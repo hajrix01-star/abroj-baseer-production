@@ -1,6 +1,6 @@
 {
     'name': 'BChat Procurement Bridge',
-    'version': '19.0.1.0.2',
+    'version': '19.0.1.0.3',
     'category': 'Inventory/Purchase',
     'summary': 'Narrow BChat order menu and internal procurement submission',
     'license': 'LGPL-3',

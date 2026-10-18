@@ -1,0 +1,31 @@
+    // Frozen pre-fix production method: queued scoped policy cancels itself on loss.
+    private void applyOrderRights(JSONObject options, AccountScope scope) throws Exception {
+        String access = options.getString("access");
+        if (!"viewer".equals(access) && !"operator".equals(access)) throw new IllegalArgumentException();
+        boolean hasView=options.has("can_view"),hasCreate=options.has("can_create"),hasReceive=options.has("can_receive");
+        if ((hasView||hasCreate||hasReceive)&&!(hasView&&hasCreate&&hasReceive)) throw new IllegalArgumentException();
+        boolean view,create,receive;
+        if(hasView){
+            if(!(options.get("can_view") instanceof Boolean)||!(options.get("can_create") instanceof Boolean)||!(options.get("can_receive") instanceof Boolean))throw new IllegalArgumentException();
+            view=options.getBoolean("can_view");create=options.getBoolean("can_create");receive=options.getBoolean("can_receive");
+        }else{
+            String saved=rememberedOrderRights.get(scope.key);
+            if(saved==null)saved=getSharedPreferences(ORDER_PERMISSION_PREFS,MODE_PRIVATE).getString(scope.key,null);
+            if(saved!=null){JSONObject old=new JSONObject(saved);view=old.getBoolean("can_view");create=old.getBoolean("can_create");receive=old.getBoolean("can_receive");}
+            else{view=true;create=receive="operator".equals(access);}
+        }
+        if(!view&&(create||receive))throw new IllegalArgumentException();
+        if(hasView){
+            JSONObject saved=new JSONObject().put("can_view",view).put("can_create",create).put("can_receive",receive);
+            final String raw=saved.toString();rememberedOrderRights.put(scope.key,raw);
+            local(scope,()->{
+                boolean stored;
+                try{stored=getSharedPreferences(ORDER_PERMISSION_PREFS,MODE_PRIVATE).edit().putString(scope.key,raw).commit();}
+                catch(RuntimeException failure){stored=false;}
+                if(!stored)preferences().edit().putBoolean(REMEMBER,false).commit();
+                return stored;
+            },(stored,error)->{if(error!=null||!Boolean.TRUE.equals(stored))offlinePersistenceReady=false;});
+        }
+        if(permissionSet.revision>=0){view&=permissionSet.orderView;create&=permissionSet.orderCreate;receive&=permissionSet.orderReceive;}
+        orderAccess=access;setOrderRights(scope,view,create,receive);
+    }

@@ -18,4 +18,12 @@ from . import change
 from . import task_service
 from . import attention_service
 from . import push
+from . import social_operation
+from . import notification_service
+from . import membership_preference
+from . import direct_service
+from . import group_audit
+from . import search_service
 from . import avatar_service
+from . import message_social
+from . import receipt_delivery_service

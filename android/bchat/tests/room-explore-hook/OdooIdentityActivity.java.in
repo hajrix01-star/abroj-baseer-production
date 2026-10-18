@@ -1,0 +1,495 @@
+package com.baseer.freshchat;
+
+import com.baseer.freshchat.sync.*;
+import org.json.*;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+import java.util.function.Consumer;
+
+/**
+ * Executable source extraction, NOT the full Android Activity.
+ * Production fragments are inserted without rewriting. Everything outside the marked
+ * fragments is an explicit deterministic adapter or a test. In particular there is no
+ * authentication, WebView, disk, actual viewport, lifecycle or read-ACK execution here.
+ */
+public final class OdooIdentityActivity {
+    // Explicit field/UI/scheduler/permission adapters for the extracted orchestration.
+    static final String V2_ROOMS = "/bchat/api/v2/rooms";
+    boolean closed, offlineHistory, v2Busy, webV2GetFallbackBusy;
+    boolean verified = true, liveForeground = true, roomsVerifiedForSession = true;
+    boolean historySearchSupported = true, receiptDeliverySupported = true;
+    boolean allowChat = true, allowMedia = true, acceptDispatch = true, allowPresentation = true;
+    int epoch = 7, historyGlobalGeneration = 11;
+    long roomExploreGeneration, messageJumpSerial, messagePositionIntentSerial, messageLatestPositionIntent = -1;
+    Object messageSendFollow;
+    AccountScope account = new AccountScope("https://hook.invalid", "synthetic", 7);
+    Room selectedRoom = new Room(1, 1, 1001, "Fixture room");
+    final List<Room> rooms = new ArrayList<>(Collections.singletonList(selectedRoom));
+    final Set<Long> v1Companies = new HashSet<>(Collections.singletonList(1L));
+    final List<JSONObject> displayedMessages = new ArrayList<>(Arrays.asList(message(10), message(11)));
+    long nextBeforeId = 10;
+    boolean historicalWindow, scrollAfterOwnSend = true, olderPageLoading = true, olderPageFailed = true;
+    static final int MAX_CONNECTED_MESSAGE_WINDOW = 500;
+    boolean initialAdmissionClears, restoringContext, mediaReplayAfterInitialHistory, receiptsAvailable;
+    int admissionScrubs, localRefreshes, retries, cacheReads, roomShows, roomLoads, pendingUiUpdates;
+    long pendingNotificationMessageId, restorationAnchor;
+    int restorationOffset;
+    Room pendingOrderShareRoom;
+    final Object historyCache = new Object();
+    static final class Restoration { final List<String> cart = new ArrayList<>(); }
+    Restoration restorationIntent;
+    // These are sentinels, not the real composer/outbox/SQLite implementation.
+    String draftSentinel = "unsent draft", replySentinel = "reply-to-8";
+    final List<String> localOutboxSentinel = new ArrayList<>(Collections.singletonList("local-uuid"));
+    final Notice chatNotice = new Notice();
+    final Control newerControl = new Control();
+    final Control olderButton = new Control();
+    final Layout messageLayout = new Layout();
+    final Scroll messageScroll = new Scroll();
+    final Scroll handler = new Scroll();
+    BChatRoomExplorePanel roomExplorePanel;
+    final List<Request> requests = new ArrayList<>();
+    final List<String> events = new ArrayList<>();
+    int persists, renders, scans, olderUpdates;
+    long renderedFocus;
+    boolean renderedFollowBottom, windowOwnSend;
+    List<JSONObject> persistedPage;
+    final ScrollAnchor fixedAnchor = new ScrollAnchor(10, -5, false);
+
+    static final class View { static final int VISIBLE = 0, GONE = 8; }
+    static final class R { static final class string {
+        static final int explore_unavailable = 101, explore_unconfirmed = 102, chat_v2_loading = 103;
+        static final int chat_v2_new_messages = 104, chat_v2_denied = 105, chat_v2_load_failed = 106;
+    } }
+    static final class Notice { String text = "old notice"; Consumer<Object> click; void setText(int id) { text = "resource:" + id; } void setText(String text) { this.text = text; } void setOnClickListener(Consumer<Object> listener) { click = listener; } }
+    static final class Control { int visibility = 8; boolean enabled = true; void setVisibility(int value) { visibility = value; } void setEnabled(boolean value) { enabled = value; } }
+    static final class Layout {
+        int scrolls, position = -1, offset;
+        void scrollToPositionWithOffset(int position, int offset) { ++scrolls; this.position = position; this.offset = offset; }
+    }
+    static final class Scroll {
+        final ArrayDeque<Runnable> posted = new ArrayDeque<>();
+        void postOnAnimation(Runnable callback) { posted.add(callback); }
+        void post(Runnable callback) { posted.add(callback); }
+        void drain() { while (!posted.isEmpty()) posted.remove().run(); }
+    }
+    static final class BChatStorageRepository {
+        static final IdentityHashMap<AccountScope,Long> generations = new IdentityHashMap<>();
+        static long generation(AccountScope scope) { return generations.getOrDefault(scope, 0L); }
+        static void invalidate(AccountScope scope) { generations.put(scope, generation(scope) + 1); }
+    }
+    interface V2Callback { void complete(int status, JSONObject body); }
+    static final class Request {
+        final String method, path, payload; final V2Callback callback;
+        Request(String method, String path, String payload, V2Callback callback) {
+            this.method = method; this.path = path; this.payload = payload; this.callback = callback;
+        }
+        void respond(int status, JSONObject body) { callback.complete(status, body); }
+    }
+    static final class BChatRoomExplorePanel {
+        @@PANEL_INTERFACES@@
+        final Host host; final AccountScope scope; final long roomId, membershipId, generation;
+        boolean shown, dismissed;
+        BChatRoomExplorePanel(OdooIdentityActivity owner, Host host, AccountScope scope, long roomId,
+                long membershipId, long generation, boolean gallery) {
+            this.host = host; this.scope = scope; this.roomId = roomId;
+            this.membershipId = membershipId; this.generation = generation;
+        }
+        void show() { shown = true; }
+        void dismiss() { dismissed = true; }
+    }
+    int dp(int value) { return value; }
+    boolean chatAllowed() { return allowChat; }
+    boolean mediaAllowed() { return allowMedia; }
+    // Presentation admission is an explicit adapter here. Its actual owner is exercised
+    // only by the separate full Activity native fixture, never by this JVM extraction.
+    boolean admitMessageTimelineOwner(Room room) { return allowPresentation && room == selectedRoom; }
+    // Explicit owner/admission adapter, NOT the production owner. It models the
+    // initial clear by invoking the ACTUAL extracted position-intent helper.
+    final class TimelineWindowOwner {
+        final Room room; final AccountScope scope = account;
+        final int session = epoch, global = historyGlobalGeneration;
+        final long repository = BChatStorageRepository.generation(scope), generation = roomExploreGeneration;
+        TimelineWindowOwner(Room room) { this.room = room; }
+        boolean bindingCurrent() { return exploreBindingCurrent(scope, room, session, global, repository, generation); }
+    }
+    boolean admitMessageTimelineOwner(TimelineWindowOwner owner) {
+        if (!owner.bindingCurrent() || !admitMessageTimelineOwner(owner.room)) return false;
+        if (initialAdmissionClears) { ++admissionScrubs; initialAdmissionClears = false; beginTimelinePositionIntent(); }
+        return true;
+    }
+    boolean handleV2TransportFailure(int status) { return false; }
+    void updateOlderButtonAvailability() { }
+    void updatePendingUi() { ++pendingUiUpdates; }
+    void reconcilePendingMediaFromVerifiedHistory(AccountScope scope, Room room, List<JSONObject> rows) { }
+    List<JSONObject> messageWindow(List<JSONObject> rows, long before, boolean bottom, boolean ownSend) { windowOwnSend = ownSend; return new ArrayList<>(rows); }
+    void showCachedMessages(Room room, long before, boolean first) { ++cacheReads; }
+    void refreshLocalRoom(Room room, boolean restore) { ++localRefreshes; }
+    void retryPending() { ++retries; }
+    void replayKnownConnectedMedia(AccountScope scope, Room room) { }
+    void purgeCachedRoom(AccountScope scope, long room) { }
+    void purgeHistory() { }
+    void showRooms() { ++roomShows; }
+    void loadRooms() { ++roomLoads; }
+    String formatMessageTime(String stamp) { return "fixture-time:" + stamp; }
+    ScrollAnchor currentScrollAnchor() { return fixedAnchor; }
+    void updateOlderControl() { ++olderUpdates; }
+    // Count the exact scan invocation boundary only. Actual geometry, durable read intent,
+    // scheduler and ACK are deliberately NOT represented by this adapter.
+    void scanVisibleMessageReceipts() { ++scans; }
+    void fetchV2(String method, String path, String payload, V2Callback callback) {
+        if (acceptDispatch && !v2Busy && !webV2GetFallbackBusy)
+            requests.add(new Request(method, path, payload, callback));
+    }
+    boolean fetchV2ReadDirectlyInWebView(String path, V2Callback callback) {
+        if (!acceptDispatch || v2Busy || webV2GetFallbackBusy) return false;
+        requests.add(new Request("GET", path, null, callback)); return true;
+    }
+    boolean postSmallFormDirectlyInWebView(String path, String field, String payload, V2Callback callback) {
+        if (!acceptDispatch || v2Busy || webV2GetFallbackBusy) return false;
+        require("payload".equals(field), "Host uses bounded payload field");
+        requests.add(new Request("POST", path, payload, callback)); return true;
+    }
+    void persistReceiptCanonical(AccountScope scope, Room room, List<JSONObject> window) {
+        require(scope == account && room == selectedRoom, "persist receives current objects");
+        ++persists; persistedPage = new ArrayList<>(window); events.add("persist-request");
+    }
+    void renderMessageWindow(Room room, List<JSONObject> window, boolean followBottom, long focus, ScrollAnchor anchor) {
+        require(room == selectedRoom && anchor == fixedAnchor, "render arguments preserved");
+        renderedFollowBottom = followBottom;
+        ++renders; renderedFocus = focus; displayedMessages.clear(); displayedMessages.addAll(window);
+        events.add("render-request");
+    }
+
+    // BEGIN VERBATIM PRODUCTION FRAGMENTS (manifest has each full fragment hash).
+    @@PRODUCTION@@
+    // END VERBATIM PRODUCTION FRAGMENTS.
+
+    static int checks, scenarios;
+    static void require(boolean condition, String label) {
+        ++checks; if (!condition) throw new AssertionError(label);
+    }
+    static JSONObject message(long id) {
+        return new JSONObject().put("id", id).put("author_user_id", 2)
+                .put("author_name", "Peer").put("text", "canonical-" + id)
+                .put("created_at", "2026-10-18 09:00:00");
+    }
+    static JSONObject detail(long target) {
+        return new JSONObject().put("api_version", 2).put("room_id", 1)
+                .put("membership_id", 1001).put("message", message(target));
+    }
+    static JSONObject history(long target) {
+        return page(new JSONArray().put(message(target - 2)).put(message(target - 1)).put(message(target)), target - 2);
+    }
+    static JSONObject page(JSONArray messages, Object cursor) {
+        return new JSONObject().put("api_version", 2).put("room_id", 1)
+                .put("membership_id", 1001).put("messages", messages).put("next_before_id", cursor);
+    }
+    String snapshot() {
+        JSONArray rows = new JSONArray(); for (JSONObject row : displayedMessages) rows.put(row);
+        // Position-intent cancellation now deliberately clears scrollAfterOwnSend.
+        // Data/cursor/loading/composer sentinels remain strict; the position flag
+        // has explicit new assertions below rather than pretending it is unchanged.
+        return rows + "|" + nextBeforeId + "|" + historicalWindow
+                + "|" + olderPageLoading + "|" + olderPageFailed + "|" + draftSentinel + "|"
+                + replySentinel + "|" + localOutboxSentinel;
+    }
+    void unchanged(String before, String label) {
+        require(before.equals(snapshot()), label + ": window/cursor/nonposition flags/draft/reply/outbox sentinels unchanged");
+        require(persists == 0 && renders == 0, label + ": no canonical persist/render request");
+    }
+    Request request(int index, String expected) {
+        require(requests.size() > index, "request exists " + index);
+        Request value = requests.get(index);
+        require(expected.equals(value.path), "route exactly " + expected);
+        return value;
+    }
+    static void validJourney() {
+        ++scenarios;
+        OdooIdentityActivity f = new OdooIdentityActivity();
+        String draft = f.draftSentinel, reply = f.replySentinel;
+        f.jumpToCanonicalMessage(f.selectedRoom, 100);
+        require(f.persists == 0 && f.renders == 0, "dispatch alone does not commit");
+        JSONObject first = detail(100); first.getJSONObject("message").put("text", "single detail is not the visible window");
+        f.request(0, V2_ROOMS + "/1/messages/100").respond(200, first);
+        require(f.persists == 0 && f.renders == 0, "valid single GET is proof only, not visible-window authority");
+        f.request(1, V2_ROOMS + "/1/messages?before_id=101").respond(200, history(100));
+        require(f.requests.size() == 2 && f.persists == 1 && f.renders == 1, "two GETs then one commit request");
+        require(f.events.equals(Arrays.asList("persist-request", "render-request")), "canonical persist requested before render (not a durability assertion)");
+        require(f.persistedPage.size() == 3 && f.persistedPage.get(2) == f.displayedMessages.get(2), "history page, not detail snippet, passed to persistence/render");
+        require("canonical-100".equals(f.displayedMessages.get(2).getString("text")), "detail snippet not injected");
+        require(f.nextBeforeId == 98 && f.historicalWindow && !f.scrollAfterOwnSend && !f.olderPageLoading && !f.olderPageFailed, "historical-window state and explicit cursor");
+        require(f.renderedFocus == 100 && f.newerControl.visibility == View.VISIBLE && f.olderUpdates == 1, "focus/newer/older arguments");
+        require(f.chatNotice.text.isEmpty() && f.scans == 0, "success notice clear; no direct scan from two GETs");
+        require(draft.equals(f.draftSentinel) && reply.equals(f.replySentinel), "successful orchestration does not touch sentinels");
+        ++scenarios; f = new OdooIdentityActivity(); String before = f.snapshot();
+        f.allowPresentation = false; f.jumpToCanonicalMessage(f.selectedRoom, 100);
+        f.requests.get(0).respond(200, detail(100)); f.requests.get(1).respond(200, history(100));
+        f.unchanged(before, "presentation-admission adapter refusal (not Authority proof)");
+        require(f.requests.size() == 2 && f.scans == 0, "admission adapter failure stops publication after GET proofs");
+    }
+    static void rejectDetail(String label, int status, JSONObject payload) {
+        ++scenarios; OdooIdentityActivity f = new OdooIdentityActivity(); String before = f.snapshot();
+        f.jumpToCanonicalMessage(f.selectedRoom, 100); f.requests.get(0).respond(status, payload);
+        f.unchanged(before, label); require(f.requests.size() == 1, label + ": no history request");
+        require(f.chatNotice.text.equals("resource:" + R.string.explore_unavailable), label + ": readable failure boundary");
+    }
+    static void rejectHistory(String label, int status, JSONObject payload) {
+        ++scenarios; OdooIdentityActivity f = new OdooIdentityActivity(); String before = f.snapshot();
+        f.jumpToCanonicalMessage(f.selectedRoom, 100); f.requests.get(0).respond(200, detail(100));
+        f.requests.get(1).respond(status, payload); f.unchanged(before, label);
+        require(f.requests.size() == 2 && f.scans == 0, label + ": no further dispatch/scan");
+        require(f.chatNotice.text.equals("resource:" + R.string.explore_unavailable), label + ": unavailable not partial mutation");
+    }
+    static void malformedJourneys() {
+        rejectDetail("detail 201", 201, detail(100)); rejectDetail("detail 204", 204, null);
+        rejectDetail("detail 401", 401, detail(100)); rejectDetail("detail 403", 403, detail(100));
+        rejectDetail("detail 404", 404, null); rejectDetail("detail 503", 503, null);
+        rejectDetail("detail unknown outcome", 0, null);
+        rejectDetail("detail API version", 200, detail(100).put("api_version", 1));
+        rejectDetail("detail string version", 200, detail(100).put("api_version", "2"));
+        rejectDetail("detail foreign room", 200, detail(100).put("room_id", 2));
+        rejectDetail("detail changed membership", 200, detail(100).put("membership_id", 2001));
+        JSONObject missing = detail(100); missing.remove("membership_id"); rejectDetail("detail missing epoch", 200, missing);
+        missing = detail(100); missing.remove("message"); rejectDetail("detail missing row", 200, missing);
+        rejectDetail("detail wrong row", 200, detail(99));
+        rejectDetail("detail row not object", 200, detail(100).put("message", "snippet"));
+        rejectDetail("detail invalid ID", 200, detail(100).put("message", message(100).put("id", "100")));
+        rejectDetail("detail invalid author", 200, detail(100).put("message", message(100).put("author_user_id", 0)));
+        rejectDetail("detail empty text", 200, detail(100).put("message", message(100).put("text", " ")));
+        rejectDetail("detail malformed media", 200, detail(100).put("message", message(100).put("media", new JSONObject())));
+        rejectDetail("detail malformed reply", 200, detail(100).put("message", message(100).put("reply", new JSONObject().put("unavailable", false))));
+        rejectHistory("history 201", 201, history(100)); rejectHistory("history 403", 403, null);
+        rejectHistory("history 503", 503, null); rejectHistory("history status0", 0, null);
+        rejectHistory("history null2xx", 200, null);
+        rejectHistory("history API", 200, history(100).put("api_version", 3));
+        rejectHistory("history room", 200, history(100).put("room_id", 2));
+        rejectHistory("history member", 200, history(100).put("membership_id", 2001));
+        missing = history(100); missing.remove("room_id"); rejectHistory("history missing room", 200, missing);
+        missing = history(100); missing.remove("messages"); rejectHistory("history missing rows", 200, missing);
+        missing = history(100); missing.remove("next_before_id"); rejectHistory("history missing explicit cursor", 200, missing);
+        rejectHistory("history string cursor", 200, history(100).put("next_before_id", "98"));
+        rejectHistory("history negative cursor", 200, history(100).put("next_before_id", -1));
+        rejectHistory("history zero cursor", 200, history(100).put("next_before_id", 0));
+        rejectHistory("history non-first cursor", 200, history(100).put("next_before_id", 99));
+        rejectHistory("history missing target", 200, page(new JSONArray().put(message(98)).put(message(99)), 98));
+        rejectHistory("history empty", 200, page(new JSONArray(), JSONObject.NULL));
+        rejectHistory("history unordered", 200, page(new JSONArray().put(message(100)).put(message(99)), 100));
+        rejectHistory("history duplicate", 200, page(new JSONArray().put(message(100)).put(message(100)), 100));
+        rejectHistory("history beyond before bound", 200, page(new JSONArray().put(message(100)).put(message(101)), 100));
+        JSONArray tooMany = new JSONArray(); for (int id = 70; id <= 100; ++id) tooMany.put(message(id));
+        rejectHistory("history31", 200, page(tooMany, 70));
+        ++scenarios; OdooIdentityActivity f = new OdooIdentityActivity();
+        f.jumpToCanonicalMessage(f.selectedRoom, 100); f.requests.get(0).respond(200, detail(100));
+        f.requests.get(1).respond(200, page(new JSONArray().put(message(100)), JSONObject.NULL));
+        require(f.renders == 1 && f.nextBeforeId == 0, "explicit null cursor means exhausted");
+        ++scenarios; f = new OdooIdentityActivity(); long max = OutboxPolicy.MAX_RECORD_ID;
+        f.jumpToCanonicalMessage(f.selectedRoom, max); f.requests.get(0).respond(200, detail(max));
+        f.request(1, V2_ROOMS + "/1/messages").respond(200, page(new JSONArray().put(message(max)), JSONObject.NULL));
+        require(f.renders == 1 && f.renderedFocus == max, "MAX ID uses bounded latest route without overflow (orchestration only)");
+    }
+    static final class Mutation {
+        final String name; final Consumer<OdooIdentityActivity> apply;
+        Mutation(String name, Consumer<OdooIdentityActivity> apply) { this.name = name; this.apply = apply; }
+    }
+    static List<Mutation> invalidations() {
+        return Arrays.asList(
+            new Mutation("closed", f -> f.closed = true), new Mutation("unverified", f -> f.verified = false),
+            new Mutation("offline", f -> f.offlineHistory = true),
+            new Mutation("paused-state", f -> { f.liveForeground = false; f.closeRoomExplore(); }),
+            new Mutation("same-key-new-account-object", f -> f.account = new AccountScope("https://hook.invalid", "synthetic", 7)),
+            new Mutation("session", f -> ++f.epoch), new Mutation("global", f -> ++f.historyGlobalGeneration),
+            new Mutation("repository", f -> BChatStorageRepository.invalidate(f.account)),
+            new Mutation("panel-generation", f -> ++f.roomExploreGeneration),
+            new Mutation("different-selected-room", f -> f.selectedRoom = new Room(2, 1, 2002, "Other")),
+            new Mutation("recipient-rejoin", f -> { f.rooms.clear(); f.rooms.add(new Room(1, 1, 2001, "Rejoined")); }),
+            new Mutation("same-membership-replaced-object", f -> { f.rooms.clear(); f.rooms.add(new Room(1, 1, 1001, "Replacement")); }),
+            new Mutation("rooms-proof", f -> f.roomsVerifiedForSession = false),
+            new Mutation("chat-rights", f -> f.allowChat = false),
+            new Mutation("company", f -> f.v1Companies.clear())
+        );
+    }
+    static void invalidationJourneys() {
+        for (Mutation mutation : invalidations()) {
+            ++scenarios; OdooIdentityActivity f = new OdooIdentityActivity(); String before = f.snapshot();
+            f.jumpToCanonicalMessage(f.selectedRoom, 100); mutation.apply.accept(f);
+            f.requests.get(0).respond(200, detail(100)); f.unchanged(before, mutation.name + " before detail");
+            require(f.requests.size() == 1 && f.scans == 0, mutation.name + ": no second GET/scan");
+            ++scenarios; f = new OdooIdentityActivity(); before = f.snapshot();
+            f.jumpToCanonicalMessage(f.selectedRoom, 100); f.requests.get(0).respond(200, detail(100));
+            mutation.apply.accept(f); f.requests.get(1).respond(200, history(100));
+            f.unchanged(before, mutation.name + " between replies"); require(f.scans == 0, mutation.name + ": no scan from late history");
+            ++scenarios; f = new OdooIdentityActivity(); before = f.snapshot();
+            f.jumpToCanonicalMessage(f.selectedRoom, 10); require(f.messageScroll.posted.size() == 1, "known-target post-scroll pending");
+            mutation.apply.accept(f); f.messageScroll.drain(); f.unchanged(before, mutation.name + " before post-scroll");
+            require(f.requests.isEmpty() && f.scans == 0, mutation.name + ": no HTTP or scan after post-scroll invalidation");
+        }
+    }
+    static void jumpSupersession() {
+        ++scenarios; OdooIdentityActivity f = new OdooIdentityActivity();
+        f.jumpToCanonicalMessage(f.selectedRoom, 100); Request first = f.requests.get(0);
+        f.jumpToCanonicalMessage(f.selectedRoom, 200); first.respond(200, detail(100));
+        require(f.requests.size() == 2 && f.renders == 0, "jump2 supersedes held detail1");
+        f.requests.get(1).respond(200, detail(200)); f.requests.get(2).respond(200, history(200));
+        require(f.renders == 1 && f.renderedFocus == 200 && f.nextBeforeId == 198, "only jump2 commits");
+        ++scenarios; f = new OdooIdentityActivity(); f.jumpToCanonicalMessage(f.selectedRoom, 100);
+        f.requests.get(0).respond(200, detail(100)); Request oldHistory = f.requests.get(1);
+        f.jumpToCanonicalMessage(f.selectedRoom, 200); oldHistory.respond(200, history(100));
+        require(f.renders == 0 && f.persists == 0, "jump2 supersedes held history1");
+        f.requests.get(2).respond(200, detail(200)); f.requests.get(3).respond(200, history(200));
+        require(f.renders == 1 && f.renderedFocus == 200, "latest history only");
+        ++scenarios; f = new OdooIdentityActivity(); String before = f.snapshot();
+        f.jumpToCanonicalMessage(f.selectedRoom, 100); f.requests.get(0).respond(200, detail(100));
+        oldHistory = f.requests.get(1); f.jumpToCanonicalMessage(f.selectedRoom, 10); oldHistory.respond(200, history(100));
+        f.unchanged(before, "already-present jump cancels pending remote jump");
+        require(f.requests.size() == 2 && f.messageLayout.position == 0, "present target adds no GET");
+        f.messageScroll.drain(); require(f.scans == 1, "only current post-scroll reaches scan invocation boundary");
+        ++scenarios; f = new OdooIdentityActivity(); f.jumpToCanonicalMessage(f.selectedRoom, 10);
+        f.jumpToCanonicalMessage(f.selectedRoom, 11); f.messageScroll.drain();
+        require(f.scans == 1 && f.requests.isEmpty() && f.messageLayout.position == 1, "older post-scroll superseded by present jump2");
+    }
+    static void localAndAdmission() {
+        ++scenarios; OdooIdentityActivity f = new OdooIdentityActivity(); String before = f.snapshot();
+        f.jumpToCanonicalMessage(f.selectedRoom, 10);
+        require(f.requests.isEmpty() && f.messageLayout.scrolls == 1 && f.scans == 0, "known current target scrolls without HTTP/direct ACK boundary");
+        f.messageScroll.drain(); require(f.scans == 1, "scan only in current scheduled post-scroll callback"); f.unchanged(before, "known current");
+        ++scenarios; f = new OdooIdentityActivity(); before = f.snapshot(); f.offlineHistory = true;
+        f.jumpToCanonicalMessage(f.selectedRoom, 10); f.messageScroll.drain();
+        require(f.requests.isEmpty() && f.messageLayout.scrolls == 1 && f.scans == 0, "known offline cache target scroll only, no scan"); f.unchanged(before, "offline known");
+        for (int mode = 0; mode < 5; ++mode) {
+            ++scenarios; f = new OdooIdentityActivity(); before = f.snapshot();
+            if (mode == 0) f.v2Busy = true; if (mode == 1) f.webV2GetFallbackBusy = true;
+            if (mode == 2) f.offlineHistory = true; if (mode == 3) f.receiptDeliverySupported = false;
+            if (mode == 4) f.acceptDispatch = false;
+            f.jumpToCanonicalMessage(f.selectedRoom, 100); f.unchanged(before, "remote admission " + mode);
+            require(f.requests.isEmpty() && f.scans == 0, "busy/offline/capability/refusal has no dispatch/scan " + mode);
+            if (mode < 2) require(f.chatNotice.text.equals("resource:" + R.string.explore_unconfirmed), "busy lane visible unconfirmed");
+        }
+        for (long invalid : new long[]{0, -1, OutboxPolicy.MAX_RECORD_ID + 1}) {
+            ++scenarios; f = new OdooIdentityActivity(); before = f.snapshot(); f.jumpToCanonicalMessage(f.selectedRoom, invalid);
+            f.unchanged(before, "invalid target " + invalid); require(f.requests.isEmpty(), "invalid target dispatch refused");
+        }
+    }
+    static RoomExploreProtocol.Query query(boolean gallery, RoomExploreProtocol.Kind kind, long room, long member) {
+        return new RoomExploreProtocol.Query(room, member, gallery, kind, "private search needle", 0);
+    }
+    static void hostJourneys() {
+        ++scenarios; OdooIdentityActivity f = new OdooIdentityActivity();
+        f.showRoomExplore(f.selectedRoom, false); BChatRoomExplorePanel panel = f.roomExplorePanel;
+        require(panel != null && panel.shown && panel.host.account() == f.account, "actual Host exposed through test Panel adapter");
+        require(panel.host.current(f.account, 1, 1001, panel.generation), "Host exact current binding");
+        require(!panel.host.current(new AccountScope("https://hook.invalid", "synthetic", 7), 1, 1001, panel.generation), "Host object identity, not key equivalence");
+        require(!panel.host.current(f.account, 1, 2001, panel.generation) && !panel.host.current(f.account, 2, 1001, panel.generation)
+                && !panel.host.current(f.account, 1, 1001, panel.generation + 1), "Host tuple exact");
+        int[] replies = {0};
+        require(panel.host.read(query(false, RoomExploreProtocol.Kind.ALL, 1, 1001), (s,b) -> ++replies[0]), "Host dispatch search");
+        Request search = f.request(0, V2_ROOMS + "/1/search");
+        require("POST".equals(search.method) && !search.path.contains("private"), "private text never URL query");
+        JSONObject payload = new JSONObject(search.payload);
+        require("private search needle".equals(payload.getString("q")) && ((Number)payload.get("membership_id")).longValue() == 1001, "actual Query payload passed to bounded adapter");
+        search.respond(200, new JSONObject()); require(replies[0] == 1, "current callback delivered");
+        require(panel.host.timeLabel("stamp").equals("fixture-time:stamp"), "formatter adapter boundary");
+        f.closeRoomExplore(); require(panel.dismissed && f.roomExplorePanel == null, "close clears Panel reference");
+        search.respond(200, new JSONObject()); require(replies[0] == 1, "closed Host drops late reply");
+        ++scenarios; f = new OdooIdentityActivity(); f.showRoomExplore(f.selectedRoom, true); panel = f.roomExplorePanel;
+        require(panel.host.read(query(true, RoomExploreProtocol.Kind.IMAGE, 1, 1001), (s,b)->{}), "gallery read admitted");
+        require("GET".equals(f.requests.get(0).method) && f.requests.get(0).path.equals(V2_ROOMS + "/1/media?membership_id=1001&kind=image"), "gallery only GET with recipient scope");
+        ++scenarios; f = new OdooIdentityActivity(); f.allowMedia = false; f.showRoomExplore(f.selectedRoom, false); panel = f.roomExplorePanel;
+        require(!panel.host.mediaAllowed(), "Host reports media denied");
+        require(panel.host.read(query(false, RoomExploreProtocol.Kind.TEXT, 1, 1001), (s,b)->{}), "text allowed without media");
+        require(panel.host.read(query(false, RoomExploreProtocol.Kind.ALL, 1, 1001), (s,b)->{}), "all text search allowed without media");
+        int count = f.requests.size();
+        for (RoomExploreProtocol.Kind kind : new RoomExploreProtocol.Kind[]{RoomExploreProtocol.Kind.IMAGE, RoomExploreProtocol.Kind.FILE, RoomExploreProtocol.Kind.AUDIO})
+            require(!panel.host.read(query(false, kind, 1, 1001), (s,b)->{}), "media kind denied " + kind);
+        require(!panel.host.read(query(true, RoomExploreProtocol.Kind.ALL, 1, 1001), (s,b)->{}) && f.requests.size() == count, "gallery denied without media");
+        for (int mode = 0; mode < 7; ++mode) {
+            ++scenarios; f = new OdooIdentityActivity(); f.showRoomExplore(f.selectedRoom, false); panel = f.roomExplorePanel;
+            if (mode == 0) f.v2Busy = true; if (mode == 1) f.webV2GetFallbackBusy = true;
+            if (mode == 2) f.acceptDispatch = false; if (mode == 3) f.historySearchSupported = false;
+            RoomExploreProtocol.Query bad = mode == 4 ? query(false, RoomExploreProtocol.Kind.ALL, 2, 1001)
+                    : mode == 5 ? query(false, RoomExploreProtocol.Kind.ALL, 1, 2001)
+                    : mode == 6 ? null : query(false, RoomExploreProtocol.Kind.ALL, 1, 1001);
+            String before = f.snapshot();
+            require(!panel.host.read(bad, (s,b)->{}), "Host refusal " + mode);
+            f.unchanged(before, "Host refusal " + mode); require(f.requests.isEmpty(), "Host refusal no transport " + mode);
+        }
+        for (Mutation mutation : invalidations()) {
+            ++scenarios; f = new OdooIdentityActivity(); f.showRoomExplore(f.selectedRoom, false); panel = f.roomExplorePanel;
+            int[] calls = {0}; require(panel.host.read(query(false, RoomExploreProtocol.Kind.ALL, 1, 1001), (s,b)->++calls[0]), "Host held search before invalidation");
+            String before = f.snapshot(); mutation.apply.accept(f); f.requests.get(0).respond(200, new JSONObject());
+            require(calls[0] == 0 && panel.host.account() == null && !panel.host.supported(), mutation.name + ": stale Host rejects reply/account/support");
+            require(!panel.host.read(query(false, RoomExploreProtocol.Kind.ALL, 1, 1001), (s,b)->++calls[0]), mutation.name + ": no new read");
+            panel.host.openMessage(100); f.unchanged(before, mutation.name + ": stale Host open");
+            require(f.requests.size() == 1 && f.scans == 0, mutation.name + ": no navigation from stale Host");
+        }
+        ++scenarios; f = new OdooIdentityActivity(); f.showRoomExplore(f.selectedRoom, false); panel = f.roomExplorePanel;
+        panel.host.openMessage(100); require(panel.dismissed && f.roomExplorePanel == null && f.requests.size() == 1, "current result opens canonical GET, not row insertion");
+        require(f.displayedMessages.size() == 2 && f.renders == 0, "search result itself does not mutate window");
+        for (int mode = 0; mode < 5; ++mode) {
+            ++scenarios; f = new OdooIdentityActivity();
+            if (mode == 0) f.historySearchSupported = false; if (mode == 1) f.allowChat = false;
+            if (mode == 2) f.offlineHistory = true; if (mode == 3) f.allowMedia = false;
+            f.showRoomExplore(mode == 4 ? null : f.selectedRoom, mode == 3);
+            require(f.roomExplorePanel == null && f.requests.isEmpty(), "open admission " + mode);
+        }
+    }
+    static void positionSequencing() {
+        ++scenarios; OdooIdentityActivity f = new OdooIdentityActivity();
+        f.messageSendFollow = new Object(); f.messageLatestPositionIntent = 7; f.scrollAfterOwnSend = true;
+        long first = f.beginTimelinePositionIntent();
+        require(first == 1 && f.messageSendFollow == null && f.messageLatestPositionIntent == -1 && !f.scrollAfterOwnSend,
+                "actual begin helper clears presentation sentinels, not data/business state");
+        require(f.localOutboxSentinel.size() == 1 && f.draftSentinel.equals("unsent draft"), "position clear retains business/composer sentinels");
+
+        ++scenarios; f = new OdooIdentityActivity(); f.messageSendFollow = new Object();
+        f.jumpToCanonicalMessage(f.selectedRoom, 100);
+        long started = f.messagePositionIntentSerial;
+        require(f.messageSendFollow == null, "actual jump start clears prior follow sentinel");
+        f.requests.get(0).respond(200, detail(100));
+        // Explicit sentinel adapter for a follow captured while the two GETs wait.
+        // This is NOT TimelineSendOrigin or actual owner authority; native covers that.
+        f.messageSendFollow = new Object(); f.scrollAfterOwnSend = true;
+        f.requests.get(1).respond(200, history(100));
+        require(f.messagePositionIntentSerial > started && f.messageSendFollow == null && !f.scrollAfterOwnSend,
+                "actual history-commit begin clears a follow captured during pending canonical GETs");
+        require(f.renderedFocus == 100 && f.renders == 1 && !f.renderedFollowBottom,
+                "explicit canonical focus wins rather than follow-bottom in actual orchestration");
+
+        ++scenarios; f = new OdooIdentityActivity(); f.historicalWindow = true; f.scrollAfterOwnSend = false;
+        f.initialAdmissionClears = true;
+        f.jumpToLatest();
+        require(f.requests.size() == 1 && f.requests.get(0).path.equals(V2_ROOMS + "/1/messages"), "actual latest dispatches latest-page GET through held adapter");
+        f.messageSendFollow = new Object();
+        f.requests.get(0).respond(200, page(new JSONArray().put(message(100)).put(message(101)), 100));
+        require(f.admissionScrubs == 1, "declared initial-admission adapter invokes actual begin helper once");
+        require(f.windowOwnSend && f.renderedFollowBottom && !f.historicalWindow,
+                "actual loadMessages preserves captured latest intent across initial-admission clear and old historical window");
+        require(f.messageSendFollow == null && !f.scrollAfterOwnSend && f.renderedFocus == 0,
+                "latest consumes presentation intent without fake canonical focus or old follow reuse");
+        require(f.displayedMessages.size() == 2 && positiveId(f.displayedMessages.get(0).get("id")) == 100,
+                "latest render receives validated response, not old historical rows (window merge remains adapter)");
+
+        ++scenarios; f = new OdooIdentityActivity(); f.historicalWindow = true; f.scrollAfterOwnSend = false;
+        f.initialAdmissionClears = true; f.jumpToLatest();
+        f.beginTimelinePositionIntent(); String before = f.snapshot();
+        f.requests.get(0).respond(200, page(new JSONArray().put(message(100)), 100));
+        f.unchanged(before, "newer explicit position fences pending latest response");
+        require(f.admissionScrubs == 0, "stale latest cannot borrow a current initial admission");
+
+        ++scenarios; f = new OdooIdentityActivity(); f.historicalWindow = true; f.scrollAfterOwnSend = false;
+        f.loadMessages(0); f.scrollAfterOwnSend = true; // a later, unrelated presentation flag
+        f.requests.get(0).respond(200, page(new JSONArray().put(message(100)), 100));
+        require(!f.windowOwnSend && !f.renderedFollowBottom && f.historicalWindow,
+                "generic request does not borrow a later own-send flag to leave historical context");
+
+        ++scenarios; f = new OdooIdentityActivity(); f.offlineHistory = true; f.historicalWindow = true;
+        f.messageSendFollow = new Object(); f.jumpToLatest();
+        require(f.cacheReads == 1 && f.requests.isEmpty() && !f.historicalWindow && f.messageSendFollow == null,
+                "actual offline latest delegates cache-only after actual intent clear (cache read is explicit adapter)");
+    }
+    public static void main(String[] args) {
+        validJourney(); malformedJourneys(); invalidationJourneys(); jumpSupersession(); localAndAdmission(); hostJourneys(); positionSequencing();
+        System.out.println("PASS " + checks + " extracted Activity C16/C21 orchestration checks across " + scenarios + " deterministic cases");
+        System.out.println("LIMITS: Gson JSON / Panel / UI / held transport / repository-generation / persistence-render / window-merge / initial-owner-admission-clear / post-scroll scan adapters. Actual begin/jumpToLatest/loadMessages bodies; not full Activity, real owner, Android, auth, HTTP, SQLite, actual viewport, lifecycle, ACK or performance acceptance");
+    }
+}

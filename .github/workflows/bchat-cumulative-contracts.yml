@@ -22,6 +22,17 @@ jobs:
         with:
           python-version: '3.12'
 
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      # Same pinned build runtime as the local toolchain. Its existing Gson jar
+      # supports the declared test-only JSONObject adapter, not a product dependency.
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+
       - name: Install the pinned media contract dependency
         run: >-
           python -m pip install --disable-pip-version-check --no-input
@@ -51,3 +62,78 @@ jobs:
             odoo@sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd \
             /mnt/baseer-addons/baseer_bchat/tools/run_native_body_tests.py \
             --addon-root /mnt/baseer-addons/baseer_bchat
+
+      - name: Run Android storage and presentation behavior on JVM
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 android/bchat/tools/test-connected-media-store.py
+          python3 android/bchat/tools/test-notification-presentation.py
+          python3 android/bchat/tools/test-notification-contract.py
+          python3 android/bchat/tools/test-notification-channels.py
+          python3 android/bchat/tools/test-notification-conversations.py
+          python3 android/bchat/tools/test-notification-messaging.py
+          python3 android/bchat/tools/test-push-routing-state.py
+          python3 android/bchat/tools/test-push-room-owner.py --label ci
+          python3 android/bchat/tools/test-push-room-owner.py --case cancel-version --label ci-cancel-version
+          python3 android/bchat/tools/test-notification-rights-reset.py
+          python3 android/bchat/tools/test-room-preferences-protocol.py
+          python3 android/bchat/tools/test-room-preferences-store.py
+          python3 android/bchat/tools/test-room-preferences-store.py --case ambiguous-epoch --label jvm-ambiguous
+          python3 android/bchat/tools/test-room-preferences-store.py --case membership-snapshot --label ci-membership-snapshot
+          python3 android/bchat/tools/test-room-preferences-controller.py --label ci
+          python3 android/bchat/tools/test-room-preferences-controller.py --case cancellation --label ci-cancellation
+          python3 android/bchat/tools/test-room-mute-index.py --label ci
+          python3 android/bchat/tools/test-room-mute-index.py --case recovery --label ci-recovery
+          python3 android/bchat/tools/test-room-mute-index.py --case foreign-rebind --label ci-foreign-rebind
+          python3 android/bchat/tools/test-room-preferences-owner.py --label ci
+          python3 android/bchat/tools/test-room-explore-hook.py --label ci
+          python3 android/bchat/tools/test-room-explore.py --label ci
+          python3 android/bchat/tools/test-group-people-protocol.py --label ci
+          python3 android/bchat/tools/test-timeline-rows.py --label ci
+          python3 android/bchat/tools/test-room-list.py --label ci
+          python3 android/bchat/tools/test-appearance-foundations.py
+          python3 android/bchat/tools/test-display-time.py --label ci
+
+  isolated-core-orm:
+    name: BChat isolated core ORM and real PostgreSQL races
+    runs-on: ubuntu-24.04
+    # Phase budgets are 16m + 4m + 5m, plus image pulls/startup, hard-kill
+    # grace and evidence upload. Keep the outer watchdog above their sum.
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Prepare frozen synthetic core fixture
+        id: fixture
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test -z "$(git status --porcelain)"
+          fixture_root="$(mktemp -d /tmp/bchat-maturity-20261017-XXXXXX)"
+          git archive --format=tar HEAD custom_addons/baseer_bchat | tar -x -C "$fixture_root"
+          printf 'root=%s\n' "$fixture_root" >> "$GITHUB_OUTPUT"
+          printf 'BCHAT_SOURCE_COMMIT=%s\n' "$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+          printf 'SOURCE_COMMIT=%s\n' "$(git rev-parse HEAD)" > "$fixture_root/preparation.log"
+          docker pull odoo@sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd 2>&1 | tee -a "$fixture_root/preparation.log"
+          docker pull postgres@sha256:f1c3376c26f2609ab9f29f71f824103fe2fcd8ee0346485cb6122a4f93df6f94 2>&1 | tee -a "$fixture_root/preparation.log"
+
+      - name: Run core regressions, real races and bounded early capacity measurement
+        shell: bash
+        working-directory: ${{ steps.fixture.outputs.root }}
+        run: bash custom_addons/baseer_bchat/tools/run_maturity_isolated.sh
+
+      - name: Retain source identity and test evidence, even on failure
+        if: always() && steps.fixture.outputs.root != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: bchat-isolated-core-${{ github.run_id }}
+          path: |
+            ${{ steps.fixture.outputs.root }}/*.log
+            ${{ steps.fixture.outputs.root }}/source.sha256
+            ${{ steps.fixture.outputs.root }}/evidence.json
+            ${{ steps.fixture.outputs.root }}/capacity-evidence.json
+          if-no-files-found: error
+          retention-days: 14

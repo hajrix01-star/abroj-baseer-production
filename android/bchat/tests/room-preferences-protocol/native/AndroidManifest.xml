@@ -1,0 +1,7 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.baseer.bchat.room.preferences.protocol.test">
+  <uses-sdk android:minSdkVersion="26" android:targetSdkVersion="35" />
+  <application android:label="Isolated room preference protocol tests" android:debuggable="true" android:allowBackup="false" />
+  <instrumentation android:name="com.baseer.freshchat.RoomPreferencesInstrumentation"
+      android:targetPackage="com.baseer.bchat.room.preferences.protocol.test"
+      android:label="Native JSON value boundary only" />
+</manifest>

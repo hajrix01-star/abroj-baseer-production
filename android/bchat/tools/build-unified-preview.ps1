@@ -2,12 +2,43 @@ param(
     [string]$EmulatorSerial = 'emulator-5554',
     [string]$GradleBin = 'D:\Codex\tools\gradle-8.11.1\bin\gradle.bat',
     [string]$SdkRoot = 'D:\Codex\AndroidSdk',
+    [string]$ExpectedSourceCommit = $env:BCHAT_SOURCE_COMMIT,
+    [string]$ExpectedSourceBranch = $env:BCHAT_SOURCE_BRANCH,
+    [int]$PreviousVersionCode = 87,
     [switch]$SkipDeviceInstall
 )
 
 $ErrorActionPreference = 'Stop'
+$project = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..')).Path
+$sourceRoot = (& git -C $project rev-parse --show-toplevel).Trim()
+if ($LASTEXITCODE -ne 0) { throw 'A Git source checkout is required.' }
+$sourceCommit = (& git -C $sourceRoot rev-parse HEAD).Trim()
+if ($ExpectedSourceCommit -notmatch '^[0-9a-f]{40}$' -or $sourceCommit -ne $ExpectedSourceCommit) {
+    throw 'Pass the exact reviewed source commit through -ExpectedSourceCommit or BCHAT_SOURCE_COMMIT.'
+}
+$sourceBranch = ([string](& git -C $sourceRoot symbolic-ref --quiet --short HEAD)).Trim()
+if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($ExpectedSourceBranch) -or
+    $sourceBranch -ne $ExpectedSourceBranch) {
+    throw 'Pass the reviewed source branch through -ExpectedSourceBranch or BCHAT_SOURCE_BRANCH; detached HEAD is not accepted.'
+}
+$sourceStatus = & git -C $sourceRoot status --porcelain --untracked-files=normal
+if ($LASTEXITCODE -ne 0 -or $sourceStatus) {
+    throw 'The reviewed release checkout must be clean, including untracked source files.'
+}
+$sourceEpoch = (& git -C $sourceRoot show -s --format=%ct HEAD).Trim()
+if ($LASTEXITCODE -ne 0 -or $sourceEpoch -notmatch '^[0-9]+$') { throw 'Missing source timestamp.' }
+$env:BCHAT_SOURCE_COMMIT = $sourceCommit
+$env:SOURCE_DATE_EPOCH = $sourceEpoch
 if ($EmulatorSerial -notmatch '^emulator-[0-9]+$') {
     throw 'Only an Android emulator may be updated by this script.'
+}
+# Use only the documented local store, never a filesystem/history search or a fallback key.
+$signingRoot = Join-Path $env:LOCALAPPDATA 'Baseer\BChatSigning\fresh-install-20261009'
+if ([string]::IsNullOrWhiteSpace($env:BCHAT_SIGNING_KEY)) {
+    $env:BCHAT_SIGNING_KEY = Join-Path $signingRoot 'bchat-preview-fresh.p12'
+}
+if ([string]::IsNullOrWhiteSpace($env:BCHAT_SIGNING_PASSWORD_FILE)) {
+    $env:BCHAT_SIGNING_PASSWORD_FILE = Join-Path $signingRoot 'keystore.password'
 }
 if ([string]::IsNullOrWhiteSpace($env:BCHAT_SIGNING_KEY) -or
     [string]::IsNullOrWhiteSpace($env:BCHAT_SIGNING_PASSWORD_FILE) -or
@@ -16,7 +47,6 @@ if ([string]::IsNullOrWhiteSpace($env:BCHAT_SIGNING_KEY) -or
     throw 'Set BCHAT_SIGNING_KEY and BCHAT_SIGNING_PASSWORD_FILE to the existing preview signing files.'
 }
 
-$project = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..')).Path
 $firebaseConfig = Join-Path $project 'app\google-services.json'
 if (-not (Test-Path -LiteralPath $firebaseConfig)) {
     throw 'Firebase configuration is missing; refusing a silently reduced push-enabled APK.'
@@ -29,6 +59,12 @@ Push-Location $project
 try {
     & $GradleBin :app:assembleRelease :app:lintRelease -PbchatEnablePush=true --offline
     if ($LASTEXITCODE -ne 0) { throw 'Release build or lint failed.' }
+    $afterCommit = (& git -C $sourceRoot rev-parse HEAD).Trim()
+    $afterBranch = ([string](& git -C $sourceRoot symbolic-ref --quiet --short HEAD)).Trim()
+    $afterStatus = & git -C $sourceRoot status --porcelain --untracked-files=normal
+    if ($LASTEXITCODE -ne 0 -or $afterCommit -ne $sourceCommit -or $afterBranch -ne $sourceBranch -or $afterStatus) {
+        throw 'Source changed during the build; no artifact is accepted.'
+    }
 
     $built = Join-Path $project 'app\build\outputs\apk\release\app-release.apk'
     $packageLine = (& $aapt dump badging $built | Where-Object { $_ -match '^package:' } | Select-Object -First 1)
@@ -37,7 +73,7 @@ try {
         throw 'Unexpected package identity or missing versionCode.'
     }
     $versionCode = $versionMatch.Groups[1].Value
-    if ([int]$versionCode -le 58) {
+    if ($PreviousVersionCode -lt 87 -or [int]$versionCode -le $PreviousVersionCode) {
         throw 'The unified APK must increment versionCode beyond the previously distributed build.'
     }
     $manifestTree = & $aapt dump xmltree $built AndroidManifest.xml
@@ -58,6 +94,25 @@ try {
     if (Test-Path -LiteralPath $artifact) { throw "Refusing to overwrite $artifact" }
     Copy-Item -LiteralPath $built -Destination $artifact
     $expectedHash = (Get-FileHash -LiteralPath $artifact -Algorithm SHA256).Hash
+    $versionNameMatch = [regex]::Match([string]$packageLine, "versionName='([^']+)'")
+    $targetLine = & $aapt dump badging $artifact | Where-Object { $_ -match '^targetSdkVersion:' } | Select-Object -First 1
+    $releaseManifest = [ordered]@{
+        schema = 1
+        sourceCommit = $sourceCommit
+        sourceBranch = $sourceBranch
+        sourceDateEpoch = $sourceEpoch
+        package = 'com.baseer.bchat.preview'
+        versionCode = [int]$versionCode
+        versionName = $versionNameMatch.Groups[1].Value
+        targetSdk = ([regex]::Match([string]$targetLine, "'([0-9]+)'")).Groups[1].Value
+        sha256 = $expectedHash.ToLowerInvariant()
+        signerSha256 = $expectedSigner
+        firebaseMessagingVerified = $true
+        deviceValidation = 'not-run'
+    }
+    $manifestPath = "$artifact.manifest.json"
+    if (Test-Path -LiteralPath $manifestPath) { throw 'Refusing to overwrite a release manifest.' }
+    $releaseManifest | ConvertTo-Json | Set-Content -LiteralPath $manifestPath -Encoding utf8
 
     if ($SkipDeviceInstall) {
         Write-Output "Unified APK: $artifact"
@@ -81,6 +136,8 @@ try {
     } finally {
         if (Test-Path -LiteralPath $verifyCopy) { Remove-Item -LiteralPath $verifyCopy }
     }
+    $releaseManifest.deviceValidation = "identical-apk-installed:$EmulatorSerial"
+    $releaseManifest | ConvertTo-Json | Set-Content -LiteralPath $manifestPath -Encoding utf8
     Write-Output "Unified APK: $artifact"
     Write-Output "SHA256: $expectedHash"
     Write-Output "Emulator: $EmulatorSerial (identical APK)"

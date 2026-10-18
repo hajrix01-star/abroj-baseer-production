@@ -69,7 +69,7 @@ class BChatMediaService(models.AbstractModel):
     def _v2_reconcile_native_upload(self, room_id, upload_uuid):
         """Return only this member epoch's persisted media after a lost native response."""
         self._require_bchat_permission('chat_send')
-        self._require_bchat_permission('media')
+        self._require_media_right('upload')
         room = self._v2_lock_room(room_id)
         member = self._v2_current_member(room)
         upload_uuid = canonical_uuid(upload_uuid)
@@ -102,7 +102,7 @@ class BChatMediaService(models.AbstractModel):
     def _v2_upload_scope(self, room_id, metadata):
         """Cheap preflight before decoding an uploaded file; commit path checks again."""
         self._require_bchat_permission('chat_send')
-        self._require_bchat_permission('media')
+        self._require_media_right('upload')
         normalized = media_contracts.normalize_metadata(metadata)
         user = self._require_user()
         room = self.env['baseer.bchat.room'].sudo().browse(positive_id(room_id, 'room_id')).exists()
@@ -305,7 +305,7 @@ class BChatMediaService(models.AbstractModel):
     @api.model
     def _v2_media_content(self, media_id, thumbnail=False):
         self._require_bchat_permission('chat_view')
-        self._require_bchat_permission('media')
+        self._require_media_right('view' if thumbnail else 'download')
         media_id = positive_id(media_id, 'media_id')
         media = self.env['baseer.bchat.media'].sudo().browse(media_id).exists()
         if not media or media.state != 'attached' or not media.message_id:

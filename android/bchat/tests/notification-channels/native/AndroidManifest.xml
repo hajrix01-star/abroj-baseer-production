@@ -1,0 +1,5 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.baseer.freshchat.channels.test">
+  <uses-sdk android:minSdkVersion="26" android:targetSdkVersion="35"/>
+  <application android:label="BChat isolated channel routing tests" android:hasCode="true" android:allowBackup="false"/>
+  <instrumentation android:name="com.baseer.freshchat.ChannelInstrumentation" android:targetPackage="com.baseer.freshchat.channels.test" android:label="Isolated native channel tests"/>
+</manifest>

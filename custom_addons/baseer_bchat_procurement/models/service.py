@@ -207,6 +207,116 @@ class BChatProcurementService(models.AbstractModel):
         return result
 
     @api.model
+    def _order_catalog_item(self, option):
+        """One shared wire shape for browsing and targeted draft hydration."""
+        product = option.product_id
+        return {
+            'id': option.id, 'product_id': product.id,
+            'product_name': self._label(product.name),
+            'option_name': self._label(option.name),
+            'uom_name': self._label(option.uom_id.display_name),
+            'packaging_note': self._label(option.packaging_note) if option.packaging_note else '',
+            'category_id': option.category_id.id,
+            'category_name': self._label(option.category_id.display_name),
+            'last_price': self._money(option.last_price),
+            'currency_symbol': self._label(self.env.company.currency_id.symbol or self.env.company.currency_id.name, 16),
+            'image_url': ('/bchat/api/v2/orders/image/%s?company_id=%s' % (product.id, self.env.company.id))
+                         if product.image_128 else '',
+        }
+
+    @api.model
+    def _order_validate_selection(self, warehouse_id, purchase_route, selected):
+        """Reuse create's selection policy; no reservation or financial writes."""
+        company_id = self.env.company.id
+        if type(purchase_route) is not str or purchase_route not in PURCHASE_ROUTES:
+            raise ProtocolError('invalid_purchase_route', 'Choose a valid purchase route.')
+        if purchase_route != 'representative' and selected is not None:
+            raise ProtocolError('invalid_representative', 'This purchase route cannot have a representative.')
+        warehouse = self.env['stock.warehouse'].sudo().browse(warehouse_id).exists()
+        if not warehouse or warehouse.company_id.id != company_id or not warehouse.active:
+            raise ProtocolError('invalid_warehouse', 'Choose a warehouse in this company.', 400)
+        representative = False
+        if purchase_route == 'representative':
+            representatives = self._representatives()
+            if not representatives:
+                raise ProtocolError('no_representative', 'No purchase representative is available in this company.', 409)
+            if len(representatives) == 1:
+                representative = representatives[0]
+                if selected is not None and selected != representative.id:
+                    raise ProtocolError('invalid_representative', 'The selected representative is unavailable.', 409)
+            else:
+                if selected is None:
+                    raise ProtocolError('representative_required', 'Choose a purchase representative.', 409)
+                representative = representatives.filtered(lambda row: row.id == selected)
+                if not representative:
+                    raise ProtocolError('invalid_representative', 'The selected representative is unavailable.', 409)
+        return warehouse, representative
+
+    @api.model
+    def _v2_order_catalog_resolve(self, payload):
+        """Read <=100 requested IDs only, never scan or mutate the catalogue.
+
+        The cursor advances through requested IDs, including missing ones.
+        Page size may shrink to meet the actual JSON/UTF-8 byte ceiling; a
+        refusal never creates an order or consumes the client's saved intent.
+        """
+        self._require_order_creator()
+        required = {'api_version', 'company_id', 'warehouse_id', 'purchase_route',
+                    'representative_partner_id', 'option_ids'}
+        if (type(payload) is not dict or not required <= set(payload)
+                or set(payload) - required - {'after_option_id'}):
+            raise ProtocolError('invalid_payload', 'Unexpected catalogue resolve fields.')
+        if type(payload['api_version']) is not int or payload['api_version'] != 2:
+            raise ProtocolError('invalid_payload', 'Unsupported order API version.')
+        company_id = positive_id(payload['company_id'], 'company_id')
+        warehouse_id = positive_id(payload['warehouse_id'], 'warehouse_id')
+        selected = payload['representative_partner_id']
+        if selected is not None:
+            selected = positive_id(selected, 'representative_partner_id')
+        requested = payload['option_ids']
+        if type(requested) is not list or not 1 <= len(requested) <= MAX_CART_LINES:
+            raise ProtocolError('invalid_payload', 'Resolve 1–100 purchase option IDs.')
+        ids = [positive_id(value, 'option_id') for value in requested]
+        if len(set(ids)) != len(ids):
+            raise ProtocolError('invalid_payload', 'An option appears twice in the saved cart.')
+        ids.sort()
+        after = payload.get('after_option_id')
+        if after is not None:
+            after = positive_id(after, 'after_option_id')
+            if after not in ids:
+                raise ProtocolError('invalid_payload', 'The cursor must belong to the requested option IDs.')
+        scoped = self._order_create_scope(company_id)
+        scoped._order_validate_selection(warehouse_id, payload['purchase_route'], selected)
+        remaining = [option_id for option_id in ids if after is None or option_id > after]
+        processed = remaining[:PAGE_SIZE]
+        Order = scoped.env['baseer.procurement.request'].sudo().with_company(scoped.env.company)
+        # An ID-restricted domain also avoids prefetching foreign option fields.
+        options = scoped.env['baseer.procurement.purchase.option'].sudo().with_company(
+            scoped.env.company).search([
+                ('id', 'in', processed), ('company_id', '=', company_id), ('active', '=', True),
+            ], order='id', limit=PAGE_SIZE)
+        by_id = {}
+        for option in options:
+            try:
+                Order._assert_catalog_options(option)
+            except (AccessError, ValidationError):
+                continue  # Same non-disclosing result as missing or archived.
+            by_id[option.id] = scoped._order_catalog_item(option)
+        while True:
+            result = {
+                'api_version': 2,
+                'items': [by_id[option_id] for option_id in processed if option_id in by_id],
+                'missing_ids': [option_id for option_id in processed if option_id not in by_id],
+                'processed_option_ids': list(processed),
+                'next_after_option_id': processed[-1] if processed and len(processed) < len(remaining) else None,
+            }
+            if len(json.dumps(result, ensure_ascii=False).encode('utf-8')) <= MAX_RESPONSE_BYTES:
+                return result
+            if len(processed) <= 1:
+                raise ProtocolError('page_too_large', 'Saved cart page exceeds 64 KiB; keep the draft for review.', 413)
+            processed.pop()
+
+    @api.model
     def _v2_order_catalog(self, company_id, search_term=None, category_id=None, after_id=None):
         scoped = self._order_create_scope(company_id)
         if search_term is not None and (not isinstance(search_term, str)
@@ -248,22 +358,7 @@ class BChatProcurementService(models.AbstractModel):
             last_product_id = product.id
         if batch and not page:
             raise ProtocolError('invalid_catalog', 'No purchase option is available for this material.', 409)
-        items = []
-        for option in page:
-            product = option.product_id
-            items.append({
-                'id': option.id, 'product_id': product.id,
-                'product_name': self._label(product.name),
-                'option_name': self._label(option.name),
-                'uom_name': self._label(option.uom_id.display_name),
-                'packaging_note': self._label(option.packaging_note) if option.packaging_note else '',
-                'category_id': option.category_id.id,
-                'category_name': self._label(option.category_id.display_name),
-                'last_price': self._money(option.last_price),
-                'currency_symbol': self._label(scoped.env.company.currency_id.symbol or scoped.env.company.currency_id.name, 16),
-                'image_url': ('/bchat/api/v2/orders/image/%s?company_id=%s' % (product.id, scoped.env.company.id))
-                             if product.image_128 else '',
-            })
+        items = [scoped._order_catalog_item(option) for option in page]
         has_more = bool(last_product_id and (
             len(products) > PAGE_SIZE or any(product.id > last_product_id for product in batch)
         ))
@@ -592,24 +687,7 @@ class BChatProcurementService(models.AbstractModel):
                 raise ProtocolError('idempotency_conflict', 'This order token was already used differently.', 409)
             return {'api_version': 2, 'order': scoped._order_data(existing),
                     'client_uuid': token, 'replayed': True}
-        warehouse = scoped.env['stock.warehouse'].sudo().browse(warehouse_id).exists()
-        if not warehouse or warehouse.company_id.id != company_id or not warehouse.active:
-            raise ProtocolError('invalid_warehouse', 'Choose a warehouse in this company.', 400)
-        representative = False
-        if purchase_route == 'representative':
-            representatives = scoped._representatives()
-            if not representatives:
-                raise ProtocolError('no_representative', 'No purchase representative is available in this company.', 409)
-            if len(representatives) == 1:
-                representative = representatives[0]
-                if selected is not None and selected != representative.id:
-                    raise ProtocolError('invalid_representative', 'The selected representative is unavailable.', 409)
-            else:
-                if selected is None:
-                    raise ProtocolError('representative_required', 'Choose a purchase representative.', 409)
-                representative = representatives.filtered(lambda row: row.id == selected)
-                if not representative:
-                    raise ProtocolError('invalid_representative', 'The selected representative is unavailable.', 409)
+        warehouse, representative = scoped._order_validate_selection(warehouse_id, purchase_route, selected)
         options = scoped.env['baseer.procurement.purchase.option'].sudo().browse(
             [row['option_id'] for row in normalized]).exists()
         if len(options) != len(normalized):

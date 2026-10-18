@@ -1,0 +1,15 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.baseer.freshchat.transfer.test">
+  <uses-sdk android:minSdkVersion="26" android:targetSdkVersion="35"/>
+  <uses-permission android:name="android.permission.RUN_USER_INITIATED_JOBS"/>
+  <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC"/>
+  <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+  <application android:label="BChat transfer isolated tests" android:hasCode="true" android:allowBackup="false">
+    <activity android:name="com.baseer.freshchat.TransferTestSurface" android:exported="false" android:theme="@android:style/Theme.Material.Light.NoActionBar"/>
+    <service android:name="com.baseer.freshchat.BChatTransferJobService" android:permission="android.permission.BIND_JOB_SERVICE" android:exported="false"/>
+    <service android:name="com.baseer.freshchat.BChatTransferService" android:foregroundServiceType="dataSync" android:exported="false"/>
+    <provider android:name="com.baseer.freshchat.DraftTestMediaProvider" android:authorities="com.baseer.freshchat.transfer.test.media" android:exported="false"/>
+  </application>
+  <instrumentation android:name="com.baseer.freshchat.TransferInstrumentation" android:targetPackage="com.baseer.freshchat.transfer.test" android:label="Isolated UIDT transfer tests"/>
+</manifest>

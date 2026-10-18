@@ -1,0 +1,8 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.baseer.bchat.notification.messaging.test">
+  <uses-sdk android:minSdkVersion="26" android:targetSdkVersion="35" />
+  <application android:label="Isolated BChat MessagingStyle construction tests" android:debuggable="true"
+      android:allowBackup="false" android:supportsRtl="true" />
+  <instrumentation android:name="com.baseer.freshchat.MessagingInstrumentation"
+      android:targetPackage="com.baseer.bchat.notification.messaging.test"
+      android:label="Native notification construction only" />
+</manifest>

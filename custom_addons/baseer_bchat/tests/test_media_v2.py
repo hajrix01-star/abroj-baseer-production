@@ -193,10 +193,12 @@ class BChatMediaCase(TransactionCase):
             (audio, 'audio', 'audio/mp4', 'voice.m4a'),
             ('مذكرة\n'.encode('utf-8'), 'file', 'text/plain', 'note.txt'),
         ):
-            with self.subTest(kind=kind):
+            # Explicitly enable the optional document-selection boundary only
+            # for this classifier fixture; base-only rooms stay disabled.
+            with self.subTest(kind=kind), patch.object(type(service), '_v2_documents_enabled', return_value=True):
                 media_id = service._v2_upload(self.room.id, self._metadata(
                     raw, kind=kind, mime=mime, name=name), raw)['media_id']
-                self.room.with_user(self.manager).with_company(self.company).write({
+                self.room.with_user(self.room_admin).with_company(self.company).write({
                     'invoice_policy': 'select_on_upload',
                 })
                 payload = {
@@ -391,16 +393,17 @@ class BChatMediaCase(TransactionCase):
 
         second = self.env['res.company'].create({'name': 'BChat media other company'})
         self.manager.sudo().write({'company_ids': [Command.link(second.id)]})
-        other_room = self.env['baseer.bchat.room'].with_user(self.manager).with_company(second).create({
+        self.room_admin.write({'company_ids': [Command.link(second.id)]})
+        other_room = self.env['baseer.bchat.room'].with_user(self.room_admin).with_company(second).create({
             'name': 'Media second company', 'company_id': second.id,
         })
-        other_epoch = self.env['baseer.bchat.membership'].with_user(self.manager).with_company(second).create({
+        other_epoch = self.env['baseer.bchat.membership'].with_user(self.room_admin).with_company(second).create({
             'room_id': other_room.id, 'user_id': self.manager.id,
         })
         # A separate user avoids the deliberate per-account staged quota above.
         other_user = self._user('other-company', 'base.group_user')
         other_user.sudo().write({'company_ids': [Command.link(second.id)]})
-        user_epoch = self.env['baseer.bchat.membership'].with_user(self.manager).with_company(second).create({
+        user_epoch = self.env['baseer.bchat.membership'].with_user(self.room_admin).with_company(second).create({
             'room_id': other_room.id, 'user_id': other_user.id,
         })
         upload = self.env['baseer.bchat.service'].with_user(other_user).with_company(self.company)._v2_upload(
@@ -424,13 +427,15 @@ class BChatMediaCase(TransactionCase):
         with self.assertRaises(AccessError):
             self.room.with_user(self.member).write({'invoice_policy': 'invoice_default'})
         with self.assertRaises(AccessError):
-            self.room.with_user(self.manager).write({'invoice_policy_version': 99})
+            self.room.with_user(self.manager).write({'invoice_policy': 'invoice_default'})
+        with self.assertRaises(AccessError):
+            self.room.with_user(self.room_admin).write({'invoice_policy_version': 99})
         # The optional Documents addon enables this in integrated test DBs;
         # force the disabled boundary to test the base-module fallback itself.
         with patch.object(type(service), '_v2_documents_enabled', return_value=False):
             with self.assertRaises(AccessError):
-                self.room.with_user(self.manager).write({'invoice_policy': 'invoice_default'})
-        explicit_off = self.env['baseer.bchat.room'].with_user(self.manager).with_company(
+                self.room.with_user(self.room_admin).write({'invoice_policy': 'invoice_default'})
+        explicit_off = self.env['baseer.bchat.room'].with_user(self.room_admin).with_company(
             self.company).create({
                 'name': 'Explicit off', 'company_id': self.company.id,
                 'invoice_policy': 'off',
@@ -438,19 +443,19 @@ class BChatMediaCase(TransactionCase):
         self.assertEqual(explicit_off.invoice_policy, 'off')
         with patch.object(type(service), '_v2_documents_enabled', return_value=False):
             with self.assertRaises(AccessError):
-                self.env['baseer.bchat.room'].with_user(self.manager).with_company(
+                self.env['baseer.bchat.room'].with_user(self.room_admin).with_company(
                     self.company).create({
                         'name': 'Forbidden enabled policy', 'company_id': self.company.id,
                         'invoice_policy': 'invoice_default',
                     })
         with patch.object(type(service), '_v2_documents_enabled', return_value=True):
-            self.room.with_user(self.manager).with_company(self.company).write({
+            self.room.with_user(self.room_admin).with_company(self.company).write({
                 'name': 'Renamed and enabled', 'invoice_policy': 'invoice_default',
             })
             self.assertEqual(self.room.name, 'Renamed and enabled')
             self.assertEqual(self.room.invoice_policy_version, 2)
             self.assertEqual(service._v2_send(self.room.id, original), sent)
-            self.room.with_user(self.manager).with_company(self.company).write({
+            self.room.with_user(self.room_admin).with_company(self.company).write({
                 'invoice_policy': 'invoice_default',
             })
             self.assertEqual(self.room.invoice_policy_version, 2)
@@ -477,7 +482,7 @@ class BChatMediaCase(TransactionCase):
         raw = self._image()
         service = self.env['baseer.bchat.service'].with_user(self.manager)
         with patch.object(type(service), '_v2_documents_enabled', return_value=True):
-            self.room.with_user(self.manager).with_company(self.company).write({
+            self.room.with_user(self.room_admin).with_company(self.company).write({
                 'invoice_policy': 'select_on_upload',
             })
             media_id = service._v2_upload(self.room.id, self._metadata(raw), raw)['media_id']
@@ -515,7 +520,7 @@ class BChatMediaCase(TransactionCase):
         with patch.object(type(service), '_v2_media_original_bytes', return_value=raw) as read:
             self.assertEqual(service._v2_media_content(media.id)[0], raw)
             read.assert_called_once()
-            self.member_epoch.with_user(self.manager).with_company(self.company).action_revoke()
+            self.member_epoch.with_user(self.room_admin).with_company(self.company).action_revoke()
             with self.assertRaises(AccessError):
                 self.env['baseer.bchat.service'].with_user(self.member)._v2_media_content(media.id)
             read.assert_called_once()

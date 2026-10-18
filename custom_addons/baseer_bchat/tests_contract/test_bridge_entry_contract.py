@@ -12,7 +12,11 @@ class BridgeEntryContractTests(unittest.TestCase):
         source = (ROOT / "controllers" / "bridge.py").read_text(encoding="utf-8")
         server_test = (ROOT / "tests" / "test_bridge.py").read_text(encoding="utf-8")
         self.assertIn("auth='user'", source)
-        self.assertIn("self.assertEqual(response.status_code, 404)", server_test)
+        # auth=user has always redirected guests before the route executes;
+        # preserve authentication and verify its destination, not a false 404.
+        self.assertIn("self.assertEqual(response.status_code, 303)", server_test)
+        self.assertIn("self.assertEqual(target.path, '/web/login')", server_test)
+        self.assertIn("self.assertEqual(urlsplit(redirect[0]).path, '/bchat/app/bridge')", server_test)
         self.assertIn("self.assertNotIn('BChat', response.text)", server_test)
 
     def test_only_a_missing_private_bridge_recovers_to_login(self):

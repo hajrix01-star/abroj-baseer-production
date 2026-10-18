@@ -1,0 +1,24 @@
+plugins { id 'com.android.application' }
+android {
+ namespace 'com.baseer.freshchat'
+ compileSdk 35
+ buildFeatures { buildConfig true }
+ defaultConfig {
+  applicationId 'com.baseer.bchat.timeline.hook.test'
+  minSdk 26
+  targetSdk 35
+  versionCode 1
+  versionName 'C11-isolated-functional'
+  buildConfigField 'String','BCHAT_ORIGIN','"https://timeline.invalid"'
+  buildConfigField 'String','BCHAT_DATABASE','"synthetic"'
+  buildConfigField 'String','BCHAT_RELEASE_DATE','"2026-10-18"'
+  buildConfigField 'String','BCHAT_SOURCE_COMMIT','"@BASE_COMMIT@"'
+  buildConfigField 'String','BCHAT_TARGET_ACTIVITY_SHA','"@ACTIVITY_SHA@"'
+  buildConfigField 'boolean','BCHAT_PUSH_ENABLED','false'
+  buildConfigField 'boolean','BCHAT_TRANSPORT_DIAGNOSTICS','false'
+  buildConfigField 'boolean','BCHAT_PUSH_REGISTRATION_DIAGNOSTICS','false'
+ }
+ buildTypes { debug { signingConfig=null; debuggable true; minifyEnabled false } }
+ compileOptions { sourceCompatibility JavaVersion.VERSION_1_8; targetCompatibility JavaVersion.VERSION_1_8 }
+}
+dependencies { implementation 'androidx.recyclerview:recyclerview:1.4.0' }

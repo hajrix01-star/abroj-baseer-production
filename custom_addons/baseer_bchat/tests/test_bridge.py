@@ -1,6 +1,7 @@
 """HTTP contract for the minimal BChat WebView landing page."""
 
 from uuid import uuid4
+from urllib.parse import parse_qs, urlsplit
 
 from odoo import Command
 from odoo.tests import HttpCase, tagged
@@ -8,10 +9,18 @@ from odoo.tests import HttpCase, tagged
 
 @tagged('post_install', '-at_install', 'baseer_bchat')
 class BChatBridgeHttpCase(HttpCase):
-    def test_guest_cannot_discover_private_bridge(self):
+    def test_guest_is_redirected_to_login_without_private_bridge_content(self):
         response = self.url_open('/bchat/app/bridge', allow_redirects=False)
-        self.assertEqual(response.status_code, 404)
+        # The original main route is auth=user: Odoo redirects an anonymous
+        # request before invoking the controller. It never promised a 404.
+        self.assertEqual(response.status_code, 303)
+        target = urlsplit(response.headers['Location'])
+        self.assertEqual(target.path, '/web/login')
+        redirect = parse_qs(target.query)['redirect']
+        self.assertEqual(len(redirect), 1)
+        self.assertEqual(urlsplit(redirect[0]).path, '/bchat/app/bridge')
         self.assertNotIn('BChat', response.text)
+        self.assertNotIn('<title>BChat</title>', response.text)
 
     def test_internal_session_gets_only_small_static_bridge(self):
         password = 'test-only-%s' % uuid4().hex

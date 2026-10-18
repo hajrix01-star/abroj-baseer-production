@@ -1,0 +1,6 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.baseer.bchat.notification.privacy.test">
+  <uses-sdk android:minSdkVersion="26" android:targetSdkVersion="35"/>
+  <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+  <application android:label="BChat isolated OS privacy tests" android:hasCode="true" android:allowBackup="false" android:debuggable="true"/>
+  <instrumentation android:name="com.baseer.freshchat.NotificationPrivacyInstrumentation" android:targetPackage="com.baseer.bchat.notification.privacy.test" android:label="Isolated native privacy/reset tests"/>
+</manifest>

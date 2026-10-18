@@ -3,9 +3,19 @@ package com.baseer.freshchat.sync.test;
 import android.app.Instrumentation;
 import android.content.Context;
 import android.os.Bundle;
+import android.database.sqlite.SQLiteDatabase;
 import com.baseer.freshchat.sync.AccountScope;
 import com.baseer.freshchat.sync.BChatConnectedMediaStore;
 import com.baseer.freshchat.sync.BChatV2Outbox;
+import com.baseer.freshchat.sync.BChatSendTickets;
+import com.baseer.freshchat.sync.BChatLocalState;
+import com.baseer.freshchat.sync.BChatComposerSnapshot;
+import com.baseer.freshchat.sync.BChatCartResolver;
+import com.baseer.freshchat.sync.BChatStorageRepository;
+import com.baseer.freshchat.PermissionPolicyProbe;
+import com.baseer.freshchat.PermissionRefreshProbe;
+import com.baseer.freshchat.ConnectedAudioProbe;
+import com.baseer.freshchat.IntentDispatchProbe;
 import com.baseer.freshchat.sync.DurableOutbox;
 import com.baseer.freshchat.sync.MessageRequest;
 import com.baseer.freshchat.sync.OutboxPolicy;
@@ -18,11 +28,16 @@ import java.nio.file.Files;
 import java.security.MessageDigest;
 import java.util.Arrays;
 import java.util.UUID;
+import java.util.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import org.json.JSONArray;
 
 /** Explicit, disposable-device test. It uses only this test APK's own database namespace. */
 public final class OutboxInstrumentation extends Instrumentation {
     private int assertions;
-    private void check(boolean value) { assertions++; if (!value) throw new AssertionError("Assertion " + assertions); }
+    private void check(boolean value) { assertions++; if (!value) throw new AssertionError("Assertion " + assertions + " at " + new Throwable().getStackTrace()[1]); }
     private void rejects(Runnable action) {
         assertions++;
         try { action.run(); throw new AssertionError("Expected rejection " + assertions); }
@@ -34,6 +49,196 @@ public final class OutboxInstrumentation extends Instrumentation {
         catch (IOException expected) { }
     }
     private interface IoAction { void run() throws Exception; }
+
+    private void localCallbackBarriers() throws Exception {
+        check(android.os.Looper.myLooper() != android.os.Looper.getMainLooper());
+        AccountScope scope = new AccountScope("https://callback.invalid", "synthetic", 17);
+        CountDownLatch started = new CountDownLatch(1), release = new CountDownLatch(1), barrier = new CountDownLatch(1);
+        AtomicBoolean staleCallback = new AtomicBoolean(), staleQueuedWork = new AtomicBoolean(), mainCallback = new AtomicBoolean();
+        BChatStorageRepository.submit(scope, () -> {
+            started.countDown();
+            if (!release.await(5, TimeUnit.SECONDS)) throw new IllegalStateException("Test release timed out");
+            return true;
+        }, (value, error) -> staleCallback.set(true));
+        check(started.await(5, TimeUnit.SECONDS));
+        BChatStorageRepository.submit(scope, () -> { staleQueuedWork.set(true); return true; },
+                (value, error) -> staleCallback.set(true));
+        BChatStorageRepository.invalidate(scope);
+        BChatStorageRepository.submit(null, () -> Thread.currentThread().getName(), (name, error) -> {
+            mainCallback.set(error == null && "bchat-local-storage".equals(name)
+                    && android.os.Looper.myLooper() == android.os.Looper.getMainLooper());
+            barrier.countDown();
+        });
+        release.countDown();
+        check(barrier.await(5, TimeUnit.SECONDS));
+        check(!staleCallback.get() && !staleQueuedWork.get() && mainCallback.get());
+    }
+
+    private JSONObject resolvedPage(long[] processed, long[] missing, Long cursor) throws Exception {
+        Set<Long> unavailable = new HashSet<>();
+        JSONArray done = new JSONArray(), absent = new JSONArray(), items = new JSONArray();
+        for (long id : missing) { unavailable.add(id); absent.put(id); }
+        for (long id : processed) {
+            done.put(id);
+            if (!unavailable.contains(id)) items.put(new JSONObject().put("id", id).put("last_price", "2.50"));
+        }
+        return new JSONObject().put("api_version", 2).put("processed_option_ids", done)
+                .put("items", items).put("missing_ids", absent)
+                .put("next_after_option_id", cursor == null ? JSONObject.NULL : cursor);
+    }
+
+    private void cartAndComposerContracts() throws Exception {
+        AccountScope account = new AccountScope("https://composer.invalid", "synthetic", 7);
+        BChatComposerSnapshot editor = new BChatComposerSnapshot(account, 11, 13, 17, "body", 19);
+        check(editor.matches(account, 11, 13, 17, "body", 19));
+        check(!editor.matches(new AccountScope("https://composer.invalid", "synthetic", 8), 11, 13, 17, "body", 19));
+        check(!editor.matches(account, 12, 13, 17, "body", 19));
+        check(!editor.matches(account, 11, 14, 17, "body", 19));
+        check(!editor.matches(account, 11, 13, 18, "body", 19)); // edited, then restored identical characters
+        check(!editor.matches(account, 11, 13, 17, "body2", 19));
+        check(!editor.matches(account, 11, 13, 17, "body", 20));
+        check(!editor.matches(null, 11, 13, 17, "body", 19));
+        BChatCartResolver resolver = new BChatCartResolver(Arrays.asList(3L, 1L, 2L));
+        check(resolver.requested().equals(Arrays.asList(1L, 2L, 3L)) && resolver.afterId() == 0);
+        resolver.accept(resolvedPage(new long[]{1, 2}, new long[]{2}, 2L));
+        check(!resolver.complete() && resolver.afterId() == 2);
+        try { resolver.items(); throw new AssertionError("Partial cart exposed"); }
+        catch (IllegalStateException expected) { check(true); }
+        resolver.accept(resolvedPage(new long[]{3}, new long[]{}, null));
+        check(resolver.complete() && resolver.items().size() == 2 && resolver.missingIds().equals(Collections.singleton(2L)));
+        List<Long> hundred = new ArrayList<>(); for (long id = 1; id <= 100; id++) hundred.add(id);
+        BChatCartResolver tinyPages = new BChatCartResolver(hundred);
+        for (long id = 1; id <= 100; id++) tinyPages.accept(resolvedPage(new long[]{id}, new long[]{}, id == 100 ? null : id));
+        check(tinyPages.complete() && tinyPages.items().size() == 100); // UTF-8 limits can shrink pages below 24
+        try { new BChatCartResolver(Arrays.asList(1L, 1L)); throw new AssertionError(); }
+        catch (IllegalArgumentException expected) { check(true); }
+        hundred.add(101L); rejects(() -> new BChatCartResolver(hundred));
+        for (int invalid = 0; invalid < 6; invalid++) {
+            BChatCartResolver strict = new BChatCartResolver(Arrays.asList(1L, 2L));
+            JSONObject page = resolvedPage(new long[]{1}, new long[]{}, 1L);
+            if (invalid == 0) page.put("processed_option_ids", new JSONArray().put(2));
+            if (invalid == 1) page.put("next_after_option_id", JSONObject.NULL);
+            if (invalid == 2) page.put("items", new JSONArray().put(new JSONObject().put("id", "1")));
+            if (invalid == 3) page.put("items", new JSONArray().put(new JSONObject().put("id", 9)));
+            if (invalid == 4) page.put("missing_ids", new JSONArray().put(1));
+            if (invalid == 5) page.put("padding", String.join("", Collections.nCopies(33000, "ع")));
+            try { strict.accept(page); throw new AssertionError("Invalid page " + invalid); }
+            catch (IllegalArgumentException expected) { check(strict.afterId() == 0 && !strict.complete()); }
+        }
+    }
+
+    /** Actual Android SQLite migrations and queue state, in the disposable test package only. */
+    private void textMaturity(Context context) throws Exception {
+        final String database = "bchat-v2-text-outbox.db";
+        AccountScope account = new AccountScope("https://queue.invalid", "synthetic", 7);
+        AccountScope other = new AccountScope("https://queue.invalid", "synthetic", 8);
+        for (int version = 1; version <= 5; version++) {
+            context.deleteDatabase(database);
+            String uuid = UUID.randomUUID().toString();
+            try (SQLiteDatabase legacy = context.openOrCreateDatabase(database, Context.MODE_PRIVATE, null)) {
+                legacy.execSQL("CREATE TABLE pending_text (_id INTEGER PRIMARY KEY, account_key TEXT NOT NULL, "
+                        + "room_id INTEGER NOT NULL,membership_id INTEGER NOT NULL,client_uuid TEXT NOT NULL UNIQUE,"
+                        + "body TEXT NOT NULL,created_at INTEGER NOT NULL"
+                        + (version >= 3 ? ",review_code INTEGER NOT NULL DEFAULT 0" : "")
+                        + (version >= 4 ? ",reply_to_message_id INTEGER" : "")
+                        + (version >= 5 ? ",queue_state TEXT NOT NULL DEFAULT 'queued',attempts INTEGER NOT NULL DEFAULT 0,"
+                            +"next_attempt_at INTEGER NOT NULL DEFAULT 0,lease_until INTEGER NOT NULL DEFAULT 0,message_id INTEGER NOT NULL DEFAULT 0" : "") + ")");
+                if (version >= 2) legacy.execSQL("CREATE TABLE draft_text (account_key TEXT NOT NULL,room_id INTEGER NOT NULL,"
+                        + "membership_id INTEGER NOT NULL,body TEXT NOT NULL"
+                        +(version>=5?",reply_to_message_id INTEGER":"")+",PRIMARY KEY(account_key,room_id,membership_id))");
+                if(version>=5){
+                    legacy.execSQL("CREATE TABLE local_context(account_key TEXT PRIMARY KEY,state_json TEXT NOT NULL)");
+                    legacy.execSQL("INSERT INTO draft_text(account_key,room_id,membership_id,body,reply_to_message_id) VALUES (?,1,101,'legacy draft',42)",new Object[]{account.key});
+                }
+                legacy.execSQL("INSERT INTO pending_text (_id,account_key,room_id,membership_id,client_uuid,body,created_at)"
+                        + " VALUES (17,?,1,101,?,'legacy preserved',123)", new Object[]{account.key, uuid});
+                if (version >= 4) legacy.execSQL("UPDATE pending_text SET reply_to_message_id=42");
+                if(version>=5)legacy.execSQL("UPDATE pending_text SET queue_state='sending',attempts=2");
+                legacy.setVersion(version);
+            }
+            try (BChatV2Outbox box = new BChatV2Outbox(context)) {
+                BChatV2Outbox.Entry preserved = box.first(account, 1, 101);
+                check(preserved.id == 17 && uuid.equals(preserved.uuid) && "legacy preserved".equals(preserved.body));
+                check("review".equals(preserved.state) && preserved.attempts == (version>=5?2:0));
+                check(preserved.replyToMessageId == (version >= 4 ? 42 : 0));
+                check(box.getReadableDatabase().getVersion() == 6);
+                if(version>=5){
+                    check(box.draftRecord(account,1,101).editorRevision==-1&&"legacy draft".equals(box.draft(account,1,101)));
+                    check(box.tickets().head(account,1,101).legacy&&box.tickets().head(account,1,101).attempts==2);
+                }
+                box.saveDraft(account, 1, 101, "draft reply", 42);
+                check(box.draftRecord(account, 1, 101).replyToMessageId == 42);
+            }
+        }
+        context.deleteDatabase(database);
+        List<String> uuids = new ArrayList<>();
+        try (BChatV2Outbox box = new BChatV2Outbox(context)) {
+            box.saveDraft(account, 1, 101, "message 0", 42);
+            for (int i = 0; i < 10; i++) {
+                BChatV2Outbox.Entry entry = box.enqueue(account, 1, 101, "message " + i, i == 0 ? 42 : 0);
+                uuids.add(entry.uuid);
+                check(entry.body.equals("message " + i));
+            }
+            check(box.draftRecord(account, 1, 101) == null && box.roomEntries(account, 1, 101).size() == 10);
+            check(box.roomEntries(other, 1, 101).isEmpty() && box.roomEntries(account, 1, 999).isEmpty());
+            BChatV2Outbox.Entry first = box.claimHead(account, 1, 101, 1000);
+            check(first.attempts == 1 && first.uuid.equals(uuids.get(0)));
+            check(box.claimHead(account, 1, 101, 1001) == null);
+            check(box.recordFailure(account, first, false, 1001));
+            check(box.claimHead(account, 1, 101, 6000) == null);
+        }
+        // The attempt/backoff is reloaded from disk, not reset when Activity/process is rebuilt.
+        try (BChatV2Outbox box = new BChatV2Outbox(context)) {
+            BChatV2Outbox.Entry secondAttempt = box.claimHead(account, 1, 101, 6001);
+            check(secondAttempt != null && secondAttempt.attempts == 2 && secondAttempt.uuid.equals(uuids.get(0)));
+            check(box.recordReceipt(account, secondAttempt, 77));
+            check(!box.recordFailure(account, secondAttempt, true, 9000));
+            check(box.claimHead(account, 1, 101, 90000) == null); // receipt head cannot POST again.
+        }
+        try (BChatV2Outbox box = new BChatV2Outbox(context)) {
+            BChatV2Outbox.Entry receipt = box.first(account, 1, 101);
+            check("receipt".equals(receipt.state) && receipt.messageId == 77 && receipt.attempts == 2);
+            check(!box.recordReceipt(other, receipt, 77));
+            check(box.acknowledge(account, receipt));
+            check(box.first(account, 1, 101).uuid.equals(uuids.get(1)));
+            BChatV2Outbox.Entry undelivered = box.claimHead(account, 1, 101, 100000);
+            check(box.deferUndispatched(account, undelivered));
+            check(box.first(account, 1, 101).attempts == 0);
+            BChatV2Outbox.Entry sending = box.claimHead(account, 1, 101, 100001);
+            check(sending.attempts == 1);
+        }
+        try (BChatV2Outbox box = new BChatV2Outbox(context)) {
+            box.recoverInterrupted(account);
+            BChatV2Outbox.Entry recovered = box.first(account, 1, 101);
+            check("uncertain".equals(recovered.state) && recovered.attempts == 1 && recovered.uuid.equals(uuids.get(1)));
+            long now = 200000;
+            for (int attempt = 2; attempt <= OutboxPolicy.MAX_ATTEMPTS; attempt++) {
+                BChatV2Outbox.Entry claim = box.claimHead(account, 1, 101, now);
+                check(claim != null && claim.attempts == attempt && claim.uuid.equals(uuids.get(1)));
+                check(box.recordFailure(account, claim, false, now));
+                now += 2 * OutboxPolicy.MAX_BACKOFF_MILLIS;
+            }
+            check("review".equals(box.first(account, 1, 101).state));
+            check(box.claimHead(account, 1, 101, now) == null); // later UUID never overtakes review.
+            for (int i = 9; i < 20; i++) box.enqueue(account, 1, 101, "behind review " + i);
+            check(box.roomEntries(account, 1, 101).size() == 20);
+            try { box.enqueue(account, 1, 101, "21st rejected"); throw new AssertionError("Capacity bypass"); }
+            catch (IllegalStateException expected) { check(true); }
+            for (int room = 2; room <= 5; room++) for (int i = 0; i < 20; i++) box.enqueue(account, room, 100 + room, "account capacity");
+            try { box.enqueue(account, 6, 106, "101st rejected"); throw new AssertionError("Account capacity bypass"); }
+            catch (IllegalStateException expected) { check(true); }
+            Map<Long, String> cart = new LinkedHashMap<>(); cart.put(2L, "3.25");
+            BChatLocalState state = new BChatLocalState("chats", 3, 1, 101, 77, -15, "open", 3, 4, 5,
+                    "representative", cart);
+            box.saveContext(account, state);
+            check(box.context(other) == null && box.context(account).cart.get(2L).equals("3.25"));
+            check(box.context(account).anchorMessageId == 77 && !state.toJson().contains("price") && !state.toJson().contains("total"));
+            BChatV2Outbox.Entry old = box.first(account, 1, 101);
+            box.purgeAccount(account);
+            check(box.context(account) == null && box.first(account, 1, 101) == null);
+            check(!box.recordReceipt(account, old, 99)); // stale callback never resurrects purged UUID.
+        }
+    }
 
     /** The test package owns these synthetic files; no Odoo request or real account is involved. */
     private void mediaExpiryRecovery(Context context) throws Exception {
@@ -104,6 +309,79 @@ public final class OutboxInstrumentation extends Instrumentation {
             directory.delete();
         }
     }
+
+    private BChatConnectedMediaStore.Entry fixtureMedia(Context context, AccountScope scope, long room,
+                                                       long member, String label) throws Exception {
+        String upload=UUID.randomUUID().toString();
+        byte[] bytes=("private synthetic "+label).getBytes(StandardCharsets.UTF_8);
+        File folder=new File(context.getFilesDir(),"bchat-v2-media/"+scope.key);folder.mkdirs();
+        StringBuilder digest=new StringBuilder();
+        for(byte b:MessageDigest.getInstance("SHA-256").digest(bytes))digest.append(String.format(Locale.ROOT,"%02x",b&255));
+        JSONObject json=new JSONObject().put("account_key",scope.key).put("room_id",room).put("membership_id",member)
+                .put("company_id",3).put("upload_uuid",upload).put("client_uuid",UUID.randomUUID().toString())
+                .put("kind","image").put("mime","image/jpeg").put("name",label+".jpg")
+                .put("size",bytes.length).put("sha256",digest.toString()).put("text","")
+                .put("reply_to_message_id",0).put("media_id",0);
+        try(FileOutputStream out=new FileOutputStream(new File(folder,upload+".bin"))){out.write(bytes);}
+        try(FileOutputStream out=new FileOutputStream(new File(folder,upload+".json"))){out.write(json.toString().getBytes(StandardCharsets.UTF_8));}
+        return new BChatConnectedMediaStore(context).lookup(scope,upload);
+    }
+
+    /** Real SQLite and private files, simulated ACKs: no network/session or ordering from clocks. */
+    private void mixedSendTickets(Context context)throws Exception {
+        context.deleteDatabase("bchat-v2-text-outbox.db");
+        AccountScope scope=new AccountScope("https://mixed.invalid","synthetic",19);
+        AccountScope other=new AccountScope("https://mixed.invalid","synthetic",20);
+        BChatConnectedMediaStore store=new BChatConnectedMediaStore(context);
+        try(BChatV2Outbox out=new BChatV2Outbox(context)){
+            BChatSendTickets tickets=out.tickets();List<String> expected=new ArrayList<>();
+            for(int i=0;i<10;i++){
+                BChatV2Outbox.Entry e=out.enqueue(scope,17,8,"mixed text "+i);expected.add(e.uuid);
+                if(i==2||i==6){BChatConnectedMediaStore.Entry m=fixtureMedia(context,scope,17,8,"m"+i);
+                    expected.add(tickets.admitMedia(scope,m,false).uuid);}
+            }
+            check(tickets.forAccount(scope).size()==12&&tickets.forAccount(other).isEmpty());
+            long previous=0;int mediaCount=0;
+            for(String uuid:expected){
+                BChatSendTickets.Ticket head=tickets.head(scope,17,8);
+                check(head.uuid.equals(uuid)&&head.sequence>previous);previous=head.sequence;
+                if("text".equals(head.kind)){
+                    check(tickets.claimMediaHead(scope,17,8,UUID.randomUUID().toString(),1000)==null);
+                    BChatV2Outbox.Entry claim=out.claimHead(scope,17,8,1000);
+                    check(claim.uuid.equals(uuid));check(out.recordReceipt(scope,claim,100+previous));
+                    check(out.acknowledge(scope,out.first(scope,17,8)));
+                }else{
+                    mediaCount++;check(out.claimHead(scope,17,8,1000)==null);
+                    BChatSendTickets.Ticket a=tickets.claimMediaHead(scope,17,8,UUID.randomUUID().toString(),1000);
+                    check(a!=null&&tickets.failed(scope,a,false,1001));
+                    check(tickets.claimMediaHead(scope,17,8,UUID.randomUUID().toString(),1002)==null);
+                    BChatSendTickets.Ticket b=tickets.claimMediaHead(scope,17,8,UUID.randomUUID().toString(),200000);
+                    check(b!=null&&b.generation>a.generation&&!tickets.receipt(scope,a,901));
+                    BChatConnectedMediaStore.Entry entry=store.lookup(scope,b.uploadUuid);
+                    check(tickets.saveUploaded(scope,b,800+previous,()->store.markUploaded(scope,entry,800+b.sequence)));
+                    check(!tickets.failed(scope,b,true,300000)); // upload proof cannot be overwritten by late transport failure.
+                    check(tickets.receipt(scope,b,900+previous));
+                    BChatSendTickets.Ticket receipt=tickets.find(scope,"media",uuid);
+                    try{tickets.retireMedia(scope,receipt,()->{throw new IOException("simulated cleanup interruption");});throw new AssertionError();}
+                    catch(IOException expectedFailure){check("receipt".equals(tickets.find(scope,"media",uuid).state));}
+                    check(tickets.retireMedia(scope,receipt,()->store.retireReceipted(scope,entry.uploadUuid,receipt.fingerprint)));
+                    check(!tickets.receipt(scope,b,900+previous));
+                }
+            }
+            check(mediaCount==2&&tickets.head(scope,17,8)==null);
+            BChatConnectedMediaStore.Entry orphan=fixtureMedia(context,scope,17,8,"orphan");
+            check(tickets.find(scope,"media",orphan.clientUuid)==null); // stage/ticket crash gap never autosends.
+            BChatSendTickets.Ticket legacy=tickets.admitMedia(scope,orphan,true);
+            out.enqueue(scope,17,8,"behind unknown old order");
+            check(tickets.head(scope,17,8).legacy&&out.claimHead(scope,17,8,900000)==null);
+            check(tickets.claimMediaHead(scope,17,8,UUID.randomUUID().toString(),900000)==null);
+            check(tickets.approveLegacyMedia(scope,legacy));
+            BChatSendTickets.Ticket claim=tickets.claimMediaHead(scope,17,8,UUID.randomUUID().toString(),900001);
+            check(claim.legacy&&out.claimHead(scope,17,8,900002)==null);
+            out.purgeAccount(scope);check(!tickets.uploaded(scope,claim,99)&&!tickets.receipt(scope,claim,99));
+            store.purgeAccount(scope);
+        }
+    }
     @Override public void onCreate(Bundle arguments) { super.onCreate(arguments); start(); }
     @Override public void onStart() {
         Bundle result = new Bundle();
@@ -169,7 +447,9 @@ public final class OutboxInstrumentation extends Instrumentation {
             textBox = new BChatV2Outbox(context);
             BChatV2Outbox.Entry plain = textBox.enqueue(a, 2, 20, "Pending text");
             check(!textBox.acknowledge(b, plain));
-            check(textBox.acknowledge(a, plain));
+            check(!textBox.acknowledge(a, plain));
+            check(textBox.recordReceipt(a,plain,41));
+            check(textBox.acknowledge(a,textBox.first(a,2,20)));
             check(textBox.first(a, 2, 20) == null);
             BChatV2Outbox.Entry reply = textBox.enqueue(a, 2, 20, "Reply text", 42);
             check(textBox.convertToDraft(a, reply, 2, 20, false));
@@ -180,7 +460,24 @@ public final class OutboxInstrumentation extends Instrumentation {
             check(!textBox.discard(b, discarded));
             check(textBox.discard(a, discarded));
             check(textBox.first(a, 2, 20) == null);
+            textBox.close(); textBox = null;
+            textMaturity(context);
+            cartAndComposerContracts();
+            localCallbackBarriers();
+            assertions += PermissionPolicyProbe.run();
+            assertions += PermissionRefreshProbe.run();
+            final int[] audioAssertions = {0};
+            final Throwable[] audioFailure = {null};
+            runOnMainSync(() -> {
+                try { audioAssertions[0] = ConnectedAudioProbe.run(context.getCacheDir()); }
+                catch (Throwable error) { audioFailure[0] = error; }
+            });
+            if (audioFailure[0] != null) throw new AssertionError(audioFailure[0]);
+            assertions += audioAssertions[0];
+            assertions += IntentPersistenceChecks.run(context);
+            assertions += IntentDispatchProbe.run(this);
             mediaExpiryRecovery(context);
+            mixedSendTickets(context);
             result.putString("stream", "PASS: " + assertions + " outbox and media-expiry assertions\n");
             finish(0, result);
         } catch (Throwable error) {

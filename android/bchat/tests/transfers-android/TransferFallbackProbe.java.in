@@ -1,0 +1,48 @@
+package com.baseer.freshchat;
+import android.content.Intent;
+import android.os.IBinder;
+import java.util.*;
+/** Production FGS service body; explicit platform/coordinator fakes, not an API26 device claim. */
+final class TransferFallbackProbe extends TransferFallbackProbeBase {
+    static final List<String> events=new ArrayList<>();
+    static boolean deny;
+    static final class Build{static final class VERSION{static int SDK_INT;}}
+    static final class BChatTransferCoordinator{
+        static final String EXTRA_ID="transfer_id",ACTION_STOP="stop";
+        static final BChatTransferCoordinator INSTANCE=new BChatTransferCoordinator();
+        static BChatTransferCoordinator get(Object ignored){return INSTANCE;}
+        boolean contains(int id){return id==7;}
+        Object notification(int id){events.add("notification");return new Object();}
+        void start(int id,Runnable done){events.add("start");}
+        void stop(int id){events.add("stop:"+id);}
+    }
+%PRODUCTION_BODY%
+    private static int checks;
+    static void check(boolean value){checks++;if(!value)throw new AssertionError("FGS fake "+checks+": "+events);}
+    static int run(){checks=0;
+        for(int api=26;api<=33;api++){
+            Build.VERSION.SDK_INT=api;events.clear();deny=false;
+            TransferFallbackProbe p=new TransferFallbackProbe();
+            check(p.onStartCommand(new Intent().putExtra("transfer_id",7),0,1)==START_NOT_STICKY);
+            check(events.equals(Arrays.asList("notification","foreground","start")));
+            p.onDestroy();check(events.contains("stop:7"));
+        }
+        Build.VERSION.SDK_INT=34;events.clear();
+        new TransferFallbackProbe().onStartCommand(new Intent().putExtra("transfer_id",7),0,1);
+        check(!events.contains("start")&&!events.contains("foreground"));
+        Build.VERSION.SDK_INT=28;deny=true;events.clear();
+        new TransferFallbackProbe().onStartCommand(new Intent().putExtra("transfer_id",7),0,1);
+        check(events.contains("stop:7")&&!events.contains("start"));deny=false;
+        events.clear();new TransferFallbackProbe().onStartCommand(new Intent("stop").putExtra("transfer_id",7),0,1);
+        check(events.contains("stop:7")&&!events.contains("start"));
+        return checks;
+    }
+}
+class TransferFallbackProbeBase{
+    static final int START_NOT_STICKY=2,STOP_FOREGROUND_REMOVE=1;
+    public int onStartCommand(Intent i,int f,int s){return START_NOT_STICKY;}
+    public void onTimeout(int id,int type){}public void onDestroy(){}public IBinder onBind(Intent i){return null;}
+    void startForeground(int id,Object notification){TransferFallbackProbe.events.add("foreground");
+        if(TransferFallbackProbe.deny)throw new IllegalStateException("simulated OS denial");}
+    void stopForeground(int ignored){}void stopSelf(int id){TransferFallbackProbe.events.add("stopSelf");}
+}

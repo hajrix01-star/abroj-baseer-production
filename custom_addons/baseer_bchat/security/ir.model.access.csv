@@ -4,3 +4,4 @@ access_bchat_binding_user,BChat bound group read,model_baseer_bchat_binding,base
 access_bchat_binding_manager,BChat explicit binding manager,model_baseer_bchat_binding,group_bchat_manager,1,1,1,0
 access_bchat_room_manager,BChat room manager,model_baseer_bchat_room,group_bchat_manager,1,1,1,0
 access_bchat_membership_manager,BChat membership manager,model_baseer_bchat_membership,group_bchat_manager,1,0,1,0
+access_bchat_admin_recovery_manager,BChat explicit admin recovery,model_baseer_bchat_group_admin_recovery,group_bchat_manager,1,1,1,0

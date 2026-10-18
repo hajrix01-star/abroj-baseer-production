@@ -14,6 +14,9 @@ from .media import _MEDIA_TOKEN
 from .message_receipt import _RECEIPT_TOKEN
 
 
+_ACK_MEMBERSHIP_ABSENT = object()
+
+
 class BChatTextService(models.AbstractModel):
     _inherit = 'baseer.bchat.service'
 
@@ -28,6 +31,10 @@ class BChatTextService(models.AbstractModel):
             'company_ids': allowed_company_ids,
             'current_company_id': (user.company_id.id
                                    if user.company_id.id in allowed_company_ids else None),
+            'receipt_delivery_contract_version': 1,
+            'history_search_contract_version': 1,
+            'room_preferences_contract_version': 1,
+            'room_preferences_cancel_contract_version': 1,
             'capabilities': {
                 'rooms': True, 'messages': True, 'history': True,
                 'attachments': True, 'tasks': False, 'shifts': False,
@@ -238,42 +245,45 @@ class BChatTextService(models.AbstractModel):
         # Names are read only for messages visible in this membership period.
         author_names = self._v2_author_names(page + list(parents))
         while page:
-            payload = self._v2_history_payload(page, more, author_names, parent_by_id)
+            payload = {**self._v2_history_payload(page, more, author_names, parent_by_id),
+                       'room_id': room.id, 'membership_id': member.id}
             if len(json.dumps(payload, ensure_ascii=False).encode('utf-8')) <= 131072:
                 return payload
             page.pop()
             more = True
-        return {'api_version': 2, 'messages': [], 'next_before_id': None}
+        return {'api_version': 2, 'room_id': room.id, 'membership_id': member.id,
+                'messages': [], 'next_before_id': None}
 
     @api.model
     def _v2_author_names(self, page):
-        names = {}
-        for author_id in {message.author_user_id.id for message in page}:
-            name = 'User'
-            try:
-                # Never use the message's sudoed author_user_id to read PII.
-                user = self.env['res.users'].browse(author_id)
-                user.check_access('read')
-                if user.exists():
-                    candidate = ''.join(char for char in (user.name or '')
-                                        if not unicodedata.category(char).startswith('C')).strip()
-                    if candidate:
-                        name = candidate[:120].encode('utf-8')[:256].decode('utf-8', 'ignore') or 'User'
-            except (AccessError, MissingError):
-                pass
-            names[author_id] = name
+        return self._v2_visible_user_names({message.author_user_id.id for message in page})
+
+    @api.model
+    def _v2_visible_user_names(self, user_ids):
+        author_ids = sorted(set(user_ids))
+        names = {author_id: 'User' for author_id in author_ids}
+        if not author_ids:
+            return names
+        try:
+            # Never read names through the sudoed messages. Native search/read
+            # applies the caller's ACL and record rules to this whole bounded
+            # page+reply batch. Archived authors retain their existing names.
+            rows = self.env['res.users'].with_context(active_test=False).search_read(
+                [('id', 'in', author_ids)], fields=['name'], order='id', limit=len(author_ids))
+        except (AccessError, MissingError):
+            return names
+        for row in rows:
+            candidate = ''.join(char for char in (row['name'] or '')
+                                if not unicodedata.category(char).startswith('C')).strip()
+            if candidate:
+                names[row['id']] = candidate[:120].encode('utf-8')[:256].decode('utf-8', 'ignore') or 'User'
         return names
 
     @api.model
     def _v2_history_payload(self, page, more, author_names, parent_by_id=None):
         parent_by_id = parent_by_id or {}
         own_ids = [message.id for message in page if message.author_user_id.id == self.env.uid]
-        receipt_rows = self.env['baseer.bchat.message.receipt'].sudo().search([
-            ('message_id', 'in', own_ids),
-        ]) if own_ids else self.env['baseer.bchat.message.receipt']
-        receipts = {}
-        for receipt in receipt_rows:
-            receipts.setdefault(receipt.message_id.id, []).append(receipt)
+        receipts = self._v2_receipt_summaries(own_ids)
         def message_data(message):
             row = {
                 'id': message.id,
@@ -283,19 +293,9 @@ class BChatTextService(models.AbstractModel):
                 'created_at': fields.Datetime.to_string(message.create_date),
             }
             if message.author_user_id.id == self.env.uid:
-                all_receipts = receipts.get(message.id, [])
-                eligible = [item for item in all_receipts if item.membership_id.active]
-                state = ('read' if eligible and all(row.read_at for row in eligible)
-                         else 'delivered' if eligible and all(row.delivered_at for row in eligible)
-                         else 'sent')
-                row['delivery_state'] = state
-                completion_times = [
-                    item.read_at or item.membership_id.left_at
-                    for item in all_receipts
-                    if item.read_at or (not item.membership_id.active and item.membership_id.left_at)
-                ]
-                row['read_at'] = (fields.Datetime.to_string(max(completion_times))
-                                  if state == 'read' and completion_times else None)
+                summary = receipts[message.id]
+                row['delivery_state'] = summary['state']
+                row['read_at'] = summary['read_at']
             if (message.media_id and message.media_id.state == 'attached'
                     and message.media_id.message_id.id == message.id
                     and message.media_id.room_id.id == message.room_id.id
@@ -324,7 +324,21 @@ class BChatTextService(models.AbstractModel):
     @api.model
     def _v2_send(self, room_id, payload):
         self._require_bchat_permission('chat_send')
-        normalized = v2_contracts.normalize_send(payload)
+        return self._v2_send_normalized(room_id, v2_contracts.normalize_send(payload))
+
+    @api.model
+    def _v2_send_metadata_scope(self, room, member, normalized):
+        """Additive metadata hook after current scope and replay checks."""
+        return None
+
+    @api.model
+    def _v2_create_send_metadata(self, room, member, message, normalized, metadata):
+        """Additive metadata must commit in the message's existing savepoint."""
+        return None
+
+    @api.model
+    def _v2_send_normalized(self, room_id, normalized):
+        self._require_bchat_permission('chat_send')
         with self.env.cr.savepoint():
             room = self._v2_lock_room(room_id, mutate=True)
             member = self._v2_current_member(room)
@@ -339,7 +353,7 @@ class BChatTextService(models.AbstractModel):
                     raise AccessError(self.env._('The referenced BChat message is unavailable.'))
             media = None
             if 'media_id' in normalized:
-                self._require_bchat_permission('media')
+                self._require_media_right('upload')
                 media = self.env['baseer.bchat.media'].sudo().browse(normalized['media_id']).exists()
                 if (not media or media.author_user_id.id != self.env.uid
                         or media.room_id.id != room.id
@@ -358,6 +372,7 @@ class BChatTextService(models.AbstractModel):
                 return self._v2_replay(room, member, normalized, digest, existing)
             if media and (media.state != 'staged' or media.message_id):
                 raise ProtocolError('media_already_sent', 'This media was already sent.', 409)
+            metadata = self._v2_send_metadata_scope(room, member, normalized)
             effective = self._v2_document_selection(room, normalized, media) if media else normalized
             vals = {
                 'room_id': room.id, 'company_id': room.company_id.id,
@@ -379,6 +394,7 @@ class BChatTextService(models.AbstractModel):
                             'document_type': effective['document_type'],
                             'document_policy_version': effective['policy_version'],
                         }, _MEDIA_TOKEN)
+                    self._v2_create_send_metadata(room, member, created, normalized, metadata)
             except UniqueViolation as error:
                 if error.diag.constraint_name != 'baseer_bchat_message_user_uuid_unique':
                     raise
@@ -391,7 +407,8 @@ class BChatTextService(models.AbstractModel):
             if len(members) > 2048:
                 raise ProtocolError('too_many_members', 'This room exceeds its supported member limit.', 409)
             members = members.filtered(lambda row: row.user_id.active
-                                      and row.company_id in row.user_id.company_ids)
+                                      and row.company_id in row.user_id.company_ids
+                                      and row.user_id._bchat_effective_permissions()['chat_view'])
             recipients = members.filtered(lambda row: row.user_id.id != self.env.uid)
             if recipients:
                 self.env['baseer.bchat.message.receipt'].sudo()._create_verified([{
@@ -421,10 +438,11 @@ class BChatTextService(models.AbstractModel):
             raise AccessError(self.env._('This BChat message is unavailable.'))
         authors = self._v2_author_names([message])
         payload = self._v2_history_payload([message], False, authors)
-        return {'api_version': 2, 'message': payload['messages'][0]}
+        return {'api_version': 2, 'room_id': room.id, 'membership_id': member.id,
+                'message': payload['messages'][0]}
 
     @api.model
-    def _v2_receipt_ack(self, room_id, message_id, kind):
+    def _v2_receipt_ack(self, room_id, message_id, kind, membership_id=_ACK_MEMBERSHIP_ABSENT):
         self._require_bchat_permission('chat_view')
         if kind not in ('delivered', 'read'):
             raise ProtocolError('invalid_payload', 'Unknown BChat receipt kind.')
@@ -432,6 +450,11 @@ class BChatTextService(models.AbstractModel):
         with self.env.cr.savepoint():
             room = self._v2_lock_room(room_id)
             member = self._v2_current_member(room)
+            if membership_id is not _ACK_MEMBERSHIP_ABSENT:
+                if type(membership_id) is not int or not 0 < membership_id <= 2147483647:
+                    raise ProtocolError('invalid_payload', 'A positive membership ID is required.')
+                if membership_id != member.id:
+                    raise ProtocolError('membership_changed', 'The membership period changed.', 409)
             message = self.env['baseer.bchat.message'].sudo().browse(message_id).exists()
             if (not message or message.room_id.id != room.id
                     or message.company_id.id != room.company_id.id
@@ -546,7 +569,7 @@ class BChatTextService(models.AbstractModel):
                 raise AccessError(self.env._('This room is unavailable.'))
             fresh['baseer.bchat.service']._require_bchat_permission('chat_send')
             if 'media_id' in normalized:
-                fresh['baseer.bchat.service']._require_bchat_permission('media')
+                fresh['baseer.bchat.service']._require_media_right('upload')
             room = fresh['baseer.bchat.room'].sudo().browse(room_id)
             if not room.exists() or room.company_id not in user.company_ids:
                 raise AccessError(self.env._('This room is unavailable.'))

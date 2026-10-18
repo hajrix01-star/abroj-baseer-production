@@ -1,0 +1,119 @@
+package com.baseer.freshchat;
+
+import android.content.BroadcastReceiver;
+import android.content.Intent;
+import android.media.AudioAttributes;
+import android.media.AudioFocusRequest;
+import android.media.AudioManager;
+import com.baseer.freshchat.sync.AccountScope;
+import java.io.*;
+import java.util.Locale;
+import java.util.function.Consumer;
+
+/** Exact Activity inline wiring + production coordinator. UI, player and transport are explicit fakes. */
+public final class ConnectedAudioProbe {
+%PRODUCTION_AUDIO_TIME%
+%PRODUCTION_STOP_INLINE%
+%PRODUCTION_TOGGLE_INLINE%
+%PRODUCTION_AUDIO_ATTRIBUTES%
+%PRODUCTION_STOP_OWNED%
+    final AccountScope account=new AccountScope("https://audio.invalid","synthetic",7);
+    final Room room=new Room();
+    final Platform platform=new Platform();
+    final AudioFocusLease connectedAudioFocus=new AudioFocusLease(platform);
+    AudioFocusLease.Lease inlineAudioFocus;
+    int inlineAudioRequest,inlineDownloadReadNonce=-1,mediaReadNonce,closes,ticks;
+    boolean inlineAudioPrepared,inlineAudioSeeking,allowed=true;
+    AccountScope inlineAudioAccount;
+    Room inlineAudioRoom;
+    long inlineAudioMediaId;
+    File inlineAudioFile;
+    TextView inlineAudioPlay,inlineAudioTime,chatNotice=new TextView();
+    SeekBar inlineAudioSeek;
+    WaveformView inlineAudioWave;
+    MediaPlayer inlineAudioPlayer;
+    Runnable inlineAudioTicker;
+    Handler handler=new Handler();
+    Read pendingRead;
+    static final class Room { }
+    static final class MediaRecord { long id=17; }
+    static class TextView { String text; void setText(String value){text=value;} void setText(int value){text=String.valueOf(value);} void setContentDescription(String value){} }
+    static final class SeekBar {void setEnabled(boolean value){} void setProgress(int value){} void setMax(int value){} }
+    static final class WaveformView {void progress(float value){} }
+    static final class Handler {void removeCallbacks(Runnable value){} }
+    static final class R {static final class string {static final int bchat_media_play=1,bchat_media_pause=2,
+        bchat_media_unavailable=3,bchat_media_cancel_audio=4,bchat_media_loading_audio=5;}}
+    interface Read {void complete(File file,int status);}
+    static final class Platform implements AudioFocusLease.Platform {
+        boolean granted=true; BroadcastReceiver receiver;
+        public boolean callActive(){return false;}
+        public boolean request(AudioFocusRequest request){return granted;}
+        public void abandon(AudioFocusRequest request){}
+        public void register(BroadcastReceiver receiver){this.receiver=receiver;}
+        public void unregister(BroadcastReceiver receiver){if(this.receiver==receiver)this.receiver=null;}
+    }
+    static final class MediaPlayer {
+        interface Failed {boolean error(MediaPlayer player,int what,int extra);}
+        Consumer<MediaPlayer> prepared,completed;
+        boolean playing,released; int starts;
+        void setAudioAttributes(AudioAttributes value){}
+        void setDataSource(FileDescriptor descriptor,long start,long length){}
+        void setOnPreparedListener(Consumer<MediaPlayer> callback){prepared=callback;}
+        void setOnCompletionListener(Consumer<MediaPlayer> callback){completed=callback;}
+        void setOnErrorListener(Failed callback){}
+        void prepareAsync(){}
+        void start(){if(released)throw new IllegalStateException();playing=true;starts++;}
+        void pause(){playing=false;}
+        boolean isPlaying(){return playing;}
+        int getDuration(){return 1000;}
+        void release(){released=true;playing=false;}
+        void prepared(){prepared.accept(this);}
+    }
+    boolean stillCurrent(AccountScope scope,Room selected){return scope==account&&selected==room;}
+    boolean mediaDownloadAllowed(){return allowed;}
+    String getString(int id){return String.valueOf(id);}
+    void readConnectedMedia(Room selected,MediaRecord media,boolean thumbnail,Read callback){mediaReadNonce++;pendingRead=callback;}
+    void closeMediaRead(){mediaReadNonce++;closes++;}
+    void showMeasuredAudioWave(File file,MediaRecord media,int request,SeekBar seek,WaveformView wave){}
+    void tickInlineAudio(int request){ticks++;}
+    void showRooms(){} void loadRooms(){}
+    void toggle(){toggleInlineAudio(room,new MediaRecord(),new TextView(),new SeekBar(),new WaveformView(),new TextView());}
+    void deliver(File folder)throws Exception {
+        File file=File.createTempFile("audio-wiring-",".bin",folder);
+        try(FileOutputStream output=new FileOutputStream(file)){output.write(new byte[]{1,2,3});}
+        pendingRead.complete(file,200);
+    }
+    static int checks;
+    static void check(boolean condition){checks++;if(!condition)throw new AssertionError("Activity audio wiring "+checks);}
+    public static int run(File folder)throws Exception {
+        checks=0;
+        ConnectedAudioProbe normal=new ConnectedAudioProbe();normal.toggle();
+        check(normal.inlineAudioFocus!=null&&normal.inlineAudioFocus.active()&&normal.inlineAudioPlayer==null);
+        normal.deliver(folder);MediaPlayer player=normal.inlineAudioPlayer;
+        check(player.starts==0);player.prepared();check(player.starts==1&&player.playing);
+        normal.toggle();check(!player.playing&&normal.inlineAudioFocus==null);
+        normal.toggle();check(player.starts==2&&normal.inlineAudioFocus.active());
+        normal.platform.receiver.onReceive(null,new Intent(AudioManager.ACTION_AUDIO_BECOMING_NOISY));
+        check(player.released&&normal.inlineAudioPlayer==null&&normal.inlineAudioFocus==null);
+
+        ConnectedAudioProbe preparing=new ConnectedAudioProbe();preparing.toggle();preparing.deliver(folder);
+        MediaPlayer old=preparing.inlineAudioPlayer;
+        AudioFocusLease.Lease recorder=preparing.connectedAudioFocus.acquire(preparing.connectedAudioAttributes(true),true,reason->{});
+        old.prepared();check(old.starts==0&&old.released&&recorder.active());recorder.close();
+
+        ConnectedAudioProbe download=new ConnectedAudioProbe();download.toggle();Read oldRead=download.pendingRead;
+        AudioFocusLease.Lease newer=download.connectedAudioFocus.acquire(download.connectedAudioAttributes(true),true,reason->{});
+        check(download.closes==2&&download.inlineAudioRoom==null); // initial read reset + owner-loss cancellation
+        File late=File.createTempFile("late-audio-",".bin",folder);oldRead.complete(late,200);
+        check(!late.exists()&&download.inlineAudioPlayer==null&&newer.active());newer.close();
+
+        ConnectedAudioProbe denial=new ConnectedAudioProbe();denial.toggle();denial.deliver(folder);
+        MediaPlayer denied=denial.inlineAudioPlayer;denial.platform.granted=false;denied.prepared();
+        check(denied.starts==0&&denied.released&&denial.inlineAudioFocus==null);
+
+        ConnectedAudioProbe paused=new ConnectedAudioProbe();paused.toggle();paused.deliver(folder);
+        MediaPlayer stale=paused.inlineAudioPlayer;paused.connectedAudioFocus.stop();stale.prepared();
+        check(stale.starts==0&&stale.released&&paused.inlineAudioFocus==null);
+        return checks;
+    }
+}

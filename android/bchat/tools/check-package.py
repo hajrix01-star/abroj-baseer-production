@@ -7,7 +7,7 @@ manifest=ET.parse(root/'app/src/main/AndroidManifest.xml').getroot()
 a='{http://schemas.android.com/apk/res/android}'
 assert manifest.attrib['package']=='com.baseer.bchat.preview'
 permissions={e.get(a+'name') for e in manifest.findall('uses-permission')}
-assert permissions=={'android.permission.POST_NOTIFICATIONS','android.permission.VIBRATE','android.permission.RECORD_AUDIO','android.permission.INTERNET','android.permission.ACCESS_NETWORK_STATE'}, 'Only explicitly used demo and Odoo identity permissions are allowed'
+assert permissions=={'android.permission.POST_NOTIFICATIONS','android.permission.VIBRATE','android.permission.RECORD_AUDIO','android.permission.INTERNET','android.permission.ACCESS_NETWORK_STATE','android.permission.RUN_USER_INITIATED_JOBS','android.permission.FOREGROUND_SERVICE','android.permission.FOREGROUND_SERVICE_DATA_SYNC'}, 'Only reviewed identity, notification and user-initiated transfer permissions are allowed'
 app=manifest.find('application')
 assert app.get(a+'allowBackup')=='false'
 assert app.get(a+'supportsRtl')=='true'
@@ -32,10 +32,15 @@ print('PASS manifest, isolated Odoo identity permission, adaptive icon, XML, and
 notifications=(root/'app/src/main/java/com/baseer/freshchat/DemoNotifications.java').read_text(encoding='utf-8')
 for required in ['FLAG_IMMUTABLE', 'IMPORTANCE_HIGH', 'TYPE_NOTIFICATION', 'postingBlockerId(context)', 'MAIN.postDelayed', 'OPEN_ACTION', 'setLocalOnly(true)']:
  assert required in notifications, required
-assert not app.findall('service') and not app.findall('receiver')
+transfer_services = {item.get(a+'name'): item for item in app.findall('service')}
+assert set(transfer_services) == {'com.baseer.freshchat.BChatTransferJobService', 'com.baseer.freshchat.BChatTransferService'}
+assert all(item.get(a+'exported') == 'false' for item in transfer_services.values())
+assert transfer_services['com.baseer.freshchat.BChatTransferJobService'].get(a+'permission') == 'android.permission.BIND_JOB_SERVICE'
+assert transfer_services['com.baseer.freshchat.BChatTransferService'].get(a+'foregroundServiceType') == 'dataSync'
+assert not app.findall('receiver')
 assert 'AlarmManager' not in notifications
 assert 'setBypassDnd' not in notifications
-print('PASS bounded user-triggered local notification source contracts; no alarm, service, receiver, or DND bypass')
+print('PASS bounded local notification and private user-initiated transfer services; no alarm, receiver, or DND bypass')
 
 list_screen=source[source.index('private void showList()'):source.index('private void updateInbox()')]
 assert 'addMainToolbar()' in list_screen and 'inboxSearchExpanded ? View.VISIBLE : View.GONE' in list_screen
@@ -88,9 +93,31 @@ print('PASS QA Gradle release version, installed-package About version and in-ap
 
 push=(root/'app/src/main/java/com/baseer/freshchat/BChatFirebaseMessagingService.java').read_text(encoding='utf-8')
 for required in ('bchat-events-v3', 'setSound(Settings.System.DEFAULT_NOTIFICATION_URI',
-                 'setVisibility(Notification.VISIBILITY_PRIVATE)', 'message_preview',
-                 'sender_name', 'Notification.BigTextStyle'):
+                 'setVisibility(Notification.VISIBILITY_PRIVATE)', 'NotificationPresentation.parse(data)',
+                 'BChatNotificationConversations.append(frame, privateMode)',
+                 'BChatMessagingNotificationStyle.create(this, channelRoute.channelId, projection.conversation)'):
  assert required in push, required
+presentation=(root/'app/src/main/java/com/baseer/freshchat/NotificationPresentation.java').read_text(encoding='utf-8')
+for required in ('message_preview', 'sender_name', 'MAX_DATA_BYTES = 3072', 'presentation_v',
+                 'sender != name', 'title != group', '"[0-9a-f]{64}"'):
+ assert required in presentation, required
+assert 'BChatNotificationLedger.claimSound(' in push
+assert '.setOnlyAlertOnce(!"chat".equals(kind) || !audible)' in push
+assert 'Notification.GROUP_ALERT_SUMMARY' in push and 'Notification.GROUP_ALERT_CHILDREN' in push
+assert push.index('BChatNotificationChannels.load(this)') < push.index('BChatNotificationChannels.resolve(kind)')
+assert 'BChatNotificationChannels.present(channelRoute, () -> {' in push
+assert 'if (!posted || !channelPosted[0] || !bufferPosted[0] || !childPosted[0]) return;' in push
+assert 'String privateMode = channelRoute.known ? mode : "none";' in push
+assert 'boolean audible = channelRoute.known &&' in push
+channels=(root/'app/src/main/java/com/baseer/freshchat/BChatNotificationChannels.java').read_text(encoding='utf-8')
+for channel_id in ('bchat-events-v3', 'bchat-chat-v1', 'bchat-tasks-v1', 'bchat-orders-v1'):
+ assert channel_id in channels, channel_id
+assert 'if (manager.getNotificationChannel(ids[i]) == null)' in channels
+assert 'if (!saved) return result(false, false, "commit_failed", before);' in channels
+channel_change=channels[channels.index('public static Result setSeparated('):channels.index('private static NotificationChannel copyBaseline(')]
+assert channel_change.index('.commit();') < channel_change.index('if (!saved) return') < channel_change.index('current = new Snapshot(true, separated, before.revision + 1);')
+assert 'if (selection.owner != current) return false;' in channels
+assert 'deleteNotificationChannel' not in channels and 'copy.setBypassDnd(false)' in channels
 assert 'android.permission.ACCESS_NETWORK_STATE' in permissions
 
 assert notifications.index('channel.setVibrationPattern(') < notifications.index('channel.enableVibration(settings.vibration(CATEGORY))'), 'Apply vibration Off after Android pattern setter'
@@ -131,8 +158,11 @@ print('PASS independent preview requires an explicitly supplied local signer; no
 identity=(root/'app/src/main/java/com/baseer/freshchat/OdooIdentityActivity.java').read_text(encoding='utf-8')
 assert 'networkAvailable() && offerOfflineHistory()' in identity
 assert 'scrollAfterOwnSend = true;\n                            loadMessages(0);' in identity
-assert 'channel.getImportance() < NotificationManager.IMPORTANCE_DEFAULT' in identity
-assert 'channel.getSound() == null' in identity
+settings_panel=(root/'app/src/main/java/com/baseer/freshchat/BChatNotificationSettingsPanel.java').read_text(encoding='utf-8')
+assert 'channel.getImportance() < NotificationManager.IMPORTANCE_DEFAULT' in settings_panel
+assert 'channel.getSound() == null' in settings_panel
+assert 'R.string.notification_quiet' in settings_panel and 'R.string.notification_blocked' in settings_panel
+assert 'new BChatNotificationSettingsPanel(this,' in identity
 assert 'Settings.ACTION_APP_NOTIFICATION_SETTINGS' in identity
 verified_push = identity[identity.index('applyPermissionSet(account, granted);'):identity.index('profileSnapshot = verifiedProfile;')]
 assert 'maybeRegisterPush();' not in verified_push
@@ -180,9 +210,10 @@ v2_outbox=(root/'app/src/main/java/com/baseer/freshchat/sync/BChatV2Outbox.java'
 for required in ('/bchat/api/v2/bootstrap', '/bchat/api/v2/rooms', 'author_name',
                  'new WebMessagePort[]{channel[1]}', 'redirect:\'manual\'',
                  'MAX_V2_RESPONSE = 131072', 'probeV1AfterTransportFailure(writeRequest)',
-                 'room.membershipId', 'outbox.acknowledge(account, entry)'):
+                 'room.membershipId', 'box.acknowledge(scope, entry)', 'box.recordReceipt(scope, entry, receiptId)'):
  assert required in identity, required
-for required in ('account_key', 'membership_id', 'client_uuid', 'Resolve the pending message first'):
+for required in ('account_key', 'membership_id', 'client_uuid', 'Text queue capacity reached',
+                 'MAX_PER_ACCOUNT', 'MAX_PER_ROOM', 'MAX_ACCOUNT_BYTES'):
  assert required in v2_outbox, required
 for required in ('firstStale(AccountScope account', 'convertToDraft(AccountScope account',
                  'discard(AccountScope account', 'createDraftTable(db)',
@@ -190,14 +221,15 @@ for required in ('firstStale(AccountScope account', 'convertToDraft(AccountScope
                  'pageForAccount(AccountScope account', 'recordRejected(AccountScope account',
                  'review_code INTEGER NOT NULL DEFAULT 0'):
  assert required in v2_outbox, required
-for required in ('clearChatView();\n            account = nextAccount',
+assert re.search(r'clearChatView\(\);\s+account = nextAccount;', identity)
+for required in (
                  'if (initial) {\n                    shell.setVisibility(View.GONE);',
-                 'outbox.firstStale(account, selectedRoom.id, selectedRoom.membershipId)',
+                 'box.firstStale(scope, room.id, room.membershipId)',
                  'confirmConvertToDraft(verifiedAccount, room, entry)',
                  'confirmDiscard(verifiedAccount, room, entry)',
                  'flushDraftSave();', 'chat_v2_uncertain', 'draftActive = true;',
                  'showGlobalPending(0)', 'confirmGlobalConvert(verifiedAccount, entry, choices.get(which))',
-                 'outbox.recordRejected(account, entry)', 'pending.reviewCode == 1'):
+                 'box.recordFailure(scope, entry, permanent, System.currentTimeMillis())', 'pending.reviewCode == 1'):
  assert required in identity, required
 assert 'new ChatStore(' not in identity and 'MainActivity.class' not in identity
 assert 'CookieManager.getInstance().getCookie(' not in identity
@@ -234,4 +266,10 @@ push_app=push_manifest.find('application')
 push_service=next(e for e in push_app.findall('service') if e.get(a+'name')=='com.baseer.freshchat.BChatFirebaseMessagingService')
 assert any(action.get(a+'name')=='com.google.firebase.MESSAGING_EVENT'
            for action in push_service.findall('intent-filter/action'))
+assert push_service.get(a+'exported') == 'false'
+push_app.remove(push_service)
+push_sdk = push_manifest.find('uses-sdk')
+assert push_sdk is not None and push_sdk.attrib == standalone_sdk.attrib
+push_manifest.remove(push_sdk)
+assert ET.canonicalize(ET.tostring(canonical_manifest, encoding='unicode'), strip_text=True) == ET.canonicalize(ET.tostring(push_manifest, encoding='unicode'), strip_text=True), 'Push manifest must retain every reviewed app/transfer declaration, adding only the private FCM service'
 print('PASS package-free AGP input exactly matches standalone app manifest semantics')

@@ -1,0 +1,9 @@
+plugins { id 'com.android.application' }
+android {
+ namespace 'com.baseer.freshchat'
+ compileSdk 35
+ defaultConfig { applicationId 'com.baseer.bchat.room.explore.test'; minSdk 26; targetSdk 35; versionCode 1; versionName 'C16-isolated-component' }
+ buildTypes { debug { signingConfig=null; debuggable true; minifyEnabled false } }
+ compileOptions { sourceCompatibility JavaVersion.VERSION_1_8; targetCompatibility JavaVersion.VERSION_1_8 }
+}
+dependencies { implementation 'androidx.recyclerview:recyclerview:1.4.0' }

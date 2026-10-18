@@ -1,0 +1,7 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+ <application android:label="BChat isolated room explore" android:theme="@style/AppTheme" android:debuggable="true" android:allowBackup="false" android:supportsRtl="true" android:hardwareAccelerated="true">
+  <activity android:name="com.baseer.freshchat.ExploreTestActivity" android:exported="false" android:screenOrientation="portrait" android:windowSoftInputMode="adjustResize"/>
+  <activity android:name="com.baseer.freshchat.ExploreTestActivity$PauseActivity" android:exported="false" android:screenOrientation="portrait"/>
+ </application>
+ <instrumentation android:name="com.baseer.freshchat.ExploreInstrumentation" android:targetPackage="com.baseer.bchat.room.explore.test"/>
+</manifest>

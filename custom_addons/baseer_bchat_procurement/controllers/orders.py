@@ -100,6 +100,15 @@ class BChatOrderApi(http.Controller):
         except (AccessError, ProtocolError, ValidationError, UserError) as error:
             return self._error(error)
 
+    @http.route('/bchat/api/v2/orders/catalog/resolve', type='http', auth='user',
+                methods=['POST'], csrf=True, save_session=True, max_content_length=65536)
+    def catalog_resolve(self, **kwargs):
+        try:
+            self._args(())
+            return self._response(self._service()._v2_order_catalog_resolve(self._form()))
+        except (AccessError, ProtocolError, ValidationError, UserError) as error:
+            return self._error(error)
+
     @http.route('/bchat/api/v2/orders', type='http', auth='user',
                 methods=['GET'], csrf=True, save_session=True)
     def orders(self, **kwargs):

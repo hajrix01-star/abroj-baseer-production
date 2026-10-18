@@ -47,6 +47,22 @@ def normalize_send(payload):
     return normalized
 
 
+def normalize_social_send(payload):
+    """Add explicit mentions without broadening the published legacy parser."""
+    if type(payload) is not dict:
+        raise ProtocolError('invalid_payload', 'Payload fields do not match the social message contract.')
+    mentions = payload.get('mention_user_ids', [])
+    if type(mentions) is not list or len(mentions) > 49:
+        raise ProtocolError('invalid_payload', 'Choose at most 49 explicit mention recipients.')
+    ids = [positive_id(value, 'mention_user_id') for value in mentions]
+    if len(set(ids)) != len(ids):
+        raise ProtocolError('invalid_payload', 'Mention recipients must be unique.')
+    normalized = normalize_send({key: value for key, value in payload.items() if key != 'mention_user_ids'})
+    if ids:
+        normalized['mention_user_ids'] = sorted(ids)
+    return normalized
+
+
 def digest(room_id, normalized):
     body = {
         'room_id': room_id,
@@ -62,6 +78,8 @@ def digest(room_id, normalized):
     for key in ('document_type', 'invoice_case_id', 'policy_version'):
         if key in normalized:
             body[key] = normalized[key]
+    if normalized.get('mention_user_ids'):
+        body['mention_user_ids'] = normalized['mention_user_ids']
     encoded = json.dumps(body, sort_keys=True, ensure_ascii=False, separators=(',', ':')).encode('utf-8')
     return hashlib.sha256(encoded).hexdigest()
 

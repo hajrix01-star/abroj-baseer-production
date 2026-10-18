@@ -34,6 +34,10 @@ class BChatTaskService(models.AbstractModel):
                 memberships={row.user_id.id: row.id for row in members})
         else:
             recipients = {task.creator_id.id, task.assignee_id.id}
+            # A former assignee may sort before the new recipients. Reserve
+            # their full union before task then task_revoked are published.
+            recipient_union = recipients | ({former_assignee_id} if former_assignee_id else set())
+            self._change_lock_recipients(recipient_union)
             self._change_publish(recipients, 'task', task_id=task.id,
                                  company_id=task.company_id.id)
             if former_assignee_id and former_assignee_id not in recipients:

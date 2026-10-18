@@ -183,9 +183,12 @@ def check_android_source() -> None:
             and "members/\" + authorId + \"/avatar" in activity,
             "private employee-avatar presentation is absent")
     require("reconcilePendingMediaFromVerifiedHistory" in activity
-            and "mediaStore.pendingForRoom(scopedAccount" in activity
-            and "confirmedMediaIds.contains(entry.mediaId)" in activity
-            and "mediaStore.acknowledge(scopedAccount, entry);" in activity,
+            and "store.pendingForRoom(scopedAccount" in activity
+            and "confirmedMediaIds.containsKey(entry.mediaId)" in activity
+            and "box.tickets().receipt(scopedAccount,ticket,confirmedMediaIds.get(entry.mediaId))" in activity
+            and "box.tickets().retireMedia(scopedAccount,receipt," in activity
+            and "store.retireReceipted(scopedAccount,entry.uploadUuid,receipt.fingerprint)" in activity
+            and "local(scopedAccount, () ->" in activity,
             "media send acknowledgement recovery is absent")
 
 
@@ -218,6 +221,12 @@ def run_android_source_contract() -> None:
         "android/bchat/tools/test-connected-media-journey.py",
         "android/bchat/tools/test-verified-read-fallback.py",
         "android/bchat/tools/test-login-brand-contracts.py",
+        "android/bchat/tools/test-maturity-source-contracts.py",
+        "android/bchat/tools/test-unread-receipts-contract.py",
+        "android/bchat/tools/test-receipt-details-hook.py",
+        "android/bchat/tools/test-notification-conversations-hook.py",
+        "android/bchat/tools/test-room-list-hook.py",
+        "android/bchat/tools/test-message-timeline-contracts.py",
     ):
         subprocess.run([sys.executable, source_test], cwd=ROOT, check=True)
 

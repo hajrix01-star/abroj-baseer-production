@@ -67,11 +67,22 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
 
 import com.baseer.freshchat.sync.AccountScope;
 import com.baseer.freshchat.sync.BChatV2Outbox;
 import com.baseer.freshchat.sync.BChatConnectedMediaStore;
 import com.baseer.freshchat.sync.ConnectedHistoryCache;
+import com.baseer.freshchat.sync.ReceiptDeliveryProtocol;
+import com.baseer.freshchat.sync.BChatLocalState;
+import com.baseer.freshchat.sync.BChatComposerSnapshot;
+import com.baseer.freshchat.sync.BChatCartResolver;
+import com.baseer.freshchat.sync.BChatStorageRepository;
+import com.baseer.freshchat.sync.BChatIntentPersistence;
+import com.baseer.freshchat.sync.BChatSendTickets;
+import com.baseer.freshchat.sync.BChatStageAdmission;
 import com.baseer.freshchat.sync.OutboxPolicy;
 import com.baseer.freshchat.sync.TaskOfflineCache;
 
@@ -105,6 +116,7 @@ import java.text.SimpleDateFormat;
 import java.nio.charset.StandardCharsets;
 import java.math.BigDecimal;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
 /** Employee entry and isolated BChat v2 text client. The offline demo store stays untouched. */
@@ -169,9 +181,13 @@ public final class OdooIdentityActivity extends Activity {
     private static final long NATIVE_GRANT_CONTROL_RETRY_MILLIS = 250L;
 
     private final Handler handler = new Handler(Looper.getMainLooper());
+    private final Set<String> intentWrites = new HashSet<>();
+    private final Map<String, String> rememberedOrderRights = new LinkedHashMap<>();
+    private volatile int livePersistenceGeneration;
     private final SharedPreferences.OnSharedPreferenceChangeListener pushTokenListener =
             (preferences, key) -> {
-                if ("fcm-token".equals(key)) handler.post(this::maybeRegisterPush);
+                if ("fcm-token".equals(key) || "routing-state".equals(key))
+                    handler.post(this::maybeRegisterPush);
             };
     private boolean pushRegistrationBusy;
     private boolean pushRegistrationScheduled;
@@ -210,6 +226,15 @@ public final class OdooIdentityActivity extends Activity {
     private int liveNonce, busNonce;
     private boolean liveBusy, feedQueued, snapshotInProgress, liveStarted, liveForeground, busConnected;
     private boolean receiptsAvailable;
+    private boolean receiptDeliverySupported, receiptSyncBusy, receiptPassActive;
+    private long receiptPendingCursor;
+    private int receiptPendingPages;
+    private int receiptStorageGeneration;
+    private int receiptPassToken;
+    private int receiptRebindGeneration;
+    private boolean receiptNeedsRoomRebind;
+    private Runnable receiptSyncTimer;
+    private final Set<String> receiptPassAttempted = new HashSet<>();
     private long feedCursor, feedRetryAt;
     private int feedFailures, busFailures;
     private Runnable feedTimer, busReconnect;
@@ -227,7 +252,7 @@ public final class OdooIdentityActivity extends Activity {
     private long lastPermissionRefreshAt;
     private static final Object historyStorageLock = new Object();
     private static volatile int historyGlobalGeneration;
-    private final ExecutorService historyWrites = Executors.newSingleThreadExecutor();
+    private final Executor historyWrites = BChatStorageRepository.executor();
     private final ExecutorService mediaIo = Executors.newSingleThreadExecutor();
     /** Read-only fallback when an Android WebView drops a message-port response. */
     private boolean webV2GetFallbackBusy;
@@ -250,7 +275,6 @@ public final class OdooIdentityActivity extends Activity {
     private boolean mediaAvailable;
     private View mediaPickButton;
     private Button mediaReviewButton;
-    private BChatNativeMediaUploader.Call mediaNativeUpload;
     private Runnable mediaUploadTimeout;
     private int mediaUploadNonce;
     private boolean mediaUploadBusy;
@@ -265,6 +289,19 @@ public final class OdooIdentityActivity extends Activity {
     private Room mediaPickerRoom;
     private int mediaPickerGeneration;
     private int mediaSessionGeneration;
+    private BChatSendTickets.Ticket mediaClaim;
+    private AccountScope mediaClaimAccount;
+    private boolean mediaClaimHandedOff;
+    private BChatTransferCoordinator transferCoordinator;
+    private BChatNotificationSettingsPanel notificationSettingsPanel;
+    private BChatReceiptDetailsPanel receiptDetailsPanel;
+    private final BChatStageAdmission.Observer stageAdmissionObserver=this::onTransferChanged;
+    private final BChatTransferCoordinator.Observer transferObserver = this::onTransferChanged;
+    private void onTransferChanged(String key,long roomId,long memberId) {
+        Room room=selectedRoom;
+        if(!closed&&verified&&!offlineHistory&&account!=null&&account.key.equals(key)
+                &&room!=null)refreshLocalRoom(room,false);
+    }
     private File cameraCaptureFile;
     private VoiceRecorder connectedVoiceRecorder;
     private File voicePreviewFile;
@@ -280,6 +317,13 @@ public final class OdooIdentityActivity extends Activity {
     private Runnable mediaReadTimeout;
     private int mediaReadNonce, mediaReadSequence, mediaReadBytes;
     private boolean mediaReadBusy;
+    private boolean mediaReadIsThumbnail;
+    private volatile int mediaDownloadGeneration;
+    private ImagePreviews connectedImagePreviews;
+    private AudioFocusLease connectedAudioFocus;
+    private AudioFocusLease.Lease inlineAudioFocus, voicePreviewFocus, recordingFocus;
+    private int inlineDownloadReadNonce = -1, voicePreviewGeneration, recordingGeneration;
+    private TextView voicePreviewPlay;
     private boolean mediaReadStarted;
     private File pendingPdfDownload;
     private AccountScope pendingPdfAccount;
@@ -312,8 +356,9 @@ public final class OdooIdentityActivity extends Activity {
     private int unreadMetadataGeneration;
     private AccountScope groupPhotoAccount;
     private Room groupPhotoRoom;
-    private final Map<String, List<ImageView>> groupAvatarWaiting = new LinkedHashMap<>();
-    private final LinkedList<Room> groupAvatarQueue = new LinkedList<>();
+    private final Map<String, List<GroupAvatarTarget>> groupAvatarWaiting = new LinkedHashMap<>();
+    private final LinkedList<GroupAvatarRequest> groupAvatarQueue = new LinkedList<>();
+    private GroupAvatarRequest groupAvatarActive;
     private boolean groupAvatarBusy;
     private WebMessagePort groupAvatarPort;
     private int groupAvatarNonce;
@@ -379,7 +424,7 @@ public final class OdooIdentityActivity extends Activity {
     private String orderQuoteCurrency;
     private boolean orderQuoteLoading;
     private Runnable orderQuoteTask;
-    private AlertDialog orderCartDialog;
+    private BChatCartSheet orderCartDialog;
     private AlertDialog receiptFlowDialog;
     private LinearLayout orderCartLinesView;
     private TextView orderCartTotalView;
@@ -446,6 +491,9 @@ public final class OdooIdentityActivity extends Activity {
     private AlertDialog profileDialog;
     private AlertDialog groupCreateDialog;
     private AlertDialog groupInfoDialog;
+    private BChatRoomExplorePanel roomExplorePanel;
+    private long roomExploreGeneration, messageJumpSerial;
+    private boolean historySearchSupported;
     private boolean recreateForLanguage;
     private LinearLayout composerRow;
     private TextView recordingBadge;
@@ -456,7 +504,14 @@ public final class OdooIdentityActivity extends Activity {
     private long selectedReplyMessageId;
     private FrameLayout messageFrame;
     private String visibleSection = "chats";
-    private LinearLayout roomItems;
+    private FrameLayout roomItems;
+    private RecyclerView roomRecycler;
+    private BChatRoomListAdapter roomListAdapter;
+    private final BChatRoomListAdapter.Lane roomListLane = new BChatRoomListAdapter.Lane();
+    private AccountScope roomListAccount;
+    private int roomListSession, roomListGlobal;
+    private long roomListEpoch;
+    private boolean roomListAdmitted, roomListOffline;
     private EditText roomSearchInput;
     private LinearLayoutManager messageLayout;
     private MessageTimelineAdapter messageAdapter;
@@ -472,7 +527,7 @@ public final class OdooIdentityActivity extends Activity {
     private Button newerButton;
     private TextView refreshHint;
     private View roomBackButton;
-    private ScrollView roomScroll;
+    private FrameLayout roomScroll;
     private RecyclerView messageScroll;
     private LinearLayout olderControl;
     private LinearLayout newerControl;
@@ -482,6 +537,55 @@ public final class OdooIdentityActivity extends Activity {
     private boolean unresolvedSendNotice;
     private AlertDialog pendingDialog;
     private Runnable draftSaveTask;
+    private long editorRevision;
+    private boolean textEnqueueBusy, textDispatchBusy, localReadBusy, draftReplyBlocked, roomDraftNeedsRestore;
+    private int localReadSerial;
+    private RoomLocalSnapshot roomLocal;
+    private final List<BChatV2Outbox.Entry> localTextRows = new ArrayList<>();
+    private BChatLocalState restorationIntent;
+    private long restorationAnchor;
+    private int restorationOffset;
+    private boolean contextLoaded, restoringContext, roomsVerifiedForSession;
+    private boolean contextNavigationRestored, cartRestoreBusy;
+    private int cartRestoreGeneration;
+    private AlertDialog cartRestoreDialog;
+    private boolean forceTimelineReset;
+    private TimelineWindowOwner messageWindowOwner;
+    private BChatTimelineRows.Snapshot messageRowSnapshot;
+    private long messageWindowOwnerSequence;
+    private long messageWindowAdmissionEpoch;
+    private long messagePositionIntentSerial;
+    private long messageLatestPositionIntent = -1;
+    private TimelineSendFollow messageSendFollow;
+    private int storageWriteFailureSerial;
+    private int screenBaseHorizontal, screenBaseVertical;
+    private WindowInsetsCompat screenInsets;
+    private boolean globalPendingKnown, globalPendingAvailable;
+    private boolean offlinePersistenceReady, offlineReadPending;
+    private boolean offlinePolicyDiskReady, orderPolicyDiskReady = true;
+    private int orderPolicyWriteSerial;
+    private int offlinePolicySerial;
+
+    private static final class RoomLocalSnapshot {
+        final long roomId, membershipId;
+        final List<BChatV2Outbox.Entry> text;
+        final BChatV2Outbox.Entry stale;
+        final BChatV2Outbox.Draft draft;
+        final List<BChatConnectedMediaStore.Entry> media;
+        final BChatConnectedMediaStore.Diagnostics diagnostics;
+        final BChatSendTickets.Ticket sendHead;
+        final BChatStageAdmission.Recovery recovery;
+        RoomLocalSnapshot(long roomId, long membershipId, List<BChatV2Outbox.Entry> text,
+                          BChatV2Outbox.Entry stale, BChatV2Outbox.Draft draft,
+                          List<BChatConnectedMediaStore.Entry> media, BChatConnectedMediaStore.Diagnostics diagnostics,
+                          BChatSendTickets.Ticket sendHead,BChatStageAdmission.Recovery recovery) {
+            this.roomId = roomId; this.membershipId = membershipId; this.text = text;
+            this.stale = stale; this.draft = draft; this.media = media; this.diagnostics = diagnostics;
+            this.sendHead=sendHead;
+            this.recovery=recovery;
+        }
+        BChatV2Outbox.Entry head() { return text.isEmpty() ? null : text.get(0); }
+    }
     private int epoch;
     private int webEpoch;
     private int pageEpoch;
@@ -503,23 +607,49 @@ public final class OdooIdentityActivity extends Activity {
                 || Intent.ACTION_SEND_MULTIPLE.equals(intent.getAction()));
     }
 
-    @Override protected void attachBaseContext(Context base) { super.attachBaseContext(AppLocale.wrap(base)); }
+    @Override protected void attachBaseContext(Context base) {
+        super.attachBaseContext(AppLocale.wrap(ChatAppearance.wrap(base)));
+    }
 
     @Override public void onCreate(Bundle state) {
+        setTheme(ChatAppearance.themeResource(this));
         super.onCreate(state);
+        transferCoordinator=BChatTransferCoordinator.get(this);
+        transferCoordinator.observe(transferObserver);
+        BChatStageAdmission.observe(stageAdmissionObserver);
+        connectedImagePreviews = new ImagePreviews(this);
+        connectedAudioFocus = new AudioFocusLease(this);
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+        WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView())
+                .setAppearanceLightStatusBars(!ChatAppearance.dark(this));
+        WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView())
+                .setAppearanceLightNavigationBars(!ChatAppearance.dark(this));
         historyCache = new ConnectedHistoryCache(this);
         taskOfflineCache = new TaskOfflineCache(this);
         if (BuildConfig.BCHAT_PUSH_ENABLED) BChatPushState.observe(this, pushTokenListener);
         capturePushTarget(getIntent());
-        if (!preferences().getBoolean(REMEMBER, false)) BChatPushState.clearAccount(this);
-        buildScreen();
-        showShareNotice(getIntent());
-        if ((state != null && state.getBoolean("bchat-language-recreate", false))
-                || preferences().getBoolean(REMEMBER, false)) openWeb(BRIDGE);
-        else clearCookies(() -> { if (!closed) openWeb(LOGIN); });
+        final boolean languageRestore = state != null && state.getBoolean("bchat-language-recreate", false);
+        setContentView(new android.widget.ProgressBar(this));
+        BChatStorageRepository.submit(null, () -> {
+            // Warm the platform's lazy preference readers on the same disk lane as SQLite.
+            for (String name : new String[]{PREFS, TASK_CREATE_PREFS, ORDER_CREATE_PREFS,
+                    ORDER_COMPANY_PREFS, RECEIPT_CONFIRM_PREFS, RECEIPT_SHARE_PREFS,
+                    GROUP_CREATE_PREFS, PERMISSION_PREFS, ORDER_PERMISSION_PREFS, LIVE_PREFS})
+                getSharedPreferences(name, MODE_PRIVATE).getAll();
+            return preferences().getBoolean(REMEMBER, false);
+        }, (remember, error) -> {
+            if (closed) return;
+            offlinePolicyReady(error == null && Boolean.TRUE.equals(remember));
+            if (!offlinePersistenceReady) BChatPushState.clearAccount(this);
+            buildScreen();
+            showShareNotice(getIntent());
+            if (languageRestore || offlinePersistenceReady) openWeb(BRIDGE);
+            else clearCookies(() -> { if (!closed) openWeb(LOGIN); });
+        });
     }
 
     @Override protected void onSaveInstanceState(Bundle state) {
+        saveLocalContext();
         state.putBoolean("bchat-language-recreate", recreateForLanguage);
         super.onSaveInstanceState(state);
     }
@@ -564,6 +694,21 @@ public final class OdooIdentityActivity extends Activity {
         return getSharedPreferences(RECEIPT_SHARE_PREFS, MODE_PRIVATE);
     }
     private int dp(int value) { return Math.round(value * getResources().getDisplayMetrics().density); }
+    private void setScreenPadding(int horizontalDp, int verticalDp) {
+        screenBaseHorizontal = dp(horizontalDp); screenBaseVertical = dp(verticalDp);
+        applyScreenInsets();
+    }
+
+    private void applyScreenInsets() {
+        if (layout == null) return;
+        androidx.core.graphics.Insets bars = screenInsets == null ? androidx.core.graphics.Insets.NONE
+                : screenInsets.getInsets(WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
+        androidx.core.graphics.Insets ime = screenInsets == null ? androidx.core.graphics.Insets.NONE
+                : screenInsets.getInsets(WindowInsetsCompat.Type.ime());
+        // Always use the stage's fixed base, never the padding written by a previous inset pass.
+        layout.setPadding(screenBaseHorizontal + bars.left, screenBaseVertical + bars.top,
+                screenBaseHorizontal + bars.right, screenBaseVertical + Math.max(bars.bottom, ime.bottom));
+    }
     private LinearLayout.LayoutParams fieldSize(int top) {
         LinearLayout.LayoutParams size = new LinearLayout.LayoutParams(-1, -2);
         size.topMargin = dp(top);
@@ -590,9 +735,9 @@ public final class OdooIdentityActivity extends Activity {
         input.setInputType(password ? InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD
                 : InputType.TYPE_CLASS_TEXT);
         input.setHint(label);
-        input.setHintTextColor(0xff64748b);
-        input.setTextColor(0xff182a3b);
-        input.setBackground(Ui.outline(Color.WHITE, 0xffbfd0df, 14, this));
+        input.setHintTextColor(UiPalette.muted(this));
+        input.setTextColor(UiPalette.ink(this));
+        input.setBackground(Ui.outline(Color.WHITE, Ui.LINE, 14, this));
         input.setMinHeight(dp(56));
         input.setPadding(dp(16), 0, dp(16), 0);
         input.setImportantForAutofill(View.IMPORTANT_FOR_AUTOFILL_NO_EXCLUDE_DESCENDANTS);
@@ -604,12 +749,15 @@ public final class OdooIdentityActivity extends Activity {
     private void buildScreen() {
         layout = new LinearLayout(this);
         layout.setOrientation(LinearLayout.VERTICAL);
-        layout.setBackgroundColor(Color.WHITE);
-        layout.setPadding(dp(20), dp(16), dp(20), dp(16));
+        layout.setBackgroundColor(UiPalette.surface(this));
+        setScreenPadding(20, 16);
+        ViewCompat.setOnApplyWindowInsetsListener(layout, (view, insets) -> {
+            screenInsets = insets; applyScreenInsets(); return insets;
+        });
         layout.setLayoutDirection(AppLocale.direction(this));
         status = new TextView(this);
         status.setTextSize(14);
-        status.setTextColor(0xff44566b);
+        status.setTextColor(UiPalette.muted(this));
         status.setText(R.string.auth_loading);
         layout.addView(status, new LinearLayout.LayoutParams(-1, -2));
 
@@ -618,12 +766,12 @@ public final class OdooIdentityActivity extends Activity {
         // block beneath the sign-in control on some Android devices.
         nativeForm.setFillViewport(false);
         nativeForm.setVerticalScrollBarEnabled(false);
-        nativeForm.setBackgroundColor(Color.WHITE);
+        nativeForm.setBackgroundColor(UiPalette.surface(this));
         LinearLayout fields = new LinearLayout(this);
         fields.setOrientation(LinearLayout.VERTICAL);
         fields.setGravity(Gravity.CENTER_HORIZONTAL);
         fields.setPadding(dp(12), dp(20), dp(12), dp(14));
-        fields.setBackgroundColor(Color.WHITE);
+        fields.setBackgroundColor(UiPalette.surface(this));
         nativeForm.addView(fields, new ScrollView.LayoutParams(-1, -2));
         LoginBrandView mark = new LoginBrandView(this);
         LinearLayout.LayoutParams markSize = new LinearLayout.LayoutParams(dp(148), dp(158));
@@ -632,7 +780,7 @@ public final class OdooIdentityActivity extends Activity {
         TextView title = new TextView(this);
         title.setText(R.string.auth_native_title);
         title.setTextSize(23);
-        title.setTextColor(0xff0d3f68);
+        title.setTextColor(UiPalette.accent(this));
         title.setGravity(Gravity.CENTER);
         fields.addView(title, fieldSize(8));
         loginInput = field(fields, R.string.auth_native_username, false);
@@ -650,9 +798,10 @@ public final class OdooIdentityActivity extends Activity {
         loginReleaseFooter = new TextView(this);
         loginReleaseFooter.setText(getString(R.string.bchat_login_release_footer,
                 BidiFormatter.getInstance(AppLocale.rtl(this)).unicodeWrap(installedBChatReleaseName()),
-                getString(R.string.bchat_login_release_date)));
+                BuildConfig.BCHAT_RELEASE_DATE.isEmpty() ? getString(R.string.bchat_login_release_date)
+                        : asciiDigits(BuildConfig.BCHAT_RELEASE_DATE)));
         loginReleaseFooter.setTextSize(12);
-        loginReleaseFooter.setTextColor(0xff64748b);
+        loginReleaseFooter.setTextColor(UiPalette.muted(this));
         loginReleaseFooter.setGravity(Gravity.CENTER);
         loginReleaseFooter.setTextDirection(View.TEXT_DIRECTION_FIRST_STRONG);
         loginReleaseFooter.setLayoutDirection(AppLocale.direction(this));
@@ -666,19 +815,19 @@ public final class OdooIdentityActivity extends Activity {
         shell.setGravity(Gravity.CENTER);
         TextView brand = new TextView(this);
         brand.setText(R.string.auth_shell_brand);
-        brand.setTextColor(0xff0d3f68);
+        brand.setTextColor(UiPalette.accent(this));
         brand.setTextSize(28);
         brand.setGravity(Gravity.CENTER);
         shell.addView(brand, fieldSize(4));
         TextView heading = new TextView(this);
         heading.setText(R.string.auth_shell_heading);
-        heading.setTextColor(0xff0d3f68);
+        heading.setTextColor(UiPalette.accent(this));
         heading.setTextSize(20);
         heading.setGravity(Gravity.CENTER);
         shell.addView(heading, fieldSize(16));
         shellNotice = new TextView(this);
         shellNotice.setText(R.string.auth_shell_unavailable);
-        shellNotice.setTextColor(0xff44566b);
+        shellNotice.setTextColor(UiPalette.muted(this));
         shellNotice.setTextSize(15);
         shellNotice.setGravity(Gravity.CENTER);
         shell.addView(shellNotice, fieldSize(16));
@@ -708,7 +857,7 @@ public final class OdooIdentityActivity extends Activity {
         chatRoot = new LinearLayout(this);
         chatRoot.setOrientation(LinearLayout.VERTICAL);
         chatRoot.setLayoutDirection(AppLocale.direction(this));
-        chatRoot.setBackgroundColor(Ui.LIGHT);
+        chatRoot.setBackgroundColor(UiPalette.background(this, Ui.LIGHT));
         chatRoot.setVisibility(View.GONE);
         brandBar = Ui.row(this);
         brandBar.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
@@ -781,6 +930,7 @@ public final class OdooIdentityActivity extends Activity {
         roomBackButton.setOnClickListener(v -> showRooms());
         chatTitleBar.addView(roomBackButton, new LinearLayout.LayoutParams(dp(48), dp(48)));
         roomAvatarSlot = new FrameLayout(this);
+        roomAvatarSlot.setPadding(dp(2), dp(2), dp(2), dp(2)); // 44dp art within a 48dp touch target.
         roomAvatarSlot.setOnClickListener(v -> {
             if (selectedRoom != null) showGroupInfo(selectedRoom);
         });
@@ -822,13 +972,13 @@ public final class OdooIdentityActivity extends Activity {
         chatPane.addView(chatTitleBar, new LinearLayout.LayoutParams(-1, -2));
         refreshHint = new TextView(this);
         refreshHint.setText(R.string.chat_v2_manual_refresh);
-        refreshHint.setTextColor(Ui.MUTED);
+        refreshHint.setTextColor(UiPalette.muted(this));
         refreshHint.setTextSize(11);
         Ui.pad(refreshHint, 10, 3);
         refreshHint.setVisibility(View.GONE);
         chatPane.addView(refreshHint, new LinearLayout.LayoutParams(-1, -2));
         chatNotice = new TextView(this);
-        chatNotice.setTextColor(Ui.GREEN);
+        chatNotice.setTextColor(UiPalette.accent(this));
         chatNotice.setTextSize(12);
         chatNotice.setGravity(Gravity.CENTER);
         chatNotice.setBackground(Ui.bg(Ui.ACTION_TONAL, 12, this));
@@ -838,7 +988,7 @@ public final class OdooIdentityActivity extends Activity {
         noticeSize.setMargins(dp(10), dp(3), dp(10), dp(3));
         chatPane.addView(chatNotice, noticeSize);
         roomListHeader = Ui.column(this);
-        roomListHeader.setBackgroundColor(Color.WHITE);
+        roomListHeader.setBackgroundColor(UiPalette.surface(this));
         LinearLayout roomHeadingRow = Ui.row(this);
         roomHeadingRow.setGravity(Gravity.CENTER_VERTICAL);
         TextView roomsHeading = Ui.text(this, getString(R.string.chat_v2_rooms), 20,
@@ -874,8 +1024,8 @@ public final class OdooIdentityActivity extends Activity {
         roomSearchInput.setHint(R.string.chat_v2_search_rooms);
         roomSearchInput.setTextSize(15);
         roomSearchInput.setSingleLine(true);
-        roomSearchInput.setTextColor(Ui.INK);
-        roomSearchInput.setHintTextColor(Ui.MUTED);
+        roomSearchInput.setTextColor(UiPalette.ink(this));
+        roomSearchInput.setHintTextColor(UiPalette.muted(this));
         roomSearchInput.setBackgroundColor(Color.TRANSPARENT);
         roomSearchInput.setPaddingRelative(dp(10), dp(8), dp(14), dp(8));
         roomSearchInput.addTextChangedListener(new TextWatcher() {
@@ -891,12 +1041,14 @@ public final class OdooIdentityActivity extends Activity {
         roomSearchSurface.setVisibility(View.GONE);
         roomListHeader.addView(roomSearchSurface, searchSurfaceSize);
         chatPane.addView(roomListHeader, new LinearLayout.LayoutParams(-1, -2));
-        roomScroll = new ScrollView(this);
-        roomScroll.setFillViewport(true);
-        roomScroll.setBackgroundColor(Color.WHITE);
-        roomItems = new LinearLayout(this);
-        roomItems.setOrientation(LinearLayout.VERTICAL);
-        roomScroll.addView(roomItems);
+        roomScroll = new FrameLayout(this);
+        roomScroll.setBackgroundColor(UiPalette.surface(this));
+        roomRecycler = new RecyclerView(this);
+        roomRecycler.setLayoutManager(new LinearLayoutManager(this));
+        roomRecycler.setItemAnimator(null); // Search is frequent; no delayed/ghost removed rows.
+        roomScroll.addView(roomRecycler, new FrameLayout.LayoutParams(-1, -1));
+        roomItems = new FrameLayout(this); // Empty-state overlay, never a second list of rows.
+        roomScroll.addView(roomItems, new FrameLayout.LayoutParams(-1, -1));
         chatPane.addView(roomScroll, new LinearLayout.LayoutParams(-1, 0, 1));
         olderButton = new Button(this);
         olderButton.setText(R.string.chat_v2_older);
@@ -925,7 +1077,33 @@ public final class OdooIdentityActivity extends Activity {
         Ui.pad(messageScroll, 12, 12);
         messageAdapter = new MessageTimelineAdapter();
         messageScroll.setAdapter(messageAdapter);
+        messageScroll.addOnLayoutChangeListener((view, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> {
+            int width = right - left;
+            if (width <= 0 || oldRight - oldLeft <= 0 || width == oldRight - oldLeft || selectedRoom == null) return;
+            final Room room = selectedRoom;
+            final TimelineWindowOwner owner = messageWindowOwner;
+            final long positionIntent = messagePositionIntentSerial;
+            final ScrollAnchor anchor = currentScrollAnchor();
+            messageScroll.post(() -> {
+                if (closed || selectedRoom != room || messageScroll.getWidth() != width
+                        || owner == null || !owner.current()
+                        || messagePositionIntentSerial != positionIntent) return;
+                // A window resize changes the usable width even when the server records did not change.
+                forceTimelineReset = true;
+                try { renderMessageWindow(room, new ArrayList<>(displayedMessages), anchor.atBottom, 0, anchor); }
+                catch (Exception invalid) { messageAdapter.notifyDataSetChanged(); }
+            });
+        });
         messageScroll.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            private int previousState = RecyclerView.SCROLL_STATE_IDLE;
+            @Override public void onScrollStateChanged(@NonNull RecyclerView list, int state) {
+                // DRAGGING -> SETTLING is one gesture, not a second navigation intent.
+                if (state == RecyclerView.SCROLL_STATE_DRAGGING
+                        || state == RecyclerView.SCROLL_STATE_SETTLING
+                        && previousState == RecyclerView.SCROLL_STATE_IDLE)
+                    beginTimelinePositionIntent();
+                previousState = state;
+            }
             @Override public void onScrolled(@NonNull RecyclerView list, int dx, int dy) {
                 updateOlderButtonAvailability();
                 pumpMediaThumbnails();
@@ -950,7 +1128,7 @@ public final class OdooIdentityActivity extends Activity {
         chatPane.addView(messageFrame, new LinearLayout.LayoutParams(-1, 0, 1));
         replyTray = Ui.row(this);
         Ui.pad(replyTray, 12, 4);
-        replyTray.setBackgroundColor(Color.WHITE);
+        replyTray.setBackgroundColor(UiPalette.surface(this));
         replyPreview = Ui.text(this, "", 14, Ui.INK, false);
         replyPreview.setMaxLines(2);
         replyPreview.setEllipsize(android.text.TextUtils.TruncateAt.END);
@@ -958,7 +1136,12 @@ public final class OdooIdentityActivity extends Activity {
         Button cancelReply = new Button(this);
         cancelReply.setText(R.string.chat_v2_cancel_reply);
         styleAction(cancelReply, false);
-        cancelReply.setOnClickListener(v -> clearSelectedReply());
+        cancelReply.setOnClickListener(v -> {
+            clearSelectedReply(); ++editorRevision;
+            if (draftActive && account != null && selectedRoom != null)
+                scheduleDraftSave(account, selectedRoom, messageInput.getText().toString());
+            updatePendingUi();
+        });
         replyTray.addView(cancelReply, new LinearLayout.LayoutParams(-2, dp(48)));
         replyTray.setVisibility(View.GONE);
         chatPane.addView(replyTray, new LinearLayout.LayoutParams(-1, -2));
@@ -969,7 +1152,7 @@ public final class OdooIdentityActivity extends Activity {
         chatPane.addView(recordingBadge, new LinearLayout.LayoutParams(-1, -2));
         composerRow = Ui.row(this);
         Ui.pad(composerRow, 8, 6);
-        composerRow.setBackgroundColor(Ui.CHAT_CANVAS);
+        composerRow.setBackgroundColor(UiPalette.canvas(this));
         LinearLayout composerSurface = Ui.row(this);
         composerSurface.setBackground(Ui.outline(Color.WHITE, Ui.LINE, 24, this));
         composerSurface.setMinimumHeight(dp(48));
@@ -978,7 +1161,7 @@ public final class OdooIdentityActivity extends Activity {
         messageInput.setMinLines(1);
         messageInput.setMaxLines(4);
         messageInput.setTextSize(16);
-        messageInput.setTextColor(Ui.INK);
+        messageInput.setTextColor(UiPalette.ink(this));
         messageInput.setBackgroundColor(Color.TRANSPARENT);
         messageInput.setMinHeight(dp(48));
         messageInput.setPaddingRelative(dp(16), dp(8), dp(5), dp(8));
@@ -988,6 +1171,7 @@ public final class OdooIdentityActivity extends Activity {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) { }
             @Override public void afterTextChanged(Editable value) {
+                if (!suppressDraftChanges) ++editorRevision;
                 Room room = selectedRoom;
                 if (suppressDraftChanges || !draftActive || room == null || account == null || outbox == null)
                     return;
@@ -1011,25 +1195,25 @@ public final class OdooIdentityActivity extends Activity {
         retryButton.setOnClickListener(v -> retryPending());
         pendingActionsRow = Ui.row(this);
         Ui.pad(pendingActionsRow, 8, 0);
-        pendingActionsRow.addView(retryButton, new LinearLayout.LayoutParams(dp(48), dp(48)));
+        pendingActionsRow.addView(retryButton, new LinearLayout.LayoutParams(-2, -2));
         mediaReviewButton = new Button(this);
         mediaReviewButton.setText(R.string.bchat_media_review_pending);
         styleAction(mediaReviewButton, false);
         mediaReviewButton.setVisibility(View.GONE);
         mediaReviewButton.setOnClickListener(v -> reviewConnectedMedia());
-        chatPane.addView(mediaReviewButton, new LinearLayout.LayoutParams(-1, dp(48)));
+        chatPane.addView(mediaReviewButton, new LinearLayout.LayoutParams(-1, -2));
         resolvePendingButton = new Button(this);
         resolvePendingButton.setText(R.string.chat_v2_review_pending);
         styleAction(resolvePendingButton, false);
         resolvePendingButton.setOnClickListener(v -> reviewPending(false));
-        pendingActionsRow.addView(resolvePendingButton, new LinearLayout.LayoutParams(0, dp(48), 1));
+        pendingActionsRow.addView(resolvePendingButton, new LinearLayout.LayoutParams(0, -2, 1));
         pendingActionsRow.setVisibility(View.GONE);
-        chatPane.addView(pendingActionsRow, new LinearLayout.LayoutParams(-1, dp(48)));
+        chatPane.addView(pendingActionsRow, new LinearLayout.LayoutParams(-1, -2));
         stalePendingButton = new Button(this);
         stalePendingButton.setText(R.string.chat_v2_review_old_pending);
         styleAction(stalePendingButton, false);
         stalePendingButton.setOnClickListener(v -> reviewPending(true));
-        chatPane.addView(stalePendingButton, new LinearLayout.LayoutParams(-1, dp(48)));
+        chatPane.addView(stalePendingButton, new LinearLayout.LayoutParams(-1, -2));
         sendButton = Ui.iconButton(this, "send", getString(R.string.chat_v2_send));
         Ui.styleIconAction(sendButton, Ui.IconTone.FILLED);
         sendButton.setOnClickListener(v -> sendText());
@@ -1076,7 +1260,7 @@ public final class OdooIdentityActivity extends Activity {
         orderMineButton = orderChoiceButton(R.string.order_mine, () -> showOrderMode(true));
         orderReceiptButton = orderChoiceButton(R.string.receipt_tab, this::showReceiptMode);
         LinearLayout orderSegments = Ui.row(this);
-        orderSegments.setBackgroundColor(Color.WHITE);
+        orderSegments.setBackgroundColor(UiPalette.surface(this));
         orderCatalogLine = addOrderTab(orderSegments, orderCatalogButton);
         orderMineLine = addOrderTab(orderSegments, orderMineButton);
         orderReceiptLine = addOrderTab(orderSegments, orderReceiptButton);
@@ -1123,7 +1307,7 @@ public final class OdooIdentityActivity extends Activity {
         orderScroll.setOnScrollChangeListener((v, x, y, oldX, oldY) ->
                 scheduleOrderImagePump());
         orderItems = Ui.column(this);
-        orderItems.setBackgroundColor(Color.WHITE);
+        orderItems.setBackgroundColor(UiPalette.surface(this));
         orderItems.addOnLayoutChangeListener((v, left, top, right, bottom,
                 oldLeft, oldTop, oldRight, oldBottom) -> scheduleOrderImagePump());
         orderScroll.addView(orderItems);
@@ -1188,7 +1372,7 @@ public final class OdooIdentityActivity extends Activity {
         LinearLayout taskTabs = Ui.row(this);
         Ui.pad(taskTabs, 8, 2);
         LinearLayout taskSegments = Ui.row(this);
-        taskSegments.setBackgroundColor(Color.WHITE);
+        taskSegments.setBackgroundColor(UiPalette.surface(this));
         taskAllButton = orderChoiceButton(R.string.task_tab_closed, () -> selectTaskState("cancelled"));
         taskOpenButton = orderChoiceButton(R.string.task_tab_open, () -> selectTaskState("open"));
         taskDoneButton = orderChoiceButton(R.string.task_tab_done, () -> selectTaskState("done"));
@@ -1214,7 +1398,7 @@ public final class OdooIdentityActivity extends Activity {
         ScrollView taskScroll = new ScrollView(this);
         taskScroll.setFillViewport(true);
         taskItems = Ui.column(this);
-        taskItems.setBackgroundColor(Color.WHITE);
+        taskItems.setBackgroundColor(UiPalette.surface(this));
         taskScroll.addView(taskItems);
         taskPane.addView(taskScroll, new LinearLayout.LayoutParams(-1, 0, 1));
         taskOlderButton = new Button(this);
@@ -1227,7 +1411,7 @@ public final class OdooIdentityActivity extends Activity {
         bottomTabs = Ui.row(this);
         Ui.pad(bottomTabs, 6, 0);
         bottomTabs.setTag("bchat-bottom-navigation");
-        bottomTabs.setBackgroundColor(Color.WHITE);
+        bottomTabs.setBackgroundColor(UiPalette.surface(this));
         chatRoot.addView(Ui.line(this));
         chatRoot.addView(bottomTabs, new LinearLayout.LayoutParams(-1, -2));
         layout.addView(chatRoot, new LinearLayout.LayoutParams(-1, 0, 1));
@@ -1313,11 +1497,141 @@ public final class OdooIdentityActivity extends Activity {
         if (permissionSet.taskView)
             entries.add(AnchoredMenu.Entry.action(getString(R.string.task_room_tasks), "clock",
                     () -> openTasks(room.id)));
+        if (historySearchSupported) {
+            entries.add(AnchoredMenu.Entry.action(getString(R.string.explore_search_title), "search",
+                    () -> showRoomExplore(room, false)));
+            if (mediaAllowed()) entries.add(AnchoredMenu.Entry.action(getString(R.string.explore_media_title), "attach",
+                    () -> showRoomExplore(room, true)));
+        }
         entries.add(AnchoredMenu.Entry.action(getString(R.string.chat_v2_refresh), "refresh",
                 this::refreshCurrentSection));
         roomActionMenu.show(anchor, getString(R.string.chat_v2_room_actions),
                 () -> verified && account == scopedAccount && selectedRoom == room
                         && chatTitleBar.isShown(), entries);
+    }
+
+    private void closeRoomExplore() {
+        ++roomExploreGeneration; ++messageJumpSerial;
+        BChatRoomExplorePanel previous = roomExplorePanel; roomExplorePanel = null;
+        if (previous != null) previous.dismiss();
+    }
+
+    private boolean exploreBindingCurrent(AccountScope expected, Room room, int session, int global,
+            long repository, long generation) {
+        return !closed && verified && !offlineHistory && liveForeground && account == expected
+                && expected != null && epoch == session && historyGlobalGeneration == global
+                && BChatStorageRepository.generation(expected) == repository
+                && roomExploreGeneration == generation && selectedRoom == room
+                && roomsVerifiedForSession && currentInfoRoom(room) == room && chatAllowed()
+                && v1Companies.contains(room.companyId);
+    }
+
+    private void showRoomExplore(Room room, boolean gallery) {
+        if (!historySearchSupported || room == null || selectedRoom != room || !chatAllowed()
+                || offlineHistory || gallery && !mediaAllowed()) return;
+        closeRoomExplore();
+        final AccountScope expected = account;
+        final int session = epoch, global = historyGlobalGeneration;
+        final long repository = BChatStorageRepository.generation(expected), generation = roomExploreGeneration;
+        roomExplorePanel = new BChatRoomExplorePanel(this, new BChatRoomExplorePanel.Host() {
+            private boolean current() { return exploreBindingCurrent(expected, room, session, global, repository, generation); }
+            @Override public AccountScope account() { return current() ? expected : null; }
+            @Override public boolean current(AccountScope candidate, long id, long member, long version) {
+                return candidate == expected && id == room.id && member == room.membershipId
+                        && version == generation && current();
+            }
+            @Override public boolean supported() { return current() && historySearchSupported; }
+            @Override public boolean mediaAllowed() { return current() && OdooIdentityActivity.this.mediaAllowed(); }
+            @Override public boolean read(RoomExploreProtocol.Query query, BChatRoomExplorePanel.Reply reply) {
+                if (!current() || !historySearchSupported || query == null || reply == null
+                        || query.roomId != room.id || query.membershipId != room.membershipId
+                        || (query.gallery || query.kind != RoomExploreProtocol.Kind.ALL
+                            && query.kind != RoomExploreProtocol.Kind.TEXT) && !mediaAllowed()) return false;
+                V2Callback callback = (status, body) -> { if (current()) reply.complete(status, body); };
+                if (query.gallery) return fetchV2ReadDirectlyInWebView(query.path(), callback);
+                return postSmallFormDirectlyInWebView(query.path(), "payload", query.payload().toString(), callback);
+            }
+            @Override public void openMessage(long id) {
+                if (!current()) return;
+                closeRoomExplore(); jumpToCanonicalMessage(room, id);
+            }
+            @Override public String timeLabel(String stamp) { return formatMessageTime(stamp); }
+        }, expected, room.id, room.membershipId, generation, gallery);
+        roomExplorePanel.show();
+    }
+
+    /** Neither a quoted/search snippet nor a notification is canonical message authority. */
+    private void jumpToCanonicalMessage(Room room, long target) {
+        if (closed || room == null || room != selectedRoom || account == null
+                || target <= 0 || target > OutboxPolicy.MAX_RECORD_ID || !liveForeground) return;
+        // A second jump, including an already displayed target, supersedes a pending one.
+        closeRoomExplore();
+        final long positionIntent = beginTimelinePositionIntent();
+        final long request = ++messageJumpSerial, generation = roomExploreGeneration;
+        final AccountScope expected = account;
+        final int session = epoch, global = historyGlobalGeneration;
+        final long repository = BChatStorageRepository.generation(expected);
+        int present = messagePosition(target);
+        boolean currentWindow = offlineHistory ? currentInfoRoom(room) == room
+                : exploreBindingCurrent(expected, room, session, global, repository, generation);
+        if (present >= 0 && currentWindow) {
+            // Existing epoch-bound canonical/cache rows can be scrolled without another read.
+            // This action is not an ACK. Actual layout+viewport and durable pin gates still own it.
+            final long appliedIntent = beginTimelinePositionIntent();
+            messageLayout.scrollToPositionWithOffset(present, dp(32));
+            messageScroll.postOnAnimation(() -> {
+                if (messageJumpSerial == request && messagePosition(target) >= 0
+                        && messagePositionIntentSerial == appliedIntent
+                        && exploreBindingCurrent(expected, room, session, global, repository, generation))
+                    scanVisibleMessageReceipts();
+            });
+            return;
+        }
+        if (!exploreBindingCurrent(expected, room, session, global, repository, generation)
+                || !receiptDeliverySupported) {
+            chatNotice.setText(R.string.explore_unavailable); return;
+        }
+        if (v2Busy || webV2GetFallbackBusy) { chatNotice.setText(R.string.explore_unconfirmed); return; }
+        chatNotice.setText(R.string.chat_v2_loading);
+        fetchV2("GET", V2_ROOMS + "/" + room.id + "/messages/" + target, null, (status, body) -> {
+            if (messageJumpSerial != request || messagePositionIntentSerial != positionIntent
+                    || !exploreBindingCurrent(expected, room, session, global, repository, generation)) return;
+            try {
+                if (status != 200 || body == null || positiveId(body.get("api_version")) != 2) throw new IllegalArgumentException();
+                requireReceiptEpoch(body, room);
+                List<JSONObject> canonical = validateMessageList(new JSONArray().put(body.getJSONObject("message")), 0);
+                if (positiveId(canonical.get(0).get("id")) != target) throw new IllegalArgumentException();
+                long before = target == OutboxPolicy.MAX_RECORD_ID ? 0 : target + 1;
+                fetchV2("GET", V2_ROOMS + "/" + room.id + "/messages"
+                        + (before == 0 ? "" : "?before_id=" + before), null, (pageStatus, response) -> {
+                    if (messageJumpSerial != request || messagePositionIntentSerial != positionIntent
+                            || !exploreBindingCurrent(expected, room, session, global, repository, generation)) return;
+                    try {
+                        if (pageStatus != 200 || response == null || positiveId(response.get("api_version")) != 2) throw new IllegalArgumentException();
+                        requireReceiptEpoch(response, room);
+                        List<JSONObject> window = validateMessageList(response.getJSONArray("messages"), before);
+                        boolean found = false;
+                        for (JSONObject item : window) if (positiveId(item.get("id")) == target) found = true;
+                        if (!response.has("next_before_id")) throw new IllegalArgumentException();
+                        Object rawCursor = response.opt("next_before_id");
+                        long cursor = rawCursor == null || rawCursor == JSONObject.NULL ? 0 : positiveId(rawCursor);
+                        if (!found || cursor > 0 && (window.isEmpty() || cursor != positiveId(window.get(0).get("id")))) throw new IllegalArgumentException();
+                        // Only now commit the visible historical window. Never inject the single
+                        // GET/search row or synthesize a cursor when the history page omitted it.
+                        ScrollAnchor anchor = currentScrollAnchor();
+                        if (!admitMessageTimelineOwner(room)) return;
+                        // Also invalidate send origins captured while this explicit jump waited.
+                        beginTimelinePositionIntent();
+                        persistReceiptCanonical(expected, room, window);
+                        nextBeforeId = cursor; historicalWindow = true;
+                        scrollAfterOwnSend = false; olderPageLoading = olderPageFailed = false;
+                        renderMessageWindow(room, window, false, target, anchor);
+                        newerControl.setVisibility(View.VISIBLE); updateOlderControl();
+                        chatNotice.setText("");
+                    } catch (Exception unavailable) { chatNotice.setText(R.string.explore_unavailable); }
+                });
+            } catch (Exception unavailable) { chatNotice.setText(R.string.explore_unavailable); }
+        });
     }
 
     private void chooseGroupCompany() {
@@ -1329,15 +1643,18 @@ public final class OdooIdentityActivity extends Activity {
         String pending = getSharedPreferences(GROUP_CREATE_PREFS, MODE_PRIVATE)
                 .getString(account.key, null);
         if (pending != null) {
+            final AccountScope scoped = account;
             Ui.decorateDialog(new AlertDialog.Builder(this)
                     .setTitle(R.string.bchat_group_unconfirmed_title)
                     .setMessage(R.string.bchat_group_unconfirmed_explain)
                     .setPositiveButton(R.string.bchat_group_retry, (dialog, which) ->
                             submitGroupCreate(pending))
                     .setNeutralButton(R.string.bchat_group_discard, (dialog, which) -> {
-                        getSharedPreferences(GROUP_CREATE_PREFS, MODE_PRIVATE).edit()
-                                .remove(account.key).commit();
-                        chooseGroupCompany();
+                        persistIntent(scoped, "group", getSharedPreferences(GROUP_CREATE_PREFS,
+                                MODE_PRIVATE), pending, null, (saved, error) -> {
+                            if (error == null && Boolean.TRUE.equals(saved)) chooseGroupCompany();
+                            else chatNotice.setText(R.string.chat_v2_save_failed);
+                        });
                     }).setNegativeButton(R.string.chat_v2_cancel, null).show());
             return;
         }
@@ -1439,8 +1756,13 @@ public final class OdooIdentityActivity extends Activity {
                         if (!details.isEmpty()) payload.put("description", details);
                         payload.put("member_user_ids", ids);
                     } catch (Exception invalid) { return; }
-                    dialog.dismiss();
-                    submitGroupCreate(payload.toString());
+                    submitGroupCreate(payload.toString(), () -> {
+                        JSONArray currentIds = new JSONArray();
+                        for (TaskChoice member : selected) currentIds.put(member.id);
+                        if (groupCreateDialog == dialog && title.equals(name.getText().toString().trim())
+                                && details.equals(description.getText().toString().trim())
+                                && ids.toString().equals(currentIds.toString())) dialog.dismiss();
+                    });
                 }));
         dialog.show();
         Ui.decorateDialog(dialog);
@@ -1456,6 +1778,54 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     private View roomAvatarView(Room room) {
+        return roomAvatarView(room, () -> true);
+    }
+
+    private static final class GroupAvatarRequest {
+        final AccountScope scope;
+        final int session, global, version;
+        final long room, membership;
+        final String key;
+        GroupAvatarRequest(AccountScope scope,int session,int global,Room room) {
+            this.scope=scope;this.session=session;this.global=global;this.room=room.id;
+            membership=room.membershipId;version=room.avatarVersion;
+            key=scope.key+":"+this.room+":"+membership+":"+version;
+        }
+    }
+
+    private Room currentGroupAvatar(GroupAvatarRequest request) {
+        if(request==null || closed || !verified || offlineHistory || account!=request.scope
+                || epoch!=request.session || historyGlobalGeneration!=request.global
+                || !roomsVerifiedForSession || permissionAccount!=account || !permissionSet.chatView)return null;
+        for(Room room:rooms)if(room.id==request.room && room.membershipId==request.membership
+                && room.isGroup && room.avatarVersion==request.version && v1Companies.contains(room.companyId))return room;
+        return null;
+    }
+
+    private final class GroupAvatarTarget {
+        final GroupAvatarRequest request;
+        final ImageView image;
+        final java.util.function.BooleanSupplier bindingCurrent;
+        boolean released;
+        GroupAvatarTarget(GroupAvatarRequest request,ImageView image,java.util.function.BooleanSupplier current) {
+            this.request=request;this.image=image;bindingCurrent=current;image.setTag(this);
+        }
+        boolean current() { return !released && image.getTag()==this && bindingCurrent.getAsBoolean() && currentGroupAvatar(request)!=null; }
+        void release() {
+            if(released)return;released=true;image.setImageDrawable(null);image.setVisibility(View.GONE);
+            List<GroupAvatarTarget> waiting=groupAvatarWaiting.get(request.key);
+            if(waiting!=null){waiting.remove(this);if(waiting.isEmpty()) {
+                groupAvatarWaiting.remove(request.key);
+                groupAvatarQueue.removeIf(queued -> queued.key.equals(request.key));
+            }}
+        }
+    }
+
+    private void releaseGroupAvatarView(View view) {
+        if(view.getTag() instanceof GroupAvatarTarget)((GroupAvatarTarget)view.getTag()).release();
+    }
+
+    private View roomAvatarView(Room room, java.util.function.BooleanSupplier bindingCurrent) {
         FrameLayout holder = new FrameLayout(this);
         holder.addView(new Ui.Avatar(this, room.name, "group",
                 (int) ((room.id * 47) % 360)), new FrameLayout.LayoutParams(-1, -1));
@@ -1465,26 +1835,34 @@ public final class OdooIdentityActivity extends Activity {
         image.setScaleType(ImageView.ScaleType.CENTER_CROP);
         GradientDrawable circle = new GradientDrawable();
         circle.setShape(GradientDrawable.OVAL);
-        circle.setColor(Ui.LIGHT);
+        circle.setColor(UiPalette.background(this, Ui.LIGHT));
         image.setBackground(circle);
         image.setClipToOutline(true);
         image.setVisibility(View.GONE);
         holder.addView(image, new FrameLayout.LayoutParams(-1, -1));
-        String key = account.key + ":" + room.id + ":" + room.avatarVersion;
+        GroupAvatarRequest request=new GroupAvatarRequest(account,epoch,historyGlobalGeneration,room);
+        GroupAvatarTarget target=new GroupAvatarTarget(request,image,bindingCurrent);
+        holder.setTag(target);
+        holder.addOnAttachStateChangeListener(new View.OnAttachStateChangeListener() {
+            public void onViewAttachedToWindow(View view) { if(!target.current())target.release(); }
+            public void onViewDetachedFromWindow(View view) { target.release(); }
+        });
+        if(!target.current()){target.release();return holder;}
+        String key = request.key;
         Bitmap cached = groupAvatarCache.get(key);
         if (cached != null) {
             image.setImageBitmap(cached);
             image.setVisibility(View.VISIBLE);
         }
         else {
-            List<ImageView> waiting = groupAvatarWaiting.get(key);
+            List<GroupAvatarTarget> waiting = groupAvatarWaiting.get(key);
             if (waiting == null) {
                 waiting = new ArrayList<>();
                 groupAvatarWaiting.put(key, waiting);
-                groupAvatarQueue.add(room);
+                groupAvatarQueue.add(request);
                 handler.post(this::pumpGroupAvatars);
             }
-            waiting.add(image);
+            waiting.add(target);
         }
         return holder;
     }
@@ -1493,13 +1871,21 @@ public final class OdooIdentityActivity extends Activity {
         if (groupAvatarBusy || groupAvatarQueue.isEmpty() || !verified || account == null
                 || web == null || web.getUrl() == null || !isBridgeUrl(Uri.parse(web.getUrl())))
             return;
-        Room room = groupAvatarQueue.removeFirst();
-        AccountScope scoped = account;
-        int version = room.avatarVersion;
-        String key = scoped.key + ":" + room.id + ":" + version;
+        GroupAvatarRequest item = groupAvatarQueue.removeFirst();
+        AccountScope scoped = item.scope;
+        int version = item.version;
+        String key = item.key;
         if (!groupAvatarWaiting.containsKey(key)) { handler.post(this::pumpGroupAvatars); return; }
+        List<GroupAvatarTarget> admitted=groupAvatarWaiting.get(key);
+        for(GroupAvatarTarget target:new ArrayList<>(admitted))if(!target.current())target.release();
+        if(currentGroupAvatar(item)==null || !groupAvatarWaiting.containsKey(key)) {
+            List<GroupAvatarTarget> stale=groupAvatarWaiting.remove(key);
+            if(stale!=null)for(GroupAvatarTarget target:new ArrayList<>(stale))target.release();
+            handler.post(this::pumpGroupAvatars);return;
+        }
         groupAvatarBusy = true;
-        String path = V2_ROOMS + "/" + room.id + "/avatar?version=" + version;
+        groupAvatarActive = item;
+        String path = V2_ROOMS + "/" + item.room + "/avatar?version=" + version;
         String url = ORIGIN + path;
         int currentWeb = webEpoch;
         int currentPage = pageEpoch;
@@ -1510,7 +1896,8 @@ public final class OdooIdentityActivity extends Activity {
             @Override public void onMessage(WebMessagePort port, WebMessage message) {
                 if (request != groupAvatarNonce || port != groupAvatarPort
                         || !verified || account != scoped || currentWeb != webEpoch
-                        || currentPage != pageEpoch || room.avatarVersion != version) return;
+                        || currentPage != pageEpoch) return;
+                if(currentGroupAvatar(item)==null){finishGroupAvatar(key,null,request);return;}
                 String encoded = null;
                 try {
                     String data = message.getData();
@@ -1555,7 +1942,8 @@ public final class OdooIdentityActivity extends Activity {
                 + "window.addEventListener('message',h);})();";
         web.evaluateJavascript(script, ignored -> {
             if (request == groupAvatarNonce && web != null && currentWeb == webEpoch
-                    && currentPage == pageEpoch && groupAvatarPort == channel[0])
+                    && currentPage == pageEpoch && groupAvatarPort == channel[0]
+                    && currentGroupAvatar(item)!=null && groupAvatarWaiting.containsKey(key))
                 web.postWebMessage(new WebMessage("group-avatar",
                         new WebMessagePort[]{channel[1]}), Uri.parse(ORIGIN));
         });
@@ -1569,15 +1957,18 @@ public final class OdooIdentityActivity extends Activity {
         if (request != groupAvatarNonce) return;
         ++groupAvatarNonce;
         if (groupAvatarPort != null) { groupAvatarPort.close(); groupAvatarPort = null; }
-        List<ImageView> waiting = groupAvatarWaiting.remove(key);
-        if (bitmap != null && waiting != null && verified && account != null
-                && key.startsWith(account.key + ":")) {
-            groupAvatarCache.put(key, bitmap);
-            for (ImageView target : waiting) {
-                target.setImageBitmap(bitmap);
-                target.setVisibility(View.VISIBLE);
+        List<GroupAvatarTarget> waiting = groupAvatarWaiting.remove(key);
+        if (bitmap != null && waiting != null && groupAvatarActive!=null
+                && key.equals(groupAvatarActive.key) && currentGroupAvatar(groupAvatarActive)!=null) {
+            boolean published=false;
+            for (GroupAvatarTarget target : waiting) {
+                if(!target.current()){target.release();continue;}
+                target.image.setImageBitmap(bitmap);
+                target.image.setVisibility(View.VISIBLE);published=true;
             }
+            if(published)groupAvatarCache.put(key,bitmap);
         }
+        groupAvatarActive=null;
         groupAvatarBusy = false;
         handler.post(this::pumpGroupAvatars);
     }
@@ -1592,7 +1983,7 @@ public final class OdooIdentityActivity extends Activity {
         image.setScaleType(ImageView.ScaleType.CENTER_CROP);
         GradientDrawable circle = new GradientDrawable();
         circle.setShape(GradientDrawable.OVAL);
-        circle.setColor(Ui.LIGHT);
+        circle.setColor(UiPalette.background(this, Ui.LIGHT));
         image.setBackground(circle);
         image.setClipToOutline(true);
         image.setVisibility(View.GONE);
@@ -1769,13 +2160,29 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     private void submitGroupCreate(String raw) {
-        if (!permissionSet.groupCreate || !verified || account == null || v2Busy) return;
+        submitGroupCreate(raw, () -> { });
+    }
+
+    private void submitGroupCreate(String raw, Runnable persisted) {
+        if (!permissionSet.groupCreate || !verified || account == null || v2Busy
+                || intentBusy(account, "group")) return;
         final AccountScope scoped = account;
-        if (!getSharedPreferences(GROUP_CREATE_PREFS, MODE_PRIVATE).edit()
-                .putString(scoped.key, raw).commit()) {
-            chatNotice.setText(R.string.chat_v2_save_failed);
-            return;
-        }
+        final SharedPreferences store = getSharedPreferences(GROUP_CREATE_PREFS, MODE_PRIVATE);
+        final String section = visibleSection;
+        final Room room = selectedRoom;
+        final String expected = store.getString(scoped.key, null);
+        if (expected != null && !expected.equals(raw)) return;
+        final long companyId;
+        try { companyId = positiveId(new JSONObject(raw).get("company_id")); }
+        catch (Exception invalid) { chatNotice.setText(R.string.bchat_group_failed); return; }
+        persistIntent(scoped, "group", store, expected, raw, (saved, error) -> {
+            if (error != null || !Boolean.TRUE.equals(saved)) {
+                chatNotice.setText(R.string.chat_v2_save_failed); return;
+            }
+            persisted.run();
+            if (!permissionSet.groupCreate || !v1Companies.contains(companyId) || v2Busy
+                    || !section.equals(visibleSection) || room != selectedRoom
+                    || !raw.equals(store.getString(scoped.key, null))) return;
         fetchV2("POST", V2_ROOMS, raw, (status, result) -> {
             if (handleGroupRouteFailure(status, true)) return;
             if (!verified || account != scoped) return;
@@ -1783,16 +2190,19 @@ public final class OdooIdentityActivity extends Activity {
                 if (status != 200 || result == null || result.getInt("api_version") != 2
                         || positiveId(result.get("room_id")) <= 0)
                     throw new IllegalArgumentException();
-                getSharedPreferences(GROUP_CREATE_PREFS, MODE_PRIVATE).edit()
-                        .remove(scoped.key).commit();
-                loadRooms();
+                persistIntent(scoped, "group", store, raw, null, (removed, failure) -> {
+                    if (failure == null && Boolean.TRUE.equals(removed)) loadRooms();
+                    else chatNotice.setText(R.string.chat_v2_save_failed);
+                });
             } catch (Exception invalid) {
-                if (status >= 400 && status < 500)
-                    getSharedPreferences(GROUP_CREATE_PREFS, MODE_PRIVATE).edit()
-                            .remove(scoped.key).commit();
-                chatNotice.setText(status == 0 ? R.string.bchat_group_unconfirmed_title
+                if (status >= 400 && status < 500) {
+                    persistIntent(scoped, "group", store, raw, null, (removed, failure) ->
+                            chatNotice.setText(failure == null && Boolean.TRUE.equals(removed)
+                                    ? R.string.bchat_group_failed : R.string.chat_v2_save_failed));
+                } else chatNotice.setText(status == 0 ? R.string.bchat_group_unconfirmed_title
                         : R.string.bchat_group_failed);
             }
+        });
         });
     }
 
@@ -1874,7 +2284,7 @@ public final class OdooIdentityActivity extends Activity {
         ScrollView scroll = new ScrollView(this);
         scroll.setFillViewport(true);
         LinearLayout content = Ui.column(this);
-        content.setBackgroundColor(Ui.LIGHT);
+        content.setBackgroundColor(UiPalette.background(this, Ui.LIGHT));
         Ui.pad(content, 12, 18);
         scroll.addView(content);
         FrameLayout avatar = (FrameLayout) roomAvatarView(room);
@@ -1921,7 +2331,7 @@ public final class OdooIdentityActivity extends Activity {
             LinearLayout memberRow = Ui.row(this);
             memberRow.setBackground(Ui.bg(Ui.SURFACE, 12, this));
             Ui.pad(memberRow, 12, 6);
-            TextView initial = Ui.text(this, memberName.substring(0, 1), 18, Ui.GREEN, true);
+            TextView initial = Ui.text(this, AvatarInitials.of(memberName), 18, Ui.GREEN, true);
             initial.setGravity(Gravity.CENTER);
             initial.setBackground(Ui.bg(Ui.ACTION_TONAL, 24, this));
             memberRow.addView(initial, new LinearLayout.LayoutParams(dp(40), dp(40)));
@@ -2321,7 +2731,99 @@ public final class OdooIdentityActivity extends Activity {
         entries.add(AnchoredMenu.Entry.action(getString(R.string.bchat_notifications), "bell",
                 this::showNotificationSettings));
         entries.add(AnchoredMenu.Entry.action(getString(R.string.language_title), "language", this::showLanguageSettings));
+        entries.add(AnchoredMenu.Entry.action(getString(R.string.appearance_title), "settings", this::showAppearanceSettings));
+        entries.add(AnchoredMenu.Entry.action(getString(R.string.storage_health_title), "info", this::showStorageHealth));
         accountMenu.replace(getString(R.string.bchat_settings), entries);
+    }
+
+    private void showStorageHealth() {
+        if (account == null || mediaStore == null) return;
+        final AccountScope scope = account;
+        final BChatConnectedMediaStore store = mediaStore;
+        local(scope, () -> store.diagnostics(scope), (health, error) -> {
+            if (error != null || health == null) {
+                new AlertDialog.Builder(this).setTitle(R.string.storage_health_title)
+                        .setMessage(R.string.chat_v2_save_failed).setPositiveButton(R.string.task_close, null).show();
+                return;
+            }
+            LinearLayout content = Ui.column(this);
+            Ui.pad(content, 20, 12);
+            content.addView(Ui.text(this, getString(R.string.storage_health_summary,
+                    String.valueOf(health.requestCount), asciiDigits(android.text.format.Formatter
+                            .formatShortFileSize(this, health.usedBytes))), 14, Ui.MUTED, false));
+            if (health.totalProblemCount == 0)
+                content.addView(Ui.text(this, getString(R.string.storage_health_clear), 15, Ui.INK, false));
+            for (BChatConnectedMediaStore.Problem problem : health.problems) {
+                int label;
+                switch (problem.code) {
+                    case "metadata_invalid": label = R.string.storage_health_metadata_invalid; break;
+                    case "metadata_oversized": label = R.string.storage_health_metadata_oversized; break;
+                    case "media_missing": label = R.string.storage_health_media_missing; break;
+                    case "media_size_mismatch": label = R.string.storage_health_media_size_mismatch; break;
+                    case "orphan_media": label = R.string.storage_health_orphan_media; break;
+                    case "staging_incomplete": label = R.string.storage_health_staging_incomplete; break;
+                    default: label = R.string.storage_health_metadata_unavailable;
+                }
+                TextView row = Ui.text(this, getString(R.string.storage_health_problem,
+                        BidiFormatter.getInstance(AppLocale.rtl(this)).unicodeWrap(problem.uploadUuid),
+                        getString(label) + " (" + problem.code + ")"), 14, Ui.INK, false);
+                row.setTextIsSelectable(true);
+                Ui.pad(row, 0, 10);
+                content.addView(row);
+            }
+            if (health.truncated) content.addView(Ui.text(this, getString(R.string.storage_health_more,
+                    String.valueOf(health.problems.size())), 13, Ui.MUTED, false));
+            ScrollView scroll = new ScrollView(this); scroll.addView(content);
+            new AlertDialog.Builder(this).setTitle(R.string.storage_health_title).setView(scroll)
+                    .setPositiveButton(R.string.task_close, null).show();
+        });
+    }
+
+    private void showAppearanceSettings() {
+        if (account == null) return;
+        String current = ChatAppearance.theme(this);
+        String[] themes = {"system", "light", "dark"};
+        int selectedTheme = "dark".equals(current) ? 2 : "light".equals(current) ? 1 : 0;
+        new AlertDialog.Builder(this).setTitle(R.string.appearance_title)
+                .setSingleChoiceItems(new String[]{getString(R.string.appearance_system),
+                        getString(R.string.appearance_light), getString(R.string.appearance_dark)}, selectedTheme,
+                        (dialog, which) -> {
+                            dialog.dismiss();
+                            if (!themes[which].equals(ChatAppearance.theme(this)))
+                                changeAppearance(() -> ChatAppearance.setTheme(this, themes[which]));
+                        })
+                .setNeutralButton(R.string.appearance_text_size, (dialog, which) -> showChatTextSize())
+                .setNegativeButton(R.string.chat_v2_cancel, null).show();
+    }
+
+    private void showChatTextSize() {
+        int size = ChatAppearance.bodySp(this);
+        int[] sizes = {14, 16, 18};
+        new AlertDialog.Builder(this).setTitle(R.string.appearance_text_size)
+                .setSingleChoiceItems(new String[]{getString(R.string.appearance_small) + " (14)",
+                        getString(R.string.appearance_normal) + " (16)", getString(R.string.appearance_large) + " (18)"},
+                        size == 14 ? 0 : size == 18 ? 2 : 1, (dialog, which) -> {
+                            dialog.dismiss();
+                            if (sizes[which] != ChatAppearance.bodySp(this))
+                                changeAppearance(() -> ChatAppearance.setBodySp(this, sizes[which]));
+                        }).setNegativeButton(R.string.chat_v2_cancel, null).show();
+    }
+
+    private void changeAppearance(Runnable change) {
+        if (account == null) return;
+        final AccountScope scope = account;
+        final int failures = storageWriteFailureSerial;
+        flushDraftSave();
+        saveLocalContext();
+        // A barrier after the actual durable draft/context writes, not a UI wait or a fake apply ACK.
+        local(scope, () -> true, (ready, error) -> {
+            if (error != null || failures != storageWriteFailureSerial) {
+                chatNotice.setText(R.string.chat_v2_save_failed); return;
+            }
+            change.run();
+            recreateForLanguage = true; // Preserve only the re-auth route, never a cached authorization.
+            recreate();
+        });
     }
 
     /** Android permission and the BChat channel are separate, user-controlled delivery settings. */
@@ -2332,69 +2834,76 @@ public final class OdooIdentityActivity extends Activity {
                     .setPositiveButton(R.string.task_close, null).show();
             return;
         }
-        boolean permissionGranted = Build.VERSION.SDK_INT < 33
-                || checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
-                == PackageManager.PERMISSION_GRANTED;
-        NotificationManager notifications = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-        ensureBChatNotificationChannel(notifications);
-        boolean enabled = notifications != null && notifications.areNotificationsEnabled();
-        boolean channelMuted = false;
-        if (Build.VERSION.SDK_INT >= 26 && notifications != null) {
-            NotificationChannel channel = notifications.getNotificationChannel("bchat-events-v3");
-            // Android preserves a user's per-channel sound choice.  Treat a quiet
-            // channel as unavailable too, otherwise the status screen would claim
-            // that delivery has sound even after the user muted it.
-            channelMuted = channel != null && (channel.getImportance() < NotificationManager.IMPORTANCE_DEFAULT
-                    || channel.getSound() == null);
-        }
-        boolean linked = account != null && !BChatPushState.needsRegistration(this, account);
-        final boolean openChannelSettings = permissionGranted && enabled && channelMuted;
-        int action = !permissionGranted && !preferences().getBoolean(PUSH_PERMISSION_ASKED, false)
-                ? R.string.bchat_notifications_enable : R.string.bchat_notifications_manage;
-        AlertDialog dialog = new AlertDialog.Builder(this).setTitle(R.string.bchat_notifications)
-                .setMessage(notificationStatusMessage(permissionGranted, enabled, channelMuted, linked))
-                .setNegativeButton(R.string.task_close, null)
-                .setPositiveButton(action, null).create();
-        dialog.setOnShowListener(ignored -> dialog.getButton(AlertDialog.BUTTON_POSITIVE)
-                .setOnClickListener(v -> {
-                    if (!permissionGranted && !preferences().getBoolean(PUSH_PERMISSION_ASKED, false)
-                            && Build.VERSION.SDK_INT >= 33) {
-                        preferences().edit().putBoolean(PUSH_PERMISSION_ASKED, true).apply();
-                        requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},
-                                PUSH_PERMISSION_REQUEST);
-                    } else openNotificationSettings(openChannelSettings);
-                    dialog.dismiss();
-                }));
-        dialog.show();
-        maybeRegisterPush();
-        refreshNotificationStatus(dialog, permissionGranted, enabled, channelMuted);
+        final AccountScope scope=account;final int session=epoch;
+        if(!notificationScopeCurrent(scope,session))return;
+        ensureBChatNotificationChannel((NotificationManager)getSystemService(NOTIFICATION_SERVICE));
+        if(notificationSettingsPanel!=null)notificationSettingsPanel.dismiss();
+        notificationSettingsPanel=new BChatNotificationSettingsPanel(this,new BChatNotificationSettingsPanel.Host(){
+            @Override public AccountScope account(){return notificationScopeCurrent(scope,session)?scope:null;}
+            @Override public boolean current(AccountScope candidate){
+                return candidate==scope&&notificationScopeCurrent(scope,session);
+            }
+            private boolean install(String value){
+                try{return value!=null&&UUID.fromString(value).toString().equals(value)
+                        &&value.equals(BChatPushState.installationId(OdooIdentityActivity.this));}
+                catch(IllegalArgumentException invalid){return false;}
+            }
+            private boolean read(String path,BChatNotificationSettingsPanel.Reply reply){
+                return notificationScopeCurrent(scope,session)&&reply!=null
+                        &&fetchV2ReadDirectlyInWebView(path,(status,result)->{
+                            if(notificationScopeCurrent(scope,session))reply.complete(status,result);
+                        });
+            }
+            private boolean write(String path,JSONObject payload,BChatNotificationSettingsPanel.Reply reply){
+                return notificationScopeCurrent(scope,session)&&payload!=null&&reply!=null
+                        &&install(payload.optString("installation_id",null))
+                        &&postSmallFormDirectlyInWebView(path,"payload",payload.toString(),(status,result)->{
+                            if(notificationScopeCurrent(scope,session))reply.complete(status,result);
+                        });
+            }
+            @Override public boolean bootstrap(BChatNotificationSettingsPanel.Reply reply){return read(V2_BOOTSTRAP,reply);}
+            @Override public boolean preferences(String installation,BChatNotificationSettingsPanel.Reply reply){
+                return install(installation)&&read("/bchat/api/v2/notifications/preferences?installation_id="+installation,reply);
+            }
+            @Override public boolean setPreferences(JSONObject payload,BChatNotificationSettingsPanel.Reply reply){
+                return write("/bchat/api/v2/notifications/preferences",payload,reply);
+            }
+            @Override public boolean test(JSONObject payload,BChatNotificationSettingsPanel.Reply reply){
+                return write("/bchat/api/v2/notifications/test",payload,reply);
+            }
+            @Override public boolean testStatus(long event,String installation,BChatNotificationSettingsPanel.Reply reply){
+                return event>0&&event<=OutboxPolicy.MAX_RECORD_ID&&install(installation)
+                        &&read("/bchat/api/v2/notifications/test/"+event+"?installation_id="+installation,reply);
+            }
+            @Override public void registerPush(){if(notificationScopeCurrent(scope,session))maybeRegisterPush();}
+            @Override public void requestPermission(){
+                if(notificationScopeCurrent(scope,session)&&Build.VERSION.SDK_INT>=33
+                        &&checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED){
+                    OdooIdentityActivity.this.preferences().edit().putBoolean(PUSH_PERMISSION_ASKED,true).apply();
+                    requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},PUSH_PERMISSION_REQUEST);
+                }
+            }
+            @Override public void openSystemSettings(boolean channel){
+                if(notificationScopeCurrent(scope,session))openNotificationSettings(channel);
+            }
+        });
+        notificationSettingsPanel.show();
     }
 
-    private String notificationStatusMessage(boolean permissionGranted, boolean enabled,
-                                             boolean channelMuted, boolean linked) {
-        int state = !permissionGranted || !enabled || channelMuted
-                ? R.string.bchat_notifications_off
-                : linked ? R.string.bchat_notifications_on : R.string.bchat_notifications_linking;
-        String message = getString(state, linked ? getString(R.string.bchat_device_linked)
-                : getString(R.string.bchat_device_linking));
-        return BuildConfig.BCHAT_PUSH_REGISTRATION_DIAGNOSTICS
-                ? message + "\nQA push: " + pushRegistrationDiagnostic : message;
+    private boolean notificationScopeCurrent(AccountScope scope,int session){
+        return !closed&&verified&&!offlineHistory&&session==epoch&&scope!=null&&account==scope
+                &&account.key.equals(scope.key)&&(chatAllowed()||permissionSet.taskView);
     }
 
-    /** Refresh only local state while the dialog is open; this never issues another registration. */
-    private void refreshNotificationStatus(AlertDialog dialog, boolean permissionGranted,
-                                           boolean enabled, boolean channelMuted) {
-        if (dialog == null || !dialog.isShowing()) return;
-        boolean linked = account != null && !BChatPushState.needsRegistration(this, account);
-        dialog.setMessage(notificationStatusMessage(permissionGranted, enabled, channelMuted, linked));
-        if (!linked && permissionGranted && enabled && !channelMuted) {
-            handler.postDelayed(() -> refreshNotificationStatus(dialog, permissionGranted, enabled,
-                    channelMuted), 300);
-        }
+    private boolean notificationPresentationOwned(AccountScope scope) {
+        return scope != null && scope == account && !closed && verified && !offlineHistory
+                && (receiptStorageGeneration == historyGlobalGeneration
+                || receiptNeedsRoomRebind && receiptRebindGeneration == historyGlobalGeneration);
     }
 
     private void ensureBChatNotificationChannel(NotificationManager notifications) {
         if (Build.VERSION.SDK_INT < 26 || notifications == null) return;
+        if (notifications.getNotificationChannel("bchat-events-v3") != null) return;
         NotificationChannel channel = new NotificationChannel("bchat-events-v3", "BChat",
                 NotificationManager.IMPORTANCE_HIGH);
         channel.setDescription(getString(R.string.bchat_push_channel_description));
@@ -2581,7 +3090,7 @@ public final class OdooIdentityActivity extends Activity {
         orderRenderedKey = null;
         resetOrderImages(false);
         orderItems.removeAllViews();
-        orderItems.setBackgroundColor(Color.WHITE);
+        orderItems.setBackgroundColor(UiPalette.surface(this));
         // Neutral transition: never present another company/filter/page as current data.
         View placeholder = new View(this);
         placeholder.setBackground(Ui.bg(Ui.LIGHT, 12, this));
@@ -3194,40 +3703,40 @@ public final class OdooIdentityActivity extends Activity {
             while (keys.hasNext()) if (capabilities.opt(keys.next()) != Boolean.FALSE)
                 throw new IllegalArgumentException("Unexpected enabled capability");
             AccountScope nextAccount = new AccountScope(ORIGIN, DATABASE, uid);
-            boolean canRemember = historyCache != null && taskOfflineCache != null;
+            invalidateMessageTimelineOwner();
+            clearRoomListNow();
             ++historyWriteGeneration; // Fence queued writes before account-switch cleanup.
             ++historyGlobalGeneration; // Also fence the previous Activity after a fast recreate.
-            if (historyCache != null && taskOfflineCache != null) try {
-                synchronized (historyStorageLock) {
-                    historyCache.purgeOtherAccounts(nextAccount);
-                    taskOfflineCache.purgeOtherAccounts(nextAccount);
-                }
-            }
-            catch (RuntimeException storage) {
-                // No cold-start access can be offered if account-switch cleanup failed.
-                canRemember = false;
-                preferences().edit().putBoolean(REMEMBER, false).apply();
-                synchronized (historyStorageLock) {
-                    historyCache.close();
-                    historyCache = null;
-                    taskOfflineCache.close();
-                    taskOfflineCache = null;
-                }
-            }
-            prepareOrderCompanyAccount(nextAccount);
-            clearChatView();
-            account = nextAccount; // The server authorizes all work.
-            v1Companies.clear();
-            v1Companies.addAll(ids);
-            traceTransport("D02_V1_ACCEPTED");
-            verified = true;
-            probing = false;
-            submitting = false;
-            closePort();
-            if (canRemember) CookieManager.getInstance().flush();
-            preferences().edit().putBoolean(REMEMBER, canRemember).apply();
-            showShell();
-            verifyV2();
+            if (account != null && !account.key.equals(nextAccount.key))
+                BChatStorageRepository.invalidate(account);
+            final int policy = ++offlinePolicySerial;
+            offlinePolicyReady(false);
+            final ConnectedHistoryCache cache = historyCache;
+            final TaskOfflineCache tasksCache = taskOfflineCache;
+            BChatStorageRepository.submit(null, () -> {
+                boolean canRemember = cache != null && tasksCache != null;
+                try { synchronized (historyStorageLock) {
+                    if (cache != null) cache.purgeOtherAccounts(nextAccount);
+                    if (tasksCache != null) tasksCache.purgeOtherAccounts(nextAccount);
+                } } catch (RuntimeException damaged) { canRemember = false; }
+                prepareOrderCompanyAccount(nextAccount);
+                return preferences().edit().putBoolean(REMEMBER, canRemember).commit() && canRemember;
+            }, (canRemember, storageError) -> {
+                if (closed || attempt != epoch || policy != offlinePolicySerial) return;
+                orderPolicyDiskReady = true;
+                ++orderPolicyWriteSerial;
+                offlinePolicyReady(storageError == null && Boolean.TRUE.equals(canRemember));
+                clearChatView();
+                account = nextAccount; // Only the fresh server identity authorizes display.
+                v1Companies.clear(); v1Companies.addAll(ids);
+                traceTransport("D02_V1_ACCEPTED");
+                verified = true;
+                probing = false; submitting = false;
+                closePort();
+                if (offlinePersistenceReady) CookieManager.getInstance().flush();
+                showShell();
+                verifyV2();
+            });
         } catch (Exception invalid) {
             if (attempt == epoch) fail(R.string.auth_denied);
         }
@@ -3337,12 +3846,16 @@ public final class OdooIdentityActivity extends Activity {
     private boolean postSmallFormDirectlyInWebView(String path, String field, String payload,
                                                    V2Callback callback) {
         boolean mediaMessage = path.matches("/bchat/api/v2/rooms/[1-9][0-9]*/messages");
-        boolean supported = V2_PUSH_REGISTER.equals(path) || mediaMessage
+        boolean roomSearch = path.matches("/bchat/api/v2/rooms/[1-9][0-9]*/search");
+        boolean notificationControl="/bchat/api/v2/notifications/preferences".equals(path)
+                ||"/bchat/api/v2/notifications/test".equals(path);
+        boolean supported = V2_PUSH_REGISTER.equals(path) || mediaMessage ||notificationControl || roomSearch
                 || path.matches("/bchat/api/v2/rooms/[1-9][0-9]*/mobile-upload-grants");
         if (closed || !verified || account == null || csrfToken == null || callback == null
                 || payload == null || payload.length() > (mediaMessage ? 49152
-                        : V2_PUSH_REGISTER.equals(path) ? 8192 : 4096) || field == null
-                || !(mediaMessage || V2_PUSH_REGISTER.equals(path)
+                        : V2_PUSH_REGISTER.equals(path)||notificationControl || roomSearch ? 8192 : 4096) || field == null
+                || (notificationControl || roomSearch)&&payload.getBytes(StandardCharsets.UTF_8).length>8192
+                || !(mediaMessage || V2_PUSH_REGISTER.equals(path)||notificationControl || roomSearch
                         ? "payload".equals(field) : "metadata".equals(field))
                 || !field.matches("[a-z_]{1,32}") || !supported || webV2GetFallbackBusy
                 || v2Busy || web == null || web.getUrl() == null
@@ -3621,10 +4134,16 @@ public final class OdooIdentityActivity extends Activity {
         final String method, path, formKey, formValue;
         final AccountScope scope;
         final V2Callback callback;
+        final long receiptMembershipId;
         LiveRequest(String method, String path, String formKey, String formValue,
                     AccountScope scope, V2Callback callback) {
+            this(method, path, formKey, formValue, scope, callback, 0);
+        }
+        LiveRequest(String method, String path, String formKey, String formValue,
+                    AccountScope scope, V2Callback callback, long receiptMembershipId) {
             this.method = method; this.path = path; this.formKey = formKey;
             this.formValue = formValue; this.scope = scope; this.callback = callback;
+            this.receiptMembershipId = receiptMembershipId;
         }
     }
 
@@ -3634,6 +4153,8 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     private void closeLiveSync() {
+        resetReceiptPass();
+        ++livePersistenceGeneration;
         liveStarted = false;
         busConnected = false;
         feedQueued = false;
@@ -3677,6 +4198,12 @@ public final class OdooIdentityActivity extends Activity {
         if (liveBusy || liveQueue.isEmpty()) return;
         LiveRequest item = liveQueue.removeFirst();
         if (!liveReady(item.scope)) { item.callback.complete(0, null); pumpLiveQueue(); return; }
+        if (item.receiptMembershipId > 0) {
+            boolean current = false;
+            for (Room room : rooms) if (room.membershipId == item.receiptMembershipId
+                    && item.path.startsWith(V2_ROOMS + "/" + room.id + "/messages/")) current = true;
+            if (!receiptSyncReady() || !current) { item.callback.complete(0, null); pumpLiveQueue(); return; }
+        }
         liveBusy = true;
         final int nonce = ++liveNonce, currentWeb = webEpoch, currentPage = pageEpoch,
                 currentEpoch = epoch;
@@ -3728,6 +4255,7 @@ public final class OdooIdentityActivity extends Activity {
                     ? "o.headers['Content-Type']='application/x-www-form-urlencoded;charset=UTF-8';"
                     + "o.body=new URLSearchParams({csrf_token:" + JSONObject.quote(csrfToken)
                     + (item.formKey.isEmpty() ? "" : "," + item.formKey + ":" + JSONObject.quote(item.formValue))
+                    + (item.receiptMembershipId > 0 ? ",membership_id:" + item.receiptMembershipId : "")
                     + "}).toString();" : "")
                 + "fetch(u.href,o).then(function(r){if(r.type==='opaqueredirect')return {nonce:"
                 + nonce + ",status:401,type:'application/json',url:u.href,body:'{}'};"
@@ -3774,6 +4302,7 @@ public final class OdooIdentityActivity extends Activity {
         feedFailures = busFailures = 0;
         scheduleFeed(0);
         connectLiveBus();
+        scheduleReceiptSync(0);
     }
 
     private void scheduleFeed(long delayMs) {
@@ -3790,12 +4319,12 @@ public final class OdooIdentityActivity extends Activity {
         }
         final AccountScope scope = account;
         final long requestedAfter = feedCursor;
+        final int persistenceGeneration = livePersistenceGeneration;
         feedQueued = true;
         enqueueLive("GET", V2_CHANGES + "?after=" + requestedAfter
                 + "&limit=100&permissions_version=1", null, null,
                 (statusCode, result) -> {
-                    feedQueued = false;
-                    if (!liveReady(scope)) return;
+                    if (!liveReady(scope) || persistenceGeneration != livePersistenceGeneration) return;
                     if (statusCode == 401) { logout(); return; }
                     try {
                         if (statusCode != 200 || result == null
@@ -3805,6 +4334,7 @@ public final class OdooIdentityActivity extends Activity {
                         if (result.optBoolean("reset_required", false)) {
                             if (!result.optBoolean("snapshot_required", false))
                                 throw new IllegalArgumentException();
+                            feedQueued = false;
                             snapshotChanges(scope, watermark, 0, 0, 0);
                             return;
                         }
@@ -3824,14 +4354,20 @@ public final class OdooIdentityActivity extends Activity {
                         }
                         if (result.getBoolean("has_more") && next == requestedAfter)
                             throw new IllegalArgumentException();
-                        if (!getSharedPreferences(LIVE_PREFS, MODE_PRIVATE).edit()
-                                .putLong(scope.key, next).commit()) throw new IllegalStateException();
-                        feedCursor = next;
-                        feedFailures = 0;
-                        feedRetryAt = 0;
-                        flushLiveUi();
-                        scheduleFeed(result.getBoolean("has_more") ? 0 : busConnected ? 2500 : 850);
-                    } catch (Exception invalid) { retryFeed(); }
+                        final boolean more = result.getBoolean("has_more");
+                        local(scope, () -> persistenceGeneration == livePersistenceGeneration
+                                && getSharedPreferences(LIVE_PREFS, MODE_PRIVATE).edit()
+                                        .putLong(scope.key, next).commit(), (saved, failure) -> {
+                            if (persistenceGeneration != livePersistenceGeneration || !liveReady(scope)) return;
+                            feedQueued = false;
+                            if (failure != null || !Boolean.TRUE.equals(saved)) { retryFeed(); return; }
+                            feedCursor = next;
+                            feedFailures = 0;
+                            feedRetryAt = 0;
+                            flushLiveUi();
+                            scheduleFeed(more ? 0 : busConnected ? 2500 : 850);
+                        });
+                    } catch (Exception invalid) { feedQueued = false; retryFeed(); }
                 });
     }
 
@@ -3847,6 +4383,7 @@ public final class OdooIdentityActivity extends Activity {
         String kind = change.getString("kind");
         long roomId = change.has("room_id") ? positiveId(change.get("room_id")) : 0;
         if ("revoked".equals(kind)) {
+            if (notificationPresentationOwned(account)) BChatPushState.contentInvalidated(this, account);
             if (historyCache != null && account != null && roomId > 0)
                 try { purgeCachedRoom(account, roomId); }
                 catch (RuntimeException storage) { purgeHistory(); }
@@ -3856,12 +4393,14 @@ public final class OdooIdentityActivity extends Activity {
                 liveMessagesDirty = false;
             }
         } else if ("task_revoked".equals(kind)) {
+            if (notificationPresentationOwned(account)) BChatPushState.contentInvalidated(this, account);
             liveTasksDirty = true;
         } else if ("room".equals(kind)) {
             liveRoomsDirty = true;
         } else if ("message".equals(kind) || "receipt".equals(kind)) {
             liveRoomsDirty = true;
             if (selectedRoom != null && selectedRoom.id == roomId) liveMessagesDirty = true;
+            scheduleReceiptSync(0); // A hint only; the independent metadata scan is authoritative.
         } else if ("task".equals(kind)) {
             liveTasksDirty = true;
             if (roomId > 0) liveRoomsDirty = true;
@@ -3876,17 +4415,22 @@ public final class OdooIdentityActivity extends Activity {
     private void snapshotChanges(AccountScope scope, long watermark, int sectionIndex,
                                  long beforeId, int pages) {
         if (!liveReady(scope)) return;
+        final int persistenceGeneration = livePersistenceGeneration;
         snapshotInProgress = true;
         if (sectionIndex == 3) {
-            snapshotInProgress = false;
-            if (!getSharedPreferences(LIVE_PREFS, MODE_PRIVATE).edit()
-                    .putLong(scope.key, watermark).commit()) { retryFeed(); return; }
-            feedCursor = watermark;
-            feedFailures = 0;
-            liveRoomsDirty = liveTasksDirty = liveOrdersDirty = true;
-            if (selectedRoom != null) liveMessagesDirty = true;
-            flushLiveUi();
-            scheduleFeed(0);
+            local(scope, () -> persistenceGeneration == livePersistenceGeneration
+                    && getSharedPreferences(LIVE_PREFS, MODE_PRIVATE).edit()
+                            .putLong(scope.key, watermark).commit(), (saved, failure) -> {
+                if (persistenceGeneration != livePersistenceGeneration || !liveReady(scope)) return;
+                snapshotInProgress = false;
+                if (failure != null || !Boolean.TRUE.equals(saved)) { retryFeed(); return; }
+                feedCursor = watermark;
+                feedFailures = 0;
+                liveRoomsDirty = liveTasksDirty = liveOrdersDirty = true;
+                if (selectedRoom != null) liveMessagesDirty = true;
+                flushLiveUi();
+                scheduleFeed(0);
+            });
             return;
         }
         if (pages >= 1000) { retryFeed(); return; }
@@ -3894,7 +4438,7 @@ public final class OdooIdentityActivity extends Activity {
         String path = V2_CHANGES + "/snapshot?section=" + section + "&watermark=" + watermark
                 + (beforeId > 0 ? "&before_id=" + beforeId : "");
         enqueueLive("GET", path, null, null, (statusCode, result) -> {
-            if (!liveReady(scope)) return;
+            if (!liveReady(scope) || persistenceGeneration != livePersistenceGeneration) return;
             if (statusCode == 401) { logout(); return; }
             try {
                 if (statusCode != 200 || result == null || nonnegativeCursor(result.get("api_version")) != 2
@@ -4031,15 +4575,17 @@ public final class OdooIdentityActivity extends Activity {
         final boolean chatView, chatSend, media, groupCreate, groupManage;
         final boolean taskView, taskManage, roomAdmin;
         final boolean ordersIncluded, orderView, orderCreate, orderReceive;
+        final MediaRights mediaRights;
 
-        private PermissionSet(long revision, boolean chatView, boolean chatSend, boolean media,
+        private PermissionSet(long revision, boolean chatView, boolean chatSend, MediaRights mediaRights,
                 boolean groupCreate, boolean groupManage, boolean taskView,
                 boolean taskManage, boolean roomAdmin, boolean ordersIncluded,
                 boolean orderView, boolean orderCreate, boolean orderReceive) {
             this.revision = revision;
             this.chatView = chatView;
             this.chatSend = chatSend && chatView;
-            this.media = media && this.chatView;
+            this.mediaRights = mediaRights;
+            this.media = mediaRights.legacyCombined();
             this.groupCreate = groupCreate && chatView;
             this.groupManage = groupManage && chatView;
             this.taskView = taskView;
@@ -4052,7 +4598,7 @@ public final class OdooIdentityActivity extends Activity {
         }
 
         static PermissionSet legacy() {
-            return new PermissionSet(-1, true, true, true, true, true,
+            return new PermissionSet(-1, true, true, MediaRights.resolve(null, null, null, true, true), true, true,
                     true, true, true, false, false, false, false);
         }
 
@@ -4071,9 +4617,12 @@ public final class OdooIdentityActivity extends Activity {
             if ((orderView || orderCreate || orderReceive)
                     && !(orderView && orderCreate && orderReceive))
                 throw new IllegalArgumentException("Incomplete order permissions");
+            boolean chatView = requiredFlag(source, "chat_view");
+            MediaRights mediaRights = MediaRights.resolve(source.opt("media_view"), source.opt("media_upload"),
+                    source.opt("media_download"), requiredFlag(source, "media"), chatView);
             return new PermissionSet(revision,
-                    requiredFlag(source, "chat_view"), requiredFlag(source, "chat_send"),
-                    requiredFlag(source, "media"), requiredFlag(source, "group_create"),
+                    chatView, requiredFlag(source, "chat_send"),
+                    mediaRights, requiredFlag(source, "group_create"),
                     requiredFlag(source, "group_manage"), requiredFlag(source, "task_view"),
                     requiredFlag(source, "task_manage"), requiredFlag(source, "room_admin"),
                     orderView, orderView && requiredFlag(source, "order_view"),
@@ -4091,6 +4640,8 @@ public final class OdooIdentityActivity extends Activity {
             return other != null && revision == other.revision
                     && chatView == other.chatView && chatSend == other.chatSend
                     && media == other.media && groupCreate == other.groupCreate
+                    && mediaRights.view == other.mediaRights.view && mediaRights.upload == other.mediaRights.upload
+                    && mediaRights.download == other.mediaRights.download
                     && groupManage == other.groupManage && taskView == other.taskView
                     && taskManage == other.taskManage && roomAdmin == other.roomAdmin
                     && ordersIncluded == other.ordersIncluded && orderView == other.orderView
@@ -4101,12 +4652,20 @@ public final class OdooIdentityActivity extends Activity {
             JSONObject value = new JSONObject();
             value.put("version", 1).put("revision", revision)
                     .put("chat_view", chatView).put("chat_send", chatSend)
-                    .put("media", media).put("group_create", groupCreate)
+                    .put("media", media).put("media_view", mediaRights.view)
+                    .put("media_upload", mediaRights.upload).put("media_download", mediaRights.download)
+                    .put("group_create", groupCreate)
                     .put("group_manage", groupManage).put("task_view", taskView)
                     .put("task_manage", taskManage).put("room_admin", roomAdmin);
             if (ordersIncluded) value.put("order_view", orderView)
                     .put("order_create", orderCreate).put("order_receive", orderReceive);
             return value;
+        }
+
+        PermissionSet constrainMedia(PermissionSet remembered) {
+            MediaRights constrained = mediaRights.constrainedByRemembered(remembered == null ? null : remembered.mediaRights);
+            return new PermissionSet(revision, chatView, chatSend, constrained, groupCreate,
+                    groupManage, taskView, taskManage, roomAdmin, ordersIncluded, orderView, orderCreate, orderReceive);
         }
     }
 
@@ -4119,27 +4678,41 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     private PermissionSet permissionContract(JSONObject bootstrap, AccountScope scope) throws Exception {
+        PermissionSet remembered = rememberedPermissions(scope);
+        if (scope != null && remembered == null
+                && getSharedPreferences(PERMISSION_PREFS, MODE_PRIVATE).contains(scope.key))
+            throw new IllegalArgumentException("Unreadable remembered permission policy");
         JSONObject supplied = bootstrap.optJSONObject("permissions");
-        if (supplied != null) return PermissionSet.parse(supplied);
+        if (supplied != null) return PermissionSet.parse(supplied).constrainMedia(remembered);
         if (bootstrap.has("permissions")) throw new IllegalArgumentException("Invalid permissions");
         // A downgraded/old server must not silently regrant rights revoked by a newer one.
-        PermissionSet saved = rememberedPermissions(scope);
-        return saved == null ? PermissionSet.legacy() : saved;
+        return remembered == null ? PermissionSet.legacy() : remembered;
     }
 
     private boolean chatAllowed() { return permissionSet.chatView; }
     private boolean sendAllowed() { return permissionSet.chatSend; }
-    private boolean mediaAllowed() { return permissionSet.media && mediaAvailable; }
-    private boolean mediaUploadAllowed() { return sendAllowed() && mediaAllowed(); }
+    private boolean mediaAllowed() { return permissionSet.mediaRights.view && mediaAvailable; }
+    private boolean mediaUploadAllowed() { return mediaAvailable && permissionSet.mediaRights.canUpload(sendAllowed()); }
+    private boolean mediaDownloadAllowed() { return mediaAllowed() && permissionSet.mediaRights.download; }
+
+    private void refreshTransferAuthority() {
+        if(transferCoordinator==null||account==null)return;
+        Set<String> allowed=new HashSet<>();
+        if(verified&&!offlineHistory&&roomsVerifiedForSession&&mediaUploadAllowed())
+            for(Room room:rooms)if(v1Companies.contains(room.companyId))
+                allowed.add(BChatTransferCoordinator.roomKey(room.id,room.membershipId,room.companyId));
+        transferCoordinator.authorize(account,allowed);
+    }
 
     private void showPermittedRoot() {
         if (shell != null) shell.setVisibility(View.GONE);
         if (chatRoot != null) chatRoot.setVisibility(View.VISIBLE);
         if (loginReleaseFooter != null) loginReleaseFooter.setVisibility(View.GONE);
-        if (layout != null) layout.setPadding(0, 0, 0, 0);
+        if (layout != null) setScreenPadding(0, 0);
     }
 
     private void cancelRevokedMediaSending(AccountScope scope) {
+        if(transferCoordinator!=null)transferCoordinator.revoke(scope);
         ++mediaSessionGeneration;
         closeMediaUpload();
         mediaStageBusy = false;
@@ -4152,16 +4725,24 @@ public final class OdooIdentityActivity extends Activity {
         clearVoicePreview();
         if (connectedVoiceRecorder != null) {
             connectedVoiceRecorder.cancel(); connectedVoiceRecorder = null;
+            releaseRecordingFocus();
         }
-        if (mediaStore != null) try { mediaStore.purgeAccount(scope); }
-        catch (IOException unavailable) {
-            // A failed private-file purge must not retain a cold-start offline session.
-            preferences().edit().putBoolean(REMEMBER, false).commit();
-        }
+        final BChatConnectedMediaStore store = mediaStore;
+        if (store != null) BChatStorageRepository.submit(null, () -> {
+            try { store.purgeAccount(scope); if(outbox!=null)outbox.tickets().purgeMedia(scope); return true; }
+            catch (IOException unavailable) {
+                preferences().edit().putBoolean(REMEMBER, false).commit(); return false;
+            }
+        }, (ok, error) -> {
+            if (account == scope && (error != null || !Boolean.TRUE.equals(ok)))
+                offlinePolicyReady(false);
+        });
     }
 
     private void purgeRevokedMedia(AccountScope scope) {
         cancelRevokedMediaSending(scope);
+        ++mediaDownloadGeneration;
+        ++mediaOpenNonce;
         closeMediaRead();
         clearPendingPdf();
         clearMediaReadCache();
@@ -4171,7 +4752,44 @@ public final class OdooIdentityActivity extends Activity {
         stopInlineAudio();
     }
 
+    private void revokeDownloadedMedia() {
+        ++mediaDownloadGeneration;
+        ++mediaOpenNonce;
+        if (!mediaReadIsThumbnail) closeMediaRead();
+        clearPendingPdf();
+        clearMediaReadCache(true);
+        if (mediaPreviewDialog != null) mediaPreviewDialog.dismiss();
+        stopInlineAudio();
+        // Authorized thumbnail memory/queue and an in-flight thumbnail are deliberately retained.
+    }
+
     private void applyPermissionSet(AccountScope scope, PermissionSet next) {
+        PermissionSet previous = permissionSet;
+        if (permissionAccount != scope || !next.sameAs(previous)) {
+            closeRoomExplore();
+            invalidateMessageTimelineOwner();
+        }
+        if (!next.chatView) closeReceiptDetails();
+        if(!next.chatView&&!next.taskView&&notificationSettingsPanel!=null){
+            notificationSettingsPanel.dismiss();notificationSettingsPanel=null;
+        }
+        boolean revoked = previous != null && (previous.chatView && !next.chatView
+                || previous.chatSend && !next.chatSend || previous.media && !next.media
+                || previous.mediaRights.view && !next.mediaRights.view
+                || previous.mediaRights.upload && !next.mediaRights.upload
+                || previous.mediaRights.download && !next.mediaRights.download
+                || previous.taskView && !next.taskView || previous.taskManage && !next.taskManage
+                || previous.groupCreate && !next.groupCreate || previous.groupManage && !next.groupManage
+                || previous.orderView && !next.orderView || previous.orderCreate && !next.orderCreate
+                || previous.orderReceive && !next.orderReceive);
+        if (revoked) {
+            if (notificationPresentationOwned(scope)) BChatPushState.contentInvalidated(this, scope);
+            flushDraftSave();
+            BChatStorageRepository.invalidate(scope);
+            ++localReadSerial;
+            roomLocal = null; localTextRows.clear();
+            globalPendingKnown = false;
+        }
         if (permissionAccount != scope || permissionSet.revision != next.revision) {
             orderCapabilityOptions = null;
             orderCapabilityAccount = null;
@@ -4183,20 +4801,42 @@ public final class OdooIdentityActivity extends Activity {
         if (next.ordersIncluded) setOrderRights(scope, next.orderView,
                 next.orderCreate, next.orderReceive);
         else if (next.revision >= 0) setOrderRights(scope, false, false, false);
-        try {
-            if (next.revision >= 0 && !getSharedPreferences(PERMISSION_PREFS, MODE_PRIVATE).edit()
-                    .putString(scope.key, next.toJson().toString()).commit())
-                throw new IllegalStateException("Cannot save permission snapshot");
-        } catch (Exception storage) {
-            // Never offer stale offline history when the newer revocation cannot be persisted.
-            purgeHistory();
-        }
+        final int policy = ++offlinePolicySerial;
+        offlinePolicyReady(false);
+        final ConnectedHistoryCache cache = historyCache;
+        final TaskOfflineCache tasksCache = taskOfflineCache;
+        final BChatV2Outbox box = outbox;
+        // An unscoped job is intentional: a later permission fence must not cancel a purge.
+        BChatStorageRepository.submit(null, () -> {
+            boolean saved = next.revision < 0 || getSharedPreferences(PERMISSION_PREFS, MODE_PRIVATE)
+                    .edit().putString(scope.key, next.toJson().toString()).commit();
+            try {
+                synchronized (historyStorageLock) {
+                    if (!next.chatView && cache != null) cache.purgeAccount(scope);
+                    if (!next.taskView && tasksCache != null) tasksCache.purgeAccount(scope);
+                }
+                if ((!next.chatSend || !next.chatView) && box != null) box.purgeAccount(scope);
+                if (!next.groupCreate || !next.chatView || !next.chatSend)
+                    saved &= getSharedPreferences(GROUP_CREATE_PREFS, MODE_PRIVATE).edit().remove(scope.key).commit();
+                if (!next.taskManage) saved &= taskCreatePreferences().edit().remove(scope.key).commit();
+            } catch (RuntimeException unavailable) { saved = false; }
+            if (!saved) {
+                preferences().edit().putBoolean(REMEMBER, false).commit();
+                synchronized (historyStorageLock) {
+                    if (cache != null) cache.purgeAll();
+                    if (tasksCache != null) tasksCache.purgeAll();
+                }
+            }
+            return saved && preferences().getBoolean(REMEMBER, false);
+        }, (saved, error) -> {
+            if (closed || account != scope || policy != offlinePolicySerial) return;
+            offlinePolicyReady(error == null && Boolean.TRUE.equals(saved));
+        });
         if (!next.chatView) {
+            clearRoomListNow();
+            invalidateReceiptRoomBinding();
             ++historyWriteGeneration;
             ++historyGlobalGeneration;
-            try { synchronized (historyStorageLock) {
-                if (historyCache != null) historyCache.purgeAccount(scope);
-            } } catch (RuntimeException damaged) { purgeHistory(); }
             rooms.clear();
             selectedRoom = null;
             displayedMessages.clear();
@@ -4205,34 +4845,29 @@ public final class OdooIdentityActivity extends Activity {
             closeLiveSync();
         }
         if (!next.chatSend || !next.chatView) {
-            flushDraftSave();
-            try { if (outbox != null) outbox.purgeAccount(scope); }
-            catch (RuntimeException damaged) { preferences().edit().putBoolean(REMEMBER, false).commit(); }
-            getSharedPreferences(GROUP_CREATE_PREFS, MODE_PRIVATE).edit().remove(scope.key).commit();
+            draftActive = false;
             if (messageInput != null) {
                 suppressDraftChanges = true;
                 messageInput.setText("");
                 suppressDraftChanges = false;
             }
         }
-        if (!next.media || !next.chatView) purgeRevokedMedia(scope);
-        else if (!next.chatSend) cancelRevokedMediaSending(scope);
-        if (!next.groupCreate)
-            getSharedPreferences(GROUP_CREATE_PREFS, MODE_PRIVATE).edit().remove(scope.key).commit();
+        if (!next.mediaRights.view || !next.chatView) purgeRevokedMedia(scope);
+        else {
+            if (!next.mediaRights.upload || !next.chatSend) cancelRevokedMediaSending(scope);
+            if (previous.mediaRights.download && !next.mediaRights.download) revokeDownloadedMedia();
+        }
+        if (messageAdapter != null && (previous.mediaRights.view != next.mediaRights.view
+                || previous.mediaRights.download != next.mediaRights.download)) messageAdapter.notifyDataSetChanged();
         if ((!next.groupManage || !next.chatView) && groupInfoDialog != null)
             groupInfoDialog.dismiss();
         if (!next.taskView) {
             ++taskViewSerial;
-            try { synchronized (historyStorageLock) {
-                if (taskOfflineCache != null) taskOfflineCache.purgeAccount(scope);
-            } } catch (RuntimeException damaged) { purgeHistory(); }
             tasksAvailable = false;
             tasks.clear();
             taskCompanies.clear();
             if (taskItems != null) taskItems.removeAllViews();
         }
-        if (!next.taskManage)
-            taskCreatePreferences().edit().remove(scope.key).commit();
         if (createGroupButton != null) createGroupButton.setVisibility(
                 next.groupCreate ? View.VISIBLE : View.GONE);
         if (selectedRoom != null) {
@@ -4263,31 +4898,44 @@ public final class OdooIdentityActivity extends Activity {
     private void restrictCompanyScope(AccountScope scope, Set<Long> allowed) {
         if (scope != account || allowed.equals(v1Companies)) return;
         if (!v1Companies.containsAll(allowed)) return; // Grants require a fresh v1 identity check.
+        closeRoomExplore();
+        invalidateMessageTimelineOwner();
+        clearRoomListNow();
+        if (notificationPresentationOwned(scope)) BChatPushState.contentInvalidated(this, scope);
+        if(transferCoordinator!=null)transferCoordinator.revoke(scope);
+        invalidateReceiptRoomBinding();
         ++historyWriteGeneration;
         ++historyGlobalGeneration;
         ++mediaSessionGeneration;
+        ++mediaDownloadGeneration;
+        flushDraftSave();
+        BChatStorageRepository.invalidate(scope);
+        ++localReadSerial;
+        roomLocal = null; localTextRows.clear(); globalPendingKnown = false;
+        final int policy = ++offlinePolicySerial;
+        offlinePolicyReady(false);
         Set<Long> retainedRooms = new HashSet<>();
         for (Room room : rooms) if (allowed.contains(room.companyId)) retainedRooms.add(room.id);
-        if (historyCache != null) try { synchronized (historyStorageLock) {
-            for (ConnectedHistoryCache.RoomRecord room : historyCache.rooms(scope)) {
-                if (allowed.contains(room.companyId)) retainedRooms.add(room.id);
-                else historyCache.purgeRoom(scope, room.id);
-            }
-        } } catch (RuntimeException damaged) { purgeHistory(); }
-        if (taskOfflineCache != null) try { synchronized (historyStorageLock) {
-            taskOfflineCache.purgeExceptCompanySet(scope, allowed);
-        } } catch (RuntimeException damaged) { purgeHistory(); }
         if (selectedRoom != null && !allowed.contains(selectedRoom.companyId)) showRooms();
         rooms.removeIf(room -> !allowed.contains(room.companyId));
         displayedMessages.removeIf(message -> selectedRoom == null
                 || !allowed.contains(selectedRoom.companyId));
-        try { if (outbox != null) outbox.purgeExceptRooms(scope, retainedRooms); }
-        catch (RuntimeException damaged) { preferences().edit().putBoolean(REMEMBER, false).commit(); }
-        try { if (mediaStore != null) mediaStore.purgeCompaniesNotIn(scope, allowed); }
-        catch (IOException damaged) {
-            try { if (mediaStore != null) mediaStore.purgeAccount(scope); }
-            catch (IOException ignored) { preferences().edit().putBoolean(REMEMBER, false).commit(); }
-        }
+        final ConnectedHistoryCache cache = historyCache;
+        final TaskOfflineCache tasksCache = taskOfflineCache;
+        final BChatV2Outbox box = outbox;
+        final BChatConnectedMediaStore store = mediaStore;
+        final Set<Long> permitted = new HashSet<>(allowed), diskRetained = new HashSet<>(retainedRooms);
+        BChatStorageRepository.submit(null, () -> {
+        try {
+            synchronized (historyStorageLock) {
+                if (cache != null) for (ConnectedHistoryCache.RoomRecord room : cache.rooms(scope)) {
+                    if (permitted.contains(room.companyId)) diskRetained.add(room.id);
+                    else cache.purgeRoom(scope, room.id);
+                }
+                if (tasksCache != null) tasksCache.purgeExceptCompanySet(scope, permitted);
+            }
+            if (box != null) box.purgeExceptRooms(scope, diskRetained);
+            if (store != null) store.purgeCompaniesNotIn(scope, permitted);
         try {
             String pendingGroup = getSharedPreferences(GROUP_CREATE_PREFS, MODE_PRIVATE)
                     .getString(scope.key, null);
@@ -4321,6 +4969,15 @@ public final class OdooIdentityActivity extends Activity {
                     || !allowed.contains(((Number) item.getValue()).longValue())))
                 sharesEdit.remove(item.getKey());
         sharesEdit.commit();
+            return preferences().getBoolean(REMEMBER, false);
+        } catch (Exception unavailable) {
+            preferences().edit().putBoolean(REMEMBER, false).commit();
+            return false;
+        }
+        }, (saved, error) -> {
+            if (closed || account != scope || policy != offlinePolicySerial) return;
+            offlinePolicyReady(error == null && Boolean.TRUE.equals(saved));
+        });
         closeMediaRead();
         clearPendingPdf();
         clearMediaReadCache();
@@ -4403,18 +5060,22 @@ public final class OdooIdentityActivity extends Activity {
         }
         lastPermissionRefreshAt = now;
         final AccountScope scoped = account;
+        final int notificationSession = epoch, notificationGeneration = historyGlobalGeneration;
         fetchV2("GET", V2_BOOTSTRAP, null, (status, result) -> {
-            if (scoped != account || !verified) return;
+            if (scoped != account || !verified || notificationSession != epoch
+                    || notificationGeneration != historyGlobalGeneration) return;
             if (handleV2TransportFailure(status)) return;
+            if (status == 403) { closeDeniedPermissionView(); return; }
+            if (status >= 500 || status == 429) return; // A temporary service failure is not a revocation.
             try {
                 if (status != 200 || result == null || positiveId(result.get("api_version")) != 2
                         || positiveId(result.get("user_id")) != scoped.userId
-                        || !DATABASE.equals(result.getString("database"))) return;
+                        || !DATABASE.equals(result.getString("database"))) throw new IllegalArgumentException();
                 JSONArray listed = result.getJSONArray("company_ids");
                 Set<Long> validCompanies = new HashSet<>();
                 for (int i = 0; i < listed.length(); i++)
                     validCompanies.add(positiveId(listed.get(i)));
-                if (listed.length() != validCompanies.size()) return;
+                if (listed.length() != validCompanies.size()) throw new IllegalArgumentException();
                 if (!validCompanies.equals(v1Companies)) {
                     Set<Long> stillVerified = new HashSet<>(v1Companies);
                     stillVerified.retainAll(validCompanies);
@@ -4426,17 +5087,43 @@ public final class OdooIdentityActivity extends Activity {
                     }
                 }
                 PermissionSet next = permissionContract(result, scoped);
+                boolean searchSupported = RoomExploreProtocol.supported(result);
+                if (historySearchSupported != searchSupported) closeRoomExplore();
+                historySearchSupported = searchSupported;
                 boolean gainedChat = !permissionSet.chatView && next.chatView;
                 if (permissionAccount != scoped || !next.sameAs(permissionSet))
                     applyPermissionSet(scoped, next);
                 if (gainedChat) loadRooms();
                 maybeProbeOrderCapability();
-            } catch (Exception invalid) { /* A malformed refresh must not grant rights. */ }
+            } catch (Exception invalid) { closeDeniedPermissionView(); }
         });
     }
 
+    private void closeDeniedPermissionView() {
+        if(transferCoordinator!=null)transferCoordinator.revoke(account);
+        // Reuse the same generation fences as logout/revocation, without deleting an uncertain UUID.
+        purgeHistory();
+        ++epoch;
+        verified = false; probing = false; submitting = false;
+        closeV2Port();
+        clearChatView(); // Closes original image/audio readers and clears visible cached rows immediately.
+        account = null;
+        v1Companies.clear();
+        csrfToken = null;
+        BChatPushState.clearAccount(this);
+        releaseWeb();
+        showShell();
+        shellNotice.setText(R.string.chat_v2_denied);
+        shellRetry.setVisibility(View.VISIBLE);
+    }
+
     private void verifyV2() {
+        final AccountScope notificationAccount = account;
+        final int notificationSession = epoch, notificationGeneration = historyGlobalGeneration;
+        if (closed || !verified || offlineHistory || notificationAccount == null) return;
         fetchV2("GET", V2_BOOTSTRAP, null, (statusCode, result) -> {
+            if (closed || !verified || offlineHistory || account != notificationAccount
+                    || notificationSession != epoch || notificationGeneration != historyGlobalGeneration) return;
             traceTransport("D08_V2_VERIFY_" + statusCode);
             if (handleV2TransportFailure(statusCode)) return;
             if (statusCode == 403) purgeHistory();
@@ -4472,6 +5159,9 @@ public final class OdooIdentityActivity extends Activity {
                 PermissionSet granted = permissionContract(result, account);
                 csrfToken = token;
                 BChatPushState.verifiedAccount(this, account);
+                // This fully validated bootstrap owns its captured generation even before the
+                // receipt binding exists. Clear old presentation before clearChatView resets it.
+                BChatPushState.contentInvalidated(this, notificationAccount);
                 requestFirebaseToken();
                 if (outbox == null) outbox = new BChatV2Outbox(this);
                 if (mediaStore == null) mediaStore = new BChatConnectedMediaStore(this);
@@ -4487,13 +5177,20 @@ public final class OdooIdentityActivity extends Activity {
                         ? rememberedOrderCompany : selectedChatCompanyId;
                 receiptsAvailable = flag(caps, "delivery_receipts", true)
                         && flag(caps, "read_receipts", true);
+                receiptDeliverySupported = ReceiptDeliveryProtocol.supported(result);
+                historySearchSupported = RoomExploreProtocol.supported(result);
+                receiptStorageGeneration = historyGlobalGeneration;
+                receiptNeedsRoomRebind = false;
+                receiptRebindGeneration = 0;
+                loadLocalContext(account);
                 shellNotice.setText(R.string.chat_v2_loading);
                 if (chatAllowed()) loadRooms();
                 else {
+                    roomsVerifiedForSession = true; // Task/order-only restoration has no room membership to accept.
                     shell.setVisibility(View.GONE);
                     chatRoot.setVisibility(View.VISIBLE);
                     if (loginReleaseFooter != null) loginReleaseFooter.setVisibility(View.GONE);
-                    layout.setPadding(0, 0, 0, 0);
+                    setScreenPadding(0, 0);
                     if (permissionSet.taskView) switchSection("tasks");
                     else {
                         showShell();
@@ -4552,12 +5249,14 @@ public final class OdooIdentityActivity extends Activity {
             return;
         }
         final AccountScope scopedAccount = account;
-        final String token = BChatPushState.pendingToken(this);
-        final String installation = BChatPushState.installationId(this);
-        if (token == null || installation == null) {
+        final int session = epoch;
+        final BChatPushState.Registration registration = BChatPushState.registration(this, scopedAccount);
+        if (registration == null) {
             tracePushRegistration("P06_LOCAL_IDENTITY_MISSING");
             return;
         }
+        final String token = registration.token;
+        final String installation = registration.installationId;
         final JSONObject payload = new JSONObject();
         try {
             payload.put("api_version", 2);
@@ -4569,7 +5268,7 @@ public final class OdooIdentityActivity extends Activity {
         if (!registerPushDirectlyInWebView(payload.toString(), (statusCode, response) -> {
             pushRegistrationBusy = false;
             tracePushRegistration("P09_HTTP_" + statusCode);
-            if (closed || account == null || !account.key.equals(scopedAccount.key)
+            if (closed || account != scopedAccount || session != epoch
                     || !installation.equals(BChatPushState.installationId(this))) return;
             try {
                 if (statusCode != 200) { tracePushRegistration("P10_HTTP_" + statusCode); return; }
@@ -4586,9 +5285,12 @@ public final class OdooIdentityActivity extends Activity {
                     tracePushRegistration("P14_PUSH_FLAG_INVALID");
                     return;
                 }
-                if (BChatPushState.registered(this, scopedAccount, token, installation,
-                        response.getString("account_key"))) tracePushRegistration("P15_LINKED");
-                else tracePushRegistration("P16_LOCAL_SAVE_REJECTED");
+                BChatPushState.registeredAsync(this, registration, response.getString("account_key"),
+                        (accepted, durable) -> {
+                    if (closed || account != scopedAccount || session != epoch || !verified) return;
+                    tracePushRegistration(Boolean.TRUE.equals(accepted) && durable
+                            ? "P15_LINKED" : "P16_LOCAL_SAVE_REJECTED");
+                });
             } catch (Exception invalid) {
                 // Missing optional module or untrusted response never enables push.
                 tracePushRegistration("P17_RESPONSE_MALFORMED");
@@ -4737,6 +5439,9 @@ public final class OdooIdentityActivity extends Activity {
                     finishPushNavigation();
                     return;
                 }
+                requireReceiptEpoch(body, targetRoom);
+                JSONObject canonical = validateMessageList(new JSONArray().put(body.getJSONObject("message")), 0).get(0);
+                persistReceiptCanonical(scopedAccount, targetRoom, Collections.singletonList(canonical));
                 selectRoom(targetRoom, messageId);
             } catch (Exception invalid) { pushUnavailable(); }
             finishPushNavigation();
@@ -4918,57 +5623,90 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     private void purgeHistory() {
+        invalidateMessageTimelineOwner();
+        clearRoomListNow();
+        invalidateReceiptRoomBinding();
         ++historyWriteGeneration;
         ++historyGlobalGeneration;
-        // If disk deletion fails, a restarted app must still refuse stale offline access.
-        preferences().edit().putBoolean(REMEMBER, false).commit();
-        if (historyCache == null && taskOfflineCache == null) return;
-        try { synchronized (historyStorageLock) {
-            if (historyCache != null) historyCache.purgeAll();
-            if (taskOfflineCache != null) taskOfflineCache.purgeAll();
-        } }
-        catch (RuntimeException damaged) {
-            // A damaged local cache must not authorize cold-start browsing later.
+        ++offlinePolicySerial;
+        offlinePolicyReady(false); offlineReadPending = false;
+        if (account != null) BChatStorageRepository.invalidate(account);
+        final ConnectedHistoryCache cache = historyCache;
+        final TaskOfflineCache tasksCache = taskOfflineCache;
+        BChatStorageRepository.submit(null, () -> {
+            // Commit the deny marker before deletion; offline cannot be enabled while pending.
             preferences().edit().putBoolean(REMEMBER, false).commit();
-        }
+            synchronized (historyStorageLock) {
+                if (cache != null) cache.purgeAll();
+                if (tasksCache != null) tasksCache.purgeAll();
+            }
+            return null;
+        }, (ignored, error) -> { /* Memory remains denied even if local deletion failed. */ });
     }
 
     private void purgeCachedRoom(AccountScope scopedAccount, long roomId) {
+        invalidateMessageTimelineOwner();
+        clearRoomListNow();
+        invalidateReceiptRoomBinding();
         ++historyWriteGeneration;
         ++historyGlobalGeneration;
-        synchronized (historyStorageLock) {
-            if (historyCache != null) historyCache.purgeRoom(scopedAccount, roomId);
+        final ConnectedHistoryCache cache = historyCache;
+        BChatStorageRepository.submit(null, () -> {
+            synchronized (historyStorageLock) {
+                if (cache != null) cache.purgeRoom(scopedAccount, roomId);
+            }
+            return null;
+        }, (ignored, error) -> { if (error != null && !closed) purgeHistory(); });
+    }
+
+    private static final class OfflineSnapshot {
+        final ConnectedHistoryCache.Snapshot history;
+        final TaskOfflineCache.Snapshot tasks;
+        final PermissionSet permissions;
+        OfflineSnapshot(ConnectedHistoryCache.Snapshot history, TaskOfflineCache.Snapshot tasks,
+                        PermissionSet permissions) {
+            this.history = history; this.tasks = tasks; this.permissions = permissions;
         }
     }
 
     /** An offline snapshot is a read-only fallback after transport failure, never a session. */
     private boolean offerOfflineHistory() {
-        if (closed || loggingOut || !preferences().getBoolean(REMEMBER, false)
+        if (closed || loggingOut || !offlinePersistenceReady
                 || (historyCache == null && taskOfflineCache == null)) return false;
+        if (offlineReadPending) return true;
+        offlineReadPending = true;
+        final int session = epoch, policy = offlinePolicySerial;
+        final ConnectedHistoryCache cache = historyCache;
+        final TaskOfflineCache tasksCache = taskOfflineCache;
+        BChatStorageRepository.submit(null, () -> {
         ConnectedHistoryCache.Snapshot history = null;
         TaskOfflineCache.Snapshot taskSnapshot = null;
         PermissionSet saved;
-        try {
+            if (!preferences().getBoolean(REMEMBER, false)) return null;
             long now = System.currentTimeMillis();
-            if (historyCache != null)
-                history = historyCache.remembered(ORIGIN, DATABASE, now, MAX_OFFLINE_AGE_MILLIS);
-            if (taskOfflineCache != null)
-                taskSnapshot = taskOfflineCache.remembered(ORIGIN, DATABASE, now, MAX_OFFLINE_AGE_MILLIS);
-            if (history == null && taskSnapshot == null) return false;
+            if (cache != null) history = cache.remembered(ORIGIN, DATABASE, now, MAX_OFFLINE_AGE_MILLIS);
+            if (tasksCache != null) taskSnapshot = tasksCache.remembered(ORIGIN, DATABASE, now, MAX_OFFLINE_AGE_MILLIS);
+            if (history == null && taskSnapshot == null) return null;
             AccountScope candidate = history != null ? history.account : taskSnapshot.account;
             if (history != null && taskSnapshot != null
-                    && !history.account.key.equals(taskSnapshot.account.key)) return false;
+                    && !history.account.key.equals(taskSnapshot.account.key)) return null;
             saved = rememberedPermissions(candidate);
             if (saved == null || (history == null || !saved.chatView)
-                    && (taskSnapshot == null || !saved.taskView)) return false;
-        } catch (Exception unavailable) { return false; }
-        ++epoch;
-        probing = false;
-        submitting = false;
-        verified = false;
-        csrfToken = null;
-        releaseWeb();
-        return browseRememberedHistory(history, taskSnapshot, saved);
+                    && (taskSnapshot == null || !saved.taskView)) return null;
+            return new OfflineSnapshot(history, taskSnapshot, saved);
+        }, (snapshot, error) -> {
+            if (closed || session != epoch || policy != offlinePolicySerial) return;
+            offlineReadPending = false;
+            if (!offlinePersistenceReady || error != null || snapshot == null) {
+                fail(R.string.auth_network_error); return;
+            }
+            ++epoch;
+            probing = false; submitting = false; verified = false; csrfToken = null;
+            releaseWeb();
+            if (!browseRememberedHistory(snapshot.history, snapshot.tasks, snapshot.permissions))
+                fail(R.string.auth_network_error);
+        });
+        return true; // Fallback is handled asynchronously, not a writable authentication result.
     }
 
     private void retryOnlineSession() {
@@ -5000,7 +5738,7 @@ public final class OdooIdentityActivity extends Activity {
                                             TaskOfflineCache.Snapshot taskSnapshot,
                                             PermissionSet saved) {
         if (closed || saved == null || (snapshot == null && taskSnapshot == null)
-                || !preferences().getBoolean(REMEMBER, false)) return false;
+                || !offlinePersistenceReady) return false;
         try {
             releaseWeb();
             clearChatView();
@@ -5021,12 +5759,13 @@ public final class OdooIdentityActivity extends Activity {
                         record.name, record.policy, record.policyVersion));
                 v1Companies.add(record.companyId);
             }
+            admitRoomListSnapshot();
             shell.setVisibility(View.GONE);
             nativeForm.setVisibility(View.GONE);
             if (loginReleaseFooter != null) loginReleaseFooter.setVisibility(View.GONE);
             status.setVisibility(View.GONE);
             chatRoot.setVisibility(View.VISIBLE);
-            layout.setPadding(0, 0, 0, 0);
+            setScreenPadding(0, 0);
             if (saved.chatView && snapshot != null) showRooms();
             else if (saved.taskView && taskSnapshot != null) switchSection("tasks");
             else return false;
@@ -5055,16 +5794,230 @@ public final class OdooIdentityActivity extends Activity {
                 ? getString(R.string.chat_v2_uncertain_network) + "\n" + readOnly : readOnly;
     }
 
+    private void saveLocalContext() {
+        if (!verified || offlineHistory || account == null || outbox == null || restoringContext) return;
+        final AccountScope scope = account;
+        final BChatV2Outbox box = outbox;
+        Room room = selectedRoom;
+        ScrollAnchor anchor = currentScrollAnchor();
+        Map<Long, String> cart = new LinkedHashMap<>();
+        for (OrderCartLine line : orderCart.values()) cart.put(line.option.id, line.quantity);
+        BChatLocalState deferred = restorationIntent != null && !restorationIntent.cart.isEmpty()
+                ? restorationIntent : null;
+        if (deferred != null) { cart.clear(); cart.putAll(deferred.cart); }
+        try {
+            final BChatLocalState state = new BChatLocalState(visibleSection,
+                    room == null ? selectedChatCompanyId : room.companyId,
+                    room == null ? 0 : room.id, room == null ? 0 : room.membershipId,
+                    room == null ? 0 : anchor.messageId, room == null ? 0 : anchor.offset,
+                    taskStateFilter == null ? "open" : taskStateFilter,
+                    deferred == null ? orderCompanyId : deferred.cartCompanyId,
+                    deferred == null ? orderWarehouseId : deferred.warehouseId,
+                    deferred == null ? orderRepresentativeId : deferred.representativeId,
+                    deferred == null ? orderPurchaseRoute : deferred.purchaseRoute, cart);
+            BChatStorageRepository.submit(scope, () -> { box.saveContext(scope, state); return null; },
+                    (ignored, error) -> {
+                        if (error != null && !closed && account == scope) {
+                            ++storageWriteFailureSerial;
+                            chatNotice.setText(R.string.chat_v2_save_failed);
+                        }
+                    });
+        } catch (Exception invalid) { ++storageWriteFailureSerial; chatNotice.setText(R.string.chat_v2_save_failed); }
+    }
+
+    private void loadLocalContext(AccountScope scope) {
+        final BChatV2Outbox box = outbox;
+        contextLoaded = false;
+        contextNavigationRestored = false;
+        cartRestoreBusy = false;
+        ++cartRestoreGeneration;
+        local(scope, () -> { box.recoverInterrupted(scope); return box.context(scope); }, (state, error) -> {
+            contextLoaded = true;
+            restorationIntent = error == null ? state : null;
+            tryRestoreLocalContext();
+        });
+    }
+
+    private void tryRestoreLocalContext() {
+        if (!contextLoaded || contextNavigationRestored || restorationIntent == null || !verified || offlineHistory || !roomsVerifiedForSession
+                || account == null || v2Busy || selectedRoom != null || pendingNotificationMessageId > 0
+                || pendingPushRoomId > 0 || pendingNotificationTaskId > 0) return;
+        BChatLocalState saved = restorationIntent;
+        contextNavigationRestored = true;
+        if (!saved.cart.isEmpty() && v1Companies.contains(saved.cartCompanyId))
+            orderCompanyId = saved.cartCompanyId;
+        if (v1Companies.contains(saved.companyId)) selectedChatCompanyId = saved.companyId;
+        if ("chats".equals(saved.section) && saved.roomId > 0 && chatAllowed()) {
+            for (Room room : rooms) if (room.id == saved.roomId && room.companyId == saved.companyId
+                    && room.membershipId == saved.membershipId) {
+                restorationAnchor = saved.anchorMessageId;
+                restorationOffset = saved.anchorOffset;
+                restoringContext = true;
+                selectRoom(room, 0);
+                return;
+            }
+        } else if ("tasks".equals(saved.section) && permissionSet.taskView) {
+            taskStateFilter = saved.taskFilter;
+            switchSection("tasks");
+        } else if ("orders".equals(saved.section) && permissionSet.orderView) {
+            // Options and batch hydration must authorize these raw identifiers before use.
+            if (v1Companies.contains(saved.cartCompanyId)) orderCompanyId = saved.cartCompanyId;
+            switchSection("orders");
+        }
+        // A vanished room is a safe return to the current room list, not stale membership reuse.
+        if (saved.cart.isEmpty()) restorationIntent = null;
+    }
+
+    private <T> void local(AccountScope scope, BChatStorageRepository.Work<T> work,
+                           BChatStorageRepository.Ready<T> ready) {
+        final int session = epoch;
+        BChatStorageRepository.submit(scope, work, (value, error) -> {
+            if (closed || session != epoch || account != scope) return;
+            ready.complete(value, error);
+        });
+    }
+
+    private String intentWriteKey(AccountScope scope, String kind) {
+        return kind + ":" + scope.key + ":" + epoch + ":"
+                + BChatStorageRepository.generation(scope);
+    }
+
+    private boolean intentBusy(AccountScope scope, String kind) {
+        return scope != null && intentWrites.contains(intentWriteKey(scope, kind));
+    }
+
+    /** Admission and retirement use the same disk lane as purge, never an apply() surrogate. */
+    private boolean intentWork(AccountScope scope, String kind,
+            BChatStorageRepository.Work<Boolean> work, BChatStorageRepository.Ready<Boolean> ready) {
+        if (scope == null || account != scope || !verified) return false;
+        final String key = intentWriteKey(scope, kind);
+        if (!intentWrites.add(key)) return false;
+        local(scope, work, (saved, error) -> {
+            intentWrites.remove(key);
+            ready.complete(saved, error);
+        });
+        return true;
+    }
+
+    private boolean persistIntent(AccountScope scope, String kind, SharedPreferences preferences,
+            String expected, String value, BChatStorageRepository.Ready<Boolean> ready) {
+        return intentWork(scope, kind, () -> BChatIntentPersistence.replace(
+                BChatIntentPersistence.preferences(preferences), scope.key, expected, value), ready);
+    }
+
+    private boolean currentIntentContext(AccountScope scope, long companyId, long roomId) {
+        if (!verified || scope == null || account != scope || !v1Companies.contains(companyId)) return false;
+        if (roomId == 0) return true;
+        for (Room room : rooms)
+            if (room.id == roomId && room.companyId == companyId && room.membershipId > 0) return true;
+        return false;
+    }
+
+    private long intentMembership(long roomId) {
+        if (roomId == 0) return 0;
+        for (Room room : rooms) if (room.id == roomId) return room.membershipId;
+        return -1;
+    }
+
+    private boolean localMatches(Room room) {
+        return roomLocal != null && roomLocal.roomId == room.id && roomLocal.membershipId == room.membershipId;
+    }
+
+    private void refreshLocalRoom(Room room, boolean restoreDraft) {
+        if (account == null || outbox == null || room != selectedRoom || offlineHistory) return;
+        final TimelineWindowOwner localOwner = messageWindowOwner;
+        if (localOwner == null || !localOwner.current()) return;
+        final AccountScope scope = account;
+        final BChatV2Outbox box = outbox;
+        final BChatConnectedMediaStore media = mediaStore;
+        final int request = ++localReadSerial;
+        final long revision = editorRevision;
+        final boolean hydrateDraft = restoreDraft || roomDraftNeedsRestore;
+        localReadBusy = true;
+        local(scope, () -> {
+            BChatStageAdmission.Recovery recovery=media==null?null:BChatStageAdmission.recover(box,media,scope,room.id,room.membershipId);
+            return new RoomLocalSnapshot(room.id, room.membershipId,
+                box.roomEntries(scope, room.id, room.membershipId),
+                box.firstStale(scope, room.id, room.membershipId), box.draftRecord(scope, room.id, room.membershipId),
+                recovery==null?Collections.emptyList():recovery.media,
+                media == null ? null : media.diagnostics(scope),box.tickets().head(scope,room.id,room.membershipId),recovery);
+        }, (snapshot, error) -> {
+            if (request != localReadSerial || selectedRoom != room || !localOwner.current()) return;
+            localReadBusy = false;
+            if (error != null) { chatNotice.setText(R.string.chat_v2_save_failed); return; }
+            roomLocal = snapshot;
+            if (!publishMessageRows(displayedMessages, snapshot.text)) return;
+            if (hydrateDraft && editorRevision == revision) {
+                suppressDraftChanges = true;
+                messageInput.setText(snapshot.draft == null ? "" : snapshot.draft.body);
+                suppressDraftChanges = false;
+                draftActive = true;
+                if (snapshot.draft != null && snapshot.draft.replyToMessageId > 0)
+                    restoreDraftReply(scope, room, snapshot.draft.replyToMessageId);
+                if(snapshot.draft!=null)scheduleDraftSave(scope,room,messageInput.getText().toString());
+            }
+            if (hydrateDraft) {
+                draftActive = true;
+                roomDraftNeedsRestore = false;
+                if (editorRevision != revision)
+                    scheduleDraftSave(scope, room, messageInput.getText().toString());
+            }
+            updatePendingUi();
+            handler.post(this::retryPending);
+            handler.post(()->replayKnownConnectedMedia(scope,room));
+        });
+    }
+
+    private void restoreDraftReply(AccountScope scope, Room room, long replyId) {
+        selectedReplyMessageId = replyId;
+        draftReplyBlocked = true;
+        replyTray.setVisibility(View.VISIBLE);
+        replyPreview.setText(R.string.chat_v2_loading);
+        Runnable read = new Runnable() {
+            @Override public void run() {
+                if (!stillCurrent(scope, room) || selectedReplyMessageId != replyId) return;
+                if (v2Busy) { handler.postDelayed(this, 250); return; }
+                fetchV2("GET", V2_ROOMS + "/" + room.id + "/messages/" + replyId, null, (status, result) -> {
+                    if (!stillCurrent(scope, room) || selectedReplyMessageId != replyId) return;
+                    try {
+                        if (status != 200 || result == null || positiveId(result.get("api_version")) != 2)
+                            throw new IllegalArgumentException();
+                        JSONObject message = validateMessageList(new JSONArray().put(result.getJSONObject("message")), 0).get(0);
+                        if (positiveId(message.get("id")) != replyId) throw new IllegalArgumentException();
+                        requireReceiptEpoch(result, room);
+                        persistReceiptCanonical(scope, room, Collections.singletonList(message));
+                        draftReplyBlocked = false;
+                        selectReply(room, replyId, message.getString("author_name"), message.getString("text"));
+                    } catch (Exception denied) {
+                        // The saved reply remains explicit; never silently dispatch its text without the reference.
+                        replyPreview.setText(R.string.chat_v2_reply_unavailable);
+                    }
+                    updatePendingUi();
+                });
+            }
+        };
+        handler.post(read);
+    }
+
     private void scheduleDraftSave(AccountScope scopedAccount, Room scopedRoom, String body) {
         if (draftSaveTask != null) handler.removeCallbacks(draftSaveTask);
+        final long reply = selectedReplyMessageId;
+        final long revision=editorRevision;
         final Runnable[] task = new Runnable[1];
         task[0] = () -> {
             if (draftSaveTask != task[0]) return;
             draftSaveTask = null;
-            if (closed || account != scopedAccount || selectedRoom != scopedRoom || !draftActive
-                    || outbox == null) return;
-            try { outbox.saveDraft(scopedAccount, scopedRoom.id, scopedRoom.membershipId, body); }
-            catch (Exception invalid) { chatNotice.setText(R.string.chat_v2_save_failed); }
+            if (outbox == null) return;
+            final BChatV2Outbox box = outbox;
+            local(scopedAccount, () -> {
+                box.saveDraft(scopedAccount, scopedRoom.id, scopedRoom.membershipId, body, reply,revision);
+                return null;
+            }, (ignored, invalid) -> {
+                if (invalid != null && selectedRoom == scopedRoom) {
+                    ++storageWriteFailureSerial;
+                    chatNotice.setText(R.string.chat_v2_save_failed);
+                }
+            });
         };
         draftSaveTask = task[0];
         handler.postDelayed(task[0], 300);
@@ -5079,6 +6032,25 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     private void clearChatView() {
+        invalidateMessageTimelineOwner();
+        clearRoomListNow();
+        closeReceiptDetails();
+        closeRoomExplore();
+        historySearchSupported = false;
+        if(notificationSettingsPanel!=null){notificationSettingsPanel.dismiss();notificationSettingsPanel=null;}
+        ++mediaDownloadGeneration;
+        restorationIntent = null;
+        contextLoaded = contextNavigationRestored = false;
+        restoringContext = false;
+        cartRestoreBusy = false;
+        ++cartRestoreGeneration;
+        if (cartRestoreDialog != null) cartRestoreDialog.dismiss();
+        roomsVerifiedForSession = false;
+        globalPendingKnown = globalPendingAvailable = false;
+        ++localReadSerial;
+        roomLocal = null; localTextRows.clear(); localReadBusy = false;
+        roomDraftNeedsRestore = false;
+        textDispatchBusy = textEnqueueBusy = false;
         ++mediaSessionGeneration;
         ++historyWriteGeneration;
         closeLiveSync();
@@ -5094,11 +6066,16 @@ public final class OdooIdentityActivity extends Activity {
         offlineChatVerifiedAt = offlineTaskVerifiedAt = 0;
         offlineUncertainWrite = false;
         receiptsAvailable = false;
+        receiptDeliverySupported = false;
+        receiptStorageGeneration = 0;
+        receiptNeedsRoomRebind = false;
+        receiptRebindGeneration = 0;
         liveRoomsDirty = liveMessagesDirty = liveTasksDirty = liveOrdersDirty = false;
         stopInlineAudio();
         stopRecordingBadge();
         if (connectedVoiceRecorder != null) {
             connectedVoiceRecorder.cancel(); connectedVoiceRecorder = null;
+            releaseRecordingFocus();
         }
         clearVoicePreview();
         if (cameraCaptureFile != null) { cameraCaptureFile.delete(); cameraCaptureFile = null; }
@@ -5108,6 +6085,7 @@ public final class OdooIdentityActivity extends Activity {
         groupPhotoRoom = null;
         groupAvatarWaiting.clear();
         groupAvatarQueue.clear();
+        groupAvatarActive = null;
         groupAvatarBusy = false;
         ++groupAvatarNonce;
         if (groupAvatarPort != null) { groupAvatarPort.close(); groupAvatarPort = null; }
@@ -5252,16 +6230,16 @@ public final class OdooIdentityActivity extends Activity {
                         || historyCache != cache) return;
                 try { write.run(); }
                 catch (RuntimeException storage) {
+                    preferences().edit().putBoolean(REMEMBER, false).commit();
+                    cache.close();
                     handler.post(() -> {
                         if (closed || generation != historyWriteGeneration
                                 || globalGeneration != historyGlobalGeneration || account != scope
                                 || historyCache != cache) return;
                         ++historyWriteGeneration;
-                        preferences().edit().putBoolean(REMEMBER, false).commit();
-                        synchronized (historyStorageLock) {
-                            historyCache.close();
-                            historyCache = null;
-                        }
+                        ++offlinePolicySerial;
+                        offlinePolicyReady(false);
+                        historyCache = null;
                     });
                 }
             }
@@ -5292,6 +6270,10 @@ public final class OdooIdentityActivity extends Activity {
 
     private void showRooms() {
         if (!chatAllowed() && !offlineHistory) return;
+        invalidateMessageTimelineOwner();
+        closeReceiptDetails();
+        closeRoomExplore();
+        restoringContext = false;
         if (roomActionMenu != null) roomActionMenu.dismiss();
         if (mediaPreviewDialog != null) mediaPreviewDialog.dismiss();
         ++mediaSessionGeneration;
@@ -5301,6 +6283,7 @@ public final class OdooIdentityActivity extends Activity {
         closeMediaRead();
         if (connectedVoiceRecorder != null) {
             connectedVoiceRecorder.cancel(); connectedVoiceRecorder = null;
+            releaseRecordingFocus();
         }
         stopRecordingBadge();
         clearVoicePreview();
@@ -5349,117 +6332,128 @@ public final class OdooIdentityActivity extends Activity {
     private void renderRooms() {
         if (roomItems == null) return;
         roomItems.removeAllViews();
-        roomItems.setGravity(Gravity.TOP);
         try {
             boolean hasPending = sendAllowed() && verified && account != null && outbox != null
-                    && !outbox.pageForAccount(account, 0).isEmpty();
+                    && globalPendingAvailable;
+            if (!globalPendingKnown && verified && account != null && outbox != null) {
+                globalPendingKnown = true;
+                final AccountScope scope = account;
+                final BChatV2Outbox box = outbox;
+                local(scope, () -> !box.pageForAccount(scope, 0).isEmpty(), (present, error) -> {
+                    globalPendingAvailable = error == null && Boolean.TRUE.equals(present);
+                    if (selectedRoom == null) renderRooms();
+                });
+            }
             roomPendingButton.setVisibility(hasPending ? View.VISIBLE : View.GONE);
         } catch (Exception storage) {
             roomPendingButton.setVisibility(View.GONE);
             chatNotice.setText(R.string.chat_v2_save_failed);
             return;
         }
-        if (rooms.isEmpty()) {
-            chatNotice.setText("");
-            roomItems.setGravity(Gravity.CENTER);
-            roomItems.addView(Ui.emptyState(this, getString(R.string.chat_v2_no_rooms),
-                    getString(R.string.chat_v2_rooms_empty_hint)),
-                    new LinearLayout.LayoutParams(-1, -1));
-            return;
-        }
         chatNotice.setText("");
-        String query = roomSearchInput == null ? "" : roomSearchInput.getText().toString().trim()
-                .toLowerCase(Locale.ROOT);
-        int shown = 0;
+        if (!roomListOwnerCurrent(roomListEpoch)) { clearRoomListNow(); return; }
+        if (selectedRoom != null) return;
+        final long owner = roomListEpoch;
+        if (roomListAdapter == null) {
+            roomListAdapter = new BChatRoomListAdapter(new BChatRoomListAdapter.Host() {
+                public boolean current() { return roomListOwnerCurrent(owner); }
+                public boolean current(BChatRoomRow row) {
+                    Room room = currentRoomRow(owner, row.key);
+                    return room != null && room.companyId == row.company
+                            && room.avatarVersion == row.avatarVersion && room.isGroup == row.group;
+                }
+                public void open(BChatRoomRow.Key key) {
+                    Room room = currentRoomRow(owner, key);
+                    if (room != null && selectedRoom == null && "chats".equals(visibleSection)
+                            && roomScroll.getVisibility() == View.VISIBLE) selectRoom(room);
+                }
+                public Runnable avatar(BChatRoomRow row, FrameLayout slot) {
+                    Room room = currentRoomRow(owner, row.key);
+                    if (room == null || selectedRoom != null || !current(row)) return () -> {};
+                    View avatar = roomAvatarView(room, () -> current(row) && selectedRoom == null
+                            && "chats".equals(visibleSection) && roomScroll.getVisibility() == View.VISIBLE);
+                    slot.removeAllViews(); slot.addView(avatar, new FrameLayout.LayoutParams(-1, -1));
+                    return () -> { releaseGroupAvatarView(avatar); slot.removeView(avatar); };
+                }
+                public void committed(int count) { if (current()) renderRoomEmptyState(count); }
+            }, roomListLane);
+            roomRecycler.setAdapter(roomListAdapter);
+        }
+        List<BChatRoomRow> projection = new ArrayList<>();
         boolean showCompany = v1Companies.size() > 1;
+        String renderKey = getResources().getConfiguration().toString() + ":" + ChatAppearance.bodySp(this);
         for (Room room : rooms) {
             String companyName = showCompany ? companyNameForId(room.companyId, "") : "";
-            if (!query.isEmpty() && !room.name.toLowerCase(Locale.ROOT).contains(query)
-                    && !companyName.toLowerCase(Locale.ROOT).contains(query)) continue;
-            shown++;
-            LinearLayout entry = Ui.row(this);
-            Ui.pad(entry, 14, 8);
-            float fontScale = getResources().getConfiguration().fontScale;
-            entry.setMinimumHeight(Ui.dp(this, Ui.ROOM_ROW_MIN_DP * Math.max(1f, fontScale)));
-            entry.addView(roomAvatarView(room), new LinearLayout.LayoutParams(
-                    dp(Ui.ROOM_AVATAR_DP), dp(Ui.ROOM_AVATAR_DP)));
-            LinearLayout labelColumn = Ui.column(this);
-            LinearLayout titleRow = Ui.row(this);
-            TextView name = Ui.text(this, room.name, Ui.ROOM_TITLE_SP, Ui.INK, true);
-            name.setMaxLines(2);
-            name.setEllipsize(android.text.TextUtils.TruncateAt.END);
-            titleRow.addView(name, new LinearLayout.LayoutParams(0, -2, 1));
-            if (!room.lastMessageAt.isEmpty()) {
-                TextView lastTime = Ui.text(this, formatRoomListTime(room.lastMessageAt),
-                        Ui.CHAT_TIME_SP, Ui.MUTED, false);
-                lastTime.setSingleLine(true);
-                LinearLayout.LayoutParams timeSize = new LinearLayout.LayoutParams(-2, -2);
-                timeSize.setMarginStart(dp(8));
-                titleRow.addView(lastTime, timeSize);
-            }
-            labelColumn.addView(titleRow, new LinearLayout.LayoutParams(-1, -2));
-            LinearLayout subtitleRow = Ui.row(this);
             String preview = room.lastMessagePreview.isEmpty()
                     ? (room.lastMessageKind.isEmpty()
                             ? getString(R.string.chat_v2_room_label)
                             : mediaKindDescription(room.lastMessageKind))
                     : room.lastMessagePreview;
-            TextView subtitle = Ui.text(this, preview, Ui.CHAT_PREVIEW_SP, Ui.MUTED, false);
-            subtitle.setSingleLine(true);
-            subtitle.setEllipsize(android.text.TextUtils.TruncateAt.END);
-            subtitleRow.addView(subtitle, new LinearLayout.LayoutParams(0, -2, 1));
-            if (room.unreadCount > 0) {
-                TextView badge = Ui.text(this, room.unreadCount > 99 ? "99+"
-                        : String.valueOf(room.unreadCount), Ui.CHAT_META_SP, Color.WHITE, true);
-                badge.setGravity(Gravity.CENTER);
-                badge.setBackground(Ui.bg(Ui.GREEN, 20, this));
-                badge.setMinWidth(dp(22));
-                LinearLayout.LayoutParams badgeSize = new LinearLayout.LayoutParams(-2, dp(22));
-                badgeSize.setMarginStart(dp(8));
-                subtitleRow.addView(badge, badgeSize);
-            }
-            if (room.isGroup && room.hasActiveTask) {
-                TextView taskChip = Ui.text(this, getString(R.string.bchat_room_has_tasks),
-                        Ui.CHAT_META_SP, Ui.GREEN, true);
-                taskChip.setSingleLine(true);
-                taskChip.setBackground(Ui.bg(0xffe6f3fb, 14, this));
-                LinearLayout.LayoutParams taskChipSize = new LinearLayout.LayoutParams(-2, dp(22));
-                taskChipSize.setMarginStart(dp(8));
-                subtitleRow.addView(taskChip, taskChipSize);
-            }
-            labelColumn.addView(subtitleRow, new LinearLayout.LayoutParams(-1, -2));
-            if (showCompany && !companyName.isEmpty()) {
-                TextView companyLabel = Ui.text(this, companyName, Ui.CHAT_META_SP,
-                        Ui.MUTED, false);
-                companyLabel.setSingleLine(true);
-                companyLabel.setEllipsize(android.text.TextUtils.TruncateAt.END);
-                LinearLayout.LayoutParams companySize = new LinearLayout.LayoutParams(-1, -2);
-                companySize.topMargin = dp(2);
-                labelColumn.addView(companyLabel, companySize);
-            }
-            LinearLayout.LayoutParams labelSize = new LinearLayout.LayoutParams(0, -2, 1);
-            labelSize.setMarginStart(dp(10));
-            entry.addView(labelColumn, labelSize);
-            entry.setContentDescription(companyName.isEmpty() ? room.name
-                    : room.name + ", " + companyName);
-            Ui.clickable(entry);
-            entry.setOnClickListener(v -> selectRoom(room));
-            roomItems.addView(entry, new LinearLayout.LayoutParams(-1, -2));
-            LinearLayout.LayoutParams dividerSize = new LinearLayout.LayoutParams(-1, dp(1));
-            dividerSize.setMarginStart(dp(72));
-            roomItems.addView(Ui.line(this), dividerSize);
+            projection.add(new BChatRoomRow(new BChatRoomRow.Key(account.key, room.id, room.membershipId),
+                    room.companyId, room.name, preview,
+                    room.lastMessageAt.isEmpty() ? "" : formatRoomListTime(room.lastMessageAt),
+                    companyName, getString(R.string.bchat_room_has_tasks), room.unreadCount,
+                    room.avatarVersion, room.isGroup, room.hasActiveTask, renderKey));
         }
-        if (shown == 0) {
-            roomItems.setGravity(Gravity.CENTER);
-            roomItems.addView(Ui.emptyState(this, getString(R.string.chat_v2_no_room_matches), ""),
-                    new LinearLayout.LayoutParams(-1, -1));
+        List<BChatRoomRow> filtered = BChatRoomRow.filter(projection,
+                roomSearchInput == null ? "" : roomSearchInput.getText().toString());
+        roomListAdapter.submit(filtered);
+        renderRoomEmptyState(filtered.size());
+    }
+
+    private void renderRoomEmptyState(int count) {
+        if (roomItems == null) return;
+        roomItems.removeAllViews(); roomItems.setVisibility(count == 0 ? View.VISIBLE : View.GONE);
+        if (count == 0) roomItems.addView(Ui.emptyState(this,
+                getString(rooms.isEmpty() ? R.string.chat_v2_no_rooms : R.string.chat_v2_no_room_matches),
+                rooms.isEmpty() ? getString(R.string.chat_v2_rooms_empty_hint) : ""),
+                new FrameLayout.LayoutParams(-1, -1));
+    }
+
+    private boolean roomListOwnerCurrent(long owner) {
+        return roomListAdmitted && owner == roomListEpoch && !closed && account != null
+                && account == roomListAccount && epoch == roomListSession && historyGlobalGeneration == roomListGlobal
+                && offlineHistory == roomListOffline && permissionAccount == account && permissionSet.chatView
+                && (offlineHistory ? offlineChatCacheAvailable && offlinePersistenceReady : verified && roomsVerifiedForSession);
+    }
+
+    private Room currentRoomRow(long owner, BChatRoomRow.Key key) {
+        if (!roomListOwnerCurrent(owner) || !account.key.equals(key.account)) return null;
+        for (Room room : rooms) if (room.id == key.room && room.membershipId == key.membership
+                && v1Companies.contains(room.companyId)) return room;
+        return null;
+    }
+
+    /** Only accepted online/offline room-snapshot proof points call this; rendering never grants ownership. */
+    private void admitRoomListSnapshot() {
+        if (!roomListOwnerCurrent(roomListEpoch)) clearRoomListNow();
+        roomListAccount = account; roomListSession = epoch; roomListGlobal = historyGlobalGeneration;
+        roomListOffline = offlineHistory; roomListAdmitted = account != null;
+    }
+
+    private void invalidateRoomListForSnapshot(List<Room> next) {
+        boolean same = roomListOwnerCurrent(roomListEpoch) && next.size() == rooms.size();
+        if (same) for (Room prior : rooms) {
+            boolean found = false;
+            for (Room room : next) if (prior.sameMembership(room) && prior.companyId == room.companyId) { found = true; break; }
+            if (!found) { same = false; break; }
         }
+        if (!same) clearRoomListNow();
+    }
+
+    private void clearRoomListNow() {
+        ++roomListEpoch; roomListAdmitted = false; roomListAccount = null;
+        if (roomListAdapter != null) roomListAdapter.invalidateNow();
+        if (roomRecycler != null) roomRecycler.setAdapter(null);
+        roomListAdapter = null;
+        if (roomItems != null) { roomItems.removeAllViews(); roomItems.setVisibility(View.GONE); }
     }
 
     private void loadRooms() {
         if (!chatAllowed()) return;
         boolean initial = chatRoot.getVisibility() != View.VISIBLE;
         final int requestUnreadMetadataGeneration = unreadMetadataGeneration;
+        final int requestHistoryGeneration = historyGlobalGeneration;
         if (initial) shellNotice.setText(R.string.chat_v2_loading);
         else chatNotice.setText(R.string.chat_v2_loading);
         fetchV2("GET", V2_ROOMS, null, (statusCode, result) -> {
@@ -5470,6 +6464,9 @@ public final class OdooIdentityActivity extends Activity {
                 if (requestUnreadMetadataGeneration != unreadMetadataGeneration) {
                     loadRooms();
                     return;
+                }
+                if (requestHistoryGeneration != historyGlobalGeneration) {
+                    loadRooms(); return; // A pre-revocation response cannot re-arm the new receipt generation.
                 }
                 JSONArray list = result.getJSONArray("rooms");
                 if (list.length() > 100) throw new IllegalArgumentException();
@@ -5514,6 +6511,16 @@ public final class OdooIdentityActivity extends Activity {
                         throw new IllegalArgumentException();
                     validated.add(room);
                 }
+                if (notificationPresentationOwned(account)) {
+                    boolean lostMembership = false;
+                    for (Room prior : rooms) {
+                        boolean retained = false;
+                        for (Room current : validated) if (prior.sameMembership(current)) { retained = true; break; }
+                        if (!retained) { lostMembership = true; break; }
+                    }
+                    if (lostMembership) BChatPushState.contentInvalidated(this, account);
+                }
+                invalidateRoomListForSnapshot(validated);
                 Room active = selectedRoom;
                 Room refreshedActive = null;
                 if (active != null) {
@@ -5529,11 +6536,13 @@ public final class OdooIdentityActivity extends Activity {
                     if (refreshedActive == null) {
                         showRooms();
                         if (mediaStore != null && account != null) {
-                            try {
-                                BChatConnectedMediaStore.Entry stale = mediaStore.pending(account,
-                                        active.id, active.membershipId);
-                                if (stale != null) mediaStore.discard(account, stale);
-                            } catch (IOException ignored) { /* The server still denies the stale membership. */ }
+                            final AccountScope scope = account;
+                            final BChatConnectedMediaStore store = mediaStore;
+                            BChatStorageRepository.write(scope, () -> {
+                                BChatConnectedMediaStore.Entry stale = store.pending(scope, active.id, active.membershipId);
+                                if (stale != null) store.discard(scope, stale);
+                                return null;
+                            });
                         }
                     }
                     else {
@@ -5546,6 +6555,9 @@ public final class OdooIdentityActivity extends Activity {
                 }
                 rooms.clear();
                 rooms.addAll(validated);
+                roomsVerifiedForSession = true;
+                admitRoomListSnapshot();
+                refreshTransferAuthority();
                 ++roomMetadataGeneration;
                 if (historyCache != null && account != null) {
                     List<ConnectedHistoryCache.RoomRecord> snapshot = new ArrayList<>();
@@ -5555,14 +6567,13 @@ public final class OdooIdentityActivity extends Activity {
                     AccountScope scopedAccount = account;
                     ConnectedHistoryCache cache = historyCache;
                     boolean remembered = preferences().getBoolean(REMEMBER, false);
-                    queueHistoryWrite(scopedAccount, cache,
-                            () -> cache.reconcile(scopedAccount, remembered, snapshot));
+                    persistReceiptRooms(scopedAccount, cache, remembered, snapshot);
                 }
                 if (initial) {
                     shell.setVisibility(View.GONE);
                     chatRoot.setVisibility(View.VISIBLE);
                     if (loginReleaseFooter != null) loginReleaseFooter.setVisibility(View.GONE);
-                    layout.setPadding(0, 0, 0, 0);
+                    setScreenPadding(0, 0);
                     showRooms();
                 } else renderRooms();
                 openDeferredPushRoomIfPresent();
@@ -5571,6 +6582,7 @@ public final class OdooIdentityActivity extends Activity {
                     unresolvedSendNotice = false;
                 }
                 processPendingPush();
+                handler.post(this::tryRestoreLocalContext);
                 // Resolve the orders capability before optional push registration can
                 // occupy the single v2 request channel with a retry.
                 maybeProbeOrderCapability();
@@ -5746,12 +6758,21 @@ public final class OdooIdentityActivity extends Activity {
     private void selectRoom(Room room, long notifiedMessageId) {
         if ((!chatAllowed() && !offlineHistory) || room == null || !rooms.contains(room)
                 || v2Busy || (!offlineHistory && csrfToken == null)) return;
+        invalidateMessageTimelineOwner();
+        closeReceiptDetails();
+        flushDraftSave();
+        closeRoomExplore();
+        ++localReadSerial;
+        roomLocal = null; localTextRows.clear(); localReadBusy = false;
+        roomDraftNeedsRestore = true;
+        ++editorRevision;
         ++mediaSessionGeneration;
         stopInlineAudio();
         closeMediaUpload();
         closeMediaRead();
         if (connectedVoiceRecorder != null) {
             connectedVoiceRecorder.cancel(); connectedVoiceRecorder = null;
+            releaseRecordingFocus();
         }
         stopRecordingBadge();
         clearVoicePreview();
@@ -5800,7 +6821,8 @@ public final class OdooIdentityActivity extends Activity {
         displayedMessages.clear();
         olderPageLoading = false;
         olderPageFailed = false;
-        messageAdapter.notifyDataSetChanged();
+        if (!admitMessageTimelineOwner(room)) return;
+        publishMessageRows(displayedMessages, localTextRows);
         ++messageRenderSerial;
         if (offlineHistory) {
             roomTasksButton.setVisibility(View.GONE);
@@ -5808,20 +6830,21 @@ public final class OdooIdentityActivity extends Activity {
             showCachedMessages(room, 0, true);
             return;
         }
-        String savedDraft = outbox == null || account == null ? null
-                : outbox.draft(account, room.id, room.membershipId);
         suppressDraftChanges = true;
-        messageInput.setText(savedDraft == null ? "" : savedDraft);
+        messageInput.setText("");
         suppressDraftChanges = false;
-        draftActive = true; // Every new text is a draft until persisted into the outbox.
+        draftActive = false; // A current verified room's durable draft loads off the UI thread.
+        if (!restoringContext) refreshLocalRoom(room, true);
         updatePendingUi();
-        showCachedMessages(room, 0, true);
-        loadMessages(notifiedMessageId > 0 && notifiedMessageId < 2147483647L
+        if (!restoringContext) showCachedMessages(room, 0, true);
+        loadMessages(restoringContext && restorationAnchor > 0 && restorationAnchor < 2147483647L
+                ? restorationAnchor + 1 : notifiedMessageId > 0 && notifiedMessageId < 2147483647L
                 ? notifiedMessageId + 1 : 0);
     }
 
     private void clearSelectedReply() {
         selectedReplyMessageId = 0;
+        draftReplyBlocked = false;
         if (replyPreview != null) replyPreview.setText("");
         if (replyTray != null) replyTray.setVisibility(View.GONE);
     }
@@ -5829,12 +6852,15 @@ public final class OdooIdentityActivity extends Activity {
     private void selectReply(Room room, long messageId, String author, String text) {
         if (room == null || selectedRoom != room || messageId <= 0) return;
         selectedReplyMessageId = messageId;
+        ++editorRevision;
         String preview = text.replace('\n', ' ').replace('\r', ' ').trim();
         if (preview.isEmpty()) preview = getString(R.string.chat_v2_attachment_reply);
         if (preview.length() > 100) preview = preview.substring(0, 100) + "…";
         replyPreview.setText(getString(R.string.chat_v2_reply_preview, author, preview));
         replyTray.setVisibility(View.VISIBLE);
         messageInput.requestFocus();
+        if (draftActive && account != null)
+            scheduleDraftSave(account, room, messageInput.getText().toString());
     }
 
     private void updatePendingUi() {
@@ -5848,29 +6874,34 @@ public final class OdooIdentityActivity extends Activity {
             sendButton.setEnabled(false);
             return;
         }
-        BChatV2Outbox.Entry pending = outbox.first(account, selectedRoom.id, selectedRoom.membershipId);
-        BChatV2Outbox.Entry stale = outbox.firstStale(account, selectedRoom.id, selectedRoom.membershipId);
+        if (!localMatches(selectedRoom)) {
+            sendButton.setEnabled(false);
+            if (!localReadBusy && !restoringContext) refreshLocalRoom(selectedRoom, false);
+            return;
+        }
+        BChatV2Outbox.Entry pending = roomLocal.head();
+        BChatV2Outbox.Entry stale = roomLocal.stale;
         retryButton.setVisibility(pending == null || pending.reviewCode == 1 ? View.GONE : View.VISIBLE);
         resolvePendingButton.setVisibility(pending == null ? View.GONE : View.VISIBLE);
         pendingActionsRow.setVisibility(pending == null ? View.GONE : View.VISIBLE);
         stalePendingButton.setVisibility(stale == null ? View.GONE : View.VISIBLE);
         boolean mediaPending = false;
         boolean mediaPolicyChanged = false;
-        try {
-            List<BChatConnectedMediaStore.Entry> mediaEntries = mediaStore == null
-                    ? Collections.emptyList() : mediaStore.pendingForRoom(account, selectedRoom.id,
-                    selectedRoom.membershipId);
+        {
+            List<BChatConnectedMediaStore.Entry> mediaEntries = roomLocal.media;
             mediaPending = !mediaEntries.isEmpty();
             for (BChatConnectedMediaStore.Entry mediaEntry : mediaEntries)
                 if (mediaEntry.policyVersion != selectedRoom.invoicePolicyVersion)
                     mediaPolicyChanged = true;
-        } catch (IOException damaged) { chatNotice.setText(R.string.chat_v2_save_failed); mediaPending = true; }
+        }
         boolean inFlight = mediaStageBusy || mediaUploadBusy || mediaConfirmBusy
                 && mediaConfirmRoom != null && mediaConfirmRoom.sameMembership(selectedRoom);
         mediaReviewButton.setVisibility(CONNECTED_MEDIA_UI_ENABLED && mediaPending && !inFlight
+                &&(roomLocal.recovery==null||!roomLocal.recovery.staging)
                 ? View.VISIBLE : View.GONE);
-        sendButton.setEnabled(sendAllowed() && pending == null && !mediaPending && !v2Busy
-                && !inFlight);
+        sendButton.setEnabled(sendAllowed() && verified && !offlineHistory && !textEnqueueBusy
+                && draftActive && !draftReplyBlocked && roomLocal.text.size() < BChatV2Outbox.MAX_PER_ROOM
+                && !mediaStageBusy);
         // The actionable review controls already explain pending messages below the thread.
         // Keep the conversation area free of a duplicate, non-actionable banner.
         if (pending != null || stale != null) chatNotice.setText("");
@@ -5878,6 +6909,8 @@ public final class OdooIdentityActivity extends Activity {
                 ? R.string.bchat_media_sending : R.string.bchat_media_uploading);
         else if (mediaPending) chatNotice.setText(mediaPolicyChanged
                 ? R.string.bchat_media_policy_changed : R.string.bchat_media_pending);
+        if(roomLocal.recovery!=null&&!roomLocal.recovery.issues.isEmpty())
+            chatNotice.setText(getString(R.string.chat_v2_save_failed)+" ("+roomLocal.recovery.issues.get(0).code+")");
     }
 
     private void showPendingDialog(AlertDialog.Builder builder) {
@@ -5897,8 +6930,11 @@ public final class OdooIdentityActivity extends Activity {
     private void showGlobalPending(long afterId) {
         AccountScope verifiedAccount = account;
         if (verifiedAccount == null || !stillAccount(verifiedAccount)) return;
+        final BChatV2Outbox box = outbox;
+        local(verifiedAccount, () -> box.pageForAccount(verifiedAccount, afterId), (page, error) -> {
+        if (!stillAccount(verifiedAccount)) return;
+        if (error != null) { chatNotice.setText(R.string.chat_v2_save_failed); return; }
         try {
-            List<BChatV2Outbox.Entry> page = outbox.pageForAccount(verifiedAccount, afterId);
             if (page.isEmpty()) {
                 showPendingDialog(new AlertDialog.Builder(this)
                         .setTitle(R.string.chat_v2_global_pending)
@@ -5923,6 +6959,7 @@ public final class OdooIdentityActivity extends Activity {
                     })
                     .setNegativeButton(R.string.chat_v2_cancel, null));
         } catch (Exception storage) { chatNotice.setText(R.string.chat_v2_save_failed); }
+        });
     }
 
     private void showGlobalEntry(AccountScope verifiedAccount, BChatV2Outbox.Entry entry) {
@@ -5930,7 +6967,7 @@ public final class OdooIdentityActivity extends Activity {
         TextView text = new TextView(this);
         text.setText(entry.body);
         text.setTextSize(16);
-        text.setTextColor(0xff243e54);
+        text.setTextColor(UiPalette.ink(this));
         text.setPadding(dp(18), dp(12), dp(18), dp(12));
         ScrollView scroll = new ScrollView(this);
         scroll.addView(text);
@@ -5959,24 +6996,30 @@ public final class OdooIdentityActivity extends Activity {
 
     private void confirmGlobalConvert(AccountScope verifiedAccount, BChatV2Outbox.Entry entry, Room target) {
         if (!stillAccount(verifiedAccount) || !rooms.contains(target)) return;
+        final BChatV2Outbox box = outbox;
+        local(verifiedAccount, () -> box.draft(verifiedAccount, target.id, target.membershipId) != null, (replacing, error) -> {
+        if (!stillAccount(verifiedAccount) || !rooms.contains(target)) return;
+        if (error != null) { chatNotice.setText(R.string.chat_v2_save_failed); return; }
         try {
-            boolean replacing = outbox.draft(verifiedAccount, target.id, target.membershipId) != null;
             showPendingDialog(new AlertDialog.Builder(this)
                     .setTitle(R.string.chat_v2_restore_draft)
                     .setMessage(replacing ? R.string.chat_v2_global_replace_warning
                             : R.string.chat_v2_global_restore_warning)
                     .setPositiveButton(R.string.chat_v2_restore_draft, (dialog, which) -> {
                         if (!stillAccount(verifiedAccount) || !rooms.contains(target)) return;
-                        try {
-                            if (!outbox.convertToDraft(verifiedAccount, entry, target.id,
-                                    target.membershipId, replacing)) throw new IllegalStateException("Pending changed");
+                        local(verifiedAccount, () -> box.convertToDraft(verifiedAccount, entry, target.id,
+                                target.membershipId, replacing), (converted, failed) -> {
+                            if (!stillAccount(verifiedAccount) || !rooms.contains(target)) return;
+                            if (failed != null || !Boolean.TRUE.equals(converted)) { chatNotice.setText(R.string.chat_v2_save_failed); return; }
+                            globalPendingKnown = false;
                             renderRooms();
                             selectRoom(target);
                             chatNotice.setText(R.string.chat_v2_draft_restored);
-                        } catch (Exception storage) { chatNotice.setText(R.string.chat_v2_save_failed); }
+                        });
                     })
                     .setNegativeButton(R.string.chat_v2_cancel, null));
         } catch (Exception storage) { chatNotice.setText(R.string.chat_v2_save_failed); }
+        });
     }
 
     private void confirmGlobalDiscard(AccountScope verifiedAccount, BChatV2Outbox.Entry entry) {
@@ -5986,11 +7029,14 @@ public final class OdooIdentityActivity extends Activity {
                 .setMessage(R.string.chat_v2_delete_warning)
                 .setPositiveButton(R.string.chat_v2_delete_local, (dialog, which) -> {
                     if (!stillAccount(verifiedAccount)) return;
-                    try {
-                        if (!outbox.discard(verifiedAccount, entry)) throw new IllegalStateException("Pending changed");
+                    final BChatV2Outbox box = outbox;
+                    local(verifiedAccount, () -> box.discard(verifiedAccount, entry), (discarded, error) -> {
+                        if (!stillAccount(verifiedAccount)) return;
+                        if (error != null || !Boolean.TRUE.equals(discarded)) { chatNotice.setText(R.string.chat_v2_save_failed); return; }
+                        globalPendingKnown = false;
                         renderRooms();
                         chatNotice.setText(R.string.chat_v2_local_deleted);
-                    } catch (Exception storage) { chatNotice.setText(R.string.chat_v2_save_failed); }
+                    });
                 })
                 .setNegativeButton(R.string.chat_v2_cancel, null));
     }
@@ -5999,9 +7045,8 @@ public final class OdooIdentityActivity extends Activity {
         Room room = selectedRoom;
         AccountScope verifiedAccount = account;
         if (room == null || verifiedAccount == null || outbox == null || v2Busy) return;
-        BChatV2Outbox.Entry entry = oldMembership
-                ? outbox.firstStale(verifiedAccount, room.id, room.membershipId)
-                : outbox.first(verifiedAccount, room.id, room.membershipId);
+        if (!localMatches(room)) { refreshLocalRoom(room, false); return; }
+        BChatV2Outbox.Entry entry = oldMembership ? roomLocal.stale : roomLocal.head();
         if (entry == null) { updatePendingUi(); return; }
         showPendingDialog(new AlertDialog.Builder(this)
                 .setTitle(oldMembership ? R.string.chat_v2_review_old_pending : R.string.chat_v2_review_pending)
@@ -6021,27 +7066,28 @@ public final class OdooIdentityActivity extends Activity {
     private void confirmConvertToDraft(AccountScope verifiedAccount, Room room, BChatV2Outbox.Entry entry) {
         if (!stillCurrent(verifiedAccount, room)) return;
         boolean replacing = messageInput.length() > 0
-                || outbox.draft(verifiedAccount, room.id, room.membershipId) != null;
+                || (localMatches(room) && roomLocal.draft != null);
         showPendingDialog(new AlertDialog.Builder(this)
                 .setTitle(R.string.chat_v2_restore_draft)
                 .setMessage(replacing ? R.string.chat_v2_restore_replace_warning
                         : R.string.chat_v2_restore_warning)
                 .setPositiveButton(R.string.chat_v2_restore_draft, (dialog, which) -> {
                     if (!stillCurrent(verifiedAccount, room)) return;
-                    try {
-                        if (!outbox.convertToDraft(verifiedAccount, entry, room.id, room.membershipId, replacing))
-                            throw new IllegalStateException("Pending changed");
+                    final BChatV2Outbox box = outbox;
+                    local(verifiedAccount, () -> box.convertToDraft(verifiedAccount, entry, room.id, room.membershipId, replacing),
+                            (converted, error) -> {
+                        if (!stillCurrent(verifiedAccount, room)) return;
+                        if (error != null || !Boolean.TRUE.equals(converted)) { chatNotice.setText(R.string.chat_v2_save_failed); return; }
+                        ++editorRevision;
                         suppressDraftChanges = true;
                         messageInput.setText(entry.body);
                         messageInput.setSelection(messageInput.length());
                         suppressDraftChanges = false;
                         draftActive = true;
-                        updatePendingUi();
+                        globalPendingKnown = false;
+                        refreshLocalRoom(room, true);
                         chatNotice.setText(R.string.chat_v2_draft_restored);
-                    } catch (Exception invalid) {
-                        suppressDraftChanges = false;
-                        chatNotice.setText(R.string.chat_v2_save_failed);
-                    }
+                    });
                 })
                 .setNegativeButton(R.string.chat_v2_cancel, null));
     }
@@ -6053,11 +7099,14 @@ public final class OdooIdentityActivity extends Activity {
                 .setMessage(R.string.chat_v2_delete_warning)
                 .setPositiveButton(R.string.chat_v2_delete_local, (dialog, which) -> {
                     if (!stillCurrent(verifiedAccount, room)) return;
-                    try {
-                        if (!outbox.discard(verifiedAccount, entry)) throw new IllegalStateException("Pending changed");
+                    final BChatV2Outbox box = outbox;
+                    local(verifiedAccount, () -> box.discard(verifiedAccount, entry), (discarded, error) -> {
+                        if (!stillCurrent(verifiedAccount, room)) return;
+                        if (error != null || !Boolean.TRUE.equals(discarded)) { chatNotice.setText(R.string.chat_v2_save_failed); return; }
+                        globalPendingKnown = false;
                         chatNotice.setText(R.string.chat_v2_local_deleted);
-                        updatePendingUi();
-                    } catch (Exception invalid) { chatNotice.setText(R.string.chat_v2_save_failed); }
+                        refreshLocalRoom(room, false);
+                    });
                 })
                 .setNegativeButton(R.string.chat_v2_cancel, null));
     }
@@ -6111,6 +7160,10 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     private void addConnectedMediaCard(LinearLayout bubble, Room room, MediaRecord media, int width) {
+        if (!mediaAllowed()) {
+            bubble.addView(Ui.text(this, getString(R.string.bchat_media_unavailable), 13, Ui.MUTED, false));
+            return;
+        }
         if ("audio".equals(media.kind)) {
             addInlineAudioCard(bubble, room, media, width);
             return;
@@ -6122,7 +7175,7 @@ public final class OdooIdentityActivity extends Activity {
         if ("image".equals(media.kind)) {
             ImageView picture = new ImageView(this);
             picture.setScaleType(ImageView.ScaleType.CENTER_CROP);
-            picture.setBackground(Ui.bg(0xffe8edf2, 8, this));
+            picture.setBackground(Ui.bg(Ui.ACTION_DISABLED, 8, this));
             card.addView(picture, new LinearLayout.LayoutParams(Math.min(width, dp(240)), dp(132)));
         if (CONNECTED_MEDIA_UI_ENABLED && mediaAllowed() && media.thumbnailAvailable) {
                 Bitmap cached = mediaThumbnailCache.get(mediaThumbKey(room, media));
@@ -6184,6 +7237,8 @@ public final class OdooIdentityActivity extends Activity {
         card.addView(meta, new LinearLayout.LayoutParams(-1, -2));
         play.setOnClickListener(v -> toggleInlineAudio(room, media, play, seek, wave, time));
         save.setOnClickListener(v -> saveConnectedAudio(room, media));
+        play.setEnabled(mediaDownloadAllowed());
+        save.setEnabled(mediaDownloadAllowed());
         if (inlineAudioRoom == room && inlineAudioAccount == account
                 && inlineAudioMediaId == media.id) {
             inlineAudioPlay = play;
@@ -6260,6 +7315,10 @@ public final class OdooIdentityActivity extends Activity {
 
     private void stopInlineAudio() {
         ++inlineAudioRequest;
+        inlineDownloadReadNonce = -1;
+        AudioFocusLease.Lease focus = inlineAudioFocus;
+        inlineAudioFocus = null;
+        if (focus != null) focus.close();
         if (inlineAudioTicker != null) { handler.removeCallbacks(inlineAudioTicker); inlineAudioTicker = null; }
         if (inlineAudioPlayer != null) {
             inlineAudioPlayer.release();
@@ -6306,16 +7365,23 @@ public final class OdooIdentityActivity extends Activity {
 
     private void toggleInlineAudio(Room room, MediaRecord media, TextView play,
                                    SeekBar seek, WaveformView wave, TextView time) {
-        if (!stillCurrent(account, room) || !mediaAllowed()) return;
+        if (!stillCurrent(account, room) || !mediaDownloadAllowed()) return;
         if (inlineAudioRoom == room && inlineAudioMediaId == media.id) {
             if (inlineAudioPlayer == null) { stopInlineAudio(); closeMediaRead(); return; }
             if (!inlineAudioPrepared) return;
             try {
                 if (inlineAudioPlayer.isPlaying()) {
                     inlineAudioPlayer.pause();
+                    if (inlineAudioFocus != null) inlineAudioFocus.close();
+                    inlineAudioFocus = null;
                     play.setText("▶");
                     play.setContentDescription(getString(R.string.bchat_media_play));
                 } else {
+                    final int request = inlineAudioRequest;
+                    inlineAudioFocus = connectedAudioFocus.reserve(reason -> stopOwnedInlineAudio(request));
+                    if (inlineAudioFocus == null || !inlineAudioFocus.gainFocus(connectedAudioAttributes(false), false)) {
+                        stopInlineAudio(); chatNotice.setText(R.string.bchat_media_unavailable); return;
+                    }
                     inlineAudioPlayer.start();
                     play.setText("Ⅱ");
                     play.setContentDescription(getString(R.string.bchat_media_pause));
@@ -6328,6 +7394,9 @@ public final class OdooIdentityActivity extends Activity {
         closeMediaRead(); // User playback takes priority over queued thumbnails.
         final AccountScope scopedAccount = account;
         final int request = inlineAudioRequest;
+        final AudioFocusLease.Lease owner = connectedAudioFocus.reserve(reason -> stopOwnedInlineAudio(request));
+        if (owner == null) { chatNotice.setText(R.string.bchat_media_unavailable); return; }
+        inlineAudioFocus = owner;
         inlineAudioRoom = room;
         inlineAudioAccount = scopedAccount;
         inlineAudioMediaId = media.id;
@@ -6339,7 +7408,7 @@ public final class OdooIdentityActivity extends Activity {
         play.setContentDescription(getString(R.string.bchat_media_cancel_audio));
         time.setText(R.string.bchat_media_loading_audio);
         readConnectedMedia(room, media, false, (file, status) -> {
-            if (request != inlineAudioRequest || !stillCurrent(scopedAccount, room)) {
+            if (request != inlineAudioRequest || !stillCurrent(scopedAccount, room) || !mediaDownloadAllowed() || !owner.active()) {
                 if (file != null) file.delete();
                 return;
             }
@@ -6354,11 +7423,15 @@ public final class OdooIdentityActivity extends Activity {
             try {
                 MediaPlayer player = new MediaPlayer();
                 inlineAudioPlayer = player;
+                player.setAudioAttributes(connectedAudioAttributes(false));
                 try (FileInputStream source = new FileInputStream(file)) {
                     player.setDataSource(source.getFD(), 0, file.length());
                 }
                 player.setOnPreparedListener(ready -> {
-                    if (request != inlineAudioRequest || inlineAudioPlayer != ready) return;
+                    if (request != inlineAudioRequest || inlineAudioPlayer != ready || !mediaDownloadAllowed()) return;
+                    if (!owner.active() || !owner.gainFocus(connectedAudioAttributes(false), false)) {
+                        stopInlineAudio(); chatNotice.setText(R.string.bchat_media_unavailable); return;
+                    }
                     inlineAudioPrepared = true;
                     int duration = Math.max(1, ready.getDuration());
                     if (inlineAudioSeek != null) {
@@ -6375,6 +7448,8 @@ public final class OdooIdentityActivity extends Activity {
                 });
                 player.setOnCompletionListener(done -> {
                     if (request != inlineAudioRequest || inlineAudioPlayer != done) return;
+                    if (inlineAudioFocus != null) inlineAudioFocus.close();
+                    inlineAudioFocus = null;
                     if (inlineAudioPlay != null) {
                         inlineAudioPlay.setText("▶");
                         inlineAudioPlay.setContentDescription(getString(R.string.bchat_media_play));
@@ -6397,6 +7472,19 @@ public final class OdooIdentityActivity extends Activity {
                 chatNotice.setText(R.string.bchat_media_unavailable);
             }
         });
+        if (request == inlineAudioRequest && inlineAudioPlayer == null) inlineDownloadReadNonce = mediaReadNonce;
+    }
+
+    private AudioAttributes connectedAudioAttributes(boolean recording) {
+        return new AudioAttributes.Builder().setUsage(recording ? AudioAttributes.USAGE_VOICE_COMMUNICATION
+                : AudioAttributes.USAGE_MEDIA).setContentType(AudioAttributes.CONTENT_TYPE_SPEECH).build();
+    }
+
+    private void stopOwnedInlineAudio(int request) {
+        if (request != inlineAudioRequest) return;
+        boolean cancelDownload = inlineAudioPlayer == null && inlineDownloadReadNonce == mediaReadNonce;
+        stopInlineAudio();
+        if (cancelDownload) closeMediaRead();
     }
 
     private void showMeasuredAudioWave(File file, MediaRecord media, int request,
@@ -6414,12 +7502,12 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     private void saveConnectedAudio(Room room, MediaRecord media) {
-        if (!stillCurrent(account, room) || !mediaAllowed()) return;
+        if (!stillCurrent(account, room) || !mediaDownloadAllowed()) return;
         stopInlineAudio();
         closeMediaRead();
         final AccountScope scopedAccount = account;
         readConnectedMedia(room, media, false, (file, status) -> {
-            if (file != null && stillCurrent(scopedAccount, room)) prepareDocumentSave(file, room, media);
+            if (file != null && stillCurrent(scopedAccount, room) && mediaDownloadAllowed()) prepareDocumentSave(file, room, media);
             else {
                 if (file != null) file.delete();
                 if (stillCurrent(scopedAccount, room)) chatNotice.setText(R.string.bchat_media_unavailable);
@@ -6439,6 +7527,7 @@ public final class OdooIdentityActivity extends Activity {
             Rect visible = new Rect();
             if (!target.image.getGlobalVisibleRect(visible) || visible.isEmpty()) continue;
             mediaThumbnailQueue.remove(i);
+            final AccountScope thumbnailAccount = account;
             readConnectedMedia(target.room, target.media, true, (file, status) -> {
                 if (file == null) { pumpMediaThumbnails(); return; }
                 mediaIo.execute(() -> {
@@ -6458,7 +7547,7 @@ public final class OdooIdentityActivity extends Activity {
                     } finally { file.delete(); }
                     Bitmap ready = bitmap;
                     handler.post(() -> {
-                        if (ready != null && selectedRoom == target.room && account != null
+                        if (ready != null && selectedRoom == target.room && account == thumbnailAccount && mediaAllowed()
                                 && target.image.isAttachedToWindow()) {
                             mediaThumbnailCache.put(mediaThumbKey(target.room, target.media), ready);
                             target.image.setImageBitmap(ready);
@@ -6472,7 +7561,7 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     private void openConnectedMedia(Room room, MediaRecord media) {
-        if (!CONNECTED_MEDIA_UI_ENABLED || room != selectedRoom || !mediaAllowed() || account == null) {
+        if (!CONNECTED_MEDIA_UI_ENABLED || room != selectedRoom || !mediaDownloadAllowed() || account == null) {
             chatNotice.setText(R.string.bchat_media_unavailable); return;
         }
         if (mediaPreviewDialog != null) mediaPreviewDialog.dismiss();
@@ -6542,21 +7631,15 @@ public final class OdooIdentityActivity extends Activity {
 
     private void showFullImage(File file, MediaRecord media, Room room,
                                AccountScope scopedAccount, int request) {
-        new Thread(() -> {
+        mediaIo.execute(() -> {
+            if (closed || request != mediaOpenNonce) { file.delete(); return; }
             Bitmap bitmap = null;
             try {
-                BitmapFactory.Options bounds = new BitmapFactory.Options();
-                bounds.inJustDecodeBounds = true;
-                BitmapFactory.decodeFile(file.getAbsolutePath(), bounds);
-                int sample = 1;
-                while (bounds.outWidth / sample > 2048 || bounds.outHeight / sample > 2048) sample *= 2;
-                BitmapFactory.Options options = new BitmapFactory.Options();
-                options.inSampleSize = sample;
-                bitmap = BitmapFactory.decodeFile(file.getAbsolutePath(), options);
+                bitmap = ImagePreviews.decodeConnectedCache(this, file, ImagePreviewPolicy.MAX_EDGE);
             } catch (Exception ignored) { }
             Bitmap decoded = bitmap;
             handler.post(() -> {
-                if (request != mediaOpenNonce || !stillCurrent(scopedAccount, room)
+                if (request != mediaOpenNonce || !stillCurrent(scopedAccount, room) || !mediaDownloadAllowed()
                         || decoded == null) {
                     file.delete();
                     if (decoded != null) decoded.recycle();
@@ -6568,17 +7651,22 @@ public final class OdooIdentityActivity extends Activity {
                     if (stillCurrent(scopedAccount, room)) chatNotice.setText(R.string.bchat_media_unavailable);
                     return;
                 }
-                displayFullImage(decoded, file, media, room, scopedAccount);
+                displayFullImage(decoded, file, media, room, scopedAccount, request);
             });
-        }, "bchat-media-decode").start();
+        });
     }
 
     private void displayFullImage(Bitmap bitmap, File file, MediaRecord media,
-                                  Room room, AccountScope scopedAccount) {
+                                  Room room, AccountScope scopedAccount, int request) {
+        if (!stillCurrent(scopedAccount, room) || !mediaDownloadAllowed()) {
+            file.delete(); bitmap.recycle(); return;
+        }
         FrameLayout surface = new FrameLayout(this);
         surface.setBackgroundColor(Color.rgb(12, 18, 25));
         ZoomableImageView display = new ZoomableImageView(this);
         display.setImageBitmap(bitmap);
+        display.setConnectedDetailSource(connectedImagePreviews, file,
+                () -> !closed && request == mediaOpenNonce && stillCurrent(scopedAccount, room) && mediaDownloadAllowed());
         display.setContentDescription(media.name);
         surface.addView(display, new FrameLayout.LayoutParams(-1, -1));
         LinearLayout toolbar = Ui.row(this);
@@ -6617,6 +7705,7 @@ public final class OdooIdentityActivity extends Activity {
         mediaPreviewDialog = dialog;
         dialog.setOnDismissListener(ignored -> {
             if (mediaPreviewDialog == dialog) mediaPreviewDialog = null;
+            display.clearDetailSource();
             display.setImageDrawable(null);
             bitmap.recycle();
             if (pendingPdfDownload != file) file.delete();
@@ -6629,6 +7718,7 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     private void prepareDocumentSave(File file, Room room, MediaRecord media) {
+        if (!stillCurrent(account, room) || !mediaDownloadAllowed()) { file.delete(); return; }
         clearPendingPdf();
         pendingPdfDownload = file;
         pendingPdfAccount = account;
@@ -6642,17 +7732,22 @@ public final class OdooIdentityActivity extends Activity {
 
     private interface MediaReadCallback { void complete(File file, int status); }
 
-    private File mediaReadCacheFile(int request) throws IOException {
+    private File mediaReadCacheFile(int request, boolean thumbnail) throws IOException {
         File root = new File(getCacheDir(), "bchat-v2-media-read");
         if (!root.isDirectory() && !root.mkdirs()) throw new IOException("Media cache unavailable");
-        return new File(root, "read-" + request + ".bin");
+        return new File(root, (thumbnail ? "thumb-read-" : "read-") + request + ".bin");
     }
 
     private void clearMediaReadCache() {
+        clearMediaReadCache(false);
+    }
+
+    private void clearMediaReadCache(boolean originalsOnly) {
         File folder = new File(getCacheDir(), "bchat-v2-media-read");
         File[] files = folder.listFiles();
         if (files == null) return;
-        for (File file : files) if (file.isFile() && file.getName().matches("read-[0-9]+\\.bin")) file.delete();
+        for (File file : files) if (file.isFile() && file.getName().matches(
+                originalsOnly ? "read-[0-9]+\\.bin" : "(?:thumb-)?read-[0-9]+\\.bin")) file.delete();
     }
 
     private void clearPendingPdf() {
@@ -6701,7 +7796,7 @@ public final class OdooIdentityActivity extends Activity {
     private void readConnectedMedia(Room room, MediaRecord media, boolean thumbnail,
                                     MediaReadCallback callback) {
         AccountScope scopedAccount = account;
-        if (!stillCurrent(scopedAccount, room) || !mediaAllowed() || mediaReadBusy || web == null
+        if (!stillCurrent(scopedAccount, room) || !(thumbnail ? mediaAllowed() : mediaDownloadAllowed()) || mediaReadBusy || web == null
                 || web.getUrl() == null || !isBridgeUrl(Uri.parse(web.getUrl()))) {
             callback.complete(null, 0); return;
         }
@@ -6711,7 +7806,8 @@ public final class OdooIdentityActivity extends Activity {
         final int request = ++mediaReadNonce;
         final int currentWeb = webEpoch, currentPage = pageEpoch, currentEpoch = epoch;
         try {
-            mediaReadFile = mediaReadCacheFile(request);
+            mediaReadFile = mediaReadCacheFile(request, thumbnail);
+            mediaReadIsThumbnail = thumbnail;
             mediaReadOutput = new FileOutputStream(mediaReadFile);
             mediaReadBytes = 0;
             mediaReadSequence = 0;
@@ -6721,6 +7817,10 @@ public final class OdooIdentityActivity extends Activity {
             mediaReadPort = channel[0];
             mediaReadPort.setWebMessageCallback(new WebMessagePort.WebMessageCallback() {
                 @Override public void onMessage(WebMessagePort port, WebMessage message) {
+                    if (!(thumbnail ? mediaAllowed() : mediaDownloadAllowed())) {
+                        if (request == mediaReadNonce) closeMediaRead();
+                        return;
+                    }
                     if (closed || request != mediaReadNonce || !mediaReadBusy || port != mediaReadPort
                             || currentWeb != webEpoch || currentPage != pageEpoch || currentEpoch != epoch
                             || !stillCurrent(scopedAccount, room) || web == null || web.getUrl() == null
@@ -6865,21 +7965,30 @@ public final class OdooIdentityActivity extends Activity {
         Room room = selectedRoom;
         if ((!chatAllowed() && !offlineHistory) || room == null || v2Busy) return;
         if (offlineHistory) { showCachedMessages(room, beforeId, false); return; }
+        final TimelineWindowOwner readOwner = new TimelineWindowOwner(room);
+        if (!readOwner.bindingCurrent()) return;
         if (beforeId > 0) {
             if (olderPageLoading) return;
             olderPageLoading = true;
         }
+        final long positionIntent = beforeId > 0 ? beginTimelinePositionIntent() : messageLatestPositionIntent;
+        final long dispatchPositionIntent = messagePositionIntentSerial;
+        final boolean requestedOwnSend = beforeId == 0 && scrollAfterOwnSend;
         String path = V2_ROOMS + "/" + room.id + "/messages"
                 + (beforeId > 0 ? "?before_id=" + beforeId : "");
         chatNotice.setText(R.string.chat_v2_loading);
         olderButton.setEnabled(false);
         fetchV2("GET", path, null, (statusCode, result) -> {
-            if (selectedRoom != room) return;
+            if (selectedRoom != room || !readOwner.bindingCurrent()) return;
             if (beforeId > 0) olderPageLoading = false;
+            if (positionIntent >= 0 && messagePositionIntentSerial != positionIntent) {
+                updateOlderButtonAvailability(); return;
+            }
             if (handleV2TransportFailure(statusCode)) return;
             try {
                 if (statusCode != 200 || result == null || positiveId(result.get("api_version")) != 2)
                     throw new IllegalArgumentException();
+                requireReceiptEpoch(result, room);
                 JSONArray list = result.getJSONArray("messages");
                 List<JSONObject> validated = validateMessageList(list, beforeId);
                 // A media POST can reach Odoo while its one-shot bridge ACK is lost.  Never
@@ -6901,16 +8010,17 @@ public final class OdooIdentityActivity extends Activity {
                     pendingNotificationMessageId = 0;
                     if (!found) throw new IllegalArgumentException("Notification message not in page");
                 }
+                // Initial owner admission scrubs presentation, so preserve this authorized
+                // request's position intent before that scrub (never borrow a newer one).
+                boolean ownSend = requestedOwnSend && messagePositionIntentSerial == dispatchPositionIntent;
+                if (!admitMessageTimelineOwner(readOwner)) return;
                 if (historyCache != null && account != null) {
-                    AccountScope scopedAccount = account;
-                    ConnectedHistoryCache cache = historyCache;
-                    queueHistoryWrite(scopedAccount, cache, () -> {
-                        try { cache.savePage(scopedAccount, room.id, room.membershipId, validated); }
-                        catch (Exception storage) { throw new IllegalStateException(storage); }
-                    });
+                    persistReceiptCanonical(account, room, validated);
                 }
-                ScrollAnchor anchor = currentScrollAnchor();
-                boolean ownSend = scrollAfterOwnSend;
+                ScrollAnchor anchor = restoringContext
+                        ? new ScrollAnchor(restorationAnchor, restorationOffset, false) : currentScrollAnchor();
+                if (beforeId > 0 || positionIntent >= 0 || focusedNotification)
+                    beginTimelinePositionIntent();
                 boolean olderWindowTransition = beforeId > 0
                         && displayedMessages.size() >= MAX_CONNECTED_MESSAGE_WINDOW;
                 List<JSONObject> window = messageWindow(validated, beforeId, anchor.atBottom, ownSend);
@@ -6927,7 +8037,14 @@ public final class OdooIdentityActivity extends Activity {
                 else if (ownSend || (anchor.atBottom && !historicalWindow) || displayedMessages.isEmpty())
                     historicalWindow = false;
                 olderPageFailed = false;
+                if (restoringContext && beforeId > 0) historicalWindow = true;
                 renderMessageWindow(room, window, followBottom, focusId, anchor);
+                if (restoringContext) {
+                    restoringContext = false;
+                    restorationAnchor = 0;
+                    refreshLocalRoom(room, true);
+                    if (restorationIntent != null && restorationIntent.cart.isEmpty()) restorationIntent = null;
+                }
                 updateOlderControl();
                 updateOlderButtonAvailability();
                 newerControl.setVisibility(historicalWindow ? View.VISIBLE : View.GONE);
@@ -6942,6 +8059,7 @@ public final class OdooIdentityActivity extends Activity {
                     chatNotice.setOnClickListener(null);
                 }
                 updatePendingUi();
+                handler.post(this::retryPending);
                 // Read and reconcile authenticated history before any idempotent replay.
                 // Posting first would occupy the single V2 transport and skip this initial
                 // room page, even when the server already contains the media message.
@@ -6955,9 +8073,6 @@ public final class OdooIdentityActivity extends Activity {
                     retryPending();
                 }
                 if (receiptsAvailable && !offlineHistory) {
-                    for (JSONObject item : validated)
-                        if (account != null && positiveId(item.opt("author_user_id")) != account.userId)
-                            acknowledgeMessage(room, positiveId(item.opt("id")), "delivered");
                     messageScroll.post(this::scanVisibleMessageReceipts);
                 }
             } catch (Exception invalid) {
@@ -6980,19 +8095,31 @@ public final class OdooIdentityActivity extends Activity {
                                                            List<JSONObject> messages) {
         if (!stillCurrent(scopedAccount, room) || mediaStore == null) return;
         try {
-            List<BChatConnectedMediaStore.Entry> pending = mediaStore.pendingForRoom(scopedAccount,
-                    room.id, room.membershipId);
-            if (pending.isEmpty()) return;
-            Set<Long> confirmedMediaIds = new HashSet<>();
+            Map<Long,Long> confirmedMediaIds = new LinkedHashMap<>();
             for (JSONObject message : messages) {
                 if (positiveId(message.opt("author_user_id")) != scopedAccount.userId
                         || !message.has("media")) continue;
                 MediaRecord serverMedia = new MediaRecord(message.getJSONObject("media"));
-                confirmedMediaIds.add(serverMedia.id);
+                confirmedMediaIds.put(serverMedia.id,positiveId(message.get("id")));
             }
-            for (BChatConnectedMediaStore.Entry entry : pending)
-                if (entry.mediaId > 0 && confirmedMediaIds.contains(entry.mediaId))
-                    mediaStore.acknowledge(scopedAccount, entry);
+            if (confirmedMediaIds.isEmpty()) return;
+            final BChatConnectedMediaStore store = mediaStore;
+            final BChatV2Outbox box=outbox;
+            local(scopedAccount, () -> {
+                boolean changed = false;
+                for (BChatConnectedMediaStore.Entry entry : store.pendingForRoom(scopedAccount, room.id, room.membershipId))
+                    if (entry.mediaId > 0 && confirmedMediaIds.containsKey(entry.mediaId)) {
+                        BChatSendTickets.Ticket ticket=box.tickets().find(scopedAccount,"media",entry.clientUuid);
+                        if(ticket==null)ticket=box.tickets().admitMedia(scopedAccount,entry,true);
+                        if(!ticket.matches(entry)||!box.tickets().receipt(scopedAccount,ticket,confirmedMediaIds.get(entry.mediaId)))continue;
+                        BChatSendTickets.Ticket receipt=box.tickets().find(scopedAccount,"media",entry.clientUuid);
+                        changed|=box.tickets().retireMedia(scopedAccount,receipt,
+                                ()->store.retireReceipted(scopedAccount,entry.uploadUuid,receipt.fingerprint));
+                    }
+                return changed;
+            }, (changed, error) -> {
+                if (stillCurrent(scopedAccount, room) && Boolean.TRUE.equals(changed)) refreshLocalRoom(room, false);
+            });
         } catch (Exception ignored) {
             // Retaining the staged item is safer than hiding an uncertain send.  The next
             // verified history read will retry this idempotent reconciliation.
@@ -7044,14 +8171,16 @@ public final class OdooIdentityActivity extends Activity {
     /** Fetch just the acknowledged row after send; avoid reloading/rebinding the entire timeline. */
     private void appendAcknowledgedMessage(AccountScope scopedAccount, Room room, long messageId) {
         if (!stillCurrent(scopedAccount, room)) return;
+        final TimelineWindowOwner readOwner = new TimelineWindowOwner(room);
         fetchV2("GET", V2_ROOMS + "/" + room.id + "/messages/" + messageId, null,
                 (statusCode, result) -> {
-                    if (!stillCurrent(scopedAccount, room)) return;
+                    if (!stillCurrent(scopedAccount, room) || !readOwner.bindingCurrent()) return;
                     if (handleV2TransportFailure(statusCode)) return;
                     try {
                         if (statusCode != 200 || result == null
                                 || positiveId(result.get("api_version")) != 2)
                             throw new IllegalArgumentException();
+                        requireReceiptEpoch(result, room);
                         JSONArray one = new JSONArray().put(result.getJSONObject("message"));
                         JSONObject message = validateMessageList(one, 0).get(0);
                         // A reply may be sent while viewing an older, bounded page.  Do not
@@ -7086,12 +8215,9 @@ public final class OdooIdentityActivity extends Activity {
                             // larger window after paging, while this just-acknowledged row is
                             // already fully verified and can be merged by the cache itself.
                             final List<JSONObject> saved = Collections.singletonList(message);
-                            final ConnectedHistoryCache cache = historyCache;
-                            queueHistoryWrite(scopedAccount, cache, () -> {
-                                try { cache.savePage(scopedAccount, room.id, room.membershipId, saved); }
-                                catch (Exception storage) { throw new IllegalStateException(storage); }
-                            });
+                            persistReceiptCanonical(scopedAccount, room, saved);
                         }
+                        if (!admitMessageTimelineOwner(readOwner)) return;
                         renderMessageWindow(room, window, true, 0, currentScrollAnchor());
                         updateOlderControl();
                         updateOlderButtonAvailability();
@@ -7186,8 +8312,25 @@ public final class OdooIdentityActivity extends Activity {
 
     private void showCachedMessages(Room room, long beforeId, boolean firstOpen) {
         if (room != selectedRoom || historyCache == null || account == null) return;
+        final TimelineWindowOwner readOwner = new TimelineWindowOwner(room);
+        final AccountScope scope = account;
+        final ConnectedHistoryCache cache = historyCache;
+        final int render = messageRenderSerial;
+        final long positionIntent = beforeId > 0 ? beginTimelinePositionIntent() : messagePositionIntentSerial;
+        final boolean explicitPosition = beforeId > 0 || messageLatestPositionIntent == positionIntent;
+        // A manual page request owns the position chosen at dispatch. Enqueue/composer
+        // reflow while the cache read waits must not silently choose a different anchor.
+        final ScrollAnchor requestedAnchor = beforeId > 0 && !firstOpen ? currentScrollAnchor() : null;
+        local(scope, () -> {
+            List<JSONObject> page = cache.page(scope, room.id, room.membershipId, beforeId);
+            long first = page.isEmpty() ? 0 : positiveId(page.get(0).get("id"));
+            return new CachedPage(page, first > 0 && cache.hasOlder(scope, room.id, room.membershipId, first), false);
+        }, (saved, error) -> {
+        if (selectedRoom != room || messagePositionIntentSerial != positionIntent
+                || !explicitPosition && messageRenderSerial != render || !readOwner.bindingCurrent()) return;
         try {
-            List<JSONObject> cached = historyCache.page(account, room.id, room.membershipId, beforeId);
+            if (error != null) throw error;
+            List<JSONObject> cached = saved.messages;
             if (cached.isEmpty() && !firstOpen) {
                 nextBeforeId = 0;
                 updateOlderControl();
@@ -7195,12 +8338,13 @@ public final class OdooIdentityActivity extends Activity {
             }
             // The cache is written only after an authenticated, validated room read. It can
             // safely confirm the exact media ID before the next live fetch completes.
+            if (!admitMessageTimelineOwner(readOwner)) return;
+            if (explicitPosition) beginTimelinePositionIntent();
             reconcilePendingMediaFromVerifiedHistory(account, room, cached);
-            ScrollAnchor anchor = currentScrollAnchor();
+            ScrollAnchor anchor = requestedAnchor != null ? requestedAnchor : currentScrollAnchor();
             List<JSONObject> window = messageWindow(cached, beforeId, anchor.atBottom, false);
             long first = window.isEmpty() ? 0 : positiveId(window.get(0).get("id"));
-            nextBeforeId = first > 0 && historyCache.hasOlder(account, room.id, room.membershipId, first)
-                    ? first : 0;
+            nextBeforeId = first > 0 && (saved.older || window.size() > cached.size()) ? first : 0;
             if (beforeId > 0) historicalWindow = true;
             renderMessageWindow(room, window, firstOpen, 0, anchor);
             updatePendingUi();
@@ -7210,23 +8354,47 @@ public final class OdooIdentityActivity extends Activity {
         } catch (Exception damaged) {
             if (offlineHistory) chatNotice.setText(R.string.chat_v2_load_failed);
         }
+        });
+    }
+
+    private static final class CachedPage {
+        final List<JSONObject> messages;
+        final boolean older, newer;
+        CachedPage(List<JSONObject> messages, boolean older, boolean newer) {
+            this.messages = messages; this.older = older; this.newer = newer;
+        }
     }
 
     private void showNewerMessages() {
         Room room = selectedRoom;
         if (room == null || displayedMessages.isEmpty()) return;
         if (historyCache == null || account == null) { jumpToLatest(); return; }
+        final long positionIntent = beginTimelinePositionIntent();
+        final TimelineWindowOwner readOwner = new TimelineWindowOwner(room);
+        final AccountScope scope = account;
+        final ConnectedHistoryCache cache = historyCache;
+        final JSONObject previousLast = displayedMessages.get(displayedMessages.size() - 1);
+        long last = previousLast.optLong("id");
+        local(scope, () -> {
+            List<JSONObject> newer = cache.pageAfter(scope, room.id, room.membershipId, last);
+            long newest = newer.isEmpty() ? last : positiveId(newer.get(newer.size() - 1).get("id"));
+            return new CachedPage(newer, cache.hasOlder(scope, room.id, room.membershipId, last),
+                    cache.hasNewer(scope, room.id, room.membershipId, newest));
+        }, (saved, error) -> {
+        if (selectedRoom != room || messagePositionIntentSerial != positionIntent || !readOwner.bindingCurrent()) return;
         try {
-            long last = positiveId(displayedMessages.get(displayedMessages.size() - 1).get("id"));
-            List<JSONObject> newer = historyCache.pageAfter(account, room.id, room.membershipId, last);
+            if (error != null) throw error;
+            List<JSONObject> newer = saved.messages;
             if (newer.isEmpty()) { jumpToLatest(); return; }
             List<JSONObject> window = new ArrayList<>();
-            window.add(displayedMessages.get(displayedMessages.size() - 1));
+            window.add(previousLast);
             window.addAll(newer);
+            if (!admitMessageTimelineOwner(readOwner)) return;
+            beginTimelinePositionIntent();
             long first = positiveId(window.get(0).get("id"));
             long newest = positiveId(window.get(window.size() - 1).get("id"));
-            historicalWindow = historyCache.hasNewer(account, room.id, room.membershipId, newest);
-            nextBeforeId = historyCache.hasOlder(account, room.id, room.membershipId, first) ? first : 0;
+            historicalWindow = saved.newer;
+            nextBeforeId = saved.older ? first : 0;
             renderMessageWindow(room, window, false, 0,
                     new ScrollAnchor(first, dp(12), false));
             updateOlderControl();
@@ -7236,23 +8404,17 @@ public final class OdooIdentityActivity extends Activity {
         } catch (Exception damaged) {
             chatNotice.setText(R.string.chat_v2_load_failed);
         }
+        });
     }
 
     private void jumpToLatest() {
         Room room = selectedRoom;
         if (room == null || v2Busy) return;
+        messageLatestPositionIntent = beginTimelinePositionIntent();
         if (offlineHistory) {
             if (historyCache == null || account == null) return;
-            try {
-                List<JSONObject> latest = historyCache.page(account, room.id, room.membershipId, 0);
-                if (latest.isEmpty()) return;
-                historicalWindow = false;
-                long first = positiveId(latest.get(0).get("id"));
-                nextBeforeId = historyCache.hasOlder(account, room.id, room.membershipId, first) ? first : 0;
-                renderMessageWindow(room, latest, true, 0, currentScrollAnchor());
-                updateOlderControl();
-                newerControl.setVisibility(View.GONE);
-            } catch (Exception damaged) { chatNotice.setText(R.string.chat_v2_load_failed); }
+            historicalWindow = false;
+            showCachedMessages(room, 0, true);
             return;
         }
         scrollAfterOwnSend = true;
@@ -7261,6 +8423,14 @@ public final class OdooIdentityActivity extends Activity {
 
     private void renderMessageWindow(Room room, List<JSONObject> window, boolean followBottom,
                                      long focusId, ScrollAnchor anchor) throws Exception {
+        renderMessageWindowWithLocals(room, window, followBottom, focusId, anchor, localTextRows);
+    }
+
+    private void renderMessageWindowWithLocals(Room room, List<JSONObject> window, boolean followBottom,
+            long focusId, ScrollAnchor anchor, List<BChatV2Outbox.Entry> locals) throws Exception {
+        final TimelineWindowOwner renderOwner = messageWindowOwner;
+        if (renderOwner == null || renderOwner.room != room || !renderOwner.current())
+            throw new IllegalStateException("Window outside admitted timeline owner");
         if (window.size() > MAX_CONNECTED_MESSAGE_WINDOW) throw new IllegalArgumentException("Too many bubbles");
         long priorId = 0;
         for (JSONObject item : window) {
@@ -7279,15 +8449,18 @@ public final class OdooIdentityActivity extends Activity {
             }
         }
         if (!keepPlaying) stopInlineAudio();
-        updateMessageRows(window);
+        if (locals == localTextRows) updateMessageRows(window);
+        else if (!publishMessageRows(window, locals)) throw new IllegalStateException("Timeline owner is no longer current");
         final int renderSerial = ++messageRenderSerial;
+        final long positionIntent = messagePositionIntentSerial;
         messageScroll.post(() -> {
-            if (selectedRoom != room || messageRenderSerial != renderSerial) return;
+            if (selectedRoom != room || messageRenderSerial != renderSerial || !renderOwner.current()
+                    || messagePositionIntentSerial != positionIntent) return;
             int focus = messagePosition(focusId);
             int previous = messagePosition(anchor.messageId);
             if (focus >= 0) messageLayout.scrollToPositionWithOffset(focus, dp(32));
-            else if (followBottom && !displayedMessages.isEmpty())
-                messageLayout.scrollToPosition(displayedMessages.size() - 1);
+            else if ((hasTimelineSendFollow() || followBottom) && messageAdapter.getItemCount() > 0)
+                messageLayout.scrollToPosition(messageAdapter.getItemCount() - 1);
             else if (previous >= 0)
                 messageLayout.scrollToPositionWithOffset(previous, anchor.offset);
             updateOlderButtonAvailability();
@@ -7297,6 +8470,8 @@ public final class OdooIdentityActivity extends Activity {
             // until it fills the viewport or the server has no older page.
             messageScroll.postOnAnimation(() -> {
                 if (selectedRoom == room && messageRenderSerial == renderSerial
+                        && messagePositionIntentSerial == positionIntent
+                        && renderOwner.current()
                         && !messageScroll.canScrollVertically(-1)
                         && !messageScroll.canScrollVertically(1)) maybeLoadOlderMessages();
             });
@@ -7310,40 +8485,262 @@ public final class OdooIdentityActivity extends Activity {
         return -1;
     }
 
-    /** Keep already attached bubbles intact when a poll changes no visible message. */
+    /** A presentation owner is admitted only at the existing verified HTTP/cache entry points.
+     * Projection never upgrades old visible rows to a newly observed account or generation. */
+    private final class TimelineWindowOwner {
+        final AccountScope scope;
+        final Room room;
+        final PermissionSet permissions;
+        final int session, global;
+        final long repository, serial, admissionEpoch;
+        final boolean offline;
+        TimelineWindowOwner(Room room) {
+            if (android.os.Looper.myLooper() != android.os.Looper.getMainLooper())
+                throw new IllegalStateException("Timeline binding capture requires MAIN");
+            scope = account; this.room = room; permissions = permissionSet;
+            session = epoch; global = historyGlobalGeneration;
+            repository = BChatStorageRepository.generation(scope);
+            serial = ++messageWindowOwnerSequence; admissionEpoch = messageWindowAdmissionEpoch;
+            offline = offlineHistory;
+        }
+        boolean current() {
+            return messageWindowOwner == this && bindingCurrent();
+        }
+        boolean bindingCurrent() {
+            return !closed && account == scope && selectedRoom == room
+                    && messageWindowAdmissionEpoch == admissionEpoch
+                    && epoch == session && historyGlobalGeneration == global
+                    && BChatStorageRepository.generation(scope) == repository
+                    && offlineHistory == offline && permissions.sameAs(permissionSet)
+                    && timelineRoomReadable(room);
+        }
+    }
+
+    private boolean timelineRoomReadable(Room room) {
+        return account != null && room != null && selectedRoom == room && currentInfoRoom(room) == room
+                && (offlineHistory ? offlineChatCacheAvailable && offlinePersistenceReady
+                    : verified && roomsVerifiedForSession && chatAllowed() && v1Companies.contains(room.companyId));
+    }
+
+    /** MAIN only. Scrub visible and pooled bubbles before the previous owner can be replaced. */
+    private void invalidateMessageTimelineOwner() {
+        if (android.os.Looper.myLooper() != android.os.Looper.getMainLooper())
+            throw new IllegalStateException("Timeline invalidation requires MAIN");
+        ++messageWindowAdmissionEpoch;
+        clearMessageTimelinePresentation();
+    }
+
+    private void clearMessageTimelinePresentation() {
+        beginTimelinePositionIntent();
+        messageWindowOwner = null; messageRowSnapshot = null; forceTimelineReset = true;
+        olderPageLoading = olderPageFailed = false;
+        if (messageScroll == null || messageAdapter == null) return;
+        for (int i = 0; i < messageScroll.getChildCount(); i++) {
+            RecyclerView.ViewHolder view = messageScroll.getChildViewHolder(messageScroll.getChildAt(i));
+            if (view instanceof MessageTimelineAdapter.Holder) {
+                MessageTimelineAdapter.Holder holder = (MessageTimelineAdapter.Holder) view;
+                detachAudioControls(holder.bubble);
+                holder.container.removeAllViews(); holder.bubble = null;
+            }
+        }
+        messageScroll.setAdapter(null);
+        messageScroll.getRecycledViewPool().clear();
+    }
+
+    private boolean admitMessageTimelineOwner(Room room) {
+        return admitMessageTimelineOwner(new TimelineWindowOwner(room));
+    }
+
+    private boolean admitMessageTimelineOwner(TimelineWindowOwner admitted) {
+        if (android.os.Looper.myLooper() != android.os.Looper.getMainLooper())
+            throw new IllegalStateException("Timeline admission requires MAIN");
+        if (admitted == null || !admitted.bindingCurrent()) return false;
+        if (messageWindowOwner == null || !messageWindowOwner.current()) {
+            // Admission consumes a ticket from this epoch; only explicit invalidation advances it.
+            clearMessageTimelinePresentation();
+            messageWindowOwner = admitted;
+        }
+        if (messageScroll.getAdapter() != messageAdapter) messageScroll.setAdapter(messageAdapter);
+        return true;
+    }
+
+    private BChatTimelineRows.Context timelineRenderContext() {
+        android.content.res.Configuration config = getResources().getConfiguration();
+        android.util.DisplayMetrics metrics = getResources().getDisplayMetrics();
+        BChatTimelineRows.Rights rights = new BChatTimelineRows.Rights(Math.max(0, permissionSet.revision),
+                permissionSet.chatView, permissionSet.chatSend, permissionSet.mediaRights.view,
+                permissionSet.mediaRights.download, receiptDeliverySupported, receiptsAvailable);
+        return new BChatTimelineRows.Context(config.getLocales().get(0).toLanguageTag(),
+                ChatAppearance.theme(this) + ":" + (config.uiMode & android.content.res.Configuration.UI_MODE_NIGHT_MASK),
+                ChatAppearance.bodySp(this), config.fontScale, metrics.density,
+                Math.max(1, messageScroll.getWidth() > 0 ? messageScroll.getWidth() : metrics.widthPixels),
+                config.getLayoutDirection() == View.LAYOUT_DIRECTION_RTL, offlineHistory, rights,
+                java.util.TimeZone.getDefault().getID(), messageDayKey(new Date(), ""),
+                android.text.format.DateFormat.is24HourFormat(this));
+    }
+
+    /** Adapt already validated values, preserving every render/action field without serializing JSON. */
+    private BChatTimelineRows.Snapshot projectMessageRows(TimelineWindowOwner owner,
+            List<JSONObject> window, List<BChatV2Outbox.Entry> locals) throws Exception {
+        BChatTimelineRows.Scope scope = new BChatTimelineRows.Scope(owner.scope.key, owner.scope.userId,
+                owner.room.id, owner.room.membershipId, owner.session, owner.serial);
+        List<BChatTimelineRows.Server> canonical = new ArrayList<>(window.size());
+        for (JSONObject item : window) {
+            BChatTimelineRows.Reply reply = null;
+            JSONObject quoted = item.optJSONObject("reply");
+            if (quoted != null) {
+                Object kind = quoted.opt("media_kind");
+                reply = quoted.has("unavailable") ? BChatTimelineRows.Reply.unavailable()
+                        : BChatTimelineRows.Reply.available(positiveId(quoted.get("id")),
+                            quoted.getString("author_name"), quoted.getString("text"),
+                            kind instanceof String ? BChatTimelineRows.MediaKind.valueOf(((String) kind).toUpperCase(Locale.ROOT)) : null);
+            }
+            BChatTimelineRows.Media media = null;
+            JSONObject value = item.optJSONObject("media");
+            if (value != null) media = new BChatTimelineRows.Media(positiveId(value.get("id")),
+                    BChatTimelineRows.MediaKind.valueOf(value.getString("kind").toUpperCase(Locale.ROOT)),
+                    value.getString("mime"), value.getString("name"), value.getString("sha256"),
+                    BChatTimelineRows.DocumentType.valueOf(value.getString("document_type").toUpperCase(Locale.ROOT)),
+                    value.getBoolean("thumbnail_available"), value.getInt("size"));
+            BChatTimelineRows.Delivery delivery = item.has("delivery_state") && !item.isNull("delivery_state")
+                    ? BChatTimelineRows.Delivery.valueOf(item.getString("delivery_state").toUpperCase(Locale.ROOT)) : null;
+            canonical.add(new BChatTimelineRows.Server(positiveId(item.get("id")), positiveId(item.get("author_user_id")),
+                    item.getString("author_name"), item.getString("text"), item.getString("created_at"), reply, media,
+                    delivery, item.has("read_at") && !item.isNull("read_at") ? item.getString("read_at") : null));
+        }
+        List<BChatTimelineRows.Local> pending = new ArrayList<>(locals.size());
+        for (BChatV2Outbox.Entry entry : locals) {
+            if (entry.roomId != owner.room.id || entry.membershipId != owner.room.membershipId)
+                throw new IllegalArgumentException("Local row outside timeline membership");
+            pending.add(new BChatTimelineRows.Local(entry.id, entry.uuid, entry.body,
+                    BChatTimelineRows.LocalState.valueOf(entry.state.toUpperCase(Locale.ROOT)),
+                    entry.replyToMessageId, entry.reviewCode, entry.messageId));
+        }
+        return BChatTimelineRows.project(scope, timelineRenderContext(), canonical, pending);
+    }
+
+    /** Build first, then publish data and ordered notifications together on MAIN. No ACK/storage action. */
+    private boolean publishMessageRows(List<JSONObject> window, List<BChatV2Outbox.Entry> locals) {
+        if (android.os.Looper.myLooper() != android.os.Looper.getMainLooper())
+            throw new IllegalStateException("Timeline publication requires MAIN");
+        TimelineWindowOwner owner = messageWindowOwner;
+        if (owner == null || !owner.current()) return false;
+        // Copy before clearing: callers may supply the currently displayed lists themselves.
+        List<JSONObject> nextWindow = new ArrayList<>(window);
+        List<BChatV2Outbox.Entry> nextLocals = new ArrayList<>(locals);
+        final BChatTimelineRows.Snapshot next;
+        final BChatTimelineChangePlan.Plan plan;
+        try {
+            next = projectMessageRows(owner, nextWindow, nextLocals);
+            plan = messageRowSnapshot == null ? null : BChatTimelineChangePlan.between(messageRowSnapshot, next);
+        } catch (Exception invalid) { throw new IllegalArgumentException("Invalid timeline publication", invalid); }
+        if (!owner.current()) return false;
+        boolean reset = forceTimelineReset || plan == null || plan.fallback != BChatTimelineChangePlan.Fallback.NONE;
+        displayedMessages.clear(); displayedMessages.addAll(nextWindow);
+        localTextRows.clear(); localTextRows.addAll(nextLocals);
+        messageRowSnapshot = next; forceTimelineReset = false;
+        if (reset) messageAdapter.notifyDataSetChanged();
+        else {
+            for (int position : plan.removeOldDescending) messageAdapter.notifyItemRemoved(position);
+            for (int position : plan.insertNewAscending) messageAdapter.notifyItemInserted(position);
+            for (int position : plan.changeNewPositions) messageAdapter.notifyItemChanged(position);
+        }
+        admitTimelineSendFollow(nextLocals);
+        postTimelineSendFollow(owner);
+        return true;
+    }
+
+    /** Position intent is presentation-only: it never admits data, retires an entry or sends ACK. */
+    private long beginTimelinePositionIntent() {
+        messageSendFollow = null;
+        messageLatestPositionIntent = -1;
+        scrollAfterOwnSend = false;
+        return ++messagePositionIntentSerial;
+    }
+
+    private final class TimelineSendOrigin {
+        final TimelineWindowOwner owner;
+        final long jump, positionIntent;
+        TimelineSendOrigin(TimelineWindowOwner owner) {
+            this.owner = owner; jump = messageJumpSerial;
+            positionIntent = messagePositionIntentSerial;
+        }
+        boolean current() {
+            return owner.current() && jump == messageJumpSerial
+                    && positionIntent == messagePositionIntentSerial;
+        }
+    }
+
+    private final class TimelineSendFollow {
+        final TimelineSendOrigin origin;
+        final long id;
+        final String uuid;
+        final boolean admitted;
+        TimelineSendFollow(TimelineSendOrigin origin, long id, String uuid, boolean admitted) {
+            this.origin = origin; this.id = id; this.uuid = uuid; this.admitted = admitted;
+        }
+    }
+
+    private TimelineSendOrigin captureTimelineSendOrigin() {
+        TimelineWindowOwner owner = messageWindowOwner;
+        if (owner == null || !owner.current() || restoringContext || messageScroll == null
+                || messageScroll.getAdapter() != messageAdapter || !messageScroll.isAttachedToWindow()
+                || !messageScroll.isShown() || messageScroll.getWidth() <= 0 || messageScroll.getHeight() <= 0
+                || messageScroll.isLayoutRequested() || messageScroll.isComputingLayout()
+                || messageScroll.hasPendingAdapterUpdates()
+                || messageLayout.findLastVisibleItemPosition() < 0
+                || messageScroll.canScrollVertically(1)) return null;
+        return new TimelineSendOrigin(owner);
+    }
+
+    private void rememberTimelineSendFollow(TimelineSendOrigin origin, BChatV2Outbox.Entry entry) {
+        if (origin == null || !origin.current() || entry == null || entry.id <= 0
+                || entry.roomId != origin.owner.room.id || entry.membershipId != origin.owner.room.membershipId
+                || entry.uuid == null || entry.uuid.isEmpty()) return;
+        messageSendFollow = new TimelineSendFollow(origin, entry.id, entry.uuid, false);
+    }
+
+    private void admitTimelineSendFollow(List<BChatV2Outbox.Entry> entries) {
+        TimelineSendFollow follow = messageSendFollow;
+        if (follow == null || follow.admitted || !follow.origin.current()) return;
+        for (BChatV2Outbox.Entry entry : entries) {
+            if (entry.id == follow.id && follow.uuid.equals(entry.uuid)
+                    && entry.roomId == follow.origin.owner.room.id
+                    && entry.membershipId == follow.origin.owner.room.membershipId) {
+                messageSendFollow = new TimelineSendFollow(follow.origin, follow.id, follow.uuid, true);
+                return;
+            }
+        }
+    }
+
+    private boolean hasTimelineSendFollow() {
+        return messageSendFollow != null && messageSendFollow.admitted && messageSendFollow.origin.current();
+    }
+
+    private void postTimelineSendFollow(TimelineWindowOwner owner) {
+        if (!hasTimelineSendFollow()) return;
+        final int render = ++messageRenderSerial;
+        final long positionIntent = messagePositionIntentSerial;
+        messageScroll.post(() -> {
+            if (!owner.current() || messageRenderSerial != render
+                    || messagePositionIntentSerial != positionIntent || !hasTimelineSendFollow()) return;
+            if (messageAdapter.getItemCount() > 0)
+                messageLayout.scrollToPosition(messageAdapter.getItemCount() - 1);
+        });
+    }
+
     private void updateMessageRows(List<JSONObject> window) {
-        List<JSONObject> previous = new ArrayList<>(displayedMessages);
-        int oldSize = previous.size();
-        int newSize = window.size();
-        int prepend = -1;
-        if (oldSize > 0 && newSize >= oldSize) {
-            long firstOldId = previous.get(0).optLong("id");
-            for (int i = 0; i <= newSize - oldSize; i++) {
-                if (window.get(i).optLong("id") == firstOldId) { prepend = i; break; }
-            }
-            if (prepend >= 0) {
-                for (int i = 0; i < oldSize; i++) {
-                    if (previous.get(i).optLong("id") != window.get(prepend + i).optLong("id")) {
-                        prepend = -1;
-                        break;
-                    }
-                }
-            }
-        }
-        displayedMessages.clear();
-        displayedMessages.addAll(window);
-        if (prepend < 0) {
-            messageAdapter.notifyDataSetChanged();
-            return;
-        }
-        int append = newSize - prepend - oldSize;
-        if (prepend > 0) messageAdapter.notifyItemRangeInserted(0, prepend);
-        if (append > 0) messageAdapter.notifyItemRangeInserted(prepend + oldSize, append);
-        for (int i = 0; i < oldSize; i++) {
-            if (!previous.get(i).toString().equals(window.get(prepend + i).toString())
-                    || (prepend > 0 && i == 0))
-                messageAdapter.notifyItemChanged(prepend + i);
-        }
+        if (!publishMessageRows(window, localTextRows)) throw new IllegalStateException("Timeline owner is no longer current");
+    }
+
+    /** Existing resume/layout points refresh date, clock and display settings without a new timer. */
+    private void reprojectMessageTimelineContext() {
+        TimelineWindowOwner owner = messageWindowOwner;
+        if (owner == null || !owner.current() || messageRowSnapshot == null
+                || messageRowSnapshot.context.same(timelineRenderContext())) return;
+        ScrollAnchor anchor = currentScrollAnchor();
+        try { renderMessageWindow(owner.room, new ArrayList<>(displayedMessages), anchor.atBottom, 0, anchor); }
+        catch (Exception invalid) { chatNotice.setText(R.string.chat_v2_load_failed); }
     }
 
     private boolean isWithin(View child, View ancestor) {
@@ -7377,11 +8774,12 @@ public final class OdooIdentityActivity extends Activity {
         }
 
         @Override public long getItemId(int position) {
-            return displayedMessages.isEmpty() ? Long.MIN_VALUE
-                    : displayedMessages.get(position).optLong("id");
+            if (position < displayedMessages.size()) return displayedMessages.get(position).optLong("id");
+            int local = position - displayedMessages.size();
+            return local < localTextRows.size() ? -localTextRows.get(local).id : Long.MIN_VALUE;
         }
 
-        @Override public int getItemCount() { return Math.max(1, displayedMessages.size()); }
+        @Override public int getItemCount() { return Math.max(1, displayedMessages.size() + localTextRows.size()); }
 
         @NonNull @Override public Holder onCreateViewHolder(@NonNull android.view.ViewGroup parent,
                                                             int viewType) {
@@ -7394,6 +8792,11 @@ public final class OdooIdentityActivity extends Activity {
             detachAudioControls(holder.bubble);
             holder.container.removeAllViews();
             holder.bubble = null;
+            if (position >= displayedMessages.size() && position - displayedMessages.size() < localTextRows.size()) {
+                holder.bubble = createLocalTextBubble(localTextRows.get(position - displayedMessages.size()));
+                holder.container.addView(holder.bubble, new FrameLayout.LayoutParams(-1, -2));
+                return;
+            }
             if (displayedMessages.isEmpty()) {
                 holder.container.addView(Ui.emptyState(OdooIdentityActivity.this,
                         getString(offlineHistory ? R.string.chat_v2_empty_cache
@@ -7434,6 +8837,29 @@ public final class OdooIdentityActivity extends Activity {
         }
     }
 
+    private View createLocalTextBubble(BChatV2Outbox.Entry entry) {
+        FrameLayout outer = new FrameLayout(this);
+        Ui.pad(outer, 12, 3);
+        LinearLayout bubble = Ui.column(this);
+        Ui.pad(bubble, 12, 8);
+        bubble.setBackground(chatBubbleBackground(true, false));
+        TextView body = Ui.chatText(this, entry.body);
+        body.setMaxWidth(Math.max(1, Ui.bubbleMaxWidth(messageScroll) - dp(24)));
+        body.setTextIsSelectable(true);
+        bubble.addView(body, new LinearLayout.LayoutParams(-2, -2));
+        int state = "sending".equals(entry.state) ? R.string.text_queue_sending
+                : "review".equals(entry.state) ? R.string.text_queue_review
+                : "receipt".equals(entry.state) ? R.string.text_queue_receipt
+                : "uncertain".equals(entry.state) ? R.string.text_queue_uncertain : R.string.text_queue_queued;
+        View status = Ui.messageMeta(this, getString(state), entry.state, () -> reviewPending(false));
+        bubble.addView(status);
+        FrameLayout.LayoutParams size = new FrameLayout.LayoutParams(-2, -2, Gravity.RIGHT);
+        size.leftMargin = dp(48);
+        outer.addView(bubble, size);
+        outer.setOnClickListener(v -> reviewPending(false));
+        return outer;
+    }
+
     private View createMessageBubble(Room room, JSONObject item,
                                      boolean sameSender, boolean showDate) throws Exception {
         long authorId = positiveId(item.get("author_user_id"));
@@ -7471,9 +8897,8 @@ public final class OdooIdentityActivity extends Activity {
         Ui.pad(bubble, 12, 8);
         bubble.setBackground(chatBubbleBackground(mine, sameSender));
         bubble.setElevation(dp(1));
-        int screen = getResources().getDisplayMetrics().widthPixels;
-        int maxWidth = Math.min(dp(520), Math.min((int) (screen * .84f), screen - dp(44)));
-        int contentWidth = maxWidth - dp(24);
+        int maxWidth = Ui.bubbleMaxWidth(messageScroll);
+        int contentWidth = Math.max(1, maxWidth - dp(24));
         if (!mine && !sameSender) {
             TextView author = Ui.text(this, authorName, 13, Ui.GREEN, true);
             author.setMaxWidth(contentWidth);
@@ -7494,6 +8919,11 @@ public final class OdooIdentityActivity extends Activity {
             snippet.setEllipsize(android.text.TextUtils.TruncateAt.END);
             snippet.setBackground(Ui.bg(Ui.LIGHT, 8, this));
             Ui.pad(snippet, 8, 5);
+            if (!quoted.has("unavailable")) {
+                final long parentId = positiveId(quoted.get("id"));
+                snippet.setMinHeight(dp(48)); Ui.clickable(snippet);
+                snippet.setOnClickListener(ignored -> jumpToCanonicalMessage(room, parentId));
+            }
             bubble.addView(snippet, new LinearLayout.LayoutParams(-1, -2));
         }
         if (!body.isEmpty()) {
@@ -7507,11 +8937,8 @@ public final class OdooIdentityActivity extends Activity {
                 });
                 bubble.addView(orderCard, new LinearLayout.LayoutParams(contentWidth, -2));
             } else {
-                TextView line = Ui.text(this, body, Ui.CHAT_BODY_SP, Ui.INK, false);
+                TextView line = Ui.chatText(this, body);
                 line.setMaxWidth(contentWidth);
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
-                    line.setLineHeight(Math.max(line.getLineHeight(), dp(Ui.CHAT_TEXT_LINE_DP)));
-                else line.setLineSpacing(dp(2), 1f);
                 if (!offlineHistory) line.setOnLongClickListener(v -> {
                     showMessageActions(v, room, id, authorName, replyBody, body,
                             mine ? item : null);
@@ -7535,39 +8962,18 @@ public final class OdooIdentityActivity extends Activity {
             return true;
         });
         String sentClock = formatBubbleTime(item.getString("created_at"));
-        TextView stamp = Ui.text(this, sentClock,
-                Ui.CHAT_TIME_SP, Ui.MUTED, false);
+        String delivery = mine && item.has("delivery_state") ? item.getString("delivery_state") : null;
+        if (delivery != null && !("sent".equals(delivery) || "delivered".equals(delivery)
+                || "read".equals(delivery))) throw new IllegalArgumentException();
+        LinearLayout stamp = Ui.messageMeta(this, sentClock, delivery,
+                delivery == null ? null : () -> showMessageDetails(item));
         if (!mine) stamp.setContentDescription(getString(
                 R.string.chat_v2_accessibility_sender_time, authorName,
                 sentClock));
-        stamp.setMaxWidth(contentWidth);
-        stamp.setGravity(Gravity.END);
         LinearLayout.LayoutParams stampSize = new LinearLayout.LayoutParams(-2, -2);
         stampSize.gravity = Gravity.END;
         stampSize.topMargin = dp(3);
         bubble.addView(stamp, stampSize);
-        if (mine && item.has("delivery_state")) {
-            String delivery = item.getString("delivery_state");
-            if (!("sent".equals(delivery) || "delivered".equals(delivery)
-                    || "read".equals(delivery))) throw new IllegalArgumentException();
-            String ticks = "sent".equals(delivery) ? "✓" : "✓✓";
-            stamp.setText(sentClock + "  " + ticks);
-            if ("read".equals(delivery)) stamp.setTextColor(Ui.GREEN);
-            stamp.setOnClickListener(v -> showMessageDetails(item));
-            stamp.post(() -> {
-                Rect hit = new Rect();
-                stamp.getHitRect(hit);
-                if (hit.width() < dp(48)) {
-                    hit.left = Math.max(0, hit.right - dp(48));
-                    hit.right = Math.min(bubble.getWidth(), hit.left + dp(48));
-                }
-                if (hit.height() < dp(48)) {
-                    hit.top = Math.max(0, hit.bottom - dp(48));
-                    hit.bottom = Math.min(bubble.getHeight(), hit.top + dp(48));
-                }
-                bubble.setTouchDelegate(new TouchDelegate(hit, stamp));
-            });
-        }
         LinearLayout.LayoutParams bubbleSize = new LinearLayout.LayoutParams(-2, -2);
         bubbleSize.bottomMargin = sameSender ? dp(3) : dp(8);
         if (!mine && !sameSender) {
@@ -7700,6 +9106,47 @@ public final class OdooIdentityActivity extends Activity {
 
     private void showMessageDetails(JSONObject item) {
         if (item == null) return;
+        final AccountScope scopedAccount = account;
+        final Room room = selectedRoom;
+        final long messageId = positiveId(item.opt("id"));
+        if (scopedAccount == null || room == null || messageId <= 0
+                || positiveId(item.opt("author_user_id")) != scopedAccount.userId
+                || !stillCurrent(scopedAccount, room) || !chatAllowed() || offlineHistory) return;
+        if (receiptDeliverySupported && receiptsAvailable) {
+            closeReceiptDetails();
+            final int session = epoch;
+            final long generation = mediaSessionGeneration;
+            receiptDetailsPanel = new BChatReceiptDetailsPanel(this, new BChatReceiptDetailsPanel.Host() {
+                @Override public AccountScope account() { return OdooIdentityActivity.this.account; }
+                @Override public boolean current(AccountScope captured, long requestedRoom, long requestedMembership,
+                                                 long requestedMessage, long requestedGeneration) {
+                    return captured == scopedAccount && requestedRoom == room.id
+                            && requestedMembership == room.membershipId && requestedMessage == messageId
+                            && requestedGeneration == generation
+                            && receiptDetailsBinding(scopedAccount, room, session, generation);
+                }
+                @Override public boolean load(long afterId, BChatReceiptDetailsPanel.Reply reply) {
+                    if (reply == null || !liveForeground || v2Busy || csrfToken == null
+                            || !receiptDetailsBinding(scopedAccount, room, session, generation)) return false;
+                    final String path;
+                    try { path = ReceiptDetailsProtocol.path(room.id, messageId, afterId); }
+                    catch (IllegalArgumentException invalid) { return false; }
+                    fetchV2("GET", path, null, (statusCode, body) -> {
+                        if (!receiptDetailsBinding(scopedAccount, room, session, generation)) {
+                            reply.complete(0, null); return;
+                        }
+                        if (statusCode == 401) {
+                            handleV2TransportFailure(statusCode); reply.complete(401, null); return;
+                        }
+                        reply.complete(statusCode, body);
+                    });
+                    return true;
+                }
+            }, scopedAccount, room.id, room.membershipId, messageId, generation);
+            receiptDetailsPanel.show();
+            return;
+        }
+        // Read-only legacy aggregate, not a fallback path for delivery/read ACKs.
         String state = item.optString("delivery_state", "");
         Object readAt = item.opt("read_at");
         Ui.decorateDialog(new AlertDialog.Builder(this)
@@ -7712,9 +9159,19 @@ public final class OdooIdentityActivity extends Activity {
                 .setPositiveButton(R.string.bchat_group_ok, null).show());
     }
 
+    private boolean receiptDetailsBinding(AccountScope scope, Room room, int session, long generation) {
+        return !offlineHistory && !recheckOnResume && session == epoch && generation == mediaSessionGeneration
+                && roomsVerifiedForSession && v1Companies.contains(room.companyId)
+                && receiptDeliverySupported && receiptsAvailable && chatAllowed() && stillCurrent(scope, room);
+    }
+
+    private void closeReceiptDetails() {
+        if (receiptDetailsPanel != null) { receiptDetailsPanel.dismiss(); receiptDetailsPanel = null; }
+    }
+
     private GradientDrawable chatBubbleBackground(boolean mine, boolean sameSender) {
         GradientDrawable background = new GradientDrawable();
-        background.setColor(mine ? Ui.CHAT_SENT : Ui.CHAT_RECEIVED);
+        background.setColor(mine ? UiPalette.sent(this) : UiPalette.received(this));
         float large = dp(17);
         float small = dp(6);
         boolean smallLeft = !mine;
@@ -7763,75 +9220,321 @@ public final class OdooIdentityActivity extends Activity {
         return asciiDigits(android.text.format.DateFormat.getDateFormat(this).format(date));
     }
 
-    private void acknowledgeMessage(Room room, long messageId, String kind) {
-        AccountScope scope = account;
-        if (!receiptsAvailable || !liveReady(scope) || room == null || selectedRoom != room
-                || messageId <= 0 || !("delivered".equals(kind) || "read".equals(kind))) return;
-        String key = room.id + ":" + messageId + ":" + kind;
-        if (acknowledgedMessages.contains(key) || !pendingAcknowledgements.add(key)) return;
-        final int requestRoomMetadataGeneration = roomMetadataGeneration;
-        String path = V2_ROOMS + "/" + room.id + "/messages/" + messageId + "/receipts";
-        enqueueLive("POST", path, "kind", kind, (statusCode, result) -> {
-            pendingAcknowledgements.remove(key);
-            if (!liveReady(scope)) return;
-            if (statusCode == 401) { logout(); return; }
-            try {
-                if (statusCode != 200 || result == null
-                        || nonnegativeCursor(result.get("api_version")) != 2
-                        || positiveId(result.get("message_id")) != messageId
-                        || !(result.opt("delivered_at") instanceof String)
-                        || ("read".equals(kind) && !(result.opt("read_at") instanceof String)))
-                    throw new IllegalArgumentException();
-                long unread = nonnegativeCursor(result.get("unread_count"));
-                long responseLastMessageId = nonnegativeCursor(result.get("last_message_id"));
-                if (unread > Integer.MAX_VALUE) throw new IllegalArgumentException();
-                acknowledgedMessages.add(key);
-                if ("read".equals(kind)) {
-                    acknowledgedMessages.add(room.id + ":" + messageId + ":delivered");
-                    // The server committed this exact read receipt. Apply its
-                    // count only to the same active membership and only if a
-                    // newer room snapshot has not arrived while it was in flight.
-                    boolean refreshUnreadMetadata = false;
-                    for (Room candidate : rooms) {
-                        if (!candidate.sameMembership(room)) continue;
-                        if (requestRoomMetadataGeneration != roomMetadataGeneration
-                                || candidate.lastMessageId != responseLastMessageId) {
-                            // A list response may have replaced the badge with data fetched
-                            // before this receipt committed. It is not safe to merge the ACK
-                            // into that snapshot; fence every in-flight list and fetch a fresh one.
-                            refreshUnreadMetadata = true;
-                            break;
-                        }
-                        candidate.unreadCount = (int) unread;
-                        if (selectedRoom == candidate) selectedRoom.unreadCount = (int) unread;
-                        ++unreadMetadataGeneration;
-                        if (selectedRoom == null && "chats".equals(visibleSection)) renderRooms();
-                        break;
-                    }
-                    if (refreshUnreadMetadata) {
-                        ++unreadMetadataGeneration;
-                        // The receipt runs on the live queue while a v2 request may still be
-                        // active. Defer the refresh through the existing v2-idle pump so a
-                        // synthetic busy status cannot be mistaken for a transport failure.
-                        liveRoomsDirty = true;
-                        handler.post(this::flushLiveUi);
-                    }
-                }
-            } catch (Exception invalid) {
-                if (statusCode == 0 || statusCode >= 500) handler.postDelayed(() -> {
-                    if (selectedRoom == room && liveReady(scope)) {
-                        if ("read".equals(kind)) scanVisibleMessageReceipts();
-                        else acknowledgeMessage(room, messageId, "delivered");
-                    }
-                }, 3000);
+    /** Disk + generation gate shared by every delivery/read source, never selected-room ownership. */
+    private void resetReceiptPass() {
+        ++receiptPassToken;
+        if (receiptSyncTimer != null) { handler.removeCallbacks(receiptSyncTimer); receiptSyncTimer = null; }
+        receiptSyncBusy = receiptPassActive = false;
+        receiptPendingCursor = 0; receiptPendingPages = 0; receiptPassAttempted.clear();
+        pendingAcknowledgements.clear();
+    }
+
+    private void invalidateReceiptRoomBinding() {
+        // Only the owner of the previous verified generation can request re-arm from a fresh room snapshot.
+        receiptNeedsRoomRebind = receiptStorageGeneration == historyGlobalGeneration
+                || receiptNeedsRoomRebind && receiptRebindGeneration == historyGlobalGeneration;
+        receiptRebindGeneration = receiptNeedsRoomRebind ? historyGlobalGeneration + 1 : 0;
+        receiptStorageGeneration = 0;
+        resetReceiptPass();
+    }
+
+    private void persistReceiptRooms(AccountScope scope, ConnectedHistoryCache cache, boolean remembered,
+                                     List<ConnectedHistoryCache.RoomRecord> snapshot) {
+        final int session = epoch, generation = historyWriteGeneration, global = historyGlobalGeneration;
+        final boolean mayRebind = receiptNeedsRoomRebind && receiptRebindGeneration == global
+                || receiptStorageGeneration == global;
+        // Capturing another Activity's newer global value is not ownership of its account or memberships.
+        // Refuse the SQL write itself, not just the later attempt to re-arm the receipt pump.
+        if (!verified || scope == null || cache == null || !mayRebind) return;
+        BChatStorageRepository.submit(null, () -> {
+            synchronized (historyStorageLock) {
+                if (closed || !verified || account != scope || cache != historyCache || session != epoch
+                        || generation != historyWriteGeneration || global != historyGlobalGeneration
+                        || !(receiptStorageGeneration == global
+                        || receiptNeedsRoomRebind && receiptRebindGeneration == global))
+                    throw new IllegalStateException("Room snapshot scope changed");
+                cache.reconcile(scope, remembered, snapshot); return true;
+            }
+        }, (saved, error) -> {
+            if (closed || !verified || account != scope || cache != historyCache || session != epoch
+                    || generation != historyWriteGeneration || global != historyGlobalGeneration
+                    || !(receiptStorageGeneration == global
+                    || receiptNeedsRoomRebind && receiptRebindGeneration == global)) return;
+            if (error != null || !Boolean.TRUE.equals(saved)) return;
+            if (mayRebind) {
+                receiptStorageGeneration = global; receiptNeedsRoomRebind = false;
+                receiptRebindGeneration = 0;
+                scheduleReceiptSync(0);
+                if (messageScroll != null) messageScroll.post(this::scanVisibleMessageReceipts);
             }
         });
+    }
+
+    private void requireReceiptEpoch(JSONObject result, Room room) throws Exception {
+        if (receiptDeliverySupported && (positiveId(result.get("room_id")) != room.id
+                || positiveId(result.get("membership_id")) != room.membershipId))
+            throw new IllegalArgumentException("Canonical receipt epoch changed");
+    }
+
+    private <T> void receiptDisk(AccountScope scope, ConnectedHistoryCache cache,
+            BChatStorageRepository.Work<T> work, BChatStorageRepository.Ready<T> ready) {
+        final int session = epoch, generation = historyWriteGeneration, global = historyGlobalGeneration;
+        final int token = receiptPassToken;
+        final long repositoryGeneration = BChatStorageRepository.generation(scope);
+        // An unscoped callback is deliberate: repository invalidation must not withhold the only busy completion.
+        // Every action is manually fenced below; stale work cannot execute or settle, but its pass can be reset.
+        BChatStorageRepository.submit(null, () -> {
+            synchronized (historyStorageLock) {
+                if (closed || scope != account || cache != historyCache || session != epoch
+                        || generation != historyWriteGeneration || global != historyGlobalGeneration
+                        || receiptStorageGeneration != global || token != receiptPassToken
+                        || repositoryGeneration != BChatStorageRepository.generation(scope))
+                    throw new IllegalStateException("Receipt scope changed");
+                return work.run();
+            }
+        }, (value, error) -> {
+            if (closed || scope != account || cache != historyCache || session != epoch || token != receiptPassToken) return;
+            if (generation != historyWriteGeneration || global != historyGlobalGeneration
+                    || receiptStorageGeneration != global
+                    || repositoryGeneration != BChatStorageRepository.generation(scope)) {
+                resetReceiptPass(); scheduleReceiptSync(0);
+                if (messageScroll != null) messageScroll.post(this::scanVisibleMessageReceipts);
+                return;
+            }
+            ready.complete(value, error);
+        });
+    }
+
+    private void persistReceiptCanonical(AccountScope scope, Room room, List<JSONObject> page) {
+        final ConnectedHistoryCache cache = historyCache;
+        if (scope == null || cache == null || room == null || !verified || offlineHistory) return;
+        final boolean delivery = receiptsAvailable && receiptDeliverySupported;
+        receiptDisk(scope, cache, () -> {
+            if (delivery) cache.savePageAndQueueDelivered(scope, room.id, room.membershipId, page);
+            else cache.savePage(scope, room.id, room.membershipId, page);
+            return true;
+        }, (saved, error) -> {
+            if (error != null) {
+                if (selectedRoom != null && selectedRoom.sameMembership(room))
+                    chatNotice.setText(R.string.chat_v2_save_failed);
+                return; // No ACK on failure. Independent pending scan can recover without blocking the composer.
+            }
+            scheduleReceiptSync(0);
+            if (selectedRoom != null && selectedRoom.sameMembership(room) && messageScroll != null)
+                messageScroll.post(this::scanVisibleMessageReceipts);
+        });
+    }
+
+    private Room receiptRoom(ConnectedHistoryCache.ReceiptWork work) {
+        if (!chatAllowed() || !roomsVerifiedForSession) return null;
+        for (Room room : rooms)
+            if (room.id == work.roomId && room.membershipId == work.membershipId) return room;
+        return null;
+    }
+
+    private boolean receiptSyncReady() {
+        return receiptsAvailable && receiptDeliverySupported && liveReady(account) && chatAllowed()
+                && receiptStorageGeneration == historyGlobalGeneration
+                && roomsVerifiedForSession && historyCache != null;
+    }
+
+    private void scheduleReceiptSync(long delay) {
+        if (!receiptSyncReady()) return;
+        if (receiptSyncTimer != null) {
+            if (delay > 0) return;
+            handler.removeCallbacks(receiptSyncTimer);
+        }
+        receiptSyncTimer = () -> {
+            receiptSyncTimer = null;
+            if (!receiptSyncReady() || receiptSyncBusy) return;
+            if (!receiptPassActive) {
+                receiptPassActive = true; receiptPendingCursor = 0; receiptPendingPages = 0;
+                receiptPassAttempted.clear();
+            }
+            drainReceiptSync();
+        };
+        handler.postDelayed(receiptSyncTimer, Math.max(0, delay));
+    }
+
+    private void finishReceiptPass() {
+        receiptSyncBusy = receiptPassActive = false;
+        receiptPendingCursor = 0; receiptPendingPages = 0;
+        scheduleReceiptSync(15000); // RAM cursor resets each pass: late commits and restored rights are revisited.
+    }
+
+    private void drainReceiptSync() {
+        if (!receiptSyncReady() || receiptSyncBusy) return;
+        if (receiptPassAttempted.size() >= 2000) { finishReceiptPass(); return; }
+        receiptSyncBusy = true;
+        final AccountScope scope = account;
+        final ConnectedHistoryCache cache = historyCache;
+        receiptDisk(scope, cache, () -> cache.receiptWork(scope), (work, error) -> {
+            if (!receiptSyncReady()) { receiptSyncBusy = false; return; }
+            if (error != null) { finishReceiptPass(); return; }
+            for (ConnectedHistoryCache.ReceiptWork item : work) {
+                if (receiptPassAttempted.contains(item.key())) continue;
+                receiptPassAttempted.add(item.key());
+                Room room = receiptRoom(item);
+                if (room == null) { liveRoomsDirty = true; continue; }
+                if ("fetch".equals(item.kind) || "verify".equals(item.kind)) fetchReceiptCanonical(scope, cache, room, item);
+                else dispatchReceiptIntent(scope, cache, room, item);
+                return;
+            }
+            if (!receiptDeliverySupported || receiptPendingPages >= 40) { finishReceiptPass(); return; }
+            requestPendingReceiptReferences(scope, cache);
+        });
+    }
+
+    private void nextReceiptWork() {
+        receiptSyncBusy = false;
+        if (receiptSyncReady()) handler.post(this::drainReceiptSync);
+    }
+
+    private void requestPendingReceiptReferences(AccountScope scope, ConnectedHistoryCache cache) {
+        final long requestedAfter = receiptPendingCursor;
+        final int token = receiptPassToken;
+        enqueueLive("GET", "/bchat/api/v2/receipts/pending?after_id=" + requestedAfter, null, null,
+                (statusCode, result) -> {
+            if (token != receiptPassToken) return;
+            if (!receiptSyncReady() || account != scope) { receiptSyncBusy = false; return; }
+            if (statusCode == 401) { logout(); return; }
+            try {
+                if (statusCode != 200) throw new IllegalArgumentException();
+                ReceiptDeliveryProtocol.Page page = ReceiptDeliveryProtocol.pending(result, requestedAfter);
+                receiptDisk(scope, cache, () -> { cache.admitReceiptReferences(scope, page.refs); return true; },
+                        (saved, error) -> {
+                    if (error != null) {
+                        // All-or-nothing admission and no cursor advance. ACKs get the first chance next pass.
+                        liveRoomsDirty = true; handler.post(this::flushLiveUi); finishReceiptPass(); return;
+                    }
+                    receiptPendingCursor = page.nextAfterId; ++receiptPendingPages;
+                    // Drain this final page before ending; no additional HTTP query is needed.
+                    if (!page.hasMore) receiptPendingPages = 40;
+                    nextReceiptWork();
+                });
+            } catch (Exception invalid) { finishReceiptPass(); }
+        });
+    }
+
+    private void fetchReceiptCanonical(AccountScope scope, ConnectedHistoryCache cache, Room room,
+                                       ConnectedHistoryCache.ReceiptWork work) {
+        final int token = receiptPassToken;
+        enqueueLive("GET", V2_ROOMS + "/" + room.id + "/messages/" + work.messageId, null, null,
+                (statusCode, result) -> {
+            if (token != receiptPassToken) return;
+            if (!receiptSyncReady() || scope != account) { receiptSyncBusy = false; return; }
+            if (statusCode == 401) { logout(); return; }
+            try {
+                if (statusCode != 200 || receiptRoom(work) == null || result == null
+                        || positiveId(result.get("api_version")) != 2
+                        || positiveId(result.get("room_id")) != work.roomId
+                        || positiveId(result.get("membership_id")) != work.membershipId) throw new IllegalArgumentException();
+                JSONObject canonical = validateMessageList(new JSONArray().put(result.getJSONObject("message")), 0).get(0);
+                if (positiveId(canonical.get("id")) != work.messageId
+                        || positiveId(canonical.get("author_user_id")) == scope.userId) throw new IllegalArgumentException();
+                receiptDisk(scope, cache, () -> {
+                    cache.savePageAndQueueDelivered(scope, work.roomId, work.membershipId, Collections.singletonList(canonical));
+                    return true;
+                }, (saved, error) -> {
+                    if (error == null && "verify".equals(work.kind) && selectedRoom != null
+                            && selectedRoom.sameMembership(room) && messageScroll != null)
+                        messageScroll.post(this::scanVisibleMessageReceipts);
+                    nextReceiptWork();
+                });
+            } catch (Exception invalid) {
+                if (statusCode == 403 || statusCode == 404 || statusCode == 409) {
+                    liveRoomsDirty = true; handler.post(this::flushLiveUi);
+                }
+                nextReceiptWork(); // One rejected/failed reference never blocks its page's other messages.
+            }
+        });
+    }
+
+    private void dispatchReceiptIntent(AccountScope scope, ConnectedHistoryCache cache, Room room,
+                                       ConnectedHistoryCache.ReceiptWork work) {
+        final int token = receiptPassToken;
+        receiptDisk(scope, cache, () -> cache.hasReceiptEvidence(scope, work), (present, error) -> {
+            if (error != null || !Boolean.TRUE.equals(present) || !receiptSyncReady() || receiptRoom(work) == null) {
+                nextReceiptWork(); return;
+            }
+            final int requestRoomMetadataGeneration = roomMetadataGeneration;
+            String path = V2_ROOMS + "/" + room.id + "/messages/" + work.messageId + "/receipts";
+            V2Callback callback = (statusCode, result) -> {
+                if (token != receiptPassToken) return;
+                if (account != scope) return;
+                if (statusCode == 401) { logout(); return; }
+                try {
+                    if (statusCode != 200) throw new IllegalArgumentException();
+                    ReceiptDeliveryProtocol.acknowledged(result, work);
+                    // This authentic matching ACK remains useful after room navigation or onPause.
+                    receiptDisk(scope, cache, () -> cache.settleReceipt(scope, work), (settled, failure) -> {
+                        if (failure == null && Boolean.TRUE.equals(settled))
+                            applyReceiptUnread(room, work.kind, result, requestRoomMetadataGeneration);
+                        nextReceiptWork();
+                    });
+                } catch (Exception invalid) { nextReceiptWork(); }
+            };
+            if (liveQueue.size() >= 128 || csrfToken == null) { nextReceiptWork(); return; }
+            liveQueue.addLast(new LiveRequest("POST", path, "kind", work.kind, scope, callback, work.membershipId));
+            pumpLiveQueue();
+        });
+    }
+
+    private void applyReceiptUnread(Room room, String kind, JSONObject result, int requestRoomMetadataGeneration) {
+        if (!"read".equals(kind)) return;
+        long unread = nonnegativeCursor(result.opt("unread_count"));
+        long responseLastMessageId = nonnegativeCursor(result.opt("last_message_id"));
+        boolean refreshUnreadMetadata = false;
+        for (Room candidate : rooms) {
+            if (!candidate.sameMembership(room)) continue;
+            if (requestRoomMetadataGeneration != roomMetadataGeneration
+                    || candidate.lastMessageId != responseLastMessageId) {
+                refreshUnreadMetadata = true; break;
+            }
+            candidate.unreadCount = (int) unread;
+            if (selectedRoom == candidate) selectedRoom.unreadCount = (int) unread;
+            ++unreadMetadataGeneration;
+            if (selectedRoom == null && "chats".equals(visibleSection)) renderRooms();
+            break;
+        }
+        if (refreshUnreadMetadata) {
+            ++unreadMetadataGeneration; liveRoomsDirty = true; handler.post(this::flushLiveUi);
+        }
+    }
+
+    private void acknowledgeMessage(Room room, long messageId, String kind) {
+        AccountScope scope = account;
+        if (!"read".equals(kind) || !receiptSyncReady() || !receiptViewportActive()
+                || room == null || selectedRoom != room || messageId <= 0) return;
+        String key = room.id + ":" + room.membershipId + ":" + messageId + ":read";
+        if (!pendingAcknowledgements.add(key)) return;
+        JSONObject canonical = null;
+        for (JSONObject item : displayedMessages) if (positiveId(item.opt("id")) == messageId) { canonical = item; break; }
+        if (canonical == null) { pendingAcknowledgements.remove(key); return; }
+        final JSONObject message = canonical;
+        final ConnectedHistoryCache cache = historyCache;
+        receiptDisk(scope, cache, () -> { cache.queueRead(scope, room.id, room.membershipId, message); return true; },
+                (saved, error) -> {
+            pendingAcknowledgements.remove(key);
+            if (error instanceof ConnectedHistoryCache.MissingReceiptEvidence) {
+                receiptDisk(scope, cache, () -> {
+                    cache.requestReadEvidence(scope, room.id, room.membershipId, messageId); return true;
+                }, (requested, failure) -> { if (failure == null) scheduleReceiptSync(0); });
+            } else if (error == null) scheduleReceiptSync(0);
+        });
+    }
+
+    private boolean receiptViewportActive() {
+        android.os.PowerManager power = (android.os.PowerManager)getSystemService(POWER_SERVICE);
+        android.app.KeyguardManager keyguard = (android.app.KeyguardManager)getSystemService(KEYGUARD_SERVICE);
+        return liveForeground && hasWindowFocus() && power != null && power.isInteractive()
+                && keyguard != null && !keyguard.isKeyguardLocked();
     }
 
     /** A read ACK is emitted only while the message bubble is actually on screen. */
     private void scanVisibleMessageReceipts() {
         Room room = selectedRoom;
-        if (!receiptsAvailable || !liveReady(account) || room == null || messageFrame == null
+        if (!receiptsAvailable || !liveReady(account) || !receiptViewportActive() || room == null || messageFrame == null
                 || messageFrame.getVisibility() != View.VISIBLE
                 || !"chats".equals(visibleSection) || messageScroll == null
                 || !messageScroll.isShown()) return;
@@ -7909,24 +9612,41 @@ public final class OdooIdentityActivity extends Activity {
 
     private void sendText() {
         Room room = selectedRoom;
-        if (!sendAllowed() || room == null || v2Busy || account == null
-                || outbox == null || mediaStageBusy) return;
-        try {
-            if (mediaStore != null && mediaStore.pending(account, room.id, room.membershipId) != null) {
-                chatNotice.setText(R.string.bchat_media_pending); return;
-            }
-        } catch (IOException damaged) { chatNotice.setText(R.string.chat_v2_save_failed); return; }
+        if (!verified || offlineHistory || !sendAllowed() || room == null || account == null
+                || outbox == null || mediaStageBusy || textEnqueueBusy || draftReplyBlocked || !localMatches(room)) return;
         String body = messageInput.getText().toString();
         try {
             OutboxPolicy.requireText(body);
             flushDraftSave();
-            outbox.enqueue(account, room.id, room.membershipId, body, selectedReplyMessageId);
-            clearSelectedReply();
-            draftActive = false;
-            messageInput.setText("");
-            draftActive = true;
+            final AccountScope scope = account;
+            final BChatV2Outbox box = outbox;
+            final long revision = editorRevision, replyId = selectedReplyMessageId;
+            final BChatComposerSnapshot editor = new BChatComposerSnapshot(scope, room.id,
+                    room.membershipId, revision, body, replyId);
+            final TimelineSendOrigin sendOrigin = captureTimelineSendOrigin();
+            textEnqueueBusy = true;
             updatePendingUi();
-            retryPending();
+            local(scope, () -> box.enqueue(scope, room.id, room.membershipId, body, replyId,revision), (entry, error) -> {
+                textEnqueueBusy = false;
+                if (selectedRoom != room) return;
+                if (error != null) {
+                    chatNotice.setText(error instanceof IllegalStateException && error.getMessage() != null
+                            && error.getMessage().contains("capacity") ? R.string.text_queue_full : R.string.text_queue_storage_failed);
+                    updatePendingUi(); return;
+                }
+                rememberTimelineSendFollow(sendOrigin, entry);
+                // A user may have continued editing while the durable transaction ran.
+                if (editor.matches(account, room.id, room.membershipId, editorRevision,
+                        messageInput.getText().toString(), selectedReplyMessageId)) {
+                    clearSelectedReply();
+                    suppressDraftChanges = true;
+                    messageInput.setText("");
+                    suppressDraftChanges = false;
+                    ++editorRevision;
+                } else scheduleDraftSave(scope, room, messageInput.getText().toString());
+                globalPendingKnown = false;
+                refreshLocalRoom(room, false);
+            });
         } catch (IllegalArgumentException invalid) {
             chatNotice.setText(R.string.chat_v2_invalid_text);
         } catch (Exception storage) {
@@ -7942,8 +9662,7 @@ public final class OdooIdentityActivity extends Activity {
         if (!CONNECTED_MEDIA_UI_ENABLED || !mediaUploadAllowed() || !stillCurrent(account, room)
                 || mediaStageBusy || voicePreviewFile != null || mediaUploadBusy || v2Busy) return;
         try {
-            if (mediaStore.pending(account, room.id, room.membershipId) != null
-                    || outbox.first(account, room.id, room.membershipId) != null) {
+            if (!localMatches(room)) {
                 chatNotice.setText(R.string.bchat_media_pending); return;
             }
         } catch (Exception invalid) { chatNotice.setText(R.string.chat_v2_save_failed); return; }
@@ -7985,6 +9704,13 @@ public final class OdooIdentityActivity extends Activity {
     private void startConnectedVoice(AccountScope scopedAccount, Room room) {
         if (!stillCurrent(scopedAccount, room) || !mediaUploadAllowed() || connectedVoiceRecorder != null
                 || voicePreviewFile != null) return;
+        final int request = ++recordingGeneration;
+        final AudioFocusLease.Lease owner = connectedAudioFocus.reserve(reason -> cancelOwnedRecording(request));
+        if (owner == null || !owner.gainFocus(connectedAudioAttributes(true), true)) {
+            if (owner != null) owner.close();
+            chatNotice.setText(R.string.bchat_media_record_failed); return;
+        }
+        recordingFocus = owner;
         final VoiceRecorder[] current = new VoiceRecorder[1];
         VoiceRecorder recorder = new VoiceRecorder(this, new VoiceRecorder.Listener() {
             @Override public void onLimitReached() {
@@ -7993,6 +9719,7 @@ public final class OdooIdentityActivity extends Activity {
             @Override public void onError(String ignored) {
                 if (connectedVoiceRecorder == current[0]) {
                     connectedVoiceRecorder = null;
+                    releaseRecordingFocus();
                     mediaStageBusy = false;
                     stopRecordingBadge();
                     mediaVoiceButton.setContentDescription(getString(R.string.bchat_media_record));
@@ -8010,7 +9737,31 @@ public final class OdooIdentityActivity extends Activity {
             chatNotice.setText("");
             startRecordingBadge();
             updatePendingUi();
-        } catch (Exception failure) { chatNotice.setText(R.string.bchat_media_record_failed); }
+        } catch (Exception failure) {
+            recorder.cancel(); releaseRecordingFocus();
+            chatNotice.setText(R.string.bchat_media_record_failed);
+        }
+    }
+
+    private void releaseRecordingFocus() {
+        ++recordingGeneration;
+        AudioFocusLease.Lease owner = recordingFocus;
+        recordingFocus = null;
+        if (owner != null) owner.close();
+    }
+
+    private void cancelOwnedRecording(int request) {
+        if (request != recordingGeneration) return;
+        VoiceRecorder recorder = connectedVoiceRecorder;
+        connectedVoiceRecorder = null;
+        if (recorder != null) recorder.cancel();
+        releaseRecordingFocus();
+        mediaStageBusy = false;
+        mediaPickerAccount = null; mediaPickerRoom = null;
+        stopRecordingBadge();
+        if (mediaVoiceButton != null) mediaVoiceButton.setContentDescription(getString(R.string.bchat_media_record));
+        if (chatNotice != null) chatNotice.setText(R.string.bchat_media_record_cancelled);
+        updatePendingUi();
     }
 
     private void finishConnectedVoice() {
@@ -8025,7 +9776,7 @@ public final class OdooIdentityActivity extends Activity {
         stopRecordingBadge();
         mediaVoiceButton.setContentDescription(getString(R.string.bchat_media_record));
         updatePendingUi();
-        if (recorder == null) return;
+        if (recorder == null) { releaseRecordingFocus(); return; }
         try {
             ChatStore.Attachment recorded = recorder.finish();
             File source = AttachmentSupport.requirePrivateFile(this, recorded);
@@ -8034,19 +9785,36 @@ public final class OdooIdentityActivity extends Activity {
             }
             showVoicePreview(scopedAccount, room, generation, source);
         } catch (Exception invalid) { recorder.cancel(); chatNotice.setText(R.string.bchat_media_record_failed); }
+        finally { releaseRecordingFocus(); }
     }
 
     private void clearVoicePreview() {
         AlertDialog dialog = voicePreviewDialog;
         voicePreviewDialog = null;
         if (dialog != null) dialog.dismiss();
-        if (voicePreviewPlayer != null) {
-            voicePreviewPlayer.release();
-            voicePreviewPlayer = null;
-        }
+        stopVoicePreviewPlayback();
+        voicePreviewPlay = null;
         if (voicePreviewFile != null) { voicePreviewFile.delete(); voicePreviewFile = null; }
         mediaStageBusy = false;
         if (selectedRoom != null) updatePendingUi();
+    }
+
+    private void stopVoicePreviewPlayback() {
+        ++voicePreviewGeneration;
+        AudioFocusLease.Lease owner = voicePreviewFocus;
+        voicePreviewFocus = null;
+        if (owner != null) owner.close();
+        if (voicePreviewPlayer != null) { voicePreviewPlayer.release(); voicePreviewPlayer = null; }
+        if (voicePreviewPlay != null) voicePreviewPlay.setText("▶  " + getString(R.string.bchat_media_preview_play));
+    }
+
+    private AudioFocusLease.Lease reserveVoicePreviewFocus() {
+        final int request = ++voicePreviewGeneration;
+        AudioFocusLease.Lease owner = connectedAudioFocus.reserve(reason -> {
+            if (request == voicePreviewGeneration) stopVoicePreviewPlayback();
+        });
+        voicePreviewFocus = owner;
+        return owner;
     }
 
     private void showVoicePreview(AccountScope scopedAccount, Room room, int generation, File source) {
@@ -8061,6 +9829,7 @@ public final class OdooIdentityActivity extends Activity {
         play.setGravity(Gravity.CENTER);
         play.setMinHeight(dp(56));
         play.setContentDescription(getString(R.string.bchat_media_preview_play));
+        voicePreviewPlay = play;
         play.setOnClickListener(v -> {
             if (voicePreviewFile != source || !stillCurrent(scopedAccount, room)
                     || generation != mediaSessionGeneration) return;
@@ -8068,42 +9837,52 @@ public final class OdooIdentityActivity extends Activity {
                 if (voicePreviewPlayer != null) {
                     if (voicePreviewPlayer.isPlaying()) {
                         voicePreviewPlayer.pause();
+                        if (voicePreviewFocus != null) voicePreviewFocus.close();
+                        voicePreviewFocus = null;
                         play.setText("▶  " + getString(R.string.bchat_media_preview_play));
                     } else {
+                        AudioFocusLease.Lease owner = reserveVoicePreviewFocus();
+                        if (owner == null || !owner.gainFocus(connectedAudioAttributes(false), false)) {
+                            stopVoicePreviewPlayback(); chatNotice.setText(R.string.bchat_media_unavailable); return;
+                        }
                         voicePreviewPlayer.start();
                         play.setText("Ⅱ  " + getString(R.string.bchat_media_pause));
                     }
                     return;
                 }
+                final AudioFocusLease.Lease owner = reserveVoicePreviewFocus();
+                if (owner == null) { chatNotice.setText(R.string.bchat_media_unavailable); return; }
                 MediaPlayer player = new MediaPlayer();
                 voicePreviewPlayer = player;
+                player.setAudioAttributes(connectedAudioAttributes(false));
                 try (FileInputStream input = new FileInputStream(source)) {
                     player.setDataSource(input.getFD(), 0, source.length());
                 }
                 play.setText(R.string.bchat_media_loading_audio);
                 player.setOnPreparedListener(ready -> {
                     if (voicePreviewPlayer != ready || voicePreviewFile != source) return;
+                    if (!owner.active() || !owner.gainFocus(connectedAudioAttributes(false), false)) {
+                        stopVoicePreviewPlayback(); chatNotice.setText(R.string.bchat_media_unavailable); return;
+                    }
                     ready.start();
                     play.setText("Ⅱ  " + getString(R.string.bchat_media_pause));
                 });
                 player.setOnCompletionListener(done -> {
                     if (voicePreviewPlayer != done) return;
+                    if (voicePreviewFocus != null) voicePreviewFocus.close();
+                    voicePreviewFocus = null;
                     play.setText("▶  " + getString(R.string.bchat_media_preview_play));
                 });
                 player.setOnErrorListener((failed, what, extra) -> {
                     if (voicePreviewPlayer == failed) {
-                        failed.release();
-                        voicePreviewPlayer = null;
+                        stopVoicePreviewPlayback();
                         play.setText("▶  " + getString(R.string.bchat_media_preview_play));
                     }
                     return true;
                 });
                 player.prepareAsync();
             } catch (Exception failure) {
-                if (voicePreviewPlayer != null) {
-                    voicePreviewPlayer.release();
-                    voicePreviewPlayer = null;
-                }
+                stopVoicePreviewPlayback();
                 play.setText("▶  " + getString(R.string.bchat_media_preview_play));
                 chatNotice.setText(R.string.bchat_media_unavailable);
             }
@@ -8166,8 +9945,7 @@ public final class OdooIdentityActivity extends Activity {
         if (!CONNECTED_MEDIA_UI_ENABLED || !mediaUploadAllowed() || room == null || account == null
                 || mediaStore == null || mediaUploadBusy || mediaStageBusy || v2Busy) return;
         try {
-            if (mediaStore.pending(account, room.id, room.membershipId) != null
-                    || outbox.first(account, room.id, room.membershipId) != null) {
+            if (!localMatches(room)) {
                 chatNotice.setText(R.string.bchat_media_pending); return;
             }
         } catch (Exception error) { chatNotice.setText(R.string.chat_v2_save_failed); return; }
@@ -8200,31 +9978,35 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     private void captureConnectedPhoto(Room room) {
-        try {
-            File folder = new File(getFilesDir(), "attachments");
-            if (!folder.isDirectory() && !folder.mkdirs()) throw new IOException("Camera directory unavailable");
-            String name = "bchat-" + account.key.substring(0, 16) + "-" + room.id
-                    + "-" + UUID.randomUUID() + ".jpg";
-            File output = new File(folder, name);
-            if (!output.createNewFile()) throw new IOException("Camera file unavailable");
-            Uri uri = new Uri.Builder().scheme("content")
-                    .authority(getPackageName() + ".files").appendPath(name).build();
-            Intent camera = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-            camera.putExtra(MediaStore.EXTRA_OUTPUT, uri);
-            camera.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-            if (camera.resolveActivity(getPackageManager()) == null) {
-                output.delete(); chatNotice.setText(R.string.bchat_media_camera_unavailable); return;
+        final AccountScope scope=account;final int generation=mediaSessionGeneration;
+        if(!stillCurrent(scope,room)||!mediaUploadAllowed())return;
+        BChatStorageRepository.submit(null,()->{
+            File folder=new File(getFilesDir(),"attachments");
+            if(!folder.isDirectory()&&!folder.mkdirs())throw new IOException("Camera directory unavailable");
+            File output=new File(folder,"bchat-"+scope.key.substring(0,16)+"-"+room.id+"-"+UUID.randomUUID()+".jpg");
+            if(!output.createNewFile())throw new IOException("Camera file unavailable");
+            return output;
+        },(output,error)->{
+            if(error!=null){if(stillCurrent(scope,room))chatNotice.setText(R.string.bchat_media_camera_unavailable);return;}
+            if(!stillCurrent(scope,room)||generation!=mediaSessionGeneration||!mediaUploadAllowed()){
+                deleteTransientMedia(output);return;
             }
-            cameraCaptureFile = output;
-            mediaPickerAccount = account;
-            mediaPickerRoom = room;
-            mediaPickerGeneration = mediaSessionGeneration;
-            startActivityForResult(camera, MEDIA_CAMERA_REQUEST);
-        } catch (Exception failure) {
-            if (cameraCaptureFile != null) { cameraCaptureFile.delete(); cameraCaptureFile = null; }
-            mediaPickerAccount = null; mediaPickerRoom = null;
-            chatNotice.setText(R.string.bchat_media_camera_unavailable);
-        }
+            Uri uri=new Uri.Builder().scheme("content").authority(getPackageName()+".files").appendPath(output.getName()).build();
+            Intent camera=new Intent(MediaStore.ACTION_IMAGE_CAPTURE).putExtra(MediaStore.EXTRA_OUTPUT,uri)
+                    .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION|Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+            try{
+                if(camera.resolveActivity(getPackageManager())==null)throw new IllegalStateException("Camera unavailable");
+                cameraCaptureFile=output;mediaPickerAccount=scope;mediaPickerRoom=room;mediaPickerGeneration=generation;
+                startActivityForResult(camera,MEDIA_CAMERA_REQUEST);
+            }catch(RuntimeException unavailable){
+                deleteTransientMedia(output);cameraCaptureFile=null;mediaPickerAccount=null;mediaPickerRoom=null;
+                chatNotice.setText(R.string.bchat_media_camera_unavailable);
+            }
+        });
+    }
+
+    private void deleteTransientMedia(File file){
+        if(file!=null)BChatStorageRepository.submit(null,()->file.delete(),(removed,error)->{});
     }
 
     @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -8248,8 +10030,9 @@ public final class OdooIdentityActivity extends Activity {
             pendingPdfRoom = null;
             if (source == null) return;
             if (resultCode != RESULT_OK || data == null || data.getData() == null
-                    || !stillCurrent(scopedAccount, room)) { source.delete(); return; }
+                    || !stillCurrent(scopedAccount, room) || !mediaDownloadAllowed()) { source.delete(); return; }
             Uri destination = data.getData();
+            final int exportGeneration = mediaDownloadGeneration;
             new Thread(() -> {
                 boolean saved = false;
                 try (FileInputStream input = new FileInputStream(source);
@@ -8257,7 +10040,10 @@ public final class OdooIdentityActivity extends Activity {
                     if (output == null) throw new IOException("Selected document is unavailable");
                     byte[] chunk = new byte[32 * 1024];
                     int count;
-                    while ((count = input.read(chunk)) != -1) output.write(chunk, 0, count);
+                    while ((count = input.read(chunk)) != -1) {
+                        if (exportGeneration != mediaDownloadGeneration) throw new IOException("Media permission changed");
+                        output.write(chunk, 0, count);
+                    }
                     output.flush();
                     saved = true;
                 } catch (Exception ignored) { }
@@ -8293,12 +10079,20 @@ public final class OdooIdentityActivity extends Activity {
 
     private void classifyConnectedMedia(AccountScope scopedAccount, Room room, int generation, Uri selected,
                                         File temporary) {
-        String mime;
-        try { mime = getContentResolver().getType(selected); }
-        catch (RuntimeException unreadable) {
-            if (temporary != null) temporary.delete();
-            chatNotice.setText(R.string.bchat_media_invalid); return;
-        }
+        mediaIo.execute(()->{
+            String type=null;boolean failed=false;
+            try{type=getContentResolver().getType(selected);}catch(RuntimeException unreadable){failed=true;}
+            final String mime=type;final boolean invalid=failed;
+            handler.post(()->{
+                if(!stillCurrent(scopedAccount,room)||generation!=mediaSessionGeneration){deleteTransientMedia(temporary);return;}
+                if(invalid){deleteTransientMedia(temporary);chatNotice.setText(R.string.bchat_media_invalid);return;}
+                classifyConnectedMediaType(scopedAccount,room,generation,selected,temporary,mime);
+            });
+        });
+    }
+
+    private void classifyConnectedMediaType(AccountScope scopedAccount,Room room,int generation,Uri selected,
+                                            File temporary,String mime){
         boolean eligible = "image/jpeg".equals(mime) || "image/png".equals(mime)
                 || "image/webp".equals(mime) || "application/pdf".equals(mime);
         if (!eligible || "off".equals(room.invoicePolicy)) {
@@ -8366,6 +10160,11 @@ public final class OdooIdentityActivity extends Activity {
         }
         String text = messageInput.getText().toString();
         long replyId = selectedReplyMessageId;
+        final long stageEditorRevision=editorRevision;
+        BChatComposerSnapshot editor=new BChatComposerSnapshot(scopedAccount,room.id,room.membershipId,
+                stageEditorRevision,text,replyId);
+        long storageGeneration=BChatStorageRepository.generation(scopedAccount);
+        flushDraftSave();
         String captureName = null;
         if (temporary != null) {
             String stamp = new SimpleDateFormat("yyyyMMdd-HHmmss", Locale.ROOT).format(new Date());
@@ -8376,41 +10175,45 @@ public final class OdooIdentityActivity extends Activity {
         mediaStageBusy = true;
         updatePendingUi();
         chatNotice.setText(R.string.bchat_media_uploading);
+        final BChatV2Outbox preparingBox=outbox;final BChatConnectedMediaStore stagingStore=mediaStore;
+        BChatStorageRepository.submit(null,()->BChatStageAdmission.begin(preparingBox,stagingStore,scopedAccount,room.id,room.membershipId),
+                (stageToken,prepareError)->{
+            if(prepareError!=null){mediaStageBusy=false;if(stillCurrent(scopedAccount,room))refreshLocalRoom(room,false);return;}
+            if(!stillCurrent(scopedAccount,room)||generation!=mediaSessionGeneration||!mediaUploadAllowed()){
+                BChatStorageRepository.write(null,()->{stageToken.close();return null;});return;
+            }
         new Thread(() -> {
             BChatConnectedMediaStore.Entry staged = null;
             try {
-                if (generation == mediaSessionGeneration) {
-                    staged = mediaStore.stage(getContentResolver(), scopedAccount, room.id, room.companyId,
+                if (storageGeneration == BChatStorageRepository.generation(scopedAccount)) {
+                    staged = stagingStore.stage(getContentResolver(), scopedAccount, room.id, room.companyId,
                             room.membershipId, selected, text, replyId, documentType,
                             room.invoicePolicyVersion, invoiceCaseId, stagedName);
                 }
-            } catch (Exception ignored) { /* The user sees a bounded, non-sensitive error. */ }
+            } catch (Exception ignored) { staged=null; /* Original remains diagnostic-only if admission failed. */ }
             finally { if (temporary != null) temporary.delete(); }
-            BChatConnectedMediaStore.Entry finalStaged = staged;
-            handler.post(() -> {
-                if (generation != mediaSessionGeneration || !stillCurrent(scopedAccount, room)) {
-                    if (finalStaged != null) {
-                        try { mediaStore.discard(scopedAccount, finalStaged); }
-                        catch (IOException ignored) { /* The old membership cannot upload. */ }
-                    }
-                    return;
-                }
+            BChatConnectedMediaStore.Entry copied=staged;
+            android.content.Context app=getApplicationContext();
+            BChatStorageRepository.submit(null,()->{
+                try{
+                    if(copied==null||!stageToken.owns())return null;
+                    // Same lane as recovery/purge; fence closes only after the admission TX ends.
+                    try(BChatV2Outbox box=new BChatV2Outbox(app)){box.tickets().admitMedia(scopedAccount,copied,false,stageEditorRevision);}
+                    return copied;
+                }finally{stageToken.close();}
+            },(finalStaged,admissionError)->{
+                if (generation != mediaSessionGeneration || !stillCurrent(scopedAccount, room)) return;
                 mediaStageBusy = false;
-                if (!mediaUploadAllowed()) {
-                    if (finalStaged != null) try { mediaStore.discard(scopedAccount, finalStaged); }
-                    catch (IOException ignored) { /* Sending was revoked after staging. */ }
-                    return;
-                }
-                if (finalStaged == null) { chatNotice.setText(R.string.bchat_media_invalid); return; }
-                flushDraftSave();
-                if (text.equals(messageInput.getText().toString())) {
-                    try { outbox.saveDraft(scopedAccount, room.id, room.membershipId, ""); }
-                    catch (Exception ignored) { chatNotice.setText(R.string.chat_v2_save_failed); }
+                if (!mediaUploadAllowed()) return;
+                if (admissionError!=null||finalStaged == null) { chatNotice.setText(R.string.bchat_media_invalid); return; }
+                if (editor.matches(account,room.id,room.membershipId,editorRevision,
+                        messageInput.getText().toString(),selectedReplyMessageId)) {
                     suppressDraftChanges = true;
                     messageInput.setText("");
                     suppressDraftChanges = false;
+                    clearSelectedReply();
+                    ++editorRevision;
                 }
-                if (selectedReplyMessageId == replyId) clearSelectedReply();
                 // A just-staged file has never crossed the native transport, so begin the
                 // first upload directly.  Stored pending rows take the separate recovery
                 // path below: they must reconcile with the server before any byte retry.
@@ -8419,9 +10222,10 @@ public final class OdooIdentityActivity extends Activity {
                 } catch (IOException unavailable) {
                     chatNotice.setText(R.string.chat_v2_uncertain);
                 }
-                updatePendingUi();
+                refreshLocalRoom(room,false);
             });
         }, "bchat-media-stage").start();
+        });
     }
 
     private void reviewConnectedMedia() {
@@ -8429,8 +10233,8 @@ public final class OdooIdentityActivity extends Activity {
         AccountScope scopedAccount = account;
         if (!CONNECTED_MEDIA_UI_ENABLED || !stillCurrent(scopedAccount, room) || mediaStore == null) return;
         try {
-            List<BChatConnectedMediaStore.Entry> entries = mediaStore.pendingForRoom(scopedAccount,
-                    room.id, room.membershipId);
+            if(!localMatches(room)){refreshLocalRoom(room,false);return;}
+            List<BChatConnectedMediaStore.Entry> entries = roomLocal.media;
             if (entries.isEmpty()) { updatePendingUi(); return; }
             BChatConnectedMediaStore.Entry entry = entries.get(0);
             boolean policyChanged = entry.policyVersion != room.invoicePolicyVersion;
@@ -8438,6 +10242,8 @@ public final class OdooIdentityActivity extends Activity {
             boolean hasUploadedRecord = false;
             StringBuilder detail = new StringBuilder(getString(R.string.bchat_media_review_intro,
                     entries.size()));
+            if(roomLocal.recovery!=null)for(BChatStageAdmission.Issue issue:roomLocal.recovery.issues)
+                detail.append("\n\n").append(getString(R.string.storage_health_problem,issue.uploadUuid,issue.code));
             for (BChatConnectedMediaStore.Entry candidate : entries) {
                 detail.append("\n\n").append(candidate.name).append("\n")
                         .append(connectedMediaPendingStatus(candidate, room));
@@ -8462,8 +10268,12 @@ public final class OdooIdentityActivity extends Activity {
             if ((hasUploadedRecord || (!policyChanged && !uploadBlocked)) && mediaUploadAllowed())
                 review.setPositiveButton(R.string.bchat_media_check_now,
                         (dialog, which) -> checkConnectedMediaStatus(scopedAccount, room));
+            BChatSendTickets.Ticket head=roomLocal.sendHead;
+            if(entry.mediaId>0&&head!=null&&head.matches(entry)&&!policyChanged&&!uploadBlocked
+                    &&!(transferCoordinator!=null&&transferCoordinator.isBusy()))
+                review.setPositiveButton(R.string.chat_v2_retry,(dialog,which)->approveMediaLinkRetry(scopedAccount,room,entry,head));
             showPendingDialog(review);
-        } catch (IOException invalid) { chatNotice.setText(R.string.chat_v2_save_failed); }
+        } catch (RuntimeException invalid) { chatNotice.setText(R.string.chat_v2_save_failed); }
     }
 
     private String connectedMediaPendingStatus(BChatConnectedMediaStore.Entry entry, Room room) {
@@ -8475,14 +10285,25 @@ public final class OdooIdentityActivity extends Activity {
         return getString(R.string.bchat_media_status_message_pending, entry.mediaId);
     }
 
+    /** Explicit same-UUID link retry, never a byte upload. A fresh claim fences any older ACK. */
+    private void approveMediaLinkRetry(AccountScope scope,Room room,BChatConnectedMediaStore.Entry entry,BChatSendTickets.Ticket expected){
+        if(!stillCurrent(scope,room)||!mediaUploadAllowed()||entry.mediaId<=0)return;
+        final BChatV2Outbox box=outbox;
+        local(scope,()->box.tickets().approveLegacyMedia(scope,expected),(saved,error)->{
+            if(!stillCurrent(scope,room))return;
+            if(error!=null||!Boolean.TRUE.equals(saved)){chatNotice.setText(R.string.chat_v2_save_failed);return;}
+            sendConnectedMedia(scope,room,entry);
+        });
+    }
+
     /** Re-reads verified room history only; it never uploads or posts a media message. */
     private void checkConnectedMediaStatus(AccountScope scopedAccount, Room room) {
         if (!stillCurrent(scopedAccount, room) || mediaStore == null) return;
         try {
             boolean hasUploadedRecord = false;
             BChatConnectedMediaStore.Entry unresolvedNativeUpload = null;
-            for (BChatConnectedMediaStore.Entry entry : mediaStore.pendingForRoom(scopedAccount,
-                    room.id, room.membershipId)) {
+            if(!localMatches(room)){refreshLocalRoom(room,false);return;}
+            for (BChatConnectedMediaStore.Entry entry : roomLocal.media) {
                 if (entry.mediaId > 0 && entry.policyVersion == room.invoicePolicyVersion
                         && entry.uploadBlockCode.isEmpty()) hasUploadedRecord = true;
                 if (entry.mediaId <= 0 && entry.policyVersion == room.invoicePolicyVersion
@@ -8497,7 +10318,7 @@ public final class OdooIdentityActivity extends Activity {
                 chatNotice.setText(R.string.bchat_media_checking);
                 recoverUncertainMediaConfirmation(scopedAccount, room);
             }
-        } catch (IOException unavailable) { chatNotice.setText(R.string.chat_v2_save_failed); }
+        } catch (RuntimeException unavailable) { chatNotice.setText(R.string.chat_v2_save_failed); }
     }
 
     /** Authenticated read only: recover a persisted native upload after response/process loss. */
@@ -8511,6 +10332,8 @@ public final class OdooIdentityActivity extends Activity {
             chatNotice.setText(R.string.bchat_media_status_upload_pending); return;
         }
         chatNotice.setText(R.string.bchat_media_checking);
+        final BChatSendTickets.Ticket captured=localMatches(room)?roomLocal.sendHead:null;
+        if(captured==null||!captured.matches(entry))return;
         String path = V2_ROOMS + "/" + room.id + "/uploads/" + uploadUuid + "/reconcile";
         fetchV2("GET", path, null, (statusCode, result) -> {
             if (!stillCurrent(scopedAccount, room) || mediaStore == null) return;
@@ -8526,8 +10349,11 @@ public final class OdooIdentityActivity extends Activity {
                         ? 0 : nonnegativeCursor(rawMediaId);
                 String state = result.getString("state");
                 if (mediaId > 0 && ("staged".equals(state) || "attached".equals(state))) {
-                    BChatConnectedMediaStore.Entry saved = mediaStore.markUploaded(scopedAccount, entry, mediaId);
-                    sendConnectedMedia(scopedAccount, room, saved);
+                    final BChatV2Outbox box=outbox;final BChatConnectedMediaStore store=mediaStore;
+                    local(scopedAccount,()->box.tickets().saveUploaded(scopedAccount,captured,mediaId,
+                            ()->store.markUploaded(scopedAccount,entry,mediaId)),(saved,error)->{
+                        if(stillCurrent(scopedAccount,room)){refreshLocalRoom(room,false);recoverUncertainMediaConfirmation(scopedAccount,room);}
+                    });
                     return;
                 }
                 if (mediaId == 0 && "uploading".equals(state)) {
@@ -8563,18 +10389,15 @@ public final class OdooIdentityActivity extends Activity {
                 .setMessage(R.string.bchat_media_status_upload_pending)
                 .setPositiveButton(R.string.chat_v2_retry, (dialog, which) -> {
                     if (!stillCurrent(scopedAccount, room) || mediaStore == null) return;
-                    try {
-                        for (BChatConnectedMediaStore.Entry current : mediaStore.pendingForRoom(
-                                scopedAccount, room.id, room.membershipId)) {
-                            if (current.mediaId <= 0
-                                    && current.networkUploadUuid().equals(entry.networkUploadUuid())) {
-                                uploadConnectedMedia(scopedAccount, room, current);
-                                break;
-                            }
-                        }
-                    } catch (IOException unavailable) {
-                        chatNotice.setText(R.string.chat_v2_save_failed);
-                    }
+                    final BChatV2Outbox box=outbox;
+                    local(scopedAccount,()->{
+                        BChatSendTickets.Ticket t=box.tickets().find(scopedAccount,"media",entry.clientUuid);
+                        return t!=null&&t.matches(entry)&&box.tickets().approveLegacyMedia(scopedAccount,t);
+                    },(approved,error)->{
+                        if(!stillCurrent(scopedAccount,room))return;
+                        if(error!=null||!Boolean.TRUE.equals(approved)){chatNotice.setText(R.string.chat_v2_save_failed);return;}
+                        try{uploadConnectedMedia(scopedAccount,room,entry);}catch(IOException invalid){chatNotice.setText(R.string.chat_v2_save_failed);}
+                    });
                 })
                 .setNegativeButton(R.string.chat_v2_cancel, null));
     }
@@ -8625,15 +10448,21 @@ public final class OdooIdentityActivity extends Activity {
     private void discardLocalMediaAfterReview(AccountScope scope, Room room,
                                               BChatConnectedMediaStore.Entry entry, boolean remoteUncertain) {
         if (scope != account || mediaStore == null) return;
-        try {
-            mediaStore.discard(scope, entry);
-            if (stillCurrent(scope, room)) {
-                updatePendingUi();
-                if (remoteUncertain) chatNotice.setText(R.string.bchat_media_local_removed_only);
+        final BChatV2Outbox box=outbox;final BChatConnectedMediaStore store=mediaStore;
+        local(scope,()->{
+            BChatSendTickets.Ticket ticket=box.tickets().find(scope,"media",entry.clientUuid);
+            if(ticket==null&&!BChatStageAdmission.active(scope,room.id,room.membershipId)){
+                store.retireReceipted(scope,entry.uploadUuid,entry.requestFingerprint());return true;
             }
-        } catch (IOException invalid) {
-            if (stillCurrent(scope, room)) chatNotice.setText(R.string.chat_v2_save_failed);
-        }
+            return ticket!=null&&ticket.matches(entry)&&box.tickets().discardMedia(scope,ticket,
+                    ()->store.retireReceipted(scope,entry.uploadUuid,ticket.fingerprint));
+        },(removed,error)->{
+            if (stillCurrent(scope, room)) {
+                refreshLocalRoom(room,false);
+                if(error!=null||!Boolean.TRUE.equals(removed))chatNotice.setText(R.string.chat_v2_save_failed);
+                else if (remoteUncertain) chatNotice.setText(R.string.bchat_media_local_removed_only);
+            }
+        });
     }
 
     private void retryConnectedMedia() {
@@ -8642,7 +10471,10 @@ public final class OdooIdentityActivity extends Activity {
         if (!stillCurrent(scopedAccount, room) || !mediaUploadAllowed() || mediaStore == null
                 || mediaUploadBusy || v2Busy || csrfToken == null) return;
         try {
-            BChatConnectedMediaStore.Entry entry = mediaStore.pending(scopedAccount, room.id, room.membershipId);
+            if(!localMatches(room)||roomLocal.sendHead==null||!"media".equals(roomLocal.sendHead.kind))return;
+            BChatConnectedMediaStore.Entry entry = null;
+            for(BChatConnectedMediaStore.Entry candidate:roomLocal.media)
+                if(roomLocal.sendHead.matches(candidate)){entry=candidate;break;}
             if (entry == null) return;
             if (entry.policyVersion != room.invoicePolicyVersion) {
                 chatNotice.setText(R.string.bchat_media_policy_changed);
@@ -8651,9 +10483,6 @@ public final class OdooIdentityActivity extends Activity {
             if (!entry.uploadBlockCode.isEmpty()) {
                 chatNotice.setText(R.string.bchat_media_upload_blocked);
                 return;
-            }
-            if (outbox.first(scopedAccount, room.id, room.membershipId) != null) {
-                chatNotice.setText(R.string.chat_v2_pending); return;
             }
             // media_id means upload was already acknowledged.  Replaying its immutable
             // client UUID is idempotent and must not upload the original bytes again.
@@ -8674,15 +10503,20 @@ public final class OdooIdentityActivity extends Activity {
      */
     private void replayKnownConnectedMedia(AccountScope scopedAccount, Room room) {
         if (!stillCurrent(scopedAccount, room) || mediaStore == null || outbox == null
-                || mediaStageBusy || mediaUploadBusy || mediaConfirmBusy || v2Busy) return;
+                || mediaStageBusy || mediaUploadBusy || mediaConfirmBusy || v2Busy
+                || transferCoordinator!=null&&transferCoordinator.isBusy()) return;
+        if(localMatches(room)&&roomLocal.recovery!=null&&roomLocal.recovery.dispatchBlocked)return;
         try {
-            BChatConnectedMediaStore.Entry entry = mediaStore.pending(scopedAccount, room.id,
-                    room.membershipId);
-            if (entry == null || entry.mediaId <= 0
-                    || entry.policyVersion != room.invoicePolicyVersion
-                    || !entry.uploadBlockCode.isEmpty()
-                    || outbox.first(scopedAccount, room.id, room.membershipId) != null) return;
-            sendConnectedMedia(scopedAccount, room, entry);
+            if(!localMatches(room)||roomLocal.sendHead==null)return;
+            BChatSendTickets.Ticket head=roomLocal.sendHead;
+            if(!"media".equals(head.kind)||head.legacy||"review".equals(head.state)||"uncertain".equals(head.state)
+                    ||"sending".equals(head.state)||"receipt".equals(head.state))return;
+            for(BChatConnectedMediaStore.Entry entry:roomLocal.media){
+                if(!head.matches(entry)||entry.policyVersion!=room.invoicePolicyVersion||!entry.uploadBlockCode.isEmpty())continue;
+                if(entry.mediaId>0)sendConnectedMedia(scopedAccount,room,entry);
+                else if("queued".equals(head.state))uploadConnectedMedia(scopedAccount,room,entry);
+                break;
+            }
         } catch (IOException ignored) {
             // Keep the explicit recovery action if local storage itself cannot be read.
         }
@@ -8692,7 +10526,13 @@ public final class OdooIdentityActivity extends Activity {
         ++mediaUploadNonce;
         mediaUploadBusy = false;
         if (mediaUploadTimeout != null) { handler.removeCallbacks(mediaUploadTimeout); mediaUploadTimeout = null; }
-        if (mediaNativeUpload != null) { mediaNativeUpload.cancel(); mediaNativeUpload = null; }
+        BChatSendTickets.Ticket claim=mediaClaim;AccountScope scope=mediaClaimAccount;
+        if(claim!=null&&!mediaClaimHandedOff&&scope!=null){
+            android.content.Context app=getApplicationContext();
+            BChatStorageRepository.submit(null,()->{try(BChatV2Outbox box=new BChatV2Outbox(app)){
+                return box.tickets().defer(scope,claim);}},(saved,error)->{});
+        }
+        mediaClaim=null;mediaClaimAccount=null;mediaClaimHandedOff=false;
     }
 
     private void mediaUploadDeadline(int request, AccountScope scopedAccount, Room room,
@@ -8708,15 +10548,33 @@ public final class OdooIdentityActivity extends Activity {
 
     private void uploadConnectedMedia(AccountScope scopedAccount, Room room,
                                       BChatConnectedMediaStore.Entry entry) throws IOException {
-        if (!stillCurrent(scopedAccount, room) || !mediaUploadAllowed() || mediaUploadBusy) return;
-        File staged = mediaStore.file(scopedAccount, entry);
-        String metadata = entry.uploadMetadata().toString();
+        if (!stillCurrent(scopedAccount, room) || !mediaUploadAllowed() || mediaUploadBusy
+                || !liveForeground||!hasWindowFocus()
+                || transferCoordinator!=null&&transferCoordinator.isBusy()) return;
         mediaUploadBusy = true;
         updatePendingUi();
         final int request = ++mediaUploadNonce;
         chatNotice.setText(R.string.bchat_media_uploading);
-        mediaUploadDeadline(request, scopedAccount, room, entry);
-        requestNativeMediaGrant(request, scopedAccount, room, entry, staged, metadata, 0, 0);
+        final BChatV2Outbox box=outbox;
+        local(scopedAccount,()->{
+            if(BChatStageAdmission.recover(box,mediaStore,scopedAccount,room.id,room.membershipId).dispatchBlocked)return null;
+            BChatSendTickets.Ticket head=box.tickets().head(scopedAccount,room.id,room.membershipId);
+            if(head==null||!head.matches(entry))return null;
+            BChatSendTickets.Ticket claim=box.tickets().claimMediaHead(scopedAccount,room.id,room.membershipId,
+                    UUID.randomUUID().toString(),System.currentTimeMillis());
+            if(claim==null||!claim.matches(entry))return null;
+            return new Object[]{claim,mediaStore.file(scopedAccount,entry),entry.uploadMetadata().toString()};
+        },(prepared,error)->{
+            if(request!=mediaUploadNonce||!stillCurrent(scopedAccount,room)){
+                if(prepared!=null){BChatSendTickets.Ticket old=(BChatSendTickets.Ticket)prepared[0];
+                    BChatStorageRepository.write(scopedAccount,()->{box.tickets().defer(scopedAccount,old);return null;});}
+                return;
+            }
+            if(error!=null||prepared==null){closeMediaUpload();refreshLocalRoom(room,false);return;}
+            mediaClaim=(BChatSendTickets.Ticket)prepared[0];mediaClaimAccount=scopedAccount;mediaClaimHandedOff=false;
+            mediaUploadDeadline(request,scopedAccount,room,entry);
+            requestNativeMediaGrant(request,scopedAccount,room,entry,(File)prepared[1],(String)prepared[2],0,0);
+        });
     }
 
     /**
@@ -8781,85 +10639,16 @@ public final class OdooIdentityActivity extends Activity {
             String secret = result.getString("secret");
             if (!grantId.matches("[0-9a-f-]{36}") || !secret.matches("[A-Za-z0-9_-]{43,128}"))
                 throw new IOException("Invalid native grant");
-            BChatNativeMediaUploader.Call call = new BChatNativeMediaUploader.Call();
-            mediaNativeUpload = call;
-            mediaIo.execute(() -> {
-                BChatNativeMediaUploader.Result response = BChatNativeMediaUploader.upload(
-                        call, ORIGIN, DATABASE, grantId, secret, staged, entry.size, entry.mime);
-                handler.post(() -> finishNativeMediaUpload(request, scopedAccount, room, entry,
-                        grantId, secret, response));
-            });
-        } catch (Exception invalid) {
+            refreshTransferAuthority();
+            mediaClaimHandedOff=mediaClaim!=null&&transferCoordinator.schedule(scopedAccount,mediaClaim,entry,
+                    staged,grantId,secret,()->!closed&&liveForeground&&hasWindowFocus()
+                            &&stillCurrent(scopedAccount,room)&&mediaUploadAllowed());
+            boolean accepted=mediaClaimHandedOff;
             closeMediaUpload();
-            if (stillCurrent(scopedAccount, room)) chatNotice.setText(R.string.chat_v2_uncertain);
-        }
-    }
-
-    private void finishNativeMediaUpload(int request, AccountScope scopedAccount, Room room,
-                                         BChatConnectedMediaStore.Entry entry, String grantId,
-                                         String secret, BChatNativeMediaUploader.Result response) {
-        if (closed || request != mediaUploadNonce || !mediaUploadBusy
-                || !stillCurrent(scopedAccount, room)) return;
-        if (response.isTransportFailure() || response.status == 202) {
-            checkNativeMediaUpload(request, scopedAccount, room, entry, grantId, secret, 0);
-            return;
-        }
-        applyNativeMediaResult(request, scopedAccount, room, entry, response, 0);
-    }
-
-    private void checkNativeMediaUpload(int request, AccountScope scopedAccount, Room room,
-                                        BChatConnectedMediaStore.Entry entry, String grantId,
-                                        String secret, int attempt) {
-        if (closed || request != mediaUploadNonce || !mediaUploadBusy
-                || !stillCurrent(scopedAccount, room)) return;
-        BChatNativeMediaUploader.Call call = new BChatNativeMediaUploader.Call();
-        mediaNativeUpload = call;
-        mediaIo.execute(() -> {
-            BChatNativeMediaUploader.Result response = BChatNativeMediaUploader.status(
-                    call, ORIGIN, DATABASE, grantId, secret);
-            handler.post(() -> {
-                if (closed || request != mediaUploadNonce || !mediaUploadBusy
-                        || !stillCurrent(scopedAccount, room)) return;
-                if (response.status == 202 || response.isTransportFailure()) {
-                    handler.postDelayed(() -> checkNativeMediaUpload(request, scopedAccount, room, entry,
-                            grantId, secret, attempt + 1), 1000);
-                } else applyNativeMediaResult(request, scopedAccount, room, entry, response, attempt);
-            });
-        });
-    }
-
-    private void applyNativeMediaResult(int request, AccountScope scopedAccount, Room room,
-                                        BChatConnectedMediaStore.Entry entry,
-                                        BChatNativeMediaUploader.Result response, int statusAttempt) {
-        if (closed || request != mediaUploadNonce || !mediaUploadBusy
-                || !stillCurrent(scopedAccount, room)) return;
-        try {
-            JSONObject result = new JSONObject(response.body);
-            if (response.status == 200 && positiveId(result.get("api_version")) == 2
-                    && entry.networkUploadUuid().equals(result.getString("upload_uuid"))
-                    && ("staged".equals(result.getString("state"))
-                    || "attached".equals(result.getString("state")))) {
-                closeMediaUpload();
-                BChatConnectedMediaStore.Entry saved = mediaStore.markUploaded(scopedAccount, entry,
-                        positiveId(result.get("media_id")));
-                sendConnectedMedia(scopedAccount, room, saved);
-                return;
+            if(stillCurrent(scopedAccount,room)){
+                chatNotice.setText(accepted?R.string.bchat_media_uploading:R.string.bchat_transfer_waiting_foreground);
+                refreshLocalRoom(room,false);
             }
-            JSONObject error = result.optJSONObject("error");
-            String code = error == null ? "native_upload_unconfirmed"
-                    : error.optString("code", "native_upload_unconfirmed");
-            if (!code.matches("[a-z_]{1,64}")) code = "native_upload_unconfirmed";
-            closeMediaUpload();
-            if (response.status == 400 || response.status == 409 || response.status == 413
-                    || response.status == 415) {
-                mediaStore.markUploadBlocked(scopedAccount, entry, code);
-                if (response.status == 409) loadRooms();
-                updatePendingUi();
-                chatNotice.setText(R.string.bchat_media_upload_blocked);
-            } else if (response.status == 429) {
-                chatNotice.setText(R.string.bchat_media_rejected);
-                updatePendingUi();
-            } else chatNotice.setText(R.string.chat_v2_uncertain);
         } catch (Exception invalid) {
             closeMediaUpload();
             if (stillCurrent(scopedAccount, room)) chatNotice.setText(R.string.chat_v2_uncertain);
@@ -8870,6 +10659,25 @@ public final class OdooIdentityActivity extends Activity {
                                     BChatConnectedMediaStore.Entry entry) {
         if (!stillCurrent(scopedAccount, room) || !mediaUploadAllowed()
                 || entry.mediaId <= 0 || mediaConfirmBusy) return;
+        final BChatV2Outbox box=outbox;
+        mediaConfirmBusy=true;
+        local(scopedAccount,()->{
+            if(BChatStageAdmission.recover(box,mediaStore,scopedAccount,room.id,room.membershipId).dispatchBlocked)return null;
+            BChatSendTickets.Ticket head=box.tickets().head(scopedAccount,room.id,room.membershipId);
+            if(head==null||!head.matches(entry))return null;
+            return box.tickets().claimMediaHead(scopedAccount,room.id,room.membershipId,UUID.randomUUID().toString(),System.currentTimeMillis());
+        },(claim,error)->{
+            mediaConfirmBusy=false;
+            if(!stillCurrent(scopedAccount,room)||!mediaUploadAllowed()||error!=null||claim==null){
+                if(claim!=null)BChatStorageRepository.write(scopedAccount,()->{box.tickets().defer(scopedAccount,claim);return null;});
+                return;
+            }
+            sendClaimedConnectedMedia(scopedAccount,room,entry,claim);
+        });
+    }
+
+    private void sendClaimedConnectedMedia(AccountScope scopedAccount,Room room,
+            BChatConnectedMediaStore.Entry entry,BChatSendTickets.Ticket claim) {
         try {
             JSONObject payload = new JSONObject();
             payload.put("api_version", 2);
@@ -8886,7 +10694,7 @@ public final class OdooIdentityActivity extends Activity {
             final int dispatch = ++mediaConfirmDispatchGeneration;
             updatePendingUi();
             dispatchConnectedMediaMessage(scopedAccount, room, payload.toString(), dispatch,
-                    mediaSessionGeneration, 0,
+            mediaSessionGeneration, 0, claim,
                     (statusCode, result) -> {
                         if (dispatch == mediaConfirmDispatchGeneration) {
                             mediaConfirmBusy = false;
@@ -8915,11 +10723,20 @@ public final class OdooIdentityActivity extends Activity {
                             // Do this before testing the current screen: a room reload or a
                             // quick navigation must not leave an already-sent image blocking
                             // the next message on the device.
-                            mediaStore.acknowledge(scopedAccount, entry);
-                            if (!stillCurrent(scopedAccount, room)) return;
-                            chatNotice.setText(R.string.chat_v2_sent);
-                            updatePendingUi();
-                            appendAcknowledgedMessage(scopedAccount, room, sentMessageId);
+                            android.content.Context app=getApplicationContext();
+                            BChatStorageRepository.submit(null,()->{
+                                try(BChatV2Outbox box=new BChatV2Outbox(app)){
+                                    if(!box.tickets().receipt(scopedAccount,claim,sentMessageId))return false;
+                                    BChatSendTickets.Ticket receipt=box.tickets().find(scopedAccount,"media",claim.uuid);
+                                    return box.tickets().retireMedia(scopedAccount,receipt,
+                                            ()->new BChatConnectedMediaStore(app).retireReceipted(scopedAccount,entry.uploadUuid,claim.fingerprint));
+                                }
+                            },(retired,error)->{
+                                if(!stillCurrent(scopedAccount,room))return;
+                                chatNotice.setText(error==null&&Boolean.TRUE.equals(retired)?R.string.chat_v2_sent:R.string.chat_v2_save_failed);
+                                refreshLocalRoom(room,false);
+                                appendAcknowledgedMessage(scopedAccount,room,sentMessageId);
+                            });
                         } catch (Exception invalid) {
                             // A 2xx response whose one-shot bridge body was truncated or malformed
                             // is still an uncertain write.  The verified history path can retire
@@ -8958,12 +10775,13 @@ public final class OdooIdentityActivity extends Activity {
      */
     private void dispatchConnectedMediaMessage(AccountScope scopedAccount, Room room, String payload,
                                                int dispatch, int session, int attempt,
-                                               V2Callback callback) {
+                                               BChatSendTickets.Ticket claim,V2Callback callback) {
         if (dispatch != mediaConfirmDispatchGeneration) return;
         if (session != mediaSessionGeneration || !stillCurrent(scopedAccount, room)
                 || !mediaUploadAllowed()) {
             mediaConfirmBusy = false;
             mediaConfirmRoom = null;
+            deferMediaLink(scopedAccount,claim);
             updatePendingUi();
             return;
         }
@@ -8971,13 +10789,20 @@ public final class OdooIdentityActivity extends Activity {
                 "payload", payload, callback)) return;
         if (attempt < MAX_NATIVE_GRANT_CONTROL_RETRIES) {
             handler.postDelayed(() -> dispatchConnectedMediaMessage(scopedAccount, room, payload,
-                    dispatch, session, attempt + 1, callback), NATIVE_GRANT_CONTROL_RETRY_MILLIS);
+                    dispatch, session, attempt + 1, claim, callback), NATIVE_GRANT_CONTROL_RETRY_MILLIS);
         } else {
             mediaConfirmBusy = false;
             mediaConfirmRoom = null;
+            deferMediaLink(scopedAccount,claim);
             updatePendingUi();
             chatNotice.setText(R.string.chat_v2_uncertain);
         }
+    }
+
+    private void deferMediaLink(AccountScope scope,BChatSendTickets.Ticket claim){
+        android.content.Context app=getApplicationContext();
+        BChatStorageRepository.submit(null,()->{try(BChatV2Outbox box=new BChatV2Outbox(app)){
+            return box.tickets().defer(scope,claim);}},(saved,error)->{});
     }
 
     /**
@@ -8996,15 +10821,13 @@ public final class OdooIdentityActivity extends Activity {
         handler.postDelayed(() -> {
             if (recovery != mediaConfirmRecoveryGeneration || !stillCurrent(scopedAccount, room)
                     || mediaStore == null) return;
-            try {
-                List<BChatConnectedMediaStore.Entry> pending = mediaStore.pendingForRoom(scopedAccount,
-                        room.id, room.membershipId);
+            {
+                if(!localMatches(room)){refreshLocalRoom(room,false);return;}
+                List<BChatConnectedMediaStore.Entry> pending = roomLocal.media;
                 boolean hasUploadedRecord = false;
                 for (BChatConnectedMediaStore.Entry entry : pending)
                     if (entry.mediaId > 0) hasUploadedRecord = true;
                 if (!hasUploadedRecord) return;
-            } catch (IOException unavailable) {
-                return;
             }
             if (v2Busy) {
                 if (attempt < 2)
@@ -9022,53 +10845,124 @@ public final class OdooIdentityActivity extends Activity {
 
     private void retryPending() {
         Room room = selectedRoom;
-        if (!sendAllowed() || room == null || v2Busy || account == null || outbox == null) return;
-        BChatV2Outbox.Entry entry = outbox.first(account, room.id, room.membershipId);
-        if (entry == null) { updatePendingUi(); return; }
-        try {
-            JSONObject payload = new JSONObject();
-            payload.put("api_version", 2);
-            payload.put("membership_id", room.membershipId);
-            payload.put("client_uuid", entry.uuid);
-            payload.put("text", entry.body);
-            if (entry.replyToMessageId > 0) payload.put("reply_to_message_id", entry.replyToMessageId);
-            String path = V2_ROOMS + "/" + room.id + "/messages";
-            chatNotice.setText(R.string.chat_v2_sending);
-            retryButton.setEnabled(false);
-            fetchV2("POST", path, payload.toString(), (statusCode, result) -> {
-                if (handleV2TransportFailure(statusCode, true)) return;
-                try {
-                    if (statusCode != 200 && statusCode != 201) throw new IllegalArgumentException();
-                    if (result == null || positiveId(result.get("api_version")) != 2
-                            || positiveId(result.get("room_id")) != room.id
-                            || positiveId(result.get("membership_id")) != room.membershipId
-                            || !entry.uuid.equals(result.getString("client_uuid"))
-                            || !"sent".equals(result.getString("state"))) throw new IllegalArgumentException();
-                    long sentMessageId = positiveId(result.get("message_id"));
-                    if (!outbox.acknowledge(account, entry)) throw new IllegalArgumentException();
-                    if (selectedRoom == room) {
-                        chatNotice.setText(R.string.chat_v2_sent);
-                        appendAcknowledgedMessage(account, room, sentMessageId);
-                    }
-                } catch (Exception invalid) {
-                    if (statusCode == 400 || statusCode == 413) {
-                        try { outbox.recordRejected(account, entry); }
-                        catch (Exception storage) { chatNotice.setText(R.string.chat_v2_save_failed); }
-                    }
-                    if (selectedRoom == room) {
-                        chatNotice.setText(statusCode == 400 || statusCode == 413
-                                ? R.string.chat_v2_rejected_review : R.string.chat_v2_uncertain);
-                        if (statusCode == 403 || statusCode == 409) {
-                            unresolvedSendNotice = true;
-                            displayedMessages.clear();
-                            messageAdapter.notifyDataSetChanged();
-                            showRooms();
-                            loadRooms();
-                        }
-                    }
-                } finally { if (selectedRoom == room) { retryButton.setEnabled(true); updatePendingUi(); } }
-            });
-        } catch (Exception invalid) { chatNotice.setText(R.string.chat_v2_uncertain); }
+        if (!verified || offlineHistory || !sendAllowed() || room == null || v2Busy || textDispatchBusy
+                || account == null || outbox == null || !localMatches(room)) return;
+        BChatV2Outbox.Entry head = roomLocal.head();
+        if (head == null || "review".equals(head.state)) return;
+        if ("receipt".equals(head.state)) { reconcileTextReceipt(account, room, head); return; }
+        if(roomLocal.sendHead==null||!"text".equals(roomLocal.sendHead.kind)
+                ||!head.uuid.equals(roomLocal.sendHead.uuid))return;
+        if(roomLocal.recovery!=null&&roomLocal.recovery.dispatchBlocked)return;
+        long now = System.currentTimeMillis();
+        if (head.nextAttemptAt > now || ("sending".equals(head.state) && head.leaseUntil > now)) {
+            long due = Math.max(head.nextAttemptAt, head.leaseUntil);
+            handler.postDelayed(() -> { if (selectedRoom == room) retryPending(); }, Math.min(60000, Math.max(100, due - now)));
+            return;
+        }
+        final AccountScope scope = account;
+        final BChatV2Outbox box = outbox;
+        textDispatchBusy = true;
+        local(scope, () -> {
+            if(mediaStore!=null&&BChatStageAdmission.recover(box,mediaStore,scope,room.id,room.membershipId).dispatchBlocked)return null;
+            return box.claimHead(scope, room.id, room.membershipId, System.currentTimeMillis());
+        }, (entry, error) -> {
+            if (error != null) { textDispatchBusy = false; chatNotice.setText(R.string.chat_v2_save_failed); return; }
+            if (!stillCurrent(scope, room) || v2Busy) {
+                textDispatchBusy = false;
+                if (entry != null) BChatStorageRepository.write(scope, () -> { box.deferUndispatched(scope, entry); return null; });
+                handler.postDelayed(() -> { if (stillCurrent(scope, room)) refreshLocalRoom(room, false); }, 250);
+                return;
+            }
+            if (entry == null) {
+                textDispatchBusy = false; refreshLocalRoom(room, false); return;
+            }
+            refreshLocalRoom(room, false);
+            try {
+                JSONObject payload = new JSONObject().put("api_version", 2).put("membership_id", room.membershipId)
+                        .put("client_uuid", entry.uuid).put("text", entry.body);
+                if (entry.replyToMessageId > 0) payload.put("reply_to_message_id", entry.replyToMessageId);
+                fetchV2("POST", V2_ROOMS + "/" + room.id + "/messages", payload.toString(), (statusCode, result) -> {
+                    long messageId = 0;
+                    try {
+                        if ((statusCode != 200 && statusCode != 201) || result == null
+                                || positiveId(result.get("api_version")) != 2
+                                || positiveId(result.get("room_id")) != room.id
+                                || positiveId(result.get("membership_id")) != room.membershipId
+                                || !entry.uuid.equals(result.getString("client_uuid"))
+                                || !"sent".equals(result.getString("state"))) throw new IllegalArgumentException();
+                        messageId = positiveId(result.get("message_id"));
+                    } catch (Exception invalid) { /* Persist uncertainty before any transport recovery. */ }
+                    final long receiptId = messageId;
+                    final boolean permanent = statusCode == 400 || statusCode == 413 || statusCode == 409;
+                    BChatStorageRepository.submit(scope, () -> receiptId > 0
+                                    ? box.recordReceipt(scope, entry, receiptId)
+                                    : box.recordFailure(scope, entry, permanent, System.currentTimeMillis()),
+                            (saved, storageError) -> {
+                                if (closed || account != scope || selectedRoom != room) return;
+                                textDispatchBusy = false;
+                                if (storageError != null || !Boolean.TRUE.equals(saved)) {
+                                    chatNotice.setText(R.string.chat_v2_save_failed); return;
+                                }
+                                refreshLocalRoom(room, false);
+                                if (receiptId == 0 && handleV2TransportFailure(statusCode, true)) return;
+                                if (statusCode == 403 || statusCode == 409) { showRooms(); loadRooms(); }
+                            });
+                });
+            } catch (Exception invalid) {
+                local(scope, () -> box.recordFailure(scope, entry, false, System.currentTimeMillis()), (saved, failed) -> {
+                    textDispatchBusy = false; refreshLocalRoom(room, false);
+                });
+            }
+        });
+    }
+
+    private void reconcileTextReceipt(AccountScope scope, Room room, BChatV2Outbox.Entry entry) {
+        if (!stillCurrent(scope, room) || v2Busy || textDispatchBusy || entry.messageId <= 0) return;
+        final TimelineWindowOwner readOwner = new TimelineWindowOwner(room);
+        textDispatchBusy = true;
+        final BChatV2Outbox box = outbox;
+        fetchV2("GET", V2_ROOMS + "/" + room.id + "/messages/" + entry.messageId, null, (status, result) -> {
+            if (!stillCurrent(scope, room) || !readOwner.bindingCurrent()) { textDispatchBusy = false; return; }
+            try {
+                if (status != 200 || result == null || positiveId(result.get("api_version")) != 2)
+                    throw new IllegalArgumentException();
+                requireReceiptEpoch(result, room);
+                JSONObject message = validateMessageList(new JSONArray().put(result.getJSONObject("message")), 0).get(0);
+                if (positiveId(message.get("id")) != entry.messageId
+                        || positiveId(message.get("author_user_id")) != scope.userId)
+                    throw new IllegalArgumentException();
+                final ConnectedHistoryCache cache = historyCache;
+                local(scope, () -> {
+                    if (cache != null) cache.savePage(scope, room.id, room.membershipId, Collections.singletonList(message));
+                    return box.acknowledge(scope, entry);
+                }, (retired, error) -> {
+                    textDispatchBusy = false;
+                    if (selectedRoom != room) return;
+                    if (error != null || !Boolean.TRUE.equals(retired)) { chatNotice.setText(R.string.chat_v2_save_failed); return; }
+                    if (!admitMessageTimelineOwner(readOwner)) return;
+                    List<JSONObject> window = new ArrayList<>(displayedMessages);
+                    boolean present = false;
+                    for (JSONObject item : window) if (item.optLong("id") == entry.messageId) present = true;
+                    if (!present) window.add(message);
+                    window.sort((left, right) -> Long.compare(left.optLong("id"), right.optLong("id")));
+                    if (window.size() > MAX_CONNECTED_MESSAGE_WINDOW)
+                        window = new ArrayList<>(window.subList(window.size() - MAX_CONNECTED_MESSAGE_WINDOW, window.size()));
+                    List<BChatV2Outbox.Entry> remaining = new ArrayList<>(localTextRows);
+                    remaining.removeIf(item -> item.uuid.equals(entry.uuid));
+                    globalPendingKnown = false;
+                    // Exact durable retirement already happened above. Publish both sources
+                    // together; the planner removes/inserts identities, never infers an ACK.
+                    ScrollAnchor anchor = currentScrollAnchor();
+                    try { renderMessageWindowWithLocals(room, window, anchor.atBottom, 0, anchor, remaining); }
+                    catch (Exception invalid) { loadMessages(0); }
+                    refreshLocalRoom(room, false);
+                });
+            } catch (Exception unavailable) {
+                textDispatchBusy = false;
+                if (handleV2TransportFailure(status)) return;
+                chatNotice.setText(R.string.text_queue_receipt);
+            }
+        });
     }
 
     private static final class TaskChoice {
@@ -9166,13 +11060,13 @@ public final class OdooIdentityActivity extends Activity {
                         cache.save(scope, companyScope, roomId, stateFilter, taskCopy, companyCopy,
                                 nextBeforeId, remembered, verifiedAt);
                     } catch (Exception storage) {
+                        preferences().edit().putBoolean(REMEMBER, false).commit();
+                        cache.close();
                         handler.post(() -> {
                             if (closed || account != scope || taskOfflineCache != cache) return;
-                            preferences().edit().putBoolean(REMEMBER, false).commit();
-                            synchronized (historyStorageLock) {
-                                cache.close();
-                                if (taskOfflineCache == cache) taskOfflineCache = null;
-                            }
+                            ++offlinePolicySerial;
+                            offlinePolicyReady(false);
+                            taskOfflineCache = null;
                         });
                     }
                 }
@@ -9322,9 +11216,16 @@ public final class OdooIdentityActivity extends Activity {
         setTaskTabsVisibility(View.VISIBLE);
         taskOlderButton.setVisibility(View.GONE);
         taskOlderButton.setEnabled(false);
+        final AccountScope scope = account;
+        final TaskOfflineCache cache = taskOfflineCache;
+        final Set<Long> companyScope = new HashSet<>(v1Companies);
+        final long roomFilter = taskRoomFilter;
+        final String stateFilter = taskStateFilter;
+        final int serial = ++taskViewSerial;
+        local(scope, () -> cache.page(scope, companyScope, roomFilter, stateFilter), (cached, error) -> {
+        if (!offlineHistory || serial != taskViewSerial || !permissionSet.taskView) return;
         try {
-            TaskOfflineCache.Page cached = taskOfflineCache.page(account, v1Companies,
-                    taskRoomFilter, taskStateFilter);
+            if (error != null) throw error;
             tasks.clear();
             taskCompanies.clear();
             taskBeforeId = 0;
@@ -9366,6 +11267,7 @@ public final class OdooIdentityActivity extends Activity {
             renderTasks();
             taskNotice.setText(R.string.task_load_failed);
         }
+        });
     }
 
     private void clearDeniedTaskList() {
@@ -9403,9 +11305,9 @@ public final class OdooIdentityActivity extends Activity {
         Ui.styleSegment(taskAllButton, closed);
         Ui.styleSegment(taskOpenButton, "open".equals(taskStateFilter));
         Ui.styleSegment(taskDoneButton, "done".equals(taskStateFilter));
-        taskAllLine.setBackgroundColor(closed ? Ui.GREEN : Color.TRANSPARENT);
-        taskOpenLine.setBackgroundColor("open".equals(taskStateFilter) ? Ui.GREEN : Color.TRANSPARENT);
-        taskDoneLine.setBackgroundColor("done".equals(taskStateFilter) ? Ui.GREEN : Color.TRANSPARENT);
+        taskAllLine.setBackgroundColor(closed ? UiPalette.accent(this) : Color.TRANSPARENT);
+        taskOpenLine.setBackgroundColor("open".equals(taskStateFilter) ? UiPalette.accent(this) : Color.TRANSPARENT);
+        taskDoneLine.setBackgroundColor("done".equals(taskStateFilter) ? UiPalette.accent(this) : Color.TRANSPARENT);
     }
 
     private int taskStateLabel(String state) {
@@ -9649,9 +11551,25 @@ public final class OdooIdentityActivity extends Activity {
                     String taskDescription = boundedTaskText(description.getText().toString(), 4096, false);
                     if (selected[0] == null) throw new IllegalArgumentException();
                     String dueAt = due[0] == null ? null : formatTaskDue(due[0]);
-                    if (submitTask(companyId, roomId, selected[0].id,
-                            taskTitle, taskDescription, dueAt)) dialog.dismiss();
-                    else error.setText(R.string.task_pending_or_save_failed);
+                    final long selectedAssignee = selected[0].id;
+                    dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false);
+                    if (!submitTask(companyId, roomId, selectedAssignee,
+                            taskTitle, taskDescription, dueAt, (saved, failure) -> {
+                        if (!dialog.isShowing()) return;
+                        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(true);
+                        if (failure != null || !Boolean.TRUE.equals(saved)) {
+                            error.setText(R.string.task_pending_or_save_failed); return;
+                        }
+                        String currentDue = due[0] == null ? null : formatTaskDue(due[0]);
+                        if (selected[0] != null && selected[0].id == selectedAssignee
+                                && taskTitle.equals(title.getText().toString().trim())
+                                && taskDescription.equals(description.getText().toString())
+                                && (dueAt == null ? currentDue == null : dueAt.equals(currentDue)))
+                            dialog.dismiss();
+                    })) {
+                        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(true);
+                        error.setText(R.string.task_pending_or_save_failed);
+                    }
                 } catch (Exception invalid) { error.setText(R.string.task_invalid); }
             }));
             dialog.show();
@@ -9674,7 +11592,7 @@ public final class OdooIdentityActivity extends Activity {
         final AccountScope scopedAccount = account;
         if (scopedAccount == null || labels == null || labels.length == 0) return;
         LinearLayout content = Ui.column(this);
-        content.setBackgroundColor(Color.WHITE);
+        content.setBackgroundColor(UiPalette.surface(this));
         content.setPadding(dp(16), dp(16), dp(16), 0);
 
         LinearLayout heading = Ui.row(this);
@@ -9814,12 +11732,17 @@ public final class OdooIdentityActivity extends Activity {
     private void updatePendingTaskUi() {
         boolean pending = hasPendingTaskCreate();
         if (taskPendingButton != null) taskPendingButton.setVisibility(pending ? View.VISIBLE : View.GONE);
-        if (taskNewButton != null) taskNewButton.setEnabled(!pending && !v2Busy);
+        if (taskNewButton != null) taskNewButton.setEnabled(!pending && !v2Busy && !intentBusy(account, "task"));
     }
 
     private boolean submitTask(long companyId, long roomId, long assigneeId,
-                               String title, String description, String dueAt) {
-        if (v2Busy || !verified || account == null || hasPendingTaskCreate()) return false;
+                               String title, String description, String dueAt,
+                               BChatStorageRepository.Ready<Boolean> ready) {
+        if (v2Busy || !permissionSet.taskManage || !currentIntentContext(account, companyId, roomId)
+                || hasPendingTaskCreate() || intentBusy(account, "task")) return false;
+        final AccountScope scoped = account;
+        final int view = taskViewSerial;
+        final long membership = intentMembership(roomId);
         try {
             JSONObject payload = new JSONObject();
             payload.put("api_version", 2);
@@ -9830,22 +11753,39 @@ public final class OdooIdentityActivity extends Activity {
             payload.put("description", description);
             payload.put("due_at", dueAt == null ? JSONObject.NULL : dueAt);
             payload.put("assignee_id", assigneeId);
-            PendingTaskCreate pending = new PendingTaskCreate(account, payload.toString());
-            // Synchronous private-store commit is the write-ahead boundary before network I/O.
-            if (!taskCreatePreferences().edit().putString(account.key, pending.raw).commit()) return false;
-            updatePendingTaskUi();
-            sendPendingTaskCreate(pending);
-            return true;
+            PendingTaskCreate pending = new PendingTaskCreate(scoped, payload.toString());
+            return persistIntent(scoped, "task", taskCreatePreferences(), null, pending.raw,
+                    (saved, failure) -> {
+                ready.complete(saved, failure);
+                updatePendingTaskUi();
+                if (failure == null && Boolean.TRUE.equals(saved) && view == taskViewSerial
+                        && membership == intentMembership(roomId)) sendPendingTaskCreate(pending);
+            });
         } catch (Exception invalid) { return false; }
     }
 
     private void sendPendingTaskCreate(PendingTaskCreate pending) {
-        if (v2Busy || !verified || account == null || !account.key.equals(pending.scope)
+        if (v2Busy || !verified || account == null || intentBusy(account, "task") || !permissionSet.taskManage
+                || !currentIntentContext(account, pending.companyId, pending.roomId)
+                || !account.key.equals(pending.scope)
                 || !pending.raw.equals(taskCreatePreferences().getString(pending.scope, null))) return;
+        final AccountScope scoped = account;
+        final int view = taskViewSerial;
+        final long membership = intentMembership(pending.roomId);
         taskNotice.setText(R.string.task_saving);
+        taskPendingButton.setEnabled(false);
+        persistIntent(scoped, "task", taskCreatePreferences(), pending.raw, pending.raw, (saved, failure) -> {
+        taskPendingButton.setEnabled(true);
+        if (failure != null || !Boolean.TRUE.equals(saved)) {
+            taskNotice.setText(R.string.task_pending_or_save_failed); return;
+        }
+        if (!permissionSet.taskManage || !currentIntentContext(scoped, pending.companyId, pending.roomId)
+                || membership != intentMembership(pending.roomId) || view != taskViewSerial || v2Busy
+                || !pending.raw.equals(taskCreatePreferences().getString(pending.scope, null))) return;
         taskPendingButton.setEnabled(false);
         fetchV2("POST", V2_TASKS, pending.raw, (statusCode, result) -> {
             taskPendingButton.setEnabled(true);
+            if (account != scoped) return;
             if (handleV2TransportFailure(statusCode, true)) return;
             try {
                 if (statusCode != 200 || result == null || positiveId(result.get("api_version")) != 2
@@ -9855,22 +11795,28 @@ public final class OdooIdentityActivity extends Activity {
                 boolean replayed = result.getBoolean("replayed");
                 Task created = new Task(result.getJSONObject("task"));
                 if (created.companyId != pending.companyId || created.roomId != pending.roomId
-                        || created.creatorId != account.userId) throw new IllegalArgumentException();
+                        || created.creatorId != scoped.userId) throw new IllegalArgumentException();
                 if (!replayed && (created.assigneeId != pending.assigneeId
                         || !pending.title.equals(created.title)
                         || !pending.description.equals(created.description)
                         || !(pending.dueAt == null ? created.dueAt == null
                                 : pending.dueAt.equals(created.dueAt)))) throw new IllegalArgumentException();
-                if (!pending.raw.equals(taskCreatePreferences().getString(pending.scope, null))
-                        || !taskCreatePreferences().edit().remove(pending.scope).commit())
-                    throw new IllegalArgumentException();
-                updatePendingTaskUi();
-                taskNotice.setText(replayed ? R.string.task_confirmed : R.string.task_created);
-                if ("tasks".equals(visibleSection)) loadTasks(0);
+                persistIntent(scoped, "task", taskCreatePreferences(), pending.raw, null,
+                        (removed, error) -> {
+                    updatePendingTaskUi();
+                    if (view != taskViewSerial) return;
+                    taskNotice.setText(error == null && Boolean.TRUE.equals(removed)
+                            ? replayed ? R.string.task_confirmed : R.string.task_created
+                            : R.string.task_create_uncertain);
+                    if (error == null && Boolean.TRUE.equals(removed)
+                            && "tasks".equals(visibleSection)) loadTasks(0);
+                });
             } catch (Exception invalid) {
                 updatePendingTaskUi();
+                if (view != taskViewSerial) return;
                 taskNotice.setText(R.string.task_create_uncertain);
             }
+        });
         });
     }
 
@@ -9908,15 +11854,15 @@ public final class OdooIdentityActivity extends Activity {
                 .setPositiveButton(R.string.task_delete_local, (dialog, which) -> {
                     if (account == null || !account.key.equals(scopedAccount.key)
                             || v2Busy || !taskCreatePreferences().contains(scopedAccount.key)) return;
-                    try {
-                        String current = taskCreatePreferences().getString(scopedAccount.key, null);
-                        if (!(raw == null ? current == null : raw.equals(current))
-                                || !taskCreatePreferences().edit().remove(scopedAccount.key).commit())
-                            throw new IllegalArgumentException();
+                    persistIntent(scopedAccount, "task", taskCreatePreferences(), raw, null,
+                            (saved, failure) -> {
+                        if (failure != null || !Boolean.TRUE.equals(saved)) {
+                            taskNotice.setText(R.string.task_pending_or_save_failed); return;
+                        }
                         updatePendingTaskUi();
                         taskNotice.setText(R.string.task_local_deleted);
                         if (tasksAvailable) loadTasks(0);
-                    } catch (Exception invalid) { taskNotice.setText(R.string.task_pending_or_save_failed); }
+                    });
                 }).setNegativeButton(R.string.chat_v2_cancel, null).show();
     }
 
@@ -10612,9 +12558,9 @@ public final class OdooIdentityActivity extends Activity {
         Ui.styleSegment(orderCatalogButton, catalog);
         Ui.styleSegment(orderMineButton, orderMine);
         Ui.styleSegment(orderReceiptButton, orderReceiving);
-        orderCatalogLine.setBackgroundColor(catalog ? Ui.GREEN : Color.TRANSPARENT);
-        orderMineLine.setBackgroundColor(orderMine ? Ui.GREEN : Color.TRANSPARENT);
-        orderReceiptLine.setBackgroundColor(orderReceiving ? Ui.GREEN : Color.TRANSPARENT);
+        orderCatalogLine.setBackgroundColor(catalog ? UiPalette.accent(this) : Color.TRANSPARENT);
+        orderMineLine.setBackgroundColor(orderMine ? UiPalette.accent(this) : Color.TRANSPARENT);
+        orderReceiptLine.setBackgroundColor(orderReceiving ? UiPalette.accent(this) : Color.TRANSPARENT);
         orderFiltersRow.setVisibility(catalog && operator ? View.VISIBLE : View.GONE);
         orderPreviousButton.setVisibility(catalog && !orderPageHistory.isEmpty()
                 ? View.VISIBLE : View.GONE);
@@ -10712,7 +12658,8 @@ public final class OdooIdentityActivity extends Activity {
             create = options.getBoolean("can_create");
             receive = options.getBoolean("can_receive");
         } else {
-            String saved = getSharedPreferences(ORDER_PERMISSION_PREFS, MODE_PRIVATE)
+            String saved = rememberedOrderRights.get(scope.key);
+            if (saved == null) saved = getSharedPreferences(ORDER_PERMISSION_PREFS, MODE_PRIVATE)
                     .getString(scope.key, null);
             if (saved != null) {
                 JSONObject old = new JSONObject(saved);
@@ -10726,11 +12673,12 @@ public final class OdooIdentityActivity extends Activity {
         }
         if (!view && (create || receive))
             throw new IllegalArgumentException("Write permission without view");
+        String policyRaw = null;
         if (hasView) {
             JSONObject saved = new JSONObject().put("can_view", view)
                     .put("can_create", create).put("can_receive", receive);
-            getSharedPreferences(ORDER_PERMISSION_PREFS, MODE_PRIVATE).edit()
-                    .putString(scope.key, saved.toString()).commit();
+            policyRaw = saved.toString();
+            rememberedOrderRights.put(scope.key, policyRaw);
         }
         if (permissionSet.revision >= 0) {
             view &= permissionSet.orderView;
@@ -10738,12 +12686,45 @@ public final class OdooIdentityActivity extends Activity {
             receive &= permissionSet.orderReceive;
         }
         orderAccess = access;
+        // Fence old scoped work before reserving this policy write. A revocation must
+        // never invalidate its own persistence job and leave an older grant on disk.
         setOrderRights(scope, view, create, receive);
+        if (policyRaw != null) persistOrderPolicy(scope, policyRaw);
+    }
+
+    private void offlinePolicyReady(boolean ready) {
+        offlinePolicyDiskReady = ready;
+        offlinePersistenceReady = ready && orderPolicyDiskReady;
+    }
+
+    private void persistOrderPolicy(AccountScope scope, String raw) {
+        final int session = epoch, request = ++orderPolicyWriteSerial;
+        orderPolicyDiskReady = false;
+        offlinePersistenceReady = false;
+        // This accepted server policy is account-keyed, but deliberately unscoped:
+        // later room/permission invalidation must not cancel its conservative write.
+        BChatStorageRepository.submit(null, () -> {
+            boolean stored;
+            try { stored = getSharedPreferences(ORDER_PERMISSION_PREFS, MODE_PRIVATE)
+                    .edit().putString(scope.key, raw).commit(); }
+            catch (RuntimeException failure) { stored = false; }
+            if (!stored) preferences().edit().putBoolean(REMEMBER, false).commit();
+            return stored;
+        }, (stored, error) -> {
+            if (closed || account != scope || session != epoch || request != orderPolicyWriteSerial) return;
+            orderPolicyDiskReady = error == null && Boolean.TRUE.equals(stored);
+            if (!orderPolicyDiskReady) offlinePolicyReady(false);
+            else offlinePersistenceReady = offlinePolicyDiskReady;
+        });
     }
 
     private void setOrderRights(AccountScope scope, boolean view, boolean create,
             boolean receive) {
         boolean lostView = orderCanView && !view;
+        if (lostView || orderCanCreate && !create || orderCanReceive && !receive) {
+            invalidateMessageTimelineOwner();
+            BChatStorageRepository.invalidate(scope);
+        }
         orderCanView = view;
         orderCanCreate = view && create;
         orderCanReceive = view && receive;
@@ -10757,21 +12738,33 @@ public final class OdooIdentityActivity extends Activity {
             if (orderItems != null) orderItems.removeAllViews();
         }
         if (!orderCanCreate || lostView) {
-            orderCreatePreferences().edit().remove(scope.key).commit();
             orderCart.clear();
             orderOptions.clear();
             invalidateOrderQuote();
             if (orderCartDialog != null) orderCartDialog.dismiss();
         }
         if (!orderCanReceive || lostView) {
-            receiptConfirmPreferences().edit().remove(scope.key).commit();
             if (receiptFlowDialog != null) receiptFlowDialog.dismiss();
-            SharedPreferences shares = receiptSharePreferences();
-            SharedPreferences.Editor edit = shares.edit();
-            for (String key : shares.getAll().keySet())
-                if (key.startsWith(scope.key + ":")) edit.remove(key);
-            edit.commit();
         }
+        final boolean clearCreate = !orderCanCreate || lostView;
+        final boolean clearReceive = !orderCanReceive || lostView;
+        if (clearCreate || clearReceive) BChatStorageRepository.submit(null, () -> {
+            boolean saved = true;
+            if (clearCreate) saved &= orderCreatePreferences().edit().remove(scope.key).commit();
+            if (clearReceive) {
+                saved &= receiptConfirmPreferences().edit().remove(scope.key).commit();
+                SharedPreferences shares = receiptSharePreferences();
+                SharedPreferences.Editor edit = shares.edit();
+                for (String key : shares.getAll().keySet())
+                    if (key.startsWith(scope.key + ":")) edit.remove(key);
+                saved &= edit.commit();
+            }
+            if (!saved) preferences().edit().putBoolean(REMEMBER, false).commit();
+            return saved;
+        }, (saved, error) -> {
+            if (!closed && account == scope && (error != null || !Boolean.TRUE.equals(saved)))
+                offlinePolicyReady(false);
+        });
         if (lostView) {
             orderSummaries.clear();
             receiptSummaries.clear();
@@ -10885,7 +12878,7 @@ public final class OdooIdentityActivity extends Activity {
                     shell.setVisibility(View.GONE);
                     chatRoot.setVisibility(View.VISIBLE);
                     if (loginReleaseFooter != null) loginReleaseFooter.setVisibility(View.GONE);
-                    layout.setPadding(0, 0, 0, 0);
+                    setScreenPadding(0, 0);
                     switchSection("orders");
                 }
             } catch (Exception invalid) {
@@ -11162,6 +13155,7 @@ public final class OdooIdentityActivity extends Activity {
                 if (!representativeValid) orderRepresentativeId = 0;
                 if (!categoryValid) orderCategoryId = 0;
                 updateOrderSelectors();
+                if (maybeRestoreSavedCart()) return;
                 if (!orderCart.isEmpty() && orderQuoteTotal == null) scheduleOrderQuote();
                 if (warehouses.isEmpty()) orderNotice.setText(R.string.order_no_warehouse);
                 else if ("representative".equals(orderPurchaseRoute) && representatives.isEmpty())
@@ -11184,6 +13178,145 @@ public final class OdooIdentityActivity extends Activity {
                 }
             }
         });
+    }
+
+    private boolean hasDeferredCart() {
+        return restorationIntent != null && !restorationIntent.cart.isEmpty();
+    }
+
+    /** Raw local IDs are never displayed as products or treated as an authorized quote. */
+    private boolean maybeRestoreSavedCart() {
+        if (!hasDeferredCart() || !verified || offlineHistory || !orderCanCreate
+                || !orderCompanyOptionsLoaded || orderMine || orderReceiving
+                || !"orders".equals(visibleSection) || hasPendingOrder()) return false;
+        if (cartRestoreBusy) return true;
+        final BChatLocalState saved = restorationIntent;
+        boolean warehouseValid = false, representativeValid = saved.representativeId == 0;
+        for (TaskChoice option : orderWarehouses) if (option.id == saved.warehouseId) warehouseValid = true;
+        for (TaskChoice option : orderRepresentatives) if (option.id == saved.representativeId) representativeValid = true;
+        if (saved.cartCompanyId != orderCompanyId || !v1Companies.contains(saved.cartCompanyId)
+                || !warehouseValid || !orderPurchaseRoutes.contains(saved.purchaseRoute)
+                || !representativeValid || !orderCart.isEmpty()) {
+            showSavedCartReview(R.string.cart_restore_context);
+            return true;
+        }
+        orderWarehouseId = saved.warehouseId;
+        orderRepresentativeId = saved.representativeId;
+        orderPurchaseRoute = saved.purchaseRoute;
+        invalidateOrderQuote();
+        updateOrderSelectors();
+        cartRestoreBusy = true;
+        final int generation = ++cartRestoreGeneration;
+        beginOrderLoading(orderViewSerial, R.string.cart_restore_loading);
+        resolveSavedCartPage(account, saved, new BChatCartResolver(saved.cart.keySet()),
+                orderViewSerial, generation);
+        return true;
+    }
+
+    private void resolveSavedCartPage(AccountScope scope, BChatLocalState saved,
+                                      BChatCartResolver accumulator, int serial, int generation) {
+        if (closed || !verified || account != scope || restorationIntent != saved
+                || !orderCanCreate || !"orders".equals(visibleSection) || orderMine || orderReceiving
+                || orderViewSerial != serial || orderCompanyId != saved.cartCompanyId
+                || orderWarehouseId != saved.warehouseId || orderRepresentativeId != saved.representativeId
+                || !saved.purchaseRoute.equals(orderPurchaseRoute) || generation != cartRestoreGeneration) {
+            if (generation == cartRestoreGeneration) cartRestoreBusy = false;
+            return;
+        }
+        if (v2Busy) {
+            queueOrderLoadWhenIdle(() -> resolveSavedCartPage(scope, saved, accumulator, serial, generation));
+            return;
+        }
+        try {
+            JSONObject payload = new JSONObject().put("api_version", 2)
+                    .put("company_id", saved.cartCompanyId).put("warehouse_id", saved.warehouseId)
+                    .put("purchase_route", saved.purchaseRoute)
+                    .put("representative_partner_id", saved.representativeId == 0
+                            ? JSONObject.NULL : saved.representativeId)
+                    .put("option_ids", new JSONArray(accumulator.requested()))
+                    .put("after_option_id", accumulator.afterId() == 0 ? JSONObject.NULL : accumulator.afterId());
+            fetchV2("POST", V2_ORDERS + "/catalog/resolve", payload.toString(), (status, body) -> {
+                if (closed || account != scope || restorationIntent != saved || serial != orderViewSerial
+                        || generation != cartRestoreGeneration || !verified || !orderCanCreate
+                        || orderMine || orderReceiving || !"orders".equals(visibleSection)
+                        || orderCompanyId != saved.cartCompanyId || orderWarehouseId != saved.warehouseId
+                        || orderRepresentativeId != saved.representativeId
+                        || !saved.purchaseRoute.equals(orderPurchaseRoute)) {
+                    if (generation == cartRestoreGeneration) cartRestoreBusy = false;
+                    return;
+                }
+                if (handleV2TransportFailure(status)) { cartRestoreBusy = false; return; }
+                try {
+                    if (status != 200) throw new IllegalArgumentException();
+                    accumulator.accept(body);
+                    if (!accumulator.complete()) {
+                        handler.post(() -> resolveSavedCartPage(scope, saved, accumulator, serial, generation));
+                        return;
+                    }
+                    cartRestoreBusy = false;
+                    finishOrderLoading();
+                    if (!accumulator.missingIds().isEmpty()) {
+                        showSavedCartReview(R.string.cart_restore_unavailable); return;
+                    }
+                    Map<Long, OrderCartLine> restored = new LinkedHashMap<>();
+                    for (Map.Entry<Long, String> line : saved.cart.entrySet())
+                        restored.put(line.getKey(), new OrderCartLine(
+                                new OrderOption(accumulator.items().get(line.getKey()), saved.cartCompanyId), line.getValue()));
+                    if (!orderCart.isEmpty()) throw new IllegalStateException("Editor changed during restore");
+                    // Commit to the editor only after EVERY requested ID and all fresh records validated.
+                    orderCart.putAll(restored);
+                    restorationIntent = null;
+                    invalidateOrderQuote(); // No saved total: mandatory existing backend quote + revision/fingerprint.
+                    updateOrderSelectors();
+                    saveLocalContext();
+                    loadOrderCatalog(0);
+                } catch (Exception invalid) {
+                    cartRestoreBusy = false;
+                    finishOrderLoading();
+                    if (status == 403 || status == 409) showSavedCartReview(R.string.cart_restore_context);
+                    else showOrderLoadError(R.string.cart_restore_failed, this::maybeRestoreSavedCart);
+                }
+            });
+        } catch (Exception invalid) {
+            cartRestoreBusy = false;
+            finishOrderLoading();
+            showOrderLoadError(R.string.cart_restore_failed, this::maybeRestoreSavedCart);
+        }
+    }
+
+    private void showSavedCartReview(int label) {
+        if (!hasDeferredCart() || closed || account == null) return;
+        finishOrderLoading();
+        showOrderLoadError(label, this::maybeRestoreSavedCart);
+        if (cartRestoreDialog != null && cartRestoreDialog.isShowing()) return;
+        final BChatLocalState saved = restorationIntent;
+        final AccountScope scope = account;
+        cartRestoreDialog = new AlertDialog.Builder(this).setTitle(R.string.cart_restore_retry)
+                .setMessage(label).setPositiveButton(R.string.cart_restore_retry, (dialog, which) -> {
+                    if (account == scope && restorationIntent == saved) maybeRestoreSavedCart();
+                }).setNegativeButton(R.string.chat_v2_cancel, null)
+                .setNeutralButton(R.string.cart_restore_discard, (dialog, which) -> {
+                    if (account != scope || restorationIntent != saved) return;
+                    new AlertDialog.Builder(this).setMessage(R.string.cart_restore_discard_warning)
+                            .setPositiveButton(R.string.cart_restore_discard, (confirm, button) -> {
+                                if (account != scope || restorationIntent != saved || outbox == null) return;
+                                BChatLocalState cleared = new BChatLocalState(saved.section, saved.companyId,
+                                        saved.roomId, saved.membershipId, saved.anchorMessageId, saved.anchorOffset,
+                                        saved.taskFilter, 0, 0, 0, "representative", Collections.emptyMap());
+                                final BChatV2Outbox box = outbox;
+                                local(scope, () -> { box.saveContext(scope, cleared); return null; }, (ignored, error) -> {
+                                    if (restorationIntent != saved) return;
+                                    if (error != null) { orderNotice.setText(R.string.cart_restore_failed); return; }
+                                    restorationIntent = null;
+                                    ++cartRestoreGeneration; cartRestoreBusy = false;
+                                    clearOrderRetry();
+                                    saveLocalContext();
+                                    if ("orders".equals(visibleSection)) loadOrderCatalog(0);
+                                });
+                            }).setNegativeButton(R.string.chat_v2_cancel, null).show();
+                }).create();
+        cartRestoreDialog.setOnDismissListener(ignored -> cartRestoreDialog = null);
+        cartRestoreDialog.show();
     }
 
     private void chooseOrderCategory() {
@@ -11345,7 +13478,7 @@ public final class OdooIdentityActivity extends Activity {
 
     private void renderOrderCatalog() {
         resetOrderImages(false);
-        orderItems.setBackgroundColor(Color.WHITE);
+        orderItems.setBackgroundColor(UiPalette.surface(this));
         orderItems.removeAllViews();
         if (orderOptions.isEmpty()) {
             TextView empty = Ui.text(this, getString(R.string.order_empty_catalog), 15, Ui.MUTED, false);
@@ -11386,7 +13519,7 @@ public final class OdooIdentityActivity extends Activity {
             if (option.imagePath != null) {
                 ImageView thumbnail = new ImageView(this);
                 thumbnail.setScaleType(ImageView.ScaleType.CENTER_CROP);
-                thumbnail.setBackgroundColor(Ui.LIGHT);
+                thumbnail.setBackgroundColor(UiPalette.background(this, Ui.LIGHT));
                 thumbnail.setContentDescription(getString(R.string.order_product_image,
                         option.product));
                 LinearLayout.LayoutParams thumbnailSize = new LinearLayout.LayoutParams(dp(52), dp(52));
@@ -11425,7 +13558,7 @@ public final class OdooIdentityActivity extends Activity {
                 add.setText(choices.size() == 1 ? "+" : "⋯");
                 Ui.styleIconAction(add, Ui.IconTone.TONAL);
                 add.setTextSize(21);
-                add.setTextColor(Ui.GREEN);
+                add.setTextColor(UiPalette.accent(this));
                 add.setContentDescription(getString(choices.size() == 1
                         ? R.string.order_add : R.string.order_choose_product_option) + " " + option.product);
                 add.setOnClickListener(v -> chooseOrAddOrderProduct(choices));
@@ -11468,46 +13601,14 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     private LinearLayout orderQuantityStepper(OrderCartLine selected) {
-        LinearLayout stepper = Ui.row(this);
-        stepper.setBackground(Ui.outline(Color.WHITE, Ui.LINE, 12, this));
-        stepper.setClipToOutline(true);
-        stepper.addView(orderStepperAction("−", 19, R.string.order_decrease,
-                selected.option.product, () -> stepOrderQuantity(selected.option, -1)),
-                new LinearLayout.LayoutParams(dp(48), dp(48)));
-        View firstDivider = new View(this);
-        firstDivider.setBackgroundColor(Ui.LINE);
-        LinearLayout.LayoutParams dividerSize = new LinearLayout.LayoutParams(dp(1), dp(24));
-        dividerSize.gravity = Gravity.CENTER_VERTICAL;
-        stepper.addView(firstDivider, dividerSize);
-        TextView quantity = orderStepperAction(selected.quantity, 14,
-                R.string.order_change_quantity, selected.option.product,
-                () -> editOrderQuantity(selected.option));
-        quantity.setContentDescription(getString(R.string.order_change_quantity)
-                + " " + selected.option.product + ": " + selected.quantity);
-        quantity.setSingleLine(true);
-        quantity.setEllipsize(android.text.TextUtils.TruncateAt.MIDDLE);
-        stepper.addView(quantity, new LinearLayout.LayoutParams(dp(56), dp(48)));
-        View secondDivider = new View(this);
-        secondDivider.setBackgroundColor(Ui.LINE);
-        LinearLayout.LayoutParams secondDividerSize = new LinearLayout.LayoutParams(dp(1), dp(24));
-        secondDividerSize.gravity = Gravity.CENTER_VERTICAL;
-        stepper.addView(secondDivider, secondDividerSize);
-        stepper.addView(orderStepperAction("+", 19, R.string.order_increase,
-                selected.option.product, () -> stepOrderQuantity(selected.option, 1)),
-                new LinearLayout.LayoutParams(dp(48), dp(48)));
-        return stepper;
+        return orderQuantityStepper(selected, false);
     }
 
-    private TextView orderStepperAction(String label, int textSize, int accessibilityLabel,
-            String product, Runnable action) {
-        TextView button = Ui.text(this, label, textSize, Ui.GREEN, true);
-        button.setGravity(Gravity.CENTER);
-        button.setMinWidth(dp(48));
-        button.setMinHeight(dp(48));
-        button.setContentDescription(getString(accessibilityLabel) + " " + product);
-        Ui.clickable(button);
-        button.setOnClickListener(v -> action.run());
-        return button;
+    private LinearLayout orderQuantityStepper(OrderCartLine selected, boolean expanded) {
+        return OrderQuantityStepper.create(this, selected.quantity, selected.option.product, expanded,
+                () -> stepOrderQuantity(selected.option, -1),
+                () -> editOrderQuantity(selected.option),
+                () -> stepOrderQuantity(selected.option, 1));
     }
 
     private OrderCartLine orderLineForProduct(long productId) {
@@ -11568,6 +13669,7 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     private void chooseOrAddOrderProduct(List<OrderOption> choices) {
+        if (hasDeferredCart()) { showSavedCartReview(R.string.cart_restore_context); return; }
         if (!ordersAvailable || orderMine || orderReceiving || hasPendingOrder()) {
             orderNotice.setText(R.string.order_pending_blocks_new);
             return;
@@ -11589,6 +13691,7 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     private void addOneOrderOption(OrderOption option) {
+        if (hasDeferredCart()) { showSavedCartReview(R.string.cart_restore_context); return; }
         if (!verified || !ordersAvailable || orderMine || orderReceiving || hasPendingOrder()
                 || !orderOptions.contains(option)) return;
         OrderCartLine existing = orderLineForProduct(option.productId);
@@ -11649,6 +13752,7 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     private void editOrderQuantity(OrderOption option) {
+        if (hasDeferredCart()) { showSavedCartReview(R.string.cart_restore_context); return; }
         if (!ordersAvailable || orderMine || orderReceiving || hasPendingOrder()) {
             orderNotice.setText(R.string.order_pending_blocks_new);
             return;
@@ -11746,7 +13850,7 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     private void renderOrderSummaries() {
-        orderItems.setBackgroundColor(Ui.LIGHT);
+        orderItems.setBackgroundColor(UiPalette.background(this, Ui.LIGHT));
         orderItems.removeAllViews();
         if (orderSummaries.isEmpty()) {
             TextView empty = Ui.text(this, getString(R.string.order_empty_mine), 15, Ui.MUTED, false);
@@ -11882,7 +13986,7 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     private void renderReceipts() {
-        orderItems.setBackgroundColor(Ui.LIGHT);
+        orderItems.setBackgroundColor(UiPalette.background(this, Ui.LIGHT));
         orderItems.removeAllViews();
         if (receiptSummaries.isEmpty()) {
             TextView empty = Ui.text(this, getString(R.string.receipt_empty), 15, Ui.MUTED, false);
@@ -12131,8 +14235,12 @@ public final class OdooIdentityActivity extends Activity {
             AccountScope scopedAccount, long companyId, int serial, PendingReceipt replacing) {
         AlertDialog dialog = new AlertDialog.Builder(this).setTitle(R.string.receipt_confirm)
                 .setMessage(review)
-                .setPositiveButton(R.string.receipt_confirm, (ignoredDialog, which) -> {
+                .setPositiveButton(R.string.receipt_confirm, null)
+                .setNegativeButton(R.string.chat_v2_cancel, null).create();
+        dialog.setOnShowListener(ignored -> dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+                .setOnClickListener(button -> {
                     if (!receiptContext(scopedAccount, companyId, serial)
+                            || intentBusy(scopedAccount, "receipt")
                             || (replacing == null ? hasPendingReceipt()
                             : !replacing.stored.equals(receiptConfirmPreferences()
                                     .getString(replacing.scope, null)))) {
@@ -12150,17 +14258,23 @@ public final class OdooIdentityActivity extends Activity {
                         payload.put("lines", lines);
                         PendingReceipt pending = new PendingReceipt(scopedAccount,
                                 detail.id, payload.toString());
-                        if (!receiptConfirmPreferences().edit()
-                                .putString(scopedAccount.key, pending.stored).commit()) {
-                            orderNotice.setText(R.string.receipt_save_failed);
-                            return;
-                        }
-                        updateOrderSelectors();
-                        sendPendingReceipt(pending);
+                        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false);
+                        if (!persistIntent(scopedAccount, "receipt", receiptConfirmPreferences(),
+                                replacing == null ? null : replacing.stored, pending.stored,
+                                (saved, failure) -> {
+                            if (dialog.isShowing()) dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(true);
+                            updateOrderSelectors();
+                            if (failure != null || !Boolean.TRUE.equals(saved)) {
+                                orderNotice.setText(R.string.receipt_save_failed); return;
+                            }
+                            if (!receiptContext(scopedAccount, companyId, serial)) return;
+                            if (receiptFlowDialog == dialog) dialog.dismiss();
+                            sendPendingReceipt(pending);
+                        })) dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(true);
                     } catch (Exception invalid) {
                         orderNotice.setText(R.string.receipt_invalid_value);
                     }
-                }).setNegativeButton(R.string.chat_v2_cancel, null).create();
+                }));
         receiptFlowDialog = dialog;
         dialog.setOnDismissListener(ignored -> {
             if (receiptFlowDialog == dialog) receiptFlowDialog = null;
@@ -12379,18 +14493,27 @@ public final class OdooIdentityActivity extends Activity {
                             try {
                                 OutboxPolicy.requireText(shareText);
                                 if (outbox == null) throw new IllegalStateException();
-                                if (outbox.first(scopedAccount, chosen.id, chosen.membershipId) != null
-                                        || (mediaStore != null && mediaStore.pending(scopedAccount,
-                                                chosen.id, chosen.membershipId) != null)) {
-                                    orderNotice.setText(R.string.order_share_pending);
-                                    return;
-                                }
-                                outbox.enqueuePreservingDraft(scopedAccount, chosen.id,
-                                        chosen.membershipId, shareText);
-                                rooms.clear();
-                                rooms.addAll(fresh);
-                                pendingOrderShareRoom = chosen;
-                                selectRoom(chosen);
+                                final BChatV2Outbox box = outbox;
+                                final BChatConnectedMediaStore store = mediaStore;
+                                local(scopedAccount, () -> {
+                                    if (store != null && store.pending(scopedAccount,
+                                            chosen.id, chosen.membershipId) != null) return null;
+                                    return box.enqueuePreservingDraft(scopedAccount, chosen.id,
+                                            chosen.membershipId, shareText);
+                                }, (entry, error) -> {
+                                    globalPendingKnown = false;
+                                    if (!validPreviousOrderContext(scopedAccount, companyId, requesterId, serial)) return;
+                                    if (error != null || entry == null) {
+                                        orderNotice.setText(entry == null && error == null
+                                                ? R.string.order_share_pending : R.string.chat_v2_save_failed);
+                                        return;
+                                    }
+                                    invalidateRoomListForSnapshot(fresh);
+                                    rooms.clear(); rooms.addAll(fresh);
+                                    admitRoomListSnapshot();
+                                    pendingOrderShareRoom = chosen;
+                                    selectRoom(chosen);
+                                });
                             } catch (Exception storage) {
                                 orderNotice.setText(R.string.chat_v2_save_failed);
                             }
@@ -12456,6 +14579,7 @@ public final class OdooIdentityActivity extends Activity {
 
     private void reviewOrderCart() {
         if (orderMine || orderReceiving) return;
+        if (hasDeferredCart()) { maybeRestoreSavedCart(); return; }
         if (orderCart.isEmpty()) { orderNotice.setText(R.string.order_empty_cart); return; }
         if (hasPendingOrder()) { reviewPendingOrder(); return; }
         if (orderCartDialog != null && orderCartDialog.isShowing()) return;
@@ -12469,13 +14593,8 @@ public final class OdooIdentityActivity extends Activity {
                         choice -> { orderRepresentativeId = choice.id; updateOrderSelectors(); }));
         content.addView(orderCartRepresentativeButton, fieldSize(4));
         refreshOrderCartRoute();
-        ScrollView scroll = new ScrollView(this);
         orderCartLinesView = Ui.column(this);
-        scroll.addView(orderCartLinesView);
-        int visibleHeight = Math.min(400, Math.max(130,
-                getResources().getConfiguration().screenHeightDp - 300));
-        int desiredHeight = Math.min(visibleHeight, Math.max(150, orderCart.size() * 146));
-        content.addView(scroll, new LinearLayout.LayoutParams(-1, dp(desiredHeight)));
+        content.addView(orderCartLinesView, new LinearLayout.LayoutParams(-1, -2));
         orderCartTotalView = Ui.text(this, orderQuoteLabel(), 17, Ui.INK, true);
         Ui.pad(orderCartTotalView, 10, 10);
         orderCartTotalView.setBackground(Ui.bg(Ui.TASK_ACTIVE_TINT, 10, this));
@@ -12483,12 +14602,8 @@ public final class OdooIdentityActivity extends Activity {
         TextView disclaimer = Ui.text(this, getString(R.string.order_quote_disclaimer),
                 12, Ui.MUTED, false);
         content.addView(disclaimer);
-        orderCartDialog = new AlertDialog.Builder(this).setTitle(R.string.order_cart)
-                .setView(content)
-                .setPositiveButton(R.string.order_submit, (dialog, which) -> chooseOrderRoom())
-                .setNeutralButton(R.string.order_add_more, (dialog, which) -> { })
-                .setNegativeButton(R.string.task_close, null).create();
-        orderCartDialog.setOnDismissListener(dialog -> {
+        orderCartDialog = new BChatCartSheet(this, content, this::chooseOrderRoom, dismissed -> {
+            if (orderCartDialog != dismissed) return;
             orderCartDialog = null;
             orderCartLinesView = null;
             orderCartTotalView = null;
@@ -12497,13 +14612,7 @@ public final class OdooIdentityActivity extends Activity {
         });
         renderOrderCartLines();
         orderCartDialog.show();
-        Ui.decorateDialog(orderCartDialog);
-        if (orderCartDialog.getWindow() != null) {
-            orderCartDialog.getWindow().setGravity(Gravity.BOTTOM);
-            orderCartDialog.getWindow().setLayout(-1, -2);
-        }
-        orderCartDialog.getButton(AlertDialog.BUTTON_POSITIVE)
-                .setEnabled(!orderCart.isEmpty() && !hasPendingOrder());
+        orderCartDialog.setSubmitEnabled(!orderCart.isEmpty() && !hasPendingOrder());
     }
 
     private void renderOrderCartLines() {
@@ -12511,10 +14620,10 @@ public final class OdooIdentityActivity extends Activity {
         orderCartLinesView.removeAllViews();
         if (lastRemovedOrderLine != null && orderCart.size() < 100
                 && orderLineForProduct(lastRemovedOrderLine.option.productId) == null) {
-            LinearLayout undo = Ui.row(this);
+            LinearLayout undo = Ui.column(this);
             TextView removed = Ui.text(this, getString(R.string.order_removed_product,
                     lastRemovedOrderLine.option.product), 12, Ui.MUTED, false);
-            undo.addView(removed, new LinearLayout.LayoutParams(0, -2, 1));
+            undo.addView(removed, new LinearLayout.LayoutParams(-1, -2));
             Button restore = orderQuantityAction(getString(R.string.order_undo),
                     R.string.order_undo, lastRemovedOrderLine.option.product, () -> {
                         OrderCartLine line = lastRemovedOrderLine;
@@ -12523,7 +14632,10 @@ public final class OdooIdentityActivity extends Activity {
                         lastRemovedOrderLine = null;
                         afterOrderCartChange(true);
                     });
-            undo.addView(restore, new LinearLayout.LayoutParams(dp(80), dp(48)));
+            restore.setSingleLine(false);
+            restore.setMaxLines(Integer.MAX_VALUE);
+            restore.setEllipsize(null);
+            undo.addView(restore, new LinearLayout.LayoutParams(-1, -2));
             orderCartLinesView.addView(undo);
         }
         if (orderCart.isEmpty()) {
@@ -12531,31 +14643,14 @@ public final class OdooIdentityActivity extends Activity {
                     14, Ui.MUTED, false));
         }
         for (OrderCartLine line : new ArrayList<>(orderCart.values())) {
-            LinearLayout row = Ui.column(this);
-            Ui.pad(row, 10, 9);
-            row.setBackground(Ui.outline(Color.WHITE, Ui.LINE, 12, this));
-            LinearLayout heading = Ui.row(this);
-            TextView product = Ui.text(this, line.option.product, 15, Ui.INK, true);
-            product.setMaxLines(2);
-            product.setEllipsize(android.text.TextUtils.TruncateAt.END);
-            heading.addView(product, new LinearLayout.LayoutParams(0, -2, 1));
-            FrameLayout remove = Ui.iconButton(this, "close", getString(R.string.order_remove)
-                    + " " + line.option.product);
-            remove.setOnClickListener(v -> removeOrderOption(line.option.id));
-            heading.addView(remove, new LinearLayout.LayoutParams(dp(48), dp(48)));
-            row.addView(heading);
-            row.addView(Ui.text(this, orderOptionLabel(line.option), 12, Ui.MUTED, false));
-            LinearLayout controls = Ui.row(this);
-            controls.setGravity(Gravity.END);
-            controls.addView(orderQuantityStepper(line), new LinearLayout.LayoutParams(-2, dp(48)));
-            row.addView(controls);
+            View row = BChatCartSheet.line(this, line.option.product, orderOptionLabel(line.option),
+                    orderQuantityStepper(line, true), () -> removeOrderOption(line.option.id));
             LinearLayout.LayoutParams rowSize = new LinearLayout.LayoutParams(-1, -2);
             rowSize.setMargins(0, 0, 0, dp(8));
             orderCartLinesView.addView(row, rowSize);
         }
         if (orderCartDialog != null && orderCartDialog.isShowing())
-            orderCartDialog.getButton(AlertDialog.BUTTON_POSITIVE)
-                    .setEnabled(!orderCart.isEmpty() && !hasPendingOrder());
+            orderCartDialog.setSubmitEnabled(!orderCart.isEmpty() && !hasPendingOrder());
         refreshOrderQuoteLabels();
     }
 
@@ -12822,6 +14917,23 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     private void sendPendingReceipt(PendingReceipt pending) {
+        if (account == null || !account.key.equals(pending.scope) || !verified || v2Busy
+                || ordersDenied || !orderCanReceive || intentBusy(account, "receipt")
+                || !v1Companies.contains(pending.companyId)) return;
+        final AccountScope scoped = account;
+        final int view = orderViewSerial;
+        persistIntent(scoped, "receipt", receiptConfirmPreferences(), pending.stored, pending.stored,
+                (saved, error) -> {
+            if (error != null || !Boolean.TRUE.equals(saved)) {
+                orderNotice.setText(R.string.receipt_save_failed); return;
+            }
+            if (view == orderViewSerial && orderCanReceive && !ordersDenied
+                    && v1Companies.contains(pending.companyId) && !v2Busy)
+                sendPendingReceiptDurable(pending);
+        });
+    }
+
+    private void sendPendingReceiptDurable(PendingReceipt pending) {
         if (!verified || account == null || v2Busy || ordersDenied
                 || !orderCanReceive
                 || !account.key.equals(pending.scope)
@@ -12830,6 +14942,7 @@ public final class OdooIdentityActivity extends Activity {
         orderNotice.setText(R.string.receipt_sending);
         receiptPendingButton.setEnabled(false);
         final AccountScope scopedAccount = account;
+        final int view = orderViewSerial;
         fetchV2("POST", V2_ORDERS + "/receipts/" + pending.orderId + "/confirm",
                 pending.raw, (status, body) -> {
             receiptPendingButton.setEnabled(true);
@@ -12853,17 +14966,19 @@ public final class OdooIdentityActivity extends Activity {
                     throw new IllegalArgumentException();
                 String total = receipt.getString("actual_total");
                 String currency = boundedTaskText(receipt.getString("currency_symbol"), 16, false);
-                if (!total.matches("[0-9]{1,14}\\.[0-9]{2}")
-                        || !pending.stored.equals(receiptConfirmPreferences()
-                                .getString(pending.scope, null))
-                        || !receiptSharePreferences().edit()
-                                .putLong(receiptShareKey(scopedAccount, pending.orderId),
-                                        pending.companyId).commit()
-                        || !receiptConfirmPreferences().edit().remove(pending.scope).commit())
-                    throw new IllegalArgumentException();
-                updateOrderSelectors();
+                if (!total.matches("[0-9]{1,14}\\.[0-9]{2}")) throw new IllegalArgumentException();
                 String message = getString(R.string.receipt_confirmed,
                         boundedTaskText(receipt.getString("name"), 160, true), total, currency);
+                intentWork(scopedAccount, "receipt", () -> BChatIntentPersistence.markerThenRetire(
+                        BChatIntentPersistence.preferences(receiptConfirmPreferences()), pending.scope,
+                        pending.stored, BChatIntentPersistence.longPreferences(receiptSharePreferences()),
+                        receiptShareKey(scopedAccount, pending.orderId), Long.toString(pending.companyId)),
+                        (saved, failure) -> {
+                updateOrderSelectors();
+                if (view != orderViewSerial) return;
+                if (failure != null || !Boolean.TRUE.equals(saved)) {
+                    orderNotice.setText(R.string.receipt_save_failed); return;
+                }
                 orderNotice.setText(message);
                 new AlertDialog.Builder(this).setTitle(R.string.receipt_confirm)
                         .setMessage(message)
@@ -12872,7 +14987,9 @@ public final class OdooIdentityActivity extends Activity {
                                         pending.companyId, scopedAccount))
                         .setNegativeButton(R.string.task_close, null).show();
                 if (orderReceiving && "orders".equals(visibleSection)) loadReceipts(0);
+                });
             } catch (Exception invalid) {
+                if (view != orderViewSerial) return;
                 String code = receiptErrorCode(status, body);
                 int message = receiptFailureMessage(status, code);
                 orderNotice.setText(message);
@@ -12892,6 +15009,26 @@ public final class OdooIdentityActivity extends Activity {
 
     private void shareConfirmedReceipt(long orderId, long companyId,
             AccountScope scopedAccount) {
+        final String kind = "receipt-share:" + orderId;
+        if (!verified || account != scopedAccount || v2Busy || !orderCanReceive
+                || !v1Companies.contains(companyId) || intentBusy(scopedAccount, kind)) return;
+        final int view = orderViewSerial;
+        final String key = receiptShareKey(scopedAccount, orderId);
+        intentWork(scopedAccount, kind, () -> BChatIntentPersistence.replace(
+                BChatIntentPersistence.longPreferences(receiptSharePreferences()), key,
+                Long.toString(companyId), Long.toString(companyId)), (saved, failure) -> {
+            if (view != orderViewSerial) return;
+            if (failure != null || !Boolean.TRUE.equals(saved)) {
+                showReceiptShareRetry(orderId, companyId, scopedAccount, R.string.receipt_share_failed);
+                return;
+            }
+            if (!v2Busy && orderCanReceive && v1Companies.contains(companyId))
+                shareConfirmedReceiptDurable(orderId, companyId, scopedAccount);
+        });
+    }
+
+    private void shareConfirmedReceiptDurable(long orderId, long companyId,
+            AccountScope scopedAccount) {
         if (!verified || account != scopedAccount || !orderCanReceive
                 || !v1Companies.contains(companyId) || v2Busy
                 || pendingReceiptShareCompany(scopedAccount, orderId) != companyId) {
@@ -12900,6 +15037,7 @@ public final class OdooIdentityActivity extends Activity {
             return;
         }
         try {
+            final int view = orderViewSerial;
             JSONObject payload = new JSONObject();
             payload.put("api_version", 2);
             payload.put("company_id", companyId);
@@ -12916,17 +15054,26 @@ public final class OdooIdentityActivity extends Activity {
                             || positiveId(body.get("room_id")) <= 0
                             || positiveId(body.get("message_id")) <= 0
                             || !body.getBoolean("shared")
-                            || !(body.get("replayed") instanceof Boolean)
-                            || pendingReceiptShareCompany(scopedAccount, orderId) != companyId
-                            || !receiptSharePreferences().edit()
-                                    .remove(receiptShareKey(scopedAccount, orderId)).commit())
+                            || !(body.get("replayed") instanceof Boolean))
                         throw new IllegalArgumentException();
+                    intentWork(scopedAccount, "receipt-share:" + orderId,
+                            () -> BChatIntentPersistence.replace(
+                                    BChatIntentPersistence.longPreferences(receiptSharePreferences()),
+                                    receiptShareKey(scopedAccount, orderId), Long.toString(companyId), null),
+                            (removed, failure) -> {
                     updateOrderSelectors();
+                    if (view != orderViewSerial) return;
+                    if (failure != null || !Boolean.TRUE.equals(removed)) {
+                        showReceiptShareRetry(orderId, companyId, scopedAccount, R.string.receipt_share_failed);
+                        return;
+                    }
                     orderNotice.setText(R.string.receipt_share_sent);
                     Ui.decorateDialog(new AlertDialog.Builder(this)
                             .setMessage(R.string.receipt_share_sent)
                             .setPositiveButton(R.string.task_close, null).show());
+                    });
                 } catch (Exception failed) {
+                    if (view != orderViewSerial) return;
                     JSONObject error = body == null ? null : body.optJSONObject("error");
                     String code = error == null ? "" : error.optString("code", "");
                     showReceiptShareRetry(orderId, companyId, scopedAccount,
@@ -12982,13 +15129,17 @@ public final class OdooIdentityActivity extends Activity {
                 .setPositiveButton(R.string.task_delete_local, (dialog, which) -> {
                     if (account != scopedAccount || v2Busy || !stored.equals(
                             receiptConfirmPreferences().getString(scopedAccount.key, null))) return;
-                    if (!receiptConfirmPreferences().edit().remove(scopedAccount.key).commit()) {
-                        orderNotice.setText(R.string.receipt_save_failed);
-                        return;
-                    }
+                    final int view = orderViewSerial;
+                    persistIntent(scopedAccount, "receipt", receiptConfirmPreferences(), stored, null,
+                            (saved, failure) -> {
                     updateOrderSelectors();
+                    if (view != orderViewSerial) return;
+                    if (failure != null || !Boolean.TRUE.equals(saved)) {
+                        orderNotice.setText(R.string.receipt_save_failed); return;
+                    }
                     orderNotice.setText(R.string.receipt_local_deleted);
                     if (orderReceiving && "orders".equals(visibleSection)) loadReceipts(0);
+                    });
                 }).setNegativeButton(R.string.chat_v2_cancel, null).show();
     }
 
@@ -12998,7 +15149,7 @@ public final class OdooIdentityActivity extends Activity {
 
     private void submitOrder(long roomId) {
         if (!orderCanCreate || !verified || v2Busy || account == null || hasPendingOrder()
-                || orderMine || orderReceiving) {
+                || intentBusy(account, "order") || orderMine || orderReceiving) {
             orderNotice.setText(R.string.order_pending_blocks_new);
             return;
         }
@@ -13040,19 +15191,64 @@ public final class OdooIdentityActivity extends Activity {
             payload.put("client_uuid", UUID.randomUUID().toString());
             payload.put("lines", lines);
             payload.put("room_id", roomId == 0 ? JSONObject.NULL : roomId);
-            PendingOrder pending = new PendingOrder(account, payload.toString());
-            if (!orderCreatePreferences().edit().putString(account.key, pending.raw).commit()) {
-                orderNotice.setText(R.string.order_save_failed);
-                return;
-            }
-            updateOrderSelectors();
-            sendPendingOrder(pending);
+            final AccountScope scope = account;
+            final int view = orderViewSerial, revision = orderCartRevision;
+            final String fingerprint = orderCartFingerprint();
+            PendingOrder pending = new PendingOrder(scope, payload.toString());
+            persistIntent(scope, "order", orderCreatePreferences(), null, pending.raw, (saved, failure) -> {
+                updateOrderSelectors();
+                if (failure != null || !Boolean.TRUE.equals(saved)) {
+                    orderNotice.setText(R.string.order_save_failed); return;
+                }
+                if (view == orderViewSerial && revision == orderCartRevision
+                        && fingerprint.equals(orderCartFingerprint())) sendPendingOrder(pending);
+            });
         } catch (Exception invalid) { orderNotice.setText(R.string.order_invalid); }
     }
 
     private void sendPendingOrder(PendingOrder pending) {
-        if (!orderCanCreate || !verified || v2Busy || account == null || !account.key.equals(pending.scope)
+        if (!orderCanCreate || !verified || v2Busy || account == null || intentBusy(account, "order")
+                || !currentIntentContext(account, pending.companyId, pending.roomId)
+                || !account.key.equals(pending.scope)
                 || !pending.raw.equals(orderCreatePreferences().getString(pending.scope, null))) return;
+        final AccountScope scoped = account;
+        final int view = orderViewSerial, revision = orderCartRevision;
+        final String fingerprint = orderCartFingerprint();
+        final boolean matchedCart = pendingOrderMatchesCart(pending);
+        final long membership = intentMembership(pending.roomId);
+        persistIntent(scoped, "order", orderCreatePreferences(), pending.raw, pending.raw,
+                (saved, failure) -> {
+            if (failure != null || !Boolean.TRUE.equals(saved)) {
+                orderNotice.setText(R.string.order_save_failed); return;
+            }
+            if (view == orderViewSerial && orderCanCreate && !ordersDenied && !v2Busy
+                    && membership == intentMembership(pending.roomId)
+                    && pending.raw.equals(orderCreatePreferences().getString(pending.scope, null))
+                    && currentIntentContext(scoped, pending.companyId, pending.roomId))
+                sendPendingOrderDurable(pending, view, revision, fingerprint, matchedCart);
+        });
+    }
+
+    private boolean pendingOrderMatchesCart(PendingOrder pending) {
+        if (pending.companyId != orderCompanyId || pending.warehouseId != orderWarehouseId
+                || !pending.purchaseRoute.equals(orderPurchaseRoute)
+                || pending.representativeId != (!"representative".equals(orderPurchaseRoute)
+                        || orderRepresentatives.size() == 1 ? 0 : orderRepresentativeId)) return false;
+        try {
+            JSONArray lines = new JSONObject(pending.raw).getJSONArray("lines");
+            if (lines.length() != orderCart.size()) return false;
+            for (int i = 0; i < lines.length(); i++) {
+                JSONObject item = lines.getJSONObject(i);
+                OrderCartLine current = orderCart.get(positiveId(item.get("option_id")));
+                if (current == null || !item.getString("quantity")
+                        .equals(normalizeOrderQuantity(current.quantity))) return false;
+            }
+            return true;
+        } catch (Exception invalid) { return false; }
+    }
+
+    private void sendPendingOrderDurable(PendingOrder pending, int view, int revision,
+            String fingerprint, boolean matchedCart) {
         orderNotice.setText(R.string.order_sending);
         orderPendingButton.setEnabled(false);
         final AccountScope scopedAccount = account;
@@ -13077,43 +15273,57 @@ public final class OdooIdentityActivity extends Activity {
                         || (pending.representativeId > 0
                                 && created.representativeId != pending.representativeId)
                         || created.roomId != pending.roomId
-                        || created.total.isEmpty()
-                        || !pending.raw.equals(orderCreatePreferences()
-                                .getString(pending.scope, null))
-                        || !orderCreatePreferences().edit().remove(pending.scope).commit())
+                        || created.total.isEmpty())
                     throw new IllegalArgumentException();
-                orderCart.clear();
-                lastRemovedOrderLine = null;
-                invalidateOrderQuote();
-                updateOrderSelectors();
                 String message = getString(body.getBoolean("replayed")
                         ? R.string.order_confirmed : R.string.order_sent, created.name)
                         + "\n" + getString(R.string.order_total, created.total, created.currency);
                 if (pending.roomId != 0)
                     message += "\n" + getString(R.string.order_room_posted);
-                orderNotice.setText(message);
+                final String confirmedMessage = message;
+                persistIntent(scopedAccount, "order", orderCreatePreferences(), pending.raw, null,
+                        (removed, failure) -> {
+                updateOrderSelectors();
+                if (view != orderViewSerial) return;
+                if (failure != null || !Boolean.TRUE.equals(removed)) {
+                    orderNotice.setText(R.string.order_create_uncertain); return;
+                }
+                boolean ownsCart = matchedCart && revision == orderCartRevision
+                        && fingerprint.equals(orderCartFingerprint());
+                if (ownsCart) {
+                    orderCart.clear();
+                    lastRemovedOrderLine = null;
+                    invalidateOrderQuote();
+                    saveLocalContext();
+                }
+                orderNotice.setText(confirmedMessage);
                 new AlertDialog.Builder(this).setTitle(R.string.chat_v2_orders)
-                        .setMessage(message).setPositiveButton(R.string.task_close, null).show();
-                if ("orders".equals(visibleSection)) {
+                        .setMessage(confirmedMessage).setPositiveButton(R.string.task_close, null).show();
+                if (ownsCart && "orders".equals(visibleSection)) {
                     orderMine = true;
                     orderReceiving = false;
                     updateOrderSelectors();
                     loadOrderSummaries(0);
                 }
+                });
             } catch (Exception invalid) {
                 updateOrderSelectors();
+                if (view != orderViewSerial) return;
                 JSONObject error = body == null ? null : body.optJSONObject("error");
                 String code = error == null ? "" : error.optString("code", "");
                 if (("room_unavailable".equals(code) || "membership_changed".equals(code)
                         || "room_message_too_long".equals(code))
                         && pending.raw.equals(orderCreatePreferences().getString(pending.scope, null))) {
-                    if (!orderCreatePreferences().edit().remove(pending.scope).commit()) {
-                        orderNotice.setText(R.string.order_save_failed);
-                        return;
-                    }
+                    persistIntent(scopedAccount, "order", orderCreatePreferences(), pending.raw, null,
+                            (removed, failure) -> {
                     updateOrderSelectors();
+                    if (view != orderViewSerial) return;
+                    if (failure != null || !Boolean.TRUE.equals(removed)) {
+                        orderNotice.setText(R.string.order_save_failed); return;
+                    }
                     orderNotice.setText("room_message_too_long".equals(code)
                             ? R.string.order_room_message_long : R.string.order_room_unavailable);
+                    });
                     return;
                 }
                 orderNotice.setText("no_representative".equals(code)
@@ -13159,15 +15369,17 @@ public final class OdooIdentityActivity extends Activity {
                 .setMessage(R.string.order_delete_warning)
                 .setPositiveButton(R.string.task_delete_local, (dialog, which) -> {
                     if (account == null || !account.key.equals(scopedAccount.key) || v2Busy) return;
-                    String current = orderCreatePreferences().getString(scopedAccount.key, null);
-                    if (!(raw == null ? current == null : raw.equals(current))
-                            || !orderCreatePreferences().edit().remove(scopedAccount.key).commit()) {
-                        orderNotice.setText(R.string.order_save_failed);
-                        return;
-                    }
+                    final int view = orderViewSerial;
+                    persistIntent(scopedAccount, "order", orderCreatePreferences(), raw, null,
+                            (saved, failure) -> {
                     updateOrderSelectors();
+                    if (view != orderViewSerial) return;
+                    if (failure != null || !Boolean.TRUE.equals(saved)) {
+                        orderNotice.setText(R.string.order_save_failed); return;
+                    }
                     orderNotice.setText(R.string.order_local_deleted);
                     if (orderMine) loadOrderSummaries(0);
+                    });
                 }).setNegativeButton(R.string.chat_v2_cancel, null).show();
     }
 
@@ -13175,7 +15387,7 @@ public final class OdooIdentityActivity extends Activity {
         verified = false;
         BChatPushState.clearAccount(this);
         clearChatView();
-        layout.setPadding(dp(20), dp(16), dp(20), dp(16));
+        setScreenPadding(20, 16);
         account = null;
         v1Companies.clear();
         csrfToken = null;
@@ -13189,7 +15401,7 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     private void showShell() {
-        layout.setPadding(dp(20), dp(16), dp(20), dp(16));
+        setScreenPadding(20, 16);
         nativeForm.setVisibility(View.GONE);
         if (loginReleaseFooter != null) loginReleaseFooter.setVisibility(View.GONE);
         shell.setVisibility(View.VISIBLE);
@@ -13238,6 +15450,7 @@ public final class OdooIdentityActivity extends Activity {
 
     private void logout() {
         if (closed || loggingOut) return;
+        if(transferCoordinator!=null)transferCoordinator.revoke(account);
         purgeHistory();
         pendingPush = null;
         pendingNotificationTaskId = 0;
@@ -13262,7 +15475,7 @@ public final class OdooIdentityActivity extends Activity {
         v1Companies.clear();
         csrfToken = null;
         loggingOut = true;
-        layout.setPadding(dp(20), dp(16), dp(20), dp(16));
+        setScreenPadding(20, 16);
         localExit.setVisibility(View.GONE);
         nativeForm.setVisibility(View.GONE);
         if (loginReleaseFooter != null) loginReleaseFooter.setVisibility(View.GONE);
@@ -13310,18 +15523,28 @@ public final class OdooIdentityActivity extends Activity {
         if (!recheckOnResume) processPendingPush();
     }
 
+    @Override public void onWindowFocusChanged(boolean focused){
+        super.onWindowFocusChanged(focused);
+        if (focused && messageScroll != null) messageScroll.post(this::scanVisibleMessageReceipts);
+        if(focused&&liveForeground&&verified&&!offlineHistory&&selectedRoom!=null&&outbox!=null)
+            handler.post(()->{if(!closed&&verified&&selectedRoom!=null)refreshLocalRoom(selectedRoom,false);});
+    }
+
     @Override protected void onPause() {
+        closeRoomExplore();
+        if (receiptDetailsPanel != null) receiptDetailsPanel.pause();
+        if(notificationSettingsPanel!=null)notificationSettingsPanel.pause();
+        if (connectedAudioFocus != null) connectedAudioFocus.stop();
+        saveLocalContext();
         liveForeground = false;
         closeLiveSync();
         if (inlineAudioRoom != null && inlineAudioPlayer == null) closeMediaRead();
         stopInlineAudio();
-        if (voicePreviewPlayer != null) {
-            try { if (voicePreviewPlayer.isPlaying()) voicePreviewPlayer.pause(); }
-            catch (IllegalStateException ignored) { }
-        }
+        stopVoicePreviewPlayback();
         if (mediaPreviewDialog != null) mediaPreviewDialog.dismiss();
         if (connectedVoiceRecorder != null) {
             connectedVoiceRecorder.cancel(); connectedVoiceRecorder = null;
+            releaseRecordingFocus();
             stopRecordingBadge();
             mediaStageBusy = false;
             mediaPickerAccount = null; mediaPickerRoom = null;
@@ -13335,6 +15558,7 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     @Override protected void onStop() {
+        if (connectedAudioFocus != null) connectedAudioFocus.stop();
         flushDraftSave();
         if (verified && mediaPickerAccount == null && groupPhotoAccount == null
                 && pendingPdfDownload == null)
@@ -13344,7 +15568,11 @@ public final class OdooIdentityActivity extends Activity {
 
     @Override protected void onResume() {
         super.onResume();
+        if (roomListAdmitted && !roomListOwnerCurrent(roomListEpoch)) clearRoomListNow();
+        if (receiptDetailsPanel != null) receiptDetailsPanel.resume();
+        if(notificationSettingsPanel!=null)notificationSettingsPanel.resume();
         liveForeground = true;
+        if (!recheckOnResume) reprojectMessageTimelineContext();
         if (recheckOnResume && verified && !closed) {
             recheckOnResume = false;
             verified = false;
@@ -13375,6 +15603,7 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     @Override public void onBackPressed() {
+        if (localExit == null) { finish(); return; }
         if (accountMenu != null && accountMenu.dismiss()) return;
         if (orderCompanyMenu != null && orderCompanyMenu.dismiss()) return;
         if (offlineHistory && selectedRoom != null) { showRooms(); return; }
@@ -13390,6 +15619,17 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     @Override protected void onDestroy() {
+        invalidateMessageTimelineOwner();
+        clearRoomListNow();
+        roomListLane.close();
+        closeReceiptDetails();
+        closeRoomExplore();
+        BChatStageAdmission.unobserve(stageAdmissionObserver);
+        if(notificationSettingsPanel!=null){notificationSettingsPanel.dismiss();notificationSettingsPanel=null;}
+        if(transferCoordinator!=null)transferCoordinator.unobserve(transferObserver);
+        if (connectedAudioFocus != null) connectedAudioFocus.stop();
+        if (connectedImagePreviews != null) connectedImagePreviews.close();
+        ++mediaDownloadGeneration;
         stopInlineAudio();
         if (connectedWaveforms != null) connectedWaveforms.close();
         clearVoicePreview();
@@ -13405,18 +15645,18 @@ public final class OdooIdentityActivity extends Activity {
         clearPendingPdf();
         clearMediaReadCache();
         releaseWeb();
-        if (outbox != null) outbox.close();
+        BChatV2Outbox closingOutbox = outbox;
         // A verified room snapshot queued just before a language change or activity close
         // must commit before this helper closes. No disk wait occurs on the UI thread.
         ConnectedHistoryCache closingCache = historyCache;
         TaskOfflineCache closingTaskCache = taskOfflineCache;
         historyWrites.execute(() -> {
             synchronized (historyStorageLock) {
+                if (closingOutbox != null) closingOutbox.close();
                 if (closingCache != null) closingCache.close();
                 if (closingTaskCache != null) closingTaskCache.close();
             }
         });
-        historyWrites.shutdown();
         mediaIo.shutdown();
         handler.removeCallbacksAndMessages(null);
         super.onDestroy();

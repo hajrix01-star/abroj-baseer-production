@@ -28,9 +28,14 @@ class PushInstallationLifecycleContractTests(unittest.TestCase):
 
     def test_client_preserves_a_verified_route_on_same_account_recheck(self):
         source = PUSH_STATE.read_text(encoding="utf-8")
-        self.assertIn("if (account.key.equals(state.getString(SCOPE, null))) return;", source)
-        self.assertIn(".remove(ACCOUNT).remove(REGISTERED_TOKEN)", source)
-        self.assertIn("validUuid(installationId)", source)
+        self.assertIn("if (account.key.equals(s.scope)) return;", source)
+        self.assertIn("s.account = null; s.registeredToken = null;", source)
+        self.assertIn("s.routeDurable = false", source)
+        self.assertIn("validUuid(installation)", source)
+        self.assertIn("currentRegistration(request)", source)
+        self.assertIn("public static Registration registration(", source)
+        workflow = (ROOT.parents[1] / ".github/workflows/bchat-cumulative-contracts.yml").read_text(encoding="utf-8")
+        self.assertIn("test-push-routing-state.py", workflow)
 
 
 if __name__ == "__main__":

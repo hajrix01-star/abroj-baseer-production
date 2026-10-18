@@ -7,3 +7,13 @@ from . import test_bridge
 from . import test_tasks_v2
 from . import test_permissions
 from . import test_push_v2
+from . import test_maturity_permissions
+from . import test_maturity_push
+from . import test_notification_settings
+from . import test_membership_preferences
+from . import test_membership_cancel_http
+from . import test_direct_rooms
+from . import test_group_audit
+from . import test_search_v2
+from . import test_message_social
+from . import test_delivery_receipts_v2

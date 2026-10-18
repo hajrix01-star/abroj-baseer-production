@@ -1,0 +1,6 @@
+<resources>
+  <!-- Explicit test resource adapter. This suite does not certify product translations/theme. -->
+  <string name="bchat_push_chat">New message</string>
+  <string name="bchat_push_attachment">Attachment</string>
+  <color name="bchat_accent">#11699B</color>
+</resources>

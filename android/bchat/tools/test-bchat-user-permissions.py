@@ -8,10 +8,11 @@ import unittest
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SOURCE = (ROOT / 'app/src/main/java/com/baseer/freshchat/OdooIdentityActivity.java').read_text()
-HISTORY = (ROOT / 'app/src/main/java/com/baseer/freshchat/sync/ConnectedHistoryCache.java').read_text()
-OUTBOX = (ROOT / 'app/src/main/java/com/baseer/freshchat/sync/BChatV2Outbox.java').read_text()
-MEDIA = (ROOT / 'app/src/main/java/com/baseer/freshchat/sync/BChatConnectedMediaStore.java').read_text()
+SOURCE = (ROOT / 'app/src/main/java/com/baseer/freshchat/OdooIdentityActivity.java').read_text(encoding='utf-8')
+HISTORY = (ROOT / 'app/src/main/java/com/baseer/freshchat/sync/ConnectedHistoryCache.java').read_text(encoding='utf-8')
+OUTBOX = (ROOT / 'app/src/main/java/com/baseer/freshchat/sync/BChatV2Outbox.java').read_text(encoding='utf-8')
+MEDIA = (ROOT / 'app/src/main/java/com/baseer/freshchat/sync/BChatConnectedMediaStore.java').read_text(encoding='utf-8')
+MEDIA_RIGHTS = (ROOT / 'app/src/main/java/com/baseer/freshchat/MediaRights.java').read_text(encoding='utf-8')
 
 
 def method(name, return_type='void'):
@@ -56,17 +57,21 @@ class PermissionContracts(unittest.TestCase):
 
     def test_revocation_removes_only_disallowed_local_data(self):
         apply = method('applyPermissionSet')
-        self.assertIn('historyCache.purgeAccount(scope)', apply)
-        self.assertIn('outbox.purgeAccount(scope)', apply)
+        self.assertIn('cache.purgeAccount(scope)', apply)
+        self.assertIn('box.purgeAccount(scope)', apply)
+        self.assertIn('BChatStorageRepository.submit(null, () ->', apply)
         self.assertIn('purgeRevokedMedia(scope)', apply)
         self.assertIn('taskCreatePreferences().edit().remove(scope.key)', apply)
         self.assertIn('if (!next.chatView)', apply)
         self.assertIn('if (!next.chatSend || !next.chatView)', apply)
-        self.assertIn('if (!next.media || !next.chatView) purgeRevokedMedia(scope)', apply)
-        self.assertIn('else if (!next.chatSend) cancelRevokedMediaSending(scope)', apply)
+        self.assertIn('if (!next.mediaRights.view || !next.chatView) purgeRevokedMedia(scope)', apply)
+        self.assertIn('if (!next.mediaRights.upload || !next.chatSend) cancelRevokedMediaSending(scope)', apply)
+        self.assertIn('previous.mediaRights.download && !next.mediaRights.download', apply)
+        self.assertIn('revokeDownloadedMedia()', apply)
         self.assertIn('public void purgeAccount(AccountScope account)', HISTORY)
         self.assertIn('public void purgeAccount(AccountScope account)', OUTBOX)
-        self.assertIn('public synchronized void purgeAccount(AccountScope account)', MEDIA)
+        self.assertIn('public void purgeAccount(AccountScope account)', MEDIA)
+        self.assertIn('synchronized (STORE_LOCK)', MEDIA[MEDIA.index('public void purgeAccount(AccountScope account)'):])
         self.assertIn('"account_key=?"', HISTORY)
         self.assertIn('"account_key=?"', OUTBOX)
         order = method('setOrderRights')
@@ -85,7 +90,7 @@ class PermissionContracts(unittest.TestCase):
         self.assertIn('if (!next.chatView)', apply)
 
     def test_offline_task_cache_is_bounded_scoped_and_labelled(self):
-        task_cache = (ROOT / 'app/src/main/java/com/baseer/freshchat/sync/TaskOfflineCache.java').read_text()
+        task_cache = (ROOT / 'app/src/main/java/com/baseer/freshchat/sync/TaskOfflineCache.java').read_text(encoding='utf-8')
         self.assertIn('MAX_PAGES_PER_ACCOUNT = 4', task_cache)
         self.assertIn('MAX_BYTES_PER_ACCOUNT = 2L * 1024 * 1024', task_cache)
         self.assertIn('account_key,room_id,state_filter,company_key', task_cache)
@@ -112,36 +117,44 @@ class PermissionContracts(unittest.TestCase):
     def test_read_only_media_can_play_and_view_but_cannot_upload(self):
         contract = SOURCE[SOURCE.index('private static final class PermissionSet'):
                           SOURCE.index('private PermissionSet rememberedPermissions(')]
-        self.assertIn('this.media = media && this.chatView;', contract)
-        self.assertNotIn('this.media = media && this.chatSend;', contract)
-        self.assertIn('return sendAllowed() && mediaAllowed();',
+        self.assertIn('this.media = mediaRights.legacyCombined();', contract)
+        self.assertIn('view && upload && download', MEDIA_RIGHTS)
+        self.assertIn('mediaRights.canUpload(sendAllowed())',
                       method('mediaUploadAllowed', 'boolean'))
-        for name in ('toggleInlineAudio', 'openConnectedMedia', 'readConnectedMedia'):
-            self.assertIn('mediaAllowed()', method(name))
+        for name in ('toggleInlineAudio', 'openConnectedMedia'):
+            self.assertIn('mediaDownloadAllowed()', method(name))
             self.assertNotIn('mediaUploadAllowed()', method(name))
+        self.assertIn('thumbnail ? mediaAllowed() : mediaDownloadAllowed()', method('readConnectedMedia'))
         for name in ('chooseConnectedMedia', 'toggleConnectedVoice',
                      'retryConnectedMedia', 'sendConnectedMedia'):
             self.assertIn('mediaUploadAllowed()', method(name))
         cancel = method('cancelRevokedMediaSending')
-        self.assertIn('mediaStore.purgeAccount(scope)', cancel)
+        self.assertIn('store.purgeAccount(scope)', cancel)
+        self.assertIn('BChatStorageRepository.submit(null, () ->', cancel)
         self.assertNotIn('closeMediaRead()', cancel)
         self.assertNotIn('clearMediaReadCache()', cancel)
         self.assertIn('clearMediaReadCache()', method('purgeRevokedMedia'))
+        originals = method('revokeDownloadedMedia')
+        self.assertIn('clearMediaReadCache(true)', originals)
+        self.assertNotIn('mediaThumbnailCache.evictAll()', originals)
 
     def test_company_revoke_purges_only_removed_company_history(self):
         refresh = method('refreshPermissionSet')
         self.assertIn('stillVerified.retainAll(validCompanies)', refresh)
         self.assertIn('restrictCompanyScope(scoped, stillVerified)', refresh)
         revoke = method('restrictCompanyScope')
-        self.assertIn('historyCache.purgeRoom(scope, room.id)', revoke)
+        self.assertIn('cache.purgeRoom(scope, room.id)', revoke)
+        self.assertIn('BChatStorageRepository.submit(null, () ->', revoke)
         self.assertIn('if (allowed.contains(room.companyId)) retainedRooms.add(room.id)', revoke)
-        self.assertIn('outbox.purgeExceptRooms(scope, retainedRooms)', revoke)
-        self.assertIn('mediaStore.purgeCompaniesNotIn(scope, allowed)', revoke)
+        self.assertIn('box.purgeExceptRooms(scope, diskRetained)', revoke)
+        self.assertIn('store.purgeCompaniesNotIn(scope, permitted)', revoke)
+        self.assertIn('new HashSet<>(allowed)', revoke)
         self.assertIn('rooms.removeIf(room -> !allowed.contains(room.companyId))', revoke)
         self.assertIn('v1Companies.addAll(allowed)', revoke)
         self.assertNotIn('logout()', revoke)
         self.assertIn('public void purgeExceptRooms(AccountScope account', OUTBOX)
-        self.assertIn('public synchronized void purgeCompaniesNotIn(AccountScope account', MEDIA)
+        self.assertIn('public void purgeCompaniesNotIn(AccountScope account', MEDIA)
+        self.assertIn('synchronized (STORE_LOCK)', MEDIA[MEDIA.index('public void purgeCompaniesNotIn(AccountScope account'):])
         self.assertIn('v1Companies.contains(candidate.optLong("id"))',
                       method('refreshChatCompanySelector'))
 
@@ -166,7 +179,11 @@ class PermissionContracts(unittest.TestCase):
                          SOURCE.index('@Override public void onBackPressed()')]
         self.assertIn('handler.post(this::refreshPermissionSet)', resumed)
         for name in ('sendPendingOrder', 'sendPendingReceipt'):
-            action = method(name)
+            dispatch = method(name)
+            self.assertIn('persistIntent(', dispatch)
+            self.assertIn('!Boolean.TRUE.equals(saved)', dispatch)
+            self.assertIn(name + 'Durable(', dispatch)
+            action = method(name + 'Durable')
             self.assertIn('if (status == 403)', action)
             self.assertIn('discoverOrders();', action)
             self.assertNotIn('if (status == 403) { denyOrdersForSession(); return; }', action)

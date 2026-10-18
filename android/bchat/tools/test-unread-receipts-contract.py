@@ -25,11 +25,11 @@ assert "receipt.read_at IS NULL" in receipt
 assert "'unread_count': unread_count" in receipt
 assert "'last_message_id': last_message_id" in receipt
 
-start = ANDROID.index('private void acknowledgeMessage(')
-end = ANDROID.index('    /** A read ACK is emitted', start)
+start = ANDROID.index('private void applyReceiptUnread(')
+end = ANDROID.index('private void acknowledgeMessage(', start)
 ack = ANDROID[start:end]
-assert 'nonnegativeCursor(result.get("unread_count"))' in ack
-assert 'nonnegativeCursor(result.get("last_message_id"))' in ack
+assert 'nonnegativeCursor(result.opt("unread_count"))' in ack
+assert 'nonnegativeCursor(result.opt("last_message_id"))' in ack
 assert 'candidate.sameMembership(room)' in ack
 assert 'candidate.lastMessageId != responseLastMessageId' in ack
 assert 'requestRoomMetadataGeneration != roomMetadataGeneration' in ack
@@ -40,9 +40,20 @@ assert '++unreadMetadataGeneration;' in ack
 assert 'liveRoomsDirty = true;' in ack
 assert 'handler.post(this::flushLiveUi);' in ack
 assert 'loadRooms();' not in ack
-assert 'if ("read".equals(kind)) {' in ack
+assert 'if (!"read".equals(kind)) return;' in ack
 assert 'room.unreadCount--' not in ack
 assert 'room.unreadCount = 0;' not in ack
+
+start = ANDROID.index('private void dispatchReceiptIntent(')
+dispatch = ANDROID[start:ANDROID.index('private void applyReceiptUnread(', start)]
+assert 'cache.hasReceiptEvidence(scope, work)' in dispatch
+assert dispatch.index('ReceiptDeliveryProtocol.acknowledged(result, work)') < dispatch.index('cache.settleReceipt(scope, work)')
+assert dispatch.index('cache.settleReceipt(scope, work)') < dispatch.index('applyReceiptUnread(room, work.kind, result')
+assert 'new LiveRequest("POST", path, "kind", work.kind, scope, callback, work.membershipId)' in dispatch
+assert 'selectedRoom' not in dispatch
+protocol = (ROOT / 'app/src/main/java/com/baseer/freshchat/sync/ReceiptDeliveryProtocol.java').read_text(encoding='utf-8')
+assert 'number(body.get("unread_count"), false)' in protocol
+assert 'number(body.get("last_message_id"), false)' in protocol
 
 rooms_start = ANDROID.index('private void loadRooms()')
 rooms_end = ANDROID.index('private void selectRoom(', rooms_start)

@@ -1,0 +1,464 @@
+{
+  "WELCOME": "Chào mừng",
+  "COMMON": {
+    "ERROR": "Lỗi",
+    "ERROR_TITLE": "Đã xảy ra lỗi không mong muốn",
+    "REPORT_MESSAGE": "Chúng tôi đã báo cáo điều này cho nhóm của chúng tôi! Vui lòng đóng ứng dụng và bắt đầu lại!",
+    "CLOSE": "Đóng"
+  },
+  "FOOTER": {
+    "HOME": "Trang Chủ",
+    "CONVERSATION": "Các cuộc hội thoại",
+    "NOTIFICATION": "Thông báo",
+    "SETTINGS": "Cài đặt"
+  },
+  "CONFIGURE_URL": {
+    "ENTER_URL": "URL cài đặt",
+    "DESCRIPTION": "Nếu bạn đang dùng Chatwoot tự chủ, điền URL máy chủ của bạn. Nếu không, dùng app.chatwoot.com.",
+    "URL_ERROR": "Điền URL hợp lệ",
+    "URL_REQUIRED": "URL bắt buộc có",
+    "CONNECT": "Kết nối",
+    "CHANGE_LANGUAGE": "Thay đổi ngôn ngữ",
+    "ERROR": "Url cài đặt không hợp lệ"
+  },
+  "LOGIN": {
+    "TITLE": "Log in to your account",
+    "DESCRIPTION": "You are connected to {{baseUrl}}.",
+    "EMAIL": "Email",
+    "PASSWORD": "Mật khẩu",
+    "EMAIL_REQUIRED": "Email bắt buộc có",
+    "EMAIL_ERROR": "Điền email hợp lệ",
+    "PASSWORD_REQUIRED": "Mật khẩu bắt buộc có",
+    "PASSWORD_ERROR": "Điền password hợp lệ",
+    "LOGIN": "Đăng nhập",
+    "LOGIN_LOADING": "Signing In...",
+    "FORGOT_PASSWORD": "Quên mật khẩu?",
+    "RESET_HERE": "Đặt lại ở đây",
+    "NO_ACCOUNT": "Không có tài khoản?",
+    "CREATE_ACCOUNT": "Tạo mới tài khoản",
+    "SETTINGS": "Cài đặt",
+    "CHANGE_LANGUAGE": "Thay đổi ngôn ngữ",
+    "TERMS": "Điều khoản và điều kiện",
+    "CHANGE_URL": "Thay đổi URL"
+  },
+  "FORGOT_PASSWORD": {
+    "EMAIL": "Vui lòng nhập email",
+    "EMAIL_ERROR": "Điền email hợp lệ",
+    "RESET_HERE": "Đặt lại mật khẩu",
+    "HEADER_TITLE": "Đặt lại mật khẩu",
+    "TITLE": "Quên mật khẩu?",
+    "SUB_TITLE": "Đừng lo! Chúng tôi sẽ canh chừng cho bạn",
+    "API_SUCCESS": "Liên kết đặt lại mật khẩu đã được gửi đến địa chỉ email của bạn"
+  },
+  "CONVERSATION": {
+    "HEADER": {
+      "TITLE": "Các cuộc hội thoại",
+      "CLEAR_FILTER": "Clear"
+    },
+    "FILTERS": {
+      "AGENT": {
+        "SEARCH_AGENT": "Tìm kiếm nhân viên"
+      },
+      "INBOX": {
+        "TITLE": "Filter by inbox"
+      },
+      "SORT_BY": {
+        "TITLE": "Sắp bởi",
+        "OPTIONS": {
+          "LATEST": "Latest",
+          "SORT_ON_CREATED_AT": "Tạo vào lúc",
+          "SORT_ON_PRIORITY": "Sự ưu tiên"
+        }
+      },
+      "STATUS": {
+        "TITLE": "Filter by status",
+        "OPTIONS": {
+          "OPEN": "Mở",
+          "PENDING": "Chờ giải quyết",
+          "SNOOZED": "Tạm dừng",
+          "RESOLVED": "Đã được giải quyết",
+          "ALL": "Tất cả"
+        }
+      },
+      "ASSIGNEE_TYPE": {
+        "TITLE": "Filter by assignee type",
+        "OPTIONS": {
+          "ME": "Me",
+          "UNASSIGNED": "Chưa được phân công",
+          "ALL": "Tất cả"
+        }
+      }
+    },
+    "ASSIGNEE": {
+      "LABELS": {
+        "SEARCH_LABELS": "Tìm nhãn"
+      },
+      "AGENTS": {
+        "SEARCH_AGENT": "Tìm kiếm nhân viên"
+      },
+      "STATUS": {
+        "HEADER_TITLE": "Assign status",
+        "TITLE": "Filter by status",
+        "OPTIONS": {
+          "OPEN": "Mở",
+          "PENDING": "Chờ giải quyết",
+          "SNOOZED": "Tạm dừng",
+          "RESOLVED": "Đã được giải quyết",
+          "ALL": "Tất cả"
+        }
+      }
+    },
+    "DEFAULT_HEADER_TITLE": "Các cuộc hội thoại",
+    "UPDATING": "Đang cập nhật...",
+    "MINE": "Của tôi",
+    "UN_ASSIGNED": "Chưa được phân công",
+    "ALL": "Tất cả",
+    "EMPTY": "Không có bất kì hoạt động trò chuyện nào trong nhóm.",
+    "PICTURE_CONTENT": "Tin nhắn hình ảnh",
+    "ATTACHMENT_CONTENT": "Tập tin đính kèm",
+    "DOWNLOAD": "Tải xuống",
+    "TODAY": "Hôm nay",
+    "YESTERDAY": "Hôm qua",
+    "TYPE_MESSAGE": "Gõ tin nhắn",
+    "TYPING": "đang gõ",
+    "ALL_CONVERSATION_LOADED": "Tất cả các cuộc trò chuyện đã được tải",
+    "ASSIGN": "Phân công cuộc trò chuyện",
+    "FILE_SIZE_LIMIT": "File vượt quá giới hạn tối đa 5MB",
+    "SHARE": "Chia sẻ cuộc trò chuyện",
+    "DETAILS": "Chi tiết",
+    "LABELS": "Nhãn hội thoại",
+    "ASSIGNED_AGENT": "Đại lý được phân công",
+    "TEAM": "Nhóm",
+    "PRIVATE_MSG_INPUT": "Chỉ hiện cho nhà cung cấp",
+    "UNSUPPORTED_MESSAGE": "This message is unsupported. You can view this message on the Facebook / Instagram app.",
+    "NOT_FOUND": {
+      "TITLE": "Unable to fetch conversation",
+      "RETRY": "Retry",
+      "BACK_TO_HOME": "Go back to home",
+      "DESCRIPTION": "It seems like that conversation is not able fetch properly. It could be due to a network issue or the conversation is not available anymore. Please click on the retry button to try again."
+    },
+    "BOT": "Bot",
+    "EMAIL_HEAD": {
+      "TO": "Đến",
+      "CC": "Cc",
+      "BCC": "Bcc"
+    },
+    "SELF_ASSIGN": "Phân công cho tôi",
+    "UN_ASSIGN": "Bỏ phân công cuộc trò chuyện",
+    "CONVERSATION_NOT_FOUND": "Không tìm thấy hội thoại",
+    "MARK_AS_PENDING": "Đánh dấu chưa giải quyết",
+    "SNOOZE_UNTIL": "Tạm dừng đến khi",
+    "SNOOZE_UNTIL_NEXT_REPLY": "Cho đến phản hồi kế tiếp",
+    "SNOOZE_UNTIL_TOMORROW": "Cho đến ngày mai",
+    "SNOOZE_UNTIL_NEXT_WEEK": "Cho đến tuần sau",
+    "SNOOZE": "Snooze conversation",
+    "CHANGE_PRIORITY": "Change priority",
+    "MESSAGES": "Tin nhắn",
+    "UNDEFINED_VARIABLES_TITLE": "Undefined variables",
+    "UNDEFINED_VARIABLES_CLOSE": "Đóng",
+    "DELETE_MESSAGE_TITLE": "Are you sure you want to delete this message?",
+    "DELETE_MESSAGE_SUB_TITLE": "This action cannot be undone.",
+    "COPY_MESSAGE": "Message copied to clipboard",
+    "STORY_NOT_AVAILABLE": "This story is no longer available",
+    "DELETE_MESSAGE_SUCCESS": "Tin nhắn được xoá thành công",
+    "NO_CONTENT": "Không có nội dung",
+    "ASSIGN_CHANGE": "Người Được Chỉ Định Cuộc Hội Thoại đã thay đổi",
+    "TEAM_CHANGE": "Conversation Team changed",
+    "STATUS_CHANGE": "Conversation Status changed",
+    "PRIORITY_CHANGE": "Conversation Priority changed",
+    "PARTICIPANT_CHANGE": "Conversation Participant changed",
+    "CHANGE_STATUS": "Thay đổi trạng thái",
+    "SEARCH_TEAM": "Tìm kiếm nhóm",
+    "PRIORITY": {
+      "TITLE": "Sự ưu tiên",
+      "OPTIONS": {
+        "NONE": "Không có",
+        "URGENT": "Gấp",
+        "HIGH": "Cao",
+        "MEDIUM": "Trung bình",
+        "LOW": "Thấp"
+      },
+      "CHANGE_PRIORITY": {
+        "SELECT_PLACEHOLDER": "Không có",
+        "INPUT_PLACEHOLDER": "Select priority",
+        "NO_RESULTS": "Không tìm thấy kết quả",
+        "SUCCESSFUL": "Changed priority of conversation id %{conversationId} to %{priority}",
+        "FAILED": "Couldn't change priority. Please try again."
+      }
+    },
+    "ITEM": {
+      "ASSIGN": "Gán",
+      "STATUS": "Trạng thái"
+    },
+    "ATTACHMENTS": {
+      "image": {
+        "CONTENT": "Tin nhắn hình ảnh"
+      },
+      "audio": {
+        "CONTENT": "Tin nhắn thoại"
+      },
+      "video": {
+        "CONTENT": "Tin nhắn video"
+      },
+      "file": {
+        "CONTENT": "Tập tin đính kèm"
+      },
+      "location": {
+        "CONTENT": "Vị trí"
+      },
+      "fallback": {
+        "CONTENT": "có một đường dẫn chia sẻ"
+      },
+      "contact": {
+        "CONTENT": "Shared a contact"
+      }
+    },
+    "LONG_PRESS_ACTIONS": {
+      "COPY": "Sao Chép",
+      "REPLY": "Trả lời",
+      "DELETE_MESSAGE": "Delete message"
+    },
+    "EMAIL_HEADER": {
+      "FROM": "Từ",
+      "TO": "Đến",
+      "BCC": "Bcc",
+      "CC": "Cc",
+      "SUBJECT": "Chủ đề",
+      "EXPAND": "Expand email"
+    },
+    "ACTIONS": {
+      "ASSIGNEE": {
+        "EMPTY": "Chưa được phân công",
+        "ASSIGN": "Gán",
+        "EDIT": "Chỉnh sửa"
+      },
+      "TEAM": {
+        "EMPTY": "No team assigned",
+        "ASSIGN": "Gán"
+      },
+      "PRIORITY": {
+        "EMPTY": "No priority added",
+        "EDIT": "Chỉnh sửa"
+      }
+    }
+  },
+  "FILTER": {
+    "ALL_INBOXES": "All inboxes",
+    "FILTER_BY_ASSIGNEE_TYPE": "Filter by assignee type",
+    "FILTER_BY_CONVERSATION_STATUS": "Filter by conversation status",
+    "SORT_BY": "Sắp bởi",
+    "FILTER_BY_INBOX": "Filter by inbox",
+    "HEADER_TITLE": "Bộ lọc Cuộc trò chuyện",
+    "CHOOSE_INBOX": "Chọn Hộp thư đến",
+    "CHOOSE_STATUS": "Trạng thái cuộc trò chuyện",
+    "OPEN": "Mở",
+    "RESOLVED": "Đã được giải quyết",
+    "BOT": "Bot",
+    "SUBMIT": "Gửi",
+    "PENDING": "Chờ giải quyết",
+    "SNOOZED": "Tạm dừng"
+  },
+  "SETTINGS": {
+    "HEADER_TITLE": "Cài đặt",
+    "SET_AVAILABILITY": "Đặt chính mình như",
+    "CHANGE_AVAILABILITY": "Set availability",
+    "PREFERENCES": "Preferences",
+    "ABOUT": "Về",
+    "SUPPORT": "Hỗ trợ",
+    "SWITCH_ACCOUNT": "Chuyển tài khoản",
+    "CHANGE_LANGUAGE": "Thay đổi ngôn ngữ",
+    "NOTIFICATIONS": "Thông báo",
+    "NOTIFICATION_PREFERENCES": "Tuỳ chọn thông báo",
+    "READ_DOCS": "Read Docs",
+    "CHAT_WITH_US": "Trò chuyện với chúng tôi",
+    "LOGOUT": "Đăng xuất",
+    "SUBMIT": "Gửi",
+    "SET_LANGUAGE": "Set Language",
+    "DEBUG_ACTIONS": "Debug Actions"
+  },
+  "NOTIFICATION": {
+    "HEADER_TITLE": "Thông báo",
+    "INBOX": "Kênh",
+    "EMPTY": "Không có thông báo.",
+    "EMPTY_MORE_TEXT": "Khi bạn bắt đầu nhận được thông báo, chúng sẽ xuất hiện ở đây.",
+    "ALL_NOTIFICATION_LOADED": "Tất cả thông báo đã được tải",
+    "MARK_ALL": "Đánh dấu tất cả đã đọc",
+    "CANCEL": "Huỷ",
+    "DELETE": "Xoá",
+    "TYPES": {
+      "CONVERSATION_MENTION": "Bạn đã được nhắc đến trong một cuộc trò chuyện",
+      "CONVERSATION_CREATION": "New conversation created",
+      "CONVERSATION_ASSIGNMENT": "A conversation has been assigned to you",
+      "ASSIGNED_CONVERSATION_NEW_MESSAGE": "New message in an assigned conversation",
+      "PARTICIPATING_CONVERSATION_NEW_MESSAGE": "New message in a conversation you are participating in",
+      "SLA_MISSED_FIRST_RESPONSE": "SLA target first response missed for conversation",
+      "SLA_MISSED_NEXT_RESPONSE": "SLA target next response missed for conversation",
+      "SLA_MISSED_RESOLUTION": "SLA target resolution missed for conversation"
+    },
+    "FILTERS": {
+      "SORT_BY": {
+        "TITLE": "Sắp bởi",
+        "OPTIONS": {
+          "ASC": "Oldest",
+          "DESC": "Newest"
+        }
+      }
+    },
+    "ALERTS": {
+      "MARK_AS_READ": "Notification marked as read",
+      "MARK_AS_UNREAD": "Notification marked as unread",
+      "SNOOZE": "Notification snoozed",
+      "DELETE": "Notification deleted",
+      "MARK_ALL_READ": "All notifications marked as read",
+      "DELETE_ALL": "All notifications deleted",
+      "DELETE_ALL_READ": "All read notifications deleted"
+    }
+  },
+  "AVAILABILITY": {
+    "ONLINE": "Trực Tuyến",
+    "BUSY": "Bận",
+    "OFFLINE": "Không Trực Tuyến"
+  },
+  "NOTIFICATION_PREFERENCE": {
+    "TITLE": "Tuỳ chọn thông báo",
+    "EMAIL": "Thông Báo Email",
+    "PUSH": "Thông Báo",
+    "CONVERSATION_CREATE_PUSH": "A new conversation is created",
+    "CONVERSATION_ASSIGNEE_PUSH": "A conversation is assigned to you",
+    "CONVERSATION_ASSIGNED_NEW_MESSAGE_PUSH": "You are mentioned in a conversation",
+    "CONVERSATION_MENTION": "A new message is created in an assigned conversation",
+    "CONVERSATION_PARTICIPATING_NEW_MESSAGE_PUSH": "A new message is created in a participating conversation",
+    "CONVERSATION_SLA_MISSED_FIRST_RESPONSE": "A conversation misses first response SLA",
+    "CONVERSATION_SLA_MISSED_NEXT_RESPONSE": "A conversation misses next response SLA",
+    "CONVERSATION_SLA_MISSED_RESOLUTION": "A conversation misses resolution SLA"
+  },
+  "CONVERSATION_DETAILS": {
+    "TITLE": "Attributes",
+    "BROWSER": "Trình duyệt",
+    "OPERATING_SYSTEM": "Hệ điều hành",
+    "INITIATED_AT": "Bắt đầu lúc",
+    "INITIATED_FROM": "Bắt đầu từ",
+    "IP_ADDRESS": "Địa chỉ IP",
+    "CONVERSATION_ID": "Conversation ID",
+    "CLIPBOARD_SUCCESS": "Copied to clipboard"
+  },
+  "CONTACT_DETAILS": {
+    "TITLE": "Chi tiết liên hệ",
+    "EMAIL": "Email",
+    "PHONE_NUMBER": "Số điện thoại",
+    "CALL": "Call",
+    "CONTACT_ATTRIBUTES": "Thuộc tính của liên hệ",
+    "VALUE_UNAVAILABLE": "Không có sẵn"
+  },
+  "CONVERSATION_PARTICIPANTS": {
+    "TITLE": "Participants",
+    "TOTAL_PARTICIPANTS_TEXT": "%{count} people are participating.",
+    "TOTAL_PARTICIPANT_TEXT": "%{count} person is participating.",
+    "NO_PARTICIPANTS_TEXT": "No one is participating!.",
+    "WATCH_CONVERSATION": "Mở cuộc trò chuyện",
+    "YOU_ARE_WATCHING": "You are participating",
+    "NO_RECORDS_FOUND": "Không tìm thấy kết quả",
+    "SELECT_PARTICIPANTS": "Select agents",
+    "ADD_PARTICIPANTS": "Select participants",
+    "REMAINING_PARTICIPANTS_TEXT": "khác",
+    "REMAINING_PARTICIPANT_TEXT": "khác",
+    "ADD_PARTICIPANT": "Add Participant"
+  },
+  "CONTACT_ATTRIBUTES": {
+    "TITLE": "Thuộc tính của liên hệ"
+  },
+  "CONVERSATION_ACTION": {
+    "TITLE": "Hành động",
+    "OPTIONS": {
+      "OPEN": "Open",
+      "PENDING": "Pending",
+      "SNOOZED": "Snooze",
+      "RESOLVED": "resolve"
+    }
+  },
+  "CONVERSATION_TEAMS": {
+    "TITLE": "Gán nhóm",
+    "SELECT_TEAM": "Chọn nhóm",
+    "NO_RESULT": "No team found"
+  },
+  "CONVERSATION_LABELS": {
+    "TITLE": "Nhãn hội thoại",
+    "ADD_LABEL": "Thêm nhãn",
+    "EMPTY_LIST": "Vui lòng thêm nhãn cho tài khoản của bạn",
+    "NO_LABEL": "No labels assigned",
+    "UPDATE_LABEL": "Nhãn được cập nhật thành công",
+    "SELECTED": "Selected",
+    "NOT_SELECTED": "No labels selected",
+    "NO_RESULT": "Không tìm thấy nhãn"
+  },
+  "CONVERSATION_AGENTS": {
+    "TITLE": "Gán tổng đài viên",
+    "SELECT_AGENT": "Chọn thành viên",
+    "NO_RESULT": "No agent found"
+  },
+  "AGENT": {
+    "TITLE": "Chọn đại lý"
+  },
+  "TEAMS": {
+    "TITLE": "Chọn nhóm",
+    "EMPTY": "Please add teams to your account to assign conversations to teams.",
+    "CHANGE_TEAMS": "Nhóm của cuộc trò chuyện đã được thay đổi"
+  },
+  "ERRORS": {
+    "COMMON_ERROR": "Could not connect to Chatwoot Server, Please try again later",
+    "OfFLINE": "Bạn phải kết nối với Wi-fi hoặc mạng di động để trực tuyến trở lại",
+    "CANNOT_FETCH": "Đã xảy ra lỗi khi lấy thông tin, vui lòng thử lại",
+    "AUTH": "Tài khoản/Mật khẩu không đúng. Vui lòng thử lại",
+    "NO_ACCOUNTS_MESSAGE": "Bạn không có quyền truy cập vào bất kỳ tài khoản chatwoot nào"
+  },
+  "SUCCESS": {
+    "AUTH": "Đăng nhập thành công"
+  },
+  "SERVER_UPGRADE": {
+    "TITLE": "Cần nâng cấp máy chủ",
+    "WARNING_FOR_AGENT": "Có vẻ như bạn đang dùng máy chủ Chatwoot không hỗ trợ ứng dụng di động. Vui lòng liên hệ với quản trị viên để nâng cấp server Chatwoot của bạn.",
+    "WARNING_FOR_ADMIN": "Có vẻ như bạn đang dùng máy chủ Chatwoot không hỗ trợ ứng dụng di động. Cần nâng cấp máy chủ lên phiên bản %{minimumVersion} hoặc lớn hơn."
+  },
+  "EXIT": {
+    "TITLE": "Lối ra",
+    "SUBTITLE": "Khỏi bạn chắc chắn bạn muốn bỏ thuốc lá?",
+    "CANCEL": "Huỷ",
+    "OK": "Có"
+  },
+  "BANNER": {
+    "TWILIO_WHATSAPP_CAN_REPLY": "Bạn chỉ có thể phản hồi hội thoại này bằng tin nhắn mẫu vì",
+    "TWILIO_WHATSAPP_24_HOURS_WINDOW": "Giới hạn thời lượng tin nhắn 24 giờ",
+    "24_HOURS_WINDOW": "Giới hạn thời lượng tin nhắn 24 giờ",
+    "CANNOT_REPLY": "Bạn không thể trả lời do"
+  },
+  "SLA": {
+    "FRT": "FRT",
+    "NRT": "NRT",
+    "RT": "RT",
+    "STATUS": {
+      "FRT": "FRT %{status}",
+      "NRT": "NRT %{status}",
+      "RT": "RT %{status}",
+      "MISSED": "missed",
+      "DUE": "due"
+    },
+    "MISSES": {
+      "TITLE": "SLA Misses",
+      "FRT": "Thời gian phản hồi đầu tiên",
+      "NRT": "Next response time",
+      "RT": "Resolution time",
+      "SHOW_MORE": "{count} more",
+      "HIDE": "Hide {count} rows"
+    }
+  },
+  "MACRO": {
+    "TITLE": "Macros",
+    "SELECT_MACRO": "Select macro",
+    "ACTIONS": {
+      "RUN": "Run"
+    },
+    "EXECUTION_SUCCESS": "Macro được thực thi thành công",
+    "EXECUTION_ERROR": "Macro execution failed",
+    "NO_MACROS": "Không tìm thấy macro"
+  }
+}

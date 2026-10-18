@@ -1,0 +1,60 @@
+export const TEXT_ONLY = [
+  {
+    conversation_id: 1016,
+    status: 'read',
+    content_type: 'text',
+    processed_message_content: null,
+    id: 5319,
+    content: 'Here is the text message',
+    account_id: 2,
+    inbox_id: 486,
+    message_type: 1,
+    created_at: 1732788745,
+    updated_at: '2024-11-28T10:12:25.906Z',
+    private: false,
+    source_id: null,
+    content_attributes: {},
+    sender_type: 'User',
+    sender_id: 2,
+    external_source_ids: {},
+    additional_attributes: {},
+    sentiment: {},
+    conversation: {
+      assignee_id: 1,
+      unread_count: 0,
+      last_activity_at: 1732788745,
+      contact_inbox: {
+        source_id: 'f42d4630-7c41-4af3-bbc7-7c43e2aa2fc7',
+      },
+    },
+    attachments: [
+      {
+        id: 22,
+        message_id: 5319,
+        file_type: 'audio',
+        account_id: 2,
+        extension: null,
+        data_url: 'https://cdn.freesound.org/previews/769/769025_16085454-lq.mp3',
+        thumb_url: '',
+        file_size: 345644,
+        width: null,
+        height: null,
+      },
+    ],
+    sender: {
+      id: 1,
+      name: 'John',
+      available_name: 'John',
+      avatar_url:
+        'http://localhost:3000/rails/active_storage/representations/redirect/eyJfcmFpbHMiOnsibWVzc2FnZSI6IkJBaHBBaDBLIiwiZXhwIjpudWxsLCJwdXIiOiJibG9iX2lkIn19--4e625d80e7ef2dc41354392bc214832fbe640840/eyJfcmFpbHMiOnsibWVzc2FnZSI6IkJBaDdCem9MWm05eWJXRjBTU0lJY0c1bkJqb0dSVlE2RTNKbGMybDZaVjkwYjE5bWFXeHNXd2RwQWZvdyIsImV4cCI6bnVsbCwicHVyIjoidmFyaWF0aW9uIn19--ebe60765d222d11ade39165eae49cc4b2de18d89/picologo.png',
+      type: 'user',
+      availability_status: null,
+      thumbnail:
+        'http://localhost:3000/rails/active_storage/representations/redirect/eyJfcmFpbHMiOnsibWVzc2FnZSI6IkJBaHBBaDBLIiwiZXhwIjpudWxsLCJwdXIiOiJibG9iX2lkIn19--4e625d80e7ef2dc41354392bc214832fbe640840/eyJfcmFpbHMiOnsibWVzc2FnZSI6IkJBaDdCem9MWm05eWJXRjBTU0lJY0c1bkJqb0dSVlE2RTNKbGMybDZaVjkwYjE5bWFXeHNXd2RwQWZvdyIsImV4cCI6bnVsbCwicHVyIjoidmFyaWF0aW9uIn19--ebe60765d222d11ade39165eae49cc4b2de18d89/picologo.png',
+    },
+    previous_changes: {
+      updated_at: ['2024-11-28T10:12:25.364Z', '2024-11-28T10:12:25.906Z'],
+      status: ['sent', 'read'],
+    },
+  },
+];

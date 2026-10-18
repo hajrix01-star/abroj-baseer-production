@@ -1,0 +1,89 @@
+import { Meta, StoryObj } from '@storybook/react';
+import { ScrollView } from 'react-native';
+import { Platform } from 'react-native';
+import { KeyboardGestureArea, KeyboardProvider } from 'react-native-keyboard-controller';
+import { Animated } from 'react-native';
+import { configureStore, createSlice } from '@reduxjs/toolkit';
+import { tailwind } from '@/theme';
+import { MessagesList } from '../MessagesList';
+import { ChatWindowProvider, RefsProvider } from '@/context';
+import { Provider } from 'react-redux';
+import { INSTAGRAM_MESSAGES } from './mock-data/instagram';
+import { getAllGroupedMessages } from './mock-data/helper';
+
+const ALL_MESSAGES_MOCKDATA = getAllGroupedMessages(INSTAGRAM_MESSAGES);
+
+const PlatformSpecificKeyboardWrapperComponent =
+  Platform.OS === 'android' ? Animated.View : KeyboardGestureArea;
+
+const mockSendMessageSlice = createSlice({
+  name: 'sendMessage',
+  initialState: {
+    messageContent: '',
+    isPrivateMessage: false,
+    attachments: [],
+    quoteMessage: null,
+  },
+  reducers: {},
+});
+
+const mockConversationSlice = createSlice({
+  name: 'conversation',
+  initialState: {
+    ids: [29],
+    entities: {
+      29: {
+        id: 29,
+        status: 'open',
+        messages: ALL_MESSAGES_MOCKDATA,
+      },
+    },
+  },
+  reducers: {},
+});
+
+const mockStore = configureStore({
+  reducer: {
+    sendMessage: mockSendMessageSlice.reducer,
+    conversations: mockConversationSlice.reducer,
+  },
+});
+
+const meta: Meta<typeof MessagesList> = {
+  title: 'Messages List',
+  component: MessagesList,
+  argTypes: {},
+};
+
+export default meta;
+type Story = StoryObj<typeof MessagesList>;
+
+export const Instagram: Story = {
+  render: function AllVariantsComponent() {
+    return (
+      <Provider store={mockStore}>
+        <RefsProvider>
+          <KeyboardProvider>
+            <ChatWindowProvider conversationId={29}>
+              <ScrollView contentContainerStyle={tailwind.style('flex')}>
+                <PlatformSpecificKeyboardWrapperComponent
+                  style={tailwind.style('flex-1 bg-white')}
+                  interpolator="linear">
+                  <MessagesList
+                    messages={ALL_MESSAGES_MOCKDATA}
+                    isFlashListReady={false}
+                    setFlashListReady={() => {}}
+                    onEndReached={() => {}}
+                    onStartReached={() => {}}
+                    isEmailInbox={false}
+                    currentUserId={1}
+                  />
+                </PlatformSpecificKeyboardWrapperComponent>
+              </ScrollView>
+            </ChatWindowProvider>
+          </KeyboardProvider>
+        </RefsProvider>
+      </Provider>
+    );
+  },
+};

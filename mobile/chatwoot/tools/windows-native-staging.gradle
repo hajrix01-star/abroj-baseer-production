@@ -1,0 +1,13 @@
+// Optional Windows build-only path shortening. Do not alter native libraries.
+// AGP's default node_modules/<package>/android/.cxx path can exceed the legacy
+// Ninja MAX_PATH after appending ../prefab/.../ReactAndroidConfigVersion.cmake.
+gradle.beforeProject { candidate ->
+    ["com.android.library", "com.android.application"].each { pluginId ->
+        candidate.plugins.withId(pluginId) {
+            candidate.extensions.getByName("androidComponents").finalizeDsl { androidDsl ->
+                androidDsl.externalNativeBuild.cmake.buildStagingDirectory =
+                    candidate.rootProject.file("../.native-cxx/${candidate.name}")
+            }
+        }
+    }
+}

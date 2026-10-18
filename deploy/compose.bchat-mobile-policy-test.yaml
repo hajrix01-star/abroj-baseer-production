@@ -1,0 +1,51 @@
+# Prepared, NOT RUN. Synthetic disposable data only; no operational mounts.
+# From repo root: docker compose -f deploy/compose.bchat-mobile-policy-test.yaml up --abort-on-container-exit --exit-code-from odoo-tests
+name: bchat-mobile-policy-synthetic-20261018
+services:
+  db:
+    image: postgres@sha256:f1c3376c26f2609ab9f29f71f824103fe2fcd8ee0346485cb6122a4f93df6f94
+    pull_policy: never
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: bchat_trial_synthetic
+      POSTGRES_PASSWORD: synthetic_disposable_only
+    volumes: [synthetic_db:/var/lib/postgresql/data]
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U bchat_trial_synthetic -d postgres']
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    networks: [isolated]
+  odoo-tests:
+    image: odoo@sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd
+    pull_policy: never
+    depends_on:
+      db: {condition: service_healthy}
+    environment:
+      HOST: db
+      USER: bchat_trial_synthetic
+      PASSWORD: synthetic_disposable_only
+    command:
+      - odoo
+      - --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/trial-addons
+      - --database=bchat_mobile_policy_synthetic_20261018
+      - --db-filter=^bchat_mobile_policy_synthetic_20261018$$
+      - --no-database-list
+      - --without-demo=all
+      - --init=baseer_bchat_mobile_policy
+      - --test-enable
+      - --test-tags=/baseer_bchat_mobile_policy
+      - --stop-after-init
+      - --workers=0
+      - --max-cron-threads=0
+      - --http-interface=127.0.0.1
+      - --log-level=test
+    volumes:
+      - synthetic_odoo:/var/lib/odoo
+      - ../custom_addons:/mnt/trial-addons:ro
+    networks: [isolated]
+volumes:
+  synthetic_db:
+  synthetic_odoo:
+networks:
+  isolated: {internal: true}

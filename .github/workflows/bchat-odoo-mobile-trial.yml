@@ -1,0 +1,27 @@
+name: BChat Odoo mobile trial
+on:
+  pull_request:
+    paths:
+      - 'mobile/chatwoot/**'
+      - 'custom_addons/baseer_bchat_mobile_policy/**'
+      - '.github/workflows/bchat-odoo-mobile-trial.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  domain-and-types:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile/chatwoot
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npx --yes pnpm@10.11.0 install --frozen-lockfile --ignore-scripts
+      - run: npm run check:odoo
+      - run: npm run test:odoo
+      - name: Python syntax (not an Odoo runtime test)
+        working-directory: .
+        run: python -m compileall -q custom_addons/baseer_bchat_mobile_policy

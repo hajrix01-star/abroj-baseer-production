@@ -1,0 +1,83 @@
+import type { User } from '@/types/User';
+
+export interface AuthHeaders {
+  'access-token': string;
+  uid: string;
+  client: string;
+}
+export interface LoginPayload {
+  email: string;
+  password: string;
+}
+export interface LoginResponse {
+  user: User;
+  headers: AuthHeaders;
+}
+
+// How the sign-in verification code is delivered. Null means an authenticator app.
+export type VerificationChannel = 'email';
+
+export interface MfaRequiredResponse {
+  mfa_required: true;
+  mfa_token: string;
+  verification_channel: VerificationChannel | null;
+}
+
+// The account enforces two-factor authentication and this user has not enrolled yet.
+// Enrolment happens on the web app, so the setup token the server sends is not carried.
+export interface MfaSetupRequiredResponse {
+  mfa_setup_required: true;
+}
+
+export interface MfaVerificationPayload {
+  mfa_token: string;
+  otp_code?: string;
+  backup_code?: string;
+  remember_device?: boolean;
+}
+
+export interface LoginApiResponse {
+  data?: User;
+  mfa_required?: boolean;
+  mfa_setup_required?: boolean;
+  mfa_token?: string;
+  verification_channel?: VerificationChannel | null;
+}
+export interface ResetPasswordPayload {
+  email: string;
+}
+export interface ResetPasswordResponse {
+  message: string;
+}
+
+export interface AvailabilityPayload {
+  profile: {
+    availability: string;
+    account_id: string;
+  };
+}
+
+export interface ProfileResponse {
+  user: User;
+}
+
+export interface ApiErrorResponse {
+  success: boolean;
+  errors: string[];
+}
+
+export interface SetActiveAccountPayload {
+  profile: {
+    account_id: number;
+  };
+}
+
+export interface SsoAuthPayload {
+  email: string;
+  sso_auth_token: string;
+}
+
+export interface SsoAuthResponse {
+  user: User;
+  headers: AuthHeaders;
+}

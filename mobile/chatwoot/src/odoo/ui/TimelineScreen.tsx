@@ -74,16 +74,26 @@ export function TimelineScreen({
   const live = useRef(true);
   const latestAccess = useRef(canSend);
   latestAccess.current = canSend;
-  // One correction per layout pass. Later native size events cover recycled-cell settling;
-  // do not issue duplicate scrolls at unchanged geometry or restart a scheduled frame.
+  // Coalesce layout signals and let recycled cells commit before one correction.
+  // Native onScroll can still describe the previous tail, so prefer FlashList's fresh layout.
   const scrollLatest = useCallback(() => {
     if (scrollFrame.current !== null) return;
     scrollFrame.current = requestAnimationFrame(() => {
-      scrollFrame.current = null;
-      if (!live.current || dragging.current || !follow.current.following) return;
-      const { content, viewport, offset } = scrollGeometry.current;
-      if (viewport > 0 && Math.abs(Math.max(0, content - viewport) - offset) <= 1) return;
-      list.current?.scrollToEnd({ animated: false });
+      scrollFrame.current = requestAnimationFrame(() => {
+        scrollFrame.current = null;
+        if (!live.current || dragging.current || !follow.current.following) return;
+        let { content, viewport, offset } = scrollGeometry.current;
+        const current = list.current;
+        try {
+          if (current?.getChildContainerDimensions && current.getWindowSize && current.getAbsoluteLastScrollOffset) {
+            content = current.getChildContainerDimensions().height + current.getFirstItemOffset();
+            viewport = current.getWindowSize().height;
+            offset = current.getAbsoluteLastScrollOffset();
+          }
+        } catch { /* Before FlashList initializes, use the latest native measurements. */ }
+        if (viewport > 0 && Math.abs(Math.max(0, content - viewport) - offset) <= 1) return;
+        current?.scrollToEnd({ animated: false });
+      });
     });
   }, []);
   const followGeometry = useCallback(() => {
@@ -254,6 +264,7 @@ export function TimelineScreen({
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="none"
             onLoad={followGeometry}
+            onCommitLayoutEffect={followGeometry}
             onLayout={event => {
               if (event?.nativeEvent?.layout) scrollGeometry.current.viewport = event.nativeEvent.layout.height;
               followGeometry();

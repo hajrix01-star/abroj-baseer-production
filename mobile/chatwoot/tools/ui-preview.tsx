@@ -171,7 +171,7 @@ function PreviewApp() {
     // Android drawable resource names are not file:// URLs. Keep the production
     // viewer's file-only guard and create a small local geometric fixture instead.
     const uri = `${FS.cacheDirectory}cw36-local-image.png`;
-    const png = 'iVBORw0KGgoAAAANSUhEUgAAAHgAAABQCAYAAADSm7GJAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAD8SURBVHhe7dLLDQIxEAXBSY1wCIzAiAS0HFb8IqjpJ7UsH63yXK73x6a2bY5Hz0yBfQB//3S1LQsYX8D4AsYXML6A8QWML2B8AeMLGF/A+ALGFzC+gPEFjC9gfAHjCxhfwPgCxhcwvoDxBYwvYHwB4wsYX8D4AsYXML6A8QWML2B8AeMLGF/A+ALGFzC+gPGdwO+XFbvNil6mx3m8OWCvgPECxgsYL2C8gPECxgsYL2C8gPECxgsYL2C8gPECxgsYL2C8gPECxgsYL2C8gPECxgsYL2C8gPECxgsYL2C8gPECxgsYL2C8gPECxgsYL2C8gPECxgsYL2C8H+DyOoFX7c9vl3sCnfrJUaEI/mIAAAAASUVORK5CYII=';
+    const png = 'iVBORw0KGgoAAAANSUhEUgAAAHgAAABQCAIAAABd+SbeAAAAzElEQVR4nO3QUQmAAABEMZP4bU4jmsQIxngnDJZgx3k/v/Pe1+8c+ZroXfma6F2iRYvO5Wuid4kWLTqXr4neJVq06Fy+JnqXaNGic/ma6F2iRYvO5Wuid4kWLTqXr4neJVq06Fy+JnqXaNGic/ma6F2iRYvO5Wuid4kWLTqXr4neJVq06Fy+JnqXaNGic/ma6F2iRYvO5Wuid4kWLTqXr4neJVq06Fy+JnqXaNGic/ma6F2iRYvO5Wuid4kWLTqXr4neJVq06Fy+JnrXB2/sJFi/ek+mAAAAAElFTkSuQmCC';
     void FS.writeAsStringAsync(uri, png, { encoding: FS.EncodingType.Base64 }).then(() => setImageUri(uri));
   }, []);
   return (

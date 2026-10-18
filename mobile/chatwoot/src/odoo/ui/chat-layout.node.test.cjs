@@ -347,3 +347,19 @@ test('follow requests coalesce and do not scroll an already aligned timeline rep
   app.keyboard.keyboardDidShow(); list.onContentSizeChange(320, 1000); app.flushFrames();
   assert.equal(scrolls, 1, 'identical bottom geometry needs no correction');
 });
+
+test('committed list geometry overrides a stale aligned native scroll event when the tail grows', () => {
+  const app = timeline(); const tree = app.render(); let scrolls = 0;
+  const list = one(tree, 'FlashList'); let height = 1000;
+  list.ref.current = { scrollToEnd: () => scrolls++, getChildContainerDimensions: () => ({ height }),
+    getWindowSize: () => ({ height: 400 }), getFirstItemOffset: () => 0, getAbsoluteLastScrollOffset: () => 600 };
+  list.onScroll({ nativeEvent: { contentSize: { height: 1000 }, layoutMeasurement: { height: 400 }, contentOffset: { y: 600 } } });
+  app.flushFrames(); assert.equal(scrolls, 0);
+  height = 1080; // FlashList has laid out the new/recycled row; native onScroll is still the old one.
+  list.onCommitLayoutEffect(); app.flushFrames();
+  assert.equal(scrolls, 1, 'late tail layout must remain visible above the composer');
+  list.onScrollBeginDrag();
+  list.onScroll({ nativeEvent: { contentSize: { height: 1080 }, layoutMeasurement: { height: 400 }, contentOffset: { y: 100 } } });
+  list.onScrollEndDrag(); list.onCommitLayoutEffect(); app.flushFrames();
+  assert.equal(scrolls, 1, 'layout settling must not pull a history reader back down');
+});

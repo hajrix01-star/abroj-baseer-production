@@ -47,7 +47,7 @@ test('cached voice displays only real native peaks, seeks by drag/accessibility 
   app.props.voice.durationMs = 10000; app.props.voice.positionMs = 2500;
   tree = app.render(); assert.equal(one(tree, 'IconButton').icon, 'pause');
   const seek = one(tree, 'View', props => props.accessibilityRole === 'adjustable');
-  seek.onLayout({ nativeEvent: { layout: { width: 100 } } }); seek.onResponderRelease({ nativeEvent: { locationX: 80 } });
+  seek.onLayout({ nativeEvent: { layout: { width: 100 } } }); seek.onResponderGrant({ nativeEvent: { locationX: 20 } }); seek.onResponderRelease({ nativeEvent: { locationX: 80 } });
   assert.deepEqual(app.calls.at(-1), ['seek', 8000]);
   seek.onAccessibilityAction({ nativeEvent: { actionName: 'increment' } }); assert.deepEqual(app.calls.at(-1), ['seek', 7500]);
   one(tree, 'IconButton').onPress(); await settled(); assert.deepEqual(app.calls.at(-1), ['pause']);
@@ -60,6 +60,32 @@ test('background/recycling cancel analysis, ignore late peaks, and release the a
   assert.equal(app.calls.some(row => row[0] === 'cancel'), true); assert.equal(app.calls.some(row => row[0] === 'release'), true);
   assert.equal(nodes(app.render()).some(row => row.type === 'Image'), false);
   app.close();
+});
+test('active audio scrub keeps responder ownership against ancestor reply capture; inactive and invalidated rows yield', async () => {
+  const app = harness(); app.cache(); app.envelope(envelope); app.render(); await settled();
+  app.props.voice.activeUri = 'file:///owned/4.m4a'; app.props.voice.durationMs = 10000;
+  let rail = one(app.render(), 'View', props => props.accessibilityRole === 'adjustable');
+  rail.onLayout({ nativeEvent: { layout: { width: 100 } } });
+  assert.equal(rail.onStartShouldSetResponder(), true);
+  assert.equal(rail.onResponderTerminationRequest(), true, 'no scrub owns a gesture before grant');
+  rail.onResponderGrant({ nativeEvent: { locationX: 15 } });
+  assert.equal(rail.onResponderTerminationRequest(), false, 'reply-direction ancestor capture cannot steal an active scrub, even before a render');
+  rail.onResponderMove({ nativeEvent: { locationX: 85 } });
+  rail.onResponderRelease({ nativeEvent: { locationX: 85 } });
+  assert.deepEqual(app.calls.at(-1), ['seek', 8500]); assert.equal(rail.onResponderTerminationRequest(), true);
+  rail.onResponderGrant({ nativeEvent: { locationX: 20 } }); const oldRail = rail;
+  app.props.voice.activeUri = 'file:///unrelated.m4a';
+  rail = one(app.render(), 'View', props => props.accessibilityRole === 'adjustable');
+  let seekCount = app.calls.filter(row => row[0] === 'seek').length;
+  assert.equal(oldRail.onResponderTerminationRequest(), true); oldRail.onResponderRelease({ nativeEvent: { locationX: 90 } });
+  assert.equal(app.calls.filter(row => row[0] === 'seek').length, seekCount, 'a retained old handler cannot seek a newly active recording');
+  assert.equal(rail.onStartShouldSetResponder(), false); rail.onResponderGrant({ nativeEvent: { locationX: 10 } });
+  assert.equal(rail.onResponderTerminationRequest(), true, 'inactive rows never prevent reply/scroll transfer');
+  app.props.voice.activeUri = 'file:///owned/4.m4a'; rail = one(app.render(), 'View', props => props.accessibilityRole === 'adjustable');
+  rail.onResponderGrant({ nativeEvent: { locationX: 10 } }); app.background();
+  const before = app.calls.filter(row => row[0] === 'seek').length;
+  assert.equal(rail.onResponderTerminationRequest(), true); rail.onResponderRelease({ nativeEvent: { locationX: 90 } });
+  assert.equal(app.calls.filter(row => row[0] === 'seek').length, before, 'background cancels the old owner without seeking'); app.close();
 });
 test('only the active voice bubble subscribes to native progress; unrelated rows receive no clock writes', async () => {
   const app = harness(); app.cache(); app.envelope(envelope);

@@ -35,7 +35,8 @@
     { "id": "voice-progress-row", "description": "نبضات المشغل تخص فقاعة الصوت النشطة فقط", "suite": "test:odoo", "test": "only the active voice bubble subscribes to native progress; unrelated rows receive no clock writes" },
     { "id": "quote-authority-denial", "description": "قفزة الاقتباس تطبق سحب الجلسة أو العضوية ولا تمس جلسة أحدث", "suite": "test:odoo", "test": "quote navigation applies existing 401 session and 403 membership purges without touching a newer session" },
     { "id": "hide-persistence-ack", "description": "لا نجاح للإخفاء قبل حفظه، والبيانات التالفة لا تكشف المحتوى", "suite": "test:odoo", "test": "local hide commits only after storage ACK and invalid persisted metadata fails closed" },
-    { "id": "message-actions-readonly", "description": "المعلومات والإخفاء والتراجع متاحة للمشاهد ولا تكشف الرسالة المخفية", "suite": "test:odoo", "test": "message information and device-local hide undo remain available to read-only members without exposing hidden content" }
+    { "id": "message-actions-readonly", "description": "المعلومات والإخفاء والتراجع متاحة للمشاهد ولا تكشف الرسالة المخفية", "suite": "test:odoo", "test": "message information and device-local hide undo remain available to read-only members without exposing hidden content" },
+    { "id": "voice-scrub-ownership", "description": "السحب داخل شريط الصوت لا يتحول إلى رد، والنطاق المبطل لا يحتفظ بالإيماءة", "suite": "test:odoo", "test": "active audio scrub keeps responder ownership against ancestor reply capture; inactive and invalidated rows yield" }
   ],
   "openGaps": []
 }

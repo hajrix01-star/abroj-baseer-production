@@ -187,9 +187,8 @@ const transport = {
     }
     if (/\/rooms\/\d+\/messages(?:\?|$)/.test(r.path) && r.method === 'GET') {
       fixtureGets++;
-      if (!archiveMode) return { api_version: 2, messages, next_before_id: null };
       const before = Number(new URL(`https://ui-preview.invalid${r.path}`).searchParams.get('before_id')) || Infinity;
-      const eligible = archiveMessages.filter(row => row.id < before), page = eligible.slice(-30);
+      const eligible = (archiveMode ? archiveMessages : messages).filter(row => row.id < before), page = eligible.slice(-30);
       return { api_version: 2, messages: page, next_before_id: eligible.length > 30 ? page[0]!.id : null };
     }
     if (/\/rooms\/\d+\/messages$/.test(r.path) && r.method === 'POST') {

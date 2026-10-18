@@ -34,6 +34,10 @@ export function VoiceBubble({ room, media, voice, t, language, report, scopeKey,
   const analysis = useRef<string | null>(null);
   const width = useRef(1);
   const [scrub, setScrub] = useState<number | null>(null);
+  const scrubOwner = useRef<string | null>(null);
+  const currentPlayback = useRef(voice.activeUri);
+  currentPlayback.current = voice.activeUri;
+  const scrubIdentity = `${token}/${revision}`;
   const [clock, setClock] = useState<{ token: string; uri: string | null; positionMs: number; durationMs: number } | null>(null);
   const current = () => live.current.alive && live.current.token === token && live.current.revision === revision && AppState.currentState === 'active';
   const analyze = async (uri: string) => {
@@ -53,12 +57,13 @@ export function VoiceBubble({ room, media, voice, t, language, report, scopeKey,
       if (state !== 'active') {
         live.current.revision++; live.current.busy = false;
         if (analysis.current) NativeModules.BWorkWaveform?.cancel(analysis.current);
-        analysis.current = null; clearMemberAvatars(); setLocal(null); setAvatar(null); setBusyToken(null); setScrub(null);
+        analysis.current = null; scrubOwner.current = null; clearMemberAvatars(); setLocal(null); setAvatar(null); setBusyToken(null); setScrub(null);
       }
       setForeground(state === 'active');
     });
     return () => {
       if (live.current.token === token) { live.current.alive = false; live.current.revision++; }
+      scrubOwner.current = null;
       listener.remove();
       if (analysis.current) NativeModules.BWorkWaveform?.cancel(analysis.current);
       analysis.current = null;
@@ -127,6 +132,7 @@ export function VoiceBubble({ room, media, voice, t, language, report, scopeKey,
   };
   const fraction = (event: GestureResponderEvent) => Math.max(0, Math.min(1, event.nativeEvent.locationX / width.current));
   const seekable = active && duration > 0;
+  const canScrub = () => seekable && current() && currentPlayback.current === uri;
   return <View accessibilityLabel={t('voiceMessage')} style={{ width: 240, maxWidth: '100%', minHeight: 60, flexDirection: language === 'ar' ? 'row-reverse' : 'row', direction: 'ltr', alignItems: 'center', gap: 6 }}>
     <IconButton icon={active && voice.playing ? 'pause' : 'play'} label={active && voice.playing ? t('pause') : active && voice.paused ? t('resume') : t('play')} size={24} busy={busy} onPress={() => { void play(); }} style={{ width: 44, height: 44, borderRadius: 22 }} />
     <View style={{ flex: 1, minWidth: 0 }}>
@@ -134,11 +140,15 @@ export function VoiceBubble({ room, media, voice, t, language, report, scopeKey,
         accessibilityActions={seekable ? [{ name: 'increment' }, { name: 'decrement' }] : []}
         onAccessibilityAction={event => { if (seekable) void voice.seek(position + (event.nativeEvent.actionName === 'increment' ? 5000 : -5000)); }}
         onLayout={event => { width.current = Math.max(1, event.nativeEvent.layout.width); }}
-        onStartShouldSetResponder={() => seekable}
-        onResponderGrant={event => setScrub(fraction(event))}
-        onResponderMove={event => setScrub(fraction(event))}
-        onResponderRelease={event => { if (seekable) void voice.seek(fraction(event) * duration); setScrub(null); }}
-        onResponderTerminate={() => setScrub(null)}
+        onStartShouldSetResponder={canScrub}
+        onResponderGrant={event => { if (canScrub()) { scrubOwner.current = scrubIdentity; setScrub(fraction(event)); } }}
+        onResponderMove={event => { if (canScrub() && scrubOwner.current === scrubIdentity) setScrub(fraction(event)); }}
+        onResponderTerminationRequest={() => !(canScrub() && scrubOwner.current === scrubIdentity)}
+        onResponderRelease={event => {
+          if (canScrub() && scrubOwner.current === scrubIdentity) void voice.seek(fraction(event) * duration);
+          if (scrubOwner.current === scrubIdentity) { scrubOwner.current = null; setScrub(null); }
+        }}
+        onResponderTerminate={() => { if (scrubOwner.current === scrubIdentity) { scrubOwner.current = null; setScrub(null); } }}
         style={{ height: 44, justifyContent: 'center' }}>
         {envelope ? <View pointerEvents="none" style={{ height: 28, flexDirection: 'row', alignItems: 'center', gap: 1 }}>
           {envelope.peaks.map((peak, index) => <View key={index} style={{ flex: 1, minWidth: 1, height: Math.max(2, Math.sqrt(peak) * 28), borderRadius: 2, backgroundColor: index / 40 < progress ? colors.blue : colors.muted, opacity: index / 40 < progress ? 1 : 0.45 }} />)}

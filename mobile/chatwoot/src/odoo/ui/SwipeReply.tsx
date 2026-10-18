@@ -1,11 +1,11 @@
 import React, { useEffect, useRef } from 'react';
-import { PanResponder, View } from 'react-native';
+import { PanResponder, View, type StyleProp, type ViewStyle } from 'react-native';
 import { colors, Icon } from './components';
 import type { Language } from './dictionary';
 
 /** Direct finger feedback only; no animation, timer, or takeover of vertical history scrolling. */
-export function SwipeReply({ children, enabled, language, onReply, gestureKey }: {
-  children: React.ReactNode; enabled: boolean; language: Language; onReply: () => void; gestureKey: string;
+export function SwipeReply({ children, enabled, language, onReply, gestureKey, style }: {
+  children: React.ReactNode; enabled: boolean; language: Language; onReply: () => void; gestureKey: string; style?: StyleProp<ViewStyle>;
 }) {
   const view = useRef<View>(null);
   const indicator = useRef<View>(null);
@@ -18,10 +18,14 @@ export function SwipeReply({ children, enabled, language, onReply, gestureKey }:
     indicator.current?.setNativeProps({ style: { opacity: 0 } });
   };
   useEffect(() => { cancelled.current = true; gesture.current = null; reset(); }, [gestureKey, enabled, language]);
+  const shouldClaim = (_event: unknown, motion: { numberActiveTouches: number; dx: number; dy: number }) =>
+    current.current.enabled && motion.numberActiveTouches === 1
+      && motion.dx * sign() > 12 && Math.abs(motion.dx) > Math.abs(motion.dy) * 1.5;
   const responder = useRef(PanResponder.create({
     onStartShouldSetPanResponder: () => false,
-    onMoveShouldSetPanResponder: (_event, gesture) => current.current.enabled && gesture.numberActiveTouches === 1
-      && gesture.dx * sign() > 12 && Math.abs(gesture.dx) > Math.abs(gesture.dy) * 1.5,
+    // Negotiate moves before Pressability consumes the message as a tap. Never capture starts or vertical history gestures.
+    onMoveShouldSetPanResponderCapture: shouldClaim,
+    onMoveShouldSetPanResponder: shouldClaim,
     onPanResponderGrant: () => { cancelled.current = false; gesture.current = { key: current.current.gestureKey, language: current.current.language }; },
     onPanResponderMove: (_event, gesture) => {
       if (!current.current.enabled || gesture.numberActiveTouches > 1) { cancelled.current = true; reset(); return; }
@@ -39,7 +43,7 @@ export function SwipeReply({ children, enabled, language, onReply, gestureKey }:
     onPanResponderTerminate: () => { cancelled.current = true; gesture.current = null; reset(); },
     onPanResponderTerminationRequest: () => true,
   })).current;
-  return <View {...responder.panHandlers}>
+  return <View {...responder.panHandlers} style={style}>
     <View ref={indicator} pointerEvents="none" style={{ position: 'absolute', top: '40%', opacity: 0,
       ...(language === 'ar' ? { right: 8 } : { left: 8 }) }}><Icon icon="reply" size={20} color={colors.blue} /></View>
     <View ref={view}>{children}</View>

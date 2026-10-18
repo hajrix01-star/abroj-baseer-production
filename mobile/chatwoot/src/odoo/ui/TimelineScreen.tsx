@@ -471,6 +471,13 @@ export function TimelineScreen({
                 </View>
               );
               return (
+                <SwipeReply gestureKey={`${actionScope}/${message?.id ?? pending?.client_uuid}`} enabled={!!message && canSend} language={language} onReply={() => { if (message) chooseReply(message); }}
+                  style={{
+                    alignSelf: own
+                      ? language === 'ar' ? 'flex-start' : 'flex-end'
+                      : language === 'ar' ? 'flex-end' : 'flex-start',
+                    width: 'auto', maxWidth: '86%', minWidth: 100, marginVertical: 4,
+                  }}>
                 <Pressable
                   accessibilityLabel={
                     message ? `${message.author_name}: ${message.text}` : pending?.text
@@ -492,21 +499,7 @@ export function TimelineScreen({
                   }}
                   onLongPress={() => {
                     if (message) chooseReply(message);
-                  }}
-                  style={{
-                    alignSelf: own
-                      ? language === 'ar'
-                        ? 'flex-start'
-                        : 'flex-end'
-                      : language === 'ar'
-                        ? 'flex-end'
-                        : 'flex-start',
-                    width: 'auto',
-                    maxWidth: '86%',
-                    minWidth: 100,
-                    marginVertical: 4,
                   }}>
-                  <SwipeReply gestureKey={`${actionScope}/${message?.id ?? pending?.client_uuid}`} enabled={!!message && canSend} language={language} onReply={() => { if (message) chooseReply(message); }}>
                   <View
                     style={[
                       styles.card,
@@ -601,7 +594,6 @@ export function TimelineScreen({
                       {own && <MessageStatus state={state} t={t} />}
                     </View>
                   </View>
-                  </SwipeReply>
                   {message && actionsFor === message.id && (
                     <View
                       style={{
@@ -627,6 +619,7 @@ export function TimelineScreen({
                     </View>
                   )}
                 </Pressable>
+                </SwipeReply>
               );
             }}
           />

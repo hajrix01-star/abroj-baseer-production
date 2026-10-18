@@ -271,9 +271,9 @@ G4: AppShell مضغوط بعد الدخول، ومحادثة الهاتف تست
 | --- | --- | --- |
 | AppShell في `OdooTrialApp.tsx` | root؛ الحالة القائمة ChatView وlanguage/companyId/management/menu، وonMenu إلى Timeline | يخفي الرأس العام عند محادثة الهاتف فقط؛ يحفظ offline/error/outbox وتحذير الخروج؛ يمنع overlays/profile عند !presentationReady، ويغلقها عند الخلفية أو تغير السياق |
 | Drawer في `ui/NavigationDrawer.tsx` | root؛ visible/identity/language/t/offline/pendingCount/busy/canManage/close/onAction | home/profile/settings للعرض؛ إجراءات اللغة والتحديث والخروج/الإدارة القائمة؛ readonly، disabled/busy، AR/EN، رجوع/خلفية، يغلق قبل إدارة المجموعة أو الشركة |
-| CompanySelector في `ui/CompanySelector.tsx` مع `ui/companyNames.ts` | server_policy؛ identity/companyId/selectCompany/language/t/disabled | authorized IDs فقط، اسم اللغة ثمname ثمid، selected/empty/search/long text، يتحقق latestscope عند الاختيار ويغلق عند تغير السياق أو الخلفية؛ RoomsScreen مستهلكه الوحيد مبدئيًا |
+| CompanySelector في `ui/CompanySelector.tsx` مع `ui/companyNames.ts` | server_policy؛ identity/companyId/onSelect/language/t | authorized IDs فقط، اسم اللغة ثمname ثمid، selected/empty/search/long text، disabled داخلي عند غياب الشركات أو حق العرض؛ يتحقق latestscope عند الاختيار ويغلق عند تغير السياق أو الخلفية؛ RoomsScreen مستهلكه الوحيد مبدئيًا |
 | Icon وIconButton في `ui/components.tsx` | root؛ icon/label/onPress/disabled/busy/tone/size/style | أسماء أيقونات موحدة nativeSVG؛44dp على الأقل، accessibilityLabel/state، دائرة primary أو quiet/danger، لا emoji بديلًا للأيقونات ولا فعل hover |
-| Timeline/AttachmentTools في `ui/TimelineScreen.tsx` و`ui/MediaTools.tsx` | mobile_core؛ onMenu الاختياري؛ AttachmentTools children/hasText/onSendText/allowAttachments/sending مع props القائمة | نص وصوت ومرفقات خلف canSend/canAttach؛ busy/recording/readOnly/offline/reply؛ useVoiceSession وحراس السحب والعضوية دون تغيير؛ مساحةflex ولوحة مفاتيح |
+| Timeline/AttachmentTools في `ui/TimelineScreen.tsx` و`ui/MediaTools.tsx` | mobile_core؛ onMenu الاختياري؛ AttachmentTools children/hasText/onSendText/allowAttachments/disabled مع props القائمة | نص وصوت ومرفقات خلف canSend/canAttach؛ busy/recording/readOnly/offline/reply؛ useVoiceSession وحراس السحب والعضوية دون تغيير؛ مساحةflex ولوحة مفاتيح |
 
 اعتمد الحارس G0، والتصميم G4 مقبول مبدئيًا؛ هذا الجدول يكمل نقص المسارات/props للمراجعة النهائية المحدودة. المعاينة الاصطناعية من المكونات الفعلية مقبولة للتحقق320/400/900 بشرط عزلها عن release وعدم تجاوز حجاب الجاهزية فيه.
 
@@ -292,6 +292,12 @@ G4: AppShell مضغوط بعد الدخول، ومحادثة الهاتف تست
 التحقق المدمج بعد تنفيذ الواجهة: `npm.cmd run test:odoo` **103/103 PASS**، ثم `npm.cmd run check:odoo` PASS. يشمل الاختبار الفعلي للمكونات3 حالات company و6 timeline/composer و7 Shell/Drawer، و4 hook للصوت؛ ليست لقطات جهاز ولا إثبات وسائط طرفية. يحرس Shell الإجراء القديم وموافقة الخروج المؤجلة بعد تبدل الحساب/السياق، ويحجب profile والمحادثة أثناء فحص الجاهزية؛ مصدر core/runtime/native/backend غير متغير. طبّق formatter فقط بعد النتيجة دون تغيير سلوك. فشل استدعاء بناء المعاينة الأول قبل bundle بسبب مسار entry نسبي ينقصه `..`؛ صُحح init-script المخرجات وحده وأعيد البناء، لا عيب منتج أو إعادة فحوص ناجحة.
 
 المراجعة المستقلة للمصدر أغلقت CW32:20/20 حالة UI/component/hook مستقلة PASS، بلا موانعP0–P2. ملاحظةP3 عن سهم العودة العربي صححت بأسلوب rotate180deg للعربية وحدها مثل Drawer، وأعيدت6 حالات chat-layout فقط PASS؛ راجع الحارس السطر وأغلق الملاحظة دون إعادة فحوص غير متغيرة. حزمة preview بدأت قبل هذا السطر فلا تثبت شكل السهم المصحح، بينما البناء العادي النهائي يجب أن يتضمنه. قبول مصدر الفرق لا يساوي قبول التشغيل العام أو الجهاز النهائي؛ المصدر يجمد قبل حزمة التسليم.
+
+### تصحيح شاشة الكتابة من المعاينة الأصلية
+
+المعاينة المنفصلة الأولى نجح بناؤها4m34s، وأثبتت AR320 والقائمة/الملف/الإعدادات وEN400 وعرضًا واسعًا900x1200 (900x700 أداره Android إلى700x900 بسبب portrait، فلا يحسب كعرض900). أثبتت لقطة `cw32-keyboard-320-ar.png` عيبP1: ظهور الكيبورد يغطي المحرر لأن KAV في Android بلاbehavior؛ وجودadjustResize لم يكف في هذه البيئة. أوقف بناء الحزمة العاديةc61797f3 بـCtrlC ولم ينشر أو يسلّم أيAPK منها.
+
+التصحيح محلي في Timeline: wrapper يقيس موضعه الحقيقي على الشاشة، وKAV height فيAndroid/padding فيiOS، وoffset من القياس وحده دون تكرارsafeArea/header. sequence يرفض القياس الأقدم وreceiptLive يرفضه بعدunmount.7/7 chat-layout وTypeScript PASS بعد الفرق، والحارس قرأ الفرق وأعاد اختبار القياس الجديد وحده1/1 PASS؛ لا إعادةcore/backend/nativeauth. يبقى إغلاقP1 رهن دليل معاينة جديد لظهور المحرر والإرسال أعلى الكيبورد وعودة ارتفاع الرسائل بعد إغلاقه.
 
 ## سجل القرارات والعمليات
 

@@ -148,6 +148,18 @@ function timeline() {
   return { props, calls, voiceRights, tools, render: () => state.render(() => module.TimelineScreen(props)), release: () => release() };
 }
 
+test('Android composer avoidance uses the measured screen offset and ignores an older layout measurement', () => {
+  const app = timeline();
+  const tree = app.render();
+  const callbacks = [];
+  tree.props.ref.current = { measureInWindow: callback => callbacks.push(callback) };
+  tree.props.onLayout(); tree.props.onLayout();
+  callbacks[1](0, 84); callbacks[0](0, 24);
+  const avoidance = one(app.render(), 'KeyboardAvoidingView');
+  assert.equal(avoidance.behavior, 'height');
+  assert.equal(avoidance.keyboardVerticalOffset, 84);
+});
+
 test('timeline gives history the remaining height, caps inline input and dispatches a draft only once before durable enqueue', async () => {
   const app = timeline();
   let tree = app.render();

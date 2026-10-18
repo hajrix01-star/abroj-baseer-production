@@ -1,8 +1,10 @@
 # سجل معمارية بصير أودو
 
-## CW-ODOO-TRIAL-20261018 — عميل Chatwoot/React Native مستقل لأودو (APK تجريبي محلي)
+## CW-ODOO-TRIAL-20261018 — عميل Chatwoot/React Native مستقل لأودو (APK تجريبي متاح للتحميل)
 
 التصنيف `ARCHITECTURAL`: عميل Android تجريبي منفصل `com.baseer.bchat.trial` داخل `mobile/chatwoot`، يحفظ مصدر Chatwoot المقدم وترخيص MIT، ويستخدم واجهة Odoo منعزلة عن تسجيل Chatwoot وRedux/Sentry. الخادم الحالي يملك الهوية وحقوق المستخدم والشركة والعضوية والرسائل؛ امتداد `baseer_bchat_mobile_policy` يضيف مفتاح DM لكل شركة وعلامة المدير والزوج الثابت دون تصنيف الغرف القديمة أو تغيير الطلبات. الطابور المحلي UUID/ACK ونطاق origin+DB+uid+company+room+membership؛ وسائط بنفس جلسة Android مع no-follow وتحقق SHA256. المصدر الأساس `9a3abda312b739f62fba62c284b1c8d206f454d7` والمرشح `ddde3212a9fa30d3cadf33717fdd3fd5b27d9707`، المالك قائد تجربة BChat والبديل حارس المراجعة المستقل. نجح73اختبارًا وTypeScript وبناءAPK0.1.0 وتثبيته وفتح شاشة الدخولAR/EN على المحاكي؛ خادمTailscale لايُحل اسمه داخله، فلا جلسة فعلية أو قبول عزل طرفي. NO-GO تشغيليًا؛ لا نشرQA/Live أو تنفيذ اختباراتOdoo11. [العقد وبصمةAPK والدليل والموانع](../../build-governance/CHATWOOT-ODOO-TRIAL-20261018.md#نتيجة-الحزمة-والتشغيل--cw22). لا تعاد مراجعة ERP غير المتغير لهذه التجربة.
+
+رابط GitHub العام وبصمة إعادة التنزيل محفوظان في [CW23](../../build-governance/CHATWOOT-ODOO-TRIAL-20261018.md#رابط-التحميل-المحفوظ--cw23)؛ توزيع APK تجريبي فقط، دون نشر المصدر الجديد أو تغيير قرار NO-GO التشغيلي.
 
 ## BCH-NTP-20261016 — إشعارات BChat ومركز المتابعة والحارس التراكمي (مرشح محلي)
 

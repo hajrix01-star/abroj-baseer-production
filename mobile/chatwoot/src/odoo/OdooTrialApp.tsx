@@ -11,6 +11,7 @@ import { RoomsScreen, type ManagementMode } from './ui/RoomsScreen';
 import { TimelineScreen } from './ui/TimelineScreen';
 import { useChat } from './ui/useChat';
 import { presentationKey } from './ui/viewModel';
+import { VersionLabel } from './ui/VersionLabel';
 
 function SessionApp({ engine }: { engine: ChatEngine }) {
   const chat = useChat(engine);
@@ -60,11 +61,12 @@ function SessionApp({ engine }: { engine: ChatEngine }) {
             flexDirection: language === 'ar' ? 'row-reverse' : 'row',
           },
         ]}>
-        <View>
+        <View style={{ flexShrink: 1 }}>
           <Text style={[styles.title, direction(language)]}>{t('app')}</Text>
           <Label language={language} muted>
             {(chat.presentationReady && chat.identity?.profile?.name) || t('trial')}
           </Label>
+          <VersionLabel language={language} />
         </View>
         <View style={styles.row}>
           <Button
@@ -211,6 +213,7 @@ export default function OdooTrialApp() {
       ) : (
         <SafeAreaView style={[styles.page, { justifyContent: 'center', padding: 24 }]}>
           <Text style={styles.title}>{translator('ar')('app')}</Text>
+          <VersionLabel language="ar" />
           <Text style={styles.text}>{translator('ar')('config')}</Text>
         </SafeAreaView>
       )}

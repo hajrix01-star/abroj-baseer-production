@@ -54,6 +54,7 @@ export class ChatError extends Error {
   readonly status: number;
   loginStage?: LoginStage;
   networkFailure?: NetworkFailure;
+  sessionTrace?: string;
   constructor(code: string, status = 0) { super(code); this.name = 'ChatError'; this.code = code; this.status = status; }
 }
 const TTL = 24 * 60 * 60 * 1000;

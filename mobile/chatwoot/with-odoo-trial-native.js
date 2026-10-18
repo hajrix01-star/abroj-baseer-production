@@ -32,7 +32,7 @@ function copySources(projectRoot, applicationPackage) {
   const relative = 'com/baseer/bchat/trial/session';
   const destination = path.join(projectRoot, 'android/app/src/main/java', relative);
   fs.mkdirSync(destination, { recursive: true });
-  for (const file of ['CommitCookieHandler.java', 'OriginCookieJar.java', 'BaseerSessionNetworking.java']) {
+  for (const file of ['CommitCookieHandler.java', 'OriginCookieJar.java', 'BaseerSessionNetworking.java', 'SessionDiagnostics.java']) {
     fs.copyFileSync(path.join(__dirname, 'native/android', relative, file), path.join(destination, file));
   }
 }

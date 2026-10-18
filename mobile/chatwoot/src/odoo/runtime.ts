@@ -8,7 +8,7 @@ import type { FetchBlobResponse, StatefulPromise } from 'react-native-blob-util'
 import { ChatEngine, ChatError } from './core/ChatEngine';
 import type { Attachment, Bootstrap, Pending, Request, Room } from './core/ChatEngine';
 import { actorPattern, mediaFilePattern, nativeSessionOptions, retainNativeFile, scopePattern, trustedMedia } from './core/nativeBoundary';
-import { networkFailure } from './core/loginDiagnostics';
+import { nativeSessionTrace, networkFailure } from './core/loginDiagnostics';
 
 export const config = Object.freeze({
   origin: (process.env.EXPO_PUBLIC_ODOO_ORIGIN ?? '').trim(),
@@ -55,6 +55,7 @@ async function sessionNative(path: string, method: 'GET' | 'POST', headers: Reco
   const task = BlobUtil.config({ ...nativeSessionOptions, ...(output ? { path: decodeURI(output.replace(/^file:\/\//, '')), overwrite: true } : {}) })
     .fetch(method, fixedURL(path), { ...headers, 'X-Odoo-Database': config.database }, body);
   let tooLarge = false;
+  let sessionTrace: string | undefined;
   const abort = () => { task.cancel(() => undefined); };
   signal?.addEventListener('abort', abort); tasks.add(task);
   task.progress({ interval: 100 }, received => { if (received > byteLimit) { tooLarge = true; abort(); } });
@@ -62,6 +63,10 @@ async function sessionNative(path: string, method: 'GET' | 'POST', headers: Reco
     const response = await task;
     if (generation !== epoch || signal?.aborted) throw new ChatError('stale_session');
     if (tooLarge) throw new ChatError('file_too_large');
+    // The native interceptor replaces this private header with bounded bits.
+    // Snapshot it before redirect rejection and engine cleanup destroy the session.
+    if (method === 'GET' && path === '/bchat/api/v2/bootstrap')
+      sessionTrace = nativeSessionTrace(headersOf(response)['x-baseer-native-session']);
     const status = response.info()?.status;
     if (!Number.isInteger(status) || status < 100 || status > 599) throw new ChatError('native_response_missing');
     // BlobUtil's Android interceptor records the INITIAL URL as entry zero.
@@ -80,7 +85,10 @@ async function sessionNative(path: string, method: 'GET' | 'POST', headers: Reco
   } catch (error) {
     if (generation !== epoch || signal?.aborted) throw new ChatError('stale_session');
     if (tooLarge) throw new ChatError('file_too_large');
-    if (error instanceof ChatError) throw error;
+    if (error instanceof ChatError) {
+      if (sessionTrace) error.sessionTrace = sessionTrace;
+      throw error;
+    }
     const failure = new ChatError('connection_failed');
     failure.networkFailure = networkFailure(error);
     throw failure;

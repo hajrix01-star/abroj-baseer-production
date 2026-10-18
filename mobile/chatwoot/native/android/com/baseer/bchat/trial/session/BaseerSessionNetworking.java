@@ -50,8 +50,10 @@ public final class BaseerSessionNetworking {
       }
     }, 5000);
     OriginCookieJar jar = new OriginCookieJar(origin, handler);
+    SessionDiagnostics diagnostics = new SessionDiagnostics(origin);
     OkHttpClientProvider.setOkHttpClientFactory(() -> OkHttpClientProvider.createClientBuilder()
-        .cookieJar(jar).addInterceptor(jar).followRedirects(false).followSslRedirects(false).build());
+        .cookieJar(jar).addInterceptor(jar).addNetworkInterceptor(diagnostics)
+        .followRedirects(false).followSslRedirects(false).build());
     // Fail closed if a template change initialized the shared client before this registration.
     if (OkHttpClientProvider.getOkHttpClient().cookieJar() != jar) {
       throw new IllegalStateException("native_cookie_factory_order");

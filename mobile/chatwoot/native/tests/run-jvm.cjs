@@ -29,7 +29,8 @@ const cp = [path.join(temp, 'classes.jar'), path.join(android, 'platforms/androi
   artifact('org.jetbrains.kotlin', 'kotlin-stdlib', '2.2.20', '.jar')].join(path.delimiter);
 const source = path.join(__dirname, '../android/com/baseer/bchat/trial/session');
 execFileSync(bin('javac'), ['-encoding', 'UTF-8', '-cp', cp, '-d', temp,
-  ...['CommitCookieHandler.java', 'OriginCookieJar.java', 'BaseerSessionNetworking.java'].map(file => path.join(source, file)),
-  path.join(__dirname, 'SessionCookieHarness.java')], { stdio: 'inherit' });
+  ...['CommitCookieHandler.java', 'OriginCookieJar.java', 'BaseerSessionNetworking.java', 'SessionDiagnostics.java'].map(file => path.join(source, file)),
+  path.join(__dirname, 'SessionCookieHarness.java'), path.join(__dirname, 'SessionDiagnosticsHarness.java')], { stdio: 'inherit' });
 execFileSync(bin('java'), ['-ea', '-cp', temp + path.delimiter + cp, 'com.baseer.bchat.trial.session.SessionCookieHarness'], { stdio: 'inherit' });
+execFileSync(bin('java'), ['-ea', '-cp', temp + path.delimiter + cp, 'com.baseer.bchat.trial.session.SessionDiagnosticsHarness'], { stdio: 'inherit' });
 console.log('Compiled production Android adapter with installed RN and android-36 classes. Temporary classes: ' + temp);

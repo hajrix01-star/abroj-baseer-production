@@ -2,6 +2,8 @@ export type Language = 'ar' | 'en';
 const ar = {
   app: 'بصير · محادثات',
   trial: 'نسخة تجريبية',
+  version: 'الإصدار',
+  build: 'البناء',
   login: 'تسجيل الدخول',
   user: 'اسم المستخدم',
   password: 'كلمة المرور',
@@ -86,6 +88,8 @@ const ar = {
 export type Word = keyof typeof ar;
 const en: Record<Word, string> = {
   app: 'Baseer · Chat',
+  version: 'Version',
+  build: 'Build',
   trial: 'Trial',
   login: 'Sign in',
   user: 'Username',

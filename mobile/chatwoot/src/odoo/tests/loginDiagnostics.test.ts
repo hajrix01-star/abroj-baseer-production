@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { loginDiagnostic, networkFailure } from '../core/loginDiagnostics.ts';
+import { loginDiagnostic, nativeSessionTrace, networkFailure } from '../core/loginDiagnostics.ts';
 
 test('native network hints classify known failures without returning native text', () => {
   assert.equal(
@@ -20,15 +20,15 @@ test('login diagnostic only exposes allowlisted phase, failure and HTTP status',
       loginStage: 'session_close',
       networkFailure: 'DNS',
     }),
-    'LOGIN2-CLOSE-DNS-0',
+    'LOGIN3-CLOSE-DNS-0',
   );
   assert.equal(
     loginDiagnostic({ code: 'redirect_denied', loginStage: 'bootstrap', status: 303 }),
-    'LOGIN2-PROFILE-REDIRECT-303',
+    'LOGIN3-PROFILE-REDIRECT-303',
   );
   assert.equal(
     loginDiagnostic({ code: 'native_response_missing', loginStage: 'authenticate' }),
-    'LOGIN2-AUTH-NATIVE-0',
+    'LOGIN3-AUTH-NATIVE-0',
   );
   assert.equal(
     loginDiagnostic({
@@ -37,10 +37,25 @@ test('login diagnostic only exposes allowlisted phase, failure and HTTP status',
       networkFailure: 'private.example',
       status: 'secret',
     }),
-    'LOGIN2-LOCAL-OTHER-0',
+    'LOGIN3-LOCAL-OTHER-0',
   );
   assert.equal(
     loginDiagnostic(new Error('password=secret session_id=private')),
-    'LOGIN2-LOCAL-OTHER-0',
+    'LOGIN3-LOCAL-OTHER-0',
   );
+});
+
+test('native session observations accept five bits only and never export cookie material', () => {
+  const valid = 'I1A1S1M1L1';
+  assert.equal(nativeSessionTrace(valid), valid);
+  assert.equal(loginDiagnostic({ code: 'redirect_denied', loginStage: 'bootstrap', status: 303,
+    sessionTrace: valid }), 'LOGIN3-PROFILE-REDIRECT-303-I1A1S1M1L1');
+  for (const value of [null, 123, {}, 'session_id=secret', `${valid}\n`, `${valid}-password=secret`,
+    'I2A1S1M1L1', 'I1S1M1L1']) {
+    assert.equal(nativeSessionTrace(value), undefined);
+    assert.equal(loginDiagnostic({ code: 'redirect_denied', loginStage: 'bootstrap', status: 303,
+      sessionTrace: value }), 'LOGIN3-PROFILE-REDIRECT-303');
+  }
+  assert.equal(loginDiagnostic({ code: 'redirect_denied', loginStage: 'authenticate', status: 303,
+    sessionTrace: valid }), 'LOGIN3-AUTH-REDIRECT-303');
 });

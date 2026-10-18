@@ -2,6 +2,13 @@
 export type LoginStage = 'session_close' | 'authenticate' | 'bootstrap' | 'rooms' | 'storage';
 export type NetworkFailure = 'DNS' | 'TLS' | 'TIMEOUT' | 'CONNECT' | 'OTHER';
 
+/** Native-only observations cross the bridge as five bits, never cookie data. */
+export function nativeSessionTrace(value: unknown): string | undefined {
+  return typeof value === 'string' && /^I[01]A[01]S[01]M[01]L[01]$/.test(value)
+    ? value
+    : undefined;
+}
+
 export function networkFailure(error: unknown): NetworkFailure {
   const message = error instanceof Error ? error.message : '';
   if (/unable to resolve host|unknownhost|enotfound|no address associated/i.test(message))
@@ -44,6 +51,7 @@ export function loginDiagnostic(error: unknown): string {
           status?: unknown;
           loginStage?: unknown;
           networkFailure?: unknown;
+          sessionTrace?: unknown;
         })
       : {};
   const stage =
@@ -67,5 +75,6 @@ export function loginDiagnostic(error: unknown): string {
     value.status <= 599
       ? value.status
       : 0;
-  return `LOGIN2-${stage}-${failure}-${status}`;
+  const trace = stage === 'PROFILE' ? nativeSessionTrace(value.sessionTrace) : undefined;
+  return `LOGIN3-${stage}-${failure}-${status}${trace ? `-${trace}` : ''}`;
 }

@@ -39,6 +39,7 @@ let rooms = [roomA, roomB]; let mediaRight = true; let offline = false; let redi
 let beforeNative: ((path: string) => Promise<void>) | undefined;
 let missingMetadata = false;
 let nativeFailure: Error | undefined;
+let bootstrapDiagnostic: string | undefined;
 const calls: { method: string; path: string; options: Record<string, unknown> }[] = [];
 function nativeFetch(options: Record<string, unknown>, method: string, url: string, requestHeaders: Record<string, string>) {
   const path = new URL(url).pathname; calls.push({ method, path, options });
@@ -49,7 +50,10 @@ function nativeFetch(options: Record<string, unknown>, method: string, url: stri
     if (nativeFailure) throw nativeFailure;
     if (offline) throw new Error('network unavailable');
     let status = 200; let body: unknown; const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-    if (redirect) status = 302;
+    if (bootstrapDiagnostic !== undefined && path === '/bchat/api/v2/bootstrap') {
+      status = 303; headers['X-Baseer-Native-Session'] = bootstrapDiagnostic;
+    }
+    else if (redirect) status = 302;
     else if (unauthorized) { status = 401; body = { error: { code: 'session_expired' } }; }
     else if (revoked && path.startsWith('/bchat/')) { status = 403; body = { error: { code: 'forbidden' } }; }
     // Actual QA fixture shape without a cookie, with fixed X-Odoo-Database.
@@ -166,6 +170,27 @@ test('native DNS failure retains original retry code and adds only a sanitized h
     await assert.rejects(engine.login('alice', 'private', true), { code: 'connection_failed', networkFailure: 'DNS', loginStage: 'session_close' });
     assert.equal(engine.identity, null);
   } finally { nativeFailure = undefined; }
+});
+
+test('bootstrap redirect snapshots native bits before cleanup and ignores non-bit header values', async () => {
+  for (const value of ['I1A1S1M1L1', 'session_id=private-sentinel']) {
+    bootstrapDiagnostic = value;
+    const before = calls.length;
+    try {
+      await assert.rejects(engine.login('alice', 'private', true), (error: any) => {
+        assert.equal(error.code, 'redirect_denied');
+        assert.equal(error.status, 303);
+        assert.equal(error.loginStage, 'bootstrap');
+        assert.equal(error.sessionTrace, value === 'I1A1S1M1L1' ? value : undefined);
+        assert.equal(JSON.stringify(error).includes('private-sentinel'), false);
+        return true;
+      });
+      assert.deepEqual(calls.slice(before).map(call => call.path), [
+        '/web/session/destroy', '/web/session/authenticate', '/bchat/api/v2/bootstrap', '/web/session/destroy',
+      ]);
+      assert.equal(engine.identity, null);
+    } finally { bootstrapDiagnostic = undefined; }
+  }
 });
 
 test('real runtime logout removes cached files and refuses HTTP redirects before authenticate', async () => {

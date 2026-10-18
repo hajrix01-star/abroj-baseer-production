@@ -1,5 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { AppState, Image, PermissionsAndroid, Platform, View } from 'react-native';
+import {
+  ActivityIndicator,
+  AppState,
+  Image,
+  PermissionsAndroid,
+  Platform,
+  Pressable,
+  View,
+} from 'react-native';
 import { pick, types, isErrorWithCode, errorCodes } from '@react-native-documents/picker';
 import { launchImageLibrary } from 'react-native-image-picker';
 import FileViewer from 'react-native-file-viewer';
@@ -12,8 +20,9 @@ import AudioRecorderPlayer, {
 } from 'react-native-audio-recorder-player';
 import type { Attachment, Room } from '../core/ChatEngine';
 import { localMedia, stageFile } from '../runtime';
-import { Button, colors, IconButton, Label, styles } from './components';
+import { Button, colors, Icon, IconButton, Label, styles } from './components';
 import { errorWord, type Language, type Translate, type Word } from './dictionary';
+import { ImageViewer } from './ImageViewer';
 
 export function useVoiceSession(
   scope: string,
@@ -377,6 +386,7 @@ export function MediaTile({
   t,
   language,
   report,
+  scopeKey = '',
 }: {
   room: Room;
   media: Record<string, unknown>;
@@ -384,28 +394,91 @@ export function MediaTile({
   t: Translate;
   language: Language;
   report: (word: Word) => void;
+  scopeKey?: string;
 }) {
-  const [uri, setUri] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-  const live = useRef(true);
-  useEffect(
-    () => () => {
-      live.current = false;
-    },
-    [],
-  );
+  // FlashList may recycle the same component for another attachment. Tag every
+  // presentation and pending result, so an old image cannot flash in a new row.
+  const key = JSON.stringify([
+    scopeKey,
+    room.company_id,
+    room.id,
+    room.membership_id,
+    media.id,
+    media.kind,
+    media.mime,
+    media.size,
+    media.sha256,
+    media.name,
+  ]);
+  const [cached, setCached] = useState<{ key: string; uri: string } | null>(null);
+  const [opening, setOpening] = useState<string | null>(null);
+  const [showing, setShowing] = useState<string | null>(null);
+  const live = useRef({ key, revision: 0, serial: 0, active: true, busy: false });
+  if (live.current.key !== key) {
+    live.current = {
+      key,
+      revision: live.current.revision + 1,
+      serial: live.current.serial + 1,
+      active: true,
+      busy: false,
+    };
+  }
+  const presentation = `${key}/${live.current.revision}`;
+  const uri = cached?.key === presentation ? cached.uri : null;
+  const busy = opening === presentation;
+  useEffect(() => {
+    live.current.active = AppState.currentState === 'active';
+    const invalidate = () => {
+      live.current.serial++;
+      live.current.busy = false;
+      setShowing(null);
+      setOpening(null);
+    };
+    const listener = AppState.addEventListener('change', state => {
+      live.current.active = state === 'active';
+      if (state !== 'active') invalidate();
+    });
+    return () => {
+      live.current.active = false;
+      live.current.serial++;
+      live.current.busy = false;
+      listener.remove();
+    };
+  }, [key]);
   const open = async () => {
-    setBusy(true);
+    if (
+      !live.current.active ||
+      live.current.key !== key ||
+      live.current.busy ||
+      AppState.currentState !== 'active'
+    )
+      return;
+    live.current.busy = true;
+    const serial = ++live.current.serial;
+    const current = () =>
+      live.current.active &&
+      live.current.key === key &&
+      live.current.serial === serial &&
+      AppState.currentState === 'active';
+    setOpening(presentation);
     try {
+      // Keep runtime's association, identity, permission, hash and session fences.
+      // No effect automatically downloads history images, and no remote URI is rendered.
       const local = await localMedia(room, media);
-      if (!live.current) return;
-      if (media.kind === 'image') setUri(local);
-      else if (media.kind === 'audio') await voice.play(local);
+      if (!current()) return;
+      if (media.kind === 'image') {
+        if (!local.startsWith('file://')) throw new Error('invalid_local_image');
+        setCached({ key: presentation, uri: local });
+        setShowing(presentation);
+      } else if (media.kind === 'audio') await voice.play(local);
       else await FileViewer.open(local.replace(/^file:\/\//, ''), { showOpenWithDialog: true });
     } catch (e) {
-      if (live.current) report(errorWord(e));
+      if (current()) report(errorWord(e));
     } finally {
-      if (live.current) setBusy(false);
+      if (current()) {
+        live.current.busy = false;
+        setOpening(null);
+      }
     }
   };
   return (
@@ -413,22 +486,84 @@ export function MediaTile({
       <Label language={language} muted>
         {String(media.name ?? t('file'))}
       </Label>
-      {uri && (
-        <Image
-          accessibilityLabel={String(media.name ?? t('photo'))}
-          source={{ uri }}
-          resizeMode="contain"
-          style={{ width: 240, maxWidth: '100%', height: 180, borderRadius: 12 }}
+      {media.kind === 'image' ? (
+        <>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('viewPhoto')}
+            accessibilityHint={t('zoomPhoto')}
+            accessibilityState={{ busy, disabled: busy }}
+            disabled={busy}
+            onPress={() => {
+              void open();
+            }}
+            style={({ pressed }) => ({
+              width: 240,
+              maxWidth: '100%',
+              height: 180,
+              borderRadius: 12,
+              overflow: 'hidden',
+              backgroundColor: colors.pale,
+              alignItems: 'center',
+              justifyContent: 'center',
+              opacity: pressed ? 0.8 : 1,
+            })}>
+            {uri ? (
+              <Image
+                source={{ uri }}
+                resizeMode="contain"
+                accessible={false}
+                style={{ width: '100%', height: '100%' }}
+              />
+            ) : (
+              <View style={{ gap: 6, alignItems: 'center', padding: 12 }}>
+                <Icon icon="image" size={34} color={colors.blue} />
+                <Label language={language} muted>
+                  {t('viewPhoto')}
+                </Label>
+              </View>
+            )}
+            <View
+              pointerEvents="none"
+              style={{
+                position: 'absolute',
+                bottom: 8,
+                right: 8,
+                width: 36,
+                height: 36,
+                borderRadius: 18,
+                backgroundColor: colors.white,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}>
+              {busy ? (
+                <ActivityIndicator color={colors.blue} />
+              ) : (
+                <Icon icon="maximize" size={20} color={colors.blue} />
+              )}
+            </View>
+          </Pressable>
+          {showing === presentation && uri && (
+            <ImageViewer
+              key={`${presentation}/${uri}`}
+              uri={uri}
+              name={String(media.name ?? t('photo'))}
+              language={language}
+              t={t}
+              onClose={() => setShowing(null)}
+            />
+          )}
+        </>
+      ) : (
+        <Button
+          quiet
+          title={media.kind === 'audio' ? t('play') : t('open')}
+          busy={busy}
+          onPress={() => {
+            void open();
+          }}
         />
       )}
-      <Button
-        quiet
-        title={media.kind === 'audio' ? t('play') : t('open')}
-        busy={busy}
-        onPress={() => {
-          void open();
-        }}
-      />
       {media.kind === 'audio' && voice.playing && (
         <Button
           quiet

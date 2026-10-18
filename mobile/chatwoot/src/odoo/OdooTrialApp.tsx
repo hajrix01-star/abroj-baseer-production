@@ -231,7 +231,7 @@ export function SessionApp({ engine }: { engine: ChatEngine }) {
         </View>
       ) : (
         <>
-          {(chat.offline || chat.pending.length > 0) && (
+          {(chat.offline || (!chat.selected && chat.pending.length > 0)) && (
             <View
               style={[
                 styles.banner,

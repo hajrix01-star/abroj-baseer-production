@@ -198,6 +198,19 @@ test('selected phone conversation hides duplicate app header and opens its own m
   assert.equal(one(tree, 'TimelineScreen').onMenu, undefined);
 });
 
+test('online queue updates never insert a height-changing banner above an open conversation; offline warning remains', () => {
+  const app = session();
+  app.chat.selected = { id: 4, company_id: 1, membership_id: 9 };
+  app.chat.pending = [{ client_uuid: 'test' }];
+  assert.equal(text(app.render()).includes(dictionary.translator('ar')('queue')), false);
+  app.chat.pending = [];
+  assert.equal(text(app.render()).includes(dictionary.translator('ar')('queue')), false);
+  app.chat.offline = true;
+  assert.ok(text(app.render()).includes(dictionary.translator('ar')('offlineNote')));
+  app.chat.offline = false; app.chat.selected = null; app.chat.pending = [{}];
+  assert.ok(text(app.render()).includes(dictionary.translator('ar')('queue')));
+});
+
 test('SessionApp routes current-scope language, refresh and policy actions and invalidates scheduled old policy', () => {
   const app = session();
   let tree = app.render();

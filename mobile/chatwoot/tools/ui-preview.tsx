@@ -1,9 +1,13 @@
 /** Isolated native layout fixture. Never imported by the application entry point. */
 import React, { useEffect, useState } from 'react';
-import { Text } from 'react-native';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { Text, View } from 'react-native';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { registerRootComponent } from 'expo';
 import * as Crypto from 'expo-crypto';
+import { Asset } from 'expo-asset';
+import { ImageViewer } from '../src/odoo/ui/ImageViewer';
+import { translator } from '../src/odoo/ui/dictionary';
+import { Button } from '../src/odoo/ui/components';
 import { SessionApp } from '../src/odoo/OdooTrialApp';
 import {
   ChatEngine,
@@ -124,6 +128,8 @@ const transport = {
     if (/\/rooms\/\d+\/messages/.test(r.path) && r.method === 'GET')
       return { api_version: 2, messages, next_before_id: null };
     if (/\/rooms\/\d+\/messages$/.test(r.path) && r.method === 'POST') {
+      // Local deterministic latency exercises a responsive composer before remote ACK.
+      await new Promise(resolve => setTimeout(resolve, 1500));
       const payload = JSON.parse(r.form!.payload!);
       const id = messages.length + 1;
       const parent = messages.find(message => message.id === payload.reply_to_message_id);
@@ -157,12 +163,27 @@ const engine = new ChatEngine({
 });
 function PreviewApp() {
   const [ready, setReady] = useState(false);
+  const [surface, setSurface] = useState<'choose' | 'chat' | 'image'>('choose');
+  const [imageUri, setImageUri] = useState('');
   useEffect(() => {
     void engine.login('synthetic', 'synthetic', true).then(() => setReady(true));
+    const asset = Asset.fromModule(require('../assets/icon.png'));
+    void asset.downloadAsync().then(() => setImageUri(asset.localUri ?? ''));
   }, []);
   return (
     <SafeAreaProvider>
-      {ready ? <SessionApp engine={engine} /> : <Text>{marker}</Text>}
+      {!ready ? <Text>{marker}</Text> : surface === 'chat' ? <SessionApp engine={engine} /> : surface === 'image' ? (
+        <ImageViewer uri={imageUri} name="CW36 local test image" language="ar" t={translator('ar')}
+          onClose={() => setSurface('choose')} />
+      ) : (
+        <SafeAreaView style={{ flex: 1, padding: 24, justifyContent: 'center' }}>
+          <View style={{ gap: 20 }}>
+            <Text>{marker}</Text>
+            <Button title="CW36 chat check" onPress={() => setSurface('chat')} />
+            <Button title="CW36 image check" disabled={!imageUri} onPress={() => setSurface('image')} />
+          </View>
+        </SafeAreaView>
+      )}
     </SafeAreaProvider>
   );
 }

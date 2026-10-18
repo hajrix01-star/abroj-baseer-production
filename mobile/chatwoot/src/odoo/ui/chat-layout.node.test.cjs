@@ -237,7 +237,7 @@ test('actual list follows keyboard/viewport/composer changes and durable own sen
   one(tree, 'Field').onChangeText('visible above keyboard'); tree = app.render();
   one(tree, app.tools).onSendText(); app.release(); await settled(); app.render(); app.flushFrames();
   assert.equal(one(app.render(), 'Field').value, '');
-  assert.ok(scrolls > beforeResize + 2);
+  assert.ok(scrolls >= beforeResize + 2, 'one resize correction and one durable-send correction');
   assert.equal(one(app.render(), 'FlashList').keyboardShouldPersistTaps, 'handled');
 });
 
@@ -321,4 +321,29 @@ test('receipt icons preserve server and queue semantics including unknown; no fa
     assert.equal(tree.props.accessibilityLabel, state ?? 'unknown');
     assert.equal(one(tree, 'Icon').color, state === 'read' ? colors.blue : state === 'failed' ? colors.danger : colors.muted);
   }
+});
+
+test('local durable send unlocks the composer without waiting for network synchronization', async () => {
+  const app = timeline(); let finishSync;
+  app.props.chat.offline = false;
+  app.props.chat.sync = () => new Promise(resolve => { finishSync = resolve; });
+  one(app.render(), 'Field').onChangeText('first');
+  one(app.render(), app.tools).onSendText(); app.release(); await settled();
+  assert.equal(one(app.render(), app.tools).disabled, false, 'network wait must not block typing/sending');
+  one(app.render(), 'Field').onChangeText('second');
+  one(app.render(), app.tools).onSendText();
+  assert.equal(app.calls.filter(call => Array.isArray(call) && call[0] === 'text').length, 2);
+  app.release(); finishSync?.(); await settled();
+});
+
+test('follow requests coalesce and do not scroll an already aligned timeline repeatedly', () => {
+  const app = timeline(); const tree = app.render(); let scrolls = 0;
+  const list = one(tree, 'FlashList'); list.ref.current = { scrollToEnd: () => scrolls++ };
+  list.onLayout({ nativeEvent: { layout: { height: 400 } } });
+  list.onContentSizeChange(320, 1000);
+  app.flushFrames();
+  assert.equal(scrolls, 1, 'one layout pass, not an unconditional double scroll');
+  list.onScroll({ nativeEvent: { contentSize: { height: 1000 }, layoutMeasurement: { height: 400 }, contentOffset: { y: 600 } } });
+  app.keyboard.keyboardDidShow(); list.onContentSizeChange(320, 1000); app.flushFrames();
+  assert.equal(scrolls, 1, 'identical bottom geometry needs no correction');
 });

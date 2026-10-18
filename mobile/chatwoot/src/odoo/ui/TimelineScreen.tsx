@@ -67,24 +67,23 @@ export function TimelineScreen({
   const input = useRef<TextInput>(null);
   const follow = useRef(new TimelineFollow());
   const scrollFrame = useRef<number | null>(null);
+  const scrollGeometry = useRef({ content: 0, viewport: 0, offset: 0 });
   const dragging = useRef(false);
   const [showLatest, setShowLatest] = useState(false);
   const [actionsFor, setActionsFor] = useState<number | null>(null);
   const live = useRef(true);
   const latestAccess = useRef(canSend);
   latestAccess.current = canSend;
-  // Coalesce geometry changes. A second frame lets recycled cells settle after the IME/input layout.
-  // A deliberate history drag cancels both frames; never pull the reader away from older messages.
+  // One correction per layout pass. Later native size events cover recycled-cell settling;
+  // do not issue duplicate scrolls at unchanged geometry or restart a scheduled frame.
   const scrollLatest = useCallback(() => {
-    if (scrollFrame.current !== null) cancelAnimationFrame(scrollFrame.current);
+    if (scrollFrame.current !== null) return;
     scrollFrame.current = requestAnimationFrame(() => {
-      if (!live.current || dragging.current || !follow.current.following) { scrollFrame.current = null; return; }
+      scrollFrame.current = null;
+      if (!live.current || dragging.current || !follow.current.following) return;
+      const { content, viewport, offset } = scrollGeometry.current;
+      if (viewport > 0 && Math.abs(Math.max(0, content - viewport) - offset) <= 1) return;
       list.current?.scrollToEnd({ animated: false });
-      scrollFrame.current = requestAnimationFrame(() => {
-        scrollFrame.current = null;
-        if (live.current && !dragging.current && follow.current.following)
-          list.current?.scrollToEnd({ animated: false });
-      });
     });
   }, []);
   const followGeometry = useCallback(() => {
@@ -162,7 +161,8 @@ export function TimelineScreen({
       setActionsFor(null);
       chat.capture();
       scrollLatest();
-      if (!chat.offline) await chat.sync();
+      // The durable local queue owns retry/ACK. Network latency must not hold the composer lock.
+      if (!chat.offline) void chat.sync().catch(() => undefined);
     } catch (e) {
       setLocalError(errorWord(e));
     } finally {
@@ -254,8 +254,14 @@ export function TimelineScreen({
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="none"
             onLoad={followGeometry}
-            onLayout={followGeometry}
-            onContentSizeChange={followGeometry}
+            onLayout={event => {
+              if (event?.nativeEvent?.layout) scrollGeometry.current.viewport = event.nativeEvent.layout.height;
+              followGeometry();
+            }}
+            onContentSizeChange={(_width, height) => {
+              if (typeof height === 'number') scrollGeometry.current.content = height;
+              followGeometry();
+            }}
             scrollEventThrottle={16}
             onScrollBeginDrag={() => {
               dragging.current = true;
@@ -270,10 +276,11 @@ export function TimelineScreen({
             }}
             onMomentumScrollEnd={() => { dragging.current = false; }}
             onScroll={event => {
+              const { contentSize, layoutMeasurement, contentOffset } = event.nativeEvent;
+              scrollGeometry.current = { content: contentSize.height, viewport: layoutMeasurement.height, offset: contentOffset.y };
               // Only gestures change reader intent in either direction. Expanding the viewport
               // may expose the last row, but must not re-arm following when IME opens again.
               if (!dragging.current) return;
-              const { contentSize, layoutMeasurement, contentOffset } = event.nativeEvent;
               const atBottom = follow.current.scroll(contentSize.height, layoutMeasurement.height, contentOffset.y);
               setShowLatest(!atBottom);
             }}
@@ -360,6 +367,7 @@ export function TimelineScreen({
                     {viewMedia && message?.media && (
                       <MediaTile
                         key={`${mediaKey}/${message.id}/${String(message.media.id)}`}
+                        scopeKey={`${chat.identity?.database}/${mediaKey}`}
                         room={room}
                         media={message.media}
                         voice={voice}

@@ -4,7 +4,7 @@
   "packageManager": "pnpm@10.11.0",
   "scripts": {
     "check:odoo": "tsc --project tsconfig.odoo.json --pretty false",
-    "test:odoo": "node --experimental-strip-types --test src/odoo/tests/*.test.ts src/odoo/ui/behavior.node.test.ts src/odoo/ui/voice-lifecycle.node.test.cjs src/odoo/ui/foreground-offline.node.test.cjs src/odoo/ui/version-label.node.test.cjs src/odoo/ui/company-selector.node.test.cjs src/odoo/ui/chat-layout.node.test.cjs src/odoo/ui/navigation-layout.node.test.cjs native/tests/plugin.test.cjs",
+    "test:odoo": "node --experimental-strip-types --test src/odoo/tests/*.test.ts src/odoo/ui/behavior.node.test.ts src/odoo/ui/voice-lifecycle.node.test.cjs src/odoo/ui/foreground-offline.node.test.cjs src/odoo/ui/version-label.node.test.cjs src/odoo/ui/company-selector.node.test.cjs src/odoo/ui/chat-layout.node.test.cjs src/odoo/ui/navigation-layout.node.test.cjs src/odoo/ui/media-image.node.test.cjs native/tests/plugin.test.cjs",
     "test:native-session": "node native/tests/run-jvm.cjs",
     "start": "expo start --dev-client",
     "start:production": "expo start --no-dev --minify",

@@ -1,8 +1,8 @@
 # سجل معمارية بصير أودو
 
-## CW-ODOO-TRIAL-20261018 — عميل Chatwoot/React Native مستقل لأودو (قيد البناء)
+## CW-ODOO-TRIAL-20261018 — عميل Chatwoot/React Native مستقل لأودو (APK تجريبي محلي)
 
-التصنيف `ARCHITECTURAL`: عميل Android تجريبي منفصل `com.baseer.bchat.trial` داخل `mobile/chatwoot`، يحفظ مصدر Chatwoot المقدم وترخيص MIT، ويستخدم واجهة Odoo منعزلة عن تسجيل Chatwoot وRedux/Sentry. الخادم الحالي يملك الهوية وحقوق المستخدم والشركة والعضوية والرسائل؛ امتداد `baseer_bchat_mobile_policy` يضيف مفتاح DM لكل شركة وعلامة المدير والزوج الثابت دون تصنيف الغرف القديمة أو تغيير الطلبات. الطابور المحلي UUID/ACK ونطاق origin+DB+uid+company+room+membership؛ وسائط بنفس جلسة Android مع no-follow وتحقق SHA256. المصدر الأساس `9a3abda312b739f62fba62c284b1c8d206f454d7`، المالك قائد تجربة BChat والبديل حارس المراجعة المستقل. لا نشر QA/Live ولا قبول جهاز؛ [العقد والدليل والموانع](../../build-governance/CHATWOOT-ODOO-TRIAL-20261018.md). لا تعاد مراجعة ERP غير المتغير لهذه التجربة.
+التصنيف `ARCHITECTURAL`: عميل Android تجريبي منفصل `com.baseer.bchat.trial` داخل `mobile/chatwoot`، يحفظ مصدر Chatwoot المقدم وترخيص MIT، ويستخدم واجهة Odoo منعزلة عن تسجيل Chatwoot وRedux/Sentry. الخادم الحالي يملك الهوية وحقوق المستخدم والشركة والعضوية والرسائل؛ امتداد `baseer_bchat_mobile_policy` يضيف مفتاح DM لكل شركة وعلامة المدير والزوج الثابت دون تصنيف الغرف القديمة أو تغيير الطلبات. الطابور المحلي UUID/ACK ونطاق origin+DB+uid+company+room+membership؛ وسائط بنفس جلسة Android مع no-follow وتحقق SHA256. المصدر الأساس `9a3abda312b739f62fba62c284b1c8d206f454d7` والمرشح `ddde3212a9fa30d3cadf33717fdd3fd5b27d9707`، المالك قائد تجربة BChat والبديل حارس المراجعة المستقل. نجح73اختبارًا وTypeScript وبناءAPK0.1.0 وتثبيته وفتح شاشة الدخولAR/EN على المحاكي؛ خادمTailscale لايُحل اسمه داخله، فلا جلسة فعلية أو قبول عزل طرفي. NO-GO تشغيليًا؛ لا نشرQA/Live أو تنفيذ اختباراتOdoo11. [العقد وبصمةAPK والدليل والموانع](../../build-governance/CHATWOOT-ODOO-TRIAL-20261018.md#نتيجة-الحزمة-والتشغيل--cw22). لا تعاد مراجعة ERP غير المتغير لهذه التجربة.
 
 ## BCH-NTP-20261016 — إشعارات BChat ومركز المتابعة والحارس التراكمي (مرشح محلي)
 

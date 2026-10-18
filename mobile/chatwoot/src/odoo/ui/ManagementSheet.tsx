@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Alert, Pressable, Switch, Text, View } from 'react-native';
+import { Alert, AppState, Pressable, Switch, Text, View } from 'react-native';
 import { ChatError, groupDescription, type ChatEngine, type GroupInfo, type Room } from '../core/ChatEngine';
 import { launchImageLibrary } from 'react-native-image-picker';
 import { GroupAvatar } from './GroupAvatar';
+import { chooseGroupPhoto } from './groupPhotoOperation';
 import {
   Button,
   colors,
@@ -25,6 +26,7 @@ export function ManagementSheet({
   engine,
   close,
   changed,
+  onPhotoOutcome,
   language,
   t,
 }: {
@@ -34,6 +36,7 @@ export function ManagementSheet({
   engine: ChatEngine;
   close: () => void;
   changed: (roomId?: number) => Promise<void>;
+  onPhotoOutcome?: (outcome: { scope: string; room: Room; status: 'saved' | 'failed'; error?: unknown }) => void;
   language: Language;
   t: Translate;
 }) {
@@ -127,19 +130,25 @@ export function ManagementSheet({
   const changePhoto = async () => {
     if (!room || !canManage || busy || mutation.current || engine.offline) return;
     const requested = identityScope;
+    const photoScope = engine.accountScope, photoRoom = { ...room };
+    const report = (status: 'saved' | 'failed', error?: unknown) => {
+      if (photoScope && engine.accountScope === photoScope) {
+        try { onPhotoOutcome?.({ scope: photoScope, room: photoRoom, status, ...(status === 'failed' ? { error } : {}) }); } catch { /* Presentation cannot change an upload outcome. */ }
+      }
+    };
+    let saved = false;
     mutation.current = true; setBusy(true); setError(null);
     try {
-      const chosen = await launchImageLibrary({ mediaType: 'photo', selectionLimit: 1, maxWidth: 1600, maxHeight: 1600, quality: 0.9 });
-      if (!current(requested) || chosen.didCancel) return;
-      const asset = chosen.assets?.[0];
-      if (!asset?.uri || chosen.errorCode) throw new ChatError('avatar_invalid');
-      const detail = await engine.setGroupAvatar(room, { uri: asset.uri, name: asset.fileName ?? 'group.jpg', mime: asset.type ?? 'image/jpeg' });
+      const result = await chooseGroupPhoto(engine, photoRoom, () => launchImageLibrary({ mediaType: 'photo', selectionLimit: 1, maxWidth: 1600, maxHeight: 1600, quality: 0.9 }));
+      if (result.status === 'cancelled') return;
+      saved = true; report('saved');
       if (!current(requested)) return;
-      applyDetail(detail); await changed();
+      applyDetail(result.detail); await changed();
     } catch (e) {
+      if (!saved) report('failed', e);
       if (!current(requested)) return;
       // Refresh display after an uncertain upload, but never convert that outcome into success.
-      try { const detail = await engine.groupInfo(room); if (current(requested)) applyDetail(detail); } catch { /* Keep the last permitted presentation. */ }
+      try { if (AppState.currentState === 'active') { const detail = await engine.groupInfo(room); if (current(requested)) applyDetail(detail); } } catch { /* Keep the last permitted presentation. */ }
       if (current(requested)) setError(errorWord(e));
     } finally { mutation.current = false; if (current(requested)) setBusy(false); }
   };

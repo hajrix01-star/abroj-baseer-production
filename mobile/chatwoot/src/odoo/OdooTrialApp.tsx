@@ -4,7 +4,7 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import type { ChatEngine, Room } from './core/ChatEngine';
 import { getEngine } from './runtime';
 import { Button, colors, direction, IconButton, Label, styles } from './ui/components';
-import { translator, type Language } from './ui/dictionary';
+import { errorWord, translator, type Language, type Word } from './ui/dictionary';
 import { LoginScreen } from './ui/LoginScreen';
 import { ManagementSheet } from './ui/ManagementSheet';
 import { RoomsScreen, type ManagementMode } from './ui/RoomsScreen';
@@ -33,6 +33,9 @@ export function SessionApp({ engine }: { engine: ChatEngine }) {
     null,
   );
   const [menu, setMenu] = useState(false);
+  const [photoNotice, setPhotoNotice] = useState<{
+    scope: string; companyId: number; roomId: number; membershipId: number; word: Word;
+  } | null>(null);
   const t = translator(language);
   const { width } = useWindowDimensions();
   const wide = width >= 850;
@@ -185,6 +188,22 @@ export function SessionApp({ engine }: { engine: ChatEngine }) {
       if (room) await chat.select(room);
     }
   };
+  // The system picker hides/unmounts private panels. Its verified outcome belongs
+  // to this surviving shell, but only the original, still-authorized session.
+  const photoOutcome = (outcome: {scope: string; room: Room; status: 'saved' | 'failed'; error?: unknown}) => {
+    try {
+      if (engine.accountScope !== outcome.scope || engine.identity?.permissions.chat_view !== true) return;
+      const room = engine.rooms().find(row => row.id === outcome.room.id &&
+        row.company_id === outcome.room.company_id && row.membership_id === outcome.room.membership_id);
+      if (!room?.is_group) return;
+      chat.capture();
+      setPhotoNotice({scope: outcome.scope, companyId: room.company_id, roomId: room.id,
+        membershipId: room.membership_id, word: outcome.status === 'saved' ? 'groupPhotoUpdated' : errorWord(outcome.error)});
+    } catch { /* Expired/revoked sessions cannot publish even a stale operation notice. */ }
+  };
+  const showPhotoNotice = photoNotice && photoNotice.scope === engine.accountScope &&
+    chat.selected?.id === photoNotice.roomId && chat.selected.company_id === photoNotice.companyId &&
+    chat.selected.membership_id === photoNotice.membershipId;
   return (
     <SafeAreaView style={styles.page}>
       {(!identity || wide || !chat.selected) && (
@@ -240,6 +259,14 @@ export function SessionApp({ engine }: { engine: ChatEngine }) {
         </View>
       ) : (
         <>
+          {!!showPhotoNotice && (
+            <View accessibilityLiveRegion="polite" style={[styles.banner, styles.row, {
+              flexDirection: language === 'ar' ? 'row-reverse' : 'row', direction: 'ltr', flexWrap: 'nowrap',
+            }]}>
+              <View style={{flex: 1, minWidth: 0}}><Label language={language}>{t(photoNotice!.word)}</Label></View>
+              <IconButton icon="close" label={t('close')} onPress={() => setPhotoNotice(null)} />
+            </View>
+          )}
           {(chat.offline || (!chat.selected && chat.pending.length > 0)) && (
             <View
               style={[
@@ -382,6 +409,7 @@ export function SessionApp({ engine }: { engine: ChatEngine }) {
               engine={engine}
               close={() => setManagement(null)}
               changed={changed}
+              onPhotoOutcome={photoOutcome}
               language={language}
               t={t}
             />

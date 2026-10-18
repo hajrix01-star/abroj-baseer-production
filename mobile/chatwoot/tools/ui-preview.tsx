@@ -21,6 +21,8 @@ import {
 } from '../src/odoo/core/ChatEngine';
 
 const marker = 'SYNTHETIC_UI_PREVIEW';
+let avatarUploads = 0;
+const avatarObservers = new Set<() => void>();
 const descriptions = new Map<number, string>([
   [11, 'تنسيق المشتريات ومتابعة طلبات الفريق — Purchasing coordination.'],
   [12, 'معلومات المجموعة للأعضاء — Read-only group information.'],
@@ -192,18 +194,23 @@ const engine = new ChatEngine({
   origin: 'https://ui-preview.invalid',
   database: 'synthetic',
   uploadGroupAvatar: async room => {
+    avatarUploads++;
     const current = rooms.find(row => row.id === room.id)!;
     current.avatar_version = (current.avatar_version ?? 0) + 1;
+    for (const notify of avatarObservers) notify();
     return {api_version:2,room_id:room.id,avatar_version:current.avatar_version};
   },
 });
 function PreviewApp() {
+  const [, updateAvatarProbe] = useState(0);
   const [ready, setReady] = useState(false);
   const [surface, setSurface] = useState<'choose' | 'chat' | 'image' | 'feedback'>('choose');
   const [feedback, setFeedback] = useState('Not checked');
   const [imageUri, setImageUri] = useState('');
   const [imageLanguage, setImageLanguage] = useState<'ar' | 'en'>('ar');
   useEffect(() => {
+    const notifyAvatar = () => updateAvatarProbe(value => value + 1);
+    avatarObservers.add(notifyAvatar);
     void engine.login('synthetic', 'synthetic', true).then(() => setReady(true));
     // Android drawable resource names are not file:// URLs. Keep the production
     // viewer's file-only guard and create a small local geometric fixture instead.
@@ -227,6 +234,7 @@ function PreviewApp() {
         sha256: 'a'.repeat(64), name: 'CW37 inline preview.png' };
       setImageUri(uri);
     });
+    return () => { avatarObservers.delete(notifyAvatar); };
   }, []);
   if (surface === 'feedback') return (
     <SafeAreaProvider><SafeAreaView style={{flex:1,padding:20,gap:16,backgroundColor:'white'}}>
@@ -241,7 +249,10 @@ function PreviewApp() {
   );
   return (
     <SafeAreaProvider>
-      {!ready ? <Text>{marker}</Text> : surface === 'chat' ? <SessionApp engine={engine} /> : surface === 'image' ? (
+      {!ready ? <Text>{marker}</Text> : surface === 'chat' ? (
+        <View collapsable={false} testID={`FF-avatar-upload-${avatarUploads}-version-${rooms[0]?.avatar_version ?? 0}`}
+          style={{flex:1}}><SessionApp engine={engine} /></View>
+      ) : surface === 'image' ? (
         <ImageViewer uri={imageUri} name="CW36 local test image" language={imageLanguage} t={translator(imageLanguage)}
           onClose={() => setSurface('choose')} />
       ) : (

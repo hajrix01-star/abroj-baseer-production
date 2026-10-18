@@ -88,24 +88,33 @@ test('GroupAvatar eviction, masking, rights loss and unmount never retain a priv
 function management(manage = true) {
   const state = hooks(), timers = new Map(), calls = []; let nextTimer = 0, picker = { didCancel: true }, post = null;
   const core = load('../core/ChatEngine.ts', {});
+  const listeners = new Set();
+  const AppState = { currentState: 'active', addEventListener(event, listener) { listeners.add(listener); return { remove: () => listeners.delete(listener) }; } };
+  const clock = { setTimeout: callback => { const id = ++nextTimer; timers.set(id, callback); return id; }, clearTimeout: id => timers.delete(id) };
+  const helper = load('groupPhotoOperation.ts', { ...clock, 'react-native': { AppState }, '../core/ChatEngine': core });
   const detail = { api_version: 2, can_manage: manage,
     room: { id: 4, company_id: 1, is_group: true, name: 'Synthetic', description: 'Saved description', avatar_version: 1 },
     members: [{ user_id: 7, name: 'Current', is_admin: manage }] };
-  const engine = { accountScope: 'actor7/epoch1', identity: { database: 'db', user_id: 7 }, offline: false,
+  const engine = { accountScope: 'actor7/epoch1', identity: { database: 'db', user_id: 7, permissions: { chat_view: true } }, offline: false,
+    rooms: () => [props.room],
     groupInfo: async () => { calls.push(['detail']); return copy(detail); }, candidates: async () => ({ users: [] }),
     groupChange: async (room, payload) => { calls.push(['change', room, copy(payload)]); if (post) await post.promise;
       if (payload.action === 'set_description') detail.room.description = payload.description; },
     setGroupAvatar: async (room, input) => { calls.push(['photo', room, input]); detail.room.avatar_version++; return copy(detail); } };
   const props = { mode: 'members', room: { id: 4, company_id: 1, membership_id: 12, is_group: true, avatar_version: 1, name: 'Synthetic' }, companyId: 1,
-    engine, language: 'ar', t: key => key, close: () => calls.push(['close']), changed: async () => { calls.push(['changed']); } };
+    engine, language: 'ar', t: key => key, close: () => calls.push(['close']), changed: async () => { calls.push(['changed']); },
+    onPhotoOutcome: outcome => calls.push(['outcome', outcome]) };
   const mod = load('ManagementSheet.tsx', { react: state.react, 'react/jsx-runtime': jsx, '../core/ChatEngine': core, './GroupAvatar': { GroupAvatar: 'GroupAvatar' },
     './components': components, './dictionary': { errorWord: error => error.code || 'error' },
-    'react-native': { View: 'View', Text: 'Text', Pressable: 'Pressable', Switch: 'Switch', Alert: { alert() {} } },
+    './groupPhotoOperation': helper,
+    'react-native': { AppState, View: 'View', Text: 'Text', Pressable: 'Pressable', Switch: 'Switch', Alert: { alert() {} } },
     'react-native-image-picker': { launchImageLibrary: async () => { calls.push(['picker']); return picker; } },
-    setTimeout: callback => { const id = ++nextTimer; timers.set(id, callback); return id; }, clearTimeout: id => timers.delete(id) });
+    ...clock });
   return { props, calls, detail, core, render: () => state.render(() => mod.ManagementSheet(props)),
     async ready() { this.render(); for (const [id, callback] of [...timers]) { timers.delete(id); await callback(); } return this.render(); },
-    deferPost() { post = deferred(); return post; }, picker(value) { picker = value; }, close: () => state.close() };
+    deferPost() { post = deferred(); return post; }, picker(value) { picker = value; }, close: () => state.close(), get lateWrites() { return state.lateWrites; },
+    lifecycle(value) { AppState.currentState = value; for (const listener of [...listeners]) listener(value); },
+    get listenerCount() { return listeners.size; }, expire() { for (const callback of [...timers.values()]) callback(); } };
 }
 const description = tree => one(tree, 'Field', p => p.accessibilityLabel === 'groupDescription');
 const saveDescription = tree => one(tree, 'Button', p => p.title === 'saveDescription');
@@ -169,6 +178,41 @@ test('same-actor new session rejects the previous pending photo picker without r
   assert.equal(app.calls.filter(call => call[0] === 'photo').length, 0);
   assert.equal(app.calls.filter(call => call[0] === 'changed').length, 0);
 });
+
+test('native picker privacy unmount does not discard an explicitly chosen photo or write into the closed sheet', async () => {
+  const app = management(); await app.ready(); const pick = deferred(); app.picker(pick.promise);
+  photo(app.render()).onPress(); app.lifecycle('background'); app.close();
+  pick.resolve({ assets: [{ uri: 'file:///picker/chosen-after-background.jpg', type: 'image/jpeg' }] }); await settle();
+  assert.equal(app.calls.filter(call => call[0] === 'photo').length, 0, 'chosen callback before active cannot upload yet');
+  assert.equal(app.listenerCount, 1); app.lifecycle('active'); await settle();
+  assert.equal(app.calls.filter(call => call[0] === 'photo').length, 1);
+  assert.equal(app.detail.room.avatar_version, 2, 'successful operation exposes authoritative ACK version');
+  assert.equal(app.calls.filter(call => call[0] === 'changed').length, 0, 'closed sheet cannot invoke presentation callback');
+  assert.equal(app.lateWrites, 0);
+  assert.equal(app.listenerCount, 0);
+  assert.equal(app.calls.filter(call => call[0] === 'outcome').length, 1);
+  assert.equal(app.calls.find(call => call[0] === 'outcome')[1].status, 'saved');
+  assert.equal(app.calls.find(call => call[0] === 'outcome')[1].error, undefined);
+});
+
+test('unmounted picker cancel, revoked membership, new epoch and foreground timeout never upload', async () => {
+  for (const scenario of ['cancel', 'membership', 'epoch', 'timeout', 'noasset', 'membership-after-choice', 'epoch-after-choice']) {
+    const app = management(); await app.ready(); const pick = deferred(); app.picker(pick.promise);
+    photo(app.render()).onPress(); app.lifecycle('background'); app.close();
+    if (scenario === 'membership') app.props.engine.rooms = () => [];
+    if (scenario === 'epoch') app.props.engine.accountScope = 'actor7/epoch2';
+    pick.resolve(scenario === 'cancel' ? { didCancel: true } : scenario === 'noasset' ? {} : { assets: [{ uri: 'file:///picker/not-authorized.jpg', type: 'image/jpeg' }] });
+    await settle();
+    if (scenario === 'membership-after-choice') app.props.engine.rooms = () => [];
+    if (scenario === 'epoch-after-choice') app.props.engine.accountScope = 'actor7/epoch2';
+    if (scenario === 'timeout') { assert.equal(app.listenerCount, 1); app.expire(); await settle(); }
+    app.lifecycle('active'); await settle();
+    assert.equal(app.calls.filter(call => call[0] === 'photo').length, 0, scenario);
+    assert.equal(app.calls.filter(call => call[0] === 'changed').length, 0, scenario);
+    assert.equal(app.calls.filter(call => call[0] === 'outcome' && call[1].status === 'saved').length, 0, 'no false success');
+    assert.equal(app.listenerCount, 0, scenario); assert.equal(app.lateWrites, 0, scenario);
+  }
+});
 test('description readback mismatch leaves the draft dirty and surfaces an error, not a false saved value', async () => {
   const app = management(); await app.ready();
   app.props.engine.groupChange = async () => { app.detail.room.description = 'Unexpected server value'; };
@@ -176,4 +220,14 @@ test('description readback mismatch leaves the draft dirty and surfaces an error
   const tree = app.render(); assert.equal(description(tree).value, 'Wanted draft');
   assert.equal(saveDescription(tree).disabled, false);
   assert.ok(nodes(tree).some(n => n.type === 'Text' && n.props.children === 'group_readback_mismatch'));
+});
+
+test('unknown upload failure cannot be confused with a saved outcome after privacy unmount', async () => {
+  const app = management(); await app.ready(); const pick = deferred(); app.picker(pick.promise);
+  app.props.engine.setGroupAvatar = async () => { throw undefined; };
+  photo(app.render()).onPress(); app.close();
+  pick.resolve({ assets: [{ uri: 'file:///picker/unknown-failure.jpg', type: 'image/jpeg' }] }); await settle();
+  const outcomes = app.calls.filter(call => call[0] === 'outcome');
+  assert.equal(outcomes.length, 1); assert.equal(outcomes[0][1].status, 'failed');
+  assert.equal(app.detail.room.avatar_version, 1); assert.equal(app.lateWrites, 0);
 });

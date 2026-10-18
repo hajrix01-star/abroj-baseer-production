@@ -105,6 +105,7 @@ function session() {
   const chat = { identity: identity(), presentationReady: true, selected: null, offline: false, busy: false,
     pending: [], rooms: [], error: null, select: async room => { calls.push(['select', room]); },
     sync: async () => { calls.push('sync'); }, logout: async () => { calls.push('logout'); }, capture() {} };
+  const engine = { accountScope: 'synthetic-actor/epoch:1', get identity() { return chat.identity; }, rooms: () => chat.rooms };
   const module = load('../OdooTrialApp.tsx', { react: state.react, 'react/jsx-runtime': jsx,
     'react-native': { Alert: { alert: (title, message, buttons) => alerts.push({ title, message, buttons }) }, AppState: nativeApp,
       BackHandler: { addEventListener(_event, callback) { back = callback; return { remove() { back = undefined; } }; } },
@@ -118,7 +119,7 @@ function session() {
     './ui/CompanySelector': { CompanySelector: 'CompanySelector' },
   }, { requestAnimationFrame: callback => { frames.push(callback); return frames.length; } });
   assert.equal(typeof module.SessionApp, 'function', 'test uses the actual named SessionApp export');
-  return { chat, calls, alerts, nativeApp, render: () => state.render(() => module.SessionApp({ engine: {} })),
+  return { engine, chat, calls, alerts, nativeApp, render: () => state.render(() => module.SessionApp({ engine })),
     width(value) { width = value; }, back() { return back?.(); }, flushFrames() { for (const frame of frames.splice(0)) frame(); } };
 }
 
@@ -385,4 +386,44 @@ test('a revoked local company filter resets to all companies and closes old mana
   const tree = app.render();
   assert.equal(one(tree, 'RoomsScreen').companyId, 0);
   assert.equal(nodes(tree).some(node => node.type === 'ManagementSheet'), false);
+});
+
+test('verified picker outcome survives private-sheet unmount without reopening it and is scoped to the current session and room', () => {
+  const app = session();
+  const room = {id: 8, company_id: 1, membership_id: 18, is_group: true, name: 'Synthetic group'};
+  app.chat.rooms = [room]; app.chat.selected = room;
+  one(app.render(), 'TimelineScreen').manage();
+  const finish = one(app.render(), 'ManagementSheet').onPhotoOutcome;
+  const scope = app.engine.accountScope;
+  app.nativeApp.change('background'); app.render(); app.nativeApp.change('active');
+  finish({scope, room, status: 'saved'});
+  let tree = app.render();
+  assert.ok(text(tree).includes(dictionary.translator('ar')('groupPhotoUpdated')));
+  assert.equal(nodes(tree).some(node => node.type === 'ManagementSheet'), false);
+  app.engine.accountScope = 'synthetic-actor/epoch:2';
+  finish({scope, room, status: 'failed', error: {code: 'avatar_uncertain', private: 'UNSAFE-PRIVATE-ERROR'}});
+  tree = app.render();
+  assert.equal(text(tree).includes(dictionary.translator('ar')('groupPhotoUpdated')), false);
+  assert.equal(text(tree).includes(dictionary.translator('ar')('avatarUncertain')), false);
+  assert.equal(text(tree).includes('UNSAFE-PRIVATE-ERROR'), false);
+  app.chat.rooms = [];
+  finish({scope: app.engine.accountScope, room, status: 'saved'});
+  assert.equal(text(app.render()).includes(dictionary.translator('ar')('groupPhotoUpdated')), false);
+});
+
+test('surviving picker failures render generic translated words only, and a different room or mask hides the notice', () => {
+  const app = session();
+  const room = {id: 8, company_id: 1, membership_id: 18, is_group: true, name: 'Synthetic group'};
+  app.chat.rooms = [room]; app.chat.selected = room;
+  one(app.render(), 'TimelineScreen').manage();
+  const finish = one(app.render(), 'ManagementSheet').onPhotoOutcome;
+  finish({scope: app.engine.accountScope, room, status: 'failed', error: {code: 'avatar_uncertain', uri: 'file:///PRIVATE'}});
+  let tree = app.render();
+  assert.ok(text(tree).includes(dictionary.translator('ar')('avatarUncertain')));
+  assert.equal(text(tree).includes('file:///PRIVATE'), false);
+  assert.equal(text(tree).includes(dictionary.translator('ar')('groupPhotoUpdated')), false);
+  app.chat.selected = {...room, id: 9};
+  assert.equal(text(app.render()).includes(dictionary.translator('ar')('avatarUncertain')), false);
+  app.chat.selected = room; app.chat.presentationReady = false;
+  assert.equal(text(app.render()).includes(dictionary.translator('ar')('avatarUncertain')), false);
 });

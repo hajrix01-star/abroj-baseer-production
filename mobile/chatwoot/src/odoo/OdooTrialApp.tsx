@@ -193,15 +193,20 @@ export function SessionApp({ engine }: { engine: ChatEngine }) {
             styles.row,
             {
               justifyContent: 'space-between',
+              paddingHorizontal: 8,
+              paddingVertical: 6,
+              direction: 'ltr',
+              flexWrap: 'nowrap',
               flexDirection: language === 'ar' ? 'row-reverse' : 'row',
             },
           ]}>
-          <View style={{ flexShrink: 1 }}>
-            <Text style={[styles.title, direction(language)]}>{t('app')}</Text>
+          {identity && <IconButton icon="menu" label={t('menu')} onPress={openMenu} />}
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text numberOfLines={1} style={[styles.title, direction(language), identity && { fontSize: 17, lineHeight: 24 }]}>{t('app')}</Text>
             {identity ? (
-              <Label language={language} muted>
+              <Text numberOfLines={1} style={[styles.muted, direction(language), { fontSize: 12, lineHeight: 18 }]}>
                 {t(chat.offline ? 'offline' : 'connected')}
-              </Label>
+              </Text>
             ) : (
               <>
                 <Label language={language} muted>
@@ -219,7 +224,6 @@ export function SessionApp({ engine }: { engine: ChatEngine }) {
                 onPress={() => setLanguage(language === 'ar' ? 'en' : 'ar')}
               />
             )}
-            {identity && <IconButton icon="menu" label={t('menu')} onPress={openMenu} />}
           </View>
         </View>
       )}

@@ -387,6 +387,7 @@ export function MediaTile({
   language,
   report,
   scopeKey = '',
+  previewVisible = false,
 }: {
   room: Room;
   media: Record<string, unknown>;
@@ -395,6 +396,7 @@ export function MediaTile({
   language: Language;
   report: (word: Word) => void;
   scopeKey?: string;
+  previewVisible?: boolean;
 }) {
   // FlashList may recycle the same component for another attachment. Tag every
   // presentation and pending result, so an old image cannot flash in a new row.
@@ -413,7 +415,16 @@ export function MediaTile({
   const [cached, setCached] = useState<{ key: string; uri: string } | null>(null);
   const [opening, setOpening] = useState<string | null>(null);
   const [showing, setShowing] = useState<string | null>(null);
-  const live = useRef({ key, revision: 0, serial: 0, active: true, busy: false });
+  const [foreground, setForeground] = useState(AppState.currentState === 'active');
+  const live = useRef({
+    key,
+    revision: 0,
+    serial: 0,
+    active: true,
+    busy: false,
+    intentional: false,
+    previewAttempted: false,
+  });
   if (live.current.key !== key) {
     live.current = {
       key,
@@ -421,22 +432,28 @@ export function MediaTile({
       serial: live.current.serial + 1,
       active: true,
       busy: false,
+      intentional: false,
+      previewAttempted: false,
     };
   }
   const presentation = `${key}/${live.current.revision}`;
+  const revision = live.current.revision;
   const uri = cached?.key === presentation ? cached.uri : null;
   const busy = opening === presentation;
   useEffect(() => {
     live.current.active = AppState.currentState === 'active';
     const invalidate = () => {
       live.current.serial++;
+      if (live.current.busy) live.current.previewAttempted = false;
       live.current.busy = false;
+      live.current.intentional = false;
       setShowing(null);
       setOpening(null);
     };
     const listener = AppState.addEventListener('change', state => {
       live.current.active = state === 'active';
       if (state !== 'active') invalidate();
+      setForeground(state === 'active');
     });
     return () => {
       live.current.active = false;
@@ -445,42 +462,70 @@ export function MediaTile({
       listener.remove();
     };
   }, [key]);
-  const open = async () => {
+  const resolve = async (intentional: boolean) => {
     if (
       !live.current.active ||
       live.current.key !== key ||
-      live.current.busy ||
+      live.current.revision !== revision ||
       AppState.currentState !== 'active'
     )
       return;
+    if (live.current.busy) {
+      // A deliberate tap joins an automatic thumbnail request. It must not queue
+      // another download or be lost simply because the thumbnail is still loading.
+      if (intentional && media.kind === 'image') live.current.intentional = true;
+      return;
+    }
+    if (!intentional && (media.kind !== 'image' || live.current.previewAttempted || uri)) return;
+    live.current.previewAttempted = true;
     live.current.busy = true;
+    live.current.intentional = intentional;
     const serial = ++live.current.serial;
     const current = () =>
       live.current.active &&
       live.current.key === key &&
+      live.current.revision === revision &&
       live.current.serial === serial &&
       AppState.currentState === 'active';
     setOpening(presentation);
     try {
       // Keep runtime's association, identity, permission, hash and session fences.
-      // No effect automatically downloads history images, and no remote URI is rendered.
+      // Automatic calls are viewport-gated below. No remote URI is ever rendered.
       const local = await localMedia(room, media);
       if (!current()) return;
       if (media.kind === 'image') {
         if (!local.startsWith('file://')) throw new Error('invalid_local_image');
         setCached({ key: presentation, uri: local });
-        setShowing(presentation);
+        if (live.current.intentional) setShowing(presentation);
       } else if (media.kind === 'audio') await voice.play(local);
       else await FileViewer.open(local.replace(/^file:\/\//, ''), { showOpenWithDialog: true });
     } catch (e) {
-      if (current()) report(errorWord(e));
+      // Off-line cache misses and other automatic failures stay local and quiet.
+      // A deliberate retry still reports the normal actionable runtime error.
+      if (current() && live.current.intentional) report(errorWord(e));
     } finally {
       if (current()) {
         live.current.busy = false;
+        live.current.intentional = false;
         setOpening(null);
       }
     }
   };
+  useEffect(() => {
+    if (!previewVisible) {
+      if (live.current.busy && !live.current.intentional) {
+        live.current.serial++;
+        live.current.busy = false;
+        live.current.previewAttempted = false;
+        setOpening(null);
+      }
+      return;
+    }
+    if (foreground && media.kind === 'image') void resolve(false);
+    // Resolve is intentionally not a dependency: repeated history renders must
+    // neither repeat failed automatic attempts nor restart in-flight downloads.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [presentation, previewVisible, foreground]);
   return (
     <View style={{ gap: 8 }}>
       <Label language={language} muted>
@@ -492,10 +537,9 @@ export function MediaTile({
             accessibilityRole="button"
             accessibilityLabel={t('viewPhoto')}
             accessibilityHint={t('zoomPhoto')}
-            accessibilityState={{ busy, disabled: busy }}
-            disabled={busy}
+            accessibilityState={{ busy }}
             onPress={() => {
-              void open();
+              void resolve(true);
             }}
             style={({ pressed }) => ({
               width: 240,
@@ -519,7 +563,7 @@ export function MediaTile({
               <View style={{ gap: 6, alignItems: 'center', padding: 12 }}>
                 <Icon icon="image" size={34} color={colors.blue} />
                 <Label language={language} muted>
-                  {t('viewPhoto')}
+                  {t(busy ? 'loading' : 'viewPhoto')}
                 </Label>
               </View>
             )}
@@ -560,7 +604,7 @@ export function MediaTile({
           title={media.kind === 'audio' ? t('play') : t('open')}
           busy={busy}
           onPress={() => {
-            void open();
+            void resolve(true);
           }}
         />
       )}

@@ -28,6 +28,7 @@ import {
 } from './viewModel';
 
 type Row = { key: string; message?: Message; pending?: Pending };
+const previewViewability = { minimumViewTime: 150, itemVisiblePercentThreshold: 10 };
 export function TimelineScreen({
   engine,
   chat,
@@ -59,6 +60,14 @@ export function TimelineScreen({
   const canAttach = chat.presentationReady && access.canAttach;
   const viewMedia = chat.presentationReady && canViewMedia(chat.identity, room);
   const mediaKey = presentationKey(chat.identity, room);
+  const previewScope = `${chat.identity?.database}/${mediaKey}`;
+  const [visibleImages, setVisibleImages] = useState<{ scope: string; ids: number[] }>({ scope: '', ids: [] });
+  const previewChanged = useCallback(({ viewableItems }: { viewableItems: ViewToken<Row>[] }) => {
+    const ids = viewableItems.filter(item => item.isViewable && item.item.message?.media?.kind === 'image')
+      .map(item => item.item.message!.id).sort((a, b) => a - b);
+    setVisibleImages(previous => previous.scope === previewScope && previous.ids.join(',') === ids.join(',')
+      ? previous : { scope: previewScope, ids });
+  }, [previewScope]);
   const voice = useVoiceSession(mediaKey, setLocalError, viewMedia, canAttach);
   const sendBusy = useRef(false);
   const draftRevision = useRef(0);
@@ -220,16 +229,8 @@ export function TimelineScreen({
           <View
             style={[
               styles.row,
-              { flexWrap: 'nowrap', flexDirection: language === 'ar' ? 'row-reverse' : 'row' },
+              { direction: 'ltr', flexWrap: 'nowrap', flexDirection: language === 'ar' ? 'row-reverse' : 'row' },
             ]}>
-            {back && (
-              <IconButton
-                icon="back"
-                label={t('back')}
-                onPress={back}
-                style={language === 'ar' ? { transform: [{ rotate: '180deg' }] } : undefined}
-              />
-            )}
             {onMenu && <IconButton icon="menu" label={t('menu')} onPress={onMenu} />}
             <View style={[styles.fill, { minWidth: 0 }]}>
               <Text
@@ -251,15 +252,24 @@ export function TimelineScreen({
                 onPress={manage}
               />
             )}
+            {back && (
+              <IconButton
+                icon="back"
+                label={t('back')}
+                onPress={back}
+                style={language === 'ar' ? { transform: [{ rotate: '180deg' }] } : undefined}
+              />
+            )}
           </View>
         </View>
         <View style={{ flex: 1, minHeight: 0 }}>
           <FlashList
             ref={list}
-            extraData={mediaKey}
+            extraData={`${previewScope}/${visibleImages.scope === previewScope ? visibleImages.ids.join(',') : ''}`}
             data={rows}
             viewabilityConfig={{ minimumViewTime: 600, viewAreaCoveragePercentThreshold: 75 }}
             onViewableItemsChanged={visibleChanged}
+            viewabilityConfigCallbackPairs={[{ viewabilityConfig: previewViewability, onViewableItemsChanged: previewChanged }]}
             keyExtractor={row => row.key}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="none"
@@ -378,7 +388,8 @@ export function TimelineScreen({
                     {viewMedia && message?.media && (
                       <MediaTile
                         key={`${mediaKey}/${message.id}/${String(message.media.id)}`}
-                        scopeKey={`${chat.identity?.database}/${mediaKey}`}
+                        scopeKey={previewScope}
+                        previewVisible={visibleImages.scope === previewScope && visibleImages.ids.includes(message.id)}
                         room={room}
                         media={message.media}
                         voice={voice}

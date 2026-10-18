@@ -113,22 +113,27 @@ export function NavigationDrawer({
   return (
     <Modal visible transparent animationType="none" onRequestClose={exit}>
       <SafeAreaView style={{ flex: 1, backgroundColor: '#15233366' }}>
-        <View style={{ flex: 1, flexDirection: language === 'ar' ? 'row-reverse' : 'row' }}>
+        <View style={{ flex: 1, direction: 'ltr', flexDirection: language === 'ar' ? 'row-reverse' : 'row' }}>
           <View
             accessibilityViewIsModal
             style={{
               width: Math.min(width - 24, 350),
               backgroundColor: colors.white,
-              paddingHorizontal: 12,
-              paddingTop: 8,
+              paddingHorizontal: 8,
+              paddingTop: 6,
               paddingBottom: 12,
             }}>
             <View
               style={{
                 flexDirection: language === 'ar' ? 'row-reverse' : 'row',
+                direction: 'ltr',
                 alignItems: 'center',
                 gap: 8,
               }}>
+              <IconButton icon="menu" label={t('close')} onPress={close} />
+              <Text style={[styles.title, direction(language), { flex: 1, fontSize: 20 }]}>
+                {title}
+              </Text>
               {page !== 'home' && (
                 <IconButton
                   icon="back"
@@ -137,10 +142,6 @@ export function NavigationDrawer({
                   style={language === 'ar' ? { transform: [{ rotate: '180deg' }] } : undefined}
                 />
               )}
-              <Text style={[styles.title, direction(language), { flex: 1, fontSize: 20 }]}>
-                {title}
-              </Text>
-              <IconButton icon="close" label={t('close')} onPress={close} />
             </View>
             <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 16, gap: 12 }}>
               <View

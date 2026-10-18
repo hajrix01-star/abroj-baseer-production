@@ -173,6 +173,39 @@ test('Android composer avoidance uses the measured screen offset and ignores an 
   assert.equal(avoidance.keyboardVerticalOffset, 84);
 });
 
+test('conversation menu occupies the same leading physical language edge as inbox, with Back opposite', () => {
+  const app = timeline();
+  for (const language of ['ar', 'en']) {
+    app.props.language = language; const tree = app.render();
+    const menu = nodes(tree).find(node => node.type === 'IconButton' && node.props.icon === 'menu');
+    const header = nodes(tree).find(node => Array.isArray(node.props?.children) && node.props.children.includes(menu));
+    const children = header.props.children.filter(Boolean);
+    assert.equal(children[0], menu);
+    assert.equal(children.at(-1).props.icon, 'back');
+    assert.equal(header.props.style.at(-1).flexDirection, language === 'ar' ? 'row-reverse' : 'row');
+    assert.equal(header.props.style.at(-1).direction, 'ltr');
+  }
+});
+
+test('only viewport-visible authorized image rows request automatic previews, separate from read receipts', () => {
+  const app = timeline(); let tree = app.render();
+  const row = { key: 'message-10', message: app.props.chat.history.messages[0] };
+  row.message.media.kind = 'image';
+  let list = one(tree, 'FlashList');
+  assert.equal(one(list.renderItem({ item: row }), 'MediaTile').previewVisible, false);
+  assert.equal(list.viewabilityConfig.minimumViewTime, 600, 'read receipt dwell unchanged');
+  const preview = list.viewabilityConfigCallbackPairs[0];
+  assert.equal(preview.viewabilityConfig.itemVisiblePercentThreshold, 10);
+  preview.onViewableItemsChanged({ viewableItems: [{ isViewable: true, item: row }] });
+  tree = app.render(); list = one(tree, 'FlashList');
+  assert.equal(one(list.renderItem({ item: row }), 'MediaTile').previewVisible, true);
+  list.viewabilityConfigCallbackPairs[0].onViewableItemsChanged({ viewableItems: [] });
+  list = one(app.render(), 'FlashList');
+  assert.equal(one(list.renderItem({ item: row }), 'MediaTile').previewVisible, false);
+  app.props.chat.identity.permissions.media = false;
+  assert.equal(nodes(one(app.render(), 'FlashList').renderItem({ item: row })).some(n => n.type === 'MediaTile'), false);
+});
+
 test('timeline gives history the remaining height, caps inline input and dispatches a draft only once before durable enqueue', async () => {
   const app = timeline();
   let tree = app.render();

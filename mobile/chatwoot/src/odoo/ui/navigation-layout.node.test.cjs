@@ -138,6 +138,29 @@ test('drawer never renders a masked identity and profile lists only authorized c
   assert.ok(nodes(app.render()).some(node => node.type === 'Pressable' && node.props.accessibilityLabel === app.props.t('profile')));
 });
 
+test('shell menu is first on its language edge and drawer keeps the same edge toggle', () => {
+  const app = session(); const panel = drawer();
+  for (const language of ['ar', 'en']) {
+    if (language === 'en') one(app.render(), 'NavigationDrawer').onAction('en');
+    panel.props.language = language; panel.props.t = dictionary.translator(language);
+    const tree = app.render();
+    const menu = nodes(tree).find(node => node.type === 'IconButton' && node.props.icon === 'menu');
+    const header = nodes(tree).find(node => Array.isArray(node.props?.children) && node.props.children.includes(menu));
+    assert.ok(header, 'toggle is a direct header child, not a trailing action wrapper');
+    assert.equal(header.props.children.filter(Boolean)[0], menu);
+    assert.equal(header.props.style.at(-1).flexDirection, language === 'ar' ? 'row-reverse' : 'row');
+    assert.equal(header.props.style.at(-1).direction, 'ltr', 'physical edge independent of OS RTL');
+    assert.equal(header.props.style.at(-1).paddingHorizontal, 8);
+    const opened = panel.render();
+    const toggle = nodes(opened).find(node => node.type === 'IconButton' && node.props.icon === 'menu');
+    assert.ok(toggle, 'same hamburger remains at drawer edge when expanded');
+    const heading = nodes(opened).find(node => Array.isArray(node.props?.children) && node.props.children.includes(toggle));
+    assert.equal(heading.props.children.filter(Boolean)[0], toggle);
+    assert.equal(heading.props.style.flexDirection, language === 'ar' ? 'row-reverse' : 'row');
+    toggle.props.onPress(); assert.equal(panel.events.at(-1), 'close');
+  }
+});
+
 test('drawer settings route language/actions, respect busy/offline policy, and close on background/backdrop', () => {
   const app = drawer();
   one(app.render(), 'Pressable', p => p.accessibilityLabel === app.props.t('settings')).onPress();

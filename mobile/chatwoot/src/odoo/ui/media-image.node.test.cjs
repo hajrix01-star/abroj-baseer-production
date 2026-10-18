@@ -64,6 +64,16 @@ function mediaHarness(kind = 'image') {
     get lateWrites() { return state.lateWrites; },
     appState(value) { native.AppState.currentState = value; [...listeners].forEach(callback => callback(value)); } };
 }
+test('visible image resolves its real scoped thumbnail automatically, without opening the full-screen viewer', async () => {
+  const app = mediaHarness(); app.props.previewVisible = true; app.render();
+  assert.equal(app.calls.length, 1, 'a visible image automatically resolves the scoped local image');
+  assert.equal(app.calls[0][1], app.props.room); assert.equal(app.calls[0][2], app.props.media);
+  app.pending().resolve('file:///scoped/automatic.jpg'); await settled();
+  const tree = app.render();
+  assert.equal(one(tree, 'Image').source.uri, 'file:///scoped/automatic.jpg');
+  assert.equal(nodes(tree).some(node => node.type === 'ImageViewer'), false);
+  assert.deepEqual([one(tree, 'Pressable').style({ pressed: false }).width, one(tree, 'Pressable').style({ pressed: false }).height], [240, 180]);
+});
 test('image keeps 240x180 geometry before and after explicit download; duplicate taps resolve once into local full-screen viewer', async () => {
   const app = mediaHarness();
   const initial = app.render(); const tile = one(initial, 'Pressable');
@@ -73,7 +83,7 @@ test('image keeps 240x180 geometry before and after explicit download; duplicate
   assert.equal(one(initial, 'Icon', p => p.icon === 'maximize').size, 20);
   tile.onPress(); tile.onPress();
   assert.equal(app.calls.length, 1);
-  assert.equal(one(app.render(), 'Pressable').disabled, true);
+  assert.equal(one(app.render(), 'Pressable').accessibilityState.busy, true);
   app.pending().resolve('file:///scoped/image31.jpg'); await settled();
   const loaded = app.render();
   assert.equal(one(loaded, 'ImageViewer').uri, 'file:///scoped/image31.jpg');
@@ -122,7 +132,7 @@ test('recycling back to the original descriptor never resurrects the previous im
   app.props.media = { ...original, id: 32 }; app.render();
   app.props.media = original;
   assert.equal(nodes(app.render()).some(node => ['Image', 'ImageViewer'].includes(node.type)), false);
-  assert.equal(one(app.render(), 'Pressable').disabled, false);
+  assert.notEqual(one(app.render(), 'Pressable').disabled, true);
 });
 test('unmount ignores late media completion; rejected/remote image input leaves a retryable placeholder', async () => {
   const closed = mediaHarness(); one(closed.render(), 'Pressable').onPress(); closed.unmount();
@@ -133,7 +143,7 @@ test('unmount ignores late media completion; rejected/remote image input leaves 
     if (result) app.pending().resolve(result); else app.pending().reject(new Error('synthetic failure'));
     await settled(); const tree = app.render();
     assert.equal(nodes(tree).some(node => ['Image', 'ImageViewer'].includes(node.type)), false);
-    assert.equal(one(tree, 'Pressable').disabled, false); assert.deepEqual(app.errors, ['error']);
+    assert.notEqual(one(tree, 'Pressable').disabled, true); assert.deepEqual(app.errors, ['error']);
   }
 });
 test('file and audio retain guarded local resolution, file-viewer and playback paths without image UI', async () => {
@@ -189,4 +199,70 @@ test('all image controls have distinct bilingual labels in the actual dictionary
   for (const key of ['viewPhoto', 'zoomPhoto', 'closePhoto', 'zoomIn', 'zoomOut', 'photoPanHint']) {
     assert.ok(translator('ar')(key)); assert.ok(translator('en')(key)); assert.notEqual(translator('ar')(key), translator('en')(key));
   }
+});
+test('hidden images and non-image attachments never start automatic local resolution', () => {
+  const hidden = mediaHarness(); hidden.render(); hidden.render();
+  assert.equal(hidden.calls.length, 0);
+  for (const kind of ['audio', 'file']) {
+    const app = mediaHarness(kind); app.props.previewVisible = true;
+    app.render(); app.render(); assert.equal(app.calls.length, 0);
+  }
+});
+test('a tap during automatic thumbnail loading joins one scoped request and intentionally opens full-screen', async () => {
+  const app = mediaHarness(); app.props.previewVisible = true; app.render();
+  const tile = one(app.render(), 'Pressable');
+  assert.notEqual(tile.disabled, true); assert.equal(tile.accessibilityState.busy, true);
+  tile.onPress(); tile.onPress(); app.render(); assert.equal(app.calls.length, 1);
+  app.pending().resolve('file:///scoped/intentional.jpg'); await settled();
+  assert.equal(one(app.render(), 'ImageViewer').uri, 'file:///scoped/intentional.jpg');
+});
+test('automatic offline/cache failure is silent and never retries on rerender or repeated visibility; explicit retry works', async () => {
+  const app = mediaHarness(); app.props.previewVisible = true; app.render();
+  app.pending().reject(Object.assign(new Error('synthetic offline cache miss'), { code: 'media_not_cached' }));
+  await settled(); app.render(); app.render();
+  app.props.previewVisible = false; app.render(); app.props.previewVisible = true; app.render();
+  assert.equal(app.calls.length, 1); assert.deepEqual(app.errors, []);
+  app.next(); one(app.render(), 'Pressable').onPress();
+  app.pending().resolve('file:///scoped/offline-cached.jpg'); await settled();
+  assert.equal(one(app.render(), 'ImageViewer').uri, 'file:///scoped/offline-cached.jpg');
+  assert.equal(app.calls.length, 2);
+});
+test('automatic preview is foreground-only, ignores interrupted results and resumes only by a new scoped lookup', async () => {
+  const app = mediaHarness(); app.appState('background'); app.props.previewVisible = true;
+  app.render(); assert.equal(app.calls.length, 0);
+  app.appState('active'); app.render(); assert.equal(app.calls.length, 1);
+  const old = app.pending(); app.appState('background'); app.render();
+  old.resolve('file:///scoped/stale-background.jpg'); await settled();
+  assert.equal(nodes(app.render()).some(node => ['Image', 'ImageViewer'].includes(node.type)), false);
+  app.next(); app.appState('active'); app.render(); assert.equal(app.calls.length, 2);
+  app.pending().resolve('file:///scoped/foreground.jpg'); await settled();
+  const tree = app.render(); assert.equal(one(tree, 'Image').source.uri, 'file:///scoped/foreground.jpg');
+  assert.equal(nodes(tree).some(node => node.type === 'ImageViewer'), false);
+});
+test('leaving viewport cancels acceptance of automatic results; returning resolves once without opening full-screen', async () => {
+  const app = mediaHarness(); app.props.previewVisible = true; app.render(); const old = app.pending();
+  app.props.previewVisible = false; app.render();
+  old.resolve('file:///scoped/hidden.jpg'); await settled();
+  assert.equal(nodes(app.render()).some(node => ['Image', 'ImageViewer'].includes(node.type)), false);
+  app.next(); app.props.previewVisible = true; app.render();
+  assert.equal(app.calls.length, 2);
+  app.pending().resolve('file:///scoped/visible.jpg'); await settled();
+  assert.equal(one(app.render(), 'Image').source.uri, 'file:///scoped/visible.jpg');
+  assert.equal(nodes(app.render()).some(node => node.type === 'ImageViewer'), false);
+});
+test('visible automatic loads retain account/membership/recycling fences and ignore revoked/unmounted results', async () => {
+  for (const change of [app => { app.props.scopeKey = 'synthetic-db/user8'; },
+    app => { app.props.room = { ...app.props.room, membership_id: 99 }; },
+    app => { app.props.media = { ...app.props.media, id: 32 }; }]) {
+    const app = mediaHarness(); app.props.previewVisible = true; app.render(); const old = app.pending();
+    change(app); app.next(); app.render();
+    old.resolve('file:///scoped/old.jpg'); await settled();
+    assert.equal(nodes(app.render()).some(node => ['Image', 'ImageViewer'].includes(node.type)), false);
+    app.pending().resolve('file:///scoped/new.jpg'); await settled();
+    assert.equal(one(app.render(), 'Image').source.uri, 'file:///scoped/new.jpg');
+    assert.equal(nodes(app.render()).some(node => node.type === 'ImageViewer'), false);
+  }
+  const revoked = mediaHarness(); revoked.props.previewVisible = true; revoked.render(); revoked.unmount();
+  revoked.pending().resolve('file:///scoped/revoked.jpg'); await settled();
+  assert.equal(revoked.lateWrites, 0); assert.deepEqual(revoked.errors, []);
 });

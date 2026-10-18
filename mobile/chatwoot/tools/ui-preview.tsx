@@ -5,6 +5,7 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { registerRootComponent } from 'expo';
 import * as Crypto from 'expo-crypto';
 import * as FS from 'expo-file-system/legacy';
+import * as fixtureRuntime from '../src/odoo/runtime';
 import { ImageViewer } from '../src/odoo/ui/ImageViewer';
 import { translator } from '../src/odoo/ui/dictionary';
 import { Button } from '../src/odoo/ui/components';
@@ -172,7 +173,17 @@ function PreviewApp() {
     // viewer's file-only guard and create a small local geometric fixture instead.
     const uri = `${FS.cacheDirectory}cw36-local-image.png`;
     const png = 'iVBORw0KGgoAAAANSUhEUgAAAHgAAABQCAIAAABd+SbeAAAAzElEQVR4nO3QUQmAAABEMZP4bU4jmsQIxngnDJZgx3k/v/Pe1+8c+ZroXfma6F2iRYvO5Wuid4kWLTqXr4neJVq06Fy+JnqXaNGic/ma6F2iRYvO5Wuid4kWLTqXr4neJVq06Fy+JnqXaNGic/ma6F2iRYvO5Wuid4kWLTqXr4neJVq06Fy+JnqXaNGic/ma6F2iRYvO5Wuid4kWLTqXr4neJVq06Fy+JnqXaNGic/ma6F2iRYvO5Wuid4kWLTqXr4neJVq06Fy+JnrXB2/sJFi/ek+mAAAAAElFTkSuQmCC';
-    void FS.writeAsStringAsync(uri, png, { encoding: FS.EncodingType.Base64 }).then(() => setImageUri(uri));
+    void FS.writeAsStringAsync(uri, png, { encoding: FS.EncodingType.Base64 }).then(() => {
+      // Fixture-only native seam: actual Timeline/MediaTile/FlashList, synthetic local
+      // resolution instead of a real Odoo account. Never imported by normal entry.
+      Object.assign(fixtureRuntime, { localMedia: async () => {
+        await new Promise(resolve => setTimeout(resolve, 250));
+        return uri;
+      } });
+      messages[15]!.media = { id: 37, kind: 'image', mime: 'image/png', size: 261,
+        sha256: 'a'.repeat(64), name: 'CW37 inline preview.png' };
+      setImageUri(uri);
+    });
   }, []);
   return (
     <SafeAreaProvider>

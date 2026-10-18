@@ -1,5 +1,15 @@
 import type { Bootstrap, Room } from '../core/ChatEngine';
 
+/** Odoo timestamps are UTC; display device-local time using 0–9 digits. */
+export function messageTime(value: string, timeZone?: string): string {
+  const iso = value.replace(' ', 'T');
+  const date = new Date(/(?:Z|[+-]\d{2}:\d{2})$/i.test(iso) ? iso : `${iso}Z`);
+  if (!Number.isFinite(date.getTime())) return '';
+  return new Intl.DateTimeFormat('en-GB', {
+    hour: '2-digit', minute: '2-digit', hour12: false, numberingSystem: 'latn', timeZone,
+  }).format(date);
+}
+
 /** Server-derived presentation only; every operation remains server-authorized. */
 export function conversationAccess(identity: Bootstrap | null, room: Room) {
   const scoped = !!identity?.company_ids.includes(room.company_id);

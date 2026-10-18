@@ -14,7 +14,7 @@ import { Button, colors, direction, Field, Label, styles } from './components';
 import { errorWord, type Language, type Translate, type Word } from './dictionary';
 import { AttachmentTools, MediaTile, useVoiceSession } from './MediaTools';
 import type { ChatView } from './useChat';
-import { canViewMedia, conversationAccess, presentationKey, visibleReadIds } from './viewModel';
+import { canViewMedia, conversationAccess, messageTime, presentationKey, visibleReadIds } from './viewModel';
 
 type Row = { key: string; message?: Message; pending?: Pending };
 export function TimelineScreen({
@@ -234,7 +234,7 @@ export function TimelineScreen({
                 )}
                 <View style={[styles.row, { justifyContent: 'space-between' }]}>
                   {message?.created_at && (
-                    <Text style={styles.muted}>{message.created_at.slice(11, 16)}</Text>
+                    <Text style={styles.muted}>{messageTime(message.created_at)}</Text>
                   )}
                   {own && (
                     <Text

@@ -195,9 +195,10 @@ test('expanded member actions reset on room scope changes and stay behind the cu
 
 test('actual central Sheet opts into compact RTL/LTR header and 44px close target without changing legacy layout', () => {
   const element = (type, props) => ({ type, props: props || {} });
-  const native = { StyleSheet: { create: value => value } };
-  for (const name of ['ActivityIndicator', 'Modal', 'Pressable', 'ScrollView', 'Text', 'TextInput', 'View']) native[name] = name;
-  const modules = { react: { forwardRef: component => component },
+  const offsets = [];
+  const native = { StyleSheet: { create: value => value }, Platform: { OS: 'android' } };
+  for (const name of ['ActivityIndicator', 'KeyboardAvoidingView', 'Modal', 'Pressable', 'ScrollView', 'Text', 'TextInput', 'View']) native[name] = name;
+  const modules = { react: { forwardRef: component => component, useState: () => [0, value => offsets.push(value)], useRef: value => ({ current: value }) },
     'react/jsx-runtime': { jsx: element, jsxs: element, Fragment: 'Fragment' }, 'react-native': native,
     'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView' },
     'react-native-svg': { __esModule: true, default: 'Svg', Path: 'Path' } };
@@ -215,6 +216,22 @@ test('actual central Sheet opts into compact RTL/LTR header and 44px close targe
   assert.ok(one(legacy, components.Button));
   for (const language of ['ar', 'en']) {
     const compact = components.Sheet({ ...props, compact: true, language });
+    const keyboard = one(compact, 'KeyboardAvoidingView');
+    assert.equal(keyboard.behavior, 'height');
+    assert.equal(keyboard.style.flex, 1);
+    assert.equal(one(compact, 'ScrollView').style.flexShrink, 1);
+    assert.ok(nodes(compact).some(node => node.props.onLayout && node.props.collapsable === false), 'modal-local offset is measured');
+    const frame = one(compact, 'View', p => p.onLayout && p.collapsable === false);
+    const callbacks = [];
+    frame.ref.current = { measureInWindow: callback => callbacks.push(callback) };
+    const before = offsets.length;
+    frame.onLayout(); frame.onLayout();
+    callbacks[0](0, 99);
+    assert.equal(offsets.length, before, 'stale measure ignored');
+    callbacks[1](0, 40);
+    assert.equal(offsets.at(-1), 40, 'offset uses modal window coordinates');
+    frame.ref.current = null; callbacks[1](0, 88);
+    assert.equal(offsets.at(-1), 40, 'unmounted frame ignored');
     assert.equal(one(compact, 'ScrollView').contentContainerStyle.gap, 8);
     const closeNode = nodes(compact).find(node => node.type === components.IconButton);
     assert.equal(closeNode.props.icon, 'close');

@@ -1,7 +1,9 @@
 import React from 'react';
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -266,20 +268,40 @@ export function Sheet({
   compact?: boolean;
   language?: Language;
 }) {
-  return (
-    <Modal visible transparent animationType="fade" onRequestClose={close}>
-      <SafeAreaView style={styles.modal}>
-        <View style={[styles.panel, compact && { padding: 12, gap: 8 }, style]}>
-          <View style={compact ? { direction: 'ltr', flexDirection: language === 'ar' ? 'row-reverse' : 'row', alignItems: 'center', gap: 8 } : [styles.row, { justifyContent: 'space-between' }]}>
+  const [keyboardOffset, setKeyboardOffset] = React.useState(0);
+  const keyboardFrame = React.useRef<View>(null);
+  const keyboardMeasure = React.useRef(0);
+  const panel = (
+        <View style={[styles.panel, compact && { padding: 12, gap: 8, maxHeight: '100%', flexShrink: 1, minHeight: 0 }, style]}>
+          <View style={compact ? { direction: 'ltr', flexDirection: language === 'ar' ? 'row-reverse' : 'row', alignItems: 'center', gap: 8, flexShrink: 0 } : [styles.row, { justifyContent: 'space-between' }]}>
             <Text style={compact ? [styles.title, direction(language), { flex: 1, fontSize: 18 }] : styles.title}>{title}</Text>
             {compact ? <IconButton icon="close" label={t('close')} onPress={close} /> : <Button quiet title={t('close')} onPress={close} />}
           </View>
           <ScrollView
+            style={compact ? { flexShrink: 1, minHeight: 0 } : undefined}
             keyboardShouldPersistTaps="handled"
             contentContainerStyle={{ gap: compact ? 8 : 14, paddingBottom: 12 }}>
             {children}
           </ScrollView>
         </View>
+  );
+  return (
+    <Modal visible transparent animationType="fade" onRequestClose={close}>
+      <SafeAreaView style={styles.modal}>
+        {compact ? (
+          <View ref={keyboardFrame} collapsable={false} style={{ flex: 1, width: '100%', minHeight: 0 }}
+            onLayout={() => {
+              const requested = ++keyboardMeasure.current;
+              keyboardFrame.current?.measureInWindow((_x, y) => {
+                if (keyboardFrame.current && requested === keyboardMeasure.current) setKeyboardOffset(y);
+              });
+            }}>
+            <KeyboardAvoidingView style={{ flex: 1, minHeight: 0, justifyContent: 'center' }}
+              behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={keyboardOffset}>
+              {panel}
+            </KeyboardAvoidingView>
+          </View>
+        ) : panel}
       </SafeAreaView>
     </Modal>
   );

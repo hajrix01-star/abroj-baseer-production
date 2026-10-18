@@ -4,7 +4,7 @@ import { Text, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { registerRootComponent } from 'expo';
 import * as Crypto from 'expo-crypto';
-import { Asset } from 'expo-asset';
+import * as FS from 'expo-file-system/legacy';
 import { ImageViewer } from '../src/odoo/ui/ImageViewer';
 import { translator } from '../src/odoo/ui/dictionary';
 import { Button } from '../src/odoo/ui/components';
@@ -165,22 +165,27 @@ function PreviewApp() {
   const [ready, setReady] = useState(false);
   const [surface, setSurface] = useState<'choose' | 'chat' | 'image'>('choose');
   const [imageUri, setImageUri] = useState('');
+  const [imageLanguage, setImageLanguage] = useState<'ar' | 'en'>('ar');
   useEffect(() => {
     void engine.login('synthetic', 'synthetic', true).then(() => setReady(true));
-    const asset = Asset.fromModule(require('../assets/icon.png'));
-    void asset.downloadAsync().then(() => setImageUri(asset.localUri ?? ''));
+    // Android drawable resource names are not file:// URLs. Keep the production
+    // viewer's file-only guard and create a small local geometric fixture instead.
+    const uri = `${FS.cacheDirectory}cw36-local-image.png`;
+    const png = 'iVBORw0KGgoAAAANSUhEUgAAAHgAAABQCAYAAADSm7GJAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAD8SURBVHhe7dLLDQIxEAXBSY1wCIzAiAS0HFb8IqjpJ7UsH63yXK73x6a2bY5Hz0yBfQB//3S1LQsYX8D4AsYXML6A8QWML2B8AeMLGF/A+ALGFzC+gPEFjC9gfAHjCxhfwPgCxhcwvoDxBYwvYHwB4wsYX8D4AsYXML6A8QWML2B8AeMLGF/A+ALGFzC+gPGdwO+XFbvNil6mx3m8OWCvgPECxgsYL2C8gPECxgsYL2C8gPECxgsYL2C8gPECxgsYL2C8gPECxgsYL2C8gPECxgsYL2C8gPECxgsYL2C8gPECxgsYL2C8gPECxgsYL2C8gPECxgsYL2C8H+DyOoFX7c9vl3sCnfrJUaEI/mIAAAAASUVORK5CYII=';
+    void FS.writeAsStringAsync(uri, png, { encoding: FS.EncodingType.Base64 }).then(() => setImageUri(uri));
   }, []);
   return (
     <SafeAreaProvider>
       {!ready ? <Text>{marker}</Text> : surface === 'chat' ? <SessionApp engine={engine} /> : surface === 'image' ? (
-        <ImageViewer uri={imageUri} name="CW36 local test image" language="ar" t={translator('ar')}
+        <ImageViewer uri={imageUri} name="CW36 local test image" language={imageLanguage} t={translator(imageLanguage)}
           onClose={() => setSurface('choose')} />
       ) : (
         <SafeAreaView style={{ flex: 1, padding: 24, justifyContent: 'center' }}>
           <View style={{ gap: 20 }}>
             <Text>{marker}</Text>
             <Button title="CW36 chat check" onPress={() => setSurface('chat')} />
-            <Button title="CW36 image check" disabled={!imageUri} onPress={() => setSurface('image')} />
+            <Button title="CW36 image check" disabled={!imageUri} onPress={() => { setImageLanguage('ar'); setSurface('image'); }} />
+            <Button title="CW36 image English" disabled={!imageUri} onPress={() => { setImageLanguage('en'); setSurface('image'); }} />
           </View>
         </SafeAreaView>
       )}

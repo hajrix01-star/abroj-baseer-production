@@ -55,7 +55,8 @@ test('runtime source uses no-follow client on all network paths with scoped hist
   assert.match(runtime, /BlobUtil\.config\(\{ \.\.\.nativeSessionOptions/);
   assert.doesNotMatch(runtime, /\bawait fetch\(/);
   assert.match(runtime, /getEngine\(\)\.mediaAssociation\(room, Number\(descriptor\.id\)\)/);
-  assert.match(runtime, /cached\.size === expected\.bytes && await hashFile\(uri\) === expected\.sha256/);
+  assert.match(runtime, /cached\.size === expected\.bytes && await hashFile\(path\) === expected\.sha256/);
+  assert.match(runtime, /cachedLease\(`\$\{directory\}media-\$\{media\.id\}\$\{extension\}`, \{ bytes: media\.size, sha256: media\.sha256 \}\)/);
   assert.match(runtime, /digest !== media\.sha256/);
   assert.doesNotMatch(runtime, /CookieManager|\.getCookies\(|\.getCookie\(/);
 });

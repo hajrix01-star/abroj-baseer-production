@@ -23,6 +23,11 @@ function hooks() {
         if (!slots[at] || deps.some((item, i) => item !== slots[at].deps[i])) slots[at] = { deps, value };
         return slots[at].value;
       },
+      useMemo(factory, deps) {
+        const at = index++;
+        if (!slots[at] || deps.some((item, i) => item !== slots[at].deps[i])) slots[at] = { deps, value: factory() };
+        return slots[at].value;
+      },
       useEffect(callback, deps) {
         const at = index++;
         if (!slots[at] || deps.some((value, i) => value !== slots[at].deps[i])) {
@@ -36,7 +41,7 @@ function hooks() {
 const element = (type, props) => ({ type, props: props || {} });
 const jsx = { jsx: element, jsxs: element, Fragment: 'Fragment' };
 const colors = { white: 'white', border: 'border', chatBackground: 'history-surface', chatSent: 'sent-surface', composerBackground: 'composer-surface', danger: 'danger', blue: 'blue' };
-const components = { Button: 'Button', Field: 'Field', IconButton: 'IconButton', Label: 'Label', colors,
+const components = { Button: 'Button', Field: 'Field', IconButton: 'IconButton', Label: 'Label', Sheet: 'Sheet', colors,
   styles: { fill: { flex: 1 }, row: {}, card: {}, header: {}, text: {}, muted: {}, title: {} }, direction: () => ({}) };
 function load(file, dependencies) {
   const compiled = ts.transpileModule(readFileSync(join(__dirname, file), 'utf8'), { compilerOptions: {
@@ -133,31 +138,36 @@ test('media withdrawal keeps text input but removes picker/mic capability; disab
 
 function timeline() {
   const state = hooks(); const calls = []; const voiceRights = []; const frames = []; const keyboard = {};
+  const alerts = []; let hidden = [];
   let release;
   const tools = function AttachmentTools() {};
   const props = { language: 'ar', t, onMenu: () => calls.push('menu'), back: () => calls.push('back'), manage: () => calls.push('members'),
-    engine: { enqueue: async (_room, text) => { calls.push(['text', text]); await new Promise(resolve => { release = resolve; }); }, enqueueAttachment: async () => undefined, acknowledge: async () => null },
+    engine: { cachedHiddenMessages: () => [...hidden], hiddenMessages: async () => [...hidden],
+      setMessageHidden: async (_room, id, value) => { hidden = value ? [...hidden, id] : hidden.filter(item => item !== id); calls.push(['hidden', id, value]); return [...hidden]; },
+      messageInfo: async (_room, id) => { calls.push(['info', id]); return props.chat.history.messages.find(message => message.id === id); },
+      enqueue: async (_room, text) => { calls.push(['text', text]); await new Promise(resolve => { release = resolve; }); }, enqueueAttachment: async () => undefined, acknowledge: async () => null },
     chat: { selected: room, presentationReady: true, offline: true, busy: false, error: null,
       identity: { user_id: 7, company_ids: [1], permissions: { chat_view: true, chat_send: true, media: true } },
       history: { messages: [{ id: 10, author_user_id: 8, author_name: 'Synthetic', text: 'retained message', created_at: '2026-10-18 12:30:00', media: { id: 1 } }] }, pending: [], capture: () => calls.push('capture'),
     },
   };
-  const viewModel = { presentationKey: () => 'scoped', visibleReadIds: () => [], messageTime: () => '15:30',
+  const viewModel = { presentationKey: () => 'scoped', visibleReadIds: () => [], messageTime: () => '15:30', messageDateTime: () => '18/10/2026, 15:30',
     conversationAccess: (identity, selected) => {
       const canSend = !!identity?.company_ids.includes(selected.company_id) && identity.permissions.chat_view === true && identity.permissions.chat_send === true;
       return { directOff: false, canSend, canAttach: canSend && identity.permissions.media === true };
     }, canViewMedia: (identity, selected) => !!identity?.company_ids.includes(selected.company_id) && identity.permissions.chat_view === true && identity.permissions.media === true };
   const module = load('TimelineScreen.tsx', { react: state.react, 'react/jsx-runtime': jsx,
     frames,
-    'react-native': { Keyboard: { addListener: (name, callback) => { keyboard[name] = callback; return { remove() {} }; } }, AppState: { currentState: 'active' }, KeyboardAvoidingView: 'KeyboardAvoidingView', Platform: { OS: 'android' }, Pressable: 'Pressable', Text: 'Text', View: 'View' },
+    'react-native': { Alert: { alert: (...args) => alerts.push(args) }, Keyboard: { addListener: (name, callback) => { keyboard[name] = callback; return { remove() {} }; } }, AppState: { currentState: 'active' }, KeyboardAvoidingView: 'KeyboardAvoidingView', Platform: { OS: 'android' }, Pressable: 'Pressable', Text: 'Text', View: 'View' },
     '@shopify/flash-list': { FlashList: 'FlashList' }, './components': components, './dictionary': { errorWord: () => 'error' }, './viewModel': viewModel,
     './MediaTools': { AttachmentTools: tools, MediaTile: 'MediaTile', useVoiceSession: (_scope, _report, play, record) => { voiceRights.push([play, record]); return { recording: false }; } },
     './GroupAvatar': { GroupAvatar: 'GroupAvatar' },
+    './SwipeReply': { SwipeReply: 'SwipeReply' },
     './timelineFollow': load('timelineFollow.ts', {}),
     './companyNames': { companyDisplayName: () => 'Synthetic company' },
     './MessagePresentation': { MessageQuote: 'MessageQuote', MessageStatus: 'MessageStatus' },
   });
-  return { props, calls, voiceRights, tools, keyboard, frames,
+  return { props, calls, voiceRights, tools, keyboard, frames, alerts,
     flushFrames() { for (let i = 0; i < frames.length && i < 100; i++) { const callback = frames[i]; frames[i] = null; callback?.(); } },
     render: () => state.render(() => module.TimelineScreen(props)), release: () => release() };
 }
@@ -261,6 +271,15 @@ test('timeline gives history the remaining height, caps inline input and dispatc
   assert.ok(app.calls.includes('menu'));
 });
 
+test('typing preserves timeline data and cell presentation identity while local actions explicitly invalidate cells', async () => {
+  const app = timeline(); app.render(); await settled();
+  const first = one(app.render(), 'FlashList');
+  one(app.render(), 'Field').onChangeText('a draft'); const typed = one(app.render(), 'FlashList');
+  assert.equal(typed.data, first.data); assert.equal(typed.extraData, first.extraData);
+  typed.renderItem({ item: typed.data[0] }).props.onPress();
+  const actions = one(app.render(), 'FlashList'); assert.equal(actions.data, first.data); assert.notEqual(actions.extraData, typed.extraData);
+});
+
 test('timeline hides retained rows during blocked or wrong-company presentation and passes revoked rights into voice', () => {
   const app = timeline(); app.render();
   app.props.chat.presentationReady = false;
@@ -355,6 +374,74 @@ test('reply uses contextual affordance, focuses input and retains quote on faile
   one(tree, 'Field').onChangeText('keep draft'); one(app.render(), app.tools).onSendText(); await settled();
   assert.equal(one(app.render(), 'MessageQuote').text, 'retained message');
   assert.equal(one(app.render(), 'Field').value, 'keep draft');
+});
+
+test('message information and device-local hide undo remain available to read-only members without exposing hidden content', async () => {
+  const app = timeline(); app.props.chat.identity.permissions.chat_send = false;
+  let list = one(app.render(), 'FlashList'); const item = { key: 'message-10', message: app.props.chat.history.messages[0] };
+  list.renderItem({ item }).props.onPress();
+  let row = one(app.render(), 'FlashList').renderItem({ item });
+  assert.equal(nodes(row).some(node => node.type === 'IconButton' && node.props.icon === 'reply'), false);
+  one(row, 'IconButton', props => props.icon === 'info').onPress(); await settled();
+  const sheet = one(app.render(), 'Sheet'); assert.equal(sheet.title, 'messageInfo');
+  assert.equal(JSON.stringify(sheet).includes('retained message'), true);
+  assert.equal(JSON.stringify(sheet).includes('receiptSummary'), false, 'received message has no invented author-wide receipt status');
+  sheet.close();
+  row = one(app.render(), 'FlashList').renderItem({ item }); row.props.onPress();
+  row = one(app.render(), 'FlashList').renderItem({ item });
+  one(row, 'IconButton', props => props.icon === 'trash').onPress();
+  assert.equal(app.calls.some(call => Array.isArray(call) && call[0] === 'hidden'), false, 'confirmation precedes persistence');
+  app.alerts.at(-1)[2].find(action => action.style === 'destructive').onPress(); await settled();
+  row = one(app.render(), 'FlashList').renderItem({ item });
+  assert.equal(JSON.stringify(row).includes('retained message'), false);
+  assert.equal(JSON.stringify(row).includes('MediaTile'), false);
+  one(row, 'Button', props => props.title === 'undoHide').onPress(); await settled();
+  row = one(app.render(), 'FlashList').renderItem({ item }); assert.equal(JSON.stringify(row).includes('retained message'), true);
+});
+
+test('closing message information prevents late fetch resurrection and never dismisses the keyboard', async () => {
+  const app = timeline(); let finish;
+  app.props.engine.messageInfo = () => new Promise(resolve => { finish = resolve; });
+  const item = { key: 'message-10', message: app.props.chat.history.messages[0] };
+  one(app.render(), 'FlashList').renderItem({ item }).props.onPress();
+  one(one(app.render(), 'FlashList').renderItem({ item }), 'IconButton', props => props.icon === 'info').onPress();
+  one(app.render(), 'Sheet').close(); finish(item.message); await settled();
+  assert.equal(nodes(app.render()).some(node => node.type === 'Sheet'), false);
+});
+
+test('tapping a reply quote locates and highlights the original without clearing draft or keyboard', async () => {
+  const app = timeline(); const original = { ...app.props.chat.history.messages[0], id: 4, text: 'original' };
+  app.props.chat.history.messages[0].reply = { id: 4, author_name: 'Synthetic', text: 'original' };
+  app.props.chat.jump = async id => { app.calls.push(['jump', id]); app.props.chat.history = { messages: [original], archive: { browsing: true, older: { kind: 'end' }, newer: { kind: 'gap' } } }; };
+  one(app.render(), 'Field').onChangeText('keep draft');
+  let tree = app.render(), list = one(tree, 'FlashList'); let target;
+  list.ref.current = { scrollToIndex: value => { target = value; } };
+  const item = { key: 'message-10', message: app.props.chat.history.messages[0] };
+  one(list.renderItem({ item }), 'MessageQuote').onPress(); await settled(); app.render(); app.flushFrames();
+  assert.deepEqual(app.calls.find(call => Array.isArray(call) && call[0] === 'jump'), ['jump', 4]);
+  assert.equal(target.index, 0); assert.equal(target.animated, false); assert.equal(one(app.render(), 'Field').value, 'keep draft');
+});
+
+test('swipe reply respects language direction, vertical scrolling, cancellation and revoked send rights', () => {
+  const state = hooks(); let responder, replies = 0;
+  const module = load('SwipeReply.tsx', { react: state.react, 'react/jsx-runtime': jsx,
+    'react-native': { View: 'View', PanResponder: { create: handlers => { responder = handlers; return { panHandlers: {} }; } } },
+    './components': { ...components, Icon: 'Icon' } });
+  const props = { enabled: true, language: 'ar', gestureKey: 'scope/message10', onReply: () => replies++, children: element('Text', {}) };
+  const render = () => state.render(() => module.SwipeReply(props)); render();
+  assert.equal(responder.onMoveShouldSetPanResponder(null, { dx: -20, dy: 2, numberActiveTouches: 1 }), true);
+  assert.equal(responder.onMoveShouldSetPanResponder(null, { dx: -20, dy: 35, numberActiveTouches: 1 }), false);
+  assert.equal(responder.onMoveShouldSetPanResponder(null, { dx: 20, dy: 0, numberActiveTouches: 1 }), false);
+  responder.onPanResponderGrant(); responder.onPanResponderRelease(null, { dx: -60, dy: 1 }); assert.equal(replies, 1);
+  props.language = 'en'; render(); responder.onPanResponderGrant();
+  responder.onPanResponderRelease(null, { dx: 60, dy: 1 }); assert.equal(replies, 2);
+  responder.onPanResponderGrant(); responder.onPanResponderMove(null, { dx: 65, dy: 0, numberActiveTouches: 2 });
+  responder.onPanResponderRelease(null, { dx: 65, dy: 0 }); assert.equal(replies, 2);
+  props.enabled = false; render(); responder.onPanResponderRelease(null, { dx: 65, dy: 0 }); assert.equal(replies, 2);
+  props.enabled = true; render(); responder.onPanResponderGrant(); props.gestureKey = 'scope/message11'; render();
+  responder.onPanResponderRelease(null, { dx: 65, dy: 0 }); assert.equal(replies, 2, 'recycled rows cannot receive an old gesture');
+  responder.onPanResponderGrant(); responder.onPanResponderTerminate();
+  responder.onPanResponderRelease(null, { dx: 65, dy: 0 }); assert.equal(replies, 2);
 });
 
 test('following threshold is single, receipt/prepend changes do not count as new rows', () => {

@@ -38,7 +38,7 @@ function copySources(projectRoot, applicationPackage) {
   const feedback = 'com/baseer/bchat/trial/feedback';
   const target = path.join(projectRoot, 'android/app/src/main/java', feedback);
   fs.mkdirSync(target, { recursive: true });
-  for (const file of ['FeedbackController.java', 'BWorkFeedbackModule.java', 'BWorkFeedbackPackage.java']) {
+  for (const file of ['FeedbackController.java', 'BWorkFeedbackModule.java', 'BWorkFeedbackPackage.java', 'PeakEnvelope.java', 'BWorkWaveformModule.java']) {
     fs.copyFileSync(path.join(__dirname, 'native/android', feedback, file), path.join(target, file));
   }
 }

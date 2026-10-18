@@ -56,6 +56,7 @@ function mediaHarness(kind = 'image') {
     scopeKey: 'synthetic-db/user7', t, language: 'ar', report: word => errors.push(word) };
   const mod = load('MediaTools.tsx', { react: state.react, 'react/jsx-runtime': jsx, 'react-native': native,
     './components': components, './ImageViewer': { ImageViewer: 'ImageViewer' }, './dictionary': { errorWord: () => 'error' },
+    './VoiceBubble': { VoiceBubble: 'VoiceBubble' },
     '../runtime': { localMediaLease: async (room, media, variant) => {
       calls.push(['localMediaLease', room, media, variant]);
       const uri = await pending.promise;
@@ -151,8 +152,10 @@ test('unmount ignores late media completion; rejected/remote image input leaves 
     assert.notEqual(one(tree, 'Pressable').disabled, true); assert.deepEqual(app.errors, ['error']);
   }
 });
-test('file and audio retain guarded local resolution, file-viewer and playback paths without image UI', async () => {
-  for (const kind of ['audio', 'file']) {
+test('files retain guarded local resolution and file-viewer path; audio delegates to the scoped voice bubble', async () => {
+  const audio = mediaHarness('audio'); const bubble = one(audio.render(), 'VoiceBubble');
+  assert.equal(bubble.media, audio.props.media); assert.equal(bubble.room, audio.props.room); assert.equal(bubble.voice, audio.props.voice);
+  for (const kind of ['file']) {
     const app = mediaHarness(kind); const tree = app.render();
     assert.equal(nodes(tree).some(node => ['ImageViewer', 'Pressable'].includes(node.type)), false);
     one(tree, 'Button').onPress();
@@ -161,7 +164,6 @@ test('file and audio retain guarded local resolution, file-viewer and playback p
     assert.equal(app.calls[0][2], app.props.media);
     assert.equal(app.calls[1][0], kind === 'audio' ? 'play' : 'file');
     assert.equal(app.calls[1][1], kind === 'audio' ? 'file:///scoped/attachment' : '/scoped/attachment');
-    if (kind === 'audio') { app.props.voice.playing = true; one(app.render(), 'Button', p => p.title === 'stop').onPress(); await settled(); assert.equal(app.calls.at(-1)[0], 'stop'); }
   }
 });
 function viewerHarness(uri = 'file:///scoped/image.jpg') {

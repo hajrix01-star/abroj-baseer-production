@@ -7,6 +7,24 @@ const ar = {
   menu: 'القائمة',
   profile: 'الملف الشخصي',
   settings: 'الإعدادات',
+  messageInfo: 'معلومات الرسالة',
+  sender: 'المرسل',
+  sentAt: 'تاريخ الإرسال',
+  messageState: 'حالة الرسالة',
+  readCompletedAt: 'وقت اكتمال القراءة',
+  receiptSummary: 'حالة مجمعة من أودو، وليست قائمة بالقراء.',
+  cachedInfo: 'بيانات محفوظة على الجهاز',
+  openOriginal: 'فتح الرسالة الأصلية',
+  hideLocal: 'حذف محلي',
+  hideLocalConfirm: 'سيُخفى محتوى الرسالة على هذا الجهاز فقط. تبقى في أودو ولدى الآخرين، ويمكنك التراجع.',
+  locallyHidden: 'رسالة مخفية على هذا الجهاز',
+  undoHide: 'تراجع عن الإخفاء',
+  localHideLimit: 'بلغت حد الإخفاء المحلي. أعد إظهار بعض الرسائل للمحاولة.',
+  localStateError: 'تعذر قراءة الإخفاء المحلي. حاول فتح المحادثة مجددًا.',
+  voiceMessage: 'رسالة صوتية',
+  pause: 'إيقاف مؤقت',
+  resume: 'متابعة التشغيل',
+  seekAudio: 'موضع التشغيل',
   chatSounds: 'أصوات المحادثة',
   chatSoundsHint: 'أصوات الإرسال والوصول داخل المحادثة المفتوحة فقط.',
   groupPhoto: 'صورة المجموعة',
@@ -128,6 +146,24 @@ const en: Record<Word, string> = {
   menu: 'Menu',
   profile: 'Profile',
   settings: 'Settings',
+  messageInfo: 'Message information',
+  sender: 'Sender',
+  sentAt: 'Sent at',
+  messageState: 'Message status',
+  readCompletedAt: 'Read completion time',
+  receiptSummary: 'Aggregate status from Odoo, not a list of readers.',
+  cachedInfo: 'Information saved on this device',
+  openOriginal: 'Open original message',
+  hideLocal: 'Delete locally',
+  hideLocalConfirm: 'Hide this message on this device only. It remains in Odoo and for others. You can undo this.',
+  locallyHidden: 'Message hidden on this device',
+  undoHide: 'Undo hiding',
+  localHideLimit: 'Local hiding limit reached. Restore some messages to try again.',
+  localStateError: 'Could not read local hiding preferences. Try reopening the conversation.',
+  voiceMessage: 'Voice message',
+  pause: 'Pause',
+  resume: 'Resume playback',
+  seekAudio: 'Playback position',
   chatSounds: 'Conversation sounds',
   chatSoundsHint: 'Send and receive sounds in the open conversation only.',
   groupPhoto: 'Group photo',
@@ -248,6 +284,9 @@ export const translator = (language: Language) => (word: Word) =>
 export type Translate = ReturnType<typeof translator>;
 export function errorWord(error: unknown): Word {
   const code = (error as { code?: string })?.code;
+  if (code === 'message_unavailable') return 'unavailable';
+  if (code === 'local_hide_quota') return 'localHideLimit';
+  if (code === 'local_state_invalid') return 'localStateError';
   if (code === 'description_invalid') return 'descriptionInvalid';
   if (code === 'avatar_invalid') return 'avatarInvalid';
   if (code === 'avatar_uncertain') return 'avatarUncertain';

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { colors, direction, Icon, styles, type IconName } from './components';
 import type { Language, Translate, Word } from './dictionary';
 
@@ -15,13 +15,15 @@ export function MessageStatus({ state, t }: { state: string | undefined; t: Tran
   );
 }
 
-export function MessageQuote({ author, text, language }: { author: string; text: string; language: Language }) {
+export function MessageQuote({ author, text, language, onPress, label }: { author: string; text: string; language: Language; onPress?: () => void; label?: string }) {
+  const Container = onPress ? Pressable : View;
   return (
-    <View style={{ borderRightWidth: language === 'ar' ? 3 : 0, borderLeftWidth: language === 'en' ? 3 : 0,
+    <Container onPress={onPress} accessibilityRole={onPress ? 'button' : undefined} accessibilityLabel={onPress ? label : undefined}
+      style={{ borderRightWidth: language === 'ar' ? 3 : 0, borderLeftWidth: language === 'en' ? 3 : 0,
       borderColor: colors.blue, backgroundColor: colors.chatQuote, borderRadius: 8,
       paddingHorizontal: 9, paddingVertical: 6, gap: 2, minWidth: 0, flexShrink: 1 }}>
       {!!author && <Text numberOfLines={1} style={[styles.muted, direction(language), { color: colors.blue, fontWeight: '600' }]}>{author}</Text>}
       <Text numberOfLines={2} style={[styles.muted, direction(language)]}>{text}</Text>
-    </View>
+    </Container>
   );
 }

@@ -24,6 +24,16 @@ import { Button, colors, Icon, IconButton, Label, styles } from './components';
 import { errorWord, type Language, type Translate, type Word } from './dictionary';
 import { ImageViewer } from './ImageViewer';
 import { setFeedbackVoice } from './messageSounds';
+import { VoiceBubble } from './VoiceBubble';
+
+// RecorderPlayer's native player is process-wide, including across keyed
+// Timeline unmount/remount. A hook-local queue cannot protect a new room.
+let nativeVoiceQueue: Promise<unknown> = Promise.resolve();
+let nativeVoiceOwner: { id: object; stop(): Promise<void> } | null = null;
+function serialNative<T>(operation: () => Promise<T>): Promise<T> {
+  const result = nativeVoiceQueue.then(operation, operation);
+  nativeVoiceQueue = result.catch(() => undefined); return result;
+}
 
 export function useVoiceSession(
   scope: string,
@@ -41,43 +51,51 @@ export function useVoiceSession(
   const [recording, setRecording] = useState(false);
   const [seconds, setSeconds] = useState(0);
   const [playing, setPlaying] = useState(false);
+  const [paused, setPaused] = useState(false);
+  const [activeUri, setActiveUri] = useState<string | null>(null);
+  const playback = useRef({ uri: null as string | null, duration: 0 });
+  const clock = useRef({ uri: null as string | null, positionMs: 0, durationMs: 0 });
+  const clockListeners = useRef(new Set<() => void>());
+  const progress = useRef({
+    snapshot: () => clock.current,
+    subscribe: (listener: () => void) => { clockListeners.current.add(listener); return () => { clockListeners.current.delete(listener); }; },
+  });
+  const publishProgress = (positionMs: number, durationMs: number, uri: string | null = playback.current.uri) => {
+    clock.current = { uri, positionMs, durationMs };
+    for (const listener of clockListeners.current) listener();
+  };
+  const nativeOwner = useRef({});
   const feedbackOwner = useRef({});
   const voiceActive = useRef(false);
   const playbackRelease = useRef<(() => void) | null>(null);
-  const cleanup = async () => {
+  const prepareCleanup = () => {
     const cleaning = ++token.current;
     const releasingPlayback = playbackRelease.current; playbackRelease.current = null;
-    player.removeRecordBackListener();
-    player.removePlayBackListener();
-    try {
-      await player.stopRecorder();
-    } catch {
-      /* No recorder active. */
-    }
-    try {
-      await player.stopPlayer();
-    } catch {
-      /* No player active. */
-    }
-    releasingPlayback?.();
     const path = temporary.current;
     temporary.current = null;
-    if (path) {
-      try {
-        await BlobUtil.fs.unlink(path.replace(/^file:\/\//, ''));
-      } catch {
-        /* Already staged or deleted. */
+    playback.current = { uri: null, duration: 0 };
+    return async () => {
+      if (nativeVoiceOwner?.id === nativeOwner.current) {
+        nativeVoiceOwner = null;
+        player.removeRecordBackListener(); player.removePlayBackListener();
+        try { await player.stopRecorder(); } catch { /* No recorder active. */ }
+        try { await player.stopPlayer(); } catch { /* No player active. */ }
       }
-    }
-    if (alive.current && cleaning === token.current) {
-      setRecording(false);
-      setPlaying(false);
-      setSeconds(0);
-    }
-    if (cleaning === token.current) {
-      voiceActive.current = false;
-      if (!starting.current) setFeedbackVoice(feedbackOwner.current, false);
-    }
+      releasingPlayback?.();
+      if (path) { try { await BlobUtil.fs.unlink(path.replace(/^file:\/\//, '')); } catch { /* Already removed. */ } }
+      if (alive.current && cleaning === token.current) {
+        setRecording(false); setPlaying(false); setPaused(false); setActiveUri(null); publishProgress(0, 0, null); setSeconds(0);
+      }
+      if (cleaning === token.current) {
+        voiceActive.current = false;
+        if (!starting.current) setFeedbackVoice(feedbackOwner.current, false);
+      }
+    };
+  };
+  const cleanup = () => serialNative(prepareCleanup());
+  const claimNative = async () => {
+    if (nativeVoiceOwner?.id !== nativeOwner.current) await nativeVoiceOwner?.stop();
+    nativeVoiceOwner = { id: nativeOwner.current, stop: () => prepareCleanup()() };
   };
   useEffect(() => {
     alive.current = true;
@@ -120,7 +138,10 @@ export function useVoiceSession(
       const path = `${BlobUtil.fs.dirs.CacheDir}/odoo-voice-${Date.now()}.m4a`;
       temporary.current = path;
       try {
-        await player.startRecorder(path, {
+        await serialNative(async () => {
+          if (current !== token.current || !allowed.current.canRecord || !alive.current) return;
+          await claimNative();
+          return player.startRecorder(path, {
           AudioSourceAndroid: AudioSourceAndroidType.MIC,
           OutputFormatAndroid: OutputFormatAndroidType.MPEG_4,
           AudioEncoderAndroid: AudioEncoderAndroidType.AAC,
@@ -130,6 +151,7 @@ export function useVoiceSession(
           AVFormatIDKeyIOS: AVEncodingOption.aac,
           AVNumberOfChannelsKeyIOS: 1,
           AVSampleRateKeyIOS: 44100,
+          });
         });
         if (current !== token.current || !allowed.current.canRecord) {
           await cleanup();
@@ -154,7 +176,10 @@ export function useVoiceSession(
   const finish = async (room: Room): Promise<Attachment | null> => {
     const current = token.current;
     try {
-      const path = await player.stopRecorder();
+      const path = await serialNative(() => {
+        if (nativeVoiceOwner?.id !== nativeOwner.current) throw new Error('stale_voice');
+        return player.stopRecorder();
+      });
       player.removeRecordBackListener();
       if (current !== token.current || !allowed.current.canRecord || !alive.current) return null;
       setRecording(false);
@@ -175,20 +200,31 @@ export function useVoiceSession(
   };
   const play = async (uri: string, release?: () => void) => {
     if (!allowed.current.canPlay || !alive.current || AppState.currentState !== 'active') { release?.(); return; }
-    await cleanup();
+    const stopping = cleanup(); const requested = token.current;
+    await stopping;
+    if (requested !== token.current) { release?.(); return; }
     if (!allowed.current.canPlay || !alive.current || AppState.currentState !== 'active') { release?.(); return; }
     playbackRelease.current = release ?? null;
     setFeedbackVoice(feedbackOwner.current, true);
     const current = ++token.current;
     try {
-      await player.startPlayer(uri);
+      await serialNative(async () => {
+        if (current !== token.current || !allowed.current.canPlay || !alive.current) return;
+        await claimNative(); return player.startPlayer(uri);
+      });
       if (current !== token.current || !allowed.current.canPlay || !alive.current) {
-        await player.stopPlayer();
         return;
       }
       setPlaying(true);
+      setPaused(false); setActiveUri(uri); publishProgress(0, 0, uri);
+      playback.current = { uri, duration: 0 };
       voiceActive.current = true;
       player.addPlayBackListener(event => {
+        if (current !== token.current || !alive.current) return;
+        if (Number.isFinite(event.duration) && event.duration > 0) {
+          playback.current.duration = event.duration;
+          publishProgress(Number.isFinite(event.currentPosition) ? Math.max(0, Math.min(event.duration, event.currentPosition)) : 0, event.duration);
+        }
         if (
           current === token.current &&
           event.currentPosition >= event.duration &&
@@ -197,11 +233,35 @@ export function useVoiceSession(
           void cleanup();
       });
     } catch {
-      await cleanup();
-      report('error');
+      if (current === token.current) { await cleanup(); report('error'); }
     }
   };
-  return { recording, seconds, playing, start, finish, play, stop: cleanup };
+  const pause = async () => {
+    const current = token.current;
+    await serialNative(async () => {
+      if (current !== token.current || nativeVoiceOwner?.id !== nativeOwner.current || !playback.current.uri || !allowed.current.canPlay || !alive.current) return;
+      try { await player.pausePlayer(); if (current === token.current && alive.current) { setPlaying(false); setPaused(true); } }
+      catch { if (current === token.current) report('error'); }
+    });
+  };
+  const resume = async () => {
+    const current = token.current;
+    await serialNative(async () => {
+      if (current !== token.current || nativeVoiceOwner?.id !== nativeOwner.current || !playback.current.uri || !allowed.current.canPlay || !alive.current || AppState.currentState !== 'active') return;
+      try { await player.resumePlayer(); if (current === token.current && alive.current) { setPlaying(true); setPaused(false); } }
+      catch { if (current === token.current) report('error'); }
+    });
+  };
+  const seek = async (milliseconds: number) => {
+    const current = token.current;
+    await serialNative(async () => {
+      if (current !== token.current || nativeVoiceOwner?.id !== nativeOwner.current || !playback.current.uri || !allowed.current.canPlay || !alive.current || AppState.currentState !== 'active' || !Number.isFinite(milliseconds) || playback.current.duration <= 0) return;
+      const position = Math.max(0, Math.min(playback.current.duration, milliseconds));
+      try { await player.seekToPlayer(position); if (current === token.current && alive.current) publishProgress(position, playback.current.duration); }
+      catch { if (current === token.current) report('error'); }
+    });
+  };
+  return { recording, seconds, playing, paused, activeUri, positionMs: clock.current.positionMs, durationMs: clock.current.durationMs, progress: progress.current, start, finish, play, pause, resume, seek, stop: cleanup };
 }
 export type VoiceSession = ReturnType<typeof useVoiceSession>;
 
@@ -405,6 +465,8 @@ export function MediaTile({
   report,
   scopeKey = '',
   previewVisible = false,
+  senderName = '',
+  senderUserId,
 }: {
   room: Room;
   media: Record<string, unknown>;
@@ -414,6 +476,8 @@ export function MediaTile({
   report: (word: Word) => void;
   scopeKey?: string;
   previewVisible?: boolean;
+  senderName?: string;
+  senderUserId?: number;
 }) {
   // FlashList may recycle the same component for another attachment. Tag every
   // presentation and pending result, so an old image cannot flash in a new row.
@@ -570,9 +634,9 @@ export function MediaTile({
   }, [presentation, previewVisible, foreground]);
   return (
     <View style={{ gap: 8 }}>
-      <Label language={language} muted>
+      {media.kind !== 'audio' && <Label language={language} muted>
         {String(media.name ?? t('file'))}
-      </Label>
+      </Label>}
       {media.kind === 'image' ? (
         <>
           <Pressable
@@ -598,6 +662,7 @@ export function MediaTile({
               <Image
                 source={{ uri: uri ?? fullUri! }}
                 resizeMode="contain"
+                resizeMethod="resize"
                 accessible={false}
                 style={{ width: '100%', height: '100%' }}
               />
@@ -652,6 +717,8 @@ export function MediaTile({
             />
           )}
         </>
+      ) : media.kind === 'audio' ? (
+        <VoiceBubble room={room} media={media} voice={voice} t={t} language={language} report={report} scopeKey={scopeKey} visible={previewVisible && foreground} senderName={senderName} senderUserId={senderUserId} />
       ) : (
         <Button
           quiet
@@ -659,15 +726,6 @@ export function MediaTile({
           busy={busy}
           onPress={() => {
             void resolve(true);
-          }}
-        />
-      )}
-      {media.kind === 'audio' && voice.playing && (
-        <Button
-          quiet
-          title={t('stop')}
-          onPress={() => {
-            void voice.stop();
           }}
         />
       )}

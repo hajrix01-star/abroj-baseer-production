@@ -1,5 +1,5 @@
 /** Android trial native boundary. No credential extraction, telemetry or public media URLs. */
-import { Platform } from 'react-native';
+import { AppState, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Crypto from 'expo-crypto';
 import * as FS from 'expo-file-system/legacy';
@@ -50,6 +50,44 @@ const avatarNotify = () => { for (const listener of avatarListeners) { try { lis
 export function subscribeGroupAvatars(listener: () => void): () => void { avatarListeners.add(listener); return () => { avatarListeners.delete(listener); }; }
 export function hasGroupAvatar(key: string): boolean { return avatars.has(key); }
 export function clearGroupAvatars(): void { avatarEpoch++; avatarReads.clear(); if (avatars.size) { avatars.clear(); avatarNotify(); } }
+type MemberAvatar = { uri: string; at: number };
+const memberAvatars = new Map<string, MemberAvatar>();
+const memberAvatarReads = new Map<string, Promise<string>>();
+let memberAvatarEpoch = 0;
+export function clearMemberAvatars(): void { memberAvatarEpoch++; memberAvatars.clear(); memberAvatarReads.clear(); }
+/** Existing protected room-member endpoint; never a guessed/public employee URL. */
+export async function readMemberAvatar(room: Room, userId: number): Promise<string> {
+  if (AppState.currentState !== 'active' || !Number.isSafeInteger(userId) || userId <= 0) throw new ChatError('avatar_missing', 404);
+  if (getEngine().identity?.permissions.chat_view !== true) throw new ChatError('forbidden', 403);
+  const snapshot = scope(room), epoch = memberAvatarEpoch;
+  const key = `${snapshot.key}/${snapshot.epoch}/${room.company_id}/${room.id}/${room.membership_id}/${userId}`;
+  const valid = () => { fence(room, snapshot); if (getEngine().identity?.permissions.chat_view !== true || epoch !== memberAvatarEpoch || AppState.currentState !== 'active') throw new ChatError('stale_session'); };
+  valid();
+  const cached = memberAvatars.get(key);
+  if (cached && Date.now() - cached.at < 60000) { memberAvatars.delete(key); memberAvatars.set(key, cached); return cached.uri; }
+  memberAvatars.delete(key);
+  if (getEngine().offline) throw new ChatError('avatar_missing', 404);
+  const running = memberAvatarReads.get(key); if (running) return running;
+  if (memberAvatarReads.size >= 8) throw new ChatError('avatar_missing', 404);
+  const pending = (async () => {
+    const response = await sessionNative(`/bchat/api/v2/rooms/${room.id}/members/${userId}/avatar`, 'GET', { Accept: 'image/png' }, undefined, undefined, undefined, 256 * 1024);
+    valid(); const headers = headersOf(response);
+    if ((headers['content-type'] ?? '').split(';')[0].trim() !== 'image/png') throw new ChatError('invalid_response');
+    const encoded = await response.base64();
+    if (typeof encoded !== 'string' || encoded.length > 349528 || !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(encoded)) throw new ChatError('invalid_response');
+    const raw = BlobUtil.base64.decode(encoded);
+    const size = (offset: number) => raw.charCodeAt(offset) * 0x1000000 + (raw.charCodeAt(offset + 1) << 16) + (raw.charCodeAt(offset + 2) << 8) + raw.charCodeAt(offset + 3);
+    if (raw.length < 24 || raw.length > 256 * 1024 || raw.slice(0, 8) !== '\x89PNG\r\n\x1a\n' || raw.slice(12, 16) !== 'IHDR'
+      || size(8) !== 13 || size(16) < 1 || size(16) > 128 || size(20) < 1 || size(20) > 128
+      || headers['content-length'] !== undefined && Number(headers['content-length']) !== raw.length) throw new ChatError('invalid_response');
+    valid(); const uri = `data:image/png;base64,${encoded}`;
+    memberAvatars.set(key, { uri, at: Date.now() });
+    while (memberAvatars.size > 128 || [...memberAvatars.values()].reduce((sum, item) => sum + item.uri.length, 0) > 4 * 1024 * 1024) memberAvatars.delete(memberAvatars.keys().next().value!);
+    return uri;
+  })();
+  memberAvatarReads.set(key, pending);
+  try { return await pending; } finally { if (memberAvatarReads.get(key) === pending) memberAvatarReads.delete(key); }
+}
 function pruneGroupAvatars(all = false): void {
   let removed = false;
   for (const [key, item] of avatars) {
@@ -150,6 +188,7 @@ function fixedURL(path: string): string {
 function cancelNative(): void {
   generation++;
   clearGroupAvatars();
+  clearMemberAvatars();
   mediaPins.clear();
   for (const task of tasks) task.cancel(() => undefined);
   tasks.clear();
@@ -466,7 +505,7 @@ function pinLocal(uri: string): LocalMediaLease {
 export async function localMedia(room: Room, descriptor: Record<string, unknown>, variant: MediaVariant = 'original'): Promise<string> {
   const lease = await localMediaLease(room, descriptor, variant); lease.release(); return lease.uri;
 }
-export async function localMediaLease(room: Room, descriptor: Record<string, unknown>, variant: MediaVariant = 'original'): Promise<LocalMediaLease> {
+export async function localMediaLease(room: Room, descriptor: Record<string, unknown>, variant: MediaVariant = 'original', cachedOnly = false): Promise<LocalMediaLease> {
   const before = scope(room);
   if (!Number.isSafeInteger(descriptor.id) || Number(descriptor.id) <= 0) throw new ChatError('invalid_attachment');
   const associated = await getEngine().mediaAssociation(room, Number(descriptor.id));
@@ -482,22 +521,30 @@ export async function localMediaLease(room: Room, descriptor: Record<string, unk
     const state = await loadActorFiles(actor, snapshot.epoch);
     const preview = variant === 'preview' && media.kind === 'image' && media.thumbnail_available === true;
     const uri = `${directory}media-${media.id}${preview ? '-preview.jpg' : extension}`;
-    const cached = await FS.getInfoAsync(uri);
-    if (cached.exists && !cached.isDirectory) {
-      const expected = preview ? state.cache.get(uri) : { bytes: media.size, sha256: media.sha256 };
-      if (expected?.sha256 && cached.size === expected.bytes && await hashFile(uri) === expected.sha256) {
+    const cachedLease = async (path: string, expected: { bytes: number; sha256: string | null } | undefined) => {
+      const cached = await FS.getInfoAsync(path);
+      if (!cached.exists || cached.isDirectory) return null;
+      if (expected?.sha256 && cached.size === expected.bytes && await hashFile(path) === expected.sha256) {
         mediaFence(room, snapshot);
-        const usedAt = Date.now(), entry = { uri, bytes: cached.size, sha256: expected.sha256, usedAt };
-        if (!state.cache.has(uri)) state.cacheBytes += cached.size;
-        state.cache.delete(uri); state.cache.set(uri, entry);
-        await mediaCacheCatalog.put(catalogActor(actor), entry); mediaFence(room, snapshot); return pinLocal(uri);
+        const usedAt = Date.now(), entry = { uri: path, bytes: cached.size, sha256: expected.sha256, usedAt };
+        if (!state.cache.has(path)) state.cacheBytes += cached.size;
+        state.cache.delete(path); state.cache.set(path, entry);
+        await mediaCacheCatalog.put(catalogActor(actor), entry); mediaFence(room, snapshot); return pinLocal(path);
       }
-      await removeOwned(uri);
+      await removeOwned(path); return null;
+    };
+    const existing = await cachedLease(uri, preview ? state.cache.get(uri) : { bytes: media.size, sha256: media.sha256 });
+    if (existing) return existing;
+    // A modern thumbnail may have been evicted while its verified full image
+    // remains. Reuse only local bytes: scrolling never downloads an original.
+    if (preview) {
+      const original = await cachedLease(`${directory}media-${media.id}${extension}`, { bytes: media.size, sha256: media.sha256 });
+      if (original) return original;
     }
     // Legacy images may reuse a downloaded original, but a scroll never starts
     // a large original download simply because a thumbnail is unavailable.
     if (variant === 'preview' && !preview) throw new ChatError('media_not_cached');
-    if (getEngine().offline) throw new ChatError('media_not_cached');
+    if (cachedOnly || getEngine().offline) throw new ChatError('media_not_cached');
     const limit = preview ? MAX_THUMBNAIL : media.size;
     await capacity(actor, limit); await FS.makeDirectoryAsync(directory, { intermediates: true });
     const partial = `${directory}media-${media.id}-${Crypto.randomUUID()}.part`; let moved = false;

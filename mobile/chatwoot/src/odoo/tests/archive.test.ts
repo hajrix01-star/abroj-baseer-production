@@ -25,6 +25,12 @@ function app(archive = new MemoryHistoryArchive(), storage = new Map<string, str
       if (request.path.includes('/changes?')) { const changes = changed ? [{ kind: 'message', room_id: room.id }] : []; if (changed) cursor++; changed = false; return { api_version: 2, changes, next_after: cursor, watermark: cursor, reset_required: false }; }
       if (request.method === 'GET' && request.path.includes('/messages')) {
         if (!allowed) throw new ChatError('membership_changed', 403);
+        const single = /\/messages\/(\d+)$/.exec(request.path);
+        if (single) {
+          const id = Number(single[1]), n = (id - 2) / 3;
+          if (!Number.isInteger(n) || n < 1 || n > total) throw new ChatError('message_unavailable', 403);
+          return { api_version: 2, message: { ...message(n), ...(n % 2 === 0 ? { delivery_state: 'read', read_at: '2026-10-18 00:01:00' } : {}) } };
+        }
         const value = new URL(request.path, 'https://synthetic.invalid').searchParams.get('before_id');
         const end = value ? Math.min(total, Math.floor((Number(value) - 3) / 3)) : total;
         const start = Math.max(1, end - 29), messages: Message[] = [];
@@ -36,6 +42,104 @@ function app(archive = new MemoryHistoryArchive(), storage = new Map<string, str
   return { engine, archive, storage, calls, total(n: number) { total = n; }, add(n: number) { total += n; changed = true; }, revoke() { allowed = false; }, before(fn: typeof before) { before = fn; }, advance(ms: number) { now += ms; } };
 }
 const login = (engine: ChatEngine) => engine.login('synthetic', 'not-real', true);
+
+test('message information is canonical, truthful and does not move the bounded reader or acknowledge receipts', async () => {
+  const testApp = app(); await login(testApp.engine); await testApp.engine.latest(room);
+  const before = testApp.engine.rememberedHistory(room), count = testApp.calls.length;
+  const info = await testApp.engine.messageInfo(room, message(2).id);
+  assert.equal(info.delivery_state, 'read'); assert.equal(info.read_at, '2026-10-18 00:01:00');
+  assert.deepEqual(testApp.engine.rememberedHistory(room), before);
+  assert.equal(testApp.calls.length, count + 1); assert.equal(testApp.calls.at(-1)!.method, 'GET');
+  assert.equal('recipients' in info, false); assert.equal('delivered_at' in info, false);
+  await assert.rejects(testApp.engine.messageInfo(room, 3), { code: 'message_unavailable' });
+  testApp.engine.markDisconnected(); const offlineCalls = testApp.calls.length;
+  assert.equal((await testApp.engine.messageInfo(room, message(720).id)).id, message(720).id);
+  assert.equal(testApp.calls.length, offlineCalls);
+  await assert.rejects(testApp.engine.messageInfo({ ...room, company_id: 2 }, message(720).id), { code: 'room_unavailable' });
+});
+
+test('quote navigation resolves exact sparse original in one bounded page and never substitutes a neighbor', async () => {
+  const testApp = app(); await login(testApp.engine); await testApp.engine.latest(room);
+  const before = testApp.calls.length;
+  const original = await testApp.engine.jumpToMessage(room, message(10).id);
+  assert.ok(original.messages.some(row => row.id === message(10).id)); assert.equal(original.archive!.browsing, true);
+  assert.ok(original.messages.length <= ARCHIVE_LIMITS.pageMessages); assert.equal(testApp.calls.length, before + 1);
+  assert.equal(testApp.calls.at(-1)!.path, `/bchat/api/v2/rooms/4/messages?before_id=${message(10).id + 1}`);
+  testApp.engine.markDisconnected(); const offlineCalls = testApp.calls.length;
+  assert.ok((await testApp.engine.jumpToMessage(room, message(5).id)).messages.some(row => row.id === message(5).id));
+  await assert.rejects(testApp.engine.jumpToMessage(room, message(5).id - 1), { code: 'message_unavailable' });
+  await assert.rejects(testApp.engine.jumpToMessage(room, message(400).id), { code: 'message_unavailable' });
+  assert.equal(testApp.calls.length, offlineCalls);
+  testApp.advance(24 * 60 * 60 * 1000 + 1);
+  await assert.rejects(testApp.engine.jumpToMessage(room, message(5).id), { code: 'offline_expired' });
+});
+
+test('quote navigation applies existing 401 session and 403 membership purges without touching a newer session', async () => {
+  for (const status of [401, 403]) {
+    const testApp = app(); await login(testApp.engine); await testApp.engine.latest(room);
+    await testApp.engine.enqueue(room, 'Unsent');
+    testApp.before(async request => { if (request.path.includes('before_id=')) throw new ChatError(status === 401 ? 'session_expired' : 'membership_changed', status); });
+    await assert.rejects(testApp.engine.jumpToMessage(room, message(10).id), { status });
+    if (status === 401) assert.equal(testApp.engine.identity, null);
+    else { assert.deepEqual(testApp.engine.rooms(), []); assert.deepEqual(testApp.engine.pending(), []); }
+    assert.equal([...testApp.storage.keys()].some(key => key.includes('/outbox/')), false);
+  }
+  const testApp = app(); await login(testApp.engine); await testApp.engine.latest(room);
+  const entered = deferred(), release = deferred();
+  testApp.before(async request => {
+    if (request.path.includes('before_id=')) { entered.resolve(); await release.promise; throw new ChatError('membership_changed', 403); }
+  });
+  const old = testApp.engine.jumpToMessage(room, message(10).id); await entered.promise;
+  testApp.before(undefined); await testApp.engine.logout(); await login(testApp.engine); release.resolve();
+  await assert.rejects(old, { code: 'stale_session' });
+  assert.equal(testApp.engine.identity?.user_id, 7); assert.equal(testApp.engine.rooms().length, 1);
+});
+
+test('device-local hide and undo persist by account company room membership without server writes or outbox changes', async () => {
+  const testApp = app(); await login(testApp.engine); await testApp.engine.latest(room);
+  await testApp.engine.enqueue(room, 'Keep unsent'); const pending = testApp.engine.pending();
+  const calls = testApp.calls.length;
+  assert.deepEqual(await testApp.engine.hiddenMessages(room), []);
+  assert.deepEqual(await testApp.engine.setMessageHidden(room, message(720).id, true), [message(720).id]);
+  assert.equal(testApp.calls.length, calls); assert.deepEqual(testApp.engine.pending(), pending);
+  const restored = app(testApp.archive, testApp.storage); assert.equal(await restored.engine.restoreOffline(), true);
+  await restored.engine.latest(room);
+  assert.deepEqual(await restored.engine.hiddenMessages(room), [message(720).id]);
+  assert.equal((await restored.engine.messageInfo(room, message(720).id)).text, message(720).text, 'local hiding does not delete the archive');
+  await assert.rejects(restored.engine.hiddenMessages({ ...room, membership_id: 999 }), { code: 'room_unavailable' });
+  assert.deepEqual(await restored.engine.setMessageHidden(room, message(720).id, false), []);
+  assert.deepEqual(restored.engine.pending(), pending);
+  assert.deepEqual(await restored.engine.setMessageHidden(room, message(720).id, true), [message(720).id]);
+  await restored.engine.logout();
+  assert.equal([...testApp.storage.keys()].some(key => key.endsWith('hidden-message-ids')), false);
+});
+
+test('local hide commits only after storage ACK and invalid persisted metadata fails closed', async () => {
+  const testApp = app(); await login(testApp.engine); await testApp.engine.latest(room); await testApp.engine.hiddenMessages(room);
+  const originalSet = testApp.storage.set.bind(testApp.storage);
+  testApp.storage.set = (key, value) => { if (key.endsWith('hidden-message-ids')) throw new Error('disk full'); return originalSet(key, value); };
+  await assert.rejects(testApp.engine.setMessageHidden(room, message(720).id, true), /disk full/);
+  assert.deepEqual(await testApp.engine.hiddenMessages(room), []);
+  testApp.storage.set = originalSet;
+  const hiddenKey = 'odoo-chat/v1/https%3A%2F%2Fsynthetic.invalid/db/u/7/c/1/r/4/m/12/hidden-message-ids';
+  testApp.storage.set(hiddenKey, JSON.stringify(['not-an-id']));
+  const restored = app(testApp.archive, testApp.storage); assert.equal(await restored.engine.restoreOffline(), true);
+  await assert.rejects(restored.engine.hiddenMessages(room), { code: 'local_state_invalid' });
+});
+
+test('local hide metadata is loaded once and capped without silently restoring older hidden messages', async () => {
+  const testApp = app(); await login(testApp.engine); await testApp.engine.latest(room);
+  const key = 'odoo-chat/v1/https%3A%2F%2Fsynthetic.invalid/db/u/7/c/1/r/4/m/12/hidden-message-ids';
+  const ids = Array.from({ length: 5000 }, (_, n) => n + 10000); testApp.storage.set(key, JSON.stringify(ids));
+  const originalGet = testApp.storage.get.bind(testApp.storage); let reads = 0;
+  testApp.storage.get = name => { if (name === key) reads++; return originalGet(name); };
+  assert.equal((await testApp.engine.hiddenMessages(room)).length, 5000);
+  await assert.rejects(testApp.engine.setMessageHidden(room, message(720).id, true), { code: 'local_hide_quota' });
+  assert.deepEqual(await testApp.engine.hiddenMessages(room), ids); assert.equal(reads, 1);
+  await testApp.engine.setMessageHidden(room, ids[0]!, false);
+  const updated = await testApp.engine.setMessageHidden(room, message(720).id, true);
+  assert.equal(updated.length, 5000); assert.equal(updated.includes(message(720).id), true); assert.equal(reads, 1);
+});
 
 test('page proof validates sparse IDs/progress, merges only touching proven ranges', () => {
   assert.deepEqual(pageCoverage(null, { api_version: 2, messages: [message(5), message(7)], next_before_id: message(5).id }).range, { low: 17, high: 24 });

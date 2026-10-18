@@ -21,9 +21,21 @@
     { "id": "group-description", "description": "حفظ وصف المجموعة والتحقق من قراءته مع منع تكرار الحفظ", "suite": "test:odoo", "test": "admin description uses actual normalization, exact payload/readback and empty clear; duplicate save is serialized" },
     { "id": "group-rights", "description": "العضو العادي يقرأ معلومات المجموعة ولا يرى أدوات الإدارة", "suite": "test:odoo", "test": "ordinary group member sees description/avatar without editor, photo picker or mutation controls" },
     { "id": "foreground-sounds", "description": "الصوت للرسالة الجديدة فقط وليس للتاريخ والردود الذاتية والتحديثات", "suite": "test:odoo", "test": "startup/select/history/catchup/self/receipt/prepend are silent; one new remote batch sounds once and advances while muted" },
-    { "id": "installed-version", "description": "رقم الإصدار من النسخة المثبتة في اللغتين وليس قيمة ثابتة", "suite": "test:odoo", "test": "header version reflects installed binary metadata in Arabic and English" }
+    { "id": "installed-version", "description": "رقم الإصدار من النسخة المثبتة في اللغتين وليس قيمة ثابتة", "suite": "test:odoo", "test": "header version reflects installed binary metadata in Arabic and English" },
+    { "id": "offline-image-original", "description": "المعاينة تعيد استخدام الأصل المحلي المتحقق منه دون تنزيله", "suite": "test:odoo", "test": "modern preview uses a verified cached original when its thumbnail is absent, offline and without original HTTP" },
+    { "id": "message-information", "description": "معلومات حقيقية دون اختلاق إيصالات أو تغيير موضع القراءة", "suite": "test:odoo", "test": "message information is canonical, truthful and does not move the bounded reader or acknowledge receipts" },
+    { "id": "quote-original", "description": "الوصول للرسالة الأصلية بصفحة محدودة ومعرف مطابق", "suite": "test:odoo", "test": "quote navigation resolves exact sparse original in one bounded page and never substitutes a neighbor" },
+    { "id": "local-hide-undo", "description": "الحذف المحلي والتراجع محفوظان بالنطاق ولا يمسان الخادم أو الطابور", "suite": "test:odoo", "test": "device-local hide and undo persist by account company room membership without server writes or outbox changes" },
+    { "id": "swipe-reply", "description": "السحب للرد يحترم اللغة والتمرير والصلاحية", "suite": "test:odoo", "test": "swipe reply respects language direction, vertical scrolling, cancellation and revoked send rights" },
+    { "id": "voice-waveform-seek", "description": "موجة فعلية مع سحب التشغيل وإيقاف ومتابعة التسجيل الصحيح", "suite": "test:odoo", "test": "cached voice displays only real native peaks, seeks by drag/accessibility and pauses/resumes only its own URI" },
+    { "id": "voice-single-player", "description": "تسجيل واحد نشط وتحرير حجز الملفات المستبدلة مرة واحدة", "suite": "test:odoo", "test": "concurrent playback intentions keep only the newest recording and release superseded leases once" },
+    { "id": "voice-real-pcm", "description": "الموجة ناتجة من عينات حقيقية وبحدود لا بيانات ناقصة أو مزيفة", "suite": "test:odoo", "test": "real PCM envelope has bounded truthful time bins and rejects unsupported/partial inputs" },
+    { "id": "voice-cross-room", "description": "تنظيف غرفة قديمة لا يوقف صوت الغرفة الجديدة", "suite": "test:odoo", "test": "process-wide voice owner serializes delayed old-room start and cleanup across two keyed hook mounts" },
+    { "id": "voice-progress-parent", "description": "تقدم الصوت لا يعيد رسم قائمة الرسائل كل نبضة", "suite": "test:odoo", "test": "native progress uses stable active-row subscriptions without rerendering the timeline hook" },
+    { "id": "voice-progress-row", "description": "نبضات المشغل تخص فقاعة الصوت النشطة فقط", "suite": "test:odoo", "test": "only the active voice bubble subscribes to native progress; unrelated rows receive no clock writes" },
+    { "id": "quote-authority-denial", "description": "قفزة الاقتباس تطبق سحب الجلسة أو العضوية ولا تمس جلسة أحدث", "suite": "test:odoo", "test": "quote navigation applies existing 401 session and 403 membership purges without touching a newer session" },
+    { "id": "hide-persistence-ack", "description": "لا نجاح للإخفاء قبل حفظه، والبيانات التالفة لا تكشف المحتوى", "suite": "test:odoo", "test": "local hide commits only after storage ACK and invalid persisted metadata fails closed" },
+    { "id": "message-actions-readonly", "description": "المعلومات والإخفاء والتراجع متاحة للمشاهد ولا تكشف الرسالة المخفية", "suite": "test:odoo", "test": "message information and device-local hide undo remain available to read-only members without exposing hidden content" }
   ],
-  "openGaps": [
-    { "id": "message-information", "status": "not-implemented-in-reviewed-bwork-versions", "description": "خيار معلومات الرسالة غير موجود في 0.1.13 و0.1.14 وفي الواجهة الأولى التي روجعت؛ لا يوجد دليل أنه حُذف في تحديث الأرشيف. ليس غيابه ثابتًا معتمدًا؛ يلزم تحديد النسخة السابقة المقصودة أو طلب تنفيذ الوظيفة." }
-  ]
+  "openGaps": []
 }

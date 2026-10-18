@@ -28,6 +28,6 @@ test('production feedback module/package compile against installed RN0.86 and An
   const source = path.join(__dirname, '../android/com/baseer/bchat/trial/feedback');
   const cp = [path.join(temp, 'classes.jar'), path.join(process.env.ANDROID_HOME || 'D:/Codex/AndroidSdk', 'platforms/android-36/android.jar')].join(path.delimiter);
   execFileSync(bin('javac'), ['-encoding', 'UTF-8', '-cp', cp, '-d', temp,
-    ...['FeedbackController.java', 'BWorkFeedbackModule.java', 'BWorkFeedbackPackage.java'].map(file => path.join(source, file))]);
+    ...['FeedbackController.java', 'BWorkFeedbackModule.java', 'BWorkFeedbackPackage.java', 'PeakEnvelope.java', 'BWorkWaveformModule.java'].map(file => path.join(source, file))]);
   assert.ok(fs.existsSync(path.join(temp, 'com/baseer/bchat/trial/feedback/BWorkFeedbackModule.class')));
 });

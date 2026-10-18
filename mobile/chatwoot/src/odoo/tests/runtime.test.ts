@@ -68,6 +68,7 @@ const roomB = { id: 12, company_id: 1, membership_id: 22, name: 'B', is_group: t
 const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aBz8AAAAASUVORK5CYII=', 'base64');
 let avatarBytes = png, avatarMime = 'image/png', avatarHeader: string | undefined;
 let avatarCanManage = true, avatarLostAck = false, avatarReads = 0, avatarUploads = 0, groupReads = 0;
+const appState = { currentState: 'active' };
 let rooms = [roomA, roomB]; let mediaRight = true; let offline = false; let redirect = false; let unauthorized = false; let revoked = false;
 let beforeNative: ((path: string) => Promise<void>) | undefined;
 let missingMetadata = false;
@@ -125,6 +126,9 @@ function nativeFetch(options: Record<string, unknown>, method: string, url: stri
         headers['X-BChat-Avatar-Version'] = avatarHeader ?? String(room.avatar_version);
       }
     }
+    else if (/\/rooms\/\d+\/members\/\d+\/avatar$/.test(path)) {
+      headers['Content-Type'] = avatarMime; headers['Content-Length'] = String(avatarBytes.length);
+    }
     else if (path.endsWith('/changes')) body = { api_version: 2, changes: [], next_after: 0, watermark: 0, reset_required: false };
     else if (path.endsWith('/11/messages')) body = { api_version: 2, messages: [
       { id: 1, author_user_id: 7, author_name: 'A', text: '', created_at: '', media },
@@ -150,7 +154,7 @@ function nativeFetch(options: Record<string, unknown>, method: string, url: stri
 }
 const mocks: Record<string, unknown> = {
   './storage/nativeArchive': { mediaCacheCatalog: catalog, historyArchive: sqlArchive },
-  'react-native': { Platform: { OS: 'android' } },
+  'react-native': { Platform: { OS: 'android' }, AppState: appState },
   '@react-native-async-storage/async-storage': asyncStorage,
   'expo-crypto': { CryptoDigestAlgorithm: { SHA256: 'SHA256' }, randomUUID, digestStringAsync: async (_algorithm: unknown, value: string) => createHash('sha256').update(value).digest('hex') },
   'expo-file-system/legacy': fs,
@@ -177,7 +181,7 @@ const hooks = registerHooks({
   },
 });
 process.env.EXPO_PUBLIC_ODOO_ORIGIN = 'https://odoo.example'; process.env.EXPO_PUBLIC_ODOO_DATABASE = 'trial';
-const { getEngine, localMedia, localMediaLease, stageFile, readGroupAvatar, hasGroupAvatar, clearGroupAvatars, subscribeGroupAvatars } = await import('../runtime.ts');
+const { getEngine, localMedia, localMediaLease, stageFile, readGroupAvatar, hasGroupAvatar, clearGroupAvatars, subscribeGroupAvatars, readMemberAvatar, clearMemberAvatars } = await import('../runtime.ts');
 const engine = getEngine();
 
 test('real native adapter maps no-cookie session fixture then rejects cross-room media and validates offline bytes', async () => {
@@ -416,6 +420,50 @@ test('real previews fetch only protected thumbnails; explicit original stays sep
   a.release(); a.release(); b.release(); full.release();
   await engine.refresh(); assert.equal(directoryReads, scans, 'polling no longer recursively scans native cache');
   extraMedia.clear(); await engine.history(roomA);
+});
+
+test('modern preview uses a verified cached original when its thumbnail is absent, offline and without original HTTP', async () => {
+  await engine.logout(); await engine.login('alice', 'private', true);
+  extraMedia.set(imageMedia.id, { metadata: imageMedia, bytes: imageBytes }); await engine.history(roomA);
+  const original = await localMediaLease(roomA, { id: 170 }, 'original'); original.release();
+  const before = calls.length; engine.markDisconnected(); offline = true;
+  try {
+    const preview = await localMediaLease(roomA, { id: 170 }, 'preview');
+    assert.equal(preview.uri, original.uri); assert.equal(calls.length, before); preview.release();
+    files.set(original.uri, Buffer.alloc(imageBytes.length, 1));
+    await assert.rejects(localMediaLease(roomA, { id: 170 }, 'preview'), { code: 'media_not_cached' });
+    assert.equal(files.has(original.uri), false); assert.equal(calls.length, before);
+  } finally { offline = false; await engine.refresh(); extraMedia.clear(); await engine.history(roomA); }
+});
+
+test('cached-only audio/file lookup cannot download bytes and keeps the normal authorization fences', async () => {
+  await engine.logout(); await engine.login('alice', 'private', true); await engine.history(roomA);
+  const before = calls.length;
+  await assert.rejects(localMediaLease(roomA, media, 'original', true), { code: 'media_not_cached' });
+  assert.equal(calls.length, before);
+  const original = await localMediaLease(roomA, media); original.release();
+  const cached = await localMediaLease(roomA, media, 'original', true); cached.release();
+  assert.equal(cached.uri, original.uri);
+  await assert.rejects(localMediaLease(roomB, media, 'original', true), { code: 'media_room_mismatch' });
+});
+
+test('member avatars use the protected scoped endpoint, deduplicate, validate PNG and reject background/late membership results', async () => {
+  await engine.login('alice', 'private', true); clearMemberAvatars();
+  avatarBytes = png; avatarMime = 'image/png';
+  const before = calls.length;
+  const [first, second] = await Promise.all([readMemberAvatar(roomA, 7), readMemberAvatar(roomA, 7)]);
+  assert.equal(first, second); assert.match(first, /^data:image\/png;base64,/);
+  assert.deepEqual(calls.slice(before).map(c => c.path), ['/bchat/api/v2/rooms/11/members/7/avatar']);
+  assert.equal(await readMemberAvatar(roomA, 7), first); assert.equal(calls.length, before + 1);
+  appState.currentState = 'background';
+  await assert.rejects(readMemberAvatar(roomA, 7), { code: 'avatar_missing' }); appState.currentState = 'active';
+  clearMemberAvatars(); avatarMime = 'text/html'; await assert.rejects(readMemberAvatar(roomA, 7), { code: 'invalid_response' }); avatarMime = 'image/png';
+  let release!: () => void, start!: () => void;
+  const waiting = new Promise<void>(resolve => { start = resolve; }); const hold = new Promise<void>(resolve => { release = resolve; });
+  beforeNative = async path => { if (path.includes('/members/')) { beforeNative = undefined; start(); await hold; } };
+  const result = readMemberAvatar(roomA, 7); const rejected = assert.rejects(result, { code: 'membership_changed' });
+  await waiting; rooms = [roomB]; await engine.refresh(); release(); await rejected;
+  rooms = [roomA, roomB]; await engine.refresh(); clearMemberAvatars();
 });
 
 test('thumbnail failure never downloads original; legacy previews require an already verified original', async () => {

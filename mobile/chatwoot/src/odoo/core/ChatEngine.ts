@@ -38,7 +38,7 @@ export interface GroupAvatarInput { uri: string; name: string; mime: string }
 export interface GroupAvatarAck { api_version: 2; room_id: number; avatar_version: number }
 export interface Message {
   id: number; author_user_id: number; author_name: string; text: string; created_at: string;
-  delivery_state?: string; media?: Record<string, unknown>; reply?: Record<string, unknown>;
+  delivery_state?: string; read_at?: string | null; media?: Record<string, unknown>; reply?: Record<string, unknown>;
 }
 export interface History { api_version: 2; messages: Message[]; next_before_id: number | null;
   archive?: { older: ArchiveEdge; newer: ArchiveEdge; partial: boolean; browsing: boolean; latestId: number | null; unverified?: boolean } }
@@ -108,6 +108,7 @@ export class ChatEngine {
   private browsing = new Set<string>();
   private historyPumps = new Map<string, Promise<History>>();
   private windowVersions = new Map<string, number>();
+  private hiddenIds = new Map<string, Set<number>>();
   private epoch = 0;
   private abort = new AbortController();
   private work: Promise<unknown> = Promise.resolve();
@@ -159,6 +160,7 @@ export class ChatEngine {
     this.remembered = false; this.verifiedAt = 0; this.changeCursor = 0; this.disconnected = true;
     this.refreshing = null; this.pumping = null; this.state = 'signed_out';
     this.browsing.clear(); this.historyPumps.clear(); this.windowVersions.clear();
+    this.hiddenIds.clear();
     this.accessLocked = false;
     this.receiptWork = Promise.resolve(); this.receiptPumps.clear(); this.receiptAcks.clear();
     return this.epoch;
@@ -217,6 +219,7 @@ export class ChatEngine {
     }
   }
   private async purge(prefix: string, removeFiles = true) {
+    for (const key of this.hiddenIds.keys()) if (key.startsWith(prefix)) this.hiddenIds.delete(key);
     const keys = await this.storage.getAllKeys();
     const removed: [string, string][] = [];
     for (const key of keys) if (key.startsWith(prefix)) {
@@ -634,6 +637,93 @@ export class ChatEngine {
     const room = this.room(value), scope = this.scope(room);
     this.windowVersions.set(scope, (this.windowVersions.get(scope) ?? 0) + 1); this.browsing.delete(scope);
     return this.history(room);
+  }
+  /** One exact, authorized message; no receipt POST or alteration of the reader's window. */
+  async messageInfo(value: Room | number, messageId: number): Promise<Message> {
+    const room = this.room(value), e = this.epoch, guard = this.archiveGuard(e, room);
+    if (!id(messageId) || messageId >= Number.MAX_SAFE_INTEGER) throw new ChatError('invalid_message');
+    try {
+      let message: Message | undefined;
+      if (!this.disconnected) {
+        const result = await this.request(`/bchat/api/v2/rooms/${room.id}/messages/${messageId}`, e); guard();
+        if (result.api_version !== 2) throw new ChatError('invalid_response');
+        message = this.validHistory({ api_version: 2, messages: [object(result.message)], next_before_id: null }).messages[0];
+      } else {
+        message = this.histories.get(this.scope(room))?.messages.find(row => row.id === messageId);
+        if (!message) {
+          const slice = await this.serial(() => this.archive.read(this.archiveScope(room), { direction: 'before', anchorId: messageId + 1, limit: 1, maxBytes: ARCHIVE_LIMITS.windowBytes }, guard));
+          message = slice.messages.find(row => row.id === messageId);
+        }
+      }
+      guard();
+      if (!message) throw new ChatError('message_unavailable', 404);
+      if (message.id !== messageId || typeof message.author_name !== 'string' || typeof message.created_at !== 'string'
+        || message.read_at !== undefined && message.read_at !== null && typeof message.read_at !== 'string') throw new ChatError('invalid_response');
+      const result = copy(message);
+      if (this.account?.permissions.media !== true) delete result.media;
+      return result;
+    } catch (error) {
+      if (e === this.epoch && error instanceof ChatError && error.status === 401) await this.invalidate(e);
+      if (error instanceof ChatError && error.status === 403) throw new ChatError('message_unavailable', 403);
+      throw error;
+    }
+  }
+  /** Resolve an original without walking all pages or mistaking its nearest neighbor for it. */
+  async jumpToMessage(value: Room | number, messageId: number): Promise<History> {
+    const room = this.room(value), e = this.epoch, guard = this.archiveGuard(e, room), key = this.scope(room);
+    if (!id(messageId) || messageId >= Number.MAX_SAFE_INTEGER) throw new ChatError('invalid_message');
+    const version = (this.windowVersions.get(key) ?? 0) + 1; this.windowVersions.set(key, version);
+    try {
+    let slice = await this.serial(() => this.archive.read(this.archiveScope(room), { direction: 'before', anchorId: messageId + 1, limit: ARCHIVE_LIMITS.pageMessages, maxBytes: ARCHIVE_LIMITS.windowBytes }, guard));
+    guard();
+    if (!this.disconnected) {
+      // Revalidate visibility/joins online even if a provisional old cache contains the target.
+      await this.fetchHistoryPage(room, messageId + 1, e); guard();
+      slice = await this.serial(() => this.archive.read(this.archiveScope(room), { direction: 'before', anchorId: messageId + 1, limit: ARCHIVE_LIMITS.pageMessages, maxBytes: ARCHIVE_LIMITS.windowBytes }, guard));
+    }
+    if (!slice.messages.some(row => row.id === messageId)) throw new ChatError('message_unavailable', 404);
+    return await this.serial(async () => {
+      guard(); if (this.windowVersions.get(key) !== version) throw new ChatError('stale_session');
+      this.browsing.add(key); const page = this.sliceHistory(slice, true);
+      await this.cacheHistory(room, page, e); guard(); return copy(page);
+    });
+    } catch (error) {
+      if (error instanceof ChatError && ['message_unavailable', 'stale_session'].includes(error.code)) throw error;
+      return this.historyFailure(room, e, error);
+    }
+  }
+  /** Device presentation metadata only. Server content and queued sends are never mutated. */
+  private async loadHidden(room: Room, guard: () => void): Promise<Set<number>> {
+    const key = this.scope(room); guard();
+    const old = this.hiddenIds.get(key); if (old) return old;
+    const raw = await this.storage.getItem(`${key}hidden-message-ids`); guard();
+    if (raw !== null && raw.length > 90001) throw new ChatError('local_state_invalid');
+    let ids: unknown;
+    try { ids = raw === null ? [] : JSON.parse(raw); } catch { throw new ChatError('local_state_invalid'); }
+    if (!Array.isArray(ids) || ids.length > 5000 || ids.some(value => !id(value)) || new Set(ids).size !== ids.length) throw new ChatError('local_state_invalid');
+    const loaded = new Set<number>(ids); this.hiddenIds.set(key, loaded); return loaded;
+  }
+  async hiddenMessages(value: Room | number): Promise<number[]> {
+    const room = this.room(value), guard = this.archiveGuard(this.epoch, room);
+    return this.serial(async () => { const ids = await this.loadHidden(room, guard); guard(); return [...ids]; });
+  }
+  cachedHiddenMessages(value: Room | number): number[] | null {
+    const room = this.room(value), ids = this.hiddenIds.get(this.scope(room));
+    return ids ? [...ids] : null;
+  }
+  async setMessageHidden(value: Room | number, messageId: number, hidden: boolean): Promise<number[]> {
+    const room = this.room(value), e = this.epoch, guard = this.archiveGuard(e, room);
+    if (!id(messageId) || typeof hidden !== 'boolean') throw new ChatError('invalid_message');
+    return this.serial(async () => {
+      const previous = await this.loadHidden(room, guard), next = new Set(previous); guard();
+      if (hidden) {
+        if (!this.histories.get(this.scope(room))?.messages.some(message => message.id === messageId)) throw new ChatError('message_unavailable', 404);
+        if (!next.has(messageId) && next.size >= 5000) throw new ChatError('local_hide_quota');
+        next.add(messageId);
+      } else next.delete(messageId);
+      await this.storage.setItem(`${this.scope(room)}hidden-message-ids`, JSON.stringify([...next])); guard();
+      this.hiddenIds.set(this.scope(room), next); return [...next];
+    });
   }
   async newer(value: Room | number): Promise<History> {
     const room = this.room(value), last = this.histories.get(this.scope(room))?.messages.at(-1)?.id;

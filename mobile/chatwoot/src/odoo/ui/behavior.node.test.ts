@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { Bootstrap, Room } from '../core/ChatEngine';
-import { canViewMedia, conversationAccess, messageTime, presentationKey, visibleReadIds } from './viewModel.ts';
+import { canViewMedia, conversationAccess, messageDateTime, messageTime, presentationKey, visibleReadIds } from './viewModel.ts';
 import { errorWord, translator } from './dictionary.ts';
 
 const identity: Bootstrap = {
@@ -16,6 +16,8 @@ test('Odoo UTC message times convert to local zone with Latin digits and preserv
   assert.equal(messageTime('2026-10-18 12:30:00', 'Asia/Riyadh'), '15:30');
   assert.equal(messageTime('2026-10-18T15:30:00+03:00', 'Asia/Riyadh'), '15:30');
   assert.equal(messageTime('not-a-date', 'Asia/Riyadh'), '');
+  assert.equal(messageDateTime('2026-10-18 12:30:00', 'Asia/Riyadh'), '18/10/2026, 15:30');
+  assert.equal(messageDateTime('not-a-date', 'Asia/Riyadh'), '');
 });
 test('media permission and revision invalidate presentation identity without changing room', () => {
   const revoked = {

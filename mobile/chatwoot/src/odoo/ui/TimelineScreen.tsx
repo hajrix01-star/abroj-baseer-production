@@ -1,6 +1,7 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   AppState,
+  Alert,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
@@ -12,18 +13,20 @@ import {
 } from 'react-native';
 import { FlashList, type FlashListRef } from '@shopify/flash-list';
 import type { Attachment, ChatEngine, Message, Pending } from '../core/ChatEngine';
-import { Button, colors, direction, Field, Icon, IconButton, Label, styles } from './components';
+import { Button, colors, direction, Field, Icon, IconButton, Label, Sheet, styles } from './components';
 import { companyDisplayName } from './companyNames';
 import { MessageQuote, MessageStatus } from './MessagePresentation';
 import { TimelineFollow } from './timelineFollow';
 import { errorWord, type Language, type Translate, type Word } from './dictionary';
 import { AttachmentTools, MediaTile, useVoiceSession } from './MediaTools';
 import { GroupAvatar } from './GroupAvatar';
+import { SwipeReply } from './SwipeReply';
 import type { ChatView } from './useChat';
 import {
   canViewMedia,
   conversationAccess,
   messageTime,
+  messageDateTime,
   presentationKey,
   visibleReadIds,
 } from './viewModel';
@@ -62,6 +65,28 @@ export function TimelineScreen({
   const viewMedia = chat.presentationReady && canViewMedia(chat.identity, room);
   const mediaKey = presentationKey(chat.identity, room);
   const previewScope = `${chat.identity?.database}/${mediaKey}`;
+  const actionScope = `${engine.accountScope}/${previewScope}`;
+  const currentActionScope = useRef(actionScope); currentActionScope.current = actionScope;
+  const [hiddenState, setHiddenState] = useState<{ scope: string; ids: number[] } | null>(() => {
+    try { const ids = engine.cachedHiddenMessages(room); return ids === null ? null : { scope: actionScope, ids }; }
+    catch { return null; }
+  });
+  const hiddenReady = hiddenState?.scope === actionScope;
+  const hiddenIds = useMemo(() => new Set(hiddenReady ? hiddenState.ids : []), [hiddenState, actionScope]);
+  const hiddenRef = useRef({ ready: hiddenReady, ids: hiddenIds }); hiddenRef.current = { ready: hiddenReady, ids: hiddenIds };
+  const [info, setInfo] = useState<{ scope: string; message: Message; cached: boolean } | null>(null);
+  const [actionBusy, setActionBusy] = useState(false);
+  const actionOperation = useRef(0);
+  const [jumpTarget, setJumpTarget] = useState<{ scope: string; id: number } | null>(null);
+  useEffect(() => {
+    let active = true;
+    const requested = actionScope;
+    setActionBusy(false); setInfo(null); setJumpTarget(null);
+    void engine.hiddenMessages(room).then(ids => {
+      if (active && currentActionScope.current === requested) setHiddenState({ scope: requested, ids });
+    }).catch(e => { if (active && currentActionScope.current === requested) setLocalError(errorWord(e)); });
+    return () => { active = false; actionOperation.current++; };
+  }, [engine, actionScope]);
   const [visibleImages, setVisibleImages] = useState<{ scope: string; ids: number[] }>({
     scope: '',
     ids: [],
@@ -69,7 +94,7 @@ export function TimelineScreen({
   const previewChanged = useCallback(
     ({ viewableItems }: { viewableItems: ViewToken<Row>[] }) => {
       const ids = viewableItems
-        .filter(item => item.isViewable && item.item.message?.media?.kind === 'image')
+        .filter(item => item.isViewable && ['image', 'audio'].includes(String(item.item.message?.media?.kind)))
         .map(item => item.item.message!.id)
         .sort((a, b) => a - b);
       setVisibleImages(previous =>
@@ -139,11 +164,57 @@ export function TimelineScreen({
     };
   }, [followGeometry]);
   const chooseReply = (message: Message) => {
-    if (!latestAccess.current || !live.current) return;
+    if (!latestAccess.current || !live.current || !hiddenRef.current.ready || hiddenRef.current.ids.has(message.id)) return;
     setActionsFor(null);
     replyRevision.current++;
     setReply(message);
     input.current?.focus();
+  };
+  const operationCurrent = (scope: string, operation: number) => live.current && currentActionScope.current === scope
+    && actionOperation.current === operation && AppState.currentState === 'active';
+  const showInfo = async (message: Message) => {
+    if (currentActionScope.current !== actionScope || !live.current || !chat.presentationReady || AppState.currentState !== 'active') return;
+    const requested = actionScope, operation = ++actionOperation.current;
+    setActionsFor(null); setActionBusy(true); setLocalError(null);
+    setInfo({ scope: requested, message, cached: true });
+    try {
+      const result = await engine.messageInfo(room, message.id);
+      if (operationCurrent(requested, operation)) setInfo({ scope: requested, message: result, cached: chat.offline });
+    } catch (e) { if (operationCurrent(requested, operation)) { setInfo(null); setLocalError(errorWord(e)); } }
+    finally { if (operationCurrent(requested, operation)) setActionBusy(false); }
+  };
+  const changeHidden = async (messageId: number, hidden: boolean) => {
+    if (currentActionScope.current !== actionScope || !live.current || !chat.presentationReady || AppState.currentState !== 'active') return;
+    const requested = actionScope, operation = ++actionOperation.current;
+    setActionsFor(null); setActionBusy(true); setLocalError(null);
+    try {
+      const ids = await engine.setMessageHidden(room, messageId, hidden);
+      if (operationCurrent(requested, operation)) {
+        setHiddenState({ scope: requested, ids }); setInfo(null);
+        if (hidden && reply?.id === messageId) { replyRevision.current++; setReply(null); }
+      }
+    } catch (e) { if (operationCurrent(requested, operation)) setLocalError(errorWord(e)); }
+    finally { if (operationCurrent(requested, operation)) setActionBusy(false); }
+  };
+  const confirmHide = (messageId: number) => {
+    if (currentActionScope.current !== actionScope || !live.current || !chat.presentationReady || AppState.currentState !== 'active') return;
+    const requested = actionScope;
+    Alert.alert(t('hideLocal'), t('hideLocalConfirm'), [
+      { text: t('cancel'), style: 'cancel' },
+      { text: t('hideLocal'), style: 'destructive', onPress: () => {
+        if (currentActionScope.current === requested && live.current) void changeHidden(messageId, true);
+      } },
+    ]);
+  };
+  const openOriginal = async (messageId: number) => {
+    if (currentActionScope.current !== actionScope || !live.current || !chat.presentationReady || AppState.currentState !== 'active') return;
+    const requested = actionScope, operation = ++actionOperation.current;
+    follow.current.following = false; setShowLatest(true); setActionsFor(null); setActionBusy(true); setLocalError(null);
+    try {
+      await chat.jump(messageId);
+      if (operationCurrent(requested, operation)) setJumpTarget({ scope: requested, id: messageId });
+    } catch (e) { if (operationCurrent(requested, operation)) setLocalError(errorWord(e)); }
+    finally { if (operationCurrent(requested, operation)) setActionBusy(false); }
   };
   useEffect(() => {
     setText('');
@@ -163,7 +234,7 @@ export function TimelineScreen({
     ({ viewableItems }: { viewableItems: ViewToken<Row>[] }) => {
       const active = AppState.currentState === 'active' && chat.presentationReady && !chat.offline;
       for (const id of visibleReadIds(
-        viewableItems.filter(item => item.isViewable).map(item => item.item),
+        viewableItems.filter(item => item.isViewable && hiddenRef.current.ready && !hiddenRef.current.ids.has(item.item.message?.id ?? 0)).map(item => item.item),
         chat.identity?.user_id ?? 0,
         active,
       )) {
@@ -210,12 +281,25 @@ export function TimelineScreen({
       setSending(false);
     }
   };
-  const rows: Row[] = [
+  const rows: Row[] = useMemo(() => [
     ...chat.history.messages.map(message => ({ key: `message-${message.id}`, message })),
     ...chat.pending
       .filter(item => item.room_id === room.id && item.company_id === room.company_id && item.membership_id === room.membership_id)
       .map(pending => ({ key: pending.client_uuid, pending })),
-  ];
+  ], [chat.history.messages, chat.pending, room.id, room.company_id, room.membership_id]);
+  const rowPresentation = useMemo(() => ({ mediaKey, hiddenState, actionsFor, jumpTarget, actionBusy, visibleImages, language, canSend, viewMedia }),
+    [mediaKey, hiddenState, actionsFor, jumpTarget, actionBusy, visibleImages, language, canSend, viewMedia]);
+  useEffect(() => {
+    if (jumpTarget?.scope !== actionScope) return;
+    const index = rows.findIndex(row => row.message?.id === jumpTarget.id);
+    if (index < 0) return;
+    const requested = actionScope;
+    const frame = requestAnimationFrame(() => {
+      if (live.current && currentActionScope.current === requested)
+        list.current?.scrollToIndex({ index, animated: false, viewPosition: 0.4 });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [jumpTarget, actionScope, chat.history.messages]);
   const lastKey = rows[rows.length - 1]?.key;
   useEffect(() => {
     if (browsing.current) { follow.current.following = false; setShowLatest(true); return; }
@@ -294,7 +378,7 @@ export function TimelineScreen({
         <View style={{ flex: 1, minHeight: 0 }}>
           <FlashList
             ref={list}
-            extraData={`${previewScope}/${visibleImages.scope === previewScope ? visibleImages.ids.join(',') : ''}`}
+            extraData={rowPresentation}
             data={rows}
             viewabilityConfig={{ minimumViewTime: 600, viewAreaCoveragePercentThreshold: 75 }}
             onViewableItemsChanged={visibleChanged}
@@ -380,19 +464,30 @@ export function TimelineScreen({
               const message = item.message;
               const pending = item.pending;
               const state = pending?.state ?? message?.delivery_state;
+              if (message && (!hiddenReady || hiddenIds.has(message.id))) return (
+                <View style={{ alignSelf: 'center', marginVertical: 5, padding: 10, borderRadius: 12, backgroundColor: colors.pale }}>
+                  <Label language={language} muted>{t(hiddenReady ? 'locallyHidden' : 'loading')}</Label>
+                  {hiddenReady && <Button quiet title={t('undoHide')} busy={actionBusy} onPress={() => { void changeHidden(message.id, false); }} />}
+                </View>
+              );
               return (
                 <Pressable
                   accessibilityLabel={
                     message ? `${message.author_name}: ${message.text}` : pending?.text
                   }
                   accessibilityActions={
-                    message && canSend ? [{ name: 'reply', label: t('reply') }] : []
+                    message ? [
+                      ...(canSend ? [{ name: 'reply', label: t('reply') }] : []),
+                      { name: 'info', label: t('messageInfo') }, { name: 'hide', label: t('hideLocal') },
+                    ] : []
                   }
                   onAccessibilityAction={event => {
                     if (event.nativeEvent.actionName === 'reply' && message) chooseReply(message);
+                    if (event.nativeEvent.actionName === 'info' && message) void showInfo(message);
+                    if (event.nativeEvent.actionName === 'hide' && message) confirmHide(message.id);
                   }}
                   onPress={() => {
-                    if (message && canSend)
+                    if (message)
                       setActionsFor(actionsFor === message.id ? null : message.id);
                   }}
                   onLongPress={() => {
@@ -411,6 +506,7 @@ export function TimelineScreen({
                     minWidth: 100,
                     marginVertical: 4,
                   }}>
+                  <SwipeReply gestureKey={`${actionScope}/${message?.id ?? pending?.client_uuid}`} enabled={!!message && canSend} language={language} onReply={() => { if (message) chooseReply(message); }}>
                   <View
                     style={[
                       styles.card,
@@ -423,6 +519,7 @@ export function TimelineScreen({
                         paddingHorizontal: 11,
                         paddingTop: 9,
                         paddingBottom: 7,
+                        ...(jumpTarget?.scope === actionScope && jumpTarget.id === message?.id ? { borderWidth: 1, borderColor: colors.blue } : {}),
                       },
                     ]}>
                     {message && !own && (
@@ -438,6 +535,9 @@ export function TimelineScreen({
                     {(message?.reply || pending?.reply_to_message_id) && (
                       <MessageQuote
                         language={language}
+                        label={t('openOriginal')}
+                        onPress={Number.isSafeInteger(message?.reply?.id ?? pending?.reply_to_message_id) && Number(message?.reply?.id ?? pending?.reply_to_message_id) > 0
+                          ? () => { void openOriginal(Number(message?.reply?.id ?? pending?.reply_to_message_id)); } : undefined}
                         author={String(
                           message?.reply?.author_name ??
                             chat.history.messages.find(m => m.id === pending?.reply_to_message_id)
@@ -445,7 +545,8 @@ export function TimelineScreen({
                             '',
                         )}
                         text={
-                          message?.reply?.unavailable
+                          hiddenIds.has(Number(message?.reply?.id ?? pending?.reply_to_message_id))
+                            ? t('locallyHidden') : message?.reply?.unavailable
                             ? t('unavailable')
                             : String(
                                 message?.reply?.text ??
@@ -472,6 +573,8 @@ export function TimelineScreen({
                         }
                         room={room}
                         media={message.media}
+                        senderName={message.author_name}
+                        senderUserId={message.author_user_id}
                         voice={voice}
                         t={t}
                         language={language}
@@ -498,7 +601,8 @@ export function TimelineScreen({
                       {own && <MessageStatus state={state} t={t} />}
                     </View>
                   </View>
-                  {message && canSend && actionsFor === message.id && (
+                  </SwipeReply>
+                  {message && actionsFor === message.id && (
                     <View
                       style={{
                         backgroundColor: colors.white,
@@ -508,13 +612,18 @@ export function TimelineScreen({
                         alignItems: 'center',
                         paddingHorizontal: 8,
                         marginTop: 4,
+                        flexWrap: 'wrap',
                       }}>
+                      {canSend && <>
                       <IconButton
                         icon="reply"
                         label={t('reply')}
                         onPress={() => chooseReply(message)}
                       />
                       <Text style={styles.muted}>{t('reply')}</Text>
+                      </>}
+                      <IconButton icon="info" label={t('messageInfo')} disabled={actionBusy} onPress={() => { void showInfo(message); }} />
+                      <IconButton icon="trash" label={t('hideLocal')} tone="danger" disabled={actionBusy} onPress={() => confirmHide(message.id)} />
                     </View>
                   )}
                 </Pressable>
@@ -635,6 +744,31 @@ export function TimelineScreen({
           )}
         </View>
       </KeyboardAvoidingView>
+      {info?.scope === actionScope && hiddenReady && !hiddenIds.has(info.message.id) && (
+        <Sheet compact title={t('messageInfo')} language={language} t={t} close={() => {
+          actionOperation.current++; setInfo(null); setActionBusy(false);
+        }}>
+          <View style={{ height: 20 }}><Label language={language} muted>{actionBusy ? t('loading') : info.cached ? t('cachedInfo') : ''}</Label></View>
+          <Label language={language} muted>{t('sender')}</Label>
+          <Text selectable style={[styles.text, direction(language)]}>{info.message.author_name}</Text>
+          <Label language={language} muted>{t('sentAt')}</Label>
+          <Text style={[styles.text, { writingDirection: 'ltr' }]}>{messageDateTime(info.message.created_at) || t('unknown')}</Text>
+          {!!info.message.text && <Text selectable style={[styles.text, direction(language)]}>{info.message.text}</Text>}
+          {info.message.media?.kind === 'audio' && <Label language={language}>{t('voiceMessage')}</Label>}
+          {info.message.author_user_id === chat.identity.user_id && <>
+            <Label language={language} muted>{t('messageState')}</Label>
+            <View style={[styles.row, { flexDirection: language === 'ar' ? 'row-reverse' : 'row' }]}>
+              <MessageStatus state={info.message.delivery_state} t={t} />
+              <Label language={language}>{t(['sent', 'delivered', 'read'].includes(info.message.delivery_state ?? '') ? info.message.delivery_state as Word : 'unknown')}</Label>
+            </View>
+            {info.message.delivery_state === 'read' && !!info.message.read_at && <>
+              <Label language={language} muted>{t('readCompletedAt')}</Label>
+              <Text style={[styles.text, { writingDirection: 'ltr' }]}>{messageDateTime(info.message.read_at) || t('unknown')}</Text>
+            </>}
+            <Label language={language} muted>{t('receiptSummary')}</Label>
+          </>}
+        </Sheet>
+      )}
     </View>
   );
 }

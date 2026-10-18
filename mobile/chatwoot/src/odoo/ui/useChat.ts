@@ -309,6 +309,14 @@ export function useChat(engine: ChatEngine) {
     const g = ++generation.current; soundBaselineReady.current = false;
     await run(async () => { const page = await engine.latest(room); if (mounted.current && g === generation.current) setHistory(page); });
   }, [engine, run]);
+  const jump = useCallback(async (messageId: number) => {
+    const room = selectedRef.current; if (!room) return;
+    const g = ++generation.current; soundBaselineReady.current = false;
+    await run(async () => {
+      const page = await engine.jumpToMessage(room, messageId);
+      if (mounted.current && g === generation.current) setHistory(page);
+    });
+  }, [engine, run]);
   return {
     identity,
     rooms,
@@ -327,6 +335,7 @@ export function useChat(engine: ChatEngine) {
     older,
     newer,
     latest,
+    jump,
     soundsEnabled:
       soundState.actor === soundActor(identity) && soundState.ready && soundState.enabled,
     soundsReady: soundState.actor === soundActor(identity) && soundState.ready,

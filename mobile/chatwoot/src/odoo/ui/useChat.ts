@@ -80,6 +80,7 @@ export function useChat(engine: ChatEngine) {
     pollBusy.current = true;
     const g = generation.current;
     const foreground = foregroundEpoch.current;
+    const syncIdentity = engine.identity;
     try {
       if (engine.pending().some(p => p.state !== 'failed')) await engine.flush();
       else await engine.refresh();
@@ -93,6 +94,37 @@ export function useChat(engine: ChatEngine) {
         setPresentationReady(true);
     } catch (e) {
       if (mounted.current) setError(errorWord(e));
+      const failure = e as { code?: string; status?: number };
+      const unavailable =
+        (failure.code === 'connection_failed' && !failure.status) ||
+        (failure.status === 503 &&
+          !['forbidden', 'identity_mismatch', 'session_expired', 'stale_session'].includes(
+            failure.code ?? '',
+          ));
+      if (
+        unavailable &&
+        engine.offline &&
+        mounted.current &&
+        active.current &&
+        foreground === foregroundEpoch.current &&
+        g === generation.current &&
+        syncIdentity
+      ) {
+        try {
+          // NetInfo measures internet access, not this Odoo/VPN route. The
+          // engine's scoped cache read is also the authoritative TTL guard.
+          engine.rooms();
+          const current = engine.identity;
+          if (
+            current?.user_id === syncIdentity.user_id &&
+            current?.database === syncIdentity.database &&
+            current.permissions.chat_view === true
+          )
+            setPresentationReady(true);
+        } catch {
+          /* Expired/revoked cache stays behind the foreground mask. */
+        }
+      }
     } finally {
       pollBusy.current = false;
       capture();

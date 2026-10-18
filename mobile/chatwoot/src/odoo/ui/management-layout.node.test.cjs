@@ -47,21 +47,22 @@ function one(tree, type, predicate = () => true) {
 }
 const copy = value => JSON.parse(JSON.stringify(value));
 async function settled() { for (let i = 0; i < 15; i++) await Promise.resolve(); }
+function waiting() { let resolve; const promise = new Promise(done => { resolve = done; }); return { promise, resolve }; }
 
 function harness(manage = true) {
-  const state = hooks(), timers = new Map(), calls = [], alerts = [];
+  const state = hooks(), timers = new Map(), calls = [], alerts = [], reads = [];
   let nextTimer = 0, deferred = null, release;
   const detail = { api_version: 2, room: { id: 4, company_id: 1, name: 'Synthetic group', description: 'Saved description', avatar_version: 0, is_group: true }, can_manage: manage, members: [
     { user_id: 7, name: 'Current admin', is_admin: true },
     { user_id: 8, name: 'اسم عضو طويل للاختبار يحافظ على مرونة عرض الاسم', is_admin: false },
     { user_id: 9, name: 'Another admin', is_admin: true },
   ] };
-  const engine = { identity: { user_id: 7 },
-    groupInfo: async () => detail,
-    candidates: async () => ({ users: [
+  const engine = { identity: { user_id: 7, company_ids: [1] }, rooms: () => [props.room],
+    groupInfo: async () => { reads.push(['detail']); return detail; },
+    candidates: async (company, query) => { reads.push(['candidates', company, query]); return { users: [
       { user_id: 8, name: detail.members[1]?.name ?? 'Already member' },
       { user_id: 10, name: 'Candidate with a long display name' },
-    ] }),
+    ] }; },
     groupChange: async (room, payload) => {
       calls.push({ room, payload: copy(payload) });
       if (deferred === payload.action) await new Promise(resolve => { release = resolve; });
@@ -80,7 +81,7 @@ function harness(manage = true) {
     '../core/ChatEngine': { groupDescription: value => value.replace(/\r\n/g, '\n').trim(), ChatError: class extends Error {} },
     './GroupAvatar': { GroupAvatar: 'GroupAvatar' },
     'react-native-image-picker': { launchImageLibrary: async () => ({ didCancel: true }) },
-    'react-native': { View: 'View', Text: 'Text', Pressable: 'Pressable', Switch: 'Switch', Alert: { alert: (title, message, buttons) => alerts.push({ title, message, buttons }) } },
+    'react-native': { ActivityIndicator: 'ActivityIndicator', View: 'View', Text: 'Text', Pressable: 'Pressable', Switch: 'Switch', Alert: { alert: (title, message, buttons) => alerts.push({ title, message, buttons }) } },
     './components': { Button: 'Button', Field: 'Field', Icon: 'Icon', IconButton: 'IconButton', Label: 'Label', Sheet: 'Sheet',
       colors: { pale: 'pale', blue: 'blue', border: 'border', danger: 'danger' }, direction: language => ({ textAlign: language === 'ar' ? 'right' : 'left' }),
       styles: { row: { flexDirection: 'row', flexWrap: 'wrap' }, card: { cardMarker: true }, listRow: {}, text: {}, muted: {}, fill: { flex: 1 } } },
@@ -92,15 +93,68 @@ function harness(manage = true) {
   const module = { exports: {} };
   vm.runInNewContext(compiled, { module, exports: module.exports, require: name => modules[name] ?? {}, TextEncoder,
     setTimeout: callback => { const id = ++nextTimer; timers.set(id, callback); return id; }, clearTimeout: id => timers.delete(id) }, { filename: 'ManagementSheet.tsx' });
-  return { props, calls, alerts, detail, render: () => state.render(() => module.exports.ManagementSheet(props)),
-    async load() { for (const [id, callback] of [...timers]) { timers.delete(id); await callback(); } },
+  return { props, calls, alerts, detail, reads, render: () => state.render(() => module.exports.ManagementSheet(props)),
+    async load() { await settled(); for (const [id, callback] of [...timers]) { timers.delete(id); await callback(); } await settled(); },
     defer(action) { deferred = action; }, release() { release(); },
   };
 }
-async function ready(manage = true) { const app = harness(manage); app.render(); await app.load(); app.render(); return app; }
+async function ready(manage = true) { const app = harness(manage); app.render(); await app.load(); app.render(); await app.load(); app.render(); return app; }
 function row(tree, id) { return nodes(tree).find(node => node.type === 'View' && node.props.testID === `group-member-${id}`); }
 function more(tree, id) { return one(row(tree, id), 'IconButton', p => p.icon === 'more'); }
 const actions = tree => nodes(tree).filter(node => node.type === 'Button' && ['remove', 'makeAdmin', 'demote'].includes(node.props.title));
+
+test('opening group detail starts immediately without the search debounce delay', async () => {
+  const app = harness(); app.render();
+  assert.equal(app.reads.filter(read => read[0] === 'detail').length, 1);
+});
+
+test('candidate search never reloads group detail or disables unrelated editing; equivalent room objects do not reload', async () => {
+  const app = await ready(); const before = app.reads.filter(read => read[0] === 'detail').length;
+  one(app.render(), 'Field', field => field.accessibilityLabel === 'search').onChangeText('candidate');
+  app.render(); await app.load();
+  assert.equal(app.reads.filter(read => read[0] === 'detail').length, before);
+  app.props.room = { ...app.props.room }; app.render(); await app.load();
+  assert.equal(app.reads.filter(read => read[0] === 'detail').length, before);
+});
+
+test('pending and stale candidate queries cannot block editing or replace a newer query result', async () => {
+  const app = await ready(); const requests = [];
+  app.props.engine.candidates = async (company, query) => { const request = { ...waiting(), query }; requests.push(request); return request.promise; };
+  one(app.render(), 'Field', p => p.accessibilityLabel === 'search').onChangeText('older'); app.render(); await app.load();
+  let tree = app.render();
+  assert.equal(one(tree, 'Field', p => p.accessibilityLabel === 'groupDescription').editable, true);
+  assert.equal(one(tree, 'IconButton', p => p.icon === 'check').disabled, false);
+  assert.equal(nodes(tree).filter(node => node.type === 'ActivityIndicator').length, 1);
+  one(tree, 'Field', p => p.accessibilityLabel === 'search').onChangeText('newer'); app.render(); await app.load();
+  requests[1].resolve({ users: [{ user_id: 44, name: 'Current candidate' }] }); await settled();
+  assert.ok(one(app.render(), 'Pressable', p => p.accessibilityLabel === 'add: Current candidate'));
+  requests[0].resolve({ users: [{ user_id: 45, name: 'Stale candidate' }] }); await settled();
+  tree = app.render(); assert.equal(nodes(tree).some(node => node.props.accessibilityLabel === 'add: Stale candidate'), false);
+  assert.ok(one(tree, 'Pressable', p => p.accessibilityLabel === 'add: Current candidate'));
+  app.props.engine.rooms = () => [];
+  assert.equal(nodes(app.render()).some(node => node.props.accessibilityLabel === 'add: Current candidate'), false, 'already-rendered candidates hide on membership revocation');
+});
+
+test('description save keeps readback and immediate busy feedback without candidate reload; membership mutations refresh candidates once', async () => {
+  const app = await ready(); const before = app.reads.filter(read => read[0] === 'candidates').length;
+  const idleSlot = nodes(app.render()).find(node => node.type === 'View' && node.props.style?.height === 20);
+  assert.ok(idleSlot);
+  one(app.render(), 'Field', p => p.accessibilityLabel === 'groupDescription').onChangeText('New description');
+  app.defer('set_description'); const save = one(app.render(), 'Button', p => p.title === 'saveDescription');
+  save.onPress(); save.onPress(); await settled();
+  assert.equal(nodes(app.render()).filter(node => node.type === 'ActivityIndicator').length, 1);
+  assert.equal(nodes(app.render()).find(node => node.type === 'View' && node.props.style?.height === 20).props.style.height, 20);
+  assert.equal(app.calls.filter(call => typeof call === 'object').length, 1);
+  app.release(); await settled(); app.render(); await app.load();
+  assert.equal(app.reads.filter(read => read[0] === 'candidates').length, before);
+  assert.equal(one(app.render(), 'Field', p => p.accessibilityLabel === 'groupDescription').value, 'New description');
+  more(app.render(), 8).onPress(); one(app.render(), 'Button', p => p.title === 'remove').onPress(); await settled();
+  app.render(); await app.load(); app.render();
+  assert.equal(app.reads.filter(read => read[0] === 'candidates').length, before + 1);
+  one(app.render(), 'Pressable', p => p.accessibilityLabel === 'add: Candidate with a long display name').onPress(); await settled();
+  app.render(); await app.load();
+  assert.equal(app.reads.filter(read => read[0] === 'candidates').length, before + 2);
+});
 
 test('member layout is compact with flexible accessible names, 36px initials and inline rename/save', async () => {
   const app = await ready(); const tree = app.render();
@@ -143,6 +197,7 @@ test('rename, promote, demote, remove and add preserve exact groupChange payload
   one(app.render(), 'Button', p => p.title === 'makeAdmin').onPress(); await settled();
   one(app.render(), 'Button', p => p.title === 'demote').onPress(); await settled();
   one(app.render(), 'Button', p => p.title === 'remove').onPress(); await settled();
+  app.render(); await app.load();
   const candidate = one(app.render(), 'Pressable', p => p.accessibilityLabel === 'add: Candidate with a long display name');
   const style = candidate.style[0];
   assert.equal(style.minHeight, 48); assert.equal(style.flexDirection, 'row-reverse');

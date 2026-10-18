@@ -7,9 +7,11 @@ const artwork = {
   mark: require('../../../assets/bwork/bwork-icon-1024.png'),
 };
 const sizes = {
-  header: { width: 112, height: 28 },
+  // The approved raster is 10:3 with internal clear space. These slots keep
+  // its visible blue mark ~26/28dp, not the old ~19dp contained artwork.
+  header: { width: 128, height: 38.4 },
   login: { width: 224, height: 56 },
-  drawer: { width: 136, height: 34 },
+  drawer: { width: 140, height: 42 },
   mark: { width: 36, height: 36 },
 } as const;
 

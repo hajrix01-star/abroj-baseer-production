@@ -355,6 +355,41 @@ test('members use the room company, independent of the selected inbox filter', (
   assert.equal(one(app.render(), 'RoomsScreen').companyId, 1);
 });
 
+test('saved metadata captures the engine snapshot without another refresh or same-room history selection', async () => {
+  const app = session();
+  const room = { id: 8, company_id: 1, membership_id: 18, is_group: true, name: 'Old' };
+  app.chat.rooms = [{ ...room, name: 'Server-confirmed name' }];
+  app.chat.selected = room;
+  app.engine.refresh = async () => { app.calls.push('redundant-refresh'); };
+  app.chat.capture = () => { app.calls.push('capture'); };
+  one(app.render(), 'TimelineScreen').manage();
+  const sheet = one(app.render(), 'ManagementSheet');
+  await sheet.changed(room.id);
+  assert.equal(app.calls.filter(call => call === 'capture').length, 1);
+  assert.equal(app.calls.filter(call => call === 'redundant-refresh').length, 0);
+  assert.equal(app.calls.filter(call => Array.isArray(call) && call[0] === 'select').length, 0,
+    'same membership keeps its current history/draft/keyboard/sound baseline');
+});
+
+test('confirmed creation/open selects a different authorized tuple, but never an absent room', async () => {
+  for (const sameIdNewMembership of [false, true]) {
+    const app = session();
+    const current = { id: 8, company_id: 1, membership_id: 18, is_group: true };
+    const fresh = { ...current, id: sameIdNewMembership ? 8 : 9, membership_id: 19 };
+    app.chat.selected = current; app.chat.rooms = [fresh];
+    app.chat.capture = () => { app.calls.push('capture'); };
+    app.engine.refresh = async () => { app.calls.push('redundant-refresh'); };
+    one(app.render(), 'TimelineScreen').manage();
+    const sheet = one(app.render(), 'ManagementSheet');
+    await sheet.changed(fresh.id);
+    const selects = app.calls.filter(call => Array.isArray(call) && call[0] === 'select');
+    assert.equal(selects.length, 1); assert.equal(selects[0][1], fresh);
+    await sheet.changed(999);
+    assert.equal(app.calls.filter(call => Array.isArray(call) && call[0] === 'select').length, 1);
+    assert.equal(app.calls.includes('redundant-refresh'), false);
+  }
+});
+
 test('pending company operations and old room actions cannot survive revoke, mask, scope change or background', () => {
   for (const scenario of ['companies', 'rights', 'masked', 'user', 'background']) {
     const app = session();

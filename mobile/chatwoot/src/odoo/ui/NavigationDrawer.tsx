@@ -148,7 +148,7 @@ export function NavigationDrawer({
               {page === 'home' ? (
                 <View
                   style={{ flex: 1, alignItems: language === 'ar' ? 'flex-end' : 'flex-start' }}>
-                  <Brand variant="header" />
+                  <Brand variant="drawer" />
                 </View>
               ) : (
                 <Text

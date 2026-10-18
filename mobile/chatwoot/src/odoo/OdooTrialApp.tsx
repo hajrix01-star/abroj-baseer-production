@@ -181,11 +181,18 @@ export function SessionApp({ engine }: { engine: ChatEngine }) {
     }
   };
   const changed = async (roomId?: number) => {
-    await engine.refresh();
+    // Every administrative engine mutation already refreshes and fences its
+    // authoritative snapshot. Capture it instead of repeating bootstrap/rooms.
     chat.capture();
     if (roomId) {
       const room = engine.rooms().find(item => item.id === roomId);
-      if (room) await chat.select(room);
+      const selected = chat.selected;
+      // Metadata/member edits must not clear the same conversation's history,
+      // draft, keyboard position or sound baseline by re-selecting that room.
+      if (room && (!selected || selected.id !== room.id ||
+          selected.company_id !== room.company_id || selected.membership_id !== room.membership_id)) {
+        await chat.select(room);
+      }
     }
   };
   // The system picker hides/unmounts private panels. Its verified outcome belongs

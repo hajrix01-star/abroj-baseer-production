@@ -22,6 +22,8 @@ import {
 
 const marker = 'SYNTHETIC_UI_PREVIEW';
 let avatarUploads = 0;
+// Local-only management latency/round-trip fixture; never a real Odoo write.
+const addedEmployees = new Set<number>();
 const avatarObservers = new Set<() => void>();
 const descriptions = new Map<number, string>([
   [11, 'تنسيق المشتريات ومتابعة طلبات الفريق — Purchasing coordination.'],
@@ -136,8 +138,11 @@ const transport = {
       if (!room) throw new ChatError('room_unavailable');
       if (r.method === 'POST') {
         const payload = JSON.parse(r.form!.payload!);
+        await new Promise(resolve => setTimeout(resolve, 800));
         if (payload.action === 'rename') room.name = payload.name;
         if (payload.action === 'set_description') descriptions.set(room.id, payload.description);
+        if (payload.action === 'add_member' && payload.user_id === 10) addedEmployees.add(room.id);
+        if (payload.action === 'remove_member' && payload.user_id === 10) addedEmployees.delete(room.id);
         return { api_version: 2, room_id: room.id, action: payload.action };
       }
       return { api_version: 2, room: { id: room.id, company_id: room.company_id, name: room.name,
@@ -145,7 +150,8 @@ const transport = {
         is_group: true }, can_manage: room.id === 11,
         members: [{user_id: 7, name: identity.profile!.name, is_admin: true},
           {user_id: 8, name: 'مدير المجموعة — Group administrator', is_admin: true},
-          {user_id: 9, name: 'عضو فريق العمل — Team member', is_admin: false}] };
+          {user_id: 9, name: 'عضو فريق العمل — Team member', is_admin: false},
+          ...(addedEmployees.has(room.id) ? [{ user_id: 10, name: 'موظف مرشح — Candidate employee', is_admin: false }] : [])] };
     }
     const receipt = /messages\/(\d+)\/receipts$/.exec(r.path);
     if (receipt)

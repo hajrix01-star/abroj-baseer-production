@@ -95,7 +95,7 @@ function management(manage = true) {
   const detail = { api_version: 2, can_manage: manage,
     room: { id: 4, company_id: 1, is_group: true, name: 'Synthetic', description: 'Saved description', avatar_version: 1 },
     members: [{ user_id: 7, name: 'Current', is_admin: manage }] };
-  const engine = { accountScope: 'actor7/epoch1', identity: { database: 'db', user_id: 7, permissions: { chat_view: true } }, offline: false,
+  const engine = { accountScope: 'actor7/epoch1', identity: { database: 'db', user_id: 7, company_ids: [1], permissions: { chat_view: true } }, offline: false,
     rooms: () => [props.room],
     groupInfo: async () => { calls.push(['detail']); return copy(detail); }, candidates: async () => ({ users: [] }),
     groupChange: async (room, payload) => { calls.push(['change', room, copy(payload)]); if (post) await post.promise;
@@ -107,11 +107,11 @@ function management(manage = true) {
   const mod = load('ManagementSheet.tsx', { react: state.react, 'react/jsx-runtime': jsx, '../core/ChatEngine': core, './GroupAvatar': { GroupAvatar: 'GroupAvatar' },
     './components': components, './dictionary': { errorWord: error => error.code || 'error' },
     './groupPhotoOperation': helper,
-    'react-native': { AppState, View: 'View', Text: 'Text', Pressable: 'Pressable', Switch: 'Switch', Alert: { alert() {} } },
+    'react-native': { ActivityIndicator: 'ActivityIndicator', AppState, View: 'View', Text: 'Text', Pressable: 'Pressable', Switch: 'Switch', Alert: { alert() {} } },
     'react-native-image-picker': { launchImageLibrary: async () => { calls.push(['picker']); return picker; } },
     ...clock });
   return { props, calls, detail, core, render: () => state.render(() => mod.ManagementSheet(props)),
-    async ready() { this.render(); for (const [id, callback] of [...timers]) { timers.delete(id); await callback(); } return this.render(); },
+    async ready() { this.render(); await settle(); this.render(); for (const [id, callback] of [...timers]) { timers.delete(id); await callback(); } await settle(); return this.render(); },
     deferPost() { post = deferred(); return post; }, picker(value) { picker = value; }, close: () => state.close(), get lateWrites() { return state.lateWrites; },
     lifecycle(value) { AppState.currentState = value; for (const listener of [...listeners]) listener(value); },
     get listenerCount() { return listeners.size; }, expire() { for (const callback of [...timers.values()]) callback(); } };
@@ -230,4 +230,22 @@ test('unknown upload failure cannot be confused with a saved outcome after priva
   const outcomes = app.calls.filter(call => call[0] === 'outcome');
   assert.equal(outcomes.length, 1); assert.equal(outcomes[0][1].status, 'failed');
   assert.equal(app.detail.room.avatar_version, 1); assert.equal(app.lateWrites, 0);
+});
+
+test('late detail and candidate reads cannot update an unmounted sheet or a replaced engine with the same actor IDs', async () => {
+  const detailApp = management(); const detailWait = deferred(); detailApp.props.engine.groupInfo = () => detailWait.promise;
+  detailApp.render(); detailApp.close(); detailWait.resolve(copy(detailApp.detail)); await settle(); assert.equal(detailApp.lateWrites, 0);
+  const app = management(); await app.ready(); const candidateWait = deferred();
+  app.props.engine.candidates = () => candidateWait.promise;
+  one(app.render(), 'Field', p => p.accessibilityLabel === 'search').onChangeText('query'); app.render(); app.expire(); await settle();
+  app.props.engine = { ...app.props.engine, groupInfo: () => new Promise(() => {}) };
+  app.render(); candidateWait.resolve({ users: [{ user_id: 44, name: 'Old engine candidate' }] }); await settle();
+  assert.equal(nodes(app.render()).some(node => node.props.accessibilityLabel === 'add: Old engine candidate'), false);
+  const closed = management(); await closed.ready(); const late = deferred(); closed.props.engine.candidates = () => late.promise;
+  one(closed.render(), 'Field', p => p.accessibilityLabel === 'search').onChangeText('pending'); closed.render(); closed.expire(); await settle();
+  closed.close(); late.resolve({ users: [{ user_id: 45, name: 'Closed candidate' }] }); await settle(); assert.equal(closed.lateWrites, 0);
+  const revoked = management(); await revoked.ready(); const revokedWait = deferred(); revoked.props.engine.candidates = () => revokedWait.promise;
+  one(revoked.render(), 'Field', p => p.accessibilityLabel === 'search').onChangeText('before revoke'); revoked.render(); revoked.expire(); await settle();
+  revoked.props.engine.rooms = () => []; revokedWait.resolve({ users: [{ user_id: 46, name: 'Revoked candidate' }] }); await settle();
+  assert.equal(nodes(revoked.render()).some(node => node.props.accessibilityLabel === 'add: Revoked candidate'), false);
 });

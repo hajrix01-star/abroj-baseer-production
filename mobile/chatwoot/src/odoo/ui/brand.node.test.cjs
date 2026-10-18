@@ -33,11 +33,30 @@ test('approved artwork is fixed-size, accessible, contained and never mirrored',
   }
 });
 
+test('header and narrow-drawer brand slots account for raster clear space without widening the drawer', () => {
+  const Brand = component();
+  const header = Brand({ variant: 'header' }).props.style;
+  const drawer = Brand({ variant: 'drawer' }).props.style;
+  assert.equal(header.width, 128);
+  assert.equal(header.height, 38.4);
+  assert.equal(drawer.width, 140);
+  assert.equal(drawer.height, 42);
+  for (const size of [header, drawer]) {
+    assert.ok(Math.abs(size.width / size.height - 10 / 3) < 0.001);
+    // Blue mark occupies 200 of the source raster's 300px height.
+    assert.ok(size.height * 2 / 3 >= 24);
+  }
+  assert.ok(drawer.width <= 320 * 0.65 - 16 - 44 - 8,
+    'fits beside the unchanged toggle/gap inside the existing 65% drawer');
+  const source = readFileSync(join(__dirname, 'NavigationDrawer.tsx'), 'utf8');
+  assert.ok(source.includes('<Brand variant="drawer" />'));
+});
+
 test('native branding preserves update identity and uses separate Odoo assets', () => {
   const config = readFileSync(join(root, 'app.config.ts'), 'utf8');
   assert.ok(config.includes("name: trial ? 'BWork' : 'Chatwoot'"));
-  assert.ok(config.includes("version: trial ? '0.1.12'"));
-  assert.ok(config.includes('versionCode: 13'));
+  assert.ok(config.includes("version: trial ? '0.1.13'"));
+  assert.ok(config.includes('versionCode: 14'));
   assert.ok(config.includes("package: trial ? 'com.baseer.bchat.trial'"));
   assert.ok(config.includes("scheme: trial ? 'bchat-trial'"));
   assert.ok(config.includes("trial ? './assets/bwork/bwork-adaptive-1024.png' : './assets/adaptive-icon.png'"));

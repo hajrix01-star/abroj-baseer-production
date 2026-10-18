@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Alert, AppState, Pressable, Switch, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, AppState, Pressable, Switch, Text, View } from 'react-native';
 import { ChatError, groupDescription, type ChatEngine, type GroupInfo, type Room } from '../core/ChatEngine';
 import { launchImageLibrary } from 'react-native-image-picker';
 import { GroupAvatar } from './GroupAvatar';
@@ -48,6 +48,11 @@ export function ManagementSheet({
   const [canManage, setCanManage] = useState(false);
   const [enabled, setEnabled] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [detailLoading, setDetailLoading] = useState(mode === 'members' || mode === 'policy');
+  const [candidateLoading, setCandidateLoading] = useState(false);
+  const [detailScope, setDetailScope] = useState<{ engine: ChatEngine; key: string } | null>(null);
+  const [candidateScope, setCandidateScope] = useState<{ engine: ChatEngine; key: string } | null>(null);
+  const [candidateRevision, setCandidateRevision] = useState(0);
   const [error, setError] = useState<Word | null>(null);
   const [expandedMember, setExpandedMember] = useState<number | null>(null);
   const [description, setDescription] = useState('');
@@ -57,11 +62,24 @@ export function ManagementSheet({
   const descriptionRevision = useRef(0);
   const mutation = useRef(false);
   const alive = useRef(true);
-  const readScope = () => `${engine.accountScope}/${engine.identity?.database}/${engine.identity?.user_id}/${room?.company_id}/${room?.id}/${room?.membership_id}`;
+  const readScope = () => `${engine.accountScope}/${engine.identity?.database}/${engine.identity?.user_id}/${JSON.stringify(engine.identity?.company_ids)}/${JSON.stringify(engine.identity?.permissions)}/${companyId}/${mode}/${room?.company_id}/${room?.id}/${room?.membership_id}`;
   const identityScope = readScope();
   const liveScope = useRef(identityScope); liveScope.current = identityScope;
+  const liveEngine = useRef(engine); liveEngine.current = engine;
   useEffect(() => { alive.current = true; return () => { alive.current = false; }; }, [identityScope]);
-  const current = (requested: string) => alive.current && liveScope.current === requested && readScope() === requested;
+  const current = (requested: string) => {
+    if (!alive.current || liveEngine.current !== engine || liveScope.current !== requested || readScope() !== requested) return false;
+    try {
+      if (!engine.identity?.company_ids.includes(companyId)) return false;
+      return mode !== 'members' || !!room && engine.rooms().some(row => row.id === room.id && row.company_id === room.company_id && row.membership_id === room.membership_id);
+    } catch { return false; }
+  };
+  const detailReady = detailScope?.engine === engine && detailScope.key === identityScope && current(identityScope);
+  const mayManage = canManage && detailReady;
+  const candidateKey = JSON.stringify([identityScope, query, candidateRevision]);
+  const liveCandidate = useRef(candidateKey); liveCandidate.current = candidateKey;
+  const visibleMembers = detailReady ? members : [];
+  const visibleUsers = candidateScope?.engine === engine && candidateScope.key === candidateKey && (mode !== 'members' || mayManage) ? users : [];
   const applyDetail = (detail: GroupInfo, saved?: { value: string; revision: number }) => {
     setMembers(detail.members); setCanManage(detail.can_manage);
     setAvatarVersion(detail.room.avatar_version); setSavedDescription(detail.room.description);
@@ -76,37 +94,54 @@ export function ManagementSheet({
   useEffect(() => {
     let live = true;
     const requested = identityScope;
-    const timer = setTimeout(async () => {
-      setBusy(true);
+    setDetailScope(null); setCanManage(false); setMembers([]); setUsers([]); setSelected([]);
+    setName(room?.name ?? ''); setDescription(''); setSavedDescription('');
+    descriptionDirty.current = false; descriptionRevision.current++;
+    setDetailLoading(mode === 'members' || mode === 'policy');
+    const allowed = () => live && current(requested);
+    void (async () => {
       try {
         if (mode === 'policy') {
           const policy = await engine.policy(companyId);
-          if (live) {
+          if (allowed()) {
             setEnabled(policy.direct_enabled);
             setCanManage(policy.can_manage);
+            setDetailScope({ engine, key: requested });
           }
-        } else {
-          if (mode === 'members' && room) {
-            const detail = await engine.groupInfo(room);
-            if (live && current(requested)) applyDetail(detail);
-            if (!detail.can_manage) return;
-          }
-          const candidates = await engine.candidates(companyId, query);
-          if (live) setUsers(candidates.users);
+        } else if (mode === 'members' && room) {
+          const detail = await engine.groupInfo(room);
+          if (allowed()) { applyDetail(detail); setDetailScope({ engine, key: requested }); }
         }
       } catch (e) {
-        if (live) setError(errorWord(e));
+        if (allowed()) setError(errorWord(e));
       } finally {
-        if (live) setBusy(false);
+        if (allowed()) setDetailLoading(false);
       }
-    }, 200);
-    return () => {
-      live = false;
-      clearTimeout(timer);
+    })();
+    return () => { live = false; };
+  }, [engine, identityScope]);
+  useEffect(() => {
+    let live = true;
+    const requested = identityScope, requestedCandidates = candidateKey;
+    const allowed = () => live && current(requested) && liveCandidate.current === requestedCandidates;
+    const eligible = mode !== 'policy' && (mode !== 'members' || mayManage);
+    setCandidateScope(null); setUsers([]); setCandidateLoading(eligible);
+    if (!eligible) return () => { live = false; };
+    const load = async () => {
+      if (!allowed()) return;
+      try {
+        const candidates = await engine.candidates(companyId, query);
+        if (allowed()) { setUsers(candidates.users); setCandidateScope({ engine, key: requestedCandidates }); }
+      } catch (e) { if (allowed()) setError(errorWord(e)); }
+      finally { if (allowed()) setCandidateLoading(false); }
     };
-  }, [companyId, engine, mode, query, room]);
-  const act = async (operation: () => Promise<unknown>, dismiss = false, saved?: { value: string; revision: number }) => {
-    if (mutation.current) return;
+    // The first candidate list is immediate; only typing pays the search debounce.
+    const timer = query ? setTimeout(() => { void load(); }, 200) : undefined;
+    if (!query) void load();
+    return () => { live = false; if (timer !== undefined) clearTimeout(timer); };
+  }, [engine, identityScope, candidateKey, mayManage]);
+  const act = async (operation: () => Promise<unknown>, dismiss = false, saved?: { value: string; revision: number }, reloadCandidates = false) => {
+    if (mutation.current || detailLoading || !current(identityScope)) return;
     mutation.current = true;
     const requested = identityScope;
     setBusy(true);
@@ -118,7 +153,10 @@ export function ManagementSheet({
       if (dismiss) close();
       else if (room) {
         const detail = await engine.groupInfo(room);
-        if (current(requested)) applyDetail(detail, saved);
+        if (current(requested)) {
+          applyDetail(detail, saved);
+          if (reloadCandidates) setCandidateRevision(previous => previous + 1);
+        }
       }
     } catch (e) {
       if (current(requested)) setError(errorWord(e));
@@ -128,7 +166,7 @@ export function ManagementSheet({
     }
   };
   const changePhoto = async () => {
-    if (!room || !canManage || busy || mutation.current || engine.offline) return;
+    if (!room || !mayManage || detailLoading || busy || mutation.current || engine.offline) return;
     const requested = identityScope;
     const photoScope = engine.accountScope, photoRoom = { ...room };
     const report = (status: 'saved' | 'failed', error?: unknown) => {
@@ -162,12 +200,15 @@ export function ManagementSheet({
           : t('members');
   return (
     <Sheet title={title} close={close} t={t} compact={mode === 'members'} language={language}>
+      <View style={{ height: 20, alignItems: 'center', justifyContent: 'center' }}>
+        {(busy || detailLoading) && <ActivityIndicator size="small" accessibilityLabel={t('loading')} color={colors.blue} />}
+      </View>
       {mode === 'policy' ? (
         <>
           <View style={styles.row}>
             <Switch
               value={enabled}
-              disabled={!canManage || busy}
+              disabled={!mayManage || busy}
               onValueChange={setEnabled}
               accessibilityLabel={t('directEnabled')}
             />
@@ -180,7 +221,7 @@ export function ManagementSheet({
           </Label>
           <Button
             title={t('save')}
-            disabled={!canManage}
+            disabled={!mayManage}
             busy={busy}
             onPress={() => {
               void act(() => engine.setPolicy(companyId, enabled), true);
@@ -203,9 +244,9 @@ export function ManagementSheet({
             <>
               {room && <View style={{ alignItems: 'center', gap: 6, paddingVertical: 4 }}>
                 <GroupAvatar engine={engine} room={{ ...room, avatar_version: avatarVersion }} enabled={!engine.offline} size={64} label={t('groupPhoto')} />
-                {canManage && <Button quiet title={t('changeGroupPhoto')} disabled={busy || engine.offline} onPress={() => { void changePhoto(); }} />}
+                {mayManage && <Button quiet title={t('changeGroupPhoto')} disabled={busy || engine.offline} onPress={() => { void changePhoto(); }} />}
               </View>}
-              {canManage && (
+              {mayManage && (
                 <View
                   style={{
                     flexDirection: language === 'ar' ? 'row-reverse' : 'row',
@@ -233,10 +274,10 @@ export function ManagementSheet({
                   />
                 </View>
               )}
-              {!canManage && room && <Label language={language}>{room.name}</Label>}
+              {!mayManage && room && <Label language={language}>{room.name}</Label>}
               <View style={{ gap: 6 }}>
                 <Label language={language} muted>{t('groupDescription')}</Label>
-                {canManage ? <>
+                {mayManage ? <>
                   <Field language={language} multiline value={description} maxLength={1024} editable={!busy}
                     placeholder={t('descriptionPlaceholder')} accessibilityLabel={t('groupDescription')}
                     onChangeText={value => { descriptionRevision.current++; descriptionDirty.current = true; setDescription(value); }}
@@ -251,9 +292,9 @@ export function ManagementSheet({
                         } catch (e) { setError(errorWord(e)); }
                       }} />
                   </View>
-                </> : <Label language={language}>{savedDescription || t('noDescription')}</Label>}
+                </> : <Label language={language}>{detailReady ? savedDescription || t('noDescription') : ''}</Label>}
               </View>
-              {members.map(member => (
+              {visibleMembers.map(member => (
                 <View
                   key={member.user_id}
                   testID={`group-member-${member.user_id}`}
@@ -308,7 +349,7 @@ export function ManagementSheet({
                         </Text>
                       )}
                     </View>
-                    {canManage && member.user_id !== engine.identity?.user_id && (
+                    {mayManage && member.user_id !== engine.identity?.user_id && (
                       <IconButton
                         icon="more"
                         label={`${t(expandedMember === member.user_id ? 'close' : 'settings')}: ${member.name}`}
@@ -321,7 +362,7 @@ export function ManagementSheet({
                       />
                     )}
                   </View>
-                  {canManage &&
+                  {mayManage &&
                     member.user_id !== engine.identity?.user_id &&
                     expandedMember === member.user_id && (
                       <View
@@ -345,7 +386,7 @@ export function ManagementSheet({
                                 engine.groupChange(room, {
                                   action: 'remove_member',
                                   user_id: member.user_id,
-                                }),
+                                }), false, undefined, true,
                               );
                           }}
                         />
@@ -371,8 +412,8 @@ export function ManagementSheet({
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={t('leave')}
-                accessibilityState={{ disabled: busy }}
-                disabled={busy}
+                accessibilityState={{ disabled: busy || detailLoading }}
+                disabled={busy || detailLoading}
                 style={{
                   minHeight: 48,
                   paddingHorizontal: 2,
@@ -406,7 +447,7 @@ export function ManagementSheet({
               </Pressable>
             </>
           )}
-          {(mode !== 'members' || canManage) && (
+          {(mode !== 'members' || mayManage) && (
             <>
               <Field
                 language={language}
@@ -416,13 +457,14 @@ export function ManagementSheet({
                 accessibilityLabel={t('search')}
                 maxLength={80}
               />
+              {candidateLoading && <ActivityIndicator accessibilityLabel={t('loading')} color={colors.blue} />}
               {mode === 'create' && (
                 <Label language={language} muted>
                   {t('selectMembers')} · {String(selected.length)}/49
                 </Label>
               )}
-              {users
-                .filter(user => !members.some(member => member.user_id === user.user_id))
+              {visibleUsers
+                .filter(user => !visibleMembers.some(member => member.user_id === user.user_id))
                 .map(user => (
                   <Pressable
                     key={user.user_id}
@@ -438,7 +480,7 @@ export function ManagementSheet({
                       }
                       if (mode === 'members' && room) {
                         void act(() =>
-                          engine.groupChange(room, { action: 'add_member', user_id: user.user_id }),
+                          engine.groupChange(room, { action: 'add_member', user_id: user.user_id }), false, undefined, true,
                         );
                         return;
                       }
@@ -499,7 +541,7 @@ export function ManagementSheet({
                     )}
                   </Pressable>
                 ))}
-              {!users.length && !busy && (
+              {!visibleUsers.length && !busy && !candidateLoading && !detailLoading && (
                 <Label language={language} muted>
                   {t('noMembers')}
                 </Label>

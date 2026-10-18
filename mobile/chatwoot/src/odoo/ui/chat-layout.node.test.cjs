@@ -136,9 +136,9 @@ test('media withdrawal keeps text input but removes picker/mic capability; disab
   assert.equal(app.events.length, 1);
 });
 
-function timeline() {
+function timeline(initialHidden = []) {
   const state = hooks(); const calls = []; const voiceRights = []; const frames = []; const keyboard = {};
-  const alerts = []; let hidden = [];
+  const alerts = []; let hidden = [...initialHidden];
   let release;
   const tools = function AttachmentTools() {};
   const props = { language: 'ar', t, onMenu: () => calls.push('menu'), back: () => calls.push('back'), manage: () => calls.push('members'),
@@ -382,11 +382,13 @@ test('message information and device-local hide undo remain available to read-on
   one(list.renderItem({ item }), 'Pressable').onPress();
   let row = one(app.render(), 'FlashList').renderItem({ item });
   assert.equal(nodes(row).some(node => node.type === 'IconButton' && node.props.icon === 'reply'), false);
+  assert.equal(nodes(row).some(node => node.type === 'IconButton' && node.props.icon === 'trash'), false, 'read-only is not an exception to authorship');
   one(row, 'IconButton', props => props.icon === 'info').onPress(); await settled();
   const sheet = one(app.render(), 'Sheet'); assert.equal(sheet.title, 'messageInfo');
   assert.equal(JSON.stringify(sheet).includes('retained message'), true);
   assert.equal(JSON.stringify(sheet).includes('receiptSummary'), false, 'received message has no invented author-wide receipt status');
   sheet.close();
+  item.message.author_user_id = 7; // Own historical messages remain locally hideable after send rights are withdrawn.
   row = one(app.render(), 'FlashList').renderItem({ item }); one(row, 'Pressable').onPress();
   row = one(app.render(), 'FlashList').renderItem({ item });
   one(row, 'IconButton', props => props.icon === 'trash').onPress();
@@ -397,6 +399,37 @@ test('message information and device-local hide undo remain available to read-on
   assert.equal(JSON.stringify(row).includes('MediaTile'), false);
   one(row, 'Button', props => props.title === 'undoHide').onPress(); await settled();
   row = one(app.render(), 'FlashList').renderItem({ item }); assert.equal(JSON.stringify(row).includes('retained message'), true);
+});
+
+test('employees and group admins cannot hide received messages or trigger stale hide handlers', async () => {
+  for (const language of ['ar', 'en']) for (const isAdmin of [false, true]) {
+    const app = timeline([10]); app.props.language = language; app.props.chat.selected = { ...room, is_group_admin: isAdmin };
+    const item = { message: app.props.chat.history.messages[0] };
+    let row = one(app.render(), 'FlashList').renderItem({ item });
+    assert.equal(JSON.stringify(row).includes('retained message'), true, 'legacy foreign markers must not hide received text');
+    assert.equal(one(row, 'Pressable').accessibilityActions.some(action => action.name === 'hide'), false);
+    one(row, 'Pressable').onAccessibilityAction({ nativeEvent: { actionName: 'hide' } });
+    one(row, 'Pressable').onPress(); row = one(app.render(), 'FlashList').renderItem({ item });
+    assert.equal(nodes(row).some(node => node.type === 'IconButton' && node.props.icon === 'trash'), false);
+    assert.equal(nodes(row).some(node => node.type === 'IconButton' && node.props.icon === 'reply'), true);
+    assert.equal(nodes(row).some(node => node.type === 'IconButton' && node.props.icon === 'info'), true);
+    assert.equal(app.alerts.length, 0);
+    // A callback captured while the same recycled row was owned cannot hide a received replacement.
+    const own = timeline(); const ownItem = { message: own.props.chat.history.messages[0] }; ownItem.message.author_user_id = 7;
+    one(one(own.render(), 'FlashList').renderItem({ item: ownItem }), 'Pressable').onPress();
+    const trash = one(one(own.render(), 'FlashList').renderItem({ item: ownItem }), 'IconButton', p => p.icon === 'trash');
+    trash.onPress(); const confirm = own.alerts.at(-1)[2].find(action => action.style === 'destructive');
+    ownItem.message.author_user_id = 8; own.render(); trash.onPress(); confirm.onPress(); await settled();
+    assert.equal(own.alerts.length, 1); assert.equal(own.calls.some(call => Array.isArray(call) && call[0] === 'hidden'), false);
+  }
+  const pendingMetadata = timeline(); pendingMetadata.props.engine.cachedHiddenMessages = () => null;
+  pendingMetadata.props.engine.hiddenMessages = () => new Promise(() => {});
+  const item = { message: pendingMetadata.props.chat.history.messages[0] };
+  let row = one(pendingMetadata.render(), 'FlashList').renderItem({ item });
+  assert.equal(JSON.stringify(row).includes('retained message'), true, 'received content never waits for local-hide metadata');
+  one(row, 'Pressable').onPress(); row = one(pendingMetadata.render(), 'FlashList').renderItem({ item });
+  one(row, 'IconButton', p => p.icon === 'info').onPress(); await settled();
+  assert.equal(one(pendingMetadata.render(), 'Sheet').title, 'messageInfo');
 });
 
 test('closing message information prevents late fetch resurrection and never dismisses the keyboard', async () => {

@@ -36,7 +36,10 @@
     { "id": "quote-authority-denial", "description": "قفزة الاقتباس تطبق سحب الجلسة أو العضوية ولا تمس جلسة أحدث", "suite": "test:odoo", "test": "quote navigation applies existing 401 session and 403 membership purges without touching a newer session" },
     { "id": "hide-persistence-ack", "description": "لا نجاح للإخفاء قبل حفظه، والبيانات التالفة لا تكشف المحتوى", "suite": "test:odoo", "test": "local hide commits only after storage ACK and invalid persisted metadata fails closed" },
     { "id": "message-actions-readonly", "description": "المعلومات والإخفاء والتراجع متاحة للمشاهد ولا تكشف الرسالة المخفية", "suite": "test:odoo", "test": "message information and device-local hide undo remain available to read-only members without exposing hidden content" },
-    { "id": "voice-scrub-ownership", "description": "السحب داخل شريط الصوت لا يتحول إلى رد، والنطاق المبطل لا يحتفظ بالإيماءة", "suite": "test:odoo", "test": "active audio scrub keeps responder ownership against ancestor reply capture; inactive and invalidated rows yield" }
+    { "id": "voice-scrub-ownership", "description": "السحب داخل شريط الصوت لا يتحول إلى رد، والنطاق المبطل لا يحتفظ بالإيماءة", "suite": "test:odoo", "test": "active audio scrub keeps responder ownership against ancestor reply capture; inactive and invalidated rows yield" },
+    { "id": "own-message-hide-core", "description": "الإخفاء المحلي للمرسل نفسه فقط من بيانات المحرك ولا استثناء للمدير", "suite": "test:odoo", "test": "only the canonical message author can hide locally; foreign and unknown IDs never write metadata" },
+    { "id": "own-message-hide-ui", "description": "رسائل الآخرين تبقى ظاهرة ولا تخفى بإجراء قديم أو بالإتاحة حتى للمدير", "suite": "test:odoo", "test": "employees and group admins cannot hide received messages or trigger stale hide handlers" },
+    { "id": "legacy-foreign-hidden", "description": "تنظيف علامات إخفاء رسائل الآخرين في الصفحة المحملة دون فقد إخفاء رسائلي", "suite": "test:odoo", "test": "legacy hidden received messages are pruned from a loaded page without losing own markers or reading other history" }
   ],
   "openGaps": []
 }

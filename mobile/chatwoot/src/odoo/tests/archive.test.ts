@@ -11,7 +11,7 @@ const message = (n: number): Message => ({ id: n * 3 + 2, author_user_id: n % 2 
 const guard = () => {};
 function deferred() { let resolve!: () => void; const promise = new Promise<void>(done => { resolve = done; }); return { promise, resolve }; }
 const scope: HistoryScope = { account: 'synthetic/db/u7', companyId: 1, roomId: 4, membershipId: 12 };
-function app(archive = new MemoryHistoryArchive(), storage = new Map<string, string>()) {
+function app(archive = new MemoryHistoryArchive(), storage = new Map<string, string>(), isAdmin = false) {
   const calls: Request[] = []; let total = 720, changed = false, cursor = 0, allowed = true, now = 100000000;
   let before: ((request: Request) => Promise<void>) | undefined;
   const engine = new ChatEngine({ archive, origin: 'https://synthetic.invalid', database: 'db', now: () => now,
@@ -21,7 +21,7 @@ function app(archive = new MemoryHistoryArchive(), storage = new Map<string, str
       if (request.path === '/web/session/destroy') return { result: null };
       if (request.path === '/web/session/authenticate') return { result: { uid: 7, db: 'db' } };
       if (request.path.endsWith('/bootstrap')) return { api_version: 2, user_id: 7, database: 'db', company_ids: [1], csrf_token: 'synthetic', permissions: { chat_view: true, chat_send: true, media: true } };
-      if (request.path === '/bchat/api/v2/rooms') return { api_version: 2, rooms: allowed ? [room] : [] };
+      if (request.path === '/bchat/api/v2/rooms') return { api_version: 2, rooms: allowed ? [{ ...room, is_group_admin: isAdmin }] : [] };
       if (request.path.includes('/changes?')) { const changes = changed ? [{ kind: 'message', room_id: room.id }] : []; if (changed) cursor++; changed = false; return { api_version: 2, changes, next_after: cursor, watermark: cursor, reset_required: false }; }
       if (request.method === 'GET' && request.path.includes('/messages')) {
         if (!allowed) throw new ChatError('membership_changed', 403);
@@ -125,6 +125,29 @@ test('local hide commits only after storage ACK and invalid persisted metadata f
   testApp.storage.set(hiddenKey, JSON.stringify(['not-an-id']));
   const restored = app(testApp.archive, testApp.storage); assert.equal(await restored.engine.restoreOffline(), true);
   await assert.rejects(restored.engine.hiddenMessages(room), { code: 'local_state_invalid' });
+});
+
+test('only the canonical message author can hide locally; foreign and unknown IDs never write metadata', async () => {
+  for (const isAdmin of [false, true]) {
+  const testApp = app(undefined, undefined, isAdmin); await login(testApp.engine); await testApp.engine.latest(room);
+  const before = new Map(testApp.storage), calls = testApp.calls.length;
+  await assert.rejects(testApp.engine.setMessageHidden(room, message(719).id, true), { code: 'forbidden' });
+  await assert.rejects(testApp.engine.setMessageHidden(room, 999999, true), { code: 'message_unavailable' });
+  assert.deepEqual(testApp.storage, before); assert.equal(testApp.calls.length, calls);
+  assert.deepEqual(await testApp.engine.setMessageHidden(room, message(720).id, true), [message(720).id]);
+  assert.deepEqual(await testApp.engine.setMessageHidden(room, message(720).id, false), []);
+  }
+});
+
+test('legacy hidden received messages are pruned from a loaded page without losing own markers or reading other history', async () => {
+  const testApp = app(); await login(testApp.engine); await testApp.engine.latest(room);
+  const key = 'odoo-chat/v1/https%3A%2F%2Fsynthetic.invalid/db/u/7/c/1/r/4/m/12/hidden-message-ids';
+  testApp.storage.set(key, JSON.stringify([message(719).id, message(720).id]));
+  const before = testApp.calls.length;
+  assert.deepEqual(await testApp.engine.hiddenMessages(room), [message(720).id]);
+  assert.equal(testApp.calls.length, before);
+  assert.deepEqual(JSON.parse(testApp.storage.get(key)!), [message(720).id]);
+  assert.deepEqual(await testApp.engine.setMessageHidden(room, message(719).id, false), [message(720).id], 'old marker cleanup is always allowed');
 });
 
 test('local hide metadata is loaded once and capped without silently restoring older hidden messages', async () => {

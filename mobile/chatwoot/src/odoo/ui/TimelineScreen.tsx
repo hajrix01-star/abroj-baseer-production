@@ -72,7 +72,15 @@ export function TimelineScreen({
     catch { return null; }
   });
   const hiddenReady = hiddenState?.scope === actionScope;
-  const hiddenIds = useMemo(() => new Set(hiddenReady ? hiddenState.ids : []), [hiddenState, actionScope]);
+  const hiddenIds = useMemo(() => {
+    const stored = new Set(hiddenReady ? hiddenState.ids : []);
+    return new Set(chat.history.messages.filter(message => stored.has(message.id)
+      && message.author_user_id === chat.identity?.user_id).map(message => message.id));
+  }, [hiddenState, actionScope, chat.history.messages, chat.identity?.user_id]);
+  const currentMessages = useRef({ messages: chat.history.messages, userId: chat.identity?.user_id });
+  currentMessages.current = { messages: chat.history.messages, userId: chat.identity?.user_id };
+  const ownsMessage = (messageId: number) => currentMessages.current.messages.some(message =>
+    message.id === messageId && message.author_user_id === currentMessages.current.userId);
   const hiddenRef = useRef({ ready: hiddenReady, ids: hiddenIds }); hiddenRef.current = { ready: hiddenReady, ids: hiddenIds };
   const [info, setInfo] = useState<{ scope: string; message: Message; cached: boolean } | null>(null);
   const [actionBusy, setActionBusy] = useState(false);
@@ -164,7 +172,8 @@ export function TimelineScreen({
     };
   }, [followGeometry]);
   const chooseReply = (message: Message) => {
-    if (!latestAccess.current || !live.current || !hiddenRef.current.ready || hiddenRef.current.ids.has(message.id)) return;
+    if (!latestAccess.current || !live.current || (message.author_user_id === currentMessages.current.userId
+      && (!hiddenRef.current.ready || hiddenRef.current.ids.has(message.id)))) return;
     setActionsFor(null);
     replyRevision.current++;
     setReply(message);
@@ -185,6 +194,7 @@ export function TimelineScreen({
   };
   const changeHidden = async (messageId: number, hidden: boolean) => {
     if (currentActionScope.current !== actionScope || !live.current || !chat.presentationReady || AppState.currentState !== 'active') return;
+    if (hidden && !ownsMessage(messageId)) return;
     const requested = actionScope, operation = ++actionOperation.current;
     setActionsFor(null); setActionBusy(true); setLocalError(null);
     try {
@@ -198,6 +208,7 @@ export function TimelineScreen({
   };
   const confirmHide = (messageId: number) => {
     if (currentActionScope.current !== actionScope || !live.current || !chat.presentationReady || AppState.currentState !== 'active') return;
+    if (!ownsMessage(messageId)) return;
     const requested = actionScope;
     Alert.alert(t('hideLocal'), t('hideLocalConfirm'), [
       { text: t('cancel'), style: 'cancel' },
@@ -234,7 +245,8 @@ export function TimelineScreen({
     ({ viewableItems }: { viewableItems: ViewToken<Row>[] }) => {
       const active = AppState.currentState === 'active' && chat.presentationReady && !chat.offline;
       for (const id of visibleReadIds(
-        viewableItems.filter(item => item.isViewable && hiddenRef.current.ready && !hiddenRef.current.ids.has(item.item.message?.id ?? 0)).map(item => item.item),
+        viewableItems.filter(item => item.isViewable && (item.item.message?.author_user_id !== chat.identity?.user_id
+          || hiddenRef.current.ready && !hiddenRef.current.ids.has(item.item.message?.id ?? 0))).map(item => item.item),
         chat.identity?.user_id ?? 0,
         active,
       )) {
@@ -464,7 +476,7 @@ export function TimelineScreen({
               const message = item.message;
               const pending = item.pending;
               const state = pending?.state ?? message?.delivery_state;
-              if (message && (!hiddenReady || hiddenIds.has(message.id))) return (
+              if (message && own && (!hiddenReady || hiddenIds.has(message.id))) return (
                 <View style={{ alignSelf: 'center', marginVertical: 5, padding: 10, borderRadius: 12, backgroundColor: colors.pale }}>
                   <Label language={language} muted>{t(hiddenReady ? 'locallyHidden' : 'loading')}</Label>
                   {hiddenReady && <Button quiet title={t('undoHide')} busy={actionBusy} onPress={() => { void changeHidden(message.id, false); }} />}
@@ -485,7 +497,7 @@ export function TimelineScreen({
                   accessibilityActions={
                     message ? [
                       ...(canSend ? [{ name: 'reply', label: t('reply') }] : []),
-                      { name: 'info', label: t('messageInfo') }, { name: 'hide', label: t('hideLocal') },
+                      { name: 'info', label: t('messageInfo') }, ...(own ? [{ name: 'hide', label: t('hideLocal') }] : []),
                     ] : []
                   }
                   onAccessibilityAction={event => {
@@ -615,7 +627,7 @@ export function TimelineScreen({
                       <Text style={styles.muted}>{t('reply')}</Text>
                       </>}
                       <IconButton icon="info" label={t('messageInfo')} disabled={actionBusy} onPress={() => { void showInfo(message); }} />
-                      <IconButton icon="trash" label={t('hideLocal')} tone="danger" disabled={actionBusy} onPress={() => confirmHide(message.id)} />
+                      {own && <IconButton icon="trash" label={t('hideLocal')} tone="danger" disabled={actionBusy} onPress={() => confirmHide(message.id)} />}
                     </View>
                   )}
                 </Pressable>
@@ -737,7 +749,8 @@ export function TimelineScreen({
           )}
         </View>
       </KeyboardAvoidingView>
-      {info?.scope === actionScope && hiddenReady && !hiddenIds.has(info.message.id) && (
+      {info?.scope === actionScope && (info.message.author_user_id !== chat.identity?.user_id
+        || hiddenReady && !hiddenIds.has(info.message.id)) && (
         <Sheet compact title={t('messageInfo')} language={language} t={t} close={() => {
           actionOperation.current++; setInfo(null); setActionBusy(false);
         }}>

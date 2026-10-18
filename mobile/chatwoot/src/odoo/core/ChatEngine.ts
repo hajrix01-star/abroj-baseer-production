@@ -695,13 +695,20 @@ export class ChatEngine {
   /** Device presentation metadata only. Server content and queued sends are never mutated. */
   private async loadHidden(room: Room, guard: () => void): Promise<Set<number>> {
     const key = this.scope(room); guard();
-    const old = this.hiddenIds.get(key); if (old) return old;
-    const raw = await this.storage.getItem(`${key}hidden-message-ids`); guard();
+    const old = this.hiddenIds.get(key);
+    const raw = old ? null : await this.storage.getItem(`${key}hidden-message-ids`); guard();
     if (raw !== null && raw.length > 90001) throw new ChatError('local_state_invalid');
     let ids: unknown;
     try { ids = raw === null ? [] : JSON.parse(raw); } catch { throw new ChatError('local_state_invalid'); }
     if (!Array.isArray(ids) || ids.length > 5000 || ids.some(value => !id(value)) || new Set(ids).size !== ids.length) throw new ChatError('local_state_invalid');
-    const loaded = new Set<number>(ids); this.hiddenIds.set(key, loaded); return loaded;
+    const loaded = old ?? new Set<number>(ids);
+    // Earlier releases allowed hiding received messages. Only prune authorship
+    // proven by this bounded canonical window; never scan the archive per ID.
+    const foreign = new Set((this.histories.get(key)?.messages ?? [])
+      .filter(message => message.author_user_id !== this.account?.user_id).map(message => message.id));
+    const owned = new Set([...loaded].filter(messageId => !foreign.has(messageId)));
+    if (owned.size !== loaded.size) { await this.storage.setItem(`${key}hidden-message-ids`, JSON.stringify([...owned])); guard(); }
+    this.hiddenIds.set(key, owned); return owned;
   }
   async hiddenMessages(value: Room | number): Promise<number[]> {
     const room = this.room(value), guard = this.archiveGuard(this.epoch, room);
@@ -715,9 +722,14 @@ export class ChatEngine {
     const room = this.room(value), e = this.epoch, guard = this.archiveGuard(e, room);
     if (!id(messageId) || typeof hidden !== 'boolean') throw new ChatError('invalid_message');
     return this.serial(async () => {
+      guard();
+      if (hidden) {
+        const message = this.histories.get(this.scope(room))?.messages.find(row => row.id === messageId);
+        if (!message) throw new ChatError('message_unavailable', 404);
+        if (message.author_user_id !== this.account?.user_id) throw new ChatError('forbidden', 403);
+      }
       const previous = await this.loadHidden(room, guard), next = new Set(previous); guard();
       if (hidden) {
-        if (!this.histories.get(this.scope(room))?.messages.some(message => message.id === messageId)) throw new ChatError('message_unavailable', 404);
         if (!next.has(messageId) && next.size >= 5000) throw new ChatError('local_hide_quota');
         next.add(messageId);
       } else next.delete(messageId);

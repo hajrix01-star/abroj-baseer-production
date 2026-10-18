@@ -31,6 +31,8 @@ npm.cmd run test:odoo
 .\gradlew.bat :app:assembleRelease '-PreactNativeArchitectures=arm64-v8a,x86_64' --no-daemon --max-workers=2 --console=plain
 # Windows only, if legacy Ninja reports an existing prefab file missing/MAX_PATH:
 .\gradlew.bat :app:assembleRelease '-PreactNativeArchitectures=arm64-v8a,x86_64' --init-script ../tools/windows-native-staging.gradle --no-daemon --max-workers=2 --console=plain
+# A deeply nested checkout may additionally need -PbchatNativeStagingRoot=D:/path/bchat-native-trial
+# Choose a new, dedicated absolute directory under the authorized workspace.
 ```
 
 The generated release uses the default development certificate: private trial only, not a production signing identity. `android/local.properties` can select a separately installed official NDK if the SDK auto-download stalls; it is intentionally untracked and regeneration may replace it. The Odoo-only config plugin explicitly excludes unused Firebase/Sentry/FFmpeg/Notifee native libraries; this is independently checked rather than relying on null overrides in the supplied linker config.

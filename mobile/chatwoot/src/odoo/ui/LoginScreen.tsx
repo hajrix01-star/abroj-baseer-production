@@ -42,10 +42,10 @@ export function LoginScreen({
             {'\n'}
             {config.database}
           </Text>
+          <Label language={language}>{t('user')}</Label>
           <Field
             language={language}
             accessibilityLabel={t('user')}
-            placeholder={t('user')}
             value={login}
             onChangeText={setLogin}
             autoCapitalize="none"
@@ -53,10 +53,10 @@ export function LoginScreen({
             textContentType="username"
             autoComplete="username"
           />
+          <Label language={language}>{t('password')}</Label>
           <Field
             language={language}
             accessibilityLabel={t('password')}
-            placeholder={t('password')}
             value={password}
             onChangeText={setPassword}
             secureTextEntry

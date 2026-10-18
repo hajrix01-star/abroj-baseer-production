@@ -8,6 +8,7 @@ import type { FetchBlobResponse, StatefulPromise } from 'react-native-blob-util'
 import { ChatEngine, ChatError } from './core/ChatEngine';
 import type { Attachment, Bootstrap, Pending, Request, Room } from './core/ChatEngine';
 import { actorPattern, mediaFilePattern, nativeSessionOptions, retainNativeFile, scopePattern, trustedMedia } from './core/nativeBoundary';
+import { networkFailure } from './core/loginDiagnostics';
 
 export const config = Object.freeze({
   origin: (process.env.EXPO_PUBLIC_ODOO_ORIGIN ?? '').trim(),
@@ -41,6 +42,7 @@ function cancelNative(): void {
   tasks.clear();
 }
 function headersOf(response: FetchBlobResponse): Record<string, string> {
+  if (!response.info()?.headers || typeof response.info().headers !== 'object') throw new ChatError('native_response_missing');
   return Object.fromEntries(Object.entries(response.info().headers as Record<string, unknown>).map(([key, value]) => [key.toLowerCase(), String(value)]));
 }
 async function sessionNative(path: string, method: 'GET' | 'POST', headers: Record<string, string>, body?: unknown, signal?: AbortSignal, output?: string, byteLimit = 2 * 1024 * 1024): Promise<FetchBlobResponse> {
@@ -60,7 +62,8 @@ async function sessionNative(path: string, method: 'GET' | 'POST', headers: Reco
     const response = await task;
     if (generation !== epoch || signal?.aborted) throw new ChatError('stale_session');
     if (tooLarge) throw new ChatError('file_too_large');
-    const status = response.info().status;
+    const status = response.info()?.status;
+    if (!Number.isInteger(status) || status < 100 || status > 599) throw new ChatError('native_response_missing');
     // BlobUtil's Android interceptor records the INITIAL URL as entry zero.
     const visited = response.info().redirects ?? [];
     if (status >= 300 && status < 400 || visited.length > 1 || visited.some(url => new URL(url).href !== fixedURL(path))) throw new ChatError('redirect_denied', status);
@@ -78,7 +81,9 @@ async function sessionNative(path: string, method: 'GET' | 'POST', headers: Reco
     if (generation !== epoch || signal?.aborted) throw new ChatError('stale_session');
     if (tooLarge) throw new ChatError('file_too_large');
     if (error instanceof ChatError) throw error;
-    throw new ChatError('connection_failed');
+    const failure = new ChatError('connection_failed');
+    failure.networkFailure = networkFailure(error);
+    throw failure;
   } finally { tasks.delete(task); signal?.removeEventListener('abort', abort); }
 }
 async function request(req: Request): Promise<unknown> {

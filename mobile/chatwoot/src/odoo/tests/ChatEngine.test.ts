@@ -67,6 +67,19 @@ function setup(storage = new MemoryStorage(), server = new Server(), extra: Part
 }
 const login = async (engine: ChatEngine) => engine.login('alice', 'NeverPersistThis', true);
 
+test('login support stage preserves the original error code at each remote step', async () => {
+  const stages = [
+    ['/web/session/destroy', 'session_close'], ['/web/session/authenticate', 'authenticate'],
+    ['/bchat/api/v2/bootstrap', 'bootstrap'], ['/bchat/api/v2/rooms', 'rooms'],
+  ];
+  for (const [path, loginStage] of stages) {
+    const { engine, server } = setup();
+    server.before = async request => { if (request.path === path) throw new ChatError('connection_failed'); };
+    await assert.rejects(login(engine), { code: 'connection_failed', loginStage });
+    assert.equal(engine.identity, null);
+  }
+});
+
 test('individual login verifies uid/database and never stores password or CSRF', async () => {
   const { engine, storage, server } = setup();
   await login(engine); assert.equal(engine.identity?.user_id, 7); assert.equal(server.closed, 1);

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, Switch, Text, View } from 'react-native';
 import type { ChatEngine } from '../core/ChatEngine';
+import { loginDiagnostic } from '../core/loginDiagnostics';
 import { config } from '../runtime';
 import { Button, Field, Label, styles } from './components';
 import type { Language, Translate } from './dictionary';
@@ -20,10 +21,16 @@ export function LoginScreen({
   const [login, setLogin] = useState('');
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(true);
+  const [diagnostic, setDiagnostic] = useState<string | null>(null);
   const submit = () => {
     const secret = password;
     setPassword('');
-    void chat.run(() => engine.login(login.trim(), secret, remember)).catch(() => undefined);
+    setDiagnostic(null);
+    void chat
+      .run(() => engine.login(login.trim(), secret, remember))
+      .catch(error => {
+        setDiagnostic(loginDiagnostic(error));
+      });
   };
   return (
     <KeyboardAvoidingView
@@ -77,6 +84,18 @@ export function LoginScreen({
             </View>
           </View>
           {chat.error && <Label language={language}>{t(chat.error)}</Label>}
+          {chat.error && diagnostic && (
+            <View style={{ gap: 4 }}>
+              <Label language={language} muted>
+                {t('diagnostic')}
+              </Label>
+              <Text
+                selectable
+                style={[styles.muted, { writingDirection: 'ltr', textAlign: 'left' }]}>
+                {diagnostic}
+              </Text>
+            </View>
+          )}
           <Button
             title={t('login')}
             disabled={!login.trim() || !password}
@@ -88,6 +107,7 @@ export function LoginScreen({
             title={t('restore')}
             disabled={chat.busy}
             onPress={() => {
+              setDiagnostic(null);
               void chat
                 .run(async () => {
                   await engine.restoreOffline();

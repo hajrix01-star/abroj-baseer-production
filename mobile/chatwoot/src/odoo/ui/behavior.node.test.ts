@@ -48,6 +48,7 @@ test('read receipts select only actual visible non-own unique IDs, bounded to 20
   assert.equal(new Set(ids).size, 20);
 });
 test('safe UX text distinguishes credentials, MFA, local logout and queued send', () => {
+  assert.equal(errorWord({ code: 'connection_failed' }), 'connectionError');
   assert.equal(errorWord({ code: 'authentication_failed' }), 'credentials');
   assert.equal(errorWord({ code: 'mfa_required' }), 'mfa');
   assert.equal(translator('ar')('queued'), 'بانتظار الإرسال');

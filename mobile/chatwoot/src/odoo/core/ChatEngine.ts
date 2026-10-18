@@ -1,4 +1,5 @@
 /** Odoo-owned chat domain. No native dependencies, credentials or telemetry. */
+import type { LoginStage, NetworkFailure } from './loginDiagnostics';
 export interface Storage {
   getItem(key: string): Promise<string | null>;
   setItem(key: string, value: string): Promise<void>;
@@ -51,6 +52,8 @@ export interface Options {
 export class ChatError extends Error {
   readonly code: string;
   readonly status: number;
+  loginStage?: LoginStage;
+  networkFailure?: NetworkFailure;
   constructor(code: string, status = 0) { super(code); this.name = 'ChatError'; this.code = code; this.status = status; }
 }
 const TTL = 24 * 60 * 60 * 1000;
@@ -265,24 +268,31 @@ export class ChatEngine {
         return { uid, verifiedAt };
       }); this.fence(e);
       let bootstrapRequested = false;
+      let loginStage: LoginStage = 'session_close';
       try {
         // The native cookie jar is shared by this origin. A failed close blocks switching.
         await this.closeSession(e, 1);
+        loginStage = 'authenticate';
         const auth = await this.request('/web/session/authenticate', e, { jsonrpc: '2.0', method: 'call', params: { db: this.database, login, password }, id: 2 }, true);
         const result = object(auth.result);
         if (!id(result.uid)) throw new ChatError(result.uid === null ? 'mfa_required' : 'login_failed');
         if (result.db && result.db !== this.database) throw new ChatError('identity_mismatch', 403);
+        loginStage = 'storage';
         await this.serial(async () => {
           this.fence(e);
           if (prior.uid !== result.uid) { await this.purge(this.root); await this.storage.setItem(`${this.root}authentication-required`, 'true'); }
           await this.storage.setItem(`${this.root}owner`, JSON.stringify({ user_id: result.uid })); this.fence(e);
         });
         bootstrapRequested = true;
+        loginStage = 'bootstrap';
         const bootstrap = this.bootstrap(await this.request('/bchat/api/v2/bootstrap', e), result.uid);
         this.account = bootstrap; this.remembered = remember; this.verifiedAt = prior.uid === result.uid ? prior.verifiedAt : 0;
         if (prior.uid === result.uid) await this.serial(() => this.loadStoredAccount(e));
-        await this.applyBootstrap(bootstrap, e); await this.loadRooms(e);
+        await this.applyBootstrap(bootstrap, e);
+        loginStage = 'rooms';
+        await this.loadRooms(e);
         this.verifiedAt = this.now();
+        loginStage = 'storage';
         await this.serial(async () => {
           this.fence(e); await this.persistIdentity(e);
           if (!remember) await this.storage.removeItem(`${this.root}identity`);
@@ -291,6 +301,7 @@ export class ChatEngine {
         this.accessLocked = false; this.disconnected = false; this.state = 'ready'; this.failures = 0;
         return copy(bootstrap);
       } catch (error) {
+        if (error instanceof ChatError) error.loginStage = loginStage;
         if (e === this.epoch) {
           try { await this.closeSession(e, 3); } catch { /* The next login must close successfully. */ }
           if (error instanceof ChatError && error.code === 'identity_mismatch' || bootstrapRequested && denied(error)) await this.invalidate(e);

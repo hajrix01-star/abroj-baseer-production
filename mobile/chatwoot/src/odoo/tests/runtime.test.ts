@@ -37,6 +37,8 @@ const roomA = { id: 11, company_id: 1, membership_id: 21, name: 'A', is_group: t
 const roomB = { id: 12, company_id: 1, membership_id: 22, name: 'B', is_group: true };
 let rooms = [roomA, roomB]; let mediaRight = true; let offline = false; let redirect = false; let unauthorized = false; let revoked = false;
 let beforeNative: ((path: string) => Promise<void>) | undefined;
+let missingMetadata = false;
+let nativeFailure: Error | undefined;
 const calls: { method: string; path: string; options: Record<string, unknown> }[] = [];
 function nativeFetch(options: Record<string, unknown>, method: string, url: string, requestHeaders: Record<string, string>) {
   const path = new URL(url).pathname; calls.push({ method, path, options });
@@ -44,6 +46,7 @@ function nativeFetch(options: Record<string, unknown>, method: string, url: stri
   assert.equal(requestHeaders['X-Odoo-Database'], 'trial');
   const task: any = Promise.resolve().then(async () => {
     if (beforeNative) await beforeNative(path);
+    if (nativeFailure) throw nativeFailure;
     if (offline) throw new Error('network unavailable');
     let status = 200; let body: unknown; const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (redirect) status = 302;
@@ -59,7 +62,7 @@ function nativeFetch(options: Record<string, unknown>, method: string, url: stri
     else if (path.endsWith('/12/messages')) body = { api_version: 2, messages: [], next_before_id: null };
     else if (path.endsWith('/media/70/content')) { headers['Content-Type'] = media.mime; headers['Content-Length'] = String(payload.length); if (options.path) files.set(normalize(String(options.path)), Buffer.from(payload)); }
     else throw new Error(`Unexpected test route ${path}`);
-    return { info: () => ({ status, headers, redirects: [url] }), json: () => body };
+    return { info: () => missingMetadata ? { rnfbEncode: 'utf8' } : ({ status, headers, redirects: [url] }), json: () => body };
   });
   task.cancel = () => task; task.progress = () => task;
   return task;
@@ -147,6 +150,24 @@ test('real runtime preserves locked stages after transient login failure and ver
   assert.equal(engine.pending().length, 1); assert.equal(files.has(staged.uri), true);
   await engine.logout(); assert.equal(files.has(staged.uri), false);
 });
+test('missing native response metadata fails closed with a safe stage code before authenticate', async () => {
+  missingMetadata = true;
+  const before = calls.filter(c => c.path.endsWith('/authenticate')).length;
+  try {
+    await assert.rejects(engine.login('alice', 'private', true), { code: 'native_response_missing', loginStage: 'session_close' });
+    assert.equal(calls.filter(c => c.path.endsWith('/authenticate')).length, before);
+    assert.equal(engine.identity, null);
+  } finally { missingMetadata = false; }
+});
+
+test('native DNS failure retains original retry code and adds only a sanitized hint', async () => {
+  nativeFailure = new Error('Unable to resolve host private.example with password=sentinel');
+  try {
+    await assert.rejects(engine.login('alice', 'private', true), { code: 'connection_failed', networkFailure: 'DNS', loginStage: 'session_close' });
+    assert.equal(engine.identity, null);
+  } finally { nativeFailure = undefined; }
+});
+
 test('real runtime logout removes cached files and refuses HTTP redirects before authenticate', async () => {
   await engine.login('alice', 'private', true);
   const uri = await localMedia(roomA, media); await engine.logout(); assert.equal(files.has(uri), false);

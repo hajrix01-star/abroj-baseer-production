@@ -66,6 +66,8 @@ const ar = {
   retry: 'إعادة المحاولة',
   empty: 'لا توجد رسائل محفوظة بعد',
   error: 'تعذر إكمال العملية. تحقق من الاتصال والصلاحيات ثم حاول مجددًا.',
+  connectionError: 'تعذر الاتصال بأودو من التطبيق. تحقق من اتصال Tailscale ثم حاول مجددًا.',
+  diagnostic: 'رمز الفحص',
   mfa: 'يتطلب حسابك تحققًا بخطوتين. هذا المسار غير متاح في النسخة التجريبية.',
   credentials: 'تعذر تسجيل الدخول. تحقق من اسم المستخدم وكلمة المرور ثم حاول مجددًا.',
   expired: 'انتهت مدة القراءة دون اتصال. اتصل وسجّل الدخول للتحقق من صلاحياتك.',
@@ -150,6 +152,8 @@ const en: Record<Word, string> = {
   retry: 'Retry',
   empty: 'No saved messages yet',
   error: 'Could not complete this action. Check your connection and permissions, then try again.',
+  connectionError: 'The app could not reach Odoo. Check your Tailscale connection and try again.',
+  diagnostic: 'Support code',
   mfa: 'Your account requires two-step verification. This flow is unavailable in the trial build.',
   credentials: 'Could not sign in. Check your username and password, then try again.',
   expired: 'Offline reading expired. Connect and sign in to verify your access.',
@@ -170,6 +174,7 @@ export const translator = (language: Language) => (word: Word) =>
 export type Translate = ReturnType<typeof translator>;
 export function errorWord(error: unknown): Word {
   const code = (error as { code?: string })?.code;
+  if (code === 'connection_failed') return 'connectionError';
   if (code === 'mfa_required') return 'mfa';
   if (['authentication_failed', 'login_failed', 'invalid_credentials'].includes(code ?? ''))
     return 'credentials';

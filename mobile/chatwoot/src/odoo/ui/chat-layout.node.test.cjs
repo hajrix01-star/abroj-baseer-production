@@ -42,7 +42,7 @@ const element = (type, props) => ({ type, props: props || {} });
 const jsx = { jsx: element, jsxs: element, Fragment: 'Fragment' };
 const colors = { white: 'white', border: 'border', chatBackground: 'history-surface', chatSent: 'sent-surface', composerBackground: 'composer-surface', danger: 'danger', blue: 'blue' };
 const components = { Button: 'Button', Field: 'Field', IconButton: 'IconButton', Label: 'Label', Sheet: 'Sheet', colors,
-  styles: { fill: { flex: 1 }, row: {}, card: {}, header: {}, text: {}, muted: {}, title: {} }, direction: () => ({}) };
+  styles: { fill: { flex: 1 }, row: {}, card: {}, header: {}, text: {}, muted: {}, title: {} }, direction: language => ({ textAlign: language === 'ar' ? 'right' : 'left', writingDirection: language === 'ar' ? 'rtl' : 'ltr' }) };
 function load(file, dependencies) {
   const compiled = ts.transpileModule(readFileSync(join(__dirname, file), 'utf8'), { compilerOptions: {
     module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true,
@@ -453,6 +453,31 @@ test('tapping a reply quote locates and highlights the original without clearing
   one(list.renderItem({ item }), 'MessageQuote').onPress(); await settled(); app.render(); app.flushFrames();
   assert.deepEqual(app.calls.find(call => Array.isArray(call) && call[0] === 'jump'), ['jump', 4]);
   assert.equal(target.index, 0); assert.equal(target.animated, false); assert.equal(one(app.render(), 'Field').value, 'keep draft');
+});
+
+test('own bubbles stay physically right and received left in both languages, including media and queued sends', () => {
+  const flat = style => Object.assign({}, ...[style].flat(Infinity).filter(Boolean));
+  for (const language of ['ar', 'en']) {
+    const app = timeline(); app.props.language = language;
+    const tree = app.render(), list = one(tree, 'FlashList');
+    assert.equal(flat(tree.props.style).direction, 'ltr', 'physical bubble geometry must not inherit device RTL');
+    for (const own of [true, false]) for (const kind of ['text', 'image', 'audio', 'pending']) {
+      const item = kind === 'pending' ? { pending: { client_uuid: 'queued-own', text: 'queued text', state: 'queued' } }
+        : { message: { ...app.props.chat.history.messages[0], author_user_id: own ? 7 : 8,
+          media: kind === 'text' ? undefined : { id: 23, kind } } };
+      const mine = own || kind === 'pending';
+      const row = list.renderItem({ item });
+      assert.equal(row.props.style.alignSelf, mine ? 'flex-end' : 'flex-start', `${language}/${kind}/${mine}`);
+      const bubble = one(row, 'View', p => flat(p.style).borderRadius === 18);
+      assert.equal(flat(bubble.style).borderBottomLeftRadius, mine ? 18 : 5);
+      assert.equal(flat(bubble.style).borderBottomRightRadius, mine ? 5 : 18);
+      const text = one(row, 'Text', p => p.selectable === true);
+      assert.equal(flat(text.style).writingDirection, language === 'ar' ? 'rtl' : 'ltr', 'text direction remains language-aware');
+      assert.equal(nodes(row).some(node => node.type === 'MessageStatus'), mine);
+      assert.equal(nodes(row).some(node => node.type === 'View' && flat(node.props.style).alignSelf === 'flex-end'
+        && flat(node.props.style).gap === 4), true, 'time/check cluster stays at the physical end');
+    }
+  }
 });
 
 test('swipe reply respects language direction, vertical scrolling, cancellation and revoked send rights', () => {

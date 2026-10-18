@@ -334,7 +334,7 @@ export function TimelineScreen({
   return (
     <View
       ref={keyboardFrame}
-      style={[styles.fill, { minHeight: 0 }]}
+      style={[styles.fill, { minHeight: 0, direction: 'ltr' }]}
       onLayout={() => {
         const requested = ++keyboardMeasure.current;
         keyboardFrame.current?.measureInWindow((_x, y) => {
@@ -485,9 +485,7 @@ export function TimelineScreen({
               return (
                 <SwipeReply gestureKey={`${actionScope}/${message?.id ?? pending?.client_uuid}`} enabled={!!message && canSend} language={language} onReply={() => { if (message) chooseReply(message); }}
                   style={{
-                    alignSelf: own
-                      ? language === 'ar' ? 'flex-start' : 'flex-end'
-                      : language === 'ar' ? 'flex-end' : 'flex-start',
+                    alignSelf: own ? 'flex-end' : 'flex-start',
                     width: 'auto', maxWidth: '86%', minWidth: 100, marginVertical: 4,
                   }}>
                 <Pressable
@@ -518,8 +516,8 @@ export function TimelineScreen({
                       {
                         backgroundColor: own ? colors.chatSent : colors.white,
                         borderRadius: 18,
-                        borderBottomLeftRadius: !!own === (language === 'ar') ? 5 : 18,
-                        borderBottomRightRadius: !!own === (language === 'ar') ? 18 : 5,
+                        borderBottomLeftRadius: own ? 18 : 5,
+                        borderBottomRightRadius: own ? 5 : 18,
                         gap: 4,
                         paddingHorizontal: 11,
                         paddingTop: 9,
@@ -596,7 +594,7 @@ export function TimelineScreen({
                         flexDirection: 'row',
                         alignItems: 'center',
                         gap: 4,
-                        alignSelf: language === 'ar' ? 'flex-start' : 'flex-end',
+                        alignSelf: 'flex-end',
                       }}>
                       {message?.created_at && (
                         <Text style={[styles.muted, { fontSize: 11, lineHeight: 16 }]}>

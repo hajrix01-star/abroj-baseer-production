@@ -116,7 +116,7 @@ class BChatNotificationSettingsCase(TransactionCase):
         event = self._send_event()
         minimal = self._outgoing_data(event)
         self.assertEqual(set(minimal), {'account_key', 'kind', 'event_id', 'presentation_v',
-                                        'room_key', 'message_key', 'sent_at_ms'})
+                                        'room_key', 'message_key', 'sent_at_ms', 'mute_scope_v', 'mute_room_key'})
         self.assertEqual((minimal['account_key'], minimal['kind'], minimal['event_id'], minimal['presentation_v']),
                          (self.key, 'chat', str(event.id), '1'))
         member = self.env['baseer.bchat.membership'].sudo().search([
@@ -127,6 +127,7 @@ class BChatNotificationSettingsCase(TransactionCase):
                                  member.id, event.message_id.id, self.actor.id)
         self.assertEqual(minimal['room_key'], keys['room_key'])
         self.assertEqual(minimal['message_key'], keys['message_key'])
+        self.assertEqual((minimal['mute_scope_v'], minimal['mute_room_key']), ('1', keys['room_key']))
         self.assertTrue(all(type(value) is str for value in minimal.values()))
         self._preferences('sender')
         sender = self._outgoing_data(event)
@@ -142,6 +143,9 @@ class BChatNotificationSettingsCase(TransactionCase):
         self.assertEqual(full['conversation_title'], 'Private preview fixture')
         self.assertEqual(full['is_group'], 'true')
         self.assertEqual(full['sent_at_ms'], minimal['sent_at_ms'])
+        for data in (sender, full):
+            self.assertEqual((data['mute_scope_v'], data['mute_room_key']),
+                             (minimal['mute_scope_v'], minimal['mute_room_key']))
         event._write_verified({'state': 'retry'}, _PUSH_TOKEN)
         self._preferences('none')
         self.assertEqual(self._outgoing_data(event), minimal)

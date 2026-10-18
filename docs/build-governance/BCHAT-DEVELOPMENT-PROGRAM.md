@@ -446,6 +446,49 @@
 - backend-contracts169methods/5.840s وsource-structure وguard-integrity كلهاPASS(chunks5deb1d)،وmaturitywiringPASSبعدإضافةfocusedCI(chunks3d575c). diff--checkللخلفيةPASS. JSONسليموتوزيعالحزمباقٍ25in_progress/9pending؛لاG8أواختبارجهازمُنسبلهذهالفحوص.
 - rootيحفظsourcecheckpointصريحًامنbackend/wire/tests/probe/evidencegateوClientcancellationالمراجعةوCI/docsفقط؛Activity/newHostتظلانWIPغيرمضافتينلأنc32ينفذالربط. لاgitaddعامولاإعادةضبطشغلآخر. بعدنجاحcommitسيُرفعفرعالتطويرإلىDraftPR413لتشغيلالفحوصالمطلوبةعلىSHAمجمّدة؛لاmainmergeأوQA/LIVEأوversion/APKأوتسليمجزئي. قبولruntimeلايعلنإلابدليلCIالفعلينفسه.
 
+#### DEV184 — checkpoint رُفع للفحص؛ بدء إغلاق تصميم Panel وRecovery فقط
+
+- commit`da7c4029ebc343720e07a7a6a8b61bd9fd1f9614` حفظ25ملفًا/1425إضافة/38حذفًا،واستثنىActivity/newHostكماهوDEV183. pushمنb2ab4ebcنجحعلىفرعالتطوير(chunks0e1383/c7f01e)،لاmainmergeأوإصدار. CI39094181511 وSource39094181512 بدآعلىSHAنفسها؛الحالةالمقروءةin_progress،لاينقلالـ202القديملقبولجديد.
+- c13يصممPanelC17فقطقبلالكود،بمكوناتUi/Palette/لغةAR-EN،ومهاراتEmil/ux-arabyلتقليلزحامالخاناتوتمييزالحفظعنالكتمالمحلي. rootأعادقراءةتعليماتالمهارتينويعيداستعمالمراجعهاالمقروءة؛لاصورأوحركةأومكتبةجديدة. مصفوفةstate/actionو320/font2/48wrapولغةالإلغاءالصريحةتُراجَعقبلالتنفيذ. c32يواصلHostالمنفصلةلاPanel.
+- audit_report_truth_reviewيصممGlueRecoveryفقطمنالمكوناتالمقبولة،لإغلاقpositiveproof/StoreCAS→Indexrebind→sameOwnerload→publication،معpending/oldmember/capacity/UNCERTAINوالإبطال. لاكودRecoveryأونشرأوقاعدةجديدةمنهذاالمدخل؛مالكالكودوالعقودبعدمراجعةG2محددة. لامراجعةأجنتللنطاقالذييكتبهأجنتآخر.
+- مرجعقرارfreshcursorالمقروءرسميًا: [PostgreSQL REPEATABLE READ](https://www.postgresql.org/docs/17/transaction-iso.html)،[Odoo19 TestCursor](https://raw.githubusercontent.com/odoo/odoo/19.0/odoo/tests/test_cursor.py)،[Odoo19 sql_db](https://raw.githubusercontent.com/odoo/odoo/19.0/odoo/sql_db.py). اختيارseamاستدلالخاصبعقدبشاتimmutablejournal،لاادعاءمعيارعاملكلأنظمةOdoo.
+
+#### DEV185 — G2/G4 Panel C17 معتمد بعد مقترح c13 ومراجعة root
+
+| Before | After | Why |
+|---|---|---|
+| خلط حالة الحفظ بالكتم المحلي | سطر للخادم وآخر للكتم الفعلي | SAVED وحدها لا تثبت رفع الكتم |
+| إجراءات وخيارات متزاحمة | خيارات رأسية وحفظ بعرض اللوحة | قراءة ولمس واضحان عند320dp وخط200% |
+| تبديل الخيار يغيّر الطلب مباشرة | مسودة محلية ثم حفظ صريح | لاPOST منrenderأوhealthcallback |
+| مدة محسوبة من ساعة الهاتف | إيقاف أو دائم أو الاحتفاظ بالـUTCالأصلية | القرار الزمني للخادم،بلاexpiryمحلي |
+
+- API: BChatRoomPreferencesPanel(Activity/Context,Store,Binding,Host,Scheduler,نفسOwner.port)،تملكControllerومراقبيهابقوةطوالحياةاللوحة،ويحتفظController/Portبمراجعهمالضعيفةالقائمة. show/pause/resume/closeفقط؛لاMirror/Authority/laneجديدة. Controller.isBusygetterMAINللعرضفقط،لأنCACHEDقدتسبقنهايةGET؛لااعتبارهاصلاحيةنقل.
+- HealthUNKNOWN/FAILED/CLEARINGتعرضشرحًامحليًاوتمنعالتغييروالإلغاء؛تتيحrefreshقراءةصريحةفقطبلاوعدإصلاح. READY+freshserverDecisionReady+لاpendingتتيحpin/archive/muteوsave؛floorONلاتمنعunmuteاختيارًا. SAVED/cancelcommitلايدعيانرفعالكتمولايمنحانقرارًاجديدًادونGETالحالية.
+- pendingunsentتلغىمحليًابزرمعناهصريح؛startedunknownيمكنretryنفسالطلبإذاunblockedأوcancelالسابقعندversion1،لاdelete. strict409reviewمنprivateproof→GETفقط→REVIEW_READYثمnewexplicitchoiceعندsaveبـreplaceRejectedExplicit،لااعتمادعلىblockedCodeالمحفوظكتصريح.
+- timedmodeيحافظعلىmutedUntilالأصليةحرفيًاعندكونmutedالحاليةمنGETtrue. إذاmuted=falseيعرضOFFوالموعدالمسجلللقراءةفقط؛اختيارOFFيمررnull/false. لاParsingمننصالعرضأومدةجديدةأوClock؛تبديلpin/archiveلايعيدexpiryقديمةللحفظ. هذهحدودعرضالعقدالقائملاإضافةwire.
+- المسودةلاتُكتبفوقاختيارالمستخدمعندhealthobserverأوrenderمتكرر؛كلضغطsaveيعيدControllerالتحققالقائم. invalidbindingيمسحالعرض/الاشتراكويعطلالأفعال؛privateviewnonceوالحاليةتعيدانالفحصقبلcallback/view. pauseتغلقsubscriptionوتوقفControllerdispatch؛resumeتعيدالاشتراكوالقراءةRAMفقط،لاGET/POST. ACKصالحقديسوّىدائمًاوفقالعقدبعدcloseولايحدّثUIقديمة.
+- Ui/Palette/AppLocaleوالكتالوجالحاليومواردAR/EN،minimum48dpمعwrap،scrollbodyوفوترخارجالتمرير،لاحركةزخرفيةأولون/شعار/مكتبةجديدة. القبولfocusedstate/clicksثم4rendersAR/EN×فاتح/داكنعند320font2+رحلةIME،بمحولاتHostمعلنةومكوناتController/Storeالفعليةقدرالإمكان؛لاHTTP/Auth/FCMأوقبولActivityمنPanelstandalone.
+- ملكيةc13: Panel/resources/newfocusedtests+isBusygetterفقط. Activity/Hostلـc32ولاكتابةمتداخلة؛لاADB/Gradleقبلsourcefreezeوتأجيرrootللمحاكي5580. لاoldwriter/restart/PG/G6rerunsأوAPKمنتجمنهذهالشريحة.
+
+#### DEV186 — G2 مكوّن Recovery merge معتمد فقط، لا Manager/Host إذن
+
+- اكتشفمصممRecoveryأنloadColdWorkerتتوقفبشكلصحيحإذاMirrorمعروفةأوcellsموجودة؛لذلكاستعمالهاكأنهاreloadبعدإضافةnewmembershipfloorلايثبتالجاهزية. rootاعتمدأقصرseamفيOwner/Portنفسيهما،لاMirrorبديلةأوWriterجديد. هذهدلتاالمكوّنالمفقودلااعتمادGluelatermanager.
+- Owner.refreshRecoveryWorker(expectedFrame)تعملworkerفقط،وتشترطFrameالأصليةالحاليةغيرrevokedوبلارoutesفعالة(قبلpublication)،قبلوبعدقراءةIndex. PortتنتجRecoveryReadopaqueimmutableمرتبطةبنفسPort/Indexمنقراءةworkerالحقيقية؛الـOwnerيفحصFrameويطلبmergeداخلGateالواحدةالقائمة. لاأيcallerActivitycallbackأوI/OداخلالـGate،ولاfactoryAuthority/Scopeجديدة.
+- mergeتقييديةداخلنفسMirror:تضيفfloorsالمثبتةفقط،ولاclearمنabsence/false،ولااستبدالindexTokenمختلفبصمتأوتعديلcheckpoint/admissionصالحة. RAMfloorموجودةبلاdiskfloorمطابقةأوباختلافtokenيفشلمغلقًا؛لاوصفهاdurableREADY. قراءةFAILED/CORRUPT/FOREIGN/UNCERTAINلاتشفيحالةالعرض. exactcurrentvalidatedIndexقديعيدknownhealthyبعدFOREIGNrebindموثقبالمسارالأصليوقبلpublicationفقط،دونتنبيهأوصوت.
+- lifecycleFrameالقديمة/terminal/normalpublicationأثناءI/Oتمنعالmerge؛لاعكسمصطنعلـdiskcommitسبق. طريقةالقراءةتستعملIndexالقائمةبحراسالمسارات/AtomicFileلاparseمكررة. لاreadbackثمfilterGCولاfloorحذف/تدويرtoken. ليسmirrorrefreshإذنHTTPأوunmuteأومسارلتخطيStoreproof.
+- الملكيةaudit_report_truth_review: Port/OwnerوملفfocusedOwnerRecoveryCasesواختيارrunnerمحصورفقط؛لاState/Index/Store/Protocol/Controller/Activity/resources/backend/CI/docs. اختباراتactualJVMIndexfilesمعمكيفاتGate/Schedulerمعلنة:knownmirrornewhashmerge/retainedfloors/tokenconflict/missingfloor/corrupt/staleFramebefore-after/terminal/rejectedpost،ثمSDK35stub. لاoldfullsuites/ADB/Gradle/PG. المراجعةrootبعدfreeze. GlueManagerيبقىمسودة≤100fullrooms/freshGET/StoreCAS/allslotrebind/nopendingdelete،ولايُنسبلهتنفيذمنهذهالشريحة.
+
+#### DEV187 — CI RED219: expected FCM oracle قديمة، لا تشخيص فشل cancellation
+
+- CI39094181511 علىda7c4029: cumulativecontractsjobنجحت،isolatedORMjobفشلت1failed/0errors/219tests. الفشل الوحيدالمعلن `BChatNotificationSettingsCase.test_actual_outgoing_http_data_none_sender_full_and_downgrade:118` يرفضmute_scope_v/mute_room_keyكحقلينزائدين. loopتوقفتقبلPG/G6،فلاادعاءتشغيلهما. rawfailedsummarychunk e7d0be؛لاانحدارإرسالصورأوخطأجهازمنهذاالدليل.
+- مهارةalpha-bug-resolutionتطبقفرقآخرنجاحb2ab4ebcوأولفشلda7c4029: DEV143أضافpairالمعتمدةوالـ13puretestsتتوقعهافعلاً،لكنORMminimalexactsetقديمة. rootيعدلtest_notification_settingsفقطلتبقىexactsetوتشملpair،ويضيفassertلإصدارstring1ومساواةhashلـrecipientroomkeyوثباتpairفيnone/sender/full/downgrade. لاproduction/privacy/provider/APIchangeولاتخفيفexactfieldcheckأوحذفassert.
+- نيةالتحقق:syntax/diffلملفالاختباروالدلتاالمحدودة،مراجعةindependentلـoracle،ثمsourcecheckpointجديدمحددورفعهPR413لـOdoo/PGالمطلوبة. لاخفضللفحوصأوإعادةنشرAPK،ولاادعاءGREENقبلruntime. الـ219والفشل الخاميُحفظانقبلأيإعادة.
+
+#### DEV188 — oracle source GO والدليل RED محفوظ قبل إعادة CI
+
+- c13راجعالخمسةأسطرباستقلالوأعطىGOمحدودًا: minimalوsenderexactsetsمحفوظة،privacynegativeassertsوالـdowngradeequalityباقية،والزوجفقطالمعتمدأُضيفبقيمهالصريحة؛لاproducthelperchange. syntax/diffPASS(chunksc77ad0)،ولاأيORMمحليادعاء.
+- artifactCIمحفوظفي`android/bchat/artifacts/ci/run-39094181511`؛orm.logSHA`1449E425DB0668AB2B629E9C02238AF543EADFC6661C971D37D461B9B71A2209`،219starts/219uniqueبالفحصالمستقل،1failed/0errors؛PG/G6لمتبدأ. نيةcommitالتاليtest_notification_settings+rootdocsفقط،لاActivity/Panel/PortOwnerWIP،ثمpushPR413المتفقعليها. تشغيلCIالتاليضروريلإثباتتصحيحالـoracleوالوصولللـ4phasesالجديدةالتيمنعهافشلORM؛لاrerunللـJVM906/25محليًا.
+
 - Controller واختباراته فقط: Binding ثابتaccount/room/member/accountobject/session/global+repositorygeneration/version، معAuthorityAtomic يبطلهاHost قبلتغييرالهوية/الحقوق. Host.currentBinding مرآةRAMthread-safe لاقراءةحقولActivityالعاديةمنworker،والـHostيفحصالنقلالأخيرعلىMAIN. weakHost/Observer/MutePort ولاActivityreferenceأومصادقةموازية؛ التخزينعلىlaneالقائمةBChatStorageRepositoryلاحقًا.
 - open/refresh صريحان: loadغيرحديث ثمGETحاليثمsaveSnapshotCAS؛لاfreshمنsnapshotأعلىاستُرجعتبدلGETأقدم،ولاwritepermissionعندstorage/epochfailure. نيةجديدةمنGETحاليوبقرارالمستخدم؛ muteBarrierمحافظفورًاثمstageCOMMITTED→markDispatchStartedCOMMITTED→POSTبنفسpayload. UNCHANGED/NO_MATCHليساpermissionعامة. retryExplicitفقطلنيةloadedexactunblockedمعUUID/payload/expiryثابتةوcurrentticket،لاautoRetryأوUUIDجديد.
 - pause/close يبطلGET/UI وdispatchticketالجديد،ولايلغيunknownstartedأويُرسلجديدًا. stagedunsentيبقىللمراجعة. ACK200مرتبطبالطلبالأصليقديسوّيStoreرغمإغلاقviewإذاidentity/rightsصالحة؛لاتسويةqueued/receivedبعدإبطالها. **linearizationعنددخولStore**: commitبدأبملكيةصحيحةقديكملأثناءlogout،ولاrollbackأوإعادةpendingمصطنعة،لكنلاRAM/UI/muteReleaseبعدالإبطال. لاauthlockطوالsyncولاI/OعلىMAIN.

@@ -402,6 +402,9 @@ test('message information and device-local hide undo remain available to read-on
 });
 
 test('employees and group admins cannot hide received messages or trigger stale hide handlers', async () => {
+  const { translator } = load('dictionary.ts', {});
+  assert.equal(translator('ar')('hideLocal'), 'إخفاء من جهازي');
+  assert.equal(translator('en')('hideLocal'), 'Hide on my device');
   for (const language of ['ar', 'en']) for (const isAdmin of [false, true]) {
     const app = timeline([10]); app.props.language = language; app.props.chat.selected = { ...room, is_group_admin: isAdmin };
     const item = { message: app.props.chat.history.messages[0] };

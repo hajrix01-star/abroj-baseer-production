@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { Text } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { registerRootComponent } from 'expo';
+import * as Crypto from 'expo-crypto';
 import { SessionApp } from '../src/odoo/OdooTrialApp';
 import {
   ChatEngine,
@@ -148,6 +149,7 @@ const transport = {
   },
 };
 const engine = new ChatEngine({
+  uuid: Crypto.randomUUID,
   storage: new MemoryStorage(),
   transport,
   origin: 'https://ui-preview.invalid',

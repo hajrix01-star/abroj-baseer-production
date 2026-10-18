@@ -570,8 +570,11 @@
       "source_paths": [
         "android/bchat/app/src/main/java/com/baseer/freshchat/BChatRoomMuteIndex.java",
         "android/bchat/app/src/main/java/com/baseer/freshchat/BChatRoomMutePort.java",
+        "android/bchat/app/src/main/java/com/baseer/freshchat/BChatRoomPreferencesOwner.java",
         "android/bchat/tests/room-mute-index/**",
-        "android/bchat/tools/test-room-mute-index.py"
+        "android/bchat/tests/room-preferences-owner/**",
+        "android/bchat/tools/test-room-mute-index.py",
+        "android/bchat/tools/test-room-preferences-owner.py"
       ],
       "suites": ["android-source-contract", "source-structure"]
     },
@@ -585,8 +588,29 @@
         "android/bchat/app/src/main/java/com/baseer/freshchat/BChatRoomExplorePanel.java",
         "android/bchat/tests/room-explore/**",
         "android/bchat/tests/room-explore-android/**",
+        "android/bchat/tests/room-explore-hook/**",
         "android/bchat/tools/test-room-explore.py",
-        "android/bchat/tools/test-room-explore-android.py"
+        "android/bchat/tools/test-room-explore-android.py",
+        "android/bchat/tools/test-room-explore-hook.py"
+      ],
+      "suites": ["android-source-contract", "source-structure"]
+    },
+    {
+      "id": "group-people-typed-wire-and-exact-intent",
+      "introduced": "2026-10-18",
+      "risk": "critical",
+      "scope": "Bounded immutable company-scoped candidates and positive-membership group events preserve typed wire, exact UUID payloads and full batch acknowledgements. Protocol and declared Panel hosts do not grant authentication, persistence or dispatch authority.",
+      "source_paths": [
+        "android/bchat/app/src/main/java/com/baseer/freshchat/GroupPeopleProtocol.java",
+        "android/bchat/app/src/main/java/com/baseer/freshchat/BChatPeoplePickerPanel.java",
+        "android/bchat/app/src/main/java/com/baseer/freshchat/BChatGroupEventsPanel.java",
+        "android/bchat/app/src/main/res/values/bchat_people_strings.xml",
+        "android/bchat/app/src/main/res/values-ar/bchat_people_strings.xml",
+        "android/bchat/app/src/main/res/values-en/bchat_people_strings.xml",
+        "android/bchat/tests/group-people-protocol/**",
+        "android/bchat/tests/group-people-android/**",
+        "android/bchat/tools/test-group-people-protocol.py",
+        "android/bchat/tools/test-group-people-android.py"
       ],
       "suites": ["android-source-contract", "source-structure"]
     },
@@ -599,7 +623,12 @@
         "android/bchat/app/src/main/java/com/baseer/freshchat/BChatTimelineRows.java",
         "android/bchat/app/src/main/java/com/baseer/freshchat/BChatTimelineChangePlan.java",
         "android/bchat/tests/timeline-rows/**",
-        "android/bchat/tools/test-timeline-rows.py"
+        "android/bchat/tests/timeline-hook-android/**",
+        "android/bchat/tests/timeline-position-android/**",
+        "android/bchat/tools/test-timeline-rows.py",
+        "android/bchat/tools/test-timeline-hook-android.py",
+        "android/bchat/tools/test-timeline-position-android.py",
+        "android/bchat/tools/test-message-timeline-contracts.py"
       ],
       "suites": ["android-source-contract", "source-structure"]
     }

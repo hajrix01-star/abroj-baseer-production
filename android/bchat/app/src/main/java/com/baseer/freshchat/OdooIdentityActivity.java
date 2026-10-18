@@ -550,6 +550,13 @@ public final class OdooIdentityActivity extends Activity {
     private int cartRestoreGeneration;
     private AlertDialog cartRestoreDialog;
     private boolean forceTimelineReset;
+    private TimelineWindowOwner messageWindowOwner;
+    private BChatTimelineRows.Snapshot messageRowSnapshot;
+    private long messageWindowOwnerSequence;
+    private long messageWindowAdmissionEpoch;
+    private long messagePositionIntentSerial;
+    private long messageLatestPositionIntent = -1;
+    private TimelineSendFollow messageSendFollow;
     private int storageWriteFailureSerial;
     private int screenBaseHorizontal, screenBaseVertical;
     private WindowInsetsCompat screenInsets;
@@ -1074,9 +1081,13 @@ public final class OdooIdentityActivity extends Activity {
             int width = right - left;
             if (width <= 0 || oldRight - oldLeft <= 0 || width == oldRight - oldLeft || selectedRoom == null) return;
             final Room room = selectedRoom;
+            final TimelineWindowOwner owner = messageWindowOwner;
+            final long positionIntent = messagePositionIntentSerial;
             final ScrollAnchor anchor = currentScrollAnchor();
             messageScroll.post(() -> {
-                if (closed || selectedRoom != room || messageScroll.getWidth() != width) return;
+                if (closed || selectedRoom != room || messageScroll.getWidth() != width
+                        || owner == null || !owner.current()
+                        || messagePositionIntentSerial != positionIntent) return;
                 // A window resize changes the usable width even when the server records did not change.
                 forceTimelineReset = true;
                 try { renderMessageWindow(room, new ArrayList<>(displayedMessages), anchor.atBottom, 0, anchor); }
@@ -1084,6 +1095,15 @@ public final class OdooIdentityActivity extends Activity {
             });
         });
         messageScroll.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            private int previousState = RecyclerView.SCROLL_STATE_IDLE;
+            @Override public void onScrollStateChanged(@NonNull RecyclerView list, int state) {
+                // DRAGGING -> SETTLING is one gesture, not a second navigation intent.
+                if (state == RecyclerView.SCROLL_STATE_DRAGGING
+                        || state == RecyclerView.SCROLL_STATE_SETTLING
+                        && previousState == RecyclerView.SCROLL_STATE_IDLE)
+                    beginTimelinePositionIntent();
+                previousState = state;
+            }
             @Override public void onScrolled(@NonNull RecyclerView list, int dx, int dy) {
                 updateOlderButtonAvailability();
                 pumpMediaThumbnails();
@@ -1546,6 +1566,7 @@ public final class OdooIdentityActivity extends Activity {
                 || target <= 0 || target > OutboxPolicy.MAX_RECORD_ID || !liveForeground) return;
         // A second jump, including an already displayed target, supersedes a pending one.
         closeRoomExplore();
+        final long positionIntent = beginTimelinePositionIntent();
         final long request = ++messageJumpSerial, generation = roomExploreGeneration;
         final AccountScope expected = account;
         final int session = epoch, global = historyGlobalGeneration;
@@ -1556,9 +1577,11 @@ public final class OdooIdentityActivity extends Activity {
         if (present >= 0 && currentWindow) {
             // Existing epoch-bound canonical/cache rows can be scrolled without another read.
             // This action is not an ACK. Actual layout+viewport and durable pin gates still own it.
+            final long appliedIntent = beginTimelinePositionIntent();
             messageLayout.scrollToPositionWithOffset(present, dp(32));
             messageScroll.postOnAnimation(() -> {
                 if (messageJumpSerial == request && messagePosition(target) >= 0
+                        && messagePositionIntentSerial == appliedIntent
                         && exploreBindingCurrent(expected, room, session, global, repository, generation))
                     scanVisibleMessageReceipts();
             });
@@ -1571,7 +1594,8 @@ public final class OdooIdentityActivity extends Activity {
         if (v2Busy || webV2GetFallbackBusy) { chatNotice.setText(R.string.explore_unconfirmed); return; }
         chatNotice.setText(R.string.chat_v2_loading);
         fetchV2("GET", V2_ROOMS + "/" + room.id + "/messages/" + target, null, (status, body) -> {
-            if (messageJumpSerial != request || !exploreBindingCurrent(expected, room, session, global, repository, generation)) return;
+            if (messageJumpSerial != request || messagePositionIntentSerial != positionIntent
+                    || !exploreBindingCurrent(expected, room, session, global, repository, generation)) return;
             try {
                 if (status != 200 || body == null || positiveId(body.get("api_version")) != 2) throw new IllegalArgumentException();
                 requireReceiptEpoch(body, room);
@@ -1580,7 +1604,8 @@ public final class OdooIdentityActivity extends Activity {
                 long before = target == OutboxPolicy.MAX_RECORD_ID ? 0 : target + 1;
                 fetchV2("GET", V2_ROOMS + "/" + room.id + "/messages"
                         + (before == 0 ? "" : "?before_id=" + before), null, (pageStatus, response) -> {
-                    if (messageJumpSerial != request || !exploreBindingCurrent(expected, room, session, global, repository, generation)) return;
+                    if (messageJumpSerial != request || messagePositionIntentSerial != positionIntent
+                            || !exploreBindingCurrent(expected, room, session, global, repository, generation)) return;
                     try {
                         if (pageStatus != 200 || response == null || positiveId(response.get("api_version")) != 2) throw new IllegalArgumentException();
                         requireReceiptEpoch(response, room);
@@ -1594,6 +1619,9 @@ public final class OdooIdentityActivity extends Activity {
                         // Only now commit the visible historical window. Never inject the single
                         // GET/search row or synthesize a cursor when the history page omitted it.
                         ScrollAnchor anchor = currentScrollAnchor();
+                        if (!admitMessageTimelineOwner(room)) return;
+                        // Also invalidate send origins captured while this explicit jump waited.
+                        beginTimelinePositionIntent();
                         persistReceiptCanonical(expected, room, window);
                         nextBeforeId = cursor; historicalWindow = true;
                         scrollAfterOwnSend = false; olderPageLoading = olderPageFailed = false;
@@ -3675,6 +3703,7 @@ public final class OdooIdentityActivity extends Activity {
             while (keys.hasNext()) if (capabilities.opt(keys.next()) != Boolean.FALSE)
                 throw new IllegalArgumentException("Unexpected enabled capability");
             AccountScope nextAccount = new AccountScope(ORIGIN, DATABASE, uid);
+            invalidateMessageTimelineOwner();
             clearRoomListNow();
             ++historyWriteGeneration; // Fence queued writes before account-switch cleanup.
             ++historyGlobalGeneration; // Also fence the previous Activity after a fast recreate.
@@ -4736,7 +4765,10 @@ public final class OdooIdentityActivity extends Activity {
 
     private void applyPermissionSet(AccountScope scope, PermissionSet next) {
         PermissionSet previous = permissionSet;
-        if (permissionAccount != scope || !next.sameAs(previous)) closeRoomExplore();
+        if (permissionAccount != scope || !next.sameAs(previous)) {
+            closeRoomExplore();
+            invalidateMessageTimelineOwner();
+        }
         if (!next.chatView) closeReceiptDetails();
         if(!next.chatView&&!next.taskView&&notificationSettingsPanel!=null){
             notificationSettingsPanel.dismiss();notificationSettingsPanel=null;
@@ -4867,6 +4899,7 @@ public final class OdooIdentityActivity extends Activity {
         if (scope != account || allowed.equals(v1Companies)) return;
         if (!v1Companies.containsAll(allowed)) return; // Grants require a fresh v1 identity check.
         closeRoomExplore();
+        invalidateMessageTimelineOwner();
         clearRoomListNow();
         if (notificationPresentationOwned(scope)) BChatPushState.contentInvalidated(this, scope);
         if(transferCoordinator!=null)transferCoordinator.revoke(scope);
@@ -5590,6 +5623,7 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     private void purgeHistory() {
+        invalidateMessageTimelineOwner();
         clearRoomListNow();
         invalidateReceiptRoomBinding();
         ++historyWriteGeneration;
@@ -5611,6 +5645,7 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     private void purgeCachedRoom(AccountScope scopedAccount, long roomId) {
+        invalidateMessageTimelineOwner();
         clearRoomListNow();
         invalidateReceiptRoomBinding();
         ++historyWriteGeneration;
@@ -5890,6 +5925,8 @@ public final class OdooIdentityActivity extends Activity {
 
     private void refreshLocalRoom(Room room, boolean restoreDraft) {
         if (account == null || outbox == null || room != selectedRoom || offlineHistory) return;
+        final TimelineWindowOwner localOwner = messageWindowOwner;
+        if (localOwner == null || !localOwner.current()) return;
         final AccountScope scope = account;
         final BChatV2Outbox box = outbox;
         final BChatConnectedMediaStore media = mediaStore;
@@ -5905,11 +5942,11 @@ public final class OdooIdentityActivity extends Activity {
                 recovery==null?Collections.emptyList():recovery.media,
                 media == null ? null : media.diagnostics(scope),box.tickets().head(scope,room.id,room.membershipId),recovery);
         }, (snapshot, error) -> {
-            if (request != localReadSerial || selectedRoom != room) return;
+            if (request != localReadSerial || selectedRoom != room || !localOwner.current()) return;
             localReadBusy = false;
             if (error != null) { chatNotice.setText(R.string.chat_v2_save_failed); return; }
             roomLocal = snapshot;
-            localTextRows.clear(); localTextRows.addAll(snapshot.text);
+            if (!publishMessageRows(displayedMessages, snapshot.text)) return;
             if (hydrateDraft && editorRevision == revision) {
                 suppressDraftChanges = true;
                 messageInput.setText(snapshot.draft == null ? "" : snapshot.draft.body);
@@ -5925,7 +5962,6 @@ public final class OdooIdentityActivity extends Activity {
                 if (editorRevision != revision)
                     scheduleDraftSave(scope, room, messageInput.getText().toString());
             }
-            messageAdapter.notifyDataSetChanged();
             updatePendingUi();
             handler.post(this::retryPending);
             handler.post(()->replayKnownConnectedMedia(scope,room));
@@ -5996,6 +6032,7 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     private void clearChatView() {
+        invalidateMessageTimelineOwner();
         clearRoomListNow();
         closeReceiptDetails();
         closeRoomExplore();
@@ -6233,6 +6270,7 @@ public final class OdooIdentityActivity extends Activity {
 
     private void showRooms() {
         if (!chatAllowed() && !offlineHistory) return;
+        invalidateMessageTimelineOwner();
         closeReceiptDetails();
         closeRoomExplore();
         restoringContext = false;
@@ -6720,6 +6758,7 @@ public final class OdooIdentityActivity extends Activity {
     private void selectRoom(Room room, long notifiedMessageId) {
         if ((!chatAllowed() && !offlineHistory) || room == null || !rooms.contains(room)
                 || v2Busy || (!offlineHistory && csrfToken == null)) return;
+        invalidateMessageTimelineOwner();
         closeReceiptDetails();
         flushDraftSave();
         closeRoomExplore();
@@ -6782,7 +6821,8 @@ public final class OdooIdentityActivity extends Activity {
         displayedMessages.clear();
         olderPageLoading = false;
         olderPageFailed = false;
-        messageAdapter.notifyDataSetChanged();
+        if (!admitMessageTimelineOwner(room)) return;
+        publishMessageRows(displayedMessages, localTextRows);
         ++messageRenderSerial;
         if (offlineHistory) {
             roomTasksButton.setVisibility(View.GONE);
@@ -7925,17 +7965,25 @@ public final class OdooIdentityActivity extends Activity {
         Room room = selectedRoom;
         if ((!chatAllowed() && !offlineHistory) || room == null || v2Busy) return;
         if (offlineHistory) { showCachedMessages(room, beforeId, false); return; }
+        final TimelineWindowOwner readOwner = new TimelineWindowOwner(room);
+        if (!readOwner.bindingCurrent()) return;
         if (beforeId > 0) {
             if (olderPageLoading) return;
             olderPageLoading = true;
         }
+        final long positionIntent = beforeId > 0 ? beginTimelinePositionIntent() : messageLatestPositionIntent;
+        final long dispatchPositionIntent = messagePositionIntentSerial;
+        final boolean requestedOwnSend = beforeId == 0 && scrollAfterOwnSend;
         String path = V2_ROOMS + "/" + room.id + "/messages"
                 + (beforeId > 0 ? "?before_id=" + beforeId : "");
         chatNotice.setText(R.string.chat_v2_loading);
         olderButton.setEnabled(false);
         fetchV2("GET", path, null, (statusCode, result) -> {
-            if (selectedRoom != room) return;
+            if (selectedRoom != room || !readOwner.bindingCurrent()) return;
             if (beforeId > 0) olderPageLoading = false;
+            if (positionIntent >= 0 && messagePositionIntentSerial != positionIntent) {
+                updateOlderButtonAvailability(); return;
+            }
             if (handleV2TransportFailure(statusCode)) return;
             try {
                 if (statusCode != 200 || result == null || positiveId(result.get("api_version")) != 2)
@@ -7962,12 +8010,17 @@ public final class OdooIdentityActivity extends Activity {
                     pendingNotificationMessageId = 0;
                     if (!found) throw new IllegalArgumentException("Notification message not in page");
                 }
+                // Initial owner admission scrubs presentation, so preserve this authorized
+                // request's position intent before that scrub (never borrow a newer one).
+                boolean ownSend = requestedOwnSend && messagePositionIntentSerial == dispatchPositionIntent;
+                if (!admitMessageTimelineOwner(readOwner)) return;
                 if (historyCache != null && account != null) {
                     persistReceiptCanonical(account, room, validated);
                 }
                 ScrollAnchor anchor = restoringContext
                         ? new ScrollAnchor(restorationAnchor, restorationOffset, false) : currentScrollAnchor();
-                boolean ownSend = scrollAfterOwnSend;
+                if (beforeId > 0 || positionIntent >= 0 || focusedNotification)
+                    beginTimelinePositionIntent();
                 boolean olderWindowTransition = beforeId > 0
                         && displayedMessages.size() >= MAX_CONNECTED_MESSAGE_WINDOW;
                 List<JSONObject> window = messageWindow(validated, beforeId, anchor.atBottom, ownSend);
@@ -8118,9 +8171,10 @@ public final class OdooIdentityActivity extends Activity {
     /** Fetch just the acknowledged row after send; avoid reloading/rebinding the entire timeline. */
     private void appendAcknowledgedMessage(AccountScope scopedAccount, Room room, long messageId) {
         if (!stillCurrent(scopedAccount, room)) return;
+        final TimelineWindowOwner readOwner = new TimelineWindowOwner(room);
         fetchV2("GET", V2_ROOMS + "/" + room.id + "/messages/" + messageId, null,
                 (statusCode, result) -> {
-                    if (!stillCurrent(scopedAccount, room)) return;
+                    if (!stillCurrent(scopedAccount, room) || !readOwner.bindingCurrent()) return;
                     if (handleV2TransportFailure(statusCode)) return;
                     try {
                         if (statusCode != 200 || result == null
@@ -8163,6 +8217,7 @@ public final class OdooIdentityActivity extends Activity {
                             final List<JSONObject> saved = Collections.singletonList(message);
                             persistReceiptCanonical(scopedAccount, room, saved);
                         }
+                        if (!admitMessageTimelineOwner(readOwner)) return;
                         renderMessageWindow(room, window, true, 0, currentScrollAnchor());
                         updateOlderControl();
                         updateOlderButtonAvailability();
@@ -8257,15 +8312,22 @@ public final class OdooIdentityActivity extends Activity {
 
     private void showCachedMessages(Room room, long beforeId, boolean firstOpen) {
         if (room != selectedRoom || historyCache == null || account == null) return;
+        final TimelineWindowOwner readOwner = new TimelineWindowOwner(room);
         final AccountScope scope = account;
         final ConnectedHistoryCache cache = historyCache;
         final int render = messageRenderSerial;
+        final long positionIntent = beforeId > 0 ? beginTimelinePositionIntent() : messagePositionIntentSerial;
+        final boolean explicitPosition = beforeId > 0 || messageLatestPositionIntent == positionIntent;
+        // A manual page request owns the position chosen at dispatch. Enqueue/composer
+        // reflow while the cache read waits must not silently choose a different anchor.
+        final ScrollAnchor requestedAnchor = beforeId > 0 && !firstOpen ? currentScrollAnchor() : null;
         local(scope, () -> {
             List<JSONObject> page = cache.page(scope, room.id, room.membershipId, beforeId);
             long first = page.isEmpty() ? 0 : positiveId(page.get(0).get("id"));
             return new CachedPage(page, first > 0 && cache.hasOlder(scope, room.id, room.membershipId, first), false);
         }, (saved, error) -> {
-        if (selectedRoom != room || messageRenderSerial != render) return;
+        if (selectedRoom != room || messagePositionIntentSerial != positionIntent
+                || !explicitPosition && messageRenderSerial != render || !readOwner.bindingCurrent()) return;
         try {
             if (error != null) throw error;
             List<JSONObject> cached = saved.messages;
@@ -8276,8 +8338,10 @@ public final class OdooIdentityActivity extends Activity {
             }
             // The cache is written only after an authenticated, validated room read. It can
             // safely confirm the exact media ID before the next live fetch completes.
+            if (!admitMessageTimelineOwner(readOwner)) return;
+            if (explicitPosition) beginTimelinePositionIntent();
             reconcilePendingMediaFromVerifiedHistory(account, room, cached);
-            ScrollAnchor anchor = currentScrollAnchor();
+            ScrollAnchor anchor = requestedAnchor != null ? requestedAnchor : currentScrollAnchor();
             List<JSONObject> window = messageWindow(cached, beforeId, anchor.atBottom, false);
             long first = window.isEmpty() ? 0 : positiveId(window.get(0).get("id"));
             nextBeforeId = first > 0 && (saved.older || window.size() > cached.size()) ? first : 0;
@@ -8305,9 +8369,10 @@ public final class OdooIdentityActivity extends Activity {
         Room room = selectedRoom;
         if (room == null || displayedMessages.isEmpty()) return;
         if (historyCache == null || account == null) { jumpToLatest(); return; }
+        final long positionIntent = beginTimelinePositionIntent();
+        final TimelineWindowOwner readOwner = new TimelineWindowOwner(room);
         final AccountScope scope = account;
         final ConnectedHistoryCache cache = historyCache;
-        final int render = messageRenderSerial;
         final JSONObject previousLast = displayedMessages.get(displayedMessages.size() - 1);
         long last = previousLast.optLong("id");
         local(scope, () -> {
@@ -8316,7 +8381,7 @@ public final class OdooIdentityActivity extends Activity {
             return new CachedPage(newer, cache.hasOlder(scope, room.id, room.membershipId, last),
                     cache.hasNewer(scope, room.id, room.membershipId, newest));
         }, (saved, error) -> {
-        if (selectedRoom != room || messageRenderSerial != render) return;
+        if (selectedRoom != room || messagePositionIntentSerial != positionIntent || !readOwner.bindingCurrent()) return;
         try {
             if (error != null) throw error;
             List<JSONObject> newer = saved.messages;
@@ -8324,6 +8389,8 @@ public final class OdooIdentityActivity extends Activity {
             List<JSONObject> window = new ArrayList<>();
             window.add(previousLast);
             window.addAll(newer);
+            if (!admitMessageTimelineOwner(readOwner)) return;
+            beginTimelinePositionIntent();
             long first = positiveId(window.get(0).get("id"));
             long newest = positiveId(window.get(window.size() - 1).get("id"));
             historicalWindow = saved.newer;
@@ -8343,6 +8410,7 @@ public final class OdooIdentityActivity extends Activity {
     private void jumpToLatest() {
         Room room = selectedRoom;
         if (room == null || v2Busy) return;
+        messageLatestPositionIntent = beginTimelinePositionIntent();
         if (offlineHistory) {
             if (historyCache == null || account == null) return;
             historicalWindow = false;
@@ -8355,6 +8423,14 @@ public final class OdooIdentityActivity extends Activity {
 
     private void renderMessageWindow(Room room, List<JSONObject> window, boolean followBottom,
                                      long focusId, ScrollAnchor anchor) throws Exception {
+        renderMessageWindowWithLocals(room, window, followBottom, focusId, anchor, localTextRows);
+    }
+
+    private void renderMessageWindowWithLocals(Room room, List<JSONObject> window, boolean followBottom,
+            long focusId, ScrollAnchor anchor, List<BChatV2Outbox.Entry> locals) throws Exception {
+        final TimelineWindowOwner renderOwner = messageWindowOwner;
+        if (renderOwner == null || renderOwner.room != room || !renderOwner.current())
+            throw new IllegalStateException("Window outside admitted timeline owner");
         if (window.size() > MAX_CONNECTED_MESSAGE_WINDOW) throw new IllegalArgumentException("Too many bubbles");
         long priorId = 0;
         for (JSONObject item : window) {
@@ -8373,15 +8449,18 @@ public final class OdooIdentityActivity extends Activity {
             }
         }
         if (!keepPlaying) stopInlineAudio();
-        updateMessageRows(window);
+        if (locals == localTextRows) updateMessageRows(window);
+        else if (!publishMessageRows(window, locals)) throw new IllegalStateException("Timeline owner is no longer current");
         final int renderSerial = ++messageRenderSerial;
+        final long positionIntent = messagePositionIntentSerial;
         messageScroll.post(() -> {
-            if (selectedRoom != room || messageRenderSerial != renderSerial) return;
+            if (selectedRoom != room || messageRenderSerial != renderSerial || !renderOwner.current()
+                    || messagePositionIntentSerial != positionIntent) return;
             int focus = messagePosition(focusId);
             int previous = messagePosition(anchor.messageId);
             if (focus >= 0) messageLayout.scrollToPositionWithOffset(focus, dp(32));
-            else if (followBottom && !displayedMessages.isEmpty())
-                messageLayout.scrollToPosition(displayedMessages.size() - 1);
+            else if ((hasTimelineSendFollow() || followBottom) && messageAdapter.getItemCount() > 0)
+                messageLayout.scrollToPosition(messageAdapter.getItemCount() - 1);
             else if (previous >= 0)
                 messageLayout.scrollToPositionWithOffset(previous, anchor.offset);
             updateOlderButtonAvailability();
@@ -8391,6 +8470,8 @@ public final class OdooIdentityActivity extends Activity {
             // until it fills the viewport or the server has no older page.
             messageScroll.postOnAnimation(() -> {
                 if (selectedRoom == room && messageRenderSerial == renderSerial
+                        && messagePositionIntentSerial == positionIntent
+                        && renderOwner.current()
                         && !messageScroll.canScrollVertically(-1)
                         && !messageScroll.canScrollVertically(1)) maybeLoadOlderMessages();
             });
@@ -8404,41 +8485,262 @@ public final class OdooIdentityActivity extends Activity {
         return -1;
     }
 
-    /** Keep already attached bubbles intact when a poll changes no visible message. */
+    /** A presentation owner is admitted only at the existing verified HTTP/cache entry points.
+     * Projection never upgrades old visible rows to a newly observed account or generation. */
+    private final class TimelineWindowOwner {
+        final AccountScope scope;
+        final Room room;
+        final PermissionSet permissions;
+        final int session, global;
+        final long repository, serial, admissionEpoch;
+        final boolean offline;
+        TimelineWindowOwner(Room room) {
+            if (android.os.Looper.myLooper() != android.os.Looper.getMainLooper())
+                throw new IllegalStateException("Timeline binding capture requires MAIN");
+            scope = account; this.room = room; permissions = permissionSet;
+            session = epoch; global = historyGlobalGeneration;
+            repository = BChatStorageRepository.generation(scope);
+            serial = ++messageWindowOwnerSequence; admissionEpoch = messageWindowAdmissionEpoch;
+            offline = offlineHistory;
+        }
+        boolean current() {
+            return messageWindowOwner == this && bindingCurrent();
+        }
+        boolean bindingCurrent() {
+            return !closed && account == scope && selectedRoom == room
+                    && messageWindowAdmissionEpoch == admissionEpoch
+                    && epoch == session && historyGlobalGeneration == global
+                    && BChatStorageRepository.generation(scope) == repository
+                    && offlineHistory == offline && permissions.sameAs(permissionSet)
+                    && timelineRoomReadable(room);
+        }
+    }
+
+    private boolean timelineRoomReadable(Room room) {
+        return account != null && room != null && selectedRoom == room && currentInfoRoom(room) == room
+                && (offlineHistory ? offlineChatCacheAvailable && offlinePersistenceReady
+                    : verified && roomsVerifiedForSession && chatAllowed() && v1Companies.contains(room.companyId));
+    }
+
+    /** MAIN only. Scrub visible and pooled bubbles before the previous owner can be replaced. */
+    private void invalidateMessageTimelineOwner() {
+        if (android.os.Looper.myLooper() != android.os.Looper.getMainLooper())
+            throw new IllegalStateException("Timeline invalidation requires MAIN");
+        ++messageWindowAdmissionEpoch;
+        clearMessageTimelinePresentation();
+    }
+
+    private void clearMessageTimelinePresentation() {
+        beginTimelinePositionIntent();
+        messageWindowOwner = null; messageRowSnapshot = null; forceTimelineReset = true;
+        olderPageLoading = olderPageFailed = false;
+        if (messageScroll == null || messageAdapter == null) return;
+        for (int i = 0; i < messageScroll.getChildCount(); i++) {
+            RecyclerView.ViewHolder view = messageScroll.getChildViewHolder(messageScroll.getChildAt(i));
+            if (view instanceof MessageTimelineAdapter.Holder) {
+                MessageTimelineAdapter.Holder holder = (MessageTimelineAdapter.Holder) view;
+                detachAudioControls(holder.bubble);
+                holder.container.removeAllViews(); holder.bubble = null;
+            }
+        }
+        messageScroll.setAdapter(null);
+        messageScroll.getRecycledViewPool().clear();
+    }
+
+    private boolean admitMessageTimelineOwner(Room room) {
+        return admitMessageTimelineOwner(new TimelineWindowOwner(room));
+    }
+
+    private boolean admitMessageTimelineOwner(TimelineWindowOwner admitted) {
+        if (android.os.Looper.myLooper() != android.os.Looper.getMainLooper())
+            throw new IllegalStateException("Timeline admission requires MAIN");
+        if (admitted == null || !admitted.bindingCurrent()) return false;
+        if (messageWindowOwner == null || !messageWindowOwner.current()) {
+            // Admission consumes a ticket from this epoch; only explicit invalidation advances it.
+            clearMessageTimelinePresentation();
+            messageWindowOwner = admitted;
+        }
+        if (messageScroll.getAdapter() != messageAdapter) messageScroll.setAdapter(messageAdapter);
+        return true;
+    }
+
+    private BChatTimelineRows.Context timelineRenderContext() {
+        android.content.res.Configuration config = getResources().getConfiguration();
+        android.util.DisplayMetrics metrics = getResources().getDisplayMetrics();
+        BChatTimelineRows.Rights rights = new BChatTimelineRows.Rights(Math.max(0, permissionSet.revision),
+                permissionSet.chatView, permissionSet.chatSend, permissionSet.mediaRights.view,
+                permissionSet.mediaRights.download, receiptDeliverySupported, receiptsAvailable);
+        return new BChatTimelineRows.Context(config.getLocales().get(0).toLanguageTag(),
+                ChatAppearance.theme(this) + ":" + (config.uiMode & android.content.res.Configuration.UI_MODE_NIGHT_MASK),
+                ChatAppearance.bodySp(this), config.fontScale, metrics.density,
+                Math.max(1, messageScroll.getWidth() > 0 ? messageScroll.getWidth() : metrics.widthPixels),
+                config.getLayoutDirection() == View.LAYOUT_DIRECTION_RTL, offlineHistory, rights,
+                java.util.TimeZone.getDefault().getID(), messageDayKey(new Date(), ""),
+                android.text.format.DateFormat.is24HourFormat(this));
+    }
+
+    /** Adapt already validated values, preserving every render/action field without serializing JSON. */
+    private BChatTimelineRows.Snapshot projectMessageRows(TimelineWindowOwner owner,
+            List<JSONObject> window, List<BChatV2Outbox.Entry> locals) throws Exception {
+        BChatTimelineRows.Scope scope = new BChatTimelineRows.Scope(owner.scope.key, owner.scope.userId,
+                owner.room.id, owner.room.membershipId, owner.session, owner.serial);
+        List<BChatTimelineRows.Server> canonical = new ArrayList<>(window.size());
+        for (JSONObject item : window) {
+            BChatTimelineRows.Reply reply = null;
+            JSONObject quoted = item.optJSONObject("reply");
+            if (quoted != null) {
+                Object kind = quoted.opt("media_kind");
+                reply = quoted.has("unavailable") ? BChatTimelineRows.Reply.unavailable()
+                        : BChatTimelineRows.Reply.available(positiveId(quoted.get("id")),
+                            quoted.getString("author_name"), quoted.getString("text"),
+                            kind instanceof String ? BChatTimelineRows.MediaKind.valueOf(((String) kind).toUpperCase(Locale.ROOT)) : null);
+            }
+            BChatTimelineRows.Media media = null;
+            JSONObject value = item.optJSONObject("media");
+            if (value != null) media = new BChatTimelineRows.Media(positiveId(value.get("id")),
+                    BChatTimelineRows.MediaKind.valueOf(value.getString("kind").toUpperCase(Locale.ROOT)),
+                    value.getString("mime"), value.getString("name"), value.getString("sha256"),
+                    BChatTimelineRows.DocumentType.valueOf(value.getString("document_type").toUpperCase(Locale.ROOT)),
+                    value.getBoolean("thumbnail_available"), value.getInt("size"));
+            BChatTimelineRows.Delivery delivery = item.has("delivery_state") && !item.isNull("delivery_state")
+                    ? BChatTimelineRows.Delivery.valueOf(item.getString("delivery_state").toUpperCase(Locale.ROOT)) : null;
+            canonical.add(new BChatTimelineRows.Server(positiveId(item.get("id")), positiveId(item.get("author_user_id")),
+                    item.getString("author_name"), item.getString("text"), item.getString("created_at"), reply, media,
+                    delivery, item.has("read_at") && !item.isNull("read_at") ? item.getString("read_at") : null));
+        }
+        List<BChatTimelineRows.Local> pending = new ArrayList<>(locals.size());
+        for (BChatV2Outbox.Entry entry : locals) {
+            if (entry.roomId != owner.room.id || entry.membershipId != owner.room.membershipId)
+                throw new IllegalArgumentException("Local row outside timeline membership");
+            pending.add(new BChatTimelineRows.Local(entry.id, entry.uuid, entry.body,
+                    BChatTimelineRows.LocalState.valueOf(entry.state.toUpperCase(Locale.ROOT)),
+                    entry.replyToMessageId, entry.reviewCode, entry.messageId));
+        }
+        return BChatTimelineRows.project(scope, timelineRenderContext(), canonical, pending);
+    }
+
+    /** Build first, then publish data and ordered notifications together on MAIN. No ACK/storage action. */
+    private boolean publishMessageRows(List<JSONObject> window, List<BChatV2Outbox.Entry> locals) {
+        if (android.os.Looper.myLooper() != android.os.Looper.getMainLooper())
+            throw new IllegalStateException("Timeline publication requires MAIN");
+        TimelineWindowOwner owner = messageWindowOwner;
+        if (owner == null || !owner.current()) return false;
+        // Copy before clearing: callers may supply the currently displayed lists themselves.
+        List<JSONObject> nextWindow = new ArrayList<>(window);
+        List<BChatV2Outbox.Entry> nextLocals = new ArrayList<>(locals);
+        final BChatTimelineRows.Snapshot next;
+        final BChatTimelineChangePlan.Plan plan;
+        try {
+            next = projectMessageRows(owner, nextWindow, nextLocals);
+            plan = messageRowSnapshot == null ? null : BChatTimelineChangePlan.between(messageRowSnapshot, next);
+        } catch (Exception invalid) { throw new IllegalArgumentException("Invalid timeline publication", invalid); }
+        if (!owner.current()) return false;
+        boolean reset = forceTimelineReset || plan == null || plan.fallback != BChatTimelineChangePlan.Fallback.NONE;
+        displayedMessages.clear(); displayedMessages.addAll(nextWindow);
+        localTextRows.clear(); localTextRows.addAll(nextLocals);
+        messageRowSnapshot = next; forceTimelineReset = false;
+        if (reset) messageAdapter.notifyDataSetChanged();
+        else {
+            for (int position : plan.removeOldDescending) messageAdapter.notifyItemRemoved(position);
+            for (int position : plan.insertNewAscending) messageAdapter.notifyItemInserted(position);
+            for (int position : plan.changeNewPositions) messageAdapter.notifyItemChanged(position);
+        }
+        admitTimelineSendFollow(nextLocals);
+        postTimelineSendFollow(owner);
+        return true;
+    }
+
+    /** Position intent is presentation-only: it never admits data, retires an entry or sends ACK. */
+    private long beginTimelinePositionIntent() {
+        messageSendFollow = null;
+        messageLatestPositionIntent = -1;
+        scrollAfterOwnSend = false;
+        return ++messagePositionIntentSerial;
+    }
+
+    private final class TimelineSendOrigin {
+        final TimelineWindowOwner owner;
+        final long jump, positionIntent;
+        TimelineSendOrigin(TimelineWindowOwner owner) {
+            this.owner = owner; jump = messageJumpSerial;
+            positionIntent = messagePositionIntentSerial;
+        }
+        boolean current() {
+            return owner.current() && jump == messageJumpSerial
+                    && positionIntent == messagePositionIntentSerial;
+        }
+    }
+
+    private final class TimelineSendFollow {
+        final TimelineSendOrigin origin;
+        final long id;
+        final String uuid;
+        final boolean admitted;
+        TimelineSendFollow(TimelineSendOrigin origin, long id, String uuid, boolean admitted) {
+            this.origin = origin; this.id = id; this.uuid = uuid; this.admitted = admitted;
+        }
+    }
+
+    private TimelineSendOrigin captureTimelineSendOrigin() {
+        TimelineWindowOwner owner = messageWindowOwner;
+        if (owner == null || !owner.current() || restoringContext || messageScroll == null
+                || messageScroll.getAdapter() != messageAdapter || !messageScroll.isAttachedToWindow()
+                || !messageScroll.isShown() || messageScroll.getWidth() <= 0 || messageScroll.getHeight() <= 0
+                || messageScroll.isLayoutRequested() || messageScroll.isComputingLayout()
+                || messageScroll.hasPendingAdapterUpdates()
+                || messageLayout.findLastVisibleItemPosition() < 0
+                || messageScroll.canScrollVertically(1)) return null;
+        return new TimelineSendOrigin(owner);
+    }
+
+    private void rememberTimelineSendFollow(TimelineSendOrigin origin, BChatV2Outbox.Entry entry) {
+        if (origin == null || !origin.current() || entry == null || entry.id <= 0
+                || entry.roomId != origin.owner.room.id || entry.membershipId != origin.owner.room.membershipId
+                || entry.uuid == null || entry.uuid.isEmpty()) return;
+        messageSendFollow = new TimelineSendFollow(origin, entry.id, entry.uuid, false);
+    }
+
+    private void admitTimelineSendFollow(List<BChatV2Outbox.Entry> entries) {
+        TimelineSendFollow follow = messageSendFollow;
+        if (follow == null || follow.admitted || !follow.origin.current()) return;
+        for (BChatV2Outbox.Entry entry : entries) {
+            if (entry.id == follow.id && follow.uuid.equals(entry.uuid)
+                    && entry.roomId == follow.origin.owner.room.id
+                    && entry.membershipId == follow.origin.owner.room.membershipId) {
+                messageSendFollow = new TimelineSendFollow(follow.origin, follow.id, follow.uuid, true);
+                return;
+            }
+        }
+    }
+
+    private boolean hasTimelineSendFollow() {
+        return messageSendFollow != null && messageSendFollow.admitted && messageSendFollow.origin.current();
+    }
+
+    private void postTimelineSendFollow(TimelineWindowOwner owner) {
+        if (!hasTimelineSendFollow()) return;
+        final int render = ++messageRenderSerial;
+        final long positionIntent = messagePositionIntentSerial;
+        messageScroll.post(() -> {
+            if (!owner.current() || messageRenderSerial != render
+                    || messagePositionIntentSerial != positionIntent || !hasTimelineSendFollow()) return;
+            if (messageAdapter.getItemCount() > 0)
+                messageLayout.scrollToPosition(messageAdapter.getItemCount() - 1);
+        });
+    }
+
     private void updateMessageRows(List<JSONObject> window) {
-        List<JSONObject> previous = new ArrayList<>(displayedMessages);
-        int oldSize = previous.size();
-        int newSize = window.size();
-        int prepend = -1;
-        if (oldSize > 0 && newSize >= oldSize) {
-            long firstOldId = previous.get(0).optLong("id");
-            for (int i = 0; i <= newSize - oldSize; i++) {
-                if (window.get(i).optLong("id") == firstOldId) { prepend = i; break; }
-            }
-            if (prepend >= 0) {
-                for (int i = 0; i < oldSize; i++) {
-                    if (previous.get(i).optLong("id") != window.get(prepend + i).optLong("id")) {
-                        prepend = -1;
-                        break;
-                    }
-                }
-            }
-        }
-        displayedMessages.clear();
-        displayedMessages.addAll(window);
-        if (prepend < 0 || forceTimelineReset) {
-            forceTimelineReset = false;
-            messageAdapter.notifyDataSetChanged();
-            return;
-        }
-        int append = newSize - prepend - oldSize;
-        if (prepend > 0) messageAdapter.notifyItemRangeInserted(0, prepend);
-        if (append > 0) messageAdapter.notifyItemRangeInserted(prepend + oldSize, append);
-        for (int i = 0; i < oldSize; i++) {
-            if (!previous.get(i).toString().equals(window.get(prepend + i).toString())
-                    || (prepend > 0 && i == 0))
-                messageAdapter.notifyItemChanged(prepend + i);
-        }
+        if (!publishMessageRows(window, localTextRows)) throw new IllegalStateException("Timeline owner is no longer current");
+    }
+
+    /** Existing resume/layout points refresh date, clock and display settings without a new timer. */
+    private void reprojectMessageTimelineContext() {
+        TimelineWindowOwner owner = messageWindowOwner;
+        if (owner == null || !owner.current() || messageRowSnapshot == null
+                || messageRowSnapshot.context.same(timelineRenderContext())) return;
+        ScrollAnchor anchor = currentScrollAnchor();
+        try { renderMessageWindow(owner.room, new ArrayList<>(displayedMessages), anchor.atBottom, 0, anchor); }
+        catch (Exception invalid) { chatNotice.setText(R.string.chat_v2_load_failed); }
     }
 
     private boolean isWithin(View child, View ancestor) {
@@ -9321,6 +9623,7 @@ public final class OdooIdentityActivity extends Activity {
             final long revision = editorRevision, replyId = selectedReplyMessageId;
             final BChatComposerSnapshot editor = new BChatComposerSnapshot(scope, room.id,
                     room.membershipId, revision, body, replyId);
+            final TimelineSendOrigin sendOrigin = captureTimelineSendOrigin();
             textEnqueueBusy = true;
             updatePendingUi();
             local(scope, () -> box.enqueue(scope, room.id, room.membershipId, body, replyId,revision), (entry, error) -> {
@@ -9331,6 +9634,7 @@ public final class OdooIdentityActivity extends Activity {
                             && error.getMessage().contains("capacity") ? R.string.text_queue_full : R.string.text_queue_storage_failed);
                     updatePendingUi(); return;
                 }
+                rememberTimelineSendFollow(sendOrigin, entry);
                 // A user may have continued editing while the durable transaction ran.
                 if (editor.matches(account, room.id, room.membershipId, editorRevision,
                         messageInput.getText().toString(), selectedReplyMessageId)) {
@@ -10614,13 +10918,15 @@ public final class OdooIdentityActivity extends Activity {
 
     private void reconcileTextReceipt(AccountScope scope, Room room, BChatV2Outbox.Entry entry) {
         if (!stillCurrent(scope, room) || v2Busy || textDispatchBusy || entry.messageId <= 0) return;
+        final TimelineWindowOwner readOwner = new TimelineWindowOwner(room);
         textDispatchBusy = true;
         final BChatV2Outbox box = outbox;
         fetchV2("GET", V2_ROOMS + "/" + room.id + "/messages/" + entry.messageId, null, (status, result) -> {
-            if (!stillCurrent(scope, room)) { textDispatchBusy = false; return; }
+            if (!stillCurrent(scope, room) || !readOwner.bindingCurrent()) { textDispatchBusy = false; return; }
             try {
                 if (status != 200 || result == null || positiveId(result.get("api_version")) != 2)
                     throw new IllegalArgumentException();
+                requireReceiptEpoch(result, room);
                 JSONObject message = validateMessageList(new JSONArray().put(result.getJSONObject("message")), 0).get(0);
                 if (positiveId(message.get("id")) != entry.messageId
                         || positiveId(message.get("author_user_id")) != scope.userId)
@@ -10633,6 +10939,7 @@ public final class OdooIdentityActivity extends Activity {
                     textDispatchBusy = false;
                     if (selectedRoom != room) return;
                     if (error != null || !Boolean.TRUE.equals(retired)) { chatNotice.setText(R.string.chat_v2_save_failed); return; }
+                    if (!admitMessageTimelineOwner(readOwner)) return;
                     List<JSONObject> window = new ArrayList<>(displayedMessages);
                     boolean present = false;
                     for (JSONObject item : window) if (item.optLong("id") == entry.messageId) present = true;
@@ -10640,12 +10947,13 @@ public final class OdooIdentityActivity extends Activity {
                     window.sort((left, right) -> Long.compare(left.optLong("id"), right.optLong("id")));
                     if (window.size() > MAX_CONNECTED_MESSAGE_WINDOW)
                         window = new ArrayList<>(window.subList(window.size() - MAX_CONNECTED_MESSAGE_WINDOW, window.size()));
-                    localTextRows.removeIf(item -> item.uuid.equals(entry.uuid));
+                    List<BChatV2Outbox.Entry> remaining = new ArrayList<>(localTextRows);
+                    remaining.removeIf(item -> item.uuid.equals(entry.uuid));
                     globalPendingKnown = false;
-                    // One local stable-ID row becomes one server row in the same frame;
-                    // a bare server insertion would make RecyclerView's count inconsistent.
-                    forceTimelineReset = true;
-                    try { renderMessageWindow(room, window, true, 0, currentScrollAnchor()); }
+                    // Exact durable retirement already happened above. Publish both sources
+                    // together; the planner removes/inserts identities, never infers an ACK.
+                    ScrollAnchor anchor = currentScrollAnchor();
+                    try { renderMessageWindowWithLocals(room, window, anchor.atBottom, 0, anchor, remaining); }
                     catch (Exception invalid) { loadMessages(0); }
                     refreshLocalRoom(room, false);
                 });
@@ -12413,8 +12721,10 @@ public final class OdooIdentityActivity extends Activity {
     private void setOrderRights(AccountScope scope, boolean view, boolean create,
             boolean receive) {
         boolean lostView = orderCanView && !view;
-        if (lostView || orderCanCreate && !create || orderCanReceive && !receive)
+        if (lostView || orderCanCreate && !create || orderCanReceive && !receive) {
+            invalidateMessageTimelineOwner();
             BChatStorageRepository.invalidate(scope);
+        }
         orderCanView = view;
         orderCanCreate = view && create;
         orderCanReceive = view && receive;
@@ -15262,6 +15572,7 @@ public final class OdooIdentityActivity extends Activity {
         if (receiptDetailsPanel != null) receiptDetailsPanel.resume();
         if(notificationSettingsPanel!=null)notificationSettingsPanel.resume();
         liveForeground = true;
+        if (!recheckOnResume) reprojectMessageTimelineContext();
         if (recheckOnResume && verified && !closed) {
             recheckOnResume = false;
             verified = false;
@@ -15308,6 +15619,7 @@ public final class OdooIdentityActivity extends Activity {
     }
 
     @Override protected void onDestroy() {
+        invalidateMessageTimelineOwner();
         clearRoomListNow();
         roomListLane.close();
         closeReceiptDetails();

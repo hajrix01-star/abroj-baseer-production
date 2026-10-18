@@ -15,9 +15,10 @@ public final class NotificationRightsResetProbe {
     private final Set<Long> v1Companies=new HashSet<>(Arrays.asList(1L,2L));
     private final List<String> effects=new ArrayList<>();
     private int clears,chatResets,permissionApplications,cachePurges,denials,loadRoomsCalls,profileChecks;
-    private boolean profileValid=true,permissionsValid=true,mediaAvailable,receiptsAvailable,receiptDeliverySupported,roomsVerifiedForSession;
+    private boolean profileValid=true,permissionsValid=true,mediaAvailable,receiptsAvailable,receiptDeliverySupported,roomsVerifiedForSession,historySearchSupported;
     private String csrfToken;
     private PermissionSet permissionSet=new PermissionSet(true,true,true);
+    private AccountScope permissionAccount=account;
     private final Transfer transferCoordinator=new Transfer();
     private Panel notificationSettingsPanel;
     private BChatV2Outbox outbox;
@@ -47,6 +48,11 @@ public final class NotificationRightsResetProbe {
     }
     private void flushDraftSave(){effects.add("draft-flush");}
     private void closeReceiptDetails(){}
+    // Downstream room/search/timeline presentation adapters only. These UI owners are NOT
+    // executed by this notification proof-prefix fixture; their dedicated suites own them.
+    private void clearRoomListNow(){}
+    private void closeRoomExplore(){}
+    private void invalidateMessageTimelineOwner(){}
     private JSONObject verifiedProfile(JSONObject data,Set<Long> companies){
         ++profileChecks;if(!profileValid)throw new IllegalArgumentException();return new JSONObject();
     }
@@ -100,11 +106,20 @@ public final class NotificationRightsResetProbe {
         PermissionSet(boolean chatView,boolean chatSend,boolean taskView){
             this.chatView=chatView;this.chatSend=chatSend;this.taskView=taskView;
         }
+        boolean sameAs(PermissionSet other){
+            return other!=null&&chatView==other.chatView&&chatSend==other.chatSend&&taskView==other.taskView
+                &&taskManage==other.taskManage&&media==other.media&&groupCreate==other.groupCreate
+                &&groupManage==other.groupManage&&orderView==other.orderView&&orderCreate==other.orderCreate
+                &&orderReceive==other.orderReceive&&mediaRights.view==other.mediaRights.view
+                &&mediaRights.upload==other.mediaRights.upload&&mediaRights.download==other.mediaRights.download;
+        }
     }
     private static final class Panel {void dismiss(){}}
     private static final class BChatV2Outbox {BChatV2Outbox(Object ignored){}}
     private static final class BChatConnectedMediaStore {BChatConnectedMediaStore(Object ignored){}}
     private static final class ReceiptDeliveryProtocol {static boolean supported(JSONObject ignored){return true;}}
+    // Optional search negotiation is outside this proof-prefix fixture, so it stays unsupported.
+    private static final class RoomExploreProtocol {static boolean supported(JSONObject ignored){return false;}}
     private static final class R {static final class string {static final int chat_v2_loading=1,chat_v2_denied=2;}}
     private static final class View {static final int GONE=8,VISIBLE=0;}
     private static final class StubView {void setText(int ignored){}void setVisibility(int ignored){}}

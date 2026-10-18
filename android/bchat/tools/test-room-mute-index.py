@@ -39,9 +39,10 @@ def gson_file(explicit):
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--label', required=True)
-parser.add_argument('--case', choices=('all', 'admission-state'), default='all')
+parser.add_argument('--case', choices=('all', 'admission-state', 'recovery', 'health'), default='all')
 parser.add_argument('--gson-jar', type=Path)
 parser.add_argument('--android-jar', type=Path)
+parser.add_argument('--port-source', type=Path, help='Focused health regression against an archived Port; no native run')
 parser.add_argument('--build-android', action='store_true')
 parser.add_argument('--run', action='store_true')
 parser.add_argument('--serial', default='emulator-5580')
@@ -55,13 +56,22 @@ if args.case != 'all' and (args.run or args.build_android):
 gson = gson_file(args.gson_jar)
 root = Path(__file__).resolve().parents[1]
 source = root / 'app/src/main/java/com/baseer/freshchat'
+port_override = args.port_source.resolve() if args.port_source else None
+if port_override and (args.case != 'health' or args.run or args.build_android
+        or not port_override.is_file() or port_override.name != 'BChatRoomMutePort.java'
+        or not port_override.is_relative_to(root / 'artifacts')):
+    raise SystemExit('Port override must be an existing local artifact and focused health JVM only')
+
+
+def input_bytes(path):
+    return (port_override if port_override and path == source / 'BChatRoomMutePort.java' else path).read_bytes()
 tests = root / 'tests/room-mute-index'
 adapters = root / 'tests/room-preferences-store/jvm'
 production = [source / name for name in ('BChatRoomMuteIndex.java', 'BChatRoomMutePort.java',
     'RoomPreferencesController.java', 'RoomPreferencesStore.java', 'RoomPreferencesProtocol.java',
     'NotificationPresentation.java', 'sync/AccountScope.java', 'sync/OutboxPolicy.java')]
 java_inputs = production + sorted(path for path in adapters.rglob('*.java') if 'com/baseer/' not in path.as_posix())
-java_inputs += [root / 'tests/room-preferences-controller/com/baseer/freshchat/ControllerCases.java']
+java_inputs += sorted((root / 'tests/room-preferences-controller').rglob('*.java'))
 java_inputs += sorted((tests / 'shared').rglob('*.java')) + sorted((tests / 'jvm').rglob('*.java'))
 inputs = java_inputs + sorted(path for path in (tests / 'native').rglob('*') if path.is_file()) + [Path(__file__).resolve()]
 output = root / 'artifacts/room-mute-index' / args.label
@@ -69,7 +79,7 @@ output.mkdir(parents=True, exist_ok=False)
 archive = output / 'inputs'
 hashes = {}
 for path in inputs:
-    name, raw = path.relative_to(root).as_posix(), path.read_bytes()
+    name, raw = path.relative_to(root).as_posix(), input_bytes(path)
     target = archive / name
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_bytes(raw)
@@ -78,6 +88,7 @@ scope = ('Production index/port/controller and actual JVM private files; explici
          'Gson-JSON/queue/HTTP fixtures, no Android runtime/FCM/Activity/wiring/power-loss claim')
 (output / 'source-manifest.json').write_text(json.dumps({'schema': 1, 'scope': scope, 'case': args.case, 'archived_inputs': 'inputs',
     'compiled_from_archived_inputs': True, 'source_sha256': hashes,
+    'port_source_override': port_override.relative_to(root).as_posix() if port_override else None,
     'adapter_gson_sha256': hashlib.sha256(gson.read_bytes()).hexdigest(),
     'android_stub_sha256': hashlib.sha256(args.android_jar.read_bytes()).hexdigest() if args.android_jar else None}, indent=2), encoding='utf-8')
 
@@ -85,7 +96,7 @@ scope = ('Production index/port/controller and actual JVM private files; explici
 def frozen():
     for path in inputs:
         name = path.relative_to(root).as_posix()
-        if hashlib.sha256(path.read_bytes()).hexdigest() != hashes[name] or hashlib.sha256((archive / name).read_bytes()).hexdigest() != hashes[name]:
+        if hashlib.sha256(input_bytes(path)).hexdigest() != hashes[name] or hashlib.sha256((archive / name).read_bytes()).hexdigest() != hashes[name]:
             raise SystemExit('Live/archive input changed: ' + name)
 
 

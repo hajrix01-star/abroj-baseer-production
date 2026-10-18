@@ -24,7 +24,7 @@ from odoo.modules.registry import Registry
 
 from ..contracts import ProtocolError, positive_id
 from ..push_contracts import classify_fcm_failure, retry_after_seconds, retry_delay_seconds
-from ..notification_presentation import chat_data, notification_text as _notification_text
+from ..notification_presentation import chat_data, room_mute_keys, notification_text as _notification_text
 
 
 _PUSH_TOKEN = object()
@@ -400,7 +400,6 @@ class BChatPushEvent(models.Model):
     def _fcm_send(self, event, config):
         try:
             import requests
-            access_token = self._fcm_access_token(config)
             diagnostic = event.event_kind == 'diagnostic'
             data = {'account_key': event.device_id.account_key,
                     'kind': 'diagnostic' if diagnostic else 'chat' if event.message_id else 'task',
@@ -415,6 +414,10 @@ class BChatPushEvent(models.Model):
                     ('room_id', '=', message.room_id.id), ('user_id', '=', event.recipient_id.id),
                     ('active', '=', True), ('joined_after_message_id', '<', message.id),
                 ], limit=1) if self._event_recipient_still_allowed(event) else None
+                if not member:
+                    # Missing current recipient scope is revocation, never a
+                    # generic notification that silently bypasses room mute.
+                    raise _PushTransportError('access_revoked', retry=False)
                 if member:
                     sender = ''
                     if event.device_id.preview_mode in ('sender', 'full'):
@@ -434,6 +437,17 @@ class BChatPushEvent(models.Model):
                         mode=event.device_id.preview_mode, sender=sender,
                         title=message.room_id.name, is_group=message.room_id.is_group,
                         text=message.text, attachment=bool(message.media_id))
+            elif event.task_id and event.task_id.room_id:
+                task = event.task_id
+                member = self.env['baseer.bchat.membership'].sudo().search([
+                    ('room_id', '=', task.room_id.id), ('user_id', '=', event.recipient_id.id),
+                    ('active', '=', True),
+                ], limit=1) if self._event_recipient_still_allowed(event) else None
+                if not member:
+                    raise _PushTransportError('access_revoked', retry=False)
+                data.update(room_mute_keys(event.device_id.account_key, task.company_id.id,
+                                           task.room_id.id, member.id))
+            access_token = self._fcm_access_token(config)
             response = requests.post(
                 'https://fcm.googleapis.com/v1/projects/%s/messages:send' % config['project_id'],
                 headers={'Authorization': 'Bearer %s' % access_token},
@@ -557,6 +571,10 @@ class BChatPushEvent(models.Model):
                 event._write_verified({'state': 'sent', 'sent_at': now,
                                        'last_error': False, 'next_attempt_at': False}, _PUSH_TOKEN)
             except _PushTransportError as error:
+                if error.code == 'access_revoked':
+                    event._write_verified({'state': 'discarded', 'last_error': 'access_revoked',
+                                           'next_attempt_at': False}, _PUSH_TOKEN)
+                    continue
                 if error.invalid_token and event.device_id:
                     super(BChatPushDevice, event.device_id).write({
                         'active': False, 'last_seen_at': now,

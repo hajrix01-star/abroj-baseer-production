@@ -32,7 +32,7 @@ public final class StoreInstrumentation extends Instrumentation {
                     public int lookups(Context context) { return ((FixtureContext) context).lookups; }
                     public void main(Runnable action) { runOnMainSync(action); }
                 };
-                checks = "ambiguous".equals(phase) ? StoreCases.ambiguousEpoch(host) : StoreCases.run(host);
+                checks = "ambiguous".equals(phase) ? StoreCases.ambiguousEpoch(host) : StoreCases.run(host) + StoreRecoveryCases.run(host);
             } else restart(base);
             JSONObject evidence = new JSONObject().put("schema", 1).put("passed", true).put("phase", phase)
                     .put("session", session).put("sdk", Build.VERSION.SDK_INT).put("process_id", Process.myPid())

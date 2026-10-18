@@ -63,8 +63,11 @@ for test in ('TransferInstrumentation.java', 'TransferProcessDeathInstrumentatio
              'DraftRevisionInstrumentation.java'):
     assert (ROOT / 'tests/transfers-android/com/baseer/freshchat' / test).is_file()
 workflow = (REPO / ".github/workflows/bchat-cumulative-contracts.yml").read_text(encoding="utf-8")
-for test in ("test-connected-media-store.py", "test-notification-presentation.py", "test-push-routing-state.py", "test-appearance-foundations.py", "test-room-preferences-protocol.py", "test-room-preferences-store.py", "test-room-preferences-controller.py", "test-room-mute-index.py", "test-room-explore.py", "test-timeline-rows.py"):
+for test in ("test-connected-media-store.py", "test-notification-presentation.py", "test-push-routing-state.py", "test-appearance-foundations.py", "test-room-preferences-protocol.py", "test-room-preferences-store.py", "test-room-preferences-controller.py", "test-room-mute-index.py", "test-room-explore.py", "test-room-explore-hook.py", "test-group-people-protocol.py", "test-timeline-rows.py"):
     assert test in workflow and (ROOT / "tools" / test).is_file()
+assert "test-room-mute-index.py --case recovery --label ci-recovery" in workflow
+assert "test-room-preferences-owner.py --label ci" in workflow
+assert (ROOT / "tools/test-room-preferences-owner.py").is_file()
 builder = read("tools/build-unified-preview.ps1")
 assert "--porcelain --untracked-files=normal" in builder and "ExpectedSourceCommit" in builder
 assert "ExpectedSourceBranch" in builder and "sourceBranch = $sourceBranch" in builder

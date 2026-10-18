@@ -44,15 +44,17 @@ public final class RoomMuteCases {
         final BChatRoomMutePort delegate;
         final List<RoomPreferencesController.RestrictionTicket> tickets = new ArrayList<>();
         final List<Object> admissions = new ArrayList<>(), checked = new ArrayList<>();
+        final List<RoomPreferencesController.DurableProof> proofs = new ArrayList<>();
         Logged(BChatRoomMutePort port) { delegate = port; }
         public Object checkpoint(RoomPreferencesController.Binding binding) { return delegate.checkpoint(binding); }
+        public boolean currentReadHealthy(Object checkpoint, RoomPreferencesController.Binding binding) { return delegate.currentReadHealthy(checkpoint, binding); }
         public Object prepare(RoomPreferencesController.RestrictionTicket ticket) {
             Object admission = delegate.prepare(ticket); tickets.add(ticket); admissions.add(admission); return admission;
         }
         public boolean currentDurable(Object admission, RoomPreferencesController.Binding binding, RoomPreferencesProtocol.Pending pending) {
             checked.add(admission); return delegate.currentDurable(admission, binding, pending);
         }
-        public void release(RoomPreferencesController.DurableProof proof) { delegate.release(proof); }
+        public void release(RoomPreferencesController.DurableProof proof) { proofs.add(proof); delegate.release(proof); }
     }
     static final class Env {
         final ControllerCases.Fixture fixture = new ControllerCases.Fixture();
@@ -62,11 +64,21 @@ public final class RoomMuteCases {
         final BChatRoomMutePort.Mirror mirror = new BChatRoomMutePort.Mirror(index.scopeKey, ACCOUNT, gate);
         String routeUuid = ACCOUNT;
         long company = 7;
+        boolean rejectPortWorker;
         final BChatRoomMutePort.RouteSource source = expected -> {
             check(!gate.inside, "No Host/RouteSource callback under RAM gate");
             return new BChatRoomMutePort.Route(fixture.binding, routeUuid, company);
         };
-        final BChatRoomMutePort port = new BChatRoomMutePort(index, mirror, source, fixture.queue);
+        final RoomPreferencesController.Scheduler guardedQueue = new RoomPreferencesController.Scheduler() {
+            public void worker(Runnable work) {
+                check(!gate.inside, "No worker scheduling under RAM gate");
+                if (rejectPortWorker) throw new java.util.concurrent.RejectedExecutionException("Synthetic port queue rejection");
+                fixture.queue.worker(work);
+            }
+            public void main(Runnable work) { check(!gate.inside, "No MAIN scheduling under RAM gate"); fixture.queue.main(work); }
+            public boolean isMain() { return fixture.queue.isMain(); }
+        };
+        final BChatRoomMutePort port = new BChatRoomMutePort(index, mirror, source, guardedQueue);
         final Logged logged = new Logged(port);
         Env() { replace(); }
         void replace() { fixture.controller = new RoomPreferencesController(fixture.store, fixture.binding, fixture, fixture.queue, fixture, logged); }
@@ -201,8 +213,217 @@ public final class RoomMuteCases {
                     "Only error emit; refreshed exact metadata has no extra observer event");
         }
     }
+    private static void recovery() throws Exception {
+        for (boolean desiredMute : new boolean[]{false, true}) {
+            Env env = new Env(); env.ready(); env.fixture.controller.submit(UUID, null, desiredMute, !desiredMute, false);
+            env.fixture.queue.disk(); env.fixture.queue.disk(); // index read/put then actual stage.
+            env.fixture.controller.pause(); env.fixture.queue.drain(); env.fixture.controller.resume();
+            String token = env.disk().state.token(env.room()); int writes = env.io.writes;
+            Object checkpoint = env.port.checkpoint(env.fixture.binding);
+            check(env.port.currentReadHealthy(checkpoint, env.fixture.binding), "Exact durable index read-health for unsent cancellation");
+            env.fixture.controller.cancelUnsentExplicit(UUID); env.fixture.queue.drain();
+            check(env.fixture.load().state.pending.isEmpty() && env.fixture.posts.isEmpty() && env.io.writes == writes
+                    && Objects.equals(env.disk().state.token(env.room()), token) && env.blocked() == desiredMute,
+                    "Read-only cancellation neither creates nor clears floor/token: " + desiredMute);
+        }
+        Env nondurable = new Env(); nondurable.ready(); nondurable.fixture.controller.submit(UUID, null, true, false, false);
+        Object old = nondurable.port.checkpoint(nondurable.fixture.binding);
+        check(!nondurable.port.currentReadHealthy(old, nondurable.fixture.binding), "Pending index sync is not read-health");
+        nondurable.fixture.queue.disk(); check(nondurable.port.currentReadHealthy(old, nondurable.fixture.binding), "Same checkpoint healthy only after index commit");
+        nondurable.logged.prepare(nondurable.logged.tickets.get(0));
+        check(!nondurable.port.currentReadHealthy(old, nondurable.fixture.binding), "New checkpoint invalidates cancellation read proof");
+        nondurable.fixture.queue.drain(); Object current = nondurable.port.checkpoint(nondurable.fixture.binding);
+        nondurable.routeUuid = "00000000-0000-4000-8000-000000000098";
+        check(!nondurable.port.currentReadHealthy(current, nondurable.fixture.binding), "Route swap invalidates RAM read-health");
+        for (boolean newMute : new boolean[]{false, true}) {
+            Env env = new Env(); env.ready(); env.fixture.send(true);
+            env.fixture.posts.get(0).complete(409, new JSONObject().put("api_version", 2).put("error", new JSONObject().put("code", "revision_conflict"))); env.fixture.queue.drain();
+            env.fixture.controller.refreshConflictExplicit(UUID); env.fixture.queue.drain();
+            env.fixture.gets.get(1).complete(200, state(3, false)); env.fixture.queue.drain();
+            String original = env.disk().state.token(env.room()); int writes = env.io.writes;
+            env.fixture.controller.replaceRejectedExplicit("00000000-0000-4000-8000-000000000002", null, newMute, false, false);
+            check(env.blocked() && env.fixture.load().state.operation(17, 23).pending.clientUuid.equals(UUID), "Immediate replacement floor precedes Store mutation");
+            env.fixture.queue.disk(); // Real index put or read, same worker lane.
+            String admitted = env.disk().state.token(env.room());
+            check(admitted != null && (newMute ? !admitted.equals(original) && env.io.writes == writes + 1 : admitted.equals(original) && env.io.writes == writes),
+                    "Replacement desired mute persists new token; unmute preserves prior floor: " + newMute);
+            check(env.fixture.posts.size() == 1 && env.fixture.load().state.operation(17, 23).pending.clientUuid.equals(UUID), "Index durable before atomic replacement");
+            env.fixture.queue.disk(); env.fixture.queue.ui(); env.fixture.queue.disk(); env.fixture.queue.ui();
+            check(env.fixture.posts.size() == 2 && env.fixture.load().state.operation(17, 23).dispatchStarted && env.blocked(), "Actual port admission gates replace, mark, new POST without early release");
+            Object exact = env.logged.admissions.get(env.logged.admissions.size() - 1);
+            check(env.logged.checked.subList(env.logged.checked.size() - 3, env.logged.checked.size()).stream().allMatch(value -> value == exact),
+                    "Same immutable replacement admission at all three boundaries");
+        }
+        Env failed = new Env(); failed.ready(); failed.fixture.send(true);
+        failed.fixture.posts.get(0).complete(409, new JSONObject().put("api_version", 2).put("error", new JSONObject().put("code", "revision_conflict"))); failed.fixture.queue.drain();
+        failed.fixture.controller.refreshConflictExplicit(UUID); failed.fixture.queue.drain(); failed.fixture.gets.get(1).complete(200, state(3, false)); failed.fixture.queue.drain();
+        failed.io.failAt = failed.io.writes + 1;
+        failed.fixture.controller.replaceRejectedExplicit("00000000-0000-4000-8000-000000000002", null, true, false, false); failed.fixture.queue.drain();
+        check(failed.fixture.posts.size() == 1 && failed.fixture.load().state.operation(17, 23).pending.clientUuid.equals(UUID) && failed.blocked(), "Uncertain replacement floor prevents Store replace and HTTP");
+    }
+    private static int cells(Env env) throws Exception {
+        java.lang.reflect.Field field = BChatRoomMutePort.Mirror.class.getDeclaredField("cells");
+        field.setAccessible(true); return ((Map<?, ?>) field.get(env.mirror)).size();
+    }
+    private static void health() throws Exception {
+        Env fresh = new Env();
+        BChatRoomMutePort.Health unknown = fresh.port.health(fresh.fixture.binding);
+        check(unknown.status == BChatRoomMutePort.HealthStatus.UNKNOWN && unknown.effectiveBlocked
+                && unknown.durableFloor == BChatRoomMutePort.DurableFloor.UNKNOWN && cells(fresh) == 0,
+                "Initial read is conservative and never allocates a cell/floor");
+        List<BChatRoomMutePort.Health> seen = new ArrayList<>();
+        BChatRoomMutePort.HealthObserver listener = value -> {
+            check(!fresh.gate.inside && fresh.fixture.queue.isMain(), "Health observer outside RAM gate on MAIN");
+            check(fresh.port.isCurrent(value, fresh.fixture.binding), "Delivered value is current");
+            seen.add(value);
+        };
+        BChatRoomMutePort.Subscription subscription = fresh.port.observe(fresh.fixture.binding, listener);
+        fresh.fixture.queue.ui(); check(seen.size() == 1 && cells(fresh) == 0, "Initial observation does not allocate cell");
+        fresh.ready(); fresh.fixture.queue.drain();
+        BChatRoomMutePort.Health ready = fresh.port.health(fresh.fixture.binding);
+        check(ready.status == BChatRoomMutePort.HealthStatus.READY && !ready.effectiveBlocked
+                && ready.durableFloor == BChatRoomMutePort.DurableFloor.OFF
+                && !fresh.port.isCurrent(unknown, fresh.fixture.binding), "Cold healthy absence is local OFF, old value stale");
+        fresh.fixture.controller.submit(UUID, null, true, false, false);
+        BChatRoomMutePort.Health staged = fresh.port.health(fresh.fixture.binding);
+        check(staged.status == BChatRoomMutePort.HealthStatus.UNKNOWN && staged.effectiveBlocked
+                && staged.durableFloor == BChatRoomMutePort.DurableFloor.UNKNOWN, "Uncommitted floor is not READY");
+        fresh.fixture.queue.disk();
+        BChatRoomMutePort.Health durable = fresh.port.health(fresh.fixture.binding);
+        check(durable.status == BChatRoomMutePort.HealthStatus.READY && durable.effectiveBlocked
+                && durable.durableFloor == BChatRoomMutePort.DurableFloor.ON && fresh.fixture.posts.isEmpty(),
+                "Durable floor health is not server/POST readiness");
+        fresh.fixture.queue.drain();
+        check(seen.get(seen.size() - 1).revision == durable.revision && !fresh.port.isCurrent(ready, fresh.fixture.binding),
+                "One queued notice coalesces to latest version, never stale READY OFF");
+        subscription.close(); int notices = seen.size();
+        fresh.port.checkpoint(fresh.fixture.binding); fresh.fixture.queue.drain();
+        check(seen.size() == notices && listener != null, "Closed observer receives no later notices");
+
+        for (int kind = 0; kind < 5; ++kind) {
+            Env closed = new Env(); closed.ready(); final int[] calls = {0};
+            BChatRoomMutePort.HealthObserver observer = value -> { ++calls[0]; check(!closed.gate.inside, "Reentrant callback outside gate"); };
+            BChatRoomMutePort.Subscription sub = closed.port.observe(closed.fixture.binding, observer);
+            if (kind == 0) sub.close();
+            else if (kind == 1) closed.fixture.invalidate();
+            else if (kind == 2) closed.company = 8;
+            else if (kind == 3) closed.routeUuid = "00000000-0000-4000-8000-000000000098";
+            else {
+                // Deterministic WeakReference collection seam, not a claim about GC timing.
+                java.lang.reflect.Field field = BChatRoomMutePort.Subscription.class.getDeclaredField("observer");
+                field.setAccessible(true); ((WeakReference<?>) field.get(sub)).clear();
+            }
+            closed.fixture.queue.drain(); check(calls[0] == 0, "Queued observer refused after close/revoke/company/route/weak-clear: " + kind);
+            sub.close();
+        }
+        Env reentrant = new Env(); reentrant.ready();
+        final BChatRoomMutePort.Subscription[] own = new BChatRoomMutePort.Subscription[1]; final int[] entered = {0};
+        BChatRoomMutePort.HealthObserver reentry = value -> {
+            ++entered[0]; check(!reentrant.gate.inside, "No observer callback under gate");
+            reentrant.port.health(reentrant.fixture.binding); own[0].close();
+        };
+        own[0] = reentrant.port.observe(reentrant.fixture.binding, reentry); reentrant.fixture.queue.drain();
+        check(entered[0] == 1, "Observer can read/unsubscribe/reenter without deadlock or rescheduling");
+
+        Env bounded = new Env(); final int[] boundedCalls = {0};
+        BChatRoomMutePort.HealthObserver boundedObserver = value -> ++boundedCalls[0];
+        List<BChatRoomMutePort.Subscription> subscriptions = new ArrayList<>();
+        for (int n = 0; n < 100; ++n) subscriptions.add(bounded.port.observe(bounded.fixture.binding, boundedObserver));
+        boolean refused = false;
+        try { bounded.port.observe(bounded.fixture.binding, boundedObserver); }
+        catch (IllegalStateException expected) { refused = true; }
+        check(refused && cells(bounded) == 0 && bounded.io.writes == 0, "Observer capacity bounded100 without cell/disk effects");
+        for (BChatRoomMutePort.Subscription sub : subscriptions) sub.close();
+        while (!bounded.fixture.queue.ui.isEmpty()) bounded.fixture.queue.ui();
+        check(boundedCalls[0] == 0, "All100 canceled queued notices remain inert");
+
+        for (int outcome = 0; outcome < 3; ++outcome) {
+            Env clear = new Env(); clear.readyMuted();
+            List<BChatRoomMutePort.Health> values = new ArrayList<>(); BChatRoomMutePort.HealthObserver observer = values::add;
+            BChatRoomMutePort.Subscription sub = clear.port.observe(clear.fixture.binding, observer); clear.fixture.queue.drain();
+            clear.fixture.controller.submit(UUID, null, false, false, false); clear.fixture.queue.drain();
+            clear.replyUnmute(); clear.fixture.queue.ui(); clear.fixture.queue.disk(); clear.fixture.queue.ui();
+            BChatRoomMutePort.Health clearing = clear.port.health(clear.fixture.binding);
+            check(clear.fixture.controller.state().phase == RoomPreferencesController.Phase.SAVED
+                    && clearing.status == BChatRoomMutePort.HealthStatus.CLEARING && clearing.effectiveBlocked
+                    && clearing.durableFloor == BChatRoomMutePort.DurableFloor.ON, "Server SAVED is not local unmute success");
+            int queued = clear.fixture.queue.disk.size(); long revision = clearing.revision;
+            clear.port.release(clear.logged.proofs.get(clear.logged.proofs.size() - 1));
+            check(clear.fixture.queue.disk.size() == queued && clear.port.health(clear.fixture.binding).revision == revision,
+                    "Repeated exact release does not queue duplicate clear or health revision");
+            if (outcome == 1) clear.io.failAt = clear.io.writes + 1;
+            else if (outcome == 2) {
+                Looper.mainForTest(false);
+                try { check(clear.index.put(clear.room(), IndexCases.token(999)).kind == BChatRoomMuteIndex.Kind.COMMITTED,
+                        "Concurrent index token CAS witness committed"); }
+                finally { Looper.mainForTest(true); }
+            }
+            clear.fixture.queue.disk(); clear.fixture.queue.drain();
+            BChatRoomMutePort.Health settled = clear.port.health(clear.fixture.binding);
+            check(!clear.port.isCurrent(clearing, clear.fixture.binding), "Settled health invalidates CLEARING value");
+            if (outcome == 0) check(settled.status == BChatRoomMutePort.HealthStatus.READY
+                    && settled.durableFloor == BChatRoomMutePort.DurableFloor.OFF && !settled.effectiveBlocked && !clear.blocked(),
+                    "OFF only after actual clear COMMITTED and current binding");
+            else {
+                check(settled.status == BChatRoomMutePort.HealthStatus.FAILED
+                        && settled.durableFloor == BChatRoomMutePort.DurableFloor.UNKNOWN && settled.effectiveBlocked && clear.blocked(),
+                        "Uncertain/CAS failed clear never publishes local OFF: " + outcome);
+                clear.fixture.controller.refresh(); clear.fixture.queue.drain();
+                clear.fixture.gets.get(clear.fixture.gets.size() - 1).complete(200, state(3, false)); clear.fixture.queue.drain();
+                check(clear.port.health(clear.fixture.binding).status == BChatRoomMutePort.HealthStatus.FAILED && clear.blocked(),
+                        "GET/cachedfalse never heals unknown index");
+            }
+            check(values.stream().noneMatch(value -> value.revision >= clearing.revision
+                    && !value.effectiveBlocked && settled.status == BChatRoomMutePort.HealthStatus.FAILED), "No false-unmute observer value");
+            sub.close();
+        }
+        Env newer = new Env(); newer.ready(); newer.fixture.send(true);
+        newer.fixture.posts.get(0).complete(200, state(3, false).put("client_uuid", UUID).put("operation_revision", 2).put("replayed", true));
+        newer.fixture.queue.ui(); newer.fixture.queue.disk(); newer.fixture.queue.ui();
+        BChatRoomMutePort.Health previous = newer.port.health(newer.fixture.binding);
+        check(previous.status == BChatRoomMutePort.HealthStatus.CLEARING, "Old legitimate clear is pending");
+        newer.logged.prepare(newer.logged.tickets.get(0)); newer.fixture.queue.drain();
+        BChatRoomMutePort.Health latest = newer.port.health(newer.fixture.binding);
+        check(latest.status == BChatRoomMutePort.HealthStatus.READY && latest.durableFloor == BChatRoomMutePort.DurableFloor.ON
+                && latest.effectiveBlocked && !newer.port.isCurrent(previous, newer.fixture.binding), "New floor supersedes clear and keeps current durable ON");
+
+        Env refusedClear = new Env(); refusedClear.readyMuted();
+        List<BChatRoomMutePort.Health> rejectedStates = new ArrayList<>();
+        BChatRoomMutePort.HealthObserver observer = rejectedStates::add;
+        BChatRoomMutePort.Subscription sub = refusedClear.port.observe(refusedClear.fixture.binding, observer); refusedClear.fixture.queue.drain();
+        refusedClear.fixture.controller.submit(UUID, null, false, false, false); refusedClear.fixture.queue.drain();
+        refusedClear.replyUnmute(); refusedClear.fixture.queue.ui(); refusedClear.fixture.queue.disk();
+        refusedClear.rejectPortWorker = true; refusedClear.fixture.queue.ui(); refusedClear.fixture.queue.drain();
+        BChatRoomMutePort.Health failedClear = refusedClear.port.health(refusedClear.fixture.binding);
+        check(refusedClear.fixture.controller.state().phase == RoomPreferencesController.Phase.SAVED
+                && failedClear.status == BChatRoomMutePort.HealthStatus.FAILED && failedClear.effectiveBlocked
+                && refusedClear.disk().state.token(refusedClear.room()) != null && refusedClear.fixture.queue.disk.isEmpty(),
+                "Rejected clear scheduling is terminal FAILED/blocked, no throw or fictitious running work");
+        check(rejectedStates.get(rejectedStates.size() - 1).status == BChatRoomMutePort.HealthStatus.FAILED,
+                "Rejected clear notifies FAILED outside gate");
+        refusedClear.port.release(refusedClear.logged.proofs.get(refusedClear.logged.proofs.size() - 1));
+        check(refusedClear.port.health(refusedClear.fixture.binding).status == BChatRoomMutePort.HealthStatus.FAILED,
+                "Repeated rejected release cannot heal floor"); sub.close();
+        Env refusedPut = new Env(); refusedPut.ready(); refusedPut.rejectPortWorker = true;
+        refusedPut.fixture.controller.submit(UUID, null, true, false, false); refusedPut.fixture.queue.drain();
+        check(refusedPut.port.health(refusedPut.fixture.binding).status == BChatRoomMutePort.HealthStatus.FAILED
+                && refusedPut.blocked() && refusedPut.fixture.posts.isEmpty() && refusedPut.fixture.load().state.pending.isEmpty(),
+                "Rejected prepare scheduling cannot grant admission/Store stage/POST");
+    }
     public static void main(String[] args) throws Exception {
         root = new File(args[0]); Files.createDirectories(root.toPath()); ControllerCases.componentRoot(root);
+        if (args.length > 1 && args[1].equals("health")) {
+            Looper.mainForTest(true); health();
+            System.out.println("PASS " + (checks + ControllerCases.fixtureChecks()) + " production room mute component assertions; port/controller=" + checks
+                    + ", fixture=" + ControllerCases.fixtureChecks() + "; focused health; declared Android/JSON/queue/HTTP adapters, no Android runtime/FCM");
+            return;
+        }
+        if (args.length > 1 && args[1].equals("recovery")) {
+            Looper.mainForTest(true); recovery();
+            System.out.println("PASS " + (checks + ControllerCases.fixtureChecks()) + " production room mute component assertions; index=0, port/controller=" + checks
+                    + ", fixture=" + ControllerCases.fixtureChecks() + "; focused recovery only; declared Android/JSON/queue/HTTP adapters, no Android runtime/FCM");
+            return;
+        }
         if (args.length > 1 && args[1].equals("admission-state")) {
             Looper.mainForTest(true); admissionObserverState();
             System.out.println("PASS " + (checks + ControllerCases.fixtureChecks()) + " production room mute component assertions; index=0, port/controller=" + checks
@@ -218,7 +439,7 @@ public final class RoomMuteCases {
             public void main(Runnable action) { Looper.mainForTest(true); try { action.run(); } finally { Looper.mainForTest(false); } }
         };
         int indexChecks = IndexCases.run(host); Looper.mainForTest(true);
-        ordering(); nonMutingAndClear(); failures(); newerFloorSurvives(); admissionObserverState();
+        ordering(); nonMutingAndClear(); failures(); newerFloorSurvives(); admissionObserverState(); health();
         System.out.println("PASS " + (indexChecks + checks + ControllerCases.fixtureChecks()) + " production room mute component assertions; index=" + indexChecks
                 + ", port/controller=" + checks + ", fixture=" + ControllerCases.fixtureChecks() + "; actual JVM files with declared Android/JSON/scheduler/HTTP adapters; no Android runtime/FCM/wiring/power-loss claim");
     }

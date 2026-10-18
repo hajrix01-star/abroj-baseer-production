@@ -62,7 +62,7 @@ final class RoomPreferencesController {
         boolean isMain();
     }
     interface Observer { void changed(ViewState state); }
-    enum Phase { IDLE, LOADING, CACHED, READY, SAVING, PENDING, UNKNOWN, BLOCKED, SAVED, ERROR, CLOSED }
+    enum Phase { IDLE, LOADING, CACHED, READY, REVIEW_READY, SAVING, PENDING, UNKNOWN, BLOCKED, SAVED, ERROR, CLOSED }
     enum Code { OK, UNSUPPORTED, STALE, NOT_READY, PENDING_REVIEW, REQUEST_UNKNOWN, INVALID_RESPONSE,
         INVALID_INPUT, REVISION_CONFLICT, MEMBERSHIP_CHANGED, PERMISSION_DENIED,
         STORAGE_UNAVAILABLE, STORAGE_CONFLICT, STORAGE_UNCERTAIN, STORAGE_FULL }
@@ -75,10 +75,14 @@ final class RoomPreferencesController {
          * current index/mirror health, durable Admission or local mute-release confirmation.
          * Future Panel wiring must observe index health/async clear feedback separately. */
         final boolean serverDecisionReady;
+        /** Presentation hint from this lifetime's private rejection, never a public proof.
+         * Actions revalidate the private proof; state() drops this hint after revocation. */
+        final boolean canReviewConflict;
         private ViewState(Phase phase, Code code, RoomPreferencesProtocol.Snapshot snapshot,
-                RoomPreferencesStore.Operation pending, boolean serverDecisionReady) {
+                RoomPreferencesStore.Operation pending, boolean serverDecisionReady, boolean canReviewConflict) {
             this.phase = phase; this.code = code; this.snapshot = snapshot;
             this.pending = pending; this.serverDecisionReady = serverDecisionReady;
+            this.canReviewConflict = canReviewConflict;
         }
     }
 
@@ -112,6 +116,9 @@ final class RoomPreferencesController {
         /** RAM-only opaque checkpoint for account/room/member/Authority. Missing means no release
          * permission. Every block creates a new object; never reuse an earlier checkpoint (ABA). */
         Object checkpoint(Binding binding);
+        /** Local unsent-cancel read-health only. No admission/floor/release or HTTP permission.
+         * An absent implementation deliberately fails closed. RAM-only on MAIN or worker. */
+        default boolean currentReadHealthy(Object checkpoint, Binding expected) { return false; }
         /** RAM-only conservative floor; implementation must recheck Authority/binding/ticket.
          * No clock-based expiry, route/hash inference, disk, notification or audio work here. */
         Object prepare(RestrictionTicket ticket);
@@ -133,6 +140,25 @@ final class RoomPreferencesController {
             this.binding = binding; this.view = view; muteCheckpoint = checkpoint;
         }
     }
+    /** Constructed ONLY after the original strict authenticated POST callback is durably
+     * blocked. No server body, stored marker or restored snapshot can manufacture this. */
+    private static final class RejectedProof {
+        final Ticket request;
+        final RoomPreferencesProtocol.Pending pending;
+        private RejectedProof(Ticket request, RoomPreferencesProtocol.Pending pending) {
+            this.request = request; this.pending = pending;
+        }
+    }
+    /** The actual explicit conflict GET, never a higher snapshot selected from disk. */
+    private static final class FreshDecision {
+        final RejectedProof rejected;
+        final Ticket get;
+        final RoomPreferencesProtocol.Snapshot snapshot;
+        final long storeRevision;
+        private FreshDecision(RejectedProof rejected, Ticket get, RoomPreferencesProtocol.Snapshot snapshot, long revision) {
+            this.rejected = rejected; this.get = get; this.snapshot = snapshot; storeRevision = revision;
+        }
+    }
     private final RoomPreferencesStore store;
     private final Binding binding;
     private final Scheduler scheduler;
@@ -145,7 +171,12 @@ final class RoomPreferencesController {
     private boolean busy;
     private long storeRevision;
     private RoomPreferencesProtocol.Snapshot fresh;
-    private ViewState state = new ViewState(Phase.IDLE, Code.OK, null, null, false);
+    // MAIN-only rejection ownership. An explicit recovery action may hand the same immutable
+    // original proof to its new view ticket. Ordinary actions, pause/close and restart cannot.
+    private RejectedProof rejectedProof;
+    private long rejectedView;
+    private FreshDecision freshDecision;
+    private ViewState state = new ViewState(Phase.IDLE, Code.OK, null, null, false, false);
 
     RoomPreferencesController(RoomPreferencesStore store, Binding binding, Host host, Scheduler scheduler,
             Observer observer, MutePort mute) {
@@ -156,15 +187,33 @@ final class RoomPreferencesController {
         this.mute = new WeakReference<>(mute);
     }
 
-    ViewState state() { mainThread(); return state; }
+    ViewState state() {
+        mainThread();
+        if (state.canReviewConflict && (state.pending == null
+                || !currentRejection(state.pending.pending.clientUuid)))
+            state = new ViewState(state.phase, state.code, state.snapshot, state.pending, state.serverDecisionReady, false);
+        return state;
+    }
     void open() { refresh(); }
     /** Explicit user GET only. Loading/restoring never drains, retries, cancels or overwrites intents. */
     void refresh() {
         mainThread();
         if (closed || paused || busy) return;
+        refreshWithProof(null);
+    }
+
+    /** Explicit review of THIS lifetime's authenticated conflict, not a blocked-intent POST. */
+    void refreshConflictExplicit(String uuid) {
+        mainThread();
+        if (closed || paused || busy || !currentRejection(uuid)) return;
+        refreshWithProof(rejectedProof);
+    }
+
+    private void refreshWithProof(RejectedProof proof) {
         if (binding.contractVersion != 1) { emit(Phase.ERROR, Code.UNSUPPORTED, null, null, false); return; }
-        Ticket ticket = begin();
+        Ticket ticket = proof == null ? begin() : beginRecovery(proof);
         if (!active(ticket)) return;
+        fresh = null;
         busy = true; emit(Phase.LOADING, Code.OK, state.snapshot, state.pending, false);
         scheduler.worker(() -> {
             if (!active(ticket)) return;
@@ -174,15 +223,19 @@ final class RoomPreferencesController {
                 if (!readable(loaded)) { busy = false; storageError(loaded); return; }
                 storeRevision = loaded.state.revision;
                 RoomPreferencesStore.Operation pending = operation(loaded.state);
-                restoreFloor(ticket, pending, RestrictionReason.RESTORED_INTENT);
+                if (proof != null && (!recoveryCurrent(ticket, proof) || !rejectedOperation(loaded.state, proof))) {
+                    busy = false; clearRecovery();
+                    emit(Phase.BLOCKED, Code.PENDING_REVIEW, snapshot(loaded.state), pending, false); return;
+                }
+                if (proof == null) restoreFloor(ticket, pending, RestrictionReason.RESTORED_INTENT);
                 emit(Phase.CACHED, pending == null ? Code.OK : Code.PENDING_REVIEW,
                         snapshot(loaded.state), pending, false);
-                requestGet(ticket);
+                requestGet(ticket, proof);
             });
         });
     }
 
-    private void requestGet(Ticket ticket) {
+    private void requestGet(Ticket ticket, RejectedProof proof) {
         if (!active(ticket)) return;
         final Ticket request = dispatchTicket(ticket);
         Host port = host.get();
@@ -194,16 +247,17 @@ final class RoomPreferencesController {
                 parsed = RoomPreferencesProtocol.freshSnapshot(body, binding.account, binding.roomId, binding.membershipId);
             } catch (RuntimeException ignored) { }
             final RoomPreferencesProtocol.Snapshot response = parsed;
-            scheduler.main(() -> receiveGet(request, status, response));
+            scheduler.main(() -> receiveGet(request, status, response, proof));
         };
         boolean accepted;
         try { accepted = active(request) && port != null && port.get(request.binding, reply); }
         catch (RuntimeException unavailable) { accepted = false; }
-        if (!accepted && answered.compareAndSet(false, true)) receiveGet(request, 0, null);
+        if (!accepted && answered.compareAndSet(false, true)) receiveGet(request, 0, null, proof);
     }
 
-    private void receiveGet(Ticket ticket, int status, RoomPreferencesProtocol.Snapshot response) {
+    private void receiveGet(Ticket ticket, int status, RoomPreferencesProtocol.Snapshot response, RejectedProof proof) {
         if (!active(ticket)) return;
+        if (proof != null && !recoveryCurrent(ticket, proof)) return;
         if (response == null) {
             final RoomPreferencesStore.Operation pending = state.pending;
             if (pending != null && (status == 403 || status == 409)) {
@@ -239,12 +293,86 @@ final class RoomPreferencesController {
                 RoomPreferencesProtocol.Snapshot cached = snapshot(saved.state);
                 // A valid but older GET cannot promote a newer disk snapshot into fresh authority.
                 boolean currentObservation = cached != null && cached.revision == response.revision;
+                if (proof != null) {
+                    freshDecision = null;
+                    if (recoveryCurrent(ticket, proof) && rejectedOperation(saved.state, proof)
+                            && currentObservation && response.revision > proof.pending.expectedRevision) {
+                        freshDecision = new FreshDecision(proof, ticket, response, saved.state.revision);
+                        // A review decision is not ordinary new-intent readiness or index health.
+                        emit(Phase.REVIEW_READY, Code.REVISION_CONFLICT, cached, pending, false);
+                    } else emit(Phase.BLOCKED, Code.STORAGE_CONFLICT, cached, pending, false);
+                    return;
+                }
                 fresh = currentObservation && ticket.muteCheckpoint != null && mute.get() != null
                         && !hasRoomPending(saved.state) ? response : null;
                 emit(fresh == null ? Phase.CACHED : Phase.READY,
                         pending == null ? Code.OK : Code.PENDING_REVIEW, cached, pending, fresh != null);
                 if (fresh != null && !fresh.muted && identity(ticket.binding))
                     release(ticket, saved.state, fresh, null, ProofReason.CURRENT_GET_COMMITTED);
+            });
+        });
+    }
+
+    /** Local cancellation only. Serial Store locking decides any race with markStarted.
+     * Never dispatches, fabricates a floor or releases one, even after COMMITTED. */
+    void cancelUnsentExplicit(String uuid) {
+        mainThread();
+        if (closed || paused || busy || uuid == null) return;
+        Ticket ticket = dispatchTicket(begin());
+        if (!active(ticket)) return;
+        fresh = null; busy = true;
+        if (!readHealthy(ticket)) { admissionError(ticket); return; }
+        emit(Phase.SAVING, Code.OK, state.snapshot, state.pending, false);
+        scheduler.worker(() -> {
+            if (!active(ticket)) return;
+            RoomPreferencesStore.Result loaded = store.load();
+            if (!active(ticket)) return;
+            RoomPreferencesStore.Operation pending = readable(loaded) ? operation(loaded.state) : null;
+            if (!readHealthy(ticket)) { scheduler.main(() -> admissionError(ticket)); return; }
+            RoomPreferencesStore.Result result = pending != null && uuid.equals(pending.pending.clientUuid)
+                    ? store.cancelUnsent(pending.pending) : loaded;
+            scheduler.main(() -> {
+                if (!active(ticket)) return;
+                busy = false;
+                if (result.kind == RoomPreferencesStore.Kind.COMMITTED) {
+                    storeRevision = result.state.revision;
+                    emit(Phase.CACHED, Code.OK, snapshot(result.state), operation(result.state), false);
+                } else if (readable(result))
+                    emit(Phase.BLOCKED, Code.PENDING_REVIEW, snapshot(result.state), operation(result.state), false);
+                else storageError(result);
+            });
+        });
+    }
+
+    /** Only a new explicit user choice creates the replacement UUID/payload. The original
+     * rejected payload is never edited, auto-retried, or dispatched after restart. */
+    void replaceRejectedExplicit(String uuid, String until, boolean forever, boolean pinned, boolean archived) {
+        mainThread();
+        FreshDecision decision = freshDecision;
+        if (closed || paused || busy || decision == null || !active(decision.get)
+                || !recoveryCurrent(decision.get, decision.rejected)) return;
+        final RoomPreferencesProtocol.Pending replacement;
+        try {
+            replacement = RoomPreferencesProtocol.newPending(decision.snapshot, uuid, until, forever, pinned, archived);
+            if (replacement.clientUuid.equals(decision.rejected.pending.clientUuid)) throw new IllegalArgumentException();
+        } catch (RuntimeException invalid) { emit(Phase.ERROR, Code.INVALID_INPUT, state.snapshot, state.pending, false); return; }
+        Ticket ticket = beginRecovery(decision.rejected);
+        if (!active(ticket)) return;
+        fresh = null; busy = true;
+        Object admission = prepareAttempt(ticket, replacement, RestrictionReason.USER_INTENT);
+        if (admission == null) { admissionError(ticket); return; }
+        emit(Phase.SAVING, Code.OK, state.snapshot, state.pending, false);
+        scheduler.worker(() -> {
+            if (!active(ticket)) return;
+            if (!currentDurable(ticket, replacement, admission)) { scheduler.main(() -> admissionError(ticket)); return; }
+            RoomPreferencesStore.Result result = store.replaceExactRejected(decision.rejected.pending,
+                    decision.snapshot, replacement, decision.storeRevision);
+            scheduler.main(() -> {
+                if (!active(ticket)) return;
+                if (result.kind != RoomPreferencesStore.Kind.COMMITTED) { busy = false; storageError(result); return; }
+                clearRecovery(); storeRevision = result.state.revision;
+                emit(Phase.PENDING, Code.PENDING_REVIEW, snapshot(result.state), operation(result.state), false);
+                markAndPost(ticket, replacement, false, admission);
             });
         });
     }
@@ -321,7 +449,7 @@ final class RoomPreferencesController {
                 storeRevision = marked.state.revision;
                 // Keep exact durable flags even if the port disappears at the final gate.
                 // No extra observer event: the next outcome publishes this current metadata.
-                state = new ViewState(Phase.PENDING, Code.PENDING_REVIEW, snapshot(marked.state), exact, false);
+                state = new ViewState(Phase.PENDING, Code.PENDING_REVIEW, snapshot(marked.state), exact, false, false);
                 requestPost(ticket, pending, admission);
             });
         });
@@ -340,17 +468,18 @@ final class RoomPreferencesController {
             catch (RuntimeException ignored) { }
             final RoomPreferencesProtocol.Acknowledgement response = parsed;
             final Code rejected = postCode(status, body);
+            final boolean strictConflict = strictRevisionConflict(status, body);
             // Original request's immutable pending/binding, never the currently selected view.
-            scheduler.main(() -> receivePost(request, pending, status, response, rejected));
+            scheduler.main(() -> receivePost(request, pending, status, response, rejected, strictConflict));
         };
         boolean accepted;
         try { accepted = active(request) && port != null && port.post(request.binding, pending.payload, reply); }
         catch (RuntimeException unavailable) { accepted = false; }
-        if (!accepted && answered.compareAndSet(false, true)) receivePost(request, pending, 0, null, Code.REQUEST_UNKNOWN);
+        if (!accepted && answered.compareAndSet(false, true)) receivePost(request, pending, 0, null, Code.REQUEST_UNKNOWN, false);
     }
 
     private void receivePost(Ticket ticket, RoomPreferencesProtocol.Pending pending, int status,
-            RoomPreferencesProtocol.Acknowledgement response, Code rejected) {
+            RoomPreferencesProtocol.Acknowledgement response, Code rejected, boolean strictConflict) {
         // Pause/close is NOT identity invalidation; valid sent receipts may settle while unselected.
         if (!identity(ticket.binding)) return;
         if (response == null && status != 403 && status != 409) {
@@ -371,6 +500,7 @@ final class RoomPreferencesController {
                 if (!identity(ticket.binding)) return; // No RAM/UI/mute effects after invalidation.
                 if (response != null && result.kind == RoomPreferencesStore.Kind.COMMITTED) {
                     if (active(ticket)) {
+                        clearRecovery();
                         busy = false; fresh = null; storeRevision = result.state.revision;
                         emit(Phase.SAVED, Code.OK, snapshot(result.state), operation(result.state), false);
                     }
@@ -382,10 +512,15 @@ final class RoomPreferencesController {
                         release(ticket, result.state, response.snapshot, pending.clientUuid, ProofReason.MATCHED_ACK_COMMITTED);
                 } else if (active(ticket)) {
                     busy = false;
-                    if (response == null && (result.kind == RoomPreferencesStore.Kind.COMMITTED || result.kind == RoomPreferencesStore.Kind.UNCHANGED))
+                    if (response == null && (result.kind == RoomPreferencesStore.Kind.COMMITTED || result.kind == RoomPreferencesStore.Kind.UNCHANGED)) {
+                        RoomPreferencesStore.Operation exact = operation(result.state);
+                        if (strictConflict && exact != null && exact.dispatchStarted
+                                && "revision_conflict".equals(exact.blockedCode) && samePending(exact.pending, pending)) {
+                            rejectedProof = new RejectedProof(ticket, pending); rejectedView = ticket.view; freshDecision = null;
+                        }
                         emit(Phase.BLOCKED, rejected,
                                 snapshot(result.state), operation(result.state), false);
-                    else storageError(result);
+                    } else storageError(result);
                 }
             });
         });
@@ -396,13 +531,35 @@ final class RoomPreferencesController {
     void resume() { mainThread(); if (!closed) { paused = false; invalidateView(); } }
     void close() {
         mainThread(); closed = true; invalidateView(); observer.clear();
-        state = new ViewState(Phase.CLOSED, Code.OK, null, null, false);
+        state = new ViewState(Phase.CLOSED, Code.OK, null, null, false, false);
     }
     private void invalidateView() {
-        ++viewTicket; busy = false; fresh = null;
-        if (!closed) state = new ViewState(Phase.CACHED, Code.NOT_READY, state.snapshot, state.pending, false);
+        ++viewTicket; busy = false; fresh = null; clearRecovery();
+        if (!closed) state = new ViewState(Phase.CACHED, Code.NOT_READY, state.snapshot, state.pending, false, false);
     }
-    private Ticket begin() { return new Ticket(binding, ++viewTicket); }
+    private Ticket begin() { clearRecovery(); return new Ticket(binding, ++viewTicket); }
+    private Ticket beginRecovery(RejectedProof proof) {
+        Ticket ticket = begin(); rejectedProof = proof; rejectedView = ticket.view; return ticket;
+    }
+    private void clearRecovery() { rejectedProof = null; freshDecision = null; }
+    private boolean currentRejection(String uuid) {
+        return rejectedProof != null && uuid != null && uuid.equals(rejectedProof.pending.clientUuid)
+                && recoveryCurrent(new Ticket(binding, viewTicket), rejectedProof);
+    }
+    private boolean recoveryCurrent(Ticket ticket, RejectedProof proof) {
+        return proof != null && rejectedProof == proof && rejectedView == ticket.view && active(ticket)
+                && ticket.binding.same(proof.request.binding);
+    }
+    private boolean rejectedOperation(RoomPreferencesStore.State value, RejectedProof proof) {
+        RoomPreferencesStore.Operation item = operation(value);
+        return item != null && item.dispatchStarted && "revision_conflict".equals(item.blockedCode)
+                && samePending(item.pending, proof.pending);
+    }
+    private static boolean samePending(RoomPreferencesProtocol.Pending first, RoomPreferencesProtocol.Pending second) {
+        return RoomPreferencesProtocol.sameBinding(first.account, first.roomId, first.membershipId,
+                second.account, second.roomId, second.membershipId)
+                && first.clientUuid.equals(second.clientUuid) && first.payload.equals(second.payload);
+    }
     private Ticket dispatchTicket(Ticket ticket) {
         Object checkpoint = null;
         MutePort port = mute.get();
@@ -450,6 +607,12 @@ final class RoomPreferencesController {
         try { return port != null && port.currentDurable(admission, ticket.binding, pending); }
         catch (RuntimeException unavailable) { return false; }
     }
+    private boolean readHealthy(Ticket ticket) {
+        if (ticket.muteCheckpoint == null || !active(ticket)) return false;
+        MutePort port = mute.get();
+        try { return port != null && port.currentReadHealthy(ticket.muteCheckpoint, ticket.binding); }
+        catch (RuntimeException unavailable) { return false; }
+    }
     private void admissionError(Ticket ticket) {
         if (!active(ticket)) return;
         busy = false; fresh = null; emit(Phase.ERROR, Code.STORAGE_UNAVAILABLE, state.snapshot, state.pending, false);
@@ -475,6 +638,13 @@ final class RoomPreferencesController {
         if (status == 409 && "revision_conflict".equals(code)) return Code.REVISION_CONFLICT;
         return Code.REQUEST_UNKNOWN;
     }
+    private static boolean strictRevisionConflict(int status, JSONObject body) {
+        Object version = body == null ? null : body.opt("api_version");
+        Object error = body == null ? null : body.opt("error");
+        Object code = error instanceof JSONObject ? ((JSONObject) error).opt("code") : null;
+        return status == 409 && (version instanceof Integer || version instanceof Long)
+                && ((Number) version).longValue() == 2 && "revision_conflict".equals(code);
+    }
     private void storageError(RoomPreferencesStore.Result result) {
         fresh = null;
         Code code;
@@ -490,7 +660,10 @@ final class RoomPreferencesController {
     }
     private void emit(Phase phase, Code code, RoomPreferencesProtocol.Snapshot snapshot,
             RoomPreferencesStore.Operation pending, boolean ready) {
-        state = new ViewState(phase, code, snapshot, pending, ready);
+        boolean review = phase == Phase.BLOCKED && code == Code.REVISION_CONFLICT && pending != null
+                && pending.dispatchStarted && "revision_conflict".equals(pending.blockedCode)
+                && currentRejection(pending.pending.clientUuid);
+        state = new ViewState(phase, code, snapshot, pending, ready, review);
         if (closed || paused || !identity(binding)) return;
         Observer port = observer.get(); if (port != null) port.changed(state);
     }

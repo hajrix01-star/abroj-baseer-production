@@ -1,7 +1,9 @@
 package com.baseer.freshchat;
 
 import java.lang.ref.WeakReference;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
@@ -12,6 +14,41 @@ import java.util.UUID;
  * RouteSource is a thread-safe verified RAM projection, not ordinary Activity fields.
  */
 final class BChatRoomMutePort implements RoomPreferencesController.MutePort {
+    enum HealthStatus { UNKNOWN, READY, CLEARING, FAILED }
+    enum DurableFloor { UNKNOWN, OFF, ON }
+    /** Display/read health only. Not an Admission, authenticated GET or unmute proof. */
+    static final class Health {
+        final long revision;
+        final HealthStatus status;
+        final DurableFloor durableFloor;
+        final boolean effectiveBlocked;
+        private final Mirror owner;
+        private final Route route;
+        private Health(Mirror owner, Route route, long revision, HealthStatus status,
+                DurableFloor floor, boolean blocked) {
+            this.owner = owner; this.route = route; this.revision = revision;
+            this.status = status; durableFloor = floor; effectiveBlocked = blocked;
+        }
+    }
+    interface HealthObserver { void changed(Health health); }
+    static final class Subscription implements AutoCloseable {
+        private final WeakReference<BChatRoomMutePort> owner;
+        private final WeakReference<HealthObserver> observer;
+        private final RoomPreferencesController.Binding binding;
+        private final Route route;
+        // Access only under the account's existing Mirror.gate.
+        private boolean closed, queued;
+        private long deliveredRevision = -1;
+        private Subscription(BChatRoomMutePort owner, RoomPreferencesController.Binding binding,
+                Route route, HealthObserver observer) {
+            this.owner = new WeakReference<>(owner); this.binding = binding;
+            this.route = route; this.observer = new WeakReference<>(observer);
+        }
+        public void close() {
+            BChatRoomMutePort port = owner.get();
+            if (port != null) port.closeSubscription(this);
+        }
+    }
     interface Value<T> { T get(); }
     interface Gate { <T> T run(Value<T> value); }
     /** Component default/test gate; later ROUTING integration is separately reviewed. */
@@ -37,7 +74,9 @@ final class BChatRoomMutePort implements RoomPreferencesController.MutePort {
         final String scopeKey, accountUuid;
         private final Gate gate;
         private final Map<String, Cell> cells = new HashMap<>();
-        private boolean known;
+        private final List<Subscription> subscriptions = new ArrayList<>();
+        private boolean known, failed;
+        private long healthRevision;
         private Object change = new Object();
         private BChatRoomMuteIndex.Kind loadKind;
         Mirror(String scopeKey, String accountUuid, Gate gate) {
@@ -50,6 +89,7 @@ final class BChatRoomMutePort implements RoomPreferencesController.MutePort {
         String indexToken;
         boolean floor, tokenDurable;
         Checkpoint checkpoint;
+        Checkpoint clearing;
         Admission admission;
         Cell(String token) { indexToken = token; floor = token != null; tokenDurable = true; }
     }
@@ -89,12 +129,97 @@ final class BChatRoomMutePort implements RoomPreferencesController.MutePort {
         Object fence = mirror.gate.run(() -> mirror.known || !mirror.cells.isEmpty() ? null : mirror.change);
         if (fence == null) return mirror.gate.run(() -> mirror.known ? mirror.loadKind : BChatRoomMuteIndex.Kind.IO_FAILURE);
         BChatRoomMuteIndex.Result loaded = index.load(); // No RAM gate around disk.
-        return mirror.gate.run(() -> {
+        BChatRoomMuteIndex.Kind result = mirror.gate.run(() -> {
             if (mirror.change != fence) return BChatRoomMuteIndex.Kind.IO_FAILURE;
-            if (!loaded.readable()) { mirror.known = false; mirror.loadKind = loaded.kind; return loaded.kind; }
+            if (!loaded.readable()) {
+                mirror.known = false; mirror.failed = true; mirror.loadKind = loaded.kind;
+                changedLocked(); return loaded.kind;
+            }
             for (Map.Entry<String, String> entry : loaded.state.floors.entrySet()) mirror.cells.put(entry.getKey(), new Cell(entry.getValue()));
-            mirror.known = true; mirror.loadKind = loaded.kind; mirror.change = new Object(); return loaded.kind;
+            mirror.known = true; mirror.failed = false; mirror.loadKind = loaded.kind;
+            changedLocked(); return loaded.kind;
         });
+        publishHealth(); return result;
+    }
+
+    /** Pure RAM observation: in particular, an absent cell is NOT allocated by this read. */
+    Health health(RoomPreferencesController.Binding binding) {
+        Route current = route(binding); // Host/RouteSource is never called inside Mirror.gate.
+        return mirror.gate.run(() -> healthLocked(current));
+    }
+    boolean isCurrent(Health health, RoomPreferencesController.Binding binding) {
+        if (health == null || health.owner != mirror || !sameRoute(route(binding), health.route)) return false;
+        return mirror.gate.run(() -> binding.authority.valid() && health.revision == mirror.healthRevision);
+    }
+    Subscription observe(RoomPreferencesController.Binding binding, HealthObserver observer) {
+        if (binding == null || observer == null) throw new IllegalArgumentException("Binding and observer required");
+        Subscription subscription = new Subscription(this, binding, route(binding), observer);
+        mirror.gate.run(() -> {
+            pruneSubscriptionsLocked();
+            if (mirror.subscriptions.size() >= BChatRoomMuteIndex.MAX_ENTRIES)
+                throw new IllegalStateException("Too many scoped health observers");
+            mirror.subscriptions.add(subscription); return null;
+        });
+        publishHealth(); return subscription;
+    }
+    private Health healthLocked(Route current) {
+        if (current == null || !current.binding.authority.valid())
+            return new Health(mirror, current, mirror.healthRevision, HealthStatus.UNKNOWN, DurableFloor.UNKNOWN, true);
+        if (!mirror.known) return new Health(mirror, current, mirror.healthRevision,
+                mirror.failed ? HealthStatus.FAILED : HealthStatus.UNKNOWN, DurableFloor.UNKNOWN, true);
+        Cell cell = mirror.cells.get(current.roomKey);
+        if (cell != null && !cell.tokenDurable)
+            return new Health(mirror, current, mirror.healthRevision, HealthStatus.UNKNOWN, DurableFloor.UNKNOWN, true);
+        boolean floor = cell != null && cell.floor;
+        return new Health(mirror, current, mirror.healthRevision,
+                cell != null && cell.clearing != null ? HealthStatus.CLEARING : HealthStatus.READY,
+                floor ? DurableFloor.ON : DurableFloor.OFF, floor);
+    }
+    private void changedLocked() {
+        mirror.change = new Object(); ++mirror.healthRevision;
+    }
+    private void pruneSubscriptionsLocked() {
+        mirror.subscriptions.removeIf(subscription -> subscription.closed
+                || subscription.owner.get() == null || subscription.observer.get() == null);
+    }
+    private void closeSubscription(Subscription subscription) {
+        mirror.gate.run(() -> {
+            subscription.closed = true; subscription.queued = false;
+            subscription.observer.clear(); mirror.subscriptions.remove(subscription); return null;
+        });
+    }
+    /** Coalesces to one queued MAIN notice per subscription; no scheduler call under the gate. */
+    private void publishHealth() {
+        List<Subscription> notices = mirror.gate.run(() -> {
+            pruneSubscriptionsLocked(); List<Subscription> result = new ArrayList<>();
+            for (Subscription subscription : mirror.subscriptions)
+                if (!subscription.queued && subscription.deliveredRevision != mirror.healthRevision) {
+                    subscription.queued = true; result.add(subscription);
+                }
+            return result;
+        });
+        for (Subscription subscription : notices) {
+            BChatRoomMutePort port = subscription.owner.get();
+            if (port != null) try { port.scheduler.main(() -> port.deliverHealth(subscription)); }
+            catch (RuntimeException unavailable) { port.closeSubscription(subscription); }
+        }
+    }
+    private void deliverHealth(Subscription subscription) {
+        boolean active = mirror.gate.run(() -> {
+            subscription.queued = false;
+            return !subscription.closed && mirror.subscriptions.contains(subscription);
+        });
+        if (!active) return;
+        Health value = health(subscription.binding);
+        if (!sameRoute(value.route, subscription.route) || !isCurrent(value, subscription.binding)) return;
+        HealthObserver observer = mirror.gate.run(() -> {
+            if (subscription.closed || !mirror.subscriptions.contains(subscription)
+                    || !subscription.binding.authority.valid() || value.revision != mirror.healthRevision
+                    || subscription.deliveredRevision == value.revision) return null;
+            subscription.deliveredRevision = value.revision; return subscription.observer.get();
+        });
+        // MAIN view owners also check their current view ticket before rendering.
+        if (observer != null) try { observer.changed(value); } catch (RuntimeException unavailable) { }
     }
 
     /** RAM privacy predicate only, NOT authorization. Wrong route/unknown/malformed is blocked. */
@@ -106,15 +231,17 @@ final class BChatRoomMutePort implements RoomPreferencesController.MutePort {
     public Object checkpoint(RoomPreferencesController.Binding expected) {
         Route route = route(expected);
         if (route == null) return null;
-        return mirror.gate.run(() -> {
+        Object result = mirror.gate.run(() -> {
             if (!mirror.known || !expected.authority.valid()) return null;
             Cell cell = cell(route.roomKey);
             if (cell == null) return null;
             if (cell.checkpoint == null || !cell.checkpoint.route.binding.same(expected)) {
-                cell.checkpoint = new Checkpoint(route, cell.indexToken); cell.admission = null; mirror.change = new Object();
+                cell.checkpoint = new Checkpoint(route, cell.indexToken); cell.admission = null;
+                cell.clearing = null; changedLocked();
             }
             return cell.checkpoint;
         });
+        publishHealth(); return result;
     }
 
     public Object prepare(RoomPreferencesController.RestrictionTicket ticket) {
@@ -130,10 +257,34 @@ final class BChatRoomMutePort implements RoomPreferencesController.MutePort {
             // Every attempt owns a new RAM checkpoint, even if no new floor is appropriate.
             Checkpoint checkpoint = new Checkpoint(route, cell.indexToken); cell.checkpoint = checkpoint;
             Admission admitted = new Admission(ticket, checkpoint, desiredMute || cell.indexToken != null && !cell.tokenDurable);
-            cell.admission = admitted; mirror.change = new Object(); return admitted;
+            cell.admission = admitted; cell.clearing = null; changedLocked(); return admitted;
         });
-        if (admission != null) scheduler.worker(() -> persist(admission)); // Enqueue OUTSIDE the gate.
+        publishHealth();
+        if (admission != null) try { scheduler.worker(() -> persist(admission)); } // OUTSIDE the gate.
+        catch (RuntimeException unavailable) {
+            mirror.gate.run(() -> {
+                if (matchesLocked(admission)) {
+                    mirror.known = false; mirror.failed = true; changedLocked();
+                }
+                return null;
+            });
+            publishHealth();
+        }
         return admission;
+    }
+
+    /** Read-health only for explicit local unsent cancellation. No floor, admission, I/O or
+     * release is manufactured. The same opaque checkpoint must remain durable and current. */
+    public boolean currentReadHealthy(Object value, RoomPreferencesController.Binding expected) {
+        if (!(value instanceof Checkpoint)) return false;
+        Checkpoint checkpoint = (Checkpoint) value;
+        Route current = route(expected);
+        if (!sameRoute(current, checkpoint.route)) return false;
+        return mirror.gate.run(() -> {
+            Cell cell = mirror.cells.get(checkpoint.route.roomKey);
+            return currentCheckpointLocked(checkpoint) && cell.tokenDurable
+                    && Objects.equals(cell.indexToken, checkpoint.expectedIndexToken);
+        });
     }
 
     private void persist(Admission admission) {
@@ -146,10 +297,12 @@ final class BChatRoomMutePort implements RoomPreferencesController.MutePort {
         Route after = route(admission.binding);
         mirror.gate.run(() -> {
             if (!matchesLocked(admission) || !sameRoute(after, admission.checkpoint.route)) return null;
-            if (!durable) { mirror.known = false; admission.durable = false; return null; }
+            if (!durable) { mirror.known = false; mirror.failed = true; admission.durable = false; changedLocked(); return null; }
             Cell cell = mirror.cells.get(route.roomKey); cell.tokenDurable = true; admission.durable = true;
+            changedLocked();
             return null;
         });
+        publishHealth();
     }
 
     public boolean currentDurable(Object value, RoomPreferencesController.Binding expected, RoomPreferencesProtocol.Pending exact) {
@@ -167,8 +320,16 @@ final class BChatRoomMutePort implements RoomPreferencesController.MutePort {
         Checkpoint checkpoint = (Checkpoint) proof.muteCheckpoint;
         Route current = route(proof.binding);
         if (!sameRoute(current, checkpoint.route) || !exact(proof.binding, proof.snapshot)
-                || checkpoint.expectedIndexToken == null || !currentCheckpoint(checkpoint)) return;
-        scheduler.worker(() -> {
+                || checkpoint.expectedIndexToken == null) return;
+        boolean queued = mirror.gate.run(() -> {
+            if (!currentCheckpointLocked(checkpoint)) return false;
+            Cell cell = mirror.cells.get(checkpoint.route.roomKey);
+            if (cell.clearing == checkpoint) return false;
+            cell.clearing = checkpoint; changedLocked(); return true;
+        });
+        if (!queued) return;
+        publishHealth();
+        try { scheduler.worker(() -> {
             Route before = route(proof.binding);
             if (!sameRoute(before, checkpoint.route) || !currentCheckpoint(checkpoint)) return;
             // Expected token is immutable actual-dispatch data, NEVER today's cell/index token.
@@ -176,19 +337,39 @@ final class BChatRoomMutePort implements RoomPreferencesController.MutePort {
             Route after = route(proof.binding);
             mirror.gate.run(() -> {
                 if (!currentCheckpointLocked(checkpoint) || !sameRoute(after, checkpoint.route)) return null;
-                if (cleared.kind != BChatRoomMuteIndex.Kind.COMMITTED) { mirror.known = false; return null; }
+                if (cleared.kind != BChatRoomMuteIndex.Kind.COMMITTED) {
+                    mirror.known = false; mirror.failed = true; cellClearFailedLocked(checkpoint); return null;
+                }
                 Cell cell = mirror.cells.get(checkpoint.route.roomKey);
                 cell.floor = false; cell.indexToken = null; cell.tokenDurable = true; cell.admission = null;
-                cell.checkpoint = new Checkpoint(after, null); mirror.change = new Object(); return null;
+                cell.clearing = null; cell.checkpoint = new Checkpoint(after, null); changedLocked(); return null;
             });
-        });
+            publishHealth();
+        }); } catch (RuntimeException unavailable) {
+            mirror.gate.run(() -> {
+                if (currentCheckpointLocked(checkpoint)
+                        && mirror.cells.get(checkpoint.route.roomKey).clearing == checkpoint) {
+                    mirror.known = false; mirror.failed = true; cellClearFailedLocked(checkpoint);
+                }
+                return null;
+            });
+            publishHealth();
+        }
+    }
+
+    private void cellClearFailedLocked(Checkpoint checkpoint) {
+        Cell cell = mirror.cells.get(checkpoint.route.roomKey);
+        if (cell != null && cell.clearing == checkpoint) cell.clearing = null;
+        changedLocked();
     }
 
     private Cell cell(String roomKey) { // Only inside Mirror.gate; no active floor eviction.
         Cell cell = mirror.cells.get(roomKey);
         if (cell == null) {
-            if (mirror.cells.size() >= BChatRoomMuteIndex.MAX_ENTRIES) { mirror.known = false; return null; }
-            cell = new Cell(null); mirror.cells.put(roomKey, cell); mirror.change = new Object();
+            if (mirror.cells.size() >= BChatRoomMuteIndex.MAX_ENTRIES) {
+                mirror.known = false; mirror.failed = true; changedLocked(); return null;
+            }
+            cell = new Cell(null); mirror.cells.put(roomKey, cell); changedLocked();
         }
         return cell;
     }

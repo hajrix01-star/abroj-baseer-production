@@ -39,7 +39,7 @@ def discover_gson(explicit):
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--label', required=True)
-parser.add_argument('--case', choices=('all', 'ack-proof'), default='all')
+parser.add_argument('--case', choices=('all', 'ack-proof', 'recovery'), default='all')
 parser.add_argument('--gson-jar', type=Path)
 parser.add_argument('--android-jar', type=Path, help='Optional existing SDK35 stub compilation only, NOT Android execution')
 args = parser.parse_args()

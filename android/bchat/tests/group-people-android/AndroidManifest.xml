@@ -1,0 +1,10 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.baseer.bchat.group.people.test">
+    <uses-sdk android:minSdkVersion="26" android:targetSdkVersion="35" />
+    <application android:label="Isolated group people component test" android:allowBackup="false"
+        android:debuggable="true" android:supportsRtl="true" android:theme="@style/AppTheme">
+        <activity android:name="com.baseer.freshchat.GroupPeopleTestActivity" android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+    </application>
+    <instrumentation android:name="com.baseer.freshchat.GroupPeopleInstrumentation"
+        android:targetPackage="com.baseer.bchat.group.people.test" android:label="Group people native component checks" />
+</manifest>

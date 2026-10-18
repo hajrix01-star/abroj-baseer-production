@@ -172,6 +172,8 @@ class BChatTextCase(TransactionCase):
         v2 = self._service(self.member)._v2_bootstrap()
         self.assertEqual(v2['api_version'], 2)
         self.assertEqual(v2['history_search_contract_version'], 1)
+        self.assertEqual(v2['room_preferences_contract_version'], 1)
+        self.assertNotIn('room_preferences_contract_version', v2['capabilities'])
         self.assertNotIn('history_search', v2['capabilities'])
         self.assertEqual(v2['user_id'], self.member.id)
         self.assertEqual(v2['current_company_id'], self.company.id)

@@ -28,19 +28,36 @@ def notification_text(value, limit):
     return ' '.join(''.join(cleaned).split())[:limit]
 
 
-def presentation_keys(account, company, room, membership, message, author):
+def _room_scope(account, company, room, membership):
     try:
         parsed = UUID(account)
     except (TypeError, ValueError, AttributeError):
         raise ValueError('Invalid presentation account.') from None
     if parsed.version != 4 or str(parsed) != account:
         raise ValueError('Invalid presentation account.')
-    for value in (company, room, membership, message, author):
+    for value in (company, room, membership):
         if type(value) is not int or not 0 < value <= 2147483647:
             raise ValueError('Invalid presentation record identity.')
-    scope = '%s|%s|%s|%s' % (account, company, room, membership)
+    return '%s|%s|%s|%s' % (account, company, room, membership)
+
+
+def _digest(kind, scope, suffix=''):
+    return hashlib.sha256(('bchat-pres-v1|%s|%s%s' % (kind, scope, suffix)).encode('utf-8')).hexdigest()
+
+
+def room_mute_keys(account, company, room, membership):
+    """Recipient room scope only; no invented message/author for room tasks."""
+    scope = _room_scope(account, company, room, membership)
+    return {'mute_scope_v': '1', 'mute_room_key': _digest('room', scope)}
+
+
+def presentation_keys(account, company, room, membership, message, author):
+    scope = _room_scope(account, company, room, membership)
+    for value in (message, author):
+        if type(value) is not int or not 0 < value <= 2147483647:
+            raise ValueError('Invalid presentation record identity.')
     def digest(kind, suffix=''):
-        return hashlib.sha256(('bchat-pres-v1|%s|%s%s' % (kind, scope, suffix)).encode('utf-8')).hexdigest()
+        return _digest(kind, scope, suffix)
     return {'presentation_v': '1', 'room_key': digest('room'),
             'message_key': digest('message', '|%s' % message),
             'sender_key': digest('sender', '|%s' % author)}
@@ -63,6 +80,7 @@ def chat_data(*, account, event, company, room, membership, message, author,
     data = {'account_key': account, 'kind': 'chat', 'event_id': str(event),
             'presentation_v': keys['presentation_v'], 'room_key': keys['room_key'],
             'message_key': keys['message_key'], 'sent_at_ms': str(sent_at_ms)}
+    data.update(room_mute_keys(account, company, room, membership))
     minimal = dict(data)
     if mode in ('sender', 'full'):
         data.update(sender_key=keys['sender_key'], sender_name=notification_text(sender, 120))

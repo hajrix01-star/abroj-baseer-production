@@ -3,6 +3,7 @@ import importlib.util
 import json
 from pathlib import Path
 import unittest
+from unittest.mock import patch
 
 spec = importlib.util.spec_from_file_location('bchat_presentation',
     Path(__file__).resolve().parents[1] / 'notification_presentation.py')
@@ -48,7 +49,8 @@ class NotificationPresentationCase(unittest.TestCase):
     def test_none_contains_no_names_text_title_sender_or_group_flag(self):
         data = self.payload()
         self.assertEqual(set(data), {'account_key', 'kind', 'event_id', 'presentation_v',
-                                     'room_key', 'message_key', 'sent_at_ms'})
+                                     'room_key', 'message_key', 'sent_at_ms',
+                                     'mute_scope_v', 'mute_room_key'})
         self.assertNotIn('Private', json.dumps(data))
         self.assertTrue(all(type(value) is str for value in data.values()))
 
@@ -95,6 +97,37 @@ class NotificationPresentationCase(unittest.TestCase):
         for extra in ({'mode': 'unknown'}, {'is_group': 'true'}, {'attachment': 1}):
             with self.assertRaises(ValueError): self.payload(**extra)
         self.assertEqual(self.payload(sent_at_ms=presentation.MAX_SENT_AT_MS)['sent_at_ms'], '253402300799999')
+
+    def test_room_mute_scope_uses_same_recipient_vector_without_message_sentinels(self):
+        self.assertEqual(presentation.room_mute_keys(ACCOUNT, 7, 19, 23), {
+            'mute_scope_v': '1',
+            'mute_room_key': 'f204a34ee307e864d1c4db0eb36ab19cb8fca1e92d3d7da323773f7444fb6218',
+        })
+        for company, room, member in ((8, 19, 23), (7, 20, 23), (7, 19, 24)):
+            self.assertNotEqual(presentation.room_mute_keys(ACCOUNT, 7, 19, 23),
+                                presentation.room_mute_keys(ACCOUNT, company, room, member))
+
+    def test_room_mute_scope_rejects_malformed_identity_without_coercion(self):
+        for index in range(3):
+            for invalid in (True, 1.0, '1', 0, -1, 2147483648, None):
+                values = [7, 19, 23]
+                values[index] = invalid
+                with self.subTest(index=index, value=invalid), self.assertRaises(ValueError):
+                    presentation.room_mute_keys(ACCOUNT, *values)
+        for invalid in ('a' * 64, '00000000-0000-1000-8000-000000000001', None):
+            with self.assertRaises(ValueError):
+                presentation.room_mute_keys(invalid, 7, 19, 23)
+
+    def test_mute_pair_survives_all_privacy_modes_and_rich_budget_fallback(self):
+        minimal = self.payload()
+        budget = len(json.dumps(minimal, ensure_ascii=False, separators=(',', ':')).encode())
+        for mode in ('none', 'sender', 'full'):
+            data = self.payload(mode=mode)
+            self.assertEqual((data['mute_scope_v'], data['mute_room_key']), ('1', data['room_key']))
+            with patch.object(presentation, 'MAX_DATA_BYTES', budget):
+                bounded = self.payload(mode=mode)
+                self.assertEqual(bounded, minimal)
+                self.assertLessEqual(len(json.dumps(bounded, ensure_ascii=False, separators=(',', ':')).encode()), budget)
 
 
 if __name__ == '__main__':

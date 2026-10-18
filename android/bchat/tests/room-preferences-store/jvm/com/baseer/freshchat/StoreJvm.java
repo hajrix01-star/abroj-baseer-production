@@ -15,7 +15,9 @@ public final class StoreJvm {
             public int lookups(Context context) { return context.fileLookups; }
             public void main(Runnable action) { Looper.mainForTest(true); try { action.run(); } finally { Looper.mainForTest(false); } }
         };
-        int checks = args.length > 1 && args[1].equals("ambiguous-epoch") ? StoreCases.ambiguousEpoch(host) : StoreCases.run(host);
+        int checks = args.length > 1 && args[1].equals("ambiguous-epoch") ? StoreCases.ambiguousEpoch(host)
+                : args.length > 1 && args[1].equals("recovery") ? StoreRecoveryCases.run(host)
+                : StoreCases.run(host) + StoreRecoveryCases.run(host);
         System.out.println("PASS " + checks + " production RoomPreferencesStore checks on actual JVM files with explicit Context/Looper/AtomicFile/Gson-JSON adapters; no Android/process-restart/HTTP");
     }
 }

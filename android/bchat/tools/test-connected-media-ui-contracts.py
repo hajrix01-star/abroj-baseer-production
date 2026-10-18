@@ -35,7 +35,9 @@ checks = {
     "Recorded audio is sent only on explicit preview action":
         "setPositiveButton(R.string.bchat_media_preview_send" in body("private void showVoicePreview("),
     "Audio download survives same-media redraw while pending":
-        "inlineAudioMediaId > 0" in body("private void renderMessageWindow("),
+        "renderMessageWindowWithLocals(room, window, followBottom, focusId, anchor, localTextRows)" in body("private void renderMessageWindow(")
+        and "inlineAudioRoom == room && inlineAudioAccount == account && inlineAudioMediaId > 0" in body("private void renderMessageWindowWithLocals(")
+        and "if (!keepPlaying) stopInlineAudio();" in body("private void renderMessageWindowWithLocals("),
     "Verified history clears every matching author's acknowledged staged media":
         "private void reconcilePendingMediaFromVerifiedHistory(" in source
         and "reconcilePendingMediaFromVerifiedHistory(account, room, validated);" in body(

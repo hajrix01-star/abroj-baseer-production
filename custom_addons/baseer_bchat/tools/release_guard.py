@@ -226,6 +226,7 @@ def run_android_source_contract() -> None:
         "android/bchat/tools/test-receipt-details-hook.py",
         "android/bchat/tools/test-notification-conversations-hook.py",
         "android/bchat/tools/test-room-list-hook.py",
+        "android/bchat/tools/test-message-timeline-contracts.py",
     ):
         subprocess.run([sys.executable, source_test], cwd=ROOT, check=True)
 

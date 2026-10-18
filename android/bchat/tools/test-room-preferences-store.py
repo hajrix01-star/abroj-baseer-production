@@ -22,8 +22,10 @@ parser.add_argument('--build-android', action='store_true')
 parser.add_argument('--run', action='store_true')
 parser.add_argument('--serial', default='emulator-5580')
 parser.add_argument('--label', default='jvm')
-parser.add_argument('--case', choices=('all', 'ambiguous-epoch'), default='all')
+parser.add_argument('--case', choices=('all', 'ambiguous-epoch', 'recovery'), default='all')
 args = parser.parse_args()
+if args.case == 'recovery' and (args.build_android or args.run):
+    raise SystemExit('Recovery delta is JVM-only; existing native AtomicFile evidence is not rerun/relabelled')
 if args.serial != 'emulator-5580' or not re.fullmatch(r'[a-z0-9][a-z0-9-]{0,47}', args.label):
     raise SystemExit('Only authorized emulator and a bounded evidence label are accepted')
 root = Path(__file__).resolve().parents[1]
@@ -47,7 +49,8 @@ for name, raw in input_bytes.items():
 production_build = [archived / path.relative_to(root) for path in production]
 tests_build = archived / tests.relative_to(root)
 scope = ('Production Store/Protocol on actual JVM files with explicit Context/Looper/AtomicFile/Gson-JSON adapters; '
-         + ('optional actual Android35 AtomicFile/JSON/Looper and four restart processes. ' if args.case == 'all' else
+         + ('recovery delta JVM-only; no native/restart rerun. ' if args.case == 'recovery' else
+            'optional actual Android35 AtomicFile/JSON/Looper and four restart processes. ' if args.case == 'all' else
             'optional focused actual Android35 AtomicFile/JSON/Looper ambiguous-epoch edge; no restart-suite rerun. ')
          + 'Fault injections are explicit; '
          'no power-loss/interprocess-writer/HTTP/auth/controller/UI/FCM/C17 completion')

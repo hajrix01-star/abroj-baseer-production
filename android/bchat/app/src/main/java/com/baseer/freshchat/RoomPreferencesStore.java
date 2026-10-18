@@ -182,6 +182,67 @@ final class RoomPreferencesStore {
         }
     }
 
+    /** Metadata-only primitive. The Controller must own the original authenticated rejection
+     * and the actual current GET; a stored blockedCode is NOT that authority. No HTTP grant. */
+    Result replaceExactRejected(RoomPreferencesProtocol.Pending old, RoomPreferencesProtocol.Snapshot fresh,
+            RoomPreferencesProtocol.Pending replacement, long expectedStoreRevision) {
+        worker();
+        synchronized (FILE_LOCK) {
+            Read current = read(); if (!current.usable()) return current.result;
+            State state = current.result.state;
+            if (!validPending(old) || !validPending(replacement) || !validSnapshot(fresh) || !fresh.freshGet
+                    || !RoomPreferencesProtocol.sameBinding(old.account, old.roomId, old.membershipId,
+                            fresh.account, fresh.roomId, fresh.membershipId)
+                    || !RoomPreferencesProtocol.sameBinding(old.account, old.roomId, old.membershipId,
+                            replacement.account, replacement.roomId, replacement.membershipId)
+                    || fresh.revision <= old.expectedRevision || replacement.expectedRevision != fresh.revision
+                    || old.clientUuid.equals(replacement.clientUuid)) return result(Kind.INVALID, state);
+            if (expectedStoreRevision != state.revision) return result(Kind.CONFLICT, state);
+            Operation found = matching(state, old);
+            if (found == null) return result(Kind.NO_MATCH, state);
+            if (!found.dispatchStarted || !"revision_conflict".equals(found.blockedCode)) return result(Kind.BLOCKED, state);
+            for (Operation item : state.pending)
+                if (item.pending.clientUuid.equals(replacement.clientUuid)) return result(Kind.CONFLICT, state);
+            RoomPreferencesProtocol.Snapshot cached = state.snapshot(old.roomId);
+            if (cached != null && cached.membershipId != old.membershipId) return result(Kind.EPOCH_CONFLICT, state);
+            // Never select a higher cache then dispatch an intent based on the older GET.
+            if (cached != null && cached.revision > fresh.revision) return result(Kind.CONFLICT, state);
+            final RoomPreferencesProtocol.Snapshot confirmed;
+            try { RoomPreferencesProtocol.mergeSnapshot(cached, fresh); confirmed = cached(fresh); }
+            catch (IllegalArgumentException | JSONException invalid) { return result(Kind.CONFLICT, state); }
+            if (cached == null && state.snapshots.size() >= MAX_SNAPSHOTS) return result(Kind.CAPACITY, state);
+            List<RoomPreferencesProtocol.Snapshot> snapshots = new ArrayList<>(state.snapshots);
+            snapshots.remove(cached); snapshots.add(confirmed);
+            List<Operation> pending = new ArrayList<>(state.pending);
+            pending.remove(found); pending.add(new Operation(replacement, false, ""));
+            return commit(current, snapshots, pending);
+        }
+    }
+
+    /** No caller/proof construction is wired yet. A future owner must positively prove the
+     * SAME room's different current membership from a complete authenticated rooms result.
+     * Absence, another pending, archive projections and this primitive cannot prove that.
+     * Retires local metadata only, never an ACK, message purge or index-floor release. */
+    Result retireObsoleteExact(RoomPreferencesProtocol.Pending old, long provenCurrentMember, long expectedStoreRevision) {
+        worker();
+        synchronized (FILE_LOCK) {
+            Read current = read(); if (!current.usable()) return current.result;
+            State state = current.result.state;
+            if (!validPending(old) || provenCurrentMember <= 0 || provenCurrentMember > Integer.MAX_VALUE
+                    || provenCurrentMember == old.membershipId) return result(Kind.INVALID, state);
+            if (expectedStoreRevision != state.revision) return result(Kind.CONFLICT, state);
+            Operation found = matching(state, old);
+            if (found == null) return result(Kind.NO_MATCH, state);
+            RoomPreferencesProtocol.Snapshot cached = state.snapshot(old.roomId);
+            if (cached != null && cached.membershipId != old.membershipId && cached.membershipId != provenCurrentMember)
+                return result(Kind.EPOCH_CONFLICT, state);
+            List<RoomPreferencesProtocol.Snapshot> snapshots = new ArrayList<>(state.snapshots);
+            if (cached != null && cached.membershipId == old.membershipId) snapshots.remove(cached);
+            List<Operation> pending = new ArrayList<>(state.pending); pending.remove(found);
+            return commit(current, snapshots, pending);
+        }
+    }
+
     Result acknowledge(RoomPreferencesProtocol.Pending operation, RoomPreferencesProtocol.Acknowledgement ack) {
         worker();
         synchronized (FILE_LOCK) {

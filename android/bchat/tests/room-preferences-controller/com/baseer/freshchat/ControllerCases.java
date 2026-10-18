@@ -55,11 +55,13 @@ public final class ControllerCases {
     }
     static final class Faults implements RoomPreferencesStore.AtomicFiles {
         int writes, failAt;
+        Runnable afterFinish;
         public AtomicFile create(File base) {
             return new AtomicFile(base) {
                 @Override public void finishWrite(FileOutputStream stream) {
                     if (++writes == failAt) { try { stream.close(); } catch (IOException ignored) { } }
                     else super.finishWrite(stream);
+                    Runnable hook = afterFinish; afterFinish = null; if (hook != null) hook.run();
                 }
             };
         }
@@ -122,6 +124,9 @@ public final class ControllerCases {
         public void changed(RoomPreferencesController.ViewState value) { check(queue.isMain(), "Observer on MAIN"); views.add(value); }
         public Object checkpoint(RoomPreferencesController.Binding value) {
             check(queue.isMain() && value == binding, "Checkpoint read at MAIN dispatch, exact scope"); ++checkpoints; return nullCheckpoint ? null : muteCheckpoint;
+        }
+        public boolean currentReadHealthy(Object checkpoint, RoomPreferencesController.Binding expected) {
+            return !nullCheckpoint && checkpoint == muteCheckpoint && binding == expected && binding.authority.valid();
         }
         public Object prepare(RoomPreferencesController.RestrictionTicket value) {
             check(value.binding == binding && value.binding.authority.valid(), "Floor bound to current identity");
@@ -428,8 +433,11 @@ public final class ControllerCases {
 
     public static void main(String[] args) throws Exception {
         root = new File(args[0]); Files.createDirectories(root.toPath()); Looper.mainForTest(true);
-        if (args.length > 1 && args[1].equals("ack-proof")) ackProofMatrix();
-        else { basics(); staleGets(); dispatchOrdering(); viewFences(); authorityFences(); failedCommitsAndDenials(); replayAndValidation(); additionalFences(); crossControllerMuteFence(); ackProofMatrix(); }
+        int recovery = 0;
+        if (args.length > 1 && args[1].equals("recovery")) recovery = ControllerRecoveryCases.run();
+        else if (args.length > 1 && args[1].equals("ack-proof")) ackProofMatrix();
+        else { basics(); staleGets(); dispatchOrdering(); viewFences(); authorityFences(); failedCommitsAndDenials(); replayAndValidation(); additionalFences(); crossControllerMuteFence(); ackProofMatrix(); recovery = ControllerRecoveryCases.run(); }
+        checks += recovery;
         System.out.println("PASS " + checks + " production RoomPreferencesController assertions with actual Store/JVM files; declared queue/transport/Android/JSON adapters; no Android/HTTP/FCM/Activity claim");
     }
     static void componentRoot(File owned) { root = owned; checks = 0; fixtures = 0; }

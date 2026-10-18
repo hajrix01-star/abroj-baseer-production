@@ -2,12 +2,16 @@
 """Execute production PushState with explicit preferences/handler/executor/notification adapters.
 
 This exercises account, preview and durable-snapshot interleavings, not Android storage/OEM FCM.
+DEV148 compiles actual Owner/Index/Port dependencies. Legacy Context has no private files,
+so its index is intentionally unavailable; new push-room-owner tests use actual JVM files.
+JSON uses the existing Store Gson-backed adapter with object-access conveniences, not wire JSON.
 The preference adapter deliberately changes memory even when commit returns false.
 """
 from pathlib import Path
 import argparse
 import hashlib
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -16,7 +20,29 @@ import tempfile
 root = Path(__file__).resolve().parents[1]
 parser = argparse.ArgumentParser()
 parser.add_argument('--evidence-label', help='New source-frozen evidence directory under artifacts/test-results')
+parser.add_argument('--gson-jar', type=Path)
 args = parser.parse_args()
+
+def gson_file(explicit):
+    if explicit is not None:
+        if not explicit.is_file():
+            raise SystemExit('Explicit Gson path missing; no fallback')
+        return explicit.resolve()
+    paths = []
+    if os.environ.get('BCHAT_TEST_GSON_JAR'):
+        paths.append(Path(os.environ['BCHAT_TEST_GSON_JAR']))
+    if os.environ.get('GRADLE_HOME'):
+        paths += sorted((Path(os.environ['GRADLE_HOME']) / 'lib').glob('gson-*.jar'))
+    executable = shutil.which('gradle')
+    if executable:
+        paths += sorted((Path(executable).resolve().parents[1] / 'lib').glob('gson-*.jar'))
+    paths += sorted(Path('D:/Codex/tools/gradle-8.11.1/lib').glob('gson-*.jar'))
+    found = next((path.resolve() for path in paths if path.is_file()), None)
+    if found is None:
+        raise SystemExit('Existing Gson test runtime required; no download')
+    return found
+
+gson = gson_file(args.gson_jar)
 evidence = None
 if args.evidence_label:
     if not re.fullmatch(r'[a-zA-Z0-9][a-zA-Z0-9_-]{0,79}', args.evidence_label):
@@ -40,9 +66,12 @@ public class JSONObject {
 """,
     "android/content/Context.java": r"""
 package android.content;
+import java.io.File;
 public abstract class Context {
  public static final int MODE_PRIVATE=0;
  public Context getApplicationContext(){return this;}
+ // Legacy routing harness intentionally has no index files; new Owner suite overrides this.
+ public File getFilesDir(){return null;}
  public abstract SharedPreferences getSharedPreferences(String name,int mode);
  public abstract <T> T getSystemService(Class<T> type);
 }
@@ -145,7 +174,7 @@ public class PushRoutingHarness extends Context {
  }
  @SuppressWarnings("unchecked") public <T>T getSystemService(Class<T> type){return (T)notifications;}
  static void check(boolean ok,String label){if(!ok)throw new AssertionError(label);checks++;}
- static NotificationPresentation frame(){
+ static NotificationPresentation frame()throws Exception{
    Map<String,String> data=new HashMap<>();data.put("kind","chat");data.put("account_key",ACCOUNT);
    data.put("event_id","91");data.put("presentation_v","1");data.put("sent_at_ms","1000");
    data.put("room_key",NotificationPresentation.roomKey(ACCOUNT,1,1,1));
@@ -547,6 +576,8 @@ temporary_root.mkdir(parents=True, exist_ok=True)
 with tempfile.TemporaryDirectory(prefix="push-routing-", dir=temporary_root) as temporary:
     target = Path(temporary)
     for name, content in files.items():
+        if name == 'org/json/JSONObject.java':
+            continue # Use the declared existing Gson-backed adapter below, not a fake Index parser.
         path = target / name
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(content, encoding="utf-8")
@@ -556,6 +587,11 @@ with tempfile.TemporaryDirectory(prefix="push-routing-", dir=temporary_root) as 
               production / "NotificationPresentation.java",
               production / "NotificationSettingsProtocol.java", root / "tests/NotificationSettingsProtocolTest.java",
               production / "sync/AccountScope.java", production / "sync/OutboxPolicy.java"]
+    sources += [production / name for name in ('BChatRoomPreferencesOwner.java', 'BChatRoomMuteIndex.java',
+                'BChatRoomMutePort.java', 'RoomPreferencesController.java', 'RoomPreferencesStore.java', 'RoomPreferencesProtocol.java')]
+    sources += [root / 'tests/push-room-owner/adapters/org/json/JSONObject.java']
+    adapter_root = root / 'tests/room-preferences-store/jvm'
+    sources += [adapter_root / name for name in ('org/json/JSONArray.java', 'org/json/JSONException.java', 'android/util/AtomicFile.java')]
     inputs = sources + [Path(__file__).resolve()]
     before = {str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in inputs}
     if evidence:
@@ -564,9 +600,11 @@ with tempfile.TemporaryDirectory(prefix="push-routing-", dir=temporary_root) as 
             frozen = evidence / 'inputs' / relative
             frozen.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(path, frozen)
-        (evidence / 'source-manifest.json').write_text(json.dumps(before, indent=2) + '\n', encoding='utf-8')
-    commands = [('compile', [shutil.which('javac') or 'javac', '-encoding', 'UTF-8', '-d', str(target), *map(str, sources)]),
-                ('run', [shutil.which('java') or 'java', '-cp', str(target), 'com.baseer.freshchat.PushRoutingHarness'])]
+        (evidence / 'source-manifest.json').write_text(json.dumps({'source_sha256': before,
+            'adapter_gson_sha256': hashlib.sha256(gson.read_bytes()).hexdigest(),
+            'scope': 'Production State+Owner/Index/Port; legacy Context deliberately returns no index directory; Gson JSON adapter, no Android/FCM'}, indent=2) + '\n', encoding='utf-8')
+    commands = [('compile', [shutil.which('javac') or 'javac', '-encoding', 'UTF-8', '-cp', str(gson), '-d', str(target), *map(str, sources)]),
+                ('run', [shutil.which('java') or 'java', '-cp', os.pathsep.join([str(target), str(gson)]), 'com.baseer.freshchat.PushRoutingHarness'])]
     for name, command in commands:
         result = subprocess.run(command, capture_output=bool(evidence), text=True, encoding='utf-8', errors='replace')
         if evidence:

@@ -39,9 +39,9 @@ import org.json.JSONObject;
  * Host inputs; no real auth, storage, backend, product Activity, FCM, audio or device claim. */
 public final class GroupPeopleInstrumentation extends Instrumentation {
     private final List<String> failures = new ArrayList<>();
-    private final JSONArray renders = new JSONArray(), journeys = new JSONArray(), imeTrace = new JSONArray();
+    private final JSONArray renders = new JSONArray(), journeys = new JSONArray(), imeTrace = new JSONArray(), timeGeometryTrace = new JSONArray();
     private int assertions, nativeJsonChecks;
-    private boolean failuresOnly, imeFixOnly, imeOnly;
+    private boolean failuresOnly, imeFixOnly, imeOnly, displayTimeOnly;
     private JSONObject footerGeometry;
     private GroupPeopleTestActivity activity;
     private interface Journey { void run() throws Exception; }
@@ -58,6 +58,7 @@ public final class GroupPeopleInstrumentation extends Instrumentation {
         failuresOnly = "failures".equals(args.getString("selection"));
         imeFixOnly = "ime-fix".equals(args.getString("selection"));
         imeOnly = "ime-only".equals(args.getString("selection"));
+        displayTimeOnly = "display-time".equals(args.getString("selection"));
         start();
     }
     @Override public void onStart() {
@@ -65,7 +66,9 @@ public final class GroupPeopleInstrumentation extends Instrumentation {
         try {
             require(getTargetContext().getPackageName().equals("com.baseer.bchat.group.people.test"), "Exact isolated package");
             require(android.os.Build.VERSION.SDK_INT == 35, "Actual API35 runtime");
-            if (imeFixOnly || imeOnly) {
+            if (displayTimeOnly) {
+                render("ar", true, 2f, "events"); render("en", true, 2f, "events");
+            } else if (imeFixOnly || imeOnly) {
                 journey("native_ime_visible_editor_search_font2_footer_reachable", this::nativeIme);
                 if (imeFixOnly) {
                 journey("candidate_edit_stale_page_explicit_search_and_denial_priority", this::staleCandidateEdit);
@@ -97,19 +100,22 @@ public final class GroupPeopleInstrumentation extends Instrumentation {
             JSONObject evidence = new JSONObject().put("schema", 1).put("passed", failures.isEmpty())
                     .put("android_api", android.os.Build.VERSION.SDK_INT).put("package", getTargetContext().getPackageName())
                     .put("assertions", assertions).put("native_json_checks", nativeJsonChecks).put("renders", renders).put("journeys", journeys)
-                    .put("selection", imeOnly ? "ime-only" : imeFixOnly ? "ime-fix" : failuresOnly ? "failures" : "all").put("ime_trace", imeTrace)
+                    .put("selection", displayTimeOnly ? "display-time" : imeOnly ? "ime-only" : imeFixOnly ? "ime-fix" : failuresOnly ? "failures" : "all").put("ime_trace", imeTrace)
+                    .put("time_geometry_trace", timeGeometryTrace)
                     .put("footer_geometry", footerGeometry == null ? JSONObject.NULL : footerGeometry)
-                    .put("failures", new JSONArray(failures)).put("scope", "Actual native Activity/Dialog/JSON/locale/IME visibility; programmatic View input and native InputConnection editor action, not physical typing; fake Host/account/rights/HTTP/journal. No actual auth/storage/backend/Activity hook/FCM/audio/phone claim");
+                    .put("failures", new JSONArray(failures)).put("scope", displayTimeOnly
+                        ? "Actual native Activity/Dialog/JSON/locale/TextView Layout/preDraw and footer reachability; two display-only renders, fake Host/account/rights/HTTP/journal. No old journeys/IME/auth/storage/backend/Activity hook/FCM/audio/phone/performance claim. Canvas frames are supplemental, not OS screenshots."
+                        : "Actual native Activity/Dialog/JSON/locale/IME visibility; programmatic View input and native InputConnection editor action, not physical typing; fake Host/account/rights/HTTP/journal. No actual auth/storage/backend/Activity hook/FCM/audio/phone claim");
             write("group-people-results.json", evidence.toString(2).getBytes(StandardCharsets.UTF_8));
         } catch (Throwable error) { failures.add("Evidence: " + error); }
-        result.putString("stream", (failures.isEmpty() ? (imeOnly ? "PASS 1 focused native IME geometry journey; " : imeFixOnly ? "PASS 3 focused native IME/stale-edit/pending journeys; " : failuresOnly ? "PASS 5 focused native confirmation/IME journeys; " : "PASS 16 native panel renders across 8 configurations and 11 focused journeys; ") + assertions + " assertions"
+        result.putString("stream", (failures.isEmpty() ? (displayTimeOnly ? "PASS 2 actual Android group-event time renders; " : imeOnly ? "PASS 1 focused native IME geometry journey; " : imeFixOnly ? "PASS 3 focused native IME/stale-edit/pending journeys; " : failuresOnly ? "PASS 5 focused native confirmation/IME journeys; " : "PASS 16 native panel renders across 8 configurations and 11 focused journeys; ") + assertions + " assertions"
                 : "FAIL group people component: " + failures) + "\n");
         finish(failures.isEmpty() ? Activity.RESULT_OK : Activity.RESULT_CANCELED, result);
     }
     private GroupPeopleTestActivity open(String language, boolean dark, float scale, String surface, GroupPeopleProtocol.Mode mode) throws Exception {
         close(); require(new LocalSettings(getTargetContext()).language(language), "Test-only locale preference commit");
         GroupPeopleTestActivity.language = language; GroupPeopleTestActivity.dark = dark; GroupPeopleTestActivity.scale = scale;
-        GroupPeopleTestActivity.surface = surface; GroupPeopleTestActivity.mode = mode;
+        GroupPeopleTestActivity.surface = surface; GroupPeopleTestActivity.mode = mode; GroupPeopleTestActivity.viewportDp = displayTimeOnly ? 320 : 360;
         activity = (GroupPeopleTestActivity) startActivitySync(new Intent(getTargetContext(), GroupPeopleTestActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
         settle(); return activity;
     }
@@ -134,22 +140,25 @@ public final class GroupPeopleInstrumentation extends Instrumentation {
         int before = failures.size();
         try {
             GroupPeopleTestActivity current = open(language, dark, scale, surface, GroupPeopleProtocol.Mode.CREATE);
+            final JSONObject[] displayGeometry = new JSONObject[2];
             runOnMainSync(() -> { if (surface.equals("picker")) { fillCreate(); choose(100); choose(101); } });
             awaitDraw(field(panel(), "dialog", AlertDialog.class));
             runOnMainSync(() -> {
                 AlertDialog dialog = field(panel(), "dialog", AlertDialog.class); View decor = dialog.getWindow().getDecorView();
                 float width = decor.getWidth() / current.getResources().getDisplayMetrics().density;
-                check(current.getResources().getConfiguration().screenWidthDp == 360, label + " actual360dp viewport");
-                check(Math.abs(width - 328) <= 2, label + " production328dp Dialog width, not fixture-widened");
+                check(current.getResources().getConfiguration().screenWidthDp == (displayTimeOnly ? 320 : 360), label + " actual configured narrow viewport");
+                check(Math.abs(width - (displayTimeOnly ? 288 : 328)) <= 2, label + " production Dialog width, not fixture-widened");
                 check(Math.abs(current.getResources().getConfiguration().fontScale - scale) < .01, label + " actual fontScale");
                 check(ChatAppearance.dark(current) == dark && AppLocale.rtl(current) == language.equals("ar"), label + " locale/theme");
                 inspect(decor, decor, label); capture(decor, label + "-top.png");
+                if (displayTimeOnly) displayGeometry[0] = timeGeometry(decor, false);
                 field(panel(), "scroll", ScrollView.class).fullScroll(View.FOCUS_DOWN);
             });
             waitFor(() -> !field(panel(), "scroll", ScrollView.class).canScrollVertically(1), "Reach bottom", 3000);
             awaitDraw(field(panel(), "dialog", AlertDialog.class));
             runOnMainSync(() -> {
                 AlertDialog dialog = field(panel(), "dialog", AlertDialog.class); capture(dialog.getWindow().getDecorView(), label + "-bottom.png");
+                if (displayTimeOnly) { inspect(dialog.getWindow().getDecorView(), dialog.getWindow().getDecorView(), label + "-bottom"); displayGeometry[1] = timeGeometry(dialog.getWindow().getDecorView(), true); }
                 if (surface.equals("picker") && scale == 2) click("review");
             });
             if (surface.equals("picker") && scale == 2) awaitDraw(field(panel(), "confirmation", AlertDialog.class));
@@ -162,11 +171,56 @@ public final class GroupPeopleInstrumentation extends Instrumentation {
                     check(current.peopleHost.requests.isEmpty(), "Rendering confirmation never dispatches");
                 }
                 try { renders.put(new JSONObject().put("case", label).put("language", language).put("dark", dark).put("font_scale", scale)
+                        .put("viewport_dp", current.getResources().getConfiguration().screenWidthDp).put("dialog_width_px", field(panel(), "dialog", AlertDialog.class).getWindow().getDecorView().getWidth())
+                        .put("time_geometry_top", displayGeometry[0] == null ? JSONObject.NULL : displayGeometry[0]).put("time_geometry_bottom", displayGeometry[1] == null ? JSONObject.NULL : displayGeometry[1])
                         .put("surface", surface).put("passed", failures.size() == before)); } catch (Exception invalid) { throw new AssertionError(invalid); }
             });
         } catch (Throwable error) { failures.add(label + ": " + error); }
         finally { close(); }
     }
+    private JSONObject timeGeometry(View decor, boolean bottom) {
+        try {
+            JSONArray timestamps = new JSONArray(); collectTimeGeometry(decor, timestamps);
+            require(timestamps.length() == 13, "Actual audit-start plus 12 event timestamp TextViews rendered");
+            require(!textTree(decor).contains(GroupPeopleTestActivity.STAMP) && !textTree(decor).contains("2026-10-17T10:00:00Z"), "No duplicate ISO/Z wire timestamp in actual text");
+            Button footer = field(panel(), "older", Button.class); Rect local = new Rect(), global = new Rect(), frame = new Rect();
+            boolean localVisible = footer.getLocalVisibleRect(local); android.graphics.Point globalOffset = new android.graphics.Point(); boolean globalVisible = footer.getGlobalVisibleRect(global, globalOffset);
+            int[] point = new int[2], rootPoint = new int[2], decorPoint = new int[2], windowPoint = new int[2]; footer.getLocationOnScreen(point); footer.getRootView().getLocationOnScreen(rootPoint); decor.getLocationOnScreen(decorPoint); footer.getLocationInWindow(windowPoint); decor.getWindowVisibleDisplayFrame(frame);
+            Rect full = new Rect(point[0], point[1], point[0] + footer.getWidth(), point[1] + footer.getHeight()), clipped = new Rect(local); clipped.offset(point[0], point[1]);
+            boolean identity = true; JSONArray ancestors = new JSONArray(); View current = footer;
+            while (true) {
+                boolean currentIdentity = current.getMatrix().isIdentity(); identity &= currentIdentity; int[] at = new int[2]; current.getLocationOnScreen(at);
+                ancestors.put(new JSONObject().put("class", current.getClass().getName()).put("matrix_identity", currentIdentity).put("matrix", current.getMatrix().toShortString())
+                        .put("location_screen", new JSONArray().put(at[0]).put(at[1])).put("size", new JSONArray().put(current.getWidth()).put(current.getHeight()))
+                        .put("scroll", new JSONArray().put(current.getScrollX()).put(current.getScrollY())).put("padding", new JSONArray().put(current.getPaddingLeft()).put(current.getPaddingTop()).put(current.getPaddingRight()).put(current.getPaddingBottom())));
+                android.view.ViewParent parent = current.getParent(); if (!(parent instanceof View)) break; current = (View)parent;
+            }
+            JSONObject measured = new JSONObject().put("phase", bottom ? "bottom" : "top").put("language", activity.getResources().getConfiguration().getLocales().get(0).toLanguageTag())
+                    .put("timestamp_textviews", timestamps).put("footer_global_visible", globalVisible).put("footer_local_visible", localVisible).put("footer_transform_identity", identity)
+                    .put("footer_transform_assumption", "All footer-to-root View matrices are identity; local visible rect is offset by actual getLocationOnScreen. No compositor-transform claim or expected shift.")
+                    .put("footer_local_visible_rect", timeRect(local)).put("footer_raw_global_rect_root_space", timeRect(global)).put("footer_global_offset_root_space", new JSONArray().put(globalOffset.x).put(globalOffset.y))
+                    .put("footer_location_screen", new JSONArray().put(point[0]).put(point[1])).put("footer_location_window", new JSONArray().put(windowPoint[0]).put(windowPoint[1]))
+                    .put("footer_root_location_screen", new JSONArray().put(rootPoint[0]).put(rootPoint[1])).put("dialog_decor_location_screen", new JSONArray().put(decorPoint[0]).put(decorPoint[1]))
+                    .put("footer_visible_frame_screen", timeRect(frame)).put("footer_view_ancestors", ancestors).put("footer_full", timeRect(full)).put("footer_clipped", timeRect(clipped));
+            timeGeometryTrace.put(measured); // Preserve raw measurements even if the footer assertion fails.
+            if (bottom) require(identity && localVisible && footer.getWidth() > 0 && footer.getHeight() >= Ui.dp(activity, 48)
+                    && local.equals(new Rect(0, 0, footer.getWidth(), footer.getHeight())) && clipped.equals(full) && frame.contains(full), "Actual older-events footer fully reachable in one screen coordinate system, no transform/inset compensation");
+            return measured;
+        } catch (Exception error) { throw new AssertionError(error); }
+    }
+    private void collectTimeGeometry(View view, JSONArray rows) throws Exception {
+        if (view instanceof TextView && (((TextView)view).getText().toString().contains("\u20662026-10-18 · 12:00:00 UTC\u2069") || ((TextView)view).getText().toString().contains("\u20662026-10-17 · 10:00:00 UTC\u2069"))) {
+            TextView text = (TextView)view; Layout layout = text.getLayout(); require(layout != null && text.getMaxLines() > 1 && text.getEllipsize() == null, "Actual multiline timestamp layout, no ellipsis policy");
+            int[] point = new int[2]; text.getLocationOnScreen(point); Rect visible = new Rect(); boolean shown = text.getGlobalVisibleRect(visible); JSONArray lines = new JSONArray();
+            for (int i = 0; i < layout.getLineCount(); ++i) { require(layout.getEllipsisCount(i) == 0 && layout.getLineMax(i) <= layout.getWidth() + 2, "Actual timestamp glyphs not horizontally clipped"); lines.put(layout.getLineMax(i)); }
+            require(layout.getHeight() + text.getCompoundPaddingTop() + text.getCompoundPaddingBottom() <= text.getHeight() + 2, "Actual timestamp layout not vertically clipped");
+            rows.put(new JSONObject().put("text", text.getText().toString()).put("line_count", layout.getLineCount()).put("line_max_px", lines).put("layout_width", layout.getWidth()).put("layout_height", layout.getHeight()).put("view_height", text.getHeight())
+                    .put("compound_padding_top", text.getCompoundPaddingTop()).put("compound_padding_bottom", text.getCompoundPaddingBottom())
+                    .put("full", timeRect(new Rect(point[0], point[1], point[0] + text.getWidth(), point[1] + text.getHeight()))).put("global_visible", shown).put("clipped", timeRect(visible)));
+        }
+        if (view instanceof ViewGroup) for (int i = 0; i < ((ViewGroup)view).getChildCount(); ++i) collectTimeGeometry(((ViewGroup)view).getChildAt(i), rows);
+    }
+    private JSONObject timeRect(Rect value) throws Exception { return new JSONObject().put("left", value.left).put("top", value.top).put("right", value.right).put("bottom", value.bottom); }
     private void nativeJson() throws Exception {
         GroupPeopleProtocol.CandidateQuery query = new GroupPeopleProtocol.CandidateQuery(7, 41, "ع & ?", 0);
         check(!query.path().contains("after_user_id=0") && query.path().contains("%26"), "Native query encoding/cursor0"); nativeJsonChecks++;

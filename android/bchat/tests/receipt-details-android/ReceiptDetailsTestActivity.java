@@ -21,6 +21,7 @@ public final class ReceiptDetailsTestActivity extends Activity {
     static String language = "ar";
     static boolean dark;
     static float scale = 1;
+    static int viewportDp = 360;
     BChatReceiptDetailsPanel panel;
     FakeHost host;
 
@@ -31,8 +32,8 @@ public final class ReceiptDetailsTestActivity extends Activity {
         config.uiMode = (config.uiMode & ~Configuration.UI_MODE_NIGHT_MASK)
                 | (dark ? Configuration.UI_MODE_NIGHT_YES : Configuration.UI_MODE_NIGHT_NO);
         // Only this Activity: 320px at density142 is 360.56dp. No device wm/global changes.
-        config.densityDpi = Math.round(base.getResources().getDisplayMetrics().widthPixels * 160f / 360f);
-        config.screenWidthDp = 360; config.smallestScreenWidthDp = 360;
+        config.densityDpi = Math.round(base.getResources().getDisplayMetrics().widthPixels * 160f / viewportDp);
+        config.screenWidthDp = viewportDp; config.smallestScreenWidthDp = viewportDp;
         super.attachBaseContext(base.createConfigurationContext(config));
     }
     @Override public void onCreate(Bundle state) {

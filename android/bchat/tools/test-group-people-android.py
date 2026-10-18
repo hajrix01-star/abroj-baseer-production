@@ -39,9 +39,13 @@ parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("--label", required=True, help="Fresh evidence label; no prior run is overwritten")
 parser.add_argument("--run", action="store_true", help="Only after explicit emulator-5580 lease")
 parser.add_argument("--serial", default="emulator-5580")
-parser.add_argument("--selection", choices=("all", "failures", "ime-fix", "ime-only"), default="all",
+parser.add_argument("--selection", choices=("all", "failures", "ime-fix", "ime-only", "display-time"), default="all",
                     help="Focused selections do not replay the 16 previously passing renders")
 args = parser.parse_args()
+if args.selection == "display-time":
+    SCOPE = ("Actual standalone Android35 Activity/Dialog/JSONObject/Views/locale/preDraw/TextView Layout and footer reachability; "
+             "two display-only renders, fake Host/account/rights/company/journal/HTTP. No old journeys/native-JSON test suite/IME/"
+             "auth/storage/backend/product Activity hook/FCM/audio/phone/performance claim. Supplemental Canvas frames, not OS screenshots.")
 if args.serial != "emulator-5580":
     raise SystemExit("Only the explicitly leased emulator-5580 is accepted")
 if not re.fullmatch(r"[a-z0-9][a-z0-9-]{0,47}", args.label):
@@ -85,16 +89,17 @@ def run(*command, timeout=90, check=True):
 
 
 names = ("Ui", "UiPalette", "ChatAppearance", "AvatarInitials", "AppLocale", "AppLocalePolicy",
-         "LocalSettings", "LocalSettingsPolicy", "GroupPeopleProtocol", "BChatPeoplePickerPanel", "BChatGroupEventsPanel")
+         "LocalSettings", "LocalSettingsPolicy", "BChatDisplayTime", "GroupPeopleProtocol", "BChatPeoplePickerPanel", "BChatGroupEventsPanel")
 source = root / "app/src/main/java/com/baseer/freshchat"
 production = [source / (name + ".java") for name in names]
 tests = root / "tests/group-people-android"
 owned_resources = [root / f"app/src/main/res/{catalog}/bchat_people_strings.xml" for catalog in ("values", "values-ar", "values-en")]
-owned = production[-3:] + owned_resources
+owned = production[-4:] + owned_resources
 expected_owned = {
+    "BChatDisplayTime.java": "358fbe3c405ac9ebd5e84323bacd072ec93becb96636d4182192336652e49db9",
     "GroupPeopleProtocol.java": "51c670d8ed87bbe4af0e56e668b7a65212220e30d307f691214cf93c8bc78500",
     "BChatPeoplePickerPanel.java": "241824b4508baeb724fc99c8370a7c31a283127ae9e622f676b6e955ab04bf26",
-    "BChatGroupEventsPanel.java": "76fe62a247d8a636ecbee3b0a5f72f4fd90c47b87b5ad267fc56ba24c4c9f72e",
+    "BChatGroupEventsPanel.java": "8c5fbb269dc3da105f7eef0e635eae9205ff34e6d11791dff1668e2a2cea30d4",
 }
 for path in owned:
     expected = (expected_owned[path.name] if path.suffix == ".java" else
@@ -106,7 +111,7 @@ for path in owned:
 # Never compile live shared files while other owners edit the worktree. These eight
 # classes and all pre-existing resources come only from the approved immutable Git object.
 repository = root.parents[1]
-baseline_paths = [path.relative_to(repository).as_posix() for path in production[:-3]] + ["android/bchat/app/src/main/res"]
+baseline_paths = [path.relative_to(repository).as_posix() for path in production[:-4]] + ["android/bchat/app/src/main/res"]
 snapshot = subprocess.run(["git", "-C", str(repository), "archive", "--format=tar", DEPENDENCY_COMMIT, "--", *baseline_paths],
                           capture_output=True, timeout=30)
 if snapshot.returncode:
@@ -139,6 +144,11 @@ for original, relative in zip(inputs, paths):
     destination.write_bytes(data)
     hashes[relative] = hashlib.sha256(data).hexdigest()
     origins[relative] = "reviewed-owned-or-harness"
+frozen_jar = archived / "sdk/android-35.jar"
+frozen_jar.parent.mkdir(parents=True, exist_ok=True)
+frozen_jar.write_bytes(jar.read_bytes())
+hashes["sdk/android-35.jar"] = sha(frozen_jar)
+origins["sdk/android-35.jar"] = "installed-sdk35"
 manifest = {"schema": 1, "scope": SCOPE, "compile_from_archived_inputs": True,
             "source_sha256": hashes, "android_api": 35, "min_api": 26,
             "source_origins": origins, "dependency_commit": DEPENDENCY_COMMIT,
@@ -149,6 +159,7 @@ write_json(output / "source-manifest.json", manifest)
 def verify_inputs():
     records = []
     live = dict(zip(paths, inputs))
+    live["sdk/android-35.jar"] = jar
     for relative, expected in hashes.items():
         original = live.get(relative)
         records.append({"path": relative, "expected": hashes[relative],
@@ -170,7 +181,11 @@ frame_names += [f"people-confirm-{language}-{mode}-2.0.png"
                 for language in ("ar", "en") for mode in ("light", "dark")]
 frame_names += ["people-ime-en-light-2.0-form.png", "people-ime-en-light-2.0-footer.png"]
 expected_journeys = JOURNEYS
-if args.selection != "all":
+if args.selection == "display-time":
+    render_names = [f"group-events-{language}-dark-2.0" for language in ("ar", "en")]
+    frame_names = [f"{name}-{position}.png" for name in render_names for position in ("top", "bottom")]
+    expected_journeys = ()
+elif args.selection != "all":
     render_names = []
     frame_names = ["people-ime-en-light-2.0-form.png", "people-ime-en-light-2.0-footer.png"]
     expected_journeys = (JOURNEYS[1], JOURNEYS[3], JOURNEYS[4], JOURNEYS[5], JOURNEYS[10])
@@ -212,15 +227,15 @@ try:
         frozen_production = [archived / path.relative_to(root) for path in production]
         frozen_tests = archived / tests.relative_to(root)
         run(bt / ("aapt2" + exe), "compile", "--dir", archived / "app/src/main/res", "-o", build / "resources.zip")
-        run(bt / ("aapt2" + exe), "link", "-o", build / "base.apk", "-I", jar,
+        run(bt / ("aapt2" + exe), "link", "-o", build / "base.apk", "-I", frozen_jar,
             "--manifest", frozen_tests / "AndroidManifest.xml", build / "resources.zip",
             "--java", generated, "--custom-package", "com.baseer.freshchat")
-        run(javac, "-encoding", "UTF-8", "-source", "8", "-target", "8", "-Xlint:-options", "-cp", jar, "-d", classes,
+        run(javac, "-encoding", "UTF-8", "-source", "8", "-target", "8", "-Xlint:-options", "-cp", frozen_jar, "-d", classes,
             *sorted(generated.rglob("*.java")), *frozen_production, *sorted(frozen_tests.rglob("*.java")))
         with zipfile.ZipFile(build / "classes.jar", "w", zipfile.ZIP_DEFLATED) as archive:
             for item in sorted(classes.rglob("*.class")):
                 archive.write(item, item.relative_to(classes).as_posix())
-        run(bt / ("d8" + batch), "--min-api", "26", "--lib", jar, "--output", dex, build / "classes.jar")
+        run(bt / ("d8" + batch), "--min-api", "26", "--lib", frozen_jar, "--output", dex, build / "classes.jar")
         with zipfile.ZipFile(build / "base.apk", "a", zipfile.ZIP_DEFLATED) as archive:
             for item in sorted(dex.glob("*.dex")):
                 archive.write(item, item.name)
@@ -252,7 +267,8 @@ try:
             if not evidence_path.is_file():
                 raise RuntimeError("Missing native result; inspect preserved instrumentation log")
             evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
-            summary = ("PASS 1 focused native IME geometry journey;" if args.selection == "ime-only" else
+            summary = ("PASS 2 actual Android group-event time renders;" if args.selection == "display-time" else
+                       "PASS 1 focused native IME geometry journey;" if args.selection == "ime-only" else
                        "PASS 3 focused native IME/stale-edit/pending journeys;" if args.selection == "ime-fix" else
                        "PASS 5 focused native confirmation/IME journeys;" if args.selection == "failures" else
                        "PASS 16 native panel renders across 8 configurations and 11 focused journeys;")
@@ -274,7 +290,15 @@ try:
             frames = json.loads((output / "captures-manifest.json").read_text(encoding="utf-8"))["frames"]
             valid = valid and len(frames) == len(frame_names) and all(row["width"] > 0 and row["height"] > 0 for row in frames)
             trace = evidence.get("ime_trace", [])
-            valid = valid and [row.get("step") for row in trace] == ["before_editor_action", "after_editor_action_loading_before_callback",
+            if args.selection == "display-time":
+                valid = valid and trace == [] and all(len(row.get("time_geometry_top", {}).get("timestamp_textviews", [])) == 13
+                    and len(row.get("time_geometry_bottom", {}).get("timestamp_textviews", [])) == 13
+                    and row["time_geometry_bottom"]["footer_global_visible"] is True
+                    and row["time_geometry_bottom"]["footer_local_visible"] is True
+                    and row["time_geometry_bottom"]["footer_transform_identity"] is True
+                    and row["time_geometry_bottom"]["footer_full"] == row["time_geometry_bottom"]["footer_clipped"] for row in rendered)
+            else:
+                valid = valid and [row.get("step") for row in trace] == ["before_editor_action", "after_editor_action_loading_before_callback",
                 "after_read_callback_and_preDraw", "before_focus_preserving_scrollTo", "after_focus_preserving_scrollTo_and_preDraw"]
             valid = valid and all(type(row.get("ime_visible")) is bool and type(row.get("input_enabled")) is bool
                                   and type(row.get("input_focused")) is bool for row in trace)
@@ -292,7 +316,8 @@ try:
                     and local[0] <= 0 and local[1] <= 0 and local[2] >= width and local[3] >= height
                     and frame[0] <= full[0] and frame[1] <= full[1] and frame[2] >= full[2] and frame[3] >= full[3]
                     and clipped == [full[0] + local[0], full[1] + local[1], full[0] + local[2], full[1] + local[3]])
-            valid = valid and geometry_shape
+            if args.selection != "display-time":
+                valid = valid and geometry_shape
             if not valid:
                 raise RuntimeError("Incomplete/failing native component evidence; partial inputs/logs/frames preserved")
             print(instrument.stdout)

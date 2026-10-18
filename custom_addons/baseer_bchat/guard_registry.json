@@ -301,6 +301,9 @@
         "android/bchat/app/src/main/java/com/baseer/freshchat/UiPalette.java",
         "android/bchat/app/src/main/java/com/baseer/freshchat/ChatAppearance.java",
         "android/bchat/app/src/main/java/com/baseer/freshchat/AvatarInitials.java",
+        "android/bchat/app/src/main/java/com/baseer/freshchat/BChatDisplayTime.java",
+        "android/bchat/tests/display-time/**",
+        "android/bchat/tools/test-display-time.py",
         "android/bchat/tests/AvatarInitialsTest.java",
         "android/bchat/tests/android-appearance/**",
         "android/bchat/tools/test-appearance-foundations.py",
@@ -571,9 +574,12 @@
         "android/bchat/app/src/main/java/com/baseer/freshchat/BChatRoomMuteIndex.java",
         "android/bchat/app/src/main/java/com/baseer/freshchat/BChatRoomMutePort.java",
         "android/bchat/app/src/main/java/com/baseer/freshchat/BChatRoomPreferencesOwner.java",
+        "android/bchat/app/src/main/java/com/baseer/freshchat/BChatPushState.java",
         "android/bchat/tests/room-mute-index/**",
         "android/bchat/tests/room-preferences-owner/**",
+        "android/bchat/tests/push-room-owner/**",
         "android/bchat/tools/test-room-mute-index.py",
+        "android/bchat/tools/test-push-room-owner.py",
         "android/bchat/tools/test-room-preferences-owner.py"
       ],
       "suites": ["android-source-contract", "source-structure"]

@@ -107,8 +107,9 @@ final class BChatGroupEventsPanel {
     }
     private void draw() {
         if (closed || paused) return; rows.removeAllViews();
-        summary.setText(page == null || page.auditStartedAt == null ? activity.getString(R.string.bchat_group_event_start_unknown)
-                : activity.getString(R.string.bchat_group_event_started, utc(page.auditStartedAt)));
+        String started = page == null ? null : BChatDisplayTime.groupEvent(page.auditStartedAt);
+        summary.setText(started == null ? activity.getString(R.string.bchat_group_event_start_unknown)
+                : activity.getString(R.string.bchat_group_event_started, started));
         if (page == null) text(rows, false).setText(R.string.bchat_group_event_unknown_page);
         else if (page.events.isEmpty()) text(rows, false).setText(R.string.bchat_group_event_empty);
         else for (GroupPeopleProtocol.Event event : page.events) {
@@ -163,6 +164,9 @@ final class BChatGroupEventsPanel {
     }
     private static LinearLayout.LayoutParams full() { return new LinearLayout.LayoutParams(-1, -2); }
     private static String digits(long value) { return "\u2066" + String.format(Locale.ROOT, "%d", value) + "\u2069"; }
-    private static String utc(String value) { return "\u2066" + value + " UTC\u2069"; }
+    private String utc(String value) {
+        String display = BChatDisplayTime.groupEvent(value);
+        return display == null ? activity.getString(R.string.bchat_group_event_unconfirmed) : display;
+    }
     private static void mainThread() { if (Looper.myLooper() != Looper.getMainLooper()) throw new IllegalStateException("Group events UI requires MAIN"); }
 }

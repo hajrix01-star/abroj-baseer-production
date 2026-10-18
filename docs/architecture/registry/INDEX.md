@@ -2,6 +2,10 @@
 
 ## BCH-DEV-20261017 — برنامج تطوير BChat الموحد (قيد التنفيذ، لا مرشح إصدار)
 
+DEV157–160 يحدّثان NO-GO فيDEV153: StateF86BECF4 نالGOمكوّنًا مستقلًا393JVM/8families/22original+5generated+SDK35stub؛reconcile محلي coalesced ورفضMAIN.post(false) مغلقان،وأدلةREDمحفوظة. fullFirebasejavac16sPASS علىF86B/358F/81BA/8C5F،لاruntime. formatter106pureGO،Receipt482Layout/footer وGroup1764display منفصلان؛Receiptmiddle57/48inputs نالGOمستقلًا للنصنفسهvisible AR/ENdark/font2/320،ولاجمعأعدادأوwholePanel/Activityقبول. لاActivity/FCM/PanelC17تكامل. تغيّرregisteredUUIDيكشفROUTE_MISMATCHمستمرًا فيIndex،وsnapshot-onlyقديمة تمنعrejoinGET؛عقدتعافٍموجبقيدالتصميملاfloorGCصامت.
+
+checkpoint محلي `b9f6b334cd8adcb961905f58b3b61264f8e306cf`، بلاpushأودمجوإصدارمنتج. يحفظالمكوناتالمراجعةحتىDEV149وbackendpayload(ORMالجديدةpendingCI)؛Statelifetimeقيدالتنفيذخارجcheckpoint. لايستبدلمرجعCIالمتحققb2ab4ebcأدناهولايمنحG8.
+
 DEV149 يحدّث انتظارnewerأعلاه: GOمستقللمصدر67EDضمنnative124للحالتينفقط(73newer/42invalidate/9setup-final)و252/252copies،2417A99E/8D254855/D95375EC. older65سابقمنفصللايُجمع. fullFirebasejavac18sPASSقبلأيStatewiring. seam573/141currentمتوافقلكن17bodiesلمتتغيروشوCachedMessagesadapter،لادليلجديدلهذاالإصلاح. G2State/OwnerlifetimeمعتمدبعدmarkerحتىOwnernullومعverifiedRAMقبلready؛تنفيذهالتاليمنفصلعنالمكوناتالمقبولةوبلامرشحمنتجأونشر.
 
 DEV141–148: Owner RAM3FDB نالGOمحدود494/9families/17inputs+SDK35stub؛currentC272 فرقJavadocفقطلشركاتالغرفالمرجعية،لاحدلشركاتالحساب. backend scopedpair/helper/bootstrap/sourceGOو13purePASS،لكن5ORM+Base/metadataالجديدةتنتظرCI. C11current67EDE075يثبتmanualanchorعندdispatch؛23guardsوseam573/141PASS،وRED54→GREENolder65independentعلىنفسfixture/base،لاoverallPASS126(فشلnewerعندfirst-rowoffset12→0،invalidateلمتبدأ). primaryAndroidX1.4.0bytecode081050E5فسرedgegapnormalization؛fixtureضيقللحالتينالمتبقيتينقيدالتجميدبلاتغييرمنتج. PushState/OwnerlifetimeG2مسودةقبلالكود؛لاFCM/ActivityربطأوAPKمنتجأوQA/LIVE. [السجل الحي](../../build-governance/BCHAT-DEVELOPMENT-PROGRAM.md).

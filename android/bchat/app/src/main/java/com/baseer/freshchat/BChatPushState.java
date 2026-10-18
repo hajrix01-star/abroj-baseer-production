@@ -31,6 +31,16 @@ public final class BChatPushState {
     private static final String CONTROL_REVISION = "preview-control-expected-revision";
     private static final Object ROUTING = new Object();
     private static final Handler MAIN = new Handler(Looper.getMainLooper());
+    private static final BChatRoomMutePort.Gate ROOM_GATE = new BChatRoomMutePort.Gate() {
+        public <T> T run(BChatRoomMutePort.Value<T> value) { synchronized (ROUTING) { return value.get(); } }
+    };
+    private static final RoomPreferencesController.Scheduler ROOM_SCHEDULER = new RoomPreferencesController.Scheduler() {
+        public void worker(Runnable work) { BChatStorageRepository.executor().execute(work); }
+        public void main(Runnable work) {
+            if (!MAIN.post(work)) throw new java.util.concurrent.RejectedExecutionException("MAIN rejected room health work");
+        }
+        public boolean isMain() { return Looper.myLooper() == Looper.getMainLooper(); }
+    };
     private static final IdentityHashMap<SharedPreferences.OnSharedPreferenceChangeListener, Boolean> OBSERVERS
             = new IdentityHashMap<>();
     private static State state;
@@ -48,6 +58,11 @@ public final class BChatPushState {
         String controlUuid, controlAccount, durableControl;
         long controlRevision = -1;
         long epoch, intent, previewRevision = -1, sequence, registrationSerial, presentationSerial;
+        BChatRoomPreferencesOwner roomOwner;
+        Object bindingGeneration = new Object();
+        boolean needsVerifiedBindings;
+        String verifiedRAMScope; // Set ONLY by verifiedAccount, never by preferences/registration.
+        RoomReconcile roomReconcile;
         State(Context context, NotificationManager manager) { this.context = context; notifications = manager; }
     }
     public static final class Registration {
@@ -88,9 +103,113 @@ public final class BChatPushState {
         private final State owner;
         private final String account;
         private final long epoch, presentationSerial;
-        private Delivery(State owner) {
+        private final String roomKey, scope;
+        private final BChatRoomPreferencesOwner roomOwner;
+        private final BChatRoomPreferencesOwner.Frame roomFrame;
+        private Delivery(State owner) { this(owner, null); }
+        private Delivery(State owner, String roomKey) {
             this.owner = owner; account = owner.account; epoch = owner.epoch;
             presentationSerial = owner.presentationSerial;
+            this.roomKey = roomKey; scope = owner.scope; roomOwner = owner.roomOwner;
+            roomFrame = roomKey == null || roomOwner == null ? null : roomOwner.snapshot();
+        }
+    }
+    /** Immutable RAM observation/load ticket, not authentication or POST permission. Capture
+     * before dispatch; a callback may not borrow the newer Owner/Frame/binding generation.
+     */
+    static final class RoomRoute {
+        final String scope, account;
+        final BChatRoomPreferencesOwner roomOwner;
+        final BChatRoomPreferencesOwner.Frame frame;
+        private final State state;
+        private final long epoch;
+        private final Object bindingGeneration;
+        private final boolean needsVerifiedBindings;
+        private RoomRoute(State state) {
+            this.state = state; scope = state.scope; account = state.account; epoch = state.epoch;
+            roomOwner = state.roomOwner; frame = roomOwner == null ? null : roomOwner.snapshot();
+            bindingGeneration = state.bindingGeneration; needsVerifiedBindings = state.needsVerifiedBindings;
+        }
+    }
+    private static RoomRoute roomRouteLocked(State s) {
+        return validScope(s.scope) && validUuid(s.account) ? new RoomRoute(s) : null;
+    }
+    private static boolean currentRoomRouteLocked(RoomRoute ticket) {
+        State s = state;
+        return ticket != null && s == ticket.state && s.epoch == ticket.epoch
+                && s.bindingGeneration == ticket.bindingGeneration
+                && Objects.equals(s.scope, ticket.scope) && Objects.equals(s.account, ticket.account)
+                && s.roomOwner == ticket.roomOwner
+                && (ticket.roomOwner == null || ticket.roomOwner.snapshot() == ticket.frame);
+    }
+    /** Worker prelude on the EXISTING serial disk lane, called directly, never queue+wait.
+     * Factory and index I/O are outside ROUTING. Failure never grants scoped presentation.
+     */
+    private static void prepareRoomOwnerWorker(RoomRoute ticket) {
+        if (Looper.myLooper() == Looper.getMainLooper()) throw new IllegalStateException("Room index requires worker");
+        synchronized (ROUTING) { if (!currentRoomRouteLocked(ticket)) return; }
+        BChatRoomPreferencesOwner owner = ticket.roomOwner;
+        BChatRoomPreferencesOwner.Frame frame = ticket.frame;
+        if (owner == null) {
+            BChatRoomMuteIndex index = new BChatRoomMuteIndex(ticket.state.context, ticket.scope, ticket.account);
+            BChatRoomPreferencesOwner created = new BChatRoomPreferencesOwner(index, ROOM_GATE, ROOM_SCHEDULER);
+            if (ticket.needsVerifiedBindings)
+                created.invalidateBindings(created.snapshot(), BChatRoomPreferencesOwner.Reason.RIGHTS_CHANGED);
+            synchronized (ROUTING) {
+                if (!currentRoomRouteLocked(ticket)) { created.revokeRoute(created.snapshot()); return; }
+                ticket.state.roomOwner = created; owner = created; frame = created.snapshot();
+            }
+        }
+        owner.loadColdWorker(frame); // A late load cannot publish routes or rearm an invalid Frame.
+    }
+    private static void invalidateRoomOwnerLocked(State s, boolean terminal, BChatRoomPreferencesOwner.Reason reason) {
+        s.bindingGeneration = new Object(); s.needsVerifiedBindings = true;
+        if (s.roomOwner == null) return; // The generation/marker still fences a pending factory.
+        if (terminal) { s.roomOwner.revokeRoute(s.roomOwner.snapshot()); s.roomOwner = null; }
+        else s.roomOwner.invalidateBindings(s.roomOwner.snapshot(), reason);
+    }
+    /** A queued local request belongs to ONE route key, not a reusable ready/retry flag.
+     * The original factory CAS stays strict; this job gets its own current ticket at entry.
+     */
+    private static final class RoomReconcile {
+        final State state;
+        final long epoch;
+        final String scope, account;
+        RoomReconcile(State state) {
+            this.state = state; epoch = state.epoch; scope = state.scope; account = state.account;
+        }
+        boolean same(State current) {
+            return current == state && current.epoch == epoch
+                    && Objects.equals(current.scope, scope) && Objects.equals(current.account, account);
+        }
+    }
+    /** Called AFTER releasing ROUTING. One queued job per current route key; no self-requeue,
+     * wait, extra registration or HTTP. New content during its factory may request one next job.
+     */
+    private static void queueRoomReconcile(RoomReconcile request) {
+        try {
+            BChatStorageRepository.executor().execute(() -> {
+                RoomRoute ticket;
+                synchronized (ROUTING) {
+                    State s = request.state;
+                    if (s.roomReconcile == request) s.roomReconcile = null;
+                    if (state != s || !request.same(s) || s.roomOwner != null) return;
+                    ticket = roomRouteLocked(s); // Latest generation, but ONLY for this original key.
+                }
+                try { prepareRoomOwnerWorker(ticket); } catch (RuntimeException unavailable) { }
+            });
+        } catch (RuntimeException unavailable) {
+            synchronized (ROUTING) {
+                if (request.state.roomReconcile == request) request.state.roomReconcile = null;
+            }
+        }
+    }
+    /** Future Host read only: no initialization, I/O, room publication or write authorization. */
+    static RoomRoute roomRoute(AccountScope verifiedScope) {
+        synchronized (ROUTING) {
+            State s = state;
+            return s != null && active(s) && verifiedScope != null && verifiedScope.key.equals(s.scope)
+                    && verifiedScope.key.equals(s.verifiedRAMScope) && s.roomOwner != null ? roomRouteLocked(s) : null;
         }
     }
     private static State current(Context context) {
@@ -119,12 +238,13 @@ public final class BChatPushState {
         synchronized (ROUTING) { return s.ready; }
     }
     private static void load(State s) {
-        SharedPreferences prefs = s.context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+        SharedPreferences prefs = null;
         String scope = null, account = null, token = null, registered = null, installation = null;
         String pendingScope = null, pendingInstallation = null, desired = null, controlUuid = null, controlAccount = null;
         long controlRevision = -1;
         boolean read = true;
         try {
+            prefs = s.context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
             scope = prefs.getString(SCOPE, null); account = prefs.getString(ACCOUNT, null);
             token = prefs.getString(TOKEN, null); registered = prefs.getString(REGISTERED_TOKEN, null);
             installation = prefs.getString(INSTALLATION, null);
@@ -135,8 +255,10 @@ public final class BChatPushState {
             controlAccount = prefs.getString(CONTROL_ACCOUNT, null);
             controlRevision = prefs.getLong(CONTROL_REVISION, -1);
         } catch (RuntimeException unavailable) { read = false; }
-        synchronized (ROUTING) {
-            if (state != s) { s.loaded.countDown(); return; }
+        try {
+          RoomRoute room;
+          synchronized (ROUTING) {
+            if (state != s) return;
             s.prefs = prefs;
             boolean changedScope = s.scopeTouched && !Objects.equals(s.scope, scope);
             boolean changedToken = s.tokenTouched && !Objects.equals(s.token, token);
@@ -152,7 +274,6 @@ public final class BChatPushState {
             // Only a fresh authenticated preference response can enable sender/full in this process.
             s.preview = "none"; s.previewRevision = -1; s.storageHealthy = read;
             clearPresentationLocked(s); // Cold/unknown privacy must also retract earlier-process rich rows.
-            s.ready = true;
             if (read && validPreview(desired) && s.scope != null && s.scope.equals(pendingScope)
                     && s.installation.equals(pendingInstallation)) {
                 s.previewDesired = desired; s.privacyScope = pendingScope; s.privacyInstallation = pendingInstallation;
@@ -169,13 +290,26 @@ public final class BChatPushState {
                     }
                 }
             }
-            if (s.scopeTouched || s.tokenTouched || s.routeCleared || !read || s.savedInstallation == null)
-                persistLocked(s, null);
-            s.loaded.countDown();
-            changedLocked();
+            room = roomRouteLocked(s);
+          }
+          try { prepareRoomOwnerWorker(room); } catch (RuntimeException unavailable) { /* Unknown room index stays blocked. */ }
+        } finally {
+          synchronized (ROUTING) {
+            try {
+                if (state == s) {
+                    s.ready = true;
+                    if (s.scopeTouched || s.tokenTouched || s.routeCleared || !read || s.savedInstallation == null)
+                        persistLocked(s, null);
+                    changedLocked();
+                }
+            } finally {
+                s.loaded.countDown(); // Includes failure to enqueue a final change notice/save.
+            }
+          }
         }
     }
     private static void invalidateRouteLocked(State s, boolean preservePrivacyIntent) {
+        invalidateRoomOwnerLocked(s, !preservePrivacyIntent, BChatRoomPreferencesOwner.Reason.TOKEN_ROTATED);
         ++s.epoch; ++s.intent; s.routeCleared = true; s.routeDurable = false;
         s.account = null; s.registeredToken = null; s.preview = "none"; s.previewRevision = -1;
         if (!preservePrivacyIntent) {
@@ -197,17 +331,26 @@ public final class BChatPushState {
     /** Called only after a current authenticated rights/membership result, never from a stale Activity. */
     public static void contentInvalidated(Context context, AccountScope scope) {
         State s = current(context);
+        RoomReconcile request = null;
         synchronized (ROUTING) {
             // Retraction needs a current verified scope, not a durable delivery route. A same-binding
             // registration write temporarily disables routing but must never defer a rights reset.
-            if (scope == null || !s.ready || !Objects.equals(scope.key, s.scope)) return;
+            if (scope == null || !Objects.equals(scope.key, s.scope)
+                    || !s.ready && !Objects.equals(scope.key, s.verifiedRAMScope)) return;
+            invalidateRoomOwnerLocked(s, false, BChatRoomPreferencesOwner.Reason.RIGHTS_CHANGED);
             clearPresentationLocked(s);
+            if (s.roomOwner == null && validScope(s.scope) && validUuid(s.account)
+                    && (s.roomReconcile == null || !s.roomReconcile.same(s))) {
+                request = new RoomReconcile(s); s.roomReconcile = request;
+            }
         }
+        if (request != null) queueRoomReconcile(request);
     }
     public static void verifiedAccount(Context context, AccountScope account) {
         if (account == null) throw new IllegalArgumentException("Verified account required");
         State s = current(context);
         synchronized (ROUTING) {
+            s.verifiedRAMScope = account.key; // Also on the same-scope early-return path.
             if (account.key.equals(s.scope)) return;
             invalidateRouteLocked(s, false); s.scope = account.key; s.scopeTouched = true;
             persistLocked(s, null);
@@ -216,6 +359,7 @@ public final class BChatPushState {
     public static void clearAccount(Context context) {
         State s = current(context);
         synchronized (ROUTING) {
+            s.verifiedRAMScope = null;
             invalidateRouteLocked(s, false); s.scope = null; s.scopeTouched = true;
             persistLocked(s, null);
         }
@@ -255,6 +399,9 @@ public final class BChatPushState {
                 deliver(callback, false, false); return;
             }
             State s = state;
+            if (s.roomOwner != null && (!s.scope.equals(s.roomOwner.scopeKey) || !serverAccountKey.equals(s.roomOwner.accountUuid))
+                    || s.account != null && !serverAccountKey.equals(s.account))
+                invalidateRoomOwnerLocked(s, true, BChatRoomPreferencesOwner.Reason.IDENTITY_CHANGED);
             boolean sameBinding = serverAccountKey.equals(s.account) && request.token.equals(s.registeredToken);
             s.account = serverAccountKey; s.registeredToken = request.token; s.routeDurable = false;
             if (!sameBinding) {
@@ -295,6 +442,16 @@ public final class BChatPushState {
         State s = current(context);
         synchronized (ROUTING) { return validUuid(key) && active(s) && key.equals(s.account) ? new Delivery(s) : null; }
     }
+    /** Room key is supplied only after the separately approved strict scoped-payload parser.
+     * No guessing from titles or synthetic account/room identities. Existing unscoped API stays.
+     */
+    static Delivery roomDelivery(Context context, String key, String roomKey) {
+        State s = current(context);
+        synchronized (ROUTING) {
+            return validUuid(key) && active(s) && key.equals(s.account) && BChatRoomMuteIndex.hash(roomKey)
+                    && s.roomOwner != null ? new Delivery(s, roomKey) : null;
+        }
+    }
     /** No preferences/disk work in the gate. The callback may only build/post a notification. */
     static boolean present(Delivery delivery, Presentation presentation) {
         synchronized (ROUTING) {
@@ -302,6 +459,8 @@ public final class BChatPushState {
             if (delivery == null || s != delivery.owner || !active(s) || s.epoch != delivery.epoch
                     || s.presentationSerial != delivery.presentationSerial
                     || !delivery.account.equals(s.account)) return false;
+            if (delivery.roomKey != null && (delivery.roomOwner == null || s.roomOwner != delivery.roomOwner
+                    || delivery.roomOwner.blocks(delivery.roomFrame, delivery.scope, delivery.account, delivery.roomKey))) return false;
             presentation.show(s.preview);
             return true;
         }
@@ -512,6 +671,7 @@ public final class BChatPushState {
         final String controlUuid = s.controlUuid, controlAccount = s.controlAccount, controlFingerprint = controlFingerprint(s);
         final long controlRevision = s.controlRevision;
         final long revision = s.previewRevision, sequence = ++s.sequence, epoch = s.epoch;
+        final RoomRoute room = roomRouteLocked(s);
         BChatStorageRepository.executor().execute(() -> {
             boolean saved;
             try {
@@ -525,6 +685,9 @@ public final class BChatPushState {
                 edit.putLong(CONTROL_REVISION, controlRevision);
                 saved = edit.putLong(PREVIEW_REVISION, revision).commit();
             } catch (RuntimeException failure) { saved = false; }
+            // Keep routing snapshot order unchanged; no new Owner task under ROUTING. The
+            // current saved route gets its index attempt before routeDurable is accepted.
+            if (saved) try { prepareRoomOwnerWorker(room); } catch (RuntimeException unavailable) { }
             synchronized (ROUTING) {
                 if (state == s) {
                     s.storageHealthy = saved;

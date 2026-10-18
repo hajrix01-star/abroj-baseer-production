@@ -140,7 +140,10 @@ final class BChatReceiptDetailsPanel {
         }
         drawActions();
     }
-    private String utc(String value) { return "\u2066" + value + " UTC\u2069"; }
+    private String utc(String value) {
+        String display = BChatDisplayTime.receipt(value);
+        return display == null ? activity.getString(R.string.receipt_details_not_confirmed) : display;
+    }
     private String digits(long value) { return "\u2066" + String.format(Locale.ROOT, "%d", value) + "\u2069"; }
     private void drawActions() {
         refresh.setEnabled(!closed && !paused && !busy);

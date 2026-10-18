@@ -36,8 +36,8 @@ test('approved artwork is fixed-size, accessible, contained and never mirrored',
 test('native branding preserves update identity and uses separate Odoo assets', () => {
   const config = readFileSync(join(root, 'app.config.ts'), 'utf8');
   assert.ok(config.includes("name: trial ? 'BWork' : 'Chatwoot'"));
-  assert.ok(config.includes("version: trial ? '0.1.9'"));
-  assert.ok(config.includes('versionCode: 10'));
+  assert.ok(config.includes("version: trial ? '0.1.10'"));
+  assert.ok(config.includes('versionCode: 11'));
   assert.ok(config.includes("package: trial ? 'com.baseer.bchat.trial'"));
   assert.ok(config.includes("scheme: trial ? 'bchat-trial'"));
   assert.ok(config.includes("trial ? './assets/bwork/bwork-adaptive-1024.png' : './assets/adaptive-icon.png'"));

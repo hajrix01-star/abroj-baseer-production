@@ -96,7 +96,7 @@ function drawer() {
     close: () => events.push('close'), onAction: action => events.push(action) };
   const module = load('NavigationDrawer.tsx', { react: state.react, 'react/jsx-runtime': jsx,
     'react-native': { AppState: nativeApp, Modal: 'Modal', Pressable: 'Pressable', ScrollView: 'ScrollView', Text: 'Text', View: 'View', useWindowDimensions: () => ({ width: 320 }) },
-    'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView' }, './companyNames': names, './components': components, './VersionLabel': { VersionLabel: 'VersionLabel' } });
+    'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView' }, './companyNames': names, './components': components, './VersionLabel': { VersionLabel: 'VersionLabel' }, './Brand': { Brand: 'Brand' } });
   return { props, events, nativeApp, render: () => state.render(() => module.NavigationDrawer(props)) };
 }
 function session() {
@@ -137,6 +137,26 @@ test('drawer never renders a masked identity and profile lists only authorized c
   assert.equal(one(profile, 'ScrollView').style.flex, 1);
   one(profile, 'Modal').onRequestClose();
   assert.ok(nodes(app.render()).some(node => node.type === 'Pressable' && node.props.accessibilityLabel === app.props.t('profile')));
+});
+
+test('compact drawer keeps brand on the toggle row and all actions in the scrollable group', () => {
+  const app = drawer();
+  const tree = app.render();
+  const pane = one(tree, 'View', p => p.accessibilityViewIsModal);
+  assert.equal(pane.style.width, 264);
+  const toggle = nodes(tree).find(n => n.type === 'IconButton' && n.props.icon === 'menu');
+  const heading = nodes(tree).find(n => Array.isArray(n.props?.children) && n.props.children.includes(toggle));
+  assert.equal(nodes(heading).filter(n => n.type === 'Brand').length, 1);
+  const scroll = nodes(tree).find(n => n.type === 'ScrollView');
+  assert.equal(nodes(scroll).some(n => n.type === 'Brand'), false);
+  for (const key of ['profile','settings','refresh','logout']) {
+    const action = one(scroll, 'Pressable', p => p.accessibilityLabel === app.props.t(key));
+    const style = action.style({pressed:false})[0];
+    assert.equal(style.minHeight, 48);
+  }
+  const account = nodes(tree).find(n => n.type === 'View' && n.props.testID === 'drawer-account');
+  assert.equal(account.props.style.flexDirection, 'row-reverse');
+  assert.equal(one(account, 'Text', p => p.accessibilityLabel === app.props.identity.profile.name).numberOfLines, 2);
 });
 
 test('shell menu is first on its language edge and drawer keeps the same edge toggle', () => {

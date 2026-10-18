@@ -1,5 +1,23 @@
 # BWORK-BRAND-20261018 — Approved identity adoption
 
+## BWORK-DRAWER-20261018 — Compact navigation follow-up
+
+Fingerprint6c790ac7/app343203c8, shipped0.1.9/build10, clean dedicatedworktree; newbranchcodex/bwork-compact-drawer-20261018. Ownerprovidedphoneimage andauthorized professional compactdrawer afterwebresearch. LOCAL presentation-only in NavigationDrawer; no backend/auth/permissions/storage/dependency or identityartwork changes. Reuse currentarchitecture and limitedtrialdistribution evidence. No alpha-build fullgates: project expressly exempts localspacing/arrangement fixes. Deliveryreview remains required for nextAPK.
+
+Diagnosis: current350dp cap/width-24 leaves too little scrim on phone. New branding introduced a separate logo block belowheader; preexisting account stacks avatar/name/status and fixes actions atbottom of flex1scroll, causing large gaps. This is an unwanted layout, not a proven messaging/runtime regression. Original source/image evidence shows it directly.
+
+| Before | After | Why |
+| --- | --- | --- |
+| width-24 / cap350 | width-56 / cap304 | leave visible dismiss target, less full-screen feeling |
+| title then standalone brand row | same-row toggle+brand on home | eliminate duplicate masthead |
+| stacked profile and fixed bottom actions | compact avatar/name row and grouped actions | remove large internal dead space |
+
+Research references: https://developer.android.com/develop/ui/compose/components/drawer and https://developer.android.com/develop/ui/compose/quick-guides/content/create-navigation-drawer?hl=en ; appbar https://m3.material.io/components/app-bars/ . Reviewed Telegramofficial DrawerLayoutContainer source at https://raw.githubusercontent.com/DrKLO/Telegram/master/TMessagesProj/src/main/java/org/telegram/ui/ActionBar/DrawerLayoutContainer.java for context only; current fileisnotaprescriptionforourheaderdimensions. No copiedTelegramGPLcode/library, no claimedpixelmatchtoapps. Our adaptation preserves samephysicalARright/ENleft menuedge, modalback/background guards and48dp touchrows. No newanimation or library.
+
+DW1 intent: add focused actualcomponentregressions for width, same-rowBrand, compactaccount, and groupedactions; prove they fail on0.1.9 before modifying owner. Then TypeScript + affectednavigation/brand checks; existingnativepreview at320AR/400ENandlongname/fontscale only. No newenvironment/load/backendtest; actualtrialscope unchanged, only drawergeometry changed. Nativeversion0.1.10/build11, samepackage/cert; update existinggeneratedversion metadata without destructiveExpo prebuild because icon/nativeplugins unchanged. Preserve previous0.1.9 and identityZIP.
+
+DW2 source acceptance: new compact-layout regression failed before implementation (296 vs264), then targeted navigation+brand17/17 PASS and check:odoo TypeScript PASS. Independent bwork_gate_review inspected the complete delta and independently reproduced17/17; READY TO FREEZE, no blockers. Planned native acceptance: existing emulator/synthetic preview only,320AR/400EN and largefont/shortviewport reachability. No broad runtime/ERP repeats.
+
 ## G0–G3 contract (before app changes)
 
 Fingerprint: source `daa8cee5` (app `78cd3907`, trial 0.1.8/build9), clean dedicated worktree. Owner explicitly approved supplied bwork ribbon logo and requested a reusable complete identity file plus application now. CONTROLLED presentation-only change; no new application, backend deployment, protocol or data model.

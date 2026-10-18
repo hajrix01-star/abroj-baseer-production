@@ -43,13 +43,13 @@ function MenuRow({
       onPress={onPress}
       style={({ pressed }) => [
         {
-          minHeight: 52,
-          paddingHorizontal: 16,
-          paddingVertical: 12,
+          minHeight: 48,
+          paddingHorizontal: 12,
+          paddingVertical: 10,
           flexDirection: language === 'ar' ? 'row-reverse' : 'row',
           alignItems: 'center',
-          gap: 14,
-          borderRadius: 12,
+          gap: 12,
+          borderRadius: 10,
           backgroundColor: selected ? colors.pale : 'transparent',
         },
         disabled && styles.disabled,
@@ -118,7 +118,7 @@ export function NavigationDrawer({
           <View
             accessibilityViewIsModal
             style={{
-              width: Math.min(width - 24, 350),
+              width: Math.min(width - 56, 304),
               backgroundColor: colors.white,
               paddingHorizontal: 8,
               paddingTop: 6,
@@ -129,12 +129,19 @@ export function NavigationDrawer({
                 flexDirection: language === 'ar' ? 'row-reverse' : 'row',
                 direction: 'ltr',
                 alignItems: 'center',
+                minHeight: 44,
                 gap: 8,
               }}>
               <IconButton icon="menu" label={t('close')} onPress={close} />
-              <Text style={[styles.title, direction(language), { flex: 1, fontSize: 20 }]}>
-                {title}
-              </Text>
+              {page === 'home' ? (
+                <View style={{ flex: 1, alignItems: language === 'ar' ? 'flex-end' : 'flex-start' }}>
+                  <Brand variant="header" />
+                </View>
+              ) : (
+                <Text numberOfLines={1} style={[styles.title, direction(language), { flex: 1, fontSize: 18 }]}>
+                  {title}
+                </Text>
+              )}
               {page !== 'home' && (
                 <IconButton
                   icon="back"
@@ -144,35 +151,39 @@ export function NavigationDrawer({
                 />
               )}
             </View>
-            <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 16, gap: 12 }}>
-              <View style={{ alignItems: language === 'ar' ? 'flex-end' : 'flex-start', padding: 16 }}>
-                <Brand variant="drawer" />
-              </View>
+            <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 12, gap: 4 }}>
               <View
-                style={{ padding: 16, gap: 8, borderBottomWidth: 1, borderColor: colors.border }}>
+                testID="drawer-account"
+                style={{ paddingHorizontal: 12, paddingVertical: 16, gap: 12,
+                  direction: 'ltr', flexDirection: language === 'ar' ? 'row-reverse' : 'row',
+                  alignItems: 'center', borderBottomWidth: 1, borderColor: colors.border,
+                  marginBottom: 4 }}>
                 <View
                   style={{
-                    width: 56,
-                    height: 56,
-                    borderRadius: 28,
+                    width: 40,
+                    height: 40,
+                    borderRadius: 20,
                     backgroundColor: colors.pale,
-                    alignSelf: language === 'ar' ? 'flex-end' : 'flex-start',
+                    flexShrink: 0,
                     justifyContent: 'center',
                     alignItems: 'center',
                   }}>
-                  <Text style={{ color: colors.blue, fontSize: 26, fontWeight: '700' }}>
+                  <Text style={{ color: colors.blue, fontSize: 19, fontWeight: '700' }}>
                     {name.slice(0, 1)}
                   </Text>
                 </View>
-                <Text style={[styles.title, direction(language), { fontSize: 19 }]}>{name}</Text>
-                <Label language={language} muted>
-                  {t(offline ? 'offline' : 'connected')}
-                </Label>
-                {!!pendingCount && (
-                  <Label language={language} muted>
-                    {t('queue')}: {String(pendingCount)}
-                  </Label>
-                )}
+                <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+                  <Text numberOfLines={2} accessibilityLabel={name}
+                    style={[styles.title, direction(language), { fontSize: 16, lineHeight: 22 }]}>{name}</Text>
+                  <Text style={[styles.muted, direction(language), { fontSize: 12, lineHeight: 18 }]}>
+                    {t(offline ? 'offline' : 'connected')}
+                  </Text>
+                  {!!pendingCount && (
+                    <Text style={[styles.muted, direction(language), { fontSize: 12, lineHeight: 18 }]}>
+                      {t('queue')}: {String(pendingCount)}
+                    </Text>
+                  )}
+                </View>
               </View>
               {page === 'home' && (
                 <>
@@ -245,8 +256,7 @@ export function NavigationDrawer({
                   </View>
                 </>
               )}
-            </ScrollView>
-            <View style={{ borderTopWidth: 1, borderColor: colors.border, paddingTop: 8 }}>
+            <View style={{ borderTopWidth: 1, borderColor: colors.border, paddingTop: 6, marginTop: 8 }}>
               <MenuRow
                 icon="refresh"
                 label={t('refresh')}
@@ -266,6 +276,7 @@ export function NavigationDrawer({
                 <VersionLabel language={language} />
               </View>
             </View>
+            </ScrollView>
           </View>
           <Pressable
             accessibilityRole="button"

@@ -189,3 +189,95 @@ test('actual React 19 effects mount the workflow, invalidate quotes and clean up
     assert.ok(app.calls.some(call => call[0] === 'cancelReads'));
   } finally { await app.unmount(); }
 });
+
+test('actual React quantity buttons preserve fractional text, reject invalid input and never reduce an upper-bound quantity', async () => {
+  const app = harness({}, true);
+  try {
+    await app.flush();
+    await app.act(() => one(app.render(), 'Button', p => p.accessibilityLabel === 'Add Fixture product Case').onPress());
+    await app.act(() => button(app.render(), 'Review cart (1)').onPress());
+    for (const [input, expected] of [['999999.99', '999999.99'], ['999998.99', '999999.99'], ['1.999', '1.999'], ['1.25', '2.25'], ['1.01', '2.01'], ['1.20', '2.20'], ['0.25', '1.25']]) {
+      await app.act(() => byId(app.render(), 'cart-quantity-81').onChangeText(input));
+      await app.act(() => one(app.render(), 'IconButton', p => p.icon === 'plus').onPress());
+      assert.equal(byId(app.render(), 'cart-quantity-81').value, expected, `${input} + 1`);
+    }
+    for (const [input, expected] of [['999999.99', '999998.99'], ['2.25', '1.25'], ['2.01', '1.01'], ['2.20', '1.20'], ['1.25', '0.25'], ['1.999', '1.999']]) {
+      await app.act(() => byId(app.render(), 'cart-quantity-81').onChangeText(input));
+      await app.act(() => button(app.render(), '−').onPress());
+      assert.equal(byId(app.render(), 'cart-quantity-81').value, expected, `${input} - 1`);
+    }
+    await app.act(() => byId(app.render(), 'cart-quantity-81').onChangeText('999999.99'));
+    await app.act(() => button(app.render(), 'Get Odoo quote').onPress());
+    const quoteCount = app.calls.filter(call => call[0] === 'invalidateQuote').length;
+    await app.act(() => one(app.render(), 'IconButton', p => p.icon === 'plus').onPress());
+    assert.equal(app.calls.filter(call => call[0] === 'invalidateQuote').length, quoteCount, 'a no-op upper-bound press keeps the current quote');
+    assert.ok(text(app.render()).includes('991.73 SAR'));
+    await app.act(() => byId(app.render(), 'cart-quantity-81').onChangeText('1.999'));
+    const invalidCount = app.calls.filter(call => call[0] === 'invalidateQuote').length;
+    await app.act(() => one(app.render(), 'IconButton', p => p.icon === 'plus').onPress());
+    assert.equal(app.calls.filter(call => call[0] === 'invalidateQuote').length, invalidCount, 'invalid input is not rewritten or invalidated again by a no-op press');
+    await app.act(() => byId(app.render(), 'cart-quantity-81').onChangeText('1.01'));
+    await app.act(() => button(app.render(), '−').onPress());
+    assert.equal(byId(app.render(), 'cart-quantity-81').value, '0.01');
+    await app.act(() => byId(app.render(), 'cart-quantity-81').onChangeText('1.00'));
+    await app.act(() => button(app.render(), '−').onPress());
+    assert.equal(nodes(app.render()).some(node => node.props.testID === 'cart-quantity-81'), false, 'exact zero removes the cart line');
+    assert.ok(text(app.render()).includes('Your cart is empty'));
+  } finally { await app.unmount(); }
+});
+
+async function confirmWithActualReact(app) {
+  await app.flush();
+  await app.act(() => byId(app.render(), 'orders-tab-receiving').onPress());
+  await app.act(() => byId(app.render(), 'receipt-row-12').onPress());
+  for (const id of [1, 2]) await app.act(() => byId(app.render(), `receipt-price-${id}`).onChangeText('1'));
+  await app.act(() => button(app.render(), 'Review receipt').onPress());
+  await app.act(() => button(app.render(), 'Confirm receipt').onPress());
+}
+
+test('actual React orders-only receipt sharing uses authorized order detail with rooms empty and never repeats confirm on 403', async () => {
+  const app = harness({ rooms: [] }, true);
+  app.props.identity.permissions.chat_send = true;
+  app.engine.share = async (company, id) => { app.calls.push(['share', company, id]); throw { code: 'forbidden', status: 403 }; };
+  try {
+    await confirmWithActualReact(app);
+    assert.equal(app.props.identity.permissions.chat_view, false);
+    assert.deepEqual(app.props.rooms, []);
+    assert.deepEqual(app.calls.filter(call => call[0] === 'detail'), [['detail', 1, 12]]);
+    assert.equal(app.calls.filter(call => call[0] === 'share').length, 0, 'detail is read without automatically sharing');
+    assert.equal(button(app.render(), 'Share receipt result').disabled, false);
+    const share = button(app.render(), 'Share receipt result').onPress;
+    await app.act(() => share());
+    assert.deepEqual(app.calls.filter(call => call[0] === 'share'), [['share', 1, 12]]);
+    assert.equal(button(app.render(), 'Share receipt result').disabled, true);
+    await app.act(() => share());
+    assert.equal(app.calls.filter(call => call[0] === 'share').length, 1, 'retained sharing action is revoked after 403');
+    assert.equal(app.calls.filter(call => call[0] === 'confirm').length, 1, 'membership failure never repeats stock confirmation');
+  } finally { await app.unmount(); }
+});
+
+test('actual React share stays disabled without chat_send or an original room, and late detail cannot escape an unmounted scope', async () => {
+  for (const scenario of ['no-send', 'no-original-room', 'late-detail']) {
+    const app = harness({ rooms: [] }, true), delayed = waiting();
+    app.props.identity.permissions.chat_send = scenario !== 'no-send';
+    if (scenario !== 'no-send') app.engine.detail = async (company, id) => {
+      app.calls.push(['detail', company, id]);
+      if (scenario === 'late-detail') return delayed.promise;
+      return { order: { ...app.summary(id, company), room_id: null }, lines: [] };
+    };
+    try {
+      await confirmWithActualReact(app);
+      assert.equal(button(app.render(), 'Share receipt result').disabled, true, scenario);
+      assert.equal(app.calls.filter(call => call[0] === 'detail').length, scenario === 'no-send' ? 0 : 1);
+      if (scenario === 'late-detail') {
+        const stale = button(app.render(), 'Share receipt result').onPress;
+        app.props.online = false; await app.flush();
+        await app.act(() => delayed.resolve({ order: app.summary(12, 1), lines: [] }));
+        await app.act(() => stale());
+        assert.equal(nodes(app.render()).some(node => node.props.testID === 'orders-write-result'), false);
+      }
+      assert.equal(app.calls.filter(call => call[0] === 'share').length, 0, scenario);
+      assert.equal(app.calls.filter(call => call[0] === 'confirm').length, 1, scenario);
+    } finally { await app.unmount(); }
+  }
+});

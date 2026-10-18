@@ -92,7 +92,7 @@ function Workspace({ engine, identity, language, rooms = [] }: OrdersScreenProps
         : <KeyboardAvoidingView style={s.fill} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
           <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={[s.content, { paddingBottom: 24 }]}>
             {!!pending.length && <PendingPanel engine={engine} attempts={pending} language={language} onResult={result} onChanged={reloadPending} />}
-            {outcome ? <ResultPanel engine={engine} result={outcome} language={language} rooms={safeRooms}
+            {outcome ? <ResultPanel engine={engine} result={outcome} language={language} canSend={identity.permissions.chat_send === true}
               close={() => { setOutcome(null); setRefresh(value => value + 1); setTab('allOrders'); }} />
               : activeTab === 'allOrders' ? <OrderList key={`list-${refresh}`} engine={engine} language={language} companies={companies} canReceive={canReceive}
                 onReceive={(id, orderId) => { changedCompany(id); setReceiptId(orderId); setTab('receiving'); }} />
@@ -132,28 +132,35 @@ function PendingPanel({ engine, attempts, language, onResult, onChanged }: {
   </View>;
 }
 
-function ResultPanel({ engine, result, language, rooms, close }: { engine: OrdersEngine; result: WriteResult; language: Language; rooms: Room[]; close: () => void }) {
+function ResultPanel({ engine, result, language, canSend, close }: { engine: OrdersEngine; result: WriteResult; language: Language; canSend: boolean; close: () => void }) {
   const t = orderTranslator(language), alive = useAlive();
   const receipt = 'receipt' in result ? result.receipt : null;
-  const [originalRoomId, setOriginalRoomId] = useState<number | null>(null);
+  const receiptScope = receipt ? `${receipt.company_id}/${receipt.order_id}` : '';
+  const [originalRoom, setOriginalRoom] = useState<{ scope: string; roomId: number | null } | null>(null);
   const [busy, setBusy] = useState(false), [shared, setShared] = useState(false);
+  const [shareDenied, setShareDenied] = useState(false);
   const [error, setError] = useState<unknown>(null);
   const gate = useRef(false);
-  const latestRooms = useRef(rooms); latestRooms.current = rooms;
-  const roomScope = JSON.stringify(rooms.map(room => [room.id, room.company_id, room.membership_id]));
+  const denied = useRef(false);
+  const latest = useRef({ canSend, receiptScope }); latest.current = { canSend, receiptScope };
   useEffect(() => {
-    setOriginalRoomId(null);
-    if (!receipt || !rooms.some(room => room.company_id === receipt.company_id)) return;
+    setOriginalRoom(null); setShared(false); setShareDenied(false); denied.current = false;
+    if (!receipt || !canSend) return;
     let active = true;
-    void engine.detail(receipt.company_id, receipt.order_id).then(detail => { if (active && alive()) setOriginalRoomId(detail.order.room_id); }).catch(failure => { if (active && alive()) setError(failure); });
+    // Orders detail supplies the original room. Chat visibility/list loading is unrelated;
+    // the explicit share endpoint verifies current membership and send permission.
+    void engine.detail(receipt.company_id, receipt.order_id).then(detail => { if (active && alive()) setOriginalRoom({ scope: receiptScope, roomId: detail.order.room_id }); }).catch(failure => { if (active && alive()) setError(failure); });
     return () => { active = false; };
-  }, [receipt?.company_id, receipt?.order_id, roomScope]);
-  const canShare = !!receipt && !!originalRoomId && rooms.some(room => room.id === originalRoomId && room.company_id === receipt.company_id && room.membership_id > 0);
+  }, [receiptScope, canSend]);
+  const canShare = !!receipt && canSend && originalRoom?.scope === receiptScope && !!originalRoom.roomId && !shareDenied;
   const share = async () => {
-    if (!alive() || !canShare || gate.current || shared || !receipt || !latestRooms.current.some(room => room.id === originalRoomId && room.company_id === receipt.company_id && room.membership_id > 0)) return;
+    if (!alive() || !canShare || gate.current || shared || denied.current || !receipt || !latest.current.canSend || latest.current.receiptScope !== receiptScope) return;
     gate.current = true; setBusy(true); setError(null);
-    try { await engine.share(receipt.company_id, receipt.order_id); if (alive()) setShared(true); }
-    catch (failure) { if (alive()) setError(failure); }
+    try { await engine.share(receipt.company_id, receipt.order_id); if (alive() && latest.current.receiptScope === receiptScope && latest.current.canSend) setShared(true); }
+    catch (failure) { if (alive() && latest.current.receiptScope === receiptScope && latest.current.canSend) {
+      if (typeof failure === 'object' && failure !== null && (('status' in failure && failure.status === 403) || ('code' in failure && failure.code === 'forbidden'))) { denied.current = true; setShareDenied(true); }
+      setError(failure);
+    } }
     finally { gate.current = false; if (alive()) setBusy(false); }
   };
   return <View style={s.stack} testID="orders-write-result"><Heading language={language} word={receipt ? 'confirmed' : 'created'} />

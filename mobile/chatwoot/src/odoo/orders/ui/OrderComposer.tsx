@@ -10,7 +10,17 @@ import { Busy, Choice, Empty, Failure, Heading, KeyValue, Note, NumberText, orde
 
 interface CartItem { item: CatalogItem; quantity: string }
 export const validQuantity = (text: string) => /^(?:[1-9][0-9]{0,5}|0)(?:\.[0-9]{1,2})?$/.test(text) && Number(text) > 0;
-const stepQuantity = (text: string, step: number) => String(Math.max(0, Math.min(999999, Math.round((Number(text) || 0) * 100) / 100 + step)));
+/** Change whole units only; preserve the user's fractional digits without decimal arithmetic. */
+export function stepQuantity(text: string, step: 1 | -1): string {
+  if (!validQuantity(text)) return text;
+  const [whole, fraction] = text.split('.');
+  if (step === 1 && whole === '999999') return text;
+  if (step === -1 && whole === '0') return '0';
+  // Six-digit whole quantities are exact integers; the fractional string is never parsed.
+  const nextWhole = String(Number(whole) + step);
+  if (nextWhole === '0' && (fraction === undefined || /^0+$/.test(fraction))) return '0';
+  return fraction === undefined ? nextWhole : `${nextWhole}.${fraction}`;
+}
 
 export function OrderComposer({ engine, companyId, language, rooms, onResult, onPending, blocked }: {
   engine: OrdersEngine; companyId: number; language: Language; rooms: Room[]; onResult: (result: CreateResult) => void; onPending: () => Promise<void>; blocked: boolean;
@@ -61,8 +71,9 @@ export function OrderComposer({ engine, companyId, language, rooms, onResult, on
   }, [search, category, reload]);
   const changeQuantity = (item: CatalogItem, quantity: string) => {
     const current = cartRef.current, existing = current.find(line => line.item.id === item.id);
+    if (existing?.quantity === quantity) return;
     if (!existing && current.length >= 100) { setError({ code: 'cart_limit' }); return; }
-    if (quantity === '0') { if (existing) { setRemoved(existing); updateCart(current.filter(line => line.item.id !== item.id)); } return; }
+    if (/^0(?:\.0{1,2})?$/.test(quantity)) { if (existing) { setRemoved(existing); updateCart(current.filter(line => line.item.id !== item.id)); } return; }
     updateCart(existing ? current.map(line => line.item.id === item.id ? { ...line, quantity } : line) : [...current, { item, quantity }]);
   };
   const validCart = cart.length > 0 && cart.every(line => validQuantity(line.quantity));

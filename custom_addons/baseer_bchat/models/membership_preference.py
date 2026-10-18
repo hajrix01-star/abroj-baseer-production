@@ -3,8 +3,9 @@ import base64
 from datetime import datetime, timedelta
 import hashlib
 import json
+import re
 
-from odoo import api, fields, models
+from odoo import api, fields, models, sql_db
 from odoo.exceptions import AccessError
 
 from ..contracts import ProtocolError, canonical_uuid, positive_id
@@ -83,15 +84,21 @@ class BChatMembershipPreferenceService(models.AbstractModel):
     @api.model
     def _social_replay_guard(self, action, intent):
         if action == 'room_preferences':
-            user = self._require_bchat_permission('chat_view')
-            room = self.env['baseer.bchat.room'].sudo().browse(intent['room_id']).exists()
-            # Fresh replay reads must not wait on the request's own room lock.
-            if not room or room.company_id not in user.company_ids:
-                raise AccessError(self.env._('This room is unavailable.'))
-            if self._v2_current_member(room).id != intent['membership_id']:
-                raise ProtocolError('membership_changed', 'The membership period changed.', 409)
+            self._room_preference_replay_scope(intent)
             return
         return super()._social_replay_guard(action, intent)
+
+    @api.model
+    def _room_preference_replay_scope(self, intent):
+        """Current scope without a room lock, including inside a fresh cursor."""
+        user = self._require_bchat_permission('chat_view')
+        room = self.env['baseer.bchat.room'].sudo().browse(intent['room_id']).exists()
+        if not room or room.company_id not in user.company_ids:
+            raise AccessError(self.env._('This room is unavailable.'))
+        member = self._v2_current_member(room)
+        if member.id != intent['membership_id']:
+            raise ProtocolError('membership_changed', 'The membership period changed.', 409)
+        return room, member
 
     @api.model
     def _room_preference_scope(self, room_id, membership_id, *, mutate=False):
@@ -129,7 +136,8 @@ class BChatMembershipPreferenceService(models.AbstractModel):
         return self._room_preference_data(member, self._room_preference_row(member))
 
     @api.model
-    def _v2_set_room_preferences(self, room_id, payload):
+    def _room_preference_intent(self, room_id, payload):
+        """Original/cancel share canonical shape; future-expiry is apply-only."""
         required = {'api_version', 'membership_id', 'client_uuid', 'expected_revision',
                     'muted_until', 'mute_forever', 'pinned', 'archived'}
         if (type(payload) is not dict or set(payload) != required
@@ -137,11 +145,13 @@ class BChatMembershipPreferenceService(models.AbstractModel):
                 or any(type(payload[key]) is not bool for key in ('mute_forever', 'pinned', 'archived'))):
             raise ProtocolError('invalid_payload', 'Invalid personal room preference fields.')
         room_id = positive_id(room_id, 'room_id')
+        positive_id(payload['membership_id'], 'membership_id')
         token = canonical_uuid(payload['client_uuid'])
         expected = positive_id(payload['expected_revision'], 'expected_revision')
         until = payload['muted_until']
         if until is not None:
-            if type(until) is not str or len(until) != 20:
+            if (type(until) is not str or not re.fullmatch(
+                    r'[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z', until)):
                 raise ProtocolError('invalid_payload', 'Mute expiry must be a UTC timestamp or null.')
             try:
                 until = datetime.strptime(until, '%Y-%m-%dT%H:%M:%SZ')
@@ -149,14 +159,105 @@ class BChatMembershipPreferenceService(models.AbstractModel):
                 raise ProtocolError('invalid_payload', 'Mute expiry must be a UTC timestamp or null.') from None
         if until is not None and payload['mute_forever']:
             raise ProtocolError('invalid_payload', 'Choose one mute duration.')
+        return room_id, token, expected, until
+
+    @api.model
+    def _room_preference_receipt_kind(self, result):
+        """This strict result union belongs only to action=room_preferences."""
+        if type(result) is dict:
+            if set(result) == {'cancelled'} and result['cancelled'] is True:
+                return 'cancelled'
+            if (set(result) == {'revision'} and type(result['revision']) is int
+                    and 0 < result['revision'] <= 2147483647):
+                return 'applied'
+        raise AccessError(self.env._('This personal preference receipt is unavailable.'))
+
+    @api.model
+    def _room_preference_cancellation(self, room_id, payload, token):
+        return {'api_version': 2, 'room_id': room_id, 'membership_id': payload['membership_id'],
+                'client_uuid': token, 'expected_revision': payload['expected_revision'], 'cancelled': True}
+
+    @api.model
+    def _room_preference_applied_replay(self, intent, token, operation_revision):
+        """Primary fresh auth+snapshot; only proven own-uncommitted may use MAIN.
+
+        Called under the exact actor/action/UUID advisory lock. Immutable,
+        never-deleted journal rows visible to MAIN cannot be missing from a
+        later primary snapshot unless MAIN itself has not committed that row.
+        Use a real independent connection even in Odoo's shared TestCursor mode.
+        """
+        digest = hashlib.sha256(json.dumps(intent, ensure_ascii=False, sort_keys=True,
+                                          separators=(',', ':')).encode('utf-8')).hexdigest()
+        query = '''SELECT payload_digest,result_json FROM baseer_bchat_social_operation
+                   WHERE actor_id=%s AND action='room_preferences' AND client_uuid=%s'''
+        arguments = [self.env.uid, token]
+
+        def validate(receipt):
+            if not receipt or receipt[0] != digest:
+                raise AccessError(self.env._('This personal preference receipt is unavailable.'))
+            try:
+                result = json.loads(receipt[1])
+            except (ValueError, TypeError):
+                raise AccessError(self.env._('This personal preference receipt is unavailable.')) from None
+            if (self._room_preference_receipt_kind(result) != 'applied'
+                    or result['revision'] != operation_revision
+                    or operation_revision != intent['expected_revision'] + 1):
+                raise AccessError(self.env._('This personal preference receipt is unavailable.'))
+
+        def snapshot(service):
+            _room, member = service._room_preference_replay_scope(intent)
+            data = service._room_preference_data(member, service._room_preference_row(member))
+            if (type(data['revision']) is not int or not operation_revision <= data['revision'] <= 2147483647):
+                raise AccessError(service.env._('This personal preference snapshot is unavailable.'))
+            return {**data, 'replayed': True, 'client_uuid': token, 'operation_revision': operation_revision}
+
+        # readonly=True may choose a lagging replica; the terminal decision must
+        # read the same PRIMARY as the request, made read-only before any query.
+        with sql_db.db_connect(self.env.cr.dbname, readonly=False).cursor() as fresh_cr:
+            fresh_cr.execute('SET TRANSACTION READ ONLY')
+            fresh_cr.execute(query, arguments)
+            fresh_receipt = fresh_cr.fetchone()
+            if fresh_receipt:
+                validate(fresh_receipt)
+                fresh = api.Environment(fresh_cr, self.env.uid, {
+                    'allowed_company_ids': self.env.context.get('allowed_company_ids', []),
+                })
+                return snapshot(fresh['baseer.bchat.service'])
+        # Never use a MAIN row in the independent cursor, nor a room lock here.
+        # A missing fresh row alone is NOT proof: MAIN must see this exact row.
+        self.env.cr.execute(query, arguments)
+        validate(self.env.cr.fetchone())
+        return snapshot(self)
+
+    @api.model
+    def _v2_cancel_room_preferences(self, room_id, payload):
+        room_id, token, _expected, _until = self._room_preference_intent(room_id, payload)
+        self._require_bchat_permission('chat_view')
+        intent = {'room_id': room_id, **payload}
+        with self.env.cr.savepoint():
+            digest, replay = self._social_lock_operation('room_preferences', token, intent)
+            if replay is not None:
+                if self._room_preference_receipt_kind(replay) == 'applied':
+                    return self._room_preference_applied_replay(intent, token, replay['revision'])
+                self._room_preference_replay_scope(intent)
+                return self._room_preference_cancellation(room_id, payload, token)
+            self._room_preference_scope(room_id, payload['membership_id'], mutate=True)
+            self._social_complete_operation('room_preferences', token, digest, {'cancelled': True})
+            return self._room_preference_cancellation(room_id, payload, token)
+
+    @api.model
+    def _v2_set_room_preferences(self, room_id, payload):
+        room_id, token, expected, until = self._room_preference_intent(room_id, payload)
         self._require_bchat_permission('chat_view')
         with self.env.cr.savepoint():
             digest, replay = self._social_lock_operation('room_preferences', token, {'room_id': room_id, **payload})
+            if replay is not None:
+                if self._room_preference_receipt_kind(replay) == 'cancelled':
+                    self._room_preference_replay_scope({'room_id': room_id, **payload})
+                    return self._room_preference_cancellation(room_id, payload, token)
+                return self._room_preference_applied_replay({'room_id': room_id, **payload}, token, replay['revision'])
             room, member = self._room_preference_scope(room_id, payload['membership_id'], mutate=True)
             row = self._room_preference_row(member)
-            if replay is not None:
-                return {**self._room_preference_data(member, row), 'replayed': True,
-                        'client_uuid': token, 'operation_revision': replay['revision']}
             now = fields.Datetime.now()
             if until is not None and not now < until <= now + timedelta(days=365):
                 raise ProtocolError('invalid_payload', 'Choose a future mute expiry within one year.')

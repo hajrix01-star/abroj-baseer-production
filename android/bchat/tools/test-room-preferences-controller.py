@@ -39,7 +39,7 @@ def discover_gson(explicit):
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--label', required=True)
-parser.add_argument('--case', choices=('all', 'ack-proof', 'recovery'), default='all')
+parser.add_argument('--case', choices=('all', 'ack-proof', 'recovery', 'cancellation'), default='all')
 parser.add_argument('--gson-jar', type=Path)
 parser.add_argument('--android-jar', type=Path, help='Optional existing SDK35 stub compilation only, NOT Android execution')
 args = parser.parse_args()
@@ -67,6 +67,8 @@ for path in inputs:
     hashes[name] = hashlib.sha256(raw).hexdigest()
 scope = ('Production Controller/Store/Protocol, actual JVM files; declared deterministic scheduler, '
          'transport and Android Context/Looper/AtomicFile/Gson-JSON adapters; no real HTTP/Android/Activity/FCM')
+if args.case == 'cancellation':
+    scope += '; DEV176 cancellation-only selected; existing cases compiled as fixture dependencies, no old suites executed'
 if args.android_jar and not args.android_jar.is_file():
     raise SystemExit('Existing SDK35 android.jar required')
 (output / 'source-manifest.json').write_text(json.dumps({'schema': 1, 'scope': scope, 'case': args.case,
@@ -105,9 +107,12 @@ with tempfile.TemporaryDirectory(prefix='controller-', dir=output) as folder:
         *(archive / path.relative_to(root) for path in java_inputs))
     result = run(java, '-cp', os.pathsep.join([str(classes), str(gson)]), 'com.baseer.freshchat.ControllerCases', files, args.case)
     (output / 'jvm.log').write_text(result, encoding='utf-8')
-    match = re.search(r'^PASS ([1-9][0-9]*) production RoomPreferencesController assertions', result)
+    match = re.search(r'^PASS ([1-9][0-9]*) production RoomPreferencesController assertions', result, re.M)
     if not match:
         raise SystemExit('Missing positive assertion evidence')
+    groups = {name: int(count) for name, count in re.findall(r'^GROUP ([a-z0-9-]+) PASS ([1-9][0-9]*)$', result, re.M)}
+    if args.case == 'cancellation' and (len(groups) != 8 or sum(groups.values()) != int(match.group(1))):
+        raise SystemExit('Cancellation selected group inventory/count mismatch')
     if args.android_jar:
         android_classes = Path(folder) / 'android35-stub-classes'
         android_classes.mkdir()
@@ -117,6 +122,7 @@ with tempfile.TemporaryDirectory(prefix='controller-', dir=output) as folder:
     frozen()
     (output / 'evidence.json').write_text(json.dumps({'schema': 1, 'passed': True, 'case': args.case,
         'assertions': int(match.group(1)), 'source_inputs': len(inputs), 'scope': scope,
+        'focused_groups': groups if args.case == 'cancellation' else None,
         'android35_stub_compile_only': bool(args.android_jar),
         'source_before_after_equal': True, 'archived_before_after_equal': True}, indent=2), encoding='utf-8')
     print(result, end='')

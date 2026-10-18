@@ -38,7 +38,7 @@ def gson_file(explicit):
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--label', required=True)
-parser.add_argument('--case', choices=('all', 'factory-reconcile', 'health-post', 'integration-gateway'), default='all')
+parser.add_argument('--case', choices=('all', 'factory-reconcile', 'health-post', 'integration-gateway', 'cancel-version'), default='all')
 parser.add_argument('--gson-jar', type=Path)
 parser.add_argument('--android-jar', type=Path, help='Optional existing SDK35 stub only')
 args = parser.parse_args()

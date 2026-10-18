@@ -497,10 +497,47 @@ public final class PushOwnerCases {
     static Object lock() {
         try { return field(null, "ROUTING"); } catch (Exception failure) { throw new AssertionError(failure); }
     }
+    /** DEV176 feature version follows the ACTUAL State publication gateway into Owner
+     * and Binding. Bootstrap/full-rooms identity remains an explicit trusted test fixture. */
+    static void cancelVersionPublication() throws Exception {
+        App app = fresh(true); app.seedFloor(); app.ready(); BChatPushState.verifiedAccount(app, app.scope);
+        byte[] floor = Files.readAllBytes(app.base().toPath()); int reads = app.fileReads;
+        BChatPushState.RoomRoute original = BChatPushState.roomRoute(app.scope);
+        BChatRoomPreferencesOwner.VerifiedRoutes legacy = routes(app, 1, 23);
+        check(legacy.cancelContractVersion == 0, "old VerifiedRoutes constructor stays cancellation0");
+        BChatPushState.RoomPublication published = BChatPushState.publishRoomRoutes(original, legacy);
+        BChatRoomMutePort.Route old = BChatPushState.currentRoomBinding(published.route, 17);
+        check(old != null && old.binding.cancelContractVersion == 0 && old.binding.contractVersion == 1, "actual State gateway publishes old constructor without disabling base C17");
+        JSONObject bootstrap = new JSONObject().put("api_version", 2).put("room_preferences_contract_version", 1).put("room_preferences_cancel_contract_version", 1);
+        BChatRoomPreferencesOwner.VerifiedRoutes supported = new BChatRoomPreferencesOwner.VerifiedRoutes(app.scope,
+                app.accountIdentity, app.sessionIdentity, 1, 2, 1, RoomPreferencesProtocol.cancelSupported(bootstrap) ? 1 : 0,
+                Arrays.asList(7L), Arrays.asList(new BChatRoomPreferencesOwner.RoomSpec(7, 17, 23)));
+        BChatPushState.RoomPublication upgraded = BChatPushState.publishRoomRoutes(published.route, supported);
+        BChatRoomMutePort.Route next = BChatPushState.currentRoomBinding(upgraded.route, 17);
+        check(upgraded.kind == BChatRoomPreferencesOwner.Kind.PUBLISHED && next != old && next.binding.cancelContractVersion == 1
+                && !old.binding.authority.valid() && next.binding.authority.valid() && !old.binding.same(next.binding), "0-to1 replaces Binding and revokes old Authority before exposure");
+        check(owner().current(old.binding) == null && owner().current(next.binding) == next, "old version-bound callback cannot borrow current route");
+        BChatPushState.RoomPublication refreshed = BChatPushState.publishRoomRoutes(upgraded.route, supported);
+        check(BChatPushState.currentRoomBinding(refreshed.route, 17) == next && next.binding.authority.valid(), "same feature version retains exact Binding");
+        BChatRoomPreferencesOwner.VerifiedRoutes unsupported = new BChatRoomPreferencesOwner.VerifiedRoutes(app.scope,
+                app.accountIdentity, app.sessionIdentity, 1, 2, 1, 7, Arrays.asList(7L), Arrays.asList(new BChatRoomPreferencesOwner.RoomSpec(7, 17, 23)));
+        BChatPushState.RoomPublication downgraded = BChatPushState.publishRoomRoutes(refreshed.route, unsupported);
+        BChatRoomMutePort.Route zero = BChatPushState.currentRoomBinding(downgraded.route, 17);
+        check(downgraded.kind == BChatRoomPreferencesOwner.Kind.PUBLISHED && zero != next && zero.binding.cancelContractVersion == 0
+                && zero.binding.contractVersion == 1 && !next.binding.authority.valid(), "unsupported optional version normalizes0, replaces old1, C17 remains published");
+        BChatPushState.RoomPublication stale = BChatPushState.publishRoomRoutes(upgraded.route, supported);
+        check(stale.kind == BChatRoomPreferencesOwner.Kind.STALE && stale.route == null && BChatPushState.currentRoomBinding(downgraded.route, 17) == zero,
+                "old original Frame cannot stamp newer cancellation support");
+        BChatPushState.RoomPublication backToLegacy = BChatPushState.publishRoomRoutes(downgraded.route, legacy);
+        check(BChatPushState.currentRoomBinding(backToLegacy.route, 17) == zero, "normalized unsupported and legacy0 retain exact Binding");
+        check(app.fileReads == reads && Arrays.equals(floor, Files.readAllBytes(app.base().toPath())) && !roomPresent(app),
+                "version publication RAM-only, existing floor bytes and conservative privacy retained");
+    }
     public static void main(String[] args) throws Exception {
         root = new File(args[0]); Looper.getMainLooper(); resetState();
         String selection = args.length > 1 ? args[1] : "all";
-        if (selection.equals("factory-reconcile")) family("pre-ready-marker-factory-cas", PushOwnerCases::preReadyFactoryFence);
+        if (selection.equals("cancel-version")) family("cancel-version-publication", PushOwnerCases::cancelVersionPublication);
+        else if (selection.equals("factory-reconcile")) family("pre-ready-marker-factory-cas", PushOwnerCases::preReadyFactoryFence);
         else if (selection.equals("health-post")) family("captured-frame-final-predicate", PushOwnerCases::finalPredicate);
         else if (selection.equals("integration-gateway")) family("integration-gateway-ram", PushOwnerCases::integrationGateway);
         else {

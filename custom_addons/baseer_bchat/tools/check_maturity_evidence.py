@@ -19,6 +19,119 @@ SOCIAL_PHASES = {
 MESSAGE_SOCIAL_PHASES = {
     'reaction_absent_cas', 'saved_same_uuid', 'legacy_social_empty_mentions', 'explicit_mentions_same_uuid',
 }
+MEMBERSHIP_CANCEL_PHASES = {
+    'cancel_before_original', 'original_before_cancel',
+    'rr_wait_applied_current', 'late_original_payload_conflict',
+}
+
+
+def verify_membership_cancel(value):
+    """Validate retained real witnesses, never infer PG execution from a process exit."""
+    if not isinstance(value, dict) or value.get('database') != 'bchat_maturity_test_20261017':
+        raise ValueError('Missing membership cancellation real PostgreSQL proof')
+    phases = value.get('phases')
+    if not isinstance(phases, dict) or set(phases) != MEMBERSHIP_CANCEL_PHASES:
+        raise ValueError('Missing membership cancellation phases')
+
+    def integer(item, minimum=1, maximum=None):
+        return type(item) is int and item >= minimum and (maximum is None or item <= maximum)
+
+    def cancellation(result):
+        return (isinstance(result, dict) and set(result) == {
+            'api_version', 'room_id', 'membership_id', 'client_uuid', 'expected_revision', 'cancelled'}
+            and type(result['api_version']) is int and result['api_version'] == 2
+            and integer(result['room_id'], maximum=2147483647)
+            and integer(result['membership_id'], maximum=2147483647)
+            and type(result['expected_revision']) is int and result['expected_revision'] == 1
+            and isinstance(result['client_uuid'], str)
+            and re.fullmatch(r'[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}', result['client_uuid'])
+            and result['cancelled'] is True)
+
+    for name, phase in phases.items():
+        if not isinstance(phase, dict):
+            raise ValueError('Invalid membership cancellation phase')
+        rows = phase.get('transactions')
+        if not isinstance(rows, list) or len(rows) != 2:
+            raise ValueError('Cancellation requires two genuine transactions')
+        pids, transactions = set(), set()
+        for row in rows:
+            initial = row.get('initial') if isinstance(row, dict) else None
+            if (not isinstance(initial, dict) or not integer(initial.get('backend_pid'))
+                    or not integer(initial.get('txid')) or initial.get('isolation') != 'repeatable read'
+                    or type(initial.get('snapshot_revision')) is not int or initial['snapshot_revision'] != 1
+                    or not integer(row.get('attempts'), maximum=6)
+                    or not isinstance(row.get('retry_sqlstates'), list)
+                    or len(row['retry_sqlstates']) != row['attempts'] - 1
+                    or any(state != '40001' for state in row['retry_sqlstates'])
+                    or (row.get('state') == 'ok' and (not integer(row.get('final_backend_pid'))
+                        or not integer(row.get('final_txid'))))):
+                raise ValueError('Cancellation requires independent real RR with bounded serialization-only retries')
+            pids.add(initial['backend_pid'])
+            transactions.add(initial['txid'])
+        if len(pids) != 2 or len(transactions) != 2:
+            raise ValueError('Cancellation reused a PostgreSQL backend or transaction')
+        first, second = rows
+        conflict = name == 'late_original_payload_conflict'
+        cancel_first = name in ('cancel_before_original', 'late_original_payload_conflict')
+        if first.get('state') != 'ok' or second.get('state') != ('idempotency_conflict' if conflict else 'ok'):
+            raise ValueError('Unexpected cancellation race outcome')
+        if cancel_first:
+            if (not cancellation(first.get('result'))
+                    or (conflict and (type(second.get('status')) is not int or second['status'] != 409
+                                      or second.get('result') is not None))
+                    or (not conflict and (not cancellation(second.get('result'))
+                                          or first['result'] != second['result']))):
+                raise ValueError('Cancellation did not fence the exact original intent')
+        else:
+            expected_current = 3 if name == 'rr_wait_applied_current' else 2
+            for index, row in enumerate(rows):
+                result = row.get('result')
+                if (not isinstance(result, dict) or 'cancelled' in result
+                        or type(result.get('api_version')) is not int or result['api_version'] != 2
+                        or type(result.get('operation_revision')) is not int or result['operation_revision'] != 2
+                        or type(result.get('revision')) is not int or result['revision'] != (2 if index == 0 else expected_current)
+                        or not integer(result.get('room_id'), maximum=2147483647)
+                        or not integer(result.get('membership_id'), maximum=2147483647)
+                        or result.get('replayed') is not bool(index)
+                        or not isinstance(result.get('client_uuid'), str)
+                        or not re.fullmatch(r'[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}', result['client_uuid'])):
+                    raise ValueError('Cancellation replay lost the applied/current revision')
+            if any(first['result'][key] != second['result'][key] for key in ('client_uuid', 'room_id', 'membership_id')):
+                raise ValueError('Cancellation replay belongs to another intent')
+            fresh = second.get('fresh')
+            if (not isinstance(fresh, dict) or not integer(fresh.get('backend_pid'))
+                    or fresh['backend_pid'] == second['final_backend_pid']
+                    or not integer(fresh.get('txid')) or fresh['txid'] == second['final_txid']
+                    or fresh.get('read_only') != 'on' or fresh.get('isolation') != 'repeatable read'):
+                raise ValueError('Cancellation needs a separate primary read-only replay snapshot')
+            for index, row in enumerate(rows):
+                advanced = name == 'rr_wait_applied_current' and index == 1
+                if any(row['result'].get(key) is not expected for key, expected in (
+                        ('pinned', not advanced), ('archived', not advanced), ('muted', advanced))):
+                    raise ValueError('Cancellation replay returned the wrong current snapshot')
+        wait = phase.get('advisory_wait')
+        if conflict:
+            if wait is not None:
+                raise ValueError('Late-conflict phase cannot invent an advisory waiter')
+        elif (not isinstance(wait, dict) or type(wait.get('backend_pid')) is not int
+                or wait['backend_pid'] != second['initial']['backend_pid']
+                or wait.get('wait_event_type') != 'Lock' or wait.get('wait_event') != 'advisory'
+                or not integer(wait.get('ungranted_advisory_locks'))):
+            raise ValueError('Missing genuine cancellation advisory-lock wait')
+        post = phase.get('postcheck')
+        current = 1 if cancel_first else (3 if name == 'rr_wait_applied_current' else 2)
+        if (not isinstance(post, dict) or post.get('preference_revisions') != ([] if current == 1 else [current])
+                or any(type(item) is not int for item in post.get('preference_revisions', []))
+                or type(post.get('operation_count')) is not int or post['operation_count'] != (2 if current == 3 else 1)
+                or type(post.get('change_hint_delta')) is not int or post['change_hint_delta'] != (0 if current == 1 else current - 1)
+                or post.get('original_result') != ({'cancelled': True} if cancel_first else {'revision': 2})
+                or (cancel_first and post['original_result'].get('cancelled') is not True)
+                or (not cancel_first and type(post['original_result'].get('revision')) is not int)):
+            raise ValueError('Cancellation changed preference/journal/hint counts')
+    cleanup = value.get('cleanup')
+    if (not isinstance(cleanup, dict) or set(cleanup) != {'remaining_rooms', 'remaining_users'}
+            or any(type(item) is not int or item != 0 for item in cleanup.values())):
+        raise ValueError('Cancellation cleanup is missing or incomplete')
 
 
 def verify_message_social(value):
@@ -261,6 +374,7 @@ def verify(addon, orm_log, probe_log, source_commit):
         raise ValueError('Quota refusal must be explicit 429 with retry guidance')
     verify_message_social(probes.get('message_social'))
     verify_receipt_delivery(probes.get('receipt_delivery'))
+    verify_membership_cancel(probes.get('membership_cancel'))
     return {
         'source_commit': source_commit, 'core_tests': len(expected), 'skipped': 0,
         'core_test_kinds': {kind: sum(value == kind for value in kinds.values()) for kind in sorted(set(kinds.values()))},
@@ -268,6 +382,7 @@ def verify(addon, orm_log, probe_log, source_commit):
         'room_lock_compatibility_proof': True, 'probes': probes,
         'message_social_real_postgres_phases': 4, 'fresh_mention_read_only_helper_proof': True,
         'receipt_delivery_real_postgres_phases': 2,
+        'membership_cancel_real_postgres_phases': 4,
         'limitations': ['Core module only; procurement bridge not executed',
                         'Synthetic DB and provider boundary; no live/OEM/FCM delivery or phone performance acceptance'],
     }
@@ -283,7 +398,7 @@ def main():
     args = parser.parse_args()
     evidence = verify(args.root, args.orm_log.read_text(encoding='utf-8'), args.probe_log.read_text(encoding='utf-8'), args.source_commit)
     args.output.write_text(json.dumps(evidence, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
-    print('BCHAT_CORE_ORM_EVIDENCE=PASS tests=%s phases=10 message_social_phases=4 receipt_delivery_phases=2 skips=0' % evidence['core_tests'])
+    print('BCHAT_CORE_ORM_EVIDENCE=PASS tests=%s phases=10 message_social_phases=4 receipt_delivery_phases=2 membership_cancel_phases=4 skips=0' % evidence['core_tests'])
 
 
 if __name__ == '__main__':

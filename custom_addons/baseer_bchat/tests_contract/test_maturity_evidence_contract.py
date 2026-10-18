@@ -61,6 +61,49 @@ def receipt_delivery_fixture():
             'original_receipts_unchanged': True, 'cleanup_counts': {'remaining_owned': 0}, 'cleanup_completed': True}
 
 
+def membership_cancel_fixture():
+    # Gate-test input only. This fabricated log is never retained as runtime evidence.
+    value = {'database': 'bchat_maturity_test_20261017', 'phases': {},
+             'cleanup': {'remaining_rooms': 0, 'remaining_users': 0}}
+    token = '00000000-0000-4000-8000-000000000088'
+    for name in gate.MEMBERSHIP_CANCEL_PHASES:
+        cancel_first = name in ('cancel_before_original', 'late_original_payload_conflict')
+        conflict = name == 'late_original_payload_conflict'
+        current = 1 if cancel_first else (3 if name == 'rr_wait_applied_current' else 2)
+        cancelled = {'api_version': 2, 'room_id': 1, 'membership_id': 2,
+                     'client_uuid': token, 'expected_revision': 1, 'cancelled': True}
+        rows = []
+        for index in range(2):
+            initial = {'backend_pid': 71 + index, 'txid': 2001 + index,
+                       'isolation': 'repeatable read', 'snapshot_revision': 1}
+            row = {'state': 'ok', 'initial': initial, 'attempts': 1,
+                   'retry_sqlstates': [], 'fresh': None,
+                   'final_backend_pid': 71 + index, 'final_txid': 2001 + index}
+            if conflict and index:
+                row.update(state='idempotency_conflict', status=409)
+            elif cancel_first:
+                row['result'] = dict(cancelled)
+            else:
+                advanced = name == 'rr_wait_applied_current' and index == 1
+                row['result'] = {'api_version': 2, 'client_uuid': token, 'room_id': 1, 'membership_id': 2,
+                                 'operation_revision': 2, 'revision': 2 if index == 0 else current,
+                                 'replayed': bool(index), 'pinned': not advanced,
+                                 'archived': not advanced, 'muted': advanced}
+                if index:
+                    row['fresh'] = {'backend_pid': 73, 'txid': 2003,
+                                    'read_only': 'on', 'isolation': 'repeatable read'}
+            rows.append(row)
+        value['phases'][name] = {
+            'transactions': rows,
+            'advisory_wait': None if conflict else {'backend_pid': 72, 'wait_event_type': 'Lock',
+                'wait_event': 'advisory', 'ungranted_advisory_locks': 1},
+            'postcheck': {'preference_revisions': [] if current == 1 else [current],
+                'operation_count': 2 if current == 3 else 1,
+                'original_result': {'cancelled': True} if cancel_first else {'revision': 2},
+                'change_hint_delta': 0 if current == 1 else current - 1}}
+    return value
+
+
 class MaturityEvidenceGateTests(unittest.TestCase):
     def test_isolated_images_are_valid_sha256_and_match_the_existing_project_pin(self):
         workflow = (ADDON.parents[1] / '.github/workflows/bchat-cumulative-contracts.yml').read_text(encoding='utf-8')
@@ -113,6 +156,7 @@ class MaturityEvidenceGateTests(unittest.TestCase):
                        'daily_quota_winners': 1},
             'message_social': message_social_fixture(),
             'receipt_delivery': receipt_delivery_fixture(),
+            'membership_cancel': membership_cancel_fixture(),
         }
         self.probes['social']['phases']['diagnostic_distinct_devices_daily_quota'] = [one, quota_loser]
 
@@ -124,6 +168,7 @@ class MaturityEvidenceGateTests(unittest.TestCase):
         self.assertEqual(report['real_postgres_phases'], 10)
         self.assertEqual(report['message_social_real_postgres_phases'], 4)
         self.assertEqual(report['receipt_delivery_real_postgres_phases'], 2)
+        self.assertEqual(report['membership_cancel_real_postgres_phases'], 4)
         self.assertGreater(report['core_test_kinds']['http'], 0)
         self.assertGreater(report['core_test_kinds']['orm'], 0)
         self.assertGreater(report['core_test_kinds']['basecase'], 0)
@@ -135,6 +180,118 @@ class MaturityEvidenceGateTests(unittest.TestCase):
         del self.probes['receipt_delivery']
         with self.assertRaisesRegex(ValueError, 'receipt delivery'):
             self.verify()
+
+    def test_cancel_all_phases_and_actual_witnesses_are_required(self):
+        del self.probes['membership_cancel']
+        with self.assertRaisesRegex(ValueError, 'cancellation'):
+            self.verify()
+        for name in gate.MEMBERSHIP_CANCEL_PHASES:
+            value = membership_cancel_fixture()
+            del value['phases'][name]
+            with self.subTest(phase=name), self.assertRaises(ValueError):
+                gate.verify_membership_cancel(value)
+        for key, bad in (('backend_pid', 71), ('backend_pid', True), ('txid', 2001),
+                         ('isolation', 'read committed'), ('snapshot_revision', True)):
+            value = membership_cancel_fixture()
+            value['phases']['cancel_before_original']['transactions'][1]['initial'][key] = bad
+            with self.subTest(key=key), self.assertRaises(ValueError):
+                gate.verify_membership_cancel(value)
+
+    def test_cancel_retry_is_serialization_only_and_bounded(self):
+        for attempts, retries in ((True, []), (7, ['40001'] * 6), (2, []), (2, ['40P01'])):
+            value = membership_cancel_fixture()
+            value['phases']['cancel_before_original']['transactions'][0].update(
+                attempts=attempts, retry_sqlstates=retries)
+            with self.subTest(attempts=attempts, retries=retries), self.assertRaises(ValueError):
+                gate.verify_membership_cancel(value)
+        value = membership_cancel_fixture()
+        value['phases']['cancel_before_original']['transactions'][0].update(attempts=2, retry_sqlstates=['40001'])
+        gate.verify_membership_cancel(value)
+
+    def test_cancel_strict_receipt_and_late_conflict_cannot_be_weakened(self):
+        for key, bad in (('api_version', True), ('room_id', True), ('membership_id', 0),
+                         ('expected_revision', True), ('cancelled', 1), ('cancelled', False),
+                         ('client_uuid', 'not-a-uuid'), ('snapshot', {})):
+            value = membership_cancel_fixture()
+            value['phases']['cancel_before_original']['transactions'][0]['result'][key] = bad
+            with self.subTest(key=key), self.assertRaises(ValueError):
+                gate.verify_membership_cancel(value)
+        for key, bad in (('status', 200), ('status', 409.0), ('state', 'revision_conflict'), ('result', {})):
+            value = membership_cancel_fixture()
+            value['phases']['late_original_payload_conflict']['transactions'][1][key] = bad
+            with self.subTest(key=key), self.assertRaises(ValueError):
+                gate.verify_membership_cancel(value)
+        for key, bad in (('api_version', 2.0), ('cancelled', 1), ('expected_revision', True)):
+            value = membership_cancel_fixture()
+            value['phases']['cancel_before_original']['transactions'][1]['result'][key] = bad
+            with self.subTest(second_key=key), self.assertRaises(ValueError):
+                gate.verify_membership_cancel(value)
+
+    def test_cancel_advisory_wait_and_fresh_primary_snapshot_are_mandatory(self):
+        for key, bad in (('backend_pid', True), ('backend_pid', 71), ('wait_event_type', 'IO'),
+                         ('wait_event', 'relation'), ('ungranted_advisory_locks', True),
+                         ('ungranted_advisory_locks', 0)):
+            value = membership_cancel_fixture()
+            value['phases']['original_before_cancel']['advisory_wait'][key] = bad
+            with self.subTest(key=key), self.assertRaises(ValueError):
+                gate.verify_membership_cancel(value)
+        for key, bad in (('backend_pid', 72), ('backend_pid', True), ('txid', 2002),
+                         ('read_only', 'off'), ('isolation', 'read committed')):
+            value = membership_cancel_fixture()
+            value['phases']['rr_wait_applied_current']['transactions'][1]['fresh'][key] = bad
+            with self.subTest(key=key), self.assertRaises(ValueError):
+                gate.verify_membership_cancel(value)
+
+    def test_cancel_fresh_snapshot_may_reuse_closed_winner_but_never_current_retry(self):
+        value = membership_cancel_fixture()
+        waiter = value['phases']['rr_wait_applied_current']['transactions'][1]
+        waiter.update(attempts=2, retry_sqlstates=['40001'], final_backend_pid=74, final_txid=2004)
+        waiter['fresh'].update(backend_pid=71, txid=2005)
+        gate.verify_membership_cancel(value)
+        for key, bad in (('backend_pid', 74), ('txid', 2004)):
+            altered = deepcopy(value)
+            altered['phases']['rr_wait_applied_current']['transactions'][1]['fresh'][key] = bad
+            with self.subTest(key=key), self.assertRaises(ValueError):
+                gate.verify_membership_cancel(altered)
+        for key in ('final_backend_pid', 'final_txid'):
+            for bad in (None, True, 0):
+                altered = deepcopy(value)
+                altered['phases']['rr_wait_applied_current']['transactions'][1][key] = bad
+                with self.subTest(key=key, bad=bad), self.assertRaises(ValueError):
+                    gate.verify_membership_cancel(altered)
+
+    def test_cancel_applied_room_membership_and_revision2_bits_remain_exact(self):
+        for key, bad in (('room_id', None), ('room_id', True), ('room_id', 3),
+                         ('membership_id', None), ('membership_id', False), ('membership_id', 3),
+                         ('pinned', False), ('archived', 1), ('muted', True)):
+            value = membership_cancel_fixture()
+            value['phases']['original_before_cancel']['transactions'][1]['result'][key] = bad
+            with self.subTest(key=key, bad=bad), self.assertRaises(ValueError):
+                gate.verify_membership_cancel(value)
+
+    def test_cancel_applied_current_ack_cannot_be_replaced_by_old_or_cancelled_result(self):
+        for key, bad in (('revision', 2), ('revision', 3.0), ('operation_revision', True),
+                         ('replayed', 1), ('client_uuid', '00000000-0000-4000-8000-000000000089'),
+                         ('cancelled', False), ('pinned', True), ('archived', 0), ('muted', False)):
+            value = membership_cancel_fixture()
+            value['phases']['rr_wait_applied_current']['transactions'][1]['result'][key] = bad
+            with self.subTest(key=key), self.assertRaises(ValueError):
+                gate.verify_membership_cancel(value)
+
+    def test_cancel_counts_immutable_result_and_cleanup_are_strict(self):
+        for key, bad in (('preference_revisions', [2]), ('operation_count', True),
+                         ('change_hint_delta', True), ('original_result', {'cancelled': 1})):
+            value = membership_cancel_fixture()
+            value['phases']['cancel_before_original']['postcheck'][key] = bad
+            with self.subTest(key=key), self.assertRaises(ValueError):
+                gate.verify_membership_cancel(value)
+        for key, bad in (('remaining_rooms', True), ('remaining_rooms', 1), ('remaining_users', '0')):
+            value = membership_cancel_fixture(); value['cleanup'][key] = bad
+            with self.subTest(key=key), self.assertRaises(ValueError):
+                gate.verify_membership_cancel(value)
+        value = membership_cancel_fixture()
+        value['phases']['original_before_cancel']['postcheck']['original_result']['revision'] = 2.0
+        with self.assertRaises(ValueError): gate.verify_membership_cancel(value)
 
     def test_receipt_late_commit_ids_backends_reset_and_truthful_fixture_are_required(self):
         for key, bad in (('writer_pids', [61, 61]), ('writer_pids', [True, 62]),

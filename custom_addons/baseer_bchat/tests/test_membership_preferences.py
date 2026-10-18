@@ -1,5 +1,6 @@
 """C17 private preferences: manager isolation, epochs and current push policy."""
 from datetime import timedelta
+import json
 from unittest.mock import patch
 from uuid import uuid4
 
@@ -172,3 +173,137 @@ class BChatMembershipPreferencesCase(TransactionCase):
         for invalid in ('%%%', 'a' * 513, 'YQ', '[]'):
             with self.subTest(cursor=invalid), self.assertRaises(ProtocolError):
                 self.service._v2_social_rooms(cursor=invalid)
+
+    def test_cancel_unapplied_is_immutable_and_late_original_has_no_effect(self):
+        payload = self._payload(archived=True, mute_forever=True)
+        watermark = self.service._v2_changes()['watermark']
+        expected = {'api_version': 2, 'room_id': self.room.id, 'membership_id': self.member.id,
+                    'client_uuid': payload['client_uuid'], 'expected_revision': 1, 'cancelled': True}
+        for operation in (self.service._v2_cancel_room_preferences, self.service._v2_cancel_room_preferences,
+                          self.service._v2_set_room_preferences):
+            self.assertEqual(operation(self.room.id, payload), expected)
+        self.assertEqual(self.service._v2_room_preferences(self.room.id, self.member.id)['revision'], 1)
+        self.assertFalse(self.preferences.sudo().search_count([('membership_id', '=', self.member.id)]))
+        self.assertEqual(self.service._v2_changes(after=watermark)['changes'], [])
+        receipts = self.env['baseer.bchat.social.operation'].sudo().search([
+            ('actor_id', '=', self.reader.id), ('action', '=', 'room_preferences'),
+            ('client_uuid', '=', payload['client_uuid'])])
+        self.assertEqual(len(receipts), 1)
+        self.assertEqual(json.loads(receipts.result_json), {'cancelled': True})
+        with self.assertRaises(AccessError):
+            receipts.write({'result_json': '{"revision":2}'})
+        for operation in (self.service._v2_cancel_room_preferences, self.service._v2_set_room_preferences):
+            with self.subTest(operation=operation), self.assertRaises(ProtocolError) as conflict:
+                operation(self.room.id, {**payload, 'archived': False})
+            self.assertEqual(conflict.exception.code, 'idempotency_conflict')
+
+    def test_cancel_expired_unapplied_and_failed_cas_do_not_require_future_time(self):
+        expired = self._payload(muted_until='2020-01-01T00:00:00Z')
+        with self.assertRaises(ProtocolError) as old:
+            self.service._v2_set_room_preferences(self.room.id, expired)
+        self.assertEqual(old.exception.code, 'invalid_payload')
+        cancelled = self.service._v2_cancel_room_preferences(self.room.id, expired)
+        self.assertTrue(cancelled['cancelled'])
+        self.assertEqual(self.service._v2_set_room_preferences(self.room.id, expired), cancelled)
+        stale = self._payload(expected_revision=9, pinned=True)
+        with self.assertRaises(ProtocolError) as conflict:
+            self.service._v2_set_room_preferences(self.room.id, stale)
+        self.assertEqual(conflict.exception.code, 'revision_conflict')
+        self.assertEqual(self.service._v2_cancel_room_preferences(self.room.id, stale)['expected_revision'], 9)
+        self.assertFalse(self.preferences.sudo().search_count([('membership_id', '=', self.member.id)]))
+
+    def test_cancel_applied_returns_current_snapshot_and_original_operation_revision(self):
+        until = fields.Datetime.now() + timedelta(hours=1)
+        payload = self._payload(pinned=True, muted_until=until.strftime('%Y-%m-%dT%H:%M:%SZ'))
+        first = self.service._v2_set_room_preferences(self.room.id, payload)
+        self._set(archived=True)
+        watermark = self.service._v2_changes()['watermark']
+        with patch('odoo.addons.baseer_bchat.models.membership_preference.fields.Datetime.now',
+                   return_value=until + timedelta(seconds=1)):
+            for operation in (self.service._v2_cancel_room_preferences, self.service._v2_set_room_preferences):
+                replay = operation(self.room.id, payload)
+                self.assertEqual((replay['operation_revision'], replay['revision']), (first['revision'], 3))
+                self.assertTrue(replay['replayed'])
+                self.assertTrue(replay['archived'])
+                self.assertFalse(replay['pinned'])
+                self.assertFalse(replay['muted'])
+                self.assertNotIn('cancelled', replay)
+        self.assertEqual(self.service._v2_changes(after=watermark)['changes'], [])
+
+    def test_cancel_and_original_share_strict_shape_without_forged_markers(self):
+        good = self._payload()
+        invalid = [None, [], {**good, 'cancelled': True}, {key: value for key, value in good.items() if key != 'archived'}]
+        for key, value in [('api_version', True), ('membership_id', True), ('membership_id', 2147483648),
+                           ('expected_revision', 1.0), ('expected_revision', False), ('mute_forever', 0),
+                           ('pinned', 'false'), ('archived', None), ('client_uuid', 'not-a-uuid'),
+                           ('muted_until', '2026-1-01T00:00:000Z'), ('muted_until', '2026-02-30T00:00:00Z'),
+                           ('muted_until', '2026-01-01T00:00:00+00:00')]:
+            invalid.append({**good, key: value})
+        invalid.append({**good, 'muted_until': '2020-01-01T00:00:00Z', 'mute_forever': True})
+        for operation in (self.service._v2_cancel_room_preferences, self.service._v2_set_room_preferences):
+            for payload in invalid:
+                with self.subTest(operation=operation, payload=payload), self.assertRaises(ProtocolError):
+                    operation(self.room.id, payload)
+
+    def test_cancel_rechecks_current_permissions_company_and_membership(self):
+        payload = self._payload()
+        self.service._v2_cancel_room_preferences(self.room.id, payload)
+        with self.assertRaises(ProtocolError) as wrong_member:
+            self.service._v2_cancel_room_preferences(self.room.id, self._payload(membership_id=self.owner_member_id))
+        self.assertEqual(wrong_member.exception.code, 'membership_changed')
+        with self.assertRaises(AccessError):
+            self.env['baseer.bchat.service'].with_user(self.admin)._v2_cancel_room_preferences(self.room.id, payload)
+        self.reader.with_user(self.admin).write({'bchat_chat_view': False})
+        with self.assertRaises(AccessError):
+            self.service._v2_cancel_room_preferences(self.room.id, payload)
+        self.reader.with_user(self.admin).write({'bchat_chat_view': True})
+        other = self.env['res.company'].create({'name': 'Cancellation isolated company ' + uuid4().hex})
+        self.admin.write({'company_ids': [Command.link(other.id)]})
+        foreign = self.env['baseer.bchat.room'].with_user(self.admin).with_company(other).create({
+            'name': 'Cancellation foreign room', 'company_id': other.id})
+        with self.assertRaises(AccessError):
+            self.service._v2_cancel_room_preferences(foreign.id, self._payload())
+        self.owner_service._v2_group_change(self.room.id, {'api_version': 2, 'action': 'remove_member', 'user_id': self.reader.id})
+        self.owner_service._v2_group_change(self.room.id, {'api_version': 2, 'action': 'add_member', 'user_id': self.reader.id})
+        with self.assertRaises(ProtocolError) as obsolete:
+            self.service._v2_cancel_room_preferences(self.room.id, payload)
+        self.assertEqual(obsolete.exception.code, 'membership_changed')
+
+    def test_room_preference_receipt_union_rejects_malformed_immutable_rows(self):
+        for result in ({}, {'revision': True}, {'revision': 0}, {'revision': '2'}, {'revision': 2147483648}, {'revision': 2},
+                       {'cancelled': False}, {'cancelled': 1}, {'cancelled': True, 'revision': 2}, []):
+            payload = self._payload()
+            digest, replay = self.service._social_lock_operation('room_preferences', payload['client_uuid'],
+                                                                 {'room_id': self.room.id, **payload})
+            self.assertIsNone(replay)
+            self.service._social_complete_operation('room_preferences', payload['client_uuid'], digest, result)
+            for operation in (self.service._v2_cancel_room_preferences, self.service._v2_set_room_preferences):
+                with self.subTest(result=result, operation=operation), self.assertRaises(AccessError):
+                    operation(self.room.id, payload)
+        self.assertFalse(self.preferences.sudo().search_count([('membership_id', '=', self.member.id)]))
+
+    def test_own_uncommitted_replay_nested_savepoint_then_rollback_has_no_ack(self):
+        payload = self._payload(pinned=True)
+        class RollbackFixture(Exception):
+            pass
+        with self.assertRaises(RollbackFixture):
+            with self.env.cr.savepoint():
+                applied = self.service._v2_set_room_preferences(self.room.id, payload)
+                self.assertEqual(applied['operation_revision'], 2)
+                with self.env.cr.savepoint(), patch.object(type(self.service), '_room_preference_scope',
+                                                          side_effect=AssertionError('Replay must not lock MAIN room')):
+                    replay = self.service._v2_cancel_room_preferences(self.room.id, payload)
+                    self.assertEqual((replay['revision'], replay['operation_revision'], replay['replayed']), (2, 2, True))
+                    self.assertTrue(replay['pinned'])
+                raise RollbackFixture()
+        self.env.cr.execute('''SELECT COUNT(*) FROM baseer_bchat_social_operation
+            WHERE actor_id=%s AND action='room_preferences' AND client_uuid=%s''',
+                            [self.reader.id, payload['client_uuid']])
+        self.assertEqual(self.env.cr.fetchone()[0], 0)
+        with self.assertRaises(AccessError):
+            self.service._room_preference_applied_replay({'room_id': self.room.id, **payload}, payload['client_uuid'], 2)
+        cancelled = self.service._v2_cancel_room_preferences(self.room.id, payload)
+        self.assertEqual(set(cancelled), {'api_version', 'room_id', 'membership_id', 'client_uuid',
+                                          'expected_revision', 'cancelled'})
+        self.assertTrue(cancelled['cancelled'])
+        self.assertFalse(self.preferences.sudo().search_count([('membership_id', '=', self.member.id)]))

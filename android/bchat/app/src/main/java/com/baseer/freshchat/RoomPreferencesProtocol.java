@@ -24,6 +24,8 @@ final class RoomPreferencesProtocol {
     private static final Set<String> PAYLOAD_KEYS = new HashSet<>(Arrays.asList(
             "api_version", "membership_id", "client_uuid", "expected_revision",
             "muted_until", "mute_forever", "pinned", "archived"));
+    private static final Set<String> CANCELLATION_KEYS = new HashSet<>(Arrays.asList(
+            "api_version", "room_id", "membership_id", "client_uuid", "expected_revision", "cancelled"));
 
     static final class Snapshot {
         final AccountScope account;
@@ -89,12 +91,31 @@ final class RoomPreferencesProtocol {
         }
     }
 
+    /** Typed terminal receipt, not authentication or a new intent. Keep the exact original
+     * immutable request: six wire fields alone must not match another same-UUID payload. */
+    static final class Cancellation {
+        private final Pending request;
+        private Cancellation(Pending request) { this.request = request; }
+        boolean matches(Pending pending) {
+            return pending != null && sameBinding(request.account, request.roomId, request.membershipId,
+                    pending.account, pending.roomId, pending.membershipId)
+                    && request.clientUuid.equals(pending.clientUuid) && request.expectedRevision == pending.expectedRevision
+                    && request.payload.equals(pending.payload);
+        }
+    }
+
     /** Optional advertisement only; never enables auth/rights or validates a bootstrap user. */
     static boolean supported(JSONObject bootstrap) {
         return bootstrap != null && !bootstrap.has("error") && integer(bootstrap.opt("api_version"))
                 && ((Number) bootstrap.opt("api_version")).longValue() == 2
                 && integer(bootstrap.opt("room_preferences_contract_version"))
                 && ((Number) bootstrap.opt("room_preferences_contract_version")).longValue() == 1;
+    }
+
+    /** Missing/malformed optional support hides cancellation only, never base C17. */
+    static boolean cancelSupported(JSONObject bootstrap) {
+        return supported(bootstrap) && integer(bootstrap.opt("room_preferences_cancel_contract_version"))
+                && ((Number) bootstrap.opt("room_preferences_cancel_contract_version")).longValue() == 1;
     }
 
     /** Call only for an authenticated, current-ticket GET. No response can prove freshness itself. */
@@ -139,7 +160,7 @@ final class RoomPreferencesProtocol {
     }
 
     static Acknowledgement acknowledgement(int status, JSONObject body, Pending pending) {
-        require(status == 200 && pending != null);
+        require(status == 200 && pending != null && body != null && !body.has("cancelled"));
         Snapshot current = snapshot(body, pending.account, pending.roomId, pending.membershipId, false);
         require(pending.clientUuid.equals(body.opt("client_uuid")));
         long operation = positive(body.opt("operation_revision"));
@@ -154,6 +175,20 @@ final class RoomPreferencesProtocol {
                     && current.pinned == pending.pinned && current.archived == pending.archived);
         }
         return new Acknowledgement(current, pending, operation, replayed);
+    }
+
+    /** Only the original current authenticated POST callback may supply this input.
+     * Presence of cancelled is an exclusive discriminant; malformed cancellation must
+     * never fall through to the acknowledgement parser, including a late original POST. */
+    static Cancellation cancellation(int status, JSONObject body, Pending pending) {
+        require(status == 200 && body != null && pending != null && body.length() == CANCELLATION_KEYS.size());
+        Iterator<String> fields = body.keys();
+        while (fields.hasNext()) require(CANCELLATION_KEYS.contains(fields.next()));
+        api(body);
+        require(positive(body.opt("room_id")) == pending.roomId && positive(body.opt("membership_id")) == pending.membershipId
+                && pending.clientUuid.equals(body.opt("client_uuid")) && positive(body.opt("expected_revision")) == pending.expectedRevision
+                && flag(body, "cancelled"));
+        return new Cancellation(pending);
     }
 
     /**

@@ -24,9 +24,13 @@ final class RoomPreferencesController {
         final Object accountIdentity, sessionIdentity;
         final Authority authority;
         final long globalGeneration, repositoryGeneration, roomId, membershipId;
-        final int contractVersion;
+        final int contractVersion, cancelContractVersion;
         Binding(AccountScope account, Object accountIdentity, Object sessionIdentity, Authority authority,
                 long global, long repository, long room, long membership, int contractVersion) {
+            this(account, accountIdentity, sessionIdentity, authority, global, repository, room, membership, contractVersion, 0);
+        }
+        Binding(AccountScope account, Object accountIdentity, Object sessionIdentity, Authority authority,
+                long global, long repository, long room, long membership, int contractVersion, int cancelContractVersion) {
             if (account == null || accountIdentity == null || sessionIdentity == null || authority == null
                     || global < 0 || repository < 0 || room <= 0 || room > Integer.MAX_VALUE
                     || membership <= 0 || membership > Integer.MAX_VALUE || contractVersion < 0)
@@ -34,6 +38,7 @@ final class RoomPreferencesController {
             this.account = account; this.accountIdentity = accountIdentity; this.sessionIdentity = sessionIdentity;
             this.authority = authority; globalGeneration = global; repositoryGeneration = repository;
             roomId = room; membershipId = membership; this.contractVersion = contractVersion;
+            this.cancelContractVersion = cancelContractVersion == 1 ? 1 : 0;
         }
         boolean same(Binding other) {
             return other != null && authority.valid() && other.authority.valid()
@@ -41,7 +46,7 @@ final class RoomPreferencesController {
                     && sessionIdentity == other.sessionIdentity && authority == other.authority
                     && globalGeneration == other.globalGeneration && repositoryGeneration == other.repositoryGeneration
                     && roomId == other.roomId && membershipId == other.membershipId
-                    && contractVersion == 1 && other.contractVersion == 1;
+                    && contractVersion == 1 && other.contractVersion == 1 && cancelContractVersion == other.cancelContractVersion;
         }
     }
 
@@ -55,6 +60,9 @@ final class RoomPreferencesController {
          * Return false if no request was accepted. Never perform blocking I/O on this caller. */
         boolean get(Binding binding, Reply reply);
         boolean post(Binding binding, String exactPayload, Reply reply);
+        /** Optional MAIN route, same current-binding/HTTP gate as post. Legacy Hosts do
+         * not probe a route or accidentally submit the original operation as a cancel. */
+        default boolean cancel(Binding binding, String exactPayload, Reply reply) { return false; }
     }
     interface Scheduler {
         void worker(Runnable work);
@@ -344,6 +352,34 @@ final class RoomPreferencesController {
         });
     }
 
+    /** Explicit terminal cancellation of the same durable started intent. No second UUID,
+     * markStarted, new admission, time inference, automatic retry/GET or floor release. */
+    void cancelStartedExplicit(String uuid) {
+        mainThread();
+        if (closed || paused || busy || uuid == null || binding.cancelContractVersion != 1) return;
+        Ticket ticket = dispatchTicket(begin());
+        if (!active(ticket)) return;
+        fresh = null; busy = true;
+        if (!readHealthy(ticket)) { admissionError(ticket); return; }
+        emit(Phase.SAVING, Code.OK, state.snapshot, state.pending, false);
+        scheduler.worker(() -> {
+            if (!active(ticket)) return;
+            RoomPreferencesStore.Result loaded = store.load();
+            if (!active(ticket)) return;
+            if (!readHealthy(ticket)) { scheduler.main(() -> admissionError(ticket)); return; }
+            scheduler.main(() -> {
+                if (!active(ticket)) return;
+                if (!readable(loaded)) { busy = false; storageError(loaded); return; }
+                RoomPreferencesStore.Operation exact = operation(loaded.state);
+                if (exact == null || !exact.dispatchStarted || !uuid.equals(exact.pending.clientUuid)) {
+                    busy = false; emit(Phase.BLOCKED, Code.PENDING_REVIEW, snapshot(loaded.state), exact, false); return;
+                }
+                storeRevision = loaded.state.revision;
+                requestPost(ticket, exact.pending, null, true);
+            });
+        });
+    }
+
     /** Only a new explicit user choice creates the replacement UUID/payload. The original
      * rejected payload is never edited, auto-retried, or dispatched after restart. */
     void replaceRejectedExplicit(String uuid, String until, boolean forever, boolean pinned, boolean archived) {
@@ -456,33 +492,45 @@ final class RoomPreferencesController {
     }
 
     private void requestPost(Ticket ticket, RoomPreferencesProtocol.Pending pending, Object admission) {
+        requestPost(ticket, pending, admission, false);
+    }
+    private void requestPost(Ticket ticket, RoomPreferencesProtocol.Pending pending, Object admission, boolean cancel) {
         if (!active(ticket)) return;
-        if (!currentDurable(ticket, pending, admission)) { admissionError(ticket); return; }
+        if (cancel ? binding.cancelContractVersion != 1 || !readHealthy(ticket) : !currentDurable(ticket, pending, admission)) {
+            admissionError(ticket); return;
+        }
         final Ticket request = dispatchTicket(ticket);
         Host port = host.get();
         AtomicBoolean answered = new AtomicBoolean();
         Reply reply = (status, body) -> {
             if (!answered.compareAndSet(false, true)) return;
             RoomPreferencesProtocol.Acknowledgement parsed = null;
-            if (status == 200) try { parsed = RoomPreferencesProtocol.acknowledgement(status, body, pending); }
+            RoomPreferencesProtocol.Cancellation cancelled = null;
+            if (status == 200) try {
+                if (body != null && body.has("cancelled")) cancelled = RoomPreferencesProtocol.cancellation(status, body, pending);
+                else parsed = RoomPreferencesProtocol.acknowledgement(status, body, pending);
+            }
             catch (RuntimeException ignored) { }
             final RoomPreferencesProtocol.Acknowledgement response = parsed;
+            final RoomPreferencesProtocol.Cancellation cancellation = cancelled;
             final Code rejected = postCode(status, body);
             final boolean strictConflict = strictRevisionConflict(status, body);
             // Original request's immutable pending/binding, never the currently selected view.
-            scheduler.main(() -> receivePost(request, pending, status, response, rejected, strictConflict));
+            scheduler.main(() -> receivePost(request, pending, status, response, cancellation, rejected, strictConflict));
         };
         boolean accepted;
-        try { accepted = active(request) && port != null && port.post(request.binding, pending.payload, reply); }
+        try { accepted = active(request) && port != null && (cancel
+                    ? readHealthy(request) && port.cancel(request.binding, pending.payload, reply)
+                    : port.post(request.binding, pending.payload, reply)); }
         catch (RuntimeException unavailable) { accepted = false; }
-        if (!accepted && answered.compareAndSet(false, true)) receivePost(request, pending, 0, null, Code.REQUEST_UNKNOWN, false);
+        if (!accepted && answered.compareAndSet(false, true)) receivePost(request, pending, 0, null, null, Code.REQUEST_UNKNOWN, false);
     }
 
     private void receivePost(Ticket ticket, RoomPreferencesProtocol.Pending pending, int status,
-            RoomPreferencesProtocol.Acknowledgement response, Code rejected, boolean strictConflict) {
+            RoomPreferencesProtocol.Acknowledgement response, RoomPreferencesProtocol.Cancellation cancellation, Code rejected, boolean strictConflict) {
         // Pause/close is NOT identity invalidation; valid sent receipts may settle while unselected.
         if (!identity(ticket.binding)) return;
-        if (response == null && status != 403 && status != 409) {
+        if (response == null && cancellation == null && status != 403 && status != 409) {
             if (active(ticket)) { busy = false; emit(Phase.UNKNOWN, status == 200 ? Code.INVALID_RESPONSE : denied(status),
                     state.snapshot, state.pending, false); }
             return;
@@ -491,14 +539,21 @@ final class RoomPreferencesController {
             // Linearization boundary: queued work after revocation cannot enter Store. A commit
             // already entered while valid may finish; no auth lock spans sync/finish/readback.
             if (!identity(ticket.binding)) return;
-            RoomPreferencesStore.Result result = response == null
+            RoomPreferencesStore.Result result = cancellation != null ? store.cancelledExact(pending, cancellation) : response == null
                     ? store.markBlocked(pending, rejected == Code.PERMISSION_DENIED ? "permission_denied"
                             : rejected == Code.MEMBERSHIP_CHANGED ? "membership_changed"
                             : rejected == Code.REVISION_CONFLICT ? "revision_conflict" : "request_unknown")
                     : store.acknowledge(pending, response);
             scheduler.main(() -> {
                 if (!identity(ticket.binding)) return; // No RAM/UI/mute effects after invalidation.
-                if (response != null && result.kind == RoomPreferencesStore.Kind.COMMITTED) {
+                if (cancellation != null && result.kind == RoomPreferencesStore.Kind.COMMITTED) {
+                    if (active(ticket)) {
+                        clearRecovery(); busy = false; fresh = null; storeRevision = result.state.revision;
+                        emit(Phase.CACHED, Code.OK, snapshot(result.state), operation(result.state), false);
+                    }
+                    // Cancellation contains no current preference observation/checkpoint proof.
+                    // Never clear the conservative floor from this branch, even cached false.
+                } else if (response != null && result.kind == RoomPreferencesStore.Kind.COMMITTED) {
                     if (active(ticket)) {
                         clearRecovery();
                         busy = false; fresh = null; storeRevision = result.state.revision;
@@ -512,7 +567,7 @@ final class RoomPreferencesController {
                         release(ticket, result.state, response.snapshot, pending.clientUuid, ProofReason.MATCHED_ACK_COMMITTED);
                 } else if (active(ticket)) {
                     busy = false;
-                    if (response == null && (result.kind == RoomPreferencesStore.Kind.COMMITTED || result.kind == RoomPreferencesStore.Kind.UNCHANGED)) {
+                    if (response == null && cancellation == null && (result.kind == RoomPreferencesStore.Kind.COMMITTED || result.kind == RoomPreferencesStore.Kind.UNCHANGED)) {
                         RoomPreferencesStore.Operation exact = operation(result.state);
                         if (strictConflict && exact != null && exact.dispatchStarted
                                 && "revision_conflict".equals(exact.blockedCode) && samePending(exact.pending, pending)) {

@@ -11,6 +11,7 @@ from . import test_maturity_permissions
 from . import test_maturity_push
 from . import test_notification_settings
 from . import test_membership_preferences
+from . import test_membership_cancel_http
 from . import test_direct_rooms
 from . import test_group_audit
 from . import test_search_v2

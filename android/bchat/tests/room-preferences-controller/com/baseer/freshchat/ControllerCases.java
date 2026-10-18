@@ -434,7 +434,8 @@ public final class ControllerCases {
     public static void main(String[] args) throws Exception {
         root = new File(args[0]); Files.createDirectories(root.toPath()); Looper.mainForTest(true);
         int recovery = 0;
-        if (args.length > 1 && args[1].equals("recovery")) recovery = ControllerRecoveryCases.run();
+        if (args.length > 1 && args[1].equals("cancellation")) recovery = ControllerCancellationCases.run();
+        else if (args.length > 1 && args[1].equals("recovery")) recovery = ControllerRecoveryCases.run();
         else if (args.length > 1 && args[1].equals("ack-proof")) ackProofMatrix();
         else { basics(); staleGets(); dispatchOrdering(); viewFences(); authorityFences(); failedCommitsAndDenials(); replayAndValidation(); additionalFences(); crossControllerMuteFence(); ackProofMatrix(); recovery = ControllerRecoveryCases.run(); }
         checks += recovery;

@@ -37,15 +37,21 @@ final class BChatRoomPreferencesOwner implements BChatRoomMutePort.RouteSource {
         final AccountScope account;
         final Object accountIdentity, sessionIdentity;
         final long globalGeneration, repositoryGeneration;
-        final int contractVersion;
+        final int contractVersion, cancelContractVersion;
         final List<Long> authorizedCompanies;
         final List<RoomSpec> rooms;
         private final boolean copied;
         VerifiedRoutes(AccountScope account, Object accountIdentity, Object sessionIdentity,
                 long global, long repository, int contractVersion, List<Long> authorizedCompanies,
                 List<RoomSpec> rooms) {
+            this(account, accountIdentity, sessionIdentity, global, repository, contractVersion, 0, authorizedCompanies, rooms);
+        }
+        VerifiedRoutes(AccountScope account, Object accountIdentity, Object sessionIdentity,
+                long global, long repository, int contractVersion, int cancelContractVersion, List<Long> authorizedCompanies,
+                List<RoomSpec> rooms) {
             this.account = account; this.accountIdentity = accountIdentity; this.sessionIdentity = sessionIdentity;
             globalGeneration = global; repositoryGeneration = repository; this.contractVersion = contractVersion;
+            this.cancelContractVersion = cancelContractVersion == 1 ? 1 : 0;
             List<Long> companies = copy(authorizedCompanies);
             List<RoomSpec> specs = copy(rooms);
             copied = companies != null && specs != null;
@@ -226,7 +232,7 @@ final class BChatRoomPreferencesOwner implements BChatRoomMutePort.RouteSource {
         return a.account == b.account && a.accountIdentity == b.accountIdentity && a.sessionIdentity == b.sessionIdentity
                 && a.globalGeneration == b.globalGeneration && a.repositoryGeneration == b.repositoryGeneration
                 && old.companyId == candidate.companyId && a.roomId == b.roomId && a.membershipId == b.membershipId
-                && a.contractVersion == b.contractVersion;
+                && a.contractVersion == b.contractVersion && a.cancelContractVersion == b.cancelContractVersion;
     }
     private Prepared prepare(VerifiedRoutes value) {
         Map<Long, BChatRoomMutePort.Route> routes = new LinkedHashMap<>();
@@ -244,7 +250,7 @@ final class BChatRoomPreferencesOwner implements BChatRoomMutePort.RouteSource {
                 return new Prepared(Kind.INVALID, Collections.emptyMap());
             RoomPreferencesController.Binding binding = new RoomPreferencesController.Binding(value.account,
                     value.accountIdentity, value.sessionIdentity, new RoomPreferencesController.Authority(),
-                    value.globalGeneration, value.repositoryGeneration, spec.roomId, spec.membershipId, value.contractVersion);
+                    value.globalGeneration, value.repositoryGeneration, spec.roomId, spec.membershipId, value.contractVersion, value.cancelContractVersion);
             routes.put(spec.roomId, new BChatRoomMutePort.Route(binding, accountUuid, spec.companyId));
         }
         return new Prepared(Kind.PUBLISHED, routes);

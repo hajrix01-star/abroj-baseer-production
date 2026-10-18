@@ -47,6 +47,15 @@ class BChatSocialApi(http.Controller):
         except (AccessError, ProtocolError) as error:
             return self._error(error)
 
+    @http.route('/bchat/api/v2/rooms/<int:room_id>/preferences/cancel', type='http', auth='user',
+                methods=['POST'], csrf=True, save_session=True, max_content_length=8192)
+    def cancel_preferences(self, room_id, **kwargs):
+        try:
+            self._no_query()
+            return self._response(self._service()._v2_cancel_room_preferences(room_id, self._form()))
+        except (AccessError, ProtocolError) as error:
+            return self._error(error)
+
     @http.route('/bchat/api/v2/social/rooms', type='http', auth='user',
                 methods=['GET'], csrf=True, save_session=True)
     def rooms(self, **kwargs):

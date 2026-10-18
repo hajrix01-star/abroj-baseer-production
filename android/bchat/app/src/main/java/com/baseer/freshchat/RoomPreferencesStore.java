@@ -199,6 +199,20 @@ final class RoomPreferencesStore {
         }
     }
 
+    /** Exact terminal HTTP receipt only; never a GET/marker/clock proof or a mute release.
+     * Controller owns authentication and the identity fence at Store entry, as for ACK. */
+    Result cancelledExact(RoomPreferencesProtocol.Pending operation, RoomPreferencesProtocol.Cancellation cancellation) {
+        worker();
+        synchronized (FILE_LOCK) {
+            Read current = read(); if (!current.usable()) return current.result;
+            Operation found = matching(current.result.state, operation);
+            if (found == null) return result(Kind.NO_MATCH, current.result.state);
+            if (!found.dispatchStarted || cancellation == null || !cancellation.matches(found.pending))
+                return result(Kind.INVALID, current.result.state);
+            return replace(current, found, null); // Preserve every snapshot and other pending exactly.
+        }
+    }
+
     Result markBlocked(RoomPreferencesProtocol.Pending operation, String code) {
         worker();
         synchronized (FILE_LOCK) {

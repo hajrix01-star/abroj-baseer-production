@@ -72,6 +72,9 @@ assert "test-room-preferences-owner.py --label ci" in workflow
 assert (ROOT / "tools/test-room-preferences-owner.py").is_file()
 for command in ("test-push-room-owner.py --label ci", "test-display-time.py --label ci"):
     assert command in workflow and (ROOT / "tools" / command.split()[0]).is_file()
+for command in ("test-push-room-owner.py --case cancel-version --label ci-cancel-version",
+                "test-room-preferences-controller.py --case cancellation --label ci-cancellation"):
+    assert command in workflow and (ROOT / "tools" / command.split()[0]).is_file()
 builder = read("tools/build-unified-preview.ps1")
 assert "--porcelain --untracked-files=normal" in builder and "ExpectedSourceCommit" in builder
 assert "ExpectedSourceBranch" in builder and "sourceBranch = $sourceBranch" in builder

@@ -34,6 +34,7 @@ class BChatTextService(models.AbstractModel):
             'receipt_delivery_contract_version': 1,
             'history_search_contract_version': 1,
             'room_preferences_contract_version': 1,
+            'room_preferences_cancel_contract_version': 1,
             'capabilities': {
                 'rooms': True, 'messages': True, 'history': True,
                 'attachments': True, 'tasks': False, 'shifts': False,

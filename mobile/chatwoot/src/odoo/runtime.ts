@@ -10,6 +10,10 @@ import type { Attachment, Bootstrap, GroupAvatarAck, GroupAvatarInput, History, 
 import { actorPattern, mediaFilePattern, nativeSessionOptions, retainNativeFile, scopePattern, trustedMedia, validThumbnail } from './core/nativeBoundary';
 import { nativeSessionTrace, networkFailure } from './core/loginDiagnostics';
 import { historyArchive, mediaCacheCatalog } from './storage/nativeArchive';
+import { OrdersOnlySession, ordersOnlyBootstrap } from './session/OrdersOnlySession';
+import { OrdersEngine } from './orders/core/OrdersEngine';
+import { OrdersError, type OrdersIdentity } from './orders/core/types';
+import { ordersNativeRequest } from './orders/transport';
 
 export const config = Object.freeze({
   origin: (process.env.EXPO_PUBLIC_ODOO_ORIGIN ?? '').trim(),
@@ -22,6 +26,18 @@ const MAX_CACHE_FILES = 5000;
 const MAX_THUMBNAIL = 128 * 1024;
 const mediaRoot = `${FS.documentDirectory ?? ''}odoo-chat-media/`;
 const tasks = new Set<StatefulPromise<FetchBlobResponse>>();
+const ordersOnlySession = new OrdersOnlySession();
+let ordersEngine: OrdersEngine | undefined;
+let ordersConnectivity = true;
+let ordersAccessEpoch = 0;
+let ordersRefresh: { generation: number; accessEpoch: number; operation: Promise<Bootstrap> } | null = null;
+export const subscribeOrdersOnlySession = ordersOnlySession.subscribe;
+export const ordersOnlySnapshot = ordersOnlySession.snapshot;
+export function setOrdersConnectivity(connected: boolean): void {
+  if (!connected && ordersConnectivity) ordersAccessEpoch++;
+  ordersConnectivity = connected;
+  if (!connected) ordersOnlySession.lock();
+}
 const reservations = new Map<string, { epoch: number; at: number }>();
 let generation = 0;
 let engine: NativeChatEngine | undefined;
@@ -187,6 +203,7 @@ function fixedURL(path: string): string {
 }
 function cancelNative(): void {
   generation++;
+  ordersOnlySession.lock();
   clearGroupAvatars();
   clearMemberAvatars();
   mediaPins.clear();
@@ -432,9 +449,27 @@ function deniedCleanupEpoch(error: unknown, expected: number): number {
   return denied && generation === expected + 1 && engine?.status === 'signed_out' && !engine.identity ? generation : expected;
 }
 class NativeChatEngine extends ChatEngine {
+  protected override nonChatBootstrap(raw: unknown, expectedUid: number): Bootstrap | null {
+    return ordersOnlyBootstrap(raw, expectedUid, config.database);
+  }
   override async login(login: string, password: string, remember: boolean): Promise<Bootstrap> {
     const operation = super.login(login, password, remember); const epoch = generation;
-    try { const result = await operation; await pruneMedia('snapshot', epoch); return result; }
+    const accessEpoch = ordersAccessEpoch;
+    try {
+      const result = await operation;
+      if (result.permissions.chat_view === false && result.permissions.order_view === true) {
+        const accepted = epoch + 1; // Exactly this login's authoritative chat invalidation.
+        if (generation !== accepted || this.identity || this.status !== 'signed_out') throw new ChatError('stale_session');
+        await pruneMedia('logout', accepted);
+        if (generation !== accepted || ordersAccessEpoch !== accessEpoch || !ordersConnectivity || AppState.currentState !== 'active') throw new ChatError('stale_session');
+        ordersOnlySession.publish(result, accepted, generation);
+      } else {
+        await pruneMedia('snapshot', epoch);
+        if (generation !== epoch) throw new ChatError('stale_session');
+        ordersOnlySession.clear(ordersOnlySnapshot().generation);
+      }
+      return result;
+    }
     catch (error) { await pruneMedia('cacheOnly', deniedCleanupEpoch(error, epoch)).catch(() => undefined); throw error; }
   }
   override async restoreOffline(): Promise<boolean> { const operation = super.restoreOffline(); const epoch = generation; const restored = await operation; await pruneMedia('snapshot', epoch); return restored; }
@@ -447,8 +482,14 @@ class NativeChatEngine extends ChatEngine {
     }
   }
   override async logout(): Promise<void> {
+    const prior = ordersOnlySnapshot();
     const operation = super.logout(); const epoch = generation;
-    try { await operation; } finally { if (generation === epoch) { reservations.clear(); await pruneMedia('logout', epoch); } }
+    try { await operation; } finally {
+      if (generation === epoch) {
+        reservations.clear(); await pruneMedia('logout', epoch);
+        ordersOnlySession.clear(prior.generation);
+      }
+    }
   }
   override async enqueueAttachment(room: Room | number, attachment: Attachment, text = '', replyTo?: number): Promise<Pending> {
     try { const item = await super.enqueueAttachment(room, attachment, text, replyTo); reservations.delete(attachment.uri); return item; }
@@ -469,6 +510,81 @@ export function getEngine(): NativeChatEngine {
     });
   }
   return engine;
+}
+
+/** Fresh application scope for orders; a chat-revoked user never becomes a chat identity. */
+function applicationOrdersIdentity(): { identity: Bootstrap; epoch: string | number } | null {
+  const alternate = ordersOnlySnapshot();
+  if (alternate.identity) {
+    return alternate.verified && alternate.generation === generation && ordersConnectivity && AppState.currentState === 'active'
+      ? { identity: alternate.identity, epoch: `${alternate.generation}/orders:${ordersAccessEpoch}/verification:${alternate.revision}` } : null;
+  }
+  const chat = getEngine();
+  const identity = chat.identity;
+  return identity && !chat.offline && AppState.currentState === 'active' && chat.accountScope
+    && ordersConnectivity ? { identity, epoch: `${chat.accountScope}/orders:${ordersAccessEpoch}` } : null;
+}
+function identityStamp(value: ReturnType<typeof applicationOrdersIdentity>): string {
+  return value ? JSON.stringify([value.identity.database, value.identity.user_id, value.epoch]) : '';
+}
+export function getOrdersEngine(): OrdersEngine {
+  if (!ordersEngine) ordersEngine = new OrdersEngine({
+    storage: AsyncStorage, now: Date.now, uuid: Crypto.randomUUID,
+    identityScope: (): OrdersIdentity | null => {
+      const current = applicationOrdersIdentity();
+      if (!current) return null;
+      const b = current.identity;
+      return { origin: config.origin, db: config.database, uid: b.user_id, epoch: current.epoch,
+        companyIds: b.company_ids, verified: true, permissions: {
+          order_view: b.permissions.order_view === true, order_create: b.permissions.order_create === true,
+          order_receive: b.permissions.order_receive === true, chat_send: b.permissions.chat_send === true,
+        } };
+    },
+    transport: { request: async input => {
+      const expected = applicationOrdersIdentity();
+      if (!expected || expected.identity.permissions.order_view !== true) throw new OrdersError('unauthorized');
+      const stamp = identityStamp(expected);
+      try {
+        const value = await request(ordersNativeRequest(input, expected.identity.csrf_token ?? ''));
+        if (identityStamp(applicationOrdersIdentity()) !== stamp) throw new OrdersError('stale');
+        return value;
+      } catch (error) {
+        if (identityStamp(applicationOrdersIdentity()) !== stamp) throw new OrdersError('stale');
+        if (error instanceof ChatError && error.status === 401) {
+          // The comparison precedes logout; an old response cannot destroy a newer session.
+          await getEngine().logout();
+        }
+        if (error instanceof OrdersError) throw error;
+        throw new OrdersError(error instanceof ChatError ? error.code : 'connection_failed', undefined, undefined,
+          error instanceof ChatError ? error.status : undefined);
+      }
+    } },
+  });
+  return ordersEngine;
+}
+export async function refreshOrdersOnlySession(): Promise<Bootstrap> {
+  const prior = ordersOnlySnapshot();
+  if (!prior.identity || prior.generation !== generation || !ordersConnectivity || AppState.currentState !== 'active') throw new ChatError('stale_session');
+  const accessEpoch = ordersAccessEpoch;
+  if (ordersRefresh?.generation === prior.generation && ordersRefresh.accessEpoch === accessEpoch) return ordersRefresh.operation;
+  ordersOnlySession.lock();
+  const expected = prior.generation;
+  const operation = (async () => {
+    try {
+      const raw = await request({ method: 'GET', path: '/bchat/api/v2/bootstrap' });
+      if (generation !== expected || ordersAccessEpoch !== accessEpoch || ordersOnlySnapshot().generation !== expected || !ordersConnectivity || AppState.currentState !== 'active') throw new ChatError('stale_session');
+      const identity = ordersOnlyBootstrap(raw, prior.identity!.user_id, config.database);
+      if (!identity) throw new ChatError('forbidden', 403);
+      ordersOnlySession.publish(identity, expected, generation);
+      return identity;
+    } catch (error) {
+      if (generation === expected && ordersAccessEpoch === accessEpoch && ordersOnlySnapshot().generation === expected
+          && error instanceof ChatError && [401, 403].includes(error.status)) await getEngine().logout();
+      throw error;
+    }
+  })();
+  ordersRefresh = { generation: expected, accessEpoch, operation };
+  try { return await operation; } finally { if (ordersRefresh?.operation === operation) ordersRefresh = null; }
 }
 export function stageFile(room: Room, input: { uri: string; name: string; mime: string; kind?: 'image' | 'file' | 'audio' }): Promise<Attachment> {
   return serialMedia(async () => {

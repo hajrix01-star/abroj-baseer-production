@@ -2,8 +2,12 @@
   "schema": 1,
   "approvedAppSource": "8c6a91438423342f9fef740769b89bc3e9dd1901",
   "approvedVersion": "0.1.14/build15",
-  "suites": ["test:bwork-gate", "test:odoo", "test:brand"],
+  "suites": ["test:bwork-gate", "test:odoo", "test:brand", "test:orders"],
   "invariants": [
+    { "id": "orders-independent-login", "description": "جلسة الطلبات فقط لا تمنح المحادثة وتتحقق بعد فقد الاتصال", "suite": "test:odoo", "test": "native orders-only login purges chat, never fetches rooms or restores chat, and requires fresh foreground authority" },
+    { "id": "orders-stale-actor", "description": "رد الطلبات يعيد فحص الحساب عند آخر استمرار قبل العرض", "suite": "test:orders", "test": "public read continuations recheck their original actor after transport already checked it" },
+    { "id": "orders-durable-intent", "description": "حفظ النية قبل الإرسال وحفظ الإقرار قبل إعلان النجاح", "suite": "test:orders", "test": "intent storage ACK precedes POST and success ACK is durable before success returns" },
+    { "id": "orders-receipt-review", "description": "الاستلام بكل السطور والدقة والمراجعة ومشاركة مستقلة", "suite": "test:orders", "test": "receipt requires every exact decimal line and a deliberate review; confirm and share are separate" },
     { "id": "navigation-edge", "description": "القائمة ثابتة في جهة اللغة داخل المحادثة وخارجها", "suite": "test:odoo", "test": "conversation menu occupies the same leading physical language edge as inbox, with Back opposite" },
     { "id": "drawer-width", "description": "عرض القائمة المعتمد 65% دون تغيير حد العرض الواسع", "suite": "test:odoo", "test": "drawer uses 65 percent phone width without changing wide screen cap" },
     { "id": "brand", "description": "مساحة الشعار المعتمدة في الهيدر والقائمة دون توسيع القائمة", "suite": "test:brand", "test": "header and narrow-drawer brand slots account for raster clear space without widening the drawer" },

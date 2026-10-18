@@ -10,6 +10,7 @@ import type { ArchiveDatabase } from '../storage/SqliteHistoryArchive.ts';
 const files = new Map<string, Buffer>(); const directories = new Set<string>(['file:///app/']);
 let directoryReads = 0;
 let beforeStat: ((uri: string) => Promise<void>) | undefined;
+let failOwnedDelete = false;
 const normalize = (uri: string) => uri.startsWith('file://') ? uri : `file://${uri}`;
 function makeDirectory(uri: string) {
   const parts = uri.replace(/^file:\/\//, '').split('/').filter(Boolean); let path = 'file:///';
@@ -29,7 +30,7 @@ const fs = {
     for (const key of [...directories, ...files.keys()]) if (key.startsWith(prefix) && key !== prefix) entries.add(key.slice(prefix.length).split('/')[0]!);
     return [...entries];
   },
-  async deleteAsync(uri: string) { files.delete(normalize(uri)); },
+  async deleteAsync(uri: string) { if (failOwnedDelete && uri.includes('/odoo-chat-media/')) throw new Error('synthetic cleanup failure'); files.delete(normalize(uri)); },
   async copyAsync({ from, to }: { from: string; to: string }) { const bytes = files.get(normalize(from)); if (!bytes) throw new Error('missing file'); files.set(normalize(to), Buffer.from(bytes)); },
   async moveAsync({ from, to }: { from: string; to: string }) { const bytes = files.get(normalize(from)); if (!bytes) throw new Error('missing file'); files.set(normalize(to), bytes); files.delete(normalize(from)); },
   EncodingType: { Base64: 'base64' },
@@ -76,6 +77,8 @@ let nativeFailure: Error | undefined;
 let bootstrapDiagnostic: string | undefined;
 let emulateOdooStatelessHeader = false;
 let statefulSessionIssued = false;
+let bootstrapOverride: unknown;
+let ordersStatus = 200;
 const calls: { method: string; path: string; options: Record<string, unknown> }[] = [];
 function nativeFetch(options: Record<string, unknown>, method: string, url: string, requestHeaders: Record<string, string>, requestBody?: unknown) {
   const path = new URL(url).pathname; calls.push({ method, path, options });
@@ -104,7 +107,10 @@ function nativeFetch(options: Record<string, unknown>, method: string, url: stri
     // Actual QA fixture shape without a cookie, with fixed X-Odoo-Database.
     else if (path === '/web/session/destroy') body = { jsonrpc: '2.0', error: { code: 100, message: 'Odoo Session Expired', data: { name: 'odoo.http.SessionExpiredException', message: 'Odoo Session Expired' } } };
     else if (path === '/web/session/authenticate') body = { result: { uid: 7, db: 'trial' } };
-    else if (path.endsWith('/bootstrap')) body = { api_version: 2, database: 'trial', user_id: 7, company_ids: [1], csrf_token: 'notpersisted', permissions: { chat_view: true, chat_send: true, media: mediaRight } };
+    else if (path.endsWith('/bootstrap')) body = bootstrapOverride ?? { api_version: 2, database: 'trial', user_id: 7, company_ids: [1], csrf_token: 'notpersisted', permissions: { chat_view: true, chat_send: true, media: mediaRight } };
+    else if (path === '/bchat/api/v2/orders/options') { status = ordersStatus; body = status === 200
+      ? { api_version: 2, access: 'viewer', can_view: true, can_create: false, can_receive: false, companies: [{ id: 1, name: 'Synthetic company' }] }
+      : { error: { code: 'session_expired' } }; }
     else if (path === '/bchat/api/v2/rooms') body = { api_version: 2, rooms };
     else if (/\/rooms\/\d+\/group$/.test(path)) {
       groupReads++; const room = rooms.find(row => row.id === Number(path.split('/').at(-2)))!;
@@ -181,7 +187,7 @@ const hooks = registerHooks({
   },
 });
 process.env.EXPO_PUBLIC_ODOO_ORIGIN = 'https://odoo.example'; process.env.EXPO_PUBLIC_ODOO_DATABASE = 'trial';
-const { getEngine, localMedia, localMediaLease, stageFile, readGroupAvatar, hasGroupAvatar, clearGroupAvatars, subscribeGroupAvatars, readMemberAvatar, clearMemberAvatars } = await import('../runtime.ts');
+const { getEngine, getOrdersEngine, ordersOnlySnapshot, refreshOrdersOnlySession, setOrdersConnectivity, localMedia, localMediaLease, stageFile, readGroupAvatar, hasGroupAvatar, clearGroupAvatars, subscribeGroupAvatars, readMemberAvatar, clearMemberAvatars } = await import('../runtime.ts');
 const engine = getEngine();
 
 test('real native adapter maps no-cookie session fixture then rejects cross-room media and validates offline bytes', async () => {
@@ -576,6 +582,99 @@ test('file-count LRU reconciles more than the old 1000-file ceiling and evicts d
   assert.equal(files.has(`${directory}media-10001.pdf`), false);
   assert.equal(files.has(`${directory}media-15000.pdf`), true);
   await fresh.logout(); await engine.login('alice', 'private', true);
+});
+
+const ordersBootstrap = (changes: Record<string, unknown> = {}) => ({ api_version: 2, database: 'trial', user_id: 7,
+  company_ids: [1], csrf_token: 'notpersisted', permissions: { chat_view: false, chat_send: false,
+    order_view: true, order_create: false, order_receive: false }, ...changes });
+
+test('native orders-only login purges chat, never fetches rooms or restores chat, and requires fresh foreground authority', async () => {
+  await engine.login('alice', 'private', true); await engine.history(roomA);
+  const cached = await localMedia(roomA, media);
+  storage.set('bwork/orders/v1/synthetic-unknown', 'preserve durable order intent');
+  bootstrapOverride = ordersBootstrap(); const before = calls.length;
+  try {
+    const identity = await engine.login('orders-only', 'private', true);
+    assert.equal(identity.permissions.chat_view, false); assert.equal(engine.identity, null);
+    assert.equal(engine.status, 'signed_out'); assert.equal(ordersOnlySnapshot().verified, true);
+    assert.equal(files.has(cached), false);
+    assert.equal(calls.slice(before).some(c => c.path.includes('/rooms')), false);
+    assert.ok(![...storage.values()].some(v => v.includes('csrf_token')));
+    assert.equal(storage.get('bwork/orders/v1/synthetic-unknown'), 'preserve durable order intent');
+    const options = await getOrdersEngine().options(); assert.equal(options.companies[0]!.id, 1);
+    setOrdersConnectivity(false); assert.equal(ordersOnlySnapshot().verified, false);
+    await assert.rejects(getOrdersEngine().options(), { code: 'unauthorized' });
+    setOrdersConnectivity(true); await assert.rejects(getOrdersEngine().options(), { code: 'unauthorized' });
+    await refreshOrdersOnlySession(); assert.equal(ordersOnlySnapshot().verified, true);
+    appState.currentState = 'background'; await assert.rejects(getOrdersEngine().options(), { code: 'unauthorized' });
+    appState.currentState = 'active';
+    bootstrapOverride = ordersBootstrap({ company_ids: [2] }); await refreshOrdersOnlySession();
+    assert.deepEqual(ordersOnlySnapshot().identity!.company_ids, [2]);
+    bootstrapOverride = ordersBootstrap({ permissions: { chat_view: false, order_view: false } });
+    await assert.rejects(refreshOrdersOnlySession(), { code: 'forbidden' });
+    assert.equal(ordersOnlySnapshot().identity, null); assert.equal(engine.identity, null);
+  } finally { bootstrapOverride = undefined; appState.currentState = 'active'; setOrdersConnectivity(true); await engine.logout(); }
+});
+
+test('native orders-only rejects forged uid and cleanup failure before publishing application authority', async () => {
+  bootstrapOverride = ordersBootstrap({ user_id: 8 });
+  await assert.rejects(engine.login('orders-only', 'private', true), { code: 'identity_mismatch' });
+  assert.equal(ordersOnlySnapshot().identity, null);
+  bootstrapOverride = undefined; await engine.login('alice', 'private', true); await engine.history(roomA);
+  await localMedia(roomA, media); bootstrapOverride = ordersBootstrap(); failOwnedDelete = true;
+  try {
+    await assert.rejects(engine.login('orders-only', 'private', true), /cleanup failure/);
+    assert.equal(ordersOnlySnapshot().identity, null); assert.equal(engine.identity, null);
+  } finally { failOwnedDelete = false; bootstrapOverride = undefined; await engine.logout(); }
+});
+
+test('native stale orders-only login cannot publish after a newer login and stale orders 401 cannot log it out', async () => {
+  bootstrapOverride = ordersBootstrap();
+  let release!: () => void, started!: () => void;
+  const wait = new Promise<void>(resolve => { release = resolve; }); const seen = new Promise<void>(resolve => { started = resolve; });
+  beforeNative = async path => { if (path.endsWith('/bootstrap')) { beforeNative = undefined; started(); await wait; } };
+  const old = engine.login('old', 'private', true); const rejected = assert.rejects(old, { code: 'stale_session' });
+  await seen; bootstrapOverride = undefined;
+  const newer = engine.login('new', 'private', true); release(); await rejected; await newer;
+  assert.equal(engine.identity!.user_id, 7); assert.equal(ordersOnlySnapshot().identity, null);
+  bootstrapOverride = ordersBootstrap(); await engine.login('orders-only', 'private', true);
+  let releaseOrder!: () => void, orderStarted!: () => void;
+  const orderWait = new Promise<void>(resolve => { releaseOrder = resolve; }); const orderSeen = new Promise<void>(resolve => { orderStarted = resolve; });
+  beforeNative = async path => { if (path.endsWith('/orders/options')) { beforeNative = undefined; orderStarted(); await orderWait; } };
+  ordersStatus = 401;
+  const oldOrder = getOrdersEngine().options(); const denied = assert.rejects(oldOrder, { code: 'stale' });
+  await orderSeen; bootstrapOverride = undefined;
+  await engine.login('new', 'private', true); releaseOrder(); await denied;
+  assert.equal(engine.identity!.user_id, 7); assert.equal(engine.status, 'ready');
+  assert.equal(ordersOnlySnapshot().identity, null); ordersStatus = 200;
+});
+
+test('orders access epoch rejects pre-disconnect reads and old foreground verification without locking a newer verification', async () => {
+  bootstrapOverride = ordersBootstrap(); await engine.login('orders-only', 'private', true);
+  let release!: () => void, started!: () => void;
+  let wait = new Promise<void>(resolve => { release = resolve; }); let seen = new Promise<void>(resolve => { started = resolve; });
+  beforeNative = async path => { if (path.endsWith('/orders/options')) { beforeNative = undefined; started(); await wait; } };
+  const read = getOrdersEngine().options(); const rejected = assert.rejects(read, { code: 'stale' });
+  await seen; setOrdersConnectivity(false); setOrdersConnectivity(true); await refreshOrdersOnlySession();
+  release(); await rejected; assert.equal(ordersOnlySnapshot().verified, true);
+  wait = new Promise<void>(resolve => { release = resolve; }); seen = new Promise<void>(resolve => { started = resolve; });
+  beforeNative = async path => { if (path.endsWith('/bootstrap')) { beforeNative = undefined; started(); await wait; } };
+  const prior = refreshOrdersOnlySession(); const stale = assert.rejects(prior, { code: 'stale_session' });
+  await seen; setOrdersConnectivity(false); setOrdersConnectivity(true); await refreshOrdersOnlySession();
+  const currentRevision = ordersOnlySnapshot().revision;
+  release(); await stale;
+  assert.equal(ordersOnlySnapshot().revision, currentRevision); assert.equal(ordersOnlySnapshot().verified, true);
+  bootstrapOverride = undefined; await engine.logout();
+});
+
+test('native current orders 401 closes only its own scope and ordinary chat login still fetches rooms', async () => {
+  bootstrapOverride = ordersBootstrap(); await engine.login('orders-only', 'private', true);
+  ordersStatus = 401;
+  try { await assert.rejects(getOrdersEngine().options()); assert.equal(ordersOnlySnapshot().identity, null); assert.equal(engine.identity, null); }
+  finally { ordersStatus = 200; bootstrapOverride = undefined; }
+  const before = calls.length; await engine.login('alice', 'private', true);
+  assert.equal(engine.identity!.permissions.chat_view, true);
+  assert.ok(calls.slice(before).some(c => c.path === '/bchat/api/v2/rooms'));
 });
 
 test('real runtime logout removes cached files and refuses HTTP redirects before authenticate', async () => {

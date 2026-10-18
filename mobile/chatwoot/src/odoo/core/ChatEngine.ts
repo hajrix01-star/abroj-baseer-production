@@ -260,6 +260,8 @@ export class ChatEngine {
     if (b.api_version !== 2 || b.user_id !== uid || b.database !== this.database || !id(uid) || !Array.isArray(b.company_ids) || !b.company_ids.every(id) || !b.company_ids.length || typeof b.csrf_token !== 'string' || !b.csrf_token || !b.permissions || b.permissions.chat_view !== true) throw new ChatError('identity_mismatch', 403);
     return b as Bootstrap;
   }
+  /** Application login may select another authorized module. Default chat behavior is unchanged. */
+  protected nonChatBootstrap(_raw: unknown, _expectedUid: number): Bootstrap | null { return null; }
   private async persistIdentity(e: number) {
     this.fence(e);
     if (!this.account) return;
@@ -348,7 +350,15 @@ export class ChatEngine {
         });
         bootstrapRequested = true;
         loginStage = 'bootstrap';
-        const bootstrap = this.bootstrap(await this.request('/bchat/api/v2/bootstrap', e), result.uid);
+        const rawBootstrap = await this.request('/bchat/api/v2/bootstrap', e);
+        const alternate = this.nonChatBootstrap(rawBootstrap, result.uid);
+        if (alternate) {
+          // The authoritative bootstrap has withdrawn chat access. Keep its
+          // native session for the application module, never a chat identity.
+          await this.invalidate(e);
+          return copy(alternate);
+        }
+        const bootstrap = this.bootstrap(rawBootstrap, result.uid);
         this.account = bootstrap; this.remembered = remember; this.verifiedAt = prior.uid === result.uid ? prior.verifiedAt : 0;
         if (prior.uid === result.uid) await this.serial(() => this.loadStoredAccount(e));
         await this.applyBootstrap(bootstrap, e);

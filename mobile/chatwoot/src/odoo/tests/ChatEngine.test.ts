@@ -71,6 +71,24 @@ function setup(storage = new MemoryStorage(), server = new Server(), extra: Part
 }
 const login = async (engine: ChatEngine) => engine.login('alice', 'NeverPersistThis', true);
 
+test('plain ChatEngine keeps chat_view mandatory even when a genuine bootstrap grants orders-only rights', async () => {
+  class OrdersServer extends Server {
+    override async request(request: Request): Promise<unknown> {
+      if (request.path === '/bchat/api/v2/bootstrap') {
+        this.calls.push(request);
+        return { api_version: 2, database: 'trial', user_id: 7, company_ids: [1], csrf_token: 'ephemeral',
+          permissions: { chat_view: false, chat_send: false, order_view: true, order_create: true, order_receive: true } };
+      }
+      return super.request(request);
+    }
+  }
+  const server = new OrdersServer(); const { engine, storage } = setup(new MemoryStorage(), server);
+  await assert.rejects(login(engine), { code: 'identity_mismatch' });
+  assert.equal(engine.identity, null); assert.equal(await engine.restoreOffline(), false);
+  assert.equal(server.calls.some(request => request.path.includes('/rooms')), false);
+  assert.ok(![...storage.data.values()].some(value => value.includes('csrf_token')));
+});
+
 test('remembered history is a defensive no-network snapshot fenced by identity, rights, company, membership and offline lease', async () => {
   const { engine, server, tick } = setup();
   assert.throws(() => engine.rememberedHistory(room), { code: 'login_required' });

@@ -1,8 +1,12 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, AppState, BackHandler, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import NetInfo from '@react-native-community/netinfo';
 import type { ChatEngine, Room } from './core/ChatEngine';
-import { getEngine } from './runtime';
+import { getEngine, getOrdersEngine, ordersOnlySnapshot, refreshOrdersOnlySession, setOrdersConnectivity, subscribeOrdersOnlySession } from './runtime';
+import { OrdersOnlyShell } from './session/OrdersOnlyShell';
+import { OrdersScreen } from './orders/ui/OrdersScreen';
+import { orderTranslator } from './orders/dictionary';
 import { Button, colors, direction, IconButton, Label, styles } from './ui/components';
 import { errorWord, translator, type Language, type Word } from './ui/dictionary';
 import { LoginScreen } from './ui/LoginScreen';
@@ -24,9 +28,11 @@ type ManagementTarget = {
   scope: string;
 };
 
-export function SessionApp({ engine }: { engine: ChatEngine }) {
+export function SessionApp({ engine, initialLanguage = 'ar', onLanguageChange }: { engine: ChatEngine; initialLanguage?: Language; onLanguageChange?: (value: Language) => void }) {
   const chat = useChat(engine);
-  const [language, setLanguage] = useState<Language>('ar');
+  const [language, updateLanguage] = useState<Language>(initialLanguage);
+  const setLanguage = (value: Language) => { updateLanguage(value); onLanguageChange?.(value); };
+  const [area, setArea] = useState<'chat' | 'orders'>('chat');
   const [companyId, setCompanyId] = useState(0);
   const [management, setManagement] = useState<ManagementTarget | null>(null);
   const [companyChoice, setCompanyChoice] = useState<{ mode: CompanyMode; scope: string } | null>(
@@ -40,6 +46,18 @@ export function SessionApp({ engine }: { engine: ChatEngine }) {
   const { width } = useWindowDimensions();
   const wide = width >= 850;
   const identity = chat.presentationReady ? chat.identity : null;
+  useEffect(() => subscribeOrdersOnlySession(chat.capture), [chat.capture]);
+  useEffect(() => {
+    if (!chat.identity || chat.identity.permissions.order_view !== true) setArea('chat');
+  }, [chat.identity?.database, chat.identity?.user_id, chat.identity?.permissions.order_view]);
+  useEffect(() => {
+    if (area !== 'orders') return;
+    const listener = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (menu) setMenu(false); else setArea('chat');
+      return true;
+    });
+    return () => listener.remove();
+  }, [area, menu]);
   const active = useRef(AppState.currentState === 'active');
   const interactionEpoch = useRef(0);
   const eligibleCompanies = (mode: CompanyMode) =>
@@ -296,7 +314,8 @@ export function SessionApp({ engine }: { engine: ChatEngine }) {
               <Label language={language}>{t(chat.error)}</Label>
             </View>
           )}
-          <View
+          {area === 'orders' ? <OrdersScreen engine={getOrdersEngine()} identity={chat.identity} language={language}
+            scopeKey={engine.accountScope ?? ''} online={!chat.offline && !!identity} rooms={chat.rooms} onBack={() => setArea('chat')} /> : <View
             style={[
               styles.fill,
               { flexDirection: wide ? (language === 'ar' ? 'row-reverse' : 'row') : 'column' },
@@ -376,7 +395,7 @@ export function SessionApp({ engine }: { engine: ChatEngine }) {
                 </View>
               )
             )}
-          </View>
+          </View>}
           {companyChoice?.scope === scopeKey && identity?.permissions.chat_view === true && (
             <CompanySelector
               key={`${scopeKey}/${companyChoice.mode}`}
@@ -438,12 +457,37 @@ export function SessionApp({ engine }: { engine: ChatEngine }) {
         soundsEnabled={chat.soundsEnabled}
         soundsReady={chat.soundsReady}
         onSoundsChange={chat.setSoundsEnabled}
+        ordersLabel={orderTranslator(language)('orders')}
+        onOrders={identity?.permissions.order_view === true && !chat.selected ? () => {
+          if (!active.current || liveScope.current !== scopeKey) return;
+          setMenu(false); setArea('orders');
+        } : undefined}
       />
     </SafeAreaView>
   );
 }
 
 export default function OdooTrialApp() {
+  const [language, setLanguage] = useState<Language>('ar');
+  const [alternate, setAlternate] = useState(ordersOnlySnapshot);
+  const [online, setOnline] = useState(false);
+  useEffect(() => subscribeOrdersOnlySession(() => setAlternate(ordersOnlySnapshot())), []);
+  useEffect(() => {
+    let connected = false;
+    let active = AppState.currentState === 'active';
+    let wasReady = false;
+    const update = () => {
+      const ready = connected && active;
+      setOnline(ready); setOrdersConnectivity(ready);
+      if (ready && !wasReady && ordersOnlySnapshot().identity) void refreshOrdersOnlySession().catch(() => undefined);
+      wasReady = ready;
+    };
+    const network = NetInfo.addEventListener(state => {
+      connected = state.isConnected === true && state.isInternetReachable !== false; update();
+    });
+    const application = AppState.addEventListener('change', state => { active = state === 'active'; update(); });
+    return () => { network(); application.remove(); };
+  }, []);
   const [engine] = useState(() => {
     try {
       return getEngine();
@@ -454,7 +498,8 @@ export default function OdooTrialApp() {
   return (
     <SafeAreaProvider>
       {engine ? (
-        <SessionApp engine={engine} />
+        alternate.identity ? <OrdersOnlyShell snapshot={alternate} language={language} setLanguage={setLanguage} online={online} />
+          : <SessionApp engine={engine} initialLanguage={language} onLanguageChange={setLanguage} />
       ) : (
         <SafeAreaView style={[styles.page, { justifyContent: 'center', padding: 24 }]}>
           <Text style={styles.title}>{translator('ar')('app')}</Text>

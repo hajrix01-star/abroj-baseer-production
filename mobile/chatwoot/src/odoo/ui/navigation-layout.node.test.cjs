@@ -73,6 +73,7 @@ const components = { Button: 'Button', Icon: 'Icon', IconButton: 'IconButton', L
   direction: () => ({}), styles: { page: {}, header: {}, row: {}, title: {}, fill: { flex: 1 }, muted: {}, text: {}, banner: {} },
   colors: { white: 'white', pale: 'pale', danger: 'danger', blue: 'blue', ink: 'ink', border: 'border' } };
 const dictionary = load('dictionary.ts', {});
+const ordersDictionary = load('../orders/dictionary.ts', {});
 const names = load('companyNames.ts', {});
 const viewModel = load('viewModel.ts', {});
 function identity(uid = 7) {
@@ -112,6 +113,10 @@ function session() {
       Text: 'Text', View: 'View', useWindowDimensions: () => ({ width }) },
     'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView', SafeAreaProvider: 'SafeAreaProvider' },
     './ui/components': components, './ui/dictionary': dictionary, './ui/useChat': { useChat: () => chat }, './ui/viewModel': viewModel,
+    './orders/dictionary': ordersDictionary, './orders/ui/OrdersScreen': { OrdersScreen: 'OrdersScreen' },
+    './session/OrdersOnlyShell': { OrdersOnlyShell: 'OrdersOnlyShell' },
+    './runtime': { getEngine: () => engine, getOrdersEngine: () => ({}), ordersOnlySnapshot: () => ({ identity: null, verified: false, generation: 0, revision: 0 }),
+      subscribeOrdersOnlySession: () => () => {}, refreshOrdersOnlySession: async () => {}, setOrdersConnectivity() {} },
     './ui/LoginScreen': { LoginScreen: 'LoginScreen' }, './ui/ManagementSheet': { ManagementSheet: 'ManagementSheet' },
     './ui/RoomsScreen': { RoomsScreen: 'RoomsScreen' }, './ui/TimelineScreen': { TimelineScreen: 'TimelineScreen' },
     './ui/VersionLabel': { VersionLabel: 'VersionLabel' }, './ui/NavigationDrawer': { NavigationDrawer: 'NavigationDrawer' },
@@ -191,6 +196,30 @@ test('shell menu is first on its language edge and drawer keeps the same edge to
     assert.equal(heading.props.style.flexDirection, language === 'ar' ? 'row-reverse' : 'row');
     toggle.props.onPress(); assert.equal(panel.events.at(-1), 'close');
   }
+});
+
+test('orders shell entry uses explicit user rights and cannot unmount a selected frozen conversation', () => {
+  const app = session();
+  assert.equal(one(app.render(), 'NavigationDrawer').onOrders, undefined);
+  app.chat.identity.permissions.order_view = true;
+  const openOrders = one(app.render(), 'NavigationDrawer').onOrders;
+  assert.equal(typeof openOrders, 'function'); openOrders();
+  const orders = one(app.render(), 'OrdersScreen');
+  assert.equal(orders.scopeKey, app.engine.accountScope); assert.equal(orders.online, true);
+  assert.equal(orders.identity, app.chat.identity); assert.deepEqual(app.calls, []);
+  orders.onBack(); assert.ok(one(app.render(), 'RoomsScreen'));
+  app.chat.selected = { id: 4, company_id: 1, membership_id: 9 };
+  assert.equal(one(app.render(), 'NavigationDrawer').onOrders, undefined);
+  openOrders(); assert.ok(one(app.render(), 'TimelineScreen'));
+  assert.equal(nodes(app.render()).some(node => node.type === 'OrdersScreen'), false);
+  assert.deepEqual(app.calls, [], 'no reselect, room load or hidden timeline mount from an old menu action');
+  app.chat.selected = null; app.render();
+  one(app.render(), 'NavigationDrawer').onOrders(); app.render();
+  app.chat.presentationReady = false;
+  assert.equal(nodes(app.render()).some(node => node.type === 'OrdersScreen'), false);
+  app.chat.identity.permissions.order_view = false; app.chat.presentationReady = true;
+  assert.equal(one(app.render(), 'NavigationDrawer').onOrders, undefined);
+  assert.equal(nodes(app.render()).some(node => node.type === 'OrdersScreen'), false);
 });
 
 test('drawer settings route language/actions, respect busy/offline policy, and close on background/backdrop', () => {

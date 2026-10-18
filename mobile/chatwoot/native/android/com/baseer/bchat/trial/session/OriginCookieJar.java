@@ -74,7 +74,9 @@ public final class OriginCookieJar implements CookieJarContainer, Interceptor {
       Response response = chain.proceed(chain.request());
       try {
         handler.awaitReady();
-        return response;
+        // BridgeInterceptor has already saved cookies and the native network observer has seen
+        // them. BlobUtil exports final headers to JS, so strip secrets only at this outer boundary.
+        return response.newBuilder().removeHeader("Set-Cookie").removeHeader("Set-Cookie2").build();
       } catch (IOException error) {
         response.close();
         throw error;

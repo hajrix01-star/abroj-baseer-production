@@ -183,18 +183,31 @@ public final class SessionDiagnosticsHarness {
     AtomicReference<Request> actual = new AtomicReference<>();
     Server server = wire -> {
       actual.set(wire);
-      Headers headers = wire.url().encodedPath().equals("/web/session/authenticate")
-          ? new Headers.Builder().add("Set-Cookie", "session_id=bridge-session; Path=/; HttpOnly; Max-Age=600").build()
-          : new Headers.Builder().add("Location", "/web/login?never=export").add("X-Baseer-Native-Session", "upstream-spoof").build();
+      String path = wire.url().encodedPath();
+      Headers headers = path.equals("/web/session/authenticate")
+          ? new Headers.Builder().add("Set-Cookie", "session_id=bridge-session; Path=/; HttpOnly; Max-Age=600")
+              .add("set-cookie", "preference=synthetic; Path=/").add("SET-COOKIE2", "other=synthetic; Path=/").build()
+          : path.equals("/web/session/destroy")
+              ? new Headers.Builder().add("sEt-CoOkIe", "session_id=; Max-Age=0; Path=/").add("Set-Cookie2", "other=; Max-Age=0; Path=/").build()
+              : new Headers.Builder().add("Location", "/web/login?never=export").add("X-Baseer-Native-Session", "upstream-spoof").build();
       return response(wire, wire.url().encodedPath().equals(BOOTSTRAP) ? 303 : 200, headers);
     };
-    for (Request request : new Request[] { request("POST", "/web/session/authenticate"), request("GET", BOOTSTRAP) }) {
+    boolean destroyed = false;
+    for (Request request : new Request[] { request("POST", "/web/session/authenticate"), request("GET", BOOTSTRAP), request("POST", "/web/session/destroy"), request("GET", BOOTSTRAP) }) {
       try (Response result = jar.intercept(chain(request, application -> bridge.intercept(chain(application,
           network -> nativeDiagnostic.intercept(chain(network, server))))))) {
+        check(result.headers().values("Set-Cookie").isEmpty() && result.headers().values("Set-Cookie2").isEmpty(), "all case variants and duplicate cookie response headers absent outward");
+        if (request.url().encodedPath().equals("/web/session/destroy")) destroyed = true;
         if (request.url().encodedPath().equals(BOOTSTRAP)) {
-          check(actual.get().header("Cookie").contains("session_id=bridge-session"), "real BridgeInterceptor adds actual outgoing session");
-          check(result.header(SessionDiagnostics.HEADER).equals("I1A1S1M1L1"), "native observer compares true outbound header after BridgeInterceptor");
+          if (!destroyed) {
+            check(actual.get().header("Cookie").contains("session_id=bridge-session"), "real BridgeInterceptor adds actual outgoing session despite outward header removal");
+            check(result.header(SessionDiagnostics.HEADER).equals("I1A1S1M1L1"), "native observer compares true outbound header after BridgeInterceptor");
+          } else {
+            check(actual.get().header("Cookie") == null || !actual.get().header("Cookie").contains("session_id="), "native deletion persists despite outward header removal");
+            check(result.header(SessionDiagnostics.HEADER).equals("I0A0S0M0L1"), "destroy still resets native reference");
+          }
         }
+        check(result.body().string().equals("unread synthetic body"), "outer cookie stripping does not consume or replace body");
       }
     }
     System.out.println("PASS " + assertions + " native session diagnostic assertions (synthetic exchanges, installed OkHttp BridgeInterceptor)");

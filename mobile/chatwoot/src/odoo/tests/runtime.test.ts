@@ -40,17 +40,28 @@ let beforeNative: ((path: string) => Promise<void>) | undefined;
 let missingMetadata = false;
 let nativeFailure: Error | undefined;
 let bootstrapDiagnostic: string | undefined;
+let emulateOdooStatelessHeader = false;
+let statefulSessionIssued = false;
 const calls: { method: string; path: string; options: Record<string, unknown> }[] = [];
-function nativeFetch(options: Record<string, unknown>, method: string, url: string, requestHeaders: Record<string, string>) {
+function nativeFetch(options: Record<string, unknown>, method: string, url: string, requestHeaders: Record<string, string>, requestBody?: unknown) {
   const path = new URL(url).pathname; calls.push({ method, path, options });
   assert.equal(options.followRedirect, false); assert.equal(options.trusty, false);
-  assert.equal(requestHeaders['X-Odoo-Database'], 'trial');
+  if (path !== '/web/session/authenticate') assert.equal(requestHeaders['X-Odoo-Database'], 'trial');
+  else {
+    assert.equal(requestHeaders['X-Odoo-Database'], undefined);
+    assert.equal(JSON.parse(String(requestBody)).params.db, 'trial');
+  }
   const task: any = Promise.resolve().then(async () => {
     if (beforeNative) await beforeNative(path);
     if (nativeFailure) throw nativeFailure;
     if (offline) throw new Error('network unavailable');
     let status = 200; let body: unknown; const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-    if (bootstrapDiagnostic !== undefined && path === '/bchat/api/v2/bootstrap') {
+    if (emulateOdooStatelessHeader && path === '/web/session/authenticate')
+      statefulSessionIssued = requestHeaders['X-Odoo-Database'] === undefined;
+    if (emulateOdooStatelessHeader && path === '/bchat/api/v2/bootstrap' && !statefulSessionIssued) {
+      status = 303; headers['X-Baseer-Native-Session'] = 'I0A0S0M0L1';
+    }
+    else if (bootstrapDiagnostic !== undefined && path === '/bchat/api/v2/bootstrap') {
       status = 303; headers['X-Baseer-Native-Session'] = bootstrapDiagnostic;
     }
     else if (redirect) status = 302;
@@ -76,7 +87,7 @@ const mocks: Record<string, unknown> = {
   '@react-native-async-storage/async-storage': asyncStorage,
   'expo-crypto': { CryptoDigestAlgorithm: { SHA256: 'SHA256' }, randomUUID, digestStringAsync: async (_algorithm: unknown, value: string) => createHash('sha256').update(value).digest('hex') },
   'expo-file-system/legacy': fs,
-  'react-native-blob-util': { config: (options: Record<string, unknown>) => ({ fetch: (method: string, url: string, headers: Record<string, string>) => nativeFetch(options, method, url, headers) }),
+  'react-native-blob-util': { config: (options: Record<string, unknown>) => ({ fetch: (method: string, url: string, headers: Record<string, string>, body?: unknown) => nativeFetch(options, method, url, headers, body) }),
     wrap: (path: string) => `native-file:${path}`, fs: { hash: async (path: string) => createHash('sha256').update(files.get(normalize(path))!).digest('hex') } },
 };
 (globalThis as any).__odooNativeTestMocks = mocks;
@@ -191,6 +202,20 @@ test('bootstrap redirect snapshots native bits before cleanup and ignores non-bi
       assert.equal(engine.identity, null);
     } finally { bootstrapDiagnostic = undefined; }
   }
+});
+
+test('Odoo stateful authentication omits stateless database header and reaches scoped bootstrap', async () => {
+  emulateOdooStatelessHeader = true; statefulSessionIssued = false;
+  const before = calls.length;
+  try {
+    await engine.login('alice', 'private', true);
+    assert.equal(statefulSessionIssued, true);
+    assert.equal(engine.identity?.database, 'trial');
+    assert.equal(engine.identity?.user_id, 7);
+    assert.deepEqual(calls.slice(before).map(call => call.path), [
+      '/web/session/destroy', '/web/session/authenticate', '/bchat/api/v2/bootstrap', '/bchat/api/v2/rooms',
+    ]);
+  } finally { emulateOdooStatelessHeader = false; }
 });
 
 test('real runtime logout removes cached files and refuses HTTP redirects before authenticate', async () => {

@@ -52,8 +52,12 @@ async function sessionNative(path: string, method: 'GET' | 'POST', headers: Reco
   if (Platform.OS !== 'android') throw new ChatError('android_trial_required');
   if (signal?.aborted) throw new ChatError('stale_session');
   const epoch = generation;
+  // Odoo 19 treats X-Odoo-Database without a database-bound session as stateless
+  // (session.can_save=false). Authenticate selects its DB through JSON params.db;
+  // it must be allowed to persist that session before the scoped bootstrap.
+  const statefulAuthenticate = method === 'POST' && path === '/web/session/authenticate';
   const task = BlobUtil.config({ ...nativeSessionOptions, ...(output ? { path: decodeURI(output.replace(/^file:\/\//, '')), overwrite: true } : {}) })
-    .fetch(method, fixedURL(path), { ...headers, 'X-Odoo-Database': config.database }, body);
+    .fetch(method, fixedURL(path), { ...headers, ...(statefulAuthenticate ? {} : { 'X-Odoo-Database': config.database }) }, body);
   let tooLarge = false;
   let sessionTrace: string | undefined;
   const abort = () => { task.cancel(() => undefined); };

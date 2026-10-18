@@ -6,6 +6,7 @@ import { config } from '../runtime';
 import { Button, Field, Label, styles } from './components';
 import type { Language, Translate } from './dictionary';
 import type { ChatView } from './useChat';
+import { Brand } from './Brand';
 
 export function LoginScreen({
   engine,
@@ -40,6 +41,9 @@ export function LoginScreen({
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: 24 }}>
         <View style={[styles.card, { width: '100%', maxWidth: 480, alignSelf: 'center', gap: 18 }]}>
+          <View style={{ alignItems: 'center', paddingVertical: 12 }}>
+            <Brand variant="login" />
+          </View>
           <Text style={styles.title}>{t('login')}</Text>
           <Label language={language} muted>
             {t('secure')}

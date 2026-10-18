@@ -14,17 +14,18 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
-import { tailwind } from '../../theme';
 import type { Language, Translate } from './dictionary';
 
 export const colors = {
-  ink: tailwind.color('gray-950') ?? '#202124',
-  muted: tailwind.color('gray-900') ?? '#64676b',
-  blue: tailwind.color('blue-800') ?? '#087fdf',
-  border: tailwind.color('gray-200') ?? '#eaecef',
-  background: tailwind.color('gray-50') ?? '#f8f9fa',
+  ink: '#101b36',
+  muted: '#54697b',
+  blue: '#1256da',
+  border: '#dce5ec',
+  background: '#f4f7fd',
   white: '#ffffff',
-  pale: '#eaf4ff',
+  pale: '#edf2fc',
+  accent: '#25bdec',
+  violet: '#7556f5',
   warning: '#fff4d6',
   danger: '#a12a32',
   chatBackground: '#f1f3f5',

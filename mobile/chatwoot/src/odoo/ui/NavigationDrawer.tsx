@@ -14,6 +14,7 @@ import { authorizedCompanies } from './companyNames';
 import { colors, direction, Icon, IconButton, Label, styles, type IconName } from './components';
 import type { Language, Translate } from './dictionary';
 import { VersionLabel } from './VersionLabel';
+import { Brand } from './Brand';
 
 export type DrawerAction = 'ar' | 'en' | 'refresh' | 'logout' | 'policy';
 function MenuRow({
@@ -144,6 +145,9 @@ export function NavigationDrawer({
               )}
             </View>
             <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 16, gap: 12 }}>
+              <View style={{ alignItems: language === 'ar' ? 'flex-end' : 'flex-start', padding: 16 }}>
+                <Brand variant="drawer" />
+              </View>
               <View
                 style={{ padding: 16, gap: 8, borderBottomWidth: 1, borderColor: colors.border }}>
                 <View

@@ -14,6 +14,7 @@ import { companyActions, presentationKey } from './ui/viewModel';
 import { VersionLabel } from './ui/VersionLabel';
 import { NavigationDrawer, type DrawerAction } from './ui/NavigationDrawer';
 import { CompanySelector } from './ui/CompanySelector';
+import { Brand } from './ui/Brand';
 
 type CompanyMode = Exclude<ManagementMode, 'members'>;
 type ManagementTarget = {
@@ -202,7 +203,9 @@ export function SessionApp({ engine }: { engine: ChatEngine }) {
           ]}>
           {identity && <IconButton icon="menu" label={t('menu')} onPress={openMenu} />}
           <View style={{ flex: 1, minWidth: 0 }}>
-            <Text numberOfLines={1} style={[styles.title, direction(language), identity && { fontSize: 17, lineHeight: 24 }]}>{t('app')}</Text>
+            <View style={{ alignItems: language === 'ar' ? 'flex-end' : 'flex-start' }}>
+              <Brand />
+            </View>
             {identity ? (
               <Text numberOfLines={1} style={[styles.muted, direction(language), { fontSize: 12, lineHeight: 18 }]}>
                 {t(chat.offline ? 'offline' : 'connected')}

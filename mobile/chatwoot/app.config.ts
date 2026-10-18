@@ -3,11 +3,11 @@ import { ConfigContext, ExpoConfig } from 'expo/config';
 export default ({ config }: ConfigContext): ExpoConfig => {
   const trial = process.env.EXPO_PUBLIC_BACKEND !== 'chatwoot';
   return {
-    name: trial ? 'BChat Trial' : 'Chatwoot',
+    name: trial ? 'BWork' : 'Chatwoot',
     slug: process.env.EXPO_PUBLIC_APP_SLUG || (trial ? 'bchat-odoo-trial' : 'chatwoot-mobile'),
-    version: trial ? '0.1.8' : '4.9.11',
+    version: trial ? '0.1.9' : '4.9.11',
     orientation: 'portrait',
-    icon: './assets/icon.png',
+    icon: trial ? './assets/bwork/bwork-icon-1024.png' : './assets/icon.png',
     userInterfaceStyle: 'light',
     scheme: trial ? 'bchat-trial' : 'chatwootapp',
     ios: {
@@ -30,9 +30,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       associatedDomains: trial ? [] : ['applinks:app.chatwoot.com'],
     },
     android: {
-      ...(trial ? { versionCode: 9 } : {}),
+      ...(trial ? { versionCode: 10 } : {}),
       ...(trial ? { allowBackup: false } : {}),
-      adaptiveIcon: { foregroundImage: './assets/adaptive-icon.png', backgroundColor: '#ffffff' },
+      adaptiveIcon: { foregroundImage: trial ? './assets/bwork/bwork-adaptive-1024.png' : './assets/adaptive-icon.png', backgroundColor: '#ffffff' },
       package: trial ? 'com.baseer.bchat.trial' : 'com.chatwoot.app',
       permissions: [
         'android.permission.CAMERA',
@@ -81,7 +81,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       [
         'expo-splash-screen',
         {
-          image: './assets/splash.png',
+          image: trial ? './assets/bwork/bwork-icon-1024.png' : './assets/splash.png',
           resizeMode: 'contain',
           backgroundColor: '#ffffff',
           enableFullScreenImage_legacy: true,

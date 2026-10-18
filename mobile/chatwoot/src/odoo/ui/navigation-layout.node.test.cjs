@@ -114,6 +114,7 @@ function session() {
     './ui/LoginScreen': { LoginScreen: 'LoginScreen' }, './ui/ManagementSheet': { ManagementSheet: 'ManagementSheet' },
     './ui/RoomsScreen': { RoomsScreen: 'RoomsScreen' }, './ui/TimelineScreen': { TimelineScreen: 'TimelineScreen' },
     './ui/VersionLabel': { VersionLabel: 'VersionLabel' }, './ui/NavigationDrawer': { NavigationDrawer: 'NavigationDrawer' },
+    './ui/Brand': { Brand: 'Brand' },
     './ui/CompanySelector': { CompanySelector: 'CompanySelector' },
   }, { requestAnimationFrame: callback => { frames.push(callback); return frames.length; } });
   assert.equal(typeof module.SessionApp, 'function', 'test uses the actual named SessionApp export');
@@ -202,10 +203,10 @@ test('SessionApp masks profile/menu and all retained conversation content while 
 test('selected phone conversation hides duplicate app header and opens its own menu; wide layout retains list/header', () => {
   const app = session();
   let tree = app.render();
-  assert.ok(text(tree).includes(dictionary.translator('ar')('app')));
+  assert.ok(nodes(tree).some(node => node.type === 'Brand'));
   app.chat.selected = { id: 4, company_id: 1, membership_id: 9 };
   tree = app.render();
-  assert.equal(text(tree).includes(dictionary.translator('ar')('app')), false);
+  assert.equal(nodes(tree).some(node => node.type === 'Brand'), false);
   assert.equal(nodes(tree).some(node => node.type === 'RoomsScreen'), false);
   one(tree, 'TimelineScreen').onMenu();
   tree = app.render();
@@ -216,7 +217,7 @@ test('selected phone conversation hides duplicate app header and opens its own m
   app.back();
   assert.equal(app.calls[0][0], 'select'); assert.equal(app.calls[0][1], null);
   app.width(900); tree = app.render();
-  assert.ok(text(tree).includes(dictionary.translator('ar')('app')));
+  assert.ok(nodes(tree).some(node => node.type === 'Brand'));
   assert.ok(one(tree, 'RoomsScreen'));
   assert.equal(one(tree, 'TimelineScreen').onMenu, undefined);
 });

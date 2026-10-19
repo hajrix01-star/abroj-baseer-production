@@ -1164,6 +1164,13 @@ class BChatOrderHttpCase(HttpCase):
         self.assertEqual(receipt_list.status_code, 200, receipt_list.text)
         self.assertIn(created.json()['order']['id'],
                       [row['id'] for row in receipt_list.json()['orders']])
+        global_receipts = self.url_open('%s?scope=all' % receipt_root, allow_redirects=False)
+        self.assertEqual(global_receipts.status_code, 200, global_receipts.text)
+        self.assertIn(created.json()['order']['id'], [row['id'] for row in global_receipts.json()['orders']])
+        scoped_receipts = self.url_open('%s?scope=all&company_id=%s' % (receipt_root, company.id), allow_redirects=False)
+        self.assertEqual(scoped_receipts.status_code, 200, scoped_receipts.text)
+        for suffix in ('', '?scope=mine', '?scope=all&company_id=0', '?scope=all&before_id=0'):
+            self.assertEqual(self.url_open('%s%s' % (receipt_root, suffix), allow_redirects=False).status_code, 400)
         receipt_detail = self.url_open('%s/%s?company_id=%s' % (
             receipt_root, created.json()['order']['id'], company.id,
         ), allow_redirects=False)

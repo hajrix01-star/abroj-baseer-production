@@ -15,6 +15,33 @@ async function receipt(app) {
 }
 const waiting = () => { let resolve, reject; const promise = new Promise((a, b) => { resolve = a; reject = b; }); return { promise, resolve, reject }; };
 
+test('catalog cards keep name, unit beside price, and add or quantity controls in three rows without shrinking text', async () => {
+  for (const language of ['ar', 'en']) {
+    const app = harness({ language }, true);
+    try {
+      app.item.product_name = language === 'ar' ? 'اسم صنف طويل محفوظ بالكامل دون إخفاء المعلومات' : 'A long product name preserved without removing information';
+      await app.flush();
+      const tree = app.render();
+      const metadata = byId(tree, 'catalog-metadata-81');
+      assert.equal(metadata.style.at(-1).flexWrap, 'nowrap');
+      assert.equal(metadata.style[1].flexDirection, language === 'ar' ? 'row-reverse' : 'row');
+      assert.ok(text({ props: metadata }).includes('Case · Box'));
+      assert.ok(text({ props: metadata }).includes('17.30 SAR'));
+      assert.ok(text(tree).includes(app.item.product_name));
+      const rows = [byId(tree, 'catalog-option-81').children].flat(Infinity).filter(child => child && typeof child === 'object');
+      assert.equal(rows.length, 3);
+      assert.equal(rows[2].type, 'Button');
+      await app.act(() => rows[2].props.onPress());
+      const selected = [byId(app.render(), 'catalog-option-81').children].flat(Infinity).filter(child => child && typeof child === 'object');
+      assert.equal(selected.length, 3);
+      assert.ok(byId(app.render(), 'cart-quantity-81'));
+      assert.equal(one(app.render(), 'Field', p => p.testID === 'cart-quantity-81').style.minHeight, 44);
+      assert.equal(app.module('./OrdersPrimitives.tsx').ordersStyles.strong.fontSize, 16);
+      assert.equal(app.calls.some(call => call[0] === 'create'), false);
+    } finally { await app.unmount(); }
+  }
+});
+
 test('real orders screen honors view/create/receive separately, including orders-only users', async () => {
   const app = await ready();
   assert.ok(byId(app.render(), 'catalog-search'));

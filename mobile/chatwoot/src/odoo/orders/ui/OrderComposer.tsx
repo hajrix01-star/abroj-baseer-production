@@ -116,10 +116,15 @@ export function OrderComposer({ engine, companyId, language, onResult, onPending
       const priced = quoteValid ? quote.lines?.find(row => row.option_id === item.id) : undefined;
       return <View key={item.id} testID={`catalog-option-${item.id}`} style={[s.compactCard, { width: !showCart && width >= 650 ? '48.8%' : '100%' }]}>
         <View style={[s.row, rowDirection(language), { alignItems: 'flex-start' }]}>
-          <View style={s.flexible}><Text style={[s.strong, direction(language)]}>{item.product_name}</Text><Label muted language={language}>{item.option_name} · {item.uom_name}</Label>
+          <View style={s.flexible}><Text style={[s.strong, direction(language)]}>{item.product_name}</Text>{showCart && <Label muted language={language}>{item.option_name} · {item.uom_name}</Label>}
           </View>
         </View>
-        {!showCart && <KeyValue language={language} label={t('lastPrice')}><NumberText value={item.last_price} suffix={item.currency_symbol} /></KeyValue>}
+        {!showCart && <View testID={`catalog-metadata-${item.id}`} style={[s.row, rowDirection(language), { flexWrap: 'nowrap', alignItems: 'flex-start' }]}>
+          <View style={s.flexible}><Label muted language={language}>{item.option_name} · {item.uom_name}</Label></View>
+          <View accessible accessibilityLabel={`${t('lastPrice')}: ${displayNumber(item.last_price)} ${item.currency_symbol}`} style={{ flexShrink: 0 }}>
+            <NumberText value={item.last_price} suffix={item.currency_symbol} />
+          </View>
+        </View>}
         {review ? <KeyValue language={language} label={t('quantity')}><NumberText value={line?.quantity} /></KeyValue>
           : line ? <View style={[s.row, rowDirection(language)]}>
             <IconButton icon="trash" label={`${t('remove')} ${item.product_name} ${item.option_name}`} disabled={writing} onPress={() => changeQuantity(item, '0')} />

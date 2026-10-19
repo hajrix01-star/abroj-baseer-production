@@ -4,6 +4,7 @@
   "approvedVersion": "0.1.14/build15",
   "suites": ["test:bwork-gate", "test:odoo", "test:brand", "test:orders"],
   "invariants": [
+    { "id": "orders-compact-catalog-card", "description": "بطاقة المنيو ثلاثة صفوف: اسم، وحدة وسعر متجاوران، ثم إضافة أو كمية دون تصغير الخط", "suite": "test:orders", "test": "catalog cards keep name, unit beside price, and add or quantity controls in three rows without shrinking text" },
     { "id": "orders-workflow-fence", "description": "الخادم القديم لا يستقبل إنشاءً جديدًا أو مشاركة حديثة دون عقد التدفق", "suite": "test:orders", "test": "workflow verification fences new writes and scoped reads on legacy or unsupported servers" },
     { "id": "orders-legacy-retry", "description": "إعادة محاولة الطلب القديم تحفظ UUID والحمولة دون حقن غرفة جديدة", "suite": "test:orders", "test": "a legacy unknown attempt still retries exact original bytes without a workflow flag or room injection" },
     { "id": "orders-share-after-ack", "description": "مشاركة الطلب عملية مستقلة لا تنشئ طلبًا أو تعيد إنشاؤه", "suite": "test:orders", "test": "post-create share is one explicit bounded operation, guards double taps, validates ACK and never creates an order" },

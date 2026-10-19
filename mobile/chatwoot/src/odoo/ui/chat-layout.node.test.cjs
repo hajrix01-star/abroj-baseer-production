@@ -445,6 +445,57 @@ test('only viewport-visible authorized image rows request automatic previews, se
   assert.equal(nodes(one(app.render(), 'FlashList').renderItem({ item: row })).some(n => n.type === 'MediaTile'), false);
 });
 
+test('pending image ACK at the same visible index recomputes actual FlashList viewability without a scroll', () => {
+  // Use the installed library's index-only change detector, not a mock that
+  // invents an ACK callback the real native list does not emit.
+  const { default: ViewabilityHelper } = load('../../../node_modules/@shopify/flash-list/src/recyclerview/viewability/ViewabilityHelper.ts', {
+    '../../errors/ErrorMessages': { ErrorMessages: {} },
+  });
+  const app = timeline(); app.props.chat.history.messages = [];
+  app.props.chat.pending = [{ client_uuid: 'same-slot', room_id: room.id, company_id: room.company_id,
+    membership_id: room.membership_id, state: 'queued', text: '', attachment: { kind: 'image', name: 'new.jpg' } }];
+  let list = one(app.render(), 'FlashList'), callbacks = 0, recomputes = 0;
+  const helper = new ViewabilityHelper({ minimumViewTime: 0, itemVisiblePercentThreshold: 10 }, indices => {
+    callbacks++;
+    list.viewabilityConfigCallbackPairs[0].onViewableItemsChanged({ viewableItems: indices.map(index => ({ index, isViewable: true, item: list.data[index] })) });
+  });
+  const update = () => helper.updateViewableItems(false, 0, { width: 320, height: 640 }, () => ({ x: 0, y: 0, width: 280, height: 180 }), [0]);
+  list.ref.current = { scrollToEnd() {}, recomputeViewableItems() { recomputes++; helper.clearLastReportedViewableIndices(); update(); } };
+  update(); app.flushFrames(); list = one(app.render(), 'FlashList');
+  const initial = callbacks;
+  app.props.chat.pending = [];
+  app.props.chat.history.messages = [{ id: 77, author_user_id: 7, text: '', created_at: '', media: { id: 177, kind: 'image' } }];
+  list = one(app.render(), 'FlashList'); update();
+  assert.equal(callbacks, initial, 'same visible index alone does not emit an ACK row callback');
+  assert.equal(one(list.renderItem({ item: list.data[0] }), 'MediaTile').previewVisible, false);
+  app.flushFrames(); list = one(app.render(), 'FlashList');
+  assert.equal(one(list.renderItem({ item: list.data[0] }), 'MediaTile').previewVisible, true,
+    'ACK image must be discovered without moving the viewport');
+  const before = recomputes;
+  app.props.chat.history.messages = app.props.chat.history.messages.map(row => ({ ...row }));
+  app.render(); app.flushFrames(); assert.equal(recomputes, before, 'identical history polls must not reset viewability');
+  helper.dispose();
+});
+
+test('deferred preview discovery rejects hidden unverified revoked and old-account frames', () => {
+  for (const change of [app => { app.props.presented = false; },
+    app => { app.props.chat.presentationReady = false; app.props.chat.retainedDisplay = true; },
+    app => { app.props.chat.identity.permissions.media = false; },
+    app => { app.props.engine.accountScope = 'actor8/epoch2'; }]) {
+    const app = timeline(); let count = 0;
+    const list = one(app.render(), 'FlashList');
+    list.ref.current = { scrollToEnd() {}, recomputeViewableItems() { count++; } };
+    const stale = app.frames.filter(Boolean);
+    change(app); app.render();
+    // Even a callback already handed to native cannot use old presentation.
+    for (const callback of stale) callback();
+    assert.equal(count, 0);
+  }
+  const app = timeline(); app.props.presented = false; let count = 0;
+  const list = one(app.render(), 'FlashList'); list.ref.current = { recomputeViewableItems() { count++; } };
+  app.flushFrames(); assert.equal(count, 0);
+});
+
 test('timeline gives history the remaining height, caps inline input and dispatches a draft only once before durable enqueue', async () => {
   const app = timeline();
   let tree = app.render();

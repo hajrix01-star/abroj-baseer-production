@@ -217,12 +217,26 @@ test('hidden images and non-image attachments never start automatic local resolu
 });
 test('a tap during automatic thumbnail loading joins one scoped request and intentionally opens full-screen', async () => {
   const app = mediaHarness(); app.props.previewVisible = true; app.render();
+  const preview = app.pending(); app.next();
   const tile = one(app.render(), 'Pressable');
   assert.notEqual(tile.disabled, true); assert.equal(tile.accessibilityState.busy, true);
-  tile.onPress(); tile.onPress(); app.render(); assert.equal(app.calls.length, 1);
+  tile.onPress(); tile.onPress(); app.render(); assert.equal(app.calls.length, 2, 'one original starts without waiting for thumbnail, repeated tap joins it');
   app.pending().resolve('file:///scoped/intentional.jpg'); await settled();
   assert.deepEqual(app.calls.filter(c => c[0] === 'localMediaLease').map(c => c[3]), ['preview', 'original']);
   assert.equal(one(app.render(), 'ImageViewer').uri, 'file:///scoped/intentional.jpg');
+  preview.resolve('file:///scoped/late-thumb.jpg'); await settled();
+  assert.equal(one(app.render(), 'ImageViewer').uri, 'file:///scoped/intentional.jpg');
+  assert.equal(app.calls.filter(c => c[0] === 'release' && c[1].endsWith('late-thumb.jpg')).length, 1);
+});
+
+test('a failed automatic thumbnail cannot swallow a pending deliberate original open', async () => {
+  const app = mediaHarness(); app.props.previewVisible = true; app.render();
+  const preview = app.pending(); app.next(); one(app.render(), 'Pressable').onPress();
+  preview.reject(new Error('thumbnail unavailable')); await settled();
+  assert.deepEqual(app.calls.filter(c => c[0] === 'localMediaLease').map(c => c[3]), ['preview', 'original']);
+  assert.deepEqual(app.errors, []);
+  app.pending().resolve('file:///scoped/original-without-thumbnail.jpg'); await settled();
+  assert.equal(one(app.render(), 'ImageViewer').uri, 'file:///scoped/original-without-thumbnail.jpg');
 });
 test('automatic offline/cache failure is silent and never retries on rerender or repeated visibility; explicit retry works', async () => {
   const app = mediaHarness(); app.props.previewVisible = true; app.render();

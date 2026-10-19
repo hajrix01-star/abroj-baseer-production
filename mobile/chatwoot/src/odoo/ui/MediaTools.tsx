@@ -580,10 +580,10 @@ export function MediaTile({
     )
       return;
     if (live.current.busy) {
-      // A deliberate tap joins an automatic thumbnail request. It must not queue
-      // another download or be lost simply because the thumbnail is still loading.
-      if (intentional && media.kind === 'image') live.current.intentional = true;
-      return;
+      // A tap supersedes an automatic thumbnail, not the other way around.
+      // Repeated taps still join one original; the serial below rejects/release
+      // the thumbnail's late result without replacing the full-screen image.
+      if (!intentional || media.kind !== 'image' || live.current.intentional) return;
     }
     if (!intentional && (media.kind !== 'image' || live.current.previewAttempted || uri)) return;
     live.current.previewAttempted = true;
@@ -600,17 +600,14 @@ export function MediaTile({
     try {
       // The viewport receives a real protected thumbnail, never a full image.
       // Deliberate opening independently resolves the original with its SHA.
-      let local = await localMediaLease(room, media, intentional || media.kind !== 'image' ? 'original' : 'preview');
+      const local = await localMediaLease(room, media, intentional || media.kind !== 'image' ? 'original' : 'preview');
       if (!current()) { local.release(); return; }
       if (media.kind === 'image') {
         if (!local.uri.startsWith('file://')) { local.release(); throw new Error('invalid_local_image'); }
         if (!intentional) {
           leases.current.preview?.release(); leases.current.preview = local;
           setCached({ key: presentation, uri: local.uri });
-          if (!live.current.intentional) return;
-          local = await localMediaLease(room, media, 'original');
-          if (!current()) { local.release(); return; }
-          if (!local.uri.startsWith('file://')) { local.release(); throw new Error('invalid_local_image'); }
+          return;
         }
         leases.current.full?.release(); leases.current.full = local;
         setFull({ key: presentation, uri: local.uri }); setShowing(presentation);

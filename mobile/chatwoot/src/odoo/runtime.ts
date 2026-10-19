@@ -58,6 +58,12 @@ const reservations = new Map<string, { epoch: number; at: number }>();
 let generation = 0;
 let engine: NativeChatEngine | undefined;
 let mediaWork: Promise<unknown> = Promise.resolve();
+// Network waits must never own the file mutation queue. One automatic preview
+// and one deliberate original may transfer at once; taps do not queue behind
+// thumbnails. Cache writes, quota, eviction and staging remain serialized.
+const mediaTransfers: Record<MediaVariant, Promise<unknown>> = { preview: Promise.resolve(), original: Promise.resolve() };
+const mediaDownloads = new Map<string, { operation: Promise<LocalMediaLease>; readers: number }>();
+const mediaDownloadReservations = new Map<object, { actor: string; bytes: number }>();
 type CacheEntry = { uri: string; bytes: number; sha256: string | null; usedAt: number };
 type ActorFiles = { cache: Map<string, CacheEntry>; stages: Map<string, number>; cacheBytes: number; stageBytes: number };
 const actorFiles = new Map<string, ActorFiles>();
@@ -382,11 +388,11 @@ async function loadActorFiles(actor: string, epoch = generation): Promise<ActorF
   state.cache = new Map([...state.cache.values()].sort((a, b) => a.usedAt - b.usedAt || a.uri.localeCompare(b.uri)).map(entry => [entry.uri, entry]));
   actorFiles.set(actor, state); return state;
 }
-async function capacity(actor: string, additional: number, stage = false): Promise<void> {
+async function capacity(actor: string, additional: number, stage = false, additionalFiles = additional > 0 ? 1 : 0): Promise<void> {
   const epoch = generation, state = await loadActorFiles(actor, epoch);
   if (stage) { if (state.stageBytes + additional > MAX_STAGED || state.stages.size >= 200 && additional > 0) throw new ChatError('media_quota'); return; }
   const victims = state.cache.values();
-  while (state.cacheBytes + additional > MAX_CACHE || state.cache.size + (additional > 0 ? 1 : 0) > MAX_CACHE_FILES) {
+  while (state.cacheBytes + additional > MAX_CACHE || state.cache.size + additionalFiles > MAX_CACHE_FILES) {
     let victim: CacheEntry | undefined;
     for (const item of victims) if (!mediaPins.get(item.uri)?.size) { victim = item; break; }
     if (!victim) throw new ChatError('media_quota');
@@ -814,7 +820,7 @@ export async function localMediaLease(room: Room, descriptor: Record<string, unk
   // never forces an HTTP history request or a full archive scan.
   if (!history) history = await getEngine().history(room);
   const media = trustedMedia(history, descriptor); mediaFence(room, before);
-  return serialMedia(async () => {
+  const prepared = await serialMedia(async () => {
     mediaFence(room, before); const snapshot = scope(room); const extension = extensions[media.mime];
     if (!extension || getEngine().identity?.permissions.media !== true) throw new ChatError('forbidden', 403);
     const actor = await actorDirectory(snapshot.key); const directory = `${actor}c${room.company_id}-r${room.id}-m${room.membership_id}/`;
@@ -834,43 +840,89 @@ export async function localMediaLease(room: Room, descriptor: Record<string, unk
       await removeOwned(path); return null;
     };
     const existing = await cachedLease(uri, preview ? state.cache.get(uri) : { bytes: media.size, sha256: media.sha256 });
-    if (existing) return existing;
+    if (existing) return { local: existing };
     // A modern thumbnail may have been evicted while its verified full image
     // remains. Reuse only local bytes: scrolling never downloads an original.
     if (preview) {
       const original = await cachedLease(`${directory}media-${media.id}${extension}`, { bytes: media.size, sha256: media.sha256 });
-      if (original) return original;
+      if (original) return { local: original };
     }
     // Legacy images may reuse a downloaded original, but a scroll never starts
     // a large original download simply because a thumbnail is unavailable.
     if (variant === 'preview' && !preview) throw new ChatError('media_not_cached');
     if (cachedOnly || getEngine().offline) throw new ChatError('media_not_cached');
-    const limit = preview ? MAX_THUMBNAIL : media.size;
-    await capacity(actor, limit); await FS.makeDirectoryAsync(directory, { intermediates: true });
-    const partial = `${directory}media-${media.id}-${Crypto.randomUUID()}.part`; let moved = false;
-    try {
-      mediaFence(room, snapshot);
-      const mime = preview ? 'image/jpeg' : media.mime;
-      const response = await sessionNative(`/bchat/api/v2/media/${media.id}/${preview ? 'thumbnail' : 'content'}`, 'GET', { Accept: mime, 'Accept-Encoding': 'identity' }, undefined, undefined, partial, limit);
-      mediaFence(room, snapshot); const headers = headersOf(response);
-      if ((headers['content-type'] ?? '').split(';')[0].trim() !== mime) throw new ChatError('invalid_response');
-      const info = await FS.getInfoAsync(partial);
-      if (!info.exists || info.isDirectory || info.size <= 0 || info.size > limit
-          || headers['content-length'] !== undefined && (!/^[1-9]\d*$/.test(headers['content-length']) || Number(headers['content-length']) !== info.size)) throw new ChatError('invalid_response');
-      const digest = await hashFile(partial);
-      if (!preview && (info.size !== media.size || digest !== media.sha256)) throw new ChatError('attachment_changed');
-      if (preview) {
-        const encoded = await FS.readAsStringAsync(partial, { encoding: FS.EncodingType.Base64 });
-        if (!validThumbnail(BlobUtil.base64.decode(encoded))) throw new ChatError('invalid_response');
-      }
-      mediaFence(room, snapshot); await FS.moveAsync({ from: partial, to: uri }); moved = true; mediaFence(room, snapshot);
-      const entry = { uri, bytes: info.size, sha256: digest, usedAt: Date.now() };
-      state.cacheBytes += info.size; state.cache.set(uri, entry);
-      await mediaCacheCatalog.put(catalogActor(actor), entry); mediaFence(room, snapshot); return pinLocal(uri);
-    } catch (error) {
-      await removeOwned(partial).catch(() => undefined);
-      if (moved) await removeOwned(uri).catch(() => undefined);
-      throw error;
-    }
+    return { snapshot, actor, directory, preview, uri, limit: preview ? MAX_THUMBNAIL : media.size };
   });
+  if (prepared.local) return prepared.local;
+  const { snapshot, actor, directory, preview, uri, limit } = prepared;
+  const downloadKey = `${snapshot.epoch}/${uri}/${media.sha256}`;
+  let shared = mediaDownloads.get(downloadKey);
+  if (!shared) {
+    const transfer = async (): Promise<LocalMediaLease> => {
+      const reservation = {};
+      const partial = `${directory}media-${media.id}-${Crypto.randomUUID()}.part`; let moved = false;
+      try {
+        await serialMedia(async () => {
+          mediaFence(room, snapshot);
+          const held = [...mediaDownloadReservations.values()].filter(item => item.actor === actor);
+          await capacity(actor, limit + held.reduce((sum, item) => sum + item.bytes, 0), false, held.length + 1);
+          mediaFence(room, snapshot);
+          await FS.makeDirectoryAsync(directory, { intermediates: true });
+          mediaDownloadReservations.set(reservation, { actor, bytes: limit });
+        });
+        mediaFence(room, snapshot);
+        const mime = preview ? 'image/jpeg' : media.mime;
+        const response = await sessionNative(`/bchat/api/v2/media/${media.id}/${preview ? 'thumbnail' : 'content'}`, 'GET', { Accept: mime, 'Accept-Encoding': 'identity' }, undefined, undefined, partial, limit);
+        mediaFence(room, snapshot); const headers = headersOf(response);
+        if ((headers['content-type'] ?? '').split(';')[0].trim() !== mime) throw new ChatError('invalid_response');
+        const info = await FS.getInfoAsync(partial);
+        if (!info.exists || info.isDirectory || info.size <= 0 || info.size > limit
+            || headers['content-length'] !== undefined && (!/^[1-9]\d*$/.test(headers['content-length']) || Number(headers['content-length']) !== info.size)) throw new ChatError('invalid_response');
+        const digest = await hashFile(partial);
+        if (!preview && (info.size !== media.size || digest !== media.sha256)) throw new ChatError('attachment_changed');
+        if (preview) {
+          const encoded = await FS.readAsStringAsync(partial, { encoding: FS.EncodingType.Base64 });
+          if (!validThumbnail(BlobUtil.base64.decode(encoded))) throw new ChatError('invalid_response');
+        }
+        return await serialMedia(async () => {
+          try {
+            mediaFence(room, snapshot);
+            const state = await loadActorFiles(actor, snapshot.epoch);
+            const held = [...mediaDownloadReservations.entries()].filter(([key, item]) => key !== reservation && item.actor === actor);
+            await capacity(actor, info.size + held.reduce((sum, [, item]) => sum + item.bytes, 0), false, held.length + 1);
+            mediaFence(room, snapshot);
+            await FS.moveAsync({ from: partial, to: uri }); moved = true; mediaFence(room, snapshot);
+            const entry = { uri, bytes: info.size, sha256: digest, usedAt: Date.now() };
+            const prior = state.cache.get(uri); state.cacheBytes += info.size - (prior?.bytes ?? 0); state.cache.set(uri, entry);
+            await mediaCacheCatalog.put(catalogActor(actor), entry); mediaFence(room, snapshot); return pinLocal(uri);
+          } catch (error) {
+            // Do not release the mutation lock between a failed commit and its
+            // cleanup: a new generation may already be waiting to use this path.
+            if (moved) await removeOwned(uri).catch(() => undefined);
+            throw error;
+          }
+        });
+      } catch (error) {
+        await serialMedia(() => removeOwned(partial).catch(() => undefined));
+        throw error;
+      } finally {
+        mediaDownloadReservations.delete(reservation);
+      }
+    };
+    const lane = preview ? 'preview' : 'original';
+    const operation = mediaTransfers[lane].then(transfer, transfer);
+    mediaTransfers[lane] = operation.catch(() => undefined);
+    shared = { operation, readers: 0 }; mediaDownloads.set(downloadKey, shared);
+  }
+  shared.readers++;
+  try {
+    const local = await shared.operation;
+    mediaFence(room, snapshot); return pinLocal(local.uri);
+  } finally {
+    if (--shared.readers === 0) {
+      if (mediaDownloads.get(downloadKey) === shared) mediaDownloads.delete(downloadKey);
+      // The shared pin bridges completion to each caller's independent lease.
+      void shared.operation.then(local => local.release(), () => undefined);
+    }
+  }
 }

@@ -498,6 +498,36 @@ there is no full-system rediscovery or separate duplicate map artifact.
   to grant privileges. Ordinary APK tools are ready, but avoid a new build while
   these prerequisites prevent distribution; existing APK files are fixtures.
 
+- R32 (2026-10-19), bounded QA experimental release acceptance supersedes only
+  R29's first-install hold. Owner explicitly accepted the disclosed QA trial
+  request/APK path, then supplied QA Apps detail screenshots. Purchase dashboard
+  and `baseer_native_spend` both show Upgrade and Uninstall: installed-state
+  evidence, NOT proof of installed version or deployed commit. Native-spend
+  screenshot SHA256
+  `F2A8E2E58C467E2B705C4ADB937D83556C48A332221ECE191E39F73623BC8048`;
+  the source dependency closure is
+  unchanged between prior QA policy source31010aa4 and frozen source8139fab1.
+  Independent reviewer rechecked the evidence and gives CONDITIONAL GO for one
+  protected QA request with only sales dashboard, heat calendar and optional
+  BWork bridge in MODULES. Do not upgrade stable dependencies or third-party
+  modules, grant roles, automatically enable dashboard_view, or touch Live.
+  Existing local QA guard passed (`QA_DEPLOY_GUARD_TESTS=PASS`,
+  `QA_DEPLOY_SOURCE=PASS`); diff whitespace check passed. No workflow changed.
+  Policy pins `8139fab1607f54b1154fb1b6599c351fcfff733b`, merged source PR421;
+  reuse source CI, isolated Odoo110 cases, mobile468PASS/97 invariants and native
+  acceptance. No changed product or repeated build/test is justified.
+  Ordinary APK `BWork-0.1.22-8139fab1.apk`, version0.1.22/code23,
+  SHA256 `025A6751D7B0FBCA6C054BB47934DDA206D9BDCDFE998D1E575AA741D52AAC65`,
+  66628312 bytes, was built once from that exact source; matching existing signer,
+  normal entry/QA boundary, no fixtures, same16 permissions, successful22-to23
+  upgrade and AR/EN320 login smoke were independently accepted. Publish only as
+  QA prerelease/non-Latest with host completion UNKNOWN and canonical operational
+  financial parity UNTESTED prominently stated. A queued signed request is NOT
+  a deployment receipt; no automatic repeat request. The dashboard may remain
+  unavailable until QA actually completes and an already-authorized user has
+  its explicit switch. No financial production GO is granted. Evidence resides
+  in ignored output/bwork-leadership-20261019/release-0.1.22; never commit output.
+
 ## Local handoff / remaining acceptance
 
 | Area | Owner / evidence | Result |

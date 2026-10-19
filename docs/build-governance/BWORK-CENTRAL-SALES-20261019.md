@@ -96,13 +96,14 @@ authenticated reads, not the invoice-only QA reports connector.
 | G2 | GO for canonical heat adapter, targets and C1 bridge | shared source authority, exact C1 wire/routes/limits; bridge implementation released under R06 boundaries |
 | G3 | GO | existing Odoo/BWork stack, no dependencies; actual ORM parity and mobile state/UI verification remain required; R04 |
 | G4 | GO, bounded source UI | central primitives, compact three cards/chips, weekday averages above calendar, local AR/EN presentation |
-| G5 | Local checks PASS; actual ORM pending | 463 PASS/1 existing skip, 92 invariants + TypeScript; Python compile/XML/pure contracts; no ORM/native inference |
+| G5 | Local PASS; actual isolated Odoo FAIL | local463 PASS/1 existing skip/92 invariants; actual run39258483362 reports1 failed/6 errors of101 tests; R12 |
 | G6 | Independent local source review accepted | central_sales_independent_review; findings below closed by delta review |
 | G7 | No distributable requested | no APK, release version bump, external publication or deployment |
-| G8 | NO-GO for release/deployment | critical actual Odoo ORM/HTTP and native AR/EN evidence unavailable; local source handoff only |
+| G8 | NO-GO for merge/release/deployment | actual Odoo failures + source-integrity failure remain; native AR/EN acceptance also pending; R12 |
 
-Local implementation is complete and reviewed. Actual runtime acceptance is not
-complete; no QA/Live or operational-readiness claim follows from source review.
+Local implementation was source-reviewed, but actual isolated execution revealed
+open blockers in R12. The earlier source acceptance is not runtime acceptance;
+no QA/Live or operational-readiness claim follows from it.
 
 ### Maintained architecture / authority map
 
@@ -162,6 +163,56 @@ there is no full-system rediscovery or separate duplicate map artifact.
   No changes to canonical sales module, chat core, order or task business code.
   Isolated Odoo workflow extended to install/test the optional bridge, but not run
   remotely. No source push, PR, merge, QA/Live update, APK or goal/business writes.
+- R10 (2026-10-19), owner explicitly approved source upload to a review branch
+  and isolated Odoo CI, with results reported before any merge/deployment.
+  Test profile: canonical heat/bridge source change; ORM financial/ACL/HTTP risk
+  not covered by local compile/host tests; observed owner scope7 companies,
+  existing assumption<=20 concurrent readers (not a new load claim). Reuse the
+  existing disposable pinned Odoo19/PostgreSQL workflow; no QA/Live load/data.
+  Local candidate `f97d40fcb10c94e018aba3b55b4aaa36dbf52f90` uploaded unchanged to
+  `codex/bwork-central-sales-dashboard-20261019`. CLI gh token was invalid, but
+  Git credential-manager dry-run verified scoped push permission; no credentials
+  were requested, exposed or changed. Current main fetched read-only.
+  Clean review commit `f6897e215daacfd23819150c7d121c4166be7546` is based on
+  main`b1e871b8a6e3db26c0ec05ebe113e0961c4c95e5`, tree`33b382f45d58c0fb9d9b7285dfc32d0391c71e9b`.
+  It applies the feature/workflow/doc delta and imports the complete frozen BWork
+  subtree`f3c754cd46c7e4c548c7a6bc14a8ed47d28441bd` (not previously in main), without
+  copying unrelated local main divergences or overwriting QA policies. Product
+  paths compare byte-for-byte equal to local f97; canonical sales/BChat/ops diff
+  versus main is empty. Draft PR420 opened, no reviewers/auto-merge requested.
+  Run39258483362 is the actual isolated Odoo run; no merge/deploy authorized.
+- R11, initial external evidence: cumulative contracts run39258483265 succeeded.
+  Source integrity run39258483309 failed `git diff --check` on existing imported
+  mobile files: `.cursor/rules/about.mdc` and five vendor patches (clipboard,
+  menu, ffmpeg, iOS utilities, reanimated). These files were unchanged between
+  reviewed base8dd and candidatef97; initial import into main made their existing
+  whitespace visible to the whole-PR gate. Do not trim patch context blindly,
+  weaken the gate or claim source integrity passed. Actual Odoo run remained in
+  progress at this observation; its result is independent and not inferred.
+- R12, completed external result (2026-10-19T13:19:41Z): isolated Odoo run
+  [39258483362](https://github.com/hajrix01-star/abroj-baseer-production/actions/runs/39258483362),
+  job118079706252, FAILED. Final Odoo summary reports`1 failed, 6 error(s) of101 tests`;
+  do not sum overlapping per-module statistics or infer that unstarted class
+  methods passed. Checkout merge`ede9f3b1e445b5043a942ee2a5ef40ff8228acb4` is recorded
+  in logs; review head remainsf6897e21 and PR420 draft/open/unmerged.
+  Findings:
+  - RT-01: `HeatPosCase.test_order_and_session_rules_intersect_and_company_session_scope_is_enforced`,
+    test_heat_pos.py:421, expected AccessError after a rule hides contributing
+    sessionB; no error was raised. Root cause is NOT established; do not weaken
+    the assertion or classify it as harmless before diagnosing rule/caching/read
+    behavior under the pinned runtime. This blocks source permission acceptance.
+  - RT-02: `TestHeatUnifiedSales.setUpClass` fails creating spreadsheet.dashboard
+    under its accounting-fixture identity, so new unified parity methods did not
+    run. Four bridge test methods fail creating Sales-order fixtures; a fifth
+    fails changing dashboard visibility. These six setup/access errors must be
+    fixed in isolated fixture preparation without elevating report readers or
+    granting production source rights. No actual full-source parity pass exists.
+  - RT-03: source-integrity run39258483309 fails initial-import legacy whitespace
+    as described in R11. Preserve meaningful vendor patch context and do not
+    bypass the source gate. Cumulative contracts run39258483265 PASSED.
+  Result posted on PR420 (conversation comment6268228060). No product/test fixes,
+  retries, merge, QA/Live deployment or APK/release were performed in this turn;
+  the user requested the result before any further merge/deployment action.
 
 ## Local handoff / remaining acceptance
 
@@ -174,10 +225,11 @@ there is no full-system rediscovery or separate duplicate map artifact.
 
 Remaining blockers before operational release:
 
-1. Run actual isolated Odoo19/PostgreSQL ORM/HTTP suites for canonical sources,
-   refunds/dedup/targets/company/source ACLs and optional bridge. Docker daemon is
-   unavailable locally; compile, mocks and synthetic serializer do not replace it.
-   The repository workflow and module README hold the runnable commands.
+1. Diagnose/fix R12 isolated-test failures and R11 source-import gate, then rerun
+   the affected pinned Odoo19/PostgreSQL suites. The first real run failed and
+   the new unified-heat class did not reach parity tests. Docker remains
+   unavailable locally, but GitHub isolated execution is now established.
+   Compile, mocks and synthetic serializer do not replace that failed proof.
 2. Verify actual native AR/EN narrow/wide rendering and representative response
    times against the fixed source candidate. React host tests do not establish
    font/layout/keyboard/device acceptance. No representative load was applied.

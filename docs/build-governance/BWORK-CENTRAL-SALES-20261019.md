@@ -95,16 +95,17 @@ authenticated reads, not the invoice-only QA reports connector.
 | G1 | GO with enforced budgets | month + 8-week window; canonical access/capacity checks before materialization; bridge company/request cap frozen before bridge code; R04 |
 | G2 | GO for canonical heat adapter, targets and C1 bridge | shared source authority, exact C1 wire/routes/limits; bridge implementation released under R06 boundaries |
 | G3 | GO | existing Odoo/BWork stack, no dependencies; actual ORM parity and mobile state/UI verification remain required; R04 |
-| G4 | GO, bounded source UI | central primitives, compact three cards/chips, weekday averages above calendar, local AR/EN presentation |
-| G5 | Local + actual isolated Odoo PASS | local464 PASS/1 existing optional skip/93 invariants; actual run39262869103 reports0 failed/0 errors of110 tests, no actual test skips; R17 |
+| G4 | GO, actual native synthetic UI accepted | source69db5f8d; AR/EN320/900 after geometry repairs; R24, not QA financial proof |
+| G5 | Local + actual isolated Odoo PASS | local466 PASS/1 existing optional skip/95 invariants; current-head run39267547320 reports0 failed/0 errors of110 tests, no actual test skips; R23 |
 | G6 | Independent local source review accepted | central_sales_independent_review; findings below closed by delta review |
-| G7 | No distributable requested | no APK, release version bump, external publication or deployment |
-| G8 | HOLD before merge; operational release not accepted | owner requires result before merge/deploy; native AR/EN acceptance and later QA parity/artifact proof remain; isolated blockers resolved R17 |
+| G7 | QA candidate0.1.22/build23 requested | source metadata frozen; synthetic preview only, ordinary APK not built/published |
+| G8 | Source-only merge GO; QA/APK NO-GO | independent source/native/current CI accepted R24; installed dependency preflight, host receipt and authenticated QA parity still missing |
 
 The first isolated failures in R12 and newly exposed R16 failures are repaired;
 the same pinned workflow now passes at the exact R17 source head. This is actual
 isolated ORM/HTTP proof, not native visual acceptance or QA financial parity.
-Owner review remains the stop boundary before merge/deployment.
+Owner authorized QA-first order in R20. Independent source-only merge approval
+is recorded in R24; QA deployment/publication prerequisites remain enforced.
 
 ### Maintained architecture / authority map
 
@@ -362,6 +363,55 @@ there is no full-system rediscovery or separate duplicate map artifact.
   <=20readers; native geometry risk not covered by host doubles, no load rerun.
   P2only observations remain: extra date/time fields in month control, small
   narrow calendar touch widths and English Estimate wrap. No silent polish scope.
+- R23, repaired candidate69db5f8d uploaded to clean review head
+  `e6a4e3f8712c9abab528cea89c157c846f71aae9`, tree
+  `ee8abde05b88cb65bb4af967536d733dab402b06`. Product paths including current
+  governance verified byte-identical to local frozen source. Full local gate:
+  467cases/466PASS/one existing optional capacity skip,95invariants+TypeScript,
+  13.96s. Current-head CI source39267547211/contracts39267547315/Odoo39267547320
+  all SUCCESS; Odoo job118110966883 final0failed/0errors of110,110actualstarts
+  and zero actualtestskip markers. This is mandatory PR-head validation, not a
+  newly invented financial/load environment. Independent delta review accepted
+  causal layout fixes and additive tests/guards; native closure remains pending.
+  Owner repeated to follow the prior publication method; do not interpret this
+  as waiving QA financial parity or expanding dependency initialization. Read-only
+  QA preflight gap confirmed by actual wrapper315–377: it checks explicit module
+  states, not dependency closure; installing bridge can implicitly install absent
+  native_spend and run its root-plan configuration hook. Old source archives
+  prove code presence only; historical Live installation is not current QA state.
+  No approved SSH alias config is present; browserChrome/IAB unavailable and
+  anonymous QA is login-only. No credential/secret-file discovery attempted.
+  Before queueing3-module policy need installed/compatible dependency evidence;
+  coherent QA backup does not authorize unknown initialization scope. No QA request
+  or APK publication until its prerequisites can actually be satisfied.
+- R24, final native closure and independent acceptance: actual AR/EN320/900,
+  12native plot taps (days1/6/30) all selected the exact expected date; all4heat
+  geometries show7columns (Oct1Thu/Oct2Fri/Oct3Sat), weekday average centers
+  within1px. Postfix proof under`native/69db5f8d/` plus APK/bundle manifests in
+  `output/bwork-leadership-20261019/`; fixture APK65,623,360bytes SHAprefix9F060082
+  belongs to isolateduipreview0.1.21/build22, NOT ordinary0.1.22/build23. Same
+  synthetic harness; ordinary installed0.1.21 app preserved. Independent reviewer
+  verified actual PNG/XML/touch evidence, hashes, exact current CI head and all
+  110unique tests. GO for PR420 source merge ONLY at e6a4e3f8; QA dispatch/APK
+  remain NO-GO pending explicit dependency/host/authenticated parity proof. Main
+  verifiedb1e871b8; automatic workflows are PR checks only, Live dispatch remains
+  separately manual/protected. Intent: expected-head squash merge, verify exact
+  merged tree matches reviewedee8abde0 and parentb1e871b8; no release/deploy call.
+- R25, source PR420 merged by expected-head squash after independent source-only
+  GO. Actual commit`3497dc5d1bb0351fd2282fb16120899b8c634759`, parent
+  `b1e871b8a6e3db26c0ec05ebe113e0961c4c95e5`, full tree
+  `ee8abde05b88cb65bb4af967536d733dab402b06` exactly equals the tested review
+  tree; fresh PR metadata confirms closed/merged. No QA policy/dispatch or Live
+  approval/deploy call was made. QA request stays blocked on current installed
+  dependency/state proof; actual financial parity and host receipt unavailable.
+  Ordinary0.1.22/build23 APK not built/published: generated Android release bytes
+  currently belong to explicitly synthetic uipreview, never distribute them.
+  Future normal build must synchronize ignored native metadata23, regenerate
+  normal entry/bundle/APK and pass normal-artifact/signature/upgrade verifier.
+  Agent restored320x640/density160/font1.0 and normal installed0.1.21 app unchanged;
+  final12touch/4geometryproof and coherent report read by root. Operational
+  release decision NO-GO until missing QA access/dependency/host/parity gates;
+  do not substitute prior QUEUED-only method for verified financial acceptance.
 
 ## Local handoff / remaining acceptance
 

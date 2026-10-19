@@ -1,0 +1,275 @@
+import React, { useMemo } from 'react';
+import { Alert, Linking, Platform, Pressable, Text } from 'react-native';
+import {
+  pick,
+  types as documentPickerTypes,
+  errorCodes as documentPickerErrorCodes,
+  isErrorWithCode,
+  type DocumentPickerResponse,
+} from '@react-native-documents/picker';
+import { Asset, launchCamera, launchImageLibrary } from 'react-native-image-picker';
+import { PERMISSIONS, request, RESULTS } from 'react-native-permissions';
+import Animated, { SlideInDown, SlideOutDown } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAppDispatch, useAppSelector } from '@/hooks';
+import type { AppDispatch } from '@/store';
+import { updateAttachments } from '@/store/conversation/sendMessageSlice';
+import { useChatWindowContext, useRefsContext } from '@/context';
+import {
+  AttachFileIcon,
+  CameraIcon,
+  MacrosIcon,
+  PhotosIcon,
+  WhatsAppMonochromeIcon,
+} from '@/svg-icons';
+import { tailwind } from '@/theme';
+import { isAWhatsAppChannel, useHaptic, useScaleAnimation } from '@/utils';
+import { Icon } from '@/components-next/common';
+import { MAXIMUM_FILE_UPLOAD_SIZE } from '@/constants';
+import i18n from '@/i18n';
+import { showToast } from '@/utils/toastUtils';
+import { findFileSize } from '@/utils/fileUtils';
+import { selectConversationById } from '@/store/conversation/conversationSelectors';
+import { selectInboxById } from '@/store/inbox/inboxSelectors';
+
+export const handleOpenPhotosLibrary = async (dispatch: AppDispatch) => {
+  const pickedAssets = await launchImageLibrary({
+    quality: 1,
+    selectionLimit: 4,
+    mediaType: 'mixed',
+    presentationStyle: 'formSheet',
+  });
+  if (pickedAssets.didCancel) {
+  } else if (pickedAssets.errorCode) {
+    Alert.alert(
+      'Permission Denied',
+      pickedAssets.errorMessage ||
+        'The permission to access the photo library has been denied and cannot be requested again. Please enable it in your device settings if you wish to access photos from your library.',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Open Settings',
+          onPress: () => {
+            // Open app settings
+            Linking.openSettings();
+          },
+        },
+      ],
+      { cancelable: false },
+    );
+  } else {
+    if (pickedAssets.assets && pickedAssets.assets?.length > 0) {
+      validateFileAndSetAttachments(dispatch, pickedAssets.assets[0]);
+    }
+  }
+};
+
+const handleLaunchCamera = async (dispatch: AppDispatch) => {
+  request(Platform.OS === 'ios' ? PERMISSIONS.IOS.CAMERA : PERMISSIONS.ANDROID.CAMERA).then(
+    async result => {
+      if (RESULTS.BLOCKED === result) {
+        Alert.alert(
+          'Permission Denied',
+          'The permission to access the camera has been denied and cannot be requested again. Please enable it in your device settings if you wish to use the camera feature.',
+          [
+            {
+              text: 'Cancel',
+              style: 'cancel',
+            },
+            {
+              text: 'Open Settings',
+              onPress: () => {
+                // Open app settings
+                Linking.openSettings();
+              },
+            },
+          ],
+          { cancelable: false },
+        );
+      }
+      if (RESULTS.GRANTED === result) {
+        const imageResult = await launchCamera({
+          presentationStyle: 'formSheet',
+          mediaType: 'mixed',
+        });
+        if (imageResult.didCancel) {
+        } else if (imageResult.errorCode) {
+        } else {
+          if (imageResult.assets && imageResult.assets?.length > 0) {
+            validateFileAndSetAttachments(dispatch, imageResult.assets[0]);
+          }
+        }
+      }
+    },
+  );
+};
+
+/**
+ * Doing this so that the our Store Object Attachments is of single type - Asset from Image Picker Library
+ * The function `mapObject` takes an object of type `DocumentPickerResponse` and returns an array of
+ * `Asset` objects with properties `fileName`, `fileSize`, `type`, and `uri`.
+ * @param {DocumentPickerResponse} originalObject - The originalObject parameter is of type
+ * DocumentPickerResponse.
+ * @returns The function `mapObject` is returning an array of `Asset` objects.
+ */
+const mapObject = (originalObject: DocumentPickerResponse): Asset[] => {
+  return [
+    {
+      fileName: originalObject.name || '',
+      fileSize: originalObject.size || 0,
+      type: originalObject.type || '',
+      uri: originalObject.uri || '',
+    },
+  ];
+};
+
+const handleAttachFile = async (dispatch: AppDispatch) => {
+  try {
+    const result = await pick({
+      type: [
+        documentPickerTypes.allFiles,
+        documentPickerTypes.images,
+        documentPickerTypes.plainText,
+        documentPickerTypes.audio,
+        documentPickerTypes.pdf,
+        documentPickerTypes.zip,
+        documentPickerTypes.csv,
+        documentPickerTypes.doc,
+        documentPickerTypes.docx,
+        documentPickerTypes.ppt,
+        documentPickerTypes.pptx,
+        documentPickerTypes.xls,
+        documentPickerTypes.xlsx,
+      ],
+      presentationStyle: 'formSheet',
+    });
+    // TODO: Support multiple files
+    const file = mapObject(result[0])[0];
+    validateFileAndSetAttachments(dispatch, file);
+  } catch (err) {
+    if (isErrorWithCode(err) && err.code === documentPickerErrorCodes.OPERATION_CANCELED) {
+      // User cancelled the picker
+    } else {
+      throw err;
+    }
+  }
+};
+
+const ADD_MENU_OPTIONS = [
+  {
+    id: 'photos',
+    icon: <PhotosIcon />,
+    titleKey: 'CONVERSATION_ATTACHMENT.OPTIONS.PHOTOS',
+    handlePress: handleOpenPhotosLibrary,
+  },
+  {
+    id: 'camera',
+    icon: <CameraIcon />,
+    titleKey: 'CONVERSATION_ATTACHMENT.OPTIONS.CAMERA',
+    handlePress: handleLaunchCamera,
+  },
+  {
+    id: 'attach_file',
+    icon: <AttachFileIcon />,
+    titleKey: 'CONVERSATION_ATTACHMENT.OPTIONS.ATTACH_FILE',
+    handlePress: handleAttachFile,
+  },
+  {
+    id: 'macros',
+    icon: <MacrosIcon />,
+    titleKey: 'CONVERSATION_ATTACHMENT.OPTIONS.MACROS',
+    handlePress: () => {},
+  },
+];
+
+const TEMPLATES_MENU_OPTION = {
+  id: 'whatsapp_templates',
+  icon: <WhatsAppMonochromeIcon />,
+  titleKey: 'CONVERSATION_ATTACHMENT.OPTIONS.WHATSAPP_TEMPLATES',
+  handlePress: () => {},
+};
+
+export const validateFileAndSetAttachments = async (dispatch: AppDispatch, attachment: Asset) => {
+  const { fileSize } = attachment;
+  if (fileSize !== undefined && findFileSize(fileSize) <= MAXIMUM_FILE_UPLOAD_SIZE) {
+    dispatch(updateAttachments([attachment]));
+  } else {
+    showToast({ message: i18n.t('CONVERSATION.FILE_SIZE_LIMIT') });
+  }
+};
+
+type MenuOptionProps = {
+  index: number;
+  menuOption: (typeof ADD_MENU_OPTIONS)[0];
+};
+
+const MenuOption = (props: MenuOptionProps) => {
+  const { index, menuOption } = props;
+  const dispatch = useAppDispatch();
+  const { macrosListSheetRef, whatsAppTemplatesSheetRef } = useRefsContext();
+
+  const { animatedStyle, handlers } = useScaleAnimation();
+  const hapticSelection = useHaptic();
+
+  const handlePress = () => {
+    hapticSelection?.();
+    menuOption?.handlePress(dispatch);
+    if (menuOption.id === 'macros') {
+      macrosListSheetRef.current?.present();
+    }
+    if (menuOption.id === 'whatsapp_templates') {
+      whatsAppTemplatesSheetRef.current?.present();
+    }
+  };
+
+  return (
+    <Animated.View style={[tailwind.style('mb-3'), animatedStyle]}>
+      <Pressable onPress={handlePress} {...handlers}>
+        <Animated.View key={index} style={[tailwind.style('flex-row items-center justify-start')]}>
+          <Animated.View style={tailwind.style('p-2')}>
+            <Icon icon={menuOption.icon} size={24} />
+          </Animated.View>
+          <Text
+            style={tailwind.style(
+              'text-base font-inter-normal-20 leading-[18px] tracking-[0.24px] text-gray-950 pl-5',
+            )}>
+            {i18n.t(menuOption.titleKey)}
+          </Text>
+        </Animated.View>
+      </Pressable>
+    </Animated.View>
+  );
+};
+
+export const CommandOptionsMenu = () => {
+  const { bottom } = useSafeAreaInsets();
+  const isAndroid = Platform.OS === 'android';
+  const { conversationId } = useChatWindowContext();
+  const conversation = useAppSelector(state => selectConversationById(state, conversationId));
+  const inboxId = conversation?.inboxId;
+  const inbox = useAppSelector(state => (inboxId ? selectInboxById(state, inboxId) : undefined));
+
+  const menuOptions = useMemo(() => {
+    if (inbox && isAWhatsAppChannel(inbox)) {
+      return [...ADD_MENU_OPTIONS, TEMPLATES_MENU_OPTION];
+    }
+    return ADD_MENU_OPTIONS;
+  }, [inbox]);
+
+  const perItemHeight = isAndroid ? 53 : 44;
+  const containerHeight = perItemHeight * menuOptions.length + (bottom === 0 ? 16 : bottom);
+
+  return (
+    <Animated.View
+      entering={SlideInDown.springify().mass(1).damping(29).stiffness(140)}
+      exiting={SlideOutDown.springify().mass(1).damping(29).stiffness(140)}
+      style={tailwind.style('mx-1 pt-2 items-start', `h-[${containerHeight}px]`)}>
+      {menuOptions.map((menuOption, index) => {
+        return <MenuOption key={menuOption.id} {...{ menuOption, index }} />;
+      })}
+    </Animated.View>
+  );
+};

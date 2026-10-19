@@ -1,0 +1,37 @@
+version: '2.1'
+orbs:
+  node: circleci/node@5.1.0
+
+jobs:
+  build-and-test:
+    docker:
+      - image: cimg/node:20.9.0
+    steps:
+      - checkout
+      - run:
+          name: Setup Working Directory
+          command: |
+            ls -la
+            pwd
+      - restore_cache:
+          name: Restore pnpm Package Cache
+          keys:
+            - pnpm-packages-v1-{{ checksum "pnpm-lock.yaml" }}
+            - pnpm-packages-v1-
+      - run:
+          name: Install Dependencies
+          command: npx pnpm@10.11.0 install --frozen-lockfile
+      - save_cache:
+          name: Save pnpm Package Cache
+          key: pnpm-packages-v1-{{ checksum "pnpm-lock.yaml" }}
+          paths:
+            - .pnpm-store
+            - node_modules
+      - run:
+          command: npx pnpm@10.11.0 exec jest --maxWorkers=2
+          name: Run pnpm tests
+
+workflows:
+  test_my_app:
+    jobs:
+      - build-and-test

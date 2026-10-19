@@ -166,7 +166,10 @@
                 </div>
                 </div>
                 <footer class="o_baseer_heat_details_footer">
-                    <button t-if="props.day.source_action" class="btn btn-primary" type="button" t-on-click="() => props.openSources(props.day.source_action)" t-esc="props.labels.source"/>
+                    <t t-if="props.day.source_actions and props.day.source_actions.length">
+                        <button t-foreach="props.day.source_actions" t-as="source" t-key="source.key" class="btn btn-primary" type="button" t-on-click="() => props.openSources(source.action)" t-esc="source.action.name"/>
+                    </t>
+                    <button t-elif="props.day.source_action" class="btn btn-primary" type="button" t-on-click="() => props.openSources(props.day.source_action)" t-esc="props.labels.source"/>
                     <button class="btn btn-secondary" type="button" t-on-click="props.close" t-esc="props.labels.close"/>
                 </footer>
             </section>

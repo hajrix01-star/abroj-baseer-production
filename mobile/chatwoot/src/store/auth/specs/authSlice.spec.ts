@@ -1,0 +1,306 @@
+import authReducer, { logout, resetAuth, setAccount } from '@/store/auth/authSlice';
+import { mockUser } from './authMockData';
+import { AuthState } from '@/store/auth/authSlice';
+import { authActions } from '@/store/auth/authActions';
+import { AvailabilityStatus, UserRole } from '@/types';
+
+jest.mock('@sentry/react-native', () => ({
+  captureException: jest.fn(),
+}));
+
+jest.mock('@/i18n', () => ({
+  t: (key: string) => key,
+}));
+
+jest.mock('@/utils/toastUtils', () => ({
+  showToast: jest.fn(),
+}));
+
+jest.mock('@/services/APIService', () => ({
+  apiService: {
+    get: jest.fn(),
+    post: jest.fn(),
+    put: jest.fn(),
+    delete: jest.fn(),
+  },
+}));
+
+describe('Auth Slice', () => {
+  const initialState: AuthState = {
+    user: null,
+    accessToken: null,
+    uiFlags: {
+      isLoggingIn: false,
+      isResettingPassword: false,
+      isVerifyingMfa: false,
+    },
+    headers: null,
+    error: null,
+    mfaToken: null,
+    verificationChannel: null,
+  };
+
+  const loggedInState = {
+    ...initialState,
+    user: {
+      ...mockUser,
+      accounts: [],
+      pubsub_token: 'token',
+      avatar_url: 'url',
+      available_name: 'name',
+      role: 'agent' as UserRole,
+      identifier_hash: 'hash',
+      availability: 'online',
+      thumbnail: 'thumbnail',
+      availability_status: 'online' as AvailabilityStatus,
+      type: 'user',
+    },
+    accessToken: 'token',
+    headers: { 'access-token': 'token', uid: 'uid', client: 'client' },
+  };
+
+  const userWithAccounts = {
+    ...mockUser,
+    id: 1,
+    account_id: 123,
+    accounts: [
+      {
+        id: 123,
+        active_at: '',
+        auto_offline: false,
+        availability: 'online',
+        availability_status: 'online' as AvailabilityStatus,
+        custom_role: '',
+        custom_role_id: '',
+        name: 'Account 1',
+        permissions: [],
+        role: 'agent' as UserRole,
+        status: 'active',
+      },
+      {
+        id: 456,
+        active_at: '',
+        auto_offline: false,
+        availability: 'online',
+        availability_status: 'online' as AvailabilityStatus,
+        custom_role: '',
+        custom_role_id: '',
+        name: 'Account 2',
+        permissions: [],
+        role: 'agent' as UserRole,
+        status: 'active',
+      },
+    ],
+    pubsub_token: '',
+    avatar_url: '',
+    available_name: '',
+    role: 'agent' as UserRole,
+    availability: 'online',
+    availability_status: 'online' as AvailabilityStatus,
+    identifier_hash: '',
+    thumbnail: '',
+    type: 'user',
+  };
+
+  it('should handle initial state', () => {
+    expect(authReducer(undefined, { type: 'unknown' })).toEqual(initialState);
+  });
+
+  describe('basic reducers', () => {
+    it('should handle logout', () => {
+      expect(() => authReducer(loggedInState, logout())).not.toThrow();
+    });
+
+    it('should handle resetAuth', () => {
+      expect(authReducer(loggedInState, resetAuth())).toEqual(initialState);
+    });
+
+    it('should handle setAccount', () => {
+      const state = {
+        ...initialState,
+        user: {
+          ...mockUser,
+          accounts: [],
+          role: 'agent' as UserRole,
+          availability_status: 'online' as AvailabilityStatus,
+          pubsub_token: 'token',
+          avatar_url: 'url',
+          available_name: 'name',
+          identifier_hash: 'hash',
+          availability: 'online',
+          thumbnail: 'thumbnail',
+          type: 'user',
+        },
+      };
+      expect(authReducer(state, setAccount(123))).toEqual(state);
+    });
+  });
+
+  describe('setCurrentUserAvailability', () => {
+    it('should update availability for matching user and account', () => {
+      const state = {
+        ...initialState,
+        user: userWithAccounts,
+      };
+
+      const action = {
+        type: 'auth/setCurrentUserAvailability',
+        payload: {
+          users: {
+            '1': 'busy',
+          },
+        },
+      };
+
+      const nextState = authReducer(state, action);
+      expect(nextState.user?.accounts[0].availability).toBe('busy');
+      expect(nextState.user?.accounts[0].availability_status).toBe('busy');
+      expect(nextState.user?.accounts[1].availability).toBe('online');
+    });
+
+    it('should not update for non-matching user ID', () => {
+      const state = {
+        ...initialState,
+        user: { ...userWithAccounts, id: 2 },
+      };
+
+      const action = {
+        type: 'auth/setCurrentUserAvailability',
+        payload: {
+          users: {
+            '1': 'busy',
+          },
+        },
+      };
+
+      expect(authReducer(state, action)).toEqual(state);
+    });
+
+    it('should not update when user is null', () => {
+      const state = { ...initialState, user: null };
+      const action = {
+        type: 'auth/setCurrentUserAvailability',
+        payload: { users: { '1': 'busy' } },
+      };
+
+      expect(authReducer(state, action)).toEqual(state);
+    });
+  });
+
+  describe('auth async actions', () => {
+    it('should set isLoggingIn flag when login is pending', () => {
+      const action = { type: authActions.login.pending.type };
+      const state = authReducer(initialState, action);
+      expect(state.uiFlags.isLoggingIn).toBe(true);
+      expect(state.error).toBeNull();
+    });
+
+    it('should handle successful login', () => {
+      const payload = {
+        user: mockUser,
+        headers: { 'access-token': 'token', uid: 'uid', client: 'client' },
+      };
+      const action = { type: authActions.login.fulfilled.type, payload };
+      const state = authReducer(initialState, action);
+
+      expect(state.user).toEqual(mockUser);
+      expect(state.headers).toEqual(payload.headers);
+      expect(state.uiFlags.isLoggingIn).toBe(false);
+      expect(state.error).toBeNull();
+    });
+
+    it('should store the MFA token and verification channel when verification is required', () => {
+      const payload = {
+        mfa_required: true,
+        mfa_token: 'mfa-token',
+        verification_channel: 'email',
+      };
+      const action = { type: authActions.login.fulfilled.type, payload };
+      const state = authReducer(initialState, action);
+
+      expect(state.user).toBeNull();
+      expect(state.mfaToken).toBe('mfa-token');
+      expect(state.verificationChannel).toBe('email');
+      expect(state.uiFlags.isLoggingIn).toBe(false);
+    });
+
+    it('stays logged out when the account requires MFA enrolment', () => {
+      const pendingState = {
+        ...initialState,
+        uiFlags: { ...initialState.uiFlags, isLoggingIn: true },
+      };
+      const action = {
+        type: authActions.login.fulfilled.type,
+        payload: { mfa_setup_required: true },
+      };
+      const state = authReducer(pendingState, action);
+
+      expect(state.user).toBeNull();
+      expect(state.headers).toBeNull();
+      expect(state.mfaToken).toBeNull();
+      expect(state.uiFlags.isLoggingIn).toBe(false);
+      expect(state.error).toBeNull();
+    });
+
+    it('should default the verification channel to null for authenticator MFA', () => {
+      const payload = { mfa_required: true, mfa_token: 'mfa-token' };
+      const action = { type: authActions.login.fulfilled.type, payload };
+      const state = authReducer(initialState, action);
+
+      expect(state.mfaToken).toBe('mfa-token');
+      expect(state.verificationChannel).toBeNull();
+    });
+
+    it('should clear the MFA token and verification channel once verification succeeds', () => {
+      const pendingState = {
+        ...initialState,
+        mfaToken: 'mfa-token',
+        verificationChannel: 'email' as const,
+      };
+      const payload = {
+        user: mockUser,
+        headers: { 'access-token': 'token', uid: 'uid', client: 'client' },
+      };
+      const action = { type: authActions.verifyMfa.fulfilled.type, payload };
+      const state = authReducer(pendingState, action);
+
+      expect(state.user).toEqual(mockUser);
+      expect(state.mfaToken).toBeNull();
+      expect(state.verificationChannel).toBeNull();
+      expect(state.uiFlags.isVerifyingMfa).toBe(false);
+    });
+
+    it('stays logged out and drops the token when verification ends in an MFA setup challenge', () => {
+      const pendingState = {
+        ...initialState,
+        mfaToken: 'mfa-token',
+        verificationChannel: 'email' as const,
+        uiFlags: { ...initialState.uiFlags, isVerifyingMfa: true },
+      };
+      const action = {
+        type: authActions.verifyMfa.fulfilled.type,
+        payload: { mfa_setup_required: true },
+      };
+      const state = authReducer(pendingState, action);
+
+      expect(state.user).toBeNull();
+      expect(state.headers).toBeNull();
+      expect(state.mfaToken).toBeNull();
+      expect(state.verificationChannel).toBeNull();
+      expect(state.uiFlags.isVerifyingMfa).toBe(false);
+      expect(state.error).toBeNull();
+    });
+
+    it('should handle login failure', () => {
+      const error = 'Invalid credentials';
+      const action = {
+        type: authActions.login.rejected.type,
+        payload: { errors: [error] },
+      };
+      const state = authReducer(initialState, action);
+
+      expect(state.uiFlags.isLoggingIn).toBe(false);
+      expect(state.error).toBe(error);
+    });
+  });
+});

@@ -6,13 +6,13 @@ const ts = require('typescript');
 
 function harness(initial = {}, realReact = false, realComponents = false) {
   const instances = new Map(), cache = new Map(), timers = new Map();
-  let active, slots, seen, effects, nextTimer = 0;
+  let active, slots, seen, effects, nextTimer = 0, stateWrites = 0;
   const react = realReact ? require('react') : {
     useState(initial) {
       const slot = slots++;
       if (!(slot in active.slots)) active.slots[slot] = typeof initial === 'function' ? initial() : initial;
       const instance = active;
-      return [instance.slots[slot], value => { instance.slots[slot] = typeof value === 'function' ? value(instance.slots[slot]) : value; }];
+      return [instance.slots[slot], value => { stateWrites++; instance.slots[slot] = typeof value === 'function' ? value(instance.slots[slot]) : value; }];
     },
     useRef(value) { const slot = slots++; return active.slots[slot] ?? (active.slots[slot] = { current: value }); },
     useEffect(effect, deps) {
@@ -120,7 +120,11 @@ function harness(initial = {}, realReact = false, realComponents = false) {
   return { props, engine, options, item, calls, summary, receiptDetail, render, flush, setWidth(value) { width = value; },
     module: name => load(join(__dirname, name)), timers,
     async act(callback, runTimers = true) { if (!realReact) throw new Error('Requires actual React harness'); await renderer.act(async () => { await callback(); }); return flush(runTimers); },
-    async unmount() { if (mounted) await renderer.act(() => mounted.unmount()); },
+    writes: () => stateWrites,
+    async unmount() {
+      if (mounted) await renderer.act(() => mounted.unmount());
+      else { for (const instance of instances.values()) for (const slot of instance.slots) slot?.cleanup?.(); instances.clear(); }
+    },
   };
 }
 function nodes(node) { return !node || typeof node !== 'object' ? [] : Array.isArray(node) ? node.flatMap(nodes) : [node, ...nodes(node.props?.children)]; }

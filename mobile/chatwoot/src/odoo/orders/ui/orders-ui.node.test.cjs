@@ -30,6 +30,14 @@ test('orders keyboard avoidance includes the measured shell offset without reset
   frame.onLayout();
   assert.equal(one(app.render(), 'KeyboardAvoidingView').keyboardVerticalOffset, 24);
   assert.equal(byId(app.render(), 'cart-quantity-81').value, '1');
+  const callbacks = [];
+  frame.ref.current = { measureInWindow: callback => callbacks.push(callback) };
+  frame.onLayout(); frame.onLayout();
+  callbacks[1](0, 48); callbacks[0](0, 120);
+  assert.equal(one(app.render(), 'KeyboardAvoidingView').keyboardVerticalOffset, 48, 'older asynchronous measurement cannot replace the latest');
+  frame.onLayout(); await app.unmount();
+  const writes = app.writes(); callbacks[2](0, 99);
+  assert.equal(app.writes(), writes, 'a measurement after unmount cannot set state');
 });
 
 test('catalog cards keep name, unit beside price, and add or quantity controls in three rows without shrinking text', async () => {

@@ -26,10 +26,14 @@ export function OrdersScreen(props: OrdersScreenProps) {
   const t = orderTranslator(language);
   const alive = useAlive();
   const frame = useRef<View | null>(null);
+  const measurement = useRef(0);
   const [keyboardOffset, setKeyboardOffset] = useState(0);
-  const measureOffset = () => frame.current?.measureInWindow((_x, top) => {
-    if (alive() && Number.isFinite(top)) setKeyboardOffset(Math.max(0, top));
-  });
+  const measureOffset = () => {
+    const request = ++measurement.current;
+    frame.current?.measureInWindow((_x, top) => {
+      if (alive() && request === measurement.current && Number.isFinite(top)) setKeyboardOffset(Math.max(0, top));
+    });
+  };
   const engineScope = useRef({ engine: props.engine, revision: 0 });
   if (engineScope.current.engine !== props.engine) engineScope.current = { engine: props.engine, revision: engineScope.current.revision + 1 };
   // A key clears every in-memory order and closure before another scope can render it.

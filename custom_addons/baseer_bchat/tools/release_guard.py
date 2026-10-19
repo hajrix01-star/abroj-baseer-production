@@ -262,12 +262,21 @@ def run_guard_integrity() -> None:
     require("Pillow==12.3.0" in requirements and "--hash=sha256:" in requirements,
             "BChat media-test dependency is not version and hash pinned")
     source_workflow = source_text(".github/workflows/validate-pull-request.yml")
-    require("baseer_bwork_admin" in source_workflow and "test-bwork-admin" in source_workflow
-            and '"custom_addons/baseer_bwork_admin/"' in source,
-            "BWork administrative changes no longer activate cumulative contracts")
     require("requirements-ci.txt" in workflow and "--require-hashes" in workflow
             and "requirements-ci.txt" in source_workflow and "--require-hashes" in source_workflow,
             "BChat media-test dependency is not installed by every guard workflow")
+
+
+def check_repository_ci_wiring() -> None:
+    # Canonical repository checks must inspect current CI activation. A bounded
+    # module deployment intentionally retains the host's unrelated workflow
+    # files, so that assertion belongs to both repository modes, not the
+    # default runtime guard. All pre-existing runtime guard checks remain.
+    source_workflow = source_text(".github/workflows/validate-pull-request.yml")
+    source = source_text("custom_addons/baseer_bchat/tools/release_guard.py")
+    require("baseer_bwork_admin" in source_workflow and "test-bwork-admin" in source_workflow
+            and '"custom_addons/baseer_bwork_admin/"' in source,
+            "BWork administrative changes no longer activate cumulative contracts")
 
 
 def run_bridge_entry_contract() -> None:
@@ -330,6 +339,8 @@ def main() -> None:
     parser.add_argument("--all", action="store_true", help="run every trusted suite")
     args = parser.parse_args()
     registry = load_registry()
+    if args.changed or args.all:
+        check_repository_ci_wiring()
     selected = set(args.suite)
     if args.changed:
         selected.update(changed_guard(*args.changed, registry))

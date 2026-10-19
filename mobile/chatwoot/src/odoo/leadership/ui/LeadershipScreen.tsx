@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Svg, { Line, Path } from 'react-native-svg';
 import type { Bootstrap } from '../../core/ChatEngine';
@@ -71,7 +71,8 @@ function Workspace({ engine, identity, language, presented, online = true, onBac
     if (!(remaining > 0)) { expire(); return; }
     const timer = setTimeout(expire, remaining); return () => clearTimeout(timer);
   }, [engine, online, report]);
-  const choose = (action: () => void) => { if (!active.current || !readyRef.current) return; engine.cancelReads(); setComparison(false); setScopeDetails(false); setSelectedDay(null); setError(null); action(); };
+  const choose = useCallback((action: () => void) => { if (!active.current || !readyRef.current) return; engine.cancelReads(); setComparison(false); setScopeDetails(false); setSelectedDay(null); setError(null); action(); }, [engine]);
+  const selectMonth = useCallback((selected: string) => choose(() => { setMonth(selected); if (period === 'date') setCustomDate(`${selected}-01`); }), [choose, period]);
   const refreshReport = () => { if (active.current) { if (readyRef.current) setRefresh(v => v + 1); else { setReady(false); setRefresh(v => v + 1); /* Retry options below through remount-free callback. */ void retryOptions(); } } };
   const retryOptions = async () => { if (!active.current) return; const ticket = ++generation.current; setBusy(true); setError(null);
     try { const next = await engine.options(); if (alive.current && active.current && ticket === generation.current) { setOptions(next); setCompany(next.companies.length === 1 ? next.companies[0].id : 0); readyRef.current = true; setReady(true); } }
@@ -105,7 +106,7 @@ function Workspace({ engine, identity, language, presented, online = true, onBac
             </>}
           </View>}
           <View style={[s.panel, tab === 'heatmap' && s.calendarPanel]} testID="leadership-calendar-panel">
-            <MonthField key={String(online)} disabled={!ready} label={t('chooseMonth')} testID="leadership-month" language={language} value={month} onChange={selected => choose(() => { setMonth(selected); if (period === 'date') setCustomDate(`${selected}-01`); })} />
+            <MonthField key={String(online)} disabled={!ready} label={t('chooseMonth')} testID="leadership-month" language={language} value={month} onChange={selectMonth} />
             {data && (tab === 'heatmap' ? <>
               <Text style={[s.heading, direction(language)]}>{monthLabel(data.calendar.month, language)}</Text>
               <Text style={[s.caption, direction(language)]}>{t('weekdayAverage')}</Text>

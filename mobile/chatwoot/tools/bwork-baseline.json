@@ -4,6 +4,7 @@
   "approvedVersion": "0.1.14/build15",
   "suites": ["test:bwork-gate", "test:odoo", "test:brand", "test:orders", "test:tasks", "test:leadership", "test:attachment-camera"],
   "invariants": [
+    {"id":"bcu-month-cancel-epoch","description":"لا يعتمد callback قديم اختيار الشهر بعد إلغاء النافذة أو تغير سياقها أو تفكيكها","suite":"test:leadership","test":"month picker stale option and year callbacks cannot commit after cancel, disable, value or callback change, reopen or unmount"},
     {"id":"bcu-month-bounds","description":"منتقي الشهر يحفظ حدود السنة وقيمة الشهر المدنية دون تحويل توقيت","suite":"test:leadership","test":"month picker respects 1900 and 9998 boundaries and emits the exact civil month without timezone conversion"},
     {"id":"bcu-day-modal","description":"تفاصيل يوم التقويم نافذة محروسة لا بطاقة أسفل الرسم","suite":"test:leadership","test":"day inspection opens a dismissible authorized Sheet, never an inline financial card"},
     {"id":"bcu-month-grid","description":"اختيار الشهر والسنة بالضغط دون وقت أو إدخال يدوي ولا اعتماد الإلغاء","suite":"test:leadership","test":"month picker uses localized month and year grids with string-only selection and cancel/backdrop/back"},

@@ -90,6 +90,32 @@ test('month picker respects 1900 and 9998 boundaries and emits the exact civil m
   }
 });
 
+test('month picker stale option and year callbacks cannot commit after cancel, disable, value or callback change, reopen or unmount', async () => {
+  for (const cause of ['cancel', 'disabled', 'value', 'callback', 'reopen', 'unmount']) {
+    const selected = [], app = harness({ value: '2026-10', label: 'Month', onChange: value => selected.push(value) }, 'MonthField');
+    try {
+      await app.flush(); await app.act(() => byId(app.render(), 'leadership-month').onPress());
+      const staleOption = byId(app.render(), 'leadership-month-option-09').onPress;
+      const staleYear = byId(app.render(), 'leadership-month-year-next').onPress;
+      if (cause === 'disabled') { app.props.disabled = true; await app.flush(); }
+      else if (cause === 'value') { app.props.value = '2025-08'; await app.flush(); }
+      else if (cause === 'callback') { app.props.onChange = value => selected.push(`new:${value}`); await app.flush(); }
+      else if (cause === 'unmount') await app.unmount();
+      else {
+        await app.act(() => byId(app.render(), 'leadership-month-backdrop').onPress());
+        if (cause === 'reopen') await app.act(() => byId(app.render(), 'leadership-month').onPress());
+      }
+      await app.act(() => { staleYear(); staleOption(); });
+      assert.deepEqual(selected, [], cause);
+      if (cause === 'reopen') {
+        assert.match(text({ type: 'Pressable', props: byId(app.render(), 'leadership-month-year') }), /2026/);
+        await app.act(() => byId(app.render(), 'leadership-month-option-11').onPress());
+        assert.deepEqual(selected, ['2026-11']);
+      }
+    } finally { await app.unmount(); }
+  }
+});
+
 test('offline leadership keeps readonly cards and details without new warning time or live-day claims', async () => {
   for (const language of ['ar', 'en']) {
     const app = harness({ language, online: false }); app.engine.displayLeaseRemainingMs = Infinity;

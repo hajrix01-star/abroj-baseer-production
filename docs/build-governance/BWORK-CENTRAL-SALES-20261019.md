@@ -96,14 +96,15 @@ authenticated reads, not the invoice-only QA reports connector.
 | G2 | GO for canonical heat adapter, targets and C1 bridge | shared source authority, exact C1 wire/routes/limits; bridge implementation released under R06 boundaries |
 | G3 | GO | existing Odoo/BWork stack, no dependencies; actual ORM parity and mobile state/UI verification remain required; R04 |
 | G4 | GO, bounded source UI | central primitives, compact three cards/chips, weekday averages above calendar, local AR/EN presentation |
-| G5 | Local PASS; actual isolated Odoo FAIL | local463 PASS/1 existing skip/92 invariants; actual run39258483362 reports1 failed/6 errors of101 tests; R12 |
+| G5 | Local + actual isolated Odoo PASS | local464 PASS/1 existing optional skip/93 invariants; actual run39262869103 reports0 failed/0 errors of110 tests, no actual test skips; R17 |
 | G6 | Independent local source review accepted | central_sales_independent_review; findings below closed by delta review |
 | G7 | No distributable requested | no APK, release version bump, external publication or deployment |
-| G8 | NO-GO for merge/release/deployment | actual Odoo failures + source-integrity failure remain; native AR/EN acceptance also pending; R12 |
+| G8 | HOLD before merge; operational release not accepted | owner requires result before merge/deploy; native AR/EN acceptance and later QA parity/artifact proof remain; isolated blockers resolved R17 |
 
-Local implementation was source-reviewed, but actual isolated execution revealed
-open blockers in R12. The earlier source acceptance is not runtime acceptance;
-no QA/Live or operational-readiness claim follows from it.
+The first isolated failures in R12 and newly exposed R16 failures are repaired;
+the same pinned workflow now passes at the exact R17 source head. This is actual
+isolated ORM/HTTP proof, not native visual acceptance or QA financial parity.
+Owner review remains the stop boundary before merge/deployment.
 
 ### Maintained architecture / authority map
 
@@ -271,22 +272,111 @@ there is no full-system rediscovery or separate duplicate map artifact.
   Same pinned isolated suite rerun required after these actual code/fixture
   changes; no load retest (owner7companies, assumed<=20readers). No merge/deploy.
 
+- R17, repaired source mirror`93f4a641ef6fe7c417d3c3a81da3369b9274bb79`
+  uploaded to clean review head`1f0f49fe94b7f54a0d44467c1a67c17e34cb28ec`;
+  product paths verified byte-identical. PR420 remains draft/open/unmerged.
+  Pinned isolated Odoo run[39262869103](https://github.com/hajrix01-star/abroj-baseer-production/actions/runs/39262869103),
+  job118094798203, checkout merge`627f989656fbcca2950a6bf7a9f00083fbabb3df`,
+  SUCCESS: final`0 failed, 0 error(s) of110 tests`;110 actual test starts and no
+  actual skipped tests. All7 unified-heat cases,10 leadership ORM cases,2 HTTP
+  cases, original heat/new Sales hidden-session cases and missing-language
+  regression executed. Source39262869092 and cumulative contracts39262869085
+  also PASS. Test setup now posts through the real Saudi validator with its
+  own Python datetime clock wrapped, preserving real combine/normalization;
+  asserts posted state and actual confirmation timestamp before earlier-clock
+  report assertions. No ACL/rule relaxed, failed assertion removed, test skip
+  added, source gate excluded or financial formula changed. No QA/Live data,
+  targets, APK/release or deployment touched. Existing non-failing translation
+  fallback warnings remain (including occasion-name generator); do not claim a
+  warning-free log or complete native-language acceptance. Documentation after
+  this tested source is evidence only and does not require rerunning unchanged
+  product tests. Owner is to receive this result before any merge/deployment.
+  Independent central_sales_independent_review fetched final job logs and
+  confirmed110 unique test starts/zero actual skips, exact tested head, all
+  specified cases and valid native Saudi posting fixture. Accepted repaired
+  source + isolated CI only; no native UI/QA parity/merge/deployment approval.
+
+- R18, owner now authorizes native preview and authenticated QA parity; only if
+  acceptance succeeds, merge through PR, protected QA-only deployment and APK
+  publication on GitHub download page. Live explicitly excluded. Reuse R17
+  source/110-case runtime and current architecture; no repeated unchanged ORM
+  or capacity run. Alpha delivery conducts independent candidate/operations
+  acceptance. Native proof gap: LeadershipScreen has only host/design evidence;
+  use existing AVD with isolated synthetic uipreview package, actual screen/engine,
+  AR/EN320/900 and no real HTTP/account/storage or normal app mutation. Owner
+  scope7companies/assumption<=20readers; this is layout acceptance, not load.
+  Existing QA workflow only accepts main-ancestor policy commits, so candidate
+  parity cannot precede merge/deploy through that approved path. Connected QA
+  reports expose invoice-only totals, not the canonical union; no usable browser
+  session is available (CUA inventory onlyMCPapps; IAB unavailable). Independent
+  operations reviewer confirmed the prerequisite conflict and access gap.
+  Asked owner whether to authorize QA deployment before financial parity (APK
+  remains withheld until parity), and for an approved authenticated QA path.
+  No merge, deployment, account grant or publication while prerequisites missing.
+- R19, bounded QA connectivity with a fresh anonymous in-memory cookie container:
+  known database login returned200 at`/en/web/login`; new leadership/options
+  returned404 at`/en/bchat/api/v2/leadership/options`. This proves connectivity
+  and that anonymous request's outcome only, not installed commit, authenticated
+  capability, accounting parity or a valid before/after activation comparison.
+  No existing browser cookies/private storage inspected and no credentials read.
+  Native agent approved to boot existing AVD without wipe/normal-app mutations,
+  build one offline isolated uipreview fixture of the real screen/engine and
+  capture AR/EN320/900. Any fixture is ignored output, never ordinary APK data.
+  Remaining financial acceptance once authorized access exists: same ordinary
+  account/company/date/currency reads from canonical Sales summary, Odoo heat
+  and BWork leadership; exact monthly/daily monetary parity, all-company scope,
+  signed refunds/dedup and central target identity, plus denial without partial
+  totals. No fiscal/goal writes or shared-environment load test authorized.
+- R20, owner explicitly approved revised order: after tests/native preview and
+  independent acceptance, merge and deploy QA first, then actual authenticated
+  parity before APK publication. Live remains excluded. Owner asked to clarify
+  access; explained that reading the full report needs signed-in QA account,
+  not just the URL, and no password/token should be sent in chat. Authenticated
+  parity and exact QA host result remain unproved; this approval does not turn
+  the invoice-only connector or a queued request into that evidence. Candidate
+  release metadata planned0.1.22/build23 only after preview build input is frozen.
+- R21, isolated preview build frozen before metadata edit: packageuipreview only,
+  no normal app overwrite. Candidate changes only trial version0.1.22/code23 in
+  app.config.ts; Chatwoot version, package IDs, dependency lock, permissions and
+  all reporting/calculation/product logic unchanged. Run existing BWork gate for
+  candidate metadata/source provenance, then update draft review and retain exact
+  current-head mandatory CI checks. No new Odoo/load environment, and no source
+  backend change justifying a discretionary repeated ORM run. Generated Android
+  metadata belongs to the later ordinary candidate build, not a tracked source
+  override. Final native acceptance and QA prerequisites still gate merge/deploy.
+- R22, native900 surfaced two genuine presentation/inspection defects; G4/G5/G8
+  reopened, not classified as proven regressions (no prior same-environment
+  success). Default SVG`meet` centers320px art inside710px touch bounds while
+  handler uses full width: tapping visible day6 selected day12. Percentage-width
+  flexWrap heat slots round into6columns at900 under7weekday headers, shifting
+  dates. Root/independent reviewer confirmed code and actual PNG evidence under
+  `output/bwork-leadership-20261019/native/`. Alpha bug-resolution applied.
+  Minimal local fixes: SVG preserveAspectRatio=none matches existing inverse;
+  explicit non-wrapping7-slot week rows include leading/trailing blanks, share
+  header slot geometry, and center weekday money locally. No backend amount,
+  date/filter calculation, ACL, dependencies or frozen module changed. Both
+  regression tests failed before repair and pass after it; corrected host-tree
+  child traversal in the calendar test, not its assertions. Add2 protected
+  invariants, run candidate gate, then one justified offline preview rebuild for
+  real AR/EN320/900 chart-hit/calendar-alignment proof. Owner7companies/assumed
+  <=20readers; native geometry risk not covered by host doubles, no load rerun.
+  P2only observations remain: extra date/time fields in month control, small
+  narrow calendar touch widths and English Estimate wrap. No silent polish scope.
+
 ## Local handoff / remaining acceptance
 
 | Area | Owner / evidence | Result |
 |---|---|---|
-| Truth of money / ACL / capacity | independent source review of heat + bridge; canonical calculator unchanged | source accepted, actual ORM unproven |
+| Truth of money / ACL / capacity | source review and actual isolated Odoo110 cases R17; canonical sum/date/dedup unchanged | isolated ORM/HTTP PASS; operational QA parity still unproven |
 | API consumer / revocation / language | strict decoder, real React host execution, generation/denial cases | local PASS, not native visual acceptance |
 | Regression / links / simplicity | unchanged frozen calculators; additive optional bridge/native routes; full baseline | PASS, no dependencies added |
-| Operation / candidate / acceptance | local branch only; README isolated install/test prerequisites | not deployed; release NO-GO |
+| Operation / candidate / acceptance | uploaded draft PR420, same pinned workflow PASS | not merged/deployed; owner review + operational acceptance pending |
 
 Remaining blockers before operational release:
 
-1. Diagnose/fix R12 isolated-test failures and R11 source-import gate, then rerun
-   the affected pinned Odoo19/PostgreSQL suites. The first real run failed and
-   the new unified-heat class did not reach parity tests. Docker remains
-   unavailable locally, but GitHub isolated execution is now established.
-   Compile, mocks and synthetic serializer do not replace that failed proof.
+1. Report R17 success to owner and preserve the explicit stop before merge or
+   deployment. R12/R16 isolated blockers are resolved; do not rerun unchanged
+   tests or equate this passing isolated DB with real QA financial parity.
 2. Verify actual native AR/EN narrow/wide rendering and representative response
    times against the fixed source candidate. React host tests do not establish
    font/layout/keyboard/device acceptance. No representative load was applied.

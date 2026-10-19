@@ -164,7 +164,7 @@ function timeline(initialHidden = [], host) {
     '../runtime': host?.runtime ?? {}, Date: host?.Date, setTimeout: host?.setTimeout, clearTimeout: host?.clearTimeout,
     '../core/ChatEngine': { ChatError: class ChatError extends Error { constructor(code) { super(code); this.code = code; } } },
     '@shopify/flash-list': { FlashList: host?.FlashList ?? 'FlashList' }, './components': components, './dictionary': { errorWord: () => 'error' }, './viewModel': viewModel,
-    './MediaTools': { AttachmentTools: tools, MediaTile: 'MediaTile', useVoiceSession: (_scope, _report, play, record) => { voiceRights.push([play, record]); return { recording: false }; } },
+    './MediaTools': { AttachmentTools: tools, MediaTile: 'MediaTile', PendingImagePreview: 'PendingImagePreview', useVoiceSession: (_scope, _report, play, record) => { voiceRights.push([play, record]); return { recording: false }; } },
     './GroupAvatar': { GroupAvatar: 'GroupAvatar' },
     './SwipeReply': { SwipeReply: 'SwipeReply' },
     './timelineFollow': load('timelineFollow.ts', {}),
@@ -175,6 +175,25 @@ function timeline(initialHidden = [], host) {
     flushFrames() { for (let i = 0; i < frames.length && i < 100; i++) { const callback = frames[i]; frames[i] = null; callback?.(); } },
     render: () => state.render(() => module.TimelineScreen(props)), release: () => release() };
 }
+
+test('pending own images keep their real queued/sending Clock with scoped local preview while files/audio stay name-only', () => {
+  const status = load('MessagePresentation.tsx', { react: {}, 'react/jsx-runtime': jsx, 'react-native': { View: 'View' }, './components': components }).MessageStatus;
+  for (const language of ['ar', 'en']) for (const state of ['queued', 'sending']) {
+    const app = timeline(); app.props.language = language;
+    const item = { pending: { client_uuid: 'queued-image', room_id: room.id, company_id: room.company_id, membership_id: room.membership_id, state, text: '', attachment: { kind: 'image', name: 'own.jpg' } } };
+    let row = one(app.render(), 'FlashList').renderItem({ item }); const preview = one(row, 'PendingImagePreview');
+    assert.equal(preview.clientUuid, 'queued-image'); assert.equal(preview.room, room); assert.equal(preview.enabled, true);
+    assert.equal(nodes(row).some(n => n.type === 'MediaTile'), false, 'no fake acknowledged media descriptor');
+    assert.equal(one(status(one(row, 'MessageStatus')), 'Icon').icon, 'clock');
+    app.props.chat.presentationReady = false; app.props.chat.retainedDisplay = true;
+    row = one(app.render(), 'FlashList').renderItem({ item }); assert.equal(one(row, 'PendingImagePreview').enabled, false);
+    for (const kind of ['audio', 'file']) {
+      const other = { pending: { ...item.pending, attachment: { kind, name: kind + '.bin' } } };
+      row = one(app.render(), 'FlashList').renderItem({ item: other }); assert.equal(nodes(row).some(n => n.type === 'PendingImagePreview'), false);
+      assert.equal(one(row, 'Label').children, kind + '.bin');
+    }
+  }
+});
 
 test('actual React retains the timeline list mount, draft, reply and reader state during display-only revalidation', async () => {
   const React = require('react'), renderer = require('react-test-renderer');

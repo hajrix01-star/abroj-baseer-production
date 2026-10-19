@@ -69,6 +69,53 @@ function mediaHarness(kind = 'image') {
     get lateWrites() { return state.lateWrites; },
     appState(value) { native.AppState.currentState = value; [...listeners].forEach(callback => callback(value)); } };
 }
+
+function pendingImageHarness() {
+  const state = hooks(), listeners = new Set(), calls = []; let pending = deferred();
+  const native = { View: 'View', Image: 'Image', AppState: { currentState: 'active', addEventListener(_name, callback) { listeners.add(callback); return { remove() { listeners.delete(callback); } }; } } };
+  const props = { room: { company_id: 2, id: 7, membership_id: 12 }, clientUuid: 'actual-outbox-uuid', scopeKey: 'db/user7/epoch1', enabled: true, label: 'own.jpg' };
+  const mod = load('MediaTools.tsx', { react: state.react, 'react/jsx-runtime': jsx, 'react-native': native, './components': components,
+    '../runtime': { localPendingImage: async (room, uuid) => { calls.push([room, uuid]); return pending.promise; } } });
+  return { props, calls, render: () => state.render(() => mod.PendingImagePreview(props)), pending: () => pending,
+    next() { pending = deferred(); }, unmount: () => state.unmount(), get lateWrites() { return state.lateWrites; },
+    appState(value) { native.AppState.currentState = value; [...listeners].forEach(callback => callback(value)); } };
+}
+
+test('pending own image renders its guarded local source in stable 240x180 geometry without a media descriptor or viewer', async () => {
+  const app = pendingImageHarness(); const first = app.render();
+  assert.equal(app.calls.length, 1); assert.equal(app.calls[0][0], app.props.room); assert.equal(app.calls[0][1], app.props.clientUuid);
+  assert.equal(nodes(first).some(n => n.type === 'Image'), false);
+  const box = one(first, 'View', p => p.testID === 'pending-image-space'); assert.deepEqual([box.style.width, box.style.height], [240, 180]);
+  app.pending().resolve('file:///owned/stage.jpg'); await settled(); const loaded = app.render();
+  assert.equal(one(loaded, 'Image').source.uri, 'file:///owned/stage.jpg');
+  assert.equal(nodes(loaded).some(n => ['ImageViewer', 'Pressable', 'MediaTile'].includes(n.type)), false);
+  one(loaded, 'Image').onError(); assert.equal(nodes(app.render()).some(n => n.type === 'Image'), false);
+  assert.equal(app.calls.length, 1, 'decode error neither retries nor deletes the stage');
+});
+
+test('pending own image drops late/recycled/unmounted and disabled results, and background waits for renewed presentation authority', async () => {
+  for (const change of [a => { a.props.clientUuid = 'another-uuid'; }, a => { a.props.scopeKey = 'db/user8/epoch2'; },
+    a => { a.props.room = { ...a.props.room, membership_id: 99 }; }, a => { a.props.enabled = false; }]) {
+    const app = pendingImageHarness(); app.render(); const old = app.pending(); change(app); app.next(); app.render();
+    old.resolve('file:///owned/late.jpg'); await settled(); assert.equal(nodes(app.render()).some(n => n.type === 'Image'), false);
+  }
+  const gone = pendingImageHarness(); gone.render(); gone.unmount(); gone.pending().resolve('file:///owned/late.jpg'); await settled(); assert.equal(gone.lateWrites, 0);
+  const app = pendingImageHarness(); app.render(); app.pending().resolve('file:///owned/current.jpg'); await settled(); app.render();
+  app.appState('background'); assert.equal(nodes(app.render()).some(n => n.type === 'Image'), false);
+  app.next(); app.appState('active'); app.render(); assert.equal(app.calls.length, 1, 'foreground alone is not renewed presentation authority');
+  app.props.enabled = false; app.render(); app.props.enabled = true; app.render(); assert.equal(app.calls.length, 2);
+  app.pending().resolve('file:///owned/revalidated.jpg'); await settled(); assert.equal(one(app.render(), 'Image').source.uri, 'file:///owned/revalidated.jpg');
+  app.props.enabled = false; assert.equal(nodes(app.render()).some(n => n.type === 'Image'), false, 'mask before any effect cleanup');
+});
+
+test('pending own image rejects remote/rejected results quietly without a decoder retry loop', async () => {
+  for (const remote of [true, false]) {
+    const app = pendingImageHarness(); app.render();
+    if (remote) app.pending().resolve('https://invalid.example/private-stage'); else app.pending().reject(Error('removed by ACK'));
+    await settled(); app.render(); const tree = app.render();
+    assert.equal(nodes(tree).some(n => n.type === 'Image'), false); assert.equal(app.calls.length, 1);
+  }
+});
 test('visible image resolves its real scoped thumbnail automatically, without opening the full-screen viewer', async () => {
   const app = mediaHarness(); app.props.previewVisible = true; app.render();
   assert.equal(app.calls.length, 1, 'a visible image automatically resolves the scoped local image');

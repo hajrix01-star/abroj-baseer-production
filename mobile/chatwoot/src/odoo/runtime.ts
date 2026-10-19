@@ -408,6 +408,40 @@ async function verifyAttachment(room: Room, attachment: Attachment): Promise<voi
   if (!info.exists || info.isDirectory || info.size !== attachment.size || await hashFile(attachment.uri) !== attachment.sha256) throw new ChatError('attachment_changed');
   fence(room, snapshot);
 }
+/** Own queued bytes are not acknowledged media. Resolve only an actual current
+ * outbox stage; never accept a caller URI, create a cache/pin or fetch history. */
+export async function localPendingImage(room: Room, clientUuid: string): Promise<string> {
+  const snapshot = scope(room);
+  const read = () => {
+    mediaFence(room, snapshot);
+    const current = getEngine();
+    if (AppState.currentState !== 'active' || current.identity?.permissions.chat_view !== true
+        || current.identity?.permissions.chat_send !== true) throw new ChatError('forbidden', 403);
+    const pending = current.pending(room).find(item => item.client_uuid === clientUuid);
+    const attachment = pending?.attachment;
+    if (!pending || !['queued', 'sending'].includes(pending.state) || pending.room_id !== room.id
+        || pending.company_id !== room.company_id || pending.membership_id !== room.membership_id
+        || !attachment || attachment.kind !== 'image' || !['image/jpeg', 'image/png', 'image/webp'].includes(attachment.mime)
+        || !owned(attachment.uri)) throw new ChatError('invalid_attachment');
+    return attachment;
+  };
+  const attachment = read();
+  // Upload ACK may add media_id/policy_version while this same owned stage is
+  // still sending. Those server fields neither change its bytes nor grant a
+  // message association; only the local stage identity participates here.
+  const fingerprint = (value: Attachment) => JSON.stringify([value.uri, value.upload_uuid, value.kind, value.mime,
+    value.size, value.sha256, value.name]);
+  const expected = fingerprint(attachment);
+  const guard = () => { if (fingerprint(read()) !== expected) throw new ChatError('stale_session'); };
+  const actor = await actorDirectory(snapshot.key); guard();
+  if (!attachment.uri.startsWith(`${actor}c${room.company_id}-r${room.id}-m${room.membership_id}/stage-`))
+    throw new ChatError('invalid_attachment');
+  const stat = await FS.getInfoAsync(attachment.uri); guard();
+  if (!stat.exists || stat.isDirectory || stat.size !== attachment.size) throw new ChatError('attachment_changed');
+  const sha256 = await hashFile(attachment.uri); guard();
+  if (sha256 !== attachment.sha256) throw new ChatError('attachment_changed');
+  return attachment.uri;
+}
 async function upload(room: Room, attachment: Attachment, csrfToken: string, signal: AbortSignal): Promise<{ media_id: number; policy_version?: number }> {
   const snapshot = scope(room); await verifyAttachment(room, attachment);
   const complete = async (mediaId: number) => {

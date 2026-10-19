@@ -85,6 +85,26 @@ test('display lease remaining is a pure bounded deadline with exact expiry, cloc
   await engine.logout(); assert.equal(engine.leaseRemainingMs, 0);
 });
 
+test('remembered display lease excludes non-remembered login and restores only the original bounded lease', async () => {
+  const current = setup();
+  assert.equal(current.engine.rememberedLeaseRemainingMs, 0);
+  await current.engine.login('alice', 'NeverPersistThis', false);
+  assert.equal(current.engine.leaseRemainingMs, 86400000);
+  assert.equal(current.engine.rememberedLeaseRemainingMs, 0);
+  await current.engine.login('alice', 'NeverPersistThis', true);
+  const before = current.server.calls.length;
+  assert.equal(current.engine.rememberedLeaseRemainingMs, 86400000);
+  current.tick(-1); assert.equal(current.engine.rememberedLeaseRemainingMs, 0);
+  current.tick(60001); assert.equal(current.engine.rememberedLeaseRemainingMs, 86340000);
+  assert.equal(current.server.calls.length, before, 'the remembered getter never fetches or renews authority');
+  const restored = setup(current.storage, current.server, { now: () => 1_060_000 });
+  assert.equal(await restored.engine.restoreOffline(), true);
+  assert.equal(restored.engine.offline, true);
+  assert.equal(restored.engine.rememberedLeaseRemainingMs, 86340000);
+  await restored.engine.logout(); assert.equal(restored.engine.rememberedLeaseRemainingMs, 0);
+  current.tick(86340000); assert.equal(current.engine.rememberedLeaseRemainingMs, 0);
+});
+
 test('plain ChatEngine keeps chat_view mandatory even when a genuine bootstrap grants orders-only rights', async () => {
   class OrdersServer extends Server {
     override async request(request: Request): Promise<unknown> {

@@ -6,6 +6,9 @@ import { createHash, randomUUID } from 'node:crypto';
 import { DatabaseSync } from 'node:sqlite';
 import { SqliteArchiveStore } from '../storage/SqliteHistoryArchive.ts';
 import type { ArchiveDatabase } from '../storage/SqliteHistoryArchive.ts';
+import type { SnapshotAuthority } from '../leadership/LeadershipSnapshots.ts';
+import { LeadershipSnapshots as ActualLeadershipSnapshots } from '../leadership/LeadershipSnapshots.ts';
+import { options as financialOptions, report as financialReport } from '../leadership/tests/fixtures.ts';
 
 const files = new Map<string, Buffer>(); const directories = new Set<string>(['file:///app/']);
 let directoryReads = 0;
@@ -56,6 +59,34 @@ const asyncStorage = {
   async getItem(k: string) { return storage.get(k) ?? null; }, async setItem(k: string, v: string) { storage.set(k, v); },
   async removeItem(k: string) { storage.delete(k); }, async getAllKeys() { return [...storage.keys()]; },
 };
+const snapshotRevocations: SnapshotAuthority[] = [];
+let snapshotCurrent: (() => SnapshotAuthority | null) | undefined;
+let beforeSnapshotRevoke: (() => Promise<void>) | undefined;
+let snapshotOptionReads = 0;
+let realFinancialSnapshots = false;
+class SnapshotSeam {
+  private actual: ActualLeadershipSnapshots;
+  constructor(deps: ConstructorParameters<typeof ActualLeadershipSnapshots>[0]) {
+    snapshotCurrent ??= deps.current; this.actual = new ActualLeadershipSnapshots(deps);
+  }
+  async revoke(authority: SnapshotAuthority) {
+    snapshotRevocations.push(structuredClone(authority));
+    if (realFinancialSnapshots) await this.actual.revoke(authority);
+    await beforeSnapshotRevoke?.();
+  }
+  async options(...args: Parameters<ActualLeadershipSnapshots['options']>) {
+    snapshotOptionReads++; if (realFinancialSnapshots) return this.actual.options(...args);
+    throw Object.assign(new Error('snapshot_unavailable'), { code: 'snapshot_unavailable' });
+  }
+  async read(...args: Parameters<ActualLeadershipSnapshots['read']>) {
+    if (realFinancialSnapshots) return this.actual.read(...args);
+    throw Object.assign(new Error('snapshot_unavailable'), { code: 'snapshot_unavailable' });
+  }
+  async save(...args: Parameters<ActualLeadershipSnapshots['save']>) {
+    if (realFinancialSnapshots) await this.actual.save(...args);
+  }
+  get displayExpiresAt() { return realFinancialSnapshots ? this.actual.displayExpiresAt : 0; }
+}
 const payload = Buffer.from('%PDF-1.7 test data %%EOF'); const sha256 = createHash('sha256').update(payload).digest('hex');
 const media = { id: 70, kind: 'file', mime: 'application/pdf', name: 'private.pdf', size: payload.length, sha256 };
 const thumbnail = Buffer.from([255,216,255,192,0,11,8,0,1,0,1,1,1,17,0,255,218,0,8,1,1,0,0,63,0,1,255,217]);
@@ -80,6 +111,8 @@ let statefulSessionIssued = false;
 let bootstrapOverride: unknown;
 let ordersStatus = 200;
 let workTasksStatus = 200;
+let changesStatus = 200, malformedChanges = false;
+let leadershipReportStatus = 200;
 const calls: { method: string; path: string; options: Record<string, unknown> }[] = [];
 function nativeFetch(options: Record<string, unknown>, method: string, url: string, requestHeaders: Record<string, string>, requestBody?: unknown) {
   const path = new URL(url).pathname; calls.push({ method, path, options });
@@ -117,6 +150,11 @@ function nativeFetch(options: Record<string, unknown>, method: string, url: stri
         companies: [{ id: 1, name: 'Synthetic tasks company' }], default_company_id: 1,
         can_view: true, can_manage: false, capabilities: { direct_done: true, reminders: true } }
       : { api_version: 2, error: { code: status === 401 ? 'session_expired' : 'forbidden' } }; }
+    else if (path === '/bchat/api/v2/leadership/options') body = { ...financialOptions, companies: financialOptions.companies.slice(0, 1) };
+    else if (path === '/bchat/api/v2/leadership') {
+      status = leadershipReportStatus;
+      body = status === 200 ? financialReport(1) : { error: { code: 'forbidden' } };
+    }
     else if (path === '/bchat/api/v2/rooms') body = { api_version: 2, rooms };
     else if (/\/rooms\/\d+\/group$/.test(path)) {
       groupReads++; const room = rooms.find(row => row.id === Number(path.split('/').at(-2)))!;
@@ -141,7 +179,11 @@ function nativeFetch(options: Record<string, unknown>, method: string, url: stri
     else if (/\/rooms\/\d+\/members\/\d+\/avatar$/.test(path)) {
       headers['Content-Type'] = avatarMime; headers['Content-Length'] = String(avatarBytes.length);
     }
-    else if (path.endsWith('/changes')) body = { api_version: 2, changes: [], next_after: 0, watermark: 0, reset_required: false };
+    else if (path.endsWith('/changes')) {
+      status = changesStatus;
+      body = status !== 200 ? { error: { code: 'request_failed' } } : malformedChanges ? { api_version: 2, changes: null }
+        : { api_version: 2, changes: [], next_after: 0, watermark: 0, reset_required: false };
+    }
     else if (path.endsWith('/11/messages')) body = { api_version: 2, messages: [
       { id: 1, author_user_id: 7, author_name: 'A', text: '', created_at: '', media },
       ...[...extraMedia.values()].map((item, index) => ({ id: index + 2, author_user_id: 7, author_name: 'A', text: '', created_at: '', media: item.metadata })),
@@ -165,6 +207,7 @@ function nativeFetch(options: Record<string, unknown>, method: string, url: stri
   return task;
 }
 const mocks: Record<string, unknown> = {
+  './leadership/LeadershipSnapshots': { LeadershipSnapshots: SnapshotSeam },
   './storage/nativeArchive': { mediaCacheCatalog: catalog, historyArchive: sqlArchive },
   'react-native': { Platform: { OS: 'android' }, AppState: appState },
   '@react-native-async-storage/async-storage': asyncStorage,
@@ -193,7 +236,7 @@ const hooks = registerHooks({
   },
 });
 process.env.EXPO_PUBLIC_ODOO_ORIGIN = 'https://odoo.example'; process.env.EXPO_PUBLIC_ODOO_DATABASE = 'trial';
-const { getEngine, getOrdersEngine, getTasksEngine, ordersOnlySnapshot, refreshOrdersOnlySession, setOrdersConnectivity, localMedia, localMediaLease, stageFile, readGroupAvatar, hasGroupAvatar, clearGroupAvatars, subscribeGroupAvatars, readMemberAvatar, clearMemberAvatars } = await import('../runtime.ts');
+const { getEngine, getOrdersEngine, getTasksEngine, getLeadershipEngine, ordersOnlySnapshot, refreshOrdersOnlySession, setOrdersConnectivity, localMedia, localMediaLease, stageFile, readGroupAvatar, hasGroupAvatar, clearGroupAvatars, subscribeGroupAvatars, readMemberAvatar, clearMemberAvatars } = await import('../runtime.ts');
 const engine = getEngine();
 
 test('real native adapter maps no-cookie session fixture then rejects cross-room media and validates offline bytes', async () => {
@@ -726,6 +769,154 @@ test('native task-only login and transport honor independent grants, foreground 
     appState.currentState = 'active'; workTasksStatus = 401;
     await assert.rejects(getTasksEngine().options()); assert.equal(ordersOnlySnapshot().identity, null);
   } finally { bootstrapOverride = undefined; workTasksStatus = 200; beforeNative = undefined; appState.currentState = 'active'; setOrdersConnectivity(true); await engine.logout(); }
+});
+
+const financialBootstrap = (company_ids = [1], dashboard_view = true, revision = 1) => ({
+  api_version: 2, database: 'trial', user_id: 7, company_ids, csrf_token: 'notpersisted',
+  permissions: { chat_view: true, chat_send: true, media: true, dashboard_view, revision },
+});
+
+test('leadership runtime exposes remembered foreground display only and preserves offline restoration', async () => {
+  await engine.logout(); bootstrapOverride = financialBootstrap();
+  const leadership = getLeadershipEngine();
+  try {
+    await engine.login('alice', 'private', false);
+    assert.equal(snapshotCurrent!(), null, 'ordinary online login is not remembered display authority');
+    await engine.login('alice', 'private', true);
+    const current = snapshotCurrent!()!;
+    assert.equal(current.uid, 7); assert.deepEqual(current.companyIds, [1]);
+    assert.equal(current.revision, 1); assert.equal(current.epoch, engine.accountScope);
+    assert.ok(current.leaseRemainingMs > 0);
+    appState.currentState = 'background'; assert.equal(snapshotCurrent!(), null);
+    appState.currentState = 'active';
+    const before = snapshotRevocations.length;
+    engine.markDisconnected(); offline = true; setOrdersConnectivity(false);
+    assert.equal(await engine.restoreOffline(), true);
+    assert.equal(snapshotRevocations.length, before, 'restore/reset/cancelNative must not purge financial snapshots');
+    assert.ok(snapshotCurrent!()!.leaseRemainingMs <= current.leaseRemainingMs);
+    const requests = calls.length;
+    await assert.rejects(leadership.options(), { code: 'snapshot_unavailable' });
+    assert.equal(calls.length, requests, 'remembered authority is never used for HTTP');
+    appState.currentState = 'background';
+    const restoredEpoch = engine.accountScope;
+    offline = false;
+    await engine.logout();
+    assert.equal(snapshotRevocations.at(-1)!.epoch, restoredEpoch, 'cleanup captures actor even while backgrounded');
+  } finally { bootstrapOverride = undefined; offline = false; appState.currentState = 'active'; setOrdersConnectivity(true); await engine.logout(); }
+});
+
+test('leadership runtime purges captured company/grant/revision changes even when refresh later fails', async () => {
+  bootstrapOverride = financialBootstrap();
+  try {
+    await engine.login('alice', 'private', true);
+    let before = snapshotRevocations.length;
+    await engine.refresh();
+    assert.equal(snapshotRevocations.length, before, 'same-authority lease renewal retains snapshots');
+    const original = snapshotCurrent!()!;
+    bootstrapOverride = financialBootstrap([2]);
+    beforeNative = async path => { if (path.endsWith('/rooms')) throw new Error('synthetic rooms unavailable'); };
+    await assert.rejects(engine.refresh(), { code: 'connection_failed' });
+    assert.equal(snapshotRevocations.length, before + 1);
+    assert.deepEqual(snapshotRevocations.at(-1)!.companyIds, [1]);
+    assert.equal(snapshotRevocations.at(-1)!.epoch, original.epoch);
+    beforeNative = undefined; rooms = [];
+    bootstrapOverride = financialBootstrap([2], true, 2); before = snapshotRevocations.length;
+    await engine.refresh(); assert.equal(snapshotRevocations.length, before + 1);
+    assert.equal(snapshotRevocations.at(-1)!.revision, 1);
+    bootstrapOverride = financialBootstrap([2], false, 3); before = snapshotRevocations.length;
+    await engine.refresh(); assert.equal(snapshotRevocations.length, before + 1);
+    assert.equal(snapshotRevocations.at(-1)!.canView, true);
+    assert.equal(snapshotCurrent!()!.canView, false);
+    revoked = true; const deniedEpoch = engine.accountScope; before = snapshotRevocations.length;
+    await assert.rejects(engine.refresh(), { status: 403 });
+    assert.equal(snapshotRevocations.length, before + 1);
+    assert.equal(snapshotRevocations.at(-1)!.epoch, deniedEpoch);
+    assert.equal(snapshotCurrent!(), null);
+  } finally { revoked = false; beforeNative = undefined; bootstrapOverride = undefined; rooms = [roomA, roomB]; await engine.logout(); }
+});
+
+test('financial offline requires network evidence or explicit restoration, never a server or malformed refresh failure', async () => {
+  bootstrapOverride = financialBootstrap(); const leadership = getLeadershipEngine();
+  try {
+    await engine.login('alice', 'private', true);
+    let before = snapshotOptionReads;
+    changesStatus = 500;
+    await assert.rejects(engine.refresh(), { status: 500 });
+    assert.equal(engine.offline, true, 'frozen chat behavior still marks its disconnected state');
+    await assert.rejects(leadership.options(), { code: 'unauthorized' });
+    assert.equal(snapshotOptionReads, before, 'HTTP 500 must not route to a cached financial report');
+    changesStatus = 200; await engine.refresh(); malformedChanges = true;
+    await assert.rejects(engine.refresh(), { code: 'invalid_changes' });
+    await assert.rejects(leadership.options(), { code: 'unauthorized' });
+    assert.equal(snapshotOptionReads, before, 'malformed successful HTTP is not network loss');
+    malformedChanges = false; await engine.refresh();
+    offline = true; await assert.rejects(engine.refresh(), { code: 'connection_failed' });
+    const requests = calls.length;
+    await assert.rejects(leadership.options(), { code: 'snapshot_unavailable' });
+    assert.equal(snapshotOptionReads, ++before); assert.equal(calls.length, requests);
+    offline = false; await engine.refresh(); malformedChanges = true;
+    await assert.rejects(engine.refresh(), { code: 'invalid_changes' });
+    await assert.rejects(leadership.options(), { code: 'unauthorized' });
+    assert.equal(snapshotOptionReads, before, 'a later server failure clears earlier network eligibility');
+    malformedChanges = false;
+    assert.equal(await engine.restoreOffline(), true);
+    await assert.rejects(leadership.options(), { code: 'snapshot_unavailable' });
+    assert.equal(snapshotOptionReads, before + 1, 'successful explicit offline restore is valid independent evidence');
+  } finally { bootstrapOverride = undefined; changesStatus = 200; malformedChanges = false; offline = false; await engine.logout(); }
+});
+
+test('leadership login revokes cold/same-account incarnations and stale cleanup cannot return a newer login', async () => {
+  await engine.logout(); bootstrapOverride = financialBootstrap();
+  try {
+    const before = snapshotRevocations.length;
+    await engine.login('alice', 'private', true);
+    assert.equal(snapshotRevocations.length, before + 1);
+    assert.equal(snapshotRevocations.at(-1)!.epoch, engine.accountScope, 'cold login cuts older disk data before publishing itself');
+    const oldEpoch = engine.accountScope;
+    let release!: () => void, started!: () => void;
+    const wait = new Promise<void>(resolve => { release = resolve; }), seen = new Promise<void>(resolve => { started = resolve; });
+    beforeSnapshotRevoke = async () => { beforeSnapshotRevoke = undefined; started(); await wait; };
+    const old = engine.login('alice', 'private', true), rejected = assert.rejects(old, { code: 'stale_session' });
+    await seen;
+    assert.equal(snapshotRevocations.at(-1)!.epoch, oldEpoch, 'same-account login uses captured prior epoch');
+    await engine.login('alice', 'private', true);
+    const freshEpoch = engine.accountScope;
+    const revokes = snapshotRevocations.length;
+    release(); await rejected;
+    assert.equal(engine.accountScope, freshEpoch);
+    assert.equal(snapshotRevocations.length, revokes, 'late login must not issue fresh cleanup against the newer actor');
+  } finally { beforeSnapshotRevoke = undefined; bootstrapOverride = undefined; await engine.logout(); }
+});
+
+test('real runtime report 403 revokes the plain display epoch and stays blocked after restore and a fresh snapshot store', async () => {
+  await engine.logout(); bootstrapOverride = financialBootstrap(); realFinancialSnapshots = true;
+  const leadership = getLeadershipEngine(), selected = { month: '2026-10', period: 'month' as const, companyId: 1 };
+  try {
+    await engine.login('alice', 'private', true); await leadership.options();
+    await leadership.read(selected);
+    const savedScope = engine.accountScope!;
+    assert.ok([...storage.keys()].some(key => key.startsWith('bwork.leadership.snapshots.v1:') && key.endsWith('/envelope')),
+      'verified online read must actually persist through the production snapshot store');
+    engine.markDisconnected(); assert.equal(await engine.restoreOffline(), true);
+    await leadership.options(); assert.equal((await leadership.read(selected)).overview.sales.value, '123456.78');
+    await engine.refresh(); await leadership.options(); leadershipReportStatus = 403;
+    const before = snapshotRevocations.length;
+    await assert.rejects(leadership.read(selected), { code: 'forbidden', status: 403 });
+    assert.equal(snapshotRevocations.length, before + 1);
+    assert.equal(snapshotRevocations.at(-1)!.epoch, engine.accountScope);
+    assert.equal(String(snapshotRevocations.at(-1)!.epoch).endsWith('/orders'), false,
+      'HTTP identity suffix must never be used as the persisted display cleanup epoch');
+    assert.notEqual(engine.accountScope, savedScope, 'explicit restoration creates its own display incarnation');
+    assert.equal(await engine.restoreOffline(), true);
+    const requests = calls.length;
+    await assert.rejects(leadership.options(), { code: 'snapshot_unavailable' });
+    const restarted = new ActualLeadershipSnapshots({ storage: asyncStorage, current: snapshotCurrent!, now: Date.now });
+    await assert.rejects(restarted.options(snapshotCurrent!()!), { code: 'snapshot_unavailable' });
+    assert.equal(calls.length, requests, 'denied local/restarted reads must not attempt HTTP');
+    const controls = [...storage.entries()].filter(([key]) => key.startsWith('bwork.leadership.snapshots.v1:') && key.endsWith('/control'));
+    assert.ok(controls.some(([, value]) => JSON.parse(value).blocked === true), '403 leaves a durable blocked marker');
+    assert.equal([...storage.keys()].some(key => key.startsWith('bwork.leadership.snapshots.v1:') && key.endsWith('/envelope')), false);
+  } finally { leadershipReportStatus = 200; bootstrapOverride = undefined; await engine.logout(); realFinancialSnapshots = false; }
 });
 
 test('real runtime logout removes cached files and refuses HTTP redirects before authenticate', async () => {

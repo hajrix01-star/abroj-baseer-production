@@ -150,6 +150,8 @@ export class ChatEngine {
     const now = this.now();
     return Number.isFinite(now) && now >= this.verifiedAt ? Math.max(0, TTL - (now - this.verifiedAt)) : 0;
   }
+  /** Remembered display permission only; never verifies or renews HTTP authority. */
+  get rememberedLeaseRemainingMs(): number { return this.remembered ? this.leaseRemainingMs : 0; }
   get status(): string { return this.state; }
   get backoffMs(): number { return this.failures ? [5000, 10000, 20000, 30000][Math.min(this.failures - 1, 3)]! : 2000; }
   markDisconnected(): void { this.disconnected = true; if (this.account) this.state = 'offline'; }

@@ -2,16 +2,73 @@ const { test } = require('node:test'), assert = require('node:assert/strict');
 const { harness, nodes, one, byId, text } = require('./leadership-harness.cjs');
 const waiting = () => { let resolve, reject; const promise = new Promise((a, b) => { resolve = a; reject = b; }); return { promise, resolve, reject }; };
 
-test('calendar cells retain full source amounts with readable wrapping, zero and unavailable distinct in either language', async () => {
+test('offline leadership keeps readonly cards and details without new warning time or live-day claims', async () => {
+  for (const language of ['ar', 'en']) {
+    const app = harness({ language, online: false }); app.engine.displayLeaseRemainingMs = Infinity;
+    try {
+      await app.flush(); assert.match(text(app.render()), /123,456.78/);
+      await app.act(() => byId(app.render(), 'leadership-card-sales').onPress()); assert.ok(one(app.render(), 'Sheet'));
+      await app.act(() => one(app.render(), 'Sheet').close());
+      await app.act(() => byId(app.render(), 'leadership-tab-heatmap').onPress());
+      assert.equal(nodes(app.render()).some(n => /leadership-day-live-/.test(n.props.testID || '')), false);
+      const day = byId(app.render(), 'leadership-day-2026-10-19');
+      assert.doesNotMatch(day.accessibilityLabel, /In progress|Live|جارٍ/);
+      assert.notEqual(day.style[1].borderColor, '#1256da');
+      await app.act(() => day.onPress());
+      assert.match(text(app.render()), /100.00/); assert.doesNotMatch(text(app.render()), /In progress|Live|جارٍ|Updated|آخر تحديث/);
+      assert.equal(nodes(app.render()).some(n => n.props.testID === 'leadership-warning'), false);
+    } finally { await app.unmount(); }
+  }
+});
+
+test('reconnection verifies silently and does not revive live styling before a fresh server report', async () => {
+  const app = harness({ online: false }); app.engine.displayLeaseRemainingMs = Infinity;
+  try {
+    await app.flush(); await app.act(() => byId(app.render(), 'leadership-tab-heatmap').onPress());
+    const held = waiting(); app.engine.options = async () => held.promise;
+    app.props.online = true; await app.flush();
+    assert.match(text(app.render()), /100/); assert.equal(byId(app.render(), 'leadership-day-2026-10-19').disabled, true);
+    assert.equal(nodes(app.render()).some(n => /leadership-day-live-/.test(n.props.testID || '')), false);
+    await app.act(() => held.resolve(app.options));
+    assert.ok(byId(app.render(), 'leadership-day-live-2026-10-19'));
+    assert.equal(byId(app.render(), 'leadership-day-2026-10-19').disabled, false);
+  } finally { await app.unmount(); }
+});
+
+test('an unavailable offline filter clears prior values rather than displaying zero or another scope', async () => {
+  const app = harness({ online: false }); app.engine.displayLeaseRemainingMs = Infinity;
+  try {
+    await app.flush(); app.engine.read = async () => { throw { code: 'snapshot_unavailable' }; };
+    await app.act(() => byId(app.render(), 'leadership-company-1').onPress());
+    assert.doesNotMatch(text(app.render()), /123,456.78/); assert.match(text(app.render()), /Unavailable/);
+  } finally { await app.unmount(); }
+});
+
+test('cached financial pixels and open details disappear at their display lease deadline', async () => {
+  const app = harness({ online: false }); app.engine.displayLeaseRemainingMs = 40;
+  try {
+    await app.flush(); await app.act(() => byId(app.render(), 'leadership-card-sales').onPress());
+    assert.match(text(app.render()), /123,456.78/);
+    await app.act(() => new Promise(resolve => setTimeout(resolve, 60)));
+    assert.doesNotMatch(text(app.render()), /123,456.78/);
+    assert.equal(nodes(app.render()).some(n => n.type === 'Sheet'), false);
+  } finally { await app.unmount(); }
+});
+
+test('calendar integer display rounds upward exactly while original decimal details stay unchanged in either language', async () => {
   for (const language of ['en', 'ar']) {
     const app = harness({ language });
     const displays = ['7,000.00', '1,234,567.89', '-25,000.75', '0.00', '—'];
+    const visible = ['7,000', '1,234,568', '-25,000', '0', '—'];
+    let source, sourceSnapshot;
     app.engine.read = async q => {
       const r = app.fixtures.report(q.companyId, '2026-10', 'month');
       ['7000.00', '1234567.89', '-25000.75', '0.00'].forEach((value, i) => {
         r.calendar.days[i].sales = { ...app.fixtures.money(value), display: displays[i] };
       });
       Object.assign(r.calendar.days[4], { has_sales: false, sales: app.fixtures.unavailable(), status: 'missing' });
+      r.calendar.weekdays[5].average = app.fixtures.money('1234567.89');
+      source = r; sourceSnapshot = JSON.stringify(r);
       return r;
     };
     try {
@@ -20,16 +77,61 @@ test('calendar cells retain full source amounts with readable wrapping, zero and
         await app.act(() => byId(app.render(), 'leadership-heatmap').onLayout({ nativeEvent: { layout: { width } } }));
         for (let i = 0; i < displays.length; i++) {
           const date = `2026-10-0${i + 1}`, amount = byId(app.render(), `leadership-day-sales-${date}`);
-          assert.equal(text({ type: 'Text', props: amount }).replace(/\u200b/g, ''), displays[i]);
-          if (displays[i].includes('.')) assert.ok(text({ type: 'Text', props: amount }).includes('\u200b.'), 'fraction has its own wrap boundary instead of orphaning a cent digit at large font');
+          assert.equal(text({ type: 'Text', props: amount }).replace(/\u200b/g, ''), visible[i]);
+          assert.doesNotMatch(text({ type: 'Text', props: amount }), /\./);
           assert.equal(amount.numberOfLines, undefined); assert.equal(amount.adjustsFontSizeToFit, undefined);
           assert.equal(amount.style[1].fontSize, width < 420 ? 10 : 12);
           assert.equal(amount.style[0].writingDirection, 'ltr');
-          assert.ok(byId(app.render(), `leadership-day-${date}`).accessibilityLabel.includes(displays[i]));
+          assert.ok(byId(app.render(), `leadership-day-${date}`).accessibilityLabel.includes(visible[i]));
         }
       }
       await app.act(() => byId(app.render(), 'leadership-day-2026-10-03').onPress());
       assert.match(text(app.render()), /-25,000.75/);
+      assert.equal(JSON.stringify(source), sourceSnapshot, 'presentation never mutates original decimal amounts, totals or comparisons');
+      byId(app.render(), 'leadership-weekday-averages').children.forEach((header, index) => {
+        const average = one(header, 'Text', p => p.style?.fontWeight === '700');
+        assert.equal(text({ type: 'Text', props: average }).replace(/\u200b/g, ''), index === 0 ? '1,234,568' : '102');
+        assert.equal(average.numberOfLines, undefined); assert.equal(average.adjustsFontSizeToFit, undefined);
+        assert.equal(average.style.fontSize, 11);
+      });
+    } finally { await app.unmount(); }
+  }
+});
+
+test('calendar ceil formatter preserves decimal precision, carry, signed refunds and unavailable without Number rounding', () => {
+  const { presentation, fixtures } = harness();
+  const cases = [
+    ['53.10', '54'], ['53.90', '54'], ['53.00', '53'], ['53', '53'],
+    ['999.01', '1,000'], ['999999.99', '1,000,000'], ['0.00', '0'],
+    ['0.0000000000000001', '1'], ['-0.0000000000000001', '0'], ['-0.00', '0'],
+    ['-53.10', '-53'], ['-53.00', '-53'], ['-25000.75', '-25,000'],
+    ['9007199254740992.01', '9,007,199,254,740,993'],
+    ['999999999999999999999999999999.01', '1,000,000,000,000,000,000,000,000,000,000'],
+  ];
+  for (const [value, expected] of cases) {
+    const amount = Object.freeze(fixtures.money(value));
+    assert.equal(presentation.calendarIntegerDisplay(amount), expected, value);
+    assert.equal(amount.value, value);
+  }
+  assert.equal(presentation.calendarIntegerDisplay(fixtures.unavailable()), '—');
+  assert.equal(presentation.calendarIntegerDisplay(undefined), '—');
+});
+
+test('compact calendar gains side space without horizontal scrolling and selected-day details remain outside its card', async () => {
+  for (const language of ['ar', 'en']) {
+    const app = harness({ language });
+    try {
+      await app.flush();
+      const basePadding = byId(app.render(), 'leadership-scroll').contentContainerStyle[0].padding;
+      await app.act(() => byId(app.render(), 'leadership-tab-heatmap').onPress());
+      const scroll = byId(app.render(), 'leadership-scroll');
+      assert.equal(scroll.contentContainerStyle[1].paddingHorizontal, 6);
+      assert.ok(scroll.contentContainerStyle[1].paddingHorizontal < basePadding);
+      assert.equal(byId(app.render(), 'leadership-calendar-panel').style[1].paddingHorizontal, 6);
+      assert.equal(nodes(app.render()).some(n => n.type === 'ScrollView' && n.props.horizontal), false);
+      await app.act(() => byId(app.render(), 'leadership-day-2026-10-01').onPress());
+      assert.ok(byId(app.render(), 'leadership-day-detail'));
+      assert.equal(nodes({type:'View', props:byId(app.render(), 'leadership-calendar-panel')}).some(n => n.props.testID === 'leadership-day-detail'), false);
     } finally { await app.unmount(); }
   }
 });
@@ -189,7 +291,7 @@ test('server zero, missing, partial and future labels stay distinct and unavaila
     Object.assign(days[1], { sales: app.fixtures.unavailable(), has_sales: false, status_label: 'Missing', status: 'missing' });
     Object.assign(days[2], { status_label: 'Incomplete', status: 'incomplete' }); Object.assign(days[20], { status_label: 'English future evidence', status: 'incomplete' }); return r; };
   try { await app.flush(); await app.act(() => byId(app.render(), 'leadership-tab-heatmap').onPress()); const month = app.calls.find(c => c[0] === 'read')[1].month;
-    const zero = byId(app.render(), `leadership-day-${month}-01`), missing = byId(app.render(), `leadership-day-${month}-02`); assert.match(zero.accessibilityLabel, /0.00, Recorded zero/); assert.match(missing.accessibilityLabel, /—, Missing/);
+    const zero = byId(app.render(), `leadership-day-${month}-01`), missing = byId(app.render(), `leadership-day-${month}-02`); assert.match(zero.accessibilityLabel, /0, Recorded zero/); assert.match(missing.accessibilityLabel, /—, Missing/);
     assert.notEqual(zero.style[1].backgroundColor, missing.style[1].backgroundColor); assert.match(byId(app.render(), `leadership-day-${month}-03`).accessibilityLabel, /Incomplete/); assert.match(byId(app.render(), `leadership-day-${month}-21`).accessibilityLabel, /Future/);
   } finally { await app.unmount(); }
 });

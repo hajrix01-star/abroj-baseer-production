@@ -8,7 +8,7 @@ function harness(initial = {}) {
     filename = resolve(filename); if (cache.has(filename)) return cache.get(filename);
     const raw = readFileSync(filename, 'utf8'), output = { exports: {} }; cache.set(filename, output.exports);
     const code = ts.transpileModule(raw, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022, esModuleInterop: true } }).outputText;
-    vm.runInNewContext(code, { module: output, exports: output.exports, Date, Intl, Math, JSON, console, require(name) {
+    vm.runInNewContext(code, { module: output, exports: output.exports, Date, Intl, Math, JSON, console, setTimeout, clearTimeout, require(name) {
       if (['react', 'react/jsx-runtime'].includes(name)) return require(name);
       if (name === 'react-native') return { ...Object.fromEntries(['View', 'Text', 'Pressable', 'ScrollView', 'ActivityIndicator'].map(n => [n, n])), StyleSheet: { create: value => value } };
       if (name === 'react-native-svg') return { __esModule: true, default: 'Svg', Line: 'Line', Path: 'Path' };
@@ -30,7 +30,7 @@ function harness(initial = {}) {
   const tree = value => value == null || typeof value !== 'object' ? value : Array.isArray(value) ? value.map(tree) : { type: value.type, props: { ...value.props, children: tree(value.children) } };
   const render = () => tree(mounted?.toJSON());
   const flush = async () => { await renderer.act(async () => { if (!mounted) mounted = renderer.create(React.createElement(Screen, props)); else mounted.update(React.createElement(Screen, props)); }); return render(); };
-  return { props, engine, options, calls, fixtures, render, flush, async act(callback) { await renderer.act(async () => { await callback(); }); return flush(); }, async unmount() { if (mounted) await renderer.act(async () => mounted.unmount()); } };
+  return { props, engine, options, calls, fixtures, presentation: load(resolve(__dirname, 'presentation.ts')), render, flush, async act(callback) { await renderer.act(async () => { await callback(); }); return flush(); }, async unmount() { if (mounted) await renderer.act(async () => mounted.unmount()); } };
 }
 const nodes = value => value == null || typeof value !== 'object' ? [] : Array.isArray(value) ? value.flatMap(nodes) : [value, ...nodes(value.props?.children)];
 const one = (value, type, predicate = () => true) => { const node = nodes(value).find(n => n.type === type && predicate(n.props)); if (!node) throw new Error(`Missing ${type}`); return node.props; };

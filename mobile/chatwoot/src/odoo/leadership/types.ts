@@ -19,9 +19,18 @@ export interface LeadershipReport {
   calendar: LeadershipCalendar & { weekdays: { weekday: number; name: string; average: Amount; sample_count: number }[] };
   previous_calendar: LeadershipCalendar;
 }
-export interface LeadershipIdentity { verified: boolean; origin: string; db: string; uid: number; epoch: string | number; companyIds: number[]; canView: boolean }
+export interface LeadershipIdentity { verified: boolean; origin: string; db: string; uid: number; epoch: string | number; companyIds: number[]; canView: boolean; revision?: number }
 export interface LeadershipRequest { method: 'GET'; path: string; query?: Record<string, string | number>; signal?: AbortSignal; payload?: never }
-export interface LeadershipDependencies { transport: { request: (request: LeadershipRequest) => Promise<unknown> }; identityScope: () => LeadershipIdentity | null; onUnauthorized?: () => void; onForbidden?: () => void }
+export interface LeadershipDependencies {
+  transport: { request: (request: LeadershipRequest) => Promise<unknown> };
+  identityScope: () => LeadershipIdentity | null;
+  /** Cache-only authority: must never be passed to transport as verified identity. */
+  displayScope?: () => import('./LeadershipSnapshots').SnapshotAuthority | null;
+  snapshots?: import('./LeadershipSnapshots').LeadershipSnapshots;
+  offline?: () => boolean;
+  now?: () => number;
+  onUnauthorized?: () => void; onForbidden?: () => void;
+}
 export class LeadershipError extends Error {
   code: string; status?: number;
   constructor(code: string, status?: number) { super(code); this.name = 'LeadershipError'; this.code = code; this.status = status; }

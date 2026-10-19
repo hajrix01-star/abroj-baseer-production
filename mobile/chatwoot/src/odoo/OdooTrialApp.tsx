@@ -349,7 +349,7 @@ export function SessionApp({ engine, initialLanguage = 'ar', onLanguageChange }:
           {leadershipVisited && chat.identity.permissions.dashboard_view === true && <View style={[styles.fill, { display: area === 'leadership' ? 'flex' : 'none' }]}
             pointerEvents={area === 'leadership' ? 'auto' : 'none'} accessibilityElementsHidden={area !== 'leadership'} importantForAccessibility={area === 'leadership' ? 'auto' : 'no-hide-descendants'}>
             <LeadershipScreen engine={getLeadershipEngine()} identity={chat.identity} language={language}
-              scopeKey={engine.accountScope ?? ''} presented={area === 'leadership' && !!identity && !chat.offline}
+              scopeKey={engine.accountScope ?? ''} online={!chat.offline && !!identity} presented={area === 'leadership' && !!identity}
               onBack={() => {
                 if (!active.current || liveArea.current !== 'leadership' || liveScope.current !== scopeKey) return;
                 Keyboard.dismiss(); setArea('chat');

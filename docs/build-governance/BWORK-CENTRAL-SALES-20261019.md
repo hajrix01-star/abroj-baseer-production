@@ -528,6 +528,40 @@ there is no full-system rediscovery or separate duplicate map artifact.
   its explicit switch. No financial production GO is granted. Evidence resides
   in ignored output/bwork-leadership-20261019/release-0.1.22; never commit output.
 
+- R33 (2026-10-19), LOCAL calendar compactness on branch
+  `codex/bwork-calendar-compact-20261019`, base `5d7f0eb3`. Owner explicitly
+  replaces fractional calendar labels with ceiling-to-integer presentation,
+  including real fractions, while preserving exact financial calculations.
+  Only calendar day/weekday-average labels use the decimal-string formatter;
+  no binary Number/Math.ceil conversion, Amount mutation, aggregate calculation,
+  server/transport/ACL change, or offline feature is introduced. Positive53.10
+  displays54; negative53.10 displays-53 (ceiling toward +infinity); negative
+  fractional zero displays0. Details, overview, comparisons and source keep
+  original decimals. Source arrays are checked byte-for-byte after rendering.
+
+  | Before | After | Why |
+  | --- | --- | --- |
+  | Fractional day/weekday labels | Display-only integer ceiling | Owner-approved compact calendar; no accounting rounding |
+  | Outer12 + inner12 horizontal padding | Calendar-only6 +6 | More room for the same seven columns; overview unchanged |
+  | Weekday average may shrink to fit | Fixed font with grouping wrap | Preserve readable figures; no new horizontal scrolling |
+
+  Selected-day details remain a separate non-horizontal panel. Existing live-day,
+  zero/missing, seven-slot, chart, access-denial and same-filter refresh behavior
+  remains covered. Three new/updated target tests failed before implementation;
+  final15 UI cases pass in AR/EN with narrow270/wide710 layout events. Other11
+  unchanged leadership engine/transport cases passed; producer-wire case passed
+  separately with the installed bundled Python via existing BWORK_PYTHON setting
+  (WindowsApps alias failed first). Total27 leadership cases passed across the
+  targeted runs, plus TypeScript. Host renderer is NOT native screenshot proof;
+  native phone acceptance and a new APK are not claimed. Baseline cell-sales
+  invariant intentionally follows this explicit owner decision; exact-decimal
+  ceiling guard is added, not deleted or skipped. No unchanged ORM/load rerun.
+  Source-only change: no QA request, APK publication or Live operation in R33.
+  Offline audit: LeadershipEngine is connected-only with no persistent financial
+  cache; OdooTrialApp masks leadership when chat.offline. Chat separately supports
+  a remembered account's valid cached history for24h after verification and a
+  pending-message queue; uncached content and financial refresh need connection.
+
 ## Local handoff / remaining acceptance
 
 | Area | Owner / evidence | Result |

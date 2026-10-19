@@ -20,6 +20,8 @@ import { tasksNativeRequest } from './tasks/transport';
 import { LeadershipEngine } from './leadership/core/LeadershipEngine';
 import { LeadershipError, type LeadershipIdentity } from './leadership/core/types';
 import { leadershipNativeRequest } from './leadership/transport';
+import { LeadershipSnapshots } from './leadership/LeadershipSnapshots';
+import type { SnapshotAuthority } from './leadership/LeadershipSnapshots';
 
 export const config = Object.freeze({
   origin: (process.env.EXPO_PUBLIC_ODOO_ORIGIN ?? '').trim(),
@@ -36,6 +38,10 @@ const ordersOnlySession = new OrdersOnlySession();
 let ordersEngine: OrdersEngine | undefined;
 let workTasksEngine: TasksEngine | undefined;
 let leadershipEngine: LeadershipEngine | undefined;
+let leadershipSnapshots: LeadershipSnapshots | undefined;
+// Chat's disconnected state also covers invalid/server responses; those must
+// never authorize a historical financial fallback.
+let leadershipOfflineScope: string | null = null;
 let ordersConnectivity = true;
 let ordersAccessEpoch = 0;
 let ordersRefresh: { generation: number; accessEpoch: number; operation: Promise<Bootstrap> } | null = null;
@@ -212,6 +218,7 @@ function fixedURL(path: string): string {
   return url.href;
 }
 function cancelNative(): void {
+  leadershipOfflineScope = null;
   generation++;
   leadershipEngine?.clear();
   ordersOnlySession.lock();
@@ -459,15 +466,59 @@ function deniedCleanupEpoch(error: unknown, expected: number): number {
     && (error.status === 401 || error.status === 403 || error.code === 'identity_mismatch');
   return denied && generation === expected + 1 && engine?.status === 'signed_out' && !engine.identity ? generation : expected;
 }
+/** Cleanup may identify a remembered actor while backgrounded or expired.
+ * This is never passed to HTTP and is not sufficient for displaying data. */
+function leadershipSnapshotAuthority(): SnapshotAuthority | null {
+  const chat = getEngine(), identity = chat.identity, epoch = chat.accountScope;
+  if (!identity || !epoch) return null;
+  const revision = identity.permissions.revision;
+  return { origin: config.origin, db: config.database, uid: identity.user_id, epoch,
+    companyIds: [...identity.company_ids], canView: identity.permissions.dashboard_view === true,
+    revision: typeof revision === 'number' && Number.isSafeInteger(revision) && revision >= 0 ? revision : 0,
+    leaseRemainingMs: chat.rememberedLeaseRemainingMs };
+}
+function leadershipDisplayScope(): SnapshotAuthority | null {
+  if (AppState.currentState !== 'active') return null;
+  const authority = leadershipSnapshotAuthority();
+  return authority && authority.leaseRemainingMs > 0 ? authority : null;
+}
+function getLeadershipSnapshots(): LeadershipSnapshots {
+  if (!leadershipSnapshots) leadershipSnapshots = new LeadershipSnapshots({
+    storage: AsyncStorage, current: leadershipDisplayScope, now: Date.now,
+  });
+  return leadershipSnapshots;
+}
+function snapshotAuthorityStamp(authority: SnapshotAuthority | null): string {
+  // Epoch/deadline renewal is not a company or permission change.
+  return authority ? JSON.stringify([authority.origin, authority.db, authority.uid,
+    [...authority.companyIds].sort((a, b) => a - b), authority.canView, authority.revision]) : '';
+}
+async function revokeLeadershipSnapshots(authority: SnapshotAuthority | null): Promise<void> {
+  leadershipEngine?.clear();
+  if (authority) await getLeadershipSnapshots().revoke(authority);
+}
+async function reconcileLeadershipSnapshots(before: SnapshotAuthority | null, expected: number): Promise<void> {
+  if (generation !== expected || snapshotAuthorityStamp(before) === snapshotAuthorityStamp(leadershipSnapshotAuthority())) return;
+  await revokeLeadershipSnapshots(before);
+}
 class NativeChatEngine extends ChatEngine {
   protected override nonChatBootstrap(raw: unknown, expectedUid: number): Bootstrap | null {
     return ordersOnlyBootstrap(raw, expectedUid, config.database);
   }
   override async login(login: string, password: string, remember: boolean): Promise<Bootstrap> {
+    const before = leadershipSnapshotAuthority();
     const operation = super.login(login, password, remember); const epoch = generation;
     const accessEpoch = ordersAccessEpoch;
     try {
       const result = await operation;
+      const acceptedGeneration = result.permissions.chat_view === false ? epoch + 1 : epoch;
+      const acceptedScope = this.accountScope;
+      const after = leadershipSnapshotAuthority();
+      if (generation !== acceptedGeneration || result.permissions.chat_view === true && (!after || after.uid !== result.user_id)) throw new ChatError('stale_session');
+      // A cold login has no prior in-memory actor. Its own new incarnation may
+      // revoke older disk snapshots before the login result reaches the UI.
+      await revokeLeadershipSnapshots(before ?? after).catch(() => undefined);
+      if (generation !== acceptedGeneration || this.accountScope !== acceptedScope) throw new ChatError('stale_session');
       if (result.permissions.chat_view === false && (result.permissions.order_view === true || result.permissions.task_view === true)) {
         const accepted = epoch + 1; // Exactly this login's authoritative chat invalidation.
         if (generation !== accepted || this.identity || this.status !== 'signed_out') throw new ChatError('stale_session');
@@ -481,21 +532,45 @@ class NativeChatEngine extends ChatEngine {
       }
       return result;
     }
-    catch (error) { await pruneMedia('cacheOnly', deniedCleanupEpoch(error, epoch)).catch(() => undefined); throw error; }
-  }
-  override async restoreOffline(): Promise<boolean> { const operation = super.restoreOffline(); const epoch = generation; const restored = await operation; await pruneMedia('snapshot', epoch); return restored; }
-  override async refresh(): Promise<Bootstrap> {
-    const epoch = generation;
-    try { const result = await super.refresh(); await pruneMedia('snapshot', epoch); return result; }
     catch (error) {
       const cleanupEpoch = deniedCleanupEpoch(error, epoch);
+      if (cleanupEpoch !== epoch) await revokeLeadershipSnapshots(before).catch(() => undefined);
+      await pruneMedia('cacheOnly', cleanupEpoch).catch(() => undefined); throw error;
+    }
+  }
+  override async restoreOffline(): Promise<boolean> {
+    const operation = super.restoreOffline(); const epoch = generation;
+    const restored = await operation;
+    if (generation === epoch) leadershipOfflineScope = restored ? this.accountScope : null;
+    await pruneMedia('snapshot', epoch); return restored;
+  }
+  override async refresh(): Promise<Bootstrap> {
+    const before = leadershipSnapshotAuthority();
+    const epoch = generation;
+    leadershipOfflineScope = null;
+    try {
+      const result = await super.refresh();
+      await reconcileLeadershipSnapshots(before, epoch).catch(() => undefined);
+      await pruneMedia('snapshot', epoch); return result;
+    }
+    catch (error) {
+      const cleanupEpoch = deniedCleanupEpoch(error, epoch);
+      if (generation === epoch && error instanceof ChatError && error.code === 'connection_failed' && !error.status)
+        leadershipOfflineScope = this.accountScope;
+      if (cleanupEpoch !== epoch) await revokeLeadershipSnapshots(before).catch(() => undefined);
+      else await reconcileLeadershipSnapshots(before, epoch).catch(() => undefined);
       await pruneMedia(cleanupEpoch === epoch ? 'snapshot' : 'cacheOnly', cleanupEpoch).catch(() => undefined); throw error;
     }
   }
   override async logout(): Promise<void> {
+    const financialActor = leadershipSnapshotAuthority();
+    // Start the actor's serialized revoke before reset hides its identity.
+    // Store failure blocks financial reads in-process; it must not change chat logout.
+    const financialCleanup = revokeLeadershipSnapshots(financialActor).catch(() => undefined);
     const prior = ordersOnlySnapshot();
     const operation = super.logout(); const epoch = generation;
     try { await operation; } finally {
+      await financialCleanup;
       if (generation === epoch) {
         reservations.clear(); await pruneMedia('logout', epoch);
         ordersOnlySession.clear(prior.generation);
@@ -614,12 +689,17 @@ export function getTasksEngine(): TasksEngine {
 /** Financial reports are read-only and live only in their verified actor scope. */
 export function getLeadershipEngine(): LeadershipEngine {
   if (!leadershipEngine) leadershipEngine = new LeadershipEngine({
+    snapshots: getLeadershipSnapshots(),
+    offline: () => !ordersConnectivity || getEngine().offline && leadershipOfflineScope !== null && leadershipOfflineScope === getEngine().accountScope,
+    displayScope: leadershipDisplayScope,
+    now: Date.now,
     identityScope: (): LeadershipIdentity | null => {
       const current = applicationOrdersIdentity();
       if (!current) return null;
       const b = current.identity;
       return { origin: config.origin, db: config.database, uid: b.user_id, epoch: current.epoch,
-        companyIds: b.company_ids, verified: true, canView: b.permissions.dashboard_view === true };
+        companyIds: b.company_ids, verified: true, canView: b.permissions.dashboard_view === true,
+        ...(typeof b.permissions.revision === 'number' ? { revision: b.permissions.revision } : {}) };
     },
     transport: { request: async input => {
       const expected = applicationOrdersIdentity();

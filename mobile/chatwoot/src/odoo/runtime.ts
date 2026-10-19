@@ -581,9 +581,9 @@ class NativeChatEngine extends ChatEngine {
     try { const item = await super.enqueueAttachment(room, attachment, text, replyTo); reservations.delete(attachment.uri); return item; }
     catch (error) {
       reservations.delete(attachment.uri);
-      let pendingOwner = false;
-      try { pendingOwner = this.pending().some(item => item.attachment?.uri === attachment.uri); } catch { /* No readable session remains. */ }
-      if (!pendingOwner) await removeOwned(attachment.uri).catch(() => undefined);
+      let pendingOwner = true;
+      try { pendingOwner = this.pending().some(item => item.attachment?.uri === attachment.uri); } catch { /* Unreadable ownership is not permission to delete. */ }
+      if (!pendingOwner && !await stagedJournalOwns(attachment.uri)) await removeOwned(attachment.uri).catch(() => undefined);
       throw error;
     }
   }
@@ -769,6 +769,32 @@ export function stageFile(room: Room, input: { uri: string; name: string; mime: 
       reservations.set(uri, { epoch: snapshot.epoch, at: Date.now() });
       return { uri, name, mime: input.mime, kind, size: info.size, sha256, upload_uuid };
     } catch (error) { await removeOwned(uri).catch(() => undefined); throw error; }
+  });
+}
+async function stagedJournalOwns(uri: string): Promise<boolean> {
+  try {
+    for (const key of await AsyncStorage.getAllKeys()) if (key.includes('/outbox/') || key.includes('/ack/')) {
+      const raw = await AsyncStorage.getItem(key);
+      if (raw && JSON.parse(raw).attachment?.uri === uri) return true;
+    }
+    return false;
+  } catch { return true; } // Unknown durable outcome must preserve its bytes.
+}
+/** Dispose only an unclaimed picker reservation. An unreadable/uncertain outbox
+ * is never evidence that a staged file is disposable. */
+export function discardStagedAttachment(attachment: Attachment): Promise<void> {
+  return serialMedia(async () => {
+    const uri = attachment.uri, reservation = reservations.get(uri);
+    if (!reservation || !owned(uri) || !uri.split('/').at(-1)?.startsWith('stage-')) return;
+    let pending: Pending[];
+    try { pending = getEngine().pending(); } catch { return; }
+    if (pending.some(item => item.attachment?.uri === uri)) return;
+    // Pending state may be awaiting an in-flight durable enqueue; preserve any
+    // journal reference, and fail closed if its storage cannot be inspected.
+    if (await stagedJournalOwns(uri)) return;
+    try { if (getEngine().pending().some(item => item.attachment?.uri === uri)) return; } catch { return; }
+    if (reservations.get(uri) !== reservation) return;
+    reservations.delete(uri); await removeOwned(uri);
   });
 }
 function pinLocal(uri: string): LocalMediaLease {

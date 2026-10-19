@@ -131,6 +131,39 @@ function session() {
     width(value) { width = value; }, back() { for (const callback of [...backHandlers].reverse()) if (callback()) return true; return false; }, flushFrames() { for (const frame of frames.splice(0)) frame(); } };
 }
 
+test('Chats is the first authorized drawer section and opens the inbox from every workspace in either language', () => {
+  for (const language of ['ar', 'en']) {
+    const panel = drawer(320); panel.props.language = language; panel.props.t = dictionary.translator(language);
+    panel.props.onChats = () => panel.events.push('chats');
+    panel.props.onOrders = () => {}; panel.props.ordersLabel = 'Orders';
+    panel.props.onTasks = () => {}; panel.props.tasksLabel = 'Tasks';
+    panel.props.onLeadership = () => {}; panel.props.leadershipLabel = 'Leadership';
+    const entries = nodes(one(panel.render(), 'ScrollView').children).filter(n => n.type === 'Pressable');
+    assert.equal(entries[0].props.accessibilityLabel, panel.props.t('rooms'));
+    entries[0].props.onPress(); assert.equal(panel.events.at(-1), 'chats');
+    panel.props.identity.permissions.chat_view = false;
+    assert.equal(nodes(panel.render()).some(n => n.type === 'Pressable' && n.props.accessibilityLabel === panel.props.t('rooms')), false);
+
+    const app = session();
+    if (language === 'en') one(app.render(), 'NavigationDrawer').onAction('en');
+    Object.assign(app.chat.identity.permissions, { order_view: true, task_view: true, dashboard_view: true });
+    assert.equal(one(app.render(), 'View', p => p.testID === 'chat-workspace').style.at(-1).display, 'flex', 'cold start defaults to chat');
+    for (const section of ['Orders', 'Tasks', 'Leadership']) {
+      one(app.render(), 'NavigationDrawer')[`on${section}`]();
+      assert.equal(one(app.render(), 'View', p => p.testID === 'chat-workspace').style.at(-1).display, 'none');
+      app.chat.selected = { id: 4, company_id: 1, membership_id: 9 };
+      one(app.render(), 'NavigationDrawer').onChats();
+      assert.equal(one(app.render(), 'View', p => p.testID === 'chat-workspace').style.at(-1).display, 'flex');
+      assert.deepEqual(app.calls.at(-1), ['select', null]);
+      app.chat.selected = null;
+    }
+    const stale = one(app.render(), 'NavigationDrawer').onChats;
+    app.chat.identity.permissions.chat_view = false; app.render();
+    assert.equal(one(app.render(), 'NavigationDrawer').onChats, undefined);
+    const before = app.calls.length; stale(); assert.equal(app.calls.length, before);
+  }
+});
+
 test('dashboard navigation is separately granted, retained when hidden and revoked without touching chat', () => {
   const app = session();
   assert.equal(one(app.render(), 'NavigationDrawer').onLeadership, undefined);

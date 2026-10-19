@@ -504,6 +504,11 @@ export function SessionApp({ engine, initialLanguage = 'ar', onLanguageChange }:
         soundsEnabled={chat.soundsEnabled}
         soundsReady={chat.soundsReady}
         onSoundsChange={chat.setSoundsEnabled}
+        onChats={identity?.permissions.chat_view === true ? () => {
+          if (!active.current || liveScope.current !== scopeKey) return;
+          Keyboard.dismiss(); setMenu(false); setManagement(null); setCompanyChoice(null); setArea('chat');
+          if (chat.selected) void chat.select(null);
+        } : undefined}
         ordersLabel={orderTranslator(language)('orders')}
         onOrders={identity?.permissions.order_view === true ? () => {
           if (!active.current || liveScope.current !== scopeKey) return;

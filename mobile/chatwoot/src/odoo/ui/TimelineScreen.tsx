@@ -22,6 +22,8 @@ import { AttachmentTools, MediaTile, useVoiceSession } from './MediaTools';
 import { GroupAvatar } from './GroupAvatar';
 import { SwipeReply } from './SwipeReply';
 import type { ChatView } from './useChat';
+import { ChatError } from '../core/ChatEngine';
+import { discardStagedAttachment, stageFile } from '../runtime';
 import {
   canViewMedia,
   conversationAccess,
@@ -144,6 +146,18 @@ export function TimelineScreen({
   latestAccess.current = canSend;
   const latestSendAuthority = useRef(chat.presentationReady && access.canSend);
   latestSendAuthority.current = chat.presentationReady && access.canSend;
+  const attachmentPresentation = useRef({ presented, ready: chat.presentationReady, offline: chat.offline });
+  attachmentPresentation.current = { presented, ready: chat.presentationReady, offline: chat.offline };
+  const attachmentIntents = useRef(new Set<{ wake(): void; cancel(): void }>());
+  useEffect(() => {
+    for (const intent of attachmentIntents.current) intent.wake();
+  }, [actionScope, presented, chat.presentationReady, chat.offline, sending, access.canAttach, JSON.stringify(chat.identity?.company_ids)]);
+  useEffect(() => {
+    const subscription = AppState.addEventListener?.('change', () => {
+      for (const intent of attachmentIntents.current) intent.wake();
+    });
+    return () => { subscription?.remove(); for (const intent of [...attachmentIntents.current]) intent.cancel(); };
+  }, []);
   // Coalesce layout signals and let recycled cells commit before one correction.
   // Native onScroll can still describe the previous tail, so prefer FlashList's fresh layout.
   const scrollLatest = useCallback(() => {
@@ -327,6 +341,86 @@ export function TimelineScreen({
       sendBusy.current = false;
       setSending(false);
     }
+  };
+  /** Only a user-started picker owns this bounded intent; hidden text callbacks
+   * still use send's unchanged guards. Offline enqueue is local only; flush
+   * retains its existing independent online verification. */
+  const beginAttachment = () => {
+    const fingerprint = () => {
+      try {
+        const identity = engine.identity, current = engine.rooms().find(value => value.id === room.id);
+        if (!identity || !engine.accountScope || !current || current.company_id !== room.company_id || current.membership_id !== room.membership_id
+          || !conversationAccess(identity, current).canAttach) return null;
+        return JSON.stringify([engine.accountScope, identity.database, identity.user_id, [...identity.company_ids].sort((a, b) => a - b),
+          identity.permissions.revision, room.company_id, room.id, room.membership_id]);
+      } catch { return null; }
+    };
+    const original = fingerprint(), requested = actionScope;
+    if (!original || !canAttach || !live.current || AppState.currentState !== 'active') throw new ChatError('stale_session');
+    const submittedText = text, submittedReply = reply?.id, submittedDraft = draftRevision.current, submittedReplyRevision = replyRevision.current;
+    const deadline = Date.now() + 5 * 60 * 1000;
+    let cancelled = false, claimed = false, discarded = false, stageStarted = false, enqueueStarted = false, staged: Attachment | undefined;
+    let waiter: { resolve(): void; reject(error: ChatError): void } | undefined;
+    const valid = () => !cancelled && live.current && Date.now() < deadline && currentActionScope.current === requested && fingerprint() === original;
+    const ready = () => {
+      const current = attachmentPresentation.current;
+      return current.presented && current.ready && AppState.currentState === 'active' && !sendBusy.current;
+    };
+    const dispose = () => { clearTimeout(timer); attachmentIntents.current.delete(intent); };
+    const discard = () => {
+      if (staged && !claimed && !discarded) { discarded = true; void discardStagedAttachment(staged).catch(() => undefined); }
+    };
+    const cancel = () => {
+      if (cancelled) { discard(); return; }
+      cancelled = true; dispose();
+      waiter?.reject(new ChatError('stale_session')); waiter = undefined;
+      discard();
+    };
+    const wake = () => {
+      if (!valid()) { cancel(); return; }
+      if (ready() && waiter) { const pending = waiter; waiter = undefined; pending.resolve(); }
+    };
+    const intent = { wake, cancel };
+    const timer = setTimeout(cancel, 5 * 60 * 1000);
+    attachmentIntents.current.add(intent);
+    const wait = async () => {
+      if (!valid()) { cancel(); throw new ChatError('stale_session'); }
+      if (!ready()) await new Promise<void>((resolve, reject) => { waiter = { resolve, reject }; wake(); });
+      if (!valid() || !ready()) throw new ChatError('stale_session');
+    };
+    return {
+      stage: async (input: { uri: string; name: string; mime: string; kind: 'image' | 'file' }) => {
+        if (stageStarted) throw new ChatError('stale_session');
+        stageStarted = true;
+        await wait();
+        if (!valid() || !ready()) { cancel(); throw new ChatError('stale_session'); }
+        const value = await stageFile(room, input); staged = value;
+        if (!valid()) { cancel(); throw new ChatError('stale_session'); }
+        return value;
+      },
+      enqueue: async (value: Attachment) => {
+        if (enqueueStarted || !staged || value !== staged) throw new ChatError('stale_session');
+        enqueueStarted = true;
+        await wait();
+        if (!valid() || !ready()) { cancel(); throw new ChatError('stale_session'); }
+        claimed = true; dispose(); sendBusy.current = true; setSending(true); setLocalError(null);
+        try {
+          // Claim before awaiting: the existing outbox exclusively owns retry,
+          // uncertain persistence and staged-file cleanup from this point on.
+          await engine.enqueueAttachment(room, value, submittedText, submittedReply);
+          if (!valid()) return;
+          if (submittedDraft === draftRevision.current) setText('');
+          if (submittedReplyRevision === replyRevision.current) setReply(null);
+          chat.capture();
+          if (presentedRef.current) {
+            chat.soundSent?.(room); if (!browsing.current) follow.current.ownEnqueued();
+            setShowLatest(browsing.current); setActionsFor(null); if (!browsing.current) scrollLatest();
+          }
+          if (!engine.offline) void chat.sync().catch(() => undefined);
+        } finally { sendBusy.current = false; setSending(false); }
+      },
+      cancel,
+    };
   };
   const rows: Row[] = useMemo(() => [
     ...chat.history.messages.map(message => ({ key: `message-${message.id}`, message })),
@@ -767,6 +861,7 @@ export function TimelineScreen({
                 disabled={sending || !canSend}
                 voice={voice}
                 enqueue={send}
+                beginAttachment={beginAttachment}
                 language={language}
                 t={t}
                 report={setLocalError}

@@ -49,6 +49,7 @@ function load(file, dependencies) {
   } }).outputText;
   const module = { exports: {} };
   vm.runInNewContext(compiled, { module, exports: module.exports, require: name => dependencies[name] ?? {}, console,
+    Date: dependencies.Date ?? Date, setTimeout: dependencies.setTimeout ?? setTimeout, clearTimeout: dependencies.clearTimeout ?? clearTimeout,
     requestAnimationFrame: callback => { dependencies.frames?.push(callback); return dependencies.frames?.length ?? 1; },
     cancelAnimationFrame: id => { if (dependencies.frames) dependencies.frames[id - 1] = null; },
   }, { filename: file });
@@ -142,7 +143,7 @@ function timeline(initialHidden = [], host) {
   let release;
   const tools = host?.AttachmentTools ?? function AttachmentTools() {};
   const props = { language: 'ar', t, onMenu: () => calls.push('menu'), back: () => calls.push('back'), manage: () => calls.push('members'),
-    engine: { cachedHiddenMessages: () => [...hidden], hiddenMessages: async () => [...hidden],
+    engine: { accountScope: 'actor7/epoch1', offline: false, rooms: () => [props.chat.selected], cachedHiddenMessages: () => [...hidden], hiddenMessages: async () => [...hidden],
       setMessageHidden: async (_room, id, value) => { hidden = value ? [...hidden, id] : hidden.filter(item => item !== id); calls.push(['hidden', id, value]); return [...hidden]; },
       messageInfo: async (_room, id) => { calls.push(['info', id]); return props.chat.history.messages.find(message => message.id === id); },
       enqueue: async (_room, text) => { calls.push(['text', text]); await new Promise(resolve => { release = resolve; }); }, enqueueAttachment: async () => undefined, acknowledge: async () => null },
@@ -151,6 +152,7 @@ function timeline(initialHidden = [], host) {
       history: { messages: [{ id: 10, author_user_id: 8, author_name: 'Synthetic', text: 'retained message', created_at: '2026-10-18 12:30:00', media: { id: 1 } }] }, pending: [], capture: () => calls.push('capture'),
     },
   };
+  Object.defineProperty(props.engine, 'identity', { get: () => props.chat.identity });
   const viewModel = { presentationKey: () => 'scoped', visibleReadIds: (rows, uid, active) => active ? rows.filter(row => row.message && row.message.author_user_id !== uid).map(row => row.message.id) : [], messageTime: () => '15:30', messageDateTime: () => '18/10/2026, 15:30',
     conversationAccess: (identity, selected) => {
       const canSend = !!identity?.company_ids.includes(selected.company_id) && identity.permissions.chat_view === true && identity.permissions.chat_send === true;
@@ -158,7 +160,9 @@ function timeline(initialHidden = [], host) {
     }, canViewMedia: (identity, selected) => !!identity?.company_ids.includes(selected.company_id) && identity.permissions.chat_view === true && identity.permissions.media === true };
   const module = load('TimelineScreen.tsx', { react: state.react, 'react/jsx-runtime': host?.jsx ?? jsx,
     frames,
-    'react-native': { Alert: { alert: (...args) => alerts.push(args) }, Keyboard: { addListener: (name, callback) => { keyboard[name] = callback; return { remove() {} }; } }, AppState: { currentState: 'active' }, KeyboardAvoidingView: 'KeyboardAvoidingView', Platform: { OS: 'android' }, Pressable: 'Pressable', Text: 'Text', View: 'View' },
+    'react-native': { Alert: { alert: (...args) => alerts.push(args) }, Keyboard: { addListener: (name, callback) => { keyboard[name] = callback; return { remove() {} }; } }, AppState: host?.appState ?? { currentState: 'active' }, KeyboardAvoidingView: 'KeyboardAvoidingView', Platform: { OS: 'android' }, Pressable: 'Pressable', Text: 'Text', View: 'View' },
+    '../runtime': host?.runtime ?? {}, Date: host?.Date, setTimeout: host?.setTimeout, clearTimeout: host?.clearTimeout,
+    '../core/ChatEngine': { ChatError: class ChatError extends Error { constructor(code) { super(code); this.code = code; } } },
     '@shopify/flash-list': { FlashList: host?.FlashList ?? 'FlashList' }, './components': components, './dictionary': { errorWord: () => 'error' }, './viewModel': viewModel,
     './MediaTools': { AttachmentTools: tools, MediaTile: 'MediaTile', useVoiceSession: (_scope, _report, play, record) => { voiceRights.push([play, record]); return { recording: false }; } },
     './GroupAvatar': { GroupAvatar: 'GroupAvatar' },
@@ -222,6 +226,146 @@ test('actual React retains the timeline list mount, draft, reply and reader stat
     assert.equal(mounts, 1); assert.equal(get('FlashList').fixturePosition, 640);
     assert.equal(get('Field').value, 'retained draft'); assert.equal(get('MessageQuote').text, 'retained message');
   } finally { await renderer.act(async () => mounted?.unmount()); }
+});
+
+async function pickerTimeline({ delayStage = false, offline = false, kind = 'image' } = {}) {
+  const React = require('react'), renderer = require('react-test-renderer');
+  globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+  let mounted, pickResult, stageResult, time = 1000000;
+  const events = [], timers = new Set(), appState = { currentState: 'active' };
+  const runtime = {
+    stageFile: async (_room, input) => {
+      events.push(['stage', input]);
+      return delayStage ? new Promise(resolve => { stageResult = resolve; }) : { ...attachment, kind: input.kind, mime: input.mime, name: input.name };
+    },
+    discardStagedAttachment: async value => events.push(['discard', value]),
+  };
+  const actualTools = load('MediaTools.tsx', { react: React, 'react/jsx-runtime': require('react/jsx-runtime'),
+    'react-native': { View: 'View', Platform: { OS: 'android' }, PermissionsAndroid: {}, AppState: appState },
+    './components': components, './dictionary': { errorWord: () => 'error' }, '../runtime': runtime,
+    '@react-native-documents/picker': { pick: () => new Promise(resolve => { pickResult = resolve; }),
+      types: { pdf: 'pdf', plainText: 'text', docx: 'docx', xlsx: 'xlsx' }, isErrorWithCode: () => false, errorCodes: { OPERATION_CANCELED: 'cancelled' } },
+    'react-native-image-picker': { launchImageLibrary: () => new Promise(resolve => { pickResult = resolve; }), launchCamera: async () => ({ didCancel: true }) },
+  }).AttachmentTools;
+  const app = timeline([], { react: React, jsx: require('react/jsx-runtime'), AttachmentTools: actualTools, runtime, appState,
+    Date: { now: () => time }, setTimeout: callback => { timers.add(callback); return callback; }, clearTimeout: callback => timers.delete(callback),
+  });
+  app.props.engine.accountScope = 'actor7/epoch1'; app.props.engine.offline = offline;
+  app.props.chat.offline = offline; app.props.chat.sync = async () => events.push(['sync']);
+  app.props.engine.enqueueAttachment = async (...args) => events.push(['enqueue', ...args]);
+  const update = async () => renderer.act(async () => {
+    const element = React.createElement(app.Component, app.props);
+    if (mounted) mounted.update(element); else mounted = renderer.create(element);
+  });
+  const get = (type, match) => mounted.root.findAllByType(type).find(node => !match || match(node.props)).props;
+  return { ...app, events, appState, get, update, act: renderer.act,
+    async start() {
+    await update();
+    await renderer.act(async () => get('IconButton', p => p.icon === 'attach').onPress());
+    await renderer.act(async () => get('Button', p => p.title === (kind === 'file' ? 'file' : 'photo')).onPress());
+    },
+    async pause() {
+      app.props.chat.presentationReady = false; app.props.chat.retainedDisplay = true; app.props.presented = false;
+      app.props.chat.offline = true; app.props.engine.offline = true; appState.currentState = 'background'; await update();
+    },
+    async resume() {
+      appState.currentState = 'active'; app.props.chat.presentationReady = true; app.props.presented = true;
+      app.props.chat.offline = offline; app.props.engine.offline = offline; await update(); await settled();
+    },
+    async picked(value = kind === 'file' ? [{ uri: 'content://picker/document.pdf', name: 'document.pdf', type: 'application/pdf' }]
+      : { assets: [{ uri: 'file:///picker/image.jpg', type: 'image/jpeg' }] }) {
+      await renderer.act(async () => { pickResult(value); await settled(); });
+    },
+    async releaseStage() { await renderer.act(async () => { stageResult({ ...attachment, kind: 'image' }); await settled(); }); },
+    async expire() { time += 300001; await renderer.act(async () => { for (const callback of [...timers]) callback(); await settled(); }); },
+    async unmount() { await renderer.act(async () => mounted?.unmount()); },
+  };
+}
+
+test('actual picker return waits through foreground revalidation then enqueues its selected attachment exactly once', async () => {
+  for (const kind of ['image', 'file']) {
+  const app = await pickerTimeline({ kind });
+  try {
+    await app.start(); await app.pause(); app.appState.currentState = 'active'; await app.picked();
+    assert.equal(app.events.length, 0, 'no staging, upload or enqueue while original authority is being revalidated');
+    await app.resume();
+    assert.equal(app.events.filter(event => event[0] === 'stage').length, 1);
+    assert.equal(app.events.find(event => event[0] === 'stage')[1].kind, kind);
+    assert.equal(app.events.filter(event => event[0] === 'enqueue').length, 1);
+    await app.update(); assert.equal(app.events.filter(event => event[0] === 'enqueue').length, 1);
+  } finally { await app.unmount(); }
+  }
+});
+
+test('actual picker retains its original draft/reply and does not clear a newer draft after local enqueue', async () => {
+  const app = await pickerTimeline({ delayStage: true });
+  try {
+    await app.update();
+    await app.act(async () => app.get('Field').onChangeText('original caption'));
+    await app.act(async () => { const list = app.get('FlashList'); list.renderItem({ item: list.data[0] }).props.onReply(); });
+    await app.start(); await app.pause(); app.appState.currentState = 'active'; await app.picked(); await app.resume();
+    await app.act(async () => { app.get('Field').onChangeText('newer draft'); app.get('IconButton', p => p.label === 'cancel').onPress(); });
+    await app.releaseStage();
+    const enqueued = app.events.filter(event => event[0] === 'enqueue');
+    assert.equal(enqueued.length, 1); assert.equal(enqueued[0][3], 'original caption'); assert.equal(enqueued[0][4], 10);
+    assert.equal(app.get('Field').value, 'newer draft');
+    assert.equal(app.events.some(event => event[0] === 'discard'), false, 'durable enqueue owns its stage exclusively');
+  } finally { await app.unmount(); }
+});
+
+test('actual offline picker keeps bounded local enqueue and never requests sync; expired local authority cancels', async () => {
+  const app = await pickerTimeline({ offline: true });
+  try {
+    await app.start(); await app.picked();
+    assert.equal(app.events.filter(event => event[0] === 'enqueue').length, 1);
+    assert.equal(app.events.filter(event => event[0] === 'sync').length, 0);
+    await app.start(); app.props.engine.rooms = () => { throw new Error('offline_expired'); };
+    await app.picked();
+    assert.equal(app.events.filter(event => event[0] === 'enqueue').length, 1);
+    assert.equal(app.events.filter(event => event[0] === 'stage').length, 1);
+  } finally { await app.unmount(); }
+});
+
+test('actual selected picker cancels before staging after actor/company/membership/grant change, expiry or unmount', async () => {
+  for (const changed of ['actor', 'companies', 'room', 'membership', 'grant', 'revision', 'expiry', 'unmount', 'picker_cancel']) {
+    const app = await pickerTimeline();
+    try {
+      await app.start(); await app.pause();
+      if (changed === 'actor') app.props.engine.accountScope = 'actor7/epoch2';
+      if (changed === 'companies') app.props.chat.identity = { ...app.props.chat.identity, company_ids: [1, 2] };
+      if (changed === 'room') app.props.chat.selected = { ...room, id: 5 };
+      if (changed === 'membership') app.props.chat.selected = { ...room, membership_id: 10 };
+      if (changed === 'grant') app.props.chat.identity = { ...app.props.chat.identity, permissions: { ...app.props.chat.identity.permissions, media: false } };
+      if (changed === 'revision') app.props.chat.identity = { ...app.props.chat.identity, permissions: { ...app.props.chat.identity.permissions, revision: 2 } };
+      if (changed === 'expiry') await app.expire();
+      if (changed === 'unmount') await app.unmount();
+      app.appState.currentState = 'active'; await app.picked(changed === 'picker_cancel' ? { didCancel: true } : undefined);
+      if (changed !== 'unmount') await app.resume();
+      assert.equal(app.events.filter(event => ['stage', 'enqueue', 'sync'].includes(event[0])).length, 0, changed);
+    } finally { if (changed !== 'unmount') await app.unmount(); }
+  }
+});
+
+test('cancellation during a pending stage discards the late unclaimed file once and never enqueues it', async () => {
+  const app = await pickerTimeline({ delayStage: true });
+  try {
+    await app.start(); await app.picked();
+    app.props.engine.accountScope = 'actor8/epoch2'; await app.update();
+    await app.releaseStage();
+    assert.equal(app.events.filter(event => event[0] === 'enqueue').length, 0);
+    assert.equal(app.events.filter(event => event[0] === 'discard').length, 1);
+  } finally { await app.unmount(); }
+});
+
+test('selected attachment enqueue failure is attempted once and never automatically retried or discarded by the picker', async () => {
+  const app = await pickerTimeline();
+  app.props.engine.enqueueAttachment = async (...args) => { app.events.push(['enqueue', ...args]); throw new Error('synthetic uncertain enqueue'); };
+  try {
+    await app.start(); await app.picked(); await app.update(); await app.update();
+    assert.equal(app.events.filter(event => event[0] === 'enqueue').length, 1);
+    assert.equal(app.events.filter(event => event[0] === 'discard').length, 0, 'claimed files belong exclusively to native outbox cleanup');
+    assert.equal(app.events.filter(event => event[0] === 'sync').length, 0);
+  } finally { await app.unmount(); }
 });
 test('archive controls navigate cached pages offline and durable sends do not snap a browsing timeline', async () => {
   const app = timeline(); let scrolls = 0;

@@ -32,6 +32,13 @@ class BChatTask(models.Model):
     last_actor_id = fields.Many2one('res.users', readonly=True, ondelete='restrict')
     last_changed_at = fields.Datetime(readonly=True)
     last_note = fields.Char(readonly=True, size=512)
+    origin_api = fields.Selection([
+        ('tasks_v2', 'Legacy tasks v2'), ('work_tasks_v1', 'Work tasks v1'),
+    ], required=True, readonly=True, default='tasks_v2')
+    completion_note = fields.Char(readonly=True, size=512)
+    done_by_id = fields.Many2one('res.users', readonly=True, ondelete='restrict')
+    reminder_at = fields.Datetime(readonly=True)
+    reminder_emitted_at = fields.Datetime(readonly=True)
 
     _creator_uuid_unique = models.Constraint(
         'UNIQUE(creator_id, client_uuid)', 'A BChat task UUID identifies one creation.',
@@ -58,6 +65,20 @@ class BChatTask(models.Model):
             CREATE INDEX IF NOT EXISTS baseer_bchat_task_assignee_state_id_idx
             ON baseer_bchat_task (assignee_id, state, id DESC)
         ''')
+        self.env.cr.execute('''
+            CREATE INDEX IF NOT EXISTS baseer_bchat_task_creator_state_id_idx
+            ON baseer_bchat_task (creator_id, state, id DESC)
+        ''')
+        self.env.cr.execute('''
+            CREATE INDEX IF NOT EXISTS baseer_bchat_task_pending_reminder_idx
+            ON baseer_bchat_task (reminder_at, id)
+            WHERE reminder_emitted_at IS NULL AND reminder_at IS NOT NULL
+              AND state IN ('new', 'in_progress')
+        ''')
+
+    @api.model
+    def _cron_work_task_reminders(self):
+        return self.env['baseer.bchat.service']._work_task_schedule_reminders()
 
     @api.model_create_multi
     def create(self, vals_list):

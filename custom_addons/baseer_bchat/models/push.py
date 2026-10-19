@@ -215,6 +215,7 @@ class BChatPushEvent(models.Model):
     company_id = fields.Many2one('res.company', required=True, readonly=True, ondelete='restrict', index=True)
     event_kind = fields.Selection([
         ('assigned', 'Assigned'), ('updated', 'Updated'), ('message', 'Message'),
+        ('reminder', 'Task reminder'),
     ], required=True, readonly=True)
     task_revision = fields.Integer(readonly=True)
     state = fields.Selection([
@@ -233,7 +234,7 @@ class BChatPushEvent(models.Model):
     _event_source_shape = models.Constraint(
         """CHECK (
             (task_id IS NOT NULL AND message_id IS NULL
-             AND task_revision IS NOT NULL AND event_kind IN ('assigned', 'updated'))
+             AND task_revision IS NOT NULL AND event_kind IN ('assigned', 'updated', 'reminder'))
             OR
             (task_id IS NULL AND message_id IS NOT NULL
              AND task_revision IS NULL AND event_kind = 'message')
@@ -416,6 +417,20 @@ class BChatPushEvent(models.Model):
                 ('active', '=', True), ('joined_after_message_id', '<', message.id),
             ], limit=1))
         task = event.task_id
+        if task and event.event_kind == 'reminder':
+            # Serialize room-membership/task revocation against delivery. A
+            # queued reminder is for precisely its assignee, never all members.
+            if task.room_id:
+                self.env['baseer.bchat.room']._lock_for_read(task.room_id.id)
+            self.env.cr.execute('SELECT id FROM baseer_bchat_task WHERE id = %s FOR SHARE', [task.id])
+            if not self.env.cr.fetchone():
+                return False
+            task.invalidate_recordset()
+            if (task.assignee_id.id != user.id or task.state not in ('new', 'in_progress')
+                    or event.task_revision != task.revision
+                    or not task.reminder_at or not task.reminder_emitted_at
+                    or not user._bchat_effective_permissions().get('task_manage')):
+                return False
         if (not task or event.company_id != task.company_id
                 or task.company_id not in user.company_ids
                 or not user._bchat_effective_permissions().get('task_view')):

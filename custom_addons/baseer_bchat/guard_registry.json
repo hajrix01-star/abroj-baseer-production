@@ -14,7 +14,10 @@
         "custom_addons/baseer_bchat/models/v2_service.py",
         "custom_addons/baseer_bchat/security/**"
       ],
-      "suites": ["backend-contracts", "source-structure"]
+      "suites": [
+        "backend-contracts",
+        "source-structure"
+      ]
     },
     {
       "id": "membership-epochs",
@@ -28,7 +31,10 @@
         "custom_addons/baseer_bchat/tests/**",
         "custom_addons/baseer_bchat/tests_contract/**"
       ],
-      "suites": ["backend-contracts", "source-structure"]
+      "suites": [
+        "backend-contracts",
+        "source-structure"
+      ]
     },
     {
       "id": "task-transitions",
@@ -42,7 +48,10 @@
         "custom_addons/baseer_bchat/tests/test_tasks_v2.py",
         "custom_addons/baseer_bchat/tests_contract/test_task_contracts.py"
       ],
-      "suites": ["backend-contracts", "source-structure"]
+      "suites": [
+        "backend-contracts",
+        "source-structure"
+      ]
     },
     {
       "id": "push-enabled-apk",
@@ -57,7 +66,10 @@
         "android/bchat/tools/build-unified-preview.ps1",
         "android/bchat/tools/check-package.py"
       ],
-      "suites": ["android-source-contract", "apk-artifact"]
+      "suites": [
+        "android-source-contract",
+        "apk-artifact"
+      ]
     },
     {
       "id": "attention-center",
@@ -71,7 +83,11 @@
         "android/bchat/app/src/main/java/com/baseer/freshchat/OdooIdentityActivity.java",
         "custom_addons/baseer_bchat/tests_contract/test_attention_contract.py"
       ],
-      "suites": ["backend-contracts", "android-source-contract", "source-structure"]
+      "suites": [
+        "backend-contracts",
+        "android-source-contract",
+        "source-structure"
+      ]
     },
     {
       "id": "client-ui-localization",
@@ -87,7 +103,9 @@
         "android/bchat/tools/test-localization.py",
         "android/bchat/tools/test-orders-ui-contracts.py"
       ],
-      "suites": ["android-source-contract"]
+      "suites": [
+        "android-source-contract"
+      ]
     },
     {
       "id": "verified-webview-read-fallback",
@@ -99,7 +117,9 @@
         "android/bchat/tools/test-verified-read-fallback.py",
         "android/bchat/tools/check-package.py"
       ],
-      "suites": ["android-source-contract"]
+      "suites": [
+        "android-source-contract"
+      ]
     },
     {
       "id": "bridge-session-recovery",
@@ -116,7 +136,11 @@
         "android/bchat/app/src/main/res/values-ar/strings.xml",
         "android/bchat/app/src/main/res/values-en/strings.xml"
       ],
-      "suites": ["bridge-entry-contract", "android-source-contract", "backend-contracts"]
+      "suites": [
+        "bridge-entry-contract",
+        "android-source-contract",
+        "backend-contracts"
+      ]
     },
     {
       "id": "qa-live-release-gate",
@@ -128,7 +152,10 @@
         "ops/production/baseer-production-deploy",
         ".github/workflows/validate-pull-request.yml"
       ],
-      "suites": ["release-wrapper", "source-structure"]
+      "suites": [
+        "release-wrapper",
+        "source-structure"
+      ]
     },
     {
       "id": "guard-engine-integrity",
@@ -142,7 +169,10 @@
         ".github/workflows/bchat-cumulative-contracts.yml",
         ".github/CODEOWNERS"
       ],
-      "suites": ["guard-integrity", "source-structure"]
+      "suites": [
+        "guard-integrity",
+        "source-structure"
+      ]
     },
     {
       "id": "push-installation-lifecycle",
@@ -156,7 +186,10 @@
         "custom_addons/baseer_bchat/__manifest__.py",
         "android/bchat/app/src/main/java/com/baseer/freshchat/BChatPushState.java"
       ],
-      "suites": ["backend-contracts", "source-structure"]
+      "suites": [
+        "backend-contracts",
+        "source-structure"
+      ]
     },
     {
       "id": "task-push-fastlane-and-private-avatars",
@@ -174,7 +207,11 @@
         "android/bchat/app/src/main/java/com/baseer/freshchat/OdooIdentityActivity.java",
         "custom_addons/baseer_bchat/__manifest__.py"
       ],
-      "suites": ["backend-contracts", "android-source-contract", "source-structure"]
+      "suites": [
+        "backend-contracts",
+        "android-source-contract",
+        "source-structure"
+      ]
     },
     {
       "id": "media-send-ack-reconciliation",
@@ -186,7 +223,10 @@
         "android/bchat/app/src/main/java/com/baseer/freshchat/sync/BChatConnectedMediaStore.java",
         "android/bchat/tools/test-connected-media-ui-contracts.py"
       ],
-      "suites": ["android-source-contract", "source-structure"]
+      "suites": [
+        "android-source-contract",
+        "source-structure"
+      ]
     },
     {
       "id": "login-brand-motion",
@@ -202,7 +242,10 @@
         "android/bchat/app/src/main/res/values-en/strings.xml",
         "android/bchat/tools/test-login-brand-contracts.py"
       ],
-      "suites": ["android-source-contract", "source-structure"]
+      "suites": [
+        "android-source-contract",
+        "source-structure"
+      ]
     },
     {
       "id": "native-capability-media-upload",
@@ -224,7 +267,33 @@
         "android/bchat/tools/test-connected-media-ui-contracts.py",
         "android/bchat/tools/test-connected-media-journey.py"
       ],
-      "suites": ["backend-contracts", "android-source-contract", "source-structure"]
+      "suites": [
+        "backend-contracts",
+        "android-source-contract",
+        "source-structure"
+      ]
+    },
+    {
+      "id": "modern-work-task-scope-replay-reminders",
+      "introduced": "2026-10-19",
+      "risk": "critical",
+      "scope": "Modern work tasks retain legacy fingerprint semantics while enforcing all-company personal scope, assignee eligibility before paging, canonical completion, same-UUID terminal replay and atomically queued revocable reminders.",
+      "source_paths": [
+        "custom_addons/baseer_bchat/work_task_contracts.py",
+        "custom_addons/baseer_bchat/models/work_task_service.py",
+        "custom_addons/baseer_bchat/models/task.py",
+        "custom_addons/baseer_bchat/models/task_service.py",
+        "custom_addons/baseer_bchat/models/push.py",
+        "custom_addons/baseer_bchat/controllers/work_task_api.py",
+        "custom_addons/baseer_bchat/data/work_task_cron.xml",
+        "custom_addons/baseer_bchat/tests/test_work_tasks.py",
+        "custom_addons/baseer_bchat/tests_contract/test_work_task_contracts.py",
+        "custom_addons/baseer_bchat/tests_contract/test_work_task_service_seams.py"
+      ],
+      "suites": [
+        "backend-contracts",
+        "source-structure"
+      ]
     }
   ]
 }

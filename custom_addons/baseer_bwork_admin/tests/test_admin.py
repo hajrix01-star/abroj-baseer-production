@@ -116,11 +116,25 @@ class BWorkAdminCase(TransactionCase):
             policy.with_user(self.ordinary).write({'warning_mib': 2})
         with self.assertRaises(AccessError):
             policy.unlink()
+        # Preserve Odoo's native last-active-administrator invariant. This
+        # disposable fixture is not the policy reader or a BWork room admin.
+        system_group = self.env.ref('base.group_system')
+        fallback_admin = self.env['res.users'].sudo().with_context(no_reset_password=True).create({
+            'name': 'Isolated policy system administrator', 'login': 'policy-system-' + uuid4().hex,
+            'company_id': self.company.id, 'company_ids': [Command.set(self.company.ids)],
+            'group_ids': [Command.set([self.env.ref('base.group_user').id, system_group.id])],
+            'active': True,
+        })
+        self.assertTrue(fallback_admin.active)
+        self.assertTrue(fallback_admin.has_group('base.group_system'))
+        self.assertFalse(fallback_admin._bchat_effective_permissions()['room_admin'])
         # Keep actual room-admin authority but remove the additional config grant.
-        self.admin.sudo().write({'group_ids': [Command.unlink(self.env.ref('base.group_system').id)]})
+        self.admin.sudo().write({'group_ids': [Command.unlink(system_group.id)]})
+        self.assertFalse(self.admin.has_group('base.group_system'))
         self.assertTrue(self.admin._bchat_effective_permissions()['room_admin'])
         with self.assertRaises(AccessError):
             policy.write({'warning_mib': 2})
+        self.assertEqual(policy.warning_mib, 1)
 
     def test_console_actions_guard_direct_rpc_and_readonly_views(self):
         model = self.env['baseer.bwork.admin.console'].with_user(self.admin).with_context(allowed_company_ids=self.company.ids)

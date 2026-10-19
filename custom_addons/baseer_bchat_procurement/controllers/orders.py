@@ -82,6 +82,21 @@ class BChatOrderApi(http.Controller):
         except (AccessError, ProtocolError, ValidationError, UserError) as error:
             return self._error(error)
 
+    @http.route('/bchat/api/v2/orders/rooms', type='http', auth='user',
+                methods=['GET'], csrf=True, save_session=True)
+    def rooms(self, **kwargs):
+        try:
+            args = self._args(('company_id', 'q', 'after_id', 'preferred_room_id'))
+            if 'company_id' not in args:
+                raise ProtocolError('invalid_payload', 'company_id is required.')
+            return self._response(self._service()._v2_order_rooms(
+                self._id(args['company_id'], 'company_id'), args.get('q'),
+                self._id(args['after_id'], 'after_id') if 'after_id' in args else None,
+                self._id(args['preferred_room_id'], 'preferred_room_id') if 'preferred_room_id' in args else None,
+            ))
+        except (AccessError, ProtocolError, ValidationError, UserError) as error:
+            return self._error(error)
+
     @http.route('/bchat/api/v2/orders/catalog', type='http', auth='user',
                 methods=['POST'], csrf=True, save_session=True, max_content_length=65536)
     def catalog(self, **kwargs):
@@ -107,9 +122,10 @@ class BChatOrderApi(http.Controller):
             args = self._args(('company_id', 'before_id', 'scope'))
             before_id = self._id(args['before_id'], 'before_id') if 'before_id' in args else None
             if 'scope' in args:
-                if args['scope'] != 'all' or 'company_id' in args:
+                if args['scope'] != 'all':
                     raise ProtocolError('invalid_payload', 'Choose one supported order scope.')
-                return self._response(self._service()._v2_orders_all(before_id))
+                company_id = self._id(args['company_id'], 'company_id') if 'company_id' in args else None
+                return self._response(self._service()._v2_orders_all(before_id, company_id=company_id))
             if 'company_id' not in args:
                 raise ProtocolError('invalid_payload', 'company_id is required.')
             company_id = self._id(args['company_id'], 'company_id')
@@ -139,6 +155,15 @@ class BChatOrderApi(http.Controller):
         try:
             self._args(())
             return self._response(self._service()._v2_order_create(self._form()))
+        except (AccessError, ProtocolError, ConcurrencyError, ValidationError, UserError) as error:
+            return self._error(error)
+
+    @http.route('/bchat/api/v2/orders/<int:order_id>/share', type='http', auth='user',
+                methods=['POST'], csrf=True, save_session=True, max_content_length=65536)
+    def share(self, order_id, **kwargs):
+        try:
+            self._args(())
+            return self._response(self._service()._v2_order_share(order_id, self._form()))
         except (AccessError, ProtocolError, ConcurrencyError, ValidationError, UserError) as error:
             return self._error(error)
 

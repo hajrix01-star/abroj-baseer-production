@@ -1,7 +1,7 @@
 import { OrdersError } from './types.ts';
 import type {
   CatalogPage, ConfirmInput, ConfirmResult, CreateInput, CreateResult, OrderDetail,
-  OrdersOptions, OrdersPage, QuoteInput, QuoteResult, ReceiptDetail, ReceiptsPage, ShareResult,
+  OrderRoomsPage, OrdersOptions, OrdersPage, QuoteInput, QuoteResult, ReceiptDetail, ReceiptsPage, ShareResult,
 } from './types.ts';
 
 type Obj = Record<string, any>;
@@ -111,6 +111,7 @@ function receiptSummary(value: unknown): void {
 }
 export function optionsResponse(value: unknown): OrdersOptions {
   const row = base(value); selections(row.companies, 20);
+  if (row.workflow_version !== undefined && (!Number.isInteger(row.workflow_version) || row.workflow_version < 0 || row.workflow_version > 2147483647)) invalid('Invalid workflow version.');
   if (!['operator', 'viewer'].includes(row.access)) invalid('Invalid access.');
   ['can_view', 'can_create', 'can_receive'].forEach(key => bool(row[key]));
   if (row.purchase_routes !== undefined) array(row.purchase_routes, 3).forEach(item => { route(item.code); text(item.name); });
@@ -119,6 +120,11 @@ export function optionsResponse(value: unknown): OrdersOptions {
   if (row.categories !== undefined) selections(row.categories, 100);
   if (row.default_warehouse_id !== undefined) nullableId(row.default_warehouse_id);
   return row as OrdersOptions;
+}
+export function roomsResponse(value: unknown): OrderRoomsPage {
+  const row = base(value); id(row.company_id); selections(row.rooms, 50); nullableId(row.next_after_id);
+  if (row.preferred_room !== null) selections([row.preferred_room], 1);
+  return row as OrderRoomsPage;
 }
 export function catalogResponse(value: unknown): CatalogPage {
   const row = base(value); array(row.items, 24).forEach(catalogItem); nullableId(row.next_after_id);

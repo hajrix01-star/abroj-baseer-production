@@ -135,7 +135,7 @@ export class SyntheticOrdersFixture {
       requested_qty: index ? '1.00' : '2.00', available: true, current_option: item }));
   }
   private options(): OrdersOptions {
-    return { api_version: 2, access: this.rights().order_create || this.rights().order_receive ? 'operator' : 'viewer',
+    return { api_version: 2, workflow_version: 1, access: this.rights().order_create || this.rights().order_receive ? 'operator' : 'viewer',
       can_view: this.rights().order_view, can_create: this.rights().order_create, can_receive: this.rights().order_receive,
       companies: this.bootstrap().profile!.companies.map(company => ({ id: company.id, name: this.label(company.name_ar!, company.name_en!) })),
       warehouses: [{ id: 71, name: this.label('مستودع اختبار رئيسي', 'Fixture main warehouse') }, { id: 72, name: this.label('مستودع اختبار ثانٍ', 'Fixture second warehouse') }],
@@ -177,6 +177,12 @@ export class SyntheticOrdersFixture {
     this.log(`${request.method} ${request.path} company=${company}${payload.client_uuid ? ` uuid=${String(payload.client_uuid)}` : ''}`);
     // No fetch/HTTP call exists here. Responses are deterministic fixture objects.
     if (request.path.endsWith('/options')) return clone(this.options());
+    if (request.path.endsWith('/rooms')) {
+      if (!this.config.chatView || !this.config.chatSend) throw new OrdersError('forbidden');
+      const eligible = [{ id: company === 41 ? 501 : 502, name: 'Synthetic purchase room' }];
+      const preferred = eligible.find(room => room.id === Number(query.preferred_room_id)) ?? null;
+      return { api_version: 2, company_id: company, rooms: eligible.filter(room => room.id > Number(query.after_id ?? 0) && room.name.toLowerCase().includes(String(query.q ?? '').toLowerCase())), next_after_id: null, preferred_room: preferred };
+    }
     if (request.path.endsWith('/catalog')) {
       const search = String(query.q ?? '').toLowerCase(), category = Number(query.category_id ?? 0), after = Number(query.after_id ?? 0);
       const matching = this.catalogItems().filter(item => item.product_id > after && (!category || category === item.category_id) && (!search || item.product_name.toLowerCase().includes(search)));
@@ -202,6 +208,17 @@ export class SyntheticOrdersFixture {
       this.log(`COMMIT confirm=${this.commits.confirm} uuid=${result.client_uuid} actual_total=${FIXED_ACTUAL} NO_REAL_STOCK`);
       this.maybeLose('confirm', result.client_uuid); return clone(result);
     }
+    const orderShare = /^\/bchat\/api\/v2\/orders\/(\d+)\/share$/.exec(request.path);
+    if (orderShare) {
+      if (!this.config.chatView || !this.config.chatSend || this.config.share403) throw new OrdersError('forbidden');
+      const original = this.detail(company, Number(orderShare[1]));
+      const roomId = Number(payload.room_id);
+      if (roomId !== (company === 41 ? 501 : 502)) throw new OrdersError('room_unavailable');
+      if (original.order.room_id && original.order.room_id !== roomId) throw new OrdersError('order_share_conflict');
+      const replayed = original.order.room_id === roomId;
+      if (!replayed) { this.summaries.set(original.order.id, { ...original.order, room_id: roomId }); this.commits.share++; }
+      return { api_version: 2, order_id: original.order.id, room_id: roomId, message_id: original.order.id + 7000, shared: true, replayed };
+    }
     const share = /^\/bchat\/api\/v2\/orders\/receipts\/(\d+)\/share$/.exec(request.path);
     if (share) {
       const id = Number(share[1]), original = this.detail(company, id);
@@ -223,7 +240,7 @@ export class SyntheticOrdersFixture {
     if (detail) return this.detail(company, Number(detail[1]));
     if (request.path === '/bchat/api/v2/orders' && request.method === 'GET') {
       const before = Number(query.before_id ?? Infinity);
-      const matching = [...this.summaries.values()].filter(order => order.id < before).sort((a, b) => b.id - a.id), orders = matching.slice(0, 30);
+      const matching = [...this.summaries.values()].filter(order => order.id < before && (!query.company_id || order.company_id === company)).sort((a, b) => b.id - a.id), orders = matching.slice(0, 30);
       return { api_version: 2, orders: clone(orders), next_before_id: matching.length > 30 ? orders.at(-1)!.id : null };
     }
     if (request.path === '/bchat/api/v2/orders' && request.method === 'POST') {
@@ -271,6 +288,16 @@ export async function runFixtureProbe(): Promise<string> {
   try { await engine.share(41, 3000); throw new Error('Expected share403'); }
   catch (error) { assert(error instanceof OrdersError && error.status === 403, 'explicit share403'); }
   assert(fixture.commits.confirm === 1 && fixture.commits.share === 0, 'share failure never repeats confirm');
+  const workflow = new SyntheticOrdersFixture({ ...DEFAULT_CONFIG, chatView: true });
+  await workflow.engine.options();
+  const next = await workflow.engine.create({ company_id: 41, warehouse_id: 71, purchase_route: 'cash', representative_partner_id: null, lines: [{ option_id: 2001, quantity: '1' }] });
+  await workflow.engine.saveRoom(41, 501);
+  assert(await workflow.engine.savedRoom(41) === 501 && await workflow.engine.savedRoom(42) === null, 'scoped conversation default');
+  const firstShare = await workflow.engine.shareOrder(41, next.order.id, 501);
+  const secondShare = await workflow.engine.shareOrder(41, next.order.id, 501);
+  assert(!firstShare.replayed && secondShare.replayed && workflow.commits.create === 1 && workflow.commits.share === 1, 'post-create share replay never duplicates order/message');
+  const scopedPage = await workflow.engine.list(undefined, 42);
+  assert(scopedPage.orders.every(order => order.company_id === 42), 'company page is filtered server-side');
   return `${FIXTURE_MARKER} PROBE PASS\ncatalog24 / quote=${FIXED_QUOTE}\ncreateUUID=${createUuid} commits=1 replayed=true\nconfirmUUID=${receiptUuid} commits=1 replayed=true\norders-only rooms=0 / originalRoom=501 / share403 / confirmStill=1\nMEMORY ONLY / NO HTTP / NO ERP\n${fixture.logs.join('\n')}`;
 }
 
@@ -280,6 +307,7 @@ function PreviewApp() {
   const fixture = fixtureRef.current;
   const [revision, setRevision] = useState(0), [surface, setSurface] = useState<'controls' | 'orders' | 'logs'>('controls');
   const [menu, setMenu] = useState(false), [probe, setProbe] = useState('Not run'), [probeBusy, setProbeBusy] = useState(false);
+  const [selectedCompanyId, setSelectedCompanyId] = useState(0);
   const language = fixture.config.language, t = translator(language);
   const configure = (update: Partial<FixtureConfig>) => { fixture.configure(update); setRevision(value => value + 1); };
   useEffect(() => fixture.subscribe(() => setRevision(value => value + 1)), [fixture]);
@@ -301,7 +329,7 @@ function PreviewApp() {
         <Button quiet title="Fixture" onPress={() => setSurface('controls')} />
       </View>
       <OrdersScreen key={fixture.epoch} scopeKey={`${FIXTURE_MARKER}/${fixture.epoch}`} engine={fixture.engine} identity={fixture.bootstrap()}
-        language={language} online={fixture.config.online} rooms={fixture.rooms()} />
+        language={language} online={fixture.config.online} selectedCompanyId={selectedCompanyId} onCompanyChange={setSelectedCompanyId} rooms={fixture.rooms()} />
       <NavigationDrawer visible={menu} identity={fixture.bootstrap()} language={language} t={t} offline={!fixture.config.online}
         pendingCount={0} busy={false} canManage={false} close={() => setMenu(false)} onAction={action} />
     </> : <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 16, gap: 12 }}>

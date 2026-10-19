@@ -28,7 +28,7 @@ function html(node) {
   const children = node.type === 'ScrollView' ? `<div style="display:flex;flex-direction:column;min-width:0;${escape(css(p.contentContainerStyle))}">${html(p.children)}</div>` : html(p.children);
   if (node.type === 'Modal' && p.visible === false) return '';
   const tag = ({ Text: 'span', TextInput: 'input', Pressable: 'button', Svg: 'svg', Path: 'path' })[node.type] ?? 'div';
-  const base = tag === 'span' ? 'display:block;white-space:pre-wrap;max-width:100%;' : tag === 'svg' || tag === 'path' ? '' : 'display:flex;flex-direction:column;min-width:0;flex-shrink:0;';
+  const base = tag === 'span' ? 'display:block;white-space:pre-wrap;max-width:100%;' : tag === 'svg' || tag === 'path' ? '' : `display:flex;flex-direction:column;min-width:0;flex-shrink:0;${node.type === 'ScrollView' ? 'overflow:auto;' : ''}`;
   const attributes = [`style="${escape(base + css(p.style))}"`];
   if (p.testID) attributes.push(`data-testid="${escape(p.testID)}"`);
   if (p.accessibilityLabel) attributes.push(`aria-label="${escape(p.accessibilityLabel)}"`);
@@ -50,11 +50,21 @@ const press = (app, label) => app.act(() => {
 async function main() {
   if (!process.argv[2]) throw new Error('Provide an explicit output directory.');
   const destination = resolve(process.argv[2]); mkdirSync(destination, { recursive: true });
-  const variants = [['catalog-ar320', 'ar', 320], ['catalog-en320', 'en', 320], ['catalog-en900', 'en', 900], ['all-orders-ar390', 'ar', 390], ['receipt-review-ar390', 'ar', 390]];
+  const variants = ['catalog', 'cart', 'review'].flatMap(page => ['ar', 'en'].flatMap(language => [320, 900].map(width => [`${page}-${language}${width}`, language, width])))
+    .concat([['all-orders-ar390', 'ar', 390], ['receipt-review-ar390', 'ar', 390]]);
   for (const [name, language, width] of variants) {
-    const app = harness({ language }, true, true); app.setWidth(width);
+    const app = harness({ language, selectedCompanyId: 1 }, true, true); app.setWidth(width);
+    const products = Array.from({ length: 24 }, (_, index) => ({ ...app.item, id: 81 + index, product_id: 22 + index,
+      product_name: language === 'ar' ? `صنف اختبار ${index + 1}` : `Fixture product ${index + 1}`,
+      option_name: language === 'ar' ? 'كرتون شراء' : 'Purchase case', uom_name: language === 'ar' ? 'وحدة' : 'Unit' }));
+    app.engine.catalog = async () => ({ api_version: 2, items: products, next_after_id: null });
     try {
       await app.flush();
+      if (name.startsWith('cart-') || name.startsWith('review-')) {
+        for (const item of products.slice(0, 3)) await press(app, `${language === 'ar' ? 'إضافة' : 'Add'} ${item.product_name} ${item.option_name}`);
+        await press(app, `${language === 'ar' ? 'مراجعة السلة' : 'Review cart'} (3)`);
+        if (name.startsWith('review-')) await press(app, language === 'ar' ? 'مراجعة الطلب' : 'Review order');
+      }
       if (name.startsWith('all-orders')) await app.act(() => byId(app.render(), 'orders-tab-allOrders').onPress());
       if (name.startsWith('receipt-review')) {
         await app.act(() => byId(app.render(), 'orders-tab-receiving').onPress());
@@ -62,7 +72,7 @@ async function main() {
         for (const id of [1, 2]) await app.act(() => byId(app.render(), `receipt-price-${id}`).onChangeText('12.34'));
         await press(app, 'مراجعة الاستلام');
       }
-      const document = `<!doctype html><html lang="${language}"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${name}</title><style>*{box-sizing:border-box}body{margin:0;background:#f4f7fd;font:16px system-ui,Segoe UI,Tahoma,sans-serif;color:#101b36}button,input{font:inherit;border:0;margin:0}button{cursor:pointer;appearance:none}button:disabled{opacity:.45}svg{flex-shrink:0}main{width:${width}px;max-width:100%;margin:auto;display:flex;flex-direction:column}aside{font-size:11px;color:#54697b;padding:16px}</style><main>${html(app.render())}</main><aside>Isolated fixture. Synthetic data. Actual React screen and central components mapped to DOM. Does not establish native Android appearance or connected Odoo behavior.</aside></html>`;
+      const document = `<!doctype html><html lang="${language}"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${name}</title><style>*{box-sizing:border-box}body{margin:0;background:#f4f7fd;font:16px system-ui,Segoe UI,Tahoma,sans-serif;color:#101b36}button,input{font:inherit;border:0;margin:0}button{cursor:pointer;appearance:none}button:disabled{opacity:.45}svg{flex-shrink:0}main{width:${width}px;height:760px;min-height:0;max-width:100%;margin:auto;display:flex;flex-direction:column}aside{font-size:11px;color:#54697b;padding:16px}</style><main>${html(app.render())}</main><aside>Isolated fixture. Synthetic data. Actual React screen and central components mapped to DOM. Does not establish native Android appearance or connected Odoo behavior.</aside></html>`;
       writeFileSync(join(destination, `${name}.html`), document, 'utf8');
       process.stdout.write(`${join(destination, `${name}.html`)}\n`);
     } finally { await app.unmount(); }

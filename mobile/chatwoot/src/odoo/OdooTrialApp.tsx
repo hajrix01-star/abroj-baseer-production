@@ -33,6 +33,7 @@ export function SessionApp({ engine, initialLanguage = 'ar', onLanguageChange }:
   const [language, updateLanguage] = useState<Language>(initialLanguage);
   const setLanguage = (value: Language) => { updateLanguage(value); onLanguageChange?.(value); };
   const [area, setArea] = useState<'chat' | 'orders'>('chat');
+  const liveArea = useRef(area); liveArea.current = area;
   const [companyId, setCompanyId] = useState(0);
   const [management, setManagement] = useState<ManagementTarget | null>(null);
   const [companyChoice, setCompanyChoice] = useState<{ mode: CompanyMode; scope: string } | null>(
@@ -315,7 +316,9 @@ export function SessionApp({ engine, initialLanguage = 'ar', onLanguageChange }:
             </View>
           )}
           {area === 'orders' ? <OrdersScreen engine={getOrdersEngine()} identity={chat.identity} language={language}
-            scopeKey={engine.accountScope ?? ''} online={!chat.offline && !!identity} rooms={chat.rooms} onBack={() => setArea('chat')} /> : <View
+            selectedCompanyId={companyId} onCompanyChange={id => {
+              if (active.current && liveArea.current === 'orders' && liveScope.current === scopeKey && identity && (id === 0 || identity.company_ids.includes(id))) setCompanyId(id);
+            }} scopeKey={engine.accountScope ?? ''} online={!chat.offline && !!identity} rooms={chat.rooms} onBack={() => setArea('chat')} /> : <View
             style={[
               styles.fill,
               { flexDirection: wide ? (language === 'ar' ? 'row-reverse' : 'row') : 'column' },

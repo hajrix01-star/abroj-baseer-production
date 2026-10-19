@@ -7,7 +7,7 @@ function choose(app, id, value) { byId(app.render(), id).onPress(); byId(app.ren
 async function cart(app) {
   one(app.render(), 'Button', p => p.accessibilityLabel === 'Add Fixture product Case').onPress();
   button(app.render(), 'Review cart (1)').onPress();
-  button(app.render(), 'Get Odoo quote').onPress(); await app.flush();
+  await app.flush();
 }
 async function receipt(app) {
   byId(app.render(), 'orders-tab-receiving').onPress(); await app.flush();
@@ -57,7 +57,7 @@ test('quote values come directly from Odoo, cart edits invalidate them, and crea
   byId(app.render(), 'cart-quantity-81').onChangeText('3.5');
   assert.equal(text(app.render()).includes('991.73 SAR'), false);
   assert.equal(button(app.render(), 'Review order').disabled, true);
-  button(app.render(), 'Get Odoo quote').onPress(); await app.flush();
+  await app.flush();
   button(app.render(), 'Review order').onPress();
   assert.ok(button(app.render(), 'Submit order'));
   assert.equal(app.calls.some(call => call[0] === 'create'), false);
@@ -91,15 +91,17 @@ test('offline and account/permission changes hide all old order data and actions
   assert.ok(text(app.render()).includes('No permission to view orders'));
 });
 
-test('all-order details use the row company, while list filters stay local and pages are bounded', async () => {
-  const app = await ready(); byId(app.render(), 'orders-tab-allOrders').onPress(); await app.flush();
+test('all-order details use the row company, company changes fetch scoped pages, and pages are bounded', async () => {
+  const app = await ready({ selectedCompanyId: 0 }); byId(app.render(), 'orders-tab-allOrders').onPress(); await app.flush();
   byId(app.render(), 'orders-row-12').onPress(); await app.flush();
   assert.deepEqual(app.calls.filter(call => call[0] === 'detail').at(-1), ['detail', 2, 12]);
   assert.ok(text(app.render()).includes('Original request values'));
   button(app.render(), 'Back').onPress(); choose(app, 'orders-list-company', 1);
   assert.equal(nodes(app.render()).some(node => node.props.testID === 'orders-row-12'), false);
-  assert.equal(app.calls.filter(call => call[0] === 'list').length, 1);
+  await app.flush();
+  assert.deepEqual(app.calls.filter(call => call[0] === 'list').at(-1), ['list', undefined, 1]);
   choose(app, 'orders-list-company', 0);
+  await app.flush();
   let page = 0;
   app.engine.list = async () => { page++; return { orders: Array.from({ length: 30 }, (_, i) => app.summary(page * 30 + i, 2)), next_before_id: page * 30 }; };
   button(app.render(), 'Reload').onPress(); await app.flush();
@@ -108,9 +110,10 @@ test('all-order details use the row company, while list filters stay local and p
   assert.equal(nodes(app.render()).some(node => node.type === 'Button' && node.props.title === 'Load more'), false);
 });
 
-test('receipt requires every exact decimal line and a deliberate review; confirm and share are separate', async () => {
+test('receipt requires every exact decimal line and a deliberate review; automatic sharing never repeats confirm', async () => {
   const app = await ready({ rooms: [{ id: 55, company_id: 1, membership_id: 5, name: 'Original room' }] });
   app.props.identity.permissions.chat_send = true; await app.flush(); await receipt(app);
+  app.engine.share = async (company, id) => { app.calls.push(['share', company, id]); throw new Error('fixture lost response'); };
   button(app.render(), 'Review receipt').onPress();
   assert.equal(nodes(app.render()).some(node => node.type === 'Button' && node.props.title === 'Confirm receipt'), false);
   byId(app.render(), 'receipt-price-1').onChangeText('1.234'); byId(app.render(), 'receipt-price-2').onChangeText('2.00');
@@ -127,11 +130,11 @@ test('receipt requires every exact decimal line and a deliberate review; confirm
   const calls = app.calls.filter(call => call[0] === 'confirm'); assert.equal(calls.length, 1);
   assert.deepEqual(JSON.parse(JSON.stringify(calls[0].slice(1))), [12, { company_id: 1, lines: [{ line_id: 1, actual_qty: '2', actual_price: '1.23' }, { line_id: 2, actual_qty: '0', actual_price: '0' }] }, [1, 2]]);
   assert.ok(text(app.render()).includes('831.49 SAR'));
-  assert.equal(app.calls.some(call => call[0] === 'share'), false);
-  app.engine.share = async (company, id) => { app.calls.push(['share', company, id]); throw new Error('fixture lost response'); };
-  button(app.render(), 'Share receipt result').onPress(); await app.flush();
-  button(app.render(), 'Share receipt result').onPress(); await app.flush();
-  assert.equal(app.calls.filter(call => call[0] === 'share').length, 2);
+  assert.equal(app.calls.filter(call => call[0] === 'share').length, 1, 'one automatic share follows the ACK');
+  assert.ok(text(app.render()).includes('The receipt is confirmed, but sharing failed'));
+  button(app.render(), 'Retry sharing').onPress(); await app.flush();
+  button(app.render(), 'Retry sharing').onPress(); await app.flush();
+  assert.equal(app.calls.filter(call => call[0] === 'share').length, 3);
   assert.equal(app.calls.filter(call => call[0] === 'confirm').length, 1);
 });
 
@@ -171,12 +174,10 @@ test('actual React 19 effects mount the workflow, invalidate quotes and clean up
     assert.ok(byId(app.render(), 'catalog-option-81'));
     await app.act(() => one(app.render(), 'Button', p => p.accessibilityLabel === 'Add Fixture product Case').onPress());
     await app.act(() => button(app.render(), 'Review cart (1)').onPress());
-    await app.act(() => button(app.render(), 'Get Odoo quote').onPress());
     assert.ok(text(app.render()).includes('991.73 SAR'));
     await app.act(() => byId(app.render(), 'cart-quantity-81').onChangeText('٢٫٥'));
     assert.equal(byId(app.render(), 'cart-quantity-81').value, '2.5');
-    assert.equal(text(app.render()).includes('991.73 SAR'), false);
-    await app.act(() => button(app.render(), 'Get Odoo quote').onPress());
+    assert.ok(text(app.render()).includes('991.73 SAR'));
     await app.act(() => button(app.render(), 'Review order').onPress());
     const stale = button(app.render(), 'Submit order').onPress;
     await app.act(() => byId(app.render(), 'orders-company').onPress());
@@ -207,7 +208,6 @@ test('actual React quantity buttons preserve fractional text, reject invalid inp
       assert.equal(byId(app.render(), 'cart-quantity-81').value, expected, `${input} - 1`);
     }
     await app.act(() => byId(app.render(), 'cart-quantity-81').onChangeText('999999.99'));
-    await app.act(() => button(app.render(), 'Get Odoo quote').onPress());
     const quoteCount = app.calls.filter(call => call[0] === 'invalidateQuote').length;
     await app.act(() => one(app.render(), 'IconButton', p => p.icon === 'plus').onPress());
     assert.equal(app.calls.filter(call => call[0] === 'invalidateQuote').length, quoteCount, 'a no-op upper-bound press keeps the current quote');
@@ -244,12 +244,10 @@ test('actual React orders-only receipt sharing uses authorized order detail with
     assert.equal(app.props.identity.permissions.chat_view, false);
     assert.deepEqual(app.props.rooms, []);
     assert.deepEqual(app.calls.filter(call => call[0] === 'detail'), [['detail', 1, 12]]);
-    assert.equal(app.calls.filter(call => call[0] === 'share').length, 0, 'detail is read without automatically sharing');
-    assert.equal(button(app.render(), 'Share receipt result').disabled, false);
-    const share = button(app.render(), 'Share receipt result').onPress;
-    await app.act(() => share());
+    assert.equal(app.calls.filter(call => call[0] === 'share').length, 1, 'one automatic share follows confirmed ACK and authorized original room');
     assert.deepEqual(app.calls.filter(call => call[0] === 'share'), [['share', 1, 12]]);
-    assert.equal(button(app.render(), 'Share receipt result').disabled, true);
+    assert.equal(button(app.render(), 'Retry sharing').disabled, true);
+    const share = button(app.render(), 'Retry sharing').onPress;
     await app.act(() => share());
     assert.equal(app.calls.filter(call => call[0] === 'share').length, 1, 'retained sharing action is revoked after 403');
     assert.equal(app.calls.filter(call => call[0] === 'confirm').length, 1, 'membership failure never repeats stock confirmation');
@@ -312,5 +310,251 @@ test('actual central Button resets disabled to false after adding, and catalog f
     await app.act(() => one(app.render(), 'Pressable', p => p.accessibilityLabel === 'Review cart (1)').onPress());
     assert.equal(nodes(app.render()).some(node => node.props.testID === 'orders-catalog-footer'), false);
     assert.equal(nodes(app.render()).filter(node => node.type === 'ScrollView').length, 1);
+  } finally { await app.unmount(); }
+});
+
+test('actual automatic quote coalesces valid edits, replaces an inflight quote and never loops on failure', async () => {
+  const app = harness({}, true), older = waiting(), newer = waiting();
+  try {
+    await app.flush();
+    await app.act(() => one(app.render(), 'Button', p => p.accessibilityLabel === 'Add Fixture product Case').onPress(), false);
+    await app.act(() => byId(app.render(), 'cart-quantity-81').onChangeText('1.5'), false);
+    await app.act(() => byId(app.render(), 'cart-quantity-81').onChangeText('2'), false);
+    assert.equal(app.calls.filter(call => call[0] === 'quote').length, 0);
+    assert.equal(app.timers.size, 1);
+    await app.flush();
+    assert.equal(app.calls.filter(call => call[0] === 'quote').length, 1);
+    assert.equal(app.calls.find(call => call[0] === 'quote')[1].lines[0].quantity, '2');
+    assert.ok(text(app.render()).includes('991.73 SAR'));
+    app.engine.quote = async input => { app.calls.push(['quote', input]); return input.lines[0].quantity === '3' ? older.promise : newer.promise; };
+    await app.act(() => byId(app.render(), 'cart-quantity-81').onChangeText('3'), false);
+    assert.equal(text(app.render()).includes('991.73 SAR'), false, 'old amount clears before debounce');
+    await app.flush();
+    await app.act(() => byId(app.render(), 'cart-quantity-81').onChangeText('4'), false);
+    await app.flush();
+    const current = app.calls.filter(call => call[0] === 'quote').at(-1)[1];
+    await app.act(() => newer.resolve({ company_id: 1, cart_revision: current.cart_revision, estimated_total: '444.40', currency_symbol: 'SAR' }));
+    await app.act(() => older.resolve({ company_id: 1, cart_revision: 0, estimated_total: '333.30', currency_symbol: 'SAR' }));
+    assert.ok(text(app.render()).includes('444.40 SAR')); assert.equal(text(app.render()).includes('333.30'), false);
+    app.engine.quote = async input => { app.calls.push(['quote', input]); throw new Error('synthetic quote failure'); };
+    await app.act(() => byId(app.render(), 'cart-quantity-81').onChangeText('5'));
+    const failedCalls = app.calls.filter(call => call[0] === 'quote').length;
+    await app.flush(); await app.flush();
+    assert.equal(app.calls.filter(call => call[0] === 'quote').length, failedCalls, 'failure cannot schedule itself');
+    await app.act(() => button(app.render(), 'Try again').onPress());
+    assert.equal(app.calls.filter(call => call[0] === 'quote').length, failedCalls + 1);
+    await app.act(() => byId(app.render(), 'cart-quantity-81').onChangeText('1.999'));
+    assert.equal(app.calls.filter(call => call[0] === 'quote').length, failedCalls + 1, 'invalid decimal never gets a quote');
+  } finally { await app.unmount(); }
+});
+
+test('company all never chooses an operation company; explicit selection is inherited by catalog and receiving', async () => {
+  const app = await ready({ selectedCompanyId: 0 });
+  assert.equal(app.calls.some(call => call[0] === 'catalog' || call[0] === 'receipts'), false);
+  assert.ok(text(app.render()).includes('Choose a company'));
+  choose(app, 'orders-company', 2); await app.flush();
+  assert.equal(app.props.selectedCompanyId, 2);
+  assert.equal(app.calls.filter(call => call[0] === 'catalog').at(-1)[1], 2);
+  byId(app.render(), 'orders-tab-receiving').onPress(); await app.flush();
+  assert.equal(app.calls.filter(call => call[0] === 'receipts').at(-1)[1], 2);
+  app.props.selectedCompanyId = 77; await app.flush();
+  assert.equal(nodes(app.render()).some(node => node.props.testID === 'receipt-row-12'), false);
+  assert.ok(text(app.render()).includes('Choose a company'));
+});
+
+test('one warehouse is hidden, no warehouse blocks pricing, and several warehouses use the server default', async () => {
+  for (const count of [0, 1, 2]) {
+    const app = harness(); app.options.warehouses = Array.from({ length: count }, (_, index) => ({ id: 7 + index, name: `Warehouse ${index}` }));
+    app.options.default_warehouse_id = count === 2 ? 8 : 7;
+    await app.flush();
+    assert.equal(nodes(app.render()).some(node => node.props.testID === 'orders-warehouse'), count > 1);
+    one(app.render(), 'Button', p => p.accessibilityLabel === 'Add Fixture product Case').onPress(); await app.flush();
+    if (!count) { assert.ok(text(app.render()).includes('No warehouse')); assert.equal(app.calls.some(call => call[0] === 'quote'), false); }
+    else assert.equal(app.calls.find(call => call[0] === 'quote')[1].warehouse_id, count === 2 ? 8 : 7);
+  }
+});
+
+async function createWithActualReact(app) {
+  await app.flush();
+  await app.act(() => one(app.render(), 'Button', p => p.accessibilityLabel === 'Add Fixture product Case').onPress());
+  await app.act(() => button(app.render(), 'Review cart (1)').onPress());
+  await app.act(() => button(app.render(), 'Review order').onPress());
+  await app.act(() => button(app.render(), 'Submit order').onPress());
+  await app.flush();
+}
+
+test('post-create defaults are freshly validated beyond page50, remembered by id only, and shared only on an explicit press', async () => {
+  const app = harness({}, true); app.props.identity.permissions.chat_send = true;
+  app.engine.savedRoom = async company => { app.calls.push(['savedRoom', company]); return 999; };
+  app.engine.rooms = async (company, query) => { app.calls.push(['rooms', company, query]); return { company_id: company,
+    rooms: Array.from({ length: 50 }, (_, index) => ({ id: index + 1, name: `Room ${index + 1}` })), next_after_id: 50, preferred_room: { id: 999, name: 'Verified default outside page' } }; };
+  try {
+    await createWithActualReact(app);
+    assert.equal(app.calls.filter(call => call[0] === 'create').length, 1);
+    assert.equal('room_id' in app.calls.find(call => call[0] === 'create')[1], false);
+    assert.equal(nodes(app.render()).some(node => node.props.testID === 'orders-room'), false);
+    assert.deepEqual(JSON.parse(JSON.stringify(app.calls.find(call => call[0] === 'rooms')[2])), { preferredRoomId: 999 });
+    assert.ok(button(app.render(), 'Verified default outside page'));
+    assert.equal(app.calls.some(call => call[0] === 'shareOrder'), false);
+    await app.act(() => button(app.render(), 'Clear default conversation').onPress());
+    assert.deepEqual(app.calls.filter(call => call[0] === 'saveRoom').at(-1), ['saveRoom', 1, null]);
+    await app.act(() => button(app.render(), 'Verified default outside page').onPress());
+    await app.act(() => byId(app.render(), 'orders-share-room-3').onPress());
+    await app.act(() => button(app.render(), 'Remember this conversation').onPress());
+    assert.deepEqual(app.calls.filter(call => call[0] === 'saveRoom').at(-1), ['saveRoom', 1, 3]);
+    const share = button(app.render(), 'Share order').onPress;
+    await app.act(() => { share(); share(); });
+    assert.deepEqual(app.calls.filter(call => call[0] === 'shareOrder'), [['shareOrder', 1, 14, 3]]);
+    assert.equal(app.calls.filter(call => call[0] === 'create').length, 1);
+    assert.ok(text(app.render()).includes('Order shared'));
+  } finally { await app.unmount(); }
+});
+
+test('missing or removed room preferences never silently pick another room; share failure retries sharing only', async () => {
+  const app = harness({}, true); app.props.identity.permissions.chat_send = true;
+  app.engine.savedRoom = async () => 999;
+  app.engine.shareOrder = async (...args) => { app.calls.push(['shareOrder', ...args]); throw { code: 'room_message_too_long' }; };
+  try {
+    await createWithActualReact(app);
+    assert.ok(text(app.render()).includes('saved conversation is unavailable'));
+    assert.equal(button(app.render(), 'Share order').disabled, true);
+    await app.act(() => button(app.render(), 'Choose a conversation').onPress());
+    await app.act(() => byId(app.render(), 'orders-share-room-55').onPress());
+    await app.act(() => button(app.render(), 'Share order').onPress());
+    assert.ok(text(app.render()).includes('Order saved'));
+    assert.ok(text(app.render()).includes('message exceeds'));
+    const count = app.calls.filter(call => call[0] === 'shareOrder').length;
+    await app.flush(); assert.equal(app.calls.filter(call => call[0] === 'shareOrder').length, count);
+    await app.act(() => button(app.render(), 'Retry sharing').onPress());
+    assert.equal(app.calls.filter(call => call[0] === 'shareOrder').length, 2);
+    assert.equal(app.calls.filter(call => call[0] === 'create').length, 1);
+  } finally { await app.unmount(); }
+});
+
+test('old server blocks new creates but saved unknown retries retain their original ACK and show the upgrade requirement', async () => {
+  const app = harness(); delete app.options.workflow_version; app.props.identity.permissions.chat_send = true;
+  app.engine.pending = async () => [{ uuid: 'old-uuid', kind: 'create', companyId: 1, createdAt: 1 }];
+  app.engine.retry = async uuid => { app.calls.push(['retry', uuid]); return { order: { ...app.summary(14, 1), room_id: null }, client_uuid: uuid, replayed: true }; };
+  await app.flush();
+  one(app.render(), 'Button', p => p.accessibilityLabel === 'Add Fixture product Case').onPress(); await app.flush();
+  assert.ok(text(app.render()).includes('requires a server update'));
+  assert.equal(app.calls.some(call => call[0] === 'quote' || call[0] === 'create' || call[0] === 'rooms'), false);
+  button(app.render(), 'Retry saved attempt').onPress(); await app.flush();
+  assert.deepEqual(app.calls.filter(call => call[0] === 'retry'), [['retry', 'old-uuid']]);
+  assert.ok(text(app.render()).includes('Order submitted'));
+  assert.ok(text(app.render()).includes('requires a server update'));
+  assert.equal(app.calls.some(call => call[0] === 'shareOrder' || call[0] === 'rooms'), false);
+});
+
+test('a corrupt optional room preference still loads eligible rooms and offers an explicit id-only reset', async () => {
+  const app = harness({}, true); app.props.identity.permissions.chat_send = true;
+  app.engine.savedRoom = async () => { throw { code: 'preference_corrupt' }; };
+  try {
+    await createWithActualReact(app);
+    assert.equal(app.calls.filter(call => call[0] === 'rooms').length, 1);
+    assert.ok(text(app.render()).includes('preference is invalid'));
+    assert.equal(app.calls.some(call => call[0] === 'saveRoom'), false, 'a bad preference is never erased automatically');
+    await app.act(() => button(app.render(), 'Clear default conversation').onPress());
+    assert.deepEqual(app.calls.filter(call => call[0] === 'saveRoom'), [['saveRoom', 1, null]]);
+    await app.act(() => button(app.render(), 'Choose a conversation').onPress());
+    await app.act(() => byId(app.render(), 'orders-share-room-55').onPress());
+    await app.act(() => button(app.render(), 'Share order').onPress());
+    assert.deepEqual(app.calls.filter(call => call[0] === 'shareOrder'), [['shareOrder', 1, 14, 55]]);
+    assert.equal(app.calls.filter(call => call[0] === 'create').length, 1);
+  } finally { await app.unmount(); }
+});
+
+test('receipt detail failure has a manual read retry and failed post-ACK share never automatically repeats', async () => {
+  const app = harness({}, true); app.props.identity.permissions.chat_send = true;
+  let detailCalls = 0;
+  app.engine.detail = async (company, id) => { app.calls.push(['detail', company, id]); if (++detailCalls === 1) throw new Error('synthetic read failure'); return { order: app.summary(id, company), lines: [] }; };
+  app.engine.share = async (...args) => { app.calls.push(['share', ...args]); throw new Error('synthetic share failure'); };
+  try {
+    await confirmWithActualReact(app);
+    assert.equal(detailCalls, 1); assert.equal(app.calls.some(call => call[0] === 'share'), false);
+    await app.flush(); assert.equal(detailCalls, 1, 'failed detail is not polled');
+    await app.act(() => button(app.render(), 'Try again').onPress());
+    assert.equal(detailCalls, 2); assert.equal(app.calls.filter(call => call[0] === 'share').length, 1);
+    await app.flush(); await app.flush();
+    assert.equal(app.calls.filter(call => call[0] === 'share').length, 1, 'failed share is not retriggered by rendering');
+    await app.act(() => button(app.render(), 'Retry sharing').onPress());
+    assert.equal(app.calls.filter(call => call[0] === 'share').length, 2);
+    assert.equal(app.calls.filter(call => call[0] === 'confirm').length, 1);
+  } finally { await app.unmount(); }
+});
+
+test('rooms search discards older results, bounds the whole picker including preferred to200, and old-scope callbacks cannot share', async () => {
+  const app = harness({}, true), older = waiting(), newer = waiting(); app.props.identity.permissions.chat_send = true;
+  app.engine.savedRoom = async () => 999;
+  app.engine.rooms = async (company, query) => {
+    app.calls.push(['rooms', company, query]);
+    if (query.q === 'old') return older.promise;
+    if (query.q === 'new') return newer.promise;
+    const after = query.afterId || 0;
+    return { company_id: company, rooms: Array.from({ length: 50 }, (_, index) => ({ id: after + index + 1, name: `Room ${after + index + 1}` })), next_after_id: after + 50, preferred_room: { id: 999, name: 'Outside preferred' } };
+  };
+  try {
+    await createWithActualReact(app);
+    await app.act(() => button(app.render(), 'Outside preferred').onPress());
+    for (let index = 0; index < 3; index++) await app.act(() => button(app.render(), 'Load more').onPress());
+    assert.equal(nodes(app.render()).filter(node => node.props.testID?.startsWith('orders-share-room-')).length, 200);
+    assert.equal(nodes(app.render()).some(node => node.type === 'Button' && node.props.title === 'Load more'), false);
+    await app.act(() => byId(app.render(), 'orders-room-search').onChangeText('old'));
+    await app.act(() => byId(app.render(), 'orders-room-search').onChangeText('new'));
+    await app.act(() => newer.resolve({ company_id: 1, rooms: [{ id: 888, name: 'Newest room' }], next_after_id: null, preferred_room: { id: 999, name: 'Outside preferred' } }));
+    await app.act(() => older.resolve({ company_id: 1, rooms: [{ id: 777, name: 'Stale room' }], next_after_id: null, preferred_room: null }));
+    assert.ok(byId(app.render(), 'orders-share-room-888'));
+    assert.equal(nodes(app.render()).some(node => node.props.testID === 'orders-share-room-777'), false);
+    const oldShare = button(app.render(), 'Share order').onPress;
+    const oldSave = button(app.render(), 'Clear default conversation').onPress;
+    app.props.selectedCompanyId = 2; await app.flush();
+    await app.act(() => { oldShare(); oldSave(); });
+    assert.equal(app.calls.some(call => call[0] === 'shareOrder' || call[0] === 'saveRoom'), false);
+    assert.equal(nodes(app.render()).some(node => node.props.testID === 'orders-post-create-share'), false);
+  } finally { await app.unmount(); }
+});
+
+test('saved create ACK recovery opens post-share without another create; own unlinked and purchased details recover their distinct share actions', async () => {
+  const app = harness({}, true); app.props.identity.permissions.chat_send = true;
+  app.engine.pending = async () => [{ uuid: 'saved-create', kind: 'create', companyId: 1, createdAt: 1 }];
+  app.engine.retry = async uuid => { app.calls.push(['retry', uuid]); return { order: { ...app.summary(14, 1), room_id: null }, client_uuid: uuid, replayed: true }; };
+  try {
+    await app.flush(); await app.act(() => button(app.render(), 'Retry saved attempt').onPress()); await app.flush();
+    assert.ok(byId(app.render(), 'orders-post-create-share'));
+    assert.equal(app.calls.some(call => call[0] === 'create' || call[0] === 'shareOrder'), false);
+    await app.act(() => button(app.render(), 'Go to all orders').onPress());
+    app.engine.detail = async (company, id) => ({ order: { ...app.summary(id, company), room_id: null }, lines: [] });
+    await app.act(() => byId(app.render(), 'orders-row-12').onPress()); await app.flush();
+    assert.ok(byId(app.render(), 'orders-post-create-share'), 'own unlinked order can be shared after returning');
+    await app.act(() => button(app.render(), 'Back').onPress());
+    app.engine.detail = async (company, id) => ({ order: { ...app.summary(id, company), state: 'purchased', room_id: 55 }, lines: [] });
+    await app.act(() => byId(app.render(), 'orders-row-12').onPress());
+    assert.ok(byId(app.render(), 'orders-receipt-share'));
+    assert.equal(app.calls.some(call => call[0] === 'share'), false, 'returning to purchased details does not auto-share');
+    await app.act(() => button(app.render(), 'Share receipt result').onPress());
+    assert.deepEqual(app.calls.filter(call => call[0] === 'share'), [['share', 1, 12]]);
+    assert.equal(app.calls.some(call => call[0] === 'confirm'), false);
+  } finally { await app.unmount(); }
+});
+
+test('cart and review show server quote unit and line prices rather than historical catalog prices, and clear them immediately on edits', async () => {
+  const app = harness({}, true);
+  try {
+    await app.flush(); assert.ok(text(app.render()).includes('17.30 SAR'));
+    await app.act(() => one(app.render(), 'Button', p => p.accessibilityLabel === 'Add Fixture product Case').onPress());
+    await app.act(() => button(app.render(), 'Review cart (1)').onPress());
+    assert.ok(text(app.render()).includes('29.81 SAR'));
+    assert.ok(text(app.render()).includes('61.13 SAR'));
+    assert.equal(text(app.render()).includes('17.30 SAR'), false, 'last recorded price is not presented as current cart price');
+    await app.act(() => button(app.render(), 'Review order').onPress());
+    assert.ok(text(app.render()).includes('Estimated unit price 29.81 SAR'));
+    assert.ok(text(app.render()).includes('Line total 61.13 SAR'));
+    assert.ok(byId(app.render(), 'orders-cart-footer'));
+    await app.act(() => button(app.render(), 'Back').onPress());
+    await app.act(() => byId(app.render(), 'cart-quantity-81').onChangeText('2'), false);
+    assert.equal(text(app.render()).includes('29.81 SAR'), false);
+    assert.equal(text(app.render()).includes('61.13 SAR'), false);
+    assert.equal(text(app.render()).includes('991.73 SAR'), false);
+    assert.equal(button(app.render(), 'Review order').disabled, true);
   } finally { await app.unmount(); }
 });

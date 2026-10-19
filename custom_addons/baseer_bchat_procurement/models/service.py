@@ -22,6 +22,7 @@ MAX_CART_LINES = 100
 MAX_OPTIONS = 100
 MAX_RESPONSE_BYTES = 65536
 MAX_ROOM_MESSAGE_BYTES = 16384
+ROOM_PAGE_SIZE = 50
 PURCHASE_ROUTES = ('representative', 'cash', 'bank_transfer')
 
 
@@ -168,7 +169,7 @@ class BChatProcurementService(models.AbstractModel):
         scopes = self._order_read_scopes()
         if len(scopes) > 20:
             raise ProtocolError('too_many_companies', 'Company selection needs pagination.', 409)
-        result = {'api_version': 2, 'access': access, **permissions, 'companies': [
+        result = {'api_version': 2, 'workflow_version': 1, 'access': access, **permissions, 'companies': [
             {'id': company_id, 'name': self._label(scope.env.company.name)}
             for company_id, scope in scopes.items()
         ]}
@@ -204,6 +205,56 @@ class BChatProcurementService(models.AbstractModel):
             'categories': [{'id': row.id, 'name': self._label(row.display_name)} for row in categories],
             'default_warehouse_id': default_warehouse.id if default_warehouse in warehouses else (warehouses[:1].id or None),
         })
+        return result
+
+    @api.model
+    def _v2_order_rooms(self, company_id, search_term=None, after_id=None, preferred_room_id=None):
+        """Names for an explicit sharing choice; never chat history or previews."""
+        self._require_order_creator()
+        self._require_bchat_permission('chat_send')
+        scoped = self._order_create_scope(company_id)
+        if search_term is not None:
+            try:
+                valid_search = isinstance(search_term, str) and len(search_term.encode('utf-8')) <= 256
+            except UnicodeEncodeError:
+                valid_search = False
+            if not valid_search:
+                raise ProtocolError('invalid_payload', 'Search text is too long.')
+        if after_id is not None:
+            after_id = positive_id(after_id, 'after_id')
+        if preferred_room_id is not None:
+            preferred_room_id = positive_id(preferred_room_id, 'preferred_room_id')
+        company_id = scoped.env.company.id
+        domain = [('user_id', '=', scoped.env.uid), ('company_id', '=', company_id),
+                  ('room_id.company_id', '=', company_id), ('active', '=', True)]
+        page_domain = list(domain)
+        if after_id:
+            page_domain.append(('room_id', '>', after_id))
+        if search_term and search_term.strip():
+            page_domain.append(('room_id.name', 'ilike', search_term.strip()))
+        Membership = scoped.env['baseer.bchat.membership'].sudo()
+        memberships = Membership.search(page_domain, order='room_id, id', limit=ROOM_PAGE_SIZE + 1)
+        preferred = Membership.search(domain + [('room_id', '=', preferred_room_id)], limit=1) if preferred_room_id else Membership.browse()
+        for room_id in sorted(set((memberships | preferred).mapped('room_id').ids)):
+            scoped.env['baseer.bchat.room']._lock_for_read(room_id)
+        (memberships | preferred).invalidate_recordset(['active'])
+        if any(not member.active for member in (memberships | preferred)):
+            # A removed probe must not turn a full page into a false final page.
+            # Never scan beyond the bounded 51 candidates; require an explicit reload.
+            raise ProtocolError('retry', 'Room membership changed; reload the room choices.', 409)
+        page = memberships[:ROOM_PAGE_SIZE]
+
+        def room_data(member):
+            return {'id': member.room_id.id, 'name': self._label(member.room_id.name, 256)}
+
+        result = {
+            'api_version': 2, 'company_id': company_id,
+            'rooms': [room_data(member) for member in page],
+            'next_after_id': page[-1].room_id.id if len(memberships) > ROOM_PAGE_SIZE else None,
+            'preferred_room': room_data(preferred) if preferred else None,
+        }
+        if len(json.dumps(result, ensure_ascii=False).encode('utf-8')) > MAX_RESPONSE_BYTES:
+            raise ProtocolError('page_too_large', 'Room page exceeds 64 KiB.', 413)
         return result
 
     @api.model
@@ -319,22 +370,23 @@ class BChatProcurementService(models.AbstractModel):
 
     @api.model
     def _order_room_text(self, order):
-        lines = [f'طلب شراء {self._label(order.name, 80)} — {self._label(order._purchase_route_label())}']
-        for line in order.line_ids.sorted('id'):
+        currency = self._label(order.currency_id.symbol or order.currency_id.name, 16)
+        lines = [f'طلب شراء {self._label(order.name, 80)}',
+                 'الشركة: %s' % self._label(order.company_id.name),
+                 'طريقة الشراء: %s' % self._label(order._purchase_route_label())]
+        if order.representative_partner_id:
+            lines.append('مندوب المشتريات: %s' % self._label(order.representative_partner_id.display_name))
+        for number, line in enumerate(order.line_ids.sorted('id'), 1):
             option = line.option_id
             product_name = self._label(option.product_id.name)
             option_name = self._label(option.name)
             item_name = (f'{product_name} ({option_name})'
                          if option_name != '-' and option_name != product_name else product_name)
-            lines.append('%s — الكمية: %s %s' % (
-                item_name,
-                format(Decimal(str(line.requested_qty)), '.2f'),
-                self._label(option.uom_id.display_name),
-            ))
-        lines.append('الإجمالي: %s %s' % (
-            self._money(order.requested_total),
-            self._label(order.currency_id.symbol or order.currency_id.name, 16),
-        ))
+            lines.extend(['', '%s. %s' % (number, item_name),
+                          'الكمية: %s %s' % (self._money(line.requested_qty), self._label(option.uom_id.display_name)),
+                          'سعر الوحدة: %s %s' % (self._money(line.requested_price), currency),
+                          'مجموع الصنف: %s %s' % (self._money(_decimal_total(line.requested_qty, line.requested_price)), currency)])
+        lines.extend(['', 'الإجمالي: %s %s' % (self._money(order.requested_total), currency)])
         message = '\n'.join(lines)
         if len(message.encode('utf-8')) > MAX_ROOM_MESSAGE_BYTES:
             raise ProtocolError('room_message_too_long', 'The order message exceeds the room limit.', 413)
@@ -357,8 +409,9 @@ class BChatProcurementService(models.AbstractModel):
                 'next_before_id': page[-1].id if len(orders) > 30 else None}
 
     @api.model
-    def _v2_orders_all(self, before_id=None):
-        scopes = self._order_read_scopes()
+    def _v2_orders_all(self, before_id=None, company_id=None):
+        scopes = ({positive_id(company_id, 'company_id'): self._order_scope(company_id)}
+                  if company_id is not None else self._order_read_scopes())
         if before_id is not None:
             before_id = positive_id(before_id, 'before_id')
         domain = [('company_id', 'in', list(scopes)), ('source_channel', '=', 'bchat')]
@@ -381,6 +434,81 @@ class BChatProcurementService(models.AbstractModel):
         if len(json.dumps(response, ensure_ascii=False).encode('utf-8')) > MAX_RESPONSE_BYTES:
             raise ProtocolError('page_too_large', 'Order page exceeds 64 KiB.', 413)
         return response
+
+    @api.model
+    def _v2_order_share(self, order_id, payload):
+        """Attach one original room after creation, atomically with its message."""
+        self._require_order_creator()
+        self._require_bchat_permission('chat_send')
+        if (type(payload) is not dict or set(payload) != {'api_version', 'company_id', 'room_id'}
+                or type(payload['api_version']) is not int or payload['api_version'] != 2):
+            raise ProtocolError('invalid_payload', 'Unexpected order sharing fields.')
+        company_id = positive_id(payload['company_id'], 'company_id')
+        room_id = positive_id(payload['room_id'], 'room_id')
+        order_id = positive_id(order_id, 'order_id')
+        scoped = self._order_create_scope(company_id)
+        Order = scoped.env['baseer.procurement.request'].sudo().with_company(scoped.env.company)
+        domain = [('id', '=', order_id), ('company_id', '=', company_id),
+                  ('requester_id', '=', scoped.env.uid), ('source_channel', '=', 'bchat')]
+        if not Order.search(domain, limit=1):
+            raise ProtocolError('not_found', 'This order is unavailable.', 404)
+        scoped.env.cr.execute('SELECT pg_try_advisory_xact_lock(hashtextextended(%s, 0))',
+                              ('bchat-order-share:%s' % order_id,))
+        if not scoped.env.cr.fetchone()[0]:
+            raise ProtocolError('retry', 'Order sharing is in progress; retry.', 409)
+        with scoped.env.cr.savepoint():
+            scoped.env.cr.execute('SELECT id FROM baseer_procurement_request WHERE id = %s FOR UPDATE', [order_id])
+            order = Order.browse(order_id).exists()
+            order.invalidate_recordset()
+            if (not order or order.company_id.id != company_id or order.requester_id.id != scoped.env.uid
+                    or order.source_channel != 'bchat'):
+                raise ProtocolError('not_found', 'This order is unavailable.', 404)
+            linked_room = order.bchat_room_id
+            linked_message = order.bchat_message_id
+            if bool(linked_room) != bool(linked_message):
+                raise ProtocolError('order_share_incomplete', 'The order sharing link needs review.', 409)
+            if linked_room and linked_room.id != room_id:
+                raise ProtocolError('order_share_conflict', 'The order already has an original room.', 409)
+            if linked_message and (linked_room.company_id.id != company_id
+                                   or linked_message.company_id.id != company_id
+                                   or linked_message.room_id.id != room_id
+                                   or linked_message.author_user_id.id != order.requester_id.id
+                                   or linked_message.membership_id.room_id.id != room_id
+                                   or linked_message.membership_id.company_id.id != company_id
+                                   or linked_message.membership_id.user_id.id != order.requester_id.id):
+                raise ProtocolError('order_share_incomplete', 'The order sharing link needs review.', 409)
+            if not linked_message and order.state not in ('sent', 'received', 'purchased'):
+                raise ProtocolError('order_share_unavailable', 'This order cannot be shared.', 409)
+            # Bound the complete body before any message or order-link mutation.
+            text = scoped._order_room_text(order) if not linked_message else None
+            try:
+                candidate = scoped.env['baseer.bchat.room'].sudo().search([
+                    ('id', '=', room_id), ('company_id', '=', company_id),
+                ], limit=1)
+                if not candidate:
+                    raise AccessError('The room is unavailable in this company.')
+                scoped._v2_current_member(candidate)
+                room = scoped._v2_lock_room(room_id, mutate=not bool(linked_message))
+                if room.company_id.id != company_id:
+                    raise AccessError('The room belongs to another company.')
+                member = scoped._v2_current_member(room)
+            except AccessError:
+                raise ProtocolError('room_unavailable', 'Choose a room with current membership in this company.', 409) from None
+            if linked_message:
+                return {'api_version': 2, 'order_id': order.id, 'room_id': room.id,
+                        'message_id': linked_message.id, 'shared': True, 'replayed': True}
+            try:
+                sent = scoped._v2_send(room.id, {
+                    'api_version': 2, 'membership_id': member.id,
+                    'client_uuid': str(uuid4()), 'text': text,
+                })
+            except AccessError:
+                raise ProtocolError('room_unavailable', 'Choose a room with current membership in this company.', 409) from None
+            order.with_context(**{REQUEST_CREATE_INTERNAL: True}).write({
+                'bchat_room_id': room.id, 'bchat_message_id': sent['message_id'],
+            })
+            return {'api_version': 2, 'order_id': order.id, 'room_id': room.id,
+                    'message_id': sent['message_id'], 'shared': True, 'replayed': False}
 
     @api.model
     def _v2_order_detail(self, company_id, order_id, scope=None):

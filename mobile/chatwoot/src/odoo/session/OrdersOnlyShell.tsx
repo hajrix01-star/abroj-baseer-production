@@ -19,6 +19,9 @@ export function OrdersOnlyShell({ snapshot, language, setLanguage, online }: {
   const close = useCallback(() => setMenu(false), []);
   const t = translator(language);
   const identity = snapshot.identity;
+  const actor = JSON.stringify([identity?.database, identity?.user_id]);
+  const [companySelection, setCompanySelection] = useState({ actor: '', id: 0 });
+  const selectedCompanyId = companySelection.actor === actor && identity?.company_ids.includes(companySelection.id) ? companySelection.id : 0;
   const ready = snapshot.verified && online;
   useEffect(() => { if (!ready) setMenu(false); }, [ready]);
   const current = () => {
@@ -47,7 +50,10 @@ export function OrdersOnlyShell({ snapshot, language, setLanguage, online }: {
       {ready ? <IconButton icon="menu" label={t('menu')} onPress={() => { if (current()) setMenu(true); }} /> : <View style={{ width: 44 }} />}
       <View style={{ flex: 1, alignItems: language === 'ar' ? 'flex-end' : 'flex-start' }}><Brand /></View>
     </View>
-    {ready ? <OrdersScreen key={`${snapshot.generation}/${snapshot.revision}`} scopeKey={`${snapshot.generation}/${snapshot.revision}`} engine={getOrdersEngine()} identity={identity} language={language} online />
+    {ready ? <OrdersScreen key={`${snapshot.generation}/${snapshot.revision}`} scopeKey={`${snapshot.generation}/${snapshot.revision}`} engine={getOrdersEngine()} identity={identity} language={language} online
+      selectedCompanyId={selectedCompanyId} onCompanyChange={id => {
+        if (current() && (id === 0 || identity.company_ids.includes(id))) setCompanySelection({ actor, id });
+      }} />
       : <View style={[styles.fill, { padding: 24, justifyContent: 'center', gap: 16 }]}>
         <Label language={language}>{t(error ? errorWord(error) : online ? 'loading' : 'connectionError')}</Label>
         <Button title={t('refresh')} disabled={busy || !online} onPress={() => void refresh()} />

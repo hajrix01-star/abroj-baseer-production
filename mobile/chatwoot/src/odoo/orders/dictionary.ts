@@ -1,6 +1,17 @@
 import type { Language } from '../ui/dictionary';
 
 const en = {
+  serverUpdateRequired: 'This workflow requires a server update.', chooseCompany: 'Choose a company to create or receive orders.', noWarehouse: 'No warehouse is available for this company.',
+  orderSettings: 'Order settings', filters: 'Product filters', quoting: 'Updating estimate',
+  orderSavedShare: 'Order saved. Choose a conversation to share it.', orderShared: 'Order shared', chooseRoom: 'Choose a conversation', searchRooms: 'Search conversations',
+  noRooms: 'No eligible conversations. Try another search.', roomsLimit: 'Showing up to 200 conversations. Search to find another.',
+  rememberRoom: 'Remember this conversation', clearDefault: 'Clear default conversation', defaultUnavailable: 'The saved conversation is unavailable. Choose another.',
+  shareOrder: 'Share order', retryShare: 'Retry sharing', sharePermission: 'Sharing requires send permission.',
+  orderShareFailed: 'The order is saved, but sharing failed. Retry sharing only.', receiptShareFailed: 'The receipt is confirmed, but sharing failed. Retry sharing only.',
+  roomUnavailable: 'This conversation is unavailable. Choose another.', shareConflict: 'The order is already linked to another conversation.',
+  messageTooLong: 'The order is saved, but its message exceeds the conversation limit.',
+  preferenceInvalid: 'The saved conversation preference is invalid. Clear it or choose another.',
+  estimatedUnitPrice: 'Estimated unit price', lineTotal: 'Line total',
   orders: 'Orders', purchaseRequests: 'Purchase requests', catalog: 'Catalog', allOrders: 'All orders', receiving: 'Receiving',
   company: 'Order company', receiptCompany: 'Receiving company', allCompanies: 'All authorized companies', warehouse: 'Warehouse',
   search: 'Search products', searchHint: 'Product name', all: 'All', lastPrice: 'Last price', add: 'Add', cart: 'Cart',
@@ -35,6 +46,17 @@ const en = {
 } as const;
 
 const ar: Record<keyof typeof en, string> = {
+  serverUpdateRequired: 'يتطلب هذا التدفق تحديث الخادم.', chooseCompany: 'اختر شركة لإنشاء الطلبات أو استلامها.', noWarehouse: 'لا يوجد مستودع متاح لهذه الشركة.',
+  orderSettings: 'إعدادات الطلب', filters: 'تصفية الأصناف', quoting: 'جارٍ تحديث التقدير',
+  orderSavedShare: 'الطلب محفوظ. اختر محادثة لمشاركته.', orderShared: 'الطلب مشارك', chooseRoom: 'اختر محادثة', searchRooms: 'البحث عن محادثة',
+  noRooms: 'لا توجد محادثات متاحة. جرّب بحثًا آخر.', roomsLimit: 'نعرض 200 محادثة كحد أقصى. ابحث عن المحادثة المطلوبة.',
+  rememberRoom: 'تذكر هذه المحادثة', clearDefault: 'إلغاء المحادثة الافتراضية', defaultUnavailable: 'المحادثة المحفوظة غير متاحة. اختر أخرى.',
+  shareOrder: 'مشاركة الطلب', retryShare: 'إعادة المشاركة', sharePermission: 'تتطلب المشاركة صلاحية الإرسال.',
+  orderShareFailed: 'الطلب محفوظ، وتعذّرت مشاركته. أعد المشاركة فقط.', receiptShareFailed: 'الاستلام مؤكد، وتعذّرت مشاركته. أعد المشاركة فقط.',
+  roomUnavailable: 'المحادثة غير متاحة. اختر أخرى.', shareConflict: 'الطلب مرتبط بمحادثة أخرى.',
+  messageTooLong: 'الطلب محفوظ، لكن رسالته تتجاوز الحد المسموح في المحادثة.',
+  preferenceInvalid: 'اختيار المحادثة المحفوظ غير صالح. ألغِه أو اختر محادثة أخرى.',
+  estimatedUnitPrice: 'سعر الوحدة التقديري', lineTotal: 'إجمالي السطر',
   orders: 'الطلبات', purchaseRequests: 'طلبات المشتريات', catalog: 'المنيو', allOrders: 'كل الطلبات', receiving: 'الاستلام',
   company: 'شركة الطلب', receiptCompany: 'شركة الاستلام', allCompanies: 'كل الشركات المصرح بها', warehouse: 'المستودع',
   search: 'البحث عن صنف', searchHint: 'اسم الصنف', all: 'الكل', lastPrice: 'آخر سعر', add: 'إضافة', cart: 'السلة',
@@ -79,6 +101,11 @@ export const displayNumber = (value: string | number | null | undefined): string
 export function orderErrorWord(error: unknown): OrderWord {
   const code = typeof error === 'object' && error !== null && 'code' in error ? String(error.code) : '';
   if (code === 'unknown') return 'unknown';
+  if (code === 'server_update_required') return 'serverUpdateRequired';
+  if (code === 'room_unavailable') return 'roomUnavailable';
+  if (code === 'order_share_conflict') return 'shareConflict';
+  if (code === 'room_message_too_long') return 'messageTooLong';
+  if (code === 'preference_corrupt') return 'preferenceInvalid';
   if (code === 'stale') return 'stale';
   if (['forbidden', 'unauthorized', 'company_forbidden'].includes(code)) return 'forbidden';
   if (code.includes('storage') || code.includes('journal')) return 'storage';

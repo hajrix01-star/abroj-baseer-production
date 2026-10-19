@@ -12,6 +12,7 @@ export const ordersStyles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8 },
   spread: { justifyContent: 'space-between' },
   card: { backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border, borderRadius: 13, padding: 14, gap: 10 },
+  compactCard: { backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border, borderRadius: 13, padding: 10, gap: 6 },
   title: { color: colors.ink, fontSize: 22, lineHeight: 32, fontWeight: '700' },
   strong: { color: colors.ink, fontSize: 16, lineHeight: 24, fontWeight: '600' },
   note: { backgroundColor: colors.pale, borderRadius: 11, padding: 12, gap: 8 },

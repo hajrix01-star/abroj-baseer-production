@@ -1,13 +1,14 @@
 import { OrdersError } from './types.ts';
 import type {
   CatalogQuery, ConfirmInput, ConfirmResult, CreateInput, CreateResult, OrdersEngineDependencies,
-  OrdersIdentity, OrdersRequest, PendingAttempt, QuoteInput, WriteResult,
+  OrdersIdentity, OrdersRequest, PendingAttempt, QuoteInput, RoomsQuery, WriteResult,
 } from './types.ts';
 import { OrdersJournal, accountKey } from './journal.ts';
 import type { Attempt } from './journal.ts';
+import { OrdersRoomPreferences } from './roomPreferences.ts';
 import {
   bytes, catalogResponse, confirmResponse, createResponse, detailResponse, id, optionsResponse,
-  ordersResponse, quoteResponse, receiptDetailResponse, receiptsResponse, shareResponse, uuid,
+  ordersResponse, quoteResponse, receiptDetailResponse, receiptsResponse, roomsResponse, shareResponse, uuid,
   validateConfirmInput, validateCreateInput, validateQuoteInput,
 } from './validators.ts';
 
@@ -21,15 +22,17 @@ function copy<T>(value: T): T { return JSON.parse(JSON.stringify(value)); }
 export class OrdersEngine {
   private deps: OrdersEngineDependencies;
   private journal: OrdersJournal;
+  private roomPreferences: OrdersRoomPreferences;
   private quoteEpoch = 0;
   private requests = new Map<string, number>();
   private controllers = new Map<string, AbortController>();
   private inflightWrites = new Set<string>();
   private revoked = new Set<string>();
-  private verifiedOptions = new Map<string, { companies: number[]; order_view: boolean; order_create: boolean; order_receive: boolean }>();
+  private verifiedOptions = new Map<string, { companies: number[]; order_view: boolean; order_create: boolean; order_receive: boolean; workflowVersion: number }>();
 
   constructor(dependencies: OrdersEngineDependencies) {
     this.deps = dependencies; this.journal = new OrdersJournal(dependencies.storage);
+    this.roomPreferences = new OrdersRoomPreferences(dependencies.storage);
   }
   invalidateQuote(): void { this.quoteEpoch += 1; this.controllers.get('quote')?.abort(); }
   /** Session/screen teardown cancels reads; durable attempts remain untouched. */
@@ -55,6 +58,15 @@ export class OrdersEngine {
     const current = this.deps.identityScope();
     if (!current || !current.verified || scopeStamp(current) !== scopeStamp(start)) throw new OrdersError('stale', 'Session or company permissions changed.');
     this.identity(right, companyId, allowRevoked);
+  }
+  private workflow(start: OrdersIdentity, right: Right, companyId?: number): void {
+    this.guard(start, right, companyId);
+    if (this.verifiedOptions.get(scopeStamp(start))?.workflowVersion !== 1) throw new OrdersError('server_update_required');
+  }
+  private conversationScope(companyId: number): OrdersIdentity {
+    const start = this.identity('order_create', companyId);
+    if (!start.permissions.chat_send) throw new OrdersError('forbidden');
+    this.workflow(start, 'order_create', companyId); return start;
   }
   private async request(start: OrdersIdentity, right: Right, companyId: number | undefined, request: OrdersRequest, allowRevoked = false): Promise<unknown> {
     this.guard(start, right, companyId, allowRevoked);
@@ -101,7 +113,7 @@ export class OrdersEngine {
     if (!result.can_view || (right === 'order_create' && !result.can_create) || result.companies.some(company => !start.companyIds.includes(company.id))) throw new OrdersError('forbidden');
     if (companyId !== undefined && !result.companies.some(company => company.id === companyId)) throw new OrdersError('forbidden');
     this.verifiedOptions.clear();
-    this.verifiedOptions.set(scopeStamp(start), { companies: result.companies.map(company => company.id), order_view: result.can_view, order_create: result.can_create, order_receive: result.can_receive });
+    this.verifiedOptions.set(scopeStamp(start), { companies: result.companies.map(company => company.id), order_view: result.can_view, order_create: result.can_create, order_receive: result.can_receive, workflowVersion: result.workflow_version ?? 0 });
     this.revoked.delete(scopeStamp(start)); return result;
   }
   async catalog(companyId: number, query: CatalogQuery = {}) {
@@ -128,15 +140,62 @@ export class OrdersEngine {
     if (result.company_id !== payload.company_id || result.cart_revision !== payload.cart_revision || result.lines.length !== payload.lines.length || result.lines.some(line => !payload.lines.some(sent => sent.option_id === line.option_id && decimalEquivalent(sent.quantity, line.quantity)))) throw new OrdersError('invalid_response');
     return result;
   }
-  async list(beforeId?: number) {
+  async list(beforeId?: number, companyId?: number) {
     const query: Record<string, string | number> = { scope: 'all' };
     if (beforeId !== undefined) query.before_id = id(beforeId);
-    const scope = this.identity('order_view');
-    const result = await this.read('orders', 'order_view', undefined, { method: 'GET', path: ROOT, query }, ordersResponse);
-    this.guard(scope, 'order_view');
+    const scope = this.identity('order_view', companyId);
+    if (companyId !== undefined) { this.workflow(scope, 'order_view', companyId); query.company_id = id(companyId); }
+    const result = await this.read('orders', 'order_view', companyId, { method: 'GET', path: ROOT, query }, ordersResponse);
+    this.guard(scope, 'order_view', companyId);
+    if (companyId !== undefined) this.workflow(scope, 'order_view', companyId);
     const companies = this.verifiedOptions.get(scopeStamp(scope))?.companies ?? scope.companyIds;
     if (result.orders.some(order => !companies.includes(order.company_id))) throw new OrdersError('invalid_response');
+    if (companyId !== undefined && result.orders.some(order => order.company_id !== companyId)) throw new OrdersError('invalid_response');
     validateBeforePage(result.orders, result.next_before_id, beforeId); return result;
+  }
+  async rooms(companyId: number, query: RoomsQuery = {}) {
+    const start = this.conversationScope(companyId);
+    const args: Record<string, string | number> = { company_id: id(companyId) };
+    if (query.q !== undefined) {
+      if (typeof query.q !== 'string' || bytes(query.q) > 256) throw new OrdersError('invalid_payload');
+      args.q = query.q;
+    }
+    if (query.afterId !== undefined) args.after_id = id(query.afterId);
+    if (query.preferredRoomId !== undefined) args.preferred_room_id = id(query.preferredRoomId);
+    const result = await this.read('orderRooms', 'order_create', companyId, { method: 'GET', path: `${ROOT}/rooms`, query: args }, roomsResponse);
+    this.workflow(start, 'order_create', companyId);
+    if (result.company_id !== companyId || (result.preferred_room !== null && result.preferred_room.id !== query.preferredRoomId)) throw new OrdersError('invalid_response');
+    if (result.rooms.some((room, index, all) => room.id <= (query.afterId ?? 0) || (index > 0 && room.id <= all[index - 1].id))) throw new OrdersError('invalid_response');
+    if (result.next_after_id !== null && (result.next_after_id <= (query.afterId ?? 0) || result.next_after_id !== result.rooms.at(-1)?.id)) throw new OrdersError('invalid_response');
+    return result;
+  }
+  async savedRoom(companyId: number): Promise<number | null> {
+    const start = this.conversationScope(companyId);
+    const result = await this.roomPreferences.get(accountKey(start), companyId);
+    this.workflow(start, 'order_create', companyId); return result;
+  }
+  async saveRoom(companyId: number, roomId: number | null): Promise<void> {
+    const start = this.conversationScope(companyId);
+    if (roomId !== null) {
+      id(roomId);
+      const current = await this.rooms(companyId, { preferredRoomId: roomId });
+      this.workflow(start, 'order_create', companyId);
+      if (current.preferred_room?.id !== roomId) throw new OrdersError('room_unavailable');
+    }
+    await this.roomPreferences.set(accountKey(start), companyId, roomId, () => this.workflow(start, 'order_create', companyId));
+    this.workflow(start, 'order_create', companyId);
+  }
+  async shareOrder(companyId: number, orderId: number, roomId: number) {
+    const start = this.conversationScope(companyId); id(orderId); id(roomId);
+    const key = `${accountKey(start)}:shareOrder:${companyId}:${orderId}`;
+    if (this.inflightWrites.has(key)) throw new OrdersError('busy');
+    this.inflightWrites.add(key);
+    try {
+      const result = shareResponse(await this.request(start, 'order_create', companyId, { method: 'POST', path: `${ROOT}/${orderId}/share`, payload: { api_version: 2, company_id: companyId, room_id: roomId } }));
+      this.workflow(start, 'order_create', companyId);
+      if (result.order_id !== orderId || result.room_id !== roomId) throw new OrdersError('invalid_response');
+      return result;
+    } finally { this.inflightWrites.delete(key); }
   }
   async detail(companyId: number, orderId: number) {
     const start = this.identity('order_view', companyId);
@@ -169,6 +228,7 @@ export class OrdersEngine {
   async create(input: CreateInput): Promise<CreateResult> {
     const value = copy(input); validateCreateInput(value);
     const start = this.identity('order_create', value.company_id);
+    this.workflow(start, 'order_create', value.company_id);
     if (value.room_id != null && !start.permissions.chat_send) throw new OrdersError('forbidden');
     const token = uuid(this.deps.uuid());
     const attempt: Attempt = { uuid: token, kind: 'create', companyId: value.company_id, createdAt: this.deps.now(), status: 'unknown', payload: { api_version: 2, ...value, client_uuid: token } };

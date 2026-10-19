@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ScrollView, Text, View, useWindowDimensions } from 'react-native';
-import type { Room } from '../../core/ChatEngine';
-import { Button, colors, direction, Field, Icon, IconButton, Label } from '../../ui/components';
+import { Button, direction, Field, IconButton, Label } from '../../ui/components';
 import type { Language } from '../../ui/dictionary';
 import type { OrdersEngine } from '../core/OrdersEngine';
 import type { CatalogItem, CreateResult, OrdersOptions, PurchaseRoute, QuoteResult } from '../core/types';
@@ -22,8 +21,8 @@ export function stepQuantity(text: string, step: 1 | -1): string {
   return fraction === undefined ? nextWhole : `${nextWhole}.${fraction}`;
 }
 
-export function OrderComposer({ engine, companyId, language, rooms, onResult, onPending, blocked, header }: {
-  engine: OrdersEngine; companyId: number; language: Language; rooms: Room[]; onResult: (result: CreateResult) => void; onPending: () => Promise<void>; blocked: boolean;
+export function OrderComposer({ engine, companyId, language, onResult, onPending, blocked, header }: {
+  engine: OrdersEngine; companyId: number; language: Language; onResult: (result: CreateResult) => void; onPending: () => Promise<void>; blocked: boolean;
   header?: React.ReactNode;
 }) {
   const t = orderTranslator(language), alive = useAlive();
@@ -31,16 +30,17 @@ export function OrderComposer({ engine, companyId, language, rooms, onResult, on
   const [options, setOptions] = useState<OrdersOptions | null>(null), [items, setItems] = useState<CatalogItem[]>([]);
   const [cursor, setCursor] = useState<number | null>(null), [search, setSearch] = useState(''), [category, setCategory] = useState(0);
   const [warehouse, setWarehouse] = useState(0), [representative, setRepresentative] = useState(0);
-  const [route, setRoute] = useState<PurchaseRoute | null>(null), [roomId, setRoomId] = useState(0);
+  const [route, setRoute] = useState<PurchaseRoute | null>(null), [settings, setSettings] = useState(false), [filters, setFilters] = useState(false);
   const [cart, setCart] = useState<CartItem[]>([]), [removed, setRemoved] = useState<CartItem | null>(null);
   const cartRef = useRef<CartItem[]>([]), revision = useRef(0), catalogGeneration = useRef(0), quoteGeneration = useRef(0);
   const [quote, setQuote] = useState<QuoteResult | null>(null), [page, setPage] = useState<'catalog' | 'cart' | 'review'>('catalog');
   const [loading, setLoading] = useState(false), [optionBusy, setOptionBusy] = useState(false), [quoting, setQuoting] = useState(false), [writing, setWriting] = useState(false);
   const [error, setError] = useState<unknown>(null), [catalogError, setCatalogError] = useState<unknown>(null);
+  const [quoteError, setQuoteError] = useState<unknown>(null), [quoteReload, setQuoteReload] = useState(0);
   const [writeUnknown, setWriteUnknown] = useState(false), [invalid, setInvalid] = useState(false), [reload, setReload] = useState(0);
   const writeGate = useRef(false), optionGate = useRef(false), catalogGate = useRef(false);
-  const latest = useRef({ rooms, blocked }); latest.current = { rooms, blocked };
-  const invalidate = () => { engine.invalidateQuote(); quoteGeneration.current++; revision.current++; setQuote(null); setInvalid(false); };
+  const latest = useRef({ blocked }); latest.current = { blocked };
+  const invalidate = () => { engine.invalidateQuote(); quoteGeneration.current++; revision.current++; setQuote(null); setQuoteError(null); setQuoting(false); setInvalid(false); };
   const updateCart = (next: CartItem[]) => { if (!alive() || writeGate.current) return; invalidate(); cartRef.current = next; setCart(next); };
   useEffect(() => {
     let current = true; setOptionBusy(true); optionGate.current = true;
@@ -80,26 +80,30 @@ export function OrderComposer({ engine, companyId, language, rooms, onResult, on
   const validCart = cart.length > 0 && cart.every(line => validQuantity(line.quantity));
   const selectionValid = !!warehouse && !!route && !!options?.warehouses?.some(item => item.id === warehouse)
     && !!options?.purchase_routes?.some(item => item.code === route)
-    && (route !== 'representative' || !!options?.representatives?.some(item => item.id === representative))
-    && (!roomId || rooms.some(room => room.id === roomId && room.company_id === companyId && room.membership_id > 0));
+    && (route !== 'representative' || !!options?.representatives?.some(item => item.id === representative));
+  const workflowReady = options?.workflow_version === 1;
   const quoteValid = !!quote && quote.company_id === companyId && quote.cart_revision === revision.current && validCart;
-  const getQuote = async () => {
-    if (!alive() || !validCart || !warehouse || quoting || writeGate.current) return;
+  useEffect(() => {
     const request = ++quoteGeneration.current, cartRevision = revision.current;
-    setQuoting(true); setError(null);
-    try {
-      const result = await engine.quote({ company_id: companyId, warehouse_id: warehouse, cart_revision: cartRevision, lines: cartRef.current.map(line => ({ option_id: line.item.id, quantity: line.quantity })) });
-      if (alive() && request === quoteGeneration.current && cartRevision === revision.current) setQuote(result);
-    } catch (failure) { if (alive() && request === quoteGeneration.current) setError(failure); }
-    finally { if (alive()) setQuoting(false); }
-  };
+    if (!validCart || !options?.warehouses?.some(item => item.id === warehouse) || blocked || writeUnknown || writing || !workflowReady) return;
+    // A changed valid intent schedules one read, never a retry loop or a write.
+    const timer = setTimeout(() => {
+      if (!alive() || request !== quoteGeneration.current || writeGate.current || latest.current.blocked) return;
+      setQuoting(true); setQuoteError(null);
+      void engine.quote({ company_id: companyId, warehouse_id: warehouse, cart_revision: cartRevision,
+        lines: cartRef.current.map(line => ({ option_id: line.item.id, quantity: line.quantity })) }).then(result => {
+        if (alive() && request === quoteGeneration.current && cartRevision === revision.current) setQuote(result);
+      }).catch(failure => { if (alive() && request === quoteGeneration.current) setQuoteError(failure); })
+        .finally(() => { if (alive() && request === quoteGeneration.current) setQuoting(false); });
+    }, 350);
+    return () => { clearTimeout(timer); quoteGeneration.current++; engine.invalidateQuote(); };
+  }, [cart, warehouse, options, blocked, writeUnknown, quoteReload]);
   const submit = async () => {
-    if (!alive() || writeGate.current || latest.current.blocked || writeUnknown || page !== 'review' || !quoteValid || !selectionValid || !route) return;
-    if (roomId && !latest.current.rooms.some(room => room.id === roomId && room.company_id === companyId && room.membership_id > 0)) return;
+    if (!alive() || writeGate.current || latest.current.blocked || writeUnknown || !workflowReady || page !== 'review' || !quoteValid || !selectionValid || !route) return;
     writeGate.current = true; setWriting(true); setError(null);
     try {
       const result = await engine.create({ company_id: companyId, warehouse_id: warehouse, representative_partner_id: route === 'representative' ? representative : null,
-        purchase_route: route, ...(roomId ? { room_id: roomId } : {}), lines: cartRef.current.map(line => ({ option_id: line.item.id, quantity: line.quantity })) });
+        purchase_route: route, lines: cartRef.current.map(line => ({ option_id: line.item.id, quantity: line.quantity })) });
       if (alive()) { cartRef.current = []; setCart([]); onResult(result); }
     } catch (failure) {
       if (alive()) { setError(failure); if (typeof failure === 'object' && failure !== null && 'code' in failure && failure.code === 'unknown') setWriteUnknown(true); await onPending(); }
@@ -109,14 +113,13 @@ export function OrderComposer({ engine, companyId, language, rooms, onResult, on
     const source = showCart ? cart.map(line => line.item) : items;
     return <View style={[s.row, { alignItems: 'stretch' }]}>{source.map(item => {
       const line = cart.find(row => row.item.id === item.id);
-      return <View key={item.id} testID={`catalog-option-${item.id}`} style={[s.card, { width: !showCart && width >= 650 ? '48.8%' : '100%' }]}>
+      const priced = quoteValid ? quote.lines?.find(row => row.option_id === item.id) : undefined;
+      return <View key={item.id} testID={`catalog-option-${item.id}`} style={[s.compactCard, { width: !showCart && width >= 650 ? '48.8%' : '100%' }]}>
         <View style={[s.row, rowDirection(language), { alignItems: 'flex-start' }]}>
-          <View style={{ width: 36, minHeight: 44, borderRadius: 8, backgroundColor: colors.pale, alignItems: 'center', justifyContent: 'center' }}><Icon icon="file" size={20} color={colors.blue} /></View>
           <View style={s.flexible}><Text style={[s.strong, direction(language)]}>{item.product_name}</Text><Label muted language={language}>{item.option_name} · {item.uom_name}</Label>
-            {!!item.packaging_note && <Label muted language={language}>{item.packaging_note}</Label>}
           </View>
         </View>
-        {!review && <KeyValue language={language} label={t('lastPrice')}><NumberText value={item.last_price} suffix={item.currency_symbol} /></KeyValue>}
+        {!showCart && <KeyValue language={language} label={t('lastPrice')}><NumberText value={item.last_price} suffix={item.currency_symbol} /></KeyValue>}
         {review ? <KeyValue language={language} label={t('quantity')}><NumberText value={line?.quantity} /></KeyValue>
           : line ? <View style={[s.row, rowDirection(language)]}>
             <IconButton icon="trash" label={`${t('remove')} ${item.product_name} ${item.option_name}`} disabled={writing} onPress={() => changeQuantity(item, '0')} />
@@ -127,6 +130,10 @@ export function OrderComposer({ engine, companyId, language, rooms, onResult, on
             <IconButton icon="plus" label={`${t('add')} ${item.product_name} ${item.option_name}`} disabled={writing} onPress={() => changeQuantity(item, stepQuantity(line.quantity, 1))} />
           </View>
             : <Button quiet title={t('add')} accessibilityLabel={`${t('add')} ${item.product_name} ${item.option_name}`} onPress={() => changeQuantity(item, '1')} busy={false} disabled={cart.length >= 100 || writing} />}
+        {showCart && (priced ? <>
+          <KeyValue language={language} label={t('estimatedUnitPrice')}><NumberText value={priced.unit_price} suffix={quote?.currency_symbol} /></KeyValue>
+          <KeyValue language={language} label={t('lineTotal')}><NumberText value={priced.line_total} suffix={quote?.currency_symbol} /></KeyValue>
+        </> : <Label language={language} muted>{t('pendingQuote')}</Label>)}
       </View>;
     })}</View>;
   };
@@ -142,11 +149,14 @@ export function OrderComposer({ engine, companyId, language, rooms, onResult, on
         : <Failure error={error} language={language} retry={!options ? () => setReload(value => value + 1) : undefined} />)}
     {cart.length >= 100 && <Note text={t('cartLimit')} language={language} />}
     {(blocked || writeUnknown) && <Note text={t('pendingBlock')} language={language} warning />}
-    <Choice label={t('warehouse')} testID="orders-warehouse" options={options?.warehouses ?? []} value={warehouse} language={language} disabled={writing || page === 'review'}
-      onSelect={id => { invalidate(); setWarehouse(id); }} />
+    {!!options && !workflowReady && <Note text={t('serverUpdateRequired')} language={language} warning />}
+    {!!options && !options.warehouses?.length && <Note text={t('noWarehouse')} language={language} warning />}
+    {(options?.warehouses?.length ?? 0) > 1 && <Choice label={t('warehouse')} testID="orders-warehouse" options={options?.warehouses ?? []} value={warehouse} language={language} disabled={writing || page === 'review'}
+      onSelect={id => { if (id !== warehouse) { invalidate(); setWarehouse(id); } }} />}
     {page === 'catalog' ? <>
       <Label language={language} muted>{t('search')}</Label><Field language={language} testID="catalog-search" accessibilityLabel={t('search')} placeholder={t('searchHint')} value={search} onChangeText={setSearch} maxLength={80} />
-      <Choice label={t('all')} testID="catalog-category" options={[{ id: 0, name: t('all') }, ...(options?.categories ?? [])]} value={category} onSelect={setCategory} language={language} />
+      {!!options?.categories?.length && <Button title={t('filters')} quiet busy={false} disabled={writing} onPress={() => setFilters(value => !value)} />}
+      {filters && <Choice label={t('all')} testID="catalog-category" options={[{ id: 0, name: t('all') }, ...(options?.categories ?? [])]} value={category} onSelect={setCategory} language={language} />}
       {!!catalogError && <Failure error={catalogError} language={language} retry={() => void loadCatalog(false, ++catalogGeneration.current)} />}
       {rows(false)}{loading && <Busy language={language} />}
       {!loading && !catalogError && !items.length && <Empty title={t('noResults')} help={t('noResultsHelp')} language={language} />}
@@ -156,33 +166,32 @@ export function OrderComposer({ engine, companyId, language, rooms, onResult, on
       {rows(true, page === 'review')}
       {removed && page === 'cart' && <Button quiet title={t('undo')} busy={false} disabled={cart.length >= 100 || writing} onPress={() => { if (!cartRef.current.some(line => line.item.id === removed.item.id) && cartRef.current.length < 100) updateCart([...cartRef.current, removed]); setRemoved(null); }} />}
       {page === 'cart' ? <>
+        <Button title={t('orderSettings')} quiet busy={false} disabled={writing} onPress={() => setSettings(value => !value)} />
+        {!settings && <Label language={language} muted>{route ? t(route) : t('missingSelection')}{route === 'representative' ? ` · ${options?.representatives?.find(item => item.id === representative)?.name ?? ''}` : ''}</Label>}
+        {settings && <>
         <Label language={language} muted>{t('method')}</Label>
         <View style={[s.row, rowDirection(language)]}>{(options?.purchase_routes ?? []).map(item => <Button key={item.code} title={t(item.code)} quiet={route !== item.code} busy={false} disabled={writing}
-          onPress={() => { setRoute(item.code); invalidate(); }} />)}</View>
+          onPress={() => setRoute(item.code)} />)}</View>
         {route === 'representative' && <Choice label={t('representativeLabel')} testID="orders-representative" options={options?.representatives ?? []} value={representative} onSelect={setRepresentative} language={language} disabled={writing} />}
         <Note text={t('routeNote')} language={language} />
-        <Choice label={t('conversation')} testID="orders-room" value={roomId} onSelect={setRoomId} language={language} disabled={writing}
-          options={[{ id: 0, name: t('none') }, ...rooms.filter(room => room.company_id === companyId && room.membership_id > 0).map(room => ({ id: room.id, name: room.name }))]} />
+        </>}
       </> : <View style={s.card}>
         <KeyValue label={t('method')} language={language}><Label language={language}>{route ? t(route) : ''}</Label></KeyValue>
         {route === 'representative' && <KeyValue label={t('representativeLabel')} language={language}><Label language={language}>{options?.representatives?.find(item => item.id === representative)?.name}</Label></KeyValue>}
-        <KeyValue label={t('conversation')} language={language}><Label language={language}>{rooms.find(room => room.id === roomId)?.name ?? t('none')}</Label></KeyValue>
       </View>}
-      {!roomId && <Note text={t('noRoomNote')} language={language} />}
       <Note text={t('estimateNote')} language={language} />
       {!validCart && <Note text={t('quantityValidation')} language={language} warning />}
       {invalid && !selectionValid && <Note text={t('missingSelection')} language={language} warning />}
-      <View style={s.card}><KeyValue label={t('estimated')} language={language}>{quoteValid ? <NumberText value={quote!.estimated_total} suffix={quote!.currency_symbol} /> : <Label language={language}>{t('pendingQuote')}</Label>}</KeyValue></View>
-      {!quoteValid && <><Note text={t('quoteRequired')} language={language} warning /><Button title={t('quote')} busy={quoting} disabled={!validCart || !warehouse || writing} onPress={() => void getQuote()} /></>}
-      <Button title={t(page === 'review' ? 'sendOrder' : 'reviewOrder')} busy={writing} disabled={!validCart || !quoteValid || blocked || writeUnknown || quoting || (page === 'review' && !selectionValid)}
-        onPress={() => { if (!alive()) return; if (page === 'review') void submit(); else { setInvalid(true); if (selectionValid) setPage('review'); } }} />
     </>}
     </View>
     </ScrollView>
-    {page === 'catalog' && <View testID="orders-catalog-footer" style={[s.footer, { width: '100%', maxWidth: 940, alignSelf: 'center', flexShrink: 0 }]}>
-      <KeyValue language={language} label={t('estimated')}>{quoteValid ? <NumberText value={quote!.estimated_total} suffix={quote!.currency_symbol} /> : <Label language={language} muted>{t('pendingQuote')}</Label>}</KeyValue>
-      <Button title={`${t('reviewCart')} (${cart.length})`} busy={false} onPress={() => { if (alive()) setPage('cart'); }}
+    <View testID={page === 'catalog' ? 'orders-catalog-footer' : 'orders-cart-footer'} style={[s.footer, { width: '100%', maxWidth: 940, alignSelf: 'center', flexShrink: 0 }]}>
+      <KeyValue language={language} label={t('estimated')}>{quoteValid ? <NumberText value={quote!.estimated_total} suffix={quote!.currency_symbol} /> : <Label language={language} muted>{t(quoting ? 'quoting' : 'pendingQuote')}</Label>}</KeyValue>
+      {!!quoteError && <Failure error={quoteError} language={language} retry={() => setQuoteReload(value => value + 1)} />}
+      {page === 'catalog' ? <Button title={`${t('reviewCart')} (${cart.length})`} busy={false} onPress={() => { if (alive()) setPage('cart'); }}
         disabled={!cart.length || loading || optionBusy || !options || blocked || writeUnknown || writing} />
-    </View>}
+        : <Button title={t(page === 'review' ? 'sendOrder' : 'reviewOrder')} busy={writing} disabled={!workflowReady || !validCart || !quoteValid || blocked || writeUnknown || quoting || (page === 'review' && !selectionValid)}
+          onPress={() => { if (!alive()) return; if (page === 'review') void submit(); else { setInvalid(true); if (selectionValid) setPage('review'); else setSettings(true); } }} />}
+    </View>
   </View>;
 }

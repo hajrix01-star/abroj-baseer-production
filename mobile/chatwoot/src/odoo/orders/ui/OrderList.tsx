@@ -6,22 +6,25 @@ import type { OrdersEngine } from '../core/OrdersEngine';
 import type { OrderDetail, OrderState, OrderSummary, Selection } from '../core/types';
 import { orderTranslator } from '../dictionary';
 import { Busy, Choice, Empty, Failure, Heading, KeyValue, Note, NumberText, ordersStyles as s, rowDirection, useAlive } from './OrdersPrimitives';
+import { PostCreateSharePanel, ReceiptSharePanel } from './OrderSharing';
 
-export function OrderList({ engine, language, companies, canReceive, onReceive }: {
-  engine: OrdersEngine; language: Language; companies: Selection[]; canReceive: boolean; onReceive: (companyId: number, orderId: number) => void;
+export function OrderList({ engine, language, companies, canReceive, onReceive, companyId, actorId, canCreate, canSend, workflowReady, onCompanyChange }: {
+  engine: OrdersEngine; language: Language; companies: Selection[]; canReceive: boolean; onReceive: (companyId: number, orderId: number) => void; companyId: number;
+  actorId: number; canCreate: boolean; canSend: boolean; workflowReady: boolean;
+  onCompanyChange: (id: number) => void;
 }) {
   const t = orderTranslator(language), alive = useAlive();
   const [orders, setOrders] = useState<OrderSummary[]>([]);
   const [cursor, setCursor] = useState<number | null>(null);
   const [busy, setBusy] = useState(false), [error, setError] = useState<unknown>(null);
-  const [company, setCompany] = useState(0), [state, setState] = useState<OrderState | 'all'>('all');
+  const [state, setState] = useState<OrderState | 'all'>('all');
   const [detail, setDetail] = useState<OrderDetail | null>(null), [detailBusy, setDetailBusy] = useState(false);
   const gate = useRef(false), generation = useRef(0);
   const load = async (more = false) => {
     if (!alive() || gate.current || (more && (cursor === null || orders.length >= 200))) return;
     gate.current = true; const request = ++generation.current; setBusy(true); setError(null);
     try {
-      const page = await engine.list(more ? cursor! : undefined);
+      const page = await engine.list(more ? cursor! : undefined, companyId || undefined);
       if (!alive() || request !== generation.current) return;
       setOrders(previous => {
         const merged = more ? [...previous, ...page.orders] : page.orders;
@@ -41,7 +44,7 @@ export function OrderList({ engine, language, companies, canReceive, onReceive }
     } catch (failure) { if (alive() && request === generation.current) setError(failure); }
     finally { gate.current = false; if (alive() && request === generation.current) setDetailBusy(false); }
   };
-  const visible = orders.filter(order => (company === 0 || company === order.company_id) && (state === 'all' || state === order.state));
+  const visible = orders.filter(order => state === 'all' || state === order.state);
   if (detail) return <View style={s.stack} testID="orders-detail">
     <Button quiet title={t('back')} onPress={() => { setDetail(null); setError(null); }} /><Heading language={language} word="details" />
     <View style={s.card}>
@@ -56,10 +59,14 @@ export function OrderList({ engine, language, companies, canReceive, onReceive }
     </View>)}
     <View style={s.card}><KeyValue language={language} label={t('requestedTotal')}><NumberText value={detail.order.requested_total} suffix={detail.order.currency_symbol} /></KeyValue></View>
     <Note text={t('historical')} language={language} />
+    {canCreate && detail.order.requester_id === actorId && !detail.order.room_id && <PostCreateSharePanel key={`order-share-${detail.order.company_id}/${detail.order.id}`} engine={engine}
+      companyId={detail.order.company_id} orderId={detail.order.id} language={language} canSend={canSend} workflowReady={workflowReady} />}
+    {canReceive && detail.order.state === 'purchased' && <ReceiptSharePanel key={`receipt-share-${detail.order.company_id}/${detail.order.id}`} engine={engine}
+      companyId={detail.order.company_id} orderId={detail.order.id} roomId={detail.order.room_id} language={language} canSend={canSend} />}
     {canReceive && ['sent', 'received'].includes(detail.order.state) && <Button title={t('openReceipt')} onPress={() => { if (alive()) onReceive(detail.order.company_id, detail.order.id); }} />}
   </View>;
   return <View style={s.stack}>
-    <Choice label={t('company')} testID="orders-list-company" options={[{ id: 0, name: t('allCompanies') }, ...companies]} value={company} onSelect={setCompany} language={language} />
+    <Choice label={t('company')} testID="orders-list-company" options={[{ id: 0, name: t('allCompanies') }, ...companies]} value={companyId} onSelect={onCompanyChange} language={language} />
     <Note text={t('orderScope')} language={language} />
     <View style={[s.row, rowDirection(language)]}>{(['all', 'sent', 'purchased'] as const).map(item => <Button key={item} title={t(item)} quiet={state !== item} onPress={() => setState(item)} />)}</View>
     {!!error && <Failure language={language} error={error} retry={() => void load()} />}

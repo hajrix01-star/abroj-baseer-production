@@ -15,14 +15,16 @@ export function ordersNativeRequest(input: OrdersRequest, csrf: string): Request
   let required: string[] = [];
   if (input.method === 'GET') {
     if (path === `${base}/options`) allowed = ['company_id'];
-    else if (path === base) { allowed = ['scope', 'before_id']; required = ['scope']; }
+    else if (path === base) { allowed = ['scope', 'before_id', 'company_id']; required = ['scope']; }
+    else if (path === `${base}/rooms`) { allowed = ['company_id', 'q', 'after_id', 'preferred_room_id']; required = ['company_id']; }
     else if (new RegExp(`^${base}/[1-9][0-9]*$`).test(path)) { allowed = ['company_id', 'scope']; required = ['company_id']; }
     else if (path === `${base}/receipts`) { allowed = ['company_id', 'before_id']; required = ['company_id']; }
     else if (new RegExp(`^${base}/receipts/[1-9][0-9]*$`).test(path)) { allowed = ['company_id']; required = ['company_id']; }
   } else if (input.method === 'POST') {
     if (path === `${base}/catalog`) { allowed = ['company_id', 'q', 'category_id', 'after_id']; required = ['company_id']; }
     else if (path === base || path === `${base}/quote`
-      || new RegExp(`^${base}/receipts/[1-9][0-9]*/(?:confirm|share)$`).test(path)) allowed = [];
+      || new RegExp(`^${base}/receipts/[1-9][0-9]*/(?:confirm|share)$`).test(path)
+      || new RegExp(`^${base}/[1-9][0-9]*/share$`).test(path)) allowed = [];
   }
   if (!allowed) throw new OrdersError('invalid_path');
   const pathId = path.slice(base.length).match(/^\/(?:receipts\/)?([0-9]+)(?:\/|$)/)?.[1];

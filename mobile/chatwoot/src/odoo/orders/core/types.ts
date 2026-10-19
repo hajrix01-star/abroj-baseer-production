@@ -15,8 +15,15 @@ export interface OrdersTransport { request(request: OrdersRequest): Promise<unkn
 export interface OrdersStorage { getItem(key: string): Promise<string | null>; setItem(key: string, value: string): Promise<void> }
 export interface OrdersOptions {
   api_version: 2; access: 'viewer' | 'operator'; can_view: boolean; can_create: boolean; can_receive: boolean;
+  /** Absent on legacy servers; only version 1 enables the post-create workflow. */
+  workflow_version?: number;
   companies: Selection[]; purchase_routes?: { code: PurchaseRoute; name: string }[];
   warehouses?: Selection[]; representatives?: Selection[]; categories?: Selection[]; default_warehouse_id?: number | null;
+}
+export interface RoomsQuery { q?: string; afterId?: number; preferredRoomId?: number }
+export interface OrderRoomsPage {
+  api_version: 2; company_id: number; rooms: Selection[]; next_after_id: number | null;
+  preferred_room: Selection | null;
 }
 export interface CatalogItem {
   id: number; product_id: number; product_name: string; option_name: string; uom_name: string;

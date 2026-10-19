@@ -113,3 +113,21 @@ test('an absent orders-only identity renders no domain surface', async () => {
   try { app.props.snapshot.identity = null; await app.render(); assert.equal(app.nodes('OrdersScreen').length, 0); assert.equal(app.nodes('NavigationDrawer').length, 0); }
   finally { await app.unmount(); }
 });
+
+test('orders-only company selection is explicit, authorized and cannot survive another actor or retained callbacks', async () => {
+  const app = harness();
+  try {
+    await app.render(); assert.equal(app.nodes('OrdersScreen')[0].props.selectedCompanyId, 0);
+    await app.act(() => app.nodes('OrdersScreen')[0].props.onCompanyChange(1));
+    assert.equal(app.nodes('OrdersScreen')[0].props.selectedCompanyId, 1);
+    await app.act(() => app.nodes('OrdersScreen')[0].props.onCompanyChange(99));
+    assert.equal(app.nodes('OrdersScreen')[0].props.selectedCompanyId, 1);
+    const stale = app.nodes('OrdersScreen')[0].props.onCompanyChange;
+    app.props.snapshot = { ...app.props.snapshot, generation: 5, identity: { ...app.props.snapshot.identity, user_id: 10 } }; await app.render();
+    assert.equal(app.nodes('OrdersScreen')[0].props.selectedCompanyId, 0);
+    await app.act(() => stale(1)); assert.equal(app.nodes('OrdersScreen')[0].props.selectedCompanyId, 0);
+    app.appState.currentState = 'background';
+    await app.act(() => app.nodes('OrdersScreen')[0].props.onCompanyChange(1));
+    assert.equal(app.nodes('OrdersScreen')[0].props.selectedCompanyId, 0);
+  } finally { await app.unmount(); }
+});

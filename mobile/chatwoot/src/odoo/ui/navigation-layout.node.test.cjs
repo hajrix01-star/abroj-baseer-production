@@ -222,6 +222,21 @@ test('orders shell entry uses explicit user rights and cannot unmount a selected
   assert.equal(nodes(app.render()).some(node => node.type === 'OrdersScreen'), false);
 });
 
+test('orders and chat share the selected company; retained orders callbacks cannot change another area or actor', () => {
+  const app = session(); app.chat.identity.permissions.order_view = true;
+  one(app.render(), 'NavigationDrawer').onOrders();
+  let orders = one(app.render(), 'OrdersScreen'); assert.equal(orders.selectedCompanyId, 0);
+  orders.onCompanyChange(1); orders = one(app.render(), 'OrdersScreen');
+  assert.equal(orders.selectedCompanyId, 1); orders.onCompanyChange(99);
+  assert.equal(one(app.render(), 'OrdersScreen').selectedCompanyId, 1);
+  const stale = orders.onCompanyChange; orders.onBack(); app.render(); stale(0);
+  assert.equal(one(app.render(), 'RoomsScreen').companyId, 1);
+  one(app.render(), 'NavigationDrawer').onOrders(); orders = one(app.render(), 'OrdersScreen');
+  const oldActor = orders.onCompanyChange;
+  app.engine.accountScope = 'new-actor/epoch:2'; app.chat.identity = identity(9); app.chat.identity.permissions.order_view = true;
+  app.render(); oldActor(0); assert.equal(one(app.render(), 'OrdersScreen').selectedCompanyId, 1, 'old callback cannot alter the current authorized chat company filter');
+});
+
 test('drawer settings route language/actions, respect busy/offline policy, and close on background/backdrop', () => {
   const app = drawer();
   one(app.render(), 'Pressable', p => p.accessibilityLabel === app.props.t('settings')).onPress();

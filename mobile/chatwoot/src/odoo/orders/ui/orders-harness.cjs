@@ -72,19 +72,26 @@ function harness(initial = {}, realReact = false, realComponents = false) {
   const engine = {
     async options(companyId) { calls.push(['options', companyId]); return options; },
     async catalog(companyId, query) { calls.push(['catalog', companyId, query]); return { api_version: 2, items: [item], next_after_id: null }; },
-    async quote(input) { calls.push(['quote', input]); return { api_version: 2, company_id: input.company_id, cart_revision: input.cart_revision, lines: [], estimated_total: '991.73', currency_symbol: 'SAR', currency_code: 'SAR', quoted_at: '2026-10-19' }; },
+    async quote(input) { calls.push(['quote', input]); return { api_version: 2, company_id: input.company_id, cart_revision: input.cart_revision, lines: input.lines.map(line => ({ ...line, unit_price: '29.81', line_total: '61.13' })), estimated_total: '991.73', currency_symbol: 'SAR', currency_code: 'SAR', quoted_at: '2026-10-19' }; },
     invalidateQuote() { calls.push(['invalidateQuote']); }, cancelReads() { calls.push(['cancelReads']); },
-    async list(before) { calls.push(['list', before]); return { api_version: 2, orders: [summary()], next_before_id: null }; },
+    async list(before, companyId) { calls.push(['list', before, companyId]); return { api_version: 2, orders: [summary(12, companyId || 2)], next_before_id: null }; },
     async detail(companyId, id) { calls.push(['detail', companyId, id]); return { api_version: 2, order: { ...summary(id, companyId), warehouse_id: 7 }, lines: [] }; },
     async receipts(companyId, before) { calls.push(['receipts', companyId, before]); return { api_version: 2, orders: [{ ...summary(12, companyId), warehouse_name: 'Fixture warehouse' }], next_before_id: null }; },
     async receiptDetail(companyId, id) { calls.push(['receiptDetail', companyId, id]); return { ...receiptDetail, order: { ...receiptDetail.order, company_id: companyId } }; },
     async pending() { calls.push(['pending']); return []; },
-    async create(input) { calls.push(['create', input]); return { api_version: 2, order: summary(14, input.company_id), client_uuid: 'fixture-uuid', replayed: false }; },
+    async create(input) { calls.push(['create', input]); return { api_version: 2, order: { ...summary(14, input.company_id), room_id: null }, client_uuid: 'fixture-uuid', replayed: false }; },
     async confirm(id, input, expected) { calls.push(['confirm', id, input, expected]); return { api_version: 2, client_uuid: 'fixture-receipt-uuid', replayed: false, receipt: { order_id: id, company_id: input.company_id, name: `PR-${id}`, state: 'purchased', actual_total: '831.49', currency_symbol: 'SAR', picking_id: null, confirmed_at: null, confirmed_by_id: 9 } }; },
     async share(companyId, id) { calls.push(['share', companyId, id]); return { shared: true }; },
+    async savedRoom(companyId) { calls.push(['savedRoom', companyId]); return null; },
+    async saveRoom(companyId, id) { calls.push(['saveRoom', companyId, id]); },
+    async rooms(companyId, query) { calls.push(['rooms', companyId, query]); return { api_version: 2, company_id: companyId, rooms: [{ id: 55, name: 'Eligible room' }], next_after_id: null, preferred_room: null }; },
+    async shareOrder(companyId, id, roomId) { calls.push(['shareOrder', companyId, id, roomId]); return { shared: true }; },
     async retry(uuid) { calls.push(['retry', uuid]); return { api_version: 2, order: summary(), client_uuid: uuid, replayed: true }; },
   };
+  options.workflow_version = 1;
   const props = { engine, identity: { api_version: 2, database: 'fixture', user_id: 9, company_ids: [1, 2], permissions: { chat_view: false, chat_send: false, order_view: true, order_create: true, order_receive: true, revision: 1 } }, language: 'en', online: true, rooms: [], ...initial };
+  props.selectedCompanyId = initial.selectedCompanyId ?? 1;
+  props.onCompanyChange = initial.onCompanyChange ?? (id => { props.selectedCompanyId = id; });
   const Screen = load(join(__dirname, 'OrdersScreen.tsx')).OrdersScreen;
   const renderer = realReact ? require('react-test-renderer') : null;
   let mounted;
@@ -112,7 +119,7 @@ function harness(initial = {}, realReact = false, realComponents = false) {
   };
   return { props, engine, options, item, calls, summary, receiptDetail, render, flush, setWidth(value) { width = value; },
     module: name => load(join(__dirname, name)), timers,
-    async act(callback) { if (!realReact) throw new Error('Requires actual React harness'); await renderer.act(async () => { await callback(); }); return flush(); },
+    async act(callback, runTimers = true) { if (!realReact) throw new Error('Requires actual React harness'); await renderer.act(async () => { await callback(); }); return flush(runTimers); },
     async unmount() { if (mounted) await renderer.act(() => mounted.unmount()); },
   };
 }

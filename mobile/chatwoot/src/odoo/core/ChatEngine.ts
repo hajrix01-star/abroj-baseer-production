@@ -144,6 +144,12 @@ export class ChatEngine {
   get identity(): Bootstrap | null { return this.account && !this.accessLocked ? copy(this.account) : null; }
   get accountScope(): string | null { return this.account && !this.accessLocked ? `${this.prefix()}/epoch:${this.epoch}` : null; }
   get offline(): boolean { return this.disconnected; }
+  /** Remaining display lease only; reading this never verifies or renews it. */
+  get leaseRemainingMs(): number {
+    if (!this.account || this.accessLocked) return 0;
+    const now = this.now();
+    return Number.isFinite(now) && now >= this.verifiedAt ? Math.max(0, TTL - (now - this.verifiedAt)) : 0;
+  }
   get status(): string { return this.state; }
   get backoffMs(): number { return this.failures ? [5000, 10000, 20000, 30000][Math.min(this.failures - 1, 3)]! : 2000; }
   markDisconnected(): void { this.disconnected = true; if (this.account) this.state = 'offline'; }

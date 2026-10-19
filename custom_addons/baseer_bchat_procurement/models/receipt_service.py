@@ -90,6 +90,41 @@ class BChatReceiptService(models.AbstractModel):
         return response
 
     @api.model
+    def _v2_receipts_all(self, before_id=None, company_id=None):
+        """One bounded global page; verify each company before the sudo read."""
+        self._require_order_receiver()
+        scopes = ({positive_id(company_id, 'company_id'): self._receipt_scope(company_id)}
+                  if company_id is not None else self._order_read_scopes())
+        # Keep receipt-specific extension checks in effect for every company.
+        scopes = {key: self._receipt_scope(key) for key in scopes}
+        if before_id is not None:
+            before_id = positive_id(before_id, 'before_id')
+        domain = [('company_id', 'in', list(scopes)), ('source_channel', '=', 'bchat'),
+                  ('state', 'in', ('sent', 'received'))]
+        if before_id:
+            domain.append(('id', '<', before_id))
+        scoped = self.with_context({
+            'allowed_company_ids': list(scopes), 'lang': self.env.lang,
+            'tz': self.env.user.tz or 'UTC',
+        })
+        orders = scoped.env['baseer.procurement.request'].sudo().search(
+            domain, order='id desc', limit=RECEIPT_PAGE_SIZE + 1,
+        )
+        page = orders[:RECEIPT_PAGE_SIZE]
+        rows = {}
+        for key in {order.company_id.id for order in page}:
+            company_orders = page.filtered(lambda order: order.company_id.id == key).with_company(
+                scopes[key].env.company,
+            )
+            for order in company_orders:
+                rows[order.id] = scopes[key]._receipt_summary(order)
+        response = {'api_version': 2, 'orders': [rows[order.id] for order in page],
+                    'next_before_id': page[-1].id if len(orders) > RECEIPT_PAGE_SIZE else None}
+        if len(json.dumps(response, ensure_ascii=False).encode('utf-8')) > MAX_RESPONSE_BYTES:
+            raise ProtocolError('page_too_large', 'Receipt page exceeds 64 KiB.', 413)
+        return response
+
+    @api.model
     def _v2_receipt_detail(self, company_id, order_id):
         scoped = self._receipt_scope(company_id)
         order = scoped._receipt_order(scoped, order_id)

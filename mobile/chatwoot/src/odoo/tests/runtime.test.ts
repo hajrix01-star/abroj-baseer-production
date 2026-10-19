@@ -667,6 +667,26 @@ test('orders access epoch rejects pre-disconnect reads and old foreground verifi
   bootstrapOverride = undefined; await engine.logout();
 });
 
+test('same-authority orders renewal retains verified option restrictions while fencing manual-refresh HTTP completions', async () => {
+  bootstrapOverride = ordersBootstrap({ permissions: { chat_view: false, chat_send: false, order_view: true, order_create: true, order_receive: false } });
+  try {
+    await engine.login('orders-only', 'private', true);
+    const orders = getOrdersEngine(); await orders.options(); // Server options deny create despite the broad bootstrap grant.
+    await assert.rejects(orders.catalog(1), { code: 'forbidden' });
+    setOrdersConnectivity(false); setOrdersConnectivity(true); await refreshOrdersOnlySession();
+    const before = calls.length;
+    await assert.rejects(orders.catalog(1), { code: 'forbidden' });
+    assert.equal(calls.length, before, 'same-authority renewal must not discard verified option restrictions');
+    let release!: () => void, started!: () => void;
+    const wait = new Promise<void>(resolve => { release = resolve; });
+    const seen = new Promise<void>(resolve => { started = resolve; });
+    beforeNative = async path => { if (path.endsWith('/orders/options')) { beforeNative = undefined; started(); await wait; } };
+    const read = orders.options(); const rejected = assert.rejects(read, { code: 'stale' });
+    await seen; await refreshOrdersOnlySession(); release(); await rejected;
+    assert.equal(ordersOnlySnapshot().verified, true);
+  } finally { bootstrapOverride = undefined; beforeNative = undefined; setOrdersConnectivity(true); await engine.logout(); }
+});
+
 test('native current orders 401 closes only its own scope and ordinary chat login still fetches rooms', async () => {
   bootstrapOverride = ordersBootstrap(); await engine.login('orders-only', 'private', true);
   ordersStatus = 401;

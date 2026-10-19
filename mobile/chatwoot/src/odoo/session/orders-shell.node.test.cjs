@@ -17,13 +17,18 @@ function harness() {
   } }).outputText;
   const engine = { logout: async () => { calls.push('logout'); } }, orders = {};
   let refreshError;
+  let workspaceMounts = 0;
+  function OrdersProbe(props) {
+    const [draft, setDraft] = React.useState(() => { workspaceMounts++; return ''; });
+    return React.createElement('OrdersScreen', { ...props, fixtureDraft: draft, fixtureEdit: setDraft });
+  }
   const modules = {
     react: React, 'react/jsx-runtime': require('react/jsx-runtime'),
     'react-native': { View: 'View', AppState: appState }, 'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView' },
     '../runtime': { getEngine: () => { calls.push('getEngine'); return engine; }, getOrdersEngine: () => { calls.push('getOrdersEngine'); return orders; },
       refreshOrdersOnlySession: async () => { calls.push('refresh'); if (refreshError) throw refreshError; }, ordersOnlySnapshot: () => props.snapshot },
-    '../orders/ui/OrdersScreen': { OrdersScreen: 'OrdersScreen' },
-    '../ui/components': { Button: 'Button', IconButton: 'IconButton', Label: 'Label', styles: {} },
+    '../orders/ui/OrdersScreen': { OrdersScreen: OrdersProbe },
+    '../ui/components': { Button: 'Button', IconButton: 'IconButton', Label: 'Label', styles: {}, colors: { white: 'white' } },
     '../ui/Brand': { Brand: 'Brand' }, '../ui/NavigationDrawer': { NavigationDrawer: 'NavigationDrawer' },
     '../ui/dictionary': { translator: language => word => `${language}:${word}`, errorWord: () => 'error' },
   };
@@ -37,28 +42,49 @@ function harness() {
   let mounted;
   const render = async () => { await renderer.act(async () => { if (!mounted) mounted = renderer.create(React.createElement(module.exports.OrdersOnlyShell, props)); else mounted.update(React.createElement(module.exports.OrdersOnlyShell, props)); }); };
   return { props, calls, orders, engine, appState, render, nodes: type => mounted.root.findAllByType(type),
+    workspaceMounts: () => workspaceMounts,
     async act(callback) { await renderer.act(async () => { await callback(); }); },
     error(value) { refreshError = value; }, async unmount() { await renderer.act(() => mounted?.unmount()); } };
 }
 
-test('orders-only shell mounts OrdersScreen only with verified online scope and never imports useChat', async () => {
+test('orders-only shell retains its same-authority workspace behind a private verification cover and never imports useChat', async () => {
   const app = harness();
   try {
     await app.render();
     const screen = app.nodes('OrdersScreen')[0].props;
     assert.equal(screen.engine, app.orders); assert.equal(screen.identity.permissions.chat_view, false);
-    assert.equal(screen.scopeKey, '4/2'); assert.equal(screen.language, 'ar'); assert.equal(screen.online, true);
+    assert.equal(screen.scopeKey.includes('fixture'), true); assert.equal(screen.language, 'ar'); assert.equal(screen.online, true);
     app.props.snapshot = { ...app.props.snapshot, verified: false }; await app.render();
-    assert.equal(app.nodes('OrdersScreen').length, 0);
-    assert.equal(app.nodes('Label')[0].props.children, 'ar:loading');
+    assert.equal(app.nodes('OrdersScreen').length, 1);
+    assert.equal(app.nodes('OrdersScreen')[0].props.presented, false);
+    assert.equal(app.nodes('Label').some(node => node.props.children === 'ar:loading'), false);
+    assert.equal(app.nodes('View').some(node => node.props.testID === 'orders-session-privacy-cover'), true);
     app.props.online = false; await app.render();
-    assert.equal(app.nodes('OrdersScreen').length, 0);
+    assert.equal(app.nodes('OrdersScreen').length, 1);
     assert.equal(app.nodes('Label')[0].props.children, 'ar:connectionError');
     assert.equal(app.nodes('Button')[0].props.disabled, true);
     assert.equal(app.nodes('NavigationDrawer')[0].props.canManage, false);
     assert.equal(app.nodes('NavigationDrawer')[0].props.offline, true);
     assert.equal(app.nodes('NavigationDrawer')[0].props.identity, null);
     assert.equal(app.nodes('NavigationDrawer')[0].props.visible, false);
+  } finally { await app.unmount(); }
+});
+
+test('orders-only verification revisions preserve mounted cart state, but changed authority remounts it', async () => {
+  const app = harness();
+  try {
+    await app.render(); const initial = app.nodes('OrdersScreen')[0].props.scopeKey;
+    await app.act(() => app.nodes('OrdersScreen')[0].props.fixtureEdit('retained cart'));
+    app.props.snapshot = { ...app.props.snapshot, verified: false, revision: 3 }; await app.render();
+    assert.equal(app.nodes('OrdersScreen')[0].props.fixtureDraft, 'retained cart');
+    assert.equal(app.nodes('OrdersScreen')[0].props.presented, false);
+    app.props.online = false; await app.render();
+    app.props.online = true; app.props.snapshot = { ...app.props.snapshot, verified: true, revision: 4 }; await app.render();
+    assert.equal(app.workspaceMounts(), 1);
+    assert.equal(app.nodes('OrdersScreen')[0].props.scopeKey, initial);
+    assert.equal(app.nodes('OrdersScreen')[0].props.fixtureDraft, 'retained cart');
+    app.props.snapshot = { ...app.props.snapshot, identity: { ...app.props.snapshot.identity, company_ids: [2] } }; await app.render();
+    assert.equal(app.workspaceMounts(), 2); assert.equal(app.nodes('OrdersScreen')[0].props.fixtureDraft, '');
   } finally { await app.unmount(); }
 });
 

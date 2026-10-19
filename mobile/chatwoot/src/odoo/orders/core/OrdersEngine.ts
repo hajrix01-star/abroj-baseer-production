@@ -28,7 +28,7 @@ export class OrdersEngine {
   private controllers = new Map<string, AbortController>();
   private inflightWrites = new Set<string>();
   private revoked = new Set<string>();
-  private verifiedOptions = new Map<string, { companies: number[]; order_view: boolean; order_create: boolean; order_receive: boolean; workflowVersion: number }>();
+  private verifiedOptions = new Map<string, { companies: number[]; order_view: boolean; order_create: boolean; order_receive: boolean; workflowVersion: number; receiptListVersion: number }>();
 
   constructor(dependencies: OrdersEngineDependencies) {
     this.deps = dependencies; this.journal = new OrdersJournal(dependencies.storage);
@@ -62,6 +62,10 @@ export class OrdersEngine {
   private workflow(start: OrdersIdentity, right: Right, companyId?: number): void {
     this.guard(start, right, companyId);
     if (this.verifiedOptions.get(scopeStamp(start))?.workflowVersion !== 1) throw new OrdersError('server_update_required');
+  }
+  private globalReceipts(start: OrdersIdentity): void {
+    this.guard(start, 'order_receive');
+    if (this.verifiedOptions.get(scopeStamp(start))?.receiptListVersion !== 1) throw new OrdersError('server_update_required');
   }
   private conversationScope(companyId: number): OrdersIdentity {
     const start = this.identity('order_create', companyId);
@@ -113,7 +117,7 @@ export class OrdersEngine {
     if (!result.can_view || (right === 'order_create' && !result.can_create) || result.companies.some(company => !start.companyIds.includes(company.id))) throw new OrdersError('forbidden');
     if (companyId !== undefined && !result.companies.some(company => company.id === companyId)) throw new OrdersError('forbidden');
     this.verifiedOptions.clear();
-    this.verifiedOptions.set(scopeStamp(start), { companies: result.companies.map(company => company.id), order_view: result.can_view, order_create: result.can_create, order_receive: result.can_receive, workflowVersion: result.workflow_version ?? 0 });
+    this.verifiedOptions.set(scopeStamp(start), { companies: result.companies.map(company => company.id), order_view: result.can_view, order_create: result.can_create, order_receive: result.can_receive, workflowVersion: result.workflow_version ?? 0, receiptListVersion: result.receipt_list_version ?? 0 });
     this.revoked.delete(scopeStamp(start)); return result;
   }
   async catalog(companyId: number, query: CatalogQuery = {}) {
@@ -203,13 +207,16 @@ export class OrdersEngine {
     this.guard(start, 'order_view', companyId);
     if (result.order.id !== orderId || result.order.company_id !== companyId) throw new OrdersError('invalid_response'); return result;
   }
-  async receipts(companyId: number, beforeId?: number) {
-    const query: Record<string, string | number> = { company_id: id(companyId) };
+  async receipts(companyId?: number, beforeId?: number) {
+    const query: Record<string, string | number> = companyId === undefined ? { scope: 'all' } : { company_id: id(companyId) };
     if (beforeId !== undefined) query.before_id = id(beforeId);
     const start = this.identity('order_receive', companyId);
+    if (companyId === undefined) this.globalReceipts(start);
     const result = await this.read('receipts', 'order_receive', companyId, { method: 'GET', path: `${ROOT}/receipts`, query }, receiptsResponse);
     this.guard(start, 'order_receive', companyId);
-    if (result.orders.some(order => order.company_id !== companyId)) throw new OrdersError('invalid_response');
+    if (companyId === undefined) this.globalReceipts(start);
+    const companies = this.verifiedOptions.get(scopeStamp(start))?.companies ?? start.companyIds;
+    if (result.orders.some(order => !companies.includes(order.company_id) || (companyId !== undefined && order.company_id !== companyId))) throw new OrdersError('invalid_response');
     validateBeforePage(result.orders, result.next_before_id, beforeId); return result;
   }
   async receiptDetail(companyId: number, orderId: number) {

@@ -169,7 +169,8 @@ class BChatProcurementService(models.AbstractModel):
         scopes = self._order_read_scopes()
         if len(scopes) > 20:
             raise ProtocolError('too_many_companies', 'Company selection needs pagination.', 409)
-        result = {'api_version': 2, 'workflow_version': 1, 'access': access, **permissions, 'companies': [
+        result = {'api_version': 2, 'workflow_version': 1, 'receipt_list_version': 1,
+                  'access': access, **permissions, 'companies': [
             {'id': company_id, 'name': self._label(scope.env.company.name)}
             for company_id, scope in scopes.items()
         ]}

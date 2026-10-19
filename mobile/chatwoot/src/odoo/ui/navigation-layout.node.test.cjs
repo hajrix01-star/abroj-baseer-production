@@ -334,6 +334,29 @@ test('SessionApp masks profile/menu and all retained conversation content while 
   assert.deepEqual(app.calls, []);
 });
 
+test('SessionApp retains a TTL-approved conversation during silent verification and covers background pixels without remounting it', () => {
+  const app = session(); app.chat.selected = { id: 4, company_id: 1, membership_id: 9 };
+  let tree = app.render(); const old = one(tree, 'TimelineScreen');
+  app.chat.retainedDisplay = true; app.chat.displayReady = true; app.chat.presentationReady = false;
+  tree = app.render();
+  assert.equal(one(tree, 'TimelineScreen').chat.selected, old.chat.selected);
+  assert.equal(one(tree, 'TimelineScreen').presented, false);
+  assert.equal(nodes(tree).some(n => n.props.testID === 'session-privacy-cover'), false);
+  assert.equal(nodes(tree).some(n => n.type === 'Label' && n.props.children === dictionary.translator('ar')('loading')), false);
+  assert.equal(one(tree, 'NavigationDrawer').identity, null);
+  const gate = one(tree, 'View', p => p.importantForAccessibility === 'no-hide-descendants' && p.pointerEvents === 'none');
+  assert.equal(gate.accessibilityElementsHidden, true);
+  old.onMenu(); old.manage(); tree = app.render();
+  assert.equal(one(tree, 'NavigationDrawer').visible, false);
+  assert.equal(nodes(tree).some(n => n.type === 'ManagementSheet'), false);
+  app.nativeApp.change('background'); app.chat.displayReady = false; tree = app.render();
+  assert.equal(one(tree, 'TimelineScreen').presented, false);
+  const cover = one(tree, 'View', p => p.testID === 'session-privacy-cover');
+  assert.equal(cover.style.backgroundColor, components.colors.white);
+  assert.equal(cover.style.top, 0); assert.equal(cover.style.bottom, 0);
+  assert.equal(cover.style.left, 0); assert.equal(cover.style.right, 0);
+});
+
 test('selected phone conversation hides duplicate app header and opens its own menu; wide layout retains list/header', () => {
   const app = session();
   let tree = app.render();

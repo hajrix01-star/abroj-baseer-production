@@ -1,9 +1,29 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Button, colors, direction, Field, Icon, Label, Sheet } from '../../ui/components';
 import { translator, type Language } from '../../ui/dictionary';
 import { displayNumber, orderErrorWord, orderTranslator, type OrderWord } from '../dictionary';
 import type { Selection } from '../core/types';
+
+export const OrdersPresentation = createContext(true);
+
+/** Recover only an interrupted read, once per presentation cycle; never retry writes. */
+export function useResumeRead(retry: () => void) {
+  const presented = useContext(OrdersPresentation);
+  const [pending, setPending] = useState(false);
+  const state = useRef({ presented, retry, recovered: false });
+  state.current.presented = presented; state.current.retry = retry;
+  if (!presented) state.current.recovered = false;
+  useEffect(() => {
+    if (!presented || !pending || state.current.recovered) return;
+    state.current.recovered = true; setPending(false); state.current.retry();
+  }, [presented, pending]);
+  return (error: unknown): boolean => {
+    if (typeof error !== 'object' || error === null || !('code' in error) || error.code !== 'stale'
+      || (state.current.presented && state.current.recovered)) return false;
+    setPending(true); return true;
+  };
+}
 
 export const ordersStyles = StyleSheet.create({
   fill: { flex: 1, minHeight: 0, backgroundColor: colors.background },
@@ -61,9 +81,10 @@ export function Choice({ label, options, value, onSelect, language, disabled = f
   label: string; options: Selection[]; value: number; onSelect: (id: number) => void; language: Language; disabled?: boolean; testID?: string;
 }) {
   const [open, setOpen] = useState(false);
+  const presented = useContext(OrdersPresentation);
   const [query, setQuery] = useState('');
   const current = useRef({ options, onSelect, disabled });
-  current.current = { options, onSelect, disabled };
+  current.current = { options, onSelect, disabled: disabled || !presented };
   const alive = useAlive();
   const t = orderTranslator(language);
   return <View style={{ gap: 5 }}>
@@ -74,7 +95,7 @@ export function Choice({ label, options, value, onSelect, language, disabled = f
       <Text numberOfLines={2} style={[ordersStyles.strong, direction(language), ordersStyles.flexible]}>{options.find(option => option.id === value)?.name ?? t(options.length ? 'choose' : 'noOptions')}</Text>
       <Icon icon="chevronDown" size={20} color={colors.muted} />
     </Pressable>
-    {open && <Sheet title={label} close={() => setOpen(false)} t={translator(language)} compact language={language}>
+    {open && presented && <Sheet title={label} close={() => setOpen(false)} t={translator(language)} compact language={language}>
       <Field language={language} accessibilityLabel={label} value={query} onChangeText={setQuery} maxLength={80} />
       {options.filter(option => option.name.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase())).map(option => <Pressable key={option.id}
         testID={`${testID}-option-${option.id}`} accessibilityRole="button" accessibilityLabel={option.name} accessibilityState={{ selected: value === option.id }}

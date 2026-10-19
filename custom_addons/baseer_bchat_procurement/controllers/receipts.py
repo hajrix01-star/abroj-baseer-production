@@ -13,11 +13,16 @@ class BChatReceiptApi(http.Controller):
     def receipts(self, **kwargs):
         api = BChatOrderApi()
         try:
-            args = api._args(('company_id', 'before_id'))
+            args = api._args(('company_id', 'before_id', 'scope'))
+            before_id = api._id(args['before_id'], 'before_id') if 'before_id' in args else None
+            if 'scope' in args:
+                if args['scope'] != 'all':
+                    raise ProtocolError('invalid_payload', 'Choose one supported receipt scope.')
+                company_id = api._id(args['company_id'], 'company_id') if 'company_id' in args else None
+                return api._response(api._service()._v2_receipts_all(before_id, company_id=company_id))
             if 'company_id' not in args:
                 raise ProtocolError('invalid_payload', 'company_id is required.')
             company_id = api._id(args['company_id'], 'company_id')
-            before_id = api._id(args['before_id'], 'before_id') if 'before_id' in args else None
             return api._response(api._service()._v2_receipts(company_id, before_id))
         except (AccessError, ProtocolError, ValidationError, UserError) as error:
             return api._error(error)

@@ -66,8 +66,10 @@ export function TimelineScreen({
   const access = conversationAccess(chat.identity, room);
   const { directOff } = access;
   const canSend = presented && chat.presentationReady && access.canSend;
+  const showComposer = access.canSend && (chat.presentationReady || chat.retainedDisplay === true);
   const canAttach = presented && chat.presentationReady && access.canAttach;
   const viewMedia = presented && chat.presentationReady && canViewMedia(chat.identity, room);
+  const retainedMedia = !viewMedia && chat.retainedDisplay === true && canViewMedia(chat.identity, room);
   const mediaKey = presentationKey(chat.identity, room);
   const previewScope = `${chat.identity?.database}/${mediaKey}`;
   const actionScope = `${engine.accountScope}/${previewScope}`;
@@ -332,8 +334,8 @@ export function TimelineScreen({
       .filter(item => item.room_id === room.id && item.company_id === room.company_id && item.membership_id === room.membership_id)
       .map(pending => ({ key: pending.client_uuid, pending })),
   ], [chat.history.messages, chat.pending, room.id, room.company_id, room.membership_id]);
-  const rowPresentation = useMemo(() => ({ mediaKey, hiddenState, actionsFor, jumpTarget, actionBusy, visibleImages, language, canSend, viewMedia }),
-    [mediaKey, hiddenState, actionsFor, jumpTarget, actionBusy, visibleImages, language, canSend, viewMedia]);
+  const rowPresentation = useMemo(() => ({ mediaKey, hiddenState, actionsFor, jumpTarget, actionBusy, visibleImages, language, canSend, viewMedia, retainedMedia }),
+    [mediaKey, hiddenState, actionsFor, jumpTarget, actionBusy, visibleImages, language, canSend, viewMedia, retainedMedia]);
   useEffect(() => {
     if (!presented || jumpTarget?.scope !== actionScope) return;
     const index = rows.findIndex(row => row.message?.id === jumpTarget.id);
@@ -357,10 +359,10 @@ export function TimelineScreen({
     language,
     room.company_id,
   );
-  // AppShell owns the blocked/verification view. Never reveal retained rows if this screen is
-  // rendered during a scope transition or without the server-authorized company/view right.
+  // A TTL-checked retained tree may stay mounted behind the shell privacy cover.
+  // It is display-only until presentationReady; media/read/actions remain fenced above.
   if (
-    !chat.presentationReady ||
+    (!chat.presentationReady && !chat.retainedDisplay) ||
     !chat.identity?.company_ids.includes(room.company_id) ||
     chat.identity.permissions.chat_view !== true
   )
@@ -628,7 +630,16 @@ export function TimelineScreen({
                         report={setLocalError}
                       />
                     )}
-                    {viewMedia && pending?.attachment && (
+                    {retainedMedia && message?.media && <View testID="retained-media-placeholder" style={{ gap: 8 }}>
+                      {message.media.kind !== 'audio' && <Label language={language} muted>{String(message.media.name ?? t('file'))}</Label>}
+                      {message.media.kind === 'image' ? <View testID="retained-image-space" style={{ width: 240, maxWidth: '100%', height: 180,
+                        borderRadius: 12, backgroundColor: colors.pale, alignItems: 'center', justifyContent: 'center' }}>
+                        <Icon icon="image" size={34} color={colors.blue} />
+                      </View> : message.media.kind === 'audio' ? <View testID="retained-audio-space" style={{ width: 240, maxWidth: '100%', minHeight: 60,
+                        alignItems: 'center', justifyContent: 'center' }}><Icon icon="play" size={24} color={colors.blue} /></View>
+                        : <Button quiet disabled title={t('open')} onPress={() => undefined} />}
+                    </View>}
+                    {(viewMedia || retainedMedia) && pending?.attachment && (
                       <Label language={language} muted>
                         {pending.attachment.name}
                       </Label>
@@ -716,7 +727,7 @@ export function TimelineScreen({
           {(localError || chat.error) && (
             <Label language={language}>{t(localError || chat.error!)}</Label>
           )}
-          {!canSend ? (
+          {!showComposer ? (
             <Label language={language}>{t(directOff ? 'directOff' : 'readOnly')}</Label>
           ) : (
             <>
@@ -744,6 +755,7 @@ export function TimelineScreen({
                     icon="close"
                     label={t('cancel')}
                     onPress={() => {
+                      if (!presentedRef.current || !chat.presentationReady) return;
                       replyRevision.current++;
                       setReply(null);
                     }}
@@ -752,7 +764,7 @@ export function TimelineScreen({
               )}
               <AttachmentTools
                 room={room}
-                disabled={sending}
+                disabled={sending || !canSend}
                 voice={voice}
                 enqueue={send}
                 language={language}
@@ -786,7 +798,7 @@ export function TimelineScreen({
                     borderRadius: 24,
                     paddingHorizontal: 10,
                   }}
-                  editable={!voice.recording}
+                  editable={canSend && !voice.recording}
                 />
               </AttachmentTools>
             </>

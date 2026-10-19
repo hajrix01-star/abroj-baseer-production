@@ -5,7 +5,7 @@ import type { Language } from '../../ui/dictionary';
 import type { OrdersEngine } from '../core/OrdersEngine';
 import type { OrderDetail, OrderState, OrderSummary, Selection } from '../core/types';
 import { orderTranslator } from '../dictionary';
-import { Busy, Choice, Empty, Failure, Heading, KeyValue, Note, NumberText, ordersStyles as s, rowDirection, useAlive } from './OrdersPrimitives';
+import { Busy, Choice, Empty, Failure, Heading, KeyValue, Note, NumberText, ordersStyles as s, rowDirection, useAlive, useResumeRead } from './OrdersPrimitives';
 import { PostCreateSharePanel, ReceiptSharePanel } from './OrderSharing';
 
 export function OrderList({ engine, language, companies, canReceive, onReceive, companyId, actorId, canCreate, canSend, workflowReady, onCompanyChange }: {
@@ -20,6 +20,7 @@ export function OrderList({ engine, language, companies, canReceive, onReceive, 
   const [state, setState] = useState<OrderState | 'all'>('all');
   const [detail, setDetail] = useState<OrderDetail | null>(null), [detailBusy, setDetailBusy] = useState(false);
   const gate = useRef(false), generation = useRef(0);
+  const interrupted = useRef<() => void>(() => {}), resumeRead = useResumeRead(() => interrupted.current());
   const load = async (more = false) => {
     if (!alive() || gate.current || (more && (cursor === null || orders.length >= 200))) return;
     gate.current = true; const request = ++generation.current; setBusy(true); setError(null);
@@ -31,7 +32,7 @@ export function OrderList({ engine, language, companies, canReceive, onReceive, 
         return merged.filter((item, index) => companies.some(company => company.id === item.company_id) && merged.findIndex(other => other.id === item.id && other.company_id === item.company_id) === index).slice(0, 200);
       });
       setCursor(page.next_before_id);
-    } catch (failure) { if (alive() && request === generation.current) setError(failure); }
+    } catch (failure) { if (alive() && request === generation.current) { interrupted.current = () => void load(more); if (!resumeRead(failure)) setError(failure); } }
     finally { gate.current = false; if (alive() && request === generation.current) setBusy(false); }
   };
   useEffect(() => { void load(); }, []);
@@ -41,7 +42,7 @@ export function OrderList({ engine, language, companies, canReceive, onReceive, 
     try {
       const next = await engine.detail(order.company_id, order.id);
       if (alive() && request === generation.current) setDetail(next);
-    } catch (failure) { if (alive() && request === generation.current) setError(failure); }
+    } catch (failure) { if (alive() && request === generation.current) { interrupted.current = () => void open(order); if (!resumeRead(failure)) setError(failure); } }
     finally { gate.current = false; if (alive() && request === generation.current) setDetailBusy(false); }
   };
   const visible = orders.filter(order => state === 'all' || state === order.state);

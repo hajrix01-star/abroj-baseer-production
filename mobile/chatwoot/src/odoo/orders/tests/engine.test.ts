@@ -8,7 +8,7 @@ const summary = (company = 1, orderId = 100) => ({ id: orderId, name: 'PR100', c
 const receiptSummary = (company = 1) => ({ id: 100, name: 'PR100', company_id: company, warehouse_name: 'Main', requester_name: 'Owner', state: 'sent', requested_total: '12.30', currency_symbol: 'SAR', submitted_at: null });
 const createInput = (quantity = '1.00') => ({ company_id: 1, warehouse_id: 3, purchase_route: 'cash', representative_partner_id: null, lines: [{ option_id: 9, quantity }] });
 const confirmInput = () => ({ company_id: 1, lines: [{ line_id: 77, actual_qty: '1', actual_price: '12.30' }, { line_id: 78, actual_qty: '0', actual_price: '0' }] });
-const options = (extras = {}) => ({ api_version: 2, workflow_version: 1, access: 'operator', can_view: true, can_create: true, can_receive: true, companies: [{ id: 1, name: 'First' }, { id: 2, name: 'Second' }], ...extras });
+const options = (extras = {}) => ({ api_version: 2, workflow_version: 1, receipt_list_version: 1, access: 'operator', can_view: true, can_create: true, can_receive: true, companies: [{ id: 1, name: 'First' }, { id: 2, name: 'Second' }], ...extras });
 function deferred() { let resolve, reject; const promise = new Promise((a, b) => { resolve = a; reject = b; }); return { promise, resolve, reject }; }
 async function setup() {
   const data = new Map(); const calls = []; let writes = 0; let counter = 0;
@@ -43,6 +43,51 @@ test('detail targets row company and scope=all, never a selected header company'
   const t = await setup(); t.handler(() => ({ api_version: 2, order: { ...summary(2), warehouse_id: 6 }, lines: [] }));
   await t.engine.detail(2, 100); assert.deepEqual(t.calls[0].query, { company_id: 2, scope: 'all' });
   await assert.rejects(t.engine.detail(1, 100), code('invalid_response'));
+});
+
+test('global receipts require explicit server capability and validate one authorized global page', async () => {
+  const t = await setup();
+  t.handler(request => ({ api_version: 2, orders: [receiptSummary(2), { ...receiptSummary(1), id: 99 }], next_before_id: 99 }));
+  const page = await t.engine.receipts(undefined, 101);
+  assert.deepEqual(t.calls[0].query, { scope: 'all', before_id: 101 });
+  assert.deepEqual(page.orders.map(row => row.company_id), [2, 1]);
+  for (const response of [
+    { orders: [receiptSummary(3)], next_before_id: null },
+    { orders: [receiptSummary()], next_before_id: 101 },
+    { orders: [receiptSummary()], next_before_id: 99 },
+    { orders: [{ ...receiptSummary(), state: 'purchased' }], next_before_id: null },
+  ]) {
+    t.handler(() => ({ api_version: 2, ...response }));
+    await assert.rejects(t.engine.receipts(undefined, 101), error => ['invalid_response', 'invalid_payload'].includes(error.code));
+  }
+  t.handler(() => ({ api_version: 2, orders: [receiptSummary(2)], next_before_id: null }));
+  await assert.rejects(t.engine.receipts(1), code('invalid_response'));
+  for (const version of [undefined, 0, 2]) {
+    t.handler(() => options({ receipt_list_version: version })); await t.engine.options();
+    const before = t.calls.length;
+    await assert.rejects(t.engine.receipts(), code('server_update_required'));
+    assert.equal(t.calls.length, before, 'unsupported global scope never sends HTTP or returns false empty');
+    t.handler(() => ({ api_version: 2, orders: [receiptSummary()], next_before_id: null }));
+    await t.engine.receipts(1);
+    assert.deepEqual(t.calls.at(-1).query, { company_id: 1 }, 'legacy single-company queue remains compatible');
+  }
+});
+
+test('global receipt completion cannot cross permission, actor, company or capability revalidation', async () => {
+  for (const change of [i => ({ ...i, uid: 8 }), i => ({ ...i, verified: false }), i => ({ ...i, companyIds: [1] }), i => ({ ...i, permissions: { ...i.permissions, order_receive: false } })]) {
+    const t = await setup(), wait = deferred(); t.handler(() => wait.promise);
+    const pending = t.engine.receipts(); t.identity = change(t.identity);
+    wait.resolve({ api_version: 2, orders: [receiptSummary(2)], next_before_id: null });
+    await assert.rejects(pending, error => ['stale', 'forbidden'].includes(error.code));
+  }
+  const t = await setup(), wait = deferred(); t.handler(() => wait.promise);
+  const pending = t.engine.receipts();
+  t.handler(() => options({ receipt_list_version: 0 })); await t.engine.options();
+  wait.resolve({ api_version: 2, orders: [], next_before_id: null });
+  await assert.rejects(pending, code('server_update_required'));
+  t.identity.permissions.order_receive = false;
+  const before = t.calls.length; await assert.rejects(t.engine.receipts(), code('forbidden'));
+  assert.equal(t.calls.length, before);
 });
 test('viewer and receiver permissions are independent from create and chat_send', async () => {
   const t = await setup(); t.identity.permissions.order_create = false; t.identity.permissions.chat_send = false;

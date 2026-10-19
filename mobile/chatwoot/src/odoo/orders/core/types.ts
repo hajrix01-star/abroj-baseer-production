@@ -17,6 +17,8 @@ export interface OrdersOptions {
   api_version: 2; access: 'viewer' | 'operator'; can_view: boolean; can_create: boolean; can_receive: boolean;
   /** Absent on legacy servers; only version 1 enables the post-create workflow. */
   workflow_version?: number;
+  /** Version 1 adds one globally paginated, authorized receipt queue. */
+  receipt_list_version?: number;
   companies: Selection[]; purchase_routes?: { code: PurchaseRoute; name: string }[];
   warehouses?: Selection[]; representatives?: Selection[]; categories?: Selection[]; default_warehouse_id?: number | null;
 }

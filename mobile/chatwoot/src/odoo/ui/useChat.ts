@@ -22,6 +22,12 @@ export function useChat(engine: ChatEngine) {
   const [busy, setBusy] = useState(false);
   const [offline, setOffline] = useState(true);
   const [presentationReady, setPresentationReady] = useState(false);
+  // Retained pixels are not authority. A same-account, TTL-valid snapshot may
+  // remain visible while foreground authority is being checked again.
+  const [displayReady, setDisplayReady] = useState(false);
+  const [foreground, setForeground] = useState(AppState.currentState === 'active');
+  const displayedScope = useRef<string | null>(null);
+  const retainedAllowed = useRef(false);
   const [soundState, setSoundState] = useState<SoundState>({
     actor: '',
     ready: false,
@@ -40,17 +46,35 @@ export function useChat(engine: ChatEngine) {
   const pollBusy = useRef(false);
   const mounted = useRef(true);
   const foregroundEpoch = useRef(0);
+  const displayScope = () => engine.identity ? `${engine.accountScope ?? ''}/${soundActor(engine.identity)}` : null;
+  const reveal = () => {
+    if (!mounted.current) return;
+    try { engine.rooms(); } catch {
+      presentation.current = false; retainedAllowed.current = false;
+      setDisplayReady(false); setPresentationReady(false); return;
+    }
+    presentation.current = true;
+    retainedAllowed.current = true;
+    displayedScope.current = displayScope();
+    setPresentationReady(true);
+    setDisplayReady(!!displayedScope.current && active.current);
+  };
   const capture = useCallback(() => {
     if (!mounted.current) return;
     let rows: Room[] = [];
     let queue: Pending[] = [];
+    let readable = false;
     try {
       rows = engine.rooms();
       queue = engine.pending();
+      readable = true;
     } catch {
       /* TTL/identity blocks display. */
     }
     const account = engine.status === 'offline_expired' ? null : engine.identity;
+    const scope = account ? `${engine.accountScope ?? ''}/${soundActor(account)}` : null;
+    const leased = presentation.current || (Number.isFinite(engine.leaseRemainingMs) && engine.leaseRemainingMs > 0);
+    setDisplayReady(active.current && retainedAllowed.current && leased && readable && !!scope && scope === displayedScope.current);
     sounds.current!.account(soundActor(account));
     if (engine.status === 'offline_expired') setError('expired');
     setIdentity(account);
@@ -161,11 +185,17 @@ export function useChat(engine: ChatEngine) {
       }
       if (mounted.current) setError(null);
       if (mounted.current && active.current && foreground === foregroundEpoch.current)
-        setPresentationReady(true);
+        reveal();
     } catch (e) {
       if (mounted.current) setError(errorWord(e));
       soundBaselineReady.current = false;
       sounds.current!.reset();
+      if (mounted.current && foreground === foregroundEpoch.current) {
+        retainedAllowed.current = false;
+        presentation.current = false;
+        setPresentationReady(false);
+        setDisplayReady(false);
+      }
       const failure = e as { code?: string; status?: number };
       const unavailable =
         (failure.code === 'connection_failed' && !failure.status) ||
@@ -192,7 +222,7 @@ export function useChat(engine: ChatEngine) {
             current?.database === syncIdentity.database &&
             current.permissions.chat_view === true
           )
-            setPresentationReady(true);
+            reveal();
         } catch {
           /* Expired/revoked cache stays behind the foreground mask. */
         }
@@ -214,7 +244,7 @@ export function useChat(engine: ChatEngine) {
     const stopNetwork = NetInfo.addEventListener(state => {
       const wasOnline = online.current;
       online.current = state.isConnected !== false && state.isInternetReachable !== false;
-      if (!wasOnline && online.current) setPresentationReady(false);
+      if (!wasOnline && online.current) { presentation.current = false; setPresentationReady(false); }
       if (wasOnline !== online.current) {
         soundEpoch.current++;
         soundBaselineReady.current = false;
@@ -222,21 +252,27 @@ export function useChat(engine: ChatEngine) {
       }
       if (!online.current) engine.markDisconnected();
       capture();
-      if (!online.current && active.current) setPresentationReady(true);
+      if (!online.current && active.current) reveal();
       if (online.current && active.current) void sync();
     });
     const subscription = AppState.addEventListener('change', state => {
       active.current = state === 'active';
+      setForeground(active.current);
       foregroundEpoch.current++;
       soundEpoch.current++;
       soundBaselineReady.current = false;
       sounds.current!.reset();
+      presentation.current = false;
       setPresentationReady(false);
+      // Enforce the existing offline lease before retained display is allowed;
+      // an online flag must not turn an old background snapshot into authority.
+      engine.markDisconnected();
+      capture();
       if (active.current) {
         if (!online.current) {
           engine.markDisconnected();
           capture();
-          setPresentationReady(true);
+          reveal();
         } else void sync();
       }
     });
@@ -244,7 +280,7 @@ export function useChat(engine: ChatEngine) {
       .restoreOffline()
       .then(() => {
         capture();
-        if (!online.current && active.current) setPresentationReady(true);
+        if (!online.current && active.current) reveal();
         void tick();
       })
       .catch(() => {
@@ -261,6 +297,25 @@ export function useChat(engine: ChatEngine) {
       sounds.current!.close();
     };
   }, [capture, engine, sync]);
+  useEffect(() => {
+    if (!displayReady || presentationReady || !foreground) return;
+    const scope = displayScope(), epoch = foregroundEpoch.current;
+    let stopped = false, timer: ReturnType<typeof setTimeout>;
+    const current = () => !stopped && mounted.current && active.current && !presentation.current
+      && epoch === foregroundEpoch.current && scope === displayScope();
+    const schedule = () => {
+      if (!current()) return;
+      const remaining = engine.leaseRemainingMs;
+      if (!Number.isFinite(remaining) || remaining <= 0) {
+        retainedAllowed.current = false; setDisplayReady(false); capture(); return;
+      }
+      // One local deadline, not polling. If verification renewed the lease
+      // while history is still pending, schedule its new deadline instead.
+      timer = setTimeout(schedule, remaining + 1);
+    };
+    schedule();
+    return () => { stopped = true; clearTimeout(timer); };
+  }, [capture, engine, displayReady, presentationReady, foreground]);
   const run = useCallback(
     async (operation: () => Promise<unknown>) => {
       setBusy(true);
@@ -275,7 +330,7 @@ export function useChat(engine: ChatEngine) {
         capture();
         if (mounted.current && active.current && engine.identity) {
           if (online.current) void sync();
-          else setPresentationReady(true);
+          else reveal();
         }
       }
     },
@@ -327,6 +382,9 @@ export function useChat(engine: ChatEngine) {
     busy,
     offline,
     presentationReady,
+    displayReady,
+    retainedDisplay: !!displayedScope.current && displayedScope.current === displayScope(),
+    foreground,
     run,
     select,
     sync,

@@ -1,17 +1,18 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useContext, useEffect, useRef, useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { Button, Field, Label, Sheet } from '../../ui/components';
 import { translator, type Language } from '../../ui/dictionary';
 import type { OrdersEngine } from '../core/OrdersEngine';
 import type { Selection } from '../core/types';
 import { orderTranslator } from '../dictionary';
-import { Busy, Failure, Note, ordersStyles as s, useAlive } from './OrdersPrimitives';
+import { Busy, Failure, Note, OrdersPresentation, ordersStyles as s, useAlive } from './OrdersPrimitives';
 
 /** This panel starts only after a documented create ACK; it never calls create. */
 export function PostCreateSharePanel({ engine, companyId, orderId, language, canSend, workflowReady }: {
   engine: OrdersEngine; companyId: number; orderId: number; language: Language; canSend: boolean; workflowReady: boolean;
 }) {
   const t = orderTranslator(language), alive = useAlive();
+  const presented = useContext(OrdersPresentation), visible = useRef(presented); visible.current = presented;
   const [rooms, setRooms] = useState<Selection[]>([]), [preferred, setPreferred] = useState<Selection | null>(null);
   const [savedId, setSavedId] = useState<number | null>(null), [selected, setSelected] = useState<Selection | null>(null);
   const [cursor, setCursor] = useState<number | null>(null), [query, setQuery] = useState(''), [opened, setOpened] = useState(false);
@@ -25,7 +26,7 @@ export function PostCreateSharePanel({ engine, companyId, orderId, language, can
   const latest = useRef({ canSend, workflowReady }); latest.current = { canSend, workflowReady };
   const eligible = () => alive() && latest.current.canSend && latest.current.workflowReady;
   const load = async (more: boolean, request: number) => {
-    if (!eligible() || (more && (loading.current || cursor === null || count.current >= 200))) return;
+    if (!eligible() || !visible.current || (more && (loading.current || cursor === null || count.current >= 200))) return;
     loading.current = true; setBusy(true); setRoomError(null);
     try {
       if (!more) {
@@ -36,6 +37,7 @@ export function PostCreateSharePanel({ engine, companyId, orderId, language, can
           preference.current = null; setSavedId(null); setPreferenceError(failure); setInvalidPreference(true);
         }
       }
+      if (!visible.current) return;
       const preferredId = selection.current?.id ?? preference.current;
       const page = await engine.rooms(companyId, { ...(query.trim() ? { q: query.trim() } : {}), ...(more ? { afterId: cursor! } : {}),
         ...(preferredId ? { preferredRoomId: preferredId } : {}) });
@@ -54,13 +56,14 @@ export function PostCreateSharePanel({ engine, companyId, orderId, language, can
     finally { if (request === generation.current) { loading.current = false; if (alive()) setBusy(false); } }
   };
   useEffect(() => {
+    if (!presented) return;
     const request = ++generation.current; loading.current = false; setRooms([]); setCursor(null);
     if (!canSend || !workflowReady || shared) return;
     const timer = setTimeout(() => { void load(false, request); }, 350);
     return () => { clearTimeout(timer); generation.current++; };
-  }, [query, reload, canSend, workflowReady, shared]);
+  }, [query, reload, canSend, workflowReady, shared, presented]);
   const save = async (roomId: number | null) => {
-    if (!eligible() || saveGate.current || shareGate.current || loading.current || (roomId !== null && roomId !== selection.current?.id)) return;
+    if (!eligible() || !visible.current || saveGate.current || shareGate.current || loading.current || (roomId !== null && roomId !== selection.current?.id)) return;
     saveGate.current = true; setSaving(true); setPreferenceError(null);
     try { await engine.saveRoom(companyId, roomId); if (eligible()) { preference.current = roomId; setSavedId(roomId); setMissingDefault(false); setInvalidPreference(false); } }
     catch (failure) { if (eligible()) setPreferenceError(failure); }
@@ -68,7 +71,7 @@ export function PostCreateSharePanel({ engine, companyId, orderId, language, can
   };
   const share = async () => {
     const room = selection.current;
-    if (!eligible() || !room || shareGate.current || shared || busy || !!roomError) return;
+    if (!eligible() || !visible.current || !room || shareGate.current || shared || busy || !!roomError) return;
     shareGate.current = true; setSharing(true); setError(null);
     try { await engine.shareOrder(companyId, orderId, room.id); if (eligible()) setShared(true); }
     catch (failure) { if (eligible()) {
@@ -84,7 +87,7 @@ export function PostCreateSharePanel({ engine, companyId, orderId, language, can
   return <View style={s.stack} testID="orders-post-create-share">
     <Note text={t(shared ? 'orderShared' : 'orderSavedShare')} language={language} />
     {!shared && <>
-      <Button quiet title={selected?.name ?? t('chooseRoom')} busy={false} disabled={sharing || saving} onPress={() => { if (eligible() && !shareGate.current && !saveGate.current) setOpened(true); }} />
+      <Button quiet title={selected?.name ?? t('chooseRoom')} busy={false} disabled={sharing || saving} onPress={() => { if (eligible() && visible.current && !shareGate.current && !saveGate.current) setOpened(true); }} />
       {missingDefault && <Note text={t('defaultUnavailable')} language={language} warning />}
       {busy && <Busy language={language} />}
       {!!roomError && <Failure error={roomError} language={language} retry={() => setReload(value => value + 1)} />}
@@ -94,12 +97,12 @@ export function PostCreateSharePanel({ engine, companyId, orderId, language, can
     </>}
     {!!error && <><Note text={t('orderShareFailed')} language={language} warning /><Failure error={error} language={language} /></>}
     {!!preferenceError && <Failure error={preferenceError} language={language} />}
-    {opened && !shared && <Sheet compact language={language} title={t('conversation')} t={translator(language)} close={() => setOpened(false)}>
+    {opened && presented && !shared && <Sheet compact language={language} title={t('conversation')} t={translator(language)} close={() => setOpened(false)}>
       <Field language={language} testID="orders-room-search" accessibilityLabel={t('searchRooms')} value={query} onChangeText={setQuery} maxLength={80} placeholder={t('searchRooms')} />
       {[...(preferred && !rooms.some(item => item.id === preferred.id) ? [preferred] : []), ...rooms].map(room => <Pressable key={room.id} testID={`orders-share-room-${room.id}`}
         accessibilityRole="button" accessibilityLabel={room.name} accessibilityState={{ selected: selected?.id === room.id, disabled: busy }} disabled={busy}
         style={[s.compactCard, { minHeight: 44, justifyContent: 'center' }]}
-        onPress={() => { if (!eligible() || loading.current || shareGate.current || saveGate.current || ![...rooms, ...(preferred ? [preferred] : [])].some(item => item.id === room.id)) return; selection.current = room; setSelected(room); setOpened(false); setError(null); }}>
+        onPress={() => { if (!eligible() || !visible.current || loading.current || shareGate.current || saveGate.current || ![...rooms, ...(preferred ? [preferred] : [])].some(item => item.id === room.id)) return; selection.current = room; setSelected(room); setOpened(false); setError(null); }}>
         <Label language={language}>{room.name}</Label>
       </Pressable>)}
       {!busy && !roomError && !rooms.length && !preferred && <Label language={language}>{t('noRooms')}</Label>}
@@ -114,22 +117,23 @@ export function ReceiptSharePanel({ engine, companyId, orderId, language, canSen
   engine: OrdersEngine; companyId: number; orderId: number; language: Language; canSend: boolean; auto?: boolean; roomId?: number | null;
 }) {
   const t = orderTranslator(language), alive = useAlive();
+  const presented = useContext(OrdersPresentation), visible = useRef(presented); visible.current = presented;
   const [originalRoom, setOriginalRoom] = useState<number | null>(null), [busy, setBusy] = useState(false), [shared, setShared] = useState(false);
   const [denied, setDenied] = useState(false), [error, setError] = useState<unknown>(null);
   const [detailReload, setDetailReload] = useState(0);
   const gate = useRef(false), autoStarted = useRef(false), revoked = useRef(false);
   const latest = useRef(canSend); latest.current = canSend;
   useEffect(() => {
-    if (!canSend) return;
+    if (!canSend || !presented) return;
     if (roomId !== undefined) { setOriginalRoom(roomId); return; }
     let current = true;
     setError(null);
     void engine.detail(companyId, orderId).then(detail => { if (current && alive() && latest.current) setOriginalRoom(detail.order.room_id); })
       .catch(failure => { if (current && alive() && latest.current) setError(failure); });
     return () => { current = false; };
-  }, [canSend, roomId, detailReload]);
+  }, [canSend, roomId, detailReload, presented]);
   const share = async () => {
-    if (!alive() || !latest.current || !originalRoom || gate.current || revoked.current || shared) return;
+    if (!alive() || !visible.current || !latest.current || !originalRoom || gate.current || revoked.current || shared) return;
     gate.current = true; setBusy(true); setError(null);
     try { await engine.share(companyId, orderId); if (alive() && latest.current) setShared(true); }
     catch (failure) { if (alive() && latest.current) {
@@ -139,9 +143,9 @@ export function ReceiptSharePanel({ engine, companyId, orderId, language, canSen
     finally { gate.current = false; if (alive()) setBusy(false); }
   };
   useEffect(() => {
-    if (!auto || !originalRoom || !canSend || autoStarted.current) return;
+    if (!presented || !auto || !originalRoom || !canSend || autoStarted.current) return;
     autoStarted.current = true; void share();
-  }, [auto, originalRoom, canSend]);
+  }, [auto, originalRoom, canSend, presented]);
   return <View style={s.stack} testID="orders-receipt-share">
     <Note text={t(error ? 'receiptShareFailed' : 'shareNote')} language={language} warning={!!error} />
     <Button title={t(shared ? 'shared' : error ? 'retryShare' : 'shareReceipt')} busy={busy} disabled={!canSend || !originalRoom || denied || shared} onPress={() => void share()} />

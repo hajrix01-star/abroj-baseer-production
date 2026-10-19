@@ -5,7 +5,7 @@ import type { Language } from '../../ui/dictionary';
 import type { OrdersEngine } from '../core/OrdersEngine';
 import type { CatalogItem, CreateResult, OrdersOptions, PurchaseRoute, QuoteResult } from '../core/types';
 import { displayNumber, orderTranslator } from '../dictionary';
-import { Busy, Choice, Empty, Failure, Heading, KeyValue, Note, NumberText, ordersStyles as s, rowDirection, useAlive } from './OrdersPrimitives';
+import { Busy, Choice, Empty, Failure, Heading, KeyValue, Note, NumberText, ordersStyles as s, rowDirection, useAlive, useResumeRead } from './OrdersPrimitives';
 
 interface CartItem { item: CatalogItem; quantity: string }
 export const validQuantity = (text: string) => /^(?:[1-9][0-9]{0,5}|0)(?:\.[0-9]{1,2})?$/.test(text) && Number(text) > 0;
@@ -39,6 +39,11 @@ export function OrderComposer({ engine, companyId, language, onResult, onPending
   const [quoteError, setQuoteError] = useState<unknown>(null), [quoteReload, setQuoteReload] = useState(0);
   const [writeUnknown, setWriteUnknown] = useState(false), [invalid, setInvalid] = useState(false), [reload, setReload] = useState(0);
   const writeGate = useRef(false), optionGate = useRef(false), catalogGate = useRef(false);
+  const [optionReload, setOptionReload] = useState(0);
+  const resumeOptions = useResumeRead(() => setOptionReload(value => value + 1));
+  const interruptedCatalogMore = useRef(false);
+  const resumeCatalog = useResumeRead(() => void loadCatalog(interruptedCatalogMore.current, catalogGeneration.current));
+  const resumeQuote = useResumeRead(() => setQuoteReload(value => value + 1));
   const latest = useRef({ blocked }); latest.current = { blocked };
   const invalidate = () => { engine.invalidateQuote(); quoteGeneration.current++; revision.current++; setQuote(null); setQuoteError(null); setQuoting(false); setInvalid(false); };
   const updateCart = (next: CartItem[]) => { if (!alive() || writeGate.current) return; invalidate(); cartRef.current = next; setCart(next); };
@@ -50,9 +55,9 @@ export function OrderComposer({ engine, companyId, language, onResult, onPending
       setWarehouse(next.warehouses?.find(item => item.id === next.default_warehouse_id)?.id ?? next.warehouses?.[0]?.id ?? 0);
       setRepresentative(next.representatives?.[0]?.id ?? 0);
       setRoute(next.purchase_routes?.[0]?.code ?? null);
-    }).catch(failure => { if (current && alive()) setError(failure); }).finally(() => { optionGate.current = false; if (current && alive()) setOptionBusy(false); });
+    }).catch(failure => { if (current && alive() && !resumeOptions(failure)) setError(failure); }).finally(() => { optionGate.current = false; if (current && alive()) setOptionBusy(false); });
     return () => { current = false; engine.invalidateQuote(); };
-  }, [reload]);
+  }, [reload, optionReload]);
   const loadCatalog = async (more: boolean, request: number) => {
     if (!alive() || (more && (catalogGate.current || cursor === null || items.length >= 200))) return;
     catalogGate.current = true; setLoading(true); setCatalogError(null);
@@ -61,7 +66,7 @@ export function OrderComposer({ engine, companyId, language, onResult, onPending
       if (!alive() || request !== catalogGeneration.current) return;
       setItems(previous => (more ? [...previous, ...next.items] : next.items).filter((item, index, list) => list.findIndex(other => other.id === item.id) === index).slice(0, 200));
       setCursor(next.next_after_id);
-    } catch (failure) { if (alive() && request === catalogGeneration.current) setCatalogError(failure); }
+    } catch (failure) { if (alive() && request === catalogGeneration.current) { interruptedCatalogMore.current = more; if (!resumeCatalog(failure)) setCatalogError(failure); } }
     finally { if (request === catalogGeneration.current) { catalogGate.current = false; if (alive()) setLoading(false); } }
   };
   useEffect(() => {
@@ -93,7 +98,7 @@ export function OrderComposer({ engine, companyId, language, onResult, onPending
       void engine.quote({ company_id: companyId, warehouse_id: warehouse, cart_revision: cartRevision,
         lines: cartRef.current.map(line => ({ option_id: line.item.id, quantity: line.quantity })) }).then(result => {
         if (alive() && request === quoteGeneration.current && cartRevision === revision.current) setQuote(result);
-      }).catch(failure => { if (alive() && request === quoteGeneration.current) setQuoteError(failure); })
+      }).catch(failure => { if (alive() && request === quoteGeneration.current && !resumeQuote(failure)) setQuoteError(failure); })
         .finally(() => { if (alive() && request === quoteGeneration.current) setQuoting(false); });
     }, 350);
     return () => { clearTimeout(timer); quoteGeneration.current++; engine.invalidateQuote(); };

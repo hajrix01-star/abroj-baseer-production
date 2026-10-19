@@ -1,10 +1,10 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { OrdersOnlySnapshot } from './OrdersOnlySession';
 import { getEngine, getOrdersEngine, ordersOnlySnapshot, refreshOrdersOnlySession } from '../runtime';
 import { OrdersScreen } from '../orders/ui/OrdersScreen';
-import { Button, IconButton, Label, styles } from '../ui/components';
+import { Button, colors, IconButton, Label, styles } from '../ui/components';
 import { Brand } from '../ui/Brand';
 import { NavigationDrawer, type DrawerAction } from '../ui/NavigationDrawer';
 import { errorWord, translator, type Language } from '../ui/dictionary';
@@ -23,6 +23,14 @@ export function OrdersOnlyShell({ snapshot, language, setLanguage, online }: {
   const [companySelection, setCompanySelection] = useState({ actor: '', id: 0 });
   const selectedCompanyId = companySelection.actor === actor && identity?.company_ids.includes(companySelection.id) ? companySelection.id : 0;
   const ready = snapshot.verified && online;
+  // A verification revision fences old callbacks/requests, but is not a new
+  // display authority. Keep the same workspace mounted behind a private cover.
+  const displayScope = JSON.stringify([snapshot.generation, identity?.database, identity?.user_id,
+    [...(identity?.company_ids ?? [])].sort((a, b) => a - b),
+    Object.entries(identity?.permissions ?? {}).sort(([a], [b]) => a.localeCompare(b))]);
+  const mountedScope = useRef<string | null>(null);
+  if (ready) mountedScope.current = displayScope;
+  const retainWorkspace = mountedScope.current === displayScope;
   useEffect(() => { if (!ready) setMenu(false); }, [ready]);
   const current = () => {
     const live = ordersOnlySnapshot();
@@ -50,15 +58,20 @@ export function OrdersOnlyShell({ snapshot, language, setLanguage, online }: {
       {ready ? <IconButton icon="menu" label={t('menu')} onPress={() => { if (current()) setMenu(true); }} /> : <View style={{ width: 44 }} />}
       <View style={{ flex: 1, alignItems: language === 'ar' ? 'flex-end' : 'flex-start' }}><Brand /></View>
     </View>
-    {ready ? <OrdersScreen key={`${snapshot.generation}/${snapshot.revision}`} scopeKey={`${snapshot.generation}/${snapshot.revision}`} engine={getOrdersEngine()} identity={identity} language={language} online
+    <View style={styles.fill}>
+    {retainWorkspace && <OrdersScreen key={displayScope} scopeKey={displayScope} engine={getOrdersEngine()} identity={identity} language={language} online={online} presented={ready}
       selectedCompanyId={selectedCompanyId} onCompanyChange={id => {
         if (current() && (id === 0 || identity.company_ids.includes(id))) setCompanySelection({ actor, id });
-      }} />
-      : <View style={[styles.fill, { padding: 24, justifyContent: 'center', gap: 16 }]}>
-        <Label language={language}>{t(error ? errorWord(error) : online ? 'loading' : 'connectionError')}</Label>
+      }} />}
+    {!ready && <View testID="orders-session-privacy-cover" style={[styles.fill, {
+      ...(retainWorkspace ? { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 } : {}),
+      backgroundColor: colors.white, padding: 24, justifyContent: 'center', gap: 16,
+    }]}>
+        {(!!error || !online || !retainWorkspace) && <Label language={language}>{t(error ? errorWord(error) : online ? 'loading' : 'connectionError')}</Label>}
         <Button title={t('refresh')} disabled={busy || !online} onPress={() => void refresh()} />
         <Button title={t('logout')} disabled={busy} onPress={() => action('logout')} />
       </View>}
+    </View>
     <NavigationDrawer visible={menu && ready} identity={ready ? identity : null} language={language} t={t} offline={!ready}
       pendingCount={0} busy={busy} canManage={false} close={close} onAction={action} />
   </SafeAreaView>;

@@ -44,14 +44,17 @@ function harness() {
   let mode = 'success';
   let expired = false;
   let rejectDeferred;
+  let resolveDeferred;
   let roomRows = [{ id: 1, membership_id: 9, company_id: 1, name: 'Before', avatar_version: 1 }];
   let messages = [];
   const tones = [];
+  const timers = new Map(); let timerSequence = 0;
   const identity = { user_id: 7, database: 'synthetic', permissions: { chat_view: true } };
   const engine = {
     identity,
     offline: false,
     status: 'ready',
+    get leaseRemainingMs() { return expired ? 0 : 86400000; },
     backoffMs: 2000,
     rooms() {
       if (expired) {
@@ -71,6 +74,7 @@ function harness() {
       if (mode === 'deferred')
         return new Promise((resolve, reject) => {
           rejectDeferred = reject;
+          resolveDeferred = resolve;
         });
       if (mode !== 'success') {
         this.offline = true;
@@ -135,8 +139,8 @@ function harness() {
     module: mod,
     exports: mod.exports,
     require: name => modules[name] ?? {},
-    setTimeout: () => 1,
-    clearTimeout() {},
+    setTimeout: (callback, delay) => { const id = ++timerSequence; timers.set(id, { callback, delay }); return id; },
+    clearTimeout(id) { timers.delete(id); },
     console,
   });
   return {
@@ -165,6 +169,8 @@ function harness() {
       engine.offline = true;
       rejectDeferred(Object.assign(new Error(), { code: 'connection_failed', status: 0 }));
     },
+    resolveOld() { engine.offline = false; mode = 'success'; resolveDeferred(engine.identity); },
+    leaseTimer() { return [...timers.values()].find(timer => timer.delay === 86400001)?.callback; },
   };
 }
 async function settled() {
@@ -203,6 +209,67 @@ test('foreground permits valid offline cache when internet is up but Odoo/VPN is
     assert.equal(app.engine.offline, true);
     assert.equal(app.render().presentationReady, true);
   }
+});
+test('same-account resume and reconnect retain TTL-valid display but never grant foreground authority before verification', async () => {
+  for (const transition of ['resume', 'reconnect']) {
+    const app = await ready();
+    const before = app.render(); assert.equal(before.displayReady, true);
+    app.mode('deferred');
+    if (transition === 'resume') {
+      app.app('background');
+      const hidden = app.render();
+      assert.equal(hidden.foreground, false); assert.equal(hidden.displayReady, false);
+      assert.equal(hidden.retainedDisplay, true, 'private tree survives behind background cover');
+      app.app('active');
+    } else { app.network(false); app.render(); app.network(true); }
+    await settled();
+    const pending = app.render();
+    assert.equal(pending.presentationReady, false, transition);
+    assert.equal(pending.displayReady, true, transition);
+    assert.equal(pending.retainedDisplay, true, transition);
+    assert.equal(pending.identity.user_id, before.identity.user_id);
+    app.resolveOld(); await settled();
+    assert.equal(app.render().presentationReady, true, transition);
+    assert.equal(app.tones.length, 0, 'catchup never emits a tone');
+  }
+});
+test('retained foreground pixels reject expired leases, account scope changes and denied revalidation', async () => {
+  for (const transition of ['expired', 'scope', 'actor', 'forbidden', 'stale']) {
+    const app = await ready(); app.app('background'); app.render();
+    app.mode(['forbidden', 'stale'].includes(transition) ? transition : 'deferred');
+    if (transition === 'expired') app.expired();
+    if (transition === 'scope') app.engine.accountScope = 'different-login-epoch';
+    if (transition === 'actor') app.engine.identity = { ...app.engine.identity, user_id: 8 };
+    app.app('active'); await settled();
+    assert.equal(app.render().displayReady, false, transition);
+    assert.equal(app.render().presentationReady, false, transition);
+  }
+});
+test('one local retained-display deadline masks a hung renewal and old deadline callbacks cannot mask a newer verified scope', async () => {
+  for (const becameOnline of [false, true]) {
+    const app = await ready(); app.mode('deferred'); app.app('background'); app.render(); app.app('active');
+    await settled(); app.render();
+    const deadline = app.leaseTimer(); assert.equal(typeof deadline, 'function');
+    if (becameOnline) {
+      // Refresh can complete before a selected history read; retained display
+      // must still expire even when rooms() is no longer in offline mode.
+      const rows = app.engine.rooms(); app.engine.rooms = () => rows; app.engine.offline = false;
+    }
+    app.expired(); deadline();
+    assert.equal(app.render().displayReady, false);
+    assert.equal(app.render().presentationReady, false);
+    app.render().capture(); assert.equal(app.render().displayReady, false, 'a later capture cannot resurrect expired pixels');
+  }
+  const app = await ready(); app.mode('deferred'); app.app('background'); app.render(); app.app('active');
+  await settled(); app.render(); const oldDeadline = app.leaseTimer();
+  app.resolveOld(); await settled(); app.render();
+  app.engine.accountScope = 'new-verified-scope'; await app.render().sync(); app.render();
+  app.expired(); oldDeadline();
+  assert.equal(app.render().presentationReady, true);
+  assert.equal(app.render().displayReady, true, 'cleaned old deadline cannot affect a newer verified authority');
+  const missing = await ready(); delete missing.engine.leaseRemainingMs;
+  missing.mode('deferred'); missing.app('background'); missing.render(); missing.app('active'); await settled();
+  assert.equal(missing.render().displayReady, false, 'an unavailable deadline never grants unlimited retained display');
 });
 test('403, missing identity, expired cache and stale-session errors never unlock foreground cache', async () => {
   for (const failure of ['forbidden', 'expired', 'identity_missing', 'stale']) {

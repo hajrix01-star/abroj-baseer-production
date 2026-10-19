@@ -47,6 +47,9 @@ export function SessionApp({ engine, initialLanguage = 'ar', onLanguageChange }:
   const { width } = useWindowDimensions();
   const wide = width >= 850;
   const identity = chat.presentationReady ? chat.identity : null;
+  const displayIdentity = chat.identity;
+  const displayReady = chat.displayReady ?? chat.presentationReady;
+  const retainedDisplay = chat.retainedDisplay === true;
   useEffect(() => subscribeOrdersOnlySession(chat.capture), [chat.capture]);
   useEffect(() => {
     if (!chat.identity || chat.identity.permissions.order_view !== true) setArea('chat');
@@ -234,7 +237,10 @@ export function SessionApp({ engine, initialLanguage = 'ar', onLanguageChange }:
     chat.selected.membership_id === photoNotice.membershipId;
   return (
     <SafeAreaView style={styles.page}>
-      {(!identity || area === 'orders' || wide || !chat.selected) && (
+      <View style={styles.fill} pointerEvents={!chat.identity || chat.presentationReady ? 'auto' : 'none'}
+        accessibilityElementsHidden={!!chat.identity && !chat.presentationReady}
+        importantForAccessibility={chat.identity && !chat.presentationReady ? 'no-hide-descendants' : 'auto'}>
+      {(!displayIdentity || area === 'orders' || wide || !chat.selected) && (
         <View
           style={[
             styles.header,
@@ -248,16 +254,16 @@ export function SessionApp({ engine, initialLanguage = 'ar', onLanguageChange }:
               flexDirection: language === 'ar' ? 'row-reverse' : 'row',
             },
           ]}>
-          {identity && <IconButton icon="menu" label={t('menu')} onPress={openMenu} />}
+          {displayIdentity && <IconButton icon="menu" label={t('menu')} disabled={!identity} onPress={openMenu} />}
           <View style={{ flex: 1, minWidth: 0 }}>
             <View style={{ alignItems: language === 'ar' ? 'flex-end' : 'flex-start' }}>
               <Brand />
             </View>
-            {identity ? (
+            {displayIdentity ? (
               <Text
                 numberOfLines={1}
                 style={[styles.muted, direction(language), { fontSize: 12, lineHeight: 18 }]}>
-                {t(chat.offline ? 'offline' : 'connected')}
+                {t(!chat.presentationReady ? 'connecting' : chat.offline ? 'offline' : 'connected')}
               </Text>
             ) : (
               <>
@@ -269,7 +275,7 @@ export function SessionApp({ engine, initialLanguage = 'ar', onLanguageChange }:
             )}
           </View>
           <View style={styles.row}>
-            {!identity && (
+            {!displayIdentity && (
               <Button
                 quiet
                 title={language === 'ar' ? 'English' : 'العربية'}
@@ -281,7 +287,7 @@ export function SessionApp({ engine, initialLanguage = 'ar', onLanguageChange }:
       )}
       {!chat.identity ? (
         <LoginScreen engine={engine} chat={chat} language={language} t={t} />
-      ) : !chat.presentationReady ? (
+      ) : !chat.presentationReady && !retainedDisplay ? (
         <View style={[styles.fill, { justifyContent: 'center', padding: 24 }]}>
           <Label language={language}>{t('loading')}</Label>
         </View>
@@ -295,7 +301,7 @@ export function SessionApp({ engine, initialLanguage = 'ar', onLanguageChange }:
               <IconButton icon="close" label={t('close')} onPress={() => setPhotoNotice(null)} />
             </View>
           )}
-          {(chat.offline || (!chat.selected && chat.pending.length > 0)) && (
+          {((chat.presentationReady && chat.offline) || (!chat.selected && chat.pending.length > 0)) && (
             <View
               style={[
                 styles.banner,
@@ -320,7 +326,7 @@ export function SessionApp({ engine, initialLanguage = 'ar', onLanguageChange }:
           {area === 'orders' && <OrdersScreen engine={getOrdersEngine()} identity={chat.identity} language={language}
             selectedCompanyId={companyId} onCompanyChange={id => {
               if (active.current && liveArea.current === 'orders' && liveScope.current === scopeKey && identity && (id === 0 || identity.company_ids.includes(id))) setCompanyId(id);
-            }} scopeKey={engine.accountScope ?? ''} online={!chat.offline && !!identity} rooms={chat.rooms} onBack={() => {
+            }} scopeKey={engine.accountScope ?? ''} online={!chat.offline && !!identity} presented={!!identity} rooms={chat.rooms} onBack={() => {
               if (!active.current || liveArea.current !== 'orders' || liveScope.current !== scopeKey) return;
               Keyboard.dismiss(); setArea('chat');
             }} />}
@@ -352,7 +358,7 @@ export function SessionApp({ engine, initialLanguage = 'ar', onLanguageChange }:
                   selected={chat.selected}
                   language={language}
                   t={t}
-                  offline={chat.offline}
+                  offline={chat.offline || !chat.presentationReady}
                   selectCompany={id => {
                     if (
                       !identity ||
@@ -391,7 +397,7 @@ export function SessionApp({ engine, initialLanguage = 'ar', onLanguageChange }:
                 chat={chat}
                 language={language}
                 t={t}
-                presented={area === 'chat'}
+                presented={area === 'chat' && chat.presentationReady}
                 back={
                   wide
                     ? undefined
@@ -479,6 +485,10 @@ export function SessionApp({ engine, initialLanguage = 'ar', onLanguageChange }:
           Keyboard.dismiss(); setMenu(false); setArea('orders');
         } : undefined}
       />
+      </View>
+      {chat.identity && retainedDisplay && !displayReady && <View testID="session-privacy-cover"
+        accessibilityElementsHidden importantForAccessibility="no-hide-descendants"
+        style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: colors.white }} />}
     </SafeAreaView>
   );
 }

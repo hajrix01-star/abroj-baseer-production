@@ -517,15 +517,19 @@ function applicationOrdersIdentity(): { identity: Bootstrap; epoch: string | num
   const alternate = ordersOnlySnapshot();
   if (alternate.identity) {
     return alternate.verified && alternate.generation === generation && ordersConnectivity && AppState.currentState === 'active'
-      ? { identity: alternate.identity, epoch: `${alternate.generation}/orders:${ordersAccessEpoch}/verification:${alternate.revision}` } : null;
+      ? { identity: alternate.identity, epoch: `${alternate.generation}/orders` } : null;
   }
   const chat = getEngine();
   const identity = chat.identity;
   return identity && !chat.offline && AppState.currentState === 'active' && chat.accountScope
-    && ordersConnectivity ? { identity, epoch: `${chat.accountScope}/orders:${ordersAccessEpoch}` } : null;
+    && ordersConnectivity ? { identity, epoch: `${chat.accountScope}/orders` } : null;
 }
 function identityStamp(value: ReturnType<typeof applicationOrdersIdentity>): string {
-  return value ? JSON.stringify([value.identity.database, value.identity.user_id, value.epoch]) : '';
+  // Renewal fences stale HTTP completions, not the user's same-authority cart
+  // or verified options. Locked/background scopes still return no authority.
+  return value ? JSON.stringify([value.identity.database, value.identity.user_id, value.epoch,
+    value.identity.company_ids, value.identity.permissions, ordersAccessEpoch,
+    ordersOnlySnapshot().identity ? ordersOnlySnapshot().revision : null]) : '';
 }
 export function getOrdersEngine(): OrdersEngine {
   if (!ordersEngine) ordersEngine = new OrdersEngine({

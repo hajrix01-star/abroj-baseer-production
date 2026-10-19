@@ -71,6 +71,20 @@ function setup(storage = new MemoryStorage(), server = new Server(), extra: Part
 }
 const login = async (engine: ChatEngine) => engine.login('alice', 'NeverPersistThis', true);
 
+test('display lease remaining is a pure bounded deadline with exact expiry, clock rollback and logout guards', async () => {
+  const { engine, server, tick } = setup();
+  assert.equal(engine.leaseRemainingMs, 0);
+  await login(engine); const before = server.calls.length;
+  assert.equal(engine.leaseRemainingMs, 86400000);
+  tick(-1); assert.equal(engine.leaseRemainingMs, 0);
+  tick(1); assert.equal(engine.leaseRemainingMs, 86400000);
+  tick(86400000); assert.equal(engine.leaseRemainingMs, 0);
+  tick(1); assert.equal(engine.leaseRemainingMs, 0);
+  assert.equal(server.calls.length, before, 'reading the deadline never fetches or renews authority');
+  engine.markDisconnected(); assert.throws(() => engine.rooms(), { code: 'offline_expired' });
+  await engine.logout(); assert.equal(engine.leaseRemainingMs, 0);
+});
+
 test('plain ChatEngine keeps chat_view mandatory even when a genuine bootstrap grants orders-only rights', async () => {
   class OrdersServer extends Server {
     override async request(request: Request): Promise<unknown> {

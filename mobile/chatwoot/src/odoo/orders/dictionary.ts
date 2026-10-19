@@ -1,7 +1,7 @@
 import type { Language } from '../ui/dictionary';
 
 const en = {
-  serverUpdateRequired: 'This workflow requires a server update.', chooseCompany: 'Choose a company to create or receive orders.', noWarehouse: 'No warehouse is available for this company.',
+  serverUpdateRequired: 'This workflow requires a server update.', chooseCompany: 'Choose a company to create orders.', noWarehouse: 'No warehouse is available for this company.',
   orderSettings: 'Order settings', filters: 'Product filters', quoting: 'Updating estimate',
   orderSavedShare: 'Order saved. Choose a conversation to share it.', orderShared: 'Order shared', chooseRoom: 'Choose a conversation', searchRooms: 'Search conversations',
   noRooms: 'No eligible conversations. Try another search.', roomsLimit: 'Showing up to 200 conversations. Search to find another.',
@@ -33,7 +33,7 @@ const en = {
   empty: 'No orders here', emptyHelp: 'Authorized BChat orders will appear here when available.', noResults: 'No matching products',
   noResultsHelp: 'Try another name or category.', noReceipts: 'No orders awaiting receipt', noReceiptsHelp: 'Choose another company or check back later.',
   cartEmpty: 'Your cart is empty', cartEmptyHelp: 'Add products from the catalog.', orderScope: 'All employees’ BChat orders across your authorized companies',
-  receiptsScope: 'Orders available to receive in the selected company', menu: 'Menu', close: 'Close', remove: 'Remove', undo: 'Undo removal',
+  receiptsScope: 'Orders available to receive across your authorized companies', menu: 'Menu', close: 'Close', remove: 'Remove', undo: 'Undo removal',
   validation: 'Enter quantity and price with up to 2 decimals. Zero quantity requires zero price; received items need a positive price.',
   quantityValidation: 'Enter a positive quantity with up to 2 decimals.', needPositive: 'Enter a positive quantity and price for at least one item.',
   unknown: 'Result unknown. Retry the saved attempt to check the same operation.', pending: 'Unresolved attempts', retryAttempt: 'Retry saved attempt',
@@ -46,7 +46,7 @@ const en = {
 } as const;
 
 const ar: Record<keyof typeof en, string> = {
-  serverUpdateRequired: 'يتطلب هذا التدفق تحديث الخادم.', chooseCompany: 'اختر شركة لإنشاء الطلبات أو استلامها.', noWarehouse: 'لا يوجد مستودع متاح لهذه الشركة.',
+  serverUpdateRequired: 'يتطلب هذا التدفق تحديث الخادم.', chooseCompany: 'اختر شركة لإنشاء الطلبات.', noWarehouse: 'لا يوجد مستودع متاح لهذه الشركة.',
   orderSettings: 'إعدادات الطلب', filters: 'تصفية الأصناف', quoting: 'جارٍ تحديث التقدير',
   orderSavedShare: 'الطلب محفوظ. اختر محادثة لمشاركته.', orderShared: 'الطلب مشارك', chooseRoom: 'اختر محادثة', searchRooms: 'البحث عن محادثة',
   noRooms: 'لا توجد محادثات متاحة. جرّب بحثًا آخر.', roomsLimit: 'نعرض 200 محادثة كحد أقصى. ابحث عن المحادثة المطلوبة.',
@@ -78,7 +78,7 @@ const ar: Record<keyof typeof en, string> = {
   empty: 'لا توجد طلبات', emptyHelp: 'ستظهر طلبات BChat المصرح بها عند توفرها.', noResults: 'لا توجد أصناف مطابقة',
   noResultsHelp: 'جرّب اسمًا آخر أو غيّر الفئة.', noReceipts: 'لا توجد طلبات بانتظار الاستلام', noReceiptsHelp: 'اختر شركة أخرى أو عُد لاحقًا.',
   cartEmpty: 'السلة فارغة', cartEmptyHelp: 'أضف أصنافًا من المنيو.', orderScope: 'طلبات BChat لجميع الموظفين عبر الشركات المصرح بها',
-  receiptsScope: 'الطلبات المتاحة للاستلام في الشركة المحددة', menu: 'القائمة', close: 'إغلاق', remove: 'حذف', undo: 'تراجع عن الحذف',
+  receiptsScope: 'الطلبات المتاحة للاستلام عبر الشركات المصرح بها', menu: 'القائمة', close: 'إغلاق', remove: 'حذف', undo: 'تراجع عن الحذف',
   validation: 'أدخل الكمية والسعر بمنزلتين عشريتين كحد أقصى. الكمية صفر تتطلب سعرًا صفرًا، والأصناف المستلمة تتطلب سعرًا موجبًا.',
   quantityValidation: 'أدخل كمية موجبة بمنزلتين عشريتين كحد أقصى.', needPositive: 'أدخل كمية وسعرًا موجبين لصنف واحد على الأقل.',
   unknown: 'النتيجة غير محسومة. أعد المحاولة المحفوظة للتحقق من العملية نفسها.', pending: 'محاولات غير محسومة', retryAttempt: 'إعادة المحاولة المحفوظة',

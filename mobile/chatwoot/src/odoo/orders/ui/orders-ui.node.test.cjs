@@ -131,14 +131,18 @@ test('changing operation company clears the cart immediately and retained old ac
   assert.equal(app.calls.filter(call => call[0] === 'catalog').at(-1)[1], 2);
 });
 
-test('offline and account/permission changes hide all old order data and actions', async () => {
+test('offline masks retained order state and blocks actions while account or permission changes remove the old scope', async () => {
   const app = await ready(); await cart(app);
   button(app.render(), 'Review order').onPress(); const submit = button(app.render(), 'Submit order').onPress;
   app.props.online = false; const tree = app.render(); submit(); await app.flush();
   assert.ok(text(tree).includes('Connect to open orders'));
-  assert.equal(text(tree).includes('Fixture product'), false);
+  assert.equal(byId(tree, 'orders-retained-workspace').accessibilityElementsHidden, true);
+  assert.equal(byId(tree, 'orders-retained-workspace').pointerEvents, 'none');
+  assert.ok(byId(tree, 'orders-privacy-cover'));
   assert.equal(app.calls.some(call => call[0] === 'create'), false);
-  assert.ok(app.calls.some(call => call[0] === 'cancelReads'));
+  app.props.online = true; await app.flush();
+  assert.equal(byId(app.render(), 'orders-retained-workspace').accessibilityElementsHidden, false);
+  assert.ok(text(app.render()).includes('Fixture product'));
   app.props.online = true; app.props.identity = { ...app.props.identity, user_id: 44, permissions: { order_view: false } };
   assert.ok(text(app.render()).includes('No permission to view orders'));
 });
@@ -324,7 +328,8 @@ test('actual React share stays disabled without chat_send or an original room, a
         app.props.online = false; await app.flush();
         await app.act(() => delayed.resolve({ order: app.summary(12, 1), lines: [] }));
         await app.act(() => stale());
-        assert.equal(nodes(app.render()).some(node => node.props.testID === 'orders-write-result'), false);
+        assert.equal(byId(app.render(), 'orders-retained-workspace').accessibilityElementsHidden, true);
+        assert.ok(byId(app.render(), 'orders-privacy-cover'));
       }
       assert.equal(app.calls.filter(call => call[0] === 'share').length, 0, scenario);
       assert.equal(app.calls.filter(call => call[0] === 'confirm').length, 1, scenario);
@@ -400,7 +405,7 @@ test('actual automatic quote coalesces valid edits, replaces an inflight quote a
   } finally { await app.unmount(); }
 });
 
-test('company all never chooses an operation company; explicit selection is inherited by catalog and receiving', async () => {
+test('all-company browsing is independent of the explicit single-company catalog selection', async () => {
   const app = await ready({ selectedCompanyId: 0 });
   assert.equal(app.calls.some(call => call[0] === 'catalog' || call[0] === 'receipts'), false);
   assert.ok(text(app.render()).includes('Choose a company'));
@@ -408,10 +413,157 @@ test('company all never chooses an operation company; explicit selection is inhe
   assert.equal(app.props.selectedCompanyId, 2);
   assert.equal(app.calls.filter(call => call[0] === 'catalog').at(-1)[1], 2);
   byId(app.render(), 'orders-tab-receiving').onPress(); await app.flush();
-  assert.equal(app.calls.filter(call => call[0] === 'receipts').at(-1)[1], 2);
+  assert.equal(app.calls.filter(call => call[0] === 'receipts').at(-1)[1], undefined);
+  assert.equal(byId(app.render(), 'orders-receipts-company').accessibilityState.expanded, false);
+  choose(app, 'orders-receipts-company', 1); await app.flush();
+  assert.equal(app.calls.filter(call => call[0] === 'receipts').at(-1)[1], 1);
+  assert.equal(app.props.selectedCompanyId, 2, 'read filter never changes the catalog company');
+  byId(app.render(), 'orders-tab-allOrders').onPress(); await app.flush();
+  assert.equal(app.calls.filter(call => call[0] === 'list').at(-1)[2], 1, 'both read tabs share an optional browsing filter');
+  choose(app, 'orders-list-company', 0); await app.flush();
+  assert.equal(app.calls.filter(call => call[0] === 'list').at(-1)[2], undefined);
   app.props.selectedCompanyId = 77; await app.flush();
-  assert.equal(nodes(app.render()).some(node => node.props.testID === 'receipt-row-12'), false);
+  assert.ok(byId(app.render(), 'orders-row-12'), 'unselected creation company does not hide authorized browsing');
+  byId(app.render(), 'orders-tab-catalog').onPress(); await app.flush();
   assert.ok(text(app.render()).includes('Choose a company'));
+});
+
+test('all-company receipts bind details, confirmation and pending blocking to the row company', async () => {
+  for (const blockedCompany of [1, 2]) {
+    const app = harness({ selectedCompanyId: 1 }, true);
+    app.engine.receipts = async (company, before) => { app.calls.push(['receipts', company, before]); return { orders: [{ ...app.summary(12, 2), warehouse_name: 'Second warehouse' }], next_before_id: null }; };
+    app.engine.pending = async () => [{ uuid: 'receipt-attempt', kind: 'confirm', companyId: blockedCompany, orderId: 12, createdAt: 1 }];
+    try {
+      await app.flush(); await app.act(() => byId(app.render(), 'orders-tab-receiving').onPress());
+      assert.deepEqual(app.calls.filter(call => call[0] === 'receipts'), [['receipts', undefined, undefined]], 'one global read, no company fan-out');
+      assert.ok(text(app.render()).includes('Company 2'));
+      await app.act(() => byId(app.render(), 'receipt-row-12').onPress());
+      assert.deepEqual(app.calls.filter(call => call[0] === 'receiptDetail'), [['receiptDetail', 2, 12]]);
+      assert.equal(app.props.selectedCompanyId, 1);
+      if (blockedCompany === 2) {
+        assert.equal(button(app.render(), 'Review receipt').disabled, true);
+        assert.ok(text(app.render()).includes('Resolve the saved attempt'));
+      } else {
+        await app.act(() => byId(app.render(), 'receipt-price-1').onChangeText('1.00'));
+        await app.act(() => byId(app.render(), 'receipt-price-2').onChangeText('2.00'));
+        await app.act(() => button(app.render(), 'Review receipt').onPress());
+        await app.act(() => button(app.render(), 'Confirm receipt').onPress());
+        assert.equal(app.calls.filter(call => call[0] === 'confirm').length, 1);
+        assert.equal(app.calls.find(call => call[0] === 'confirm')[2].company_id, 2);
+      }
+    } finally { await app.unmount(); }
+  }
+});
+
+test('receipt filter rejects late pages and old-server all scope is an error rather than false empty', async () => {
+  const app = harness({}, true), delayed = waiting();
+  app.engine.receipts = async company => { app.calls.push(['receipts', company]); return company === undefined ? delayed.promise : { orders: [{ ...app.summary(13, company), warehouse_name: 'Current' }], next_before_id: null }; };
+  try {
+    await app.flush(); await app.act(() => byId(app.render(), 'orders-tab-receiving').onPress());
+    await app.act(() => byId(app.render(), 'orders-receipts-company').onPress());
+    await app.act(() => byId(app.render(), 'orders-receipts-company-option-2').onPress());
+    await app.act(() => delayed.resolve({ orders: [{ ...app.summary(99, 1), warehouse_name: 'Stale' }], next_before_id: null }));
+    assert.ok(byId(app.render(), 'receipt-row-13'));
+    assert.equal(nodes(app.render()).some(node => node.props.testID === 'receipt-row-99'), false);
+    app.engine.receipts = async company => { if (company === undefined) throw { code: 'server_update_required' }; return { orders: [{ ...app.summary(14, company), warehouse_name: 'Legacy' }], next_before_id: null }; };
+    await app.act(() => byId(app.render(), 'orders-receipts-company').onPress());
+    await app.act(() => byId(app.render(), 'orders-receipts-company-option-0').onPress());
+    assert.ok(text(app.render()).includes('requires a server update'));
+    assert.equal(text(app.render()).includes('No orders awaiting receipt'), false);
+    await app.act(() => byId(app.render(), 'orders-receipts-company').onPress());
+    await app.act(() => byId(app.render(), 'orders-receipts-company-option-1').onPress());
+    assert.ok(byId(app.render(), 'receipt-row-14'));
+  } finally { await app.unmount(); }
+});
+
+test('orders retain cart and choice state behind privacy without requests or portals until presented again', async () => {
+  const app = harness({}, true);
+  try {
+    await app.flush();
+    await app.act(() => one(app.render(), 'Button', props => props.accessibilityLabel === 'Add Fixture product Case').onPress());
+    await app.act(() => byId(app.render(), 'orders-company').onPress());
+    assert.ok(one(app.render(), 'Sheet'));
+    const calls = app.calls.length;
+    app.props.presented = false; app.props.online = false; await app.flush();
+    assert.equal(byId(app.render(), 'orders-retained-workspace').pointerEvents, 'none');
+    assert.equal(nodes(app.render()).some(node => node.type === 'Sheet'), false, 'native modal portals are not retained visibly');
+    assert.equal(app.calls.length, calls);
+    app.props.presented = true; app.props.online = true; await app.flush();
+    assert.equal(byId(app.render(), 'cart-quantity-81').value, '1');
+    assert.ok(one(app.render(), 'Sheet'), 'same picker state is restored under the same verified actor');
+    assert.equal(app.calls.length, calls, 'no remount or catalog reload on benign verification');
+    app.props.identity = { ...app.props.identity, user_id: 88 }; app.props.presented = false; await app.flush();
+    assert.equal(nodes(app.render()).some(node => node.props.testID === 'orders-retained-workspace'), false, 'old actor subtree is removed immediately');
+  } finally { await app.unmount(); }
+});
+
+test('same-scope durable create and receipt ACKs settle while hidden without replay or stuck controls', async () => {
+  for (const kind of ['create', 'confirm']) {
+    const app = harness({}, true), delayed = waiting();
+    app.props.identity.permissions.chat_send = true;
+    app.engine[kind] = async (...args) => { app.calls.push([kind, ...args]); return delayed.promise; };
+    try {
+      await app.flush();
+      if (kind === 'create') {
+        await app.act(() => one(app.render(), 'Button', props => props.accessibilityLabel === 'Add Fixture product Case').onPress());
+        await app.act(() => button(app.render(), 'Review cart (1)').onPress());
+        await app.act(() => button(app.render(), 'Review order').onPress());
+        await app.act(() => button(app.render(), 'Submit order').onPress());
+      } else {
+        await app.act(() => byId(app.render(), 'orders-tab-receiving').onPress());
+        await app.act(() => byId(app.render(), 'receipt-row-12').onPress());
+        await app.act(() => byId(app.render(), 'receipt-price-1').onChangeText('1.00'));
+        await app.act(() => byId(app.render(), 'receipt-price-2').onChangeText('2.00'));
+        await app.act(() => button(app.render(), 'Review receipt').onPress());
+        await app.act(() => button(app.render(), 'Confirm receipt').onPress());
+      }
+      app.props.presented = false; app.props.online = false; await app.flush();
+      const requests = () => app.calls.filter(call => !['cancelReads', 'invalidateQuote'].includes(call[0])).length;
+      const before = requests();
+      const ack = kind === 'create' ? { api_version: 2, client_uuid: 'hidden-create', replayed: false, order: { ...app.summary(14, 1), room_id: null } }
+        : { api_version: 2, client_uuid: 'hidden-confirm', replayed: false, receipt: { order_id: 12, company_id: 1, name: 'PR-12', state: 'purchased', actual_total: '6.00', currency_symbol: 'SAR' } };
+      await app.act(() => delayed.resolve(ack));
+      assert.ok(byId(app.render(), 'orders-write-result'), 'accepted same-scope ACK is retained, not thrown away behind privacy');
+      assert.equal(requests(), before, 'no follow-on room, sharing or journal request while hidden');
+      assert.equal(nodes(app.render()).some(node => node.type === 'Sheet'), false);
+      app.props.presented = true; app.props.online = true; await app.flush();
+      assert.equal(app.calls.filter(call => call[0] === kind).length, 1, 'resume never repeats the original write');
+      assert.ok(byId(app.render(), 'orders-write-result'));
+      assert.equal(button(app.render(), 'Go to all orders').busy, undefined, 'result navigation is not stuck behind writing');
+      if (kind === 'confirm') assert.equal(app.calls.filter(call => call[0] === 'share').length, 1, 'post-ACK share starts at most once after presentation');
+    } finally { await app.unmount(); }
+  }
+});
+
+test('interrupted order reads resume once after verification without clearing the cart or replaying writes', async () => {
+  for (const kind of ['workspace-options', 'company-options', 'catalog', 'quote', 'list', 'receipts', 'receiptDetail']) {
+    const app = harness({}, true), delayed = waiting();
+    const method = kind.includes('options') ? 'options' : kind;
+    const original = app.engine[method]; let attempts = 0;
+    app.engine[method] = async (...args) => {
+      const target = kind === 'workspace-options' ? args[0] === undefined : kind === 'company-options' ? args[0] !== undefined : true;
+      if (target && ++attempts === 1) return delayed.promise;
+      return original(...args);
+    };
+    try {
+      await app.flush();
+      if (kind === 'quote') await app.act(() => one(app.render(), 'Button', props => props.accessibilityLabel === 'Add Fixture product Case').onPress());
+      if (kind === 'list') await app.act(() => byId(app.render(), 'orders-tab-allOrders').onPress());
+      if (['receipts', 'receiptDetail'].includes(kind)) await app.act(() => byId(app.render(), 'orders-tab-receiving').onPress());
+      if (kind === 'receiptDetail') await app.act(() => byId(app.render(), 'receipt-row-12').onPress());
+      assert.equal(attempts, 1, kind);
+      app.props.presented = false; app.props.online = false; await app.flush();
+      await app.act(() => delayed.reject({ code: 'stale' }));
+      assert.equal(attempts, 1, `${kind}: no recovery while hidden`);
+      app.props.presented = true; app.props.online = true; await app.flush();
+      assert.equal(attempts, 2, `${kind}: one resumed read`);
+      assert.equal(text(app.render()).includes('The session or company changed'), false, kind);
+      if (kind === 'quote') assert.equal(byId(app.render(), 'cart-quantity-81').value, '1');
+      assert.equal(app.calls.some(call => call[0] === 'create' || call[0] === 'confirm'), false, kind);
+      app.props.presented = false; await app.flush(); app.props.presented = true; await app.flush();
+      assert.equal(attempts, 2, `${kind}: successful read is not reloaded on the next resume`);
+    } finally { await app.unmount(); }
+  }
 });
 
 test('one warehouse is hidden, no warehouse blocks pricing, and several warehouses use the server default', async () => {
@@ -584,7 +736,7 @@ test('saved create ACK recovery opens post-share without another create; own unl
     assert.ok(byId(app.render(), 'orders-receipt-share'));
     assert.equal(app.calls.some(call => call[0] === 'share'), false, 'returning to purchased details does not auto-share');
     await app.act(() => button(app.render(), 'Share receipt result').onPress());
-    assert.deepEqual(app.calls.filter(call => call[0] === 'share'), [['share', 1, 12]]);
+    assert.deepEqual(app.calls.filter(call => call[0] === 'share'), [['share', 2, 12]]);
     assert.equal(app.calls.some(call => call[0] === 'confirm'), false);
   } finally { await app.unmount(); }
 });

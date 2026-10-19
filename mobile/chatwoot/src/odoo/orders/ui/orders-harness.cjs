@@ -8,6 +8,8 @@ function harness(initial = {}, realReact = false, realComponents = false) {
   const instances = new Map(), cache = new Map(), timers = new Map();
   let active, slots, seen, effects, nextTimer = 0, stateWrites = 0;
   const react = realReact ? require('react') : {
+    createContext(value) { const context = { value }; context.Provider = ({ value, children }) => { context.value = value; return children; }; return context; },
+    useContext(context) { return context.value; },
     useState(initial) {
       const slot = slots++;
       if (!(slot in active.slots)) active.slots[slot] = typeof initial === 'function' ? initial() : initial;
@@ -76,7 +78,7 @@ function harness(initial = {}, realReact = false, realComponents = false) {
     invalidateQuote() { calls.push(['invalidateQuote']); }, cancelReads() { calls.push(['cancelReads']); },
     async list(before, companyId) { calls.push(['list', before, companyId]); return { api_version: 2, orders: [summary(12, companyId || 2)], next_before_id: null }; },
     async detail(companyId, id) { calls.push(['detail', companyId, id]); return { api_version: 2, order: { ...summary(id, companyId), warehouse_id: 7 }, lines: [] }; },
-    async receipts(companyId, before) { calls.push(['receipts', companyId, before]); return { api_version: 2, orders: [{ ...summary(12, companyId), warehouse_name: 'Fixture warehouse' }], next_before_id: null }; },
+    async receipts(companyId, before) { calls.push(['receipts', companyId, before]); return { api_version: 2, orders: [{ ...summary(12, companyId || 1), warehouse_name: 'Fixture warehouse' }], next_before_id: null }; },
     async receiptDetail(companyId, id) { calls.push(['receiptDetail', companyId, id]); return { ...receiptDetail, order: { ...receiptDetail.order, company_id: companyId } }; },
     async pending() { calls.push(['pending']); return []; },
     async create(input) { calls.push(['create', input]); return { api_version: 2, order: { ...summary(14, input.company_id), room_id: null }, client_uuid: 'fixture-uuid', replayed: false }; },
@@ -89,6 +91,7 @@ function harness(initial = {}, realReact = false, realComponents = false) {
     async retry(uuid) { calls.push(['retry', uuid]); return { api_version: 2, order: summary(), client_uuid: uuid, replayed: true }; },
   };
   options.workflow_version = 1;
+  options.receipt_list_version = 1;
   const props = { engine, identity: { api_version: 2, database: 'fixture', user_id: 9, company_ids: [1, 2], permissions: { chat_view: false, chat_send: false, order_view: true, order_create: true, order_receive: true, revision: 1 } }, language: 'en', online: true, rooms: [], ...initial };
   props.selectedCompanyId = initial.selectedCompanyId ?? 1;
   props.onCompanyChange = initial.onCompanyChange ?? (id => { props.selectedCompanyId = id; });

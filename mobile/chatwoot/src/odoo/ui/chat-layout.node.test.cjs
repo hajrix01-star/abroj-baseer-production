@@ -41,7 +41,7 @@ function hooks() {
 const element = (type, props) => ({ type, props: props || {} });
 const jsx = { jsx: element, jsxs: element, Fragment: 'Fragment' };
 const colors = { white: 'white', border: 'border', chatBackground: 'history-surface', chatSent: 'sent-surface', composerBackground: 'composer-surface', danger: 'danger', blue: 'blue' };
-const components = { Button: 'Button', Field: 'Field', IconButton: 'IconButton', Label: 'Label', Sheet: 'Sheet', colors,
+const components = { Button: 'Button', Field: 'Field', Icon: 'Icon', IconButton: 'IconButton', Label: 'Label', Sheet: 'Sheet', colors,
   styles: { fill: { flex: 1 }, row: {}, card: {}, header: {}, text: {}, muted: {}, title: {} }, direction: language => ({ textAlign: language === 'ar' ? 'right' : 'left', writingDirection: language === 'ar' ? 'rtl' : 'ltr' }) };
 function load(file, dependencies) {
   const compiled = ts.transpileModule(readFileSync(join(__dirname, file), 'utf8'), { compilerOptions: {
@@ -136,11 +136,11 @@ test('media withdrawal keeps text input but removes picker/mic capability; disab
   assert.equal(app.events.length, 1);
 });
 
-function timeline(initialHidden = []) {
-  const state = hooks(); const calls = []; const voiceRights = []; const frames = []; const keyboard = {};
+function timeline(initialHidden = [], host) {
+  const state = host ? { react: host.react } : hooks(); const calls = []; const voiceRights = []; const frames = []; const keyboard = {};
   const alerts = []; let hidden = [...initialHidden];
   let release;
-  const tools = function AttachmentTools() {};
+  const tools = host?.AttachmentTools ?? function AttachmentTools() {};
   const props = { language: 'ar', t, onMenu: () => calls.push('menu'), back: () => calls.push('back'), manage: () => calls.push('members'),
     engine: { cachedHiddenMessages: () => [...hidden], hiddenMessages: async () => [...hidden],
       setMessageHidden: async (_room, id, value) => { hidden = value ? [...hidden, id] : hidden.filter(item => item !== id); calls.push(['hidden', id, value]); return [...hidden]; },
@@ -156,10 +156,10 @@ function timeline(initialHidden = []) {
       const canSend = !!identity?.company_ids.includes(selected.company_id) && identity.permissions.chat_view === true && identity.permissions.chat_send === true;
       return { directOff: false, canSend, canAttach: canSend && identity.permissions.media === true };
     }, canViewMedia: (identity, selected) => !!identity?.company_ids.includes(selected.company_id) && identity.permissions.chat_view === true && identity.permissions.media === true };
-  const module = load('TimelineScreen.tsx', { react: state.react, 'react/jsx-runtime': jsx,
+  const module = load('TimelineScreen.tsx', { react: state.react, 'react/jsx-runtime': host?.jsx ?? jsx,
     frames,
     'react-native': { Alert: { alert: (...args) => alerts.push(args) }, Keyboard: { addListener: (name, callback) => { keyboard[name] = callback; return { remove() {} }; } }, AppState: { currentState: 'active' }, KeyboardAvoidingView: 'KeyboardAvoidingView', Platform: { OS: 'android' }, Pressable: 'Pressable', Text: 'Text', View: 'View' },
-    '@shopify/flash-list': { FlashList: 'FlashList' }, './components': components, './dictionary': { errorWord: () => 'error' }, './viewModel': viewModel,
+    '@shopify/flash-list': { FlashList: host?.FlashList ?? 'FlashList' }, './components': components, './dictionary': { errorWord: () => 'error' }, './viewModel': viewModel,
     './MediaTools': { AttachmentTools: tools, MediaTile: 'MediaTile', useVoiceSession: (_scope, _report, play, record) => { voiceRights.push([play, record]); return { recording: false }; } },
     './GroupAvatar': { GroupAvatar: 'GroupAvatar' },
     './SwipeReply': { SwipeReply: 'SwipeReply' },
@@ -167,10 +167,62 @@ function timeline(initialHidden = []) {
     './companyNames': { companyDisplayName: () => 'Synthetic company' },
     './MessagePresentation': { MessageQuote: 'MessageQuote', MessageStatus: 'MessageStatus' },
   });
-  return { props, calls, voiceRights, tools, keyboard, frames, alerts,
+  return { props, calls, voiceRights, tools, keyboard, frames, alerts, Component: module.TimelineScreen,
     flushFrames() { for (let i = 0; i < frames.length && i < 100; i++) { const callback = frames[i]; frames[i] = null; callback?.(); } },
     render: () => state.render(() => module.TimelineScreen(props)), release: () => release() };
 }
+
+test('actual React retains the timeline list mount, draft, reply and reader state during display-only revalidation', async () => {
+  const React = require('react'), renderer = require('react-test-renderer');
+  globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+  let mounts = 0, readCount = 0, mounted;
+  function FlashListProbe(props) {
+    const [position, setPosition] = React.useState(() => { mounts++; return 0; });
+    return React.createElement('FlashList', { ...props, fixturePosition: position, fixtureSetPosition: setPosition });
+  }
+  function Tools(props) { return React.createElement('AttachmentTools', props, props.children); }
+  const app = timeline([], { react: React, jsx: require('react/jsx-runtime'), FlashList: FlashListProbe, AttachmentTools: Tools });
+  app.props.chat.offline = false;
+  app.props.engine.acknowledge = async () => { readCount++; return true; };
+  const update = async () => renderer.act(async () => {
+    const element = React.createElement(app.Component, app.props);
+    if (!mounted) mounted = renderer.create(element); else mounted.update(element);
+  });
+  const get = type => mounted.root.findByType(type).props;
+  try {
+    await update();
+    await renderer.act(async () => { get('Field').onChangeText('retained draft'); get('FlashList').fixtureSetPosition(640); });
+    // Exercise the real reply handler through its SwipeReply callback.
+    const item = get('FlashList').data[0];
+    await renderer.act(async () => get('FlashList').renderItem({ item }).props.onReply());
+    assert.equal(get('MessageQuote').text, 'retained message');
+    const list = get('FlashList'), send = get('AttachmentTools').onSendText;
+    const pendingItem = { key: 'pending', pending: { client_uuid: 'fixture', text: '', attachment: { name: 'queued.jpg' }, state: 'queued' } };
+    const originalPending = one(list.renderItem({ item: pendingItem }), 'Label', p => p.children === 'queued.jpg');
+    app.props.chat.presentationReady = false; app.props.chat.retainedDisplay = true; app.props.presented = false;
+    await update();
+    assert.equal(mounts, 1); assert.equal(get('FlashList').fixturePosition, 640);
+    assert.equal(get('Field').value, 'retained draft'); assert.equal(get('MessageQuote').text, 'retained message');
+    assert.equal(get('GroupAvatar').enabled, false); assert.deepEqual(app.voiceRights.at(-1), [false, false]);
+    const imageRow = get('FlashList').renderItem({ item: { ...item, message: { ...item.message, media: { kind: 'image', name: 'private.jpg' } } } });
+    assert.equal(one(imageRow, 'View', p => p.testID === 'retained-image-space').style.height, 180);
+    assert.equal(nodes(imageRow).some(row => row.type === 'MediaTile'), false);
+    const audioRow = get('FlashList').renderItem({ item: { ...item, message: { ...item.message, media: { kind: 'audio' } } } });
+    assert.equal(one(audioRow, 'View', p => p.testID === 'retained-audio-space').style.minHeight, 60);
+    assert.equal(get('Field').editable, false); assert.equal(get('AttachmentTools').disabled, true);
+    assert.deepEqual(one(get('FlashList').renderItem({ item: pendingItem }), 'Label', p => p.children === 'queued.jpg'), originalPending,
+      'queued attachments retain their existing name-only geometry without starting media work');
+    await renderer.act(async () => {
+      send(); list.onViewableItemsChanged({ viewableItems: [{ isViewable: true, item }] });
+      list.viewabilityConfigCallbackPairs[0].onViewableItemsChanged({ viewableItems: [{ isViewable: true, item }] });
+    });
+    assert.equal(readCount, 0); assert.equal(app.calls.length, 0);
+    app.props.chat.presentationReady = true; app.props.presented = true;
+    await update();
+    assert.equal(mounts, 1); assert.equal(get('FlashList').fixturePosition, 640);
+    assert.equal(get('Field').value, 'retained draft'); assert.equal(get('MessageQuote').text, 'retained message');
+  } finally { await renderer.act(async () => mounted?.unmount()); }
+});
 test('archive controls navigate cached pages offline and durable sends do not snap a browsing timeline', async () => {
   const app = timeline(); let scrolls = 0;
   app.props.chat.history.next_before_id = 10;

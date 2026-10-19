@@ -42,6 +42,16 @@ test('transport enforces required company/scopes and rejects unknown or conflict
   assert.throws(() => ordersNativeRequest({ method: 'POST', path: base, query: { company_id: 1 }, payload: { api_version: 2 } }, 'csrf'), code('invalid_payload'));
   assert.throws(() => ordersNativeRequest({ method: 'GET', path: `${base}/options`, query: [] }, ''), code('invalid_payload'));
 });
+
+test('receipt list scope is explicitly all or a legacy company, while details always require company', () => {
+  for (const query of [{ scope: 'all' }, { scope: 'all', before_id: 100 }, { company_id: 2 }, { scope: 'all', company_id: 2 }]) {
+    assert.ok(ordersNativeRequest({ method: 'GET', path: `${base}/receipts`, query }, '').path.includes('/receipts?'));
+  }
+  for (const query of [{}, { before_id: 100 }, { scope: 'mine' }, { scope: 'all', company_id: 0 }, { scope: 'all', before_id: [1] }]) {
+    assert.throws(() => ordersNativeRequest({ method: 'GET', path: `${base}/receipts`, query }, ''), code('invalid_payload'));
+  }
+  assert.throws(() => ordersNativeRequest({ method: 'GET', path: `${base}/receipts/91`, query: { scope: 'all' } }, ''), code('invalid_payload'));
+});
 test('query IDs accept only the server positive int32 syntax and catalog search has a UTF8 byte bound', () => {
   for (const company_id of [0, -1, 1.5, 2147483648, true, null, '01', '1.0', '1e2', '+1', '١']) assert.throws(() => ordersNativeRequest({ method: 'GET', path: `${base}/options`, query: { company_id } }, ''), code('invalid_payload'));
   for (const company_id of [1, 2147483647, '1', '2147483647']) assert.ok(ordersNativeRequest({ method: 'GET', path: `${base}/options`, query: { company_id } }, '').path.includes(`company_id=${company_id}`));

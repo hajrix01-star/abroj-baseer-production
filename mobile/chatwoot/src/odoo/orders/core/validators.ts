@@ -112,6 +112,7 @@ function receiptSummary(value: unknown): void {
 export function optionsResponse(value: unknown): OrdersOptions {
   const row = base(value); selections(row.companies, 20);
   if (row.workflow_version !== undefined && (!Number.isInteger(row.workflow_version) || row.workflow_version < 0 || row.workflow_version > 2147483647)) invalid('Invalid workflow version.');
+  if (row.receipt_list_version !== undefined && (!Number.isInteger(row.receipt_list_version) || row.receipt_list_version < 0 || row.receipt_list_version > 2147483647)) invalid('Invalid receipt list version.');
   if (!['operator', 'viewer'].includes(row.access)) invalid('Invalid access.');
   ['can_view', 'can_create', 'can_receive'].forEach(key => bool(row[key]));
   if (row.purchase_routes !== undefined) array(row.purchase_routes, 3).forEach(item => { route(item.code); text(item.name); });

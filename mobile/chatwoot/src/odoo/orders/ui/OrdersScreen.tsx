@@ -5,24 +5,26 @@ import { Button, colors, direction, IconButton, Label } from '../../ui/component
 import type { Language } from '../../ui/dictionary';
 import { companyDisplayName } from '../../ui/companyNames';
 import type { OrdersEngine } from '../core/OrdersEngine';
-import type { OrdersOptions, PendingAttempt, WriteResult } from '../core/types';
+import { OrdersError, type OrdersOptions, type PendingAttempt, type WriteResult } from '../core/types';
 import { orderTranslator } from '../dictionary';
 import { OrderComposer } from './OrderComposer';
 import { OrderList } from './OrderList';
 import { Receiving } from './Receiving';
 import { PostCreateSharePanel, ReceiptSharePanel } from './OrderSharing';
-import { Busy, Choice, Empty, Failure, Heading, Note, NumberText, ordersStyles as s, rowDirection, useAlive } from './OrdersPrimitives';
+import { Busy, Choice, Empty, Failure, Heading, Note, NumberText, OrdersPresentation, ordersStyles as s, rowDirection, useAlive, useResumeRead } from './OrdersPrimitives';
 
 export interface OrdersScreenProps {
   engine: OrdersEngine; identity: Bootstrap; language: Language; online: boolean; rooms?: Room[];
   selectedCompanyId: number; onCompanyChange: (id: number) => void;
   /** Session owner can include origin/verification epoch without exposing credentials. */
   scopeKey?: string | number;
+  /** Display only. Requests still require the engine's current verified scope. */
+  presented?: boolean;
   onBack?: () => void; onMenu?: () => void;
 }
 
 export function OrdersScreen(props: OrdersScreenProps) {
-  const { identity, online, language } = props;
+  const { identity, online, language, presented = true } = props;
   const t = orderTranslator(language);
   const alive = useAlive();
   const frame = useRef<View | null>(null);
@@ -37,7 +39,24 @@ export function OrdersScreen(props: OrdersScreenProps) {
   const engineScope = useRef({ engine: props.engine, revision: 0 });
   if (engineScope.current.engine !== props.engine) engineScope.current = { engine: props.engine, revision: engineScope.current.revision + 1 };
   // A key clears every in-memory order and closure before another scope can render it.
-  const scope = JSON.stringify([props.scopeKey, engineScope.current.revision, identity.database, identity.user_id, identity.company_ids, identity.permissions, online]);
+  const scope = JSON.stringify([props.scopeKey, engineScope.current.revision, identity.database, identity.user_id, identity.company_ids, identity.permissions]);
+  const mountedScope = useRef<string | null>(null);
+  if (online && presented && identity.permissions.order_view) mountedScope.current = scope;
+  const visible = online && presented && !!identity.permissions.order_view;
+  const visibleRef = useRef(visible); visibleRef.current = visible;
+  const guardedEngine = useRef<{ source: OrdersEngine; facade: OrdersEngine } | null>(null);
+  if (guardedEngine.current?.source !== props.engine) {
+    guardedEngine.current = { source: props.engine, facade: new Proxy(props.engine, {
+      get(source, key) {
+        const method = source[key as keyof OrdersEngine];
+        if (typeof method !== 'function') return method;
+        return (...args: unknown[]) => {
+          if (!visibleRef.current && key !== 'cancelReads' && key !== 'invalidateQuote') return Promise.reject(new OrdersError('stale'));
+          return (method as (...params: unknown[]) => unknown).apply(source, args);
+        };
+      },
+    }) };
+  }
   // Keyboard events use screen coordinates; KAV's layout is relative to this
   // page below the shell header. Include that offset without remounting drafts.
   return <View ref={frame} collapsable={false} testID="orders-workspace-frame" onLayout={measureOffset} style={s.fill}>
@@ -48,16 +67,23 @@ export function OrdersScreen(props: OrdersScreenProps) {
         <View style={s.flexible}><Heading word="orders" language={language} /><Label language={language} muted>{t('purchaseRequests')}</Label></View>
       </View>
     </View>
-    {!identity.permissions.order_view ? <Empty title={t('noAccess')} help={t('permissionHelp')} language={language} />
-      : !online ? <Empty title={t('offline')} help={t('offlineHelp')} language={language} />
-        : <Workspace key={scope} {...props} keyboardOffset={keyboardOffset} />}
+    {!identity.permissions.order_view ? <Empty title={t('noAccess')} help={t('permissionHelp')} language={language} /> : <View style={s.fill}>
+      {mountedScope.current === scope && <View testID="orders-retained-workspace" pointerEvents={visible ? 'auto' : 'none'}
+        accessibilityElementsHidden={!visible} importantForAccessibility={visible ? 'auto' : 'no-hide-descendants'} style={[s.fill, !visible && { opacity: 0 }]}>
+        <OrdersPresentation.Provider value={visible}><Workspace key={scope} {...props} engine={guardedEngine.current.facade} keyboardOffset={keyboardOffset} /></OrdersPresentation.Provider>
+      </View>}
+      {!visible && <View testID="orders-privacy-cover" style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: colors.white }}>
+        {presented && !online && <Empty title={t('offline')} help={t('offlineHelp')} language={language} />}
+      </View>}
+    </View>}
   </View>;
 }
 
 type Tab = 'catalog' | 'allOrders' | 'receiving';
-function Workspace({ engine, identity, language, selectedCompanyId, onCompanyChange, keyboardOffset }: OrdersScreenProps & { keyboardOffset: number }) {
+function Workspace({ engine, identity, language, selectedCompanyId, onCompanyChange, keyboardOffset, presented = true, online }: OrdersScreenProps & { keyboardOffset: number }) {
   const t = orderTranslator(language);
   const alive = useAlive();
+  const active = useRef(presented && online); active.current = presented && online;
   const [options, setOptions] = useState<OrdersOptions | null>(null);
   const [error, setError] = useState<unknown>(null);
   const [busy, setBusy] = useState(false);
@@ -68,11 +94,13 @@ function Workspace({ engine, identity, language, selectedCompanyId, onCompanyCha
   const [savedOutcome, setOutcome] = useState<{ selection: number; value: WriteResult } | null>(null);
   const outcome = savedOutcome?.selection === selectedCompanyId ? savedOutcome.value : null;
   const [receiptTarget, setReceiptTarget] = useState<{ companyId: number; orderId: number } | null>(null);
-  const receiptId = receiptTarget?.companyId === company ? receiptTarget.orderId : undefined;
+  // Browsing is independent of the single-company catalog/create selection.
+  const [filterCompany, setFilterCompany] = useState(0);
   const selection = useRef(selectedCompanyId); selection.current = selectedCompanyId;
   const [refresh, setRefresh] = useState(0);
+  const resumeRead = useResumeRead(() => void load());
   const load = async () => {
-    if (!alive() || loading.current) return;
+    if (!alive() || !active.current || loading.current) return;
     loading.current = true; setBusy(true); setError(null);
     try {
       const next = await engine.options();
@@ -80,19 +108,24 @@ function Workspace({ engine, identity, language, selectedCompanyId, onCompanyCha
       setOptions(next);
       const attempts = await engine.pending();
       if (alive()) setPending(attempts);
-    } catch (failure) { if (alive()) setError(failure); }
+    } catch (failure) { if (alive() && !resumeRead(failure)) setError(failure); }
     finally { loading.current = false; if (alive()) setBusy(false); }
   };
   useEffect(() => { void load(); }, []);
   useEffect(() => () => { engine.cancelReads(); }, [engine, selectedCompanyId]);
-  useEffect(() => { setOutcome(null); setReceiptTarget(previous => previous?.companyId === selectedCompanyId ? previous : null); }, [selectedCompanyId]);
-  const reloadPending = async () => { try { const next = await engine.pending(); if (alive()) setPending(next); } catch (failure) { if (alive()) setError(failure); } };
+  useEffect(() => { setOutcome(null); }, [selectedCompanyId]);
+  const reloadPending = async () => { if (!alive() || !active.current) return; try { const next = await engine.pending(); if (alive() && active.current) setPending(next); } catch (failure) { if (alive() && active.current) setError(failure); } };
   const result = (value: WriteResult) => { if (!alive()) return; setOutcome({ selection: selectedCompanyId, value }); void reloadPending(); };
   const changedCompany = (id: number) => { if (!alive() || selection.current !== selectedCompanyId || (id !== 0 && !options?.companies.some(item => item.id === id && identity.company_ids.includes(id)))) return; engine.invalidateQuote(); onCompanyChange(id); setReceiptTarget(null); setOutcome(null); };
   const companies = (options?.companies ?? []).filter(item => identity.company_ids.includes(item.id)).map(item => {
     const profile = identity.profile?.companies.find(company => company.id === item.id);
     return { ...item, name: profile ? companyDisplayName(profile, language, item.id) : item.name };
   });
+  const readCompany = companies.some(item => item.id === filterCompany) ? filterCompany : 0;
+  const changedFilter = (id: number) => {
+    if (!alive() || (id !== 0 && !companies.some(item => item.id === id))) return;
+    engine.cancelReads(); setFilterCompany(id); setReceiptTarget(null); setOutcome(null);
+  };
   const canView = options?.can_view === true && identity.permissions.order_view === true;
   const canCreate = canView && options?.can_create === true && identity.permissions.order_create === true;
   const canReceive = canView && options?.can_receive === true && identity.permissions.order_receive === true;
@@ -106,7 +139,7 @@ function Workspace({ engine, identity, language, selectedCompanyId, onCompanyCha
     {busy ? <Busy language={language} /> : error ? <View style={s.content}><Failure error={error} language={language} retry={() => void load()} /></View>
       : !canView ? <Empty title={t('noAccess')} help={t('permissionHelp')} language={language} />
         : <KeyboardAvoidingView style={s.fill} keyboardVerticalOffset={keyboardOffset} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-          {selectedCompanyId !== 0 && !company ? <View style={s.content}><Choice label={t('company')} testID="orders-company" options={companies} value={0} onSelect={changedCompany} language={language} /><Empty title={t('chooseCompany')} language={language} /></View>
+          {activeTab === 'catalog' && !company ? <View style={s.content}><Choice label={t('company')} testID="orders-company" options={companies} value={0} onSelect={changedCompany} language={language} /><Empty title={t('chooseCompany')} language={language} /></View>
           : !outcome && activeTab === 'catalog' && company ? <OrderComposer key={`compose-${company}`} engine={engine} companyId={company} language={language}
             header={<>{pendingHeader}<Choice label={t('company')} testID="orders-company" options={companies} value={company} onSelect={changedCompany} language={language} /></>}
             onResult={result} onPending={reloadPending} blocked={pending.some(item => item.companyId === company && item.kind === 'create')} /> :
@@ -114,15 +147,14 @@ function Workspace({ engine, identity, language, selectedCompanyId, onCompanyCha
             {pendingHeader}
             {outcome ? <ResultPanel key={'receipt' in outcome ? outcome.client_uuid : `${outcome.order.company_id}/${outcome.order.id}`} engine={engine} result={outcome} language={language} canSend={identity.permissions.chat_send === true} workflowReady={options?.workflow_version === 1}
               close={() => { setOutcome(null); setRefresh(value => value + 1); setTab('allOrders'); }} />
-              : activeTab === 'allOrders' ? <OrderList key={`list-${refresh}-${selectedCompanyId}`} engine={engine} language={language} companies={companies} canReceive={canReceive} companyId={company}
+              : activeTab === 'allOrders' ? <OrderList key={`list-${refresh}-${readCompany}`} engine={engine} language={language} companies={companies} canReceive={canReceive} companyId={readCompany}
                 actorId={identity.user_id} canCreate={canCreate} canSend={identity.permissions.chat_send === true} workflowReady={options?.workflow_version === 1}
-                onCompanyChange={changedCompany}
-                onReceive={(id, orderId) => { changedCompany(id); setReceiptTarget({ companyId: id, orderId }); setTab('receiving'); }} />
+                onCompanyChange={changedFilter}
+                onReceive={(id, orderId) => { if (alive() && companies.some(item => item.id === id)) { setReceiptTarget({ companyId: id, orderId }); setTab('receiving'); } }} />
                 : <>
-                  <Choice label={t(activeTab === 'receiving' ? 'receiptCompany' : 'company')} testID="orders-company" options={companies} value={company} onSelect={changedCompany} language={language} />
-                  {!company ? <Empty title={t('chooseCompany')} language={language} />
-                    : <Receiving key={`receive-${company}-${receiptId ?? 'list'}`} engine={engine} companyId={company} initialOrderId={receiptId} language={language}
-                        onResult={result} onPending={reloadPending} blockedOrderIds={pending.filter(item => item.kind === 'confirm' && item.companyId === company).map(item => item.orderId ?? 0)} />}
+                  <Choice label={t('receiptCompany')} testID="orders-receipts-company" options={[{ id: 0, name: t('allCompanies') }, ...companies]} value={readCompany} onSelect={changedFilter} language={language} />
+                  <Receiving key={`receive-${readCompany}-${receiptTarget ? `${receiptTarget.companyId}/${receiptTarget.orderId}` : 'list'}`} engine={engine} companyId={readCompany} companies={companies} initialTarget={receiptTarget ?? undefined} language={language}
+                    onResult={result} onPending={reloadPending} blockedAttempts={pending.filter(item => item.kind === 'confirm')} />
                 </>}
           </ScrollView>}
         </KeyboardAvoidingView>}

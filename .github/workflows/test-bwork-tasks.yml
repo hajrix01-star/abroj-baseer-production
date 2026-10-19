@@ -1,0 +1,76 @@
+name: Test BWork tasks in isolated Odoo
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'custom_addons/baseer_bchat/**'
+      - '.github/workflows/test-bwork-tasks.yml'
+permissions:
+  contents: read
+jobs:
+  tasks-runtime:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres@sha256:f1c3376c26f2609ab9f29f71f824103fe2fcd8ee0346485cb6122a4f93df6f94
+        env:
+          POSTGRES_DB: postgres
+          POSTGRES_USER: odoo
+          POSTGRES_PASSWORD: odoo
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U odoo -d postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Modern tasks, legacy compatibility, reminders and push audience
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          docker run --rm --network host \
+            -e HOST=127.0.0.1 -e USER=odoo -e PASSWORD=odoo \
+            -e PGOPTIONS='-c lock_timeout=5000 -c statement_timeout=30000' \
+            --mount type=bind,src="$GITHUB_WORKSPACE/custom_addons",dst=/mnt/baseer-addons,readonly \
+            odoo@sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd \
+            odoo --db_host=127.0.0.1 --db_port=5432 --db_user=odoo --db_password=odoo \
+            --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/baseer-addons \
+            -d bwork_tasks_ci -i baseer_bchat --without-demo=all \
+            --test-enable \
+            --test-tags=/baseer_bchat:BWorkTaskCase,/baseer_bchat:BWorkTaskHttpCase,/baseer_bchat:BChatTaskCase,/baseer_bchat:BChatTaskHttpCase,/baseer_bchat:BChatPushCase \
+            --stop-after-init --max-cron-threads=0 --workers=0 --log-level=test 2>&1 | tee bwork-tasks-runtime.log
+          for test_class in BWorkTaskCase BWorkTaskHttpCase BChatTaskCase BChatTaskHttpCase BChatPushCase; do
+            grep -F "Starting $test_class." bwork-tasks-runtime.log
+          done
+          if grep -Eq ': skipped .+ : |[1-9][0-9]* failed,|[1-9][0-9]* error\(s\)' bwork-tasks-runtime.log; then
+            echo 'BWork task runtime tests were skipped or failed' >&2
+            exit 1
+          fi
+          grep -F '0 failed, 0 error(s)' bwork-tasks-runtime.log
+          test "$(grep -Ec 'Starting (BWorkTaskCase|BWorkTaskHttpCase|BChatTaskCase|BChatTaskHttpCase|BChatPushCase)\.' bwork-tasks-runtime.log)" -eq 40
+      - name: Genuine reminder lock and once-only emission in a fresh process
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          docker run --rm -i --network host \
+            -e HOST=127.0.0.1 -e USER=odoo -e PASSWORD=odoo \
+            -e PGOPTIONS='-c lock_timeout=5000 -c statement_timeout=30000' \
+            --mount type=bind,src="$GITHUB_WORKSPACE/custom_addons",dst=/mnt/baseer-addons,readonly \
+            odoo@sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd \
+            odoo shell --db_host=127.0.0.1 --db_port=5432 --db_user=odoo --db_password=odoo \
+            --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/baseer-addons \
+            -d bwork_tasks_ci --no-http --max-cron-threads=0 --workers=0 --log-level=test \
+            <<'PY' 2>&1 | tee bwork-tasks-concurrency.log
+          from odoo.addons.baseer_bchat.tests.work_task_reminder_concurrency_probe import run
+          run(env)
+          PY
+          grep -Fx 'BWORK_TASK_REMINDER_CONCURRENCY=PASS' bwork-tasks-concurrency.log
+      - name: Preserve task runtime evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bwork-tasks-runtime
+          path: |
+            bwork-tasks-runtime.log
+            bwork-tasks-concurrency.log
+          if-no-files-found: error

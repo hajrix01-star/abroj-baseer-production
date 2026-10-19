@@ -347,7 +347,8 @@ class BChatTaskService(models.AbstractModel):
                 if action == 'start' and task.state == 'new':
                     values.update(state='in_progress', started_at=fields.Datetime.now())
                 elif action == 'done' and task.state == 'in_progress':
-                    values.update(state='done', done_at=fields.Datetime.now())
+                    values.update(state='done', done_at=fields.Datetime.now(),
+                                  done_by_id=user.id, completion_note=normalized['reason'] or False)
                 else:
                     raise ProtocolError('state_conflict', 'The task transition is not available.', 409)
             elif action == 'cancel':

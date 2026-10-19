@@ -1,9 +1,14 @@
 """BChat push registration and task wake-up contracts."""
+import logging
 from uuid import uuid4
 
-from odoo import Command
+from odoo import Command, sql_db
 from odoo.exceptions import AccessError
 from odoo.tests import TransactionCase, tagged
+from odoo.tools import SQL
+
+
+_logger = logging.getLogger(__name__)
 
 
 @tagged('post_install', '-at_install', 'baseer_bchat')
@@ -78,7 +83,7 @@ class BChatPushCase(TransactionCase):
         self._register(self.replacement, shared_token)
         devices = self.env['baseer.bchat.push.device'].sudo().search([('fcm_token', '=', shared_token)])
         self.assertEqual(devices.user_id, self.replacement)
-        replaced = self.env['baseer.bchat.push.device'].sudo().search([
+        replaced = self.env['baseer.bchat.push.device'].sudo().with_context(active_test=False).search([
             ('account_key', '=', first['account_key']),
         ])
         self.assertTrue(replaced)
@@ -95,7 +100,8 @@ class BChatPushCase(TransactionCase):
         events = self.env['baseer.bchat.push.event'].sudo().search([
             ('task_id', '=', task['id']), ('task_revision', '=', 2),
         ])
-        self.assertEqual(set(events.mapped('recipient_id').ids), {self.creator.id, self.replacement.id})
+        self.assertEqual(set(events.mapped('recipient_id').ids), {self.replacement.id})
+        self.assertNotIn(self.creator.id, events.mapped('recipient_id').ids)
         self.assertNotIn(self.assignee.id, events.mapped('recipient_id').ids)
 
     def test_reassignment_revokes_pending_assignment_event_for_previous_assignee(self):
@@ -120,9 +126,10 @@ class BChatPushCase(TransactionCase):
         self._service(self.assignee)._v2_push_unregister({
             'api_version': 2, 'installation_id': registration['installation_id'],
         })
-        device = self.env['baseer.bchat.push.device'].sudo().search([
+        device = self.env['baseer.bchat.push.device'].sudo().with_context(active_test=False).search([
             ('account_key', '=', registration['account_key']),
         ])
+        self.assertTrue(device)
         self.assertFalse(device.active)
         self.assertEqual(device.inactive_reason, 'logout')
         self.assertTrue(device.inactive_at)
@@ -247,9 +254,52 @@ class BChatPushCase(TransactionCase):
 
     def test_postgres_skip_locked_excludes_a_row_locked_by_another_worker(self):
         """The dispatcher lock primitive must not hand a locked row to a second worker."""
-        with self.env.registry.cursor() as first_worker:
-            first_worker.execute('SELECT id FROM res_users WHERE id = %s FOR UPDATE', [1])
-            with self.env.registry.cursor() as second_worker:
-                second_worker.execute(
-                    'SELECT id FROM res_users WHERE id = %s FOR UPDATE SKIP LOCKED', [1])
-                self.assertFalse(second_worker.fetchall())
+        self.assertEqual(self.env.cr.dbname, 'bwork_tasks_ci',
+                         'Committed lock fixtures require the dedicated disposable CI database.')
+        db = sql_db.db_connect(self.env.cr.dbname)
+        # A TEMP table is connection-local and cannot prove cross-worker
+        # exclusion. This exact UUID table has no audit FK to user1, unlike
+        # res_users: the outer test transaction may hold KEY SHARE there.
+        target = SQL.identifier('bchat_push_lock_' + uuid4().hex)
+        created = False
+
+        def bounded(cursor):
+            cursor.execute("SET LOCAL lock_timeout = '2s'")
+            cursor.execute("SET LOCAL statement_timeout = '15s'")
+
+        try:
+            _logger.info('BChat isolated row-lock fixture: seed')
+            with db.cursor() as seed:
+                bounded(seed)
+                seed.execute(SQL('CREATE TABLE %s (id integer PRIMARY KEY)', target))
+                seed.execute(SQL('INSERT INTO %s (id) VALUES (1)', target))
+                seed.commit()
+                created = True
+            with db.cursor() as first_worker:
+                bounded(first_worker)
+                first_worker.execute(SQL('SELECT id FROM %s WHERE id = 1 FOR UPDATE', target))
+                self.assertEqual(first_worker.fetchone(), (1,))
+                _logger.info('BChat isolated row-lock fixture: held')
+                with db.cursor() as second_worker:
+                    bounded(second_worker)
+                    second_worker.execute(SQL(
+                        'SELECT id FROM %s WHERE id = 1 FOR UPDATE SKIP LOCKED', target))
+                    self.assertFalse(second_worker.fetchall())
+                    _logger.info('BChat isolated row-lock fixture: skipped')
+                first_worker.rollback()
+            _logger.info('BChat isolated row-lock fixture: released')
+            with db.cursor() as available_worker:
+                bounded(available_worker)
+                available_worker.execute(SQL(
+                    'SELECT id FROM %s WHERE id = 1 FOR UPDATE SKIP LOCKED', target))
+                self.assertEqual(available_worker.fetchall(), [(1,)])
+                _logger.info('BChat isolated row-lock fixture: visible')
+        finally:
+            # All worker contexts have exited before touching the one table
+            # this run demonstrably created and committed. Never DROP a guess.
+            if created:
+                with db.cursor() as cleanup:
+                    bounded(cleanup)
+                    cleanup.execute(SQL('DROP TABLE %s', target))
+                    cleanup.commit()
+                    _logger.info('BChat isolated row-lock fixture: cleaned')

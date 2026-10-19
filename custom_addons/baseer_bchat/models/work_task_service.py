@@ -102,7 +102,7 @@ class BChatWorkTaskService(models.AbstractModel):
 
     @api.model
     def _work_task_assignees(self, company_id, q='', after_id=None):
-        self._work_task_scope(company_id)
+        self._work_task_scope(company_id, manage=True)
         company_id = positive_id(company_id, 'company_id')
         q = wire.legacy._text(q, 'q', 256)
         if after_id is not None:

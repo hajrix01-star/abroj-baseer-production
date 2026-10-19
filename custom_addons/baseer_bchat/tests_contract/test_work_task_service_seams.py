@@ -116,6 +116,19 @@ class Model(types.SimpleNamespace):
 
 
 class WorkTaskProductionSeamCase(unittest.TestCase):
+    def test_actual_assignee_picker_requires_manage_before_directory_access(self):
+        pick = production_method('models/work_task_service.py', '_work_task_assignees')
+        checked = []
+        def scope(company_id, manage=False):
+            checked.append((company_id, manage))
+            if manage:
+                raise PermissionError('task_manage required')
+            raise AssertionError('View-only must not reach an assignee lookup')
+        fixture = Record(_work_task_scope=scope)
+        with self.assertRaises(PermissionError):
+            pick(fixture, 3)
+        self.assertEqual(checked, [(3, True)])
+
     def test_actual_serializer_fits_maximal_escaped_task_without_losing_text(self):
         serialize = production_method('models/work_task_service.py', '_work_task_data')
         label = production_method('models/work_task_service.py', '_work_task_label')

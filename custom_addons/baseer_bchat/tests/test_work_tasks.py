@@ -3,7 +3,7 @@ import json
 from datetime import timedelta
 from uuid import uuid4
 
-from odoo import Command, fields
+from odoo import SUPERUSER_ID, Command, api, fields, sql_db
 from odoo.exceptions import AccessError
 from odoo.tests import HttpCase, TransactionCase, tagged
 
@@ -65,6 +65,8 @@ class BWorkTaskCase(TransactionCase):
         self.assertTrue(single['can_manage'])
         self.outsider.sudo().write({'bchat_task_manage': False})
         self.assertFalse(self.service(self.outsider)._work_task_options()['can_manage'])
+        with self.assertRaises(AccessError):
+            self.service(self.outsider)._work_task_assignees(self.company.id)
         with self.assertRaises(AccessError):
             self.service(self.outsider)._work_task_create(self.create_payload())
         self.outsider.sudo().write({'bchat_task_view': False})
@@ -285,6 +287,73 @@ class BWorkTaskCase(TransactionCase):
         eligible = self.reminder_task(assignee_id=self.replacement.id)
         self.assertEqual(self.env['baseer.bchat.task']._cron_work_task_reminders(), 1)
         self.assertTrue(self.env['baseer.bchat.task'].sudo().browse(eligible['id']).reminder_emitted_at)
+
+    def test_concurrent_reminder_claim_skips_locked_then_emits_once(self):
+        # A real connection is necessary: registry.cursor() in TransactionCase
+        # can be a TestCursor over the same transaction, not a competing worker.
+        # The workflow's disposable DB is the only allowed committed fixture.
+        self.assertEqual(self.env.cr.dbname, 'bwork_tasks_ci',
+                         'This committed concurrency fixture requires the dedicated CI database.')
+        db = sql_db.db_connect(self.env.cr.dbname)
+        marker = 'bwork-reminder-lock-' + uuid4().hex
+        task_id = user_id = partner_id = None
+        committed = False
+        try:
+            with db.cursor() as seed_cr:
+                seed = api.Environment(seed_cr, SUPERUSER_ID, {})
+                company = seed.ref('base.main_company')
+                user = seed['res.users'].with_context(no_reset_password=True).create({
+                    'name': marker, 'login': marker, 'company_id': company.id,
+                    'company_ids': [Command.set(company.ids)],
+                    'group_ids': [Command.set([seed.ref('base.group_user').id])],
+                    'bchat_task_view': True, 'bchat_task_manage': True,
+                })
+                user_id, partner_id = user.id, user.partner_id.id
+                task = seed['baseer.bchat.task']._create_verified({
+                    'company_id': company.id, 'creator_id': user.id, 'assignee_id': user.id,
+                    'title': marker, 'client_uuid': str(uuid4()), 'payload_digest': 'a' * 64,
+                    'state': 'new', 'revision': 1, 'origin_api': 'work_tasks_v1',
+                    'reminder_at': fields.Datetime.now() - timedelta(minutes=1),
+                }, _TASK_SERVICE_TOKEN)
+                task_id = task.id
+                seed_cr.commit()
+                committed = True
+            with db.cursor() as locker:
+                locker.execute('SELECT id FROM baseer_bchat_task WHERE id=%s FOR UPDATE', [task_id])
+                self.assertEqual(locker.fetchone(), (task_id,))
+                with db.cursor() as worker_cr:
+                    worker_cr.execute("SET LOCAL lock_timeout = '2s'")
+                    worker = api.Environment(worker_cr, SUPERUSER_ID, {})
+                    self.assertEqual(worker['baseer.bchat.task']._cron_work_task_reminders(), 0)
+                    worker_cr.execute('SELECT reminder_emitted_at FROM baseer_bchat_task WHERE id=%s', [task_id])
+                    self.assertIsNone(worker_cr.fetchone()[0])
+                    worker_cr.execute('SELECT COUNT(*) FROM baseer_bchat_change WHERE task_id=%s', [task_id])
+                    self.assertEqual(worker_cr.fetchone()[0], 0)
+                locker.rollback()
+            with db.cursor() as worker_cr:
+                worker = api.Environment(worker_cr, SUPERUSER_ID, {})
+                self.assertEqual(worker['baseer.bchat.task']._cron_work_task_reminders(), 1)
+                self.assertEqual(worker['baseer.bchat.task']._cron_work_task_reminders(), 0)
+                worker_cr.execute('SELECT reminder_emitted_at FROM baseer_bchat_task WHERE id=%s', [task_id])
+                self.assertIsNotNone(worker_cr.fetchone()[0])
+                worker_cr.execute('SELECT COUNT(*) FROM baseer_bchat_change WHERE task_id=%s', [task_id])
+                self.assertEqual(worker_cr.fetchone()[0], 1)
+                worker_cr.commit()
+        finally:
+            if committed and task_id and user_id:
+                with db.cursor() as cleanup_cr:
+                    cleanup = api.Environment(cleanup_cr, SUPERUSER_ID, {})
+                    cleanup_cr.execute('SELECT title,creator_id FROM baseer_bchat_task WHERE id=%s', [task_id])
+                    self.assertEqual(cleanup_cr.fetchone(), (marker, user_id))
+                    self.assertEqual(cleanup['res.users'].browse(user_id).login, marker)
+                    cleanup_cr.execute('DELETE FROM baseer_bchat_change WHERE task_id=%s', [task_id])
+                    cleanup_cr.execute('DELETE FROM baseer_bchat_change_cursor WHERE user_id=%s', [user_id])
+                    cleanup_cr.execute('DELETE FROM baseer_bchat_task WHERE id=%s AND creator_id=%s AND title=%s',
+                                       [task_id, user_id, marker])
+                    self.assertEqual(cleanup_cr.rowcount, 1)
+                    cleanup['res.users'].browse(user_id).unlink()
+                    cleanup['res.partner'].browse(partner_id).unlink()
+                    cleanup_cr.commit()
 
 
 @tagged('post_install', '-at_install', 'baseer_bchat', 'bwork_tasks')

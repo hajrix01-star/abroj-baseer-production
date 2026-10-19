@@ -1,4 +1,4 @@
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from unittest.mock import patch
 from uuid import uuid4
 
@@ -20,6 +20,9 @@ class HeatCalendarCase(TransactionCase):
 
     def setUp(self):
         super().setUp()
+        clock = patch('odoo.fields.Datetime.now', return_value=datetime(2037, 10, 1, 9))
+        clock.start()
+        self.addCleanup(clock.stop)
         sar = self.env['res.currency'].with_context(active_test=False).search(
             [('name', '=', 'SAR')], limit=1,
         )

@@ -29,7 +29,7 @@ class HeatPosCase(TransactionCase):
         cls.other = cls.env['res.company'].create({
             'name': 'Heat forbidden company', 'currency_id': cls.env.ref('base.SAR').id})
         cls.reader = new_test_user(cls.env, login='heat_native_pos_reader',
-            groups='base.group_user,point_of_sale.group_pos_user',
+            groups='base.group_user,point_of_sale.group_pos_user,sales_team.group_sale_salesman_all_leads,account.group_account_readonly',
             company_id=cls.company.id, company_ids=[Command.set(cls.company.ids)])
         cls.dashboard = cls.env['spreadsheet.dashboard'].create({
             'name': 'Heat native POS test',
@@ -52,6 +52,11 @@ class HeatPosCase(TransactionCase):
             'name': 'Heat other till', 'company_id': cls.other.id,
             'currency_id': cls.env.ref('base.SAR').id, 'picking_type_id': picking.id,
             'iface_tax_included': 'total', 'picking_policy': 'direct', 'active': True})
+        cls.summary_config = cls._insert('pos.config', {
+            'name': 'Heat summary bridge', 'company_id': cls.company.id,
+            'currency_id': cls.env.ref('base.SAR').id, 'picking_type_id': picking.id,
+            'baseer_summary_only': True, 'iface_tax_included': 'total',
+            'picking_policy': 'direct', 'active': True})
         cls.session_a = cls._session('Heat A', cls.config)
         cls.session_b = cls._session('Heat B', cls.config, 'closed')
         cls.other_session = cls._session('Heat other', cls.other_config)
@@ -62,6 +67,14 @@ class HeatPosCase(TransactionCase):
                     if field.required and field.store and field.column_type
                     and not field.compute and not field.related and name not in values]
         values = dict(cls.env[model].default_get(required), **values)
+        # Raw fixture inserts must populate stored related columns too. The
+        # canonical reader validates order/session company and currency links.
+        if values.get('config_id'):
+            config = cls.env['pos.config'].browse(values['config_id'])
+            for name in ('company_id', 'currency_id'):
+                field = cls.env[model]._fields.get(name)
+                if field and field.store and field.column_type:
+                    values.setdefault(name, config[name].id)
         cls.env.cr.execute(SQL('INSERT INTO %s (%s) VALUES (%s) RETURNING id',
             SQL.identifier(cls.env[model]._table),
             SQL(', ').join(SQL.identifier(key) for key in values),
@@ -99,18 +112,21 @@ class HeatPosCase(TransactionCase):
                  schedule='all', state='approved', linked=True):
         summary = self._insert('baseer.pos.summary', {
             'name': 'Heat saved summary', 'company_id': self.company.id,
-            'business_date': date.fromisoformat(day), 'config_id': self.config.id,
+            'business_date': date.fromisoformat(day), 'config_id': self.summary_config.id,
             'period_scope': period, 'day_schedule': schedule, 'state': state,
             'customer_count': customers, 'zero_sales': Decimal(amount) == 0,
             'amount_gross': Decimal(amount), 'amount_net': Decimal(amount), 'amount_tax': 0,
         })
         if linked and Decimal(amount) and state == 'approved':
-            session = self._session('Heat summary %s' % summary.id, self.config, 'closed', day + ' 00:00:00')
+            session = self._session('Heat summary %s' % summary.id, self.summary_config, 'closed', day + ' 00:00:00')
             order = self._order(day + ' 12:00:00', amount, session, state='done',
                                 summary=summary, source='baseer_summary')
             self.env.cr.execute(SQL('UPDATE baseer_pos_summary SET order_id = %s, '
                 'session_id = %s WHERE id = %s', order.id, session.id, summary.id))
             summary.invalidate_recordset()
+            self.env.cr.execute(SQL('UPDATE pos_session SET baseer_summary_id = %s WHERE id = %s',
+                                    summary.id, session.id))
+            session.invalidate_recordset()
         return summary
 
     def _closure(self, day, period='all'):
@@ -143,6 +159,29 @@ class HeatPosCase(TransactionCase):
         self.assertEqual(action['views'], [(False, 'list'), (False, 'form')])
         return self._scoped().env[action['res_model']].search(action['domain'])
 
+    def test_missing_context_language_uses_user_fallback_with_occasions_and_sales(self):
+        self.reader.lang = 'en_US'
+        self._order('2026-10-03 12:00:00', '23.00')
+        self.env['baseer.official.occasion'].create({
+            'name': 'Language fallback fixture', 'name_en': 'Language fallback fixture',
+            'code': 'HEAT-LANG-FALLBACK', 'source_label': 'Isolated fixture',
+            'date_from': '2026-10-03', 'date_to': '2026-10-03',
+            'occasion_type': 'official_holiday', 'status': 'confirmed',
+            'company_ids': [Command.set(self.company.ids)],
+        })
+        for lang in (None, False):
+            with self.subTest(lang=lang):
+                scoped = self._scoped().with_context(lang=lang)
+                self.assertFalse(scoped.env.su)
+                self.assertFalse(scoped.env.lang)
+                payload = self._payload(dashboard=scoped)
+                day = next(day for week in payload['weeks'] for day in week
+                           if day and day['date'] == '2026-10-03')
+                self.assertEqual(day['sales_value'], '23.00')
+                self.assertEqual(day['status_label'], 'Complete')
+                self.assertEqual(day['occasions'][0]['kind_label'], 'Official holiday')
+                self.assertEqual(payload['labels']['sales'], 'Sales including VAT')
+
     def test_summary_generated_native_order_is_counted_once_and_zero_is_preserved(self):
         summary = self._summary('2026-10-01', customers=17)
         zero = self._summary('2026-10-02', amount='0', customers=0)
@@ -163,8 +202,8 @@ class HeatPosCase(TransactionCase):
         self.assertEqual(third['status'], 'incomplete')
         self.assertEqual(third['customers'], 3)
         action = first['source_action']
-        self.assertEqual(action['res_model'], 'pos.order')
-        self.assertEqual(self._action_records(action), summary.order_id)
+        self.assertEqual(action['res_model'], 'baseer.pos.summary')
+        self.assertEqual(self._action_records(action), summary)
         self.assertEqual(second['source_action']['res_model'], 'baseer.pos.summary')
         self.assertEqual(self._action_records(second['source_action']), zero)
         days = self._days()
@@ -190,15 +229,16 @@ class HeatPosCase(TransactionCase):
         a, b = rows[date(2026, 10, 2)], rows[date(2026, 10, 3)]
         self.assertEqual((a['source_kind'], a['sales'], a['order_count']),
                          ('direct', Decimal('133.50'), 5))
-        self.assertEqual((b['sales'], b['order_count']), (Decimal('60.00'), 2))
+        self.assertEqual((b['sales'], b['order_count']), (Decimal('10.00'), 1))
         self.assertEqual((a['outside_count'], b['outside_count']), (0, 0))
         self.assertEqual(a['status'], 'complete')
         self.assertEqual(b['status'], 'complete')
         self.assertEqual(set(self._action_records(a['source_action']).ids), {first.id, overnight.id, refund.id, gap.id, long.id})
-        self.assertEqual(set(self._action_records(b['source_action']).ids), {third.id, last.id})
+        self.assertEqual(set(self._action_records(b['source_action']).ids), {last.id})
         days = self._days()
-        self.assertIn('transactions', days['2026-10-02']['aria_label'])
-        self.assertEqual(days['2026-10-02']['count_label'], 'POS transactions')
+        self.assertIn('customers', days['2026-10-02']['aria_label'])
+        self.assertEqual(days['2026-10-02']['count_label'], 'Recorded customers')
+        self.assertIsNone(days['2026-10-02']['customers_value'])
         self.assertEqual(days['2026-10-02']['shift_breakdown'], [])
 
     def test_missing_day_is_not_complete_zero(self):
@@ -218,7 +258,7 @@ class HeatPosCase(TransactionCase):
         self._order('2026-10-03 19:00:00', '10', session)
         self._order('2026-10-04 04:30:00', '20', session)
         current = self._rows(last='2026-10-05', now=datetime(2026, 10, 4, 1))
-        self.assertEqual(current[date(2026, 10, 3)]['sales'], Decimal('10.00'))
+        self.assertEqual(current[date(2026, 10, 3)]['sales'], Decimal('30.00'))
         self.assertEqual(current[date(2026, 10, 3)]['status'], 'incomplete')
         for day in (4, 5):
             self.assertEqual(current[date(2026, 10, day)]['status'], 'missing')
@@ -239,7 +279,7 @@ class HeatPosCase(TransactionCase):
         self.assertEqual(row['sales'], Decimal('0.52'))
         self.assertEqual(self._days()['2026-10-03']['sales_display'], '0.52')
 
-    def test_same_day_source_conflict_preserves_native_sum_and_excludes_baselines_and_average(self):
+    def test_valid_mixed_sources_preserve_sum_and_participate_in_baselines_and_average(self):
         for day, amount in (('2026-09-05', '20'), ('2026-09-12', '30'), ('2026-09-19', '40')):
             self._order(day + ' 12:00:00', amount)
         self._summary('2026-09-26', amount='1000')
@@ -249,28 +289,31 @@ class HeatPosCase(TransactionCase):
         self._order('2026-10-10 12:00:00', '60')
         now = datetime(2026, 10, 11, 6)
         row = self._rows(now=now)[date(2026, 10, 3)]
-        self.assertEqual(row['source_kind'], 'conflict')
-        self.assertEqual(row['status'], 'conflict')
+        self.assertEqual(row['source_kind'], 'mixed')
+        self.assertEqual(row['status'], 'complete')
         self.assertTrue(row['has_sales'])
         self.assertEqual(row['sales'], Decimal('110.00'))
         payload = self._payload(now=now)
         days = {day['date']: day for week in payload['weeks'] for day in week if day}
         conflict = days['2026-10-03']
         self.assertEqual(conflict['sales_display'], '110.00')
-        self.assertEqual(conflict['ratio_display'], '—')
-        self.assertEqual(conflict['heat_level'], 'neutral')
-        self.assertEqual(conflict['customers_display'], '8')
-        self.assertTrue(conflict['warning'])
-        self.assertEqual(days['2026-10-10']['baseline_sample_count'], 3)
-        self.assertEqual(days['2026-10-10']['basis_display'], '30.00')
+        self.assertNotEqual(conflict['ratio_display'], '—')
+        self.assertIsNone(conflict['customers_value'])
+        self.assertFalse(conflict['warning'])
+        self.assertEqual(conflict['source_kinds'], ['manual', 'pos'])
+        self.assertEqual(len(conflict['source_actions']), 2)
+        self.assertIsNone(conflict['source_action'])
+        self.assertEqual(days['2026-10-10']['baseline_sample_count'], 5)
+        self.assertEqual(days['2026-10-10']['basis_display'], '40.00')
         saturday = next(row for row in payload['weekdays'] if row['name'] == 'Saturday')
-        self.assertEqual(saturday['average_display'], '60.00')
+        self.assertEqual(saturday['average_display'], '85.00')
 
     def test_full_closure_with_direct_order_is_conflict(self):
         self._closure('2026-10-03')
         self._order('2026-10-03 12:00:00', '25')
         row = self._rows()[date(2026, 10, 3)]
-        self.assertEqual(row['source_kind'], 'conflict')
+        self.assertEqual(row['source_kind'], 'direct')
+        self.assertEqual(row['status'], 'conflict')
         self.assertNotEqual(row['status'], 'complete')
         self.assertEqual(self._days()['2026-10-03']['sales_display'], '25.00')
 
@@ -278,10 +321,13 @@ class HeatPosCase(TransactionCase):
         summary = self._summary('2026-10-03', linked=False)
         with self.assertRaises(ValidationError):
             self._rows()
-        order = self._order('2026-10-03 12:00:00', '115', summary=summary,
+        session = self._session('Heat broken bridge', self.summary_config)
+        self.env.cr.execute(SQL('UPDATE pos_session SET baseer_summary_id = %s WHERE id = %s', summary.id, session.id))
+        session.invalidate_recordset()
+        order = self._order('2026-10-03 12:00:00', '115', session=session, summary=summary,
                             state='cancel', source='baseer_summary')
         self.env.cr.execute(SQL('UPDATE baseer_pos_summary SET order_id = %s, session_id = %s WHERE id = %s',
-                                order.id, self.session_a.id, summary.id))
+                                order.id, session.id, summary.id))
         summary.invalidate_recordset()
         with self.assertRaises(ValidationError):
             self._rows()
@@ -306,7 +352,7 @@ class HeatPosCase(TransactionCase):
         self.env['ir.rule'].create({'name': 'Heat hide generated order',
             'model_id': self.env['ir.model']._get_id('pos.order'),
             'domain_force': "[('id', '!=', %d)]" % order.id})
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(AccessError):
             self._rows()
 
     def test_generated_order_with_inaccessible_summary_or_orphan_marker_is_unavailable(self):
@@ -314,7 +360,7 @@ class HeatPosCase(TransactionCase):
         rule = self.env['ir.rule'].create({'name': 'Heat hide generated metadata',
             'model_id': self.env['ir.model']._get_id('baseer.pos.summary'),
             'domain_force': "[('id', '!=', %d)]" % summary.id})
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(AccessError):
             self._rows()
         rule.unlink()
         self.assertEqual(self._rows()[date(2026, 10, 3)]['source_kind'], 'summary')
@@ -322,15 +368,36 @@ class HeatPosCase(TransactionCase):
         with self.assertRaises(ValidationError):
             self._rows()
 
-    def test_generated_noon_order_after_now_is_unavailable_not_invented_zero(self):
+    def test_generated_future_order_money_is_preserved_but_not_evaluated(self):
         self._summary('2026-10-03')
-        with self.assertRaises(ValidationError):
-            self._rows(now=datetime(2026, 10, 3, 7))  # 10:00 local, source noon is future
+        future = self._rows(now=datetime(2026, 10, 2, 7))[date(2026, 10, 3)]
+        self.assertEqual(future['sales'], Decimal('115.00'))
+        self.assertEqual(future['status'], 'incomplete')
         self.assertEqual(self._rows(now=datetime(2026, 10, 3, 9))[date(2026, 10, 3)]['sales'], Decimal('115.00'))
         row = self._rows(now=datetime(2026, 10, 3, 9, 0, 1))[date(2026, 10, 3)]
         self.assertEqual(row['source_kind'], 'summary')
         self.assertEqual(row['sales'], Decimal('115.00'))
         self.assertEqual(row['order_count'], 1)
+
+    def test_weekday_average_and_reference_use_positive_completed_past_days_only(self):
+        for day, amount in (('2026-09-05', '20'), ('2026-09-19', '-5'),
+                            ('2026-09-26', '40'), ('2026-10-03', '100'),
+                            ('2026-10-17', '-10'), ('2026-10-24', '600')):
+            self._order(day + ' 12:00:00', amount)
+        self._summary('2026-09-12', amount='0', customers=0)
+        self._summary('2026-10-10', amount='0', customers=0)
+        payload = self._payload(now=datetime(2026, 10, 20, 9))
+        days = {day['date']: day for week in payload['weeks'] for day in week if day}
+        saturday = next(item for item in payload['weekdays'] if item['weekday'] == 5)
+        self.assertEqual(saturday['average_value'], '100.00')
+        self.assertEqual(saturday['sample_count'], 1)
+        self.assertEqual(days['2026-10-10']['sales_value'], '0.00')
+        self.assertEqual(days['2026-10-10']['status'], 'complete')
+        self.assertEqual(days['2026-10-24']['status'], 'incomplete')
+        self.assertEqual(days['2026-10-24']['sales_value'], '600.00')
+        self.assertIsNone(days['2026-10-24']['ratio_value'])
+        self.assertEqual(days['2026-10-31']['baseline_sample_count'], 3)
+        self.assertEqual(days['2026-10-31']['baseline_value'], '40.00')
 
     def test_summary_marker_with_null_source_and_unapproved_metadata_is_unavailable(self):
         draft = self._summary('2026-10-03', state='draft', linked=False)
@@ -340,19 +407,19 @@ class HeatPosCase(TransactionCase):
         with self.assertRaises(ValidationError):
             self._rows()
 
-    def test_session_month_boundary_summary_date_conflict_and_serializable_drilldown(self):
+    def test_session_month_boundary_uses_canonical_summary_date_and_serializable_drilldown(self):
         summary = self._summary('2026-09-30', amount='50')
         self.env.cr.execute(SQL('UPDATE pos_session SET start_at = %s WHERE id = %s',
                                 datetime(2026, 10, 1, 15), summary.session_id.id))
         summary.session_id.invalidate_recordset()
-        row = self._rows()[date(2026, 10, 1)]
+        row = self._rows(first='2026-09-30')[date(2026, 9, 30)]
         self.assertEqual(row['sales'], Decimal('50.00'))
-        self.assertEqual(row['status'], 'conflict')
+        self.assertEqual(row['status'], 'complete')
         self.assertEqual(summary.business_date, date(2026, 9, 30))
-        self.assertEqual(self._action_records(row['source_action']), summary.order_id)
+        self.assertEqual(self._action_records(row['source_action']), summary)
         json.dumps(row['source_action'])
         day = self._days()['2026-10-01']
-        self.assertEqual(day['sales_display'], '50.00')
+        self.assertEqual(day['sales_display'], '—')
         self.assertEqual(day['ratio_display'], '—')
 
     def test_missing_session_opening_is_rejected_without_omitting_money(self):
@@ -371,12 +438,26 @@ class HeatPosCase(TransactionCase):
             'domain_force': "[('id', '!=', %d)]" % hidden.id})
         self.assertEqual(self._rows()[date(2026, 10, 3)]['sales'], Decimal('10.00'))
         rule.unlink()
-        self.env['ir.rule'].create({'name': 'Heat hide session',
+        session_rule = self.env['ir.rule'].create({'name': 'Heat hide session',
             'model_id': self.env['ir.model']._get_id('pos.session'),
             'domain_force': "[('id', '!=', %d)]" % self.session_b.id})
-        row = self._rows()[date(2026, 10, 3)]
-        self.assertEqual(row['sales'], Decimal('10.00'))
-        self.assertEqual(self._action_records(row['source_action']), visible)
+        scoped = self._scoped()
+        self.assertFalse(scoped.env.su)
+        self.assertEqual(scoped.env['pos.order'].search([
+            ('company_id', '=', self.company.id), ('session_id', '=', self.session_b.id),
+        ]), hidden.with_user(self.reader))
+        with patch.object(type(scoped), '_baseer_unified_period',
+                          side_effect=AssertionError('Hidden session must fail before financial materialization')):
+            with self.assertRaises(AccessError):
+                self._rows(dashboard=scoped)
+        with self.assertRaises(AccessError):
+            self.session_b.with_user(self.reader).check_access('read')
+        # The public Sales summary and central heat reader share this refusal.
+        with self.assertRaises(AccessError):
+            scoped._baseer_unified_missing_dates(scoped.env.company)
+        with self.assertRaises(AccessError):
+            self._rows()
+        session_rule.unlink()
         self.reader.sudo().write({'company_ids': [Command.set((self.company | self.other).ids)]})
         with self.assertRaises(AccessError):
             self._payload(dashboard=self._scoped().with_context(allowed_company_ids=self.other.ids))
@@ -384,11 +465,12 @@ class HeatPosCase(TransactionCase):
         with self.assertRaises(AccessError):
             self._scoped()._heat_aggregate_days(self.other, date(2026, 10, 1), date(2026, 10, 3), self.NOW)
         forged = self._scoped().with_context(force_company=self.other.id, arbitrary='forged')
-        self.assertEqual(self._days(dashboard=forged)['2026-10-03']['sales_display'], '10.00')
+        self.assertEqual(self._days(dashboard=forged)['2026-10-03']['sales_display'], '30.00')
 
     def test_actual_pos_acl_required_and_reads_never_mutate_operational_models(self):
         self._order('2026-10-03 12:00:00', '12.34')
-        for model in ('pos.order', 'pos.session'):
+        for model in ('pos.order', 'pos.session', 'account.move', 'account.move.line',
+                      'sale.order', 'sale.order.line'):
             original = type(self.env[model]).check_access
             def deny(record, operation, original=original, model=model):
                 if record._name == model and operation == 'read':
@@ -408,7 +490,7 @@ class HeatPosCase(TransactionCase):
 
     def test_non_sar_company_and_foreign_pos_even_only_in_gap_are_rejected(self):
         self.company.currency_id = self.env.ref('base.USD')
-        with patch.object(type(self.dashboard), '_baseer_executive_capacity') as aggregate:
+        with patch.object(type(self.dashboard), '_baseer_unified_period') as aggregate:
             with self.assertRaises(ValidationError):
                 self._payload()
         aggregate.assert_not_called()
@@ -430,12 +512,16 @@ class HeatPosCase(TransactionCase):
             self._payload()
 
     def test_capacity_rejects_100001_orders_without_truncation(self):
+        currency = self.env['pos.order']._fields['currency_id']
+        currency_column = SQL(', currency_id') if currency.store and currency.column_type else SQL('')
+        currency_value = SQL(', %s', self.config.currency_id.id) if currency.store and currency.column_type else SQL('')
         self.env.cr.execute(SQL('''
             INSERT INTO pos_order (name, date_order, state, amount_tax, amount_total,
-                amount_paid, amount_return, company_id, session_id, config_id, currency_rate)
-            SELECT 'Heat capacity', %s, 'paid', 0, 0.01, 0.01, 0, %s, %s, %s, 1
+                amount_paid, amount_return, company_id, session_id, config_id, currency_rate%s)
+            SELECT 'Heat capacity', %s, 'paid', 0, 0.01, 0.01, 0, %s, %s, %s, 1%s
             FROM generate_series(1, %s)
-        ''', datetime(2026, 10, 3, 9), self.company.id, self.session_a.id, self.config.id, MAX_ORDERS))
+        ''', currency_column, datetime(2026, 10, 3, 9), self.company.id, self.session_a.id,
+            self.config.id, currency_value, MAX_ORDERS))
         self.assertEqual(self._rows()[date(2026, 10, 3)]['sales'], Decimal('1000.00'))
         self._order('2026-10-03 12:30:00', '0.01')
         with self.assertRaises(ValidationError):
@@ -447,8 +533,7 @@ class HeatPosCase(TransactionCase):
             self._order('2026-10-03 12:00:00', '0.01', session)
         row = self._rows()[date(2026, 10, 3)]
         self.assertEqual(row['sales'], Decimal('10.00'))
-        session_filter = next(term for term in row['source_action']['domain'] if term[0] == 'session_id')
-        self.assertEqual(len(session_filter[2]), 1000)
+        self.assertEqual(len(self._action_records(row['source_action'])), 1000)
         extra = self._session('Heat bound overflow', self.config)
         self._order('2026-10-03 12:01:00', '0.01', extra)
         with self.assertRaises(ValidationError):

@@ -172,6 +172,8 @@ class BChatOrderCase(TransactionCase):
             with self.assertRaises(ProtocolError) as changed:
                 self.service._v2_order_rooms(self.company.id)
         self.assertEqual((changed.exception.code, changed.exception.status), ('retry', 409))
+        # Odoo assertRaises rolls back the injected revoke; restore it for the reload.
+        first_membership.with_user(manager).with_company(self.company).action_revoke()
         refreshed = self.service._v2_order_rooms(self.company.id)
         self.assertEqual(len(refreshed['rooms']), 50)
         self.assertIsNotNone(refreshed['next_after_id'])

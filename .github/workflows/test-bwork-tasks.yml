@@ -47,10 +47,30 @@ jobs:
             exit 1
           fi
           grep -F '0 failed, 0 error(s)' bwork-tasks-runtime.log
+          test "$(grep -Ec 'Starting (BWorkTaskCase|BWorkTaskHttpCase|BChatTaskCase|BChatTaskHttpCase|BChatPushCase)\.' bwork-tasks-runtime.log)" -eq 40
+      - name: Genuine reminder lock and once-only emission in a fresh process
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          docker run --rm -i --network host \
+            -e HOST=127.0.0.1 -e USER=odoo -e PASSWORD=odoo \
+            -e PGOPTIONS='-c lock_timeout=5000 -c statement_timeout=30000' \
+            --mount type=bind,src="$GITHUB_WORKSPACE/custom_addons",dst=/mnt/baseer-addons,readonly \
+            odoo@sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd \
+            odoo shell --db_host=127.0.0.1 --db_port=5432 --db_user=odoo --db_password=odoo \
+            --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/baseer-addons \
+            -d bwork_tasks_ci --no-http --max-cron-threads=0 --workers=0 --log-level=test \
+            <<'PY' 2>&1 | tee bwork-tasks-concurrency.log
+          from odoo.addons.baseer_bchat.tests.work_task_reminder_concurrency_probe import run
+          run(env)
+          PY
+          grep -Fx 'BWORK_TASK_REMINDER_CONCURRENCY=PASS' bwork-tasks-concurrency.log
       - name: Preserve task runtime evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: bwork-tasks-runtime
-          path: bwork-tasks-runtime.log
+          path: |
+            bwork-tasks-runtime.log
+            bwork-tasks-concurrency.log
           if-no-files-found: error

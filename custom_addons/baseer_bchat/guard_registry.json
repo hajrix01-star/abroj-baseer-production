@@ -287,7 +287,9 @@
         "custom_addons/baseer_bchat/controllers/work_task_api.py",
         "custom_addons/baseer_bchat/data/work_task_cron.xml",
         "custom_addons/baseer_bchat/tests/test_work_tasks.py",
+        "custom_addons/baseer_bchat/tests/work_task_reminder_concurrency_probe.py",
         "custom_addons/baseer_bchat/tests_contract/test_work_task_contracts.py",
+        "custom_addons/baseer_bchat/tests_contract/test_work_task_reminder_probe.py",
         "custom_addons/baseer_bchat/tests_contract/test_work_task_service_seams.py"
       ],
       "suites": [

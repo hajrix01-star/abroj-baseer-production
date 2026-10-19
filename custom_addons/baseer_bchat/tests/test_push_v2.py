@@ -83,7 +83,7 @@ class BChatPushCase(TransactionCase):
         self._register(self.replacement, shared_token)
         devices = self.env['baseer.bchat.push.device'].sudo().search([('fcm_token', '=', shared_token)])
         self.assertEqual(devices.user_id, self.replacement)
-        replaced = self.env['baseer.bchat.push.device'].sudo().search([
+        replaced = self.env['baseer.bchat.push.device'].sudo().with_context(active_test=False).search([
             ('account_key', '=', first['account_key']),
         ])
         self.assertTrue(replaced)
@@ -125,9 +125,10 @@ class BChatPushCase(TransactionCase):
         self._service(self.assignee)._v2_push_unregister({
             'api_version': 2, 'installation_id': registration['installation_id'],
         })
-        device = self.env['baseer.bchat.push.device'].sudo().search([
+        device = self.env['baseer.bchat.push.device'].sudo().with_context(active_test=False).search([
             ('account_key', '=', registration['account_key']),
         ])
+        self.assertTrue(device)
         self.assertFalse(device.active)
         self.assertEqual(device.inactive_reason, 'logout')
         self.assertTrue(device.inactive_at)

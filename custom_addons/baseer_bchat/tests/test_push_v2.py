@@ -1,9 +1,14 @@
 """BChat push registration and task wake-up contracts."""
+import logging
 from uuid import uuid4
 
-from odoo import Command
+from odoo import Command, sql_db
 from odoo.exceptions import AccessError
 from odoo.tests import TransactionCase, tagged
+from odoo.tools import SQL
+
+
+_logger = logging.getLogger(__name__)
 
 
 @tagged('post_install', '-at_install', 'baseer_bchat')
@@ -247,9 +252,52 @@ class BChatPushCase(TransactionCase):
 
     def test_postgres_skip_locked_excludes_a_row_locked_by_another_worker(self):
         """The dispatcher lock primitive must not hand a locked row to a second worker."""
-        with self.env.registry.cursor() as first_worker:
-            first_worker.execute('SELECT id FROM res_users WHERE id = %s FOR UPDATE', [1])
-            with self.env.registry.cursor() as second_worker:
-                second_worker.execute(
-                    'SELECT id FROM res_users WHERE id = %s FOR UPDATE SKIP LOCKED', [1])
-                self.assertFalse(second_worker.fetchall())
+        self.assertEqual(self.env.cr.dbname, 'bwork_tasks_ci',
+                         'Committed lock fixtures require the dedicated disposable CI database.')
+        db = sql_db.db_connect(self.env.cr.dbname)
+        # A TEMP table is connection-local and cannot prove cross-worker
+        # exclusion. This exact UUID table has no audit FK to user1, unlike
+        # res_users: the outer test transaction may hold KEY SHARE there.
+        target = SQL.identifier('bchat_push_lock_' + uuid4().hex)
+        created = False
+
+        def bounded(cursor):
+            cursor.execute("SET LOCAL lock_timeout = '2s'")
+            cursor.execute("SET LOCAL statement_timeout = '15s'")
+
+        try:
+            _logger.info('BChat isolated row-lock fixture: seed')
+            with db.cursor() as seed:
+                bounded(seed)
+                seed.execute(SQL('CREATE TABLE %s (id integer PRIMARY KEY)', target))
+                seed.execute(SQL('INSERT INTO %s (id) VALUES (1)', target))
+                seed.commit()
+                created = True
+            with db.cursor() as first_worker:
+                bounded(first_worker)
+                first_worker.execute(SQL('SELECT id FROM %s WHERE id = 1 FOR UPDATE', target))
+                self.assertEqual(first_worker.fetchone(), (1,))
+                _logger.info('BChat isolated row-lock fixture: held')
+                with db.cursor() as second_worker:
+                    bounded(second_worker)
+                    second_worker.execute(SQL(
+                        'SELECT id FROM %s WHERE id = 1 FOR UPDATE SKIP LOCKED', target))
+                    self.assertFalse(second_worker.fetchall())
+                    _logger.info('BChat isolated row-lock fixture: skipped')
+                first_worker.rollback()
+            _logger.info('BChat isolated row-lock fixture: released')
+            with db.cursor() as available_worker:
+                bounded(available_worker)
+                available_worker.execute(SQL(
+                    'SELECT id FROM %s WHERE id = 1 FOR UPDATE SKIP LOCKED', target))
+                self.assertEqual(available_worker.fetchall(), [(1,)])
+                _logger.info('BChat isolated row-lock fixture: visible')
+        finally:
+            # All worker contexts have exited before touching the one table
+            # this run demonstrably created and committed. Never DROP a guess.
+            if created:
+                with db.cursor() as cleanup:
+                    bounded(cleanup)
+                    cleanup.execute(SQL('DROP TABLE %s', target))
+                    cleanup.commit()
+                    _logger.info('BChat isolated row-lock fixture: cleaned')

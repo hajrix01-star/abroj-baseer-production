@@ -9,7 +9,7 @@ export const taskStyles = StyleSheet.create({
   flexible: { flex: 1, minWidth: 0 }, title: { color: colors.ink, fontSize: 22, lineHeight: 32, fontWeight: '700' },
   strong: { color: colors.ink, fontSize: 16, lineHeight: 24, fontWeight: '600' },
   tabs: { flexDirection: 'row', gap: 4, borderBottomWidth: 1, borderBottomColor: colors.border, backgroundColor: colors.white },
-  tab: { flex: 1, minWidth: 44, minHeight: 48, padding: 8, alignItems: 'center', justifyContent: 'center', borderBottomWidth: 3, borderBottomColor: 'transparent' },
+  tab: { flex: 1, minWidth: 44, minHeight: 44, padding: 6, alignItems: 'center', justifyContent: 'center', borderBottomWidth: 3, borderBottomColor: 'transparent' },
   selected: { borderBottomColor: colors.blue }, muted: { color: colors.muted, fontSize: 13, lineHeight: 20 },
   footer: { padding: 14, gap: 8, backgroundColor: colors.white, borderTopWidth: 1, borderTopColor: colors.border },
 });

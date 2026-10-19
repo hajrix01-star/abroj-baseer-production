@@ -4,6 +4,12 @@
   "approvedVersion": "0.1.14/build15",
   "suites": ["test:bwork-gate", "test:odoo", "test:brand", "test:orders", "test:tasks", "test:leadership", "test:attachment-camera"],
   "invariants": [
+    {"id":"bcu-month-bounds","description":"منتقي الشهر يحفظ حدود السنة وقيمة الشهر المدنية دون تحويل توقيت","suite":"test:leadership","test":"month picker respects 1900 and 9998 boundaries and emits the exact civil month without timezone conversion"},
+    {"id":"bcu-day-modal","description":"تفاصيل يوم التقويم نافذة محروسة لا بطاقة أسفل الرسم","suite":"test:leadership","test":"day inspection opens a dismissible authorized Sheet, never an inline financial card"},
+    {"id":"bcu-month-grid","description":"اختيار الشهر والسنة بالضغط دون وقت أو إدخال يدوي ولا اعتماد الإلغاء","suite":"test:leadership","test":"month picker uses localized month and year grids with string-only selection and cancel/backdrop/back"},
+    {"id":"bcu-calendar-context","description":"نافذة اليوم والشهر تخضعان للأوفلاين وسحب الصلاحية ولا تعيدان اختيارًا قديمًا","suite":"test:leadership","test":"month picker and day Sheet close on offline transitions and permission revocation without resurrecting selections"},
+    {"id":"bcu-orders-header","description":"هيدر الطلبات عنوان واحد ومسافات مضغوطة دون فقد الرجوع وأهداف اللمس","suite":"test:orders","test":"orders compact header has one title and preserves navigation and readable touch targets"},
+    {"id":"bcu-tasks-header","description":"إضافة المهمة ضمن الهيدر دون تكرار صف وبحراسة الإدارة نفسها","suite":"test:tasks","test":"tasks compact header keeps one authorized create action beside its title without a duplicate row"},
     {"id":"bsp-send-pipeline-01","description":"معاينة صورة الطابور المحلي مع حراسة الملكية والحالة والواجهة دون تغيير ACK أو تنظيف الملف","suite":"test:odoo","test":"pending own image resolves only the actual queued stage with no HTTP, copying, cache or cleanup"},
     {"id":"bsp-send-pipeline-02","description":"معاينة صورة الطابور المحلي مع حراسة الملكية والحالة والواجهة دون تغيير ACK أو تنظيف الملف","suite":"test:odoo","test":"pending own image denies background, missing send/view/media rights and non-image stages"},
     {"id":"bsp-send-pipeline-03","description":"معاينة صورة الطابور المحلي مع حراسة الملكية والحالة والواجهة دون تغيير ACK أو تنظيف الملف","suite":"test:odoo","test":"pending own image rejects a late stat result after canonical ACK removes its stage"},

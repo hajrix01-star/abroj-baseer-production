@@ -97,10 +97,11 @@ function Workspace({ engine, identity, language, presented, onBack }: TasksScree
   const measure = () => { const generation = ++measureGeneration.current; keyboardFrame.current?.measureInWindow((_x, top) => { if (alive.current && generation === measureGeneration.current && Number.isFinite(top)) setKeyboardOffset(Math.max(0, top)); }); };
   return <View style={s.fill} ref={keyboardFrame} collapsable={false} onLayout={measure} testID="tasks-workspace-frame">
     {identity.permissions.task_view && <>
-      <View style={[s.content, { backgroundColor: colors.white, paddingVertical: 10 }]}>
+      <View testID="tasks-section-header" style={[s.content, { backgroundColor: colors.white, paddingVertical: 4, gap: 6 }]}>
         <View style={[s.row, taskRow(language), { flexWrap: 'nowrap' }]}>
           {onBack && <IconButton icon="back" label={t('back')} disabled={!presented} onPress={() => { if (live()) onBack(); }} />}
           <Text style={[s.title, direction(language), s.flexible]}>{t(mode === 'create' ? 'newTask' : 'tasks')}</Text>
+          {mode === 'list' && canManage && <Button title={t('newTask')} disabled={!presented} onPress={enterCreate} />}
           {mode === 'list' && <IconButton icon="refresh" label={t('refresh')} busy={busy || detailBusy} disabled={!presented} onPress={() => { if (live()) { setRefresh(value => value + 1); void loadOptions(); } }} />}
         </View>
         {!!error && <View accessibilityLiveRegion="polite"><Label language={language}>{t(taskErrorWord(error))}</Label><Button title={t('retry')} quiet disabled={!presented} onPress={() => void loadOptions()} /></View>}
@@ -117,14 +118,13 @@ function Workspace({ engine, identity, language, presented, onBack }: TasksScree
                 accessibilityState={{ selected: view === item }} disabled={!presented} onPress={() => { if (live()) { setView(item); setError(null); } }} style={[s.tab, view === item && s.selected]}>
                 <Text style={[s.strong, direction(language), { color: view === item ? colors.blue : colors.muted }]}>{t(item)}</Text>
               </Pressable>)}</View>
-              <View style={[s.content, { paddingVertical: 8 }]}>
+              <View testID="tasks-list-filters" style={[s.content, { paddingVertical: 6, gap: 6 }]}>
                 <View style={[s.row, taskRow(language)]}>{(['open', 'done', 'cancelled'] as const).map(item => <Pressable key={item} testID={`tasks-state-${item}`} accessibilityRole="tab" accessibilityLabel={t(item)}
                   accessibilityState={{ selected: state === item }} disabled={!presented} onPress={() => { if (live()) setState(item); }} style={{ minHeight: 44, minWidth: 44, paddingHorizontal: 12, justifyContent: 'center', backgroundColor: state === item ? colors.pale : 'transparent', borderRadius: 10 }}>
                   <Text style={[s.muted, direction(language), { color: state === item ? colors.blue : colors.muted }]}>{t(item)}</Text>
                 </Pressable>)}</View>
                 {companies.length > 1 && (ready ? <CompanySelector identity={identity} permission="task_view" companyId={readCompany} onSelect={id => { if (live() && (id === 0 || companies.some(company => company.id === id))) { engine.cancelReads(); setFilter(id); } }}
                   language={language} t={translator(language)} companyIds={companies.map(company => company.id)} allowAll /> : <View style={{ minHeight: 48 }} />)}
-                {canManage && <Button title={t('newTask')} disabled={!presented} onPress={enterCreate} />}
                 {detailBusy && <ActivityIndicator color={colors.blue} accessibilityLabel={t('loading')} />}
               </View>
               <TaskList key={`${view}-${state}-${readCompany}`} engine={engine} language={language} presented={ready} view={view} state={state} companyId={readCompany} companies={companies} refresh={refresh} onOpen={task => void openDetail(task)} onDenied={denySection} />

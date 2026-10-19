@@ -60,11 +60,11 @@ export function OrdersScreen(props: OrdersScreenProps) {
   // Keyboard events use screen coordinates; KAV's layout is relative to this
   // page below the shell header. Include that offset without remounting drafts.
   return <View ref={frame} collapsable={false} testID="orders-workspace-frame" onLayout={measureOffset} style={s.fill}>
-    <View style={{ paddingHorizontal: 14, paddingVertical: 10, backgroundColor: colors.white }}>
-      <View style={[s.row, rowDirection(language)]}>
+    <View testID="orders-section-header" style={{ paddingHorizontal: 12, paddingVertical: 4, backgroundColor: colors.white }}>
+      <View style={[s.row, rowDirection(language), { flexWrap: 'nowrap' }]}>
         {props.onMenu && <IconButton icon="menu" label={t('menu')} onPress={props.onMenu} />}
         {!props.onMenu && props.onBack && <IconButton icon="back" label={t('back')} onPress={props.onBack} />}
-        <View style={s.flexible}><Heading word="orders" language={language} /><Label language={language} muted>{t('purchaseRequests')}</Label></View>
+        <View style={s.flexible}><Heading word="orders" language={language} /></View>
       </View>
     </View>
     {!identity.permissions.order_view ? <Empty title={t('noAccess')} help={t('permissionHelp')} language={language} /> : <View style={s.fill}>

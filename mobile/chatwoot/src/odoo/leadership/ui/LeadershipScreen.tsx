@@ -11,6 +11,7 @@ import { accessDenied } from '../types';
 import type { Amount, LeadershipDay, LeadershipOptions, LeadershipQuery, LeadershipReport, Period } from '../types';
 import { errorWord, leadershipTranslator, weekdayName, type LeadershipWord } from '../dictionary';
 import { calendarIntegerDisplay, coverageLabel, dayLabel, dayWord, monthLabel, percentagePresentation, snapshotDate } from './presentation';
+import { MonthField } from './MonthField';
 
 export interface LeadershipScreenProps { engine: LeadershipEngine; identity: Bootstrap; language: Language; presented: boolean; online?: boolean; scopeKey: string; onBack?: () => void }
 const row = (language: Language) => ({ flexDirection: language === 'ar' ? 'row-reverse' : 'row' } as const);
@@ -104,7 +105,7 @@ function Workspace({ engine, identity, language, presented, online = true, onBac
             </>}
           </View>}
           <View style={[s.panel, tab === 'heatmap' && s.calendarPanel]} testID="leadership-calendar-panel">
-            <DateTimeField disabled={!ready} label={t('chooseMonth')} testID="leadership-month" language={language} value={pickerValue(`${month}-01`)} onChange={value => { if (value) choose(() => { const selected = chosenDate(value).slice(0, 7); setMonth(selected); if (period === 'date') setCustomDate(`${selected}-01`); }); }} />
+            <MonthField key={String(online)} disabled={!ready} label={t('chooseMonth')} testID="leadership-month" language={language} value={month} onChange={selected => choose(() => { setMonth(selected); if (period === 'date') setCustomDate(`${selected}-01`); })} />
             {data && (tab === 'heatmap' ? <>
               <Text style={[s.heading, direction(language)]}>{monthLabel(data.calendar.month, language)}</Text>
               <Text style={[s.caption, direction(language)]}>{t('weekdayAverage')}</Text>
@@ -116,13 +117,15 @@ function Workspace({ engine, identity, language, presented, online = true, onBac
               <Trend disabled={!ready} report={data} language={language} onSelect={date => { if (active.current && readyRef.current) setSelectedDay(date); }} selected={selectedDay} />
             </>)}
           </View>
-          {day && <View style={s.panel} testID="leadership-day-detail"><View style={[s.row, row(language), { justifyContent: 'space-between' }]}><Text style={[s.heading, direction(language)]}>{t('selectedDay')} · {day.date}</Text><IconButton icon="close" label={t('close')} onPress={() => setSelectedDay(null)} /></View>
-            <Detail label={t('sales')} amount={day.sales} language={language} /><Label language={language}>{dayLabel(day, data!.as_of, language, live)}</Label><Label language={language} muted>{coverageLabel(day, data!.companies.length, language)}</Label>
-            <Detail label={t('target')} amount={day.target} language={language} /><Detail label={t(day.basis_kind === 'target' ? 'target' : day.basis_kind === 'baseline' ? 'baseline' : 'noBasis')} amount={day.basis} language={language} /><Detail label={t('ratio')} amount={day.ratio} percent language={language} />
-            {tab === 'overview' && <Detail label={`${t('previous')} · ${data?.previous_calendar.days.find(d => d.day === day.day)?.date ?? '—'}`} amount={data?.previous_calendar.days.find(d => d.day === day.day)?.sales} language={language} />}
-          </View>}
         </>}
       </ScrollView>
+      {day && ready && data && <Sheet title={`${t('selectedDay')} · ${day.date}`} close={() => setSelectedDay(null)} t={translator(language)} language={language} compact>
+        <View testID="leadership-day-detail" style={{ gap: 8 }}>
+          <Detail label={t('sales')} amount={day.sales} language={language} /><Label language={language}>{dayLabel(day, data.as_of, language, live)}</Label><Label language={language} muted>{coverageLabel(day, data.companies.length, language)}</Label>
+          <Detail label={t('target')} amount={day.target} language={language} /><Detail label={t(day.basis_kind === 'target' ? 'target' : day.basis_kind === 'baseline' ? 'baseline' : 'noBasis')} amount={day.basis} language={language} /><Detail label={t('ratio')} amount={day.ratio} percent language={language} />
+          {tab === 'overview' && <Detail label={`${t('previous')} · ${data.previous_calendar.days.find(d => d.day === day.day)?.date ?? '—'}`} amount={data.previous_calendar.days.find(d => d.day === day.day)?.sales} language={language} />}
+        </View>
+      </Sheet>}
       {comparison && ready && data && <Sheet title={t('comparison')} close={() => setComparison(false)} t={translator(language)} language={language} compact>
         <Label language={language}>{t('current')} · {data.overview.current_month.month}</Label><Label language={language}>{t('fixedComparison')}</Label><Label language={language} muted>{data.overview.current_month.from} — {data.overview.current_month.to}</Label>
         <Detail label={t('sales')} amount={data.overview.current_month.sales} language={language} /><Detail label={t('previousSales')} amount={data.overview.current_month.previous_sales} language={language} /><Detail label={t('dailyAverage')} amount={data.overview.current_month.daily_average} language={language} /><Detail label={t('previousAverage')} amount={data.overview.current_month.previous_daily_average} language={language} /><Detail label={t('salesChange')} amount={data.overview.current_month.sales_change} percent trend="higher" language={language} /><Detail label={t('spendingChange')} amount={data.overview.current_month.spending_change} percent trend="lower" language={language} /><Detail label={t('differenceChange')} amount={data.overview.current_month.difference_change} percent trend="higher" language={language} />

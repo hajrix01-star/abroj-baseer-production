@@ -2,6 +2,22 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { harness, nodes, one, byId, button, text } = require('./tasks-harness.cjs');
 const waiting = () => { let resolve, reject; const promise = new Promise((a, b) => { resolve = a; reject = b; }); return { promise, resolve, reject }; };
+test('tasks compact header keeps one authorized create action beside its title without a duplicate row', async () => {
+  for (const language of ['ar', 'en']) {
+    const app = harness({ language });
+    try { await app.flush();
+      const header = byId(app.render(), 'tasks-section-header');
+      assert.equal(header.style.at(-1).paddingVertical, 4);
+      const create = nodes({ props: header }).filter(node => node.type === 'Button');
+      assert.equal(create.length, 1);
+      assert.equal(nodes(app.render()).filter(node => node.type === 'Button' && node.props.title === create[0].props.title).length, 1);
+      assert.equal(byId(app.render(), 'tasks-list-filters').style.at(-1).gap, 6);
+      await app.act(() => create[0].props.onPress()); assert.ok(byId(app.render(), 'task-composer'));
+      app.options.can_manage = false; app.props.identity = { ...app.props.identity, permissions: { ...app.props.identity.permissions, task_manage: false } }; await app.flush();
+      assert.equal(nodes({ props: byId(app.render(), 'tasks-section-header') }).some(node => node.type === 'Button'), false);
+    } finally { await app.unmount(); }
+  }
+});
 test('task-only users see all authorized companies by default and filters are global server queries', async () => {
   const app = harness(); try {
     await app.flush(); assert.deepEqual(JSON.parse(JSON.stringify(app.calls.find(call => call[0] === 'list')[1])), { view: 'mine', state: 'open' });

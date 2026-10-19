@@ -2,6 +2,62 @@ const { test } = require('node:test'), assert = require('node:assert/strict');
 const { harness, nodes, one, byId, text } = require('./leadership-harness.cjs');
 const waiting = () => { let resolve, reject; const promise = new Promise((a, b) => { resolve = a; reject = b; }); return { promise, resolve, reject }; };
 
+test('calendar weeks always contain seven equal slots aligned with centered weekday averages', async () => {
+  for (const language of ['en', 'ar']) {
+    const app = harness({ language });
+    app.engine.read = async q => app.fixtures.report(q.companyId, '2026-10', 'month');
+    try {
+      await app.flush();
+      await app.act(() => byId(app.render(), 'leadership-tab-heatmap').onPress());
+      const weeks = nodes(app.render()).filter(n => /^leadership-week-\d+$/.test(n.props.testID || ''));
+      assert.equal(weeks.length, 6);
+      for (const week of weeks) {
+        assert.equal(week.props.style.flexDirection, 'row');
+        assert.notEqual(week.props.style.flexWrap, 'wrap');
+        const slots = week.props.children;
+        assert.equal(slots.length, 7);
+        slots.forEach(slot => { assert.equal(slot.props.style.flex, 1); assert.equal(slot.props.style.minWidth, 0); assert.equal(slot.props.style.width, undefined); });
+      }
+      assert.equal(one(weeks[0].props.children[5], 'Pressable').testID, 'leadership-day-2026-10-01');
+      assert.equal(one(weeks[0].props.children[6], 'Pressable').testID, 'leadership-day-2026-10-02');
+      assert.equal(one(weeks[1].props.children[0], 'Pressable').testID, 'leadership-day-2026-10-03');
+      const headers = byId(app.render(), 'leadership-weekday-averages');
+      assert.equal(headers.children.length, 7);
+      assert.equal(headers.style.gap || 0, 0);
+      headers.children.forEach(header => {
+        const average = nodes(header).find(n => n.type === 'Text' && n.props.style?.fontWeight === '700');
+        assert.ok(average);
+        assert.equal(average.props.style.textAlign, 'center');
+        assert.equal(average.props.style.alignSelf, 'stretch');
+      });
+    } finally { await app.unmount(); }
+  }
+});
+
+test('chart drawing and day inspection share the full touch width in both languages', async () => {
+  for (const language of ['en', 'ar']) {
+    const app = harness({ language });
+    app.engine.read = async q => { app.calls.push(['read', q]); return app.fixtures.report(q.companyId, '2026-10', 'month'); };
+    try {
+      await app.flush();
+      // Native SVG otherwise defaults to a centered `meet` viewBox, while
+      // locationX spans the entire Pressable. Host doubles cannot render that
+      // mismatch: bind its explicit drawing policy as well as its hit mapping.
+      assert.equal(one(app.render(), 'Svg').preserveAspectRatio, 'none');
+      const reads = app.calls.filter(c => c[0] === 'read').length;
+      for (const width of [246, 710]) {
+        await app.act(() => byId(app.render(), 'leadership-chart').onLayout({ nativeEvent: { layout: { width } } }));
+        for (const day of [1, 3, 6, 18, 31]) {
+          const locationX = (14 + (day - 1) * 292 / 30) * width / 320;
+          await app.act(() => byId(app.render(), 'leadership-chart').onPress({ nativeEvent: { locationX } }));
+          assert.match(text(app.render()), new RegExp(`2026-10-${String(day).padStart(2, '0')}`));
+        }
+      }
+      assert.equal(app.calls.filter(c => c[0] === 'read').length, reads);
+    } finally { await app.unmount(); }
+  }
+});
+
 test('percentages show their unit and sign with semantic colors without changing server amounts', async () => {
   const app = harness(), base = app.engine.read;
   app.engine.read = async q => { const r = await base(q); r.overview.current_month.spending_change = app.fixtures.money('9.00'); r.overview.current_month.difference_change = app.fixtures.money('-3.00'); return r; };

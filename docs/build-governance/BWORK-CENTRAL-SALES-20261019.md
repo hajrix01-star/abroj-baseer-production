@@ -296,6 +296,73 @@ there is no full-system rediscovery or separate duplicate map artifact.
   specified cases and valid native Saudi posting fixture. Accepted repaired
   source + isolated CI only; no native UI/QA parity/merge/deployment approval.
 
+- R18, owner now authorizes native preview and authenticated QA parity; only if
+  acceptance succeeds, merge through PR, protected QA-only deployment and APK
+  publication on GitHub download page. Live explicitly excluded. Reuse R17
+  source/110-case runtime and current architecture; no repeated unchanged ORM
+  or capacity run. Alpha delivery conducts independent candidate/operations
+  acceptance. Native proof gap: LeadershipScreen has only host/design evidence;
+  use existing AVD with isolated synthetic uipreview package, actual screen/engine,
+  AR/EN320/900 and no real HTTP/account/storage or normal app mutation. Owner
+  scope7companies/assumption<=20readers; this is layout acceptance, not load.
+  Existing QA workflow only accepts main-ancestor policy commits, so candidate
+  parity cannot precede merge/deploy through that approved path. Connected QA
+  reports expose invoice-only totals, not the canonical union; no usable browser
+  session is available (CUA inventory onlyMCPapps; IAB unavailable). Independent
+  operations reviewer confirmed the prerequisite conflict and access gap.
+  Asked owner whether to authorize QA deployment before financial parity (APK
+  remains withheld until parity), and for an approved authenticated QA path.
+  No merge, deployment, account grant or publication while prerequisites missing.
+- R19, bounded QA connectivity with a fresh anonymous in-memory cookie container:
+  known database login returned200 at`/en/web/login`; new leadership/options
+  returned404 at`/en/bchat/api/v2/leadership/options`. This proves connectivity
+  and that anonymous request's outcome only, not installed commit, authenticated
+  capability, accounting parity or a valid before/after activation comparison.
+  No existing browser cookies/private storage inspected and no credentials read.
+  Native agent approved to boot existing AVD without wipe/normal-app mutations,
+  build one offline isolated uipreview fixture of the real screen/engine and
+  capture AR/EN320/900. Any fixture is ignored output, never ordinary APK data.
+  Remaining financial acceptance once authorized access exists: same ordinary
+  account/company/date/currency reads from canonical Sales summary, Odoo heat
+  and BWork leadership; exact monthly/daily monetary parity, all-company scope,
+  signed refunds/dedup and central target identity, plus denial without partial
+  totals. No fiscal/goal writes or shared-environment load test authorized.
+- R20, owner explicitly approved revised order: after tests/native preview and
+  independent acceptance, merge and deploy QA first, then actual authenticated
+  parity before APK publication. Live remains excluded. Owner asked to clarify
+  access; explained that reading the full report needs signed-in QA account,
+  not just the URL, and no password/token should be sent in chat. Authenticated
+  parity and exact QA host result remain unproved; this approval does not turn
+  the invoice-only connector or a queued request into that evidence. Candidate
+  release metadata planned0.1.22/build23 only after preview build input is frozen.
+- R21, isolated preview build frozen before metadata edit: packageuipreview only,
+  no normal app overwrite. Candidate changes only trial version0.1.22/code23 in
+  app.config.ts; Chatwoot version, package IDs, dependency lock, permissions and
+  all reporting/calculation/product logic unchanged. Run existing BWork gate for
+  candidate metadata/source provenance, then update draft review and retain exact
+  current-head mandatory CI checks. No new Odoo/load environment, and no source
+  backend change justifying a discretionary repeated ORM run. Generated Android
+  metadata belongs to the later ordinary candidate build, not a tracked source
+  override. Final native acceptance and QA prerequisites still gate merge/deploy.
+- R22, native900 surfaced two genuine presentation/inspection defects; G4/G5/G8
+  reopened, not classified as proven regressions (no prior same-environment
+  success). Default SVG`meet` centers320px art inside710px touch bounds while
+  handler uses full width: tapping visible day6 selected day12. Percentage-width
+  flexWrap heat slots round into6columns at900 under7weekday headers, shifting
+  dates. Root/independent reviewer confirmed code and actual PNG evidence under
+  `output/bwork-leadership-20261019/native/`. Alpha bug-resolution applied.
+  Minimal local fixes: SVG preserveAspectRatio=none matches existing inverse;
+  explicit non-wrapping7-slot week rows include leading/trailing blanks, share
+  header slot geometry, and center weekday money locally. No backend amount,
+  date/filter calculation, ACL, dependencies or frozen module changed. Both
+  regression tests failed before repair and pass after it; corrected host-tree
+  child traversal in the calendar test, not its assertions. Add2 protected
+  invariants, run candidate gate, then one justified offline preview rebuild for
+  real AR/EN320/900 chart-hit/calendar-alignment proof. Owner7companies/assumed
+  <=20readers; native geometry risk not covered by host doubles, no load rerun.
+  P2only observations remain: extra date/time fields in month control, small
+  narrow calendar touch widths and English Estimate wrap. No silent polish scope.
+
 ## Local handoff / remaining acceptance
 
 | Area | Owner / evidence | Result |

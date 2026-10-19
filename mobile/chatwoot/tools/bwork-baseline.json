@@ -5,6 +5,8 @@
   "suites": ["test:bwork-gate", "test:odoo", "test:brand", "test:orders", "test:tasks", "test:leadership"],
   "invariants": [
     { "id": "vendor-patch-source-lock", "description": "رقع التوافق الأصلية محفوظة ببصماتها وقفل الاعتماديات دون تجاوز بوابة نظافة المصدر", "suite": "test:bwork-gate", "test": "reviewed vendor patches keep exact content and their lockfile hashes" },
+    { "id": "leadership-chart-hit-geometry", "description": "نقطة الرسم واليوم المختار يستخدمان عرضًا واحدًا في اللغتين وعلى العرضين الضيق والواسع", "suite": "test:leadership", "test": "chart drawing and day inspection share the full touch width in both languages" },
+    { "id": "leadership-seven-calendar-columns", "description": "التقويم سبع خانات ثابتة تحت عناوينها ومتوسطاتها دون التفاف الأعمدة", "suite": "test:leadership", "test": "calendar weeks always contain seven equal slots aligned with centered weekday averages" },
     { "id": "leadership-producer-wire", "description": "عقد الخادم الحقيقي المتسلسل يطابق قارئ BWork الصارم دون اعتباره اختبار أودو فعليًا", "suite": "test:leadership", "test": "real backend serializer output is accepted by the strict native report decoder" },
     { "id": "leadership-exact-companies", "description": "الجميع لا يقبل إخفاء شركة مخولة من خيارات التقرير", "suite": "test:leadership", "test": "all-company options cannot silently omit any verified authorized company" },
     { "id": "leadership-percent-units", "description": "النسب ظاهرة بعلامتها ولون اتجاهها دون تغيير قيم الخادم", "suite": "test:leadership", "test": "percentages show their unit and sign with semantic colors without changing server amounts" },

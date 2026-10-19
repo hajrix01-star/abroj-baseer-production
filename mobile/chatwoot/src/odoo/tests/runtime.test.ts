@@ -14,6 +14,7 @@ const files = new Map<string, Buffer>(); const directories = new Set<string>(['f
 let directoryReads = 0;
 let beforeStat: ((uri: string) => Promise<void>) | undefined;
 let failOwnedDelete = false;
+let failImageCacheCopy = false, failImageCacheCatalog = false;
 const normalize = (uri: string) => uri.startsWith('file://') ? uri : `file://${uri}`;
 function makeDirectory(uri: string) {
   const parts = uri.replace(/^file:\/\//, '').split('/').filter(Boolean); let path = 'file:///';
@@ -34,7 +35,10 @@ const fs = {
     return [...entries];
   },
   async deleteAsync(uri: string) { if (failOwnedDelete && uri.includes('/odoo-chat-media/')) throw new Error('synthetic cleanup failure'); files.delete(normalize(uri)); },
-  async copyAsync({ from, to }: { from: string; to: string }) { const bytes = files.get(normalize(from)); if (!bytes) throw new Error('missing file'); files.set(normalize(to), Buffer.from(bytes)); },
+  async copyAsync({ from, to }: { from: string; to: string }) {
+    const bytes = files.get(normalize(from)); if (!bytes) throw new Error('missing file'); files.set(normalize(to), Buffer.from(bytes));
+    if (failImageCacheCopy && to.includes('/media-') && to.endsWith('.part')) { failImageCacheCopy = false; throw new Error('synthetic partial copy failure'); }
+  },
   async moveAsync({ from, to }: { from: string; to: string }) { const bytes = files.get(normalize(from)); if (!bytes) throw new Error('missing file'); files.set(normalize(to), bytes); files.delete(normalize(from)); },
   EncodingType: { Base64: 'base64' },
   async readAsStringAsync(uri: string) { const bytes = files.get(normalize(uri)); if (!bytes) throw new Error('missing file'); return bytes.toString('base64'); },
@@ -50,7 +54,10 @@ const sqlArchive = new SqliteArchiveStore(async () => database);
 const strictCatalogActor = (actor: string) => assert.match(actor, /^[a-f0-9]{64}$/, 'real SQLite catalog accepts an actor digest, never a file directory');
 const catalog = {
   async list(actor: string) { strictCatalogActor(actor); return sqlArchive.mediaCacheCatalog.list(actor); },
-  async put(actor: string, entry: { uri: string; bytes: number; sha256: string; usedAt: number }) { strictCatalogActor(actor); return sqlArchive.mediaCacheCatalog.put(actor, entry); },
+  async put(actor: string, entry: { uri: string; bytes: number; sha256: string; usedAt: number }) {
+    strictCatalogActor(actor); await sqlArchive.mediaCacheCatalog.put(actor, entry);
+    if (failImageCacheCatalog) { failImageCacheCatalog = false; throw new Error('synthetic uncertain catalog ACK'); }
+  },
   async remove(actor: string, uri: string) { strictCatalogActor(actor); return sqlArchive.mediaCacheCatalog.remove(actor, uri); },
   async touch(actor: string, uri: string, at: number) { strictCatalogActor(actor); return sqlArchive.mediaCacheCatalog.touch(actor, uri, at); },
 };
@@ -96,6 +103,7 @@ const imageMedia = { id: 170, kind: 'image', mime: 'image/jpeg', name: 'syntheti
   sha256: createHash('sha256').update(imageBytes).digest('hex'), thumbnail_available: true };
 const extraMedia = new Map<number, { metadata: typeof media | typeof imageMedia; bytes: Buffer }>();
 let thumbnailBytes = thumbnail, thumbnailMime = 'image/jpeg';
+let uploadProbe: { id: number; uuid?: string; metadata?: typeof imageMedia; bytes?: Buffer; uploadPosts: number; messagePosts: number; badAck?: boolean; reconcile?: boolean } | undefined;
 const roomA = { id: 11, company_id: 1, membership_id: 21, name: 'A', is_group: true, avatar_version: 1 };
 const roomB = { id: 12, company_id: 1, membership_id: 22, name: 'B', is_group: true, avatar_version: 1 };
 const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aBz8AAAAASUVORK5CYII=', 'base64');
@@ -103,7 +111,7 @@ let avatarBytes = png, avatarMime = 'image/png', avatarHeader: string | undefine
 let avatarCanManage = true, avatarLostAck = false, avatarReads = 0, avatarUploads = 0, groupReads = 0;
 const appState = { currentState: 'active' };
 let rooms = [roomA, roomB]; let mediaRight = true; let offline = false; let redirect = false; let unauthorized = false; let revoked = false;
-let beforeNative: ((path: string) => Promise<void>) | undefined;
+let beforeNative: ((path: string, method?: string) => Promise<void>) | undefined;
 let missingMetadata = false;
 let nativeFailure: Error | undefined;
 let bootstrapDiagnostic: string | undefined;
@@ -124,7 +132,7 @@ function nativeFetch(options: Record<string, unknown>, method: string, url: stri
     assert.equal(JSON.parse(String(requestBody)).params.db, 'trial');
   }
   const task: any = Promise.resolve().then(async () => {
-    if (beforeNative) await beforeNative(path);
+    if (beforeNative) await beforeNative(path, method);
     if (nativeFailure) throw nativeFailure;
     if (offline) throw new Error('network unavailable');
     let status = 200; let body: unknown; const headers: Record<string, string> = { 'Content-Type': 'application/json' };
@@ -184,6 +192,29 @@ function nativeFetch(options: Record<string, unknown>, method: string, url: stri
       status = changesStatus;
       body = status !== 200 ? { error: { code: 'request_failed' } } : malformedChanges ? { api_version: 2, changes: null }
         : { api_version: 2, changes: [], next_after: 0, watermark: 0, reset_required: false };
+    }
+    else if (uploadProbe && /\/11\/uploads\/[a-f0-9-]+\/reconcile$/.test(path)) {
+      uploadProbe.uuid = path.split('/').at(-2);
+      body = { api_version: 2, room_id: roomA.id, membership_id: roomA.membership_id, upload_uuid: uploadProbe.uuid,
+        state: uploadProbe.reconcile ? 'staged' : 'missing', ...(uploadProbe.reconcile ? { media_id: uploadProbe.id } : {}) };
+    }
+    else if (uploadProbe && method === 'POST' && path.endsWith('/11/uploads')) {
+      uploadProbe.uploadPosts++;
+      const parts = requestBody as { name: string; data: string }[];
+      const metadata = JSON.parse(parts.find(item => item.name === 'metadata')!.data);
+      const bytes = files.get(normalize(parts.find(item => item.name === 'file')!.data.replace(/^native-file:/, '')))!;
+      assert.equal(createHash('sha256').update(bytes).digest('hex'), metadata.sha256);
+      uploadProbe.metadata = { ...metadata, id: uploadProbe.id, thumbnail_available: true };
+      uploadProbe.bytes = Buffer.from(bytes);
+      body = { api_version: 2, upload_uuid: metadata.upload_uuid, media_id: uploadProbe.id, state: 'staged' };
+    }
+    else if (uploadProbe && method === 'POST' && path.endsWith('/11/messages')) {
+      uploadProbe.messagePosts++;
+      const submitted = JSON.parse(new URLSearchParams(String(requestBody)).get('payload')!);
+      if (!uploadProbe.badAck && uploadProbe.metadata && uploadProbe.bytes)
+        extraMedia.set(uploadProbe.id, { metadata: uploadProbe.metadata, bytes: uploadProbe.bytes });
+      body = { api_version: 2, room_id: roomA.id, membership_id: roomA.membership_id, client_uuid: submitted.client_uuid,
+        message_id: 2, media_id: uploadProbe.badAck ? uploadProbe.id + 1 : uploadProbe.id, state: 'sent' };
     }
     else if (path.endsWith('/11/messages')) body = { api_version: 2, messages: [
       { id: 1, author_user_id: 7, author_name: 'A', text: '', created_at: '', media },
@@ -490,6 +521,122 @@ test('modern preview uses a verified cached original when its thumbnail is absen
     await assert.rejects(localMediaLease(roomA, { id: 170 }, 'preview'), { code: 'media_not_cached' });
     assert.equal(files.has(original.uri), false); assert.equal(calls.length, before);
   } finally { offline = false; await engine.refresh(); extraMedia.clear(); await engine.history(roomA); }
+});
+
+test('own uploaded image survives normal ACK cleanup as verified cache and never downloads its bytes again', async () => {
+  await engine.logout(); await engine.login('alice', 'private', true); await engine.history(roomA);
+  uploadProbe = { id: 670, uploadPosts: 0, messagePosts: 0 };
+  files.set('file:///external/own.jpg', imageBytes);
+  const staged = await stageFile(roomA, { uri: 'file:///external/own.jpg', name: 'own.jpg', mime: 'image/jpeg', kind: 'image' });
+  try {
+    await engine.enqueueAttachment(roomA, staged); await engine.flush();
+    assert.equal(uploadProbe.uploadPosts, 1); assert.equal(uploadProbe.messagePosts, 1);
+    assert.equal(engine.pending().length, 0); assert.equal(files.has(staged.uri), false, 'outbox cleanup is unchanged');
+    const before = calls.length;
+    const preview = await localMediaLease(roomA, { id: 670 }, 'preview');
+    const original = await localMediaLease(roomA, { id: 670 });
+    try {
+      assert.equal(calls.slice(before).filter(call => call.path.includes('/media/')).length, 0, 'sender already owns these exact uploaded bytes');
+      assert.equal(preview.uri, original.uri); assert.deepEqual(files.get(original.uri), imageBytes);
+    } finally { preview.release(); original.release(); }
+  } finally { uploadProbe = undefined; extraMedia.clear(); await engine.logout(); }
+});
+
+test('upload ACK cache cannot grant image display before a canonical message or after a bad message ACK', async () => {
+  await engine.logout(); await engine.login('alice', 'private', true); await engine.history(roomA);
+  uploadProbe = { id: 671, uploadPosts: 0, messagePosts: 0, badAck: true };
+  files.set('file:///external/unattached.jpg', imageBytes);
+  const staged = await stageFile(roomA, { uri: 'file:///external/unattached.jpg', name: 'unattached.jpg', mime: 'image/jpeg', kind: 'image' });
+  const cache = staged.uri.replace(/stage-[^/]+$/, 'media-671.jpg');
+  let release!: () => void, started!: () => void;
+  const hold = new Promise<void>(resolve => { release = resolve; }), waiting = new Promise<void>(resolve => { started = resolve; });
+  beforeNative = async (path, method) => { if (method === 'POST' && path.endsWith('/11/messages')) { started(); await hold; } };
+  try {
+    await engine.enqueueAttachment(roomA, staged);
+    const flushing = engine.flush(), rejected = assert.rejects(flushing, { code: 'invalid_ack' });
+    await waiting;
+    assert.equal(files.has(cache), true); assert.equal(files.has(staged.uri), true, 'COPY leaves the durable outbox stage intact');
+    await assert.rejects(localMediaLease(roomA, { id: 671 }), { code: 'media_room_mismatch' });
+    release(); await rejected; beforeNative = undefined;
+    await assert.rejects(localMediaLease(roomA, { id: 671 }), { code: 'media_room_mismatch' });
+    assert.equal(uploadProbe.uploadPosts, 1); assert.equal(engine.pending().length, 1);
+    assert.equal(files.has(staged.uri), true);
+  } finally {
+    release(); beforeNative = undefined; uploadProbe = undefined; extraMedia.clear(); await engine.logout();
+    assert.equal(files.has(cache), false); assert.equal(files.has(staged.uri), false);
+  }
+});
+
+test('canonical image hash always overrides sender cache candidates and never displays different local bytes', async () => {
+  await engine.logout(); await engine.login('alice', 'private', true); await engine.history(roomA);
+  uploadProbe = { id: 672, uploadPosts: 0, messagePosts: 0 };
+  files.set('file:///external/candidate.jpg', imageBytes);
+  const staged = await stageFile(roomA, { uri: 'file:///external/candidate.jpg', name: 'candidate.jpg', mime: 'image/jpeg', kind: 'image' });
+  try {
+    await engine.enqueueAttachment(roomA, staged); await engine.flush();
+    const canonical = Buffer.alloc(imageBytes.length, 88);
+    extraMedia.set(672, { metadata: { ...uploadProbe.metadata!, sha256: createHash('sha256').update(canonical).digest('hex') }, bytes: canonical });
+    await engine.history(roomA);
+    const before = calls.length, local = await localMediaLease(roomA, { id: 672 });
+    try {
+      assert.deepEqual(files.get(local.uri), canonical);
+      assert.deepEqual(calls.slice(before).map(call => call.path), ['/bchat/api/v2/media/672/content']);
+    } finally { local.release(); }
+  } finally { uploadProbe = undefined; extraMedia.clear(); await engine.logout(); }
+});
+
+test('optional sender image copy or catalog failures never fail a successful upload or recreate its outbox', async () => {
+  for (const failure of ['copy', 'catalog']) {
+    await engine.logout(); await engine.login('alice', 'private', true); await engine.history(roomA);
+    uploadProbe = { id: 673, uploadPosts: 0, messagePosts: 0 };
+    files.set('file:///external/cache-failure.jpg', imageBytes);
+    const staged = await stageFile(roomA, { uri: 'file:///external/cache-failure.jpg', name: 'cache-failure.jpg', mime: 'image/jpeg', kind: 'image' });
+    try {
+      failImageCacheCopy = failure === 'copy'; failImageCacheCatalog = failure === 'catalog';
+      await engine.enqueueAttachment(roomA, staged); await engine.flush(); await engine.flush();
+      assert.equal(uploadProbe.uploadPosts, 1); assert.equal(uploadProbe.messagePosts, 1);
+      assert.equal(engine.pending().length, 0); assert.equal(files.has(staged.uri), false);
+      assert.equal(files.has(staged.uri.replace(/stage-[^/]+$/, 'media-673.jpg')), false);
+      assert.equal([...files.keys()].some(uri => uri.endsWith('.part')), false);
+    } finally { failImageCacheCopy = false; failImageCacheCatalog = false; uploadProbe = undefined; extraMedia.clear(); await engine.logout(); }
+  }
+});
+
+test('reconciled upload image candidates never replace an existing independently leased original', async () => {
+  await engine.logout(); await engine.login('alice', 'private', true);
+  extraMedia.set(674, { metadata: { ...imageMedia, id: 674 }, bytes: imageBytes }); await engine.history(roomA);
+  const pinned = await localMediaLease(roomA, { id: 674 });
+  const different = Buffer.alloc(imageBytes.length, 87);
+  files.set('file:///external/reconciled.jpg', different);
+  const staged = await stageFile(roomA, { uri: 'file:///external/reconciled.jpg', name: 'reconciled.jpg', mime: 'image/jpeg', kind: 'image' });
+  uploadProbe = { id: 674, uploadPosts: 0, messagePosts: 0, reconcile: true, metadata: { ...imageMedia, id: 674 }, bytes: imageBytes };
+  try {
+    await engine.enqueueAttachment(roomA, staged); await engine.flush();
+    assert.equal(uploadProbe.uploadPosts, 0, 'reconciliation is reused without another upload');
+    assert.equal(uploadProbe.messagePosts, 1); assert.deepEqual(files.get(pinned.uri), imageBytes);
+    assert.equal(engine.pending().length, 0); assert.equal(files.has(staged.uri), false);
+  } finally { pinned.release(); uploadProbe = undefined; extraMedia.clear(); await engine.logout(); }
+});
+
+test('membership revoked while copying an upload cache candidate cannot commit or expose its late bytes', async () => {
+  await engine.logout(); await engine.login('alice', 'private', true); await engine.history(roomA);
+  uploadProbe = { id: 675, uploadPosts: 0, messagePosts: 0 };
+  files.set('file:///external/revoked-cache.jpg', imageBytes);
+  const staged = await stageFile(roomA, { uri: 'file:///external/revoked-cache.jpg', name: 'revoked-cache.jpg', mime: 'image/jpeg', kind: 'image' });
+  const cache = staged.uri.replace(/stage-[^/]+$/, 'media-675.jpg');
+  let release!: () => void, started!: () => void;
+  const hold = new Promise<void>(resolve => { release = resolve; }), waiting = new Promise<void>(resolve => { started = resolve; });
+  beforeStat = async uri => { if (uri.endsWith('.part')) { started(); await hold; } };
+  try {
+    await engine.enqueueAttachment(roomA, staged);
+    const flushing = engine.flush(), rejected = assert.rejects(flushing, { code: 'membership_changed' });
+    await waiting; rooms = [roomB]; const refreshing = engine.refresh();
+    for (let n = 0; n < 100 && engine.rooms().some(row => row.id === roomA.id); n++) await Promise.resolve();
+    assert.equal(engine.rooms().some(row => row.id === roomA.id), false);
+    beforeStat = undefined; release(); await rejected; await refreshing;
+    assert.equal(files.has(cache), false); assert.equal(uploadProbe.messagePosts, 0);
+    assert.equal([...files.keys()].some(uri => uri.endsWith('.part')), false);
+  } finally { beforeStat = undefined; release(); rooms = [roomA, roomB]; uploadProbe = undefined; extraMedia.clear(); await engine.logout(); }
 });
 
 test('a stalled thumbnail never blocks a verified cached image or staging the next attachment', async () => {

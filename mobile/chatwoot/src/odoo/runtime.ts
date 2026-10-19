@@ -410,11 +410,17 @@ async function verifyAttachment(room: Room, attachment: Attachment): Promise<voi
 }
 async function upload(room: Room, attachment: Attachment, csrfToken: string, signal: AbortSignal): Promise<{ media_id: number; policy_version?: number }> {
   const snapshot = scope(room); await verifyAttachment(room, attachment);
+  const complete = async (mediaId: number) => {
+    // Replaceable bytes, never a message association or permission. The outbox
+    // still owns its stage; a failed cache optimization must not replay upload.
+    await cacheUploadedImage(room, attachment, mediaId, snapshot).catch(() => undefined);
+    fence(room, snapshot); return { media_id: mediaId };
+  };
   const base = `/bchat/api/v2/rooms/${room.id}/uploads`;
   const reconciled = await request({ method: 'GET', path: `${base}/${attachment.upload_uuid}/reconcile`, signal }) as Record<string, unknown>;
   fence(room, snapshot);
   if (reconciled.api_version !== 2 || reconciled.membership_id !== room.membership_id || reconciled.room_id !== room.id || reconciled.upload_uuid !== attachment.upload_uuid) throw new ChatError('invalid_response');
-  if (Number.isSafeInteger(reconciled.media_id) && Number(reconciled.media_id) > 0 && ['staged', 'attached'].includes(String(reconciled.state))) return { media_id: Number(reconciled.media_id) };
+  if (Number.isSafeInteger(reconciled.media_id) && Number(reconciled.media_id) > 0 && ['staged', 'attached'].includes(String(reconciled.state))) return complete(Number(reconciled.media_id));
   if (reconciled.state !== 'missing') throw new ChatError('upload_pending');
   const metadata = { api_version: 2, membership_id: room.membership_id, upload_uuid: attachment.upload_uuid, kind: attachment.kind, mime: attachment.mime, size: attachment.size, sha256: attachment.sha256, name: attachment.name };
   const body = [{ name: 'csrf_token', data: csrfToken }, { name: 'metadata', data: JSON.stringify(metadata) },
@@ -423,7 +429,48 @@ async function upload(room: Room, attachment: Attachment, csrfToken: string, sig
   let result: any; try { result = response.json(); } catch { throw new ChatError('invalid_response'); }
   fence(room, snapshot);
   if (result.api_version !== 2 || result.upload_uuid !== attachment.upload_uuid || !Number.isSafeInteger(result.media_id) || result.media_id <= 0 || !['staged', 'attached'].includes(result.state)) throw new ChatError('invalid_response');
-  return { media_id: result.media_id };
+  return complete(result.media_id);
+}
+/** Cache the sender's verified image without moving/retaining its outbox stage.
+ * localMediaLease still requires canonical history, current membership and SHA
+ * before any display; an upload ACK alone cannot make these bytes readable. */
+async function cacheUploadedImage(room: Room, attachment: Attachment, mediaId: number, snapshot: ReturnType<typeof scope>): Promise<void> {
+  if (attachment.kind !== 'image' || !['image/jpeg', 'image/png', 'image/webp'].includes(attachment.mime)) return;
+  return serialMedia(async () => {
+    mediaFence(room, snapshot);
+    if (getEngine().identity?.permissions.chat_send !== true) throw new ChatError('forbidden', 403);
+    await verifyAttachment(room, attachment); mediaFence(room, snapshot);
+    const actor = await actorDirectory(snapshot.key);
+    const directory = `${actor}c${room.company_id}-r${room.id}-m${room.membership_id}/`;
+    const uri = `${directory}media-${mediaId}${extensions[attachment.mime]}`;
+    // Never replace a leased/existing URI or compete with a canonical download.
+    if ((await FS.getInfoAsync(uri)).exists || mediaPins.get(uri)?.size
+        || [...mediaDownloads.keys()].some(key => key.startsWith(`${snapshot.epoch}/${uri}/`))) return;
+    const partial = `${directory}media-${mediaId}-${Crypto.randomUUID()}.part`;
+    let moved = false;
+    try {
+      const held = [...mediaDownloadReservations.values()].filter(item => item.actor === actor);
+      await capacity(actor, attachment.size + held.reduce((sum, item) => sum + item.bytes, 0), false, held.length + 1);
+      mediaFence(room, snapshot);
+      await FS.copyAsync({ from: attachment.uri, to: partial });
+      const copied = await FS.getInfoAsync(partial);
+      if (!copied.exists || copied.isDirectory || copied.size !== attachment.size || await hashFile(partial) !== attachment.sha256)
+        throw new ChatError('attachment_changed');
+      mediaFence(room, snapshot);
+      if (getEngine().identity?.permissions.chat_send !== true) throw new ChatError('forbidden', 403);
+      await FS.moveAsync({ from: partial, to: uri }); moved = true; mediaFence(room, snapshot);
+      const state = await loadActorFiles(actor, snapshot.epoch), prior = state.cache.get(uri);
+      const entry = { uri, bytes: attachment.size, sha256: attachment.sha256, usedAt: Date.now() };
+      state.cacheBytes += entry.bytes - (prior?.bytes ?? 0); state.cache.set(uri, entry);
+      await mediaCacheCatalog.put(catalogActor(actor), entry); mediaFence(room, snapshot);
+    } catch (error) {
+      // Still under the mutation lock: stale cleanup cannot race a new actor's
+      // cache commit. The original stage is never a cleanup target here.
+      await removeOwned(partial).catch(() => undefined);
+      if (moved) await removeOwned(uri).catch(() => undefined);
+      throw error;
+    }
+  });
 }
 /** Remove only regex-validated app-owned files, never an arbitrary directory. */
 async function pruneMedia(mode: 'snapshot' | 'cacheOnly' | 'logout', expectedGeneration = generation): Promise<void> {

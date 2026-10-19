@@ -1,6 +1,7 @@
 """Source contract for safe BChat push-device reactivation after logout."""
 import ast
 from pathlib import Path
+import types
 import unittest
 
 
@@ -10,6 +11,28 @@ PUSH_STATE = (ROOT.parents[1] / "android" / "bchat" / "app" / "src" / "main"
 
 
 class PushInstallationLifecycleContractTests(unittest.TestCase):
+    def test_reassignment_fixture_requires_new_recipient_without_actor_or_old_assignee(self):
+        tree = ast.parse((ROOT / 'tests/test_push_v2.py').read_text(encoding='utf-8'))
+        method = next(node for node in ast.walk(tree) if isinstance(node, ast.FunctionDef)
+                      and node.name == 'test_token_moves_to_current_user_and_reassign_never_wakes_previous_assignee')
+        assertions = [node for node in method.body if isinstance(node, ast.Expr)
+                      and isinstance(node.value, ast.Call) and isinstance(node.value.func, ast.Attribute)
+                      and node.value.func.attr.startswith('assert')
+                      and "events.mapped('recipient_id').ids" in ast.unparse(node)]
+        self.assertEqual(len(assertions), 3)
+        code = compile(ast.fix_missing_locations(ast.Module(body=assertions, type_ignores=[])),
+                       'authored-reassignment-recipient-assertions', 'exec')
+        self.creator = types.SimpleNamespace(id=5)
+        self.assignee = types.SimpleNamespace(id=7)
+        self.replacement = types.SimpleNamespace(id=9)
+        def run(ids):
+            events = types.SimpleNamespace(mapped=lambda name: types.SimpleNamespace(ids=ids))
+            exec(code, {'self': self, 'events': events})
+        run([9])
+        for rejected in ([], [5, 9], [7, 9]):
+            with self.subTest(recipients=rejected), self.assertRaises(AssertionError):
+                run(rejected)
+
     def test_inactive_audit_fixtures_explicitly_include_retained_rows(self):
         tree = ast.parse((ROOT / 'tests/test_push_v2.py').read_text(encoding='utf-8'))
         for method_name, variable in (

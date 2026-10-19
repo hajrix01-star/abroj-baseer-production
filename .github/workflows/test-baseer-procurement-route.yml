@@ -4,6 +4,8 @@ on:
     branches: [main]
     paths:
       - custom_addons/baseer_procurement_requests/**
+      - custom_addons/baseer_bchat_procurement/**
+      - custom_addons/baseer_bchat/**
       - custom_addons/baseer_access_roles/**
       - tests/purchase_route_catalog.test.mjs
       - .github/workflows/test-baseer-procurement-route.yml
@@ -11,6 +13,53 @@ on:
 permissions:
   contents: read
 jobs:
+  bchat-orders-workflow:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres@sha256:f1c3376c26f2609ab9f29f71f824103fe2fcd8ee0346485cb6122a4f93df6f94
+        env:
+          POSTGRES_DB: postgres
+          POSTGRES_USER: odoo
+          POSTGRES_PASSWORD: odoo
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U odoo -d postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify BChat order permissions, HTTP, atomic sharing and receipts in isolated Odoo
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          docker run --rm --network host \
+            -e HOST=127.0.0.1 -e USER=odoo -e PASSWORD=odoo \
+            --mount type=bind,src="$GITHUB_WORKSPACE/custom_addons",dst=/mnt/baseer-addons,readonly \
+            --mount type=bind,src="$GITHUB_WORKSPACE/third_party_addons/odoomates_19",dst=/mnt/odoomates,readonly \
+            --mount type=bind,src="$GITHUB_WORKSPACE/third_party_addons/erp_heritage_19",dst=/mnt/erp-heritage,readonly \
+            odoo@sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd \
+            odoo --db_host=127.0.0.1 --db_port=5432 --db_user=odoo --db_password=odoo \
+            --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/baseer-addons,/mnt/odoomates,/mnt/erp-heritage \
+            -d bwork_orders_workflow_ci -i baseer_bchat_procurement,baseer_access_roles --without-demo=all \
+            --test-enable \
+            --test-tags=/baseer_bchat_procurement:BChatOrderCase,/baseer_bchat_procurement:BChatOrderHttpCase,/baseer_bchat_procurement:BChatReceiptCase,/baseer_bchat_procurement:BChatUserPermissionsCase \
+            --stop-after-init --max-cron-threads=0 --workers=0 --log-level=test 2>&1 | tee bchat-orders-workflow.log
+          for test_class in BChatOrderCase BChatOrderHttpCase BChatReceiptCase BChatUserPermissionsCase; do
+            grep -F "Starting $test_class." bchat-orders-workflow.log
+          done
+          if grep -Eiq 'skipped|[1-9][0-9]* failed,|[1-9][0-9]* error\(s\)' bchat-orders-workflow.log; then
+            echo 'BChat orders runtime tests were skipped or failed' >&2
+            exit 1
+          fi
+          grep -F '0 failed, 0 error(s)' bchat-orders-workflow.log
+      - name: Preserve isolated Odoo evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bchat-orders-workflow-runtime
+          path: bchat-orders-workflow.log
+          if-no-files-found: error
   purchase-route:
     runs-on: ubuntu-24.04
     timeout-minutes: 20

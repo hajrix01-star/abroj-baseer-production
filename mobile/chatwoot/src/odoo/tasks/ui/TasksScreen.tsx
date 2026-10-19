@@ -13,28 +13,30 @@ import { TaskComposer } from './TaskComposer';
 import { TaskDetail } from './TaskDetail';
 import { taskRow, taskStyles as s } from './taskStyles';
 
-export interface TasksScreenProps { engine: TasksEngine; identity: Bootstrap; language: Language; presented: boolean; scopeKey: string; onBack?: () => void }
+export interface TasksScreenProps { engine: TasksEngine; identity: Bootstrap; language: Language; presented: boolean; scopeKey: string; onBack?: () => void; notificationTarget?: {taskId:number;companyId:number;nonce:number;authority:string} }
+export const taskNotificationScope=(identity:Bootstrap,scopeKey:string)=>JSON.stringify([scopeKey,identity.database,identity.user_id,identity.company_ids,identity.permissions]);
 
 /** The scope key clears private state on identity/permission change, not on verification. */
 export function TasksScreen(props: TasksScreenProps) {
-  const t = taskTranslator(props.language), scope = JSON.stringify([props.scopeKey, props.identity.database, props.identity.user_id, props.identity.company_ids, props.identity.permissions]);
+  const t = taskTranslator(props.language), scope = taskNotificationScope(props.identity,props.scopeKey);
   return <View style={s.fill} testID="tasks-screen">
     <View pointerEvents={props.presented ? 'auto' : 'none'} accessibilityElementsHidden={!props.presented} importantForAccessibility={props.presented ? 'auto' : 'no-hide-descendants'}
       style={[s.fill, !props.presented && { opacity: 0 }]} testID="tasks-retained-workspace">
-      <Workspace key={scope} {...props} />
+      <Workspace key={scope} {...props} notificationTarget={props.notificationTarget?.authority===scope?props.notificationTarget:undefined} />
     </View>
     {!props.presented && <View testID="tasks-privacy-cover" style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: colors.white }} />}
     {!props.identity.permissions.task_view && props.presented && <View style={s.content}><Label language={props.language}>{t('noAccess')}</Label><Label language={props.language} muted>{t('permissionHelp')}</Label></View>}
   </View>;
 }
 
-function Workspace({ engine, identity, language, presented, onBack }: TasksScreenProps) {
+function Workspace({ engine, identity, language, presented, onBack, notificationTarget }: TasksScreenProps) {
   const t = taskTranslator(language), [options, setOptions] = useState<WorkTasksOptions | null>(null), [error, setError] = useState<unknown>(null), [busy, setBusy] = useState(false), [optionsReady, setOptionsReady] = useState(false);
   const [view, setView] = useState<TasksView>('mine'), [state, setState] = useState<TasksStateFilter>('open'), [filter, setFilter] = useState(0);
   const [mode, setMode] = useState<'list' | 'create' | 'detail'>('list'), [detail, setDetail] = useState<WorkTask | null>(null), [detailBusy, setDetailBusy] = useState(false);
   const [lastCompany, setLastCompany] = useState(0), [createCompany, setCreateCompany] = useState(0), [refresh, setRefresh] = useState(0), [pending, setPending] = useState<PendingTaskAttempt[]>([]);
   const alive = useRef(true), active = useRef(presented), optionsGate = useRef(false), detailGeneration = useRef(0), optionsGeneration = useRef(0);
   const knownDenied = useRef(false);
+  const consumedNotification=useRef<number|null>(null);
   active.current = presented && identity.permissions.task_view === true;
   const retryRead = useRef<{ run: () => void; needsOptions: boolean } | null>(null), [resumeTick, setResumeTick] = useState(0), recovered = useRef(false), pendingDirty = useRef(false);
   const keyboardFrame = useRef<View>(null), measureGeneration = useRef(0), [keyboardOffset, setKeyboardOffset] = useState(0);
@@ -84,6 +86,18 @@ function Workspace({ engine, identity, language, presented, onBack }: TasksScree
   useEffect(() => { if (!presented) { setOptionsReady(false); engine.cancelReads(); } else void loadOptions(); }, [presented]);
   useEffect(() => { if (!presented || !retryRead.current || (retryRead.current.needsOptions && !ready) || recovered.current) return;
     recovered.current = true; const retry = retryRead.current; retryRead.current = null; retry.run(); }, [presented, ready, resumeTick]);
+  useEffect(()=>{
+    const target=notificationTarget;
+    if(!target||!live()||consumedNotification.current===target.nonce)return;
+    consumedNotification.current=target.nonce;setMode('list');setDetail(null);
+    if(!Number.isSafeInteger(target.taskId)||target.taskId<=0||!companies.some(company=>company.id===target.companyId))return;
+    const generation=++detailGeneration.current;setDetailBusy(true);
+    // Only the modern, authorized detail endpoint; legacy tasks remain in the inbox.
+    void engine.detail(target.taskId,target.companyId).then(next=>{
+      if(live()&&generation===detailGeneration.current&&next.task.id===target.taskId&&next.task.company_id===target.companyId){setDetail(next.task);setMode('detail');}
+    }).catch(failure=>{if(alive.current&&generation===detailGeneration.current&&taskAccessDenied(failure))denySection(failure);})
+      .finally(()=>{if(alive.current&&generation===detailGeneration.current)setDetailBusy(false);});
+  },[notificationTarget?.nonce,ready]);
   const outcome = (result: WorkTaskWriteResult) => {
     if (!alive.current || knownDenied.current || !identity.company_ids.includes(result.task.company_id)) return;
     setDetail(result.task); setMode('detail'); setRefresh(value => value + 1); pendingDirty.current = true; if (active.current) void loadPending();

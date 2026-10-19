@@ -25,11 +25,12 @@ function harness() {
   const modules = {
     react: React, 'react/jsx-runtime': require('react/jsx-runtime'),
     'react-native': { View: 'View', AppState: appState }, 'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView' },
-    '../runtime': { getEngine: () => { calls.push('getEngine'); return engine; }, getOrdersEngine: () => { calls.push('getOrdersEngine'); return orders; }, getTasksEngine: () => { calls.push('getTasksEngine'); return {}; }, getLeadershipEngine: () => { calls.push('getLeadershipEngine'); return {}; },
+    '../runtime': { getEngine: () => { calls.push('getEngine'); return engine; }, getNotificationsEngine: () => ({}), getOrdersEngine: () => { calls.push('getOrdersEngine'); return orders; }, getTasksEngine: () => { calls.push('getTasksEngine'); return {}; }, getLeadershipEngine: () => { calls.push('getLeadershipEngine'); return {}; },
       refreshOrdersOnlySession: async () => { calls.push('refresh'); if (refreshError) throw refreshError; }, ordersOnlySnapshot: () => props.snapshot },
     '../orders/ui/OrdersScreen': { OrdersScreen: OrdersProbe },
     '../orders/dictionary': { orderTranslator: language => word => `${language}:${word}` },
     '../tasks/ui/TasksScreen': { TasksScreen: 'TasksScreen' },
+    '../notifications/NotificationsHub': { NotificationsHub: 'NotificationsHub' },
     '../leadership/ui/LeadershipScreen': { LeadershipScreen: 'LeadershipScreen' },
     '../tasks/dictionary': { taskTranslator: language => word => `${language}:${word}` },
     '../ui/components': { Button: 'Button', IconButton: 'IconButton', Label: 'Label', styles: {}, colors: { white: 'white' } },

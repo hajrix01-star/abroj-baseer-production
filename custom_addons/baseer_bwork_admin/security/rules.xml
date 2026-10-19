@@ -1,0 +1,7 @@
+<odoo noupdate="1">
+    <record id="policy_company_rule" model="ir.rule">
+        <field name="name">BWork warning policy current companies</field>
+        <field name="model_id" ref="model_baseer_bwork_admin_policy"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+</odoo>

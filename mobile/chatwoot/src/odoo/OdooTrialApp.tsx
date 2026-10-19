@@ -3,11 +3,13 @@ import { Alert, AppState, BackHandler, Keyboard, Text, useWindowDimensions, View
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import NetInfo from '@react-native-community/netinfo';
 import type { ChatEngine, Room } from './core/ChatEngine';
-import { getEngine, getOrdersEngine, getTasksEngine, getLeadershipEngine, ordersOnlySnapshot, refreshOrdersOnlySession, setOrdersConnectivity, subscribeOrdersOnlySession } from './runtime';
+import { getEngine, getOrdersEngine, getTasksEngine, getLeadershipEngine, getNotificationsEngine, ordersOnlySnapshot, refreshOrdersOnlySession, setOrdersConnectivity, subscribeOrdersOnlySession } from './runtime';
+import { NotificationsHub } from './notifications/NotificationsHub';
+import type { NotificationDestination } from './notifications/NotificationsEngine';
 import { OrdersOnlyShell } from './session/OrdersOnlyShell';
 import { OrdersScreen } from './orders/ui/OrdersScreen';
 import { orderTranslator } from './orders/dictionary';
-import { TasksScreen } from './tasks/ui/TasksScreen';
+import { TasksScreen, taskNotificationScope } from './tasks/ui/TasksScreen';
 import { LeadershipScreen } from './leadership/ui/LeadershipScreen';
 import { taskTranslator } from './tasks/dictionary';
 import { Button, colors, direction, IconButton, Label, styles } from './ui/components';
@@ -45,6 +47,8 @@ export function SessionApp({ engine, initialLanguage = 'ar', onLanguageChange }:
     null,
   );
   const [menu, setMenu] = useState(false);
+  const [notificationsVisible,setNotificationsVisible]=useState(false);
+  const [notificationTarget,setNotificationTarget]=useState<{companyId:number;taskId:number;nonce:number;authority:string}|undefined>();
   const [photoNotice, setPhotoNotice] = useState<{
     scope: string; companyId: number; roomId: number; membershipId: number; word: Word;
   } | null>(null);
@@ -103,6 +107,19 @@ export function SessionApp({ engine, initialLanguage = 'ar', onLanguageChange }:
   const liveScope = useRef(scopeKey);
   liveScope.current = scopeKey;
   const closeMenu = useCallback(() => setMenu(false), []);
+  const closeNotifications=useCallback(()=>setNotificationsVisible(false),[]);
+  const notificationDestination=async(destination:NotificationDestination)=>{
+    if(!identity||!active.current||liveScope.current!==scopeKey||!identity.company_ids.includes(destination.companyId))return;
+    setNotificationsVisible(false);setMenu(false);
+    if(destination.kind==='task'&&identity.permissions.task_view===true){
+      setNotificationTarget({companyId:destination.companyId,taskId:destination.taskId,nonce:Date.now(),authority:taskNotificationScope(identity,engine.accountScope??'')});setTasksVisited(true);setArea('tasks');
+    } else if(destination.kind==='chat'&&identity.permissions.chat_view===true){
+      const actor=engine.accountScope,room=engine.rooms().find(row=>row.id===destination.roomId&&row.company_id===destination.companyId);
+      setArea('chat');if(!room)return; // Safe chat inbox when a room is no longer available.
+      try{await chat.select(room);if(!active.current||engine.accountScope!==actor||!engine.identity?.company_ids.includes(destination.companyId))return;
+        await engine.jumpToMessage(room,destination.messageId);if(active.current&&engine.accountScope===actor)chat.capture();}catch{/* No alternate endpoint or guessed room. */}
+    }
+  };
   const openMenu = () => {
     if (identity && active.current && liveScope.current === scopeKey) setMenu(true);
   };
@@ -339,7 +356,7 @@ export function SessionApp({ engine, initialLanguage = 'ar', onLanguageChange }:
             }} />}
           {tasksVisited && chat.identity.permissions.task_view === true && <View style={[styles.fill, { display: area === 'tasks' ? 'flex' : 'none' }]}
             pointerEvents={area === 'tasks' ? 'auto' : 'none'} accessibilityElementsHidden={area !== 'tasks'} importantForAccessibility={area === 'tasks' ? 'auto' : 'no-hide-descendants'}>
-            <TasksScreen engine={getTasksEngine()} identity={chat.identity} language={language}
+            <TasksScreen engine={getTasksEngine()} identity={chat.identity} language={language} notificationTarget={notificationTarget}
               scopeKey={engine.accountScope ?? ''} presented={area === 'tasks' && !!identity && !chat.offline}
               onBack={() => {
                 if (!active.current || liveArea.current !== 'tasks' || liveScope.current !== scopeKey) return;
@@ -501,6 +518,7 @@ export function SessionApp({ engine, initialLanguage = 'ar', onLanguageChange }:
         canManage={canManage}
         close={closeMenu}
         onAction={menuAction}
+        onNotifications={identity&&(identity.permissions.chat_view||identity.permissions.task_view)?()=>{if(active.current&&liveScope.current===scopeKey){setMenu(false);setNotificationsVisible(true);}}:undefined}
         soundsEnabled={chat.soundsEnabled}
         soundsReady={chat.soundsReady}
         onSoundsChange={chat.setSoundsEnabled}
@@ -525,6 +543,8 @@ export function SessionApp({ engine, initialLanguage = 'ar', onLanguageChange }:
           Keyboard.dismiss(); setMenu(false); setTasksVisited(true); setArea('tasks');
         } : undefined}
       />
+      <NotificationsHub engine={getNotificationsEngine()} language={language} ready={!!identity&&!chat.offline} scopeKey={JSON.stringify([identity?.database,identity?.user_id,identity?.company_ids,identity?.permissions,engine.accountScope])}
+        visible={notificationsVisible} close={closeNotifications} onDestination={notificationDestination} />
       </View>
       {chat.identity && retainedDisplay && !displayReady && <View testID="session-privacy-cover"
         accessibilityElementsHidden importantForAccessibility="no-hide-descendants"

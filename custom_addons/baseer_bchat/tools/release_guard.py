@@ -45,6 +45,7 @@ REQUIRED_IDS = {
     "media-send-ack-reconciliation",
     "native-capability-media-upload",
     "modern-work-task-scope-replay-reminders",
+    "bwork-admin-metadata-and-branding",
 }
 
 
@@ -261,6 +262,9 @@ def run_guard_integrity() -> None:
     require("Pillow==12.3.0" in requirements and "--hash=sha256:" in requirements,
             "BChat media-test dependency is not version and hash pinned")
     source_workflow = source_text(".github/workflows/validate-pull-request.yml")
+    require("baseer_bwork_admin" in source_workflow and "test-bwork-admin" in source_workflow
+            and '"custom_addons/baseer_bwork_admin/"' in source,
+            "BWork administrative changes no longer activate cumulative contracts")
     require("requirements-ci.txt" in workflow and "--require-hashes" in workflow
             and "requirements-ci.txt" in source_workflow and "--require-hashes" in source_workflow,
             "BChat media-test dependency is not installed by every guard workflow")
@@ -298,7 +302,8 @@ def matches(path: str, patterns: list[str]) -> bool:
 def changed_guard(base: str, head: str, registry: dict) -> set[str]:
     paths = changed_paths(base, head)
     relevant = [path for path in paths if path.startswith((
-        "custom_addons/baseer_bchat/", "android/bchat/", "ops/qa/baseer-qa-deploy",
+        "custom_addons/baseer_bchat/", "custom_addons/baseer_bwork_admin/",
+        ".github/workflows/test-bwork-admin.yml", "android/bchat/", "ops/qa/baseer-qa-deploy",
         "ops/production/baseer-production-deploy", ".github/workflows/validate-pull-request.yml",
         ".github/workflows/bchat-cumulative-contracts.yml", ".github/CODEOWNERS",
     ))]

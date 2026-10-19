@@ -37,6 +37,14 @@ class ReleaseGuardTests(unittest.TestCase):
         )]
         self.assertEqual(owners, ["login-brand-motion"])
 
+    def test_bwork_admin_and_runtime_workflow_have_cumulative_contracts(self):
+        registry = guard.load_registry()
+        for path in ('custom_addons/baseer_bwork_admin/models/service.py',
+                     '.github/workflows/test-bwork-admin.yml'):
+            owners = [entry['id'] for entry in registry['invariants']
+                      if guard.matches(path, entry['source_paths'])]
+            self.assertIn('bwork-admin-metadata-and-branding', owners)
+
     def test_guard_integrity_covers_codeowners_and_both_ci_modes(self):
         guard.run_guard_integrity()
 

@@ -2,10 +2,11 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { OrdersOnlySnapshot } from './OrdersOnlySession';
-import { getEngine, getOrdersEngine, getTasksEngine, getLeadershipEngine, ordersOnlySnapshot, refreshOrdersOnlySession } from '../runtime';
+import { getEngine, getOrdersEngine, getTasksEngine, getLeadershipEngine, getNotificationsEngine, ordersOnlySnapshot, refreshOrdersOnlySession } from '../runtime';
+import { NotificationsHub } from '../notifications/NotificationsHub';
 import { OrdersScreen } from '../orders/ui/OrdersScreen';
 import { orderTranslator } from '../orders/dictionary';
-import { TasksScreen } from '../tasks/ui/TasksScreen';
+import { TasksScreen, taskNotificationScope } from '../tasks/ui/TasksScreen';
 import { LeadershipScreen } from '../leadership/ui/LeadershipScreen';
 import { taskTranslator } from '../tasks/dictionary';
 import { Button, colors, IconButton, Label, styles } from '../ui/components';
@@ -18,6 +19,9 @@ export function OrdersOnlyShell({ snapshot, language, setLanguage, online }: {
   snapshot: OrdersOnlySnapshot; language: Language; setLanguage: (value: Language) => void; online: boolean;
 }) {
   const [menu, setMenu] = useState(false);
+  const [notificationsVisible,setNotificationsVisible]=useState(false);
+  const [notificationTarget,setNotificationTarget]=useState<{companyId:number;taskId:number;nonce:number;authority:string}|undefined>();
+  const closeNotifications=useCallback(()=>setNotificationsVisible(false),[]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<unknown>(null);
   const close = useCallback(() => setMenu(false), []);
@@ -79,7 +83,7 @@ export function OrdersOnlyShell({ snapshot, language, setLanguage, online }: {
       }} /></View>}
     {retainWorkspace && hasTasks && (tasksVisited || visibleArea === 'tasks') && <View style={[styles.fill, { display: visibleArea === 'tasks' ? 'flex' : 'none' }]}
       pointerEvents={visibleArea === 'tasks' ? 'auto' : 'none'} accessibilityElementsHidden={visibleArea !== 'tasks'} importantForAccessibility={visibleArea === 'tasks' ? 'auto' : 'no-hide-descendants'}>
-      <TasksScreen key={displayScope} engine={getTasksEngine()} identity={identity} language={language} scopeKey={displayScope} presented={ready && visibleArea === 'tasks'} />
+      <TasksScreen key={displayScope} engine={getTasksEngine()} identity={identity} language={language} scopeKey={displayScope} notificationTarget={notificationTarget} presented={ready && visibleArea === 'tasks'} />
     </View>}
     {retainWorkspace && hasLeadership && (leadershipVisited || visibleArea === 'leadership') && <View style={[styles.fill, { display: visibleArea === 'leadership' ? 'flex' : 'none' }]}
       pointerEvents={visibleArea === 'leadership' ? 'auto' : 'none'} accessibilityElementsHidden={visibleArea !== 'leadership'} importantForAccessibility={visibleArea === 'leadership' ? 'auto' : 'no-hide-descendants'}>
@@ -96,11 +100,15 @@ export function OrdersOnlyShell({ snapshot, language, setLanguage, online }: {
     </View>
     <NavigationDrawer visible={menu && ready} identity={ready ? identity : null} language={language} t={t} offline={!ready}
       pendingCount={0} busy={busy} canManage={false} close={close} onAction={action}
+      onNotifications={hasTasks?()=>{if(ready&&current()){setMenu(false);setNotificationsVisible(true);}}:undefined}
       ordersLabel={orderTranslator(language)('orders')}
       onOrders={hasOrders ? () => { if (ready && current()) { setMenu(false); setArea('orders'); } } : undefined}
       leadershipLabel={t('leadership')}
       onLeadership={hasLeadership ? () => { if (ready && current()) { setMenu(false); setLeadershipVisited(true); setArea('leadership'); } } : undefined}
       tasksLabel={taskTranslator(language)('tasks')}
       onTasks={hasTasks ? () => { if (ready && current()) { setMenu(false); setTasksVisited(true); setArea('tasks'); } } : undefined} />
+    <NotificationsHub engine={getNotificationsEngine()} language={language} ready={ready&&hasTasks} scopeKey={displayScope+':'+snapshot.revision} visible={notificationsVisible} close={closeNotifications}
+      onDestination={destination=>{if(!ready||!current()||!hasTasks||destination.kind!=='task'||!identity.company_ids.includes(destination.companyId))return;
+        setNotificationTarget({companyId:destination.companyId,taskId:destination.taskId,nonce:Date.now(),authority:taskNotificationScope(identity,displayScope)});setTasksVisited(true);setArea('tasks');setNotificationsVisible(false);}} />
   </SafeAreaView>;
 }

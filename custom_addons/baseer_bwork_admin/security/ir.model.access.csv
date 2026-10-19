@@ -1,0 +1,3 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+console_manager,BWork console,model_baseer_bwork_admin_console,baseer_bchat.group_bchat_manager,1,1,1,0
+policy_manager,BWork warning policy,model_baseer_bwork_admin_policy,baseer_bchat.group_bchat_manager,1,1,1,0

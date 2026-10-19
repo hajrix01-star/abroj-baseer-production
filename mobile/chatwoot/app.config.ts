@@ -1,11 +1,13 @@
 import { ConfigContext, ExpoConfig } from 'expo/config';
+const { pushOptions } = require('./with-bwork-push.js');
 
 export default ({ config }: ConfigContext): ExpoConfig => {
   const trial = process.env.EXPO_PUBLIC_BACKEND !== 'chatwoot';
+  const push = trial ? pushOptions() : null;
   return {
     name: trial ? 'BWork' : 'Chatwoot',
     slug: process.env.EXPO_PUBLIC_APP_SLUG || (trial ? 'bchat-odoo-trial' : 'chatwoot-mobile'),
-    version: trial ? '0.1.28' : '4.9.11',
+    version: trial ? '0.1.29' : '4.9.11',
     orientation: 'portrait',
     icon: trial ? './assets/bwork/bwork-icon-1024.png' : './assets/icon.png',
     userInterfaceStyle: 'light',
@@ -30,7 +32,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       associatedDomains: trial ? [] : ['applinks:app.chatwoot.com'],
     },
     android: {
-      ...(trial ? { versionCode: 29 } : {}),
+      ...(trial ? { versionCode: 30 } : {}),
       ...(trial ? { allowBackup: false } : {}),
       adaptiveIcon: { foregroundImage: trial ? './assets/bwork/bwork-adaptive-1024.png' : './assets/adaptive-icon.png', backgroundColor: '#ffffff' },
       package: trial ? 'com.baseer.bchat.trial' : 'com.chatwoot.app',
@@ -40,7 +42,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         'android.permission.POST_NOTIFICATIONS',
       ],
       // Please use the relative path to the google-services.json file
-      googleServicesFile: process.env.EXPO_PUBLIC_ANDROID_GOOGLE_SERVICES_FILE,
+      googleServicesFile: trial ? (push?.enabled ? push.configFile : undefined) : process.env.EXPO_PUBLIC_ANDROID_GOOGLE_SERVICES_FILE,
       intentFilters: trial ? [] : [
         {
           action: 'VIEW',
@@ -75,6 +77,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     ...(trial ? {} : { owner: 'chatwoot' }),
     plugins: [
       ...(trial ? ['./with-odoo-trial-native.js'] : []),
+      ...(trial ? [['./with-bwork-push.js', push] as [string, Record<string, unknown>]] : []),
       'expo-font',
       'expo-image',
       'expo-status-bar',

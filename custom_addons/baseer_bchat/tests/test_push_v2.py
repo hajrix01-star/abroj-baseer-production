@@ -72,7 +72,7 @@ class BChatPushCase(TransactionCase):
         received = self._service(self.assignee)._v2_push_event(event.id)
         self.assertEqual(received['notification']['kind'], 'task')
         self.assertEqual(received['notification']['source_ref'], {
-            'destination': 'task', 'task_id': task['id'],
+            'destination': 'task', 'task_id': task['id'], 'company_id': self.company.id,
         })
         with self.assertRaises(AccessError):
             self._service(self.creator)._v2_push_event(event.id)
@@ -182,6 +182,7 @@ class BChatPushCase(TransactionCase):
         self.assertEqual(received['notification'], {
             'id': event.id, 'kind': 'chat',
             'source_ref': {'destination': 'room_message', 'room_id': room.id,
+                           'company_id': self.company.id,
                            'message_id': sent['message_id']},
         })
         with self.assertRaises(AccessError):

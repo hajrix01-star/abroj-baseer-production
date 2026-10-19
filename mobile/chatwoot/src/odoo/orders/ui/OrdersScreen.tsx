@@ -24,11 +24,19 @@ export interface OrdersScreenProps {
 export function OrdersScreen(props: OrdersScreenProps) {
   const { identity, online, language } = props;
   const t = orderTranslator(language);
+  const alive = useAlive();
+  const frame = useRef<View | null>(null);
+  const [keyboardOffset, setKeyboardOffset] = useState(0);
+  const measureOffset = () => frame.current?.measureInWindow((_x, top) => {
+    if (alive() && Number.isFinite(top)) setKeyboardOffset(Math.max(0, top));
+  });
   const engineScope = useRef({ engine: props.engine, revision: 0 });
   if (engineScope.current.engine !== props.engine) engineScope.current = { engine: props.engine, revision: engineScope.current.revision + 1 };
   // A key clears every in-memory order and closure before another scope can render it.
   const scope = JSON.stringify([props.scopeKey, engineScope.current.revision, identity.database, identity.user_id, identity.company_ids, identity.permissions, online]);
-  return <View style={s.fill}>
+  // Keyboard events use screen coordinates; KAV's layout is relative to this
+  // page below the shell header. Include that offset without remounting drafts.
+  return <View ref={frame} collapsable={false} testID="orders-workspace-frame" onLayout={measureOffset} style={s.fill}>
     <View style={{ paddingHorizontal: 14, paddingVertical: 10, backgroundColor: colors.white }}>
       <View style={[s.row, rowDirection(language)]}>
         {props.onMenu && <IconButton icon="menu" label={t('menu')} onPress={props.onMenu} />}
@@ -38,12 +46,12 @@ export function OrdersScreen(props: OrdersScreenProps) {
     </View>
     {!identity.permissions.order_view ? <Empty title={t('noAccess')} help={t('permissionHelp')} language={language} />
       : !online ? <Empty title={t('offline')} help={t('offlineHelp')} language={language} />
-        : <Workspace key={scope} {...props} />}
+        : <Workspace key={scope} {...props} keyboardOffset={keyboardOffset} />}
   </View>;
 }
 
 type Tab = 'catalog' | 'allOrders' | 'receiving';
-function Workspace({ engine, identity, language, selectedCompanyId, onCompanyChange }: OrdersScreenProps) {
+function Workspace({ engine, identity, language, selectedCompanyId, onCompanyChange, keyboardOffset }: OrdersScreenProps & { keyboardOffset: number }) {
   const t = orderTranslator(language);
   const alive = useAlive();
   const [options, setOptions] = useState<OrdersOptions | null>(null);
@@ -93,7 +101,7 @@ function Workspace({ engine, identity, language, selectedCompanyId, onCompanyCha
       style={[s.tab, activeTab === item && s.selectedTab]}><Text numberOfLines={2} style={[s.strong, direction(language), { fontSize: 14, color: activeTab === item ? colors.blue : colors.muted }]}>{t(item)}</Text></Pressable>)}</View>
     {busy ? <Busy language={language} /> : error ? <View style={s.content}><Failure error={error} language={language} retry={() => void load()} /></View>
       : !canView ? <Empty title={t('noAccess')} help={t('permissionHelp')} language={language} />
-        : <KeyboardAvoidingView style={s.fill} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        : <KeyboardAvoidingView style={s.fill} keyboardVerticalOffset={keyboardOffset} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
           {selectedCompanyId !== 0 && !company ? <View style={s.content}><Choice label={t('company')} testID="orders-company" options={companies} value={0} onSelect={changedCompany} language={language} /><Empty title={t('chooseCompany')} language={language} /></View>
           : !outcome && activeTab === 'catalog' && company ? <OrderComposer key={`compose-${company}`} engine={engine} companyId={company} language={language}
             header={<>{pendingHeader}<Choice label={t('company')} testID="orders-company" options={companies} value={company} onSelect={changedCompany} language={language} /></>}

@@ -15,6 +15,23 @@ async function receipt(app) {
 }
 const waiting = () => { let resolve, reject; const promise = new Promise((a, b) => { resolve = a; reject = b; }); return { promise, resolve, reject }; };
 
+test('orders keyboard avoidance includes the measured shell offset without resetting the cart', async () => {
+  const app = await ready();
+  one(app.render(), 'Button', p => p.accessibilityLabel === 'Add Fixture product Case').onPress(); await app.flush();
+  const frame = byId(app.render(), 'orders-workspace-frame');
+  frame.ref.current = { measureInWindow: callback => callback(0, 82, 320, 530) };
+  frame.onLayout();
+  assert.equal(one(app.render(), 'KeyboardAvoidingView').keyboardVerticalOffset, 82);
+  assert.equal(byId(app.render(), 'cart-quantity-81').value, '1');
+  frame.ref.current = { measureInWindow: callback => callback(0, 24, 320, 588) };
+  frame.onLayout();
+  assert.equal(one(app.render(), 'KeyboardAvoidingView').keyboardVerticalOffset, 24);
+  frame.ref.current = { measureInWindow: callback => callback(0, NaN, 320, 588) };
+  frame.onLayout();
+  assert.equal(one(app.render(), 'KeyboardAvoidingView').keyboardVerticalOffset, 24);
+  assert.equal(byId(app.render(), 'cart-quantity-81').value, '1');
+});
+
 test('catalog cards keep name, unit beside price, and add or quantity controls in three rows without shrinking text', async () => {
   for (const language of ['ar', 'en']) {
     const app = harness({ language }, true);

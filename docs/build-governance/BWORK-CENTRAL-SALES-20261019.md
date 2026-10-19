@@ -252,6 +252,25 @@ there is no full-system rediscovery or separate duplicate map artifact.
   authorization + fixture setup; uncovered risk is actual ACL/financial/HTTP
   execution, actual owner scope7 companies, assumption<=20 readers (not load).
 
+- R16, first repaired isolated execution at review head`e4556bd4`:
+  source-integrity39261319099 and cumulative-contract39261319299 PASS. Actual
+  Odoo39261319103/job118089404998 FAILED, final`3 failed, 1 error(s) of109 tests`.
+  Independent log review confirmed both the original heat hidden-session case
+  and added public Sales regression executed without failure; both HTTP cases
+  and all7 unified-heat methods ran. No longer blocked by fixture ACL setup.
+  The newly exposed failures have two causes: all3 bridge failures hit native
+  translation fallback when context language is absent; local date`cursor`
+  is mistaken for the database cursor by Odoo's `_get_cr`. Both baseline and
+  occasion date-loop variables renamed, preserving native user-language fallback
+  rather than forcing English. Added ordinary-reader missing-language regression
+  with positive sales and a confirmed occasion; heat module19.0.1.1.4.
+  The remaining heat error is real Saudi future-invoice validation during setup.
+  Fixture posting must use a consistent later clock (including l10n_sa's own
+  datetime clock), then report at the earlier test clock; never bypass the
+  validation, alter posted dates or remove future-money/target assertions.
+  Same pinned isolated suite rerun required after these actual code/fixture
+  changes; no load retest (owner7companies, assumed<=20readers). No merge/deploy.
+
 ## Local handoff / remaining acceptance
 
 | Area | Owner / evidence | Result |

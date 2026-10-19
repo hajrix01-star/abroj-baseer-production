@@ -10,12 +10,52 @@ msgstr ""
 "Plural-Forms: nplurals=6; plural=n==0?0:n==1?1:n==2?2:n%100>=3 && n%100<=10?3:n%100>=11 && n%100<=99?4:5;\n"
 
 #. module: baseer_bchat
-msgid "BChat Conversation Manager"
-msgstr "مدير محادثات BChat"
+#: model:res.groups,name:baseer_bchat.group_bchat_manager
+msgid "BWork Conversation Manager"
+msgstr "مدير محادثات بيورك"
 
 #. module: baseer_bchat
-msgid "BChat API User"
-msgstr "مستخدم واجهة BChat البرمجية"
+#: model:res.groups,name:baseer_bchat.group_bchat_user
+msgid "BWork API User"
+msgstr "مستخدم واجهة بيورك البرمجية"
+
+#. module: baseer_bchat
+#: model:ir.ui.menu,name:baseer_bchat.menu_bchat_root
+#: model:ir.module.module,shortdesc:base.module_baseer_bchat
+#: model_terms:ir.ui.view,arch_db:baseer_bchat.view_users_form_bchat_capabilities
+msgid "BWork"
+msgstr "بيورك"
+
+#. module: baseer_bchat
+#: model:ir.module.module,summary:base.module_baseer_bchat
+msgid "Private BWork messaging and company-scoped group administration"
+msgstr "محادثات بيورك الخاصة وإدارة المجموعات حسب الشركة"
+
+#. module: baseer_bchat
+#: model:ir.actions.act_window,name:baseer_bchat.action_bchat_rooms
+#: model_terms:ir.ui.view,arch_db:baseer_bchat.view_bchat_room_list
+msgid "BWork Rooms"
+msgstr "غرف بيورك"
+
+#. module: baseer_bchat
+#: model_terms:ir.ui.view,arch_db:baseer_bchat.view_bchat_room_form
+msgid "BWork Room"
+msgstr "غرفة بيورك"
+
+#. module: baseer_bchat
+#: model:ir.actions.act_window,name:baseer_bchat.action_bchat_memberships
+msgid "BWork Members"
+msgstr "أعضاء بيورك"
+
+#. module: baseer_bchat
+#: model_terms:ir.ui.view,arch_db:baseer_bchat.view_bchat_membership_list
+msgid "BWork Memberships"
+msgstr "عضويات بيورك"
+
+#. module: baseer_bchat
+#: model_terms:ir.ui.view,arch_db:baseer_bchat.view_bchat_membership_form
+msgid "BWork Membership"
+msgstr "عضوية بيورك"
 
 #. module: baseer_bchat
 #: model:ir.model.fields,field_description:baseer_bchat.field_res_users__bchat_chat_view

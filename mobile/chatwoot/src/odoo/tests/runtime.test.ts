@@ -110,6 +110,9 @@ const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR
 let avatarBytes = png, avatarMime = 'image/png', avatarHeader: string | undefined;
 let avatarCanManage = true, avatarLostAck = false, avatarReads = 0, avatarUploads = 0, groupReads = 0;
 const appState = { currentState: 'active' };
+const pushNativeState={configured:false,enabled:false,granted:true,scope:'',accountKey:'',installationId:'10000000-0000-4000-8000-000000000001'};
+let pushClears=0;
+const pushNative={async status(){return {...pushNativeState};},clearNow(){pushClears++;pushNativeState.scope='';pushNativeState.accountKey='';pushNativeState.enabled=false;return true;},async enable(){pushNativeState.enabled=true;return true;},async disable(){this.clearNow();},async token(){return {installationId:pushNativeState.installationId,token:'synthetic'.repeat(12),nativeEpoch:1};},async bind(scope:string,_installation:string,_token:string,key:string){pushNativeState.scope=scope;pushNativeState.accountKey=key;return true;}};
 let rooms = [roomA, roomB]; let mediaRight = true; let offline = false; let redirect = false; let unauthorized = false; let revoked = false;
 let beforeNative: ((path: string, method?: string) => Promise<void>) | undefined;
 let missingMetadata = false;
@@ -150,6 +153,8 @@ function nativeFetch(options: Record<string, unknown>, method: string, url: stri
     // Actual QA fixture shape without a cookie, with fixed X-Odoo-Database.
     else if (path === '/web/session/destroy') body = { jsonrpc: '2.0', error: { code: 100, message: 'Odoo Session Expired', data: { name: 'odoo.http.SessionExpiredException', message: 'Odoo Session Expired' } } };
     else if (path === '/web/session/authenticate') body = { result: { uid: 7, db: 'trial' } };
+    else if(path==='/bchat/api/v2/notifications/register')body={api_version:2,installation_id:pushNativeState.installationId,account_key:pushNativeState.installationId,push_enabled:true,client:'bwork',preview_enabled:false};
+    else if(path==='/bchat/api/v2/notifications/unregister')body={api_version:2,unregistered:true};
     else if (path.endsWith('/bootstrap')) body = bootstrapOverride ?? { api_version: 2, database: 'trial', user_id: 7, company_ids: [1], csrf_token: 'notpersisted', permissions: { chat_view: true, chat_send: true, media: mediaRight } };
     else if (path === '/bchat/api/v2/orders/options') { status = ordersStatus; body = status === 200
       ? { api_version: 2, access: 'viewer', can_view: true, can_create: false, can_receive: false, companies: [{ id: 1, name: 'Synthetic company' }] }
@@ -241,7 +246,7 @@ function nativeFetch(options: Record<string, unknown>, method: string, url: stri
 const mocks: Record<string, unknown> = {
   './leadership/LeadershipSnapshots': { LeadershipSnapshots: SnapshotSeam },
   './storage/nativeArchive': { mediaCacheCatalog: catalog, historyArchive: sqlArchive },
-  'react-native': { Platform: { OS: 'android' }, AppState: appState },
+  'react-native': { Platform: { OS: 'android' }, AppState: appState, NativeModules: {BWorkNotifications:pushNative} },
   '@react-native-async-storage/async-storage': asyncStorage,
   'expo-crypto': { CryptoDigestAlgorithm: { SHA256: 'SHA256' }, randomUUID, digestStringAsync: async (_algorithm: unknown, value: string) => createHash('sha256').update(value).digest('hex') },
   'expo-file-system/legacy': fs,
@@ -268,8 +273,44 @@ const hooks = registerHooks({
   },
 });
 process.env.EXPO_PUBLIC_ODOO_ORIGIN = 'https://odoo.example'; process.env.EXPO_PUBLIC_ODOO_DATABASE = 'trial';
-const { getEngine, getOrdersEngine, getTasksEngine, getLeadershipEngine, ordersOnlySnapshot, refreshOrdersOnlySession, setOrdersConnectivity, localMedia, localMediaLease, localPendingImage, stageFile, discardStagedAttachment, readGroupAvatar, hasGroupAvatar, clearGroupAvatars, subscribeGroupAvatars, readMemberAvatar, clearMemberAvatars } = await import('../runtime.ts');
+const { getEngine, getOrdersEngine, getTasksEngine, getLeadershipEngine, getNotificationsEngine, ordersOnlySnapshot, refreshOrdersOnlySession, setOrdersConnectivity, localMedia, localMediaLease, localPendingImage, stageFile, discardStagedAttachment, readGroupAvatar, hasGroupAvatar, clearGroupAvatars, subscribeGroupAvatars, readMemberAvatar, clearMemberAvatars } = await import('../runtime.ts');
 const engine = getEngine();
+
+test('actual runtime clears native push synchronously before login logout and fresh permission revision changes',async()=>{
+  await engine.logout();pushNativeState.configured=true;
+  try{await engine.login('alice','private',true);assert.equal(await getNotificationsEngine().enable(),'ready');assert.ok(pushNativeState.accountKey);
+    const cleared=pushClears,logout=engine.logout();assert.ok(pushClears>cleared);assert.equal(pushNativeState.accountKey,'');await logout;
+    const before=pushClears,login=engine.login('alice','private',true);assert.ok(pushClears>before);await login;assert.equal(await getNotificationsEngine().enable(),'ready');
+    bootstrapOverride={...engine.identity!,permissions:{...engine.identity!.permissions,revision:2}};await engine.refresh();assert.equal(pushNativeState.accountKey,'');
+  }finally{bootstrapOverride=undefined;pushNativeState.configured=false;await engine.logout();}
+});
+
+test('actual runtime logout never waits for delayed native notification cleanup after clearing its binding',async()=>{
+  await engine.logout();pushNativeState.configured=true;const status=pushNative.status;let finish!:(value:typeof pushNativeState)=>void;
+  try{await engine.login('alice','private',true);assert.equal(await getNotificationsEngine().enable(),'ready');
+    pushNative.status=()=>new Promise(resolve=>{finish=resolve;});
+    const before=pushClears,logout=engine.logout();assert.ok(pushClears>before);assert.equal(pushNativeState.accountKey,'');
+    let timer:ReturnType<typeof setTimeout>|undefined;
+    try{await Promise.race([logout,new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('Logout waited for notification status')),250);})]);}finally{if(timer)clearTimeout(timer);}
+    assert.equal(engine.status,'signed_out');
+    pushNative.status=status;finish({...pushNativeState});await engine.login('alice','private',true);assert.equal(await getNotificationsEngine().enable(),'ready');
+    pushNative.status=()=>new Promise(resolve=>{finish=resolve;});bootstrapOverride={...engine.identity!,permissions:{...engine.identity!.permissions,revision:4}};
+    const refreshing=engine.refresh();
+    try{await Promise.race([refreshing,new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('Refresh waited for notification status')),250);})]);}finally{if(timer)clearTimeout(timer);}
+    assert.equal(pushNativeState.accountKey,'');assert.equal(engine.identity!.permissions.revision,4);
+  }finally{bootstrapOverride=undefined;pushNative.status=status;finish?.({...pushNativeState});pushNativeState.configured=false;await engine.logout();}
+});
+
+test('actual task-only refresh preserves unchanged push scope and clears revoked task authority before publication',async()=>{
+  await engine.logout();pushNativeState.configured=true;
+  try{
+    bootstrapOverride={api_version:2,database:'trial',user_id:7,company_ids:[1],csrf_token:'notpersisted',permissions:{chat_view:false,chat_send:false,order_view:true,order_create:false,order_receive:false,task_view:true,task_manage:false,revision:1}};
+    await engine.login('alice','private',true);assert.equal(await getNotificationsEngine().enable(),'ready');
+    const before=pushClears;await refreshOrdersOnlySession();assert.equal(pushClears,before);assert.ok(pushNativeState.accountKey);
+    let clearedBeforePublish=false;const unsubscribe=ordersOnlySnapshot().identity ? (await import('../runtime.ts')).subscribeOrdersOnlySession(()=>{if(ordersOnlySnapshot().identity?.permissions.task_view===false)clearedBeforePublish=pushNativeState.accountKey==='';}) : ()=>undefined;
+    try{bootstrapOverride={...bootstrapOverride,permissions:{...bootstrapOverride.permissions,task_view:false,revision:2}};await refreshOrdersOnlySession();assert.equal(pushNativeState.accountKey,'');assert.ok(pushClears>before);assert.equal(clearedBeforePublish,true);assert.equal(await getNotificationsEngine().sync(),'unavailable');}finally{unsubscribe();}
+  }finally{bootstrapOverride=undefined;pushNativeState.configured=false;await engine.logout();}
+});
 
 test('pending own image resolves only the actual queued stage with no HTTP, copying, cache or cleanup', async () => {
   await engine.logout(); await engine.login('alice', 'private', true);

@@ -1,8 +1,8 @@
 {
-    'name': 'BChat',
-    'version': '19.0.0.4.15',
+    'name': 'BWork',
+    'version': '19.0.0.4.16',
     'category': 'Productivity/Discuss',
-    'summary': 'Private BChat messaging and company-scoped group administration',
+    'summary': 'Private BWork messaging and company-scoped group administration',
     'license': 'LGPL-3',
     'depends': ['mail', 'project'],
     'data': [

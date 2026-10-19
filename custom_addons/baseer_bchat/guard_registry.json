@@ -296,6 +296,28 @@
         "backend-contracts",
         "source-structure"
       ]
+    },
+    {
+      "id": "bwork-admin-metadata-and-branding",
+      "introduced": "2026-10-20",
+      "risk": "critical",
+      "scope": "BWork administrative metadata remains bounded and company-scoped behind the existing effective room-manager authority, without content ACLs, grants, deletion or financial writes; visible branding preserves technical identifiers.",
+      "source_paths": [
+        "custom_addons/baseer_bwork_admin/**",
+        ".github/workflows/test-bwork-admin.yml",
+        "custom_addons/baseer_bchat/tests_contract/test_bwork_admin_contract.py",
+        "custom_addons/baseer_bchat/tests_contract/test_bwork_branding.py",
+        "custom_addons/baseer_bchat/static/description/icon.png",
+        "custom_addons/baseer_bchat/__manifest__.py",
+        "custom_addons/baseer_bchat/views/**",
+        "custom_addons/baseer_bchat/i18n/**",
+        "custom_addons/baseer_bchat/security/security.xml"
+      ],
+      "suites": [
+        "backend-contracts",
+        "source-structure",
+        "guard-integrity"
+      ]
     }
   ]
 }

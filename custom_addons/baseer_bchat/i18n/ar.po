@@ -12,39 +12,40 @@ msgstr ""
 #. module: baseer_bchat
 #: model:ir.ui.menu,name:baseer_bchat.menu_bchat_root
 #: model:ir.module.module,shortdesc:base.module_baseer_bchat
-msgid "BChat"
-msgstr "BChat"
+#: model_terms:ir.ui.view,arch_db:baseer_bchat.view_users_form_bchat_capabilities
+msgid "BWork"
+msgstr "بيورك"
 
 #. module: baseer_bchat
 #: model:ir.module.module,summary:base.module_baseer_bchat
-msgid "Private BChat text service and manager-only room administration"
-msgstr "محادثات BChat النصية وإدارة الغرف للمديرين"
+msgid "Private BWork messaging and company-scoped group administration"
+msgstr "محادثات بيورك الخاصة وإدارة المجموعات حسب الشركة"
 
 #. module: baseer_bchat
 #: model:ir.actions.act_window,name:baseer_bchat.action_bchat_rooms
 #: model_terms:ir.ui.view,arch_db:baseer_bchat.view_bchat_room_list
-msgid "BChat Rooms"
-msgstr "غرف BChat"
+msgid "BWork Rooms"
+msgstr "غرف بيورك"
 
 #. module: baseer_bchat
 #: model_terms:ir.ui.view,arch_db:baseer_bchat.view_bchat_room_form
-msgid "BChat Room"
-msgstr "غرفة BChat"
+msgid "BWork Room"
+msgstr "غرفة بيورك"
 
 #. module: baseer_bchat
 #: model:ir.actions.act_window,name:baseer_bchat.action_bchat_memberships
-msgid "BChat Members"
-msgstr "أعضاء BChat"
+msgid "BWork Members"
+msgstr "أعضاء بيورك"
 
 #. module: baseer_bchat
 #: model_terms:ir.ui.view,arch_db:baseer_bchat.view_bchat_membership_list
-msgid "BChat Memberships"
-msgstr "عضويات BChat"
+msgid "BWork Memberships"
+msgstr "عضويات بيورك"
 
 #. module: baseer_bchat
 #: model_terms:ir.ui.view,arch_db:baseer_bchat.view_bchat_membership_form
-msgid "BChat Membership"
-msgstr "عضوية BChat"
+msgid "BWork Membership"
+msgstr "عضوية بيورك"
 
 #. module: baseer_bchat
 #: model:ir.ui.menu,name:baseer_bchat.menu_bchat_rooms
@@ -111,27 +112,27 @@ msgstr "رقم النسخة"
 #. module: baseer_bchat
 #: model:ir.model,name:baseer_bchat.model_baseer_bchat_room
 msgid "BChat private room"
-msgstr "غرفة خاصة في BChat"
+msgstr "غرفة خاصة في بيورك"
 
 #. module: baseer_bchat
 #: model:ir.model,name:baseer_bchat.model_baseer_bchat_membership
 msgid "BChat private room membership epoch"
-msgstr "فترة عضوية غرفة BChat"
+msgstr "فترة عضوية غرفة بيورك"
 
 #. module: baseer_bchat
 #: model:res.groups,name:baseer_bchat.group_bchat_manager
-msgid "BChat Conversation Manager"
-msgstr "مدير محادثات BChat"
+msgid "BWork Conversation Manager"
+msgstr "مدير محادثات بيورك"
 
 #. module: baseer_bchat
 #: model:res.groups,name:baseer_bchat.group_bchat_user
-msgid "BChat API User"
-msgstr "مستخدم واجهة BChat البرمجية"
+msgid "BWork API User"
+msgstr "مستخدم واجهة بيورك البرمجية"
 
 #. module: baseer_bchat
 #: model:ir.model.fields,field_description:baseer_bchat.field_res_company__bchat_history_policy
 msgid "BChat History Policy"
-msgstr "سياسة تاريخ BChat"
+msgstr "سياسة سجل بيورك"
 
 #. module: baseer_bchat
 #. odoo-python
@@ -193,13 +194,13 @@ msgstr "هذه الغرفة غير متاحة."
 #. odoo-python
 #: code:addons/baseer_bchat/models/room.py:0
 msgid "BChat rooms cannot be copied."
-msgstr "لا يمكن نسخ غرف BChat."
+msgstr "لا يمكن نسخ غرف بيورك."
 
 #. module: baseer_bchat
 #. odoo-python
 #: code:addons/baseer_bchat/models/room.py:0
 msgid "BChat rooms cannot be deleted."
-msgstr "لا يمكن حذف غرف BChat."
+msgstr "لا يمكن حذف غرف بيورك."
 
 #. module: baseer_bchat
 #. odoo-python
@@ -224,7 +225,7 @@ msgstr "لا يمكن تعديل فترات العضوية."
 #: code:addons/baseer_bchat/models/room.py:0
 #: code:addons/baseer_bchat/models/storage.py:0
 msgid "An explicitly assigned BChat manager is required."
-msgstr "لا يمكنك إدارة BChat دون صلاحية المدير."
+msgstr "تحتاج إلى صلاحية المدير لإدارة بيورك."
 
 #. module: baseer_bchat
 msgid "View conversations"
@@ -260,16 +261,16 @@ msgstr "إدارة الغرف والأعضاء"
 
 #. module: baseer_bchat
 msgid "This BChat action is not enabled for your user."
-msgstr "هذا الإجراء في BChat غير مفعّل لحسابك."
+msgstr "هذا الإجراء في بيورك غير مفعّل لحسابك."
 
 #. module: baseer_bchat
 msgid "Only an administrator can change BChat permissions."
-msgstr "يمكن للمسؤول فقط تغيير صلاحيات BChat."
+msgstr "يمكن للمسؤول فقط تغيير صلاحيات بيورك."
 
 #. module: baseer_bchat
 msgid "Only the admin account may manage BChat rooms."
-msgstr "يمكن لحساب المدير العام فقط إدارة غرف BChat."
+msgstr "يمكن لحساب المدير العام فقط إدارة غرف بيورك."
 
 #. module: baseer_bchat
 msgid "BChat permission revisions are maintained by the service."
-msgstr "يتولى النظام تحديث إصدار صلاحيات BChat."
+msgstr "يتولى النظام تحديث إصدار صلاحيات بيورك."

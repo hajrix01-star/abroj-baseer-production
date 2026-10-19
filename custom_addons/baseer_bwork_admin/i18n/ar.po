@@ -1,0 +1,999 @@
+# Translation of BWork administration.
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 19.0\n"
+"Language: ar\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5;\n"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+#: model:ir.actions.act_window,name:baseer_bwork_admin.console_action
+msgid "BWork Administration"
+msgstr "إدارة بيورك"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+#: model:ir.ui.menu,name:baseer_bwork_admin.admin_menu
+msgid "Administration"
+msgstr "الإدارة"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+msgid "Refresh"
+msgstr "تحديث"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+#: model:ir.model.fields,field_description:baseer_bwork_admin.field_baseer_bwork_admin_console__rooms_count
+msgid "Rooms"
+msgstr "الغرف"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+msgid "Memberships"
+msgstr "العضويات"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+msgid "Warning settings"
+msgstr "إعدادات التحذير"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+msgid "Overview"
+msgstr "نظرة عامة"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+msgid "Storage and retention"
+msgstr "الملفات والاحتفاظ"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+msgid "Notifications and operations"
+msgstr "الإشعارات والتشغيل"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+msgid "Logical size of distinct original and thumbnail attachments per company, not physical disk usage. All linked files are retained; no deletion or backup is performed here."
+msgstr "الحجم المنطقي للمرفقات الأصلية والمصغرات المميزة لكل شركة، وليس مساحة القرص الفعلية. تُحفظ جميع الملفات المرتبطة؛ لا تُحذف ملفات ولا تُنشأ نسخ احتياطية من هنا."
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+msgid "Warning threshold 0 disables warnings. Existing unlinked staged uploads expire after 24 hours; this console does not change that policy."
+msgstr "الحد 0 يعطّل التحذير. تنتهي صلاحية الملفات المرحلية غير المرتبطة بعد 24 ساعة وفق السياسة القائمة؛ هذه الشاشة لا تغيّرها."
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+msgid "Actual metadata counts only. A scheduled cron or sent provider request does not prove device delivery. Provider readiness is unverified; no configuration secrets are inspected."
+msgstr "تعرض الشاشة أعدادًا فعلية للبيانات الوصفية فقط. موعد المهمة الدورية أو إرسال طلب للمزوّد لا يثبت وصول الإشعار للجهاز. جاهزية المزوّد غير متحققة؛ لا تُقرأ أسرار الإعدادات."
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+msgid "BWork rooms"
+msgstr "غرف بيورك"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+msgid "BWork memberships"
+msgstr "عضويات بيورك"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+msgid "BWork room metadata"
+msgstr "بيانات غرفة بيورك"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+msgid "BWork membership metadata"
+msgstr "بيانات عضوية بيورك"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+msgid "BWork warning settings"
+msgstr "إعدادات التحذير في بيورك"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+#: model:ir.model.fields,help:baseer_bwork_admin.field_baseer_bwork_admin_policy__warning_mib
+msgid "0 disables the warning. This never limits uploads or deletes files."
+msgstr "القيمة 0 تعطّل التحذير. لا يمنع هذا الإعداد الرفع ولا يحذف الملفات."
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+msgid "Complete"
+msgstr "مكتمل"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+msgid "Attachment metadata incomplete — totals unavailable"
+msgstr "بيانات المرفقات غير مكتملة، والإجماليات غير متاحة"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+msgid "Limit exceeded — narrow the company scope"
+msgstr "تجاوز حد القراءة، قلّل عدد الشركات"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+msgid "Warning disabled"
+msgstr "التحذير معطّل"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+msgid "Below warning threshold"
+msgstr "أقل من حد التحذير"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+msgid "Warning threshold reached"
+msgstr "بلغ الحجم حد التحذير"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+msgid "Originals"
+msgstr "الملفات الأصلية"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+msgid "Thumbnails"
+msgstr "المصغرات"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+msgid "Provider readiness: unverified"
+msgstr "جاهزية مزوّد الإشعارات: غير متحققة"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+msgid "Media"
+msgstr "الوسائط"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+msgid "Push queue"
+msgstr "طابور الإشعارات"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+msgid "Sanitized errors"
+msgstr "تصنيفات الأخطاء الآمنة"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+msgid "Upload capabilities"
+msgstr "تصاريح الرفع"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+msgid "Staged"
+msgstr "مرحلي"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+msgid "Attached"
+msgstr "مرتبط"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+msgid "Cancelled"
+msgstr "ملغى"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+msgid "Expired"
+msgstr "منتهي الصلاحية"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+msgid "Pending"
+msgstr "بانتظار الإرسال"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+msgid "Retry"
+msgstr "إعادة المحاولة"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+msgid "Configuration"
+msgstr "الإعدادات"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+msgid "Sent to provider"
+msgstr "أُرسل للمزوّد"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+msgid "Discarded"
+msgstr "مستبعد"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+msgid "Failed"
+msgstr "فشل"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+msgid "Issued"
+msgstr "صادر"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+msgid "Uploading"
+msgstr "جارٍ الرفع"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+msgid "Resolved"
+msgstr "مكتمل"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+msgid "Denied"
+msgstr "مرفوض"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+msgid "Transport"
+msgstr "الاتصال"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+msgid "Unregistered"
+msgstr "غير مسجّل"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+msgid "Access revoked"
+msgstr "أُلغيت الصلاحية"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+msgid "Other"
+msgstr "أخرى"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+msgid "Staged media cleanup"
+msgstr "تنظيف الوسائط المرحلية"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+msgid "Upload capability cleanup"
+msgstr "تنظيف تصاريح الرفع"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+msgid "Push dispatch"
+msgstr "إرسال الإشعارات"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+msgid "Task reminders"
+msgstr "تذكيرات المهام"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+msgid "Missing"
+msgstr "غير موجود"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+msgid "Enabled"
+msgstr "مفعّل"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+msgid "Disabled"
+msgstr "معطّل"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+msgid "Next scheduled run (UTC)"
+msgstr "التشغيل المجدول التالي (UTC)"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+msgid "System administration is required."
+msgstr "يلزم تفويض إدارة النظام."
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+msgid "Select only currently authorized companies."
+msgstr "اختر شركات متاحة ضمن نطاقك الحالي فقط."
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+msgid "Unsupported policy fields."
+msgstr "حقول السياسة غير مدعومة."
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+msgid "Only the warning threshold can be changed."
+msgstr "يمكن تعديل حد التحذير فقط."
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+msgid "BWork warning policies cannot be deleted."
+msgstr "لا يمكن حذف سياسات التحذير في بيورك."
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+msgid "Unsupported console fields."
+msgstr "حقول الإدارة غير مدعومة."
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+msgid "BWork metadata"
+msgstr "بيانات بيورك"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+#: model:ir.model.fields,field_description:baseer_bwork_admin.field_baseer_bwork_admin_console__company_ids
+msgid "Companies"
+msgstr "الشركات"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+#: model:ir.model.fields,field_description:baseer_bwork_admin.field_baseer_bwork_admin_console__status
+msgid "Status"
+msgstr "الحالة"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+#: model:ir.model.fields,field_description:baseer_bwork_admin.field_baseer_bwork_admin_console__members_count
+msgid "Active memberships"
+msgstr "العضويات النشطة"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+#: model:ir.model.fields,field_description:baseer_bwork_admin.field_baseer_bwork_admin_console__logical_storage
+msgid "Logical size (MiB)"
+msgstr "الحجم المنطقي (MiB)"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+#: model:ir.model.fields,field_description:baseer_bwork_admin.field_baseer_bwork_admin_console__storage_details
+msgid "Storage details"
+msgstr "تفاصيل الملفات"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+#: model:ir.model.fields,field_description:baseer_bwork_admin.field_baseer_bwork_admin_console__operations
+msgid "Operations"
+msgstr "التشغيل"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+#: model:ir.model.fields,field_description:baseer_bwork_admin.field_baseer_bwork_admin_policy__warning_mib
+msgid "Warning threshold (MiB)"
+msgstr "حد التحذير (MiB)"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+#: model:ir.model.fields,field_description:baseer_bwork_admin.field_baseer_bwork_admin_policy__company_id
+msgid "Company"
+msgstr "الشركة"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+#: model:ir.model,name:baseer_bwork_admin.model_baseer_bwork_admin_console
+msgid "BWork administration"
+msgstr "إدارة بيورك"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+#: model:ir.model,name:baseer_bwork_admin.model_baseer_bwork_admin_policy
+msgid "BWork storage warning policy"
+msgstr "سياسة التحذير لحجم ملفات بيورك"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.room_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+#: model:ir.model,name:baseer_bwork_admin.model_baseer_bwork_admin_service
+msgid "BWork bounded administrative metadata"
+msgstr "بيانات إدارة بيورك المحدودة"

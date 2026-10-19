@@ -16,6 +16,7 @@ import { colors, direction, Icon, IconButton, Label, styles, type IconName } fro
 import type { Language, Translate } from './dictionary';
 import { VersionLabel } from './VersionLabel';
 import { Brand } from './Brand';
+import { notificationTranslator } from '../notifications/dictionary';
 
 export type DrawerAction = 'ar' | 'en' | 'refresh' | 'logout' | 'policy';
 function MenuRow({
@@ -91,6 +92,7 @@ export function NavigationDrawer({
   tasksLabel,
   onLeadership,
   leadershipLabel,
+  onNotifications,
 }: {
   visible: boolean;
   identity: Bootstrap | null;
@@ -112,6 +114,7 @@ export function NavigationDrawer({
   tasksLabel?: string;
   onLeadership?: () => void;
   leadershipLabel?: string;
+  onNotifications?: () => void;
 }) {
   const [page, setPage] = useState<'home' | 'profile' | 'settings'>('home');
   const { width } = useWindowDimensions();
@@ -267,6 +270,7 @@ export function NavigationDrawer({
               )}
               {page === 'settings' && (
                 <>
+                  {onNotifications && <MenuRow icon="settings" label={notificationTranslator(language)('title')} language={language} disabled={offline||busy} onPress={onNotifications} />}
                   <View style={{ paddingHorizontal: 16 }}>
                     <Label language={language} muted>
                       {t('language')}

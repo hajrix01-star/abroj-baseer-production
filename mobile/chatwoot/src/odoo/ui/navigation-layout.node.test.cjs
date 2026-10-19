@@ -118,12 +118,13 @@ function session() {
     './tasks/dictionary': { taskTranslator: language => word => `${language}:${word}` }, './tasks/ui/TasksScreen': { TasksScreen: 'TasksScreen' },
     './leadership/ui/LeadershipScreen': { LeadershipScreen: 'LeadershipScreen' },
     './session/OrdersOnlyShell': { OrdersOnlyShell: 'OrdersOnlyShell' },
-    './runtime': { getEngine: () => engine, getOrdersEngine: () => ({}), getTasksEngine: () => ({}), getLeadershipEngine: () => ({}), ordersOnlySnapshot: () => ({ identity: null, verified: false, generation: 0, revision: 0 }),
+    './runtime': { getEngine: () => engine, getNotificationsEngine: () => ({}), getOrdersEngine: () => ({}), getTasksEngine: () => ({}), getLeadershipEngine: () => ({}), ordersOnlySnapshot: () => ({ identity: null, verified: false, generation: 0, revision: 0 }),
       subscribeOrdersOnlySession: () => () => {}, refreshOrdersOnlySession: async () => {}, setOrdersConnectivity() {} },
     './ui/LoginScreen': { LoginScreen: 'LoginScreen' }, './ui/ManagementSheet': { ManagementSheet: 'ManagementSheet' },
     './ui/RoomsScreen': { RoomsScreen: 'RoomsScreen' }, './ui/TimelineScreen': { TimelineScreen: 'TimelineScreen' },
     './ui/VersionLabel': { VersionLabel: 'VersionLabel' }, './ui/NavigationDrawer': { NavigationDrawer: 'NavigationDrawer' },
     './ui/Brand': { Brand: 'Brand' },
+    './notifications/NotificationsHub': { NotificationsHub: 'NotificationsHub' },
     './ui/CompanySelector': { CompanySelector: 'CompanySelector' },
   }, { requestAnimationFrame: callback => { frames.push(callback); return frames.length; } });
   assert.equal(typeof module.SessionApp, 'function', 'test uses the actual named SessionApp export');

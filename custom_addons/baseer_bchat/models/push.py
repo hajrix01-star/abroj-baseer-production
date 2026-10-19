@@ -115,6 +115,10 @@ class BChatPushDevice(models.Model):
     installation_id = fields.Char(required=True, readonly=True, size=36, index=True)
     account_key = fields.Char(required=True, readonly=True, size=36, index=True)
     fcm_token = fields.Char(required=True, readonly=True, size=4096, index=True)
+    # Absent discriminator preserves the established legacy client contract.
+    # Once registered as BWork this installation cannot silently downgrade.
+    client_kind = fields.Selection([('legacy', 'Legacy'), ('bwork', 'BWork')],
+                                   required=True, readonly=True, default='legacy')
     active = fields.Boolean(required=True, readonly=True, default=True, index=True)
     last_seen_at = fields.Datetime(required=True, readonly=True, default=fields.Datetime.now, index=True)
     inactive_reason = fields.Selection([
@@ -146,9 +150,11 @@ class BChatPushDevice(models.Model):
         raise AccessError(self.env._('Direct BChat push registration is unavailable.'))
 
     @api.model
-    def _register_verified(self, user, installation_id, fcm_token, token):
+    def _register_verified(self, user, installation_id, fcm_token, token, client='legacy'):
         if token is not _PUSH_TOKEN:
             raise AccessError(self.env._('A verified BChat push registration is required.'))
+        if client not in ('legacy', 'bwork'):
+            raise ProtocolError('invalid_payload', 'Invalid push client.')
         # A prior logout deliberately makes the device inactive.  Odoo's
         # implicit ``active_test`` filter would then hide that same row here,
         # making a subsequent sign-in try to INSERT an already-owned
@@ -173,6 +179,7 @@ class BChatPushDevice(models.Model):
             super(BChatPushDevice, existing).write({
                 'fcm_token': fcm_token, 'active': True, 'last_seen_at': now,
                 'inactive_reason': False, 'inactive_at': False,
+                'client_kind': 'bwork' if client == 'bwork' or existing.client_kind == 'bwork' else 'legacy',
             })
             return existing
         # Keep the number of active destinations bounded without retaining a
@@ -185,6 +192,7 @@ class BChatPushDevice(models.Model):
             'user_id': user.id, 'installation_id': installation_id,
             'account_key': str(uuid4()), 'fcm_token': fcm_token,
             'active': True, 'last_seen_at': now,
+            'client_kind': client,
         })
 
     def _unregister_verified(self, user, installation_id, token):
@@ -364,7 +372,7 @@ class BChatPushEvent(models.Model):
             data = {'account_key': event.device_id.account_key,
                     'kind': 'chat' if event.message_id else 'task',
                     'event_id': str(event.id)}
-            if event.message_id:
+            if event.message_id and event.device_id.client_kind != 'bwork':
                 message = event.message_id
                 sender = _notification_text(message.author_user_id.name, 120)
                 preview = _notification_text(message.text, 160)
@@ -554,7 +562,10 @@ class BChatPushService(models.AbstractModel):
 
     @api.model
     def _v2_push_register(self, payload):
-        if not isinstance(payload, dict) or set(payload) != {'api_version', 'installation_id', 'fcm_token'}:
+        required = {'api_version', 'installation_id', 'fcm_token'}
+        if (not isinstance(payload, dict) or not required <= set(payload)
+                or set(payload) - required - {'client'}
+                or ('client' in payload and payload['client'] != 'bwork')):
             raise ProtocolError('invalid_payload', 'Invalid BChat push registration.')
         if payload['api_version'] != 2:
             raise ProtocolError('invalid_payload', 'Unsupported BChat API version.')
@@ -562,11 +573,14 @@ class BChatPushService(models.AbstractModel):
         installation = _uuid4(payload['installation_id'], 'installation ID')
         token = _fcm_token(payload['fcm_token'])
         device = self.env['baseer.bchat.push.device']._register_verified(
-            user, installation, token, _PUSH_TOKEN)
+            user, installation, token, _PUSH_TOKEN, client=payload.get('client', 'legacy'))
         # This confirms only secure registration.  FCM delivery remains best-effort
         # and may be held by the server's protected runtime configuration.
-        return {'api_version': 2, 'installation_id': installation,
-                'account_key': device.account_key, 'push_enabled': True}
+        result = {'api_version': 2, 'installation_id': installation,
+                  'account_key': device.account_key, 'push_enabled': True}
+        if device.client_kind == 'bwork':
+            result.update(client='bwork', preview_enabled=False)
+        return result
 
     @api.model
     def _v2_push_unregister(self, payload):
@@ -590,11 +604,13 @@ class BChatPushService(models.AbstractModel):
                 'id': event.id, 'kind': 'chat',
                 'source_ref': {'destination': 'room_message',
                                'room_id': event.message_id.room_id.id,
+                               'company_id': event.company_id.id,
                                'message_id': event.message_id.id},
             }}
         return {'api_version': 2, 'notification': {
             'id': event.id, 'kind': 'task',
-            'source_ref': {'destination': 'task', 'task_id': event.task_id.id},
+            'source_ref': {'destination': 'task', 'task_id': event.task_id.id,
+                           'company_id': event.company_id.id},
         }}
 
     @api.model

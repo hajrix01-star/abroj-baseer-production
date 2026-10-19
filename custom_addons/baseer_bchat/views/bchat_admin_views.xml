@@ -4,7 +4,7 @@
         <field name="name">baseer.bchat.room.list</field>
         <field name="model">baseer.bchat.room</field>
         <field name="arch" type="xml">
-            <list string="BChat Rooms" create="1" delete="0">
+            <list string="BWork Rooms" create="1" delete="0">
                 <field name="name"/>
                 <field name="company_id"/>
                 <field name="invoice_policy"/>
@@ -15,7 +15,7 @@
         <field name="name">baseer.bchat.room.form</field>
         <field name="model">baseer.bchat.room</field>
         <field name="arch" type="xml">
-            <form string="BChat Room" delete="0" duplicate="0">
+            <form string="BWork Room" delete="0" duplicate="0">
                 <sheet>
                     <group>
                         <field name="name"/>
@@ -43,7 +43,7 @@
         <field name="name">baseer.bchat.membership.list</field>
         <field name="model">baseer.bchat.membership</field>
         <field name="arch" type="xml">
-            <list string="BChat Memberships" create="1" delete="0">
+            <list string="BWork Memberships" create="1" delete="0">
                 <field name="room_id"/>
                 <field name="user_id"/>
                 <field name="company_id"/>
@@ -57,7 +57,7 @@
         <field name="name">baseer.bchat.membership.form</field>
         <field name="model">baseer.bchat.membership</field>
         <field name="arch" type="xml">
-            <form string="BChat Membership" create="1" edit="1" delete="0" duplicate="0">
+            <form string="BWork Membership" create="1" edit="1" delete="0" duplicate="0">
                 <header>
                     <button name="action_revoke" type="object" string="Remove Member"
                             class="btn-danger" invisible="not id or not active"/>
@@ -76,17 +76,18 @@
         </field>
     </record>
     <record id="action_bchat_rooms" model="ir.actions.act_window">
-        <field name="name">BChat Rooms</field>
+        <field name="name">BWork Rooms</field>
         <field name="res_model">baseer.bchat.room</field>
         <field name="view_mode">list,form</field>
     </record>
     <record id="action_bchat_memberships" model="ir.actions.act_window">
-        <field name="name">BChat Members</field>
+        <field name="name">BWork Members</field>
         <field name="res_model">baseer.bchat.membership</field>
         <field name="view_mode">list,form</field>
         <field name="context">{'active_test': False}</field>
     </record>
-    <menuitem id="menu_bchat_root" name="BChat" sequence="25"
+    <menuitem id="menu_bchat_root" name="BWork" sequence="25"
+              web_icon="baseer_bchat,static/description/icon.png"
               groups="baseer_bchat.group_bchat_manager"/>
     <menuitem id="menu_bchat_rooms" name="Rooms" parent="menu_bchat_root"
               action="action_bchat_rooms" sequence="10"

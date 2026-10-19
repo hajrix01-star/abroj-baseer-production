@@ -22,6 +22,8 @@ import { LeadershipError, type LeadershipIdentity } from './leadership/core/type
 import { leadershipNativeRequest } from './leadership/transport';
 import { LeadershipSnapshots } from './leadership/LeadershipSnapshots';
 import type { SnapshotAuthority } from './leadership/LeadershipSnapshots';
+import { NotificationsEngine, notificationScope, type NotificationAuthority } from './notifications/NotificationsEngine';
+import { nativePush } from './notifications/native';
 
 export const config = Object.freeze({
   origin: (process.env.EXPO_PUBLIC_ODOO_ORIGIN ?? '').trim(),
@@ -39,6 +41,7 @@ let ordersEngine: OrdersEngine | undefined;
 let workTasksEngine: TasksEngine | undefined;
 let leadershipEngine: LeadershipEngine | undefined;
 let leadershipSnapshots: LeadershipSnapshots | undefined;
+let notificationsEngine: NotificationsEngine | undefined;
 // Chat's disconnected state also covers invalid/server responses; those must
 // never authorize a historical financial fallback.
 let leadershipOfflineScope: string | null = null;
@@ -593,6 +596,8 @@ class NativeChatEngine extends ChatEngine {
     return ordersOnlyBootstrap(raw, expectedUid, config.database);
   }
   override async login(login: string, password: string, remember: boolean): Promise<Bootstrap> {
+    // clearNow executes before authentication can replace this native account.
+    void getNotificationsEngine().invalidate().catch(() => undefined);
     const before = leadershipSnapshotAuthority();
     const operation = super.login(login, password, remember); const epoch = generation;
     const accessEpoch = ordersAccessEpoch;
@@ -633,15 +638,20 @@ class NativeChatEngine extends ChatEngine {
   }
   override async refresh(): Promise<Bootstrap> {
     const before = leadershipSnapshotAuthority();
+    const pushBefore = pushAuthority(this.identity, this.accountScope);
     const epoch = generation;
     leadershipOfflineScope = null;
     try {
       const result = await super.refresh();
+      const pushAfter = pushAuthority(result, this.accountScope);
+      if (generation === epoch && pushBefore && (!pushAfter || notificationScope(pushBefore) !== notificationScope(pushAfter)))
+        void getNotificationsEngine().invalidate().catch(() => undefined);
       await reconcileLeadershipSnapshots(before, epoch).catch(() => undefined);
       await pruneMedia('snapshot', epoch); return result;
     }
     catch (error) {
       const cleanupEpoch = deniedCleanupEpoch(error, epoch);
+      if (cleanupEpoch !== epoch) void getNotificationsEngine().invalidate().catch(() => undefined);
       if (generation === epoch && error instanceof ChatError && error.code === 'connection_failed' && !error.status)
         leadershipOfflineScope = this.accountScope;
       if (cleanupEpoch !== epoch) await revokeLeadershipSnapshots(before).catch(() => undefined);
@@ -650,6 +660,7 @@ class NativeChatEngine extends ChatEngine {
     }
   }
   override async logout(): Promise<void> {
+    void getNotificationsEngine().invalidate().catch(() => undefined);
     const financialActor = leadershipSnapshotAuthority();
     // Start the actor's serialized revoke before reset hides its identity.
     // Store failure blocks financial reads in-process; it must not change chat logout.
@@ -683,6 +694,31 @@ export function getEngine(): NativeChatEngine {
     });
   }
   return engine;
+}
+
+function pushAuthority(identity: Bootstrap | null, epoch: string | number | null): NotificationAuthority | null {
+  if (!identity || epoch===null || !(identity.permissions.chat_view === true || identity.permissions.task_view === true)) return null;
+  return {origin:config.origin,db:identity.database,uid:identity.user_id,epoch,companyIds:[...identity.company_ids],
+    revision:typeof identity.permissions.revision === 'number' ? identity.permissions.revision : 0,
+    chat:identity.permissions.chat_view === true,task:identity.permissions.task_view === true,csrf:identity.csrf_token ?? ''};
+}
+export function getNotificationsEngine(): NotificationsEngine {
+  if (!notificationsEngine) notificationsEngine = new NotificationsEngine({native:nativePush,current:()=> {
+    const value=applicationOrdersIdentity();return value ? pushAuthority(value.identity,value.epoch) : null;
+  },request:async input=> {
+    const before=applicationOrdersIdentity(), expected=identityStamp(before);
+    if (!before || !(before.identity.permissions.chat_view || before.identity.permissions.task_view)) throw new ChatError('forbidden',403);
+    try {
+      const result=await request(input);
+      if (identityStamp(applicationOrdersIdentity())!==expected) throw new ChatError('stale_session');
+      return result;
+    } catch(error) {
+      if (!input.path.endsWith('/unregister') && identityStamp(applicationOrdersIdentity())===expected && error instanceof ChatError && [401,403].includes(error.status))
+        void notificationsEngine?.invalidate().catch(()=>undefined);
+      throw error;
+    }
+  }});
+  return notificationsEngine;
 }
 
 /** Fresh application scope for orders; a chat-revoked user never becomes a chat identity. */
@@ -820,6 +856,9 @@ export async function refreshOrdersOnlySession(): Promise<Bootstrap> {
       if (generation !== expected || ordersAccessEpoch !== accessEpoch || ordersOnlySnapshot().generation !== expected || !ordersConnectivity || AppState.currentState !== 'active') throw new ChatError('stale_session');
       const identity = ordersOnlyBootstrap(raw, prior.identity!.user_id, config.database);
       if (!identity) throw new ChatError('forbidden', 403);
+      const pushBefore=pushAuthority(prior.identity,prior.generation),pushAfter=pushAuthority(identity,expected);
+      if(pushBefore&&(!pushAfter||notificationScope(pushBefore)!==notificationScope(pushAfter)))
+        void getNotificationsEngine().invalidate().catch(()=>undefined); // clearNow precedes publication; no background/foreign-session cleanup.
       ordersOnlySession.publish(identity, expected, generation);
       return identity;
     } catch (error) {

@@ -1,6 +1,8 @@
 # سجل معمارية بصير أودو
 
-## BWORK-ORDERS-IMPLEMENTATION-20261019 — قسم الطلبات، مصدر محلي غير منشور
+## BWORK-ORDERS-IMPLEMENTATION-20261019 — قسم الطلبات، نسخة QA 0.1.17 متاحة
+
+الحالة الأحدث I25–I28: حسم المالك «نسخة كاملة على QA»، وقبل الحارس توزيع الحزمة العادية الكاملة باستثناء موثق لفجوة تحقق أودو الفعلي، لا نموذج أو feature-limited APK ولا اعتماد إنتاج. [صفحة التحميل 0.1.17/build18](https://github.com/hajrix01-star/abroj-baseer-production/releases/tag/bwork-trial-apk-0.1.17-13996c60)، source المحلي `13996c60cabea6e34e7296e1fd02a662cbd993af`، APK65475960B/SHA256 `FFE4FC2C128B028654BF78C4CE18C45FA2EFD707E611ADD1164DAE17B547A6F0`. API ونسخة التنزيل العام متطابقة مستقلًا؛ release416899981/asset655228181، prerelease/nonlatest لأن البيئةQA. **CONDITIONAL GO للتوزيع علىQA فقط**؛ login/ACL/quote/create/receipt/stock الفعلي ما زال غير مثبت، والأزرار حقيقية وقد تغير المخزون/السعر/التكلفة. لا شركة/أصناف/بيانات أُنشئت ولا خادمQA/Live تغير، ولاsource/mainpush؛sourcearchives البعيدة ليست مصدرAPK. هذا تحديث للحالات التاريخية أدناه؛ [سجل الاستثناء والمطابقة I25–I28](../../build-governance/BWORK-ORDERS-20261019.md).
 
 الفرع `codex/bwork-orders-implementation-20261019` من `e7e6f5ed`، بعد اعتماد المالك للتصور ثم إذن نقطة الجلسة فقط. G0–G3 مقبولة مستقلًا I-GATE-01/02؛ التنفيذ لا يغير أودو أو المحادثة المجمدة. خريطة الفرق: `OdooTrialApp → OrdersScreen → OrdersEngine → ordersNativeRequest → sessionNative → API الأوامر الحالية في Odoo`، مع `OrdersOnlySession/OrdersOnlyShell` للدخول بصلاحيات طلبات مستقلة، وjournal منفصل origin/DB/uid/company يحتفظ بالنية/UUID وACK دون replay تلقائي. الأرقام والحالات والمخزون/التكلفة مصدرها الخادم؛ لا حساب إجماليات عميل أو سياسة مخزون جديدة.
 

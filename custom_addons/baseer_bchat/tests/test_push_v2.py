@@ -100,7 +100,8 @@ class BChatPushCase(TransactionCase):
         events = self.env['baseer.bchat.push.event'].sudo().search([
             ('task_id', '=', task['id']), ('task_revision', '=', 2),
         ])
-        self.assertEqual(set(events.mapped('recipient_id').ids), {self.creator.id, self.replacement.id})
+        self.assertEqual(set(events.mapped('recipient_id').ids), {self.replacement.id})
+        self.assertNotIn(self.creator.id, events.mapped('recipient_id').ids)
         self.assertNotIn(self.assignee.id, events.mapped('recipient_id').ids)
 
     def test_reassignment_revokes_pending_assignment_event_for_previous_assignee(self):

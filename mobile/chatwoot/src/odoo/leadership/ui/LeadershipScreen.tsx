@@ -142,18 +142,43 @@ function Detail({ label, amount, language, percent, trend }: { label: string; am
 
 const heatColor = (day: LeadershipDay, asOf: string): string => {
   if (dayWord(day, asOf) === 'future') return '#f3f5f8';
+  if (dayWord(day, asOf) === 'inProgress') return colors.pale;
   if (!day.sales.available || !day.has_sales) return colors.white;
   if (day.status === 'partial' || day.status === 'incomplete') return colors.warning;
   if (day.sales.value && /^-?0(?:\.0+)?$/.test(day.sales.value)) return '#e9eef4';
   return ({ neutral: colors.pale, watch: '#edf0c8', high: '#b9e6d3', good: '#d7eadc', low: '#fae2c3' } as Record<string, string>)[day.heat_level] ?? colors.pale;
 };
 function Heatmap({ days, asOf, companyCount, language, selected, onSelect, disabled }: { days: LeadershipDay[]; asOf: string; companyCount: number; language: Language; selected: string | null; onSelect: (date: string) => void; disabled?: boolean }) {
+  const t = leadershipTranslator(language), today = snapshotDate(asOf), [width, setWidth] = useState(0);
   const first = days[0], blank = first ? (first.weekday - 5 + 7) % 7 : 0;
   // Explicit weeks avoid percentage/flexWrap rounding creating six columns.
   const cells: Array<LeadershipDay | null> = [...Array(blank).fill(null), ...days];
   const weeks = Array.from({ length: Math.ceil(cells.length / 7) }, (_, week) =>
     Array.from({ length: 7 }, (_, column) => cells[week * 7 + column] ?? null));
-  return <View testID="leadership-heatmap">{weeks.map((week, index) => <View key={index} testID={`leadership-week-${index}`} style={s.weekdays}>{week.map((day, column) => <View key={day?.date ?? `blank-${column}`} style={s.heatSlot}>{day && <Pressable disabled={disabled} testID={`leadership-day-${day.date}`} accessibilityRole="button" accessibilityLabel={`${day.date}, ${day.sales.display}, ${dayLabel(day, asOf, language)}, ${coverageLabel(day, companyCount, language)}`} accessibilityState={{ selected: day.date === selected, disabled }} onPress={() => onSelect(day.date)} style={[s.heatDay, { backgroundColor: heatColor(day, asOf), borderColor: selected === day.date ? colors.blue : colors.border, borderStyle: !day.has_sales || !day.sales.available ? 'dashed' : 'solid' }]}><Text style={{ fontWeight: '600', color: dayWord(day, asOf) === 'future' ? colors.muted : colors.ink }}>{String(day.day)}</Text></Pressable>}</View>)}</View>)}</View>;
+  return <View testID="leadership-heatmap" onLayout={event => setWidth(event.nativeEvent.layout.width)}>
+    {weeks.map((week, index) => <View key={index} testID={`leadership-week-${index}`} style={s.weekdays}>
+      {week.map((day, column) => {
+        const current = day?.date === today, chosen = day?.date === selected;
+        const display = day?.has_sales && day.sales.available ? day.sales.display : '—';
+        return <View key={day?.date ?? `blank-${column}`} style={s.heatSlot}>
+          {day && <Pressable disabled={disabled} testID={`leadership-day-${day.date}`} accessibilityRole="button"
+            accessibilityLabel={`${day.date}, ${display}, ${dayLabel(day, asOf, language)}, ${coverageLabel(day, companyCount, language)}`}
+            accessibilityState={{ selected: chosen, disabled }} onPress={() => onSelect(day.date)}
+            style={[s.heatDay, { backgroundColor: heatColor(day, asOf), borderColor: current || chosen ? colors.blue : colors.border,
+              borderStyle: !current && (!day.has_sales || !day.sales.available) ? 'dashed' : 'solid' }]}>
+            <Text style={[s.heatDate, { color: current ? colors.blue : dayWord(day, asOf) === 'future' ? colors.muted : colors.ink }]}>{String(day.day)}</Text>
+            <View style={s.heatValue}>
+              {/* Soft breaks at thousands and before the fraction: keep every digit and sign.
+                  Never ellipsize or shrink a large amount to an unreadable single line. */}
+              <Text testID={`leadership-day-sales-${day.date}`} textBreakStrategy="simple" android_hyphenationFrequency="none"
+                style={[s.heatAmount, { fontSize: width >= 420 ? 12 : 10 }]}>{display.replace(/,/g, ',\u200b').replace(/\./g, '\u200b.')}</Text>
+            </View>
+            {current && <Text testID={`leadership-day-live-${day.date}`} style={[s.heatLive, direction(language)]}>{t('live')}</Text>}
+          </Pressable>}
+        </View>;
+      })}
+    </View>)}
+  </View>;
 }
 
 /** Conversion and arithmetic below place points only; all reported business values are server displays. */
@@ -181,5 +206,11 @@ const s = StyleSheet.create({
   panel: { backgroundColor: colors.white, borderRadius: 16, borderWidth: 1, borderColor: colors.border, padding: 12, gap: 10 }, row: { gap: 8, alignItems: 'center' }, heading: { fontSize: 15, color: colors.ink, fontWeight: '700' }, caption: { fontSize: 11, color: colors.muted },
   cards: { gap: 6, alignItems: 'stretch' }, card: { flex: 1, minWidth: 0, minHeight: 152, borderRadius: 12, padding: 8, gap: 9, borderWidth: 1, borderColor: colors.border, justifyContent: 'space-between' }, cardTitle: { fontSize: 12, color: colors.muted }, companyChip: { minHeight: 44, paddingHorizontal: 9, justifyContent: 'center', borderRadius: 9, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.white },
   periods: { padding: 3, gap: 3, backgroundColor: colors.background, borderRadius: 10 }, period: { flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 8 }, stats: { gap: 12, flexWrap: 'wrap' }, stat: { width: '47%', minWidth: 0, gap: 8, paddingVertical: 8 },
-  weekdays: { flexDirection: 'row', direction: 'ltr' }, weekday: { flex: 1, minWidth: 0, alignItems: 'center', gap: 5, paddingVertical: 3 }, heatSlot: { flex: 1, minWidth: 0, padding: 2, minHeight: 48 }, heatDay: { minHeight: 44, paddingHorizontal: 2, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderRadius: 8, gap: 4 }, legend: { fontSize: 10, color: colors.muted, paddingVertical: 4 }, series: { minHeight: 44, justifyContent: 'center' }, dayChip: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 8 },
+  weekdays: { flexDirection: 'row', direction: 'ltr' }, weekday: { flex: 1, minWidth: 0, alignItems: 'center', gap: 5, paddingVertical: 3 },
+  heatSlot: { flex: 1, minWidth: 0, padding: 2, minHeight: 88 }, heatDay: { flex: 1, minHeight: 84, paddingHorizontal: 0, paddingVertical: 5, alignItems: 'center', borderWidth: 1, borderRadius: 8, gap: 3 },
+  heatDate: { fontSize: 12, lineHeight: 16, fontWeight: '600', writingDirection: 'ltr', fontVariant: ['tabular-nums'] },
+  heatValue: { flex: 1, alignSelf: 'stretch', justifyContent: 'center', minWidth: 0 },
+  heatAmount: { lineHeight: 15, letterSpacing: -.15, color: colors.ink, textAlign: 'center', writingDirection: 'ltr', fontWeight: '600', fontVariant: ['tabular-nums'] },
+  heatLive: { color: colors.blue, fontSize: 10, lineHeight: 14, fontWeight: '600', textAlign: 'center' },
+  legend: { fontSize: 10, color: colors.muted, paddingVertical: 4 }, series: { minHeight: 44, justifyContent: 'center' }, dayChip: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 8 },
 });

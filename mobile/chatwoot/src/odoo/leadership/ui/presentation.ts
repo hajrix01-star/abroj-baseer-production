@@ -8,7 +8,7 @@ export function snapshotDate(asOf: string): string {
 export const monthLabel = (month: string, language: Language): string => new Intl.DateTimeFormat(language === 'ar' ? 'ar-SA' : 'en-GB', { calendar: 'gregory', numberingSystem: 'latn', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${month}-01T12:00:00Z`));
 export function dayWord(day: LeadershipDay, asOf: string): LeadershipWord {
   const today = snapshotDate(asOf);
-  if (day.date > today) return 'future'; if (day.date === today) return 'partial';
+  if (day.date > today) return 'future'; if (day.date === today) return 'inProgress';
   if (day.status === 'conflict') return 'conflict'; if (day.status === 'missing') return 'noRecords';
   if (day.status === 'incomplete' || day.status === 'partial') return 'partial';
   if (day.status === 'closed') return 'closed';

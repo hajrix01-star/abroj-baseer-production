@@ -1,12 +1,13 @@
 import calendar
+from collections import defaultdict
 from datetime import date, timedelta, timezone
 from decimal import Decimal
 
 from odoo import _, api, fields, models
 from odoo.exceptions import AccessError, ValidationError
-from odoo.tools import SQL
 from odoo.addons.baseer_pos_summary.models.common import active_company, money
-from odoo.addons.baseer_sales_dashboard.models.executive import RIYADH, _utc_at
+from odoo.addons.baseer_pos_summary.models.operations import covered_slots
+from odoo.addons.baseer_sales_dashboard.models.executive import RIYADH
 from .occasion import HEAT_CALENDAR_MANAGER_GROUP
 
 
@@ -119,127 +120,88 @@ class SalesHeatCalendarDashboard(models.Model):
         return [cells[index:index + 7] for index in range(0, len(cells), 7)]
 
     def _heat_aggregate_days(self, company, first, last, now):
-        """Native money once; summary/closure records supply metadata only."""
+        """Canonical Sales money; daily-report/session evidence evaluates days."""
         active_company(self, company)
         if last == date.max:
             raise ValidationError(_('Choose a calendar month before December 9999.'))
-        period = {'from': first.isoformat(), 'to': last.isoformat()}
-        for model in ('pos.order', 'pos.session'):
-            self.env[model].check_access('read')
-        self._baseer_executive_capacity(period, now)
-        if not self._baseer_executive_currency_supported(period, now):
-            raise ValidationError(_('This calendar supports SAR sales configurations only.'))
+        # A private shared reader does not authorize or bound its own callers.
+        # Sanitize even direct adapter callers, and budget history + month once.
+        self = self.with_context({'allowed_company_ids': [company.id],
+                                  'lang': self.env.lang, 'tz': 'Asia/Riyadh'})
+        company = self.env.company
+        self._baseer_unified_access()
+        self._baseer_check_capacity(company, [(first, last)])
+        period = self._baseer_unified_period(company, first, last)
+        report = self.env['baseer.pos.daily.report']._aggregate_days(company, first, last)
+        if money(report['totals']['recorded_sales']) != money(period['totals']['manual']):
+            raise ValidationError(_(
+                'Approved-summary sales disagree with the daily report. Unified sales cannot be calculated.'
+            ))
 
-        Summary = self.env['baseer.pos.summary']
-        dated_summaries = Summary.search([
-            ('company_id', '=', company.id), ('state', '=', 'approved'),
-            ('business_date', '>=', first), ('business_date', '<=', last),
-        ])
-        source_orders = self.env['pos.order'].search(self._baseer_executive_domain(period, now))
-        # Linked metadata must remain visible even when its stored date differs
-        # from the session day. Never rewrite or silently drop its native money.
-        summaries = dated_summaries | Summary.search([
-            ('company_id', '=', company.id), ('state', '=', 'approved'),
-            ('id', 'in', source_orders.baseer_summary_id.ids),
-        ])
-        nonzero = summaries.filtered(lambda item: not item.zero_sales)
-        visible_orders = self.env['pos.order'].search(self._baseer_executive_source() + [
-            ('id', 'in', nonzero.order_id.ids), ('source', '=', 'baseer_summary'),
-            ('date_order', '<=', now),
-        ])
-        visible_ids = set(visible_orders.ids)
-        for summary in nonzero:
-            order = summary.order_id
-            if (not order or order.id not in visible_ids or order.baseer_summary_id != summary
-                    or order.session_id != summary.session_id):
-                raise ValidationError(_('An approved summary has no matching accessible POS order. Review its source before evaluating this calendar.'))
-
-        # Include only generated orders whose approved metadata is visible.
-        # Reject an orphan marker rather than presenting it as a direct sale.
-        query = self._baseer_executive_query(period, now)
-        orders = self.env['pos.order']
-        summary_id = SQL.identifier(orders._table, 'baseer_summary_id')
-        source = SQL.identifier(orders._table, 'source')
-        orphan_query = self._baseer_executive_query(period, now)
-        orphan_query.add_where(SQL(
-            "(%s IS NOT NULL OR COALESCE(%s, '') = 'baseer_summary') AND NOT (COALESCE(%s = ANY(%s), FALSE) AND COALESCE(%s, '') = 'baseer_summary')",
-            summary_id, source, summary_id, summaries.ids, source))
-        if self.env.execute_query(orphan_query.select(SQL('COUNT(*)')))[0][0]:
-            raise ValidationError(_('A summary POS order has no accessible approved summary. Review its source before evaluating this calendar.'))
-        session = SQL.identifier(orders._table, 'session_id')
-        if self.env.execute_query(query.select(SQL('COUNT(DISTINCT %s)', session)))[0][0] > MAX_HEAT_SESSIONS:
+        sessions = period['orders'].mapped('session_id') | period['summaries'].mapped('session_id')
+        sessions.check_access('read')
+        if len(sessions) > MAX_HEAT_SESSIONS:
             raise ValidationError(_('This calendar exceeds 1,000 contributing sessions. No sales have been omitted.'))
-        stamp = self._baseer_executive_session_stamp()
-        business_day = SQL("CAST(%s AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Riyadh' AS DATE)", stamp)
-        generated = SQL('(%s IS NOT NULL)', summary_id)
-        query.groupby = SQL('%s, %s, %s', business_day, generated, session)
-        grouped = {}
-        for day, is_summary, session_id, amount, count in self.env.execute_query(query.select(
-                business_day, generated, session, self._baseer_executive_amount(), SQL('COUNT(*)'))):
-            kind = 'summary' if is_summary else 'direct'
-            bucket = grouped.setdefault(day, {}).setdefault(kind, {'sales': ZERO, 'count': 0, 'sessions': set()})
-            bucket['sales'] += Decimal(amount)
-            bucket['count'] += count
-            bucket['sessions'].add(session_id)
-        sessions = self.env['pos.session'].browse(sorted({
-            sid for native in grouped.values() for bucket in native.values() for sid in bucket['sessions']}))
-        open_ids = set(sessions.filtered(lambda record: record.state != 'closed').ids)
-        mismatched_days = set()
-        summary_customers = {}
-        for summary in nonzero:
-            opening = summary.session_id.start_at
-            if not opening:
-                raise ValidationError(_('A confirmed POS order has no session opening time; its operating day cannot be determined.'))
-            session_day = opening.replace(tzinfo=timezone.utc).astimezone(RIYADH).date()
-            if summary.business_date != session_day:
-                mismatched_days.update((summary.business_date, session_day))
-            summary_customers[session_day] = summary_customers.get(session_day, 0) + summary.customer_count
-
-        rows = self.env['baseer.pos.daily.report']._aggregate_days(company, first, last)['days']
+        sources = defaultdict(set)
+        day_sessions = defaultdict(set)
+        order_counts = defaultdict(int)
+        for summary in period['summaries']:
+            sources[summary.business_date].add('manual')
+            if summary.session_id:
+                day_sessions[summary.business_date].add(summary.session_id.id)
+                order_counts[summary.business_date] += 1
+        for order in period['orders']:
+            day = fields.Datetime.context_timestamp(self, order.session_id.start_at).date()
+            sources[day].add('restaurant' if order.config_id.module_pos_restaurant else 'pos')
+            day_sessions[day].add(order.session_id.id)
+            order_counts[day] += 1
+        for invoice in period['invoices']:
+            sources[invoice.invoice_date].add('sales')
+        open_ids = set(sessions.filtered(lambda session: session.state != 'closed').ids)
+        today = now.replace(tzinfo=timezone.utc).astimezone(RIYADH).date()
+        rows = report['days']
+        closures = self.env['baseer.pos.closure'].browse(sorted({
+            closure_id for row in rows for closure_id in row['closure_ids']}))
+        closures.check_access('read')
+        closure_slots = {closure.id: covered_slots(closure.period_scope) for closure in closures}
         for row in rows:
             day = row['business_date']
-            native = grouped.get(day, {})
-            summary = native.get('summary')
-            direct = native.get('direct')
-            has_summary = row['has_sales']
-            row.update(sales=ZERO, source_kind='none', order_count=0,
-                       outside_count=0, source_action=None)
-            if has_summary or summary:
-                row.update(sales=money(summary['sales']) if summary else ZERO, source_kind='summary',
-                           order_count=summary['count'] if summary else 0,
-                           customers=summary_customers.get(day, row['customers']), has_sales=True)
-            if direct:
-                row.update(sales=money(row['sales'] + direct['sales']),
-                           customers=row['customers'] + direct['count'] if summary else direct['count'], has_sales=True,
-                           order_count=row['order_count'] + direct['count'], source_kind='direct' if not summary else 'conflict')
-            if native:
-                contributing = set().union(*(bucket['sessions'] for bucket in native.values()))
-                row['status'] = ('incomplete' if contributing & open_ids
-                                 or (has_summary and row['status'] == 'incomplete') else 'complete')
-            conflict = (day in mismatched_days or (direct and (has_summary or summary or row['closure_ids']))
-                        or (summary and row['closure_ids']))
-            if conflict:
-                row.update(status='conflict', source_kind='conflict')
-            if row['source_kind'] == 'summary' and not summary:
-                # Explicit zero-day summaries have no order by design.
-                row['source_action'] = self._baseer_source_action(company, day, day)
-                row['source_action']['views'] = [(False, 'list'), (False, 'form')]
-            elif native:
-                contributing = set().union(*(bucket['sessions'] for bucket in native.values()))
-                row['source_action'] = {
-                    'type': 'ir.actions.act_window', 'name': _('POS sales sources'),
-                    'res_model': 'pos.order', 'view_mode': 'list,form',
-                    'views': [(False, 'list'), (False, 'form')],
-                    'domain': [('company_id', '=', company.id),
-                               ('session_id.company_id', '=', company.id),
-                               ('state', 'in', ['paid', 'done', 'invoiced']),
-                               ('session_id', 'in', sorted(contributing)),
-                               ('session_id.start_at', '>=', fields.Datetime.to_string(_utc_at(day, 0))),
-                               ('session_id.start_at', '<', fields.Datetime.to_string(_utc_at(day + timedelta(days=1), 0))),
-                               ('session_id.start_at', '<=', fields.Datetime.to_string(now)),
-                               ('date_order', '<=', fields.Datetime.to_string(now))],
-                    'context': {'allowed_company_ids': [company.id], 'create': False, 'edit': False, 'delete': False},
-                }
+            kinds = sorted(sources[day])
+            has_sales = day in period['sale_days']
+            original_status = row['status']
+            closed_slots = set().union(*(closure_slots[closure_id] for closure_id in row['closure_ids']))
+            if has_sales:
+                if closed_slots == {'morning', 'evening'}:
+                    row['status'] = 'conflict'
+                elif day >= today or day_sessions[day] & open_ids or (
+                        'manual' in kinds and original_status == 'incomplete'):
+                    row['status'] = 'incomplete'
+                else:
+                    row['status'] = 'complete'
+            elif day >= today and row['status'] == 'complete':
+                row['status'] = 'incomplete'
+            guest = period['guests']['by_day'].get(day)
+            customers = (guest['known_count'] if guest and guest['known_rows']
+                         and not guest['missing_rows'] else None)
+            # Invoice sources never supply guest counts, including refund-only days.
+            if 'sales' in kinds:
+                customers = None
+            if kinds == ['manual'] and row['sales'] == 0:
+                customers = row['customers']
+            actions = []
+            for key in kinds:
+                action = self._baseer_unified_action(company, day, day, key)
+                action['views'] = [(False, 'list'), (False, 'form')]
+                action['context'].update(edit=False, delete=False)
+                actions.append({'key': key, 'action': action})
+            row.update(sales=money(period['by_day'].get(day, ZERO)), customers=customers,
+                       has_sales=has_sales, source_kinds=kinds,
+                       source_kind=('summary' if kinds == ['manual'] else
+                                    'direct' if kinds in (['pos'], ['restaurant']) else
+                                    'invoice' if kinds == ['sales'] else 'mixed' if kinds else 'none'),
+                       order_count=order_counts[day], outside_count=0,
+                       source_actions=actions,
+                       source_action=actions[0]['action'] if len(actions) == 1 else None)
         return rows
 
     @api.readonly
@@ -282,7 +244,9 @@ class SalesHeatCalendarDashboard(models.Model):
         )
         all_rows = self._heat_aggregate_days(company, history_first, last, now)
         month_rows = [row for row in all_rows if first <= row['business_date'] <= last]
-        complete_rows = [row for row in month_rows if row['status'] == 'complete']
+        today = now.replace(tzinfo=timezone.utc).astimezone(RIYADH).date()
+        complete_rows = [row for row in month_rows if row['status'] == 'complete'
+                         and row['business_date'] < today and row['sales'] > ZERO]
         weekday_names = (
             (5, _('Saturday')), (6, _('Sunday')), (0, _('Monday')), (1, _('Tuesday')),
             (2, _('Wednesday')), (3, _('Thursday')), (4, _('Friday')),
@@ -297,9 +261,12 @@ class SalesHeatCalendarDashboard(models.Model):
             sales = weekday_sales[weekday]
             average = money(sum(sales, ZERO) / Decimal(len(sales))) if sales else None
             weekday_headers.append({
+                'weekday': weekday,
                 'name': name,
+                'average_value': str(average) if average is not None else None,
                 'average_display': _money_display(average),
                 'has_average': average is not None,
+                'sample_count': len(sales),
             })
         occasions_by_day = self._heat_occasions(company, history_first, last)
         breakdowns_by_day = self._heat_day_breakdowns(company, first, last)
@@ -313,7 +280,7 @@ class SalesHeatCalendarDashboard(models.Model):
             business_date = raw['business_date']
             status = raw['status']
             sales = money(Decimal(str(raw['sales'])))
-            customers = int(raw['customers'])
+            customers = int(raw['customers']) if raw['customers'] is not None else None
             target = self._heat_target_for_day(targets, business_date)
             candidates = []
             cursor = (
@@ -323,13 +290,15 @@ class SalesHeatCalendarDashboard(models.Model):
             while cursor < business_date:
                 candidate = next((row for row in all_rows if row['business_date'] == cursor), None)
                 if (candidate and candidate['status'] == 'complete' and not candidate['closure_ids']
+                        and cursor < today and candidate['sales'] > ZERO
                         and not occasions_by_day.get(cursor) and cursor.weekday() == business_date.weekday()):
                     candidates.append(money(Decimal(str(candidate['sales']))))
                 cursor += timedelta(days=1)
             baseline = _median(candidates) if len(candidates) >= BASELINE_MINIMUM else None
             basis = money(Decimal(str(target.target_amount))) if target else baseline
             basis_kind = 'target' if target else ('baseline' if baseline is not None else 'none')
-            ratio = money(sales * Decimal('100') / basis) if status == 'complete' and basis and basis > ZERO else None
+            ratio = money(sales * Decimal('100') / basis) if (
+                status == 'complete' and business_date < today and basis and basis > ZERO) else None
             if ratio is None:
                 heat_level = 'neutral'
                 heat_label = _('No performance evaluation')
@@ -355,8 +324,9 @@ class SalesHeatCalendarDashboard(models.Model):
                 for event in occasions_by_day.get(business_date, [])
             )
             source_kind = raw.get('source_kind', 'summary' if raw['has_sales'] else 'none')
-            count_label = _('POS transactions') if source_kind == 'direct' else _('Recorded customers')
+            count_label = _('Recorded customers')
             source_label = {'summary': _('Approved summary'), 'direct': _('Direct POS sales'),
+                            'invoice': _('Sales invoices'), 'mixed': _('Combined sales sources'),
                             'none': _('No sales source'), 'conflict': _('Conflicting daily sources')}[source_kind]
             source_action = raw.get('source_action')
             aria = _('%(date)s: %(sales)s; %(count)s %(count_label)s; %(status)s',
@@ -370,14 +340,17 @@ class SalesHeatCalendarDashboard(models.Model):
                 'day': business_date.day,
                 'date_display': business_date.strftime('%d/%m/%Y'),
                 'weekday': business_date.weekday(),
+                'sales_value': str(sales) if raw['has_sales'] else None,
                 'sales_display': _money_display(sales) if raw['has_sales'] else '—',
+                'customers_value': customers if raw['has_sales'] else None,
                 'customers_display': _integer_display(customers) if raw['has_sales'] else '—',
                 'status': status,
                 'status_label': status_label,
                 'source_kind': source_kind,
+                'source_kinds': raw.get('source_kinds', []),
                 'source_label': source_label,
                 'count_label': count_label,
-                'warning': (_('Daily metadata conflicts with session sales. Original POS sales remain visible; performance evaluation is withheld pending review.')
+                'warning': (_('Daily closure conflicts with recorded sales. Recorded sales remain visible; performance evaluation is withheld pending review.')
                             if status == 'conflict' else ''),
                 'outside_count': raw.get('outside_count', 0),
                 'outside_warning': (_('Sales between 05:00 and 07:00 Riyadh time are outside the operating day and are not included.')
@@ -388,13 +361,18 @@ class SalesHeatCalendarDashboard(models.Model):
                 'heat_level': heat_level if status == 'complete' else 'neutral',
                 'heat_label': heat_label if status == 'complete' else status_label,
                 'basis_kind': basis_kind,
+                'basis_value': str(basis) if basis is not None else None,
+                'target_value': str(money(target.target_amount)) if target else None,
+                'baseline_value': str(baseline) if baseline is not None else None,
                 'basis_display': _money_display(basis),
                 'baseline_sample_count': len(candidates),
                 'ratio_display': f'{ratio:,.1f}%' if ratio is not None else '—',
+                'ratio_value': str(ratio) if ratio is not None else None,
                 'occasions': occasions_by_day.get(business_date, []),
                 'occasion_label': occasion_names,
-                'shift_breakdown': breakdowns_by_day.get(business_date, []) if source_kind == 'summary' else [],
+                'shift_breakdown': breakdowns_by_day.get(business_date, []),
                 'source_action': source_action if raw['has_sales'] else None,
+                'source_actions': raw.get('source_actions', []),
                 'aria_label': aria,
             })
 
@@ -411,7 +389,7 @@ class SalesHeatCalendarDashboard(models.Model):
             'weekdays': weekday_headers,
             'labels': {
                 'sales': _('Sales including VAT'),
-                'customers': _('Customers / POS transactions'),
+                'customers': _('Recorded customers'),
                 'basis_target': _('Daily target'),
                 'basis_baseline': _('Reference median'),
                 'basis_none': _('No target or reference'),

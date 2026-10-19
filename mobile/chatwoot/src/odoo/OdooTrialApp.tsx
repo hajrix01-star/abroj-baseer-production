@@ -3,11 +3,12 @@ import { Alert, AppState, BackHandler, Keyboard, Text, useWindowDimensions, View
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import NetInfo from '@react-native-community/netinfo';
 import type { ChatEngine, Room } from './core/ChatEngine';
-import { getEngine, getOrdersEngine, getTasksEngine, ordersOnlySnapshot, refreshOrdersOnlySession, setOrdersConnectivity, subscribeOrdersOnlySession } from './runtime';
+import { getEngine, getOrdersEngine, getTasksEngine, getLeadershipEngine, ordersOnlySnapshot, refreshOrdersOnlySession, setOrdersConnectivity, subscribeOrdersOnlySession } from './runtime';
 import { OrdersOnlyShell } from './session/OrdersOnlyShell';
 import { OrdersScreen } from './orders/ui/OrdersScreen';
 import { orderTranslator } from './orders/dictionary';
 import { TasksScreen } from './tasks/ui/TasksScreen';
+import { LeadershipScreen } from './leadership/ui/LeadershipScreen';
 import { taskTranslator } from './tasks/dictionary';
 import { Button, colors, direction, IconButton, Label, styles } from './ui/components';
 import { errorWord, translator, type Language, type Word } from './ui/dictionary';
@@ -34,8 +35,9 @@ export function SessionApp({ engine, initialLanguage = 'ar', onLanguageChange }:
   const chat = useChat(engine);
   const [language, updateLanguage] = useState<Language>(initialLanguage);
   const setLanguage = (value: Language) => { updateLanguage(value); onLanguageChange?.(value); };
-  const [area, setArea] = useState<'chat' | 'orders' | 'tasks'>('chat');
+  const [area, setArea] = useState<'chat' | 'orders' | 'tasks' | 'leadership'>('chat');
   const [tasksVisited, setTasksVisited] = useState(false);
+  const [leadershipVisited, setLeadershipVisited] = useState(false);
   const liveArea = useRef(area); liveArea.current = area;
   const [companyId, setCompanyId] = useState(0);
   const [management, setManagement] = useState<ManagementTarget | null>(null);
@@ -56,8 +58,9 @@ export function SessionApp({ engine, initialLanguage = 'ar', onLanguageChange }:
   useEffect(() => subscribeOrdersOnlySession(chat.capture), [chat.capture]);
   useEffect(() => {
     if (!chat.identity || (area === 'orders' && chat.identity.permissions.order_view !== true)
-        || (area === 'tasks' && chat.identity.permissions.task_view !== true)) setArea('chat');
-  }, [chat.identity?.database, chat.identity?.user_id, chat.identity?.permissions.order_view, chat.identity?.permissions.task_view, area]);
+        || (area === 'tasks' && chat.identity.permissions.task_view !== true)
+        || (area === 'leadership' && chat.identity.permissions.dashboard_view !== true)) setArea('chat');
+  }, [chat.identity?.database, chat.identity?.user_id, chat.identity?.permissions.order_view, chat.identity?.permissions.task_view, chat.identity?.permissions.dashboard_view, area]);
   useEffect(() => {
     if (area === 'chat') return;
     const listener = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -343,6 +346,15 @@ export function SessionApp({ engine, initialLanguage = 'ar', onLanguageChange }:
                 Keyboard.dismiss(); setArea('chat');
               }} />
           </View>}
+          {leadershipVisited && chat.identity.permissions.dashboard_view === true && <View style={[styles.fill, { display: area === 'leadership' ? 'flex' : 'none' }]}
+            pointerEvents={area === 'leadership' ? 'auto' : 'none'} accessibilityElementsHidden={area !== 'leadership'} importantForAccessibility={area === 'leadership' ? 'auto' : 'no-hide-descendants'}>
+            <LeadershipScreen engine={getLeadershipEngine()} identity={chat.identity} language={language}
+              scopeKey={engine.accountScope ?? ''} presented={area === 'leadership' && !!identity && !chat.offline}
+              onBack={() => {
+                if (!active.current || liveArea.current !== 'leadership' || liveScope.current !== scopeKey) return;
+                Keyboard.dismiss(); setArea('chat');
+              }} />
+          </View>}
           <View
             testID="chat-workspace"
             pointerEvents={area === 'chat' ? 'auto' : 'none'}
@@ -496,6 +508,11 @@ export function SessionApp({ engine, initialLanguage = 'ar', onLanguageChange }:
         onOrders={identity?.permissions.order_view === true ? () => {
           if (!active.current || liveScope.current !== scopeKey) return;
           Keyboard.dismiss(); setMenu(false); setArea('orders');
+        } : undefined}
+        leadershipLabel={t('leadership')}
+        onLeadership={identity?.permissions.dashboard_view === true ? () => {
+          if (!active.current || liveScope.current !== scopeKey) return;
+          Keyboard.dismiss(); setMenu(false); setLeadershipVisited(true); setArea('leadership');
         } : undefined}
         tasksLabel={taskTranslator(language)('tasks')}
         onTasks={identity?.permissions.task_view === true ? () => {

@@ -7,6 +7,25 @@ const bootstrap = (extra = {}) => ({ api_version: 2, user_id: 7, database: 'db',
 const mismatch = error => error.code === 'identity_mismatch';
 const stale = error => error.code === 'stale_session';
 
+test('dashboard-only admission keeps reporting independent and rejects revoked or fabricated grants', () => {
+  const raw = bootstrap({ permissions: { chat_view: false, chat_send: false, dashboard_view: true } });
+  const identity = ordersOnlyBootstrap(raw, 7, 'db');
+  assert.deepEqual(identity.permissions, raw.permissions);
+  assert.equal(identity.permissions.order_view, undefined);
+  assert.equal(identity.permissions.task_view, undefined);
+  const session = new OrdersOnlySession(); session.publish(identity, 3, 3);
+  assert.equal(session.snapshot().verified, true);
+  session.lock(); assert.equal(session.snapshot().verified, false);
+  assert.throws(() => session.publish({ ...identity, permissions: { ...identity.permissions, dashboard_view: false } }, 3, 3), stale);
+  for (const dashboard_view of [undefined, false, null, 1, 'true']) {
+    assert.equal(ordersOnlyBootstrap({ ...raw, permissions: { ...raw.permissions, dashboard_view } }, 7, 'db'), null);
+  }
+  assert.throws(() => ordersOnlyBootstrap({ ...raw, company_ids: [1, 1] }, 7, 'db'), mismatch);
+  assert.throws(() => ordersOnlyBootstrap({ ...raw, user_id: 8 }, 7, 'db'), mismatch);
+  session.publish(identity, 3, 3); session.clear(3);
+  assert.equal(session.snapshot().identity, null);
+});
+
 test('task-only admission preserves independent grants without inventing chat or orders', () => {
   const raw = bootstrap({ permissions: { chat_view: false, chat_send: false, task_view: true, task_manage: false } });
   const identity = ordersOnlyBootstrap(raw, 7, 'db');

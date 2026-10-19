@@ -116,8 +116,9 @@ function session() {
     './ui/components': components, './ui/dictionary': dictionary, './ui/useChat': { useChat: () => chat }, './ui/viewModel': viewModel,
     './orders/dictionary': ordersDictionary, './orders/ui/OrdersScreen': { OrdersScreen: 'OrdersScreen' },
     './tasks/dictionary': { taskTranslator: language => word => `${language}:${word}` }, './tasks/ui/TasksScreen': { TasksScreen: 'TasksScreen' },
+    './leadership/ui/LeadershipScreen': { LeadershipScreen: 'LeadershipScreen' },
     './session/OrdersOnlyShell': { OrdersOnlyShell: 'OrdersOnlyShell' },
-    './runtime': { getEngine: () => engine, getOrdersEngine: () => ({}), getTasksEngine: () => ({}), ordersOnlySnapshot: () => ({ identity: null, verified: false, generation: 0, revision: 0 }),
+    './runtime': { getEngine: () => engine, getOrdersEngine: () => ({}), getTasksEngine: () => ({}), getLeadershipEngine: () => ({}), ordersOnlySnapshot: () => ({ identity: null, verified: false, generation: 0, revision: 0 }),
       subscribeOrdersOnlySession: () => () => {}, refreshOrdersOnlySession: async () => {}, setOrdersConnectivity() {} },
     './ui/LoginScreen': { LoginScreen: 'LoginScreen' }, './ui/ManagementSheet': { ManagementSheet: 'ManagementSheet' },
     './ui/RoomsScreen': { RoomsScreen: 'RoomsScreen' }, './ui/TimelineScreen': { TimelineScreen: 'TimelineScreen' },
@@ -129,6 +130,23 @@ function session() {
   return { engine, chat, calls, alerts, nativeApp, render: () => state.render(() => module.SessionApp({ engine })),
     width(value) { width = value; }, back() { for (const callback of [...backHandlers].reverse()) if (callback()) return true; return false; }, flushFrames() { for (const frame of frames.splice(0)) frame(); } };
 }
+
+test('dashboard navigation is separately granted, retained when hidden and revoked without touching chat', () => {
+  const app = session();
+  assert.equal(one(app.render(), 'NavigationDrawer').onLeadership, undefined);
+  app.chat.identity.permissions.dashboard_view = true;
+  one(app.render(), 'NavigationDrawer').onLeadership();
+  let tree = app.render();
+  assert.equal(one(tree, 'LeadershipScreen').presented, true);
+  assert.equal(nodes(tree).filter(n => n.props?.testID === 'chat-workspace').length, 1);
+  one(tree, 'LeadershipScreen').onBack(); tree = app.render();
+  assert.equal(one(tree, 'LeadershipScreen').presented, false);
+  one(tree, 'NavigationDrawer').onLeadership(); app.render();
+  app.chat.identity.permissions.dashboard_view = false; tree = app.render();
+  assert.equal(nodes(tree).filter(n => n.type === 'LeadershipScreen').length, 0);
+  assert.equal(one(tree, 'NavigationDrawer').onLeadership, undefined);
+  assert.equal(nodes(tree).filter(n => n.props?.testID === 'chat-workspace').length, 1);
+});
 
 test('drawer never renders a masked identity and profile lists only authorized company metadata', () => {
   const app = drawer(); app.props.identity = null;

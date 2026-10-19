@@ -25,11 +25,12 @@ function harness() {
   const modules = {
     react: React, 'react/jsx-runtime': require('react/jsx-runtime'),
     'react-native': { View: 'View', AppState: appState }, 'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView' },
-    '../runtime': { getEngine: () => { calls.push('getEngine'); return engine; }, getOrdersEngine: () => { calls.push('getOrdersEngine'); return orders; }, getTasksEngine: () => { calls.push('getTasksEngine'); return {}; },
+    '../runtime': { getEngine: () => { calls.push('getEngine'); return engine; }, getOrdersEngine: () => { calls.push('getOrdersEngine'); return orders; }, getTasksEngine: () => { calls.push('getTasksEngine'); return {}; }, getLeadershipEngine: () => { calls.push('getLeadershipEngine'); return {}; },
       refreshOrdersOnlySession: async () => { calls.push('refresh'); if (refreshError) throw refreshError; }, ordersOnlySnapshot: () => props.snapshot },
     '../orders/ui/OrdersScreen': { OrdersScreen: OrdersProbe },
     '../orders/dictionary': { orderTranslator: language => word => `${language}:${word}` },
     '../tasks/ui/TasksScreen': { TasksScreen: 'TasksScreen' },
+    '../leadership/ui/LeadershipScreen': { LeadershipScreen: 'LeadershipScreen' },
     '../tasks/dictionary': { taskTranslator: language => word => `${language}:${word}` },
     '../ui/components': { Button: 'Button', IconButton: 'IconButton', Label: 'Label', styles: {}, colors: { white: 'white' } },
     '../ui/Brand': { Brand: 'Brand' }, '../ui/NavigationDrawer': { NavigationDrawer: 'NavigationDrawer' },
@@ -49,6 +50,28 @@ function harness() {
     async act(callback) { await renderer.act(async () => { await callback(); }); },
     error(value) { refreshError = value; }, async unmount() { await renderer.act(() => mounted?.unmount()); } };
 }
+
+test('dashboard-only shell has no chat orders or tasks reads and hides reporting during verification', async () => {
+  const app = harness();
+  try {
+    app.props.snapshot.identity.permissions = { chat_view: false, dashboard_view: true };
+    await app.render();
+    assert.equal(app.nodes('LeadershipScreen').length, 1);
+    assert.equal(app.nodes('LeadershipScreen')[0].props.presented, true);
+    assert.equal(app.nodes('OrdersScreen').length, 0);
+    assert.equal(app.nodes('TasksScreen').length, 0);
+    assert.equal(app.calls.includes('getOrdersEngine'), false);
+    assert.equal(app.calls.includes('getTasksEngine'), false);
+    assert.equal(app.nodes('NavigationDrawer')[0].props.onOrders, undefined);
+    assert.equal(app.nodes('NavigationDrawer')[0].props.onTasks, undefined);
+    app.props.snapshot = { ...app.props.snapshot, verified: false, revision: 3 }; await app.render();
+    assert.equal(app.nodes('LeadershipScreen')[0].props.presented, false);
+    app.props.snapshot = { ...app.props.snapshot, verified: true, revision: 4,
+      identity: { ...app.props.snapshot.identity, permissions: { chat_view: false, dashboard_view: false } } }; await app.render();
+    assert.equal(app.nodes('LeadershipScreen').length, 0);
+    assert.equal(app.nodes('NavigationDrawer')[0].props.onLeadership, undefined);
+  } finally { await app.unmount(); }
+});
 
 test('orders-only shell retains its same-authority workspace behind a private verification cover and never imports useChat', async () => {
   const app = harness();

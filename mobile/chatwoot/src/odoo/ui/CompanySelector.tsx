@@ -28,7 +28,7 @@ export function CompanySelector({
   companyIds?: number[];
   pickerOnly?: boolean;
   onDismiss?: () => void;
-  permission?: 'chat_view' | 'task_view';
+  permission?: 'chat_view' | 'task_view' | 'dashboard_view';
 }) {
   const authorized = authorizedCompanies(identity, language).filter(
     company => !companyIds || companyIds.includes(company.id),

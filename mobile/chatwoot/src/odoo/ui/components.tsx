@@ -30,6 +30,7 @@ export const colors = {
   violet: '#7556f5',
   warning: '#fff4d6',
   danger: '#a12a32',
+  success: '#167447',
   chatBackground: '#f1f3f5',
   chatSent: '#dff0ff',
   chatQuote: '#d4e8fc',
@@ -38,6 +39,7 @@ export const colors = {
 
 const iconPaths = {
   menu: 'M4 6h16M4 12h16M4 18h16',
+  chart: 'M4 3v18h17M8 16v-5M13 16V7M18 16v-8',
   back: 'M15 5l-7 7 7 7',
   chevronDown: 'M6 9l6 6 6-6',
   check: 'M5 12l4 4L19 6',

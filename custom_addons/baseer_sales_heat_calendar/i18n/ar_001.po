@@ -95,8 +95,18 @@ msgstr "لا يوجد مصدر مبيعات"
 
 #. module: baseer_sales_heat_calendar
 #: code:addons/baseer_sales_heat_calendar/models/dashboard.py:0
-msgid "Daily metadata conflicts with session sales. Original POS sales remain visible; performance evaluation is withheld pending review."
-msgstr "بيانات اليوم لا تتطابق مع مبيعات الجلسات. المبيعات الأصلية ظاهرة؛ أوقفنا تقييم الأداء حتى مراجعة البيانات."
+msgid "Daily closure conflicts with recorded sales. Recorded sales remain visible; performance evaluation is withheld pending review."
+msgstr "إغلاق اليوم يتعارض مع المبيعات المسجلة. المبيعات ظاهرة؛ أوقفنا تقييم الأداء حتى مراجعة البيانات."
+
+#. module: baseer_sales_heat_calendar
+#: code:addons/baseer_sales_heat_calendar/models/dashboard.py:0
+msgid "Combined sales sources"
+msgstr "مصادر المبيعات المجمّعة"
+
+#. module: baseer_sales_heat_calendar
+#: code:addons/baseer_sales_heat_calendar/models/dashboard.py:0
+msgid "Sales invoices"
+msgstr "فواتير المبيعات"
 
 
 #. module: baseer_sales_heat_calendar

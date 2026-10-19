@@ -2,10 +2,11 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { OrdersOnlySnapshot } from './OrdersOnlySession';
-import { getEngine, getOrdersEngine, getTasksEngine, ordersOnlySnapshot, refreshOrdersOnlySession } from '../runtime';
+import { getEngine, getOrdersEngine, getTasksEngine, getLeadershipEngine, ordersOnlySnapshot, refreshOrdersOnlySession } from '../runtime';
 import { OrdersScreen } from '../orders/ui/OrdersScreen';
 import { orderTranslator } from '../orders/dictionary';
 import { TasksScreen } from '../tasks/ui/TasksScreen';
+import { LeadershipScreen } from '../leadership/ui/LeadershipScreen';
 import { taskTranslator } from '../tasks/dictionary';
 import { Button, colors, IconButton, Label, styles } from '../ui/components';
 import { Brand } from '../ui/Brand';
@@ -24,9 +25,12 @@ export function OrdersOnlyShell({ snapshot, language, setLanguage, online }: {
   const identity = snapshot.identity;
   const hasOrders = identity?.permissions.order_view === true;
   const hasTasks = identity?.permissions.task_view === true;
-  const [area, setArea] = useState<'orders' | 'tasks'>(hasOrders ? 'orders' : 'tasks');
+  const hasLeadership = identity?.permissions.dashboard_view === true;
+  const fallbackArea = hasOrders ? 'orders' : hasTasks ? 'tasks' : 'leadership';
+  const [area, setArea] = useState<'orders' | 'tasks' | 'leadership'>(fallbackArea);
   const [tasksVisited, setTasksVisited] = useState(!hasOrders && hasTasks);
-  const visibleArea = area === 'orders' && !hasOrders ? 'tasks' : area === 'tasks' && !hasTasks ? 'orders' : area;
+  const [leadershipVisited, setLeadershipVisited] = useState(!hasOrders && !hasTasks && hasLeadership);
+  const visibleArea = (area === 'orders' && !hasOrders) || (area === 'tasks' && !hasTasks) || (area === 'leadership' && !hasLeadership) ? fallbackArea : area;
   const actor = JSON.stringify([identity?.database, identity?.user_id]);
   const [companySelection, setCompanySelection] = useState({ actor: '', id: 0 });
   const selectedCompanyId = companySelection.actor === actor && identity?.company_ids.includes(companySelection.id) ? companySelection.id : 0;
@@ -77,6 +81,10 @@ export function OrdersOnlyShell({ snapshot, language, setLanguage, online }: {
       pointerEvents={visibleArea === 'tasks' ? 'auto' : 'none'} accessibilityElementsHidden={visibleArea !== 'tasks'} importantForAccessibility={visibleArea === 'tasks' ? 'auto' : 'no-hide-descendants'}>
       <TasksScreen key={displayScope} engine={getTasksEngine()} identity={identity} language={language} scopeKey={displayScope} presented={ready && visibleArea === 'tasks'} />
     </View>}
+    {retainWorkspace && hasLeadership && (leadershipVisited || visibleArea === 'leadership') && <View style={[styles.fill, { display: visibleArea === 'leadership' ? 'flex' : 'none' }]}
+      pointerEvents={visibleArea === 'leadership' ? 'auto' : 'none'} accessibilityElementsHidden={visibleArea !== 'leadership'} importantForAccessibility={visibleArea === 'leadership' ? 'auto' : 'no-hide-descendants'}>
+      <LeadershipScreen key={displayScope} engine={getLeadershipEngine()} identity={identity} language={language} scopeKey={displayScope} presented={ready && visibleArea === 'leadership'} />
+    </View>}
     {!ready && <View testID="orders-session-privacy-cover" style={[styles.fill, {
       ...(retainWorkspace ? { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 } : {}),
       backgroundColor: colors.white, padding: 24, justifyContent: 'center', gap: 16,
@@ -90,6 +98,8 @@ export function OrdersOnlyShell({ snapshot, language, setLanguage, online }: {
       pendingCount={0} busy={busy} canManage={false} close={close} onAction={action}
       ordersLabel={orderTranslator(language)('orders')}
       onOrders={hasOrders ? () => { if (ready && current()) { setMenu(false); setArea('orders'); } } : undefined}
+      leadershipLabel={t('leadership')}
+      onLeadership={hasLeadership ? () => { if (ready && current()) { setMenu(false); setLeadershipVisited(true); setArea('leadership'); } } : undefined}
       tasksLabel={taskTranslator(language)('tasks')}
       onTasks={hasTasks ? () => { if (ready && current()) { setMenu(false); setTasksVisited(true); setArea('tasks'); } } : undefined} />
   </SafeAreaView>;

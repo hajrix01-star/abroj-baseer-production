@@ -88,6 +88,8 @@ export function NavigationDrawer({
   ordersLabel,
   onTasks,
   tasksLabel,
+  onLeadership,
+  leadershipLabel,
 }: {
   visible: boolean;
   identity: Bootstrap | null;
@@ -106,6 +108,8 @@ export function NavigationDrawer({
   ordersLabel?: string;
   onTasks?: () => void;
   tasksLabel?: string;
+  onLeadership?: () => void;
+  leadershipLabel?: string;
 }) {
   const [page, setPage] = useState<'home' | 'profile' | 'settings'>('home');
   const { width } = useWindowDimensions();
@@ -225,6 +229,7 @@ export function NavigationDrawer({
                 <>
                   {onOrders && ordersLabel && <MenuRow icon="file" label={ordersLabel} language={language} onPress={onOrders} />}
                   {onTasks && tasksLabel && <MenuRow icon="check" label={tasksLabel} language={language} onPress={onTasks} />}
+                  {onLeadership && leadershipLabel && <MenuRow icon="chart" label={leadershipLabel} language={language} onPress={onLeadership} />}
                   <MenuRow
                     icon="user"
                     label={t('profile')}

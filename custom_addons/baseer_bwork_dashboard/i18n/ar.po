@@ -1,0 +1,99 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Baseer BWork Leadership Dashboard\n"
+"Language: ar\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 ? 4 : 5;\n"
+
+#. module: baseer_bwork_dashboard
+#: code:addons/baseer_bwork_dashboard/models/leadership.py:0
+msgid "Complete"
+msgstr "مكتمل"
+
+#. module: baseer_bwork_dashboard
+#: code:addons/baseer_bwork_dashboard/models/leadership.py:0
+msgid "Incomplete"
+msgstr "غير مكتمل"
+
+#. module: baseer_bwork_dashboard
+#: code:addons/baseer_bwork_dashboard/models/leadership.py:0
+msgid "Closed"
+msgstr "مغلق"
+
+#. module: baseer_bwork_dashboard
+#: code:addons/baseer_bwork_dashboard/models/leadership.py:0
+msgid "No entry"
+msgstr "لا توجد بيانات"
+
+#. module: baseer_bwork_dashboard
+#: code:addons/baseer_bwork_dashboard/models/leadership.py:0
+msgid "Conflicting daily sources"
+msgstr "تعارض في مصادر اليوم"
+
+#. module: baseer_bwork_dashboard
+#: code:addons/baseer_bwork_dashboard/models/leadership.py:0
+msgid "Complete in every requested company"
+msgstr "مكتمل في جميع الشركات المحددة"
+
+#. module: baseer_bwork_dashboard
+#: code:addons/baseer_bwork_dashboard/models/leadership.py:0
+msgid "Missing or incomplete company coverage"
+msgstr "بيانات إحدى الشركات مفقودة أو غير مكتملة"
+
+#. module: baseer_bwork_dashboard
+#: code:addons/baseer_bwork_dashboard/models/leadership.py:0
+msgid "Monday"
+msgstr "الاثنين"
+
+#. module: baseer_bwork_dashboard
+#: code:addons/baseer_bwork_dashboard/models/leadership.py:0
+msgid "Tuesday"
+msgstr "الثلاثاء"
+
+#. module: baseer_bwork_dashboard
+#: code:addons/baseer_bwork_dashboard/models/leadership.py:0
+msgid "Wednesday"
+msgstr "الأربعاء"
+
+#. module: baseer_bwork_dashboard
+#: code:addons/baseer_bwork_dashboard/models/leadership.py:0
+msgid "Thursday"
+msgstr "الخميس"
+
+#. module: baseer_bwork_dashboard
+#: code:addons/baseer_bwork_dashboard/models/leadership.py:0
+msgid "Friday"
+msgstr "الجمعة"
+
+#. module: baseer_bwork_dashboard
+#: code:addons/baseer_bwork_dashboard/models/leadership.py:0
+msgid "Saturday"
+msgstr "السبت"
+
+#. module: baseer_bwork_dashboard
+#: code:addons/baseer_bwork_dashboard/models/leadership.py:0
+msgid "Sunday"
+msgstr "الأحد"
+
+#. module: baseer_bwork_dashboard
+#: code:addons/baseer_bwork_dashboard/models/leadership.py:0
+msgid "No completed dates in the current month; comparison and forecast unavailable."
+msgstr "لا توجد أيام مكتملة في الشهر الحالي؛ المقارنة والتوقع غير متاحين."
+
+#. module: baseer_bwork_dashboard
+#: code:addons/baseer_bwork_dashboard/models/leadership.py:0
+msgid "Change unavailable: the previous month has fewer calendar dates."
+msgstr "نسبة التغير غير متاحة لأن أيام الشهر السابق أقل."
+
+#. module: baseer_bwork_dashboard
+#: code:addons/baseer_bwork_dashboard/models/leadership.py:0
+#, python-format
+msgid "%(first)s–%(last)s compared with %(prior_first)s–%(prior_last)s; completed dates only. Forecast is an estimate: complete-day mean × calendar days, minimum 7 complete days and no coverage gaps."
+msgstr "من %(first)s إلى %(last)s مقارنة بالفترة من %(prior_first)s إلى %(prior_last)s؛ للأيام المكتملة فقط. التوقع تقديري: متوسط اليوم المكتمل × عدد أيام الشهر، بعد اكتمال 7 أيام على الأقل ودون نقص في البيانات."
+
+#. module: baseer_bwork_dashboard
+#: code:addons/baseer_bwork_dashboard/models/leadership.py:0
+msgid "Posted supplier bills less supplier credits, gross including VAT, company currency only. Sales less supplier bills is a difference, not profit or cash flow."
+msgstr "فواتير الموردين المرحلة بعد خصم إشعاراتهم الدائنة، شاملة الضريبة وبعملة الشركة فقط. طرح فواتير الموردين من المبيعات يمثل فرقًا، وليس ربحًا أو تدفقًا نقديًا."

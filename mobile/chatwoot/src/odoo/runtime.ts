@@ -17,6 +17,9 @@ import { ordersNativeRequest } from './orders/transport';
 import { TasksEngine } from './tasks/core/TasksEngine';
 import { TasksError, type TaskIdentity } from './tasks/core/types';
 import { tasksNativeRequest } from './tasks/transport';
+import { LeadershipEngine } from './leadership/core/LeadershipEngine';
+import { LeadershipError, type LeadershipIdentity } from './leadership/core/types';
+import { leadershipNativeRequest } from './leadership/transport';
 
 export const config = Object.freeze({
   origin: (process.env.EXPO_PUBLIC_ODOO_ORIGIN ?? '').trim(),
@@ -32,6 +35,7 @@ const tasks = new Set<StatefulPromise<FetchBlobResponse>>();
 const ordersOnlySession = new OrdersOnlySession();
 let ordersEngine: OrdersEngine | undefined;
 let workTasksEngine: TasksEngine | undefined;
+let leadershipEngine: LeadershipEngine | undefined;
 let ordersConnectivity = true;
 let ordersAccessEpoch = 0;
 let ordersRefresh: { generation: number; accessEpoch: number; operation: Promise<Bootstrap> } | null = null;
@@ -42,6 +46,7 @@ export function setOrdersConnectivity(connected: boolean): void {
   ordersConnectivity = connected;
   if (!connected) ordersOnlySession.lock();
   if (!connected) workTasksEngine?.cancelReads();
+  if (!connected) leadershipEngine?.cancelReads();
 }
 const reservations = new Map<string, { epoch: number; at: number }>();
 let generation = 0;
@@ -208,6 +213,7 @@ function fixedURL(path: string): string {
 }
 function cancelNative(): void {
   generation++;
+  leadershipEngine?.clear();
   ordersOnlySession.lock();
   clearGroupAvatars();
   clearMemberAvatars();
@@ -604,6 +610,35 @@ export function getTasksEngine(): TasksEngine {
     } },
   });
   return workTasksEngine;
+}
+/** Financial reports are read-only and live only in their verified actor scope. */
+export function getLeadershipEngine(): LeadershipEngine {
+  if (!leadershipEngine) leadershipEngine = new LeadershipEngine({
+    identityScope: (): LeadershipIdentity | null => {
+      const current = applicationOrdersIdentity();
+      if (!current) return null;
+      const b = current.identity;
+      return { origin: config.origin, db: config.database, uid: b.user_id, epoch: current.epoch,
+        companyIds: b.company_ids, verified: true, canView: b.permissions.dashboard_view === true };
+    },
+    transport: { request: async input => {
+      const expected = applicationOrdersIdentity();
+      if (!expected || expected.identity.permissions.dashboard_view !== true) throw new LeadershipError('unauthorized');
+      const stamp = identityStamp(expected);
+      try {
+        const value = await request(leadershipNativeRequest(input));
+        if (identityStamp(applicationOrdersIdentity()) !== stamp) throw new LeadershipError('stale');
+        return value;
+      } catch (error) {
+        if (identityStamp(applicationOrdersIdentity()) !== stamp) throw new LeadershipError('stale');
+        if (error instanceof ChatError && error.status === 401) await getEngine().logout();
+        if (error instanceof LeadershipError) throw error;
+        throw new LeadershipError(error instanceof ChatError ? error.code : 'connection_failed',
+          error instanceof ChatError ? error.status : undefined);
+      }
+    } },
+  });
+  return leadershipEngine;
 }
 export async function refreshOrdersOnlySession(): Promise<Bootstrap> {
   const prior = ordersOnlySnapshot();

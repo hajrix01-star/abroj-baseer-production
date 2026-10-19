@@ -4,6 +4,7 @@
   "approvedVersion": "0.1.14/build15",
   "suites": ["test:bwork-gate", "test:odoo", "test:brand", "test:orders", "test:tasks"],
   "invariants": [
+    { "id": "tasks-known-denial-privacy", "description": "رفض الخادم المؤكد يزيل بيانات المهام حتى نجاح تحقق جديد، لا يكتفي بتعطيل الأزرار", "suite": "test:tasks", "test": "known options denial clears old private content and only fresh verified options can restore the section" },
     { "id": "tasks-all-companies", "description": "المهام صفحة موحدة من جميع الشركات المخولة مع فلتر مستقل ومؤشر عام", "suite": "test:tasks", "test": "all-company lists use one global query, separate filter and global cursor" },
     { "id": "tasks-single-company", "description": "الشركة الواحدة تلقائية ومخفية في الاستعراض والإنشاء مع شركة عملية صريحة", "suite": "test:tasks", "test": "one company is automatic, hidden in browsing and creation, with explicit operation company" },
     { "id": "tasks-independent-rights", "description": "صلاحيات المهام مستقلة ولا تمنح المحادثة أو إدارة بلا تصريح", "suite": "test:tasks", "test": "task-only permissions work; no-view/view-only cannot mutate or enumerate assignees" },

@@ -39,6 +39,13 @@ const ar: Record<keyof typeof en, string> = {
 };
 export type TaskWord = keyof typeof en;
 export const taskTranslator = (language: Language) => (word: TaskWord): string => (language === 'ar' ? ar : en)[word];
+/** A known authority rejection is not transient verification or a network error. */
+export function taskAccessDenied(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  const code = 'code' in error ? String(error.code) : '';
+  const status = 'status' in error ? error.status : undefined;
+  return status === 401 || status === 403 || ['forbidden', 'unauthorized', 'company_forbidden', 'session'].includes(code);
+}
 export function taskErrorWord(error: unknown): TaskWord {
   const code = error && typeof error === 'object' && 'code' in error ? String(error.code) : '';
   if (['unknown', 'outcome_unknown', 'write_in_progress'].includes(code)) return 'unknown';

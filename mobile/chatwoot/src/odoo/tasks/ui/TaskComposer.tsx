@@ -7,13 +7,13 @@ import { DateTimeField } from '../../ui/DateTimeField';
 import { translator, type Language } from '../../ui/dictionary';
 import type { TasksEngine } from '../core/TasksEngine';
 import type { TaskSelection, WorkTaskCreateInput, WorkTaskWriteResult } from '../core/types';
-import { taskErrorWord, taskTranslator } from '../dictionary';
+import { taskAccessDenied, taskErrorWord, taskTranslator } from '../dictionary';
 import { AssigneePicker } from './AssigneePicker';
 import { taskStyles as s } from './taskStyles';
 
-export function TaskComposer({ engine, identity, language, presented, companyId, companies, onCompany, onSaved, onPending, onBack }: {
+export function TaskComposer({ engine, identity, language, presented, companyId, companies, onCompany, onSaved, onPending, onBack, onDenied }: {
   engine: TasksEngine; identity: Bootstrap; language: Language; presented: boolean; companyId: number; companies: TaskSelection[];
-  onCompany: (id: number) => void; onSaved: (result: WorkTaskWriteResult) => void; onPending: () => void; onBack: () => void;
+  onCompany: (id: number) => void; onSaved: (result: WorkTaskWriteResult) => void; onPending: () => void; onBack: () => void; onDenied: (error: unknown) => void;
 }) {
   const t = taskTranslator(language), [title, setTitle] = useState(''), [description, setDescription] = useState(''), [assignee, setAssignee] = useState<TaskSelection | null>(null);
   const [due, setDue] = useState<string | null>(null), [reminder, setReminder] = useState<string | null>(null), [extra, setExtra] = useState(false);
@@ -27,7 +27,7 @@ export function TaskComposer({ engine, identity, language, presented, companyId,
     gate.current = true; setBusy(true); setError(null);
     const input: WorkTaskCreateInput = { company_id: companyId, room_id: null, title: title.trim(), description: description.trim(), assignee_id: assignee.id, due_at: due, reminder_at: reminder };
     try { const result = await engine.create(input); if (alive.current && current.current.companyId === companyId) onSaved(result); }
-    catch (failure) { if (alive.current) { setError(failure); onPending(); } }
+    catch (failure) { if (alive.current) { if (taskAccessDenied(failure)) onDenied(failure); else { setError(failure); onPending(); } } }
     finally { gate.current = false; if (alive.current) setBusy(false); }
   };
   return <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={[s.content, { paddingBottom: 32 }]} testID="task-composer">
@@ -37,7 +37,7 @@ export function TaskComposer({ engine, identity, language, presented, companyId,
     <Label language={language}>{t('title')}</Label><Field testID="task-title" accessibilityLabel={t('title')} placeholder={t('titleExample')} language={language} value={title}
       editable={presented && !busy} maxLength={160} onChangeText={text => { if (allowed()) setTitle(text); }} />
     {!companyId && <Label language={language} muted>{t('chooseCompany')}</Label>}
-    <AssigneePicker engine={engine} companyId={companyId} language={language} presented={presented} value={assignee} onSelect={person => { if (allowed()) setAssignee(person); }} disabled={busy} />
+    <AssigneePicker engine={engine} companyId={companyId} language={language} presented={presented} value={assignee} onSelect={person => { if (allowed()) setAssignee(person); }} disabled={busy} onDenied={onDenied} />
     <DateTimeField label={t('due')} testID="task-due" language={language} value={due} disabled={!presented || busy} onChange={value => { if (allowed()) { setDue(value); if (!value) setReminder(null); } }} />
     <Button title={t('moreDetails')} quiet onPress={() => { if (allowed()) setExtra(value => !value); }} disabled={!presented || busy} />
     {extra && <View style={s.stack}>

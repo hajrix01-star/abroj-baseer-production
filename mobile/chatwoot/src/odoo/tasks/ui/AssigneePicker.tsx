@@ -4,12 +4,12 @@ import { Button, colors, direction, Field, Icon, Label, Sheet, styles } from '..
 import { translator, type Language } from '../../ui/dictionary';
 import type { TasksEngine } from '../core/TasksEngine';
 import type { TaskSelection } from '../core/types';
-import { taskErrorWord, taskTranslator } from '../dictionary';
+import { taskAccessDenied, taskErrorWord, taskTranslator } from '../dictionary';
 import { taskRow, taskStyles as s } from './taskStyles';
 
 /** Company-scoped, server-paged assignee search; never a generic user-directory dump. */
-export function AssigneePicker({ engine, companyId, language, presented, value, onSelect, excludeId, disabled = false }: {
-  engine: TasksEngine; companyId: number; language: Language; presented: boolean; value: TaskSelection | null; onSelect: (person: TaskSelection) => void; excludeId?: number; disabled?: boolean;
+export function AssigneePicker({ engine, companyId, language, presented, value, onSelect, excludeId, disabled = false, onDenied }: {
+  engine: TasksEngine; companyId: number; language: Language; presented: boolean; value: TaskSelection | null; onSelect: (person: TaskSelection) => void; excludeId?: number; disabled?: boolean; onDenied: (error: unknown) => void;
 }) {
   const t = taskTranslator(language), [open, setOpen] = useState(false), [query, setQuery] = useState('');
   const [people, setPeople] = useState<TaskSelection[]>([]), [cursor, setCursor] = useState<number | null>(null), [busy, setBusy] = useState(false), [error, setError] = useState<unknown>(null);
@@ -27,7 +27,7 @@ export function AssigneePicker({ engine, companyId, language, presented, value, 
       if (!allowed() || ticket !== generation.current) return;
       setPeople(previous => { const next = more ? [...previous, ...page.assignees] : page.assignees; return next.filter((person, index) => person.id !== excludeId && next.findIndex(other => other.id === person.id) === index).slice(0, 200); });
       setCursor(page.next_after_id);
-    } catch (failure) { if (allowed() && ticket === generation.current) setError(failure); }
+    } catch (failure) { if (alive.current && ticket === generation.current) { if (taskAccessDenied(failure)) onDenied(failure); else if (allowed()) setError(failure); } }
     finally { if (ticket === generation.current) { gate.current = false; if (alive.current) setBusy(false); } }
   };
   useEffect(() => { generation.current++; gate.current = false; setPeople([]); setCursor(null);

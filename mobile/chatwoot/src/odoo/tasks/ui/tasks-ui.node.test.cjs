@@ -118,3 +118,52 @@ test('an unresolved create never traps Back or blocks an unrelated same-company 
     assert.equal(app.calls.some(call => call[0] === 'retry'), false, 'the unknown original was never automatically retried');
   } finally { await app.unmount(); }
 });
+test('known options denial clears old private content and only fresh verified options can restore the section', async () => {
+  const app = harness(); try { await app.flush(); assert.ok(byId(app.render(), 'task-row-2-7'));
+    const validOptions = app.engine.options;
+    app.engine.options = async () => { app.calls.push(['options']); throw { code: 'forbidden', status: 403 }; };
+    await app.act(() => one(app.render(), 'IconButton', props => props.label === 'Refresh').onPress());
+    assert.equal(nodes(app.render()).some(node => node.props.testID?.startsWith('task-row-')), false);
+    assert.equal(nodes(app.render()).some(node => node.type === 'CompanySelector'), false);
+    assert.equal(text(app.render()).includes('Task 7'), false);
+    const before = app.calls.filter(call => call[0] !== 'cancelReads').length;
+    await app.flush(); assert.equal(app.calls.filter(call => call[0] !== 'cancelReads').length, before, 'known denial is not retried automatically');
+    app.props.presented = false; await app.flush();
+    const retry = button(app.render(), 'Try again').onPress;
+    await app.act(retry); assert.equal(app.calls.filter(call => call[0] !== 'cancelReads').length, before, 'hidden retry cannot request authority');
+    app.engine.options = validOptions; app.props.presented = true; await app.flush(); assert.ok(byId(app.render(), 'task-row-2-7'));
+  } finally { await app.unmount(); }
+});
+test('known paged-list denial removes already loaded rows, not just their action buttons', async () => {
+  const app = harness(); app.engine.list = async query => { app.calls.push(['list', query]); if (query.beforeId) throw { code: 'forbidden', status: 403 }; return { tasks: [app.task()], next_before_id: 6 }; };
+  try { await app.flush(); assert.ok(byId(app.render(), 'task-row-2-7'));
+    await app.act(() => button(app.render(), 'Load more').onPress());
+    assert.equal(nodes(app.render()).some(node => node.props.testID === 'tasks-list'), false);
+    assert.equal(text(app.render()).includes('Task 7'), false); assert.equal(nodes(app.render()).some(node => node.type === 'CompanySelector'), false);
+    await app.act(() => button(app.render(), 'Try again').onPress()); assert.ok(byId(app.render(), 'task-row-2-7'));
+  } finally { await app.unmount(); }
+});
+test('known detail denial clears the cached detail and any late callback cannot restore it', async () => {
+  const app = harness(); try { await app.flush(); await app.act(() => byId(app.render(), 'task-row-2-7').onPress()); assert.ok(byId(app.render(), 'task-detail'));
+    const oldComplete = button(app.render(), 'Mark completed').onPress;
+    app.engine.transition = async () => { throw { code: 'revision_conflict' }; };
+    await app.act(oldComplete);
+    app.engine.detail = async () => { throw { code: 'forbidden', status: 403 }; };
+    await app.act(() => button(app.render(), 'Refresh').onPress());
+    assert.equal(nodes(app.render()).some(node => node.props.testID === 'task-detail'), false); assert.equal(text(app.render()).includes('Repair equipment'), false);
+    const before = app.calls.length; await app.act(oldComplete); assert.equal(app.calls.length, before, 'unmounted detail cannot act again');
+    await app.act(() => button(app.render(), 'Try again').onPress()); assert.equal(nodes(app.render()).some(node => node.props.testID === 'task-detail'), false);
+  } finally { await app.unmount(); }
+});
+test('known assignee denial clears the entire composer and its private draft rather than hiding a modal only', async () => {
+  const app = harness(); try { await app.flush(); await app.act(() => button(app.render(), 'New task').onPress()); await app.act(() => one(app.render(), 'CompanySelector').onSelect(1));
+    await app.act(() => byId(app.render(), 'task-title').onChangeText('Private equipment repair draft'));
+    app.engine.assignees = async () => { throw { code: 'forbidden', status: 403 }; };
+    await app.act(() => byId(app.render(), 'task-assignee-picker').onPress());
+    assert.equal(nodes(app.render()).some(node => node.props.testID === 'task-composer'), false); assert.equal(nodes(app.render()).some(node => node.type === 'Sheet'), false);
+    assert.equal(JSON.stringify(app.render()).includes('Private equipment repair draft'), false);
+    await app.act(() => button(app.render(), 'Try again').onPress());
+    assert.equal(nodes(app.render()).some(node => node.props.testID === 'task-composer'), false);
+    await app.act(() => button(app.render(), 'New task').onPress()); assert.equal(byId(app.render(), 'task-title').value, '');
+  } finally { await app.unmount(); }
+});

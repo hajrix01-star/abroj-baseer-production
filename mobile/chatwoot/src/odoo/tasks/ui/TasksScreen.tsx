@@ -7,7 +7,7 @@ import { companyDisplayName } from '../../ui/companyNames';
 import { translator, type Language } from '../../ui/dictionary';
 import type { TasksEngine } from '../core/TasksEngine';
 import type { PendingTaskAttempt, TaskSelection, TasksStateFilter, TasksView, WorkTask, WorkTasksOptions, WorkTaskWriteResult } from '../core/types';
-import { taskErrorWord, taskTranslator } from '../dictionary';
+import { taskAccessDenied, taskErrorWord, taskTranslator } from '../dictionary';
 import { TaskCard } from './TaskCard';
 import { TaskComposer } from './TaskComposer';
 import { TaskDetail } from './TaskDetail';
@@ -34,13 +34,20 @@ function Workspace({ engine, identity, language, presented, onBack }: TasksScree
   const [mode, setMode] = useState<'list' | 'create' | 'detail'>('list'), [detail, setDetail] = useState<WorkTask | null>(null), [detailBusy, setDetailBusy] = useState(false);
   const [lastCompany, setLastCompany] = useState(0), [createCompany, setCreateCompany] = useState(0), [refresh, setRefresh] = useState(0), [pending, setPending] = useState<PendingTaskAttempt[]>([]);
   const alive = useRef(true), active = useRef(presented), optionsGate = useRef(false), detailGeneration = useRef(0), optionsGeneration = useRef(0);
+  const knownDenied = useRef(false);
   active.current = presented && identity.permissions.task_view === true;
   const retryRead = useRef<{ run: () => void; needsOptions: boolean } | null>(null), [resumeTick, setResumeTick] = useState(0), recovered = useRef(false), pendingDirty = useRef(false);
   const keyboardFrame = useRef<View>(null), measureGeneration = useRef(0), [keyboardOffset, setKeyboardOffset] = useState(0);
   if (!presented) recovered.current = false;
   const networkLive = () => alive.current && active.current;
-  const ready = presented && optionsReady;
-  const live = () => networkLive() && optionsReady;
+  const ready = presented && optionsReady && !knownDenied.current;
+  const live = () => networkLive() && optionsReady && !knownDenied.current;
+  const denySection = (failure: unknown) => {
+    if (!alive.current) return;
+    knownDenied.current = true; retryRead.current = null; optionsGeneration.current++; detailGeneration.current++; engine.cancelReads();
+    optionsGate.current = false; pendingDirty.current = true; setOptionsReady(false); setOptions(null); setDetail(null); setPending([]); setMode('list');
+    setCreateCompany(0); setLastCompany(0); setFilter(0); setBusy(false); setDetailBusy(false); setError(failure);
+  };
   const companies: TaskSelection[] = (options?.companies ?? []).filter(company => identity.company_ids.includes(company.id)).map(company => {
     const profile = identity.profile?.companies.find(item => item.id === company.id);
     return { id: company.id, name: profile ? companyDisplayName(profile, language, company.id) : company.name };
@@ -54,13 +61,15 @@ function Workspace({ engine, identity, language, presented, onBack }: TasksScree
     }
     return false;
   };
-  const loadPending = async () => { if (!networkLive()) { pendingDirty.current = true; return; } try { const next = await engine.pending(); if (networkLive()) { setPending(next); pendingDirty.current = false; } }
-    catch (failure) { if (networkLive()) setError(failure); } };
+  const loadPending = async () => { if (!networkLive() || knownDenied.current) { pendingDirty.current = true; return; } try { const next = await engine.pending(); if (networkLive() && !knownDenied.current) { setPending(next); pendingDirty.current = false; } }
+    catch (failure) { if (alive.current && taskAccessDenied(failure)) denySection(failure); else if (networkLive()) setError(failure); } };
   const loadOptions = async () => {
     if (!networkLive() || optionsGate.current) return; optionsGate.current = true; const generation = ++optionsGeneration.current; setBusy(true); setError(null); setOptionsReady(false);
-    try { const next = await engine.options(); if (!networkLive() || generation !== optionsGeneration.current) return; setOptions(next); setOptionsReady(true);
+    try { const next = await engine.options(); if (!networkLive() || generation !== optionsGeneration.current) return;
+      if (!next.can_view) { denySection({ code: 'forbidden', status: 403 }); return; }
+      knownDenied.current = false; setOptions(next); setOptionsReady(true);
       if (!next.can_manage) setMode(current => current === 'create' ? 'list' : current); await loadPending(); }
-    catch (failure) { if (alive.current && generation === optionsGeneration.current && !interrupted(failure, () => void loadOptions(), false)) setError(failure); }
+    catch (failure) { if (alive.current && generation === optionsGeneration.current) { if (taskAccessDenied(failure)) denySection(failure); else if (!interrupted(failure, () => void loadOptions(), false)) setError(failure); } }
     finally { optionsGate.current = false; if (alive.current && generation === optionsGeneration.current) setBusy(false); }
   };
   const openDetail = async (task: WorkTask) => {
@@ -68,7 +77,7 @@ function Workspace({ engine, identity, language, presented, onBack }: TasksScree
     const generation = ++detailGeneration.current; setDetailBusy(true); setError(null);
     try { const next = await engine.detail(task.id, task.company_id); if (live() && generation === detailGeneration.current) { setDetail(next.task); setMode('detail'); }
       else if (alive.current && generation === detailGeneration.current) interrupted({ code: 'stale' }, () => void openDetail(task)); }
-    catch (failure) { if (alive.current && generation === detailGeneration.current && !interrupted(failure, () => void openDetail(task))) setError(failure); }
+    catch (failure) { if (alive.current && generation === detailGeneration.current) { if (taskAccessDenied(failure)) denySection(failure); else if (!interrupted(failure, () => void openDetail(task))) setError(failure); } }
     finally { if (alive.current && generation === detailGeneration.current) setDetailBusy(false); }
   };
   useEffect(() => { alive.current = true; return () => { alive.current = false; optionsGeneration.current++; detailGeneration.current++; engine.cancelReads(); }; }, [engine]);
@@ -76,7 +85,7 @@ function Workspace({ engine, identity, language, presented, onBack }: TasksScree
   useEffect(() => { if (!presented || !retryRead.current || (retryRead.current.needsOptions && !ready) || recovered.current) return;
     recovered.current = true; const retry = retryRead.current; retryRead.current = null; retry.run(); }, [presented, ready, resumeTick]);
   const outcome = (result: WorkTaskWriteResult) => {
-    if (!alive.current || !identity.company_ids.includes(result.task.company_id)) return;
+    if (!alive.current || knownDenied.current || !identity.company_ids.includes(result.task.company_id)) return;
     setDetail(result.task); setMode('detail'); setRefresh(value => value + 1); pendingDirty.current = true; if (active.current) void loadPending();
   };
   const enterCreate = () => {
@@ -99,9 +108,9 @@ function Workspace({ engine, identity, language, presented, onBack }: TasksScree
       </View>
       {options?.can_view && <KeyboardAvoidingView style={s.fill} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={keyboardOffset}>
         {mode === 'create' ? <TaskComposer key={`compose-${createCompany}`} engine={engine} identity={identity} language={language} presented={ready && canManage} companyId={createCompany} companies={companies}
-          onCompany={changedCompany} onSaved={outcome} onPending={() => void loadPending()} onBack={() => { if (live()) setMode('list'); }} />
+          onCompany={changedCompany} onSaved={outcome} onPending={() => void loadPending()} onBack={() => { if (live()) setMode('list'); }} onDenied={denySection} />
           : mode === 'detail' && detail && companies.some(company => company.id === detail.company_id) ? <TaskDetail key={`detail-${detail.company_id}-${detail.id}`} engine={engine} task={canManage ? detail : { ...detail, allowed_actions: [] }} companyName={name(detail)} language={language} presented={ready}
-            onUpdated={outcome} onPending={() => void loadPending()} onBack={() => { if (live()) { detailGeneration.current++; setMode('list'); } }} onRefresh={() => void openDetail(detail)}
+            onUpdated={outcome} onPending={() => void loadPending()} onBack={() => { if (live()) { detailGeneration.current++; setMode('list'); } }} onRefresh={() => void openDetail(detail)} onDenied={denySection}
             blocked={pending.some(attempt => attempt.kind === 'transition' && attempt.companyId === detail.company_id && attempt.taskId === detail.id)} />
             : <>
               <View style={[s.tabs, taskRow(language)]}>{(['mine', 'created'] as const).map(item => <Pressable key={item} testID={`tasks-view-${item}`} accessibilityRole="tab" accessibilityLabel={t(item)}
@@ -118,16 +127,16 @@ function Workspace({ engine, identity, language, presented, onBack }: TasksScree
                 {canManage && <Button title={t('newTask')} disabled={!presented} onPress={enterCreate} />}
                 {detailBusy && <ActivityIndicator color={colors.blue} accessibilityLabel={t('loading')} />}
               </View>
-              <TaskList key={`${view}-${state}-${readCompany}`} engine={engine} language={language} presented={ready} view={view} state={state} companyId={readCompany} companies={companies} refresh={refresh} onOpen={task => void openDetail(task)} />
+              <TaskList key={`${view}-${state}-${readCompany}`} engine={engine} language={language} presented={ready} view={view} state={state} companyId={readCompany} companies={companies} refresh={refresh} onOpen={task => void openDetail(task)} onDenied={denySection} />
             </>}
-        <PendingPanel engine={engine} pending={pending.filter(attempt => companies.some(company => company.id === attempt.companyId))} language={language} presented={ready} onResult={outcome} onChanged={() => void loadPending()} />
+        <PendingPanel engine={engine} pending={pending.filter(attempt => companies.some(company => company.id === attempt.companyId))} language={language} presented={ready} onResult={outcome} onChanged={() => void loadPending()} onDenied={denySection} />
       </KeyboardAvoidingView>}
     </>}
   </View>;
 }
 
-function TaskList({ engine, language, presented, view, state, companyId, companies, refresh, onOpen }: {
-  engine: TasksEngine; language: Language; presented: boolean; view: TasksView; state: TasksStateFilter; companyId: number; companies: TaskSelection[]; refresh: number; onOpen: (task: WorkTask) => void;
+function TaskList({ engine, language, presented, view, state, companyId, companies, refresh, onOpen, onDenied }: {
+  engine: TasksEngine; language: Language; presented: boolean; view: TasksView; state: TasksStateFilter; companyId: number; companies: TaskSelection[]; refresh: number; onOpen: (task: WorkTask) => void; onDenied: (error: unknown) => void;
 }) {
   const t = taskTranslator(language), [tasks, setTasks] = useState<WorkTask[]>([]), [cursor, setCursor] = useState<number | null>(null), [busy, setBusy] = useState(false), [error, setError] = useState<unknown>(null);
   const active = useRef(presented), alive = useRef(true), gate = useRef(false), generation = useRef(0), pendingRead = useRef(false), moreInterrupted = useRef(false), recovered = useRef(false);
@@ -141,7 +150,8 @@ function TaskList({ engine, language, presented, view, state, companyId, compani
       if (!active.current) { pendingRead.current = true; moreInterrupted.current = more; return; }
       setTasks(previous => { const next = more ? [...previous, ...page.tasks] : page.tasks; return next.filter((task, index) => companies.some(company => company.id === task.company_id) && next.findIndex(other => other.id === task.id && other.company_id === task.company_id) === index).slice(0, 200); }); setCursor(page.next_before_id); pendingRead.current = false;
     } catch (failure) { if (alive.current && ticket === generation.current) {
-      if (failure && typeof failure === 'object' && 'code' in failure && failure.code === 'stale' && (!active.current || !recovered.current)) { pendingRead.current = true; moreInterrupted.current = more; setResume(value => value + 1); }
+      if (taskAccessDenied(failure)) onDenied(failure);
+      else if (failure && typeof failure === 'object' && 'code' in failure && failure.code === 'stale' && (!active.current || !recovered.current)) { pendingRead.current = true; moreInterrupted.current = more; setResume(value => value + 1); }
       else setError(failure);
     } } finally { gate.current = false; if (alive.current && ticket === generation.current) setBusy(false); }
   };
@@ -161,8 +171,8 @@ function TaskList({ engine, language, presented, view, state, companyId, compani
     </View>} />;
 }
 
-function PendingPanel({ engine, pending, language, presented, onResult, onChanged }: {
-  engine: TasksEngine; pending: PendingTaskAttempt[]; language: Language; presented: boolean; onResult: (result: WorkTaskWriteResult) => void; onChanged: () => void;
+function PendingPanel({ engine, pending, language, presented, onResult, onChanged, onDenied }: {
+  engine: TasksEngine; pending: PendingTaskAttempt[]; language: Language; presented: boolean; onResult: (result: WorkTaskWriteResult) => void; onChanged: () => void; onDenied: (error: unknown) => void;
 }) {
   const t = taskTranslator(language), [busy, setBusy] = useState<string | null>(null), [error, setError] = useState<unknown>(null), gate = useRef(false), active = useRef(presented), alive = useRef(true);
   active.current = presented;
@@ -172,7 +182,7 @@ function PendingPanel({ engine, pending, language, presented, onResult, onChange
     if (!alive.current || !active.current || gate.current || !latestPending.current.some(attempt => attempt.uuid === uuid)) return;
     gate.current = true; setBusy(uuid); setError(null);
     try { const result = await engine.retry(uuid); if (alive.current) onResult(result); }
-    catch (failure) { if (alive.current) setError(failure); }
+    catch (failure) { if (alive.current) { if (taskAccessDenied(failure)) onDenied(failure); else setError(failure); } }
     finally { gate.current = false; if (alive.current) { setBusy(null); onChanged(); } }
   };
   if (!pending.length) return null;

@@ -5,14 +5,14 @@ import { dateTimeLabel } from '../../ui/dateTime';
 import { translator, type Language } from '../../ui/dictionary';
 import type { TasksEngine } from '../core/TasksEngine';
 import type { TaskAction, TaskSelection, WorkTask, WorkTaskWriteResult } from '../core/types';
-import { taskErrorWord, taskTranslator } from '../dictionary';
+import { taskAccessDenied, taskErrorWord, taskTranslator } from '../dictionary';
 import { AssigneePicker } from './AssigneePicker';
 import { TaskBadge } from './TaskCard';
 import { taskStyles as s } from './taskStyles';
 
-export function TaskDetail({ engine, task, companyName, language, presented, blocked, onBack, onUpdated, onPending, onRefresh }: {
+export function TaskDetail({ engine, task, companyName, language, presented, blocked, onBack, onUpdated, onPending, onRefresh, onDenied }: {
   engine: TasksEngine; task: WorkTask; companyName: string; language: Language; presented: boolean; blocked: boolean; onBack: () => void;
-  onUpdated: (result: WorkTaskWriteResult) => void; onPending: () => void; onRefresh: () => void;
+  onUpdated: (result: WorkTaskWriteResult) => void; onPending: () => void; onRefresh: () => void; onDenied: (error: unknown) => void;
 }) {
   const t = taskTranslator(language), [note, setNote] = useState(''), [busy, setBusy] = useState(false), [error, setError] = useState<unknown>(null);
   const [cancelOpen, setCancelOpen] = useState(false), [reassignOpen, setReassignOpen] = useState(false), [assignee, setAssignee] = useState<TaskSelection | null>(null);
@@ -26,7 +26,7 @@ export function TaskDetail({ engine, task, companyName, language, presented, blo
     gate.current = true; setBusy(true); setError(null); setCancelOpen(false);
     try { const result = await engine.transition(task, { action, ...(action === 'reassign' ? { assigneeId: assignee!.id } : {}), ...(note.trim() ? { note: note.trim() } : {}) });
       if (alive.current) { setNote(''); setReassignOpen(false); onUpdated(result); }
-    } catch (failure) { if (alive.current) { setError(failure); onPending(); } }
+    } catch (failure) { if (alive.current) { if (taskAccessDenied(failure)) onDenied(failure); else { setError(failure); onPending(); } } }
     finally { gate.current = false; if (alive.current) setBusy(false); }
   };
   const fact = (label: string, value: string) => <View style={{ gap: 3 }}><Label language={language} muted>{label}</Label><Label language={language}>{value}</Label></View>;
@@ -54,7 +54,7 @@ export function TaskDetail({ engine, task, companyName, language, presented, blo
       <Label language={language}>{t('cancelHelp')}</Label><Button title={t('confirmCancel')} onPress={() => void transition('cancel')} /><Button title={t('keepTask')} quiet onPress={() => setCancelOpen(false)} />
     </Sheet>}
     {reassignOpen && presented && allowed('reassign') && <Sheet title={t('reassign')} close={() => setReassignOpen(false)} t={translator(language)} compact language={language}>
-      <AssigneePicker engine={engine} companyId={task.company_id} language={language} presented={presented} value={assignee} onSelect={setAssignee} excludeId={task.assignee_id} disabled={busy || blocked} />
+      <AssigneePicker engine={engine} companyId={task.company_id} language={language} presented={presented} value={assignee} onSelect={setAssignee} excludeId={task.assignee_id} disabled={busy || blocked} onDenied={onDenied} />
       <Button title={t('changeAssignee')} busy={busy} disabled={!assignee || blocked} onPress={() => void transition('reassign')} />
     </Sheet>}
   </ScrollView>;

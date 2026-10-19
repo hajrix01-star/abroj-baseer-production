@@ -86,6 +86,237 @@ class BChatOrderCase(TransactionCase):
             'lines': [{'option_id': self.option.id, 'quantity': quantity}],
         }
 
+    def _workflow_order(self):
+        result = self.service._v2_order_create({**self._payload(), 'purchase_route': 'cash'})
+        return self.env['baseer.procurement.request'].sudo().browse(result['order']['id'])
+
+    def test_workflow_version_and_company_filtered_all_preserve_legacy_scope(self):
+        self.assertEqual(self.service._v2_order_options()['workflow_version'], 1)
+        self.assertEqual(self.service._v2_order_options(self.company.id)['workflow_version'], 1)
+        own = self._workflow_order()
+        Order = self.env['baseer.procurement.request'].sudo().with_company(self.company).with_context(**{REQUEST_CREATE_INTERNAL: True})
+        colleague_order = Order.create({
+            'company_id': self.company.id, 'warehouse_id': self.warehouse.id,
+            'requester_id': self.other_user.id, 'source_channel': 'bchat', 'state': 'sent',
+        })
+        page_orders = Order.create([{
+            'company_id': self.company.id, 'warehouse_id': self.warehouse.id,
+            'requester_id': self.other_user.id, 'source_channel': 'bchat', 'state': 'sent',
+        } for _ in range(30)])
+        first = self.service._v2_orders_all(company_id=self.company.id)
+        second = self.service._v2_orders_all(first['next_before_id'], company_id=self.company.id)
+        rows = first['orders'] + second['orders']
+        self.assertEqual(len(first['orders']), 30)
+        self.assertEqual({row['id'] for row in rows}, {own.id, colleague_order.id, *page_orders.ids})
+        self.assertTrue(all(row['company_id'] == self.company.id for row in rows))
+        self.assertEqual([row['id'] for row in rows], sorted([row['id'] for row in rows], reverse=True))
+        self.assertEqual([row['id'] for row in self.service._v2_orders(self.company.id)['orders']], [own.id])
+        with self.assertRaises(AccessError):
+            self.service._v2_orders_all(company_id=self.other_company.id)
+
+    def test_workflow_room_pages_search_and_preferred_are_names_only(self):
+        rooms = [self._room_for_employee('Workflow room %02d' % number)[1] for number in range(52)]
+        with patch.object(type(self.service), '_v2_room_rows', side_effect=AssertionError('Chat metadata must not be read')):
+            first = self.service._v2_order_rooms(self.company.id, preferred_room_id=rooms[-1].id)
+            second = self.service._v2_order_rooms(self.company.id, after_id=first['next_after_id'])
+            searched = self.service._v2_order_rooms(self.company.id, 'Workflow room 00', preferred_room_id=rooms[-1].id)
+        self.assertEqual([room['id'] for room in first['rooms']], [room.id for room in rooms[:50]])
+        self.assertEqual([room['id'] for room in second['rooms']], [room.id for room in rooms[50:]])
+        self.assertIsNone(second['next_after_id'])
+        self.assertEqual(first['preferred_room'], {'id': rooms[-1].id, 'name': rooms[-1].name})
+        self.assertEqual(searched['rooms'], [{'id': rooms[0].id, 'name': rooms[0].name}])
+        self.assertEqual(searched['preferred_room'], first['preferred_room'])
+        self.assertTrue(all(set(room) == {'id', 'name'} for room in first['rooms']))
+
+    def test_workflow_room_preference_never_grants_membership_company_or_send_access(self):
+        manager, room, membership = self._room_for_employee()
+        membership.with_user(manager).with_company(self.company).action_revoke()
+        self.assertIsNone(self.service._v2_order_rooms(self.company.id, preferred_room_id=room.id)['preferred_room'])
+        with self.assertRaises(AccessError):
+            self.service._v2_order_rooms(self.other_company.id, preferred_room_id=room.id)
+        self.user.write({'bchat_chat_send': False})
+        with self.assertRaises(AccessError):
+            self.service._v2_order_rooms(self.company.id)
+        self.user.write({'bchat_chat_send': True, 'bchat_chat_view': False})
+        # Existing effective chat_send intersects chat_view; the new route does not bypass it.
+        with self.assertRaises(AccessError):
+            self.service._v2_order_rooms(self.company.id)
+        self.assertEqual(self.service._v2_order_options()['workflow_version'], 1)
+
+    def test_workflow_room_query_boundaries(self):
+        for term in (True, 1, [], 'a' * 257, 'أ' * 129, '\ud800'):
+            with self.subTest(term=repr(term)), self.assertRaises(ProtocolError):
+                self.service._v2_order_rooms(self.company.id, search_term=term)
+        self.service._v2_order_rooms(self.company.id, search_term='أ' * 128)
+        for field in ('after_id', 'preferred_room_id'):
+            for invalid in (0, True, -1, '1', 2147483648):
+                with self.subTest(field=field, invalid=invalid), self.assertRaises(ProtocolError):
+                    self.service._v2_order_rooms(self.company.id, **{field: invalid})
+
+    def test_workflow_room_revoke_after_search_requires_reload_instead_of_false_end(self):
+        fixtures = [self._room_for_employee('Workflow race %02d' % number) for number in range(52)]
+        manager, first_room, first_membership = fixtures[0]
+        Room = type(first_room)
+        real_lock = Room._lock_for_read
+        revoked = False
+
+        def revoke_after_search(records, room_id):
+            nonlocal revoked
+            result = real_lock(records, room_id)
+            if not revoked:
+                revoked = True
+                first_membership.with_user(manager).with_company(self.company).action_revoke()
+            return result
+
+        with patch.object(Room, '_lock_for_read', revoke_after_search):
+            with self.assertRaises(ProtocolError) as changed:
+                self.service._v2_order_rooms(self.company.id)
+        self.assertEqual((changed.exception.code, changed.exception.status), ('retry', 409))
+        # Odoo assertRaises rolls back the injected revoke; restore it for the reload.
+        first_membership.with_user(manager).with_company(self.company).action_revoke()
+        refreshed = self.service._v2_order_rooms(self.company.id)
+        self.assertEqual(len(refreshed['rooms']), 50)
+        self.assertIsNotNone(refreshed['next_after_id'])
+        self.assertNotIn(first_room.id, [row['id'] for row in refreshed['rooms']])
+        final = self.service._v2_order_rooms(self.company.id, after_id=refreshed['next_after_id'])
+        self.assertEqual([row['id'] for row in final['rooms']], [fixtures[-1][1].id])
+        self.assertIsNone(final['next_after_id'])
+
+    def test_workflow_share_is_once_atomic_preserves_creation_intent_and_stored_prices(self):
+        self.option.sudo().with_context(**{OPTION_SYSTEM_WRITE: True}).write({'last_price': 6})
+        order = self._workflow_order()
+        _, room, _membership = self._room_for_employee()
+        self.option.sudo().with_context(**{OPTION_SYSTEM_WRITE: True}).write({'last_price': 99})
+        original = (order.client_token, order.client_payload_hash, order.state)
+        payload = {'api_version': 2, 'company_id': self.company.id, 'room_id': room.id}
+        first = self.service._v2_order_share(order.id, payload)
+        replay = self.service._v2_order_share(order.id, payload)
+        self.assertFalse(first['replayed'])
+        self.assertTrue(replay['replayed'])
+        self.assertEqual(first['message_id'], replay['message_id'])
+        order.invalidate_recordset()
+        self.assertEqual((order.client_token, order.client_payload_hash, order.state), original)
+        self.assertEqual(order.bchat_room_id, room)
+        self.assertIn('سعر الوحدة: 6.00', order.bchat_message_id.text)
+        self.assertNotIn('99.00', order.bchat_message_id.text)
+        self.assertEqual(self.env['baseer.bchat.message'].sudo().search_count([
+            ('room_id', '=', room.id), ('author_user_id', '=', self.user.id),
+        ]), 1)
+        retry_creation = self.service._v2_order_create({**self._payload(order.client_token), 'purchase_route': 'cash'})
+        self.assertTrue(retry_creation['replayed'])
+        self.assertEqual(retry_creation['order']['id'], order.id)
+
+    def test_workflow_share_rejects_retarget_revocation_and_foreign_requesters(self):
+        order = self._workflow_order()
+        manager, room, membership = self._room_for_employee('Original')
+        _, other_room, _ = self._room_for_employee('Other')
+        payload = {'api_version': 2, 'company_id': self.company.id, 'room_id': room.id}
+        self.service._v2_order_share(order.id, payload)
+        with self.assertRaises(ProtocolError) as conflict:
+            self.service._v2_order_share(order.id, {**payload, 'room_id': other_room.id})
+        self.assertEqual(conflict.exception.code, 'order_share_conflict')
+        membership.with_user(manager).with_company(self.company).action_revoke()
+        with self.assertRaises(ProtocolError) as unavailable:
+            self.service._v2_order_share(order.id, payload)
+        self.assertEqual(unavailable.exception.code, 'room_unavailable')
+        self.user.write({'bchat_order_create': False})
+        with self.assertRaises(AccessError):
+            self.service._v2_order_share(order.id, payload)
+        self.user.write({'bchat_order_create': True})
+        foreign = self.env['baseer.procurement.request'].sudo().with_company(self.company).with_context(**{REQUEST_CREATE_INTERNAL: True}).create({
+            'company_id': self.company.id, 'warehouse_id': self.warehouse.id,
+            'requester_id': self.other_user.id, 'source_channel': 'bchat', 'state': 'sent',
+        })
+        with self.assertRaises(ProtocolError) as forbidden:
+            self.service._v2_order_share(foreign.id, payload)
+        self.assertEqual(forbidden.exception.status, 404)
+
+    def test_workflow_share_failure_rolls_back_message_and_link_but_not_created_order(self):
+        order = self._workflow_order()
+        _, room, _ = self._room_for_employee()
+        payload = {'api_version': 2, 'company_id': self.company.id, 'room_id': room.id}
+        Model = type(order)
+        real_write = Model.write
+
+        def reject_link(records, values):
+            if 'bchat_message_id' in values:
+                raise AccessError('Test link persistence failure')
+            return real_write(records, values)
+
+        with patch.object(Model, 'write', reject_link), self.assertRaises(AccessError):
+            self.service._v2_order_share(order.id, payload)
+        order.invalidate_recordset()
+        self.assertEqual(order.state, 'sent')
+        self.assertFalse(order.bchat_room_id)
+        self.assertFalse(order.bchat_message_id)
+        self.assertFalse(self.env['baseer.bchat.message'].sudo().search_count([('room_id', '=', room.id)]))
+        self.assertTrue(self.service._v2_order_share(order.id, payload)['shared'])
+
+    def test_workflow_share_partial_links_and_body_overflow_do_not_mutate_order(self):
+        order = self._workflow_order()
+        _, room, _ = self._room_for_employee()
+        payload = {'api_version': 2, 'company_id': self.company.id, 'room_id': room.id}
+        with patch('odoo.addons.baseer_bchat_procurement.models.service.MAX_ROOM_MESSAGE_BYTES', 10):
+            with self.assertRaises(ProtocolError) as too_large:
+                self.service._v2_order_share(order.id, payload)
+        self.assertEqual(too_large.exception.code, 'room_message_too_long')
+        order.invalidate_recordset()
+        self.assertEqual(order.state, 'sent')
+        self.assertFalse(order.bchat_room_id)
+        self.assertFalse(self.env['baseer.bchat.message'].sudo().search_count([('room_id', '=', room.id)]))
+        order.with_context(**{REQUEST_CREATE_INTERNAL: True}).write({'bchat_room_id': room.id})
+        with self.assertRaises(ProtocolError) as partial:
+            self.service._v2_order_share(order.id, payload)
+        self.assertEqual(partial.exception.code, 'order_share_incomplete')
+
+    def test_workflow_share_inflight_lock_returns_retry_without_message(self):
+        order = self._workflow_order()
+        _, room, _ = self._room_for_employee()
+        with self.env.registry.cursor() as concurrent_cr:
+            concurrent_cr.execute('SELECT pg_try_advisory_xact_lock(hashtextextended(%s, 0))', ['bchat-order-share:%s' % order.id])
+            self.assertTrue(concurrent_cr.fetchone()[0])
+            with self.assertRaises(ProtocolError) as retry:
+                self.service._v2_order_share(order.id, {'api_version': 2, 'company_id': self.company.id, 'room_id': room.id})
+            self.assertEqual(retry.exception.code, 'retry')
+        self.assertFalse(self.env['baseer.bchat.message'].sudo().search_count([('room_id', '=', room.id)]))
+
+    def test_workflow_share_checks_room_scope_before_foreign_lock_and_validates_payload(self):
+        order = self._workflow_order()
+        manager, _room, _ = self._room_for_employee()
+        manager.write({'company_ids': [Command.link(self.other_company.id)]})
+        foreign_room = self.env['baseer.bchat.room'].with_user(manager).with_company(self.other_company).create({
+            'name': 'Foreign room must not be locked', 'company_id': self.other_company.id,
+        })
+        payload = {'api_version': 2, 'company_id': self.company.id, 'room_id': foreign_room.id}
+        with patch.object(type(self.service), '_v2_lock_room', side_effect=AssertionError('Foreign room lock')):
+            with self.assertRaises(ProtocolError) as denied:
+                self.service._v2_order_share(order.id, payload)
+        self.assertEqual(denied.exception.code, 'room_unavailable')
+        for malformed in ({**payload, 'api_version': True}, {**payload, 'room_id': 0},
+                          {**payload, 'room_id': '1'}, {**payload, 'company_id': 2147483648},
+                          {**payload, 'client_uuid': str(uuid4())}, {**payload, 'text': 'Client total'}):
+            with self.subTest(malformed=malformed), self.assertRaises(ProtocolError):
+                self.service._v2_order_share(order.id, malformed)
+
+    def test_workflow_share_rejects_a_message_link_authored_by_someone_else(self):
+        order = self._workflow_order()
+        manager, room, _membership = self._room_for_employee()
+        payload = {'api_version': 2, 'company_id': self.company.id, 'room_id': room.id}
+        self.service._v2_order_share(order.id, payload)
+        self.other_user.write({'company_ids': [Command.link(self.company.id)]})
+        membership = self.env['baseer.bchat.membership'].with_user(manager).with_company(self.company).create({
+            'room_id': room.id, 'user_id': self.other_user.id,
+        })
+        forged = self.env['baseer.bchat.service'].with_user(self.other_user)._v2_send(room.id, {
+            'api_version': 2, 'membership_id': membership.id, 'client_uuid': str(uuid4()), 'text': 'Unrelated message',
+        })
+        order.with_context(**{REQUEST_CREATE_INTERNAL: True}).write({'bchat_message_id': forged['message_id']})
+        before = self.env['baseer.bchat.message'].sudo().search_count([('room_id', '=', room.id)])
+        with self.assertRaises(ProtocolError) as invalid:
+            self.service._v2_order_share(order.id, payload)
+        self.assertEqual(invalid.exception.code, 'order_share_incomplete')
+        self.assertEqual(self.env['baseer.bchat.message'].sudo().search_count([('room_id', '=', room.id)]), before)
+
     def test_owner_reads_without_grant_and_operates_after_explicit_grant(self):
         representative = self._representative('Owner read-only representative', self.company)
         order_id = self.service._v2_order_create(
@@ -246,14 +477,17 @@ class BChatOrderCase(TransactionCase):
         order = self.env['baseer.procurement.request'].sudo().browse(created['order']['id'])
         message = order.bchat_message_id.text
         self.assertEqual(created['order']['requested_total'], '27.00')
-        self.assertEqual(len(message.splitlines()), 4)
-        self.assertIn('BChat chicken (Kilogram) — الكمية: 2.50', message)
-        self.assertIn('BChat onion (Crate) — الكمية: 3.00', message)
+        self.assertIn('1. BChat chicken (Kilogram)', message)
+        self.assertIn('2. BChat onion (Crate)', message)
+        self.assertIn('الكمية: 2.50', message)
+        self.assertIn('سعر الوحدة: 6.00', message)
+        self.assertIn('مجموع الصنف: 15.00', message)
+        self.assertIn('الشركة: %s' % self.company.name, message)
         self.assertIn('الإجمالي: 27.00', message)
         self.assertNotIn('BCHAT-CHICKEN-SKU', message)
         self.assertNotIn('BCHAT-ONION-SKU', message)
         self.assertNotIn('المستودع:', message)
-        self.assertNotIn('مندوب المشتريات:', message)
+        self.assertIn('مندوب المشتريات: Buyer', message)
 
     def test_room_change_and_explicit_null_conflict_with_same_order_token(self):
         self._representative('Buyer')
@@ -779,11 +1013,22 @@ class BChatOrderHttpCase(HttpCase):
         )]})
         user.write({'bchat_order_view': True, 'bchat_order_create': True,
                     'bchat_order_receive': True})
+        manager = self.env.ref('base.user_admin')
+        manager.write({'company_ids': [Command.link(company.id)], 'group_ids': [Command.link(
+            self.env.ref('baseer_bchat.group_bchat_manager').id,
+        )]})
+        room = self.env['baseer.bchat.room'].with_user(manager).with_company(company).create({
+            'name': 'HTTP order sharing', 'company_id': company.id,
+        })
+        self.env['baseer.bchat.membership'].with_user(manager).with_company(company).create({
+            'room_id': room.id, 'user_id': user.id,
+        })
         self.authenticate(user.login, password)
         bootstrap = self.url_open('/bchat/api/v2/bootstrap').json()
         csrf = bootstrap['csrf_token']
         choices = self.url_open('/bchat/api/v2/orders/options?company_id=%s' % company.id)
         self.assertEqual(choices.status_code, 200)
+        self.assertEqual(choices.json()['workflow_version'], 1)
         self.assertEqual([row['id'] for row in choices.json()['representatives']], [representative.id])
         denied_foreign = self.url_open('/bchat/api/v2/orders/options?company_id=%s' % foreign.id)
         self.assertEqual(denied_foreign.status_code, 403, denied_foreign.text)
@@ -866,10 +1111,34 @@ class BChatOrderHttpCase(HttpCase):
         all_orders = self.url_open('/bchat/api/v2/orders?scope=all', allow_redirects=False)
         self.assertEqual(all_orders.status_code, 200, all_orders.text)
         self.assertEqual(all_orders.json()['orders'][0]['requester_id'], user.id)
+        company_orders = self.url_open('/bchat/api/v2/orders?scope=all&company_id=%s' % company.id, allow_redirects=False)
+        self.assertEqual(company_orders.status_code, 200, company_orders.text)
+        self.assertTrue(all(row['company_id'] == company.id for row in company_orders.json()['orders']))
         for path in ('/bchat/api/v2/orders',
                      '/bchat/api/v2/orders?scope=unknown',
-                     '/bchat/api/v2/orders?scope=all&company_id=%s' % company.id):
+                     '/bchat/api/v2/orders?scope=all&company_id=0'):
             self.assertEqual(self.url_open(path, allow_redirects=False).status_code, 400)
+        rooms_path = '/bchat/api/v2/orders/rooms?company_id=%s' % company.id
+        room_choices = self.url_open('%s&preferred_room_id=%s' % (rooms_path, room.id), allow_redirects=False)
+        self.assertEqual(room_choices.status_code, 200, room_choices.text)
+        self.assertEqual(room_choices.json()['rooms'], [{'id': room.id, 'name': room.name}])
+        self.assertEqual(room_choices.json()['preferred_room'], {'id': room.id, 'name': room.name})
+        self.assertEqual(room_choices.headers['Cache-Control'], 'no-store')
+        for path in ('/bchat/api/v2/orders/rooms', '%s&company_id=%s' % (rooms_path, company.id),
+                     '%s&after_id=0' % rooms_path, '%s&history=1' % rooms_path):
+            self.assertEqual(self.url_open(path, allow_redirects=False).status_code, 400)
+        order_share_path = '/bchat/api/v2/orders/%s/share' % created.json()['order']['id']
+        order_sharing_payload = json.dumps({'api_version': 2, 'company_id': company.id, 'room_id': room.id})
+        self.assertNotEqual(self.url_open(order_share_path, data={'payload': order_sharing_payload}, allow_redirects=False).status_code, 200)
+        self.assertEqual(self.url_open(order_share_path, data={
+            'csrf_token': csrf, 'payload': json.dumps({'api_version': 2, 'company_id': company.id, 'room_id': room.id, 'text': 'Client amount'}),
+        }, allow_redirects=False).status_code, 400)
+        order_shared = self.url_open(order_share_path, data={'csrf_token': csrf, 'payload': order_sharing_payload}, allow_redirects=False)
+        self.assertEqual(order_shared.status_code, 200, order_shared.text)
+        self.assertFalse(order_shared.json()['replayed'])
+        order_replayed = self.url_open(order_share_path, data={'csrf_token': csrf, 'payload': order_sharing_payload}, allow_redirects=False)
+        self.assertEqual(order_replayed.json()['message_id'], order_shared.json()['message_id'])
+        self.assertTrue(order_replayed.json()['replayed'])
         detail_path = '/bchat/api/v2/orders/%s?company_id=%s' % (
             created.json()['order']['id'], company.id,
         )
@@ -920,8 +1189,9 @@ class BChatOrderHttpCase(HttpCase):
             'csrf_token': csrf,
             'payload': json.dumps({'api_version': 2, 'company_id': company.id}),
         }, allow_redirects=False)
-        self.assertEqual(sharing.status_code, 409)
-        self.assertEqual(sharing.json()['error']['code'], 'room_unavailable')
+        self.assertEqual(sharing.status_code, 200, sharing.text)
+        self.assertEqual(sharing.json()['room_id'], room.id)
+        self.assertNotEqual(sharing.json()['message_id'], order_shared.json()['message_id'])
         user.write({'bchat_order_view': False, 'bchat_order_create': False,
                     'bchat_order_receive': False})
         self.assertEqual(self.url_open('%s?company_id=%s' % (

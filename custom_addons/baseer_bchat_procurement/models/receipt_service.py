@@ -11,7 +11,7 @@ from odoo.exceptions import AccessError, UserError, ValidationError
 
 from odoo.addons.baseer_bchat.contracts import ProtocolError, canonical_uuid, positive_id
 from odoo.addons.baseer_procurement_requests.models.procurement import (
-    BCHAT_RECEIPT_INTERNAL, _decimal_input,
+    BCHAT_RECEIPT_INTERNAL, _decimal_input, _decimal_total,
 )
 
 from .service import MAX_CART_LINES, MAX_RESPONSE_BYTES, MAX_ROOM_MESSAGE_BYTES
@@ -210,22 +210,30 @@ class BChatReceiptService(models.AbstractModel):
     def _receipt_result_text(self, order):
         """Use the committed receipt values, never a client-supplied summary."""
         currency = self._label(order.currency_id.symbol or order.currency_id.name, 16)
-        lines = ['تم استلام طلب الشراء %s' % self._label(order.name, 80)]
-        for line in order.line_ids.sorted('id'):
-            if line.actual_qty <= 0:
-                continue
+        lines = ['تم استلام طلب الشراء %s' % self._label(order.name, 80),
+                 'الشركة: %s' % self._label(order.company_id.name),
+                 'طريقة الشراء: %s' % self._label(order._purchase_route_label())]
+        if order.representative_partner_id:
+            lines.append('مندوب المشتريات: %s' % self._label(order.representative_partner_id.display_name))
+        for number, line in enumerate(order.line_ids.sorted('id'), 1):
             option = line.option_id
             product = self._label(option.product_id.name)
             option_name = self._label(option.name)
             name = ('%s (%s)' % (product, option_name)
                     if option_name != '-' and option_name != product else product)
-            quantity = Decimal(str(line.actual_qty))
-            price = Decimal(str(line.actual_price))
-            lines.append('%s — %s %s × %s %s = %s %s' % (
-                name, format(quantity, '.2f'), self._label(option.uom_id.name, 80),
-                self._money(price), currency, self._money(quantity * price), currency,
-            ))
-        lines.append('الإجمالي الفعلي: %s %s' % (self._money(order.actual_total), currency))
+            unit = self._label(option.uom_id.display_name, 80)
+            difference = Decimal(str(line.actual_qty)) - Decimal(str(line.requested_qty))
+            lines.extend(['', '%s. %s' % (number, name),
+                          'الكمية المطلوبة: %s %s' % (self._money(line.requested_qty), unit),
+                          'الكمية الفعلية: %s %s' % (self._money(line.actual_qty), unit),
+                          'فرق الكمية: %s %s' % (self._money(difference), unit),
+                          'سعر الوحدة المطلوب: %s %s' % (self._money(line.requested_price), currency),
+                          'سعر الوحدة الفعلي: %s %s' % (self._money(line.actual_price), currency),
+                          'مجموع الصنف الفعلي: %s %s' % (self._money(_decimal_total(line.actual_qty, line.actual_price)), currency)])
+        total_difference = Decimal(str(order.actual_total)) - Decimal(str(order.requested_total))
+        lines.extend(['', 'الإجمالي المطلوب: %s %s' % (self._money(order.requested_total), currency),
+                      'الإجمالي الفعلي: %s %s' % (self._money(order.actual_total), currency),
+                      'فرق الإجمالي: %s %s' % (self._money(total_difference), currency)])
         message = '\n'.join(lines)
         if len(message.encode('utf-8')) > MAX_ROOM_MESSAGE_BYTES:
             raise ProtocolError('room_message_too_long', 'Receipt result exceeds the room limit.', 413)

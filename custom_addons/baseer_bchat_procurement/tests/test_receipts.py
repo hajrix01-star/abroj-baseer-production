@@ -7,6 +7,7 @@ from odoo.exceptions import AccessError, ValidationError
 from odoo.tests import TransactionCase, tagged
 
 from odoo.addons.baseer_bchat.contracts import ProtocolError
+from odoo.addons.baseer_procurement_requests.models.procurement import REQUEST_CREATE_INTERNAL
 
 
 @tagged('post_install', '-at_install', 'baseer_bchat_procurement')
@@ -73,6 +74,48 @@ class BChatReceiptCase(TransactionCase):
             'lines': [{'line_id': self.order.line_ids.id,
                        'actual_qty': quantity, 'actual_price': price}],
         }
+
+    def test_global_receipts_page_filters_company_state_channel_and_rechecks_grants(self):
+        self.operator.write({'company_ids': [Command.link(self.foreign.id)]})
+        foreign_warehouse = self.env['stock.warehouse'].search([('company_id', '=', self.foreign.id)], limit=1)
+        if not foreign_warehouse:
+            foreign_warehouse = self.env['stock.warehouse'].create({
+                'name': 'BChat global receipt warehouse', 'code': 'GR%s' % self.foreign.id,
+                'company_id': self.foreign.id,
+            })
+        Order = self.env['baseer.procurement.request'].sudo().with_context(**{REQUEST_CREATE_INTERNAL: True})
+        rows = Order.with_company(self.company).create([{
+            'company_id': self.company.id, 'warehouse_id': self.warehouse.id,
+            'requester_id': self.operator.id, 'source_channel': 'bchat', 'state': 'sent',
+        } for _ in range(30)])
+        foreign_order = Order.with_company(self.foreign).create({
+            'company_id': self.foreign.id, 'warehouse_id': foreign_warehouse.id,
+            'requester_id': self.operator.id, 'source_channel': 'bchat', 'state': 'received',
+        })
+        excluded = Order.with_company(self.company).create([{
+            'company_id': self.company.id, 'warehouse_id': self.warehouse.id,
+            'requester_id': self.operator.id, 'source_channel': channel, 'state': state,
+        } for channel, state in [('odoo', 'sent'), ('bchat', 'draft'), ('bchat', 'cancel')]])
+        first = self.service._v2_receipts_all()
+        second = self.service._v2_receipts_all(first['next_before_id'])
+        ids = [row['id'] for row in first['orders'] + second['orders']]
+        self.assertEqual(len(first['orders']), 30)
+        self.assertEqual(ids, sorted({self.order_id, foreign_order.id, *rows.ids}, reverse=True))
+        self.assertFalse(set(excluded.ids) & set(ids))
+        self.assertIsNone(second['next_before_id'])
+        filtered = self.service._v2_receipts_all(company_id=self.foreign.id)
+        self.assertEqual([row['id'] for row in filtered['orders']], [foreign_order.id])
+        self.assertEqual(filtered['orders'][0]['warehouse_name'], foreign_warehouse.display_name)
+        self.assertEqual(self.service._v2_order_options()['receipt_list_version'], 1)
+        self.operator.write({'company_ids': [Command.unlink(self.foreign.id)]})
+        self.assertNotIn(foreign_order.id, [row['id'] for row in self.service._v2_receipts_all()['orders']])
+        with self.assertRaises(AccessError):
+            self.service._v2_receipts_all(company_id=self.foreign.id)
+        self.operator.write({'bchat_order_receive': False})
+        with self.assertRaises(AccessError):
+            self.service._v2_receipts_all()
+        with self.assertRaises(AccessError):
+            self.env['baseer.bchat.service'].with_user(self.outsider)._v2_receipts_all()
 
     def test_create_only_cannot_confirm_and_receive_only_can_finish(self):
         self.operator.write({'bchat_order_receive': False})

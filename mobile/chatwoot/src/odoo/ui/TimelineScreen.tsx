@@ -428,6 +428,22 @@ export function TimelineScreen({
       .filter(item => item.room_id === room.id && item.company_id === room.company_id && item.membership_id === room.membership_id)
       .map(pending => ({ key: pending.client_uuid, pending })),
   ], [chat.history.messages, chat.pending, room.id, room.company_id, room.membership_id]);
+  // FlashList reports changed visible INDICES, not changed row identities. An
+  // outbox→ACK replacement (or late media metadata) may occupy the same index
+  // without a new callback, leaving the acknowledged image undiscovered.
+  // Fingerprint identities only: equal history polls must not reset dwell.
+  const previewRowsKey = JSON.stringify(rows.map(row => [row.key, row.message?.media?.id, row.message?.media?.kind]));
+  const previewAuthority = useRef(viewMedia); previewAuthority.current = viewMedia;
+  useEffect(() => {
+    if (!viewMedia) return;
+    const requested = actionScope;
+    const frame = requestAnimationFrame(() => {
+      if (presentedRef.current && previewAuthority.current && AppState.currentState === 'active'
+          && currentActionScope.current === requested)
+        list.current?.recomputeViewableItems?.();
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [previewRowsKey, actionScope, viewMedia]);
   const rowPresentation = useMemo(() => ({ mediaKey, hiddenState, actionsFor, jumpTarget, actionBusy, visibleImages, language, canSend, viewMedia, retainedMedia }),
     [mediaKey, hiddenState, actionsFor, jumpTarget, actionBusy, visibleImages, language, canSend, viewMedia, retainedMedia]);
   useEffect(() => {

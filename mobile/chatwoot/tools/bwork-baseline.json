@@ -4,6 +4,8 @@
   "approvedVersion": "0.1.14/build15",
   "suites": ["test:bwork-gate", "test:odoo", "test:brand", "test:orders", "test:tasks", "test:leadership", "test:attachment-camera"],
   "invariants": [
+    { "id": "chat-media-ack-same-index-discovery", "description": "تحول المرفق المعلق إلى صورة مؤكدة بنفس الفهرس يعيد اكتشاف الرؤية دون تمرير أو إعادة عند poll متطابق", "suite": "test:odoo", "test": "pending image ACK at the same visible index recomputes actual FlashList viewability without a scroll" },
+    { "id": "chat-media-discovery-frame-authority", "description": "إطار اكتشاف المعاينة المؤجل لا يعمل أثناء الحجب أو سحب الحق أو تغير الحساب", "suite": "test:odoo", "test": "deferred preview discovery rejects hidden unverified revoked and old-account frames" },
     { "id": "chat-media-cache-not-network-blocked", "description": "انتظار تنزيل مصغر لا يحجز قراءة صورة محفوظة أو تهيئة مرفق جديد", "suite": "test:odoo", "test": "a stalled thumbnail never blocks a verified cached image or staging the next attachment" },
     { "id": "chat-media-bounded-transfer-lanes", "description": "طلب الأصل لا ينتظر المصغرات وبحد مسارين وتنزيل واحد لكل وسيط مع ملكية عرض مستقلة", "suite": "test:odoo", "test": "an original bypasses stalled thumbnails with two bounded transfer lanes and shared independent leases" },
     { "id": "chat-media-tap-bypasses-preview", "description": "الضغط يطلب الأصل مرة واحدة فورًا ولا يستبدله مصغر متأخر", "suite": "test:odoo", "test": "a tap during automatic thumbnail loading joins one scoped request and intentionally opens full-screen" },

@@ -95,16 +95,17 @@ authenticated reads, not the invoice-only QA reports connector.
 | G1 | GO with enforced budgets | month + 8-week window; canonical access/capacity checks before materialization; bridge company/request cap frozen before bridge code; R04 |
 | G2 | GO for canonical heat adapter, targets and C1 bridge | shared source authority, exact C1 wire/routes/limits; bridge implementation released under R06 boundaries |
 | G3 | GO | existing Odoo/BWork stack, no dependencies; actual ORM parity and mobile state/UI verification remain required; R04 |
-| G4 | GO, bounded source UI | central primitives, compact three cards/chips, weekday averages above calendar, local AR/EN presentation |
-| G5 | Local + actual isolated Odoo PASS | local464 PASS/1 existing optional skip/93 invariants; actual run39262869103 reports0 failed/0 errors of110 tests, no actual test skips; R17 |
+| G4 | GO, actual native synthetic UI accepted | source69db5f8d; AR/EN320/900 after geometry repairs; R24, not QA financial proof |
+| G5 | Local + actual isolated Odoo PASS | local466 PASS/1 existing optional skip/95 invariants; current-head run39267547320 reports0 failed/0 errors of110 tests, no actual test skips; R23 |
 | G6 | Independent local source review accepted | central_sales_independent_review; findings below closed by delta review |
-| G7 | No distributable requested | no APK, release version bump, external publication or deployment |
-| G8 | HOLD before merge; operational release not accepted | owner requires result before merge/deploy; native AR/EN acceptance and later QA parity/artifact proof remain; isolated blockers resolved R17 |
+| G7 | QA candidate0.1.22/build23 requested | source metadata frozen; synthetic preview only, ordinary APK not built/published |
+| G8 | Source-only merge GO; QA/APK NO-GO | independent source/native/current CI accepted R24; installed dependency preflight, host receipt and authenticated QA parity still missing |
 
 The first isolated failures in R12 and newly exposed R16 failures are repaired;
 the same pinned workflow now passes at the exact R17 source head. This is actual
 isolated ORM/HTTP proof, not native visual acceptance or QA financial parity.
-Owner review remains the stop boundary before merge/deployment.
+Owner authorized QA-first order in R20. Independent source-only merge approval
+is recorded in R24; QA deployment/publication prerequisites remain enforced.
 
 ### Maintained architecture / authority map
 
@@ -362,6 +363,140 @@ there is no full-system rediscovery or separate duplicate map artifact.
   <=20readers; native geometry risk not covered by host doubles, no load rerun.
   P2only observations remain: extra date/time fields in month control, small
   narrow calendar touch widths and English Estimate wrap. No silent polish scope.
+- R23, repaired candidate69db5f8d uploaded to clean review head
+  `e6a4e3f8712c9abab528cea89c157c846f71aae9`, tree
+  `ee8abde05b88cb65bb4af967536d733dab402b06`. Product paths including current
+  governance verified byte-identical to local frozen source. Full local gate:
+  467cases/466PASS/one existing optional capacity skip,95invariants+TypeScript,
+  13.96s. Current-head CI source39267547211/contracts39267547315/Odoo39267547320
+  all SUCCESS; Odoo job118110966883 final0failed/0errors of110,110actualstarts
+  and zero actualtestskip markers. This is mandatory PR-head validation, not a
+  newly invented financial/load environment. Independent delta review accepted
+  causal layout fixes and additive tests/guards; native closure remains pending.
+  Owner repeated to follow the prior publication method; do not interpret this
+  as waiving QA financial parity or expanding dependency initialization. Read-only
+  QA preflight gap confirmed by actual wrapper315–377: it checks explicit module
+  states, not dependency closure; installing bridge can implicitly install absent
+  native_spend and run its root-plan configuration hook. Old source archives
+  prove code presence only; historical Live installation is not current QA state.
+  No approved SSH alias config is present; browserChrome/IAB unavailable and
+  anonymous QA is login-only. No credential/secret-file discovery attempted.
+  Before queueing3-module policy need installed/compatible dependency evidence;
+  coherent QA backup does not authorize unknown initialization scope. No QA request
+  or APK publication until its prerequisites can actually be satisfied.
+- R24, final native closure and independent acceptance: actual AR/EN320/900,
+  12native plot taps (days1/6/30) all selected the exact expected date; all4heat
+  geometries show7columns (Oct1Thu/Oct2Fri/Oct3Sat), weekday average centers
+  within1px. Postfix proof under`native/69db5f8d/` plus APK/bundle manifests in
+  `output/bwork-leadership-20261019/`; fixture APK65,623,360bytes SHAprefix9F060082
+  belongs to isolateduipreview0.1.21/build22, NOT ordinary0.1.22/build23. Same
+  synthetic harness; ordinary installed0.1.21 app preserved. Independent reviewer
+  verified actual PNG/XML/touch evidence, hashes, exact current CI head and all
+  110unique tests. GO for PR420 source merge ONLY at e6a4e3f8; QA dispatch/APK
+  remain NO-GO pending explicit dependency/host/authenticated parity proof. Main
+  verifiedb1e871b8; automatic workflows are PR checks only, Live dispatch remains
+  separately manual/protected. Intent: expected-head squash merge, verify exact
+  merged tree matches reviewedee8abde0 and parentb1e871b8; no release/deploy call.
+- R25, source PR420 merged by expected-head squash after independent source-only
+  GO. Actual commit`3497dc5d1bb0351fd2282fb16120899b8c634759`, parent
+  `b1e871b8a6e3db26c0ec05ebe113e0961c4c95e5`, full tree
+  `ee8abde05b88cb65bb4af967536d733dab402b06` exactly equals the tested review
+  tree; fresh PR metadata confirms closed/merged. No QA policy/dispatch or Live
+  approval/deploy call was made. QA request stays blocked on current installed
+  dependency/state proof; actual financial parity and host receipt unavailable.
+  Ordinary0.1.22/build23 APK not built/published: generated Android release bytes
+  currently belong to explicitly synthetic uipreview, never distribute them.
+  Future normal build must synchronize ignored native metadata23, regenerate
+  normal entry/bundle/APK and pass normal-artifact/signature/upgrade verifier.
+  Agent restored320x640/density160/font1.0 and normal installed0.1.21 app unchanged;
+  final12touch/4geometryproof and coherent report read by root. Operational
+  release decision NO-GO until missing QA access/dependency/host/parity gates;
+  do not substitute prior QUEUED-only method for verified financial acceptance.
+
+- R26 (2026-10-19), approved LOCAL day-cell presentation only. Branch
+  `codex/bwork-heat-day-sales-20261019` from7f0bc776; reuse the R24/R25 map,
+  source/ACL/financial proofs and blocked QA/APK state. No new environment,
+  backend test, load run, dependency or business-data write is justified: the
+  delta only exposes existing server `sales.display` inside each calendar cell.
+  Source sign, every digit and fractional precision stay intact; invisible wrap
+  opportunities after grouping commas permit readable multiline values rather
+  than ellipsis or tiny fitted text. Screen-reader/day-detail value is unchanged.
+  Missing stays `—`, recorded zero stays zero, and future-dated source evidence
+  is not discarded. Seven aligned equal slots remain in every week.
+  Riyadh date from the report snapshot selects the blue, neutral-background
+  current cell with `جارٍ` / `Live`; details/accessibility say `In progress`.
+  The server still owns completion, positive-day averages and all calculations.
+
+  | Before | After |
+  |---|---|
+  | Only the day number in a44px cell | Number plus full source amount, variable multiline cell of at least84px |
+  | Today only described as incomplete in details | Visible blue current-day marker and short live label, even before sales exist |
+  | No cell amount guard | Two new behavioral tests bound in the single invariant catalog |
+
+  `node tools/check-bwork.cjs` passed in14.80s:469tests total,468PASS,
+  one pre-existing optional capacity skip;97approved behaviors and TypeScript.
+  No guard removed or weakened. Native AR/EN320/900 synthetic-only preview is
+  being checked for large signed/fractional amounts, zero/missing/current day,
+  alignment and day details. This is local implementation, not QA deployment,
+  real-number parity, a release-version bump or a distribution APK.
+
+- R27, independent59cafbbd source review GO for LOCAL UI only: full server
+  amounts/signs/fractions, all-seven grid, zero/missing/future distinctions and
+  unchanged authority/calculation paths verified. First native synthetic build
+  passed default AR/EN320x640 and exact900x900. Wrongly normalized640-wide
+  preliminary captures were explicitly excluded, not passed off as900 evidence.
+  Root inspected AR320 large/refund/current and exact900 captures. Font1.3 had
+  no clipping/overlap and grew cells, but Android broke the last decimal digit
+  onto a separate line. Added a soft wrap boundary BEFORE the decimal dot as
+  well as after grouping commas, preserving every source character. One new
+  preview build is justified only by this code delta and the native legibility
+  defect not covered by host tests; same existing isolated AVD/cache, no load
+  test, ordinary app mutation or backend recheck. Final native evidence pending.
+
+- R28, final LOCAL handoff GO for frozen product1405092db163d103e121e9e4920f01a8e2f53182.
+  Independent source delta review GO; final `node tools/check-bwork.cjs`
+  14.91s/468PASS/one old optional capacity skip/97invariants+TypeScript.
+  Native second build1m22 on the existing isolated AVD/cache proves AR320 at
+  font1.0 and1.3 and EN320. Root personally inspected the AR large-font large
+  amount/current-day images and EN default refund/zero/missing image. Fractions
+  now stay together (`.89`, `.75`, `.00`); no orphan cent digit, ellipsis,
+  overlap or clipping. At1.3 current-day cell410–508, amount440–480 and live
+  badge483–502 retain3px separation. Large values remain multiline where needed.
+  Exact900x900 EN quick visual look is new and single-line values fit; full
+  AR/EN900 seven-slot geometry, taps and current-without-data behavior reuse
+  unchanged59caf proofs explicitly, not claimed as newly executed140 journeys.
+  Earlier640-wide preliminary captures and59caf orphan-cent font images remain
+  marked preliminary/defect evidence, not final acceptance.
+  Evidence directory `output/bwork-leadership-20261019/day-cell-sales/` contains
+  `1405092d-native-proof.json`, source proof, screenshots and XML. Synthetic
+  `com.baseer.bchat.uipreview` APK65625488B SHA256
+  `606E3600FF9B650A6E73ACECC6E11CACE8AB1FB988E8A2EBE5434DB1F5D22322`,
+  embedded bundle`4C30DDF1405480C2354A98CEE3E4792E6482079BDC54D1E2787AE4A6F7B278EA`.
+  Never distribute this fixture APK. Normal installed0.1.21/build22 and its
+  install/update timestamps unchanged; generated normal entry/boundary restored,
+  viewport320x640/density160/font1.0 restored; preview left open. No network,
+  QA/Live, real financial parity, version bump or normal APK publication. Prior
+  operational release remains NO-GO on R25 blockers, independently of LOCAL GO.
+
+- R29 (2026-10-19), owner explicitly requests publication/update of QA and APK.
+  Release attempt branch `codex/bwork-0.1.22-qa-publish-20261019`, product1405092d,
+  local documentation792b4bff. Reuse approved financial110-case source proof,
+  mobile468PASS/97invariants, independent source/native acceptance and map;
+  no unchanged ORM/load rerun. Independent bounded operational audit confirms
+  no authenticated QA surface/approved SSH alias, canonical sales/metadata or
+  result-reading connector. The four QA tools remain invoice/ledger/inventory/
+  unpaid-supplier reports, not the canonical union or deployment receipt.
+  Existing QA policy accepts only RELEASE_ID/COMMIT/MODULES/THIRD_PARTY_MODULES;
+  there is no required-installed or update-only guard. Listing dependencies in
+  MODULES would install them if absent; queueing starts an actual host operation.
+  Unknown dependency initialization (native spend analytic-plan hook), actual
+  host receipt and ordinary-account parity therefore remain release blockers.
+  Prepare the scoped source PR from actual main3497dc5d, not the full local
+  mirror; preserve all main workflows/policies and unrelated registry entries.
+  No unsafe dispatch or synthetic APK publication. The renewed release request
+  is not a waiver of financial parity/access/installation gates or permission
+  to grant privileges. Ordinary APK tools are ready, but avoid a new build while
+  these prerequisites prevent distribution; existing APK files are fixtures.
 
 ## Local handoff / remaining acceptance
 

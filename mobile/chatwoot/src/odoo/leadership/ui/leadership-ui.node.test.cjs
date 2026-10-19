@@ -2,6 +2,72 @@ const { test } = require('node:test'), assert = require('node:assert/strict');
 const { harness, nodes, one, byId, text } = require('./leadership-harness.cjs');
 const waiting = () => { let resolve, reject; const promise = new Promise((a, b) => { resolve = a; reject = b; }); return { promise, resolve, reject }; };
 
+test('calendar cells retain full source amounts with readable wrapping, zero and unavailable distinct in either language', async () => {
+  for (const language of ['en', 'ar']) {
+    const app = harness({ language });
+    const displays = ['7,000.00', '1,234,567.89', '-25,000.75', '0.00', '—'];
+    app.engine.read = async q => {
+      const r = app.fixtures.report(q.companyId, '2026-10', 'month');
+      ['7000.00', '1234567.89', '-25000.75', '0.00'].forEach((value, i) => {
+        r.calendar.days[i].sales = { ...app.fixtures.money(value), display: displays[i] };
+      });
+      Object.assign(r.calendar.days[4], { has_sales: false, sales: app.fixtures.unavailable(), status: 'missing' });
+      return r;
+    };
+    try {
+      await app.flush(); await app.act(() => byId(app.render(), 'leadership-tab-heatmap').onPress());
+      for (const width of [270, 710]) {
+        await app.act(() => byId(app.render(), 'leadership-heatmap').onLayout({ nativeEvent: { layout: { width } } }));
+        for (let i = 0; i < displays.length; i++) {
+          const date = `2026-10-0${i + 1}`, amount = byId(app.render(), `leadership-day-sales-${date}`);
+          assert.equal(text({ type: 'Text', props: amount }).replace(/\u200b/g, ''), displays[i]);
+          if (displays[i].includes('.')) assert.ok(text({ type: 'Text', props: amount }).includes('\u200b.'), 'fraction has its own wrap boundary instead of orphaning a cent digit at large font');
+          assert.equal(amount.numberOfLines, undefined); assert.equal(amount.adjustsFontSizeToFit, undefined);
+          assert.equal(amount.style[1].fontSize, width < 420 ? 10 : 12);
+          assert.equal(amount.style[0].writingDirection, 'ltr');
+          assert.ok(byId(app.render(), `leadership-day-${date}`).accessibilityLabel.includes(displays[i]));
+        }
+      }
+      await app.act(() => byId(app.render(), 'leadership-day-2026-10-03').onPress());
+      assert.match(text(app.render()), /-25,000.75/);
+    } finally { await app.unmount(); }
+  }
+});
+
+test('only the Riyadh snapshot day is live and blue, even without sales, without masking other day evidence', async () => {
+  for (const language of ['en', 'ar']) {
+    const app = harness({ language }); let hasSales = true;
+    app.engine.read = async q => {
+      const r = app.fixtures.report(q.companyId, '2026-10', 'month');
+      // UTC date is the 18th, but the server business date in Riyadh is the 19th.
+      r.as_of = '2026-10-18T22:30:00Z';
+      Object.assign(r.calendar.days[17], { status: 'incomplete' });
+      if (!hasSales) Object.assign(r.calendar.days[18], { has_sales: false, sales: app.fixtures.unavailable(), status: 'missing' });
+      return r;
+    };
+    try {
+      await app.flush(); await app.act(() => byId(app.render(), 'leadership-tab-heatmap').onPress());
+      for (const present of [true, false]) {
+        if (!present) {
+          hasSales = false;
+          await app.act(() => one(app.render(), 'IconButton', p => p.label === (language === 'ar' ? 'تحديث' : 'Refresh')).onPress());
+        }
+        const day = byId(app.render(), 'leadership-day-2026-10-19');
+        assert.equal(day.style[1].borderColor, '#1256da');
+        assert.equal(day.style[1].borderStyle, 'solid');
+        assert.match(day.accessibilityLabel, language === 'ar' ? /جارٍ/ : /In progress/);
+        assert.match(text({ type: 'View', props: day }), language === 'ar' ? /جارٍ/ : /Live/);
+        assert.ok(nodes(app.render()).filter(n => /^leadership-day-live-/.test(n.props.testID || '')).length === 1);
+        assert.match(byId(app.render(), 'leadership-day-2026-10-18').accessibilityLabel, language === 'ar' ? /غير مكتمل/ : /Incomplete/);
+        assert.match(byId(app.render(), 'leadership-day-2026-10-20').accessibilityLabel, language === 'ar' ? /مستقبلي/ : /Future/);
+        if (!present) assert.match(day.accessibilityLabel, /—/);
+      }
+      await app.act(() => byId(app.render(), 'leadership-day-2026-10-19').onPress());
+      assert.match(text(app.render()), language === 'ar' ? /جارٍ/ : /In progress/);
+    } finally { await app.unmount(); }
+  }
+});
+
 test('calendar weeks always contain seven equal slots aligned with centered weekday averages', async () => {
   for (const language of ['en', 'ar']) {
     const app = harness({ language });

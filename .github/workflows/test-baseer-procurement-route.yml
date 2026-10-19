@@ -48,7 +48,9 @@ jobs:
           for test_class in BChatOrderCase BChatOrderHttpCase BChatReceiptCase BChatUserPermissionsCase; do
             grep -F "Starting $test_class." bchat-orders-workflow.log
           done
-          if grep -Eiq 'skipped|[1-9][0-9]* failed,|[1-9][0-9]* error\(s\)' bchat-orders-workflow.log; then
+          # OdooTestResult.addSkip emits ': skipped <description> : <reason>'.
+          # Do not mistake benign config/translation 'skipped' notices for tests.
+          if grep -Eq ': skipped .+ : |[1-9][0-9]* failed,|[1-9][0-9]* error\(s\)' bchat-orders-workflow.log; then
             echo 'BChat orders runtime tests were skipped or failed' >&2
             exit 1
           fi

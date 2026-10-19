@@ -233,7 +233,7 @@ class BChatProcurementService(models.AbstractModel):
         if search_term and search_term.strip():
             page_domain.append(('room_id.name', 'ilike', search_term.strip()))
         Membership = scoped.env['baseer.bchat.membership'].sudo()
-        memberships = Membership.search(page_domain, order='room_id, id', limit=ROOM_PAGE_SIZE + 1)
+        memberships = Membership.search(page_domain, order='room_id.id asc, id asc', limit=ROOM_PAGE_SIZE + 1)
         preferred = Membership.search(domain + [('room_id', '=', preferred_room_id)], limit=1) if preferred_room_id else Membership.browse()
         for room_id in sorted(set((memberships | preferred).mapped('room_id').ids)):
             scoped.env['baseer.bchat.room']._lock_for_read(room_id)

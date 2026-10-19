@@ -77,10 +77,10 @@ class SalesHeatCalendarDashboard(models.Model):
         by_day = {}
         arabic = (self.env.lang or '').lower().startswith('ar')
         for record in records:
-            cursor = max(first, record.date_from)
+            occasion_day = max(first, record.date_from)
             end = min(last, record.date_to)
-            while cursor <= end:
-                by_day.setdefault(cursor, []).append({
+            while occasion_day <= end:
+                by_day.setdefault(occasion_day, []).append({
                     'name': record.name if arabic else record.name_en,
                     'code': record.code,
                     'occasion_type': record.occasion_type,
@@ -90,7 +90,7 @@ class SalesHeatCalendarDashboard(models.Model):
                     'source_label': record.source_label,
                     'source_url': record.source_url if (record.source_url or '').startswith('https://') else False,
                 })
-                cursor += timedelta(days=1)
+                occasion_day += timedelta(days=1)
         return by_day
 
     def _heat_day_breakdowns(self, company, first, last):
@@ -283,17 +283,19 @@ class SalesHeatCalendarDashboard(models.Model):
             customers = int(raw['customers']) if raw['customers'] is not None else None
             target = self._heat_target_for_day(targets, business_date)
             candidates = []
-            cursor = (
+            # Odoo's translation fallback reserves the local name `cursor`
+            # for a database cursor when no context language is supplied.
+            baseline_day = (
                 business_date - timedelta(weeks=BASELINE_WEEKS)
                 if business_date >= earliest_history else date.min
             )
-            while cursor < business_date:
-                candidate = next((row for row in all_rows if row['business_date'] == cursor), None)
+            while baseline_day < business_date:
+                candidate = next((row for row in all_rows if row['business_date'] == baseline_day), None)
                 if (candidate and candidate['status'] == 'complete' and not candidate['closure_ids']
-                        and cursor < today and candidate['sales'] > ZERO
-                        and not occasions_by_day.get(cursor) and cursor.weekday() == business_date.weekday()):
+                        and baseline_day < today and candidate['sales'] > ZERO
+                        and not occasions_by_day.get(baseline_day) and baseline_day.weekday() == business_date.weekday()):
                     candidates.append(money(Decimal(str(candidate['sales']))))
-                cursor += timedelta(days=1)
+                baseline_day += timedelta(days=1)
             baseline = _median(candidates) if len(candidates) >= BASELINE_MINIMUM else None
             basis = money(Decimal(str(target.target_amount))) if target else baseline
             basis_kind = 'target' if target else ('baseline' if baseline is not None else 'none')

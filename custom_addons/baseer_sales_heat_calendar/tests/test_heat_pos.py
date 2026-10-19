@@ -159,6 +159,29 @@ class HeatPosCase(TransactionCase):
         self.assertEqual(action['views'], [(False, 'list'), (False, 'form')])
         return self._scoped().env[action['res_model']].search(action['domain'])
 
+    def test_missing_context_language_uses_user_fallback_with_occasions_and_sales(self):
+        self.reader.lang = 'en_US'
+        self._order('2026-10-03 12:00:00', '23.00')
+        self.env['baseer.official.occasion'].create({
+            'name': 'Language fallback fixture', 'name_en': 'Language fallback fixture',
+            'code': 'HEAT-LANG-FALLBACK', 'source_label': 'Isolated fixture',
+            'date_from': '2026-10-03', 'date_to': '2026-10-03',
+            'occasion_type': 'official_holiday', 'status': 'confirmed',
+            'company_ids': [Command.set(self.company.ids)],
+        })
+        for lang in (None, False):
+            with self.subTest(lang=lang):
+                scoped = self._scoped().with_context(lang=lang)
+                self.assertFalse(scoped.env.su)
+                self.assertFalse(scoped.env.lang)
+                payload = self._payload(dashboard=scoped)
+                day = next(day for week in payload['weeks'] for day in week
+                           if day and day['date'] == '2026-10-03')
+                self.assertEqual(day['sales_value'], '23.00')
+                self.assertEqual(day['status_label'], 'Complete')
+                self.assertEqual(day['occasions'][0]['kind_label'], 'Official holiday')
+                self.assertEqual(payload['labels']['sales'], 'Sales including VAT')
+
     def test_summary_generated_native_order_is_counted_once_and_zero_is_preserved(self):
         summary = self._summary('2026-10-01', customers=17)
         zero = self._summary('2026-10-02', amount='0', customers=0)

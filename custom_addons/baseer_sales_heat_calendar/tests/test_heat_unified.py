@@ -3,7 +3,7 @@
 Reuse source-fixture helpers, without inheriting or rerunning the canonical suite.
 The approval and native payment hooks execute only in TransactionCase rollback.
 """
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from decimal import Decimal
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -171,7 +171,23 @@ class TestHeatUnifiedSales(AccountTestInvoicingCommon):
         self.assertEqual(days['2026-10-02']['source_kinds'], ['manual'])
 
     def test_future_invoice_is_preserved_with_target_but_never_evaluated(self):
-        self._invoice(self._sale(), date='2026-10-25')
+        # Post through the real Saudi validation on a valid later clock, then
+        # inspect the persisted invoice as of the earlier reporting clock.
+        # Never bypass future-invoice validation or edit a posted invoice date.
+        posting_now = datetime(2026, 10, 26, 9)
+        # l10n_sa imports Python's datetime directly for its Riyadh-date guard.
+        # Wrap that clock too; combine() and the native validator stay real.
+        with (patch('odoo.addons.l10n_sa.models.account_move.datetime', wraps=datetime) as sa_clock,
+              patch('odoo.fields.Date.today', return_value=posting_now.date()),
+              patch('odoo.fields.Date.context_today', return_value=posting_now.date()),
+              patch('odoo.fields.Datetime.now', return_value=posting_now)):
+            sa_clock.now.side_effect = lambda tz=None: (
+                posting_now.replace(tzinfo=timezone.utc).astimezone(tz) if tz else posting_now)
+            invoice = self._invoice(self._sale(), date='2026-10-25')
+            sa_clock.now.assert_called()
+        self.assertEqual(invoice.state, 'posted')
+        self.assertEqual(invoice.l10n_sa_confirmation_datetime, datetime(2026, 10, 25, 9))
+        self.assertLess(self.NOW.date(), invoice.invoice_date)
         self.fixture_env['baseer.heat.calendar.target'].create({
             'company_id': self.company.id, 'year': 2026, 'month': 10,
             'weekday': date(2026, 10, 25).weekday(), 'target_amount': 200,

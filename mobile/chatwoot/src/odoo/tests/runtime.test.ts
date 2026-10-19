@@ -55,8 +55,9 @@ const catalog = {
   async touch(actor: string, uri: string, at: number) { strictCatalogActor(actor); return sqlArchive.mediaCacheCatalog.touch(actor, uri, at); },
 };
 const storage = new Map<string, string>();
+let afterStorageWrite: ((key: string) => Promise<void>) | undefined;
 const asyncStorage = {
-  async getItem(k: string) { return storage.get(k) ?? null; }, async setItem(k: string, v: string) { storage.set(k, v); },
+  async getItem(k: string) { return storage.get(k) ?? null; }, async setItem(k: string, v: string) { storage.set(k, v); await afterStorageWrite?.(k); },
   async removeItem(k: string) { storage.delete(k); }, async getAllKeys() { return [...storage.keys()]; },
 };
 const snapshotRevocations: SnapshotAuthority[] = [];
@@ -236,7 +237,7 @@ const hooks = registerHooks({
   },
 });
 process.env.EXPO_PUBLIC_ODOO_ORIGIN = 'https://odoo.example'; process.env.EXPO_PUBLIC_ODOO_DATABASE = 'trial';
-const { getEngine, getOrdersEngine, getTasksEngine, getLeadershipEngine, ordersOnlySnapshot, refreshOrdersOnlySession, setOrdersConnectivity, localMedia, localMediaLease, stageFile, readGroupAvatar, hasGroupAvatar, clearGroupAvatars, subscribeGroupAvatars, readMemberAvatar, clearMemberAvatars } = await import('../runtime.ts');
+const { getEngine, getOrdersEngine, getTasksEngine, getLeadershipEngine, ordersOnlySnapshot, refreshOrdersOnlySession, setOrdersConnectivity, localMedia, localMediaLease, stageFile, discardStagedAttachment, readGroupAvatar, hasGroupAvatar, clearGroupAvatars, subscribeGroupAvatars, readMemberAvatar, clearMemberAvatars } = await import('../runtime.ts');
 const engine = getEngine();
 
 test('real native adapter maps no-cookie session fixture then rejects cross-room media and validates offline bytes', async () => {
@@ -917,6 +918,38 @@ test('real runtime report 403 revokes the plain display epoch and stays blocked 
     assert.ok(controls.some(([, value]) => JSON.parse(value).blocked === true), '403 leaves a durable blocked marker');
     assert.equal([...storage.keys()].some(key => key.startsWith('bwork.leadership.snapshots.v1:') && key.endsWith('/envelope')), false);
   } finally { leadershipReportStatus = 200; bootstrapOverride = undefined; await engine.logout(); realFinancialSnapshots = false; }
+});
+
+test('native uncertain durable attachment enqueue preserves staged bytes and restores exactly the original outbox intent', async () => {
+  await engine.login('alice', 'private', true);
+  files.set('file:///external/uncertain.pdf', payload);
+  const staged = await stageFile(roomA, { uri: 'file:///external/uncertain.pdf', name: 'uncertain.pdf', mime: 'application/pdf' });
+  try {
+    afterStorageWrite = async key => { if (key.includes('/outbox/')) { afterStorageWrite = undefined; throw new Error('synthetic durable write lost acknowledgement'); } };
+    await assert.rejects(engine.enqueueAttachment(roomA, staged), /lost acknowledgement/);
+    assert.equal(engine.pending().length, 0, 'in-memory queue does not prove the durable write failed');
+    assert.ok([...storage.entries()].some(([key, value]) => key.includes('/outbox/') && JSON.parse(value).attachment?.uri === staged.uri));
+    assert.equal(files.has(staged.uri), true, 'uncertain durable owner must retain original staged bytes');
+    await discardStagedAttachment(staged); assert.equal(files.has(staged.uri), true);
+    await engine.login('alice', 'private', true);
+    assert.equal(engine.pending().length, 1); assert.equal(engine.pending()[0]!.attachment!.uri, staged.uri);
+  } finally { afterStorageWrite = undefined; await engine.logout(); }
+});
+
+test('native picker cancellation discards only unclaimed reservations and preserves durable or unreadable ownership', async () => {
+  await engine.login('alice', 'private', true);
+  files.set('file:///external/discard.pdf', payload);
+  const stage = () => stageFile(roomA, { uri: 'file:///external/discard.pdf', name: 'discard.pdf', mime: 'application/pdf' });
+  const disposable = await stage(); await discardStagedAttachment(disposable); assert.equal(files.has(disposable.uri), false);
+  const queued = await stage(); await engine.enqueueAttachment(roomA, queued);
+  await discardStagedAttachment(queued); assert.equal(files.has(queued.uri), true);
+  const uncertain = await stage(), pending = engine.pending;
+  engine.pending = () => { throw new Error('synthetic unreadable queue'); };
+  await discardStagedAttachment(uncertain); assert.equal(files.has(uncertain.uri), true);
+  engine.pending = pending;
+  await discardStagedAttachment(uncertain); assert.equal(files.has(uncertain.uri), false);
+  await discardStagedAttachment({ ...disposable, uri: 'file:///external/discard.pdf' });
+  assert.equal(files.has('file:///external/discard.pdf'), true); await engine.logout();
 });
 
 test('real runtime logout removes cached files and refuses HTTP redirects before authenticate', async () => {

@@ -40,6 +40,7 @@ export const colors = {
 const iconPaths = {
   menu: 'M4 6h16M4 12h16M4 18h16',
   chart: 'M4 3v18h17M8 16v-5M13 16V7M18 16v-8',
+  chat: 'M21 11.5a8.5 8.5 0 0 1-8.5 8.5H4l-3 3V11.5A8.5 8.5 0 0 1 9.5 3h3a8.5 8.5 0 0 1 8.5 8.5ZM7 10h8M7 14h5',
   back: 'M15 5l-7 7 7 7',
   chevronDown: 'M6 9l6 6 6-6',
   check: 'M5 12l4 4L19 6',

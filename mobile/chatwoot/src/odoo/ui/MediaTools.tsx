@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native';
 import { pick, types, isErrorWithCode, errorCodes } from '@react-native-documents/picker';
-import { launchImageLibrary } from 'react-native-image-picker';
+import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import FileViewer from 'react-native-file-viewer';
 import BlobUtil from 'react-native-blob-util';
 import AudioRecorderPlayer, {
@@ -277,6 +277,7 @@ export function AttachmentTools({
   hasText,
   onSendText,
   allowAttachments = true,
+  beginAttachment,
 }: {
   room: Room;
   disabled: boolean;
@@ -289,6 +290,11 @@ export function AttachmentTools({
   hasText: boolean;
   onSendText: () => void;
   allowAttachments?: boolean;
+  beginAttachment?: () => {
+    stage(input: { uri: string; name: string; mime: string; kind: 'image' | 'file' }): Promise<Attachment>;
+    enqueue(attachment: Attachment): Promise<void>;
+    cancel(): void;
+  };
 }) {
   const [busy, setBusy] = useState(false);
   const [expanded, setExpanded] = useState(false);
@@ -296,45 +302,59 @@ export function AttachmentTools({
   useEffect(() => {
     if (disabled || !allowAttachments || voice.recording) setExpanded(false);
   }, [disabled, allowAttachments, voice.recording]);
-  const attach = async (kind: 'image' | 'file') => {
+  const attach = async (kind: 'image' | 'file' | 'camera') => {
     if (disabled || !allowAttachments || operation.current || voice.recording) return;
     operation.current = true;
     setExpanded(false);
     setBusy(true);
+    let intent: ReturnType<NonNullable<typeof beginAttachment>> | undefined;
     try {
-      if (kind === 'image') {
-        const result = await launchImageLibrary({
+      // Capture the original conversation/draft BEFORE any native permission or
+      // picker activity can background the app and start session revalidation.
+      intent = beginAttachment?.();
+      const stage = intent ? intent.stage : (input: Parameters<typeof stageFile>[1]) => stageFile(room, input);
+      const submit = intent ? intent.enqueue : enqueue;
+      if (kind === 'image' || kind === 'camera') {
+        if (kind === 'camera' && Platform.OS === 'android') {
+          const permission = await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.CAMERA);
+          if (permission !== PermissionsAndroid.RESULTS.GRANTED) { report('noCamera'); return; }
+        }
+        const result = await (kind === 'camera' ? launchCamera({
+          mediaType: 'photo', cameraType: 'back', quality: 0.9, saveToPhotos: false,
+        }) : launchImageLibrary({
           mediaType: 'photo',
           selectionLimit: 1,
           quality: 0.9,
-        });
+        }));
         if (result.didCancel) return;
+        if (result.errorCode) { report(kind === 'camera' ? result.errorCode === 'permission' ? 'noCamera' : 'cameraUnavailable' : 'error'); return; }
         const asset = result.assets?.[0];
-        if (!asset?.uri || result.errorCode) throw new Error('picker');
-        const staged = await stageFile(room, {
+        if (!asset?.uri) throw new Error('picker');
+        const staged = await stage({
           uri: asset.uri,
           name: asset.fileName || 'image.jpg',
           mime: asset.type || 'image/jpeg',
           kind: 'image',
         });
-        await enqueue(staged);
+        await submit(staged);
       } else {
         const [file] = await pick({
           type: [types.pdf, types.plainText, types.docx, types.xlsx],
           allowMultiSelection: false,
         });
         if (!file) return;
-        const staged = await stageFile(room, {
+        const staged = await stage({
           uri: file.uri,
           name: file.name || 'attachment',
           mime: file.type || 'application/octet-stream',
           kind: 'file',
         });
-        await enqueue(staged);
+        await submit(staged);
       }
     } catch (e) {
       if (!(isErrorWithCode(e) && e.code === errorCodes.OPERATION_CANCELED)) report(errorWord(e));
     } finally {
+      intent?.cancel();
       operation.current = false;
       setBusy(false);
     }
@@ -362,8 +382,9 @@ export function AttachmentTools({
         <View
           style={[
             styles.row,
-            { paddingHorizontal: 8, flexDirection: language === 'ar' ? 'row-reverse' : 'row' },
+            { paddingHorizontal: 8, flexDirection: language === 'ar' ? 'row-reverse' : 'row', flexWrap: 'wrap' },
           ]}>
+          <Button quiet title={t('camera')} disabled={disabled || busy} onPress={() => { void attach('camera'); }} />
           <Button
             quiet
             title={t('photo')}

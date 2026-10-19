@@ -84,6 +84,7 @@ export function NavigationDrawer({
   soundsEnabled = false,
   soundsReady = false,
   onSoundsChange,
+  onChats,
   onOrders,
   ordersLabel,
   onTasks,
@@ -104,6 +105,7 @@ export function NavigationDrawer({
   soundsEnabled?: boolean;
   soundsReady?: boolean;
   onSoundsChange?: (enabled: boolean) => void;
+  onChats?: () => void;
   onOrders?: () => void;
   ordersLabel?: string;
   onTasks?: () => void;
@@ -227,6 +229,7 @@ export function NavigationDrawer({
               </View>
               {page === 'home' && (
                 <>
+                  {identity.permissions.chat_view === true && onChats && <MenuRow icon="chat" label={t('rooms')} language={language} onPress={onChats} />}
                   {onOrders && ordersLabel && <MenuRow icon="file" label={ordersLabel} language={language} onPress={onOrders} />}
                   {onTasks && tasksLabel && <MenuRow icon="check" label={tasksLabel} language={language} onPress={onTasks} />}
                   {onLeadership && leadershipLabel && <MenuRow icon="chart" label={leadershipLabel} language={language} onPress={onLeadership} />}

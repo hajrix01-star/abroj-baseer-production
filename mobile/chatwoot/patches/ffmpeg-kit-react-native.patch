@@ -4,14 +4,14 @@ index 889d3e8f308f94a338869afedc8c25d8b1ebb53a..d41913064e7da4511cbb9ebec7374fc2
 +++ b/ffmpeg-kit-react-native.podspec
 @@ -15,121 +15,13 @@ Pod::Spec.new do |s|
    s.static_framework  = true
- 
+
    s.source       = { :git => "https://github.com/arthenica/ffmpeg-kit.git", :tag => "react.native.v#{s.version}" }
 -
 -  s.default_subspec   = 'https'
 -
 +  s.default_subspec = 'https' # Just change to whatever subspec you want to use, e.g 'min-gpl'
    s.dependency "React-Core"
- 
+
 -  s.subspec 'min' do |ss|
 -      ss.source_files      = '**/FFmpegKitReactNativeModule.m',
 -                             '**/FFmpegKitReactNativeModule.h'

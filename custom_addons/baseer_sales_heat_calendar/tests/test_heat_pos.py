@@ -418,6 +418,20 @@ class HeatPosCase(TransactionCase):
         session_rule = self.env['ir.rule'].create({'name': 'Heat hide session',
             'model_id': self.env['ir.model']._get_id('pos.session'),
             'domain_force': "[('id', '!=', %d)]" % self.session_b.id})
+        scoped = self._scoped()
+        self.assertFalse(scoped.env.su)
+        self.assertEqual(scoped.env['pos.order'].search([
+            ('company_id', '=', self.company.id), ('session_id', '=', self.session_b.id),
+        ]), hidden.with_user(self.reader))
+        with patch.object(type(scoped), '_baseer_unified_period',
+                          side_effect=AssertionError('Hidden session must fail before financial materialization')):
+            with self.assertRaises(AccessError):
+                self._rows(dashboard=scoped)
+        with self.assertRaises(AccessError):
+            self.session_b.with_user(self.reader).check_access('read')
+        # The public Sales summary and central heat reader share this refusal.
+        with self.assertRaises(AccessError):
+            scoped._baseer_unified_missing_dates(scoped.env.company)
         with self.assertRaises(AccessError):
             self._rows()
         session_rule.unlink()

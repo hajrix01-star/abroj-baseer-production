@@ -1478,3 +1478,9 @@ msgstr "مدفوعات نقاط البيع"
 #: code:addons/baseer_sales_dashboard/static/src/sales_dashboard.js:0
 msgid "Sales with matched payment allocation"
 msgstr "المبيعات ذات توزيع الدفع المطابق"
+
+#. module: baseer_sales_dashboard
+#. odoo-python
+#: code:addons/baseer_sales_dashboard/models/unified_sales.py:0
+msgid "A readable confirmed POS order refers to an inaccessible session; unified sales cannot be calculated."
+msgstr "يوجد طلب مؤكد لنقطة البيع يمكن قراءته، لكن جلسته غير متاحة لك؛ تعذّر احتساب المبيعات الموحّدة."

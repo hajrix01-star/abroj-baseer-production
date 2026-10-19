@@ -4,7 +4,7 @@ from contextlib import ExitStack
 from decimal import Decimal
 from unittest.mock import patch
 
-from odoo import Command
+from odoo import Command, SUPERUSER_ID
 from odoo.addons.account.tests.common import AccountTestInvoicingCommon
 from odoo.exceptions import AccessError, ValidationError
 from odoo.tests.common import new_test_user, tagged
@@ -15,24 +15,30 @@ class TestLeadershipOrm(AccountTestInvoicingCommon):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.company = cls.env.company
-        sar = cls.env.ref('base.SAR')
+        # AccountTestInvoicingCommon's actor is an accountant, not a Sales or
+        # dashboard administrator. Elevation belongs only to rollback fixtures;
+        # every report invocation below explicitly uses the ordinary reader.
+        cls.fixture_env = cls.env(user=SUPERUSER_ID, context={
+            **cls.env.context, 'allowed_company_ids': cls.env.company.ids,
+        })
+        cls.company = cls.fixture_env.company
+        sar = cls.fixture_env.ref('base.SAR')
         sar.active = True
         cls.company.currency_id = sar
         cls.reader = new_test_user(
-            cls.env, login='bwork_leadership_reader',
+            cls.fixture_env, login='bwork_leadership_reader',
             groups='base.group_user,point_of_sale.group_pos_user,sales_team.group_sale_salesman_all_leads,account.group_account_invoice',
             company_id=cls.company.id, company_ids=[Command.set(cls.company.ids)],
             bwork_dashboard_view=True,
         )
         cls.service = cls.env['baseer.bchat.service'].with_user(cls.reader).with_context(
             allowed_company_ids=cls.company.ids, tz='Asia/Riyadh')
-        cls.partner = cls.env['res.partner'].create({
+        cls.partner = cls.fixture_env['res.partner'].create({
             'name': 'BWork real supplier/customer',
             'property_account_receivable_id': cls.company_data['default_account_receivable'].id,
             'property_account_payable_id': cls.company_data['default_account_payable'].id,
         })
-        cls.product = cls.env['product.product'].create({
+        cls.product = cls.fixture_env['product.product'].create({
             'name': 'BWork service', 'type': 'service', 'invoice_policy': 'order',
             'list_price': 115, 'taxes_id': [Command.clear()],
             'property_account_income_id': cls.company_data['default_account_revenue'].id,
@@ -41,6 +47,8 @@ class TestLeadershipOrm(AccountTestInvoicingCommon):
 
     def setUp(self):
         super().setUp()
+        self.assertFalse(self.service.env.su)
+        self.assertFalse(self.reader.with_user(self.reader).has_group('base.group_system'))
         clock = patch('odoo.fields.Datetime.now', return_value=datetime(2026, 10, 19, 9))
         clock.start()
         self.addCleanup(clock.stop)
@@ -55,7 +63,7 @@ class TestLeadershipOrm(AccountTestInvoicingCommon):
                 'period': 'month', 'first': first, 'last': month_end(first), 'calendar_first': first}
 
     def _sale_invoice(self, price=115, day='2026-10-02'):
-        sale = self.env['sale.order'].create({
+        sale = self.fixture_env['sale.order'].create({
             'partner_id': self.partner.id,
             'order_line': [Command.create({'product_id': self.product.id,
                 'product_uom_qty': 1, 'price_unit': price, 'tax_ids': [Command.clear()]})],
@@ -67,7 +75,7 @@ class TestLeadershipOrm(AccountTestInvoicingCommon):
         return invoice
 
     def _bill(self, price=23, move_type='in_invoice'):
-        bill = self.env['account.move'].create({
+        bill = self.fixture_env['account.move'].create({
             'move_type': move_type, 'partner_id': self.partner.id,
             'invoice_date': '2026-10-02',
             'invoice_line_ids': [Command.create({'product_id': self.product.id,
@@ -80,12 +88,12 @@ class TestLeadershipOrm(AccountTestInvoicingCommon):
     def test_actual_sales_supplier_credit_parity_and_no_goal_writes(self):
         invoice = self._sale_invoice()
         bill, credit = self._bill(), self._bill(3, 'in_refund')
-        target = self.env['baseer.heat.calendar.target'].create({
+        target = self.fixture_env['baseer.heat.calendar.target'].create({
             'company_id': self.company.id, 'year': 2026, 'month': 10,
             'weekday': 4, 'target_amount': 100,
         })
         before = target.read(['target_amount', 'write_date'])
-        target_ids = self.env['baseer.heat.calendar.target'].search([]).ids
+        target_ids = self.fixture_env['baseer.heat.calendar.target'].search([]).ids
         with (patch.object(type(target), 'create', side_effect=AssertionError('No target create')),
               patch.object(type(target), 'write', side_effect=AssertionError('No target write'))):
             payload = self.service._leadership(self._selection())
@@ -101,7 +109,7 @@ class TestLeadershipOrm(AccountTestInvoicingCommon):
         self.assertEqual(payload['calendar']['days'][1]['sales']['value'], '115.00')
         self.assertEqual(payload['calendar']['days'][1]['target']['value'], '100.00')
         self.assertEqual(target.read(['target_amount', 'write_date']), before)
-        self.assertEqual(self.env['baseer.heat.calendar.target'].search([]).ids, target_ids)
+        self.assertEqual(self.fixture_env['baseer.heat.calendar.target'].search([]).ids, target_ids)
 
     def test_options_switch_revision_source_acl_and_foreign_company(self):
         options = self.service._leadership_options()
@@ -116,10 +124,10 @@ class TestLeadershipOrm(AccountTestInvoicingCommon):
         with self.assertRaises(AccessError):
             self.reader.with_user(self.reader).write({'bwork_dashboard_view': True})
         self.reader.write({'bwork_dashboard_view': True})
-        foreign = self.env['res.company'].create({'name': 'BWork inaccessible', 'currency_id': self.company.currency_id.id})
+        foreign = self.fixture_env['res.company'].create({'name': 'BWork inaccessible', 'currency_id': self.company.currency_id.id})
         with self.assertRaises(AccessError):
             self.service._leadership(self._selection(company=foreign))
-        insufficient = new_test_user(self.env, login='bwork_no_account',
+        insufficient = new_test_user(self.fixture_env, login='bwork_no_account',
             groups='base.group_user,point_of_sale.group_pos_user',
             company_id=self.company.id, company_ids=[Command.set(self.company.ids)],
             bwork_dashboard_view=True)
@@ -127,7 +135,7 @@ class TestLeadershipOrm(AccountTestInvoicingCommon):
             self.service.with_user(insufficient)._leadership_options()
 
     def test_unpublished_or_group_scoped_dashboard_is_denied(self):
-        dashboard = self.env.ref('baseer_sales_dashboard.dashboard_sales_summary')
+        dashboard = self.fixture_env.ref('baseer_sales_dashboard.dashboard_sales_summary')
         dashboard.is_published = False
         with self.assertRaises(AccessError):
             self.service._leadership_options()
@@ -169,10 +177,10 @@ class TestLeadershipOrm(AccountTestInvoicingCommon):
 
     def test_real_central_all_company_goals_do_not_omit_no_sales_company(self):
         self._sale_invoice()
-        other = self.env['res.company'].create({'name': 'BWork no sales company',
+        other = self.fixture_env['res.company'].create({'name': 'BWork no sales company',
                                                 'currency_id': self.company.currency_id.id})
         self.reader.company_ids = [Command.set((self.company | other).ids)]
-        Target = self.env['baseer.heat.calendar.target']
+        Target = self.fixture_env['baseer.heat.calendar.target']
         Target.create({'company_id': self.company.id, 'year': 2026, 'month': 10,
                        'weekday': 4, 'target_amount': 100})
         selection = self._selection()
@@ -191,7 +199,7 @@ class TestLeadershipOrm(AccountTestInvoicingCommon):
         self.assertFalse(result['calendar']['days'][1]['target']['available'])
 
     def test_combined_capacity_counts_draft_summaries_before_any_materialization(self):
-        other = self.env['res.company'].create({'name': 'BWork budget company',
+        other = self.fixture_env['res.company'].create({'name': 'BWork budget company',
                                                 'currency_id': self.company.currency_id.id})
         self.reader.company_ids = [Command.set((self.company | other).ids)]
         per_company = []

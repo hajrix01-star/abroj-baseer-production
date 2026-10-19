@@ -5,9 +5,10 @@ The approval and native payment hooks execute only in TransactionCase rollback.
 """
 from datetime import date, datetime
 from decimal import Decimal
+from types import SimpleNamespace
 from unittest.mock import patch
 
-from odoo import Command
+from odoo import Command, SUPERUSER_ID
 from odoo.addons.account.tests.common import AccountTestInvoicingCommon
 from odoo.addons.baseer_sales_dashboard.tests import test_unified_sales as source_fixtures
 from odoo.exceptions import AccessError, ValidationError
@@ -18,11 +19,9 @@ from . import test_heat_pos as pos_fixtures
 
 @tagged('post_install', '-at_install')
 class TestHeatUnifiedSales(AccountTestInvoicingCommon):
-    _sale = source_fixtures.TestUnifiedSales._sale
     _invoice = source_fixtures.TestUnifiedSales._invoice
     _pos = source_fixtures.TestUnifiedSales._pos
     _approved_manual_fixture = source_fixtures.TestUnifiedSales._approved_manual_fixture
-    _insert = classmethod(pos_fixtures.HeatPosCase._insert.__func__)
     _session = classmethod(pos_fixtures.HeatPosCase._session.__func__)
     _order = pos_fixtures.HeatPosCase._order
     _summary = pos_fixtures.HeatPosCase._summary
@@ -31,30 +30,37 @@ class TestHeatUnifiedSales(AccountTestInvoicingCommon):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        sar = cls.env.ref('base.SAR')
+        # Source creation is rollback-only fixture setup. Keep its privileges
+        # separate from the ordinary user used by both reporting authorities.
+        cls.fixture_env = cls.env(user=SUPERUSER_ID, context={
+            **cls.env.context, 'allowed_company_ids': cls.env.company.ids,
+        })
+        sar = cls.fixture_env.ref('base.SAR')
         sar.active = True
-        cls.company = cls.env.company
+        cls.company = cls.fixture_env.company
         cls.company.currency_id = sar
-        cls.env.user.group_ids |= (cls.env.ref('point_of_sale.group_pos_manager')
-                                  | cls.env.ref('sales_team.group_sale_manager'))
-        cls.dashboard = cls.env.ref('baseer_sales_dashboard.dashboard_sales_summary')
-        cls.partner = cls.env['res.partner'].create({
+        cls.reader = new_test_user(cls.fixture_env, login='heat_unified_reader',
+            groups='base.group_user,point_of_sale.group_pos_user,sales_team.group_sale_salesman_all_leads,account.group_account_readonly',
+            company_id=cls.company.id, company_ids=[Command.set(cls.company.ids)])
+        cls.dashboard = cls.env.ref('baseer_sales_dashboard.dashboard_sales_summary').with_user(
+            cls.reader).with_context(allowed_company_ids=cls.company.ids)
+        cls.partner = cls.fixture_env['res.partner'].create({
             'name': 'Heat unified actual customer',
             'property_account_receivable_id': cls.company_data['default_account_receivable'].id,
         })
-        cls.product = cls.env['product.product'].create({
+        cls.product = cls.fixture_env['product.product'].create({
             'name': 'Heat unified service', 'type': 'service', 'invoice_policy': 'order',
             'available_in_pos': True, 'list_price': 100, 'taxes_id': [Command.clear()],
             'property_account_income_id': cls.company_data['default_account_revenue'].id,
         })
         cls.unified_deposit_product = cls.product
-        cls.method = cls.env['pos.payment.method'].create({
+        cls.method = cls.fixture_env['pos.payment.method'].create({
             'name': 'Heat unified bank', 'company_id': cls.company.id,
             'journal_id': cls.company_data['default_journal_bank'].id,
             'receivable_account_id': cls.company_data['default_account_receivable'].id,
             'outstanding_account_id': cls.company_data['default_account_receivable'].id,
         })
-        cls.config = cls.env['pos.config'].create({
+        cls.config = cls.fixture_env['pos.config'].create({
             'name': 'Heat unified ordinary POS', 'company_id': cls.company.id,
             'journal_id': cls.company_data['default_journal_sale'].id,
             'invoice_journal_id': cls.company_data['default_journal_sale'].id,
@@ -73,14 +79,31 @@ class TestHeatUnifiedSales(AccountTestInvoicingCommon):
         cls.heat = cls._heat_for_company(cls.company)
 
     @classmethod
+    def _insert(cls, model, values):
+        return pos_fixtures.HeatPosCase._insert.__func__(
+            SimpleNamespace(env=cls.fixture_env), model, values)
+
+    @classmethod
     def _heat_for_company(cls, company):
-        return cls.env['spreadsheet.dashboard'].create({
+        return cls.fixture_env['spreadsheet.dashboard'].create({
             'name': 'Heat unified parity',
             'dashboard_group_id': cls.env.ref(
                 'spreadsheet_dashboard.spreadsheet_dashboard_group_sales').id,
             'baseer_dashboard_kind': 'sales_heat_calendar', 'is_published': True,
             'company_ids': [Command.set(company.ids)],
-        }).with_company(company).with_context(allowed_company_ids=company.ids, lang='en_US')
+        }).with_user(cls.reader).with_company(company).with_context(
+            allowed_company_ids=company.ids, lang='en_US')
+
+    def setUp(self):
+        super().setUp()
+        self.assertFalse(self.heat.env.su)
+        self.assertFalse(self.dashboard.env.su)
+        self.assertFalse(self.reader.with_user(self.reader).has_group('base.group_system'))
+
+    def _sale(self, pricelist=None):
+        return source_fixtures.TestUnifiedSales._sale(SimpleNamespace(
+            env=self.fixture_env, partner=self.partner, product=self.product,
+        ), pricelist=pricelist)
 
     def _days(self, heat=None, now=None):
         with patch('odoo.fields.Datetime.now', return_value=now or self.NOW):
@@ -140,6 +163,8 @@ class TestHeatUnifiedSales(AccountTestInvoicingCommon):
 
     def test_native_summary_approval_date_and_bridge_count_once(self):
         dashboard, summary = self._approved_manual_fixture()
+        self.reader.company_ids = [Command.link(summary.company_id.id)]
+        dashboard = dashboard.with_user(self.reader)
         heat = self._heat_for_company(summary.company_id)
         _, days = self._assert_headline_parity(heat=heat, summary_dashboard=dashboard)
         self.assertEqual(days['2026-10-02']['sales_value'], '115.00')
@@ -147,7 +172,7 @@ class TestHeatUnifiedSales(AccountTestInvoicingCommon):
 
     def test_future_invoice_is_preserved_with_target_but_never_evaluated(self):
         self._invoice(self._sale(), date='2026-10-25')
-        self.env['baseer.heat.calendar.target'].create({
+        self.fixture_env['baseer.heat.calendar.target'].create({
             'company_id': self.company.id, 'year': 2026, 'month': 10,
             'weekday': date(2026, 10, 25).weekday(), 'target_amount': 200,
         })
@@ -160,7 +185,7 @@ class TestHeatUnifiedSales(AccountTestInvoicingCommon):
         self.assertTrue(all(item['sample_count'] == 0 for item in payload['weekdays']))
 
     def test_pos_group_does_not_grant_sales_source_acl(self):
-        reader = new_test_user(self.env, login='heat_unified_insufficient',
+        reader = new_test_user(self.fixture_env, login='heat_unified_insufficient',
             groups='base.group_user,point_of_sale.group_pos_user',
             company_id=self.company.id, company_ids=[Command.set(self.company.ids)])
         with self.assertRaises(AccessError):
@@ -169,7 +194,7 @@ class TestHeatUnifiedSales(AccountTestInvoicingCommon):
     def test_real_invoice_targets_use_only_active_exact_scope_without_changing_sales(self):
         self._invoice(self._sale(), date='2026-10-02')
         self._invoice(self._sale(), date='2026-10-03')
-        Target = self.env['baseer.heat.calendar.target']
+        Target = self.fixture_env['baseer.heat.calendar.target']
         Target.create({'company_id': self.company.id, 'year': 2026, 'month': 10,
                        'weekday': 4, 'target_amount': 200})
         Target.create({'company_id': self.company.id, 'year': 2026, 'month': 10,

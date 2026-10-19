@@ -154,6 +154,24 @@ class UnifiedSalesDashboard(models.Model):
 
     def _baseer_unified_missing_dates(self, company):
         POS = self.env['pos.order']
+        # A dotted session/date domain applies the session's record rules and
+        # can silently remove a readable order before the later mapped-session
+        # access check. Probe only readable order links against an ordinary-rule
+        # scoped subquery first; never inspect hidden session dates or amounts.
+        # Like the existing missing-date guard, this must be company-wide: an
+        # unreadable session cannot safely be assigned to a reporting period.
+        visible_sessions = self.env['pos.session']._search([
+            ('company_id', '=', company.id),
+        ])
+        if POS.search_count([
+            ('company_id', '=', company.id),
+            ('state', 'in', ('paid', 'done')),
+            ('session_id', '!=', False),
+            ('session_id', 'not in', visible_sessions),
+        ], limit=1):
+            raise AccessError(_(
+                'A readable confirmed POS order refers to an inaccessible session; unified sales cannot be calculated.'
+            ))
         if POS.search_count(self._baseer_unified_pos_domain(company, include_bridges=True)
                             + [('session_id.start_at', '=', False)], limit=1):
             raise ValidationError(_(

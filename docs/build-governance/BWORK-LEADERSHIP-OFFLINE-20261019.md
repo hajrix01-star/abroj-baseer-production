@@ -193,3 +193,23 @@ dashboard-only sessions without remembered chat identity. No financial writes or
 offline goal edits. Rollback is source revert via PR; snapshot keys are isolated
 and old versions ignore them. QA, Live, dependencies, roles and the published
 0.1.22 APK remain untouched.
+
+## O07 — owner-authorized QA APK delivery (2026-10-19)
+
+After receiving the explicit two-change publication list, owner approved update
+and publication: compact ceiling calendar R33 plus offline snapshots, without a
+new warning/update time. Target normal QA APK0.1.23/build24, same application ID,
+QA origin/database and existing signing certificate. Reuse source acceptance
+8e365962,505 passed/103 protected behaviors and independent source GO; only trial
+version/versionCode change. Preserve stable Chatwoot version4.9.11, dependencies,
+permissions and all server modules. No QA-host migration/upgrade request is needed
+for this mobile-only delta; do not repeat prior queue39286507372. Existing server
+completion UNKNOWN/actual canonical financial parity UNTESTED remain limitations,
+not a new deployment-success claim. Live remains untouched.
+
+Build/verify one frozen normal APK; prove source/bundle/signature/upgrade and
+bounded native offline acceptance before publication. Independently review the
+release-only Draft -> Publish -> public hash verification path. Merge source only
+through a successful PR with expected head; use prerelease/non-Latest distribution
+and disclose the actual verification scope. Keep generated APK/evidence out of
+Git. Release progress/artifact proof live in ignored output under release-0.1.23.

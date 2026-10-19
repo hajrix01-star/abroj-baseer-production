@@ -79,6 +79,7 @@ let emulateOdooStatelessHeader = false;
 let statefulSessionIssued = false;
 let bootstrapOverride: unknown;
 let ordersStatus = 200;
+let workTasksStatus = 200;
 const calls: { method: string; path: string; options: Record<string, unknown> }[] = [];
 function nativeFetch(options: Record<string, unknown>, method: string, url: string, requestHeaders: Record<string, string>, requestBody?: unknown) {
   const path = new URL(url).pathname; calls.push({ method, path, options });
@@ -111,6 +112,11 @@ function nativeFetch(options: Record<string, unknown>, method: string, url: stri
     else if (path === '/bchat/api/v2/orders/options') { status = ordersStatus; body = status === 200
       ? { api_version: 2, access: 'viewer', can_view: true, can_create: false, can_receive: false, companies: [{ id: 1, name: 'Synthetic company' }] }
       : { error: { code: 'session_expired' } }; }
+    else if (path === '/bchat/api/v2/work-tasks/options') { status = workTasksStatus; body = status === 200
+      ? { api_version: 2, work_tasks_version: 1, server_now: '2026-10-19T12:00:00Z',
+        companies: [{ id: 1, name: 'Synthetic tasks company' }], default_company_id: 1,
+        can_view: true, can_manage: false, capabilities: { direct_done: true, reminders: true } }
+      : { api_version: 2, error: { code: status === 401 ? 'session_expired' : 'forbidden' } }; }
     else if (path === '/bchat/api/v2/rooms') body = { api_version: 2, rooms };
     else if (/\/rooms\/\d+\/group$/.test(path)) {
       groupReads++; const room = rooms.find(row => row.id === Number(path.split('/').at(-2)))!;
@@ -187,7 +193,7 @@ const hooks = registerHooks({
   },
 });
 process.env.EXPO_PUBLIC_ODOO_ORIGIN = 'https://odoo.example'; process.env.EXPO_PUBLIC_ODOO_DATABASE = 'trial';
-const { getEngine, getOrdersEngine, ordersOnlySnapshot, refreshOrdersOnlySession, setOrdersConnectivity, localMedia, localMediaLease, stageFile, readGroupAvatar, hasGroupAvatar, clearGroupAvatars, subscribeGroupAvatars, readMemberAvatar, clearMemberAvatars } = await import('../runtime.ts');
+const { getEngine, getOrdersEngine, getTasksEngine, ordersOnlySnapshot, refreshOrdersOnlySession, setOrdersConnectivity, localMedia, localMediaLease, stageFile, readGroupAvatar, hasGroupAvatar, clearGroupAvatars, subscribeGroupAvatars, readMemberAvatar, clearMemberAvatars } = await import('../runtime.ts');
 const engine = getEngine();
 
 test('real native adapter maps no-cookie session fixture then rejects cross-room media and validates offline bytes', async () => {
@@ -695,6 +701,31 @@ test('native current orders 401 closes only its own scope and ordinary chat logi
   const before = calls.length; await engine.login('alice', 'private', true);
   assert.equal(engine.identity!.permissions.chat_view, true);
   assert.ok(calls.slice(before).some(c => c.path === '/bchat/api/v2/rooms'));
+});
+
+test('native task-only login and transport honor independent grants, foreground verification and stale HTTP fences', async () => {
+  bootstrapOverride = ordersBootstrap({ permissions: { chat_view: false, chat_send: false, task_view: true, task_manage: false } });
+  const before = calls.length;
+  try {
+    await engine.login('task-only', 'private', true);
+    assert.equal(engine.identity, null); assert.equal(ordersOnlySnapshot().identity!.permissions.task_view, true);
+    assert.equal(calls.slice(before).some(c => c.path.includes('/rooms') || c.path.includes('/orders/')), false);
+    assert.equal((await getTasksEngine().options()).default_company_id, 1);
+    await assert.rejects(getOrdersEngine().options(), { code: 'forbidden' });
+    await assert.rejects(getTasksEngine().create({ company_id: 1, room_id: null, title: 'No write', description: '', assignee_id: 7, due_at: null, reminder_at: null }), { code: 'forbidden' });
+    setOrdersConnectivity(false); await assert.rejects(getTasksEngine().options(), { code: 'unauthorized' });
+    setOrdersConnectivity(true); await assert.rejects(getTasksEngine().options(), { code: 'unauthorized' });
+    await refreshOrdersOnlySession(); await getTasksEngine().options();
+    let release!: () => void, started!: () => void;
+    const wait = new Promise<void>(resolve => { release = resolve; }), seen = new Promise<void>(resolve => { started = resolve; });
+    beforeNative = async path => { if (path.endsWith('/work-tasks/options')) { beforeNative = undefined; started(); await wait; } };
+    const read = getTasksEngine().options(), rejection = assert.rejects(read, { code: 'stale' });
+    await seen; await refreshOrdersOnlySession(); release(); await rejection;
+    assert.equal(ordersOnlySnapshot().verified, true);
+    appState.currentState = 'background'; await assert.rejects(getTasksEngine().options(), { code: 'unauthorized' });
+    appState.currentState = 'active'; workTasksStatus = 401;
+    await assert.rejects(getTasksEngine().options()); assert.equal(ordersOnlySnapshot().identity, null);
+  } finally { bootstrapOverride = undefined; workTasksStatus = 200; beforeNative = undefined; appState.currentState = 'active'; setOrdersConnectivity(true); await engine.logout(); }
 });
 
 test('real runtime logout removes cached files and refuses HTTP redirects before authenticate', async () => {

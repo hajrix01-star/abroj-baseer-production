@@ -9,13 +9,15 @@ export function ordersOnlyBootstrap(raw: unknown, expectedUid: number, database:
   if (!record(raw) || !record(raw.permissions)) return null;
   const permissions = raw.permissions;
   if (permissions.chat_view === true) return null;
-  if (permissions.chat_view !== false || permissions.order_view !== true) return null;
+  if (permissions.chat_view !== false || (permissions.order_view !== true && permissions.task_view !== true)) return null;
   if (raw.api_version !== 2 || !positive(expectedUid) || raw.user_id !== expectedUid || raw.database !== database
       || typeof database !== 'string' || !database.trim() || database.length > 200
       || !Array.isArray(raw.company_ids) || !raw.company_ids.length || raw.company_ids.length > 1000
       || !raw.company_ids.every(positive) || new Set(raw.company_ids).size !== raw.company_ids.length
       || typeof raw.csrf_token !== 'string' || !raw.csrf_token.trim() || raw.csrf_token.length > 1024
-      || ['order_create', 'order_receive', 'chat_send'].some(key => typeof permissions[key] !== 'boolean')
+      || typeof permissions.chat_send !== 'boolean'
+      || (permissions.order_view === true && ['order_create', 'order_receive'].some(key => typeof permissions[key] !== 'boolean'))
+      || (permissions.task_view === true && typeof permissions.task_manage !== 'boolean')
       || Object.values(permissions).some(v => typeof v !== 'boolean' && !(Number.isSafeInteger(v) && Number(v) >= 0))) {
     throw new ChatError('identity_mismatch', 403);
   }
@@ -53,7 +55,8 @@ export class OrdersOnlySession {
     this.changed(); return true;
   }
   publish(identity: Bootstrap, acceptedGeneration: number, currentGeneration: number) {
-    if (acceptedGeneration !== currentGeneration || identity.permissions.chat_view !== false || identity.permissions.order_view !== true) throw new ChatError('stale_session');
+    if (acceptedGeneration !== currentGeneration || identity.permissions.chat_view !== false
+        || (identity.permissions.order_view !== true && identity.permissions.task_view !== true)) throw new ChatError('stale_session');
     this.state = { identity: clone(identity), generation: acceptedGeneration, verified: true, revision: this.state.revision };
     this.changed();
   }

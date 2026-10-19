@@ -25,9 +25,12 @@ function harness() {
   const modules = {
     react: React, 'react/jsx-runtime': require('react/jsx-runtime'),
     'react-native': { View: 'View', AppState: appState }, 'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView' },
-    '../runtime': { getEngine: () => { calls.push('getEngine'); return engine; }, getOrdersEngine: () => { calls.push('getOrdersEngine'); return orders; },
+    '../runtime': { getEngine: () => { calls.push('getEngine'); return engine; }, getOrdersEngine: () => { calls.push('getOrdersEngine'); return orders; }, getTasksEngine: () => { calls.push('getTasksEngine'); return {}; },
       refreshOrdersOnlySession: async () => { calls.push('refresh'); if (refreshError) throw refreshError; }, ordersOnlySnapshot: () => props.snapshot },
     '../orders/ui/OrdersScreen': { OrdersScreen: OrdersProbe },
+    '../orders/dictionary': { orderTranslator: language => word => `${language}:${word}` },
+    '../tasks/ui/TasksScreen': { TasksScreen: 'TasksScreen' },
+    '../tasks/dictionary': { taskTranslator: language => word => `${language}:${word}` },
     '../ui/components': { Button: 'Button', IconButton: 'IconButton', Label: 'Label', styles: {}, colors: { white: 'white' } },
     '../ui/Brand': { Brand: 'Brand' }, '../ui/NavigationDrawer': { NavigationDrawer: 'NavigationDrawer' },
     '../ui/dictionary': { translator: language => word => `${language}:${word}`, errorWord: () => 'error' },
@@ -67,6 +70,44 @@ test('orders-only shell retains its same-authority workspace behind a private ve
     assert.equal(app.nodes('NavigationDrawer')[0].props.offline, true);
     assert.equal(app.nodes('NavigationDrawer')[0].props.identity, null);
     assert.equal(app.nodes('NavigationDrawer')[0].props.visible, false);
+  } finally { await app.unmount(); }
+});
+
+test('task-only shell admits tasks without mounting chat or requesting orders, and fences hidden authority', async () => {
+  const app = harness();
+  try {
+    app.props.snapshot.identity.permissions = { chat_view: false, task_view: true, task_manage: false };
+    await app.render();
+    assert.equal(app.nodes('TasksScreen').length, 1);
+    assert.equal(app.nodes('OrdersScreen').length, 0);
+    assert.equal(app.calls.includes('getOrdersEngine'), false);
+    assert.equal(app.nodes('NavigationDrawer')[0].props.onOrders, undefined);
+    assert.equal(typeof app.nodes('NavigationDrawer')[0].props.onTasks, 'function');
+    assert.equal(app.nodes('TasksScreen')[0].props.presented, true);
+    const scope = app.nodes('TasksScreen')[0].props.scopeKey;
+    app.props.snapshot = { ...app.props.snapshot, verified: false, revision: 3 }; await app.render();
+    assert.equal(app.nodes('TasksScreen')[0].props.presented, false);
+    assert.equal(app.nodes('TasksScreen')[0].props.scopeKey, scope);
+    app.props.snapshot = { ...app.props.snapshot, verified: true, revision: 4 }; await app.render();
+    assert.equal(app.nodes('TasksScreen')[0].props.scopeKey, scope);
+    assert.equal(app.nodes('TasksScreen')[0].props.presented, true);
+  } finally { await app.unmount(); }
+});
+
+test('switching tasks preserves the same-authority orders cart and supplies independent drawer entries', async () => {
+  const app = harness();
+  try {
+    app.props.snapshot.identity.permissions.task_view = true;
+    await app.render();
+    await app.act(() => app.nodes('OrdersScreen')[0].props.fixtureEdit('keep cart'));
+    await app.act(() => app.nodes('NavigationDrawer')[0].props.onTasks());
+    assert.equal(app.nodes('TasksScreen')[0].props.presented, true);
+    assert.equal(app.nodes('OrdersScreen')[0].props.presented, false);
+    assert.equal(app.nodes('OrdersScreen')[0].props.fixtureDraft, 'keep cart');
+    await app.act(() => app.nodes('NavigationDrawer')[0].props.onOrders());
+    assert.equal(app.nodes('TasksScreen')[0].props.presented, false);
+    assert.equal(app.nodes('OrdersScreen')[0].props.presented, true);
+    assert.equal(app.workspaceMounts(), 1);
   } finally { await app.unmount(); }
 });
 

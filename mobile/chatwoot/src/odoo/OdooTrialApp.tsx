@@ -3,10 +3,12 @@ import { Alert, AppState, BackHandler, Keyboard, Text, useWindowDimensions, View
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import NetInfo from '@react-native-community/netinfo';
 import type { ChatEngine, Room } from './core/ChatEngine';
-import { getEngine, getOrdersEngine, ordersOnlySnapshot, refreshOrdersOnlySession, setOrdersConnectivity, subscribeOrdersOnlySession } from './runtime';
+import { getEngine, getOrdersEngine, getTasksEngine, ordersOnlySnapshot, refreshOrdersOnlySession, setOrdersConnectivity, subscribeOrdersOnlySession } from './runtime';
 import { OrdersOnlyShell } from './session/OrdersOnlyShell';
 import { OrdersScreen } from './orders/ui/OrdersScreen';
 import { orderTranslator } from './orders/dictionary';
+import { TasksScreen } from './tasks/ui/TasksScreen';
+import { taskTranslator } from './tasks/dictionary';
 import { Button, colors, direction, IconButton, Label, styles } from './ui/components';
 import { errorWord, translator, type Language, type Word } from './ui/dictionary';
 import { LoginScreen } from './ui/LoginScreen';
@@ -32,7 +34,8 @@ export function SessionApp({ engine, initialLanguage = 'ar', onLanguageChange }:
   const chat = useChat(engine);
   const [language, updateLanguage] = useState<Language>(initialLanguage);
   const setLanguage = (value: Language) => { updateLanguage(value); onLanguageChange?.(value); };
-  const [area, setArea] = useState<'chat' | 'orders'>('chat');
+  const [area, setArea] = useState<'chat' | 'orders' | 'tasks'>('chat');
+  const [tasksVisited, setTasksVisited] = useState(false);
   const liveArea = useRef(area); liveArea.current = area;
   const [companyId, setCompanyId] = useState(0);
   const [management, setManagement] = useState<ManagementTarget | null>(null);
@@ -52,10 +55,11 @@ export function SessionApp({ engine, initialLanguage = 'ar', onLanguageChange }:
   const retainedDisplay = chat.retainedDisplay === true;
   useEffect(() => subscribeOrdersOnlySession(chat.capture), [chat.capture]);
   useEffect(() => {
-    if (!chat.identity || chat.identity.permissions.order_view !== true) setArea('chat');
-  }, [chat.identity?.database, chat.identity?.user_id, chat.identity?.permissions.order_view]);
+    if (!chat.identity || (area === 'orders' && chat.identity.permissions.order_view !== true)
+        || (area === 'tasks' && chat.identity.permissions.task_view !== true)) setArea('chat');
+  }, [chat.identity?.database, chat.identity?.user_id, chat.identity?.permissions.order_view, chat.identity?.permissions.task_view, area]);
   useEffect(() => {
-    if (area !== 'orders') return;
+    if (area === 'chat') return;
     const listener = BackHandler.addEventListener('hardwareBackPress', () => {
       if (menu) setMenu(false); else { Keyboard.dismiss(); setArea('chat'); }
       return true;
@@ -240,7 +244,7 @@ export function SessionApp({ engine, initialLanguage = 'ar', onLanguageChange }:
       <View style={styles.fill} pointerEvents={!chat.identity || chat.presentationReady ? 'auto' : 'none'}
         accessibilityElementsHidden={!!chat.identity && !chat.presentationReady}
         importantForAccessibility={chat.identity && !chat.presentationReady ? 'no-hide-descendants' : 'auto'}>
-      {(!displayIdentity || area === 'orders' || wide || !chat.selected) && (
+      {(!displayIdentity || area !== 'chat' || wide || !chat.selected) && (
         <View
           style={[
             styles.header,
@@ -330,6 +334,15 @@ export function SessionApp({ engine, initialLanguage = 'ar', onLanguageChange }:
               if (!active.current || liveArea.current !== 'orders' || liveScope.current !== scopeKey) return;
               Keyboard.dismiss(); setArea('chat');
             }} />}
+          {tasksVisited && chat.identity.permissions.task_view === true && <View style={[styles.fill, { display: area === 'tasks' ? 'flex' : 'none' }]}
+            pointerEvents={area === 'tasks' ? 'auto' : 'none'} accessibilityElementsHidden={area !== 'tasks'} importantForAccessibility={area === 'tasks' ? 'auto' : 'no-hide-descendants'}>
+            <TasksScreen engine={getTasksEngine()} identity={chat.identity} language={language}
+              scopeKey={engine.accountScope ?? ''} presented={area === 'tasks' && !!identity && !chat.offline}
+              onBack={() => {
+                if (!active.current || liveArea.current !== 'tasks' || liveScope.current !== scopeKey) return;
+                Keyboard.dismiss(); setArea('chat');
+              }} />
+          </View>}
           <View
             testID="chat-workspace"
             pointerEvents={area === 'chat' ? 'auto' : 'none'}
@@ -483,6 +496,11 @@ export function SessionApp({ engine, initialLanguage = 'ar', onLanguageChange }:
         onOrders={identity?.permissions.order_view === true ? () => {
           if (!active.current || liveScope.current !== scopeKey) return;
           Keyboard.dismiss(); setMenu(false); setArea('orders');
+        } : undefined}
+        tasksLabel={taskTranslator(language)('tasks')}
+        onTasks={identity?.permissions.task_view === true ? () => {
+          if (!active.current || liveScope.current !== scopeKey) return;
+          Keyboard.dismiss(); setMenu(false); setTasksVisited(true); setArea('tasks');
         } : undefined}
       />
       </View>

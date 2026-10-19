@@ -44,6 +44,7 @@ REQUIRED_IDS = {
     "task-push-fastlane-and-private-avatars",
     "media-send-ack-reconciliation",
     "native-capability-media-upload",
+    "modern-work-task-scope-replay-reminders",
 }
 
 

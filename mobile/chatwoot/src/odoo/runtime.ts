@@ -14,6 +14,9 @@ import { OrdersOnlySession, ordersOnlyBootstrap } from './session/OrdersOnlySess
 import { OrdersEngine } from './orders/core/OrdersEngine';
 import { OrdersError, type OrdersIdentity } from './orders/core/types';
 import { ordersNativeRequest } from './orders/transport';
+import { TasksEngine } from './tasks/core/TasksEngine';
+import { TasksError, type TaskIdentity } from './tasks/core/types';
+import { tasksNativeRequest } from './tasks/transport';
 
 export const config = Object.freeze({
   origin: (process.env.EXPO_PUBLIC_ODOO_ORIGIN ?? '').trim(),
@@ -28,6 +31,7 @@ const mediaRoot = `${FS.documentDirectory ?? ''}odoo-chat-media/`;
 const tasks = new Set<StatefulPromise<FetchBlobResponse>>();
 const ordersOnlySession = new OrdersOnlySession();
 let ordersEngine: OrdersEngine | undefined;
+let workTasksEngine: TasksEngine | undefined;
 let ordersConnectivity = true;
 let ordersAccessEpoch = 0;
 let ordersRefresh: { generation: number; accessEpoch: number; operation: Promise<Bootstrap> } | null = null;
@@ -37,6 +41,7 @@ export function setOrdersConnectivity(connected: boolean): void {
   if (!connected && ordersConnectivity) ordersAccessEpoch++;
   ordersConnectivity = connected;
   if (!connected) ordersOnlySession.lock();
+  if (!connected) workTasksEngine?.cancelReads();
 }
 const reservations = new Map<string, { epoch: number; at: number }>();
 let generation = 0;
@@ -457,7 +462,7 @@ class NativeChatEngine extends ChatEngine {
     const accessEpoch = ordersAccessEpoch;
     try {
       const result = await operation;
-      if (result.permissions.chat_view === false && result.permissions.order_view === true) {
+      if (result.permissions.chat_view === false && (result.permissions.order_view === true || result.permissions.task_view === true)) {
         const accepted = epoch + 1; // Exactly this login's authoritative chat invalidation.
         if (generation !== accepted || this.identity || this.status !== 'signed_out') throw new ChatError('stale_session');
         await pruneMedia('logout', accepted);
@@ -565,6 +570,40 @@ export function getOrdersEngine(): OrdersEngine {
     } },
   });
   return ordersEngine;
+}
+/** Tasks authority is independent of chat/orders; POST ACKs settle only their original private journal. */
+export function getTasksEngine(): TasksEngine {
+  if (!workTasksEngine) workTasksEngine = new TasksEngine({
+    storage: AsyncStorage, now: Date.now, uuid: Crypto.randomUUID,
+    identityScope: (): TaskIdentity | null => {
+      const current = applicationOrdersIdentity();
+      if (!current) return null;
+      const b = current.identity;
+      return { origin: config.origin, db: config.database, uid: b.user_id, epoch: current.epoch,
+        companyIds: b.company_ids, verified: true, permissions: {
+          task_view: b.permissions.task_view === true, task_manage: b.permissions.task_manage === true,
+        } };
+    },
+    transport: { request: async input => {
+      const expected = applicationOrdersIdentity();
+      if (!expected || expected.identity.permissions.task_view !== true) throw new TasksError('unauthorized');
+      const stamp = identityStamp(expected);
+      try {
+        const value = await request(tasksNativeRequest(input, expected.identity.csrf_token ?? ''));
+        // The engine independently validates POST identity/intent before durable ACK,
+        // then rejects presentation if the actor or authority changed in flight.
+        if (input.method === 'GET' && identityStamp(applicationOrdersIdentity()) !== stamp) throw new TasksError('stale');
+        return value;
+      } catch (error) {
+        if (identityStamp(applicationOrdersIdentity()) !== stamp) throw new TasksError('stale');
+        if (error instanceof ChatError && error.status === 401) await getEngine().logout();
+        if (error instanceof TasksError) throw error;
+        throw new TasksError(error instanceof ChatError ? error.code : 'connection_failed', undefined, undefined,
+          error instanceof ChatError ? error.status : undefined);
+      }
+    } },
+  });
+  return workTasksEngine;
 }
 export async function refreshOrdersOnlySession(): Promise<Bootstrap> {
   const prior = ordersOnlySnapshot();

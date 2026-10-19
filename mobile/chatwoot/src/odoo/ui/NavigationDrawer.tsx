@@ -86,6 +86,8 @@ export function NavigationDrawer({
   onSoundsChange,
   onOrders,
   ordersLabel,
+  onTasks,
+  tasksLabel,
 }: {
   visible: boolean;
   identity: Bootstrap | null;
@@ -102,6 +104,8 @@ export function NavigationDrawer({
   onSoundsChange?: (enabled: boolean) => void;
   onOrders?: () => void;
   ordersLabel?: string;
+  onTasks?: () => void;
+  tasksLabel?: string;
 }) {
   const [page, setPage] = useState<'home' | 'profile' | 'settings'>('home');
   const { width } = useWindowDimensions();
@@ -220,6 +224,7 @@ export function NavigationDrawer({
               {page === 'home' && (
                 <>
                   {onOrders && ordersLabel && <MenuRow icon="file" label={ordersLabel} language={language} onPress={onOrders} />}
+                  {onTasks && tasksLabel && <MenuRow icon="check" label={tasksLabel} language={language} onPress={onTasks} />}
                   <MenuRow
                     icon="user"
                     label={t('profile')}

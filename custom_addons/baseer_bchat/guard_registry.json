@@ -224,6 +224,25 @@
         "android/bchat/tools/test-connected-media-journey.py"
       ],
       "suites": ["backend-contracts", "android-source-contract", "source-structure"]
+    },
+    {
+      "id": "modern-work-task-scope-replay-reminders",
+      "introduced": "2026-10-19",
+      "risk": "critical",
+      "scope": "Modern work tasks retain legacy fingerprint semantics while enforcing all-company personal scope, assignee eligibility before paging, canonical completion, same-UUID terminal replay and atomically queued revocable reminders.",
+      "source_paths": [
+        "custom_addons/baseer_bchat/work_task_contracts.py",
+        "custom_addons/baseer_bchat/models/work_task_service.py",
+        "custom_addons/baseer_bchat/models/task.py",
+        "custom_addons/baseer_bchat/models/task_service.py",
+        "custom_addons/baseer_bchat/models/push.py",
+        "custom_addons/baseer_bchat/controllers/work_task_api.py",
+        "custom_addons/baseer_bchat/data/work_task_cron.xml",
+        "custom_addons/baseer_bchat/tests/test_work_tasks.py",
+        "custom_addons/baseer_bchat/tests_contract/test_work_task_contracts.py",
+        "custom_addons/baseer_bchat/tests_contract/test_work_task_service_seams.py"
+      ],
+      "suites": ["backend-contracts", "source-structure"]
     }
   ]
 }

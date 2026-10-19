@@ -15,6 +15,7 @@ export function CompanySelector({
   companyIds,
   pickerOnly = false,
   onDismiss,
+  permission = 'chat_view',
 }: {
   identity: Bootstrap;
   companyId: number;
@@ -27,6 +28,7 @@ export function CompanySelector({
   companyIds?: number[];
   pickerOnly?: boolean;
   onDismiss?: () => void;
+  permission?: 'chat_view' | 'task_view';
 }) {
   const authorized = authorizedCompanies(identity, language).filter(
     company => !companyIds || companyIds.includes(company.id),
@@ -41,7 +43,8 @@ export function CompanySelector({
     companyId,
     language,
     identity.permissions.revision,
-    identity.permissions.chat_view,
+    permission,
+    identity.permissions[permission],
     options,
   ]);
   const [opened, setOpened] = useState<string | null>(pickerOnly ? context : null);
@@ -52,10 +55,10 @@ export function CompanySelector({
   const latest = useRef({
     context,
     options,
-    allowed: identity.permissions.chat_view === true,
+    allowed: identity.permissions[permission] === true,
     onSelect,
   });
-  latest.current = { context, options, allowed: identity.permissions.chat_view === true, onSelect };
+  latest.current = { context, options, allowed: identity.permissions[permission] === true, onSelect };
   const visible = opened === context && active.current && latest.current.allowed;
   const close = () => {
     openedRef.current = null;

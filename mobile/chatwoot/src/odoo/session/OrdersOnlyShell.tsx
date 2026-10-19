@@ -2,14 +2,17 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { OrdersOnlySnapshot } from './OrdersOnlySession';
-import { getEngine, getOrdersEngine, ordersOnlySnapshot, refreshOrdersOnlySession } from '../runtime';
+import { getEngine, getOrdersEngine, getTasksEngine, ordersOnlySnapshot, refreshOrdersOnlySession } from '../runtime';
 import { OrdersScreen } from '../orders/ui/OrdersScreen';
+import { orderTranslator } from '../orders/dictionary';
+import { TasksScreen } from '../tasks/ui/TasksScreen';
+import { taskTranslator } from '../tasks/dictionary';
 import { Button, colors, IconButton, Label, styles } from '../ui/components';
 import { Brand } from '../ui/Brand';
 import { NavigationDrawer, type DrawerAction } from '../ui/NavigationDrawer';
 import { errorWord, translator, type Language } from '../ui/dictionary';
 
-/** Orders-only scope never mounts useChat, room history or offline chat restore. */
+/** Non-chat scope never mounts useChat, room history or offline chat restore. */
 export function OrdersOnlyShell({ snapshot, language, setLanguage, online }: {
   snapshot: OrdersOnlySnapshot; language: Language; setLanguage: (value: Language) => void; online: boolean;
 }) {
@@ -19,6 +22,11 @@ export function OrdersOnlyShell({ snapshot, language, setLanguage, online }: {
   const close = useCallback(() => setMenu(false), []);
   const t = translator(language);
   const identity = snapshot.identity;
+  const hasOrders = identity?.permissions.order_view === true;
+  const hasTasks = identity?.permissions.task_view === true;
+  const [area, setArea] = useState<'orders' | 'tasks'>(hasOrders ? 'orders' : 'tasks');
+  const [tasksVisited, setTasksVisited] = useState(!hasOrders && hasTasks);
+  const visibleArea = area === 'orders' && !hasOrders ? 'tasks' : area === 'tasks' && !hasTasks ? 'orders' : area;
   const actor = JSON.stringify([identity?.database, identity?.user_id]);
   const [companySelection, setCompanySelection] = useState({ actor: '', id: 0 });
   const selectedCompanyId = companySelection.actor === actor && identity?.company_ids.includes(companySelection.id) ? companySelection.id : 0;
@@ -59,10 +67,16 @@ export function OrdersOnlyShell({ snapshot, language, setLanguage, online }: {
       <View style={{ flex: 1, alignItems: language === 'ar' ? 'flex-end' : 'flex-start' }}><Brand /></View>
     </View>
     <View style={styles.fill}>
-    {retainWorkspace && <OrdersScreen key={displayScope} scopeKey={displayScope} engine={getOrdersEngine()} identity={identity} language={language} online={online} presented={ready}
+    {retainWorkspace && hasOrders && <View style={[styles.fill, { display: visibleArea === 'orders' ? 'flex' : 'none' }]} pointerEvents={visibleArea === 'orders' ? 'auto' : 'none'}
+      accessibilityElementsHidden={visibleArea !== 'orders'} importantForAccessibility={visibleArea === 'orders' ? 'auto' : 'no-hide-descendants'}>
+      <OrdersScreen key={displayScope} scopeKey={displayScope} engine={getOrdersEngine()} identity={identity} language={language} online={online} presented={ready && visibleArea === 'orders'}
       selectedCompanyId={selectedCompanyId} onCompanyChange={id => {
         if (current() && (id === 0 || identity.company_ids.includes(id))) setCompanySelection({ actor, id });
-      }} />}
+      }} /></View>}
+    {retainWorkspace && hasTasks && (tasksVisited || visibleArea === 'tasks') && <View style={[styles.fill, { display: visibleArea === 'tasks' ? 'flex' : 'none' }]}
+      pointerEvents={visibleArea === 'tasks' ? 'auto' : 'none'} accessibilityElementsHidden={visibleArea !== 'tasks'} importantForAccessibility={visibleArea === 'tasks' ? 'auto' : 'no-hide-descendants'}>
+      <TasksScreen key={displayScope} engine={getTasksEngine()} identity={identity} language={language} scopeKey={displayScope} presented={ready && visibleArea === 'tasks'} />
+    </View>}
     {!ready && <View testID="orders-session-privacy-cover" style={[styles.fill, {
       ...(retainWorkspace ? { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 } : {}),
       backgroundColor: colors.white, padding: 24, justifyContent: 'center', gap: 16,
@@ -73,6 +87,10 @@ export function OrdersOnlyShell({ snapshot, language, setLanguage, online }: {
       </View>}
     </View>
     <NavigationDrawer visible={menu && ready} identity={ready ? identity : null} language={language} t={t} offline={!ready}
-      pendingCount={0} busy={busy} canManage={false} close={close} onAction={action} />
+      pendingCount={0} busy={busy} canManage={false} close={close} onAction={action}
+      ordersLabel={orderTranslator(language)('orders')}
+      onOrders={hasOrders ? () => { if (ready && current()) { setMenu(false); setArea('orders'); } } : undefined}
+      tasksLabel={taskTranslator(language)('tasks')}
+      onTasks={hasTasks ? () => { if (ready && current()) { setMenu(false); setTasksVisited(true); setArea('tasks'); } } : undefined} />
   </SafeAreaView>;
 }

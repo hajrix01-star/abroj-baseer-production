@@ -33,6 +33,7 @@ class BChatTextService(models.AbstractModel):
                 'attachments': True, 'tasks': False, 'shifts': False,
                 'procurement': False, 'report_events': False,
                 'delivery_receipts': True, 'read_receipts': True,
+                'work_tasks_version': 1,
             },
             'permissions': user._bchat_effective_permissions(),
         }

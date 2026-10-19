@@ -163,6 +163,21 @@ test('actual dropdown uses interface language, trimmed fallback and authorized I
   assert.equal(nodes(english, item => item.type === 'Sheet').length, 1);
 });
 
+test('explicit task company selector uses task rights without granting chat access or expanding companies', () => {
+  const app = harness({ permission: 'task_view' });
+  const identity = app.props().identity;
+  identity.permissions = { chat_view: false, task_view: true, revision: 1 };
+  app.render({ identity });
+  const tree = open(app);
+  assert.ok(option(tree, 1)); assert.equal(option(tree, 999), undefined);
+  const old = option(tree, 2).props.onPress;
+  identity.permissions = { chat_view: false, task_view: false, revision: 2 };
+  app.render({ identity }); old();
+  assert.deepEqual(app.chosen, []); assert.equal(button(app.render()).props.disabled, true);
+  const chatDefault = harness({ identity: { ...identity, permissions: { chat_view: false, task_view: true } } });
+  assert.equal(button(chatDefault.render()).props.disabled, true, 'default consumers still require chat_view');
+});
+
 test('local search and normal selection work without an extra API', () => {
   const app = harness();
   let tree = open(app);

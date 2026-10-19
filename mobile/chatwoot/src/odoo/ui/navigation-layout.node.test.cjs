@@ -115,8 +115,9 @@ function session() {
     'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView', SafeAreaProvider: 'SafeAreaProvider' },
     './ui/components': components, './ui/dictionary': dictionary, './ui/useChat': { useChat: () => chat }, './ui/viewModel': viewModel,
     './orders/dictionary': ordersDictionary, './orders/ui/OrdersScreen': { OrdersScreen: 'OrdersScreen' },
+    './tasks/dictionary': { taskTranslator: language => word => `${language}:${word}` }, './tasks/ui/TasksScreen': { TasksScreen: 'TasksScreen' },
     './session/OrdersOnlyShell': { OrdersOnlyShell: 'OrdersOnlyShell' },
-    './runtime': { getEngine: () => engine, getOrdersEngine: () => ({}), ordersOnlySnapshot: () => ({ identity: null, verified: false, generation: 0, revision: 0 }),
+    './runtime': { getEngine: () => engine, getOrdersEngine: () => ({}), getTasksEngine: () => ({}), ordersOnlySnapshot: () => ({ identity: null, verified: false, generation: 0, revision: 0 }),
       subscribeOrdersOnlySession: () => () => {}, refreshOrdersOnlySession: async () => {}, setOrdersConnectivity() {} },
     './ui/LoginScreen': { LoginScreen: 'LoginScreen' }, './ui/ManagementSheet': { ManagementSheet: 'ManagementSheet' },
     './ui/RoomsScreen': { RoomsScreen: 'RoomsScreen' }, './ui/TimelineScreen': { TimelineScreen: 'TimelineScreen' },
@@ -252,6 +253,28 @@ test('orders shell entry uses explicit user rights and cannot unmount a selected
   app.chat.identity.permissions.order_view = false; app.chat.presentationReady = true;
   assert.equal(one(app.render(), 'NavigationDrawer').onOrders, undefined);
   assert.equal(nodes(app.render()).some(node => node.type === 'OrdersScreen'), false);
+});
+
+test('task navigation retains the frozen chat tree and uses independent rights in both languages', () => {
+  for (const language of ['ar', 'en']) {
+    const app = session();
+    if (language === 'en') one(app.render(), 'NavigationDrawer').onAction('en');
+    assert.equal(one(app.render(), 'NavigationDrawer').onTasks, undefined);
+    app.chat.identity.permissions.task_view = true;
+    app.chat.selected = { id: 4, company_id: 1, membership_id: 9 };
+    one(app.render(), 'NavigationDrawer').onTasks();
+    assert.equal(one(app.render(), 'TasksScreen').presented, true);
+    assert.equal(one(app.render(), 'TimelineScreen').presented, false);
+    assert.equal(one(app.render(), 'NavigationDrawer').onOrders, undefined);
+    const staleBack = one(app.render(), 'TasksScreen').onBack;
+    app.back(); app.render(); staleBack();
+    assert.equal(one(app.render(), 'TasksScreen').presented, false);
+    assert.equal(one(app.render(), 'TimelineScreen').presented, true);
+    assert.equal(app.calls.some(call => Array.isArray(call) && call[0] === 'select'), false);
+    app.chat.identity.permissions.task_view = false; app.render();
+    assert.equal(one(app.render(), 'NavigationDrawer').onTasks, undefined);
+    assert.equal(nodes(app.render()).some(node => node.type === 'TasksScreen'), false);
+  }
 });
 
 test('unified Orders entry keeps the same label and permission guard for home and conversation in both languages', () => {

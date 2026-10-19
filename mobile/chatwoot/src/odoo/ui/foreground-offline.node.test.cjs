@@ -186,6 +186,132 @@ async function ready() {
   return app;
 }
 
+test('send queued during an in-flight poll is flushed before the polling delay without parallel sync', async () => {
+  const app = await ready(); await app.render().select(app.engine.rooms()[0]);
+  let release; let first = true; let flushes = 0; let runningRefresh = false;
+  let queue = [];
+  app.engine.pending = () => queue;
+  app.engine.refresh = async () => {
+    if (first) { first = false; runningRefresh = true; await new Promise(resolve => { release = resolve; }); runningRefresh = false; }
+    return app.engine.identity;
+  };
+  app.engine.flush = async () => { assert.equal(runningRefresh, false); flushes++; queue = []; };
+  const poll = app.render().sync(); await settled();
+  queue = [{ client_uuid: 'new-send', state: 'queued', next_attempt_at: 0 }]; app.render().capture();
+  await app.render().sync(); await app.render().sync();
+  assert.equal(flushes, 0, 'never run sends in parallel with the old poll');
+  release(); await poll; await settled();
+  assert.equal(flushes, 1, 'drain one queued wakeup immediately, without firing the 2000ms timer');
+  assert.equal(app.render().pending.length, 0);
+});
+
+test('post-ACK fresh result updates history and pending without a redundant history request', async () => {
+  const app = await ready(); await app.render().select(app.engine.rooms()[0]);
+  let queue = [{ client_uuid: 'sent-image', state: 'queued', next_attempt_at: 0 }]; let reads = 0;
+  app.engine.pending = () => queue; app.render().capture();
+  const fresh = { api_version: 2, messages: [{ id: 101, author_user_id: 7, media: { id: 7101, kind: 'image' } }], next_before_id: null };
+  app.engine.flush = async () => { queue = []; return { historyFor(room) { assert.equal(room.id, 1); return fresh; } }; };
+  app.engine.history = async () => { reads++; throw new Error('redundant history must not delay settled ACK'); };
+  await app.render().sync();
+  assert.equal(reads, 0); assert.equal(app.render().history.messages[0].id, 101);
+  assert.equal(app.render().pending.length, 0); assert.equal(app.render().error, null);
+});
+
+test('missing fresh flush page falls back to canonical history without inventing a sent message', async () => {
+  for (const result of [undefined, { historyFor: () => null }]) {
+    const app = await ready(); await app.render().select(app.engine.rooms()[0]);
+    let queue = [{ client_uuid: 'fallback', state: 'queued', next_attempt_at: 0 }]; let reads = 0;
+    app.engine.pending = () => queue;
+    app.engine.flush = async () => { queue = []; return result; };
+    app.engine.history = async () => { reads++; return { api_version: 2, messages: [{ id: 201, author_user_id: 7 }], next_before_id: null }; };
+    await app.render().sync();
+    assert.equal(reads, 1); assert.equal(app.render().history.messages[0].id, 201);
+    assert.equal(app.render().pending.length, 0);
+  }
+});
+
+test('sender wakeups coalesce and a new UUID added during flush drains exactly once without parallel requests', async () => {
+  const app = await ready(); await app.render().select(app.engine.rooms()[0]);
+  let queue = [{ client_uuid: 'first', state: 'queued', next_attempt_at: 0 }];
+  let release; let calls = 0; let active = 0;
+  app.engine.pending = () => queue;
+  app.engine.flush = async () => {
+    assert.equal(++active, 1); const owned = new Set(queue.map(item => item.client_uuid));
+    if (++calls === 1) await new Promise(resolve => { release = resolve; });
+    queue = queue.filter(item => !owned.has(item.client_uuid)); active--;
+  };
+  const original = app.render().sync(); await settled();
+  queue.push({ client_uuid: 'second', state: 'queued', next_attempt_at: 0 });
+  for (let i = 0; i < 5; i++) await app.render().sync();
+  assert.equal(calls, 1); release(); await original;
+  assert.equal(calls, 2); assert.equal(queue.length, 0); assert.equal(active, 0);
+  assert.equal(app.render().pending.length, 0);
+});
+
+test('sender wakeups preserve backoff and stop on failure background offline or changed actor scope', async () => {
+  for (const mode of ['existing', 'unknown', 'future', 'failure', 'background', 'offline', 'actor', 'scope']) {
+    const app = await ready(); await app.render().select(app.engine.rooms()[0]);
+    let queue = mode === 'existing' ? [{ client_uuid: 'old', state: 'queued', next_attempt_at: 0 }] : [];
+    let release, reject; let calls = 0;
+    const held = () => new Promise((resolve, no) => { release = resolve; reject = no; });
+    app.engine.pending = () => queue;
+    app.engine.refresh = held;
+    app.engine.flush = async () => { calls++; if (mode === 'existing') await held(); };
+    const original = app.render().sync(); await settled();
+    if (mode !== 'existing') queue = [{ client_uuid: 'new', state: mode === 'unknown' ? 'unknown' : 'queued',
+      next_attempt_at: mode === 'future' ? Date.now() + 10000 : 0 }];
+    await app.render().sync();
+    if (mode === 'background') app.app('background');
+    if (mode === 'offline') app.network(false);
+    if (mode === 'actor') app.engine.identity = { ...app.engine.identity, user_id: 88 };
+    if (mode === 'scope') app.engine.accountScope = 'new-login';
+    if (mode === 'failure') reject(Object.assign(new Error(), { code: 'connection_failed' })); else release(app.engine.identity);
+    await original;
+    assert.equal(calls, mode === 'existing' ? 1 : 0, mode);
+    assert.equal(queue.length, 1, 'never recreate, remove or fake-settle the durable engine queue');
+    if (mode === 'background' || mode === 'actor' || mode === 'scope') assert.equal(app.render().displayReady, false, mode);
+  }
+});
+
+test('a stale sync cannot start history reads or overwrite a newer navigation after its awaited refresh', async () => {
+  for (const transition of ['background', 'actor', 'navigation', 'navigation-failure']) {
+    const app = await ready(); app.messages([{ id: 1, author_user_id: 9 }]);
+    await app.render().select(app.engine.rooms()[0]);
+    let release, reject; let reads = 0;
+    app.engine.refresh = () => new Promise((yes, no) => { release = yes; reject = no; });
+    const old = app.render().sync(); await settled();
+    if (transition === 'background') app.app('background');
+    else if (transition === 'actor') app.engine.identity = { ...app.engine.identity, user_id: 88 };
+    else {
+      app.engine.latest = async () => ({ api_version: 2, messages: [{ id: 900, author_user_id: 9 }], next_before_id: null });
+      await app.render().select(app.engine.rooms()[0]);
+    }
+    app.engine.history = async () => { reads++; throw new Error('old cycle started a new history request'); };
+    if (transition === 'navigation-failure') reject(Object.assign(new Error(), { code: 'forbidden', status: 403 })); else release(app.engine.identity);
+    await old;
+    assert.equal(reads, 0, transition);
+    assert.equal(app.render().history.messages[0].id, transition.startsWith('navigation') ? 900 : 1, transition);
+    if (transition.startsWith('navigation')) assert.equal(app.render().error, null, 'old failures cannot overwrite a new selection');
+  }
+});
+
+test('navigation during an old poll can drain a new send only through its own fresh selected cycle', async () => {
+  const app = await ready(); await app.render().select(app.engine.rooms()[0]);
+  let release; let queue = []; let flushes = 0; let unexpectedReads = 0;
+  app.engine.pending = () => queue;
+  app.engine.refresh = () => new Promise(resolve => { release = resolve; });
+  const original = app.render().sync(); await settled();
+  app.engine.latest = async () => ({ api_version: 2, messages: [{ id: 900, author_user_id: 9 }], next_before_id: null });
+  await app.render().select(app.engine.rooms()[0]);
+  queue = [{ client_uuid: 'new-selection-send', state: 'queued', next_attempt_at: 0 }];
+  app.engine.flush = async () => { flushes++; queue = []; return { historyFor: () => ({ api_version: 2,
+    messages: [{ id: 901, author_user_id: 7 }], next_before_id: null }) }; };
+  app.engine.history = async () => { unexpectedReads++; throw new Error('old cycle read newer selection'); };
+  await app.render().sync(); release(app.engine.identity); await original;
+  assert.equal(unexpectedReads, 0); assert.equal(flushes, 1); assert.equal(app.render().history.messages[0].id, 901);
+  assert.equal(app.render().pending.length, 0);
+});
+
 test('late older navigation cannot replace a newer explicit latest selection or emit a receive tone', async () => {
   const app = await ready(); let release;
   app.engine.latest = async () => ({ api_version: 2, messages: [{ id: 900, author_user_id: 9 }], next_before_id: 900 });

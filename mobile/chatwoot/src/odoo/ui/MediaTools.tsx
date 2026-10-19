@@ -19,7 +19,7 @@ import AudioRecorderPlayer, {
   OutputFormatAndroidType,
 } from 'react-native-audio-recorder-player';
 import type { Attachment, Room } from '../core/ChatEngine';
-import { localMediaLease, stageFile, type LocalMediaLease } from '../runtime';
+import { localMediaLease, localPendingImage, stageFile, type LocalMediaLease } from '../runtime';
 import { Button, colors, Icon, IconButton, Label, styles } from './components';
 import { errorWord, type Language, type Translate, type Word } from './dictionary';
 import { ImageViewer } from './ImageViewer';
@@ -475,6 +475,55 @@ export function AttachmentTools({
       </View>
     </View>
   );
+}
+
+/** A pending stage has no server media identity and cannot open a media viewer.
+ * Authority comes from the current outbox resolver, never this row's URI. */
+export function PendingImagePreview({ room, clientUuid, scopeKey, enabled, label }: {
+  room: Room; clientUuid: string; scopeKey: string; enabled: boolean; label: string;
+}) {
+  const key = JSON.stringify([scopeKey, room.company_id, room.id, room.membership_id, clientUuid]);
+  const live = useRef({ key, serial: 0, active: AppState.currentState === 'active', enabled, blocked: AppState.currentState !== 'active' });
+  if (live.current.key !== key) live.current = { key, serial: live.current.serial + 1,
+    active: AppState.currentState === 'active', enabled, blocked: AppState.currentState !== 'active' };
+  const owner = live.current;
+  // A background/active pair alone must not resurrect private stage pixels.
+  // useChat must first mask, then renew presentation authority for this actor.
+  if (enabled && !owner.enabled) owner.blocked = false;
+  owner.enabled = enabled;
+  const [foreground, setForeground] = useState(AppState.currentState === 'active');
+  const [cached, setCached] = useState<{ owner: typeof owner; serial: number; uri: string } | null>(null);
+  useEffect(() => {
+    owner.active = AppState.currentState === 'active';
+    const listener = AppState.addEventListener('change', state => {
+      owner.active = state === 'active';
+      if (state !== 'active') { owner.blocked = true; owner.serial++; setCached(null); }
+      setForeground(state === 'active');
+    });
+    return () => { owner.active = false; owner.serial++; listener.remove(); };
+  }, [key]);
+  useEffect(() => {
+    if (!enabled || !foreground || owner.blocked || !owner.active) { owner.serial++; setCached(null); return; }
+    const serial = ++owner.serial;
+    const current = () => live.current === owner && owner.serial === serial && owner.active && owner.enabled
+      && !owner.blocked && AppState.currentState === 'active';
+    void localPendingImage(room, clientUuid).then(uri => {
+      if (current() && typeof uri === 'string' && uri.startsWith('file://')) setCached({ owner, serial, uri });
+    }).catch(() => undefined);
+    return () => { owner.serial++; };
+    // The resolver rechecks actual outbox ownership; row renders never retrigger
+    // a failed/deleted stage or restart decoding after an onError callback.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key, enabled, foreground]);
+  const uri = enabled && foreground && owner.active && !owner.blocked && AppState.currentState === 'active'
+    && cached?.owner === owner && cached.serial === owner.serial ? cached.uri : null;
+  return <View testID="pending-image-space" style={{ width: 240, maxWidth: '100%', height: 180,
+    borderRadius: 12, overflow: 'hidden', backgroundColor: colors.pale, alignItems: 'center', justifyContent: 'center' }}>
+    {uri ? <Image source={{ uri }} accessibilityLabel={label} resizeMode="contain" resizeMethod="resize"
+      style={{ width: '100%', height: '100%' }} onError={() => {
+        if (live.current === owner && owner.active && cached?.serial === owner.serial) setCached(null);
+      }} /> : <Icon icon="image" size={34} color={colors.blue} />}
+  </View>;
 }
 
 export function MediaTile({

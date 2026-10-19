@@ -44,6 +44,9 @@ export function useChat(engine: ChatEngine) {
   const online = useRef(true);
   const generation = useRef(0);
   const pollBusy = useRef(false);
+  const sendWake = useRef(new Set<string>());
+  const syncPending = useRef(new Set<string>());
+  const syncScope = useRef<string | null>(null);
   const mounted = useRef(true);
   const foregroundEpoch = useRef(0);
   const displayScope = () => engine.identity ? `${engine.accountScope ?? ''}/${soundActor(engine.identity)}` : null;
@@ -146,90 +149,118 @@ export function useChat(engine: ChatEngine) {
     [capture, engine],
   );
   const sync = useCallback(async () => {
-    if (pollBusy.current || !active.current || !online.current || !engine.identity) {
-      capture();
-      return;
+    const actorScope = displayScope();
+    if (!active.current || !online.current || !engine.identity) {
+      sendWake.current.clear(); capture(); return;
     }
-    pollBusy.current = true;
-    const g = generation.current;
-    const foreground = foregroundEpoch.current;
-    const syncIdentity = engine.identity;
-    const soundWasReady = soundBaselineReady.current;
-    const soundContext = soundEpoch.current;
-    try {
-      if (engine.pending().some(p => p.state !== 'failed')) await engine.flush();
-      else await engine.refresh();
-      const room = selectedRef.current;
-      if (room) {
-        const page = await engine.history(room);
-        if (mounted.current && generation.current === g) {
-          setHistory(page);
-          const account = engine.identity;
-          if (
-            !page.archive?.browsing &&
-            active.current &&
-            foreground === foregroundEpoch.current &&
-            soundContext === soundEpoch.current &&
-            soundActor(account) === soundActor(syncIdentity)
-          ) {
-            sounds.current!.account(soundActor(account));
-            sounds.current!.observe(
-              soundRoom(soundActor(account), room),
-              page.messages,
-              account?.user_id ?? 0,
-              !soundWasReady || engine.offline || !online.current,
-            );
-            soundBaselineReady.current = !engine.offline && online.current;
-          } else if (page.archive?.browsing) soundBaselineReady.current = false;
-        }
-      }
-      if (mounted.current) setError(null);
-      if (mounted.current && active.current && foreground === foregroundEpoch.current)
-        reveal();
-    } catch (e) {
-      if (mounted.current) setError(errorWord(e));
-      soundBaselineReady.current = false;
-      sounds.current!.reset();
-      if (mounted.current && foreground === foregroundEpoch.current) {
-        retainedAllowed.current = false;
-        presentation.current = false;
-        setPresentationReady(false);
-        setDisplayReady(false);
-      }
-      const failure = e as { code?: string; status?: number };
-      const unavailable =
-        (failure.code === 'connection_failed' && !failure.status) ||
-        (failure.status === 503 &&
-          !['forbidden', 'identity_mismatch', 'session_expired', 'stale_session'].includes(
-            failure.code ?? '',
-          ));
-      if (
-        unavailable &&
-        engine.offline &&
-        mounted.current &&
-        active.current &&
-        foreground === foregroundEpoch.current &&
-        g === generation.current &&
-        syncIdentity
-      ) {
+    if (pollBusy.current) {
+      // A user enqueue during an older poll is work, not a second poll. Remember
+      // only NEW due UUIDs; retries/unknown outcomes retain the engine's backoff.
+      if (actorScope === syncScope.current) {
         try {
-          // NetInfo measures internet access, not this Odoo/VPN route. The
-          // engine's scoped cache read is also the authoritative TTL guard.
-          engine.rooms();
-          const current = engine.identity;
+          for (const item of engine.pending()) {
+            if (item.state === 'queued' && (item.next_attempt_at ?? 0) <= Date.now()
+                && !syncPending.current.has(item.client_uuid)) sendWake.current.add(item.client_uuid);
+          }
+        } catch { sendWake.current.clear(); }
+      } else sendWake.current.clear();
+      capture(); return;
+    }
+    pollBusy.current = true; syncScope.current = actorScope;
+    const handled = new Set<string>(); syncPending.current = handled;
+    try {
+      let drain = true;
+      while (drain) {
+        sendWake.current.clear();
+        const g = generation.current;
+        const foreground = foregroundEpoch.current;
+        const syncIdentity = engine.identity;
+        const soundWasReady = soundBaselineReady.current;
+        const soundContext = soundEpoch.current;
+        let succeeded = false;
+        const currentActor = () => actorScope === displayScope()
+          && soundActor(engine.identity) === soundActor(syncIdentity);
+        const currentCycle = () => mounted.current && active.current
+          && foreground === foregroundEpoch.current && generation.current === g && currentActor();
+        try {
+          const queue = engine.pending();
+          for (const item of queue) handled.add(item.client_uuid);
+          const flushed = queue.some(p => p.state !== 'failed')
+            ? await engine.flush() : (await engine.refresh(), null);
+          // Do not start a NEW read for an actor/window selected after this
+          // awaited pass. A queued send may get its own fresh follow-up pass.
+          const room = currentCycle() ? selectedRef.current : null;
+          if (room) {
+            // Only a canonical page actually ingested by this flush is reusable.
+            // Its closure checks current authority/window/reference; no stale
+            // remembered-history shortcut and no association synthesized from ACK.
+            const page = flushed?.historyFor(room) ?? await engine.history(room);
+            if (currentCycle()) {
+              setHistory(page);
+              const account = engine.identity;
+              if (
+                !page.archive?.browsing &&
+                soundContext === soundEpoch.current
+              ) {
+                sounds.current!.account(soundActor(account));
+                sounds.current!.observe(
+                  soundRoom(soundActor(account), room),
+                  page.messages,
+                  account?.user_id ?? 0,
+                  !soundWasReady || engine.offline || !online.current,
+                );
+                soundBaselineReady.current = !engine.offline && online.current;
+              } else if (page.archive?.browsing) soundBaselineReady.current = false;
+            }
+          }
+          if (currentCycle()) { setError(null); reveal(); }
+          succeeded = true;
+        } catch (e) {
+          sendWake.current.clear();
+          if (currentCycle()) {
+            setError(errorWord(e));
+            soundBaselineReady.current = false;
+            sounds.current!.reset();
+            retainedAllowed.current = false;
+            presentation.current = false;
+            setPresentationReady(false);
+            setDisplayReady(false);
+          }
+          const failure = e as { code?: string; status?: number };
+          const unavailable =
+            (failure.code === 'connection_failed' && !failure.status) ||
+            (failure.status === 503 &&
+              !['forbidden', 'identity_mismatch', 'session_expired', 'stale_session'].includes(
+                failure.code ?? '',
+              ));
           if (
-            current?.user_id === syncIdentity.user_id &&
-            current?.database === syncIdentity.database &&
-            current.permissions.chat_view === true
-          )
-            reveal();
-        } catch {
-          /* Expired/revoked cache stays behind the foreground mask. */
+            unavailable && engine.offline && syncIdentity && currentCycle()
+          ) {
+            try {
+              // NetInfo measures internet, not the Odoo/VPN route. Current
+              // scoped rooms enforce the unchanged offline TTL before reveal.
+              engine.rooms();
+              if (engine.identity?.permissions.chat_view === true) reveal();
+            } catch { /* Expired/revoked cache stays behind the foreground mask. */ }
+          }
+        } finally {
+          capture();
         }
+        drain = false;
+        if (succeeded && mounted.current && active.current && online.current
+            && foreground === foregroundEpoch.current && currentActor() && sendWake.current.size) {
+          try {
+            drain = engine.pending().some(item => sendWake.current.has(item.client_uuid)
+              && !handled.has(item.client_uuid) && item.state === 'queued'
+              && (item.next_attempt_at ?? 0) <= Date.now());
+          } catch { sendWake.current.clear(); }
+        }
+        // A follow-up pass is serialized here, not a timer, recursive finally,
+        // parallel request, or immediate retry of an already handled UUID.
       }
     } finally {
-      pollBusy.current = false;
-      capture();
+      pollBusy.current = false; syncScope.current = null;
+      sendWake.current.clear(); syncPending.current.clear();
     }
   }, [capture, engine]);
   useEffect(() => {
@@ -246,6 +277,7 @@ export function useChat(engine: ChatEngine) {
       online.current = state.isConnected !== false && state.isInternetReachable !== false;
       if (!wasOnline && online.current) { presentation.current = false; setPresentationReady(false); }
       if (wasOnline !== online.current) {
+        sendWake.current.clear();
         soundEpoch.current++;
         soundBaselineReady.current = false;
         sounds.current!.reset();
@@ -256,6 +288,7 @@ export function useChat(engine: ChatEngine) {
       if (online.current && active.current) void sync();
     });
     const subscription = AppState.addEventListener('change', state => {
+      sendWake.current.clear();
       active.current = state === 'active';
       setForeground(active.current);
       foregroundEpoch.current++;
@@ -290,6 +323,7 @@ export function useChat(engine: ChatEngine) {
     return () => {
       stopped = true;
       mounted.current = false;
+      sendWake.current.clear();
       generation.current++;
       clearTimeout(timer);
       stopNetwork();
@@ -337,6 +371,7 @@ export function useChat(engine: ChatEngine) {
     [capture, engine, sync],
   );
   const logout = useCallback(async () => {
+    sendWake.current.clear();
     generation.current++;
     soundBaselineReady.current = false;
     sounds.current!.account('');

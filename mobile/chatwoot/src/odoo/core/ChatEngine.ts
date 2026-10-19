@@ -42,6 +42,9 @@ export interface Message {
 }
 export interface History { api_version: 2; messages: Message[]; next_before_id: number | null;
   archive?: { older: ArchiveEdge; newer: ArchiveEdge; partial: boolean; browsing: boolean; latestId: number | null; unverified?: boolean } }
+/** Only successful canonical post-ACK reads from this exact flush incarnation.
+ * Null requires the caller's ordinary history path; this never fetches or renews authority. */
+export interface FlushResult { historyFor(value: Room | number): History | null }
 export interface Pending {
   client_uuid: string; room_id: number; company_id: number; membership_id: number;
   text: string; reply_to_message_id?: number; created_at: number;
@@ -113,7 +116,7 @@ export class ChatEngine {
   private abort = new AbortController();
   private work: Promise<unknown> = Promise.resolve();
   private lifecycle: Promise<unknown> = Promise.resolve();
-  private pumping: Promise<void> | null = null;
+  private pumping: Promise<FlushResult> | null = null;
   private refreshing: Promise<Bootstrap> | null = null;
   private account: Bootstrap | null = null;
   private roomRows: Room[] = [];
@@ -820,7 +823,7 @@ export class ChatEngine {
     await this.serial(async () => { guard(); await this.archive.commitPage(this.archiveScope(room), { beforeId: beforeId ?? null, history: page }, guard); guard(); });
     return page;
   }
-  private async readHistory(room: Room, beforeId: number | undefined, e: number): Promise<History> {
+  private async readHistory(room: Room, beforeId: number | undefined, e: number, committed?: (history: History) => void): Promise<History> {
     if (beforeId !== undefined && !id(beforeId)) throw new ChatError('invalid_before_id');
     try {
       const page = await this.fetchHistoryPage(room, beforeId, e);
@@ -839,6 +842,9 @@ export class ChatEngine {
           const slice = await this.archive.read(this.archiveScope(room), { direction: 'latest', limit: ARCHIVE_LIMITS.windowMessages, maxBytes: ARCHIVE_LIMITS.windowBytes }, guard); guard();
           await this.cacheHistory(room, this.sliceHistory(slice, false), e);
         }
+        // Capture the real internal object while the storage mutex is held.
+        // A later replacement can invalidate its consumer without trusting a caller page.
+        committed?.(this.histories.get(key)!);
       });
       return copy(this.histories.get(this.scope(room))!);
     } catch (error) { return this.historyFailure(room, e, error); }
@@ -958,9 +964,26 @@ export class ChatEngine {
       this.fence(e); this.queue.set(uuid, pending); return copy(pending);
     });
   }
-  async flush(): Promise<void> {
+  async flush(): Promise<FlushResult> {
     if (this.pumping) return this.pumping;
     const e = this.epoch;
+    const pages = new Map<number, { room: Room; accountScope: string | null; version: number; history: History }>();
+    const prunePages = () => {
+      for (const [id, page] of pages) if (this.histories.get(this.scope(page.room)) !== page.history) pages.delete(id);
+    };
+    const result: FlushResult = { historyFor: value => {
+      this.fence(e);
+      const account = this.requireIdentity();
+      if (account.permissions.chat_view !== true) throw new ChatError('forbidden', 403);
+      if (this.leaseRemainingMs <= 0) throw new ChatError('offline_expired');
+      const current = this.room(value), page = pages.get(current.id);
+      if (!page) return null;
+      this.room(page.room); // A numeric selector must not cross a membership period either.
+      if (page.accountScope !== this.accountScope) throw new ChatError('stale_session');
+      const key = this.scope(current);
+      if ((this.windowVersions.get(key) ?? 0) !== page.version || this.histories.get(key) !== page.history) return null;
+      return copy(page.history);
+    } };
     const run = (async () => {
       // Never replay under a remembered identity until server identity and memberships agree.
       await this.refresh(); this.fence(e);
@@ -1003,7 +1026,17 @@ export class ChatEngine {
           });
           // The operation has a durable ACK. A subsequent history read failure
           // must never recreate its already-removed outbox item.
-          try { await this.readHistory(room, undefined, e); }
+          pages.delete(room.id);
+          try {
+            const key = this.scope(room), version = this.windowVersions.get(key) ?? 0;
+            let committed: History | undefined;
+            await this.readHistory(room, undefined, e, history => {
+              if ((this.windowVersions.get(key) ?? 0) === version) committed = history;
+            });
+            prunePages();
+            if (committed && this.histories.get(key) === committed && (this.windowVersions.get(key) ?? 0) === version)
+              pages.set(room.id, { room: copy(room), accountScope: this.accountScope, version, history: committed });
+          }
           catch (error) { this.fence(e); if (denied(error)) throw error; }
         } catch (error) {
           this.fence(e);
@@ -1017,9 +1050,11 @@ export class ChatEngine {
           this.disconnected = true; this.failures++; throw error;
         }
       }
+      prunePages();
+      return result;
     })();
     this.pumping = run;
-    try { await run; } finally { if (this.pumping === run) this.pumping = null; }
+    try { return await run; } finally { if (this.pumping === run) this.pumping = null; }
   }
   private async write(path: string, payload: Record<string, unknown>): Promise<any> {
     const e = this.epoch; await this.refresh(); this.fence(e);

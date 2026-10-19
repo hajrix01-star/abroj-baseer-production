@@ -268,8 +268,115 @@ const hooks = registerHooks({
   },
 });
 process.env.EXPO_PUBLIC_ODOO_ORIGIN = 'https://odoo.example'; process.env.EXPO_PUBLIC_ODOO_DATABASE = 'trial';
-const { getEngine, getOrdersEngine, getTasksEngine, getLeadershipEngine, ordersOnlySnapshot, refreshOrdersOnlySession, setOrdersConnectivity, localMedia, localMediaLease, stageFile, discardStagedAttachment, readGroupAvatar, hasGroupAvatar, clearGroupAvatars, subscribeGroupAvatars, readMemberAvatar, clearMemberAvatars } = await import('../runtime.ts');
+const { getEngine, getOrdersEngine, getTasksEngine, getLeadershipEngine, ordersOnlySnapshot, refreshOrdersOnlySession, setOrdersConnectivity, localMedia, localMediaLease, localPendingImage, stageFile, discardStagedAttachment, readGroupAvatar, hasGroupAvatar, clearGroupAvatars, subscribeGroupAvatars, readMemberAvatar, clearMemberAvatars } = await import('../runtime.ts');
 const engine = getEngine();
+
+test('pending own image resolves only the actual queued stage with no HTTP, copying, cache or cleanup', async () => {
+  await engine.logout(); await engine.login('alice', 'private', true);
+  files.set('file:///external/pending-own.jpg', imageBytes);
+  const staged = await stageFile(roomA, { uri: 'file:///external/pending-own.jpg', name: 'pending.jpg', mime: 'image/jpeg', kind: 'image' });
+  const pending = await engine.enqueueAttachment(roomA, staged);
+  const before = calls.length, ownedBefore = [...files.keys()];
+  assert.equal(await localPendingImage(roomA, pending.client_uuid), staged.uri);
+  assert.equal(calls.length, before); assert.deepEqual([...files.keys()], ownedBefore);
+  assert.equal(engine.pending(roomA).length, 1); assert.equal(files.has(staged.uri), true);
+  await assert.rejects(localPendingImage(roomB, pending.client_uuid));
+  await assert.rejects(localPendingImage(roomA, randomUUID()));
+  files.set(staged.uri, Buffer.alloc(staged.size, 1));
+  await assert.rejects(localPendingImage(roomA, pending.client_uuid), { code: 'attachment_changed' });
+  assert.equal(files.has(staged.uri), true, 'preview failure never deletes the durable stage');
+  await engine.logout();
+});
+
+test('pending own image denies background, missing send/view/media rights and non-image stages', async () => {
+  await engine.logout(); await engine.login('alice', 'private', true);
+  files.set('file:///external/pending-rights.jpg', imageBytes);
+  const staged = await stageFile(roomA, { uri: 'file:///external/pending-rights.jpg', name: 'rights.jpg', mime: 'image/jpeg', kind: 'image' });
+  const pending = await engine.enqueueAttachment(roomA, staged);
+  try {
+    appState.currentState = 'background'; await assert.rejects(localPendingImage(roomA, pending.client_uuid));
+    appState.currentState = 'active';
+    const identity = engine.identity!;
+    for (const right of ['chat_send', 'chat_view', 'media']) {
+      bootstrapOverride = { ...identity, permissions: { ...identity.permissions, [right]: false } };
+      await engine.refresh().catch(() => undefined);
+      const before = calls.length; await assert.rejects(localPendingImage(roomA, pending.client_uuid)); assert.equal(calls.length, before);
+      bootstrapOverride = undefined; await engine.login('alice', 'private', true);
+    }
+    files.set('file:///external/pending.pdf', payload);
+    const file = await stageFile(roomA, { uri: 'file:///external/pending.pdf', name: 'pending.pdf', mime: 'application/pdf', kind: 'file' });
+    const queued = await engine.enqueueAttachment(roomA, file); await assert.rejects(localPendingImage(roomA, queued.client_uuid));
+  } finally { appState.currentState = 'active'; bootstrapOverride = undefined; await engine.logout(); }
+});
+
+test('pending own image rejects a late stat result after canonical ACK removes its stage', async () => {
+  await engine.logout(); await engine.login('alice', 'private', true);
+  files.set('file:///external/pending-late.jpg', imageBytes);
+  const staged = await stageFile(roomA, { uri: 'file:///external/pending-late.jpg', name: 'late.jpg', mime: 'image/jpeg', kind: 'image' });
+  const pending = await engine.enqueueAttachment(roomA, staged);
+  let release!: () => void, started!: () => void;
+  const waiting = new Promise<void>(resolve => { started = resolve; }), hold = new Promise<void>(resolve => { release = resolve; });
+  beforeStat = async uri => { if (uri === staged.uri) { beforeStat = undefined; started(); await hold; } };
+  uploadProbe = { id: 690, uploadPosts: 0, messagePosts: 0 };
+  const resolving = localPendingImage(roomA, pending.client_uuid), rejected = assert.rejects(resolving);
+  try {
+    await waiting; await engine.flush(); assert.equal(engine.pending(roomA).length, 0); assert.equal(files.has(staged.uri), false);
+    release(); await rejected;
+  } finally { release(); beforeStat = undefined; uploadProbe = undefined; extraMedia.clear(); await engine.logout(); }
+});
+
+test('pending own image keeps a verified sending stage visible while real upload is held, then leaves cleanup to ACK', async () => {
+  await engine.logout(); await engine.login('alice', 'private', true);
+  files.set('file:///external/pending-sending.jpg', imageBytes);
+  const staged = await stageFile(roomA, { uri: 'file:///external/pending-sending.jpg', name: 'sending.jpg', mime: 'image/jpeg', kind: 'image' });
+  const pending = await engine.enqueueAttachment(roomA, staged);
+  let release!: () => void, started!: () => void;
+  const waiting = new Promise<void>(resolve => { started = resolve; }), hold = new Promise<void>(resolve => { release = resolve; });
+  uploadProbe = { id: 691, uploadPosts: 0, messagePosts: 0 };
+  beforeNative = async (path, method) => { if (method === 'POST' && path.endsWith('/11/uploads')) { started(); await hold; } };
+  const flushing = engine.flush();
+  try {
+    await waiting; assert.equal(engine.pending(roomA)[0]?.state, 'sending'); const before = calls.length;
+    assert.equal(await localPendingImage(roomA, pending.client_uuid), staged.uri); assert.equal(calls.length, before);
+    assert.equal(files.has(staged.uri), true); release(); await flushing;
+    assert.equal(engine.pending(roomA).length, 0); assert.equal(files.has(staged.uri), false);
+  } finally { release(); beforeNative = undefined; uploadProbe = undefined; extraMedia.clear(); await engine.logout(); }
+});
+
+test('pending own image fails closed after background interrupts stat without deleting or mutating its queue', async () => {
+  await engine.logout(); await engine.login('alice', 'private', true);
+  files.set('file:///external/pending-background.jpg', imageBytes);
+  const staged = await stageFile(roomA, { uri: 'file:///external/pending-background.jpg', name: 'background.jpg', mime: 'image/jpeg', kind: 'image' });
+  const pending = await engine.enqueueAttachment(roomA, staged);
+  let release!: () => void, started!: () => void;
+  const waiting = new Promise<void>(resolve => { started = resolve; }), hold = new Promise<void>(resolve => { release = resolve; });
+  beforeStat = async uri => { if (uri === staged.uri) { beforeStat = undefined; started(); await hold; } };
+  const resolving = localPendingImage(roomA, pending.client_uuid), rejected = assert.rejects(resolving, { code: 'forbidden' });
+  try {
+    await waiting; appState.currentState = 'background'; release(); await rejected;
+    appState.currentState = 'active'; assert.equal(files.has(staged.uri), true); assert.equal(engine.pending(roomA).length, 1);
+  } finally { release(); appState.currentState = 'active'; beforeStat = undefined; await engine.logout(); }
+});
+
+test('pending own image remains the same guarded stage when upload ACK adds a media id during its stat await', async () => {
+  await engine.logout(); await engine.login('alice', 'private', true);
+  files.set('file:///external/pending-upload-ack.jpg', imageBytes);
+  const staged = await stageFile(roomA, { uri: 'file:///external/pending-upload-ack.jpg', name: 'upload-ack.jpg', mime: 'image/jpeg', kind: 'image' });
+  const pending = await engine.enqueueAttachment(roomA, staged);
+  let releaseStat!: () => void, statStarted!: () => void, releaseMessage!: () => void, messageStarted!: () => void;
+  const statWaiting = new Promise<void>(resolve => { statStarted = resolve; }), statHold = new Promise<void>(resolve => { releaseStat = resolve; });
+  const messageWaiting = new Promise<void>(resolve => { messageStarted = resolve; }), messageHold = new Promise<void>(resolve => { releaseMessage = resolve; });
+  beforeStat = async uri => { if (uri === staged.uri) { beforeStat = undefined; statStarted(); await statHold; } };
+  const resolving = localPendingImage(roomA, pending.client_uuid); void resolving.catch(() => undefined);
+  await statWaiting; uploadProbe = { id: 692, uploadPosts: 0, messagePosts: 0 };
+  beforeNative = async (path, method) => { if (method === 'POST' && path.endsWith('/11/messages')) { messageStarted(); await messageHold; } };
+  const flushing = engine.flush(); void flushing.catch(() => undefined);
+  try {
+    await messageWaiting; assert.equal(engine.pending(roomA)[0]?.attachment?.media_id, 692);
+    releaseStat(); assert.equal(await resolving, staged.uri, 'upload metadata is not a different local stage or acknowledgement of the message');
+    releaseMessage(); await flushing; assert.equal(files.has(staged.uri), false);
+  } finally { releaseStat(); releaseMessage(); await flushing.catch(() => undefined); beforeStat = undefined; beforeNative = undefined; uploadProbe = undefined; extraMedia.clear(); await engine.logout(); }
+});
 
 test('real native adapter maps no-cookie session fixture then rejects cross-room media and validates offline bytes', async () => {
   await engine.login('alice', 'private', true); await engine.history(roomA);

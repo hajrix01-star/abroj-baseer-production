@@ -18,7 +18,7 @@ import { companyDisplayName } from './companyNames';
 import { MessageQuote, MessageStatus } from './MessagePresentation';
 import { TimelineFollow } from './timelineFollow';
 import { errorWord, type Language, type Translate, type Word } from './dictionary';
-import { AttachmentTools, MediaTile, useVoiceSession } from './MediaTools';
+import { AttachmentTools, MediaTile, PendingImagePreview, useVoiceSession } from './MediaTools';
 import { GroupAvatar } from './GroupAvatar';
 import { SwipeReply } from './SwipeReply';
 import type { ChatView } from './useChat';
@@ -750,9 +750,14 @@ export function TimelineScreen({
                         : <Button quiet disabled title={t('open')} onPress={() => undefined} />}
                     </View>}
                     {(viewMedia || retainedMedia) && pending?.attachment && (
-                      <Label language={language} muted>
-                        {pending.attachment.name}
-                      </Label>
+                      <>
+                        <Label language={language} muted>{pending.attachment.name}</Label>
+                        {pending.attachment.kind === 'image' && ['queued', 'sending'].includes(pending.state) && (
+                          <PendingImagePreview key={`${actionScope}/${room.company_id}/${room.id}/${room.membership_id}/${pending.client_uuid}`}
+                            room={room} clientUuid={pending.client_uuid} scopeKey={actionScope} label={pending.attachment.name}
+                            enabled={viewMedia && canSend} />
+                        )}
+                      </>
                     )}
                     <View
                       style={{

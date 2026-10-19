@@ -2,6 +2,59 @@ const { test } = require('node:test'), assert = require('node:assert/strict');
 const { harness, nodes, one, byId, text } = require('./leadership-harness.cjs');
 const waiting = () => { let resolve, reject; const promise = new Promise((a, b) => { resolve = a; reject = b; }); return { promise, resolve, reject }; };
 
+test('offline leadership keeps readonly cards and details without new warning time or live-day claims', async () => {
+  for (const language of ['ar', 'en']) {
+    const app = harness({ language, online: false }); app.engine.displayLeaseRemainingMs = Infinity;
+    try {
+      await app.flush(); assert.match(text(app.render()), /123,456.78/);
+      await app.act(() => byId(app.render(), 'leadership-card-sales').onPress()); assert.ok(one(app.render(), 'Sheet'));
+      await app.act(() => one(app.render(), 'Sheet').close());
+      await app.act(() => byId(app.render(), 'leadership-tab-heatmap').onPress());
+      assert.equal(nodes(app.render()).some(n => /leadership-day-live-/.test(n.props.testID || '')), false);
+      const day = byId(app.render(), 'leadership-day-2026-10-19');
+      assert.doesNotMatch(day.accessibilityLabel, /In progress|Live|جارٍ/);
+      assert.notEqual(day.style[1].borderColor, '#1256da');
+      await app.act(() => day.onPress());
+      assert.match(text(app.render()), /100.00/); assert.doesNotMatch(text(app.render()), /In progress|Live|جارٍ|Updated|آخر تحديث/);
+      assert.equal(nodes(app.render()).some(n => n.props.testID === 'leadership-warning'), false);
+    } finally { await app.unmount(); }
+  }
+});
+
+test('reconnection verifies silently and does not revive live styling before a fresh server report', async () => {
+  const app = harness({ online: false }); app.engine.displayLeaseRemainingMs = Infinity;
+  try {
+    await app.flush(); await app.act(() => byId(app.render(), 'leadership-tab-heatmap').onPress());
+    const held = waiting(); app.engine.options = async () => held.promise;
+    app.props.online = true; await app.flush();
+    assert.match(text(app.render()), /100/); assert.equal(byId(app.render(), 'leadership-day-2026-10-19').disabled, true);
+    assert.equal(nodes(app.render()).some(n => /leadership-day-live-/.test(n.props.testID || '')), false);
+    await app.act(() => held.resolve(app.options));
+    assert.ok(byId(app.render(), 'leadership-day-live-2026-10-19'));
+    assert.equal(byId(app.render(), 'leadership-day-2026-10-19').disabled, false);
+  } finally { await app.unmount(); }
+});
+
+test('an unavailable offline filter clears prior values rather than displaying zero or another scope', async () => {
+  const app = harness({ online: false }); app.engine.displayLeaseRemainingMs = Infinity;
+  try {
+    await app.flush(); app.engine.read = async () => { throw { code: 'snapshot_unavailable' }; };
+    await app.act(() => byId(app.render(), 'leadership-company-1').onPress());
+    assert.doesNotMatch(text(app.render()), /123,456.78/); assert.match(text(app.render()), /Unavailable/);
+  } finally { await app.unmount(); }
+});
+
+test('cached financial pixels and open details disappear at their display lease deadline', async () => {
+  const app = harness({ online: false }); app.engine.displayLeaseRemainingMs = 40;
+  try {
+    await app.flush(); await app.act(() => byId(app.render(), 'leadership-card-sales').onPress());
+    assert.match(text(app.render()), /123,456.78/);
+    await app.act(() => new Promise(resolve => setTimeout(resolve, 60)));
+    assert.doesNotMatch(text(app.render()), /123,456.78/);
+    assert.equal(nodes(app.render()).some(n => n.type === 'Sheet'), false);
+  } finally { await app.unmount(); }
+});
+
 test('calendar integer display rounds upward exactly while original decimal details stay unchanged in either language', async () => {
   for (const language of ['en', 'ar']) {
     const app = harness({ language });

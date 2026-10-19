@@ -12,6 +12,7 @@ export type LeadershipWord = keyof typeof words.en | keyof typeof compact.en;
 export const leadershipTranslator = (language: Language) => (word: LeadershipWord): string => word in compact[language] ? compact[language][word as keyof typeof compact.en] : words[language][word as keyof typeof words.en];
 export const errorWord = (error: unknown): LeadershipWord => {
   const code = String((error as any)?.code ?? '');
+  if (code === 'snapshot_unavailable') return 'unavailable';
   return ['unauthorized', 'forbidden', 'session'].includes(code) ? 'noAccess' : code === 'server_update_required' ? 'update' : code === 'company_limit' ? 'companyLimit' : ['invalid_response', 'response_too_large'].includes(code) ? 'malformed' : 'failed';
 };
 export const weekdayName = (language: Language, weekday: number): string => (language === 'ar' ? ['اثن', 'ثلا', 'أرب', 'خمي', 'جمع', 'سبت', 'أحد'] : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'])[weekday];

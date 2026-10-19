@@ -12,7 +12,7 @@ import type { Amount, LeadershipDay, LeadershipOptions, LeadershipQuery, Leaders
 import { errorWord, leadershipTranslator, weekdayName, type LeadershipWord } from '../dictionary';
 import { calendarIntegerDisplay, coverageLabel, dayLabel, dayWord, monthLabel, percentagePresentation, snapshotDate } from './presentation';
 
-export interface LeadershipScreenProps { engine: LeadershipEngine; identity: Bootstrap; language: Language; presented: boolean; scopeKey: string; onBack?: () => void }
+export interface LeadershipScreenProps { engine: LeadershipEngine; identity: Bootstrap; language: Language; presented: boolean; online?: boolean; scopeKey: string; onBack?: () => void }
 const row = (language: Language) => ({ flexDirection: language === 'ar' ? 'row-reverse' : 'row' } as const);
 const riyadhDate = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Riyadh', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
 const pickerValue = (value: string) => new Date(`${value}T12:00:00`).toISOString();
@@ -24,21 +24,23 @@ export function LeadershipScreen(props: LeadershipScreenProps) {
   return <Workspace key={key} {...props} />;
 }
 
-function Workspace({ engine, identity, language, presented, onBack }: LeadershipScreenProps) {
+function Workspace({ engine, identity, language, presented, online = true, onBack }: LeadershipScreenProps) {
   const t = leadershipTranslator(language), today = riyadhDate();
   const [month, setMonth] = useState(today.slice(0, 7)), [period, setPeriod] = useState<Period>('month'), [customDate, setCustomDate] = useState(today);
   const [companyId, setCompany] = useState(0), [tab, setTab] = useState<'overview' | 'heatmap'>('overview');
-  const [options, setOptions] = useState<LeadershipOptions | null>(null), [ready, setReady] = useState(false), [report, setReport] = useState<{ key: string; value: LeadershipReport } | null>(null);
-  const [error, setError] = useState<unknown>(null), [busy, setBusy] = useState(false), [refresh, setRefresh] = useState(0), [comparison, setComparison] = useState(false), [scopeDetails, setScopeDetails] = useState(false), [selectedDay, setSelectedDay] = useState<string | null>(null);
-  const alive = useRef(true), active = useRef(false), generation = useRef(0), readyRef = useRef(false);
+  const [options, setOptions] = useState<LeadershipOptions | null>(null), [ready, setReady] = useState(false), [report, setReport] = useState<{ key: string; value: LeadershipReport; cached: boolean } | null>(null);
+  const [error, setError] = useState<unknown>(null), [busy, setBusy] = useState(false), [reading, setReading] = useState(false), [refresh, setRefresh] = useState(0), [comparison, setComparison] = useState(false), [scopeDetails, setScopeDetails] = useState(false), [selectedDay, setSelectedDay] = useState<string | null>(null);
+  const alive = useRef(true), active = useRef(false), generation = useRef(0), readGeneration = useRef(0), readyRef = useRef(false);
   active.current = presented && identity.permissions.dashboard_view === true;
   const query: LeadershipQuery = { month, period, ...(period === 'date' ? { date: customDate } : {}), ...(companyId ? { companyId } : {}) }, key = JSON.stringify(query);
   const data = report?.key === key ? report.value : null;
+  const live = online && !report?.cached;
   const latestKey = useRef(key); latestKey.current = key;
   const deny = (failure: unknown) => { engine.clear(); readyRef.current = false; setReady(false); setOptions(null); setReport(null); setComparison(false); setScopeDetails(false); setSelectedDay(null); setError(failure); };
   useEffect(() => { alive.current = true; return () => { alive.current = false; engine.cancelReads(); }; }, [engine]);
   useEffect(() => {
-    const ticket = ++generation.current; engine.cancelReads(); readyRef.current = false; setReady(false);
+    const ticket = ++generation.current; engine.cancelReads(); readyRef.current = false; setReady(false); setReading(false);
+    if (!online) { setReport(null); setComparison(false); setScopeDetails(false); setSelectedDay(null); }
     if (!active.current) { setComparison(false); setScopeDetails(false); setSelectedDay(null); if (!identity.permissions.dashboard_view) { engine.clear(); setReport(null); setOptions(null); } return; }
     setBusy(true); setError(null);
     void engine.options().then(next => { if (!alive.current || !active.current || ticket !== generation.current) return;
@@ -50,15 +52,24 @@ function Workspace({ engine, identity, language, presented, onBack }: Leadership
     }).catch(failure => { if (alive.current && active.current && ticket === generation.current) { if (accessDenied(failure)) deny(failure); else if (failure?.code !== 'stale') setError(failure); } })
       .finally(() => { if (alive.current && ticket === generation.current) setBusy(false); });
     return () => { generation.current++; engine.cancelReads(); };
-  }, [presented, identity.permissions.dashboard_view, engine]);
+  }, [presented, online, identity.permissions.dashboard_view, engine]);
   useEffect(() => {
     if (!active.current || !ready || !readyRef.current) return;
-    const ticket = ++generation.current; setBusy(true); setError(null); setSelectedDay(null);
-    void engine.read(query).then(value => { if (alive.current && active.current && ticket === generation.current && latestKey.current === key) setReport({ key, value }); })
-      .catch(failure => { if (alive.current && active.current && ticket === generation.current) { if (accessDenied(failure)) deny(failure); else if (failure?.code !== 'stale') setError(failure); } })
-      .finally(() => { if (alive.current && ticket === generation.current) setBusy(false); });
-    return () => { generation.current++; engine.cancelReads(); };
-  }, [key, ready, refresh, engine]);
+    const ticket = ++readGeneration.current; setReading(true); setError(null); setSelectedDay(null);
+    void engine.read(query).then(value => { if (alive.current && active.current && ticket === readGeneration.current && latestKey.current === key) setReport({ key, value, cached: engine.displayIsCached ?? !online }); })
+      .catch(failure => { if (alive.current && active.current && ticket === readGeneration.current) { if (accessDenied(failure)) deny(failure); else if (failure?.code !== 'stale') { if (!online) setReport(null); setError(failure); } } })
+      .finally(() => { if (alive.current && ticket === readGeneration.current) setReading(false); });
+    // A report cleanup must not cancel a newer options verification on reconnect.
+    return () => { readGeneration.current++; };
+  }, [key, ready, refresh, online, engine]);
+  useEffect(() => {
+    if (!report?.cached) return;
+    const remaining = engine.displayLeaseRemainingMs;
+    if (!Number.isFinite(remaining)) return;
+    const expire = () => { engine.cancelReads(); setReading(false); setReport(null); setComparison(false); setScopeDetails(false); setSelectedDay(null); readyRef.current = false; setReady(false); setError({ code: 'snapshot_unavailable' }); };
+    if (!(remaining > 0)) { expire(); return; }
+    const timer = setTimeout(expire, remaining); return () => clearTimeout(timer);
+  }, [engine, online, report]);
   const choose = (action: () => void) => { if (!active.current || !readyRef.current) return; engine.cancelReads(); setComparison(false); setScopeDetails(false); setSelectedDay(null); setError(null); action(); };
   const refreshReport = () => { if (active.current) { if (readyRef.current) setRefresh(v => v + 1); else { setReady(false); setRefresh(v => v + 1); /* Retry options below through remount-free callback. */ void retryOptions(); } } };
   const retryOptions = async () => { if (!active.current) return; const ticket = ++generation.current; setBusy(true); setError(null);
@@ -71,14 +82,14 @@ function Workspace({ engine, identity, language, presented, onBack }: Leadership
     <View style={[s.header, row(language)]}>
       {onBack && <IconButton icon="back" label={t('back')} onPress={onBack} />}
       <Text style={[s.title, direction(language), { flex: 1 }]}>{t('title')}</Text>
-      <IconButton icon="refresh" label={t('refresh')} busy={busy} onPress={refreshReport} disabled={!identity.permissions.dashboard_view} />
+      <IconButton icon="refresh" label={t('refresh')} busy={busy || reading} onPress={refreshReport} disabled={!identity.permissions.dashboard_view} />
     </View>
     {!identity.permissions.dashboard_view ? <View style={s.content}><Label language={language}>{t('noAccess')}</Label></View> : <>
       <View style={[s.tabs, row(language)]}>{(['overview', 'heatmap'] as const).map(value => <Pressable key={value} testID={`leadership-tab-${value}`} accessibilityRole="tab" accessibilityState={{ selected: tab === value }} onPress={() => setTab(value)} style={[s.tab, tab === value && s.selected]}><Text style={[direction(language), { color: tab === value ? colors.blue : colors.muted, fontWeight: '600' }]}>{t(value)}</Text></Pressable>)}</View>
       <ScrollView contentContainerStyle={[s.content, tab === 'heatmap' && s.calendarContent]} testID="leadership-scroll">
         {options && options.companies.length > 1 && <View style={[s.row, row(language), { flexWrap: 'wrap' }]} testID="leadership-companies">{[{ id: 0, name: t('all') }, ...options.companies].map(company => { const profile = identity.profile?.companies.find(c => c.id === company.id), name = profile ? companyDisplayName(profile, language, company.id) : company.name; return <Pressable key={company.id} testID={`leadership-company-${company.id}`} accessibilityRole="button" accessibilityLabel={name} accessibilityState={{ selected: companyId === company.id, disabled: !ready }} disabled={!ready} onPress={() => choose(() => setCompany(company.id))} style={[s.companyChip, companyId === company.id && { backgroundColor: colors.blue, borderColor: colors.blue }]}><Text style={[direction(language), { fontSize: 11, color: companyId === company.id ? colors.white : colors.muted }]}>{name}</Text></Pressable>; })}</View>}
         {!!error && <View accessibilityLiveRegion="polite" testID="leadership-error"><Label language={language}>{t(errorWord(error))}</Label><Button quiet title={t('retry')} onPress={refreshReport} /></View>}
-        {busy && !data && <ActivityIndicator color={colors.blue} accessibilityLabel={t('loading')} />}
+        {(busy || reading) && !data && <ActivityIndicator color={colors.blue} accessibilityLabel={t('loading')} />}
         {(ready || data) && <>
           {tab === 'overview' && <View style={s.panel}>
             <View style={[s.periods, row(language)]}>{(['yesterday', 'today', 'month', 'date'] as const).map(value => <Pressable key={value} testID={`leadership-period-${value}`} accessibilityRole="button" accessibilityState={{ selected: period === value, disabled: !ready }} disabled={!ready} onPress={() => choose(() => { setPeriod(value); if (value === 'date' && customDate.slice(0, 7) !== month) setCustomDate(`${month}-01`); })} style={[s.period, period === value && { backgroundColor: colors.blue }]}><Text style={[direction(language), { fontSize: 12, color: period === value ? colors.white : colors.muted }]}>{t(value)}</Text></Pressable>)}</View>
@@ -98,7 +109,7 @@ function Workspace({ engine, identity, language, presented, onBack }: Leadership
               <Text style={[s.heading, direction(language)]}>{monthLabel(data.calendar.month, language)}</Text>
               <Text style={[s.caption, direction(language)]}>{t('weekdayAverage')}</Text>
               <View style={s.weekdays} testID="leadership-weekday-averages" accessibilityLabel={t('positiveDays')}>{[5, 6, 0, 1, 2, 3, 4].map(index => { const item = data.calendar.weekdays.find(w => w.weekday === index)!, name = weekdayName(language, index); return <View key={index} style={s.weekday} accessibilityLabel={`${name}: ${calendarIntegerDisplay(item.average)}; ${t('sample')}: ${String(item.sample_count)}`}><Text style={[s.caption, direction(language)]} numberOfLines={1}>{name}</Text><Money amount={item.average} size={11} center calendarInteger /></View>; })}</View>
-              <Heatmap disabled={!ready} days={data.calendar.days} asOf={data.as_of} companyCount={data.companies.length} language={language} selected={selectedDay} onSelect={date => { if (active.current && readyRef.current) setSelectedDay(date); }} />
+              <Heatmap live={live} disabled={!ready} days={data.calendar.days} asOf={data.as_of} companyCount={data.companies.length} language={language} selected={selectedDay} onSelect={date => { if (active.current && readyRef.current) setSelectedDay(date); }} />
               <View style={[s.row, row(language), { flexWrap: 'wrap' }]}>{(['recordedZero', 'noRecords', 'partial', 'future'] as const).map(word => <Text key={word} style={[s.legend, direction(language)]}>{t(word)}</Text>)}</View>
             </> : <>
               <Text style={[s.heading, direction(language)]}>{monthLabel(data.calendar.month, language)}</Text>
@@ -106,7 +117,7 @@ function Workspace({ engine, identity, language, presented, onBack }: Leadership
             </>)}
           </View>
           {day && <View style={s.panel} testID="leadership-day-detail"><View style={[s.row, row(language), { justifyContent: 'space-between' }]}><Text style={[s.heading, direction(language)]}>{t('selectedDay')} · {day.date}</Text><IconButton icon="close" label={t('close')} onPress={() => setSelectedDay(null)} /></View>
-            <Detail label={t('sales')} amount={day.sales} language={language} /><Label language={language}>{dayLabel(day, data!.as_of, language)}</Label><Label language={language} muted>{coverageLabel(day, data!.companies.length, language)}</Label>
+            <Detail label={t('sales')} amount={day.sales} language={language} /><Label language={language}>{dayLabel(day, data!.as_of, language, live)}</Label><Label language={language} muted>{coverageLabel(day, data!.companies.length, language)}</Label>
             <Detail label={t('target')} amount={day.target} language={language} /><Detail label={t(day.basis_kind === 'target' ? 'target' : day.basis_kind === 'baseline' ? 'baseline' : 'noBasis')} amount={day.basis} language={language} /><Detail label={t('ratio')} amount={day.ratio} percent language={language} />
             {tab === 'overview' && <Detail label={`${t('previous')} · ${data?.previous_calendar.days.find(d => d.day === day.day)?.date ?? '—'}`} amount={data?.previous_calendar.days.find(d => d.day === day.day)?.sales} language={language} />}
           </View>}
@@ -140,15 +151,15 @@ function SummaryCard({ word, amount, ratio, change, average, forecast, language,
 function CompactMetric({ label, amount, language, percent, trend }: { label: string; amount: Amount; language: Language; percent?: boolean; trend?: TrendDirection }) { return <View style={[row(language), { alignItems: 'center', gap: 3, justifyContent: 'space-between' }]}><Text style={[direction(language), { fontSize: 9, color: colors.muted, flexShrink: 1 }]}>{label}</Text><Money amount={amount} size={11} percent={percent} trend={trend} /></View>; }
 function Detail({ label, amount, language, percent, trend }: { label: string; amount?: Amount; language: Language; percent?: boolean; trend?: TrendDirection }) { return <View style={[s.row, row(language), { justifyContent: 'space-between', paddingVertical: 5 }]}><Text style={[s.caption, direction(language), { flex: 1 }]}>{label}</Text><Money amount={amount} size={16} percent={percent} trend={trend} /></View>; }
 
-const heatColor = (day: LeadershipDay, asOf: string): string => {
-  if (dayWord(day, asOf) === 'future') return '#f3f5f8';
-  if (dayWord(day, asOf) === 'inProgress') return colors.pale;
+const heatColor = (day: LeadershipDay, asOf: string, live: boolean): string => {
+  if (dayWord(day, asOf, live) === 'future') return '#f3f5f8';
+  if (dayWord(day, asOf, live) === 'inProgress') return colors.pale;
   if (!day.sales.available || !day.has_sales) return colors.white;
   if (day.status === 'partial' || day.status === 'incomplete') return colors.warning;
   if (day.sales.value && /^-?0(?:\.0+)?$/.test(day.sales.value)) return '#e9eef4';
   return ({ neutral: colors.pale, watch: '#edf0c8', high: '#b9e6d3', good: '#d7eadc', low: '#fae2c3' } as Record<string, string>)[day.heat_level] ?? colors.pale;
 };
-function Heatmap({ days, asOf, companyCount, language, selected, onSelect, disabled }: { days: LeadershipDay[]; asOf: string; companyCount: number; language: Language; selected: string | null; onSelect: (date: string) => void; disabled?: boolean }) {
+function Heatmap({ days, asOf, companyCount, language, selected, onSelect, disabled, live }: { days: LeadershipDay[]; asOf: string; companyCount: number; language: Language; selected: string | null; onSelect: (date: string) => void; disabled?: boolean; live: boolean }) {
   const t = leadershipTranslator(language), today = snapshotDate(asOf), [width, setWidth] = useState(0);
   const first = days[0], blank = first ? (first.weekday - 5 + 7) % 7 : 0;
   // Explicit weeks avoid percentage/flexWrap rounding creating six columns.
@@ -158,15 +169,15 @@ function Heatmap({ days, asOf, companyCount, language, selected, onSelect, disab
   return <View testID="leadership-heatmap" onLayout={event => setWidth(event.nativeEvent.layout.width)}>
     {weeks.map((week, index) => <View key={index} testID={`leadership-week-${index}`} style={s.weekdays}>
       {week.map((day, column) => {
-        const current = day?.date === today, chosen = day?.date === selected;
+        const current = live && day?.date === today, chosen = day?.date === selected;
         const display = day?.has_sales && day.sales.available ? calendarIntegerDisplay(day.sales) : '—';
         return <View key={day?.date ?? `blank-${column}`} style={s.heatSlot}>
           {day && <Pressable disabled={disabled} testID={`leadership-day-${day.date}`} accessibilityRole="button"
-            accessibilityLabel={`${day.date}, ${display}, ${dayLabel(day, asOf, language)}, ${coverageLabel(day, companyCount, language)}`}
+            accessibilityLabel={`${day.date}, ${display}, ${dayLabel(day, asOf, language, live)}, ${coverageLabel(day, companyCount, language)}`}
             accessibilityState={{ selected: chosen, disabled }} onPress={() => onSelect(day.date)}
-            style={[s.heatDay, { backgroundColor: heatColor(day, asOf), borderColor: current || chosen ? colors.blue : colors.border,
+            style={[s.heatDay, { backgroundColor: heatColor(day, asOf, live), borderColor: current || chosen ? colors.blue : colors.border,
               borderStyle: !current && (!day.has_sales || !day.sales.available) ? 'dashed' : 'solid' }]}>
-            <Text style={[s.heatDate, { color: current ? colors.blue : dayWord(day, asOf) === 'future' ? colors.muted : colors.ink }]}>{String(day.day)}</Text>
+            <Text style={[s.heatDate, { color: current ? colors.blue : dayWord(day, asOf, live) === 'future' ? colors.muted : colors.ink }]}>{String(day.day)}</Text>
             <View style={s.heatValue}>
               {/* Display-only ceil; full exact decimals remain in the selected-day detail.
                   Keep all integer digits and sign, wrapping only at thousands. */}

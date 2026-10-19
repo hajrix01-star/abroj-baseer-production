@@ -8,7 +8,7 @@ function harness(initial = {}) {
     filename = resolve(filename); if (cache.has(filename)) return cache.get(filename);
     const raw = readFileSync(filename, 'utf8'), output = { exports: {} }; cache.set(filename, output.exports);
     const code = ts.transpileModule(raw, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022, esModuleInterop: true } }).outputText;
-    vm.runInNewContext(code, { module: output, exports: output.exports, Date, Intl, Math, JSON, console, require(name) {
+    vm.runInNewContext(code, { module: output, exports: output.exports, Date, Intl, Math, JSON, console, setTimeout, clearTimeout, require(name) {
       if (['react', 'react/jsx-runtime'].includes(name)) return require(name);
       if (name === 'react-native') return { ...Object.fromEntries(['View', 'Text', 'Pressable', 'ScrollView', 'ActivityIndicator'].map(n => [n, n])), StyleSheet: { create: value => value } };
       if (name === 'react-native-svg') return { __esModule: true, default: 'Svg', Line: 'Line', Path: 'Path' };

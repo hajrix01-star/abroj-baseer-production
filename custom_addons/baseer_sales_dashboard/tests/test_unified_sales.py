@@ -288,6 +288,34 @@ class TestUnifiedSales(AccountTestInvoicingCommon):
         with self.assertRaises(AccessError):
             self._metrics(dashboard=self.dashboard.with_user(insufficient))
 
+    def test_hidden_session_cannot_silently_remove_readable_order_from_summary(self):
+        order = self._pos()
+        reader = new_test_user(
+            self.env, login='unified_hidden_session_reader',
+            groups='base.group_user,point_of_sale.group_pos_user,sales_team.group_sale_salesman_all_leads,account.group_account_readonly',
+            company_id=self.company.id, company_ids=[Command.set(self.company.ids)],
+        )
+        dashboard = self.dashboard.with_user(reader).with_context(allowed_company_ids=self.company.ids)
+        self.assertFalse(dashboard.env.su)
+        self._assert_sales(100, dashboard=dashboard)  # warm the native report/cache
+        rule = self.env['ir.rule'].with_user(self.env.ref('base.user_admin')).create({
+            'name': 'Unified hidden contributing session',
+            'model_id': self.env['ir.model']._get_id('pos.session'),
+            'domain_force': repr([('id', '!=', self.session.id)]),
+            'perm_read': True, 'perm_write': False, 'perm_create': False, 'perm_unlink': False,
+        })
+        with patch.object(type(dashboard), '_baseer_unified_period',
+                          side_effect=AssertionError('Hidden session must fail before financial materialization')):
+            with self.assertRaises(AccessError):
+                self._metrics(dashboard=dashboard)
+        self.assertEqual(dashboard.env['pos.order'].search([
+            ('company_id', '=', self.company.id), ('session_id', '=', self.session.id),
+        ]), order.with_user(reader))
+        with self.assertRaises(AccessError):
+            self.session.with_user(reader).check_access('read')
+        rule.unlink()
+        self._assert_sales(100, dashboard=dashboard)
+
     def test_real_foreign_posted_invoice_is_excluded_from_active_company(self):
         self._invoice(self._sale())
         foreign = self.env['res.company'].create({

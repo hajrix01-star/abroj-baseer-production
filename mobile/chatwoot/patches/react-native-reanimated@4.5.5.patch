@@ -3,9 +3,9 @@ index f9711f4eb6185ea99e08280ff90edd45e4152e12..3d62becfdb3488c8e5ecfcc3870afac6
 --- a/Common/cpp/reanimated/LayoutAnimations/LayoutAnimationsProxy_Legacy.cpp
 +++ b/Common/cpp/reanimated/LayoutAnimations/LayoutAnimationsProxy_Legacy.cpp
 @@ -530,15 +530,15 @@ void LayoutAnimationsProxy_Legacy::addOngoingAnimations(SurfaceId surfaceId, Sha
- 
+
      auto layoutAnimationIt = layoutAnimations_.find(tag);
- 
+
 -    if (layoutAnimationIt == layoutAnimations_.end() ||
 -        // A settled animation is normally cleaned up without applying further
 -        // updates. The exception is a flaky entering animation whose opacity was
@@ -22,6 +22,6 @@ index f9711f4eb6185ea99e08280ff90edd45e4152e12..3d62becfdb3488c8e5ecfcc3870afac6
 +    // frame, so skipping settled entries here leaves the view invisible or at
 +    // its previous layout. updateMap is cleared below, so a settled animation
 +    // is updated at most once.
- 
+
      auto &layoutAnimation = layoutAnimationIt->second;
      layoutAnimation.isViewAlreadyMounted = true;

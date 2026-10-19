@@ -1,6 +1,6 @@
 ---
-description: 
-globs: 
+description:
+globs:
 alwaysApply: true
 ---
 # Chatwoot Mobile App - Combined Cursor Rules
@@ -294,7 +294,7 @@ const twConfig = {
       colors: { ...chatwootAppColors },
       fontSize: {
         xs: '12px',
-        cxs: '13px', 
+        cxs: '13px',
         md: '15px'
       },
       fontFamily: {
@@ -342,7 +342,7 @@ The app uses the Inter font family with various weights and optical sizes:
 </View>
 
 // Combining styles
-<TouchableOpacity 
+<TouchableOpacity
   style={tailwind('bg-blue-600 rounded-lg p-3 active:bg-blue-700')}>
   <Text style={tailwind('text-white font-inter-medium-24')}>
     Submit

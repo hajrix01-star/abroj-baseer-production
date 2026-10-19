@@ -213,6 +213,44 @@ there is no full-system rediscovery or separate duplicate map artifact.
   Result posted on PR420 (conversation comment6268228060). No product/test fixes,
   retries, merge, QA/Live deployment or APK/release were performed in this turn;
   the user requested the result before any further merge/deployment action.
+- R13, repair authorization: owner approved diagnosing/fixing and rerunning,
+  explicitly forbidding weaker permissions or bypassed tests; still no merge or
+  deployment. Reuse the current architecture map and pinned runtime. RT-01 cause:
+  native Odoo19 applies comodel record rules to dotted session domains, so a
+  readable POS order can disappear before mapped-session access validation. No
+  prior same-environment success was established; do not call this a proven
+  runtime regression. The new report's fail-closed requirement was not met.
+  Independent source review ruled out simple rule-cache staleness (rule creation
+  clears native rule caches) and accepted a bounded ordinary-rule session-link
+  probe before relational date filtering. Shared guard is in canonical source
+  authorization, not in financial aggregation; no sum/date/refund/dedup formula
+  changed, no sudo/hidden date or amount read. This strengthens refusal for any
+  readable confirmed own-company order linked to an inaccessible session; its
+  global scope matches the existing missing-date safety guard. Sales and heat
+  now share the refusal. Sales module patch version19.0.1.7.1.
+  Existing failing assertion retained; added warm-cache, direct-link, explicit
+  session-denial, pre-materialization and public Sales RPC regression coverage.
+- R14, RT-02 repair: isolated fixture creators use an explicit privileged fixture
+  environment for native source/target/dashboard/user setup. All report calls
+  remain with separate ordinary readers; added non-sudo/non-system assertions.
+  No ACL/record-rule or negative test weakened; no skipped/removed test. Separate
+  independent reviewer accepted both fixture files and the shared source guard.
+- R15, RT-03 repair: reformatted only blank context/removal patch lines using the
+  installed pinned pnpm10.11.0 parser/applier semantics; insertion and meaningful
+  content untouched. Independent in-memory proof over7 installed native files:
+  original and converted forward patches produce byte-identical targets; Git
+  patch syntax/reverse checks pass. Reverse restoration of removed whitespace
+  can differ, but authoritative forward installation output is identical.
+  Twenty offending patch lines and ordinary Cursor-doc trailing spaces removed;
+  no .gitattributes exemption, source-gate or workflow bypass. All affected lock
+  hash references updated mechanically. Frozen/offline/lockfile-only pnpm check
+  PASS371ms without scripts, package installation or network. Added exact patch
+  fingerprint/lockfile guard; full BWork gate465 cases/464 PASS/one existing skip,
+  all93 invariants and TypeScript PASS12.81s. Correct-root Python compile PASS;
+  first compile invocation had wrong cwd and was not counted as evidence.
+  Next isolated run reuses same disposable pinned workflow: changed source
+  authorization + fixture setup; uncovered risk is actual ACL/financial/HTTP
+  execution, actual owner scope7 companies, assumption<=20 readers (not load).
 
 ## Local handoff / remaining acceptance
 

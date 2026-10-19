@@ -1,6 +1,6 @@
 # BWork — تجميد المحادثة ودراسة نقل الطلبات من BChat
 
-الحالة الحالية — I28: **BWork 0.1.17/build18 متاحة كحزمة QA كاملة** من `13996c60` في [صفحة التحميل](https://github.com/hajrix01-star/abroj-baseer-production/releases/tag/bwork-trial-apk-0.1.17-13996c60). قرار التوزيع **CONDITIONAL GO** باستثناء المالك الموثق لفجوة تحقق أودو الفعلي، وليس اعتمادًا تشغيليًا أو Live. مطابقة التنزيل العام أُغلقت مستقلًا؛ لا تغيير خادم أو بيانات QA/Live. أقسام الدراسة ومسودات البوابات التالية تاريخية؛ دفتر العمليات يحدد التقدم الفعلي.
+الحالة الحالية — F08: **BWork 0.1.18/build19 متاحة كحزمة QA كاملة** من `c0498c11` في [صفحة التحميل](https://github.com/hajrix01-star/abroj-baseer-production/releases/tag/bwork-trial-apk-0.1.18-c0498c11). قرار التوزيع **CONDITIONAL GO** بتفويض المالك الموثق، وليس اعتمادًا تشغيليًا أو Live. اختبارات أودو المعزولة62/62 PASS، والمصدر والسياسة دُمجا عبرPR414/415 ثم أُرسل طلبQA المحمي؛ **تنفيذ التحديث على خادم QA غير مؤكد**. التنزيل العام مطابق للحزمة المختبرة. تفاصيل الآثار والحدود فيF07–F08؛ أقسام الدراسة ومسودات البوابات التالية تاريخية.
 
 ## عقد المرحلة / G0 مسودة
 
@@ -158,6 +158,22 @@
 أُغلق القبول الأصلي المصحح على مصدر `c0498c110f9d4ea0efd1c50a21a271394e435885`: AR/EN320، أسفل زر44px عند397 قبلIME411، مع حفظ الكمية2.20/1.20 والسعر الخادمي المعروض991.73. حراس قياسlayout ترفض الرد المتأخر وبعدunmount؛ البوابة النهائية364/363PASS/1skipقائم و51ثابتًا وTypeScript10.78s. أعيد استخدام دليل مشاركة/تفضيل/استلام17b1f859 غير المتغير، ولم يُسمَّ اتصالًا فعليًا. الحزمة العادية `BWork-0.1.18-c0498c11.apk`،65503900B،SHA256`37679BFB369F7EEEDB87B754083FBCEBCEDA51738A37C700049C59E8065E6D99`،bundle`3659723BA735AC387152F122704306338B3C804A81CCC92009780B934E3301E3`. المدخل العادي وأصل/DBQA وغيابfixtures وتطابقbundle والترقية19→19 دونclear وبقاء الشهادة/الصلاحيات وتاريخ2026-10-18 مثبتة في `output/bwork-orders-compact-20261019/native/c0498c11-native-summary.json`؛ دليل18→19 السابق مستقل. الحارس حسب الملف والبصمة وراجع الصور/proofs مستقلًا وقبل native/artifact محليًا فقط.
 
 الـCI الثاني`39205505257` علىbackend`4a3a2b88` شغل62:61PASS/1FAIL/0errors/0skips؛ نجح ترتيبالغرف. الباقيfixture: OdooassertRaises يرجعsavepoint مع سحب العضوية المحاكى، فتعود الغرفة فيreload. تصحيح اختبار فقط أعادaction_revoke خارج السياق بعدassert409 دون تغيير بقيةassertions أوproduct، وطابقه الحارس. مرشحbackend`4dedf987b66d03253c703f2c116c7a8c86e01d07` فيDraftPR414،run`39206602095` جارٍ. لا runtimeGO حتى نجاحه الفعلي، ولاQA_DEPLOY من نجاح queue وحده؛ النشر المحمي لا يعيد نتيجةhost إلىGitHub. طُلب مسارread-only معتمد لنتيجةQA، ولا وصول أسرار/تجربة مخزون مفترضة.
+
+### F07 — قبول ERP الفعلي وسياسة QA والتوزيع المشروط
+
+run`39206602095` نجح فعلًا علىhead`4dedf987`:62 حالةunique (35Orders+1HTTP+6Permissions+20Receipts)،0failure/0error/0actualskip، مع نجاح حالتيpagination/revoke. السجلSHA256`D7DF58FD20C5606E442F7153E8B8CDB841AD66214B6A50B2C497B199D4619E18`،artifact`12165978147`/digest`7fcdfd7c28a0c7ac5242a6be5e92722c4406a7c2be9c0d4728d31de297348091`؛ الحارس قرأrawlog وطابق البصمة والـ62 اسمًا، فأغلقP1-ERP-RUNTIME للمعزول فقط. بقية فحوصPR414 نجحت. دُمج عبرsquash إلىmain`f200ed6fb5fec5b3a0537c9997f5154f31f08e97`؛ module tree`b2383837d786936e3477d6499c75b487590342bd` يطابق المختبر، بما فيه الاختبارات، وdiffworkflow فارغ. لا دفع مباشرmain.
+
+سياسةQA المنفصلةPR415/head`d34d72c8a02425b2af467d912bf0630bf9d2bc83` ثلاثة مفاتيح فقط:release`baseer-2026-10-19-bwork-orders-flow`،commit`f200ed6f` الكامل،modules`baseer_bchat_procurement` وحده. الحارس قرأها وطابقها واعتمد الدمج بعدCI ثمdispatchالمحمي، دون تغيير صلاحيات/خدمةنشر/Live أووحداتأخرى. نتيجةhost ليستمتاحة ولايفيدنجاحqueue أنهاGO.
+
+ردالمالك صراحة علىسؤالنقصالدليلQA:«نعم لدي اتصال وانشرة مثل مانشرت انت السابق في جيت هب ورابط صفحة التحميل». قبلالحارس **CONDITIONAL GO لتوزيعAPKQA فقط** بعدCIوالمسارالمحميومطابقةالملف، معإعلانأنhostdeploymentغيرمؤكد،والتوقفعندطلبتحديثالخادم،ومنعاعتمادالاستلامتشغيليًاحتىتحققQA. لا استثناءلـLiveأواعتمادمالي. رُفعAPK والبصمةإلىdraftrelease`416951418`،asset`655387402`uploaded/65503900B/API digest مطابقF06؛ليسمنشورًابعد. ملاحظاتالصفحةتحفظهذهالحدودوالآثارالحقيقيةوشهادةDebugوأرشيفsourceالمختلف. دليل`output/bwork-orders-compact-20261019/github-draft-proof.json`.
+
+### F08 — نشر APK ومطابقة التنزيل العام، دون ادعاء نجاح الخادم
+
+نجحت فحوصPR415 (Source integrity25s،Cumulative1m26s)، ودُمجتالسياسةsquash`b7351c0f03c2bfb5d7bfb45e98e3d3096d075185`. dispatchالمحمي`39207594522` منmain/qa نجح، وأصدر `QA_REQUEST=QUEUED` بالوسم `qa-release-baseer-2026-10-19-bwork-orders-flow-39207594522` الذي يستهدفf200ed6f المطابق. APIGitHub يُظهرverification=false/reason=no_user؛ ليس دليل تحققallowed-signers علىhost ولايُسمىQA_DEPLOY=GO. لم يُغيّرغلافالنشرأوالحمايةأوالوحداتالمسموحة. نتيجةhostتظلغيرمتاحة.
+
+بعدقبولالحارسلملاحظاتالإصداروهويةالمسودة، نُشرتالمسودةنفسها`416951418` بتاريخ2026-10-19T06:03:24Z،draft=false/prerelease=true/make_latest=false،بـassetAPKنفسه`655387402` دونإعادةبناءأورفع. [صفحةتحميل0.1.18](https://github.com/hajrix01-star/abroj-baseer-production/releases/tag/bwork-trial-apk-0.1.18-c0498c11). نزّلcurlعامبلامصادقةالملف إلى `output/bwork-orders-compact-20261019/github-public-BWork-0.1.18-c0498c11.apk`؛65503900B/SHA256`37679BFB369F7EEEDB87B754083FBCEBCEDA51738A37C700049C59E8065E6D99` مطابقللمحليوAPI. الدليلان`github-published-proof.json` و`github-public-download-proof.json` بجانبملاحظاتالإصدارالمعتمدةوSHA256SUMS. لاclear/uninstallأوتغييرLive/تجربةمخزون.
+
+فحصوصولغيرمصادقلمسارQAroomsبعدالطلبأعاد502،بدل404قبلالنشر؛التحققالمحدودالأخيرأعادlogin303 وrooms404. رجعتصفحةالدخولللوصوللكنوجودالعقدالجديدغيرمثبت؛لايُستنتجrestartأونجاحأوفشلالترقيةمنهذهالرموزوحدها. لمتُعدdispatchولامتسجيلدخولأوكتابة. الحارسأعادحسابpublicAPKمستقلًاوأغلقسلسلةالتوزيعالمشروطREADY؛لايغلقذلكمانعالخادم. تعليماتالتسليم:الملفمتاح،لكنميزاتworkflowالجديدةتنتظرتحققQA،ولااعتماداستلامتشغيليحتىذلك.
 
 ### I01 — عقد التنفيذ بعد اعتماد الشكل / مراجعة G0–G3
 

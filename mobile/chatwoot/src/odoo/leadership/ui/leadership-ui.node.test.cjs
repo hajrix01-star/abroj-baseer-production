@@ -2,6 +2,120 @@ const { test } = require('node:test'), assert = require('node:assert/strict');
 const { harness, nodes, one, byId, text } = require('./leadership-harness.cjs');
 const waiting = () => { let resolve, reject; const promise = new Promise((a, b) => { resolve = a; reject = b; }); return { promise, resolve, reject }; };
 
+test('day inspection opens a dismissible authorized Sheet, never an inline financial card', async () => {
+  for (const language of ['ar', 'en']) {
+    const app = harness({ language });
+    try {
+      await app.flush(); await app.act(() => byId(app.render(), 'leadership-tab-heatmap').onPress());
+      await app.act(() => byId(app.render(), 'leadership-day-2026-10-01').onPress());
+      const sheet = one(app.render(), 'Sheet', p => p.title.includes('2026-10-01'));
+      assert.equal(sheet.compact, true); assert.equal(sheet.language, language);
+      assert.ok(byId(app.render(), 'leadership-day-detail'));
+      assert.equal(nodes({ type: 'ScrollView', props: byId(app.render(), 'leadership-scroll') }).some(n => n.props.testID === 'leadership-day-detail'), false);
+      await app.act(() => sheet.close());
+      assert.equal(nodes(app.render()).some(n => n.props.testID === 'leadership-day-detail'), false);
+      await app.act(() => byId(app.render(), 'leadership-day-2026-10-01').onPress());
+      app.props.presented = false; await app.flush();
+      assert.equal(nodes(app.render()).some(n => n.type === 'Sheet'), false);
+      app.props.presented = true; await app.flush();
+      assert.equal(nodes(app.render()).some(n => n.type === 'Sheet'), false);
+    } finally { await app.unmount(); }
+  }
+});
+
+test('month picker uses localized month and year grids with string-only selection and cancel/backdrop/back', async () => {
+  for (const language of ['ar', 'en']) {
+    const app = harness({ language });
+    try {
+      await app.flush(); const reads = () => app.calls.filter(c => c[0] === 'read');
+      assert.equal(nodes(app.render()).some(n => n.type === 'DateTimeField' && n.props.testID === 'leadership-month'), false);
+      await app.act(() => byId(app.render(), 'leadership-month').onPress());
+      assert.equal(nodes(app.render()).filter(n => /^leadership-month-option-/.test(n.props.testID || '')).length, 12);
+      assert.equal(nodes(app.render()).some(n => /TextInput|DateTimeField/.test(n.type)), false);
+      assert.equal(byId(app.render(), 'leadership-month-option-09').style[0].minHeight, 44);
+      await app.act(() => byId(app.render(), 'leadership-month-year-previous').onPress());
+      await app.act(() => byId(app.render(), 'leadership-month-option-09').onPress());
+      assert.equal(reads().at(-1)[1].month, '2025-09');
+      assert.equal(nodes(app.render()).some(n => n.type === 'Modal'), false);
+      const before = reads().length;
+      for (const dismiss of ['cancel', 'backdrop', 'back']) {
+        await app.act(() => byId(app.render(), 'leadership-month').onPress());
+        if (dismiss === 'back') await app.act(() => one(app.render(), 'Modal').onRequestClose());
+        else if (dismiss === 'cancel') await app.act(() => one({ type: 'View', props: byId(app.render(), 'leadership-month-cancel') }, 'Button').onPress());
+        else await app.act(() => byId(app.render(), 'leadership-month-backdrop').onPress());
+        assert.equal(nodes(app.render()).some(n => n.type === 'Modal'), false);
+        assert.equal(reads().length, before);
+      }
+      await app.act(() => byId(app.render(), 'leadership-month').onPress());
+      await app.act(() => byId(app.render(), 'leadership-month-year').onPress());
+      assert.equal(nodes(app.render()).filter(n => /^leadership-month-year-option-/.test(n.props.testID || '')).length, 12);
+      await app.act(() => byId(app.render(), 'leadership-month-year-next').onPress());
+      const years = nodes(app.render()).filter(n => /^leadership-month-year-option-/.test(n.props.testID || ''));
+      await app.act(() => years[0].props.onPress());
+      await app.act(() => byId(app.render(), 'leadership-month-option-01').onPress());
+      assert.equal(reads().at(-1)[1].month, `${years[0].props.testID.slice(-4)}-01`);
+    } finally { await app.unmount(); }
+  }
+});
+
+test('month picker and day Sheet close on offline transitions and permission revocation without resurrecting selections', async () => {
+  const app = harness(); app.engine.displayLeaseRemainingMs = Infinity;
+  try {
+    await app.flush(); await app.act(() => byId(app.render(), 'leadership-month').onPress());
+    app.props.online = false; await app.flush();
+    assert.equal(nodes(app.render()).some(n => n.type === 'Modal'), false);
+    await app.act(() => byId(app.render(), 'leadership-inspect-1').onPress());
+    assert.ok(one(app.render(), 'Sheet'));
+    app.props.identity = { ...app.props.identity, permissions: { ...app.props.identity.permissions, dashboard_view: false } }; await app.flush();
+    assert.equal(nodes(app.render()).some(n => n.type === 'Modal' || n.type === 'Sheet'), false);
+    assert.equal(nodes(app.render()).some(n => n.props.testID === 'leadership-day-detail'), false);
+  } finally { await app.unmount(); }
+});
+
+test('month picker respects 1900 and 9998 boundaries and emits the exact civil month without timezone conversion', async () => {
+  for (const [value, disabledArrow, target] of [['1900-01', 'previous', '1900-12'], ['9998-12', 'next', '9998-01']]) {
+    let selected;
+    const app = harness({ value, label: 'Month', language: 'ar', onChange: month => { selected = month; } }, 'MonthField');
+    try {
+      await app.flush(); await app.act(() => byId(app.render(), 'leadership-month').onPress());
+      assert.equal(byId(app.render(), `leadership-month-year-${disabledArrow}`).disabled, true);
+      await app.act(() => byId(app.render(), 'leadership-month-year').onPress());
+      const years = nodes(app.render()).filter(n => /^leadership-month-year-option-/.test(n.props.testID || '')).map(n => Number(n.props.testID.slice(-4)));
+      assert.equal(years.length, 12); assert.ok(years.every(year => year >= 1900 && year <= 9998));
+      assert.equal(byId(app.render(), `leadership-month-year-${disabledArrow}`).disabled, true);
+      await app.act(() => byId(app.render(), `leadership-month-year-option-${value.slice(0, 4)}`).onPress());
+      await app.act(() => byId(app.render(), `leadership-month-option-${target.slice(5)}`).onPress());
+      assert.equal(selected, target);
+    } finally { await app.unmount(); }
+  }
+});
+
+test('month picker stale option and year callbacks cannot commit after cancel, disable, value or callback change, reopen or unmount', async () => {
+  for (const cause of ['cancel', 'disabled', 'value', 'callback', 'reopen', 'unmount']) {
+    const selected = [], app = harness({ value: '2026-10', label: 'Month', onChange: value => selected.push(value) }, 'MonthField');
+    try {
+      await app.flush(); await app.act(() => byId(app.render(), 'leadership-month').onPress());
+      const staleOption = byId(app.render(), 'leadership-month-option-09').onPress;
+      const staleYear = byId(app.render(), 'leadership-month-year-next').onPress;
+      if (cause === 'disabled') { app.props.disabled = true; await app.flush(); }
+      else if (cause === 'value') { app.props.value = '2025-08'; await app.flush(); }
+      else if (cause === 'callback') { app.props.onChange = value => selected.push(`new:${value}`); await app.flush(); }
+      else if (cause === 'unmount') await app.unmount();
+      else {
+        await app.act(() => byId(app.render(), 'leadership-month-backdrop').onPress());
+        if (cause === 'reopen') await app.act(() => byId(app.render(), 'leadership-month').onPress());
+      }
+      await app.act(() => { staleYear(); staleOption(); });
+      assert.deepEqual(selected, [], cause);
+      if (cause === 'reopen') {
+        assert.match(text({ type: 'Pressable', props: byId(app.render(), 'leadership-month-year') }), /2026/);
+        await app.act(() => byId(app.render(), 'leadership-month-option-11').onPress());
+        assert.deepEqual(selected, ['2026-11']);
+      }
+    } finally { await app.unmount(); }
+  }
+});
+
 test('offline leadership keeps readonly cards and details without new warning time or live-day claims', async () => {
   for (const language of ['ar', 'en']) {
     const app = harness({ language, online: false }); app.engine.displayLeaseRemainingMs = Infinity;
@@ -218,7 +332,7 @@ test('chart drawing and day inspection share the full touch width in both langua
         for (const day of [1, 3, 6, 18, 31]) {
           const locationX = (14 + (day - 1) * 292 / 30) * width / 320;
           await app.act(() => byId(app.render(), 'leadership-chart').onPress({ nativeEvent: { locationX } }));
-          assert.match(text(app.render()), new RegExp(`2026-10-${String(day).padStart(2, '0')}`));
+          assert.match(one(app.render(), 'Sheet').title, new RegExp(`2026-10-${String(day).padStart(2, '0')}`));
         }
       }
       assert.equal(app.calls.filter(c => c[0] === 'read').length, reads);
@@ -259,7 +373,7 @@ test('overview defaults to all with adjacent three cards and server values; heat
 test('one company is automatic, month/date controls send server filters and current month remains independent', async () => {
   const app = harness(); app.options.companies = [app.options.companies[0]]; app.props.identity.company_ids = [1];
   try { await app.flush(); assert.equal(nodes(app.render()).some(n => n.type === 'CompanySelector'), false); assert.equal(app.calls.find(c => c[0] === 'read')[1].companyId, 1);
-    await app.act(() => byId(app.render(), 'leadership-month').onChange('2026-09-10T12:00:00Z')); assert.equal(app.calls.filter(c => c[0] === 'read').at(-1)[1].month, '2026-09');
+    await app.act(() => byId(app.render(), 'leadership-month').onPress()); await app.act(() => byId(app.render(), 'leadership-month-option-09').onPress()); assert.equal(app.calls.filter(c => c[0] === 'read').at(-1)[1].month, '2026-09');
     await app.act(() => byId(app.render(), 'leadership-card-sales').onPress()); assert.match(text(app.render()), /2026-10/); assert.match(text(app.render()), /999.99/); await app.act(() => one(app.render(), 'Sheet').close());
     await app.act(() => byId(app.render(), 'leadership-period-date').onPress()); await app.act(() => byId(app.render(), 'leadership-date').onChange('2026-09-12T12:00:00Z'));
     const q = app.calls.filter(c => c[0] === 'read').at(-1)[1]; assert.equal(q.date, '2026-09-12'); assert.equal(q.period, 'date');

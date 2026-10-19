@@ -2,7 +2,7 @@
 const React = require('react'), renderer = require('react-test-renderer'), ts = require('typescript'), vm = require('node:vm');
 const { readFileSync } = require('node:fs'), { resolve, dirname, extname } = require('node:path');
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
-function harness(initial = {}) {
+function harness(initial = {}, component = 'LeadershipScreen') {
   const cache = new Map(), calls = []; let mounted;
   const load = filename => {
     filename = resolve(filename); if (cache.has(filename)) return cache.get(filename);
@@ -10,7 +10,8 @@ function harness(initial = {}) {
     const code = ts.transpileModule(raw, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022, esModuleInterop: true } }).outputText;
     vm.runInNewContext(code, { module: output, exports: output.exports, Date, Intl, Math, JSON, console, setTimeout, clearTimeout, require(name) {
       if (['react', 'react/jsx-runtime'].includes(name)) return require(name);
-      if (name === 'react-native') return { ...Object.fromEntries(['View', 'Text', 'Pressable', 'ScrollView', 'ActivityIndicator'].map(n => [n, n])), StyleSheet: { create: value => value } };
+      if (name === 'react-native') return { ...Object.fromEntries(['View', 'Text', 'Pressable', 'ScrollView', 'ActivityIndicator', 'Modal'].map(n => [n, n])), StyleSheet: { create: value => value, absoluteFillObject: { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 } } };
+      if (name === 'react-native-safe-area-context') return { SafeAreaView: 'SafeAreaView' };
       if (name === 'react-native-svg') return { __esModule: true, default: 'Svg', Line: 'Line', Path: 'Path' };
       if (name.endsWith('/ui/components')) return { ...Object.fromEntries(['Button', 'IconButton', 'Label', 'Sheet'].map(n => [n, n])), colors: { blue: '#1256da', white: '#fff', background: '#f4f7fd', pale: '#edf2fc', ink: '#101b36', border: '#dce5ec', muted: '#54697b', warning: '#fff4d6', success: '#167447', danger: '#a12a32' }, direction: language => ({ writingDirection: language === 'ar' ? 'rtl' : 'ltr' }) };
       if (name.endsWith('/ui/CompanySelector')) return { CompanySelector: 'CompanySelector' };
@@ -26,7 +27,7 @@ function harness(initial = {}) {
   const options = JSON.parse(JSON.stringify(fixtures.options));
   const engine = { async options() { calls.push(['options']); return options; }, async read(query) { calls.push(['read', query]); return fixtures.report(query.companyId, query.month, query.period, query.date || `${query.month}-10`); }, cancelReads() { calls.push(['cancelReads']); }, clear() { calls.push(['clear']); } };
   const props = { engine, identity: { database: 'fixture', user_id: 9, company_ids: [1, 2], permissions: { dashboard_view: true, chat_view: false, task_view: false, revision: 1 } }, language: 'en', presented: true, scopeKey: 'fixture-user', ...initial };
-  const Screen = load(resolve(__dirname, 'LeadershipScreen.tsx')).LeadershipScreen;
+  const Screen = load(resolve(__dirname, component + '.tsx'))[component];
   const tree = value => value == null || typeof value !== 'object' ? value : Array.isArray(value) ? value.map(tree) : { type: value.type, props: { ...value.props, children: tree(value.children) } };
   const render = () => tree(mounted?.toJSON());
   const flush = async () => { await renderer.act(async () => { if (!mounted) mounted = renderer.create(React.createElement(Screen, props)); else mounted.update(React.createElement(Screen, props)); }); return render(); };

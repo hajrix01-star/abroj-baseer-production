@@ -39,7 +39,7 @@ export const ordersStyles = StyleSheet.create({
   warning: { backgroundColor: colors.warning },
   number: { writingDirection: 'ltr', color: colors.ink, fontSize: 15, lineHeight: 23, fontVariant: ['tabular-nums'] },
   tabs: { flexDirection: 'row', gap: 4, backgroundColor: colors.white, borderBottomWidth: 1, borderBottomColor: colors.border, paddingHorizontal: 12 },
-  tab: { flex: 1, minWidth: 44, minHeight: 48, alignItems: 'center', justifyContent: 'center', paddingVertical: 10, paddingHorizontal: 2, borderBottomWidth: 3, borderBottomColor: 'transparent' },
+  tab: { flex: 1, minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center', paddingVertical: 6, paddingHorizontal: 2, borderBottomWidth: 3, borderBottomColor: 'transparent' },
   selectedTab: { borderBottomColor: colors.blue },
   footer: { padding: 14, gap: 10, backgroundColor: colors.white, borderTopWidth: 1, borderTopColor: colors.border },
   flexible: { flex: 1, minWidth: 0 },

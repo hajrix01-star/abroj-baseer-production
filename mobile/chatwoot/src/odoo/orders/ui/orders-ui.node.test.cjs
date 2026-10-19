@@ -3,6 +3,22 @@ const { test } = require('node:test');
 const { harness, nodes, one, text, byId, button } = require('./orders-harness.cjs');
 
 async function ready(initial) { const app = harness(initial); await app.flush(); return app; }
+test('orders compact header has one title and preserves navigation and readable touch targets', async () => {
+  for (const language of ['ar', 'en']) {
+    let backs = 0; const app = harness({ language, onBack: () => backs++ }, true); await app.flush();
+    try {
+      const header = byId(app.render(), 'orders-section-header');
+      assert.equal(header.style.paddingVertical, 4);
+      assert.equal(header.style.paddingHorizontal, 12);
+      assert.equal(nodes({ props: header }).some(node => node.type === 'Label'), false, 'no duplicate purchase requests subtitle');
+      const title = language === 'ar' ? 'الطلبات' : 'Orders';
+      assert.equal(nodes({ props: header }).filter(node => node.type === 'Text' && [node.props.children].flat().includes(title)).length, 1);
+      const back = one(app.render(), 'IconButton', p => p.icon === 'back');
+      await app.act(() => back.onPress()); assert.equal(backs, 1);
+      assert.equal(app.module('./OrdersPrimitives.tsx').ordersStyles.tab.minHeight, 44);
+    } finally { await app.unmount(); }
+  }
+});
 function choose(app, id, value) { byId(app.render(), id).onPress(); byId(app.render(), `${id}-option-${value}`).onPress(); }
 async function cart(app) {
   one(app.render(), 'Button', p => p.accessibilityLabel === 'Add Fixture product Case').onPress();

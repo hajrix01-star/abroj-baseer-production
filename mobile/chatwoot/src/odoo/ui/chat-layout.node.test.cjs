@@ -151,7 +151,7 @@ function timeline(initialHidden = []) {
       history: { messages: [{ id: 10, author_user_id: 8, author_name: 'Synthetic', text: 'retained message', created_at: '2026-10-18 12:30:00', media: { id: 1 } }] }, pending: [], capture: () => calls.push('capture'),
     },
   };
-  const viewModel = { presentationKey: () => 'scoped', visibleReadIds: () => [], messageTime: () => '15:30', messageDateTime: () => '18/10/2026, 15:30',
+  const viewModel = { presentationKey: () => 'scoped', visibleReadIds: (rows, uid, active) => active ? rows.filter(row => row.message && row.message.author_user_id !== uid).map(row => row.message.id) : [], messageTime: () => '15:30', messageDateTime: () => '18/10/2026, 15:30',
     conversationAccess: (identity, selected) => {
       const canSend = !!identity?.company_ids.includes(selected.company_id) && identity.permissions.chat_view === true && identity.permissions.chat_send === true;
       return { directOff: false, canSend, canAttach: canSend && identity.permissions.media === true };
@@ -297,6 +297,128 @@ test('timeline hides retained rows during blocked or wrong-company presentation 
   app.props.chat.identity.permissions.chat_send = false;
   assert.equal(nodes(app.render()).some(node => node.type === app.tools), false);
   assert.deepEqual(app.voiceRights.at(-1), [false, false]);
+});
+
+test('hidden retained conversation fences read media voice and old callbacks while preserving draft reply and reader geometry', async () => {
+  const app = timeline(); app.props.chat.offline = false;
+  app.props.chat.history.messages[0].media.kind = 'image';
+  let releaseInfo, releaseRead, readCount = 0, scrolls = 0;
+  app.props.engine.messageInfo = () => new Promise(resolve => { releaseInfo = resolve; });
+  app.props.engine.acknowledge = () => { readCount++; return new Promise(resolve => { releaseRead = resolve; }); };
+  let tree = app.render(); await settled(); tree = app.render();
+  const list = one(tree, 'FlashList');
+  list.ref.current = { scrollToEnd: () => scrolls++ };
+  app.flushFrames();
+  list.onScroll({nativeEvent: {contentSize: {height: 2000}, layoutMeasurement: {height: 500}, contentOffset: {y: 1500}}});
+  const item = list.data[0]; const viewable = {viewableItems: [{isViewable: true, item}]};
+  list.viewabilityConfigCallbackPairs[0].onViewableItemsChanged(viewable);
+  list.onViewableItemsChanged(viewable); assert.equal(readCount, 1);
+  const field = one(tree, 'Field'); field.onChangeText('preserved draft');
+  const message = one(list.renderItem({item}), 'Pressable'); message.onLongPress();
+  tree = app.render(); one(one(tree, 'FlashList').renderItem({item}), 'Pressable').onPress();
+  tree = app.render(); const actions = one(tree, 'FlashList').renderItem({item});
+  const oldInfo = one(actions, 'IconButton', p => p.icon === 'info').onPress;
+  oldInfo(); tree = app.render(); assert.ok(one(tree, 'Sheet'));
+  const oldSend = one(tree, app.tools).onSendText;
+  const oldMenu = one(tree, 'IconButton', p => p.icon === 'menu').onPress;
+  const oldBack = one(tree, 'IconButton', p => p.icon === 'back').onPress;
+  const oldMembers = one(tree, 'IconButton', p => p.icon === 'members').onPress;
+  const measured = []; tree.props.ref.current = { measureInWindow: callback => measured.push(callback) };
+  tree.props.onLayout();
+  const priorScrolls = scrolls;
+  app.props.presented = false; app.render(); tree = app.render();
+  assert.deepEqual(app.voiceRights.at(-1), [false, false]);
+  assert.equal(one(tree, 'GroupAvatar').enabled, false);
+  assert.equal(nodes(one(tree, 'FlashList').renderItem({item})).some(n => n.type === 'MediaTile'), false);
+  assert.equal(nodes(tree).some(n => n.type === 'Sheet'), false);
+  const hiddenViewable = {viewableItems: [{isViewable: true, item: {message: {...item.message, id: 11}}}]};
+  list.onViewableItemsChanged(hiddenViewable);
+  list.viewabilityConfigCallbackPairs[0].onViewableItemsChanged(viewable);
+  field.onChangeText('must not overwrite hidden draft'); oldSend(); oldInfo(); oldMenu(); oldBack(); oldMembers();
+  measured[0](0, 900);
+  tree.props.onLayout(); assert.equal(measured.length, 1, 'hidden root never requests a zero-sized layout measurement');
+  list.onScrollBeginDrag(); list.onMomentumScrollBegin();
+  list.onScroll({nativeEvent: {contentSize: {height: 0}, layoutMeasurement: {height: 0}, contentOffset: {y: 0}}});
+  list.onLayout({nativeEvent: {layout: {height: 0}}}); list.onContentSizeChange(0, 0);
+  list.onScrollEndDrag(); list.onMomentumScrollEnd(); app.keyboard.keyboardDidHide(); app.flushFrames();
+  releaseInfo(item.message); releaseRead(true); await settled();
+  assert.equal(readCount, 1, 'late native viewability cannot mark a hidden message read');
+  assert.equal(app.calls.length, 0, 'hidden callbacks perform no enqueue, navigation, capture or message operation');
+  assert.equal(scrolls, priorScrolls);
+  app.props.presented = true; tree = app.render(); await settled(); tree = app.render();
+  assert.deepEqual(app.voiceRights.at(-1), [true, true]);
+  assert.equal(one(tree, 'Field').value, 'preserved draft');
+  assert.equal(one(tree, 'MessageQuote').text, 'retained message');
+  assert.equal(nodes(tree).some(n => n.type === 'Sheet'), false, 'old async information cannot reopen after returning');
+  assert.equal(one(tree, 'KeyboardAvoidingView').keyboardVerticalOffset, 0, 'late old measurement is discarded');
+  const restoredList = one(tree, 'FlashList');
+  assert.equal(one(restoredList.renderItem({item}), 'MediaTile').previewVisible, false);
+  assert.equal(nodes(restoredList.renderItem({item})).some(n => n.type === 'IconButton'), false, 'message action strip stays closed');
+  app.keyboard.keyboardDidShow(); app.flushFrames();
+  assert.equal(scrolls, priorScrolls, 'restored aligned geometry was not overwritten by hidden zero-sized events');
+});
+
+test('durable enqueue finishing behind Orders clears only its accepted draft without hidden send tone or scrolling', async () => {
+  for (const outcome of ['accepted', 'newer-draft', 'revoked', 'changed-scope']) {
+    const app = timeline(); let scrolls = 0;
+    app.props.chat.soundSent = () => app.calls.push('sent-tone');
+    let tree = app.render();
+    const list = one(tree, 'FlashList'); list.ref.current = {scrollToEnd: () => scrolls++}; app.flushFrames();
+    one(list.renderItem({item: list.data[0]}), 'Pressable').onLongPress();
+    one(app.render(), 'Field').onChangeText('accepted draft');
+    tree = app.render(); one(tree, app.tools).onSendText();
+    if (outcome === 'newer-draft') one(app.render(), 'Field').onChangeText('newer draft');
+    app.props.presented = false;
+    if (outcome === 'revoked') app.props.chat.identity.permissions.chat_send = false;
+    if (outcome === 'changed-scope') app.props.engine.accountScope = 'different-actor';
+    app.render(); const before = scrolls;
+    app.release(); await settled(); app.flushFrames();
+    assert.equal(app.calls.filter(call => Array.isArray(call) && call[0] === 'text').length, 1);
+    assert.equal(app.calls.includes('sent-tone'), false); assert.equal(scrolls, before);
+    assert.equal(app.calls.filter(call => call === 'capture').length, ['accepted', 'newer-draft'].includes(outcome) ? 1 : 0);
+    app.props.presented = true; app.props.chat.identity.permissions.chat_send = true;
+    tree = app.render();
+    assert.equal(one(tree, 'Field').value, outcome === 'accepted' ? '' : outcome === 'newer-draft' ? 'newer draft' : 'accepted draft', outcome);
+    assert.equal(nodes(tree).some(node => node.type === 'MessageQuote'), ['revoked', 'changed-scope'].includes(outcome), outcome);
+  }
+});
+
+test('accepted local hide behind Orders settles only the latest authorized mutation without resurrecting message actions', async () => {
+  for (const outcome of ['accepted', 'revoked', 'changed-scope', 'newer-mutation', 'late-old-read']) {
+    const app = timeline(); const pending = []; let releaseOldRead;
+    app.props.chat.history.messages[0].author_user_id = 7;
+    app.props.chat.history.messages.push({id: 11, author_user_id: 7, text: 'second own message'});
+    if (outcome === 'late-old-read') app.props.engine.hiddenMessages = () => new Promise(resolve => { releaseOldRead = resolve; });
+    app.props.engine.setMessageHidden = (_room, id) => new Promise(resolve => pending.push({id, resolve}));
+    app.render(); await settled();
+    const hide = id => {
+      const list = one(app.render(), 'FlashList'); const item = list.data.find(row => row.message?.id === id);
+      one(list.renderItem({item}), 'Pressable').onAccessibilityAction({nativeEvent: {actionName: 'hide'}});
+      app.alerts.at(-1)[2].find(button => button.style === 'destructive').onPress();
+    };
+    hide(10); assert.equal(pending.length, 1);
+    app.props.presented = false;
+    if (outcome === 'revoked') app.props.chat.identity.permissions.chat_view = false;
+    if (outcome === 'changed-scope') app.props.engine.accountScope = 'new actor';
+    app.render();
+    if (outcome === 'newer-mutation') {
+      app.props.presented = true; app.render(); hide(11);
+      pending[1].resolve([11]); await settled();
+      app.props.presented = false; app.render();
+    }
+    pending[0].resolve([10]); await settled();
+    if (releaseOldRead) { releaseOldRead([]); await settled(); }
+    assert.equal(app.calls.length, 0, 'hidden settlement has no capture, navigation, playback or scroll side effect');
+    app.props.chat.identity.permissions.chat_view = true; app.props.presented = true;
+    const tree = app.render(); const list = one(tree, 'FlashList');
+    const first = JSON.stringify(list.renderItem({item: list.data[0]}));
+    const firstHidden = ['accepted', 'late-old-read'].includes(outcome);
+    assert.equal(first.includes('locallyHidden'), firstHidden, outcome);
+    assert.equal(first.includes('retained message'), !firstHidden, outcome);
+    if (outcome === 'newer-mutation') assert.equal(JSON.stringify(list.renderItem({item: list.data[1]})).includes('locallyHidden'), true);
+    assert.equal(nodes(tree).some(node => node.type === 'Sheet'), false);
+    assert.equal(nodes(list.renderItem({item: list.data[0]})).some(node => node.type === 'IconButton'), false);
+  }
 });
 
 test('a rejected durable enqueue preserves the draft and releases the UI lock for a deliberate retry', async () => {

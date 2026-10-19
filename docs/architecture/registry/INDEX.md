@@ -1,5 +1,9 @@
 # سجل معمارية بصير أودو
 
+## BWORK-WORDMARK-DRAWER-20261019 — 0.1.19/build20 قيد القبول الأصلي
+
+فرع `codex/bwork-wordmark-drawer-20261019` من9e5172e4؛ طلبالمالكاعتمادsingleblueb+workوتطبيقهكاملًاوتوحيدdrawer/تثبيتlogout. CONTROLLEDواجهةفقط؛ BrandمصدرمركزيومعاينةPNGالمعتمدةمحفوظةبايتًاSHA256`BF06EAA8FBDE40B57C040C4292AA81226E1930DC350837D591888A3BC197FC1D`/1433521B. أيقونةbالزرقاءوالأصولالتاريخيةباقية. Ordersيظهرحسبorder_viewداخل/خارجالمحادثة؛Timelineيبقىmountedبمسودة/reply/موضع،معpresentedgateيحجبhiddenread/media/voice/actions؛useChat/core/runtime/serverغيرمتغيرة. تسويةACKللإرسال/الإخفاءمحروسةمستقلةعنالعرضلمنعتكرارالمسودةأوإظهارالمخفيبعدالعودة. logout/versionخارجscroll،width65%cap304والخطوط/48pxمحفوظة. بوابة370/369PASS/skipسعةقديم،TypeScriptو57حارس12.49s؛native/artifactوالتوزيعلمتكتملبعد. مرجع [BW-WORDMARK-DRAWER والنتائج](../../build-governance/BWORK-BRAND-20261018.md). لاQA/Livedeployجديدوفجوةhostالسابقةلمتغلق.
+
 ## BWORK-ORDERS-FLOW-20261019 — 0.1.18/build19 متاحة على GitHub؛ QA host غير مؤكد
 
 نسخة0.1.18/build19 بطلبالمالك شاملةكلالتدفق وبطاقة3صفوف. مصدرAPK `c0498c110f9d4ea0efd1c50a21a271394e435885`،364اختبارًا/363PASS/1skipقائم و51حارسًا وTypeScript؛ nativeAR/EN320 زر397 فوقIME411،ترقيةدونclearوشهادةوصلاحياتثابتة. [صفحةالتحميل](https://github.com/hajrix01-star/abroj-baseer-production/releases/tag/bwork-trial-apk-0.1.18-c0498c11):65503900B/SHA256`37679BFB369F7EEEDB87B754083FBCEBCEDA51738A37C700049C59E8065E6D99` مطابق لتنزيلعامومراجعةhashمستقلة،prerelease/nonlatest. ERPفعليمعزول62/62 PASS/0skip فيrun39206602095؛PR414merged`f200ed6f` يطابقشجرةالموديولالمختبرة. سياسةQAbridge-onlyPR415merged`b7351c0f`،المسارالمحميrun39207594522نجح **Queuedفقط**. تفويضالمالكومراجعةالحارسقبلاCONDITIONAL GOللتوزيعQAمعحدودصريحة؛ actualhostdeploymentغيرمؤكد،وفحصالوصولالأخيرlogin303/rooms404بعد502مؤقت. لاQA_DEPLOY=GO ولااعتماداستلامتشغيليأوLive. [الأدلةوالحدودF05–F08](../../build-governance/BWORK-ORDERS-20261019.md).

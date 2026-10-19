@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, AppState, BackHandler, Text, useWindowDimensions, View } from 'react-native';
+import { Alert, AppState, BackHandler, Keyboard, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import NetInfo from '@react-native-community/netinfo';
 import type { ChatEngine, Room } from './core/ChatEngine';
@@ -54,7 +54,7 @@ export function SessionApp({ engine, initialLanguage = 'ar', onLanguageChange }:
   useEffect(() => {
     if (area !== 'orders') return;
     const listener = BackHandler.addEventListener('hardwareBackPress', () => {
-      if (menu) setMenu(false); else setArea('chat');
+      if (menu) setMenu(false); else { Keyboard.dismiss(); setArea('chat'); }
       return true;
     });
     return () => listener.remove();
@@ -87,6 +87,7 @@ export function SessionApp({ engine, initialLanguage = 'ar', onLanguageChange }:
     chat.selected?.id,
     chat.selected?.company_id,
     chat.selected?.membership_id,
+    area,
     interactionEpoch.current,
   ]);
   const liveScope = useRef(scopeKey);
@@ -114,7 +115,7 @@ export function SessionApp({ engine, initialLanguage = 'ar', onLanguageChange }:
     return () => listener.remove();
   }, []);
   useEffect(() => {
-    if (wide || !chat.selected) return;
+    if (area !== 'chat' || wide || !chat.selected) return;
     const listener = BackHandler.addEventListener('hardwareBackPress', () => {
       if (menu) setMenu(false);
       else if (companyChoice) setCompanyChoice(null);
@@ -123,7 +124,7 @@ export function SessionApp({ engine, initialLanguage = 'ar', onLanguageChange }:
       return true;
     });
     return () => listener.remove();
-  }, [wide, chat.selected, chat.select, menu, management, companyChoice]);
+  }, [area, wide, chat.selected, chat.select, menu, management, companyChoice]);
   useEffect(() => {
     if (!chat.identity) {
       setCompanyId(0);
@@ -141,6 +142,7 @@ export function SessionApp({ engine, initialLanguage = 'ar', onLanguageChange }:
   const requestManagement = (mode: ManagementMode) => {
     if (
       !identity ||
+      (liveArea.current !== 'chat' && mode !== 'policy') ||
       !active.current ||
       liveScope.current !== scopeKey ||
       chat.offline ||
@@ -232,7 +234,7 @@ export function SessionApp({ engine, initialLanguage = 'ar', onLanguageChange }:
     chat.selected.membership_id === photoNotice.membershipId;
   return (
     <SafeAreaView style={styles.page}>
-      {(!identity || wide || !chat.selected) && (
+      {(!identity || area === 'orders' || wide || !chat.selected) && (
         <View
           style={[
             styles.header,
@@ -315,13 +317,21 @@ export function SessionApp({ engine, initialLanguage = 'ar', onLanguageChange }:
               <Label language={language}>{t(chat.error)}</Label>
             </View>
           )}
-          {area === 'orders' ? <OrdersScreen engine={getOrdersEngine()} identity={chat.identity} language={language}
+          {area === 'orders' && <OrdersScreen engine={getOrdersEngine()} identity={chat.identity} language={language}
             selectedCompanyId={companyId} onCompanyChange={id => {
               if (active.current && liveArea.current === 'orders' && liveScope.current === scopeKey && identity && (id === 0 || identity.company_ids.includes(id))) setCompanyId(id);
-            }} scopeKey={engine.accountScope ?? ''} online={!chat.offline && !!identity} rooms={chat.rooms} onBack={() => setArea('chat')} /> : <View
+            }} scopeKey={engine.accountScope ?? ''} online={!chat.offline && !!identity} rooms={chat.rooms} onBack={() => {
+              if (!active.current || liveArea.current !== 'orders' || liveScope.current !== scopeKey) return;
+              Keyboard.dismiss(); setArea('chat');
+            }} />}
+          <View
+            testID="chat-workspace"
+            pointerEvents={area === 'chat' ? 'auto' : 'none'}
+            accessibilityElementsHidden={area !== 'chat'}
+            importantForAccessibility={area === 'chat' ? 'auto' : 'no-hide-descendants'}
             style={[
               styles.fill,
-              { flexDirection: wide ? (language === 'ar' ? 'row-reverse' : 'row') : 'column' },
+              { display: area === 'chat' ? 'flex' : 'none', flexDirection: wide ? (language === 'ar' ? 'row-reverse' : 'row') : 'column' },
             ]}>
             {(wide || !chat.selected) && (
               <View
@@ -346,6 +356,7 @@ export function SessionApp({ engine, initialLanguage = 'ar', onLanguageChange }:
                   selectCompany={id => {
                     if (
                       !identity ||
+                      liveArea.current !== 'chat' ||
                       !active.current ||
                       liveScope.current !== scopeKey ||
                       identity.permissions.chat_view !== true ||
@@ -360,6 +371,7 @@ export function SessionApp({ engine, initialLanguage = 'ar', onLanguageChange }:
                   select={room => {
                     if (
                       !identity ||
+                      liveArea.current !== 'chat' ||
                       !active.current ||
                       liveScope.current !== scopeKey ||
                       identity.permissions.chat_view !== true ||
@@ -379,6 +391,7 @@ export function SessionApp({ engine, initialLanguage = 'ar', onLanguageChange }:
                 chat={chat}
                 language={language}
                 t={t}
+                presented={area === 'chat'}
                 back={
                   wide
                     ? undefined
@@ -398,7 +411,7 @@ export function SessionApp({ engine, initialLanguage = 'ar', onLanguageChange }:
                 </View>
               )
             )}
-          </View>}
+          </View>
           {companyChoice?.scope === scopeKey && identity?.permissions.chat_view === true && (
             <CompanySelector
               key={`${scopeKey}/${companyChoice.mode}`}
@@ -461,9 +474,9 @@ export function SessionApp({ engine, initialLanguage = 'ar', onLanguageChange }:
         soundsReady={chat.soundsReady}
         onSoundsChange={chat.setSoundsEnabled}
         ordersLabel={orderTranslator(language)('orders')}
-        onOrders={identity?.permissions.order_view === true && !chat.selected ? () => {
+        onOrders={identity?.permissions.order_view === true ? () => {
           if (!active.current || liveScope.current !== scopeKey) return;
-          setMenu(false); setArea('orders');
+          Keyboard.dismiss(); setMenu(false); setArea('orders');
         } : undefined}
       />
     </SafeAreaView>

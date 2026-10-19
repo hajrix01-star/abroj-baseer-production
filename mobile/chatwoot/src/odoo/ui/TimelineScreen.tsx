@@ -41,6 +41,7 @@ export function TimelineScreen({
   back,
   manage,
   onMenu,
+  presented = true,
 }: {
   engine: ChatEngine;
   chat: ChatView;
@@ -49,8 +50,12 @@ export function TimelineScreen({
   back?: () => void;
   manage: () => void;
   onMenu?: () => void;
+  presented?: boolean;
 }) {
   const room = chat.selected!;
+  // The shell may retain this exact conversation while another section is visible.
+  // Native viewability/layout events and retained callbacks must consult current presentation.
+  const presentedRef = useRef(presented); presentedRef.current = presented;
   const [text, setText] = useState('');
   const [reply, setReply] = useState<Message | null>(null);
   const [localError, setLocalError] = useState<Word | null>(null);
@@ -60,9 +65,9 @@ export function TimelineScreen({
   const keyboardMeasure = useRef(0);
   const access = conversationAccess(chat.identity, room);
   const { directOff } = access;
-  const canSend = chat.presentationReady && access.canSend;
-  const canAttach = chat.presentationReady && access.canAttach;
-  const viewMedia = chat.presentationReady && canViewMedia(chat.identity, room);
+  const canSend = presented && chat.presentationReady && access.canSend;
+  const canAttach = presented && chat.presentationReady && access.canAttach;
+  const viewMedia = presented && chat.presentationReady && canViewMedia(chat.identity, room);
   const mediaKey = presentationKey(chat.identity, room);
   const previewScope = `${chat.identity?.database}/${mediaKey}`;
   const actionScope = `${engine.accountScope}/${previewScope}`;
@@ -85,15 +90,20 @@ export function TimelineScreen({
   const [info, setInfo] = useState<{ scope: string; message: Message; cached: boolean } | null>(null);
   const [actionBusy, setActionBusy] = useState(false);
   const actionOperation = useRef(0);
+  const hiddenMutation = useRef(0);
+  const hiddenAuthority = useRef(false);
+  hiddenAuthority.current = chat.presentationReady && chat.identity?.permissions.chat_view === true
+    && chat.identity.company_ids.includes(room.company_id);
   const [jumpTarget, setJumpTarget] = useState<{ scope: string; id: number } | null>(null);
   useEffect(() => {
     let active = true;
     const requested = actionScope;
+    const mutation = hiddenMutation.current;
     setActionBusy(false); setInfo(null); setJumpTarget(null);
     void engine.hiddenMessages(room).then(ids => {
-      if (active && currentActionScope.current === requested) setHiddenState({ scope: requested, ids });
+      if (active && currentActionScope.current === requested && hiddenMutation.current === mutation) setHiddenState({ scope: requested, ids });
     }).catch(e => { if (active && currentActionScope.current === requested) setLocalError(errorWord(e)); });
-    return () => { active = false; actionOperation.current++; };
+    return () => { active = false; actionOperation.current++; hiddenMutation.current++; };
   }, [engine, actionScope]);
   const [visibleImages, setVisibleImages] = useState<{ scope: string; ids: number[] }>({
     scope: '',
@@ -101,6 +111,7 @@ export function TimelineScreen({
   });
   const previewChanged = useCallback(
     ({ viewableItems }: { viewableItems: ViewToken<Row>[] }) => {
+      if (!presentedRef.current) return;
       const ids = viewableItems
         .filter(item => item.isViewable && ['image', 'audio'].includes(String(item.item.message?.media?.kind)))
         .map(item => item.item.message!.id)
@@ -129,14 +140,16 @@ export function TimelineScreen({
   const live = useRef(true);
   const latestAccess = useRef(canSend);
   latestAccess.current = canSend;
+  const latestSendAuthority = useRef(chat.presentationReady && access.canSend);
+  latestSendAuthority.current = chat.presentationReady && access.canSend;
   // Coalesce layout signals and let recycled cells commit before one correction.
   // Native onScroll can still describe the previous tail, so prefer FlashList's fresh layout.
   const scrollLatest = useCallback(() => {
-    if (scrollFrame.current !== null) return;
+    if (!presentedRef.current || scrollFrame.current !== null) return;
     scrollFrame.current = requestAnimationFrame(() => {
       scrollFrame.current = requestAnimationFrame(() => {
         scrollFrame.current = null;
-        if (!live.current || browsing.current || dragging.current || !follow.current.following) return;
+        if (!presentedRef.current || !live.current || browsing.current || dragging.current || !follow.current.following) return;
         let { content, viewport, offset } = scrollGeometry.current;
         const current = list.current;
         try {
@@ -158,7 +171,7 @@ export function TimelineScreen({
     });
   }, []);
   const followGeometry = useCallback(() => {
-    if (follow.current.following && !dragging.current) scrollLatest();
+    if (presentedRef.current && follow.current.following && !dragging.current) scrollLatest();
   }, [scrollLatest]);
   useEffect(() => {
     live.current = true;
@@ -171,6 +184,17 @@ export function TimelineScreen({
       if (scrollFrame.current !== null) cancelAnimationFrame(scrollFrame.current);
     };
   }, [followGeometry]);
+  useEffect(() => {
+    if (presented) return;
+    actionOperation.current++;
+    keyboardMeasure.current++;
+    setInfo(null); setActionsFor(null); setActionBusy(false); setJumpTarget(null);
+    setVisibleImages({ scope: '', ids: [] });
+    dragging.current = false;
+    if (scrollFrame.current !== null) cancelAnimationFrame(scrollFrame.current);
+    scrollFrame.current = null;
+    // Do not clear the draft/reply, change reader intent, or accept zero-sized hidden geometry.
+  }, [presented]);
   const chooseReply = (message: Message) => {
     if (!latestAccess.current || !live.current || (message.author_user_id === currentMessages.current.userId
       && (!hiddenRef.current.ready || hiddenRef.current.ids.has(message.id)))) return;
@@ -179,10 +203,10 @@ export function TimelineScreen({
     setReply(message);
     input.current?.focus();
   };
-  const operationCurrent = (scope: string, operation: number) => live.current && currentActionScope.current === scope
+  const operationCurrent = (scope: string, operation: number) => presentedRef.current && live.current && currentActionScope.current === scope
     && actionOperation.current === operation && AppState.currentState === 'active';
   const showInfo = async (message: Message) => {
-    if (currentActionScope.current !== actionScope || !live.current || !chat.presentationReady || AppState.currentState !== 'active') return;
+    if (!presentedRef.current || currentActionScope.current !== actionScope || !live.current || !chat.presentationReady || AppState.currentState !== 'active') return;
     const requested = actionScope, operation = ++actionOperation.current;
     setActionsFor(null); setActionBusy(true); setLocalError(null);
     setInfo({ scope: requested, message, cached: true });
@@ -193,32 +217,36 @@ export function TimelineScreen({
     finally { if (operationCurrent(requested, operation)) setActionBusy(false); }
   };
   const changeHidden = async (messageId: number, hidden: boolean) => {
-    if (currentActionScope.current !== actionScope || !live.current || !chat.presentationReady || AppState.currentState !== 'active') return;
+    if (!presentedRef.current || currentActionScope.current !== actionScope || !live.current || !chat.presentationReady || AppState.currentState !== 'active') return;
     if (hidden && !ownsMessage(messageId)) return;
     const requested = actionScope, operation = ++actionOperation.current;
+    const mutation = ++hiddenMutation.current;
+    const submittedReply = replyRevision.current;
     setActionsFor(null); setActionBusy(true); setLocalError(null);
     try {
       const ids = await engine.setMessageHidden(room, messageId, hidden);
-      if (operationCurrent(requested, operation)) {
-        setHiddenState({ scope: requested, ids }); setInfo(null);
-        if (hidden && reply?.id === messageId) { replyRevision.current++; setReply(null); }
+      if (live.current && receiptLive.current && currentActionScope.current === requested
+        && hiddenMutation.current === mutation && hiddenAuthority.current) {
+        setHiddenState({ scope: requested, ids });
+        if (hidden && reply?.id === messageId && submittedReply === replyRevision.current) { replyRevision.current++; setReply(null); }
       }
+      if (operationCurrent(requested, operation)) setInfo(null);
     } catch (e) { if (operationCurrent(requested, operation)) setLocalError(errorWord(e)); }
     finally { if (operationCurrent(requested, operation)) setActionBusy(false); }
   };
   const confirmHide = (messageId: number) => {
-    if (currentActionScope.current !== actionScope || !live.current || !chat.presentationReady || AppState.currentState !== 'active') return;
+    if (!presentedRef.current || currentActionScope.current !== actionScope || !live.current || !chat.presentationReady || AppState.currentState !== 'active') return;
     if (!ownsMessage(messageId)) return;
     const requested = actionScope;
     Alert.alert(t('hideLocal'), t('hideLocalConfirm'), [
       { text: t('cancel'), style: 'cancel' },
       { text: t('hideLocal'), style: 'destructive', onPress: () => {
-        if (currentActionScope.current === requested && live.current) void changeHidden(messageId, true);
+        if (presentedRef.current && currentActionScope.current === requested && live.current) void changeHidden(messageId, true);
       } },
     ]);
   };
   const openOriginal = async (messageId: number) => {
-    if (currentActionScope.current !== actionScope || !live.current || !chat.presentationReady || AppState.currentState !== 'active') return;
+    if (!presentedRef.current || currentActionScope.current !== actionScope || !live.current || !chat.presentationReady || AppState.currentState !== 'active') return;
     const requested = actionScope, operation = ++actionOperation.current;
     follow.current.following = false; setShowLatest(true); setActionsFor(null); setActionBusy(true); setLocalError(null);
     try {
@@ -243,6 +271,7 @@ export function TimelineScreen({
   );
   const visibleChanged = useCallback(
     ({ viewableItems }: { viewableItems: ViewToken<Row>[] }) => {
+      if (!presentedRef.current) return;
       const active = AppState.currentState === 'active' && chat.presentationReady && !chat.offline;
       for (const id of visibleReadIds(
         viewableItems.filter(item => item.isViewable && (item.item.message?.author_user_id !== chat.identity?.user_id
@@ -255,7 +284,7 @@ export function TimelineScreen({
         void engine
           .acknowledge(room, id, 'read')
           .then(ack => {
-            if (ack && receiptLive.current) chat.capture();
+            if (ack && receiptLive.current && presentedRef.current) chat.capture();
           })
           .catch(() => {
             /* Retry only when it is actually visible again. */
@@ -266,24 +295,28 @@ export function TimelineScreen({
     [chat.identity?.user_id, chat.presentationReady, chat.offline, chat.capture, engine, room],
   );
   const send = async (attachment?: Attachment) => {
-    if (sendBusy.current || !canSend) return;
+    if (!presentedRef.current || sendBusy.current || !latestAccess.current || !canSend) return;
     sendBusy.current = true;
     const submittedDraft = draftRevision.current;
     const submittedReply = replyRevision.current;
+    const submittedScope = actionScope;
     setSending(true);
     setLocalError(null);
     try {
       if (attachment) await engine.enqueueAttachment(room, attachment, text, reply?.id);
       else await engine.enqueue(room, text, reply?.id);
-      if (!live.current || !latestAccess.current) return;
-      chat.soundSent?.(room);
-      if (!browsing.current) follow.current.ownEnqueued();
-      setShowLatest(browsing.current);
+      if (!live.current || !receiptLive.current || currentActionScope.current !== submittedScope || !latestSendAuthority.current) return;
+      // Hiding a retained conversation is not revoking its authority. The durable
+      // enqueue owns this exact submitted draft even when Orders is now visible.
       if (submittedDraft === draftRevision.current) setText('');
       if (submittedReply === replyRevision.current) setReply(null);
-      setActionsFor(null);
       chat.capture();
-      if (!browsing.current) scrollLatest();
+      if (presentedRef.current) {
+        chat.soundSent?.(room);
+        if (!browsing.current) follow.current.ownEnqueued();
+        setShowLatest(browsing.current); setActionsFor(null);
+        if (!browsing.current) scrollLatest();
+      }
       // The durable local queue owns retry/ACK. Network latency must not hold the composer lock.
       if (!chat.offline) void chat.sync().catch(() => undefined);
     } catch (e) {
@@ -302,22 +335,23 @@ export function TimelineScreen({
   const rowPresentation = useMemo(() => ({ mediaKey, hiddenState, actionsFor, jumpTarget, actionBusy, visibleImages, language, canSend, viewMedia }),
     [mediaKey, hiddenState, actionsFor, jumpTarget, actionBusy, visibleImages, language, canSend, viewMedia]);
   useEffect(() => {
-    if (jumpTarget?.scope !== actionScope) return;
+    if (!presented || jumpTarget?.scope !== actionScope) return;
     const index = rows.findIndex(row => row.message?.id === jumpTarget.id);
     if (index < 0) return;
     const requested = actionScope;
     const frame = requestAnimationFrame(() => {
-      if (live.current && currentActionScope.current === requested)
+      if (presentedRef.current && live.current && currentActionScope.current === requested)
         list.current?.scrollToIndex({ index, animated: false, viewPosition: 0.4 });
     });
     return () => cancelAnimationFrame(frame);
-  }, [jumpTarget, actionScope, chat.history.messages]);
+  }, [presented, jumpTarget, actionScope, chat.history.messages]);
   const lastKey = rows[rows.length - 1]?.key;
   useEffect(() => {
+    if (!presented) return;
     if (browsing.current) { follow.current.following = false; setShowLatest(true); return; }
     if (follow.current.rows(lastKey)) scrollLatest();
     else if (lastKey && !follow.current.following) setShowLatest(true);
-  }, [lastKey, scrollLatest, chat.history.archive?.browsing]);
+  }, [presented, lastKey, scrollLatest, chat.history.archive?.browsing]);
   const companyName = companyDisplayName(
     chat.identity?.profile?.companies.find(company => company.id === room.company_id),
     language,
@@ -336,9 +370,10 @@ export function TimelineScreen({
       ref={keyboardFrame}
       style={[styles.fill, { minHeight: 0, direction: 'ltr' }]}
       onLayout={() => {
+        if (!presentedRef.current) return;
         const requested = ++keyboardMeasure.current;
         keyboardFrame.current?.measureInWindow((_x, y) => {
-          if (receiptLive.current && requested === keyboardMeasure.current) setKeyboardOffset(y);
+          if (presentedRef.current && receiptLive.current && requested === keyboardMeasure.current) setKeyboardOffset(y);
         });
       }}>
       <KeyboardAvoidingView
@@ -355,8 +390,8 @@ export function TimelineScreen({
                 flexDirection: language === 'ar' ? 'row-reverse' : 'row',
               },
             ]}>
-            {onMenu && <IconButton icon="menu" label={t('menu')} onPress={onMenu} />}
-            <GroupAvatar engine={engine} room={room} enabled={chat.presentationReady} size={38} />
+            {onMenu && <IconButton icon="menu" label={t('menu')} onPress={() => { if (presentedRef.current) onMenu(); }} />}
+            <GroupAvatar engine={engine} room={room} enabled={presented && chat.presentationReady} size={38} />
             <View style={[styles.fill, { minWidth: 0 }]}>
               <Text
                 numberOfLines={1}
@@ -374,14 +409,14 @@ export function TimelineScreen({
                 icon="members"
                 label={t('members')}
                 disabled={chat.offline}
-                onPress={manage}
+                onPress={() => { if (presentedRef.current) manage(); }}
               />
             )}
             {back && (
               <IconButton
                 icon="back"
                 label={t('back')}
-                onPress={back}
+                onPress={() => { if (presentedRef.current) back(); }}
                 style={language === 'ar' ? { transform: [{ rotate: '180deg' }] } : undefined}
               />
             )}
@@ -403,32 +438,39 @@ export function TimelineScreen({
             onLoad={followGeometry}
             onCommitLayoutEffect={followGeometry}
             onLayout={event => {
+              if (!presentedRef.current) return;
               if (event?.nativeEvent?.layout)
                 scrollGeometry.current.viewport = event.nativeEvent.layout.height;
               followGeometry();
             }}
             onContentSizeChange={(_width, height) => {
+              if (!presentedRef.current) return;
               if (typeof height === 'number') scrollGeometry.current.content = height;
               followGeometry();
             }}
             scrollEventThrottle={16}
             onScrollBeginDrag={() => {
+              if (!presentedRef.current) return;
               dragging.current = true;
               if (scrollFrame.current !== null) cancelAnimationFrame(scrollFrame.current);
               scrollFrame.current = null;
             }}
             onScrollEndDrag={() => {
+              if (!presentedRef.current) return;
               dragging.current = false;
             }}
             onMomentumScrollBegin={() => {
+              if (!presentedRef.current) return;
               dragging.current = true;
               if (scrollFrame.current !== null) cancelAnimationFrame(scrollFrame.current);
               scrollFrame.current = null;
             }}
             onMomentumScrollEnd={() => {
+              if (!presentedRef.current) return;
               dragging.current = false;
             }}
             onScroll={event => {
+              if (!presentedRef.current) return;
               const { contentSize, layoutMeasurement, contentOffset } = event.nativeEvent;
               scrollGeometry.current = {
                 content: contentSize.height,
@@ -456,6 +498,7 @@ export function TimelineScreen({
                   title={t('older')}
                   disabled={chat.busy || chat.offline && chat.history.archive?.older.kind !== 'cached'}
                   onPress={() => {
+                    if (!presentedRef.current) return;
                     follow.current.following = false; setShowLatest(true);
                     void chat.older().catch(() => undefined);
                   }}
@@ -463,7 +506,7 @@ export function TimelineScreen({
               ) : null}
               </View>
             }
-            ListFooterComponent={chat.history.archive?.browsing && chat.history.archive.newer.kind === 'cached' ? <Button quiet title={t('newer')} disabled={chat.busy} onPress={() => { void chat.newer().catch(() => undefined); }} /> : null}
+            ListFooterComponent={chat.history.archive?.browsing && chat.history.archive.newer.kind === 'cached' ? <Button quiet title={t('newer')} disabled={chat.busy} onPress={() => { if (presentedRef.current) void chat.newer().catch(() => undefined); }} /> : null}
             ListEmptyComponent={
               <View style={{ padding: 24 }}>
                 <Label language={language} muted>
@@ -504,6 +547,7 @@ export function TimelineScreen({
                     if (event.nativeEvent.actionName === 'hide' && message) confirmHide(message.id);
                   }}
                   onPress={() => {
+                    if (!presentedRef.current) return;
                     if (message)
                       setActionsFor(actionsFor === message.id ? null : message.id);
                   }}
@@ -649,7 +693,8 @@ export function TimelineScreen({
                 label={chat.history.archive?.browsing ? t('newer') : t('latest')}
                 disabled={chat.busy}
                 onPress={() => {
-                  const finish = () => { if (live.current) { follow.current.ownEnqueued(); setShowLatest(false); scrollLatest(); } };
+                  if (!presentedRef.current) return;
+                  const finish = () => { if (presentedRef.current && live.current) { follow.current.ownEnqueued(); setShowLatest(false); scrollLatest(); } };
                   if (chat.history.archive?.browsing) void chat.latest().then(finish).catch(() => undefined);
                   else finish();
                 }}
@@ -724,6 +769,7 @@ export function TimelineScreen({
                   multiline
                   value={text}
                   onChangeText={value => {
+                    if (!presentedRef.current) return;
                     draftRevision.current++;
                     setText(value);
                   }}
@@ -747,7 +793,7 @@ export function TimelineScreen({
           )}
         </View>
       </KeyboardAvoidingView>
-      {info?.scope === actionScope && (info.message.author_user_id !== chat.identity?.user_id
+      {presented && info?.scope === actionScope && (info.message.author_user_id !== chat.identity?.user_id
         || hiddenReady && !hiddenIds.has(info.message.id)) && (
         <Sheet compact title={t('messageInfo')} language={language} t={t} close={() => {
           actionOperation.current++; setInfo(null); setActionBusy(false);

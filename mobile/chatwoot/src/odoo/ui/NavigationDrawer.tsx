@@ -325,19 +325,21 @@ export function NavigationDrawer({
                   disabled={busy}
                   onPress={() => onAction('refresh')}
                 />
-                <MenuRow
-                  icon="logout"
-                  label={t('logout')}
-                  language={language}
-                  disabled={busy}
-                  danger
-                  onPress={() => onAction('logout')}
-                />
-                <View style={{ paddingHorizontal: 16, paddingTop: 8 }}>
-                  <VersionLabel language={language} />
-                </View>
               </View>
             </ScrollView>
+            <View testID="drawer-footer" style={{ flexShrink: 0, borderTopWidth: 1, borderColor: colors.border, paddingTop: 6 }}>
+              <MenuRow
+                icon="logout"
+                label={t('logout')}
+                language={language}
+                disabled={busy}
+                danger
+                onPress={() => onAction('logout')}
+              />
+              <View style={{ paddingHorizontal: 12, paddingTop: 4 }}>
+                <VersionLabel language={language} />
+              </View>
+            </View>
           </View>
           <Pressable
             accessibilityRole="button"

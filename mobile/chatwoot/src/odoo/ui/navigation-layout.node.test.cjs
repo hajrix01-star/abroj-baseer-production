@@ -42,7 +42,7 @@ function hookState() {
     throw new Error('Synthetic render did not settle');
   } };
 }
-const jsx = { jsx: (type, props) => ({ type, props: props || {} }), jsxs: (type, props) => ({ type, props: props || {} }), Fragment: 'Fragment' };
+const jsx = { jsx: (type, props, key) => ({ type, key, props: props || {} }), jsxs: (type, props, key) => ({ type, key, props: props || {} }), Fragment: 'Fragment' };
 function load(relative, modules, globals = {}) {
   const source = readFileSync(join(__dirname, relative), 'utf8');
   const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS,
@@ -102,14 +102,15 @@ function drawer(width = 320) {
 }
 function session() {
   const state = hookState(), nativeApp = appState(), calls = [], alerts = [], frames = [];
-  let width = 320, back;
+  let width = 320; const backHandlers = new Set();
   const chat = { identity: identity(), presentationReady: true, selected: null, offline: false, busy: false,
     pending: [], rooms: [], error: null, select: async room => { calls.push(['select', room]); },
     sync: async () => { calls.push('sync'); }, logout: async () => { calls.push('logout'); }, capture() {} };
   const engine = { accountScope: 'synthetic-actor/epoch:1', get identity() { return chat.identity; }, rooms: () => chat.rooms };
   const module = load('../OdooTrialApp.tsx', { react: state.react, 'react/jsx-runtime': jsx,
     'react-native': { Alert: { alert: (title, message, buttons) => alerts.push({ title, message, buttons }) }, AppState: nativeApp,
-      BackHandler: { addEventListener(_event, callback) { back = callback; return { remove() { back = undefined; } }; } },
+      BackHandler: { addEventListener(_event, callback) { backHandlers.add(callback); return { remove() { backHandlers.delete(callback); } }; } },
+      Keyboard: { dismiss: () => calls.push('dismiss-keyboard') },
       Text: 'Text', View: 'View', useWindowDimensions: () => ({ width }) },
     'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView', SafeAreaProvider: 'SafeAreaProvider' },
     './ui/components': components, './ui/dictionary': dictionary, './ui/useChat': { useChat: () => chat }, './ui/viewModel': viewModel,
@@ -125,7 +126,7 @@ function session() {
   }, { requestAnimationFrame: callback => { frames.push(callback); return frames.length; } });
   assert.equal(typeof module.SessionApp, 'function', 'test uses the actual named SessionApp export');
   return { engine, chat, calls, alerts, nativeApp, render: () => state.render(() => module.SessionApp({ engine })),
-    width(value) { width = value; }, back() { return back?.(); }, flushFrames() { for (const frame of frames.splice(0)) frame(); } };
+    width(value) { width = value; }, back() { for (const callback of [...backHandlers].reverse()) if (callback()) return true; return false; }, flushFrames() { for (const frame of frames.splice(0)) frame(); } };
 }
 
 test('drawer never renders a masked identity and profile lists only authorized company metadata', () => {
@@ -145,7 +146,7 @@ test('drawer never renders a masked identity and profile lists only authorized c
   assert.ok(nodes(app.render()).some(node => node.type === 'Pressable' && node.props.accessibilityLabel === app.props.t('profile')));
 });
 
-test('compact drawer keeps brand on the toggle row and all actions in the scrollable group', () => {
+test('compact drawer keeps brand on the toggle row and pins logout below the independently scrollable actions', () => {
   const app = drawer();
   const tree = app.render();
   const pane = one(tree, 'View', p => p.accessibilityViewIsModal);
@@ -155,11 +156,19 @@ test('compact drawer keeps brand on the toggle row and all actions in the scroll
   assert.equal(nodes(heading).filter(n => n.type === 'Brand').length, 1);
   const scroll = nodes(tree).find(n => n.type === 'ScrollView');
   assert.equal(nodes(scroll).some(n => n.type === 'Brand'), false);
-  for (const key of ['profile','settings','refresh','logout']) {
+  for (const key of ['profile','settings','refresh']) {
     const action = one(scroll, 'Pressable', p => p.accessibilityLabel === app.props.t(key));
     const style = action.style({pressed:false})[0];
     assert.equal(style.minHeight, 48);
   }
+  assert.equal(nodes(scroll).some(n => n.type === 'Pressable' && n.props.accessibilityLabel === app.props.t('logout')), false);
+  assert.equal(nodes(scroll).some(n => n.type === 'VersionLabel'), false);
+  const footer = nodes(tree).find(n => n.props?.testID === 'drawer-footer');
+  assert.equal(footer.props.style.flexShrink, 0);
+  assert.equal(one(footer, 'Pressable', p => p.accessibilityLabel === app.props.t('logout')).style({pressed:false})[0].minHeight, 48);
+  assert.equal(nodes(footer).at(-1).type, 'VersionLabel');
+  const paneChildren = pane.children.filter(Boolean);
+  assert.equal(paneChildren.at(-2), scroll); assert.equal(paneChildren.at(-1), footer);
   const account = nodes(tree).find(n => n.type === 'View' && n.props.testID === 'drawer-account');
   assert.equal(account.props.style.flexDirection, 'row-reverse');
   assert.equal(one(account, 'Text', p => p.accessibilityLabel === app.props.identity.profile.name).numberOfLines, 2);
@@ -206,13 +215,36 @@ test('orders shell entry uses explicit user rights and cannot unmount a selected
   assert.equal(typeof openOrders, 'function'); openOrders();
   const orders = one(app.render(), 'OrdersScreen');
   assert.equal(orders.scopeKey, app.engine.accountScope); assert.equal(orders.online, true);
-  assert.equal(orders.identity, app.chat.identity); assert.deepEqual(app.calls, []);
+  assert.equal(orders.identity, app.chat.identity); assert.deepEqual(app.calls, ['dismiss-keyboard']);
   orders.onBack(); assert.ok(one(app.render(), 'RoomsScreen'));
   app.chat.selected = { id: 4, company_id: 1, membership_id: 9 };
-  assert.equal(one(app.render(), 'NavigationDrawer').onOrders, undefined);
+  const before = app.render(); const selected = app.chat.selected;
+  const timelineBefore = nodes(before).find(node => node.type === 'TimelineScreen');
+  assert.equal(typeof one(before, 'NavigationDrawer').onOrders, 'function');
   openOrders(); assert.ok(one(app.render(), 'TimelineScreen'));
   assert.equal(nodes(app.render()).some(node => node.type === 'OrdersScreen'), false);
-  assert.deepEqual(app.calls, [], 'no reselect, room load or hidden timeline mount from an old menu action');
+  assert.equal(app.calls.some(call => Array.isArray(call) && call[0] === 'select'), false, 'old menu action cannot reselect or load a room');
+  const currentOpen = one(app.render(), 'NavigationDrawer').onOrders; currentOpen();
+  const hidden = app.render();
+  const timelineHidden = nodes(hidden).find(node => node.type === 'TimelineScreen');
+  assert.equal(timelineHidden.type, timelineBefore.type); assert.equal(timelineHidden.key, timelineBefore.key);
+  const path = (tree, target, prefix = '') => {
+    if (tree === target) return prefix;
+    if (!tree || typeof tree !== 'object') return null;
+    const children = Array.isArray(tree) ? tree : [tree.props?.children];
+    for (let i = 0; i < children.length; i++) { const found = path(children[i], target, `${prefix}/${i}`); if (found !== null) return found; }
+    return null;
+  };
+  assert.equal(path(hidden, timelineHidden), path(before, timelineBefore), 'same type/key and sibling path preserves the mounted React subtree');
+  assert.equal(timelineHidden.props.presented, false);
+  const workspace = one(hidden, 'View', p => p.testID === 'chat-workspace');
+  assert.equal(workspace.style.at(-1).display, 'none'); assert.equal(workspace.pointerEvents, 'none');
+  assert.equal(workspace.importantForAccessibility, 'no-hide-descendants');
+  assert.equal(app.chat.selected, selected);
+  app.back(); const restored = app.render();
+  assert.equal(one(restored, 'TimelineScreen').presented, true);
+  assert.equal(app.chat.selected, selected);
+  assert.equal(app.calls.some(call => Array.isArray(call) && call[0] === 'select'), false, 'Orders hardware back returns without clearing/reselecting the conversation');
   app.chat.selected = null; app.render();
   one(app.render(), 'NavigationDrawer').onOrders(); app.render();
   app.chat.presentationReady = false;
@@ -220,6 +252,22 @@ test('orders shell entry uses explicit user rights and cannot unmount a selected
   app.chat.identity.permissions.order_view = false; app.chat.presentationReady = true;
   assert.equal(one(app.render(), 'NavigationDrawer').onOrders, undefined);
   assert.equal(nodes(app.render()).some(node => node.type === 'OrdersScreen'), false);
+});
+
+test('unified Orders entry keeps the same label and permission guard for home and conversation in both languages', () => {
+  for (const language of ['ar', 'en']) {
+    const app = session(); app.chat.identity.permissions.order_view = true;
+    if (language === 'en') one(app.render(), 'NavigationDrawer').onAction('en');
+    const home = one(app.render(), 'NavigationDrawer');
+    app.chat.selected = { id: 4, company_id: 1, membership_id: 9 };
+    const conversation = one(app.render(), 'NavigationDrawer');
+    assert.equal(home.ordersLabel, conversation.ordersLabel);
+    assert.equal(typeof conversation.onOrders, 'function');
+    const retained = conversation.onOrders;
+    app.chat.identity.permissions.order_view = false; app.render(); retained();
+    assert.equal(nodes(app.render()).some(n => n.type === 'OrdersScreen'), false);
+    assert.equal(one(app.render(), 'NavigationDrawer').onOrders, undefined);
+  }
 });
 
 test('orders and chat share the selected company; retained orders callbacks cannot change another area or actor', () => {
@@ -235,6 +283,17 @@ test('orders and chat share the selected company; retained orders callbacks cann
   const oldActor = orders.onCompanyChange;
   app.engine.accountScope = 'new-actor/epoch:2'; app.chat.identity = identity(9); app.chat.identity.permissions.order_view = true;
   app.render(); oldActor(0); assert.equal(one(app.render(), 'OrdersScreen').selectedCompanyId, 1, 'old callback cannot alter the current authorized chat company filter');
+});
+
+test('Orders keeps authorized global policy settings without allowing hidden conversation management callbacks', () => {
+  const app = session(); app.chat.identity.permissions.order_view = true;
+  app.chat.selected = {id: 4, company_id: 1, membership_id: 9, is_group: true};
+  const oldManage = one(app.render(), 'TimelineScreen').manage;
+  one(app.render(), 'NavigationDrawer').onOrders(); app.render(); oldManage();
+  assert.equal(nodes(app.render()).some(node => node.type === 'ManagementSheet'), false);
+  one(app.render(), 'NavigationDrawer').onAction('policy'); app.flushFrames();
+  one(app.render(), 'CompanySelector').onSelect(1);
+  assert.equal(one(app.render(), 'ManagementSheet').mode, 'policy');
 });
 
 test('drawer settings route language/actions, respect busy/offline policy, and close on background/backdrop', () => {

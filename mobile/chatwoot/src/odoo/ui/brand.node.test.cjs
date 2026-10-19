@@ -43,13 +43,38 @@ test('header and narrow-drawer brand slots account for raster clear space withou
   assert.equal(drawer.height, 42);
   for (const size of [header, drawer]) {
     assert.ok(Math.abs(size.width / size.height - 10 / 3) < 0.001);
-    // Blue mark occupies 200 of the source raster's 300px height.
-    assert.ok(size.height * 2 / 3 >= 24);
+    const image = Brand({ variant: size === header ? 'header' : 'drawer' }).props.children.props.style;
+    // Approved b and work share a baseline; frame the full 1294x325 ink bounds.
+    const scale = image.width / 2169;
+    assert.ok(325 * scale >= 30);
+    assert.ok(image.left + 465 * scale >= 0);
+    assert.ok(image.left + 1759 * scale <= size.width);
+    assert.ok(image.top + 198 * scale >= 0);
+    assert.ok(image.top + 523 * scale <= size.height);
   }
   assert.ok(drawer.width <= 320 * 0.65 - 16 - 44 - 8,
     'fits beside the unchanged toggle/gap inside the existing 65% drawer');
   const source = readFileSync(join(__dirname, 'NavigationDrawer.tsx'), 'utf8');
   assert.ok(source.includes('<Brand variant="drawer" />'));
+});
+
+test('single blue b wordmark uses the exact approved preview in every wordmark surface', () => {
+  const crypto = require('node:crypto');
+  const bytes = readFileSync(join(root, 'assets/bwork/bwork-wordmark-approved-20261019.png'));
+  assert.equal(crypto.createHash('sha256').update(bytes).digest('hex'),
+    'bf06eaa8fbde40b57c040c4292aa81226e1930dc350837d591888a3bc197fc1d');
+  assert.equal(bytes.readUInt32BE(16), 2169);
+  assert.equal(bytes.readUInt32BE(20), 725);
+  assert.ok(bytes.length < 1500000);
+  const Brand = component();
+  for (const variant of ['header', 'login', 'drawer']) {
+    const tree = Brand({ variant });
+    assert.match(tree.props.children.props.source, /bwork-wordmark-approved-20261019\.png$/);
+    assert.equal(tree.props.style.overflow, 'hidden');
+    const image = tree.props.children.props.style;
+    assert.ok(Math.abs(image.width / image.height - 2169 / 725) < 0.0001);
+  }
+  assert.match(Brand({ variant: 'mark' }).props.children.props.source, /bwork-icon-1024\.png$/);
 });
 
 test('native branding preserves update identity and uses separate Odoo assets', () => {

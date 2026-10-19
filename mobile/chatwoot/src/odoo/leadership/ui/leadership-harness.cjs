@@ -30,7 +30,7 @@ function harness(initial = {}) {
   const tree = value => value == null || typeof value !== 'object' ? value : Array.isArray(value) ? value.map(tree) : { type: value.type, props: { ...value.props, children: tree(value.children) } };
   const render = () => tree(mounted?.toJSON());
   const flush = async () => { await renderer.act(async () => { if (!mounted) mounted = renderer.create(React.createElement(Screen, props)); else mounted.update(React.createElement(Screen, props)); }); return render(); };
-  return { props, engine, options, calls, fixtures, render, flush, async act(callback) { await renderer.act(async () => { await callback(); }); return flush(); }, async unmount() { if (mounted) await renderer.act(async () => mounted.unmount()); } };
+  return { props, engine, options, calls, fixtures, presentation: load(resolve(__dirname, 'presentation.ts')), render, flush, async act(callback) { await renderer.act(async () => { await callback(); }); return flush(); }, async unmount() { if (mounted) await renderer.act(async () => mounted.unmount()); } };
 }
 const nodes = value => value == null || typeof value !== 'object' ? [] : Array.isArray(value) ? value.flatMap(nodes) : [value, ...nodes(value.props?.children)];
 const one = (value, type, predicate = () => true) => { const node = nodes(value).find(n => n.type === type && predicate(n.props)); if (!node) throw new Error(`Missing ${type}`); return node.props; };

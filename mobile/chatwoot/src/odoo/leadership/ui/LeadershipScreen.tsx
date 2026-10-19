@@ -10,7 +10,7 @@ import type { LeadershipEngine } from '../core/LeadershipEngine';
 import { accessDenied } from '../types';
 import type { Amount, LeadershipDay, LeadershipOptions, LeadershipQuery, LeadershipReport, Period } from '../types';
 import { errorWord, leadershipTranslator, weekdayName, type LeadershipWord } from '../dictionary';
-import { coverageLabel, dayLabel, dayWord, monthLabel, percentagePresentation, snapshotDate } from './presentation';
+import { calendarIntegerDisplay, coverageLabel, dayLabel, dayWord, monthLabel, percentagePresentation, snapshotDate } from './presentation';
 
 export interface LeadershipScreenProps { engine: LeadershipEngine; identity: Bootstrap; language: Language; presented: boolean; scopeKey: string; onBack?: () => void }
 const row = (language: Language) => ({ flexDirection: language === 'ar' ? 'row-reverse' : 'row' } as const);
@@ -75,7 +75,7 @@ function Workspace({ engine, identity, language, presented, onBack }: Leadership
     </View>
     {!identity.permissions.dashboard_view ? <View style={s.content}><Label language={language}>{t('noAccess')}</Label></View> : <>
       <View style={[s.tabs, row(language)]}>{(['overview', 'heatmap'] as const).map(value => <Pressable key={value} testID={`leadership-tab-${value}`} accessibilityRole="tab" accessibilityState={{ selected: tab === value }} onPress={() => setTab(value)} style={[s.tab, tab === value && s.selected]}><Text style={[direction(language), { color: tab === value ? colors.blue : colors.muted, fontWeight: '600' }]}>{t(value)}</Text></Pressable>)}</View>
-      <ScrollView contentContainerStyle={s.content} testID="leadership-scroll">
+      <ScrollView contentContainerStyle={[s.content, tab === 'heatmap' && s.calendarContent]} testID="leadership-scroll">
         {options && options.companies.length > 1 && <View style={[s.row, row(language), { flexWrap: 'wrap' }]} testID="leadership-companies">{[{ id: 0, name: t('all') }, ...options.companies].map(company => { const profile = identity.profile?.companies.find(c => c.id === company.id), name = profile ? companyDisplayName(profile, language, company.id) : company.name; return <Pressable key={company.id} testID={`leadership-company-${company.id}`} accessibilityRole="button" accessibilityLabel={name} accessibilityState={{ selected: companyId === company.id, disabled: !ready }} disabled={!ready} onPress={() => choose(() => setCompany(company.id))} style={[s.companyChip, companyId === company.id && { backgroundColor: colors.blue, borderColor: colors.blue }]}><Text style={[direction(language), { fontSize: 11, color: companyId === company.id ? colors.white : colors.muted }]}>{name}</Text></Pressable>; })}</View>}
         {!!error && <View accessibilityLiveRegion="polite" testID="leadership-error"><Label language={language}>{t(errorWord(error))}</Label><Button quiet title={t('retry')} onPress={refreshReport} /></View>}
         {busy && !data && <ActivityIndicator color={colors.blue} accessibilityLabel={t('loading')} />}
@@ -92,12 +92,12 @@ function Workspace({ engine, identity, language, presented, onBack }: Leadership
               <Text style={[s.caption, direction(language)]}>{data.filters.from} — {data.filters.to}</Text>
             </>}
           </View>}
-          <View style={s.panel}>
+          <View style={[s.panel, tab === 'heatmap' && s.calendarPanel]} testID="leadership-calendar-panel">
             <DateTimeField disabled={!ready} label={t('chooseMonth')} testID="leadership-month" language={language} value={pickerValue(`${month}-01`)} onChange={value => { if (value) choose(() => { const selected = chosenDate(value).slice(0, 7); setMonth(selected); if (period === 'date') setCustomDate(`${selected}-01`); }); }} />
             {data && (tab === 'heatmap' ? <>
               <Text style={[s.heading, direction(language)]}>{monthLabel(data.calendar.month, language)}</Text>
               <Text style={[s.caption, direction(language)]}>{t('weekdayAverage')}</Text>
-              <View style={s.weekdays} testID="leadership-weekday-averages" accessibilityLabel={t('positiveDays')}>{[5, 6, 0, 1, 2, 3, 4].map(index => { const item = data.calendar.weekdays.find(w => w.weekday === index)!, name = weekdayName(language, index); return <View key={index} style={s.weekday} accessibilityLabel={`${name}: ${item.average.display}; ${t('sample')}: ${String(item.sample_count)}`}><Text style={[s.caption, direction(language)]} numberOfLines={1}>{name}</Text><Money amount={item.average} size={11} center /></View>; })}</View>
+              <View style={s.weekdays} testID="leadership-weekday-averages" accessibilityLabel={t('positiveDays')}>{[5, 6, 0, 1, 2, 3, 4].map(index => { const item = data.calendar.weekdays.find(w => w.weekday === index)!, name = weekdayName(language, index); return <View key={index} style={s.weekday} accessibilityLabel={`${name}: ${calendarIntegerDisplay(item.average)}; ${t('sample')}: ${String(item.sample_count)}`}><Text style={[s.caption, direction(language)]} numberOfLines={1}>{name}</Text><Money amount={item.average} size={11} center calendarInteger /></View>; })}</View>
               <Heatmap disabled={!ready} days={data.calendar.days} asOf={data.as_of} companyCount={data.companies.length} language={language} selected={selectedDay} onSelect={date => { if (active.current && readyRef.current) setSelectedDay(date); }} />
               <View style={[s.row, row(language), { flexWrap: 'wrap' }]}>{(['recordedZero', 'noRecords', 'partial', 'future'] as const).map(word => <Text key={word} style={[s.legend, direction(language)]}>{t(word)}</Text>)}</View>
             </> : <>
@@ -122,10 +122,10 @@ function Workspace({ engine, identity, language, presented, onBack }: Leadership
 }
 
 type TrendDirection = 'higher' | 'lower';
-function Money({ amount, size = 22, percent = false, trend, center = false }: { amount?: Amount; size?: number; percent?: boolean; trend?: TrendDirection; center?: boolean }) {
-  const value = percent ? percentagePresentation(amount, trend) : { display: amount?.display ?? '—', tone: 'neutral' };
+function Money({ amount, size = 22, percent = false, trend, center = false, calendarInteger = false }: { amount?: Amount; size?: number; percent?: boolean; trend?: TrendDirection; center?: boolean; calendarInteger?: boolean }) {
+  const value = percent ? percentagePresentation(amount, trend) : { display: calendarInteger ? calendarIntegerDisplay(amount) : amount?.display ?? '—', tone: 'neutral' };
   const color = value.tone === 'favorable' ? colors.success : value.tone === 'unfavorable' ? colors.danger : colors.ink;
-  return <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={.45} style={{ color, fontSize: size, fontWeight: '700', writingDirection: 'ltr', textAlign: center ? 'center' : 'left', alignSelf: center ? 'stretch' : undefined, fontVariant: ['tabular-nums'], flexShrink: 1 }}>{value.display}</Text>;
+  return <Text numberOfLines={calendarInteger ? undefined : 1} adjustsFontSizeToFit={calendarInteger ? undefined : true} minimumFontScale={calendarInteger ? undefined : .45} style={{ color, fontSize: size, fontWeight: '700', writingDirection: 'ltr', textAlign: center ? 'center' : 'left', alignSelf: center ? 'stretch' : undefined, fontVariant: ['tabular-nums'], flexShrink: 1 }}>{calendarInteger ? value.display.replace(/,/g, ',\u200b') : value.display}</Text>;
 }
 function SummaryCard({ word, amount, ratio, change, average, forecast, language, primary, onPress, disabled }: { word: LeadershipWord; amount: Amount; ratio?: Amount; change: Amount; average?: Amount; forecast?: Amount; language: Language; primary?: boolean; onPress?: () => void; disabled?: boolean }) {
   const t = leadershipTranslator(language), trend = word === 'spending' ? 'lower' : 'higher';
@@ -159,7 +159,7 @@ function Heatmap({ days, asOf, companyCount, language, selected, onSelect, disab
     {weeks.map((week, index) => <View key={index} testID={`leadership-week-${index}`} style={s.weekdays}>
       {week.map((day, column) => {
         const current = day?.date === today, chosen = day?.date === selected;
-        const display = day?.has_sales && day.sales.available ? day.sales.display : '—';
+        const display = day?.has_sales && day.sales.available ? calendarIntegerDisplay(day.sales) : '—';
         return <View key={day?.date ?? `blank-${column}`} style={s.heatSlot}>
           {day && <Pressable disabled={disabled} testID={`leadership-day-${day.date}`} accessibilityRole="button"
             accessibilityLabel={`${day.date}, ${display}, ${dayLabel(day, asOf, language)}, ${coverageLabel(day, companyCount, language)}`}
@@ -168,10 +168,10 @@ function Heatmap({ days, asOf, companyCount, language, selected, onSelect, disab
               borderStyle: !current && (!day.has_sales || !day.sales.available) ? 'dashed' : 'solid' }]}>
             <Text style={[s.heatDate, { color: current ? colors.blue : dayWord(day, asOf) === 'future' ? colors.muted : colors.ink }]}>{String(day.day)}</Text>
             <View style={s.heatValue}>
-              {/* Soft breaks at thousands and before the fraction: keep every digit and sign.
-                  Never ellipsize or shrink a large amount to an unreadable single line. */}
+              {/* Display-only ceil; full exact decimals remain in the selected-day detail.
+                  Keep all integer digits and sign, wrapping only at thousands. */}
               <Text testID={`leadership-day-sales-${day.date}`} textBreakStrategy="simple" android_hyphenationFrequency="none"
-                style={[s.heatAmount, { fontSize: width >= 420 ? 12 : 10 }]}>{display.replace(/,/g, ',\u200b').replace(/\./g, '\u200b.')}</Text>
+                style={[s.heatAmount, { fontSize: width >= 420 ? 12 : 10 }]}>{display.replace(/,/g, ',\u200b')}</Text>
             </View>
             {current && <Text testID={`leadership-day-live-${day.date}`} style={[s.heatLive, direction(language)]}>{t('live')}</Text>}
           </Pressable>}
@@ -203,6 +203,7 @@ function Trend({ report, language, onSelect, selected, disabled }: { report: Lea
 const s = StyleSheet.create({
   fill: { flex: 1, minHeight: 0, backgroundColor: colors.background }, header: { backgroundColor: colors.white, paddingHorizontal: 12, minHeight: 58, gap: 8, alignItems: 'center' }, title: { fontSize: 19, fontWeight: '700', color: colors.ink },
   content: { padding: 12, gap: 12, paddingBottom: 26, width: '100%', maxWidth: 760, alignSelf: 'center' }, tabs: { paddingHorizontal: 12, paddingVertical: 6, backgroundColor: colors.white, gap: 6 }, tab: { flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 10 }, selected: { backgroundColor: colors.pale },
+  calendarContent: { paddingHorizontal: 6 }, calendarPanel: { paddingHorizontal: 6 },
   panel: { backgroundColor: colors.white, borderRadius: 16, borderWidth: 1, borderColor: colors.border, padding: 12, gap: 10 }, row: { gap: 8, alignItems: 'center' }, heading: { fontSize: 15, color: colors.ink, fontWeight: '700' }, caption: { fontSize: 11, color: colors.muted },
   cards: { gap: 6, alignItems: 'stretch' }, card: { flex: 1, minWidth: 0, minHeight: 152, borderRadius: 12, padding: 8, gap: 9, borderWidth: 1, borderColor: colors.border, justifyContent: 'space-between' }, cardTitle: { fontSize: 12, color: colors.muted }, companyChip: { minHeight: 44, paddingHorizontal: 9, justifyContent: 'center', borderRadius: 9, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.white },
   periods: { padding: 3, gap: 3, backgroundColor: colors.background, borderRadius: 10 }, period: { flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 8 }, stats: { gap: 12, flexWrap: 'wrap' }, stat: { width: '47%', minWidth: 0, gap: 8, paddingVertical: 8 },

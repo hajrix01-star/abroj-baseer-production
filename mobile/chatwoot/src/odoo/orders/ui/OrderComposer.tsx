@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Text, View, useWindowDimensions } from 'react-native';
+import { ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import type { Room } from '../../core/ChatEngine';
 import { Button, colors, direction, Field, Icon, IconButton, Label } from '../../ui/components';
 import type { Language } from '../../ui/dictionary';
@@ -22,8 +22,9 @@ export function stepQuantity(text: string, step: 1 | -1): string {
   return fraction === undefined ? nextWhole : `${nextWhole}.${fraction}`;
 }
 
-export function OrderComposer({ engine, companyId, language, rooms, onResult, onPending, blocked }: {
+export function OrderComposer({ engine, companyId, language, rooms, onResult, onPending, blocked, header }: {
   engine: OrdersEngine; companyId: number; language: Language; rooms: Room[]; onResult: (result: CreateResult) => void; onPending: () => Promise<void>; blocked: boolean;
+  header?: React.ReactNode;
 }) {
   const t = orderTranslator(language), alive = useAlive();
   const width = useWindowDimensions().width;
@@ -119,19 +120,22 @@ export function OrderComposer({ engine, companyId, language, rooms, onResult, on
         {review ? <KeyValue language={language} label={t('quantity')}><NumberText value={line?.quantity} /></KeyValue>
           : line ? <View style={[s.row, rowDirection(language)]}>
             <IconButton icon="trash" label={`${t('remove')} ${item.product_name} ${item.option_name}`} disabled={writing} onPress={() => changeQuantity(item, '0')} />
-            <Button quiet title="−" accessibilityLabel={`${t('quantity')} − ${item.product_name} ${item.option_name}`} disabled={writing} onPress={() => changeQuantity(item, stepQuantity(line.quantity, -1))} />
+            <Button quiet title="−" accessibilityLabel={`${t('quantity')} − ${item.product_name} ${item.option_name}`} busy={false} disabled={writing} onPress={() => changeQuantity(item, stepQuantity(line.quantity, -1))} />
             <Field language={language} testID={`cart-quantity-${item.id}`} accessibilityLabel={`${t('quantity')} ${item.product_name} ${item.option_name}`}
               value={line.quantity} onChangeText={text => changeQuantity(item, displayNumber(text).replace('٫', '.'))} keyboardType="decimal-pad" maxLength={9} editable={!writing}
               style={{ flex: 1, minWidth: 72, minHeight: 44, textAlign: 'center', writingDirection: 'ltr' }} />
             <IconButton icon="plus" label={`${t('add')} ${item.product_name} ${item.option_name}`} disabled={writing} onPress={() => changeQuantity(item, stepQuantity(line.quantity, 1))} />
           </View>
-            : <Button quiet title={t('add')} accessibilityLabel={`${t('add')} ${item.product_name} ${item.option_name}`} onPress={() => changeQuantity(item, '1')} disabled={cart.length >= 100 || writing} />}
+            : <Button quiet title={t('add')} accessibilityLabel={`${t('add')} ${item.product_name} ${item.option_name}`} onPress={() => changeQuantity(item, '1')} busy={false} disabled={cart.length >= 100 || writing} />}
       </View>;
     })}</View>;
   };
-  if (optionBusy && !options) return <Busy language={language} />;
-  return <View style={s.stack}>
-    {page !== 'catalog' && <Button quiet title={t('back')} disabled={writing} onPress={() => { setPage(page === 'review' ? 'cart' : 'catalog'); setError(null); }} />}
+  return <View style={s.fill} testID="orders-composer">
+    <ScrollView testID="orders-composer-body" style={{ flex: 1, minHeight: 0 }} keyboardShouldPersistTaps="handled" contentContainerStyle={[s.content, { paddingBottom: 24 }]}>
+    {header}
+    <View style={s.stack}>
+    {optionBusy && !options && <Busy language={language} />}
+    {page !== 'catalog' && <Button quiet title={t('back')} busy={false} disabled={writing} onPress={() => { setPage(page === 'review' ? 'cart' : 'catalog'); setError(null); }} />}
     {page !== 'catalog' && <Heading language={language} word={page === 'review' ? 'reviewOrder' : 'cart'} />}
       {!!error && (typeof error === 'object' && error !== null && 'code' in error && error.code === 'cart_limit'
         ? <Note text={t('cartLimit')} language={language} warning />
@@ -146,17 +150,14 @@ export function OrderComposer({ engine, companyId, language, rooms, onResult, on
       {!!catalogError && <Failure error={catalogError} language={language} retry={() => void loadCatalog(false, ++catalogGeneration.current)} />}
       {rows(false)}{loading && <Busy language={language} />}
       {!loading && !catalogError && !items.length && <Empty title={t('noResults')} help={t('noResultsHelp')} language={language} />}
-      {cursor !== null && items.length < 200 && <Button title={t('loadMore')} quiet onPress={() => void loadCatalog(true, catalogGeneration.current)} disabled={loading} />}
+      {cursor !== null && items.length < 200 && <Button title={t('loadMore')} quiet onPress={() => void loadCatalog(true, catalogGeneration.current)} busy={false} disabled={loading} />}
       <Note text={t('estimateNote')} language={language} />
-      <View style={s.card}><KeyValue language={language} label={t('estimated')}>{quoteValid ? <NumberText value={quote!.estimated_total} suffix={quote!.currency_symbol} /> : <Label language={language} muted>{t('pendingQuote')}</Label>}</KeyValue>
-        <Button title={`${t('reviewCart')} (${cart.length})`} onPress={() => setPage('cart')} disabled={!cart.length} />
-      </View>
     </> : !cart.length ? <Empty title={t('cartEmpty')} help={t('cartEmptyHelp')} language={language} /> : <>
       {rows(true, page === 'review')}
-      {removed && page === 'cart' && <Button quiet title={t('undo')} disabled={cart.length >= 100 || writing} onPress={() => { if (!cartRef.current.some(line => line.item.id === removed.item.id) && cartRef.current.length < 100) updateCart([...cartRef.current, removed]); setRemoved(null); }} />}
+      {removed && page === 'cart' && <Button quiet title={t('undo')} busy={false} disabled={cart.length >= 100 || writing} onPress={() => { if (!cartRef.current.some(line => line.item.id === removed.item.id) && cartRef.current.length < 100) updateCart([...cartRef.current, removed]); setRemoved(null); }} />}
       {page === 'cart' ? <>
         <Label language={language} muted>{t('method')}</Label>
-        <View style={[s.row, rowDirection(language)]}>{(options?.purchase_routes ?? []).map(item => <Button key={item.code} title={t(item.code)} quiet={route !== item.code} disabled={writing}
+        <View style={[s.row, rowDirection(language)]}>{(options?.purchase_routes ?? []).map(item => <Button key={item.code} title={t(item.code)} quiet={route !== item.code} busy={false} disabled={writing}
           onPress={() => { setRoute(item.code); invalidate(); }} />)}</View>
         {route === 'representative' && <Choice label={t('representativeLabel')} testID="orders-representative" options={options?.representatives ?? []} value={representative} onSelect={setRepresentative} language={language} disabled={writing} />}
         <Note text={t('routeNote')} language={language} />
@@ -176,5 +177,12 @@ export function OrderComposer({ engine, companyId, language, rooms, onResult, on
       <Button title={t(page === 'review' ? 'sendOrder' : 'reviewOrder')} busy={writing} disabled={!validCart || !quoteValid || blocked || writeUnknown || quoting || (page === 'review' && !selectionValid)}
         onPress={() => { if (!alive()) return; if (page === 'review') void submit(); else { setInvalid(true); if (selectionValid) setPage('review'); } }} />
     </>}
+    </View>
+    </ScrollView>
+    {page === 'catalog' && <View testID="orders-catalog-footer" style={[s.footer, { width: '100%', maxWidth: 940, alignSelf: 'center', flexShrink: 0 }]}>
+      <KeyValue language={language} label={t('estimated')}>{quoteValid ? <NumberText value={quote!.estimated_total} suffix={quote!.currency_symbol} /> : <Label language={language} muted>{t('pendingQuote')}</Label>}</KeyValue>
+      <Button title={`${t('reviewCart')} (${cart.length})`} busy={false} onPress={() => { if (alive()) setPage('cart'); }}
+        disabled={!cart.length || loading || optionBusy || !options || blocked || writeUnknown || writing} />
+    </View>}
   </View>;
 }

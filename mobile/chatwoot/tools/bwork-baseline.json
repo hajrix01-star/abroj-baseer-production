@@ -4,6 +4,7 @@
   "approvedVersion": "0.1.14/build15",
   "suites": ["test:bwork-gate", "test:odoo", "test:brand", "test:orders"],
   "invariants": [
+    { "id": "orders-cart-footer-accessibility", "description": "السلة خارج التمرير وزرها يصبح متاحًا فعليًا بعد الإضافة", "suite": "test:orders", "test": "actual central Button resets disabled to false after adding, and catalog footer is outside the single body ScrollView" },
     { "id": "orders-quantity-step", "description": "زيادة الكمية تحفظ الكسر ولا تغير مدخلًا غير صالح أو تقلل قيمة الحد", "suite": "test:orders", "test": "actual React quantity buttons preserve fractional text, reject invalid input and never reduce an upper-bound quantity" },
     { "id": "orders-only-receipt-share", "description": "مشاركة إيصال الطلبات فقط لا تتطلب عرض المحادثات ولا تكرر التأكيد", "suite": "test:orders", "test": "actual React orders-only receipt sharing uses authorized order detail with rooms empty and never repeats confirm on 403" },
     { "id": "orders-independent-login", "description": "جلسة الطلبات فقط لا تمنح المحادثة وتتحقق بعد فقد الاتصال", "suite": "test:odoo", "test": "native orders-only login purges chat, never fetches rooms or restores chat, and requires fresh foreground authority" },

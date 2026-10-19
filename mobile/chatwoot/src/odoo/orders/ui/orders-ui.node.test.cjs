@@ -281,3 +281,36 @@ test('actual React share stays disabled without chat_send or an original room, a
     } finally { await app.unmount(); }
   }
 });
+
+test('actual central Button resets disabled to false after adding, and catalog footer is outside the single body ScrollView', async () => {
+  const app = harness({}, true, true);
+  const page = Array.from({ length: 24 }, (_, index) => ({ ...app.item, id: app.item.id + index, product_id: app.item.product_id + index }));
+  app.engine.catalog = async () => ({ api_version: 2, items: page, next_after_id: null });
+  try {
+    await app.flush();
+    let tree = app.render();
+    const composer = nodes(tree).find(node => node.props.testID === 'orders-composer');
+    const children = [composer.props.children].flat().filter(Boolean);
+    assert.equal(children[0].type, 'ScrollView');
+    assert.equal(children[0].props.testID, 'orders-composer-body');
+    assert.equal(children[1].props.testID, 'orders-catalog-footer', 'footer is a sibling, not catalog content');
+    assert.equal(nodes(tree).filter(node => node.type === 'ScrollView').length, 1, 'Workspace does not wrap the composer in another ScrollView');
+    assert.equal(nodes(children[0]).some(node => node.props.testID === 'orders-company'), true, 'company selector is composed into the body');
+    assert.equal(nodes(children[0]).some(node => node.props.testID === 'orders-catalog-footer'), false);
+    assert.equal(nodes(children[0]).filter(node => node.props.testID?.startsWith('catalog-option-')).length, 24);
+    assert.equal(children[1].props.style[1].maxWidth, 940);
+    assert.ok(nodes(tree).find(node => node.type === 'KeyboardAvoidingView' && nodes(node).includes(composer)), 'body and footer share the keyboard-safe frame');
+    assert.equal(one(tree, 'Pressable', p => p.accessibilityLabel === 'Review cart (0)').disabled, true);
+    await app.act(() => one(app.render(), 'Pressable', p => p.accessibilityLabel === 'Add Fixture product Case').onPress());
+    tree = app.render();
+    assert.equal(one(tree, 'Pressable', p => p.accessibilityLabel === 'Review cart (1)').disabled, false, 'actual central Button receives false, never undefined');
+    const waitingCatalog = waiting(); app.engine.catalog = async () => waitingCatalog.promise;
+    await app.act(() => byId(app.render(), 'catalog-search').onChangeText('newer'));
+    assert.equal(one(app.render(), 'Pressable', p => p.accessibilityLabel === 'Review cart (1)').disabled, true, 'footer respects a pending catalog load');
+    await app.act(() => waitingCatalog.resolve({ api_version: 2, items: page, next_after_id: null }));
+    assert.equal(one(app.render(), 'Pressable', p => p.accessibilityLabel === 'Review cart (1)').disabled, false);
+    await app.act(() => one(app.render(), 'Pressable', p => p.accessibilityLabel === 'Review cart (1)').onPress());
+    assert.equal(nodes(app.render()).some(node => node.props.testID === 'orders-catalog-footer'), false);
+    assert.equal(nodes(app.render()).filter(node => node.type === 'ScrollView').length, 1);
+  } finally { await app.unmount(); }
+});

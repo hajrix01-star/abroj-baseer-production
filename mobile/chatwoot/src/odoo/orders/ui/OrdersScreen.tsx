@@ -83,6 +83,7 @@ function Workspace({ engine, identity, language, rooms = [] }: OrdersScreenProps
   const tabs: Tab[] = [...(canCreate ? ['catalog' as const] : []), ...(canView ? ['allOrders' as const] : []), ...(canReceive ? ['receiving' as const] : [])];
   const activeTab = tabs.includes(tab) ? tab : 'allOrders';
   const safeRooms = identity.permissions.chat_send === true ? rooms.filter(room => identity.company_ids.includes(room.company_id) && room.membership_id > 0) : [];
+  const pendingHeader = !!pending.length && <PendingPanel engine={engine} attempts={pending} language={language} onResult={result} onChanged={reloadPending} />;
   return <>
     <View style={[s.tabs, rowDirection(language)]}>{tabs.map(item => <Pressable key={item} accessibilityRole="tab" accessibilityLabel={t(item)}
       accessibilityState={{ selected: activeTab === item }} testID={`orders-tab-${item}`} onPress={() => { if (alive()) { setOutcome(null); setTab(item); } }}
@@ -90,8 +91,11 @@ function Workspace({ engine, identity, language, rooms = [] }: OrdersScreenProps
     {busy ? <Busy language={language} /> : error ? <View style={s.content}><Failure error={error} language={language} retry={() => void load()} /></View>
       : !canView ? <Empty title={t('noAccess')} help={t('permissionHelp')} language={language} />
         : <KeyboardAvoidingView style={s.fill} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+          {!outcome && activeTab === 'catalog' && company ? <OrderComposer key={`compose-${company}`} engine={engine} companyId={company} language={language}
+            header={<>{pendingHeader}<Choice label={t('company')} testID="orders-company" options={companies} value={company} onSelect={changedCompany} language={language} /></>}
+            rooms={safeRooms.filter(room => room.company_id === company)} onResult={result} onPending={reloadPending} blocked={pending.some(item => item.companyId === company && item.kind === 'create')} /> :
           <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={[s.content, { paddingBottom: 24 }]}>
-            {!!pending.length && <PendingPanel engine={engine} attempts={pending} language={language} onResult={result} onChanged={reloadPending} />}
+            {pendingHeader}
             {outcome ? <ResultPanel engine={engine} result={outcome} language={language} canSend={identity.permissions.chat_send === true}
               close={() => { setOutcome(null); setRefresh(value => value + 1); setTab('allOrders'); }} />
               : activeTab === 'allOrders' ? <OrderList key={`list-${refresh}`} engine={engine} language={language} companies={companies} canReceive={canReceive}
@@ -99,12 +103,10 @@ function Workspace({ engine, identity, language, rooms = [] }: OrdersScreenProps
                 : <>
                   <Choice label={t(activeTab === 'receiving' ? 'receiptCompany' : 'company')} testID="orders-company" options={companies} value={company} onSelect={changedCompany} language={language} />
                   {!company ? <Empty title={t('noOptions')} language={language} />
-                    : activeTab === 'catalog' ? <OrderComposer key={`compose-${company}`} engine={engine} companyId={company} language={language}
-                      rooms={safeRooms.filter(room => room.company_id === company)} onResult={result} onPending={reloadPending} blocked={pending.some(item => item.companyId === company && item.kind === 'create')} />
-                      : <Receiving key={`receive-${company}-${receiptId ?? 'list'}`} engine={engine} companyId={company} initialOrderId={receiptId} language={language}
+                    : <Receiving key={`receive-${company}-${receiptId ?? 'list'}`} engine={engine} companyId={company} initialOrderId={receiptId} language={language}
                         onResult={result} onPending={reloadPending} blockedOrderIds={pending.filter(item => item.kind === 'confirm' && item.companyId === company).map(item => item.orderId ?? 0)} />}
                 </>}
-          </ScrollView>
+          </ScrollView>}
         </KeyboardAvoidingView>}
   </>;
 }

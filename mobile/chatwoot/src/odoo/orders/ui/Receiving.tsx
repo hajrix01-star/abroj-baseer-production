@@ -68,7 +68,7 @@ export function Receiving({ engine, companyId, language, initialOrderId, onResul
     {!!error && <Failure error={error} language={language} retry={!detail ? () => initialOrderId ? void open(initialOrderId) : void load() : undefined} />}
     {busy && <Busy language={language} />}
     {detail ? <>
-      <Button quiet title={t('back')} disabled={writing} onPress={() => { if (!alive() || writeGate.current) return; if (review) setReview(false); else { setDetail(null); setError(null); void load(); } }} />
+      <Button quiet title={t('back')} busy={false} disabled={writing} onPress={() => { if (!alive() || writeGate.current) return; if (review) setReview(false); else { setDetail(null); setError(null); void load(); } }} />
       <Heading language={language} word={review ? 'reviewReceipt' : 'receiptTitle'} />
       <View style={s.card}><NumberText value={detail.order.name} /><KeyValue language={language} label={t('warehouse')}><Label language={language}>{detail.order.warehouse_name}</Label></KeyValue></View>
       {detail.lines.map(line => {
@@ -104,9 +104,9 @@ export function Receiving({ engine, companyId, language, initialOrderId, onResul
         <KeyValue language={language} label={t('requestedTotal')}><NumberText value={order.requested_total} suffix={order.currency_symbol} /></KeyValue>
       </Pressable>)}
       {!busy && !error && !orders.length && <Empty title={t('noReceipts')} help={t('noReceiptsHelp')} language={language} />}
-      {cursor !== null && orders.length < 200 && <Button quiet title={t('loadMore')} onPress={() => void load(true)} disabled={busy} />}
+      {cursor !== null && orders.length < 200 && <Button quiet title={t('loadMore')} onPress={() => void load(true)} busy={false} disabled={busy} />}
       {orders.length >= 200 && <Note text={t('listLimit')} language={language} />}
-      {!initialOrderId && <Button quiet title={t('refresh')} onPress={() => void load()} disabled={busy} />}
+      {!initialOrderId && <Button quiet title={t('refresh')} onPress={() => void load()} busy={false} disabled={busy} />}
     </>}
   </View>;
 }

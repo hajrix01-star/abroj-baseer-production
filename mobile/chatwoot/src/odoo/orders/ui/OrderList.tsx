@@ -75,8 +75,8 @@ export function OrderList({ engine, language, companies, canReceive, onReceive }
     </Pressable>)}
     {!busy && !error && !visible.length && <Empty language={language} title={t('empty')} help={t('emptyHelp')} />}
     {busy && <Busy language={language} />}
-    {cursor !== null && orders.length < 200 && <Button title={t('loadMore')} onPress={() => void load(true)} disabled={busy || detailBusy} quiet />}
+    {cursor !== null && orders.length < 200 && <Button title={t('loadMore')} onPress={() => void load(true)} busy={false} disabled={busy || detailBusy} quiet />}
     {orders.length >= 200 && <Note text={t('listLimit')} language={language} />}
-    <Button title={t('refresh')} onPress={() => void load()} disabled={busy || detailBusy} quiet />
+    <Button title={t('refresh')} onPress={() => void load()} busy={false} disabled={busy || detailBusy} quiet />
   </View>;
 }

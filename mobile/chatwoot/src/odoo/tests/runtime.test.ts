@@ -492,6 +492,36 @@ test('modern preview uses a verified cached original when its thumbnail is absen
   } finally { offline = false; await engine.refresh(); extraMedia.clear(); await engine.history(roomA); }
 });
 
+test('a stalled thumbnail never blocks a verified cached image or staging the next attachment', async () => {
+  await engine.logout(); await engine.login('alice', 'private', true);
+  extraMedia.set(imageMedia.id, { metadata: imageMedia, bytes: imageBytes });
+  extraMedia.set(171, { metadata: { ...imageMedia, id: 171 }, bytes: imageBytes });
+  await engine.history(roomA);
+  const warm = await localMediaLease(roomA, { id: 170 }, 'preview'); warm.release();
+  let release!: () => void, started!: () => void;
+  const hold = new Promise<void>(resolve => { release = resolve; });
+  const waiting = new Promise<void>(resolve => { started = resolve; });
+  beforeNative = async path => { if (path === '/bchat/api/v2/media/171/thumbnail') { started(); await hold; } };
+  const stalled = localMediaLease(roomA, { id: 171 }, 'preview');
+  let cached: Awaited<ReturnType<typeof localMediaLease>> | undefined;
+  let stage: Awaited<ReturnType<typeof stageFile>> | undefined;
+  try {
+    await waiting;
+    files.set('file:///external/while-thumbnail.pdf', payload);
+    const tasks = Promise.all([
+      localMediaLease(roomA, { id: 170 }, 'preview').then(value => { cached = value; }),
+      stageFile(roomA, { uri: 'file:///external/while-thumbnail.pdf', name: 'test.pdf', mime: media.mime }).then(value => { stage = value; }),
+    ]);
+    const outcome = await Promise.race([tasks.then(() => 'ready'), new Promise(resolve => setTimeout(() => resolve('blocked'), 250))]);
+    assert.equal(outcome, 'ready', 'network wait must not own the native file mutation queue');
+    assert.equal(cached?.uri, warm.uri); assert.ok(stage);
+  } finally {
+    beforeNative = undefined; release(); (await stalled).release(); cached?.release();
+    if (stage) await discardStagedAttachment(stage);
+    extraMedia.clear(); await engine.history(roomA);
+  }
+});
+
 test('cached-only audio/file lookup cannot download bytes and keeps the normal authorization fences', async () => {
   await engine.logout(); await engine.login('alice', 'private', true); await engine.history(roomA);
   const before = calls.length;
@@ -501,6 +531,35 @@ test('cached-only audio/file lookup cannot download bytes and keeps the normal a
   const cached = await localMediaLease(roomA, media, 'original', true); cached.release();
   assert.equal(cached.uri, original.uri);
   await assert.rejects(localMediaLease(roomB, media, 'original', true), { code: 'media_room_mismatch' });
+});
+
+test('an original bypasses stalled thumbnails with two bounded transfer lanes and shared independent leases', async () => {
+  await engine.logout(); await engine.login('alice', 'private', true);
+  for (const id of [170, 171, 172, 173]) extraMedia.set(id, { metadata: { ...imageMedia, id }, bytes: imageBytes });
+  await engine.history(roomA);
+  let release!: () => void, started!: () => void;
+  const hold = new Promise<void>(resolve => { release = resolve; });
+  const both = new Promise<void>(resolve => { started = resolve; });
+  let active = 0, peak = 0, entered = 0;
+  beforeNative = async path => {
+    if (!/\/media\/\d+\/(thumbnail|content)$/.test(path)) return;
+    active++; entered++; peak = Math.max(peak, active); if (entered === 2) started();
+    try { await hold; } finally { active--; }
+  };
+  const before = calls.length;
+  const pending = [localMediaLease(roomA, { id: 171 }, 'preview'), localMediaLease(roomA, { id: 170 }),
+    localMediaLease(roomA, { id: 170 }), localMediaLease(roomA, { id: 172 }), localMediaLease(roomA, { id: 173 }, 'preview')];
+  try {
+    const outcome = await Promise.race([both.then(() => 'ready'), new Promise(resolve => setTimeout(() => resolve('blocked'), 250))]);
+    assert.equal(outcome, 'ready'); assert.equal(entered, 2);
+    await assert.rejects(localMediaLease(roomA, { id: 170 }, 'original', true), { code: 'media_not_cached' });
+  } finally { release(); }
+  const leases = await Promise.all(pending); beforeNative = undefined;
+  assert.equal(peak, 2); assert.equal(calls.slice(before).filter(call => call.path === '/bchat/api/v2/media/170/content').length, 1);
+  assert.equal(leases[1]!.uri, leases[2]!.uri); assert.notEqual(leases[1], leases[2]);
+  for (const lease of leases) lease.release();
+  assert.equal([...files.keys()].some(uri => uri.endsWith('.part')), false);
+  extraMedia.clear(); await engine.history(roomA);
 });
 
 test('member avatars use the protected scoped endpoint, deduplicate, validate PNG and reject background/late membership results', async () => {

@@ -4,6 +4,10 @@
   "approvedVersion": "0.1.14/build15",
   "suites": ["test:bwork-gate", "test:odoo", "test:brand", "test:orders", "test:tasks", "test:leadership", "test:attachment-camera"],
   "invariants": [
+    { "id": "chat-media-cache-not-network-blocked", "description": "انتظار تنزيل مصغر لا يحجز قراءة صورة محفوظة أو تهيئة مرفق جديد", "suite": "test:odoo", "test": "a stalled thumbnail never blocks a verified cached image or staging the next attachment" },
+    { "id": "chat-media-bounded-transfer-lanes", "description": "طلب الأصل لا ينتظر المصغرات وبحد مسارين وتنزيل واحد لكل وسيط مع ملكية عرض مستقلة", "suite": "test:odoo", "test": "an original bypasses stalled thumbnails with two bounded transfer lanes and shared independent leases" },
+    { "id": "chat-media-tap-bypasses-preview", "description": "الضغط يطلب الأصل مرة واحدة فورًا ولا يستبدله مصغر متأخر", "suite": "test:odoo", "test": "a tap during automatic thumbnail loading joins one scoped request and intentionally opens full-screen" },
+    { "id": "chat-media-preview-failure-original", "description": "فشل المصغر التلقائي لا يضيع طلب فتح الصورة الأصلية", "suite": "test:odoo", "test": "a failed automatic thumbnail cannot swallow a pending deliberate original open" },
     { "id": "chat-picker-enqueue-once", "description": "فشل إدخال المرفق للطابور لا يعاد تلقائيا ولا يحذف المنتقي ملفا انتقلت ملكيته للطابور", "suite": "test:odoo", "test": "selected attachment enqueue failure is attempted once and never automatically retried or discarded by the picker" },
     { "id": "chat-picker-revalidation", "description": "اختيار المرفق يحفظ نية الحساب والمحادثة قبل المنتقي وينتظر إعادة التحقق ثم يدخل الطابور مرة واحدة", "suite": "test:odoo", "test": "actual picker return waits through foreground revalidation then enqueues its selected attachment exactly once" },
     { "id": "chat-picker-original-draft", "description": "المرفق يرسل النص والرد الأصليين ولا يمس مسودة أحدث", "suite": "test:odoo", "test": "actual picker retains its original draft/reply and does not clear a newer draft after local enqueue" },

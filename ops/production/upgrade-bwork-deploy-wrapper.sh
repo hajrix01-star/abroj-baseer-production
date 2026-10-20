@@ -9,6 +9,7 @@ readonly BASE=/srv/abroj-baseer-production
 readonly CURRENT="$BASE/current"
 readonly TARGET=/usr/local/sbin/baseer-production-deploy
 readonly LOCK=/var/lock/baseer-production-deploy.lock
+readonly NATIVE_LOCK_PARENT=/var/lock
 readonly BACKUP_ROOT="$BASE/control-plane-backups"
 readonly OLD_SHA=02947f09fabe2f276266ef567be689311a94dc904835975c3e26270ce96f9587
 readonly NEW_SHA=d3c11d43215781b77c147c3ba6a470254c4e9fb42ee1bde82f3eab0ee9a0e3b7
@@ -71,6 +72,12 @@ require_lock_parent() {
             && [ "$(stat -c '%u:%g' -- /run/lock)" = 0:0 ] || die 'unsafe native lock directory'
         mode="$(stat -c '%a' -- /run/lock)"
         [ "$mode" = 1777 ] || (( (8#$mode & 8#022) == 0 )) || die 'unsafe native lock directory mode'
+    elif [ "$parent" = "$NATIVE_LOCK_PARENT" ] && [ -d "$parent" ] && [ ! -L "$parent" ] \
+        && [ "$(stat -c '%a' -- "$parent")" = 1777 ]; then
+        # Some supported hosts use a physical /var/lock rather than the alias.
+        # Only this exact native sticky directory gets the narrow exception.
+        safe_chain "$(dirname -- "$parent")"
+        [ "$(stat -c '%u:%g' -- "$parent")" = 0:0 ] || die 'unsafe physical native lock directory'
     else
         safe_chain "$parent"
     fi
@@ -79,6 +86,7 @@ require_lock_binding() {
     local expected=$1 mode
     require_lock_parent
     [ -f "$LOCK" ] && [ ! -L "$LOCK" ] || die 'production lock path changed'
+    [ "$(stat -c '%h' -- "$LOCK")" = 1 ] || die 'production lock has multiple links'
     [ "$(stat -c '%u:%g' -- "$LOCK")" = 0:0 ] || die 'production lock ownership changed'
     mode="$(stat -c '%a' -- "$LOCK")"
     (( (8#$mode & 8#022) == 0 )) || die 'production lock permissions changed'
@@ -123,6 +131,7 @@ main() {
     # system alias; the lock FILE itself must be existing, root-owned, non-link.
     require_lock_parent
     [ -f "$LOCK" ] && [ ! -L "$LOCK" ] || die 'existing production lock is missing or unsafe'
+    [ "$(stat -c '%h' -- "$LOCK")" = 1 ] || die 'production lock has multiple links'
     [ "$(stat -c '%u:%g' -- "$LOCK")" = 0:0 ] || die 'production lock is not root-owned'
     local lock_mode; lock_mode="$(stat -c '%a' -- "$LOCK")"
     (( (8#$lock_mode & 8#022) == 0 )) || die 'production lock is writable by others'

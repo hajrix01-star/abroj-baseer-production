@@ -15,7 +15,15 @@ fixture_case() (
     case_dir="$test_dir/$case_name"
     mkdir -p "$case_dir/live/releases/baseline" "$case_dir/sbin" "$case_dir/source"
     readonly BASE="$case_dir/live" CURRENT="$case_dir/live/releases/baseline"
-    readonly TARGET="$case_dir/sbin/baseer-production-deploy" LOCK="$case_dir/deploy.lock"
+    readonly TARGET="$case_dir/sbin/baseer-production-deploy"
+    readonly NATIVE_LOCK_PARENT="$case_dir/var/lock"
+    case "$case_name" in
+        physicalsticky|lockdir0777|lockdirowner) lock_path="$NATIVE_LOCK_PARENT/deploy.lock" ;;
+        arbitrarywritable) lock_path="$case_dir/other-lock/deploy.lock" ;;
+        *) lock_path="$case_dir/deploy.lock" ;;
+    esac
+    readonly LOCK="$lock_path"
+    mkdir -p "$(dirname -- "$LOCK")"
     readonly BACKUP_ROOT="$BASE/control-plane-backups" CANDIDATE="$case_dir/source/baseer-production-deploy"
     readonly LIVE_SOURCE=b3e6547fdf0c2e4f1392fcdc4f9a55e6fb877bce
     printf '#!/bin/bash\n# old isolated fixture\nexit 0\n' > "$TARGET"
@@ -32,12 +40,20 @@ fixture_case() (
     stat() {
         local format=$2 path=${@: -1}
         case "$format" in
-            '%u:%g') if [ "$case_name" = wrongowner ] && [ "$path" = "$TARGET" ]; then printf '1000:1000\n'; else printf '0:0\n'; fi ;;
+            '%u:%g')
+                if { [ "$case_name" = wrongowner ] && [ "$path" = "$TARGET" ]; } \
+                    || { [ "$case_name" = lockdirowner ] && [ "$path" = "$NATIVE_LOCK_PARENT" ]; }; then
+                    printf '1000:1000\n'; else printf '0:0\n'; fi ;;
             '%u:%g:%a')
                 if [[ "$path" == */previous-wrapper ]]; then printf '0:0:600\n'
                 elif [ "$case_name" = wrongmode ]; then printf '0:0:755\n'
                 else printf '0:0:750\n'; fi ;;
-            '%a') if [[ "$path" == "$BACKUP_ROOT"* ]]; then printf '700\n'; else printf '755\n'; fi ;;
+            '%a')
+                if [ "$path" = "$NATIVE_LOCK_PARENT" ]; then
+                    if [ "$case_name" = lockdir0777 ]; then printf '777\n'; else printf '1777\n'; fi
+                elif [ "$case_name" = arbitrarywritable ] && [ "$path" = "$case_dir/other-lock" ]; then printf '1777\n'
+                elif [[ "$path" == "$BACKUP_ROOT"* ]]; then printf '700\n'; else printf '755\n'; fi ;;
+            '%h') if [ "$case_name" = hardlink ] && [ "$path" = "$LOCK" ]; then printf '2\n'; else printf '1\n'; fi ;;
             '%d:%i')
                 if [ "$case_name" = lockinode ] && [ "$path" = /proc/self/fd/9 ]; then printf '1:2\n'
                 elif [ "$case_name" = lockafter ] && [ -e "$case_dir/locked" ] && [ "$path" = "$LOCK" ]; then printf '1:2\n'
@@ -68,6 +84,7 @@ fixture_case() (
         wrongsource) printf '%040d\n' 0 > "$CURRENT/RELEASE_COMMIT" ;;
         wrongcandidate) printf '# changed\n' >> "$CANDIDATE" ;;
         already) cp "$CANDIDATE" "$TARGET"; printf '%040d\n' 0 > "$CURRENT/RELEASE_COMMIT" ;;
+        nonregular) rm -- "$LOCK"; mkdir -- "$LOCK" ;;
     esac
     main "$action"
 )
@@ -76,7 +93,9 @@ pass=0
 for spec in 'dry:--dry-run' 'apply:--apply' 'already:--apply' 'rollback:--apply' \
     'unknownhash:--apply' 'wrongsource:--apply' 'wrongcandidate:--apply' \
     'wrongmode:--apply' 'wrongowner:--apply' 'locked:--apply' 'lockinode:--apply' \
-    'lockafter:--apply' 'nonroot:--apply'; do
+    'lockafter:--apply' 'nonroot:--apply' 'physicalsticky:--dry-run' \
+    'lockdir0777:--apply' 'lockdirowner:--apply' 'arbitrarywritable:--apply' \
+    'nonregular:--apply' 'hardlink:--apply'; do
     name=${spec%%:*}; action=${spec#*:}; log="$test_dir/$name.log"
     # Do not invoke fixture_case in an if/OR expression: that disables errexit
     # inside Bash functions and would invalidate the actual rollback exercise.
@@ -85,11 +104,11 @@ for spec in 'dry:--dry-run' 'apply:--apply' 'already:--apply' 'rollback:--apply'
     status=$?
     set -e
     case "$name:$status" in
-        dry:0|apply:0|already:0) ;;
-        dry:*|apply:*|already:*) cat "$log" >&2; exit 1 ;;
+        dry:0|apply:0|already:0|physicalsticky:0) ;;
+        dry:*|apply:*|already:*|physicalsticky:*) cat "$log" >&2; exit 1 ;;
     esac
     case "$name" in
-        dry)
+        dry|physicalsticky)
             [ "$status" -eq 0 ]; grep -Fxq 'WRAPPER_UPGRADE=DRY_RUN' "$log"
             [ ! -e "$test_dir/$name/live/control-plane-backups" ] ;;
         apply)
@@ -117,6 +136,7 @@ grep -Fxq 'readonly TARGET=/usr/local/sbin/baseer-production-deploy' "$sut"
 grep -Fxq 'readonly OLD_SHA=02947f09fabe2f276266ef567be689311a94dc904835975c3e26270ce96f9587' "$sut"
 grep -Fxq 'readonly NEW_SHA=d3c11d43215781b77c147c3ba6a470254c4e9fb42ee1bde82f3eab0ee9a0e3b7' "$sut"
 grep -Fxq 'readonly LOCK=/var/lock/baseer-production-deploy.lock' "$sut"
+grep -Fxq 'readonly NATIVE_LOCK_PARENT=/var/lock' "$sut"
 [ "$(wc -l < "$script_dir/release-policies/baseer-2026-10-21-bwork-production.env")" -eq 3 ]
 grep -Fxq 'COMMIT=81fdd415521670b8c7ad681e97dd583e6f9c85e0' "$script_dir/release-policies/baseer-2026-10-21-bwork-production.env"
 printf 'PASS %s isolated wrapper cases; mocked root metadata/flock/sync, no host or database\n' "$pass"

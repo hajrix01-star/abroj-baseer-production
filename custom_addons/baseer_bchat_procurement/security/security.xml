@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<odoo>
-    <!-- BChat-only capability. It does not imply native procurement ACLs or menus. -->
-    <record id="group_bchat_procurement_operator" model="res.groups">
-        <field name="name">BChat procurement operator</field>
-        <field name="privilege_id" eval="False"/>
-    </record>
-</odoo>

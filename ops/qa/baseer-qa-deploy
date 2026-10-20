@@ -279,6 +279,78 @@ rollback() {
     exit "$status"
 }
 
+# Fixed source-only BWork transition boundary. The installed root-owned wrapper
+# must itself be reviewed/rolled out separately; archived guard success is not
+# proof that an installed host wrapper was changed.
+declare -A BWORK_MODULE_MODE=()
+bwork_native_upgrade=0
+bwork_guard_root=''
+bwork_requested=''
+bwork_source_guard() {
+    local candidate=$1 repository=$2 module core='' legacy=0 canonical=0
+    for module in "${APPROVED_MODULES[@]}"; do
+        case "$module" in baseer_bchat) legacy=1 ;; baseer_bwork) canonical=1 ;; esac
+    done
+    [ "$legacy" -eq 0 ] || [ "$canonical" -eq 0 ] || die 'mixed BChat/BWork core policy'
+    if [ "$canonical" -eq 1 ]; then core=baseer_bwork
+    elif [ "$legacy" -eq 1 ]; then core=baseer_bchat
+    else return 0
+    fi
+    bwork_guard_root="$stage.guard"
+    [ ! -e "$bwork_guard_root" ] && [ ! -L "$bwork_guard_root" ] || die 'guard staging path already exists'
+    mkdir -m 0700 "$bwork_guard_root"
+    # Exact approved commit; never main/working tree. Retain every default
+    # backend/Android/guard-integrity check without leaking unrelated source
+    # into the module-scoped host release.
+    git -C "$repository" archive --format=tar "$commit" .github android "custom_addons/$core" ops |
+        tar -x -C "$bwork_guard_root" --no-same-owner --no-same-permissions
+    PYTHONDONTWRITEBYTECODE=1 python3 "$bwork_guard_root/custom_addons/$core/tools/release_guard.py" ||
+        die 'frozen cumulative BWork source guard rejected candidate'
+    if [ "$canonical" -eq 1 ]; then
+        # Canonical fixed entry: custom_addons/baseer_bwork/tools/release_guard.py
+        python3 "$bwork_guard_root/ops/lib/bwork_release_source.py" prepare \
+            --candidate-root "$candidate" --guard-root "$bwork_guard_root" --modules "$policy_modules" >/dev/null ||
+            die 'actual staged BWork core differs from frozen guard source'
+        bwork_requested="$(python3 "$bwork_guard_root/ops/lib/bwork_release_source.py" requested \
+            --candidate-root "$candidate" --modules "$policy_modules")" || die 'invalid BWork requested closure'
+    fi
+}
+
+bwork_classify() {
+    local candidate=$1 result=$2 lines operation module
+    shift 2
+    [ -n "$bwork_requested" ] || return 0
+    "$@" run --rm --no-deps -T -v "$candidate:/mnt/bwork-candidate:ro" --entrypoint python3 "$bwork_service" \
+        /mnt/bwork-candidate/custom_addons/baseer_bwork/tools/canonical_pre_upgrade.py \
+        --classify --modules "$bwork_requested" --database "$bwork_database" > "$result" ||
+        die 'BWork read-only database classification failed'
+    lines="$(python3 "$bwork_guard_root/ops/lib/bwork_release_source.py" plan \
+        --candidate-root "$candidate" --modules "$policy_modules" --plan "$result")" ||
+        die 'BWork installed closure is not fully approved'
+    BWORK_MODULE_MODE=()
+    while read -r operation module; do
+        case "$operation" in
+            NATIVE) case "$module" in yes) bwork_native_upgrade=1 ;; no) bwork_native_upgrade=0 ;; *) die 'invalid native mode' ;; esac ;;
+            UPGRADE|INSTALL) BWORK_MODULE_MODE[$module]=$operation ;;
+            *) die 'invalid classification operation' ;;
+        esac
+    done <<< "$lines"
+}
+
+bwork_verify() {
+    local candidate=$1 result=$2 mode=--verify verification=verified
+    shift 2
+    [ -n "$bwork_requested" ] || return 0
+    if [ "$bwork_native_upgrade" -eq 1 ]; then mode=--verify-transition; verification=verified-transition; fi
+    "$@" run --rm --no-deps -T -v "$candidate:/mnt/bwork-candidate:ro" --entrypoint python3 "$bwork_service" \
+        /mnt/bwork-candidate/custom_addons/baseer_bwork/tools/canonical_pre_upgrade.py \
+        "$mode" --modules "$bwork_requested" --database "$bwork_database" > "$result" ||
+        die 'BWork canonical postconditions failed'
+    python3 "$bwork_guard_root/ops/lib/bwork_release_source.py" "$verification" \
+        --candidate-root "$candidate" --modules "$policy_modules" --plan "$result" >/dev/null ||
+        die 'BWork post-upgrade closure failed'
+}
+
 require_root
 load_config
 validate_arguments "$@"
@@ -339,10 +411,12 @@ if [ -n "${policy_third_party_modules:-}" ]; then
     git -C "$stage.git" archive --format=tar "$commit" "$third_party_path" | \
         tar -x -C "$stage" --no-same-owner --no-same-permissions
 fi
+bwork_source_guard "$stage" "$stage.git"
 rm -rf -- "$stage.git"
-if [ -n "${APPROVED_MODULE_SET[baseer_bchat]+x}" ]; then
-    python3 "$stage/custom_addons/baseer_bchat/tools/release_guard.py" || die 'BChat release guard rejected the QA candidate'
-fi
+chmod -R a+rX -- "$stage"
+bwork_database=$QA_DATABASE
+bwork_service=$ODOO_SERVICE
+bwork_classify "$stage" "$stage/bwork-classification.json" compose_cmd
 mv "$stage" "$release"
 printf '%s\n' "$commit" > "$release/RELEASE_COMMIT"
 chmod -R a+rX -- "$release"
@@ -351,6 +425,10 @@ upgrade_modules=()
 install_modules=()
 for module in "${APPROVED_MODULES[@]}" ${policy_third_party_modules:+"$policy_third_party_modules"}; do
     state="$(module_state "$module")"
+    case "${BWORK_MODULE_MODE[$module]:-}" in
+        UPGRADE) upgrade_modules+=("$module"); continue ;;
+        INSTALL) install_modules+=("$module"); continue ;;
+    esac
     case "$state" in
         installed) upgrade_modules+=("$module") ;;
         ''|uninstalled) install_modules+=("$module") ;;
@@ -363,6 +441,13 @@ service_quiesced=1
 compose_cmd stop "$ODOO_SERVICE"
 capture_recovery_pair
 
+# Recheck after quiescence; classification is read-only, no writes before the
+# checked DB+filestore recovery pair. A changed closure is a stop, not expansion.
+if [ -n "$bwork_requested" ]; then
+    bwork_classify "$release" "$backup/bwork-classification.json" compose_cmd
+    cmp "$release/bwork-classification.json" "$backup/bwork-classification.json" || die 'BWork classification changed during quiescence'
+fi
+
 ln -sfn "$release" "$QA_BASE/current"
 release_switched=1
 odoo_command="odoo --config=/etc/odoo/odoo.conf --db_host=\"\$HOST\" --db_user=\"\$USER\" --db_password=\"\$PASSWORD\" --addons-path=$ADDONS_PATH -d $QA_DATABASE"
@@ -373,8 +458,13 @@ if [ "${#install_modules[@]}" -gt 0 ]; then
     odoo_command+=" -i $(IFS=,; printf '%s' "${install_modules[*]}")"
 fi
 odoo_command+=' --stop-after-init --workers=0 --max-cron-threads=0'
+if [ "$bwork_native_upgrade" -eq 1 ]; then
+    [ "${#upgrade_modules[@]}" -gt 0 ] || die 'native migration requires canonical upgrade list'
+    odoo_command+=' --pre-upgrade-scripts=/mnt/baseer-addons/baseer_bwork/tools/canonical_pre_upgrade.py'
+fi
 database_mutated=1
 compose_cmd run --rm --no-deps --entrypoint sh "$ODOO_SERVICE" -lc "$odoo_command" > "$backup/module-upgrade.log" 2>&1
+bwork_verify "$release" "$backup/bwork-verified.json" compose_cmd
 smoke_since="$(date -u +%Y-%m-%dT%H:%M:%SZ)" || die 'cannot timestamp QA smoke attempt'
 compose_cmd up -d "$ODOO_SERVICE"
 wait_for_login

@@ -12,10 +12,10 @@ class ResUsers(models.Model):
         help='Requires the ordinary Sales, heat calendar and supplier-bill report access.',
     )
 
-    def _bchat_effective_permissions(self):
-        result = super()._bchat_effective_permissions()
+    def _bwork_effective_permissions(self):
+        result = super()._bwork_effective_permissions()
         self.ensure_one()
-        # Same narrowly scoped protected-switch read as BChat. No report read
+        # Same narrowly scoped protected-switch read as BWork. No report read
         # ever uses this elevated recordset.
         user = self.sudo()
         result['dashboard_view'] = bool(
@@ -42,9 +42,9 @@ class ResUsers(models.Model):
         if changed:
             self.env.cr.execute('''
                 UPDATE res_users
-                   SET bchat_permission_revision = COALESCE(bchat_permission_revision, 1) + 1
+                   SET bwork_permission_revision = COALESCE(bwork_permission_revision, 1) + 1
                  WHERE id = ANY(%s)
             ''', [changed])
-            self.invalidate_recordset(['bchat_permission_revision'])
-            self.env['baseer.bchat.service']._change_publish(changed, 'permissions')
+            self.invalidate_recordset(['bwork_permission_revision'])
+            self.env['baseer.bwork.service']._change_publish(changed, 'permissions')
         return result

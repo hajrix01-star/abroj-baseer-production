@@ -11,7 +11,7 @@ from odoo import Command
 from odoo.exceptions import AccessError, ValidationError
 from odoo.tests import HttpCase, TransactionCase, tagged
 
-from odoo.addons.baseer_bchat.models.media import _MEDIA_TOKEN
+from odoo.addons.baseer_bwork.models.media import _MEDIA_TOKEN
 from .. import contracts
 
 
@@ -24,17 +24,17 @@ class BWorkAdminCase(TransactionCase):
         cls.other = cls.env['res.company'].create({'name': 'Admin second company'})
         cls.foreign = cls.env['res.company'].create({'name': 'Admin foreign company'})
         cls.admin = cls.env.ref('base.user_admin')
-        cls.admin.write({'group_ids': [Command.link(cls.env.ref('baseer_bchat.group_bchat_manager').id)],
+        cls.admin.write({'group_ids': [Command.link(cls.env.ref('baseer_bwork.group_bwork_manager').id)],
                          'company_ids': [Command.link(cls.other.id)]})
         cls.ordinary = cls.env['res.users'].with_context(no_reset_password=True).create({
             'name': 'Non-admin manager', 'login': 'admin-contract-' + uuid4().hex,
             'company_id': cls.company.id, 'company_ids': [Command.set(cls.company.ids)],
             'group_ids': [Command.set([cls.env.ref('base.group_user').id,
-                                      cls.env.ref('baseer_bchat.group_bchat_manager').id])],
+                                      cls.env.ref('baseer_bwork.group_bwork_manager').id])],
         })
-        cls.room = cls.env['baseer.bchat.room'].with_user(cls.admin).with_company(cls.company).create({
+        cls.room = cls.env['baseer.bwork.room'].with_user(cls.admin).with_company(cls.company).create({
             'name': 'Metadata room', 'company_id': cls.company.id})
-        cls.member = cls.env['baseer.bchat.membership'].with_user(cls.admin).with_company(cls.company).create({
+        cls.member = cls.env['baseer.bwork.membership'].with_user(cls.admin).with_company(cls.company).create({
             'room_id': cls.room.id, 'user_id': cls.ordinary.id})
 
     def service(self, user=None, companies=None):
@@ -80,7 +80,7 @@ class BWorkAdminCase(TransactionCase):
         attachment = self.env['ir.attachment'].create({
             'name': 'Logical fixture', 'datas': base64.b64encode(b'x' * 1234), 'mimetype': 'application/octet-stream'})
         for _index in range(2):
-            self.env['baseer.bchat.media']._create_verified({
+            self.env['baseer.bwork.media']._create_verified({
                 'room_id': self.room.id, 'company_id': self.company.id,
                 'membership_id': self.member.id, 'author_user_id': self.ordinary.id,
                 'upload_uuid': str(uuid4()), 'kind': 'file', 'mime': 'application/octet-stream',
@@ -88,7 +88,7 @@ class BWorkAdminCase(TransactionCase):
                 'state': 'attached', 'attachment_id': attachment.id,
                 'thumbnail_attachment_id': attachment.id,
             }, _MEDIA_TOKEN)
-        before = self.env['baseer.bchat.media'].sudo().search_count([('room_id', '=', self.room.id)])
+        before = self.env['baseer.bwork.media'].sudo().search_count([('room_id', '=', self.room.id)])
         data = self.service().snapshot(self.company.ids)
         row = data['companies'][0]
         self.assertEqual(row['logical_bytes'], 1234)
@@ -97,7 +97,7 @@ class BWorkAdminCase(TransactionCase):
         self.assertEqual(row['media']['attached'], 2)
         self.assertEqual(data['linked_retention'], 'preserve_all')
         self.assertTrue(attachment.exists())
-        self.assertEqual(self.env['baseer.bchat.media'].sudo().search_count([('room_id', '=', self.room.id)]), before)
+        self.assertEqual(self.env['baseer.bwork.media'].sudo().search_count([('room_id', '=', self.room.id)]), before)
         with patch.object(contracts, 'MAX_SOURCE_ROWS', 4):
             self.assertFalse(self.service().snapshot(self.company.ids)['complete'], 'Attachment reference also consumes capacity')
 
@@ -129,11 +129,11 @@ class BWorkAdminCase(TransactionCase):
         })
         self.assertTrue(fallback_admin.active)
         self.assertTrue(fallback_admin.has_group('base.group_system'))
-        self.assertFalse(fallback_admin._bchat_effective_permissions()['room_admin'])
+        self.assertFalse(fallback_admin._bwork_effective_permissions()['room_admin'])
         # Keep actual room-admin authority but remove the additional config grant.
         self.admin.sudo().write({'group_ids': [Command.unlink(system_group.id)]})
         self.assertFalse(self.admin.has_group('base.group_system'))
-        self.assertTrue(self.admin._bchat_effective_permissions()['room_admin'])
+        self.assertTrue(self.admin._bwork_effective_permissions()['room_admin'])
         with self.assertRaises(AccessError):
             policy.write({'warning_mib': 2})
         self.assertEqual(policy.warning_mib, 1)
@@ -190,7 +190,7 @@ class BWorkAdminCase(TransactionCase):
         policy = self.env['baseer.bwork.admin.policy'].with_user(self.admin).with_context(
             allowed_company_ids=self.company.ids).create({'company_id': self.company.id, 'warning_mib': 0})
         attachment = self.env['ir.attachment'].create({'name': 'Vacuum content sentinel', 'datas': base64.b64encode(b'preserve')})
-        message = self.env['baseer.bchat.service'].with_user(self.ordinary)._v2_send(self.room.id, {
+        message = self.env['baseer.bwork.service'].with_user(self.ordinary)._v2_send(self.room.id, {
             'api_version': 2, 'membership_id': self.member.id, 'client_uuid': str(uuid4()), 'text': 'Preserved content',
         })
         fresh = model.create({'company_ids': [Command.set(self.company.ids)]})
@@ -206,21 +206,21 @@ class BWorkAdminCase(TransactionCase):
         self.assertTrue(attachment.exists())
         self.assertTrue(self.room.exists())
         self.assertTrue(self.member.exists())
-        self.assertTrue(self.env['baseer.bchat.message'].sudo().browse(message['message_id']).exists())
+        self.assertTrue(self.env['baseer.bwork.message'].sudo().browse(message['message_id']).exists())
         with self.assertRaises(AccessError):
             policy.sudo().read(['warning_mib'])
 
     def test_upgrade_repairs_only_obsolete_root_menu_translations(self):
-        path = Path(__file__).resolve().parents[2] / 'baseer_bchat/migrations/19.0.0.4.17/post-migrate.py'
+        path = Path(__file__).resolve().parents[2] / 'baseer_bwork/migrations/19.0.0.4.17/post-migrate.py'
         spec = importlib.util.spec_from_file_location('bwork_menu_upgrade', path)
         migration = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(migration)
-        menu = self.env.ref('baseer_bchat.menu_bchat_root')
-        other = self.env.ref('baseer_bchat.menu_bchat_rooms')
+        menu = self.env.ref('baseer_bwork.menu_bwork_root')
+        other = self.env.ref('baseer_bwork.menu_bwork_rooms')
         self.env['ir.ui.menu'].flush_model(['name'])
         original_other = other.with_context(lang='en_US').name
-        fixture = {'en_US': 'BWork', 'ar_001': 'BChat', 'ar_SY': 'BChat',
-                   'fr_FR': 'BChat', 'ar_EG': 'Custom Arabic title'}
+        fixture = {'en_US': 'BWork', 'ar_001': 'BWork', 'ar_SY': 'BWork',
+                   'fr_FR': 'BWork', 'ar_EG': 'Custom Arabic title'}
         self.env.cr.execute('UPDATE ir_ui_menu SET name = %s::jsonb WHERE id = %s',
                             [json.dumps(fixture), menu.id])
         for _attempt in range(2):
@@ -231,13 +231,13 @@ class BWorkAdminCase(TransactionCase):
                 'fr_FR': 'BWork', 'ar_EG': 'Custom Arabic title'})
         self.env['ir.ui.menu'].invalidate_model(['name'])
         self.assertEqual(other.with_context(lang='en_US').name, original_other)
-        self.assertEqual(self.env.ref('baseer_bchat.menu_bchat_root').id, menu.id)
+        self.assertEqual(self.env.ref('baseer_bwork.menu_bwork_root').id, menu.id)
 
     def test_no_private_acl_or_provider_secret_readiness_claim(self):
-        for model in ('baseer.bchat.media', 'baseer.bchat.push.device', 'baseer.bchat.push.event',
-                      'baseer.bchat.mobile.upload.grant', 'baseer.bchat.message'):
+        for model in ('baseer.bwork.media', 'baseer.bwork.push.device', 'baseer.bwork.push.event',
+                      'baseer.bwork.mobile.upload.grant', 'baseer.bwork.message'):
             self.assertFalse(self.env[model].with_user(self.admin).has_access('read'))
-        with patch.object(type(self.env['baseer.bchat.push.event']), '_fcm_config', side_effect=AssertionError('No secret inspection')):
+        with patch.object(type(self.env['baseer.bwork.push.event']), '_fcm_config', side_effect=AssertionError('No secret inspection')):
             data = self.service().snapshot(self.company.ids)
         self.assertEqual(data['provider_readiness'], 'unverified')
         self.assertEqual(len(data['crons']), 4)
@@ -269,7 +269,7 @@ class BWorkAdminCase(TransactionCase):
         with self.assertRaises(AccessError):
             console.write({'company_ids': [Command.set(self.other.ids)]})
         self.assertEqual(console.company_ids, self.company)
-        self.env['baseer.bchat.media']._create_verified({
+        self.env['baseer.bwork.media']._create_verified({
             'room_id': self.room.id, 'company_id': self.company.id,
             'membership_id': self.member.id, 'author_user_id': self.ordinary.id,
             'upload_uuid': str(uuid4()), 'kind': 'file', 'mime': 'application/octet-stream',
@@ -295,7 +295,7 @@ class BWorkAdminHttpCase(HttpCase):
         admin = self.env.ref('base.user_admin')
         password = 'admin-isolated-' + uuid4().hex
         admin.write({'password': password, 'group_ids': [Command.link(
-            self.env.ref('baseer_bchat.group_bchat_manager').id)]})
+            self.env.ref('baseer_bwork.group_bwork_manager').id)]})
         self.authenticate(admin.login, password)
         self.assertTrue(self._rpc(self.env.company.ids)['result']['complete'])
         user = self.env['res.users'].with_context(no_reset_password=True).create({

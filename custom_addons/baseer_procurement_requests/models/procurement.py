@@ -17,7 +17,7 @@ REQUEST_CREATE_INTERNAL = '_baseer_procurement_request_create_internal'
 OPTION_SYSTEM_WRITE = '_baseer_procurement_option_system_write'
 FAVORITE_SYSTEM_WRITE = '_baseer_procurement_favorite_system_write'
 IDENTITY_SYSTEM_WRITE = '_baseer_procurement_identity_system_write'
-BCHAT_RECEIPT_INTERNAL = 'bchat_receipt_internal'
+BWORK_RECEIPT_INTERNAL = 'bwork_receipt_internal'
 MONEY_QUANTUM = Decimal('0.01')
 MAX_CATALOG_LINES = 200
 MAX_CATALOG_HIGHLIGHTS = 12
@@ -55,21 +55,22 @@ def _decimal_text(value):
     return format(Decimal(value).quantize(MONEY_QUANTUM, rounding=ROUND_HALF_UP), ',.2f')
 
 
-def _is_bchat_receipt_internal(env):
-    """Only the sudoed BChat bridge may reuse receipt logic after its checks."""
-    return bool(env.su and env.context.get(BCHAT_RECEIPT_INTERNAL))
+def _is_bwork_receipt_internal(env):
+    """Only the sudoed BWork bridge may reuse receipt logic after its checks."""
+    return bool(env.su and env.context.get(BWORK_RECEIPT_INTERNAL))
 
 
-def _bchat_receipt_overage_allowed(request):
-    """Keep an actual over-receipt exclusive to the guarded BChat bridge.
+def _bwork_receipt_overage_allowed(request):
+    """Keep an actual over-receipt exclusive to the guarded BWork bridge.
 
-    The native manager and cashier paths retain their quantity caps.  BChat
+    The native manager and cashier paths retain their quantity caps.  BWork
     authorizes the actual quantity after locking the request and records it
     against the unchanged requested quantity for later variance/audit review.
     """
-    return bool(_is_bchat_receipt_internal(request.env)
+    return bool(_is_bwork_receipt_internal(request.env)
                 and 'source_channel' in request._fields
-                and request.source_channel == 'bchat')
+                and getattr(request, '_bwork_source_channel', None) is not None
+                and request.source_channel == request._bwork_source_channel)
 
 
 def _whatsapp_product_label(product):
@@ -756,7 +757,7 @@ class ProcurementRequest(models.Model):
 
     def action_confirm_actual_purchase(self):
         self.ensure_one()
-        if not _is_bchat_receipt_internal(self.env) and not self.env.user.has_group(
+        if not _is_bwork_receipt_internal(self.env) and not self.env.user.has_group(
             'baseer_procurement_requests.group_procurement_cashier'
         ):
             raise AccessError(_('Only a procurement cashier can confirm the quantity receipt.'))
@@ -780,7 +781,7 @@ class ProcurementRequest(models.Model):
         moves = []
         for line in purchased_lines:
             if (line.actual_qty > line.manager_received_qty
-                    and not _bchat_receipt_overage_allowed(self)):
+                    and not _bwork_receipt_overage_allowed(self)):
                 raise UserError(_('Actual quantity for %s cannot exceed the manager receipt.') % line.option_id.product_id.display_name)
             if not line.option_id.product_id.is_storable:
                 continue
@@ -1558,7 +1559,7 @@ class ProcurementRequest(models.Model):
     @api.model
     def confirm_actual_from_catalog(self, request_id, lines):
         """Narrow cashier boundary for the POS-like actual-quantity screen."""
-        if not _is_bchat_receipt_internal(self.env) and not self.env.user.has_group(
+        if not _is_bwork_receipt_internal(self.env) and not self.env.user.has_group(
             'baseer_procurement_requests.group_procurement_cashier'
         ):
             raise AccessError(_('Only a procurement cashier can enter actual purchase details.'))
@@ -1591,7 +1592,7 @@ class ProcurementRequest(models.Model):
                 raise ValidationError(_('Actual quantity or price is invalid for %s.') % line.option_id.product_id.display_name)
             maximum = line.requested_qty if cashier_receipt else line.manager_received_qty
             if (quantity > _decimal_input(maximum, _('Received quantity'))
-                    and not _bchat_receipt_overage_allowed(request)):
+                    and not _bwork_receipt_overage_allowed(request)):
                 raise ValidationError(_('Actual quantity or price is invalid for %s.') % line.option_id.product_id.display_name)
             if cashier_receipt:
                 line.sudo().with_context(cashier_receipt_internal=True).write({
@@ -1823,7 +1824,7 @@ class ProcurementRequestLine(models.Model):
             if line.requested_qty <= 0 or min(line.manager_received_qty, line.actual_qty, line.requested_price, line.actual_price) < 0:
                 raise ValidationError(_('Quantities must be positive and prices cannot be negative.'))
             if (line.manager_received_qty > line.requested_qty
-                    and not _bchat_receipt_overage_allowed(line.request_id)):
+                    and not _bwork_receipt_overage_allowed(line.request_id)):
                 raise ValidationError(_('Manager-received quantity cannot exceed the requested quantity.'))
             if line.actual_qty and not line.actual_price:
                 raise ValidationError(_('Every purchased material needs a positive actual price.'))
@@ -1865,7 +1866,7 @@ class ProcurementRequestLine(models.Model):
                 if any(line.request_id.state != 'sent' for line in self):
                     raise UserError(_('Received quantities can only be entered after sending the request.'))
             if {'actual_qty', 'actual_price'} & set(vals):
-                if not _is_bchat_receipt_internal(self.env) and not self.env.user.has_group(
+                if not _is_bwork_receipt_internal(self.env) and not self.env.user.has_group(
                     'baseer_procurement_requests.group_procurement_cashier'
                 ):
                     raise AccessError(_('Only a procurement cashier can enter actual purchase details.'))

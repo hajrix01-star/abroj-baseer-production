@@ -1,0 +1,1130 @@
+{
+  "schema_version": 1,
+  "migration_id": "BCR-20261020-v1",
+  "source_inventory": "3b0feb1aafe41479e4f33378c1745a5b0a96b811",
+  "modules": [
+    {
+      "old": "baseer_bchat",
+      "new": "baseer_bwork",
+      "old_version": "19.0.0.4.19"
+    },
+    {
+      "old": "baseer_bchat_procurement",
+      "new": "baseer_bwork_procurement",
+      "old_version": "19.0.1.0.4"
+    },
+    {
+      "old": "baseer_bchat_permission_guards",
+      "new": "baseer_bwork_permission_guards",
+      "old_version": "19.0.1.0.0"
+    },
+    {
+      "old": "baseer_bchat_document_permission_guards",
+      "new": "baseer_bwork_document_permission_guards",
+      "old_version": "19.0.1.0.0"
+    }
+  ],
+  "models": [
+    {
+      "old": "baseer.bchat.binding",
+      "new": "baseer.bwork.binding",
+      "abstract": false,
+      "old_table": "baseer_bchat_binding",
+      "new_table": "baseer_bwork_binding"
+    },
+    {
+      "old": "baseer.bchat.change.cursor",
+      "new": "baseer.bwork.change.cursor",
+      "abstract": false,
+      "old_table": "baseer_bchat_change_cursor",
+      "new_table": "baseer_bwork_change_cursor"
+    },
+    {
+      "old": "baseer.bchat.change",
+      "new": "baseer.bwork.change",
+      "abstract": false,
+      "old_table": "baseer_bchat_change",
+      "new_table": "baseer_bwork_change"
+    },
+    {
+      "old": "baseer.bchat.media",
+      "new": "baseer.bwork.media",
+      "abstract": false,
+      "old_table": "baseer_bchat_media",
+      "new_table": "baseer_bwork_media"
+    },
+    {
+      "old": "baseer.bchat.membership",
+      "new": "baseer.bwork.membership",
+      "abstract": false,
+      "old_table": "baseer_bchat_membership",
+      "new_table": "baseer_bwork_membership"
+    },
+    {
+      "old": "baseer.bchat.message",
+      "new": "baseer.bwork.message",
+      "abstract": false,
+      "old_table": "baseer_bchat_message",
+      "new_table": "baseer_bwork_message"
+    },
+    {
+      "old": "baseer.bchat.message.receipt",
+      "new": "baseer.bwork.message.receipt",
+      "abstract": false,
+      "old_table": "baseer_bchat_message_receipt",
+      "new_table": "baseer_bwork_message_receipt"
+    },
+    {
+      "old": "baseer.bchat.mobile.upload.grant",
+      "new": "baseer.bwork.mobile.upload.grant",
+      "abstract": false,
+      "old_table": "baseer_bchat_mobile_upload_grant",
+      "new_table": "baseer_bwork_mobile_upload_grant"
+    },
+    {
+      "old": "baseer.bchat.push.device",
+      "new": "baseer.bwork.push.device",
+      "abstract": false,
+      "old_table": "baseer_bchat_push_device",
+      "new_table": "baseer_bwork_push_device"
+    },
+    {
+      "old": "baseer.bchat.push.event",
+      "new": "baseer.bwork.push.event",
+      "abstract": false,
+      "old_table": "baseer_bchat_push_event",
+      "new_table": "baseer_bwork_push_event"
+    },
+    {
+      "old": "baseer.bchat.receipt",
+      "new": "baseer.bwork.receipt",
+      "abstract": false,
+      "old_table": "baseer_bchat_receipt",
+      "new_table": "baseer_bwork_receipt"
+    },
+    {
+      "old": "baseer.bchat.room",
+      "new": "baseer.bwork.room",
+      "abstract": false,
+      "old_table": "baseer_bchat_room",
+      "new_table": "baseer_bwork_room"
+    },
+    {
+      "old": "baseer.bchat.service",
+      "new": "baseer.bwork.service",
+      "abstract": true,
+      "old_table": null,
+      "new_table": null
+    },
+    {
+      "old": "baseer.bchat.storage",
+      "new": "baseer.bwork.storage",
+      "abstract": true,
+      "old_table": null,
+      "new_table": null
+    },
+    {
+      "old": "baseer.bchat.task",
+      "new": "baseer.bwork.task",
+      "abstract": false,
+      "old_table": "baseer_bchat_task",
+      "new_table": "baseer_bwork_task"
+    },
+    {
+      "old": "baseer.bchat.task.event",
+      "new": "baseer.bwork.task.event",
+      "abstract": false,
+      "old_table": "baseer_bchat_task_event",
+      "new_table": "baseer_bwork_task_event"
+    }
+  ],
+  "fields": [
+    {
+      "model": "res.company",
+      "old": "bchat_history_policy",
+      "new": "bwork_history_policy",
+      "stored": true,
+      "table": "res_company"
+    },
+    {
+      "model": "res.users",
+      "old": "bchat_chat_view",
+      "new": "bwork_chat_view",
+      "stored": true,
+      "table": "res_users"
+    },
+    {
+      "model": "res.users",
+      "old": "bchat_chat_send",
+      "new": "bwork_chat_send",
+      "stored": true,
+      "table": "res_users"
+    },
+    {
+      "model": "res.users",
+      "old": "bchat_media",
+      "new": "bwork_media",
+      "stored": true,
+      "table": "res_users"
+    },
+    {
+      "model": "res.users",
+      "old": "bchat_group_create",
+      "new": "bwork_group_create",
+      "stored": true,
+      "table": "res_users"
+    },
+    {
+      "model": "res.users",
+      "old": "bchat_group_manage",
+      "new": "bwork_group_manage",
+      "stored": true,
+      "table": "res_users"
+    },
+    {
+      "model": "res.users",
+      "old": "bchat_task_view",
+      "new": "bwork_task_view",
+      "stored": true,
+      "table": "res_users"
+    },
+    {
+      "model": "res.users",
+      "old": "bchat_task_manage",
+      "new": "bwork_task_manage",
+      "stored": true,
+      "table": "res_users"
+    },
+    {
+      "model": "res.users",
+      "old": "bchat_manage_rooms",
+      "new": "bwork_manage_rooms",
+      "stored": true,
+      "table": "res_users"
+    },
+    {
+      "model": "res.users",
+      "old": "bchat_room_admin_eligible",
+      "new": "bwork_room_admin_eligible",
+      "stored": false,
+      "table": "res_users"
+    },
+    {
+      "model": "res.users",
+      "old": "bchat_permission_revision",
+      "new": "bwork_permission_revision",
+      "stored": true,
+      "table": "res_users"
+    },
+    {
+      "model": "baseer.procurement.request",
+      "old": "bchat_room_id",
+      "new": "bwork_room_id",
+      "stored": true,
+      "table": "baseer_procurement_request"
+    },
+    {
+      "model": "baseer.procurement.request",
+      "old": "bchat_message_id",
+      "new": "bwork_message_id",
+      "stored": true,
+      "table": "baseer_procurement_request"
+    },
+    {
+      "model": "res.users",
+      "old": "bchat_order_view",
+      "new": "bwork_order_view",
+      "stored": true,
+      "table": "res_users"
+    },
+    {
+      "model": "res.users",
+      "old": "bchat_order_create",
+      "new": "bwork_order_create",
+      "stored": true,
+      "table": "res_users"
+    },
+    {
+      "model": "res.users",
+      "old": "bchat_order_receive",
+      "new": "bwork_order_receive",
+      "stored": true,
+      "table": "res_users"
+    },
+    {
+      "model": "res.users",
+      "old": "bchat_can_order",
+      "new": "bwork_can_order",
+      "stored": false,
+      "table": "res_users"
+    },
+    {
+      "model": "res.users",
+      "old": "bchat_order_operator_eligible",
+      "new": "bwork_order_operator_eligible",
+      "stored": false,
+      "table": "res_users"
+    }
+  ],
+  "xmlids": [
+    {
+      "old": "baseer_bchat.cron_expire_staged_media",
+      "new": "baseer_bwork.cron_expire_staged_media",
+      "model": "ir.cron"
+    },
+    {
+      "old": "baseer_bchat.cron_expire_mobile_upload_grants",
+      "new": "baseer_bwork.cron_expire_mobile_upload_grants",
+      "model": "ir.cron"
+    },
+    {
+      "old": "baseer_bchat.cron_dispatch_push_events",
+      "new": "baseer_bwork.cron_dispatch_push_events",
+      "model": "ir.cron"
+    },
+    {
+      "old": "baseer_bchat.cron_work_task_reminders",
+      "new": "baseer_bwork.cron_work_task_reminders",
+      "model": "ir.cron"
+    },
+    {
+      "old": "baseer_bchat.access_bchat_receipt_user",
+      "new": "baseer_bwork.access_bwork_receipt_user",
+      "model": "ir.model.access"
+    },
+    {
+      "old": "baseer_bchat.access_bchat_binding_user",
+      "new": "baseer_bwork.access_bwork_binding_user",
+      "model": "ir.model.access"
+    },
+    {
+      "old": "baseer_bchat.access_bchat_binding_manager",
+      "new": "baseer_bwork.access_bwork_binding_manager",
+      "model": "ir.model.access"
+    },
+    {
+      "old": "baseer_bchat.access_bchat_room_manager",
+      "new": "baseer_bwork.access_bwork_room_manager",
+      "model": "ir.model.access"
+    },
+    {
+      "old": "baseer_bchat.access_bchat_membership_manager",
+      "new": "baseer_bwork.access_bwork_membership_manager",
+      "model": "ir.model.access"
+    },
+    {
+      "old": "baseer_bchat.group_bchat_user",
+      "new": "baseer_bwork.group_bwork_user",
+      "model": "res.groups"
+    },
+    {
+      "old": "baseer_bchat.group_bchat_manager",
+      "new": "baseer_bwork.group_bwork_manager",
+      "model": "res.groups"
+    },
+    {
+      "old": "baseer_bchat.receipt_company_rule",
+      "new": "baseer_bwork.receipt_company_rule",
+      "model": "ir.rule"
+    },
+    {
+      "old": "baseer_bchat.receipt_owner_rule",
+      "new": "baseer_bwork.receipt_owner_rule",
+      "model": "ir.rule"
+    },
+    {
+      "old": "baseer_bchat.receipt_membership_rule",
+      "new": "baseer_bwork.receipt_membership_rule",
+      "model": "ir.rule"
+    },
+    {
+      "old": "baseer_bchat.binding_company_rule",
+      "new": "baseer_bwork.binding_company_rule",
+      "model": "ir.rule"
+    },
+    {
+      "old": "baseer_bchat.binding_member_rule",
+      "new": "baseer_bwork.binding_member_rule",
+      "model": "ir.rule"
+    },
+    {
+      "old": "baseer_bchat.room_company_rule",
+      "new": "baseer_bwork.room_company_rule",
+      "model": "ir.rule"
+    },
+    {
+      "old": "baseer_bchat.membership_company_rule",
+      "new": "baseer_bwork.membership_company_rule",
+      "model": "ir.rule"
+    },
+    {
+      "old": "baseer_bchat.view_bchat_room_list",
+      "new": "baseer_bwork.view_bwork_room_list",
+      "model": "ir.ui.view"
+    },
+    {
+      "old": "baseer_bchat.view_bchat_room_form",
+      "new": "baseer_bwork.view_bwork_room_form",
+      "model": "ir.ui.view"
+    },
+    {
+      "old": "baseer_bchat.view_bchat_membership_list",
+      "new": "baseer_bwork.view_bwork_membership_list",
+      "model": "ir.ui.view"
+    },
+    {
+      "old": "baseer_bchat.view_bchat_membership_form",
+      "new": "baseer_bwork.view_bwork_membership_form",
+      "model": "ir.ui.view"
+    },
+    {
+      "old": "baseer_bchat.action_bchat_rooms",
+      "new": "baseer_bwork.action_bwork_rooms",
+      "model": "ir.actions.act_window"
+    },
+    {
+      "old": "baseer_bchat.action_bchat_memberships",
+      "new": "baseer_bwork.action_bwork_memberships",
+      "model": "ir.actions.act_window"
+    },
+    {
+      "old": "baseer_bchat.menu_bchat_root",
+      "new": "baseer_bwork.menu_bwork_root",
+      "model": "ir.ui.menu"
+    },
+    {
+      "old": "baseer_bchat.menu_bchat_rooms",
+      "new": "baseer_bwork.menu_bwork_rooms",
+      "model": "ir.ui.menu"
+    },
+    {
+      "old": "baseer_bchat.menu_bchat_members",
+      "new": "baseer_bwork.menu_bwork_members",
+      "model": "ir.ui.menu"
+    },
+    {
+      "old": "baseer_bchat.view_users_form_bchat_capabilities",
+      "new": "baseer_bwork.view_users_form_bwork_capabilities",
+      "model": "ir.ui.view"
+    },
+    {
+      "old": "baseer_bchat_procurement.group_bchat_procurement_operator",
+      "new": "baseer_bwork_procurement.group_bwork_procurement_operator",
+      "model": "res.groups"
+    },
+    {
+      "old": "baseer_bchat_procurement.view_users_form_bchat_capabilities",
+      "new": "baseer_bwork_procurement.view_users_form_bwork_capabilities",
+      "model": "ir.ui.view"
+    },
+    {
+      "old": "baseer_bwork_admin.cron_bwork_retention",
+      "new": "baseer_bwork_admin.cron_bwork_retention",
+      "model": "ir.cron"
+    },
+    {
+      "old": "baseer_bwork_admin.console_manager",
+      "new": "baseer_bwork_admin.console_manager",
+      "model": "ir.model.access"
+    },
+    {
+      "old": "baseer_bwork_admin.policy_manager",
+      "new": "baseer_bwork_admin.policy_manager",
+      "model": "ir.model.access"
+    },
+    {
+      "old": "baseer_bwork_admin.retention_policy_owner",
+      "new": "baseer_bwork_admin.retention_policy_owner",
+      "model": "ir.model.access"
+    },
+    {
+      "old": "baseer_bwork_admin.retention_policy_delegate",
+      "new": "baseer_bwork_admin.retention_policy_delegate",
+      "model": "ir.model.access"
+    },
+    {
+      "old": "baseer_bwork_admin.retention_wizard_owner",
+      "new": "baseer_bwork_admin.retention_wizard_owner",
+      "model": "ir.model.access"
+    },
+    {
+      "old": "baseer_bwork_admin.retention_wizard_delegate",
+      "new": "baseer_bwork_admin.retention_wizard_delegate",
+      "model": "ir.model.access"
+    },
+    {
+      "old": "baseer_bwork_admin.retention_run_owner",
+      "new": "baseer_bwork_admin.retention_run_owner",
+      "model": "ir.model.access"
+    },
+    {
+      "old": "baseer_bwork_admin.retention_run_delegate",
+      "new": "baseer_bwork_admin.retention_run_delegate",
+      "model": "ir.model.access"
+    },
+    {
+      "old": "baseer_bwork_admin.retention_item_owner",
+      "new": "baseer_bwork_admin.retention_item_owner",
+      "model": "ir.model.access"
+    },
+    {
+      "old": "baseer_bwork_admin.retention_item_delegate",
+      "new": "baseer_bwork_admin.retention_item_delegate",
+      "model": "ir.model.access"
+    },
+    {
+      "old": "baseer_bwork_admin.retention_audit_owner",
+      "new": "baseer_bwork_admin.retention_audit_owner",
+      "model": "ir.model.access"
+    },
+    {
+      "old": "baseer_bwork_admin.retention_audit_delegate",
+      "new": "baseer_bwork_admin.retention_audit_delegate",
+      "model": "ir.model.access"
+    },
+    {
+      "old": "baseer_bwork_admin.group_bwork_retention_manager",
+      "new": "baseer_bwork_admin.group_bwork_retention_manager",
+      "model": "res.groups"
+    },
+    {
+      "old": "baseer_bwork_admin.retention_policy_company_rule",
+      "new": "baseer_bwork_admin.retention_policy_company_rule",
+      "model": "ir.rule"
+    },
+    {
+      "old": "baseer_bwork_admin.retention_wizard_company_rule",
+      "new": "baseer_bwork_admin.retention_wizard_company_rule",
+      "model": "ir.rule"
+    },
+    {
+      "old": "baseer_bwork_admin.retention_run_company_rule",
+      "new": "baseer_bwork_admin.retention_run_company_rule",
+      "model": "ir.rule"
+    },
+    {
+      "old": "baseer_bwork_admin.retention_item_company_rule",
+      "new": "baseer_bwork_admin.retention_item_company_rule",
+      "model": "ir.rule"
+    },
+    {
+      "old": "baseer_bwork_admin.retention_audit_company_rule",
+      "new": "baseer_bwork_admin.retention_audit_company_rule",
+      "model": "ir.rule"
+    },
+    {
+      "old": "baseer_bwork_admin.policy_company_rule",
+      "new": "baseer_bwork_admin.policy_company_rule",
+      "model": "ir.rule"
+    },
+    {
+      "old": "baseer_bwork_admin.console_form",
+      "new": "baseer_bwork_admin.console_form",
+      "model": "ir.ui.view"
+    },
+    {
+      "old": "baseer_bwork_admin.room_list",
+      "new": "baseer_bwork_admin.room_list",
+      "model": "ir.ui.view"
+    },
+    {
+      "old": "baseer_bwork_admin.member_list",
+      "new": "baseer_bwork_admin.member_list",
+      "model": "ir.ui.view"
+    },
+    {
+      "old": "baseer_bwork_admin.room_form",
+      "new": "baseer_bwork_admin.room_form",
+      "model": "ir.ui.view"
+    },
+    {
+      "old": "baseer_bwork_admin.member_form",
+      "new": "baseer_bwork_admin.member_form",
+      "model": "ir.ui.view"
+    },
+    {
+      "old": "baseer_bwork_admin.policy_list",
+      "new": "baseer_bwork_admin.policy_list",
+      "model": "ir.ui.view"
+    },
+    {
+      "old": "baseer_bwork_admin.policy_form",
+      "new": "baseer_bwork_admin.policy_form",
+      "model": "ir.ui.view"
+    },
+    {
+      "old": "baseer_bwork_admin.console_action",
+      "new": "baseer_bwork_admin.console_action",
+      "model": "ir.actions.act_window"
+    },
+    {
+      "old": "baseer_bwork_admin.admin_menu",
+      "new": "baseer_bwork_admin.admin_menu",
+      "model": "ir.ui.menu"
+    },
+    {
+      "old": "baseer_bwork_admin.media_gallery_action",
+      "new": "baseer_bwork_admin.media_gallery_action",
+      "model": "ir.actions.client"
+    },
+    {
+      "old": "baseer_bwork_admin.media_gallery_menu",
+      "new": "baseer_bwork_admin.media_gallery_menu",
+      "model": "ir.ui.menu"
+    },
+    {
+      "old": "baseer_bwork_admin.retention_wizard_form",
+      "new": "baseer_bwork_admin.retention_wizard_form",
+      "model": "ir.ui.view"
+    },
+    {
+      "old": "baseer_bwork_admin.retention_wizard_action",
+      "new": "baseer_bwork_admin.retention_wizard_action",
+      "model": "ir.actions.act_window"
+    },
+    {
+      "old": "baseer_bwork_admin.retention_policy_list",
+      "new": "baseer_bwork_admin.retention_policy_list",
+      "model": "ir.ui.view"
+    },
+    {
+      "old": "baseer_bwork_admin.retention_policy_form",
+      "new": "baseer_bwork_admin.retention_policy_form",
+      "model": "ir.ui.view"
+    },
+    {
+      "old": "baseer_bwork_admin.retention_policy_search",
+      "new": "baseer_bwork_admin.retention_policy_search",
+      "model": "ir.ui.view"
+    },
+    {
+      "old": "baseer_bwork_admin.retention_policy_action",
+      "new": "baseer_bwork_admin.retention_policy_action",
+      "model": "ir.actions.act_window"
+    },
+    {
+      "old": "baseer_bwork_admin.retention_run_list",
+      "new": "baseer_bwork_admin.retention_run_list",
+      "model": "ir.ui.view"
+    },
+    {
+      "old": "baseer_bwork_admin.retention_run_form",
+      "new": "baseer_bwork_admin.retention_run_form",
+      "model": "ir.ui.view"
+    },
+    {
+      "old": "baseer_bwork_admin.retention_run_search",
+      "new": "baseer_bwork_admin.retention_run_search",
+      "model": "ir.ui.view"
+    },
+    {
+      "old": "baseer_bwork_admin.retention_run_action",
+      "new": "baseer_bwork_admin.retention_run_action",
+      "model": "ir.actions.act_window"
+    },
+    {
+      "old": "baseer_bwork_admin.retention_root_menu",
+      "new": "baseer_bwork_admin.retention_root_menu",
+      "model": "ir.ui.menu"
+    },
+    {
+      "old": "baseer_bwork_admin.retention_manual_menu",
+      "new": "baseer_bwork_admin.retention_manual_menu",
+      "model": "ir.ui.menu"
+    },
+    {
+      "old": "baseer_bwork_admin.retention_policy_menu",
+      "new": "baseer_bwork_admin.retention_policy_menu",
+      "model": "ir.ui.menu"
+    },
+    {
+      "old": "baseer_bwork_admin.retention_run_menu",
+      "new": "baseer_bwork_admin.retention_run_menu",
+      "model": "ir.ui.menu"
+    },
+    {
+      "old": "baseer_bwork_admin.console_storage_navigation",
+      "new": "baseer_bwork_admin.console_storage_navigation",
+      "model": "ir.ui.view"
+    },
+    {
+      "old": "baseer_bwork_dashboard.view_users_form_bwork_dashboard",
+      "new": "baseer_bwork_dashboard.view_users_form_bwork_dashboard",
+      "model": "ir.ui.view"
+    }
+  ],
+  "indexes": [
+    {
+      "old": "baseer_bchat_change_user_seq_idx",
+      "new": "baseer_bwork_change_user_seq_idx"
+    },
+    {
+      "old": "baseer_bchat_media_staged_expiry_idx",
+      "new": "baseer_bwork_media_staged_expiry_idx"
+    },
+    {
+      "old": "baseer_bchat_media_staged_quota_idx",
+      "new": "baseer_bwork_media_staged_quota_idx"
+    },
+    {
+      "old": "baseer_bchat_membership_active_uniq",
+      "new": "baseer_bwork_membership_active_uniq"
+    },
+    {
+      "old": "baseer_bchat_message_room_id_desc_idx",
+      "new": "baseer_bwork_message_room_id_desc_idx"
+    },
+    {
+      "old": "baseer_bchat_message_media_uniq",
+      "new": "baseer_bwork_message_media_uniq"
+    },
+    {
+      "old": "baseer_bchat_receipt_unread_member_idx",
+      "new": "baseer_bwork_receipt_unread_member_idx"
+    },
+    {
+      "old": "baseer_bchat_mobile_upload_grant_active_uniq",
+      "new": "baseer_bwork_mobile_upload_grant_active_uniq"
+    },
+    {
+      "old": "baseer_bchat_mobile_upload_grant_cleanup_idx",
+      "new": "baseer_bwork_mobile_upload_grant_cleanup_idx"
+    },
+    {
+      "old": "baseer_bchat_mobile_upload_grant_purge_idx",
+      "new": "baseer_bwork_mobile_upload_grant_purge_idx"
+    },
+    {
+      "old": "baseer_bchat_push_device_user_active_idx",
+      "new": "baseer_bwork_push_device_user_active_idx"
+    },
+    {
+      "old": "baseer_bchat_push_event_dispatch_idx",
+      "new": "baseer_bwork_push_event_dispatch_idx"
+    },
+    {
+      "old": "baseer_bchat_push_event_message_device_unique",
+      "new": "baseer_bwork_push_event_message_device_unique"
+    },
+    {
+      "old": "baseer_bchat_task_company_state_id_idx",
+      "new": "baseer_bwork_task_company_state_id_idx"
+    },
+    {
+      "old": "baseer_bchat_task_room_id_idx",
+      "new": "baseer_bwork_task_room_id_idx"
+    },
+    {
+      "old": "baseer_bchat_task_room_state_idx",
+      "new": "baseer_bwork_task_room_state_idx"
+    },
+    {
+      "old": "baseer_bchat_task_assignee_state_id_idx",
+      "new": "baseer_bwork_task_assignee_state_id_idx"
+    },
+    {
+      "old": "baseer_bchat_task_creator_state_id_idx",
+      "new": "baseer_bwork_task_creator_state_id_idx"
+    },
+    {
+      "old": "baseer_bchat_task_pending_reminder_idx",
+      "new": "baseer_bwork_task_pending_reminder_idx"
+    }
+  ],
+  "constraints": [
+    {
+      "model": "baseer.bchat.binding",
+      "old": "channel_unique",
+      "new": "channel_unique",
+      "old_definition": "unique(channel_id)",
+      "new_definition": "unique(channel_id)"
+    },
+    {
+      "model": "baseer.bchat.change.cursor",
+      "old": "user_unique",
+      "new": "user_unique",
+      "old_definition": "UNIQUE(user_id)",
+      "new_definition": "UNIQUE(user_id)"
+    },
+    {
+      "model": "baseer.bchat.change",
+      "old": "user_sequence_unique",
+      "new": "user_sequence_unique",
+      "old_definition": "UNIQUE(user_id, sequence)",
+      "new_definition": "UNIQUE(user_id, sequence)"
+    },
+    {
+      "model": "baseer.bchat.media",
+      "old": "user_upload_uuid_unique",
+      "new": "user_upload_uuid_unique",
+      "old_definition": "UNIQUE(author_user_id, upload_uuid)",
+      "new_definition": "UNIQUE(author_user_id, upload_uuid)"
+    },
+    {
+      "model": "baseer.bchat.media",
+      "old": "media_sha_format",
+      "new": "media_sha_format",
+      "old_definition": "CHECK(sha256 ~ '^[0-9a-f]{64}$')",
+      "new_definition": "CHECK(sha256 ~ '^[0-9a-f]{64}$')"
+    },
+    {
+      "model": "baseer.bchat.message",
+      "old": "user_uuid_unique",
+      "new": "user_uuid_unique",
+      "old_definition": "UNIQUE(author_user_id, client_uuid)",
+      "new_definition": "UNIQUE(author_user_id, client_uuid)"
+    },
+    {
+      "model": "baseer.bchat.message",
+      "old": "digest_format",
+      "new": "digest_format",
+      "old_definition": "CHECK(payload_digest ~ '^[0-9a-f]{64}$')",
+      "new_definition": "CHECK(payload_digest ~ '^[0-9a-f]{64}$')"
+    },
+    {
+      "model": "baseer.bchat.message",
+      "old": "uuid_format",
+      "new": "uuid_format",
+      "old_definition": "CHECK(client_uuid ~ '^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$')",
+      "new_definition": "CHECK(client_uuid ~ '^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$')"
+    },
+    {
+      "model": "baseer.bchat.message.receipt",
+      "old": "message_member_unique",
+      "new": "message_member_unique",
+      "old_definition": "UNIQUE(message_id, membership_id)",
+      "new_definition": "UNIQUE(message_id, membership_id)"
+    },
+    {
+      "model": "baseer.bchat.message.receipt",
+      "old": "read_after_delivery",
+      "new": "read_after_delivery",
+      "old_definition": "CHECK(read_at IS NULL OR delivered_at IS NOT NULL)",
+      "new_definition": "CHECK(read_at IS NULL OR delivered_at IS NOT NULL)"
+    },
+    {
+      "model": "baseer.bchat.mobile.upload.grant",
+      "old": "grant_id_unique",
+      "new": "grant_id_unique",
+      "old_definition": "UNIQUE(grant_id)",
+      "new_definition": "UNIQUE(grant_id)"
+    },
+    {
+      "model": "baseer.bchat.mobile.upload.grant",
+      "old": "secret_hash_format",
+      "new": "secret_hash_format",
+      "old_definition": "CHECK(secret_hash ~ '^[0-9a-f]{64}$')",
+      "new_definition": "CHECK(secret_hash ~ '^[0-9a-f]{64}$')"
+    },
+    {
+      "model": "baseer.bchat.push.device",
+      "old": "user_installation_unique",
+      "new": "user_installation_unique",
+      "old_definition": "UNIQUE(user_id, installation_id)",
+      "new_definition": "UNIQUE(user_id, installation_id)"
+    },
+    {
+      "model": "baseer.bchat.push.device",
+      "old": "account_key_unique",
+      "new": "account_key_unique",
+      "old_definition": "UNIQUE(account_key)",
+      "new_definition": "UNIQUE(account_key)"
+    },
+    {
+      "model": "baseer.bchat.push.device",
+      "old": "fcm_token_unique",
+      "new": "fcm_token_unique",
+      "old_definition": "UNIQUE(fcm_token)",
+      "new_definition": "UNIQUE(fcm_token)"
+    },
+    {
+      "model": "baseer.bchat.push.event",
+      "old": "task_device_revision_unique",
+      "new": "task_device_revision_unique",
+      "old_definition": "UNIQUE(task_id, device_id, event_kind, task_revision)",
+      "new_definition": "UNIQUE(task_id, device_id, event_kind, task_revision)"
+    },
+    {
+      "model": "baseer.bchat.push.event",
+      "old": "event_source_shape",
+      "new": "event_source_shape",
+      "old_definition": "CHECK (\n            (task_id IS NOT NULL AND message_id IS NULL\n             AND task_revision IS NOT NULL AND event_kind IN ('assigned', 'updated', 'reminder'))\n            OR\n            (task_id IS NULL AND message_id IS NOT NULL\n             AND task_revision IS NULL AND event_kind = 'message')\n        )",
+      "new_definition": "CHECK (\n            (task_id IS NOT NULL AND message_id IS NULL\n             AND task_revision IS NOT NULL AND event_kind IN ('assigned', 'updated', 'reminder'))\n            OR\n            (task_id IS NULL AND message_id IS NOT NULL\n             AND task_revision IS NULL AND event_kind = 'message')\n        )"
+    },
+    {
+      "model": "baseer.bchat.receipt",
+      "old": "user_uuid_unique",
+      "new": "user_uuid_unique",
+      "old_definition": "UNIQUE(user_id, client_uuid)",
+      "new_definition": "UNIQUE(user_id, client_uuid)"
+    },
+    {
+      "model": "baseer.bchat.receipt",
+      "old": "message_unique",
+      "new": "message_unique",
+      "old_definition": "UNIQUE(message_id)",
+      "new_definition": "UNIQUE(message_id)"
+    },
+    {
+      "model": "baseer.bchat.receipt",
+      "old": "digest_format",
+      "new": "digest_format",
+      "old_definition": "CHECK(payload_digest ~ '^[0-9a-f]{64}$')",
+      "new_definition": "CHECK(payload_digest ~ '^[0-9a-f]{64}$')"
+    },
+    {
+      "model": "baseer.bchat.receipt",
+      "old": "uuid_format",
+      "new": "uuid_format",
+      "old_definition": "CHECK(client_uuid ~ '^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$')",
+      "new_definition": "CHECK(client_uuid ~ '^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$')"
+    },
+    {
+      "model": "baseer.bchat.room",
+      "old": "group_create_unique",
+      "new": "group_create_unique",
+      "old_definition": "UNIQUE(group_creator_user_id, group_create_uuid)",
+      "new_definition": "UNIQUE(group_creator_user_id, group_create_uuid)"
+    },
+    {
+      "model": "baseer.bchat.task",
+      "old": "creator_uuid_unique",
+      "new": "creator_uuid_unique",
+      "old_definition": "UNIQUE(creator_id, client_uuid)",
+      "new_definition": "UNIQUE(creator_id, client_uuid)"
+    },
+    {
+      "model": "baseer.bchat.task",
+      "old": "revision_positive",
+      "new": "revision_positive",
+      "old_definition": "CHECK(revision > 0)",
+      "new_definition": "CHECK(revision > 0)"
+    },
+    {
+      "model": "baseer.bchat.task",
+      "old": "digest_format",
+      "new": "digest_format",
+      "old_definition": "CHECK(payload_digest ~ '^[0-9a-f]{64}$')",
+      "new_definition": "CHECK(payload_digest ~ '^[0-9a-f]{64}$')"
+    },
+    {
+      "model": "baseer.bchat.task.event",
+      "old": "actor_uuid_unique",
+      "new": "actor_uuid_unique",
+      "old_definition": "UNIQUE(actor_id, client_uuid)",
+      "new_definition": "UNIQUE(actor_id, client_uuid)"
+    },
+    {
+      "model": "baseer.procurement.request",
+      "old": "bchat_message_unique",
+      "new": "bwork_message_unique",
+      "old_definition": "unique(bchat_message_id)",
+      "new_definition": "unique(bwork_message_id)"
+    },
+    {
+      "model": "baseer.procurement.request",
+      "old": "bchat_receipt_token_unique",
+      "new": "bwork_receipt_token_unique",
+      "old_definition": "unique(receipt_client_token)",
+      "new_definition": "unique(receipt_client_token)"
+    },
+    {
+      "model": "baseer.procurement.request",
+      "old": "bchat_receipt_share_uuid_unique",
+      "new": "bwork_receipt_share_uuid_unique",
+      "old_definition": "unique(receipt_share_uuid)",
+      "new_definition": "unique(receipt_share_uuid)"
+    },
+    {
+      "model": "baseer.procurement.request",
+      "old": "bchat_receipt_result_message_unique",
+      "new": "bwork_receipt_result_message_unique",
+      "old_definition": "unique(receipt_result_message_id)",
+      "new_definition": "unique(receipt_result_message_id)"
+    }
+  ],
+  "m2m_keep": [
+    "bwork_admin_console_company_rel",
+    "bwork_retention_policy_room_rel",
+    "bwork_retention_wizard_room_rel",
+    "bwork_retention_run_room_rel"
+  ],
+  "m2m_columns": {
+    "bwork_admin_console_company_rel": ["console_id", "company_id"],
+    "bwork_retention_policy_room_rel": ["policy_id", "room_id"],
+    "bwork_retention_wizard_room_rel": ["wizard_id", "room_id"],
+    "bwork_retention_run_room_rel": ["run_id", "room_id"]
+  },
+  "external_dependency_exceptions": [
+    "baseer_bchat_notifications",
+    "baseer_bchat_documents"
+  ],
+  "unsupported_installed_prefixes": [
+    "baseer_bchat_"
+  ],
+  "compatibility": {
+    "source_channel": "bchat",
+    "old_ready_key": "baseer_bchat.retention_ready",
+    "new_ready_key": "baseer_bwork.retention_ready",
+    "legacy_routes": "/bchat/",
+    "canonical_routes": "/bwork/",
+    "legacy_headers": [
+      "X-BChat-Avatar-Version",
+      "X-BChat-Content-Revision"
+    ],
+    "canonical_headers": [
+      "X-BWork-Avatar-Version",
+      "X-BWork-Content-Revision"
+    ],
+    "opaque": "Never rewrite row IDs, UUIDs, payload digests, stored bytes, account_key, staged/grant/push identity or historical audit text."
+  },
+  "metadata_exact_columns": [
+    [
+      "ir_model",
+      "model"
+    ],
+    [
+      "ir_model_fields",
+      "model"
+    ],
+    [
+      "ir_model_fields",
+      "relation"
+    ],
+    [
+      "ir_model_data",
+      "model"
+    ],
+    [
+      "ir_attachment",
+      "res_model"
+    ],
+    [
+      "ir_ui_view",
+      "model"
+    ],
+    [
+      "ir_act_window",
+      "res_model"
+    ],
+    [
+      "ir_act_window",
+      "src_model"
+    ],
+    [
+      "ir_filters",
+      "model_id"
+    ],
+    [
+      "ir_exports",
+      "resource"
+    ],
+    [
+      "mail_message",
+      "model"
+    ],
+    [
+      "mail_activity",
+      "res_model"
+    ],
+    [
+      "mail_followers",
+      "res_model"
+    ],
+    [
+      "ir_act_report_xml",
+      "model"
+    ],
+    [
+      "ir_model_constraint",
+      "name"
+    ]
+  ],
+  "metadata_expression_columns": [
+    [
+      "ir_ui_view",
+      "arch_db"
+    ],
+    [
+      "ir_act_window",
+      "domain"
+    ],
+    [
+      "ir_act_window",
+      "context"
+    ],
+    [
+      "ir_filters",
+      "domain"
+    ],
+    [
+      "ir_filters",
+      "context"
+    ],
+    [
+      "ir_filters",
+      "sort"
+    ],
+    [
+      "ir_rule",
+      "domain_force"
+    ],
+    [
+      "ir_act_server",
+      "code"
+    ],
+    [
+      "ir_model_fields",
+      "domain"
+    ],
+    [
+      "ir_model_fields",
+      "compute"
+    ],
+    [
+      "ir_model_fields",
+      "depends"
+    ],
+    [
+      "ir_model_fields",
+      "related"
+    ]
+  ],
+  "identifiers": {
+    "_require_bchat_permission": "_require_bwork_permission",
+    "_require_any_bchat_permission": "_require_any_bwork_permission",
+    "_compute_bchat_manage_rooms": "_compute_bwork_manage_rooms",
+    "_compute_bchat_room_admin_eligible": "_compute_bwork_room_admin_eligible",
+    "_inverse_bchat_manage_rooms": "_inverse_bwork_manage_rooms",
+    "_bchat_effective_permissions": "_bwork_effective_permissions",
+    "_bchat_publish_state_result": "_bwork_publish_state_result",
+    "_bchat_prior_states": "_bwork_prior_states",
+    "_compute_bchat_order_legacy": "_compute_bwork_order_legacy",
+    "_check_bchat_order_dependencies": "_check_bwork_order_dependencies",
+    "_onchange_bchat_order_view": "_onchange_bwork_order_view",
+    "_bchat_require_order_permissions_admin": "_bwork_require_order_permissions_admin",
+    "_bchat_order_effective_signature": "_bwork_order_effective_signature",
+    "_is_bchat_receipt_internal": "_is_bwork_receipt_internal",
+    "_bchat_receipt_overage_allowed": "_bwork_receipt_overage_allowed"
+  },
+  "canonical_existing_models": [
+    "baseer.bwork.admin.service",
+    "baseer.bwork.admin.policy",
+    "baseer.bwork.admin.console",
+    "baseer.bwork.retention.service",
+    "baseer.bwork.retention.policy",
+    "baseer.bwork.retention.wizard",
+    "baseer.bwork.retention.run",
+    "baseer.bwork.retention.item",
+    "baseer.bwork.retention.audit"
+  ],
+  "canonical_existing_tables": [
+    "baseer_bwork_admin_policy",
+    "baseer_bwork_admin_console",
+    "baseer_bwork_retention_policy",
+    "baseer_bwork_retention_wizard",
+    "baseer_bwork_retention_run",
+    "baseer_bwork_retention_item",
+    "baseer_bwork_retention_audit"
+  ]
+}

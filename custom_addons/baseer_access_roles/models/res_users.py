@@ -155,12 +155,12 @@ class ResUsers(models.Model):
             if role in ('accountant', 'cashier', 'pos_cashier'):
                 allowed = expected.all_implied_ids | optional
                 if role in ('cashier', 'pos_cashier'):
-                    bchat_operator = self.env.ref(
-                        'baseer_bchat_procurement.group_bchat_procurement_operator',
+                    bwork_operator = self.env.ref(
+                        'baseer_bwork_procurement.group_bwork_procurement_operator',
                         raise_if_not_found=False,
                     )
-                    if bchat_operator:
-                        allowed |= bchat_operator
+                    if bwork_operator:
+                        allowed |= bwork_operator
                 if actual - allowed:
                     raise ValidationError(self.env._('These groups exceed the selected access role. Switch to manual access first.'))
 

@@ -1,6 +1,0 @@
-id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_bchat_receipt_user,BChat own receipt read,model_baseer_bchat_receipt,base.group_user,1,0,0,0
-access_bchat_binding_user,BChat bound group read,model_baseer_bchat_binding,base.group_user,1,0,0,0
-access_bchat_binding_manager,BChat explicit binding manager,model_baseer_bchat_binding,group_bchat_manager,1,1,1,0
-access_bchat_room_manager,BChat room manager,model_baseer_bchat_room,group_bchat_manager,1,1,1,0
-access_bchat_membership_manager,BChat membership manager,model_baseer_bchat_membership,group_bchat_manager,1,0,1,0

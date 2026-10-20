@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_users_form_bwork_capabilities" model="ir.ui.view">
+        <field name="name">res.users.form.bwork.capabilities</field>
+        <field name="model">res.users</field>
+        <field name="inherit_id" ref="baseer_bwork.view_users_form_bwork_capabilities"/>
+        <field name="arch" type="xml">
+            <xpath expr="//group[@name='bwork_capabilities']" position="inside">
+                <separator string="Purchase requests"/>
+                <field name="bwork_order_operator_eligible" invisible="1"/>
+                <field name="bwork_order_view"/>
+                <field name="bwork_order_create" readonly="not bwork_order_operator_eligible or not bwork_order_view"/>
+                <field name="bwork_order_receive" readonly="not bwork_order_operator_eligible or not bwork_order_view"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

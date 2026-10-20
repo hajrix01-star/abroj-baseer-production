@@ -9,10 +9,10 @@ from uuid import uuid4
 from odoo import Command, fields, api, sql_db
 from odoo.exceptions import AccessError, ValidationError, UserError
 from odoo.tests import HttpCase, TransactionCase, tagged
-from odoo.addons.baseer_bchat.contracts import ProtocolError
-from odoo.addons.baseer_bchat.models.retention import _READY_KEY, _RETENTION_TOKEN
-from odoo.addons.baseer_bchat.models.room import _GROUP_TOKEN
-from odoo.addons.baseer_bchat.models.media import _MEDIA_TOKEN
+from odoo.addons.baseer_bwork.contracts import ProtocolError
+from odoo.addons.baseer_bwork.models.retention import _READY_KEY, _RETENTION_TOKEN
+from odoo.addons.baseer_bwork.models.room import _GROUP_TOKEN
+from odoo.addons.baseer_bwork.models.media import _MEDIA_TOKEN
 
 
 from ..models.retention import _ADMIN_TOKEN
@@ -24,7 +24,7 @@ class RetentionFixtures:
         super().setUpClass()
         cls.company = cls.env.company
         cls.admin = cls.env.ref('base.user_admin')
-        cls.manager = cls.env.ref('baseer_bchat.group_bchat_manager')
+        cls.manager = cls.env.ref('baseer_bwork.group_bwork_manager')
         cls.retention_group = cls.env.ref('baseer_bwork_admin.group_bwork_retention_manager')
         cls.password = 'retention-test-' + uuid4().hex
         cls.admin.write({'group_ids': [Command.link(cls.manager.id)]})
@@ -34,11 +34,11 @@ class RetentionFixtures:
             'company_id': cls.company.id, 'company_ids': [Command.set(cls.company.ids)],
             'group_ids': [Command.set([cls.env.ref('base.group_user').id])],
         })
-        cls.room = cls.env['baseer.bchat.room'].with_user(cls.admin).create({
+        cls.room = cls.env['baseer.bwork.room'].with_user(cls.admin).create({
             'name': 'Synthetic retention room', 'company_id': cls.company.id})
-        cls.member = cls.env['baseer.bchat.membership'].with_user(cls.admin).create({
+        cls.member = cls.env['baseer.bwork.membership'].with_user(cls.admin).create({
             'room_id': cls.room.id, 'user_id': cls.reader.id})
-        cls.source = cls.env['baseer.bchat.service'].with_user(cls.reader).with_context(allowed_company_ids=cls.company.ids)
+        cls.source = cls.env['baseer.bwork.service'].with_user(cls.reader).with_context(allowed_company_ids=cls.company.ids)
         cls.service = cls.env['baseer.bwork.retention.service'].with_user(cls.admin).with_context(allowed_company_ids=cls.company.ids)
 
     def _file(self, text='Synthetic caption'):
@@ -51,8 +51,8 @@ class RetentionFixtures:
         payload = {'api_version': 2, 'membership_id': self.member.id, 'client_uuid': str(uuid4()),
                    'text': text, 'media_id': upload['media_id']}
         ack = self.source._v2_send(self.room.id, payload)
-        message = self.env['baseer.bchat.message'].sudo().browse(ack['message_id'])
-        self.env.cr.execute("UPDATE baseer_bchat_message SET create_date=NOW()-INTERVAL '40 days' WHERE id=%s", [message.id])
+        message = self.env['baseer.bwork.message'].sudo().browse(ack['message_id'])
+        self.env.cr.execute("UPDATE baseer_bwork_message SET create_date=NOW()-INTERVAL '40 days' WHERE id=%s", [message.id])
         message.invalidate_recordset()
         return message, payload, ack
 
@@ -178,21 +178,21 @@ class BWorkRetentionCase(RetentionFixtures, TransactionCase):
 
     def test_shared_inverse_hold_and_external_reference_are_protected(self):
         message, _, _ = self._file()
-        self.assertEqual(self.service.env['baseer.bchat.service']._retention_inspect(message, _RETENTION_TOKEN)[0], 'eligible')
-        self.env.cr.execute('UPDATE baseer_bchat_message SET retention_preserved=TRUE WHERE id=%s', [message.id])
+        self.assertEqual(self.service.env['baseer.bwork.service']._retention_inspect(message, _RETENTION_TOKEN)[0], 'eligible')
+        self.env.cr.execute('UPDATE baseer_bwork_message SET retention_preserved=TRUE WHERE id=%s', [message.id])
         message.invalidate_recordset()
         self.assertEqual(self._preview().protected_count, 1)
-        self.env.cr.execute('UPDATE baseer_bchat_message SET retention_preserved=FALSE WHERE id=%s', [message.id])
+        self.env.cr.execute('UPDATE baseer_bwork_message SET retention_preserved=FALSE WHERE id=%s', [message.id])
         message.invalidate_recordset()
         other, _, _ = self._file()
-        self.env.cr.execute('UPDATE baseer_bchat_media SET message_id=%s WHERE id=%s', [message.id, other.media_id.id])
-        self.assertEqual(self.service.env['baseer.bchat.service']._retention_inspect(message, _RETENTION_TOKEN)[0], 'shared_media')
-        self.env.cr.execute('UPDATE baseer_bchat_media SET message_id=%s WHERE id=%s', [other.id, other.media_id.id])
+        self.env.cr.execute('UPDATE baseer_bwork_media SET message_id=%s WHERE id=%s', [message.id, other.media_id.id])
+        self.assertEqual(self.service.env['baseer.bwork.service']._retention_inspect(message, _RETENTION_TOKEN)[0], 'shared_media')
+        self.env.cr.execute('UPDATE baseer_bwork_media SET message_id=%s WHERE id=%s', [other.id, other.media_id.id])
         # Real FK DDL/data in this rollback-only test. An external link to media
         # (without a link to message or attachment) must veto content erasure.
-        self.env.cr.execute('CREATE TABLE brt_test_external_media_ref (id SERIAL PRIMARY KEY, media_id INTEGER REFERENCES baseer_bchat_media(id))')
+        self.env.cr.execute('CREATE TABLE brt_test_external_media_ref (id SERIAL PRIMARY KEY, media_id INTEGER REFERENCES baseer_bwork_media(id))')
         self.env.cr.execute('INSERT INTO brt_test_external_media_ref(media_id) VALUES (%s)', [message.media_id.id])
-        self.assertEqual(self.service.env['baseer.bchat.service']._retention_inspect(message, _RETENTION_TOKEN, lock=True)[0], 'external_media_reference')
+        self.assertEqual(self.service.env['baseer.bwork.service']._retention_inspect(message, _RETENTION_TOKEN, lock=True)[0], 'external_media_reference')
 
     def test_exact_large_byte_evidence_and_native_transient_vacuum(self):
         console = self.service.env['baseer.bwork.admin.console'].new({'company_ids': [Command.set(self.company.ids)]})
@@ -270,20 +270,20 @@ class BWorkRetentionCase(RetentionFixtures, TransactionCase):
         with self.assertRaises(ValidationError):
             self.service._execute_batch(run)
         self.env['ir.config_parameter'].sudo().set_param(_READY_KEY, '1')
-        self.admin.sudo().write({'bchat_manage_rooms': False})
+        self.admin.sudo().write({'bwork_manage_rooms': False})
         with self.assertRaises(AccessError):
             self.service._execute_batch(run)
         self.assertTrue(message.media_id.attachment_id.exists())
         self.assertEqual(message.retention_state, 'active')
 
     def test_preserve_canonical_label_search_literal_and_revision_cursor(self):
-        owner_member = self.env['baseer.bchat.membership'].with_user(self.admin).create({
+        owner_member = self.env['baseer.bwork.membership'].with_user(self.admin).create({
             'room_id': self.room.id, 'user_id': self.admin.id})
         message, _, _ = self._file()
         with self.assertRaises(AccessError):
             self.source._v2_preserve_message(self.room.id, message.id,
                 {'api_version': 2, 'membership_id': self.member.id, 'preserved': True})
-        source = self.service.env['baseer.bchat.service']
+        source = self.service.env['baseer.bwork.service']
         held = source._v2_preserve_message(self.room.id, message.id,
             {'api_version': 2, 'membership_id': owner_member.id, 'preserved': True})
         self.assertTrue(held['message']['retention_preserved'])
@@ -293,7 +293,7 @@ class BWorkRetentionCase(RetentionFixtures, TransactionCase):
         self.assertEqual(self.source._v2_gallery(self.room.id, q='synthetic')['items'][0]['id'], message.id)
         self._file()
         page = self.source._v2_gallery(self.room.id, limit=1)
-        self.env.cr.execute('UPDATE baseer_bchat_room SET content_revision=content_revision+1 WHERE id=%s', [self.room.id])
+        self.env.cr.execute('UPDATE baseer_bwork_room SET content_revision=content_revision+1 WHERE id=%s', [self.room.id])
         self.room.invalidate_recordset()
         with self.assertRaises(ProtocolError):
             self.source._v2_gallery(self.room.id, limit=1, cursor=page['next_cursor'])
@@ -305,9 +305,9 @@ class BWorkRetentionCase(RetentionFixtures, TransactionCase):
             'kind': 'file', 'mime': 'text/plain', 'name': 'expired.txt', 'size': len(raw),
             'sha256': hashlib.sha256(raw).hexdigest(),
         }, raw)
-        media = self.env['baseer.bchat.media'].sudo().browse(upload['media_id'])
+        media = self.env['baseer.bwork.media'].sudo().browse(upload['media_id'])
         attachment = media.attachment_id
-        self.env.cr.execute("UPDATE baseer_bchat_media SET create_date=NOW()-INTERVAL '40 days' WHERE id=%s", [media.id])
+        self.env.cr.execute("UPDATE baseer_bwork_media SET create_date=NOW()-INTERVAL '40 days' WHERE id=%s", [media.id])
         media.invalidate_recordset()
         run = self._preview('expired_uploads')
         self.assertEqual((run.candidate_messages, run.candidate_media), (0, 1))
@@ -333,28 +333,28 @@ class BWorkRetentionCase(RetentionFixtures, TransactionCase):
             with database.cursor() as cr:
                 cr.execute('DROP TABLE IF EXISTS brt_test_committed_external_media_ref')
                 if ids:
-                    cr.execute('DELETE FROM baseer_bchat_media WHERE id=%s AND upload_uuid=%s', [ids['media'], marker])
-                    cr.execute('DELETE FROM baseer_bchat_membership WHERE id=%s AND room_id=%s', [ids['member'], ids['room']])
-                    cr.execute('DELETE FROM baseer_bchat_room WHERE id=%s AND group_create_uuid=%s', [ids['room'], marker])
+                    cr.execute('DELETE FROM baseer_bwork_media WHERE id=%s AND upload_uuid=%s', [ids['media'], marker])
+                    cr.execute('DELETE FROM baseer_bwork_membership WHERE id=%s AND room_id=%s', [ids['member'], ids['room']])
+                    cr.execute('DELETE FROM baseer_bwork_room WHERE id=%s AND group_create_uuid=%s', [ids['room'], marker])
                 cr.commit()
 
         self.addCleanup(cleanup)
         with database.cursor() as cr:
             env = api.Environment(cr, self.admin.id, {'allowed_company_ids': self.company.ids})
-            room = env['baseer.bchat.room']._create_group_verified({
+            room = env['baseer.bwork.room']._create_group_verified({
                 'name': 'SYNTHETIC_BRT_CONCURRENCY_ONLY', 'company_id': self.company.id,
                 'is_group': True, 'group_creator_user_id': self.admin.id,
                 'group_create_uuid': marker, 'group_create_digest': '0' * 64}, _GROUP_TOKEN)
-            member = env['baseer.bchat.membership']._create_group_verified({
+            member = env['baseer.bwork.membership']._create_group_verified({
                 'room_id': room.id, 'company_id': self.company.id, 'user_id': self.admin.id,
                 'joined_after_message_id': 0, 'active': True, 'is_group_admin': True}, _GROUP_TOKEN)
-            media = env['baseer.bchat.media']._create_verified({
+            media = env['baseer.bwork.media']._create_verified({
                 'room_id': room.id, 'company_id': self.company.id, 'membership_id': member.id,
                 'author_user_id': self.admin.id, 'upload_uuid': marker, 'kind': 'file',
                 'mime': 'text/plain', 'size_bytes': 1, 'sha256': '0' * 64,
                 'name': 'SYNTHETIC_METADATA_ONLY.txt'}, _MEDIA_TOKEN)
             ids.update(room=room.id, member=member.id, media=media.id)
-            cr.execute('CREATE TABLE brt_test_committed_external_media_ref (id SERIAL PRIMARY KEY, media_id INTEGER REFERENCES baseer_bchat_media(id))')
+            cr.execute('CREATE TABLE brt_test_committed_external_media_ref (id SERIAL PRIMARY KEY, media_id INTEGER REFERENCES baseer_bwork_media(id))')
             cr.commit()
         with database.cursor() as old:
             old.execute('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ')
@@ -364,11 +364,11 @@ class BWorkRetentionCase(RetentionFixtures, TransactionCase):
                 writer.execute('INSERT INTO brt_test_committed_external_media_ref(media_id) VALUES (%s)', [ids['media']])
                 writer.commit()  # Committed after snapshot, before source lock.
             env = api.Environment(old, self.admin.id, {'allowed_company_ids': self.company.ids})
-            service = env['baseer.bchat.service']
-            service._retention_lock_sources(media=env['baseer.bchat.media'].sudo().browse(ids['media']))
-            allowed = {'baseer_bchat_message', 'baseer_bchat_mobile_upload_grant', 'baseer_bwork_retention_item'}
-            self.assertFalse(service._retention_foreign_reference('baseer_bchat_media', ids['media'], allowed))
-            self.assertTrue(service._retention_foreign_reference('baseer_bchat_media', ids['media'], allowed, fresh=True))
+            service = env['baseer.bwork.service']
+            service._retention_lock_sources(media=env['baseer.bwork.media'].sudo().browse(ids['media']))
+            allowed = {'baseer_bwork_message', 'baseer_bwork_mobile_upload_grant', 'baseer_bwork_retention_item'}
+            self.assertFalse(service._retention_foreign_reference('baseer_bwork_media', ids['media'], allowed))
+            self.assertTrue(service._retention_foreign_reference('baseer_bwork_media', ids['media'], allowed, fresh=True))
             old.rollback()
 
     def test_same_attachment_id_changed_after_preview_is_skipped_in_both_modes(self):
@@ -399,10 +399,10 @@ class BWorkRetentionHttpCase(RetentionFixtures, HttpCase):
                    'content_revision': 0, 'media_ids': [message.media_id.id]}
         self.assertEqual(self.source._v2_content_state(self.room.id, payload)['items'][0]['state'], 'live')
         self.authenticate(self.reader.login, self.password)
-        bootstrap = self.url_open('/bchat/api/v2/bootstrap').json()
+        bootstrap = self.url_open('/bwork/api/v2/bootstrap').json()
         self.assertEqual(bootstrap['capabilities']['retention_version'], 1)
-        path = '/bchat/api/v2/rooms/%s/content-state' % self.room.id
-        gallery = self.url_open('/bchat/api/v2/rooms/%s/media' % self.room.id).json()
+        path = '/bwork/api/v2/rooms/%s/content-state' % self.room.id
+        gallery = self.url_open('/bwork/api/v2/rooms/%s/media' % self.room.id).json()
         self.assertIn(message.id, [row['id'] for row in gallery['items']])
         def request(value):
             return self.url_open(path, data={'csrf_token': bootstrap['csrf_token'], 'payload': json.dumps(value)})
@@ -413,16 +413,16 @@ class BWorkRetentionHttpCase(RetentionFixtures, HttpCase):
         self.assertEqual(request(dict(payload, content_revision=1)).status_code, 409)
         self.assertEqual(request(dict(payload, media_ids=[message.media_id.id] * 2)).status_code, 400)
         self.assertEqual(self.url_open(path, data={'payload': json.dumps(payload)}).status_code, 400)
-        self.reader.sudo().write({'bchat_media': False})
+        self.reader.sudo().write({'bwork_media': False})
         self.assertEqual(request(payload).status_code, 403)
 
     def test_unauthenticated_reconciliation_and_employee_preservation_denied(self):
         message, _, _ = self._file()
-        path = '/bchat/api/v2/rooms/%s/content-state' % self.room.id
+        path = '/bwork/api/v2/rooms/%s/content-state' % self.room.id
         self.assertNotEqual(self.url_open(path, data={}, allow_redirects=False).status_code, 200)
         self.authenticate(self.reader.login, self.password)
-        csrf = self.url_open('/bchat/api/v2/bootstrap').json()['csrf_token']
-        response = self.url_open('/bchat/api/v2/rooms/%s/messages/%s/preserve' % (self.room.id, message.id),
+        csrf = self.url_open('/bwork/api/v2/bootstrap').json()['csrf_token']
+        response = self.url_open('/bwork/api/v2/rooms/%s/messages/%s/preserve' % (self.room.id, message.id),
             data={'csrf_token': csrf, 'payload': json.dumps({'api_version': 2,
                 'membership_id': self.member.id, 'preserved': True})})
         self.assertEqual(response.status_code, 403)

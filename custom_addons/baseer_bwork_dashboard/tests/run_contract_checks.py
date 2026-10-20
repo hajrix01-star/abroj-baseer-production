@@ -8,7 +8,7 @@ import unittest
 
 def main():
     addons = pathlib.Path(__file__).resolve().parents[2]
-    for name in ('odoo', 'odoo.addons', 'odoo.addons.baseer_bchat',
+    for name in ('odoo', 'odoo.addons', 'odoo.addons.baseer_bwork',
                  'odoo.addons.baseer_bwork_dashboard', 'odoo.addons.baseer_bwork_dashboard.tests'):
         package = types.ModuleType(name)
         package.__path__ = []
@@ -21,7 +21,7 @@ def main():
         spec.loader.exec_module(module)
         return module
 
-    load('odoo.addons.baseer_bchat.contracts', addons / 'baseer_bchat/contracts.py')
+    load('odoo.addons.baseer_bwork.contracts', addons / 'baseer_bwork/contracts.py')
     load('odoo.addons.baseer_bwork_dashboard.contracts', addons / 'baseer_bwork_dashboard/contracts.py')
     test_module = load('odoo.addons.baseer_bwork_dashboard.tests.test_contracts',
                        addons / 'baseer_bwork_dashboard/tests/test_contracts.py')

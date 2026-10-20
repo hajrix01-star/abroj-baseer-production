@@ -1,5 +1,0 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.baseer.freshchat.audiotest">
-  <uses-sdk android:minSdkVersion="26" android:targetSdkVersion="35" />
-  <application android:label="BChat local audio regression tests" android:hasCode="true" />
-  <instrumentation android:name="com.baseer.freshchat.test.AudioPlaybackInstrumentation" android:targetPackage="com.baseer.bchat.preview" android:label="Generated local audio regression" />
-</manifest>

@@ -3,7 +3,7 @@
 Local implementation of C1 in `docs/build-governance/BWORK-CENTRAL-SALES-20261019.md`.
 It adds no report tables, goals, source ACL grants or business-write endpoints.
 
-Prerequisites: Odoo 19, `baseer_bchat`, `baseer_sales_heat_calendar` **including the
+Prerequisites: Odoo 19, `baseer_bwork`, `baseer_sales_heat_calendar` **including the
 canonical unified-sales day adapter and exact day Amount fields in this change**,
 and `baseer_purchase_expense_dashboard`. Install/update these together in an
 isolated database before enabling `res.users.bwork_dashboard_view` for a user.
@@ -11,7 +11,7 @@ The default is false; administrators control it. Effective permissions and
 bootstrap expose the optional `dashboard_view`/`leadership_version=1` fields.
 Ordinary published-dashboard, group, company, source-model and target read access
 is still required, and financial reads never use sudo. Only the user's protected
-switch read follows BChat's existing narrowly scoped sudo pattern. No new model
+switch read follows BWork's existing narrowly scoped sudo pattern. No new model
 ACL is necessary: the module only extends existing users and the abstract service.
 
 The two GET routes require a real internal user session and reject request bodies,

@@ -3,9 +3,9 @@
     <record id="view_users_form_bwork_dashboard" model="ir.ui.view">
         <field name="name">res.users.form.bwork.dashboard</field>
         <field name="model">res.users</field>
-        <field name="inherit_id" ref="baseer_bchat.view_users_form_bchat_capabilities"/>
+        <field name="inherit_id" ref="baseer_bwork.view_users_form_bwork_capabilities"/>
         <field name="arch" type="xml">
-            <xpath expr="//group[@name='bchat_capabilities']" position="inside">
+            <xpath expr="//group[@name='bwork_capabilities']" position="inside">
                 <field name="bwork_dashboard_view"/>
             </xpath>
         </field>

@@ -23,7 +23,7 @@ REPORTS = {
 
 
 class LeadershipService(models.AbstractModel):
-    _inherit = 'baseer.bchat.service'
+    _inherit = 'baseer.bwork.service'
 
     @api.model
     def _v2_bootstrap(self):
@@ -33,7 +33,7 @@ class LeadershipService(models.AbstractModel):
 
     def _leadership_user(self):
         user = self._require_user()
-        if not user._bchat_effective_permissions().get('dashboard_view'):
+        if not user._bwork_effective_permissions().get('dashboard_view'):
             raise AccessError(self.env._('BWork dashboard access is not enabled.'))
         return user
 
@@ -76,7 +76,7 @@ class LeadershipService(models.AbstractModel):
     @api.model
     def _leadership_options(self):
         user = self._require_user()
-        if not user._bchat_effective_permissions().get('dashboard_view'):
+        if not user._bwork_effective_permissions().get('dashboard_view'):
             return {'api_version': 2, 'leadership_version': 1, 'can_view': False,
                     'companies': [], 'max_companies': MAX_COMPANIES}
         # Options preserve the complete native company scope; never shrink it

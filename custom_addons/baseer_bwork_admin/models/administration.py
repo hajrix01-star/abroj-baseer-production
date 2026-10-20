@@ -11,11 +11,11 @@ from .. import contracts
 
 _LOGGER = logging.getLogger(__name__)
 _SOURCES = (
-    ('baseer.bchat.room', 'baseer_bchat_room'),
-    ('baseer.bchat.membership', 'baseer_bchat_membership'),
-    ('baseer.bchat.media', 'baseer_bchat_media'),
-    ('baseer.bchat.push.event', 'baseer_bchat_push_event'),
-    ('baseer.bchat.mobile.upload.grant', 'baseer_bchat_mobile_upload_grant'),
+    ('baseer.bwork.room', 'baseer_bwork_room'),
+    ('baseer.bwork.membership', 'baseer_bwork_membership'),
+    ('baseer.bwork.media', 'baseer_bwork_media'),
+    ('baseer.bwork.push.event', 'baseer_bwork_push_event'),
+    ('baseer.bwork.mobile.upload.grant', 'baseer_bwork_mobile_upload_grant'),
 )
 _CRONS = ('cron_expire_staged_media', 'cron_expire_mobile_upload_grants',
           'cron_dispatch_push_events', 'cron_work_task_reminders')
@@ -56,7 +56,7 @@ class BWorkAdminService(models.AbstractModel):
     def _guard(self, company_ids, configuration=False):
         # Reuses the UID2 + manager group + effective permission guard, which
         # also rejects superuser mode, inactive and non-internal callers.
-        user = self.env['baseer.bchat.service']._require_room_manager()
+        user = self.env['baseer.bwork.service']._require_room_manager()
         if configuration and not user.has_group('base.group_system'):
             raise AccessError(self.env._('System administration is required.'))
         try:
@@ -81,10 +81,10 @@ class BWorkAdminService(models.AbstractModel):
         self.env.cr.execute('''
             SELECT count(*) FROM (
                 SELECT DISTINCT company_id, attachment_id FROM (
-                    SELECT company_id, attachment_id FROM baseer_bchat_media
+                    SELECT company_id, attachment_id FROM baseer_bwork_media
                     WHERE company_id = ANY(%s) AND state IN ('staged', 'attached')
                     UNION ALL
-                    SELECT company_id, thumbnail_attachment_id FROM baseer_bchat_media
+                    SELECT company_id, thumbnail_attachment_id FROM baseer_bwork_media
                     WHERE company_id = ANY(%s) AND state IN ('staged', 'attached')
                 ) refs WHERE attachment_id IS NOT NULL LIMIT %s
             ) bounded
@@ -103,7 +103,7 @@ class BWorkAdminService(models.AbstractModel):
             result.update(status='limit_exceeded', complete=False)
             return result
         self.env.cr.execute('''SELECT count(*) FROM (
-            SELECT m.id FROM baseer_bchat_media m
+            SELECT m.id FROM baseer_bwork_media m
             LEFT JOIN ir_attachment a ON a.id = m.attachment_id
             LEFT JOIN ir_attachment t ON t.id = m.thumbnail_attachment_id
             WHERE m.company_id = ANY(%s) AND m.state IN ('staged', 'attached')
@@ -120,27 +120,27 @@ class BWorkAdminService(models.AbstractModel):
                       'media': {}, 'push': {}, 'push_errors': {}, 'upload_grants': {}}
                 for cid in ids}
         for table, column, target in (
-                ('baseer_bchat_media', 'state', 'media'),
-                ('baseer_bchat_push_event', 'state', 'push'),
-                ('baseer_bchat_mobile_upload_grant', 'state', 'upload_grants')):
+                ('baseer_bwork_media', 'state', 'media'),
+                ('baseer_bwork_push_event', 'state', 'push'),
+                ('baseer_bwork_mobile_upload_grant', 'state', 'upload_grants')):
             self.env.cr.execute(SQL(
                 'SELECT company_id, %s, count(*) FROM %s WHERE company_id = ANY(%s) GROUP BY company_id, %s',
                 SQL.identifier(column), SQL.identifier(table), ids, SQL.identifier(column)))
             for cid, state, count in self.env.cr.fetchall():
                 rows[cid][target][state] = count
-        self.env.cr.execute('SELECT company_id, count(*) FROM baseer_bchat_room WHERE company_id = ANY(%s) GROUP BY company_id', [ids])
+        self.env.cr.execute('SELECT company_id, count(*) FROM baseer_bwork_room WHERE company_id = ANY(%s) GROUP BY company_id', [ids])
         for cid, count in self.env.cr.fetchall():
             rows[cid]['rooms'] = count
         self.env.cr.execute('''SELECT company_id, count(*), count(*) FILTER (WHERE active)
-            FROM baseer_bchat_membership WHERE company_id = ANY(%s) GROUP BY company_id''', [ids])
+            FROM baseer_bwork_membership WHERE company_id = ANY(%s) GROUP BY company_id''', [ids])
         for cid, count, active in self.env.cr.fetchall():
             rows[cid].update(memberships=count, active_memberships=active)
         self.env.cr.execute('''
             SELECT refs.company_id, COALESCE(sum(a.file_size), 0) FROM (
-                SELECT company_id, attachment_id FROM baseer_bchat_media
+                SELECT company_id, attachment_id FROM baseer_bwork_media
                 WHERE company_id = ANY(%s) AND state IN ('staged', 'attached') AND attachment_id IS NOT NULL
                 UNION
-                SELECT company_id, thumbnail_attachment_id FROM baseer_bchat_media
+                SELECT company_id, thumbnail_attachment_id FROM baseer_bwork_media
                 WHERE company_id = ANY(%s) AND state IN ('staged', 'attached') AND thumbnail_attachment_id IS NOT NULL
             ) refs JOIN ir_attachment a ON a.id = refs.attachment_id GROUP BY refs.company_id
         ''', [ids, ids])
@@ -148,7 +148,7 @@ class BWorkAdminService(models.AbstractModel):
             rows[cid]['logical_bytes'] = int(size)
         for column, key in (('attachment_id', 'original_bytes'), ('thumbnail_attachment_id', 'thumbnail_bytes')):
             self.env.cr.execute(SQL('''SELECT refs.company_id, COALESCE(sum(a.file_size), 0)
-                FROM (SELECT DISTINCT company_id, %s AS attachment_id FROM baseer_bchat_media
+                FROM (SELECT DISTINCT company_id, %s AS attachment_id FROM baseer_bwork_media
                       WHERE company_id = ANY(%s) AND state IN ('staged', 'attached')) refs
                 JOIN ir_attachment a ON a.id = refs.attachment_id GROUP BY refs.company_id''',
                 SQL.identifier(column), ids))
@@ -158,7 +158,7 @@ class BWorkAdminService(models.AbstractModel):
         # strings must never turn into an administrative content/secret channel.
         self.env.cr.execute('''SELECT company_id,
             CASE WHEN last_error = ANY(%s) THEN last_error ELSE 'other' END,
-            count(*) FROM baseer_bchat_push_event
+            count(*) FROM baseer_bwork_push_event
             WHERE company_id = ANY(%s) AND last_error IS NOT NULL
             GROUP BY company_id, 2''', [list(contracts.PUSH_ERRORS), ids])
         for cid, code, count in self.env.cr.fetchall():
@@ -177,7 +177,7 @@ class BWorkAdminService(models.AbstractModel):
         result['totals']['logical_mib'] = contracts.mib(result['totals']['logical_bytes'])
         result['crons'] = []
         for name in _CRONS:
-            cron = self.env.ref('baseer_bchat.' + name, raise_if_not_found=False)
+            cron = self.env.ref('baseer_bwork.' + name, raise_if_not_found=False)
             # Fixed metadata fields, fixed XMLIDs, never cron code or arguments.
             if cron:
                 cron = cron.sudo()
@@ -194,7 +194,7 @@ class BWorkAdminService(models.AbstractModel):
             offset, limit = contracts.pagination(offset, limit)
         except ValueError as error:
             raise ValidationError(str(error)) from None
-        records = self.env['baseer.bchat.room'].with_context(allowed_company_ids=ids).search(
+        records = self.env['baseer.bwork.room'].with_context(allowed_company_ids=ids).search(
             [('company_id', 'in', ids)], offset=offset, limit=limit + 1, order='id desc')
         return contracts.bounded_response({'items': records[:limit].read(['name', 'company_id', 'is_group']),
                                             'has_more': len(records) > limit, 'offset': offset, 'limit': limit})
@@ -206,7 +206,7 @@ class BWorkAdminService(models.AbstractModel):
             offset, limit = contracts.pagination(offset, limit)
         except ValueError as error:
             raise ValidationError(str(error)) from None
-        records = self.env['baseer.bchat.membership'].with_context(allowed_company_ids=ids, active_test=False).search(
+        records = self.env['baseer.bwork.membership'].with_context(allowed_company_ids=ids, active_test=False).search(
             [('company_id', 'in', ids)], offset=offset, limit=limit + 1, order='id desc')
         return contracts.bounded_response({'items': records[:limit].read(['room_id', 'company_id', 'user_id', 'active', 'left_at']),
                                             'has_more': len(records) > limit, 'offset': offset, 'limit': limit})
@@ -254,13 +254,13 @@ class BWorkAdminPolicy(models.Model):
         return super().read(fields=fields, load=load)
 
     def _search(self, domain, *args, **kwargs):
-        self.env['baseer.bchat.service']._require_room_manager()
+        self.env['baseer.bwork.service']._require_room_manager()
         # Always intersect caller filters with the current authorized scope.
         domain = list(domain) + [('company_id', 'in', self.env.companies.ids)]
         return super()._search(domain, *args, **kwargs)
 
     def check_access(self, operation):
-        self.env['baseer.bchat.service']._require_room_manager()
+        self.env['baseer.bwork.service']._require_room_manager()
         ids = [rid for rid in self.ids if type(rid) is int]
         if ids:
             self.env.cr.execute('SELECT company_id FROM baseer_bwork_admin_policy WHERE id = ANY(%s)', [ids])
@@ -299,7 +299,7 @@ class BWorkAdminConsole(models.TransientModel):
     retention_storage_by_kind = fields.Text(compute='_compute_retention_storage')
 
     def _compute_display_name(self):
-        self.env['baseer.bchat.service']._require_room_manager()
+        self.env['baseer.bwork.service']._require_room_manager()
         for record in self:
             record.display_name = self.env._('BWork Administration')
 
@@ -389,7 +389,7 @@ class BWorkAdminConsole(models.TransientModel):
 
     @api.model_create_multi
     def create(self, vals_list):
-        self.env['baseer.bchat.service']._require_room_manager()
+        self.env['baseer.bwork.service']._require_room_manager()
         if any(set(vals) - {'company_ids'} for vals in vals_list):
             raise ValidationError(self.env._('Unsupported console fields.'))
         for vals in vals_list:
@@ -398,7 +398,7 @@ class BWorkAdminConsole(models.TransientModel):
         return super().create(vals_list)
 
     def write(self, vals):
-        self.env['baseer.bchat.service']._require_room_manager()
+        self.env['baseer.bwork.service']._require_room_manager()
         if set(vals) - {'company_ids'}:
             raise ValidationError(self.env._('Unsupported console fields.'))
         for record in self:
@@ -407,7 +407,7 @@ class BWorkAdminConsole(models.TransientModel):
         return super().write(vals)
 
     def _search(self, domain, *args, **kwargs):
-        self.env['baseer.bchat.service']._require_room_manager()
+        self.env['baseer.bwork.service']._require_room_manager()
         allowed = sorted(set(self.env.companies.ids) & set(self.env.user.company_ids.ids))
         return super()._search(list(domain) + [
             ('company_ids', '!=', False),
@@ -417,7 +417,7 @@ class BWorkAdminConsole(models.TransientModel):
         # Odoo may vacuum its own transient UI rows in superuser mode. This
         # exception permits no read/content/configuration operation.
         if not (operation == 'unlink' and self.env.su):
-            self.env['baseer.bchat.service']._require_room_manager()
+            self.env['baseer.bwork.service']._require_room_manager()
             ids = [rid for rid in self.ids if type(rid) is int]
             if ids:
                 # Do not read company_ids through ORM here: fetch itself calls
@@ -434,7 +434,7 @@ class BWorkAdminConsole(models.TransientModel):
         return super().export_data(fields_to_export)
 
     def read(self, fields=None, load='_classic_read'):
-        self.env['baseer.bchat.service']._require_room_manager()
+        self.env['baseer.bwork.service']._require_room_manager()
         for record in self:
             self.env['baseer.bwork.admin.service']._guard(record.company_ids.ids)
         return super().read(fields=fields, load=load)
@@ -457,10 +457,10 @@ class BWorkAdminConsole(models.TransientModel):
                             'create': False, 'edit': False, 'delete': False}}
 
     def action_rooms(self):
-        return self._metadata_action('baseer.bchat.room', 'room_list')
+        return self._metadata_action('baseer.bwork.room', 'room_list')
 
     def action_members(self):
-        return self._metadata_action('baseer.bchat.membership', 'member_list')
+        return self._metadata_action('baseer.bwork.membership', 'member_list')
 
     def action_settings(self):
         self.ensure_one()

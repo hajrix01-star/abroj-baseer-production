@@ -1,6 +1,6 @@
 # BWork Administration
 
-Optional Odoo19 native console, depending only on `baseer_bchat`. Installation
+Optional Odoo19 native console, depending only on `baseer_bwork`. Installation
 does not assign roles, seed policies, install financial dependencies or add
 cron/hooks. The existing effective room administrator (base.user_admin plus the
 existing manager group/permission) is required. Superuser report calls are
@@ -29,7 +29,7 @@ service-account configuration are returned.
 Local contract checks (no Odoo evidence):
 
 ```text
-python -m unittest discover -s custom_addons/baseer_bchat/tests_contract -p test_bwork_admin_contract.py -v
+python -m unittest discover -s custom_addons/baseer_bwork/tests_contract -p test_bwork_admin_contract.py -v
 python -m compileall -q custom_addons/baseer_bwork_admin
 ```
 

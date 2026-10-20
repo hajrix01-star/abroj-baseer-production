@@ -10,8 +10,8 @@ from odoo.tools.constants import GC_UNLINK_LIMIT
 from zoneinfo import available_timezones
 from psycopg2.errors import UniqueViolation
 
-from odoo.addons.baseer_bchat.models.retention import _RETENTION_TOKEN, _READY_KEY
-from odoo.addons.baseer_bchat.contracts import ProtocolError
+from odoo.addons.baseer_bwork.models.retention import _RETENTION_TOKEN, _READY_KEY
+from odoo.addons.baseer_bwork.contracts import ProtocolError
 from .. import retention_contracts as rules
 
 _ADMIN_TOKEN = object()
@@ -23,7 +23,7 @@ _TZ = [(tz, tz) for tz in sorted(available_timezones())]
 
 def _guard(model, company):
     company_id = company.id if hasattr(company, 'id') else company
-    return model.env['baseer.bchat.service']._retention_guard(company_id)
+    return model.env['baseer.bwork.service']._retention_guard(company_id)
 
 
 def _record_guard(model, table):
@@ -80,7 +80,7 @@ class RetentionPolicy(models.Model):
     name = fields.Char(compute='_compute_name')
     company_id = fields.Many2one('res.company', required=True, default=lambda self: self.env.company, ondelete='restrict', index=True)
     scope_mode = fields.Selection(_SCOPES, required=True, default='company')
-    room_ids = fields.Many2many('baseer.bchat.room', 'bwork_retention_policy_room_rel', 'policy_id', 'room_id')
+    room_ids = fields.Many2many('baseer.bwork.room', 'bwork_retention_policy_room_rel', 'policy_id', 'room_id')
     enabled = fields.Boolean(default=False, copy=False)
     mode = fields.Selection(_MODES, required=True, default='attachments')
     retention_days = fields.Integer(default=30, required=True)
@@ -108,7 +108,7 @@ class RetentionPolicy(models.Model):
     def _compute_readiness(self):
         for row in self:
             _guard(row, row.company_id)
-            row.readiness_status = 'ready' if self.env['baseer.bchat.service']._retention_ready() else 'not_ready'
+            row.readiness_status = 'ready' if self.env['baseer.bwork.service']._retention_ready() else 'not_ready'
 
     def _validate(self):
         for row in self:
@@ -184,7 +184,7 @@ class RetentionPolicy(models.Model):
         return True
 
     def _readiness_actor(self):
-        user = self.env['baseer.bchat.service']._require_user()
+        user = self.env['baseer.bwork.service']._require_user()
         if user != self.env.ref('base.user_admin') or not user.has_group('base.group_system'):
             raise AccessError('Only the existing system owner can acknowledge global readiness.')
         for row in self:
@@ -215,7 +215,7 @@ class RetentionWizard(models.TransientModel):
 
     company_id = fields.Many2one('res.company', required=True, default=lambda self: self.env.company)
     scope_mode = fields.Selection(_SCOPES, required=True, default='company')
-    room_ids = fields.Many2many('baseer.bchat.room', 'bwork_retention_wizard_room_rel', 'wizard_id', 'room_id')
+    room_ids = fields.Many2many('baseer.bwork.room', 'bwork_retention_wizard_room_rel', 'wizard_id', 'room_id')
     mode = fields.Selection(_MANUAL_MODES, required=True, default='attachments')
     cutoff_mode = fields.Selection([('before_date', 'Before date'), ('older_than_days', 'Older than days')], default='older_than_days', required=True)
     cutoff_date = fields.Date()
@@ -279,7 +279,7 @@ class RetentionRun(models.Model):
     company_id = fields.Many2one('res.company', required=True, readonly=True, ondelete='restrict', index=True)
     policy_id = fields.Many2one('baseer.bwork.retention.policy', readonly=True, ondelete='restrict')
     scope_mode = fields.Selection(_SCOPES, required=True, readonly=True)
-    room_ids = fields.Many2many('baseer.bchat.room', 'bwork_retention_run_room_rel', 'run_id', 'room_id', readonly=True)
+    room_ids = fields.Many2many('baseer.bwork.room', 'bwork_retention_run_room_rel', 'run_id', 'room_id', readonly=True)
     mode = fields.Selection(_MANUAL_MODES, required=True, readonly=True)
     scheduled_local_date = fields.Date(readonly=True)
     cutoff_utc = fields.Datetime(required=True, readonly=True)
@@ -375,7 +375,7 @@ class RetentionRun(models.Model):
         user = _guard(self, self.company_id)
         if self.creator_user_id != user:
             raise AccessError('Only the original retention actor may confirm this preview.')
-        if user._bchat_effective_permissions()['revision'] != self.permission_revision:
+        if user._bwork_effective_permissions()['revision'] != self.permission_revision:
             raise ValidationError('retention_permission_changed')
         if self.policy_id and (self.policy_id.revision != self.config_revision or self.policy_id.owner_user_id != user):
             raise ValidationError('retention_policy_changed')
@@ -391,7 +391,7 @@ class RetentionRun(models.Model):
         self.env.cr.execute('SELECT id FROM baseer_bwork_retention_run WHERE id=%s FOR UPDATE', [self.id])
         self.invalidate_recordset()
         self._assert_actor()
-        if not self.env['baseer.bchat.service']._retention_ready(lock=True):
+        if not self.env['baseer.bwork.service']._retention_ready(lock=True):
             raise ValidationError(self.env._('Server retention is not activated. Update clients and acknowledge readiness first.'))
         if self.state in ('queued', 'running', 'done', 'partial'):
             return self._action()
@@ -430,8 +430,8 @@ class RetentionItem(models.Model):
 
     run_id = fields.Many2one('baseer.bwork.retention.run', required=True, readonly=True, ondelete='restrict', index=True)
     company_id = fields.Many2one(related='run_id.company_id', store=True, index=True)
-    message_id = fields.Many2one('baseer.bchat.message', readonly=True, ondelete='restrict', index=True)
-    media_id = fields.Many2one('baseer.bchat.media', readonly=True, ondelete='restrict', index=True)
+    message_id = fields.Many2one('baseer.bwork.message', readonly=True, ondelete='restrict', index=True)
+    media_id = fields.Many2one('baseer.bwork.media', readonly=True, ondelete='restrict', index=True)
     fingerprint = fields.Char(required=True, readonly=True)
     logical_bytes = fields.Char(readonly=True, default='0')
     outcome = fields.Selection([(v, v.title()) for v in ('pending', 'removed', 'skipped', 'failed')], default='pending', required=True, readonly=True, index=True)
@@ -558,16 +558,16 @@ class RetentionService(models.AbstractModel):
                      by_room_display='', by_kind_display='')
         # All logical byte sources share ONE 100k budget. No physical-disk claim.
         self.env.cr.execute('''SELECT count(*) FROM (
-            SELECT id FROM baseer_bchat_media WHERE company_id=ANY(%s)
+            SELECT id FROM baseer_bwork_media WHERE company_id=ANY(%s)
             UNION ALL SELECT DISTINCT attachment_id FROM (
-                SELECT attachment_id FROM baseer_bchat_media WHERE company_id=ANY(%s) AND retention_state='active'
-                UNION ALL SELECT thumbnail_attachment_id FROM baseer_bchat_media WHERE company_id=ANY(%s) AND retention_state='active'
+                SELECT attachment_id FROM baseer_bwork_media WHERE company_id=ANY(%s) AND retention_state='active'
+                UNION ALL SELECT thumbnail_attachment_id FROM baseer_bwork_media WHERE company_id=ANY(%s) AND retention_state='active'
             ) files WHERE attachment_id IS NOT NULL LIMIT 100001) bounded''', [ids, ids, ids])
         if self.env.cr.fetchone()[0] > rules.MAX_SOURCE_ROWS:
             return empty
         self.env.cr.execute('''SELECT media.id,media.company_id,media.room_id,media.kind,attachment.id,attachment.file_size,
                 attachment.res_model,attachment.res_id,attachment.company_id
-            FROM baseer_bchat_media media
+            FROM baseer_bwork_media media
             CROSS JOIN LATERAL (VALUES (media.attachment_id),(media.thumbnail_attachment_id)) file(id)
             LEFT JOIN ir_attachment attachment ON attachment.id=file.id
             WHERE media.company_id=ANY(%s) AND media.retention_state='active'
@@ -575,7 +575,7 @@ class RetentionService(models.AbstractModel):
         by_room, by_kind, seen = {}, {}, set()
         for mid, cid, room_id, kind, aid, size, model, source_id, company_id in self.env.cr.fetchall():
             if (not aid or type(size) is not int or size < 0 or cid != company_id or cid not in ids
-                    or model != 'baseer.bchat.media' or source_id != mid or kind not in ('image', 'file', 'audio')):
+                    or model != 'baseer.bwork.media' or source_id != mid or kind not in ('image', 'file', 'audio')):
                 return dict(empty, status='integrity_error')
             if aid in seen:
                 continue
@@ -584,7 +584,7 @@ class RetentionService(models.AbstractModel):
             by_kind[kind] = by_kind.get(kind, 0) + size
         if len(by_room) > 100:
             return empty
-        rooms = self.env['baseer.bchat.room'].sudo().browse(sorted(by_room))
+        rooms = self.env['baseer.bwork.room'].sudo().browse(sorted(by_room))
         room_names = {r.id: r.name for r in rooms}
         return dict(status='available', total_bytes=str(sum(by_room.values())),
             total_display=rules.size_label(sum(by_room.values())),
@@ -601,7 +601,7 @@ class RetentionService(models.AbstractModel):
                 raise ValidationError('invalid_retention_rooms')
             domain.append(('id', 'in', room_ids))
         # Explicit metadata authority, not source-content read ACL.
-        rows = self.env['baseer.bchat.room'].sudo().search(domain, order='id', limit=101)
+        rows = self.env['baseer.bwork.room'].sudo().search(domain, order='id', limit=101)
         if len(rows) > 100 or scope_mode == 'rooms' and set(rows.ids) != set(room_ids):
             raise ValidationError('retention_room_scope_exceeded_or_changed')
         return rows
@@ -614,28 +614,28 @@ class RetentionService(models.AbstractModel):
         # Conservative aggregate budget includes all materialized source rows,
         # not only eligible/approved records. Never a partial headline.
         self.env.cr.execute('''SELECT count(*) FROM (
-            SELECT id FROM baseer_bchat_message WHERE company_id=%s AND room_id=ANY(%s)
-            UNION ALL SELECT id FROM baseer_bchat_media WHERE company_id=%s AND room_id=ANY(%s)
-            UNION ALL SELECT file.id FROM baseer_bchat_media media
+            SELECT id FROM baseer_bwork_message WHERE company_id=%s AND room_id=ANY(%s)
+            UNION ALL SELECT id FROM baseer_bwork_media WHERE company_id=%s AND room_id=ANY(%s)
+            UNION ALL SELECT file.id FROM baseer_bwork_media media
               CROSS JOIN LATERAL (VALUES(media.attachment_id),(media.thumbnail_attachment_id)) file(id)
               WHERE media.company_id=%s AND media.room_id=ANY(%s) AND file.id IS NOT NULL
-            UNION ALL SELECT event.id FROM baseer_bchat_push_event event
-              JOIN baseer_bchat_message m ON m.id=event.message_id WHERE m.company_id=%s AND m.room_id=ANY(%s)
+            UNION ALL SELECT event.id FROM baseer_bwork_push_event event
+              JOIN baseer_bwork_message m ON m.id=event.message_id WHERE m.company_id=%s AND m.room_id=ANY(%s)
             LIMIT 100001) bounded''', [company_id, rooms.ids] * 4)
         if self.env.cr.fetchone()[0] > rules.MAX_SOURCE_ROWS:
             raise ValidationError('limit_exceeded')
         if mode == 'expired_uploads':
             cutoff = min(cutoff, fields.Datetime.now() - timedelta(hours=24))
-        messages = self.env['baseer.bchat.message'].sudo().search([
+        messages = self.env['baseer.bwork.message'].sudo().search([
             ('company_id', '=', company_id), ('room_id', 'in', rooms.ids),
             ('create_date', '<', cutoff), ('retention_state', '=', 'active'),
-        ], order='create_date,id', limit=rules.MAX_SOURCE_ROWS + 1) if mode != 'expired_uploads' else self.env['baseer.bchat.media'].sudo().search([
+        ], order='create_date,id', limit=rules.MAX_SOURCE_ROWS + 1) if mode != 'expired_uploads' else self.env['baseer.bwork.media'].sudo().search([
             ('company_id', '=', company_id), ('room_id', 'in', rooms.ids),
             ('state', '=', 'staged'), ('message_id', '=', False), ('create_date', '<', cutoff),
         ], order='create_date,id', limit=rules.MAX_SOURCE_ROWS + 1)
         if len(messages) > rules.MAX_SOURCE_ROWS:
             raise ValidationError('limit_exceeded')
-        source = self.env['baseer.bchat.service']
+        source = self.env['baseer.bwork.service']
         candidates, eligible, protected, integrity = [], 0, 0, 0
         for message in messages:
             if mode == 'attachments' and (not message.media_id or message.media_id.retention_state != 'active'):
@@ -660,7 +660,7 @@ class RetentionService(models.AbstractModel):
             room_ids=[Command.set(rooms.ids)], mode=mode, cutoff_utc=cutoff, as_of=now,
             expires_at=now + timedelta(seconds=rules.PREVIEW_SECONDS), creator_user_id=user.id,
             config_revision=policy.revision if policy else 0,
-            permission_revision=user._bchat_effective_permissions()['revision'], eligible_total=eligible,
+            permission_revision=user._bwork_effective_permissions()['revision'], eligible_total=eligible,
             remaining_eligible=max(0, eligible - len(candidates)), batch_limited=eligible > len(candidates),
             candidate_messages=sum(bool(i['message_id']) for i in candidates), candidate_media=sum(bool(i['media_id']) for i in candidates),
             candidate_bytes=sum(i['logical_bytes'] for i in candidates), protected_count=protected,
@@ -675,11 +675,11 @@ class RetentionService(models.AbstractModel):
         self.env.cr.execute('SELECT id FROM baseer_bwork_retention_run WHERE id=%s FOR UPDATE', [run.id])
         run.invalidate_recordset()
         run._assert_actor()
-        source = self.env['baseer.bchat.service']
+        source = self.env['baseer.bwork.service']
         # Existing upload writers use room -> user. Keep that lock order while
         # linearizing role/policy revocation against this bounded atomic batch.
         for room in run.room_ids.sudo().sorted('id'):
-            self.env['baseer.bchat.room']._lock_for_mutation(room.id)
+            self.env['baseer.bwork.room']._lock_for_mutation(room.id)
         self.env.cr.execute('SELECT id FROM res_users WHERE id=%s FOR SHARE', [self.env.uid])
         self.env.user.invalidate_recordset()
         if run.policy_id:
@@ -693,7 +693,7 @@ class RetentionService(models.AbstractModel):
         if run.state not in ('queued', 'running'):
             return False
         items = self.env['baseer.bwork.retention.item'].search([('run_id', '=', run.id), ('outcome', '=', 'pending')], order='id', limit=rules.BATCH_SIZE)
-        changed = self.env['baseer.bchat.room'].sudo()
+        changed = self.env['baseer.bwork.room'].sudo()
         removed = skipped = failed = size = 0
         for item in items:
             # Latch, authority, policy and scope are checked for EVERY victim.
@@ -729,7 +729,7 @@ class RetentionService(models.AbstractModel):
         # a one-company, non-sudo environment before any operation.
         if not self.env.su:
             raise AccessError('Private cron entry required.')
-        if not self.env['baseer.bchat.service']._retention_ready():
+        if not self.env['baseer.bwork.service']._retention_ready():
             return
         # No catch-up burst: only today's local slot is eligible, once per
         # policy/local date. One active job per company is enforced by SQL.
@@ -751,7 +751,7 @@ class RetentionService(models.AbstractModel):
                     if policy.last_local_date != day and today_slot <= now:
                         cutoff = rules.cutoff('older_than_days', None, policy.retention_days, policy.timezone, now)
                         run = service._preview(company_id, policy.scope_mode, policy.room_ids.ids, policy.mode, cutoff, policy=policy)
-                        if not service.env['baseer.bchat.service']._retention_ready(lock=True):
+                        if not service.env['baseer.bwork.service']._retention_ready(lock=True):
                             raise ValidationError('retention_not_ready')
                         run._service_write({'state': 'queued', 'scheduled_local_date': day}, _ADMIN_TOKEN)
                         service.env['baseer.bwork.retention.audit']._append('scheduled', company_id, run=run, policy=policy, token=_ADMIN_TOKEN)
@@ -781,8 +781,8 @@ class RetentionService(models.AbstractModel):
                     FROM cancelled''', [run_id, self.env.uid, self.env.uid, self.env.uid])
 
 
-class BChatRetentionAdministration(models.AbstractModel):
-    _inherit = 'baseer.bchat.service'
+class BWorkRetentionAdministration(models.AbstractModel):
+    _inherit = 'baseer.bwork.service'
 
     def _retention_admin_available(self):
         return True

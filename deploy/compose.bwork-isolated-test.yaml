@@ -1,0 +1,76 @@
+# Disposable BWork delivery test. Never point BWORK_TEST_ROOT at operational data.
+# No QA/Live service or database is attached; only TLS is published on host loopback.
+name: bwork-isolated-20261014
+
+services:
+  db:
+    image: postgres@sha256:f1c3376c26f2609ab9f29f71f824103fe2fcd8ee0346485cb6122a4f93df6f94
+    env_file: ${BWORK_TEST_ENV_FILE:?Existing local env file required}
+    environment:
+      POSTGRES_DB: postgres
+    volumes:
+      - ${BWORK_TEST_ROOT:?D drive isolated root required}/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    networks: [private]
+
+  odoo_data_init:
+    image: odoo@sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd
+    user: "0:0"
+    entrypoint: ["/bin/bash", "-lc"]
+    command: ["install -d -o 100 -g 101 -m 0755 /var/lib/odoo/sessions /var/lib/odoo/filestore"]
+    volumes:
+      - ${BWORK_TEST_ROOT}/odoo:/var/lib/odoo
+    networks: [private]
+    restart: "no"
+
+  odoo:
+    # The historical FCM image remains the default.  Focused server tests can
+    # explicitly select the locally available Odoo base image; they do not load
+    # Android/FCM code and must never fetch an unpinned registry image.
+    image: ${BWORK_TEST_ODOO_IMAGE:-baseer-bchat-local-odoo-fcm@sha256:ab028f09c0f8c19c4442c6df2661ad3e8459fbf5154333c321bd8c890dec7f0f}
+    depends_on:
+      db: {condition: service_healthy}
+      odoo_data_init: {condition: service_completed_successfully}
+    env_file: ${BWORK_TEST_ENV_FILE}
+    environment:
+      HOST: db
+      USER: ${POSTGRES_USER:?Database user required}
+      PASSWORD: ${POSTGRES_PASSWORD:?Database password required}
+    command:
+      - odoo
+      - --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/baseer-addons,/mnt/bwork-addons,/mnt/oca-dms,/mnt/third-party-addons/erp_heritage_19,/mnt/third-party-addons/odoomates_19
+      - --database=${BWORK_TEST_DB:-bwork_capacity_test_20261014}
+      - --db-filter=^${BWORK_TEST_DB:-bwork_capacity_test_20261014}$
+      - --no-database-list
+      - --workers=2
+      - --max-cron-threads=0
+      - --http-port=8069
+      - --proxy-mode
+    volumes:
+      - ${BWORK_TEST_ROOT}/odoo:/var/lib/odoo
+      - ${BWORK_TEST_BASEER_SOURCE:?Frozen Baseer addons required}:/mnt/baseer-addons:ro
+      - ${BWORK_TEST_BWORK_SOURCE:?Existing BWork addons required}:/mnt/bwork-addons:ro
+      - ${BWORK_TEST_BASEER_ROLES:?Existing access roles required}:/mnt/baseer-addons/baseer_access_roles:ro
+      - ${BWORK_TEST_BASEER_PROCUREMENT:?Existing procurement addon required}:/mnt/baseer-addons/baseer_procurement_requests:ro
+      - ${BWORK_TEST_OCA_SOURCE:?Pinned OCA checkout required}:/mnt/oca-dms:ro
+      - ${BWORK_TEST_THIRD_PARTY_SOURCE:?Frozen third-party addons required}:/mnt/third-party-addons:ro
+      - ${BWORK_TEST_MODULE:?Candidate BWork module required}:/mnt/bwork-addons/baseer_bwork:ro
+    networks: [private]
+
+  proxy_tls:
+    image: nginx@sha256:985220252f3863977e468f611ef118ebd01421289dd86ee1ae99cb068c3bce2b
+    depends_on: [odoo]
+    ports:
+      - "127.0.0.1:18445:443"
+    volumes:
+      - ${BWORK_TEST_TLS_DIR:?Local test TLS directory required}:/etc/nginx/bwork-tls:ro
+      - ./nginx/bwork-isolated-test.conf:/etc/nginx/conf.d/default.conf:ro
+    networks: [private]
+
+networks:
+  private:
+    internal: true

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_users_form_bwork_capabilities" model="ir.ui.view">
+        <field name="name">res.users.form.bwork.capabilities</field>
+        <field name="model">res.users</field>
+        <field name="inherit_id" ref="base.view_users_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='access_rights']//field[@name='group_ids']" position="before">
+                <group name="bwork_capabilities" string="BWork" groups="base.group_system">
+                    <field name="bwork_chat_view"/>
+                    <field name="bwork_chat_send" readonly="not bwork_chat_view"/>
+                    <field name="bwork_media" readonly="not bwork_chat_view"/>
+                    <field name="bwork_group_create" readonly="not bwork_chat_view"/>
+                    <field name="bwork_group_manage" readonly="not bwork_chat_view"/>
+                    <field name="bwork_task_view"/>
+                    <field name="bwork_task_manage" readonly="not bwork_task_view"/>
+                    <field name="bwork_room_admin_eligible" invisible="1"/>
+                    <field name="bwork_manage_rooms" invisible="not bwork_room_admin_eligible"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+</odoo>

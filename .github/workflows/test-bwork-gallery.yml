@@ -3,7 +3,7 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - 'custom_addons/baseer_bchat/**'
+      - 'custom_addons/baseer_bwork/**'
       - 'custom_addons/baseer_bwork_admin/**'
       - '.github/workflows/test-bwork-gallery.yml'
 permissions:
@@ -23,7 +23,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Actual gallery client controller tests
-        run: node --test custom_addons/baseer_bchat/static/tests/gallery_client.node.test.mjs
+        run: node --test custom_addons/baseer_bwork/static/tests/gallery_client.node.test.mjs
       - name: Native ORM and HTTP gallery guards and paging
         shell: bash
         run: |
@@ -35,15 +35,15 @@ jobs:
             odoo@sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd \
             odoo --db_host=127.0.0.1 --db_port=5432 --db_user=odoo --db_password=odoo \
             --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/baseer-addons \
-            -d bwork_gallery_ci -i baseer_bchat,baseer_bwork_admin --without-demo=all \
-            --test-enable --test-tags=/baseer_bchat:BChatGalleryCase,/baseer_bchat:BChatGalleryHttpCase \
+            -d bwork_gallery_ci -i baseer_bwork,baseer_bwork_admin --without-demo=all \
+            --test-enable --test-tags=/baseer_bwork:BWorkGalleryCase,/baseer_bwork:BWorkGalleryHttpCase \
             --stop-after-init --max-cron-threads=0 --workers=0 --log-level=test 2>&1 | tee bwork-gallery-runtime.log
-          for test_class in BChatGalleryCase BChatGalleryHttpCase; do
+          for test_class in BWorkGalleryCase BWorkGalleryHttpCase; do
             grep -F "Starting $test_class." bwork-gallery-runtime.log
           done
           if grep -Eq ': skipped .+ : |[1-9][0-9]* failed,|[1-9][0-9]* error\(s\)' bwork-gallery-runtime.log; then exit 1; fi
           grep -F '0 failed, 0 error(s)' bwork-gallery-runtime.log
-          test "$(grep -Ec 'Starting (BChatGalleryCase|BChatGalleryHttpCase)\.' bwork-gallery-runtime.log)" -eq 9
+          test "$(grep -Ec 'Starting (BWorkGalleryCase|BWorkGalleryHttpCase)\.' bwork-gallery-runtime.log)" -eq 9
       - uses: actions/upload-artifact@v4
         if: always()
         with:

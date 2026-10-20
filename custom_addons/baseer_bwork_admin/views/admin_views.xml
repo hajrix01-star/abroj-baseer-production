@@ -45,20 +45,20 @@
     </record>
     <record id="room_list" model="ir.ui.view">
         <field name="name">baseer.bwork.admin.room.list</field>
-        <field name="model">baseer.bchat.room</field>
+        <field name="model">baseer.bwork.room</field>
         <field name="arch" type="xml"><list string="BWork rooms" create="0" edit="0" delete="0" open_form_view="0"><field name="name"/><field name="company_id" string="Company"/><field name="is_group"/></list></field>
     </record>
     <record id="member_list" model="ir.ui.view">
         <field name="name">baseer.bwork.admin.member.list</field>
-        <field name="model">baseer.bchat.membership</field>
+        <field name="model">baseer.bwork.membership</field>
         <field name="arch" type="xml"><list string="BWork memberships" create="0" edit="0" delete="0" open_form_view="0"><field name="room_id"/><field name="company_id" string="Company"/><field name="user_id"/><field name="active"/><field name="left_at"/></list></field>
     </record>
     <record id="room_form" model="ir.ui.view">
-        <field name="name">baseer.bwork.admin.room.form</field><field name="model">baseer.bchat.room</field>
+        <field name="name">baseer.bwork.admin.room.form</field><field name="model">baseer.bwork.room</field>
         <field name="arch" type="xml"><form string="BWork room metadata" create="0" edit="0" delete="0" duplicate="0"><sheet><group><field name="name"/><field name="company_id" string="Company" options="{'no_open': True}"/><field name="is_group"/></group></sheet></form></field>
     </record>
     <record id="member_form" model="ir.ui.view">
-        <field name="name">baseer.bwork.admin.member.form</field><field name="model">baseer.bchat.membership</field>
+        <field name="name">baseer.bwork.admin.member.form</field><field name="model">baseer.bwork.membership</field>
         <field name="arch" type="xml"><form string="BWork membership metadata" create="0" edit="0" delete="0" duplicate="0"><sheet><group><field name="room_id" options="{'no_open': True}"/><field name="company_id" string="Company" options="{'no_open': True}"/><field name="user_id" options="{'no_open': True}"/><field name="active"/><field name="left_at"/></group></sheet></form></field>
     </record>
     <record id="policy_list" model="ir.ui.view">
@@ -72,9 +72,9 @@
     <record id="console_action" model="ir.actions.act_window">
         <field name="name">BWork Administration</field><field name="res_model">baseer.bwork.admin.console</field><field name="view_mode">form</field><field name="view_id" ref="console_form"/>
     </record>
-    <menuitem id="admin_menu" name="Administration" parent="baseer_bchat.menu_bchat_root" action="console_action" groups="baseer_bchat.group_bchat_manager" sequence="5"/>
+    <menuitem id="admin_menu" name="Administration" parent="baseer_bwork.menu_bwork_root" action="console_action" groups="baseer_bwork.group_bwork_manager" sequence="5"/>
     <record id="media_gallery_action" model="ir.actions.client">
         <field name="name">Media gallery</field><field name="tag">baseer_bwork_admin.media_gallery</field>
     </record>
-    <menuitem id="media_gallery_menu" name="Media gallery" parent="baseer_bchat.menu_bchat_root" action="media_gallery_action" groups="baseer_bchat.group_bchat_manager" sequence="6"/>
+    <menuitem id="media_gallery_menu" name="Media gallery" parent="baseer_bwork.menu_bwork_root" action="media_gallery_action" groups="baseer_bwork.group_bwork_manager" sequence="6"/>
 </odoo>

@@ -229,6 +229,209 @@ class CanonicalConversionContract(unittest.TestCase):
         self.assertEqual(upgrade.rewrite_metadata('body contains baseer.bchat.message', names), 'body contains baseer.bchat.message')
         self.assertEqual(upgrade.rewrite_metadata({'en_US': xml}, names, xml=True)['en_US'], rewritten)
 
+    def test_xml_expression_commas_remain_whole_and_only_group_lists_split(self):
+        names = {'bchat_media': 'bwork_media',
+                 'baseer_bchat.group_bchat_manager': 'baseer_bwork.group_bwork_manager'}
+        xml = '''<form string="BChat historical evidence">
+          <field name="bchat_media" filter_domain="['|', ('name','ilike',self), ('type','ilike',self)]"
+            domain="[('bchat_media', '=', True), ('name', '=', 'literal,comma')]"
+            context="{'default_bchat_media': 'literal,comma', 'value': bchat_media}"
+            invisible="bchat_media in [False, None]"
+            groups="base.group_user,baseer_bchat.group_bchat_manager"/>
+          <label string="bchat_media, unchanged prose"/>
+        </form>'''
+        rewritten = upgrade.rewrite_metadata(xml, names, xml=True)
+        root = upgrade.ElementTree.fromstring(rewritten)
+        field = root.find('field')
+        self.assertEqual(field.attrib['filter_domain'], "['|', ('name','ilike',self), ('type','ilike',self)]")
+        self.assertEqual(field.attrib['domain'], "[('bwork_media', '=', True), ('name', '=', 'literal,comma')]")
+        self.assertEqual(field.attrib['context'], "{'default_bchat_media': 'literal,comma', 'value': bwork_media}")
+        self.assertEqual(field.attrib['invisible'], 'bwork_media in [False, None]')
+        self.assertEqual(field.attrib['groups'], 'base.group_user,baseer_bwork.group_bwork_manager')
+        self.assertEqual(root.attrib['string'], 'BChat historical evidence')
+        self.assertEqual(root.find('label').attrib['string'], 'bchat_media, unchanged prose')
+        unchanged = '<field name="name" filter_domain="[\'|\', (\'name\',\'ilike\',self), (\'type\',\'ilike\',self)]"/>'
+        self.assertEqual(upgrade.rewrite_metadata(unchanged, names, xml=True), unchanged)
+        self.assertEqual(upgrade.rewrite_metadata({'en_US': xml}, names, xml=True)['en_US'], rewritten)
+        for malformed in ('<form domain="[(\'bchat_media\', \'=\', True)"/>', '<form>'):
+            with self.subTest(malformed=malformed), self.assertRaises(upgrade.MigrationStopped):
+                upgrade.rewrite_metadata(malformed, names, xml=True)
+
+    def test_reference_storage_resolves_native_nondefault_table_without_skipping_fields(self):
+        mapping, _ = upgrade.load_mapping()
+        self.assertEqual(mapping['reference_storage_overrides'], [
+            {'model': 'ir.actions.server', 'field': 'resource_ref', 'table': 'ir_act_server'}])
+        cursor = Mock()
+        cursor.fetchall.return_value = [(71, 'ir.ui.menu', 'action'), (72, 'ir.actions.server', 'resource_ref')]
+        storage = {('ir_ui_menu', 'action'): 'character varying',
+                   ('ir_act_server', 'resource_ref'): 'character varying'}
+        names = {'baseer.bchat.message': 'baseer.bwork.message'}
+        with patch.object(upgrade, '_column_type', side_effect=lambda _cr, table, column: storage.get((table, column))):
+            upgrade._reference_fields(cursor, names, mapping)
+        updates = [call for call in cursor.execute.call_args_list if call.args[0].lstrip().startswith('UPDATE')]
+        self.assertEqual(len(updates), 2)
+        self.assertIn('UPDATE "ir_ui_menu" SET "action"', updates[0].args[0])
+        self.assertIn('UPDATE "ir_act_server" SET "resource_ref"', updates[1].args[0])
+        self.assertTrue(all(call.args[1] == ['baseer.bwork.message', len('baseer.bchat.message') + 1,
+                                            'baseer.bchat.message'] for call in updates))
+        self.assertTrue(all("split_part(" in call.args[0] for call in updates))
+        for owner, field, kind, code in (
+                ('unknown.custom.owner', 'reference', None, 'unsupported_reference_storage'),
+                ('ir.actions.server', 'other_reference', None, 'unsupported_reference_storage'),
+                ('ir.actions.server', 'resource_ref', None, 'unsupported_reference_storage'),
+                ('ir.actions.server', 'resource_ref', 'integer', 'unsupported_reference_type'),
+                ('ir.actions.server', 'unsafe;column', 'text', 'unsupported_reference_identifier')):
+            with self.subTest(owner=owner, field=field, kind=kind):
+                cursor = Mock()
+                cursor.fetchall.return_value = [(73, owner, field)]
+                with patch.object(upgrade, '_column_type', return_value=kind):
+                    with self.assertRaisesRegex(upgrade.MigrationStopped, code):
+                        upgrade._reference_fields(cursor, names, mapping)
+                self.assertFalse(any(call.args[0].lstrip().startswith('UPDATE')
+                                     for call in cursor.execute.call_args_list))
+
+    def test_derived_reference_requires_exact_native_field_and_absent_relation(self):
+        mapping, _ = upgrade.load_mapping()
+        classification = mapping['reference_derived_nonphysical'][0]
+        self.assertEqual(classification, {'model': 'sale.report', 'field': 'order_reference', 'relation': 'sale_report',
+                                         'field_xmlid': 'sale.field_sale_report__order_reference',
+                                         'allowed_target_models': ['sale.order', 'pos.order']})
+        identity = (907, 'sale.report', 'order_reference', 'reference', True)
+        cursor = Mock()
+        cursor.fetchall.side_effect = [[identity[:3]], [identity]]
+        with patch.object(upgrade, '_column_type', return_value=None), patch.object(upgrade, '_exists', return_value=False):
+            upgrade._reference_fields(cursor, {'baseer.bchat.message': 'baseer.bwork.message'}, mapping)
+        self.assertFalse(any(call.args[0].lstrip().startswith('UPDATE') for call in cursor.execute.call_args_list))
+        self.assertEqual(cursor.execute.call_args_list[-1].args[1], ['sale', 'field_sale_report__order_reference'])
+        for resolved in ([], [(908, *identity[1:])], [(907, 'other.model', *identity[2:])],
+                         [(907, 'sale.report', 'other_field', 'reference', True)],
+                         [(907, 'sale.report', 'order_reference', 'char', True)],
+                         [(907, 'sale.report', 'order_reference', 'reference', False)]):
+            with self.subTest(identity=resolved):
+                cursor = Mock()
+                cursor.fetchall.side_effect = [[identity[:3]], resolved]
+                with self.assertRaisesRegex(upgrade.MigrationStopped, 'unverified_derived_reference_identity'):
+                    upgrade._reference_fields(cursor, {}, mapping)
+        for relation, column in ((True, None), (False, 'character varying')):
+            with self.subTest(physical_relation=relation, physical_column=column):
+                cursor = Mock()
+                cursor.fetchall.side_effect = [[identity[:3]], [identity]]
+                with patch.object(upgrade, '_exists', return_value=relation), patch.object(upgrade, '_column_type', return_value=column):
+                    with self.assertRaisesRegex(upgrade.MigrationStopped, 'unexpected_derived_reference_storage'):
+                        upgrade._reference_fields(cursor, {}, mapping)
+        for invalid in (
+                dict(mapping, reference_derived_nonphysical=[classification, classification]),
+                dict(mapping, reference_storage_overrides=[{'model': 'sale.report', 'field': 'order_reference', 'table': 'sale_report'}])):
+            with self.assertRaisesRegex(upgrade.MigrationStopped, 'overlapping_reference_storage'):
+                upgrade._reference_fields(Mock(), {}, invalid)
+
+    def test_generated_constraint_xmlids_keep_exact_native_identity(self):
+        mapping, _ = upgrade.load_mapping()
+        modules = {row['old']: row['new'] for row in mapping['modules']}
+        models = {row['old']: row['new'] for row in mapping['models']}
+        for row in mapping['constraints']:
+            owner = 'baseer_bchat' if row['model'] in models else 'baseer_bchat_procurement'
+            old_table = row['model'].replace('.', '_')
+            new_table = models.get(row['model'], row['model']).replace('.', '_')
+            old = 'constraint_' + upgrade.pg_name(old_table + '_' + row['old'])
+            new = 'constraint_' + upgrade.pg_name(new_table + '_' + row['new'])
+            with self.subTest(old=old):
+                self.assertEqual(upgrade._xmlid_target(owner, old, 'ir.model.constraint', mapping, modules, models, {}),
+                                 (modules[owner], new))
+                self.assertEqual(upgrade._xmlid_target(modules[owner], new, 'ir.model.constraint', mapping, modules, models, {}),
+                                 (modules[owner], new))
+                self.assertEqual(upgrade._xmlid_target('__export__', old, 'ir.model.constraint', mapping, modules, models, {}),
+                                 ('__export__', old))
+                self.assertEqual(upgrade._xmlid_target('other_module', old, 'ir.model.constraint', mapping, modules, models, {}),
+                                 ('other_module', old))
+                self.assertEqual(upgrade._xmlid_target(owner, old, 'other.model', mapping, modules, models, {}),
+                                 (modules[owner], old))
+        with self.assertRaisesRegex(upgrade.MigrationStopped, 'unsupported_constraint_xmlid'):
+            upgrade._xmlid_target('baseer_bchat', 'constraint_baseer_bchat_unknown', 'ir.model.constraint',
+                                  mapping, modules, models, {})
+        long = dict(mapping['constraints'][0], old='long_' + 'x' * 70, new='long_' + 'x' * 70)
+        extended = dict(mapping, constraints=[long])
+        old = upgrade.pg_name('baseer_bchat_binding_' + long['old'])
+        new = upgrade.pg_name('baseer_bwork_binding_' + long['new'])
+        self.assertEqual(len(old), 63)
+        self.assertNotEqual(old.replace('bchat', 'bwork'), new)
+        self.assertEqual(upgrade._xmlid_target('baseer_bchat', 'constraint_' + old, 'ir.model.constraint',
+                                              extended, modules, models, {}), ('baseer_bwork', 'constraint_' + new))
+        old = 'constraint_baseer_bchat_binding_channel_unique'
+        new = 'constraint_baseer_bwork_binding_channel_unique'
+        cursor = Mock()
+        cursor.fetchall.return_value = [(11, 'baseer_bchat', old, 'ir.model.constraint', 21)]
+        upgrade._xmlids(cursor, mapping, modules, models, {})
+        self.assertEqual(cursor.execute.call_args_list[-1].args,
+                         ('UPDATE ir_model_data SET module=%s,name=%s WHERE id=%s', ['baseer_bwork', new, 11]))
+        cursor = Mock()
+        cursor.fetchall.return_value = [(11, 'baseer_bchat', old, 'ir.model.constraint', 21),
+                                       (12, 'baseer_bwork', new, 'ir.model.constraint', 22)]
+        with self.assertRaisesRegex(upgrade.MigrationStopped, 'xmlid_collision'):
+            upgrade._xmlids(cursor, mapping, modules, models, {})
+        self.assertFalse(any(call.args[0].lstrip().startswith('UPDATE') for call in cursor.execute.call_args_list))
+
+    def test_restore_allows_only_proven_single_check_roundtrip_and_keeps_full_assertion(self):
+        probe = load('bwork_restore_shape_probe', ROOT / 'tests/canonical_upgrade_probe.py')
+        original = ("CHECK (task_id IS NOT NULL AND message_id IS NULL AND task_revision IS NOT NULL AND "
+                    "(event_kind::text = ANY (ARRAY['assigned'::character varying, 'updated'::character varying, "
+                    "'reminder'::character varying]::text[])) OR task_id IS NULL AND message_id IS NOT NULL "
+                    "AND task_revision IS NULL AND event_kind::text = 'message'::text)")
+        restored = ("CHECK (task_id IS NOT NULL AND message_id IS NULL AND task_revision IS NOT NULL AND "
+                    "(event_kind::text = ANY (ARRAY['assigned'::character varying::text, 'updated'::character varying::text, "
+                    "'reminder'::character varying::text])) OR task_id IS NULL AND message_id IS NOT NULL "
+                    "AND task_revision IS NULL AND event_kind::text = 'message'::text)")
+        table, name = 'baseer_bwork_push_event', 'baseer_bwork_push_event_event_source_shape'
+        key = 'baseer_bwork.constraint_' + name
+        expected = {'tables': {table: [11, 2, 'SAME_PK_DIGEST']}, 'constraints': list(range(123)),
+                    'constraint_shapes': [[table, name, original]] + [
+                        ['other_table', 'other_%s' % i, 'CHECK (true)'] for i in range(122)],
+                    'constraint_identities': {key: {'xmlid_id': 41, 'res_id': 51, 'constraint_id': 51,
+                                                   'model_id': 61, 'module_id': 71, 'name': name,
+                                                   'physical_oid': 81, 'shape': original}}}
+        expected['constraint_identities'].update({'other_%s' % i: {'xmlid_id': 100 + i, 'res_id': 200 + i,
+            'constraint_id': 200 + i, 'model_id': 61, 'module_id': 71, 'name': 'other_%s' % i,
+            'physical_oid': 300 + i, 'shape': 'CHECK (true)'} for i in range(31)})
+        actual = json.loads(json.dumps(expected))
+        actual['tables'][table][0] += 1000
+        actual['constraints'] = list(range(1000, 1123))
+        for identity in actual['constraint_identities'].values():
+            identity['physical_oid'] += 1000
+        actual['constraint_shapes'][0][2] = restored
+        actual['constraint_identities'][key]['shape'] = restored
+        tree = ast.parse((ROOT / 'tests/canonical_upgrade_probe.py').read_text(encoding='utf-8'))
+        function = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == 'verify_legacy_restored')
+        start = next(i for i, node in enumerate(function.body) if isinstance(node, ast.For))
+        end = next(i for i, node in enumerate(function.body[start:], start) if isinstance(node, ast.Assert))
+        comparison = compile(ast.Module(body=function.body[start:end + 1], type_ignores=[]), '<actual-restore-comparison>', 'exec')
+
+        def compare(left, right):
+            namespace = dict(probe.__dict__, expected=json.loads(json.dumps(left)), actual=json.loads(json.dumps(right)))
+            exec(comparison, namespace)
+
+        compare(expected, actual)
+        callers = [node.name for node in tree.body if isinstance(node, ast.FunctionDef)
+                   and any(isinstance(call, ast.Call) and isinstance(call.func, ast.Name)
+                           and call.func.id == '_normalize_proven_restore_event_shape' for call in ast.walk(node))]
+        self.assertEqual(callers, ['verify_legacy_restored'])
+        for mutation in ('unknown_shape', 'other_constraint', 'metadata_id', 'identity_count', 'shape_count', 'wrong_xid'):
+            changed = json.loads(json.dumps(actual))
+            if mutation == 'unknown_shape':
+                changed['constraint_shapes'][0][2] = restored.replace("'message'::text", "'wrong'::text")
+                changed['constraint_identities'][key]['shape'] = changed['constraint_shapes'][0][2]
+            elif mutation == 'other_constraint':
+                changed['constraint_shapes'][1][2] = 'CHECK (false)'
+            elif mutation == 'metadata_id':
+                changed['constraint_identities'][key]['xmlid_id'] += 1
+            elif mutation == 'identity_count':
+                changed['constraint_identities']['unexpected'] = dict(changed['constraint_identities'][key])
+            elif mutation == 'shape_count':
+                changed['constraint_shapes'].pop()
+            else:
+                changed['constraint_identities']['wrong_xid'] = changed['constraint_identities'].pop(key)
+            with self.subTest(mutation=mutation), self.assertRaises(AssertionError):
+                compare(expected, changed)
+
     def test_identifier_rules_and_injection_rejection_match_official19(self):
         value = 'baseer_bchat_mobile_upload_grant_' + 'x' * 50
         self.assertEqual(upgrade.pg_name(value), value[:54] + '_' + f'{crc32(value.encode()):08x}')
@@ -250,7 +453,7 @@ class CanonicalConversionContract(unittest.TestCase):
                 self.assertNotIn('DROP CONSTRAINT', literal.value.upper())
                 self.assertNotIn('DROP TABLE', literal.value.upper())
         native = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == 'migrate')
-        self.assertEqual([arg.arg for arg in native.args.args], ['cr', 'installed_version'])
+        self.assertEqual([arg.arg for arg in native.args.args], ['cr', 'version'])
 
     def test_readiness_and_ledger_are_not_permission_or_activation_seeds(self):
         mapping, _ = upgrade.load_mapping()

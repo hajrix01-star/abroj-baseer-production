@@ -9,6 +9,7 @@ not connect, commit, deploy or start any environment itself.
 import hashlib
 import importlib.util
 import json
+import re
 from pathlib import Path
 from uuid import uuid4
 from unittest.mock import patch
@@ -32,6 +33,101 @@ def _guard(env):
 
 def _hash(value):
     return hashlib.sha256(json.dumps(value, sort_keys=True, default=str, separators=(',', ':')).encode()).hexdigest()
+
+
+def _derived_reference_state(env):
+    """Prove query-only native identity without executing the sales report."""
+    prototype = _prototype()
+    if 'sale.report' not in env:
+        env.cr.execute("SELECT 1 FROM ir_model_fields WHERE model='sale.report' AND name='order_reference'")
+        assert env.cr.fetchone() is None and not prototype._exists(env.cr, 'sale_report')
+        return {'installed': False}
+    mapping, _ = prototype.load_mapping()
+    classification, = mapping['reference_derived_nonphysical']
+    report = env['sale.report']
+    field = report._fields['order_reference']
+    metadata = env.ref(classification['field_xmlid'])
+    assert report._auto is False and report._table == classification['relation']
+    assert field.type == 'reference' and field.store is True
+    assert metadata.model == 'sale.report' and metadata.name == 'order_reference'
+    assert metadata.ttype == 'reference' and metadata.store is True
+    alias = env.ref('pos_sale.field_sale_report__order_reference', raise_if_not_found=False)
+    assert not alias or alias == metadata
+    assert not prototype._exists(env.cr, report._table)
+    assert prototype._column_type(env.cr, report._table, field.name) is None
+    query = report._table_query
+    query = query.code if hasattr(query, 'code') else str(query)
+    tags = sorted(set(re.findall(r"['\"]((?:[a-z_]+\.)+[a-z_]+)['\"]", query)))
+    assert tags and set(tags) <= set(classification['allowed_target_models'])
+    assert 'bchat' not in query and 'bwork' not in query
+    return {'installed': True, 'field_id': metadata.id, 'field_xmlid': classification['field_xmlid'],
+            'alias_id': alias.id if alias else None, 'auto': False, 'relation': report._table,
+            'relation_absent': True, 'column_absent': True, 'target_tags': tags}
+
+
+def _reference_state(env):
+    """Native Reference storage metadata/opaque references, never action execution."""
+    assert env['ir.actions.server']._table == 'ir_act_server'
+    env.flush_all()
+    env.cr.execute("SELECT id,ttype,store FROM ir_model_fields WHERE model='ir.actions.server' AND name='resource_ref'")
+    field = env.cr.fetchall()
+    assert len(field) == 1 and field[0][1:] == ('reference', True)
+    kind = _prototype()._column_type(env.cr, 'ir_act_server', 'resource_ref')
+    assert kind == 'character varying'
+    env.cr.execute('SELECT id,model_id,resource_ref FROM ir_act_server WHERE resource_ref IS NOT NULL ORDER BY id')
+    values = [list(row) for row in env.cr.fetchall()]
+    return {'table': 'ir_act_server', 'type': kind, 'field': list(field[0]),
+            'values': values, 'derived': _derived_reference_state(env)}
+
+
+def _assert_reference_fixture(env, facts, *, old):
+    current = _reference_state(env)
+    expected = facts['reference']
+    assert current['field'] == expected['field']
+    assert current['derived'] == expected['derived'], 'Derived reference identity/query/storage changed.'
+    expected_rows = []
+    for action_id, model_id, value in expected['values']:
+        if not old and value.startswith('baseer.bchat.message,'):
+            value = 'baseer.bwork.message,' + value.split(',', 1)[1]
+        expected_rows.append([action_id, model_id, value])
+    assert current['values'] == expected_rows, 'Reference IDs/storage/value suffix changed.'
+    for action_id, _, value in expected_rows:
+        target_model, target_id = value.split(',', 1)
+        reference = env['ir.actions.server'].browse(action_id).resource_ref
+        assert reference._name == target_model and reference.id == int(target_id)
+
+
+def _constraint_identity_state(env, prototype, mapping, objects, names):
+    """Keep generated XMLID, metadata and physical identities independently."""
+    modules = {row['old']: row['new'] for row in mapping['modules']}
+    models = {row['old']: row['new'] for row in mapping['models']}
+    owners = ('baseer_bchat', 'baseer_bwork', 'baseer_bchat_procurement',
+              'baseer_bwork_procurement', 'baseer_bwork_admin')
+    env.cr.execute('''SELECT d.id,d.module,d.name,d.res_id,c.id,c.name,c.model,c.module,
+                            p.oid,pg_get_constraintdef(p.oid,TRUE)
+                       FROM ir_model_data d JOIN ir_model_constraint c
+                         ON d.model='ir.model.constraint' AND d.res_id=c.id
+                       JOIN ir_model m ON m.id=c.model
+                       LEFT JOIN pg_constraint p ON p.conname=c.name
+                         AND p.conrelid=to_regclass(replace(m.model,'.','_'))
+                      WHERE d.module IN %s AND d.name LIKE 'constraint_%%'
+                      ORDER BY d.id''', [owners])
+    result, counts = {}, {}
+    for xid, module, local, res_id, meta_id, name, model_id, module_id, oid, shape in env.cr.fetchall():
+        owner, target = prototype._xmlid_target(module, local, 'ir.model.constraint', mapping, modules, models, {})
+        key = owner + '.' + target
+        assert key not in result and res_id == meta_id and oid is not None and shape
+        counts[owner] = counts.get(owner, 0) + 1
+        result[key] = {'xmlid_id': xid, 'res_id': res_id, 'constraint_id': meta_id,
+                       'model_id': model_id, 'module_id': module_id, 'name': objects.get(name, name),
+                       'physical_oid': oid, 'shape': prototype._expression(shape, names)}
+    expected = {'baseer_bwork': 26}
+    if 'bchat_order_view' in env['res.users']._fields or 'bwork_order_view' in env['res.users']._fields:
+        expected['baseer_bwork_procurement'] = 4
+    if 'baseer.bwork.admin.console' in env:
+        expected['baseer_bwork_admin'] = 2
+    assert counts == expected, 'Generated constraint identity inventory changed.'
+    return result
 
 
 def _snapshot(env, old):
@@ -83,6 +179,11 @@ def _snapshot(env, old):
     result['constraint_shapes'] = sorted([objects.get(table, table), objects.get(name, name),
                                           prototype._expression(definition, names)]
                                          for table, name, definition in shape_rows)
+    result['constraint_identities'] = _constraint_identity_state(env, prototype, mapping, objects, names)
+    result['references'] = _reference_state(env)
+    for row in result['references']['values']:
+        target, separator, suffix = row[2].partition(',')
+        row[2] = model_map.get(target, target) + separator + suffix
     return result
 
 
@@ -123,12 +224,20 @@ def prepare_legacy(env):
     grant = service._v2_issue_mobile_upload_grant(room.id, grant_metadata)
     env['mail.message'].create({'model': 'baseer.bchat.message', 'res_id': text_ack['message_id'],
                                 'body': 'BCR literal baseer.bchat.message remains historical content'})
+    message_model = env['ir.model']._get('baseer.bchat.message')
+    # Native custom-table Reference plus unrelated control. Never run either action.
+    for target in ('baseer.bchat.message,%s' % text_ack['message_id'], 'res.users,%s' % admin.id):
+        env['ir.actions.server'].create({'name': 'BCR synthetic inert reference', 'model_id': message_model.id,
+                                         'state': 'code', 'code': 'pass', 'resource_ref': target})
     env.flush_all()
     facts = {'room_id': room.id, 'company_id': company.id, 'member_id': member.id,
              'admin_id': admin.id, 'stranger_id': stranger.id, 'text_payload': text_payload,
              'text_ack': text_ack, 'media_payload': media_payload, 'media_ack': media_ack,
              'media_id': staged['media_id'], 'stage_id': stage['media_id'], 'grant_id': grant['grant_id'],
-             'bytes_sha256': hashlib.sha256(raw).hexdigest(), 'snapshot': _snapshot(env, True)}
+             'bytes_sha256': hashlib.sha256(raw).hexdigest(), 'reference': _reference_state(env),
+             'snapshot': _snapshot(env, True)}
+    assert any(row[2] == 'baseer.bchat.message,%s' % text_ack['message_id'] for row in facts['reference']['values'])
+    _assert_reference_fixture(env, facts, old=True)
     # Synthetic non-secret fixture metadata only. Never store the grant secret.
     env['ir.config_parameter'].sudo().create({'key': FIXTURE_KEY, 'value': json.dumps(facts, default=str)})
     return {'fixture': 'BCR_SYNTHETIC_ONLY', 'prepared': True, 'snapshot_sha256': _hash(facts['snapshot'])}
@@ -139,6 +248,7 @@ def exercise_legacy_rollback(env):
     _guard(env)
     prototype = _prototype()
     before = _snapshot(env, True)
+    reference_before = _reference_state(env)
     class InjectedFailure(Exception):
         pass
     try:
@@ -151,6 +261,7 @@ def exercise_legacy_rollback(env):
         raise AssertionError('Failure seam was not reached.')
     env.invalidate_all()
     assert _snapshot(env, True) == before
+    assert _reference_state(env) == reference_before
     return {'rollback_after_ddl': 'PASS', 'old_source_identity_unchanged': True}
 
 
@@ -162,6 +273,7 @@ def verify_upgraded(env):
     assert value, 'Synthetic old-install fixture is required.'
     facts = json.loads(value)
     assert _snapshot(env, False) == facts['snapshot'], 'Lineage changed during real registry upgrade.'
+    _assert_reference_fixture(env, facts, old=False)
     assert prototype.verify_transition(env.cr)['transition_lineage'] == 'PASS'
     service = env['baseer.bwork.service'].with_user(facts['admin_id']).with_company(facts['company_id'])
     assert service._v2_send(facts['room_id'], facts['text_payload']) == facts['text_ack']
@@ -320,16 +432,51 @@ def verify_upgraded_procurement(env):
             'replay_same_request': 'PASS', 'no_financial_or_stock_document_change': 'PASS'}
 
 
+def _normalize_proven_restore_event_shape(expected, actual):
+    """One finite pg_dump/restore spelling pair, never upgrade normalization.
+
+    Pinned PostgreSQL parse/deparse and all 48 nullable branch classes proved
+    equality (canonical SHA256 ee9b3121d0df3cfb3ad357c4af38fd7e8a28189b1b3e63d3409a156e83ea6c71);
+    the corrupted 'message' branch failed both proofs. No generic cast removal.
+    """
+    table = 'baseer_bwork_push_event'
+    name = 'baseer_bwork_push_event_event_source_shape'
+    key = 'baseer_bwork.constraint_' + name
+    original = ("CHECK (task_id IS NOT NULL AND message_id IS NULL AND task_revision IS NOT NULL AND "
+                "(event_kind::text = ANY (ARRAY['assigned'::character varying, 'updated'::character varying, "
+                "'reminder'::character varying]::text[])) OR task_id IS NULL AND message_id IS NOT NULL "
+                "AND task_revision IS NULL AND event_kind::text = 'message'::text)")
+    restored = ("CHECK (task_id IS NOT NULL AND message_id IS NULL AND task_revision IS NOT NULL AND "
+                "(event_kind::text = ANY (ARRAY['assigned'::character varying::text, 'updated'::character varying::text, "
+                "'reminder'::character varying::text])) OR task_id IS NULL AND message_id IS NOT NULL "
+                "AND task_revision IS NULL AND event_kind::text = 'message'::text)")
+    left = expected.get('constraint_identities', {}).get(key, {})
+    right = actual.get('constraint_identities', {}).get(key, {})
+    if (left.get('name') != name or right.get('name') != name
+            or left.get('shape') != original or right.get('shape') != restored):
+        return
+    expected_row, actual_row = [table, name, original], [table, name, restored]
+    if (expected.get('constraint_shapes', []).count(expected_row) != 1
+            or actual.get('constraint_shapes', []).count(actual_row) != 1):
+        return
+    actual['constraint_shapes'][actual['constraint_shapes'].index(actual_row)][2] = original
+    right['shape'] = original
+
+
 def verify_legacy_restored(env):
     """Paired dump+filestore restore: logical IDs same, PG OIDs may rebase."""
     _guard(env)
     from odoo.exceptions import AccessError
     facts = _facts(env)
+    _assert_reference_fixture(env, facts, old=True)
     expected = facts['snapshot']
     actual = _snapshot(env, True)
     for value in (expected, actual):
         value['tables'] = {table: facts[1:] for table, facts in value['tables'].items()}
         value.pop('constraints')  # Physical OIDs legitimately change on pg_restore.
+        for identity in value['constraint_identities'].values():
+            identity.pop('physical_oid')  # Only physical identity rebases; all metadata IDs remain strict.
+    _normalize_proven_restore_event_shape(expected, actual)
     assert expected == actual, 'Restored logical IDs/constraint shapes differ.'
     prototype = _prototype()
     env.cr.execute('SELECT 1 FROM ir_config_parameter WHERE key=%s', [prototype.LEDGER_KEY])

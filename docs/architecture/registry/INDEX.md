@@ -1,5 +1,31 @@
 # سجل معمارية بصير أودو
 
+## BCR-REF-20261020 — إصلاح مالك تخزين Reference (اختبار معزول فقط)
+
+الأساس المدموج6babe78a/tree076858e7؛ الفرعcodex/bwork-reference-storage-fix-20261020.
+ARCHITECTURAL محدود داخل محول الأسماء وخريطته وفحوصه، لا تغيير API أو تطبيق أو أدوار.
+التشغيل39411716388 فشل عند unsupported_reference_storage؛ جرد قاعدة Odoo19 اصطناعية
+أكد أن ir.actions.server.resource_ref مخزن في ir_act_server، لا ir_actions_server المشتق.
+الإصلاح يثبت مالك التخزين صراحةً مع بقاء unknown/identifier/type/collision STOP؛
+إعادة39414532775 كشفت sale.report.order_reference ذا store metadata لكن query مشتق بلا علاقة مادية؛
+إثبات ORM للصورة والـclosure المثبتين يحصر targets في sale.order/pos.order. التصنيف المقترح
+دقيق بالـXMLID وهوية الحقل وغياب العلاقة/العمود؛ أي اختلاف STOP، والأربعة المادية لا تُتخطى.
+اختبار RED/GREEN ثم إعادة rehearsal old→new/fresh/paired restore على مصدر مجمد.
+run39416405958 نجحrollback03، وتوقفnative04 قبلcallback لتوقيع الوسيط؛ يُصحح الاسم إلىversion
+بلا تغيير جسم الترحيل، ودليل مشغّل Odoo الأصلي RED/GREEN يسبق إعادة التجربة.
+run39417360446 وصلcallback ثم كشف تقسيمdomain/context عندالفاصلة؛5090metadata readonly scan
+أثبت434view failures من التقسيم، لذلك groups وحدها قائمة فاصلة وباقيattributes تعبير كامل.
+run39418547372 حمّلregistry ثمرفضlineage: localpairedrepro أثبت12constraint OIDs
+أعيدإنشاؤها و30generatedXMLID تغيرت؛ مانعP1 لايُطبّع. يلزم نقلconstraint_ XMLIDs
+الدقيقة معphysical/metadata names وحفظجميعIDs، ثمإعادةالفحص؛ لاQA/Live.
+إصلاحconstraint XMLIDs اجتاز20عقدًا وnative-u محليًا:32هوية و123قيدًا محفوظة
+وكلsnapshotkeys متطابقة؛ المراجعةالمستقلة تجيزrehearsalالكامل فقط،لا قبولنشر بعد.
+run39420564473 اجتازupgrade/bytes/permissions/latefailure،وبقيrestorecast-formatواحد؛
+ثبتتكافؤهnativePG/48حالة،وقبولزوجصياغةمحددrestore-onlyاجتاز21عقدًا وactualrestore،
+بدونمساسrawupgrade/IDs/122قيدًا آخر؛fresh/nextوالنتيجةالكاملةتنتظرنفسالمرشحالمجمد.
+لا QA/Live/APK أو تخفيف حماية أو دمج في هذا التفويض. الأدلة الحية في
+output/bwork-reference-storage-fix-20261020/progress.json، والعقد الأصلي أدناه معاد استخدامه.
+
 ## BCR-20261020 — توحيد BChat داخليًا إلى BWork (مرشح مصدر محلي)
 
 الأساس3b0feb1 ومصدر QA المثبتd989a711؛ الفرعcodex/bwork-canonical-rename-20261020.

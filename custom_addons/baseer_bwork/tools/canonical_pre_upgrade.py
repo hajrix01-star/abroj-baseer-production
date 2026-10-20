@@ -278,9 +278,11 @@ def rewrite_metadata(value, names, *, xml=False):
                           'context', 'invisible', 'readonly', 'required', 'filter_domain', 'default_order'):
             if attribute in node.attrib:
                 old = node.attrib[attribute]
-                # Views may have comma-separated group XMLIDs, not business text.
+                # Only groups is a comma-separated XMLID list. Expression
+                # attributes must stay whole: commas can be inside valid
+                # domains, contexts, predicates or quoted literal values.
                 parts = []
-                for part in old.split(','):
+                for part in old.split(',') if attribute == 'groups' else [old]:
                     module, separator, tail = part.partition('.')
                     target = names.get(part)
                     if target is None and module.startswith('baseer_bchat') and module in names:
@@ -313,10 +315,39 @@ def _metadata_expressions(cr, mapping, names):
                 cr.execute(f'UPDATE {identifier(table)} SET {identifier(column)}=%s WHERE id=%s', [new, record_id])
 
 
-def _reference_fields(cr, model_names):
-    cr.execute("SELECT model,name FROM ir_model_fields WHERE ttype='reference' AND store IS TRUE")
-    for model, column in cr.fetchall():
-        table = model_names.get(model, model).replace('.', '_')
+def _verify_derived_reference(cr, field_id, model, column, classification):
+    """One proven native query projection, never a generic missing-table skip."""
+    relation = classification['relation']
+    identifier(relation)
+    identifier(column)
+    module, name = classification['field_xmlid'].split('.', 1)
+    cr.execute('''SELECT f.id,f.model,f.name,f.ttype,f.store
+                    FROM ir_model_data d JOIN ir_model_fields f ON f.id=d.res_id
+                   WHERE d.module=%s AND d.name=%s AND d.model='ir.model.fields' ''', [module, name])
+    if cr.fetchall() != [(field_id, model, column, 'reference', True)]:
+        _stop('unverified_derived_reference_identity')
+    # to_regclass rejects tables AND views; a surprising new physical projection
+    # must be reviewed rather than silently left unconverted.
+    if _exists(cr, relation) or _column_type(cr, relation, column) is not None:
+        _stop('unexpected_derived_reference_storage')
+
+
+def _reference_fields(cr, model_names, mapping):
+    # ir_model_fields does not expose a model's custom _table. Resolve only
+    # catalog-proven owner+field exceptions; unknown storage must still STOP.
+    overrides = {(row['model'], row['field']): row['table']
+                 for row in mapping['reference_storage_overrides']}
+    if len(overrides) != len(mapping['reference_storage_overrides']):
+        _stop('duplicate_reference_storage')
+    derived = {(row['model'], row['field']): row for row in mapping['reference_derived_nonphysical']}
+    if len(derived) != len(mapping['reference_derived_nonphysical']) or set(derived) & set(overrides):
+        _stop('overlapping_reference_storage')
+    cr.execute("SELECT id,model,name FROM ir_model_fields WHERE ttype='reference' AND store IS TRUE")
+    for field_id, model, column in cr.fetchall():
+        if (model, column) in derived:
+            _verify_derived_reference(cr, field_id, model, column, derived[(model, column)])
+            continue
+        table = overrides.get((model, column), model_names.get(model, model).replace('.', '_'))
         if not _IDENTIFIER.fullmatch(table) or not _IDENTIFIER.fullmatch(column):
             _stop('unsupported_reference_identifier')
         kind = _column_type(cr, table, column)
@@ -422,11 +453,40 @@ def _constraint_metadata(cr, mapping, object_names):
     _rename_exact_column_values(cr, 'ir_model_constraint', 'name', object_names)
 
 
+def _constraint_xmlid_targets(mapping, module_names, model_names):
+    """Exact native generated identities for the reviewed 26+4 constraints."""
+    targets = {}
+    for row in mapping['constraints']:
+        if row['model'] in model_names:
+            owner = 'baseer_bchat'
+        elif row['model'] == 'baseer.procurement.request':
+            owner = 'baseer_bchat_procurement'
+        else:
+            _stop('unsupported_constraint_owner')
+        old_table = row['model'].replace('.', '_')
+        new_table = model_names.get(row['model'], row['model']).replace('.', '_')
+        old = 'constraint_' + pg_name(old_table + '_' + row['old'])
+        new = 'constraint_' + pg_name(new_table + '_' + row['new'])
+        target = (module_names[owner], new)
+        for key in ((owner, old), target):
+            if key in targets:
+                _stop('duplicate_constraint_xmlid_mapping')
+            targets[key] = target
+    return targets
+
+
 def _xmlid_target(module, name, model, mapping, module_names, model_names, field_names):
     explicit = {x['old']: x['new'] for x in mapping['xmlids']}
     target = explicit.get(module + '.' + name, module_names.get(module, module) + '.' + name)
     target_module, target_name = target.split('.', 1)
     if module != '__export__':  # User export identities are opaque compatibility IDs.
+        if model == 'ir.model.constraint':
+            generated = _constraint_xmlid_targets(mapping, module_names, model_names)
+            if (module, name) in generated:
+                return generated[(module, name)]
+            owners = {key[0] for key in generated}
+            if module in owners and name.startswith('constraint_'):
+                _stop('unsupported_constraint_xmlid')
         for old, new in model_names.items():
             old_u, new_u = old.replace('.', '_'), new.replace('.', '_')
             if target_name == 'model_' + old_u:
@@ -589,9 +649,9 @@ def verify_transition(cr):
     return {'transition_lineage': 'PASS', 'mapping_sha256': digest, 'mode': 'old-installed'}
 
 
-def migrate(cr, installed_version):
+def migrate(cr, version):
     """Native Odoo entrypoint; caller MUST keep all workers quiesced."""
-    del installed_version
+    del version
     mapping, digest = load_mapping()
     cr.execute('SELECT pg_advisory_xact_lock(hashtextextended(%s,0))', [LOCK_KEY])
     _safety(cr, mapping)
@@ -646,7 +706,7 @@ def migrate(cr, installed_version):
     _xmlids(cr, mapping, module_names, model_names, field_names)
     for table, column in mapping['metadata_exact_columns']:
         _rename_exact_column_values(cr, table, column, model_names)
-    _reference_fields(cr, model_names)
+    _reference_fields(cr, model_names, mapping)
     names = {**model_names, **module_names, **mapping['identifiers'],
              **{x['old']: x['new'] for x in mapping['xmlids']}}
     for fields in field_names.values():

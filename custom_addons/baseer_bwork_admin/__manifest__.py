@@ -1,7 +1,7 @@
 {
     'name': 'BWork Administration',
     'summary': 'Scoped, read-only BWork operations and logical storage metadata',
-    'version': '19.0.1.0.0',
+    'version': '19.0.1.0.1',
     'category': 'Productivity',
     'license': 'LGPL-3',
     'depends': ['baseer_bchat'],

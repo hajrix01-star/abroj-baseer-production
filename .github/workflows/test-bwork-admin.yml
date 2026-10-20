@@ -48,7 +48,7 @@ jobs:
             exit 1
           fi
           grep -F '0 failed, 0 error(s)' bwork-admin-runtime.log
-          test "$(grep -Ec 'Starting (BWorkAdminCase|BWorkAdminHttpCase|BWorkPushPrivacyCase)\.' bwork-admin-runtime.log)" -eq 16
+          test "$(grep -Ec 'Starting (BWorkAdminCase|BWorkAdminHttpCase|BWorkPushPrivacyCase)\.' bwork-admin-runtime.log)" -eq 17
       - name: Preserve isolated runtime evidence
         if: always()
         uses: actions/upload-artifact@v4

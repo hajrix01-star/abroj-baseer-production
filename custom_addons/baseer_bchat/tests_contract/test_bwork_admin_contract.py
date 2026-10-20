@@ -123,7 +123,7 @@ class BWorkAdminPureContract(unittest.TestCase):
         count = sum(1 for path, names in sources for group in ast.parse(path.read_text(encoding='utf-8')).body
                     if isinstance(group, ast.ClassDef) and group.name in names
                     for method in group.body if isinstance(method, ast.FunctionDef) and method.name.startswith('test_'))
-        self.assertEqual(count, 16)
+        self.assertEqual(count, 17)
 
     def test_actual_production_fcm_method_omits_every_preview_for_bwork(self):
         send = source_function('BChatPushEvent', '_fcm_send')
@@ -154,7 +154,7 @@ class BWorkAdminPureContract(unittest.TestCase):
         self.assertIn('postgres@sha256:f1c3376c', workflow)
         self.assertIn('odoo@sha256:f99ffac9', workflow)
         self.assertIn('BWorkPushPrivacyCase', workflow)
-        self.assertIn('-eq 16', workflow)
+        self.assertIn('-eq 17', workflow)
         self.assertIn('0 failed, 0 error(s)', workflow)
 
 

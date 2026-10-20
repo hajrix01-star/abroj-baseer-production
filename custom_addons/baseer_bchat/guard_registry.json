@@ -307,6 +307,7 @@
         ".github/workflows/test-bwork-admin.yml",
         "custom_addons/baseer_bchat/tests_contract/test_bwork_admin_contract.py",
         "custom_addons/baseer_bchat/tests_contract/test_bwork_branding.py",
+        "custom_addons/baseer_bchat/migrations/19.0.0.4.17/post-migrate.py",
         "custom_addons/baseer_bchat/static/description/icon.png",
         "custom_addons/baseer_bchat/__manifest__.py",
         "custom_addons/baseer_bchat/views/**",

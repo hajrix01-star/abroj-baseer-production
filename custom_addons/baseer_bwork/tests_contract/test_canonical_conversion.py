@@ -229,6 +229,34 @@ class CanonicalConversionContract(unittest.TestCase):
         self.assertEqual(upgrade.rewrite_metadata('body contains baseer.bchat.message', names), 'body contains baseer.bchat.message')
         self.assertEqual(upgrade.rewrite_metadata({'en_US': xml}, names, xml=True)['en_US'], rewritten)
 
+    def test_xml_expression_commas_remain_whole_and_only_group_lists_split(self):
+        names = {'bchat_media': 'bwork_media',
+                 'baseer_bchat.group_bchat_manager': 'baseer_bwork.group_bwork_manager'}
+        xml = '''<form string="BChat historical evidence">
+          <field name="bchat_media" filter_domain="['|', ('name','ilike',self), ('type','ilike',self)]"
+            domain="[('bchat_media', '=', True), ('name', '=', 'literal,comma')]"
+            context="{'default_bchat_media': 'literal,comma', 'value': bchat_media}"
+            invisible="bchat_media in [False, None]"
+            groups="base.group_user,baseer_bchat.group_bchat_manager"/>
+          <label string="bchat_media, unchanged prose"/>
+        </form>'''
+        rewritten = upgrade.rewrite_metadata(xml, names, xml=True)
+        root = upgrade.ElementTree.fromstring(rewritten)
+        field = root.find('field')
+        self.assertEqual(field.attrib['filter_domain'], "['|', ('name','ilike',self), ('type','ilike',self)]")
+        self.assertEqual(field.attrib['domain'], "[('bwork_media', '=', True), ('name', '=', 'literal,comma')]")
+        self.assertEqual(field.attrib['context'], "{'default_bchat_media': 'literal,comma', 'value': bwork_media}")
+        self.assertEqual(field.attrib['invisible'], 'bwork_media in [False, None]')
+        self.assertEqual(field.attrib['groups'], 'base.group_user,baseer_bwork.group_bwork_manager')
+        self.assertEqual(root.attrib['string'], 'BChat historical evidence')
+        self.assertEqual(root.find('label').attrib['string'], 'bchat_media, unchanged prose')
+        unchanged = '<field name="name" filter_domain="[\'|\', (\'name\',\'ilike\',self), (\'type\',\'ilike\',self)]"/>'
+        self.assertEqual(upgrade.rewrite_metadata(unchanged, names, xml=True), unchanged)
+        self.assertEqual(upgrade.rewrite_metadata({'en_US': xml}, names, xml=True)['en_US'], rewritten)
+        for malformed in ('<form domain="[(\'bchat_media\', \'=\', True)"/>', '<form>'):
+            with self.subTest(malformed=malformed), self.assertRaises(upgrade.MigrationStopped):
+                upgrade.rewrite_metadata(malformed, names, xml=True)
+
     def test_reference_storage_resolves_native_nondefault_table_without_skipping_fields(self):
         mapping, _ = upgrade.load_mapping()
         self.assertEqual(mapping['reference_storage_overrides'], [

@@ -13,6 +13,8 @@ ARCHITECTURAL محدود داخل محول الأسماء وخريطته وفح�
 اختبار RED/GREEN ثم إعادة rehearsal old→new/fresh/paired restore على مصدر مجمد.
 run39416405958 نجحrollback03، وتوقفnative04 قبلcallback لتوقيع الوسيط؛ يُصحح الاسم إلىversion
 بلا تغيير جسم الترحيل، ودليل مشغّل Odoo الأصلي RED/GREEN يسبق إعادة التجربة.
+run39417360446 وصلcallback ثم كشف تقسيمdomain/context عندالفاصلة؛5090metadata readonly scan
+أثبت434view failures من التقسيم، لذلك groups وحدها قائمة فاصلة وباقيattributes تعبير كامل.
 لا QA/Live/APK أو تخفيف حماية أو دمج في هذا التفويض. الأدلة الحية في
 output/bwork-reference-storage-fix-20261020/progress.json، والعقد الأصلي أدناه معاد استخدامه.
 

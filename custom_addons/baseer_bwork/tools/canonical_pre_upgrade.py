@@ -278,9 +278,11 @@ def rewrite_metadata(value, names, *, xml=False):
                           'context', 'invisible', 'readonly', 'required', 'filter_domain', 'default_order'):
             if attribute in node.attrib:
                 old = node.attrib[attribute]
-                # Views may have comma-separated group XMLIDs, not business text.
+                # Only groups is a comma-separated XMLID list. Expression
+                # attributes must stay whole: commas can be inside valid
+                # domains, contexts, predicates or quoted literal values.
                 parts = []
-                for part in old.split(','):
+                for part in old.split(',') if attribute == 'groups' else [old]:
                     module, separator, tail = part.partition('.')
                     target = names.get(part)
                     if target is None and module.startswith('baseer_bchat') and module in names:

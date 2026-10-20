@@ -3,6 +3,7 @@ import type { LoginStage, NetworkFailure } from './loginDiagnostics';
 import type { ArchiveEdge, ArchiveQuery, ArchiveSlice, HistoryArchive, HistoryScope } from './HistoryArchive.ts';
 import { ARCHIVE_LIMITS, ArchiveError } from './HistoryArchive.ts';
 import { MemoryHistoryArchive } from './MemoryHistoryArchive.ts';
+import { decodeGallery, galleryQuery, GALLERY_LIMITS, type MediaGalleryPage, type MediaGalleryQuery } from './MediaGallery.ts';
 export interface Storage {
   getItem(key: string): Promise<string | null>;
   setItem(key: string, value: string): Promise<void>;
@@ -112,6 +113,8 @@ export class ChatEngine {
   private historyPumps = new Map<string, Promise<History>>();
   private windowVersions = new Map<string, number>();
   private hiddenIds = new Map<string, Set<number>>();
+  private galleryAssociations = new Map<string, Map<number, Message>>();
+  private galleryPages = new Map<string, MediaGalleryPage>();
   private epoch = 0;
   private abort = new AbortController();
   private work: Promise<unknown> = Promise.resolve();
@@ -172,6 +175,7 @@ export class ChatEngine {
     this.refreshing = null; this.pumping = null; this.state = 'signed_out';
     this.browsing.clear(); this.historyPumps.clear(); this.windowVersions.clear();
     this.hiddenIds.clear();
+    this.galleryAssociations.clear(); this.galleryPages.clear();
     this.accessLocked = false;
     this.receiptWork = Promise.resolve(); this.receiptPumps.clear(); this.receiptAcks.clear();
     return this.epoch;
@@ -463,6 +467,7 @@ export class ChatEngine {
       this.fence(e);
       for (const old of this.roomRows) if (!bootstrap.company_ids.includes(old.company_id)) {
         const key = this.scope(old); revokedScopes.add(key); this.histories.delete(key);
+        this.clearGalleryScope(key);
       }
       this.roomRows = this.roomRows.filter(room => bootstrap.company_ids.includes(room.company_id));
       for (const [uuid, pending] of this.queue) {
@@ -475,6 +480,9 @@ export class ChatEngine {
       if (bootstrap.permissions.media !== true) for (const [key, history] of this.histories) {
         const messages = history.messages.map(message => { const { media: _media, ...textOnly } = message; return textOnly; });
         this.histories.set(key, { ...history, messages }); stripMedia.add(key);
+      }
+      if (bootstrap.permissions.media !== true || bootstrap.permissions.chat_view !== true) {
+        this.galleryAssociations.clear(); this.galleryPages.clear();
       }
     };
     // Restrict visible memory before waiting behind any pending disk operation.
@@ -523,6 +531,7 @@ export class ChatEngine {
   private async dropRoom(room: Room, e: number) {
     this.fence(e); const scope = this.scope(room);
     this.histories.delete(scope); this.roomRows = this.roomRows.filter(r => !(r.id === room.id && r.company_id === room.company_id && r.membership_id === room.membership_id));
+    this.clearGalleryScope(scope);
     this.browsing.delete(scope); await this.reconcileArchive(e);
     for (const [key, p] of this.queue) if (p.room_id === room.id && p.company_id === room.company_id && p.membership_id === room.membership_id) this.queue.delete(key);
     for (const key of this.receiptAcks.keys()) if (key.startsWith(scope)) this.receiptAcks.delete(key);
@@ -638,9 +647,78 @@ export class ChatEngine {
     const scopeGuard = this.archiveGuard(e, room);
     const guard = () => { scopeGuard(); if (this.account?.permissions.media !== true) throw new ChatError('forbidden', 403); };
     guard();
+    await this.hiddenMessages(room); guard();
+    const visible = (message: Message | null | undefined): Message | null => {
+      guard();
+      return message && !(message.author_user_id === this.account?.user_id && this.hiddenIds.get(this.scope(room))?.has(message.id)) ? copy(message) : null;
+    };
     const hot = this.histories.get(this.scope(room))?.messages.find(message => message.media?.id === mediaId);
-    if (hot) return copy(hot);
-    return this.serial(async () => { guard(); const message = await this.archive.findMedia(this.archiveScope(room), mediaId, guard); guard(); return message ? copy(message) : null; });
+    if (hot) return visible(hot);
+    const sparse = this.galleryAssociations.get(this.scope(room))?.get(mediaId);
+    if (sparse) return visible(sparse);
+    return this.serial(async () => { guard(); const message = await this.archive.findMedia(this.archiveScope(room), mediaId, guard); return visible(message); });
+  }
+  /** Persist only an internally resolved canonical association, never caller metadata. */
+  async retainMediaAssociation(value: Room | number, mediaId: number, keep: boolean): Promise<void> {
+    const room = this.room(value), e = this.epoch, scopeGuard = this.archiveGuard(e, room);
+    const guard = () => { scopeGuard(); if (this.account?.permissions.media !== true) throw new ChatError('forbidden', 403); };
+    guard();
+    if (!id(mediaId) || typeof keep !== 'boolean') throw new ChatError('invalid_media');
+    const retain = this.archive.retainMediaAssociation;
+    if (!retain) throw new ChatError('media_storage_unavailable');
+    const message = keep ? await this.mediaAssociation(room, mediaId) : null; guard();
+    if (keep && !message) throw new ChatError('media_unavailable');
+    await this.serial(async () => { guard(); await retain.call(this.archive, this.archiveScope(room), message, mediaId, guard); guard(); });
+  }
+  private clearGalleryScope(scope: string): void {
+    this.galleryAssociations.delete(scope);
+    for (const key of this.galleryPages.keys()) if (key.startsWith(scope)) this.galleryPages.delete(key);
+  }
+  /** Bounded sparse canonical associations, never committed as history pages or receipts. */
+  async mediaGallery(value: Room | number, requested: MediaGalleryQuery = {}): Promise<MediaGalleryPage> {
+    const room = this.room(value), e = this.epoch, guard = this.archiveGuard(e, room), scope = this.scope(room);
+    const mediaGuard = () => { guard(); if (this.account?.permissions.media !== true) throw new ChatError('forbidden', 403); };
+    mediaGuard();
+    let query: ReturnType<typeof galleryQuery>;
+    try { query = galleryQuery(requested); } catch { throw new ChatError('invalid_gallery'); }
+    const key = `${scope}gallery/${JSON.stringify(query)}`;
+    const hideOwned = async (page: MediaGalleryPage): Promise<MediaGalleryPage> => {
+      const hidden = new Set(await this.hiddenMessages(room)); mediaGuard();
+      return { ...copy(page), items: page.items.filter(item => !(item.author_user_id === this.account?.user_id && hidden.has(item.id))).map(copy) };
+    };
+    if (this.disconnected) {
+      const saved = this.galleryPages.get(key);
+      if (!saved) throw new ChatError('gallery_offline');
+      return hideOwned({ ...saved, cached: true });
+    }
+    try {
+      const params = new URLSearchParams({ kind: query.kind, order: query.order, limit: String(query.limit) });
+      if (query.cursor) params.set('cursor', query.cursor);
+      const raw = await this.request(`/bchat/api/v2/rooms/${room.id}/media?${params}`, e); mediaGuard();
+      let page: MediaGalleryPage;
+      try { page = decodeGallery(raw, room, query); } catch { throw new ChatError('invalid_gallery'); }
+      const visible = await hideOwned(page); mediaGuard();
+      const associations = this.galleryAssociations.get(scope) ?? new Map<number, Message>();
+      for (const message of visible.items) {
+        const id = Number(message.media!.id); associations.delete(id); associations.set(id, copy(message));
+      }
+      this.galleryAssociations.delete(scope); this.galleryAssociations.set(scope, associations);
+      let size = [...this.galleryAssociations.values()].reduce((count, rows) => count + rows.size, 0);
+      for (const [oldScope, rows] of this.galleryAssociations) {
+        while (size > GALLERY_LIMITS.associations && rows.size) { rows.delete(rows.keys().next().value!); size--; }
+        if (!rows.size) this.galleryAssociations.delete(oldScope);
+      }
+      this.galleryPages.delete(key); this.galleryPages.set(key, copy(page));
+      while (this.galleryPages.size > 6) this.galleryPages.delete(this.galleryPages.keys().next().value!);
+      return visible;
+    } catch (error) {
+      if (e === this.epoch && denied(error)) {
+        this.clearGalleryScope(scope);
+        if (error instanceof ChatError && error.status === 401) await this.invalidate(e);
+        else await this.serial(() => this.dropRoom(room, e));
+      }
+      throw error;
+    }
   }
   async history(value: Room | number, beforeId?: number): Promise<History> {
     const room = this.room(value); const e = this.epoch;

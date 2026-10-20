@@ -63,4 +63,8 @@
         <field name="name">BWork Administration</field><field name="res_model">baseer.bwork.admin.console</field><field name="view_mode">form</field><field name="view_id" ref="console_form"/>
     </record>
     <menuitem id="admin_menu" name="Administration" parent="baseer_bchat.menu_bchat_root" action="console_action" groups="baseer_bchat.group_bchat_manager" sequence="5"/>
+    <record id="media_gallery_action" model="ir.actions.client">
+        <field name="name">Media gallery</field><field name="tag">baseer_bwork_admin.media_gallery</field>
+    </record>
+    <menuitem id="media_gallery_menu" name="Media gallery" parent="baseer_bchat.menu_bchat_root" action="media_gallery_action" groups="baseer_bchat.group_bchat_manager" sequence="6"/>
 </odoo>

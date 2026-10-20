@@ -24,6 +24,9 @@ import { LeadershipSnapshots } from './leadership/LeadershipSnapshots';
 import type { SnapshotAuthority } from './leadership/LeadershipSnapshots';
 import { NotificationsEngine, notificationScope, type NotificationAuthority } from './notifications/NotificationsEngine';
 import { nativePush } from './notifications/native';
+import { mediaCacheTotals } from './storage/MediaCacheContracts';
+import type { MediaCacheTotals, MediaCacheOverview, MediaCacheCleanPlan, MediaCacheCleanResult, MediaOfflineState } from './storage/MediaCacheContracts';
+export type { MediaCacheTotals, MediaCacheOverview, MediaCacheCleanPlan, MediaCacheCleanResult, MediaOfflineState } from './storage/MediaCacheContracts';
 
 export const config = Object.freeze({
   origin: (process.env.EXPO_PUBLIC_ODOO_ORIGIN ?? '').trim(),
@@ -394,14 +397,202 @@ async function loadActorFiles(actor: string, epoch = generation): Promise<ActorF
 async function capacity(actor: string, additional: number, stage = false, additionalFiles = additional > 0 ? 1 : 0): Promise<void> {
   const epoch = generation, state = await loadActorFiles(actor, epoch);
   if (stage) { if (state.stageBytes + additional > MAX_STAGED || state.stages.size >= 200 && additional > 0) throw new ChatError('media_quota'); return; }
+  const kept=new Set((await mediaCacheCatalog.pins(catalogActor(actor))).map(pin=>pin.uri));
   const victims = state.cache.values();
   while (state.cacheBytes + additional > MAX_CACHE || state.cache.size + additionalFiles > MAX_CACHE_FILES) {
     let victim: CacheEntry | undefined;
-    for (const item of victims) if (!mediaPins.get(item.uri)?.size) { victim = item; break; }
+    for (const item of victims) if (!mediaPins.get(item.uri)?.size&&!kept.has(item.uri)) { victim = item; break; }
     if (!victim) throw new ChatError('media_quota');
     if (epoch !== generation) throw new ChatError('stale_session');
     await removeOwned(victim.uri);
   }
+}
+
+// Destructive cache operations have their own bounded opaque plans. No UI URI
+// reaches deletion, and no cache plan can grow after the user's confirmation.
+const CLEAN_TTL=5*60*1000, UNUSED_AGE=30*24*60*60*1000, CLEAN_BATCH=100;
+type CacheAuthority={epoch:number;stamp:string;actor:string;rooms:Room[]};
+type CacheVictim={uri:string;bytes:number;sha256:string;usedAt:number;association:string};
+type CachePlanRecord={view:MediaCacheCleanPlan;authority:CacheAuthority;createdAt:number;victims:CacheVictim[]};
+const cachePlans=new Map<string,CachePlanRecord>(),automaticCacheWork=new Set<string>();
+function cacheAuthorityStamp():string {
+  const current=getEngine(),identity=current.identity;
+  if(AppState.currentState!=='active'||!identity||identity.permissions.chat_view!==true||identity.permissions.media!==true||!current.accountScope)throw new ChatError('forbidden',403);
+  const rooms=current.rooms(); // Checks the remembered account lease as well.
+  return JSON.stringify([generation,current.accountScope,identity.database,identity.user_id,identity.company_ids,identity.permissions,rooms.map(room=>[room.company_id,room.id,room.membership_id])]);
+}
+function cacheAuthorityGuard(value:CacheAuthority):void {if(value.epoch!==generation||value.stamp!==cacheAuthorityStamp())throw new ChatError('stale_session');}
+async function cacheAuthority():Promise<CacheAuthority>{
+  const stamp=cacheAuthorityStamp(),epoch=generation,current=getEngine(),identity=current.identity!;
+  const actor=await actorDirectory(`${new URL(config.origin).origin}|${config.database}|${identity.user_id}`);
+  const value={epoch,stamp,actor,rooms:current.rooms()};cacheAuthorityGuard(value);return value;
+}
+function finalCacheFile(uri:string,authority:CacheAuthority):{room:Room;mediaId:number;preview:boolean}|null {
+  if(!owned(uri)||!uri.startsWith(authority.actor))return null;
+  const parts=uri.slice(authority.actor.length).split('/'),scopeMatch=scopePattern.exec(parts[0]??''),file=/^media-([1-9][0-9]*)(-preview\.jpg|\.(?:jpg|png|webp|m4a|pdf|txt|docx|xlsx))$/.exec(parts[1]??'');
+  if(parts.length!==2||!scopeMatch||!file||!Number.isSafeInteger(Number(file[1])))return null;
+  const room=authority.rooms.find(row=>row.company_id===Number(scopeMatch[1])&&row.id===Number(scopeMatch[2])&&row.membership_id===Number(scopeMatch[3]));
+  return room?{room,mediaId:Number(file[1]),preview:file[2]==='-preview.jpg'}:null;
+}
+function activeCacheFile(uri:string,actor:string):boolean {
+  return !!mediaPins.get(uri)?.size||reservations.has(uri)||[...mediaDownloadReservations.values()].some(item=>item.actor===actor)
+    ||[...mediaDownloads.keys()].some(key=>key.includes(`/${uri}/`));
+}
+async function cacheAssociation(authority:CacheAuthority,uri:string):Promise<{fingerprint:string;media:ReturnType<typeof trustedMedia>;preview:boolean}|null>{
+  const parsed=finalCacheFile(uri,authority);if(!parsed)return null;
+  const message=await getEngine().mediaAssociation(parsed.room,parsed.mediaId);cacheAuthorityGuard(authority);
+  if(!message?.media)return null;
+  const media=trustedMedia({api_version:2,messages:[message],next_before_id:null},{id:parsed.mediaId});
+  const suffix=parsed.preview?'-preview.jpg':extensions[media.mime];
+  if(!suffix||!uri.endsWith(`media-${media.id}${suffix}`)||parsed.preview&&(media.kind!=='image'||media.thumbnail_available!==true))return null;
+  return {fingerprint:JSON.stringify([message.id,media.id,media.kind,media.mime,media.size,media.sha256,media.name,media.thumbnail_available]),media,preview:parsed.preview};
+}
+async function cleanupCandidate(authority:CacheAuthority,entry:{uri:string;bytes:number;sha256:string|null;usedAt:number},mode:'all'|'unused30',now:number):Promise<CacheVictim|null>{
+  cacheAuthorityGuard(authority);
+  if(!finalCacheFile(entry.uri,authority)||!Number.isSafeInteger(entry.bytes)||entry.bytes<=0||entry.bytes>MAX_FILE
+    ||!entry.sha256||!/^[a-f0-9]{64}$/.test(entry.sha256)||!Number.isSafeInteger(entry.usedAt)||entry.usedAt<=0||entry.usedAt>now
+    ||mode==='unused30'&&now-entry.usedAt<UNUSED_AGE||activeCacheFile(entry.uri,authority.actor))return null;
+  const association=await cacheAssociation(authority,entry.uri);if(!association)return null;
+  if(association.preview?entry.bytes>MAX_THUMBNAIL:entry.bytes!==association.media.size||entry.sha256!==association.media.sha256)return null;
+  const info=await FS.getInfoAsync(entry.uri);cacheAuthorityGuard(authority);
+  if(!info.exists||info.isDirectory||info.size!==entry.bytes||await hashFile(entry.uri)!==entry.sha256)return null;
+  cacheAuthorityGuard(authority);
+  const digest=catalogActor(authority.actor),latest=await mediaCacheCatalog.get(digest,entry.uri);cacheAuthorityGuard(authority);
+  if(!latest||latest.bytes!==entry.bytes||latest.sha256!==entry.sha256||latest.usedAt!==entry.usedAt)return null;
+  const finalAssociation=await cacheAssociation(authority,entry.uri);
+  if(finalAssociation?.fingerprint!==association.fingerprint)return null;
+  if(await mediaCacheCatalog.pin(digest,entry.uri)||await stagedJournalOwns(entry.uri))return null;
+  cacheAuthorityGuard(authority);
+  if(activeCacheFile(entry.uri,authority.actor)||getEngine().pending().some(item=>item.attachment?.uri===entry.uri))return null;
+  return {...entry,sha256:entry.sha256,association:association.fingerprint};
+}
+async function cacheRows(authority:CacheAuthority){
+  const rows=await mediaCacheCatalog.list(catalogActor(authority.actor));cacheAuthorityGuard(authority);
+  if(rows.length>MAX_CACHE_FILES)throw new ChatError('media_quota');
+  return rows.filter(row=>finalCacheFile(row.uri,authority));
+}
+export async function mediaCacheOverview():Promise<MediaCacheOverview>{
+  const authority=await cacheAuthority();return serialMedia(async()=>{
+    cacheAuthorityGuard(authority);const actor=catalogActor(authority.actor),rows=await cacheRows(authority),pins=new Set((await mediaCacheCatalog.pins(actor)).map(item=>item.uri));
+    let files=0,bytes=0,keptFiles=0,keptBytes=0;
+    for(const row of rows){cacheAuthorityGuard(authority);const info=await FS.getInfoAsync(row.uri);cacheAuthorityGuard(authority);
+      if(!info.exists){await mediaCacheCatalog.remove(actor,row.uri);continue;} // Repair an interrupted unlink/catalog pair; retain pin intent.
+      if(info.isDirectory||!Number.isSafeInteger(info.size)||info.size<=0||info.size>MAX_FILE)continue;
+      files++;bytes+=info.size;if(pins.has(row.uri)||activeCacheFile(row.uri,authority.actor)){keptFiles++;keptBytes+=info.size;}
+    }
+    const policy=await mediaCacheCatalog.policy(actor);cacheAuthorityGuard(authority);
+    return {total:mediaCacheTotals(files,bytes),protected:mediaCacheTotals(keptFiles,keptBytes),policy:{autoClean30Days:policy.autoClean30Days}};
+  });
+}
+export async function planMediaCacheCleanup(mode:'all'|'unused30'='all'):Promise<MediaCacheCleanPlan>{
+  if(!['all','unused30'].includes(mode))throw new ChatError('invalid_request');
+  const authority=await cacheAuthority(),createdAt=Date.now(),victims:CacheVictim[]=[];
+  if(!await mediaCacheCatalog.clock(catalogActor(authority.actor),createdAt))throw new ChatError('cache_clock_changed');
+  const rows=await cacheRows(authority);
+  for(let offset=0;offset<rows.length;offset+=CLEAN_BATCH){await serialMedia(async()=>{
+    cacheAuthorityGuard(authority);
+    for(const row of rows.slice(offset,offset+CLEAN_BATCH)){const victim=await cleanupCandidate(authority,row,mode,createdAt);if(victim)victims.push(victim);}
+  });}
+  cacheAuthorityGuard(authority);
+  const id=Crypto.randomUUID(),view={id,mode,expiresAt:createdAt+CLEAN_TTL,estimated:mediaCacheTotals(victims.length,victims.reduce((sum,item)=>sum+item.bytes,0))};
+  cachePlans.clear();cachePlans.set(id,{view,authority,createdAt,victims});return {...view,estimated:{...view.estimated}};
+}
+export async function confirmMediaCacheCleanup(planId:string):Promise<MediaCacheCleanResult>{
+  const plan=cachePlans.get(planId);if(!plan)throw new ChatError('cache_plan_expired');cachePlans.delete(planId);
+  cacheAuthorityGuard(plan.authority);
+  let deletedFiles=0,deletedBytes=0,skippedFiles=0,skippedBytes=0,failedFiles=0,failedBytes=0,partial=false,offset=0;
+  const actor=catalogActor(plan.authority.actor);
+  for(;offset<plan.victims.length;offset+=CLEAN_BATCH){
+    try{await serialMedia(async()=>{
+      cacheAuthorityGuard(plan.authority);const now=Date.now();
+      if(now<plan.createdAt||now>plan.view.expiresAt||!await mediaCacheCatalog.clock(actor,now))throw new ChatError('cache_plan_expired');
+      for(const victim of plan.victims.slice(offset,offset+CLEAN_BATCH)){
+        let attempted=false;
+        try{
+          const current=await cleanupCandidate(plan.authority,victim,plan.view.mode,now);
+          if(!current||current.association!==victim.association){skippedFiles++;skippedBytes+=victim.bytes;continue;}
+          const deletionTime=Date.now();
+          if(deletionTime<now||deletionTime>plan.view.expiresAt||!await mediaCacheCatalog.clock(actor,deletionTime))throw new ChatError('cache_clock_changed');
+          cacheAuthorityGuard(plan.authority);
+          attempted=true;
+          await removeOwned(victim.uri);deletedFiles++;deletedBytes+=victim.bytes;
+        }catch(error){
+          partial=true;
+          // The unlink can succeed while its catalog write fails. Only an actual
+          // missing file proves released bytes; the next overview repairs SQL.
+          let gone=false;if(attempted)try{gone=!(await FS.getInfoAsync(victim.uri)).exists;}catch{/* Unknown release is never counted. */}
+          if(gone){deletedFiles++;deletedBytes+=victim.bytes;}else{failedFiles++;failedBytes+=victim.bytes;}
+          cacheAuthorityGuard(plan.authority);
+        }
+      }
+    });}catch{
+      partial=true;
+      const done=deletedFiles+skippedFiles+failedFiles;
+      for(const victim of plan.victims.slice(done)){skippedFiles++;skippedBytes+=victim.bytes;}
+      break;
+    }
+    if(offset+CLEAN_BATCH<plan.victims.length)await new Promise<void>(resolve=>setTimeout(resolve,0));
+  }
+  return {deleted:mediaCacheTotals(deletedFiles,deletedBytes),skipped:mediaCacheTotals(skippedFiles,skippedBytes),failed:mediaCacheTotals(failedFiles,failedBytes),partial:partial||skippedFiles>0||failedFiles>0};
+}
+export async function setMediaCachePolicy(autoClean30Days:boolean):Promise<void>{
+  if(typeof autoClean30Days!=='boolean')throw new ChatError('invalid_request');const authority=await cacheAuthority();
+  await serialMedia(async()=>{cacheAuthorityGuard(authority);await mediaCacheCatalog.setPolicy(catalogActor(authority.actor),autoClean30Days);cacheAuthorityGuard(authority);});
+}
+export async function runAutomaticMediaCacheCleanup():Promise<MediaCacheCleanResult|null>{
+  let authority:CacheAuthority;try{authority=await cacheAuthority();}catch{return null;}
+  if(automaticCacheWork.has(authority.actor))return null;automaticCacheWork.add(authority.actor);
+  try{
+    cacheAuthorityGuard(authority);
+    if(!await mediaCacheCatalog.claimAutomatic(catalogActor(authority.actor),Date.now()))return null;
+    cacheAuthorityGuard(authority);const plan=await planMediaCacheCleanup('unused30');return await confirmMediaCacheCleanup(plan.id);
+  }finally{automaticCacheWork.delete(authority.actor);}
+}
+async function offlineTarget(authority:CacheAuthority,room:Room,mediaId:number){
+  const message=await getEngine().mediaAssociation(room,mediaId);cacheAuthorityGuard(authority);
+  if(!message)throw new ChatError('media_not_cached');
+  const media=trustedMedia({api_version:2,messages:[message],next_before_id:null},{id:mediaId}),extension=extensions[media.mime];
+  if(!extension)throw new ChatError('invalid_attachment');
+  const uri=`${authority.actor}c${room.company_id}-r${room.id}-m${room.membership_id}/media-${mediaId}${extension}`;
+  if(!finalCacheFile(uri,authority))throw new ChatError('media_room_mismatch',403);
+  return {uri,media};
+}
+async function offlineFileState(authority:CacheAuthority,target:Awaited<ReturnType<typeof offlineTarget>>):Promise<MediaOfflineState>{
+  return serialMedia(async()=>{
+    cacheAuthorityGuard(authority);const pin=await mediaCacheCatalog.pin(catalogActor(authority.actor),target.uri);cacheAuthorityGuard(authority);
+    const info=await FS.getInfoAsync(target.uri);cacheAuthorityGuard(authority);
+    const available=info.exists&&!info.isDirectory&&info.size===target.media.size&&await hashFile(target.uri)===target.media.sha256;
+    cacheAuthorityGuard(authority);return {kept:!!pin,available};
+  });
+}
+export async function mediaOfflineState(room:Room,mediaId:number):Promise<MediaOfflineState>{
+  const authority=await cacheAuthority(),target=await offlineTarget(authority,room,mediaId);return offlineFileState(authority,target);
+}
+export async function setMediaOffline(room:Room,mediaId:number,keep:boolean):Promise<MediaOfflineState>{
+  if(typeof keep!=='boolean')throw new ChatError('invalid_request');
+  const authority=await cacheAuthority(),target=await offlineTarget(authority,room,mediaId);
+  if(!keep){
+    await serialMedia(async()=>{cacheAuthorityGuard(authority);await mediaCacheCatalog.keep(catalogActor(authority.actor),target.uri,target.media.sha256,false);cacheAuthorityGuard(authority);});
+    // Never call the engine's association mutex while retaining a filesystem lease transaction.
+    await getEngine().retainMediaAssociation(room,mediaId,false);cacheAuthorityGuard(authority);
+    return offlineFileState(authority,target);
+  }
+  await getEngine().retainMediaAssociation(room,mediaId,true);cacheAuthorityGuard(authority);
+  // User-requested original resolution (possibly network) is OUTSIDE serialMedia.
+  const lease=await localMediaLease(room,{id:mediaId},'original');
+  try{
+    cacheAuthorityGuard(authority);
+    await serialMedia(async()=>{
+      cacheAuthorityGuard(authority);
+      if(lease.uri!==target.uri)throw new ChatError('invalid_attachment');
+      const fresh=await offlineTarget(authority,room,mediaId);
+      if(fresh.media.sha256!==target.media.sha256||fresh.media.size!==target.media.size)throw new ChatError('attachment_changed');
+      const info=await FS.getInfoAsync(target.uri);
+      if(!info.exists||info.isDirectory||info.size!==target.media.size||await hashFile(target.uri)!==target.media.sha256)throw new ChatError('attachment_changed');
+      cacheAuthorityGuard(authority);await mediaCacheCatalog.keep(catalogActor(authority.actor),target.uri,target.media.sha256,true);cacheAuthorityGuard(authority);
+    });
+    return await mediaOfflineState(room,mediaId);
+  }finally{lease.release();}
 }
 async function hashFile(uri: string): Promise<string> { return BlobUtil.fs.hash(decodeURI(uri.replace(/^file:\/\//, '')), 'sha256'); }
 async function verifyAttachment(room: Room, attachment: Attachment): Promise<void> {
@@ -517,6 +708,7 @@ async function pruneMedia(mode: 'snapshot' | 'cacheOnly' | 'logout', expectedGen
     if (!FS.documentDirectory) return;
     const epoch = expectedGeneration;
     if (epoch !== generation) throw new ChatError('stale_session');
+    if(mode==='logout'){await mediaCacheCatalog.clearPins();if(epoch!==generation)throw new ChatError('stale_session');}
     const current = engine; const identity = current?.identity;
     let rooms: Room[] = []; let pending: Pending[] = []; let valid = false;
     try { if (identity) { rooms = current!.rooms(); pending = current!.pending(); valid = true; } } catch { /* Offline lease denies cached content, but unsent files survive. */ }
@@ -544,6 +736,13 @@ async function pruneMedia(mode: 'snapshot' | 'cacheOnly' | 'logout', expectedGen
         const keep = retainNativeFile({ filename: filename!, mode, validIdentity: valid, matchingScope, mediaRight: identity?.permissions.media === true,
           sendRight: identity?.permissions.chat_send === true, pending: staged.has(uri), reserved: !!reserved });
         if (!keep) { await removeOwned(uri); reservations.delete(uri); }
+      }
+      const pins=await mediaCacheCatalog.pins(catalogActor(actorPath));
+      for(const pin of pins){
+        if(epoch!==generation)throw new ChatError('stale_session');
+        const pinScope=pin.uri.startsWith(actorPath)?pin.uri.slice(actorPath.length).split('/')[0]:'';
+        if(mode==='logout'||valid&&(actorPath!==actor||identity?.permissions.media!==true||!permitted.has(pinScope!)))
+          await mediaCacheCatalog.keep(catalogActor(actorPath),pin.uri,pin.sha256,false);
       }
       if (actorPath === actor && mode === 'snapshot') await capacity(actor, 0);
     }

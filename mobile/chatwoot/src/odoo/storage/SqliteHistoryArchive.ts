@@ -32,9 +32,18 @@ export interface MediaCacheEntry {
 }
 export interface MediaCacheCatalog {
   list(actor: string): Promise<MediaCacheEntry[]>;
+  get(actor:string,uri:string):Promise<MediaCacheEntry|null>;
   put(actor: string, entry: MediaCacheEntry): Promise<void>;
   remove(actor: string, uri: string): Promise<void>;
   touch(actor: string, uri: string, at: number): Promise<void>;
+  pins(actor:string):Promise<{uri:string;sha256:string}[]>;
+  pin(actor:string,uri:string):Promise<{sha256:string}|null>;
+  keep(actor:string,uri:string,sha256:string,keep:boolean):Promise<void>;
+  clearPins(actor?:string):Promise<void>;
+  policy(actor:string):Promise<{autoClean30Days:boolean;highWater:number}>;
+  setPolicy(actor:string,enabled:boolean):Promise<void>;
+  clock(actor:string,now:number):Promise<boolean>;
+  claimAutomatic(actor:string,now:number):Promise<boolean>;
 }
 interface State {
   latest_id: number | null;
@@ -90,7 +99,17 @@ CREATE TABLE IF NOT EXISTS media_cache (
  PRIMARY KEY(actor,uri)
 ) WITHOUT ROWID;
 CREATE INDEX IF NOT EXISTS media_cache_lru ON media_cache(actor,used_at,uri);
-PRAGMA user_version=1;
+CREATE TABLE IF NOT EXISTS media_cache_pins (
+ actor TEXT NOT NULL, uri TEXT NOT NULL, sha256 TEXT NOT NULL, PRIMARY KEY(actor,uri)
+) WITHOUT ROWID;
+CREATE TABLE IF NOT EXISTS media_cache_policy (
+ actor TEXT PRIMARY KEY, auto_clean INTEGER NOT NULL DEFAULT 0, high_water INTEGER NOT NULL DEFAULT 0, last_auto INTEGER NOT NULL DEFAULT 0
+) WITHOUT ROWID;
+CREATE TABLE IF NOT EXISTS retained_media (
+ account TEXT NOT NULL, scope TEXT NOT NULL, media_id INTEGER NOT NULL, message_id INTEGER NOT NULL,
+ json TEXT NOT NULL, bytes INTEGER NOT NULL, PRIMARY KEY(account,scope,media_id)
+) WITHOUT ROWID;
+PRAGMA user_version=2;
 `;
 const encoder = new TextEncoder();
 const noop = () => {};
@@ -154,6 +173,7 @@ export class SqliteArchiveStore implements HistoryArchive {
     this.limits = limits;
     this.mediaCacheCatalog = {
       list: actor => this.catalogList(actor),
+      get: (actor,uri)=>this.serial(noop,async db=>{this.actor(actor);const row=await db.getFirstAsync<MediaCacheEntry>('SELECT uri,bytes,sha256,used_at AS usedAt FROM media_cache WHERE actor=? AND uri=?',actor,uri);return row?{...row}:null;}),
       put: (actor, entry) => this.catalogPut(actor, entry),
       remove: (actor, uri) =>
         this.serial(noop, async db => {
@@ -171,6 +191,25 @@ export class SqliteArchiveStore implements HistoryArchive {
             uri,
           );
         }),
+      pins: actor=>this.catalogPins(actor),
+      pin: (actor,uri)=>this.serial(noop,async db=>{this.actor(actor);const value=await db.getFirstAsync<{sha256:string}>('SELECT sha256 FROM media_cache_pins WHERE actor=? AND uri=?',actor,uri);if(value&&!/^[a-f0-9]{64}$/.test(value.sha256))throw new ArchiveError('invalid_media_cache');return value?{sha256:value.sha256}:null;}),
+      keep: (actor,uri,sha256,keep)=>this.catalogKeep(actor,uri,sha256,keep),
+      clearPins: actor=>this.serial(noop,async db=>{if(actor!==undefined){this.actor(actor);await db.runAsync('DELETE FROM media_cache_pins WHERE actor=?',actor);}else await db.runAsync('DELETE FROM media_cache_pins');}),
+      policy: actor=>this.serial(noop,async db=>{this.actor(actor);return this.catalogPolicy(db,actor);}),
+      setPolicy: (actor,enabled)=>this.serial(noop,async db=>{this.actor(actor);if(typeof enabled!=='boolean')throw new ArchiveError('invalid_media_cache');await db.runAsync('INSERT INTO media_cache_policy(actor,auto_clean,high_water) VALUES(?,?,0) ON CONFLICT(actor) DO UPDATE SET auto_clean=excluded.auto_clean',actor,enabled?1:0);}),
+      clock: (actor,now)=>this.tx(noop,async db=>{
+        this.actor(actor);if(!Number.isSafeInteger(now)||now<=0)throw new ArchiveError('invalid_media_cache');
+        const policy=await this.catalogPolicy(db,actor);if(now<policy.highWater)return false;
+        await db.runAsync('INSERT INTO media_cache_policy(actor,auto_clean,high_water) VALUES(?,0,?) ON CONFLICT(actor) DO UPDATE SET high_water=excluded.high_water',actor,now);return true;
+      }),
+      claimAutomatic: (actor,now)=>this.tx(noop,async db=>{
+        this.actor(actor);if(!Number.isSafeInteger(now)||now<=0)throw new ArchiveError('invalid_media_cache');
+        const policy=await this.catalogPolicy(db,actor),row=await db.getFirstAsync<{last_auto:number}>('SELECT last_auto FROM media_cache_policy WHERE actor=?',actor);
+        if(!policy.autoClean30Days||now<policy.highWater)return false;
+        if(row&&(!Number.isSafeInteger(row.last_auto)||row.last_auto<0))throw new ArchiveError('invalid_media_cache');
+        if(row?.last_auto&&now-row.last_auto<24*60*60*1000)return false;
+        await db.runAsync('UPDATE media_cache_policy SET high_water=?,last_auto=? WHERE actor=?',now,now,actor);return true;
+      }),
     };
   }
   private async db(): Promise<ArchiveDatabase> {
@@ -178,7 +217,7 @@ export class SqliteArchiveStore implements HistoryArchive {
       this.database = (async () => {
         const db = await this.open();
         const version = await db.getFirstAsync<{ user_version: number }>('PRAGMA user_version');
-        if (version && version.user_version > 1) throw new ArchiveError('archive_schema_newer');
+        if (version && version.user_version > 2) throw new ArchiveError('archive_schema_newer');
         await db.execAsync(schema);
         return db;
       })().catch(error => {
@@ -555,13 +594,33 @@ export class SqliteArchiveStore implements HistoryArchive {
     if (!Number.isSafeInteger(mediaId) || mediaId <= 0)
       throw new ArchiveError('invalid_media_cache');
     return this.serial(guard, async db => {
-      const row = await db.getFirstAsync<Row>(
+      let row = await db.getFirstAsync<Row>(
         'SELECT message_id,json,bytes FROM archive_messages WHERE account=? AND scope=? AND media_id=? ORDER BY message_id DESC LIMIT 1',
         ...this.scope(scope),
         mediaId,
       );
+      if(!row)row=await db.getFirstAsync<Row>('SELECT message_id,json,bytes FROM retained_media WHERE account=? AND scope=? AND media_id=?',...this.scope(scope),mediaId);
       guard();
-      return row ? cloneMessage(row) : null;
+      const message=row?cloneMessage(row):null;
+      if(message&&message.media?.id!==mediaId)throw new ArchiveError('invalid_archive_row');
+      return message;
+    });
+  }
+  async retainMediaAssociation(scope:HistoryScope,message:Message|null,mediaId:number,guard:Guard):Promise<void>{
+    if(!Number.isSafeInteger(mediaId)||mediaId<=0)throw new ArchiveError('invalid_media_cache');
+    const key=this.scope(scope),row=message?encodeRows([message])[0]!:null;
+    if(row&&(row.media_id!==mediaId||!message?.media||typeof message.media.name!=='string'||!['image','file','audio'].includes(String(message.media.kind))
+      ||typeof message.media.mime!=='string'||!Number.isSafeInteger(message.media.size)||Number(message.media.size)<=0||Number(message.media.size)>10*1024*1024
+      ||typeof message.media.sha256!=='string'||!/^[a-f0-9]{64}$/.test(message.media.sha256)))throw new ArchiveError('invalid_archive_row');
+    // Logical UTF-8 envelope includes every retained column's metadata as well
+    // as the canonical JSON. This is not a claim about SQLite physical pages.
+    const retainedBytes=row?encoder.encode(JSON.stringify({account:key[0],scope:key[1],media_id:mediaId,message_id:row.message_id,message:JSON.parse(row.json)})).length:0;
+    await this.tx(guard,async db=>{
+      if(!row){await db.runAsync('DELETE FROM retained_media WHERE account=? AND scope=? AND media_id=?',...key,mediaId);return;}
+      const budget=await db.getFirstAsync<{count:number;bytes:number}>('SELECT COUNT(*) AS count,COALESCE(SUM(bytes),0) AS bytes FROM retained_media WHERE account=?',scope.account);
+      const previous=await db.getFirstAsync<{bytes:number}>('SELECT bytes FROM retained_media WHERE account=? AND scope=? AND media_id=?',...key,mediaId);
+      if((budget?.count??0)+(previous?0:1)>5000||(budget?.bytes??0)-(previous?.bytes??0)+retainedBytes>8*1024*1024)throw new ArchiveError('media_quota');
+      await db.runAsync('INSERT INTO retained_media(account,scope,media_id,message_id,json,bytes) VALUES(?,?,?,?,?,?) ON CONFLICT(account,scope,media_id) DO UPDATE SET message_id=excluded.message_id,json=excluded.json,bytes=excluded.bytes',...key,mediaId,row.message_id,row.json,retainedBytes);
     });
   }
   async reconcile(
@@ -590,6 +649,8 @@ export class SqliteArchiveStore implements HistoryArchive {
               account,
               row.scope,
             );
+        const retained=await db.getAllAsync<{scope:string}>('SELECT DISTINCT scope FROM retained_media WHERE account=?',account);
+        for(const row of retained)if(!mediaAllowed||!allowed.has(row.scope))await db.runAsync('DELETE FROM retained_media WHERE account=? AND scope=?',account,row.scope);
         if (!mediaAllowed)
           await db.runAsync(
             "UPDATE archive_messages SET json=json_remove(json,'$.media'),bytes=length(CAST(json_remove(json,'$.media') AS BLOB)),media_id=NULL WHERE account=? AND media_id IS NOT NULL",
@@ -604,12 +665,37 @@ export class SqliteArchiveStore implements HistoryArchive {
       guard,
       async db => {
         await db.runAsync('DELETE FROM archive_scopes WHERE account=?', account);
+        await db.runAsync('DELETE FROM retained_media WHERE account=?',account);
       },
       true,
     );
   }
   private actor(actor: string): void {
     if (!/^[a-f0-9]{64}$/.test(actor)) throw new ArchiveError('invalid_media_cache');
+  }
+  private async catalogPolicy(db:ArchiveDatabase,actor:string):Promise<{autoClean30Days:boolean;highWater:number}>{
+    const value=await db.getFirstAsync<{auto_clean:number;high_water:number}>('SELECT auto_clean,high_water FROM media_cache_policy WHERE actor=?',actor);
+    if(!value)return {autoClean30Days:false,highWater:0};
+    if(![0,1].includes(value.auto_clean)||!Number.isSafeInteger(value.high_water)||value.high_water<0)throw new ArchiveError('invalid_media_cache');
+    return {autoClean30Days:value.auto_clean===1,highWater:value.high_water};
+  }
+  private async catalogPins(actor:string):Promise<{uri:string;sha256:string}[]>{
+    this.actor(actor);return this.serial(noop,async db=>{
+      const rows=await db.getAllAsync<{uri:string;sha256:string}>('SELECT uri,sha256 FROM media_cache_pins WHERE actor=? ORDER BY uri LIMIT 5001',actor);
+      if(rows.length>5000||rows.some(row=>typeof row.uri!=='string'||!row.uri.startsWith('file:///')||row.uri.length>2048||!/^[a-f0-9]{64}$/.test(row.sha256)))throw new ArchiveError('invalid_media_cache');return rows.map(row=>({uri:row.uri,sha256:row.sha256}));
+    });
+  }
+  private async catalogKeep(actor:string,uri:string,sha256:string,keep:boolean):Promise<void>{
+    this.actor(actor);if(typeof keep!=='boolean'||typeof uri!=='string'||!uri.startsWith('file:///')||uri.length>2048||!/^[a-f0-9]{64}$/.test(sha256))throw new ArchiveError('invalid_media_cache');
+    await this.tx(noop,async db=>{
+      if(!keep){await db.runAsync('DELETE FROM media_cache_pins WHERE actor=? AND uri=?',actor,uri);return;}
+      const file=await db.getFirstAsync<{sha256:string}>('SELECT sha256 FROM media_cache WHERE actor=? AND uri=?',actor,uri);
+      if(file?.sha256!==sha256)throw new ArchiveError('invalid_media_cache');
+      const count=await db.getFirstAsync<{count:number}>('SELECT COUNT(*) AS count FROM media_cache_pins WHERE actor=?',actor);
+      const existing=await db.getFirstAsync('SELECT 1 FROM media_cache_pins WHERE actor=? AND uri=?',actor,uri);
+      if(!existing&&count&&count.count>=5000)throw new ArchiveError('media_quota');
+      await db.runAsync('INSERT INTO media_cache_pins(actor,uri,sha256) VALUES(?,?,?) ON CONFLICT(actor,uri) DO UPDATE SET sha256=excluded.sha256',actor,uri,sha256);
+    });
   }
   private async catalogList(actor: string): Promise<MediaCacheEntry[]> {
     this.actor(actor);

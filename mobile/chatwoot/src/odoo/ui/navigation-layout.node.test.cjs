@@ -73,6 +73,7 @@ const components = { Button: 'Button', Icon: 'Icon', IconButton: 'IconButton', L
   direction: () => ({}), styles: { page: {}, header: {}, row: {}, title: {}, fill: { flex: 1 }, muted: {}, text: {}, banner: {} },
   colors: { white: 'white', pale: 'pale', danger: 'danger', blue: 'blue', ink: 'ink', border: 'border' } };
 const dictionary = load('dictionary.ts', {});
+const mediaDictionary = load('../media/dictionary.ts', {});
 const ordersDictionary = load('../orders/dictionary.ts', {});
 const names = load('companyNames.ts', {});
 const viewModel = load('viewModel.ts', {});
@@ -97,7 +98,7 @@ function drawer(width = 320) {
     close: () => events.push('close'), onAction: action => events.push(action) };
   const module = load('NavigationDrawer.tsx', { react: state.react, 'react/jsx-runtime': jsx,
     'react-native': { AppState: nativeApp, Modal: 'Modal', Pressable: 'Pressable', ScrollView: 'ScrollView', Switch: 'Switch', Text: 'Text', View: 'View', useWindowDimensions: () => ({ width }) },
-    'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView' }, './companyNames': names, './components': components, './VersionLabel': { VersionLabel: 'VersionLabel' }, './Brand': { Brand: 'Brand' } });
+    'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView' }, '../media/dictionary': mediaDictionary, './companyNames': names, './components': components, './VersionLabel': { VersionLabel: 'VersionLabel' }, './Brand': { Brand: 'Brand' } });
   return { props, events, nativeApp, render: () => state.render(() => module.NavigationDrawer(props)) };
 }
 function session() {
@@ -106,7 +107,8 @@ function session() {
   const chat = { identity: identity(), presentationReady: true, selected: null, offline: false, busy: false,
     pending: [], rooms: [], error: null, select: async room => { calls.push(['select', room]); },
     sync: async () => { calls.push('sync'); }, logout: async () => { calls.push('logout'); }, capture() {} };
-  const engine = { accountScope: 'synthetic-actor/epoch:1', get identity() { return chat.identity; }, rooms: () => chat.rooms };
+  const metrics = { captured: 0, auto: 0 }; chat.capture = () => { metrics.captured++; };
+  const engine = { accountScope: 'synthetic-actor/epoch:1', get identity() { return chat.identity; }, rooms: () => chat.rooms, jumpToMessage: async () => {} };
   const module = load('../OdooTrialApp.tsx', { react: state.react, 'react/jsx-runtime': jsx,
     'react-native': { Alert: { alert: (title, message, buttons) => alerts.push({ title, message, buttons }) }, AppState: nativeApp,
       BackHandler: { addEventListener(_event, callback) { backHandlers.add(callback); return { remove() { backHandlers.delete(callback); } }; } },
@@ -119,7 +121,8 @@ function session() {
     './leadership/ui/LeadershipScreen': { LeadershipScreen: 'LeadershipScreen' },
     './session/OrdersOnlyShell': { OrdersOnlyShell: 'OrdersOnlyShell' },
     './runtime': { getEngine: () => engine, getNotificationsEngine: () => ({}), getOrdersEngine: () => ({}), getTasksEngine: () => ({}), getLeadershipEngine: () => ({}), ordersOnlySnapshot: () => ({ identity: null, verified: false, generation: 0, revision: 0 }),
-      subscribeOrdersOnlySession: () => () => {}, refreshOrdersOnlySession: async () => {}, setOrdersConnectivity() {} },
+      subscribeOrdersOnlySession: () => () => {}, refreshOrdersOnlySession: async () => {}, setOrdersConnectivity() {}, runAutomaticMediaCacheCleanup: async () => { metrics.auto++; return null; } },
+    './media/MediaGallerySheet': { MediaGallerySheet: 'MediaGallerySheet' }, './media/MediaStorageSheet': { MediaStorageSheet: 'MediaStorageSheet' },
     './ui/LoginScreen': { LoginScreen: 'LoginScreen' }, './ui/ManagementSheet': { ManagementSheet: 'ManagementSheet' },
     './ui/RoomsScreen': { RoomsScreen: 'RoomsScreen' }, './ui/TimelineScreen': { TimelineScreen: 'TimelineScreen' },
     './ui/VersionLabel': { VersionLabel: 'VersionLabel' }, './ui/NavigationDrawer': { NavigationDrawer: 'NavigationDrawer' },
@@ -128,7 +131,7 @@ function session() {
     './ui/CompanySelector': { CompanySelector: 'CompanySelector' },
   }, { requestAnimationFrame: callback => { frames.push(callback); return frames.length; } });
   assert.equal(typeof module.SessionApp, 'function', 'test uses the actual named SessionApp export');
-  return { engine, chat, calls, alerts, nativeApp, render: () => state.render(() => module.SessionApp({ engine })),
+  return { engine, chat, calls, alerts, nativeApp, metrics, render: () => state.render(() => module.SessionApp({ engine })),
     width(value) { width = value; }, back() { for (const callback of [...backHandlers].reverse()) if (callback()) return true; return false; }, flushFrames() { for (const frame of frames.splice(0)) frame(); } };
 }
 
@@ -662,4 +665,52 @@ test('surviving picker failures render generic translated words only, and a diff
   assert.equal(text(app.render()).includes(dictionary.translator('ar')('avatarUncertain')), false);
   app.chat.selected = room; app.chat.presentationReady = false;
   assert.equal(text(app.render()).includes(dictionary.translator('ar')('avatarUncertain')), false);
+});
+
+test('media gallery opens for private and group members, masks timeline and back closes local overlays first', () => {
+  for (const is_group of [false, true]) {
+    const app = session(), room = { id: 8, company_id: 1, membership_id: 18, is_group, name: 'Synthetic room' };
+    app.chat.rooms = [room]; app.chat.selected = room;
+    one(app.render(), 'TimelineScreen').onGallery();
+    let tree = app.render();
+    assert.equal(one(tree, 'MediaGallerySheet').room.id, room.id);
+    assert.equal(one(tree, 'TimelineScreen').presented, false);
+    app.back(); tree = app.render();
+    assert.equal(nodes(tree).some(node => node.type === 'MediaGallerySheet'), false);
+    assert.equal(one(tree, 'TimelineScreen').presented, true);
+    assert.equal(app.calls.some(call => Array.isArray(call) && call[0] === 'select'), false);
+    one(tree, 'NavigationDrawer').onStorage(); tree = app.render();
+    assert.equal(one(tree, 'TimelineScreen').presented, false);
+    assert.ok(one(tree, 'MediaStorageSheet'));
+    app.back(); tree = app.render();
+    assert.equal(nodes(tree).some(node => node.type === 'MediaStorageSheet'), false);
+    assert.equal(app.calls.some(call => Array.isArray(call) && call[0] === 'select'), false);
+    app.chat.identity.permissions.media = false;
+    assert.equal(one(app.render(), 'TimelineScreen').onGallery, undefined);
+    assert.equal(one(app.render(), 'NavigationDrawer').onStorage, undefined);
+  }
+});
+
+test('old gallery jumps cannot close a reopened gallery or focus a switched room or account', async () => {
+  for (const change of ['reopen', 'room', 'account', 'background']) {
+    const app = session(), room = { id: 8, company_id: 1, membership_id: 18, is_group: false, name: 'Private' };
+    app.chat.rooms = [room]; app.chat.selected = room;
+    let release; app.engine.jumpToMessage = () => new Promise(done => { release = done; });
+    one(app.render(), 'TimelineScreen').onGallery();
+    const old = one(app.render(), 'MediaGallerySheet');
+    const pending = old.onMessage({ id: 50 });
+    if (change === 'reopen') { old.close(); one(app.render(), 'TimelineScreen').onGallery(); }
+    if (change === 'room') app.chat.selected = { ...room, id: 9, membership_id: 19 };
+    if (change === 'account') { app.chat.identity = identity(8); app.engine.accountScope = 'actor8/epoch2'; }
+    if (change === 'background') app.nativeApp.change('background');
+    app.render(); release(); await pending;
+    const tree = app.render();
+    assert.equal(app.metrics.captured, 0, change);
+    assert.equal(one(tree, 'TimelineScreen').focusTarget, undefined, change);
+    if (change === 'reopen') assert.ok(one(tree, 'MediaGallerySheet'));
+  }
+  const app = session(), room = { id: 8, company_id: 1, membership_id: 18, is_group: false, name: 'Private' };
+  app.chat.rooms = [room]; app.chat.selected = room;
+  one(app.render(), 'TimelineScreen').onGallery(); await one(app.render(), 'MediaGallerySheet').onMessage({ id: 50 });
+  assert.equal(app.metrics.captured, 1); assert.equal(one(app.render(), 'TimelineScreen').focusTarget.id, 50);
 });

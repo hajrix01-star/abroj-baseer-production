@@ -17,6 +17,7 @@ import {
 } from './components';
 import { errorWord, type Language, type Translate, type Word } from './dictionary';
 import type { ManagementMode } from './RoomsScreen';
+import { mediaTranslator } from '../media/dictionary';
 
 type Member = { user_id: number; name: string; is_admin: boolean };
 export function ManagementSheet({
@@ -27,6 +28,7 @@ export function ManagementSheet({
   close,
   changed,
   onPhotoOutcome,
+  onGallery,
   language,
   t,
 }: {
@@ -37,6 +39,7 @@ export function ManagementSheet({
   close: () => void;
   changed: (roomId?: number) => Promise<void>;
   onPhotoOutcome?: (outcome: { scope: string; room: Room; status: 'saved' | 'failed'; error?: unknown }) => void;
+  onGallery?: () => void;
   language: Language;
   t: Translate;
 }) {
@@ -200,6 +203,7 @@ export function ManagementSheet({
           : t('members');
   return (
     <Sheet title={title} close={close} t={t} compact={mode === 'members'} language={language}>
+      {mode === 'members' && room && onGallery && engine.identity?.permissions.media === true && <Button quiet title={mediaTranslator(language)('gallery')} onPress={onGallery} />}
       <View style={{ height: 20, alignItems: 'center', justifyContent: 'center' }}>
         {(busy || detailLoading) && <ActivityIndicator size="small" accessibilityLabel={t('loading')} color={colors.blue} />}
       </View>

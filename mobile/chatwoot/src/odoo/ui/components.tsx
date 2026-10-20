@@ -266,6 +266,7 @@ export function Sheet({
   t,
   style,
   compact = false,
+  scroll = true,
   language = 'en',
 }: {
   title: string;
@@ -274,6 +275,7 @@ export function Sheet({
   t: Translate;
   style?: StyleProp<ViewStyle>;
   compact?: boolean;
+  scroll?: boolean;
   language?: Language;
 }) {
   const [keyboardOffset, setKeyboardOffset] = React.useState(0);
@@ -285,12 +287,12 @@ export function Sheet({
             <Text style={compact ? [styles.title, direction(language), { flex: 1, fontSize: 18 }] : styles.title}>{title}</Text>
             {compact ? <IconButton icon="close" label={t('close')} onPress={close} /> : <Button quiet title={t('close')} onPress={close} />}
           </View>
-          <ScrollView
+          {scroll ? <ScrollView
             style={compact ? { flexShrink: 1, minHeight: 0 } : undefined}
             keyboardShouldPersistTaps="handled"
             contentContainerStyle={{ gap: compact ? 8 : 14, paddingBottom: 12 }}>
             {children}
-          </ScrollView>
+          </ScrollView> : <View style={{ flex: 1, minHeight: 0 }}>{children}</View>}
         </View>
   );
   return (

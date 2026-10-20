@@ -997,3 +997,201 @@ msgstr "سياسة التحذير لحجم ملفات بيورك"
 #: model:ir.model,name:baseer_bwork_admin.model_baseer_bwork_admin_service
 msgid "BWork bounded administrative metadata"
 msgstr "بيانات إدارة بيورك المحدودة"
+
+#. module: baseer_bwork_admin
+#. odoo-javascript
+#: code:addons/baseer_bwork_admin/static/src/media_gallery.xml:0
+#: code:addons/baseer_bchat/static/src/bwork_gallery/media_gallery.js:0
+#: model:ir.actions.client,name:baseer_bwork_admin.media_gallery_action
+#: model:ir.ui.menu,name:baseer_bwork_admin.media_gallery_menu
+msgid "Media gallery"
+msgstr "معرض المرفقات"
+
+#. module: baseer_bwork_admin
+#. odoo-javascript
+#: code:addons/baseer_bwork_admin/static/src/media_gallery.xml:0
+#: code:addons/baseer_bchat/static/src/bwork_gallery/media_gallery.js:0
+msgid "Refresh rooms"
+msgstr "تحديث المحادثات"
+
+#. module: baseer_bwork_admin
+#. odoo-javascript
+#: code:addons/baseer_bwork_admin/static/src/media_gallery.xml:0
+#: code:addons/baseer_bchat/static/src/bwork_gallery/media_gallery.js:0
+msgid "Only files in your current room memberships are shown. Opening this gallery does not mark messages as read."
+msgstr "تظهر مرفقات المحادثات التي تشارك فيها فقط. تصفح المعرض لا يؤكد قراءة الرسائل."
+
+#. module: baseer_bwork_admin
+#. odoo-javascript
+#: code:addons/baseer_bwork_admin/static/src/media_gallery.xml:0
+#: code:addons/baseer_bchat/static/src/bwork_gallery/media_gallery.js:0
+msgid "Conversation"
+msgstr "المحادثة"
+
+#. module: baseer_bwork_admin
+#. odoo-javascript
+#: code:addons/baseer_bwork_admin/static/src/media_gallery.xml:0
+#: code:addons/baseer_bchat/static/src/bwork_gallery/media_gallery.js:0
+msgid "Select a conversation"
+msgstr "اختر محادثة"
+
+#. module: baseer_bwork_admin
+#. odoo-javascript
+#: code:addons/baseer_bwork_admin/static/src/media_gallery.xml:0
+#: code:addons/baseer_bchat/static/src/bwork_gallery/media_gallery.js:0
+msgid "Type"
+msgstr "النوع"
+
+#. module: baseer_bwork_admin
+#. odoo-javascript
+#: code:addons/baseer_bwork_admin/static/src/media_gallery.xml:0
+#: code:addons/baseer_bchat/static/src/bwork_gallery/media_gallery.js:0
+msgid "All media"
+msgstr "كل المرفقات"
+
+#. module: baseer_bwork_admin
+#. odoo-javascript
+#: code:addons/baseer_bwork_admin/static/src/media_gallery.xml:0
+#: code:addons/baseer_bchat/static/src/bwork_gallery/media_gallery.js:0
+msgid "Images"
+msgstr "الصور"
+
+#. module: baseer_bwork_admin
+#. odoo-javascript
+#: code:addons/baseer_bwork_admin/static/src/media_gallery.xml:0
+#: code:addons/baseer_bchat/static/src/bwork_gallery/media_gallery.js:0
+msgid "Files"
+msgstr "الملفات"
+
+#. module: baseer_bwork_admin
+#. odoo-javascript
+#: code:addons/baseer_bwork_admin/static/src/media_gallery.xml:0
+#: code:addons/baseer_bchat/static/src/bwork_gallery/media_gallery.js:0
+msgid "Audio"
+msgstr "التسجيلات الصوتية"
+
+#. module: baseer_bwork_admin
+#. odoo-javascript
+#: code:addons/baseer_bwork_admin/static/src/media_gallery.xml:0
+#: code:addons/baseer_bchat/static/src/bwork_gallery/media_gallery.js:0
+msgid "Sort"
+msgstr "الترتيب"
+
+#. module: baseer_bwork_admin
+#. odoo-javascript
+#: code:addons/baseer_bwork_admin/static/src/media_gallery.xml:0
+#: code:addons/baseer_bchat/static/src/bwork_gallery/media_gallery.js:0
+msgid "Newest"
+msgstr "الأحدث"
+
+#. module: baseer_bwork_admin
+#. odoo-javascript
+#: code:addons/baseer_bwork_admin/static/src/media_gallery.xml:0
+#: code:addons/baseer_bchat/static/src/bwork_gallery/media_gallery.js:0
+msgid "Oldest"
+msgstr "الأقدم"
+
+#. module: baseer_bwork_admin
+#. odoo-javascript
+#: code:addons/baseer_bwork_admin/static/src/media_gallery.xml:0
+#: code:addons/baseer_bchat/static/src/bwork_gallery/media_gallery.js:0
+msgid "Largest"
+msgstr "الأكبر"
+
+#. module: baseer_bwork_admin
+#. odoo-javascript
+#: code:addons/baseer_bwork_admin/static/src/media_gallery.xml:0
+#: code:addons/baseer_bchat/static/src/bwork_gallery/media_gallery.js:0
+msgid "Loading media…"
+msgstr "جارٍ تحميل المرفقات…"
+
+#. module: baseer_bwork_admin
+#. odoo-javascript
+#: code:addons/baseer_bwork_admin/static/src/media_gallery.xml:0
+#: code:addons/baseer_bchat/static/src/bwork_gallery/media_gallery.js:0
+msgid "You have no accessible conversations."
+msgstr "لا توجد محادثات متاحة لك."
+
+#. module: baseer_bwork_admin
+#. odoo-javascript
+#: code:addons/baseer_bwork_admin/static/src/media_gallery.xml:0
+#: code:addons/baseer_bchat/static/src/bwork_gallery/media_gallery.js:0
+msgid "No media matches this filter."
+msgstr "لا توجد مرفقات مطابقة. جرّب نوعًا آخر."
+
+#. module: baseer_bwork_admin
+#. odoo-javascript
+#: code:addons/baseer_bwork_admin/static/src/media_gallery.xml:0
+#: code:addons/baseer_bchat/static/src/bwork_gallery/media_gallery.js:0
+msgid "Image preview"
+msgstr "معاينة الصورة"
+
+#. module: baseer_bwork_admin
+#. odoo-javascript
+#: code:addons/baseer_bwork_admin/static/src/media_gallery.xml:0
+#: code:addons/baseer_bchat/static/src/bwork_gallery/media_gallery.js:0
+msgid "Open file"
+msgstr "فتح الملف"
+
+#. module: baseer_bwork_admin
+#. odoo-javascript
+#: code:addons/baseer_bwork_admin/static/src/media_gallery.xml:0
+#: code:addons/baseer_bchat/static/src/bwork_gallery/media_gallery.js:0
+msgid "View message"
+msgstr "عرض الرسالة"
+
+#. module: baseer_bwork_admin
+#. odoo-javascript
+#: code:addons/baseer_bwork_admin/static/src/media_gallery.xml:0
+#: code:addons/baseer_bchat/static/src/bwork_gallery/media_gallery.js:0
+msgid "First page"
+msgstr "الصفحة الأولى"
+
+#. module: baseer_bwork_admin
+#. odoo-javascript
+#: code:addons/baseer_bwork_admin/static/src/media_gallery.xml:0
+#: code:addons/baseer_bchat/static/src/bwork_gallery/media_gallery.js:0
+msgid "Next page"
+msgstr "الصفحة التالية"
+
+#. module: baseer_bwork_admin
+#. odoo-javascript
+#: code:addons/baseer_bwork_admin/static/src/media_gallery.xml:0
+#: code:addons/baseer_bchat/static/src/bwork_gallery/media_gallery.js:0
+msgid "Selected file"
+msgstr "الملف المحدد"
+
+#. module: baseer_bwork_admin
+#. odoo-javascript
+#: code:addons/baseer_bwork_admin/static/src/media_gallery.xml:0
+#: code:addons/baseer_bchat/static/src/bwork_gallery/media_gallery.js:0
+msgid "Close preview"
+msgstr "إغلاق المعاينة"
+
+#. module: baseer_bwork_admin
+#. odoo-javascript
+#: code:addons/baseer_bwork_admin/static/src/media_gallery.xml:0
+#: code:addons/baseer_bchat/static/src/bwork_gallery/media_gallery.js:0
+msgid "Download file"
+msgstr "تنزيل الملف"
+
+#. module: baseer_bwork_admin
+#. odoo-javascript
+#: code:addons/baseer_bwork_admin/static/src/media_gallery.xml:0
+#: code:addons/baseer_bchat/static/src/bwork_gallery/media_gallery.js:0
+msgid "Original message"
+msgstr "الرسالة الأصلية"
+
+#. module: baseer_bwork_admin
+#. odoo-javascript
+#: code:addons/baseer_bwork_admin/static/src/media_gallery.xml:0
+#: code:addons/baseer_bchat/static/src/bwork_gallery/media_gallery.js:0
+msgid "Media access is unavailable. Refresh your authorized rooms."
+msgstr "لا يمكنك عرض المرفقات حاليًا. حدّث قائمة المحادثات."
+
+#. module: baseer_bwork_admin
+#. odoo-javascript
+#: code:addons/baseer_bwork_admin/static/src/media_gallery.xml:0
+#: code:addons/baseer_bchat/static/src/bwork_gallery/media_gallery.js:0
+msgid "Could not load media. Try again when connected."
+msgstr "تعذّر تحميل المرفقات. تحقق من اتصالك وحاول مرة أخرى."

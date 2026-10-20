@@ -14,10 +14,13 @@ test('real backend serializer output is accepted by the strict native report dec
   assert.ifError(result.error);
   assert.equal(result.status, 0, result.stderr);
   const { reportResponse } = await import(pathToFileURL(resolve(__dirname, '../validation.ts')).href);
-  const options = { api_version: 2, leadership_version: 1, can_view: true, companies: [{ id: 7, name: 'Synthetic wire fixture' }], max_companies: 10 };
+  const options = { api_version: 2, leadership_version: 2, can_view: true, companies: [{ id: 7, name: 'Synthetic wire fixture' }], max_companies: 10 };
   const report = reportResponse(JSON.parse(result.stdout), { companyId: 7, month: '2026-10', period: 'month' }, options);
   assert.equal(report.calendar.days.length, 31);
   assert.equal(report.overview.current_month.completed_days, 18);
   assert.equal(report.overview.sales.value, '3000.00');
+  assert.equal(report.overview.spending.value, '775.00');
+  assert.equal(report.overview.spending_breakdown.purchases.value, '620.00');
+  assert.equal(report.overview.spending_breakdown.operating.value, '155.00');
   assert.equal(report.calendar.weekdays.length, 7);
 });

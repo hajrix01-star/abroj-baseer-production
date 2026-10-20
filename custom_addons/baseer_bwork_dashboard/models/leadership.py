@@ -15,6 +15,9 @@ from ..contracts import (
     month_end, month_start, ratio,
 )
 
+from .spending import SpendingBudget, SpendingReader
+
+
 REPORTS = {
     'sales': ('baseer_sales_dashboard.dashboard_sales_summary', 'sales_summary'),
     'heat': ('baseer_sales_heat_calendar.dashboard_sales_heat_calendar', 'sales_heat_calendar'),
@@ -28,7 +31,7 @@ class LeadershipService(models.AbstractModel):
     @api.model
     def _v2_bootstrap(self):
         result = super()._v2_bootstrap()
-        result['capabilities']['leadership_version'] = 1
+        result['capabilities']['leadership_version'] = 2
         return result
 
     def _leadership_user(self):
@@ -77,7 +80,7 @@ class LeadershipService(models.AbstractModel):
     def _leadership_options(self):
         user = self._require_user()
         if not user._bwork_effective_permissions().get('dashboard_view'):
-            return {'api_version': 2, 'leadership_version': 1, 'can_view': False,
+            return {'api_version': 2, 'leadership_version': 2, 'can_view': False,
                     'companies': [], 'max_companies': MAX_COMPANIES}
         # Options preserve the complete native company scope; never shrink it
         # to companies that happen to have readable sources or goals.
@@ -85,7 +88,7 @@ class LeadershipService(models.AbstractModel):
         companies.check_access('read')
         for company in companies:
             self._leadership_reports(company)
-        return {'api_version': 2, 'leadership_version': 1, 'can_view': True,
+        return {'api_version': 2, 'leadership_version': 2, 'can_view': True,
                 'companies': self._leadership_company_rows(companies),
                 'max_companies': MAX_COMPANIES}
 
@@ -149,7 +152,7 @@ class LeadershipService(models.AbstractModel):
                     company, first, last, include_bridges=True) for first, last in ranges],
                 'account.move': [sales._baseer_unified_invoice_base_domain(
                     company, first, last) for first, last in ranges] + [
-                    spending._baseer_purchase_domain(company, first, last)
+                    spending._baseer_purchase_domain(company, first, last, same_currency=False)
                     for first, last in plan['spending_ranges']],
                 'baseer.pos.summary.allocation': [[
                     ('company_id', '=', company.id),
@@ -172,6 +175,7 @@ class LeadershipService(models.AbstractModel):
         # All budget counts finish before any public report materializes data.
         for company, _scoped, reports in per_company:
             reports['sales']._baseer_check_capacity(company, plan['sales_ranges'])
+        return SpendingBudget(remaining)
 
     @staticmethod
     def _leadership_sales(dashboard, bounds):
@@ -180,12 +184,6 @@ class LeadershipService(models.AbstractModel):
             'type': 'range', 'from': first.isoformat(), 'to': last.isoformat(),
         }})
         return Decimal(result['cards']['sales']['value'])
-
-    @staticmethod
-    def _leadership_spending(dashboard, company, bounds):
-        first, last = bounds
-        domain = dashboard._baseer_purchase_domain(company, first, last)
-        return dashboard._baseer_purchase_totals(domain, company.currency_id)[0]
 
     def _leadership_calendar(self, month, heat_payloads, today, weekdays=False):
         """Aggregate money exactly; withhold evaluation for mixed coverage/goals."""
@@ -284,16 +282,23 @@ class LeadershipService(models.AbstractModel):
         for company in companies:
             scoped, reports = self._leadership_reports(company)
             per_company.append((company, scoped, reports))
-        self._leadership_preflight(per_company, plan)
+        budget = self._leadership_preflight(per_company, plan)
+        spending_sources = {company.id: SpendingReader(scoped.env, company,
+            plan['spending_ranges'], budget).collect() for company, scoped, _reports in per_company}
         totals = {key: ZERO for key in ('sales', 'spending', 'current_sales',
                                       'current_spending', 'previous_sales', 'previous_spending')}
+        purchases, operating = ZERO, ZERO
         heat = {month: [] for month in plan['heat_months']}
         for company, _scoped, reports in per_company:
             for prefix, bounds in (('', plan['selected']), ('current_', plan['current']),
                                    ('previous_', plan['previous'])):
                 if bounds:
                     totals[prefix + 'sales'] += self._leadership_sales(reports['sales'], bounds)
-                    totals[prefix + 'spending'] += self._leadership_spending(reports['spending'], company, bounds)
+                    purchase_part, operating_part = spending_sources[company.id].totals(bounds)
+                    totals[prefix + 'spending'] += purchase_part + operating_part
+                    if not prefix:
+                        purchases += purchase_part
+                        operating += operating_part
             for month in heat:
                 heat[month].append(reports['heat'].get_baseer_heat_calendar(month=month.isoformat()[:7]))
         calendars = {month: self._leadership_calendar(month, values, today,
@@ -336,14 +341,15 @@ class LeadershipService(models.AbstractModel):
             'previous_daily_average': amount(previous_average), 'comparison_label': comparison_label,
         }
         return {
-            'api_version': 2, 'leadership_version': 1, 'source': 'sales_summary',
+            'api_version': 2, 'leadership_version': 2, 'source': 'sales_summary',
             'companies': self._leadership_company_rows(companies), 'company_id': selection['company_id'],
             'currency': 'SAR', 'as_of': as_of.isoformat(timespec='seconds') + 'Z',
             'filters': {'month': selection['month'], 'period': selection['period'],
                         'from': selection['first'].isoformat(), 'to': selection['last'].isoformat()},
             'overview': {'sales': amount(sales), 'spending': amount(spending), 'difference': amount(difference),
+                         'spending_breakdown': {'purchases': amount(purchases), 'operating': amount(operating)},
                          'spending_ratio': ratio(spending, sales), 'difference_ratio': ratio(difference, sales),
-                         'spending_scope': self.env._('Posted supplier bills less supplier credits, gross including VAT, company currency only. Sales less supplier bills is a difference, not profit or cash flow.'),
+                         'spending_scope': self.env._('Posted supplier bills less credits including their tax, plus non-bill operating expense balances in company currency. Depreciation and inventory cost already represented by purchases are excluded. This difference is not profit or cash flow.'),
                          'current_month': current},
             'calendar': calendars[selection['calendar_first']],
             'previous_calendar': calendars[month_start(selection['calendar_first'], -1)],

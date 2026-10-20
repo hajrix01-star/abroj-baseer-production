@@ -28,6 +28,24 @@ function setup(leaseRemainingMs = DAY) {
 const key = (storage: Memory, suffix: string) => [...storage.data.keys()].find(k => k.endsWith(suffix))!;
 const denied = { code: 'snapshot_unavailable' };
 
+test('legacy bill-only snapshots cannot appear as combined spending or wipe unrelated storage', async () => {
+  const h = setup(); await h.cache.save(h.authority, opts, query, report());
+  h.storage.data.set('chat/outbox/sentinel', 'keep');
+  const envelopeKey = key(h.storage, '/envelope'), legacy = JSON.parse(h.storage.data.get(envelopeKey)!);
+  legacy.options.leadership_version = 1;
+  for (const entry of legacy.entries) { entry.report.leadership_version = 1; delete entry.report.overview.spending_breakdown; }
+  h.storage.data.set(envelopeKey, JSON.stringify(legacy));
+  const controls = [...h.storage.data].filter(([k]) => k !== envelopeKey);
+  await assert.rejects(h.create().options(h.authority), denied);
+  await assert.rejects(h.create().read(h.authority, query), denied);
+  for (const [k, value] of controls) assert.equal(h.storage.data.get(k), value);
+  await h.create().save(h.authority, opts, query, report());
+  const restored = await h.create().read(h.authority, query);
+  assert.equal(restored.leadership_version, 2);
+  assert.equal(restored.overview.spending_breakdown.operating.value, '4000.00');
+  assert.equal(h.storage.data.get('chat/outbox/sentinel'), 'keep');
+});
+
 test('snapshot exact decimals/server displays survive restart, unknown data is never persisted, options alone has no report deadline', async () => {
   const h = setup(), raw = report(); raw.overview.sales.value = '12345678901234567890.1234567890123456'; raw.overview.sales.display = 'Server display';
   (raw as any).private_source_ids = ['must-not-persist'];

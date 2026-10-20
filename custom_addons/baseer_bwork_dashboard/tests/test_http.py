@@ -33,6 +33,7 @@ class TestLeadershipHttp(HttpCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.headers['Cache-Control'], 'no-store')
         self.assertTrue(response.json()['can_view'])
+        self.assertEqual(response.json()['leadership_version'], 2)
         for path in ('/bwork/api/v2/leadership/options?extra=1',
                      '/bwork/api/v2/leadership?month=2026-10&period=month&period=today',
                      '/bwork/api/v2/leadership?month=2026-10&period=month&company_id=0',

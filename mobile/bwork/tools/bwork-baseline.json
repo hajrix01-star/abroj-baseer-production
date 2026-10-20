@@ -4,6 +4,9 @@
   "approvedVersion": "0.1.14/build15",
   "suites": ["test:bwork-gate", "test:bwork-core", "test:brand", "test:orders", "test:tasks", "test:leadership", "test:attachment-camera", "test:notifications", "test:media-storage"],
   "invariants": [
+    {"id":"bcs-combined-wire-v2","description":"الإجمالي الموسع يتطلب عقدًا جديدًا وتفصيل الخادم ولا يعيد الحساب محليًا","suite":"test:leadership","test":"combined spending v2 requires server breakdown and rejects legacy bill-only payloads"},
+    {"id":"bcs-legacy-snapshot","description":"الكاش القديم لا يظهر كإجمالي شامل ولا يمحو تخزين الرسائل والطابور","suite":"test:leadership","test":"legacy bill-only snapshots cannot appear as combined spending or wipe unrelated storage"},
+    {"id":"bcs-compact-breakdown","description":"تفصيل المشتريات والتشغيل داخل نافذة مخولة مع حفظ الكروت الثلاثة","suite":"test:leadership","test":"combined spending keeps three compact cards and shows server breakdown only in its authorized Sheet"},
     {"id":"bcr-canonical-incompatible","description":"الخادم القديم لا يسبب رجوعًا صامتًا أو محو الطابور أو تمديد الأوفلاين","suite":"test:bwork-core","test":"canonical bootstrap incompatibility never falls back or wipes prior identity outbox stages or renews offline authority"},
     {"id":"bcr-independent-identities","description":"هوية الإنتاج مستقلة وهوية QA والتخزين المثبت محفوظان بلا استيراد","suite":"test:bwork-core","test":"QA upgrade and independent production identities preserve durable namespaces without importing either container"},
     {"id":"bcr-production-signer","description":"توقيع الإنتاج وإعداد نطاقه يفشلان مغلقًا دون بديل تجريبي أو قراءة أسرار","suite":"test:bwork-core","test":"production signing and realm configuration fail closed without opening secrets or falling back to QA debug credentials"},

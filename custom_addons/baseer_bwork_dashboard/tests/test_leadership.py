@@ -88,6 +88,21 @@ class TestLeadershipOrm(AccountTestInvoicingCommon):
     def test_actual_sales_supplier_credit_parity_and_no_goal_writes(self):
         invoice = self._sale_invoice()
         bill, credit = self._bill(), self._bill(3, 'in_refund')
+        # Real posted sources across the full comparable date coverage make
+        # the current/prior spending change observable, not a mocked calculator.
+        for day in range(1, 19):
+            if day != 2:
+                self._sale_invoice(1, '2026-10-%02d' % day)
+            self._sale_invoice(1, '2026-09-%02d' % day)
+        for value, day in ((7, '2026-10-02'), (4, '2026-09-02')):
+            operating = self.fixture_env['account.move'].create({
+                'move_type': 'entry', 'journal_id': self.company_data['default_journal_misc'].id,
+                'company_id': self.company.id, 'date': day,
+                'line_ids': [Command.create({'name': 'Actual operating fixture',
+                    'account_id': self.company_data['default_account_expense'].id, 'debit': value}),
+                    Command.create({'name': 'Counterpart',
+                    'account_id': self.company_data['default_account_revenue'].id, 'credit': value})]})
+            operating.action_post()
         target = self.fixture_env['baseer.heat.calendar.target'].create({
             'company_id': self.company.id, 'year': 2026, 'month': 10,
             'weekday': 4, 'target_amount': 100,
@@ -101,10 +116,15 @@ class TestLeadershipOrm(AccountTestInvoicingCommon):
             self.reader).with_context(allowed_company_ids=self.company.ids).get_baseer_sales_metrics(
                 {'native': {'type': 'range', 'from': '2026-10-01', 'to': '2026-10-31'}})
         self.assertEqual(payload['overview']['sales']['value'], canonical['cards']['sales']['value'])
-        self.assertEqual(Decimal(payload['overview']['sales']['value']), Decimal(str(invoice.amount_total_signed)))
+        self.assertEqual(Decimal(payload['overview']['sales']['value']), Decimal(str(invoice.amount_total_signed)) + 17)
         self.assertEqual(Decimal(payload['overview']['spending']['value']),
-                         -Decimal(str(bill.amount_total_signed)) - Decimal(str(credit.amount_total_signed)))
-        self.assertEqual(payload['overview']['difference']['value'], '95.00')
+                         -Decimal(str(bill.amount_total_signed)) - Decimal(str(credit.amount_total_signed)) + 7)
+        self.assertEqual(payload['leadership_version'], 2)
+        self.assertEqual(payload['overview']['spending_breakdown']['purchases']['value'], '20.00')
+        self.assertEqual(payload['overview']['spending_breakdown']['operating']['value'], '7.00')
+        self.assertEqual(payload['overview']['difference']['value'], '105.00')
+        self.assertEqual(payload['overview']['spending_ratio']['value'], '20.45')
+        self.assertEqual(payload['overview']['current_month']['spending_change']['value'], '575.00')
         self.assertIn('supplier', payload['overview']['spending_scope'].lower())
         self.assertEqual(payload['calendar']['days'][1]['sales']['value'], '115.00')
         self.assertEqual(payload['calendar']['days'][1]['target']['value'], '100.00')
@@ -149,6 +169,7 @@ class TestLeadershipOrm(AccountTestInvoicingCommon):
         self._sale_invoice(50, '2026-09-02')
         self._sale_invoice(999, '2026-10-19')
         payload = self.service._leadership(self._selection('2026-09'))
+        self.assertEqual(payload['leadership_version'], 2)
         current = payload['overview']['current_month']
         self.assertEqual(current['month'], '2026-10')
         self.assertEqual(current['to'], '2026-10-18')

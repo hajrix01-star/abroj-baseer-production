@@ -41,12 +41,14 @@ function companies(value: unknown, allowed: number[], maximum = 10): Company[] {
   const result = value.map(entry => { const v = object(entry), company = { id: id(v.id), name: text(v.name, 256) }; if (!allowed.includes(company.id)) return invalid(); return company; });
   if (new Set(result.map(c => c.id)).size !== result.length) return invalid(); return result;
 }
-function version(v: Record<string, any>): void { if (v.api_version !== 2 || v.leadership_version !== 1) throw new LeadershipError('server_update_required'); }
+// A version-1 value means supplier bills only, not purchases plus operating costs.
+// Both online payloads and persisted snapshots pass this same strict boundary.
+function version(v: Record<string, any>): void { if (v.api_version !== 2 || v.leadership_version !== 2) throw new LeadershipError('server_update_required'); }
 export function optionsResponse(value: unknown, identity: LeadershipIdentity): LeadershipOptions {
   const v = object(bounded(value)); version(v); const can_view = bool(v.can_view), scope = companies(v.companies, identity.companyIds, 1000);
   if (v.max_companies !== 10 || can_view && (!scope.length || scope.length !== identity.companyIds.length
       || identity.companyIds.some(company => !scope.some(row => row.id === company))) || !can_view && scope.length) return invalid();
-  return { api_version: 2, leadership_version: 1, can_view, companies: scope, max_companies: 10 };
+  return { api_version: 2, leadership_version: 2, can_view, companies: scope, max_companies: 10 };
 }
 function day(value: unknown, expected: string): LeadershipDay {
   const v = object(value), dayDate = date(v.date), d = new Date(`${dayDate}T12:00:00Z`), weekday = (d.getUTCDay() + 6) % 7;
@@ -81,14 +83,15 @@ export function reportResponse(value: unknown, input: LeadershipQuery, options: 
   const currentCalendar = calendar(v.calendar, input.month), prev = new Date(`${input.month}-01T12:00:00Z`); prev.setUTCMonth(prev.getUTCMonth() - 1);
   const previous_calendar = calendar(v.previous_calendar, prev.toISOString().slice(0, 7));
   if (input.period === 'month' && (from !== currentCalendar.days[0].date || to !== currentCalendar.days.at(-1)?.date)) return invalid();
-  const overview = object(v.overview), c = object(overview.current_month), currentMonth = month(c.month), currentFrom = date(c.from), currentTo = date(c.to);
+  const overview = object(v.overview), spending = object(overview.spending_breakdown), c = object(overview.current_month), currentMonth = month(c.month), currentFrom = date(c.from), currentTo = date(c.to);
   if (currentMonth !== serverDay.slice(0, 7) || currentFrom !== `${currentMonth}-01` || currentTo !== (serverDay.slice(8) === '01' ? currentFrom : yesterday)) return invalid();
   const weekdaysRaw = object(v.calendar).weekdays;
   if (!Array.isArray(weekdaysRaw) || weekdaysRaw.length !== 7) return invalid();
   const weekdays = weekdaysRaw.map(entry => { const w = object(entry); return { weekday: integer(w.weekday, 0, 6), name: text(w.name, 128), average: amount(w.average), sample_count: integer(w.sample_count, 0, 31) }; });
   if (new Set(weekdays.map(w => w.weekday)).size !== 7) return invalid();
-  return { api_version: 2, leadership_version: 1, source: 'sales_summary', companies: scope, company_id: v.company_id, currency: 'SAR', as_of,
+  return { api_version: 2, leadership_version: 2, source: 'sales_summary', companies: scope, company_id: v.company_id, currency: 'SAR', as_of,
     filters: { month: input.month, period: input.period, from, to }, overview: {
       sales: amount(overview.sales), spending: amount(overview.spending), difference: amount(overview.difference), spending_ratio: amount(overview.spending_ratio), difference_ratio: amount(overview.difference_ratio), spending_scope: text(overview.spending_scope),
+      spending_breakdown: { purchases: amount(spending.purchases), operating: amount(spending.operating) },
       current_month: { month: currentMonth, from: currentFrom, to: currentTo, sales: amount(c.sales), daily_average: amount(c.daily_average), forecast: amount(c.forecast), sales_change: amount(c.sales_change), spending_change: amount(c.spending_change), difference_change: amount(c.difference_change), completed_days: integer(c.completed_days, 0, 31), previous_sales: amount(c.previous_sales), previous_daily_average: amount(c.previous_daily_average), comparison_label: text(c.comparison_label) } }, calendar: { ...currentCalendar, weekdays }, previous_calendar };
 }

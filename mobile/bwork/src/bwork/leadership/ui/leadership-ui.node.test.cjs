@@ -2,6 +2,26 @@ const { test } = require('node:test'), assert = require('node:assert/strict');
 const { harness, nodes, one, byId, text } = require('./leadership-harness.cjs');
 const waiting = () => { let resolve, reject; const promise = new Promise((a, b) => { resolve = a; reject = b; }); return { promise, resolve, reject }; };
 
+test('combined spending keeps three compact cards and shows server breakdown only in its authorized Sheet', async () => {
+  for (const language of ['ar', 'en']) {
+    const app = harness({ language });
+    try {
+      await app.flush();
+      assert.equal(nodes(app.render()).filter(n => /^leadership-card-/.test(n.props.testID || '')).length, 3);
+      assert.equal(nodes(app.render()).some(n => n.props.testID === 'leadership-spending-detail'), false);
+      await app.act(() => byId(app.render(), 'leadership-card-spending').onPress());
+      assert.equal(one(app.render(), 'Sheet').compact, true);
+      const detail = { type: 'View', props: byId(app.render(), 'leadership-spending-detail') }, contents = text(detail);
+      assert.ok(contents.includes(language === 'ar' ? 'المشتريات' : 'Purchases'));
+      assert.ok(contents.includes(language === 'ar' ? 'مصروفات التشغيل' : 'Operating expenses'));
+      for (const amount of ['16000.00', '4000.00', '20000.00']) assert.ok(contents.includes(amount), contents);
+      app.props.identity = { ...app.props.identity, permissions: { ...app.props.identity.permissions, dashboard_view: false } };
+      await app.flush();
+      assert.equal(nodes(app.render()).some(n => n.props.testID === 'leadership-spending-detail'), false);
+    } finally { await app.unmount(); }
+  }
+});
+
 test('day inspection opens a dismissible authorized Sheet, never an inline financial card', async () => {
   for (const language of ['ar', 'en']) {
     const app = harness({ language });
@@ -363,7 +383,7 @@ test('overview defaults to all with adjacent three cards and server values; heat
     assert.ok(byId(app.render(), 'leadership-company-0')); assert.ok(byId(app.render(), 'leadership-company-1'));
     assert.equal(nodes(app.render()).filter(n => /leadership-card-/.test(n.props.testID || '')).length, 3);
     assert.match(text(app.render()), /123,456.78/); assert.match(text(app.render()), /200.00/); assert.match(text(app.render()), /9000.00/); assert.equal(nodes(app.render()).some(n => n.props.testID === 'leadership-current-month'), false);
-    await app.act(() => byId(app.render(), 'leadership-card-spending').onPress()); assert.match(text(app.render()), /Posted supplier bills and credits/); await app.act(() => one(app.render(), 'Sheet').close());
+    await app.act(() => byId(app.render(), 'leadership-card-spending').onPress()); assert.match(text(app.render()), /Purchases include their posted tax/); assert.match(text(app.render()), /Operating expenses/); assert.match(text(app.render()), /repeated inventory costs are not added/); await app.act(() => one(app.render(), 'Sheet').close());
     await app.act(() => byId(app.render(), 'leadership-card-sales').onPress()); assert.ok(one(app.render(), 'Sheet')); assert.match(text(app.render()), /Previous sales/);
     await app.act(() => one(app.render(), 'Sheet').close()); await app.act(() => byId(app.render(), 'leadership-tab-heatmap').onPress());
     assert.equal(nodes(app.render()).some(n => n.props.testID === 'leadership-three-cards'), false); assert.ok(byId(app.render(), 'leadership-heatmap')); assert.equal(byId(app.render(), 'leadership-weekday-averages').accessibilityLabel, 'Positive completed days only');
@@ -421,7 +441,7 @@ test('same-actor return retains pixels while options verify, disables actions, a
 });
 test('Arabic presentation never echoes English server prose or weekdays and leaves server amounts unchanged', async () => {
   const app = harness({ language: 'ar' }); try { await app.flush(); await app.act(() => byId(app.render(), 'leadership-card-spending').onPress());
-    assert.match(text(app.render()), /فواتير الموردين/); assert.doesNotMatch(text(app.render()), /Gross signed|Posted supplier|credits/); await app.act(() => one(app.render(), 'Sheet').close());
+    assert.match(text(app.render()), /المشتريات والمصاريف/); assert.match(text(app.render()), /مصروفات التشغيل/); assert.doesNotMatch(text(app.render()), /Gross signed|Posted supplier|credits/); await app.act(() => one(app.render(), 'Sheet').close());
     await app.act(() => byId(app.render(), 'leadership-card-sales').onPress()); assert.doesNotMatch(text(app.render()), /Completed October|September/); await app.act(() => one(app.render(), 'Sheet').close());
     await app.act(() => byId(app.render(), 'leadership-tab-heatmap').onPress()); const month = app.calls.find(c => c[0] === 'read')[1].month;
     await app.act(() => byId(app.render(), `leadership-day-${month}-01`).onPress()); assert.match(text(app.render()), /مكتمل/); assert.match(text(app.render()), /100.00/);

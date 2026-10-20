@@ -74,6 +74,15 @@ def fixture():
     source = Source()
     service._leadership_reports = lambda company: (service, {'sales': source, 'spending': source, 'heat': source})
     service._leadership_preflight = lambda companies, plan: None
+    class SpendingSource:
+        def __init__(self, *args):
+            pass
+        def collect(self):
+            return self
+        def totals(self, bounds):
+            days = Decimal((bounds[1] - bounds[0]).days + 1)
+            return days * Decimal(20), days * Decimal(5)
+    namespace['SpendingReader'] = SpendingSource
     selection = {'company_id': 7, 'month': '2026-10', 'period': 'month',
                  'first': date(2026, 10, 1), 'last': date(2026, 10, 31),
                  'calendar_first': date(2026, 10, 1)}

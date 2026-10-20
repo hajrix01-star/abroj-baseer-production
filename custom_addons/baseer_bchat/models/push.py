@@ -416,6 +416,8 @@ class BChatPushEvent(models.Model):
         if event.message_id:
             message = event.message_id
             if (not message or event.company_id != message.company_id
+                    or message.retention_state == 'content_removed'
+                    or (message.media_id and message.media_id.retention_state == 'content_removed')
                     or message.company_id not in user.company_ids
                     or not user._bchat_effective_permissions().get('chat_view')
                     or message.author_user_id == user):

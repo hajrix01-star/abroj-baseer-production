@@ -291,6 +291,26 @@ class BWorkAdminConsole(models.TransientModel):
     logical_storage = fields.Char(string='Logical size (MiB)', compute='_compute_snapshot')
     storage_details = fields.Text(string='Storage details', compute='_compute_snapshot')
     operations = fields.Text(compute='_compute_snapshot')
+    retention_storage_status = fields.Selection([
+        ('available', 'Available'), ('limit_exceeded', 'Limit exceeded'),
+        ('integrity_error', 'Metadata incomplete')], compute='_compute_retention_storage')
+    retention_storage_total = fields.Char(compute='_compute_retention_storage')
+    retention_storage_by_room = fields.Text(compute='_compute_retention_storage')
+    retention_storage_by_kind = fields.Text(compute='_compute_retention_storage')
+
+    def _compute_display_name(self):
+        self.env['baseer.bchat.service']._require_room_manager()
+        for record in self:
+            record.display_name = self.env._('BWork Administration')
+
+    @api.depends('company_ids')
+    def _compute_retention_storage(self):
+        for record in self:
+            data = self.env['baseer.bwork.retention.service'].overview(record.company_ids.ids)
+            record.retention_storage_status = data['status']
+            record.retention_storage_total = data['total_display']
+            record.retention_storage_by_room = data['by_room_display']
+            record.retention_storage_by_kind = data['by_kind_display']
 
     def _transient_clean_rows_older_than(self, seconds):
         # Odoo19's inherited vacuum uses sudo().search() before unlink. Never

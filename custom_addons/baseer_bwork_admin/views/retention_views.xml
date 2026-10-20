@@ -1,0 +1,146 @@
+<odoo>
+    <record id="retention_wizard_form" model="ir.ui.view">
+        <field name="name">baseer.bwork.retention.wizard.form</field>
+        <field name="model">baseer.bwork.retention.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Preview old content" create="0" delete="0" duplicate="0" class="o_bwork_retention_form">
+                <group>
+                    <field name="company_id" string="Company" options="{'no_create': True, 'no_open': True}"/>
+                    <field name="scope_mode" string="Conversation scope"/>
+                    <field name="room_ids" string="Conversations" widget="many2many_tags" domain="[('company_id', '=', company_id)]" options="{'no_create': True, 'no_open': True}" invisible="scope_mode != 'rooms'" required="scope_mode == 'rooms'"/>
+                    <field name="mode" string="Delete"/>
+                    <field name="cutoff_mode" string="Date rule"/>
+                    <field name="cutoff_date" string="Before date" invisible="cutoff_mode != 'before_date'" required="cutoff_mode == 'before_date'"/>
+                    <field name="older_than_days" string="Older than (days)" invisible="cutoff_mode != 'older_than_days'" required="cutoff_mode == 'older_than_days'"/>
+                    <field name="timezone" string="Time zone"/>
+                </group>
+                <p>Preview only. Nothing is deleted until you review and confirm a ready run.</p>
+                <footer>
+                    <button name="action_preview" type="object" string="Preview deletion" class="btn-primary"/>
+                    <button string="Cancel" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+    <record id="retention_wizard_action" model="ir.actions.act_window">
+        <field name="name">Preview old content</field><field name="res_model">baseer.bwork.retention.wizard</field>
+        <field name="view_mode">form</field><field name="view_id" ref="retention_wizard_form"/><field name="target">new</field>
+    </record>
+
+    <record id="retention_policy_list" model="ir.ui.view">
+        <field name="name">baseer.bwork.retention.policy.list</field><field name="model">baseer.bwork.retention.policy</field>
+        <field name="arch" type="xml">
+            <list string="Automatic deletion" delete="0" duplicate="0">
+                <field name="company_id" string="Company"/><field name="enabled" string="Enabled"/><field name="retention_days" string="Keep for (days)"/><field name="mode" string="Delete"/>
+                <field name="next_run_at" string="Next run"/><field name="last_status" string="Last result"/>
+            </list>
+        </field>
+    </record>
+    <record id="retention_policy_form" model="ir.ui.view">
+        <field name="name">baseer.bwork.retention.policy.form</field><field name="model">baseer.bwork.retention.policy</field>
+        <field name="arch" type="xml">
+            <form string="Automatic deletion" delete="0" duplicate="0" class="o_bwork_retention_form">
+                <header>
+                    <button name="action_disable" type="object" string="Stop automatic deletion" invisible="not enabled" class="btn-secondary"/>
+                    <button name="action_confirm_readiness" type="object" string="Approve server readiness" groups="base.group_system" invisible="readiness_status == 'ready'" class="btn-secondary" confirm="Approving readiness allows explicitly enabled policies and confirmed deletion runs to execute. Continue?"/>
+                    <button name="action_revoke_readiness" type="object" string="Pause server deletion" groups="base.group_system" invisible="readiness_status != 'ready'" class="btn-secondary"/>
+                </header>
+                <sheet>
+                    <div class="oe_title"><h1><field name="name" readonly="1"/></h1></div>
+                    <p>Deletion starts only after server readiness is approved. Saving this policy does not approve readiness.</p>
+                    <group string="Server readiness">
+                        <field name="readiness_status" string="Deletion readiness" readonly="1"/>
+                        <field name="ack_clients_updated" string="All BWork clients have been updated" groups="base.group_system" invisible="readiness_status == 'ready'"/>
+                        <field name="ack_legacy_offline" string="I understand offline and exported copies cannot be recalled immediately" groups="base.group_system" invisible="readiness_status == 'ready'"/>
+                    </group>
+                    <group>
+                        <group string="Scope">
+                            <field name="company_id" string="Company" options="{'no_create': True, 'no_open': True}" readonly="id"/>
+                            <field name="scope_mode" string="Conversation scope"/>
+                            <field name="room_ids" string="Conversations" widget="many2many_tags" domain="[('company_id', '=', company_id)]" options="{'no_create': True, 'no_open': True}" invisible="scope_mode != 'rooms'" required="scope_mode == 'rooms'"/>
+                            <field name="mode" string="Delete"/><field name="retention_days" string="Keep for (days)"/>
+                        </group>
+                        <group string="Daily schedule">
+                            <field name="schedule_hour" string="Hour"/><field name="schedule_minute" string="Minute"/><field name="timezone" string="Time zone"/><field name="enabled" string="Enabled"/>
+                        </group>
+                    </group>
+                    <group string="Execution">
+                        <field name="owner_user_id" string="Policy owner" readonly="1"/><field name="next_run_at" string="Next run" readonly="1"/>
+                        <field name="last_run_at" string="Last run" readonly="1"/><field name="last_status" string="Last result" readonly="1"/>
+                    </group>
+                    <p>Protected content and ERP originals are excluded. Deleted server content is removed for all participants.</p>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="retention_policy_search" model="ir.ui.view">
+        <field name="name">baseer.bwork.retention.policy.search</field><field name="model">baseer.bwork.retention.policy</field>
+        <field name="arch" type="xml"><search><field name="company_id" string="Company"/><filter name="enabled" string="Enabled" domain="[('enabled', '=', True)]"/><filter name="company" string="Company" context="{'group_by': 'company_id'}"/></search></field>
+    </record>
+    <record id="retention_policy_action" model="ir.actions.act_window">
+        <field name="name">Automatic deletion</field><field name="res_model">baseer.bwork.retention.policy</field><field name="view_mode">list,form</field><field name="limit">30</field>
+    </record>
+
+    <record id="retention_run_list" model="ir.ui.view">
+        <field name="name">baseer.bwork.retention.run.list</field><field name="model">baseer.bwork.retention.run</field>
+        <field name="arch" type="xml"><list string="Deletion runs" create="0" delete="0" edit="0"><field name="name"/><field name="company_id" string="Company"/><field name="mode" string="Delete"/><field name="cutoff_utc" string="Before (UTC)"/><field name="state" string="Status"/><field name="progress_display" string="Progress"/></list></field>
+    </record>
+    <record id="retention_run_form" model="ir.ui.view">
+        <field name="name">baseer.bwork.retention.run.form</field><field name="model">baseer.bwork.retention.run</field>
+        <field name="arch" type="xml">
+            <form string="Deletion preview" create="0" delete="0" duplicate="0" class="o_bwork_retention_form">
+                <header>
+                    <button name="action_refresh" type="object" string="Refresh"/>
+                    <button name="action_confirm" type="object" string="Confirm permanent deletion" class="btn-danger" invisible="state != 'preview'" confirm="This permanently removes the selected server content for all participants. Continue?"/>
+                    <button name="action_cancel" type="object" string="Cancel deletion" invisible="state not in ('preview', 'queued', 'running')"/>
+                    <field name="state" string="Status" widget="statusbar" statusbar_visible="preview,queued,running,done"/>
+                </header>
+                <sheet>
+                    <div class="oe_title"><h1><field name="name" readonly="1"/></h1></div>
+                    <group>
+                        <group><field name="company_id" string="Company" readonly="1"/><field name="room_ids" string="Conversations" widget="many2many_tags" readonly="1" options="{'no_open': True}"/><field name="mode" string="Delete" readonly="1"/><field name="cutoff_utc" string="Before (UTC)" readonly="1"/></group>
+                        <group><field name="creator_user_id" string="Requested by" readonly="1"/><field name="as_of" string="Preview created" readonly="1"/><field name="expires_at" string="Preview expires" readonly="1"/><field name="progress_display" string="Progress" readonly="1"/></group>
+                    </group>
+                    <div class="o_bwork_admin_kpis" role="group" aria-label="Selected for this run">
+                        <div class="o_bwork_admin_kpi"><span>Messages</span><strong><field name="candidate_messages_display" readonly="1" nolabel="1"/></strong></div>
+                        <div class="o_bwork_admin_kpi"><span>Attachments</span><strong><field name="candidate_media_display" readonly="1" nolabel="1"/></strong></div>
+                        <div class="o_bwork_admin_kpi"><span>Logical size</span><strong><field name="candidate_bytes_display" readonly="1" nolabel="1"/></strong></div>
+                    </div>
+                    <group>
+                        <field name="eligible_total" string="Eligible items" readonly="1"/><field name="remaining_eligible" string="For a later run" readonly="1"/><field name="batch_limited" string="Limited to this run" readonly="1"/>
+                        <field name="protected_display" string="Protected items" readonly="1"/><field name="integrity_count" string="Excluded uncertain items" readonly="1"/>
+                    </group>
+                    <div class="alert alert-warning" role="alert" invisible="state != 'preview'">This is permanent server deletion, not device cache cleanup. Offline or exported copies cannot be recalled immediately.</div>
+                    <field name="confirmation_checked" string="I understand this permanently deletes server content for all participants" readonly="state != 'preview'" invisible="state != 'preview'"/>
+                    <notebook>
+                        <page string="Results"><group><field name="processed" string="Processed" readonly="1"/><field name="removed" string="Deleted" readonly="1"/><field name="skipped" string="Skipped" readonly="1"/><field name="failed" string="Failed" readonly="1"/></group></page>
+                        <page string="Operation log">
+                            <field name="audit_ids" readonly="1" nolabel="1"><list create="0" edit="0" delete="0"><field name="action" string="Action"/><field name="actor_user_id" string="User"/><field name="at" string="Date"/><field name="count" string="Items"/><field name="bytes" string="Logical bytes"/><field name="code" string="Result code"/></list></field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="retention_run_search" model="ir.ui.view">
+        <field name="name">baseer.bwork.retention.run.search</field><field name="model">baseer.bwork.retention.run</field>
+        <field name="arch" type="xml"><search><field name="company_id" string="Company"/><field name="state" string="Status"/><filter name="company" string="Company" context="{'group_by': 'company_id'}"/></search></field>
+    </record>
+    <record id="retention_run_action" model="ir.actions.act_window">
+        <field name="name">Deletion runs</field><field name="res_model">baseer.bwork.retention.run</field><field name="view_mode">list,form</field><field name="limit">30</field>
+    </record>
+    <menuitem id="retention_root_menu" name="Storage management" parent="baseer_bchat.menu_bchat_root" sequence="7" groups="base.group_system,baseer_bwork_admin.group_bwork_retention_manager"/>
+    <menuitem id="retention_manual_menu" name="Delete old content" parent="retention_root_menu" action="retention_wizard_action" sequence="10"/>
+    <menuitem id="retention_policy_menu" name="Automatic deletion" parent="retention_root_menu" action="retention_policy_action" sequence="20"/>
+    <menuitem id="retention_run_menu" name="Deletion runs" parent="retention_root_menu" action="retention_run_action" sequence="30"/>
+    <record id="console_storage_navigation" model="ir.ui.view">
+        <field name="name">baseer.bwork.admin.console.storage.navigation</field><field name="model">baseer.bwork.admin.console</field>
+        <field name="inherit_id" ref="console_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form/header" position="inside">
+                <button type="action" name="%(retention_wizard_action)d" string="Preview deletion" groups="base.group_system,baseer_bwork_admin.group_bwork_retention_manager"/>
+                <button type="action" name="%(media_gallery_action)d" string="Media gallery"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

@@ -3,7 +3,7 @@
         <field name="name">baseer.bwork.admin.console.form</field>
         <field name="model">baseer.bwork.admin.console</field>
         <field name="arch" type="xml">
-            <form string="BWork Administration" delete="0" duplicate="0">
+            <form string="BWork Administration" create="0" delete="0" duplicate="0" class="o_bwork_admin_console">
                 <header>
                     <button name="action_refresh" type="object" string="Refresh" class="btn-primary"/>
                     <button name="action_rooms" type="object" string="Rooms"/>
@@ -11,21 +11,31 @@
                     <button name="action_settings" type="object" string="Warning settings" groups="base.group_system"/>
                 </header>
                 <sheet>
-                    <group>
-                        <field name="company_ids" widget="many2many_tags" domain="[('id', 'in', context.get('allowed_company_ids', []))]" options="{'no_create': True}"/>
-                        <field name="status"/>
+                    <group class="o_bwork_admin_scope">
+                        <field name="company_ids" string="Companies" widget="many2many_tags" domain="[('id', 'in', context.get('allowed_company_ids', []))]" options="{'no_create': True}"/>
+                        <field name="status" string="Status"/>
                     </group>
-                    <group string="Overview" col="3">
-                        <field name="rooms_count"/><field name="members_count"/><field name="logical_storage"/>
-                    </group>
+                    <div class="o_bwork_admin_kpis" role="group" aria-label="Overview">
+                        <div class="o_bwork_admin_kpi"><span>Rooms</span><strong><field name="rooms_count" nolabel="1"/></strong></div>
+                        <div class="o_bwork_admin_kpi"><span>Active memberships</span><strong><field name="members_count" nolabel="1"/></strong></div>
+                        <div class="o_bwork_admin_kpi"><span>Logical size (MiB)</span><strong><field name="logical_storage" nolabel="1"/></strong></div>
+                    </div>
                     <notebook>
                         <page string="Storage and retention">
-                            <p>Logical size of distinct original and thumbnail attachments per company, not physical disk usage. All linked files are retained; no deletion or backup is performed here.</p>
-                            <p>Warning threshold 0 disables warnings. Existing unlinked staged uploads expire after 24 hours; this console does not change that policy.</p>
+                            <p>Logical attachment sizes, not physical disk usage. Server retention and device cache are managed separately.</p>
+                            <group>
+                                <field name="retention_storage_status" string="Storage status"/>
+                                <field name="retention_storage_total" string="Logical size"/>
+                            </group>
+                            <group>
+                                <group string="By conversation"><field name="retention_storage_by_room" nolabel="1"/></group>
+                                <group string="By file type"><field name="retention_storage_by_kind" nolabel="1"/></group>
+                            </group>
+                            <separator string="By company"/>
                             <field name="storage_details" nolabel="1"/>
                         </page>
                         <page string="Notifications and operations">
-                            <p>Actual metadata counts only. A scheduled cron or sent provider request does not prove device delivery. Provider readiness is unverified; no configuration secrets are inspected.</p>
+                            <p>Operational counts only. Provider submission does not confirm delivery to a device.</p>
                             <field name="operations" nolabel="1"/>
                         </page>
                     </notebook>
@@ -36,28 +46,28 @@
     <record id="room_list" model="ir.ui.view">
         <field name="name">baseer.bwork.admin.room.list</field>
         <field name="model">baseer.bchat.room</field>
-        <field name="arch" type="xml"><list string="BWork rooms" create="0" edit="0" delete="0" open_form_view="0"><field name="name"/><field name="company_id"/><field name="is_group"/></list></field>
+        <field name="arch" type="xml"><list string="BWork rooms" create="0" edit="0" delete="0" open_form_view="0"><field name="name"/><field name="company_id" string="Company"/><field name="is_group"/></list></field>
     </record>
     <record id="member_list" model="ir.ui.view">
         <field name="name">baseer.bwork.admin.member.list</field>
         <field name="model">baseer.bchat.membership</field>
-        <field name="arch" type="xml"><list string="BWork memberships" create="0" edit="0" delete="0" open_form_view="0"><field name="room_id"/><field name="company_id"/><field name="user_id"/><field name="active"/><field name="left_at"/></list></field>
+        <field name="arch" type="xml"><list string="BWork memberships" create="0" edit="0" delete="0" open_form_view="0"><field name="room_id"/><field name="company_id" string="Company"/><field name="user_id"/><field name="active"/><field name="left_at"/></list></field>
     </record>
     <record id="room_form" model="ir.ui.view">
         <field name="name">baseer.bwork.admin.room.form</field><field name="model">baseer.bchat.room</field>
-        <field name="arch" type="xml"><form string="BWork room metadata" create="0" edit="0" delete="0" duplicate="0"><sheet><group><field name="name"/><field name="company_id" options="{'no_open': True}"/><field name="is_group"/></group></sheet></form></field>
+        <field name="arch" type="xml"><form string="BWork room metadata" create="0" edit="0" delete="0" duplicate="0"><sheet><group><field name="name"/><field name="company_id" string="Company" options="{'no_open': True}"/><field name="is_group"/></group></sheet></form></field>
     </record>
     <record id="member_form" model="ir.ui.view">
         <field name="name">baseer.bwork.admin.member.form</field><field name="model">baseer.bchat.membership</field>
-        <field name="arch" type="xml"><form string="BWork membership metadata" create="0" edit="0" delete="0" duplicate="0"><sheet><group><field name="room_id" options="{'no_open': True}"/><field name="company_id" options="{'no_open': True}"/><field name="user_id" options="{'no_open': True}"/><field name="active"/><field name="left_at"/></group></sheet></form></field>
+        <field name="arch" type="xml"><form string="BWork membership metadata" create="0" edit="0" delete="0" duplicate="0"><sheet><group><field name="room_id" options="{'no_open': True}"/><field name="company_id" string="Company" options="{'no_open': True}"/><field name="user_id" options="{'no_open': True}"/><field name="active"/><field name="left_at"/></group></sheet></form></field>
     </record>
     <record id="policy_list" model="ir.ui.view">
         <field name="name">baseer.bwork.admin.policy.list</field><field name="model">baseer.bwork.admin.policy</field>
-        <field name="arch" type="xml"><list string="BWork warning settings" delete="0"><field name="company_id"/><field name="warning_mib"/><field name="write_uid"/><field name="write_date"/></list></field>
+        <field name="arch" type="xml"><list string="BWork warning settings" delete="0"><field name="company_id" string="Company"/><field name="warning_mib"/><field name="write_uid"/><field name="write_date"/></list></field>
     </record>
     <record id="policy_form" model="ir.ui.view">
         <field name="name">baseer.bwork.admin.policy.form</field><field name="model">baseer.bwork.admin.policy</field>
-        <field name="arch" type="xml"><form string="BWork warning settings" delete="0" duplicate="0"><sheet><group><field name="company_id" readonly="id" options="{'no_create': True}"/><field name="warning_mib"/></group><p>0 disables the warning. This never limits uploads or deletes files.</p><group><field name="write_uid" readonly="1"/><field name="write_date" readonly="1"/></group></sheet></form></field>
+        <field name="arch" type="xml"><form string="BWork warning settings" delete="0" duplicate="0"><sheet><group><field name="company_id" string="Company" readonly="id" options="{'no_create': True}"/><field name="warning_mib"/></group><p>0 disables the warning. This never limits uploads or deletes files.</p><group><field name="write_uid" readonly="1"/><field name="write_date" readonly="1"/></group></sheet></form></field>
     </record>
     <record id="console_action" model="ir.actions.act_window">
         <field name="name">BWork Administration</field><field name="res_model">baseer.bwork.admin.console</field><field name="view_mode">form</field><field name="view_id" ref="console_form"/>

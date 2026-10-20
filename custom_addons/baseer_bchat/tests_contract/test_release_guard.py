@@ -29,7 +29,7 @@ class ReleaseGuardTests(unittest.TestCase):
         owners = [entry["id"] for entry in registry["invariants"] if guard.matches(
             "custom_addons/baseer_bchat/models/attention_service.py", entry["source_paths"]
         )]
-        self.assertEqual(owners, ["attention-center"])
+        self.assertEqual(owners, ["attention-center", "bwork-retention-explicit-readiness-and-content-tombstones"])
 
     def test_login_brand_source_has_its_contract(self):
         registry = guard.load_registry()

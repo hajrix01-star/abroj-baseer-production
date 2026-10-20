@@ -215,12 +215,16 @@ class BChatMediaApi(http.Controller):
         try:
             if request.httprequest.args:
                 raise ProtocolError('invalid_payload', 'Unexpected query fields.')
-            raw, mime, name = self._service()._v2_media_content(media_id, thumbnail)
+            service = self._service()
+            raw, mime, name = service._v2_media_content(media_id, thumbnail)
+            # _v2_media_content still holds the room SHARE lock through response.
+            revision = request.env['baseer.bchat.media'].sudo().browse(media_id).room_id.content_revision
             disposition = 'inline; filename="bchat-thumbnail.jpg"' if thumbnail else (
                 'attachment; filename="bchat-file"; filename*=UTF-8\'\'' + quote(name, safe=''))
             return request.make_response(raw, status=200, headers=[
                 ('Content-Type', mime), ('Content-Length', str(len(raw))),
                 ('Content-Disposition', disposition),
+                ('X-BChat-Content-Revision', str(revision)),
                 ('Cache-Control', 'no-store'), ('Pragma', 'no-cache'),
                 ('Vary', 'Cookie'), ('X-Content-Type-Options', 'nosniff'),
                 ('Content-Security-Policy', "default-src 'none'; sandbox"),

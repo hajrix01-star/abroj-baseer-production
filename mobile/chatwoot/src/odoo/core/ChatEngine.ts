@@ -4,6 +4,7 @@ import type { ArchiveEdge, ArchiveQuery, ArchiveSlice, HistoryArchive, HistorySc
 import { ARCHIVE_LIMITS, ArchiveError } from './HistoryArchive.ts';
 import { MemoryHistoryArchive } from './MemoryHistoryArchive.ts';
 import { decodeGallery, galleryQuery, GALLERY_LIMITS, type MediaGalleryPage, type MediaGalleryQuery } from './MediaGallery.ts';
+import {contentRevision,decodeContentState,CONTENT_LIMITS,type ContentCache} from './ContentRetention.ts';
 export interface Storage {
   getItem(key: string): Promise<string | null>;
   setItem(key: string, value: string): Promise<void>;
@@ -20,6 +21,7 @@ export interface Bootstrap {
   api_version: 2; database: string; user_id: number; company_ids: number[];
   current_company_id?: number; csrf_token?: string;
   permissions: Record<string, boolean | number>; mobile_policy?: Policy[];
+  capabilities?: {retention_version?:number;retention_ready?:boolean;[key:string]:unknown};
   profile?: { name: string; companies: { id: number; name: string; name_ar?: string; name_en?: string }[] };
 }
 export interface Room {
@@ -28,6 +30,7 @@ export interface Room {
   last_message_id?: number; last_message_preview?: string; unread_count?: number;
   invoice_policy?: string; invoice_policy_version?: number;
   avatar_version?: number;
+  content_revision?:number;
 }
 export interface GroupInfo {
   api_version: 2;
@@ -40,6 +43,7 @@ export interface GroupAvatarAck { api_version: 2; room_id: number; avatar_versio
 export interface Message {
   id: number; author_user_id: number; author_name: string; text: string; created_at: string;
   delivery_state?: string; read_at?: string | null; media?: Record<string, unknown>; reply?: Record<string, unknown>;
+  content_removed?: boolean; media_removed?: boolean;
 }
 export interface History { api_version: 2; messages: Message[]; next_before_id: number | null;
   archive?: { older: ArchiveEdge; newer: ArchiveEdge; partial: boolean; browsing: boolean; latestId: number | null; unverified?: boolean } }
@@ -67,6 +71,7 @@ export interface Options {
   removeAttachment?: (attachment: Attachment) => Promise<void>;
   uploadGroupAvatar?: (room: Room, input: GroupAvatarInput, csrfToken: string, signal: AbortSignal) => Promise<GroupAvatarAck>;
   archive?: HistoryArchive;
+  contentCache?:ContentCache;
 }
 export class ChatError extends Error {
   readonly code: string;
@@ -107,6 +112,13 @@ export class ChatEngine {
   private readonly removeAttachment?: Options['removeAttachment'];
   private readonly avatarUpload?: Options['uploadGroupAvatar'];
   private readonly archive: HistoryArchive;
+  private readonly contentCache?:ContentCache;
+  private contentStates=new Map<string,{revision:number;ready:boolean;mediaReady:boolean}>();
+  private contentListeners=new Set<()=>void>();
+  private contentVersion=0;
+  get contentEpoch():number{return this.contentVersion;}
+  subscribeContent(listener:()=>void):()=>void{this.contentListeners.add(listener);return()=>{this.contentListeners.delete(listener);};}
+  private contentNotify(){this.contentVersion++;for(const listener of this.contentListeners)try{listener();}catch{/* Observers cannot authorize content. */}}
   private archiveCleanup = new Set<string>();
   private archiveOwner: string | null = null;
   private browsing = new Set<string>();
@@ -146,6 +158,7 @@ export class ChatEngine {
     this.upload = options.upload; this.removeAttachment = options.removeAttachment;
     this.avatarUpload = options.uploadGroupAvatar;
     this.archive = options.archive ?? new MemoryHistoryArchive();
+    this.contentCache=options.contentCache;
   }
   get identity(): Bootstrap | null { return this.account && !this.accessLocked ? copy(this.account) : null; }
   get accountScope(): string | null { return this.account && !this.accessLocked ? `${this.prefix()}/epoch:${this.epoch}` : null; }
@@ -176,6 +189,7 @@ export class ChatEngine {
     this.browsing.clear(); this.historyPumps.clear(); this.windowVersions.clear();
     this.hiddenIds.clear();
     this.galleryAssociations.clear(); this.galleryPages.clear();
+    this.contentStates.clear();this.contentNotify();
     this.accessLocked = false;
     this.receiptWork = Promise.resolve(); this.receiptPumps.clear(); this.receiptAcks.clear();
     return this.epoch;
@@ -193,7 +207,87 @@ export class ChatEngine {
       if (!this.account || this.prefix() !== account || this.account.permissions.chat_view !== true) throw new ChatError('stale_session');
       if (!internal) this.requireIdentity();
       if (room && (!this.account.company_ids.includes(room.company_id) || !this.roomRows.some(row => row.id === room.id && row.company_id === room.company_id && row.membership_id === room.membership_id))) throw new ChatError('membership_changed', 403);
+      if(room&&this.retentionEnabled()){
+        const current=this.roomRows.find(row=>row.id===room.id)!;
+        if(current.content_revision!==room.content_revision)throw new ChatError('content_changed',409);
+        if((this.contentStates.get(this.scope(room))?.revision??0)>Number(room.content_revision))throw new ChatError('content_changed',409);
+        if(!internal)this.requireContent(room);
+      }
     };
+  }
+  private retentionEnabled():boolean{return this.account?.capabilities?.retention_version===1;}
+  contentReady(value:Room|number):boolean{
+    const room=this.room(value),state=this.contentStates.get(this.scope(room));return !this.retentionEnabled()||state?.ready===true&&state.revision===room.content_revision&&(this.account?.permissions.media!==true||state.mediaReady===true);
+  }
+  private requireContent(room:Room):void{if(!this.contentReady(room))throw new ChatError('content_sync_required',409);}
+  private blockContent(room:Room,revision:number):void{
+    const key=this.scope(room);revision=Math.max(revision,this.contentStates.get(key)?.revision??0);this.contentStates.set(key,{revision,ready:false,mediaReady:false});this.histories.delete(key);this.browsing.delete(key);
+    this.windowVersions.set(key,(this.windowVersions.get(key)??0)+1);this.clearGalleryScope(key);this.contentNotify();
+  }
+  private async loadContentMarkers(e:number):Promise<void>{
+    if(!this.retentionEnabled())return;
+    for(const room of this.roomRows){let raw:string|null=null;
+      try{raw=await this.storage.getItem(`${this.scope(room)}content-state`);}catch{/* An unreadable content marker is not corrupt identity or permission to purge the outbox. */}this.fence(e);
+      let saved:any;try{saved=raw?JSON.parse(raw):null;}catch{/* Unknown marker blocks content. */}
+      if(contentRevision(room.content_revision)&&saved?.revision===room.content_revision&&saved?.ready===true)this.contentStates.set(this.scope(room),{revision:room.content_revision,ready:true,mediaReady:saved.mediaReady===true});
+      else this.blockContent(room,Math.max(contentRevision(room.content_revision)?room.content_revision:0,contentRevision(saved?.revision)?saved.revision:0));
+    }
+  }
+  private async observeContentRevision(room:Room,revision:number):Promise<void>{
+    const e=this.epoch,scope=this.scope(room),key=`${scope}content-state`;
+    this.blockContent(room,Math.max(revision,this.contentStates.get(scope)?.revision??0));
+    // The durable incomplete marker must land before this observation rejects.
+    // Queue with all other marker writers; never let an older completion reopen it.
+    await this.serial(async()=>{
+      const guard=()=>{this.fence(e);if(!this.roomRows.some(row=>row.id===room.id&&row.company_id===room.company_id&&row.membership_id===room.membership_id)||this.scope(room)!==scope)throw new ChatError('stale_session');};
+      guard();const current=this.contentStates.get(scope);
+      if(current?.ready&&current.revision>=revision)return;
+      const observed=Math.max(revision,current?.revision??0);
+      try{await this.storage.setItem(key,JSON.stringify({revision:observed,ready:false}));guard();}
+      catch(error){
+        guard();
+        // If writing fails, removing the old ready marker still fails closed on restart.
+        // Total storage I/O failure cannot promise crash durability; reject, never display.
+        await this.storage.removeItem(key);guard();throw error;
+      }
+    });
+  }
+  private async assertContentResponse(raw:any,room:Room):Promise<void>{
+    if(!this.retentionEnabled())return;
+    if(!contentRevision(raw?.content_revision)||raw.content_revision!==room.content_revision){
+      if(contentRevision(raw?.content_revision)&&Number(raw.content_revision)>Number(room.content_revision))await this.observeContentRevision(room,raw.content_revision);
+      throw new ChatError('content_changed',409);
+    }
+    this.requireContent(room);
+  }
+  async checkContentRevision(value:Room|number,revision:unknown):Promise<void>{await this.assertContentResponse({content_revision:revision},this.room(value));}
+  private async reconcileContent(e:number):Promise<void>{
+    if(!this.retentionEnabled())return;
+    for(const room of this.roomRows){
+      const revision=room.content_revision!,mediaReady=this.account!.permissions.media===true,saved=this.contentStates.get(this.scope(room));
+      if(saved&&saved.revision>revision)throw new ChatError('content_revision_rollback',409);
+      if(saved?.ready&&saved.revision===revision&&saved.mediaReady===mediaReady)continue;
+      this.blockContent(room,revision);const guard=this.archiveGuard(e,room,true),key=`${this.scope(room)}content-state`,scope=this.archiveScope(room);
+      await this.serial(async()=>{guard();await this.storage.setItem(key,JSON.stringify({revision,ready:false}));guard();});
+      if(!this.archive.clearRoom)throw new ChatError('content_storage_unavailable');
+      await this.serial(async()=>{guard();await this.archive.clearRoom!(scope,guard);guard();await this.storage.removeItem(`${this.scope(room)}history`);guard();});
+      // Media revocation does not revoke text/outbox authority. Quarantine bytes
+      // without asking a media-only endpoint; regrant must reconcile this same revision.
+      const ids=(mediaReady?await this.contentCache?.quarantine(scope,room,revision,guard)??[]:[]).sort((a,b)=>a-b);guard();
+      if(ids.length>CONTENT_LIMITS.cacheIds||ids.some((v,i)=>!id(v)||i>0&&v===ids[i-1]))throw new ChatError('invalid_content_state');
+      for(let start=0;start<ids.length;start+=CONTENT_LIMITS.ids){
+        const batch=ids.slice(start,start+CONTENT_LIMITS.ids),seen=new Set<number>();let cursor:string|undefined;
+        do{
+          guard();const raw=await this.request(`/bchat/api/v2/rooms/${room.id}/content-state`,e,{api_version:2,membership_id:room.membership_id,content_revision:revision,media_ids:batch,...(cursor?{cursor}:{})});guard();
+          let page;try{page=decodeContentState(raw,room,revision,batch,cursor);}catch{throw new ChatError('invalid_content_state');}
+          for(const item of page.items){if(seen.has(item.media_id))throw new ChatError('invalid_content_state');seen.add(item.media_id);}
+          await this.contentCache?.apply(scope,room,revision,page.items,guard);guard();cursor=page.next_cursor??undefined;
+        }while(cursor);
+        if(seen.size!==batch.length)throw new ChatError('invalid_content_state');
+      }
+      await this.contentCache?.complete(scope,room,revision,guard);guard();
+      await this.serial(async()=>{guard();await this.storage.setItem(key,JSON.stringify({revision,ready:true,mediaReady}));guard();this.contentStates.set(this.scope(room),{revision,ready:true,mediaReady});this.contentNotify();});
+    }
   }
   /** Epoch-only cleanup authority remains usable after account reset. Called under serial. */
   private async drainArchiveCleanup(e: number): Promise<void> {
@@ -208,6 +302,7 @@ export class ChatEngine {
   }
   private async migrateLegacyHistory(e: number): Promise<void> {
     for (const room of this.roomRows) {
+      if(this.retentionEnabled()&&this.contentStates.get(this.scope(room))?.ready!==true)continue;
       const key = `${this.scope(room)}history`, guard = this.archiveGuard(e, room, this.accessLocked);
       let raw: string | null;
       try { raw = await this.storage.getItem(key); guard(); }
@@ -273,6 +368,7 @@ export class ChatEngine {
   private bootstrap(raw: unknown, uid: number): Bootstrap {
     const b = object(raw);
     if (b.api_version !== 2 || b.user_id !== uid || b.database !== this.database || !id(uid) || !Array.isArray(b.company_ids) || !b.company_ids.every(id) || !b.company_ids.length || typeof b.csrf_token !== 'string' || !b.csrf_token || !b.permissions || b.permissions.chat_view !== true) throw new ChatError('identity_mismatch', 403);
+    if(b.capabilities?.retention_version!==undefined&&(b.capabilities.retention_version!==1||typeof b.capabilities.retention_ready!=='boolean'))throw new ChatError('invalid_content_state',409);
     return b as Bootstrap;
   }
   /** Application login may select another authorized module. Default chat behavior is unchanged. */
@@ -375,7 +471,7 @@ export class ChatEngine {
         }
         const bootstrap = this.bootstrap(rawBootstrap, result.uid);
         this.account = bootstrap; this.remembered = remember; this.verifiedAt = prior.uid === result.uid ? prior.verifiedAt : 0;
-        if (prior.uid === result.uid) await this.serial(() => this.loadStoredAccount(e));
+        if (prior.uid === result.uid) {await this.serial(() => this.loadStoredAccount(e));await this.loadContentMarkers(e);}
         await this.applyBootstrap(bootstrap, e);
         loginStage = 'rooms';
         await this.loadRooms(e);
@@ -421,7 +517,7 @@ export class ChatEngine {
         }
         this.account = b as Bootstrap; this.verifiedAt = saved.verifiedAt; this.remembered = true;
         this.archiveOwner = this.prefix(); await this.drainArchiveCleanup(e);
-        await this.loadStoredAccount(e); this.roomRows = this.validRooms(this.roomRows);
+        await this.loadStoredAccount(e); this.roomRows = this.validRooms(this.roomRows);await this.loadContentMarkers(e);
         try { await this.reconcileArchive(e); await this.migrateLegacyHistory(e); }
         catch (error) {
           this.fence(e);
@@ -456,6 +552,7 @@ export class ChatEngine {
       const r = object(value);
       if (!id(r.id) || !id(r.company_id) || !id(r.membership_id) || typeof r.name !== 'string' || !this.account?.company_ids.includes(r.company_id) || seen.has(r.id)) throw new ChatError('invalid_rooms');
       if (r.avatar_version !== undefined && (!Number.isSafeInteger(r.avatar_version) || r.avatar_version < 0)) throw new ChatError('invalid_rooms');
+      if(this.retentionEnabled()&&!contentRevision(r.content_revision))throw new ChatError('invalid_content_state');
       seen.add(r.id); return r as Room;
     });
   }
@@ -508,6 +605,11 @@ export class ChatEngine {
   private async loadRooms(e: number) {
     const result = await this.request('/bchat/api/v2/rooms', e);
     const rooms = this.validRooms(result.rooms);
+    if(this.retentionEnabled())for(const room of rooms){
+      const saved=this.contentStates.get(this.scope(room));
+      if(saved&&saved.revision>room.content_revision!)throw new ChatError('content_revision_rollback',409);
+      if(!saved?.ready||saved.revision!==room.content_revision)this.blockContent(room,room.content_revision!);
+    }
     await this.serial(async () => {
       this.fence(e);
       for (const old of this.roomRows) {
@@ -527,6 +629,7 @@ export class ChatEngine {
       }
       await this.persistIdentity(e);
     });
+    await this.reconcileContent(e);
   }
   private async dropRoom(room: Room, e: number) {
     this.fence(e); const scope = this.scope(room);
@@ -637,12 +740,13 @@ export class ChatEngine {
     const account = this.requireIdentity();
     if (account.permissions.chat_view !== true || account.permissions.media !== true) throw new ChatError('forbidden', 403);
     const room = this.room(value);
+    this.requireContent(room);
     const history = this.histories.get(this.scope(room));
     return history ? copy(history) : null;
   }
   /** Canonical association, not authority granted by a caller-provided file descriptor. */
   async mediaAssociation(value: Room | number, mediaId: number): Promise<Message | null> {
-    const room = this.room(value), e = this.epoch;
+    const room = this.room(value), e = this.epoch;this.requireContent(room);
     if (!id(mediaId)) throw new ChatError('invalid_media');
     const scopeGuard = this.archiveGuard(e, room);
     const guard = () => { scopeGuard(); if (this.account?.permissions.media !== true) throw new ChatError('forbidden', 403); };
@@ -695,6 +799,7 @@ export class ChatEngine {
       const params = new URLSearchParams({ kind: query.kind, order: query.order, limit: String(query.limit) });
       if (query.cursor) params.set('cursor', query.cursor);
       const raw = await this.request(`/bchat/api/v2/rooms/${room.id}/media?${params}`, e); mediaGuard();
+      await this.assertContentResponse(raw,room);
       let page: MediaGalleryPage;
       try { page = decodeGallery(raw, room, query); } catch { throw new ChatError('invalid_gallery'); }
       const visible = await hideOwned(page); mediaGuard();
@@ -722,6 +827,7 @@ export class ChatEngine {
   }
   async history(value: Room | number, beforeId?: number): Promise<History> {
     const room = this.room(value); const e = this.epoch;
+    this.requireContent(room);
     if (beforeId !== undefined) return this.navigateHistory(room, 'before', beforeId);
     if (this.disconnected) return this.serial(async () => {
       const guard = this.archiveGuard(e, room); guard();
@@ -745,6 +851,7 @@ export class ChatEngine {
       let message: Message | undefined;
       if (!this.disconnected) {
         const result = await this.request(`/bchat/api/v2/rooms/${room.id}/messages/${messageId}`, e); guard();
+        await this.assertContentResponse(result,room);
         if (result.api_version !== 2) throw new ChatError('invalid_response');
         message = this.validHistory({ api_version: 2, messages: [object(result.message)], next_before_id: null }).messages[0];
       } else {
@@ -896,7 +1003,9 @@ export class ChatEngine {
     finally { if (this.historyPumps.get(pump) === run) this.historyPumps.delete(pump); }
   }
   private async fetchHistoryPage(room: Room, beforeId: number | undefined, e: number): Promise<History> {
-    const page = this.validHistory(await this.request(`/bchat/api/v2/rooms/${room.id}/messages${beforeId ? `?before_id=${beforeId}` : ''}`, e));
+    this.requireContent(room);
+    const raw=await this.request(`/bchat/api/v2/rooms/${room.id}/messages${beforeId ? `?before_id=${beforeId}` : ''}`, e);
+    await this.assertContentResponse(raw,room);const page = this.validHistory(raw);
     const guard = this.archiveGuard(e, room, true);
     await this.serial(async () => { guard(); await this.archive.commitPage(this.archiveScope(room), { beforeId: beforeId ?? null, history: page }, guard); guard(); });
     return page;

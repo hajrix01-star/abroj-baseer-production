@@ -96,3 +96,21 @@ msgstr "إنشاء المهام وتحديثها"
 #: model:ir.model.fields,field_description:baseer_bchat.field_res_users__bchat_manage_rooms
 msgid "Manage rooms and members"
 msgstr "إدارة الغرف والأعضاء"
+
+#. module: baseer_bchat
+#. odoo-python
+#: code:addons/baseer_bchat/models/retention.py:0
+msgid "Retention requires owner authority or both explicit retention and existing room-manager roles in the current company."
+msgstr "الاحتفاظ متاح للمالك، أو لمن يملك صلاحية الاحتفاظ وإدارة الغرف معًا في الشركة الحالية."
+
+#. module: baseer_bchat
+#: model:ir.model.fields.selection,name:baseer_bchat.selection__baseer_bchat_message__retention_state__active
+#: model:ir.model.fields.selection,name:baseer_bchat.selection__baseer_bchat_media__retention_state__active
+msgid "Available"
+msgstr "متاح"
+
+#. module: baseer_bchat
+#: model:ir.model.fields.selection,name:baseer_bchat.selection__baseer_bchat_message__retention_state__content_removed
+#: model:ir.model.fields.selection,name:baseer_bchat.selection__baseer_bchat_media__retention_state__content_removed
+msgid "Content removed"
+msgstr "حُذف المحتوى"

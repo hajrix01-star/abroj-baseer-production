@@ -77,7 +77,7 @@ export function TimelineScreen({
   const canAttach = presented && chat.presentationReady && access.canAttach;
   const viewMedia = presented && chat.presentationReady && canViewMedia(chat.identity, room);
   const retainedMedia = !viewMedia && chat.retainedDisplay === true && canViewMedia(chat.identity, room);
-  const mediaKey = presentationKey(chat.identity, room);
+  const mediaKey = `${presentationKey(chat.identity, room)}/content:${chat.contentEpoch??0}/${room.content_revision??'legacy'}`;
   const previewScope = `${chat.identity?.database}/${mediaKey}`;
   const actionScope = `${engine.accountScope}/${previewScope}`;
   const currentActionScope = useRef(actionScope); currentActionScope.current = actionScope;
@@ -219,12 +219,14 @@ export function TimelineScreen({
     scrollFrame.current = null;
     // Do not clear the draft/reply, change reader intent, or accept zero-sized hidden geometry.
   }, [presented]);
+  useEffect(()=>{replyRevision.current++;setReply(null);setInfo(null);setActionsFor(null);setJumpTarget(null);},[chat.contentEpoch,room.content_revision]);
   const chooseReply = (message: Message) => {
-    if (!latestAccess.current || !live.current || (message.author_user_id === currentMessages.current.userId
+    const current=currentMessages.current.messages.find(row=>row.id===message.id);
+    if (!current || current.content_removed===true || currentActionScope.current!==actionScope || !latestAccess.current || !live.current || (current.author_user_id === currentMessages.current.userId
       && (!hiddenRef.current.ready || hiddenRef.current.ids.has(message.id)))) return;
     setActionsFor(null);
     replyRevision.current++;
-    setReply(message);
+    setReply(current);
     input.current?.focus();
   };
   const operationCurrent = (scope: string, operation: number) => presentedRef.current && live.current && currentActionScope.current === scope
@@ -639,6 +641,8 @@ export function TimelineScreen({
               const own = item.pending || item.message?.author_user_id === chat.identity?.user_id;
               const message = item.message;
               const pending = item.pending;
+              const removed=message?.content_removed===true;
+              const body=message?(removed?t('contentRemoved'):message.text||(message.media_removed===true?t('mediaRemoved'):'')):pending?.text||'';
               const state = pending?.state ?? message?.delivery_state;
               if (message && own && (!hiddenReady || hiddenIds.has(message.id))) return (
                 <View style={{ alignSelf: 'center', marginVertical: 5, padding: 10, borderRadius: 12, backgroundColor: colors.pale }}>
@@ -647,18 +651,18 @@ export function TimelineScreen({
                 </View>
               );
               return (
-                <SwipeReply gestureKey={`${actionScope}/${message?.id ?? pending?.client_uuid}`} enabled={!!message && canSend} language={language} onReply={() => { if (message) chooseReply(message); }}
+                <SwipeReply gestureKey={`${actionScope}/${message?.id ?? pending?.client_uuid}`} enabled={!!message && !removed && canSend} language={language} onReply={() => { if (message) chooseReply(message); }}
                   style={{
                     alignSelf: own ? 'flex-end' : 'flex-start',
                     width: 'auto', maxWidth: '86%', minWidth: 100, marginVertical: 4,
                   }}>
                 <Pressable
                   accessibilityLabel={
-                    message ? `${message.author_name}: ${message.text}` : pending?.text
+                    message ? `${message.author_name}: ${body}` : pending?.text
                   }
                   accessibilityActions={
                     message ? [
-                      ...(canSend ? [{ name: 'reply', label: t('reply') }] : []),
+                      ...(canSend && !removed ? [{ name: 'reply', label: t('reply') }] : []),
                       { name: 'info', label: t('messageInfo') }, ...(own ? [{ name: 'hide', label: t('hideLocal') }] : []),
                     ] : []
                   }
@@ -700,7 +704,7 @@ export function TimelineScreen({
                         {message.author_name}
                       </Text>
                     )}
-                    {(message?.reply || pending?.reply_to_message_id) && (
+                    {!removed && (message?.reply || pending?.reply_to_message_id) && (
                       <MessageQuote
                         language={language}
                         label={t('openOriginal')}
@@ -726,12 +730,12 @@ export function TimelineScreen({
                         }
                       />
                     )}
-                    {!!(message?.text || pending?.text) && (
+                    {!!body && (
                       <Text selectable style={[styles.text, direction(language)]}>
-                        {message?.text ?? pending?.text}
+                        {body}
                       </Text>
                     )}
-                    {viewMedia && message?.media && (
+                    {viewMedia && !removed && !message?.media_removed && message?.media && (
                       <MediaTile
                         key={`${mediaKey}/${message.id}/${String(message.media.id)}`}
                         scopeKey={previewScope}
@@ -749,7 +753,7 @@ export function TimelineScreen({
                         report={setLocalError}
                       />
                     )}
-                    {retainedMedia && message?.media && <View testID="retained-media-placeholder" style={{ gap: 8 }}>
+                    {retainedMedia && !removed && !message?.media_removed && message?.media && <View testID="retained-media-placeholder" style={{ gap: 8 }}>
                       {message.media.kind !== 'audio' && <Label language={language} muted>{String(message.media.name ?? t('file'))}</Label>}
                       {message.media.kind === 'image' ? <View testID="retained-image-space" style={{ width: 240, maxWidth: '100%', height: 180,
                         borderRadius: 12, backgroundColor: colors.pale, alignItems: 'center', justifyContent: 'center' }}>
@@ -795,7 +799,7 @@ export function TimelineScreen({
                         marginTop: 4,
                         flexWrap: 'wrap',
                       }}>
-                      {canSend && <>
+                      {canSend && !removed && <>
                       <IconButton
                         icon="reply"
                         label={t('reply')}
@@ -940,7 +944,7 @@ export function TimelineScreen({
           <Text selectable style={[styles.text, direction(language)]}>{info.message.author_name}</Text>
           <Label language={language} muted>{t('sentAt')}</Label>
           <Text style={[styles.text, { writingDirection: 'ltr' }]}>{messageDateTime(info.message.created_at) || t('unknown')}</Text>
-          {!!info.message.text && <Text selectable style={[styles.text, direction(language)]}>{info.message.text}</Text>}
+          {(info.message.content_removed || info.message.media_removed || !!info.message.text) && <Text selectable style={[styles.text, direction(language)]}>{info.message.content_removed?t('contentRemoved'):info.message.text||(info.message.media_removed?t('mediaRemoved'):'')}</Text>}
           {info.message.media?.kind === 'audio' && <Label language={language}>{t('voiceMessage')}</Label>}
           {info.message.author_user_id === chat.identity.user_id && <>
             <Label language={language} muted>{t('messageState')}</Label>

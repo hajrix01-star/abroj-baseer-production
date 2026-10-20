@@ -26,6 +26,8 @@ import { NotificationsEngine, notificationScope, type NotificationAuthority } fr
 import { nativePush } from './notifications/native';
 import { mediaCacheTotals } from './storage/MediaCacheContracts';
 import type { MediaCacheTotals, MediaCacheOverview, MediaCacheCleanPlan, MediaCacheCleanResult, MediaOfflineState } from './storage/MediaCacheContracts';
+import type {ContentCache,ContentStateItem} from './core/ContentRetention';
+import type {HistoryScope} from './core/HistoryArchive';
 export type { MediaCacheTotals, MediaCacheOverview, MediaCacheCleanPlan, MediaCacheCleanResult, MediaOfflineState } from './storage/MediaCacheContracts';
 
 export const config = Object.freeze({
@@ -312,18 +314,20 @@ async function request(req: Request): Promise<unknown> {
 function serialMedia<T>(fn: () => Promise<T>): Promise<T> {
   const result = mediaWork.then(fn, fn); mediaWork = result.catch(() => undefined); return result;
 }
-function scope(room: Room): { uid: number; epoch: number; key: string } {
+function scope(room: Room): { uid: number; epoch: number; key: string; content:number|undefined } {
   const current = getEngine(); const uid = current.identity?.user_id;
   if (!uid || !current.rooms().some(r => r.id === room.id && r.company_id === room.company_id && r.membership_id === room.membership_id)) throw new ChatError('membership_changed', 403);
-  return { uid, epoch: generation, key: `${new URL(config.origin).origin}|${config.database}|${uid}` };
+  return { uid, epoch: generation, key: `${new URL(config.origin).origin}|${config.database}|${uid}`,content:current.rooms().find(r=>r.id===room.id)!.content_revision };
 }
 function fence(room: Room, expected: ReturnType<typeof scope>): void {
   const actual = scope(room);
   if (actual.epoch !== expected.epoch || actual.uid !== expected.uid) throw new ChatError('stale_session');
+  if(actual.content!==expected.content)throw new ChatError('content_changed',409);
 }
 function mediaFence(room: Room, expected: ReturnType<typeof scope>): void {
   fence(room, expected);
   if (getEngine().identity?.permissions.media !== true) throw new ChatError('forbidden', 403);
+  if(!getEngine().contentReady(room))throw new ChatError('content_sync_required',409);
 }
 async function actorDirectory(key: string): Promise<string> {
   if (!FS.documentDirectory) throw new ChatError('native_storage_required');
@@ -419,7 +423,8 @@ function cacheAuthorityStamp():string {
   const current=getEngine(),identity=current.identity;
   if(AppState.currentState!=='active'||!identity||identity.permissions.chat_view!==true||identity.permissions.media!==true||!current.accountScope)throw new ChatError('forbidden',403);
   const rooms=current.rooms(); // Checks the remembered account lease as well.
-  return JSON.stringify([generation,current.accountScope,identity.database,identity.user_id,identity.company_ids,identity.permissions,rooms.map(room=>[room.company_id,room.id,room.membership_id])]);
+  if(rooms.some(room=>!current.contentReady(room)))throw new ChatError('content_sync_required',409);
+  return JSON.stringify([generation,current.accountScope,identity.database,identity.user_id,identity.company_ids,identity.permissions,current.contentEpoch,rooms.map(room=>[room.company_id,room.id,room.membership_id,room.content_revision])]);
 }
 function cacheAuthorityGuard(value:CacheAuthority):void {if(value.epoch!==generation||value.stamp!==cacheAuthorityStamp())throw new ChatError('stale_session');}
 async function cacheAuthority():Promise<CacheAuthority>{
@@ -889,11 +894,73 @@ export function getEngine(): NativeChatEngine {
   if (!engine) {
     fixedURL('/bchat/api/v2/bootstrap');
     engine = new NativeChatEngine({ origin: config.origin, database: config.database, storage: AsyncStorage, archive: historyArchive, uuid: Crypto.randomUUID,
-      transport: { request, cancelAll: cancelNative }, upload, removeAttachment: a => removeOwned(a.uri), uploadGroupAvatar,
+      transport: { request, cancelAll: cancelNative }, upload, removeAttachment: a => removeOwned(a.uri), uploadGroupAvatar,contentCache:nativeContentCache,
     });
   }
   return engine;
 }
+// The engine supplies this private, verified scope even while login presentation
+// is locked. No caller URI/cutoff is accepted and no network wait owns FS locks.
+async function contentDirectory(history:HistoryScope,room:Room,guard:()=>void){
+  guard();const match=/\/u\/(\d+)\/$/.exec(history.account),uid=Number(match?.[1]);
+  const expected=`odoo-chat/v1/${encodeURIComponent(new URL(config.origin).origin)}/${encodeURIComponent(config.database)}/u/${uid}/`;
+  if(!Number.isSafeInteger(uid)||uid<=0||history.account!==expected||history.companyId!==room.company_id||history.roomId!==room.id||history.membershipId!==room.membership_id)throw new ChatError('stale_session');
+  const actor=await actorDirectory(`${new URL(config.origin).origin}|${config.database}|${uid}`);guard();
+  return {actor,digest:catalogActor(actor),directory:`${actor}c${room.company_id}-r${room.id}-m${room.membership_id}/`};
+}
+function contentFile(uri:string,directory:string):number|null{
+  if(!owned(uri)||!uri.startsWith(directory))return null;
+  const match=/^media-([1-9]\d*)(?:-preview\.jpg|\.(?:jpg|png|webp|m4a|pdf|txt|docx|xlsx))$/.exec(uri.slice(directory.length));
+  return match&&Number.isSafeInteger(Number(match[1]))?Number(match[1]):null;
+}
+async function contentFiles(directory:string,guard:()=>void):Promise<string[]>{
+  const info=await FS.getInfoAsync(directory);guard();if(!info.exists)return[];if(!info.isDirectory)throw new ChatError('local_state_invalid');
+  const names=await FS.readDirectoryAsync(directory);guard();const files=names.map(name=>directory+name).filter(uri=>contentFile(uri,directory)!==null);
+  if(files.length>5000)throw new ChatError('media_quota');return files;
+}
+async function contentJournalIds(account:string,guard:()=>void):Promise<Set<number>>{
+  const ids=new Set<number>();guard();
+  for(const key of await AsyncStorage.getAllKeys())if(key.startsWith(account)&&(key.includes('/outbox/')||key.includes('/ack/'))){
+    const raw=await AsyncStorage.getItem(key);guard();if(!raw)continue;
+    const saved=JSON.parse(raw),id=saved?.attachment?.media_id;
+    if(id!==undefined){if(!Number.isSafeInteger(id)||id<=0)throw new ChatError('local_state_invalid');ids.add(id);}
+  }
+  guard();return ids;
+}
+const nativeContentCache:ContentCache={
+  async quarantine(history,room,_revision,guard){
+    const context=await contentDirectory(history,room,guard);return serialMedia(async()=>{
+      guard();const rows=await mediaCacheCatalog.list(context.digest),pins=await mediaCacheCatalog.pins(context.digest),ids=new Set<number>();guard();
+      const queued=await contentJournalIds(history.account,guard),files=await contentFiles(context.directory,guard);
+      for(const uri of [...rows.map(row=>row.uri),...pins.map(row=>row.uri),...files]){const id=contentFile(uri,context.directory);if(id!==null&&!queued.has(id))ids.add(id);}
+      if(ids.size>5000)throw new ChatError('media_quota');return [...ids].sort((a,b)=>a-b);
+    });
+  },
+  async apply(history,room,_revision,items:ContentStateItem[],guard){
+    const context=await contentDirectory(history,room,guard);
+    for(let offset=0;offset<items.length;offset+=100){
+      const live:{message:NonNullable<Extract<ContentStateItem,{state:'live'}>['message']>;id:number}[]=[];
+      await serialMedia(async()=>{
+        guard();const queued=await contentJournalIds(history.account,guard),rows=await mediaCacheCatalog.list(context.digest),pins=await mediaCacheCatalog.pins(context.digest),files=await contentFiles(context.directory,guard);guard();
+        for(const item of items.slice(offset,offset+100)){
+          guard();if(queued.has(item.media_id))continue;
+          const ownedUris=new Set([...rows.map(row=>row.uri),...files].filter(uri=>contentFile(uri,context.directory)===item.media_id));
+          const heldPins=pins.filter(pin=>contentFile(pin.uri,context.directory)===item.media_id);
+          if(item.state==='live'){if(heldPins.length)live.push({message:item.message,id:item.media_id});continue;}
+          for(const uri of ownedUris){
+            guard();if(await stagedJournalOwns(uri))throw new ChatError('content_cleanup_pending');guard();
+            // Server removal overrides viewer/durable cache pins, not queue stages.
+            await removeOwned(uri);guard();
+          }
+          for(const pin of heldPins){guard();await mediaCacheCatalog.keep(context.digest,pin.uri,pin.sha256,false);guard();}
+        }
+      });
+      // Archive/engine association work is outside serialMedia to avoid inversion.
+      for(const row of live){guard();await historyArchive.retainMediaAssociation(history,row.message,row.id,guard);guard();}
+    }
+  },
+  async complete(_history,_room,_revision,guard){guard();},
+};
 
 function pushAuthority(identity: Bootstrap | null, epoch: string | number | null): NotificationAuthority | null {
   if (!identity || epoch===null || !(identity.permissions.chat_view === true || identity.permissions.task_view === true)) return null;
@@ -1193,6 +1260,10 @@ export async function localMediaLease(room: Room, descriptor: Record<string, unk
         const mime = preview ? 'image/jpeg' : media.mime;
         const response = await sessionNative(`/bchat/api/v2/media/${media.id}/${preview ? 'thumbnail' : 'content'}`, 'GET', { Accept: mime, 'Accept-Encoding': 'identity' }, undefined, undefined, partial, limit);
         mediaFence(room, snapshot); const headers = headersOf(response);
+        if(getEngine().identity?.capabilities?.retention_version===1){
+          const revision=headers['x-bchat-content-revision'];
+          await getEngine().checkContentRevision(room,revision!==undefined&&/^(0|[1-9]\d*)$/.test(revision)?Number(revision):undefined);
+        }
         if ((headers['content-type'] ?? '').split(';')[0].trim() !== mime) throw new ChatError('invalid_response');
         const info = await FS.getInfoAsync(partial);
         if (!info.exists || info.isDirectory || info.size <= 0 || info.size > limit

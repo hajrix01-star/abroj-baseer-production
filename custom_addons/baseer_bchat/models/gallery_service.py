@@ -15,13 +15,14 @@ class BChatGalleryService(models.AbstractModel):
         return result
 
     @api.model
-    def _v2_gallery(self, room_id, kind='all', order='newest', limit=wire.DEFAULT_PAGE, cursor=None):
+    def _v2_gallery(self, room_id, kind='all', order='newest', limit=wire.DEFAULT_PAGE, cursor=None, q=''):
         self._require_bchat_permission('chat_view')
         self._require_bchat_permission('media')
         kind, order, limit = wire.options(kind, order, limit)
         room = self._v2_lock_room(room_id)
         member = self._v2_current_member(room)
-        after = wire.anchor(cursor, room.id, member.id, kind, order)
+        q = wire.search(q)
+        after = wire.anchor(cursor, room.id, member.id, kind, order, room.content_revision, q)
         self.env['baseer.bchat.message'].flush_model()
         self.env['baseer.bchat.media'].flush_model()
         keyset = SQL('')
@@ -43,11 +44,13 @@ class BChatGalleryService(models.AbstractModel):
             JOIN baseer_bchat_media media ON media.id = message.media_id
                 AND media.message_id = message.id AND media.state = 'attached'
                 AND media.room_id = message.room_id AND media.company_id = message.company_id
+                AND media.retention_state = 'active'
             WHERE message.room_id = %s AND message.company_id = %s
               AND message.id > %s AND (%s = 'all' OR media.kind = %s)
+              AND message.retention_state = 'active' AND media.name ILIKE %s
               %s ORDER BY %s LIMIT %s
         ''', room.id, room.company_id.id, member.joined_after_message_id,
-            kind, kind, keyset, sorting, limit + 1))
+            kind, kind, wire.search_pattern(q), keyset, sorting, limit + 1))
         found = self.env.cr.fetchall()
         page = self.env['baseer.bchat.message'].sudo().browse([row[0] for row in found[:limit]])
         parent_ids = page.mapped('reply_to_message_id').ids
@@ -63,4 +66,4 @@ class BChatGalleryService(models.AbstractModel):
         for row in rows:
             row['media']['size_label'] = wire.size_label(row['media']['size'])
         return wire.response(room.id, room.company_id.id, member.id, kind, order,
-                             rows, len(found) > len(rows))
+                             rows, len(found) > len(rows), room.content_revision, q)

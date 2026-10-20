@@ -68,11 +68,24 @@ class BWorkAdminPureContract(unittest.TestCase):
         self.assertEqual(manifest['depends'], ['baseer_bchat'])
         self.assertFalse(manifest['auto_install'])
         self.assertFalse(any('hook' in key for key in manifest))
+        self.assertIn('security/retention/ir.model.access.csv', manifest['data'])
+        self.assertNotIn('security/retention_access.csv', manifest['data'])
         with (ADDON / 'security/ir.model.access.csv').open(encoding='utf-8') as source:
             acls = list(csv.DictReader(source))
         self.assertEqual({row['model_id:id'] for row in acls}, {'model_baseer_bwork_admin_console', 'model_baseer_bwork_admin_policy'})
         self.assertTrue(all(row['perm_unlink'] == '0' for row in acls))
-        self.assertFalse(any('data/' in entry for entry in manifest['data']))
+        self.assertEqual([entry for entry in manifest['data'] if entry.startswith('data/')], ['data/retention_cron.xml'])
+        retention = (ADDON / 'models/retention.py').read_text(encoding='utf-8')
+        self.assertIn('enabled = fields.Boolean(default=False', retention)
+        self.assertIn('_retention_ready(lock=True)', retention)
+        security = ET.parse(ADDON / 'security/retention_security.xml')
+        self.assertFalse(security.findall(".//field[@name='users']"))
+        self.assertFalse(security.findall(".//field[@name='implied_ids']"))
+        with (ADDON / 'security/retention/ir.model.access.csv').open(encoding='utf-8') as source:
+            new_acls = list(csv.DictReader(source))
+        self.assertTrue(all(row['perm_unlink'] == '0' for row in new_acls if 'wizard' not in row['model_id:id']))
+        self.assertTrue(all(row['perm_write'] == row['perm_create'] == '0' for row in new_acls
+                            if row['model_id:id'].endswith(('_audit', '_item'))))
 
     def test_native_metadata_forms_are_readonly_and_no_custom_framework(self):
         tree = ET.parse(ADDON / 'views/admin_views.xml')

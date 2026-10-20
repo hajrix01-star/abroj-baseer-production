@@ -21,3 +21,4 @@ from . import attention_service
 from . import push
 from . import work_task_service
 from . import avatar_service
+from . import retention

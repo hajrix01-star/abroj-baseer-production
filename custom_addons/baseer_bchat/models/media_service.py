@@ -83,6 +83,8 @@ class BChatMediaService(models.AbstractModel):
             'upload_uuid': upload_uuid, 'state': 'missing',
         }
         if media:
+            if media.retention_state == 'content_removed':
+                raise ProtocolError('media_removed', 'This attachment was removed.', 410)
             payload.update({'media_id': media.id, 'state': media.state})
             return payload
         # A process restart can lose the Android response while its raw native body is still
@@ -196,6 +198,8 @@ class BChatMediaService(models.AbstractModel):
 
     @api.model
     def _v2_upload_replay(self, media, room, member, normalized, raw):
+        if media.retention_state == 'content_removed':
+            raise ProtocolError('media_removed', 'This attachment was removed.', 410)
         if media.state == 'expired':
             raise ProtocolError('upload_expired', 'This upload UUID has expired.', 409)
         if media.state == 'cancelled':
@@ -318,6 +322,8 @@ class BChatMediaService(models.AbstractModel):
                 or media.message_id.media_id.id != media.id
                 or media.message_id.id <= member.joined_after_message_id):
             raise AccessError(self.env._('This media is unavailable.'))
+        if media.retention_state == 'content_removed' or media.message_id.retention_state == 'content_removed':
+            raise ProtocolError('media_removed', 'This attachment was removed.', 410)
         if thumbnail and media.kind != 'image':
             raise AccessError(self.env._('This media is unavailable.'))
         if thumbnail:

@@ -316,6 +316,28 @@
       "suites": ["backend-contracts", "source-structure", "guard-integrity"]
     },
     {
+      "id": "bwork-retention-explicit-readiness-and-content-tombstones",
+      "introduced": "2026-10-20",
+      "risk": "critical",
+      "scope": "Server content erasure requires explicit existing-owner or intersected retention/manager authority, current company and independent OFF-by-default readiness, frozen bounded previews and per-batch rechecks; immutable UUID tombstones, protected/shared ERP/DMS originals and client content-revision reconciliation remain enforced without source ACL grants.",
+      "source_paths": [
+        "custom_addons/baseer_bchat/retention_contracts.py",
+        "custom_addons/baseer_bchat/models/retention.py",
+        "custom_addons/baseer_bchat/controllers/retention_api.py",
+        "custom_addons/baseer_bchat/models/v2_service.py",
+        "custom_addons/baseer_bchat/models/media_service.py",
+        "custom_addons/baseer_bchat/models/push.py",
+        "custom_addons/baseer_bchat/models/attention_service.py",
+        "custom_addons/baseer_bchat/gallery_contracts.py",
+        "custom_addons/baseer_bchat/models/gallery_service.py",
+        "custom_addons/baseer_bchat/tests_contract/test_retention_contract.py",
+        "custom_addons/baseer_bchat/static/tests/gallery_retention.node.test.mjs",
+        "custom_addons/baseer_bwork_admin/**",
+        ".github/workflows/test-bwork-retention.yml"
+      ],
+      "suites": ["backend-contracts", "source-structure", "guard-integrity"]
+    },
+    {
       "id": "bwork-admin-metadata-and-branding",
       "introduced": "2026-10-20",
       "risk": "critical",

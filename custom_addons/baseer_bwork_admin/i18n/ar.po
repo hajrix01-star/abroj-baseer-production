@@ -46,6 +46,7 @@ msgstr "الإدارة"
 #: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
 #: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
 #: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_run_form
 msgid "Refresh"
 msgstr "تحديث"
 
@@ -451,6 +452,7 @@ msgstr "مرتبط"
 #: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
 #: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
 #: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+#: model:ir.model.fields.selection,name:baseer_bwork_admin.selection__baseer_bwork_retention_run__state__cancelled
 msgid "Cancelled"
 msgstr "ملغى"
 
@@ -464,6 +466,7 @@ msgstr "ملغى"
 #: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
 #: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
 #: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+#: model:ir.model.fields.selection,name:baseer_bwork_admin.selection__baseer_bwork_retention_run__state__expired
 msgid "Expired"
 msgstr "منتهي الصلاحية"
 
@@ -477,6 +480,7 @@ msgstr "منتهي الصلاحية"
 #: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
 #: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
 #: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+#: model:ir.model.fields.selection,name:baseer_bwork_admin.selection__baseer_bwork_retention_item__outcome__pending
 msgid "Pending"
 msgstr "بانتظار الإرسال"
 
@@ -542,6 +546,9 @@ msgstr "مستبعد"
 #: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
 #: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
 #: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+#: model:ir.model.fields.selection,name:baseer_bwork_admin.selection__baseer_bwork_retention_item__outcome__failed
+#: model:ir.model.fields.selection,name:baseer_bwork_admin.selection__baseer_bwork_retention_run__state__failed
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_run_form
 msgid "Failed"
 msgstr "فشل"
 
@@ -724,6 +731,9 @@ msgstr "غير موجود"
 #: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.member_form
 #: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
 #: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_policy_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_policy_search
 msgid "Enabled"
 msgstr "مفعّل"
 
@@ -869,6 +879,9 @@ msgstr "الشركات"
 #: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
 #: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
 #: model:ir.model.fields,field_description:baseer_bwork_admin.field_baseer_bwork_admin_console__status
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_run_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_run_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_run_search
 msgid "Status"
 msgstr "الحالة"
 
@@ -953,6 +966,13 @@ msgstr "حد التحذير (MiB)"
 #: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
 #: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
 #: model:ir.model.fields,field_description:baseer_bwork_admin.field_baseer_bwork_admin_policy__company_id
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_policy_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_policy_search
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_run_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_run_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_run_search
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_wizard_form
 msgid "Company"
 msgstr "الشركة"
 
@@ -1004,6 +1024,7 @@ msgstr "بيانات إدارة بيورك المحدودة"
 #: code:addons/baseer_bchat/static/src/bwork_gallery/media_gallery.js:0
 #: model:ir.actions.client,name:baseer_bwork_admin.media_gallery_action
 #: model:ir.ui.menu,name:baseer_bwork_admin.media_gallery_menu
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_storage_navigation
 msgid "Media gallery"
 msgstr "معرض المرفقات"
 
@@ -1195,3 +1216,595 @@ msgstr "لا يمكنك عرض المرفقات حاليًا. حدّث قائم�
 #: code:addons/baseer_bchat/static/src/bwork_gallery/media_gallery.js:0
 msgid "Could not load media. Try again when connected."
 msgstr "تعذّر تحميل المرفقات. تحقق من اتصالك وحاول مرة أخرى."
+
+#. module: baseer_bwork_admin
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+msgid "Logical attachment sizes, not physical disk usage. Server retention and device cache are managed separately."
+msgstr "أحجام المرفقات منطقية، وليست مساحة القرص. احتفاظ الخادم منفصل عن كاش الجهاز."
+
+#. module: baseer_bwork_admin
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+msgid "Storage status"
+msgstr "حالة التخزين"
+
+#. module: baseer_bwork_admin
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_run_form
+msgid "Logical size"
+msgstr "الحجم المنطقي"
+
+#. module: baseer_bwork_admin
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+msgid "By conversation"
+msgstr "حسب المحادثة"
+
+#. module: baseer_bwork_admin
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+msgid "By file type"
+msgstr "حسب نوع الملف"
+
+#. module: baseer_bwork_admin
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+msgid "By company"
+msgstr "حسب الشركة"
+
+#. module: baseer_bwork_admin
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_form
+msgid "Operational counts only. Provider submission does not confirm delivery to a device."
+msgstr "أعداد تشغيلية فقط. الإرسال إلى مزود الإشعارات لا يؤكد وصولها للجهاز."
+
+#. module: baseer_bwork_admin
+#: model:ir.actions.act_window,name:baseer_bwork_admin.retention_wizard_action
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_wizard_form
+msgid "Preview old content"
+msgstr "معاينة المحتوى القديم"
+
+#. module: baseer_bwork_admin
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_policy_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_wizard_form
+msgid "Conversation scope"
+msgstr "نطاق المحادثات"
+
+#. module: baseer_bwork_admin
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_policy_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_run_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_wizard_form
+msgid "Conversations"
+msgstr "المحادثات"
+
+#. module: baseer_bwork_admin
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_policy_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_policy_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_run_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_run_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_wizard_form
+msgid "Delete"
+msgstr "المحتوى المطلوب حذفه"
+
+#. module: baseer_bwork_admin
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_wizard_form
+msgid "Date rule"
+msgstr "تحديد المدة"
+
+#. module: baseer_bwork_admin
+#: model:ir.model.fields.selection,name:baseer_bwork_admin.selection__baseer_bwork_retention_wizard__cutoff_mode__before_date
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_wizard_form
+msgid "Before date"
+msgstr "ما قبل تاريخ"
+
+#. module: baseer_bwork_admin
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_wizard_form
+msgid "Older than (days)"
+msgstr "الأقدم من (أيام)"
+
+#. module: baseer_bwork_admin
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_policy_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_wizard_form
+msgid "Time zone"
+msgstr "المنطقة الزمنية"
+
+#. module: baseer_bwork_admin
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_wizard_form
+msgid "Preview only. Nothing is deleted until you review and confirm a ready run."
+msgstr "هذه معاينة فقط. لا يبدأ الحذف دون مراجعتك وتأكيدك وبعد تفعيل الجاهزية."
+
+#. module: baseer_bwork_admin
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.console_storage_navigation
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_wizard_form
+msgid "Preview deletion"
+msgstr "معاينة الحذف"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/static/src/media_gallery.xml:0
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_wizard_form
+msgid "Cancel"
+msgstr "إلغاء"
+
+#. module: baseer_bwork_admin
+#: model:ir.actions.act_window,name:baseer_bwork_admin.retention_policy_action
+#: model:ir.ui.menu,name:baseer_bwork_admin.retention_policy_menu
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_policy_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_policy_list
+msgid "Automatic deletion"
+msgstr "الحذف التلقائي"
+
+#. module: baseer_bwork_admin
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_policy_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_policy_list
+msgid "Keep for (days)"
+msgstr "مدة الاحتفاظ (أيام)"
+
+#. module: baseer_bwork_admin
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_policy_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_policy_list
+msgid "Next run"
+msgstr "التنفيذ التالي"
+
+#. module: baseer_bwork_admin
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_policy_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_policy_list
+msgid "Last result"
+msgstr "آخر نتيجة"
+
+#. module: baseer_bwork_admin
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_policy_form
+msgid "Stop automatic deletion"
+msgstr "إيقاف الحذف التلقائي"
+
+#. module: baseer_bwork_admin
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_policy_form
+msgid "Approve server readiness"
+msgstr "اعتماد جاهزية الخادم"
+
+#. module: baseer_bwork_admin
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_policy_form
+msgid "Approving readiness allows explicitly enabled policies and confirmed deletion runs to execute. Continue?"
+msgstr "يسمح اعتماد الجاهزية بتنفيذ السياسات المفعلة وطلبات الحذف المؤكدة. هل تريد المتابعة؟"
+
+#. module: baseer_bwork_admin
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_policy_form
+msgid "Pause server deletion"
+msgstr "إيقاف حذف الخادم"
+
+#. module: baseer_bwork_admin
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_policy_form
+msgid "Deletion starts only after server readiness is approved. Saving this policy does not approve readiness."
+msgstr "لا يبدأ الحذف قبل اعتماد جاهزية الخادم. حفظ السياسة لا يعتمد الجاهزية."
+
+#. module: baseer_bwork_admin
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_policy_form
+msgid "Server readiness"
+msgstr "جاهزية الخادم"
+
+#. module: baseer_bwork_admin
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_policy_form
+msgid "Deletion readiness"
+msgstr "جاهزية الحذف"
+
+#. module: baseer_bwork_admin
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_policy_form
+msgid "All BWork clients have been updated"
+msgstr "حدّثت جميع تطبيقات بيورك"
+
+#. module: baseer_bwork_admin
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_policy_form
+msgid "I understand offline and exported copies cannot be recalled immediately"
+msgstr "أفهم أن النسخ المحفوظة دون اتصال أو المصدّرة لا يمكن حذفها فورًا"
+
+#. module: baseer_bwork_admin
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_policy_form
+msgid "Scope"
+msgstr "النطاق"
+
+#. module: baseer_bwork_admin
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_policy_form
+msgid "Daily schedule"
+msgstr "موعد التنفيذ اليومي"
+
+#. module: baseer_bwork_admin
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_policy_form
+msgid "Hour"
+msgstr "الساعة"
+
+#. module: baseer_bwork_admin
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_policy_form
+msgid "Minute"
+msgstr "الدقيقة"
+
+#. module: baseer_bwork_admin
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_policy_form
+msgid "Execution"
+msgstr "التنفيذ"
+
+#. module: baseer_bwork_admin
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_policy_form
+msgid "Policy owner"
+msgstr "مسؤول السياسة"
+
+#. module: baseer_bwork_admin
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_policy_form
+msgid "Last run"
+msgstr "آخر تنفيذ"
+
+#. module: baseer_bwork_admin
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_policy_form
+msgid "Protected content and ERP originals are excluded. Deleted server content is removed for all participants."
+msgstr "نستثني المحتوى المحمي وأصول مستندات أودو. يُحذف محتوى الخادم لجميع المشاركين."
+
+#. module: baseer_bwork_admin
+#: model:ir.actions.act_window,name:baseer_bwork_admin.retention_run_action
+#: model:ir.ui.menu,name:baseer_bwork_admin.retention_run_menu
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_run_list
+msgid "Deletion runs"
+msgstr "طلبات الحذف"
+
+#. module: baseer_bwork_admin
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_run_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_run_list
+msgid "Before (UTC)"
+msgstr "ما قبل (UTC)"
+
+#. module: baseer_bwork_admin
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_run_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_run_list
+msgid "Progress"
+msgstr "التقدم"
+
+#. module: baseer_bwork_admin
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_run_form
+msgid "Deletion preview"
+msgstr "معاينة الحذف"
+
+#. module: baseer_bwork_admin
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_run_form
+msgid "Confirm permanent deletion"
+msgstr "تأكيد الحذف النهائي"
+
+#. module: baseer_bwork_admin
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_run_form
+msgid "This permanently removes the selected server content for all participants. Continue?"
+msgstr "سيُحذف محتوى الخادم المحدد نهائيًا لجميع المشاركين. هل تريد المتابعة؟"
+
+#. module: baseer_bwork_admin
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_run_form
+msgid "Cancel deletion"
+msgstr "إلغاء الحذف"
+
+#. module: baseer_bwork_admin
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_run_form
+msgid "Requested by"
+msgstr "طالب الحذف"
+
+#. module: baseer_bwork_admin
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_run_form
+msgid "Preview created"
+msgstr "وقت المعاينة"
+
+#. module: baseer_bwork_admin
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_run_form
+msgid "Preview expires"
+msgstr "انتهاء المعاينة"
+
+#. module: baseer_bwork_admin
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_run_form
+msgid "Selected for this run"
+msgstr "المحدد لهذا الطلب"
+
+#. module: baseer_bwork_admin
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_run_form
+msgid "Messages"
+msgstr "الرسائل"
+
+#. module: baseer_bwork_admin
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_run_form
+msgid "Attachments"
+msgstr "المرفقات"
+
+#. module: baseer_bwork_admin
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_run_form
+msgid "Eligible items"
+msgstr "العناصر المؤهلة"
+
+#. module: baseer_bwork_admin
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_run_form
+msgid "For a later run"
+msgstr "المتبقي لطلب لاحق"
+
+#. module: baseer_bwork_admin
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_run_form
+msgid "Limited to this run"
+msgstr "الحذف محدود بهذا الطلب"
+
+#. module: baseer_bwork_admin
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_run_form
+msgid "Protected items"
+msgstr "العناصر المحمية"
+
+#. module: baseer_bwork_admin
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_run_form
+msgid "Excluded uncertain items"
+msgstr "مستثنى لتعذر التحقق"
+
+#. module: baseer_bwork_admin
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_run_form
+msgid "This is permanent server deletion, not device cache cleanup. Offline or exported copies cannot be recalled immediately."
+msgstr "هذا حذف نهائي من الخادم، وليس تنظيف كاش الجهاز. لا يمكن حذف النسخ المنقطعة أو المصدّرة فورًا."
+
+#. module: baseer_bwork_admin
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_run_form
+msgid "I understand this permanently deletes server content for all participants"
+msgstr "أفهم أن هذا يحذف محتوى الخادم نهائيًا لجميع المشاركين"
+
+#. module: baseer_bwork_admin
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_run_form
+msgid "Results"
+msgstr "النتائج"
+
+#. module: baseer_bwork_admin
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_run_form
+msgid "Processed"
+msgstr "المعالج"
+
+#. module: baseer_bwork_admin
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_run_form
+msgid "Deleted"
+msgstr "المحذوف"
+
+#. module: baseer_bwork_admin
+#: model:ir.model.fields.selection,name:baseer_bwork_admin.selection__baseer_bwork_retention_item__outcome__skipped
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_run_form
+msgid "Skipped"
+msgstr "متجاوز"
+
+#. module: baseer_bwork_admin
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_run_form
+msgid "Operation log"
+msgstr "سجل العمليات"
+
+#. module: baseer_bwork_admin
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_run_form
+msgid "Action"
+msgstr "الإجراء"
+
+#. module: baseer_bwork_admin
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_run_form
+msgid "User"
+msgstr "المستخدم"
+
+#. module: baseer_bwork_admin
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_run_form
+msgid "Date"
+msgstr "التاريخ"
+
+#. module: baseer_bwork_admin
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_run_form
+msgid "Items"
+msgstr "العناصر"
+
+#. module: baseer_bwork_admin
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_run_form
+msgid "Logical bytes"
+msgstr "الحجم بالبايت"
+
+#. module: baseer_bwork_admin
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_run_form
+msgid "Result code"
+msgstr "رمز النتيجة"
+
+#. module: baseer_bwork_admin
+#: model:ir.ui.menu,name:baseer_bwork_admin.retention_root_menu
+msgid "Storage management"
+msgstr "إدارة التخزين"
+
+#. module: baseer_bwork_admin
+#: model:ir.ui.menu,name:baseer_bwork_admin.retention_manual_menu
+msgid "Delete old content"
+msgstr "حذف المحتوى القديم"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/static/src/media_gallery.xml:0
+msgid "Your conversations only. Browsing does not mark messages as read."
+msgstr "محادثاتك فقط. التصفح لا يؤكد قراءة الرسائل."
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/static/src/media_gallery.xml:0
+msgid "File name"
+msgstr "اسم الملف"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/static/src/media_gallery.xml:0
+msgid "Search"
+msgstr "بحث"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/static/src/media_gallery.xml:0
+msgid "Select a conversation to browse its media."
+msgstr "اختر محادثة لاستعراض مرفقاتها."
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/static/src/media_gallery.xml:0
+msgid "Remove protection"
+msgstr "إزالة الحماية"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/static/src/media_gallery.xml:0
+msgid "Protect from deletion"
+msgstr "حماية من الحذف"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/static/src/media_gallery.xml:0
+msgid "This content may be deleted by the retention policy after protection is removed."
+msgstr "قد تحذف سياسة الاحتفاظ هذا المحتوى بعد إزالة الحماية."
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/static/src/media_gallery.xml:0
+msgid "Confirm removal"
+msgstr "تأكيد إزالة الحماية"
+
+#. module: baseer_bwork_admin
+#: model:res.groups,name:baseer_bwork_admin.group_bwork_retention_manager
+msgid "BWork retention manager"
+msgstr "مدير احتفاظ بيورك"
+
+#. module: baseer_bwork_admin
+#: model:ir.rule,name:baseer_bwork_admin.retention_policy_company_rule
+msgid "Retention policy current companies"
+msgstr "سياسات الاحتفاظ للشركات الحالية"
+
+#. module: baseer_bwork_admin
+#: model:ir.rule,name:baseer_bwork_admin.retention_wizard_company_rule
+msgid "Retention preview current companies"
+msgstr "معاينات الاحتفاظ للشركات الحالية"
+
+#. module: baseer_bwork_admin
+#: model:ir.rule,name:baseer_bwork_admin.retention_run_company_rule
+msgid "Retention runs current companies"
+msgstr "طلبات الاحتفاظ للشركات الحالية"
+
+#. module: baseer_bwork_admin
+#: model:ir.rule,name:baseer_bwork_admin.retention_item_company_rule
+msgid "Retention manifest current companies"
+msgstr "عناصر الاحتفاظ للشركات الحالية"
+
+#. module: baseer_bwork_admin
+#: model:ir.rule,name:baseer_bwork_admin.retention_audit_company_rule
+msgid "Retention audit current companies"
+msgstr "سجل الاحتفاظ للشركات الحالية"
+
+#. module: baseer_bwork_admin
+#: model:ir.cron,name:baseer_bwork_admin.cron_bwork_retention
+msgid "BWork bounded retention"
+msgstr "احتفاظ بيورك المحدود"
+
+#. module: baseer_bwork_admin
+#: model:ir.model.fields.selection,name:baseer_bwork_admin.selection__baseer_bwork_admin_console__retention_storage_status__available
+msgid "Available"
+msgstr "متاح"
+
+#. module: baseer_bwork_admin
+#: model:ir.model.fields.selection,name:baseer_bwork_admin.selection__baseer_bwork_admin_console__retention_storage_status__limit_exceeded
+msgid "Limit exceeded"
+msgstr "تجاوز الحد"
+
+#. module: baseer_bwork_admin
+#: model:ir.model.fields.selection,name:baseer_bwork_admin.selection__baseer_bwork_admin_console__retention_storage_status__integrity_error
+msgid "Metadata incomplete"
+msgstr "بيانات التخزين غير مكتملة"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/retention.py:0
+msgid "BWork retention — %s"
+msgstr "احتفاظ بيورك: %s"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/retention.py:0
+msgid "BWork retention preview"
+msgstr "معاينة احتفاظ بيورك"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/retention.py:0
+msgid "Processed %s; removed %s; skipped %s; failed %s"
+msgstr "المعالج %s، المحذوف %s، المتجاوز %s، المتعذر %s"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/retention.py:0
+msgid "Server retention is not activated. Update clients and acknowledge readiness first."
+msgstr "حذف الخادم غير مفعل. حدّث التطبيقات واعتمد الجاهزية أولًا."
+
+#. module: baseer_bwork_admin
+#: model:ir.model.fields.selection,name:baseer_bwork_admin.selection__baseer_bwork_retention_policy__scope_mode__company
+#: model:ir.model.fields.selection,name:baseer_bwork_admin.selection__baseer_bwork_retention_run__scope_mode__company
+#: model:ir.model.fields.selection,name:baseer_bwork_admin.selection__baseer_bwork_retention_wizard__scope_mode__company
+msgid "All company rooms"
+msgstr "جميع محادثات الشركة"
+
+#. module: baseer_bwork_admin
+#: model:ir.model.fields.selection,name:baseer_bwork_admin.selection__baseer_bwork_retention_policy__scope_mode__rooms
+#: model:ir.model.fields.selection,name:baseer_bwork_admin.selection__baseer_bwork_retention_run__scope_mode__rooms
+#: model:ir.model.fields.selection,name:baseer_bwork_admin.selection__baseer_bwork_retention_wizard__scope_mode__rooms
+msgid "Selected rooms"
+msgstr "محادثات محددة"
+
+#. module: baseer_bwork_admin
+#: model:ir.model.fields.selection,name:baseer_bwork_admin.selection__baseer_bwork_retention_policy__mode__attachments
+#: model:ir.model.fields.selection,name:baseer_bwork_admin.selection__baseer_bwork_retention_run__mode__attachments
+#: model:ir.model.fields.selection,name:baseer_bwork_admin.selection__baseer_bwork_retention_wizard__mode__attachments
+msgid "Attachments only"
+msgstr "المرفقات فقط"
+
+#. module: baseer_bwork_admin
+#: model:ir.model.fields.selection,name:baseer_bwork_admin.selection__baseer_bwork_retention_policy__mode__messages_and_attachments
+#: model:ir.model.fields.selection,name:baseer_bwork_admin.selection__baseer_bwork_retention_run__mode__messages_and_attachments
+#: model:ir.model.fields.selection,name:baseer_bwork_admin.selection__baseer_bwork_retention_wizard__mode__messages_and_attachments
+msgid "Messages and attachments"
+msgstr "الرسائل والمرفقات"
+
+#. module: baseer_bwork_admin
+#: model:ir.model.fields.selection,name:baseer_bwork_admin.selection__baseer_bwork_retention_policy__readiness_status__not_ready
+msgid "Not activated"
+msgstr "غير مفعل"
+
+#. module: baseer_bwork_admin
+#: model:ir.model.fields.selection,name:baseer_bwork_admin.selection__baseer_bwork_retention_policy__readiness_status__ready
+msgid "Activated"
+msgstr "مفعل"
+
+#. module: baseer_bwork_admin
+#: model:ir.model.fields.selection,name:baseer_bwork_admin.selection__baseer_bwork_retention_wizard__cutoff_mode__older_than_days
+msgid "Older than days"
+msgstr "الأقدم من عدد أيام"
+
+#. module: baseer_bwork_admin
+#: model:ir.model.fields.selection,name:baseer_bwork_admin.selection__baseer_bwork_retention_run__state__preview
+msgid "Preview"
+msgstr "معاينة"
+
+#. module: baseer_bwork_admin
+#: model:ir.model.fields.selection,name:baseer_bwork_admin.selection__baseer_bwork_retention_run__state__queued
+msgid "Queued"
+msgstr "بانتظار التنفيذ"
+
+#. module: baseer_bwork_admin
+#: model:ir.model.fields.selection,name:baseer_bwork_admin.selection__baseer_bwork_retention_run__state__running
+msgid "Running"
+msgstr "قيد التنفيذ"
+
+#. module: baseer_bwork_admin
+#: model:ir.model.fields.selection,name:baseer_bwork_admin.selection__baseer_bwork_retention_run__state__done
+msgid "Done"
+msgstr "مكتمل"
+
+#. module: baseer_bwork_admin
+#: model:ir.model.fields.selection,name:baseer_bwork_admin.selection__baseer_bwork_retention_run__state__partial
+msgid "Partial"
+msgstr "مكتمل جزئيًا"
+
+#. module: baseer_bwork_admin
+#: model:ir.model.fields.selection,name:baseer_bwork_admin.selection__baseer_bwork_retention_item__outcome__removed
+msgid "Removed"
+msgstr "محذوف"
+
+#. module: baseer_bwork_admin
+#: model:ir.model.fields.selection,name:baseer_bwork_admin.selection__baseer_bwork_retention_run__mode__expired_uploads
+#: model:ir.model.fields.selection,name:baseer_bwork_admin.selection__baseer_bwork_retention_wizard__mode__expired_uploads
+msgid "Expired unlinked uploads"
+msgstr "ملفات رفع غير مرتبطة ومنتهية الصلاحية"
+
+#. module: baseer_bwork_admin
+#. odoo-python
+#: code:addons/baseer_bwork_admin/models/retention.py:0
+msgid "Another deletion run is already active for this company."
+msgstr "توجد عملية حذف قيد التنفيذ لهذه الشركة."

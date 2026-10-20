@@ -670,6 +670,9 @@ export class SqliteArchiveStore implements HistoryArchive {
       true,
     );
   }
+  async clearRoom(scope:HistoryScope,guard:Guard):Promise<void>{
+    await this.tx(guard,async db=>{await db.runAsync('DELETE FROM archive_scopes WHERE account=? AND scope=?',...this.scope(scope));await db.runAsync('DELETE FROM retained_media WHERE account=? AND scope=?',...this.scope(scope));});
+  }
   private actor(actor: string): void {
     if (!/^[a-f0-9]{64}$/.test(actor)) throw new ArchiveError('invalid_media_cache');
   }

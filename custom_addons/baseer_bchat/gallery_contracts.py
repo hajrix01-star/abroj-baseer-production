@@ -2,6 +2,7 @@
 import base64
 import binascii
 import json
+import hashlib
 import re
 
 from .contracts import ProtocolError
@@ -22,7 +23,7 @@ def options(kind='all', order='newest', limit=DEFAULT_PAGE):
 
 
 def query(args):
-    if (set(args) - {'kind', 'order', 'limit', 'cursor'}
+    if (set(args) - {'kind', 'order', 'limit', 'cursor', 'q'}
             or any(len(args.getlist(key)) != 1 for key in args)):
         raise ProtocolError('invalid_payload', 'Invalid gallery query fields.')
     raw = args.get('limit', str(DEFAULT_PAGE))
@@ -32,26 +33,43 @@ def query(args):
     cursor = args.get('cursor')
     if cursor is not None and (not cursor or len(cursor) > 256):
         raise ProtocolError('invalid_cursor', 'The gallery cursor is invalid.')
-    return dict(kind=kind, order=order, limit=limit, cursor=cursor)
+    result = dict(kind=kind, order=order, limit=limit, cursor=cursor)
+    if 'q' in args:
+        result['q'] = search(args['q'])
+    return result
 
 
-def cursor_for(room, member, kind, order, message, size):
-    value = [1, room, member, kind, order, message, size]
+def search(value):
+    if type(value) is not str or '\x00' in value or len(value.encode('utf-8')) > 128:
+        raise ProtocolError('invalid_payload', 'The filename search is too long or invalid.')
+    return value
+
+
+def search_pattern(value):
+    value = search(value)
+    return '%' + value.replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_') + '%'
+
+
+def cursor_for(room, member, kind, order, message, size, revision=0, q=''):
+    value = [2, room, member, kind, order, message, size, revision,
+             hashlib.sha256(search(q).encode()).hexdigest()]
     return base64.urlsafe_b64encode(json.dumps(value, separators=(',', ':')).encode()).rstrip(b'=').decode()
 
 
-def anchor(cursor, room, member, kind, order):
+def anchor(cursor, room, member, kind, order, revision=0, q=''):
     if cursor is None:
         return None
     try:
         if type(cursor) is not str or not re.fullmatch(r'[A-Za-z0-9_-]{1,256}', cursor):
             raise ValueError()
         value = json.loads(base64.b64decode(cursor + '=' * (-len(cursor) % 4), altchars=b'-_', validate=True))
-        if (type(value) is not list or len(value) != 7
+        if (type(value) is not list or len(value) != 9
                 or any(type(value[index]) is not int or not 0 < value[index] <= 2147483647
                        for index in (0, 1, 2, 5, 6))
-                or value[:5] != [1, room, member, kind, order]
-                or cursor_for(*value[1:]) != cursor):
+                or type(value[7]) is not int or value[7] != revision
+                or value[8] != hashlib.sha256(search(q).encode()).hexdigest()
+                or value[:5] != [2, room, member, kind, order]
+                or cursor_for(*value[1:7], revision, q) != cursor):
             raise ValueError()
         return value[5], value[6]
     except (ValueError, TypeError, UnicodeError, binascii.Error):
@@ -73,15 +91,16 @@ def encoded_size(payload):
     return len(json.dumps(payload, ensure_ascii=False).encode('utf-8'))
 
 
-def response(room, company, member, kind, order, items, more):
+def response(room, company, member, kind, order, items, more, revision=0, q=''):
     rows = list(items)
     result = {'api_version': 2, 'gallery_version': 1, 'room_id': room,
               'company_id': company, 'membership_id': member,
-              'kind': kind, 'order': order, 'items': rows, 'next_cursor': None}
+              'kind': kind, 'order': order, 'items': rows, 'next_cursor': None,
+              'content_revision': revision}
     while rows:
         last = rows[-1]
         result['next_cursor'] = cursor_for(room, member, kind, order, last['id'],
-                                           last['media']['size']) if more else None
+                                           last['media']['size'], revision, q) if more else None
         if encoded_size(result) <= MAX_BYTES:
             return result
         rows.pop()

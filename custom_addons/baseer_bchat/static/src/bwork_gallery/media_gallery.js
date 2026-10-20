@@ -10,10 +10,11 @@ export class BWorkMediaGallery extends Component {
     static props = ["*"];
 
     setup() {
-        this.state = useState({ rooms: [], roomId: "", kind: "all", order: "newest", items: [],
-            cursor: null, loading: false, opening: false, error: "", preview: null, message: null });
+        this.state = useState({ rooms: [], roomId: "", kind: "all", order: "newest", search: "", items: [],
+            cursor: null, loading: false, opening: false, error: "", preview: null, message: null,
+            canManageRetention: false, preserveTargetId: null });
         this.client = new GalleryClient(this.state);
-        onWillStart(() => this.client.loadRooms());
+        onWillStart(async () => { await this.client.loadRooms(); this.client.startWatching(); });
         onWillUnmount(() => this.client.dispose());
     }
     get errorText() {
@@ -23,6 +24,8 @@ export class BWorkMediaGallery extends Component {
     changeRoom(event) { this.state.roomId = event.target.value; return this.client.loadPage(); }
     changeKind(event) { this.state.kind = event.target.value; return this.client.loadPage(); }
     changeOrder(event) { this.state.order = event.target.value; return this.client.loadPage(); }
+    changeSearch(event) { this.state.search = event.target.value; }
+    applySearch() { return this.client.loadPage(); }
     refresh() { return this.client.loadRooms(); }
     next() { return this.client.loadPage(true); }
     first() { return this.client.loadPage(); }

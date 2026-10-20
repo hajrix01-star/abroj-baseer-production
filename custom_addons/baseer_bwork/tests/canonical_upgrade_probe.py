@@ -432,6 +432,37 @@ def verify_upgraded_procurement(env):
             'replay_same_request': 'PASS', 'no_financial_or_stock_document_change': 'PASS'}
 
 
+def _normalize_proven_restore_event_shape(expected, actual):
+    """One finite pg_dump/restore spelling pair, never upgrade normalization.
+
+    Pinned PostgreSQL parse/deparse and all 48 nullable branch classes proved
+    equality (canonical SHA256 ee9b3121d0df3cfb3ad357c4af38fd7e8a28189b1b3e63d3409a156e83ea6c71);
+    the corrupted 'message' branch failed both proofs. No generic cast removal.
+    """
+    table = 'baseer_bwork_push_event'
+    name = 'baseer_bwork_push_event_event_source_shape'
+    key = 'baseer_bwork.constraint_' + name
+    original = ("CHECK (task_id IS NOT NULL AND message_id IS NULL AND task_revision IS NOT NULL AND "
+                "(event_kind::text = ANY (ARRAY['assigned'::character varying, 'updated'::character varying, "
+                "'reminder'::character varying]::text[])) OR task_id IS NULL AND message_id IS NOT NULL "
+                "AND task_revision IS NULL AND event_kind::text = 'message'::text)")
+    restored = ("CHECK (task_id IS NOT NULL AND message_id IS NULL AND task_revision IS NOT NULL AND "
+                "(event_kind::text = ANY (ARRAY['assigned'::character varying::text, 'updated'::character varying::text, "
+                "'reminder'::character varying::text])) OR task_id IS NULL AND message_id IS NOT NULL "
+                "AND task_revision IS NULL AND event_kind::text = 'message'::text)")
+    left = expected.get('constraint_identities', {}).get(key, {})
+    right = actual.get('constraint_identities', {}).get(key, {})
+    if (left.get('name') != name or right.get('name') != name
+            or left.get('shape') != original or right.get('shape') != restored):
+        return
+    expected_row, actual_row = [table, name, original], [table, name, restored]
+    if (expected.get('constraint_shapes', []).count(expected_row) != 1
+            or actual.get('constraint_shapes', []).count(actual_row) != 1):
+        return
+    actual['constraint_shapes'][actual['constraint_shapes'].index(actual_row)][2] = original
+    right['shape'] = original
+
+
 def verify_legacy_restored(env):
     """Paired dump+filestore restore: logical IDs same, PG OIDs may rebase."""
     _guard(env)
@@ -445,6 +476,7 @@ def verify_legacy_restored(env):
         value.pop('constraints')  # Physical OIDs legitimately change on pg_restore.
         for identity in value['constraint_identities'].values():
             identity.pop('physical_oid')  # Only physical identity rebases; all metadata IDs remain strict.
+    _normalize_proven_restore_event_shape(expected, actual)
     assert expected == actual, 'Restored logical IDs/constraint shapes differ.'
     prototype = _prototype()
     env.cr.execute('SELECT 1 FROM ir_config_parameter WHERE key=%s', [prototype.LEDGER_KEY])

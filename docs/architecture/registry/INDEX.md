@@ -20,6 +20,9 @@ run39418547372 حمّلregistry ثمرفضlineage: localpairedrepro أثبت12co
 الدقيقة معphysical/metadata names وحفظجميعIDs، ثمإعادةالفحص؛ لاQA/Live.
 إصلاحconstraint XMLIDs اجتاز20عقدًا وnative-u محليًا:32هوية و123قيدًا محفوظة
 وكلsnapshotkeys متطابقة؛ المراجعةالمستقلة تجيزrehearsalالكامل فقط،لا قبولنشر بعد.
+run39420564473 اجتازupgrade/bytes/permissions/latefailure،وبقيrestorecast-formatواحد؛
+ثبتتكافؤهnativePG/48حالة،وقبولزوجصياغةمحددrestore-onlyاجتاز21عقدًا وactualrestore،
+بدونمساسrawupgrade/IDs/122قيدًا آخر؛fresh/nextوالنتيجةالكاملةتنتظرنفسالمرشحالمجمد.
 لا QA/Live/APK أو تخفيف حماية أو دمج في هذا التفويض. الأدلة الحية في
 output/bwork-reference-storage-fix-20261020/progress.json، والعقد الأصلي أدناه معاد استخدامه.
 

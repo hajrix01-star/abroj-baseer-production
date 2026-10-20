@@ -371,6 +371,67 @@ class CanonicalConversionContract(unittest.TestCase):
             upgrade._xmlids(cursor, mapping, modules, models, {})
         self.assertFalse(any(call.args[0].lstrip().startswith('UPDATE') for call in cursor.execute.call_args_list))
 
+    def test_restore_allows_only_proven_single_check_roundtrip_and_keeps_full_assertion(self):
+        probe = load('bwork_restore_shape_probe', ROOT / 'tests/canonical_upgrade_probe.py')
+        original = ("CHECK (task_id IS NOT NULL AND message_id IS NULL AND task_revision IS NOT NULL AND "
+                    "(event_kind::text = ANY (ARRAY['assigned'::character varying, 'updated'::character varying, "
+                    "'reminder'::character varying]::text[])) OR task_id IS NULL AND message_id IS NOT NULL "
+                    "AND task_revision IS NULL AND event_kind::text = 'message'::text)")
+        restored = ("CHECK (task_id IS NOT NULL AND message_id IS NULL AND task_revision IS NOT NULL AND "
+                    "(event_kind::text = ANY (ARRAY['assigned'::character varying::text, 'updated'::character varying::text, "
+                    "'reminder'::character varying::text])) OR task_id IS NULL AND message_id IS NOT NULL "
+                    "AND task_revision IS NULL AND event_kind::text = 'message'::text)")
+        table, name = 'baseer_bwork_push_event', 'baseer_bwork_push_event_event_source_shape'
+        key = 'baseer_bwork.constraint_' + name
+        expected = {'tables': {table: [11, 2, 'SAME_PK_DIGEST']}, 'constraints': list(range(123)),
+                    'constraint_shapes': [[table, name, original]] + [
+                        ['other_table', 'other_%s' % i, 'CHECK (true)'] for i in range(122)],
+                    'constraint_identities': {key: {'xmlid_id': 41, 'res_id': 51, 'constraint_id': 51,
+                                                   'model_id': 61, 'module_id': 71, 'name': name,
+                                                   'physical_oid': 81, 'shape': original}}}
+        expected['constraint_identities'].update({'other_%s' % i: {'xmlid_id': 100 + i, 'res_id': 200 + i,
+            'constraint_id': 200 + i, 'model_id': 61, 'module_id': 71, 'name': 'other_%s' % i,
+            'physical_oid': 300 + i, 'shape': 'CHECK (true)'} for i in range(31)})
+        actual = json.loads(json.dumps(expected))
+        actual['tables'][table][0] += 1000
+        actual['constraints'] = list(range(1000, 1123))
+        for identity in actual['constraint_identities'].values():
+            identity['physical_oid'] += 1000
+        actual['constraint_shapes'][0][2] = restored
+        actual['constraint_identities'][key]['shape'] = restored
+        tree = ast.parse((ROOT / 'tests/canonical_upgrade_probe.py').read_text(encoding='utf-8'))
+        function = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == 'verify_legacy_restored')
+        start = next(i for i, node in enumerate(function.body) if isinstance(node, ast.For))
+        end = next(i for i, node in enumerate(function.body[start:], start) if isinstance(node, ast.Assert))
+        comparison = compile(ast.Module(body=function.body[start:end + 1], type_ignores=[]), '<actual-restore-comparison>', 'exec')
+
+        def compare(left, right):
+            namespace = dict(probe.__dict__, expected=json.loads(json.dumps(left)), actual=json.loads(json.dumps(right)))
+            exec(comparison, namespace)
+
+        compare(expected, actual)
+        callers = [node.name for node in tree.body if isinstance(node, ast.FunctionDef)
+                   and any(isinstance(call, ast.Call) and isinstance(call.func, ast.Name)
+                           and call.func.id == '_normalize_proven_restore_event_shape' for call in ast.walk(node))]
+        self.assertEqual(callers, ['verify_legacy_restored'])
+        for mutation in ('unknown_shape', 'other_constraint', 'metadata_id', 'identity_count', 'shape_count', 'wrong_xid'):
+            changed = json.loads(json.dumps(actual))
+            if mutation == 'unknown_shape':
+                changed['constraint_shapes'][0][2] = restored.replace("'message'::text", "'wrong'::text")
+                changed['constraint_identities'][key]['shape'] = changed['constraint_shapes'][0][2]
+            elif mutation == 'other_constraint':
+                changed['constraint_shapes'][1][2] = 'CHECK (false)'
+            elif mutation == 'metadata_id':
+                changed['constraint_identities'][key]['xmlid_id'] += 1
+            elif mutation == 'identity_count':
+                changed['constraint_identities']['unexpected'] = dict(changed['constraint_identities'][key])
+            elif mutation == 'shape_count':
+                changed['constraint_shapes'].pop()
+            else:
+                changed['constraint_identities']['wrong_xid'] = changed['constraint_identities'].pop(key)
+            with self.subTest(mutation=mutation), self.assertRaises(AssertionError):
+                compare(expected, changed)
+
     def test_identifier_rules_and_injection_rejection_match_official19(self):
         value = 'baseer_bchat_mobile_upload_grant_' + 'x' * 50
         self.assertEqual(upgrade.pg_name(value), value[:54] + '_' + f'{crc32(value.encode()):08x}')

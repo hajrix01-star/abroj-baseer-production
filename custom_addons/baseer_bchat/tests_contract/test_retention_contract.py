@@ -6,6 +6,9 @@ from types import ModuleType
 import unittest
 import ast
 import xml.etree.ElementTree as ET
+from types import SimpleNamespace
+import hashlib
+import json
 
 ROOT = Path(__file__).resolve().parents[1]
 package = ModuleType('_bwork_retention_contract')
@@ -21,6 +24,48 @@ def load(name, path):
 
 
 class RetentionContractTests(unittest.TestCase):
+    def test_actual_attachment_fingerprint_changes_when_same_id_metadata_changes(self):
+        # Execute the production methods, not a duplicate hash calculation.
+        source = (ROOT / 'models/retention.py').read_text(encoding='utf-8')
+        tree = ast.parse(source)
+        methods = [node for node in ast.walk(tree) if isinstance(node, ast.FunctionDef)
+                   and node.name in ('_retention_fingerprint', '_retention_attachment_fingerprint')]
+        for method in methods:
+            method.decorator_list = []
+        token = object()
+        namespace = {'_RETENTION_TOKEN': token, 'AccessError': RuntimeError,
+                     'hashlib': hashlib, 'json': json,
+                     'fields': SimpleNamespace(Datetime=SimpleNamespace(to_string=lambda value: value))}
+        exec(compile(ast.Module(body=methods, type_ignores=[]), '<actual-retention-fingerprint>', 'exec'), namespace)
+        service = type('ProductionMethods', (), {method.name: namespace[method.name] for method in methods})()
+
+        class Files:
+            def __init__(self, rows):
+                self.rows = rows
+                self._fields = {}
+                self.id = rows[0].id if rows else False
+            def __or__(self, other):
+                return Files(self.rows + other.rows)
+            def sudo(self):
+                return self
+            def exists(self):
+                return self
+            def flush_recordset(self, names):
+                pass
+            def sorted(self, key):
+                return sorted(self.rows, key=lambda row: row.id)
+
+        attachment = SimpleNamespace(id=6, checksum='old', file_size=10, write_date='2026-10-20 01:00:00',
+            type='binary', res_model='baseer.bchat.media', res_id=5, company_id=SimpleNamespace(id=2),
+            public=False, access_token=False, res_field=False, _fields={})
+        media = SimpleNamespace(id=5, retention_state='active', attachment_id=Files([attachment]),
+            thumbnail_attachment_id=Files([]), document_file_id=0, document_type='other')
+        message = SimpleNamespace(id=4, company_id=SimpleNamespace(id=2), retention_state='active',
+            retention_preserved=False, payload_digest='fixed', create_date='2026-09-01 00:00:00', media_id=media)
+        before = service._retention_fingerprint(message, token)
+        attachment.checksum, attachment.file_size = 'new', 20
+        self.assertNotEqual(service._retention_fingerprint(message, token), before)
+
     def test_strict_reconciliation_and_scope_bound_cursor(self):
         wire = load(package.__name__ + '.retention_contracts', ROOT / 'retention_contracts.py')
         request = {'api_version': 2, 'membership_id': 4, 'content_revision': 0, 'media_ids': [1, 2]}
@@ -70,10 +115,10 @@ class RetentionContractTests(unittest.TestCase):
         native = ast.parse((admin / 'tests/test_retention.py').read_text(encoding='utf-8'))
         counts = {group.name: sum(isinstance(node, ast.FunctionDef) and node.name.startswith('test_')
                     for node in group.body) for group in native.body if isinstance(group, ast.ClassDef)}
-        self.assertEqual(counts['BWorkRetentionCase'], 9)
+        self.assertEqual(counts['BWorkRetentionCase'], 10)
         self.assertEqual(counts['BWorkRetentionHttpCase'], 2)
         workflow = (ROOT.parents[1] / '.github/workflows/test-bwork-retention.yml').read_text(encoding='utf-8')
-        self.assertIn('-eq 11', workflow)
+        self.assertIn('-eq 12', workflow)
         for path in ('gallery_client.node.test.mjs', 'gallery_retention.node.test.mjs', 'baseer_bwork_admin/tests_contract'):
             self.assertIn(path, workflow)
         security = ET.parse(admin / 'security/retention_security.xml')

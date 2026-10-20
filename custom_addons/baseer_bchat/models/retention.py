@@ -319,7 +319,8 @@ class BChatRetentionService(models.AbstractModel):
                  media.membership_id.id, media.upload_uuid, media.sha256, media.state,
                  fields.Datetime.to_string(media.create_date),
                  media.message_id.id, media.attachment_id.id, media.thumbnail_attachment_id.id,
-                 media.document_file_id, media.document_type]
+                 media.document_file_id, media.document_type,
+                 self._retention_attachment_fingerprint(media, token)]
         return hashlib.sha256(json.dumps(value, separators=(',', ':')).encode()).hexdigest()
 
     def _retention_inspect_staged(self, media, token, lock=False):
@@ -353,6 +354,7 @@ class BChatRetentionService(models.AbstractModel):
         self._retention_guard(media.company_id.id)
         self.env['baseer.bchat.room']._lock_for_mutation(media.room_id.id)
         media.invalidate_recordset()
+        self._retention_lock_sources(media=media)
         if not self._retention_ready(lock=True):
             raise ProtocolError('retention_not_ready', 'Server retention is not activated.', 409)
         if fingerprint != self._retention_staged_fingerprint(media, token):
@@ -373,8 +375,24 @@ class BChatRetentionService(models.AbstractModel):
                  fields.Datetime.to_string(message.create_date),
                  media.id, media.retention_state if media else None,
                  media.attachment_id.id, media.thumbnail_attachment_id.id,
-                 media.document_file_id, media.document_type]
+                 media.document_file_id, media.document_type,
+                 self._retention_attachment_fingerprint(media, token)]
         return hashlib.sha256(json.dumps(value, separators=(',', ':')).encode()).hexdigest()
+
+    def _retention_attachment_fingerprint(self, media, token):
+        if token is not _RETENTION_TOKEN:
+            raise AccessError('Verified retention capability required.')
+        attachments = (media.attachment_id | media.thumbnail_attachment_id).sudo().exists()
+        names = ['checksum', 'file_size', 'write_date', 'type', 'res_model', 'res_id',
+                 'company_id', 'public', 'access_token', 'res_field']
+        if 'baseer_invoice_source_held' in attachments._fields:
+            names.append('baseer_invoice_source_held')
+        attachments.flush_recordset(names)
+        return [[row.id, row.checksum, row.file_size, fields.Datetime.to_string(row.write_date),
+                 row.type, row.res_model, row.res_id, row.company_id.id, row.public,
+                 bool(row.access_token), row.res_field,
+                 bool(row.baseer_invoice_source_held) if 'baseer_invoice_source_held' in row._fields else False]
+                for row in attachments.sorted('id')]
 
     @api.model
     def _retention_scrub(self, message, mode, fingerprint, token):
@@ -385,6 +403,7 @@ class BChatRetentionService(models.AbstractModel):
             raise ProtocolError('retention_not_ready', 'Server retention is not activated.', 409)
         self.env['baseer.bchat.room']._lock_for_mutation(message.room_id.id)
         message.invalidate_recordset()
+        self._retention_lock_sources(message=message)
         if fingerprint != self._retention_fingerprint(message, token):
             return 'changed', 0
         reason, attachment_ids, size = self._retention_inspect(message, token, lock=True)

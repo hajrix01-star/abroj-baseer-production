@@ -6,7 +6,7 @@
     'license': 'LGPL-3',
     'depends': ['baseer_bchat'],
     'data': ['security/ir.model.access.csv', 'security/rules.xml',
-             'security/retention_security.xml', 'security/retention_access.csv',
+             'security/retention_security.xml', 'security/retention/ir.model.access.csv',
              'data/retention_cron.xml', 'views/admin_views.xml', 'views/retention_views.xml'],
     'assets': {'web.assets_backend': [
         'baseer_bchat/static/src/bwork_gallery/gallery_client.js',

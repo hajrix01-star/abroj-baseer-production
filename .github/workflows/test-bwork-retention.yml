@@ -47,7 +47,7 @@ jobs:
           done
           if grep -Eq ': skipped .+ : |[1-9][0-9]* failed,|[1-9][0-9]* error\(s\)' bwork-retention-runtime.log; then exit 1; fi
           grep -F '0 failed, 0 error(s)' bwork-retention-runtime.log
-          test "$(grep -Ec 'Starting (BWorkRetentionCase|BWorkRetentionHttpCase)\.' bwork-retention-runtime.log)" -eq 11
+          test "$(grep -Ec 'Starting (BWorkRetentionCase|BWorkRetentionHttpCase)\.' bwork-retention-runtime.log)" -eq 12
       - uses: actions/upload-artifact@v4
         if: always()
         with:

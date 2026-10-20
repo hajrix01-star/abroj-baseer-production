@@ -286,7 +286,7 @@ def check_repository_ci_wiring() -> None:
     retention_workflow = source_text(".github/workflows/test-bwork-retention.yml")
     require("test-bwork-retention" in source_workflow
             and "BWorkRetentionCase" in retention_workflow and "BWorkRetentionHttpCase" in retention_workflow
-            and '" -eq 11' in retention_workflow and "contents: read" in retention_workflow,
+            and '" -eq 12' in retention_workflow and "contents: read" in retention_workflow,
             "BWork retention no longer activates its isolated ORM and HTTP contract tests")
 
 

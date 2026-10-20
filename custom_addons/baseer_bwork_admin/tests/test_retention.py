@@ -1,5 +1,6 @@
 """Destructive assertions run ONLY in disposable, rolled-back Odoo tests."""
 import hashlib
+import base64
 import json
 from datetime import timedelta
 from unittest.mock import patch
@@ -314,6 +315,25 @@ class BWorkRetentionCase(RetentionFixtures, TransactionCase):
             self.assertFalse(service._retention_foreign_reference('baseer_bchat_media', ids['media'], allowed))
             self.assertTrue(service._retention_foreign_reference('baseer_bchat_media', ids['media'], allowed, fresh=True))
             old.rollback()
+
+    def test_same_attachment_id_changed_after_preview_is_skipped_in_both_modes(self):
+        for mode in ('attachments', 'messages_and_attachments'):
+            message, _, _ = self._file()
+            attachment = message.media_id.attachment_id
+            run = self._preview(mode)
+            changed = b'SYNTHETIC_NEW_BYTES_NOT_IN_CONFIRMED_PREVIEW'
+            attachment.sudo().write({'datas': base64.b64encode(changed)})
+            run.confirmation_checked = True
+            self.env['ir.config_parameter'].sudo().set_param(_READY_KEY, '1')
+            run.action_confirm()
+            self.service._execute_batch(run)
+            self.assertGreaterEqual(run.skipped, 1)
+            self.assertEqual(run.item_ids.filtered(lambda row: row.message_id.id == message.id).code, 'changed')
+            self.assertTrue(attachment.exists())
+            self.assertEqual(base64.b64decode(attachment.datas), changed)
+            message.invalidate_recordset()
+            self.assertEqual(message.retention_state, 'active')
+            self.assertEqual(message.text, 'Synthetic caption')
 
 
 @tagged('post_install', '-at_install', 'bwork_retention')

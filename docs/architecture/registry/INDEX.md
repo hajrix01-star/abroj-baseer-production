@@ -1,5 +1,21 @@
 # سجل معمارية بصير أودو
 
+## BCR-QA-20261020 — نشر التحويل على QA فقط
+
+اعتمد المالك الدمج وتحديث QA ثم أجاز صراحة ترقية غلاف QA المحدودة مع حفظ القديم
+والإعدادات والصلاحيات؛ اللايف وAPK والحذف وتفعيل readiness خارج النطاق.
+اكتملت التجربة الأصلية39422549120 على48bdde21/tree72329f5b: upgrade/lineage/bytes/
+permissions/late-failure/paired restore/fresh/next PASS، و21عقدًا؛ مراجعة مستقلةGO.
+دُمجPR440 بعد10/10CI بلا تجاوز إلى47a79260، وشجرته مطابقة تمامًا للمرشح المقبول.
+قراءةQA أكدت مصدرd989a711 وغلافroot750 قديمbe9cd42e بلا canonical bootstrap/verify؛
+لذلك لم يرسل طلب نشر. يلزم أولًا تثبيت الغلاف المراجع المجمد عبر مثبتQA القائم
+وبنسخة رجوع وlocks، مع تطابق بقية ملفاتcontrol-plane والإعدادات دون تغيير.
+السياسة الجديدة تثبت47a79260 والوحدات الست المطلوبة منclosureالمثبتة فقط؛
+لا third-party أو أدوار أو شيفرة متحركة. قبولQA ينتظر protected dispatch وpaired
+backup/quiescence/native transition verification والمصدر/الوحدات/HTTP الفعلية.
+سجل التنفيذ والدليل: output/bwork-reference-storage-fix-20261020/merge-qa-progress.json.
+نجاح المصدر أو QUEUED ليس اكتمالQA أو قبولًا ماليًا أو إذنًا للايف.
+
 ## BCR-REF-20261020 — إصلاح مالك تخزين Reference (اختبار معزول فقط)
 
 الأساس المدموج6babe78a/tree076858e7؛ الفرعcodex/bwork-reference-storage-fix-20261020.

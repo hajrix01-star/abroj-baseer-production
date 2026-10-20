@@ -28,6 +28,8 @@ class BWorkAdminCase(TransactionCase):
                          'company_ids': [Command.link(cls.other.id)]})
         cls.ordinary = cls.env['res.users'].with_context(no_reset_password=True).create({
             'name': 'Non-admin manager', 'login': 'admin-contract-' + uuid4().hex,
+            # Authorized sender, still deliberately not a room administrator.
+            'bwork_chat_view': True, 'bwork_chat_send': True,
             'company_id': cls.company.id, 'company_ids': [Command.set(cls.company.ids)],
             'group_ids': [Command.set([cls.env.ref('base.group_user').id,
                                       cls.env.ref('baseer_bwork.group_bwork_manager').id])],

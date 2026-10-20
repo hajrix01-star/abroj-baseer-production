@@ -23,6 +23,8 @@ class GalleryFixtures:
         cls.password = 'gallery-test-' + uuid4().hex
         cls.reader = cls.env['res.users'].with_context(no_reset_password=True).create({
             'name': 'Gallery reader', 'login': 'gallery-' + uuid4().hex, 'password': cls.password,
+            # Gallery fixtures explicitly opt in to their upload/read actions.
+            'bwork_chat_view': True, 'bwork_chat_send': True, 'bwork_media': True,
             'company_id': cls.company.id, 'company_ids': [Command.set(cls.company.ids)],
             'group_ids': [Command.set([cls.env.ref('base.group_user').id])],
         })

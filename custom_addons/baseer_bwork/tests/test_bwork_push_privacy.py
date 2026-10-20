@@ -20,6 +20,9 @@ class BWorkPushPrivacyCase(TransactionCase):
         cls.company = cls.env.company
         cls.author, cls.reader = [cls.env['res.users'].with_context(no_reset_password=True).create({
             'name': 'Private sender ' + name, 'login': 'bwork-push-' + uuid4().hex,
+            # Chat and task wake-up tests explicitly authorize these actors.
+            'bwork_chat_view': True, 'bwork_chat_send': True,
+            'bwork_task_view': True, 'bwork_task_manage': True,
             'company_id': cls.company.id, 'company_ids': [Command.set(cls.company.ids)],
             'group_ids': [Command.set([cls.env.ref('base.group_user').id])],
         }) for name in ('author', 'reader')]

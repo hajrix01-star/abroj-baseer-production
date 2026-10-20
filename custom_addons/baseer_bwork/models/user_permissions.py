@@ -15,23 +15,23 @@ _INVERSE_TOKEN = object()
 class ResUsers(models.Model):
     _inherit = 'res.users'
 
-    # Existing internal accounts had these BWork abilities before this version.
-    # External users are never authorized by a default: _is_internal is always
-    # checked at the service boundary and effective-permission computation.
+    # First installation and newly created accounts are opt-in. Changing a
+    # field default never resets stored permissions on an installed database.
+    # Native internal/company/membership checks still intersect explicit grants.
     bwork_chat_view = fields.Boolean(string='View conversations',
-                                     default=True, groups='base.group_system')
+                                     default=False, groups='base.group_system')
     bwork_chat_send = fields.Boolean(string='Send messages',
-                                     default=True, groups='base.group_system')
+                                     default=False, groups='base.group_system')
     bwork_media = fields.Boolean(string='Send media and files',
-                                 default=True, groups='base.group_system')
+                                 default=False, groups='base.group_system')
     bwork_group_create = fields.Boolean(string='Create groups',
-                                        default=True, groups='base.group_system')
+                                        default=False, groups='base.group_system')
     bwork_group_manage = fields.Boolean(string='Manage assigned groups',
-                                        default=True, groups='base.group_system')
+                                        default=False, groups='base.group_system')
     bwork_task_view = fields.Boolean(string='View tasks',
-                                    default=True, groups='base.group_system')
+                                    default=False, groups='base.group_system')
     bwork_task_manage = fields.Boolean(string='Create and update tasks',
-                                      default=True, groups='base.group_system')
+                                      default=False, groups='base.group_system')
     bwork_manage_rooms = fields.Boolean(
         string='Manage rooms and members',
         compute='_compute_bwork_manage_rooms', inverse='_inverse_bwork_manage_rooms',

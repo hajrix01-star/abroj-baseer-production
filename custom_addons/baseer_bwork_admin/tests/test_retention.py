@@ -27,9 +27,12 @@ class RetentionFixtures:
         cls.manager = cls.env.ref('baseer_bwork.group_bwork_manager')
         cls.retention_group = cls.env.ref('baseer_bwork_admin.group_bwork_retention_manager')
         cls.password = 'retention-test-' + uuid4().hex
-        cls.admin.write({'group_ids': [Command.link(cls.manager.id)]})
+        cls.admin.write({'group_ids': [Command.link(cls.manager.id)],
+                         'bwork_chat_view': True, 'bwork_media': True})
         cls.reader = cls.env['res.users'].with_context(no_reset_password=True).create({
             'name': 'Synthetic retention reader', 'login': 'retention-' + uuid4().hex,
+            # Explicit file sender/reader under the fresh-closed default policy.
+            'bwork_chat_view': True, 'bwork_chat_send': True, 'bwork_media': True,
             'password': cls.password,
             'company_id': cls.company.id, 'company_ids': [Command.set(cls.company.ids)],
             'group_ids': [Command.set([cls.env.ref('base.group_user').id])],

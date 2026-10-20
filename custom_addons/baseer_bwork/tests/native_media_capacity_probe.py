@@ -59,6 +59,8 @@ def run(env):
     users = env['res.users'].with_context(no_reset_password=True)
     manager = users.create({
         'name': 'Native upload capacity manager %s' % suffix,
+        # Opt in only the synthetic upload/read actors, never production users.
+        'bwork_chat_view': True, 'bwork_chat_send': True, 'bwork_media': True,
         'login': 'native-capacity-manager-%s' % suffix,
         'company_id': company.id,
         'company_ids': [Command.set(company.ids)],
@@ -66,6 +68,7 @@ def run(env):
     })
     colleague = users.create({
         'name': 'Native upload capacity colleague %s' % suffix,
+        'bwork_chat_view': True, 'bwork_chat_send': True, 'bwork_media': True,
         'login': 'native-capacity-colleague-%s' % suffix,
         'company_id': company.id,
         'company_ids': [Command.set(company.ids)],

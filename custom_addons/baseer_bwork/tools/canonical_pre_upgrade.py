@@ -130,8 +130,8 @@ def _preflight(cr, mapping, module_rows, ledger):
             _stop('old_catalog_only_bootstrap_required')
         if old_tables or new_tables or ledger:
             _stop('orphaned_schema')
-        cr.execute("SELECT 1 FROM ir_model WHERE model LIKE 'baseer.bchat.%' OR model IN %s LIMIT 1",
-                   [tuple(x['new'] for x in mapping['models'])])
+        cr.execute('SELECT 1 FROM ir_model WHERE model LIKE %s OR model IN %s LIMIT 1',
+                   ['baseer.bchat.%', tuple(x['new'] for x in mapping['models'])])
         if cr.fetchone():
             _stop('orphaned_model_metadata')
         return 'fresh'

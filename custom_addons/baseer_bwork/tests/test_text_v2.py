@@ -25,7 +25,10 @@ class BWorkTextCase(TransactionCase):
         cls.company = cls.manager.company_id
         cls.foreign_company = cls.env['res.company'].create({'name': 'BWork v2 foreign test company'})
         cls.manager.write({'group_ids': [Command.link(
-            cls.env.ref('baseer_bwork.group_bwork_manager').id)]})
+            cls.env.ref('baseer_bwork.group_bwork_manager').id)],
+            # Fresh users are closed; this synthetic actor exercises chat/groups.
+            'bwork_chat_view': True, 'bwork_chat_send': True, 'bwork_media': True,
+            'bwork_group_create': True, 'bwork_group_manage': True})
         cls.member = cls._user('member', 'base.group_user', cls.company)
         cls.foreign = cls._user('foreign', 'base.group_user', cls.foreign_company)
         cls.portal = cls._user('portal', 'base.group_portal', cls.company)
@@ -37,6 +40,10 @@ class BWorkTextCase(TransactionCase):
     @classmethod
     def _user(cls, label, group, company):
         return cls.env['res.users'].with_context(no_reset_password=True).create({
+            # Only the internal chat/group actors opt in; portal stays closed.
+            **({'bwork_chat_view': True, 'bwork_chat_send': True, 'bwork_media': True,
+                'bwork_group_create': True, 'bwork_group_manage': True}
+               if group != 'base.group_portal' else {}),
             'name': 'BWork v2 %s' % label,
             'login': 'bwork-v2-%s-%s' % (label, uuid4().hex),
             'company_id': company.id,
@@ -954,12 +961,14 @@ class BWorkTextHttpCase(HttpCase):
         password = 'test-only-%s' % uuid4().hex
         manager = self.env['res.users'].with_context(no_reset_password=True).create({
             'name': 'BWork v2 HTTP manager', 'login': 'bwork-v2-http-manager-%s' % uuid4().hex,
+            'bwork_chat_view': True,
             'password': password, 'company_id': company.id,
             'company_ids': [Command.set(company.ids)],
             'group_ids': [Command.set([self.env.ref('baseer_bwork.group_bwork_manager').id])],
         })
         member = self.env['res.users'].with_context(no_reset_password=True).create({
             'name': 'BWork v2 HTTP member', 'login': 'bwork-v2-http-member-%s' % uuid4().hex,
+            'bwork_chat_view': True, 'bwork_chat_send': True,
             'password': password, 'company_id': company.id,
             'company_ids': [Command.set(company.ids)],
             'group_ids': [Command.set([self.env.ref('base.group_user').id])],
@@ -1014,6 +1023,7 @@ class BWorkTextHttpCase(HttpCase):
         password = 'test-only-%s' % uuid4().hex
         member = self.env['res.users'].with_context(no_reset_password=True).create({
             'name': 'BWork HTTP caller', 'login': 'bwork-http-caller-%s' % uuid4().hex,
+            'bwork_chat_view': True, 'bwork_group_create': True,
             'password': password, 'company_id': company.id,
             'company_ids': [Command.set(company.ids)],
             'group_ids': [Command.set([self.env.ref('base.group_user').id])],

@@ -18,6 +18,8 @@ def run(env):
     if env.cr.dbname != 'bwork_text_test_20261009':
         raise RuntimeError('Refusing task race probe outside the approved isolated DB')
     user = env.ref('base.user_admin')
+    # This guarded disposable probe deliberately exercises task mutations.
+    user.sudo().write({'bwork_task_view': True, 'bwork_task_manage': True})
     company = user.company_id
     if not user.active or not user._is_internal() or company not in user.company_ids:
         raise RuntimeError('The isolated test admin is not an eligible BWork user')
@@ -115,6 +117,7 @@ def run_list_reassignment(env):
     if env.cr.dbname != 'bwork_text_test_20261009':
         raise RuntimeError('Refusing task list race probe outside the approved isolated DB')
     reader = env.ref('base.user_admin')
+    reader.sudo().write({'bwork_task_view': True, 'bwork_task_manage': True})
     company = reader.company_id
     candidates = env['baseer.bwork.service'].with_user(reader)._v2_task_options(company.id)['assignees']
     creator_id = next((item['id'] for item in candidates if item['id'] != reader.id), None)

@@ -24,6 +24,9 @@ class BWorkPushCase(TransactionCase):
     @classmethod
     def _user(cls, label):
         return cls.env['res.users'].with_context(no_reset_password=True).create({
+            # Explicit capabilities for the existing chat and task push fixtures.
+            'bwork_chat_view': True, 'bwork_chat_send': True,
+            'bwork_task_view': True, 'bwork_task_manage': True,
             'name': 'BWork push %s' % label,
             'login': 'bwork-push-%s-%s' % (label, uuid4().hex),
             'company_id': cls.company.id, 'company_ids': [Command.set(cls.company.ids)],

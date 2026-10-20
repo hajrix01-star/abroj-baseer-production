@@ -23,6 +23,8 @@ class BWorkReceiptCase(TransactionCase):
         group = self.env.ref('baseer_bwork_procurement.group_bwork_procurement_operator')
         self.operator = self.env['res.users'].with_context(no_reset_password=True).create({
             'name': 'BWork restaurant manager', 'login': 'bwork-receipt-%s' % uuid4().hex,
+            # Receipt sharing exercises the authorized linked-chat path.
+            'bwork_chat_view': True, 'bwork_chat_send': True,
             'company_id': self.company.id, 'company_ids': [Command.set(self.company.ids)],
             'group_ids': [Command.set([self.env.ref('base.group_user').id, group.id])],
         })

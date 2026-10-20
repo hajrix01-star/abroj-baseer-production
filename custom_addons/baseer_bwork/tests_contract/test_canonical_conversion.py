@@ -166,6 +166,37 @@ class CanonicalConversionContract(unittest.TestCase):
         self.assertEqual(set(mapping['m2m_keep']), set(mapping['m2m_columns']))
         self.assertEqual(mapping['m2m_columns']['bwork_retention_run_room_rel'], ['run_id', 'room_id'])
 
+    def test_fresh_model_pattern_is_a_bound_value_not_literal_percent_sql(self):
+        mapping, _ = upgrade.load_mapping()
+        cursor = Mock()
+        cursor.fetchone.return_value = None
+        with patch.object(upgrade, '_residual_schema'), patch.object(upgrade, '_exists', return_value=False):
+            self.assertEqual(upgrade._preflight(cursor, mapping, {}, None), 'fresh')
+        cursor.execute.assert_called_once_with(
+            'SELECT 1 FROM ir_model WHERE model LIKE %s OR model IN %s LIMIT 1',
+            ['baseer.bchat.%', tuple(row['new'] for row in mapping['models'])],
+        )
+        # The query must still reject orphaned metadata, not skip its guard.
+        cursor.fetchone.return_value = (1,)
+        with patch.object(upgrade, '_residual_schema'), patch.object(upgrade, '_exists', return_value=False):
+            with self.assertRaisesRegex(upgrade.MigrationStopped, 'orphaned_model_metadata'):
+                upgrade._preflight(cursor, mapping, {}, None)
+
+    def test_fresh_core_switches_default_closed(self):
+        tree = ast.parse((ROOT / 'models/user_permissions.py').read_text(encoding='utf-8'))
+        switches = ('bwork_chat_view', 'bwork_chat_send', 'bwork_media', 'bwork_group_create',
+                    'bwork_group_manage', 'bwork_task_view', 'bwork_task_manage')
+        cls = next(node for node in tree.body if isinstance(node, ast.ClassDef) and node.name == 'ResUsers')
+        declarations = {node.targets[0].id: node.value for node in cls.body
+                        if isinstance(node, ast.Assign) and isinstance(node.targets[0], ast.Name)
+                        and node.targets[0].id in switches}
+        self.assertEqual(set(declarations), set(switches))
+        for name, call in declarations.items():
+            self.assertEqual(ast.unparse(call.func), 'fields.Boolean', name)
+            keywords = {kw.arg: kw.value for kw in call.keywords}
+            self.assertIs(ast.literal_eval(keywords['default']), False, name)
+            self.assertEqual(ast.literal_eval(keywords['groups']), 'base.group_system', name)
+
     def test_unknown_old_physical_or_model_catalog_stops_before_mutation(self):
         mapping, _ = upgrade.load_mapping()
         cursor = Mock()

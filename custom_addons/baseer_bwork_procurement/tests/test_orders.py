@@ -26,6 +26,8 @@ class BWorkOrderCase(TransactionCase):
         self.other_company = self.env['res.company'].create({'name': 'BWork foreign company %s' % uuid4().hex[:8]})
         self.user = self.env['res.users'].with_context(no_reset_password=True).create({
             'name': 'BWork order employee', 'login': 'bwork-order-%s' % uuid4().hex,
+            # Explicit linked-chat/task-list fixture rights; orders stay separate.
+            'bwork_chat_view': True, 'bwork_chat_send': True, 'bwork_task_view': True,
             'company_id': self.company.id, 'company_ids': [Command.set(self.company.ids)],
             'group_ids': [Command.set([
                 self.env.ref('base.group_user').id,
@@ -40,6 +42,7 @@ class BWorkOrderCase(TransactionCase):
                          'bwork_order_receive': True})
         self.other_user = self.env['res.users'].with_context(no_reset_password=True).create({
             'name': 'BWork foreign employee', 'login': 'bwork-order-foreign-%s' % uuid4().hex,
+            'bwork_chat_view': True, 'bwork_chat_send': True,
             'company_id': self.other_company.id,
             'company_ids': [Command.set(self.other_company.ids)],
             'group_ids': [Command.set([self.env.ref('base.group_user').id])],
@@ -868,6 +871,8 @@ class BWorkOrderCase(TransactionCase):
         self._representative('Buyer')
         native_only = self.env['res.users'].with_context(no_reset_password=True).create({
             'name': 'Native cashier without BWork role', 'login': 'native-cashier-%s' % uuid4().hex,
+            # Native cashier is deliberately denied orders, not chat/task reads.
+            'bwork_chat_view': True, 'bwork_task_view': True,
             'company_id': self.company.id, 'company_ids': [Command.set(self.company.ids)],
             'group_ids': [Command.set([
                 self.env.ref('base.group_user').id,
@@ -1002,6 +1007,7 @@ class BWorkOrderHttpCase(HttpCase):
         password = 'test-only-%s' % uuid4().hex
         user = self.env['res.users'].with_context(no_reset_password=True).create({
             'name': 'BWork HTTP order employee', 'login': 'bwork-order-http-%s' % uuid4().hex,
+            'bwork_chat_view': True, 'bwork_chat_send': True,
             'password': password, 'company_id': company.id,
             'company_ids': [Command.set(company.ids)],
             'group_ids': [Command.set([

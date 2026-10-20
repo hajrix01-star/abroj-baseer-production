@@ -277,6 +277,11 @@ def check_repository_ci_wiring() -> None:
     require("baseer_bwork_admin" in source_workflow and "test-bwork-admin" in source_workflow
             and '"custom_addons/baseer_bwork_admin/"' in source,
             "BWork administrative changes no longer activate cumulative contracts")
+    gallery_workflow = source_text(".github/workflows/test-bwork-gallery.yml")
+    require("test-bwork-gallery" in source_workflow
+            and "BChatGalleryCase" in gallery_workflow and "BChatGalleryHttpCase" in gallery_workflow
+            and '" -eq 9' in gallery_workflow and "contents: read" in gallery_workflow,
+            "BWork gallery no longer activates its isolated ORM and HTTP contract tests")
 
 
 def run_bridge_entry_contract() -> None:
@@ -312,7 +317,7 @@ def changed_guard(base: str, head: str, registry: dict) -> set[str]:
     paths = changed_paths(base, head)
     relevant = [path for path in paths if path.startswith((
         "custom_addons/baseer_bchat/", "custom_addons/baseer_bwork_admin/",
-        ".github/workflows/test-bwork-admin.yml", "android/bchat/", "ops/qa/baseer-qa-deploy",
+        ".github/workflows/test-bwork-admin.yml", ".github/workflows/test-bwork-gallery.yml", "android/bchat/", "ops/qa/baseer-qa-deploy",
         "ops/production/baseer-production-deploy", ".github/workflows/validate-pull-request.yml",
         ".github/workflows/bchat-cumulative-contracts.yml", ".github/CODEOWNERS",
     ))]

@@ -24,6 +24,7 @@ import { SwipeReply } from './SwipeReply';
 import type { ChatView } from './useChat';
 import { ChatError } from '../core/ChatEngine';
 import { discardStagedAttachment, stageFile } from '../runtime';
+import { mediaTranslator } from '../media/dictionary';
 import {
   canViewMedia,
   conversationAccess,
@@ -44,6 +45,8 @@ export function TimelineScreen({
   manage,
   onMenu,
   presented = true,
+  focusTarget,
+  onGallery,
 }: {
   engine: ChatEngine;
   chat: ChatView;
@@ -53,6 +56,8 @@ export function TimelineScreen({
   manage: () => void;
   onMenu?: () => void;
   presented?: boolean;
+  focusTarget?: { id: number; nonce: number };
+  onGallery?: () => void;
 }) {
   const room = chat.selected!;
   // The shell may retain this exact conversation while another section is visible.
@@ -99,6 +104,9 @@ export function TimelineScreen({
   hiddenAuthority.current = chat.presentationReady && chat.identity?.permissions.chat_view === true
     && chat.identity.company_ids.includes(room.company_id);
   const [jumpTarget, setJumpTarget] = useState<{ scope: string; id: number } | null>(null);
+  useEffect(() => {
+    if (presented && focusTarget) setJumpTarget({ scope: actionScope, id: focusTarget.id });
+  }, [presented, actionScope, focusTarget?.id, focusTarget?.nonce]);
   useEffect(() => {
     let active = true;
     const requested = actionScope;
@@ -524,6 +532,7 @@ export function TimelineScreen({
                 onPress={() => { if (presentedRef.current) manage(); }}
               />
             )}
+            {onGallery && viewMedia && <IconButton icon="image" label={mediaTranslator(language)('gallery')} onPress={() => { if (presentedRef.current) onGallery(); }} />}
             {back && (
               <IconButton
                 icon="back"

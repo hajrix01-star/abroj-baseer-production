@@ -298,6 +298,24 @@
       ]
     },
     {
+      "id": "bwork-gallery-membership-keyset-and-no-receipts",
+      "introduced": "2026-10-20",
+      "risk": "critical",
+      "scope": "Sparse room galleries retain current member/company/media authority, exact linked canonical messages, stable bounded keysets and last-emitted byte-cap cursors without history coverage, receipt writes, private-content ACLs or server deletion.",
+      "source_paths": [
+        "custom_addons/baseer_bchat/gallery_contracts.py",
+        "custom_addons/baseer_bchat/models/gallery_service.py",
+        "custom_addons/baseer_bchat/controllers/gallery_api.py",
+        "custom_addons/baseer_bchat/tests/test_gallery.py",
+        "custom_addons/baseer_bchat/tests_contract/test_gallery_contract.py",
+        "custom_addons/baseer_bchat/static/src/bwork_gallery/**",
+        "custom_addons/baseer_bchat/static/tests/gallery_client.node.test.mjs",
+        "custom_addons/baseer_bwork_admin/static/**",
+        ".github/workflows/test-bwork-gallery.yml"
+      ],
+      "suites": ["backend-contracts", "source-structure", "guard-integrity"]
+    },
+    {
       "id": "bwork-admin-metadata-and-branding",
       "introduced": "2026-10-20",
       "risk": "critical",

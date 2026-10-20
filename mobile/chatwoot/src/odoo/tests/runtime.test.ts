@@ -15,6 +15,7 @@ let directoryReads = 0;
 let beforeStat: ((uri: string) => Promise<void>) | undefined;
 let failOwnedDelete = false;
 let failImageCacheCopy = false, failImageCacheCatalog = false;
+let failCachePinRead=false,failCacheOutboxRead=false,failCacheCatalogRemove=false;
 const normalize = (uri: string) => uri.startsWith('file://') ? uri : `file://${uri}`;
 function makeDirectory(uri: string) {
   const parts = uri.replace(/^file:\/\//, '').split('/').filter(Boolean); let path = 'file:///';
@@ -53,19 +54,28 @@ const database: ArchiveDatabase = {
 const sqlArchive = new SqliteArchiveStore(async () => database);
 const strictCatalogActor = (actor: string) => assert.match(actor, /^[a-f0-9]{64}$/, 'real SQLite catalog accepts an actor digest, never a file directory');
 const catalog = {
+  get: (actor:string,uri:string)=>sqlArchive.mediaCacheCatalog.get(actor,uri),
+  pins: (actor:string)=>{if(failCachePinRead)throw new Error('synthetic unreadable pin state');return sqlArchive.mediaCacheCatalog.pins(actor);},
+  pin: (actor:string,uri:string)=>{if(failCachePinRead)throw new Error('synthetic unreadable pin state');return sqlArchive.mediaCacheCatalog.pin(actor,uri);},
+  keep: (actor:string,uri:string,sha256:string,keep:boolean)=>sqlArchive.mediaCacheCatalog.keep(actor,uri,sha256,keep),
+  clearPins: (actor?:string)=>sqlArchive.mediaCacheCatalog.clearPins(actor),
+  policy: (actor:string)=>sqlArchive.mediaCacheCatalog.policy(actor),
+  setPolicy: (actor:string,enabled:boolean)=>sqlArchive.mediaCacheCatalog.setPolicy(actor,enabled),
+  clock: (actor:string,now:number)=>sqlArchive.mediaCacheCatalog.clock(actor,now),
+  claimAutomatic: (actor:string,now:number)=>sqlArchive.mediaCacheCatalog.claimAutomatic(actor,now),
   async list(actor: string) { strictCatalogActor(actor); return sqlArchive.mediaCacheCatalog.list(actor); },
   async put(actor: string, entry: { uri: string; bytes: number; sha256: string; usedAt: number }) {
     strictCatalogActor(actor); await sqlArchive.mediaCacheCatalog.put(actor, entry);
     if (failImageCacheCatalog) { failImageCacheCatalog = false; throw new Error('synthetic uncertain catalog ACK'); }
   },
-  async remove(actor: string, uri: string) { strictCatalogActor(actor); return sqlArchive.mediaCacheCatalog.remove(actor, uri); },
+  async remove(actor: string, uri: string) { strictCatalogActor(actor);if(failCacheCatalogRemove){failCacheCatalogRemove=false;throw new Error('synthetic catalog removal failure');}return sqlArchive.mediaCacheCatalog.remove(actor, uri); },
   async touch(actor: string, uri: string, at: number) { strictCatalogActor(actor); return sqlArchive.mediaCacheCatalog.touch(actor, uri, at); },
 };
 const storage = new Map<string, string>();
 let afterStorageWrite: ((key: string) => Promise<void>) | undefined;
 const asyncStorage = {
   async getItem(k: string) { return storage.get(k) ?? null; }, async setItem(k: string, v: string) { storage.set(k, v); await afterStorageWrite?.(k); },
-  async removeItem(k: string) { storage.delete(k); }, async getAllKeys() { return [...storage.keys()]; },
+  async removeItem(k: string) { storage.delete(k); }, async getAllKeys() { if(failCacheOutboxRead)throw new Error('synthetic unreadable outbox');return [...storage.keys()]; },
 };
 const snapshotRevocations: SnapshotAuthority[] = [];
 let snapshotCurrent: (() => SnapshotAuthority | null) | undefined;
@@ -273,8 +283,69 @@ const hooks = registerHooks({
   },
 });
 process.env.EXPO_PUBLIC_ODOO_ORIGIN = 'https://odoo.example'; process.env.EXPO_PUBLIC_ODOO_DATABASE = 'trial';
-const { getEngine, getOrdersEngine, getTasksEngine, getLeadershipEngine, getNotificationsEngine, ordersOnlySnapshot, refreshOrdersOnlySession, setOrdersConnectivity, localMedia, localMediaLease, localPendingImage, stageFile, discardStagedAttachment, readGroupAvatar, hasGroupAvatar, clearGroupAvatars, subscribeGroupAvatars, readMemberAvatar, clearMemberAvatars } = await import('../runtime.ts');
+const { getEngine, getOrdersEngine, getTasksEngine, getLeadershipEngine, getNotificationsEngine, ordersOnlySnapshot, refreshOrdersOnlySession, setOrdersConnectivity, localMedia, localMediaLease, localPendingImage, stageFile, discardStagedAttachment, readGroupAvatar, hasGroupAvatar, clearGroupAvatars, subscribeGroupAvatars, readMemberAvatar, clearMemberAvatars, mediaCacheOverview,planMediaCacheCleanup,confirmMediaCacheCleanup,setMediaCachePolicy,runAutomaticMediaCacheCleanup,mediaOfflineState,setMediaOffline } = await import('../runtime.ts');
 const engine = getEngine();
+
+async function cacheFixture(){
+  await engine.logout();await engine.login('alice','private',true);await engine.history(roomA);
+  const uri=await localMedia(roomA,media),actor=uri.split('/odoo-chat-media/')[1]!.split('/')[0]!;
+  return {uri,actor,entry:(await sqlArchive.mediaCacheCatalog.get(actor,uri))!};
+}
+test('manual cache cleanup is an opaque exact-victim plan and never deletes picker originals stages partials or unassociated bytes',async()=>{
+  const f=await cacheFixture();try{
+    files.set('file:///external/never-delete.pdf',payload);const stage=await stageFile(roomA,{uri:'file:///external/never-delete.pdf',name:'original.pdf',mime:media.mime});await engine.enqueueAttachment(roomA,stage);
+    const partial=f.uri.replace('media-70.pdf','media-70-inflight.part'),unknown=f.uri.replace('media-70.pdf','media-999.pdf');files.set(partial,payload);files.set(unknown,payload);
+    await catalog.put(f.actor,{...f.entry,uri:unknown});
+    const plan=await planMediaCacheCleanup();assert.equal(plan.estimated.files,1);assert.equal(JSON.stringify(plan).includes('file:///'),false);
+    const result=await confirmMediaCacheCleanup(plan.id);assert.equal(result.deleted.files,1);assert.equal(result.deleted.bytes,payload.length);assert.equal(result.partial,false);assert.equal(files.has(f.uri),false);
+    for(const uri of ['file:///external/never-delete.pdf',stage.uri,partial,unknown])assert.equal(files.has(uri),true,uri);
+    files.delete(unknown);files.delete(partial);await catalog.remove(f.actor,unknown);
+    await assert.rejects(confirmMediaCacheCleanup(plan.id),{code:'cache_plan_expired'});
+  }finally{await engine.logout();}
+});
+test('cleanup preserves unknown zero invalid and future last use and rejects rollback or expired plans',async()=>{
+  const f=await cacheFixture(),clock=Date.now;try{
+    for(const usedAt of [0,Date.now()+60000]){await catalog.touch(f.actor,f.uri,usedAt);assert.equal((await planMediaCacheCleanup()).estimated.files,0);assert.equal(files.has(f.uri),true);}
+    await database.runAsync('UPDATE media_cache SET used_at=? WHERE actor=? AND uri=?','unknown',f.actor,f.uri);assert.equal((await planMediaCacheCleanup()).estimated.files,0);
+    await catalog.put(f.actor,f.entry);const plan=await planMediaCacheCleanup();Date.now=()=>plan.expiresAt-5*60*1000-1;const result=await confirmMediaCacheCleanup(plan.id);assert.equal(result.deleted.files,0);assert.equal(result.partial,true);assert.equal(files.has(f.uri),true);
+    Date.now=clock;const expiring=await planMediaCacheCleanup();Date.now=()=>expiring.expiresAt+1;assert.equal((await confirmMediaCacheCleanup(expiring.id)).deleted.files,0);assert.equal(files.has(f.uri),true);
+  }finally{Date.now=clock;await engine.logout();}
+});
+test('cleanup confirmation skips new pins last use changes and live leases and cannot cross a new session',async()=>{
+  const f=await cacheFixture();try{
+    let plan=await planMediaCacheCleanup();await setMediaOffline(roomA,70,true);assert.deepEqual(await mediaOfflineState(roomA,70),{kept:true,available:true});assert.equal((await confirmMediaCacheCleanup(plan.id)).deleted.files,0);
+    await setMediaOffline(roomA,70,false);plan=await planMediaCacheCleanup();await catalog.touch(f.actor,f.uri,(await catalog.get(f.actor,f.uri))!.usedAt+1);assert.equal((await confirmMediaCacheCleanup(plan.id)).deleted.files,0);
+    await catalog.put(f.actor,f.entry);plan=await planMediaCacheCleanup();const lease=await localMediaLease(roomA,media);try{assert.equal((await confirmMediaCacheCleanup(plan.id)).deleted.files,0);}finally{lease.release();}
+    plan=await planMediaCacheCleanup();await engine.login('alice','private',true);await assert.rejects(confirmMediaCacheCleanup(plan.id),{code:'stale_session'});
+  }finally{await engine.logout();}
+});
+test('cleanup rechecks canonical association after awaited stat and fails closed on unreadable pins or outbox',async()=>{
+  const f=await cacheFixture();let release!:()=>void,started!:()=>void;
+  try{
+    const plan=await planMediaCacheCleanup(),waiting=new Promise<void>(r=>{started=r;}),hold=new Promise<void>(r=>{release=r;});
+    beforeStat=async uri=>{if(uri===f.uri){beforeStat=undefined;started();await hold;}};
+    const cleaning=confirmMediaCacheCleanup(plan.id);await waiting;await engine.setMessageHidden(roomA,1,true);release();assert.equal((await cleaning).deleted.files,0);assert.equal(files.has(f.uri),true);await engine.setMessageHidden(roomA,1,false);
+    failCacheOutboxRead=true;assert.equal((await planMediaCacheCleanup()).estimated.files,0);failCacheOutboxRead=false;
+    failCachePinRead=true;await assert.rejects(planMediaCacheCleanup());assert.equal(files.has(f.uri),true);
+  }finally{beforeStat=undefined;release?.();failCachePinRead=false;failCacheOutboxRead=false;await engine.logout();}
+});
+test('unlink or catalog failure reports truthful partial released bytes and reconciles missing rows without refetch',async()=>{
+  const f=await cacheFixture();try{
+    let plan=await planMediaCacheCleanup();failOwnedDelete=true;let result=await confirmMediaCacheCleanup(plan.id);failOwnedDelete=false;
+    assert.equal(result.failed.files,1);assert.equal(result.deleted.bytes,0);assert.equal(result.partial,true);assert.equal(files.has(f.uri),true);
+    plan=await planMediaCacheCleanup();failCacheCatalogRemove=true;result=await confirmMediaCacheCleanup(plan.id);assert.equal(result.deleted.bytes,payload.length);assert.equal(result.partial,true);assert.equal(files.has(f.uri),false);assert.ok(await catalog.get(f.actor,f.uri));
+    const requests=calls.length;assert.equal((await mediaCacheOverview()).total.files,0);assert.equal(await catalog.get(f.actor,f.uri),null);assert.equal(calls.length,requests);
+  }finally{failOwnedDelete=false;failCacheCatalogRemove=false;await engine.logout();}
+});
+test('offline intent does not fabricate available bytes and optional unused cleanup stays off then throttles durably',async()=>{
+  const f=await cacheFixture();try{
+    await setMediaCachePolicy(false);assert.equal(await runAutomaticMediaCacheCleanup(),null);
+    await setMediaOffline(roomA,70,true);files.delete(f.uri);assert.deepEqual(await mediaOfflineState(roomA,70),{kept:true,available:false});
+    await setMediaOffline(roomA,70,false);await localMedia(roomA,media);await catalog.touch(f.actor,f.uri,Date.now()-31*24*60*60*1000);
+    await setMediaCachePolicy(true);const result=await runAutomaticMediaCacheCleanup();assert.equal(result?.deleted.files,1);assert.equal(await runAutomaticMediaCacheCleanup(),null);
+    assert.equal((await mediaCacheOverview()).policy.autoClean30Days,true);
+  }finally{await setMediaCachePolicy(false);await engine.logout();}
+});
 
 test('actual runtime clears native push synchronously before login logout and fresh permission revision changes',async()=>{
   await engine.logout();pushNativeState.configured=true;

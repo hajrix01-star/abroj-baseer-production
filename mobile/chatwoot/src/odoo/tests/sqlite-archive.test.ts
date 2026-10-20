@@ -313,6 +313,58 @@ test('private SQLite survives reopening, media catalog actor isolation and param
   }
 });
 
+test('cache offline pins policy and clock highwater survive real SQLite restart without changing normal catalog upserts',async()=>{
+  const directory=mkdtempSync(join(tmpdir(),'bwork-cache-policy-')),path=join(directory,'cache.db'),actor='a'.repeat(64),other='c'.repeat(64);
+  const entry={uri:'file:///private/c1-r11-m21/media-7.jpg',bytes:64,sha256:'b'.repeat(64),usedAt:100};let current=harness(path);
+  try{
+    assert.deepEqual(await current.store.mediaCacheCatalog.policy(actor),{autoClean30Days:false,highWater:0});
+    await current.store.mediaCacheCatalog.put(actor,entry);await current.store.mediaCacheCatalog.keep(actor,entry.uri,entry.sha256,true);
+    await current.store.mediaCacheCatalog.setPolicy(actor,true);assert.equal(await current.store.mediaCacheCatalog.clock(actor,200),true);assert.equal(await current.store.mediaCacheCatalog.clock(actor,199),false);
+    await current.store.mediaCacheCatalog.put(actor,{...entry,usedAt:150});current.db.close();current=harness(path);
+    assert.deepEqual(await current.store.mediaCacheCatalog.pins(actor),[{uri:entry.uri,sha256:entry.sha256}]);assert.deepEqual(await current.store.mediaCacheCatalog.pins(other),[]);
+    assert.deepEqual(await current.store.mediaCacheCatalog.policy(actor),{autoClean30Days:true,highWater:200});assert.equal(await current.store.mediaCacheCatalog.clock(actor,199),false);
+    await current.store.mediaCacheCatalog.remove(actor,entry.uri);assert.equal((await current.store.mediaCacheCatalog.pins(actor)).length,1,'intent is not fabricated availability');
+    await current.store.mediaCacheCatalog.clearPins(actor);assert.deepEqual(await current.store.mediaCacheCatalog.pins(actor),[]);
+  }finally{current.db.close();rmSync(directory,{recursive:true,force:true});}
+});
+
+test('retained gallery media survives SQLite restart without claiming history coverage and is redacted by scope or media revocation',async()=>{
+  const directory=mkdtempSync(join(tmpdir(),'bwork-retained-media-')),path=join(directory,'cache.db');let current=harness(path);
+  const item=message(777,70);item.media!.name='retained.jpg';
+  try{
+    await current.store.retainMediaAssociation(scope,item,70,guard);
+    for(const table of ['archive_scopes','archive_messages','archive_coverage'])assert.equal((current.db.prepare(`SELECT COUNT(*) AS count FROM ${table}`).get() as any).count,0);
+    current.db.close();current=harness(path);assert.equal((await current.store.findMedia(scope,70,guard))?.id,777);
+    assert.equal(await current.store.findMedia({...scope,membershipId:22},70,guard),null);
+    await current.store.reconcile(scope.account,[scope],false,guard);assert.equal(await current.store.findMedia(scope,70,guard),null);
+    await current.store.retainMediaAssociation(scope,item,70,guard);await current.store.reconcile(scope.account,[],true,guard);assert.equal(await current.store.findMedia(scope,70,guard),null);
+    await current.store.retainMediaAssociation(scope,item,70,guard);await current.store.purgeAccount(scope.account,guard);assert.equal(await current.store.findMedia(scope,70,guard),null);
+    await assert.rejects(current.store.retainMediaAssociation(scope,item,71,guard),{code:'invalid_archive_row'});
+  }finally{current.db.close();rmSync(directory,{recursive:true,force:true});}
+});
+test('retained media bounds use real SQLite account rows and bytes and reject stale guarded transactions',async()=>{
+  const current=harness(),item=message(1,1);item.media!.name='retained.jpg';
+  try{
+    await current.store.retainMediaAssociation(scope,item,1,guard);
+    const scoped=JSON.stringify([scope.account,scope.companyId,scope.roomId,scope.membershipId]),json=JSON.stringify(item);
+    current.db.prepare('DELETE FROM retained_media').run();
+    current.db.prepare(`WITH RECURSIVE n(x) AS (SELECT 1 UNION ALL SELECT x+1 FROM n WHERE x<5000) INSERT INTO retained_media(account,scope,media_id,message_id,json,bytes) SELECT ?,?,x,x,json_set(?,'$.id',x,'$.media.id',x),length(CAST(json_set(?,'$.id',x,'$.media.id',x) AS BLOB)) FROM n`).run(scope.account,scoped,json,json);
+    const over=message(5001,5001);over.media!.name='retained.jpg';await assert.rejects(current.store.retainMediaAssociation(scope,over,5001,guard),{code:'media_quota'});
+    assert.equal((await current.store.findMedia(scope,5000,guard))?.id,5000);
+    current.db.prepare('DELETE FROM retained_media').run();let inserted=0;
+    for(let n=1;n<=70;n++){const big=message(n,n);big.media!.name='retained.jpg';big.text='x'.repeat(120000);try{await current.store.retainMediaAssociation(scope,big,n,guard);inserted++;}catch(error){assert.equal((error as any).code,'media_quota');break;}}
+    assert.ok(inserted>0&&inserted<70);assert.ok(Number((current.db.prepare('SELECT SUM(bytes) AS bytes FROM retained_media').get() as any).bytes)<=8*1024*1024);
+    current.db.prepare('DELETE FROM retained_media').run();
+    const metadataScope={...scope,account:'synthetic-account-'.repeat(250)},large=message(1,1);large.media!.name='retained.jpg';large.text='x'.repeat(523000);
+    assert.ok(Buffer.byteLength(JSON.stringify(large))*16<8*1024*1024,'sixteen JSON payloads alone fit; metadata must consume the remaining budget');
+    for(let n=1;n<=15;n++)await current.store.retainMediaAssociation(metadataScope,{...large,id:n,media:{...large.media!,id:n}},n,guard);
+    await assert.rejects(current.store.retainMediaAssociation(metadataScope,{...large,id:16,media:{...large.media!,id:16}},16,guard),{code:'media_quota'});
+    const declared=current.db.prepare('SELECT bytes,json,account,scope,media_id,message_id FROM retained_media LIMIT 1').get() as any;
+    assert.equal(declared.bytes,Buffer.byteLength(JSON.stringify({account:declared.account,scope:declared.scope,media_id:declared.media_id,message_id:declared.message_id,message:JSON.parse(declared.json)})));
+    await assert.rejects(current.store.retainMediaAssociation(scope,item,1,()=>{throw new Error('stale');}),/stale/);
+  }finally{current.db.close();}
+});
+
 test('real ChatEngine/SQLite integration: deep paging, local page reuse, stable browsing, offline restart and durable send', async () => {
   const { store, db } = harness();
   const data = new Map<string, string>();

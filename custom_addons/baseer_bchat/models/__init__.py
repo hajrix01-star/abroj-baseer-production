@@ -13,6 +13,7 @@ from . import mobile_upload_grant
 from . import v2_service
 from . import group_service
 from . import media_service
+from . import gallery_service
 from . import task
 from . import change
 from . import task_service

@@ -10,6 +10,7 @@ const edge = (kind: ArchiveEdge['kind'], cursor: number | null = null): ArchiveE
 /** Pure/test fallback only. Android explicitly injects durable indexed SQLite. */
 export class MemoryHistoryArchive implements HistoryArchive {
   private states = new Map<string, State>();
+  private retained = new Map<string, { scope: HistoryScope; message: Message }>();
   private work: Promise<unknown> = Promise.resolve();
   private tick = 0;
   private readonly limits: { messages: number; bytes: number };
@@ -83,7 +84,20 @@ export class MemoryHistoryArchive implements HistoryArchive {
     });
   }
   findMedia(scope: HistoryScope, mediaId: number, guard: Guard): Promise<Message | null> {
-    return this.run(guard, () => { const state = this.state(scope); return copy([...state.rows.values()].find(row => row.media?.id === mediaId) ?? null); });
+    return this.run(guard, () => { const state = this.state(scope); return copy([...state.rows.values()].find(row => row.media?.id === mediaId) ?? this.retained.get(`${archiveScopeKey(scope)}media/${mediaId}`)?.message ?? null); });
+  }
+  retainMediaAssociation(scope: HistoryScope, message: Message | null, mediaId: number, guard: Guard): Promise<void> {
+    return this.run(guard, () => {
+      const next = new Map(this.retained), key = `${archiveScopeKey(scope)}media/${mediaId}`;
+      if (message === null) next.delete(key);
+      else {
+        if (message.media?.id !== mediaId) throw new ArchiveError('invalid_history');
+        next.set(key, { scope: { ...scope }, message: copy(message) });
+        const rows = [...next.values()].filter(row => row.scope.account === scope.account);
+        if (rows.length > 5000 || rows.reduce((sum, row) => sum + bytes(row), 0) > 8 * 1024 * 1024) throw new ArchiveError('history_storage_full');
+      }
+      guard(); this.retained = next;
+    });
   }
   importLegacy(scope: HistoryScope, history: History, guard: Guard): Promise<void> {
     return this.run(guard, () => {
@@ -97,6 +111,8 @@ export class MemoryHistoryArchive implements HistoryArchive {
   reconcile(account: string, scopes: HistoryScope[], mediaAllowed: boolean, guard: Guard): Promise<void> {
     return this.run(guard, () => {
       const allowed = new Set(scopes.map(archiveScopeKey)), all = new Map(this.states);
+      const retained = new Map(this.retained);
+      for (const [key, row] of retained) if (row.scope.account === account && (!mediaAllowed || !allowed.has(archiveScopeKey(row.scope)))) retained.delete(key);
       for (const [key, old] of all) if (old.scope.account === account) {
         if (!allowed.has(key)) all.delete(key);
         else if (!mediaAllowed) {
@@ -105,10 +121,10 @@ export class MemoryHistoryArchive implements HistoryArchive {
           all.set(key, { ...old, rows });
         }
       }
-      guard(); this.states = all;
+      guard(); this.states = all; this.retained = retained;
     });
   }
   purgeAccount(account: string, guard: Guard): Promise<void> {
-    return this.run(guard, () => { const all = new Map(this.states); for (const [key, row] of all) if (row.scope.account === account) all.delete(key); guard(); this.states = all; });
+    return this.run(guard, () => { const all = new Map(this.states), retained = new Map(this.retained); for (const [key, row] of all) if (row.scope.account === account) all.delete(key); for (const [key, row] of retained) if (row.scope.account === account) retained.delete(key); guard(); this.states = all; this.retained = retained; });
   }
 }

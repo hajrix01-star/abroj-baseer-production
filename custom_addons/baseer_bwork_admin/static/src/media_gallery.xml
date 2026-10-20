@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="baseer_bwork_admin.MediaGallery">
+        <section class="o_bwork_media_gallery p-3" aria-label="Media gallery">
+            <header class="d-flex flex-wrap align-items-center gap-2 mb-3">
+                <h1 class="h3 mb-0 flex-grow-1">Media gallery</h1>
+                <button class="btn btn-secondary" t-on-click="refresh" t-att-disabled="state.loading">Refresh rooms</button>
+            </header>
+            <p>Only files in your current room memberships are shown. Opening this gallery does not mark messages as read.</p>
+            <div class="o_bwork_gallery_filters mb-3">
+                <label>Conversation
+                    <select class="form-select" t-on-change="changeRoom" t-att-value="state.roomId" t-att-disabled="state.loading">
+                        <option value="">Select a conversation</option>
+                        <t t-foreach="state.rooms" t-as="room" t-key="room.id"><option t-att-value="room.id"><t t-esc="room.name"/></option></t>
+                    </select>
+                </label>
+                <label>Type
+                    <select class="form-select" t-on-change="changeKind" t-att-value="state.kind">
+                        <option value="all">All media</option><option value="image">Images</option><option value="file">Files</option><option value="audio">Audio</option>
+                    </select>
+                </label>
+                <label>Sort
+                    <select class="form-select" t-on-change="changeOrder" t-att-value="state.order">
+                        <option value="newest">Newest</option><option value="oldest">Oldest</option><option value="largest">Largest</option>
+                    </select>
+                </label>
+            </div>
+            <div t-if="state.error" class="alert alert-warning" role="alert"><t t-esc="errorText"/></div>
+            <p t-if="state.loading" role="status">Loading media…</p>
+            <p t-elif="!state.rooms.length and !state.error">You have no accessible conversations.</p>
+            <p t-elif="state.roomId and !state.items.length and !state.error">No media matches this filter.</p>
+            <ul class="o_bwork_gallery_items list-unstyled">
+                <li t-foreach="state.items" t-as="row" t-key="row.id" class="border rounded p-3">
+                    <img t-if="row.media.kind === 'image' and row.media.thumbnail_available" t-att-src="'/bchat/api/v2/media/' + row.media.id + '/thumbnail'" alt="Image preview" loading="lazy"/>
+                    <div class="o_bwork_gallery_name"><bdi dir="auto"><t t-esc="row.media.name"/></bdi></div>
+                    <div><bdi dir="ltr"><t t-esc="row.media.size_label"/></bdi></div>
+                    <div class="text-muted"><bdi dir="auto"><t t-esc="row.author_name"/></bdi> · <bdi dir="ltr"><t t-esc="row.created_at"/></bdi></div>
+                    <div class="d-flex flex-wrap gap-2 mt-2">
+                        <button class="btn btn-primary" t-on-click="() => this.client.open(row)" t-att-disabled="state.opening">Open file</button>
+                        <button class="btn btn-secondary" t-on-click="() => this.client.message(row)">View message</button>
+                    </div>
+                </li>
+            </ul>
+            <footer t-if="state.roomId" class="d-flex flex-wrap gap-2">
+                <button class="btn btn-secondary" t-on-click="first" t-att-disabled="state.loading">First page</button>
+                <button class="btn btn-secondary" t-on-click="next" t-att-disabled="state.loading or !state.cursor">Next page</button>
+            </footer>
+            <section t-if="state.preview" class="o_bwork_gallery_preview border rounded mt-3 p-3" aria-label="Selected file">
+                <button class="btn btn-secondary mb-2" t-on-click="closePreview">Close preview</button>
+                <h2 class="h5"><bdi dir="auto"><t t-esc="state.preview.name"/></bdi></h2>
+                <img t-if="state.preview.kind === 'image'" t-att-src="state.preview.url" t-att-alt="state.preview.name"/>
+                <audio t-elif="state.preview.kind === 'audio'" controls="controls" t-att-src="state.preview.url"/>
+                <a t-att-href="state.preview.url" t-att-download="state.preview.name" class="btn btn-primary mt-2">Download file</a>
+            </section>
+            <section t-if="state.message" class="border rounded mt-3 p-3" aria-label="Original message">
+                <button class="btn btn-secondary mb-2" t-on-click="closePreview">Close preview</button>
+                <h2 class="h5">Original message</h2>
+                <p><bdi dir="auto"><t t-esc="state.message.author_name"/></bdi> · <bdi dir="ltr"><t t-esc="state.message.created_at"/></bdi></p>
+                <p class="o_bwork_gallery_message"><t t-esc="state.message.text"/></p>
+            </section>
+        </section>
+    </t>
+</templates>

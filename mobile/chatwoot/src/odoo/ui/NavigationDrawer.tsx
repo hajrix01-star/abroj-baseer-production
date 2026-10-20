@@ -17,6 +17,7 @@ import type { Language, Translate } from './dictionary';
 import { VersionLabel } from './VersionLabel';
 import { Brand } from './Brand';
 import { notificationTranslator } from '../notifications/dictionary';
+import { mediaTranslator } from '../media/dictionary';
 
 export type DrawerAction = 'ar' | 'en' | 'refresh' | 'logout' | 'policy';
 function MenuRow({
@@ -93,6 +94,7 @@ export function NavigationDrawer({
   onLeadership,
   leadershipLabel,
   onNotifications,
+  onStorage,
 }: {
   visible: boolean;
   identity: Bootstrap | null;
@@ -108,6 +110,7 @@ export function NavigationDrawer({
   soundsReady?: boolean;
   onSoundsChange?: (enabled: boolean) => void;
   onChats?: () => void;
+  onStorage?: () => void;
   onOrders?: () => void;
   ordersLabel?: string;
   onTasks?: () => void;
@@ -270,6 +273,7 @@ export function NavigationDrawer({
               )}
               {page === 'settings' && (
                 <>
+                  {onStorage && <MenuRow icon="file" label={mediaTranslator(language)('storage')} language={language} disabled={busy} onPress={onStorage} />}
                   {onNotifications && <MenuRow icon="settings" label={notificationTranslator(language)('title')} language={language} disabled={offline||busy} onPress={onNotifications} />}
                   <View style={{ paddingHorizontal: 16 }}>
                     <Label language={language} muted>

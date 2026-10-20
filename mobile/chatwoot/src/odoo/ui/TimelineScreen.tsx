@@ -77,7 +77,7 @@ export function TimelineScreen({
   const canAttach = presented && chat.presentationReady && access.canAttach;
   const viewMedia = presented && chat.presentationReady && canViewMedia(chat.identity, room);
   const retainedMedia = !viewMedia && chat.retainedDisplay === true && canViewMedia(chat.identity, room);
-  const mediaKey = presentationKey(chat.identity, room);
+  const mediaKey = `${presentationKey(chat.identity, room)}/content:${chat.contentEpoch??0}/${room.content_revision??'legacy'}`;
   const previewScope = `${chat.identity?.database}/${mediaKey}`;
   const actionScope = `${engine.accountScope}/${previewScope}`;
   const currentActionScope = useRef(actionScope); currentActionScope.current = actionScope;
@@ -219,6 +219,7 @@ export function TimelineScreen({
     scrollFrame.current = null;
     // Do not clear the draft/reply, change reader intent, or accept zero-sized hidden geometry.
   }, [presented]);
+  useEffect(()=>{replyRevision.current++;setReply(null);setInfo(null);setActionsFor(null);setJumpTarget(null);},[chat.contentEpoch,room.content_revision]);
   const chooseReply = (message: Message) => {
     if (!latestAccess.current || !live.current || (message.author_user_id === currentMessages.current.userId
       && (!hiddenRef.current.ready || hiddenRef.current.ids.has(message.id)))) return;

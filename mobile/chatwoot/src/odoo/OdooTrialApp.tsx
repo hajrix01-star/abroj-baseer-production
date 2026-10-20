@@ -68,7 +68,7 @@ export function SessionApp({ engine, initialLanguage = 'ar', onLanguageChange }:
   const displayIdentity = chat.identity;
   const displayReady = chat.displayReady ?? chat.presentationReady;
   const retainedDisplay = chat.retainedDisplay === true;
-  const mediaScope = JSON.stringify([engine.accountScope, identity?.database, identity?.user_id, identity?.company_ids, identity?.permissions]);
+  const mediaScope = JSON.stringify([engine.accountScope, identity?.database, identity?.user_id, identity?.company_ids, identity?.permissions,chat.contentEpoch]);
   const mediaScopeRef = useRef(mediaScope); mediaScopeRef.current = mediaScope;
   const galleryRoom = gallery?.scope === mediaScope && identity?.permissions.media === true && identity.permissions.chat_view === true
     ? engine.rooms().find(room => room.id === gallery.room.id && room.company_id === gallery.room.company_id && room.membership_id === gallery.room.membership_id) : undefined;

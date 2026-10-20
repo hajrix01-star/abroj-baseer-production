@@ -764,6 +764,15 @@ test('reply uses contextual affordance, focuses input and retains quote on faile
   assert.equal(one(app.render(), 'Field').value, 'keep draft');
 });
 
+test('retention revision clears composer quote and content actions without changing its unsent draft',()=>{
+ const app=timeline();let tree=app.render();one(tree,'Field').ref.current={focus(){}};
+ const item={key:'message-10',message:app.props.chat.history.messages[0]};one(one(tree,'FlashList').renderItem({item}),'Pressable').onPress();
+ one(one(app.render(),'FlashList').renderItem({item}),'IconButton',p=>p.icon==='reply').onPress();
+ one(app.render(),'Field').onChangeText('keep unsent draft');assert.equal(one(app.render(),'MessageQuote').text,'retained message');
+ app.props.chat.contentEpoch=1;app.props.chat.selected={...app.props.chat.selected,content_revision:1};app.render();tree=app.render();
+ assert.equal(nodes(tree).some(n=>n.type==='MessageQuote'),false);assert.equal(one(tree,'Field').value,'keep unsent draft');assert.equal(app.calls.length,0);
+});
+
 test('message information and device-local hide undo remain available to read-only members without exposing hidden content', async () => {
   const app = timeline(); app.props.chat.identity.permissions.chat_send = false;
   let list = one(app.render(), 'FlashList'); const item = { key: 'message-10', message: app.props.chat.history.messages[0] };

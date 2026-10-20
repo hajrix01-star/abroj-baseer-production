@@ -47,10 +47,14 @@ function harness() {
   let resolveDeferred;
   let roomRows = [{ id: 1, membership_id: 9, company_id: 1, name: 'Before', avatar_version: 1 }];
   let messages = [];
+  let contentChanged;
   const tones = [];
   const timers = new Map(); let timerSequence = 0;
   const identity = { user_id: 7, database: 'synthetic', permissions: { chat_view: true } };
   const engine = {
+    contentEpoch:0,
+    subscribeContent(listener){contentChanged=listener;return()=>{contentChanged=undefined;};},
+    retentionBarrier(){this.contentEpoch++;contentChanged?.();},
     identity,
     offline: false,
     status: 'ready',
@@ -359,6 +363,14 @@ test('same-account resume and reconnect retain TTL-valid display but never grant
     assert.equal(app.tones.length, 0, 'catchup never emits a tone');
   }
 });
+test('server content revision masks retained hook pixels before reconciliation and keeps durable pending intents unchanged',async()=>{
+ const app=await ready();app.messages([{id:1,author_user_id:7,text:'removed content'}]);await app.render().select(app.engine.rooms()[0]);
+ const queue=[{client_uuid:'unsent',state:'queued',text:'keep unsent'}];app.engine.pending=()=>queue;
+ assert.equal(app.render().history.messages.length,1);app.metadata({content_revision:1});app.engine.retentionBarrier();
+ const view=app.render();assert.equal(view.history.messages.length,0);assert.equal(view.displayReady,false);assert.equal(view.presentationReady,false);
+ assert.equal(view.selected.content_revision,1);assert.equal(view.contentEpoch,1);assert.equal(queue[0].text,'keep unsent');
+});
+
 test('retained foreground pixels reject expired leases, account scope changes and denied revalidation', async () => {
   for (const transition of ['expired', 'scope', 'actor', 'forbidden', 'stale']) {
     const app = await ready(); app.app('background'); app.render();

@@ -13,6 +13,7 @@ export class MemoryHistoryArchive implements HistoryArchive {
   private retained = new Map<string, { scope: HistoryScope; message: Message }>();
   private work: Promise<unknown> = Promise.resolve();
   private tick = 0;
+  clearRoom(scope:HistoryScope,guard:Guard):Promise<void>{return this.run(guard,()=>{const key=archiveScopeKey(scope);this.states.delete(key);for(const [id,row]of this.retained)if(archiveScopeKey(row.scope)===key)this.retained.delete(id);});}
   private readonly limits: { messages: number; bytes: number };
   constructor(limits = { messages: 2000, bytes: 2 * 1024 * 1024 }) { this.limits = limits; }
   private run<T>(guard: Guard, operation: () => T): Promise<T> {

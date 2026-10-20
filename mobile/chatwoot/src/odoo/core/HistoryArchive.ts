@@ -20,6 +20,7 @@ export interface HistoryArchive {
   read(scope: HistoryScope, query: ArchiveQuery, guard: Guard): Promise<ArchiveSlice>;
   findMedia(scope: HistoryScope, mediaId: number, guard: Guard): Promise<Message | null>;
   retainMediaAssociation?(scope:HistoryScope,message:Message|null,mediaId:number,guard:Guard):Promise<void>;
+  clearRoom?(scope:HistoryScope,guard:Guard):Promise<void>;
   importLegacy(scope: HistoryScope, history: History, guard: Guard): Promise<void>;
   reconcile(account: string, allowedScopes: HistoryScope[], mediaAllowed: boolean, guard: Guard): Promise<void>;
   purgeAccount(account: string, guard: Guard): Promise<void>;

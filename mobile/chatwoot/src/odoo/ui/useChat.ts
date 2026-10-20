@@ -26,6 +26,7 @@ export function useChat(engine: ChatEngine) {
   // remain visible while foreground authority is being checked again.
   const [displayReady, setDisplayReady] = useState(false);
   const [foreground, setForeground] = useState(AppState.currentState === 'active');
+  const [contentEpoch,setContentEpoch]=useState(engine.contentEpoch??0);
   const displayedScope = useRef<string | null>(null);
   const retainedAllowed = useRef(false);
   const [soundState, setSoundState] = useState<SoundState>({
@@ -106,12 +107,19 @@ export function useChat(engine: ChatEngine) {
           r.company_id === old.company_id &&
           r.membership_id === old.membership_id,
       );
-      if (fresh && (fresh.name !== old.name || fresh.avatar_version !== old.avatar_version)) {
+      if (fresh && (fresh.name !== old.name || fresh.avatar_version !== old.avatar_version || fresh.content_revision!==old.content_revision)) {
         selectedRef.current = fresh;
         setSelected(fresh);
       }
     }
   }, [engine]);
+  useEffect(()=>engine.subscribeContent?.(()=>{
+    // A server retention barrier masks old pixels synchronously, before its
+    // durable reconciliation awaits. Drafts/outbox are not content caches.
+    retainedAllowed.current=false;presentation.current=false;
+    setDisplayReady(false);setPresentationReady(false);setHistory(emptyHistory);
+    setContentEpoch(engine.contentEpoch);soundBaselineReady.current=false;sounds.current!.reset();capture();
+  })??(()=>{}),[engine,capture]);
   const select = useCallback(
     async (room: Room | null) => {
       const g = ++generation.current;
@@ -420,6 +428,7 @@ export function useChat(engine: ChatEngine) {
     displayReady,
     retainedDisplay: !!displayedScope.current && displayedScope.current === displayScope(),
     foreground,
+    contentEpoch,
     run,
     select,
     sync,

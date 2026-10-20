@@ -131,6 +131,7 @@ let bootstrapDiagnostic: string | undefined;
 let emulateOdooStatelessHeader = false;
 let statefulSessionIssued = false;
 let bootstrapOverride: unknown;
+let retentionRevision:number|undefined;const retentionRemoved=new Set<number>();
 let ordersStatus = 200;
 let workTasksStatus = 200;
 let changesStatus = 200, malformedChanges = false;
@@ -179,7 +180,16 @@ function nativeFetch(options: Record<string, unknown>, method: string, url: stri
       status = leadershipReportStatus;
       body = status === 200 ? financialReport(1) : { error: { code: 'forbidden' } };
     }
-    else if (path === '/bchat/api/v2/rooms') body = { api_version: 2, rooms };
+    else if (path === '/bchat/api/v2/rooms') body = { api_version: 2, rooms:retentionRevision===undefined?rooms:rooms.map(room=>({...room,content_revision:retentionRevision})) };
+    else if(path.endsWith('/content-state')){
+      if((bootstrapOverride as any)?.permissions?.media===false){status=403;body={error:{code:'forbidden'}};}
+      else{
+      const p=JSON.parse(new URLSearchParams(String(requestBody)).get('payload')!);
+      const target=rooms.find(room=>room.id===Number(path.split('/').at(-2)))!;
+      body={api_version:2,retention_version:1,room_id:target.id,company_id:target.company_id,membership_id:target.membership_id,content_revision:retentionRevision,
+        items:p.media_ids.map((id:number)=>retentionRemoved.has(id)?{media_id:id,state:'removed'}:{media_id:id,state:'live',message:{id:id===70?1:2,author_user_id:7,author_name:'Synthetic',text:'',created_at:'2026-10-20 10:00:00',media:id===70?media:extraMedia.get(id)!.metadata}}),next_cursor:null};
+      }
+    }
     else if (/\/rooms\/\d+\/group$/.test(path)) {
       groupReads++; const room = rooms.find(row => row.id === Number(path.split('/').at(-2)))!;
       body = { api_version: 2, room: { id: room.id, company_id: room.company_id, name: room.name, description: 'Synthetic group', avatar_version: room.avatar_version, is_group: true }, members: [{ user_id: 7, name: 'Synthetic member', is_admin: avatarCanManage }], can_manage: avatarCanManage };
@@ -247,6 +257,10 @@ function nativeFetch(options: Record<string, unknown>, method: string, url: stri
       if (options.path) files.set(normalize(String(options.path)), Buffer.from(item.bytes));
     }
     else throw new Error(`Unexpected test route ${path}`);
+    if(retentionRevision!==undefined){
+      if(body&&typeof body==='object'&&('messages' in body||'message' in body))(body as any).content_revision=retentionRevision;
+      if(/\/media\/\d+\/(?:content|thumbnail)$/.test(path))headers['X-BChat-Content-Revision']=String(retentionRevision);
+    }
     const image = Buffer.from(avatarBytes);
     return { info: () => missingMetadata ? { rnfbEncode: 'utf8' } : ({ status, headers, redirects: [url] }), json: () => body === undefined ? undefined : JSON.parse(JSON.stringify(body)), base64: () => image.toString('base64') };
   });
@@ -291,6 +305,48 @@ async function cacheFixture(){
   const uri=await localMedia(roomA,media),actor=uri.split('/odoo-chat-media/')[1]!.split('/')[0]!;
   return {uri,actor,entry:(await sqlArchive.mediaCacheCatalog.get(actor,uri))!};
 }
+test('native retention reconciles exact removed bytes and preserves live offline pins originals stages parts and durable queue',async()=>{
+  await engine.logout();retentionRevision=0;bootstrapOverride={api_version:2,database:'trial',user_id:7,company_ids:[1],csrf_token:'notpersisted',permissions:{chat_view:true,chat_send:true,media:true},capabilities:{retention_version:1,retention_ready:false}};
+  extraMedia.set(170,{metadata:imageMedia,bytes:imageBytes});let release!:()=>void;
+  try{
+    const f=await cacheFixture();const liveUri=await localMedia(roomA,imageMedia);await setMediaOffline(roomA,70,true);await setMediaOffline(roomA,170,true);
+    files.set('file:///external/retention-original.pdf',payload);const stage=await stageFile(roomA,{uri:'file:///external/retention-original.pdf',name:'unsent.pdf',mime:media.mime});await engine.enqueueAttachment(roomA,stage,'unsent',1);
+    const part=f.uri+'.part';files.set(part,payload);const queued=[...storage].filter(([key])=>key.includes('/outbox/'));
+    let started!:()=>void;const seen=new Promise<void>(r=>{started=r;}),hold=new Promise<void>(r=>{release=r;});
+    beforeNative=async path=>{if(path.endsWith('/content-state')){beforeNative=undefined;started();await hold;}};
+    retentionRemoved.add(70);retentionRevision=1;const refresh=engine.refresh();await seen;
+    await assert.rejects(localMediaLease(roomA,media),{code:'content_sync_required'});assert.deepEqual([...storage].filter(([key])=>key.includes('/outbox/')),queued);
+    release();await refresh;assert.equal(files.has(f.uri),false);assert.equal(await catalog.pin(f.actor,f.uri),null);
+    assert.deepEqual(await mediaOfflineState(engine.rooms()[0]!,170),{kept:true,available:true});assert.equal(files.has(liveUri),true);
+    for(const uri of ['file:///external/retention-original.pdf',stage.uri,part])assert.equal(files.has(uri),true);
+    assert.deepEqual([...storage].filter(([key])=>key.includes('/outbox/')),queued);assert.equal(engine.pending().length,1);files.delete(part);
+  }finally{release?.();beforeNative=undefined;retentionRemoved.clear();await engine.logout();retentionRevision=undefined;bootstrapOverride=undefined;extraMedia.clear();}
+});
+test('native retention unlink failure remains quarantined and retries the same revision without fabricating cleanup success',async()=>{
+  await engine.logout();retentionRevision=0;bootstrapOverride={api_version:2,database:'trial',user_id:7,company_ids:[1],csrf_token:'notpersisted',permissions:{chat_view:true,chat_send:true,media:true},capabilities:{retention_version:1,retention_ready:false}};
+  try{
+    const f=await cacheFixture();await setMediaOffline(roomA,70,true);retentionRemoved.add(70);retentionRevision=1;failOwnedDelete=true;
+    await assert.rejects(engine.refresh());assert.equal(files.has(f.uri),true);await assert.rejects(localMediaLease(roomA,media),{code:'content_sync_required'});
+    assert.ok([...storage].some(([key,value])=>key.endsWith('/content-state')&&JSON.parse(value).ready===false));
+    failOwnedDelete=false;await engine.refresh();assert.equal(files.has(f.uri),false);assert.equal(await catalog.pin(f.actor,f.uri),null);
+  }finally{failOwnedDelete=false;retentionRemoved.clear();await engine.logout();retentionRevision=undefined;bootstrapOverride=undefined;}
+});
+test('native retention media revocation keeps plaintext queue and text authority without media HTTP then reconciles on same revision regrant',async()=>{
+  await engine.logout();retentionRevision=0;const bootstrap={api_version:2,database:'trial',user_id:7,company_ids:[1],csrf_token:'notpersisted',permissions:{chat_view:true,chat_send:true,media:true},capabilities:{retention_version:1,retention_ready:false}};bootstrapOverride=bootstrap;
+  try{
+    const f=await cacheFixture();await engine.enqueue(roomA,'unsent plain text');const queued=[...storage].filter(([key])=>key.includes('/outbox/'));
+    retentionRevision=1;bootstrapOverride={...bootstrap,permissions:{...bootstrap.permissions,media:false}};
+    const before=calls.length;await engine.refresh();assert.equal(engine.identity?.user_id,7);assert.equal(engine.identity?.permissions.chat_view,true);
+    assert.equal(calls.slice(before).some(call=>call.path.endsWith('/content-state')||call.path.startsWith('/bchat/api/v2/media/')),false);
+    assert.deepEqual([...storage].filter(([key])=>key.includes('/outbox/')),queued);assert.equal(engine.pending().length,1);
+    assert.ok([...storage].some(([key,value])=>key.endsWith('/content-state')&&JSON.parse(value).ready===true&&JSON.parse(value).mediaReady===false));
+    // Model bytes left by an interrupted prior revoke; they must not become usable on regrant.
+    files.set(f.uri,payload);await catalog.put(f.actor,f.entry);retentionRemoved.add(70);bootstrapOverride=bootstrap;
+    const regrant=calls.length;await engine.refresh();assert.equal(files.has(f.uri),false);
+    assert.equal(calls.slice(regrant).some(call=>call.path.endsWith('/content-state')),true);
+    assert.deepEqual([...storage].filter(([key])=>key.includes('/outbox/')),queued);
+  }finally{retentionRemoved.clear();await engine.logout();retentionRevision=undefined;bootstrapOverride=undefined;}
+});
 test('manual cache cleanup is an opaque exact-victim plan and never deletes picker originals stages partials or unassociated bytes',async()=>{
   const f=await cacheFixture();try{
     files.set('file:///external/never-delete.pdf',payload);const stage=await stageFile(roomA,{uri:'file:///external/never-delete.pdf',name:'original.pdf',mime:media.mime});await engine.enqueueAttachment(roomA,stage);

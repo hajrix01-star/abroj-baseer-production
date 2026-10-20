@@ -342,6 +342,19 @@ test('retained gallery media survives SQLite restart without claiming history co
     await assert.rejects(current.store.retainMediaAssociation(scope,item,71,guard),{code:'invalid_archive_row'});
   }finally{current.db.close();rmSync(directory,{recursive:true,force:true});}
 });
+test('retention metadata clear is room scoped and durable on real SQLite restart without deleting file catalog pins or policy',async()=>{
+ const directory=mkdtempSync(join(tmpdir(),'bwork-retention-clear-')),path=join(directory,'history.db'),actor='c'.repeat(64),uri='file:///private/media-70.jpg';let current=harness(path);
+ try{
+  const item=message(1,70);item.media!.name='retained.jpg';await current.store.commitPage(scope,{beforeId:null,history:{api_version:2,messages:[item],next_before_id:null}},guard);
+  await current.store.retainMediaAssociation(scope,item,70,guard);const other={...scope,roomId:12,membershipId:22};await current.store.commitPage(other,{beforeId:null,history:{api_version:2,messages:[message(2)],next_before_id:null}},guard);
+  await current.store.mediaCacheCatalog.put(actor,{uri,bytes:4096,sha256:'a'.repeat(64),usedAt:1});await current.store.mediaCacheCatalog.keep(actor,uri,'a'.repeat(64),true);await current.store.mediaCacheCatalog.setPolicy(actor,true);
+  await current.store.clearRoom(scope,guard);current.db.close();current=harness(path);
+  assert.equal(await current.store.findMedia(scope,70,guard),null);assert.equal((await current.store.read(scope,{direction:'latest',limit:30,maxBytes:262144},guard)).messages.length,0);
+  assert.equal((await current.store.read(other,{direction:'latest',limit:30,maxBytes:262144},guard)).messages[0]?.id,2);
+  assert.ok(await current.store.mediaCacheCatalog.pin(actor,uri));assert.ok(await current.store.mediaCacheCatalog.get(actor,uri));assert.equal((await current.store.mediaCacheCatalog.policy(actor)).autoClean30Days,true);
+ }finally{current.db.close();rmSync(directory,{recursive:true,force:true});}
+});
+
 test('retained media bounds use real SQLite account rows and bytes and reject stale guarded transactions',async()=>{
   const current=harness(),item=message(1,1);item.media!.name='retained.jpg';
   try{

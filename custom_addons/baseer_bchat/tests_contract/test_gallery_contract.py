@@ -39,6 +39,10 @@ class GalleryContractTests(unittest.TestCase):
         root = ET.parse(admin / 'static/src/media_gallery.xml')
         isolated = {element.attrib.get('dir') for element in root.iter('bdi')}
         self.assertEqual(isolated, {'auto', 'ltr'})
+        # Odoo's LibSass evaluates CSS min() early and rejects rem/% mixing.
+        scss = (admin / 'static/src/media_gallery.scss').read_text(encoding='utf-8')
+        self.assertNotIn('min(100%', scss)
+        self.assertIn('flex-wrap: wrap', scss)
         for element in root.iter():
             for text in (element.text, element.tail, element.attrib.get('aria-label'), element.attrib.get('alt')):
                 if text and re.search(r'[A-Za-z]', text):
@@ -54,7 +58,10 @@ class GalleryContractTests(unittest.TestCase):
                     entries[key] = ast.literal_eval(line[7:])
             self.assertFalse(labels - entries.keys())
             self.assertTrue(all(entries[label] for label in labels))
-        methods = [node.name for node in ast.walk(ast.parse((ADDON / 'tests/test_gallery.py').read_text(encoding='utf-8')))
+        native_tests = (ADDON / 'tests/test_gallery.py').read_text(encoding='utf-8')
+        for required in ("_get_asset_bundle(", "'web.assets_backend', css=True, js=False", "self.assertFalse(bundle.css_errors", ".o_bwork_media_gallery", "## CSS error message ##", "css_error_message"):
+            self.assertIn(required, native_tests)
+        methods = [node.name for node in ast.walk(ast.parse(native_tests))
                    if isinstance(node, ast.FunctionDef) and node.name.startswith('test_')]
         workflow = (ADDON.parent.parent / '.github/workflows/test-bwork-gallery.yml').read_text(encoding='utf-8')
         self.assertEqual(len(methods), 9)

@@ -155,6 +155,25 @@ class BChatGalleryCase(GalleryFixtures, TransactionCase):
 @tagged('post_install', '-at_install', 'baseer_bchat_gallery')
 class BChatGalleryHttpCase(GalleryFixtures, HttpCase):
     def test_authenticated_strict_route_and_existing_content_reads(self):
+        # Odoo 19's AssetsBundle.css() can return an attachment containing old
+        # styles plus a compiler-error banner rather than raise (even HTTP 200).
+        # Exercise the installed backend bundle and its actual compiled bytes,
+        # not the SCSS source or a standalone replacement compiler.
+        bundle = self.env['ir.qweb']._get_asset_bundle(
+            'web.assets_backend', css=True, js=False, debug_assets=False,
+        )
+        self.assertTrue(any(
+            asset.url and asset.url.lstrip('/') == 'baseer_bwork_admin/static/src/media_gallery.scss'
+            for asset in bundle.stylesheets
+        ), 'The installed backend bundle must load the gallery stylesheet')
+        stylesheets = bundle.css()
+        self.assertTrue(stylesheets)
+        self.assertFalse(bundle.css_errors, '\n'.join(bundle.css_errors))
+        compiled_css = b'\n'.join(stylesheets.mapped('raw')).decode()
+        self.assertIn('.o_bwork_media_gallery', compiled_css)
+        self.assertNotIn('## CSS error message ##', compiled_css)
+        self.assertNotIn('css_error_message', compiled_css)
+
         self.authenticate(self.reader.login, self.password)
         path = '/bchat/api/v2/rooms/%s/media' % self.room.id
         response = self.url_open(path + '?limit=1&order=largest')

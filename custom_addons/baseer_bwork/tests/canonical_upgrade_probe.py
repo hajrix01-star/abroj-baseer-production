@@ -97,6 +97,39 @@ def _assert_reference_fixture(env, facts, *, old):
         assert reference._name == target_model and reference.id == int(target_id)
 
 
+def _constraint_identity_state(env, prototype, mapping, objects, names):
+    """Keep generated XMLID, metadata and physical identities independently."""
+    modules = {row['old']: row['new'] for row in mapping['modules']}
+    models = {row['old']: row['new'] for row in mapping['models']}
+    owners = ('baseer_bchat', 'baseer_bwork', 'baseer_bchat_procurement',
+              'baseer_bwork_procurement', 'baseer_bwork_admin')
+    env.cr.execute('''SELECT d.id,d.module,d.name,d.res_id,c.id,c.name,c.model,c.module,
+                            p.oid,pg_get_constraintdef(p.oid,TRUE)
+                       FROM ir_model_data d JOIN ir_model_constraint c
+                         ON d.model='ir.model.constraint' AND d.res_id=c.id
+                       JOIN ir_model m ON m.id=c.model
+                       LEFT JOIN pg_constraint p ON p.conname=c.name
+                         AND p.conrelid=to_regclass(replace(m.model,'.','_'))
+                      WHERE d.module IN %s AND d.name LIKE 'constraint_%%'
+                      ORDER BY d.id''', [owners])
+    result, counts = {}, {}
+    for xid, module, local, res_id, meta_id, name, model_id, module_id, oid, shape in env.cr.fetchall():
+        owner, target = prototype._xmlid_target(module, local, 'ir.model.constraint', mapping, modules, models, {})
+        key = owner + '.' + target
+        assert key not in result and res_id == meta_id and oid is not None and shape
+        counts[owner] = counts.get(owner, 0) + 1
+        result[key] = {'xmlid_id': xid, 'res_id': res_id, 'constraint_id': meta_id,
+                       'model_id': model_id, 'module_id': module_id, 'name': objects.get(name, name),
+                       'physical_oid': oid, 'shape': prototype._expression(shape, names)}
+    expected = {'baseer_bwork': 26}
+    if 'bchat_order_view' in env['res.users']._fields or 'bwork_order_view' in env['res.users']._fields:
+        expected['baseer_bwork_procurement'] = 4
+    if 'baseer.bwork.admin.console' in env:
+        expected['baseer_bwork_admin'] = 2
+    assert counts == expected, 'Generated constraint identity inventory changed.'
+    return result
+
+
 def _snapshot(env, old):
     prototype = _prototype()
     mapping, _ = prototype.load_mapping()
@@ -146,6 +179,7 @@ def _snapshot(env, old):
     result['constraint_shapes'] = sorted([objects.get(table, table), objects.get(name, name),
                                           prototype._expression(definition, names)]
                                          for table, name, definition in shape_rows)
+    result['constraint_identities'] = _constraint_identity_state(env, prototype, mapping, objects, names)
     result['references'] = _reference_state(env)
     for row in result['references']['values']:
         target, separator, suffix = row[2].partition(',')
@@ -409,6 +443,8 @@ def verify_legacy_restored(env):
     for value in (expected, actual):
         value['tables'] = {table: facts[1:] for table, facts in value['tables'].items()}
         value.pop('constraints')  # Physical OIDs legitimately change on pg_restore.
+        for identity in value['constraint_identities'].values():
+            identity.pop('physical_oid')  # Only physical identity rebases; all metadata IDs remain strict.
     assert expected == actual, 'Restored logical IDs/constraint shapes differ.'
     prototype = _prototype()
     env.cr.execute('SELECT 1 FROM ir_config_parameter WHERE key=%s', [prototype.LEDGER_KEY])

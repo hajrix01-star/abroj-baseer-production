@@ -325,6 +325,52 @@ class CanonicalConversionContract(unittest.TestCase):
             with self.assertRaisesRegex(upgrade.MigrationStopped, 'overlapping_reference_storage'):
                 upgrade._reference_fields(Mock(), {}, invalid)
 
+    def test_generated_constraint_xmlids_keep_exact_native_identity(self):
+        mapping, _ = upgrade.load_mapping()
+        modules = {row['old']: row['new'] for row in mapping['modules']}
+        models = {row['old']: row['new'] for row in mapping['models']}
+        for row in mapping['constraints']:
+            owner = 'baseer_bchat' if row['model'] in models else 'baseer_bchat_procurement'
+            old_table = row['model'].replace('.', '_')
+            new_table = models.get(row['model'], row['model']).replace('.', '_')
+            old = 'constraint_' + upgrade.pg_name(old_table + '_' + row['old'])
+            new = 'constraint_' + upgrade.pg_name(new_table + '_' + row['new'])
+            with self.subTest(old=old):
+                self.assertEqual(upgrade._xmlid_target(owner, old, 'ir.model.constraint', mapping, modules, models, {}),
+                                 (modules[owner], new))
+                self.assertEqual(upgrade._xmlid_target(modules[owner], new, 'ir.model.constraint', mapping, modules, models, {}),
+                                 (modules[owner], new))
+                self.assertEqual(upgrade._xmlid_target('__export__', old, 'ir.model.constraint', mapping, modules, models, {}),
+                                 ('__export__', old))
+                self.assertEqual(upgrade._xmlid_target('other_module', old, 'ir.model.constraint', mapping, modules, models, {}),
+                                 ('other_module', old))
+                self.assertEqual(upgrade._xmlid_target(owner, old, 'other.model', mapping, modules, models, {}),
+                                 (modules[owner], old))
+        with self.assertRaisesRegex(upgrade.MigrationStopped, 'unsupported_constraint_xmlid'):
+            upgrade._xmlid_target('baseer_bchat', 'constraint_baseer_bchat_unknown', 'ir.model.constraint',
+                                  mapping, modules, models, {})
+        long = dict(mapping['constraints'][0], old='long_' + 'x' * 70, new='long_' + 'x' * 70)
+        extended = dict(mapping, constraints=[long])
+        old = upgrade.pg_name('baseer_bchat_binding_' + long['old'])
+        new = upgrade.pg_name('baseer_bwork_binding_' + long['new'])
+        self.assertEqual(len(old), 63)
+        self.assertNotEqual(old.replace('bchat', 'bwork'), new)
+        self.assertEqual(upgrade._xmlid_target('baseer_bchat', 'constraint_' + old, 'ir.model.constraint',
+                                              extended, modules, models, {}), ('baseer_bwork', 'constraint_' + new))
+        old = 'constraint_baseer_bchat_binding_channel_unique'
+        new = 'constraint_baseer_bwork_binding_channel_unique'
+        cursor = Mock()
+        cursor.fetchall.return_value = [(11, 'baseer_bchat', old, 'ir.model.constraint', 21)]
+        upgrade._xmlids(cursor, mapping, modules, models, {})
+        self.assertEqual(cursor.execute.call_args_list[-1].args,
+                         ('UPDATE ir_model_data SET module=%s,name=%s WHERE id=%s', ['baseer_bwork', new, 11]))
+        cursor = Mock()
+        cursor.fetchall.return_value = [(11, 'baseer_bchat', old, 'ir.model.constraint', 21),
+                                       (12, 'baseer_bwork', new, 'ir.model.constraint', 22)]
+        with self.assertRaisesRegex(upgrade.MigrationStopped, 'xmlid_collision'):
+            upgrade._xmlids(cursor, mapping, modules, models, {})
+        self.assertFalse(any(call.args[0].lstrip().startswith('UPDATE') for call in cursor.execute.call_args_list))
+
     def test_identifier_rules_and_injection_rejection_match_official19(self):
         value = 'baseer_bchat_mobile_upload_grant_' + 'x' * 50
         self.assertEqual(upgrade.pg_name(value), value[:54] + '_' + f'{crc32(value.encode()):08x}')

@@ -15,6 +15,11 @@ run39416405958 نجحrollback03، وتوقفnative04 قبلcallback لتوقيع
 بلا تغيير جسم الترحيل، ودليل مشغّل Odoo الأصلي RED/GREEN يسبق إعادة التجربة.
 run39417360446 وصلcallback ثم كشف تقسيمdomain/context عندالفاصلة؛5090metadata readonly scan
 أثبت434view failures من التقسيم، لذلك groups وحدها قائمة فاصلة وباقيattributes تعبير كامل.
+run39418547372 حمّلregistry ثمرفضlineage: localpairedrepro أثبت12constraint OIDs
+أعيدإنشاؤها و30generatedXMLID تغيرت؛ مانعP1 لايُطبّع. يلزم نقلconstraint_ XMLIDs
+الدقيقة معphysical/metadata names وحفظجميعIDs، ثمإعادةالفحص؛ لاQA/Live.
+إصلاحconstraint XMLIDs اجتاز20عقدًا وnative-u محليًا:32هوية و123قيدًا محفوظة
+وكلsnapshotkeys متطابقة؛ المراجعةالمستقلة تجيزrehearsalالكامل فقط،لا قبولنشر بعد.
 لا QA/Live/APK أو تخفيف حماية أو دمج في هذا التفويض. الأدلة الحية في
 output/bwork-reference-storage-fix-20261020/progress.json، والعقد الأصلي أدناه معاد استخدامه.
 

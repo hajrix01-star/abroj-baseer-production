@@ -453,11 +453,40 @@ def _constraint_metadata(cr, mapping, object_names):
     _rename_exact_column_values(cr, 'ir_model_constraint', 'name', object_names)
 
 
+def _constraint_xmlid_targets(mapping, module_names, model_names):
+    """Exact native generated identities for the reviewed 26+4 constraints."""
+    targets = {}
+    for row in mapping['constraints']:
+        if row['model'] in model_names:
+            owner = 'baseer_bchat'
+        elif row['model'] == 'baseer.procurement.request':
+            owner = 'baseer_bchat_procurement'
+        else:
+            _stop('unsupported_constraint_owner')
+        old_table = row['model'].replace('.', '_')
+        new_table = model_names.get(row['model'], row['model']).replace('.', '_')
+        old = 'constraint_' + pg_name(old_table + '_' + row['old'])
+        new = 'constraint_' + pg_name(new_table + '_' + row['new'])
+        target = (module_names[owner], new)
+        for key in ((owner, old), target):
+            if key in targets:
+                _stop('duplicate_constraint_xmlid_mapping')
+            targets[key] = target
+    return targets
+
+
 def _xmlid_target(module, name, model, mapping, module_names, model_names, field_names):
     explicit = {x['old']: x['new'] for x in mapping['xmlids']}
     target = explicit.get(module + '.' + name, module_names.get(module, module) + '.' + name)
     target_module, target_name = target.split('.', 1)
     if module != '__export__':  # User export identities are opaque compatibility IDs.
+        if model == 'ir.model.constraint':
+            generated = _constraint_xmlid_targets(mapping, module_names, model_names)
+            if (module, name) in generated:
+                return generated[(module, name)]
+            owners = {key[0] for key in generated}
+            if module in owners and name.startswith('constraint_'):
+                _stop('unsupported_constraint_xmlid')
         for old, new in model_names.items():
             old_u, new_u = old.replace('.', '_'), new.replace('.', '_')
             if target_name == 'model_' + old_u:

@@ -113,6 +113,19 @@ ChatEngine association/coverage؛ UI dictionaries/actions/accessibility؛ TypeSc
 
 ## دفتر العمليات (إضافة فقط)
 
+### تفويض إصدار لاحق — 2026-10-20
+
+بعد اكتمال تنفيذ المرشح، طلب المالك صراحة «ادمج وانشر». يوسّع ذلك التفويض إلى
+دمج PR435 بعد فحوص الرأس، وتحديث QA عبر سياسته المحمية، وبناء ونشر APK عادي
+0.1.30/build31 في صفحة التحميل. لا يجيز ذلك Live أو منح أدوار أو حذف أصل خادم.
+إعادة استخدام قبول aaf77426 المحلي المشروط ودليله؛ فرق المرشح التالي metadata
+الإصدار والتوثيق فقط، دون إعادة فحوص ناجحة غير متأثرة أو توزيع حزمة uipreview.
+تُراجع مستقلًا سلسلة source S → policy M → QA request Q → actual host receipt →
+normal APK/tree/hash/signature/upgrade ثم draft/publish/public-download verification.
+الموديولان فقط baseer_bchat وbaseer_bwork_admin؛ لا تثبيت تبعيات جديدة أو تغيير أدوار.
+يبقى P2 الأداء/الإتاحة وحدود native EN negatives معلنًا، ولا قبول مالي/FCM شاملًا.
+السجل الحي للإصدار: output/bwork-media-storage-20261020/release-0.1.30/release-progress.json.
+
 1. قبل الاستكشاف: نية إعادة استخدام الخريطة والحدود الحالية؛ agent mobile للكاش فقط،
    agent backend لمسار المعرض/أودو فقط؛ لا تنفيذ حتى مراجعة البوابات.
 2. نتيجة القراءات المتجانسة: skill build ومراجع governance/scale/architecture/design/ERP،

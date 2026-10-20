@@ -54,6 +54,7 @@ class BChatAttentionService(models.AbstractModel):
                       AND receipt.recipient_user_id = %s
                       AND receipt.read_at IS NULL
                       AND receipt.message_id > membership.joined_after_message_id
+                      AND EXISTS (SELECT 1 FROM baseer_bchat_message m WHERE m.id=receipt.message_id AND m.retention_state='active')
                     LIMIT 51
                 ) AS bounded_unread
             ''', [membership_ids, user.id])
@@ -72,6 +73,7 @@ class BChatAttentionService(models.AbstractModel):
                           AND candidate.recipient_user_id = %s
                           AND candidate.read_at IS NULL
                           AND candidate.message_id > membership.joined_after_message_id
+                          AND EXISTS (SELECT 1 FROM baseer_bchat_message m WHERE m.id=candidate.message_id AND m.retention_state='active')
                         ORDER BY candidate.message_id DESC
                         LIMIT 51
                     ) AS receipt ON TRUE

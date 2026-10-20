@@ -1,0 +1,56 @@
+name: Test BWork retention in isolated Odoo
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'custom_addons/baseer_bchat/**'
+      - 'custom_addons/baseer_bwork_admin/**'
+      - '.github/workflows/test-bwork-retention.yml'
+permissions:
+  contents: read
+jobs:
+  retention-runtime:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres@sha256:f1c3376c26f2609ab9f29f71f824103fe2fcd8ee0346485cb6122a4f93df6f94
+        env: { POSTGRES_DB: postgres, POSTGRES_USER: odoo, POSTGRES_PASSWORD: odoo }
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U odoo -d postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pure backend and native-view contracts
+        run: |
+          python3 -m unittest discover -s custom_addons/baseer_bchat/tests_contract -p test_retention_contract.py -v
+          python3 -m unittest discover -s custom_addons/baseer_bwork_admin/tests_contract -v
+      - name: Actual gallery controller and retention UI controller tests
+        run: node --test custom_addons/baseer_bchat/static/tests/gallery_client.node.test.mjs custom_addons/baseer_bchat/static/tests/gallery_retention.node.test.mjs
+      - name: Native retention ORM and HTTP tests in disposable database
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          docker run --rm --network host \
+            -e HOST=127.0.0.1 -e USER=odoo -e PASSWORD=odoo \
+            -e PGOPTIONS='-c lock_timeout=5000 -c statement_timeout=30000' \
+            --mount type=bind,src="$GITHUB_WORKSPACE/custom_addons",dst=/mnt/baseer-addons,readonly \
+            odoo@sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd \
+            odoo --db_host=127.0.0.1 --db_port=5432 --db_user=odoo --db_password=odoo \
+            --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/baseer-addons \
+            -d bwork_retention_ci -i baseer_bchat,baseer_bwork_admin --without-demo=all \
+            --test-enable --test-tags=/baseer_bwork_admin:BWorkRetentionCase,/baseer_bwork_admin:BWorkRetentionHttpCase \
+            --stop-after-init --max-cron-threads=0 --workers=0 --log-level=test 2>&1 | tee bwork-retention-runtime.log
+          for test_class in BWorkRetentionCase BWorkRetentionHttpCase; do
+            grep -F "Starting $test_class." bwork-retention-runtime.log
+          done
+          if grep -Eq ': skipped .+ : |[1-9][0-9]* failed,|[1-9][0-9]* error\(s\)' bwork-retention-runtime.log; then exit 1; fi
+          grep -F '0 failed, 0 error(s)' bwork-retention-runtime.log
+          test "$(grep -Ec 'Starting (BWorkRetentionCase|BWorkRetentionHttpCase)\.' bwork-retention-runtime.log)" -eq 11
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bwork-retention-runtime
+          path: bwork-retention-runtime.log
+          if-no-files-found: error

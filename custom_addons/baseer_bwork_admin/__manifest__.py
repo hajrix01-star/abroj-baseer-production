@@ -1,11 +1,13 @@
 {
     'name': 'BWork Administration',
-    'summary': 'Scoped, read-only BWork operations and logical storage metadata',
-    'version': '19.0.1.0.2',
+    'summary': 'Scoped BWork operations and explicit OFF-by-default server retention',
+    'version': '19.0.1.1.0',
     'category': 'Productivity',
     'license': 'LGPL-3',
     'depends': ['baseer_bchat'],
-    'data': ['security/ir.model.access.csv', 'security/rules.xml', 'views/admin_views.xml'],
+    'data': ['security/ir.model.access.csv', 'security/rules.xml',
+             'security/retention_security.xml', 'security/retention_access.csv',
+             'data/retention_cron.xml', 'views/admin_views.xml', 'views/retention_views.xml'],
     'assets': {'web.assets_backend': [
         'baseer_bchat/static/src/bwork_gallery/gallery_client.js',
         'baseer_bchat/static/src/bwork_gallery/media_gallery.js',

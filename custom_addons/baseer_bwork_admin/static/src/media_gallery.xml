@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
     <t t-name="baseer_bwork_admin.MediaGallery">
-        <section class="o_bwork_media_gallery p-3" aria-label="Media gallery">
-            <header class="d-flex flex-wrap align-items-center gap-2 mb-3">
-                <h1 class="h3 mb-0 flex-grow-1">Media gallery</h1>
+        <section class="o_bwork_media_gallery p-2 p-md-3" aria-label="Media gallery">
+            <header class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                <h1 class="h4 mb-0 flex-grow-1">Media gallery</h1>
                 <button class="btn btn-secondary" t-on-click="refresh" t-att-disabled="state.loading">Refresh rooms</button>
             </header>
-            <p>Only files in your current room memberships are shown. Opening this gallery does not mark messages as read.</p>
-            <div class="o_bwork_gallery_filters mb-3">
+            <p class="text-muted small">Your conversations only. Browsing does not mark messages as read.</p>
+            <div class="o_bwork_gallery_filters mb-2">
                 <label>Conversation
                     <select class="form-select" t-on-change="changeRoom" t-att-value="state.roomId" t-att-disabled="state.loading">
                         <option value="">Select a conversation</option>
@@ -25,9 +25,14 @@
                     </select>
                 </label>
             </div>
+            <form class="o_bwork_gallery_search mb-2" t-on-submit.prevent="applySearch">
+                <label>File name<input type="search" class="form-control" t-att-value="state.search" t-on-input="changeSearch" maxlength="64"/></label>
+                <button class="btn btn-secondary" type="submit" t-att-disabled="state.loading or !state.roomId">Search</button>
+            </form>
             <div t-if="state.error" class="alert alert-warning" role="alert"><t t-esc="errorText"/></div>
             <p t-if="state.loading" role="status">Loading media…</p>
             <p t-elif="!state.rooms.length and !state.error">You have no accessible conversations.</p>
+            <p t-elif="!state.roomId and !state.error">Select a conversation to browse its media.</p>
             <p t-elif="state.roomId and !state.items.length and !state.error">No media matches this filter.</p>
             <ul class="o_bwork_gallery_items list-unstyled">
                 <li t-foreach="state.items" t-as="row" t-key="row.id" class="border rounded p-3">
@@ -38,6 +43,16 @@
                     <div class="d-flex flex-wrap gap-2 mt-2">
                         <button class="btn btn-primary" t-on-click="() => this.client.open(row)" t-att-disabled="state.opening">Open file</button>
                         <button class="btn btn-secondary" t-on-click="() => this.client.message(row)">View message</button>
+                        <button t-if="state.canManageRetention" class="btn btn-secondary" t-on-click="() => this.client.requestPreserve(row)" t-att-disabled="state.opening">
+                            <t t-if="row.retention_preserved">Remove protection</t><t t-else="">Protect from deletion</t>
+                        </button>
+                    </div>
+                    <div t-if="state.preserveTargetId === row.id" class="alert alert-warning mt-2 mb-0" role="alert">
+                        <p>This content may be deleted by the retention policy after protection is removed.</p>
+                        <div class="d-flex flex-wrap gap-2">
+                            <button class="btn btn-danger" t-on-click="() => this.client.preserve(row, false)" t-att-disabled="state.opening">Confirm removal</button>
+                            <button class="btn btn-secondary" t-on-click="() => this.client.cancelPreserve()">Cancel</button>
+                        </div>
                     </div>
                 </li>
             </ul>

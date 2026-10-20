@@ -140,9 +140,10 @@ class BChatTextService(models.AbstractModel):
                 FROM baseer_bchat_message AS message
                 WHERE message.room_id = membership.room_id
                   AND message.id > membership.joined_after_message_id
+                  AND message.retention_state = 'active'
                 ORDER BY message.id DESC LIMIT 1
             ) AS latest ON TRUE
-            LEFT JOIN baseer_bchat_media AS media ON media.id = latest.media_id
+            LEFT JOIN baseer_bchat_media AS media ON media.id = latest.media_id AND media.retention_state = 'active'
             LEFT JOIN LATERAL (
                 SELECT COUNT(*) AS total
                 FROM baseer_bchat_message_receipt AS receipt
@@ -150,6 +151,7 @@ class BChatTextService(models.AbstractModel):
                   AND receipt.recipient_user_id = %s
                   AND receipt.read_at IS NULL
                   AND receipt.message_id > membership.joined_after_message_id
+                  AND EXISTS (SELECT 1 FROM baseer_bchat_message m WHERE m.id=receipt.message_id AND m.retention_state='active')
             ) AS unread ON TRUE
             LEFT JOIN LATERAL (
                 SELECT COUNT(*) AS total FROM baseer_bchat_membership AS other
@@ -346,7 +348,8 @@ class BChatTextService(models.AbstractModel):
                         or media.room_id.id != room.id
                         or media.company_id.id != room.company_id.id
                         or media.membership_id.id != member.id
-                        or not (media.attachment_id or media.document_file_id)):
+                        or (not (media.attachment_id or media.document_file_id)
+                            and media.retention_state != 'content_removed')):
                     raise AccessError(self.env._('This media is unavailable.'))
                 normalized['media_sha256'] = media.sha256
             digest = v2_contracts.digest(room.id, normalized)
@@ -357,6 +360,10 @@ class BChatTextService(models.AbstractModel):
             ], limit=1)
             if existing:
                 return self._v2_replay(room, member, normalized, digest, existing)
+            if parent_id is not None and parent.retention_state == 'content_removed':
+                raise ProtocolError('reply_unavailable', 'The referenced content was removed.', 409)
+            if media and media.retention_state == 'content_removed':
+                raise ProtocolError('media_removed', 'This attachment was removed.', 410)
             if media and (media.state != 'staged' or media.message_id):
                 raise ProtocolError('media_already_sent', 'This media was already sent.', 409)
             effective = self._v2_document_selection(room, normalized, media) if media else normalized
@@ -571,4 +578,8 @@ class BChatTextService(models.AbstractModel):
                 or existing.payload_digest != digest
                 or existing.media_id.id != normalized.get('media_id', 0)):
             raise ProtocolError('idempotency_conflict', 'The UUID belongs to another operation or membership period.', 409)
-        return v2_contracts.ack(room.id, normalized, existing.id)
+        result = v2_contracts.ack(room.id, normalized, existing.id)
+        if existing.retention_state == 'content_removed' or (
+                existing.media_id and existing.media_id.retention_state == 'content_removed'):
+            result['content_removed'] = True
+        return result

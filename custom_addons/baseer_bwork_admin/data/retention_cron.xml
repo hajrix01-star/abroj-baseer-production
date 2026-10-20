@@ -1,0 +1,10 @@
+<odoo noupdate="1">
+    <!-- Tick is harmless until the separate readiness latch AND policy are enabled. -->
+    <record id="cron_bwork_retention" model="ir.cron">
+        <field name="name">BWork bounded retention</field>
+        <field name="model_id" ref="model_baseer_bwork_retention_service"/>
+        <field name="state">code</field><field name="code">model._cron_tick()</field>
+        <field name="interval_number">5</field><field name="interval_type">minutes</field>
+        <field name="active" eval="True"/>
+    </record>
+</odoo>

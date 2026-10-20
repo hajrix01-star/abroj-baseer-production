@@ -1,6 +1,6 @@
 .o_bwork_media_gallery {
     overflow: auto;
-    .o_bwork_gallery_filters { display: flex; flex-wrap: wrap; gap: 1rem; }
+    .o_bwork_gallery_filters { display: flex; flex-wrap: wrap; gap: .5rem; }
     .o_bwork_gallery_filters label { flex: 1 1 12rem; min-width: 0; }
     .o_bwork_gallery_items { display: flex; flex-wrap: wrap; gap: 1rem; }
     .o_bwork_gallery_items > li { flex: 1 1 16rem; min-width: 0; max-width: 100%; box-sizing: border-box; }
@@ -9,4 +9,33 @@
     .o_bwork_gallery_preview img { display: block; max-width: 100%; max-height: 65vh; object-fit: contain; }
     audio { display: block; width: 100%; max-width: 30rem; }
     .o_bwork_gallery_message { white-space: pre-wrap; overflow-wrap: anywhere; }
+    .o_bwork_gallery_search { display: flex; flex-wrap: wrap; gap: .5rem; align-items: end; }
+    .o_bwork_gallery_search label { flex: 1 1 12rem; min-width: 0; }
+    .o_bwork_gallery_search button { min-height: 2.75rem; }
+    .o_bwork_gallery_filters select { min-height: 2.75rem; }
+    .o_bwork_gallery_preview button:focus-visible, button:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+}
+
+// Native Odoo components retain their typography, controls and translations.
+// Feature-local composition only; no cloned framework or global font increase.
+.o_bwork_admin_console, .o_bwork_retention_form {
+    .o_bwork_admin_kpis { display: flex; flex-wrap: wrap; gap: .5rem; margin-block: .75rem; }
+    .o_bwork_admin_kpi {
+        flex: 1 1 7.5rem; min-width: 0; padding: .625rem .75rem;
+        border: 1px solid var(--border-color, #d8dadd); border-radius: .5rem;
+        background: var(--body-bg, #fff);
+        > span { display: block; color: var(--body-color, #50555a); font-size: .875rem; }
+        strong { display: block; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+        .o_field_widget { margin: 0; min-width: 0; }
+    }
+    .o_group { margin-block-end: .5rem; }
+    .o_notebook { margin-block-start: .75rem; }
+    .o_field_text { white-space: pre-wrap; overflow-wrap: anywhere; }
+    .alert { overflow-wrap: anywhere; }
+    .o_statusbar_buttons { display: flex; flex-wrap: wrap; gap: .25rem; }
+    @media (max-width: 575px) {
+        .o_bwork_admin_kpi { flex-basis: 7rem; padding: .5rem; }
+        .o_bwork_admin_kpis { margin-block: .5rem; }
+        .oe_title h1 { font-size: 1.25rem; overflow-wrap: anywhere; }
+    }
 }

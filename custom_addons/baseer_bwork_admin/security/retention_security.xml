@@ -1,0 +1,33 @@
+<odoo>
+    <!-- Definition only: no users, implied roles, hooks or automatic grants. -->
+    <record id="group_bwork_retention_manager" model="res.groups">
+        <field name="name">BWork retention manager</field>
+    </record>
+    <data noupdate="1">
+        <record id="retention_policy_company_rule" model="ir.rule">
+            <field name="name">Retention policy current companies</field>
+            <field name="model_id" ref="model_baseer_bwork_retention_policy"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        </record>
+        <record id="retention_wizard_company_rule" model="ir.rule">
+            <field name="name">Retention preview current companies</field>
+            <field name="model_id" ref="model_baseer_bwork_retention_wizard"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        </record>
+        <record id="retention_run_company_rule" model="ir.rule">
+            <field name="name">Retention runs current companies</field>
+            <field name="model_id" ref="model_baseer_bwork_retention_run"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        </record>
+        <record id="retention_item_company_rule" model="ir.rule">
+            <field name="name">Retention manifest current companies</field>
+            <field name="model_id" ref="model_baseer_bwork_retention_item"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        </record>
+        <record id="retention_audit_company_rule" model="ir.rule">
+            <field name="name">Retention audit current companies</field>
+            <field name="model_id" ref="model_baseer_bwork_retention_audit"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        </record>
+    </data>
+</odoo>

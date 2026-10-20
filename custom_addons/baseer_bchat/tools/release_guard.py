@@ -46,6 +46,7 @@ REQUIRED_IDS = {
     "native-capability-media-upload",
     "modern-work-task-scope-replay-reminders",
     "bwork-admin-metadata-and-branding",
+    "bwork-retention-explicit-readiness-and-content-tombstones",
 }
 
 
@@ -282,6 +283,11 @@ def check_repository_ci_wiring() -> None:
             and "BChatGalleryCase" in gallery_workflow and "BChatGalleryHttpCase" in gallery_workflow
             and '" -eq 9' in gallery_workflow and "contents: read" in gallery_workflow,
             "BWork gallery no longer activates its isolated ORM and HTTP contract tests")
+    retention_workflow = source_text(".github/workflows/test-bwork-retention.yml")
+    require("test-bwork-retention" in source_workflow
+            and "BWorkRetentionCase" in retention_workflow and "BWorkRetentionHttpCase" in retention_workflow
+            and '" -eq 11' in retention_workflow and "contents: read" in retention_workflow,
+            "BWork retention no longer activates its isolated ORM and HTTP contract tests")
 
 
 def run_bridge_entry_contract() -> None:
@@ -317,7 +323,7 @@ def changed_guard(base: str, head: str, registry: dict) -> set[str]:
     paths = changed_paths(base, head)
     relevant = [path for path in paths if path.startswith((
         "custom_addons/baseer_bchat/", "custom_addons/baseer_bwork_admin/",
-        ".github/workflows/test-bwork-admin.yml", ".github/workflows/test-bwork-gallery.yml", "android/bchat/", "ops/qa/baseer-qa-deploy",
+        ".github/workflows/test-bwork-admin.yml", ".github/workflows/test-bwork-gallery.yml", ".github/workflows/test-bwork-retention.yml", "android/bchat/", "ops/qa/baseer-qa-deploy",
         "ops/production/baseer-production-deploy", ".github/workflows/validate-pull-request.yml",
         ".github/workflows/bchat-cumulative-contracts.yml", ".github/CODEOWNERS",
     ))]

@@ -3,7 +3,7 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - 'custom_addons/baseer_bchat/**'
+      - 'custom_addons/baseer_bwork/**'
       - '.github/workflows/test-bwork-tasks.yml'
 permissions:
   contents: read
@@ -35,11 +35,11 @@ jobs:
             odoo@sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd \
             odoo --db_host=127.0.0.1 --db_port=5432 --db_user=odoo --db_password=odoo \
             --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/baseer-addons \
-            -d bwork_tasks_ci -i baseer_bchat --without-demo=all \
+            -d bwork_tasks_ci -i baseer_bwork --without-demo=all \
             --test-enable \
-            --test-tags=/baseer_bchat:BWorkTaskCase,/baseer_bchat:BWorkTaskHttpCase,/baseer_bchat:BChatTaskCase,/baseer_bchat:BChatTaskHttpCase,/baseer_bchat:BChatPushCase \
+            --test-tags=/baseer_bwork:BWorkTaskCase,/baseer_bwork:BWorkTaskHttpCase,/baseer_bwork:BWorkTaskCase,/baseer_bwork:BWorkTaskHttpCase,/baseer_bwork:BWorkPushCase \
             --stop-after-init --max-cron-threads=0 --workers=0 --log-level=test 2>&1 | tee bwork-tasks-runtime.log
-          for test_class in BWorkTaskCase BWorkTaskHttpCase BChatTaskCase BChatTaskHttpCase BChatPushCase; do
+          for test_class in BWorkTaskCase BWorkTaskHttpCase BWorkTaskCase BWorkTaskHttpCase BWorkPushCase; do
             grep -F "Starting $test_class." bwork-tasks-runtime.log
           done
           if grep -Eq ': skipped .+ : |[1-9][0-9]* failed,|[1-9][0-9]* error\(s\)' bwork-tasks-runtime.log; then
@@ -47,7 +47,7 @@ jobs:
             exit 1
           fi
           grep -F '0 failed, 0 error(s)' bwork-tasks-runtime.log
-          test "$(grep -Ec 'Starting (BWorkTaskCase|BWorkTaskHttpCase|BChatTaskCase|BChatTaskHttpCase|BChatPushCase)\.' bwork-tasks-runtime.log)" -eq 40
+          test "$(grep -Ec 'Starting (BWorkTaskCase|BWorkTaskHttpCase|BWorkTaskCase|BWorkTaskHttpCase|BWorkPushCase)\.' bwork-tasks-runtime.log)" -eq 40
       - name: Genuine reminder lock and once-only emission in a fresh process
         shell: bash
         run: |
@@ -61,7 +61,7 @@ jobs:
             --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/baseer-addons \
             -d bwork_tasks_ci --no-http --max-cron-threads=0 --workers=0 --log-level=test \
             <<'PY' 2>&1 | tee bwork-tasks-concurrency.log
-          from odoo.addons.baseer_bchat.tests.work_task_reminder_concurrency_probe import run
+          from odoo.addons.baseer_bwork.tests.work_task_reminder_concurrency_probe import run
           run(env)
           PY
           grep -Fx 'BWORK_TASK_REMINDER_CONCURRENCY=PASS' bwork-tasks-concurrency.log

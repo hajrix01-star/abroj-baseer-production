@@ -1,0 +1,21 @@
+{
+    'name': 'BWork',
+    'version': '19.0.0.4.20',
+    'category': 'Productivity/Discuss',
+    'summary': 'Private BWork messaging and company-scoped group administration',
+    'license': 'LGPL-3',
+    'depends': ['mail', 'project'],
+    'data': [
+        'security/security.xml',
+        'security/ir.model.access.csv',
+        'data/media_cleanup_cron.xml',
+        'data/push_cron.xml',
+        'data/work_task_cron.xml',
+        'views/bwork_admin_views.xml',
+        'views/res_users_bwork_views.xml',
+    ],
+    'installable': True,
+    'application': True,
+    'auto_install': False,
+    'post_init_hook': 'post_init_hook',
+}

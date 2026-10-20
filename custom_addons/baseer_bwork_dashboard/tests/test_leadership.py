@@ -31,7 +31,7 @@ class TestLeadershipOrm(AccountTestInvoicingCommon):
             company_id=cls.company.id, company_ids=[Command.set(cls.company.ids)],
             bwork_dashboard_view=True,
         )
-        cls.service = cls.env['baseer.bchat.service'].with_user(cls.reader).with_context(
+        cls.service = cls.env['baseer.bwork.service'].with_user(cls.reader).with_context(
             allowed_company_ids=cls.company.ids, tz='Asia/Riyadh')
         cls.partner = cls.fixture_env['res.partner'].create({
             'name': 'BWork real supplier/customer',
@@ -115,9 +115,9 @@ class TestLeadershipOrm(AccountTestInvoicingCommon):
         options = self.service._leadership_options()
         self.assertTrue(options['can_view'])
         self.assertEqual(options['companies'], [{'id': self.company.id, 'name': self.company.name}])
-        revision = self.reader.bchat_permission_revision
+        revision = self.reader.bwork_permission_revision
         self.reader.write({'bwork_dashboard_view': False})
-        self.assertGreater(self.reader.bchat_permission_revision, revision)
+        self.assertGreater(self.reader.bwork_permission_revision, revision)
         self.assertFalse(self.service._leadership_options()['can_view'])
         with self.assertRaises(AccessError):
             self.service._leadership(self._selection())

@@ -1,0 +1,17 @@
+// Public, already-approved SDK versions only. No Android app/config/key/cloud project.
+repositories { google(); mavenCentral() }
+configurations { bworkNativeProof }
+def contract = new groovy.json.JsonSlurper().parse(file('../sdk-contract.json'))
+contract.artifacts.values().each { item ->
+    def notation = "${item.group}:${item.name}:${item.version}" + (item.classifier ? ":${item.classifier}" : '') + "@${item.ext}"
+    def dependency = dependencies.create(notation)
+    dependency.transitive = false
+    dependencies.add('bworkNativeProof', dependency)
+}
+tasks.register('prepareNativeProof') {
+    doLast {
+        def files = configurations.bworkNativeProof.resolve()
+        if (files.size() != contract.artifacts.size()) throw new GradleException('BWork native proof SDK set incomplete')
+        println "BWork public native proof SDKs ready: ${files.size()} pinned artifacts"
+    }
+}

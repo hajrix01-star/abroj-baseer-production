@@ -36,7 +36,7 @@
             <p t-elif="state.roomId and !state.items.length and !state.error">No media matches this filter.</p>
             <ul class="o_bwork_gallery_items list-unstyled">
                 <li t-foreach="state.items" t-as="row" t-key="row.id" class="border rounded p-3">
-                    <img t-if="row.media.kind === 'image' and row.media.thumbnail_available" t-att-src="'/bchat/api/v2/media/' + row.media.id + '/thumbnail'" alt="Image preview" loading="lazy"/>
+                    <img t-if="row.media.kind === 'image' and row.media.thumbnail_available" t-att-src="'/bwork/api/v2/media/' + row.media.id + '/thumbnail'" alt="Image preview" loading="lazy"/>
                     <div class="o_bwork_gallery_name"><bdi dir="auto"><t t-esc="row.media.name"/></bdi></div>
                     <div><bdi dir="ltr"><t t-esc="row.media.size_label"/></bdi></div>
                     <div class="text-muted"><bdi dir="auto"><t t-esc="row.author_name"/></bdi> · <bdi dir="ltr"><t t-esc="row.created_at"/></bdi></div>

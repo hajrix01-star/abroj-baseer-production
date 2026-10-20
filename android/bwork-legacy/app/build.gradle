@@ -1,0 +1,73 @@
+plugins { id 'com.android.application' }
+def compatibility = new groovy.json.JsonSlurper().parse(rootProject.file('../../mobile/bwork/compatibility/identities.json'))
+// Firebase is opt-in: no credentials, SDK, service, or fake push path in local builds.
+def bworkFirebaseConfig = file('google-services.json')
+def bworkPushEnabled = bworkFirebaseConfig.exists() && project.findProperty('bworkEnablePush') == 'true'
+if (bworkPushEnabled) {
+ apply plugin: 'com.google.gms.google-services'
+}
+android {
+ buildFeatures { buildConfig true }
+ // The app switches languages offline, so future bundles must ship both catalogues.
+ bundle { language { enableSplit = false } }
+ namespace 'com.baseer.bwork.legacy'
+ // AGP 8 requires a package-free input; the standalone manifest supplies its app ID.
+ // check-package.py enforces semantic equality between these two manifest inputs.
+ sourceSets { main {
+  manifest.srcFile bworkPushEnabled ? 'src/gradle/AndroidManifestPush.xml' : 'src/gradle/AndroidManifest.xml'
+  if (!bworkPushEnabled) {
+   java.exclude '**/BWorkFirebaseMessagingService.java'
+   java.exclude '**/BWorkFirebaseTokenSource.java'
+  }
+ }; debug {
+  if (project.findProperty('bworkEmulatorLocal') == 'true') res.srcDirs += 'src/emulator/res'
+ } }
+ compileSdk 35
+ // Preserve the original brand PNG bytes; do not replace or crunch the B mark.
+ aaptOptions { cruncherEnabled = false }
+ defaultConfig {
+  applicationId compatibility.legacyPreview.applicationId; minSdk 26; targetSdk 35
+  // Native capability upload replaces the diagnostic-only WebView media transport.
+  versionCode 87; versionName '0.7.71-qa-media-journey'
+  buildConfigField 'boolean', 'BWORK_TRANSPORT_DIAGNOSTICS', 'false'
+  buildConfigField 'boolean', 'BWORK_PUSH_REGISTRATION_DIAGNOSTICS', 'true'
+  buildConfigField 'boolean', 'BWORK_PUSH_ENABLED', bworkPushEnabled ? 'true' : 'false'
+ }
+ // Independent preview signer, supplied only through local environment paths.
+ // No debug fallback or automatic key generation is permitted.
+ def previewKeyPath = System.getenv('BWORK_LEGACY_SIGNING_KEY')
+ def previewPasswordPath = System.getenv('BWORK_LEGACY_SIGNING_PASSWORD_FILE')
+ signingConfigs {
+  preview {
+   if (previewKeyPath && previewPasswordPath) {
+    storeFile file(previewKeyPath)
+    storePassword file(previewPasswordPath).text.trim()
+    keyAlias compatibility.legacyPreview.signingAlias
+    keyPassword file(previewPasswordPath).text.trim()
+   }
+  }
+ }
+ buildTypes {
+  debug {
+   signingConfig signingConfigs.preview
+   // Local TLS is only an explicit debug opt-in; normal debug and release use QA.
+   buildConfigField 'String', 'BWORK_ORIGIN', project.findProperty('bworkEmulatorLocal') == 'true'
+      ? '"https://localhost:18443"' : '"https://baseer-live-qa.tail938958.ts.net"'
+   buildConfigField 'String', 'BWORK_DATABASE', project.findProperty('bworkEmulatorLocal') == 'true'
+      ? '"' + compatibility.legacyPreview.localDatabase + '"' : '"baseer_live_qa_clean_20260928"'
+  }
+  release {
+   signingConfig signingConfigs.preview
+   buildConfigField 'String', 'BWORK_ORIGIN', '"https://baseer-live-qa.tail938958.ts.net"'
+   buildConfigField 'String', 'BWORK_DATABASE', '"baseer_live_qa_clean_20260928"'
+  }
+ }
+ compileOptions { sourceCompatibility JavaVersion.VERSION_1_8; targetCompatibility JavaVersion.VERSION_1_8 }
+}
+if (bworkPushEnabled) {
+ dependencies {
+  implementation platform('com.google.firebase:firebase-bom:34.19.0')
+  implementation 'com.google.firebase:firebase-messaging'
+ }
+}
+dependencies { implementation 'androidx.recyclerview:recyclerview:1.4.0' }

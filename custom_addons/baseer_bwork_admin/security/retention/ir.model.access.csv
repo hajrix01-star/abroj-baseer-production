@@ -1,11 +1,11 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-retention_policy_owner,Retention policy owner,model_baseer_bwork_retention_policy,baseer_bchat.group_bchat_manager,1,1,1,0
+retention_policy_owner,Retention policy owner,model_baseer_bwork_retention_policy,baseer_bwork.group_bwork_manager,1,1,1,0
 retention_policy_delegate,Retention policy delegate,model_baseer_bwork_retention_policy,group_bwork_retention_manager,1,1,1,0
-retention_wizard_owner,Retention preview owner,model_baseer_bwork_retention_wizard,baseer_bchat.group_bchat_manager,1,1,1,1
+retention_wizard_owner,Retention preview owner,model_baseer_bwork_retention_wizard,baseer_bwork.group_bwork_manager,1,1,1,1
 retention_wizard_delegate,Retention preview delegate,model_baseer_bwork_retention_wizard,group_bwork_retention_manager,1,1,1,1
-retention_run_owner,Retention run owner,model_baseer_bwork_retention_run,baseer_bchat.group_bchat_manager,1,1,1,0
+retention_run_owner,Retention run owner,model_baseer_bwork_retention_run,baseer_bwork.group_bwork_manager,1,1,1,0
 retention_run_delegate,Retention run delegate,model_baseer_bwork_retention_run,group_bwork_retention_manager,1,1,1,0
-retention_item_owner,Retention manifest owner,model_baseer_bwork_retention_item,baseer_bchat.group_bchat_manager,1,0,0,0
+retention_item_owner,Retention manifest owner,model_baseer_bwork_retention_item,baseer_bwork.group_bwork_manager,1,0,0,0
 retention_item_delegate,Retention manifest delegate,model_baseer_bwork_retention_item,group_bwork_retention_manager,1,0,0,0
-retention_audit_owner,Retention audit owner,model_baseer_bwork_retention_audit,baseer_bchat.group_bchat_manager,1,0,0,0
+retention_audit_owner,Retention audit owner,model_baseer_bwork_retention_audit,baseer_bwork.group_bwork_manager,1,0,0,0
 retention_audit_delegate,Retention audit delegate,model_baseer_bwork_retention_audit,group_bwork_retention_manager,1,0,0,0

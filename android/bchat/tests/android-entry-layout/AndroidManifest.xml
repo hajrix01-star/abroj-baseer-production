@@ -1,5 +1,0 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.baseer.freshchat.entrylayouttest">
-  <uses-sdk android:minSdkVersion="26" android:targetSdkVersion="35" />
-  <application android:label="BChat synthetic entry and layout tests" android:hasCode="true" />
-  <instrumentation android:name="com.baseer.freshchat.test.EntryLayoutInstrumentation" android:targetPackage="com.baseer.bchat.preview" android:label="Native entry and attached-layout acceptance" />
-</manifest>

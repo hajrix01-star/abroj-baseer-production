@@ -4,7 +4,7 @@ on:
     branches: [main]
     paths:
       - 'custom_addons/baseer_bwork_admin/**'
-      - 'custom_addons/baseer_bchat/**'
+      - 'custom_addons/baseer_bwork/**'
       - '.github/workflows/test-bwork-admin.yml'
 permissions:
   contents: read
@@ -36,9 +36,9 @@ jobs:
             odoo@sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd \
             odoo --db_host=127.0.0.1 --db_port=5432 --db_user=odoo --db_password=odoo \
             --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/baseer-addons \
-            -d bwork_admin_ci -i baseer_bchat,baseer_bwork_admin --without-demo=all \
+            -d bwork_admin_ci -i baseer_bwork,baseer_bwork_admin --without-demo=all \
             --test-enable \
-            --test-tags=/baseer_bwork_admin:BWorkAdminCase,/baseer_bwork_admin:BWorkAdminHttpCase,/baseer_bchat:BWorkPushPrivacyCase \
+            --test-tags=/baseer_bwork_admin:BWorkAdminCase,/baseer_bwork_admin:BWorkAdminHttpCase,/baseer_bwork:BWorkPushPrivacyCase \
             --stop-after-init --max-cron-threads=0 --workers=0 --log-level=test 2>&1 | tee bwork-admin-runtime.log
           for test_class in BWorkAdminCase BWorkAdminHttpCase BWorkPushPrivacyCase; do
             grep -F "Starting $test_class." bwork-admin-runtime.log

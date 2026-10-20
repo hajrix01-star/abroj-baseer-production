@@ -1,0 +1,23 @@
+<odoo>
+    <!-- The deployment gate controls when this scheduled task is installed. -->
+    <record id="cron_expire_staged_media" model="ir.cron">
+        <field name="name">BWork: expire unsent uploads after 24 hours</field>
+        <field name="model_id" ref="model_baseer_bwork_media"/>
+        <field name="user_id" ref="base.user_root"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_expire_staged_uploads()</field>
+        <field name="interval_number">5</field>
+        <field name="interval_type">minutes</field>
+        <field name="active" eval="True"/>
+    </record>
+    <record id="cron_expire_mobile_upload_grants" model="ir.cron">
+        <field name="name">BWork: expire native upload capabilities</field>
+        <field name="model_id" ref="model_baseer_bwork_mobile_upload_grant"/>
+        <field name="user_id" ref="base.user_root"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_expire_mobile_upload_grants()</field>
+        <field name="interval_number">5</field>
+        <field name="interval_type">minutes</field>
+        <field name="active" eval="True"/>
+    </record>
+</odoo>

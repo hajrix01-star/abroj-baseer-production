@@ -4,8 +4,8 @@ on:
     branches: [main]
     paths:
       - custom_addons/baseer_procurement_requests/**
-      - custom_addons/baseer_bchat_procurement/**
-      - custom_addons/baseer_bchat/**
+      - custom_addons/baseer_bwork_procurement/**
+      - custom_addons/baseer_bwork/**
       - custom_addons/baseer_access_roles/**
       - tests/purchase_route_catalog.test.mjs
       - .github/workflows/test-baseer-procurement-route.yml
@@ -13,7 +13,7 @@ on:
 permissions:
   contents: read
 jobs:
-  bchat-orders-workflow:
+  bwork-orders-workflow:
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     services:
@@ -29,7 +29,7 @@ jobs:
           --health-interval 5s --health-timeout 5s --health-retries 12
     steps:
       - uses: actions/checkout@v4
-      - name: Verify BChat order permissions, HTTP, atomic sharing and receipts in isolated Odoo
+      - name: Verify BWork order permissions, HTTP, atomic sharing and receipts in isolated Odoo
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -41,26 +41,26 @@ jobs:
             odoo@sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd \
             odoo --db_host=127.0.0.1 --db_port=5432 --db_user=odoo --db_password=odoo \
             --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/baseer-addons,/mnt/odoomates,/mnt/erp-heritage \
-            -d bwork_orders_workflow_ci -i baseer_bchat_procurement,baseer_access_roles --without-demo=all \
+            -d bwork_orders_workflow_ci -i baseer_bwork_procurement,baseer_access_roles --without-demo=all \
             --test-enable \
-            --test-tags=/baseer_bchat_procurement:BChatOrderCase,/baseer_bchat_procurement:BChatOrderHttpCase,/baseer_bchat_procurement:BChatReceiptCase,/baseer_bchat_procurement:BChatUserPermissionsCase \
-            --stop-after-init --max-cron-threads=0 --workers=0 --log-level=test 2>&1 | tee bchat-orders-workflow.log
-          for test_class in BChatOrderCase BChatOrderHttpCase BChatReceiptCase BChatUserPermissionsCase; do
-            grep -F "Starting $test_class." bchat-orders-workflow.log
+            --test-tags=/baseer_bwork_procurement:BWorkOrderCase,/baseer_bwork_procurement:BWorkOrderHttpCase,/baseer_bwork_procurement:BWorkReceiptCase,/baseer_bwork_procurement:BWorkUserPermissionsCase \
+            --stop-after-init --max-cron-threads=0 --workers=0 --log-level=test 2>&1 | tee bwork-orders-workflow.log
+          for test_class in BWorkOrderCase BWorkOrderHttpCase BWorkReceiptCase BWorkUserPermissionsCase; do
+            grep -F "Starting $test_class." bwork-orders-workflow.log
           done
           # OdooTestResult.addSkip emits ': skipped <description> : <reason>'.
           # Do not mistake benign config/translation 'skipped' notices for tests.
-          if grep -Eq ': skipped .+ : |[1-9][0-9]* failed,|[1-9][0-9]* error\(s\)' bchat-orders-workflow.log; then
-            echo 'BChat orders runtime tests were skipped or failed' >&2
+          if grep -Eq ': skipped .+ : |[1-9][0-9]* failed,|[1-9][0-9]* error\(s\)' bwork-orders-workflow.log; then
+            echo 'BWork orders runtime tests were skipped or failed' >&2
             exit 1
           fi
-          grep -F '0 failed, 0 error(s)' bchat-orders-workflow.log
+          grep -F '0 failed, 0 error(s)' bwork-orders-workflow.log
       - name: Preserve isolated Odoo evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: bchat-orders-workflow-runtime
-          path: bchat-orders-workflow.log
+          name: bwork-orders-workflow-runtime
+          path: bwork-orders-workflow.log
           if-no-files-found: error
   purchase-route:
     runs-on: ubuntu-24.04

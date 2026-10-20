@@ -9,32 +9,32 @@ from odoo.tests.common import TransactionCase
 
 
 class CashierProcurementRoleCase(TransactionCase):
-    def test_optional_bchat_operator_grant_stays_explicit_and_role_limited(self):
+    def test_optional_bwork_operator_grant_stays_explicit_and_role_limited(self):
         operator = self.env.ref(
-            'baseer_bchat_procurement.group_bchat_procurement_operator',
+            'baseer_bwork_procurement.group_bwork_procurement_operator',
             raise_if_not_found=False,
         )
         if not operator:
-            self.skipTest('Optional BChat procurement module is not installed')
+            self.skipTest('Optional BWork procurement module is not installed')
         for role in ('cashier', 'pos_cashier'):
             user = self.env['res.users'].with_context(no_reset_password=True).create({
-                'name': 'BChat %s' % role,
-                'login': 'bchat-optional-%s-%s' % (role, uuid4().hex),
+                'name': 'BWork %s' % role,
+                'login': 'bwork-optional-%s-%s' % (role, uuid4().hex),
                 'company_id': self.env.company.id,
                 'company_ids': [Command.set(self.env.company.ids)],
                 'baseer_access_role': role,
             })
             self.assertFalse(user.has_group(
-                'baseer_bchat_procurement.group_bchat_procurement_operator'))
+                'baseer_bwork_procurement.group_bwork_procurement_operator'))
             user.write({'group_ids': [Command.link(operator.id)]})
             self.assertTrue(user.has_group(
-                'baseer_bchat_procurement.group_bchat_procurement_operator'))
+                'baseer_bwork_procurement.group_bwork_procurement_operator'))
             user.write({'group_ids': [Command.unlink(operator.id)]})
             self.assertFalse(user.has_group(
-                'baseer_bchat_procurement.group_bchat_procurement_operator'))
+                'baseer_bwork_procurement.group_bwork_procurement_operator'))
 
         accountant = self.env['res.users'].with_context(no_reset_password=True).create({
-            'name': 'BChat accountant', 'login': 'bchat-accountant-%s' % uuid4().hex,
+            'name': 'BWork accountant', 'login': 'bwork-accountant-%s' % uuid4().hex,
             'company_id': self.env.company.id,
             'company_ids': [Command.set(self.env.company.ids)],
             'baseer_access_role': 'accountant',
@@ -43,8 +43,8 @@ class CashierProcurementRoleCase(TransactionCase):
             accountant.write({'group_ids': [Command.link(operator.id)]})
 
         cashier = self.env['res.users'].with_context(no_reset_password=True).create({
-            'name': 'BChat missing optional ID',
-            'login': 'bchat-missing-%s' % uuid4().hex,
+            'name': 'BWork missing optional ID',
+            'login': 'bwork-missing-%s' % uuid4().hex,
             'company_id': self.env.company.id,
             'company_ids': [Command.set(self.env.company.ids)],
             'baseer_access_role': 'pos_cashier',
@@ -52,12 +52,12 @@ class CashierProcurementRoleCase(TransactionCase):
         environment = type(self.env)
         original_ref = environment.ref
 
-        def ref_without_bchat(instance, xml_id, *args, **kwargs):
-            if xml_id == 'baseer_bchat_procurement.group_bchat_procurement_operator':
+        def ref_without_bwork(instance, xml_id, *args, **kwargs):
+            if xml_id == 'baseer_bwork_procurement.group_bwork_procurement_operator':
                 return False
             return original_ref(instance, xml_id, *args, **kwargs)
 
-        with patch.object(environment, 'ref', ref_without_bchat):
+        with patch.object(environment, 'ref', ref_without_bwork):
             with self.assertRaises(ValidationError):
                 cashier.write({'group_ids': [Command.link(operator.id)]})
 

@@ -1,0 +1,604 @@
+{
+  "schema": 2,
+  "policy": "Cumulative BWork contracts: a new behavior is registered once, tested by a named suite, and remains enforced in every later pull request and QA/Live release.",
+  "owner": "Baseer BWork release engineering",
+  "invariants": [
+    {
+      "id": "canonical-backend-source-lineage",
+      "introduced": "2026-10-20",
+      "risk": "critical",
+      "scope": "Previously unmodified backend source files keep explicit cumulative ownership across the canonical rename, including the fresh hook and existing permission consumers; unregistered new root capabilities still fail closed.",
+      "source_paths": [
+        "custom_addons/baseer_bwork/__init__.py",
+        "custom_addons/baseer_bwork/business_contracts.py",
+        "custom_addons/baseer_bwork/contracts.py",
+        "custom_addons/baseer_bwork/data/push_cron.xml",
+        "custom_addons/baseer_bwork/group_contracts.py",
+        "custom_addons/baseer_bwork/media_contracts.py",
+        "custom_addons/baseer_bwork/migrations/19.0.0.4.6/post-migrate.py",
+        "custom_addons/baseer_bwork/models/binding.py",
+        "custom_addons/baseer_bwork/models/change.py",
+        "custom_addons/baseer_bwork/models/company.py",
+        "custom_addons/baseer_bwork/models/group_service.py",
+        "custom_addons/baseer_bwork/models/media.py",
+        "custom_addons/baseer_bwork/models/membership.py",
+        "custom_addons/baseer_bwork/models/message.py",
+        "custom_addons/baseer_bwork/models/receipt.py",
+        "custom_addons/baseer_bwork/models/storage.py",
+        "custom_addons/baseer_bwork/models/user_permissions.py",
+        "custom_addons/baseer_bwork/storage_policy.py",
+        "custom_addons/baseer_bwork/v2_contracts.py",
+        "custom_addons/baseer_access_roles/models/res_users.py",
+        "custom_addons/baseer_access_roles/tests/test_cashier_procurement_role.py",
+        "custom_addons/baseer_procurement_requests/models/procurement.py",
+        "custom_addons/baseer_procurement_requests/tests/test_procurement_flow.py"
+      ],
+      "suites": [
+        "backend-contracts",
+        "source-structure",
+        "guard-integrity"
+      ]
+    },
+    {
+      "id": "canonical-legacy-preview-source-lineage",
+      "introduced": "2026-10-20",
+      "risk": "high",
+      "scope": "The distinct legacy preview retains its explicit source-file lineage, original component and serialized-data compatibility without importing its separate outbox into the canonical React Native application.",
+      "source_paths": [
+        "android/bwork-legacy/.gitignore",
+        "android/bwork-legacy/README.md",
+        "android/bwork-legacy/app/src/emulator/res/raw/bwork_local_ca.crt",
+        "android/bwork-legacy/app/src/emulator/res/xml/bwork_network_security.xml",
+        "android/bwork-legacy/app/src/main/java/com/baseer/bwork/legacy/AnchoredMenu.java",
+        "android/bwork-legacy/app/src/main/java/com/baseer/bwork/legacy/AppLocale.java",
+        "android/bwork-legacy/app/src/main/java/com/baseer/bwork/legacy/AppLocalePolicy.java",
+        "android/bwork-legacy/app/src/main/java/com/baseer/bwork/legacy/AttachmentSupport.java",
+        "android/bwork-legacy/app/src/main/java/com/baseer/bwork/legacy/AudioDiagnostic.java",
+        "android/bwork-legacy/app/src/main/java/com/baseer/bwork/legacy/AudioPlayback.java",
+        "android/bwork-legacy/app/src/main/java/com/baseer/bwork/legacy/AudioWaveforms.java",
+        "android/bwork-legacy/app/src/main/java/com/baseer/bwork/legacy/BWorkFirebaseTokenSource.java",
+        "android/bwork-legacy/app/src/main/java/com/baseer/bwork/legacy/BWorkWordmarkView.java",
+        "android/bwork-legacy/app/src/main/java/com/baseer/bwork/legacy/BoundedTextWriter.java",
+        "android/bwork-legacy/app/src/main/java/com/baseer/bwork/legacy/CaptureAdmission.java",
+        "android/bwork-legacy/app/src/main/java/com/baseer/bwork/legacy/ChatStore.java",
+        "android/bwork-legacy/app/src/main/java/com/baseer/bwork/legacy/CompanyLabel.java",
+        "android/bwork-legacy/app/src/main/java/com/baseer/bwork/legacy/DemoFileProvider.java",
+        "android/bwork-legacy/app/src/main/java/com/baseer/bwork/legacy/DemoNotifications.java",
+        "android/bwork-legacy/app/src/main/java/com/baseer/bwork/legacy/EditorState.java",
+        "android/bwork-legacy/app/src/main/java/com/baseer/bwork/legacy/ImagePreviewPolicy.java",
+        "android/bwork-legacy/app/src/main/java/com/baseer/bwork/legacy/ImagePreviewView.java",
+        "android/bwork-legacy/app/src/main/java/com/baseer/bwork/legacy/ImagePreviews.java",
+        "android/bwork-legacy/app/src/main/java/com/baseer/bwork/legacy/IntegrityAttachments.java",
+        "android/bwork-legacy/app/src/main/java/com/baseer/bwork/legacy/LegacyPreflight.java",
+        "android/bwork-legacy/app/src/main/java/com/baseer/bwork/legacy/LocalSettings.java",
+        "android/bwork-legacy/app/src/main/java/com/baseer/bwork/legacy/LocalSettingsPolicy.java",
+        "android/bwork-legacy/app/src/main/java/com/baseer/bwork/legacy/MainActivity.java",
+        "android/bwork-legacy/app/src/main/java/com/baseer/bwork/legacy/NotificationDemoPolicy.java",
+        "android/bwork-legacy/app/src/main/java/com/baseer/bwork/legacy/PdfPreviewView.java",
+        "android/bwork-legacy/app/src/main/java/com/baseer/bwork/legacy/PlaybackState.java",
+        "android/bwork-legacy/app/src/main/java/com/baseer/bwork/legacy/ReplyWireContract.java",
+        "android/bwork-legacy/app/src/main/java/com/baseer/bwork/legacy/RuntimeOrigin.java",
+        "android/bwork-legacy/app/src/main/java/com/baseer/bwork/legacy/StoreJournal.java",
+        "android/bwork-legacy/app/src/main/java/com/baseer/bwork/legacy/Ui.java",
+        "android/bwork-legacy/app/src/main/java/com/baseer/bwork/legacy/VoiceGestureState.java",
+        "android/bwork-legacy/app/src/main/java/com/baseer/bwork/legacy/VoicePlayerView.java",
+        "android/bwork-legacy/app/src/main/java/com/baseer/bwork/legacy/VoiceRecorder.java",
+        "android/bwork-legacy/app/src/main/java/com/baseer/bwork/legacy/WaveformSamples.java",
+        "android/bwork-legacy/app/src/main/java/com/baseer/bwork/legacy/WaveformView.java",
+        "android/bwork-legacy/app/src/main/java/com/baseer/bwork/legacy/ZoomableImageView.java",
+        "android/bwork-legacy/app/src/main/java/com/baseer/bwork/legacy/compat/LegacyIdentity.java",
+        "android/bwork-legacy/app/src/main/java/com/baseer/bwork/legacy/sync/AccountScope.java",
+        "android/bwork-legacy/app/src/main/java/com/baseer/bwork/legacy/sync/BWorkV2Outbox.java",
+        "android/bwork-legacy/app/src/main/java/com/baseer/bwork/legacy/sync/ConnectedHistoryCache.java",
+        "android/bwork-legacy/app/src/main/java/com/baseer/bwork/legacy/sync/DurableOutbox.java",
+        "android/bwork-legacy/app/src/main/java/com/baseer/bwork/legacy/sync/MessageRequest.java",
+        "android/bwork-legacy/app/src/main/java/com/baseer/bwork/legacy/sync/OutboxPolicy.java",
+        "android/bwork-legacy/app/src/main/java/com/baseer/bwork/legacy/sync/TaskOfflineCache.java",
+        "android/bwork-legacy/build.gradle",
+        "android/bwork-legacy/gradle.properties",
+        "android/bwork-legacy/settings.gradle",
+        "android/bwork-legacy/tests/AppLocalePolicyTest.java",
+        "android/bwork-legacy/tests/AttachmentPolicyTest.java",
+        "android/bwork-legacy/tests/AttachmentRetentionTest.java",
+        "android/bwork-legacy/tests/AudioDiagnosticTest.java",
+        "android/bwork-legacy/tests/BoundedTextWriterTest.java",
+        "android/bwork-legacy/tests/CaptureAdmissionTest.java",
+        "android/bwork-legacy/tests/ChatStoreTest.java",
+        "android/bwork-legacy/tests/CompanyLabelTest.java",
+        "android/bwork-legacy/tests/EditorIntegrityTest.java",
+        "android/bwork-legacy/tests/EditorStateTest.java",
+        "android/bwork-legacy/tests/FOUNDATION_VALIDATION.md",
+        "android/bwork-legacy/tests/ImagePreviewPolicyTest.java",
+        "android/bwork-legacy/tests/LegacyJournalScaleTest.java",
+        "android/bwork-legacy/tests/LegacyPreflightValidTest.java",
+        "android/bwork-legacy/tests/LocalSettingsPolicyTest.java",
+        "android/bwork-legacy/tests/MediaImageRecoveryPolicyTest.java",
+        "android/bwork-legacy/tests/NotificationDemoPolicyTest.java",
+        "android/bwork-legacy/tests/OutboxPolicyTest.java",
+        "android/bwork-legacy/tests/PREVIEW-BUILDS.md",
+        "android/bwork-legacy/tests/PlaybackStateTest.java",
+        "android/bwork-legacy/tests/RecoveryAdmissionTest.java",
+        "android/bwork-legacy/tests/ReplyWireContractTest.java",
+        "android/bwork-legacy/tests/RuntimeOriginTest.java",
+        "android/bwork-legacy/tests/StorageFoundationTest.java",
+        "android/bwork-legacy/tests/StoreJournalTest.java",
+        "android/bwork-legacy/tests/VoiceGestureStateTest.java",
+        "android/bwork-legacy/tests/WaveformSamplesTest.java",
+        "android/bwork-legacy/tests/android-audio/AndroidManifest.xml",
+        "android/bwork-legacy/tests/android-audio/README.md",
+        "android/bwork-legacy/tests/android-audio/com/baseer/bwork/legacy/test/AudioPlaybackInstrumentation.java",
+        "android/bwork-legacy/tests/android-bubbles/AndroidManifest.xml",
+        "android/bwork-legacy/tests/android-bubbles/README.md",
+        "android/bwork-legacy/tests/android-bubbles/com/baseer/bwork/legacy/test/BubbleGeometryInstrumentation.java",
+        "android/bwork-legacy/tests/android-editor/AndroidManifest.xml",
+        "android/bwork-legacy/tests/android-editor/com/baseer/bwork/legacy/EditorFoundationInstrumentation.java",
+        "android/bwork-legacy/tests/android-entry-layout/AndroidManifest.xml",
+        "android/bwork-legacy/tests/android-entry-layout/README.md",
+        "android/bwork-legacy/tests/android-entry-layout/boundary/AndroidManifest.xml",
+        "android/bwork-legacy/tests/android-entry-layout/com/baseer/bwork/legacy/test/EntryBoundaryInstrumentation.java",
+        "android/bwork-legacy/tests/android-entry-layout/com/baseer/bwork/legacy/test/EntryLayoutInstrumentation.java",
+        "android/bwork-legacy/tests/android-entry-layout/com/baseer/bwork/legacy/test/EntryLifecycleInstrumentation.java",
+        "android/bwork-legacy/tests/android-entry-layout/com/baseer/bwork/legacy/test/SyntheticShareActivity.java",
+        "android/bwork-legacy/tests/android-entry-layout/com/baseer/bwork/legacy/test/SyntheticShareProvider.java",
+        "android/bwork-legacy/tests/android-entry-layout/lifecycle/AndroidManifest.xml",
+        "android/bwork-legacy/tests/android-images/AndroidManifest.xml",
+        "android/bwork-legacy/tests/android-images/README.md",
+        "android/bwork-legacy/tests/android-images/com/baseer/bwork/legacy/test/ImageFixtureProvider.java",
+        "android/bwork-legacy/tests/android-images/com/baseer/bwork/legacy/test/ImagePreviewInstrumentation.java",
+        "android/bwork-legacy/tests/android-locale/AndroidManifest.xml",
+        "android/bwork-legacy/tests/android-locale/README.md",
+        "android/bwork-legacy/tests/android-locale/com/baseer/bwork/legacy/test/LocaleInstrumentation.java",
+        "android/bwork-legacy/tests/android-media-kernel/README.md",
+        "android/bwork-legacy/tests/android-media-kernel/com/baseer/bwork/legacy/MediaKernelMain.java",
+        "android/bwork-legacy/tests/android-media-recovery/AndroidManifest.xml",
+        "android/bwork-legacy/tests/android-media-recovery/README.md",
+        "android/bwork-legacy/tests/android-media-recovery/com/baseer/bwork/legacy/test/MediaRecoveryInstrumentation.java",
+        "android/bwork-legacy/tests/android-retention/AndroidManifest.xml",
+        "android/bwork-legacy/tests/android-retention/README.md",
+        "android/bwork-legacy/tests/android-retention/com/baseer/bwork/legacy/test/AttachmentRetentionInstrumentation.java",
+        "android/bwork-legacy/tests/android-ui-support/com/baseer/bwork/legacy/test/UiFixtureGuard.java",
+        "android/bwork-legacy/tests/android/AndroidManifest.xml",
+        "android/bwork-legacy/tests/android/com/baseer/bwork/legacy/test/SmokeInstrumentation.java",
+        "android/bwork-legacy/tests/jvm-media/MediaFoundationRecoveryTest.java",
+        "android/bwork-legacy/tests/jvm-media/android/content/ContentResolver.java",
+        "android/bwork-legacy/tests/jvm-media/android/content/Context.java",
+        "android/bwork-legacy/tests/jvm-media/android/database/Cursor.java",
+        "android/bwork-legacy/tests/jvm-media/android/net/Uri.java",
+        "android/bwork-legacy/tests/jvm-media/android/provider/OpenableColumns.java",
+        "android/bwork-legacy/tests/outbox-android/AndroidManifest.xml",
+        "android/bwork-legacy/tests/outbox-android/com/baseer/bwork/legacy/sync/test/OutboxInstrumentation.java",
+        "android/bwork-legacy/tools/build-apk.sh",
+        "android/bwork-legacy/tools/build-audio-tests.sh",
+        "android/bwork-legacy/tools/build-bubble-tests.sh",
+        "android/bwork-legacy/tools/build-editor-tests.sh",
+        "android/bwork-legacy/tools/build-entry-layout-tests.sh",
+        "android/bwork-legacy/tools/build-image-tests.sh",
+        "android/bwork-legacy/tools/build-locale-tests.sh",
+        "android/bwork-legacy/tools/build-media-kernel.sh",
+        "android/bwork-legacy/tools/build-media-recovery-tests.sh",
+        "android/bwork-legacy/tools/build-outbox-tests.sh",
+        "android/bwork-legacy/tools/build-retention-tests.sh",
+        "android/bwork-legacy/tools/build-smoke-tests.sh",
+        "android/bwork-legacy/tools/check-icon-geometry.py",
+        "android/bwork-legacy/tools/check-wordmark.py",
+        "android/bwork-legacy/tools/lint-standalone.sh",
+        "android/bwork-legacy/tools/sign-preview-apk.sh",
+        "android/bwork-legacy/tools/test-attachments.sh",
+        "android/bwork-legacy/tools/test-audio.sh",
+        "android/bwork-legacy/tools/test-bottom-navigation.py",
+        "android/bwork-legacy/tools/test-bubble-contracts.py",
+        "android/bwork-legacy/tools/test-bwork-user-permissions.py",
+        "android/bwork-legacy/tools/test-capture-admission.sh",
+        "android/bwork-legacy/tools/test-connected-orders-navigation.py",
+        "android/bwork-legacy/tools/test-core.sh",
+        "android/bwork-legacy/tools/test-editor-state.sh",
+        "android/bwork-legacy/tools/test-foundation-ui-contracts.py",
+        "android/bwork-legacy/tools/test-image-contracts.py",
+        "android/bwork-legacy/tools/test-images.sh",
+        "android/bwork-legacy/tools/test-localization.sh",
+        "android/bwork-legacy/tools/test-media-recovery-contracts.py",
+        "android/bwork-legacy/tools/test-media-recovery.sh",
+        "android/bwork-legacy/tools/test-menu-contracts.py",
+        "android/bwork-legacy/tools/test-message-timeline-contracts.py",
+        "android/bwork-legacy/tools/test-outbox.sh",
+        "android/bwork-legacy/tools/test-recovery-admission.sh",
+        "android/bwork-legacy/tools/test-retention.sh",
+        "android/bwork-legacy/tools/test-rocket-visual-contracts.py",
+        "android/bwork-legacy/tools/test-ui-harness-contracts.py",
+        "android/bwork-legacy/tools/test-unread-receipts-contract.py"
+      ],
+      "suites": [
+        "android-source-contract",
+        "source-structure",
+        "guard-integrity"
+      ]
+    },
+    {
+      "id": "canonical-client-identity-and-protected-behavior-lineage",
+      "introduced": "2026-10-20",
+      "risk": "critical",
+      "scope": "The canonical mobile source retains every protected behavior and stable QA identity while independent production fails closed without approved signing and realm configuration; the required status depends on actual execution of its complete mobile gate.",
+      "source_paths": ["mobile/bwork/**"],
+      "suites": ["source-structure", "guard-integrity"]
+    },
+    {
+      "id": "canonical-identity-migration-and-wire-compatibility",
+      "introduced": "2026-10-20",
+      "risk": "critical",
+      "scope": "Canonical module and schema identities preserve existing record identity, authority and opaque payloads; fixed pre-registry migration fails closed on collisions, and legacy routes remain aliases of one canonical handler.",
+      "source_paths": [
+        "custom_addons/baseer_bwork/canonical_name_map.json",
+        "custom_addons/baseer_bwork/compatibility.py",
+        "custom_addons/baseer_bwork/tools/canonical_pre_upgrade.py",
+        "ops/lib/bwork_release_source.py",
+        "ops/tests/test_bwork_release_source.py",
+        "ops/tests/run-bwork-canonical-ci.sh",
+        "ops/tests/fixtures/**",
+        ".github/workflows/test-bwork-canonical-migration.yml",
+        "custom_addons/baseer_bwork/tests_contract/test_canonical*.py",
+        "custom_addons/baseer_bwork_procurement/**",
+        "custom_addons/baseer_bwork_permission_guards/**",
+        "custom_addons/baseer_bwork_document_permission_guards/**",
+        "custom_addons/baseer_bwork_dashboard/**"
+      ],
+      "suites": ["backend-contracts", "source-structure", "guard-integrity", "canonical-ops-contract"]
+    },
+    {
+      "id": "private-api-permissions",
+      "introduced": "2026-10-16",
+      "risk": "critical",
+      "scope": "All BWork API reads and writes require the session-bound permission boundary.",
+      "source_paths": [
+        "custom_addons/baseer_bwork/controllers/**",
+        "custom_addons/baseer_bwork/models/service.py",
+        "custom_addons/baseer_bwork/models/v2_service.py",
+        "custom_addons/baseer_bwork/security/**"
+      ],
+      "suites": [
+        "backend-contracts",
+        "source-structure"
+      ]
+    },
+    {
+      "id": "membership-epochs",
+      "introduced": "2026-10-16",
+      "risk": "critical",
+      "scope": "Room content and unread state are limited to an active membership epoch.",
+      "source_paths": [
+        "custom_addons/baseer_bwork/models/v2_service.py",
+        "custom_addons/baseer_bwork/models/message_receipt.py",
+        "custom_addons/baseer_bwork/models/room.py",
+        "custom_addons/baseer_bwork/tests/**",
+        "custom_addons/baseer_bwork/tests_contract/**"
+      ],
+      "suites": [
+        "backend-contracts",
+        "source-structure"
+      ]
+    },
+    {
+      "id": "task-transitions",
+      "introduced": "2026-10-16",
+      "risk": "high",
+      "scope": "Task transitions remain revision-bound, permission-checked, and auditable.",
+      "source_paths": [
+        "custom_addons/baseer_bwork/models/task.py",
+        "custom_addons/baseer_bwork/models/task_service.py",
+        "custom_addons/baseer_bwork/task_contracts.py",
+        "custom_addons/baseer_bwork/tests/test_tasks_v2.py",
+        "custom_addons/baseer_bwork/tests_contract/test_task_contracts.py"
+      ],
+      "suites": [
+        "backend-contracts",
+        "source-structure"
+      ]
+    },
+    {
+      "id": "push-enabled-apk",
+      "introduced": "2026-10-16",
+      "risk": "high",
+      "scope": "A distributed Push APK contains the FCM service and event action, a newer version code, and the approved signer.",
+      "source_paths": [
+        "android/bwork-legacy/app/build.gradle",
+        "android/bwork-legacy/app/google-services.json",
+        "android/bwork-legacy/app/src/gradle/AndroidManifestPush.xml",
+        "android/bwork-legacy/app/src/main/java/com/baseer/bwork/legacy/BWorkFirebaseMessagingService.java",
+        "android/bwork-legacy/tools/build-unified-preview.ps1",
+        "android/bwork-legacy/tools/check-package.py"
+      ],
+      "suites": [
+        "android-source-contract",
+        "apk-artifact"
+      ]
+    },
+    {
+      "id": "attention-center",
+      "introduced": "2026-10-16",
+      "risk": "high",
+      "scope": "The header center is per user: unread message receipts plus active tasks assigned to that user, across authorized companies only.",
+      "source_paths": [
+        "custom_addons/baseer_bwork/models/attention_service.py",
+        "custom_addons/baseer_bwork/controllers/api_v2.py",
+        "custom_addons/baseer_bwork/models/__init__.py",
+        "android/bwork-legacy/app/src/main/java/com/baseer/bwork/legacy/BWorkIdentityActivity.java",
+        "custom_addons/baseer_bwork/tests_contract/test_attention_contract.py"
+      ],
+      "suites": [
+        "backend-contracts",
+        "android-source-contract",
+        "source-structure"
+      ]
+    },
+    {
+      "id": "client-ui-localization",
+      "introduced": "2026-10-16",
+      "risk": "medium",
+      "scope": "The BWork client keeps its reviewed RTL/LTR labels, bounded task and cart presentation, and Android manifest identity without changing server-owned business data.",
+      "source_paths": [
+        "android/bwork-legacy/app/src/main/AndroidManifest.xml",
+        "android/bwork-legacy/app/src/gradle/AndroidManifest.xml",
+        "android/bwork-legacy/app/src/main/java/com/baseer/bwork/legacy/BWorkIdentityActivity.java",
+        "android/bwork-legacy/app/src/main/res/**",
+        "android/bwork-legacy/tools/test-entry-layout-contracts.py",
+        "android/bwork-legacy/tools/test-localization.py",
+        "android/bwork-legacy/tools/test-orders-ui-contracts.py"
+      ],
+      "suites": [
+        "android-source-contract"
+      ]
+    },
+    {
+      "id": "verified-webview-read-fallback",
+      "introduced": "2026-10-16",
+      "risk": "high",
+      "scope": "Authenticated Android GET reads retain same-origin verification when MessagePort delivery fails, never retry writes, and preserve scoped offline snapshots across an expired web session.",
+      "source_paths": [
+        "android/bwork-legacy/app/src/main/java/com/baseer/bwork/legacy/BWorkIdentityActivity.java",
+        "android/bwork-legacy/tools/test-verified-read-fallback.py",
+        "android/bwork-legacy/tools/check-package.py"
+      ],
+      "suites": [
+        "android-source-contract"
+      ]
+    },
+    {
+      "id": "bridge-session-recovery",
+      "introduced": "2026-10-16",
+      "risk": "high",
+      "scope": "The private BWork bridge remains undiscoverable before authentication while an expired remembered Android session clears only its local state and opens the canonical Odoo login.",
+      "source_paths": [
+        "custom_addons/baseer_bwork/controllers/bridge.py",
+        "custom_addons/baseer_bwork/tests/test_bridge.py",
+        "custom_addons/baseer_bwork/tests_contract/test_bridge_entry_contract.py",
+        "android/bwork-legacy/app/build.gradle",
+        "android/bwork-legacy/app/src/main/java/com/baseer/bwork/legacy/BWorkIdentityActivity.java",
+        "android/bwork-legacy/app/src/main/res/values/strings.xml",
+        "android/bwork-legacy/app/src/main/res/values-ar/strings.xml",
+        "android/bwork-legacy/app/src/main/res/values-en/strings.xml"
+      ],
+      "suites": [
+        "bridge-entry-contract",
+        "android-source-contract",
+        "backend-contracts"
+      ]
+    },
+    {
+      "id": "qa-live-release-gate",
+      "introduced": "2026-10-16",
+      "risk": "critical",
+      "scope": "QA and Live release wrappers execute the BWork source guard whenever baseer_bwork is in the approved module set.",
+      "source_paths": [
+        "ops/qa/baseer-qa-deploy",
+        "ops/production/baseer-production-deploy",
+        ".github/workflows/validate-pull-request.yml"
+      ],
+      "suites": [
+        "release-wrapper",
+        "source-structure"
+      ]
+    },
+    {
+      "id": "guard-engine-integrity",
+      "introduced": "2026-10-16",
+      "risk": "critical",
+      "scope": "The contract registry and guard engine are monotonic: protected contracts may only be extended, never silently deleted or weakened.",
+      "source_paths": [
+        "custom_addons/baseer_bwork/guard_registry.json",
+        "custom_addons/baseer_bwork/tools/release_guard.py",
+        "custom_addons/baseer_bwork/tests_contract/test_release_guard.py",
+        ".github/workflows/bwork-cumulative-contracts.yml",
+        ".github/CODEOWNERS"
+      ],
+      "suites": [
+        "guard-integrity",
+        "source-structure"
+      ]
+    },
+    {
+      "id": "push-installation-lifecycle",
+      "introduced": "2026-10-16",
+      "risk": "high",
+      "scope": "A verified device registration is an idempotent upsert across logout and sign-in, preserving one installation record while reactivating it without duplicate-key failures.",
+      "source_paths": [
+        "custom_addons/baseer_bwork/models/push.py",
+        "custom_addons/baseer_bwork/tests/test_push_v2.py",
+        "custom_addons/baseer_bwork/tests_contract/test_push_installation_lifecycle_contract.py",
+        "custom_addons/baseer_bwork/__manifest__.py",
+        "android/bwork-legacy/app/src/main/java/com/baseer/bwork/legacy/BWorkPushState.java"
+      ],
+      "suites": [
+        "backend-contracts",
+        "source-structure"
+      ]
+    },
+    {
+      "id": "task-push-fastlane-and-private-avatars",
+      "introduced": "2026-10-16",
+      "risk": "critical",
+      "scope": "Room-task updates wake every active authorized room viewer after commit with a bounded durable fallback, and employee photos are served only through membership-rechecked BWork endpoints.",
+      "source_paths": [
+        "custom_addons/baseer_bwork/models/push.py",
+        "custom_addons/baseer_bwork/models/avatar_service.py",
+        "custom_addons/baseer_bwork/models/__init__.py",
+        "custom_addons/baseer_bwork/controllers/api_v2.py",
+        "custom_addons/baseer_bwork/tests/test_push_v2.py",
+        "custom_addons/baseer_bwork/tests/test_text_v2.py",
+        "custom_addons/baseer_bwork/tests_contract/test_push_fastlane_avatar_contract.py",
+        "android/bwork-legacy/app/src/main/java/com/baseer/bwork/legacy/BWorkIdentityActivity.java",
+        "custom_addons/baseer_bwork/__manifest__.py"
+      ],
+      "suites": [
+        "backend-contracts",
+        "android-source-contract",
+        "source-structure"
+      ]
+    },
+    {
+      "id": "media-send-ack-reconciliation",
+      "introduced": "2026-10-17",
+      "risk": "high",
+      "scope": "Android retires staged media only after authenticated room history proves a message from the same account contains the exact server media identifier, never by automatically retransmitting an uncertain write.",
+      "source_paths": [
+        "android/bwork-legacy/app/src/main/java/com/baseer/bwork/legacy/BWorkIdentityActivity.java",
+        "android/bwork-legacy/app/src/main/java/com/baseer/bwork/legacy/sync/BWorkConnectedMediaStore.java",
+        "android/bwork-legacy/tools/test-connected-media-ui-contracts.py"
+      ],
+      "suites": [
+        "android-source-contract",
+        "source-structure"
+      ]
+    },
+    {
+      "id": "login-brand-motion",
+      "introduced": "2026-10-17",
+      "risk": "medium",
+      "scope": "The BWork login keeps the canonical unaltered mark, a restrained motion fallback, professional credential fields, and release metadata without a marketing tagline.",
+      "source_paths": [
+        "android/bwork-legacy/app/src/main/java/com/baseer/bwork/legacy/EntryMarkView.java",
+        "android/bwork-legacy/app/src/main/java/com/baseer/bwork/legacy/LoginBrandView.java",
+        "android/bwork-legacy/app/src/main/java/com/baseer/bwork/legacy/BWorkIdentityActivity.java",
+        "android/bwork-legacy/app/src/main/res/values/strings.xml",
+        "android/bwork-legacy/app/src/main/res/values-ar/strings.xml",
+        "android/bwork-legacy/app/src/main/res/values-en/strings.xml",
+        "android/bwork-legacy/tools/test-login-brand-contracts.py"
+      ],
+      "suites": [
+        "android-source-contract",
+        "source-structure"
+      ]
+    },
+    {
+      "id": "native-capability-media-upload",
+      "introduced": "2026-10-17",
+      "risk": "critical",
+      "scope": "BWork media bytes stream only through a short-lived, room-bound native HTTPS capability that rechecks active membership and returns a durable idempotent result without exposing WebView cookies.",
+      "source_paths": [
+        "custom_addons/baseer_bwork/controllers/media_api.py",
+        "custom_addons/baseer_bwork/models/media_service.py",
+        "custom_addons/baseer_bwork/models/mobile_upload_grant.py",
+        "custom_addons/baseer_bwork/data/media_cleanup_cron.xml",
+        "custom_addons/baseer_bwork/tests/test_mobile_upload_grants.py",
+        "custom_addons/baseer_bwork/tests/test_native_upload_body.py",
+        "custom_addons/baseer_bwork/tools/run_native_body_tests.py",
+        "custom_addons/baseer_bwork/tests_contract/test_native_media_upload_contract.py",
+        "android/bwork-legacy/app/src/main/java/com/baseer/bwork/legacy/BWorkNativeMediaUploader.java",
+        "android/bwork-legacy/app/src/main/java/com/baseer/bwork/legacy/BWorkConnectedMediaBridge.java",
+        "android/bwork-legacy/app/src/main/java/com/baseer/bwork/legacy/BWorkIdentityActivity.java",
+        "android/bwork-legacy/tools/test-connected-media-ui-contracts.py",
+        "android/bwork-legacy/tools/test-connected-media-journey.py"
+      ],
+      "suites": [
+        "backend-contracts",
+        "android-source-contract",
+        "source-structure"
+      ]
+    },
+    {
+      "id": "modern-work-task-scope-replay-reminders",
+      "introduced": "2026-10-19",
+      "risk": "critical",
+      "scope": "Modern work tasks retain legacy fingerprint semantics while enforcing all-company personal scope, assignee eligibility before paging, canonical completion, same-UUID terminal replay and atomically queued revocable reminders.",
+      "source_paths": [
+        "custom_addons/baseer_bwork/work_task_contracts.py",
+        "custom_addons/baseer_bwork/models/work_task_service.py",
+        "custom_addons/baseer_bwork/models/task.py",
+        "custom_addons/baseer_bwork/models/task_service.py",
+        "custom_addons/baseer_bwork/models/push.py",
+        "custom_addons/baseer_bwork/controllers/work_task_api.py",
+        "custom_addons/baseer_bwork/data/work_task_cron.xml",
+        "custom_addons/baseer_bwork/tests/test_work_tasks.py",
+        "custom_addons/baseer_bwork/tests/work_task_reminder_concurrency_probe.py",
+        "custom_addons/baseer_bwork/tests_contract/test_work_task_contracts.py",
+        "custom_addons/baseer_bwork/tests_contract/test_work_task_reminder_probe.py",
+        "custom_addons/baseer_bwork/tests_contract/test_work_task_service_seams.py"
+      ],
+      "suites": [
+        "backend-contracts",
+        "source-structure"
+      ]
+    },
+    {
+      "id": "bwork-gallery-membership-keyset-and-no-receipts",
+      "introduced": "2026-10-20",
+      "risk": "critical",
+      "scope": "Sparse room galleries retain current member/company/media authority, exact linked canonical messages, stable bounded keysets and last-emitted byte-cap cursors without history coverage, receipt writes, private-content ACLs or server deletion.",
+      "source_paths": [
+        "custom_addons/baseer_bwork/gallery_contracts.py",
+        "custom_addons/baseer_bwork/models/gallery_service.py",
+        "custom_addons/baseer_bwork/controllers/gallery_api.py",
+        "custom_addons/baseer_bwork/tests/test_gallery.py",
+        "custom_addons/baseer_bwork/tests_contract/test_gallery_contract.py",
+        "custom_addons/baseer_bwork/static/src/bwork_gallery/**",
+        "custom_addons/baseer_bwork/static/tests/gallery_client.node.test.mjs",
+        "custom_addons/baseer_bwork_admin/static/**",
+        ".github/workflows/test-bwork-gallery.yml"
+      ],
+      "suites": ["backend-contracts", "source-structure", "guard-integrity"]
+    },
+    {
+      "id": "bwork-retention-explicit-readiness-and-content-tombstones",
+      "introduced": "2026-10-20",
+      "risk": "critical",
+      "scope": "Server content erasure requires explicit existing-owner or intersected retention/manager authority, current company and independent OFF-by-default readiness, frozen bounded previews and per-batch rechecks; immutable UUID tombstones, protected/shared ERP/DMS originals and client content-revision reconciliation remain enforced without source ACL grants.",
+      "source_paths": [
+        "custom_addons/baseer_bwork/retention_contracts.py",
+        "custom_addons/baseer_bwork/models/retention.py",
+        "custom_addons/baseer_bwork/controllers/retention_api.py",
+        "custom_addons/baseer_bwork/models/v2_service.py",
+        "custom_addons/baseer_bwork/models/media_service.py",
+        "custom_addons/baseer_bwork/models/push.py",
+        "custom_addons/baseer_bwork/models/attention_service.py",
+        "custom_addons/baseer_bwork/gallery_contracts.py",
+        "custom_addons/baseer_bwork/models/gallery_service.py",
+        "custom_addons/baseer_bwork/tests_contract/test_retention_contract.py",
+        "custom_addons/baseer_bwork/static/tests/gallery_retention.node.test.mjs",
+        "custom_addons/baseer_bwork_admin/**",
+        ".github/workflows/test-bwork-retention.yml"
+      ],
+      "suites": ["backend-contracts", "source-structure", "guard-integrity"]
+    },
+    {
+      "id": "bwork-admin-metadata-and-branding",
+      "introduced": "2026-10-20",
+      "risk": "critical",
+      "scope": "BWork administrative metadata remains bounded and company-scoped behind the existing effective room-manager authority, without content ACLs, grants, deletion or financial writes; visible branding preserves technical identifiers.",
+      "source_paths": [
+        "custom_addons/baseer_bwork_admin/**",
+        ".github/workflows/test-bwork-admin.yml",
+        "custom_addons/baseer_bwork/tests_contract/test_bwork_admin_contract.py",
+        "custom_addons/baseer_bwork/tests_contract/test_bwork_branding.py",
+        "custom_addons/baseer_bwork/migrations/19.0.0.4.17/post-migrate.py",
+        "custom_addons/baseer_bwork/static/description/icon.png",
+        "custom_addons/baseer_bwork/__manifest__.py",
+        "custom_addons/baseer_bwork/views/**",
+        "custom_addons/baseer_bwork/i18n/**",
+        "custom_addons/baseer_bwork/security/security.xml"
+      ],
+      "suites": [
+        "backend-contracts",
+        "source-structure",
+        "guard-integrity"
+      ]
+    }
+  ]
+}

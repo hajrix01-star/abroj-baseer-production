@@ -1,8 +1,0 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.baseer.freshchat.entryboundarytest">
-  <uses-sdk android:minSdkVersion="26" android:targetSdkVersion="35" />
-  <application android:label="BChat synthetic entry boundary tests" android:hasCode="true">
-    <activity android:name="com.baseer.freshchat.test.SyntheticShareActivity" android:exported="true" android:theme="@android:style/Theme.Material.Light.NoActionBar" />
-    <provider android:name="com.baseer.freshchat.test.SyntheticShareProvider" android:authorities="com.baseer.freshchat.entryboundarytest.fixture" android:exported="false" android:grantUriPermissions="true" />
-  </application>
-  <instrumentation android:name="com.baseer.freshchat.test.EntryBoundaryInstrumentation" android:targetPackage="com.baseer.bchat.preview" android:label="Native deferred file and active-media exit checks" />
-</manifest>

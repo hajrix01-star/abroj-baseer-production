@@ -2,7 +2,7 @@ from datetime import date
 from decimal import Decimal
 from unittest import TestCase
 
-from odoo.addons.baseer_bchat.contracts import ProtocolError
+from odoo.addons.baseer_bwork.contracts import ProtocolError
 
 from ..contracts import amount, change, merge_ranges, parse_query, ratio
 

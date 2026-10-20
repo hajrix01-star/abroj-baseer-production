@@ -21,11 +21,11 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install the pinned BChat media contract dependency
+      - name: Install the pinned BWork media contract dependency
         run: >-
           python -m pip install --disable-pip-version-check --no-input
           --only-binary=:all: --require-hashes
-          -r custom_addons/baseer_bchat/tests_contract/requirements-ci.txt
+          -r custom_addons/baseer_bwork/tests_contract/requirements-ci.txt
 
       - name: Reject whitespace errors and validate changed source
         shell: bash
@@ -49,8 +49,8 @@ jobs:
           if printf '%s\n' "${changed[@]}" | grep -q '^ops/production/'; then
             sudo python3 -m unittest discover -s ops/production/tests -v
           fi
-          if printf '%s\n' "${changed[@]}" | grep -Eq '^(custom_addons/(baseer_bchat|baseer_bwork_admin)/|android/bchat/|ops/qa/baseer-qa-deploy$|ops/production/baseer-production-deploy$|\.github/workflows/(validate-pull-request|bchat-cumulative-contracts|test-bwork-admin|test-bwork-gallery|test-bwork-retention)\.yml$|\.github/CODEOWNERS$)'; then
-            python3 custom_addons/baseer_bchat/tools/release_guard.py --changed "$BASE_SHA" "$HEAD_SHA"
+          if printf '%s\n' "${changed[@]}" | grep -Eq '^(custom_addons/(baseer_b(chat|work)(_(admin|procurement|permission_guards|document_permission_guards|dashboard))?)/|mobile/(chatwoot|bwork)/|android/(bchat|bwork-legacy)/|ops/(lib/bwork_release_source.py|tests/test_bwork_release_source.py|qa/baseer-qa-deploy|production/baseer-production-deploy)$|\.github/workflows/(validate-pull-request|b(chat|work)-cumulative-contracts|test-bwork-admin|test-bwork-gallery|test-bwork-retention)\.yml$|\.github/CODEOWNERS$)'; then
+            python3 custom_addons/baseer_bwork/tools/release_guard.py --changed "$BASE_SHA" "$HEAD_SHA"
           fi
           python3 - "$BASE_SHA" "$HEAD_SHA" <<'PY'
           import ast

@@ -1,0 +1,6 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_bwork_receipt_user,BWork own receipt read,model_baseer_bwork_receipt,base.group_user,1,0,0,0
+access_bwork_binding_user,BWork bound group read,model_baseer_bwork_binding,base.group_user,1,0,0,0
+access_bwork_binding_manager,BWork explicit binding manager,model_baseer_bwork_binding,group_bwork_manager,1,1,1,0
+access_bwork_room_manager,BWork room manager,model_baseer_bwork_room,group_bwork_manager,1,1,1,0
+access_bwork_membership_manager,BWork membership manager,model_baseer_bwork_membership,group_bwork_manager,1,0,1,0

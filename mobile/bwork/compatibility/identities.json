@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "qa": { "applicationId": "com.baseer.bchat.trial", "legacyScheme": "bchat-trial", "certificateSha256": "fac61745dc0903786fb9ede62a962b399f7348f0bb6f899b8332667591033b9c" },
+  "production": { "applicationId": "com.baseer.bwork", "scheme": "bwork" },
+  "storage": { "chatRoot": "odoo-chat/v1/", "mediaDirectory": "odoo-chat-media", "sqlite": "bwork-history-v1.db", "snapshots": "bwork.leadership.snapshots.v1:", "pushPreferences": "bwork-push-v1" },
+  "legacyWire": { "prefix": "/bchat/api/v2", "avatarHeader": "X-BChat-Avatar-Version", "contentHeader": "X-BChat-Content-Revision" },
+  "nativeMarkers": { "session": "bchat-native-session-commit", "linker": "bchat-odoo-native-boundary" },
+  "environmentAliases": { "origin": "EXPO_PUBLIC_ODOO_ORIGIN", "database": "EXPO_PUBLIC_ODOO_DATABASE", "policy": "QA build input compatibility only; canonical values win and conflicting aliases reject. Production requires explicit canonical values." },
+  "legacyPreview": { "applicationId": "com.baseer.bchat.preview", "originalComponent": "com.baseer.freshchat.OdooIdentityActivity", "serializationDomain": "com.baseer.freshchat.ChatStore$", "signingAlias": "bchat-preview", "localDatabase": "baseer_bchat_local" },
+  "legacyStorage": {
+    "PUSH": "bchat-push-v1", "SETTINGS": "bchat-local-settings-v1", "EDITOR_RECOVERY": "bchat-editor-recovery-v1", "CHANGE_CURSOR": "bchat-change-cursor-v1", "EMPLOYEE_AUTH": "bchat-employee-auth-v1", "TASK_PENDING": "bchat-task-create-pending-v1", "ORDER_PENDING": "bchat-order-create-pending-v1", "ORDER_COMPANY": "bchat-order-company-v1", "RECEIPT_PENDING": "bchat-receipt-confirm-pending-v1", "RECEIPT_SHARE": "bchat-receipt-share-pending-v1", "GROUP_PENDING": "bchat-group-create-pending-v1", "PERMISSIONS": "bchat-permissions-v1", "ORDER_PERMISSIONS": "bchat-order-permissions-v1", "TEXT_OUTBOX": "bchat-v2-text-outbox.db", "HISTORY": "bchat-v2-history-v1.db", "MEDIA_DIRECTORY": "bchat-v2-media", "MEDIA_READ_DIRECTORY": "bchat-v2-media-read", "OUTBOX": "bchat-authenticated-outbox.db", "TASKS": "bchat-v2-tasks-v1.db", "PUSH_EVENT": "com.baseer.bchat.PUSH_EVENT_ID", "PUSH_ACCOUNT": "com.baseer.bchat.PUSH_ACCOUNT_KEY", "PUSH_KIND": "com.baseer.bchat.PUSH_KIND"
+  },
+  "policy": "Compatibility identities only: no cross-container import, no physical data migration, no POST fallback; production signer must be explicit release configuration."
+}

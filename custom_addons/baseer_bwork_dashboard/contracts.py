@@ -4,7 +4,7 @@ import re
 from datetime import date, timedelta
 from decimal import Decimal, ROUND_HALF_UP
 
-from odoo.addons.baseer_bchat.contracts import ProtocolError
+from odoo.addons.baseer_bwork.contracts import ProtocolError
 
 ZERO = Decimal('0')
 CENT = Decimal('0.01')

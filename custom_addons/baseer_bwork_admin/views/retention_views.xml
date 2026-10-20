@@ -129,7 +129,7 @@
     <record id="retention_run_action" model="ir.actions.act_window">
         <field name="name">Deletion runs</field><field name="res_model">baseer.bwork.retention.run</field><field name="view_mode">list,form</field><field name="limit">30</field>
     </record>
-    <menuitem id="retention_root_menu" name="Storage management" parent="baseer_bchat.menu_bchat_root" sequence="7" groups="base.group_system,baseer_bwork_admin.group_bwork_retention_manager"/>
+    <menuitem id="retention_root_menu" name="Storage management" parent="baseer_bwork.menu_bwork_root" sequence="7" groups="base.group_system,baseer_bwork_admin.group_bwork_retention_manager"/>
     <menuitem id="retention_manual_menu" name="Delete old content" parent="retention_root_menu" action="retention_wizard_action" sequence="10"/>
     <menuitem id="retention_policy_menu" name="Automatic deletion" parent="retention_root_menu" action="retention_policy_action" sequence="20"/>
     <menuitem id="retention_run_menu" name="Deletion runs" parent="retention_root_menu" action="retention_run_action" sequence="30"/>

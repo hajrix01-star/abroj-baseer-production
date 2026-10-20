@@ -1,8 +1,0 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.baseer.freshchat.imagetest">
-  <uses-sdk android:minSdkVersion="26" android:targetSdkVersion="35" />
-  <application android:label="BChat synthetic image regression tests" android:hasCode="true">
-    <uses-library android:name="android.test.mock" android:required="false" />
-    <uses-library android:name="android.test.runner" android:required="false" />
-  </application>
-  <instrumentation android:name="com.baseer.freshchat.test.ImagePreviewInstrumentation" android:targetPackage="com.baseer.bchat.preview" android:label="Synthetic image preview regression" />
-</manifest>

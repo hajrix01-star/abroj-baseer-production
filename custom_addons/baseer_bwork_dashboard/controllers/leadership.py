@@ -1,15 +1,17 @@
 import json
 
+from odoo.addons.baseer_bwork.compatibility import routes, wire_payload, validate_headers, response_header, upload_token
+
 from odoo import fields, http
 from odoo.exceptions import AccessError, MissingError, ValidationError
 from odoo.http import request
-from odoo.addons.baseer_bchat.contracts import ProtocolError
-from odoo.addons.baseer_bchat.controllers.api_v2 import BChatTextApi
+from odoo.addons.baseer_bwork.contracts import ProtocolError
+from odoo.addons.baseer_bwork.controllers.api_v2 import BWorkTextApi
 
 from ..contracts import MAX_RESPONSE_BYTES, parse_query
 
 
-class LeadershipApi(BChatTextApi):
+class LeadershipApi(BWorkTextApi):
     def _leadership_response(self, value):
         if len(json.dumps(value, ensure_ascii=False).encode('utf-8')) > MAX_RESPONSE_BYTES:
             raise ProtocolError('response_too_large', 'Dashboard response exceeds 1 MiB.', 413)
@@ -25,7 +27,7 @@ class LeadershipApi(BChatTextApi):
             return self._error(ProtocolError('report_unavailable', str(error), 422))
         return self._error(error)
 
-    @http.route('/bchat/api/v2/leadership/options', type='http', auth='user',
+    @http.route(routes('/bwork/api/v2/leadership/options'), type='http', auth='user',
                 methods=['GET'], csrf=True, save_session=True, readonly=True, max_content_length=1024)
     def leadership_options(self, **kwargs):
         try:
@@ -35,7 +37,7 @@ class LeadershipApi(BChatTextApi):
         except (AccessError, MissingError, ValidationError, ProtocolError) as error:
             return self._leadership_error(error)
 
-    @http.route('/bchat/api/v2/leadership', type='http', auth='user',
+    @http.route(routes('/bwork/api/v2/leadership'), type='http', auth='user',
                 methods=['GET'], csrf=True, save_session=True, readonly=True, max_content_length=1024)
     def leadership(self, **kwargs):
         try:

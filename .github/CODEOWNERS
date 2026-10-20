@@ -1,8 +1,17 @@
 # Release safety contracts require an owner review. GitHub branch protection
-# must require CODEOWNERS review and the BChat cumulative guard status check.
-/custom_addons/baseer_bchat/guard_registry.json @hajrix01-star
-/custom_addons/baseer_bchat/tools/release_guard.py @hajrix01-star
+# must require CODEOWNERS review and the BWork cumulative guard status check.
+/custom_addons/baseer_bwork/guard_registry.json @hajrix01-star
+/custom_addons/baseer_bwork/tools/release_guard.py @hajrix01-star
+/custom_addons/baseer_bwork/tools/canonical_pre_upgrade.py @hajrix01-star
+/custom_addons/baseer_bwork/canonical_name_map.json @hajrix01-star
+/custom_addons/baseer_bwork/compatibility.py @hajrix01-star
 /.github/workflows/validate-pull-request.yml @hajrix01-star
-/.github/workflows/bchat-cumulative-contracts.yml @hajrix01-star
+/.github/workflows/bwork-cumulative-contracts.yml @hajrix01-star
+/.github/workflows/test-bwork-canonical-migration.yml @hajrix01-star
 /ops/qa/baseer-qa-deploy @hajrix01-star
 /ops/production/baseer-production-deploy @hajrix01-star
+/ops/lib/bwork_release_source.py @hajrix01-star
+/mobile/bwork/tools/bwork-baseline.json @hajrix01-star
+/mobile/bwork/tools/check-bwork.cjs @hajrix01-star
+/mobile/bwork/native/sdk-contract.json @hajrix01-star
+/mobile/bwork/native/sdk-resolver/** @hajrix01-star

@@ -21,24 +21,24 @@ class TestLeadershipHttp(HttpCase):
             bwork_dashboard_view=True)
 
     def test_unauthenticated_and_token_fallback_are_rejected(self):
-        for path in ('/bchat/api/v2/leadership/options',
-                     '/bchat/api/v2/leadership?month=2026-10&period=month&auth_token=anything'):
+        for path in ('/bwork/api/v2/leadership/options',
+                     '/bwork/api/v2/leadership?month=2026-10&period=month&auth_token=anything'):
             response = self.url_open(path, allow_redirects=False)
             self.assertIn(response.status_code, (302, 303, 401, 403))
             self.assertNotIn('"source": "sales_summary"', response.text)
 
     def test_options_nostore_and_strict_query_body_methods(self):
         self.authenticate(self.reader.login, self.password)
-        response = self.url_open('/bchat/api/v2/leadership/options')
+        response = self.url_open('/bwork/api/v2/leadership/options')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.headers['Cache-Control'], 'no-store')
         self.assertTrue(response.json()['can_view'])
-        for path in ('/bchat/api/v2/leadership/options?extra=1',
-                     '/bchat/api/v2/leadership?month=2026-10&period=month&period=today',
-                     '/bchat/api/v2/leadership?month=2026-10&period=month&company_id=0',
-                     '/bchat/api/v2/leadership?month=2026-10&period=month&sudo=1'):
+        for path in ('/bwork/api/v2/leadership/options?extra=1',
+                     '/bwork/api/v2/leadership?month=2026-10&period=month&period=today',
+                     '/bwork/api/v2/leadership?month=2026-10&period=month&company_id=0',
+                     '/bwork/api/v2/leadership?month=2026-10&period=month&sudo=1'):
             self.assertEqual(self.url_open(path).status_code, 400)
-        response = self.opener.request('GET', self.base_url() + '/bchat/api/v2/leadership/options',
+        response = self.opener.request('GET', self.base_url() + '/bwork/api/v2/leadership/options',
                                       data=b'{}', timeout=30)
         self.assertEqual(response.status_code, 400)
-        self.assertIn(self.url_open('/bchat/api/v2/leadership/options', data={'x': '1'}).status_code, (400, 403, 405))
+        self.assertIn(self.url_open('/bwork/api/v2/leadership/options', data={'x': '1'}).status_code, (400, 403, 405))

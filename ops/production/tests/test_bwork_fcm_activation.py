@@ -55,6 +55,13 @@ class TestContracts(unittest.TestCase):
             with self.assertRaises(activation.Stop):
                 activation.safe_command(['odoo', flag])
 
+    def test_exact_filter_comparison_copy_preserves_raw_and_other_dollars(self):
+        raw = ['odoo', '--db-filter=^baseer_prod$$', '--database=baseer_prod', '--other=$$']
+        before = list(raw)
+        self.assertEqual(activation.runtime_command_comparison(raw),
+                         ['odoo', '--db-filter=^baseer_prod$', '--database=baseer_prod', '--other=$$'])
+        self.assertEqual(raw, before)
+
     def test_compose_target_only_and_no_db_inheritance(self):
         release = Path('/synthetic/release')
         odoo = {'command': ['odoo'], 'environment': {activation.JSON_KEY: 'synthetic'},
@@ -133,7 +140,9 @@ class TestActivationFlow(unittest.TestCase):
                    for target, source in (('/mnt/baseer-addons', 'custom_addons'),
                                           ('/mnt/third-party-addons', 'third_party_addons'),
                                           ('/etc/odoo/odoo.conf', 'config/odoo.conf'))]
-        self.spec = {'image': 'synthetic-image', 'command': ['odoo', '--database=baseer_prod'],
+        self.runtime_command = ['odoo', '--database=baseer_prod', '--db-filter=^baseer_prod$']
+        self.spec = {'image': 'synthetic-image',
+                     'command': ['odoo', '--database=baseer_prod', '--db-filter=^baseer_prod$$'],
                      'environment': {'HOST': 'db', activation.JSON_KEY: self.credential}, 'volumes': volumes}
         self.spec['volumes'].append({'type': 'volume', 'target': '/var/lib/odoo', 'source': 'odoo-data'})
         original_mkstemp = tempfile.mkstemp
@@ -183,7 +192,7 @@ class TestActivationFlow(unittest.TestCase):
     def snapshots(self):
         env = ['HOST=db', 'PATH=/synthetic/bin'] + ([activation.JSON_KEY + '=' + self.credential] if self.active else [])
         odoo = {'Id': 'new-odoo' if self.active else 'old-odoo', 'Image': 'same-image-id',
-                'Config': {'Image': 'synthetic-image', 'Cmd': self.spec['command'], 'Entrypoint': ['/entrypoint.sh'],
+                'Config': {'Image': 'synthetic-image', 'Cmd': list(self.runtime_command), 'Entrypoint': ['/entrypoint.sh'],
                            'Env': env, 'Labels': {'com.docker.compose.service': 'odoo',
                                                  'com.docker.compose.project.working_dir': str(self.release)}},
                 'Mounts': [{'Type': 'bind', 'Source': m['source'], 'Destination': m['target'], 'RW': False}
@@ -302,6 +311,26 @@ class TestActivationFlow(unittest.TestCase):
             with self.assertRaisesRegex(activation.Stop, '^initial_non_fcm_environment_mismatch$'):
                 activation.activate(self.value, self.helper)
         self.assertEqual(self.events, [])
+
+    def test_wrong_missing_or_duplicate_filter_never_up_or_restore(self):
+        for filters in (['--db-filter=^other$$'], ['--db-filter=^baseer_prod$'], [],
+                        ['--db-filter=^baseer_prod$$', '--db-filter=^baseer_prod$$'],
+                        ['--db-filter=^baseer_prod$$', '--db-filter', '^baseer_prod$']):
+            with self.subTest(filters=filters):
+                self.spec['command'] = ['odoo', '--database=baseer_prod', *filters]
+                raw_before = list(self.spec['command'])
+                with self.assertRaisesRegex(activation.Stop, '^pinned_db_filter_required$'):
+                    activation.activate(self.value, self.helper)
+                self.assertEqual(self.events, [])
+                self.assertEqual(self.spec['command'], raw_before)
+
+    def test_other_command_token_difference_never_up_or_restore(self):
+        self.spec['command'][1] = '--database=other'
+        raw_before = list(self.spec['command'])
+        with self.assertRaisesRegex(activation.Stop, '^runtime_image_or_command_mismatch$'):
+            activation.activate(self.value, self.helper)
+        self.assertEqual(self.events, [])
+        self.assertEqual(self.spec['command'], raw_before)
 
 
 if __name__ == '__main__':

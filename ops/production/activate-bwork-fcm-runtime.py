@@ -172,6 +172,17 @@ def safe_command(command):
     need(not any('password' in item.lower() for item in command), 'odoo_password_argument_forbidden')
 
 
+def runtime_command_comparison(compose_command):
+    """Compare Compose 2.40.3's one proved dollar serialization, never alter UP input."""
+    safe_command(compose_command)
+    pinned = '--db-filter=^baseer_prod$$'
+    filters = [item for item in compose_command if item.startswith('--db-filter')]
+    need(filters == [pinned], 'pinned_db_filter_required')
+    comparison = list(compose_command)
+    comparison[comparison.index(pinned)] = '--db-filter=^baseer_prod$'
+    return comparison
+
+
 def environment_list(values):
     result = {}
     need(isinstance(values, list), 'container_env_invalid')
@@ -275,7 +286,7 @@ def runtime_projection(row):
 def validate_runtime(rows, odoo, release, image_id, image_volumes):
     row = rows[ODOO]
     need(row['Image'] == image_id and row['Config']['Image'] == odoo['image']
-         and row['Config']['Cmd'] == odoo['command'], 'runtime_image_or_command_mismatch')
+         and row['Config']['Cmd'] == runtime_command_comparison(odoo['command']), 'runtime_image_or_command_mismatch')
     labels = row['Config'].get('Labels', {})
     need(labels.get('com.docker.compose.service') == 'odoo'
          and labels.get('com.docker.compose.project.working_dir') == str(release), 'runtime_release_mismatch')

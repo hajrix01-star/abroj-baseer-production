@@ -110,6 +110,14 @@ class RetentionContractTests(unittest.TestCase):
         admin = ROOT.parent / 'baseer_bwork_admin'
         source = (admin / 'models/retention.py').read_text(encoding='utf-8')
         self.assertIn('enabled = fields.Boolean(default=False', source)
+        model_tree = ast.parse(source)
+        for name in ('RetentionPolicy', 'RetentionWizard', 'RetentionRun', 'RetentionItem', 'RetentionAudit'):
+            group = next(node for node in model_tree.body if isinstance(node, ast.ClassDef) and node.name == name)
+            export = next(node for node in group.body if isinstance(node, ast.FunctionDef) and node.name == 'export_data')
+            self.assertIn("self.check_access('read')", ast.get_source_segment(source, export))
+        self.assertIn('access.check(model._name, operation, raise_exception=False)', source)
+        self.assertIn('rule._compute_domain(model._name, operation)', source)
+        self.assertIn("scope.append(('create_uid', '=', model.env.uid))", source)
         for field in ('candidate_bytes', 'logical_bytes', 'bytes'):
             self.assertIn('%s = fields.Char(' % field, source)
         native = ast.parse((admin / 'tests/test_retention.py').read_text(encoding='utf-8'))

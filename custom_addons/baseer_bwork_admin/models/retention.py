@@ -1,6 +1,7 @@
 """Explicit OFF-by-default retention; no source ACL or automatic role grants."""
 from datetime import timedelta, timezone as datetime_timezone
 import json
+from functools import partial
 
 from odoo import api, fields, models, Command
 from odoo.exceptions import AccessError, ValidationError
@@ -38,7 +39,37 @@ def _record_guard(model, table):
 
 def _scoped_domain(model, domain):
     user = _guard(model, model.env.company)
-    return [('company_id', 'in', sorted(set(user.company_ids.ids) & set(model.env.companies.ids)))] + list(domain)
+    scope = [('company_id', 'in', sorted(set(user.company_ids.ids) & set(model.env.companies.ids)))]
+    if model.is_transient():
+        scope.append(('create_uid', '=', model.env.uid))
+    return scope + list(domain)
+
+
+def _metadata_check_access(model, operation):
+    """Native ACL + operation rules, evaluated as SQL, never sudo field reads.
+
+    BaseModel evaluates record rules with sudo().filtered_domain(). That path
+    recursively fetches uncached company fields through our deliberate SU read
+    rejection. Keep the same native access-error result contract, normal actor
+    and complete operation-specific domain, without a privileged read seam.
+    """
+    _record_guard(model, model._table)
+    access = model.env['ir.model.access']
+    if not access.check(model._name, operation, raise_exception=False):
+        return model, partial(access._make_access_error, model._name, operation)
+    ids = [rid for rid in model._ids if type(rid) is int and rid > 0]
+    if ids:
+        rule = model.env['ir.rule']
+        domain = rule._compute_domain(model._name, operation)
+        # bypass_access suppresses automatic READ rules only after we have
+        # explicitly checked native ACL and applied THIS operation's rules.
+        # _scoped_domain also preserves native transient creator isolation.
+        query = model._search([('id', 'in', ids)] + list(domain), active_test=False, bypass_access=True)
+        allowed = {row[0] for row in model.env.execute_query(query.select(SQL.identifier(model._table, 'id')))}
+        forbidden = model.browse([rid for rid in ids if rid not in allowed])
+        if forbidden:
+            return forbidden, partial(rule._make_access_error, operation, forbidden)
+    return None
 
 
 class RetentionPolicy(models.Model):
@@ -135,6 +166,13 @@ class RetentionPolicy(models.Model):
         _record_guard(self, 'baseer_bwork_retention_policy')
         return super().check_access(operation)
 
+    def _check_access(self, operation):
+        return _metadata_check_access(self, operation)
+
+    def export_data(self, fields_to_export):
+        self.check_access('read')
+        return super().export_data(fields_to_export)
+
     def _search(self, domain, *args, **kwargs):
         return super()._search(_scoped_domain(self, domain), *args, **kwargs)
 
@@ -212,6 +250,13 @@ class RetentionWizard(models.TransientModel):
         if not (self.env.su and operation == 'unlink'):
             _record_guard(self, 'baseer_bwork_retention_wizard')
         return super().check_access(operation)
+
+    def _check_access(self, operation):
+        return _metadata_check_access(self, operation)
+
+    def export_data(self, fields_to_export):
+        self.check_access('read')
+        return super().export_data(fields_to_export)
 
     def _search(self, domain, *args, **kwargs):
         return super()._search(_scoped_domain(self, domain), *args, **kwargs)
@@ -312,6 +357,13 @@ class RetentionRun(models.Model):
         _record_guard(self, 'baseer_bwork_retention_run')
         return super().check_access(operation)
 
+    def _check_access(self, operation):
+        return _metadata_check_access(self, operation)
+
+    def export_data(self, fields_to_export):
+        self.check_access('read')
+        return super().export_data(fields_to_export)
+
     def _search(self, domain, *args, **kwargs):
         return super()._search(_scoped_domain(self, domain), *args, **kwargs)
 
@@ -402,6 +454,9 @@ class RetentionItem(models.Model):
                 [run.id, run.company_id.id, row.get('message_id') or None, row.get('media_id') or None,
                  row['fingerprint'], str(row['logical_bytes']), self.env.uid, self.env.uid])
             ids.append(self.env.cr.fetchone()[0])
+        # SQL metadata inserts bypass ORM's inverse-field cache maintenance.
+        # A just-created preview can otherwise retain its cached empty O2M.
+        self.env['baseer.bwork.retention.run'].browse(sorted({row['run_id'] for row in vals})).invalidate_recordset(['item_ids'])
         return self.browse(ids)
 
     def _service_write(self, vals, token):
@@ -423,6 +478,13 @@ class RetentionItem(models.Model):
     def check_access(self, operation):
         _record_guard(self, 'baseer_bwork_retention_item')
         return super().check_access(operation)
+
+    def _check_access(self, operation):
+        return _metadata_check_access(self, operation)
+
+    def export_data(self, fields_to_export):
+        self.check_access('read')
+        return super().export_data(fields_to_export)
 
     def _search(self, domain, *args, **kwargs):
         return super()._search(_scoped_domain(self, domain), *args, **kwargs)
@@ -452,7 +514,10 @@ class RetentionAudit(models.Model):
             VALUES (%s,%s,%s,%s,%s,NOW(),%s,%s,%s,%s,%s,NOW(),NOW()) RETURNING id''',
             [company_id, run.id if run else None, policy.id if policy else None, action,
              self.env.uid, count, str(size), code, self.env.uid, self.env.uid])
-        return self.browse(self.env.cr.fetchone()[0])
+        created_id = self.env.cr.fetchone()[0]
+        if run:
+            run.invalidate_recordset(['audit_ids'])
+        return self.browse(created_id)
 
     @api.model_create_multi
     def create(self, vals):
@@ -467,6 +532,13 @@ class RetentionAudit(models.Model):
     def check_access(self, operation):
         _record_guard(self, 'baseer_bwork_retention_audit')
         return super().check_access(operation)
+
+    def _check_access(self, operation):
+        return _metadata_check_access(self, operation)
+
+    def export_data(self, fields_to_export):
+        self.check_access('read')
+        return super().export_data(fields_to_export)
 
     def _search(self, domain, *args, **kwargs):
         return super()._search(_scoped_domain(self, domain), *args, **kwargs)

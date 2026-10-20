@@ -102,21 +102,50 @@ class BWorkRetentionCase(RetentionFixtures, TransactionCase):
             self.source._v2_media_content(media.id)
         self.assertEqual(caught.exception.status, 410)
         self.assertTrue(run.audit_ids.filtered(lambda row: row.action == 'batch'))
+        run.invalidate_recordset()
+        self.assertEqual(run.read(['state', 'company_id'])[0]['state'], 'done')
+        with self.assertRaises(AccessError):
+            run.sudo().read(['audit_ids'])
+        with self.assertRaises(AccessError):
+            run.sudo().export_data(['state'])
         with self.assertRaises(AccessError):
             message.write({'text': 'forbidden'})
         with self.assertRaises(AccessError):
             message.unlink()
 
     def test_explicit_role_intersection_company_and_superuser_denials(self):
+        self._file()
         delegated = self.reader
         delegated.sudo().write({'group_ids': [Command.link(self.retention_group.id)]})
         ordinary = self.service.with_user(delegated)
         with self.assertRaises(AccessError):
             ordinary._preview(self.company.id, 'company', [], 'attachments', fields.Datetime.now())
         delegated.sudo().write({'group_ids': [Command.link(self.manager.id)]})
-        self.assertEqual(ordinary._preview(self.company.id, 'rooms', self.room.ids,
-                         'attachments', fields.Datetime.now()).state, 'preview')
+        delegated_run = ordinary._preview(self.company.id, 'rooms', self.room.ids,
+                                         'attachments', fields.Datetime.now())
+        self.assertEqual(delegated_run.state, 'preview')
+        policy = ordinary.env['baseer.bwork.retention.policy'].create({'company_id': self.company.id})
+        wizard = ordinary.env['baseer.bwork.retention.wizard'].create({'company_id': self.company.id})
+        records = [policy, wizard, delegated_run, delegated_run.item_ids, delegated_run.audit_ids]
+        for record in records:
+            self.assertTrue(record)
+            record.read(['company_id'])  # Warm metadata before every negative.
+            self.assertTrue(record.export_data(['id'])['datas'])
+            with self.assertRaises(AccessError):
+                record.sudo().export_data(['id'])
+        switched = self.env['res.company'].create({'name': 'Synthetic retention scope switch'})
+        delegated.sudo().write({'company_ids': [Command.link(switched.id)]})
+        for record in records:
+            with self.assertRaises(AccessError):
+                record.with_context(allowed_company_ids=switched.ids).export_data(['id'])
+            with self.assertRaises(AccessError):
+                record.with_context(allowed_company_ids=switched.ids).export_data(['company_id'])
         delegated.sudo().write({'group_ids': [Command.unlink(self.retention_group.id)]})
+        for record in records:
+            with self.assertRaises(AccessError):
+                record.export_data(['id'])
+            with self.assertRaises(AccessError):
+                record.export_data(['company_id'])
         with self.assertRaises(AccessError):
             ordinary._preview(self.company.id, 'company', [], 'attachments', fields.Datetime.now())
         foreign = self.env['res.company'].create({'name': 'Synthetic foreign retention company'})
@@ -124,6 +153,18 @@ class BWorkRetentionCase(RetentionFixtures, TransactionCase):
             ordinary._preview(foreign.id, 'company', [], 'attachments', fields.Datetime.now())
         with self.assertRaises(AccessError):
             self.service.sudo()._preview(self.company.id, 'company', [], 'attachments', fields.Datetime.now())
+        run = self._preview()
+        run.invalidate_recordset()
+        self.assertEqual(run.read(['state'])[0]['state'], 'preview')
+        # A WRITE-only native rule must still deny acknowledgment while READ
+        # remains allowed; substituting read rules would weaken this assertion.
+        self.env['ir.rule'].create({'name': 'Synthetic retention write denial',
+            'model_id': self.env.ref('baseer_bwork_admin.model_baseer_bwork_retention_run').id,
+            'domain_force': "[('id', '=', 0)]", 'perm_read': False, 'perm_write': True,
+            'perm_create': False, 'perm_unlink': False})
+        self.assertEqual(run.read(['state'])[0]['state'], 'preview')
+        with self.assertRaises(AccessError):
+            run.write({'confirmation_checked': True})
 
     def test_shared_inverse_hold_and_external_reference_are_protected(self):
         message, _, _ = self._file()
@@ -165,6 +206,10 @@ class BWorkRetentionCase(RetentionFixtures, TransactionCase):
         wizard.sudo()._transient_clean_rows_older_than(3600)
         self.env.cr.execute('SELECT id FROM baseer_bwork_retention_wizard WHERE id=ANY(%s)', [(fresh | aged).ids])
         self.assertEqual([row[0] for row in self.env.cr.fetchall()], [fresh.id])
+        self.reader.sudo().write({'group_ids': [Command.link(self.manager.id), Command.link(self.retention_group.id)]})
+        with self.assertRaises(AccessError):
+            fresh.with_user(self.reader).read(['company_id'])
+        self.assertFalse(wizard.with_user(self.reader).search([('id', '=', fresh.id)]))
         with self.assertRaises(AccessError):
             fresh.sudo().read(['company_id'])
         with self.assertRaises(AccessError):
@@ -340,12 +385,15 @@ class BWorkRetentionCase(RetentionFixtures, TransactionCase):
 class BWorkRetentionHttpCase(RetentionFixtures, HttpCase):
     def test_reconcile_http_csrf_revision_permissions_and_no_content_leak(self):
         message, _, _ = self._file()
+        payload = {'api_version': 2, 'membership_id': self.member.id,
+                   'content_revision': 0, 'media_ids': [message.media_id.id]}
+        self.assertEqual(self.source._v2_content_state(self.room.id, payload)['items'][0]['state'], 'live')
         self.authenticate(self.reader.login, self.password)
         bootstrap = self.url_open('/bchat/api/v2/bootstrap').json()
         self.assertEqual(bootstrap['capabilities']['retention_version'], 1)
         path = '/bchat/api/v2/rooms/%s/content-state' % self.room.id
-        payload = {'api_version': 2, 'membership_id': self.member.id,
-                   'content_revision': 0, 'media_ids': [message.media_id.id]}
+        gallery = self.url_open('/bchat/api/v2/rooms/%s/media' % self.room.id).json()
+        self.assertIn(message.id, [row['id'] for row in gallery['items']])
         def request(value):
             return self.url_open(path, data={'csrf_token': bootstrap['csrf_token'], 'payload': json.dumps(value)})
         response = request(payload)

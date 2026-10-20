@@ -173,13 +173,20 @@ class BChatRetentionService(models.AbstractModel):
             raise error
         scope = [self.env.uid, room.company_id.id, room.id, member.id, revision, wire.ids_digest(ids)]
         start = wire.cursor_index(cursor, scope, len(ids))
-        media = self.env['baseer.bchat.media'].sudo().search([
-            ('id', 'in', ids[start:]), ('room_id', '=', room.id),
-            ('company_id', '=', room.company_id.id), ('state', '=', 'attached'),
-            ('retention_state', '=', 'active'), ('message_id', '>', member.joined_after_message_id),
-            ('message_id.retention_state', '=', 'active'),
-        ], limit=wire.MAX_IDS)
-        live = {m.id: m for m in media if m.message_id.media_id == m}
+        # Match the gallery's exact sparse association query, including both
+        # directions and both company/room fences. No history/receipt writes.
+        self.env['baseer.bchat.media'].flush_model()
+        self.env['baseer.bchat.message'].flush_model()
+        self.env.cr.execute('''SELECT media.id FROM baseer_bchat_media media
+            JOIN baseer_bchat_message message ON message.id=media.message_id AND message.media_id=media.id
+            WHERE media.id=ANY(%s) AND media.room_id=%s AND media.company_id=%s
+              AND message.room_id=%s AND message.company_id=%s AND message.id>%s
+              AND media.state='attached' AND media.retention_state='active'
+              AND message.retention_state='active' ORDER BY media.id LIMIT %s''',
+            [ids[start:], room.id, room.company_id.id, room.id, room.company_id.id,
+             member.joined_after_message_id, wire.MAX_IDS])
+        media = self.env['baseer.bchat.media'].sudo().browse([row[0] for row in self.env.cr.fetchall()])
+        live = {m.id: m for m in media}
         messages = list({m.message_id.id: m.message_id for m in live.values()}.values())
         names = self._v2_author_names(messages)
         canonical = {m['id']: m for m in self._v2_history_payload(messages, False, names)['messages']}

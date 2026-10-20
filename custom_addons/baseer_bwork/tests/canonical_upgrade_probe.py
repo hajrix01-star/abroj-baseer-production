@@ -9,6 +9,7 @@ not connect, commit, deploy or start any environment itself.
 import hashlib
 import importlib.util
 import json
+import re
 from pathlib import Path
 from uuid import uuid4
 from unittest.mock import patch
@@ -34,6 +35,36 @@ def _hash(value):
     return hashlib.sha256(json.dumps(value, sort_keys=True, default=str, separators=(',', ':')).encode()).hexdigest()
 
 
+def _derived_reference_state(env):
+    """Prove query-only native identity without executing the sales report."""
+    prototype = _prototype()
+    if 'sale.report' not in env:
+        env.cr.execute("SELECT 1 FROM ir_model_fields WHERE model='sale.report' AND name='order_reference'")
+        assert env.cr.fetchone() is None and not prototype._exists(env.cr, 'sale_report')
+        return {'installed': False}
+    mapping, _ = prototype.load_mapping()
+    classification, = mapping['reference_derived_nonphysical']
+    report = env['sale.report']
+    field = report._fields['order_reference']
+    metadata = env.ref(classification['field_xmlid'])
+    assert report._auto is False and report._table == classification['relation']
+    assert field.type == 'reference' and field.store is True
+    assert metadata.model == 'sale.report' and metadata.name == 'order_reference'
+    assert metadata.ttype == 'reference' and metadata.store is True
+    alias = env.ref('pos_sale.field_sale_report__order_reference', raise_if_not_found=False)
+    assert not alias or alias == metadata
+    assert not prototype._exists(env.cr, report._table)
+    assert prototype._column_type(env.cr, report._table, field.name) is None
+    query = report._table_query
+    query = query.code if hasattr(query, 'code') else str(query)
+    tags = sorted(set(re.findall(r"['\"]((?:[a-z_]+\.)+[a-z_]+)['\"]", query)))
+    assert tags and set(tags) <= set(classification['allowed_target_models'])
+    assert 'bchat' not in query and 'bwork' not in query
+    return {'installed': True, 'field_id': metadata.id, 'field_xmlid': classification['field_xmlid'],
+            'alias_id': alias.id if alias else None, 'auto': False, 'relation': report._table,
+            'relation_absent': True, 'column_absent': True, 'target_tags': tags}
+
+
 def _reference_state(env):
     """Native Reference storage metadata/opaque references, never action execution."""
     assert env['ir.actions.server']._table == 'ir_act_server'
@@ -44,14 +75,16 @@ def _reference_state(env):
     kind = _prototype()._column_type(env.cr, 'ir_act_server', 'resource_ref')
     assert kind == 'character varying'
     env.cr.execute('SELECT id,model_id,resource_ref FROM ir_act_server WHERE resource_ref IS NOT NULL ORDER BY id')
+    values = [list(row) for row in env.cr.fetchall()]
     return {'table': 'ir_act_server', 'type': kind, 'field': list(field[0]),
-            'values': [list(row) for row in env.cr.fetchall()]}
+            'values': values, 'derived': _derived_reference_state(env)}
 
 
 def _assert_reference_fixture(env, facts, *, old):
     current = _reference_state(env)
     expected = facts['reference']
     assert current['field'] == expected['field']
+    assert current['derived'] == expected['derived'], 'Derived reference identity/query/storage changed.'
     expected_rows = []
     for action_id, model_id, value in expected['values']:
         if not old and value.startswith('baseer.bchat.message,'):

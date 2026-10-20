@@ -7,6 +7,9 @@ ARCHITECTURAL محدود داخل محول الأسماء وخريطته وفح�
 التشغيل39411716388 فشل عند unsupported_reference_storage؛ جرد قاعدة Odoo19 اصطناعية
 أكد أن ir.actions.server.resource_ref مخزن في ir_act_server، لا ir_actions_server المشتق.
 الإصلاح يثبت مالك التخزين صراحةً مع بقاء unknown/identifier/type/collision STOP؛
+إعادة39414532775 كشفت sale.report.order_reference ذا store metadata لكن query مشتق بلا علاقة مادية؛
+إثبات ORM للصورة والـclosure المثبتين يحصر targets في sale.order/pos.order. التصنيف المقترح
+دقيق بالـXMLID وهوية الحقل وغياب العلاقة/العمود؛ أي اختلاف STOP، والأربعة المادية لا تُتخطى.
 اختبار RED/GREEN ثم إعادة rehearsal old→new/fresh/paired restore على مصدر مجمد.
 لا QA/Live/APK أو تخفيف حماية أو دمج في هذا التفويض. الأدلة الحية في
 output/bwork-reference-storage-fix-20261020/progress.json، والعقد الأصلي أدناه معاد استخدامه.

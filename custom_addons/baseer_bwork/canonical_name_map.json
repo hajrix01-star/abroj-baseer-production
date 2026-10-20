@@ -985,6 +985,15 @@
       "table": "ir_act_server"
     }
   ],
+  "reference_derived_nonphysical": [
+    {
+      "model": "sale.report",
+      "field": "order_reference",
+      "relation": "sale_report",
+      "field_xmlid": "sale.field_sale_report__order_reference",
+      "allowed_target_models": ["sale.order", "pos.order"]
+    }
+  ],
   "metadata_exact_columns": [
     [
       "ir_model",

@@ -234,7 +234,7 @@ class CanonicalConversionContract(unittest.TestCase):
         self.assertEqual(mapping['reference_storage_overrides'], [
             {'model': 'ir.actions.server', 'field': 'resource_ref', 'table': 'ir_act_server'}])
         cursor = Mock()
-        cursor.fetchall.return_value = [('ir.ui.menu', 'action'), ('ir.actions.server', 'resource_ref')]
+        cursor.fetchall.return_value = [(71, 'ir.ui.menu', 'action'), (72, 'ir.actions.server', 'resource_ref')]
         storage = {('ir_ui_menu', 'action'): 'character varying',
                    ('ir_act_server', 'resource_ref'): 'character varying'}
         names = {'baseer.bchat.message': 'baseer.bwork.message'}
@@ -255,12 +255,47 @@ class CanonicalConversionContract(unittest.TestCase):
                 ('ir.actions.server', 'unsafe;column', 'text', 'unsupported_reference_identifier')):
             with self.subTest(owner=owner, field=field, kind=kind):
                 cursor = Mock()
-                cursor.fetchall.return_value = [(owner, field)]
+                cursor.fetchall.return_value = [(73, owner, field)]
                 with patch.object(upgrade, '_column_type', return_value=kind):
                     with self.assertRaisesRegex(upgrade.MigrationStopped, code):
                         upgrade._reference_fields(cursor, names, mapping)
                 self.assertFalse(any(call.args[0].lstrip().startswith('UPDATE')
                                      for call in cursor.execute.call_args_list))
+
+    def test_derived_reference_requires_exact_native_field_and_absent_relation(self):
+        mapping, _ = upgrade.load_mapping()
+        classification = mapping['reference_derived_nonphysical'][0]
+        self.assertEqual(classification, {'model': 'sale.report', 'field': 'order_reference', 'relation': 'sale_report',
+                                         'field_xmlid': 'sale.field_sale_report__order_reference',
+                                         'allowed_target_models': ['sale.order', 'pos.order']})
+        identity = (907, 'sale.report', 'order_reference', 'reference', True)
+        cursor = Mock()
+        cursor.fetchall.side_effect = [[identity[:3]], [identity]]
+        with patch.object(upgrade, '_column_type', return_value=None), patch.object(upgrade, '_exists', return_value=False):
+            upgrade._reference_fields(cursor, {'baseer.bchat.message': 'baseer.bwork.message'}, mapping)
+        self.assertFalse(any(call.args[0].lstrip().startswith('UPDATE') for call in cursor.execute.call_args_list))
+        self.assertEqual(cursor.execute.call_args_list[-1].args[1], ['sale', 'field_sale_report__order_reference'])
+        for resolved in ([], [(908, *identity[1:])], [(907, 'other.model', *identity[2:])],
+                         [(907, 'sale.report', 'other_field', 'reference', True)],
+                         [(907, 'sale.report', 'order_reference', 'char', True)],
+                         [(907, 'sale.report', 'order_reference', 'reference', False)]):
+            with self.subTest(identity=resolved):
+                cursor = Mock()
+                cursor.fetchall.side_effect = [[identity[:3]], resolved]
+                with self.assertRaisesRegex(upgrade.MigrationStopped, 'unverified_derived_reference_identity'):
+                    upgrade._reference_fields(cursor, {}, mapping)
+        for relation, column in ((True, None), (False, 'character varying')):
+            with self.subTest(physical_relation=relation, physical_column=column):
+                cursor = Mock()
+                cursor.fetchall.side_effect = [[identity[:3]], [identity]]
+                with patch.object(upgrade, '_exists', return_value=relation), patch.object(upgrade, '_column_type', return_value=column):
+                    with self.assertRaisesRegex(upgrade.MigrationStopped, 'unexpected_derived_reference_storage'):
+                        upgrade._reference_fields(cursor, {}, mapping)
+        for invalid in (
+                dict(mapping, reference_derived_nonphysical=[classification, classification]),
+                dict(mapping, reference_storage_overrides=[{'model': 'sale.report', 'field': 'order_reference', 'table': 'sale_report'}])):
+            with self.assertRaisesRegex(upgrade.MigrationStopped, 'overlapping_reference_storage'):
+                upgrade._reference_fields(Mock(), {}, invalid)
 
     def test_identifier_rules_and_injection_rejection_match_official19(self):
         value = 'baseer_bchat_mobile_upload_grant_' + 'x' * 50

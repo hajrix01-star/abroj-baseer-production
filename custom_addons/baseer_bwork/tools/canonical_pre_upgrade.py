@@ -313,6 +313,23 @@ def _metadata_expressions(cr, mapping, names):
                 cr.execute(f'UPDATE {identifier(table)} SET {identifier(column)}=%s WHERE id=%s', [new, record_id])
 
 
+def _verify_derived_reference(cr, field_id, model, column, classification):
+    """One proven native query projection, never a generic missing-table skip."""
+    relation = classification['relation']
+    identifier(relation)
+    identifier(column)
+    module, name = classification['field_xmlid'].split('.', 1)
+    cr.execute('''SELECT f.id,f.model,f.name,f.ttype,f.store
+                    FROM ir_model_data d JOIN ir_model_fields f ON f.id=d.res_id
+                   WHERE d.module=%s AND d.name=%s AND d.model='ir.model.fields' ''', [module, name])
+    if cr.fetchall() != [(field_id, model, column, 'reference', True)]:
+        _stop('unverified_derived_reference_identity')
+    # to_regclass rejects tables AND views; a surprising new physical projection
+    # must be reviewed rather than silently left unconverted.
+    if _exists(cr, relation) or _column_type(cr, relation, column) is not None:
+        _stop('unexpected_derived_reference_storage')
+
+
 def _reference_fields(cr, model_names, mapping):
     # ir_model_fields does not expose a model's custom _table. Resolve only
     # catalog-proven owner+field exceptions; unknown storage must still STOP.
@@ -320,8 +337,14 @@ def _reference_fields(cr, model_names, mapping):
                  for row in mapping['reference_storage_overrides']}
     if len(overrides) != len(mapping['reference_storage_overrides']):
         _stop('duplicate_reference_storage')
-    cr.execute("SELECT model,name FROM ir_model_fields WHERE ttype='reference' AND store IS TRUE")
-    for model, column in cr.fetchall():
+    derived = {(row['model'], row['field']): row for row in mapping['reference_derived_nonphysical']}
+    if len(derived) != len(mapping['reference_derived_nonphysical']) or set(derived) & set(overrides):
+        _stop('overlapping_reference_storage')
+    cr.execute("SELECT id,model,name FROM ir_model_fields WHERE ttype='reference' AND store IS TRUE")
+    for field_id, model, column in cr.fetchall():
+        if (model, column) in derived:
+            _verify_derived_reference(cr, field_id, model, column, derived[(model, column)])
+            continue
         table = overrides.get((model, column), model_names.get(model, model).replace('.', '_'))
         if not _IDENTIFIER.fullmatch(table) or not _IDENTIFIER.fullmatch(column):
             _stop('unsupported_reference_identifier')

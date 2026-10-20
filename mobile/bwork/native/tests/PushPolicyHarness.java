@@ -5,6 +5,11 @@ public final class PushPolicyHarness {
     assert PushPolicy.valid(key,"chat","1");assert PushPolicy.valid(key,"task","2147483647");
     for(String value:new String[]{null,"","0","01","-1","2147483648","1?company_id=2","999999999999999999999"})assert !PushPolicy.valid(key,"chat",value);
     assert !PushPolicy.valid("different-account","chat","1");assert !PushPolicy.valid(key,"order","1");
+    assert PushPolicy.notificationUri(key,"chat","1").equals("bwork://notification/"+key+"/chat/1");
+    assert PushPolicy.notificationUri(key,"task","2147483647").equals("bwork://notification/"+key+"/task/2147483647");
+    for(String value:new String[]{null,"","0","01","-1","2147483648","1?company_id=2","999999999999999999999"})assert PushPolicy.notificationUri(key,"chat",value)==null;
+    for(String account:new String[]{null,"","different-account",key+"/task/1"})assert PushPolicy.notificationUri(account,"chat","1")==null;
+    for(String kind:new String[]{null,"","order","chat?company_id=2"})assert PushPolicy.notificationUri(key,kind,"1")==null;
     assert PushPolicy.bound(true,key,"authorized-scope",key,"chat","1");assert !PushPolicy.bound(false,key,"scope",key,"chat","1");assert !PushPolicy.bound(true,"other-account","scope",key,"chat","1");assert !PushPolicy.bound(true,key,"",key,"chat","1");
     java.util.List<String> seen=new java.util.ArrayList<>();seen=PushPolicy.nextSeen(seen,"chat:1");assert PushPolicy.nextSeen(seen,"chat:1")==null; // Dismissing a system alert does not clear dedupe.
     for(int i=2;i<200;i++)seen=PushPolicy.nextSeen(seen,"chat:"+i);assert seen.size()==128;assert PushPolicy.nextSeen(seen,"chat:199")==null;
@@ -19,6 +24,8 @@ public final class PushPolicyHarness {
     assert !PushCallbacks.commit(lock,heldA,()->epoch[0],()->true,()->{mutations[0]++;enabled[0]=true;return true;});
     assert token[0].equals("B")&&binding[0].equals("B")&&epoch[0]==3&&mutations[0]==0;
     assert PushPolicy.body(false,"chat").equals("You have a new message");assert PushPolicy.body(true,"task").equals("لديك تحديث في المهام");
+    System.out.println("URI_CHAT="+PushPolicy.notificationUri(key,"chat","1"));
+    System.out.println("URI_TASK="+PushPolicy.notificationUri(key,"task","2147483647"));
     System.out.println("PASS bounded generic native push policy");
   }
 }

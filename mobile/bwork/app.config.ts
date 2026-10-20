@@ -9,7 +9,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   return {
     name: trial ? 'BWork' : 'Chatwoot',
     slug: process.env.EXPO_PUBLIC_APP_SLUG || (trial ? 'bwork' : 'chatwoot-mobile'),
-    version: trial ? '0.1.31' : '4.9.11',
+    version: trial ? '0.1.32' : '4.9.11',
     orientation: 'portrait',
     icon: trial ? './assets/bwork/bwork-icon-1024.png' : './assets/icon.png',
     userInterfaceStyle: 'light',
@@ -34,7 +34,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       associatedDomains: trial ? [] : ['applinks:app.chatwoot.com'],
     },
     android: {
-      ...(trial ? { versionCode: 32 } : {}),
+      ...(trial ? { versionCode: 33 } : {}),
       ...(trial ? { allowBackup: false } : {}),
       adaptiveIcon: { foregroundImage: trial ? './assets/bwork/bwork-adaptive-1024.png' : './assets/adaptive-icon.png', backgroundColor: '#ffffff' },
       package: trial ? target.applicationId : 'com.chatwoot.app',

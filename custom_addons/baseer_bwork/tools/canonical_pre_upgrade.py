@@ -671,8 +671,13 @@ def migrate(cr, installed_version):
                [LEDGER_KEY, json.dumps(result, sort_keys=True, separators=(',', ':'))])
 
 
-def _verify_canonical(cr, mapping):
-    """Read-only structural proof; a ledger alone never authorizes loading."""
+def _verify_canonical(cr, mapping, *, fresh_core_only=False):
+    """Read-only proof; the core post-init cannot attest later sibling loads.
+
+    Only fresh attestation narrows required NEW field presence to loaded core.
+    Old fields/columns and residual identifiers are always rejected globally.
+    Default verification still checks every installed/upgrading/planned owner.
+    """
     _safety(cr, mapping)
     _residual_schema(cr, mapping, canonical=True)
     for row in mapping['models']:
@@ -690,7 +695,9 @@ def _verify_canonical(cr, mapping):
             'bchat_can_order', 'bchat_order_operator_eligible', 'bchat_room_id', 'bchat_message_id') else 'baseer_bwork'
         cr.execute('SELECT state FROM ir_module_module WHERE name=%s', [owner])
         module = cr.fetchone()
-        if module and module[0] in ('installed', 'to upgrade', 'to install'):
+        required = owner == 'baseer_bwork' if fresh_core_only else (
+            module and module[0] in ('installed', 'to upgrade', 'to install'))
+        if required:
             cr.execute('SELECT 1 FROM ir_model_fields WHERE model=%s AND name=%s LIMIT 1', [row['model'], row['new']])
             if not cr.fetchone() or (row['stored'] and not _exists(cr, row['table'], row['new'])):
                 _stop('canonical_field_missing')
@@ -710,7 +717,7 @@ def attest_fresh(cr):
     """
     mapping, digest = load_mapping()
     cr.execute('SELECT pg_advisory_xact_lock(hashtextextended(%s,0))', [LOCK_KEY])
-    _verify_canonical(cr, mapping)
+    _verify_canonical(cr, mapping, fresh_core_only=True)
     cr.execute('SELECT 1 FROM ir_config_parameter WHERE key=%s', [LEDGER_KEY])
     if cr.fetchone():
         _stop('fresh_ledger_already_exists')

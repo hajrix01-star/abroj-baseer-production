@@ -262,6 +262,68 @@ class CanonicalConversionContract(unittest.TestCase):
         self.assertNotIn('group_ids', hook)
         self.assertNotIn('retention_ready', hook)
 
+    def test_fresh_attestation_only_requires_loaded_core_but_final_verify_requires_pending_siblings(self):
+        mapping, _ = upgrade.load_mapping()
+        core_fields = {row['new'] for row in mapping['fields'] if not (
+            row['old'].startswith('bchat_order') or row['old'] in (
+                'bchat_can_order', 'bchat_room_id', 'bchat_message_id'))}
+        tables = {row['new_table'] for row in mapping['models'] if row['new_table']}
+
+        def catalog(*, procurement_loaded=False, missing_core=False, state='to install'):
+            cursor = Mock()
+            cursor.ledger = None
+
+            def execute(query, params=None):
+                cursor.fetchone.return_value = None
+                cursor.fetchall.return_value = []
+                if query.startswith('SELECT id,model FROM ir_model '):
+                    cursor.fetchall.return_value = [(1, params[0][1])]
+                elif query.startswith('SELECT 1 FROM ir_model_fields '):
+                    field = params[1]
+                    if field in core_fields and not missing_core or procurement_loaded and field.startswith('bwork_'):
+                        cursor.fetchone.return_value = (1,)
+                elif query.startswith('SELECT state FROM ir_module_module '):
+                    cursor.fetchone.return_value = (state,)
+                elif query.startswith('SELECT id,state FROM ir_module_module '):
+                    cursor.fetchone.return_value = (7, 'to install')
+                elif query.startswith('SELECT to_regclass('):
+                    cursor.fetchone.return_value = (100 + sorted(tables).index(params[0]),)
+                elif query.startswith('INSERT INTO ir_config_parameter('):
+                    cursor.ledger = json.loads(params[1])
+
+            def exists(_cursor, table, column=None):
+                return table in tables if column is None else column in core_fields and not missing_core or (
+                    procurement_loaded and column is not None and column.startswith('bwork_'))
+
+            cursor.execute.side_effect = execute
+            return cursor, exists
+
+        cursor, exists = catalog()
+        with patch.object(upgrade, '_safety') as safety, patch.object(upgrade, '_residual_schema') as residual, \
+                patch.object(upgrade, '_column_type', return_value=None), patch.object(upgrade, '_exists', side_effect=exists):
+            upgrade.attest_fresh(cursor)
+        self.assertEqual(cursor.ledger['scope'], ['baseer_bwork'])
+        self.assertEqual(cursor.ledger['modules'], {'baseer_bwork': 7})
+        safety.assert_called_once_with(cursor, mapping)
+        residual.assert_called_once_with(cursor, mapping, canonical=True)
+        for state in ('installed', 'to upgrade', 'to install'):
+            with self.subTest(final_state=state):
+                cursor, exists = catalog(state=state)
+                with patch.object(upgrade, '_safety'), patch.object(upgrade, '_residual_schema'), \
+                        patch.object(upgrade, '_column_type', return_value=None), patch.object(upgrade, '_exists', side_effect=exists):
+                    with self.assertRaisesRegex(upgrade.MigrationStopped, 'canonical_field_missing'):
+                        upgrade._verify_canonical(cursor, mapping)
+                cursor, exists = catalog(procurement_loaded=True, state=state)
+                with patch.object(upgrade, '_safety'), patch.object(upgrade, '_residual_schema'), \
+                        patch.object(upgrade, '_column_type', return_value=None), patch.object(upgrade, '_exists', side_effect=exists):
+                    upgrade._verify_canonical(cursor, mapping)
+        cursor, exists = catalog(missing_core=True)
+        with patch.object(upgrade, '_safety'), patch.object(upgrade, '_residual_schema'), \
+                patch.object(upgrade, '_column_type', return_value=None), patch.object(upgrade, '_exists', side_effect=exists):
+            with self.assertRaisesRegex(upgrade.MigrationStopped, 'canonical_field_missing'):
+                upgrade.attest_fresh(cursor)
+        self.assertIsNone(cursor.ledger)
+
 
 if __name__ == '__main__':
     unittest.main()

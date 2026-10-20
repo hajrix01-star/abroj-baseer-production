@@ -978,6 +978,13 @@
     ],
     "opaque": "Never rewrite row IDs, UUIDs, payload digests, stored bytes, account_key, staged/grant/push identity or historical audit text."
   },
+  "reference_storage_overrides": [
+    {
+      "model": "ir.actions.server",
+      "field": "resource_ref",
+      "table": "ir_act_server"
+    }
+  ],
   "metadata_exact_columns": [
     [
       "ir_model",

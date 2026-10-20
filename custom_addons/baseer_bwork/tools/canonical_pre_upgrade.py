@@ -313,10 +313,16 @@ def _metadata_expressions(cr, mapping, names):
                 cr.execute(f'UPDATE {identifier(table)} SET {identifier(column)}=%s WHERE id=%s', [new, record_id])
 
 
-def _reference_fields(cr, model_names):
+def _reference_fields(cr, model_names, mapping):
+    # ir_model_fields does not expose a model's custom _table. Resolve only
+    # catalog-proven owner+field exceptions; unknown storage must still STOP.
+    overrides = {(row['model'], row['field']): row['table']
+                 for row in mapping['reference_storage_overrides']}
+    if len(overrides) != len(mapping['reference_storage_overrides']):
+        _stop('duplicate_reference_storage')
     cr.execute("SELECT model,name FROM ir_model_fields WHERE ttype='reference' AND store IS TRUE")
     for model, column in cr.fetchall():
-        table = model_names.get(model, model).replace('.', '_')
+        table = overrides.get((model, column), model_names.get(model, model).replace('.', '_'))
         if not _IDENTIFIER.fullmatch(table) or not _IDENTIFIER.fullmatch(column):
             _stop('unsupported_reference_identifier')
         kind = _column_type(cr, table, column)
@@ -646,7 +652,7 @@ def migrate(cr, installed_version):
     _xmlids(cr, mapping, module_names, model_names, field_names)
     for table, column in mapping['metadata_exact_columns']:
         _rename_exact_column_values(cr, table, column, model_names)
-    _reference_fields(cr, model_names)
+    _reference_fields(cr, model_names, mapping)
     names = {**model_names, **module_names, **mapping['identifiers'],
              **{x['old']: x['new'] for x in mapping['xmlids']}}
     for fields in field_names.values():

@@ -1,5 +1,16 @@
 # سجل معمارية بصير أودو
 
+## BCR-REF-20261020 — إصلاح مالك تخزين Reference (اختبار معزول فقط)
+
+الأساس المدموج6babe78a/tree076858e7؛ الفرعcodex/bwork-reference-storage-fix-20261020.
+ARCHITECTURAL محدود داخل محول الأسماء وخريطته وفحوصه، لا تغيير API أو تطبيق أو أدوار.
+التشغيل39411716388 فشل عند unsupported_reference_storage؛ جرد قاعدة Odoo19 اصطناعية
+أكد أن ir.actions.server.resource_ref مخزن في ir_act_server، لا ir_actions_server المشتق.
+الإصلاح يثبت مالك التخزين صراحةً مع بقاء unknown/identifier/type/collision STOP؛
+اختبار RED/GREEN ثم إعادة rehearsal old→new/fresh/paired restore على مصدر مجمد.
+لا QA/Live/APK أو تخفيف حماية أو دمج في هذا التفويض. الأدلة الحية في
+output/bwork-reference-storage-fix-20261020/progress.json، والعقد الأصلي أدناه معاد استخدامه.
+
 ## BCR-20261020 — توحيد BChat داخليًا إلى BWork (مرشح مصدر محلي)
 
 الأساس3b0feb1 ومصدر QA المثبتd989a711؛ الفرعcodex/bwork-canonical-rename-20261020.

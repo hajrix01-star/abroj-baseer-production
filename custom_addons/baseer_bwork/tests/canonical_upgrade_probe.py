@@ -34,6 +34,36 @@ def _hash(value):
     return hashlib.sha256(json.dumps(value, sort_keys=True, default=str, separators=(',', ':')).encode()).hexdigest()
 
 
+def _reference_state(env):
+    """Native Reference storage metadata/opaque references, never action execution."""
+    assert env['ir.actions.server']._table == 'ir_act_server'
+    env.flush_all()
+    env.cr.execute("SELECT id,ttype,store FROM ir_model_fields WHERE model='ir.actions.server' AND name='resource_ref'")
+    field = env.cr.fetchall()
+    assert len(field) == 1 and field[0][1:] == ('reference', True)
+    kind = _prototype()._column_type(env.cr, 'ir_act_server', 'resource_ref')
+    assert kind == 'character varying'
+    env.cr.execute('SELECT id,model_id,resource_ref FROM ir_act_server WHERE resource_ref IS NOT NULL ORDER BY id')
+    return {'table': 'ir_act_server', 'type': kind, 'field': list(field[0]),
+            'values': [list(row) for row in env.cr.fetchall()]}
+
+
+def _assert_reference_fixture(env, facts, *, old):
+    current = _reference_state(env)
+    expected = facts['reference']
+    assert current['field'] == expected['field']
+    expected_rows = []
+    for action_id, model_id, value in expected['values']:
+        if not old and value.startswith('baseer.bchat.message,'):
+            value = 'baseer.bwork.message,' + value.split(',', 1)[1]
+        expected_rows.append([action_id, model_id, value])
+    assert current['values'] == expected_rows, 'Reference IDs/storage/value suffix changed.'
+    for action_id, _, value in expected_rows:
+        target_model, target_id = value.split(',', 1)
+        reference = env['ir.actions.server'].browse(action_id).resource_ref
+        assert reference._name == target_model and reference.id == int(target_id)
+
+
 def _snapshot(env, old):
     prototype = _prototype()
     mapping, _ = prototype.load_mapping()
@@ -83,6 +113,10 @@ def _snapshot(env, old):
     result['constraint_shapes'] = sorted([objects.get(table, table), objects.get(name, name),
                                           prototype._expression(definition, names)]
                                          for table, name, definition in shape_rows)
+    result['references'] = _reference_state(env)
+    for row in result['references']['values']:
+        target, separator, suffix = row[2].partition(',')
+        row[2] = model_map.get(target, target) + separator + suffix
     return result
 
 
@@ -123,12 +157,20 @@ def prepare_legacy(env):
     grant = service._v2_issue_mobile_upload_grant(room.id, grant_metadata)
     env['mail.message'].create({'model': 'baseer.bchat.message', 'res_id': text_ack['message_id'],
                                 'body': 'BCR literal baseer.bchat.message remains historical content'})
+    message_model = env['ir.model']._get('baseer.bchat.message')
+    # Native custom-table Reference plus unrelated control. Never run either action.
+    for target in ('baseer.bchat.message,%s' % text_ack['message_id'], 'res.users,%s' % admin.id):
+        env['ir.actions.server'].create({'name': 'BCR synthetic inert reference', 'model_id': message_model.id,
+                                         'state': 'code', 'code': 'pass', 'resource_ref': target})
     env.flush_all()
     facts = {'room_id': room.id, 'company_id': company.id, 'member_id': member.id,
              'admin_id': admin.id, 'stranger_id': stranger.id, 'text_payload': text_payload,
              'text_ack': text_ack, 'media_payload': media_payload, 'media_ack': media_ack,
              'media_id': staged['media_id'], 'stage_id': stage['media_id'], 'grant_id': grant['grant_id'],
-             'bytes_sha256': hashlib.sha256(raw).hexdigest(), 'snapshot': _snapshot(env, True)}
+             'bytes_sha256': hashlib.sha256(raw).hexdigest(), 'reference': _reference_state(env),
+             'snapshot': _snapshot(env, True)}
+    assert any(row[2] == 'baseer.bchat.message,%s' % text_ack['message_id'] for row in facts['reference']['values'])
+    _assert_reference_fixture(env, facts, old=True)
     # Synthetic non-secret fixture metadata only. Never store the grant secret.
     env['ir.config_parameter'].sudo().create({'key': FIXTURE_KEY, 'value': json.dumps(facts, default=str)})
     return {'fixture': 'BCR_SYNTHETIC_ONLY', 'prepared': True, 'snapshot_sha256': _hash(facts['snapshot'])}
@@ -139,6 +181,7 @@ def exercise_legacy_rollback(env):
     _guard(env)
     prototype = _prototype()
     before = _snapshot(env, True)
+    reference_before = _reference_state(env)
     class InjectedFailure(Exception):
         pass
     try:
@@ -151,6 +194,7 @@ def exercise_legacy_rollback(env):
         raise AssertionError('Failure seam was not reached.')
     env.invalidate_all()
     assert _snapshot(env, True) == before
+    assert _reference_state(env) == reference_before
     return {'rollback_after_ddl': 'PASS', 'old_source_identity_unchanged': True}
 
 
@@ -162,6 +206,7 @@ def verify_upgraded(env):
     assert value, 'Synthetic old-install fixture is required.'
     facts = json.loads(value)
     assert _snapshot(env, False) == facts['snapshot'], 'Lineage changed during real registry upgrade.'
+    _assert_reference_fixture(env, facts, old=False)
     assert prototype.verify_transition(env.cr)['transition_lineage'] == 'PASS'
     service = env['baseer.bwork.service'].with_user(facts['admin_id']).with_company(facts['company_id'])
     assert service._v2_send(facts['room_id'], facts['text_payload']) == facts['text_ack']
@@ -325,6 +370,7 @@ def verify_legacy_restored(env):
     _guard(env)
     from odoo.exceptions import AccessError
     facts = _facts(env)
+    _assert_reference_fixture(env, facts, old=True)
     expected = facts['snapshot']
     actual = _snapshot(env, True)
     for value in (expected, actual):

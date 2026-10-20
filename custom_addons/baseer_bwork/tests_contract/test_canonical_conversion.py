@@ -229,6 +229,39 @@ class CanonicalConversionContract(unittest.TestCase):
         self.assertEqual(upgrade.rewrite_metadata('body contains baseer.bchat.message', names), 'body contains baseer.bchat.message')
         self.assertEqual(upgrade.rewrite_metadata({'en_US': xml}, names, xml=True)['en_US'], rewritten)
 
+    def test_reference_storage_resolves_native_nondefault_table_without_skipping_fields(self):
+        mapping, _ = upgrade.load_mapping()
+        self.assertEqual(mapping['reference_storage_overrides'], [
+            {'model': 'ir.actions.server', 'field': 'resource_ref', 'table': 'ir_act_server'}])
+        cursor = Mock()
+        cursor.fetchall.return_value = [('ir.ui.menu', 'action'), ('ir.actions.server', 'resource_ref')]
+        storage = {('ir_ui_menu', 'action'): 'character varying',
+                   ('ir_act_server', 'resource_ref'): 'character varying'}
+        names = {'baseer.bchat.message': 'baseer.bwork.message'}
+        with patch.object(upgrade, '_column_type', side_effect=lambda _cr, table, column: storage.get((table, column))):
+            upgrade._reference_fields(cursor, names, mapping)
+        updates = [call for call in cursor.execute.call_args_list if call.args[0].lstrip().startswith('UPDATE')]
+        self.assertEqual(len(updates), 2)
+        self.assertIn('UPDATE "ir_ui_menu" SET "action"', updates[0].args[0])
+        self.assertIn('UPDATE "ir_act_server" SET "resource_ref"', updates[1].args[0])
+        self.assertTrue(all(call.args[1] == ['baseer.bwork.message', len('baseer.bchat.message') + 1,
+                                            'baseer.bchat.message'] for call in updates))
+        self.assertTrue(all("split_part(" in call.args[0] for call in updates))
+        for owner, field, kind, code in (
+                ('unknown.custom.owner', 'reference', None, 'unsupported_reference_storage'),
+                ('ir.actions.server', 'other_reference', None, 'unsupported_reference_storage'),
+                ('ir.actions.server', 'resource_ref', None, 'unsupported_reference_storage'),
+                ('ir.actions.server', 'resource_ref', 'integer', 'unsupported_reference_type'),
+                ('ir.actions.server', 'unsafe;column', 'text', 'unsupported_reference_identifier')):
+            with self.subTest(owner=owner, field=field, kind=kind):
+                cursor = Mock()
+                cursor.fetchall.return_value = [(owner, field)]
+                with patch.object(upgrade, '_column_type', return_value=kind):
+                    with self.assertRaisesRegex(upgrade.MigrationStopped, code):
+                        upgrade._reference_fields(cursor, names, mapping)
+                self.assertFalse(any(call.args[0].lstrip().startswith('UPDATE')
+                                     for call in cursor.execute.call_args_list))
+
     def test_identifier_rules_and_injection_rejection_match_official19(self):
         value = 'baseer_bchat_mobile_upload_grant_' + 'x' * 50
         self.assertEqual(upgrade.pg_name(value), value[:54] + '_' + f'{crc32(value.encode()):08x}')

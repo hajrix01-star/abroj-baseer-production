@@ -97,7 +97,7 @@ class BWorkReceiptCase(TransactionCase):
         excluded = Order.with_company(self.company).create([{
             'company_id': self.company.id, 'warehouse_id': self.warehouse.id,
             'requester_id': self.operator.id, 'source_channel': channel, 'state': state,
-        } for channel, state in [('odoo', 'sent'), ('bwork', 'draft'), ('bwork', 'cancel')]])
+        } for channel, state in [('odoo', 'sent'), (LEGACY_SOURCE_CHANNEL, 'draft'), (LEGACY_SOURCE_CHANNEL, 'cancel')]])
         first = self.service._v2_receipts_all()
         second = self.service._v2_receipts_all(first['next_before_id'])
         ids = [row['id'] for row in first['orders'] + second['orders']]

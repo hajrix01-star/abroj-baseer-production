@@ -1,6 +1,6 @@
 {
     'name': 'Baseer BWork Leadership Dashboard',
-    'version': '19.0.1.0.1',
+    'version': '19.0.1.1.0',
     'author': 'Baseer',
     'license': 'LGPL-3',
     'category': 'Reporting',

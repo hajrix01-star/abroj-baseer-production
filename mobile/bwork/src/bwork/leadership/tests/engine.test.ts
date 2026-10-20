@@ -5,6 +5,23 @@ import { optionsResponse, reportResponse } from '../validation.ts';
 import { identity, money, options, report } from './fixtures.ts';
 const waiting = () => { let resolve!: (value: unknown) => void, reject!: (error: unknown) => void; const promise = new Promise((a, b) => { resolve = a; reject = b; }); return { promise, resolve, reject }; };
 const validReport = (...args: Parameters<typeof report>) => { const r = report(...args); r.overview.current_month.sales = money('999.99'); return r; };
+
+test('combined spending v2 requires server breakdown and rejects legacy bill-only payloads', () => {
+  const opts = optionsResponse(options, identity), raw = validReport();
+  raw.overview.spending = money('999.91');
+  (raw.overview.spending_breakdown as any).private_source_ids = [88];
+  const decoded = reportResponse(raw, { month: '2026-10', period: 'month' }, opts);
+  assert.equal(decoded.overview.spending.value, '999.91'); // Display server total, never recompute in JS.
+  assert.equal(decoded.overview.spending_breakdown.purchases.value, '16000.00');
+  assert.equal(decoded.overview.spending_breakdown.operating.value, '4000.00');
+  assert.equal('private_source_ids' in decoded.overview.spending_breakdown, false);
+  assert.throws(() => optionsResponse({ ...options, leadership_version: 1 }, identity));
+  for (const mutate of [(r: any) => r.leadership_version = 1, (r: any) => delete r.overview.spending_breakdown,
+    (r: any) => r.overview.spending_breakdown.operating.value = 4]) {
+    const invalid = validReport(); mutate(invalid);
+    assert.throws(() => reportResponse(invalid, { month: '2026-10', period: 'month' }, opts));
+  }
+});
 test('strict wire decoder preserves server decimals/displays and strips unknown data', () => {
   const raw = validReport(); (raw as any).private_source_ids = [77];
   const result = reportResponse(raw, { month: '2026-10', period: 'month' }, optionsResponse(options, identity));

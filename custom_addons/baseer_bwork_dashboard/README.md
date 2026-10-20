@@ -8,7 +8,7 @@ canonical unified-sales day adapter and exact day Amount fields in this change**
 and `baseer_purchase_expense_dashboard`. Install/update these together in an
 isolated database before enabling `res.users.bwork_dashboard_view` for a user.
 The default is false; administrators control it. Effective permissions and
-bootstrap expose the optional `dashboard_view`/`leadership_version=1` fields.
+bootstrap expose the optional `dashboard_view`/`leadership_version=2` fields.
 Ordinary published-dashboard, group, company, source-model and target read access
 is still required, and financial reads never use sudo. Only the user's protected
 switch read follows BWork's existing narrowly scoped sudo pattern. No new model
@@ -37,10 +37,16 @@ Daily series and targets call `get_baseer_heat_calendar`, in the same request
 transaction and clean single-company Riyadh context. Selected/current/prior
 headline totals are explicitly reconciled against the corresponding central heat
 daily money, including current/future records; any mismatch fails the report.
-Supplier spending calls only
-the native private access/domain/totals seams: gross posted supplier bills less
-supplier credits in company currency, not ledger OPEX. The difference is not
-profit or cash flow. Monetary aggregates and ratios use Decimal/HALF_UP and
+Spending version2 combines posted gross supplier bills less credits by invoice
+date, including foreign source documents at their native posted SAR company
+amount, with non-bill operating expense balances by accounting date. Its required
+`spending_breakdown` contains purchases and operating Amounts; their sum equals
+the existing spending Amount. Payroll contributes expense lines, not net pay,
+payments, advances or source-screen totals. Depreciation and proven stock COGS
+are excluded under the purchases-at-recording basis; unsupported direct-cost,
+asset-cost adjustments and bill-target entry reversals fail closed. All supplier
+bill moves are globally outside operating, regardless of date/currency. The
+difference is not profit or cash flow. Monetary aggregates and ratios use Decimal/HALF_UP and
 English-digit two-decimal strings. No arbitrary source actions/IDs are returned.
 
 All-company explicit target requires a target in every requested company,
@@ -56,9 +62,12 @@ requires at least seven complete observations, and is unavailable with any gap.
 
 ## Isolated verification
 
-No real Odoo ORM/HTTP tests have been executed in this workspace because a local
-Odoo/PostgreSQL runtime is unavailable. Compilation and pure contract checks are
-not financial, QA or live parity evidence. `python tests/run_contract_checks.py`
+The original local C1 handoff did not have an available Odoo/PostgreSQL runtime;
+its compilation and pure checks were not ORM/HTTP acceptance. Current BCS runtime
+execution and results belong to `docs/build-governance/BWORK-COMBINED-SPENDING-20261020.md`
+and `output/bwork-spending-discovery-20261020/`, and remain pending until their
+actual isolated run completes. Source or pure checks are not financial QA/Live
+parity evidence. `python tests/run_contract_checks.py`
 runs the three pure contracts tests without Odoo. `python tests/wire_fixture.py`
 prints a synthetic JSON fixture through the real producer methods for mobile
 decoder interoperability; its source seams intentionally do not exercise source
@@ -78,3 +87,32 @@ all-company target completeness and combined draft-summary budget. HttpCase test
 exercise sessions, options/no-store, strict requests and unauthenticated access.
 These fixtures may write **only inside the isolated test transaction/database**.
 QA/live financial parity and AR/EN native rendering remain separate acceptance.
+
+## Combined-spending source guard
+
+The existing request budget is shared with the new bounded financial/provenance
+reads across all companies and merged periods. Fixed-table COUNT-only coverage
+queries on at most1000 already-authorized move IDs check bill AML completeness
+and the proven stock_account19 `stock_move.account_move_id` relation. Their
+subqueries stop at remaining-budget+1. They return no hidden IDs or amounts;
+native nonzero coverage must equal the caller-secured count before any field
+materialization. Zero stock provenance requires no unused stock role. Every
+financial/provenance read is limited to1000 rows, uses ordinary access and field
+checks, and only contributing operating lines traverse optional HR expense links.
+No sudo, ACL grant, monetary SQL, persisted report table or financial write is
+introduced. Leadership2 invalidates old client/snapshot semantics through the
+existing strict version decoder, without cache/control/outbox wipe.
+
+Entry-reversal ancestors receive the same bounded, ordinary-access stock
+coverage check. An unsupported valuation ancestor fails generically instead of
+counting a negative operating leg whose original cost was excluded. Ordinary
+non-stock operating reversals remain signed operating balances. No special
+direct-cost or mixed-asset payroll exception is admitted in this release: those
+unproven cases fail closed; ordinary expense-side salary balances remain included.
+
+`TestCombinedSpendingOrm` in tests/test_spending.py adds native posted-document,
+company-currency, partition/refund/tax/period, source-link/rule and budget cases.
+Its isolated runtime profile additionally installs hr_expense and stock_account;
+plain accounting-only and separately stock-authorized users are distinct. Test
+execution and financial/ordinary-role acceptance are recorded in the BCS release
+evidence, not inferred from this source description or the synthetic wire fixture.

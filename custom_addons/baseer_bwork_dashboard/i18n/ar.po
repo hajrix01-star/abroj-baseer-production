@@ -95,5 +95,5 @@ msgstr "من %(first)s إلى %(last)s مقارنة بالفترة من %(prior_
 
 #. module: baseer_bwork_dashboard
 #: code:addons/baseer_bwork_dashboard/models/leadership.py:0
-msgid "Posted supplier bills less supplier credits, gross including VAT, company currency only. Sales less supplier bills is a difference, not profit or cash flow."
-msgstr "فواتير الموردين المرحلة بعد خصم إشعاراتهم الدائنة، شاملة الضريبة وبعملة الشركة فقط. طرح فواتير الموردين من المبيعات يمثل فرقًا، وليس ربحًا أو تدفقًا نقديًا."
+msgid "Posted supplier bills less credits including their tax, plus non-bill operating expense balances in company currency. Depreciation and inventory cost already represented by purchases are excluded. This difference is not profit or cash flow."
+msgstr "فواتير الموردين المرحلة بعد خصم إشعاراتهم الدائنة، شاملة ضريبتها، مع أرصدة مصروفات التشغيل غير المسجلة بفواتير وبعملة الشركة. يُستبعد الإهلاك وتكلفة المخزون المحتسبة ضمن المشتريات. هذا الفرق ليس ربحًا أو تدفقًا نقديًا."

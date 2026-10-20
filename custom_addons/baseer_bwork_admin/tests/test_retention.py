@@ -7,7 +7,7 @@ from unittest.mock import patch
 from uuid import uuid4
 
 from odoo import Command, fields, api, sql_db
-from odoo.exceptions import AccessError, ValidationError
+from odoo.exceptions import AccessError, ValidationError, UserError
 from odoo.tests import HttpCase, TransactionCase, tagged
 from odoo.addons.baseer_bchat.contracts import ProtocolError
 from odoo.addons.baseer_bchat.models.retention import _READY_KEY, _RETENTION_TOKEN
@@ -127,6 +127,16 @@ class BWorkRetentionCase(RetentionFixtures, TransactionCase):
         policy = ordinary.env['baseer.bwork.retention.policy'].create({'company_id': self.company.id})
         wizard = ordinary.env['baseer.bwork.retention.wizard'].create({'company_id': self.company.id})
         records = [policy, wizard, delegated_run, delegated_run.item_ids, delegated_run.audit_ids]
+        self.assertFalse(delegated.has_group('base.group_allow_export'))
+        for record in records:
+            record.read(['company_id'])  # Retention authority is valid already.
+            with self.assertRaises(UserError) as denied:
+                record.export_data(['id'])
+            self.assertIs(type(denied.exception), UserError)  # Native export-role denial, not AccessError.
+        # Explicit fixture capability only: no module ACL/group definition or
+        # production actor is changed. Keep native export authorization intact.
+        delegated.sudo().write({'group_ids': [Command.link(self.env.ref('base.group_allow_export').id)]})
+        self.assertTrue(delegated.has_group('base.group_allow_export'))
         for record in records:
             self.assertTrue(record)
             record.read(['company_id'])  # Warm metadata before every negative.

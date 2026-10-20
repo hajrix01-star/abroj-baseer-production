@@ -43,6 +43,7 @@ export interface GroupAvatarAck { api_version: 2; room_id: number; avatar_versio
 export interface Message {
   id: number; author_user_id: number; author_name: string; text: string; created_at: string;
   delivery_state?: string; read_at?: string | null; media?: Record<string, unknown>; reply?: Record<string, unknown>;
+  content_removed?: boolean; media_removed?: boolean;
 }
 export interface History { api_version: 2; messages: Message[]; next_before_id: number | null;
   archive?: { older: ArchiveEdge; newer: ArchiveEdge; partial: boolean; browsing: boolean; latestId: number | null; unverified?: boolean } }

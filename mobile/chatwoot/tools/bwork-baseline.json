@@ -205,7 +205,9 @@
     {"id":"brt-marker-write-failure","description":"فشل كتابة علامة الحجب لا يبقي صلاحية عرض المحتوى القديم","suite":"test:odoo","test":"higher revision marker write failure removes stale ready authority before offline restart"},
     {"id":"brt-media-role-revocation","description":"سحب الوسائط يحفظ هوية النص والطابور ويصالح الملفات عند عودة الصلاحية","suite":"test:odoo","test":"native retention media revocation keeps plaintext queue and text authority without media HTTP then reconciles on same revision regrant"},
     {"id":"brt-monotonic-overlap","description":"طلب الغرف المتأخر لا يخفض حاجز الحذف ولا يمنح عرضًا قديمًا","suite":"test:odoo","test":"held old room refresh cannot lower a newer observed revision or commit old ready authority"},
-    {"id":"brt-marker-read-failure","description":"تعذر قراءة علامة الحجب يعزل الغرفة ولا يمس هوية الأوفلاين أو طابور النص","suite":"test:odoo","test":"unreadable content marker quarantines room without purging offline identity plaintext queue or lease"}
+    {"id":"brt-marker-read-failure","description":"تعذر قراءة علامة الحجب يعزل الغرفة ولا يمس هوية الأوفلاين أو طابور النص","suite":"test:odoo","test":"unreadable content marker quarantines room without purging offline identity plaintext queue or lease"},
+    {"id":"brt-wire-tombstone-ack","description":"المحتوى المحذوف وإقرار UUID القديم لا يعيدان النص ولا يحذفان إرسالًا جديدًا","suite":"test:odoo","test":"exact server tombstones and removed replay ACK preserve canonical IDs without resurrecting queued content or deleting a newer unsent stage"},
+    {"id":"brt-render-tombstones","description":"عرض الحذف واضح ومنع الرد يحكم الإيماءات والإتاحة والإجراء القديم","suite":"test:odoo","test":"server retention tombstones render explicit bodies and full removal cannot start a reply while media-only text remains replyable"}
   ],
   "openGaps": []
 }

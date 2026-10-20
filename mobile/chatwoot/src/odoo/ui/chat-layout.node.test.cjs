@@ -764,6 +764,30 @@ test('reply uses contextual affordance, focuses input and retains quote on faile
   assert.equal(one(app.render(), 'Field').value, 'keep draft');
 });
 
+test('server retention tombstones render explicit bodies and full removal cannot start a reply while media-only text remains replyable',()=>{
+ const dictionary=load('dictionary.ts',{});
+ assert.equal(dictionary.translator('ar')('contentRemoved'),'حُذف المحتوى');assert.equal(dictionary.translator('ar')('mediaRemoved'),'حُذف المرفق');
+ assert.equal(dictionary.translator('en')('contentRemoved'),'Content removed');assert.equal(dictionary.translator('en')('mediaRemoved'),'Attachment removed');
+ for(const language of ['ar','en'])for(const mode of ['content','empty-media','caption-media']){
+  const app=timeline();app.props.language=language;
+  app.props.chat.history.messages=[{id:10,author_user_id:8,author_name:'Synthetic',created_at:'2026-10-20 10:00:00',text:mode==='caption-media'?'caption survives':'',...(mode==='content'?{content_removed:true}:{media_removed:true})}];
+  let tree=app.render(),row=one(tree,'FlashList').renderItem({item:{message:app.props.chat.history.messages[0]}});
+  assert.ok(nodes(row).some(node=>node.type==='Text'&&node.props.children===(mode==='content'?'contentRemoved':mode==='empty-media'?'mediaRemoved':'caption survives')),'nonblank tombstone/caption body');
+  const press=one(row,'Pressable');assert.equal(one(row,'SwipeReply').enabled,mode!=='content');
+  assert.equal(press.accessibilityActions.some(action=>action.name==='reply'),mode!=='content');
+  press.onLongPress();tree=app.render();assert.equal(nodes(tree).some(node=>node.type==='MessageQuote'),mode!=='content');
+  assert.equal(nodes(row).some(node=>node.type==='MediaTile'),false);
+ }
+ const app=timeline();let tree=app.render(),item={message:app.props.chat.history.messages[0]},row=one(tree,'FlashList').renderItem({item});
+ const swipe=one(row,'SwipeReply'),press=one(row,'Pressable');press.onPress();
+ const context=one(one(app.render(),'FlashList').renderItem({item}),'IconButton',props=>props.icon==='reply');
+ one(app.render(),'Field').onChangeText('draft remains');
+ app.props.chat.history.messages=[{id:10,author_user_id:8,author_name:'Synthetic',created_at:'2026-10-20 10:00:00',text:'',content_removed:true}];app.render();
+ swipe.onReply();press.onLongPress();press.onAccessibilityAction({nativeEvent:{actionName:'reply'}});context.onPress();
+ tree=app.render();assert.equal(nodes(tree).some(node=>node.type==='MessageQuote'),false);assert.equal(one(tree,'Field').value,'draft remains');
+ row=one(tree,'FlashList').renderItem({item:{message:app.props.chat.history.messages[0]}});assert.equal(nodes(row).some(node=>node.type==='IconButton'&&node.props.icon==='reply'),false);
+});
+
 test('retention revision clears composer quote and content actions without changing its unsent draft',()=>{
  const app=timeline();let tree=app.render();one(tree,'Field').ref.current={focus(){}};
  const item={key:'message-10',message:app.props.chat.history.messages[0]};one(one(tree,'FlashList').renderItem({item}),'Pressable').onPress();

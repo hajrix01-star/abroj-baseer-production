@@ -6,7 +6,7 @@ import {decodeContentState} from '../core/ContentRetention.ts';
 const room={id:11,company_id:1,membership_id:21,name:'Synthetic retention',is_group:true,content_revision:0};
 const message:Message={id:1,author_user_id:7,author_name:'Synthetic',text:'old content',created_at:'2026-10-20 10:00:00',media:{id:70,kind:'file',mime:'application/pdf',name:'test.pdf',size:4,sha256:'a'.repeat(64)}};
 function fixture(){
- const data=new Map<string,string>(),archive=new MemoryHistoryArchive(),calls:Request[]=[],applied:any[]=[];let revision=0,ids:number[]=[],fail=false,hold:Promise<void>|undefined,contentHold:Promise<void>|undefined;
+ const data=new Map<string,string>(),archive=new MemoryHistoryArchive(),calls:Request[]=[],applied:any[]=[];let revision=0,ids:number[]=[],fail=false,hold:Promise<void>|undefined,contentHold:Promise<void>|undefined,wireMessages:Message[]|undefined,send:((req:Request)=>Promise<any>)|undefined,uuidSequence=0;
  const storage:Storage={async getItem(k){return data.get(k)??null;},async setItem(k,v){data.set(k,v);},async removeItem(k){data.delete(k);},async getAllKeys(){return [...data.keys()];}};
  const transport={async request(req:Request):Promise<any>{calls.push(req);
   if(req.path==='/web/session/destroy')return{result:null};if(req.path==='/web/session/authenticate')return{result:{uid:7,db:'trial'}};
@@ -14,13 +14,33 @@ function fixture(){
   if(req.path==='/bchat/api/v2/rooms')return{api_version:2,rooms:[{...room,content_revision:revision}]};
   if(req.path.includes('/changes?'))return{api_version:2,changes:[],next_after:0,watermark:0,reset_required:false};
   if(req.path.endsWith('/content-state')){if(fail)throw new ChatError('connection_failed');const p=JSON.parse(req.form!.payload);assert.equal(p.content_revision,revision);const result={api_version:2,retention_version:1,room_id:11,company_id:1,membership_id:21,content_revision:revision,items:p.media_ids.map((media_id:number)=>({media_id,state:'removed'})),next_cursor:null};await contentHold;return result;}
-  if(req.path.endsWith('/messages')){const result={api_version:2,content_revision:revision,messages:revision?[]:[message],next_before_id:null};await hold;return result;}
+  if(req.path.endsWith('/messages')){if(req.method==='POST'&&send)return send(req);const result={api_version:2,content_revision:revision,messages:wireMessages??(revision?[]:[message]),next_before_id:null};await hold;return result;}
   throw Error(req.path);
  }};
- const options={origin:'https://retention.test',database:'trial',storage,archive,transport,uuid:()=> '11111111-1111-4111-8111-111111111111',contentCache:{async quarantine(){return ids;},async apply(_s:any,_r:any,_v:any,items:any){applied.push(...items);},async complete(){}}};
+ const options={origin:'https://retention.test',database:'trial',storage,archive,transport,uuid:()=> `11111111-1111-4111-8111-${String(++uuidSequence).padStart(12,'0')}`,contentCache:{async quarantine(){return ids;},async apply(_s:any,_r:any,_v:any,items:any){applied.push(...items);},async complete(){}}};
  const engine=new ChatEngine(options);
- return{engine,options,data,archive,calls,applied,setRevision(v:number){revision=v;},setIds(v:number[]){ids=v;},setFail(v:boolean){fail=v;},setHold(v?:Promise<void>){hold=v;},setContentHold(v?:Promise<void>){contentHold=v;}};
+ return{engine,options,data,archive,calls,applied,setRevision(v:number){revision=v;},setIds(v:number[]){ids=v;},setFail(v:boolean){fail=v;},setHold(v?:Promise<void>){hold=v;},setContentHold(v?:Promise<void>){contentHold=v;},setMessages(v:Message[]){wireMessages=v;},setSend(v:(req:Request)=>Promise<any>){send=v;}};
 }
+
+test('exact server tombstones and removed replay ACK preserve canonical IDs without resurrecting queued content or deleting a newer unsent stage',async()=>{
+ const f=fixture(),removed:string[]=[],uploads:string[]=[];
+ const engine=new ChatEngine({...f.options,upload:async(_room,attachment)=>{uploads.push(attachment.upload_uuid);return{media_id:71};},removeAttachment:async attachment=>{removed.push(attachment.uri);}});
+ await engine.login('synthetic','synthetic',true);await engine.history(room);
+ const oldStage={uri:'file:///owned/stage-old.pdf',name:'old.pdf',mime:'application/pdf',size:4,sha256:'a'.repeat(64),kind:'file' as const,upload_uuid:'22222222-2222-4222-8222-222222222222',media_id:70};
+ const old=await engine.enqueueAttachment(room,oldStage,'old queued private text');
+ const tombstones=[{id:1,author_user_id:7,author_name:'Synthetic',text:'',created_at:'2026-10-20 10:00:00',content_removed:true},{id:2,author_user_id:8,author_name:'Other',text:'',created_at:'2026-10-20 10:00:01',media_removed:true},{id:3,author_user_id:8,author_name:'Other',text:'caption survives',created_at:'2026-10-20 10:00:02',media_removed:true}];
+ f.setRevision(1);f.setMessages(tombstones);let release!:()=>void,started!:()=>void;const held=new Promise<void>(r=>{release=r;}),seen=new Promise<void>(r=>{started=r;});
+ f.setSend(async req=>{const p=JSON.parse(req.form!.payload);assert.equal(p.client_uuid,old.client_uuid);started();await held;return{api_version:2,room_id:11,membership_id:21,client_uuid:p.client_uuid,message_id:1,media_id:70,state:'sent',content_removed:true};});
+ const pumping=engine.flush();await seen;
+ const newStage={...oldStage,uri:'file:///owned/stage-new.pdf',name:'new.pdf',upload_uuid:'33333333-3333-4333-8333-333333333333',media_id:undefined};
+ const newer=await engine.enqueueAttachment(engine.rooms()[0]!,newStage,'genuinely unsent');release();const flushed=await pumping;assert.deepEqual(flushed.historyFor(engine.rooms()[0]!)?.messages,tombstones);
+ const page=await engine.history(engine.rooms()[0]!);assert.deepEqual(page.messages,tombstones);assert.equal(page.next_before_id,null);
+ assert.deepEqual(engine.pending().map(item=>item.client_uuid),[newer.client_uuid]);assert.deepEqual(removed,[oldStage.uri]);assert.deepEqual(uploads,[]);
+ assert.equal(JSON.stringify([...f.data]).includes('old queued private text'),false);
+ const outboxKey=[...f.data.keys()].find(key=>key.endsWith(newer.client_uuid))!,account=outboxKey.slice(0,outboxKey.indexOf('c/1/r/11/m/21/outbox/'));
+ const archived=await f.archive.read({account,companyId:1,roomId:11,membershipId:21},{direction:'latest',limit:10,maxBytes:100000},()=>{});assert.deepEqual(archived.messages,tombstones);
+ assert.ok([...f.data].some(([key,value])=>key.endsWith(newer.client_uuid)&&JSON.parse(value).attachment.uri===newStage.uri));
+});
 test('retention barrier invalidates history retained associations and replies without touching queued text or stages',async()=>{
  const f=fixture();await f.engine.login('synthetic','synthetic',true);await f.engine.history(room);await f.engine.retainMediaAssociation(room,70,true);
  await f.engine.enqueue(room,'unsent',1);const before=[...f.data].filter(([k])=>k.includes('/outbox/'));

@@ -34,6 +34,7 @@ export function MediaStorageSheet({ scopeKey, language, t, close }: {
   };
   const load = async () => {
     const current = owner.current, serial = current.serial;
+    if (current.key !== scopeKey || !current.active || AppState.currentState !== 'active') return;
     const value = await mediaCacheOverview();
     if (owner.current === current && current.serial === serial && current.active && AppState.currentState === 'active') setOverview(value);
   };
@@ -73,7 +74,7 @@ export function MediaStorageSheet({ scopeKey, language, t, close }: {
         <View style={[styles.row, { alignItems: 'center', gap: 12 }]}>
           <View style={{ flex: 1 }}><Label language={language}>{mt('auto')}</Label><Label language={language} muted>{mt('autoHint')}</Label></View>
           <Switch accessibilityLabel={mt('auto')} disabled={busy} value={overview.policy.autoClean30Days} onValueChange={value => {
-            if (allowed() && !busy) void run(async () => { await setMediaCachePolicy(value); await load(); });
+            if (allowed() && !busy) void run(async live => { await setMediaCachePolicy(value); if (live()) await load(); });
           }} />
         </View>
         <Button title={mt('clean')} busy={busy} disabled={busy || overview.total.files === 0} onPress={() => {

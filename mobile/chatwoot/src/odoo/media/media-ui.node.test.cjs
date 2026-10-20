@@ -60,6 +60,14 @@ test('stale storage actions and late preview results cannot affect a new actor o
   assert.deepEqual(calls, ['plan']);
   app.state.close(); pending.resolve({ id: 'old-plan', estimated: totals }); await settle(); assert.equal(app.state.late, 0);
 });
+test('a held policy save cannot start a new actor storage read after the sheet closes', async () => {
+  const pending = deferred(); let reads = 0;
+  const app = fixture('MediaStorageSheet.tsx', { mediaCacheOverview: async () => { reads++; return overview; }, setMediaCachePolicy: () => pending.promise });
+  const props = { scopeKey: 'actor7', language: 'en', t: key => key, close() {} }, render = () => app.state.render(() => app.module.MediaStorageSheet(props));
+  render(); await settle(); one(render(), 'Switch').onValueChange(true);
+  app.state.close(); pending.resolve(); await settle();
+  assert.equal(reads, 1); assert.equal(app.state.late, 0);
+});
 test('gallery lazily exposes media only for visible rows and stale page responses cannot cross filters or unmount', async () => {
   const pending = deferred(), requests = [];
   const app = fixture('MediaGallerySheet.tsx');

@@ -618,9 +618,9 @@ def verify_transition(cr):
     return {'transition_lineage': 'PASS', 'mapping_sha256': digest, 'mode': 'old-installed'}
 
 
-def migrate(cr, installed_version):
+def migrate(cr, version):
     """Native Odoo entrypoint; caller MUST keep all workers quiesced."""
-    del installed_version
+    del version
     mapping, digest = load_mapping()
     cr.execute('SELECT pg_advisory_xact_lock(hashtextextended(%s,0))', [LOCK_KEY])
     _safety(cr, mapping)

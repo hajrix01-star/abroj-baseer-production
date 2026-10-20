@@ -318,7 +318,7 @@ class CanonicalConversionContract(unittest.TestCase):
                 self.assertNotIn('DROP CONSTRAINT', literal.value.upper())
                 self.assertNotIn('DROP TABLE', literal.value.upper())
         native = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == 'migrate')
-        self.assertEqual([arg.arg for arg in native.args.args], ['cr', 'installed_version'])
+        self.assertEqual([arg.arg for arg in native.args.args], ['cr', 'version'])
 
     def test_readiness_and_ledger_are_not_permission_or_activation_seeds(self):
         mapping, _ = upgrade.load_mapping()

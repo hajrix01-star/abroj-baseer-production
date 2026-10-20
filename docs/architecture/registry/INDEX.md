@@ -11,6 +11,8 @@ ARCHITECTURAL محدود داخل محول الأسماء وخريطته وفح�
 إثبات ORM للصورة والـclosure المثبتين يحصر targets في sale.order/pos.order. التصنيف المقترح
 دقيق بالـXMLID وهوية الحقل وغياب العلاقة/العمود؛ أي اختلاف STOP، والأربعة المادية لا تُتخطى.
 اختبار RED/GREEN ثم إعادة rehearsal old→new/fresh/paired restore على مصدر مجمد.
+run39416405958 نجحrollback03، وتوقفnative04 قبلcallback لتوقيع الوسيط؛ يُصحح الاسم إلىversion
+بلا تغيير جسم الترحيل، ودليل مشغّل Odoo الأصلي RED/GREEN يسبق إعادة التجربة.
 لا QA/Live/APK أو تخفيف حماية أو دمج في هذا التفويض. الأدلة الحية في
 output/bwork-reference-storage-fix-20261020/progress.json، والعقد الأصلي أدناه معاد استخدامه.
 

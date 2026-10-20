@@ -19,10 +19,11 @@ function profile(env = process.env, exists = fs.existsSync) {
   if (name === 'production') {
     if (env.BWORK_PROFILE !== 'production' || env.EXPO_PUBLIC_BWORK_PROFILE !== 'production') throw Error('BWork production profile must match native and public bundle configuration');
     if (!env.EXPO_PUBLIC_BWORK_ORIGIN || !env.EXPO_PUBLIC_BWORK_DATABASE || !database.trim()) throw Error('BWork production requires explicit origin/database');
+    if (server !== identity.production.origin || database !== identity.production.database) throw Error('BWork production requires the approved public origin/database');
     if (!env.BWORK_RELEASE_KEYSTORE || !exists(env.BWORK_RELEASE_KEYSTORE) || !env.BWORK_RELEASE_KEY_ALIAS || !env.BWORK_RELEASE_STORE_PASSWORD || !env.BWORK_RELEASE_KEY_PASSWORD) throw Error('BWork production release signing is required; debug fallback is forbidden');
     if (/androiddebugkey|^debug$/i.test(env.BWORK_RELEASE_KEY_ALIAS)) throw Error('BWork production cannot use a debug signing alias');
   }
-  return Object.freeze({name,applicationId:identity[name].applicationId,scheme:identity.production.scheme,
+  return Object.freeze({name,applicationId:identity[name].applicationId,version:identity[name].version,versionCode:identity[name].versionCode,scheme:identity.production.scheme,
     schemes:name==='qa'?[identity.production.scheme,identity.qa.legacyScheme]:[identity.production.scheme],origin:server,database});
 }
 module.exports = { profile, setting };

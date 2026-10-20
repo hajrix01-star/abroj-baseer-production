@@ -51,9 +51,14 @@ test('read receipts select only actual visible non-own unique IDs, bounded to 20
 });
 test('safe UX text distinguishes credentials, MFA, local logout and queued send', () => {
   assert.equal(errorWord({ code: 'connection_failed' }), 'connectionError');
+  assert.equal(translator('ar')('connectionError'), 'تعذر الاتصال بأودو. تحقق من اتصالك بالإنترنت ثم حاول مجددًا.');
+  assert.equal(translator('en')('connectionError'), 'Could not reach Odoo. Check your internet connection and try again.');
+  for (const language of ['ar', 'en'] as const) assert.doesNotMatch(translator(language)(errorWord({ code: 'connection_failed' })), /tailscale/i);
   assert.equal(errorWord({ code: 'authentication_failed' }), 'credentials');
   assert.equal(errorWord({ code: 'mfa_required' }), 'mfa');
   assert.equal(translator('ar')('queued'), 'بانتظار الإرسال');
   assert.ok(translator('ar')('pendingWarning').includes('أودو'));
-  assert.ok(translator('en')('mfa').includes('unavailable'));
+  assert.equal(translator('ar')('mfa'), 'يتطلب حسابك تحققًا بخطوتين. هذا المسار غير متاح في الإصدار الحالي.');
+  assert.equal(translator('en')('mfa'), 'Your account requires two-step verification. This flow is unavailable in the current build.');
+  for (const language of ['ar', 'en'] as const) assert.doesNotMatch(translator(language)('mfa'), /trial|تجريب/i);
 });

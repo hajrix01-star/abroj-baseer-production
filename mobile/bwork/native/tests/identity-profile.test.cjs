@@ -5,7 +5,7 @@ const identity=require('../../compatibility/identities.json');
 const {profile}=require('../../bwork-profile.cjs');
 const {applySigningBoundary,applyNativeBoundary}=require('../../with-bwork-native.js');
 const {execFileSync}=require('node:child_process');
-const production=()=>({BWORK_PROFILE:'production',EXPO_PUBLIC_BWORK_PROFILE:'production',EXPO_PUBLIC_BWORK_ORIGIN:'https://production.example.test',EXPO_PUBLIC_BWORK_DATABASE:'production',BWORK_RELEASE_KEYSTORE:'synthetic-path-only.jks',BWORK_RELEASE_KEY_ALIAS:'publisher-release',BWORK_RELEASE_STORE_PASSWORD:'synthetic-secret-not-used',BWORK_RELEASE_KEY_PASSWORD:'synthetic-secret-not-used'});
+const production=()=>({BWORK_PROFILE:'production',EXPO_PUBLIC_BWORK_PROFILE:'production',EXPO_PUBLIC_BWORK_ORIGIN:identity.production.origin,EXPO_PUBLIC_BWORK_DATABASE:identity.production.database,BWORK_RELEASE_KEYSTORE:'synthetic-path-only.jks',BWORK_RELEASE_KEY_ALIAS:'publisher-release',BWORK_RELEASE_STORE_PASSWORD:'synthetic-secret-not-used',BWORK_RELEASE_KEY_PASSWORD:'synthetic-secret-not-used'});
 test('QA upgrade and independent production identities preserve durable namespaces without importing either container',()=>{
   const qa=profile({}),prod=profile(production(),()=>true);
   assert.equal(qa.applicationId,'com.baseer.bchat.trial');assert.equal(prod.applicationId,'com.baseer.bwork');assert.notEqual(qa.applicationId,prod.applicationId);
@@ -53,4 +53,24 @@ test('canonical native projection replaces only known old adapters and keeps ins
  for(const file of ['main/AndroidManifest.xml','gradle/AndroidManifest.xml','gradle/AndroidManifestPush.xml']){
   const source=fs.readFileSync(path.join(legacy,file),'utf8');assert.ok(source.includes(`android:name="${identity.legacyPreview.originalComponent}"`));assert.match(source,/activity-alias[^>]+targetActivity="com\.baseer\.bwork\.legacy\.BWorkIdentityActivity"/);
  }
+});
+
+test('production pins its sole public origin database and version before any signing-file existence probe while QA stays compatible',()=>{
+ const good=production();let probes=0;
+ for(const origin of ['https://baseer-live-qa.tail938958.ts.net','https://localhost','https://127.0.0.1','https://10.0.0.1','https://192.168.1.1','https://[::1]','https://baseer.abroj.sa:444','http://baseer.abroj.sa','https://baseer.abroj.sa/','https://baseer.abroj.sa/path','https://baseer.abroj.sa?x=1','https://baseer.abroj.sa.evil.test','https://user@baseer.abroj.sa']){
+  assert.throws(()=>profile({...good,EXPO_PUBLIC_BWORK_ORIGIN:origin},()=>{probes++;return true;}),origin);
+ }
+ for(const database of ['baseer_live_qa_clean_20260928','baseer_prod_copy',' baseer_prod','baseer_prod '])assert.throws(()=>profile({...good,EXPO_PUBLIC_BWORK_DATABASE:database},()=>{probes++;return true;}));
+ assert.equal(probes,0);
+ const prod=profile(good,()=>true);assert.equal(prod.origin,'https://baseer.abroj.sa');assert.equal(prod.database,'baseer_prod');assert.equal(prod.version,'1.0.0');assert.equal(prod.versionCode,1);
+ const qa=profile({EXPO_PUBLIC_ODOO_ORIGIN:'https://qa.example.test',EXPO_PUBLIC_ODOO_DATABASE:'synthetic_qa'});
+ assert.equal(qa.origin,'https://qa.example.test');assert.equal(qa.database,'synthetic_qa');assert.equal(qa.version,'0.1.32');assert.equal(qa.versionCode,33);
+});
+
+test('production native staging rejects a caller origin different from the selected profile before touching generated files',()=>{
+ const vm=require('node:vm'),pluginRequire=require('node:module').createRequire(path.join(__dirname,'../../with-bwork-native.js'));
+ const mod={exports:{}};const selected=profile(production(),()=>true);
+ vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../../with-bwork-native.js'),'utf8'),{module:mod,exports:mod.exports,URL,__dirname:path.join(__dirname,'../..'),require:name=>name==='./bwork-profile.cjs'?{profile:()=>selected}:pluginRequire(name)});
+ for(const origin of ['https://baseer-live-qa.tail938958.ts.net','https://localhost','https://baseer.abroj.sa/'])assert.throws(()=>mod.exports.applyNativeBoundary('unused-no-files',selected.applicationId,origin),/production origin mismatch/);
+ assert.throws(()=>mod.exports.applyNativeBoundary('unused-no-files',identity.qa.applicationId,selected.origin),/profile\/package mismatch/);
 });

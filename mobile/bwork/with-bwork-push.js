@@ -5,19 +5,27 @@ const identity = require('./compatibility/identities.json');
 const { profile } = require('./bwork-profile.cjs');
 const PACKAGE = identity.qa.applicationId;
 // Public Firebase identifiers only. Never discovers a project or reads credentials.
-function pushOptions(env = process.env, root = __dirname) {
+function pushOptions(env = process.env, root = __dirname, exists = fs.existsSync) {
   if (env.BWORK_ANDROID_PUSH_ENABLED === undefined || env.BWORK_ANDROID_PUSH_ENABLED === '0') return { enabled: false };
   if (env.BWORK_ANDROID_PUSH_ENABLED !== '1') throw new Error('BWork push flag must be 0 or 1');
-  const applicationId = profile(env).applicationId;
+  const applicationId = profile(env, exists).applicationId;
   const file = env.EXPO_PUBLIC_ANDROID_GOOGLE_SERVICES_FILE, project = env.BWORK_FCM_PROJECT_ID;
+  return publicOptions(file, project, applicationId, root);
+}
+function validatePublicConfig(data, applicationId, project) {
+  if (![identity.qa.applicationId,identity.production.applicationId].includes(applicationId)) throw new Error('BWork push package changed');
+  if (!project || !/^[a-z][a-z0-9-]{3,62}$/.test(project)) throw new Error('BWork push requires an expected public project');
+  const clients = Array.isArray(data?.client) ? data.client.filter(c => c?.client_info?.android_client_info?.package_name === applicationId) : [];
+  if (data?.project_info?.project_id !== project || !/^\d{4,30}$/.test(String(data?.project_info?.project_number ?? '')) || clients.length !== 1
+      || !new RegExp(`^1:${data.project_info.project_number}:android:[a-f0-9]+$`,'i').test(clients[0]?.client_info?.mobilesdk_app_id ?? '')
+      || !clients[0]?.api_key?.some(k => typeof k.current_key === 'string' && /^[A-Za-z0-9_-]{20,200}$/.test(k.current_key))) throw new Error('BWork push public config does not match the approved Android package/project');
+}
+function publicOptions(file, project, applicationId, root) {
   if (!file || !project || !/^[a-z][a-z0-9-]{3,62}$/.test(project)) throw new Error('BWork push requires an explicit public config and expected project');
   let data;
   try { data = JSON.parse(fs.readFileSync(path.resolve(root, file), 'utf8')); } catch { throw new Error('BWork push public config is unavailable'); }
-  const clients = Array.isArray(data.client) ? data.client.filter(c => c?.client_info?.android_client_info?.package_name === applicationId) : [];
-  if (data.project_info?.project_id !== project || !/^\d{4,30}$/.test(String(data.project_info?.project_number ?? '')) || clients.length !== 1
-      || !new RegExp(`^1:${data.project_info.project_number}:android:[a-f0-9]+$`,'i').test(clients[0]?.client_info?.mobilesdk_app_id ?? '')
-      || !clients[0]?.api_key?.some(k => typeof k.current_key === 'string' && /^[A-Za-z0-9_-]{20,200}$/.test(k.current_key))) throw new Error('BWork push public config does not match the approved Android package/project');
-  return { enabled: true, configFile: path.resolve(root, file), project };
+  validatePublicConfig(data, applicationId, project);
+  return { enabled: true, configFile: path.resolve(root, file), project, applicationId };
 }
 function patchApplication(source) {
   const marker = '// bwork-notifications-package';
@@ -42,7 +50,10 @@ function region(source, name, content) {
 function applyNativeBoundary(root, options = pushOptions(), applicationPackage = PACKAGE) {
   if (![identity.qa.applicationId,identity.production.applicationId].includes(applicationPackage)) throw new Error('BWork push package changed');
   // Revalidate enabled configuration at staging time, not just Expo evaluation.
-  if (options.enabled) options = pushOptions({BWORK_ANDROID_PUSH_ENABLED:'1', EXPO_PUBLIC_ANDROID_GOOGLE_SERVICES_FILE:options.configFile, BWORK_FCM_PROJECT_ID:options.project}, root);
+  if (options.enabled) {
+    if (options.applicationId !== applicationPackage) throw new Error('BWork push options/native package mismatch');
+    options = publicOptions(options.configFile, options.project, applicationPackage, root);
+  }
   const base = path.join(root, 'android'), app = path.join(base, 'app');
   const source = path.join(__dirname, 'native/android/com/baseer/bwork/notifications');
   const target = path.join(app, 'src/bworkPush/java/com/baseer/bwork/notifications');
@@ -79,6 +90,7 @@ function applyNativeBoundary(root, options = pushOptions(), applicationPackage =
 }
 module.exports = (config, options) => withDangerousMod(config,['android',async current => {applyNativeBoundary(current.modRequest.projectRoot,options,current.android?.package);return current;}]);
 module.exports.pushOptions=pushOptions;
+module.exports.validatePublicConfig=validatePublicConfig;
 module.exports.applyNativeBoundary=applyNativeBoundary;
 module.exports.applyNativePushBoundary=applyNativeBoundary;
 module.exports.patchApplication=patchApplication;

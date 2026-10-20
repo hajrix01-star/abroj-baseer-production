@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "qa": { "applicationId": "com.baseer.bchat.trial", "legacyScheme": "bchat-trial", "certificateSha256": "fac61745dc0903786fb9ede62a962b399f7348f0bb6f899b8332667591033b9c" },
-  "production": { "applicationId": "com.baseer.bwork", "scheme": "bwork" },
+  "qa": { "applicationId": "com.baseer.bchat.trial", "legacyScheme": "bchat-trial", "certificateSha256": "fac61745dc0903786fb9ede62a962b399f7348f0bb6f899b8332667591033b9c", "version": "0.1.32", "versionCode": 33 },
+  "production": { "applicationId": "com.baseer.bwork", "scheme": "bwork", "origin": "https://baseer.abroj.sa", "database": "baseer_prod", "version": "1.0.0", "versionCode": 1 },
   "storage": { "chatRoot": "odoo-chat/v1/", "mediaDirectory": "odoo-chat-media", "sqlite": "bwork-history-v1.db", "snapshots": "bwork.leadership.snapshots.v1:", "pushPreferences": "bwork-push-v1" },
   "legacyWire": { "prefix": "/bchat/api/v2", "avatarHeader": "X-BChat-Avatar-Version", "contentHeader": "X-BChat-Content-Revision" },
   "nativeMarkers": { "session": "bchat-native-session-commit", "linker": "bchat-odoo-native-boundary" },

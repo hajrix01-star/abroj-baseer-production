@@ -3,7 +3,7 @@ import { Alert, AppState, BackHandler, Keyboard, Text, useWindowDimensions, View
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import NetInfo from '@react-native-community/netinfo';
 import type { ChatEngine, Room } from './core/ChatEngine';
-import { getEngine, getOrdersEngine, getTasksEngine, getLeadershipEngine, getNotificationsEngine, ordersOnlySnapshot, refreshOrdersOnlySession, setOrdersConnectivity, subscribeOrdersOnlySession } from './runtime';
+import { config, getEngine, getOrdersEngine, getTasksEngine, getLeadershipEngine, getNotificationsEngine, ordersOnlySnapshot, refreshOrdersOnlySession, setOrdersConnectivity, subscribeOrdersOnlySession } from './runtime';
 import { NotificationsHub } from './notifications/NotificationsHub';
 import type { NotificationDestination } from './notifications/NotificationsEngine';
 import { OrdersOnlyShell } from './session/OrdersOnlyShell';
@@ -315,9 +315,9 @@ export function SessionApp({ engine, initialLanguage = 'ar', onLanguageChange }:
               </Text>
             ) : (
               <>
-                <Label language={language} muted>
+                {config.profile === 'qa' && <Label language={language} muted>
                   {t('trial')}
-                </Label>
+                </Label>}
                 <VersionLabel language={language} />
               </>
             )}

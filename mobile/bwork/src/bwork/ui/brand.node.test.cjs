@@ -82,12 +82,38 @@ test('native branding preserves update identity and uses separate Odoo assets', 
   assert.ok(config.includes("name: trial ? 'BWork' : 'Chatwoot'"));
   // Branding protects update identity, not a stale release number. Actual upgrade ordering
   // remains part of APK acceptance; legitimate version increments must not fail this test.
-  assert.match(config, /version:\s*trial\s*\?\s*'\d+\.\d+\.\d+'/);
-  assert.match(config, /versionCode:\s*[1-9]\d*\b/);
+  assert.match(config, /version:\s*trial\s*\?\s*target\.version/);
+  assert.match(config, /versionCode:\s*target\.versionCode/);
   assert.ok(config.includes('package: trial ? target.applicationId'));
   assert.equal(require('../../../bwork-profile.cjs').profile({}).applicationId,require('../../../compatibility/identities.json').qa.applicationId);
   assert.ok(config.includes('scheme: trial ? target.schemes'));
   assert.ok(config.includes("trial ? './assets/bwork/bwork-adaptive-1024.png' : './assets/adaptive-icon.png'"));
+});
+
+test('actual Expo configuration selects separate production and QA metadata without changing approved assets or permissions', () => {
+  const identity = require('../../../compatibility/identities.json');
+  const { profile } = require('../../../bwork-profile.cjs');
+  const code = ts.transpileModule(readFileSync(join(root, 'app.config.ts'), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
+  const outputs = [];
+  for (const selected of ['qa', 'production']) {
+    const env = selected === 'qa' ? {} : { BWORK_PROFILE: 'production', EXPO_PUBLIC_BWORK_PROFILE: 'production', EXPO_PUBLIC_BWORK_ORIGIN: identity.production.origin,
+      EXPO_PUBLIC_BWORK_DATABASE: identity.production.database, BWORK_RELEASE_KEYSTORE: 'synthetic-reference-only', BWORK_RELEASE_KEY_ALIAS: 'synthetic-publisher', BWORK_RELEASE_STORE_PASSWORD: 'synthetic-not-used', BWORK_RELEASE_KEY_PASSWORD: 'synthetic-not-used' };
+    const mod = { exports: {} };
+    vm.runInNewContext(code, { module: mod, exports: mod.exports, process: { env }, require(name) {
+      if (name === './bwork-profile.cjs') return { profile: () => profile(env, () => true) };
+      if (name === './with-bwork-push.js') return { pushOptions: () => ({ enabled: false }) };
+      throw Error(`Unexpected Expo runtime import: ${name}`);
+    } });
+    const result = mod.exports.default({ config: {} }); outputs.push(result);
+    assert.equal(result.version, identity[selected].version);
+    assert.equal(result.android.versionCode, identity[selected].versionCode);
+    assert.equal(result.android.package, identity[selected].applicationId);
+    assert.equal(result.name, 'BWork'); assert.equal(result.android.googleServicesFile, undefined);
+    assert.equal(result.android.allowBackup, false);
+    assert.equal(result.icon, './assets/bwork/bwork-icon-1024.png');
+  }
+  assert.deepEqual(JSON.parse(JSON.stringify(outputs[0].android.permissions)), JSON.parse(JSON.stringify(outputs[1].android.permissions)));
+  assert.deepEqual(JSON.parse(JSON.stringify(outputs[0].android.adaptiveIcon)), JSON.parse(JSON.stringify(outputs[1].android.adaptiveIcon)));
 });
 
 test('bundled source raster is preserved, PNG dimensions bounded, tokens meet button contrast', () => {

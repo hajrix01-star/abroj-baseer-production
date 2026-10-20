@@ -1,7 +1,9 @@
 """Isolated ORM/HTTP evidence; reporting calls use ordinary UID2, never sudo."""
 import base64
 import json
+import importlib.util
 from datetime import timedelta
+from pathlib import Path
 from unittest.mock import patch
 from uuid import uuid4
 
@@ -138,6 +140,37 @@ class BWorkAdminCase(TransactionCase):
 
     def test_console_actions_guard_direct_rpc_and_readonly_views(self):
         model = self.env['baseer.bwork.admin.console'].with_user(self.admin).with_context(allowed_company_ids=self.company.ids)
+        # Opening the native form calls onchange on virtual many2many records,
+        # not create/read on a persisted console. Cover the actual failing RPC
+        # and changing companies, with the existing effective authority intact.
+        fields_spec = {name: {} for name in (
+            'company_ids', 'status', 'rooms_count', 'members_count',
+            'logical_storage', 'storage_details', 'operations')}
+        # A clean --without-demo CI database has English only. Activate the
+        # real Arabic locale in this isolated transaction; do not skip it or
+        # replace the localized RPC with an English-only seam.
+        self.env['res.lang']._activate_lang('ar_001')
+        both = self.company | self.other
+        for language in ('en_US', 'ar_001'):
+            opening = model.with_context(allowed_company_ids=both.ids, lang=language)
+            for selected in (self.company, self.other, both):
+                result = opening.onchange({'company_ids': [Command.set(selected.ids)]}, [], fields_spec)
+                values = result['value']
+                self.assertIsInstance(values['operations'], str)
+                self.assertNotIn('\nFalse\n', values['operations'])
+                for company in selected:
+                    self.assertIn(company.name, values['operations'].splitlines())
+                    self.assertIn(company.name + ':', values['storage_details'])
+                for company in both - selected:
+                    self.assertNotIn(company.name, values['operations'].splitlines())
+            for selected in (self.foreign,):
+                with self.assertRaises(AccessError):
+                    opening.onchange({'company_ids': [Command.set(selected.ids)]}, [], fields_spec)
+        with self.assertRaises(AccessError):
+            model.with_user(self.ordinary).onchange(
+                {'company_ids': [Command.set(self.company.ids)]}, [], fields_spec)
+        with self.assertRaises(AccessError):
+            model.sudo().onchange({'company_ids': [Command.set(self.company.ids)]}, [], fields_spec)
         console = model.create({'company_ids': [Command.set(self.company.ids)]})
         self.assertEqual(console.rooms_count, '1')
         for method in ('action_rooms', 'action_members'):
@@ -176,6 +209,29 @@ class BWorkAdminCase(TransactionCase):
         self.assertTrue(self.env['baseer.bchat.message'].sudo().browse(message['message_id']).exists())
         with self.assertRaises(AccessError):
             policy.sudo().read(['warning_mib'])
+
+    def test_upgrade_repairs_only_obsolete_root_menu_translations(self):
+        path = Path(__file__).resolve().parents[2] / 'baseer_bchat/migrations/19.0.0.4.17/post-migrate.py'
+        spec = importlib.util.spec_from_file_location('bwork_menu_upgrade', path)
+        migration = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(migration)
+        menu = self.env.ref('baseer_bchat.menu_bchat_root')
+        other = self.env.ref('baseer_bchat.menu_bchat_rooms')
+        self.env['ir.ui.menu'].flush_model(['name'])
+        original_other = other.with_context(lang='en_US').name
+        fixture = {'en_US': 'BWork', 'ar_001': 'BChat', 'ar_SY': 'BChat',
+                   'fr_FR': 'BChat', 'ar_EG': 'Custom Arabic title'}
+        self.env.cr.execute('UPDATE ir_ui_menu SET name = %s::jsonb WHERE id = %s',
+                            [json.dumps(fixture), menu.id])
+        for _attempt in range(2):
+            migration.migrate(self.env.cr, '19.0.0.4.16')
+            self.env.cr.execute('SELECT name FROM ir_ui_menu WHERE id = %s', [menu.id])
+            self.assertEqual(self.env.cr.fetchone()[0], {
+                'en_US': 'BWork', 'ar_001': 'بيورك', 'ar_SY': 'بيورك',
+                'fr_FR': 'BWork', 'ar_EG': 'Custom Arabic title'})
+        self.env['ir.ui.menu'].invalidate_model(['name'])
+        self.assertEqual(other.with_context(lang='en_US').name, original_other)
+        self.assertEqual(self.env.ref('baseer_bchat.menu_bchat_root').id, menu.id)
 
     def test_no_private_acl_or_provider_secret_readiness_claim(self):
         for model in ('baseer.bchat.media', 'baseer.bchat.push.device', 'baseer.bchat.push.event',

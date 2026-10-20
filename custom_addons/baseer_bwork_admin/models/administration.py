@@ -310,6 +310,10 @@ class BWorkAdminConsole(models.TransientModel):
         service = self.env['baseer.bwork.admin.service']
         for record in self:
             data = service.snapshot(record.company_ids.ids)
+            # Native onchange wraps many2many values in NewId(origin=...).
+            # snapshot validates/returns real IDs; use those same guarded
+            # companies for display instead of comparing NewId to an integer.
+            companies = self.env['res.company'].browse(data['company_ids'])
             totals = data['totals']
             record.status = self.env._('Complete') if data['complete'] else (
                 self.env._('Attachment metadata incomplete — totals unavailable') if data['status'] == 'integrity_error'
@@ -318,7 +322,7 @@ class BWorkAdminConsole(models.TransientModel):
             record.members_count = str(totals['active_memberships']) if totals else '—'
             record.logical_storage = totals['logical_mib'] if totals else '—'
             lines = []
-            for company in record.company_ids:
+            for company in companies:
                 row = next((item for item in data['companies'] if item['company_id'] == company.id), None)
                 if row:
                     state = {'disabled': self.env._('Warning disabled'), 'below': self.env._('Below warning threshold'),
@@ -344,7 +348,7 @@ class BWorkAdminConsole(models.TransientModel):
                 'access_revoked': self.env._('Access revoked'), 'other': self.env._('Other'),
             }
             for row in data['companies']:
-                company = record.company_ids.filtered(lambda item: item.id == row['company_id'])
+                company = companies.filtered(lambda item: item.id == row['company_id'])
                 lines.append(company.name)
                 for kind in ('media', 'push', 'push_errors', 'upload_grants'):
                     counts = ', '.join('%s: %s' % (labels.get(key, self.env._('Other')), value)

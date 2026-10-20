@@ -1,6 +1,6 @@
 {
     'name': 'BWork',
-    'version': '19.0.0.4.16',
+    'version': '19.0.0.4.17',
     'category': 'Productivity/Discuss',
     'summary': 'Private BWork messaging and company-scoped group administration',
     'license': 'LGPL-3',

@@ -146,6 +146,10 @@ class BWorkAdminCase(TransactionCase):
         fields_spec = {name: {} for name in (
             'company_ids', 'status', 'rooms_count', 'members_count',
             'logical_storage', 'storage_details', 'operations')}
+        # A clean --without-demo CI database has English only. Activate the
+        # real Arabic locale in this isolated transaction; do not skip it or
+        # replace the localized RPC with an English-only seam.
+        self.env['res.lang']._activate_lang('ar_001')
         both = self.company | self.other
         for language in ('en_US', 'ar_001'):
             opening = model.with_context(allowed_company_ids=both.ids, lang=language)

@@ -101,7 +101,7 @@ function drawer(width = 320) {
     'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView' }, '../media/dictionary': mediaDictionary, './companyNames': names, './components': components, './VersionLabel': { VersionLabel: 'VersionLabel' }, './Brand': { Brand: 'Brand' } });
   return { props, events, nativeApp, render: () => state.render(() => module.NavigationDrawer(props)) };
 }
-function session() {
+function session(profile = 'qa', initialLanguage = 'ar') {
   const state = hookState(), nativeApp = appState(), calls = [], alerts = [], frames = [];
   let width = 320; const backHandlers = new Set();
   const chat = { identity: identity(), presentationReady: true, selected: null, offline: false, busy: false,
@@ -120,7 +120,7 @@ function session() {
     './tasks/dictionary': { taskTranslator: language => word => `${language}:${word}` }, './tasks/ui/TasksScreen': { TasksScreen: 'TasksScreen' },
     './leadership/ui/LeadershipScreen': { LeadershipScreen: 'LeadershipScreen' },
     './session/OrdersOnlyShell': { OrdersOnlyShell: 'OrdersOnlyShell' },
-    './runtime': { getEngine: () => engine, getNotificationsEngine: () => ({}), getOrdersEngine: () => ({}), getTasksEngine: () => ({}), getLeadershipEngine: () => ({}), ordersOnlySnapshot: () => ({ identity: null, verified: false, generation: 0, revision: 0 }),
+    './runtime': { config: { profile }, getEngine: () => engine, getNotificationsEngine: () => ({}), getOrdersEngine: () => ({}), getTasksEngine: () => ({}), getLeadershipEngine: () => ({}), ordersOnlySnapshot: () => ({ identity: null, verified: false, generation: 0, revision: 0 }),
       subscribeOrdersOnlySession: () => () => {}, refreshOrdersOnlySession: async () => {}, setOrdersConnectivity() {}, runAutomaticMediaCacheCleanup: async () => { metrics.auto++; return null; } },
     './media/MediaGallerySheet': { MediaGallerySheet: 'MediaGallerySheet' }, './media/MediaStorageSheet': { MediaStorageSheet: 'MediaStorageSheet' },
     './ui/LoginScreen': { LoginScreen: 'LoginScreen' }, './ui/ManagementSheet': { ManagementSheet: 'ManagementSheet' },
@@ -131,9 +131,20 @@ function session() {
     './ui/CompanySelector': { CompanySelector: 'CompanySelector' },
   }, { requestAnimationFrame: callback => { frames.push(callback); return frames.length; } });
   assert.equal(typeof module.SessionApp, 'function', 'test uses the actual named SessionApp export');
-  return { engine, chat, calls, alerts, nativeApp, metrics, render: () => state.render(() => module.SessionApp({ engine })),
+  return { engine, chat, calls, alerts, nativeApp, metrics, render: () => state.render(() => module.SessionApp({ engine, initialLanguage })),
     width(value) { width = value; }, back() { for (const callback of [...backHandlers].reverse()) if (callback()) return true; return false; }, flushFrames() { for (const frame of frames.splice(0)) frame(); } };
 }
+
+test('actual login header labels QA only in AR and EN while production keeps brand and native version without a trial label', () => {
+  for (const language of ['ar', 'en']) for (const profile of ['qa', 'production']) {
+    const app = session(profile, language); app.chat.identity = null; app.chat.presentationReady = false;
+    const tree = app.render();
+    assert.equal(text(tree).includes(dictionary.translator(language)('trial')), profile === 'qa');
+    assert.equal(nodes(tree).filter(node => node.type === 'Brand').length, 1);
+    assert.equal(nodes(tree).filter(node => node.type === 'VersionLabel').length, 1);
+    assert.equal(nodes(tree).filter(node => node.type === 'LoginScreen').length, 1);
+  }
+});
 
 test('Chats is the first authorized drawer section and opens the inbox from every workspace in either language', () => {
   for (const language of ['ar', 'en']) {

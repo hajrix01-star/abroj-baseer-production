@@ -38,6 +38,8 @@ class BWorkTaskCase(TransactionCase):
     @classmethod
     def _user(cls, label, company, group='base.group_user'):
         return cls.env['res.users'].with_context(no_reset_password=True).create({
+            # These synthetic actors test task/membership guards, not defaults.
+            'bwork_chat_view': True, 'bwork_task_view': True, 'bwork_task_manage': True,
             'name': 'BWork task %s' % label,
             'login': 'bwork-task-%s-%s' % (label, uuid4().hex),
             'company_id': company.id, 'company_ids': [Command.set(company.ids)],
@@ -310,6 +312,7 @@ class BWorkTaskHttpCase(HttpCase):
         password = 'test-only-%s' % uuid4().hex
         user = self.env['res.users'].with_context(no_reset_password=True).create({
             'name': 'BWork task HTTP user', 'login': 'bwork-task-http-%s' % uuid4().hex,
+            'bwork_task_view': True, 'bwork_task_manage': True,
             'password': password, 'company_id': company.id,
             'company_ids': [Command.set(company.ids)],
             'group_ids': [Command.set([self.env.ref('base.group_user').id])],
@@ -359,6 +362,8 @@ class BWorkTaskHttpCase(HttpCase):
         # The HTTP create/list/replay contract above remains exercised by user;
         # this fixture supplies a genuine recipient event for the HTTP read.
         assigner = self.env.ref('base.user_admin')
+        # Explicit fixture opt-in; the service below still uses ordinary with_user.
+        assigner.write({'bwork_task_view': True, 'bwork_task_manage': True})
         self.assertNotEqual(assigner.id, user.id)
         assigned = self.env['baseer.bwork.service'].with_user(assigner)._v2_task_create({
             **second_payload, 'client_uuid': str(uuid4()), 'title': 'HTTP received task',
@@ -402,6 +407,7 @@ class BWorkTaskHttpCase(HttpCase):
         password = 'test-only-%s' % uuid4().hex
         user = self.env['res.users'].with_context(no_reset_password=True).create({
             'name': 'BWork HTTP member', 'login': 'bwork-http-member-%s' % uuid4().hex,
+            'bwork_chat_view': True, 'bwork_task_view': True, 'bwork_task_manage': True,
             'password': password, 'company_id': company.id,
             'company_ids': [Command.set(company.ids)],
             'group_ids': [Command.set([self.env.ref('base.group_user').id])],

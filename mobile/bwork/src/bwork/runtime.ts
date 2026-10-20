@@ -28,10 +28,10 @@ import { mediaCacheTotals } from './storage/MediaCacheContracts';
 import type { MediaCacheTotals, MediaCacheOverview, MediaCacheCleanPlan, MediaCacheCleanResult, MediaOfflineState } from './storage/MediaCacheContracts';
 import type {ContentCache,ContentStateItem} from './core/ContentRetention';
 import type {HistoryScope} from './core/HistoryArchive';
-import { compatibility, configurationAlias } from './compatibility';
+import { applicationRealm, compatibility, configurationAlias } from './compatibility';
 export type { MediaCacheTotals, MediaCacheOverview, MediaCacheCleanPlan, MediaCacheCleanResult, MediaOfflineState } from './storage/MediaCacheContracts';
 
-export const config = Object.freeze({
+export const config = applicationRealm({
   // Literal Expo reads permit compile-time replacement; aliases belong to the
   // bounded QA compatibility manifest and conflicting realms fail closed.
   origin: configurationAlias(process.env.EXPO_PUBLIC_BWORK_ORIGIN, process.env.EXPO_PUBLIC_ODOO_ORIGIN),

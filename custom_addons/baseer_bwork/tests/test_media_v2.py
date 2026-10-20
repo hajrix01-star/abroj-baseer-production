@@ -39,6 +39,8 @@ class BWorkMediaCase(TransactionCase):
     @classmethod
     def _user(cls, label, group):
         return cls.env['res.users'].with_context(no_reset_password=True).create({
+            # Explicit synthetic media actor; fresh accounts no longer opt in.
+            'bwork_chat_view': True, 'bwork_chat_send': True, 'bwork_media': True,
             'name': 'BWork media ' + label,
             'login': 'bwork-media-%s-%s' % (label, uuid4().hex),
             'company_id': cls.company.id,
@@ -528,6 +530,7 @@ class BWorkMediaHttpCase(HttpCase):
         password = 'test-only-%s' % uuid4().hex
         user = self.env['res.users'].with_context(no_reset_password=True).create({
             'name': 'BWork media HTTP user',
+            'bwork_chat_view': True, 'bwork_chat_send': True, 'bwork_media': True,
             'login': 'bwork-media-http-%s' % uuid4().hex,
             'password': password,
             'company_id': company.id,

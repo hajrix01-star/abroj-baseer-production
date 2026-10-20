@@ -21,6 +21,8 @@ def run(env):
     users = env['res.users'].with_context(no_reset_password=True)
     manager = users.create({
         'name': 'BWork concurrency manager %s' % suffix,
+        # Explicit synthetic chat actors under the fresh-closed policy.
+        'bwork_chat_view': True, 'bwork_chat_send': True,
         'login': 'bwork-race-manager-%s' % suffix,
         'company_id': company.id,
         'company_ids': [Command.set(company.ids)],
@@ -28,6 +30,7 @@ def run(env):
     })
     member = users.create({
         'name': 'BWork concurrency member %s' % suffix,
+        'bwork_chat_view': True, 'bwork_chat_send': True,
         'login': 'bwork-race-member-%s' % suffix,
         'company_id': company.id,
         'company_ids': [Command.set(company.ids)],

@@ -99,6 +99,7 @@ ${end}`;
 function applyNativeBoundary(projectRoot, applicationPackage, origin) {
   const selected=profile();
   if (!validPackage(applicationPackage) || applicationPackage!==selected.applicationId) throw new Error('BWork native profile/package mismatch');
+  if (selected.name==='production' && origin!==selected.origin) throw new Error('BWork native production origin mismatch');
   const application = path.join(projectRoot, 'android/app/src/main/java', applicationPackage.replaceAll('.','/'),'MainApplication.kt');
   const updated = patchFeedback(patchApplication(fs.readFileSync(application, 'utf8'), origin));
   copySources(projectRoot, applicationPackage);

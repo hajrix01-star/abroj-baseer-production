@@ -23,6 +23,8 @@ class BWorkReceiptCase(TransactionCase):
         group = self.env.ref('baseer_bwork_procurement.group_bwork_procurement_operator')
         self.operator = self.env['res.users'].with_context(no_reset_password=True).create({
             'name': 'BWork restaurant manager', 'login': 'bwork-receipt-%s' % uuid4().hex,
+            # Receipt sharing exercises the authorized linked-chat path.
+            'bwork_chat_view': True, 'bwork_chat_send': True,
             'company_id': self.company.id, 'company_ids': [Command.set(self.company.ids)],
             'group_ids': [Command.set([self.env.ref('base.group_user').id, group.id])],
         })
@@ -169,9 +171,13 @@ class BWorkReceiptCase(TransactionCase):
         self.env['baseer.bwork.membership'].with_user(
             self.env.ref('base.user_admin'),
         ).with_company(self.company).create({'room_id': room.id, 'user_id': another.id})
-        cross_user = self.env['baseer.bwork.service'].with_user(another)._v2_receipt_share(
-            order.id, share,
-        )
+        cross_service = self.env['baseer.bwork.service'].with_user(another)
+        self.assertFalse(cross_service.env.su)
+        with self.assertRaises(AccessError):
+            cross_service._v2_receipt_share(order.id, share)
+        # Replay still requires explicit chat authorization under opt-in defaults.
+        another.write({'bwork_chat_view': True, 'bwork_chat_send': True})
+        cross_user = cross_service._v2_receipt_share(order.id, share)
         self.assertTrue(first['shared'])
         self.assertFalse(first['replayed'])
         self.assertTrue(second['replayed'])

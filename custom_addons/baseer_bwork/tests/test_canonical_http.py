@@ -20,11 +20,14 @@ class BWorkCanonicalHttpCase(HttpCase):
         cls.admin.write({'group_ids': [Command.link(cls.env.ref('baseer_bwork.group_bwork_manager').id)]})
         cls.member = cls.env['res.users'].with_context(no_reset_password=True).create({
             'name': 'BCR synthetic HTTP member', 'login': 'bcr-http-' + uuid4().hex,
+            # Explicit opt-in keeps alias/replay tests about their original guard.
+            'bwork_chat_view': True, 'bwork_chat_send': True, 'bwork_media': True,
             'password': cls.password, 'company_id': cls.company.id,
             'company_ids': [Command.set(cls.company.ids)],
             'group_ids': [Command.set(cls.env.ref('base.group_user').ids)]})
         cls.stranger = cls.env['res.users'].with_context(no_reset_password=True).create({
             'name': 'BCR synthetic HTTP nonmember', 'login': 'bcr-other-' + uuid4().hex,
+            'bwork_chat_view': True, 'bwork_chat_send': True, 'bwork_media': True,
             'password': cls.password, 'company_id': cls.company.id,
             'company_ids': [Command.set(cls.company.ids)],
             'group_ids': [Command.set(cls.env.ref('base.group_user').ids)]})

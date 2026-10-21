@@ -11,6 +11,9 @@
 /ops/qa/baseer-qa-deploy @hajrix01-star
 /ops/production/baseer-production-deploy @hajrix01-star
 /ops/lib/bwork_release_source.py @hajrix01-star
+/ops/lib/bwork_recovery.py @hajrix01-star
+/ops/production/upgrade-bwork-deploy-wrapper.sh @hajrix01-star
+/ops/production/test-upgrade-bwork-deploy-wrapper.sh @hajrix01-star
 /mobile/bwork/tools/bwork-baseline.json @hajrix01-star
 /mobile/bwork/tools/check-bwork.cjs @hajrix01-star
 /mobile/bwork/native/sdk-contract.json @hajrix01-star

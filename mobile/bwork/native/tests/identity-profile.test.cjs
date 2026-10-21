@@ -62,7 +62,7 @@ test('production pins its sole public origin database and version before any sig
  }
  for(const database of ['baseer_live_qa_clean_20260928','baseer_prod_copy',' baseer_prod','baseer_prod '])assert.throws(()=>profile({...good,EXPO_PUBLIC_BWORK_DATABASE:database},()=>{probes++;return true;}));
  assert.equal(probes,0);
- const prod=profile(good,()=>true);assert.equal(prod.origin,'https://baseer.abroj.sa');assert.equal(prod.database,'baseer_prod');assert.equal(prod.version,'1.0.0');assert.equal(prod.versionCode,1);
+ const prod=profile(good,()=>true);assert.equal(prod.origin,'https://baseer.abroj.sa');assert.equal(prod.database,'baseer_prod');assert.equal(prod.version,'1.0.1');assert.equal(prod.versionCode,2);
  const qa=profile({EXPO_PUBLIC_ODOO_ORIGIN:'https://qa.example.test',EXPO_PUBLIC_ODOO_DATABASE:'synthetic_qa'});
  assert.equal(qa.origin,'https://qa.example.test');assert.equal(qa.database,'synthetic_qa');assert.equal(qa.version,'0.1.32');assert.equal(qa.versionCode,33);
 });

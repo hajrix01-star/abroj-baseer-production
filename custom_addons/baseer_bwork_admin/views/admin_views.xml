@@ -77,4 +77,44 @@
         <field name="name">Media gallery</field><field name="tag">baseer_bwork_admin.media_gallery</field>
     </record>
     <menuitem id="media_gallery_menu" name="Media gallery" parent="baseer_bwork.menu_bwork_root" action="media_gallery_action" groups="baseer_bwork.group_bwork_manager" sequence="6"/>
+    <!-- BWork-only configuration surfaces: no standard company form inheritance. -->
+    <record id="company_display_list" model="ir.ui.view">
+        <field name="name">baseer.bwork.company.display.list</field>
+        <field name="model">res.company</field>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <list string="BWork company settings" editable="bottom" create="0" delete="0" open_form_view="0">
+                <field name="name" string="Company" readonly="1"/>
+                <field name="bwork_short_name_ar"/>
+                <field name="bwork_short_name_en" optional="show"/>
+                <field name="bwork_hidden"/>
+            </list>
+        </field>
+    </record>
+    <record id="company_display_form" model="ir.ui.view">
+        <field name="name">baseer.bwork.company.display.form</field>
+        <field name="model">res.company</field>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <form string="BWork company settings" create="0" delete="0" duplicate="0">
+                <sheet>
+                    <group>
+                        <field name="name" string="Company" readonly="1"/>
+                        <field name="bwork_short_name_ar"/>
+                        <field name="bwork_short_name_en"/>
+                        <field name="bwork_hidden"/>
+                    </group>
+                    <p>These settings affect BWork only. Official company names, permissions and existing data stay unchanged.</p>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="company_display_action" model="ir.actions.server">
+        <field name="name">BWork company settings</field>
+        <field name="model_id" ref="model_baseer_bwork_admin_service"/>
+        <field name="state">code</field>
+        <field name="code">action = env['baseer.bwork.admin.service'].company_settings_action()</field>
+    </record>
+    <menuitem id="settings_menu" name="Settings" parent="baseer_bwork.menu_bwork_root" groups="baseer_bwork.group_bwork_manager" sequence="30"/>
+    <menuitem id="company_display_menu" name="Companies" parent="settings_menu" action="company_display_action" groups="base.group_system" sequence="10"/>
 </odoo>

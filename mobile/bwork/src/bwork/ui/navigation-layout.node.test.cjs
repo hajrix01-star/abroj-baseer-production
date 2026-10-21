@@ -76,7 +76,7 @@ const dictionary = load('dictionary.ts', {});
 const mediaDictionary = load('../media/dictionary.ts', {});
 const ordersDictionary = load('../orders/dictionary.ts', {});
 const names = load('companyNames.ts', {});
-const viewModel = load('viewModel.ts', {});
+const viewModel = load('viewModel.ts', { './companyNames.ts': names });
 function identity(uid = 7) {
   return { api_version: 2, database: 'synthetic', user_id: uid, company_ids: [1], current_company_id: 1,
     permissions: { chat_view: true, chat_send: true, media: true, group_create: true },
@@ -115,7 +115,7 @@ function session(profile = 'qa', initialLanguage = 'ar') {
       Keyboard: { dismiss: () => calls.push('dismiss-keyboard') },
       Text: 'Text', View: 'View', useWindowDimensions: () => ({ width }) },
     'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView', SafeAreaProvider: 'SafeAreaProvider' },
-    './ui/components': components, './ui/dictionary': dictionary, './ui/useChat': { useChat: () => chat }, './ui/viewModel': viewModel,
+    './ui/components': components, './ui/dictionary': dictionary, './ui/companyNames': names, './ui/useChat': { useChat: () => chat }, './ui/viewModel': viewModel,
     './orders/dictionary': ordersDictionary, './orders/ui/OrdersScreen': { OrdersScreen: 'OrdersScreen' },
     './tasks/dictionary': { taskTranslator: language => word => `${language}:${word}` }, './tasks/ui/TasksScreen': { TasksScreen: 'TasksScreen' },
     './leadership/ui/LeadershipScreen': { LeadershipScreen: 'LeadershipScreen' },

@@ -7,6 +7,7 @@ The SQL classifier must still prove installed closure before any DB mutation.
 """
 import argparse
 import hashlib
+import importlib.util
 import json
 from pathlib import Path
 import re
@@ -88,10 +89,45 @@ def check_plan(root, approved, value, *, verified=False, transition=False):
         require(isinstance(items, list) and all(isinstance(x, str) for x in items)
                 and len(set(items)) == len(items) and set(items) <= allowed, 'invalid_' + key)
         sets[key] = set(items)
-    require(sets['required_closure'] and sets['required_closure'] <= approved,
+    preserved = set()
+    update_mode = value.get('update_mode')
+    if update_mode is not None:
+        # This is not a policy-selected skip switch. The exact canonical-only
+        # partition is produced after native ledger/identity verification and
+        # rechecked here against the actual staged, frozen-core-bound source.
+        helper_path = root / CORE / 'tools/canonical_four_update.py'
+        require(helper_path.is_file() and not helper_path.is_symlink(), 'update_contract_helper_missing')
+        spec = importlib.util.spec_from_file_location('bwork_fixed_four_update', helper_path)
+        require(spec is not None and spec.loader is not None, 'update_contract_helper_invalid')
+        helper = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(helper)
+        require(update_mode == helper.MODE and kind == 'canonical-ready' and not transition,
+                'invalid_canonical_update_mode')
+        require(approved == helper.REQUESTED_MODULES and not sets['install']
+                and sets['upgrade'] == helper.REQUESTED_MODULES
+                and sets['required_closure'] == helper.INSTALLED_MODULES,
+                'invalid_canonical_update_partition')
+        require(value.get('preserved_modules') == sorted(helper.PRESERVED_MODULES),
+                'invalid_preserved_modules')
+        try:
+            proof = helper.verify_preserved_sources(root / 'custom_addons')
+            contract_digest = helper.contract_sha256()
+        except (OSError, ValueError, RuntimeError):
+            require(False, 'preserved_source_verification_failed')
+        require(value.get('preserved_sources') == proof
+                and value.get('source_contract_sha256') == contract_digest,
+                'preserved_source_proof_mismatch')
+        preserved = helper.PRESERVED_MODULES
+    else:
+        require(not any(key in value for key in
+                        ('preserved_modules', 'preserved_sources', 'source_contract_sha256')),
+                'preserved_without_fixed_mode')
+    require(sets['required_closure'] and sets['required_closure'] <= approved | preserved,
             'installed_closure_not_approved')
     require(not (sets['install'] & sets['upgrade'])
-            and sets['install'] | sets['upgrade'] == sets['required_closure'], 'invalid_classification_partition')
+            and not (preserved & (sets['install'] | sets['upgrade']))
+            and sets['install'] | sets['upgrade'] | preserved == sets['required_closure'],
+            'invalid_classification_partition')
     require(value.get('native_pre_upgrade_required') is (kind == 'old-installed'), 'invalid_native_boundary')
     if verified or transition:
         require(kind == 'canonical-ready' and not sets['install'], 'postcondition_not_installed')

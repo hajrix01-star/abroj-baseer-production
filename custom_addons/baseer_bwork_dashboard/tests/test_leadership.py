@@ -85,6 +85,82 @@ class TestLeadershipOrm(AccountTestInvoicingCommon):
         bill.action_post()
         return bill
 
+    def _company_display(self, company, **values):
+        owner = self.fixture_env.ref('base.user_admin')
+        owner.sudo().write({
+            'company_ids': [Command.link(company.id)], 'bwork_manage_rooms': True,
+            'group_ids': [Command.link(self.env.ref('baseer_bwork.group_bwork_manager').id),
+                          Command.link(self.env.ref('base.group_system').id)],
+        })
+        company.with_user(owner).with_context(allowed_company_ids=company.ids).write(values)
+
+    def test_company_display_filters_real_aggregate_without_mutating_sources_or_authority(self):
+        invoice, bill = self._sale_invoice(), self._bill()
+        target = self.fixture_env['baseer.heat.calendar.target'].create({
+            'company_id': self.company.id, 'year': 2026, 'month': 10,
+            'weekday': 4, 'target_amount': 100,
+        })
+        other = self.fixture_env['res.company'].create({
+            'name': 'BCD visible company', 'currency_id': self.company.currency_id.id})
+        foreign = self.fixture_env['res.company'].create({
+            'name': 'BCD foreign company', 'currency_id': self.company.currency_id.id})
+        self.reader.company_ids = [Command.set((self.company | other).ids)]
+        self._company_display(other, bwork_short_name_en='Visible report')
+        self._company_display(foreign, bwork_hidden=True)
+        selection = {**self._selection(), 'company_id': None}
+        service = self.service.with_context(lang='en_US')
+        before = service._leadership(selection)
+        source_before = (invoice | bill).read(['state', 'amount_total_signed', 'company_id'])
+        target_before = target.read(['target_amount', 'active', 'write_date'])
+        company_name, company_ids = self.company.name, self.reader.company_ids.ids
+        self.assertEqual(before['overview']['sales']['value'], '115.00')
+        self.assertEqual(before['overview']['spending']['value'], '23.00')
+        self._company_display(self.company, bwork_hidden=True)
+        result = service._leadership(selection)
+        self.assertEqual(result['companies'], [{'id': other.id, 'name': 'Visible report'}])
+        self.assertEqual(result['overview']['sales']['value'], '0.00')
+        self.assertEqual(result['overview']['spending']['value'], '0.00')
+        self.assertEqual(service._leadership_options()['companies'], result['companies'])
+        with self.assertRaises(AccessError):
+            service._leadership(self._selection())
+        with self.assertRaises(AccessError):
+            service._leadership(self._selection(company=foreign))
+        self._company_display(self.company, bwork_hidden=False)
+        restored = service._leadership(selection)
+        self.assertEqual(restored['overview'], before['overview'])
+        self.assertEqual(restored['calendar'], before['calendar'])
+        self.assertEqual((invoice | bill).read(['state', 'amount_total_signed', 'company_id']), source_before)
+        self.assertEqual(target.read(['target_amount', 'active', 'write_date']), target_before)
+        self.assertEqual(self.company.name, company_name)
+        self.assertEqual(self.reader.company_ids.ids, company_ids)
+
+    def test_all_hidden_options_are_empty_and_report_stops_before_reading_sources(self):
+        self._company_display(self.company, bwork_hidden=True)
+        with patch.object(type(self.service), '_leadership_reports',
+                          side_effect=AssertionError('Hidden companies must not read sources')):
+            options = self.service._leadership_options()
+            self.assertTrue(options['can_view'])
+            self.assertEqual(options['companies'], [])
+            with self.assertRaises(ValidationError):
+                self.service._leadership({**self._selection(), 'company_id': None})
+            with self.assertRaises(AccessError):
+                self.service._leadership(self._selection())
+        self.reader.write({'bwork_dashboard_view': False})
+        self.assertFalse(self.service._leadership_options()['can_view'])
+        with self.assertRaises(AccessError):
+            self.service._leadership({**self._selection(), 'company_id': None})
+
+    def test_hidden_companies_do_not_consume_aggregate_company_limit(self):
+        hidden = self.fixture_env['res.company'].create([
+            {'name': 'BCD hidden %s' % index, 'currency_id': self.company.currency_id.id}
+            for index in range(10)])
+        self.reader.company_ids = [Command.set((self.company | hidden).ids)]
+        for company in hidden:
+            self._company_display(company, bwork_hidden=True)
+        self.assertEqual(self.service._leadership_companies().ids, self.company.ids)
+        self._company_display(hidden[0], bwork_hidden=False)
+        self.assertEqual(set(self.service._leadership_companies().ids), {self.company.id, hidden[0].id})
+
     def test_actual_sales_supplier_credit_parity_and_no_goal_writes(self):
         invoice = self._sale_invoice()
         bill, credit = self._bill(), self._bill(3, 'in_refund')
@@ -134,7 +210,8 @@ class TestLeadershipOrm(AccountTestInvoicingCommon):
     def test_options_switch_revision_source_acl_and_foreign_company(self):
         options = self.service._leadership_options()
         self.assertTrue(options['can_view'])
-        self.assertEqual(options['companies'], [{'id': self.company.id, 'name': self.company.name}])
+        self.assertEqual(options['companies'], [
+            {'id': self.company.id, 'name': self.service._bwork_company_label(self.company)}])
         revision = self.reader.bwork_permission_revision
         self.reader.write({'bwork_dashboard_view': False})
         self.assertGreater(self.reader.bwork_permission_revision, revision)

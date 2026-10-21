@@ -145,6 +145,7 @@ class WorkTaskProductionSeamCase(unittest.TestCase):
             due_at=stamp, created_at=stamp, updated_at=stamp, revision=2147483647,
             last_actor_id=2147483647, last_changed_at=stamp, last_note='"' * 512)
         fixture = Record(_task_data=lambda row: dict(base), _task_label=lambda value: value,
+            _bwork_company_label=lambda company: company.name,
             _task_stamp=lambda value: stamp, _work_task_actions=lambda row: ['start', 'done', 'cancel', 'reassign'])
         fixture._work_task_label = lambda value: label(fixture, value)
         result = serialize(fixture, task)

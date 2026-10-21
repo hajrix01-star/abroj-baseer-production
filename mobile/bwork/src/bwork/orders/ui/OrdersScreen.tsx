@@ -2,8 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import type { Bootstrap, Room } from '../../core/ChatEngine';
 import { Button, colors, direction, IconButton, Label } from '../../ui/components';
-import type { Language } from '../../ui/dictionary';
-import { companyDisplayName } from '../../ui/companyNames';
+import { translator, type Language } from '../../ui/dictionary';
+import { identityCompanyName, isCompanyVisible, visibleCompanyIds } from '../../ui/companyNames';
 import type { OrdersEngine } from '../core/OrdersEngine';
 import { OrdersError, type OrdersOptions, type PendingAttempt, type WriteResult } from '../core/types';
 import { orderTranslator } from '../dictionary';
@@ -39,7 +39,7 @@ export function OrdersScreen(props: OrdersScreenProps) {
   const engineScope = useRef({ engine: props.engine, revision: 0 });
   if (engineScope.current.engine !== props.engine) engineScope.current = { engine: props.engine, revision: engineScope.current.revision + 1 };
   // A key clears every in-memory order and closure before another scope can render it.
-  const scope = JSON.stringify([props.scopeKey, engineScope.current.revision, identity.database, identity.user_id, identity.company_ids, identity.permissions]);
+  const scope = JSON.stringify([props.scopeKey, engineScope.current.revision, identity.database, identity.user_id, identity.company_ids, identity.company_preferences, identity.permissions]);
   const mountedScope = useRef<string | null>(null);
   if (online && presented && identity.permissions.order_view) mountedScope.current = scope;
   const visible = online && presented && !!identity.permissions.order_view;
@@ -67,7 +67,7 @@ export function OrdersScreen(props: OrdersScreenProps) {
         <View style={s.flexible}><Heading word="orders" language={language} /></View>
       </View>
     </View>
-    {!identity.permissions.order_view ? <Empty title={t('noAccess')} help={t('permissionHelp')} language={language} /> : <View style={s.fill}>
+    {!visibleCompanyIds(identity).length ? <Empty title={translator(language)('noCompanies')} language={language} /> : !identity.permissions.order_view ? <Empty title={t('noAccess')} help={t('permissionHelp')} language={language} /> : <View style={s.fill}>
       {mountedScope.current === scope && <View testID="orders-retained-workspace" pointerEvents={visible ? 'auto' : 'none'}
         accessibilityElementsHidden={!visible} importantForAccessibility={visible ? 'auto' : 'no-hide-descendants'} style={[s.fill, !visible && { opacity: 0 }]}>
         <OrdersPresentation.Provider value={visible}><Workspace key={scope} {...props} engine={guardedEngine.current.facade} keyboardOffset={keyboardOffset} /></OrdersPresentation.Provider>
@@ -89,7 +89,7 @@ function Workspace({ engine, identity, language, selectedCompanyId, onCompanyCha
   const [busy, setBusy] = useState(false);
   const loading = useRef(false);
   const [tab, setTab] = useState<Tab>(identity.permissions.order_create ? 'catalog' : 'allOrders');
-  const company = options?.companies.some(item => item.id === selectedCompanyId && identity.company_ids.includes(item.id)) ? selectedCompanyId : 0;
+  const company = options?.companies.some(item => item.id === selectedCompanyId && isCompanyVisible(identity, item.id)) ? selectedCompanyId : 0;
   const [pending, setPending] = useState<PendingAttempt[]>([]);
   const [savedOutcome, setOutcome] = useState<{ selection: number; value: WriteResult } | null>(null);
   const outcome = savedOutcome?.selection === selectedCompanyId ? savedOutcome.value : null;
@@ -107,19 +107,18 @@ function Workspace({ engine, identity, language, selectedCompanyId, onCompanyCha
       if (!alive()) return;
       setOptions(next);
       const attempts = await engine.pending();
-      if (alive()) setPending(attempts);
+      if (alive()) setPending(attempts.filter(attempt => isCompanyVisible(identity, attempt.companyId)));
     } catch (failure) { if (alive() && !resumeRead(failure)) setError(failure); }
     finally { loading.current = false; if (alive()) setBusy(false); }
   };
   useEffect(() => { void load(); }, []);
   useEffect(() => () => { engine.cancelReads(); }, [engine, selectedCompanyId]);
   useEffect(() => { setOutcome(null); }, [selectedCompanyId]);
-  const reloadPending = async () => { if (!alive() || !active.current) return; try { const next = await engine.pending(); if (alive() && active.current) setPending(next); } catch (failure) { if (alive() && active.current) setError(failure); } };
-  const result = (value: WriteResult) => { if (!alive()) return; setOutcome({ selection: selectedCompanyId, value }); void reloadPending(); };
-  const changedCompany = (id: number) => { if (!alive() || selection.current !== selectedCompanyId || (id !== 0 && !options?.companies.some(item => item.id === id && identity.company_ids.includes(id)))) return; engine.invalidateQuote(); onCompanyChange(id); setReceiptTarget(null); setOutcome(null); };
-  const companies = (options?.companies ?? []).filter(item => identity.company_ids.includes(item.id)).map(item => {
-    const profile = identity.profile?.companies.find(company => company.id === item.id);
-    return { ...item, name: profile ? companyDisplayName(profile, language, item.id) : item.name };
+  const reloadPending = async () => { if (!alive() || !active.current) return; try { const next = await engine.pending(); if (alive() && active.current) setPending(next.filter(attempt => isCompanyVisible(identity, attempt.companyId))); } catch (failure) { if (alive() && active.current) setError(failure); } };
+  const result = (value: WriteResult) => { if (!alive() || !isCompanyVisible(identity, 'receipt' in value ? value.receipt.company_id : value.order.company_id)) return; setOutcome({ selection: selectedCompanyId, value }); void reloadPending(); };
+  const changedCompany = (id: number) => { if (!alive() || selection.current !== selectedCompanyId || (id !== 0 && !options?.companies.some(item => item.id === id && isCompanyVisible(identity, id)))) return; engine.invalidateQuote(); onCompanyChange(id); setReceiptTarget(null); setOutcome(null); };
+  const companies = (options?.companies ?? []).filter(item => isCompanyVisible(identity, item.id)).map(item => {
+    return { ...item, name: identityCompanyName(identity, language, item.id, item) };
   });
   const readCompany = companies.some(item => item.id === filterCompany) ? filterCompany : 0;
   const changedFilter = (id: number) => {

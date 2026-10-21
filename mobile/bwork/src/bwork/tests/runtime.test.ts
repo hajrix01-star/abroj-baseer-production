@@ -1258,6 +1258,44 @@ const financialBootstrap = (company_ids = [1], dashboard_view = true, revision =
   permissions: { chat_view: true, chat_send: true, media: true, dashboard_view, revision },
 });
 
+test('company visibility narrows only leadership online/offline authority and fences old report completion', async () => {
+  await engine.logout(); realFinancialSnapshots = true;
+  const preferences = (hidden: number[]) => [1, 2].map(id => ({ id, name: `Legal ${id}`, short_name_ar: '', short_name_en: '', hidden: hidden.includes(id) }));
+  const base = financialBootstrap([1, 2]);
+  bootstrapOverride = { ...base, company_preferences: preferences([2]) };
+  const leadership = getLeadershipEngine(); let release: (() => void) | undefined;
+  try {
+    await engine.login('alice', 'private', true);
+    assert.deepEqual(engine.identity!.company_ids, [1, 2]);
+    assert.deepEqual(snapshotCurrent!()!.companyIds, [1]);
+    await engine.enqueue(roomA, 'pending survives visibility');
+    await leadership.options(); await leadership.read({ month: '2026-10', period: 'month', companyId: 1 });
+    engine.markDisconnected(); await engine.restoreOffline();
+    const requests = calls.length;
+    assert.deepEqual((await leadership.options()).companies.map(company => company.id), [1]);
+    assert.deepEqual((await leadership.read({ month: '2026-10', period: 'month', companyId: 1 })).companies.map(company => company.id), [1]);
+    assert.equal(calls.length, requests);
+    assert.equal(engine.pending().length, 1);
+    await engine.refresh(); await leadership.options();
+    let started!: () => void; const seen = new Promise<void>(resolve => { started = resolve; });
+    const wait = new Promise<void>(resolve => { release = resolve; });
+    beforeNative = async path => { if (path === '/bwork/api/v2/leadership') { beforeNative = undefined; started(); await wait; } };
+    const report = leadership.read({ month: '2026-10', period: 'month', companyId: 1 }), rejected = assert.rejects(report, { code: 'stale' });
+    await seen; bootstrapOverride = { ...base, company_preferences: preferences([1, 2]) }; await engine.refresh(); release!(); await rejected;
+    assert.deepEqual(snapshotCurrent!()!.companyIds, []);
+    assert.deepEqual(engine.identity!.company_ids, [1, 2]); assert.equal(engine.pending().length, 1);
+    const before = calls.length;
+    assert.deepEqual((await leadership.options()).companies, []);
+    await assert.rejects(leadership.read({ month: '2026-10', period: 'month', companyId: 1 }), { code: 'snapshot_unavailable' });
+    assert.equal(calls.length, before, 'all-hidden does not query or fall back to full authorization');
+    bootstrapOverride = { ...base, company_preferences: preferences([]) }; await engine.refresh();
+    engine.markDisconnected(); await engine.restoreOffline();
+    assert.deepEqual(snapshotCurrent!()!.companyIds, [1, 2]);
+    await assert.rejects(leadership.options(), { code: 'snapshot_unavailable' });
+    assert.equal(engine.pending().length, 1, 'changing financial snapshot authority never deletes chat work');
+  } finally { release?.(); beforeNative = undefined; realFinancialSnapshots = false; bootstrapOverride = undefined; await engine.logout(); }
+});
+
 test('leadership runtime exposes remembered foreground display only and preserves offline restoration', async () => {
   await engine.logout(); bootstrapOverride = financialBootstrap();
   const leadership = getLeadershipEngine();

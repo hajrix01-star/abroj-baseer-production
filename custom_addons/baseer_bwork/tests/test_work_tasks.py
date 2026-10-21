@@ -48,6 +48,50 @@ class BWorkTaskCase(TransactionCase):
     def create_task(self, **changes):
         return self.service()._work_task_create(self.create_payload(**changes))['task']
 
+    def _company_display(self, company, **values):
+        owner = self.env.ref('base.user_admin')
+        owner.sudo().write({
+            'company_ids': [Command.link(company.id)], 'bwork_manage_rooms': True,
+            'group_ids': [Command.link(self.env.ref('baseer_bwork.group_bwork_manager').id),
+                          Command.link(self.env.ref('base.group_system').id)],
+        })
+        company.with_user(owner).with_context(allowed_company_ids=company.ids).write(values)
+
+    def test_company_display_filters_lists_but_preserves_task_and_native_scope(self):
+        self.env['res.lang']._activate_lang('ar_001')
+        visible = self.create_task()
+        hidden = self.create_task(company_id=self.other.id)
+        before = self.env['baseer.bwork.task'].sudo().browse(hidden['id']).read([
+            'company_id', 'title', 'description', 'state', 'assignee_id', 'revision'])
+        company_name = self.other.name
+        scope = self.assignee.company_ids.ids
+        self._company_display(self.company, bwork_short_name_en='Visible short',
+                              bwork_short_name_ar='اسم قصير')
+        self._company_display(self.other, bwork_hidden=True)
+        service = self.service(self.assignee).with_context(lang='en_US')
+        options = service._work_task_options()
+        self.assertEqual(options['companies'], [{'id': self.company.id, 'name': 'Visible short'}])
+        self.assertEqual(options['default_company_id'], self.company.id)
+        self.assertEqual(service.with_context(lang='ar_001')._work_task_options()['companies'][0]['name'], 'اسم قصير')
+        rows = service._work_tasks()['tasks']
+        self.assertEqual([row['id'] for row in rows], [visible['id']])
+        self.assertEqual(rows[0]['company_name'], 'Visible short')
+        self.assertFalse(service._work_tasks(company_id=self.other.id)['tasks'])
+        self.assertEqual(service._work_task_detail(hidden['id'], self.other.id)['task']['id'], hidden['id'])
+        with self.assertRaises(AccessError):
+            service._work_tasks(company_id=self.foreign_company.id)
+        self._company_display(self.company, bwork_hidden=True)
+        self.assertEqual(service._work_task_options()['companies'], [])
+        self.assertIsNone(service._work_task_options()['default_company_id'])
+        self.assertEqual(service._work_tasks()['tasks'], [])
+        self.assertTrue(service._work_task_options()['can_view'])
+        self._company_display(self.other, bwork_hidden=False)
+        self.assertEqual([row['id'] for row in service._work_tasks()['tasks']], [hidden['id']])
+        self.assertEqual(self.other.name, company_name)
+        self.assertEqual(self.assignee.company_ids.ids, scope)
+        self.assertEqual(self.env['baseer.bwork.task'].sudo().browse(hidden['id']).read([
+            'company_id', 'title', 'description', 'state', 'assignee_id', 'revision']), before)
+
     def transition_payload(self, task, action='done', **changes):
         values = dict(api_version=2, work_tasks_version=1, company_id=task['company_id'],
             client_uuid=str(uuid4()), expected_revision=task['revision'], action=action,

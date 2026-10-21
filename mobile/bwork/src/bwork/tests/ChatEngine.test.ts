@@ -71,6 +71,32 @@ function setup(storage = new MemoryStorage(), server = new Server(), extra: Part
 }
 const login = async (engine: ChatEngine) => engine.login('alice', 'NeverPersistThis', true);
 
+test('presentation-only hide survives remembered restore without removing native rooms, history or queued work', async () => {
+  const server = new Server(); let hidden = false;
+  server.messages = [{ id: 1, text: 'retained history', author_user_id: 7, author_name: 'Owner', created_at: '2026-10-18 12:00:00' }];
+  const current = setup(undefined, server, { transport: { async request(request) {
+    const value = await server.request(request);
+    return request.path === '/bwork/api/v2/bootstrap' ? { ...(value as object), company_preferences: [{ id: 1, name: 'Legal name', short_name_ar: 'مختصر', short_name_en: 'Short', hidden }] } : value;
+  } } });
+  await login(current.engine); await current.engine.history(room); await current.engine.enqueue(room, 'durable pending');
+  const durableKeys = [...current.storage.data.keys()].filter(key => key.includes('/outbox/'));
+  hidden = true; await current.engine.refresh();
+  assert.deepEqual(current.engine.identity!.company_ids, [1]);
+  assert.equal(current.engine.identity!.company_preferences![0].hidden, true);
+  assert.equal(current.engine.rooms().length, 1); assert.equal(current.engine.pending().length, 1);
+  assert.ok(durableKeys.every(key => current.storage.data.has(key)));
+  const restored = setup(current.storage, server); await restored.engine.restoreOffline();
+  assert.equal(restored.engine.identity!.company_preferences![0].hidden, true);
+  assert.equal(restored.engine.pending()[0].text, 'durable pending');
+  assert.equal((await restored.engine.history(room)).messages[0].text, 'retained history');
+  const identityKey = [...current.storage.data.keys()].find(key => key.endsWith('/identity'))!;
+  assert.ok(identityKey);
+  const saved = JSON.parse(current.storage.data.get(identityKey)!); saved.bootstrap.company_preferences[0].id = 99;
+  current.storage.data.set(identityKey, JSON.stringify(saved));
+  const invalid = setup(current.storage, server); await invalid.engine.restoreOffline();
+  assert.equal(invalid.engine.identity, null, 'offline metadata cannot inject company identity');
+});
+
 test('display lease remaining is a pure bounded deadline with exact expiry, clock rollback and logout guards', async () => {
   const { engine, server, tick } = setup();
   assert.equal(engine.leaseRemainingMs, 0);

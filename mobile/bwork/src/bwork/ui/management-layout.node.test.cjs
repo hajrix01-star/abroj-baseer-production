@@ -78,6 +78,7 @@ function harness(manage = true) {
     engine, language: 'ar', t: key => key, close: () => calls.push('close'), changed: async () => { calls.push('changed'); } };
   const element = (type, props) => ({ type, props: props || {} });
   const modules = { react: state.react, 'react/jsx-runtime': { jsx: element, jsxs: element, Fragment: 'Fragment' },
+    './companyNames': require('./company-names-fixture.cjs'),
     '../core/ChatEngine': { groupDescription: value => value.replace(/\r\n/g, '\n').trim(), ChatError: class extends Error {} },
     './GroupAvatar': { GroupAvatar: 'GroupAvatar' },
     'react-native-image-picker': { launchImageLibrary: async () => ({ didCancel: true }) },

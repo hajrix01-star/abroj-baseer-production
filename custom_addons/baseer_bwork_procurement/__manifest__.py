@@ -1,6 +1,6 @@
 {
     'name': 'BWork Procurement Bridge',
-    'version': '19.0.1.0.5',
+    'version': '19.0.1.0.6',
     'category': 'Inventory/Purchase',
     'summary': 'Narrow BWork order menu and internal procurement submission',
     'license': 'LGPL-3',

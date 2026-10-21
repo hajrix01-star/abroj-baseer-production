@@ -67,6 +67,18 @@ class BWorkAdminService(models.AbstractModel):
             raise AccessError(self.env._('Select only currently authorized companies.'))
         return ids
 
+    @api.model
+    def company_settings_action(self):
+        ids = self._guard(self.env.companies.ids, configuration=True)
+        return {
+            'type': 'ir.actions.act_window', 'name': self.env._('BWork company settings'),
+            'res_model': 'res.company', 'view_mode': 'list,form',
+            'views': [(self.env.ref('baseer_bwork_admin.company_display_list').id, 'list'),
+                      (self.env.ref('baseer_bwork_admin.company_display_form').id, 'form')],
+            'domain': [('id', 'in', ids)],
+            'context': {'allowed_company_ids': ids, 'create': False, 'delete': False},
+        }
+
     def _preflight(self, ids):
         remaining = contracts.MAX_SOURCE_ROWS
         for model, table in _SOURCES:

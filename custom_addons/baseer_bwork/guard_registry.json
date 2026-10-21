@@ -599,6 +599,48 @@
         "source-structure",
         "guard-integrity"
       ]
+    },
+    {
+      "id": "company-display-preferences-preserve-chat-authority",
+      "introduced": "2026-10-21",
+      "risk": "critical",
+      "scope": "Localized company presentation metadata keeps the full authorized bootstrap and chat sync/outbox scope intact while discovery and financial aggregates use visible authorized companies; defaults never hide or rename operational companies and metadata writes retain owner/admin/current-company guards.",
+      "source_paths": [
+        "custom_addons/baseer_bwork/company_display.py",
+        "custom_addons/baseer_bwork/models/company_display_service.py",
+        "custom_addons/baseer_bwork/tests/test_company_display.py",
+        "custom_addons/baseer_bwork/tests_contract/test_company_display.py"
+      ],
+      "suites": ["backend-contracts", "source-structure", "guard-integrity"]
+    },
+    {
+      "id": "canonical-four-update-preserves-unchanged-consumers",
+      "introduced": "2026-10-21",
+      "risk": "critical",
+      "scope": "Only an exactly requested four-module canonical-ready update with completed verified ledger and fixed six-module installed closure can preserve two byte-and-version-pinned consumers; staged source and partition proofs are independently checked while old and fresh transitions retain full closure and paired recovery.",
+      "source_paths": [
+        "custom_addons/baseer_bwork/tools/canonical_four_update.py",
+        "custom_addons/baseer_bwork/canonical_four_update_contract.json",
+        "custom_addons/baseer_bwork/tests_contract/test_canonical_four_update.py",
+        "custom_addons/baseer_bwork/tests_contract/fixtures/canonical_four_baseline_sources.zip",
+        "custom_addons/baseer_bwork/tests/canonical_four_update_probe.py"
+      ],
+      "suites": ["backend-contracts", "canonical-ops-contract", "source-structure", "guard-integrity"]
+    },
+    {
+      "id": "attested-canonical-recovery-preserves-entire-state",
+      "introduced": "2026-10-21",
+      "risk": "critical",
+      "scope": "A protected canonical-four rollback verifies the paired backup and full lossless PostgreSQL data, schema, security, sequences and frozen source before changing only fourteen physical OID slots in one exact ledger cell; same-transaction and independent original classification plus durable nonretryable intent and receipt gate every successful recovery without weakening ordinary update checks.",
+      "source_paths": [
+        "ops/lib/bwork_recovery.py",
+        "ops/tests/test_bwork_recovery.py",
+        "ops/tests/test_bwork_recovery_wrapper.py",
+        "ops/production/baseer-production-deploy",
+        "ops/production/upgrade-bwork-deploy-wrapper.sh",
+        "ops/production/test-upgrade-bwork-deploy-wrapper.sh"
+      ],
+      "suites": ["canonical-ops-contract", "source-structure", "guard-integrity"]
     }
   ]
 }

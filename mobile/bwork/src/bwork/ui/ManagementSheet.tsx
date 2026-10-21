@@ -1,3 +1,4 @@
+import { isCompanyVisible } from './companyNames';
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, AppState, Pressable, Switch, Text, View } from 'react-native';
 import { ChatError, groupDescription, type ChatEngine, type GroupInfo, type Room } from '../core/ChatEngine';
@@ -65,7 +66,7 @@ export function ManagementSheet({
   const descriptionRevision = useRef(0);
   const mutation = useRef(false);
   const alive = useRef(true);
-  const readScope = () => `${engine.accountScope}/${engine.identity?.database}/${engine.identity?.user_id}/${JSON.stringify(engine.identity?.company_ids)}/${JSON.stringify(engine.identity?.permissions)}/${companyId}/${mode}/${room?.company_id}/${room?.id}/${room?.membership_id}`;
+  const readScope = () => `${engine.accountScope}/${engine.identity?.database}/${engine.identity?.user_id}/${JSON.stringify(engine.identity?.company_ids)}/${JSON.stringify(engine.identity?.company_preferences)}/${JSON.stringify(engine.identity?.permissions)}/${companyId}/${mode}/${room?.company_id}/${room?.id}/${room?.membership_id}`;
   const identityScope = readScope();
   const liveScope = useRef(identityScope); liveScope.current = identityScope;
   const liveEngine = useRef(engine); liveEngine.current = engine;
@@ -73,7 +74,7 @@ export function ManagementSheet({
   const current = (requested: string) => {
     if (!alive.current || liveEngine.current !== engine || liveScope.current !== requested || readScope() !== requested) return false;
     try {
-      if (!engine.identity?.company_ids.includes(companyId)) return false;
+      if (!isCompanyVisible(engine.identity, companyId)) return false;
       return mode !== 'members' || !!room && engine.rooms().some(row => row.id === room.id && row.company_id === room.company_id && row.membership_id === room.membership_id);
     } catch { return false; }
   };

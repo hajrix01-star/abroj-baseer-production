@@ -22,6 +22,7 @@ import { useChat } from './ui/useChat';
 import { companyActions, presentationKey } from './ui/viewModel';
 import { VersionLabel } from './ui/VersionLabel';
 import { NavigationDrawer, type DrawerAction } from './ui/NavigationDrawer';
+import { isCompanyVisible, visibleCompanyIds } from './ui/companyNames';
 import { CompanySelector } from './ui/CompanySelector';
 import { Brand } from './ui/Brand';
 import { MediaGallerySheet } from './media/MediaGallerySheet';
@@ -66,9 +67,10 @@ export function SessionApp({ engine, initialLanguage = 'ar', onLanguageChange }:
   const wide = width >= 850;
   const identity = chat.presentationReady ? chat.identity : null;
   const displayIdentity = chat.identity;
+  const selectedVisible = !!chat.selected && isCompanyVisible(chat.identity, chat.selected.company_id);
   const displayReady = chat.displayReady ?? chat.presentationReady;
   const retainedDisplay = chat.retainedDisplay === true;
-  const mediaScope = JSON.stringify([engine.accountScope, identity?.database, identity?.user_id, identity?.company_ids, identity?.permissions,chat.contentEpoch]);
+  const mediaScope = JSON.stringify([engine.accountScope, identity?.database, identity?.user_id, identity?.company_ids, identity?.company_preferences, identity?.permissions,chat.contentEpoch]);
   const mediaScopeRef = useRef(mediaScope); mediaScopeRef.current = mediaScope;
   const galleryRoom = gallery?.scope === mediaScope && identity?.permissions.media === true && identity.permissions.chat_view === true
     ? engine.rooms().find(room => room.id === gallery.room.id && room.company_id === gallery.room.company_id && room.membership_id === gallery.room.membership_id) : undefined;
@@ -99,7 +101,7 @@ export function SessionApp({ engine, initialLanguage = 'ar', onLanguageChange }:
   const eligibleCompanies = (mode: CompanyMode) =>
     !identity || identity.permissions.chat_view !== true
       ? []
-      : identity.company_ids.filter(id => {
+      : visibleCompanyIds(identity).filter(id => {
           if (!Number.isSafeInteger(id) || id <= 0) return false;
           const actions = companyActions(identity, id, chat.offline);
           return mode === 'create'
@@ -112,7 +114,7 @@ export function SessionApp({ engine, initialLanguage = 'ar', onLanguageChange }:
   const scopeKey = JSON.stringify([
     identity?.database,
     identity?.user_id,
-    identity?.company_ids,
+    identity?.company_ids, identity?.company_preferences,
     identity?.permissions,
     identity?.mobile_policy,
     companyId,
@@ -130,14 +132,14 @@ export function SessionApp({ engine, initialLanguage = 'ar', onLanguageChange }:
   const closeMenu = useCallback(() => setMenu(false), []);
   const closeNotifications=useCallback(()=>setNotificationsVisible(false),[]);
   const notificationDestination=async(destination:NotificationDestination)=>{
-    if(!identity||!active.current||liveScope.current!==scopeKey||!identity.company_ids.includes(destination.companyId))return;
+    if(!identity||!active.current||liveScope.current!==scopeKey||!isCompanyVisible(identity, destination.companyId))return;
     setNotificationsVisible(false);setMenu(false);
     if(destination.kind==='task'&&identity.permissions.task_view===true){
       setNotificationTarget({companyId:destination.companyId,taskId:destination.taskId,nonce:Date.now(),authority:taskNotificationScope(identity,engine.accountScope??'')});setTasksVisited(true);setArea('tasks');
     } else if(destination.kind==='chat'&&identity.permissions.chat_view===true){
       const actor=engine.accountScope,room=engine.rooms().find(row=>row.id===destination.roomId&&row.company_id===destination.companyId);
       setArea('chat');if(!room)return; // Safe chat inbox when a room is no longer available.
-      try{await chat.select(room);if(!active.current||engine.accountScope!==actor||!engine.identity?.company_ids.includes(destination.companyId))return;
+      try{await chat.select(room);if(!active.current||engine.accountScope!==actor||!isCompanyVisible(engine.identity, destination.companyId))return;
         await engine.jumpToMessage(room,destination.messageId);if(active.current&&engine.accountScope===actor)chat.capture();}catch{/* No alternate endpoint or guessed room. */}
     }
   };
@@ -164,7 +166,7 @@ export function SessionApp({ engine, initialLanguage = 'ar', onLanguageChange }:
     return () => listener.remove();
   }, []);
   useEffect(() => {
-    if (area !== 'chat' || wide || !chat.selected) return;
+    if (area !== 'chat' || wide || (!chat.selected || !selectedVisible)) return;
     const listener = BackHandler.addEventListener('hardwareBackPress', () => {
       if (gallery) closeGallery();
       else if (storageScope) setStorageScope(null);
@@ -183,11 +185,12 @@ export function SessionApp({ engine, initialLanguage = 'ar', onLanguageChange }:
       setCompanyChoice(null);
       return;
     }
-    if (companyId !== 0 && !chat.identity.company_ids.includes(companyId)) setCompanyId(0);
+    if (companyId !== 0 && !isCompanyVisible(chat.identity, companyId)) setCompanyId(0);
   }, [
     chat.identity?.database,
     chat.identity?.user_id,
     chat.identity?.company_ids.join(','),
+    JSON.stringify(chat.identity?.company_preferences),
     companyId,
   ]);
   const requestManagement = (mode: ManagementMode) => {
@@ -203,7 +206,7 @@ export function SessionApp({ engine, initialLanguage = 'ar', onLanguageChange }:
       return;
     if (mode === 'members') {
       const room = chat.selected;
-      if (!room?.is_group || !identity.company_ids.includes(room.company_id)) return;
+      if (!room?.is_group || !isCompanyVisible(identity, room.company_id)) return;
       setManagement({ mode, companyId: room.company_id, room, scope: scopeKey });
       return;
     }
@@ -274,7 +277,7 @@ export function SessionApp({ engine, initialLanguage = 'ar', onLanguageChange }:
       if (engine.accountScope !== outcome.scope || engine.identity?.permissions.chat_view !== true) return;
       const room = engine.rooms().find(row => row.id === outcome.room.id &&
         row.company_id === outcome.room.company_id && row.membership_id === outcome.room.membership_id);
-      if (!room?.is_group) return;
+      if (!room?.is_group || !isCompanyVisible(engine.identity, room.company_id)) return;
       chat.capture();
       setPhotoNotice({scope: outcome.scope, companyId: room.company_id, roomId: room.id,
         membershipId: room.membership_id, word: outcome.status === 'saved' ? 'groupPhotoUpdated' : errorWord(outcome.error)});
@@ -288,7 +291,7 @@ export function SessionApp({ engine, initialLanguage = 'ar', onLanguageChange }:
       <View style={styles.fill} pointerEvents={!chat.identity || chat.presentationReady ? 'auto' : 'none'}
         accessibilityElementsHidden={!!chat.identity && !chat.presentationReady}
         importantForAccessibility={chat.identity && !chat.presentationReady ? 'no-hide-descendants' : 'auto'}>
-      {(!displayIdentity || area !== 'chat' || wide || !chat.selected) && (
+      {(!displayIdentity || area !== 'chat' || wide || (!chat.selected || !selectedVisible)) && (
         <View
           style={[
             styles.header,
@@ -349,7 +352,7 @@ export function SessionApp({ engine, initialLanguage = 'ar', onLanguageChange }:
               <IconButton icon="close" label={t('close')} onPress={() => setPhotoNotice(null)} />
             </View>
           )}
-          {((chat.presentationReady && chat.offline) || (!chat.selected && chat.pending.length > 0)) && (
+          {((chat.presentationReady && chat.offline) || ((!chat.selected || !selectedVisible) && chat.pending.length > 0)) && (
             <View
               style={[
                 styles.banner,
@@ -366,15 +369,15 @@ export function SessionApp({ engine, initialLanguage = 'ar', onLanguageChange }:
               )}
             </View>
           )}
-          {chat.error && !chat.selected && (
+          {chat.error && (!chat.selected || !selectedVisible) && (
             <View style={styles.banner}>
               <Label language={language}>{t(chat.error)}</Label>
             </View>
           )}
           {area === 'orders' && <OrdersScreen engine={getOrdersEngine()} identity={chat.identity} language={language}
             selectedCompanyId={companyId} onCompanyChange={id => {
-              if (active.current && liveArea.current === 'orders' && liveScope.current === scopeKey && identity && (id === 0 || identity.company_ids.includes(id))) setCompanyId(id);
-            }} scopeKey={engine.accountScope ?? ''} online={!chat.offline && !!identity} presented={!!identity} rooms={chat.rooms} onBack={() => {
+              if (active.current && liveArea.current === 'orders' && liveScope.current === scopeKey && identity && (id === 0 || isCompanyVisible(identity, id))) setCompanyId(id);
+            }} scopeKey={engine.accountScope ?? ''} online={!chat.offline && !!identity} presented={!!identity} rooms={chat.rooms.filter(room => isCompanyVisible(chat.identity, room.company_id))} onBack={() => {
               if (!active.current || liveArea.current !== 'orders' || liveScope.current !== scopeKey) return;
               Keyboard.dismiss(); setArea('chat');
             }} />}
@@ -405,7 +408,7 @@ export function SessionApp({ engine, initialLanguage = 'ar', onLanguageChange }:
               styles.fill,
               { display: area === 'chat' ? 'flex' : 'none', flexDirection: wide ? (language === 'ar' ? 'row-reverse' : 'row') : 'column' },
             ]}>
-            {(wide || !chat.selected) && (
+            {(wide || (!chat.selected || !selectedVisible)) && (
               <View
                 style={[
                   wide
@@ -432,7 +435,7 @@ export function SessionApp({ engine, initialLanguage = 'ar', onLanguageChange }:
                       !active.current ||
                       liveScope.current !== scopeKey ||
                       identity.permissions.chat_view !== true ||
-                      (id !== 0 && !identity.company_ids.includes(id))
+                      (id !== 0 && !isCompanyVisible(identity, id))
                     )
                       return;
                     setCompanyId(id);
@@ -447,7 +450,7 @@ export function SessionApp({ engine, initialLanguage = 'ar', onLanguageChange }:
                       !active.current ||
                       liveScope.current !== scopeKey ||
                       identity.permissions.chat_view !== true ||
-                      !identity.company_ids.includes(room.company_id)
+                      !isCompanyVisible(identity, room.company_id)
                     )
                       return;
                     void chat.select(room);
@@ -456,7 +459,7 @@ export function SessionApp({ engine, initialLanguage = 'ar', onLanguageChange }:
                 />
               </View>
             )}
-            {chat.selected ? (
+            {chat.selected && selectedVisible ? (
               <TimelineScreen
                 key={presentationKey(chat.identity, chat.selected)}
                 engine={engine}
@@ -466,7 +469,7 @@ export function SessionApp({ engine, initialLanguage = 'ar', onLanguageChange }:
                 presented={area === 'chat' && chat.presentationReady && !galleryRoom && storageScope !== mediaScope}
                 focusTarget={galleryFocus?.company === chat.selected.company_id && galleryFocus.room === chat.selected.id && galleryFocus.member === chat.selected.membership_id ? galleryFocus : undefined}
                 onGallery={identity?.permissions.media === true ? () => {
-                  if (!active.current || liveScope.current !== scopeKey || !chat.selected) return;
+                  if (!active.current || liveScope.current !== scopeKey || (!chat.selected || !selectedVisible)) return;
                   const target = { scope: mediaScope, room: chat.selected }; galleryRef.current = target; setGallery(target);
                 } : undefined}
                 back={
@@ -592,7 +595,7 @@ export function SessionApp({ engine, initialLanguage = 'ar', onLanguageChange }:
           chat.capture(); setGalleryFocus({ id: message.id, nonce: Date.now(), company: galleryRoom.company_id, room: galleryRoom.id, member: galleryRoom.membership_id }); closeGallery();
         }} />}
       {storageScope === mediaScope && identity?.permissions.media === true && identity.permissions.chat_view === true && <MediaStorageSheet key={mediaScope} scopeKey={mediaScope} language={language} t={t} close={() => setStorageScope(null)} />}
-      <NotificationsHub engine={getNotificationsEngine()} language={language} ready={!!identity&&!chat.offline} scopeKey={JSON.stringify([identity?.database,identity?.user_id,identity?.company_ids,identity?.permissions,engine.accountScope])}
+      <NotificationsHub engine={getNotificationsEngine()} language={language} ready={!!identity&&!chat.offline} scopeKey={JSON.stringify([identity?.database,identity?.user_id,identity?.company_ids, identity?.company_preferences,identity?.permissions,engine.accountScope])}
         visible={notificationsVisible} close={closeNotifications} onDestination={notificationDestination} />
       </View>
       {chat.identity && retainedDisplay && !displayReady && <View testID="session-privacy-cover"

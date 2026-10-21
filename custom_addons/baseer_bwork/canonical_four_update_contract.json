@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "mode": "canonical-four-v1",
+  "baseline_commit": "81fdd415521670b8c7ad681e97dd583e6f9c85e0",
+  "mapping_sha256": "8a7bb0128e426fa6819898f943b0a4e6dc9d1d73a2b789f75bf63f060e2d08fd",
+  "modules": [
+    {
+      "module": "baseer_access_roles",
+      "version": "19.0.1.0.20",
+      "files": 39,
+      "bytes": 136844,
+      "source_sha256": "94f1a77fd364d34fcdde7268b1d79fa0dcba988f6e2c28ad4320e0db599e0346"
+    },
+    {
+      "module": "baseer_procurement_requests",
+      "version": "19.0.14.0.13",
+      "files": 55,
+      "bytes": 848514,
+      "source_sha256": "1e0c4a2706b1cdc72447481e2b92d19c9aeff18e08c8632945fc9c25a57f46f0"
+    }
+  ]
+}

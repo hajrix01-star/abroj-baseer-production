@@ -3,7 +3,7 @@ import { ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, Pressable,
 import type { Bootstrap } from '../../core/ChatEngine';
 import { Button, colors, direction, IconButton, Label } from '../../ui/components';
 import { CompanySelector } from '../../ui/CompanySelector';
-import { companyDisplayName } from '../../ui/companyNames';
+import { identityCompanyName, isCompanyVisible, visibleCompanyIds } from '../../ui/companyNames';
 import { translator, type Language } from '../../ui/dictionary';
 import type { TasksEngine } from '../core/TasksEngine';
 import type { PendingTaskAttempt, TaskSelection, TasksStateFilter, TasksView, WorkTask, WorkTasksOptions, WorkTaskWriteResult } from '../core/types';
@@ -14,7 +14,7 @@ import { TaskDetail } from './TaskDetail';
 import { taskRow, taskStyles as s } from './taskStyles';
 
 export interface TasksScreenProps { engine: TasksEngine; identity: Bootstrap; language: Language; presented: boolean; scopeKey: string; onBack?: () => void; notificationTarget?: {taskId:number;companyId:number;nonce:number;authority:string} }
-export const taskNotificationScope=(identity:Bootstrap,scopeKey:string)=>JSON.stringify([scopeKey,identity.database,identity.user_id,identity.company_ids,identity.permissions]);
+export const taskNotificationScope=(identity:Bootstrap,scopeKey:string)=>JSON.stringify([scopeKey,identity.database,identity.user_id,identity.company_ids,identity.company_preferences,identity.permissions]);
 
 /** The scope key clears private state on identity/permission change, not on verification. */
 export function TasksScreen(props: TasksScreenProps) {
@@ -22,7 +22,7 @@ export function TasksScreen(props: TasksScreenProps) {
   return <View style={s.fill} testID="tasks-screen">
     <View pointerEvents={props.presented ? 'auto' : 'none'} accessibilityElementsHidden={!props.presented} importantForAccessibility={props.presented ? 'auto' : 'no-hide-descendants'}
       style={[s.fill, !props.presented && { opacity: 0 }]} testID="tasks-retained-workspace">
-      <Workspace key={scope} {...props} notificationTarget={props.notificationTarget?.authority===scope?props.notificationTarget:undefined} />
+      {!visibleCompanyIds(props.identity).length ? <View style={s.content}><Label language={props.language}>{translator(props.language)('noCompanies')}</Label></View> : <Workspace key={scope} {...props} notificationTarget={props.notificationTarget?.authority===scope?props.notificationTarget:undefined} />}
     </View>
     {!props.presented && <View testID="tasks-privacy-cover" style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: colors.white }} />}
     {!props.identity.permissions.task_view && props.presented && <View style={s.content}><Label language={props.language}>{t('noAccess')}</Label><Label language={props.language} muted>{t('permissionHelp')}</Label></View>}
@@ -50,9 +50,8 @@ function Workspace({ engine, identity, language, presented, onBack, notification
     optionsGate.current = false; pendingDirty.current = true; setOptionsReady(false); setOptions(null); setDetail(null); setPending([]); setMode('list');
     setCreateCompany(0); setLastCompany(0); setFilter(0); setBusy(false); setDetailBusy(false); setError(failure);
   };
-  const companies: TaskSelection[] = (options?.companies ?? []).filter(company => identity.company_ids.includes(company.id)).map(company => {
-    const profile = identity.profile?.companies.find(item => item.id === company.id);
-    return { id: company.id, name: profile ? companyDisplayName(profile, language, company.id) : company.name };
+  const companies: TaskSelection[] = (options?.companies ?? []).filter(company => isCompanyVisible(identity, company.id)).map(company => {
+    return { id: company.id, name: identityCompanyName(identity, language, company.id, company) };
   });
   const name = (task: WorkTask) => companies.find(company => company.id === task.company_id)?.name ?? task.company_name;
   const readCompany = companies.length === 1 ? companies[0].id : companies.some(company => company.id === filter) ? filter : 0;
@@ -99,7 +98,7 @@ function Workspace({ engine, identity, language, presented, onBack, notification
       .finally(()=>{if(alive.current&&generation===detailGeneration.current)setDetailBusy(false);});
   },[notificationTarget?.nonce,ready]);
   const outcome = (result: WorkTaskWriteResult) => {
-    if (!alive.current || knownDenied.current || !identity.company_ids.includes(result.task.company_id)) return;
+    if (!alive.current || knownDenied.current || !isCompanyVisible(identity, result.task.company_id)) return;
     setDetail(result.task); setMode('detail'); setRefresh(value => value + 1); pendingDirty.current = true; if (active.current) void loadPending();
   };
   const enterCreate = () => {

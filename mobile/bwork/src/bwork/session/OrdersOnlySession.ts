@@ -1,4 +1,5 @@
 import { ChatError, type Bootstrap } from '../core/ChatEngine.ts';
+import { validCompanyPreferences } from '../core/companyPreferences.ts';
 
 const record = (value: unknown): value is Record<string, unknown> => !!value && typeof value === 'object' && !Array.isArray(value);
 const positive = (value: unknown): value is number => Number.isInteger(value) && Number(value) > 0 && Number(value) <= 2147483647;
@@ -25,6 +26,8 @@ export function ordersOnlyBootstrap(raw: unknown, expectedUid: number, database:
     api_version: 2, database, user_id: expectedUid, company_ids: [...raw.company_ids], csrf_token: raw.csrf_token,
     permissions: clone(raw.permissions) as Bootstrap['permissions'],
   };
+  if (!validCompanyPreferences(raw.company_preferences, value.company_ids)) throw new ChatError('identity_mismatch', 403);
+  if (raw.company_preferences !== undefined) value.company_preferences = clone(raw.company_preferences);
   // Profile is optional at the server. It cannot provide company authority.
   const profile = raw.profile;
   if (record(profile) && typeof profile.name === 'string' && profile.name.length <= 512 && Array.isArray(profile.companies)) {

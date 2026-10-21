@@ -11,6 +11,7 @@ from . import message_receipt
 from . import media
 from . import mobile_upload_grant
 from . import v2_service
+from . import company_display_service
 from . import group_service
 from . import media_service
 from . import gallery_service

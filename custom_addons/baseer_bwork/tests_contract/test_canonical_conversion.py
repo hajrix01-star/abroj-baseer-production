@@ -111,7 +111,8 @@ class CanonicalConversionContract(unittest.TestCase):
                                 representative_partner_id=SimpleNamespace(id=False, display_name=''), requested_total='2.00',
                                 currency_id=SimpleNamespace(symbol='SAR', name='SAR'), internal_submitted_at='FIXED',
                                 bwork_room_id=SimpleNamespace(id=7), _purchase_route_label=lambda: 'Cash')
-        service = SimpleNamespace(_label=lambda value, *args: str(value), _money=lambda value: value, _stamp=lambda value: value)
+        service = SimpleNamespace(_label=lambda value, *args: str(value), _money=lambda value: value,
+                                  _stamp=lambda value: value, _bwork_company_label=lambda company: company.name)
         serialized = namespace['_order_data'](service, order)
         self.assertEqual(serialized['room_id'], 7)
         self.assertFalse(any(key.startswith(('bchat_', 'bwork_')) for key in serialized))

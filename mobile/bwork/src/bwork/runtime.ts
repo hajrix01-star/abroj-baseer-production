@@ -6,6 +6,7 @@ import * as FS from 'expo-file-system/legacy';
 import BlobUtil from 'react-native-blob-util';
 import type { FetchBlobResponse, StatefulPromise } from 'react-native-blob-util';
 import { ChatEngine, ChatError } from './core/ChatEngine';
+import { visibleCompanyIds } from './ui/companyNames.ts';
 import type { Attachment, Bootstrap, GroupAvatarAck, GroupAvatarInput, History, Pending, Request, Room } from './core/ChatEngine';
 import { actorPattern, mediaFilePattern, nativeSessionOptions, retainNativeFile, scopePattern, trustedMedia, validThumbnail } from './core/nativeBoundary';
 import { nativeSessionTrace, networkFailure } from './core/loginDiagnostics';
@@ -772,7 +773,7 @@ function leadershipSnapshotAuthority(): SnapshotAuthority | null {
   if (!identity || !epoch) return null;
   const revision = identity.permissions.revision;
   return { origin: config.origin, db: config.database, uid: identity.user_id, epoch,
-    companyIds: [...identity.company_ids], canView: identity.permissions.dashboard_view === true,
+    companyIds: visibleCompanyIds(identity), canView: identity.permissions.dashboard_view === true,
     revision: typeof revision === 'number' && Number.isSafeInteger(revision) && revision >= 0 ? revision : 0,
     leaseRemainingMs: chat.rememberedLeaseRemainingMs };
 }
@@ -1092,19 +1093,20 @@ export function getLeadershipEngine(): LeadershipEngine {
       if (!current) return null;
       const b = current.identity;
       return { origin: config.origin, db: config.database, uid: b.user_id, epoch: current.epoch,
-        companyIds: b.company_ids, verified: true, canView: b.permissions.dashboard_view === true,
+        companyIds: visibleCompanyIds(b), verified: true, canView: b.permissions.dashboard_view === true,
         ...(typeof b.permissions.revision === 'number' ? { revision: b.permissions.revision } : {}) };
     },
     transport: { request: async input => {
       const expected = applicationOrdersIdentity();
       if (!expected || expected.identity.permissions.dashboard_view !== true) throw new LeadershipError('unauthorized');
-      const stamp = identityStamp(expected);
+      const reportStamp = () => { const value = applicationOrdersIdentity(); return JSON.stringify([identityStamp(value), value?.identity.company_preferences]); };
+      const stamp = reportStamp();
       try {
         const value = await request(leadershipNativeRequest(input));
-        if (identityStamp(applicationOrdersIdentity()) !== stamp) throw new LeadershipError('stale');
+        if (reportStamp() !== stamp) throw new LeadershipError('stale');
         return value;
       } catch (error) {
-        if (identityStamp(applicationOrdersIdentity()) !== stamp) throw new LeadershipError('stale');
+        if (reportStamp() !== stamp) throw new LeadershipError('stale');
         if (error instanceof ChatError && error.status === 401) await getEngine().logout();
         if (error instanceof LeadershipError) throw error;
         throw new LeadershipError(error instanceof ChatError ? error.code : 'connection_failed',

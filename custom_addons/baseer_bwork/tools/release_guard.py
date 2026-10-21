@@ -317,6 +317,9 @@ def run_guard_integrity() -> None:
         "/ops/qa/baseer-qa-deploy",
         "/ops/production/baseer-production-deploy",
         "/ops/lib/bwork_release_source.py",
+        "/ops/lib/bwork_recovery.py",
+        "/ops/production/upgrade-bwork-deploy-wrapper.sh",
+        "/ops/production/test-upgrade-bwork-deploy-wrapper.sh",
         "/mobile/bwork/tools/bwork-baseline.json",
         "/mobile/bwork/tools/check-bwork.cjs",
         "/mobile/bwork/native/sdk-contract.json",
@@ -402,6 +405,9 @@ def run_bridge_entry_contract() -> None:
 def run_canonical_ops_contract() -> None:
     subprocess.run([sys.executable, '-m', 'unittest', 'discover', '-s',
                     'ops/tests', '-p', 'test_bwork_release_source.py', '-v'], cwd=ROOT, check=True)
+    subprocess.run([sys.executable, '-m', 'unittest', 'discover', '-s',
+                    'ops/tests', '-p', 'test_bwork_recovery*.py', '-v'], cwd=ROOT, check=True)
+    subprocess.run(['bash', 'ops/production/test-upgrade-bwork-deploy-wrapper.sh'], cwd=ROOT, check=True)
 
 
 RUNNERS: dict[str, Callable[[], None]] = {
@@ -436,6 +442,8 @@ def changed_guard(base: str, head: str, registry: dict) -> set[str]:
         "custom_addons/baseer_bwork_procurement/", "custom_addons/baseer_bwork_permission_guards/",
         "custom_addons/baseer_bwork_document_permission_guards/", "custom_addons/baseer_bwork_dashboard/",
         "ops/lib/bwork_release_source.py", "ops/tests/test_bwork_release_source.py",
+        "ops/lib/bwork_recovery.py", "ops/tests/test_bwork_recovery",
+        "ops/production/upgrade-bwork-deploy-wrapper.sh", "ops/production/test-upgrade-bwork-deploy-wrapper.sh",
         "ops/tests/run-bwork-canonical-ci.sh", "ops/tests/fixtures/",
         ".github/workflows/test-bwork-canonical-migration.yml",
         "custom_addons/baseer_access_roles/models/res_users.py",

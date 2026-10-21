@@ -46,7 +46,7 @@ function companies(value: unknown, allowed: number[], maximum = 10): Company[] {
 function version(v: Record<string, any>): void { if (v.api_version !== 2 || v.leadership_version !== 2) throw new LeadershipError('server_update_required'); }
 export function optionsResponse(value: unknown, identity: LeadershipIdentity): LeadershipOptions {
   const v = object(bounded(value)); version(v); const can_view = bool(v.can_view), scope = companies(v.companies, identity.companyIds, 1000);
-  if (v.max_companies !== 10 || can_view && (!scope.length || scope.length !== identity.companyIds.length
+  if (v.max_companies !== 10 || can_view && (scope.length !== identity.companyIds.length
       || identity.companyIds.some(company => !scope.some(row => row.id === company))) || !can_view && scope.length) return invalid();
   return { api_version: 2, leadership_version: 2, can_view, companies: scope, max_companies: 10 };
 }

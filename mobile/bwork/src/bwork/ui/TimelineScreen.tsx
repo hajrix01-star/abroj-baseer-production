@@ -14,7 +14,7 @@ import {
 import { FlashList, type FlashListRef } from '@shopify/flash-list';
 import type { Attachment, ChatEngine, Message, Pending } from '../core/ChatEngine';
 import { Button, colors, direction, Field, Icon, IconButton, Label, Sheet, styles } from './components';
-import { companyDisplayName } from './companyNames';
+import { identityCompanyName, isCompanyVisible } from './companyNames';
 import { MessageQuote, MessageStatus } from './MessagePresentation';
 import { TimelineFollow } from './timelineFollow';
 import { errorWord, type Language, type Translate, type Word } from './dictionary';
@@ -102,7 +102,7 @@ export function TimelineScreen({
   const hiddenMutation = useRef(0);
   const hiddenAuthority = useRef(false);
   hiddenAuthority.current = chat.presentationReady && chat.identity?.permissions.chat_view === true
-    && chat.identity.company_ids.includes(room.company_id);
+    && isCompanyVisible(chat.identity, room.company_id);
   const [jumpTarget, setJumpTarget] = useState<{ scope: string; id: number } | null>(null);
   useEffect(() => {
     if (presented && focusTarget) setJumpTarget({ scope: actionScope, id: focusTarget.id });
@@ -159,7 +159,7 @@ export function TimelineScreen({
   const attachmentIntents = useRef(new Set<{ wake(): void; cancel(): void }>());
   useEffect(() => {
     for (const intent of attachmentIntents.current) intent.wake();
-  }, [actionScope, presented, chat.presentationReady, chat.offline, sending, access.canAttach, JSON.stringify(chat.identity?.company_ids)]);
+  }, [actionScope, presented, chat.presentationReady, chat.offline, sending, access.canAttach, JSON.stringify([chat.identity?.company_ids,chat.identity?.company_preferences])]);
   useEffect(() => {
     const subscription = AppState.addEventListener?.('change', () => {
       for (const intent of attachmentIntents.current) intent.wake();
@@ -361,7 +361,7 @@ export function TimelineScreen({
         const identity = engine.identity, current = engine.rooms().find(value => value.id === room.id);
         if (!identity || !engine.accountScope || !current || current.company_id !== room.company_id || current.membership_id !== room.membership_id
           || !conversationAccess(identity, current).canAttach) return null;
-        return JSON.stringify([engine.accountScope, identity.database, identity.user_id, [...identity.company_ids].sort((a, b) => a - b),
+        return JSON.stringify([engine.accountScope, identity.database, identity.user_id, identity.company_preferences, [...identity.company_ids].sort((a, b) => a - b),
           identity.permissions.revision, room.company_id, room.id, room.membership_id]);
       } catch { return null; }
     };
@@ -474,16 +474,13 @@ export function TimelineScreen({
     if (follow.current.rows(lastKey)) scrollLatest();
     else if (lastKey && !follow.current.following) setShowLatest(true);
   }, [presented, lastKey, scrollLatest, chat.history.archive?.browsing]);
-  const companyName = companyDisplayName(
-    chat.identity?.profile?.companies.find(company => company.id === room.company_id),
-    language,
-    room.company_id,
-  );
+  const companyName = chat.identity ? identityCompanyName(chat.identity, language, room.company_id) : String(room.company_id);
   // A TTL-checked retained tree may stay mounted behind the shell privacy cover.
   // It is display-only until presentationReady; media/read/actions remain fenced above.
   if (
     (!chat.presentationReady && !chat.retainedDisplay) ||
-    !chat.identity?.company_ids.includes(room.company_id) ||
+    !chat.identity ||
+    !isCompanyVisible(chat.identity, room.company_id) ||
     chat.identity.permissions.chat_view !== true
   )
     return null;
@@ -946,7 +943,7 @@ export function TimelineScreen({
           <Text style={[styles.text, { writingDirection: 'ltr' }]}>{messageDateTime(info.message.created_at) || t('unknown')}</Text>
           {(info.message.content_removed || info.message.media_removed || !!info.message.text) && <Text selectable style={[styles.text, direction(language)]}>{info.message.content_removed?t('contentRemoved'):info.message.text||(info.message.media_removed?t('mediaRemoved'):'')}</Text>}
           {info.message.media?.kind === 'audio' && <Label language={language}>{t('voiceMessage')}</Label>}
-          {info.message.author_user_id === chat.identity.user_id && <>
+          {info.message.author_user_id === chat.identity?.user_id && <>
             <Label language={language} muted>{t('messageState')}</Label>
             <View style={[styles.row, { flexDirection: language === 'ar' ? 'row-reverse' : 'row' }]}>
               <MessageStatus state={info.message.delivery_state} t={t} />

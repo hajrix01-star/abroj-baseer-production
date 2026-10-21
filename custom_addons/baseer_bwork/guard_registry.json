@@ -599,6 +599,19 @@
         "source-structure",
         "guard-integrity"
       ]
+    },
+    {
+      "id": "company-display-preferences-preserve-chat-authority",
+      "introduced": "2026-10-21",
+      "risk": "critical",
+      "scope": "Localized company presentation metadata keeps the full authorized bootstrap and chat sync/outbox scope intact while discovery and financial aggregates use visible authorized companies; defaults never hide or rename operational companies and metadata writes retain owner/admin/current-company guards.",
+      "source_paths": [
+        "custom_addons/baseer_bwork/company_display.py",
+        "custom_addons/baseer_bwork/models/company_display_service.py",
+        "custom_addons/baseer_bwork/tests/test_company_display.py",
+        "custom_addons/baseer_bwork/tests_contract/test_company_display.py"
+      ],
+      "suites": ["backend-contracts", "source-structure", "guard-integrity"]
     }
   ]
 }

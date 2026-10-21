@@ -68,14 +68,17 @@ export class LeadershipEngine {
     } finally { if (this.reads.get(kind) === controller) this.reads.delete(kind); }
   }
   async options(): Promise<LeadershipOptions> {
+    const emptyOptions = (): LeadershipOptions => ({ api_version: 2, leadership_version: 2, can_view: true, companies: [], max_companies: 10 });
     if (this.deps.offline?.()) {
       const authority = this.displayIdentity(), ticket = this.generation;
+      if (!authority.companyIds.length) { this.approved = emptyOptions(); return this.approved; }
       const result = await this.deps.snapshots!.options(authority);
       const current = this.displayIdentity();
       if (ticket !== this.generation || !this.deps.offline() || authority.epoch !== current.epoch || authorityStamp(authority) !== authorityStamp(current)) throw new LeadershipError('stale');
       this.approved = result; return result;
     }
     const start = this.identity();
+    if (!start.companyIds.length) { this.approved = emptyOptions(); return this.approved; }
     const result = await this.fetch('options', start, { method: 'GET', path: `${ROOT}/options` }, value => optionsResponse(value, start));
     if (!result.can_view) { await this.revoke(start); throw new LeadershipError('forbidden', 403); }
     this.approved = result; this.revoked = false; return result;
@@ -83,6 +86,7 @@ export class LeadershipEngine {
   async read(input: LeadershipQuery) {
     if (this.deps.offline?.()) {
       const authority = this.displayIdentity(), ticket = this.generation;
+      if (!authority.companyIds.length) throw new LeadershipError('snapshot_unavailable');
       this.cachedUntil = 0;
       const result = await this.deps.snapshots!.read(authority, query(input));
       const current = this.displayIdentity();
@@ -90,6 +94,7 @@ export class LeadershipEngine {
       this.cachedUntil = this.deps.snapshots!.displayExpiresAt; this.readWasCached = true; this.cachedAuthority = authorityStamp(authority); return result;
     }
     const start = this.identity(), selected = query(input), options = this.approved;
+    if (!start.companyIds.length) throw new LeadershipError('snapshot_unavailable');
     if (this.revoked) throw new LeadershipError('forbidden');
     if (!options) throw new LeadershipError('server_update_required');
     if (selected.companyId === undefined && options.companies.length > options.max_companies) throw new LeadershipError('company_limit');

@@ -105,7 +105,7 @@ function management(manage = true) {
     engine, language: 'ar', t: key => key, close: () => calls.push(['close']), changed: async () => { calls.push(['changed']); },
     onPhotoOutcome: outcome => calls.push(['outcome', outcome]) };
   const mod = load('ManagementSheet.tsx', { react: state.react, 'react/jsx-runtime': jsx, '../core/ChatEngine': core, './GroupAvatar': { GroupAvatar: 'GroupAvatar' },
-    './components': components, './dictionary': { errorWord: error => error.code || 'error' },
+    './components': components, './companyNames': require('./company-names-fixture.cjs'), './dictionary': { errorWord: error => error.code || 'error' },
     './groupPhotoOperation': helper,
     'react-native': { ActivityIndicator: 'ActivityIndicator', AppState, View: 'View', Text: 'Text', Pressable: 'Pressable', Switch: 'Switch', Alert: { alert() {} } },
     'react-native-image-picker': { launchImageLibrary: async () => { calls.push(['picker']); return picker; } },

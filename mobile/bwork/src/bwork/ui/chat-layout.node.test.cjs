@@ -168,7 +168,7 @@ function timeline(initialHidden = [], host) {
     './GroupAvatar': { GroupAvatar: 'GroupAvatar' },
     './SwipeReply': { SwipeReply: 'SwipeReply' },
     './timelineFollow': load('timelineFollow.ts', {}),
-    './companyNames': { companyDisplayName: () => 'Synthetic company' },
+    './companyNames': { ...require('./company-names-fixture.cjs'), identityCompanyName: () => 'Synthetic company' },
     './MessagePresentation': { MessageQuote: 'MessageQuote', MessageStatus: 'MessageStatus' },
   });
   return { props, calls, voiceRights, tools, keyboard, frames, alerts, Component: module.TimelineScreen,

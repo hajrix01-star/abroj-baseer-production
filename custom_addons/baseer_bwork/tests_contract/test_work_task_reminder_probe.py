@@ -54,10 +54,10 @@ class WorkTaskReminderProbeContractCase(unittest.TestCase):
         self.assertNotIn('mock', '\n'.join(source.splitlines()[6:]))
         self.assertNotIn('work_task_reminder_concurrency_probe', (ROOT / 'tests/__init__.py').read_text())
 
-    def test_workflow_requires_40_cases_then_real_probe_and_both_logs(self):
+    def test_workflow_requires_41_cases_then_real_probe_and_both_logs(self):
         source = WORKFLOW.read_text(encoding='utf-8')
-        self.assertIn('" -eq 40', source)
-        self.assertIn('40', source)
+        self.assertIn('" -eq 41', source)
+        self.assertIn('41', source)
         self.assertLess(source.index("grep -F '0 failed, 0 error(s)'"),
                         source.index('Genuine reminder lock and once-only emission'))
         for required in ('from odoo.addons.baseer_bwork.tests.work_task_reminder_concurrency_probe import run',

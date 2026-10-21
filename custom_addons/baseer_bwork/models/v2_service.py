@@ -26,6 +26,9 @@ class BWorkTextService(models.AbstractModel):
             'database': self.env.cr.dbname,
             'user_id': user.id,
             'company_ids': allowed_company_ids,
+            # Configuration is not optional HR profile data. Full native
+            # company_ids remain unchanged for sync, pending operations/ACLs.
+            'company_preferences': self._bwork_company_preferences(),
             'current_company_id': (user.company_id.id
                                    if user.company_id.id in allowed_company_ids else None),
             'capabilities': {

@@ -260,7 +260,7 @@ function inbox() {
     '@shopify/flash-list': { FlashList: 'FlashList' },
     './CompanySelector': { CompanySelector: 'CompanySelector' },
     './companyNames': names,
-    './viewModel': compile('viewModel.ts', {}),
+    './viewModel': compile('viewModel.ts', { './companyNames.ts': names }),
     './components': { Icon: 'Icon', IconButton: 'IconButton', Label: 'Label', styles: {}, colors: {}, direction: () => ({}) },
   }).RoomsScreen;
   const calls = [];
@@ -281,14 +281,25 @@ function inbox() {
 }
 const list = tree => walk(tree, node => node.type === 'FlashList').props;
 
+test('visibility metadata masks selected hidden rooms immediately and fences retained rows/actions while preserving source rooms', () => {
+  const app = inbox(), before = app.render(), source = app.props().rooms;
+  const stale = list(before).renderItem({ item: source[1] }).props.onPress;
+  const identity = { ...app.props().identity, company_preferences: [{ id: 2, name: 'Legal', short_name_ar: 'قصير', short_name_en: 'Short', hidden: true }] };
+  const next = app.render({ identity });
+  assert.deepEqual(Array.from(list(next).data, room => room.company_id), [1]);
+  stale(); assert.deepEqual(app.calls, []); assert.equal(source.length, 3);
+  const allHidden = app.render({ identity: { ...identity, company_preferences: [1, 2].map(id => ({ id, name: 'Legal', short_name_ar: '', short_name_en: '', hidden: true })) } });
+  assert.deepEqual(Array.from(list(allHidden).data), []);
+});
+
 test('actual unified room list filters authorization before all/local filter and labels duplicate rooms by localized company', () => {
   const app = inbox();
   const tree = app.render();
   assert.deepEqual(Array.from(list(tree).data, room => room.id), [1, 2]);
   assert.equal(walk(tree, node => node.type === 'CompanySelector').props.allowAll, true);
   const rows = list(tree).data.map(item => list(tree).renderItem({ item }));
-  assert.equal(rows[0].props.accessibilityLabel, 'Same room · شركة ألف');
-  assert.equal(rows[1].props.accessibilityLabel, 'Same room · شركة باء');
+  assert.equal(rows[0].props.accessibilityLabel, 'Same room · ألف');
+  assert.equal(rows[1].props.accessibilityLabel, 'Same room · باء');
   rows[1].props.onPress();
   assert.deepEqual(app.calls, [['select', 2]]);
   let filtered = app.render({ companyId: 1, language: 'en' });

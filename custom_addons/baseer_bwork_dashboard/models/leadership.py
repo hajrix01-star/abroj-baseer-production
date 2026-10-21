@@ -42,7 +42,7 @@ class LeadershipService(models.AbstractModel):
 
     def _leadership_companies(self, company_id=None):
         user = self._leadership_user()
-        companies = user.company_ids.sorted('id')
+        companies = self._bwork_visible_companies(user).sorted('id')
         if company_id is not None:
             companies = companies.filtered(lambda company: company.id == company_id)
             if not companies:
@@ -82,9 +82,9 @@ class LeadershipService(models.AbstractModel):
         if not user._bwork_effective_permissions().get('dashboard_view'):
             return {'api_version': 2, 'leadership_version': 2, 'can_view': False,
                     'companies': [], 'max_companies': MAX_COMPANIES}
-        # Options preserve the complete native company scope; never shrink it
-        # to companies that happen to have readable sources or goals.
-        companies = user.company_ids.sorted('id')
+        # Only explicit presentation preferences narrow this set. A missing
+        # report or goal must still fail its established native access check.
+        companies = self._bwork_visible_companies(user).sorted('id')
         companies.check_access('read')
         for company in companies:
             self._leadership_reports(company)
@@ -92,9 +92,8 @@ class LeadershipService(models.AbstractModel):
                 'companies': self._leadership_company_rows(companies),
                 'max_companies': MAX_COMPANIES}
 
-    @staticmethod
-    def _leadership_company_rows(companies):
-        return [{'id': company.id, 'name': company.name} for company in companies]
+    def _leadership_company_rows(self, companies):
+        return [{'id': company.id, 'name': self._bwork_company_label(company)} for company in companies]
 
     def _leadership_plan(self, selection, today):
         selected = (selection['first'], selection['last'])

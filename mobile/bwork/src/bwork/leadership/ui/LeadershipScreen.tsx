@@ -3,7 +3,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from
 import Svg, { Line, Path } from 'react-native-svg';
 import type { Bootstrap } from '../../core/ChatEngine';
 import { Button, colors, direction, IconButton, Label, Sheet } from '../../ui/components';
-import { companyDisplayName } from '../../ui/companyNames';
+import { identityCompanyName, isCompanyVisible, visibleCompanyIds } from '../../ui/companyNames';
 import { DateTimeField } from '../../ui/DateTimeField';
 import { translator, type Language } from '../../ui/dictionary';
 import type { LeadershipEngine } from '../core/LeadershipEngine';
@@ -21,8 +21,8 @@ const chosenDate = (value: string) => { const d = new Date(value); return `${Str
 
 /** Scope changes unmount private UI; a hidden dashboard exposes no financial elements. */
 export function LeadershipScreen(props: LeadershipScreenProps) {
-  const key = JSON.stringify([props.scopeKey, props.identity.database, props.identity.user_id, props.identity.company_ids, props.identity.permissions.revision, props.identity.permissions.dashboard_view]);
-  return <Workspace key={key} {...props} />;
+  const key = JSON.stringify([props.scopeKey, props.identity.database, props.identity.user_id, props.identity.company_ids, props.identity.company_preferences, props.identity.permissions.revision, props.identity.permissions.dashboard_view]);
+  return !visibleCompanyIds(props.identity).length ? <View style={s.content} testID="leadership-empty-companies"><Label language={props.language}>{translator(props.language)('noCompanies')}</Label></View> : <Workspace key={key} {...props} />;
 }
 
 function Workspace({ engine, identity, language, presented, online = true, onBack }: LeadershipScreenProps) {
@@ -46,7 +46,7 @@ function Workspace({ engine, identity, language, presented, online = true, onBac
     setBusy(true); setError(null);
     void engine.options().then(next => { if (!alive.current || !active.current || ticket !== generation.current) return;
       if (!next.can_view) { deny({ code: 'forbidden' }); return; }
-      const companies = next.companies.filter(c => identity.company_ids.includes(c.id));
+      const companies = next.companies.filter(c => isCompanyVisible(identity, c.id));
       if (companies.length !== next.companies.length) { deny({ code: 'forbidden' }); return; }
       setCompany(current => companies.length === 1 ? companies[0].id : companies.some(c => c.id === current) ? current : 0);
       setOptions(next); readyRef.current = true; setReady(true);
@@ -89,7 +89,7 @@ function Workspace({ engine, identity, language, presented, online = true, onBac
     {!identity.permissions.dashboard_view ? <View style={s.content}><Label language={language}>{t('noAccess')}</Label></View> : <>
       <View style={[s.tabs, row(language)]}>{(['overview', 'heatmap'] as const).map(value => <Pressable key={value} testID={`leadership-tab-${value}`} accessibilityRole="tab" accessibilityState={{ selected: tab === value }} onPress={() => setTab(value)} style={[s.tab, tab === value && s.selected]}><Text style={[direction(language), { color: tab === value ? colors.blue : colors.muted, fontWeight: '600' }]}>{t(value)}</Text></Pressable>)}</View>
       <ScrollView contentContainerStyle={[s.content, tab === 'heatmap' && s.calendarContent]} testID="leadership-scroll">
-        {options && options.companies.length > 1 && <View style={[s.row, row(language), { flexWrap: 'wrap' }]} testID="leadership-companies">{[{ id: 0, name: t('all') }, ...options.companies].map(company => { const profile = identity.profile?.companies.find(c => c.id === company.id), name = profile ? companyDisplayName(profile, language, company.id) : company.name; return <Pressable key={company.id} testID={`leadership-company-${company.id}`} accessibilityRole="button" accessibilityLabel={name} accessibilityState={{ selected: companyId === company.id, disabled: !ready }} disabled={!ready} onPress={() => choose(() => setCompany(company.id))} style={[s.companyChip, companyId === company.id && { backgroundColor: colors.blue, borderColor: colors.blue }]}><Text style={[direction(language), { fontSize: 11, color: companyId === company.id ? colors.white : colors.muted }]}>{name}</Text></Pressable>; })}</View>}
+        {options && options.companies.length > 1 && <View style={[s.row, row(language), { flexWrap: 'wrap' }]} testID="leadership-companies">{[{ id: 0, name: t('all') }, ...options.companies].map(company => { const name = company.id === 0 ? company.name : identityCompanyName(identity, language, company.id, company); return <Pressable key={company.id} testID={`leadership-company-${company.id}`} accessibilityRole="button" accessibilityLabel={name} accessibilityState={{ selected: companyId === company.id, disabled: !ready }} disabled={!ready} onPress={() => choose(() => setCompany(company.id))} style={[s.companyChip, companyId === company.id && { backgroundColor: colors.blue, borderColor: colors.blue }]}><Text style={[direction(language), { fontSize: 11, color: companyId === company.id ? colors.white : colors.muted }]}>{name}</Text></Pressable>; })}</View>}
         {!!error && <View accessibilityLiveRegion="polite" testID="leadership-error"><Label language={language}>{t(errorWord(error))}</Label><Button quiet title={t('retry')} onPress={refreshReport} /></View>}
         {(busy || reading) && !data && <ActivityIndicator color={colors.blue} accessibilityLabel={t('loading')} />}
         {(ready || data) && <>

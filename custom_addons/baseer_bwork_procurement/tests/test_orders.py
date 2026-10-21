@@ -95,6 +95,49 @@ class BWorkOrderCase(TransactionCase):
         result = self.service._v2_order_create({**self._payload(), 'purchase_route': 'cash'})
         return self.env['baseer.procurement.request'].sudo().browse(result['order']['id'])
 
+    def _company_display(self, company, **values):
+        owner = self.env.ref('base.user_admin')
+        owner.sudo().write({
+            'company_ids': [Command.link(company.id)], 'bwork_manage_rooms': True,
+            'group_ids': [Command.link(self.env.ref('baseer_bwork.group_bwork_manager').id),
+                          Command.link(self.env.ref('base.group_system').id)],
+        })
+        company.with_user(owner).with_context(allowed_company_ids=company.ids).write(values)
+
+    def test_company_display_hides_discovery_not_replay_native_names_or_amounts(self):
+        payload = {**self._payload(), 'purchase_route': 'cash'}
+        order = self.service._v2_order_create(payload)['order']
+        record = self.env['baseer.procurement.request'].sudo().browse(order['id'])
+        before = record.read(['company_id', 'state', 'requested_total', 'line_ids', 'requester_id'])
+        legal_name, company_ids = self.company.name, self.user.company_ids.ids
+        self._company_display(self.company, bwork_short_name_en='Procurement short')
+        service = self.service.with_context(lang='en_US')
+        self.assertEqual(service._v2_order_options()['companies'], [
+            {'id': self.company.id, 'name': 'Procurement short'}])
+        self.assertEqual(service._v2_orders_all()['orders'][0]['company_name'], 'Procurement short')
+        self._company_display(self.company, bwork_hidden=True)
+        self.assertEqual(service._v2_order_options()['companies'], [])
+        self.assertNotIn('warehouses', service._v2_order_options(self.company.id))
+        for rows in (service._v2_orders_all(), service._v2_orders_all(company_id=self.company.id),
+                     service._v2_orders(self.company.id)):
+            self.assertEqual(rows['orders'], [])
+            self.assertIsNone(rows['next_before_id'])
+        replay = service._v2_order_create(payload)
+        self.assertTrue(replay['replayed'])
+        self.assertEqual(replay['order']['id'], order['id'])
+        with self.assertRaises(AccessError):
+            service._v2_orders_all(company_id=self.other_company.id)
+        self._company_display(self.company, bwork_hidden=False)
+        self.assertEqual([row['id'] for row in service._v2_orders_all()['orders']], [order['id']])
+        self.assertEqual(self.company.name, legal_name)
+        self.assertEqual(self.user.company_ids.ids, company_ids)
+        self.assertEqual(record.read(['company_id', 'state', 'requested_total', 'line_ids', 'requester_id']), before)
+
+    def test_visible_company_read_failure_is_not_misreported_as_hidden_empty(self):
+        with patch.object(type(self.service), '_company_scope', side_effect=AccessError('Denied')):
+            with self.assertRaises(AccessError):
+                self.service._order_read_scopes()
+
     def test_workflow_version_and_company_filtered_all_preserve_legacy_scope(self):
         self.assertEqual(self.service._v2_order_options()['workflow_version'], 1)
         self.assertEqual(self.service._v2_order_options(self.company.id)['workflow_version'], 1)
@@ -809,7 +852,7 @@ class BWorkOrderCase(TransactionCase):
         self.assertNotIn(excluded.id, ids)
         row = next(row for row in rows if row['id'] == colleague_order.id)
         self.assertEqual((row['company_id'], row['requester_id']), (self.company.id, colleague.id))
-        self.assertEqual(row['company_name'], self.company.name)
+        self.assertEqual(row['company_name'], self.service._bwork_company_label(self.company))
         self.assertEqual(row['requester_name'], colleague.name)
         detail = self.service._v2_order_detail(self.company.id, colleague_order.id, scope='all')
         self.assertEqual(detail['order']['requester_id'], colleague.id)

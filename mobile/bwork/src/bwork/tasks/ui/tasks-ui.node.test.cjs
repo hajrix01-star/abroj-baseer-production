@@ -2,6 +2,21 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { harness, nodes, one, byId, button, text } = require('./tasks-harness.cjs');
 const waiting = () => { let resolve, reject; const promise = new Promise((a, b) => { resolve = a; reject = b; }); return { promise, resolve, reject }; };
+
+test('hidden task companies are excluded independently of profile; all hidden clears UI without list or detail reads', async () => {
+  const app = harness();
+  try {
+    app.props.identity.company_preferences = [{ id: 2, name: 'Legal', short_name_ar: 'قصير', short_name_en: 'Short', hidden: true }];
+    await app.flush();
+    assert.equal(nodes(app.render()).some(node => node.props.companyName === 'Company 2'), false);
+    assert.equal(app.calls.find(call => call[0] === 'list')[1].companyId, 1);
+    const before = app.calls.filter(call => ['list', 'options', 'detail'].includes(call[0])).length;
+    app.props.identity = { ...app.props.identity, company_preferences: [1, 2].map(id => ({ id, name: 'Legal', short_name_ar: '', short_name_en: '', hidden: true })) };
+    await app.flush();
+    assert.equal(app.calls.filter(call => ['list', 'options', 'detail'].includes(call[0])).length, before);
+    assert.equal(nodes(app.render()).some(node => node.props.testID === 'tasks-list'), false);
+  } finally { await app.unmount(); }
+});
 test('tasks compact header keeps one authorized create action beside its title without a duplicate row', async () => {
   for (const language of ['ar', 'en']) {
     const app = harness({ language });

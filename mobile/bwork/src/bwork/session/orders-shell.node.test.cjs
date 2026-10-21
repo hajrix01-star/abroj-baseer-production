@@ -23,6 +23,7 @@ function harness() {
     return React.createElement('OrdersScreen', { ...props, fixtureDraft: draft, fixtureEdit: setDraft });
   }
   const modules = {
+    '../ui/companyNames': require('../ui/company-names-fixture.cjs'),
     react: React, 'react/jsx-runtime': require('react/jsx-runtime'),
     'react-native': { View: 'View', AppState: appState }, 'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView' },
     '../runtime': { getEngine: () => { calls.push('getEngine'); return engine; }, getNotificationsEngine: () => ({}), getOrdersEngine: () => { calls.push('getOrdersEngine'); return orders; }, getTasksEngine: () => { calls.push('getTasksEngine'); return {}; }, getLeadershipEngine: () => { calls.push('getLeadershipEngine'); return {}; },

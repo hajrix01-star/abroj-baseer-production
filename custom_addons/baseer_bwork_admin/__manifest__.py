@@ -1,7 +1,7 @@
 {
     'name': 'BWork Administration',
     'summary': 'Scoped BWork operations and explicit OFF-by-default server retention',
-    'version': '19.0.1.2.0',
+    'version': '19.0.1.3.0',
     'category': 'Productivity',
     'license': 'LGPL-3',
     'depends': ['baseer_bwork'],

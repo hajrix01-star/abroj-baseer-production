@@ -114,3 +114,43 @@ msgstr "متاح"
 #: model:ir.model.fields.selection,name:baseer_bwork.selection__baseer_bwork_media__retention_state__content_removed
 msgid "Content removed"
 msgstr "حُذف المحتوى"
+
+#. module: baseer_bwork
+#: model:ir.model.fields,field_description:baseer_bwork.field_res_company__bwork_short_name_ar
+msgid "Short name in Arabic"
+msgstr "الاسم المختصر بالعربية"
+
+#. module: baseer_bwork
+#: model:ir.model.fields,field_description:baseer_bwork.field_res_company__bwork_short_name_en
+msgid "Short name in English"
+msgstr "الاسم المختصر بالإنجليزية"
+
+#. module: baseer_bwork
+#: model:ir.model.fields,field_description:baseer_bwork.field_res_company__bwork_hidden
+msgid "Hide company from BWork"
+msgstr "إخفاء الشركة من BWork"
+
+#. module: baseer_bwork
+#: model:ir.model.fields,help:baseer_bwork.field_res_company__bwork_hidden
+msgid "Hide this company in BWork only. Odoo permissions and existing data stay unchanged."
+msgstr "إخفاء الشركة في BWork فقط، دون تغيير الصلاحيات أو البيانات في أودو."
+
+#. module: baseer_bwork
+#: code:addons/baseer_bwork/models/company.py:0
+msgid "Create the company first, then configure its display in BWork settings."
+msgstr "أنشئ الشركة أولًا، ثم اضبط ظهورها من إعدادات BWork."
+
+#. module: baseer_bwork
+#: code:addons/baseer_bwork/models/company.py:0
+msgid "Select only currently authorized companies."
+msgstr "اختر الشركات المصرح لك بها حاليًا فقط."
+
+#. module: baseer_bwork
+#: code:addons/baseer_bwork/models/company.py:0
+msgid "Use a short company name of at most 64 characters without control characters."
+msgstr "أدخل اسمًا مختصرًا لا يتجاوز 64 حرفًا ودون محارف تحكم."
+
+#. module: baseer_bwork
+#: code:addons/baseer_bwork/models/company.py:0
+msgid "Choose whether to hide the company from BWork."
+msgstr "حدد ما إذا كنت تريد إخفاء الشركة من BWork."

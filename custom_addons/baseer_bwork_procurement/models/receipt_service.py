@@ -74,6 +74,8 @@ class BWorkReceiptService(models.AbstractModel):
         scoped = self._receipt_scope(company_id)
         if before_id is not None:
             before_id = positive_id(before_id, 'before_id')
+        if scoped.env.company.id not in self._bwork_visible_companies().ids:
+            return {'api_version': 2, 'orders': [], 'next_before_id': None}
         domain = [('company_id', '=', scoped.env.company.id),
                   ('source_channel', '=', LEGACY_SOURCE_CHANNEL), ('state', 'in', ('sent', 'received'))]
         if before_id:
@@ -95,12 +97,15 @@ class BWorkReceiptService(models.AbstractModel):
     def _v2_receipts_all(self, before_id=None, company_id=None):
         """One bounded global page; verify each company before the sudo read."""
         self._require_order_receiver()
-        scopes = ({positive_id(company_id, 'company_id'): self._receipt_scope(company_id)}
-                  if company_id is not None else self._order_read_scopes())
+        if company_id is not None:
+            self._receipt_scope(company_id)
+        scopes = self._order_list_scopes(company_id)
         # Keep receipt-specific extension checks in effect for every company.
         scopes = {key: self._receipt_scope(key) for key in scopes}
         if before_id is not None:
             before_id = positive_id(before_id, 'before_id')
+        if not scopes:
+            return {'api_version': 2, 'orders': [], 'next_before_id': None}
         domain = [('company_id', 'in', list(scopes)), ('source_channel', '=', LEGACY_SOURCE_CHANNEL),
                   ('state', 'in', ('sent', 'received'))]
         if before_id:

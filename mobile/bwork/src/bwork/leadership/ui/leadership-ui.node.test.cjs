@@ -2,6 +2,26 @@ const { test } = require('node:test'), assert = require('node:assert/strict');
 const { harness, nodes, one, byId, text } = require('./leadership-harness.cjs');
 const waiting = () => { let resolve, reject; const promise = new Promise((a, b) => { resolve = a; reject = b; }); return { promise, resolve, reject }; };
 
+test('hide immediately removes combined financial state and old callbacks; all hidden makes zero report reads', async () => {
+  for (const language of ['ar', 'en']) {
+    const app = harness({ language });
+    try {
+      await app.flush(); const stale = byId(app.render(), 'leadership-card-sales').onPress;
+      const before = app.calls.filter(call => ['read', 'options'].includes(call[0])).length;
+      app.props.identity = { ...app.props.identity, profile: undefined, company_preferences: [1, 2].map(id => ({ id, name: 'Legal', short_name_ar: 'قصير', short_name_en: 'Short', hidden: true })) };
+      await app.flush(); stale(); await app.flush();
+      assert.ok(byId(app.render(), 'leadership-empty-companies'));
+      assert.equal(nodes(app.render()).some(node => /^leadership-card-/.test(node.props.testID || '') || node.type === 'Sheet'), false);
+      assert.equal(app.calls.filter(call => ['read', 'options'].includes(call[0])).length, before);
+      app.props.identity = { ...app.props.identity, company_preferences: app.props.identity.company_preferences.map(c => ({ ...c, hidden: c.id === 2 })) };
+      app.options.companies = app.options.companies.filter(c => c.id === 1);
+      app.engine.read = async query => { app.calls.push(['read', query]); return app.fixtures.report(1, query.month, query.period); };
+      await app.flush(); assert.ok(byId(app.render(), 'leadership-card-sales'));
+      assert.equal(app.calls.at(-1)[1].companyId, 1);
+    } finally { await app.unmount(); }
+  }
+});
+
 test('combined spending keeps three compact cards and shows server breakdown only in its authorized Sheet', async () => {
   for (const language of ['ar', 'en']) {
     const app = harness({ language });

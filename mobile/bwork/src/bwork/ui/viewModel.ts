@@ -1,3 +1,4 @@
+import { isCompanyVisible } from './companyNames.ts';
 import type { Bootstrap, Room } from '../core/ChatEngine';
 
 /** Odoo timestamps are UTC; display device-local time using 0–9 digits. */
@@ -20,7 +21,7 @@ export function messageDateTime(value: string, timeZone?: string): string {
 
 /** Server-derived presentation only; every operation remains server-authorized. */
 export function conversationAccess(identity: Bootstrap | null, room: Room) {
-  const scoped = !!identity?.company_ids.includes(room.company_id);
+  const scoped = isCompanyVisible(identity, room.company_id);
   const directOff =
     !!room.mobile_direct &&
     !identity?.mobile_policy?.find(policy => policy.company_id === room.company_id)?.direct_enabled;
@@ -34,14 +35,14 @@ export function conversationAccess(identity: Bootstrap | null, room: Room) {
 
 export function canViewMedia(identity: Bootstrap | null, room: Room): boolean {
   return (
-    !!identity?.company_ids.includes(room.company_id) &&
-    identity.permissions.chat_view === true &&
-    identity.permissions.media === true
+    isCompanyVisible(identity, room.company_id) &&
+    identity?.permissions.chat_view === true &&
+    identity?.permissions.media === true
   );
 }
 
 export function presentationKey(identity: Bootstrap | null, room: Room): string {
-  return `${identity?.user_id}/${room.company_id}/${room.id}/${room.membership_id}/${identity?.permissions.revision}/${identity?.permissions.chat_view}/${identity?.permissions.chat_send}/${identity?.permissions.media}`;
+  return `${identity?.user_id}/${isCompanyVisible(identity, room.company_id)}/${room.company_id}/${room.id}/${room.membership_id}/${identity?.permissions.revision}/${identity?.permissions.chat_view}/${identity?.permissions.chat_send}/${identity?.permissions.media}`;
 }
 
 export function visibleReadIds(
@@ -60,7 +61,7 @@ export function visibleReadIds(
 }
 
 export function companyActions(identity: Bootstrap, companyId: number, offline: boolean) {
-  const scoped = identity.company_ids.includes(companyId);
+  const scoped = isCompanyVisible(identity, companyId);
   const policy = identity.mobile_policy?.find(item => item.company_id === companyId);
   return {
     createGroup: scoped && identity.permissions.group_create === true,

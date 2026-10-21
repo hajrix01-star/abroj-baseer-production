@@ -3,6 +3,48 @@ const { test } = require('node:test');
 const { harness, nodes, one, text, byId, button } = require('./orders-harness.cjs');
 
 async function ready(initial) { const app = harness(initial); await app.flush(); return app; }
+
+test('partial hide filters stale full options, order and receipt rows, and retained selection callbacks', async () => {
+  for (const language of ['ar', 'en']) {
+    const app = harness({ language, selectedCompanyId: 1 }, true);
+    try {
+      await app.flush();
+      await app.act(() => byId(app.render(), 'orders-company').onPress());
+      const staleSelect = byId(app.render(), 'orders-company-option-2').onPress;
+      app.props.identity = { ...app.props.identity, profile: undefined, company_preferences: [{ id: 2, name: 'Hidden legal', short_name_ar: 'مخفي', short_name_en: 'Hidden', hidden: true }] };
+      await app.flush(); await app.act(staleSelect);
+      assert.equal(app.props.selectedCompanyId, 1);
+      assert.deepEqual(app.options.companies.map(company => company.id), [1, 2], 'stale server options intentionally retain hidden company');
+      await app.act(() => byId(app.render(), 'orders-company').onPress());
+      assert.equal(nodes(app.render()).some(node => node.props.testID === 'orders-company-option-2'), false);
+      app.engine.list = async () => ({ api_version: 2, orders: [app.summary(12, 1), app.summary(13, 2)], next_before_id: null });
+      await app.act(() => byId(app.render(), 'orders-tab-allOrders').onPress());
+      assert.ok(byId(app.render(), 'orders-row-12'));
+      assert.equal(nodes(app.render()).some(node => node.props.testID === 'orders-row-13'), false);
+      await app.act(() => byId(app.render(), 'orders-list-company').onPress());
+      assert.equal(nodes(app.render()).some(node => node.props.testID === 'orders-list-company-option-2'), false);
+      app.engine.receipts = async () => ({ api_version: 2, orders: [app.summary(21, 1), app.summary(22, 2)].map(order => ({ ...order, warehouse_name: 'Warehouse' })), next_before_id: null });
+      await app.act(() => byId(app.render(), 'orders-tab-receiving').onPress());
+      assert.ok(byId(app.render(), 'receipt-row-21'));
+      assert.equal(nodes(app.render()).some(node => node.props.testID === 'receipt-row-22'), false);
+      await app.act(() => byId(app.render(), 'orders-receipts-company').onPress());
+      assert.equal(nodes(app.render()).some(node => node.props.testID === 'orders-receipts-company-option-2'), false);
+    } finally { await app.unmount(); }
+  }
+});
+
+test('hiding an order company masks its selected composer and stale callbacks; all hidden performs no reads', async () => {
+  const app = harness({ selectedCompanyId: 1 }, true);
+  try {
+    await app.flush(); const stale = one(app.render(), 'Pressable', p => p.testID === 'orders-tab-allOrders').onPress;
+    app.props.identity = { ...app.props.identity, company_preferences: [1, 2].map(id => ({ id, name: 'Legal', short_name_ar: '', short_name_en: '', hidden: true })) };
+    const before = app.calls.filter(call => ['options', 'catalog', 'list', 'receipts'].includes(call[0])).length;
+    await app.flush(); await app.act(stale);
+    assert.equal(app.calls.filter(call => ['options', 'catalog', 'list', 'receipts'].includes(call[0])).length, before);
+    assert.equal(nodes(app.render()).some(node => node.props.testID === 'orders-company' || /^orders-tab-/.test(node.props.testID || '')), false);
+    assert.deepEqual(app.props.identity.company_ids, [1, 2]);
+  } finally { await app.unmount(); }
+});
 test('orders compact header has one title and preserves navigation and readable touch targets', async () => {
   for (const language of ['ar', 'en']) {
     let backs = 0; const app = harness({ language, onBack: () => backs++ }, true); await app.flush();

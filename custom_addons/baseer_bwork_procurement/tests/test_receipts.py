@@ -79,6 +79,29 @@ class BWorkReceiptCase(TransactionCase):
                        'actual_qty': quantity, 'actual_price': price}],
         }
 
+    def test_hidden_company_receipts_disappear_but_detail_and_amounts_remain(self):
+        owner = self.env.ref('base.user_admin')
+        owner.sudo().write({
+            'company_ids': [Command.link(self.company.id)], 'bwork_manage_rooms': True,
+            'group_ids': [Command.link(self.env.ref('baseer_bwork.group_bwork_manager').id),
+                          Command.link(self.env.ref('base.group_system').id)],
+        })
+        company = self.company.with_user(owner).with_context(allowed_company_ids=self.company.ids)
+        before = self.order.read(['company_id', 'state', 'requested_total', 'line_ids'])
+        detail = self.service._v2_receipt_detail(self.company.id, self.order_id)
+        company.write({'bwork_hidden': True})
+        for rows in (self.service._v2_receipts_all(),
+                     self.service._v2_receipts_all(company_id=self.company.id),
+                     self.service._v2_receipts(self.company.id)):
+            self.assertEqual(rows['orders'], [])
+            self.assertIsNone(rows['next_before_id'])
+        self.assertEqual(self.service._v2_receipt_detail(self.company.id, self.order_id), detail)
+        with self.assertRaises(AccessError):
+            self.service._v2_receipts_all(company_id=self.foreign.id)
+        company.write({'bwork_hidden': False})
+        self.assertEqual([row['id'] for row in self.service._v2_receipts_all()['orders']], [self.order_id])
+        self.assertEqual(self.order.read(['company_id', 'state', 'requested_total', 'line_ids']), before)
+
     def test_global_receipts_page_filters_company_state_channel_and_rechecks_grants(self):
         self.operator.write({'company_ids': [Command.link(self.foreign.id)]})
         foreign_warehouse = self.env['stock.warehouse'].search([('company_id', '=', self.foreign.id)], limit=1)

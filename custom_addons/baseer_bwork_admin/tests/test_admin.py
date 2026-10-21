@@ -43,6 +43,25 @@ class BWorkAdminCase(TransactionCase):
         return self.env['baseer.bwork.admin.service'].with_user(user or self.admin).with_context(
             allowed_company_ids=(companies or self.company).ids)
 
+    def test_company_settings_are_bwork_only_and_current_authorized_scope(self):
+        service = self.service(companies=self.company | self.other)
+        action = service.company_settings_action()
+        self.assertEqual(action['res_model'], 'res.company')
+        self.assertEqual(action['domain'], [('id', 'in', sorted((self.company | self.other).ids))])
+        self.assertEqual(action['views'], [
+            (self.env.ref('baseer_bwork_admin.company_display_list').id, 'list'),
+            (self.env.ref('baseer_bwork_admin.company_display_form').id, 'form')])
+        self.assertFalse(action['context']['create'])
+        self.assertFalse(action['context']['delete'])
+        for denied in (self.service(self.ordinary), service.sudo()):
+            with self.assertRaises(AccessError):
+                denied.company_settings_action()
+        for xmlid in ('company_display_list', 'company_display_form'):
+            view = self.env.ref('baseer_bwork_admin.' + xmlid)
+            self.assertFalse(view.inherit_id, 'Must not extend standard company settings')
+            self.assertGreater(view.priority, 16, 'Must not become the default company view')
+
+
     def test_authority_rejects_group_only_sudo_and_foreign_current_scope(self):
         data = self.service().snapshot(self.company.ids)
         self.assertTrue(data['complete'])

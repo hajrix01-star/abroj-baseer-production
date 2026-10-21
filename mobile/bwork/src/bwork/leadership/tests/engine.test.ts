@@ -6,6 +6,16 @@ import { identity, money, options, report } from './fixtures.ts';
 const waiting = () => { let resolve!: (value: unknown) => void, reject!: (error: unknown) => void; const promise = new Promise((a, b) => { resolve = a; reject = b; }); return { promise, resolve, reject }; };
 const validReport = (...args: Parameters<typeof report>) => { const r = report(...args); r.overview.current_month.sales = money('999.99'); return r; };
 
+test('visible report options require the exact visible set and allow empty without financial reads or permission fallbacks', async () => {
+  assert.deepEqual(optionsResponse({ ...options, companies: [] }, { ...identity, companyIds: [] }).companies, []);
+  assert.throws(() => optionsResponse(options, { ...identity, companyIds: [1] }), { code: 'invalid_response' });
+  let requests = 0;
+  const engine = new LeadershipEngine({ identityScope: () => ({ ...identity, companyIds: [] }), transport: { async request() { requests++; throw new Error('must not request'); } } });
+  assert.deepEqual((await engine.options()).companies, []);
+  await assert.rejects(engine.read({ month: '2026-10', period: 'month' }), { code: 'snapshot_unavailable' });
+  assert.equal(requests, 0);
+});
+
 test('combined spending v2 requires server breakdown and rejects legacy bill-only payloads', () => {
   const opts = optionsResponse(options, identity), raw = validReport();
   raw.overview.spending = money('999.91');

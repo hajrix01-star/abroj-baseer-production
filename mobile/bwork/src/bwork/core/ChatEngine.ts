@@ -6,6 +6,7 @@ import { MemoryHistoryArchive } from './MemoryHistoryArchive.ts';
 import { decodeGallery, galleryQuery, GALLERY_LIMITS, type MediaGalleryPage, type MediaGalleryQuery } from './MediaGallery.ts';
 import {contentRevision,decodeContentState,CONTENT_LIMITS,type ContentCache} from './ContentRetention.ts';
 import { compatibility } from '../compatibility.ts';
+import { validCompanyPreferences, type CompanyPreference } from './companyPreferences.ts';
 export interface Storage {
   getItem(key: string): Promise<string | null>;
   setItem(key: string, value: string): Promise<void>;
@@ -21,6 +22,7 @@ export interface Policy { api_version: 2; company_id: number; direct_enabled: bo
 export interface Bootstrap {
   api_version: 2; database: string; user_id: number; company_ids: number[];
   current_company_id?: number; csrf_token?: string;
+  company_preferences?: CompanyPreference[];
   permissions: Record<string, boolean | number>; mobile_policy?: Policy[];
   capabilities?: {retention_version?:number;retention_ready?:boolean;[key:string]:unknown};
   profile?: { name: string; companies: { id: number; name: string; name_ar?: string; name_en?: string }[] };
@@ -371,6 +373,7 @@ export class ChatEngine {
     const b = object(raw);
     if (b.api_version !== 2 || b.user_id !== uid || b.database !== this.database || !id(uid) || !Array.isArray(b.company_ids) || !b.company_ids.every(id) || !b.company_ids.length || typeof b.csrf_token !== 'string' || !b.csrf_token || !b.permissions || b.permissions.chat_view !== true) throw new ChatError('identity_mismatch', 403);
     if(b.capabilities?.retention_version!==undefined&&(b.capabilities.retention_version!==1||typeof b.capabilities.retention_ready!=='boolean'))throw new ChatError('invalid_content_state',409);
+    if (!validCompanyPreferences(b.company_preferences, b.company_ids)) throw new ChatError('identity_mismatch', 403);
     return b as Bootstrap;
   }
   /** Application login may select another authorized module. Default chat behavior is unchanged. */
@@ -519,6 +522,7 @@ export class ChatEngine {
           for (const key of await this.storage.getAllKeys()) if (key.startsWith(this.root) && key.endsWith('/history')) await this.storage.removeItem(key);
           this.state = 'offline_expired'; return false;
         }
+        if (!validCompanyPreferences(b.company_preferences, b.company_ids)) throw new ChatError('invalid_offline_identity');
         this.account = b as Bootstrap; this.verifiedAt = saved.verifiedAt; this.remembered = true;
         this.archiveOwner = this.prefix(); await this.drainArchiveCleanup(e);
         await this.loadStoredAccount(e); this.roomRows = this.validRooms(this.roomRows);await this.loadContentMarkers(e);

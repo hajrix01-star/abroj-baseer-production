@@ -865,6 +865,7 @@ msgstr "بيانات بيورك"
 #: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_list
 #: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.policy_form
 #: model:ir.model.fields,field_description:baseer_bwork_admin.field_baseer_bwork_admin_console__company_ids
+#: model:ir.ui.menu,name:baseer_bwork_admin.company_display_menu
 msgid "Companies"
 msgstr "الشركات"
 
@@ -973,6 +974,8 @@ msgstr "حد التحذير (MiB)"
 #: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_run_list
 #: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_run_search
 #: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.retention_wizard_form
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.company_display_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.company_display_form
 msgid "Company"
 msgstr "الشركة"
 
@@ -1808,3 +1811,21 @@ msgstr "ملفات رفع غير مرتبطة ومنتهية الصلاحية"
 #: code:addons/baseer_bwork_admin/models/retention.py:0
 msgid "Another deletion run is already active for this company."
 msgstr "توجد عملية حذف قيد التنفيذ لهذه الشركة."
+
+#. module: baseer_bwork_admin
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.company_display_list
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.company_display_form
+#: model:ir.actions.server,name:baseer_bwork_admin.company_display_action
+#: code:addons/baseer_bwork_admin/models/administration.py:0
+msgid "BWork company settings"
+msgstr "شركات BWork"
+
+#. module: baseer_bwork_admin
+#: model:ir.ui.menu,name:baseer_bwork_admin.settings_menu
+msgid "Settings"
+msgstr "الإعدادات"
+
+#. module: baseer_bwork_admin
+#: model_terms:ir.ui.view,arch_db:baseer_bwork_admin.company_display_form
+msgid "These settings affect BWork only. Official company names, permissions and existing data stay unchanged."
+msgstr "هذه الإعدادات تخص BWork فقط، ولا تغيّر الأسماء الرسمية أو الصلاحيات أو البيانات."

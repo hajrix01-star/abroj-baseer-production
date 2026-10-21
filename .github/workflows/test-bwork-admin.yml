@@ -38,9 +38,9 @@ jobs:
             --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/baseer-addons \
             -d bwork_admin_ci -i baseer_bwork,baseer_bwork_admin --without-demo=all \
             --test-enable \
-            --test-tags=/baseer_bwork_admin:BWorkAdminCase,/baseer_bwork_admin:BWorkAdminHttpCase,/baseer_bwork:BWorkPushPrivacyCase \
+            --test-tags=/baseer_bwork_admin:BWorkAdminCase,/baseer_bwork_admin:BWorkAdminHttpCase,/baseer_bwork:BWorkPushPrivacyCase,/baseer_bwork:BWorkCompanyDisplayCase \
             --stop-after-init --max-cron-threads=0 --workers=0 --log-level=test 2>&1 | tee bwork-admin-runtime.log
-          for test_class in BWorkAdminCase BWorkAdminHttpCase BWorkPushPrivacyCase; do
+          for test_class in BWorkAdminCase BWorkAdminHttpCase BWorkPushPrivacyCase BWorkCompanyDisplayCase; do
             grep -F "Starting $test_class." bwork-admin-runtime.log
           done
           if grep -Eq ': skipped .+ : |[1-9][0-9]* failed,|[1-9][0-9]* error\(s\)' bwork-admin-runtime.log; then
@@ -48,7 +48,7 @@ jobs:
             exit 1
           fi
           grep -F '0 failed, 0 error(s)' bwork-admin-runtime.log
-          test "$(grep -Ec 'Starting (BWorkAdminCase|BWorkAdminHttpCase|BWorkPushPrivacyCase)\.' bwork-admin-runtime.log)" -eq 17
+          test "$(grep -Ec 'Starting (BWorkAdminCase|BWorkAdminHttpCase|BWorkPushPrivacyCase|BWorkCompanyDisplayCase)\.' bwork-admin-runtime.log)" -eq 23
       - name: Preserve isolated runtime evidence
         if: always()
         uses: actions/upload-artifact@v4

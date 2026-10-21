@@ -126,17 +126,29 @@ class BWorkProcurementService(models.AbstractModel):
 
     @api.model
     def _order_read_scopes(self):
-        """Verify every readable operator company before a sudo order search."""
+        """Verify visible operator companies before a sudo discovery search."""
         user = self._require_order_reader()
+        companies = self._bwork_visible_companies(user).sorted('id')
         scopes = {}
-        for company in user.company_ids.sorted('id'):
+        for company in companies:
             try:
                 scopes[company.id] = self._company_scope(company.id)
             except AccessError:
                 continue
-        if not scopes:
+        if companies and not scopes:
             raise AccessError('No readable BWork procurement company is available.')
         return scopes
+
+    @api.model
+    def _order_list_scopes(self, company_id=None):
+        if company_id is None:
+            return self._order_read_scopes()
+        # Validate native permission first, including for stale hidden choices.
+        # Presentation hiding never changes detail/write/replay authorization.
+        scoped = self._order_scope(company_id)
+        company_id = scoped.env.company.id
+        return ({company_id: scoped}
+                if company_id in self._bwork_visible_companies().ids else {})
 
     @staticmethod
     def _label(value, limit=160):
@@ -173,7 +185,7 @@ class BWorkProcurementService(models.AbstractModel):
             raise ProtocolError('too_many_companies', 'Company selection needs pagination.', 409)
         result = {'api_version': 2, 'workflow_version': 1, 'receipt_list_version': 1,
                   'access': access, **permissions, 'companies': [
-            {'id': company_id, 'name': self._label(scope.env.company.name)}
+            {'id': company_id, 'name': self._label(self._bwork_company_label(scope.env.company))}
             for company_id, scope in scopes.items()
         ]}
         if permissions['can_create']:
@@ -187,6 +199,8 @@ class BWorkProcurementService(models.AbstractModel):
             return result
         scoped = self._order_create_scope(company_id)
         company = scoped.env.company
+        if company.id not in scopes:
+            return result
         warehouses = scoped.env['stock.warehouse'].sudo().search([
             ('company_id', '=', company.id), ('active', '=', True),
         ], order='name, id', limit=51)
@@ -345,7 +359,7 @@ class BWorkProcurementService(models.AbstractModel):
         return {
             'id': order.id, 'name': self._label(order.name, 80),
             'company_id': order.company_id.id,
-            'company_name': self._label(order.company_id.name),
+            'company_name': self._label(self._bwork_company_label(order.company_id)),
             'requester_id': order.requester_id.id,
             'requester_name': self._label(order.requester_id.name),
             'state': order.state,
@@ -400,6 +414,8 @@ class BWorkProcurementService(models.AbstractModel):
         scoped = self._order_scope(company_id)
         if before_id is not None:
             before_id = positive_id(before_id, 'before_id')
+        if scoped.env.company.id not in self._bwork_visible_companies().ids:
+            return {'api_version': 2, 'orders': [], 'next_before_id': None}
         domain = [('company_id', '=', scoped.env.company.id),
                   ('requester_id', '=', scoped.env.uid), ('source_channel', '=', LEGACY_SOURCE_CHANNEL)]
         if before_id:
@@ -413,10 +429,11 @@ class BWorkProcurementService(models.AbstractModel):
 
     @api.model
     def _v2_orders_all(self, before_id=None, company_id=None):
-        scopes = ({positive_id(company_id, 'company_id'): self._order_scope(company_id)}
-                  if company_id is not None else self._order_read_scopes())
+        scopes = self._order_list_scopes(company_id)
         if before_id is not None:
             before_id = positive_id(before_id, 'before_id')
+        if not scopes:
+            return {'api_version': 2, 'orders': [], 'next_before_id': None}
         domain = [('company_id', 'in', list(scopes)), ('source_channel', '=', LEGACY_SOURCE_CHANNEL)]
         if before_id:
             domain.append(('id', '<', before_id))

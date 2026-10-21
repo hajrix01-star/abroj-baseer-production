@@ -11,3 +11,4 @@ from . import test_push_v2
 from . import test_work_tasks
 from . import test_bwork_push_privacy
 from . import test_canonical_http
+from . import test_company_display

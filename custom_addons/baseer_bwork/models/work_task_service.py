@@ -77,7 +77,7 @@ class BWorkWorkTaskService(models.AbstractModel):
         data.update(
             creator_name=self._work_task_label(task.creator_id.name),
             assignee_name=self._work_task_label(task.assignee_id.name),
-            company_name=self._work_task_label(task.company_id.name),
+            company_name=self._work_task_label(self._bwork_company_label(task.company_id)),
             started_at=self._task_stamp(task.started_at), done_at=self._task_stamp(task.done_at),
             cancelled_at=self._task_stamp(task.cancelled_at),
             completion_note=task.completion_note or '', done_by_id=task.done_by_id.id or None,
@@ -93,9 +93,13 @@ class BWorkWorkTaskService(models.AbstractModel):
     def _work_task_options(self):
         user, company_ids = self._work_task_scope()
         permissions = user._bwork_effective_permissions()
-        companies = self.env['res.company'].sudo().browse(company_ids)
+        authorized_ids = set(company_ids)
+        companies = self._bwork_visible_companies(user).filtered(
+            lambda company: company.id in authorized_ids).sorted('id')
+        company_ids = companies.ids
         return wire.bounded(self._work_task_envelope(
-            companies=[{'id': company.id, 'name': self._task_label(company.name)} for company in companies],
+            companies=[{'id': company.id, 'name': self._task_label(self._bwork_company_label(company))}
+                       for company in companies],
             default_company_id=company_ids[0] if len(company_ids) == 1 else None,
             can_view=permissions['task_view'], can_manage=permissions['task_manage'],
             capabilities={'direct_done': True, 'reminders': True}), wire.OPTIONS_BYTES)
@@ -128,10 +132,14 @@ class BWorkWorkTaskService(models.AbstractModel):
     @api.model
     def _work_tasks(self, view='mine', state='open', company_id=None, before_id=None):
         user, companies = self._work_task_scope(company_id)
+        visible_ids = set(self._bwork_visible_companies(user).ids)
+        companies = [item for item in companies if item in visible_ids]
         if view not in ('mine', 'created') or state not in ('open', 'done', 'cancelled'):
             raise ProtocolError('invalid_payload', 'Unknown task list perspective or state.')
         if before_id is not None:
             before_id = positive_id(before_id, 'before_id')
+        if not companies:
+            return wire.page(self._work_task_envelope(view=view, company_id=company_id), [], False)
         states = ['new', 'in_progress'] if state == 'open' else [state]
         perspective = 'assignee_id' if view == 'mine' else 'creator_id'
         self.env['baseer.bwork.task'].flush_model([

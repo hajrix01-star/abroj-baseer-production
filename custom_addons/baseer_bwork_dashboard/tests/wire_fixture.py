@@ -69,6 +69,7 @@ def fixture():
     service = Service()
     service.env = SimpleNamespace(_=lambda text, **values: text % values if values else text)
     service.with_context = lambda **kwargs: service
+    service._bwork_company_label = lambda company: company.name
     company = SimpleNamespace(id=7, name='Synthetic wire fixture', currency_id=SimpleNamespace(name='SAR'))
     service._leadership_companies = lambda company_id: [company]
     source = Source()

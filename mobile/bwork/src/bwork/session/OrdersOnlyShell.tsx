@@ -1,3 +1,4 @@
+import { isCompanyVisible } from '../ui/companyNames';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -37,11 +38,11 @@ export function OrdersOnlyShell({ snapshot, language, setLanguage, online }: {
   const visibleArea = (area === 'orders' && !hasOrders) || (area === 'tasks' && !hasTasks) || (area === 'leadership' && !hasLeadership) ? fallbackArea : area;
   const actor = JSON.stringify([identity?.database, identity?.user_id]);
   const [companySelection, setCompanySelection] = useState({ actor: '', id: 0 });
-  const selectedCompanyId = companySelection.actor === actor && identity?.company_ids.includes(companySelection.id) ? companySelection.id : 0;
+  const selectedCompanyId = companySelection.actor === actor && isCompanyVisible(identity, companySelection.id) ? companySelection.id : 0;
   const ready = snapshot.verified && online;
   // A verification revision fences old callbacks/requests, but is not a new
   // display authority. Keep the same workspace mounted behind a private cover.
-  const displayScope = JSON.stringify([snapshot.generation, identity?.database, identity?.user_id,
+  const displayScope = JSON.stringify([snapshot.generation, identity?.database, identity?.user_id, identity?.company_preferences,
     [...(identity?.company_ids ?? [])].sort((a, b) => a - b),
     Object.entries(identity?.permissions ?? {}).sort(([a], [b]) => a.localeCompare(b))]);
   const mountedScope = useRef<string | null>(null);
@@ -79,7 +80,7 @@ export function OrdersOnlyShell({ snapshot, language, setLanguage, online }: {
       accessibilityElementsHidden={visibleArea !== 'orders'} importantForAccessibility={visibleArea === 'orders' ? 'auto' : 'no-hide-descendants'}>
       <OrdersScreen key={displayScope} scopeKey={displayScope} engine={getOrdersEngine()} identity={identity} language={language} online={online} presented={ready && visibleArea === 'orders'}
       selectedCompanyId={selectedCompanyId} onCompanyChange={id => {
-        if (current() && (id === 0 || identity.company_ids.includes(id))) setCompanySelection({ actor, id });
+        if (current() && (id === 0 || isCompanyVisible(identity, id))) setCompanySelection({ actor, id });
       }} /></View>}
     {retainWorkspace && hasTasks && (tasksVisited || visibleArea === 'tasks') && <View style={[styles.fill, { display: visibleArea === 'tasks' ? 'flex' : 'none' }]}
       pointerEvents={visibleArea === 'tasks' ? 'auto' : 'none'} accessibilityElementsHidden={visibleArea !== 'tasks'} importantForAccessibility={visibleArea === 'tasks' ? 'auto' : 'no-hide-descendants'}>
@@ -108,7 +109,7 @@ export function OrdersOnlyShell({ snapshot, language, setLanguage, online }: {
       tasksLabel={taskTranslator(language)('tasks')}
       onTasks={hasTasks ? () => { if (ready && current()) { setMenu(false); setTasksVisited(true); setArea('tasks'); } } : undefined} />
     <NotificationsHub engine={getNotificationsEngine()} language={language} ready={ready&&hasTasks} scopeKey={displayScope+':'+snapshot.revision} visible={notificationsVisible} close={closeNotifications}
-      onDestination={destination=>{if(!ready||!current()||!hasTasks||destination.kind!=='task'||!identity.company_ids.includes(destination.companyId))return;
+      onDestination={destination=>{if(!ready||!current()||!hasTasks||destination.kind!=='task'||!isCompanyVisible(identity, destination.companyId))return;
         setNotificationTarget({companyId:destination.companyId,taskId:destination.taskId,nonce:Date.now(),authority:taskNotificationScope(identity,displayScope)});setTasksVisited(true);setArea('tasks');setNotificationsVisible(false);}} />
   </SafeAreaView>;
 }

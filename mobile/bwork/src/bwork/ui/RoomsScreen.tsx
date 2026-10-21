@@ -50,6 +50,7 @@ export function RoomsScreen({
     identity.user_id,
     identity.permissions,
     identity.company_ids,
+    identity.company_preferences,
     identity.mobile_policy,
     companyId,
     language,

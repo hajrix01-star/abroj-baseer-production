@@ -132,11 +132,13 @@ class BWorkAdminPureContract(unittest.TestCase):
 
     def test_runtime_count_matches_all_exactly_selected_classes(self):
         sources = [(ADDON / 'tests/test_admin.py', {'BWorkAdminCase', 'BWorkAdminHttpCase'}),
+                   (ROOT / 'custom_addons/baseer_bwork/tests/test_company_display.py', {'BWorkCompanyDisplayCase'}),
                    (ROOT / 'custom_addons/baseer_bwork/tests/test_bwork_push_privacy.py', {'BWorkPushPrivacyCase'})]
         count = sum(1 for path, names in sources for group in ast.parse(path.read_text(encoding='utf-8')).body
                     if isinstance(group, ast.ClassDef) and group.name in names
                     for method in group.body if isinstance(method, ast.FunctionDef) and method.name.startswith('test_'))
-        self.assertEqual(count, 17)
+        # Original seventeen + admin settings case + five native metadata cases.
+        self.assertEqual(count, 23)
 
     def test_actual_production_fcm_method_omits_every_preview_for_bwork(self):
         send = source_function('BWorkPushEvent', '_fcm_send')
@@ -167,7 +169,8 @@ class BWorkAdminPureContract(unittest.TestCase):
         self.assertIn('postgres@sha256:f1c3376c', workflow)
         self.assertIn('odoo@sha256:f99ffac9', workflow)
         self.assertIn('BWorkPushPrivacyCase', workflow)
-        self.assertIn('-eq 17', workflow)
+        self.assertIn('BWorkCompanyDisplayCase', workflow)
+        self.assertIn('-eq 23', workflow)
         self.assertIn('0 failed, 0 error(s)', workflow)
 
 

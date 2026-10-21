@@ -28,7 +28,7 @@ FOUR = frozenset({'baseer_bwork', 'baseer_bwork_procurement', 'baseer_bwork_admi
 SIX = FOUR | {'baseer_access_roles', 'baseer_procurement_requests'}
 MAX_PROOF = 8 * 1024 * 1024
 MAX_RESTORE_WITNESS = 16 * 1024
-MAX_ROW = 16 * 1024 * 1024
+MAX_ROW = 32 * 1024 * 1024  # Hex UTF-8 bytes; at most 16 MiB of native record_send payload.
 MAX_DATA = 2 * 1024 * 1024 * 1024
 MAX_ROWS = 5000000
 MAX_TABLES = 4096
@@ -107,7 +107,8 @@ def row_fingerprint(rows, budget):
     for row in rows:
         require(type(row) is str, 'row_encoding')
         raw = row.encode('utf-8')
-        require(0 < len(raw) <= MAX_ROW and (previous is None or previous <= raw), 'row_bound_or_order')
+        require(0 < len(raw) <= MAX_ROW, 'row_bound')
+        require(previous is None or previous <= raw, 'row_order')
         require(len(raw) % 2 == 0 and bool(re.fullmatch(r'[0-9a-f]+', row)), 'native_row_encoding')
         budget.check(len(raw))
         value.update(len(raw).to_bytes(8, 'big'))

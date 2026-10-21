@@ -153,9 +153,9 @@ class RecoveryDataContract(unittest.TestCase):
         self.assertNotEqual(actual['sha256'], recovery.row_fingerprint(rows[1:], recovery.Budget())['sha256'])
 
     def test_unsorted_oversized_and_expired_reads_stop(self):
-        with self.assertRaises(recovery.RecoveryStopped):
+        with self.assertRaisesRegex(recovery.RecoveryStopped, 'row_order'):
             recovery.row_fingerprint(['ff', 'aa'], recovery.Budget())
-        with patch.object(recovery, 'MAX_ROW', 3), self.assertRaises(recovery.RecoveryStopped):
+        with patch.object(recovery, 'MAX_ROW', 3), self.assertRaisesRegex(recovery.RecoveryStopped, 'row_bound'):
             recovery.row_fingerprint(['1234'], recovery.Budget())
         budget = recovery.Budget()
         budget.start -= recovery.MAX_SECONDS + 1
@@ -163,6 +163,56 @@ class RecoveryDataContract(unittest.TestCase):
             budget.check()
         with patch.object(recovery, 'MAX_DATA', 2), self.assertRaises(recovery.RecoveryStopped):
             recovery.row_fingerprint(['1234'], recovery.Budget())
+
+    def test_exact_32mib_hex_boundary_preserves_incremental_reference_hash(self):
+        self.assertEqual(recovery.MAX_ROW, 32 * 1024 * 1024)
+        row = 'ab' * (recovery.MAX_ROW // 2)
+        expected = hashlib.sha256()
+        expected.update(recovery.MAX_ROW.to_bytes(8, 'big'))
+        chunk = b'ab' * (1024 * 1024 // 2)
+        for _ in range(32):
+            expected.update(chunk)
+        actual = recovery.row_fingerprint(iter([row]), recovery.Budget())
+        self.assertEqual(actual, {'rows': 1, 'bytes': recovery.MAX_ROW, 'sha256': expected.hexdigest()})
+
+    def test_cap_plus_two_and_invalid_encodings_still_fail_closed(self):
+        with self.assertRaisesRegex(recovery.RecoveryStopped, 'row_bound'):
+            recovery.row_fingerprint(['ab' * (recovery.MAX_ROW // 2 + 1)], recovery.Budget())
+        with self.assertRaisesRegex(recovery.RecoveryStopped, 'row_bound'):
+            recovery.row_fingerprint([''], recovery.Budget())
+        for row in ('a', 'AB', 'ag', '\u00e9a'):
+            with self.subTest(row=row), self.assertRaisesRegex(recovery.RecoveryStopped, 'native_row_encoding'):
+                recovery.row_fingerprint([row], recovery.Budget())
+        with self.assertRaisesRegex(recovery.RecoveryStopped, 'row_encoding'):
+            recovery.row_fingerprint([b'ab'], recovery.Budget())
+
+    def test_observed_large_ordered_duplicates_keep_every_row_and_frame(self):
+        # Measured aggregate size only: no production row content or identifier.
+        size = 21577312
+        row = '0a' * (size // 2)
+        rows = [row, row, 'ff']
+        expected = hashlib.sha256()
+        for item in rows:
+            expected.update(len(item).to_bytes(8, 'big'))
+            for offset in range(0, len(item), 1024 * 1024):
+                expected.update(item[offset:offset + 1024 * 1024].encode('ascii'))
+        actual = recovery.row_fingerprint(iter(rows), recovery.Budget())
+        self.assertEqual(actual, {'rows': 3, 'bytes': 2 * size + 2, 'sha256': expected.hexdigest()})
+        with self.assertRaisesRegex(recovery.RecoveryStopped, 'row_order'):
+            recovery.row_fingerprint(['ff', row], recovery.Budget())
+
+    def test_large_rows_do_not_relax_aggregate_row_or_deadline_budgets(self):
+        row = '0a' * (21577312 // 2)
+        with patch.object(recovery, 'MAX_DATA', len(row)), \
+             self.assertRaisesRegex(recovery.RecoveryStopped, 'data_bound'):
+            recovery.row_fingerprint([row, row], recovery.Budget())
+        with patch.object(recovery, 'MAX_ROWS', 1), \
+             self.assertRaisesRegex(recovery.RecoveryStopped, 'data_bound'):
+            recovery.row_fingerprint([row, row], recovery.Budget())
+        expired = recovery.Budget()
+        expired.start -= recovery.MAX_SECONDS + 1
+        with self.assertRaisesRegex(recovery.RecoveryStopped, 'deadline'):
+            recovery.row_fingerprint([row], expired)
 
     def test_native_binary_queries_and_strict_ledger_scalar_shape(self):
         query = recovery.record_query('ir_config_parameter', 9)

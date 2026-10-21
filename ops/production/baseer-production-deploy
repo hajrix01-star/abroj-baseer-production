@@ -561,7 +561,7 @@ bwork_recovery_pg_toolchain() {
 
 bwork_recovery_archive_schema_hash() {
     local help
-    local flags=(--schema-only --no-owner --no-privileges)
+    local flags=(--schema-only --no-owner --no-privileges --file=-)
     help="$(docker exec "$DB_CONTAINER" pg_restore --help)" || return 1
     if [[ "$help" == *--restrict-key* ]]; then flags+=("--restrict-key=$bwork_recovery_schema_key"); fi
     # Render the authenticated archive to stdout for hashing only. No --dbname,

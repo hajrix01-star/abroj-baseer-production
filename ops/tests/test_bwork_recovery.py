@@ -63,6 +63,47 @@ def post_commit(original):
 
 
 class RecoveryDataContract(unittest.TestCase):
+    def test_settings_keep_public_current_schema_and_implicit_catalog_precedence(self):
+        cr = MagicMock()
+        recovery._settings(cr)
+        statements = [call.args[0] for call in cr.execute.call_args_list]
+        paths = [statement for statement in statements if statement.startswith('SET LOCAL search_path=')]
+        # Explicit pg_catalog first makes current_schema() pg_catalog and hides
+        # public columns from the unmodified original classifier's predicates.
+        # Omitting pg_catalog keeps its implicit first lookup position, while
+        # current_schema() follows the explicit public entry (PG16 contract).
+        self.assertEqual(paths, ['SET LOCAL search_path=public'])
+        original_spec = importlib.util.spec_from_file_location(
+            'bwork_recovery_schema_contract_classifier',
+            ROOT / 'custom_addons/baseer_bwork/tools/canonical_pre_upgrade.py')
+        original = importlib.util.module_from_spec(original_spec)
+        original_spec.loader.exec_module(original)
+        cr.reset_mock()
+        cr.fetchone.return_value = (1,)
+        self.assertTrue(original._exists(cr, 'ir_config_parameter', 'value'))
+        self.assertIn('table_schema=current_schema()', cr.execute.call_args.args[0])
+        self.assertEqual(cr.execute.call_args.args[1], ['ir_config_parameter', 'value'])
+
+    def test_classifier_checks_current_schema_and_catalog_precedence_before_original(self):
+        connection = MagicMock()
+        cr = connection.cursor.return_value.__enter__.return_value
+        original = MagicMock()
+        original.classify.return_value = {
+            'classification': 'canonical-ready', 'required_closure': sorted(recovery.SIX),
+            'install': [], 'native_pre_upgrade_required': False}
+        context = {'classifier': original}
+        for state in (('pg_catalog', 'pg_catalog'), ('public', 'public'), (None, 'pg_catalog')):
+            with self.subTest(state=state):
+                cr.fetchone.return_value = state
+                with self.assertRaisesRegex(recovery.RecoveryStopped, 'classifier_schema'):
+                    recovery._classify(connection, context)
+                original.classify.assert_not_called()
+        cr.fetchone.return_value = ('public', 'pg_catalog')
+        result = recovery._classify(connection, context)
+        self.assertEqual(result['classification'], 'canonical-ready')
+        cr.execute.assert_called_with('SELECT current_schema(),(current_schemas(true))[1]')
+        original.classify.assert_called_once_with(cr, sorted(recovery.FOUR))
+
     def test_length_framing_order_and_duplicate_rows_are_exact(self):
         rows = ['000001', '000001', '000002']
         expected = b''.join(len(row.encode()).to_bytes(8, 'big') + row.encode() for row in rows)

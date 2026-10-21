@@ -238,11 +238,14 @@ def _quiet(cr):
 
 
 def _settings(cr):
+    # The original classifier uses current_schema() for public-column checks.
+    # Keep public explicit and pg_catalog implicit: catalog lookup still comes
+    # first, without making current_schema() report pg_catalog.
     for statement in ("SET LOCAL statement_timeout='30s'", "SET LOCAL lock_timeout='2s'",
                       "SET LOCAL work_mem='16MB'", "SET LOCAL temp_file_limit='512MB'",
                       "SET LOCAL TIME ZONE 'UTC'", "SET LOCAL datestyle='ISO, YMD'",
                       "SET LOCAL intervalstyle='postgres'", "SET LOCAL bytea_output='hex'",
-                      "SET LOCAL extra_float_digits=3", "SET LOCAL search_path=pg_catalog,public",
+                      "SET LOCAL extra_float_digits=3", "SET LOCAL search_path=public",
                       'SET LOCAL row_security=off'):
         cr.execute(statement)
 
@@ -395,6 +398,8 @@ def _snapshot(connection, context, database, schema_sha256, budget=None):
 
 def _classify(connection, context):
     with connection.cursor() as cr:
+        cr.execute('SELECT current_schema(),(current_schemas(true))[1]')
+        require(cr.fetchone() == ('public', 'pg_catalog'), 'classifier_schema')
         result = context['classifier'].classify(cr, sorted(FOUR))
     require(result['classification'] == 'canonical-ready' and set(result['required_closure']) == SIX
             and not result['install'] and result['native_pre_upgrade_required'] is False, 'original_classifier')

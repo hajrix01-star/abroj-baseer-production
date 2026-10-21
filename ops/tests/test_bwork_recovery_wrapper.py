@@ -219,6 +219,12 @@ compose_old=(old_compose)
         self.assertLess(verify.index('bwork-recovery-result.sha256'), verify.index('rm -- "$BASE/bwork-recovery-pending.env"'))
         self.assertIn('a previous recovery has an unresolved durable intent', TEXT)
         self.assertNotRegex(function('rollback'), r'restore_pair[^\n]*\|\|')
+        fetch = function('fetch_reviewed_source')
+        self.assertLess(fetch.index('bwork_source_guard "$stage/source" "$fetch_repo"'),
+                        fetch.index('bwork_recovery_source_guard "$fetch_repo"'))
+        self.assertLess(fetch.index('bwork_recovery_source_guard "$fetch_repo"'),
+                        fetch.index('rm -rf -- "$fetch_repo"'))
+        self.assertNotIn('bwork_recovery_source_guard', function('bwork_source_guard'))
 
     def test_quiescence_rejects_named_bind_alias_and_parent_filestore_writers(self):
         body = '''

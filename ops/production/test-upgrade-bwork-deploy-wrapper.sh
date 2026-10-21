@@ -134,7 +134,7 @@ done
 # change the production script or normalize unknown installed wrapper hashes.
 grep -Fxq 'readonly TARGET=/usr/local/sbin/baseer-production-deploy' "$sut"
 grep -Fxq 'readonly OLD_SHA=410cbfb395f3322a70f606faf5434a91452a1ee2553ae743a4510b982ec68270' "$sut"
-grep -Fxq 'readonly NEW_SHA=d74bdb6ca44cd470e3e604ea0b7d281bb89d21523a2482269a51fa2ca4de48d6' "$sut"
+grep -Fxq 'readonly NEW_SHA=65d09cb69ba082939c919106edcb24d191634af0984cfcd53b008ee78287df66' "$sut"
 grep -Fxq 'readonly LOCK=/var/lock/baseer-production-deploy.lock' "$sut"
 grep -Fxq 'readonly NATIVE_LOCK_PARENT=/var/lock' "$sut"
 [ "$(wc -l < "$script_dir/release-policies/baseer-2026-10-21-bwork-production.env")" -eq 3 ]

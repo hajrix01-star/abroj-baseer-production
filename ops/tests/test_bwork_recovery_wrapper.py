@@ -386,6 +386,19 @@ if value="$(bwork_recovery_archive_schema_hash)"; then printf 'ACCEPTED=%s\\n' "
                         fetch.index('rm -rf -- "$fetch_repo"'))
         self.assertNotIn('bwork_recovery_source_guard', function('bwork_source_guard'))
 
+    def test_git_lf_artifact_pins_match_actual_source_bytes(self):
+        # Execute this source-binding test from the raw Git-LF archive, as CI
+        # and production do; checkout CRLF hashes must never be promoted.
+        helper_sha = hashlib.sha256((ROOT / 'ops/lib/bwork_recovery.py').read_bytes()).hexdigest()
+        pinned = re.search(r'^readonly BWORK_RECOVERY_HELPER_SHA256=([a-f0-9]{64})$', TEXT, re.M)
+        self.assertIsNotNone(pinned)
+        self.assertEqual(pinned[1], helper_sha)
+        wrapper_sha = hashlib.sha256(WRAPPER.read_bytes()).hexdigest()
+        installer = (ROOT / 'ops/production/upgrade-bwork-deploy-wrapper.sh').read_text()
+        target = re.search(r'^readonly NEW_SHA=([a-f0-9]{64})$', installer, re.M)
+        self.assertIsNotNone(target)
+        self.assertEqual(target[1], wrapper_sha)
+
     def test_quiescence_rejects_named_bind_alias_and_parent_filestore_writers(self):
         body = '''
 ODOO_VOLUME=fixture-volume

@@ -27,6 +27,7 @@ LEDGER_KEY = 'baseer_bwork.canonical_rename.v1'
 FOUR = frozenset({'baseer_bwork', 'baseer_bwork_procurement', 'baseer_bwork_admin', 'baseer_bwork_dashboard'})
 SIX = FOUR | {'baseer_access_roles', 'baseer_procurement_requests'}
 MAX_PROOF = 8 * 1024 * 1024
+MAX_RESTORE_WITNESS = 16 * 1024
 MAX_ROW = 16 * 1024 * 1024
 MAX_DATA = 2 * 1024 * 1024 * 1024
 MAX_ROWS = 5000000
@@ -406,18 +407,67 @@ def _classify(connection, context):
     return result
 
 
-def compare_restored(proof, actual):
+def validate_paired_restore(raw, witness_sha256, proof, proof_sha256, context, database, schema_sha256):
+    """Bind the protected wrapper's authenticated restore, not a SQL oracle.
+
+    The root wrapper independently verifies private pair/intent/toolchain files
+    and the active release/run. This helper accepts no unbound witness digest.
+    """
+    valid_database(database)
+    require(type(raw) is str and len(raw) <= MAX_RESTORE_WITNESS, 'paired_restore_bound')
+    encoded = raw.encode('utf-8')
+    require(len(encoded) <= MAX_RESTORE_WITNESS, 'paired_restore_bound')
+    require(hex_digest(witness_sha256) and hashlib.sha256(encoded).hexdigest() == witness_sha256,
+            'paired_restore_bytes')
+    witness = decode(raw)
+    hashes = {'dump_sha256', 'filestore_sha256', 'proof_sha256', 'intent_sha256', 'toolchain_sha256',
+              'original_schema_sha256', 'restored_schema_sha256'}
+    fields = hashes | {'protocol', 'status', 'method', 'database', 'old_commit', 'candidate_commit',
+                       'release_id', 'run_id', 'source'}
+    require(type(witness) is dict and set(witness) == fields and canonical(witness) == encoded,
+            'paired_restore_shape')
+    require(witness['protocol'] == 'bwork-paired-restore-v1' and witness['status'] == 'RESTORED'
+            and witness['method'] == 'pg_restore-exit-on-error+paired-filestore', 'paired_restore_method')
+    require(all(hex_digest(witness[key]) for key in hashes), 'paired_restore_digest')
+    require(type(witness['candidate_commit']) is str and
+            bool(re.fullmatch(r'[a-f0-9]{40}', witness['candidate_commit'])) and
+            type(witness['release_id']) is str and
+            bool(re.fullmatch(r'[a-z0-9][a-z0-9-]{0,127}', witness['release_id'])) and
+            type(witness['run_id']) is str and bool(re.fullmatch(r'[0-9]{1,20}', witness['run_id'])),
+            'paired_restore_release')
+    require(type(proof) is dict and hex_digest(proof_sha256) and
+            hashlib.sha256(canonical(proof) + b'\n').hexdigest() == proof_sha256 and
+            witness['proof_sha256'] == proof_sha256, 'paired_restore_proof')
+    identity = context['identity']
+    require(type(identity) is dict and set(identity) == {'commit', 'core_sha256', 'mapping_sha256'} and
+            type(identity['commit']) is str and bool(re.fullmatch(r'[a-f0-9]{40}', identity['commit'])) and
+            hex_digest(identity['core_sha256']) and identity['mapping_sha256'] == MAPPING_SHA256,
+            'paired_restore_identity')
+    require(witness['database'] == database == proof.get('database') and
+            witness['source'] == proof.get('source') == identity and
+            witness['old_commit'] == identity['commit'], 'paired_restore_source')
+    require(witness['original_schema_sha256'] == proof.get('schema_sha256') and
+            witness['restored_schema_sha256'] == schema_sha256, 'paired_restore_schema')
+    return witness
+
+
+def compare_restored(proof, actual, witness):
     require(type(proof) is dict and set(proof) == set(actual), 'proof_shape')
-    # Physical relation OIDs are the one expected logical-restore difference;
-    # the ledger VALUE still must equal the original in the full row proof.
-    require(all(proof[key] == actual[key] for key in proof if key != 'table_oids'), 'restored_state_mismatch')
+    # Native pg_restore reassigns relation OIDs and may reparse/deparse schema
+    # expressions differently. Raw schema hashes remain forensic identities,
+    # authenticated by the paired restore witness; no SQL is normalized here.
+    require(witness['original_schema_sha256'] == proof['schema_sha256'] and
+            witness['restored_schema_sha256'] == actual['schema_sha256'], 'restored_schema_binding')
+    require(all(proof[key] == actual[key] for key in proof if key not in ('table_oids', 'schema_sha256')),
+            'restored_state_mismatch')
 
 
-def compare_post_commit(proof, actual, new_value, new_oids):
+def compare_post_commit(proof, actual, new_value, new_oids, restored_schema_sha256):
     """Explicit single-cell permission, never a broad snapshot normalizer."""
     require(set(proof) == set(actual), 'post_commit_shape')
+    require(actual['schema_sha256'] == restored_schema_sha256, 'post_commit_schema_changed')
     for key in proof:
-        if key not in ('ledger', 'table_oids', 'tables'):
+        if key not in ('ledger', 'table_oids', 'tables', 'schema_sha256'):
             require(proof[key] == actual[key], 'post_commit_state_mismatch')
     expected_row = decode(proof['ledger']['row'])
     expected_row['value'] = new_value
@@ -452,15 +502,20 @@ def capture(connection, context, database, schema_sha256):
         connection.rollback()
 
 
-def recover(connection, context, database, schema_sha256, proof):
+def recover(connection, context, database, schema_sha256, proof, *, paired_restore_json,
+            paired_restore_sha256, proof_sha256):
+    witness = validate_paired_restore(paired_restore_json, paired_restore_sha256, proof, proof_sha256,
+                                      context, database, schema_sha256)
     budget = Budget()
     connection.set_session(readonly=False, isolation_level='REPEATABLE READ', autocommit=False)
     committed = False
     try:
         actual = _snapshot(connection, context, database, schema_sha256, budget)
-        compare_restored(proof, actual)
+        compare_restored(proof, actual, witness)
         new_value, old_oids = ledger_transition(proof['ledger']['value'], actual['table_oids'], context['tables'])
         require(proof['table_oids'] == old_oids, 'proof_original_oid_mismatch')
+        validate_paired_restore(paired_restore_json, paired_restore_sha256, proof, proof_sha256,
+                               context, database, schema_sha256)
         with connection.cursor() as cr:
             _quiet(cr)
             cr.execute('SELECT value FROM public.ir_config_parameter WHERE id=%s AND key=%s FOR UPDATE',
@@ -478,12 +533,14 @@ def recover(connection, context, database, schema_sha256, proof):
             raise RecoveryStopped('BWORK_RECOVERY_STOP:commit_ambiguous_no_retry') from None
         connection.set_session(readonly=True, isolation_level='REPEATABLE READ', autocommit=False)
         post = _snapshot(connection, context, database, schema_sha256, budget)
-        compare_post_commit(proof, post, new_value, actual['table_oids'])
+        compare_post_commit(proof, post, new_value, actual['table_oids'], schema_sha256)
         classification = _classify(connection, context)
         budget.check()
         return {'protocol': PROTOCOL, 'status': 'RECOVERED', 'database': database,
                 'source': context['identity'], 'source_commit': context['identity']['commit'],
                 'schema_sha256': schema_sha256,
+                'original_schema_sha256': proof['schema_sha256'],
+                'paired_restore_sha256': paired_restore_sha256, 'proof_sha256': proof_sha256,
                 'old_ledger_sha256': hashlib.sha256(proof['ledger']['value'].encode()).hexdigest(),
                 'new_ledger_sha256': hashlib.sha256(new_value.encode()).hexdigest(),
                 'old_oids': old_oids, 'new_oids': actual['table_oids'],
@@ -509,6 +566,8 @@ def main():
     parser.add_argument('--source-commit', required=True)
     parser.add_argument('--schema-sha256', required=True)
     parser.add_argument('--proof-sha256')
+    parser.add_argument('--paired-restore-json')
+    parser.add_argument('--paired-restore-sha256')
     args = parser.parse_args()
     valid_database(args.database)
     require(hex_digest(args.schema_sha256), 'schema_digest')
@@ -519,7 +578,13 @@ def main():
         raw = sys.stdin.buffer.read(MAX_PROOF + 1)
         require(len(raw) <= MAX_PROOF and hashlib.sha256(raw).hexdigest() == args.proof_sha256, 'proof_bytes')
         proof = decode(raw)
+        require(raw == canonical(proof) + b'\n', 'proof_canonical_bytes')
+    require((args.action == 'recover') == (args.paired_restore_json is not None) and
+            (args.action == 'recover') == (args.paired_restore_sha256 is not None), 'paired_restore_argument')
     context = source_context(args.source_root, args.source_commit, args.database)
+    if args.action == 'recover':
+        validate_paired_restore(args.paired_restore_json, args.paired_restore_sha256, proof, args.proof_sha256,
+                               context, args.database, args.schema_sha256)
     import configparser
     import psycopg2
     config = configparser.ConfigParser()
@@ -532,7 +597,9 @@ def main():
         password=os.environ.get('PASSWORD') or options.get('db_password'))
     try:
         result = (capture(connection, context, args.database, args.schema_sha256) if args.action == 'capture'
-                  else recover(connection, context, args.database, args.schema_sha256, proof))
+                  else recover(connection, context, args.database, args.schema_sha256, proof,
+                               paired_restore_json=args.paired_restore_json,
+                               paired_restore_sha256=args.paired_restore_sha256, proof_sha256=args.proof_sha256))
         if args.action == 'recover':
             result['proof_sha256'] = args.proof_sha256
         output = canonical(result) + b'\n'

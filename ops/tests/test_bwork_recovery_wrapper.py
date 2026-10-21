@@ -43,7 +43,9 @@ class WrapperRecoveryFlow(unittest.TestCase):
                   'backup="$BASE/backup"\nLOG="$BASE/events"\n'
                   'TASKPY=' + shlex.quote(sys.executable.replace('\\', '/')) + '\n'
                   'python3(){ "$TASKPY" "$@"; }\n')
-        return subprocess.run([BASH, '-c', prefix + body], text=True, capture_output=True,
+        # Stream the extracted shell through stdin: the combined real witness
+        # and receipt functions exceed Windows Git Bash's -c argument bound.
+        return subprocess.run([BASH, '-s'], input=prefix + body, text=True, capture_output=True,
                               cwd=ROOT, env={**os.environ, 'PYTHONUTF8': '1',
                                              # Git Bash must not rewrite simulated Linux
                                              # Docker paths when invoking native Python.
@@ -63,13 +65,14 @@ docker(){
  [ "$FAIL" != "$stage" ]
 }
 bwork_recovery_prepare_restore(){ printf 'PREPARE\\n' >> "$LOG"; [ "$FAIL" != PREPARE ]; }
+bwork_recovery_restore_complete(){ printf 'COMPLETE\\n' >> "$LOG"; [ "$FAIL" != COMPLETE ]; }
 bwork_recovery_restore_verify(){ printf 'VERIFY\\n' >> "$LOG"; [ "$FAIL" != VERIFY ]; }
 new_compose(){ :; }
 old_compose(){ printf 'RESTART\\n' >> "$LOG"; }
 wait_for_login(){ printf 'LOGIN\\n' >> "$LOG"; }
 ln(){ :; }
 '''
-        for failure in ('CHECKSUM', 'PREPARE', 'DROP', 'CREATE', 'DATABASE', 'FILES', 'VERIFY'):
+        for failure in ('CHECKSUM', 'PREPARE', 'DROP', 'CREATE', 'DATABASE', 'FILES', 'COMPLETE', 'VERIFY'):
             with self.subTest(failure=failure):
                 events = self.root / 'events'
                 if events.exists():
@@ -83,7 +86,7 @@ ln(){ :; }
                 actual = events.read_text().splitlines() if events.exists() else []
                 self.assertNotIn('RESTART', actual)
                 self.assertNotIn('LOGIN', actual)
-                stages = ['PREPARE', 'DROP', 'CREATE', 'DATABASE', 'FILES', 'VERIFY']
+                stages = ['PREPARE', 'DROP', 'CREATE', 'DATABASE', 'FILES', 'COMPLETE', 'VERIFY']
                 expected = [] if failure == 'CHECKSUM' else stages[:stages.index(failure) + 1]
                 self.assertEqual(actual, expected)
 
@@ -95,6 +98,7 @@ release_switched=1; service_quiesced=1; database_mutated=1
 sha256sum(){ :; }
 docker(){ :; }
 bwork_recovery_prepare_restore(){ printf 'PREPARE\\n' >> "$LOG"; }
+bwork_recovery_restore_complete(){ printf 'COMPLETE\\n' >> "$LOG"; }
 bwork_recovery_restore_verify(){ printf 'VERIFY\\n' >> "$LOG"; }
 new_compose(){ :; }
 old_compose(){ printf 'RESTART\\n' >> "$LOG"; }
@@ -105,16 +109,18 @@ ln(){ :; }
         self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
         self.assertIn('LIVE=ROLLED_BACK', (self.root / 'backup/result.env').read_text())
         self.assertEqual((self.root / 'events').read_text().splitlines(),
-                         ['PREPARE', 'VERIFY', 'RESTART', 'RESTART', 'LOGIN'])
+                         ['PREPARE', 'COMPLETE', 'VERIFY', 'RESTART', 'RESTART', 'LOGIN'])
 
     def prepare_body(self):
         (self.root / 'backup/bwork-recovery-before.json').write_text('{"fixture":true}\n')
+        (self.root / 'backup/bwork-pg-toolchain.txt').write_bytes(b'fixture-toolchain\n')
         return '''
 bwork_recovery_enabled=1; live_commit=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 commit=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
 run_id=123; release_id=baseer-fixture-only
 sha256sum(){ if [ "$1" = -c ]; then return 0; fi; printf '%064d  %s\\n' 0 "$1"; }
 bwork_recovery_quiescent(){ return 0; }
+bwork_recovery_pg_toolchain(){ printf 'fixture-toolchain\\n'; }
 sync(){ :; } # Control flow only, not a durability claim.
 ''' + function('bwork_recovery_sync') + function('bwork_recovery_prepare_restore')
 
@@ -140,18 +146,35 @@ printf 'FIRST=%s SECOND=%s\\n' "$first" "$second"
         self.assertNotEqual(result.returncode, 0)
         self.assertEqual((self.root / 'bwork-recovery-pending.env').read_text(), 'PREVIOUS=AMBIGUOUS\n')
 
-    def receipt_scenario(self, change=None, classifier_failure=False):
+    def receipt_scenario(self, change=None, classifier_failure=False, post_schema_failure=False):
         body = self.prepare_body()
         old = {'fixture_' + str(index): index + 100 for index in range(14)}
-        proof = {'table_oids': old, 'source': {'commit': 'a' * 40}, 'ledger': {'value': 'fixture ledger'}}
+        proof = {'table_oids': old, 'source': {'commit': 'a' * 40}, 'ledger': {'value': 'fixture ledger'},
+                 'database': 'baseer_prod', 'schema_sha256': 'c' * 64}
         raw = (json.dumps(proof) + '\n').encode()
         (self.root / 'backup/bwork-recovery-before.json').write_bytes(raw)
         proof_sha = hashlib.sha256(raw).hexdigest()
         plan = {'classification': 'canonical-ready', 'install': [], 'required_closure': [
             'baseer_bwork', 'baseer_bwork_admin', 'baseer_bwork_dashboard',
             'baseer_bwork_procurement', 'baseer_access_roles', 'baseer_procurement_requests']}
+        (self.root / 'backup/baseer_prod.dump').write_bytes(b'fixture-dump')
+        (self.root / 'backup/filestore-baseer_prod.tar').write_bytes(b'fixture-filestore')
+        intent = ('RECOVERY=RESTORE_PREPARED\nPROOF_SHA256=' + proof_sha + '\nOLD_COMMIT=' + 'a' * 40 +
+                  '\nCOMMIT=' + 'b' * 40 + '\nRUN_ID=123\n').encode()
+        witness = {'protocol': 'bwork-paired-restore-v1', 'status': 'RESTORED',
+                   'method': 'pg_restore-exit-on-error+paired-filestore', 'database': 'baseer_prod',
+                   'old_commit': 'a' * 40, 'candidate_commit': 'b' * 40,
+                   'release_id': 'baseer-fixture-only', 'run_id': '123', 'source': proof['source'],
+                   'dump_sha256': hashlib.sha256(b'fixture-dump').hexdigest(),
+                   'filestore_sha256': hashlib.sha256(b'fixture-filestore').hexdigest(),
+                   'proof_sha256': proof_sha, 'intent_sha256': hashlib.sha256(intent).hexdigest(),
+                   'toolchain_sha256': hashlib.sha256(b'fixture-toolchain\n').hexdigest(),
+                   'original_schema_sha256': 'c' * 64, 'restored_schema_sha256': '6' * 64}
+        witness_raw = json.dumps(witness, sort_keys=True, separators=(',', ':'), ensure_ascii=False).encode()
         receipt = {'protocol': 'bwork-logical-recovery-v1', 'status': 'RECOVERED', 'database': 'baseer_prod',
-                   'source_commit': 'a' * 40, 'proof_sha256': proof_sha, 'schema_sha256': 'c' * 64,
+                   'source_commit': 'a' * 40, 'proof_sha256': proof_sha, 'schema_sha256': '6' * 64,
+                   'original_schema_sha256': 'c' * 64,
+                   'paired_restore_sha256': hashlib.sha256(witness_raw).hexdigest(),
                    'source': proof['source'], 'old_oids': old,
                    'new_oids': {name: value + 1000 for name, value in old.items()},
                    'old_ledger_sha256': hashlib.sha256(b'fixture ledger').hexdigest(),
@@ -163,21 +186,29 @@ printf 'FIRST=%s SECOND=%s\\n' "$first" "$second"
         (self.root / 'backup/bwork-filestore-before.sha256').write_text('f' * 64 + '\n')
         body += '''
 sha256sum(){ if [ "$1" = -c ]; then return 0; fi; printf '%s  %s\\n' "$PROOF_SHA" "$1"; }
-bwork_recovery_schema_hash(){ printf '%064s\\n' "$SCHEMA"; }
+bwork_recovery_schema_hash(){
+ count=$(cat "$BASE/schema-calls" 2>/dev/null || printf 0)
+ count=$((count+1)); printf '%s' "$count" > "$BASE/schema-calls"
+ if [ "$POST_SCHEMA_FAIL" = yes ] && [ "$count" -eq 3 ]; then printf 'partial-output'; return 39; fi
+ printf '%064s\\n' "$SCHEMA"
+}
 bwork_recovery_filestore_hash(){ printf '%064s\\n' "$FILESTORE"; }
 bwork_recovery_sql(){ [ "$1" = recover ] || return 1; printf '%s\\n' "$RECEIPT"; }
 old_compose(){ [ "$CLASSIFIER_FAIL" = no ] || return 30; printf '%s\\n' "$PLAN"; }
 compose_old=(old_compose)
 '''
+        body += function('bwork_recovery_witness') + function('bwork_recovery_restore_complete')
         body += function('bwork_recovery_restore_verify')
-        body += '\nbwork_recovery_prepare_restore\nbwork_recovery_restore_verify\n'
-        return self.shell(body, {'PROOF_SHA': proof_sha, 'SCHEMA': 'c' * 64, 'FILESTORE': 'f' * 64,
+        body += '\nbwork_recovery_prepare_restore\nbwork_recovery_restore_complete\nbwork_recovery_restore_verify\n'
+        return self.shell(body, {'PROOF_SHA': proof_sha, 'SCHEMA': '6' * 64, 'FILESTORE': 'f' * 64,
                                  'RECEIPT': json.dumps(receipt), 'PLAN': json.dumps(plan),
-                                 'CLASSIFIER_FAIL': 'yes' if classifier_failure else 'no'})
+                                 'CLASSIFIER_FAIL': 'yes' if classifier_failure else 'no',
+                                 'POST_SCHEMA_FAIL': 'yes' if post_schema_failure else 'no'})
 
     def test_receipt_context_failures_keep_global_pending_and_block_restart(self):
         for change in ({'status': 'FAILED'}, {'proof_sha256': '0' * 64}, {'source_commit': 'b' * 40},
-                       {'new_oids': {}}, {'database': 'baseer_qa'}):
+                       {'new_oids': {}}, {'database': 'baseer_qa'}, {'schema_sha256': '0' * 64},
+                       {'original_schema_sha256': '0' * 64}, {'paired_restore_sha256': '0' * 64}):
             with self.subTest(change=change):
                 # Each case is its own fresh attempt; never erase an existing
                 # ambiguous intent to simulate an automatic retry.
@@ -208,6 +239,135 @@ compose_old=(old_compose)
         self.assertTrue((self.root / 'backup/bwork-recovery-receipt.json').is_file())
         self.assertTrue((self.root / 'backup/bwork-restored-classification.json').is_file())
         self.assertTrue((self.root / 'backup/bwork-recovery-result.sha256').is_file())
+
+    def test_postcommit_schema_command_failure_keeps_receipt_pending_without_success(self):
+        result = self.receipt_scenario(post_schema_failure=True)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertTrue((self.root / 'bwork-recovery-pending.env').exists())
+        self.assertTrue((self.root / 'backup/bwork-recovery-receipt.json').exists())
+        self.assertFalse((self.root / 'backup/bwork-recovery-result.sha256').exists())
+        self.assertFalse((self.root / 'backup/bwork-restored-classification.json').exists())
+
+    def witness_fixture(self):
+        folder = self.root / 'backup'
+        proof = {'database': 'baseer_prod', 'schema_sha256': 'c' * 64,
+                 'source': {'commit': 'a' * 40}}
+        raw = json.dumps(proof, sort_keys=True, separators=(',', ':')).encode() + b'\n'
+        (folder / 'bwork-recovery-before.json').write_bytes(raw)
+        (folder / 'baseer_prod.dump').write_bytes(b'fixture-dump')
+        (folder / 'filestore-baseer_prod.tar').write_bytes(b'fixture-filestore')
+        (folder / 'bwork-pg-toolchain.txt').write_bytes(b'fixture-toolchain\n')
+        (folder / 'bwork-schema-before.sha256').write_bytes(('c' * 64 + '\n').encode())
+        (folder / 'bwork-schema-restored.sha256').write_bytes(('6' * 64 + '\n').encode())
+        intent = ('RECOVERY=RESTORE_PREPARED\nPROOF_SHA256=' + hashlib.sha256(raw).hexdigest() +
+                  '\nOLD_COMMIT=' + 'a' * 40 + '\nCOMMIT=' + 'b' * 40 + '\nRUN_ID=123\n')
+        (folder / 'bwork-recovery-intent.env').write_bytes(intent.encode())
+        return '''
+release_id=baseer-fixture-only; run_id=123
+live_commit=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+commit=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+''' + function('bwork_recovery_witness')
+
+    def test_actual_witness_create_verify_binds_files_context_and_never_overwrites(self):
+        body = self.witness_fixture()
+        result = self.shell(body + '\nbwork_recovery_witness create && bwork_recovery_witness verify\n')
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        path = self.root / 'backup/bwork-paired-restore.json'
+        raw = path.read_bytes()
+        witness = json.loads(raw)
+        self.assertEqual(raw, json.dumps(witness, sort_keys=True, separators=(',', ':'),
+                                        ensure_ascii=False).encode())
+        self.assertFalse(raw.endswith(b'\n'))
+        self.assertEqual(witness['status'], 'RESTORED')
+        self.assertEqual(witness['method'], 'pg_restore-exit-on-error+paired-filestore')
+        self.assertEqual(witness['original_schema_sha256'], 'c' * 64)
+        self.assertEqual(witness['restored_schema_sha256'], '6' * 64)
+        for field, name in (('dump_sha256', 'baseer_prod.dump'),
+                            ('filestore_sha256', 'filestore-baseer_prod.tar'),
+                            ('toolchain_sha256', 'bwork-pg-toolchain.txt'),
+                            ('intent_sha256', 'bwork-recovery-intent.env'),
+                            ('proof_sha256', 'bwork-recovery-before.json')):
+            self.assertEqual(witness[field], hashlib.sha256((path.parent / name).read_bytes()).hexdigest())
+        result = self.shell(body + '\nbwork_recovery_witness create\n')
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(path.read_bytes(), raw)
+
+    def test_actual_witness_rejects_changed_or_missing_pair_toolchain_intent_proof_and_schema(self):
+        names = ('baseer_prod.dump', 'filestore-baseer_prod.tar', 'bwork-pg-toolchain.txt',
+                 'bwork-recovery-intent.env', 'bwork-recovery-before.json',
+                 'bwork-schema-before.sha256', 'bwork-schema-restored.sha256')
+        for name in names:
+            for missing in (False, True):
+                with self.subTest(name=name, missing=missing), \
+                     tempfile.TemporaryDirectory(prefix='bwork-witness-file-') as temporary:
+                    old_root = self.root
+                    self.root = Path(temporary)
+                    (self.root / 'backup').mkdir()
+                    try:
+                        body = self.witness_fixture()
+                        result = self.shell(body + '\nbwork_recovery_witness create\n')
+                        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                        path = self.root / 'backup' / name
+                        if missing:
+                            path.unlink()
+                        else:
+                            path.write_bytes(path.read_bytes() + b'changed')
+                        result = self.shell(body + '\nbwork_recovery_witness verify\n')
+                        self.assertNotEqual(result.returncode, 0)
+                    finally:
+                        self.root = old_root
+
+    def test_actual_witness_rejects_stale_context_duplicate_noncanonical_and_missing_witness(self):
+        cases = ('run', 'release', 'candidate', 'old', 'duplicate', 'noncanonical', 'missing', 'extra')
+        for case in cases:
+            with self.subTest(case=case), tempfile.TemporaryDirectory(prefix='bwork-witness-context-') as temporary:
+                old_root = self.root
+                self.root = Path(temporary)
+                (self.root / 'backup').mkdir()
+                try:
+                    body = self.witness_fixture()
+                    result = self.shell(body + '\nbwork_recovery_witness create\n')
+                    self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                    path = self.root / 'backup/bwork-paired-restore.json'
+                    raw = path.read_bytes()
+                    suffix = ''
+                    if case == 'run':
+                        suffix = 'run_id=999\n'
+                    elif case == 'release':
+                        suffix = 'release_id=other-release\n'
+                    elif case == 'candidate':
+                        suffix = 'commit=' + 'd' * 40 + '\n'
+                    elif case == 'old':
+                        suffix = 'live_commit=' + 'd' * 40 + '\n'
+                    elif case == 'duplicate':
+                        path.write_bytes(raw[:-1] + b',"status":"RESTORED"}')
+                    elif case == 'noncanonical':
+                        path.write_text(json.dumps(json.loads(raw), indent=2), encoding='utf-8')
+                    elif case == 'missing':
+                        path.unlink()
+                    else:
+                        witness = json.loads(raw)
+                        witness['extra'] = True
+                        path.write_text(json.dumps(witness, sort_keys=True, separators=(',', ':')), encoding='utf-8')
+                    result = self.shell(body + '\n' + suffix + 'bwork_recovery_witness verify\n')
+                    self.assertNotEqual(result.returncode, 0)
+                finally:
+                    self.root = old_root
+
+    def test_archive_render_failure_with_output_is_not_accepted_as_a_hash(self):
+        body = '''
+DB_CONTAINER=fixture-db; bwork_recovery_schema_key=FixtureOnly
+docker(){
+ if [ "$*" = 'exec fixture-db pg_restore --help' ]; then printf '%s\\n' '--restrict-key'; return 0; fi
+ printf 'partial schema output\\n'
+ return 41
+}
+''' + function('bwork_recovery_archive_schema_hash') + '''
+if value="$(bwork_recovery_archive_schema_hash)"; then printf 'ACCEPTED=%s\\n' "$value"; exit 90; fi
+'''
+        result = self.shell(body)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertNotIn('ACCEPTED=', result.stdout)
 
     def test_source_keeps_nonretryable_intent_and_postcommit_old_classifier(self):
         before = function('bwork_recovery_prepare_restore')

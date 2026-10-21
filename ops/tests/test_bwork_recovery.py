@@ -49,6 +49,25 @@ def restored(original):
     return value
 
 
+def paired_witness(original, schema_sha256=None):
+    return {'protocol': 'bwork-paired-restore-v1', 'status': 'RESTORED',
+            'method': 'pg_restore-exit-on-error+paired-filestore', 'database': original['database'],
+            'old_commit': original['source']['commit'], 'candidate_commit': 'f' * 40,
+            'release_id': 'bwork-recovery-20261021', 'run_id': '39513209001', 'source': original['source'],
+            'dump_sha256': '1' * 64, 'filestore_sha256': '2' * 64,
+            'proof_sha256': hashlib.sha256(recovery.canonical(original) + b'\n').hexdigest(),
+            'intent_sha256': '3' * 64, 'toolchain_sha256': '4' * 64,
+            'original_schema_sha256': original['schema_sha256'],
+            'restored_schema_sha256': schema_sha256 or original['schema_sha256']}
+
+
+def witness_arguments(original, schema_sha256=None, witness=None):
+    witness = paired_witness(original, schema_sha256) if witness is None else witness
+    raw = recovery.canonical(witness).decode('utf-8')
+    return {'paired_restore_json': raw, 'paired_restore_sha256': hashlib.sha256(raw.encode()).hexdigest(),
+            'proof_sha256': hashlib.sha256(recovery.canonical(original) + b'\n').hexdigest()}
+
+
 def post_commit(original):
     value = restored(original)
     updated, _old = recovery.ledger_transition(original['ledger']['value'], NEW_OIDS, TABLES)
@@ -218,13 +237,13 @@ class RecoveryDataContract(unittest.TestCase):
 
     def test_restore_comparison_allows_physical_oid_difference_only(self):
         expected = proof()
-        recovery.compare_restored(expected, restored(expected))
+        recovery.compare_restored(expected, restored(expected), paired_witness(expected))
         for key in ('protocol', 'database', 'source', 'schema_sha256', 'tables', 'security',
                     'modules', 'sequences', 'ledger', 'ledger_remainder'):
             changed = restored(expected)
             changed[key] = None
             with self.subTest(key=key), self.assertRaises(recovery.RecoveryStopped):
-                recovery.compare_restored(expected, changed)
+                recovery.compare_restored(expected, changed, paired_witness(expected))
 
     def test_security_inventory_includes_default_column_extension_and_public_owners(self):
         tree = ast.parse((ROOT / 'ops/lib/bwork_recovery.py').read_text(encoding='utf-8'))
@@ -246,12 +265,12 @@ class RecoveryDataContract(unittest.TestCase):
             changed = restored(original)
             changed['security'][key]['sha256'] = '2' * 64
             with self.subTest(key=key), self.assertRaises(recovery.RecoveryStopped):
-                recovery.compare_restored(original, changed)
+                recovery.compare_restored(original, changed, paired_witness(original))
 
     def test_post_commit_proves_exact_cell_and_every_other_row(self):
         expected = proof()
         actual = post_commit(expected)
-        recovery.compare_post_commit(expected, actual, actual['ledger']['value'], NEW_OIDS)
+        recovery.compare_post_commit(expected, actual, actual['ledger']['value'], NEW_OIDS, expected['schema_sha256'])
         cases = []
         for key in ('security', 'ledger_remainder', 'sequences'):
             changed = copy.deepcopy(actual)
@@ -270,7 +289,8 @@ class RecoveryDataContract(unittest.TestCase):
         cases.append(changed)
         for index, changed in enumerate(cases):
             with self.subTest(index=index), self.assertRaises(recovery.RecoveryStopped):
-                recovery.compare_post_commit(expected, changed, actual['ledger']['value'], NEW_OIDS)
+                recovery.compare_post_commit(expected, changed, actual['ledger']['value'], NEW_OIDS,
+                                             expected['schema_sha256'])
 
     def test_foreign_idle_client_and_prepared_transactions_stop(self):
         cr = MagicMock()
@@ -290,6 +310,134 @@ class RecoveryDataContract(unittest.TestCase):
             with self.assertRaisesRegex(recovery.RecoveryStopped, 'proof_bytes'):
                 recovery.main()
             source.assert_not_called()
+
+
+class RecoveryWitnessContract(unittest.TestCase):
+    def test_valid_witness_is_canonical_bounded_and_binds_actual_capture_bytes(self):
+        original = proof()
+        arguments = witness_arguments(original, 'e' * 64)
+        context = {'identity': original['source']}
+        witness = recovery.validate_paired_restore(
+            arguments['paired_restore_json'], arguments['paired_restore_sha256'], original,
+            arguments['proof_sha256'], context, 'baseer_prod', 'e' * 64)
+        self.assertEqual(witness, paired_witness(original, 'e' * 64))
+        self.assertEqual(original['schema_sha256'], 'c' * 64)
+
+    def test_wrong_missing_stale_or_unbound_witness_stops_before_database_session(self):
+        original = proof()
+        valid = paired_witness(original, 'e' * 64)
+        cases = []
+        for key in valid:
+            changed = copy.deepcopy(valid)
+            changed.pop(key)
+            cases.append(changed)
+        for key, value in (
+            ('protocol', 'other'), ('status', 'PENDING'), ('method', 'pg_restore'),
+            ('database', 'baseer_qa'), ('old_commit', 'b' * 40), ('candidate_commit', 'not-a-commit'),
+            ('release_id', '../other'), ('run_id', 42), ('source', {'commit': 'b' * 40}),
+            ('proof_sha256', '0' * 64), ('original_schema_sha256', '0' * 64),
+            ('restored_schema_sha256', '0' * 64), ('dump_sha256', 'X' * 64),
+            ('filestore_sha256', ''), ('intent_sha256', None), ('toolchain_sha256', 'short')):
+            changed = copy.deepcopy(valid)
+            changed[key] = value
+            cases.append(changed)
+        changed = copy.deepcopy(valid)
+        changed['unexpected'] = 'extra'
+        cases.append(changed)
+        for index, witness in enumerate(cases):
+            connection = MagicMock()
+            with self.subTest(index=index), self.assertRaises(recovery.RecoveryStopped):
+                recovery.recover(connection, {'identity': original['source']}, 'baseer_prod', 'e' * 64,
+                                 original, **witness_arguments(original, witness=witness))
+            connection.set_session.assert_not_called()
+            connection.cursor.assert_not_called()
+            connection.commit.assert_not_called()
+
+    def test_missing_direct_witness_and_tampered_transport_stop_before_database_session(self):
+        original = proof()
+        connection = MagicMock()
+        with self.assertRaises(TypeError):
+            recovery.recover(connection, {'identity': original['source']}, 'baseer_prod', 'e' * 64, original)
+        good = witness_arguments(original, 'e' * 64)
+        variants = []
+        for key, value in (('paired_restore_json', None), ('paired_restore_json', good['paired_restore_json'] + '\n'),
+                           ('paired_restore_json', ' ' * (recovery.MAX_RESTORE_WITNESS + 1)),
+                           ('paired_restore_sha256', '0' * 64), ('proof_sha256', '0' * 64)):
+            changed = dict(good)
+            changed[key] = value
+            variants.append(changed)
+        for arguments in variants:
+            with self.subTest(arguments=tuple(arguments)), self.assertRaises(recovery.RecoveryStopped):
+                recovery.recover(connection, {'identity': original['source']}, 'baseer_prod', 'e' * 64,
+                                 original, **arguments)
+        connection.set_session.assert_not_called()
+
+    def test_direct_recovery_rejects_foreign_database_and_incomplete_source_context(self):
+        original = proof()
+        for database, identity in (('baseer_qa', original['source']),
+                                   ('baseer_prod', {'commit': 'a' * 40})):
+            connection = MagicMock()
+            with self.subTest(database=database, identity=identity), self.assertRaises(recovery.RecoveryStopped):
+                recovery.recover(connection, {'identity': identity}, database, 'e' * 64, original,
+                                 **witness_arguments(original, 'e' * 64))
+            connection.set_session.assert_not_called()
+
+    def test_schema_forensics_may_differ_only_with_witness_and_postcommit_stays_exact(self):
+        original = proof()
+        actual = restored(original)
+        actual['schema_sha256'] = 'e' * 64
+        recovery.compare_restored(original, actual, paired_witness(original, 'e' * 64))
+        with self.assertRaisesRegex(recovery.RecoveryStopped, 'restored_schema_binding'):
+            recovery.compare_restored(original, actual, paired_witness(original))
+        post = post_commit(original)
+        post['schema_sha256'] = 'e' * 64
+        recovery.compare_post_commit(original, post, post['ledger']['value'], NEW_OIDS, 'e' * 64)
+        post['schema_sha256'] = 'f' * 64
+        with self.assertRaisesRegex(recovery.RecoveryStopped, 'post_commit_schema_changed'):
+            recovery.compare_post_commit(original, post, post['ledger']['value'], NEW_OIDS, 'e' * 64)
+        self.assertEqual(original['schema_sha256'], 'c' * 64)
+
+    def test_cli_capture_forbids_witness_and_recover_requires_both_before_source(self):
+        base = ['bwork_recovery.py', 'capture', '--database', 'baseer_prod', '--source-root', '/not-read',
+                '--source-commit', 'a' * 40, '--schema-sha256', 'e' * 64]
+        for flags in (['--paired-restore-json', '{}'], ['--paired-restore-sha256', 'a' * 64]):
+            with self.subTest(flags=flags), patch.object(recovery.sys, 'argv', base + flags), \
+                 patch.object(recovery, 'source_context') as source, \
+                 self.assertRaisesRegex(recovery.RecoveryStopped, 'paired_restore_argument'):
+                recovery.main()
+            source.assert_not_called()
+        original = proof()
+        arguments = witness_arguments(original, 'e' * 64)
+        recover_base = [base[0], 'recover'] + base[2:] + ['--proof-sha256', arguments['proof_sha256']]
+        for flags in ([], ['--paired-restore-json', arguments['paired_restore_json']],
+                      ['--paired-restore-sha256', arguments['paired_restore_sha256']]):
+            with self.subTest(flags=flags), patch.object(recovery.sys, 'argv', recover_base + flags), \
+                 patch.object(recovery.sys, 'stdin', type('Input', (), {
+                     'buffer': io.BytesIO(recovery.canonical(original) + b'\n')})()), \
+                 patch.object(recovery, 'source_context') as source, \
+                 self.assertRaisesRegex(recovery.RecoveryStopped, 'paired_restore_argument'):
+                recovery.main()
+            source.assert_not_called()
+
+    def test_cli_rejects_witness_content_before_importing_database_driver(self):
+        original = proof()
+        changed = paired_witness(original, 'e' * 64)
+        changed['database'] = 'other_database'
+        arguments = witness_arguments(original, witness=changed)
+        argv = ['bwork_recovery.py', 'recover', '--database', 'baseer_prod', '--source-root', '/not-read',
+                '--source-commit', 'a' * 40, '--schema-sha256', 'e' * 64,
+                '--proof-sha256', arguments['proof_sha256'],
+                '--paired-restore-json', arguments['paired_restore_json'],
+                '--paired-restore-sha256', arguments['paired_restore_sha256']]
+        driver = MagicMock()
+        with patch.object(recovery.sys, 'argv', argv), \
+             patch.object(recovery.sys, 'stdin', type('Input', (), {
+                 'buffer': io.BytesIO(recovery.canonical(original) + b'\n')})()), \
+             patch.object(recovery, 'source_context', return_value={'identity': original['source']}), \
+             patch.dict(recovery.sys.modules, {'psycopg2': driver}), \
+             self.assertRaisesRegex(recovery.RecoveryStopped, 'paired_restore_source'):
+            recovery.main()
+        driver.connect.assert_not_called()
 
 
 class RecoveryActualSourceBinding(unittest.TestCase):
@@ -353,6 +501,7 @@ class RecoveryTransactionSeam(unittest.TestCase):
     def scenario(self, *, rowcount=1, classifier_error=False, commit_error=False, post_error=False):
         expected = proof()
         actual, post = restored(expected), post_commit(expected)
+        actual['schema_sha256'] = post['schema_sha256'] = 'e' * 64
         if post_error:
             post['security'] = {'changed': True}
         connection = MagicMock()
@@ -368,10 +517,12 @@ class RecoveryTransactionSeam(unittest.TestCase):
              patch.object(recovery, '_classify', side_effect=classifier, return_value={'classification': 'canonical-ready'}):
             if rowcount != 1 or classifier_error or commit_error or post_error:
                 with self.assertRaises(recovery.RecoveryStopped) as caught:
-                    recovery.recover(connection, context, 'baseer_prod', expected['schema_sha256'], expected)
+                    recovery.recover(connection, context, 'baseer_prod', actual['schema_sha256'], expected,
+                                     **witness_arguments(expected, actual['schema_sha256']))
                 result = str(caught.exception)
             else:
-                result = recovery.recover(connection, context, 'baseer_prod', expected['schema_sha256'], expected)
+                result = recovery.recover(connection, context, 'baseer_prod', actual['schema_sha256'], expected,
+                                          **witness_arguments(expected, actual['schema_sha256']))
         return connection, cr, result
 
     def test_success_has_one_conditional_cell_update_and_one_commit(self):
@@ -384,6 +535,10 @@ class RecoveryTransactionSeam(unittest.TestCase):
         self.assertEqual(result['source_commit'], 'a' * 40)
         self.assertEqual(result['old_oids'], OLD_OIDS)
         self.assertEqual(result['new_oids'], NEW_OIDS)
+        self.assertEqual(result['original_schema_sha256'], 'c' * 64)
+        self.assertEqual(result['schema_sha256'], 'e' * 64)
+        self.assertEqual(result['paired_restore_sha256'],
+                         witness_arguments(proof(), 'e' * 64)['paired_restore_sha256'])
 
     def test_wrong_conditional_count_or_classifier_failure_rolls_back_without_commit(self):
         for kwargs in ({'rowcount': 0}, {'rowcount': 2}, {'classifier_error': True}):

@@ -19,7 +19,7 @@ readonly ODOO_VOLUME=baseer-odoo-prod-odoo-data
 readonly LOCK_FILE=/var/lock/baseer-production-deploy.lock
 readonly GOOGLE_ENV="$BASE/secrets/google/odoo-google.env"
 # Fixed privileged recovery implementation. Unknown helpers fail closed.
-readonly BWORK_RECOVERY_HELPER_SHA256=03a22b258ea581b62936f3f3a0f2eb55f8b53704e227d2319c6fcaed7f7db659
+readonly BWORK_RECOVERY_HELPER_SHA256=dd5d1e5c2eef9942f08c7137b13945f3c752a028d3d6dc8c873be0f300d22163
 google_compose_override=''
 google_compose_files=()
 dms_old_compose_files=()
@@ -382,7 +382,7 @@ restore_pair() (
     bwork_recovery_prepare_restore
     docker exec "$DB_CONTAINER" sh -lc 'dropdb -U "$POSTGRES_USER" --if-exists baseer_prod'
     docker exec "$DB_CONTAINER" sh -lc 'createdb -U "$POSTGRES_USER" baseer_prod'
-    docker exec -i "$DB_CONTAINER" sh -lc 'pg_restore -U "$POSTGRES_USER" --no-owner --no-privileges -d baseer_prod' < "$backup/baseer_prod.dump"
+    docker exec -i "$DB_CONTAINER" sh -lc 'pg_restore -U "$POSTGRES_USER" --exit-on-error --no-owner --no-privileges -d baseer_prod' < "$backup/baseer_prod.dump"
     docker run --rm --network none -v "$ODOO_VOLUME":/target -v "$backup":/backup:ro alpine:3.20 sh -lc '
         set -eu
         rm -rf -- /target/filestore/baseer_prod
@@ -390,6 +390,7 @@ restore_pair() (
         tar -xf /backup/filestore-baseer_prod.tar -C /target
         test -d /target/filestore/baseer_prod
     '
+    bwork_recovery_restore_complete
     bwork_recovery_restore_verify
 )
 
@@ -550,11 +551,92 @@ for mount in json.load(sys.stdin):
     done
 }
 
+bwork_recovery_pg_toolchain() {
+    local image
+    image="$(docker inspect --format '{{.Image}}' "$DB_CONTAINER")" || return 1
+    [[ "$image" =~ ^sha256:[a-f0-9]{64}$ ]] || return 1
+    printf 'IMAGE=%s\n' "$image"
+    docker exec "$DB_CONTAINER" timeout 15 sh -ec 'postgres --version; pg_dump --version; pg_restore --version'
+}
+
+bwork_recovery_archive_schema_hash() {
+    local help
+    local flags=(--schema-only --no-owner --no-privileges)
+    help="$(docker exec "$DB_CONTAINER" pg_restore --help)" || return 1
+    if [[ "$help" == *--restrict-key* ]]; then flags+=("--restrict-key=$bwork_recovery_schema_key"); fi
+    # Render the authenticated archive to stdout for hashing only. No --dbname,
+    # psql or schema execution: PostgreSQL remains the trusted restore primitive.
+    docker exec -i "$DB_CONTAINER" timeout 120 pg_restore "${flags[@]}" \
+        < "$backup/baseer_prod.dump" | sha256sum | cut -d ' ' -f 1
+}
+
+bwork_recovery_witness() {
+    local mode=$1
+    python3 - "$mode" "$backup" "$release_id" "$run_id" "$live_commit" "$commit" <<'PY'
+import hashlib,json,os,pathlib,re,stat,sys
+mode,folder,release,run,old,candidate=sys.argv[1:]
+assert mode in ('create','verify')
+root=pathlib.Path(folder)
+def raw(name,bound):
+    path=root/name
+    info=path.lstat()
+    assert stat.S_ISREG(info.st_mode) and info.st_size<=bound
+    with path.open('rb') as stream:
+        opened=os.fstat(stream.fileno())
+        assert (info.st_dev,info.st_ino)==(opened.st_dev,opened.st_ino)
+        value=stream.read(bound+1)
+    assert len(value)==info.st_size and len(value)<=bound
+    return value
+def sha(name):
+    path=root/name
+    assert stat.S_ISREG(path.lstat().st_mode)
+    value=hashlib.sha256()
+    with path.open('rb') as stream:
+        for block in iter(lambda:stream.read(1048576),b''): value.update(block)
+    return value.hexdigest()
+def digest_file(name):
+    value=raw(name,128).decode().strip()
+    assert re.fullmatch('[a-f0-9]{64}',value)
+    return value
+proof_raw=raw('bwork-recovery-before.json',8388608)
+proof=json.loads(proof_raw)
+intent=dict(line.split('=',1) for line in raw('bwork-recovery-intent.env',4096).decode().splitlines())
+assert intent=={'RECOVERY':'RESTORE_PREPARED','PROOF_SHA256':hashlib.sha256(proof_raw).hexdigest(),
+               'OLD_COMMIT':old,'COMMIT':candidate,'RUN_ID':run}
+assert proof['database']=='baseer_prod' and proof['source']['commit']==old
+original=digest_file('bwork-schema-before.sha256')
+assert proof['schema_sha256']==original
+witness={'protocol':'bwork-paired-restore-v1','status':'RESTORED',
+ 'method':'pg_restore-exit-on-error+paired-filestore','database':'baseer_prod',
+ 'old_commit':old,'candidate_commit':candidate,'release_id':release,'run_id':run,
+ 'source':proof['source'],'dump_sha256':sha('baseer_prod.dump'),
+ 'filestore_sha256':sha('filestore-baseer_prod.tar'),
+ 'proof_sha256':hashlib.sha256(proof_raw).hexdigest(),
+ 'intent_sha256':sha('bwork-recovery-intent.env'),
+ 'toolchain_sha256':sha('bwork-pg-toolchain.txt'),
+ 'original_schema_sha256':original,
+ 'restored_schema_sha256':digest_file('bwork-schema-restored.sha256')}
+encoded=json.dumps(witness,sort_keys=True,separators=(',',':'),ensure_ascii=False).encode()
+assert len(encoded)<=16384
+if mode=='create':
+    descriptor=os.open(root/'bwork-paired-restore.json',os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o600)
+    with os.fdopen(descriptor,'wb') as stream:
+        stream.write(encoded);stream.flush();os.fsync(stream.fileno())
+else:
+    assert raw('bwork-paired-restore.json',16384)==encoded
+PY
+}
+
 bwork_recovery_sql() {
     local mode=$1 schema=$2 proof_sha=${3:-}
     local flags=("$mode" --database baseer_prod --source-root /mnt/bwork-recovery-old \
         --source-commit "$live_commit" --schema-sha256 "$schema")
     [ -z "$proof_sha" ] || flags+=(--proof-sha256 "$proof_sha")
+    if [ "$mode" = recover ]; then
+        bwork_recovery_witness verify || return 1
+        flags+=(--paired-restore-json "$(cat "$backup/bwork-paired-restore.json")" \
+            --paired-restore-sha256 "$(sha256sum "$backup/bwork-paired-restore.json" | cut -d ' ' -f 1)")
+    fi
     [ "$(sha256sum "$bwork_recovery_helper" | cut -d ' ' -f 1)" = "$BWORK_RECOVERY_HELPER_SHA256" ] || return 1
     "${compose_old[@]}" run --rm --no-deps -T -e PYTHONDONTWRITEBYTECODE=1 \
         -v "$bwork_recovery_helper:/mnt/bwork-recovery.py:ro" \
@@ -579,19 +661,23 @@ bwork_recovery_capture_before() {
     bwork_recovery_enabled=1
     chmod 0700 "$backup" || return 1
     bwork_recovery_quiescent || return 1
+    (set -o noclobber; bwork_recovery_pg_toolchain > "$backup/bwork-pg-toolchain.txt") || return 1
     schema="$(bwork_recovery_schema_hash)" || return 1
     (set -o noclobber; printf '%s\n' "$schema" > "$backup/bwork-schema-before.sha256") || return 1
     (set -o noclobber; bwork_recovery_sql capture "$schema" > "$backup/bwork-recovery-before.json") || return 1
     (set -o noclobber; bwork_recovery_filestore_hash > "$backup/bwork-filestore-before.sha256") || return 1
-    bwork_recovery_sync "$backup/bwork-schema-before.sha256" "$backup/bwork-recovery-before.json" "$backup/bwork-filestore-before.sha256"
+    bwork_recovery_sync "$backup/bwork-schema-before.sha256" "$backup/bwork-recovery-before.json" "$backup/bwork-filestore-before.sha256" "$backup/bwork-pg-toolchain.txt"
 }
 
 bwork_recovery_capture_after() {
     [ "$bwork_recovery_enabled" -eq 1 ] || return 0
-    local schema before
+    local schema before archive_schema
     bwork_recovery_quiescent || return 1
     schema="$(bwork_recovery_schema_hash)" || return 1
     [ "$schema" = "$(cat "$backup/bwork-schema-before.sha256")" ] || return 1
+    archive_schema="$(bwork_recovery_archive_schema_hash)" || return 1
+    [ "$archive_schema" = "$schema" ] || return 1
+    bwork_recovery_pg_toolchain | cmp "$backup/bwork-pg-toolchain.txt" - || return 1
     (set -o noclobber; bwork_recovery_sql capture "$schema" > "$backup/bwork-recovery-after.json") || return 1
     cmp "$backup/bwork-recovery-before.json" "$backup/bwork-recovery-after.json" || return 1
     before="$(bwork_recovery_filestore_hash)" || return 1
@@ -604,7 +690,7 @@ bwork_recovery_capture_after() {
     (set -o noclobber; sha256sum "$backup/baseer_prod.dump" "$backup/filestore-baseer_prod.tar" \
         "$backup/bwork-recovery-before.json" "$backup/bwork-recovery-after.json" \
         "$backup/bwork-schema-before.sha256" "$backup/bwork-filestore-before.sha256" \
-        "$backup/bwork-recovery-context.env" > "$backup/bwork-recovery.sha256") || return 1
+        "$backup/bwork-recovery-context.env" "$backup/bwork-pg-toolchain.txt" > "$backup/bwork-recovery.sha256") || return 1
     bwork_recovery_sync "$backup/bwork-recovery.sha256"
 }
 
@@ -615,6 +701,7 @@ bwork_recovery_prepare_restore() {
     # ambiguous (including partial DB/filestore restore), block future runs.
     sha256sum -c "$backup/bwork-recovery.sha256" || return 1
     bwork_recovery_quiescent || return 1
+    bwork_recovery_pg_toolchain | cmp "$backup/bwork-pg-toolchain.txt" - || return 1
     proof_sha="$(sha256sum "$backup/bwork-recovery-before.json" | cut -d ' ' -f 1)" || return 1
     (set -o noclobber; printf 'RECOVERY=RESTORE_PREPARED\nPROOF_SHA256=%s\nOLD_COMMIT=%s\nCOMMIT=%s\nRUN_ID=%s\n' \
         "$proof_sha" "$live_commit" "$commit" "$run_id" > "$backup/bwork-recovery-intent.env") || return 1
@@ -626,31 +713,50 @@ bwork_recovery_prepare_restore() {
     sync -f "$BASE" || return 1
 }
 
-bwork_recovery_restore_verify() {
+bwork_recovery_restore_complete() {
     [ "$bwork_recovery_enabled" -eq 1 ] || return 0
-    local schema filestore proof_sha receipt_status
     sha256sum -c "$backup/bwork-recovery.sha256" || return 1
     [ "$(stat -c '%d:%i' "$BASE/bwork-recovery-pending.env")" = \
         "$(stat -c '%d:%i' "$backup/bwork-recovery-intent.env")" ] || return 1
     bwork_recovery_quiescent || return 1
+    bwork_recovery_pg_toolchain | cmp "$backup/bwork-pg-toolchain.txt" - || return 1
+    (set -o noclobber; bwork_recovery_schema_hash > "$backup/bwork-schema-restored.sha256") || return 1
+    bwork_recovery_witness create || return 1
+    bwork_recovery_sync "$backup/bwork-schema-restored.sha256" "$backup/bwork-paired-restore.json"
+}
+
+bwork_recovery_restore_verify() {
+    [ "$bwork_recovery_enabled" -eq 1 ] || return 0
+    local schema filestore proof_sha receipt_status post_schema
+    sha256sum -c "$backup/bwork-recovery.sha256" || return 1
+    [ "$(stat -c '%d:%i' "$BASE/bwork-recovery-pending.env")" = \
+        "$(stat -c '%d:%i' "$backup/bwork-recovery-intent.env")" ] || return 1
+    bwork_recovery_quiescent || return 1
+    bwork_recovery_pg_toolchain | cmp "$backup/bwork-pg-toolchain.txt" - || return 1
+    bwork_recovery_witness verify || return 1
     schema="$(bwork_recovery_schema_hash)" || return 1
-    [ "$schema" = "$(cat "$backup/bwork-schema-before.sha256")" ] || return 1
+    [ "$schema" = "$(cat "$backup/bwork-schema-restored.sha256")" ] || return 1
     filestore="$(bwork_recovery_filestore_hash)" || return 1
     [ "$filestore" = "$(cat "$backup/bwork-filestore-before.sha256")" ] || return 1
     proof_sha="$(sha256sum "$backup/bwork-recovery-before.json" | cut -d ' ' -f 1)" || return 1
     (set -o noclobber; bwork_recovery_sql recover "$schema" "$proof_sha" \
         < "$backup/bwork-recovery-before.json" > "$backup/bwork-recovery-receipt.json") || return 1
     python3 - "$backup/bwork-recovery-receipt.json" "$backup/bwork-recovery-before.json" \
-        "$proof_sha" "$live_commit" "$schema" <<'PY'
+        "$proof_sha" "$live_commit" "$schema" "$backup/bwork-paired-restore.json" <<'PY'
 import hashlib,json,pathlib,re,sys
 def read(path):
     raw=pathlib.Path(path).read_bytes()
     assert len(raw)<=8388608
     return json.loads(raw)
 receipt,proof=read(sys.argv[1]),read(sys.argv[2])
+witness_path=pathlib.Path(sys.argv[6])
+witness=json.loads(witness_path.read_bytes())
 assert receipt['protocol']=='bwork-logical-recovery-v1' and receipt['status']=='RECOVERED'
 assert receipt['database']=='baseer_prod' and receipt['source_commit']==sys.argv[4]
 assert receipt['proof_sha256']==sys.argv[3] and receipt['schema_sha256']==sys.argv[5]
+assert receipt['original_schema_sha256']==proof['schema_sha256']==witness['original_schema_sha256']
+assert receipt['paired_restore_sha256']==hashlib.sha256(witness_path.read_bytes()).hexdigest()
+assert receipt['schema_sha256']==witness['restored_schema_sha256']
 assert receipt['source']==proof['source'] and receipt['old_oids']==proof['table_oids']
 new,old=receipt['new_oids'],receipt['old_oids']
 assert set(new)==set(old) and len(new)==14 and new!=old
@@ -666,6 +772,8 @@ PY
     receipt_status=$?
     [ "$receipt_status" -eq 0 ] || return 1
     bwork_recovery_sync "$backup/bwork-recovery-receipt.json" || return 1
+    post_schema="$(bwork_recovery_schema_hash)" || return 1
+    [ "$post_schema" = "$schema" ] || return 1
     "${compose_old[@]}" run --rm --no-deps -T --entrypoint timeout odoo 120 python3 \
         /mnt/baseer-addons/baseer_bwork/tools/canonical_pre_upgrade.py --classify \
         --modules baseer_bwork,baseer_bwork_admin,baseer_bwork_dashboard,baseer_bwork_procurement \
@@ -674,7 +782,8 @@ PY
         "$backup/bwork-restored-classification.json" || return 1
     bwork_recovery_sync "$backup/bwork-restored-classification.json" || return 1
     (set -o noclobber; sha256sum "$backup/bwork-recovery-intent.env" "$backup/bwork-recovery-receipt.json" \
-        "$backup/bwork-restored-classification.json" > "$backup/bwork-recovery-result.sha256") || return 1
+        "$backup/bwork-restored-classification.json" "$backup/bwork-paired-restore.json" \
+        "$backup/bwork-schema-restored.sha256" > "$backup/bwork-recovery-result.sha256") || return 1
     bwork_recovery_sync "$backup/bwork-recovery-result.sha256" || return 1
     [ "$(stat -c '%d:%i' "$BASE/bwork-recovery-pending.env")" = \
         "$(stat -c '%d:%i' "$backup/bwork-recovery-intent.env")" ] || return 1

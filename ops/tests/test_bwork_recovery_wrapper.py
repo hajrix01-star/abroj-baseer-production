@@ -354,6 +354,30 @@ commit=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
                 finally:
                     self.root = old_root
 
+    def test_archive_render_uses_explicit_stdout_only_argv(self):
+        body = '''
+DB_CONTAINER=fixture-db; bwork_recovery_schema_key=FixtureOnly
+docker(){
+ if [ "$*" = 'exec fixture-db pg_restore --help' ]; then
+   [ "$RESTRICT" = yes ] && printf '%s\\n' '--restrict-key'
+   return 0
+ fi
+ local wanted='exec -i fixture-db timeout 120 pg_restore --schema-only --no-owner --no-privileges --file=-'
+ [ "$RESTRICT" != yes ] || wanted+=' --restrict-key=FixtureOnly'
+ [ "$*" = "$wanted" ] || return 64
+ cat >/dev/null
+ printf 'synthetic raw schema\\n'
+}
+''' + function('bwork_recovery_archive_schema_hash') + '''
+bwork_recovery_archive_schema_hash
+'''
+        expected = hashlib.sha256(b'synthetic raw schema\n').hexdigest()
+        for restrict in ('yes', 'no'):
+            with self.subTest(restrict=restrict):
+                result = self.shell(body, {'RESTRICT': restrict})
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                self.assertEqual(result.stdout.strip(), expected)
+
     def test_archive_render_failure_with_output_is_not_accepted_as_a_hash(self):
         body = '''
 DB_CONTAINER=fixture-db; bwork_recovery_schema_key=FixtureOnly

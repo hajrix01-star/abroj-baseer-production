@@ -626,6 +626,21 @@
         "custom_addons/baseer_bwork/tests/canonical_four_update_probe.py"
       ],
       "suites": ["backend-contracts", "canonical-ops-contract", "source-structure", "guard-integrity"]
+    },
+    {
+      "id": "attested-canonical-recovery-preserves-entire-state",
+      "introduced": "2026-10-21",
+      "risk": "critical",
+      "scope": "A protected canonical-four rollback verifies the paired backup and full lossless PostgreSQL data, schema, security, sequences and frozen source before changing only fourteen physical OID slots in one exact ledger cell; same-transaction and independent original classification plus durable nonretryable intent and receipt gate every successful recovery without weakening ordinary update checks.",
+      "source_paths": [
+        "ops/lib/bwork_recovery.py",
+        "ops/tests/test_bwork_recovery.py",
+        "ops/tests/test_bwork_recovery_wrapper.py",
+        "ops/production/baseer-production-deploy",
+        "ops/production/upgrade-bwork-deploy-wrapper.sh",
+        "ops/production/test-upgrade-bwork-deploy-wrapper.sh"
+      ],
+      "suites": ["canonical-ops-contract", "source-structure", "guard-integrity"]
     }
   ]
 }

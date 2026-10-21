@@ -83,7 +83,7 @@ def hex_digest(value):
 
 
 def quoted(name):
-    require(type(name) is str and bool(re.fullmatch(r'[a-z_][a-z0-9_]{0,62}', name)), 'unsupported_identifier')
+    require(type(name) is str and bool(re.fullmatch(r'[A-Za-z_][A-Za-z0-9_]{0,62}', name)), 'unsupported_identifier')
     return '"' + name + '"'
 
 

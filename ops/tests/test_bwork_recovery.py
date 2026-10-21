@@ -63,6 +63,26 @@ def post_commit(original):
 
 
 class RecoveryDataContract(unittest.TestCase):
+    def test_ascii_uppercase_table_and_sequence_identifiers_keep_exact_case(self):
+        self.assertEqual(recovery.quoted('Products'), '"Products"')
+        self.assertEqual(recovery.quoted('Products_ID_seq'), '"Products_ID_seq"')
+        query = recovery.record_query('Products')
+        self.assertIn('FROM ONLY public."Products" t', query)
+        self.assertIn("encode(pg_catalog.record_send(t),'hex')", query)
+        self.assertIn('COLLATE "C"', query)
+        self.assertEqual('SELECT last_value,is_called FROM public.' + recovery.quoted('Products_ID_seq'),
+                         'SELECT last_value,is_called FROM public."Products_ID_seq"')
+        self.assertEqual(recovery.quoted('_Mixed_123'), '"_Mixed_123"')
+        self.assertEqual(recovery.quoted('A' * 63), '"' + 'A' * 63 + '"')
+
+    def test_identifier_shape_length_and_injection_guards_remain_fail_closed(self):
+        invalid = ('', 'A' * 64, '1Products', 'Products name', 'Products$', 'Products"',
+                   'public.Products', 'Products;SELECT 1', 'Products--', 'Products/*x*/',
+                   '\u00e9', 'Products\x00', None, 1, b'Products')
+        for name in invalid:
+            with self.subTest(name=name), self.assertRaisesRegex(recovery.RecoveryStopped, 'unsupported_identifier'):
+                recovery.quoted(name)
+
     def test_settings_keep_public_current_schema_and_implicit_catalog_precedence(self):
         cr = MagicMock()
         recovery._settings(cr)

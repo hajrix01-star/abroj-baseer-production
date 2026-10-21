@@ -19,7 +19,7 @@ readonly ODOO_VOLUME=baseer-odoo-prod-odoo-data
 readonly LOCK_FILE=/var/lock/baseer-production-deploy.lock
 readonly GOOGLE_ENV="$BASE/secrets/google/odoo-google.env"
 # Fixed privileged recovery implementation. Unknown helpers fail closed.
-readonly BWORK_RECOVERY_HELPER_SHA256=d68550ad8f9c67dada76a1603902b6c681f54a77410686269d94f43e19a082cd
+readonly BWORK_RECOVERY_HELPER_SHA256=03a22b258ea581b62936f3f3a0f2eb55f8b53704e227d2319c6fcaed7f7db659
 google_compose_override=''
 google_compose_files=()
 dms_old_compose_files=()

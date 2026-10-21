@@ -17,6 +17,7 @@ import sys
 import tempfile
 import time
 import types
+import urllib.error
 import urllib.request
 
 BASE = Path('/srv/abroj-baseer-production')
@@ -339,10 +340,30 @@ def health():
             return None
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), NoRedirect())
     deadline = time.monotonic() + 45
+
+    def status(url):
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise TimeoutError()
+        try:
+            response = opener.open(url, timeout=min(2, remaining))
+        except urllib.error.HTTPError as error:
+            response = error  # NoRedirect exposes 303 as HTTPError; never follow it.
+        with response as actual:
+            code = actual.status
+            locations = actual.headers.get_all('Location', []) if actual.headers is not None else []
+        if time.monotonic() >= deadline:
+            raise TimeoutError()
+        return code, locations
+
     while time.monotonic() < deadline:
         try:
-            with opener.open('http://127.0.0.1:18069/web/login', timeout=min(2, deadline - time.monotonic())) as response:
-                if response.status == 200:
+            code, locations = status('http://127.0.0.1:18069/web/login')
+            if code == 200:
+                return
+            if code == 303 and locations == ['/en/web/login']:
+                # Proven production language routing only: fixed second GET, no Location-derived URL.
+                if status('http://127.0.0.1:18069/en/web/login')[0] == 200:
                     return
         except Exception:
             pass

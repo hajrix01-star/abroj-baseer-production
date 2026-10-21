@@ -1,6 +1,8 @@
 """Synthetic activation contract: subprocess/path/health are mocked, no host reads."""
 import base64
 import copy
+import contextlib
+import email.message
 import importlib.util
 import io
 import json
@@ -111,6 +113,68 @@ class TestContracts(unittest.TestCase):
         with patch.object(activation.urllib.request, 'build_opener', return_value=opener), \
                 patch.object(activation.time, 'monotonic', side_effect=[0, 46]):
             with self.assertRaisesRegex(activation.Stop, '^login_health_failed$'): activation.health()
+
+    def exercise_health(self, replies, accepted, advance_first=0):
+        clock = [0.0]
+        calls = []
+        pending = iter(replies)
+        def opened(url, timeout):
+            calls.append((url, timeout))
+            if len(calls) == 1: clock[0] += advance_first
+            try: code, locations = next(pending)
+            except StopIteration: raise OSError('synthetic-unavailable') from None
+            headers = email.message.Message()
+            for location in locations: headers.add_header('Location', location)
+            if code != 200:
+                raise activation.urllib.error.HTTPError(url, code, 'synthetic', headers, None)
+            return contextlib.nullcontext(types.SimpleNamespace(status=code, headers=headers))
+        opener = types.SimpleNamespace(open=opened)
+        with patch.object(activation.urllib.request, 'build_opener', return_value=opener) as build, \
+                patch.object(activation.time, 'monotonic', side_effect=lambda: clock[0]), \
+                patch.object(activation.time, 'sleep', side_effect=lambda seconds: clock.__setitem__(0, clock[0] + seconds)):
+            if accepted: activation.health()
+            else:
+                with self.assertRaisesRegex(activation.Stop, '^login_health_failed$'): activation.health()
+            self.assertEqual(build.call_args.args[0].proxies, {})
+            self.assertIsNone(build.call_args.args[1].redirect_request(None, None, None, None, None, None))
+        self.assertTrue(all(0 < timeout <= 2 for _, timeout in calls))
+        self.assertLessEqual(clock[0], 45)
+        return calls
+
+    def test_health_original_200_is_still_accepted(self):
+        self.assertEqual(self.exercise_health([(200, [])], True),
+                         [('http://127.0.0.1:18069/web/login', 2)])
+
+    def test_health_exact_303_uses_only_fixed_second_get(self):
+        calls = self.exercise_health([(303, ['/en/web/login']), (200, [])], True)
+        self.assertEqual(calls, [('http://127.0.0.1:18069/web/login', 2),
+                                 ('http://127.0.0.1:18069/en/web/login', 2)])
+
+    def test_health_wrong_redirects_never_followed(self):
+        locations = ['https://foreign.invalid/en/web/login', 'http://127.0.0.1:18069/en/web/login',
+                     '//foreign.invalid/en/web/login', '/en/web/login?x=1', '/en/web/login#x',
+                     ' /en/web/login', '/en/web/login ', '/ar/web/login', '/en/web/login/']
+        for location in locations:
+            with self.subTest(location=location):
+                calls = self.exercise_health([(303, [location])], False)
+                self.assertTrue(all(url == 'http://127.0.0.1:18069/web/login' for url, _ in calls))
+        for code, headers in ((302, ['/en/web/login']), (307, ['/en/web/login']),
+                              (303, []), (303, ['/en/web/login', '/en/web/login'])):
+            with self.subTest(code=code, headers=headers):
+                calls = self.exercise_health([(code, headers)], False)
+                self.assertTrue(all(url == 'http://127.0.0.1:18069/web/login' for url, _ in calls))
+
+    def test_health_second_redirect_is_not_accepted_or_followed(self):
+        calls = self.exercise_health([(303, ['/en/web/login']), (303, ['/elsewhere'])], False)
+        self.assertEqual(sum(url == 'http://127.0.0.1:18069/en/web/login' for url, _ in calls), 1)
+        self.assertTrue(all(url in ('http://127.0.0.1:18069/web/login',
+                                   'http://127.0.0.1:18069/en/web/login') for url, _ in calls))
+
+    def test_health_second_get_shares_deadline_and_transient_retries_remain(self):
+        calls = self.exercise_health([(303, ['/en/web/login']), (200, [])], True, advance_first=44.5)
+        self.assertEqual(calls[1], ('http://127.0.0.1:18069/en/web/login', 0.5))
+        calls = self.exercise_health([(503, []), (200, [])], True)
+        self.assertEqual([url for url, _ in calls], ['http://127.0.0.1:18069/web/login'] * 2)
 
 
 class TestActivationFlow(unittest.TestCase):

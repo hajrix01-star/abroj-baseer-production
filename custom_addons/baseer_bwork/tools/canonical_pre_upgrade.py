@@ -800,6 +800,18 @@ def attest_fresh(cr):
                [LEDGER_KEY, json.dumps(result, sort_keys=True, separators=(',', ':'))])
 
 
+def _canonical_four_update():
+    import importlib.util
+    try:
+        spec = importlib.util.spec_from_file_location(
+            'bwork_canonical_four_update_source', Path(__file__).with_name('canonical_four_update.py'))
+        helper = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(helper)
+        return helper
+    except Exception:
+        _stop('canonical_four_helper_unavailable')
+
+
 def classify(cr, requested_modules):
     """Read-only fixed-scope install/upgrade classification for protected ops."""
     mapping, digest = load_mapping()
@@ -837,6 +849,45 @@ def classify(cr, requested_modules):
     scope.update(rename.get(name, name) for name, (_, value) in modules.items()
                  if name in rename and value in ('installed', 'to upgrade'))
     scope.update(name for name, value in existing.items() if value in ('installed', 'to upgrade'))
+    # A completed canonical identity can update this exact four-addon family
+    # without replaying unchanged access-role seeds. Every older/fresh/other
+    # route retains the original full-closure requirement below.
+    four_requested = {'baseer_bwork', 'baseer_bwork_procurement',
+                      'baseer_bwork_admin', 'baseer_bwork_dashboard'}
+    if state == 'complete' and set(requested_modules) == four_requested:
+        # Odoo can process unrelated queued module operations alongside -u.
+        # This narrow path permits no global pending work or active unknown
+        # BWork family member; uninstalled catalogue entries stay inert.
+        cr.execute("SELECT 1 FROM ir_module_module WHERE state IN ('to install','to upgrade','to remove') LIMIT 1")
+        if cr.fetchone():
+            _stop('canonical_four_global_pending')
+        if any(name.startswith('baseer_bwork') and name not in four_requested
+               and value in ('installed', 'to install', 'to upgrade', 'to remove')
+               for name, (_record_id, value) in modules.items()):
+            _stop('canonical_four_unknown_family')
+        helper = _canonical_four_update()
+        try:
+            if scope != helper.INSTALLED_MODULES or any(existing.get(name) != 'installed' for name in scope):
+                _stop('canonical_four_installed_closure')
+            cr.execute('SELECT name,latest_version FROM ir_module_module WHERE name IN %s',
+                       [tuple(sorted(helper.PRESERVED_MODULES))])
+            installed_versions = dict(cr.fetchall())
+            proofs = helper.verify_preserved_sources(Path(__file__).resolve().parents[2])
+            if installed_versions != {row['module']: row['version'] for row in proofs}:
+                _stop('canonical_four_installed_version')
+            return {'schema_version': 1, 'mapping_sha256': digest,
+                    'classification': 'canonical-ready', 'install': [],
+                    'upgrade': sorted(helper.REQUESTED_MODULES), 'required_closure': sorted(scope),
+                    'native_pre_upgrade_required': False, 'update_mode': helper.MODE,
+                    'preserved_modules': sorted(helper.PRESERVED_MODULES),
+                    'preserved_sources': proofs, 'source_contract_sha256': helper.contract_sha256()}
+        except MigrationStopped:
+            raise
+        except Exception as error:
+            # Preserve fixed helper reason codes; never log filesystem paths,
+            # arbitrary exception strings or source content from this boundary.
+            code = str(error) if isinstance(error, helper.CanonicalFourUpdateStopped) else 'canonical_four_source_verification'
+            _stop(code)
     installs, upgrades = [], []
     for name in sorted(scope):
         old = next((row['old'] for row in mapping['modules'] if row['new'] == name), None)

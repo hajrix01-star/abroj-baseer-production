@@ -612,6 +612,20 @@
         "custom_addons/baseer_bwork/tests_contract/test_company_display.py"
       ],
       "suites": ["backend-contracts", "source-structure", "guard-integrity"]
+    },
+    {
+      "id": "canonical-four-update-preserves-unchanged-consumers",
+      "introduced": "2026-10-21",
+      "risk": "critical",
+      "scope": "Only an exactly requested four-module canonical-ready update with completed verified ledger and fixed six-module installed closure can preserve two byte-and-version-pinned consumers; staged source and partition proofs are independently checked while old and fresh transitions retain full closure and paired recovery.",
+      "source_paths": [
+        "custom_addons/baseer_bwork/tools/canonical_four_update.py",
+        "custom_addons/baseer_bwork/canonical_four_update_contract.json",
+        "custom_addons/baseer_bwork/tests_contract/test_canonical_four_update.py",
+        "custom_addons/baseer_bwork/tests_contract/fixtures/canonical_four_baseline_sources.zip",
+        "custom_addons/baseer_bwork/tests/canonical_four_update_probe.py"
+      ],
+      "suites": ["backend-contracts", "canonical-ops-contract", "source-structure", "guard-integrity"]
     }
   ]
 }

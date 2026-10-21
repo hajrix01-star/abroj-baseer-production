@@ -1,5 +1,7 @@
 """Pure source/plan tests. No Docker, operational data or host writes."""
 import importlib.util
+import hashlib
+import io
 import json
 import os
 from pathlib import Path
@@ -9,6 +11,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+import zipfile
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -139,6 +142,97 @@ class SourceBoundaryTests(unittest.TestCase):
             self.assertLess(value.index('bwork_classify "$release"'), value.index('\ndatabase_mutated=1\n'))
             self.assertLess(value.index('\nbwork_verify "$release"'), value.index('\nwait_for_login\n'))
         self.assertEqual(blocks[0], blocks[1])
+
+
+class CanonicalFourPlanTests(unittest.TestCase):
+    """Execute the staged verifier against real, pinned consumer source bytes."""
+
+    def setUp(self):
+        SourceBoundaryTests.setUp(self)
+        # The protected host guard intentionally has no Git checkout. Keep
+        # these tests self-contained, using exact public source-test bytes.
+        archive = (ROOT / support.CORE / 'tests_contract/fixtures/canonical_four_baseline_sources.zip').read_bytes()
+        self.assertEqual(hashlib.sha256(archive).hexdigest(),
+                         '857110626812b2ea60a2f0a52411932c847d4837f5a8cb310da6ea35ea2f0e34')
+        self.assertLessEqual(len(archive), 262144)
+        with zipfile.ZipFile(io.BytesIO(archive)) as source:
+            members = source.infolist()
+            self.assertLessEqual(len(members), 150)
+            self.assertLessEqual(sum(member.file_size for member in members), 2 * 1024 * 1024)
+            self.assertEqual(len({member.filename.casefold() for member in members}), len(members))
+            for member in members:
+                name = member.filename
+                self.assertNotIn('\\', name)
+                self.assertNotIn(':', name)
+                self.assertNotIn('..', name.split('/'))
+                self.assertFalse(name.startswith('/'))
+                self.assertNotEqual((member.external_attr >> 16) & 0o170000, 0o120000)
+                self.assertTrue(name in ('custom_addons/', support.CORE + '/',
+                                         support.CORE + '/canonical_name_map.json')
+                                or name.startswith(('custom_addons/baseer_access_roles/',
+                                                    'custom_addons/baseer_procurement_requests/')))
+            source.extractall(self.candidate)
+        core = self.candidate / support.CORE
+        (core / 'tools').mkdir(exist_ok=True)
+        for relative in ('tools/canonical_four_update.py', 'canonical_four_update_contract.json'):
+            shutil.copyfile(ROOT / support.CORE / relative, core / relative)
+        helper_spec = importlib.util.spec_from_file_location('four_plan_fixture', core / 'tools/canonical_four_update.py')
+        self.helper = importlib.util.module_from_spec(helper_spec)
+        helper_spec.loader.exec_module(self.helper)
+        self.approved = self.helper.REQUESTED_MODULES
+        _, self.digest = support.mapping(self.candidate)
+
+    def four_plan(self):
+        return dict(schema_version=1, mapping_sha256=self.digest, classification='canonical-ready',
+                    native_pre_upgrade_required=False, update_mode=self.helper.MODE,
+                    install=[], upgrade=sorted(self.helper.REQUESTED_MODULES),
+                    required_closure=sorted(self.helper.INSTALLED_MODULES),
+                    preserved_modules=sorted(self.helper.PRESERVED_MODULES),
+                    preserved_sources=self.helper.verify_preserved_sources(self.candidate / 'custom_addons'),
+                    source_contract_sha256=self.helper.contract_sha256())
+
+    def test_fixed_canonical_four_upgrades_only_four_and_retains_full_closure(self):
+        result = support.check_plan(self.candidate, self.approved, self.four_plan(), verified=True)
+        self.assertEqual(result.splitlines()[0], 'NATIVE no')
+        self.assertEqual(set(result.splitlines()[1:]), {'UPGRADE ' + name for name in self.approved})
+        self.assertNotIn('UPGRADE baseer_access_roles', result)
+        self.assertNotIn('UPGRADE baseer_procurement_requests', result)
+        self.assertNotIn('INSTALL ', result)
+
+    def test_fixed_route_rejects_forged_partition_mode_and_claimed_source(self):
+        for field, replacement in (
+                ('update_mode', 'allow-any-skip'), ('classification', 'fresh'),
+                ('classification', 'old-installed'), ('upgrade', ['baseer_bwork']),
+                ('required_closure', sorted(self.approved)), ('install', ['baseer_bwork']),
+                ('preserved_modules', ['baseer_access_roles']), ('preserved_sources', []),
+                ('source_contract_sha256', '0' * 64)):
+            with self.subTest(field=field, value=replacement):
+                plan = self.four_plan()
+                plan[field] = replacement
+                with self.assertRaises(SystemExit):
+                    support.check_plan(self.candidate, self.approved, plan)
+
+    def test_staged_skipped_source_tamper_is_not_authorized_by_plan_proof(self):
+        plan = self.four_plan()
+        manifest = self.candidate / 'custom_addons/baseer_access_roles/__manifest__.py'
+        manifest.write_bytes(manifest.read_bytes() + b'\n# unexpected change\n')
+        with self.assertRaisesRegex(SystemExit, 'preserved_source_verification_failed'):
+            support.check_plan(self.candidate, self.approved, plan)
+
+    def test_preserved_claims_require_fixed_mode_and_exact_policy(self):
+        plan = self.four_plan()
+        del plan['update_mode']
+        with self.assertRaisesRegex(SystemExit, 'preserved_without_fixed_mode'):
+            support.check_plan(self.candidate, self.approved, plan)
+        for approved in (self.approved - {'baseer_bwork_admin'},
+                         self.approved | {'baseer_access_roles'},
+                         self.approved | {'baseer_sales_dashboard'}):
+            with self.subTest(approved=approved), self.assertRaises(SystemExit):
+                support.check_plan(self.candidate, approved, self.four_plan())
+
+    def test_fixed_update_cannot_attest_first_legacy_transition(self):
+        with self.assertRaisesRegex(SystemExit, 'invalid_canonical_update_mode'):
+            support.check_plan(self.candidate, self.approved, self.four_plan(), transition=True)
 
 
 class FrozenArchiveExecutionTests(unittest.TestCase):

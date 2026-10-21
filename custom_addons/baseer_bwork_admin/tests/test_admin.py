@@ -61,6 +61,58 @@ class BWorkAdminCase(TransactionCase):
             self.assertFalse(view.inherit_id, 'Must not extend standard company settings')
             self.assertGreater(view.priority, 16, 'Must not become the default company view')
 
+        # Exercise the native menu/action gates, not just the guarded service.
+        entry = self.env.ref('baseer_bwork_admin.company_display_action')
+        menu = self.env.ref('baseer_bwork_admin.company_display_menu')
+        settings = self.env.ref('baseer_bwork_admin.settings_menu')
+        self.assertEqual(entry.model_id.model, 'res.company')
+        self.assertFalse(entry.group_ids, 'Do not bypass native model access with action groups')
+        context = {'allowed_company_ids': sorted((self.company | self.other).ids)}
+        owner_entry = entry.with_user(self.admin).with_context(context)
+        owner_menu = self.env['ir.ui.menu'].with_user(self.admin).with_context(context)
+        self.assertFalse(owner_entry.env.su)
+        self.assertEqual(owner_entry.run(), action)
+        self.assertIn(menu.id, owner_menu._visible_menu_ids())
+        self.assertIn(settings.id, owner_menu._visible_menu_ids())
+
+        # Reproduce the shipped defect inside this isolated transaction: an
+        # abstract service has no read/write ACL, hiding the menu and blocking
+        # run() before the otherwise valid service call. Restore the XML binding.
+        entry.write({'model_id': self.env.ref('baseer_bwork_admin.model_baseer_bwork_admin_service').id})
+        self.env.registry.clear_cache()
+        with self.assertRaises(AccessError):
+            owner_entry.run()
+        self.assertNotIn(menu.id, owner_menu._visible_menu_ids())
+        entry.write({'model_id': self.env.ref('base.model_res_company').id})
+        self.env.registry.clear_cache()
+        self.assertEqual(owner_entry.run(), action)
+        self.assertIn(menu.id, owner_menu._visible_menu_ids())
+
+        extra = self.env['res.company'].create([
+            {'name': 'Isolated authorized company %s' % index} for index in range(5)])
+        authorized = self.company | self.other | extra
+        self.admin.write({'company_ids': [Command.link(company.id) for company in extra]})
+        for selected in (self.company, self.other, authorized):
+            with self.subTest(selected_count=len(selected)):
+                result = owner_entry.with_context(allowed_company_ids=selected.ids).run()
+                self.assertEqual(result['domain'], [('id', 'in', sorted(selected.ids))])
+                self.assertEqual(result['context']['allowed_company_ids'], sorted(selected.ids))
+                self.assertEqual(result['views'], action['views'])
+                self.assertFalse(result['context']['create'])
+                self.assertFalse(result['context']['delete'])
+        for denied in (entry.with_user(self.ordinary).with_context(context), owner_entry.sudo(),
+                       owner_entry.with_context(allowed_company_ids=self.foreign.ids)):
+            with self.assertRaises(AccessError):
+                denied.run()
+        self.assertNotIn(menu.id, self.env['ir.ui.menu'].with_user(self.ordinary)._visible_menu_ids())
+        # A system group alone must not confer the owner-only BWork authority.
+        self.ordinary.write({'group_ids': [Command.link(self.env.ref('base.group_system').id)]})
+        with self.assertRaises(AccessError):
+            entry.with_user(self.ordinary).with_context(allowed_company_ids=self.company.ids).run()
+        self.admin.write({'bwork_manage_rooms': False})
+        with self.assertRaises(AccessError):
+            owner_entry.run()
+
 
     def test_authority_rejects_group_only_sudo_and_foreign_current_scope(self):
         data = self.service().snapshot(self.company.ids)
@@ -319,6 +371,17 @@ class BWorkAdminHttpCase(HttpCase):
             self.env.ref('baseer_bwork.group_bwork_manager').id)]})
         self.authenticate(admin.login, password)
         self.assertTrue(self._rpc(self.env.company.ids)['result']['complete'])
+        def run_company_settings():
+            return self.url_open('/web/action/run', headers={'Content-Type': 'application/json'},
+                data=json.dumps({'jsonrpc': '2.0', 'method': 'call', 'id': 2, 'params': {
+                    'action_id': self.env.ref('baseer_bwork_admin.company_display_action').id,
+                    'context': {'allowed_company_ids': self.env.company.ids}}})).json()
+        opened = run_company_settings()
+        self.assertNotIn('error', opened)
+        self.assertEqual(opened['result']['res_model'], 'res.company')
+        self.assertEqual(opened['result']['domain'], [['id', 'in', self.env.company.ids]])
+        self.assertFalse(opened['result']['context']['create'])
+        self.assertFalse(opened['result']['context']['delete'])
         user = self.env['res.users'].with_context(no_reset_password=True).create({
             'name': 'HTTP nonadmin', 'login': 'admin-http-' + uuid4().hex, 'password': password,
             'company_id': self.env.company.id, 'company_ids': [Command.set(self.env.company.ids)],
@@ -326,6 +389,7 @@ class BWorkAdminHttpCase(HttpCase):
         })
         self.authenticate(user.login, password)
         self.assertIn('error', self._rpc(self.env.company.ids))
+        self.assertIn('error', run_company_settings())
 
     def test_unauthenticated_rpc_has_no_metadata(self):
         response = self._rpc(self.env.company.ids)

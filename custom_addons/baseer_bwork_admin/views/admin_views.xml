@@ -111,7 +111,7 @@
     </record>
     <record id="company_display_action" model="ir.actions.server">
         <field name="name">BWork company settings</field>
-        <field name="model_id" ref="model_baseer_bwork_admin_service"/>
+        <field name="model_id" ref="base.model_res_company"/>
         <field name="state">code</field>
         <field name="code">action = env['baseer.bwork.admin.service'].company_settings_action()</field>
     </record>

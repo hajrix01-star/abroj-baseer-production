@@ -58,6 +58,7 @@ class BWorkTaskCase(TransactionCase):
         company.with_user(owner).with_context(allowed_company_ids=company.ids).write(values)
 
     def test_company_display_filters_lists_but_preserves_task_and_native_scope(self):
+        self.env['res.lang']._activate_lang('ar_001')
         visible = self.create_task()
         hidden = self.create_task(company_id=self.other.id)
         before = self.env['baseer.bwork.task'].sudo().browse(hidden['id']).read([

@@ -100,7 +100,7 @@ def check_plan(root, approved, value, *, verified=False, transition=False):
         spec = importlib.util.spec_from_file_location('bwork_fixed_four_update', helper_path)
         require(spec is not None and spec.loader is not None, 'update_contract_helper_invalid')
         helper = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(helper)
+        exec(compile(helper_path.read_bytes(), str(helper_path), 'exec'), helper.__dict__)
         require(update_mode == helper.MODE and kind == 'canonical-ready' and not transition,
                 'invalid_canonical_update_mode')
         require(approved == helper.REQUESTED_MODULES and not sets['install']

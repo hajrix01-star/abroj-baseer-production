@@ -178,7 +178,10 @@ class CanonicalFourPlanTests(unittest.TestCase):
             shutil.copyfile(ROOT / support.CORE / relative, core / relative)
         helper_spec = importlib.util.spec_from_file_location('four_plan_fixture', core / 'tools/canonical_four_update.py')
         self.helper = importlib.util.module_from_spec(helper_spec)
-        helper_spec.loader.exec_module(self.helper)
+        # Fixture construction must not pre-create the artifact whose absence
+        # the actual writable-stage check_plan regression below proves.
+        with patch.object(sys, 'dont_write_bytecode', True):
+            helper_spec.loader.exec_module(self.helper)
         self.approved = self.helper.REQUESTED_MODULES
         _, self.digest = support.mapping(self.candidate)
 
@@ -198,6 +201,65 @@ class CanonicalFourPlanTests(unittest.TestCase):
         self.assertNotIn('UPGRADE baseer_access_roles', result)
         self.assertNotIn('UPGRADE baseer_procurement_requests', result)
         self.assertNotIn('INSTALL ', result)
+
+    def test_actual_repeated_plan_and_verified_calls_leave_writable_source_exact(self):
+        helper_path = self.candidate / support.CORE / 'tools/canonical_four_update.py'
+        frozen = self.root / 'repeat-frozen'
+        shutil.copytree(self.candidate, frozen)
+        wrapper = (ROOT / 'ops/production/baseer-production-deploy').read_text()
+        start = wrapper.index('bwork_recovery_source_guard()')
+        end = wrapper.index('\nbwork_recovery_schema_hash()', start)
+        guard = wrapper[start:end].split("<<'PY'\n", 1)[1].split('\nPY\n', 1)[0]
+        # Control: the former loader really writes a cache in a writable tree
+        # without caller-level bytecode prevention. Keep it outside candidate.
+        control = self.root / 'old-producer'
+        control.mkdir()
+        control_helper = control / 'canonical_four_update.py'
+        control_helper.write_bytes(helper_path.read_bytes())
+        with patch.dict(os.environ), patch.object(sys, 'dont_write_bytecode', False):
+            os.environ.pop('PYTHONDONTWRITEBYTECODE', None)
+            old_spec = importlib.util.spec_from_file_location('old_four_plan_producer', control_helper)
+            old_spec.loader.exec_module(importlib.util.module_from_spec(old_spec))
+            self.assertTrue(Path(importlib.util.cache_from_source(str(control_helper))).is_file())
+            before = support.tree(self.candidate)
+            for cycle in range(2):
+                with self.subTest(cycle=cycle):
+                    self.assertEqual(support.prepare(self.candidate, frozen, self.approved), self.digest)
+                    for verified in (False, True):
+                        result = support.check_plan(self.candidate, self.approved, self.four_plan(), verified=verified)
+                        self.assertIn('NATIVE no', result)
+                        self.assertEqual(support.tree(self.candidate), before)
+                        self.assertFalse(list(self.candidate.rglob('__pycache__')))
+                    # The checked candidate is now the next update's old
+                    # release: execute the real inline comparison unchanged,
+                    # with a non-ac9 identity and no legacy-cache exception.
+                    with patch.object(sys, 'argv', ['bwork-source-guard',
+                                      str(self.candidate / support.CORE), str(frozen / support.CORE), '1' * 40]):
+                        exec(compile(guard, str(ROOT / 'ops/production/baseer-production-deploy'), 'exec'),
+                             {'__name__': '__main__'})
+                self.assertEqual(support.tree(self.candidate), before)
+                self.assertFalse(list(self.candidate.rglob('__pycache__')))
+
+    def test_actual_check_plan_ignores_valid_poisoned_bytecode_and_keeps_it_unchanged(self):
+        # A valid timestamp/size header makes the old import loader consume
+        # this sentinel, proving that -B alone would not prevent cache reads.
+        from importlib._bootstrap_external import _code_to_timestamp_pyc
+        helper_path = self.candidate / support.CORE / 'tools/canonical_four_update.py'
+        cache = Path(importlib.util.cache_from_source(str(helper_path)))
+        cache.parent.mkdir()
+        metadata = helper_path.stat()
+        code = compile("raise RuntimeError('POISONED_FOUR_PLAN_CACHE')\n", str(helper_path), 'exec')
+        cache.write_bytes(_code_to_timestamp_pyc(code, int(metadata.st_mtime), metadata.st_size))
+        with patch.dict(os.environ), patch.object(sys, 'dont_write_bytecode', False):
+            os.environ.pop('PYTHONDONTWRITEBYTECODE', None)
+            old_spec = importlib.util.spec_from_file_location('poisoned_old_four_plan_loader', helper_path)
+            with self.assertRaisesRegex(RuntimeError, '^POISONED_FOUR_PLAN_CACHE$'):
+                old_spec.loader.exec_module(importlib.util.module_from_spec(old_spec))
+            before = support.tree(self.candidate)
+            for verified in (False, True):
+                result = support.check_plan(self.candidate, self.approved, self.four_plan(), verified=verified)
+                self.assertIn('NATIVE no', result)
+                self.assertEqual(support.tree(self.candidate), before)
 
     def test_fixed_route_rejects_forged_partition_mode_and_claimed_source(self):
         for field, replacement in (

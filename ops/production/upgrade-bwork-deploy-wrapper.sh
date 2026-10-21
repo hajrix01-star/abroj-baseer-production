@@ -11,9 +11,9 @@ readonly TARGET=/usr/local/sbin/baseer-production-deploy
 readonly LOCK=/var/lock/baseer-production-deploy.lock
 readonly NATIVE_LOCK_PARENT=/var/lock
 readonly BACKUP_ROOT="$BASE/control-plane-backups"
-readonly OLD_SHA=65d09cb69ba082939c919106edcb24d191634af0984cfcd53b008ee78287df66
-readonly NEW_SHA=b6cc1d577947faa6cc1d44e9c244cdac57452ed309e8a15f188864c4693dc5b9
-readonly LIVE_SOURCE=81fdd415521670b8c7ad681e97dd583e6f9c85e0
+readonly OLD_SHA=b6cc1d577947faa6cc1d44e9c244cdac57452ed309e8a15f188864c4693dc5b9
+readonly NEW_SHA=8a407bfaea03e177f9546a3a3e81d5c07fd4bdc9704670503a82f5dd2d9be85c
+readonly LIVE_SOURCE=ac9bfd96553d7ff3b467097ae9628795613ed0a6
 readonly SCRIPT_DIR="$(dirname -- "$(realpath -m -s -- "${BASH_SOURCE[0]}")")"
 readonly CANDIDATE="$SCRIPT_DIR/baseer-production-deploy"
 replacement_started=0 backup='' pending=''
@@ -56,7 +56,7 @@ require_live_source() {
     [[ "$release" == "$BASE/releases/"* ]] || die 'current release escaped release root'
     safe_chain "$release"
     safe_file "$release/RELEASE_COMMIT"
-    [ "$(cat -- "$release/RELEASE_COMMIT")" = "$LIVE_SOURCE" ] || die 'current source is not the reviewed 81 baseline'
+    [ "$(cat -- "$release/RELEASE_COMMIT")" = "$LIVE_SOURCE" ] || die 'current source is not the reviewed ac9 baseline'
 }
 require_lock_parent() {
     local parent mode

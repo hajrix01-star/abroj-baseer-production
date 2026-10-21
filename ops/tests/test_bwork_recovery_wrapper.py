@@ -3,17 +3,22 @@
 Docker/Compose, root ownership and fsync are mocked. This is not root-filesystem
 or native database acceptance; the separate native rehearsal covers the latter.
 """
+import contextlib
 import hashlib
+import io
 import json
 import os
 from pathlib import Path
 import re
 import shlex
 import shutil
+import stat
 import subprocess
 import sys
 import tempfile
+from types import SimpleNamespace
 import unittest
+from unittest.mock import patch
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -27,6 +32,148 @@ def function(name):
     closing = '\n)\n' if name == 'restore_pair' else '\n}\n'
     end = TEXT.index(closing, start) + len(closing)
     return TEXT[start:end]
+
+
+class WrapperOldSourceGuard(unittest.TestCase):
+    """Actual inline guard; synthetic constant binding is NOT Live attestation."""
+
+    LEGACY = 'tools/__pycache__/canonical_four_update.cpython-312.pyc'
+    COMMIT = 'ac9bfd96553d7ff3b467097ae9628795613ed0a6'
+    PAYLOAD = b'Synthetic unit fixture only, not production bytecode.\n'
+
+    def setUp(self):
+        temporary = tempfile.TemporaryDirectory(prefix='bwork-old-source-unit-')
+        self.addCleanup(temporary.cleanup)
+        self.root = Path(temporary.name)
+        self.actual, self.expected = self.root / 'actual', self.root / 'expected'
+        for directory in (self.actual, self.expected):
+            (directory / 'tools').mkdir(parents=True)
+            (directory / '__init__.py').write_bytes(b'# Synthetic tracked source.\n')
+            (directory / 'tools/canonical_four_update.py').write_bytes(b'# Synthetic frozen helper.\n')
+        self.cache = self.actual / self.LEGACY
+
+    def inline_guard(self, size=None, digest=None):
+        match = re.search(r"<<'PY'\n(.*?)\nPY\n", function('bwork_recovery_source_guard'), re.S)
+        self.assertIsNotNone(match)
+        script = match[1]
+        literal = "10365, '70809403353f8501ab8b5d335af3792e5e04d878e5b3b9cff25f6378cc01ae5a'"
+        self.assertEqual(script.count(literal), 1)
+        binding = str(len(self.PAYLOAD) if size is None else size) + ', ' + repr(
+            hashlib.sha256(self.PAYLOAD).hexdigest() if digest is None else digest)
+        # ONLY the fixed size/hash literals change, explicitly for this unit fixture.
+        return script.replace(literal, binding)
+
+    def write_cache(self, content=None):
+        self.cache.parent.mkdir(parents=True, exist_ok=True)
+        self.cache.write_bytes(self.PAYLOAD if content is None else content)
+
+    def execute_guard(self, commit=None, metadata=(0, 0, 0o644), **binding):
+        original_lstat = Path.lstat
+
+        def portable_root_metadata(path, *args, **kwargs):
+            info = original_lstat(path, *args, **kwargs)
+            if path == self.cache and stat.S_ISREG(info.st_mode):
+                # Portable root:root0644 only. Real file type/link count survive.
+                return SimpleNamespace(st_mode=stat.S_IFMT(info.st_mode) | metadata[2],
+                                       st_uid=metadata[0], st_gid=metadata[1], st_nlink=info.st_nlink)
+            return info
+
+        output = io.StringIO()
+        with patch.object(sys, 'argv', ['inline-guard', str(self.actual), str(self.expected),
+                                       self.COMMIT if commit is None else commit]), \
+             patch.object(Path, 'lstat', portable_root_metadata), contextlib.redirect_stdout(output):
+            exec(compile(self.inline_guard(**binding), '<actual-wrapper-inline-guard>', 'exec'), {})
+        return output.getvalue()
+
+    def test_clean_source_is_strict_and_accepted_for_any_commit(self):
+        for commit in (self.COMMIT, 'b' * 40):
+            with self.subTest(commit=commit):
+                self.assertEqual(self.execute_guard(commit), '')
+        (self.actual / '__init__.py').write_bytes(b'# Changed tracked source.\n')
+        with self.assertRaises(AssertionError):
+            self.execute_guard()
+
+    def test_exact_synthetic_legacy_artifact_is_retained_and_accepted(self):
+        self.write_cache()
+        before = self.cache.read_bytes()
+        self.assertIn('ATTESTED_AC9_EXACT_BYTES', self.execute_guard())
+        self.assertEqual(self.cache.read_bytes(), before)
+        self.assertFalse((self.expected / self.LEGACY).exists())
+
+    def test_clean_prefix_directory_and_file_keep_exact_comparison_order(self):
+        for directory in (self.actual, self.expected):
+            (directory / 'a').mkdir()
+            (directory / 'a/x.py').write_bytes(b'# Nested synthetic source.\n')
+            (directory / 'a.py').write_bytes(b'# Sibling synthetic source.\n')
+        for commit in (self.COMMIT, 'b' * 40):
+            with self.subTest(commit=commit):
+                self.assertEqual(self.execute_guard(commit), '')
+
+    def test_legacy_wrong_hash_size_commit_path_and_tracked_source_are_denied(self):
+        for case in ('hash', 'size', 'commit', 'path', 'source', 'missing-source', 'extra', 'expected-cache'):
+            with self.subTest(case=case), tempfile.TemporaryDirectory(prefix='bwork-old-guard-negative-') as temporary:
+                original = self.root, self.actual, self.expected, self.cache
+                self.root = Path(temporary)
+                self.actual, self.expected = self.root / 'actual', self.root / 'expected'
+                for directory in (self.actual, self.expected):
+                    (directory / 'tools').mkdir(parents=True)
+                    (directory / '__init__.py').write_bytes(b'# Synthetic tracked source.\n')
+                self.cache = self.actual / self.LEGACY
+                try:
+                    self.write_cache()
+                    binding = {}
+                    commit = self.COMMIT
+                    if case == 'hash':
+                        self.cache.write_bytes(b'X' + self.PAYLOAD[1:])
+                    elif case == 'size':
+                        self.cache.write_bytes(self.PAYLOAD + b'X')
+                        binding['digest'] = hashlib.sha256(self.cache.read_bytes()).hexdigest()
+                    elif case == 'commit':
+                        commit = 'b' * 40
+                    elif case == 'path':
+                        self.cache.rename(self.cache.with_name('canonical_four_update.cpython-313.pyc'))
+                    elif case == 'source':
+                        (self.actual / '__init__.py').write_bytes(b'# Changed tracked source.\n')
+                    elif case == 'missing-source':
+                        (self.actual / '__init__.py').unlink()
+                    elif case == 'extra':
+                        (self.cache.parent / 'unknown.pyc').write_bytes(b'unknown cache')
+                    else:
+                        target = self.expected / self.LEGACY
+                        target.parent.mkdir(parents=True)
+                        target.write_bytes(self.PAYLOAD)
+                    with self.assertRaises(AssertionError):
+                        self.execute_guard(commit, **binding)
+                finally:
+                    self.root, self.actual, self.expected, self.cache = original
+
+    def test_legacy_wrong_uid_gid_and_mode_are_denied(self):
+        self.write_cache()
+        for metadata in ((1, 0, 0o644), (0, 1, 0o644), (0, 0, 0o600)):
+            with self.subTest(metadata=metadata), self.assertRaises(AssertionError):
+                self.execute_guard(metadata=metadata)
+
+    def test_legacy_hardlink_is_really_rejected(self):
+        target = self.root / 'synthetic-external-cache'
+        target.write_bytes(self.PAYLOAD)
+        self.cache.parent.mkdir(parents=True)
+        os.link(target, self.cache)
+        self.assertGreater(self.cache.lstat().st_nlink, 1)
+        with self.assertRaises(AssertionError):
+            self.execute_guard()
+
+    def test_legacy_symlink_is_really_rejected(self):
+        target = self.root / 'synthetic-external-cache'
+        target.write_bytes(self.PAYLOAD)
+        self.cache.parent.mkdir(parents=True)
+        self.cache.symlink_to(target)
+        self.assertTrue(self.cache.is_symlink())
+        with self.assertRaises(AssertionError):
+            self.execute_guard()
+
+    def test_wrapper_disables_bytecode_before_any_python_execution(self):
+        self.assertRegex(TEXT, r'(?m)^export PYTHONDONTWRITEBYTECODE=1$')
+        self.assertLess(TEXT.index('export PYTHONDONTWRITEBYTECODE=1'), TEXT.index('python3'))
 
 
 class WrapperRecoveryFlow(unittest.TestCase):

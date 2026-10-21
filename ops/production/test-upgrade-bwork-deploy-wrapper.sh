@@ -25,7 +25,7 @@ fixture_case() (
     readonly LOCK="$lock_path"
     mkdir -p "$(dirname -- "$LOCK")"
     readonly BACKUP_ROOT="$BASE/control-plane-backups" CANDIDATE="$case_dir/source/baseer-production-deploy"
-    readonly LIVE_SOURCE=81fdd415521670b8c7ad681e97dd583e6f9c85e0
+    readonly LIVE_SOURCE=ac9bfd96553d7ff3b467097ae9628795613ed0a6
     printf '#!/bin/bash\n# old isolated fixture\nexit 0\n' > "$TARGET"
     printf '#!/bin/bash\n# new isolated fixture\nexit 0\n' > "$CANDIDATE"
     readonly OLD_SHA="$(sha256sum "$TARGET" | cut -d ' ' -f 1)"
@@ -133,8 +133,9 @@ done
 # Fixed production constants/policy stay authoritative; fixtures above do not
 # change the production script or normalize unknown installed wrapper hashes.
 grep -Fxq 'readonly TARGET=/usr/local/sbin/baseer-production-deploy' "$sut"
-grep -Fxq 'readonly OLD_SHA=65d09cb69ba082939c919106edcb24d191634af0984cfcd53b008ee78287df66' "$sut"
-grep -Fxq 'readonly NEW_SHA=b6cc1d577947faa6cc1d44e9c244cdac57452ed309e8a15f188864c4693dc5b9' "$sut"
+grep -Fxq 'readonly OLD_SHA=b6cc1d577947faa6cc1d44e9c244cdac57452ed309e8a15f188864c4693dc5b9' "$sut"
+grep -Fxq 'readonly NEW_SHA=8a407bfaea03e177f9546a3a3e81d5c07fd4bdc9704670503a82f5dd2d9be85c' "$sut"
+grep -Fxq 'readonly LIVE_SOURCE=ac9bfd96553d7ff3b467097ae9628795613ed0a6' "$sut"
 grep -Fxq 'readonly LOCK=/var/lock/baseer-production-deploy.lock' "$sut"
 grep -Fxq 'readonly NATIVE_LOCK_PARENT=/var/lock' "$sut"
 [ "$(wc -l < "$script_dir/release-policies/baseer-2026-10-21-bwork-production.env")" -eq 3 ]

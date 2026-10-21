@@ -3,6 +3,8 @@
 # identifier only; this wrapper owns the corresponding commit and module list.
 set -Eeuo pipefail
 umask 027
+# Source inspection must not leave interpreter artifacts in immutable releases.
+export PYTHONDONTWRITEBYTECODE=1
 
 readonly BASE=/srv/abroj-baseer-production
 readonly RELEASES="$BASE/releases"
@@ -462,8 +464,8 @@ bwork_recovery_source_guard() {
     mkdir -m 0700 "$expected_root"
     git -C "$repository" archive --format=tar "$live_commit" custom_addons/baseer_bwork |
         tar -x -C "$expected_root" --no-same-owner --no-same-permissions
-    python3 - "$old_release/custom_addons/baseer_bwork" "$expected_root/custom_addons/baseer_bwork" <<'PY'
-import hashlib, pathlib, sys
+    python3 - "$old_release/custom_addons/baseer_bwork" "$expected_root/custom_addons/baseer_bwork" "$live_commit" <<'PY'
+import hashlib, pathlib, stat, sys
 def digest(path):
     root = pathlib.Path(path)
     assert root.is_dir() and not root.is_symlink()
@@ -477,7 +479,23 @@ def digest(path):
             assert item.is_dir()
     assert rows and len(rows) <= 4096
     return rows
-assert digest(sys.argv[1]) == digest(sys.argv[2]), 'Old canonical source is not the protected frozen Git tree'
+actual, expected = digest(sys.argv[1]), digest(sys.argv[2])
+# One historical producer artifact, NOT a cache ignore rule. Native compile-only
+# attestation proved its entire byte stream against Git ac9 (BCD021). Retain it
+# in the real source/recovery snapshot; never delete or normalize live files.
+legacy_path = 'tools/__pycache__/canonical_four_update.cpython-312.pyc'
+legacy_attested = False
+if sys.argv[3] == 'ac9bfd96553d7ff3b467097ae9628795613ed0a6' and any(row[0] == legacy_path for row in actual):
+    legacy = pathlib.Path(sys.argv[1]) / legacy_path
+    info = legacy.lstat()
+    assert stat.S_ISREG(info.st_mode) and info.st_nlink == 1
+    assert (info.st_uid, info.st_gid, stat.S_IMODE(info.st_mode)) == (0, 0, 0o644)
+    assert not any(row[0] == legacy_path for row in expected)
+    expected.append((legacy_path, 10365, '70809403353f8501ab8b5d335af3792e5e04d878e5b3b9cff25f6378cc01ae5a'))
+    legacy_attested = True
+assert sorted(actual) == sorted(expected), 'Old canonical source is not the protected frozen Git tree'
+if legacy_attested:
+    print('BWORK_LEGACY_SOURCE_ARTIFACT=ATTESTED_AC9_EXACT_BYTES')
 PY
 }
 

@@ -7,7 +7,7 @@ import { defineMailModels } from "@mail/../tests/mail_test_helpers";
 import { registry } from "@web/core/registry";
 import { ConnectionLostError } from "@web/core/network/rpc";
 import { user } from "@web/core/user";
-import { mockService, mountWithCleanup, patchWithCleanup } from "@web/../tests/web_test_helpers";
+import { clearRegistry, mountWithCleanup, patchWithCleanup } from "@web/../tests/web_test_helpers";
 import { BaseerReportsHub } from "@baseer_reports_menu/report_hub";
 import { ReportSelector } from "@baseer_reports_menu/report_selector";
 import { BaseerOperationsPreview, prepareOperationsSnapshot } from "@baseer_operations_report/operations";
@@ -116,8 +116,29 @@ async function loadingTemplates(withHub = false) {
 
 async function mountLoadingReport(call, ComponentClass = BaseerOperationsPreview) {
     patchWithCleanup(user, { lang: "ar_001", activeCompany: { id: 1 }, hasGroup: async () => true });
-    mockService("orm", { call });
-    mockService("action", { doAction: async () => {} });
+    // Mount native dropdowns/overlays without starting unrelated applications
+    // (e.g. POS data initialization) from the combined unit-test asset bundle.
+    // The test helpers restore both registries after every test.
+    const services = registry.category("services");
+    const required = new Map();
+    const keep = (name) => {
+        if (required.has(name)) { return; }
+        const service = services.get(name);
+        required.set(name, service);
+        for (const dependency of service.dependencies || []) { keep(dependency); }
+    };
+    for (const name of ["ui", "hotkey", "popover", "bottom_sheet"]) { keep(name); }
+    clearRegistry(services);
+    clearRegistry(registry.category("main_components"));
+    for (const [name, service] of required) { services.add(name, service); }
+    services.add("orm", { start: () => ({ call: (model, method, ...args) => {
+        if (!((model === "baseer.profit.loss.report" && method === "get_context") ||
+            (model === "baseer.operations.report" && method === "get_source_snapshot"))) {
+            throw new Error(`Unexpected report RPC: ${model}.${method}`);
+        }
+        return call(model, method, ...args);
+    } }) });
+    services.add("action", { start: () => ({ doAction: async () => {} }) });
     const component = await mountWithCleanup(ComponentClass, {
         templates: await loadingTemplates(ComponentClass === BaseerReportsHub), props: {},
     });

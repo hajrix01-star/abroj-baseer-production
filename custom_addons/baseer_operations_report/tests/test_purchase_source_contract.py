@@ -63,6 +63,19 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
             lambda line: line.repartition_type == 'tax',
         ).write({'account_id': self.vat_account.id})
 
+    def _source_reader_groups(self):
+        """An authorized reader must read every installed source, not sudo."""
+        groups = [
+            self.env.ref('base.group_user').id,
+            self.env.ref('account.group_account_user').id,
+            self.env.ref('point_of_sale.group_pos_user').id,
+        ]
+        if 'baseer.procurement.representative.advance' in self.env:
+            groups.append(self.env.ref(
+                'baseer_procurement_requests.group_procurement_accountant',
+            ).id)
+        return groups
+
     def _bill(self):
         bill = self.env['account.move'].with_company(self.company).create({
             'move_type': 'in_invoice', 'partner_id': self.partner.id,
@@ -214,11 +227,7 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
         reader = self.env['res.users'].create({
             'name': 'Gross taxed bank outflow reader',
             'login': 'gross_taxed_bank_outflow_reader',
-            'group_ids': [Command.set([
-                self.env.ref('base.group_user').id,
-                self.env.ref('account.group_account_user').id,
-                self.env.ref('point_of_sale.group_pos_user').id,
-            ])],
+            'group_ids': [Command.set(self._source_reader_groups())],
             'company_id': self.company.id,
             'company_ids': [Command.set(self.company.ids)],
         })
@@ -443,11 +452,7 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
         reader = self.env['res.users'].create({
             'name': 'Gross cash outflow reader',
             'login': 'gross_cash_outflow_reader',
-            'group_ids': [Command.set([
-                self.env.ref('base.group_user').id,
-                self.env.ref('account.group_account_user').id,
-                self.env.ref('point_of_sale.group_pos_user').id,
-            ])],
+            'group_ids': [Command.set(self._source_reader_groups())],
             'company_id': self.company.id,
             'company_ids': [Command.set(self.company.ids)],
         })
@@ -574,11 +579,7 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
         reader = self.env['res.users'].create({
             'name': 'Gross taxed cash reader',
             'login': 'gross_taxed_cash_reader',
-            'group_ids': [Command.set([
-                self.env.ref('base.group_user').id,
-                self.env.ref('account.group_account_user').id,
-                self.env.ref('point_of_sale.group_pos_user').id,
-            ])],
+            'group_ids': [Command.set(self._source_reader_groups())],
             'company_id': self.company.id,
             'company_ids': [Command.set(self.company.ids)],
         })
@@ -846,11 +847,8 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
         reader = self.env['res.users'].create({
             'name': 'Gross batch direct cash reader',
             'login': 'gross_batch_direct_cash_reader',
-            'group_ids': [Command.set([
-                self.env.ref('base.group_user').id,
+            'group_ids': [Command.set(self._source_reader_groups() + [
                 self.env.ref('account.group_account_invoice').id,
-                self.env.ref('account.group_account_user').id,
-                self.env.ref('point_of_sale.group_pos_user').id,
             ])],
             'company_id': self.company.id,
             'company_ids': [Command.set(self.company.ids)],
@@ -1161,11 +1159,7 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
         reader = self.env['res.users'].create({
             'name': 'Gross native payment reader',
             'login': 'gross_native_payment_reader',
-            'group_ids': [Command.set([
-                self.env.ref('base.group_user').id,
-                self.env.ref('account.group_account_user').id,
-                self.env.ref('point_of_sale.group_pos_user').id,
-            ])],
+            'group_ids': [Command.set(self._source_reader_groups())],
             'company_id': self.company.id,
             'company_ids': [Command.set(self.company.ids)],
         })
@@ -1310,11 +1304,7 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
         reader = self.env['res.users'].create({
             'name': 'Gross direct expense reader',
             'login': 'gross_direct_expense_reader',
-            'group_ids': [Command.set([
-                self.env.ref('base.group_user').id,
-                self.env.ref('account.group_account_user').id,
-                self.env.ref('point_of_sale.group_pos_user').id,
-            ])],
+            'group_ids': [Command.set(self._source_reader_groups())],
             'company_id': self.company.id,
             'company_ids': [Command.set(self.company.ids)],
         })
@@ -1369,11 +1359,7 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
         reader = self.env['res.users'].create({
             'name': 'Gross payment source accountant',
             'login': 'gross_payment_source_accountant',
-            'group_ids': [Command.set([
-                self.env.ref('base.group_user').id,
-                self.env.ref('account.group_account_user').id,
-                self.env.ref('point_of_sale.group_pos_user').id,
-            ])],
+            'group_ids': [Command.set(self._source_reader_groups())],
             'company_id': self.company.id,
             'company_ids': [Command.set(self.company.ids)],
         })
@@ -1640,11 +1626,7 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
         reader = self.env['res.users'].create({
             'name': 'Gross multi-line accountant',
             'login': 'gross_multiline_accountant',
-            'group_ids': [Command.set([
-                self.env.ref('base.group_user').id,
-                self.env.ref('account.group_account_user').id,
-                self.env.ref('point_of_sale.group_pos_user').id,
-            ])],
+            'group_ids': [Command.set(self._source_reader_groups())],
             'company_id': self.company.id,
             'company_ids': [Command.set(self.company.ids)],
         })

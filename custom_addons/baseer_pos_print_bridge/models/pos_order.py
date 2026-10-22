@@ -200,7 +200,117 @@ class PosOrder(models.Model):
         if missing:
             raise AccessError(_('A kitchen order must be cancelled through the documented kitchen cancellation workflow.'))
 
+    def _baseer_assert_payment_source_integrity(self):
+        """Prove synchronized headers from native taxes before accepting payment.
+
+        Reading the tax pipeline must not repair an incomplete order: the
+        cashier needs the original lines to recover it before paying again.
+        """
+        AccountTax = self.env['account.tax']
+        for order in self:
+            currency = order.currency_id
+            # A record rule may hide part of an order. Visible rows alone
+            # cannot prove either its financial source or its empty tenders.
+            for model, inverse, records in (
+                    ('pos.order.line', 'order_id', order.lines),
+                    ('pos.payment', 'pos_order_id', order.payment_ids)):
+                source = self.env[model]
+                source.flush_model([inverse])
+                self.env.cr.execute(
+                    'SELECT id FROM "%s" WHERE "%s" = %%s' % (source._table, inverse),
+                    [order.id],
+                )
+                if {row[0] for row in self.env.cr.fetchall()} != set(records.ids):
+                    raise AccessError(_(
+                        'The complete order items and payments must be accessible before accepting payment.'
+                    ))
+                records.check_access('read')
+            if not order.lines and (
+                    any(not currency.is_zero(order[field]) for field in (
+                        'amount_total', 'amount_tax', 'amount_paid', 'amount_return'))
+                    or any(not currency.is_zero(payment.amount) for payment in order.payment_ids)):
+                raise ValidationError(_(
+                    'This order has amounts but no items. Restore its items before accepting payment.'
+                ))
+
+            # A hidden direct tax can disappear from the line's many-to-many
+            # field before native fiscal mapping even prepares the base line.
+            order.lines.flush_recordset(['tax_ids'])
+            tax_field = self.env['pos.order.line']._fields['tax_ids']
+            self.env.cr.execute(
+                'SELECT "%s" FROM "%s" WHERE "%s" = ANY(%%s)' % (
+                    tax_field.column2, tax_field.relation, tax_field.column1,
+                ),
+                [order.lines.ids],
+            )
+            source_tax_ids = {row[0] for row in self.env.cr.fetchall()}
+            AccountTax.browse(sorted(source_tax_ids)).check_access('read')
+            order.fiscal_position_id.check_access('read')
+
+            # Preserve native extension hooks, including trusted summary lines.
+            base_lines = order._prepare_tax_base_line_values()
+            pending_taxes = AccountTax
+            for base in base_lines:
+                base['tax_ids'].check_access('read')
+                pending_taxes |= base['tax_ids']
+            # Native tax expansion can filter out a hidden group child. Prove
+            # access to the complete hierarchy before using that expansion.
+            child_field = AccountTax._fields['children_tax_ids']
+            AccountTax.flush_model(['children_tax_ids'])
+            checked_tax_ids = set()
+            while pending_taxes:
+                pending_taxes.check_access('read')
+                checked_tax_ids.update(pending_taxes.ids)
+                groups = pending_taxes.filtered(lambda tax: tax.amount_type == 'group')
+                if not groups:
+                    break
+                self.env.cr.execute(
+                    'SELECT "%s" FROM "%s" WHERE "%s" = ANY(%%s)' % (
+                        child_field.column2, child_field.relation, child_field.column1,
+                    ),
+                    [groups.ids],
+                )
+                child_ids = {row[0] for row in self.env.cr.fetchall()} - checked_tax_ids
+                pending_taxes = AccountTax.browse(sorted(child_ids))
+            AccountTax._add_tax_details_in_base_lines(base_lines, order.company_id)
+            for base in base_lines:
+                for tax_data in base['tax_details']['taxes_data']:
+                    tax_data['tax'].check_access('read')
+            AccountTax._round_base_lines_tax_details(base_lines, order.company_id)
+            cash_rounding = (
+                order.config_id.rounding_method if order.config_id.cash_rounding else None
+            )
+            backend_rounding = (
+                cash_rounding if not order.config_id.only_round_cash_method else None
+            )
+            backend = AccountTax._get_tax_totals_summary(
+                base_lines=base_lines, currency=currency, company=order.company_id,
+                cash_rounding=backend_rounding,
+            )
+            candidates = [(backend['total_amount_currency'], backend['tax_amount_currency'])]
+            if cash_rounding:
+                # Odoo 19 setOrderPrices stores priceIncl before the added cash
+                # rounding line; its tax amount comes from the same summary.
+                # Keep each native (gross, tax) pair together (biggest_tax).
+                ui = AccountTax._get_tax_totals_summary(
+                    base_lines=base_lines, currency=currency, company=order.company_id,
+                    cash_rounding=cash_rounding,
+                )
+                candidates.append((
+                    ui['total_amount_currency'] - ui.get('cash_rounding_base_amount_currency', 0.0),
+                    ui['tax_amount_currency'],
+                ))
+            refund_factor = -1 if (order.is_refund or order.amount_total < 0.0) else 1
+            if not any(
+                    currency.compare_amounts(order.amount_total, refund_factor * gross) == 0
+                    and currency.compare_amounts(order.amount_tax, refund_factor * tax) == 0
+                    for gross, tax in candidates):
+                raise ValidationError(_(
+                    'The order totals no longer match its items. Reload the order and review its items before accepting payment.'
+                ))
+
     def action_pos_order_paid(self):
+        self._baseer_assert_payment_source_integrity()
         result = super().action_pos_order_paid()
         for order in self:
             if (order.config_id.baseer_direct_print_enabled

@@ -13,6 +13,7 @@ function runtime(file, native = {}) {
         AlertDialog: class {}, NumberPopup: class {}, OrderReceipt: class {}, crypto: webcrypto,
         makeAwaitable: native.makeAwaitable || (async () => null),
         ask: native.ask || (async () => true),
+        SERIALIZED_UI_STATE_PROP: 'JSONuiState', setTimeout, clearTimeout,
         window: native.window || { location: {} },
         _t: (message, value) => message.replace('%s', value ?? '%s'),
         patch(target, extension) {
@@ -86,10 +87,54 @@ assert.equal(draft.uiState.baseerPreparationOutcomeUnknown, true);
 assert.equal(draft.uiState.baseerPreparationAction.action_uuid, 'pending');
 store.getOrder = () => draft;
 assert.equal(await store._baseerConfirmPaymentWithoutKitchen(), false);
+function installRecoveryContract(record) {
+    Object.assign(record, { id: 7, uuid: record.uuid || 'retry-draft', isSynced: true,
+        company_id: { id: 2 }, config_id: { id: 3 }, state: 'draft', lines: [], payment_ids: [] });
+    Object.assign(store.config, { id: 3, company_id: { id: 2 } });
+    record.serializeForORM = () => {};
+    record.serializeForIndexedDB = () => ({ id: record.id, uuid: record.uuid,
+        JSONuiState: JSON.stringify(record.uiState) });
+    store.removePendingOrder = () => {};
+    const snapshot = { 'pos.order': [{ id: record.id, uuid: record.uuid, company_id: 2, config_id: 3,
+        state: 'draft', lines: [], payment_ids: [] }],
+        'pos.order.line': [], 'pos.payment': [], 'pos.pack.operation.lot': [], 'product.attribute.custom.value': [] };
+    store.models = Object.fromEntries(Object.keys(snapshot).map(model => [model, {
+        get: () => model === 'pos.order' ? record : undefined,
+        getBy: () => model === 'pos.order' ? record : undefined,
+        filter: predicate => model === 'pos.order' && predicate(record) ? [record] : [],
+    }]));
+    store.models.loadConnectedData = data => {
+        Object.assign(record, data['pos.order'][0], { company_id: { id: 2 }, config_id: { id: 3 } });
+    };
+    let reads = 0;
+    store.data = { network: { offline: false }, fields: {}, relations: {}, opts: { databaseTable: {} },
+        synchronizeLocalDataInIndexedDB: async () => true,
+        call: async (model, method, args, kwargs, queue) => {
+            assert.equal(model, 'pos.order'); assert.equal(method, 'read_pos_data_uuid');
+            assert.equal(args[0], record.uuid); assert.equal(queue, false); reads++;
+            return snapshot;
+        },
+        missingRecursive: async data => data,
+        indexedDBMutex: { exec: callback => callback() },
+        indexedDB: { activeTransactions: new Set(), getNewTransaction() {
+            const handlers = {};
+            const requests = [];
+            const request = () => { const value = { addEventListener(name, callback) { requests.push(callback); } }; return value; };
+            const transaction = { addEventListener(name, callback) { handlers[name] = callback; },
+                objectStore: () => ({ put: request, delete: request }), abort() { handlers.abort(); } };
+            this.activeTransactions.add(transaction);
+            queueMicrotask(() => { for (const callback of requests) callback(); handlers.complete(); });
+            return transaction;
+        } },
+    };
+    store.deviceSync = { readDataFromServer: async () => { throw new Error('Incremental recovery is forbidden'); } };
+    return () => reads;
+}
+const draftReads = installRecoveryContract(draft);
 store._baseerPreparationStatus = async () => ({ accepted: true });
 assert.equal(await store.sendOrderInPreparation(draft), true);
 assert.equal(draft.uiState.baseerPreparationOutcomeUnknown, undefined);
-let recoveredRefreshes = 0;
+assert.equal(draftReads(), 1);
 const recoverable = {
     uuid: 'reconcile-confirmed-cancellation',
     uiState: {
@@ -97,15 +142,15 @@ const recoverable = {
         baseerPreparationAction: { action_uuid: 'confirmed-cancellation' },
     },
 };
-store.data = { network: { offline: false }, synchronizeLocalDataInIndexedDB: async () => true };
-store.deviceSync = { readDataFromServer: async () => recoveredRefreshes++ };
+const recoveredRefreshes = installRecoveryContract(recoverable);
 store._baseerPreparationStatus = async () => ({ accepted: true, done: true });
 assert.equal(await store.baseerResolvePreparationOutcome(recoverable), true);
-assert.equal(recoveredRefreshes, 1);
+assert.equal(recoveredRefreshes(), 1);
 assert.equal(recoverable.uiState.baseerPreparationOutcomeUnknown, undefined);
 assert.equal(recoverable.uiState.baseerPreparationAction, undefined);
 store.syncAllOrders = async () => { throw { data: { name: 'odoo.exceptions.ValidationError', message: 'Rejected' } }; };
 store._baseerPreparationStatus = async () => ({ accepted: false });
+draft.uiState.baseerPreparationAction = { action_uuid: 'rejected-new-action' };
 await assert.rejects(store.sendOrderInPreparation(draft));
 assert.equal(draft.uiState.baseerPreparationOutcomeUnknown, undefined);
 const unfinalized = await store.printReceipt({ order: { isSynced: true, id: 2, state: 'draft' } });

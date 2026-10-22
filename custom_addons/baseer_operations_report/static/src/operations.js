@@ -1,9 +1,12 @@
 /** @odoo-module **/
 
 import { BaseerProfitLossReport } from "@baseer_profit_loss_report/profit_loss";
+import { onWillDestroy } from "@odoo/owl";
+import { ConnectionLostError } from "@web/core/network/rpc";
 import { registry } from "@web/core/registry";
 
 const MODEL = "baseer.operations.report";
+const CONTEXT_MODEL = "baseer.profit.loss.report";
 const ACCOUNT_PAGE_SIZE = 50;
 const ROWS = [
     "income", "cost_of_sales", "gross_profit", "expense",
@@ -22,6 +25,7 @@ const labels = {
         unprovenLiquidityCount: "خروج سيولة غير مثبت المصدر عبر الفترات",
         loading: "جارٍ تحميل المعاينة…", accountsLoading: "جارٍ تحميل الحسابات…",
         eventsLoading: "جارٍ تحميل الأحداث…", error: "تعذر عرض المعاينة. تحقق من الفترة والصلاحيات ثم أعد المحاولة.",
+        connectionError: "تعذر إكمال الاتصال بالخادم. أعد المحاولة.", retry: "إعادة المحاولة",
         account: "الحساب", balance: "المبلغ", income: "الإيرادات", cost_of_sales: "تكلفة المبيعات",
         gross_profit: "إجمالي العمليات بعد تكلفة المبيعات", expense: "المصروفات",
         net_operating_income: "رصيد العمليات التشغيلية", other_income: "إيرادات أخرى",
@@ -46,6 +50,7 @@ const labels = {
         unprovenLiquidityCount: "Cash outflows without proven source across periods",
         loading: "Loading preview…", accountsLoading: "Loading accounts…",
         eventsLoading: "Loading events…", error: "Could not load the preview. Check the period and access rights, then retry.",
+        connectionError: "Could not complete the connection to the server. Retry.", retry: "Retry",
         account: "Account", balance: "Amount", income: "Income", cost_of_sales: "Cost of sales",
         gross_profit: "Gross operations after cost of sales", expense: "Expenses",
         net_operating_income: "Operating balance", other_income: "Other income",
@@ -148,6 +153,69 @@ export class BaseerOperationsPreview extends BaseerProfitLossReport {
         this.state.incompleteControls = null;
         this.snapshotAccounts = {};
         this.detailRequestToken = 0;
+        this.state.contextReady = false;
+        this.contextLoading = false;
+        this.snapshotRequest = null;
+        this.disposed = false;
+        onWillDestroy(() => {
+            this.disposed = true;
+            this.requestToken += 1;
+            this.companyGeneration += 1;
+            this.detailRequestToken += 1;
+        });
+    }
+
+    // Reuse P&L's setup/bus hooks, but never make its onWillStart await RPC.
+    // Otherwise Owl leaves the previous report mounted until this report loads.
+    refreshActiveCompany() {
+        const companyId = this.activeCompanyId;
+        if (this.disposed || (this.contextLoading && this.contextCompanyId === companyId)) { return; }
+        this.invalidate();
+        this.snapshotRequest = null;
+        const generation = ++this.companyGeneration;
+        this.state.contextReady = false;
+        this.state.filters.company_id = 0;
+        this.state.journals = [];
+        this.contextLoading = false;
+        this.contextCompanyId = companyId;
+        if (!companyId) { this.state.error = this.labels.error; return; }
+        this.state.loading = true;
+        this.contextLoading = true;
+        void this.loadCompanyContext(companyId, generation);
+    }
+
+    async loadCompanyContext(companyId, generation) {
+        try {
+            const context = await this.orm.call(CONTEXT_MODEL, "get_context", [companyId]);
+            if (this.disposed || generation !== this.companyGeneration || companyId !== this.activeCompanyId) { return; }
+            if ((context.default_company_id || context.default_filters?.company_id) !== companyId) {
+                throw new Error("Active company mismatch");
+            }
+            this.installContext(context);
+            this.state.contextReady = true;
+            await this.apply();
+        } catch (error) {
+            if (!this.disposed && generation === this.companyGeneration && companyId === this.activeCompanyId) {
+                this.state.error = this.reportError(error);
+            }
+        } finally {
+            if (!this.disposed && generation === this.companyGeneration) {
+                this.contextLoading = false;
+                if (!this.snapshotRequest) { this.state.loading = false; }
+            }
+        }
+    }
+
+    reportError(error) {
+        // A real source/permission rejection is not a transport failure.
+        if (typeof error?.data?.message === "string" && error.data.message) { return error.data.message; }
+        return error instanceof ConnectionLostError ? this.labels.connectionError : this.labels.error;
+    }
+
+    retryLoad() {
+        if (this.disposed || this.state.loading) { return; }
+        if (!this.state.contextReady) { this.refreshActiveCompany(); return; }
+        return this.apply();
     }
 
     get labels() { return labels[this.lang]; }
@@ -183,8 +251,18 @@ export class BaseerOperationsPreview extends BaseerProfitLossReport {
         this.detailRequestToken += 1;
     }
 
-    async apply(direction = 0) {
+    apply(direction = 0) {
+        if (this.disposed || !this.state.contextReady) { return; }
         const filters = this.cloneFilters(direction);
+        const key = JSON.stringify([this.companyGeneration, filters]);
+        if (this.snapshotRequest?.key === key) { return this.snapshotRequest.promise; }
+        const request = { key };
+        this.snapshotRequest = request;
+        request.promise = this.loadSnapshot(filters, request);
+        return request.promise;
+    }
+
+    async loadSnapshot(filters, request) {
         this.invalidate();
         const token = this.requestToken;
         const generation = this.companyGeneration;
@@ -218,10 +296,11 @@ export class BaseerOperationsPreview extends BaseerProfitLossReport {
             this.appliedFilters = this.cloneFilters();
         } catch (error) {
             if (token === this.requestToken && generation === this.companyGeneration) {
-                this.state.error = error?.data?.message || this.labels.error;
+                this.state.error = this.reportError(error);
             }
         } finally {
             if (token === this.requestToken && generation === this.companyGeneration) { this.state.loading = false; }
+            if (this.snapshotRequest === request) { this.snapshotRequest = null; }
         }
     }
 
@@ -260,7 +339,7 @@ export class BaseerOperationsPreview extends BaseerProfitLossReport {
             }
         } catch (error) {
             if (token === this.detailRequestToken && this.state.detail === detail) {
-                detail.error = error?.data?.message || this.labels.error;
+                detail.error = this.reportError(error);
             }
         } finally {
             if (token === this.detailRequestToken && this.state.detail === detail) { detail.loading = false; }
@@ -285,7 +364,7 @@ export class BaseerOperationsPreview extends BaseerProfitLossReport {
             }
         } catch (error) {
             if (token === this.requestToken && generation === this.companyGeneration) {
-                this.state.error = error?.data?.message || this.labels.error;
+                this.state.error = this.reportError(error);
             }
         } finally {
             if (token === this.requestToken && generation === this.companyGeneration) { this.state.printing = false; }

@@ -25,7 +25,12 @@ class OperationsPosEvidence(models.AbstractModel):
         if pairs != {(row.id, tax.id) for row in records for tax in row.tax_ids}:
             self._deny_incomplete_source()
         tax_model = self.env['account.tax']
-        pending = tax_model.browse(sorted({tax for _, tax in pairs}))
+        return self._pos_evidence_tax_graph(tax_model.browse(sorted({tax for _, tax in pairs})))
+
+    def _pos_evidence_tax_graph(self, taxes):
+        """Normal-user proof also used for fiscal-position mapped base taxes."""
+        tax_model = self.env['account.tax']
+        pending = tax_model.browse(taxes.ids)
         child_field = tax_model._fields['children_tax_ids']
         tax_model.flush_model(['children_tax_ids'])
         checked = set()
@@ -39,6 +44,27 @@ class OperationsPosEvidence(models.AbstractModel):
                 child_field.column2, child_field.relation, child_field.column1), [groups.ids])
             children = {row[0] for row in self.env.cr.fetchall()}
             pending = tax_model.browse(sorted(children - checked))
+        return tax_model.browse(sorted(checked))
+
+    def _pos_evidence_repartition(self, taxes, refund):
+        """A hidden repartition must fail before native allocation uses it."""
+        taxes.check_access('read')
+        if not taxes:
+            return
+        name = 'refund_repartition_line_ids' if refund else 'invoice_repartition_line_ids'
+        inverse = taxes._fields[name].inverse_name
+        records = taxes[name]
+        records.check_access('read')
+        # Odoo 19 shares tax_id for both One2many fields; their document_type
+        # domain is part of membership, not an ACL filter to omit here.
+        self.env['account.tax.repartition.line'].flush_model([inverse, 'document_type'])
+        self.env.cr.execute(
+            ('SELECT "%s", id FROM account_tax_repartition_line '
+             'WHERE "%s"=ANY(%%s) AND document_type=%%s') % (inverse, inverse),
+            [taxes.ids, 'refund' if refund else 'invoice'],
+        )
+        if set(self.env.cr.fetchall()) != {(record[inverse].id, record.id) for record in records}:
+            self._deny_incomplete_source()
 
     def _pos_evidence_partials(self, line):
         partials = line.matched_debit_ids | line.matched_credit_ids
@@ -104,6 +130,7 @@ class OperationsPosEvidence(models.AbstractModel):
         if len(eligible) > 100000:
             self._deny_incomplete_source()
         vector = {}
+        source_values = []
         tax_model = self.env['account.tax']
         for order in eligible:
             if (order.company_id != company or order.session_id != session
@@ -112,9 +139,11 @@ class OperationsPosEvidence(models.AbstractModel):
                     or order.source not in ('pos', 'baseer_summary')
                     or (order.source == 'pos' and not order.date_order)):
                 return None
-            # Reuse the event's cache/header/tax/company/ACL proof, including
-            # legitimate empty-zero orders, without writing/recomputing data.
-            self._pos_amounts(order, company, {key: {} for key in SECTION_KEYS}, Counter())
+        # Prove the complete eligible set (including sources outside the
+        # display period) in one read batch, retaining native per-order math.
+        self._pos_amounts(eligible, company, {key: {} for key in SECTION_KEYS}, Counter())
+        order_bases = []
+        for order in eligible:
             if order.is_invoiced:
                 # A later invoice reverses a sale already posted by closing.
                 # The current invoice flag alone cannot reconstruct that
@@ -133,6 +162,17 @@ class OperationsPosEvidence(models.AbstractModel):
             if not order.lines:
                 continue
             bases = order.with_context(linked_to_pos=True)._prepare_tax_base_line_values()
+            order_bases.append(bases)
+        # Fiscal positions may substitute taxes absent from the display
+        # line's M2M. Prove the actual native bases, including group children,
+        # before native accounting can filter a hidden repartition to empty.
+        for refund in (False, True):
+            actual_taxes = tax_model.browse(sorted({
+                tax.id for bases in order_bases for base in bases
+                if bool(base['is_refund']) == refund for tax in base['tax_ids']
+            }))
+            self._pos_evidence_repartition(self._pos_evidence_tax_graph(actual_taxes), refund)
+        for bases in order_bases:
             tax_model._add_tax_details_in_base_lines(bases, company)
             tax_model._round_base_lines_tax_details(bases, company)
             tax_model._add_accounting_data_in_base_lines_tax_details(
@@ -149,23 +189,37 @@ class OperationsPosEvidence(models.AbstractModel):
                        tuple(tax['tax_tag_ids'][0][2]))
                 values.append(session._get_tax_vals(
                     key, tax['amount_currency'], tax['balance'], tax['tax_base_amount']))
-            for value in values:
-                account = self.env['account.account'].browse(value['account_id'])
-                account.check_access('read')
-                rep = self.env['account.tax.repartition.line'].browse(
-                    value.get('tax_repartition_line_id'))
-                rep.check_access('read')
-                if not rep and account.account_type not in SECTION_KEYS:
-                    return None
-                balance = self._pos_evidence_money(value['balance'], company)
-                key = self._pos_evidence_key(
-                    account.id, value.get('tax_ids', [(6, 0, [])])[0][2],
-                    value.get('tax_tag_ids', [(6, 0, [])])[0][2],
-                    value.get('product_id'), rep.id, rep.tax_id.id, balance)
-                amount, base_amount = vector.get(key, (Decimal(0), Decimal(0)))
-                vector[key] = (amount + balance, base_amount + (
-                    self._pos_evidence_money(value['tax_base_amount'], company)
-                    if rep else Decimal(0)))
+            source_values.extend(values)
+        # Prove all native accounting targets in the caller's environment
+        # before reading their classification. Keep every row and its order;
+        # tax calculations/rounding above are still independent per order.
+        accounts = self.env['account.account'].browse(sorted({
+            value['account_id'] for value in source_values
+        }))
+        reps = self.env['account.tax.repartition.line'].browse(sorted({
+            value['tax_repartition_line_id'] for value in source_values
+            if value.get('tax_repartition_line_id')
+        }))
+        accounts.check_access('read')
+        reps.check_access('read')
+        reps.tax_id.check_access('read')
+        account_map = {account.id: account for account in accounts}
+        rep_map = {rep.id: rep for rep in reps}
+        for value in source_values:
+            account = account_map[value['account_id']]
+            rep = rep_map.get(value.get('tax_repartition_line_id'))
+            if not rep and account.account_type not in SECTION_KEYS:
+                return None
+            balance = self._pos_evidence_money(value['balance'], company)
+            key = self._pos_evidence_key(
+                account.id, value.get('tax_ids', [(6, 0, [])])[0][2],
+                value.get('tax_tag_ids', [(6, 0, [])])[0][2],
+                value.get('product_id'), rep.id if rep else False,
+                rep.tax_id.id if rep else False, balance)
+            amount, base_amount = vector.get(key, (Decimal(0), Decimal(0)))
+            vector[key] = (amount + balance, base_amount + (
+                self._pos_evidence_money(value['tax_base_amount'], company)
+                if rep else Decimal(0)))
         return {key: value for key, value in vector.items() if value != (0, 0)}
 
     def _pos_adjustment_link(self, move, company):

@@ -200,6 +200,34 @@ const backendLocation = { href: "" };
 const posExitRuntime = runtime("pos_exit.js", { window: { location: backendLocation } });
 new posExitRuntime.PosStore().redirectToBackend();
 assert.equal(backendLocation.href, "/odoo/action-point_of_sale.action_pos_config_kanban");
+const mergeRuntime = runtime('preparation_bridge.js', {
+    async _mergeOrders() { this.nativeMergeCalled = true; },
+    async deleteOrders(orders) { this.nativeDeleteOrders = orders; return true; },
+});
+const mergeStore = new mergeRuntime.PosStore();
+mergeStore.config = {baseer_direct_print_enabled: true, current_session_id: 4};
+const mergedSource = {id: 41, isSynced: true, uiState: {}};
+const mergedDestination = {id: 42, isSynced: true, uiState: {}};
+await mergeStore._mergeOrders(mergedSource, mergedDestination);
+assert.equal(mergeStore.nativeMergeCalled, true);
+assert.equal(mergedSource.uiState.baseerRestaurantMergeDestinationId, 42);
+const mergeCalls = [];
+mergeStore.data = {silentCall: async (model, method, args) => {
+    mergeCalls.push([model, method, args]);
+    if (method === 'baseer_preview_preparation_cancellations') return {order_ids: [41]};
+    return {};
+}};
+mergeStore.baseerResolvePreparationOutcome = async () => true;
+mergeStore.removeOrder = (order) => { mergeStore.removed = order; };
+mergeStore.removePendingOrder = () => {};
+mergeStore.notification = {add() { throw new Error('A verified merge must not create a kitchen cancellation notice'); }};
+await mergeStore.deleteOrders([mergedSource], [], true);
+assert.equal(mergeStore.removed, mergedSource);
+assert.equal(mergeCalls[1][0], 'pos.order');
+assert.equal(mergeCalls[1][1], 'baseer_finalize_restaurant_merge');
+assert.equal(mergeCalls[1][2][0][0], 41);
+assert.equal(mergeCalls[1][2][1], 42);
+assert.deepEqual(mergeStore.nativeDeleteOrders, []);
 const selectionPopupSources = ["preparation_bridge.js", "line_actions.js"]
     .map((file) => readFileSync(new URL(`../static/src/app/${file}`, import.meta.url), "utf8"));
 const selectionPopupBodies = selectionPopupSources.flatMap((source) => source.match(/SelectionPopup,\s*\{[\s\S]*?\n\s*\}\);/g) || []);

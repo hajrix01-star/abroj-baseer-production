@@ -20,7 +20,9 @@ from odoo.exceptions import AccessError, ValidationError
 from odoo.addons.baseer_profit_loss_report.models.profit_loss import (
     EXPENSE_KEYS, SECTION_GROUPS, SECTION_KEYS,
 )
-from odoo.addons.baseer_profit_loss_report.models.revenue_channels import UNALLOCATED
+from odoo.addons.baseer_profit_loss_report.models.revenue_channels import (
+    UNALLOCATED, allocate_channels, tender_matches_order,
+)
 
 
 ROW_KEYS = (
@@ -598,10 +600,11 @@ class BaseerOperationsReport(models.AbstractModel):
                     'date': fields.Date.to_string(event_date),
                 }))
         self._record_many(sections, entries)
+        return eligible
 
     @api.model
     def _direct_exclusions(self, company, start, end, journal_ids,
-                           recognized_direct_ids=(), excluded=None):
+                           recognized_direct_ids=(), excluded=None, proven_orders=None):
         domain = [
             ('company_id', '=', company.id), ('parent_state', '=', 'posted'),
             ('move_id.move_type', '=', 'entry'),
@@ -638,7 +641,7 @@ class BaseerOperationsReport(models.AbstractModel):
             self._deny_incomplete_source()
         # Prove native tax/accounting groups and actual reconciliation links,
         # not display-line caches or reference/amount coincidences.
-        secondary = self._proven_pos_secondary_lines(company, lines)
+        secondary = self._proven_pos_secondary_lines(company, lines, proven_orders=proven_orders)
         # Native POS invoicing reverses the order's session recognition.
         # This is not a customer refund and must not become a second event.
         reversals = self._proven_pos_invoice_reversal_lines(company, lines)
@@ -1566,11 +1569,21 @@ class BaseerOperationsReport(models.AbstractModel):
 
     def _entry_channels(self, entry, company):
         pl = self.env['baseer.profit.loss.report']
+        # Facts live only in this invocation. On a union ACL failure restart
+        # with the original per-event reader, preserving partial visibility.
+        try:
+            facts = self._entry_channel_facts(entry['events'], company)
+        except AccessError:
+            facts = None
         channels = {}
         for event in entry['events']:
             amount = self._decimal(event['amount'])
             allocation = {UNALLOCATED: ('', amount)}
-            if event['line_model'] == 'pos.order.line':
+            if facts is not None:
+                tenders = facts.get(event['line_id']) if event['line_model'] == 'pos.order.line' else None
+                if tenders:
+                    allocation = allocate_channels(amount, tenders, self._decimal(company.currency_id.rounding))
+            elif event['line_model'] == 'pos.order.line':
                 try:
                     line = self.env['pos.order.line'].browse(event['line_id']).exists()
                     line.check_access('read')
@@ -1584,6 +1597,42 @@ class BaseerOperationsReport(models.AbstractModel):
         return [{'key': key, 'name': name or pl._unallocated_channel_label(),
                  'amount': pl._format_money(value, company.currency_id),
                  'negative': value < 0} for key, (name, value) in sorted(channels.items())]
+
+    def _entry_channel_facts(self, events, company):
+        """Batch the same payment witnesses; never aggregate/round sale amounts."""
+        lines = self.env['pos.order.line'].browse(sorted({
+            event['line_id'] for event in events if event['line_model'] == 'pos.order.line'
+        })).exists()
+        lines.check_access('read')
+        orders = lines.order_id
+        orders.check_access('read')
+        payments = orders.payment_ids
+        payments.check_access('read')
+        payments.payment_method_id.check_access('read')
+        self.env['pos.payment'].flush_model(['pos_order_id'])
+        self.env.cr.execute('SELECT pos_order_id, id FROM pos_payment WHERE pos_order_id=ANY(%s)', [orders.ids])
+        raw = {order.id: set() for order in orders}
+        for parent, payment in self.env.cr.fetchall():
+            raw[parent].add(payment)
+        tenders_by_order = {}
+        rounding = self._decimal(company.currency_id.rounding)
+        for order in orders:
+            if order.company_id != company or order.currency_id != company.currency_id:
+                continue
+            visible = order.payment_ids
+            if (raw[order.id] != set(visible.ids)
+                    or any(method.company_id != company for method in visible.payment_method_id)):
+                continue
+            tenders = [
+                ('payment_%s' % payment.payment_method_id.id,
+                 payment.payment_method_id.name, self._decimal(payment.amount))
+                for payment in visible.sorted('id')
+            ]
+            total = self._decimal(order.amount_total)
+            total = -abs(total) if order.is_refund else total
+            if tender_matches_order(tenders, total, rounding):
+                tenders_by_order[order.id] = tenders
+        return {line.id: tenders_by_order.get(line.order_id.id) for line in lines}
 
     @api.model
     def _sales_census(self, company, start, end, journal_ids, moves, orders,
@@ -1746,7 +1795,7 @@ class BaseerOperationsReport(models.AbstractModel):
         for move in moves:
             self._invoice_amounts(move, company, sections, excluded)
         orders = self._pos_records(company, start, end, journal_ids)
-        self._pos_amounts(orders, company, sections, excluded)
+        proven_orders = self._pos_amounts(orders, company, sections, excluded)
         self._sales_census(company, start, end, journal_ids, moves, orders,
                            sections, excluded)
         recognized_direct = self._purchase_outflows(
@@ -1763,6 +1812,7 @@ class BaseerOperationsReport(models.AbstractModel):
         )
         excluded['direct_aml_unproven'] = self._direct_exclusions(
             company, start, end, journal_ids, recognized_direct, excluded,
+            proven_orders=proven_orders,
         )
         for section in sections.values():
             for entry in section.values():

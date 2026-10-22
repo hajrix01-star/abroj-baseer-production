@@ -916,6 +916,56 @@ class TestBaseerPrintBridgeHybrid(TransactionCase):
         self.assertFalse(order.lines)
         self.assertEqual(order.state, 'cancel')
 
+    def test_restaurant_merge_closes_sent_source_without_kitchen_cancellation(self):
+        source = self._kitchen_order()
+        source_line = source.lines.ensure_one()
+        destination = self.env['pos.order'].create({
+            'company_id': self.company.id,
+            'session_id': source.session_id.id,
+            'amount_tax': 0,
+            'amount_total': source.amount_total,
+            'amount_paid': 0,
+            'amount_return': 0,
+            'lines': [Command.create({
+                'product_id': source_line.product_id.id,
+                'qty': source_line.qty,
+                'price_unit': source_line.price_unit,
+                'price_subtotal': source_line.price_subtotal,
+                'price_subtotal_incl': source_line.price_subtotal_incl,
+                'full_product_name': source_line.full_product_name,
+            })],
+        })
+
+        with self.assertRaises(AccessError):
+            source.action_pos_order_cancel()
+        with self.assertRaises(AccessError):
+            source.write({'baseer_merged_into_order_id': destination.id})
+        merge = source.baseer_begin_restaurant_merge(destination.id)
+        destination.lines.write({'qty': source_line.qty * 2})
+        destination.write({'amount_total': source.amount_total + destination.amount_total})
+        source.baseer_finalize_restaurant_merge(destination.id, {
+            merge['preparation_line_uuids'][0]: destination.lines.ensure_one().uuid,
+        })
+
+        self.assertEqual(source.state, 'cancel')
+        self.assertEqual(source.baseer_merged_into_order_id, destination)
+        self.assertFalse(self.env['baseer.print.cancellation'].search([
+            ('order_id', '=', source.id),
+        ]))
+        state = self.env['baseer.print.preparation.state'].search([('order_id', '=', destination.id)])
+        self.assertEqual(state.order_line_id, destination.lines)
+        self.assertEqual(state.line_uuid, destination.lines.uuid)
+        self.assertEqual(state.quantity, source_line.qty)
+
+    def test_restaurant_merge_rejects_a_destination_missing_source_lines(self):
+        source = self._kitchen_order()
+        destination = self._order()
+        source.baseer_begin_restaurant_merge(destination.id)
+        with self.assertRaises(ValidationError):
+            source.baseer_finalize_restaurant_merge(destination.id, {})
+        self.assertEqual(source.state, 'draft')
+        self.assertFalse(source.baseer_merged_into_order_id)
+
     def test_discovery_does_not_disable_a_configured_printer(self):
         self.env['baseer.print.printer']._sync_from_agent(self.agent, [])
         self.assertTrue(self.receipt.active)

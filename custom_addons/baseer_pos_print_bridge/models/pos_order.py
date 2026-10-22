@@ -10,6 +10,28 @@ class PosOrder(models.Model):
     _inherit = 'pos.order'
 
     baseer_receipt_enqueue_error = fields.Char(readonly=True, copy=False)
+    baseer_merged_into_order_id = fields.Many2one(
+        'pos.order', readonly=True, copy=False, index=True,
+        string='Merged into POS order',
+    )
+    baseer_merge_destination_id = fields.Many2one(
+        'pos.order', readonly=True, copy=False,
+        string='Pending restaurant merge destination',
+    )
+    baseer_merge_expected_quantities = fields.Json(readonly=True, copy=False)
+    baseer_merge_expected_total = fields.Monetary(currency_field='currency_id', readonly=True, copy=False)
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        protected_fields = {
+            'baseer_merged_into_order_id',
+            'baseer_merge_destination_id',
+            'baseer_merge_expected_quantities',
+            'baseer_merge_expected_total',
+        }
+        if any(protected_fields.intersection(vals) for vals in vals_list):
+            raise AccessError(_('Restaurant merge links can only be recorded by the protected merge workflow.'))
+        return super().create(vals_list)
 
     @api.model
     def _process_order(self, order, existing_order):
@@ -192,13 +214,158 @@ class PosOrder(models.Model):
         return states.mapped('order_id')
 
     def _baseer_assert_cancellation_events_exist(self):
-        protected = self._baseer_requires_cancellation_event().filtered(lambda order: order.state == 'draft')
+        protected = self._baseer_requires_cancellation_event().filtered(
+            lambda order: order.state == 'draft' and not order.baseer_merged_into_order_id
+        )
         if not protected:
             return
         events = self.env['baseer.print.cancellation'].sudo().search([('order_id', 'in', protected.ids)])
         missing = protected - events.mapped('order_id')
         if missing:
             raise AccessError(_('A kitchen order must be cancelled through the documented kitchen cancellation workflow.'))
+
+    def _baseer_assert_restaurant_merge_destination(self, destination):
+        self.ensure_one()
+        if (destination == self or destination.state != 'draft'
+                or destination.company_id != self.company_id
+                or destination.config_id != self.config_id
+                or destination.session_id != self.session_id):
+            raise ValidationError(_('The restaurant merge destination must be a draft order in the same POS session.'))
+
+    def _baseer_merge_line_quantities(self):
+        self.ensure_one()
+        quantities = {}
+        for line in self.lines:
+            # Native restaurant merging can fold a source line into an existing
+            # destination line. Product quantity is the durable common
+            # identity in both that case and the retained-separate-line case.
+            key = str(line.product_id.id)
+            quantities[key] = quantities.get(key, 0.0) + line.qty
+        return quantities
+
+    def baseer_begin_restaurant_merge(self, destination_id):
+        """Record the destination baseline before native POS moves the lines."""
+        self.ensure_one()
+        self.check_access('write')
+        if not isinstance(destination_id, int):
+            raise ValidationError(_('The restaurant merge destination is invalid.'))
+        destination = self.browse(destination_id).exists()
+        if not destination:
+            raise ValidationError(_('The restaurant merge destination was not found.'))
+        destination.check_access('read')
+
+        State = self.env['baseer.print.preparation.state']
+        State._lock_orders_states(self | destination)
+        source = self.browse(self.id).exists()
+        destination = self.browse(destination.id).exists()
+        if not source or not destination:
+            raise ValidationError(_('The restaurant merge orders are no longer available.'))
+        states = source._baseer_preparation_states()
+        if not states:
+            return {'requires_transfer': False}
+        source._baseer_assert_cancellation_batch(source.session_id.id)
+        source._baseer_assert_restaurant_merge_destination(destination)
+        expected_quantities = destination._baseer_merge_line_quantities()
+        for key, quantity in source._baseer_merge_line_quantities().items():
+            expected_quantities[key] = expected_quantities.get(key, 0.0) + quantity
+        super(PosOrder, source).write({
+            'baseer_merge_destination_id': destination.id,
+            'baseer_merge_expected_quantities': expected_quantities,
+            'baseer_merge_expected_total': destination.amount_total + source.amount_total,
+        })
+        return {'requires_transfer': True, 'preparation_line_uuids': sorted(set(states.mapped('line_uuid')))}
+
+    def _baseer_assert_restaurant_merge_transfer(self, destination):
+        self.ensure_one()
+        if self.baseer_merge_destination_id != destination or not self.baseer_merge_expected_quantities:
+            raise ValidationError(_('The restaurant merge was not prepared before the order changed.'))
+        destination_quantities = destination._baseer_merge_line_quantities()
+        if any(destination_quantities.get(key, 0.0) + 0.000001 < quantity
+               for key, quantity in self.baseer_merge_expected_quantities.items()):
+            raise ValidationError(_('The restaurant merge destination does not contain the transferred source order lines.'))
+        if not self.currency_id.is_zero(destination.amount_total - self.baseer_merge_expected_total):
+            raise ValidationError(_('The restaurant merge destination does not retain the source order total.'))
+
+    def _baseer_transfer_restaurant_merge_states(self, destination, line_uuid_map):
+        """Move preparation state to the native destination line identities."""
+        self.ensure_one()
+        State = self.env['baseer.print.preparation.state']
+        source_states = State._states_for_orders(self)
+        if not isinstance(line_uuid_map, dict):
+            raise ValidationError(_('The restaurant merge line transfer is invalid.'))
+        destination_lines = {line.uuid: line for line in destination.lines}
+        required_uuids = set(source_states.mapped('line_uuid'))
+        if any(not isinstance(line_uuid_map.get(uuid), str) or len(line_uuid_map[uuid]) > 128
+               for uuid in required_uuids):
+            raise ValidationError(_('The restaurant merge is missing a transferred kitchen line.'))
+        destination_states = State._states_for_orders(destination)
+        for source_state in source_states:
+            destination_line = destination_lines.get(line_uuid_map[source_state.line_uuid])
+            details = State._line_details(destination_line) if destination_line else False
+            if not destination_line or not State._same_logical_line(source_state, details):
+                raise ValidationError(_('The restaurant merge kitchen line does not match its destination.'))
+            existing = destination_states.filtered(
+                lambda state: state.line_uuid == destination_line.uuid
+                and state.printer_id == source_state.printer_id
+            )
+            if existing:
+                existing.ensure_one().write({
+                    'quantity': existing.quantity + source_state.quantity,
+                    'order_line_id': destination_line.id,
+                    'details': details,
+                })
+                source_state.unlink()
+            else:
+                source_state.write({
+                    'order_id': destination.id,
+                    'order_line_id': destination_line.id,
+                    'line_uuid': destination_line.uuid,
+                    'details': details,
+                })
+                destination_states |= source_state
+
+    def baseer_finalize_restaurant_merge(self, destination_id, line_uuid_map):
+        """Close a kitchen order only after its restaurant merge is durable.
+
+        Odoo synchronizes the destination before it cancels the source.  A
+        kitchen-sent source is intentionally protected from ordinary
+        cancellation, but a verified merge is a transfer rather than a kitchen
+        cancellation: emitting a cancellation ticket here would be incorrect.
+        """
+        self.ensure_one()
+        self.check_access('write')
+        if not isinstance(destination_id, int):
+            raise ValidationError(_('The restaurant merge destination is invalid.'))
+        destination = self.browse(destination_id).exists()
+        if not destination:
+            raise ValidationError(_('The restaurant merge destination was not found.'))
+        destination.check_access('read')
+
+        State = self.env['baseer.print.preparation.state']
+        State._lock_orders_states(self | destination)
+        source = self.browse(self.id).exists()
+        destination = self.browse(destination.id).exists()
+        if not source or not destination:
+            raise ValidationError(_('The restaurant merge orders are no longer available.'))
+        source.invalidate_recordset()
+        destination.invalidate_recordset()
+        source._baseer_assert_cancellation_batch(source.session_id.id)
+        if not source._baseer_preparation_states():
+            raise ValidationError(_('The restaurant source order has no kitchen preparation state.'))
+        source._baseer_assert_restaurant_merge_destination(destination)
+        source._baseer_assert_restaurant_merge_transfer(destination)
+        source._baseer_transfer_restaurant_merge_states(destination, line_uuid_map)
+
+        # This link is immutable from regular ORM writes.  It is both an audit
+        # trail and the narrowly-scoped proof that the following native cancel
+        # is a restaurant merge, not a silent kitchen cancellation.
+        super(PosOrder, source).write({
+            'baseer_merged_into_order_id': destination.id,
+            'baseer_merge_destination_id': False,
+            'baseer_merge_expected_quantities': False,
+            'baseer_merge_expected_total': False,
+        })
+        return source._baseer_native_action_pos_order_cancel()
 
     def _baseer_assert_payment_source_integrity(self):
         """Prove synchronized headers from native taxes before accepting payment.
@@ -357,6 +524,13 @@ class PosOrder(models.Model):
         return super().action_pos_order_cancel()
 
     def write(self, vals):
+        if {
+            'baseer_merged_into_order_id',
+            'baseer_merge_destination_id',
+            'baseer_merge_expected_quantities',
+            'baseer_merge_expected_total',
+        }.intersection(vals):
+            raise AccessError(_('Restaurant merge links can only be recorded by the protected merge workflow.'))
         if vals.get('state') == 'cancel':
             self._baseer_assert_cancellation_events_exist()
         return super().write(vals)

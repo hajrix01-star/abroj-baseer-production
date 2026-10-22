@@ -940,19 +940,29 @@ class TestBaseerPrintBridgeHybrid(TransactionCase):
             source.action_pos_order_cancel()
         with self.assertRaises(AccessError):
             source.write({'baseer_merged_into_order_id': destination.id})
-        source.baseer_finalize_restaurant_merge(destination.id)
+        merge = source.baseer_begin_restaurant_merge(destination.id)
+        destination.lines.write({'qty': source_line.qty * 2})
+        destination.write({'amount_total': source.amount_total + destination.amount_total})
+        source.baseer_finalize_restaurant_merge(destination.id, {
+            merge['preparation_line_uuids'][0]: destination.lines.ensure_one().uuid,
+        })
 
         self.assertEqual(source.state, 'cancel')
         self.assertEqual(source.baseer_merged_into_order_id, destination)
         self.assertFalse(self.env['baseer.print.cancellation'].search([
             ('order_id', '=', source.id),
         ]))
+        state = self.env['baseer.print.preparation.state'].search([('order_id', '=', destination.id)])
+        self.assertEqual(state.order_line_id, destination.lines)
+        self.assertEqual(state.line_uuid, destination.lines.uuid)
+        self.assertEqual(state.quantity, source_line.qty)
 
     def test_restaurant_merge_rejects_a_destination_missing_source_lines(self):
         source = self._kitchen_order()
         destination = self._order()
+        source.baseer_begin_restaurant_merge(destination.id)
         with self.assertRaises(ValidationError):
-            source.baseer_finalize_restaurant_merge(destination.id)
+            source.baseer_finalize_restaurant_merge(destination.id, {})
         self.assertEqual(source.state, 'draft')
         self.assertFalse(source.baseer_merged_into_order_id)
 

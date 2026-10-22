@@ -566,18 +566,38 @@ patch(PosStore.prototype, {
     },
 
     async _mergeOrders(sourceOrder, destinationOrder) {
-        await super._mergeOrders(...arguments);
-        // Native restaurant merging synchronizes the destination and only
-        // then deletes the source. Preserve that identity for deleteOrders so
-        // a kitchen-sent source takes the verified transfer path below rather
-        // than the ordinary kitchen-cancellation path.
-        if (
-            this.config.baseer_direct_print_enabled &&
-            sourceOrder?.isSynced &&
-            Number.isInteger(destinationOrder?.id)
-        ) {
-            sourceOrder.uiState.baseerRestaurantMergeDestinationId = destinationOrder.id;
+        if (!this.config.baseer_direct_print_enabled || !sourceOrder?.isSynced) {
+            return await super._mergeOrders(...arguments);
         }
+        if (!Number.isInteger(destinationOrder?.id)) {
+            const sessionId = this.config.current_session_id?.id || this.config.current_session_id;
+            const preview = await this._baseerCancellationPreview([sourceOrder.id], sessionId);
+            if (preview?.order_ids?.includes(sourceOrder.id)) {
+                throw new Error(_t("Save the destination table before merging a kitchen order."));
+            }
+            return await super._mergeOrders(...arguments);
+        }
+        // Capture the destination's server-side line quantities before native
+        // POS transfers the source lines. Finalization requires the resulting
+        // baseline plus source quantities and the exact native line mapping.
+        const merge = await this.data.silentCall(
+            "pos.order", "baseer_begin_restaurant_merge",
+            [[sourceOrder.id], destinationOrder.id], {}, false
+        );
+        await super._mergeOrders(...arguments);
+        if (!merge?.requires_transfer) return;
+        const preparationLineUuids = new Set(merge.preparation_line_uuids || []);
+        const lineMap = Object.fromEntries(Object.entries(destinationOrder.uiState?.unmerge || {})
+            .filter(([targetUuid, entry]) => targetUuid && preparationLineUuids.has(entry?.formerUuid))
+            .map(([targetUuid, entry]) => [entry.formerUuid, targetUuid]));
+        if (Object.keys(lineMap).length !== preparationLineUuids.size) {
+            throw new Error(_t("The kitchen order merge could not be verified. Reload POS and try again."));
+        }
+        // Native restaurant merging synchronizes the destination and only then
+        // deletes the source. Preserve the verified server intent and exact
+        // source-to-target line mapping for deleteOrders.
+        sourceOrder.uiState.baseerRestaurantMergeDestinationId = destinationOrder.id;
+        sourceOrder.uiState.baseerRestaurantMergeLineMap = lineMap;
     },
 
     async deleteOrders(orders, serverIds = [], ignoreChange = false) {
@@ -616,13 +636,15 @@ patch(PosStore.prototype, {
             await this.data.silentCall(
                 "pos.order",
                 "baseer_finalize_restaurant_merge",
-                [[order.id], order.uiState.baseerRestaurantMergeDestinationId],
+                [[order.id], order.uiState.baseerRestaurantMergeDestinationId,
+                    order.uiState.baseerRestaurantMergeLineMap],
                 {},
                 false
             );
             this.removeOrder(order, false);
             this.removePendingOrder(order);
             delete order.uiState.baseerRestaurantMergeDestinationId;
+            delete order.uiState.baseerRestaurantMergeLineMap;
         }
         const cancellationIds = protectedIds.filter((id) => !mergedIds.has(id));
         const cancellationSet = new Set(cancellationIds);

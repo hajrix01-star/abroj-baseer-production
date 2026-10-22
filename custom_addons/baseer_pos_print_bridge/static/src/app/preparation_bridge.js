@@ -3,6 +3,7 @@
 import { patch } from "@web/core/utils/patch";
 import { _t } from "@web/core/l10n/translation";
 import { PosStore } from "@point_of_sale/app/services/pos_store";
+import { SERIALIZED_UI_STATE_PROP } from "@point_of_sale/app/models/related_models/utils";
 import { OrderReceipt } from "@point_of_sale/app/screens/receipt_screen/receipt/order_receipt";
 import { SelectionPopup } from "@point_of_sale/app/components/popups/selection_popup/selection_popup";
 import { TextInputPopup } from "@point_of_sale/app/components/popups/text_input_popup/text_input_popup";
@@ -112,10 +113,20 @@ patch(PosStore.prototype, {
 
     async _baseerResolvePreparationAttempt(order, action) {
         const matches = (candidate) => candidate?.uiState?.baseerPreparationAction?.action_uuid === action.action_uuid;
-        const fields = ["baseerPreparationAction", "baseerPreparationOutcomeUnknown", "baseerPreparationPreviousChange"];
+        const fields = ["baseerPreparationAction", "baseerPreparationOutcomeUnknown", "baseerPreparationPreviousChange", "baseerPreparationStaleRecords"];
+        const orderId = order.id;
+        const orderUuid = order.uuid;
+        const companyId = order.company_id?.id;
+        const configId = order.config_id?.id;
+        const isCurrent = () => matches(order) && !this.data.network.offline
+            && order.id === orderId && order.uuid === orderUuid
+            && order.company_id?.id === companyId && order.config_id?.id === configId
+            && this.models["pos.order"].getBy("uuid", orderUuid) === order;
         try {
+            if (!companyId || !configId || this.config.id !== configId
+                || this.config.company_id?.id !== companyId || !isCurrent()) return false;
             let status = await this._baseerPreparationStatus(order, action);
-            if (!matches(order)) return false;
+            if (!isCurrent()) return false;
             if (!status?.accepted) {
                 // An atomic server receipt retires an unaccepted attempt. A
                 // delayed copy of the original payload cannot send it later.
@@ -124,32 +135,202 @@ patch(PosStore.prototype, {
                     "pos.order", "baseer_resolve_preparation_action", [[order.id], action], {}, false
                 );
             }
-            if (!status?.accepted || !matches(order)) return false;
-            await this.deviceSync.readDataFromServer();
-            const canonical = this.models?.["pos.order"]?.getBy("uuid", order.uuid);
-            if (this.models?.["pos.order"] && !canonical) return false;
-            const current = canonical || order;
-            if (!matches(order) || (current.uiState?.baseerPreparationAction && !matches(current))) return false;
-            // Refresh first; never restore old quantities when IndexedDB fails.
-            const snapshots = [...new Set([order, current])].map((candidate) => ({
-                candidate, values: Object.fromEntries(fields.map((field) => [field, candidate.uiState[field] ?? order.uiState[field]])),
-            }));
-            for (const { candidate } of snapshots) {
-                for (const field of fields) delete candidate.uiState[field];
-            }
-            try {
-                await this.data.synchronizeLocalDataInIndexedDB();
-            } catch {
-                for (const { candidate, values } of snapshots) {
-                    if (!candidate.uiState.baseerPreparationAction) {
-                        Object.assign(candidate.uiState, values);
+            if (!status?.accepted || !isCurrent()) return false;
+            // This native point read returns the complete financial graph, even
+            // when write_date is unchanged. Do not merge via callRelated/read or
+            // autosync the uncertain intent while obtaining the snapshot.
+            let snapshot = await this.data.call("pos.order", "read_pos_data_uuid", [order.uuid], {}, false);
+            if (!isCurrent() || !this._baseerValidPreparationSnapshot(snapshot, order, status)) return false;
+            snapshot = await this.data.missingRecursive(snapshot);
+            if (!isCurrent() || !this._baseerValidPreparationSnapshot(snapshot, order, status)) return false;
+            // missingRecursive intentionally tolerates some read failures.
+            // An unresolved relation is not a complete recovery snapshot.
+            for (const [model, records] of Object.entries(snapshot)) {
+                for (const field of Object.values(this.data.relations[model] || {})) {
+                    if (!field.relation || !this.models[field.relation]) continue;
+                    for (const record of records) {
+                        const ids = Array.isArray(record[field.name]) ? record[field.name] : [record[field.name]];
+                        if (ids.some((id) => typeof id === "number" && id
+                            && !snapshot[field.relation]?.some((related) => related.id === id)
+                            && !this.models[field.relation].get(id))) return false;
                     }
                 }
-                return false;
             }
-            if (current.uiState.baseerPreparationAction) return false;
+
+            // Native loading retains unsynced children in x2many fields. Remove
+            // this order's stale children first, including detached backrefs.
+            // Deletion records ORM commands even when silent: consume those
+            // locally BEFORE loading, so they cannot cancel canonical lines on
+            // the next payment. No serialized payload is sent to the server.
+            const localLines = this.models["pos.order.line"].filter((line) => line.order_id?.id === order.id);
+            const localCourses = this.models["restaurant.order.course"]?.filter((course) => course.order_id?.id === order.id) || [];
+            // Keep deletion tombstones with the uncertain intent until their
+            // IndexedDB removal succeeds, including retries after a failed save.
+            const staleKeys = order.uiState.baseerPreparationStaleRecords || [];
+            order.uiState.baseerPreparationStaleRecords = staleKeys;
+            for (const [model, inverse, owners] of [
+                ["pos.pack.operation.lot", "pos_order_line_id", localLines],
+                ["product.attribute.custom.value", "pos_order_line_id", localLines],
+                ["pos.order.line", "order_id", [order]],
+                ["pos.payment", "pos_order_id", [order]],
+                ["restaurant.order.course", "order_id", [order]],
+            ]) {
+                const ownerIds = new Set(owners.map((owner) => owner.id));
+                const serverIds = new Set((snapshot[model] || []).map((record) => record.id));
+                const stale = this.models[model]?.filter((record) => ownerIds.has(record[inverse]?.id) && !serverIds.has(record.id)) || [];
+                for (const record of stale) {
+                    const key = this.data.opts.databaseTable[model]?.key || "id";
+                    staleKeys.push([model, record[key]]);
+                    record.delete({ silent: true });
+                }
+            }
+            for (const line of localLines) line.serializeForORM();
+            for (const course of localCourses) course.serializeForORM();
+            order.serializeForORM();
+            this.models.loadConnectedData(snapshot, []);
+            if (!isCurrent()) return false;
+            const canonical = snapshot["pos.order"][0];
+            if (order.state !== canonical.state || order.company_id?.id !== companyId
+                || order.config_id?.id !== configId
+                || !this._baseerSamePreparationIds(order.lines, canonical.lines)
+                || !this._baseerSamePreparationIds(order.payment_ids, canonical.payment_ids)
+                || order.lines.some((line) => line.order_id !== order)
+                || order.payment_ids.some((payment) => payment.pos_order_id !== order)) return false;
+            if (canonical.course_ids && (!this._baseerSamePreparationIds(order.course_ids, canonical.course_ids)
+                || order.course_ids.some((course) => course.order_id !== order))) return false;
+            // Keep recovery flags in memory until the entire canonical graph,
+            // stale deletions and unblocked order have committed atomically.
+            await this._baseerPersistPreparationSnapshot(snapshot, order, staleKeys, fields, isCurrent);
+            if (!isCurrent()) return false;
+            for (const field of fields) delete order.uiState[field];
+            this.removePendingOrder(order);
             this._baseerNotifyPreparationStatus(status);
             return true;
+        } catch {
+            return false;
+        }
+    },
+
+    async _baseerPersistPreparationSnapshot(snapshot, order, staleKeys, fields, isCurrent) {
+        return this.data.indexedDBMutex.exec(() => {
+            if (!isCurrent()) throw new Error("Preparation recovery changed before persistence.");
+            const rows = {};
+            for (const [model, records] of Object.entries(snapshot)) {
+                rows[model] = records.map((record) => this.models[model].get(record.id).serializeForIndexedDB());
+            }
+            const serializedOrder = rows["pos.order"][0];
+            const state = JSON.parse(serializedOrder[SERIALIZED_UI_STATE_PROP]);
+            for (const field of fields) delete state[field];
+            serializedOrder[SERIALIZED_UI_STATE_PROP] = JSON.stringify(state);
+            const stores = [...new Set([...Object.keys(rows).filter((model) => rows[model].length),
+                ...staleKeys.map(([model]) => model)])];
+            // Native IndexedDB.create resolves on request success and converts
+            // request failures into result objects. Recovery must await the
+            // transaction's actual commit and reject an abort/error instead.
+            return new Promise((resolve, reject) => {
+                const database = this.data.indexedDB;
+                const transaction = database.getNewTransaction(stores);
+                if (!transaction) {
+                    reject(new Error("Preparation recovery storage is unavailable."));
+                    return;
+                }
+                let settled = false;
+                const timeout = setTimeout(() => abort(new Error("Preparation recovery storage timed out.")), 15000);
+                const finish = (error) => {
+                    if (settled) return;
+                    settled = true;
+                    clearTimeout(timeout);
+                    database.activeTransactions.delete(transaction);
+                    if (error) reject(error);
+                    else resolve();
+                };
+                const abort = (error) => {
+                    try {
+                        transaction.abort();
+                    } catch {
+                        // A transaction may already have been aborted.
+                    }
+                    finish(error);
+                };
+                transaction.addEventListener("complete", () => finish(), { once: true });
+                transaction.addEventListener("abort", () => finish(transaction.error || new Error("Preparation recovery storage was aborted.")), { once: true });
+                transaction.addEventListener("error", () => abort(transaction.error || new Error("Preparation recovery storage failed.")), { once: true });
+                const guardRequest = (request) => {
+                    request.addEventListener("success", () => {
+                        // Request callbacks still run inside the active native
+                        // readwrite transaction. Abort before commit if a newer
+                        // intent, replacement order or disconnect invalidated
+                        // the clean UI-state snapshot while requests waited.
+                        if (!isCurrent()) abort(new Error("Preparation recovery changed during persistence."));
+                    }, { once: true });
+                };
+                try {
+                    for (const [model, key] of staleKeys) guardRequest(transaction.objectStore(model).delete(key));
+                    for (const [model, records] of Object.entries(rows)) {
+                        for (const record of records) {
+                            guardRequest(transaction.objectStore(model).put(JSON.parse(JSON.stringify(record))));
+                        }
+                    }
+                } catch (error) {
+                    abort(error);
+                }
+            });
+        });
+    },
+
+    _baseerSamePreparationIds(records, ids) {
+        return Array.isArray(records) && Array.isArray(ids) && records.length === ids.length
+            && new Set(ids).size === ids.length && new Set(records.map((record) => record.id)).size === records.length
+            && records.every((record) => Number.isInteger(record.id) && record.id > 0 && ids.includes(record.id));
+    },
+
+    _baseerValidPreparationSnapshot(snapshot, order, status) {
+        const records = snapshot?.["pos.order"];
+        if (!Array.isArray(records) || records.length !== 1) return false;
+        const canonical = records[0];
+        if (canonical.id !== order.id || canonical.uuid !== order.uuid
+            || canonical.company_id !== order.company_id.id || canonical.config_id !== order.config_id.id) return false;
+        for (const model of ["pos.order", "pos.order.line", "pos.payment"]) {
+            if (!Array.isArray(snapshot[model]) || snapshot[model].some((record) =>
+                !Number.isInteger(record.id) || !record.uuid
+                || (this.data.fields[model] || []).some((field) => !Object.hasOwn(record, field)))) return false;
+        }
+        for (const [model, relation, inverse] of [
+            ["pos.order.line", "lines", "order_id"], ["pos.payment", "payment_ids", "pos_order_id"],
+        ]) {
+            if (!this._baseerSamePreparationIds(snapshot[model], canonical[relation])
+                || snapshot[model].some((record) => record[inverse] !== order.id)) return false;
+        }
+        for (const [model, relation] of [["pos.pack.operation.lot", "pack_lot_ids"],
+            ["product.attribute.custom.value", "custom_attribute_value_ids"]]) {
+            const children = snapshot[model];
+            if (!Array.isArray(children)) return false;
+            const ids = snapshot["pos.order.line"].flatMap((line) => line[relation] || []);
+            if (!this._baseerSamePreparationIds(children, ids)
+                || children.some((child) => !snapshot["pos.order.line"].some((line) =>
+                    line.id === child.pos_order_line_id && line[relation]?.includes(child.id)))) return false;
+        }
+        if (this.models["restaurant.order.course"]) {
+            const courses = snapshot["restaurant.order.course"];
+            if (!Array.isArray(courses) || !this._baseerSamePreparationIds(courses, canonical.course_ids)
+                || courses.some((course) => course.order_id !== order.id
+                    || !Array.isArray(course.line_ids) || course.line_ids.some((id) =>
+                        !snapshot["pos.order.line"].some((line) => line.id === id && line.course_id === course.id)))
+                || snapshot["pos.order.line"].some((line) => line.course_id
+                    && !courses.some((course) => course.id === line.course_id && course.line_ids.includes(line.id)))) return false;
+        }
+        if (canonical.state === "draft") return true;
+        // An accepted cancellation of the last kitchen item can natively close
+        // an empty order. Never resurrect its previous quantities to unlock it.
+        if (canonical.state !== "cancel" || status.skipped || canonical.lines.length
+            || canonical.payment_ids.length || canonical.account_move || canonical.is_refund
+            || ![canonical.amount_total, canonical.amount_paid, canonical.amount_return].every((amount) =>
+                typeof amount === "number" && Math.abs(amount) < 0.000001)) return false;
+        try {
+            const baseline = typeof canonical.last_order_preparation_change === "string"
+                ? JSON.parse(canonical.last_order_preparation_change) : canonical.last_order_preparation_change;
+            return Boolean(baseline?.lines) && Object.values(baseline.lines).every((line) =>
+                Number.isFinite(line.quantity) && Math.abs(line.quantity) < 0.000001);
         } catch {
             return false;
         }
@@ -574,6 +755,10 @@ patch(PosStore.prototype, {
             return false;
         }
         const direct = this.config.baseer_direct_print_enabled;
+        if (direct && !opts.orderDone && (order.uiState.baseerPreparationOutcomeUnknown
+            || this._baseerPreparationResolutions?.has(order.uuid))) {
+            return await this.baseerResolvePreparationOutcome(order);
+        }
         if (direct && !opts.orderDone && !order.uiState.baseerPreparationAction) {
             // Native payment and native reprint paths reach this generic method
             // without an auditable Baseer intent. Never print or advance the
@@ -627,6 +812,15 @@ patch(PosStore.prototype, {
                     error.baseerPreparationOutcomeUnknown = true;
                     throw error;
                 }
+                if (status.skipped) {
+                    order.uiState.baseerPreparationOutcomeUnknown = true;
+                    if (!(await this.baseerResolvePreparationOutcome(order))) {
+                        const error = new Error(_t("The kitchen result is still unknown. Reconnect and check it before retrying."));
+                        error.baseerPreparationOutcomeUnknown = true;
+                        throw error;
+                    }
+                    return { successful: true, recovered: true };
+                }
                 delete order.uiState.baseerPreparationOutcomeUnknown;
                 this._baseerNotifyPreparationStatus(status);
                 if (status?.pending) {
@@ -641,18 +835,20 @@ patch(PosStore.prototype, {
                     const status = await this._baseerPreparationStatus(order, auditedAction);
                     if (!stillCurrent()) return false;
                     if (status?.accepted) {
-                        delete order.uiState.baseerPreparationOutcomeUnknown;
-                        this._baseerNotifyPreparationStatus(status);
-                        if (status.pending) {
-                            void this._baseerWatchPreparationStatus(order, auditedAction, status);
+                        order.uiState.baseerPreparationOutcomeUnknown = true;
+                        error.baseerPreparationOutcomeUnknown = true;
+                        if (await this.baseerResolvePreparationOutcome(order)) {
+                            if (status.pending) {
+                                void this._baseerWatchPreparationStatus(order, auditedAction, status);
+                            }
+                            return { successful: true, recovered: true };
                         }
-                        return { successful: true, recovered: true };
                     }
                 } catch {
                     // Preserve the original transport/server error below.
                 }
                 if (!stillCurrent()) return false;
-                const definitive = ["odoo.exceptions.ValidationError", "odoo.exceptions.AccessError",
+                const definitive = !error.baseerPreparationOutcomeUnknown && ["odoo.exceptions.ValidationError", "odoo.exceptions.AccessError",
                     "odoo.exceptions.UserError"].includes(error?.data?.name);
                 if (definitive) {
                     order.last_order_preparation_change = previousChange;

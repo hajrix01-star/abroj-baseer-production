@@ -2405,3 +2405,18 @@ msgstr "فئات نقاط البيع"
 #: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_pos_config_form_direct_print
 msgid "Test kitchen printer"
 msgstr "اختبار طابعة المطبخ"
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/pos_order.py:0
+msgid "This order has amounts but no items. Restore its items before accepting payment."
+msgstr "تعذّر اعتماد الدفع لغياب الأصناف. استعد أصناف الطلب ثم راجع المبلغ."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/pos_order.py:0
+msgid "The order totals no longer match its items. Reload the order and review its items before accepting payment."
+msgstr "إجمالي الطلب لا يطابق أصنافه. أعد تحميل الطلب وراجعه قبل الدفع."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/pos_order.py:0
+msgid "The complete order items and payments must be accessible before accepting payment."
+msgstr "تعذّر التحقق من أصناف الطلب ودفعاته كاملة. راجع صلاحية الوصول قبل الدفع."

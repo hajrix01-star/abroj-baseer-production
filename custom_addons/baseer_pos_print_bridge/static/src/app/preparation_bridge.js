@@ -565,6 +565,21 @@ patch(PosStore.prototype, {
         return true;
     },
 
+    async _mergeOrders(sourceOrder, destinationOrder) {
+        await super._mergeOrders(...arguments);
+        // Native restaurant merging synchronizes the destination and only
+        // then deletes the source. Preserve that identity for deleteOrders so
+        // a kitchen-sent source takes the verified transfer path below rather
+        // than the ordinary kitchen-cancellation path.
+        if (
+            this.config.baseer_direct_print_enabled &&
+            sourceOrder?.isSynced &&
+            Number.isInteger(destinationOrder?.id)
+        ) {
+            sourceOrder.uiState.baseerRestaurantMergeDestinationId = destinationOrder.id;
+        }
+    },
+
     async deleteOrders(orders, serverIds = [], ignoreChange = false) {
         if (!this.config.baseer_direct_print_enabled) {
             return super.deleteOrders(orders, serverIds, ignoreChange);
@@ -593,29 +608,51 @@ patch(PosStore.prototype, {
         }
         const protectedSet = new Set(protectedIds);
         const protectedOrders = orders.filter((candidate) => protectedSet.has(candidate?.id));
+        const mergedOrders = protectedOrders.filter(
+            (order) => ignoreChange && Number.isInteger(order.uiState?.baseerRestaurantMergeDestinationId)
+        );
+        const mergedIds = new Set(mergedOrders.map((order) => order.id));
+        for (const order of mergedOrders) {
+            await this.data.silentCall(
+                "pos.order",
+                "baseer_finalize_restaurant_merge",
+                [[order.id], order.uiState.baseerRestaurantMergeDestinationId],
+                {},
+                false
+            );
+            this.removeOrder(order, false);
+            this.removePendingOrder(order);
+            delete order.uiState.baseerRestaurantMergeDestinationId;
+        }
+        const cancellationIds = protectedIds.filter((id) => !mergedIds.has(id));
+        const cancellationSet = new Set(cancellationIds);
+        const cancellationOrders = orders.filter((candidate) => cancellationSet.has(candidate?.id));
         const reasonsByOrder = Object.fromEntries(
-            protectedOrders
+            cancellationOrders
                 .filter((order) => order.uiState?.baseerKitchenCancellation)
                 .map((order) => [String(order.id), {
                     reason_code: order.uiState.baseerKitchenCancellation.reasonCode,
                     reason_note: order.uiState.baseerKitchenCancellation.reasonNote || "",
                 }])
         );
-        if (Object.keys(reasonsByOrder).length !== protectedIds.length) {
+        if (Object.keys(reasonsByOrder).length !== cancellationIds.length) {
             this.notification.add(
                 _t("Open each kitchen order and choose its cancellation reason before closing the session."),
                 { type: "warning" }
             );
             return false;
         }
-        const result = await this.data.silentCall(
-            "pos.order", "baseer_cancel_with_preparation_reasons",
-            [protectedIds, sessionId, reasonsByOrder], {}, false
-        );
+        let result;
+        if (cancellationIds.length) {
+            result = await this.data.silentCall(
+                "pos.order", "baseer_cancel_with_preparation_reasons",
+                [cancellationIds, sessionId, reasonsByOrder], {}, false
+            );
+        }
         // The server transaction already cancelled the protected orders. Remove
         // only their local twins; native deleteOrders remains owner of all other
         // orders and therefore cannot issue a second untracked cancellation.
-        for (const order of orders.filter((candidate) => protectedSet.has(candidate?.id))) {
+        for (const order of cancellationOrders) {
             this.removeOrder(order, false);
             this.removePendingOrder(order);
             delete order.uiState.baseerKitchenCancellation;
@@ -623,12 +660,14 @@ patch(PosStore.prototype, {
         const nativeOrders = orders.filter((candidate) => !protectedSet.has(candidate?.id));
         const nativeServerIds = serverIds.filter((id) => !protectedSet.has(id));
         const nativeResult = await super.deleteOrders(nativeOrders, nativeServerIds, ignoreChange);
-        this.notification.add(
-            result?.pending
-                ? _t("Kitchen cancellation was recorded and is waiting for the Windows agent.")
-                : _t("Kitchen cancellation was recorded."),
-            { type: result?.pending ? "warning" : "success" }
-        );
+        if (result) {
+            this.notification.add(
+                result.pending
+                    ? _t("Kitchen cancellation was recorded and is waiting for the Windows agent.")
+                    : _t("Kitchen cancellation was recorded."),
+                { type: result.pending ? "warning" : "success" }
+            );
+        }
         return nativeResult;
     },
 

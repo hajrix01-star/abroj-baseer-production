@@ -6,3 +6,4 @@ from . import test_sales_census
 from . import test_receipts_payments_source_contract
 from . import test_pos_evidence
 from . import test_read_batches
+from . import test_dedup

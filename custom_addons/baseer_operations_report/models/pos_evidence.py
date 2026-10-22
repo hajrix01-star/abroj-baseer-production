@@ -122,7 +122,7 @@ class OperationsPosEvidence(models.AbstractModel):
                            if line.tax_line_id else Decimal(0))
         return {key: value for key, value in vector.items() if value != (0, 0)}
 
-    def _pos_expected_vector(self, session, company):
+    def _pos_expected_vector(self, session, company, proven_orders=None):
         orders = session.order_ids
         self.env['pos.order'].flush_model(['session_id'])
         self._assert_visible('pos_order', 'session_id=%s', [session.id], orders)
@@ -141,7 +141,15 @@ class OperationsPosEvidence(models.AbstractModel):
                 return None
         # Prove the complete eligible set (including sources outside the
         # display period) in one read batch, retaining native per-order math.
-        self._pos_amounts(eligible, company, {key: {} for key in SECTION_KEYS}, Counter())
+        # Only _period_sources supplies proof from its earlier successful
+        # calculation, in the same environment/transaction/company. Standalone
+        # calls and sources outside that period retain the complete validation.
+        proven = self.env['pos.order']
+        if proven_orders is not None:
+            if proven_orders.env is not self.env:
+                self._deny_incomplete_source()
+            proven = proven_orders
+        self._pos_amounts(eligible - proven, company, {key: {} for key in SECTION_KEYS}, Counter())
         order_bases = []
         for order in eligible:
             if order.is_invoiced:
@@ -275,7 +283,7 @@ class OperationsPosEvidence(models.AbstractModel):
         return sessions if len(sessions) == 1 else None
 
     @api.model
-    def _proven_pos_secondary_lines(self, company, candidate_lines):
+    def _proven_pos_secondary_lines(self, company, candidate_lines, proven_orders=None):
         moves = candidate_lines.move_id
         if not moves:
             return set()
@@ -297,7 +305,7 @@ class OperationsPosEvidence(models.AbstractModel):
                     or session.currency_id != company.currency_id
                     or session.config_id.cash_rounding):
                 continue
-            expected = self._pos_expected_vector(session, company)
+            expected = self._pos_expected_vector(session, company, proven_orders=proven_orders)
             original = self._pos_posted_vector(session.move_id, company)
             if expected is None or original is None or not expected:
                 continue

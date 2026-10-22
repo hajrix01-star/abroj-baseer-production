@@ -317,13 +317,14 @@ class TestOperationsReadBatches(TransactionCase):
     def test_fiscal_position_mapped_tax_repartition_is_required_evidence(self):
         orders = self._mixed_orders()
         rounded, mapped_order = orders
-        mapped_tax = self.tax.copy({'name': 'Synthetic fiscal-position mapped VAT'})
+        mapped_tax = self.tax.copy({
+            'name': 'Synthetic fiscal-position mapped VAT',
+            'original_tax_ids': [Command.set(self.tax.ids)],
+        })
         fiscal_position = self.env['account.fiscal.position'].with_company(self.company).create({
             'name': 'Synthetic batch fiscal-position tax map',
             'company_id': self.company.id,
-            'tax_ids': [Command.create({
-                'tax_src_id': self.tax.id, 'tax_dest_id': mapped_tax.id,
-            })],
+            'tax_ids': [Command.set(mapped_tax.ids)],
         })
         mapped_order.fiscal_position_id = fiscal_position
         self.assertNotIn(mapped_tax, mapped_order.lines.tax_ids)

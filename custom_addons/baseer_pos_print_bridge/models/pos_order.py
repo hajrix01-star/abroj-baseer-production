@@ -1,4 +1,5 @@
 import logging
+import math
 
 from odoo import _, api, fields, models
 from odoo.exceptions import AccessError, UserError, ValidationError
@@ -35,6 +36,7 @@ class PosOrder(models.Model):
 
     @api.model
     def _process_order(self, order, existing_order):
+        self._baseer_strip_merge_sync_echo(order, existing_order)
         raw_action = order.pop('baseer_preparation_action', False)
         if not raw_action:
             return super()._process_order(order, existing_order)
@@ -91,6 +93,52 @@ class PosOrder(models.Model):
         State._apply_action(pos_order, action)
         Attempt._record_decision(pos_order, action, 'accepted')
         return order_id
+
+    @api.model
+    def _baseer_strip_merge_sync_echo(self, order, existing_order):
+        """Native POS serializes readonly fields too; echoes grant no write.
+
+        Keep the ORM guards intact. Only discard proven unchanged native
+        values at the sync boundary, never client changes or context claims.
+        No extra row lock: preparation retains its action/order lock ordering.
+        """
+        names = ('baseer_merged_into_order_id', 'baseer_merge_destination_id',
+                 'baseer_merge_expected_quantities', 'baseer_merge_expected_total')
+        present = [name for name in names if name in order]
+        if not present:
+            return
+        if existing_order:
+            existing_order.check_access('read')
+            if (existing_order.company_id not in self.env.companies
+                    or order.get('uuid') != existing_order.uuid):
+                raise AccessError(_('The merge field echo does not belong to this POS order.'))
+            existing_order.invalidate_recordset(names)
+        for name in present:
+            kind = self._fields[name].type
+            expected = existing_order[name] if existing_order else (0 if kind == 'monetary' else False)
+            value = order[name]
+            if kind == 'many2one':
+                expected = expected.id if expected else False
+                matches = value is False if expected is False else type(value) is int and value == expected
+            elif kind == 'monetary':
+                matches = ((value is False and expected == 0)
+                           or (type(value) in (int, float) and value == expected and math.isfinite(value)))
+            else:
+                # This field is a native product-ID -> quantity map. JS
+                # echoes 1.0 as 1; that is exact numeric equality, not a
+                # rounding tolerance. Booleans/strings are never quantities.
+                matches = ((value is False and expected is False) or (
+                    type(value) is dict and type(expected) is dict
+                    and value.keys() == expected.keys()
+                    and all(type(key) is str and type(value[key]) in (int, float)
+                            and type(expected[key]) in (int, float)
+                            and value[key] == expected[key]
+                            and math.isfinite(value[key]) and math.isfinite(expected[key])
+                            for key in value)))
+            if not matches:
+                raise AccessError(_('Restaurant merge links can only be recorded by the protected merge workflow.'))
+        for name in present:
+            order.pop(name)
 
     def baseer_resolve_preparation_action(self, raw_action):
         """Retire an unaccepted send without changing the order or print jobs."""

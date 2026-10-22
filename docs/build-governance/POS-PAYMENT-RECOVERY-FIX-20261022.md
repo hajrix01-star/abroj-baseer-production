@@ -1,5 +1,13 @@
 # POS-INTEGRITY-20261022 — إصلاح سلامة الدفع واسترداد الإلغاء
 
+## POS-SYNC-ECHO-20261022 — إصلاح عاجل لمزامنة الطباعة
+
+المالك أبلغ توقف جميع طابعات المطبخ والفاتورة وطلب الإصلاح العاجل على الأصلية. الأصليةdd7/bridge19.0.7.8.25؛24رفضmergefieldفي25دقيقة ولاjobطباعةجديدفي30دقيقة، لا دليل عطل جهاز. native serializer المثبت9896e969يرسلprotectedreadonlyfieldsبقِيَمfalse/0أوechoللمخزن؛native_process_orderيمررهاcreate/writeوحارس25يرفضمجردوجودها. تجربةnativeبأربعحالاتأثبتتREDللعقد؛الاختباراتالقديمةpayloadانتقائيبلاهذهالحقولفلمتغطالرحلة. تقريرالتحسينغيرمنشور،ومتابعتهautomation-2عُلّقتلمنعتزامننشرآخر.
+
+اعتماد مستقل operations_financial_review للتصميم قبل التنفيذ: _process_orderفقطيتحققnormaluser/readaccess/company/UUIDثميفصلالقيمالفارغةالأصليةأوechoمطابقصارمللمخزن،لاtruthinessأوسماحيةمالية،ويزيلالحقولبعدإثباتهاقبلsuper؛أيتغييرمرفوض. create/writepresenceguardsومساراتmergeالمحميةوالدفعاتوالإلغاءتظلثابتة؛لاcontextflag/sudo/SQLتعديل/مسحكاش/إعادةإنشاءطلب. reuseمعماريةPOS-INTEGRITY،لاواجهة/schema/مكتبةجديدة؛إصلاحمحليعاليالأثرتتبعهفحوصnormaldraft/kitchen/paid/echo/forgeryومراجعةمستقلةوسياسةPOSsinglemoduleمحميّة. غلاف8aينسخcurrentثمoverlayللوحداتالمصرحةفقط؛يحفظالتقريرالحي.5حتىلوmainيحتوي.6غيرالمنشور. السعةمالكواستخدامعملاءقائم؛لاأحمالإنتاجأونسخةDBجديدة. الهدفأصغرتغييرفيحدالمزامنة،لاحذفالحمايةلتجاوزالرفض.
+
+تحقق26-7-19 محليًا عبر `local-lab.ps1` في حاوية معزولة `network=none`: PASS للاختبارين المتغيرين فقط `test_native_paid_sync_accepts_defaults_and_receipt_status` و`test_exact_pending_merge_echo_preserves_server_values_and_rejects_changes`. يثبتان syncمدفوعًا وenqueue/status للإيصال بصلاحيات الكاشير دون تغيير مالي، وecho `1.0→1` المطابق لخادم الدمج مع رفضbool/quantity/total/destinationالمزور. نتيجة الجولة الكاملة السابقة132اختبارًا:131PASSوفشلfixtureواحد عولج بهذا الاختبار المحدد؛ لاادعاء أنها نتيجةجديدة. مرشح المصدر هوbridge19.0.7.8.26 فقط، ويحتاجCIكاملًا ومراجعةتسليممستقلة وPRقبلسياسةPOS-onlyوالنشرالمحمي.
+
 ## التفويض والنطاق
 
 ### تفويض النشر اللاحق — 22 أكتوبر

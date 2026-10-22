@@ -255,10 +255,27 @@ class BaseerOperationsReport(models.AbstractModel):
 
     @api.model
     def _pos_lines(self, order):
-        lines = order.lines
+        order.ensure_one()
+        return self._pos_lines_batch(order)[order.id]
+
+    @api.model
+    def _pos_lines_batch(self, orders):
+        """Prove membership per parent, not just the union's line count."""
+        orders.check_access('read')
+        lines = orders.lines
+        lines.check_access('read')
         self.env['pos.order.line'].flush_model(['order_id'])
-        self._assert_visible('pos_order_line', 'order_id=%s', [order.id], lines)
-        return lines
+        self.env.cr.execute(
+            'SELECT order_id, id FROM pos_order_line WHERE order_id=ANY(%s)',
+            [orders.ids],
+        )
+        actual = set(self.env.cr.fetchall())
+        if actual != {(line.order_id.id, line.id) for line in lines}:
+            self._deny_incomplete_source()
+        result = {order.id: self.env['pos.order.line'] for order in orders}
+        for line in lines:
+            result[line.order_id.id] |= line
+        return result
 
     @api.model
     def _is_proven_empty_native_pos_order(self, order, company, lines):
@@ -310,9 +327,14 @@ class BaseerOperationsReport(models.AbstractModel):
                     or base['record'].order_id != order
                     or base['currency_id'] != currency):
                 self._deny_incomplete_source()
-            base['tax_ids'].check_access('read')
+        self.env['account.tax'].browse(sorted({
+            tax.id for base in bases for tax in base['tax_ids']
+        })).check_access('read')
         tax_model._add_tax_details_in_base_lines(bases, company)
         tax_model._round_base_lines_tax_details(bases, company)
+        self.env['account.tax'].browse(sorted({
+            item['tax'].id for base in bases for item in base['tax_details']['taxes_data']
+        })).check_access('read')
         net_by_line, gross_by_line = {}, {}
         tax_total = Decimal('0')
         for base in bases:
@@ -325,8 +347,6 @@ class BaseerOperationsReport(models.AbstractModel):
                 self._deny_incomplete_source()
             net = (money(details['total_excluded_currency'])
                    + money(details['delta_total_excluded_currency']))
-            for item in details['taxes_data']:
-                item['tax'].check_access('read')
             tax = sum((money(item['tax_amount_currency'])
                        for item in details['taxes_data']), Decimal('0'))
             net_by_line[line.id], gross_by_line[line.id] = net, net + tax
@@ -345,9 +365,24 @@ class BaseerOperationsReport(models.AbstractModel):
 
     @api.model
     def _record(self, sections, section, account, amount, source, event=None):
+        self._record_many(sections, [(section, account, amount, source, event)])
+
+    @api.model
+    def _record_many(self, sections, entries):
+        # Re-browse in this caller's environment: never inherit a privileged
+        # environment from an account passed by another source helper.
+        entries = list(entries)
+        accounts = self.env['account.account'].browse(sorted({
+            account.id for _section, account, _amount, _source, _event in entries
+        }))
+        accounts.check_access('read')
+        for section, account, amount, source, event in entries:
+            self._record_entry(sections, section, accounts.browse(account.id), amount, source, event)
+
+    @api.model
+    def _record_entry(self, sections, section, account, amount, source, event):
         if section not in SECTION_KEYS:
             self._deny_incomplete_source()
-        account.check_access('read')
         entry = sections[section].setdefault(account.id, {
             'account': account, 'raw': Decimal('0'), 'count': 0,
             'source_counts': Counter(), 'events': [],
@@ -465,89 +500,104 @@ class BaseerOperationsReport(models.AbstractModel):
         )
 
     @api.model
-    def _pos_amounts(self, order, company, sections, excluded):
-        order.check_access('read')
-        if order.company_id != company:
-            self._deny_incomplete_source()
-        session = order.session_id
-        if not session or not session.config_id or not session.config_id.journal_id:
-            self._deny_incomplete_source()
-        session.check_access('read')
-        session.config_id.check_access('read')
-        session.config_id.journal_id.check_access('read')
-        if session.company_id != company:
-            self._deny_incomplete_source()
-        if session.state == 'closed':
-            if not session.move_id or session.move_id.state != 'posted':
+    def _pos_amounts(self, orders, company, sections, excluded):
+        """Batch reads and access proofs; native rounding remains per order."""
+        orders.check_access('read')
+        sessions = orders.session_id
+        sessions.check_access('read')
+        sessions.config_id.check_access('read')
+        sessions.config_id.journal_id.check_access('read')
+        closed = sessions.filtered(lambda session: session.state == 'closed')
+        closed.move_id.check_access('read')
+        eligible = self.env['pos.order']
+        for order in orders:
+            session = order.session_id
+            if (order.company_id != company or not session
+                    or not session.config_id or not session.config_id.journal_id
+                    or session.company_id != company
+                    or (session.state == 'closed' and (
+                        not session.move_id or session.move_id.state != 'posted'))):
                 self._deny_incomplete_source()
-            session.move_id.check_access('read')
-        if order.currency_id != company.currency_id:
-            excluded['foreign_pos_orders'] += 1
-            return
-        if order.source == 'baseer_summary':
-            summary = order.baseer_summary_id
-            if not summary or summary.state != 'approved' or summary.order_id != order:
-                self._deny_incomplete_source()
-            summary.check_access('read')
-        if order.account_move:
-            order.account_move.check_access('read')
-            if order.account_move.state != 'posted' or order not in order.account_move.pos_order_ids:
-                self._deny_incomplete_source()
-            excluded['linked_pos_invoice_not_readded'] += 1
-        order.reversed_move_ids.check_access('read')
-        lines = self._pos_lines(order)
-        if not lines:
-            if self._is_proven_empty_native_pos_order(order, company, lines):
-                excluded['empty_zero_native_pos_orders'] += 1
-                return
-            self._deny_incomplete_source()
-        lines.mapped('product_id').check_access('read')
-        lines.mapped('tax_ids').check_access('read')
+            # Do not start line/tax/account evidence for an excluded currency.
+            if order.currency_id != company.currency_id:
+                excluded['foreign_pos_orders'] += 1
+                continue
+            eligible |= order
+        summaries = eligible.filtered(lambda order: order.source == 'baseer_summary').baseer_summary_id
+        summaries.check_access('read')
+        eligible.account_move.check_access('read')
+        eligible.reversed_move_ids.check_access('read')
+        for order in eligible:
+            if order.source == 'baseer_summary':
+                summary = order.baseer_summary_id
+                if not summary or summary.state != 'approved' or summary.order_id != order:
+                    self._deny_incomplete_source()
+            if order.account_move:
+                if order.account_move.state != 'posted' or order not in order.account_move.pos_order_ids:
+                    self._deny_incomplete_source()
+                excluded['linked_pos_invoice_not_readded'] += 1
+        by_order = self._pos_lines_batch(eligible)
+        lines = eligible.lines
+        lines.product_id.check_access('read')
+        lines.tax_ids.check_access('read')
         self._pos_evidence_taxes(lines)
-        if order.fiscal_position_id:
-            order.fiscal_position_id.check_access('read')
-        sign = -1 if order.is_refund else 1
-        gross_by_line = {line.id: self._decimal(line.price_subtotal_incl) for line in lines}
-        net_by_line = {line.id: self._decimal(line.price_subtotal) for line in lines}
-        source_tax = self._decimal(order.amount_tax)
-        if (order.source == 'pos'
-                and company.tax_calculation_rounding_method == 'round_globally'
-                and not session.config_id.cash_rounding):
-            net_by_line, gross_by_line, source_tax = self._native_global_pos_amounts(
-                order, company, lines,
-            )
-            excluded['native_pos_tax_rounding'] += 1
-        gross = sum(gross_by_line.values(), Decimal('0'))
-        net = sum(net_by_line.values(), Decimal('0'))
-        if not self._pos_totals_consistent(
-                gross, net, source_tax,
-                self._decimal(order.amount_total), sign, len(lines),
-                self._decimal(company.currency_id.rounding)):
-            self._deny_incomplete_source()
+        eligible.fiscal_position_id.check_access('read')
+        account_by_line = {}
         for line in lines:
             account = line._prepare_base_line_for_taxes_computation().get('account_id')
             if not account or account._name != 'account.account':
                 self._deny_incomplete_source()
-            account.check_access('read')
-            section = account.account_type
-            if section not in SECTION_KEYS:
-                excluded['non_pl_pos_lines'] += 1
-                continue
-            gross_amount = sign * gross_by_line[line.id]
-            amount = -gross_amount if section in EXPENSE_KEYS else gross_amount
-            event_date = (summary.business_date if order.source == 'baseer_summary'
+            account_by_line[line.id] = account.id
+        accounts = self.env['account.account'].browse(sorted(set(account_by_line.values())))
+        accounts.check_access('read')
+        account_by_id = {account.id: account for account in accounts}
+        # Same company/timezone for this invocation, not an inter-call cache.
+        zone = self._company_timezone(company) if eligible.filtered(lambda order: order.source != 'baseer_summary') else None
+        entries = []
+        for order in eligible:
+            lines = by_order[order.id]
+            if not lines:
+                if self._is_proven_empty_native_pos_order(order, company, lines):
+                    excluded['empty_zero_native_pos_orders'] += 1
+                    continue
+                self._deny_incomplete_source()
+            sign = -1 if order.is_refund else 1
+            gross_by_line = {line.id: self._decimal(line.price_subtotal_incl) for line in lines}
+            net_by_line = {line.id: self._decimal(line.price_subtotal) for line in lines}
+            source_tax = self._decimal(order.amount_tax)
+            if (order.source == 'pos'
+                    and company.tax_calculation_rounding_method == 'round_globally'
+                    and not order.session_id.config_id.cash_rounding):
+                net_by_line, gross_by_line, source_tax = self._native_global_pos_amounts(
+                    order, company, lines,
+                )
+                excluded['native_pos_tax_rounding'] += 1
+            gross = sum(gross_by_line.values(), Decimal('0'))
+            net = sum(net_by_line.values(), Decimal('0'))
+            if not self._pos_totals_consistent(
+                    gross, net, source_tax, self._decimal(order.amount_total), sign,
+                    len(lines), self._decimal(company.currency_id.rounding)):
+                self._deny_incomplete_source()
+            event_date = (order.baseer_summary_id.business_date if order.source == 'baseer_summary'
                           else fields.Datetime.to_datetime(order.date_order).replace(
                               tzinfo=UTC,
-                          ).astimezone(self._company_timezone(company)).date())
-            self._record(
-                sections, section, account, amount, 'pos', {
+                          ).astimezone(zone).date())
+            for line in lines:
+                account = account_by_id[account_by_line[line.id]]
+                section = account.account_type
+                if section not in SECTION_KEYS:
+                    excluded['non_pl_pos_lines'] += 1
+                    continue
+                gross_amount = sign * gross_by_line[line.id]
+                amount = -gross_amount if section in EXPENSE_KEYS else gross_amount
+                entries.append((section, account, amount, 'pos', {
                     'source_model': ('baseer.pos.summary' if order.source == 'baseer_summary'
                                      else 'pos.order'),
-                    'source_id': summary.id if order.source == 'baseer_summary' else order.id,
+                    'source_id': order.baseer_summary_id.id if order.source == 'baseer_summary' else order.id,
                     'line_model': 'pos.order.line', 'line_id': line.id,
                     'date': fields.Date.to_string(event_date),
-                },
-            )
+                }))
+        self._record_many(sections, entries)
 
     @api.model
     def _direct_exclusions(self, company, start, end, journal_ids,
@@ -1565,8 +1615,11 @@ class BaseerOperationsReport(models.AbstractModel):
             if event['line_model'] == 'pos.order.line':
                 pos_events.setdefault(event['line_id'], []).append(event)
 
+        current_lines = self._pos_lines_batch(orders)
+        zone = self._company_timezone(company) if orders else None
+
         def assert_pos_events(order, event_map, day):
-            lines = self._pos_lines(order)
+            lines = current_lines[order.id] if order.id in current_lines else self._pos_lines(order)
             counted = [event for line in lines
                        for event in event_map.get(line.id, [])]
             expected_model = ('baseer.pos.summary' if order.source == 'baseer_summary'
@@ -1677,7 +1730,7 @@ class BaseerOperationsReport(models.AbstractModel):
             else:
                 day = fields.Datetime.to_datetime(order.date_order).replace(
                     tzinfo=UTC,
-                ).astimezone(self._company_timezone(company)).date()
+                ).astimezone(zone).date()
             order_line_ids.update(assert_pos_events(order, pos_events, day))
         if set(pos_events) != order_line_ids:
             self._deny_incomplete_source()
@@ -1693,8 +1746,7 @@ class BaseerOperationsReport(models.AbstractModel):
         for move in moves:
             self._invoice_amounts(move, company, sections, excluded)
         orders = self._pos_records(company, start, end, journal_ids)
-        for order in orders:
-            self._pos_amounts(order, company, sections, excluded)
+        self._pos_amounts(orders, company, sections, excluded)
         self._sales_census(company, start, end, journal_ids, moves, orders,
                            sections, excluded)
         recognized_direct = self._purchase_outflows(

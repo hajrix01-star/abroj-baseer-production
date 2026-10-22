@@ -68,20 +68,16 @@ class TestOperationsBrowser(HttpCase):
                 throw new Error('Timed out waiting for ' + description);
             };
             const hub = await waitFor(() => document.querySelector('.o_baseer_reports_hub.o_action'), 'real report action');
-            const env = await waitFor(() => odoo.__WOWL_DEBUG__?.root?.env?.services?.orm && odoo.__WOWL_DEBUG__.root.env, 'installed Odoo client services');
-            const operationsModule = odoo.loader.modules.get('@baseer_operations_report/operations');
-            const webEnvModule = odoo.loader.modules.get('@web/env');
-            if (!operationsModule?.BaseerOperationsPreview || !webEnvModule?.mountComponent) {
-                throw new Error('Installed operations browser modules unavailable');
-            }
-            const { BaseerOperationsPreview } = operationsModule;
-            const { mountComponent } = webEnvModule;
-            const existing = hub.querySelector(':scope > .o_baseer_reports_hub_body');
-            if (existing) { existing.style.display = 'none'; }
-            const host = document.createElement('div');
-            host.className = 'o_baseer_reports_hub_body';
-            hub.append(host);
-            const app = await mountComponent(BaseerOperationsPreview, host, { env, props: { embedded: true } });
+            // Exercise the real report transition. Mounting Operations in a
+            // separate host concealed the awaited onWillStart regression.
+            const host = hub.querySelector(':scope > .o_baseer_reports_hub_body');
+            const switcher = await waitFor(() => host.querySelector('.o_baseer_report_switcher'), 'installed report selector');
+            switcher.click();
+            const operations = await waitFor(() => [...document.querySelectorAll('.dropdown-item')].find(
+                (item) => /Gross Operations|العمليات الإجمالية/.test(item.textContent)), 'operations selector entry');
+            operations.click();
+            await waitFor(() => host.querySelector('.o_baseer_go_report'), 'operations mounted through selector');
+            if (host.querySelector('.o_baseer_vat_report')) { throw new Error('Previous VAT report remained visible'); }
             await waitFor(() => host.querySelector('.o_baseer_go_report .o_baseer_pl_net_income'), 'operations preview');
             if (host.querySelector('.o_baseer_go_incomplete')) { throw new Error('Proven source was hidden'); }
             const periodButton = () => host.querySelector('button[aria-label="Period"], button[aria-label="الفترة"]');
@@ -155,7 +151,6 @@ class TestOperationsBrowser(HttpCase):
                 throw new Error('Last row is unreachable at this viewport');
             }
             if (document.scrollingElement.scrollTop !== 0) { throw new Error('Body scrolled instead of report action'); }
-            app.destroy();
             console.log('test successful');
         })().catch((error) => { console.error(error); throw error; });
         """.replace('__JOURNAL_ID__', str(journal.id)).replace('__ACCOUNT_CODE__', account.code)

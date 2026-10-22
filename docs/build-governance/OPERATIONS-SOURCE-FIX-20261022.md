@@ -2,6 +2,8 @@
 
 ## OPER-DEDUP-20261022 — G0–G3 قيد المراجعة قبل التنفيذ
 
+G8 مرشحمجمد3ee8734c: نجحت87خلفيةنظيفة0failed0errors و12HOOT/73assertionsلكلعرض، ورحلتاالمتصفحالفعلي1280/375 (39838225825)، والمصدر39838225935والتوافق39838225840كاملان. SOURCE_HANDOFF/SOURCE_MERGEGOالمستقلانمشروطانبالـCIوتحققشرطهما؛دُمجPR469 بالرأسالمتوقعإلى0878f593169b8c4f97ad45b89b01dce0db9e604f،وشجرةالتقريرمطابقةللمرشح. عُرضتالنتائجعلىالمالكقبلالنشر. السياسةbaseer-2026-10-22-operations-dedupتثبت0878وترقيموديولالتقريروحده؛preflightdedupيثبتdd7/POS25وغلاف8aوالإعداداتوالحسابات. مازالالنشرالمحميAPPROVE/DEPLOYوقبولالأصليةينتظرسياسةمراجعةناجحة؛لاتعاملQUEUEDأونجاحworkflowوحدهقبولاً.
+
 قرار مستقل operations_financial_review: G0–G3 GO قبل كود التطبيق؛ prooffresh لكل_period_sources وبنفسenv/cr/company/user، لا كتابةمصدر بينالمرحلتين، تثبيتisolationالأصليفيprobe. channelbatch/scalarfallback يحفظALLOCATEلكلeventوUNALLOCATEDلكلparent. مختبرPOS24المجمد+reportoverlayالمقترحGOلدليلمقارن فقط، لايمثلالأصليةPOS25ولايدعيذلك.
 
 G5/G6 أولي: فرق80سطرًا راجعه operations_financial_review ومنح SOURCE_GO دونP0/P1؛ لا تغييرmath/ACL/UI. المقارنةداخلrepeatable-readالمعاملةذاتها علىالمختبرالخاصنجحت:exactpayload كاملSHAab4a8448f5aa9414a7ba203e957ca32b072049396e132af547e1e13c9e74e4c1 للمصدرdd7والمرشح؛10.969→4.526ث،7765→1023SQL. لا تصديربيانات أوcommitللتصحيحالمحلي ولاSLAإنتاج؛ تنتظراختباراتالحجبوالقنواتوالـCIومراجعةالتسليم قبلالنشرالمحمي. استخدممختبرPOS24المجمد243a معoverlayreportreadonlyلعدمإحداثschemaتجريبي؛هذالايدعيتمثيلPOS25الأصلية.

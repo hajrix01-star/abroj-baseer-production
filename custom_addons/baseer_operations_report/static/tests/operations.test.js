@@ -127,7 +127,7 @@ async function mountLoadingReport(call, ComponentClass = BaseerOperationsPreview
         required.set(name, service);
         for (const dependency of service.dependencies || []) { keep(dependency); }
     };
-    for (const name of ["ui", "hotkey", "popover", "bottom_sheet"]) { keep(name); }
+    for (const name of ["localization", "ui", "hotkey", "popover", "bottom_sheet"]) { keep(name); }
     clearRegistry(services);
     clearRegistry(registry.category("main_components"));
     for (const [name, service] of required) { services.add(name, service); }

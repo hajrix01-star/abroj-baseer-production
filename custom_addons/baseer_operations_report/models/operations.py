@@ -43,6 +43,8 @@ INFORMATIONAL_EXCLUSIONS = frozenset({
     'unconfirmed_payment_link', 'census_sales_documents',
     'census_pos_orders', 'pos_session_income_not_readded',
     'pos_invoice_reversal_not_readded', 'proven_representative_advance',
+    'empty_zero_native_pos_orders',
+    'native_pos_tax_rounding',
 })
 
 
@@ -57,8 +59,10 @@ class BaseerOperationsReport(models.AbstractModel):
     @staticmethod
     def _pos_totals_consistent(gross, net, tax, total, sign, line_count,
                                rounding):
-        # Odoo may round the order tax globally after rounding each POS line.
-        # The gross line sum remains exact; only the net/tax cross-check may
+        # Proven gross allocations must sum exactly to the order header.
+        # Legacy line caches may differ from Odoo's global tax allocation;
+        # that source is verified separately, never accepted by tolerance.
+        # Only the legacy net/tax cross-check may
         # differ by the single minor unit observed in the source.
         return (sign * gross == total
                 and abs(sign * net + tax - total)
@@ -280,6 +284,89 @@ class BaseerOperationsReport(models.AbstractModel):
         return lines
 
     @api.model
+    def _is_proven_empty_native_pos_order(self, order, company, lines):
+        """An empty native zero order is not a sale or a missing sale line.
+
+        Callers retain the order/session/company checks. Prove inverse links
+        with the same SQL-ID/ORM visibility check as sale lines: an invisible
+        payment or reversal must never turn into an apparently empty order.
+        """
+        if (lines or order.source != 'pos'
+                or order.currency_id != company.currency_id
+                or order.is_refund or order.account_move
+                or any(self._decimal(order[name]) != 0 for name in (
+                    'amount_total', 'amount_tax', 'amount_paid', 'amount_return',
+                ))):
+            return False
+        self._require_read(('pos.payment',))
+        payments = order.payment_ids
+        self.env['pos.payment'].flush_model(['pos_order_id'])
+        self._assert_visible('pos_payment', 'pos_order_id=%s', [order.id], payments)
+        reversals = order.reversed_move_ids
+        inverse = order._fields['reversed_move_ids'].inverse_name
+        self.env['account.move'].flush_model([inverse])
+        self._assert_visible('account_move', inverse + '=%s', [order.id], reversals)
+        return not payments and not reversals
+
+    @api.model
+    def _native_global_pos_amounts(self, order, company, lines):
+        """Read Odoo's native tax allocation, without recomputing stored data.
+
+        POS stores rounded display-line totals before distributing global tax
+        deltas. Prove that entire cache against the native pipeline, then use
+        its final per-line allocation. No unexplained header/line difference
+        or cash-rounding amount is admitted by this path.
+        """
+        currency = company.currency_id
+        pl = self.env['baseer.profit.loss.report']
+
+        def money(value):
+            return Decimal(pl._format_money(self._decimal(value), currency).replace(',', ''))
+
+        tax_model = self.env['account.tax']
+        bases = lines._prepare_tax_base_line_values()
+        if (len(bases) != len(lines)
+                or {base['record'].id for base in bases} != set(lines.ids)):
+            self._deny_incomplete_source()
+        for base in bases:
+            if (base['record']._name != 'pos.order.line'
+                    or base['record'].order_id != order
+                    or base['currency_id'] != currency):
+                self._deny_incomplete_source()
+            base['tax_ids'].check_access('read')
+        tax_model._add_tax_details_in_base_lines(bases, company)
+        tax_model._round_base_lines_tax_details(bases, company)
+        net_by_line, gross_by_line = {}, {}
+        tax_total = Decimal('0')
+        for base in bases:
+            line, details = base['record'], base['tax_details']
+            # These are the frozen fields used by POS's display-line cache;
+            # raw_total_included is not the same rounding operation.
+            if (self._decimal(line.price_subtotal) != money(details['total_excluded_currency'])
+                    or self._decimal(line.price_subtotal_incl)
+                    != money(details['total_included_currency'])):
+                self._deny_incomplete_source()
+            net = (money(details['total_excluded_currency'])
+                   + money(details['delta_total_excluded_currency']))
+            for item in details['taxes_data']:
+                item['tax'].check_access('read')
+            tax = sum((money(item['tax_amount_currency'])
+                       for item in details['taxes_data']), Decimal('0'))
+            net_by_line[line.id], gross_by_line[line.id] = net, net + tax
+            tax_total += tax
+        native = tax_model._get_tax_totals_summary(
+            base_lines=bases, currency=currency, company=company, cash_rounding=None,
+        )
+        sign = -1 if order.is_refund else 1
+        gross = sum(gross_by_line.values(), Decimal('0'))
+        if (gross != money(native['total_amount_currency'])
+                or tax_total != money(native['tax_amount_currency'])
+                or sign * gross != self._decimal(order.amount_total)
+                or sign * tax_total != money(order.amount_tax)):
+            self._deny_incomplete_source()
+        return net_by_line, gross_by_line, money(order.amount_tax)
+
+    @api.model
     def _record(self, sections, section, account, amount, source, event=None):
         if section not in SECTION_KEYS:
             self._deny_incomplete_source()
@@ -433,16 +520,29 @@ class BaseerOperationsReport(models.AbstractModel):
         order.reversed_move_ids.check_access('read')
         lines = self._pos_lines(order)
         if not lines:
+            if self._is_proven_empty_native_pos_order(order, company, lines):
+                excluded['empty_zero_native_pos_orders'] += 1
+                return
             self._deny_incomplete_source()
         lines.mapped('product_id').check_access('read')
         lines.mapped('tax_ids').check_access('read')
         if order.fiscal_position_id:
             order.fiscal_position_id.check_access('read')
         sign = -1 if order.is_refund else 1
-        gross = sum((self._decimal(line.price_subtotal_incl) for line in lines), Decimal('0'))
-        net = sum((self._decimal(line.price_subtotal) for line in lines), Decimal('0'))
+        gross_by_line = {line.id: self._decimal(line.price_subtotal_incl) for line in lines}
+        net_by_line = {line.id: self._decimal(line.price_subtotal) for line in lines}
+        source_tax = self._decimal(order.amount_tax)
+        if (order.source == 'pos'
+                and company.tax_calculation_rounding_method == 'round_globally'
+                and not session.config_id.cash_rounding):
+            net_by_line, gross_by_line, source_tax = self._native_global_pos_amounts(
+                order, company, lines,
+            )
+            excluded['native_pos_tax_rounding'] += 1
+        gross = sum(gross_by_line.values(), Decimal('0'))
+        net = sum(net_by_line.values(), Decimal('0'))
         if not self._pos_totals_consistent(
-                gross, net, self._decimal(order.amount_tax),
+                gross, net, source_tax,
                 self._decimal(order.amount_total), sign, len(lines),
                 self._decimal(company.currency_id.rounding)):
             self._deny_incomplete_source()
@@ -455,7 +555,7 @@ class BaseerOperationsReport(models.AbstractModel):
             if section not in SECTION_KEYS:
                 excluded['non_pl_pos_lines'] += 1
                 continue
-            gross_amount = sign * self._decimal(line.price_subtotal_incl)
+            gross_amount = sign * gross_by_line[line.id]
             amount = -gross_amount if section in EXPENSE_KEYS else gross_amount
             event_date = (summary.business_date if order.source == 'baseer_summary'
                           else fields.Datetime.to_datetime(order.date_order).replace(
@@ -551,6 +651,8 @@ class BaseerOperationsReport(models.AbstractModel):
                                - self._decimal(order.amount_tax))
                 pos_lines = self._pos_lines(order)
                 if not pos_lines:
+                    if self._is_proven_empty_native_pos_order(order, company, pos_lines):
+                        continue
                     self._deny_incomplete_source()
                 pos_lines.mapped('product_id').check_access('read')
                 pos_lines.mapped('tax_ids').check_access('read')

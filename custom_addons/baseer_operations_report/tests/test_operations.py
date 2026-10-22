@@ -3,6 +3,7 @@
 from datetime import datetime, timedelta
 from decimal import Decimal
 from uuid import uuid4
+from unittest.mock import patch
 
 from pytz import UTC, timezone
 
@@ -94,6 +95,241 @@ class TestOperationsGrossCalculator(TransactionCase):
     def _row(snapshot, key):
         return next(row for row in snapshot['periods'][0]['rows'] if row['key'] == key)
 
+    def _empty_native_pos_order(self, session=None):
+        if session is None:
+            bank = self.env['account.journal'].search([
+                ('company_id', '=', self.company.id), ('type', '=', 'bank'),
+            ], limit=1)
+            self.assertTrue(bank)
+            clearing = self._account('958141', 'asset_current', True)
+            method = self.env['pos.payment.method'].with_company(self.company).create({
+                'name': 'Empty native source payment guard',
+                'company_id': self.company.id, 'journal_id': bank.id,
+                'receivable_account_id': self.receivable.id,
+                'outstanding_account_id': clearing.id,
+            })
+            config = self.env['pos.config'].with_company(self.company).create({
+                'name': 'Gross operations empty native order',
+                'company_id': self.company.id,
+                'journal_id': self.sale_journal.id,
+                'invoice_journal_id': self.sale_journal.id,
+                'payment_method_ids': [Command.set(method.ids)],
+            })
+            session = self.env['pos.session'].create({'config_id': config.id})
+            session.set_opening_control(0, 'Empty native source regression')
+        return self.env['pos.order'].with_company(self.company).create({
+            'session_id': session.id, 'company_id': self.company.id,
+            'partner_id': self.partner.id, 'state': 'paid', 'source': 'pos',
+            'date_order': '2041-06-10 12:00:00',
+            'amount_total': 0, 'amount_tax': 0, 'amount_paid': 0,
+            'amount_return': 0, 'lines': [], 'payment_ids': [],
+        })
+
+    def test_empty_zero_native_pos_has_no_financial_event(self):
+        order = self._empty_native_pos_order()
+        snapshot = self.report.get_source_snapshot(self._filters())
+        self.assertTrue(snapshot['complete'])
+        self.assertEqual(self._row(snapshot, 'income')['amount'], '0.00')
+        self.assertTrue(all(not items for items in snapshot['periods'][0]['accounts'].values()))
+        self.assertEqual(snapshot['periods'][0]['excluded']['empty_zero_native_pos_orders'], 1)
+        self.assertEqual(snapshot['periods'][0]['excluded']['census_pos_orders'], 1)
+        self.assertFalse(order.lines)
+
+    def test_empty_native_pos_rejects_each_nonzero_header(self):
+        order = self._empty_native_pos_order()
+        for field in ('amount_total', 'amount_tax', 'amount_paid', 'amount_return'):
+            with self.subTest(field=field):
+                order[field] = 1
+                with self.assertRaises(AccessError):
+                    self.report.get_source_snapshot(self._filters())
+                order[field] = 0
+
+    def _empty_order_payment(self, order):
+        method = order.session_id.config_id.payment_method_ids[:1]
+        return self.env['pos.payment'].create({
+            'pos_order_id': order.id, 'payment_method_id': method.id, 'amount': 0,
+        })
+
+    def test_empty_native_pos_rejects_even_a_zero_payment(self):
+        order = self._empty_native_pos_order()
+        self._empty_order_payment(order)
+        with self.assertRaises(AccessError):
+            self.report.get_source_snapshot(self._filters())
+
+    def test_empty_native_pos_proof_rejects_wrong_source_refund_currency_and_invoice(self):
+        order = self._empty_native_pos_order()
+        prove = self.report._is_proven_empty_native_pos_order
+        self.assertTrue(prove(order, self.company, order.lines))
+        with patch.object(type(order), 'source', 'baseer_summary'):
+            self.assertFalse(prove(order, self.company, order.lines))
+        with patch.object(type(order), 'is_refund', True):
+            self.assertFalse(prove(order, self.company, order.lines))
+        other_currency = self.env['res.currency'].with_context(active_test=False).search([
+            ('id', '!=', self.company.currency_id.id),
+        ], limit=1)
+        self.assertTrue(other_currency)
+        with patch.object(type(order), 'currency_id', other_currency):
+            self.assertFalse(prove(order, self.company, order.lines))
+        order.account_move = self.env['account.move'].create({
+            'move_type': 'out_invoice', 'journal_id': self.sale_journal.id,
+            'partner_id': self.partner.id, 'invoice_date': fields.Date.today(),
+        })
+        self.assertFalse(prove(order, self.company, order.lines))
+        with self.assertRaises(AccessError):
+            self.report.get_source_snapshot(self._filters())
+
+    def test_empty_native_pos_rejects_reversal_link(self):
+        order = self._empty_native_pos_order()
+        reversal = self.env['account.move'].create({
+            'move_type': 'entry', 'journal_id': self.sale_journal.id,
+            'date': '2041-06-10',
+        })
+        reversal[order._fields['reversed_move_ids'].inverse_name] = order.id
+        self.assertFalse(self.report._is_proven_empty_native_pos_order(
+            order, self.company, order.lines,
+        ))
+        with self.assertRaises(AccessError):
+            self.report.get_source_snapshot(self._filters())
+
+    def _native_global_rounding_order(self, session=None):
+        self.company.tax_calculation_rounding_method = 'round_globally'
+        order = self._empty_native_pos_order(session)
+        product = self.env['product.product'].create({
+            'name': 'Global rounding source service', 'type': 'service',
+            'available_in_pos': True, 'property_account_income_id': self.income.id,
+            'taxes_id': [Command.set(self.tax.ids)],
+        })
+        order.write({
+            'amount_total': .09, 'amount_tax': .01, 'amount_paid': .09,
+            'lines': [Command.create({
+                'product_id': product.id, 'uuid': str(uuid4()), 'qty': 1,
+                'price_unit': .02, 'price_subtotal': .02,
+                'price_subtotal_incl': .02, 'full_product_name': product.display_name,
+                'tax_ids': [Command.set(self.tax.ids)],
+            }) for _ in range(4)],
+        })
+        return order
+
+    def test_native_global_rounding_uses_proven_order_allocations(self):
+        order = self._native_global_rounding_order()
+        self.assertEqual(sum(Decimal(str(line.price_subtotal_incl)) for line in order.lines),
+                         Decimal('.08'))
+        snapshot = self.report.get_source_snapshot(self._filters())
+        self.assertTrue(snapshot['complete'])
+        self.assertEqual(self._row(snapshot, 'income')['amount'], '0.09')
+        sections, _excluded = self.report._period_sources(
+            self.company, fields.Date.to_date('2041-06-01'),
+            fields.Date.to_date('2041-06-30'), [],
+        )
+        events = sections['income'][self.income.id]['events']
+        self.assertEqual(len(events), 4)
+        self.assertEqual(sum(event['amount'] for event in events), Decimal('.09'))
+
+    def test_native_global_rounding_rejects_changed_header_or_tax(self):
+        order = self._native_global_rounding_order()
+        for field, correct in (('amount_total', .09), ('amount_tax', .01)):
+            with self.subTest(field=field):
+                order[field] = correct + .01
+                with self.assertRaises(AccessError):
+                    self.report.get_source_snapshot(self._filters())
+                order[field] = correct
+
+    def test_native_global_rounding_refund_reverses_exact_allocations(self):
+        order = self._native_global_rounding_order()
+        refund = order._refund()
+        refund.write({'state': 'paid', 'date_order': order.date_order})
+        self.assertTrue(refund.is_refund)
+        self.assertEqual(Decimal(str(refund.amount_total)), Decimal('-.09'))
+        snapshot = self.report.get_source_snapshot(self._filters())
+        self.assertTrue(snapshot['complete'])
+        self.assertEqual(self._row(snapshot, 'income')['amount'], '0.00')
+        self.assertEqual(snapshot['periods'][0]['excluded']['native_pos_tax_rounding'], 2)
+
+    def test_native_global_rounding_rejects_changed_or_compensated_line_cache(self):
+        order = self._native_global_rounding_order()
+        first, second = order.lines[:2]
+        first.price_subtotal_incl = .03
+        # Matching the order header is not enough to prove individual lines.
+        with self.assertRaises(AccessError):
+            self.report.get_source_snapshot(self._filters())
+        second.price_subtotal_incl = .01
+        with self.assertRaises(AccessError):
+            self.report.get_source_snapshot(self._filters())
+
+    def _empty_native_reader(self):
+        user = self.env['res.users'].create({
+            'name': 'Native source guarded reader',
+            'login': 'native_source_guarded_reader',
+            'company_id': self.company.id,
+            'company_ids': [Command.set(self.company.ids)],
+            'group_ids': [Command.set([
+                self.env.ref('base.group_user').id,
+                self.env.ref('account.group_account_manager').id,
+                self.env.ref('point_of_sale.group_pos_manager').id,
+            ])],
+        })
+        return self.report.with_user(user).with_context(allowed_company_ids=self.company.ids)
+
+    def test_empty_native_pos_rejects_hidden_payment_and_reversal(self):
+        order = self._empty_native_pos_order()
+        payment = self._empty_order_payment(order)
+        reversal = self.env['account.move'].create({
+            'move_type': 'entry', 'journal_id': self.sale_journal.id,
+            'date': '2041-06-10',
+        })
+        inverse = order._fields['reversed_move_ids'].inverse_name
+        secured = self._empty_native_reader()
+        for model, record in (('pos.payment', payment), ('account.move', reversal)):
+            if model == 'account.move':
+                payment.unlink()
+                reversal[inverse] = order.id
+            rule = self.env['ir.rule'].create({
+                'name': 'Hide empty native source link',
+                'model_id': self.env['ir.model']._get(model).id,
+                'domain_force': f"[('id', '!=', {record.id})]",
+            })
+            try:
+                secured.env.invalidate_all()
+                self.assertFalse(secured.env[model].search([('id', '=', record.id)]))
+                with self.assertRaises(AccessError):
+                    secured.get_source_snapshot(self._filters())
+            finally:
+                rule.unlink()
+
+    def test_native_global_rounding_rejects_hidden_line_and_tax(self):
+        order = self._native_global_rounding_order()
+        secured = self._empty_native_reader()
+        for model, record in (('pos.order.line', order.lines[:1]), ('account.tax', self.tax)):
+            rule = self.env['ir.rule'].create({
+                'name': 'Hide native global-rounding source',
+                'model_id': self.env['ir.model']._get(model).id,
+                'domain_force': f"[('id', '!=', {record.id})]",
+            })
+            try:
+                secured.env.invalidate_all()
+                with self.assertRaises(AccessError):
+                    secured.get_source_snapshot(self._filters())
+            finally:
+                rule.unlink()
+
+    def test_empty_native_pos_and_real_sale_share_a_closed_session(self):
+        empty = self._empty_native_pos_order()
+        order = self._native_global_rounding_order(empty.session_id)
+        now = fields.Datetime.now()
+        empty.date_order = order.date_order = now
+        payment = self._empty_order_payment(order)
+        payment.amount = .09
+        order.session_id.action_pos_session_closing_control()
+        self.assertEqual(order.session_id.state, 'closed')
+        self.assertEqual(order.session_id.move_id.state, 'posted')
+        day = fields.Date.to_string(fields.Date.today())
+        filters = {**self._filters(), 'date_from': day, 'date_to': day}
+        snapshot = self.report.get_source_snapshot(filters)
+        self.assertTrue(snapshot['complete'])
+        self.assertEqual(self._row(snapshot, 'income')['amount'], '0.09')
+        self.assertEqual(snapshot['periods'][0]['excluded']['empty_zero_native_pos_orders'], 1)
+        self.assertEqual(snapshot['periods'][0]['excluded']['direct_aml_unproven'], 0)
+
     def test_pos_tax_rounding_accepts_only_bounded_multiline_difference(self):
         consistent = self.report._pos_totals_consistent
         gross, net, tax, total = map(
@@ -158,6 +394,38 @@ class TestOperationsGrossCalculator(TransactionCase):
             'baseer_procurement_representative_petty_cash_payment_journal_ids':
                 [Command.link(bank.id)],
         })
+        representative = self.env['res.partner'].with_company(self.company).create({
+            'name': 'Gross operations source representative',
+            'company_id': self.company.id, 'is_purchase_representative': True,
+        })
+        product = self.env['product.product'].create({
+            'name': 'Source funding material', 'company_id': self.company.id,
+        })
+        option = self.env['baseer.procurement.purchase.option'].create({
+            'name': 'Source funding unit', 'company_id': self.company.id,
+            'product_id': product.id, 'uom_id': product.uom_id.id,
+        })
+        request = self.env['baseer.procurement.request'].create({
+            'company_id': self.company.id,
+            'warehouse_id': self.env['stock.warehouse'].search([
+                ('company_id', '=', self.company.id),
+            ], limit=1).id,
+            'representative_partner_id': representative.id,
+            'line_ids': [Command.create({
+                'option_id': option.id, 'requested_qty': 1, 'requested_price': 1,
+            })],
+        })
+        # Exercise the real transition with an authorized synthetic requester.
+        requester = self.env['res.users'].create({
+            'name': 'Source funding requester', 'login': 'source_funding_requester',
+            'company_id': self.company.id, 'company_ids': [Command.set(self.company.ids)],
+            'group_ids': [Command.set([
+                self.env.ref('baseer_procurement_requests.group_procurement_user').id,
+            ])],
+        })
+        request.with_user(requester).with_context(
+            allowed_company_ids=self.company.ids,
+        ).action_mark_sent()
         for documented_amount, expected in ((1, True), (2, False)):
             move = self.env['account.move'].create({
                 'move_type': 'entry', 'journal_id': self.sale_journal.id,
@@ -170,7 +438,8 @@ class TestOperationsGrossCalculator(TransactionCase):
                 baseer_representative_petty_cash_internal=True,
             ).create({
                 'company_id': self.company.id, 'movement_type': 'funding',
-                'representative_partner_id': self.partner.id,
+                'representative_partner_id': representative.id,
+                'procurement_request_id': request.id,
                 'payment_journal_id': bank.id, 'movement_date': '2041-06-10',
                 'amount': documented_amount, 'move_id': move.id,
                 'client_token': str(uuid4()),

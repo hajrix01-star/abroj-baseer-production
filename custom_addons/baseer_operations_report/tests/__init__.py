@@ -4,3 +4,4 @@ from . import test_operations_pdf
 from . import test_operations_browser
 from . import test_sales_census
 from . import test_receipts_payments_source_contract
+from . import test_pos_evidence

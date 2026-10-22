@@ -346,25 +346,6 @@ class TestOperationsGrossCalculator(TransactionCase):
         self.assertFalse(consistent(gross, net, tax, Decimal('53.01'),
                                     1, 2, cent))
 
-    def test_pos_session_income_reconciliation_rejects_extra_or_changed_income(self):
-        reconciled = self.report._pos_session_income_reconciled
-        cent = Decimal('0.01')
-        source = [(self.income.id, Decimal('15.65')),
-                  (self.income.id, Decimal('30.43'))]
-        posted = [(self.income.id, Decimal('46.09'))]
-        self.assertTrue(reconciled(source, posted, Decimal('46.09'), cent))
-        self.assertFalse(reconciled(source, [(self.income.id, Decimal('46.10'))],
-                                    Decimal('46.09'), cent))
-        self.assertFalse(reconciled(source, posted, Decimal('46.08'), cent))
-        self.assertFalse(reconciled(source, posted + [
-            (self.income.id, Decimal('1.00')),
-            (self.income.id, Decimal('-1.00')),
-        ], Decimal('46.09'), cent))
-        self.assertFalse(reconciled(source, [
-            (self.other_income.id, Decimal('46.09')),
-        ], Decimal('46.09'), cent))
-        self.assertFalse(reconciled([], [], Decimal('0'), cent))
-
     def test_unknown_asset_funding_remains_unproven(self):
         asset = self._account('958121', 'asset_current')
         journal = self._journal('general', 'GOA')

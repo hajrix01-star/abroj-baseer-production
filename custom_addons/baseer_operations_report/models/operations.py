@@ -69,29 +69,6 @@ class BaseerOperationsReport(models.AbstractModel):
                 <= (rounding if line_count > 1 else Decimal('0')))
 
     @staticmethod
-    def _pos_session_income_reconciled(source_lines, posted_lines, header_net,
-                                       rounding):
-        if (not source_lines or not posted_lines
-                or len(posted_lines) > len(source_lines)
-                or sum((amount for _, amount in posted_lines), Decimal('0')) != header_net):
-            return False
-        expected = Counter()
-        posted = Counter()
-        source_signs = {}
-        for account_id, amount in source_lines:
-            expected[account_id] += amount
-            if amount:
-                source_signs.setdefault(account_id, set()).add(1 if amount > 0 else -1)
-        for account_id, amount in posted_lines:
-            posted[account_id] += amount
-            if amount and (1 if amount > 0 else -1) not in source_signs.get(account_id, set()):
-                return False
-        return (expected.keys() == posted.keys()
-                and all(len(source_signs.get(key, ())) == 1
-                        and abs(expected[key] - posted[key]) <= rounding
-                        for key in expected))
-
-    @staticmethod
     def _coverage_complete(excluded):
         """Unknown and unsupported source classes are never silently accepted."""
         return all(not count for key, count in excluded.items()
@@ -526,6 +503,7 @@ class BaseerOperationsReport(models.AbstractModel):
             self._deny_incomplete_source()
         lines.mapped('product_id').check_access('read')
         lines.mapped('tax_ids').check_access('read')
+        self._pos_evidence_taxes(lines)
         if order.fiscal_position_id:
             order.fiscal_position_id.check_access('read')
         sign = -1 if order.is_refund else 1
@@ -608,91 +586,9 @@ class BaseerOperationsReport(models.AbstractModel):
         recognized = set(recognized_direct_ids)
         if not recognized.issubset(set(lines.ids)):
             self._deny_incomplete_source()
-        # A closed POS session posts accounting income after its original
-        # orders.  Those entries are evidence of the sale, not new operations.
-        sessions = self.env['pos.session'].search([
-            ('move_id', 'in', lines.mapped('move_id').ids),
-            ('company_id', '=', company.id), ('state', '=', 'closed'),
-        ])
-        sessions.check_access('read')
-        proven_session_moves = set()
-        self.env['pos.order'].flush_model(['session_id'])
-        for session in sessions:
-            session.move_id.check_access('read')
-            session.config_id.check_access('read')
-            session.config_id.journal_id.check_access('read')
-            orders = session.order_ids
-            self._assert_visible('pos_order', 'session_id=%s', [session.id], orders)
-            eligible = orders.filtered(lambda order: order.state in POS_STATES)
-            if (session.move_id.state != 'posted' or not eligible
-                    or not session.config_id
-                    or session.config_id.journal_id != session.move_id.journal_id
-                    or any(order.company_id != company
-                           or (order.source == 'pos' and not order.date_order)
-                           or (order.source == 'baseer_summary' and (
-                               not order.baseer_summary_id
-                               or order.baseer_summary_id.state != 'approved'
-                               or order.baseer_summary_id.order_id != order))
-                           or order.source not in ('pos', 'baseer_summary')
-                           for order in eligible)):
-                continue
-            source_income = []
-            header_net = Decimal('0')
-            for order in eligible:
-                order.check_access('read')
-                order.currency_id.check_access('read')
-                if order.currency_id != company.currency_id:
-                    self._deny_incomplete_source()
-                if order.source == 'baseer_summary':
-                    order.baseer_summary_id.check_access('read')
-                if order.fiscal_position_id:
-                    order.fiscal_position_id.check_access('read')
-                header_net += (self._decimal(order.amount_total)
-                               - self._decimal(order.amount_tax))
-                pos_lines = self._pos_lines(order)
-                if not pos_lines:
-                    if self._is_proven_empty_native_pos_order(order, company, pos_lines):
-                        continue
-                    self._deny_incomplete_source()
-                pos_lines.mapped('product_id').check_access('read')
-                pos_lines.mapped('tax_ids').check_access('read')
-                for pos_line in pos_lines:
-                    account = pos_line._prepare_base_line_for_taxes_computation().get(
-                        'account_id',
-                    )
-                    if not account or account._name != 'account.account':
-                        self._deny_incomplete_source()
-                    account.check_access('read')
-                    if account.account_type in ('income', 'income_other'):
-                        sign = -1 if order.is_refund else 1
-                        source_income.append((
-                            account.id, sign * self._decimal(pos_line.price_subtotal),
-                        ))
-            move_lines = session.move_id.line_ids
-            self.env['account.move.line'].flush_model(['move_id'])
-            self._assert_visible(
-                'account_move_line', 'move_id=%s', [session.move_id.id], move_lines,
-            )
-            posted_income = []
-            for move_line in move_lines:
-                move_line.account_id.check_access('read')
-                if (move_line.company_id != company
-                        or move_line.parent_state != 'posted'):
-                    self._deny_incomplete_source()
-                if move_line.account_id.account_type in ('income', 'income_other'):
-                    posted_income.append((
-                        move_line.account_id.id, -self._decimal(move_line.balance),
-                    ))
-            if not self._pos_session_income_reconciled(
-                    source_income, posted_income, header_net,
-                    self._decimal(company.currency_id.rounding)):
-                continue
-            proven_session_moves.add(session.move_id.id)
-        secondary = {
-            line.id for line in lines
-            if line.move_id.id in proven_session_moves
-            and line.account_id.account_type in ('income', 'income_other')
-        }
+        # Prove native tax/accounting groups and actual reconciliation links,
+        # not display-line caches or reference/amount coincidences.
+        secondary = self._proven_pos_secondary_lines(company, lines)
         # Native POS invoicing reverses the order's session recognition.
         # This is not a customer refund and must not become a second event.
         reversals = self._proven_pos_invoice_reversal_lines(company, lines)
@@ -1569,6 +1465,8 @@ class BaseerOperationsReport(models.AbstractModel):
             format(event['amount'].normalize(), 'f'),
             event.get('payment_move_id') or 0,
             event.get('payment_line_id') or 0,
+            event.get('liquidity_line_id') or 0,
+            event.get('pos_session_id') or 0,
             event.get('link_status') or '',
         ) for event in events)
         payload = [company.id, fields.Date.to_string(start),
@@ -1800,6 +1698,9 @@ class BaseerOperationsReport(models.AbstractModel):
         self._sales_census(company, start, end, journal_ids, moves, orders,
                            sections, excluded)
         recognized_direct = self._purchase_outflows(
+            company, start, end, journal_ids, sections, excluded,
+        )
+        recognized_direct |= self._native_pos_variance_inflows(
             company, start, end, journal_ids, sections, excluded,
         )
         self._batch_purchase_outflows(

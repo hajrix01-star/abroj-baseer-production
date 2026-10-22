@@ -362,4 +362,3 @@ class TestBaseerPaymentIntegrity(TransactionCase):
         with self.assertRaises(UserError), self.env.cr.savepoint():
             order.lines.unlink()
         self.assertEqual(before, self._snapshot())
-

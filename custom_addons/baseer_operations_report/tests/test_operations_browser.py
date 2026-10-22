@@ -165,3 +165,8 @@ class TestOperationsBrowser(HttpCase):
 class TestOperationsBrowserMobile(TestOperationsBrowser):
     browser_size = '375x812'
     touch_enabled = True
+
+    def test_preview_filters_detail_and_scroll(self):
+        # Give the inherited journey its own class-bound Odoo test spec so
+        # the explicit mobile CI selector actually collects and executes it.
+        super().test_preview_filters_detail_and_scroll()

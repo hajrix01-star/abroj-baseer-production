@@ -108,8 +108,9 @@ jobs:
             '--test-tags=/baseer_operations_report:TestOperationsBrowser.test_preview_filters_detail_and_scroll,/baseer_operations_report:TestOperationsBrowserMobile.test_preview_filters_detail_and_scroll' \
             --test-enable --stop-after-init --max-cron-threads=0 --workers=0 --log-level=test \
             2>&1 | tee "$RUNNER_TEMP/baseer-operations-browser.log"
-          grep -Fq '0 failed, 0 error' "$RUNNER_TEMP/baseer-operations-browser.log"
-          grep -Fq 'test_preview_filters_detail_and_scroll' "$RUNNER_TEMP/baseer-operations-browser.log"
+          grep -Fq '0 failed, 0 error(s) of 2 tests' "$RUNNER_TEMP/baseer-operations-browser.log"
+          grep -Fq 'TestOperationsBrowser.test_preview_filters_detail_and_scroll.browser: test successful' "$RUNNER_TEMP/baseer-operations-browser.log"
+          grep -Fq 'TestOperationsBrowserMobile.test_preview_filters_detail_and_scroll.browser: test successful' "$RUNNER_TEMP/baseer-operations-browser.log"
       - name: Preserve browser diagnostics
         if: always()
         uses: actions/upload-artifact@v4

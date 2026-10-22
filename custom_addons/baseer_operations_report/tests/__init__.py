@@ -7,3 +7,9 @@ from . import test_receipts_payments_source_contract
 from . import test_pos_evidence
 from . import test_read_batches
 from . import test_dedup
+from . import test_native_preparation
+from . import test_owner_sales
+from . import test_owner_cash
+from . import test_owner_report
+from . import test_owner_hr
+from . import test_owner_pdf

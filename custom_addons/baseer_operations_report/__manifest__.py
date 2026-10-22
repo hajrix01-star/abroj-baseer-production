@@ -1,13 +1,13 @@
 {
-    'name': 'Baseer Gross Operations Source (Limited)',
-    'summary': 'Read-only, explicitly incomplete VAT-inclusive operations source',
-    'version': '19.0.1.0.6',
+    'name': 'Baseer Sales and Payments Summary',
+    'summary': 'Recorded sales and proven cash payments with explicit source coverage',
+    'version': '19.0.1.0.7',
     'author': 'Baseer',
     'license': 'LGPL-3',
     'category': 'Accounting/Reporting',
     'depends': ['baseer_profit_loss_report', 'baseer_pos_summary',
                 'baseer_purchase_batch'],
-    'data': ['report/operations_report.xml'],
+    'data': ['report/operations_report.xml', 'report/owner_report.xml'],
     'assets': {
         'web.assets_backend': [
             'baseer_operations_report/static/src/operations.js',

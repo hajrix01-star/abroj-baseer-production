@@ -14,6 +14,11 @@ SPEC.loader.exec_module(engine)
 
 
 class RefreshContracts(unittest.TestCase):
+    def setUp(self):
+        request = patch.dict(engine.os.environ, {'QA_REFRESH_SIGNED_TAG': 'qa-refresh-20261023-12345'})
+        request.start()
+        self.addCleanup(request.stop)
+
     def make(self):
         return engine.Refresh('12345', 'a' * 40, 'b' * 40)
 
@@ -116,12 +121,12 @@ class RefreshContracts(unittest.TestCase):
         with tempfile.TemporaryDirectory(dir=Path(__file__).parent) as directory:
             refresh = self.make()
             refresh.state = Path(directory)
-            (refresh.state / 'protected-before.json').write_text('{}')
+            (refresh.state / 'protected-after.json').write_text('{}')
             with patch.object(refresh, 'start') as start, patch.object(refresh, 'guards'), \
                     patch.object(refresh, 'finish_prepare') as finish, patch.object(engine, 'run') as run:
                 with self.assertRaisesRegex(RuntimeError, 'recovery point already crossed'):
                     refresh.resume()
-                start.assert_called_once_with('resume')
+                start.assert_called_once_with('resume-12345')
                 finish.assert_not_called()
                 run.assert_not_called()
 
@@ -141,6 +146,57 @@ class RefreshContracts(unittest.TestCase):
         for forbidden in ('self.dump(', 'self.restore(', 'self.archive(', 'copytree(', 'volume", "rm'):
             self.assertNotIn(forbidden, source)
         self.assertIn('self.finish_prepare(manifest)', source)
+
+    def test_resume_intent_names_bind_the_signed_request_and_receipts_do_not_overwrite(self):
+        refresh = self.make()
+        self.assertEqual(refresh.recovery_stage(), 'resume-12345')
+        with patch.dict(engine.os.environ, {'QA_REFRESH_SIGNED_TAG': 'qa-refresh-20261023-67890'}):
+            self.assertEqual(refresh.recovery_stage(), 'resume-67890')
+        with patch.dict(engine.os.environ, {'QA_REFRESH_SIGNED_TAG': 'qa-refresh-20261023-12/34'}):
+            with self.assertRaises(RuntimeError):
+                refresh.recovery_stage()
+        with tempfile.TemporaryDirectory(dir=Path(__file__).parent) as directory:
+            refresh.state = Path(directory)
+            receipt = refresh.state / 'prepare.receipt.json'
+            receipt.write_text('original')
+            with self.assertRaisesRegex(RuntimeError, 'receipt already exists'):
+                refresh.receipt('prepare', {'other': 'value'})
+            self.assertEqual(receipt.read_text(), 'original')
+
+    def test_recovery_keeps_the_original_financial_baseline(self):
+        refresh = self.make()
+        original = {'account_move': '10|original'}
+        with tempfile.TemporaryDirectory(dir=Path(__file__).parent) as directory:
+            refresh.state = Path(directory)
+            path = refresh.state / 'protected-before.json'
+            path.write_text(json.dumps(original))
+            original_bytes = path.read_bytes()
+            with patch.object(refresh, 'attachments', return_value=1), \
+                    patch.object(engine, 'fingerprints', return_value={'account_move': '10|changed'}), \
+                    patch.object(refresh, 'namespace_test') as network:
+                with self.assertRaisesRegex(RuntimeError, 'protected data changed before recovery'):
+                    refresh.finish_prepare({})
+                network.assert_not_called()
+            with patch.object(refresh, 'attachments', return_value=1), \
+                    patch.object(engine, 'fingerprints', return_value=original) as fingerprints, \
+                    patch.object(refresh, 'namespace_test', side_effect=RuntimeError('network boundary')):
+                with self.assertRaisesRegex(RuntimeError, 'network boundary'):
+                    refresh.finish_prepare({})
+                fingerprints.assert_called_once()
+            self.assertEqual(path.read_bytes(), original_bytes)
+
+    def test_network_proof_explicitly_allows_internal_qa_peer_and_records_ipv6(self):
+        import inspect
+        source = inspect.getsource(engine.Refresh.namespace_test)
+        self.assertIn("name == 'internal_qa_peer'", source)
+        targets = [('database', engine.PGIP, 5432, True), ('internal_qa_peer', '172.31.134.5', 16443, True)]
+        with tempfile.TemporaryDirectory(dir=Path(__file__).parent) as directory:
+            refresh = self.make()
+            refresh.state = Path(directory)
+            with patch.object(engine, 'run', return_value='{"database":true,"internal_qa_peer":true,"ipv6_disabled":true}') as run:
+                refresh.namespace_probe(targets)
+            self.assertIn("r['ipv6_disabled']=True", run.call_args.args[0][-1])
+            self.assertTrue(json.loads((refresh.state / 'network-proof.json').read_text())['ipv6_disabled'])
 
     def test_referenced_blob_must_match_size_and_checksum(self):
         refresh = self.make()

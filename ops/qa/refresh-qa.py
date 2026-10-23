@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Bounded root-only QA refresh engine. Invoked only by the signed request wrapper.
 
-Never resumes an incomplete mutation. A failed intent requires operator review;
+Resumes only a reviewed checkpoint before neutralization, with an unchanged baseline;
 old volumes and every protected archive are retained. No network/provider calls.
 """
 import contextlib
@@ -247,6 +247,7 @@ class Refresh:
         save(intent, {'live_sha': self.live_sha, 'qa_sha': self.qa_sha, 'time': time.time()})
 
     def receipt(self, stage, value):
+        require(not (self.state / (stage + '.receipt.json')).exists(), 'receipt already exists')
         value.update(reviewed_revision=os.environ.get('QA_REFRESH_REVIEWED_REVISION'),
                      signed_tag=os.environ.get('QA_REFRESH_SIGNED_TAG'))
         save(self.state / (stage + '.receipt.json'), value)
@@ -354,7 +355,7 @@ class Refresh:
                  '--sysctl', 'net.ipv6.conf.all.disable_ipv6=1', '--entrypoint', 'python3', ODOO_IMAGE, '-c', server])
             try:
                 targets = [('host', '172.31.134.1', host_port), ('public', '1.1.1.1', 443),
-                           ('live_pg', live_ip, 5432), ('other_container', '172.31.134.5', 16443)]
+                           ('live_pg', live_ip, 5432), ('internal_qa_peer', '172.31.134.5', 16443)]
                 for name, host, port in targets:
                     for attempt in range(10):
                         try:
@@ -368,7 +369,7 @@ class Refresh:
                             require(attempt < 9, 'host TCP positive control unavailable: ' + name)
                             time.sleep(0.2)
                 self.namespace_probe([('database', PGIP, 5432, True)] +
-                                     [(name, host, port, False) for name, host, port in targets])
+                                     [(name, host, port, name == 'internal_qa_peer') for name, host, port in targets])
             finally:
                 run(['docker', 'rm', '-f', helper])
 
@@ -381,6 +382,7 @@ class Refresh:
             " finally: s.close()\n"
             " r[name]=ok; assert ok==expected,name\n"
             "assert pathlib.Path('/proc/sys/net/ipv6/conf/all/disable_ipv6').read_text().strip()=='1'\n"
+            "r['ipv6_disabled']=True\n"
             "print(json.dumps(r))")
         result = run(['docker', 'run', '--rm', '--network', NETWORK, '--ip', '172.31.134.4',
                       '--sysctl', 'net.ipv6.conf.all.disable_ipv6=1', '--entrypoint', 'python3', ODOO_IMAGE, '-c', code])
@@ -503,10 +505,11 @@ class Refresh:
 
     def resume(self):
         """One reviewed recovery point: restore completed, no neutralization begun."""
-        self.start('resume')
+        stage = self.recovery_stage()
+        self.start(stage)
         self.guards()
         require(not any((self.state / name).exists() for name in (
-            'protected-before.json', 'protected-after.json', 'prepare.receipt.json', 'network-proof.json')),
+            'protected-after.json', 'prepare.receipt.json', 'network-proof.json')),
             'recovery point already crossed')
         require(run(['docker', 'container', 'inspect', ODOO], check=False) is None, 'candidate Odoo already exists')
         target_pg = inspect(PG)
@@ -515,6 +518,8 @@ class Refresh:
                     'live.dump', 'live-filestore.tar')
         required = archives + ('prepare.intent.json', 'inventory.json', 'attachments.json',
                                'source-manifest.json', 'pg.env', 'app.env', 'compose.json', 'odoo.conf')
+        if (self.state / 'protected-before.json').exists():
+            required += ('protected-before.json',)
         for name in required:
             path = self.state / name
             require(path.is_file() and not path.is_symlink() and path.stat().st_uid == 0 and
@@ -538,11 +543,13 @@ class Refresh:
         require(config['options']['db_name'] == DB and config['options']['db_user'] == 'qa_runner' and
                 config['options']['db_host'] == 'db' and config['options']['max_cron_threads'] == '0',
                 'recovery database config mismatch')
+        require(sql(PG, DB, "SELECT coalesce((SELECT lower(value) FROM ir_config_parameter WHERE key='database.is_neutralized'),'false')").strip() == 'false',
+                'database neutralization already started')
         manifest.update(old_databases=[QDB], archives={name: digest(self.state / name) for name in archives})
         run(['systemctl', 'stop', TIMER])
         try:
             self.finish_prepare(manifest)
-            self.receipt('resume', {'state': str(self.state), 'resumed': 'restored-before-neutralization'})
+            self.receipt(stage, {'state': str(self.state), 'resumed': 'restored-before-neutralization'})
         except BaseException:
             run(['docker', 'stop', ODOO], check=False)
             require(inspect(QODOO)['State']['Running'], 'old QA is not running')
@@ -550,10 +557,20 @@ class Refresh:
                 run(['systemctl', 'start', TIMER])
             raise
 
+    def recovery_stage(self):
+        request = re.fullmatch(r'qa-refresh-20261023-([1-9][0-9]{0,19})',
+                               os.environ.get('QA_REFRESH_SIGNED_TAG', ''))
+        require(request is not None, 'invalid signed recovery request')
+        return 'resume-' + request.group(1)
+
     def finish_prepare(self, manifest):
         attachments = self.attachments()
         baseline = fingerprints(PG, DB)
-        save(self.state / 'protected-before.json', baseline)
+        previous = self.state / 'protected-before.json'
+        if previous.exists():
+            require(baseline == json.loads(previous.read_text()), 'protected data changed before recovery')
+        else:
+            save(previous, baseline)
         self.namespace_test()
         # Native command loads neutralize SQL only, no registry/HTTP/cron process.
         cli = ("import configparser,os; c=configparser.ConfigParser(); c.read('/etc/odoo/odoo.conf'); "
@@ -659,7 +676,8 @@ def main(argv=None):
         print(json.dumps(result, sort_keys=True))
     else:
         getattr(engine, args[0])()
-        print((engine.state / (args[0] + '.receipt.json')).read_text())
+        stage = engine.recovery_stage() if args[0] == 'resume' else args[0]
+        print((engine.state / (stage + '.receipt.json')).read_text())
 
 
 if __name__ == '__main__':

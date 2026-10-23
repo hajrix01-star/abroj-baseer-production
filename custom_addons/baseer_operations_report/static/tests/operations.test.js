@@ -154,6 +154,7 @@ test("owner summary mounts loading then renders server strings without detail RP
     expect(document.querySelectorAll(".o_baseer_owner_table thead .is-number").length).toBe(4);
     expect(document.querySelector(".o_baseer_owner_section strong").textContent).toBe("115.00");
     expect(document.querySelector(".o_baseer_owner_percentage").textContent).toBe("50.00%");
+    expect(document.querySelector(".o_baseer_owner_amount_stack").firstElementChild.classList.contains("o_baseer_owner_percentage")).toBe(true);
     expect(document.querySelector(".o_baseer_owner_unclassified").textContent).toBe(component.labels.unclassified);
     expect(document.querySelector(".o_baseer_owner_difference strong").textContent).toBe("95.00");
     expect(document.querySelectorAll(".o_baseer_owner_absent").length).toBeGreaterThan(0);

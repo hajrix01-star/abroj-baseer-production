@@ -37,8 +37,7 @@
             <div t-if="state.loading" class="o_baseer_reports_hub_status" role="status" aria-live="polite" t-esc="labels.loading"/>
             <div t-if="state.report" class="o_baseer_report_canvas">
                 <section t-if="!state.ownerDetail" class="o_baseer_report o_baseer_pl_paper o_baseer_owner_summary" t-att-aria-label="state.report.title || labels.title">
-                    <header class="o_baseer_report_head"><div><h1 class="o_baseer_report_title" t-esc="state.report.title || labels.title"/><p class="o_baseer_report_period"><span t-esc="state.report.company.name"/></p></div><span class="o_baseer_report_meta" t-esc="state.report.company.currency_code"/></header>
-                    <p class="o_baseer_owner_basis" t-esc="state.report.basis"/>
+                    <header class="o_baseer_report_head"><div><h1 class="o_baseer_report_title" t-esc="state.report.title || labels.title"/><p class="o_baseer_report_period"><span t-esc="state.report.company.name"/> · <span t-if="primaryPeriod" t-esc="reportPeriodCaption"/></p></div><span class="o_baseer_report_meta" t-esc="state.report.company.currency_code"/></header>
                     <p t-if="state.report.is_partial_journals" class="o_baseer_pl_partial" role="status" t-esc="labels.selectedJournals"/>
                     <div class="o_baseer_pl_table_wrap"><table class="o_baseer_pl_table o_baseer_owner_table">
                         <thead><tr><th scope="col" rowspan="2" t-esc="labels.details"/><th t-foreach="state.report.periods" t-as="period" t-key="period.key" scope="col" class="is-number"><span t-att-title="period.label" t-att-aria-label="period.label" t-esc="period.display_label || period.label"/></th></tr><tr><th t-foreach="state.report.periods" t-as="period" t-key="period.key" scope="col" class="is-number"><small t-esc="labels.amount"/></th></tr></thead>
@@ -70,6 +69,7 @@
                             </tr>
                         </tbody>
                     </table></div>
+                    <p class="o_baseer_owner_basis" t-esc="state.report.basis"/>
                     <div t-if="hasUnclassifiedOutflows" class="o_baseer_report_notice o_baseer_owner_unclassified" role="status" t-esc="labels.unclassified"/>
                 </section>
                 <section t-if="state.ownerDetail" class="o_baseer_report o_baseer_pl_paper o_baseer_owner_detail_page" t-att-aria-busy="state.ownerDetail.loading">

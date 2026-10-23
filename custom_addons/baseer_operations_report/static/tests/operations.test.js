@@ -330,6 +330,7 @@ test("every owner row and present amount is a drilldown separate from folding", 
         const period = target.period || (expected.has(`${target.row}|current`) ? "current" : "previous");
         expect(call[2]).toBe(period);
         expect(call[3]).toBe((period === "current" ? "a" : "b").repeat(64));
+        await waitUntil(() => document.querySelector(".o_baseer_owner_detail_total strong"));
         expect(document.querySelector(".o_baseer_owner_detail_total strong").textContent)
             .toBe(expected.get(`${target.row}|${period}`).amount);
         document.querySelector(".o_baseer_owner_back").click();

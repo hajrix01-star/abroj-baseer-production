@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_owner_pdf_portrait" model="ir.actions.report">
+        <field name="name">Sales and Payments / ملخص المبيعات والمدفوعات</field>
+        <field name="model">baseer.operations.report</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">baseer_operations_report.owner_pdf_portrait</field>
+        <field name="report_file">baseer_operations_report.owner_pdf_portrait</field>
+        <field name="paperformat_id" ref="paperformat_operations_portrait"/>
+    </record>
+    <record id="action_owner_pdf_landscape" model="ir.actions.report">
+        <field name="name">Sales and Payments / ملخص المبيعات والمدفوعات</field>
+        <field name="model">baseer.operations.report</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">baseer_operations_report.owner_pdf_landscape</field>
+        <field name="report_file">baseer_operations_report.owner_pdf_landscape</field>
+        <field name="paperformat_id" ref="paperformat_operations_landscape"/>
+    </record>
+
+    <!-- Reuse the existing Arabic-safe print shell, margins and footer. -->
+    <template id="owner_pdf_body" inherit_id="baseer_operations_report.operations_pdf_body" primary="True">
+        <xpath expr="//h1" position="replace"><h1 t-esc="snapshot['title']"/></xpath>
+        <xpath expr="//div[@class='notice']" position="replace"><div class="notice" t-esc="snapshot['basis']"/></xpath>
+        <xpath expr="//div[span/span[@class='page']]" position="replace"/>
+        <xpath expr="//div[@class='page bgo-pdf']" position="after">
+            <div class="footer" style="font-family: DejaVu Sans, Arial, sans-serif; font-size: 8px; color: #657487; border-top: 1px solid #d9dfe4; padding-top: 4px;" t-att-dir="'rtl' if arabic else 'ltr'">
+                <span t-esc="company_record.name"/> · <span t-esc="snapshot['currency_code']"/>
+                <span style="float: right;" dir="ltr"><span class="page"/> / <span class="topage"/></span>
+            </div>
+        </xpath>
+        <xpath expr="//table" position="replace">
+            <section t-foreach="periods" t-as="period" style="margin-bottom: 20px;">
+                <h2 dir="auto" style="font-size: 12px; margin: 12px 0 4px;" t-esc="period['display_label']"/>
+                <p class="period" dir="ltr"><span t-esc="period['date_from']"/> - <span t-esc="period['date_to']"/></p>
+                <table>
+                    <thead><tr><th style="width: 64%;" scope="col" t-esc="'البند' if arabic else 'Item'"/><th class="numeric" scope="col" t-esc="'المبلغ' if arabic else 'Amount'"/><th class="numeric" scope="col" t-esc="'النسبة من المبيعات' if arabic else 'Share of sales'"/></tr></thead>
+                    <tbody>
+                        <tr t-foreach="period['totals'][:2]" t-as="total" class="section"><th scope="row" t-esc="total['label']"/><td t-att-class="'numeric ' + ('negative' if total['negative'] else '')" t-esc="total['amount']"/><td/></tr>
+                        <tr><th colspan="3" scope="colgroup" t-esc="'المبيعات حسب طريقة الدفع' if arabic else 'Sales by payment channel'"/></tr>
+                        <tr t-foreach="period['channels']" t-as="channel"><th scope="row" t-esc="channel['label']"/><td t-att-class="'numeric ' + ('negative' if channel['negative'] else '')" t-esc="channel['amount']"/><td class="numeric" t-esc="channel['percentage'] if channel['percentage'] is not None else '-'"/></tr>
+                        <tr t-if="not period['channels']"><td colspan="3" t-esc="'لا توجد مبيعات في هذه الفترة.' if arabic else 'No sales in this period.'"/></tr>
+                        <t t-foreach="period['outflows']" t-as="group">
+                            <tr class="section"><th scope="row" t-esc="group['label']"/><td class="numeric" t-esc="group['amount']"/><td/></tr>
+                            <tr t-foreach="group['rows']" t-as="row" class="account"><th scope="row" t-esc="row['label']"/><td class="numeric" t-esc="row['amount']"/><td/></tr>
+                        </t>
+                        <tr t-if="not period['outflows']"><td colspan="3" t-esc="'لا توجد مدفوعات في هذه الفترة.' if arabic else 'No payments in this period.'"/></tr>
+                        <tr class="section net_income"><th scope="row" t-esc="period['totals'][2]['label']"/><td t-att-class="'numeric ' + ('negative' if period['totals'][2]['negative'] else '')" t-esc="period['totals'][2]['amount']"/><td/></tr>
+                    </tbody>
+                </table>
+                <p t-if="period['has_unclassified_outflows']" class="notice" t-esc="'يشمل الإجمالي مدفوعات لم يكتمل تصنيفها، وهي ظاهرة أعلاه.' if arabic else 'Totals include payments with incomplete classification, shown above.'"/>
+            </section>
+        </xpath>
+    </template>
+    <template id="owner_pdf_portrait"><t t-call="baseer_operations_report.owner_pdf_body"/></template>
+    <template id="owner_pdf_landscape"><t t-call="baseer_operations_report.owner_pdf_body"/></template>
+</odoo>

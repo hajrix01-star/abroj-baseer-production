@@ -111,7 +111,7 @@ class BaseerOperationsReport(models.AbstractModel):
             'account.tax', 'account.tax.repartition.line', 'account.journal',
             'pos.order', 'pos.order.line', 'pos.session', 'pos.config',
             'baseer.pos.summary', 'res.partner',
-            'product.product', 'account.fiscal.position',
+            'product.product', 'account.fiscal.position', 'account.fiscal.position.account',
             'account.bank.statement.line', 'account.partial.reconcile',
             'account.payment',
         ))
@@ -305,7 +305,7 @@ class BaseerOperationsReport(models.AbstractModel):
         return not payments and not reversals
 
     @api.model
-    def _native_global_pos_amounts(self, order, company, lines):
+    def _native_global_pos_amounts(self, order, company, lines, bases=None):
         """Read Odoo's native tax allocation, without recomputing stored data.
 
         POS stores rounded display-line totals before distributing global tax
@@ -313,30 +313,51 @@ class BaseerOperationsReport(models.AbstractModel):
         its final per-line allocation. No unexplained header/line difference
         or cash-rounding amount is admitted by this path.
         """
+        # Optional bases are local to _pos_amounts, in the same source context.
+        # Accounting's linked_to_pos bases are intentionally never shared here.
+        if bases is None:
+            bases = lines._prepare_tax_base_line_values()
+        return self._native_global_pos_amounts_batch([(order, lines, bases)], company)[order.id]
+
+    @api.model
+    def _native_global_pos_amounts_batch(self, order_bases, company):
+        """Batch only read-access checks; native tax math stays per order."""
+        currency = company.currency_id
+        tax_model = self.env['account.tax']
+        if len({order.id for order, _lines, _bases in order_bases}) != len(order_bases):
+            self._deny_incomplete_source()
+        for order, lines, bases in order_bases:
+            if (len(bases) != len(lines)
+                    or {base['record'].id for base in bases} != set(lines.ids)):
+                self._deny_incomplete_source()
+            for base in bases:
+                if (base['record']._name != 'pos.order.line'
+                        or base['record'].order_id != order
+                        or base['currency_id'] != currency):
+                    self._deny_incomplete_source()
+        tax_model.browse(sorted({
+            tax.id for _order, _lines, bases in order_bases
+            for base in bases for tax in base['tax_ids']
+        })).check_access('read')
+        for _order, _lines, bases in order_bases:
+            tax_model._add_tax_details_in_base_lines(bases, company)
+            tax_model._round_base_lines_tax_details(bases, company)
+        tax_model.browse(sorted({
+            item['tax'].id for _order, _lines, bases in order_bases
+            for base in bases for item in base['tax_details']['taxes_data']
+        })).check_access('read')
+        return {order.id: self._native_global_pos_amounts_from_details(order, company, bases)
+                for order, _lines, bases in order_bases}
+
+    @api.model
+    def _native_global_pos_amounts_from_details(self, order, company, bases):
         currency = company.currency_id
         pl = self.env['baseer.profit.loss.report']
+        tax_model = self.env['account.tax']
 
         def money(value):
             return Decimal(pl._format_money(self._decimal(value), currency).replace(',', ''))
 
-        tax_model = self.env['account.tax']
-        bases = lines._prepare_tax_base_line_values()
-        if (len(bases) != len(lines)
-                or {base['record'].id for base in bases} != set(lines.ids)):
-            self._deny_incomplete_source()
-        for base in bases:
-            if (base['record']._name != 'pos.order.line'
-                    or base['record'].order_id != order
-                    or base['currency_id'] != currency):
-                self._deny_incomplete_source()
-        self.env['account.tax'].browse(sorted({
-            tax.id for base in bases for tax in base['tax_ids']
-        })).check_access('read')
-        tax_model._add_tax_details_in_base_lines(bases, company)
-        tax_model._round_base_lines_tax_details(bases, company)
-        self.env['account.tax'].browse(sorted({
-            item['tax'].id for base in bases for item in base['tax_details']['taxes_data']
-        })).check_access('read')
         net_by_line, gross_by_line = {}, {}
         tax_total = Decimal('0')
         for base in bases:
@@ -505,6 +526,8 @@ class BaseerOperationsReport(models.AbstractModel):
     def _pos_amounts(self, orders, company, sections, excluded):
         """Batch reads and access proofs; native rounding remains per order."""
         orders.check_access('read')
+        if not orders:
+            return orders
         sessions = orders.session_id
         sessions.check_access('read')
         sessions.config_id.check_access('read')
@@ -543,16 +566,35 @@ class BaseerOperationsReport(models.AbstractModel):
         lines.product_id.check_access('read')
         lines.tax_ids.check_access('read')
         self._pos_evidence_taxes(lines)
-        eligible.fiscal_position_id.check_access('read')
+        self._pos_evidence_fiscal_positions(eligible.fiscal_position_id)
         account_by_line = {}
-        for line in lines:
-            account = line._prepare_base_line_for_taxes_computation().get('account_id')
-            if not account or account._name != 'account.account':
+        bases_by_order = {}
+        prefetch_line_ids = lines._ids
+        for order in eligible:
+            # Retain the complete batch prefetch set while each native tax
+            # calculation still receives this order's lines only.
+            order_lines = by_order[order.id].with_prefetch(prefetch_line_ids)
+            bases = order_lines._prepare_tax_base_line_values()
+            if (len(bases) != len(order_lines)
+                    or {base['record'].id for base in bases} != set(order_lines.ids)):
                 self._deny_incomplete_source()
-            account_by_line[line.id] = account.id
+            for base in bases:
+                line, account = base['record'], base.get('account_id')
+                if (line._name != 'pos.order.line' or line.order_id != order
+                        or not account or account._name != 'account.account'):
+                    self._deny_incomplete_source()
+                account_by_line[line.id] = account.id
+            bases_by_order[order.id] = bases
         accounts = self.env['account.account'].browse(sorted(set(account_by_line.values())))
         accounts.check_access('read')
         account_by_id = {account.id: account for account in accounts}
+        native_amounts = self._native_global_pos_amounts_batch([
+            (order, by_order[order.id], bases_by_order[order.id]) for order in eligible
+            if by_order[order.id] and order.source == 'pos'
+            and company.tax_calculation_rounding_method == 'round_globally'
+            and not order.session_id.config_id.cash_rounding
+        ], company)
+        del bases_by_order
         # Same company/timezone for this invocation, not an inter-call cache.
         zone = self._company_timezone(company) if eligible.filtered(lambda order: order.source != 'baseer_summary') else None
         entries = []
@@ -570,9 +612,7 @@ class BaseerOperationsReport(models.AbstractModel):
             if (order.source == 'pos'
                     and company.tax_calculation_rounding_method == 'round_globally'
                     and not order.session_id.config_id.cash_rounding):
-                net_by_line, gross_by_line, source_tax = self._native_global_pos_amounts(
-                    order, company, lines,
-                )
+                net_by_line, gross_by_line, source_tax = native_amounts[order.id]
                 excluded['native_pos_tax_rounding'] += 1
             gross = sum(gross_by_line.values(), Decimal('0'))
             net = sum(net_by_line.values(), Decimal('0'))
@@ -849,7 +889,8 @@ class BaseerOperationsReport(models.AbstractModel):
         return allocated
 
     @api.model
-    def _purchase_outflows(self, company, start, end, journal_ids, sections, excluded):
+    def _purchase_outflows(self, company, start, end, journal_ids, sections, excluded,
+                           claimed_statement_ids=frozenset()):
         """Limited proof: one-line company-currency bill paid by a bank statement.
 
         Neither a posted bill nor a registered payment on an outstanding
@@ -881,6 +922,11 @@ class BaseerOperationsReport(models.AbstractModel):
         recognized_direct = set()
         cumulative = {}
         for statement in statements.sorted(lambda item: (item.date, item.id)):
+            # Only the owner collector supplies these invocation-local claims,
+            # after proving the complete HR bank event. The source ID/ACL
+            # census above still includes every statement, including claims.
+            if statement.id in claimed_statement_ids:
+                continue
             statement.check_access('read')
             journal = statement.journal_id
             journal.check_access('read')
@@ -1309,7 +1355,7 @@ class BaseerOperationsReport(models.AbstractModel):
 
     @api.model
     def _native_payment_outflows(self, company, start, end, journal_ids,
-                                 sections, excluded):
+                                 sections, excluded, claimed_payment_ids=frozenset()):
         """Count a fully assigned, direct-liquidity vendor payment once.
 
         An old reconciliation cannot prove that the bill was the payment's
@@ -1367,7 +1413,7 @@ class BaseerOperationsReport(models.AbstractModel):
         else:
             batch_payments = set()
         for payment in payments:
-            if payment.id in batch_payments:
+            if payment.id in batch_payments or payment.id in claimed_payment_ids:
                 continue
             move = payment.move_id
             move.check_access('read')
@@ -1389,6 +1435,13 @@ class BaseerOperationsReport(models.AbstractModel):
             if any(item.company_id != company or item.journal_id != journal
                    for item in lines):
                 self._deny_incomplete_source()
+            # An outstanding-account payment is not itself a cash movement.
+            # Its later bank statement, if any, is proved by the statement
+            # collector. Classify by the actual posted lines, not today's
+            # payment-method configuration. The full liquidity census still
+            # rejects every cash decrease without a proven allocation.
+            if not lines.filtered(lambda item: item.account_id.account_type == 'asset_cash'):
+                continue
             if journal_ids and journal.id not in journal_ids:
                 continue
             self._assert_visible(

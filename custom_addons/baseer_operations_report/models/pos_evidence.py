@@ -14,6 +14,36 @@ class OperationsPosEvidence(models.AbstractModel):
         return Decimal(self.env['baseer.profit.loss.report']._format_money(
             self._decimal(value), company.currency_id).replace(',', ''))
 
+    def _pos_evidence_fiscal_positions(self, positions):
+        """A hidden fiscal mapping must not silently fall back to its source."""
+        positions = self.env['account.fiscal.position'].browse(positions.ids)
+        positions.check_access('read')
+        if not positions:
+            return
+        mapped_taxes = positions.tax_ids
+        for records, name in ((positions, 'tax_ids'), (mapped_taxes, 'original_tax_ids')):
+            records.check_access('read')
+            records.flush_recordset([name])
+            relation = records._fields[name]
+            targets = records[name]
+            targets.check_access('read')
+            self.env.cr.execute(
+                'SELECT "%s", "%s" FROM "%s" WHERE "%s"=ANY(%%s)' % (
+                    relation.column1, relation.column2, relation.relation, relation.column1),
+                [records.ids],
+            )
+            if set(self.env.cr.fetchall()) != {
+                    (record.id, target.id) for record in records for target in record[name]}:
+                self._deny_incomplete_source()
+        self._pos_evidence_tax_graph(mapped_taxes | mapped_taxes.original_tax_ids)
+        # Odoo's native map_account uses the separate account mapping rows.
+        # Prove those too before a hidden row can fall back to the old account.
+        mappings = positions.account_ids
+        inverse = positions._fields['account_ids'].inverse_name
+        mappings.flush_model([inverse])
+        self._assert_visible(mappings._table, inverse+'=ANY(%s)', [positions.ids], mappings)
+        (mappings.account_src_id | mappings.account_dest_id).check_access('read')
+
     def _pos_evidence_taxes(self, records):
         """Prove the raw M2M membership and every native group child first."""
         records.check_access('read')

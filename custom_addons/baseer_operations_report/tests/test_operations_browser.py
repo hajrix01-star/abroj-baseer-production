@@ -74,11 +74,11 @@ class TestOperationsBrowser(HttpCase):
             const switcher = await waitFor(() => host.querySelector('.o_baseer_report_switcher'), 'installed report selector');
             switcher.click();
             const operations = await waitFor(() => [...document.querySelectorAll('.dropdown-item')].find(
-                (item) => /Gross Operations|العمليات الإجمالية/.test(item.textContent)), 'operations selector entry');
+                (item) => /Sales and Payments Summary|ملخص المبيعات والمدفوعات/.test(item.textContent)), 'owner summary selector entry');
             operations.click();
             await waitFor(() => host.querySelector('.o_baseer_go_report'), 'operations mounted through selector');
             if (host.querySelector('.o_baseer_vat_report')) { throw new Error('Previous VAT report remained visible'); }
-            await waitFor(() => host.querySelector('.o_baseer_go_report .o_baseer_pl_net_income'), 'operations preview');
+            await waitFor(() => host.querySelector('.o_baseer_go_report .o_baseer_owner_difference'), 'owner summary preview');
             if (host.querySelector('.o_baseer_go_incomplete')) { throw new Error('Proven source was hidden'); }
             const periodButton = () => host.querySelector('button[aria-label="Period"], button[aria-label="الفترة"]');
             periodButton().click();
@@ -90,19 +90,19 @@ class TestOperationsBrowser(HttpCase):
             const month = await waitFor(() => [...document.querySelectorAll('.o_baseer_pl_period_menu .o_baseer_pl_menu_row')].find(
                 (row) => /Month|شهر/.test(row.textContent)), 'month filter');
             month.querySelector('.o_baseer_pl_menu_select').click();
-            await waitFor(() => host.querySelector('.o_baseer_go_report .o_baseer_pl_net_income') && !host.querySelector('.o_baseer_reports_hub_status'), 'month report');
+            await waitFor(() => host.querySelector('.o_baseer_go_report .o_baseer_owner_difference') && !host.querySelector('.o_baseer_reports_hub_status'), 'month report');
 
             const comparison = host.querySelector('button[aria-label="Comparison"], button[aria-label="المقارنة"]');
             comparison.click();
             const lastYear = await waitFor(() => [...document.querySelectorAll('.o_baseer_pl_comparison_menu .dropdown-item')].find(
                 (item) => /Same period last year|الفترة نفسها العام الماضي/.test(item.textContent)), 'last-year comparison');
             lastYear.click();
-            await waitFor(() => host.querySelectorAll('.o_baseer_pl_table thead th').length === 3, 'comparison column');
+            await waitFor(() => host.querySelectorAll('.o_baseer_owner_period').length === 2, 'comparison periods');
             comparison.click();
             const none = await waitFor(() => [...document.querySelectorAll('.o_baseer_pl_comparison_menu .dropdown-item')].find(
                 (item) => /No comparison|دون مقارنة/.test(item.textContent)), 'no comparison');
             none.click();
-            await waitFor(() => host.querySelectorAll('.o_baseer_pl_table thead th').length === 2, 'single period');
+            await waitFor(() => host.querySelectorAll('.o_baseer_owner_period').length === 1, 'single period');
 
             const currentMonth = periodButton().textContent;
             periodButton().click();
@@ -110,14 +110,14 @@ class TestOperationsBrowser(HttpCase):
                 (row) => /Month|شهر/.test(row.textContent)), 'month navigation');
             previousMonth.querySelector('.o_baseer_pl_row_navigation button').click();
             await waitFor(() => host.querySelector('.o_baseer_go_incomplete'), 'unproven prior month');
-            if (host.querySelector('.o_baseer_pl_table') || periodButton().textContent === currentMonth) {
+            if (host.querySelector('.o_baseer_owner_summary') || periodButton().textContent === currentMonth) {
                 throw new Error('Unproven period leaked amounts or did not advance');
             }
             periodButton().click();
             const nextMonth = await waitFor(() => [...document.querySelectorAll('.o_baseer_pl_period_menu .o_baseer_pl_menu_row')].find(
                 (row) => /Month|شهر/.test(row.textContent)), 'return month navigation');
             nextMonth.querySelectorAll('.o_baseer_pl_row_navigation button')[1].click();
-            await waitFor(() => host.querySelector('.o_baseer_go_report .o_baseer_pl_net_income'), 'proven month restored');
+            await waitFor(() => host.querySelector('.o_baseer_go_report .o_baseer_owner_difference'), 'proven month restored');
             if (periodButton().textContent !== currentMonth) { throw new Error('Month anchor was not restored'); }
 
             const journals = host.querySelector('.o_baseer_pl_journals');
@@ -127,18 +127,13 @@ class TestOperationsBrowser(HttpCase):
             journal.click();
             await waitFor(() => host.querySelector('.o_baseer_pl_partial'), 'selected-journal marker');
             journals.querySelector('summary').click();
-            host.querySelector('.o_baseer_pl_income .o_baseer_pl_toggle').click();
-            const account = await waitFor(() => [...host.querySelectorAll('.o_baseer_pl_account')].find(
-                (row) => row.textContent.includes('__ACCOUNT_CODE__')), 'source account');
-            account.querySelector('button.o_baseer_pl_account_amount').click();
-            await waitFor(() => host.querySelector('.o_baseer_go_detail_page .o_baseer_go_events tbody tr'), 'separate detail page');
-            if (host.querySelector('.o_baseer_pl_table:not(.o_baseer_go_events)')) {
-                throw new Error('Summary table still visible on detail page');
+            const last = await waitFor(() => host.querySelector('.o_baseer_owner_difference'), 'owner summary after journal filter');
+            if (host.querySelector('.o_baseer_pl_table, .o_baseer_go_detail_page')) {
+                throw new Error('Legacy financial table or account-detail path remained visible');
             }
-            host.querySelector('.o_baseer_go_back').click();
-            const last = await waitFor(() => host.querySelector('.o_baseer_pl_net_income'), 'returned summary');
-            const filler = document.createElement('tr');
-            filler.innerHTML = '<td colspan="2" style="height:1600px">Scroll fixture</td>';
+            const filler = document.createElement('div');
+            filler.style.height = '1600px';
+            filler.textContent = 'Scroll fixture';
             last.before(filler);
             if (hub.scrollHeight <= hub.clientHeight || getComputedStyle(hub).overflowY !== 'auto') {
                 throw new Error('Report action is not vertically scrollable');

@@ -15,7 +15,7 @@ function ownerSnapshot(companyId = 1, sales = "115.00") {
     return {
         company_id: companyId, complete: true, currency_code: "SAR",
         title: "ملخص المبيعات والمدفوعات", basis: "Recorded sales include uncollected sales.",
-        period_controls: { anchor_date: "2026-10-22", options: [] }, comparison_controls: {}, periods: [{
+        period_controls: { anchor_date: "2026-10-22", options: [{ kind: "month", display_label: "Month" }] }, comparison_controls: {}, periods: [{
             key: "current", label: "October", display_label: "October 2026",
             date_from: "2026-10-01", date_to: "2026-10-31", has_unclassified_outflows: true,
             totals: [
@@ -142,10 +142,6 @@ test("Arabic owner totals preserve a negative server string and accessible perio
     expect(difference.classList.contains("o_baseer_report_amount")).toBe(true);
     expect(difference.classList.contains("is-negative")).toBe(true);
     expect(document.querySelector(".o_baseer_owner_value small").classList.contains("o_baseer_report_amount")).toBe(true);
-    await waitUntil(() => {
-        const button = document.querySelector('button[aria-label="الفترة"]');
-        return button && !button.disabled;
-    });
     const periodButton = document.querySelector('button[aria-label="الفترة"]');
     expect(periodButton).not.toBe(null);
     periodButton.click();

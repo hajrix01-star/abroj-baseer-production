@@ -27,7 +27,8 @@
         flex-wrap: wrap;
         gap: 0.35rem;
         max-width: 100%;
-        direction: ltr;
+        // Follow the report's reading order; each numeric value stays isolated.
+        direction: inherit;
     }
     .o_baseer_owner_absent { color: var(--baseer-report-muted); }
     .o_baseer_owner_label { width: auto; max-width: 100%; overflow-wrap: anywhere; }

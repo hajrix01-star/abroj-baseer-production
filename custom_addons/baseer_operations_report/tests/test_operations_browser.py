@@ -91,6 +91,10 @@ class TestOperationsBrowser(HttpCase):
             if (Math.min(amountBox.bottom, percentageBox.bottom) <= Math.max(amountBox.top, percentageBox.top)) {
                 throw new Error('Percentage added a second line to the owner row');
             }
+            const rtl = getComputedStyle(host.querySelector('.o_baseer_go_report')).direction === 'rtl';
+            if (rtl ? percentageBox.left < amountBox.right - 1 : percentageBox.right > amountBox.left + 1) {
+                throw new Error('Percentage must precede the amount in the report reading direction');
+            }
             if (getComputedStyle(host.querySelector('.o_baseer_owner_summary')).display !== 'block') {
                 throw new Error('Owner paper retained the extra grid spacing');
             }

@@ -6,15 +6,23 @@
         color: #614a22;
     }
 
-    .o_baseer_owner_summary { display: grid; gap: 1rem; }
-    .o_baseer_owner_basis { color: var(--baseer-report-muted); margin: -0.35rem 0 0; }
+    .o_baseer_owner_summary { display: block; }
+    .o_baseer_owner_basis { color: var(--baseer-report-muted); margin: 0 0 0.5rem; }
     .o_baseer_owner_table .o_baseer_owner_percentage {
-        display: block;
+        display: inline-block;
         color: var(--baseer-report-muted);
         font-size: 0.76rem;
         font-weight: 400;
     }
-    .o_baseer_owner_amount_stack { display: block; }
+    .o_baseer_owner_amount_stack {
+        display: inline-flex;
+        align-items: baseline;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+        max-width: 100%;
+        direction: ltr;
+    }
     .o_baseer_owner_absent { color: var(--baseer-report-muted); }
 }
 

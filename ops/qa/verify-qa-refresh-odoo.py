@@ -37,7 +37,7 @@ try:
         signatures = []
         for lang in ['ar_001', 'en_US']:
             report = env['baseer.operations.report'].with_user(user).with_context(
-                allowed_company_ids=user.company_ids.ids, lang=lang, tz='Asia/Riyadh',
+                allowed_company_ids=[company_id], lang=lang, tz='Asia/Riyadh',
             )
             filters = {
                 'company_id': company_id, 'date_from': '2026-10-01',

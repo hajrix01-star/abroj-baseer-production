@@ -81,6 +81,22 @@ class TestOperationsBrowser(HttpCase):
             await waitFor(() => host.querySelector('.o_baseer_go_report .o_baseer_owner_difference'), 'owner summary preview');
             const ownerTable = () => host.querySelector('.o_baseer_pl_table.o_baseer_owner_table');
             if (!ownerTable()) { throw new Error('Owner P&L table was not rendered'); }
+            // Regression: percentages must share the amount's line at both
+            // native test widths, not make every payment-channel row taller.
+            const percentage = ownerTable().querySelector('.o_baseer_owner_percentage');
+            if (!percentage) { throw new Error('Fixture payment-channel percentage missing'); }
+            const amount = percentage.parentElement.querySelector('strong');
+            const amountBox = amount.getBoundingClientRect();
+            const percentageBox = percentage.getBoundingClientRect();
+            if (Math.min(amountBox.bottom, percentageBox.bottom) <= Math.max(amountBox.top, percentageBox.top)) {
+                throw new Error('Percentage added a second line to the owner row');
+            }
+            if (getComputedStyle(host.querySelector('.o_baseer_owner_summary')).display !== 'block') {
+                throw new Error('Owner paper retained the extra grid spacing');
+            }
+            if (ownerTable().scrollWidth > ownerTable().clientWidth + 1) {
+                throw new Error('Compact owner table overflowed its viewport');
+            }
             const salesToggle = ownerTable().querySelector('.o_baseer_owner_section .o_baseer_pl_toggle');
             if (!salesToggle || salesToggle.tagName !== 'BUTTON') { throw new Error('Sales fold is not keyboard accessible'); }
             salesToggle.focus();

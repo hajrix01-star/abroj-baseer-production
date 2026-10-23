@@ -165,6 +165,8 @@ class RefreshContracts(unittest.TestCase):
                                ('/mnt/third-party-addons', refresh.release / 'third_party_addons')):
             mounts.append({'Destination': target, 'Type': 'bind', 'Source': str(source), 'RW': False})
         odoo = container('odoo-id', engine.ODOO_IMAGE, ['POSTGRES_USER=qa_runner'], mounts)
+        odoo['Mounts'].append({'Destination': '/mnt/extra-addons', 'Type': 'volume',
+                              'Name': 'image-extra', 'Source': str(refresh.state / 'extra'), 'RW': True})
         network = {'Name': engine.NETWORK, 'Driver': 'bridge', 'Internal': True, 'EnableIPv6': False,
                    'IPAM': {'Config': [{'Subnet': engine.SUBNET, 'Gateway': '172.31.134.1'}]},
                    'Containers': {'pg-id': {}, 'odoo-id': {}}}
@@ -177,7 +179,9 @@ class RefreshContracts(unittest.TestCase):
             baseline, network, pg, odoo = self.http_checkpoint(refresh)
             original = {name: (refresh.state / name).read_bytes() for name in
                         ('protected-before.json', 'protected-after.json', 'network-proof.json')}
-            with patch.object(engine, 'inspect', side_effect=[network, pg, odoo]), \
+            (refresh.state / 'extra').mkdir()
+            with patch.object(engine, 'inspect', side_effect=[network, pg, odoo, {'Config': {'Volumes': {'/mnt/extra-addons': {}}}}]), \
+                    patch.object(engine, 'volume', return_value=refresh.state / 'extra'), \
                     patch.object(engine, 'fingerprints', return_value=baseline), \
                     patch.object(engine, 'run', side_effect=lambda args, **kwargs: events.append(tuple(args)) or 'ready'), \
                     patch.object(refresh, 'compose_run', side_effect=lambda *args: events.append(('compose',) + args)), \
@@ -209,6 +213,21 @@ class RefreshContracts(unittest.TestCase):
             with patch.object(engine, 'inspect', side_effect=[network, pg, odoo]), \
                     patch.object(engine, 'fingerprints', return_value=baseline), patch.object(engine, 'run') as run:
                 with self.assertRaisesRegex(RuntimeError, 'unexpected QA network checkpoint'):
+                    refresh.recover_http({}, 'resume-12345')
+                run.assert_not_called()
+
+    def test_http_recovery_refuses_nonempty_image_extra_addons(self):
+        refresh = self.make()
+        with tempfile.TemporaryDirectory(dir=Path(__file__).parent) as directory:
+            refresh.state = Path(directory)
+            baseline, network, pg, odoo = self.http_checkpoint(refresh)
+            extra = refresh.state / 'extra'
+            extra.mkdir()
+            (extra / 'unexpected.py').write_text('unexpected')
+            with patch.object(engine, 'inspect', side_effect=[network, pg, odoo, {'Config': {'Volumes': {'/mnt/extra-addons': {}}}}]), \
+                    patch.object(engine, 'volume', return_value=extra), \
+                    patch.object(engine, 'fingerprints', return_value=baseline), patch.object(engine, 'run') as run:
+                with self.assertRaisesRegex(RuntimeError, 'unexpected image extra-addons contents'):
                     refresh.recover_http({}, 'resume-12345')
                 run.assert_not_called()
 

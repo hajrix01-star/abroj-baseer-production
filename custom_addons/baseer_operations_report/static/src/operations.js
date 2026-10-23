@@ -1,7 +1,7 @@
 /** @odoo-module **/
 
 import { BaseerProfitLossReport } from "@baseer_profit_loss_report/profit_loss";
-import { onWillDestroy } from "@odoo/owl";
+import { onWillDestroy, useEffect, useRef } from "@odoo/owl";
 import { ConnectionLostError } from "@web/core/network/rpc";
 import { registry } from "@web/core/registry";
 
@@ -25,6 +25,12 @@ const labels = {
         periods: "فترات", periodOrder: "ترتيب الفترات", descending: "تنازلي", ascending: "تصاعدي",
         previous: "السابق", next: "التالي", from: "من", to: "إلى", current: "الحالية",
         details: "التفاصيل", amount: "المبلغ",
+        back: "العودة إلى الملخص", source: "عرض المستند", date: "التاريخ", total: "الإجمالي",
+        detailLoading: "جارٍ تحميل العمليات…", noEvents: "لا توجد عمليات لهذا البند في الفترة المحددة.",
+        detailError: "تعذر تحميل التفاصيل. تحقق من الاتصال والصلاحيات ثم أعد المحاولة.",
+        changed: "تغيرت العمليات منذ عرض الملخص. حدّث الملخص لعرض الأرقام والتفاصيل المتطابقة.",
+        refresh: "تحديث الملخص", page: "صفحة", count: "عدد المساهمات",
+        allocated: "المبالغ أدناه هي مساهمة كل عملية في البند المختار، وقد تختلف عن إجمالي المستند. في بند الفرق تُعرض المدفوعات بالسالب.",
     },
     en: {
         title: "Sales and Payments Summary", company: "Company", journals: "Journals",
@@ -42,6 +48,12 @@ const labels = {
         periods: "Periods", periodOrder: "Period order", descending: "Descending", ascending: "Ascending",
         previous: "Previous", next: "Next", from: "From", to: "To", current: "Current",
         details: "Details", amount: "Amount",
+        back: "Back to summary", source: "View document", date: "Date", total: "Total",
+        detailLoading: "Loading operations…", noEvents: "No operations for this item in the selected period.",
+        detailError: "Could not load details. Check the connection and access rights, then retry.",
+        changed: "Operations have changed since the summary was shown. Refresh the summary to see matching amounts and details.",
+        refresh: "Refresh summary", page: "Page", count: "Contributions",
+        allocated: "Amounts below are each operation’s contribution to the selected item and may differ from the document total. Payments are negative in the difference item.",
     },
 };
 
@@ -84,7 +96,8 @@ export function prepareOperationsSnapshot(snapshot, companyName, selectedJournal
                 display_label: period.display_label || period.label };
         }
         const totals = period.totals;
-        if (!Array.isArray(totals) || totals.length !== TOTAL_KEYS.length ||
+        if (!/^[a-f0-9]{64}$/.test(period.revision || "") ||
+            !Array.isArray(totals) || totals.length !== TOTAL_KEYS.length ||
             new Set(totals.map((row) => row?.key)).size !== TOTAL_KEYS.length ||
             TOTAL_KEYS.some((key) => !totals.some((row) => row?.key === key && text(row.label) && serverMoney(row))) ||
             !rows(period.channels, true) || !uniqueKeys(period.channels) || !Array.isArray(period.outflows) ||
@@ -186,6 +199,22 @@ export class BaseerOperationsPreview extends BaseerProfitLossReport {
         this.contextLoading = false;
         this.snapshotRequest = null;
         this.disposed = false;
+        this.state.ownerDetail = null;
+        this.detailRequestToken = 0;
+        this.reportRoot = useRef("reportRoot");
+        this.detailFocusPending = false;
+        useEffect(() => {
+            if (!this.detailFocusPending) { return; }
+            this.detailFocusPending = false;
+            const root = this.reportRoot.el;
+            if (this.state.ownerDetail) {
+                root?.querySelector(".o_baseer_owner_detail_title")?.focus();
+            } else if (this.detailReturnTarget) {
+                const target = this.detailReturnTarget;
+                [...(root?.querySelectorAll("[data-owner-row]") || [])].find((button) =>
+                    button.dataset.ownerRow === target.row && button.dataset.ownerPeriod === target.period)?.focus();
+            }
+        }, () => [this.state.ownerDetail, this.state.ownerDetail?.loading]);
         onWillDestroy(() => {
             this.disposed = true;
             this.requestToken += 1;
@@ -283,9 +312,105 @@ export class BaseerOperationsPreview extends BaseerProfitLossReport {
 
     invalidate() {
         super.invalidate();
+        this.detailRequestToken = (this.detailRequestToken || 0) + 1;
+        this.state.ownerDetail = null;
         this.state.incomplete = false;
         this.state.incompletePeriod = null;
         this.state.incompleteControls = null;
+    }
+
+    openOwnerDetails(row, periodKey = null) {
+        if (!this.appliedFilters || this.state.loading || !this.state.report?.complete) { return; }
+        // Labels prefer the current period, then the first column containing
+        // this row. Each amount always selects its own column, never a guess.
+        const period = periodKey ? this.reportPeriods.find((item) => item.key === periodKey) :
+            this.reportPeriods.find((item) => item.key === "current" && row.amounts[item.key]) ||
+            this.reportPeriods.find((item) => row.amounts[item.key]);
+        if (!period || !row.amounts[period.key]) { return; }
+        if (this.state.ownerDetail?.rowKey === row.key &&
+            this.state.ownerDetail?.periodKey === period.key && this.state.ownerDetail.loading) { return; }
+        this.detailReturnTarget = { row: row.key, period: periodKey || "" };
+        this.detailFocusPending = true;
+        this.state.ownerDetail = { rowKey: row.key, periodKey: period.key, revision: period.revision,
+            label: row.label, periodLabel: period.display_label || period.label,
+            expectedAmount: row.amounts[period.key].amount, expectedNegative: row.amounts[period.key].negative,
+            page: 1, loading: false, changed: false, error: "", data: null, opening: false };
+        return this.loadOwnerDetails(1);
+    }
+
+    closeOwnerDetails() {
+        this.detailRequestToken += 1;
+        this.detailFocusPending = true;
+        this.state.ownerDetail = null;
+    }
+
+    async loadOwnerDetails(page) {
+        const detail = this.state.ownerDetail;
+        if (!detail || detail.loading || detail.changed || !this.appliedFilters) { return; }
+        const token = ++this.detailRequestToken;
+        const reportToken = this.requestToken;
+        const companyId = this.activeCompanyId;
+        const current = () => !this.disposed && token === this.detailRequestToken &&
+            reportToken === this.requestToken && companyId === this.activeCompanyId;
+        this.detailFocusPending = true;
+        detail.loading = true;
+        detail.error = "";
+        detail.data = null;
+        detail.page = page;
+        try {
+            const result = await this.orm.call(MODEL, "get_owner_details", [this.appliedFilters,
+                detail.rowKey, detail.periodKey, detail.revision, page]);
+            if (!current()) { return; }
+            if (result?.changed === true) { detail.changed = true; return; }
+            if (!result || result.changed !== false || result.company_id !== companyId ||
+                result.row_key !== detail.rowKey || result.period_key !== detail.periodKey ||
+                result.revision !== detail.revision || result.page !== page || result.page_size !== 50 ||
+                !Number.isSafeInteger(result.total_count) || result.total_count < 0 ||
+                !serverMoney(result) || !text(result.label) || !text(result.period_label) ||
+                !Array.isArray(result.events) || result.events.length > 50 ||
+                !uniqueKeys(result.events.map((event) => ({ key: event.event_key }))) ||
+                !result.events.every((event) => /^[a-f0-9]{64}$/.test(event.event_key || "") &&
+                    text(event.label) && /^\d{4}-\d{2}-\d{2}$/.test(event.date || "") && serverMoney(event))) {
+                throw new Error("Unexpected owner-detail contract");
+            }
+            // String equality is a consistency guard, never browser arithmetic.
+            if (result.amount !== detail.expectedAmount || result.negative !== detail.expectedNegative) {
+                detail.changed = true;
+                return;
+            }
+            detail.data = result;
+        } catch (_error) {
+            if (current()) { detail.error = this.labels.detailError; }
+        } finally {
+            if (current()) { detail.loading = false; }
+        }
+    }
+
+    async openOwnerSource(event) {
+        const detail = this.state.ownerDetail;
+        if (!detail?.data || detail.loading || detail.opening || detail.changed || !this.appliedFilters) { return; }
+        const token = this.detailRequestToken;
+        const reportToken = this.requestToken;
+        const companyId = this.activeCompanyId;
+        const current = () => !this.disposed && token === this.detailRequestToken &&
+            reportToken === this.requestToken && companyId === this.activeCompanyId;
+        detail.opening = true;
+        detail.error = "";
+        try {
+            const action = await this.orm.call(MODEL, "action_owner_source", [this.appliedFilters,
+                detail.rowKey, detail.periodKey, detail.revision, event.event_key]);
+            if (!current()) { return; }
+            if (action?.changed === true) {
+                detail.changed = true;
+                detail.data = null;
+                return;
+            }
+            await this.env.services.action.doAction(action);
+        } catch (_error) {
+            if (current()) { detail.error = this.labels.detailError; detail.data = null; }
+        } finally {
+            if (current()) { detail.opening = false; }
+        }
     }
 
     apply(direction = 0) {

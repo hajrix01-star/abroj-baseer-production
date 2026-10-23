@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
     <t t-name="baseer_operations_report.Preview">
-        <main class="o_baseer_pl_report o_baseer_go_report" t-att-aria-busy="state.loading" t-att-dir="lang === 'ar' ? 'rtl' : 'ltr'" t-att-lang="lang">
+        <main t-ref="reportRoot" class="o_baseer_pl_report o_baseer_go_report" t-att-aria-busy="state.loading" t-att-dir="lang === 'ar' ? 'rtl' : 'ltr'" t-att-lang="lang">
             <header class="o_baseer_report_toolbar o_baseer_pl_toolbar">
                 <ReportSelector t-if="props.reportOptions" options="props.reportOptions" selectedKey="props.selectedReportKey" label="props.reportSelectorLabel" lang="lang" onSelect="props.onReportSelect"/>
                 <button t-if="state.report &amp;&amp; state.report.complete" type="button" class="btn btn-primary o_baseer_pl_pdf" t-att-disabled="state.loading || state.printing" t-on-click="printReport">PDF</button>
@@ -36,7 +36,7 @@
             <div t-if="state.error" class="alert alert-danger o_baseer_reports_hub_alert" role="alert"><span t-esc="state.error"/><button type="button" class="btn btn-secondary" t-att-disabled="state.loading" t-on-click="retryLoad" t-esc="labels.retry"/></div>
             <div t-if="state.loading" class="o_baseer_reports_hub_status" role="status" aria-live="polite" t-esc="labels.loading"/>
             <div t-if="state.report" class="o_baseer_report_canvas">
-                <section class="o_baseer_report o_baseer_pl_paper o_baseer_owner_summary" t-att-aria-label="state.report.title || labels.title">
+                <section t-if="!state.ownerDetail" class="o_baseer_report o_baseer_pl_paper o_baseer_owner_summary" t-att-aria-label="state.report.title || labels.title">
                     <header class="o_baseer_report_head"><div><h1 class="o_baseer_report_title" t-esc="state.report.title || labels.title"/><p class="o_baseer_report_period"><span t-esc="state.report.company.name"/></p></div><span class="o_baseer_report_meta" t-esc="state.report.company.currency_code"/></header>
                     <p class="o_baseer_owner_basis" t-esc="state.report.basis"/>
                     <p t-if="state.report.is_partial_journals" class="o_baseer_pl_partial" role="status" t-esc="labels.selectedJournals"/>
@@ -45,32 +45,54 @@
                         <tbody>
                             <t t-foreach="ownerTable.sections" t-as="section" t-key="section.key">
                                 <tr t-att-class="ownerRowClass(section)">
-                                    <th scope="row" t-att-data-label="labels.details"><button type="button" class="o_baseer_pl_toggle" t-att-aria-expanded="isOwnerExpanded(section) ? 'true' : 'false'" t-att-aria-label="section.label" t-on-click="() => this.toggleOwnerRow(section)"><i t-att-class="isOwnerExpanded(section) ? 'fa fa-caret-down' : 'fa fa-caret-right'" aria-hidden="true"/><span t-esc="section.label"/></button></th>
-                                    <td t-foreach="state.report.periods" t-as="period" t-key="period.key" class="is-number" t-att-data-label="period.display_label || period.label"><t t-set="value" t-value="ownerValue(section, period.key)"/><strong t-if="value" t-att-class="ownerAmountClass(value)" t-esc="value.amount"/><span t-else="" class="o_baseer_owner_absent">-</span></td>
+                                    <th scope="row" t-att-data-label="labels.details"><button type="button" class="o_baseer_pl_toggle o_baseer_owner_caret" t-att-aria-expanded="isOwnerExpanded(section) ? 'true' : 'false'" t-att-aria-label="section.label" t-on-click="() => this.toggleOwnerRow(section)"><i t-att-class="isOwnerExpanded(section) ? 'fa fa-caret-down' : 'fa fa-caret-right'" aria-hidden="true"/></button><button type="button" class="o_baseer_pl_account_amount o_baseer_owner_label" t-att-data-owner-row="section.key" data-owner-period="" t-on-click="() => this.openOwnerDetails(section)" t-esc="section.label"/></th>
+                                    <td t-foreach="state.report.periods" t-as="period" t-key="period.key" class="is-number" t-att-data-label="period.display_label || period.label"><t t-set="value" t-value="ownerValue(section, period.key)"/><button t-if="value" type="button" class="o_baseer_pl_account_amount" t-att-data-owner-row="section.key" t-att-data-owner-period="period.key" t-att-aria-label="section.label + ' · ' + period.label" t-on-click="() => this.openOwnerDetails(section, period.key)"><strong t-att-class="ownerAmountClass(value)" t-esc="value.amount"/></button><span t-else="" class="o_baseer_owner_absent">-</span></td>
                                 </tr>
                                 <t t-if="isOwnerExpanded(section)">
                                     <tr t-if="!section.children.length"><td t-att-colspan="state.report.periods.length + 1" class="o_baseer_pl_status" t-esc="section.emptyLabel === 'channels' ? labels.noChannels : labels.noOutflows"/></tr>
                                     <t t-foreach="section.children" t-as="row" t-key="row.key">
                                         <tr t-att-class="ownerRowClass(row)">
-                                            <th scope="row" t-att-data-label="labels.details"><button t-if="row.expandable" type="button" class="o_baseer_pl_toggle" t-att-aria-expanded="isOwnerExpanded(row) ? 'true' : 'false'" t-att-aria-label="row.label" t-on-click="() => this.toggleOwnerRow(row)"><i t-att-class="isOwnerExpanded(row) ? 'fa fa-caret-down' : 'fa fa-caret-right'" aria-hidden="true"/><span t-esc="row.label"/></button><span t-else="" t-esc="row.label"/></th>
-                                            <td t-foreach="state.report.periods" t-as="period" t-key="period.key" class="is-number" t-att-data-label="period.display_label || period.label"><t t-set="value" t-value="ownerValue(row, period.key)"/><span t-if="value" class="o_baseer_owner_amount_stack"><strong t-att-class="ownerAmountClass(value)" t-esc="value.amount"/><small t-if="value.percentage" t-att-class="ownerAmountClass(value, true)" t-esc="value.percentage"/></span><span t-else="" class="o_baseer_owner_absent">-</span></td>
+                                            <th scope="row" t-att-data-label="labels.details"><button t-if="row.expandable" type="button" class="o_baseer_pl_toggle o_baseer_owner_caret" t-att-aria-expanded="isOwnerExpanded(row) ? 'true' : 'false'" t-att-aria-label="row.label" t-on-click="() => this.toggleOwnerRow(row)"><i t-att-class="isOwnerExpanded(row) ? 'fa fa-caret-down' : 'fa fa-caret-right'" aria-hidden="true"/></button><button type="button" class="o_baseer_pl_account_amount o_baseer_owner_label" t-att-data-owner-row="row.key" data-owner-period="" t-on-click="() => this.openOwnerDetails(row)" t-esc="row.label"/></th>
+                                            <td t-foreach="state.report.periods" t-as="period" t-key="period.key" class="is-number" t-att-data-label="period.display_label || period.label"><t t-set="value" t-value="ownerValue(row, period.key)"/><button t-if="value" type="button" class="o_baseer_pl_account_amount" t-att-data-owner-row="row.key" t-att-data-owner-period="period.key" t-att-aria-label="row.label + ' · ' + period.label" t-on-click="() => this.openOwnerDetails(row, period.key)"><span class="o_baseer_owner_amount_stack"><strong t-att-class="ownerAmountClass(value)" t-esc="value.amount"/><small t-if="value.percentage" t-att-class="ownerAmountClass(value, true)" t-esc="value.percentage"/></span></button><span t-else="" class="o_baseer_owner_absent">-</span></td>
                                         </tr>
                                         <t t-if="row.expandable &amp;&amp; isOwnerExpanded(row)">
                                             <tr t-foreach="row.children" t-as="detail" t-key="detail.key" t-att-class="ownerRowClass(detail)">
-                                                <th scope="row" t-att-data-label="labels.details" t-esc="detail.label"/>
-                                                <td t-foreach="state.report.periods" t-as="period" t-key="period.key" class="is-number" t-att-data-label="period.display_label || period.label"><t t-set="value" t-value="ownerValue(detail, period.key)"/><strong t-if="value" t-att-class="ownerAmountClass(value)" t-esc="value.amount"/><span t-else="" class="o_baseer_owner_absent">-</span></td>
+                                                <th scope="row" t-att-data-label="labels.details"><button type="button" class="o_baseer_pl_account_amount o_baseer_owner_label" t-att-data-owner-row="detail.key" data-owner-period="" t-on-click="() => this.openOwnerDetails(detail)" t-esc="detail.label"/></th>
+                                                <td t-foreach="state.report.periods" t-as="period" t-key="period.key" class="is-number" t-att-data-label="period.display_label || period.label"><t t-set="value" t-value="ownerValue(detail, period.key)"/><button t-if="value" type="button" class="o_baseer_pl_account_amount" t-att-data-owner-row="detail.key" t-att-data-owner-period="period.key" t-att-aria-label="detail.label + ' · ' + period.label" t-on-click="() => this.openOwnerDetails(detail, period.key)"><strong t-att-class="ownerAmountClass(value)" t-esc="value.amount"/></button><span t-else="" class="o_baseer_owner_absent">-</span></td>
                                             </tr>
                                         </t>
                                     </t>
                                 </t>
                             </t>
                             <tr class="o_baseer_owner_difference o_baseer_pl_result o_baseer_pl_net_income">
-                                <th scope="row" t-att-data-label="labels.details" t-esc="ownerTable.difference.label"/>
-                                <td t-foreach="state.report.periods" t-as="period" t-key="period.key" class="is-number" t-att-data-label="period.display_label || period.label"><t t-set="value" t-value="ownerValue(ownerTable.difference, period.key)"/><strong t-if="value" t-att-class="ownerAmountClass(value)" t-esc="value.amount"/><span t-else="" class="o_baseer_owner_absent">-</span></td>
+                                <th scope="row" t-att-data-label="labels.details"><button type="button" class="o_baseer_pl_account_amount o_baseer_owner_label" t-att-data-owner-row="ownerTable.difference.key" data-owner-period="" t-on-click="() => this.openOwnerDetails(ownerTable.difference)" t-esc="ownerTable.difference.label"/></th>
+                                <td t-foreach="state.report.periods" t-as="period" t-key="period.key" class="is-number" t-att-data-label="period.display_label || period.label"><t t-set="value" t-value="ownerValue(ownerTable.difference, period.key)"/><button t-if="value" type="button" class="o_baseer_pl_account_amount" t-att-data-owner-row="ownerTable.difference.key" t-att-data-owner-period="period.key" t-att-aria-label="ownerTable.difference.label + ' · ' + period.label" t-on-click="() => this.openOwnerDetails(ownerTable.difference, period.key)"><strong t-att-class="ownerAmountClass(value)" t-esc="value.amount"/></button><span t-else="" class="o_baseer_owner_absent">-</span></td>
                             </tr>
                         </tbody>
                     </table></div>
                     <div t-if="hasUnclassifiedOutflows" class="o_baseer_report_notice o_baseer_owner_unclassified" role="status" t-esc="labels.unclassified"/>
+                </section>
+                <section t-if="state.ownerDetail" class="o_baseer_report o_baseer_pl_paper o_baseer_owner_detail_page" t-att-aria-busy="state.ownerDetail.loading">
+                    <button type="button" class="btn btn-secondary o_baseer_owner_back" t-on-click="closeOwnerDetails" t-esc="labels.back"/>
+                    <header class="o_baseer_report_head"><div><h1 class="o_baseer_report_title o_baseer_owner_detail_title" tabindex="-1" t-esc="state.ownerDetail.label"/><p class="o_baseer_report_period"><span t-esc="state.report.company.name"/> · <span t-esc="state.ownerDetail.periodLabel"/></p></div><span class="o_baseer_report_meta" t-esc="state.report.company.currency_code"/></header>
+                    <p class="o_baseer_owner_basis" t-esc="labels.allocated"/>
+                    <div t-if="state.ownerDetail.loading" class="o_baseer_reports_hub_status" role="status" aria-live="polite" t-esc="labels.detailLoading"/>
+                    <div t-if="state.ownerDetail.changed" class="o_baseer_report_notice" role="status"><span t-esc="labels.changed"/><button type="button" class="btn btn-secondary o_baseer_owner_refresh" t-on-click="() => this.apply()" t-esc="labels.refresh"/></div>
+                    <div t-if="state.ownerDetail.error" class="alert alert-danger" role="alert"><span t-esc="state.ownerDetail.error"/><button type="button" class="btn btn-secondary o_baseer_owner_retry" t-att-disabled="state.ownerDetail.loading || state.ownerDetail.opening" t-on-click="() => this.loadOwnerDetails(state.ownerDetail.page)" t-esc="labels.retry"/></div>
+                    <t t-if="state.ownerDetail.data">
+                        <t t-set="data" t-value="state.ownerDetail.data"/>
+                        <p class="o_baseer_owner_detail_total"><span t-esc="labels.total"/>: <strong t-att-class="ownerAmountClass(data)" t-esc="data.amount"/> · <span t-esc="labels.count"/>: <span class="o_baseer_report_amount" t-esc="data.total_count"/></p>
+                        <div t-if="!data.events.length" class="o_baseer_reports_hub_status" role="status" t-esc="labels.noEvents"/>
+                        <div t-else="" class="o_baseer_pl_table_wrap"><table class="o_baseer_pl_table o_baseer_owner_events">
+                            <thead><tr><th scope="col" t-esc="labels.details"/><th scope="col" class="is-number" t-esc="labels.date"/><th scope="col" class="is-number" t-esc="labels.amount"/></tr></thead>
+                            <tbody><tr t-foreach="data.events" t-as="event" t-key="event.event_key">
+                                <th scope="row"><button type="button" class="o_baseer_pl_account_amount o_baseer_owner_source" t-att-disabled="state.ownerDetail.opening" t-att-title="labels.source" t-on-click="() => this.openOwnerSource(event)" t-esc="event.label"/></th>
+                                <td class="is-number" t-att-data-label="labels.date"><span class="o_baseer_report_amount" t-esc="event.date"/></td>
+                                <td class="is-number" t-att-data-label="labels.amount"><button type="button" class="o_baseer_pl_account_amount" t-att-disabled="state.ownerDetail.opening" t-att-aria-label="labels.source + ' · ' + event.label" t-on-click="() => this.openOwnerSource(event)"><strong t-att-class="ownerAmountClass(event)" t-esc="event.amount"/></button></td>
+                            </tr></tbody>
+                        </table></div>
+                        <nav class="o_baseer_pl_pager" t-att-aria-label="labels.page"><button type="button" class="o_baseer_owner_previous" t-att-disabled="data.page &lt;= 1 || state.ownerDetail.opening" t-on-click="() => this.loadOwnerDetails(data.page - 1)" t-esc="labels.previous"/><span><t t-esc="labels.page"/> <span class="o_baseer_report_amount" t-esc="data.page"/></span><button type="button" class="o_baseer_owner_next" t-att-disabled="data.page * data.page_size >= data.total_count || state.ownerDetail.opening" t-on-click="() => this.loadOwnerDetails(data.page + 1)" t-esc="labels.next"/></nav>
+                    </t>
                 </section>
             </div>
         </main>

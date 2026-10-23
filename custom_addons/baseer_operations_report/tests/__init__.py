@@ -13,3 +13,4 @@ from . import test_owner_cash
 from . import test_owner_report
 from . import test_owner_hr
 from . import test_owner_pdf
+from . import test_owner_details

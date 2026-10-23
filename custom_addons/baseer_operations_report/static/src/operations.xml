@@ -40,20 +40,37 @@
                     <header class="o_baseer_report_head"><div><h1 class="o_baseer_report_title" t-esc="state.report.title || labels.title"/><p class="o_baseer_report_period"><span t-esc="state.report.company.name"/></p></div><span class="o_baseer_report_meta" t-esc="state.report.company.currency_code"/></header>
                     <p class="o_baseer_owner_basis" t-esc="state.report.basis"/>
                     <p t-if="state.report.is_partial_journals" class="o_baseer_pl_partial" role="status" t-esc="labels.selectedJournals"/>
-                    <section t-foreach="state.report.periods" t-as="period" t-key="period.key" class="o_baseer_owner_period" t-att-aria-label="period.display_label">
-                        <header class="o_baseer_owner_period_head"><h2 t-esc="period.display_label"/></header>
-                        <div class="o_baseer_owner_totals">
-                            <article t-foreach="period.top_totals" t-as="total" t-key="total.key" class="o_baseer_owner_total"><span t-esc="total.label"/><strong class="o_baseer_report_amount" t-att-class="total.negative ? 'is-negative' : ''" t-esc="total.amount"/></article>
-                        </div>
-                        <section class="o_baseer_owner_section" t-att-aria-label="labels.channels"><h3 t-esc="labels.channels"/></section>
-                        <ul t-if="period.channels.length" class="o_baseer_owner_list"><li t-foreach="period.channels" t-as="channel" t-key="channel.key"><span t-esc="channel.label"/><span class="o_baseer_owner_value"><strong class="o_baseer_report_amount" t-att-class="channel.negative ? 'is-negative' : ''" t-esc="channel.amount"/><small t-if="channel.percentage" class="o_baseer_report_amount" t-esc="channel.percentage"/></span></li></ul>
-                        <p t-else="" class="o_baseer_pl_status" t-esc="labels.noChannels"/>
-                        <section class="o_baseer_owner_section" t-att-aria-label="labels.outflows"><h3 t-esc="labels.outflows"/></section>
-                        <div t-if="period.has_unclassified_outflows" class="o_baseer_report_notice o_baseer_owner_unclassified" role="status" t-esc="labels.unclassified"/>
-                        <div t-if="period.outflows.length" class="o_baseer_owner_groups"><section t-foreach="period.outflows" t-as="group" t-key="group.key" class="o_baseer_owner_group"><header><h4 t-esc="group.label"/><strong class="o_baseer_report_amount" t-att-class="group.negative ? 'is-negative' : ''" t-esc="group.amount"/></header><ul t-if="group.rows.length" class="o_baseer_owner_list"><li t-foreach="group.rows" t-as="row" t-key="row.key"><span t-esc="row.label"/><strong class="o_baseer_report_amount" t-att-class="row.negative ? 'is-negative' : ''" t-esc="row.amount"/></li></ul></section></div>
-                        <p t-else="" class="o_baseer_pl_status" t-esc="labels.noOutflows"/>
-                        <article class="o_baseer_owner_difference"><span t-esc="period.difference.label"/><strong class="o_baseer_report_amount" t-att-class="period.difference.negative ? 'is-negative' : ''" t-esc="period.difference.amount"/></article>
-                    </section>
+                    <div class="o_baseer_pl_table_wrap"><table class="o_baseer_pl_table o_baseer_owner_table">
+                        <thead><tr><th scope="col" rowspan="2" t-esc="labels.details"/><th t-foreach="state.report.periods" t-as="period" t-key="period.key" scope="col" class="is-number"><span t-att-title="period.label" t-att-aria-label="period.label" t-esc="period.display_label || period.label"/></th></tr><tr><th t-foreach="state.report.periods" t-as="period" t-key="period.key" scope="col" class="is-number"><small t-esc="labels.amount"/></th></tr></thead>
+                        <tbody>
+                            <t t-foreach="ownerTable.sections" t-as="section" t-key="section.key">
+                                <tr t-att-class="ownerRowClass(section)">
+                                    <th scope="row" t-att-data-label="labels.details"><button type="button" class="o_baseer_pl_toggle" t-att-aria-expanded="isOwnerExpanded(section) ? 'true' : 'false'" t-att-aria-label="section.label" t-on-click="() => this.toggleOwnerRow(section)"><i t-att-class="isOwnerExpanded(section) ? 'fa fa-caret-down' : 'fa fa-caret-right'" aria-hidden="true"/><span t-esc="section.label"/></button></th>
+                                    <td t-foreach="state.report.periods" t-as="period" t-key="period.key" class="is-number" t-att-data-label="period.display_label || period.label"><t t-set="value" t-value="ownerValue(section, period.key)"/><strong t-if="value" t-att-class="ownerAmountClass(value)" t-esc="value.amount"/><span t-else="" class="o_baseer_owner_absent">-</span></td>
+                                </tr>
+                                <t t-if="isOwnerExpanded(section)">
+                                    <tr t-if="!section.children.length"><td t-att-colspan="state.report.periods.length + 1" class="o_baseer_pl_status" t-esc="section.emptyLabel === 'channels' ? labels.noChannels : labels.noOutflows"/></tr>
+                                    <t t-foreach="section.children" t-as="row" t-key="row.key">
+                                        <tr t-att-class="ownerRowClass(row)">
+                                            <th scope="row" t-att-data-label="labels.details"><button t-if="row.expandable" type="button" class="o_baseer_pl_toggle" t-att-aria-expanded="isOwnerExpanded(row) ? 'true' : 'false'" t-att-aria-label="row.label" t-on-click="() => this.toggleOwnerRow(row)"><i t-att-class="isOwnerExpanded(row) ? 'fa fa-caret-down' : 'fa fa-caret-right'" aria-hidden="true"/><span t-esc="row.label"/></button><span t-else="" t-esc="row.label"/></th>
+                                            <td t-foreach="state.report.periods" t-as="period" t-key="period.key" class="is-number" t-att-data-label="period.display_label || period.label"><t t-set="value" t-value="ownerValue(row, period.key)"/><span t-if="value" class="o_baseer_owner_amount_stack"><strong t-att-class="ownerAmountClass(value)" t-esc="value.amount"/><small t-if="value.percentage" t-att-class="ownerAmountClass(value, true)" t-esc="value.percentage"/></span><span t-else="" class="o_baseer_owner_absent">-</span></td>
+                                        </tr>
+                                        <t t-if="row.expandable &amp;&amp; isOwnerExpanded(row)">
+                                            <tr t-foreach="row.children" t-as="detail" t-key="detail.key" t-att-class="ownerRowClass(detail)">
+                                                <th scope="row" t-att-data-label="labels.details" t-esc="detail.label"/>
+                                                <td t-foreach="state.report.periods" t-as="period" t-key="period.key" class="is-number" t-att-data-label="period.display_label || period.label"><t t-set="value" t-value="ownerValue(detail, period.key)"/><strong t-if="value" t-att-class="ownerAmountClass(value)" t-esc="value.amount"/><span t-else="" class="o_baseer_owner_absent">-</span></td>
+                                            </tr>
+                                        </t>
+                                    </t>
+                                </t>
+                            </t>
+                            <tr class="o_baseer_owner_difference o_baseer_pl_result o_baseer_pl_net_income">
+                                <th scope="row" t-att-data-label="labels.details" t-esc="ownerTable.difference.label"/>
+                                <td t-foreach="state.report.periods" t-as="period" t-key="period.key" class="is-number" t-att-data-label="period.display_label || period.label"><t t-set="value" t-value="ownerValue(ownerTable.difference, period.key)"/><strong t-if="value" t-att-class="ownerAmountClass(value)" t-esc="value.amount"/><span t-else="" class="o_baseer_owner_absent">-</span></td>
+                            </tr>
+                        </tbody>
+                    </table></div>
+                    <div t-if="hasUnclassifiedOutflows" class="o_baseer_report_notice o_baseer_owner_unclassified" role="status" t-esc="labels.unclassified"/>
                 </section>
             </div>
         </main>

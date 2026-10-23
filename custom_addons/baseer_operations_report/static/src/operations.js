@@ -24,6 +24,7 @@ const labels = {
         previousPeriods: "الفترات السابقة", samePeriodLastYear: "الفترة نفسها العام الماضي",
         periods: "فترات", periodOrder: "ترتيب الفترات", descending: "تنازلي", ascending: "تصاعدي",
         previous: "السابق", next: "التالي", from: "من", to: "إلى", current: "الحالية",
+        details: "التفاصيل", amount: "المبلغ",
     },
     en: {
         title: "Sales and Payments Summary", company: "Company", journals: "Journals",
@@ -40,6 +41,7 @@ const labels = {
         previousPeriods: "Previous periods", samePeriodLastYear: "Same period last year",
         periods: "Periods", periodOrder: "Period order", descending: "Descending", ascending: "Ascending",
         previous: "Previous", next: "Next", from: "From", to: "To", current: "Current",
+        details: "Details", amount: "Amount",
     },
 };
 
@@ -54,6 +56,10 @@ function serverMoney(row) {
 function rows(items, requirePercentage = false) {
     return Array.isArray(items) && items.every((row) => text(row?.key) && text(row?.label) &&
         serverMoney(row) && (!requirePercentage || row.percentage === null || text(row.percentage)));
+}
+
+function uniqueKeys(items) {
+    return new Set(items.map((item) => item.key)).size === items.length;
 }
 
 // This adapter validates shape only. Amounts and percentages remain the exact
@@ -81,12 +87,14 @@ export function prepareOperationsSnapshot(snapshot, companyName, selectedJournal
         if (!Array.isArray(totals) || totals.length !== TOTAL_KEYS.length ||
             new Set(totals.map((row) => row?.key)).size !== TOTAL_KEYS.length ||
             TOTAL_KEYS.some((key) => !totals.some((row) => row?.key === key && text(row.label) && serverMoney(row))) ||
-            !rows(period.channels, true) || !Array.isArray(period.outflows) ||
+            !rows(period.channels, true) || !uniqueKeys(period.channels) || !Array.isArray(period.outflows) ||
+            !uniqueKeys(period.outflows) ||
             typeof period.has_unclassified_outflows !== "boolean") {
             throw new Error("Incomplete owner-summary values");
         }
         for (const group of period.outflows) {
-            if (!text(group?.key) || !text(group?.label) || !serverMoney(group) || !rows(group.rows || [])) {
+            if (!text(group?.key) || !text(group?.label) || !serverMoney(group) || !rows(group.rows || []) ||
+                !uniqueKeys(group.rows || [])) {
                 throw new Error("Incomplete owner-summary outflows");
             }
         }
@@ -94,8 +102,6 @@ export function prepareOperationsSnapshot(snapshot, companyName, selectedJournal
             ...period,
             role: period.key === "current" ? "primary" : "comparison",
             display_label: period.display_label || period.label,
-            top_totals: totals.filter((row) => row.key !== "difference"),
-            difference: totals.find((row) => row.key === "difference"),
         };
     });
     return {
@@ -110,6 +116,63 @@ export function prepareOperationsSnapshot(snapshot, companyName, selectedJournal
     };
 }
 
+// Presentation-only union. Values are the original server rows: this never
+// parses, totals, formats, or substitutes financial values in the browser.
+export function buildOwnerTable(periods) {
+    const sales = {
+        key: "total:incoming_total", kind: "section", label: "", amounts: Object.create(null), children: [],
+        emptyLabel: "channels", expandable: true,
+    };
+    const cash = {
+        key: "total:cash_total", kind: "section", label: "", amounts: Object.create(null), children: [],
+        emptyLabel: "outflows", expandable: true,
+    };
+    const difference = { key: "total:difference", kind: "result", label: "", amounts: Object.create(null) };
+    const channels = new Map();
+    const groups = new Map();
+
+    for (const period of periods) {
+        for (const total of period.totals) {
+            const target = total.key === "incoming_total" ? sales : total.key === "cash_total" ? cash : difference;
+            if (!target.label) { target.label = total.label; }
+            target.amounts[period.key] = total;
+        }
+        for (const channel of period.channels) {
+            const key = `channel:${channel.key}`;
+            let row = channels.get(key);
+            if (!row) {
+                row = { key, kind: "channel", label: channel.label, amounts: Object.create(null) };
+                channels.set(key, row);
+                sales.children.push(row);
+            }
+            row.amounts[period.key] = channel;
+        }
+        for (const group of period.outflows) {
+            const key = `outflow:${group.key}`;
+            let groupRow = groups.get(key);
+            if (!groupRow) {
+                groupRow = {
+                    key, kind: "group", label: group.label, amounts: Object.create(null), children: [], expandable: false,
+                };
+                groups.set(key, groupRow);
+                cash.children.push(groupRow);
+            }
+            groupRow.amounts[period.key] = group;
+            for (const detail of group.rows) {
+                const detailKey = `outflow:${group.key}:${detail.key}`;
+                let detailRow = groupRow.children.find((row) => row.key === detailKey);
+                if (!detailRow) {
+                    detailRow = { key: detailKey, kind: "detail", label: detail.label, amounts: Object.create(null) };
+                    groupRow.children.push(detailRow);
+                }
+                groupRow.expandable = true;
+                detailRow.amounts[period.key] = detail;
+            }
+        }
+    }
+    return { sections: [sales, cash], difference };
+}
+
 export class BaseerOperationsPreview extends BaseerProfitLossReport {
     static template = "baseer_operations_report.Preview";
 
@@ -119,6 +182,7 @@ export class BaseerOperationsPreview extends BaseerProfitLossReport {
         this.state.incompletePeriod = null;
         this.state.incompleteControls = null;
         this.state.contextReady = false;
+        this.resetOwnerExpansion();
         this.contextLoading = false;
         this.snapshotRequest = null;
         this.disposed = false;
@@ -183,6 +247,33 @@ export class BaseerOperationsPreview extends BaseerProfitLossReport {
     get labels() { return labels[this.lang]; }
     get periodSummary() { return this.state.incompletePeriod?.display_label || super.periodSummary; }
     get periodOptions() { return this.state.incompleteControls?.options || super.periodOptions; }
+    get ownerTable() { return buildOwnerTable(this.state.report?.periods || []); }
+    get hasUnclassifiedOutflows() {
+        return this.state.report?.periods.some((period) => period.has_unclassified_outflows) || false;
+    }
+
+    resetOwnerExpansion() {
+        this.state.ownerExpanded = { "total:incoming_total": true, "total:cash_total": true };
+    }
+
+    isOwnerExpanded(row) { return !!this.state.ownerExpanded[row.key]; }
+
+    toggleOwnerRow(row) {
+        if (this.state.loading || !row.expandable) { return; }
+        this.state.ownerExpanded[row.key] = !this.state.ownerExpanded[row.key];
+    }
+
+    ownerValue(row, periodKey) { return row.amounts[periodKey] || null; }
+
+    ownerAmountClass(value, percentage = false) {
+        return `${percentage ? "o_baseer_owner_percentage " : ""}o_baseer_report_amount${value?.negative ? " is-negative" : ""}`;
+    }
+
+    ownerRowClass(row) {
+        if (row.kind === "section") { return "o_baseer_pl_section o_baseer_owner_section"; }
+        if (row.kind === "group") { return "o_baseer_pl_account o_baseer_pl_subtotal o_baseer_owner_group"; }
+        return "o_baseer_pl_channel o_baseer_owner_detail";
+    }
 
     installContext(context) {
         super.installContext(context);
@@ -238,6 +329,7 @@ export class BaseerOperationsPreview extends BaseerProfitLossReport {
                 return;
             }
             this.state.report = prepared;
+            this.resetOwnerExpansion();
             this.appliedFilters = this.cloneFilters();
         } catch (error) {
             if (token === this.requestToken && generation === this.companyGeneration) {

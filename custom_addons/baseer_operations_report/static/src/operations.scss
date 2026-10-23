@@ -8,70 +8,18 @@
 
     .o_baseer_owner_summary { display: grid; gap: 1rem; }
     .o_baseer_owner_basis { color: var(--baseer-report-muted); margin: -0.35rem 0 0; }
-    .o_baseer_owner_period { display: grid; gap: 0.7rem; }
-    .o_baseer_owner_period + .o_baseer_owner_period {
-        border-top: 1px solid var(--baseer-report-line);
-        padding-top: 1rem;
-    }
-    .o_baseer_owner_period_head h2,
-    .o_baseer_owner_section h3,
-    .o_baseer_owner_group h4 { margin: 0; font-size: 0.95rem; }
-    .o_baseer_owner_totals { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.65rem; }
-    .o_baseer_owner_total,
-    .o_baseer_owner_difference {
-        display: flex;
-        align-items: baseline;
-        justify-content: space-between;
-        gap: 1rem;
-        padding: 0.75rem;
-        border: 1px solid var(--baseer-report-line);
-        background: #fff;
-    }
-    .o_baseer_owner_total span,
-    .o_baseer_owner_difference span { color: var(--baseer-report-muted); }
-    .o_baseer_owner_total strong,
-    .o_baseer_owner_difference strong,
-    .o_baseer_owner_group header strong,
-    .o_baseer_owner_list strong {
-        flex: 0 0 auto;
-        text-align: end;
-    }
-    .o_baseer_owner_list { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--baseer-report-line); }
-    .o_baseer_owner_list li,
-    .o_baseer_owner_group header {
-        display: flex;
-        align-items: baseline;
-        justify-content: space-between;
-        gap: 1rem;
-        padding: 0.55rem 0;
-        border-bottom: 1px solid var(--baseer-report-line);
-    }
-    .o_baseer_owner_list li > :first-child,
-    .o_baseer_owner_group h4 { min-width: 0; overflow-wrap: anywhere; }
-    .o_baseer_owner_value { display: inline-flex; align-items: baseline; gap: 0.5rem; }
-    .o_baseer_owner_value small {
-        flex: 0 0 auto;
+    .o_baseer_owner_table .o_baseer_owner_percentage {
+        display: block;
         color: var(--baseer-report-muted);
+        font-size: 0.76rem;
+        font-weight: 400;
     }
-    .o_baseer_owner_groups { display: grid; gap: 0.6rem; }
-    .o_baseer_owner_group { padding: 0.7rem; border: 1px solid var(--baseer-report-line); background: #fff; }
-    .o_baseer_owner_group header { padding-top: 0; font-weight: 700; }
-    .o_baseer_owner_difference {
-        margin-top: 0.35rem;
-        border-color: #5b7181;
-        background: #edf3f6;
-        font-size: 1.02rem;
-        font-weight: 700;
-    }
+    .o_baseer_owner_amount_stack { display: block; }
+    .o_baseer_owner_absent { color: var(--baseer-report-muted); }
 }
 
 @media (max-width: 560px) {
     .o_baseer_go_report {
-        .o_baseer_owner_totals { grid-template-columns: 1fr; }
-        .o_baseer_owner_period { gap: 0.6rem; }
-        .o_baseer_owner_list li,
-        .o_baseer_owner_group header,
-        .o_baseer_owner_total,
-        .o_baseer_owner_difference { padding-inline: 0.55rem; }
+        .o_baseer_owner_table .o_baseer_owner_percentage { text-align: end; }
     }
 }

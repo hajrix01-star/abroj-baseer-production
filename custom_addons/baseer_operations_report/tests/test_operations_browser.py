@@ -79,6 +79,18 @@ class TestOperationsBrowser(HttpCase):
             await waitFor(() => host.querySelector('.o_baseer_go_report'), 'operations mounted through selector');
             if (host.querySelector('.o_baseer_vat_report')) { throw new Error('Previous VAT report remained visible'); }
             await waitFor(() => host.querySelector('.o_baseer_go_report .o_baseer_owner_difference'), 'owner summary preview');
+            const ownerTable = () => host.querySelector('.o_baseer_pl_table.o_baseer_owner_table');
+            if (!ownerTable()) { throw new Error('Owner P&L table was not rendered'); }
+            const salesToggle = ownerTable().querySelector('.o_baseer_owner_section .o_baseer_pl_toggle');
+            if (!salesToggle || salesToggle.tagName !== 'BUTTON') { throw new Error('Sales fold is not keyboard accessible'); }
+            salesToggle.focus();
+            if (document.activeElement !== salesToggle || salesToggle.getAttribute('aria-expanded') !== 'true') {
+                throw new Error('Sales fold did not expose its initial expanded state');
+            }
+            salesToggle.click();
+            await waitFor(() => salesToggle.getAttribute('aria-expanded') === 'false', 'collapsed sales fold');
+            salesToggle.click();
+            await waitFor(() => salesToggle.getAttribute('aria-expanded') === 'true', 'expanded sales fold');
             if (host.querySelector('.o_baseer_go_incomplete')) { throw new Error('Proven source was hidden'); }
             const periodButton = () => host.querySelector('button[aria-label="Period"], button[aria-label="الفترة"]');
             periodButton().click();
@@ -97,12 +109,12 @@ class TestOperationsBrowser(HttpCase):
             const lastYear = await waitFor(() => [...document.querySelectorAll('.o_baseer_pl_comparison_menu .dropdown-item')].find(
                 (item) => /Same period last year|الفترة نفسها العام الماضي/.test(item.textContent)), 'last-year comparison');
             lastYear.click();
-            await waitFor(() => host.querySelectorAll('.o_baseer_owner_period').length === 2, 'comparison periods');
+            await waitFor(() => ownerTable().querySelectorAll('thead .is-number').length === 4, 'comparison columns');
             comparison.click();
             const none = await waitFor(() => [...document.querySelectorAll('.o_baseer_pl_comparison_menu .dropdown-item')].find(
                 (item) => /No comparison|دون مقارنة/.test(item.textContent)), 'no comparison');
             none.click();
-            await waitFor(() => host.querySelectorAll('.o_baseer_owner_period').length === 1, 'single period');
+            await waitFor(() => ownerTable().querySelectorAll('thead .is-number').length === 2, 'single period column');
 
             const currentMonth = periodButton().textContent;
             periodButton().click();
@@ -128,13 +140,16 @@ class TestOperationsBrowser(HttpCase):
             await waitFor(() => host.querySelector('.o_baseer_pl_partial'), 'selected-journal marker');
             journals.querySelector('summary').click();
             const last = await waitFor(() => host.querySelector('.o_baseer_owner_difference'), 'owner summary after journal filter');
-            if (host.querySelector('.o_baseer_pl_table, .o_baseer_go_detail_page')) {
-                throw new Error('Legacy financial table or account-detail path remained visible');
+            if (!ownerTable() || host.querySelector('.o_baseer_go_detail_page')) {
+                throw new Error('Owner P&L table or its local-only hierarchy was lost');
+            }
+            if (window.innerWidth <= 400 && ownerTable().scrollWidth > ownerTable().clientWidth + 1) {
+                throw new Error('Owner P&L table overflowed the narrow viewport');
             }
             const filler = document.createElement('div');
             filler.style.height = '1600px';
             filler.textContent = 'Scroll fixture';
-            last.before(filler);
+            ownerTable().closest('.o_baseer_pl_table_wrap').before(filler);
             if (hub.scrollHeight <= hub.clientHeight || getComputedStyle(hub).overflowY !== 'auto') {
                 throw new Error('Report action is not vertically scrollable');
             }

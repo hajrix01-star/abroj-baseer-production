@@ -589,6 +589,14 @@ class Refresh:
              '/mnt/third-party-addons': ('bind', str(self.release / 'third_party_addons'), False)})):
             actual_env = dict(v.split('=', 1) for v in item['Config']['Env'] if '=' in v)
             actual_mounts = {v['Destination']: (v['Type'], v.get('Name') if v['Type'] == 'volume' else v['Source'], v['RW']) for v in item['Mounts']}
+            # The pinned Odoo image declares an anonymous, unused extra-addons volume.
+            extra = actual_mounts.get('/mnt/extra-addons')
+            if image == ODOO_IMAGE and extra:
+                require(extra[0] == 'volume' and extra[2] and
+                        '/mnt/extra-addons' in inspect(ODOO_IMAGE, 'image')['Config']['Volumes'] and
+                        str(volume(extra[1])) == next(v['Source'] for v in item['Mounts'] if v['Destination'] == '/mnt/extra-addons') and
+                        not any(volume(extra[1]).iterdir()), 'unexpected image extra-addons contents')
+                del actual_mounts['/mnt/extra-addons']
             require(item['Image'] == image and item['HostConfig']['RestartPolicy']['Name'] == 'no' and
                     set(item['NetworkSettings']['Networks']) == {NETWORK} and actual_mounts == mounts and
                     all(actual_env.get(k) == v for k, v in env_file(self.state / env).items()), 'candidate runtime changed')

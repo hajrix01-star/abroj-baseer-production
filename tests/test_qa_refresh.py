@@ -121,7 +121,7 @@ class RefreshContracts(unittest.TestCase):
         with tempfile.TemporaryDirectory(dir=Path(__file__).parent) as directory:
             refresh = self.make()
             refresh.state = Path(directory)
-            (refresh.state / 'protected-after.json').write_text('{}')
+            (refresh.state / 'prepare.receipt.json').write_text('{}')
             with patch.object(refresh, 'start') as start, patch.object(refresh, 'guards'), \
                     patch.object(refresh, 'finish_prepare') as finish, patch.object(engine, 'run') as run:
                 with self.assertRaisesRegex(RuntimeError, 'recovery point already crossed'):
@@ -146,6 +146,71 @@ class RefreshContracts(unittest.TestCase):
         for forbidden in ('self.dump(', 'self.restore(', 'self.archive(', 'copytree(', 'volume", "rm'):
             self.assertNotIn(forbidden, source)
         self.assertIn('self.finish_prepare(manifest)', source)
+
+    def http_checkpoint(self, refresh):
+        baseline = {'account_move': '10|original'}
+        files = {'protected-before.json': json.dumps(baseline), 'protected-after.json': json.dumps(baseline),
+                 'network-proof.json': '{"database": true}\n', 'pg.env': 'POSTGRES_USER=qa_refresh_admin',
+                 'app.env': 'POSTGRES_USER=qa_runner', 'odoo.conf': 'original-config', 'compose.json': '{}'}
+        for name, value in files.items():
+            (refresh.state / name).write_text(value)
+        def container(ident, image, env, mounts):
+            return {'Id': ident, 'Image': image, 'Config': {'Env': env}, 'State': {'Running': False},
+                    'HostConfig': {'RestartPolicy': {'Name': 'no'}},
+                    'NetworkSettings': {'Networks': {engine.NETWORK: {}}}, 'Mounts': mounts}
+        pg = container('pg-id', engine.PG_IMAGE, ['POSTGRES_USER=qa_refresh_admin'], [
+            {'Destination': '/var/lib/postgresql/data', 'Type': 'volume', 'Name': engine.PROJECT + '-postgres', 'RW': True}])
+        mounts = [{'Destination': '/var/lib/odoo', 'Type': 'volume', 'Name': engine.PROJECT + '-odoo', 'RW': True}]
+        for target, source in (('/etc/odoo/odoo.conf', refresh.config), ('/mnt/baseer-addons', refresh.release / 'custom_addons'),
+                               ('/mnt/third-party-addons', refresh.release / 'third_party_addons')):
+            mounts.append({'Destination': target, 'Type': 'bind', 'Source': str(source), 'RW': False})
+        odoo = container('odoo-id', engine.ODOO_IMAGE, ['POSTGRES_USER=qa_runner'], mounts)
+        network = {'Name': engine.NETWORK, 'Driver': 'bridge', 'Internal': True, 'EnableIPv6': False,
+                   'IPAM': {'Config': [{'Subnet': engine.SUBNET, 'Gateway': '172.31.134.1'}]},
+                   'Containers': {'pg-id': {}, 'odoo-id': {}}}
+        return baseline, network, pg, odoo
+
+    def test_http_recovery_preserves_evidence_and_installs_firewall_before_start(self):
+        refresh, events = self.make(), []
+        with tempfile.TemporaryDirectory(dir=Path(__file__).parent) as directory:
+            refresh.state = Path(directory)
+            baseline, network, pg, odoo = self.http_checkpoint(refresh)
+            original = {name: (refresh.state / name).read_bytes() for name in
+                        ('protected-before.json', 'protected-after.json', 'network-proof.json')}
+            with patch.object(engine, 'inspect', side_effect=[network, pg, odoo]), \
+                    patch.object(engine, 'fingerprints', return_value=baseline), \
+                    patch.object(engine, 'run', side_effect=lambda args, **kwargs: events.append(tuple(args)) or 'ready'), \
+                    patch.object(refresh, 'compose_run', side_effect=lambda *args: events.append(('compose',) + args)), \
+                    patch.object(refresh, 'firewall', side_effect=lambda: events.append(('firewall',))), \
+                    patch.object(refresh, 'namespace_test') as proof, patch.object(refresh, 'neutral_guard'), \
+                    patch.object(refresh, 'health') as health, patch.object(refresh, 'receipt') as receipt, \
+                    patch.object(refresh, 'attachments', return_value=8), patch.object(refresh, 'complete_prepare') as complete:
+                refresh.recover_http({'old_databases': [engine.QDB]}, 'resume-12345')
+            self.assertLess(events.index(('firewall',)), events.index(('compose', 'up', '-d', '--force-recreate', 'db')))
+            self.assertLess(events.index(('compose', 'up', '-d', '--force-recreate', 'db')),
+                            events.index(('compose', 'up', '-d', '--force-recreate', 'odoo')))
+            self.assertIn(('docker', 'network', 'create', '--subnet', engine.SUBNET, engine.NETWORK), events)
+            self.assertIn(('docker', 'rm', engine.PG, engine.ODOO), events)
+            self.assertNotIn('--internal', str(events))
+            proof.assert_called_once_with('resume-12345.network-proof.json')
+            health.assert_called_once_with(18136)
+            self.assertEqual(receipt.call_args.args[0], 'resume-12345-network-migration')
+            self.assertEqual(complete.call_args.args[1], 8)
+            for name, content in original.items():
+                self.assertEqual((refresh.state / name).read_bytes(), content)
+            self.assertEqual((refresh.state / 'resume-12345.prior-network-proof.json').read_bytes(), original['network-proof.json'])
+
+    def test_http_recovery_refuses_other_network_endpoints_before_stopping_anything(self):
+        refresh = self.make()
+        with tempfile.TemporaryDirectory(dir=Path(__file__).parent) as directory:
+            refresh.state = Path(directory)
+            baseline, network, pg, odoo = self.http_checkpoint(refresh)
+            network['Containers']['foreign-id'] = {}
+            with patch.object(engine, 'inspect', side_effect=[network, pg, odoo]), \
+                    patch.object(engine, 'fingerprints', return_value=baseline), patch.object(engine, 'run') as run:
+                with self.assertRaisesRegex(RuntimeError, 'unexpected QA network checkpoint'):
+                    refresh.recover_http({}, 'resume-12345')
+                run.assert_not_called()
 
     def test_resume_intent_names_bind_the_signed_request_and_receipts_do_not_overwrite(self):
         refresh = self.make()

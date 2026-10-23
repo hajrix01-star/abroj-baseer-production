@@ -341,7 +341,7 @@ class Refresh:
         save(self.state / 'attachments.json', values)
         return len(values)
 
-    def namespace_test(self):
+    def namespace_test(self, proof_name='network-proof.json'):
         live_ip = next(iter(inspect(LPG)['NetworkSettings']['Networks'].values()))['IPAddress']
         require(not inspect(NETWORK, 'network').get('EnableIPv6'), 'network IPv6 enabled')
         helper = PROJECT + '-tcp-control'
@@ -369,11 +369,11 @@ class Refresh:
                             require(attempt < 9, 'host TCP positive control unavailable: ' + name)
                             time.sleep(0.2)
                 self.namespace_probe([('database', PGIP, 5432, True)] +
-                                     [(name, host, port, name == 'internal_qa_peer') for name, host, port in targets])
+                                     [(name, host, port, name == 'internal_qa_peer') for name, host, port in targets], proof_name)
             finally:
                 run(['docker', 'rm', '-f', helper])
 
-    def namespace_probe(self, targets):
+    def namespace_probe(self, targets, proof_name='network-proof.json'):
         code = ("import socket,json,pathlib; r={}; targets=" + repr(targets) + ";\n"
             "for name,host,port,expected in targets:\n"
             " s=socket.socket(); s.settimeout(2)\n"
@@ -386,7 +386,11 @@ class Refresh:
             "print(json.dumps(r))")
         result = run(['docker', 'run', '--rm', '--network', NETWORK, '--ip', '172.31.134.4',
                       '--sysctl', 'net.ipv6.conf.all.disable_ipv6=1', '--entrypoint', 'python3', ODOO_IMAGE, '-c', code])
-        save(self.state / 'network-proof.json', json.loads(result))
+        path = self.state / proof_name
+        if path.exists():
+            require(json.loads(path.read_text()) == json.loads(result), 'recorded network proof changed')
+        else:
+            save(path, json.loads(result))
 
     def neutral_guard(self):
         tables = schema(PG, DB)
@@ -468,8 +472,7 @@ class Refresh:
                 if item.get('Subnet'):
                     net = ipaddress.ip_network(item['Subnet'])
                     require(net.version != 4 or not net.overlaps(ipaddress.ip_network(SUBNET)), 'candidate subnet overlaps')
-        run(['docker', 'network', 'create', '--internal', '--subnet', SUBNET, '--opt',
-             'com.docker.network.bridge.enable_ip_masquerade=false', NETWORK])
+        run(['docker', 'network', 'create', '--subnet', SUBNET, NETWORK])
         admin_pw, runner_pw = secrets.token_hex(32), secrets.token_hex(32)
         save(self.state / 'pg.env', 'POSTGRES_USER=qa_refresh_admin\nPOSTGRES_PASSWORD=' + admin_pw + '\nPOSTGRES_DB=postgres')
         save(self.state / 'app.env', 'POSTGRES_USER=qa_runner\nPOSTGRES_PASSWORD=' + runner_pw +
@@ -508,10 +511,12 @@ class Refresh:
         stage = self.recovery_stage()
         self.start(stage)
         self.guards()
-        require(not any((self.state / name).exists() for name in (
-            'protected-after.json', 'prepare.receipt.json', 'network-proof.json')),
+        neutralized = (self.state / 'protected-after.json').exists()
+        require(not (self.state / 'prepare.receipt.json').exists() and
+                (neutralized or not (self.state / 'network-proof.json').exists()),
             'recovery point already crossed')
-        require(run(['docker', 'container', 'inspect', ODOO], check=False) is None, 'candidate Odoo already exists')
+        if not neutralized:
+            require(run(['docker', 'container', 'inspect', ODOO], check=False) is None, 'candidate Odoo already exists')
         target_pg = inspect(PG)
         require(target_pg['Image'] == PG_IMAGE and target_pg['State']['Running'], 'candidate PostgreSQL mismatch')
         archives = ('old-db-0.dump', 'old-odoo.tar', 'old-config.tar', 'old-source.tar',
@@ -520,6 +525,8 @@ class Refresh:
                                'source-manifest.json', 'pg.env', 'app.env', 'compose.json', 'odoo.conf')
         if (self.state / 'protected-before.json').exists():
             required += ('protected-before.json',)
+        if neutralized:
+            required += ('protected-before.json', 'protected-after.json', 'network-proof.json')
         for name in required:
             path = self.state / name
             require(path.is_file() and not path.is_symlink() and path.stat().st_uid == 0 and
@@ -543,13 +550,16 @@ class Refresh:
         require(config['options']['db_name'] == DB and config['options']['db_user'] == 'qa_runner' and
                 config['options']['db_host'] == 'db' and config['options']['max_cron_threads'] == '0',
                 'recovery database config mismatch')
-        require(sql(PG, DB, "SELECT coalesce((SELECT lower(value) FROM ir_config_parameter WHERE key='database.is_neutralized'),'false')").strip() == 'false',
-                'database neutralization already started')
+        require(sql(PG, DB, "SELECT coalesce((SELECT lower(value) FROM ir_config_parameter WHERE key='database.is_neutralized'),'false')").strip() == ('true' if neutralized else 'false'),
+                'database neutralization checkpoint mismatch')
         manifest.update(old_databases=[QDB], archives={name: digest(self.state / name) for name in archives})
         run(['systemctl', 'stop', TIMER])
         try:
-            self.finish_prepare(manifest)
-            self.receipt(stage, {'state': str(self.state), 'resumed': 'restored-before-neutralization'})
+            if neutralized:
+                self.recover_http(manifest, stage)
+            else:
+                self.finish_prepare(manifest)
+            self.receipt(stage, {'state': str(self.state), 'resumed': 'neutralized-http' if neutralized else 'restored-before-neutralization'})
         except BaseException:
             run(['docker', 'stop', ODOO], check=False)
             require(inspect(QODOO)['State']['Running'], 'old QA is not running')
@@ -562,6 +572,53 @@ class Refresh:
                                os.environ.get('QA_REFRESH_SIGNED_TAG', ''))
         require(request is not None, 'invalid signed recovery request')
         return 'resume-' + request.group(1)
+
+    def recover_http(self, manifest, stage):
+        baseline = json.loads((self.state / 'protected-before.json').read_text())
+        require(baseline == json.loads((self.state / 'protected-after.json').read_text()) == fingerprints(PG, DB),
+                'neutralized recovery protected data mismatch')
+        network, pg, odoo = inspect(NETWORK, 'network'), inspect(PG), inspect(ODOO)
+        require(network['Name'] == NETWORK and network['Driver'] == 'bridge' and network['Internal'] and
+                not network.get('EnableIPv6') and network_ranges(network) == [{'Subnet': SUBNET, 'Gateway': '172.31.134.1'}] and
+                set(network.get('Containers', {})) <= {pg['Id'], odoo['Id']}, 'unexpected QA network checkpoint')
+        for item, image, env, mounts in (
+            (pg, PG_IMAGE, 'pg.env', {'/var/lib/postgresql/data': ('volume', PROJECT + '-postgres', True)}),
+            (odoo, ODOO_IMAGE, 'app.env', {'/var/lib/odoo': ('volume', PROJECT + '-odoo', True),
+             '/etc/odoo/odoo.conf': ('bind', str(self.config), False),
+             '/mnt/baseer-addons': ('bind', str(self.release / 'custom_addons'), False),
+             '/mnt/third-party-addons': ('bind', str(self.release / 'third_party_addons'), False)})):
+            actual_env = dict(v.split('=', 1) for v in item['Config']['Env'] if '=' in v)
+            actual_mounts = {v['Destination']: (v['Type'], v.get('Name') if v['Type'] == 'volume' else v['Source'], v['RW']) for v in item['Mounts']}
+            require(item['Image'] == image and item['HostConfig']['RestartPolicy']['Name'] == 'no' and
+                    set(item['NetworkSettings']['Networks']) == {NETWORK} and actual_mounts == mounts and
+                    all(actual_env.get(k) == v for k, v in env_file(self.state / env).items()), 'candidate runtime changed')
+        require(not odoo['State']['Running'], 'candidate Odoo must be stopped for network recovery')
+        artifacts = ('protected-before.json', 'protected-after.json', 'network-proof.json', 'pg.env', 'app.env', 'odoo.conf', 'compose.json')
+        unchanged = {name: digest(self.state / name) for name in artifacts}
+        prior = self.state / (stage + '.prior-network-proof.json')
+        require(not prior.exists(), 'prior network proof already exists')
+        shutil.copyfile(self.state / 'network-proof.json', prior)
+        os.chmod(prior, 0o600)
+        run(['docker', 'stop', PG])
+        run(['docker', 'rm', PG, ODOO])  # No -v: retain both external data volumes.
+        run(['docker', 'network', 'rm', NETWORK])
+        run(['docker', 'network', 'create', '--subnet', SUBNET, NETWORK])
+        self.firewall()
+        self.compose_run('up', '-d', '--force-recreate', 'db')
+        for _ in range(60):
+            if run(['docker', 'exec', PG, 'pg_isready', '-h', '127.0.0.1', '-U', 'qa_refresh_admin', '-d', 'postgres'], check=False):
+                break
+            time.sleep(1)
+        self.compose_run('up', '-d', '--force-recreate', 'odoo')
+        proof = stage + '.network-proof.json'
+        self.namespace_test(proof)
+        self.neutral_guard()
+        self.health(18136)
+        require(baseline == fingerprints(PG, DB) and unchanged == {name: digest(self.state / name) for name in artifacts},
+                'HTTP recovery changed protected evidence')
+        self.receipt(stage + '-network-migration', {'from_internal': True, 'to_internal': False,
+                     'prior_proof': str(prior), 'prior_sha256': digest(prior), 'new_proof': str(self.state / proof), 'http': 200})
+        self.complete_prepare(manifest, self.attachments())
 
     def finish_prepare(self, manifest):
         attachments = self.attachments()
@@ -584,6 +641,9 @@ class Refresh:
         self.compose_run('up', '-d', 'odoo')
         self.health(18136)
         require(baseline == fingerprints(PG, DB), 'protected data changed after HTTP')
+        self.complete_prepare(manifest, attachments)
+
+    def complete_prepare(self, manifest, attachments):
         manifest['attachments'] = attachments
         manifest['source_sha'] = self.live_sha
         manifest['release'] = str(self.release)

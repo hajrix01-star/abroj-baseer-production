@@ -351,7 +351,11 @@ class Refresh:
                 for name, host, port in targets:
                     for attempt in range(10):
                         try:
-                            with socket.create_connection((host, port), timeout=3):
+                            # The host's gateway belongs to the blocked QA subnet.
+                            # Bind this local positive control to loopback so it
+                            # proves the listener without exercising container rules.
+                            source = ('127.0.0.1', 0) if name == 'host' else None
+                            with socket.create_connection((host, port), timeout=3, source_address=source):
                                 break
                         except OSError:
                             require(attempt < 9, 'host TCP positive control unavailable: ' + name)

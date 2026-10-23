@@ -17,6 +17,12 @@ class RefreshContracts(unittest.TestCase):
     def make(self):
         return engine.Refresh('12345', 'a' * 40, 'b' * 40)
 
+    def test_host_and_none_networks_have_no_address_ranges(self):
+        for value in ({}, {'IPAM': None}, {'IPAM': {'Config': None}}, {'IPAM': {'Config': []}}):
+            self.assertEqual(engine.network_ranges(value), [])
+        ranges = [{'Subnet': '172.17.0.0/16'}]
+        self.assertEqual(engine.network_ranges({'IPAM': {'Config': ranges}}), ranges)
+
     def test_arguments_cannot_select_paths_or_shell_commands(self):
         for bad in ('../123', '1;id', '0', '1\n2', 'x', '1' * 25):
             with self.assertRaises(RuntimeError):

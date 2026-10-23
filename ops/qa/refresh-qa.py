@@ -88,6 +88,11 @@ def inspect(name, kind='container'):
     return json.loads(run(['docker', kind, 'inspect', name]))[0]
 
 
+def network_ranges(network):
+    # Docker's host/none networks explicitly return Config=null.
+    return (network.get('IPAM') or {}).get('Config') or []
+
+
 def volume(name):
     item = inspect(name, 'volume')
     require(item['Driver'] == 'local', 'nonlocal volume')
@@ -455,7 +460,7 @@ class Refresh:
             run(['docker', 'volume', 'create', name])
         require(run(['docker', 'network', 'inspect', NETWORK], check=False) is None, 'candidate network exists')
         for network_id in run(['docker', 'network', 'ls', '-q']).split():
-            for item in inspect(network_id, 'network').get('IPAM', {}).get('Config', []):
+            for item in network_ranges(inspect(network_id, 'network')):
                 if item.get('Subnet'):
                     net = ipaddress.ip_network(item['Subnet'])
                     require(net.version != 4 or not net.overlaps(ipaddress.ip_network(SUBNET)), 'candidate subnet overlaps')

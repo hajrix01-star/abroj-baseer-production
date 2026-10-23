@@ -6,6 +6,7 @@ old volumes and every protected archive are retained. No network/provider calls.
 """
 import contextlib
 import base64
+import configparser
 import hashlib
 import ipaddress
 import json
@@ -131,7 +132,8 @@ def schema(container, database):
     result = {}
     for line in rows.splitlines():
         table, column, nullable = line.split('|')
-        require(re.fullmatch(r'[a-z_0-9]+', table + column), 'unsafe schema identifier')
+        require(all(re.fullmatch(r'[A-Za-z_][A-Za-z_0-9]*', name) for name in (table, column)),
+                'unsafe schema identifier')
         result.setdefault(table, {})[column] = nullable == 'YES'
     return result
 
@@ -497,6 +499,58 @@ class Refresh:
         (target / 'sessions').mkdir()
         run(['tar', '--no-same-owner', '-C', target / 'filestore' / DB, '-xf', self.state / 'live-filestore.tar'])
         run(['chown', '-R', '100:101', target])
+        self.finish_prepare(manifest)
+
+    def resume(self):
+        """One reviewed recovery point: restore completed, no neutralization begun."""
+        self.start('resume')
+        self.guards()
+        require(not any((self.state / name).exists() for name in (
+            'protected-before.json', 'protected-after.json', 'prepare.receipt.json', 'network-proof.json')),
+            'recovery point already crossed')
+        require(run(['docker', 'container', 'inspect', ODOO], check=False) is None, 'candidate Odoo already exists')
+        target_pg = inspect(PG)
+        require(target_pg['Image'] == PG_IMAGE and target_pg['State']['Running'], 'candidate PostgreSQL mismatch')
+        archives = ('old-db-0.dump', 'old-odoo.tar', 'old-config.tar', 'old-source.tar',
+                    'live.dump', 'live-filestore.tar')
+        required = archives + ('prepare.intent.json', 'inventory.json', 'attachments.json',
+                               'source-manifest.json', 'pg.env', 'app.env', 'compose.json', 'odoo.conf')
+        for name in required:
+            path = self.state / name
+            require(path.is_file() and not path.is_symlink() and path.stat().st_uid == 0 and
+                    path.stat().st_mode & 0o777 == (0o640 if name == 'odoo.conf' else 0o600),
+                    'unsafe recovery file: ' + name)
+        intent = json.loads((self.state / 'prepare.intent.json').read_text())
+        require(intent['live_sha'] == self.live_sha and intent['qa_sha'] == self.qa_sha, 'recovery source mismatch')
+        manifest = json.loads((self.state / 'inventory.json').read_text())
+        require(manifest['old_source'] == str((BASE / 'current').resolve(strict=True)) and
+                manifest['live_source'] == str(LIVE.resolve(strict=True)), 'recovery source path changed')
+        source = json.loads((self.state / 'source-manifest.json').read_text())
+        require(set(source) == {'custom_addons', 'third_party_addons'} and
+                (self.release / 'RELEASE_COMMIT').read_text().strip() == self.live_sha,
+                'recovery release identity mismatch')
+        require(source == {name: tree_hash(self.release / name) for name in source} ==
+                {name: tree_hash(LIVE / name) for name in source}, 'recovery source bytes changed')
+        require(json.loads(self.compose.read_text()) == self.compose_config(self.release, 18136, self.config),
+                'recovery compose changed')
+        config = configparser.ConfigParser()
+        config.read(self.config)
+        require(config['options']['db_name'] == DB and config['options']['db_user'] == 'qa_runner' and
+                config['options']['db_host'] == 'db' and config['options']['max_cron_threads'] == '0',
+                'recovery database config mismatch')
+        manifest.update(old_databases=[QDB], archives={name: digest(self.state / name) for name in archives})
+        run(['systemctl', 'stop', TIMER])
+        try:
+            self.finish_prepare(manifest)
+            self.receipt('resume', {'state': str(self.state), 'resumed': 'restored-before-neutralization'})
+        except BaseException:
+            run(['docker', 'stop', ODOO], check=False)
+            require(inspect(QODOO)['State']['Running'], 'old QA is not running')
+            if manifest['poller_active']:
+                run(['systemctl', 'start', TIMER])
+            raise
+
+    def finish_prepare(self, manifest):
         attachments = self.attachments()
         baseline = fingerprints(PG, DB)
         save(self.state / 'protected-before.json', baseline)
@@ -519,7 +573,7 @@ class Refresh:
         save(self.state / 'inventory.json', manifest)
         self.receipt('prepare', {'state': str(self.state), 'source_sha': self.live_sha,
                                 'archives': len(manifest['archives']), 'attachments': attachments,
-                                'old_databases': len(databases), 'network': NETWORK, 'http': 200})
+                                'old_databases': len(manifest['old_databases']), 'network': NETWORK, 'http': 200})
 
     def verify(self, switched=False):
         self.guards(switched)
@@ -592,7 +646,7 @@ class Refresh:
 
 def main(argv=None):
     args = sys.argv[1:] if argv is None else argv
-    require(len(args) == 4 and args[0] in ('prepare', 'switch', 'verify'), 'expected stage RUNID LIVE_SHA QA_SHA')
+    require(len(args) == 4 and args[0] in ('prepare', 'resume', 'switch', 'verify'), 'expected stage RUNID LIVE_SHA QA_SHA')
     require(os.geteuid() == 0, 'root required')
     require(os.name == 'posix', 'Linux required')
     os.umask(0o077)

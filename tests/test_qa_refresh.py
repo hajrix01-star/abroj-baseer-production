@@ -93,6 +93,55 @@ class RefreshContracts(unittest.TestCase):
         self.assertIn("- 'google_calendar_token'", settings)
         self.assertNotIn("- 'id'", settings)
 
+    def test_schema_accepts_quoted_products_identifiers_and_rejects_sql_syntax(self):
+        rows = 'Products|stock_move_line_id|YES\nProducts|stock_package_destination_id|NO\n'
+        with patch.object(engine, 'sql', return_value=rows):
+            self.assertEqual(engine.schema('test', 'test_db'), {'Products': {
+                'stock_move_line_id': True, 'stock_package_destination_id': False}})
+        statements = []
+        def query(container, database, statement):
+            statements.append(statement)
+            return '2|digest'
+        with patch.object(engine, 'schema', return_value={'Products': {'stock_move_line_id': True}}), \
+                patch.object(engine, 'sql', side_effect=query):
+            self.assertEqual(engine.fingerprints('test', 'test_db', False), {'Products': '2|digest'})
+        self.assertIn('FROM "Products" t', statements[0])
+        for invalid in ('Products;DROP TABLE res_users|column|YES', 'Products|bad"column|YES',
+                        '|column|YES', 'Products|a/b|YES'):
+            with patch.object(engine, 'sql', return_value=invalid):
+                with self.assertRaises(RuntimeError):
+                    engine.schema('test', 'test_db')
+
+    def test_resume_refuses_any_crossed_neutralization_checkpoint(self):
+        with tempfile.TemporaryDirectory(dir=Path(__file__).parent) as directory:
+            refresh = self.make()
+            refresh.state = Path(directory)
+            (refresh.state / 'protected-before.json').write_text('{}')
+            with patch.object(refresh, 'start') as start, patch.object(refresh, 'guards'), \
+                    patch.object(refresh, 'finish_prepare') as finish, patch.object(engine, 'run') as run:
+                with self.assertRaisesRegex(RuntimeError, 'recovery point already crossed'):
+                    refresh.resume()
+                start.assert_called_once_with('resume')
+                finish.assert_not_called()
+                run.assert_not_called()
+
+    def test_resume_refuses_even_a_stopped_candidate_odoo(self):
+        with tempfile.TemporaryDirectory(dir=Path(__file__).parent) as directory:
+            refresh = self.make()
+            refresh.state = Path(directory)
+            with patch.object(refresh, 'start'), patch.object(refresh, 'guards'), \
+                    patch.object(refresh, 'finish_prepare') as finish, patch.object(engine, 'run', return_value='stopped-container'):
+                with self.assertRaisesRegex(RuntimeError, 'candidate Odoo already exists'):
+                    refresh.resume()
+                finish.assert_not_called()
+
+    def test_resume_only_reuses_the_restored_snapshot(self):
+        import inspect
+        source = inspect.getsource(engine.Refresh.resume)
+        for forbidden in ('self.dump(', 'self.restore(', 'self.archive(', 'copytree(', 'volume", "rm'):
+            self.assertNotIn(forbidden, source)
+        self.assertIn('self.finish_prepare(manifest)', source)
+
     def test_referenced_blob_must_match_size_and_checksum(self):
         refresh = self.make()
         with tempfile.TemporaryDirectory(dir=Path(__file__).parent) as directory:

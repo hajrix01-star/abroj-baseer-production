@@ -10,10 +10,10 @@ safe_file() {
     [ "$(stat -c '%U:%G:%a' "$1")" = "root:root:$2" ] || die 'unsafe file ownership/mode'
 }
 [ "$(id -u)" -eq 0 ] || die 'root is required'
-[ "$#" -eq 2 ] || die 'expected prepare/switch/verify and signed request tag'
+[ "$#" -eq 2 ] || die 'expected prepare/resume/switch/verify and signed request tag'
 action=$1
 tag=$2
-[[ "$action" =~ ^(prepare|switch|verify)$ ]] || die 'unsupported action'
+[[ "$action" =~ ^(prepare|resume|switch|verify)$ ]] || die 'unsupported action'
 [[ "$tag" =~ ^qa-refresh-20261023-([0-9]+)$ ]] || die 'unsupported request'
 run_id=${BASH_REMATCH[1]}
 safe_file "$CONFIG" 600
@@ -44,12 +44,19 @@ revision=$(git -C "$stage/repo.git" rev-parse "refs/tags/$tag^{commit}")
 git -C "$stage/repo.git" merge-base --is-ancestor "$revision" refs/heads/reviewed-main || die 'request is outside reviewed main'
 message=$(git -C "$stage/repo.git" cat-file -p "refs/tags/$tag" | sed '1,/^$/d' | sed '/^-----BEGIN SSH SIGNATURE-----/,$d')
 mapfile -t fields < <(printf '%s\n' "$message" | sed '/^$/d')
-[ "${#fields[@]}" -eq 3 ] || die 'request must have exactly three bounded fields'
+[[ "${#fields[@]}" -eq 3 || "${#fields[@]}" -eq 4 ]] || die 'request must have three or four bounded fields'
 [ "${fields[0]}" = QA_REFRESH_DATE=20261023 ] || die 'request date mismatch'
 [[ "${fields[1]}" =~ ^QA_REFRESH_LIVE=([a-f0-9]{40})$ ]] || die 'invalid LIVE source identity'
 live=${BASH_REMATCH[1]}
 [[ "${fields[2]}" =~ ^QA_REFRESH_PREVIOUS=([a-f0-9]{40})$ ]] || die 'invalid previous QA identity'
 previous=${BASH_REMATCH[1]}
+if [ "${#fields[@]}" -eq 4 ]; then
+    [[ "${fields[3]}" =~ ^QA_REFRESH_RECOVERY_RUN=([1-9][0-9]{0,19})$ ]] || die 'invalid recovery run'
+    run_id=${BASH_REMATCH[1]}
+    [ "$action" != prepare ] || die 'recovery request cannot take a new snapshot'
+elif [ "$action" = resume ]; then
+    die 'resume requires a signed recovery run'
+fi
 for pair in 'ops/qa/baseer-qa-refresh:/usr/local/sbin/baseer-qa-refresh' 'ops/qa/refresh-qa.py:/usr/local/lib/baseer-qa-refresh/refresh-qa.py' 'ops/qa/verify-qa-refresh-odoo.py:/usr/local/lib/baseer-qa-refresh/verify-qa-refresh-odoo.py'; do
     repo_path=${pair%%:*}
     installed=${pair#*:}

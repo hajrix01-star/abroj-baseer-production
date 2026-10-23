@@ -1,0 +1,31 @@
+name: QA refresh operation contracts
+
+on:
+  pull_request:
+    paths:
+      - ops/qa/refresh-qa.py
+      - ops/qa/baseer-qa-refresh
+      - ops/qa/install-qa-refresh.sh
+      - tests/test_qa_refresh.py
+      - .github/workflows/refresh-reviewed-qa.yml
+      - .github/workflows/test-qa-refresh.yml
+  push:
+    branches: [main]
+    paths:
+      - ops/qa/refresh-qa.py
+      - ops/qa/baseer-qa-refresh
+      - ops/qa/install-qa-refresh.sh
+      - tests/test_qa_refresh.py
+
+permissions:
+  contents: read
+
+jobs:
+  contracts:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash -n ops/qa/baseer-qa-refresh
+      - run: bash -n ops/qa/install-qa-refresh.sh
+      - run: python3 -B -m unittest discover -s tests -p test_qa_refresh.py -v

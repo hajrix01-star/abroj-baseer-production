@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+# Bounded signed-request bridge; installed from the reviewed Git revision.
+set -Eeuo pipefail
+umask 077
+readonly CONFIG=/etc/baseer-qa/deploy.env
+readonly ENGINE=/usr/local/lib/baseer-qa-refresh/refresh-qa.py
+die() { printf 'QA_REFRESH=FAILED\nREASON=%s\n' "$*" >&2; exit 1; }
+safe_file() {
+    [ -f "$1" ] && [ ! -L "$1" ] || die 'required regular file absent'
+    [ "$(stat -c '%U:%G:%a' "$1")" = "root:root:$2" ] || die 'unsafe file ownership/mode'
+}
+[ "$(id -u)" -eq 0 ] || die 'root is required'
+[ "$#" -eq 2 ] || die 'expected prepare/switch/verify and signed request tag'
+action=$1
+tag=$2
+[[ "$action" =~ ^(prepare|switch|verify)$ ]] || die 'unsupported action'
+[[ "$tag" =~ ^qa-refresh-20261023-([0-9]+)$ ]] || die 'unsupported request'
+run_id=${BASH_REMATCH[1]}
+safe_file "$CONFIG" 600
+# shellcheck disable=SC1090
+. "$CONFIG"
+[ "${QA_ENVIRONMENT:-}" = qa ] && [ "${QA_BASE:-}" = /srv/baseer-qa ] || die 'not the QA configuration'
+safe_file "$QA_SOURCE_SSH_KEY" 600
+safe_file "$QA_SOURCE_KNOWN_HOSTS" 644
+safe_file "$QA_TAG_ALLOWED_SIGNERS" 644
+safe_file "$ENGINE" 750
+safe_file /usr/local/sbin/baseer-qa-refresh 750
+exec 7>/var/lock/baseer-qa-refresh.lock
+flock -n 7 || die 'refresh already running'
+exec 8>/var/lock/baseer-qa-deploy.lock
+flock -n 8 || die 'QA deployment already running'
+exec 9>/var/lock/baseer-qa-release-poller.lock
+flock -n 9 || die 'QA request poller already running'
+stage=$(mktemp -d /srv/baseer-qa/deploy-staging/.refresh-request.XXXXXX)
+trap 'rm -rf -- "$stage"' EXIT
+git init --quiet --bare "$stage/repo.git"
+git -C "$stage/repo.git" remote add origin "$QA_SOURCE_REMOTE"
+export GIT_SSH_COMMAND="ssh -i $QA_SOURCE_SSH_KEY -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$QA_SOURCE_KNOWN_HOSTS"
+git -C "$stage/repo.git" fetch --quiet --no-tags origin main:refs/heads/reviewed-main "refs/tags/$tag:refs/tags/$tag"
+[ "$(git -C "$stage/repo.git" cat-file -t "refs/tags/$tag")" = tag ] || die 'annotated tag required'
+[ "$(git -C "$stage/repo.git" cat-file -p "refs/tags/$tag" | sed -n '3s/^tag //p')" = "$tag" ] || die 'tag identity mismatch'
+git -C "$stage/repo.git" -c gpg.format=ssh -c "gpg.ssh.allowedSignersFile=$QA_TAG_ALLOWED_SIGNERS" verify-tag "refs/tags/$tag"
+revision=$(git -C "$stage/repo.git" rev-parse "refs/tags/$tag^{commit}")
+git -C "$stage/repo.git" merge-base --is-ancestor "$revision" refs/heads/reviewed-main || die 'request is outside reviewed main'
+message=$(git -C "$stage/repo.git" cat-file -p "refs/tags/$tag" | sed '1,/^$/d' | sed '/^-----BEGIN SSH SIGNATURE-----/,$d')
+mapfile -t fields < <(printf '%s\n' "$message" | sed '/^$/d')
+[ "${#fields[@]}" -eq 3 ] || die 'request must have exactly three bounded fields'
+[ "${fields[0]}" = QA_REFRESH_DATE=20261023 ] || die 'request date mismatch'
+[[ "${fields[1]}" =~ ^QA_REFRESH_LIVE=([a-f0-9]{40})$ ]] || die 'invalid LIVE source identity'
+live=${BASH_REMATCH[1]}
+[[ "${fields[2]}" =~ ^QA_REFRESH_PREVIOUS=([a-f0-9]{40})$ ]] || die 'invalid previous QA identity'
+previous=${BASH_REMATCH[1]}
+for pair in 'ops/qa/baseer-qa-refresh:/usr/local/sbin/baseer-qa-refresh' 'ops/qa/refresh-qa.py:/usr/local/lib/baseer-qa-refresh/refresh-qa.py' 'ops/qa/verify-qa-refresh-odoo.py:/usr/local/lib/baseer-qa-refresh/verify-qa-refresh-odoo.py'; do
+    repo_path=${pair%%:*}
+    installed=${pair#*:}
+    git -C "$stage/repo.git" show "$revision:$repo_path" > "$stage/expected"
+    cmp -- "$stage/expected" "$installed" || die 'installed operation does not match the signed reviewed request'
+done
+export QA_REFRESH_REVIEWED_REVISION=$revision
+export QA_REFRESH_SIGNED_TAG=$tag
+python3 "$ENGINE" "$action" "$run_id" "$live" "$previous"

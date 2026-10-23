@@ -16,16 +16,16 @@ function ownerSnapshot(companyId = 1, sales = "115.00") {
         company_id: companyId, complete: true, currency_code: "SAR",
         title: "ملخص المبيعات والمدفوعات", basis: "Recorded sales include uncollected sales.",
         period_controls: { anchor_date: "2026-10-22", options: [{ kind: "month", display_label: "Month" }] }, comparison_controls: {}, periods: [{
-            key: "current", label: "October", display_label: "October 2026",
+            key: "current", revision: "a".repeat(64), label: "October", display_label: "October 2026",
             date_from: "2026-10-01", date_to: "2026-10-31", has_unclassified_outflows: true,
             totals: [
                 { key: "incoming_total", label: "Sales", amount: sales, negative: false },
                 { key: "cash_total", label: "Actual payments", amount: "20.00", negative: false },
                 { key: "difference", label: "Sales less payments", amount: "95.00", negative: false },
             ],
-            channels: [{ key: "cash", label: "Cash", amount: "57.50", negative: false, percentage: "50.00%" }],
-            outflows: [{ key: "purchase:1/2", label: "Purchases", amount: "20.00", negative: false,
-                rows: [{ key: "purchase:1/2", label: "Food / Vegetables", amount: "20.00", negative: false }] }],
+            channels: [{ key: "cccccccccccccccccccc", label: "Cash", amount: "57.50", negative: false, percentage: "50.00%" }],
+            outflows: [{ key: "purchase", label: "Purchases", amount: "20.00", negative: false,
+                rows: [{ key: "dddddddddddddddddddd", label: "Food / Vegetables", amount: "20.00", negative: false }] }],
         }],
     };
 }
@@ -33,16 +33,16 @@ function ownerSnapshot(companyId = 1, sales = "115.00") {
 function ownerSnapshotWithComparison() {
     const snapshot = ownerSnapshot();
     snapshot.periods.push({
-        key: "previous", label: "September", display_label: "September 2026",
+        key: "previous", revision: "b".repeat(64), label: "September", display_label: "September 2026",
         date_from: "2026-09-01", date_to: "2026-09-30", has_unclassified_outflows: false,
         totals: [
             { key: "incoming_total", label: "Sales", amount: "90.00", negative: false },
             { key: "cash_total", label: "Actual payments", amount: "10.00", negative: false },
             { key: "difference", label: "Sales less payments", amount: "80.00", negative: false },
         ],
-        channels: [{ key: "card", label: "Card", amount: "90.00", negative: false, percentage: "100.00%" }],
-        outflows: [{ key: "operating:9", label: "Operating", amount: "10.00", negative: false,
-            rows: [{ key: "electricity:9", label: "Electricity", amount: "10.00", negative: false }] }],
+        channels: [{ key: "aaaaaaaaaaaaaaaaaaaa", label: "Card", amount: "90.00", negative: false, percentage: "100.00%" }],
+        outflows: [{ key: "operating_account", label: "Operating", amount: "10.00", negative: false,
+            rows: [{ key: "eeeeeeeeeeeeeeeeeeee", label: "Electricity", amount: "10.00", negative: false }] }],
     });
     return snapshot;
 }
@@ -62,11 +62,11 @@ test("owner summary preserves server amounts and percentage strings", () => {
 test("owner table unions stable rows in first-seen server order without values for absent periods", () => {
     const table = buildOwnerTable(prepareOperationsSnapshot(ownerSnapshotWithComparison(), "Baseer", false).periods);
     expect(table.sections.map((row) => row.key)).toEqual(["total:incoming_total", "total:cash_total"]);
-    expect(table.sections[0].children.map((row) => row.key)).toEqual(["channel:cash", "channel:card"]);
-    expect(table.sections[1].children.map((row) => row.key)).toEqual(["outflow:purchase:1/2", "outflow:operating:9"]);
+    expect(table.sections[0].children.map((row) => row.key)).toEqual(["channel:cccccccccccccccccccc", "channel:aaaaaaaaaaaaaaaaaaaa"]);
+    expect(table.sections[1].children.map((row) => row.key)).toEqual(["outflow:purchase", "outflow:operating_account"]);
     expect(table.sections[0].children[0].amounts.current.amount).toBe("57.50");
     expect(table.sections[0].children[0].amounts.previous).toBe(undefined);
-    expect(table.sections[1].children[1].children[0].key).toBe("outflow:operating:9:electricity:9");
+    expect(table.sections[1].children[1].children[0].key).toBe("outflow:operating_account:eeeeeeeeeeeeeeeeeeee");
     expect(table.difference.amounts.previous.amount).toBe("80.00");
 });
 
@@ -105,7 +105,7 @@ async function loadingTemplates() {
     return "<templates>" + templates.join("") + "</templates>";
 }
 
-async function mountLoadingReport(call) {
+async function mountLoadingReport(call, doAction = async () => {}) {
     patchWithCleanup(user, { lang: "ar_001", activeCompany: { id: 1 }, hasGroup: async () => true });
     const services = registry.category("services");
     const required = new Map();
@@ -122,12 +122,14 @@ async function mountLoadingReport(call) {
     services.add("orm", { start: () => ({ call: (model, method, ...args) => {
         if (!((model === "baseer.profit.loss.report" && method === "get_context") ||
             (model === "baseer.operations.report" && method === "get_owner_snapshot") ||
+            (model === "baseer.operations.report" && method === "get_owner_details") ||
+            (model === "baseer.operations.report" && method === "action_owner_source") ||
             (model === "baseer.operations.report" && method === "action_print_owner"))) {
             throw new Error(`Unexpected report RPC: ${model}.${method}`);
         }
         return call(model, method, ...args);
     } }) });
-    services.add("action", { start: () => ({ doAction: async () => {} }) });
+    services.add("action", { start: () => ({ doAction }) });
     const component = await mountWithCleanup(BaseerOperationsPreview, { templates: await loadingTemplates(), props: {} });
     return { component, destroy: () => destroy(component.__owl__.app) };
 }
@@ -283,4 +285,168 @@ test("leaving owner summary fences a late response", async () => {
     await Promise.resolve(); await Promise.resolve();
     expect(component.disposed).toBe(true);
     expect(component.state.report).toBe(null);
+});
+
+function detailResult(args, amount = "115.00", extra = {}) {
+    return { changed: false, company_id: args[0].company_id, row_key: args[1], period_key: args[2],
+        revision: args[3], page: args[4], page_size: 50, total_count: 1, amount, negative: false,
+        label: "Sales", period_label: "October 2026", events: [{ event_key: "c".repeat(64),
+            date: "2026-10-12", label: "INV/001", amount, negative: false }], ...extra };
+}
+
+test("every owner row and present amount is a drilldown separate from folding", async () => {
+    const requests = [];
+    const snapshot = ownerSnapshotWithComparison();
+    const expected = new Map();
+    const table = buildOwnerTable(snapshot.periods);
+    for (const row of [...table.sections, ...table.sections.flatMap((section) => section.children),
+        ...table.sections.flatMap((section) => section.children.flatMap((row) => row.children || [])), table.difference]) {
+        for (const [period, value] of Object.entries(row.amounts)) { expected.set(`${row.key}|${period}`, value); }
+    }
+    const { component } = await mountLoadingReport((_model, method, args) => {
+        if (method === "get_context") { return Promise.resolve(loadingContext()); }
+        if (method === "get_owner_snapshot") { return Promise.resolve(snapshot); }
+        if (method === "get_owner_details") {
+            requests.push(args);
+            const value = expected.get(`${args[1]}|${args[2]}`);
+            return Promise.resolve(detailResult(args, value.amount));
+        }
+        throw new Error("Unexpected RPC");
+    });
+    await waitUntil(() => component.state.report !== null);
+    for (const group of component.ownerTable.sections[1].children) { component.toggleOwnerRow(group); }
+    await waitUntil(() => document.querySelector('[data-owner-row="outflow:operating_account:eeeeeeeeeeeeeeeeeeee"]'));
+    const buttons = [...document.querySelectorAll("[data-owner-row]")].map((button) => ({
+        row: button.dataset.ownerRow, period: button.dataset.ownerPeriod,
+    }));
+    expect(buttons.length).toBe(expected.size + new Set([...expected.keys()].map((key) => key.split("|")[0])).size);
+    for (const target of buttons) {
+        const button = [...document.querySelectorAll("[data-owner-row]")].find((node) =>
+            node.dataset.ownerRow === target.row && node.dataset.ownerPeriod === target.period);
+        button.click();
+        await waitUntil(() => component.state.ownerDetail?.data);
+        const call = requests[requests.length - 1];
+        expect(call[1]).toBe(target.row);
+        const period = target.period || (expected.has(`${target.row}|current`) ? "current" : "previous");
+        expect(call[2]).toBe(period);
+        expect(call[3]).toBe((period === "current" ? "a" : "b").repeat(64));
+        await waitUntil(() => document.querySelector(".o_baseer_owner_detail_total strong"));
+        expect(document.querySelector(".o_baseer_owner_detail_total strong").textContent)
+            .toBe(expected.get(`${target.row}|${period}`).amount);
+        document.querySelector(".o_baseer_owner_back").click();
+        await waitUntil(() => document.querySelector(".o_baseer_owner_summary"));
+        expect(document.activeElement.dataset.ownerRow).toBe(target.row);
+        expect(document.activeElement.dataset.ownerPeriod).toBe(target.period);
+    }
+    expect(requests.length).toBe(buttons.length);
+    expect(component.isOwnerExpanded(component.ownerTable.sections[1].children[0])).toBe(true);
+});
+
+test("details page through exact server contributions and open a revalidated source", async () => {
+    const requests = [], actions = [];
+    const { component } = await mountLoadingReport((_model, method, args) => {
+        if (method === "get_context") { return Promise.resolve(loadingContext()); }
+        if (method === "get_owner_snapshot") { return Promise.resolve(ownerSnapshot()); }
+        requests.push({ method, args });
+        if (method === "get_owner_details") { return Promise.resolve(detailResult(args, "115.00", { total_count: 51 })); }
+        if (method === "action_owner_source") { return Promise.resolve({ type: "ir.actions.act_window", res_model: "account.move", res_id: 7 }); }
+        throw new Error("Unexpected RPC");
+    }, async (action) => actions.push(action));
+    await waitUntil(() => component.state.report !== null);
+    await component.openOwnerDetails(component.ownerTable.sections[0], "current");
+    await waitUntil(() => document.querySelector(".o_baseer_owner_next"));
+    document.querySelector(".o_baseer_owner_next").click();
+    await waitUntil(() => component.state.ownerDetail?.data?.page === 2);
+    expect(requests[1].args[4]).toBe(2);
+    await waitUntil(() => document.querySelector(".o_baseer_owner_source"));
+    document.querySelector(".o_baseer_owner_source").click();
+    await waitUntil(() => actions.length === 1);
+    expect(requests[2].args).toEqual([component.appliedFilters, "total:incoming_total", "current", "a".repeat(64), "c".repeat(64)]);
+    expect(actions[0].res_id).toBe(7);
+});
+
+test("changed detail or source revision hides events and requests a new summary", async () => {
+    let changed = false, source = false;
+    const { component } = await mountLoadingReport((_model, method, args) => {
+        if (method === "get_context") { return Promise.resolve(loadingContext()); }
+        if (method === "get_owner_snapshot") { return Promise.resolve(ownerSnapshot()); }
+        if (method === "get_owner_details") { return Promise.resolve(changed ? { changed: true } : detailResult(args)); }
+        if (method === "action_owner_source") { source = true; return Promise.resolve({ changed: true }); }
+        throw new Error("Unexpected RPC");
+    }, async () => { throw new Error("Stale source action must not run"); });
+    await waitUntil(() => component.state.report !== null);
+    await component.openOwnerDetails(component.ownerTable.sections[0]);
+    await component.openOwnerSource(component.state.ownerDetail.data.events[0]);
+    expect(source).toBe(true);
+    expect(component.state.ownerDetail.data).toBe(null);
+    expect(component.state.ownerDetail.changed).toBe(true);
+    component.closeOwnerDetails();
+    changed = true;
+    await component.openOwnerDetails(component.ownerTable.sections[0]);
+    await waitUntil(() => document.querySelector(".o_baseer_owner_refresh"));
+    expect(document.querySelector(".o_baseer_owner_events")).toBe(null);
+    document.querySelector(".o_baseer_owner_refresh").click();
+    await waitUntil(() => document.querySelector(".o_baseer_owner_summary"));
+    expect(component.state.ownerDetail).toBe(null);
+});
+
+test("details retry safely and fence late responses after back, company change and destroy", async () => {
+    let calls = 0;
+    let pending;
+    const { component, destroy } = await mountLoadingReport((_model, method, args) => {
+        if (method === "get_context") { return Promise.resolve(loadingContext(args[0])); }
+        if (method === "get_owner_snapshot") { return Promise.resolve(ownerSnapshot(args[0].company_id)); }
+        if (method === "get_owner_details") {
+            calls++;
+            if (calls === 1) { return Promise.reject(new ConnectionLostError("/details")); }
+            pending = { ...deferred(), args };
+            return pending.promise;
+        }
+        throw new Error("Unexpected RPC");
+    });
+    await waitUntil(() => component.state.report !== null);
+    await component.openOwnerDetails(component.ownerTable.sections[0]);
+    expect(component.state.ownerDetail.error).toBe(component.labels.detailError);
+    const request = component.loadOwnerDetails(1);
+    component.loadOwnerDetails(1);
+    expect(calls).toBe(2);
+    component.closeOwnerDetails();
+    pending.resolve(detailResult(pending.args)); await request;
+    expect(component.state.ownerDetail).toBe(null);
+    const second = component.openOwnerDetails(component.ownerTable.sections[0]);
+    patchWithCleanup(user, { activeCompany: { id: 2 } });
+    component.refreshActiveCompany();
+    pending.resolve(detailResult(pending.args)); await second;
+    await waitUntil(() => component.appliedFilters?.company_id === 2);
+    expect(component.state.ownerDetail).toBe(null);
+    const third = component.openOwnerDetails(component.ownerTable.sections[0]);
+    destroy(); pending.resolve(detailResult(pending.args)); await third;
+    expect(component.state.ownerDetail.data).toBe(null);
+});
+
+test("detail payload mismatches and source errors never display unverified operations", async () => {
+    let mode = "wrongAmount";
+    const { component } = await mountLoadingReport((_model, method, args) => {
+        if (method === "get_context") { return Promise.resolve(loadingContext()); }
+        if (method === "get_owner_snapshot") { return Promise.resolve(ownerSnapshot()); }
+        if (method === "get_owner_details") {
+            return Promise.resolve(detailResult(args, mode === "wrongAmount" ? "999.00" : "115.00",
+                mode === "wrongCompany" ? { company_id: 9 } : {}));
+        }
+        if (method === "action_owner_source") { return Promise.reject(new Error("Denied source")); }
+        throw new Error("Unexpected RPC");
+    }, async () => { throw new Error("Rejected source must not open"); });
+    await waitUntil(() => component.state.report !== null);
+    await component.openOwnerDetails(component.ownerTable.sections[0]);
+    expect(component.state.ownerDetail.changed).toBe(true);
+    expect(component.state.ownerDetail.data).toBe(null);
+    component.closeOwnerDetails(); mode = "wrongCompany";
+    await component.openOwnerDetails(component.ownerTable.sections[0]);
+    expect(component.state.ownerDetail.error).toBe(component.labels.detailError);
+    expect(component.state.ownerDetail.data).toBe(null);
+    component.closeOwnerDetails(); mode = "valid";
+    await component.openOwnerDetails(component.ownerTable.sections[0]);
+    await component.openOwnerSource(component.state.ownerDetail.data.events[0]);
+    expect(component.state.ownerDetail.error).toBe(component.labels.detailError);
+    expect(component.state.ownerDetail.opening).toBe(false);
 });

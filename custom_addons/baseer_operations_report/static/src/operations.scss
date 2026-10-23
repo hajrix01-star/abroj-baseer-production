@@ -24,6 +24,14 @@
         direction: ltr;
     }
     .o_baseer_owner_absent { color: var(--baseer-report-muted); }
+    .o_baseer_owner_label { width: auto; max-width: 100%; overflow-wrap: anywhere; }
+    .o_baseer_owner_caret { margin-inline-end: 0.5rem; min-width: 1rem; }
+    .o_baseer_owner_back { margin-bottom: 0.75rem; }
+    .o_baseer_owner_events th { overflow-wrap: anywhere; }
+    .o_baseer_owner_detail_page .o_baseer_pl_pager button:disabled { opacity: 0.45; cursor: default; }
+    .o_baseer_owner_detail_page .o_baseer_pl_pager button:focus-visible {
+        outline: 2px solid var(--baseer-report-accent); outline-offset: 2px;
+    }
 }
 
 @media (max-width: 560px) {

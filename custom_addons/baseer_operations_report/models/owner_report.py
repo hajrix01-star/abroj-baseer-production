@@ -1,7 +1,10 @@
 """Server-formatted owner summary used by the existing Hub and PDF entry."""
 
 from decimal import Decimal, localcontext
+from datetime import date, datetime
+from datetime import date, datetime
 from hashlib import sha256
+import json
 
 from odoo import api, fields, models
 
@@ -72,6 +75,70 @@ class OperationsOwnerReport(models.AbstractModel):
             'has_unclassified_outflows': summary['has_unclassified_outflows'],
         }
 
+    @staticmethod
+    def _owner_revision_value(value):
+        """Serialize only known source primitives for a non-reversible digest."""
+        if isinstance(value, Decimal):
+            return format(value, 'f')
+        if isinstance(value, (date, datetime)):
+            return value.isoformat()
+        if isinstance(value, (date, datetime)):
+            return value.isoformat()
+        if isinstance(value, dict):
+            return {str(key): OperationsOwnerReport._owner_revision_value(item)
+                    for key, item in sorted(value.items())}
+        if isinstance(value, (list, tuple)):
+            return [OperationsOwnerReport._owner_revision_value(item) for item in value]
+        if value is None or isinstance(value, (str, int, bool)):
+            return value
+        raise TypeError('Unexpected owner-source revision value.')
+
+    def _owner_period_revision(self, company, start, end, journal_ids, sales, cash, display):
+        """Bind drill-down pages to the exact proved facts and visible rows."""
+        facts = []
+        for event in sales + cash['events']:
+            facts.append(self._owner_revision_value({
+                key: event[key] for key in (
+                    'company_id', 'direction', 'source_model', 'source_id',
+                    'line_model', 'line_id', 'payment_move_id', 'payment_line_id',
+                    'date', 'amount', 'classification', 'account_id', 'account_name',
+                    'service_key', 'service_name', 'category_path', 'channels',
+                    'link_status', 'linked_invoice_id', 'invoice_not_readded',
+                    'employee_id', 'loan_id', 'payslip_id', 'origin_payment_id',
+                ) if key in event
+            }))
+        payload = self._owner_revision_value({
+            'company_id': company.id,
+            'currency_id': company.currency_id.id,
+            'currency_code': company.currency_id.name,
+            'date_from': fields.Date.to_string(start),
+            'date_to': fields.Date.to_string(end),
+            'journal_ids': sorted(journal_ids),
+            'facts': sorted(facts, key=lambda item: json.dumps(
+                item, sort_keys=True, separators=(',', ':'), ensure_ascii=True)),
+            'display': display,
+        })
+        return sha256(json.dumps(
+            payload, sort_keys=True, separators=(',', ':'), ensure_ascii=True,
+        ).encode()).hexdigest()
+
+    def _owner_period_data(self, company, start, end, journal_ids):
+        """Rebuild one period from the same private, access-checked collectors."""
+        sales = self._owner_sales(company, start, end, journal_ids)
+        cash = self._owner_cash(company, start, end, journal_ids)
+        if not cash['coverage_complete']:
+            return {'coverage_complete': False}
+        summary = build_owner_summary(sales + cash['events'], cash['liquidity_totals'], company_id=company.id)
+        display = self._owner_display(summary, company)
+        return {
+            'coverage_complete': True,
+            'sales': sales,
+            'cash': cash,
+            'summary': summary,
+            'display': display,
+            'revision': self._owner_period_revision(company, start, end, journal_ids, sales, cash, display),
+        }
+
     @api.model
     def get_owner_snapshot(self, filters):
         """Only filters are accepted; all source facts are read in this request."""
@@ -81,19 +148,20 @@ class OperationsOwnerReport(models.AbstractModel):
         results = []
         for period in periods:
             start, end = fields.Date.to_date(period['date_from']), fields.Date.to_date(period['date_to'])
-            sales = self._owner_sales(company, start, end, journals)
-            cash = self._owner_cash(company, start, end, journals)
-            summary = build_owner_summary(sales + cash['events'], cash['liquidity_totals'], company_id=company.id)
-            results.append({
+            data = self._owner_period_data(company, start, end, journals)
+            result = {
                 'key': period['key'], 'date_from': period['date_from'], 'date_to': period['date_to'],
                 'label': period['label'], 'display_label': period['display_label'],
-                'coverage_complete': cash['coverage_complete'],
-                **self._owner_display(summary, company),
-            })
+                'coverage_complete': data['coverage_complete'],
+            }
+            if data['coverage_complete']:
+                result.update(data['display'])
+                result['revision'] = data['revision']
+            results.append(result)
         complete = all(period['coverage_complete'] for period in results)
         if not complete:
             for period in results:
-                for key in ('totals', 'channels', 'outflows', 'has_unclassified_outflows'):
+                for key in ('totals', 'channels', 'outflows', 'has_unclassified_outflows', 'revision'):
                     period.pop(key, None)
         arabic = (self.env.context.get('lang') or self.env.user.lang or '').startswith('ar')
         return {

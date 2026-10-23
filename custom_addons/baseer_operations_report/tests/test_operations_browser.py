@@ -107,6 +107,38 @@ class TestOperationsBrowser(HttpCase):
             await waitFor(() => salesToggle.getAttribute('aria-expanded') === 'false', 'collapsed sales fold');
             salesToggle.click();
             await waitFor(() => salesToggle.getAttribute('aria-expanded') === 'true', 'expanded sales fold');
+            const linkSpecs = [...ownerTable().querySelectorAll('[data-owner-row]')].map(button => ({
+                row: button.dataset.ownerRow, period: button.dataset.ownerPeriod,
+            }));
+            if (linkSpecs.length < 8) { throw new Error('Some summary rows or amounts are not linked'); }
+            for (const spec of linkSpecs) {
+                const link = [...ownerTable().querySelectorAll('[data-owner-row]')].find(button =>
+                    button.dataset.ownerRow === spec.row && button.dataset.ownerPeriod === spec.period);
+                link.focus();
+                if (document.activeElement !== link) { throw new Error('Detail link is not keyboard accessible'); }
+                link.click();
+                const details = await waitFor(() => host.querySelector('.o_baseer_owner_detail_page'), 'detail page');
+                await waitFor(() => details.querySelector('.o_baseer_owner_detail_total'), 'real detail RPC');
+                if (details.querySelector('.alert-danger, .o_baseer_owner_refresh')) { throw new Error('Detail request failed'); }
+                if (details.scrollWidth > details.clientWidth + 1) { throw new Error('Details overflowed viewport'); }
+                if (spec.row === 'total:cash_total') {
+                    if (details.querySelector('.o_baseer_owner_events')) { throw new Error('Zero cash has false events'); }
+                } else {
+                    const documentLink = details.querySelector('.o_baseer_owner_source');
+                    if (!documentLink || !documentLink.textContent.trim()) { throw new Error('Source document link missing'); }
+                    if (spec.row === 'total:incoming_total' && spec.period === 'current') {
+                        documentLink.click();
+                        const dialog = await waitFor(() => document.querySelector('.modal .o_form_view'), 'source form action');
+                        if (!dialog.textContent.includes('__INVOICE_NAME__')) { throw new Error('Wrong source document opened'); }
+                        const close = dialog.closest('.modal').querySelector('.btn-close');
+                        if (!close) { throw new Error('Source dialog close missing'); }
+                        close.click();
+                        await waitFor(() => !document.querySelector('.modal .o_form_view'), 'source dialog closed');
+                    }
+                }
+                details.querySelector('.o_baseer_owner_back').click();
+                await waitFor(() => ownerTable(), 'summary restored');
+            }
             if (host.querySelector('.o_baseer_go_incomplete')) { throw new Error('Proven source was hidden'); }
             const periodButton = () => host.querySelector('button[aria-label="Period"], button[aria-label="الفترة"]');
             periodButton().click();
@@ -179,7 +211,7 @@ class TestOperationsBrowser(HttpCase):
             if (document.scrollingElement.scrollTop !== 0) { throw new Error('Body scrolled instead of report action'); }
             console.log('test successful');
         })().catch((error) => { console.error(error); throw error; });
-        """.replace('__JOURNAL_ID__', str(journal.id)).replace('__ACCOUNT_CODE__', account.code)
+        """.replace('__JOURNAL_ID__', str(journal.id)).replace('__ACCOUNT_CODE__', account.code).replace('__INVOICE_NAME__', invoice.name)
         self.browser_js(
             '/odoo/action-%s' % action.id, script,
             ready="!!document.querySelector('.o_baseer_reports_hub.o_action')",

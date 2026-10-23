@@ -1,7 +1,7 @@
 {
     'name': 'Baseer Sales and Payments Summary',
     'summary': 'Recorded sales and proven cash payments with explicit source coverage',
-    'version': '19.0.1.0.9',
+    'version': '19.0.1.0.10',
     'author': 'Baseer',
     'license': 'LGPL-3',
     'category': 'Accounting/Reporting',

@@ -1,15 +1,18 @@
 """Fresh source-based owner PDF and the existing Arabic-safe A4 shell."""
 
 from io import BytesIO
+from copy import deepcopy
 import os
 from pathlib import Path
 from unittest.mock import patch
+from lxml import html as html_parser
 
 from odoo import Command
 from odoo.exceptions import AccessError, ValidationError
 from odoo.tests.common import HttpCase, tagged
 
 from .test_owner_cash import TestOwnerCash
+from ..report.owner_report import _owner_print_rows
 
 
 @tagged('post_install', '-at_install', 'operations_owner_pdf')
@@ -42,6 +45,33 @@ class TestOwnerPdf(HttpCase):
         self.assertEqual(values['periods'][0]['totals'][1]['amount'], '50.00')
         self.assertEqual(values['periods'][0]['totals'][2]['amount'], '-50.00')
 
+    def test_matrix_keeps_server_strings_identity_and_absent_cells(self):
+        def value(key, amount, label='Same label', **extra):
+            return {'key': key, 'label': label, 'amount': amount,
+                    'negative': amount.startswith('-'), **extra}
+
+        periods = [
+            {'key': 'current', 'totals': [value('incoming_total', '100.00'),
+                value('cash_total', '40.00'), value('difference', '60.00')],
+             'channels': [value('card', '100.00', percentage='100.00%')],
+             'outflows': [value('purchase', '40.00', rows=[value('same', '40.00')])]},
+            {'key': 'previous', 'totals': [value('incoming_total', '80.00'),
+                value('cash_total', '10.00'), value('difference', '70.00')],
+             'channels': [value('cash', '80.00', percentage='100.00%')],
+             'outflows': [value('services', '10.00', rows=[value('same', '10.00')])]},
+        ]
+        before = deepcopy(periods)
+        rows = _owner_print_rows(periods)
+        self.assertEqual([row['key'] for row in rows], [
+            'incoming_total', 'channel:card', 'channel:cash', 'cash_total',
+            'outflow:purchase', 'outflow:purchase:same', 'outflow:services',
+            'outflow:services:same', 'difference',
+        ])
+        self.assertNotIn('previous', rows[1]['amounts'])
+        self.assertEqual(rows[1]['amounts']['current']['amount'], '100.00')
+        self.assertEqual(rows[1]['amounts']['current']['percentage'], '100.00%')
+        self.assertEqual(periods, before)
+
     def test_incomplete_company_and_layout_guards(self):
         portrait = self.env['report.baseer_operations_report.owner_pdf_portrait']
         landscape = self.env['report.baseer_operations_report.owner_pdf_landscape']
@@ -62,7 +92,7 @@ class TestOwnerPdf(HttpCase):
     def _render_pdf(self, arabic=False, comparison=False):
         filters = dict(self.filters)
         if comparison:
-            filters['comparison'] = {'kind': 'previous_period', 'count': 1, 'order': 'descending'}
+            filters['comparison'] = {'kind': 'previous_period', 'count': 3, 'order': 'descending'}
         language = 'ar_001' if arabic else 'en_US'
         layout = 'landscape' if comparison else 'portrait'
         name = 'baseer_operations_report.owner_pdf_' + layout
@@ -70,6 +100,17 @@ class TestOwnerPdf(HttpCase):
         html, _kind = report._render_qweb_html(name, docids=[], data={'filters': filters})
         self.assertIn(('ملخص المبيعات والمدفوعات' if arabic else 'Sales and Payments Summary').encode(), html)
         self.assertIn(b'-40.00', html)
+        document = html_parser.fromstring(html)
+        self.assertEqual(len(document.xpath('//table[@class="owner-matrix"]')), 1)
+        self.assertEqual(len(document.xpath('//table/thead/tr/th')), 5 if comparison else 2)
+        self.assertTrue(document.xpath('//div[contains(@class,"bpl-pdf")]'))
+        self.assertTrue(document.xpath('//div[@class="footer"]'))
+        counter = document.xpath('//div[@class="footer"]/span[@dir="ltr"]')[0]
+        self.assertEqual(counter.get('style'), 'float: left;' if arabic else 'float: right;')
+        self.assertFalse(document.xpath('//div[contains(@class,"bpl-pdf")]//div[@class="footer"]'))
+        self.assertEqual(len(document.xpath('//tr[@data-owner-row="difference"]')), 1)
+        if comparison:
+            self.assertTrue(document.xpath('//td/span[text()="-"]'))
         pdf, kind = report._render_qweb_pdf(name, res_ids=[], data={'filters': filters})
         self.assertEqual(kind, 'pdf')
         self.assertTrue(pdf.startswith(b'%PDF-'))

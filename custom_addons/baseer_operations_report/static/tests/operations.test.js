@@ -7,7 +7,7 @@ import { registry } from "@web/core/registry";
 import { ConnectionLostError } from "@web/core/network/rpc";
 import { user } from "@web/core/user";
 import { clearRegistry, mountWithCleanup, patchWithCleanup } from "@web/../tests/web_test_helpers";
-import { BaseerOperationsPreview, prepareOperationsSnapshot } from "@baseer_operations_report/operations";
+import { BaseerOperationsPreview, buildOwnerTable, prepareOperationsSnapshot } from "@baseer_operations_report/operations";
 
 defineMailModels();
 
@@ -30,15 +30,44 @@ function ownerSnapshot(companyId = 1, sales = "115.00") {
     };
 }
 
+function ownerSnapshotWithComparison() {
+    const snapshot = ownerSnapshot();
+    snapshot.periods.push({
+        key: "previous", label: "September", display_label: "September 2026",
+        date_from: "2026-09-01", date_to: "2026-09-30", has_unclassified_outflows: false,
+        totals: [
+            { key: "incoming_total", label: "Sales", amount: "90.00", negative: false },
+            { key: "cash_total", label: "Actual payments", amount: "10.00", negative: false },
+            { key: "difference", label: "Sales less payments", amount: "80.00", negative: false },
+        ],
+        channels: [{ key: "card", label: "Card", amount: "90.00", negative: false, percentage: "100.00%" }],
+        outflows: [{ key: "operating:9", label: "Operating", amount: "10.00", negative: false,
+            rows: [{ key: "electricity:9", label: "Electricity", amount: "10.00", negative: false }] }],
+    });
+    return snapshot;
+}
+
 test("owner summary preserves server amounts and percentage strings", () => {
     const output = prepareOperationsSnapshot(ownerSnapshot(), "Baseer", false);
     const period = output.periods[0];
+    const table = buildOwnerTable(output.periods);
     expect(output.complete).toBe(true);
-    expect(period.top_totals[0].amount).toBe("115.00");
+    expect(table.sections[0].amounts.current.amount).toBe("115.00");
     expect(period.channels[0].percentage).toBe("50.00%");
     expect(period.outflows[0].rows[0].amount).toBe("20.00");
-    expect(period.difference.amount).toBe("95.00");
+    expect(table.difference.amounts.current.amount).toBe("95.00");
     expect(period.has_unclassified_outflows).toBe(true);
+});
+
+test("owner table unions stable rows in first-seen server order without values for absent periods", () => {
+    const table = buildOwnerTable(prepareOperationsSnapshot(ownerSnapshotWithComparison(), "Baseer", false).periods);
+    expect(table.sections.map((row) => row.key)).toEqual(["total:incoming_total", "total:cash_total"]);
+    expect(table.sections[0].children.map((row) => row.key)).toEqual(["channel:cash", "channel:card"]);
+    expect(table.sections[1].children.map((row) => row.key)).toEqual(["outflow:purchase:1/2", "outflow:operating:9"]);
+    expect(table.sections[0].children[0].amounts.current.amount).toBe("57.50");
+    expect(table.sections[0].children[0].amounts.previous).toBe(undefined);
+    expect(table.sections[1].children[1].children[0].key).toBe("outflow:operating:9:electricity:9");
+    expect(table.difference.amounts.previous.amount).toBe("80.00");
 });
 
 test("owner summary rejects missing values and incomplete leaked amounts", () => {
@@ -118,12 +147,30 @@ test("owner summary mounts loading then renders server strings without detail RP
     await waitUntil(() => calls.includes("get_owner_snapshot"));
     component.apply();
     expect(calls).toEqual(["get_context", "get_owner_snapshot"]);
-    snapshot.resolve(ownerSnapshot());
+    snapshot.resolve(ownerSnapshotWithComparison());
     await waitUntil(() => document.querySelector(".o_baseer_owner_difference strong"));
-    expect(document.querySelector(".o_baseer_owner_total strong").textContent).toBe("115.00");
-    expect(document.querySelector(".o_baseer_owner_value small").textContent).toBe("50.00%");
+    expect(document.querySelectorAll(".o_baseer_owner_table thead .is-number").length).toBe(4);
+    expect(document.querySelector(".o_baseer_owner_section strong").textContent).toBe("115.00");
+    expect(document.querySelector(".o_baseer_owner_percentage").textContent).toBe("50.00%");
     expect(document.querySelector(".o_baseer_owner_unclassified").textContent).toBe(component.labels.unclassified);
     expect(document.querySelector(".o_baseer_owner_difference strong").textContent).toBe("95.00");
+    expect(document.querySelectorAll(".o_baseer_owner_absent").length).toBeGreaterThan(0);
+    const groupToggle = document.querySelector('.o_baseer_owner_group button[aria-label="Purchases"]');
+    expect(groupToggle.getAttribute("aria-expanded")).toBe("false");
+    groupToggle.click();
+    await waitUntil(() => groupToggle.getAttribute("aria-expanded") === "true");
+    expect([...document.querySelectorAll(".o_baseer_owner_detail")].some((node) =>
+        node.textContent.includes("Food / Vegetables"))).toBe(true);
+    groupToggle.click();
+    await waitUntil(() => groupToggle.getAttribute("aria-expanded") === "false");
+    expect([...document.querySelectorAll(".o_baseer_owner_detail")].some((node) =>
+        node.textContent.includes("Food / Vegetables"))).toBe(false);
+    const salesToggle = document.querySelector('.o_baseer_owner_section button[aria-label="Sales"]');
+    expect(salesToggle.getAttribute("aria-expanded")).toBe("true");
+    salesToggle.click();
+    await waitUntil(() => salesToggle.getAttribute("aria-expanded") === "false");
+    expect(document.querySelector(".o_baseer_owner_percentage")).toBe(null);
+    expect(calls).toEqual(["get_context", "get_owner_snapshot"]);
 });
 
 test("Arabic owner totals preserve a negative server string and accessible period navigation", async () => {
@@ -141,7 +188,7 @@ test("Arabic owner totals preserve a negative server string and accessible perio
     expect(difference.textContent).toBe("-40.00");
     expect(difference.classList.contains("o_baseer_report_amount")).toBe(true);
     expect(difference.classList.contains("is-negative")).toBe(true);
-    expect(document.querySelector(".o_baseer_owner_value small").classList.contains("o_baseer_report_amount")).toBe(true);
+    expect(document.querySelector(".o_baseer_owner_percentage").classList.contains("o_baseer_report_amount")).toBe(true);
     const periodButton = document.querySelector('button[aria-label="الفترة"]');
     expect(periodButton).not.toBe(null);
     periodButton.click();
@@ -189,7 +236,7 @@ test("company changes fence late owner snapshots", async () => {
     await waitUntil(() => component.state.report !== null);
     pending.get(1).resolve(ownerSnapshot(1, "111.00"));
     await Promise.resolve(); await Promise.resolve();
-    expect(component.state.report.periods[0].top_totals[0].amount).toBe("222.00");
+    expect(component.ownerTable.sections[0].amounts.current.amount).toBe("222.00");
     expect(component.appliedFilters.company_id).toBe(2);
 });
 

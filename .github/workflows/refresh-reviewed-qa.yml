@@ -1,0 +1,70 @@
+name: Queue reviewed QA refresh from Live
+
+on:
+  workflow_dispatch:
+    inputs:
+      live_commit:
+        description: Exact currently deployed Live RELEASE_COMMIT
+        required: true
+        type: string
+      previous_qa_commit:
+        description: Exact currently deployed previous QA RELEASE_COMMIT
+        required: true
+        type: string
+      confirmation:
+        description: Type REFRESH_QA to preserve old QA and prepare its replacement
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: baseer-qa
+  cancel-in-progress: false
+
+jobs:
+  queue:
+    if: github.ref == 'refs/heads/main' && inputs.confirmation == 'REFRESH_QA'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment: qa
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - name: Validate reviewed operation and source identities
+        env:
+          LIVE_COMMIT: ${{ inputs.live_commit }}
+          PREVIOUS_QA_COMMIT: ${{ inputs.previous_qa_commit }}
+        run: |
+          set -Eeuo pipefail
+          [[ "$LIVE_COMMIT" =~ ^[a-f0-9]{40}$ ]]
+          [[ "$PREVIOUS_QA_COMMIT" =~ ^[a-f0-9]{40}$ ]]
+          git merge-base --is-ancestor "$LIVE_COMMIT" "$GITHUB_SHA"
+          git merge-base --is-ancestor "$PREVIOUS_QA_COMMIT" "$GITHUB_SHA"
+          bash -n ops/qa/baseer-qa-refresh
+          bash -n ops/qa/install-qa-refresh.sh
+          python3 -B -m unittest discover -s tests -p test_qa_refresh.py -v
+      - name: Sign the bounded refresh request
+        env:
+          LIVE_COMMIT: ${{ inputs.live_commit }}
+          PREVIOUS_QA_COMMIT: ${{ inputs.previous_qa_commit }}
+          QA_REQUEST_SIGNING_KEY: ${{ secrets.QA_REQUEST_SIGNING_KEY }}
+        run: |
+          set -Eeuo pipefail
+          test -n "$QA_REQUEST_SIGNING_KEY"
+          signing_key="$RUNNER_TEMP/qa-refresh-signing-key"
+          trap 'rm -f -- "$signing_key"' EXIT
+          printf '%s\n' "$QA_REQUEST_SIGNING_KEY" > "$signing_key"
+          chmod 0600 "$signing_key"
+          git config user.name baseer-qa-release-bot
+          git config user.email baseer-qa-release-bot@users.noreply.github.com
+          git config gpg.format ssh
+          git config user.signingkey "$signing_key"
+          printf 'QA_REFRESH_DATE=20261023\nQA_REFRESH_LIVE=%s\nQA_REFRESH_PREVIOUS=%s\n' "$LIVE_COMMIT" "$PREVIOUS_QA_COMMIT" > "$RUNNER_TEMP/qa-refresh-request"
+          request_tag="qa-refresh-20261023-${GITHUB_RUN_ID}"
+          git tag --sign --file "$RUNNER_TEMP/qa-refresh-request" "$request_tag" "$GITHUB_SHA"
+          git push origin "refs/tags/$request_tag"
+          printf 'QA_REFRESH_REQUEST=QUEUED\nTAG=%s\n' "$request_tag"

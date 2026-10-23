@@ -11,6 +11,11 @@ on:
         description: Exact currently deployed previous QA RELEASE_COMMIT
         required: true
         type: string
+      recovery_run_id:
+        description: Optional failed restored run to continue without taking another snapshot
+        required: false
+        default: ''
+        type: string
       confirmation:
         description: Type REFRESH_QA to preserve old QA and prepare its replacement
         required: true
@@ -38,10 +43,12 @@ jobs:
         env:
           LIVE_COMMIT: ${{ inputs.live_commit }}
           PREVIOUS_QA_COMMIT: ${{ inputs.previous_qa_commit }}
+          RECOVERY_RUN: ${{ inputs.recovery_run_id }}
         run: |
           set -Eeuo pipefail
           [[ "$LIVE_COMMIT" =~ ^[a-f0-9]{40}$ ]]
           [[ "$PREVIOUS_QA_COMMIT" =~ ^[a-f0-9]{40}$ ]]
+          [[ -z "$RECOVERY_RUN" || "$RECOVERY_RUN" =~ ^[1-9][0-9]{0,19}$ ]]
           git merge-base --is-ancestor "$LIVE_COMMIT" "$GITHUB_SHA"
           git merge-base --is-ancestor "$PREVIOUS_QA_COMMIT" "$GITHUB_SHA"
           bash -n ops/qa/baseer-qa-refresh
@@ -51,6 +58,7 @@ jobs:
         env:
           LIVE_COMMIT: ${{ inputs.live_commit }}
           PREVIOUS_QA_COMMIT: ${{ inputs.previous_qa_commit }}
+          RECOVERY_RUN: ${{ inputs.recovery_run_id }}
           QA_REQUEST_SIGNING_KEY: ${{ secrets.QA_REQUEST_SIGNING_KEY }}
         run: |
           set -Eeuo pipefail
@@ -64,6 +72,9 @@ jobs:
           git config gpg.format ssh
           git config user.signingkey "$signing_key"
           printf 'QA_REFRESH_DATE=20261023\nQA_REFRESH_LIVE=%s\nQA_REFRESH_PREVIOUS=%s\n' "$LIVE_COMMIT" "$PREVIOUS_QA_COMMIT" > "$RUNNER_TEMP/qa-refresh-request"
+          if [ -n "$RECOVERY_RUN" ]; then
+            printf 'QA_REFRESH_RECOVERY_RUN=%s\n' "$RECOVERY_RUN" >> "$RUNNER_TEMP/qa-refresh-request"
+          fi
           request_tag="qa-refresh-20261023-${GITHUB_RUN_ID}"
           git tag --sign --file "$RUNNER_TEMP/qa-refresh-request" "$request_tag" "$GITHUB_SHA"
           git push origin "refs/tags/$request_tag"

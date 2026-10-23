@@ -142,6 +142,10 @@ test("Arabic owner totals preserve a negative server string and accessible perio
     expect(difference.classList.contains("o_baseer_report_amount")).toBe(true);
     expect(difference.classList.contains("is-negative")).toBe(true);
     expect(document.querySelector(".o_baseer_owner_value small").classList.contains("o_baseer_report_amount")).toBe(true);
+    await waitUntil(() => {
+        const button = document.querySelector('button[aria-label="الفترة"]');
+        return button && !button.disabled;
+    });
     const periodButton = document.querySelector('button[aria-label="الفترة"]');
     expect(periodButton).not.toBe(null);
     periodButton.click();

@@ -146,4 +146,3 @@ class TestOperationsOwnerReport(TransactionCase):
             context.prec = 4
             displayed = self.report._owner_display(precise, self.company)
         self.assertEqual(displayed['outflows'][0]['amount'], '999,999,999,999,999,999.99')
-

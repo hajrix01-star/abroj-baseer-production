@@ -1,4 +1,4 @@
-"""Server-formatted owner summary; the existing Hub is not wired here yet."""
+"""Server-formatted owner summary used by the existing Hub and PDF entry."""
 
 from decimal import Decimal, localcontext
 from hashlib import sha256

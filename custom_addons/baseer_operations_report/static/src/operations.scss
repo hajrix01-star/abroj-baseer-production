@@ -8,6 +8,12 @@
 
     .o_baseer_owner_summary { display: block; }
     .o_baseer_owner_basis { color: var(--baseer-report-muted); margin: 0 0 0.5rem; }
+    .o_baseer_owner_summary > .o_baseer_owner_basis { margin: 0.8rem 0 0; font-size: 0.8rem; }
+    // Keep the P&L text hierarchy without turning off any drilldown button.
+    .o_baseer_owner_table .o_baseer_pl_account_amount:not(:disabled),
+    .o_baseer_owner_events .o_baseer_pl_account_amount:not(:disabled) { color: inherit; }
+    .o_baseer_owner_detail td strong,
+    .o_baseer_owner_events td strong { font-weight: 400; }
     .o_baseer_owner_table .o_baseer_owner_percentage {
         display: inline-block;
         color: var(--baseer-report-muted);

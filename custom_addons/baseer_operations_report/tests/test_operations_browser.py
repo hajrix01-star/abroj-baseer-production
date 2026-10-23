@@ -97,6 +97,48 @@ class TestOperationsBrowser(HttpCase):
             if (ownerTable().scrollWidth > ownerTable().clientWidth + 1) {
                 throw new Error('Compact owner table overflowed its viewport');
             }
+            // Compare the rendered theme with the unchanged shared P&L styles.
+            // No financial fixture or RPC is needed for this visual contract.
+            const reference = document.createElement('div');
+            reference.className = 'o_baseer_pl_report';
+            reference.style.cssText = 'position:absolute;visibility:hidden;pointer-events:none';
+            reference.innerHTML = '<section class="o_baseer_report o_baseer_pl_paper">' +
+                '<header class="o_baseer_report_head"><h1 class="o_baseer_report_title">Reference</h1></header>' +
+                '<table class="o_baseer_pl_table"><tbody>' +
+                '<tr class="o_baseer_pl_section"><th>Section</th><td><strong>100.00</strong></td></tr>' +
+                '<tr class="o_baseer_pl_channel"><th>Channel</th><td><span>100.00</span></td></tr>' +
+                '</tbody></table></section>';
+            host.appendChild(reference);
+            try {
+                const paper = host.querySelector('.o_baseer_owner_summary');
+                const sameStyle = (actual, expected, properties) => {
+                    const actualStyle = getComputedStyle(actual), expectedStyle = getComputedStyle(expected);
+                    for (const property of properties) {
+                        if (actualStyle[property] !== expectedStyle[property]) {
+                            throw new Error('Owner/P&L theme mismatch: ' + property);
+                        }
+                    }
+                };
+                sameStyle(paper.querySelector('h1'), reference.querySelector('h1'), ['fontSize', 'fontWeight', 'color']);
+                const section = ownerTable().querySelector('.o_baseer_owner_section');
+                sameStyle(section, reference.querySelector('.o_baseer_pl_section'), ['backgroundColor']);
+                sameStyle(section.querySelector('[data-owner-row]'), reference.querySelector('th'), ['color', 'fontWeight']);
+                sameStyle(section.querySelector('td strong'), reference.querySelector('td strong'), ['color', 'fontWeight']);
+                sameStyle(amount, reference.querySelector('.o_baseer_pl_channel td span'), ['color', 'fontWeight']);
+                sameStyle(section.querySelector('td'), reference.querySelector('td'), ['paddingTop', 'paddingBottom']);
+                const basis = paper.querySelector('.o_baseer_owner_basis');
+                if (!basis.textContent.trim() || basis.getBoundingClientRect().top < ownerTable().getBoundingClientRect().bottom) {
+                    throw new Error('Accounting basis must remain visible below the table');
+                }
+                const caption = paper.querySelector('.o_baseer_report_period').textContent;
+                const currentPeriod = ownerTable().querySelector('thead .is-number span').textContent;
+                if (!caption.includes(currentPeriod)) { throw new Error('Header period missing'); }
+                const amountButton = amount.closest('button');
+                amountButton.focus();
+                if (document.activeElement !== amountButton || getComputedStyle(amountButton).outlineStyle === 'none') {
+                    throw new Error('Themed amount lost visible keyboard focus');
+                }
+            } finally { reference.remove(); }
             const salesToggle = ownerTable().querySelector('.o_baseer_owner_section .o_baseer_pl_toggle');
             if (!salesToggle || salesToggle.tagName !== 'BUTTON') { throw new Error('Sales fold is not keyboard accessible'); }
             salesToggle.focus();

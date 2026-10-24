@@ -612,10 +612,15 @@ class BaseerProfitLossReport(models.AbstractModel):
         if type(page) is not int or page < 1:
             raise ValidationError(_('Select a valid page.'))
         company, _journal_ids, periods, _period_control, _comparison_control = self._scope(filters)
-        section_keys = SECTION_GROUPS.get(section, (section,))
         grouped_by_period = {
             period['key']: self._section_rows(period['domain']) for period in periods
         }
+        return self._account_section(company, periods, grouped_by_period, section, page=page)
+
+    def _account_section(self, company, periods, grouped_by_period, section, page=None,
+                         channel_periods=None):
+        """Project already verified request-local groups; None selects the full section."""
+        section_keys = SECTION_GROUPS.get(section, (section,))
         by_account = {}
         for period in periods:
             for section_key in section_keys:
@@ -627,16 +632,17 @@ class BaseerProfitLossReport(models.AbstractModel):
         ordered = sorted(by_account.values(), key=lambda row: (
             row['account'].code or '', row['account'].id,
         ))
-        start = (page - 1) * self.PAGE_SIZE
-        selected = ordered[start:start + self.PAGE_SIZE]
+        start = (page - 1) * self.PAGE_SIZE if page is not None else 0
+        selected = ordered[start:start + self.PAGE_SIZE] if page is not None else ordered
         currency = company.currency_id
         accounts = []
-        channel_periods = {
-            period['key']: self._revenue_channels(
-                company, period['domain'] & Domain('account_id', 'in',
-                    [item['account'].id for item in selected]))
-            for period in periods
-        } if section in ('income', 'income_other') else {}
+        if channel_periods is None:
+            channel_periods = {
+                period['key']: self._revenue_channels(
+                    company, period['domain'] & Domain('account_id', 'in',
+                        [item['account'].id for item in selected]))
+                for period in periods
+            } if section in ('income', 'income_other') else {}
         for row in selected:
             account = row['account']
             amounts = {}
@@ -670,7 +676,7 @@ class BaseerProfitLossReport(models.AbstractModel):
             'accounts': accounts,
         }
 
-    def _order_channels(self, order, amount, company):
+    def _order_channels(self, order, amount, company, _payment_ids=None):
         """Use original payment method IDs, not channel names or inference."""
         try:
             order.check_access('read')
@@ -678,9 +684,11 @@ class BaseerProfitLossReport(models.AbstractModel):
                 return {UNALLOCATED: ('', amount)}
             payments = order.payment_ids
             payments.check_access('read')
-            self.env['pos.payment'].flush_model(['pos_order_id'])
-            self.env.cr.execute('SELECT id FROM pos_payment WHERE pos_order_id=%s', [order.id])
-            if set(payments.ids) != {item[0] for item in self.env.cr.fetchall()}:
+            if _payment_ids is None:
+                self.env['pos.payment'].flush_model(['pos_order_id'])
+                self.env.cr.execute('SELECT id FROM pos_payment WHERE pos_order_id=%s', [order.id])
+                _payment_ids = {item[0] for item in self.env.cr.fetchall()}
+            if set(payments.ids) != _payment_ids:
                 return {UNALLOCATED: ('', amount)}
             methods = payments.payment_method_id
             methods.check_access('read')
@@ -700,7 +708,42 @@ class BaseerProfitLossReport(models.AbstractModel):
         except AccessError:
             return {UNALLOCATED: ('', amount)}
 
-    def _revenue_channels(self, company, domain, provenance=None):
+    def _channel_child_ids(self, orders):
+        """Fresh identity-only inverse census for already searched POS parents.
+
+        Never a financial source or a visibility grant. Each caller still checks
+        each declared child relation's access and exact IDs at the scalar boundary.
+        """
+        order_ids = sorted(set(orders.ids))
+        result = {'lines': {}, 'payments': {}}
+        if not order_ids:
+            return result
+        self.env['pos.order.line'].flush_model(['order_id'])
+        self.env['pos.payment'].flush_model(['pos_order_id'])
+        for offset in range(0, len(order_ids), 1000):
+            selected = order_ids[offset:offset + 1000]
+            for key, query in (
+                ('lines', 'SELECT order_id, id FROM pos_order_line WHERE order_id=ANY(%s)'),
+                ('payments', 'SELECT pos_order_id, id FROM pos_payment WHERE pos_order_id=ANY(%s)'),
+            ):
+                result[key].update({order_id: set() for order_id in selected})
+                self.env.cr.execute(query, [selected])
+                while batch := self.env.cr.fetchmany(1000):
+                    for order_id, child_id in batch:
+                        result[key][order_id].add(child_id)
+        return result
+
+    @staticmethod
+    def _claim_export_channel(budget, account_id, channel_key):
+        if budget is None:
+            return
+        key = (account_id, channel_key)
+        if key not in budget['keys']:
+            if len(budget['keys']) >= budget['limit']:
+                raise ValidationError(_('The export is limited to 5,000 rows. Narrow the period or selected journals.'))
+            budget['keys'].add(key)
+
+    def _revenue_channels(self, company, domain, provenance=None, _export_channel_budget=None):
         """Only attribute a whole move/account after exact POS net matching."""
         lines = self.env['account.move.line'].search(domain)
         self._verify_links(lines)
@@ -709,6 +752,9 @@ class BaseerProfitLossReport(models.AbstractModel):
             key = (line.move_id.id, line.account_id.id)
             grouped[key] = grouped.get(key, Decimal('0')) - self._decimal(line.balance)
         result = {}
+        # Only IDs are reused within this invocation; no context, cross-request,
+        # amount or visibility cache. Guard failures retain their original scope.
+        child_ids = {'lines': {}, 'payments': {}}
         for (move_id, account_id), amount in grouped.items():
             allocation = {UNALLOCATED: ('', amount)}
             try:
@@ -732,13 +778,15 @@ class BaseerProfitLossReport(models.AbstractModel):
                 if set(orders.ids) != {item[0] for item in self.env.cr.fetchall()}:
                     raise AccessError(_('POS source is not available.'))
                 orders.session_id.check_access('read')
+                missing = orders.filtered(lambda order: order.id not in child_ids['lines'])
+                if missing:
+                    census = self._channel_child_ids(missing)
+                    for key in child_ids:
+                        child_ids[key].update(census[key])
                 order_amounts = []
                 for order in orders:
                     order.lines.check_access('read')
-                    self.env['pos.order.line'].flush_model(['order_id'])
-                    self.env.cr.execute('SELECT id FROM pos_order_line WHERE order_id=%s',
-                                        [order.id])
-                    if set(order.lines.ids) != {item[0] for item in self.env.cr.fetchall()}:
+                    if set(order.lines.ids) != child_ids['lines'][order.id]:
                         raise AccessError(_('POS source is not available.'))
                     net = Decimal('0')
                     for source in order.lines:
@@ -756,7 +804,8 @@ class BaseerProfitLossReport(models.AbstractModel):
                 if order_amounts is not None:
                     allocation = {}
                     for order, net in order_amounts:
-                        for key, (name, value) in self._order_channels(order, net, company).items():
+                        for key, (name, value) in self._order_channels(
+                                order, net, company, _payment_ids=child_ids['payments'][order.id]).items():
                             prior = allocation.get(key, (name, Decimal('0')))
                             allocation[key] = (name, prior[1] + value)
             except (AccessError, KeyError):
@@ -764,6 +813,7 @@ class BaseerProfitLossReport(models.AbstractModel):
                 pass
             target = result.setdefault(account_id, {})
             for key, (name, value) in allocation.items():
+                self._claim_export_channel(_export_channel_budget, account_id, key)
                 if provenance is not None:
                     provenance.append({'move_id': move_id, 'account_id': account_id,
                                        'channel_key': key, 'name': name, 'value': value})

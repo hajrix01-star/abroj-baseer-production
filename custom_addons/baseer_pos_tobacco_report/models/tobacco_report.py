@@ -4,6 +4,7 @@ from zoneinfo import ZoneInfo
 
 from odoo import _, fields, models
 from odoo.exceptions import AccessError, ValidationError
+from odoo.tools import SQL
 
 
 RIYADH = ZoneInfo('Asia/Riyadh')
@@ -39,16 +40,19 @@ class BaseerPosTobaccoReport(models.AbstractModel):
             end_local.astimezone(timezone.utc).replace(tzinfo=None),
         )
 
-    def _order_tax_base_lines(self, order):
+    def _order_tax_base_lines(self, order, lines=None):
         tax_model = self.env['account.tax'].with_company(order.company_id)
-        base_lines = order.lines.sorted('id')._prepare_tax_base_line_values()
+        source_lines = order.lines if lines is None else lines
+        base_lines = source_lines.sorted('id')._prepare_tax_base_line_values()
+        for base in base_lines:
+            base['account_id'].check_access('read')
         tax_model._add_tax_details_in_base_lines(base_lines, order.company_id)
         tax_model._round_base_lines_tax_details(base_lines, order.company_id)
         tax_model._add_accounting_data_in_base_lines_tax_details(base_lines, order.company_id)
         return tax_model, base_lines
 
-    def _order_fee_data(self, order, quantum):
-        tax_model, base_lines = self._order_tax_base_lines(order)
+    def _order_fee_data(self, order, quantum, lines=None):
+        tax_model, base_lines = self._order_tax_base_lines(order, lines=lines)
         refund_factor = -1 if (order.is_refund or order.amount_total < 0.0) else 1
         fee_lines = []
         for base_line in base_lines:
@@ -57,6 +61,8 @@ class BaseerPosTobaccoReport(models.AbstractModel):
             for tax_data in base_line['tax_details']['taxes_data']:
                 for rep_data in tax_data.get('tax_reps_data', []):
                     account = rep_data.get('account')
+                    if account:
+                        account.check_access('read')
                     if account and account.with_company(order.company_id).code == '201021':
                         has_tobacco_repartition = True
                         line_fee += _money(rep_data['tax_amount_currency'], quantum)
@@ -82,20 +88,118 @@ class BaseerPosTobaccoReport(models.AbstractModel):
         mismatch = abs(computed_total - saved_total) > quantum / 2
         return fee_lines, mismatch, computed_total, saved_total
 
-    def _collect_rows(self, orders, currency, quantum):
+    def _checked_tax_links(self, records, field_name):
+        """Private identity-only proof for fixed native tax Many2many relations."""
+        records.check_access('read')
+        linked = records[field_name]
+        linked.check_access('read')
+        if records:
+            relation = records._fields[field_name]
+            records.flush_model([field_name])
+            self.env.cr.execute(SQL(
+                'SELECT %s,%s FROM %s WHERE %s=ANY(%s)',
+                SQL.identifier(relation.column1), SQL.identifier(relation.column2),
+                SQL.identifier(relation.relation), SQL.identifier(relation.column1), records.ids,
+            ))
+            if set(self.env.cr.fetchall()) != {
+                    (record.id, child.id) for record in records for child in record[field_name]}:
+                raise AccessError(_('The POS source is not available.'))
+        return linked
+
+    def _tobacco_candidates(self, orders, lines, company):
+        """Screen only identities/metadata; native per-order math stays authoritative.
+
+        A blank target can fall back to the native base account. Such orders
+        must be evaluated, not assumed unrelated. Never cache across requests.
+        """
+        line_model = self.env['pos.order.line']
+        line_model.flush_model(['order_id'])
+        self.env.cr.execute('SELECT order_id,id FROM pos_order_line WHERE order_id=ANY(%s)',
+                            [orders.ids])
+        if set(self.env.cr.fetchall()) != {(line.order_id.id, line.id) for line in lines}:
+            raise AccessError(_('The POS source is not available.'))
+        if any(order.company_id != company for order in orders):
+            raise AccessError(_('The POS source is not available.'))
+        if any(order.currency_id != company.currency_id for order in orders):
+            raise ValidationError(_('A POS order uses a different currency. Split or correct the source before reporting.'))
+        positions = orders.fiscal_position_id
+        positions.check_access('read')
+        if any(position.company_id and position.company_id != company for position in positions):
+            raise AccessError(_('The POS source is not available.'))
+        original_taxes = self._checked_tax_links(lines, 'tax_ids')
+        mapping_taxes = self._checked_tax_links(positions, 'tax_ids')
+        self._checked_tax_links(mapping_taxes, 'original_tax_ids')
+        self._checked_tax_links(original_taxes, 'fiscal_position_ids')
+        all_taxes = original_taxes | mapping_taxes
+        frontier = all_taxes
+        while frontier:
+            children = self._checked_tax_links(frontier, 'children_tax_ids')
+            frontier = children - all_taxes
+            all_taxes |= children
+        if any(tax.company_id != company for tax in all_taxes):
+            raise AccessError(_('The POS source is not available.'))
+        all_repartitions = all_taxes.invoice_repartition_line_ids | all_taxes.refund_repartition_line_ids
+        all_repartitions.check_access('read')
+        self.env['account.tax.repartition.line'].flush_model(['tax_id'])
+        self.env.cr.execute('SELECT tax_id,id FROM account_tax_repartition_line WHERE tax_id=ANY(%s)',
+                            [all_taxes.ids])
+        if set(self.env.cr.fetchall()) != {(rep.tax_id.id, rep.id) for rep in all_repartitions}:
+            raise AccessError(_('The POS source is not available.'))
+        all_repartitions.account_id.check_access('read')
+        all_taxes.cash_basis_transition_account_id.check_access('read')
+        candidates, tax_candidates, mapped = set(), {}, {}
+        for line in lines:
+            position = line.order_id.fiscal_position_id
+            source_taxes = line.tax_ids
+            mapping_key = (company.id, position.id, tuple(source_taxes.ids))
+            if mapping_key not in mapped:
+                # Exact native computed-field mapping, without writing that field
+                # for thousands of noncandidate lines. Amounts still use native
+                # preparation independently for every selected order below.
+                mapped[mapping_key] = position.map_tax(source_taxes)
+                mapped[mapping_key].check_access('read')
+                if set(mapped[mapping_key].ids) - set(all_taxes.ids):
+                    raise AccessError(_('The POS source is not available.'))
+            taxes = mapped[mapping_key]
+            key = tuple(taxes.ids)
+            if key not in tax_candidates:
+                flattened = taxes._flatten_taxes_and_sort_them()[0]
+                flattened.check_access('read')
+                if any(tax.company_id != company for tax in taxes | flattened):
+                    raise AccessError(_('The POS source is not available.'))
+                repartitions = (flattened.invoice_repartition_line_ids
+                                | flattened.refund_repartition_line_ids)
+                repartitions.check_access('read')
+                tax_repartitions = repartitions.filtered(lambda item: item.repartition_type == 'tax')
+                possible = bool(taxes) and not tax_repartitions
+                for repartition in tax_repartitions:
+                    account = repartition.with_company(company)._get_aml_target_tax_account()
+                    account.check_access('read')
+                    if account and company not in account.company_ids:
+                        raise AccessError(_('The POS source is not available.'))
+                    if not account or account.with_company(company).code == '201021':
+                        possible = True
+                tax_candidates[key] = possible
+            if tax_candidates[key]:
+                candidates.add(line.order_id.id)
+        return orders.filtered(lambda order: order.id in candidates)
+
+    def _collect_rows(self, orders, currency, quantum, lines_by_order=None):
         rows = []
         exceptions = []
         running = debit_total = credit_total = Decimal('0')
         for order in orders:
             if order.currency_id != currency:
                 raise ValidationError(_('A POS order uses a different currency. Split or correct the source before reporting.'))
-            fee_lines, mismatch, computed_total, saved_total = self._order_fee_data(order, quantum)
+            fee_lines, mismatch, computed_total, saved_total = (
+                self._order_fee_data(order, quantum) if lines_by_order is None else
+                self._order_fee_data(order, quantum, lines=lines_by_order[order]))
             local_date = fields.Datetime.to_datetime(order.date_order).replace(
                 tzinfo=timezone.utc,
             ).astimezone(RIYADH)
             date_text = _western(local_date.strftime('%d-%m-%Y %H:%M'))
             order_text = _western(order.name)
-            if mismatch:
+            if mismatch and fee_lines:
                 exceptions.append({
                     'date': date_text,
                     'order': order_text,
@@ -155,8 +259,14 @@ class BaseerPosTobaccoReport(models.AbstractModel):
             raise TobaccoReportTooLarge(_('This period exceeds 5,000 POS lines. Split it into smaller reports.'))
         lines.check_access('read')
 
+        selected_orders = self._tobacco_candidates(orders, lines, company)
+        selected_lines = lines.filtered(lambda line: line.order_id in selected_orders)
+        # Keep all companion lines, but do not ask Odoo to compute fields for
+        # unrelated orders through a wide prefetch set during native tax math.
+        lines_by_order = selected_lines.with_prefetch(selected_lines.ids).grouped('order_id')
+
         rows, exceptions, debit_total, credit_total, running = self._collect_rows(
-            orders, currency, quantum,
+            selected_orders, currency, quantum, lines_by_order=lines_by_order,
         )
 
         return {

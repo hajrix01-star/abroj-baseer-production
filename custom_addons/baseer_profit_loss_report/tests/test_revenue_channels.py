@@ -10,6 +10,32 @@ from ..models.revenue_channels import (
 
 @tagged('post_install', '-at_install')
 class TestRevenueChannels(TransactionCase):
+    def test_identity_census_empty_deduplicated_and_bounded_chunks(self):
+        calls = []
+        class Model:
+            def flush_model(self, fields):
+                pass
+        class Cursor:
+            def execute(self, query, args):
+                calls.append((query, list(args[0])))
+            def fetchmany(self, limit):
+                self_limit = limit
+                assert self_limit == 1000
+                return []
+        class Env(dict):
+            cr = Cursor()
+        report = SimpleNamespace(env=Env({'pos.order.line': Model(), 'pos.payment': Model()}))
+        collect = BaseerProfitLossReport._channel_child_ids
+        self.assertEqual(collect(report, SimpleNamespace(ids=[])), {'lines': {}, 'payments': {}})
+        self.assertEqual(calls, [])
+        ids = list(range(1, 1002)) + [1, 2, 1001]
+        result = collect(report, SimpleNamespace(ids=ids))
+        self.assertEqual(len(calls), 4)
+        self.assertEqual([len(chunk) for _query, chunk in calls], [1000, 1000, 1, 1])
+        self.assertEqual(set(result['lines']), set(ids))
+        self.assertEqual(set(result['payments']), set(ids))
+        self.assertTrue(all(not values for section in result.values() for values in section.values()))
+
     def test_posted_rounding_residual_preserves_ledger(self):
         unit = Decimal('.01')
         for sign in (Decimal('1'), Decimal('-1')):

@@ -24,6 +24,7 @@ async function vatTemplates() {
 
 async function mountVisualReport(lang, withWarnings = false) {
     patchWithCleanup(user, { lang, activeCompany: { id: 3 } });
+    const dialogs = [];
     const orm = {
         async call(model, method) {
             if (model !== "baseer.tax.report.wizard") {
@@ -54,13 +55,13 @@ async function mountVisualReport(lang, withWarnings = false) {
                             direct: { base: true, tax: true }, components: { base: [], tax: [] },
                         },
                         {
-                            number: "13", name: "Net VAT", base_text: "0.00", base_state: "zero",
+                            number: "13", name: "Net VAT", base_text: "—", base_state: "empty",
                             tax_text: "0.00", tax_state: "zero",
                             direct: { base: false, tax: false },
                             components: {
-                                base: [{ number: "1", column: "tax", name: "Zero component",
+                                tax: [{ number: "1", column: "tax", name: "Zero component",
                                     amount_text: "0.00", state: "zero" }],
-                                tax: [],
+                                base: [],
                             },
                         },
                     ],
@@ -70,12 +71,14 @@ async function mountVisualReport(lang, withWarnings = false) {
         },
     };
     const app = new App(SaudiVatReport, {
-        env: { services: { orm, action: { doAction: async () => {} }, notification: { add: () => {} }, dialog: { add: () => {} } } },
+        env: { services: { orm, action: { doAction: async () => {} }, notification: { add: () => {} },
+            dialog: { add: (component, props) => dialogs.push({ component, ...props }) } } },
         templates: await vatTemplates(), props: {}, test: true,
     });
     after(() => app.destroy());
     await app.mount(getFixture());
     await waitUntil(() => Boolean(queryOne(".o_baseer_vat_table")));
+    return dialogs;
 }
 
 test("VAT warning keeps untagged VAT distinct from other fees in Arabic", async () => {
@@ -224,8 +227,8 @@ test("VAT visual amount states preserve muted zero and red negative", () => {
     expect(SaudiVatReport.prototype.amountClass("empty")).toBe("");
 });
 
-test("Arabic VAT paper renders RTL, isolated numbers, and a faint zero in expanded components", async () => {
-    await mountVisualReport("ar_001");
+test("Arabic VAT paper preserves RTL, isolated numbers and faint zero while composites open shared details", async () => {
+    const dialogs = await mountVisualReport("ar_001");
     const root = queryOne(".o_baseer_vat_report");
     const paper = queryOne(".o_baseer_vat_paper");
     const canvas = queryOne(".o_baseer_report_canvas");
@@ -243,16 +246,49 @@ test("Arabic VAT paper renders RTL, isolated numbers, and a faint zero in expand
     expect(negative.textContent).toBe("-15.00");
     expect(window.getComputedStyle(zero).color).not.toBe(window.getComputedStyle(negative).color);
 
-    await click('.o_baseer_vat_total .o_baseer_vat_cell_button[aria-expanded="false"]');
-    await waitUntil(() => document.querySelector(
-        '.o_baseer_vat_total .o_baseer_vat_cell_button[aria-expanded="true"]'
-    ));
-    await waitUntil(() => document.querySelector(
-        ".o_baseer_vat_components .o_baseer_vat_cell_button.is-zero"
-    ));
-    const componentZero = queryOne(".o_baseer_vat_components .o_baseer_vat_cell_button.is-zero");
-    expect(componentZero.textContent).toBe("0.00");
-    expect(componentZero.getAttribute("dir")).toBe("ltr");
+    const compositeZero = queryOne(".o_baseer_vat_table tbody tr:last-child .o_baseer_vat_cell_button");
+    expect(compositeZero.textContent).toBe("0.00");
+    expect(compositeZero.getAttribute("dir")).toBe("ltr");
+    expect(compositeZero.classList.contains("is-zero")).toBe(true);
+    expect(compositeZero.hasAttribute("aria-expanded")).toBe(false);
+    compositeZero.click();
+    await waitUntil(() => dialogs.length === 1);
+    expect(dialogs[0].selector).toEqual({ kind: "cell", box: "13", column: "tax" });
+    expect(dialogs[0].reportKey).toBe("vat");
+    expect(document.querySelector(".o_baseer_vat_components")).toBe(null);
+    expect(queryOne(".o_baseer_vat_table tbody tr:last-child td:nth-child(2)").textContent.includes("—")).toBe(true);
+    expect(queryOne(".o_baseer_vat_table tbody tr:last-child td:nth-child(2)").querySelector("button")).toBe(null);
+});
+
+test("VAT direct, composite and warning amounts use one dialog with captured applied scope", async () => {
+    const dialogs = await mountVisualReport("en_US", true);
+    const buttons = [...document.querySelectorAll(".o_baseer_vat_table .o_baseer_vat_cell_button")];
+    expect(buttons.length).toBe(5);
+    for (const button of buttons) { button.click(); }
+    const warnings = [...document.querySelectorAll(".o_baseer_report_warning .o_baseer_report_amount")];
+    expect(warnings.length).toBe(2);
+    expect(warnings.map((button) => button.textContent)).toEqual(["-42.13", "-100.00"]);
+    for (const button of warnings) {
+        expect(button.tagName).toBe("BUTTON");
+        expect(button.getAttribute("dir")).toBe("ltr");
+        button.click();
+    }
+    await waitUntil(() => dialogs.length === 7);
+    expect(dialogs.map((dialog) => dialog.selector)).toEqual([
+        { kind: "cell", box: "1", column: "base" }, { kind: "cell", box: "1", column: "tax" },
+        { kind: "cell", box: "6", column: "base" }, { kind: "cell", box: "6", column: "tax" },
+        { kind: "cell", box: "13", column: "tax" },
+        { kind: "exception", class: "vat" }, { kind: "exception", class: "other" },
+    ]);
+    for (const dialog of dialogs) {
+        expect(dialog.component).toBe(dialogs[0].component);
+        expect(dialog.reportKey).toBe("vat");
+        expect(dialog.filters).toEqual({ company_id: 3, period_type: "quarter", year: 2026,
+            month: "1", quarter: "3", display_mode: "simple", journal_ids: [] });
+    }
+    patchWithCleanup(user, { activeCompany: { id: 4 } });
+    buttons[0].click();
+    expect(dialogs.length).toBe(7);
 });
 
 test("English VAT paper renders LTR and keeps the same server-provided amounts", async () => {

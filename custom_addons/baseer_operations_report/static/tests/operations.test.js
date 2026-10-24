@@ -95,6 +95,7 @@ function loadingContext(companyId = 1) {
 
 async function loadingTemplates() {
     const paths = ["/baseer_operations_report/static/src/operations.xml",
+        "/baseer_reports_menu/static/src/report_drill.xml",
         "/baseer_reports_menu/static/src/report_export.xml",
         "/baseer_reports_menu/static/src/report_selector.xml"];
     const templates = await Promise.all(paths.map(async (path) => {
@@ -116,7 +117,7 @@ async function mountLoadingReport(call, doAction = async () => {}) {
         required.set(name, service);
         for (const dependency of service.dependencies || []) { keep(dependency); }
     };
-    for (const name of ["localization", "ui", "hotkey", "popover", "bottom_sheet"]) { keep(name); }
+    for (const name of ["localization", "ui", "hotkey", "popover", "bottom_sheet", "dialog"]) { keep(name); }
     clearRegistry(services);
     clearRegistry(registry.category("main_components"));
     for (const [name, service] of required) { services.add(name, service); }
@@ -132,7 +133,6 @@ async function mountLoadingReport(call, doAction = async () => {}) {
     } }) });
     services.add("action", { start: () => ({ doAction }) });
     services.add("notification", { start: () => ({ add: () => {} }) });
-    services.add("dialog", { start: () => ({ add: () => {} }) });
     const component = await mountWithCleanup(BaseerOperationsPreview, { templates: await loadingTemplates(), props: {} });
     return { component, destroy: () => destroy(component.__owl__.app) };
 }
@@ -327,6 +327,8 @@ test("every owner row and present amount is a drilldown separate from folding", 
     for (const target of buttons) {
         const button = [...document.querySelectorAll("[data-owner-row]")].find((node) =>
             node.dataset.ownerRow === target.row && node.dataset.ownerPeriod === target.period);
+        button.focus();
+        expect(document.activeElement).toBe(button);
         button.click();
         await waitUntil(() => component.state.ownerDetail?.data);
         const call = requests[requests.length - 1];
@@ -334,13 +336,13 @@ test("every owner row and present amount is a drilldown separate from folding", 
         const period = target.period || (expected.has(`${target.row}|current`) ? "current" : "previous");
         expect(call[2]).toBe(period);
         expect(call[3]).toBe((period === "current" ? "a" : "b").repeat(64));
-        await waitUntil(() => document.querySelector(".o_baseer_owner_detail_total strong"));
-        expect(document.querySelector(".o_baseer_owner_detail_total strong").textContent)
+        await waitUntil(() => document.querySelector(".o_baseer_amount_details_dialog .o_baseer_drill_value"));
+        expect(document.querySelector(".o_baseer_amount_details_dialog .o_baseer_drill_value").textContent)
             .toBe(expected.get(`${target.row}|${period}`).amount);
-        document.querySelector(".o_baseer_owner_back").click();
-        await waitUntil(() => document.querySelector(".o_baseer_owner_summary"));
-        expect(document.activeElement.dataset.ownerRow).toBe(target.row);
-        expect(document.activeElement.dataset.ownerPeriod).toBe(target.period);
+        expect(document.querySelector(".o_baseer_owner_summary")).not.toBe(null);
+        document.querySelector(".o_baseer_drill_close").click();
+        await waitUntil(() => !document.querySelector(".o_baseer_amount_details_dialog"));
+        await waitUntil(() => document.activeElement === button);
     }
     expect(requests.length).toBe(buttons.length);
     expect(component.isOwnerExpanded(component.ownerTable.sections[1].children[0])).toBe(true);
@@ -358,12 +360,12 @@ test("details page through exact server contributions and open a revalidated sou
     }, async (action) => actions.push(action));
     await waitUntil(() => component.state.report !== null);
     await component.openOwnerDetails(component.ownerTable.sections[0], "current");
-    await waitUntil(() => document.querySelector(".o_baseer_owner_next"));
-    document.querySelector(".o_baseer_owner_next").click();
+    await waitUntil(() => document.querySelector(".o_baseer_drill_next"));
+    document.querySelector(".o_baseer_drill_next").click();
     await waitUntil(() => component.state.ownerDetail?.data?.page === 2);
     expect(requests[1].args[4]).toBe(2);
-    await waitUntil(() => document.querySelector(".o_baseer_owner_source"));
-    document.querySelector(".o_baseer_owner_source").click();
+    await waitUntil(() => document.querySelector(".o_baseer_amount_details_dialog .o_baseer_amount_link"));
+    document.querySelector(".o_baseer_amount_details_dialog .o_baseer_amount_link").click();
     await waitUntil(() => actions.length === 1);
     expect(requests[2].args).toEqual([component.appliedFilters, "total:incoming_total", "current", "a".repeat(64), "c".repeat(64)]);
     expect(actions[0].res_id).toBe(7);
@@ -387,9 +389,9 @@ test("changed detail or source revision hides events and requests a new summary"
     component.closeOwnerDetails();
     changed = true;
     await component.openOwnerDetails(component.ownerTable.sections[0]);
-    await waitUntil(() => document.querySelector(".o_baseer_owner_refresh"));
-    expect(document.querySelector(".o_baseer_owner_events")).toBe(null);
-    document.querySelector(".o_baseer_owner_refresh").click();
+    await waitUntil(() => document.querySelector(".o_baseer_drill_refresh"));
+    expect(document.querySelector(".o_baseer_drill_table")).toBe(null);
+    document.querySelector(".o_baseer_drill_refresh").click();
     await waitUntil(() => document.querySelector(".o_baseer_owner_summary"));
     expect(component.state.ownerDetail).toBe(null);
 });
@@ -411,11 +413,13 @@ test("details retry safely and fence late responses after back, company change a
     await waitUntil(() => component.state.report !== null);
     await component.openOwnerDetails(component.ownerTable.sections[0]);
     expect(component.state.ownerDetail.error).toBe(component.labels.detailError);
-    const request = component.loadOwnerDetails(1);
+    await waitUntil(() => document.querySelector(".o_baseer_drill_retry"));
+    document.querySelector(".o_baseer_drill_retry").click();
+    await waitUntil(() => calls === 2);
     component.loadOwnerDetails(1);
     expect(calls).toBe(2);
     component.closeOwnerDetails();
-    pending.resolve(detailResult(pending.args)); await request;
+    pending.resolve(detailResult(pending.args)); await Promise.resolve();
     expect(component.state.ownerDetail).toBe(null);
     const second = component.openOwnerDetails(component.ownerTable.sections[0]);
     patchWithCleanup(user, { activeCompany: { id: 2 } });
@@ -425,7 +429,7 @@ test("details retry safely and fence late responses after back, company change a
     expect(component.state.ownerDetail).toBe(null);
     const third = component.openOwnerDetails(component.ownerTable.sections[0]);
     destroy(); pending.resolve(detailResult(pending.args)); await third;
-    expect(component.state.ownerDetail.data).toBe(null);
+    expect(component.state.ownerDetail).toBe(null);
 });
 
 test("detail payload mismatches and source errors never display unverified operations", async () => {
@@ -453,4 +457,26 @@ test("detail payload mismatches and source errors never display unverified opera
     await component.openOwnerSource(component.state.ownerDetail.data.events[0]);
     expect(component.state.ownerDetail.error).toBe(component.labels.detailError);
     expect(component.state.ownerDetail.opening).toBe(false);
+});
+
+test("late dialog close callbacks cannot clear a newer owner detail", async () => {
+    const dialogs = [];
+    const { component } = await mountLoadingReport((_model, method, args) => {
+        if (method === "get_context") { return Promise.resolve(loadingContext()); }
+        if (method === "get_owner_snapshot") { return Promise.resolve(ownerSnapshot()); }
+        if (method === "get_owner_details") { return Promise.resolve(detailResult(args)); }
+        throw new Error("Unexpected RPC");
+    });
+    await waitUntil(() => component.state.report !== null);
+    component.dialog = { add: (_Dialog, _props, options) => {
+        dialogs.push(options);
+        return () => options.onClose();
+    } };
+    await component.openOwnerDetails(component.ownerTable.sections[0]);
+    await component.openOwnerDetails(component.ownerTable.difference);
+    expect(component.state.ownerDetail.rowKey).toBe("total:difference");
+    dialogs[0].onClose();
+    expect(component.state.ownerDetail.rowKey).toBe("total:difference");
+    dialogs[1].onClose();
+    expect(component.state.ownerDetail).toBe(null);
 });

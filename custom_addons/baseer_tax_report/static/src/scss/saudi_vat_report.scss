@@ -79,7 +79,7 @@
         }
         thead th:first-child { width: 58%; text-align: start; }
         thead th:not(:first-child) { width: 21%; text-align: end; }
-        tbody tr:has(.o_baseer_vat_cell_button):not(.o_baseer_vat_components):hover { background: #f5f8f8; }
+        tbody tr:has(.o_baseer_vat_cell_button):hover { background: #f5f8f8; }
         .o_baseer_vat_total { font-weight: 700; }
         .o_baseer_vat_total th, .o_baseer_vat_total td {
             border-top: 1px solid #c6cdd3;
@@ -122,15 +122,6 @@
         outline: 2px solid var(--baseer-report-accent);
         outline-offset: 2px;
     }
-    .o_baseer_vat_components td { padding-inline: 1.1rem; background: #f9fafb; }
-    .o_baseer_vat_component_heading { display: block; margin-bottom: 0.3rem; color: var(--baseer-report-muted); }
-    .o_baseer_vat_component {
-        display: flex;
-        justify-content: space-between;
-        align-items: baseline;
-        gap: 0.6rem;
-        padding: 0.25rem 0;
-    }
     .o_baseer_vat_warning_help {
         display: inline-flex;
         justify-content: center;
@@ -153,7 +144,7 @@
         .o_baseer_vat_journals summary { width: 100%; }
         .o_baseer_vat_table {
             thead { display: none; }
-            tbody tr:not(.o_baseer_vat_components) {
+            tbody tr {
                 display: grid;
                 grid-template-columns: repeat(2, minmax(0, 1fr));
                 border-bottom: 1px solid var(--baseer-report-line);
@@ -173,7 +164,6 @@
                 color: var(--baseer-report-muted);
                 font-size: 0.75rem;
             }
-            .o_baseer_vat_components td { display: block; }
         }
     }
 }

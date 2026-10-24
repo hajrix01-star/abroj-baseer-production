@@ -1,31 +1,38 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
     <t t-name="baseer_reports_menu.DrillDialog">
-        <Dialog title="state.data?.title || labels.title" size="'lg'">
-            <div class="o_baseer_report_drill" t-att-dir="props.lang === 'ar' ? 'rtl' : 'ltr'" t-att-lang="props.lang" t-att-aria-busy="state.busy ? 'true' : 'false'">
+        <AmountDetailsDialog view="view" lang="props.lang" close="props.close"
+            retry.bind="load" activate.bind="activate" page.bind="page" back.bind="back"/>
+    </t>
+    <t t-name="baseer_reports_menu.AmountDetailsDialog">
+        <Dialog title="props.view.data?.title || labels.title" size="'lg'">
+            <div class="o_baseer_report_drill o_baseer_amount_details_dialog" t-att-dir="props.lang === 'ar' ? 'rtl' : 'ltr'" t-att-lang="props.lang" t-att-aria-busy="props.view.busy ? 'true' : 'false'">
                 <p class="text-muted small" t-esc="labels.current"/>
-                <p t-if="state.busy" role="status" t-esc="labels.loading"/>
-                <div t-if="state.error" role="alert" class="alert alert-danger"><span t-esc="state.error"/> <button type="button" class="btn btn-light" t-on-click="load" t-att-disabled="state.busy" t-esc="labels.retry"/></div>
-                <t t-if="state.data">
-                    <strong dir="ltr" class="o_baseer_drill_value" t-esc="state.data.value"/>
-                    <p class="o_baseer_drill_basis" t-esc="state.data.basis"/>
+                <p t-if="props.view.busy" role="status" t-esc="labels.loading"/>
+                <div t-if="props.view.error" role="alert" class="alert alert-danger"><span t-esc="props.view.error"/> <button type="button" class="btn btn-light o_baseer_drill_retry" t-on-click="props.retry" t-att-disabled="props.view.busy" t-esc="labels.retry"/></div>
+                <div t-if="props.view.changedText" role="status" class="alert alert-warning o_baseer_drill_changed"><span t-esc="props.view.changedText"/> <button t-if="props.refresh" type="button" class="btn btn-light o_baseer_drill_refresh" t-on-click="props.refresh" t-att-disabled="props.view.busy" t-esc="labels.refresh"/></div>
+                <t t-if="props.view.data">
+                    <p t-if="props.view.data.subtitle" class="text-muted small" t-esc="props.view.data.subtitle"/>
+                    <strong dir="ltr" class="o_baseer_drill_value" t-esc="props.view.data.value"/>
+                    <p class="o_baseer_drill_count"><t t-esc="labels.count"/>: <span dir="ltr" t-esc="props.view.data.total_count"/></p>
+                    <p class="o_baseer_drill_basis" t-esc="props.view.data.basis"/>
                     <div class="table-responsive">
-                        <table class="table table-sm o_baseer_drill_table"><thead><tr><th t-foreach="state.data.columns" t-as="column" t-key="column.key" t-esc="column.label"/></tr></thead>
-                            <tbody><tr t-foreach="state.data.rows" t-as="row" t-key="row.key"><td t-foreach="state.data.columns" t-as="column" t-key="column.key" t-att-dir="column.numeric ? 'ltr' : undefined">
-                                <button t-if="row.drill || row.source" type="button" class="o_baseer_amount_link" t-att-disabled="state.busy" t-on-click="() => this.activate(row)" t-esc="row.cells[column.key] || '—'"/>
+                        <table class="table table-sm o_baseer_drill_table"><thead><tr><th t-foreach="props.view.data.columns" t-as="column" t-key="column.key" t-esc="column.label"/></tr></thead>
+                            <tbody><tr t-foreach="props.view.data.rows" t-as="row" t-key="row.key"><td t-foreach="props.view.data.columns" t-as="column" t-key="column.key" t-att-dir="column.numeric ? 'ltr' : undefined">
+                                <button t-if="row.drill || row.source" type="button" class="o_baseer_amount_link" t-att-disabled="props.view.busy" t-on-click="() => props.activate(row)" t-esc="row.cells[column.key] || '—'"/>
                                 <span t-else="" t-esc="row.cells[column.key] || '—'"/>
                             </td></tr></tbody>
                         </table>
                     </div>
-                    <p t-if="!state.data.rows.length" t-esc="labels.empty"/>
-                    <nav t-if="state.data.total_count > state.data.page_size" class="d-flex gap-2 align-items-center" t-att-aria-label="labels.page">
-                        <button type="button" class="btn btn-light" t-att-disabled="state.busy || state.data.page === 1" t-on-click="() => this.page(-1)" t-esc="labels.previous"/>
-                        <span><t t-esc="labels.page"/> <t t-esc="state.data.page"/></span>
-                        <button type="button" class="btn btn-light" t-att-disabled="state.busy || state.data.page * state.data.page_size >= state.data.total_count" t-on-click="() => this.page(1)" t-esc="labels.next"/>
+                    <p t-if="!props.view.data.rows.length" class="o_baseer_drill_empty" t-esc="labels.empty"/>
+                    <nav t-if="props.view.data.total_count > props.view.data.page_size" class="d-flex gap-2 align-items-center" t-att-aria-label="labels.page">
+                        <button type="button" class="btn btn-light o_baseer_drill_previous" t-att-disabled="props.view.busy || props.view.data.page === 1" t-on-click="() => props.page(-1)" t-esc="labels.previous"/>
+                        <span><t t-esc="labels.page"/> <t t-esc="props.view.data.page"/></span>
+                        <button type="button" class="btn btn-light o_baseer_drill_next" t-att-disabled="props.view.busy || props.view.data.page * props.view.data.page_size >= props.view.data.total_count" t-on-click="() => props.page(1)" t-esc="labels.next"/>
                     </nav>
                 </t>
             </div>
-            <t t-set-slot="footer"><button type="button" class="btn btn-primary" t-on-click="props.close" t-esc="labels.close"/><button t-if="state.history.length" type="button" class="btn btn-secondary" t-att-disabled="state.busy" t-on-click="back" t-esc="labels.back"/></t>
+            <t t-set-slot="footer"><button type="button" class="btn btn-primary o_baseer_drill_close" t-on-click="props.close" t-esc="labels.close"/><button t-if="props.view.hasBack and props.back" type="button" class="btn btn-secondary o_baseer_drill_back" t-att-disabled="props.view.busy" t-on-click="props.back" t-esc="labels.back"/></t>
         </Dialog>
     </t>
 </templates>

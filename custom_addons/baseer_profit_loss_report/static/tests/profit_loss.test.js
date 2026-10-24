@@ -88,8 +88,9 @@ async function mountReport(calls) {
     return dialogs;
 }
 
-test("profit and loss summary and zero-period account amounts open applied-scope details", async () => {
-    const dialogs = await mountReport([]);
+test("profit and loss summary, account name, nonzero and zero amounts open the same applied-scope details", async () => {
+    const calls = [];
+    const dialogs = await mountReport(calls);
     await click(".o_baseer_pl_income td .o_baseer_amount_link");
     expect(dialogs[0].selector).toEqual({ kind: "row", row_key: "income", period_key: "current" });
     expect(dialogs[0].filters.company_id).toBe(1);
@@ -100,6 +101,17 @@ test("profit and loss summary and zero-period account amounts open applied-scope
     buttons[1].click();
     await waitUntil(() => dialogs.length === 2);
     expect(dialogs[1].selector).toEqual({ kind: "account", account_id: 7, period_key: "previous_1" });
+    buttons[0].click();
+    await waitUntil(() => dialogs.length === 3);
+    expect(dialogs[2].selector).toEqual({ kind: "account", account_id: 7, period_key: "current" });
+    await click(".o_baseer_pl_account th .o_baseer_amount_link");
+    await waitUntil(() => dialogs.length === 4);
+    expect(dialogs[3].selector).toEqual(dialogs[2].selector);
+    for (const dialog of dialogs) {
+        expect(dialog.reportKey).toBe("profit_loss");
+        expect(dialog.filters).toEqual(filters);
+    }
+    expect(calls.filter(([method]) => method === "get_account_action")).toEqual([]);
 });
 
 test("profit and loss remains a real accounting-only report component", () => {
@@ -135,7 +147,7 @@ test("period navigation delegates calendar movement to the server", async () => 
     const calls = [];
     const instance = Object.create(BaseerProfitLossReport.prototype);
     Object.assign(instance, {
-        state: { filters: structuredClone(filters), loading: false, error: "", report: null, expanded: {}, pages: {}, accountLoading: {}, accountOpening: {} },
+        state: { filters: structuredClone(filters), loading: false, error: "", report: null, expanded: {}, pages: {}, accountLoading: {} },
         requestToken: 0, appliedFilters: null, lang: "en", orm: { call: async (_model, method, args) => {
             calls.push([method, args]);
             return { company: { name: "Baseer", currency_code: "SAR" }, periods, rows: [], period_controls: { anchor_date: "2026-09-15" } };
@@ -203,15 +215,27 @@ test("a period-menu arrow changes its own server period kind before navigating",
     expect(directions).toEqual([-1]);
 });
 
-test("account click opens the native journal-items page for its selected period", async () => {
+test("account clicks route to details for the exact period without a direct source RPC", async () => {
     const calls = [];
     const actions = [];
-    const context = { appliedFilters: structuredClone(filters), requestToken: 0, state: { accountOpening: {}, error: "" }, labels: { error: "Could not open" }, orm: { call: async (...args) => { calls.push(args); return { type: "ir.actions.act_window", res_model: "account.move.line", target: "current", domain: [["account_id", "=", 7]] }; } }, env: { services: { action: { doAction: async (action) => actions.push(action) } } }, accountKey: BaseerProfitLossReport.prototype.accountKey };
-    await BaseerProfitLossReport.prototype.openAccount.call(context, { id: 7, code: "400000", move_line_counts: { previous_1: 1 } }, "previous_1");
-    expect(calls[0][1]).toBe("get_account_action");
-    expect(calls[0][2][2]).toBe("previous_1");
-    expect(actions[0].target).toBe("current");
-    expect(actions[0].domain).toEqual([["account_id", "=", 7]]);
+    const dialogs = [];
+    const context = { appliedFilters: structuredClone(filters),
+        drill: { open: (selector) => dialogs.push(selector) },
+        orm: { call: async (...args) => calls.push(args) },
+        env: { services: { action: { doAction: async (action) => actions.push(action) } } } };
+    for (const count of [0, 1]) {
+        await BaseerProfitLossReport.prototype.openAccount.call(context,
+            { id: 7, code: "400000", move_line_counts: { previous_1: count } }, "previous_1");
+    }
+    expect(dialogs).toEqual([
+        { kind: "account", account_id: 7, period_key: "previous_1" },
+        { kind: "account", account_id: 7, period_key: "previous_1" },
+    ]);
+    context.appliedFilters = null;
+    await BaseerProfitLossReport.prototype.openAccount.call(context, { id: 7 }, "current");
+    expect(dialogs.length).toBe(2);
+    expect(calls).toEqual([]);
+    expect(actions).toEqual([]);
 });
 
 test("mounted report displays comparison columns without inline journal entries", async () => {
@@ -293,7 +317,7 @@ test("profit and loss A-to-B-to-A ignores stale contexts", async () => {
     Object.assign(report, {
         companyGeneration: 0, requestToken: 0, appliedFilters: null, lang: "en",
         state: { filters: structuredClone(filters), journals: [], report: null, error: "", loading: false,
-            expanded: {}, pages: {}, accountLoading: {}, accountOpening: {} },
+            expanded: {}, pages: {}, accountLoading: {} },
         orm: { call: () => new Promise((resolve) => pending.push(resolve)) },
         apply: async () => { report.state.report = { company_id: report.state.filters.company_id }; },
     });
@@ -319,7 +343,7 @@ test("applied export scope never adopts an unfinished draft edited during report
     Object.assign(report, {
         companyGeneration: 0, requestToken: 0, appliedFilters: null, lang: "en",
         state: { filters: structuredClone(filters), journals: [], report: null, error: "", loading: false,
-            expanded: {}, pages: {}, accountLoading: {}, accountOpening: {} },
+            expanded: {}, pages: {}, accountLoading: {} },
         orm: { call: () => new Promise((done) => { resolve = done; }) },
     });
     const pending = report.apply();

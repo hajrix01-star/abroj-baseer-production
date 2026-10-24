@@ -1,10 +1,12 @@
 /** @odoo-module **/
 
 import { BaseerProfitLossReport } from "@baseer_profit_loss_report/profit_loss";
-import { onWillDestroy, useEffect, useRef } from "@odoo/owl";
+import { Component, onWillDestroy, useEffect, useRef } from "@odoo/owl";
 import { ConnectionLostError } from "@web/core/network/rpc";
 import { registry } from "@web/core/registry";
+import { useService } from "@web/core/utils/hooks";
 import { ReportExportButtons } from "@baseer_reports_menu/report_export";
+import { AmountDetailsDialog } from "@baseer_reports_menu/report_drill";
 
 const MODEL = "baseer.operations.report";
 const CONTEXT_MODEL = "baseer.profit.loss.report";
@@ -187,12 +189,59 @@ export function buildOwnerTable(periods) {
     return { sections: [sales, cash], difference };
 }
 
+// This is deliberately a presentation adapter. The owner RPC, revision and
+// source-action checks remain in BaseerOperationsPreview; no values are parsed
+// or recomputed while adapting them to the shared amount-details dialog.
+export class OwnerDetailsDialog extends Component {
+    static template = "baseer_operations_report.OwnerDetailsDialog";
+    static components = { AmountDetailsDialog };
+    static props = {
+        owner: Object, lang: String, close: Function, retry: Function,
+        activate: Function, page: Function, refresh: Function,
+    };
+    get labels() { return labels[this.props.lang]; }
+    get view() {
+        const detail = this.props.owner;
+        const data = detail.data;
+        return {
+            busy: detail.loading || detail.opening,
+            error: detail.error,
+            changedText: detail.changed ? this.labels.changed : "",
+            data: data && {
+                title: detail.label,
+                value: data.amount,
+                basis: this.labels.allocated,
+                subtitle: detail.subtitle,
+                columns: [
+                    { key: "label", label: this.labels.details },
+                    { key: "date", label: this.labels.date, numeric: true },
+                    { key: "amount", label: this.labels.amount, numeric: true },
+                ],
+                rows: data.events.map((event) => ({
+                    key: event.event_key,
+                    cells: { label: event.label, date: event.date, amount: event.amount },
+                    source: event.event_key,
+                    event,
+                })),
+                total_count: data.total_count,
+                page_size: data.page_size,
+                page: data.page,
+            },
+        };
+    }
+    retry() { return this.props.retry(); }
+    activate(row) { return this.props.activate(row.event); }
+    page(delta) { return this.props.page(delta); }
+    refresh() { return this.props.refresh(); }
+}
+
 export class BaseerOperationsPreview extends BaseerProfitLossReport {
     static template = "baseer_operations_report.Preview";
     static components = { ...BaseerProfitLossReport.components, ReportExportButtons };
 
     setup() {
         super.setup();
+        this.dialog = useService("dialog");
         this.state.incomplete = false;
         this.state.incompletePeriod = null;
         this.state.incompleteControls = null;
@@ -209,9 +258,7 @@ export class BaseerOperationsPreview extends BaseerProfitLossReport {
             if (!this.detailFocusPending) { return; }
             this.detailFocusPending = false;
             const root = this.reportRoot.el;
-            if (this.state.ownerDetail) {
-                root?.querySelector(".o_baseer_owner_detail_title")?.focus();
-            } else if (this.detailReturnTarget) {
+            if (!this.state.ownerDetail && this.detailReturnTarget) {
                 const target = this.detailReturnTarget;
                 [...(root?.querySelectorAll("[data-owner-row]") || [])].find((button) =>
                     button.dataset.ownerRow === target.row && button.dataset.ownerPeriod === target.period)?.focus();
@@ -221,6 +268,7 @@ export class BaseerOperationsPreview extends BaseerProfitLossReport {
             this.disposed = true;
             this.requestToken += 1;
             this.companyGeneration += 1;
+            this.closeOwnerDetails(false);
         });
     }
 
@@ -314,8 +362,7 @@ export class BaseerOperationsPreview extends BaseerProfitLossReport {
 
     invalidate() {
         super.invalidate();
-        this.detailRequestToken = (this.detailRequestToken || 0) + 1;
-        this.state.ownerDetail = null;
+        this.closeOwnerDetails(false);
         this.state.incomplete = false;
         this.state.incompletePeriod = null;
         this.state.incompleteControls = null;
@@ -331,19 +378,51 @@ export class BaseerOperationsPreview extends BaseerProfitLossReport {
         if (!period || !row.amounts[period.key]) { return; }
         if (this.state.ownerDetail?.rowKey === row.key &&
             this.state.ownerDetail?.periodKey === period.key && this.state.ownerDetail.loading) { return; }
+        if (this.state.ownerDetail) { this.closeOwnerDetails(false); }
         this.detailReturnTarget = { row: row.key, period: periodKey || "" };
         this.detailFocusPending = true;
         this.state.ownerDetail = { rowKey: row.key, periodKey: period.key, revision: period.revision,
             label: row.label, periodLabel: period.display_label || period.label,
+            subtitle: `${this.state.report.company.name} · ${period.display_label || period.label}`,
             expectedAmount: row.amounts[period.key].amount, expectedNegative: row.amounts[period.key].negative,
             page: 1, loading: false, changed: false, error: "", data: null, opening: false };
+        const detail = this.state.ownerDetail;
+        this.ownerDialogClose = this.dialog.add(OwnerDetailsDialog, {
+            owner: detail, lang: this.lang,
+            close: () => this.closeOwnerDetails(), retry: () => this.retryOwnerDetails(),
+            activate: (row) => this.openOwnerSource(row), page: (delta) => this.pageOwnerDetails(delta),
+            refresh: () => this.refreshOwnerDetails(),
+        }, { onClose: () => {
+            if (this.state.ownerDetail === detail) { this.closeOwnerDetails(true, true); }
+        } });
         return this.loadOwnerDetails(1);
     }
 
-    closeOwnerDetails() {
+    closeOwnerDetails(restoreFocus = true, fromDialog = false) {
         this.detailRequestToken += 1;
-        this.detailFocusPending = true;
+        this.detailFocusPending = restoreFocus;
+        const close = this.ownerDialogClose;
+        this.ownerDialogClose = null;
         this.state.ownerDetail = null;
+        if (!fromDialog && close) { close(); }
+    }
+
+    pageOwnerDetails(delta) {
+        const page = this.state.ownerDetail?.data?.page;
+        if (!Number.isSafeInteger(page) || !Number.isSafeInteger(delta)) { return; }
+        return this.loadOwnerDetails(page + delta);
+    }
+
+    retryOwnerDetails() {
+        const page = this.state.ownerDetail?.page;
+        if (!Number.isSafeInteger(page)) { return; }
+        return this.loadOwnerDetails(page);
+    }
+
+    refreshOwnerDetails() {
+        if (!this.state.ownerDetail?.changed) { return; }
+        this.closeOwnerDetails();
+        return this.apply();
     }
 
     async loadOwnerDetails(page) {
@@ -408,6 +487,7 @@ export class BaseerOperationsPreview extends BaseerProfitLossReport {
                 return;
             }
             await this.env.services.action.doAction(action);
+            if (current()) { this.closeOwnerDetails(false); }
         } catch (_error) {
             if (current()) { detail.error = this.labels.detailError; detail.data = null; }
         } finally {

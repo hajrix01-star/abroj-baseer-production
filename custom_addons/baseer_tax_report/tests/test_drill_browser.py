@@ -50,8 +50,53 @@ class TestVatSourceBrowser(HttpCase):
                 .find(button => button.getAttribute('aria-label') === 'عرض القيود الداعمة 1 الضريبة'
                     && button.textContent.trim() === '15.00'), 'synthetic tax amount');
             amount.click();
-            const source = await wait(() => [...document.querySelectorAll('.o_baseer_drill_table button')]
+            await wait(() => [...document.querySelectorAll('.o_baseer_drill_table button')]
                 .find(button => button.textContent.trim() === moveName), 'source in actual dialog');
+            const directDialog = document.querySelector('.o_baseer_amount_details_dialog');
+            if (!directDialog || directDialog.querySelector('.o_baseer_drill_value').textContent.trim() !== '15.00') {
+                throw new Error('Direct VAT amount did not use the shared amount dialog');
+            }
+            directDialog.closest('.modal-content').querySelector('.o_baseer_drill_close').click();
+            await wait(() => !document.querySelector('.o_baseer_report_drill'), 'direct dialog closed');
+
+            const composite = await wait(() => [...report.querySelectorAll('.o_baseer_vat_cell_button')]
+                .find(button => button.getAttribute('aria-label') === 'عرض القيود الداعمة 6 الضريبة'
+                    && button.textContent.trim() === '15.00'), 'synthetic composite tax amount');
+            composite.click();
+            const loadedDialog = () => {
+                const dialog = document.querySelector('.o_baseer_amount_details_dialog');
+                return dialog?.getAttribute('aria-busy') === 'false' && dialog.querySelector('.o_baseer_drill_table')
+                    ? dialog : null;
+            };
+            const compositeDialog = await wait(loadedDialog, 'composite shared amount dialog');
+            const componentAmount = () => {
+                const dialog = loadedDialog();
+                if (!dialog) { return null; }
+                const row = [...dialog.querySelectorAll('tbody tr')]
+                    .find(item => item.querySelector('td')?.textContent.trim() === '1');
+                return row?.querySelector('td[dir="ltr"] button');
+            };
+            if (compositeDialog.querySelector('.o_baseer_drill_value').textContent.trim() !== '15.00' ||
+                report.querySelector('.o_baseer_vat_components')) {
+                throw new Error('Composite VAT amount bypassed the shared dialog');
+            }
+            for (let visit = 0; visit < 2; visit++) {
+                const child = await wait(componentAmount, 'box 1 tax component amount');
+                if (child.textContent.trim() !== '+15.00') { throw new Error('Signed VAT component amount changed'); }
+                child.click();
+                await wait(() => loadedDialog()?.textContent.includes(moveName), 'component source detail');
+                if (document.querySelectorAll('.o_baseer_amount_details_dialog').length !== 1 ||
+                    loadedDialog() !== compositeDialog ||
+                    loadedDialog().querySelector('.o_baseer_drill_value').textContent.trim() !== '15.00') {
+                    throw new Error('VAT component did not stay in the same authoritative dialog');
+                }
+                if (visit === 0) {
+                    compositeDialog.closest('.modal-content').querySelector('.o_baseer_drill_back').click();
+                    await wait(componentAmount, 'return to composite component list');
+                }
+            }
+            const source = await wait(() => [...document.querySelectorAll('.o_baseer_drill_table button')]
+                .find(button => button.textContent.trim() === moveName), 'source after component revisit');
             source.click();
             const list = await wait(() => {
                 const element = document.querySelector('.o_list_view');
@@ -64,6 +109,7 @@ class TestVatSourceBrowser(HttpCase):
                 throw new Error('Source list is not limited to the authorized line');
             }
             console.log('BASEER_VAT_SOURCE_ACTION_REAL_PASS');
+            console.log('BASEER_VAT_UNIFORM_COMPOSITE_SOURCE_PASS');
             console.log('test successful');
         })().catch(error => { console.error(error); throw error; });
         """.replace('__MOVE__', json.dumps(move.name))

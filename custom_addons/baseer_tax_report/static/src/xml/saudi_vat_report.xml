@@ -97,18 +97,11 @@
                                     <t t-foreach="['base', 'tax']" t-as="column" t-key="column">
                                         <td class="o_baseer_vat_value">
                                             <span class="o_baseer_vat_column_label" t-esc="labels[column]"/>
-                                            <button t-if="row.direct[column]" type="button" dir="ltr"
+                                            <button t-if="row[column + '_state'] !== 'empty'" type="button" dir="ltr"
                                                 class="o_baseer_vat_cell_button"
                                                 t-att-class="amountClass(row[column + '_state'])"
                                                 t-att-aria-label="labels.source + ' ' + row.number + ' ' + labels[column]"
                                                 t-on-click="() => this.openCell(row.number, column)"
-                                                t-esc="row[column + '_text']"/>
-                                            <button t-elif="row.components[column].length" type="button" dir="ltr"
-                                                class="o_baseer_vat_cell_button"
-                                                t-att-class="amountClass(row[column + '_state'])"
-                                                t-att-aria-expanded="isExpanded(row.number, column) ? 'true' : 'false'"
-                                                t-att-aria-label="(isExpanded(row.number, column) ? labels.collapse : labels.expand) + ' ' + row.number + ' ' + labels[column]"
-                                                t-on-click="() => this.toggleComponents(row.number, column)"
                                                 t-esc="row[column + '_text']"/>
                                             <span t-else="" class="o_baseer_report_amount" dir="ltr"
                                                 t-att-class="amountClass(row[column + '_state'])"
@@ -116,22 +109,6 @@
                                         </td>
                                     </t>
                                 </tr>
-                                <t t-foreach="['base', 'tax']" t-as="column" t-key="column">
-                                    <tr t-if="isExpanded(row.number, column)" class="o_baseer_vat_components">
-                                        <td colspan="3">
-                                            <span class="o_baseer_vat_component_heading" t-esc="labels[column]"/>
-                                            <div t-foreach="row.components[column]" t-as="part" t-key="part.number + ':' + part.column"
-                                                class="o_baseer_vat_component">
-                                                <span><span t-esc="part.number"/>. <span t-esc="part.name"/></span>
-                                                <button type="button" class="o_baseer_vat_cell_button" dir="ltr"
-                                                    t-att-class="amountClass(part.state)"
-                                                    t-att-aria-label="labels.source + ' ' + part.number + ' ' + labels[part.column]"
-                                                    t-on-click="() => this.openCell(part.number, part.column)"
-                                                    t-esc="part.amount_text"/>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                </t>
                             </t>
                             <tr t-if="!state.data.rows.length"><td colspan="3" class="o_baseer_report_empty" t-esc="labels.empty"/></tr>
                         </tbody>
@@ -140,7 +117,9 @@
                         <strong t-esc="labels.untaggedVat"/>
                         <span class="o_baseer_report_warning_count" t-esc="state.data.exception.count"/>
                         <span t-esc="labels.entries"/> · <span t-esc="labels.signedBalance"/>
-                        <span class="o_baseer_report_amount" dir="ltr"
+                        <button type="button" class="o_baseer_vat_cell_button o_baseer_report_amount" dir="ltr"
+                            t-att-aria-label="labels.source + ' ' + labels.untaggedVat"
+                            t-on-click="() => this.openException('vat')"
                             t-att-class="amountClass(state.data.exception.amount_state)"
                             t-esc="state.data.exception.amount_text"/>
                         <button type="button" class="o_baseer_vat_warning_help" t-att-title="labels.reviewVat"
@@ -153,7 +132,9 @@
                         <strong t-esc="labels.untaggedOther"/>
                         <span class="o_baseer_report_warning_count" t-esc="state.data.exception.other_count"/>
                         <span t-esc="labels.entries"/> · <span t-esc="labels.signedBalance"/>
-                        <span class="o_baseer_report_amount" dir="ltr"
+                        <button type="button" class="o_baseer_vat_cell_button o_baseer_report_amount" dir="ltr"
+                            t-att-aria-label="labels.source + ' ' + labels.untaggedOther"
+                            t-on-click="() => this.openException('other')"
                             t-att-class="amountClass(state.data.exception.other_amount_state)"
                             t-esc="state.data.exception.other_amount_text"/>
                         <button type="button" class="o_baseer_vat_warning_help" t-att-title="labels.reviewOther"

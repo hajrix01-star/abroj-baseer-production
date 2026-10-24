@@ -211,6 +211,12 @@ class BaseerOperationsReport(models.AbstractModel):
         if bill_moves:
             children('account_move_line', 'move_id', bill_moves)
             children('account_move', 'reversed_entry_id', bill_moves)
+            # A hint only: stored-field access remains lazy at the original
+            # scalar bill point below.  Keep each prefetch set bounded and do
+            # not use it as an access or eligibility proof.
+            cache['bill_move_prefetch_groups'] = tuple(
+                tuple(ids) for ids in chunks(sorted(bill_moves))
+            )
         return cache
 
     @api.model
@@ -530,18 +536,20 @@ class BaseerOperationsReport(models.AbstractModel):
         return net_by_line, gross_by_line, money(order.amount_tax)
 
     @api.model
-    def _record(self, sections, section, account, amount, source, event=None):
-        self._record_many(sections, [(section, account, amount, source, event)])
+    def _record(self, sections, section, account, amount, source, event=None,
+                read_facts=None):
+        self._record_many(
+            sections, [(section, account, amount, source, event)], read_facts=read_facts)
 
     @api.model
-    def _record_many(self, sections, entries):
+    def _record_many(self, sections, entries, read_facts=None):
         # Re-browse in this caller's environment: never inherit a privileged
         # environment from an account passed by another source helper.
         entries = list(entries)
         accounts = self.env['account.account'].browse(sorted({
             account.id for _section, account, _amount, _source, _event in entries
         }))
-        accounts.check_access('read')
+        self._owner_check_read(accounts, read_facts)
         for section, account, amount, source, event in entries:
             self._record_entry(sections, section, accounts.browse(account.id), amount, source, event)
 
@@ -655,7 +663,7 @@ class BaseerOperationsReport(models.AbstractModel):
                     'source_model': 'account.move', 'source_id': move.id,
                     'line_model': 'account.move.line', 'line_id': line.id,
                     'date': fields.Date.to_string(move.invoice_date),
-                },
+                }, read_facts=read_facts,
             )
         # Tax AML is accounting evidence, never an additional operation.
         self._owner_check_read(move.line_ids.filtered('tax_line_id'), read_facts)
@@ -1500,7 +1508,7 @@ class BaseerOperationsReport(models.AbstractModel):
     @api.model
     def _native_payment_outflows(self, company, start, end, journal_ids,
                                  sections, excluded, claimed_payment_ids=frozenset(),
-                                 read_facts=None):
+                                 read_facts=None, prefetch_bills=True):
         """Count a fully assigned, direct-liquidity vendor payment once.
 
         An old reconciliation cannot prove that the bill was the payment's
@@ -1562,6 +1570,21 @@ class BaseerOperationsReport(models.AbstractModel):
                                 and payment.id not in claimed_payment_ids]
         native_cache = self._native_payment_identity_census(
             self.env['account.payment'].browse(eligible_payment_ids))
+
+        def prefetched_bill(bill):
+            """Attach a lazy, census-bounded prefetch group to this bill only.
+
+            The caller has already performed the original bill read proof.
+            Odoo falls back to the current record if a stored-field group has
+            a hidden peer, so this is never an eager access check or a source
+            eligibility decision.
+            """
+            if not prefetch_bills:
+                return bill
+            for group in native_cache.get('bill_move_prefetch_groups', ()):
+                if bill.id in group:
+                    return bill.with_prefetch(group)
+            return bill
 
         def visible(table, field, parent_id, records):
             if self._native_payment_cached_visible(
@@ -1651,6 +1674,7 @@ class BaseerOperationsReport(models.AbstractModel):
             self._owner_check_read(bill_payable.partner_id, read_facts)
             bill = bill_payable.move_id
             self._owner_check_read(bill, read_facts)
+            bill = prefetched_bill(bill)
             origin_bills = payment.invoice_ids
             reconciled_bills = payment.reconciled_bill_ids
             self._owner_check_read(origin_bills, read_facts)
@@ -1710,7 +1734,7 @@ class BaseerOperationsReport(models.AbstractModel):
                  'payment_move_id': move.id,
                  'payment_line_id': liquidity.id,
                  'date': fields.Date.to_string(move.date),
-                 'link_status': 'unconfirmed'},
+                 'link_status': 'unconfirmed'}, read_facts=read_facts,
             )
             excluded['unconfirmed_payment_link'] += 1
 

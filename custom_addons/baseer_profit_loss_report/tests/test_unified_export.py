@@ -181,7 +181,7 @@ class TestUnifiedExport(TransactionCase):
         with self.assertRaises(ValidationError):
             self.report._claim_export_channel(budget, self.income.id, 'new')
 
-    def _native_channel_orders(self, count=2):
+    def _native_channel_orders(self, count=2, split_accounts=False, refund_last=False, extra_zero_lines=0):
         if 'pos.order' not in self.env:
             self.skipTest('Native POS is optional; covered by the all-provider runtime.')
         receivable = self.env['account.account'].create({'code': '962481', 'name': 'PL POS receivable',
@@ -199,26 +199,48 @@ class TestUnifiedExport(TransactionCase):
         session.set_opening_control(0, 'Synthetic PL channel fixture')
         product = self.env['product.product'].create({'name': 'PL synthetic native item', 'type': 'service',
             'available_in_pos': True, 'property_account_income_id': self.income.id, 'taxes_id': [Command.clear()]})
+        products = [(product, 100)]
+        if split_accounts:
+            self.other_income = self.env['account.account'].create({'code': '962483', 'name': 'PL POS other income',
+                'account_type': 'income_other', 'company_ids': [Command.set(self.company.ids)]})
+            other_product = self.env['product.product'].create({
+                'name': 'PL native second account', 'type': 'service', 'available_in_pos': True,
+                'property_account_income_id': self.other_income.id, 'taxes_id': [Command.clear()]})
+            self.assertTrue(other_product.id)
+            products = [(product, 60), (other_product, 40)]
         orders = self.env['pos.order']
         for _index in range(count):
+            sign = -1 if refund_last and _index == count - 1 else 1
+            line_values = [Command.create({'product_id': item.id, 'uuid': str(uuid4()), 'qty': sign,
+                'price_unit': price, 'price_subtotal': sign * price, 'price_subtotal_incl': sign * price,
+                'full_product_name': item.display_name, 'tax_ids': [Command.clear()]}) for item, price in products]
+            line_values += [Command.create({'product_id': product.id, 'uuid': str(uuid4()), 'qty': 0,
+                'price_unit': 100, 'price_subtotal': 0, 'price_subtotal_incl': 0,
+                'full_product_name': product.display_name, 'tax_ids': [Command.clear()]}) for _ in range(extra_zero_lines)]
             orders |= self.env['pos.order'].create({'session_id': session.id, 'company_id': self.company.id,
                 'state': 'paid', 'source': 'pos', 'date_order': '2044-10-18 12:00:00',
-                'amount_total': 100, 'amount_tax': 0, 'amount_paid': 100, 'amount_return': 0,
-                'lines': [Command.create({'product_id': product.id, 'uuid': str(uuid4()), 'qty': 1,
-                    'price_unit': 100, 'price_subtotal': 100, 'price_subtotal_incl': 100,
-                    'full_product_name': product.display_name, 'tax_ids': [Command.clear()]})],
-                'payment_ids': [Command.create({'payment_method_id': method.id, 'amount': 100})]})
-        move = self._entry('income', count * 100, day='2044-10-18')
+                'is_refund': sign < 0, 'amount_total': sign * 100, 'amount_tax': 0,
+                'amount_paid': sign * 100, 'amount_return': 0, 'lines': line_values,
+                'payment_ids': [Command.create({'payment_method_id': method.id, 'amount': sign * 100})]})
+        multiplier = count - 2 if refund_last else count
+        if split_accounts:
+            move = self.env['account.move'].create({'date': '2044-10-18', 'journal_id': self.journal.id,
+                'line_ids': [Command.create({'account_id': self.cash.id, 'debit': multiplier * 100}),
+                             Command.create({'account_id': self.income.id, 'credit': multiplier * 60}),
+                             Command.create({'account_id': self.other_income.id, 'credit': multiplier * 40})]})
+            move._post(soft=False)
+        else:
+            move = self._entry('income', multiplier * 100, day='2044-10-18')
         orders.account_move = move
         reader = self._accountant()
         reader.write({'group_ids': [Command.link(self.env.ref('point_of_sale.group_pos_manager').id)]})
         return orders, move, self.report.with_user(reader).sudo(False).with_context(allowed_company_ids=self.company.ids)
 
-    def _native_channels(self, report, move, scalar=False):
+    def _native_channels(self, report, move, scalar=False, account_ids=None, provenance=None):
         from odoo.fields import Domain
-        domain = Domain('move_id', '=', move.id) & Domain('account_id', '=', self.income.id)
+        domain = Domain('move_id', '=', move.id) & Domain('account_id', 'in', account_ids or self.income.ids)
         if not scalar:
-            return report._revenue_channels(self.company, domain)
+            return report._revenue_channels(self.company, domain, provenance=provenance)
 
         def scalar_census(orders):
             result = {'lines': {}, 'payments': {}}
@@ -231,8 +253,89 @@ class TestUnifiedExport(TransactionCase):
                     result[key][order.id] = {row[0] for row in self.env.cr.fetchall()}
             return result
 
-        with patch.object(type(report), '_channel_child_ids', new=lambda model, orders: scalar_census(orders)):
-            return report._revenue_channels(self.company, domain)
+        def scalar_accounts(model, orders, line_ids):
+            result = {}
+            for order in orders:
+                order.lines.check_access('read')
+                if set(order.lines.ids) != line_ids[order.id]:
+                    raise AccessError('Synthetic scalar source unavailable')
+                for line in order.lines:
+                    account = line._prepare_base_line_for_taxes_computation().get('account_id')
+                    if account:
+                        account.check_access('read')
+                    result[line.id] = account
+            return result
+
+        with patch.object(type(report), '_channel_child_ids', new=lambda model, orders: scalar_census(orders)), \
+             patch.object(type(report), '_native_channel_accounts', new=scalar_accounts):
+            return report._revenue_channels(self.company, domain, provenance=provenance)
+
+    def test_native_account_batches_preserve_multiaccount_refund_and_provenance(self):
+        orders, move, report = self._native_channel_orders(3, split_accounts=True, refund_last=True)
+        accounts = (self.income | self.other_income).ids
+        expected_sources, actual_sources = [], []
+        expected = self._native_channels(report, move, scalar=True, account_ids=accounts, provenance=expected_sources)
+        actual = self._native_channels(report, move, account_ids=accounts, provenance=actual_sources)
+        self.assertEqual(actual, expected)
+        self.assertEqual(actual_sources, expected_sources)
+        self.assertEqual(sum(amount for _name, amount in actual[self.income.id].values()), Decimal('60'))
+        self.assertEqual(sum(amount for _name, amount in actual[self.other_income.id].values()), Decimal('40'))
+        # Hidden companion base account is outside the selected ledger domain:
+        # native preparation must still reject the entire selected move/account.
+        rule = self._hide_record('account.account', self.other_income)
+        try:
+            report.env.invalidate_all()
+            result = self._native_channels(report, move)
+            self.assertEqual(result, self._native_channels(report, move, scalar=True))
+            self.assertEqual(result, {self.income.id: {'unallocated': ('', Decimal('60'))}})
+        finally:
+            rule.unlink()
+
+    def test_native_account_chunk_bound_late_failure_and_exact_source_ids(self):
+        orders, move, report = self._native_channel_orders(1, extra_zero_lines=1000)
+        native = type(orders.lines)._prepare_tax_base_line_values
+        sizes = []
+
+        def prepare(lines):
+            sizes.append(len(lines))
+            return native(lines)
+
+        with patch.object(type(orders.lines), '_prepare_tax_base_line_values', new=prepare):
+            actual = self._native_channels(report, move)
+        self.assertEqual(sizes, [1000, 1])
+        self.assertEqual(actual, self._native_channels(report, move, scalar=True))
+        for failure in ('access', 'key', 'missing', 'duplicate', 'extra'):
+            sizes.clear()
+
+            def late_failure(lines):
+                sizes.append(len(lines))
+                result = native(lines)
+                if len(sizes) == 2:
+                    if failure == 'access':
+                        raise AccessError('Synthetic late native access failure')
+                    if failure == 'key':
+                        raise KeyError('Synthetic late native field unavailable')
+                    if failure == 'missing':
+                        return []
+                    if failure == 'duplicate':
+                        return result + result
+                    return [{**result[0], 'record': orders.lines[:1]}]
+                return result
+
+            with patch.object(type(orders.lines), '_prepare_tax_base_line_values', new=late_failure), \
+                 patch.object(type(report), '_order_channels', wraps=report._order_channels) as allocation:
+                result = self._native_channels(report, move)
+            self.assertEqual(sizes, [1000, 1])
+            allocation.assert_not_called()
+            self.assertEqual(result, {self.income.id: {'unallocated': ('', Decimal('100'))}})
+        # A corrupt raw inverse witness fails before any native preparation.
+        census = report._channel_child_ids(orders.with_env(report.env))
+        census['lines'][orders.id].remove(orders.lines[-1].id)
+        with patch.object(type(report), '_channel_child_ids', return_value=census), \
+             patch.object(type(orders.lines), '_prepare_tax_base_line_values') as preparation:
+            result = self._native_channels(report, move)
+        preparation.assert_not_called()
+        self.assertEqual(result, {self.income.id: {'unallocated': ('', Decimal('100'))}})
 
     def test_native_census_constant_queries_and_fresh_scalar_parity(self):
         orders, move, report = self._native_channel_orders(8)

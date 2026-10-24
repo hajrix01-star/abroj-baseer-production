@@ -59,6 +59,74 @@ class TestTobaccoScope(TransactionCase):
         return self.env['account.account'].create({'name': 'Scope unrelated tax account', 'code': '963311',
             'account_type': 'liability_current', 'company_ids': [Command.set(self.company.ids)]})
 
+    def test_account_access_memo_is_exact_environment_local_and_success_only(self):
+        account = self._ordinary_account()
+        other_context = account.with_context(tobacco_access_test='other')
+        self.assertIsNot(account.env, other_context.env)
+        native = type(account).check_access
+        calls = []
+
+        def counted(records, operation):
+            calls.append((records.env, tuple(records.ids), operation))
+            return native(records, operation)
+
+        checked = {}
+        with patch.object(type(account), 'check_access', new=counted):
+            self.report._check_report_account_access(account, checked)
+            self.report._check_report_account_access(account, checked)
+            self.report._check_report_account_access(other_context, checked)
+            self.report._check_report_account_access(account, {})
+            self.report._check_report_account_access(account)
+            self.report._check_report_account_access(account)
+        self.assertEqual(len(calls), 5)
+        self.assertIs(calls[0][0], account.env)
+        self.assertIs(calls[1][0], other_context.env)
+        self.assertEqual(checked[account.env], set(account.ids))
+        failed = {}
+        with patch.object(type(account), 'check_access', side_effect=AccessError('denied')) as check:
+            for _attempt in range(2):
+                # Do not let TransactionCase.assertRaises flush unrelated fixture
+                # writes while the model-wide access stub is installed.
+                try:
+                    self.report._check_report_account_access(account, failed)
+                except AccessError:
+                    pass
+                else:
+                    self.fail('Denied account unexpectedly passed the access check')
+            self.assertEqual(check.call_count, 2)
+        self.assertFalse(failed[account.env], 'Denied identities must not become authorized')
+
+    def test_collection_access_memo_does_not_survive_rule_changes(self):
+        orders = self._done(self._real_order([1, 2])) | self._done(self._real_order([-1]))
+        user = self.env['res.users'].create({'name': 'Tobacco fresh access reader',
+            'login': 'tobacco_fresh_access_reader', 'company_id': self.company.id,
+            'company_ids': [Command.set(self.company.ids)],
+            'group_ids': [Command.set([self.env.ref('base.group_user').id,
+                self.env.ref('account.group_account_readonly').id,
+                self.env.ref('point_of_sale.group_pos_user').id])]})
+        report = self.report.with_user(user).sudo(False).with_context(allowed_company_ids=self.company.ids)
+        visible_orders = orders.with_env(report.env)
+        expected = [report._order_fee_data(order, self.quantum) for order in visible_orders]
+        checked = {}
+        actual = [report._order_fee_data(order, self.quantum, checked_accounts=checked)
+                  for order in visible_orders]
+        self.assertEqual(actual, expected, 'Memo must preserve all native amounts and rounding')
+        product, tax, _session = self._pos_fixture()
+        base_account = orders[:1].lines[:1]._prepare_base_line_for_taxes_computation()['account_id']
+        tax_account = tax.invoice_repartition_line_ids.filtered(
+            lambda row: row.repartition_type == 'tax').account_id
+        for account in base_account | tax_account:
+            report._collect_rows(visible_orders, self.company.currency_id, self.quantum)
+            rule = self.env['ir.rule'].create({'name': 'Hide previously authorized tobacco account',
+                'model_id': self.env['ir.model']._get('account.account').id,
+                'domain_force': f"[('id', '!=', {account.id})]"})
+            try:
+                report.env.invalidate_all()
+                with self.assertRaises(AccessError):
+                    report._collect_rows(visible_orders, self.company.currency_id, self.quantum)
+            finally:
+                rule.unlink()
+
     def test_native_mixed_refund_global_cash_rounding_and_bounded_candidate_calls(self):
         self.company.tax_calculation_rounding_method = 'round_globally'
         mixed = self._real_order([4, -1])
@@ -87,10 +155,10 @@ class TestTobaccoScope(TransactionCase):
         native = self.report._order_fee_data
         called = []
 
-        def counted(order, quantum, lines=None):
+        def counted(order, quantum, lines=None, checked_accounts=None):
             called.append(order.id)
             self.assertEqual(set(lines.ids), set(order.lines.ids), 'Mixed/global rounding lost companion lines')
-            return native(order, quantum, lines=lines)
+            return native(order, quantum, lines=lines, checked_accounts=checked_accounts)
 
         with patch.object(type(self.report), '_order_fee_data', side_effect=counted):
             actual = self._build()

@@ -223,6 +223,65 @@ class TestOwnerHrCash(TransactionCase):
                          {'employee_advance', 'payroll'})
         self.assertEqual(sum(row['amount'] for row in result['events']), Decimal('1100'))
 
+    def test_direct_salary_facts_batch_two_eligible_payments_and_keep_cash_parity(self):
+        slip = self._payroll()
+        first = self._pay(slip, 600)
+        second = self._pay(slip, 900, '2026-07-02')
+        moves = first.move_id | second.move_id
+
+        facts = self.report._owner_hr_direct_salary_facts(moves)
+
+        self.assertEqual(set(facts['payments_by_move']), set(moves.ids))
+        self.assertEqual({rows.id for rows in facts['payments_by_move'].values()},
+                         {first.id, second.id})
+        self.assertEqual(set(facts['lines_by_move']), set(moves.ids))
+        self.assertTrue(all(facts['credits_by_payable'].values()))
+        result = self._read()
+        self.assertEqual(result['claimed_payment_ids'], {first.id, second.id})
+        self.assertEqual(sum(row['amount'] for row in result['events']), Decimal('1500'))
+
+    def test_direct_salary_facts_hide_one_partial_fails_closed_for_all_candidates(self):
+        slip = self._payroll()
+        first = self._pay(slip, 600)
+        second = self._pay(slip, 900, '2026-07-02')
+        payable = first.move_id.line_ids.filtered(lambda row: row.account_id == self.payable)
+        partial = payable.matched_credit_ids
+        secured = self._reader()
+        rule = self.env['ir.rule'].create({
+            'name': 'Hide one batched direct-salary partial',
+            'model_id': self.env['ir.model']._get('account.partial.reconcile').id,
+            'domain_force': "[('id', '!=', %s)]" % partial.id,
+        })
+        try:
+            secured.env.invalidate_all()
+            self.assertFalse(secured.env['account.partial.reconcile'].search([
+                ('id', '=', partial.id),
+            ]))
+            with self.assertRaises(AccessError):
+                secured._owner_hr_direct_salary_facts(
+                    secured.env['account.move'].browse((first.move_id | second.move_id).ids))
+        finally:
+            rule.unlink()
+
+    def test_direct_salary_facts_uses_one_payment_inverse_probe_for_many_moves(self):
+        slip = self._payroll()
+        first = self._pay(slip, 600)
+        second = self._pay(slip, 900, '2026-07-02')
+        self.env.invalidate_all()
+        cursor_type = type(self.env.cr)
+        original_execute = cursor_type.execute
+        probes = []
+
+        def counted_execute(cursor, query, *args, **kwargs):
+            sql = re.sub(r'\s+', ' ', str(getattr(query, 'code', query))).lower()
+            if 'from account_payment where move_id=any' in sql:
+                probes.append(sql)
+            return original_execute(cursor, query, *args, **kwargs)
+
+        with patch.object(cursor_type, 'execute', new=counted_execute):
+            self.report._owner_hr_direct_salary_facts(first.move_id | second.move_id)
+        self.assertEqual(len(probes), 1, probes)
+
     def test_hr_batch_census_uses_constant_inverse_probes_for_ordinary_cash(self):
         self._unrelated_cash_moves(120)
         self.env.invalidate_all()
@@ -323,6 +382,30 @@ class TestOwnerHrCash(TransactionCase):
         self.assertEqual(result, {'events': [], 'claimed_payment_ids': set(),
                                   'claimed_statement_ids': set(),
                                   'claimed_liquidity_ids': set(), 'excluded': {}})
+
+    def test_generic_direct_payment_keeps_account_acl_before_no_payslip_skip(self):
+        payment = self.env['account.payment'].create({
+            'date': '2026-07-04', 'amount': 20,
+            'payment_type': 'outbound', 'partner_type': 'supplier',
+            'partner_id': self.contact.id, 'journal_id': self.bank.id,
+            'company_id': self.company.id, 'currency_id': self.company.currency_id.id,
+            'payment_method_line_id': self.method.id,
+        })
+        payment.action_post()
+        secured = self._reader()
+        self.assertEqual(self._read(report=secured)['events'], [])
+        rule = self.env['ir.rule'].create({
+            'name': 'Hide generic direct-payment cash account',
+            'model_id': self.env['ir.model']._get('account.account').id,
+            'domain_force': "[('id', '!=', %s)]" % self.cash.id,
+        })
+        try:
+            secured.env.invalidate_all()
+            self.assertFalse(secured.env['account.account'].search([('id', '=', self.cash.id)]))
+            with self.assertRaises(AccessError):
+                self._read(report=secured)
+        finally:
+            rule.unlink()
 
     def test_wage_correction_counts_only_its_actual_payment(self):
         slip = self._payroll()

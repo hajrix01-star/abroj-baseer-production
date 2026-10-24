@@ -40,19 +40,32 @@ class BaseerPosTobaccoReport(models.AbstractModel):
             end_local.astimezone(timezone.utc).replace(tzinfo=None),
         )
 
-    def _order_tax_base_lines(self, order, lines=None):
+    def _check_report_account_access(self, accounts, checked=None):
+        """Reuse successful identity checks only within one collection and exact env."""
+        if checked is None or not accounts:
+            accounts.check_access('read')
+            return
+        seen = checked.setdefault(accounts.env, set())
+        pending = accounts.browse([account_id for account_id in accounts.ids if account_id not in seen])
+        if pending:
+            pending.check_access('read')
+            # A failed check must never authorize a later occurrence.
+            seen.update(pending.ids)
+
+    def _order_tax_base_lines(self, order, lines=None, checked_accounts=None):
         tax_model = self.env['account.tax'].with_company(order.company_id)
         source_lines = order.lines if lines is None else lines
         base_lines = source_lines.sorted('id')._prepare_tax_base_line_values()
         for base in base_lines:
-            base['account_id'].check_access('read')
+            self._check_report_account_access(base['account_id'], checked_accounts)
         tax_model._add_tax_details_in_base_lines(base_lines, order.company_id)
         tax_model._round_base_lines_tax_details(base_lines, order.company_id)
         tax_model._add_accounting_data_in_base_lines_tax_details(base_lines, order.company_id)
         return tax_model, base_lines
 
-    def _order_fee_data(self, order, quantum, lines=None):
-        tax_model, base_lines = self._order_tax_base_lines(order, lines=lines)
+    def _order_fee_data(self, order, quantum, lines=None, checked_accounts=None):
+        tax_model, base_lines = self._order_tax_base_lines(
+            order, lines=lines, checked_accounts=checked_accounts)
         refund_factor = -1 if (order.is_refund or order.amount_total < 0.0) else 1
         fee_lines = []
         for base_line in base_lines:
@@ -62,7 +75,7 @@ class BaseerPosTobaccoReport(models.AbstractModel):
                 for rep_data in tax_data.get('tax_reps_data', []):
                     account = rep_data.get('account')
                     if account:
-                        account.check_access('read')
+                        self._check_report_account_access(account, checked_accounts)
                     if account and account.with_company(order.company_id).code == '201021':
                         has_tobacco_repartition = True
                         line_fee += _money(rep_data['tax_amount_currency'], quantum)
@@ -188,12 +201,14 @@ class BaseerPosTobaccoReport(models.AbstractModel):
         rows = []
         exceptions = []
         running = debit_total = credit_total = Decimal('0')
+        checked_accounts = {}
         for order in orders:
             if order.currency_id != currency:
                 raise ValidationError(_('A POS order uses a different currency. Split or correct the source before reporting.'))
             fee_lines, mismatch, computed_total, saved_total = (
-                self._order_fee_data(order, quantum) if lines_by_order is None else
-                self._order_fee_data(order, quantum, lines=lines_by_order[order]))
+                self._order_fee_data(order, quantum, checked_accounts=checked_accounts)
+                if lines_by_order is None else self._order_fee_data(
+                    order, quantum, lines=lines_by_order[order], checked_accounts=checked_accounts))
             local_date = fields.Datetime.to_datetime(order.date_order).replace(
                 tzinfo=timezone.utc,
             ).astimezone(RIYADH)

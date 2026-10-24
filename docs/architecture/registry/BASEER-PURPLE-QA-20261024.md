@@ -1,6 +1,6 @@
 # BASEER-PURPLE-QA-20261024
 
-Status: approved colour direction; QA implementation in progress. No LIVE authority.
+Status: QA deployed; owner explicitly authorized promotion of the current theme and icon to original LIVE on 2026-10-24. Production policy preparation; no LIVE deployment receipt yet.
 
 Impact: CONTROLLED presentation only. Parent reference: LEGION1 and QA-REFRESH-20261023. Base source `06d8364e`; current QA source observed `88422dd5f40d80db90a43f54c26c9f16b0f06362`. The user explicitly approved the final vivid-purple reference and previously requested both icon and theme on current QA.
 
@@ -19,3 +19,7 @@ Source verification: independent `purple_delivery_review` GO-source, no P1/P2. N
 Artwork: the Baseer baa icon was generated with built-in image_gen from the earlier reviewed concept; its mint dot is now pale lavender. PNG exports at 180, 192 and 512 pixels are included, with `purpose:any` (no maskable certification). Existing installations may retain cached names/icons until the browser refreshes the installed app metadata.
 
 Release preparation: source PR503 merged as `c58299c5749fac9d2651f3f8b21fb7a6837d1db3`; native-tested module tree is byte-identical to the merge. Required source CI40049799102 and cumulative CI40049799090 passed. Independent reviewer reconfirmed GO for QA after the two native tests passed. Policy `baseer-2026-10-24-purple-theme` permits only `baseer_legion_compat`; it preserves all unrelated current QA modules, including the refreshed ZATCA/report trial. QA deployment/visual receipts remain pending.
+
+QA receipt: protected run `40050534544` returned `QA_DEPLOY=GO`, release `/srv/baseer-qa/releases/c58299c5749f-run-40050534544-20261024T013722Z`, recovery pair `/srv/baseer-qa/backups/pre-c58299c5749f-40050534544-20261024T013722Z`. Actual manifest, 180/192/512 PNGs and `web.assets_web` CSS returned HTTP200 with the intended palette and no compilation error. Non-target custom/third-party file fingerprints matched. Desktop/mobile visual acceptance remained unverified because CUA repeatedly timed out; this was disclosed to the owner. Generated comparison boards are illustrations, not actual UI evidence.
+
+LIVE promotion scope: owner requested publishing the current approved theme (same palette as option06) to original LIVE. Reuse the unchanged two native tests and source review. Production policy pins `267493ad9cdc9a1cda782aaef5a99d340bbf06f1`; its target module tree `993970aa9fd110ca4aaba7633885696dd8621d1b` is identical to QA source `c58299c5749fac9d2651f3f8b21fb7a6837d1db3`. Newer pin preserves ancestry from the current LIVE report release `3c847bffbaa02a61314f3db3b4a7b7dfc59479e4`; the wrapper still overlays only `baseer_legion_compat`, never unrelated main changes. No financial, permission, company, business-data or third-party change is approved. Independent scoped source review found no P0/P1; runtime module inventory, protected recovery pair, receipt and HTTP checks remain release evidence requirements. A fresh CUA inventory attempt timed out; do not claim actual visual or computed-style acceptance.

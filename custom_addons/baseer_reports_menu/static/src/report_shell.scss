@@ -53,6 +53,11 @@
 .o_baseer_report_switcher span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .o_baseer_report_switcher:hover { color: #087d84; }
 .o_baseer_report_filters { display: flex; align-items: center; flex-wrap: wrap; gap: 0.3rem; min-width: 0; }
+// The DOM follows keyboard/reading order: selector, exports, period, specific filters.
+// Keep exports outside the filter row so mobile wrapping is identical for all reports.
+.o_baseer_report_toolbar > .o_baseer_report_exports { flex: 0 0 auto; }
+.o_baseer_report_filters > label { max-width: 100%; min-width: 0; }
+.o_baseer_report_filters > label > select { max-width: 100%; }
 .o_baseer_report_select_filter select,
 .o_baseer_report_date_filter input {
     min-height: 2rem;
@@ -301,7 +306,7 @@
 
 @media (max-width: 560px) {
     .o_baseer_report_toolbar { align-items: stretch; padding-inline: 0.75rem; }
-    .o_baseer_report_filters { width: 100%; }
+    .o_baseer_report_filters { width: 100%; flex-basis: 100%; }
     .o_baseer_report_select_filter { min-width: 0; flex: 1 1 42%; }
     .o_baseer_report_select_filter select { width: 100%; }
     .o_baseer_report_date_filter { flex: 1 1 42%; }

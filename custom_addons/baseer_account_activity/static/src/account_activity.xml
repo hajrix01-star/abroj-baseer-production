@@ -9,13 +9,8 @@
                 <div t-if="!props.embedded" class="o_baseer_report_toolbar_identity">
                     <button class="o_baseer_report_switcher" type="button" t-on-click="goToReports" t-esc="labels.backToReports"/>
                 </div>
-                <ReportExportButtons t-if="state.data &amp;&amp; state.appliedFilters" reportKey="'activity'" filters="state.appliedFilters" lang="lang" disabled="state.loading || state.accountsLoading"/>
+                <ReportExportButtons reportKey="'activity'" filters="state.appliedFilters || undefined" lang="lang" disabled="!state.data || !state.appliedFilters || state.loading || state.accountsLoading"/>
                 <div class="o_baseer_report_filters" t-att-aria-label="labels.scope">
-                    <label class="o_baseer_report_select_filter"><span class="visually-hidden" t-esc="labels.account"/>
-                        <select t-att-aria-label="labels.account" t-att-value="state.accountId" t-on-change="onAccountChange">
-                            <option t-foreach="state.accounts" t-as="account" t-key="account.id" t-att-value="account.id" t-att-selected="account.id === state.accountId" t-esc="account.display_name"/>
-                        </select>
-                    </label>
                     <label class="o_baseer_report_select_filter"><span class="visually-hidden" t-esc="labels.period"/>
                         <select t-att-aria-label="labels.period" t-att-value="state.period" t-on-change="onPeriodChange">
                             <option value="month" t-att-selected="state.period === 'month'" t-esc="labels.month"/>
@@ -25,6 +20,11 @@
                     </label>
                     <label t-if="state.period === 'custom'" class="o_baseer_report_date_filter"><span t-esc="labels.from"/><input type="date" name="dateFrom" t-att-value="state.dateFrom" t-on-change="onDateChange"/></label>
                     <label t-if="state.period === 'custom'" class="o_baseer_report_date_filter"><span t-esc="labels.to"/><input type="date" name="dateTo" t-att-value="state.dateTo" t-on-change="onDateChange"/></label>
+                    <label class="o_baseer_report_select_filter"><span class="visually-hidden" t-esc="labels.account"/>
+                        <select t-att-aria-label="labels.account" t-att-value="state.accountId" t-on-change="onAccountChange">
+                            <option t-foreach="state.accounts" t-as="account" t-key="account.id" t-att-value="account.id" t-att-selected="account.id === state.accountId" t-esc="account.display_name"/>
+                        </select>
+                    </label>
                     <button class="btn btn-primary o_baseer_report_apply" type="button" t-att-disabled="state.loading || state.accountsLoading || !state.accountId" t-on-click="apply" t-esc="labels.apply"/>
                 </div>
             </header>

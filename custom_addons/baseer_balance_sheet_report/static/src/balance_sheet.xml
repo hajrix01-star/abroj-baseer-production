@@ -6,8 +6,8 @@
                 <ReportSelector t-if="props.reportOptions" options="props.reportOptions"
                     selectedKey="props.selectedReportKey" label="props.reportSelectorLabel"
                     lang="lang" onSelect="props.onReportSelect"/>
-                <div class="o_baseer_report_filters" t-att-aria-label="labels.title">
                 <ReportExportButtons reportKey="'balance_sheet'" filters="appliedFilters || undefined" lang="lang" disabled="!state.report || state.loading || state.printing"/>
+                <div class="o_baseer_report_filters" t-att-aria-label="labels.title">
                     <details class="o_baseer_gl_period">
                         <summary t-att-aria-label="labels.period"><i class="fa fa-calendar" aria-hidden="true"/> <span t-esc="periodSummary"/></summary>
                         <div class="o_baseer_gl_period_list">

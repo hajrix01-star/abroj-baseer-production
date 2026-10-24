@@ -1,6 +1,22 @@
 # BRUE-1 — محرك العرض والتصدير الموحد لتقارير بصير
 
+## BRUE058 — Toolbar ordering delta (2026-10-24)
+
+BRUE059 / initial checks:10 template contracts PASS (selector/export/direct-filter order, period/cutoff first, no legacy print button). Independent bounded review noP0–P3; source acceptance conditional on runtime/CI. Actual mobile375 toolbar journeys PASS for all10 in ar_001/en_US. Desktop1280 first batch fails its global `.dropdown-item` count (includes unrelated navbar entries); scope the test to known report titles and enabled in-report selector, preserving exact10 and all layout assertions. Re-run only two desktop cases; first whole batch remains2failed/4 in `output/reports-toolbar-order-20261024.log`, not all-green. No application-code correction after that run. Browser work remains synthetic lab only; no fresh QA/Live acceptance.
+
+User approved the audited toolbar arrangement. Branch `codex/reports-toolbar-order-20261024`, basefc592105; reuse BRUE055–057 evidence and report11 map. LOCAL template/CSS arrangement under AGENTS small-UI exception: no rebuild, new libraries, RPC/calculation/ACL/export serializer or filter-application semantics change. Scope: selector → shared Excel/PDF exports → period/cutoff → report-specific filters → existing Apply where applicable; month/year controls ordered period/year/month consistently in VAT/tobacco. Exports stay visible but disabled before valid data instead of disappearing. Remove only the extra legacy print buttons from AR/AP, retaining shared PDF, native backend and existing print methods. No account/report deletion.
+
+| Before | After | Why |
+| --- | --- | --- |
+| Export group nested in filters or preceding selector | Direct toolbar child after selector in all ten | Stable reading/tab order and narrow wrapping |
+| Account before period; tobacco month before year | Period first; year/month consistent | Predictable scanning without changing scope |
+| Extra AR/AP legacy print buttons | One shared PDF button | Single visible export path |
+
+Skills: reuse-first orchestration, known architecture, XML/testing and emil layout/accessibility; full build-team gates not restarted for this presentation-only delta per explicit AGENTS exception. Main implements; independent delivery reviews bounded diff. Test intent: changed DOM grouping and mobile wrapping need fresh template contracts for10 and actual browser1280/375 layout checks; use existing synthetic single-reader lab, no new environment/load or repeated financial backend tests. QA/Live acceptance from BRUE057 remains unresolved, no Live authorization bypass.
+
 ## BRUE055 — Uniform number-click UX accepted locally
+
+BRUE057 / QA deployment receipt: policy PR508 passed4checks, independently reviewed report11-only, mergedfc59210585a901e44251bf54f97d98fcea4c10a7. Protected request40066374541 completed2026-10-24T05:31:22Z with QA_POLLER=GO and QA_DEPLOY=GO. Current source marker and result.env match53479878878a848fd278150a59e56547eb0795a4 and exactreport11, no third-party modules. Release `/srv/baseer-qa/releases/53479878878a-run-40066374541-20261024T052955Z`; recovery pair `/srv/baseer-qa/backups/pre-53479878878a-40066374541-20261024T052955Z` database.dump and filestore.tar both hash-check OK. This proves deployment/recovery, not postdeploy UX/export/latency acceptance. CUA attachment currently fails at focus-emulation command; no alternate browser/session extraction used. Live unchanged. Need authorized independent read-only QA browser or restored CUA to finish actual UI/file/latency acceptance before Live.
 
 BRUE056 / protected source merge: PR507 all11 CI checks PASS on0d0dac2021369577987b954e7c7971ff22723a89, including ten-provider exports/details, operations backend/Hoot, PL/VAT Hoot and source integrity. Squash merged2026-10-24T05:24:55Z as53479878878a848fd278150a59e56547eb0795a4; changed module trees match the tested candidate exactly. Independent delivery review GO for QA queue after greenCI only, not Live. QA-only policy pins merged source and unchanged exactreport11. Prequeue QA identity stillab51ea7e; receiver timeractive. Browser attachment twice timed out at Emulation.setFocusEmulationEnabled, so no new QA UI acceptance claimed. Existing final export-file/valid-latency gates remain.
 

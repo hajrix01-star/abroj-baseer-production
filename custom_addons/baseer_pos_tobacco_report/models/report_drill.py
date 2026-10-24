@@ -165,4 +165,4 @@ class TobaccoReportDrill(models.TransientModel):
             line.check_access('read')
             line.check_access_rule('read')
         return {'type': 'ir.actions.act_window', 'name': _('POS Order'), 'res_model': 'pos.order',
-                'view_mode': 'form', 'res_id': order.id, 'target': 'current'}
+                'views': [[False, 'form']], 'view_mode': 'form', 'res_id': order.id, 'target': 'current'}

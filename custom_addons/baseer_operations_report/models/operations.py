@@ -32,6 +32,7 @@ ROW_KEYS = (
 )
 INVOICE_TYPES = ('out_invoice', 'out_refund', 'out_receipt')
 POS_STATES = ('paid', 'done', 'invoiced')
+NATIVE_PAYMENT_CENSUS_BATCH_SIZE = 1000
 DISPLAY_SECTIONS = {
     'income': ('income',),
     'cost_of_sales': ('expense_direct_cost',),
@@ -92,6 +93,120 @@ class BaseerOperationsReport(models.AbstractModel):
         if set(row[0] for row in self.env.cr.fetchall()) != set(records.ids):
             self._deny_incomplete_source()
         records.check_access('read')
+
+    @api.model
+    def _native_payment_identity_census(self, payments):
+        """Read only relation identities for the native-payment proof cache.
+
+        This intentionally has no ORM search, ACL check, eligibility decision,
+        or financial validation.  It merely records the raw parent/child edges
+        that the scalar proof below will still validate in its original order.
+        Missing parents are deliberately absent (rather than cached as empty)
+        so their old per-parent proof remains the fallback.
+        """
+        cache = {'ids': {}, 'partial_edges': {}}
+
+        def chunks(ids):
+            for offset in range(0, len(ids), NATIVE_PAYMENT_CENSUS_BATCH_SIZE):
+                yield ids[offset:offset + NATIVE_PAYMENT_CENSUS_BATCH_SIZE]
+
+        def add(table, field, rows):
+            for record_id, parent_id in rows:
+                cache['ids'].setdefault((table, field, parent_id), set()).add(record_id)
+
+        payment_ids = payments.ids
+        if not payment_ids:
+            return cache
+        payment_model = self.env['account.payment']
+        move_model = self.env['account.move']
+        line_model = self.env['account.move.line']
+        partial_model = self.env['account.partial.reconcile']
+        payment_model.flush_model(['move_id'])
+        move_model.flush_model(['reversed_entry_id'])
+        line_model.flush_model(['move_id'])
+        partial_model.flush_model(['debit_move_id', 'credit_move_id'])
+
+        payment_moves = set()
+        for ids in chunks(payment_ids):
+            self.env.cr.execute(
+                'SELECT id, move_id FROM account_payment WHERE id=ANY(%s)', [ids])
+            rows = self.env.cr.fetchall()
+            payment_moves.update(move_id for _payment_id, move_id in rows if move_id)
+        if not payment_moves:
+            return cache
+
+        def children(table, field, parent_ids):
+            for ids in chunks(sorted(parent_ids)):
+                self.env.cr.execute(
+                    'SELECT id, %s FROM %s WHERE %s=ANY(%%s)' % (field, table, field), [ids])
+                rows = self.env.cr.fetchall()
+                for parent_id in ids:
+                    cache['ids'].setdefault((table, field, parent_id), set())
+                add(table, field, rows)
+
+        children('account_move_line', 'move_id', payment_moves)
+        children('account_move', 'reversed_entry_id', payment_moves)
+        payment_line_ids = set().union(*(
+            cache['ids'].get(('account_move_line', 'move_id', move_id), set())
+            for move_id in payment_moves
+        ))
+        if not payment_line_ids:
+            return cache
+
+        credit_line_ids = set()
+        for ids in chunks(sorted(payment_line_ids)):
+            self.env.cr.execute(
+                'SELECT id, debit_move_id, credit_move_id '
+                'FROM account_partial_reconcile WHERE debit_move_id=ANY(%s)', [ids])
+            rows = self.env.cr.fetchall()
+            for parent_id in ids:
+                cache['ids'].setdefault(
+                    ('account_partial_reconcile', 'debit_move_id', parent_id), set())
+            for partial_id, debit_id, credit_id in rows:
+                cache['ids'].setdefault(
+                    ('account_partial_reconcile', 'debit_move_id', debit_id), set()).add(partial_id)
+                cache['partial_edges'][partial_id] = (debit_id, credit_id)
+                if credit_id:
+                    credit_line_ids.add(credit_id)
+        if not credit_line_ids:
+            return cache
+
+        bill_moves = set()
+        for ids in chunks(sorted(credit_line_ids)):
+            self.env.cr.execute(
+                'SELECT id, move_id FROM account_move_line WHERE id=ANY(%s)', [ids])
+            bill_moves.update(move_id for _line_id, move_id in self.env.cr.fetchall() if move_id)
+            self.env.cr.execute(
+                'SELECT id, debit_move_id, credit_move_id '
+                'FROM account_partial_reconcile WHERE credit_move_id=ANY(%s)', [ids])
+            rows = self.env.cr.fetchall()
+            for parent_id in ids:
+                cache['ids'].setdefault(
+                    ('account_partial_reconcile', 'credit_move_id', parent_id), set())
+            for partial_id, debit_id, credit_id in rows:
+                cache['ids'].setdefault(
+                    ('account_partial_reconcile', 'credit_move_id', credit_id), set()).add(partial_id)
+                cache['partial_edges'][partial_id] = (debit_id, credit_id)
+        if bill_moves:
+            children('account_move_line', 'move_id', bill_moves)
+            children('account_move', 'reversed_entry_id', bill_moves)
+        return cache
+
+    @api.model
+    def _native_payment_cached_visible(self, cache, table, field, parent_id, records):
+        """Use a raw identity census only when it proves this exact edge."""
+        key = (table, field, parent_id)
+        if key not in cache['ids']:
+            return False
+        if cache['ids'][key] != set(records.ids):
+            self._deny_incomplete_source()
+        records.check_access('read')
+        if table == 'account_partial_reconcile':
+            for partial in records:
+                if cache['partial_edges'].get(partial.id) != (
+                        partial.debit_move_id.id, partial.credit_move_id.id):
+                    self._deny_incomplete_source()
+        return True
 
     @api.model
     def _scope(self, filters):
@@ -1412,6 +1527,18 @@ class BaseerOperationsReport(models.AbstractModel):
             batch_payments = set(batch_lines.mapped('payment_id').ids)
         else:
             batch_payments = set()
+        eligible_payment_ids = [payment.id for payment in payments
+                                if payment.id not in batch_payments
+                                and payment.id not in claimed_payment_ids]
+        native_cache = self._native_payment_identity_census(
+            self.env['account.payment'].browse(eligible_payment_ids))
+
+        def visible(table, field, parent_id, records):
+            if self._native_payment_cached_visible(
+                    native_cache, table, field, parent_id, records):
+                return
+            self._assert_visible(table, '%s=%%s' % field, [parent_id], records)
+
         for payment in payments:
             if payment.id in batch_payments or payment.id in claimed_payment_ids:
                 continue
@@ -1429,8 +1556,7 @@ class BaseerOperationsReport(models.AbstractModel):
                     or move.journal_id != journal):
                 self._deny_incomplete_source()
             lines = move.line_ids
-            self._assert_visible('account_move_line', 'move_id=%s',
-                                 [move.id], lines)
+            visible('account_move_line', 'move_id', move.id, lines)
             lines.mapped('account_id').check_access('read')
             if any(item.company_id != company or item.journal_id != journal
                    for item in lines):
@@ -1444,10 +1570,7 @@ class BaseerOperationsReport(models.AbstractModel):
                 continue
             if journal_ids and journal.id not in journal_ids:
                 continue
-            self._assert_visible(
-                'account_move', 'reversed_entry_id=%s', [move.id],
-                move.reversal_move_ids,
-            )
+            visible('account_move', 'reversed_entry_id', move.id, move.reversal_move_ids)
             if (payment.company_id != company or move.company_id != company
                     or payment.move_id != move or move.origin_payment_id != payment
                     or payment.payment_type != 'outbound'
@@ -1485,8 +1608,7 @@ class BaseerOperationsReport(models.AbstractModel):
                 excluded['unsupported_native_payment'] += 1
                 continue
             partials = payable.matched_credit_ids
-            self._assert_visible('account_partial_reconcile',
-                                 'debit_move_id=%s', [payable.id], partials)
+            visible('account_partial_reconcile', 'debit_move_id', payable.id, partials)
             if len(partials) != 1 or self._decimal(partials.amount) != amount:
                 excluded['unassigned_native_payment'] += 1
                 continue
@@ -1499,17 +1621,13 @@ class BaseerOperationsReport(models.AbstractModel):
             reconciled_bills = payment.reconciled_bill_ids
             origin_bills.check_access('read')
             reconciled_bills.check_access('read')
-            self._assert_visible('account_move', 'reversed_entry_id=%s',
-                                 [bill.id], bill.reversal_move_ids)
+            visible('account_move', 'reversed_entry_id', bill.id, bill.reversal_move_ids)
             bill_lines = bill.line_ids
-            self._assert_visible('account_move_line', 'move_id=%s',
-                                 [bill.id], bill_lines)
+            visible('account_move_line', 'move_id', bill.id, bill_lines)
             bill_lines.mapped('account_id').check_access('read')
             bill.partner_id.check_access('read')
             bill_partials = bill_payable.matched_debit_ids
-            self._assert_visible('account_partial_reconcile',
-                                 'credit_move_id=%s', [bill_payable.id],
-                                 bill_partials)
+            visible('account_partial_reconcile', 'credit_move_id', bill_payable.id, bill_partials)
             if (bill.move_type != 'in_invoice' or bill.state != 'posted'
                     or bill.company_id != company
                     or bill.currency_id != company.currency_id

@@ -7,6 +7,7 @@ precede the bank movement when an outstanding account is configured.
 
 from collections import Counter
 from decimal import Decimal
+from unittest.mock import patch
 
 from odoo import Command
 from odoo.exceptions import AccessError, ValidationError
@@ -1033,6 +1034,80 @@ class TestOperationsPurchaseSourceContract(TransactionCase):
                       {**event, 'source_id': statement.id + 1,
                        'amount': Decimal('25.00')},
                   ]})
+
+    def test_native_payment_identity_cache_keeps_direction_and_unknown_fallback_distinct(self):
+        self.method.payment_account_id = self.bank.default_account_id
+        bill = self._bill()
+        payment = self.env['account.payment.register'].with_context(
+            active_model='account.move', active_ids=bill.ids,
+        ).create({
+            'journal_id': self.bank.id,
+            'payment_method_line_id': self.method.id,
+            'amount': bill.amount_total,
+            'payment_date': '2026-06-20',
+            'installments_mode': 'full',
+            'payment_difference_handling': 'open',
+        })._create_payments()
+        payable = payment.move_id.line_ids.filtered(
+            lambda line: line.account_id == self.payable)
+        partials = payable.matched_credit_ids
+        self.assertEqual(len(partials), 1)
+        report = self.env['baseer.operations.report']
+        cache = report._native_payment_identity_census(payment)
+
+        self.assertTrue(report._native_payment_cached_visible(
+            cache, 'account_partial_reconcile', 'debit_move_id', payable.id, partials))
+        # A debit parent is never accepted through the credit-direction key.
+        self.assertFalse(report._native_payment_cached_visible(
+            cache, 'account_partial_reconcile', 'credit_move_id', payable.id, partials))
+        reversals = payment.move_id.reversal_move_ids
+        self.assertFalse(reversals)
+        self.assertIn(('account_move', 'reversed_entry_id', payment.move_id.id), cache['ids'])
+        self.assertTrue(report._native_payment_cached_visible(
+            cache, 'account_move', 'reversed_entry_id', payment.move_id.id, reversals))
+        self.assertFalse(report._native_payment_cached_visible(
+            cache, 'account_move', 'reversed_entry_id', -2,
+            self.env['account.move.line']))
+        damaged = {'ids': dict(cache['ids']), 'partial_edges': dict(cache['partial_edges'])}
+        damaged['partial_edges'][partials.id] = (
+            partials.credit_move_id.id, partials.debit_move_id.id)
+        with self.assertRaises(AccessError):
+            report._native_payment_cached_visible(
+                damaged, 'account_partial_reconcile', 'debit_move_id', payable.id, partials)
+
+    def test_native_payment_proof_cache_preserves_scalar_invoice_validation(self):
+        self.method.payment_account_id = self.bank.default_account_id
+        bill = self._bill()
+        payment = self.env['account.payment.register'].with_context(
+            active_model='account.move', active_ids=bill.ids,
+        ).create({
+            'journal_id': self.bank.id,
+            'payment_method_line_id': self.method.id,
+            'amount': bill.amount_total,
+            'payment_date': '2026-06-20',
+            'installments_mode': 'full',
+            'payment_difference_handling': 'open',
+        })._create_payments()
+        report = self.env['baseer.operations.report']
+        sections = {key: {} for key in ('income', 'income_other', 'expense_direct_cost',
+                                        'expense', 'expense_depreciation', 'expense_other')}
+        excluded = Counter()
+        original = type(report)._assert_visible
+        calls = []
+
+        def counted(instance, table, domain, params, records):
+            calls.append((table, domain))
+            return original(instance, table, domain, params, records)
+
+        with patch.object(type(report), '_assert_visible', new=counted):
+            report._native_payment_outflows(
+                self.company, '2026-06-01', '2026-06-30', [], sections, excluded)
+        # The six native-payment relation proofs use the cache.  The one
+        # remaining call is the unchanged scalar invoice/tax evidence path.
+        self.assertEqual(calls, [('account_move_line', 'move_id=%s AND display_type=%s')])
+        events = [event for entry in sections['expense'].values() for event in entry['events']]
+        self.assertEqual({event['source_id'] for event in events}, {payment.id})
+        self.assertEqual(excluded['unconfirmed_payment_link'], 1)
 
     def test_native_payment_origin_link_differs_from_later_advance_match(self):
         """Characterize the stored invoice link; do not admit it to the report yet."""

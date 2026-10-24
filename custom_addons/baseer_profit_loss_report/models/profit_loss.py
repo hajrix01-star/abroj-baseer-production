@@ -743,6 +743,45 @@ class BaseerProfitLossReport(models.AbstractModel):
                 raise ValidationError(_('The export is limited to 5,000 rows. Narrow the period or selected journals.'))
             budget['keys'].add(key)
 
+    def _native_channel_accounts(self, orders, line_ids_by_order):
+        """Prepare unchanged native bases in bounded chunks, then prove accounts.
+
+        Nothing is returned until every child relation, native result identity,
+        and account has passed. The caller retains its move/account-local fallback.
+        """
+        source_ids = []
+        for order in orders:
+            lines = order.lines
+            lines.check_access('read')
+            if set(lines.ids) != line_ids_by_order[order.id]:
+                raise AccessError(_('POS source is not available.'))
+            source_ids.extend(lines.ids)
+        if len(set(source_ids)) != len(source_ids):
+            raise AccessError(_('POS source is not available.'))
+        source_lines = self.env['pos.order.line'].browse(source_ids)
+        prepared = {}
+        for offset in range(0, len(source_lines), 1000):
+            chunk = source_lines[offset:offset + 1000]
+            chunk = chunk.with_prefetch(chunk.ids)
+            bases = chunk._prepare_tax_base_line_values()
+            expected, seen, accounts_by_env = set(chunk.ids), set(), {}
+            for base in bases:
+                record = base['record']
+                if record._name != 'pos.order.line' or len(record) != 1 or record.id not in expected or record.id in seen:
+                    raise AccessError(_('POS source is not available.'))
+                seen.add(record.id)
+                account = base.get('account_id')
+                if account:
+                    # Keep the exact environment returned by native preparation:
+                    # do not change company, user or fiscal-position context.
+                    accounts_by_env[account.env] = accounts_by_env.get(account.env, account.browse()) | account
+                prepared[record.id] = account
+            if seen != expected:
+                raise AccessError(_('POS source is not available.'))
+            for accounts in accounts_by_env.values():
+                accounts.check_access('read')
+        return prepared
+
     def _revenue_channels(self, company, domain, provenance=None, _export_channel_budget=None):
         """Only attribute a whole move/account after exact POS net matching."""
         lines = self.env['account.move.line'].search(domain)
@@ -783,16 +822,12 @@ class BaseerProfitLossReport(models.AbstractModel):
                     census = self._channel_child_ids(missing)
                     for key in child_ids:
                         child_ids[key].update(census[key])
+                prepared_accounts = self._native_channel_accounts(orders, child_ids['lines'])
                 order_amounts = []
                 for order in orders:
-                    order.lines.check_access('read')
-                    if set(order.lines.ids) != child_ids['lines'][order.id]:
-                        raise AccessError(_('POS source is not available.'))
                     net = Decimal('0')
                     for source in order.lines:
-                        account = source._prepare_base_line_for_taxes_computation().get('account_id')
-                        if account:
-                            account.check_access('read')
+                        account = prepared_accounts[source.id]
                         if account and account.id == account_id:
                             # Baseer refunds can store positive subtotals;
                             # already-negative native lines must not flip twice.

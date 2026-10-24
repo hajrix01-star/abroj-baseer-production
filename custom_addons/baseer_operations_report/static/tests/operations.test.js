@@ -132,6 +132,7 @@ async function mountLoadingReport(call, doAction = async () => {}) {
     } }) });
     services.add("action", { start: () => ({ doAction }) });
     services.add("notification", { start: () => ({ add: () => {} }) });
+    services.add("dialog", { start: () => ({ add: () => {} }) });
     const component = await mountWithCleanup(BaseerOperationsPreview, { templates: await loadingTemplates(), props: {} });
     return { component, destroy: () => destroy(component.__owl__.app) };
 }

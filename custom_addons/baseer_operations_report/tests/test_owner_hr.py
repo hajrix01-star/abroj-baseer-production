@@ -240,6 +240,24 @@ class TestOwnerHrCash(TransactionCase):
         self.assertEqual(result['claimed_payment_ids'], {first.id, second.id})
         self.assertEqual(sum(row['amount'] for row in result['events']), Decimal('1500'))
 
+    def test_direct_salary_read_facts_keep_events_claims_and_exclusions_identical(self):
+        """The optional proof memo changes repeated ACL work, never HR facts."""
+        slip = self._payroll()
+        first = self._pay(slip, 600)
+        second = self._pay(slip, 900, '2026-07-02')
+
+        baseline = self.report._owner_hr_cash(
+            self.company, '2026-06-01', '2026-07-31', self.bank.ids)
+        memoized = self.report._owner_hr_cash(
+            self.company, '2026-06-01', '2026-07-31', self.bank.ids, read_facts={})
+
+        self.assertEqual(memoized['events'], baseline['events'])
+        self.assertEqual(memoized['claimed_payment_ids'], {first.id, second.id})
+        self.assertEqual(memoized['claimed_payment_ids'], baseline['claimed_payment_ids'])
+        self.assertEqual(memoized['claimed_statement_ids'], baseline['claimed_statement_ids'])
+        self.assertEqual(memoized['claimed_liquidity_ids'], baseline['claimed_liquidity_ids'])
+        self.assertEqual(memoized['excluded'], baseline['excluded'])
+
     def test_direct_salary_facts_hide_one_partial_fails_closed_for_all_candidates(self):
         slip = self._payroll()
         first = self._pay(slip, 600)

@@ -66,10 +66,10 @@ class OperationsOwnerHr(models.AbstractModel):
             payment_moves.update(move.id for move in moves if move.origin_payment_id)
         return loan_moves, statement_moves, payment_moves
 
-    def _owner_hr_reversed(self, moves):
+    def _owner_hr_reversed(self, moves, read_facts=None):
         """A visible reversal is unsupported; a hidden inverse is denied."""
-        moves.check_access('read')
-        moves.reversed_entry_id.check_access('read')
+        self._owner_check_read(moves, read_facts)
+        self._owner_check_read(moves.reversed_entry_id, read_facts)
         reversals = self._owner_sales_pairs(
             moves, 'reversal_move_ids', 'account.move', 'reversed_entry_id')
         return bool(reversals or moves.reversed_entry_id)
@@ -95,7 +95,7 @@ class OperationsOwnerHr(models.AbstractModel):
                 result[parent.id] |= child
         return result
 
-    def _owner_hr_direct_salary_facts(self, moves):
+    def _owner_hr_direct_salary_facts(self, moves, read_facts=None):
         """Batch direct-salary relation evidence for already selected moves.
 
         The candidate census has already established that each move has a
@@ -105,7 +105,7 @@ class OperationsOwnerHr(models.AbstractModel):
         """
         if not moves:
             return None
-        moves.check_access('read')
+        self._owner_check_read(moves, read_facts)
         payment_model = self.env['account.payment']
         payment_model.flush_model(['move_id'])
         raw_pairs = set()
@@ -117,7 +117,7 @@ class OperationsOwnerHr(models.AbstractModel):
             )
             raw_pairs.update(self.env.cr.fetchall())
             payments |= payment_model.search([('move_id', 'in', ids)])
-        payments.check_access('read')
+        self._owner_check_read(payments, read_facts)
         visible_pairs = {(payment.id, payment.move_id.id) for payment in payments}
         if raw_pairs != visible_pairs:
             self._deny_incomplete_source()
@@ -132,8 +132,8 @@ class OperationsOwnerHr(models.AbstractModel):
         payment_lines = self.env['account.move.line'].browse(sorted({
             line.id for lines in lines_by_move.values() for line in lines
         }))
-        payment_lines.check_access('read')
-        payment_lines.account_id.check_access('read')
+        self._owner_check_read(payment_lines, read_facts)
+        self._owner_check_read(payment_lines.account_id, read_facts)
         payables = payment_lines.filtered(
             lambda line: line.account_id.account_type == 'liability_payable')
         credits_by_payable = self._owner_hr_pair_map(
@@ -144,10 +144,10 @@ class OperationsOwnerHr(models.AbstractModel):
             'credits_by_payable': credits_by_payable,
         }
 
-    def _owner_hr_move_lines(self, move, company, facts=None):
-        move.check_access('read')
-        move.journal_id.check_access('read')
-        move.currency_id.check_access('read')
+    def _owner_hr_move_lines(self, move, company, facts=None, read_facts=None):
+        self._owner_check_read(move, read_facts)
+        self._owner_check_read(move.journal_id, read_facts)
+        self._owner_check_read(move.currency_id, read_facts)
         if (move.company_id != company or move.state != 'posted'
                 or move.currency_id != company.currency_id
                 or move.journal_id.company_id != company):
@@ -156,9 +156,9 @@ class OperationsOwnerHr(models.AbstractModel):
                  if facts is not None else None)
         if lines is None:
             lines = self._owner_sales_pairs(move, 'line_ids', 'account.move.line', 'move_id')
-        lines.check_access('read')
-        lines.account_id.check_access('read')
-        lines.partner_id.check_access('read')
+        self._owner_check_read(lines, read_facts)
+        self._owner_check_read(lines.account_id, read_facts)
+        self._owner_check_read(lines.partner_id, read_facts)
         total = Decimal(0)
         for line in lines:
             if (line.company_id != company or line.journal_id != move.journal_id
@@ -176,18 +176,18 @@ class OperationsOwnerHr(models.AbstractModel):
             self._deny_incomplete_source()
         return lines
 
-    def _owner_hr_contact(self, source, company):
-        source.check_access('read')
+    def _owner_hr_contact(self, source, company, read_facts=None):
+        self._owner_check_read(source, read_facts)
         employee = source.employee_id
-        employee.check_access('read')
+        self._owner_check_read(employee, read_facts)
         contact = employee.work_contact_id
-        contact.check_access('read')
+        self._owner_check_read(contact, read_facts)
         if (source.company_id != company or not employee or employee.company_id != company
                 or not contact or contact.company_id not in (company, self.env['res.company'])):
             self._deny_incomplete_source()
         return contact
 
-    def _owner_hr_advance(self, liquidity, company):
+    def _owner_hr_advance(self, liquidity, company, read_facts=None):
         move = liquidity.move_id
         declared = move.baseer_loan_id
         model = self.env['baseer.hr.loan']
@@ -199,8 +199,8 @@ class OperationsOwnerHr(models.AbstractModel):
         loans = model.search([('move_id', '=', move.id)])
         if set(loans.ids) != source_ids:
             self._deny_incomplete_source()
-        loans.check_access('read')
-        declared.check_access('read')
+        self._owner_check_read(loans, read_facts)
+        self._owner_check_read(declared, read_facts)
         if not loans:
             # Repayments and reviewed reversals also carry baseer_loan_id.
             # They are not the original advance disbursement.
@@ -208,10 +208,10 @@ class OperationsOwnerHr(models.AbstractModel):
         if len(loans) != 1 or declared != loans:
             self._deny_incomplete_source()
         loan = loans
-        contact = self._owner_hr_contact(loan, company)
-        loan.journal_id.check_access('read')
-        loan.currency_id.check_access('read')
-        lines = self._owner_hr_move_lines(move, company)
+        contact = self._owner_hr_contact(loan, company, read_facts)
+        self._owner_check_read(loan.journal_id, read_facts)
+        self._owner_check_read(loan.currency_id, read_facts)
+        lines = self._owner_hr_move_lines(move, company, read_facts=read_facts)
         principal = lines - liquidity
         amount = self._owner_sales_money(loan.amount, company.currency_id)
         if (len(lines) != 2 or len(principal) != 1 or move.move_type != 'entry'
@@ -240,27 +240,32 @@ class OperationsOwnerHr(models.AbstractModel):
             'employee_id': loan.employee_id.id, 'loan_id': loan.id,
         }, True
 
-    def _owner_hr_salary_source(self, source, company, contact):
+    def _owner_hr_salary_source(self, source, company, contact, read_facts=None):
         """Return a proved slip, or False for a visible unsupported correction."""
-        source.check_access('read')
+        self._owner_check_read(source, read_facts)
         slip = source.baseer_payslip_id
-        slip.check_access('read')
+        self._owner_check_read(slip, read_facts)
         if not slip:
             return False
-        employee_contact = self._owner_hr_contact(slip, company)
+        employee_contact = self._owner_hr_contact(slip, company, read_facts)
         original = slip.move_id
-        original.check_access('read')
+        self._owner_check_read(original, read_facts)
         if (slip.state != 'done' or not original or original.state != 'posted'
                 or original.company_id != company or original.baseer_payslip_id != slip
                 or employee_contact != contact or source.move_type != 'entry'):
             self._deny_incomplete_source()
         originals = self.env['hr.payslip'].search([('move_id', '=', original.id)])
         originals.flush_model(['move_id'])
-        self._assert_visible('hr_payslip', 'move_id=%s', [original.id], originals)
+        if read_facts is None:
+            self._assert_visible('hr_payslip', 'move_id=%s', [original.id], originals)
+        else:
+            self._assert_visible(
+                'hr_payslip', 'move_id=%s', [original.id], originals,
+                read_facts=read_facts)
         if originals != slip:
             self._deny_incomplete_source()
-        self._owner_hr_move_lines(original, company)
-        if self._owner_hr_reversed(source | original):
+        self._owner_hr_move_lines(original, company, read_facts=read_facts)
+        if self._owner_hr_reversed(source | original, read_facts):
             return False
         if source == original:
             if (source.baseer_correction_payslip_id or source.baseer_correction_source_id
@@ -277,7 +282,7 @@ class OperationsOwnerHr(models.AbstractModel):
         return slip
 
     def _owner_hr_salary(self, liquidity, company, *, statement=None, outstanding_credit=None,
-                         facts=None):
+                         facts=None, read_facts=None):
         """Share salary-source proof between direct cash and whole bank clearing."""
         funding_credit = outstanding_credit if statement else liquidity
         move = funding_credit.move_id
@@ -286,39 +291,45 @@ class OperationsOwnerHr(models.AbstractModel):
         if payments is None:
             payments = self.env['account.payment'].search([('move_id', '=', move.id)])
             payments.flush_model(['move_id'])
-            self._assert_visible('account_payment', 'move_id=%s', [move.id], payments)
+            if read_facts is None:
+                self._assert_visible('account_payment', 'move_id=%s', [move.id], payments)
+            else:
+                self._assert_visible(
+                    'account_payment', 'move_id=%s', [move.id], payments,
+                    read_facts=read_facts)
         else:
-            payments.check_access('read')
+            self._owner_check_read(payments, read_facts)
         declared = move.origin_payment_id
-        declared.check_access('read')
+        self._owner_check_read(declared, read_facts)
         if not payments and not declared:
             return [], False, None
         if len(payments) != 1 or declared != payments:
             self._deny_incomplete_source()
         payment = payments
-        lines = self._owner_hr_move_lines(move, company, facts=facts)
+        lines = self._owner_hr_move_lines(
+            move, company, facts=facts, read_facts=read_facts)
         payable = lines.filtered(lambda line: line.account_id.account_type == 'liability_payable')
         partials = (facts['credits_by_payable'].get(payable.id)
                     if facts is not None and len(payable) == 1 else None)
         if partials is None:
             partials = self._owner_sales_pairs(
                 payable, 'matched_credit_ids', 'account.partial.reconcile', 'debit_move_id')
-        partials.check_access('read')
+        self._owner_check_read(partials, read_facts)
         credits = partials.credit_move_id
-        credits.check_access('read')
-        credits.move_id.check_access('read')
+        self._owner_check_read(credits, read_facts)
+        self._owner_check_read(credits.move_id, read_facts)
         slips = credits.move_id.baseer_payslip_id
         if not slips:
             return [], False, None
-        slips.check_access('read')
-        if self._owner_hr_reversed(move):
+        self._owner_check_read(slips, read_facts)
+        if self._owner_hr_reversed(move, read_facts):
             return [], True, None
         contact = payment.partner_id
-        contact.check_access('read')
+        self._owner_check_read(contact, read_facts)
         method = payment.payment_method_line_id
-        method.check_access('read')
-        payment.journal_id.check_access('read')
-        payment.currency_id.check_access('read')
+        self._owner_check_read(method, read_facts)
+        self._owner_check_read(payment.journal_id, read_facts)
+        self._owner_check_read(payment.currency_id, read_facts)
         # Visible unsupported shapes retain the global cash census gap.
         amount = self._owner_sales_money(payment.amount, company.currency_id)
         if (payment.company_id != company or payment.move_id != move
@@ -350,20 +361,21 @@ class OperationsOwnerHr(models.AbstractModel):
         for partial in partials:
             credit = partial.credit_move_id
             source = credit.move_id
-            credit.account_id.check_access('read')
-            credit.partner_id.check_access('read')
+            self._owner_check_read(credit.account_id, read_facts)
+            self._owner_check_read(credit.partner_id, read_facts)
             if (partial.company_id != company or partial.debit_move_id != payable
                     or credit.company_id != company or credit.account_id != payable.account_id
                     or credit.partner_id != contact or source.date > move.date
                     or self._owner_sales_money(credit.balance, company.currency_id) >= 0):
                 self._deny_incomplete_source()
-            self._owner_hr_move_lines(source, company, facts=facts)
+            self._owner_hr_move_lines(
+                source, company, facts=facts, read_facts=read_facts)
             reverse = self._owner_sales_pairs(
                 credit, 'matched_debit_ids', 'account.partial.reconcile', 'credit_move_id')
-            reverse.check_access('read')
+            self._owner_check_read(reverse, read_facts)
             if partial not in reverse:
                 self._deny_incomplete_source()
-            slip = self._owner_hr_salary_source(source, company, contact)
+            slip = self._owner_hr_salary_source(source, company, contact, read_facts)
             if not slip:
                 return [], True, None
             allocated = self._owner_sales_money(partial.amount, company.currency_id)
@@ -386,7 +398,7 @@ class OperationsOwnerHr(models.AbstractModel):
             return [], True, None
         return events, True, payment.id
 
-    def _owner_hr_statement(self, liquidity, company):
+    def _owner_hr_statement(self, liquidity, company, read_facts=None):
         """Only a whole payment cleared by one whole statement is supported."""
         move = liquidity.move_id
         model = self.env['account.bank.statement.line']
@@ -397,15 +409,15 @@ class OperationsOwnerHr(models.AbstractModel):
         if not source_ids and not declared:
             return [], False, None
         statements = model.search([('move_id', '=', move.id)])
-        statements.check_access('read')
-        declared.check_access('read')
+        self._owner_check_read(statements, read_facts)
+        self._owner_check_read(declared, read_facts)
         if set(statements.ids) != source_ids or len(statements) != 1 or statements != declared:
             self._deny_incomplete_source()
         statement = statements
-        statement.journal_id.check_access('read')
-        statement.currency_id.check_access('read')
-        statement.partner_id.check_access('read')
-        lines = self._owner_hr_move_lines(move, company)
+        self._owner_check_read(statement.journal_id, read_facts)
+        self._owner_check_read(statement.currency_id, read_facts)
+        self._owner_check_read(statement.partner_id, read_facts)
+        lines = self._owner_hr_move_lines(move, company, read_facts=read_facts)
         counterpart = lines - liquidity
         amount = -self._owner_sales_money(liquidity.balance, company.currency_id)
         if (len(lines) != 2 or len(counterpart) != 1
@@ -427,10 +439,10 @@ class OperationsOwnerHr(models.AbstractModel):
         debit_matches = self._owner_sales_pairs(
             counterpart, 'matched_debit_ids', 'account.partial.reconcile', 'credit_move_id')
         credits = clearing.credit_move_id
-        credits.check_access('read')
-        credits.move_id.check_access('read')
-        credits.account_id.check_access('read')
-        credits.partner_id.check_access('read')
+        self._owner_check_read(credits, read_facts)
+        self._owner_check_read(credits.move_id, read_facts)
+        self._owner_check_read(credits.account_id, read_facts)
+        self._owner_check_read(credits.partner_id, read_facts)
         reverse = self._owner_sales_pairs(
             credits, 'matched_debit_ids', 'account.partial.reconcile', 'credit_move_id')
         credit_matches = self._owner_sales_pairs(
@@ -445,21 +457,22 @@ class OperationsOwnerHr(models.AbstractModel):
                 or self._owner_sales_money(credits.balance, company.currency_id) != -amount):
             return [], False, None
         # Check both sides before salary proof, including hidden reversals.
-        if self._owner_hr_reversed(move):
+        if self._owner_hr_reversed(move, read_facts):
             return [], False, None
         events, hr_source, _payment_id = self._owner_hr_salary(
-            liquidity, company, statement=statement, outstanding_credit=credits)
+            liquidity, company, statement=statement, outstanding_credit=credits,
+            read_facts=read_facts)
         return events, hr_source, statement.id if events else None
 
     @api.model
-    def _owner_hr_cash(self, company, start, end, journal_ids):
+    def _owner_hr_cash(self, company, start, end, journal_ids, read_facts=None):
         company.ensure_one()
         if (company.id != self.env.company.id or company.id not in {1, 2, 3, 56}
                 or company.id not in self.env.user.company_ids.ids):
             raise AccessError(_('Only an authorized active company may be reported.'))
         company = self.env['res.company'].browse(company.id)
-        company.check_access('read')
-        company.currency_id.check_access('read')
+        self._owner_check_read(company, read_facts)
+        self._owner_check_read(company.currency_id, read_facts)
         start, end = fields.Date.to_date(start), fields.Date.to_date(end)
         if not start or not end or start > end:
             self._deny_incomplete_source()
@@ -467,7 +480,7 @@ class OperationsOwnerHr(models.AbstractModel):
                 or any(type(value) is not int or value <= 0 for value in journal_ids)):
             self._deny_incomplete_source()
         journals = self.env['account.journal'].browse(journal_ids).exists()
-        journals.check_access('read')
+        self._owner_check_read(journals, read_facts)
         if set(journals.ids) != set(journal_ids) or any(row.company_id != company for row in journals):
             self._deny_incomplete_source()
         move_fields = self.env['account.move']._fields
@@ -498,9 +511,9 @@ class OperationsOwnerHr(models.AbstractModel):
                             'ON a.id=l.account_id WHERE ' + sql, params)
         if {row[0] for row in self.env.cr.fetchall()} != set(liquidity.ids):
             self._deny_incomplete_source()
-        liquidity.check_access('read')
-        liquidity.move_id.check_access('read')
-        liquidity.account_id.check_access('read')
+        self._owner_check_read(liquidity, read_facts)
+        self._owner_check_read(liquidity.move_id, read_facts)
+        self._owner_check_read(liquidity.account_id, read_facts)
         loan_moves, statement_moves, payment_moves = self._owner_hr_candidate_moves(
             liquidity, loans_available=loans_available, salary_available=salary_available,
         )
@@ -511,13 +524,14 @@ class OperationsOwnerHr(models.AbstractModel):
             lambda line: (line.move_id.id in payment_moves
                           and line.move_id.id not in loan_moves
                           and line.move_id.id not in statement_moves)).move_id
-        direct_salary_facts = self._owner_hr_direct_salary_facts(direct_salary_moves)
+        direct_salary_facts = self._owner_hr_direct_salary_facts(
+            direct_salary_moves, read_facts)
         excluded = Counter()
         with localcontext() as context:
             context.prec = 60
             for line in liquidity:
                 move_id = line.move_id.id
-                advance, hr_source = (self._owner_hr_advance(line, company)
+                advance, hr_source = (self._owner_hr_advance(line, company, read_facts)
                                       if move_id in loan_moves else (None, False))
                 if advance:
                     result['events'].append(advance)
@@ -526,7 +540,8 @@ class OperationsOwnerHr(models.AbstractModel):
                 if hr_source:
                     excluded['unsupported_hr_cash'] += 1
                     continue
-                events, hr_source, statement_id = (self._owner_hr_statement(line, company)
+                events, hr_source, statement_id = (self._owner_hr_statement(
+                    line, company, read_facts)
                                                    if move_id in statement_moves else ([], False, None))
                 if events:
                     result['events'].extend(events)
@@ -537,7 +552,8 @@ class OperationsOwnerHr(models.AbstractModel):
                     excluded['unsupported_hr_cash'] += 1
                     continue
                 events, hr_source, payment_id = (
-                    self._owner_hr_salary(line, company, facts=direct_salary_facts)
+                    self._owner_hr_salary(
+                        line, company, facts=direct_salary_facts, read_facts=read_facts)
                     if move_id in payment_moves else ([], False, None)
                 )
                 if events:

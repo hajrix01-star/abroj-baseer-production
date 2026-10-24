@@ -147,7 +147,11 @@ class OperationsOwnerCash(models.AbstractModel):
         with localcontext() as context:
             context.prec = 60
             excluded = Counter()
-            hr = self._owner_hr_cash(company, start, end, journal_ids)
+            # Read proofs are retained only while this one owner snapshot is
+            # assembled.  They never cross Environment, request, or company.
+            read_facts = {}
+            hr = self._owner_hr_cash(
+                company, start, end, journal_ids, read_facts=read_facts)
             originals, by_liquidity = [], {}
 
             def claim(events):
@@ -180,6 +184,8 @@ class OperationsOwnerCash(models.AbstractModel):
                           if collector == self._native_payment_outflows else {})
                 if collector == self._purchase_outflows:
                     kwargs = {'claimed_statement_ids': frozenset(hr['claimed_statement_ids'])}
+                if collector == self._native_payment_outflows:
+                    kwargs['read_facts'] = read_facts
                 collector(company, start, end, list(journal_ids), sections, excluded, **kwargs)
                 collected = []
                 for section in sections.values():

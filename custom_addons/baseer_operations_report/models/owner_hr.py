@@ -12,8 +12,59 @@ from odoo import _, api, fields, models
 from odoo.exceptions import AccessError
 
 
+OWNER_HR_CENSUS_BATCH_SIZE = 1000
+
+
 class OperationsOwnerHr(models.AbstractModel):
     _inherit = 'baseer.operations.report'
+
+    @staticmethod
+    def _owner_hr_id_chunks(ids):
+        """Keep inverse-link census parameters bounded without changing scope."""
+        for offset in range(0, len(ids), OWNER_HR_CENSUS_BATCH_SIZE):
+            yield ids[offset:offset + OWNER_HR_CENSUS_BATCH_SIZE]
+
+    def _owner_hr_candidate_moves(self, liquidity, *, loans_available, salary_available):
+        """Census HR inverse links once, without accepting any financial fact.
+
+        The three native validators below deliberately prove both the declared
+        relation and its raw inverse for one cash move.  Repeating their empty
+        inverse probes for every ordinary cash move made imported history
+        scale with the number of unrelated liquidity lines.  This helper is
+        only a request-local gate: a move is merely selected for the existing
+        validator when either side of a native link exists.  Validators retain
+        all cardinality, ACL, company, amount, and reversal checks.
+        """
+        moves = liquidity.move_id
+        if not moves:
+            return set(), set(), set()
+        move_ids = moves.ids
+
+        def inverse_moves(model_name, table):
+            model = self.env[model_name]
+            model.flush_model(['move_id'])
+            result = set()
+            for batch in self._owner_hr_id_chunks(move_ids):
+                self.env.cr.execute(
+                    'SELECT move_id FROM %s WHERE move_id=ANY(%%s)' % table,
+                    [batch],
+                )
+                result.update(row[0] for row in self.env.cr.fetchall())
+            return result
+
+        loan_moves = set()
+        if loans_available:
+            loan_moves = inverse_moves('baseer.hr.loan', 'baseer_hr_loan')
+            loan_moves.update(move.id for move in moves if move.baseer_loan_id)
+
+        statement_moves = payment_moves = set()
+        if salary_available:
+            statement_moves = inverse_moves(
+                'account.bank.statement.line', 'account_bank_statement_line')
+            statement_moves.update(move.id for move in moves if move.statement_line_id)
+            payment_moves = inverse_moves('account.payment', 'account_payment')
+            payment_moves.update(move.id for move in moves if move.origin_payment_id)
+        return loan_moves, statement_moves, payment_moves
 
     def _owner_hr_reversed(self, moves):
         """A visible reversal is unsupported; a hidden inverse is denied."""
@@ -365,12 +416,16 @@ class OperationsOwnerHr(models.AbstractModel):
         liquidity.check_access('read')
         liquidity.move_id.check_access('read')
         liquidity.account_id.check_access('read')
+        loan_moves, statement_moves, payment_moves = self._owner_hr_candidate_moves(
+            liquidity, loans_available=loans_available, salary_available=salary_available,
+        )
         excluded = Counter()
         with localcontext() as context:
             context.prec = 60
             for line in liquidity:
+                move_id = line.move_id.id
                 advance, hr_source = (self._owner_hr_advance(line, company)
-                                      if loans_available else (None, False))
+                                      if move_id in loan_moves else (None, False))
                 if advance:
                     result['events'].append(advance)
                     result['claimed_liquidity_ids'].add(line.id)
@@ -379,7 +434,7 @@ class OperationsOwnerHr(models.AbstractModel):
                     excluded['unsupported_hr_cash'] += 1
                     continue
                 events, hr_source, statement_id = (self._owner_hr_statement(line, company)
-                                                   if salary_available else ([], False, None))
+                                                   if move_id in statement_moves else ([], False, None))
                 if events:
                     result['events'].extend(events)
                     result['claimed_statement_ids'].add(statement_id)
@@ -389,7 +444,7 @@ class OperationsOwnerHr(models.AbstractModel):
                     excluded['unsupported_hr_cash'] += 1
                     continue
                 events, hr_source, payment_id = (self._owner_hr_salary(line, company)
-                                                 if salary_available else ([], False, None))
+                                                 if move_id in payment_moves else ([], False, None))
                 if events:
                     result['events'].extend(events)
                     result['claimed_payment_ids'].add(payment_id)

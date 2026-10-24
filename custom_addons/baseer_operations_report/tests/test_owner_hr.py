@@ -1,13 +1,15 @@
 """Native HR workflows feed direct cash facts without salary/advance duplication."""
 
 from decimal import Decimal
+import re
+from unittest.mock import patch
 
 from odoo import Command
 from odoo.exceptions import AccessError
 from odoo.tests.common import TransactionCase, tagged
 
 
-@tagged('post_install', '-at_install', 'operations_owner_hr')
+@tagged('post_install', '-at_install', 'operations_owner_hr', 'operations_owner_hr_perf')
 class TestOwnerHrCash(TransactionCase):
     def setUp(self):
         super().setUp()
@@ -139,6 +141,26 @@ class TestOwnerHrCash(TransactionCase):
         self.assertEqual(statement.move_id.state, 'posted')
         return statement
 
+    def _unrelated_cash_moves(self, count, day='2026-06-18'):
+        """Real posted liquidity, deliberately without an HR native relation."""
+        moves = self.env['account.move'].create([{
+            'move_type': 'entry', 'journal_id': self.bank.id, 'date': day,
+            'line_ids': [
+                Command.create({
+                    'name': 'Owner HR ordinary cash %s' % index,
+                    'account_id': self.expense.id, 'debit': 1,
+                }),
+                Command.create({
+                    'name': 'Owner HR ordinary cash %s' % index,
+                    'account_id': self.cash.id, 'credit': 1,
+                }),
+            ],
+        } for index in range(count)])
+        moves.action_post()
+        self.assertTrue(all(not move.baseer_loan_id and not move.statement_line_id
+                            and not move.origin_payment_id for move in moves))
+        return moves
+
     def _reader(self):
         user = self.env['res.users'].create({
             'name': 'Owner HR normal reader', 'login': 'owner_hr_normal_reader',
@@ -183,6 +205,114 @@ class TestOwnerHrCash(TransactionCase):
                                       company_id=self.company.id)
         self.assertEqual(summary['cash_total'], Decimal('2000'))
         self.assertEqual(summary['cash_event_count'], 3)
+
+    def test_hr_batch_census_preserves_native_candidates_amid_ordinary_cash(self):
+        loan = self._loan()
+        slip = self._payroll()
+        payment = self._pay(slip, 600)
+        self._unrelated_cash_moves(120)
+
+        result = self._read()
+        self.assertEqual(result['excluded'], {})
+        self.assertEqual(result['claimed_payment_ids'], {payment.id})
+        self.assertEqual(result['claimed_liquidity_ids'], {
+            loan.move_id.line_ids.filtered(lambda row: row.account_id == self.cash).id,
+            payment.move_id.line_ids.filtered(lambda row: row.account_id == self.cash).id,
+        })
+        self.assertEqual({row['classification'] for row in result['events']},
+                         {'employee_advance', 'payroll'})
+        self.assertEqual(sum(row['amount'] for row in result['events']), Decimal('1100'))
+
+    def test_hr_batch_census_uses_constant_inverse_probes_for_ordinary_cash(self):
+        self._unrelated_cash_moves(120)
+        self.env.invalidate_all()
+        cursor_type = type(self.env.cr)
+        original_execute = cursor_type.execute
+        queries = []
+
+        def counted_execute(cursor, query, *args, **kwargs):
+            sql = re.sub(r'\s+', ' ', str(getattr(query, 'code', query))).lower()
+            if any(table in sql for table in (
+                    'baseer_hr_loan', 'account_bank_statement_line', 'account_payment')):
+                queries.append(sql)
+            return original_execute(cursor, query, *args, **kwargs)
+
+        with patch.object(cursor_type, 'execute', new=counted_execute):
+            result = self._read()
+        self.assertEqual(result, {
+            'events': [], 'claimed_payment_ids': set(), 'claimed_statement_ids': set(),
+            'claimed_liquidity_ids': set(), 'excluded': {},
+        })
+        for table in ('baseer_hr_loan', 'account_bank_statement_line', 'account_payment'):
+            with self.subTest(table=table):
+                matching = [sql for sql in queries if 'from %s where move_id=any' % table in sql]
+                self.assertEqual(len(matching), 1, queries)
+                self.assertFalse(any('from %s where move_id=%%s' % table in sql
+                                     for sql in queries), queries)
+
+    def test_hr_candidate_census_id_chunks_bound_parameters(self):
+        chunks = list(self.report._owner_hr_id_chunks(list(range(1, 1002))))
+
+        self.assertEqual([len(chunk) for chunk in chunks], [1000, 1])
+        self.assertEqual(chunks[0][0], 1)
+        self.assertEqual(chunks[-1], [1001])
+
+    def test_hr_batch_census_hidden_raw_inverse_still_fails_closed(self):
+        loan = self._loan()
+        secured = self._reader()
+        rule = self.env['ir.rule'].create({
+            'name': 'Hide batched owner HR loan inverse',
+            'model_id': self.env['ir.model']._get('baseer.hr.loan').id,
+            'domain_force': "[('id', '!=', %s)]" % loan.id,
+        })
+        try:
+            secured.env.invalidate_all()
+            self.assertFalse(secured.env['baseer.hr.loan'].search([('id', '=', loan.id)]))
+            with self.assertRaises(AccessError):
+                self._read(report=secured)
+        finally:
+            rule.unlink()
+
+    def test_hr_batch_census_selects_each_enabled_native_family(self):
+        loan = self._loan()
+        slip = self._payroll()
+        direct = self._pay(slip, 600)
+        self.method.payment_account_id = self.outstanding
+        outstanding = self._pay(slip, 900, '2026-07-02')
+        statement = self._clear_outstanding(outstanding, '2026-07-05')
+        liquidity = loan.move_id.line_ids.filtered(lambda row: row.account_id == self.cash)
+        liquidity |= direct.move_id.line_ids.filtered(lambda row: row.account_id == self.cash)
+        liquidity |= statement.move_id.line_ids.filtered(lambda row: row.account_id == self.cash)
+
+        loan_moves, statement_moves, payment_moves = self.report._owner_hr_candidate_moves(
+            liquidity, loans_available=True, salary_available=True)
+        self.assertEqual(loan_moves, {loan.move_id.id})
+        self.assertEqual(statement_moves, {statement.move_id.id})
+        self.assertEqual(payment_moves, {direct.move_id.id})
+
+    def test_hr_batch_census_hidden_statement_and_payment_inverses_fail_closed(self):
+        slip = self._payroll()
+        direct = self._pay(slip, 600)
+        self.method.payment_account_id = self.outstanding
+        outstanding = self._pay(slip, 900, '2026-07-02')
+        statement = self._clear_outstanding(outstanding, '2026-07-05')
+        secured = self._reader()
+        for model, record in (
+                ('account.payment', direct),
+                ('account.bank.statement.line', statement)):
+            with self.subTest(model=model):
+                rule = self.env['ir.rule'].create({
+                    'name': 'Hide batched owner HR %s inverse' % model,
+                    'model_id': self.env['ir.model']._get(model).id,
+                    'domain_force': "[('id', '!=', %s)]" % record.id,
+                })
+                try:
+                    secured.env.invalidate_all()
+                    self.assertFalse(secured.env[model].search([('id', '=', record.id)]))
+                    with self.assertRaises(AccessError):
+                        self._read(report=secured)
+                finally:
+                    rule.unlink()
 
     def test_unpaid_payroll_and_outstanding_payment_have_no_cash_claim(self):
         slip = self._payroll()
@@ -339,6 +469,52 @@ class TestOwnerHrCash(TransactionCase):
         self.assertEqual(sum(integrated['liquidity_totals'].values()), Decimal('60'))
         self.assertEqual({(row['source_model'], row['source_id']) for row in integrated['events']},
                          {('account.bank.statement.line', statement.id), ('account.payment', payment.id)})
+
+    def test_hr_batch_census_keeps_native_invoice_payment_relation(self):
+        purchase = self.env['account.journal'].create({
+            'name': 'Owner HR guarded payment purchases', 'code': 'OHP',
+            'type': 'purchase', 'company_id': self.company.id,
+        })
+        bill = self.env['account.move'].create({
+            'move_type': 'in_invoice', 'journal_id': purchase.id,
+            'partner_id': self.contact.id, 'invoice_date': '2026-06-18',
+            'invoice_line_ids': [Command.create({
+                'name': 'Owner HR guarded payment expense', 'quantity': 1,
+                'price_unit': 20, 'account_id': self.expense.id,
+                'tax_ids': [Command.clear()],
+            })],
+        })
+        bill.action_post()
+        payment = self.env['account.payment.register'].with_context(
+            active_model='account.move', active_ids=bill.ids,
+        ).create({
+            'journal_id': self.bank.id, 'payment_method_line_id': self.method.id,
+            'amount': 20, 'payment_date': '2026-06-20',
+            'installments_mode': 'full', 'payment_difference_handling': 'open',
+        })._create_payments()
+        move = payment.move_id
+        liquidity = move.line_ids.filtered(lambda row: row.account_id == self.cash)
+        _loans, _statements, payments = self.report._owner_hr_candidate_moves(
+            liquidity, loans_available=True, salary_available=True)
+        self.assertEqual(payments, {move.id})
+
+        # This laboratory does not necessarily install the optional lifecycle
+        # guard module.  Prove the native relation that the census consumes,
+        # then re-read it through a fresh environment cache.
+        self.assertEqual(move.origin_payment_id, payment)
+        self.env.invalidate_all()
+        move = self.env['account.move'].browse(move.id)
+        self.assertEqual(move.origin_payment_id, payment)
+        liquidity = move.line_ids.filtered(lambda row: row.account_id == self.cash)
+        _loans, _statements, payments = self.report._owner_hr_candidate_moves(
+            liquidity, loans_available=True, salary_available=True)
+        self.assertEqual(payments, {move.id})
+
+        integrated = self.report._owner_cash(
+            self.company, '2026-06-01', '2026-07-31', self.bank.ids)
+        events = [row for row in integrated['events']
+                  if row['source_model'] == 'account.payment' and row['source_id'] == payment.id]
+        self.assertEqual([row['amount'] for row in events], [Decimal('20')])
 
     def _assert_reversed_cash_unclaimed(self, payment, reversal):
         result = self._read()

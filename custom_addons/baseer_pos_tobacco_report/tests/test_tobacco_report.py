@@ -23,6 +23,9 @@ class FakeAccount:
     def with_company(self, company):
         return self
 
+    def check_access(self, operation):
+        assert operation == 'read'
+
 
 class FakeTaxModel:
     def __init__(self, order_total):
@@ -523,6 +526,16 @@ class TestTobaccoReport(TransactionCase):
                 [order], currency, Decimal('0.01'),
             )
         self.assertFalse(rows)
+        self.assertFalse(exceptions)
+        # A native tobacco repartition at zero remains in scope; an order with
+        # no tobacco fee line must no longer produce an unrelated warning.
+        with patch.object(BaseerPosTobaccoReport, '_order_fee_data', return_value=(
+            [(sale, Decimal('0.00'))], True, Decimal('220.00'), Decimal('219.99'),
+        )):
+            rows, exceptions, _, _, _ = self.report._collect_rows(
+                [order], currency, Decimal('0.01'),
+            )
+        self.assertEqual(rows[0]['_fee'], Decimal('0.00'))
         self.assertEqual(len(exceptions), 1)
         self.assertEqual(exceptions[0]['order'], '12')
         self.assertEqual(exceptions[0]['_order_id'], 701)

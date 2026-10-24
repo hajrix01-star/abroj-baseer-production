@@ -4,7 +4,7 @@
         <main t-ref="reportRoot" class="o_baseer_pl_report o_baseer_go_report" t-att-aria-busy="state.loading" t-att-dir="lang === 'ar' ? 'rtl' : 'ltr'" t-att-lang="lang">
             <header class="o_baseer_report_toolbar o_baseer_pl_toolbar">
                 <ReportSelector t-if="props.reportOptions" options="props.reportOptions" selectedKey="props.selectedReportKey" label="props.reportSelectorLabel" lang="lang" onSelect="props.onReportSelect"/>
-                <ReportExportButtons t-if="state.report &amp;&amp; state.report.complete &amp;&amp; appliedFilters" reportKey="'operations_gross'" filters="appliedFilters" lang="lang" disabled="state.loading || state.printing"/>
+                <ReportExportButtons reportKey="'operations_gross'" filters="appliedFilters || undefined" lang="lang" disabled="!state.report || !state.report.complete || !appliedFilters || state.loading || state.printing"/>
                 <div t-if="state.contextReady" class="o_baseer_report_filters" t-att-aria-label="labels.title">
                     <Dropdown menuClass="'o_baseer_pl_native_dropdown o_baseer_pl_period_menu'">
                         <button type="button" class="o_baseer_pl_filter_menu o_baseer_pl_filter_chip" t-att-aria-label="labels.period" t-att-disabled="state.loading"><i class="fa fa-calendar" aria-hidden="true"/> <span t-esc="periodSummary"/></button>

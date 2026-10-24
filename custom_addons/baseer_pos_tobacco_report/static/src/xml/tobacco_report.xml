@@ -3,11 +3,11 @@
     <t t-name="baseer_pos_tobacco_report.HubReport">
         <main class="o_baseer_tobacco_hub" t-att-dir="lang === 'ar' ? 'rtl' : 'ltr'" t-att-lang="lang">
             <div class="o_baseer_report_toolbar">
-                <ReportExportButtons reportKey="'tobacco'" filters="state.appliedFilters || undefined" lang="lang"
-                    disabled="state.loading || state.printing || !state.data || state.data.overflow"/>
                 <ReportSelector t-if="props.reportOptions" options="props.reportOptions"
                     selectedKey="props.selectedReportKey" label="props.reportSelectorLabel"
                     lang="lang" onSelect="props.onReportSelect"/>
+                <ReportExportButtons reportKey="'tobacco'" filters="state.appliedFilters || undefined" lang="lang"
+                    disabled="state.loading || state.printing || !state.data || state.data.overflow"/>
                 <div class="o_baseer_report_filters" role="group" t-att-aria-label="labels.title">
                     <label class="o_baseer_report_select_filter"><span class="visually-hidden" t-esc="labels.period"/>
                         <select name="period" t-att-aria-label="labels.period" t-on-change="updateFilter">
@@ -16,13 +16,13 @@
                         </select>
                     </label>
                     <t t-if="state.filters.period === 'month'">
+                        <label class="o_baseer_tobacco_year"><span class="visually-hidden" t-esc="labels.year"/>
+                            <input name="year" type="number" min="2000" max="2100" t-att-aria-label="labels.year" t-att-value="state.filters.year" t-on-change="updateFilter"/>
+                        </label>
                         <label class="o_baseer_report_select_filter"><span class="visually-hidden" t-esc="labels.month"/>
                             <select name="month" t-att-aria-label="labels.month" t-on-change="updateFilter">
                                 <option t-foreach="monthOptions" t-as="month" t-key="month.value" t-att-value="month.value" t-att-selected="month.value === state.filters.month" t-esc="month.name"/>
                             </select>
-                        </label>
-                        <label class="o_baseer_tobacco_year"><span class="visually-hidden" t-esc="labels.year"/>
-                            <input name="year" type="number" min="2000" max="2100" t-att-aria-label="labels.year" t-att-value="state.filters.year" t-on-change="updateFilter"/>
                         </label>
                     </t>
                     <t t-else="">
@@ -30,7 +30,7 @@
                         <label class="o_baseer_report_date_filter"><span t-esc="labels.to"/><input name="date_to" type="date" t-att-value="state.filters.date_to" t-on-change="updateFilter"/></label>
                     </t>
                     <label class="o_baseer_tobacco_products"><input name="show_products" type="checkbox" t-att-checked="state.filters.show_products" t-on-change="updateFilter"/><span t-esc="labels.products"/></label>
-                    <button type="button" class="btn btn-secondary o_baseer_report_apply" t-att-disabled="state.loading" t-on-click="() => this.load(1)" t-esc="labels.apply"/>
+                    <button type="button" class="btn btn-primary o_baseer_report_apply" t-att-disabled="state.loading" t-on-click="() => this.load(1)" t-esc="labels.apply"/>
                 </div>
             </div>
             <div t-if="state.error" class="alert alert-danger o_baseer_tobacco_message" role="alert" t-esc="state.error"/>

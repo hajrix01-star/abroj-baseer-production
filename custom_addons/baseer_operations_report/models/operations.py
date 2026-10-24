@@ -87,12 +87,33 @@ class BaseerOperationsReport(models.AbstractModel):
             self.env[name].browse().check_access('read')
 
     @api.model
-    def _assert_visible(self, table, domain, params, records):
+    def _owner_check_read(self, records, read_facts=None):
+        """Check read access once per exact record identity in one owner read.
+
+        This is deliberately narrower than a model-ACL cache.  Odoo's
+        ``check_access`` also evaluates record rules, so a successful proof is
+        retained only for the same Environment, model, operation and record
+        ID.  Callers retain their original check location; empty recordsets
+        still execute the normal model-level check.
+        """
+        if read_facts is None or not records:
+            records.check_access('read')
+            return
+        key = (records.env, records._name, 'read')
+        known = read_facts.setdefault(key, set())
+        pending = set(records.ids) - known
+        if pending:
+            records.browse(sorted(pending)).check_access('read')
+            # Never retain a partial or failed check.
+            known.update(pending)
+
+    @api.model
+    def _assert_visible(self, table, domain, params, records, read_facts=None):
         """SQL only detects a hidden ID; no unruled amount enters the report."""
         self.env.cr.execute('SELECT id FROM ' + table + ' WHERE ' + domain, params)
         if set(row[0] for row in self.env.cr.fetchall()) != set(records.ids):
             self._deny_incomplete_source()
-        records.check_access('read')
+        self._owner_check_read(records, read_facts)
 
     @api.model
     def _native_payment_identity_census(self, payments):
@@ -193,14 +214,15 @@ class BaseerOperationsReport(models.AbstractModel):
         return cache
 
     @api.model
-    def _native_payment_cached_visible(self, cache, table, field, parent_id, records):
+    def _native_payment_cached_visible(self, cache, table, field, parent_id, records,
+                                       read_facts=None):
         """Use a raw identity census only when it proves this exact edge."""
         key = (table, field, parent_id)
         if key not in cache['ids']:
             return False
         if cache['ids'][key] != set(records.ids):
             self._deny_incomplete_source()
-        records.check_access('read')
+        self._owner_check_read(records, read_facts)
         if table == 'account_partial_reconcile':
             for partial in records:
                 if cache['partial_edges'].get(partial.id) != (
@@ -360,14 +382,20 @@ class BaseerOperationsReport(models.AbstractModel):
         return orders
 
     @api.model
-    def _invoice_lines(self, move):
+    def _invoice_lines(self, move, read_facts=None):
         lines = move.invoice_line_ids
-        lines.check_access('read')
+        self._owner_check_read(lines, read_facts)
         source_lines = lines.filtered(lambda line: line.display_type == 'product')
         self.env['account.move.line'].flush_model(['move_id', 'display_type'])
-        self._assert_visible('account_move_line',
-                             'move_id=%s AND display_type=%s',
-                             [move.id, 'product'], source_lines)
+        if read_facts is None:
+            self._assert_visible('account_move_line',
+                                 'move_id=%s AND display_type=%s',
+                                 [move.id, 'product'], source_lines)
+        else:
+            self._assert_visible('account_move_line',
+                                 'move_id=%s AND display_type=%s',
+                                 [move.id, 'product'], source_lines,
+                                 read_facts=read_facts)
         return source_lines
 
     @api.model
@@ -532,9 +560,10 @@ class BaseerOperationsReport(models.AbstractModel):
             entry['events'].append({**event, 'amount': amount})
 
     @api.model
-    def _invoice_amounts(self, move, company, sections, excluded, line_entries=None):
-        move.check_access('read')
-        move.journal_id.check_access('read')
+    def _invoice_amounts(self, move, company, sections, excluded, line_entries=None,
+                         read_facts=None):
+        self._owner_check_read(move, read_facts)
+        self._owner_check_read(move.journal_id, read_facts)
         if move.company_id != company:
             self._deny_incomplete_source()
         # A linked original order may be outside this report period. Compare
@@ -546,16 +575,16 @@ class BaseerOperationsReport(models.AbstractModel):
         )
         linked_ids = {row[0] for row in self.env.cr.fetchall()}
         linked_orders = self.env['pos.order'].browse(sorted(linked_ids))
-        linked_orders.check_access('read')
+        self._owner_check_read(linked_orders, read_facts)
         if linked_ids:
             for order in linked_orders:
                 if order.account_move != move or order.company_id != company:
                     self._deny_incomplete_source()
             excluded['linked_pos_invoice'] += 1
             return
-        source_lines = self._invoice_lines(move)
-        source_lines.mapped('account_id').check_access('read')
-        source_lines.mapped('tax_ids').check_access('read')
+        source_lines = self._invoice_lines(move, read_facts=read_facts)
+        self._owner_check_read(source_lines.mapped('account_id'), read_facts)
+        self._owner_check_read(source_lines.mapped('tax_ids'), read_facts)
         base_lines, _tax_lines = move._get_rounded_base_and_tax_lines()
         self.env['account.tax']._add_accounting_data_in_base_lines_tax_details(
             base_lines, company,
@@ -581,7 +610,7 @@ class BaseerOperationsReport(models.AbstractModel):
                 tax = tax_data.get('tax')
                 if not tax:
                     self._deny_incomplete_source()
-                tax.check_access('read')
+                self._owner_check_read(tax, read_facts)
                 amount = money(tax_data.get('tax_amount'))
                 if tax.amount < 0:
                     excluded['unsupported_negative_tax_lines'] += 1
@@ -592,10 +621,10 @@ class BaseerOperationsReport(models.AbstractModel):
                 for rep in reps:
                     rep_line = rep.get('tax_repartition_line')
                     if rep_line:
-                        rep_line.check_access('read')
+                        self._owner_check_read(rep_line, read_facts)
                     rep_account = rep.get('account')
                     if rep_account:
-                        rep_account.check_access('read')
+                        self._owner_check_read(rep_account, read_facts)
                     rep_total += money(rep.get('tax_amount'))
                 if money(rep_total) != amount:
                     self._deny_incomplete_source()
@@ -629,7 +658,7 @@ class BaseerOperationsReport(models.AbstractModel):
                 },
             )
         # Tax AML is accounting evidence, never an additional operation.
-        move.line_ids.filtered('tax_line_id').check_access('read')
+        self._owner_check_read(move.line_ids.filtered('tax_line_id'), read_facts)
         excluded['nonrecoverable_tax_amls_not_readded'] += len(
             move.line_ids.filtered(
                 lambda item: item.tax_line_id and
@@ -1470,7 +1499,8 @@ class BaseerOperationsReport(models.AbstractModel):
 
     @api.model
     def _native_payment_outflows(self, company, start, end, journal_ids,
-                                 sections, excluded, claimed_payment_ids=frozenset()):
+                                 sections, excluded, claimed_payment_ids=frozenset(),
+                                 read_facts=None):
         """Count a fully assigned, direct-liquidity vendor payment once.
 
         An old reconciliation cannot prove that the bill was the payment's
@@ -1501,7 +1531,7 @@ class BaseerOperationsReport(models.AbstractModel):
         payments = self.env['account.payment'].search(domain, order='id')
         if set(payments.ids) != source_ids:
             self._deny_incomplete_source()
-        payments.check_access('read')
+        self._owner_check_read(payments, read_facts)
         if not payments:
             return
         # A hidden Baseer batch relation must not make the same payment look
@@ -1523,7 +1553,7 @@ class BaseerOperationsReport(models.AbstractModel):
             ])
             if set(batch_lines.ids) != batch_ids:
                 self._deny_incomplete_source()
-            batch_lines.check_access('read')
+            self._owner_check_read(batch_lines, read_facts)
             batch_payments = set(batch_lines.mapped('payment_id').ids)
         else:
             batch_payments = set()
@@ -1535,29 +1565,33 @@ class BaseerOperationsReport(models.AbstractModel):
 
         def visible(table, field, parent_id, records):
             if self._native_payment_cached_visible(
-                    native_cache, table, field, parent_id, records):
+                    native_cache, table, field, parent_id, records, read_facts):
                 return
-            self._assert_visible(table, '%s=%%s' % field, [parent_id], records)
+            if read_facts is None:
+                self._assert_visible(table, '%s=%%s' % field, [parent_id], records)
+            else:
+                self._assert_visible(
+                    table, '%s=%%s' % field, [parent_id], records, read_facts=read_facts)
 
         for payment in payments:
             if payment.id in batch_payments or payment.id in claimed_payment_ids:
                 continue
             move = payment.move_id
-            move.check_access('read')
+            self._owner_check_read(move, read_facts)
             journal = payment.journal_id
-            journal.check_access('read')
+            self._owner_check_read(journal, read_facts)
             partner = payment.partner_id
-            partner.check_access('read')
+            self._owner_check_read(partner, read_facts)
             method = payment.payment_method_line_id
-            method.check_access('read')
+            self._owner_check_read(method, read_facts)
             liquidity_account = journal.default_account_id
-            liquidity_account.check_access('read')
+            self._owner_check_read(liquidity_account, read_facts)
             if (move.company_id != company or journal.company_id != company
                     or move.journal_id != journal):
                 self._deny_incomplete_source()
             lines = move.line_ids
             visible('account_move_line', 'move_id', move.id, lines)
-            lines.mapped('account_id').check_access('read')
+            self._owner_check_read(lines.mapped('account_id'), read_facts)
             if any(item.company_id != company or item.journal_id != journal
                    for item in lines):
                 self._deny_incomplete_source()
@@ -1596,7 +1630,7 @@ class BaseerOperationsReport(models.AbstractModel):
             payable = lines.filtered(
                 lambda item: item.account_id.account_type == 'liability_payable',
             )
-            payable.mapped('partner_id').check_access('read')
+            self._owner_check_read(payable.mapped('partner_id'), read_facts)
             amount = self._decimal(payment.amount)
             if (len(lines) != 2 or len(liquidity) != 1 or len(payable) != 1
                     or amount <= 0
@@ -1613,19 +1647,19 @@ class BaseerOperationsReport(models.AbstractModel):
                 excluded['unassigned_native_payment'] += 1
                 continue
             bill_payable = partials.credit_move_id
-            bill_payable.check_access('read')
-            bill_payable.partner_id.check_access('read')
+            self._owner_check_read(bill_payable, read_facts)
+            self._owner_check_read(bill_payable.partner_id, read_facts)
             bill = bill_payable.move_id
-            bill.check_access('read')
+            self._owner_check_read(bill, read_facts)
             origin_bills = payment.invoice_ids
             reconciled_bills = payment.reconciled_bill_ids
-            origin_bills.check_access('read')
-            reconciled_bills.check_access('read')
+            self._owner_check_read(origin_bills, read_facts)
+            self._owner_check_read(reconciled_bills, read_facts)
             visible('account_move', 'reversed_entry_id', bill.id, bill.reversal_move_ids)
             bill_lines = bill.line_ids
             visible('account_move_line', 'move_id', bill.id, bill_lines)
-            bill_lines.mapped('account_id').check_access('read')
-            bill.partner_id.check_access('read')
+            self._owner_check_read(bill_lines.mapped('account_id'), read_facts)
+            self._owner_check_read(bill.partner_id, read_facts)
             bill_partials = bill_payable.matched_debit_ids
             visible('account_partial_reconcile', 'credit_move_id', bill_payable.id, bill_partials)
             if (bill.move_type != 'in_invoice' or bill.state != 'posted'
@@ -1650,8 +1684,8 @@ class BaseerOperationsReport(models.AbstractModel):
             for tax_line in bill_lines.filtered('tax_line_id'):
                 tax = tax_line.tax_line_id
                 repartition = tax_line.tax_repartition_line_id
-                tax.check_access('read')
-                repartition.check_access('read')
+                self._owner_check_read(tax, read_facts)
+                self._owner_check_read(repartition, read_facts)
                 if (not repartition or repartition.tax_id != tax
                         or repartition not in tax.invoice_repartition_line_ids):
                     self._deny_incomplete_source()
@@ -1660,6 +1694,7 @@ class BaseerOperationsReport(models.AbstractModel):
             line_entries = []
             self._invoice_amounts(
                 bill, company, bill_sections, bill_excluded, line_entries,
+                read_facts=read_facts,
             )
             if (len(line_entries) != 1 or line_entries[0][1] not in EXPENSE_KEYS
                     or line_entries[0][3] != self._decimal(bill.amount_total)

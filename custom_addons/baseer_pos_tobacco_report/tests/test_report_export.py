@@ -17,6 +17,7 @@ from odoo.tests.common import TransactionCase, tagged
 class TestTobaccoUnifiedExport(TransactionCase):
     def setUp(self):
         super().setUp()
+        self.env['res.lang']._activate_lang('ar_001')
         self.company = self.env.company
         self.company.currency_id = self.env.ref('base.SAR')
         self.report = self.env['baseer.pos.tobacco.report.wizard']

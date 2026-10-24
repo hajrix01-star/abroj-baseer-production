@@ -26,6 +26,7 @@ class TestOwnerUnifiedExport(TransactionCase):
 
     def setUp(self):
         super().setUp()
+        self.env['res.lang']._activate_lang('ar_001')
         self.company = self.env.company
         self.report = self.env['baseer.operations.report']
         self.exports = self.env['baseer.report.export']

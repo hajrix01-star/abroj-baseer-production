@@ -13,6 +13,7 @@ from odoo.tests.common import TransactionCase, tagged
 class TestAgedPayableUnifiedExport(TransactionCase):
     def setUp(self):
         super().setUp()
+        self.env['res.lang']._activate_lang('ar_001')
         self.company = self.env.company
         self.report = self.env['baseer.aged.payable.report']
         Account = self.env['account.account'].with_company(self.company)

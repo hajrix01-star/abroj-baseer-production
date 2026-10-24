@@ -22,6 +22,7 @@ class TestActivityUnifiedExport(TransactionCase):
 
     def setUp(self):
         super().setUp()
+        self.env['res.lang']._activate_lang('ar_001')
         self.company = self.env.company
         self.asset = self.env['account.account'].create({
             'code': '915019', 'name': 'Unified activity asset', 'account_type': 'asset_current',

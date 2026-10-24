@@ -21,6 +21,7 @@ class TestUnifiedExport(TransactionCase):
 
     def setUp(self):
         super().setUp()
+        self.env['res.lang']._activate_lang('ar_001')
         self.company = self.env.company
         self.company.write({'fiscalyear_last_day': 31, 'fiscalyear_last_month': '12'})
         self.report = self.env['baseer.general.ledger.report']

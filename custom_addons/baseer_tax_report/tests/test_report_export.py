@@ -17,6 +17,7 @@ from odoo.tests.common import TransactionCase, tagged
 class TestVatUnifiedExport(TransactionCase):
     def setUp(self):
         super().setUp()
+        self.env['res.lang']._activate_lang('ar_001')
         self.company = self.env.company
         self.company.account_fiscal_country_id = self.env.ref('base.sa')
         self.report = self.env['baseer.tax.report.wizard']

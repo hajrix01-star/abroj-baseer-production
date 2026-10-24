@@ -1,7 +1,7 @@
 {
     "name": "Baseer Legion Theme Compatibility",
     "summary": "Baseer purple identity, readable navigation and installable app icons",
-    "version": "19.0.1.1.0",
+    "version": "19.0.1.1.1",
     "author": "Baseer",
     "license": "AGPL-3",
     "depends": ["legion_enterprise_theme"],

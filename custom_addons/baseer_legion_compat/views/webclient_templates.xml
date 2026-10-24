@@ -6,10 +6,10 @@
             <attribute name="content">#5B04A0</attribute>
         </xpath>
         <xpath expr="//link[@rel='apple-touch-icon']" position="attributes">
-            <attribute name="href">/baseer_legion_compat/static/src/img/baseer-icon-180.png</attribute>
+            <attribute name="href">/baseer_legion_compat/static/src/img/baseer-icon-b-180.png</attribute>
         </xpath>
         <xpath expr="//t[@t-call='web.layout']" position="inside">
-            <t t-set="x_icon" t-value="'/baseer_legion_compat/static/src/img/baseer-icon-192.png'"/>
+            <t t-set="x_icon" t-value="'/baseer_legion_compat/static/src/img/baseer-icon-b-192.png'"/>
         </xpath>
     </template>
 </odoo>

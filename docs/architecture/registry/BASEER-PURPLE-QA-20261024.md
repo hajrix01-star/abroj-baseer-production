@@ -1,6 +1,6 @@
 # BASEER-PURPLE-QA-20261024
 
-Status: QA deployed; owner explicitly authorized promotion of the current theme and icon to original LIVE on 2026-10-24. Production policy preparation; no LIVE deployment receipt yet.
+Status: purple theme deployed to original LIVE; owner now selected ribbon B icon option02 and explicitly requested applying it to original LIVE. Icon-only release preparation.
 
 Impact: CONTROLLED presentation only. Parent reference: LEGION1 and QA-REFRESH-20261023. Base source `06d8364e`; current QA source observed `88422dd5f40d80db90a43f54c26c9f16b0f06362`. The user explicitly approved the final vivid-purple reference and previously requested both icon and theme on current QA.
 
@@ -13,6 +13,10 @@ Verification: native Odoo install/manifest/icon tests and backend asset compilat
 Delivery: independent scoped review, successful PR checks and merge, then pinned module-only QA policy via the existing GitHub Actions/signed-request wrapper with its recovery pair. No direct writes to runtime release files. Revert through the saved QA recovery release if acceptance fails.
 
 Evidence and exact release identifiers will be appended here.
+
+Original purple LIVE receipt: PR521 merged `4f5a5175f51985377043792202a187b2bd0ec970`, protected approval40094500219 and deploy40094564494 succeeded. Source267493ad9cdc9a1cda782aaef5a99d340bbf06f1, module-only; paired recovery verified, all other modules/config hashes preserved, manifest/icons/CSS/login HTTP checks passed. Detailed local evidence: `output/branding/baseer-theme-comparison-20261024/LIVE-DEPLOYMENT.json`. Independent technical GO; actual browser visual acceptance remained unverified due to CUA timeout (P2, no proven P1).
+
+Ribbon B update (2026-10-24): owner chose exact first-batch option02, `output/branding/baseer-mobile-icon-B-20261024/02-ribbon-B.png`, and authorized original LIVE application. Export the same artwork at180/192/512 without creative regeneration. New static names `baseer-icon-b-*.png` make icon URLs change for metadata/cache refresh. Update existing WebManifest and QWeb paths plus package version19.0.1.1.1; preserve old static icon files for cached clients. Theme SCSS, application name, native scope/start/share_target, permissions and business code are unchanged. Use the existing module-only production release path and paired recovery. Verify exported images, XML/path references, successful CI, deployed manifest/PNG hashes and unchanged non-target/config files; reuse native inheritance/CSS evidence because only image URLs/artwork changed. No fresh environment or load/financial test is required.
 
 Source verification: independent `purple_delivery_review` GO-source, no P1/P2. Native Odoo 19 install, public manifest, PNG dimensions/MIME, Apple icon/QWeb inheritance, authenticated webclient and actual `web.assets_web` CSS compilation: two focused tests passed, zero failures/errors on 2026-10-24. First run exposed only an incorrect test assumption about the native bundle name; corrected and rerun successfully on the same disposable database. White text contrast at gradient endpoints measured 6.76:1–12.67:1. No load, financial or concurrency test required for this delta.
 

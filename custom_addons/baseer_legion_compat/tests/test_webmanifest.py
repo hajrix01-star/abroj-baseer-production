@@ -33,7 +33,7 @@ class TestBaseerWebManifest(HttpCase):
         document = html.fromstring(response.content)
         self.assertEqual(document.xpath('//meta[@name="theme-color"]/@content'), ["#5B04A0"])
         icons = document.xpath('//link[@rel="apple-touch-icon"]/@href')
-        self.assertIn("/baseer_legion_compat/static/src/img/baseer-icon-180.png", icons)
+        self.assertIn("/baseer_legion_compat/static/src/img/baseer-icon-b-180.png", icons)
         self.assertEqual(self.url_open(icons[0]).status_code, 200)
         paths = document.xpath('//link[@rel="stylesheet"]/@href')
         backend_sheets = [path for path in paths if "web.assets_web" in path]

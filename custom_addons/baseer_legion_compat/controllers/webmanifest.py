@@ -20,7 +20,7 @@ class BaseerWebManifest(WebManifest):
             theme_color=BRAND_PRIMARY,
             background_color=BRAND_PRIMARY,
             icons=[
-                {"src": f"{ICON_ROOT}/baseer-icon-{size}.png", "sizes": f"{size}x{size}",
+                {"src": f"{ICON_ROOT}/baseer-icon-b-{size}.png", "sizes": f"{size}x{size}",
                  "type": "image/png", "purpose": "any"}
                 for size in (192, 512)
             ],
@@ -28,4 +28,4 @@ class BaseerWebManifest(WebManifest):
         return manifest
 
     def _icon_path(self):
-        return f"{ICON_ROOT.lstrip('/')}/baseer-icon-192.png"
+        return f"{ICON_ROOT.lstrip('/')}/baseer-icon-b-192.png"

@@ -468,11 +468,22 @@ class TestOwnerCash(TransactionCase):
         account = self.bank.default_account_id
         reader = self._reader()
         facts, calls = {}, []
+        depth = 0
         original = type(account).check_access
 
         def counted(records, operation):
-            calls.append((records.env, records.ids, operation))
-            return original(records, operation)
+            # Odoo's real ``check_access`` may call this model hook again while
+            # evaluating its own rules.  Count only the outer call emitted by
+            # ``_owner_check_read``; the original ACL path still executes.
+            nonlocal depth
+            outer = depth == 0
+            depth += 1
+            try:
+                if outer:
+                    calls.append((records.env, records.ids, operation))
+                return original(records, operation)
+            finally:
+                depth -= 1
 
         base = account
         context = account.with_context(baseer_owner_read_probe='context')

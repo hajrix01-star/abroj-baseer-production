@@ -1,11 +1,12 @@
 /** @odoo-module **/
-import { Component, xml } from "@odoo/owl";
+import { Component, useState, xml } from "@odoo/owl";
 import { expect, globals, test, withFetch } from "@odoo/hoot";
 import { click, waitUntil } from "@odoo/hoot-dom";
 import { defineMailModels } from "@mail/../tests/mail_test_helpers";
 import { mockService, mountWithCleanup, patchWithCleanup } from "@web/../tests/web_test_helpers";
 import { user } from "@web/core/user";
-import { ReportDrillDialog, useReportDrill } from "@baseer_reports_menu/report_drill";
+import { useService } from "@web/core/utils/hooks";
+import { AmountDetailsDialog, ReportDrillDialog, useReportDrill } from "@baseer_reports_menu/report_drill";
 
 defineMailModels();
 const selector = { kind: "summary", measure: "closing" };
@@ -98,4 +99,51 @@ test("shared detail dialog renders Arabic server values, clickable sources and n
     expect(".o_baseer_drill_value").toHaveText("125.00");
     expect(".o_baseer_drill_table button").toHaveCount(2);
     expect(".o_baseer_report_drill img").toHaveCount(0);
+});
+
+test("shared presentation handles loading, retry, changed, empty and paging without altering strings", async () => {
+    const response = await withFetch(globals.fetch, () => fetch("/baseer_reports_menu/static/src/report_drill.xml"));
+    const calls = [];
+    class Launcher extends Component {
+        static template = xml`<button id="open-presentation" t-on-click="open">Open</button>`;
+        static props = ["*"];
+        setup() {
+            this.dialog = useService("dialog");
+            this.view = useState({ busy: true, error: "", data: null, changedText: "", hasBack: false });
+        }
+        open() {
+            this.dialog.add(AmountDetailsDialog, { view: this.view, lang: "en",
+                retry: () => calls.push("retry"), refresh: () => calls.push("refresh"),
+                activate: (row) => calls.push(row.source), page: (delta) => calls.push(delta),
+                back: () => calls.push("back") });
+        }
+    }
+    const launcher = await mountWithCleanup(Launcher, { templates: await response.text() });
+    await click("#open-presentation");
+    await waitUntil(() => document.querySelector('.o_baseer_report_drill[aria-busy="true"]'));
+    expect(".o_baseer_report_drill").toHaveAttribute("dir", "ltr");
+    expect(".o_baseer_report_drill [role='status']").toHaveText("Loading details…");
+    Object.assign(launcher.view, { busy: false, error: "Safe error" });
+    await waitUntil(() => document.querySelector(".o_baseer_drill_retry"));
+    await click(".o_baseer_drill_retry");
+    expect(calls).toEqual(["retry"]);
+    Object.assign(launcher.view, { error: "", changedText: "Refresh required" });
+    await waitUntil(() => document.querySelector(".o_baseer_drill_refresh"));
+    await click(".o_baseer_drill_refresh");
+    expect(calls).toEqual(["retry", "refresh"]);
+    Object.assign(launcher.view, { changedText: "", data: { ...result, value: "−1,234.50", rows: [] } });
+    await waitUntil(() => document.querySelector(".o_baseer_drill_empty"));
+    expect(".o_baseer_drill_value").toHaveText("−1,234.50");
+    expect(".o_baseer_drill_empty").toHaveText("No sources for this value in the selected scope.");
+    launcher.view.data = { ...result, total_count: 51 };
+    launcher.view.hasBack = true;
+    await waitUntil(() => document.querySelector(".o_baseer_drill_next"));
+    expect(".o_baseer_drill_count span").toHaveText("51");
+    await click(".o_baseer_drill_next");
+    await click(".o_baseer_drill_back");
+    await click(".o_baseer_drill_table tbody tr:first-child td:first-child button");
+    expect(calls).toEqual(["retry", "refresh", 1, "back", result.rows[0].source]);
+    await click(".o_baseer_drill_close");
+    await waitUntil(() => !document.querySelector(".o_baseer_amount_details_dialog"));
+    expect(document.activeElement.id).toBe("open-presentation");
 });

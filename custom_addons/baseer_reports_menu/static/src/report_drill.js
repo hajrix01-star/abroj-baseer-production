@@ -7,16 +7,30 @@ import { user, userBus } from "@web/core/user";
 const COPY = {
     ar: { title: "تفاصيل المبلغ", loading: "جارٍ تحميل التفاصيل…", error: "تعذر عرض التفاصيل. تحقق من الفترة والصلاحيات، وجرّب فترة أقصر ثم أعد المحاولة.",
         empty: "لا توجد مصادر لهذه القيمة ضمن النطاق المحدد.", retry: "إعادة المحاولة", back: "رجوع", previous: "السابق", next: "التالي", close: "إغلاق", source: "عرض المصدر",
-        current: "تفاصيل حالية وفق فلاتر التقرير المختارة؛ قد تتغير بعد التصحيحات أو الترحيل.", page: "صفحة" },
+        current: "تفاصيل حالية وفق فلاتر التقرير المختارة؛ قد تتغير بعد التصحيحات أو الترحيل.", page: "صفحة", refresh: "تحديث التقرير", count: "عدد البنود" },
     en: { title: "Amount details", loading: "Loading details…", error: "Could not load details. Check the period and access, try a shorter period, then retry.",
         empty: "No sources for this value in the selected scope.", retry: "Retry", back: "Back", previous: "Previous", next: "Next", close: "Close", source: "View source",
-        current: "Current details under the selected report filters; corrections or posting may change them.", page: "Page" },
+        current: "Current details under the selected report filters; corrections or posting may change them.", page: "Page", refresh: "Refresh report", count: "Items" },
 };
 const clone = (value) => JSON.parse(JSON.stringify(value));
 
+// Presentation only: controllers retain authorization, revision and request
+// guards. Amounts are already formatted by the server, never calculated here.
+export class AmountDetailsDialog extends Component {
+    static template = "baseer_reports_menu.AmountDetailsDialog";
+    static components = { Dialog };
+    static props = {
+        view: Object, lang: String, close: Function, retry: Function,
+        activate: Function, page: Function,
+        back: { type: Function, optional: true },
+        refresh: { type: Function, optional: true },
+    };
+    get labels() { return COPY[this.props.lang === "ar" ? "ar" : "en"]; }
+}
+
 export class ReportDrillDialog extends Component {
     static template = "baseer_reports_menu.DrillDialog";
-    static components = { Dialog };
+    static components = { AmountDetailsDialog };
     static props = { reportKey: String, filters: Object, selector: Object, lang: String, close: Function };
     setup() {
         this.orm = useService("orm");
@@ -29,6 +43,10 @@ export class ReportDrillDialog extends Component {
         onMounted(() => this.load());
     }
     get labels() { return COPY[this.props.lang === "ar" ? "ar" : "en"]; }
+    get view() {
+        return { data: this.state.data, busy: this.state.busy, error: this.state.error,
+            hasBack: this.state.history.length > 0 };
+    }
     get sameCompany() { return this.props.filters.company_id === Number(user.activeCompany?.id); }
     async load() {
         if (!this.sameCompany) { this.props.close(); return; }

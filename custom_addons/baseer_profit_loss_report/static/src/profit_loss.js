@@ -45,7 +45,7 @@ export class BaseerProfitLossReport extends Component {
         this.orm = useService("orm");
         this.lang = user.lang?.startsWith("ar") ? "ar" : "en";
         this.state = useState({ loading: true, printing: false, error: "", journals: [], report: null,
-            filters: this.emptyFilters(), expanded: {}, pages: {}, accountLoading: {}, accountOpening: {} });
+            filters: this.emptyFilters(), expanded: {}, pages: {}, accountLoading: {} });
         this.appliedFilters = null;
         this.drill = useReportDrill("profit_loss", () => this.appliedFilters, () => this.lang);
         this.requestToken = 0;
@@ -91,7 +91,6 @@ export class BaseerProfitLossReport extends Component {
     amountFor(entity, periodKey) { return entity?.amounts?.[periodKey] || ZERO; }
     rowClass(row) { return `o_baseer_pl_${row.kind || "detail"} o_baseer_pl_${row.key}`; }
     sectionLabel(key) { return this.labels[key] || key; }
-    accountKey(account, periodKey) { return `${account.id}:${periodKey}`; }
     rowColspan() { return Math.max(2, this.reportPeriods.length + 1); }
     cloneFilters(direction = 0) {
         const { period, comparison } = this.state.filters;
@@ -113,7 +112,6 @@ export class BaseerProfitLossReport extends Component {
         this.state.expanded = {};
         this.state.pages = {};
         this.state.accountLoading = {};
-        this.state.accountOpening = {};
         this.appliedFilters = null;
     }
     async refreshActiveCompany() {
@@ -244,22 +242,8 @@ export class BaseerProfitLossReport extends Component {
         }
     }
     async openAccount(account, periodKey) {
-        const key = this.accountKey(account, periodKey);
-        if (!this.appliedFilters || this.state.accountOpening[key]) { return; }
-        if (!account.move_line_counts?.[periodKey]) {
-            return this.drill.open({ kind: "account", account_id: account.id, period_key: periodKey });
-        }
-        const token = this.requestToken;
-        const companyId = this.activeCompanyId;
-        this.state.accountOpening[key] = true;
-        try {
-            const action = await this.orm.call(MODEL, "get_account_action", [this.appliedFilters, account.id, periodKey]);
-            if (token === this.requestToken && companyId === this.activeCompanyId) { await this.env.services.action.doAction(action); }
-        } catch (error) {
-            if (token === this.requestToken) { this.state.error = error?.data?.message || this.labels.error; }
-        } finally {
-            if (token === this.requestToken) { this.state.accountOpening[key] = false; }
-        }
+        if (!this.appliedFilters) { return; }
+        return this.drill.open({ kind: "account", account_id: account.id, period_key: periodKey });
     }
 
     async printReport() {

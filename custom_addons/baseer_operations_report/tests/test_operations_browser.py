@@ -176,15 +176,16 @@ class TestOperationsBrowser(HttpCase):
                 if (document.activeElement !== link) { throw new Error('Detail link is not keyboard accessible'); }
                 const detailStarted = performance.now();
                 link.click();
-                const details = await waitFor(() => host.querySelector('.o_baseer_owner_detail_page'), 'detail page');
-                await waitFor(() => details.querySelector('.o_baseer_owner_detail_total'), 'real detail RPC');
+                const details = await waitFor(() => document.querySelector('.o_baseer_amount_details_dialog'), 'detail dialog');
+                await waitFor(() => details.querySelector('.o_baseer_drill_value'), 'real detail RPC');
                 console.log('BASEER_METRIC owner_detail_ms=' + Math.round(performance.now() - detailStarted));
-                if (details.querySelector('.alert-danger, .o_baseer_owner_refresh')) { throw new Error('Detail request failed'); }
+                if (details.querySelector('.alert-danger, .o_baseer_drill_refresh')) { throw new Error('Detail request failed'); }
                 if (details.scrollWidth > details.clientWidth + 1) { throw new Error('Details overflowed viewport'); }
                 if (spec.row === 'total:cash_total') {
-                    if (details.querySelector('.o_baseer_owner_events')) { throw new Error('Zero cash has false events'); }
+                    if (details.querySelectorAll('.o_baseer_drill_table tbody tr').length) { throw new Error('Zero cash has false events'); }
+                    if (!details.querySelector('.o_baseer_drill_empty')?.textContent.trim()) { throw new Error('Zero cash missing empty disclosure'); }
                 } else {
-                    const documentLink = details.querySelector('.o_baseer_owner_source');
+                    const documentLink = details.querySelector('.o_baseer_amount_link');
                     if (!documentLink || !documentLink.textContent.trim()) { throw new Error('Source document link missing'); }
                     if (spec.row === 'total:incoming_total' && spec.period === 'current') {
                         documentLink.click();
@@ -196,8 +197,16 @@ class TestOperationsBrowser(HttpCase):
                         await waitFor(() => !document.querySelector('.modal .o_form_view'), 'source dialog closed');
                     }
                 }
-                details.querySelector('.o_baseer_owner_back').click();
-                await waitFor(() => ownerTable(), 'summary restored');
+                if (spec.row === 'total:cash_total') {
+                    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+                    await waitFor(() => !document.querySelector('.o_baseer_amount_details_dialog'), 'detail dialog closed by Escape');
+                    if (document.activeElement !== link) { throw new Error('Escape did not restore detail-link focus'); }
+                } else {
+                    const closeDetails = document.querySelector('.o_baseer_drill_close');
+                    if (closeDetails) { closeDetails.click(); }
+                    await waitFor(() => !document.querySelector('.o_baseer_amount_details_dialog'), 'detail dialog closed');
+                }
+                await waitFor(() => ownerTable(), 'summary retained behind dialog');
             }
             if (host.querySelector('.o_baseer_go_incomplete')) { throw new Error('Proven source was hidden'); }
             const periodButton = () => host.querySelector('button[aria-label="Period"], button[aria-label="الفترة"]');

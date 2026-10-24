@@ -166,6 +166,29 @@ class TestUnifiedDrillBrowser(HttpCase):
             }, 'fresh selected-journal income row');
             elapsed('profit_journal_filter', start);
             journals.querySelector('summary').click();
+            profit.report.querySelector('.o_baseer_pl_income .o_baseer_pl_toggle').click();
+            const expandedAccountAmount = await waitFor(() => {
+                const row = [...profit.report.querySelectorAll('.o_baseer_pl_account')]
+                    .find(item => item.textContent.includes(fixture.accountCode));
+                return row?.querySelector('.o_baseer_pl_account_amount');
+            }, 'expanded profit account');
+            if (expandedAccountAmount.textContent.trim() !== '37.00') {
+                throw new Error('Expanded profit account fixture mismatch');
+            }
+            focusAmount(expandedAccountAmount);
+            start = performance.now();
+            expandedAccountAmount.click();
+            dialog = await waitFor(() => loadedDialog()?.textContent.includes(fixture.move) ? loadedDialog() : null,
+                'nonzero report account opens shared details before source');
+            elapsed('profit_expanded_account_detail', start);
+            await checkDialog(dialog);
+            if (dialog.querySelector('.o_baseer_drill_value').textContent.trim() !== '37.00' ||
+                [...document.querySelectorAll('.o_form_view')].some(visible)) {
+                throw new Error('Account click bypassed authoritative amount details');
+            }
+            dialog.closest('.modal-content').querySelector('.modal-footer .btn-primary').click();
+            await waitFor(() => !document.querySelector('.o_baseer_report_drill'), 'account detail closed');
+            await waitFor(() => document.activeElement === expandedAccountAmount, 'return focus to account amount');
             focusAmount(incomeAmount);
             start = performance.now();
             incomeAmount.click();

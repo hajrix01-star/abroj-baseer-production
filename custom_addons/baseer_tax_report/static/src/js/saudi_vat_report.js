@@ -17,7 +17,7 @@ const copy = {
         empty: "لا توجد مبالغ في الفترة المحددة.", noCompany: "الشركة النشطة غير مؤهلة لتقرير الضريبة السعودية.",
         loading: "جارٍ تحميل تقرير الضريبة…", error: "تعذر تحميل التقرير. تحقق من الفترة والصلاحيات ثم أعد المحاولة.",
         exportError: "تعذر تصدير Excel. تحقق من الصلاحيات والفترة ودقة العملة؛ قد يكون الملف تجاوز حد الحجم أو الوقت.",
-        source: "عرض القيود الداعمة", expand: "عرض البنود المكوّنة", collapse: "إخفاء البنود المكوّنة",
+        source: "عرض القيود الداعمة",
         selectedWarning: "تحليل الدفاتر المختارة، وليس إجمالي الإقرار لجميع الدفاتر.",
         untaggedVat: "قيود ضريبة القيمة المضافة غير المصنفة", untaggedOther: "قيود رسوم وضرائب أخرى بلا وسوم",
         entries: "قيد", signedBalance: "الرصيد",
@@ -35,7 +35,7 @@ const copy = {
         empty: "No non-zero boxes for this period.", noCompany: "The active company is not eligible for the Saudi VAT report.",
         loading: "Loading VAT report…", error: "Could not load the report. Check the period and access, then retry.",
         exportError: "Could not export Excel. Check access, period and currency precision; the file may have exceeded its size or time limit.",
-        source: "Open supporting entries", expand: "Show component boxes", collapse: "Hide component boxes",
+        source: "Open supporting entries",
         selectedWarning: "Selected journals are an analytical view, not the full VAT return.",
         untaggedVat: "Unclassified VAT entries", untaggedOther: "Other untagged fees and taxes",
         entries: "entries", signedBalance: "Balance",
@@ -59,7 +59,7 @@ export class SaudiVatReport extends Component {
         this.state = useState({
             journals: [], companyId: 0, periodType: "quarter", year: 0,
             month: "1", quarter: "1", displayMode: "simple", journalIds: [],
-            data: null, appliedFilters: null, expanded: {}, loading: true, printing: false, exporting: false, error: "",
+            data: null, appliedFilters: null, loading: true, printing: false, exporting: false, error: "",
         });
         this.companyGeneration = 0;
         this.drill = useReportDrill("vat", () => this.state.appliedFilters, () => this.lang);
@@ -98,7 +98,6 @@ export class SaudiVatReport extends Component {
         this.epoch += 1;
         this.state.data = null;
         this.state.appliedFilters = null;
-        this.state.expanded = {};
         this.state.error = "";
         this.state.loading = false;
     }
@@ -147,7 +146,6 @@ export class SaudiVatReport extends Component {
         this.state.loading = true;
         this.state.error = "";
         this.state.data = null;
-        this.state.expanded = {};
         try {
             const data = await this.orm.call("baseer.tax.report.wizard", "get_hub_report", [this.payload()]);
             if (epoch === this.epoch && generation === this.companyGeneration && companyId === this.activeCompanyId) {
@@ -196,11 +194,6 @@ export class SaudiVatReport extends Component {
 
     openException(kind) { this.drill.open({ kind: "exception", class: kind }); }
 
-    toggleComponents(box, column) {
-        const key = `${box}:${column}`;
-        this.state.expanded = { ...this.state.expanded, [key]: !this.state.expanded[key] };
-    }
-    isExpanded(box, column) { return Boolean(this.state.expanded[`${box}:${column}`]); }
     amountClass(state) { return state === "zero" ? "is-zero" : state === "negative" ? "is-negative" : ""; }
     isTotal(number) { return ["6", "12", "13", "16"].includes(number); }
 }

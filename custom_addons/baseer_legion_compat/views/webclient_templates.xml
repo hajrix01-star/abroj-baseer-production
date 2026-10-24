@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="baseer_webclient_identity" inherit_id="web.webclient_bootstrap"
+              name="Baseer app identity" priority="40">
+        <xpath expr="//meta[@name='theme-color']" position="attributes">
+            <attribute name="content">#5B04A0</attribute>
+        </xpath>
+        <xpath expr="//link[@rel='apple-touch-icon']" position="attributes">
+            <attribute name="href">/baseer_legion_compat/static/src/img/baseer-icon-180.png</attribute>
+        </xpath>
+        <xpath expr="//t[@t-call='web.layout']" position="inside">
+            <t t-set="x_icon" t-value="'/baseer_legion_compat/static/src/img/baseer-icon-192.png'"/>
+        </xpath>
+    </template>
+</odoo>

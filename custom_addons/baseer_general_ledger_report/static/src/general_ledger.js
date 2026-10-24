@@ -5,6 +5,8 @@ import { registry } from "@web/core/registry";
 import { user, userBus } from "@web/core/user";
 import { useBus, useService } from "@web/core/utils/hooks";
 import { ReportSelector } from "@baseer_reports_menu/report_selector";
+import { ReportExportButtons } from "@baseer_reports_menu/report_export";
+import { useReportDrill } from "@baseer_reports_menu/report_drill";
 
 const MODEL = "baseer.general.ledger.report";
 const copy = {
@@ -40,7 +42,7 @@ const copy = {
 
 export class BaseerGeneralLedgerReport extends Component {
     static template = "baseer_general_ledger_report.Report";
-    static components = { ReportSelector };
+    static components = { ReportSelector, ReportExportButtons };
     static props = ["*"];
 
     setup() {
@@ -55,6 +57,7 @@ export class BaseerGeneralLedgerReport extends Component {
             accountOpening: {},
         });
         this.appliedFilters = null;
+        this.drill = useReportDrill("general_ledger", () => this.appliedFilters, () => this.lang);
         this.requestToken = 0;
         useBus(userBus, "ACTIVE_COMPANIES_CHANGED", () => this.refreshCompany());
         onWillStart(async () => {
@@ -259,6 +262,12 @@ export class BaseerGeneralLedgerReport extends Component {
         } finally {
             if (token === this.requestToken && this.appliedFilters?.company_id === this.activeCompanyId) { this.state.rbfLoading = false; }
         }
+    }
+    openAmount(kind, measure, accountId) {
+        if (!this.state.report || this.state.loading || !this.appliedFilters) { return; }
+        const selector = { kind, measure };
+        if (accountId !== undefined) { selector.account_id = accountId; }
+        this.drill.open(selector);
     }
     async openAccount(accountId, scope) {
         const key = this.lineKey(accountId, scope);

@@ -1,7 +1,7 @@
 {
     "name": "Baseer Balance Sheet",
     "summary": "Posted balance sheet with secured source drill-down",
-    "version": "19.0.1.0.0",
+    "version": "19.0.1.1.0",
     "author": "Baseer",
     "license": "LGPL-3",
     "category": "Accounting/Reporting",

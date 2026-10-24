@@ -4,6 +4,7 @@ import { BaseerProfitLossReport } from "@baseer_profit_loss_report/profit_loss";
 import { onWillDestroy, useEffect, useRef } from "@odoo/owl";
 import { ConnectionLostError } from "@web/core/network/rpc";
 import { registry } from "@web/core/registry";
+import { ReportExportButtons } from "@baseer_reports_menu/report_export";
 
 const MODEL = "baseer.operations.report";
 const CONTEXT_MODEL = "baseer.profit.loss.report";
@@ -188,6 +189,7 @@ export function buildOwnerTable(periods) {
 
 export class BaseerOperationsPreview extends BaseerProfitLossReport {
     static template = "baseer_operations_report.Preview";
+    static components = { ...BaseerProfitLossReport.components, ReportExportButtons };
 
     setup() {
         super.setup();

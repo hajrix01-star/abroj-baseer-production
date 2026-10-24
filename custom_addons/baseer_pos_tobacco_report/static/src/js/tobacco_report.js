@@ -2,6 +2,8 @@
 
 import { Component, onWillStart, useState } from "@odoo/owl";
 import { ReportSelector } from "@baseer_reports_menu/report_selector";
+import { ReportExportButtons } from "@baseer_reports_menu/report_export";
+import { useReportDrill } from "@baseer_reports_menu/report_drill";
 import { useBus, useService } from "@web/core/utils/hooks";
 import { user, userBus } from "@web/core/user";
 
@@ -38,7 +40,7 @@ const copy = {
 };
 
 export class BaseerTobaccoReport extends Component {
-    static components = { ReportSelector };
+    static components = { ReportSelector, ReportExportButtons };
     static template = "baseer_pos_tobacco_report.HubReport";
     static props = ["*"];
 
@@ -46,11 +48,12 @@ export class BaseerTobaccoReport extends Component {
         this.orm = useService("orm");
         this.action = useService("action");
         this.lang = user.lang?.startsWith("ar") ? "ar" : "en";
-        this.state = useState({ loading: true, printing: false, error: "", data: null,
+        this.state = useState({ loading: true, printing: false, error: "", data: null, appliedFilters: null,
             filters: { company_id: 0, period: "month", month: 1, year: 2026,
                 date_from: "", date_to: "", show_products: false, page: 1 } });
         this.requestToken = 0;
         this.companyGeneration = 0;
+        this.drill = useReportDrill("tobacco", () => this.drillFilters, () => this.lang);
         useBus(userBus, "ACTIVE_COMPANIES_CHANGED", () => this.refreshActiveCompany());
         onWillStart(() => this.refreshActiveCompany());
     }
@@ -72,6 +75,7 @@ export class BaseerTobaccoReport extends Component {
         this.requestToken += 1;
         this.state.filters.company_id = 0;
         this.state.data = null;
+        this.state.appliedFilters = null;
         this.state.error = "";
         if (!companyId) { this.state.error = this.labels.noCompany; this.state.loading = false; return; }
         this.state.loading = true;
@@ -95,6 +99,11 @@ export class BaseerTobaccoReport extends Component {
     }
 
     get labels() { return copy[this.lang]; }
+    get drillFilters() {
+        if (!this.state.data || !this.state.appliedFilters) { return null; }
+        const { page, ...filters } = this.state.appliedFilters;
+        return filters;
+    }
     get monthOptions() { return this.labels.monthName.map((name, index) => ({ value: index + 1, name })); }
     amountClass(value, outflow = false) {
         if (!value || value === "0.00") { return "o_baseer_report_amount is-zero"; }
@@ -122,7 +131,10 @@ export class BaseerTobaccoReport extends Component {
         const companyId = this.activeCompanyId;
         try {
             const data = await this.orm.call(MODEL, "get_hub_report", [{ ...this.state.filters }]);
-            if (token === this.requestToken && generation === this.companyGeneration && companyId === this.activeCompanyId) { this.state.data = data; }
+            if (token === this.requestToken && generation === this.companyGeneration && companyId === this.activeCompanyId) {
+                this.state.data = data;
+                this.state.appliedFilters = { ...this.state.filters };
+            }
         } catch (error) {
             if (token === this.requestToken && generation === this.companyGeneration) { this.state.error = error?.data?.message || this.labels.error; }
         } finally {

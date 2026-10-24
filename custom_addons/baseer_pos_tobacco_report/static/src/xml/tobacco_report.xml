@@ -3,9 +3,8 @@
     <t t-name="baseer_pos_tobacco_report.HubReport">
         <main class="o_baseer_tobacco_hub" t-att-dir="lang === 'ar' ? 'rtl' : 'ltr'" t-att-lang="lang">
             <div class="o_baseer_report_toolbar">
-                <button type="button" class="btn o_baseer_report_pdf"
-                    t-att-disabled="state.loading || state.printing || !state.data || state.data.overflow"
-                    t-on-click="printPdf" t-esc="labels.pdf"/>
+                <ReportExportButtons reportKey="'tobacco'" filters="state.appliedFilters || undefined" lang="lang"
+                    disabled="state.loading || state.printing || !state.data || state.data.overflow"/>
                 <ReportSelector t-if="props.reportOptions" options="props.reportOptions"
                     selectedKey="props.selectedReportKey" label="props.reportSelectorLabel"
                     lang="lang" onSelect="props.onReportSelect"/>
@@ -45,10 +44,10 @@
                         <p class="o_baseer_report_period" t-esc="periodCaption"/>
                     </header>
                     <div class="o_baseer_report_totals">
-                        <div class="o_baseer_report_total"><span class="o_baseer_report_total_label" t-esc="labels.opening"/><strong t-att-class="amountClass(state.data.opening)" t-esc="state.data.opening"/></div>
-                        <div class="o_baseer_report_total"><span class="o_baseer_report_total_label" t-esc="labels.debit"/><strong t-att-class="amountClass(state.data.debit_total, true)" t-esc="state.data.debit_total"/></div>
-                        <div class="o_baseer_report_total"><span class="o_baseer_report_total_label" t-esc="labels.credit"/><strong t-att-class="amountClass(state.data.credit_total)" t-esc="state.data.credit_total"/></div>
-                        <div class="o_baseer_report_total"><span class="o_baseer_report_total_label" t-esc="labels.closing"/><strong t-att-class="amountClass(state.data.closing)" t-esc="state.data.closing"/></div>
+                        <div class="o_baseer_report_total"><span class="o_baseer_report_total_label" t-esc="labels.opening"/><button type="button" class="o_baseer_report_amount o_baseer_amount_link" t-att-class="amountClass(state.data.opening)" t-on-click="() => this.drill.open({kind: 'summary', metric: 'opening'})" t-esc="state.data.opening"/></div>
+                        <div class="o_baseer_report_total"><span class="o_baseer_report_total_label" t-esc="labels.debit"/><button type="button" class="o_baseer_report_amount o_baseer_amount_link" t-att-class="amountClass(state.data.debit_total, true)" t-on-click="() => this.drill.open({kind: 'summary', metric: 'debit_total'})" t-esc="state.data.debit_total"/></div>
+                        <div class="o_baseer_report_total"><span class="o_baseer_report_total_label" t-esc="labels.credit"/><button type="button" class="o_baseer_report_amount o_baseer_amount_link" t-att-class="amountClass(state.data.credit_total)" t-on-click="() => this.drill.open({kind: 'summary', metric: 'credit_total'})" t-esc="state.data.credit_total"/></div>
+                        <div class="o_baseer_report_total"><span class="o_baseer_report_total_label" t-esc="labels.closing"/><button type="button" class="o_baseer_report_amount o_baseer_amount_link" t-att-class="amountClass(state.data.closing)" t-on-click="() => this.drill.open({kind: 'summary', metric: 'closing'})" t-esc="state.data.closing"/></div>
                     </div>
                     <div class="o_baseer_report_meta"><span><t t-esc="labels.rows"/> <b dir="ltr" t-esc="state.data.first_row"/>–<b dir="ltr" t-esc="state.data.last_row"/> <t t-esc="labels.of"/> <b dir="ltr" t-esc="state.data.row_count"/></span><span><t t-esc="labels.currency"/> <b dir="ltr" t-esc="state.data.currency"/></span></div>
                     <p t-if="!state.data.rows.length" class="o_baseer_report_empty" t-esc="labels.empty"/>
@@ -57,16 +56,16 @@
                             <th t-esc="labels.date"/><th t-esc="labels.order"/><th t-if="state.data.show_products" t-esc="labels.product"/><th t-esc="labels.type"/><th class="is-number" t-esc="labels.debit"/><th class="is-number" t-esc="labels.credit"/><th class="is-number" t-esc="labels.running"/>
                         </tr></thead><tbody><tr t-foreach="state.data.rows" t-as="row" t-key="row_index">
                             <td dir="ltr" t-esc="row.date"/><td class="is-reference" dir="ltr" t-esc="row.order"/><td t-if="state.data.show_products" t-esc="row.products"/><td t-esc="row.type"/>
-                            <td class="is-number"><span t-att-class="amountClass(row.debit, true)" t-esc="row.debit"/></td><td class="is-number"><span t-att-class="amountClass(row.credit)" t-esc="row.credit"/></td><td class="is-number"><span t-att-class="amountClass(row.running)" t-esc="row.running"/></td>
+                            <td class="is-number"><button type="button" class="o_baseer_report_amount o_baseer_amount_link" t-att-class="amountClass(row.debit, true)" t-on-click="() => this.drill.open({kind: 'fee_row', order_id: row.drill.order_id, line_id: row.drill.line_id, measure: 'debit'})" t-esc="row.debit"/></td><td class="is-number"><button type="button" class="o_baseer_report_amount o_baseer_amount_link" t-att-class="amountClass(row.credit)" t-on-click="() => this.drill.open({kind: 'fee_row', order_id: row.drill.order_id, line_id: row.drill.line_id, measure: 'credit'})" t-esc="row.credit"/></td><td class="is-number"><button type="button" class="o_baseer_report_amount o_baseer_amount_link" t-att-class="amountClass(row.running)" t-on-click="() => this.drill.open({kind: 'running', order_id: row.drill.order_id, line_id: row.drill.line_id})" t-esc="row.running"/></td>
                         </tr></tbody></table>
                     </div>
                     <div t-if="state.data.rows.length" class="o_baseer_report_mobile">
                         <article t-foreach="state.data.rows" t-as="row" t-key="row_index" class="o_baseer_report_entry">
                             <div class="o_baseer_report_entry_head"><strong dir="ltr" t-esc="row.order"/><span dir="ltr" class="o_baseer_report_entry_details" t-esc="row.date"/></div>
                             <div t-if="state.data.show_products" class="o_baseer_report_entry_details" t-esc="row.products"/><div class="o_baseer_report_entry_details" t-esc="row.type"/>
-                            <div class="o_baseer_report_entry_value"><span t-esc="labels.debit"/><b t-att-class="amountClass(row.debit, true)" t-esc="row.debit"/></div>
-                            <div class="o_baseer_report_entry_value"><span t-esc="labels.credit"/><b t-att-class="amountClass(row.credit)" t-esc="row.credit"/></div>
-                            <div class="o_baseer_report_entry_value"><span t-esc="labels.running"/><b t-att-class="amountClass(row.running)" t-esc="row.running"/></div>
+                            <div class="o_baseer_report_entry_value"><span t-esc="labels.debit"/><button type="button" class="o_baseer_report_amount o_baseer_amount_link" t-att-class="amountClass(row.debit, true)" t-on-click="() => this.drill.open({kind: 'fee_row', order_id: row.drill.order_id, line_id: row.drill.line_id, measure: 'debit'})" t-esc="row.debit"/></div>
+                            <div class="o_baseer_report_entry_value"><span t-esc="labels.credit"/><button type="button" class="o_baseer_report_amount o_baseer_amount_link" t-att-class="amountClass(row.credit)" t-on-click="() => this.drill.open({kind: 'fee_row', order_id: row.drill.order_id, line_id: row.drill.line_id, measure: 'credit'})" t-esc="row.credit"/></div>
+                            <div class="o_baseer_report_entry_value"><span t-esc="labels.running"/><button type="button" class="o_baseer_report_amount o_baseer_amount_link" t-att-class="amountClass(row.running)" t-on-click="() => this.drill.open({kind: 'running', order_id: row.drill.order_id, line_id: row.drill.line_id})" t-esc="row.running"/></div>
                         </article>
                     </div>
                     <nav t-if="state.data.pages > 1" class="o_baseer_tobacco_pager" t-att-aria-label="labels.page">
@@ -76,7 +75,7 @@
                     </nav>
                     <div t-if="state.data.exception_count !== '0'" class="o_baseer_report_warning" role="note">
                         <h2><t t-esc="labels.mismatch"/> <span class="o_baseer_report_warning_count" dir="ltr" t-esc="state.data.exception_count"/></h2>
-                        <div t-foreach="state.data.exceptions" t-as="exception" t-key="exception_index" class="o_baseer_report_warning_line"><b dir="ltr" t-esc="exception.order"/> · <t t-esc="labels.computed"/> <b dir="ltr" t-esc="exception.computed_total"/> · <t t-esc="labels.saved"/> <b dir="ltr" t-esc="exception.saved_total"/></div>
+                        <div t-foreach="state.data.exceptions" t-as="exception" t-key="exception_index" class="o_baseer_report_warning_line"><b dir="ltr" t-esc="exception.order"/> · <t t-esc="labels.computed"/> <button type="button" class="o_baseer_report_amount o_baseer_amount_link" dir="ltr" t-on-click="() => this.drill.open(exception.drill)" t-esc="exception.computed_total"/> · <t t-esc="labels.saved"/> <button type="button" class="o_baseer_report_amount o_baseer_amount_link" dir="ltr" t-on-click="() => this.drill.open({kind: 'exception', order_id: exception.drill.order_id, metric: 'saved_total'})" t-esc="exception.saved_total"/></div>
                         <p t-if="state.data.exceptions.length &lt; state.data.exception_count" t-esc="labels.moreExceptions"/>
                     </div>
                 </section>

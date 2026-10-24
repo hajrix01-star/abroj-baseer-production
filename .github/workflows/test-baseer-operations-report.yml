@@ -4,6 +4,7 @@ on:
   pull_request:
     branches: [main]
     paths:
+      - custom_addons/baseer_reports_menu/**
       - custom_addons/baseer_operations_report/**
       - tests/test_operations_owner_summary.py
       - .github/workflows/test-baseer-operations-report.yml
@@ -39,6 +40,11 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
+          docker run --rm --network none \
+            --mount type=bind,src="$GITHUB_WORKSPACE/custom_addons",dst=/mnt/baseer-addons,readonly \
+            --entrypoint python3 \
+            odoo@sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd \
+            /mnt/baseer-addons/baseer_reports_menu/tests/test_report_document.py -v
           docker run --rm --network host \
             -e HOST=127.0.0.1 -e USER=odoo -e PASSWORD=odoo \
             --mount type=bind,src="$GITHUB_WORKSPACE/custom_addons",dst=/mnt/baseer-addons,readonly \
@@ -93,8 +99,8 @@ jobs:
             --db_user=odoo --db_password=odoo \
             --http-interface=127.0.0.1 --http-port=8079 \
             --addons-path=/usr/lib/python3/dist-packages/odoo/addons,"$GITHUB_WORKSPACE/custom_addons","$GITHUB_WORKSPACE/third_party_addons/erp_heritage_19","$GITHUB_WORKSPACE/third_party_addons/odoomates_19" \
-            -d baseer_operations_ui_ci -i baseer_operations_report --without-demo=all \
-            '--test-tags=/web:WebSuite.test_unit_desktop[@baseer_operations_report/operations],/web:MobileWebSuite.test_unit_mobile[@baseer_operations_report/operations]' \
+            -d baseer_operations_ui_ci -i baseer_operations_report,baseer_account_activity,baseer_profit_loss_report --without-demo=all \
+            '--test-tags=/web:WebSuite.test_unit_desktop[@baseer_operations_report/operations],/web:MobileWebSuite.test_unit_mobile[@baseer_operations_report/operations],/web:WebSuite.test_unit_desktop[@baseer_reports_menu/report_export],/web:MobileWebSuite.test_unit_mobile[@baseer_reports_menu/report_export],/web:WebSuite.test_unit_desktop[@baseer_reports_menu/report_drill],/web:MobileWebSuite.test_unit_mobile[@baseer_reports_menu/report_drill]' \
             --stop-after-init --max-cron-threads=0 --workers=0 --log-level=test \
             2>&1 | tee "$RUNNER_TEMP/baseer-operations-hoot.log"
           test "$(grep -Fc '[HOOT] Test suite succeeded' "$RUNNER_TEMP/baseer-operations-hoot.log")" -ge 2
@@ -108,10 +114,11 @@ jobs:
             --http-interface=127.0.0.1 --http-port=8079 \
             --addons-path=/usr/lib/python3/dist-packages/odoo/addons,"$GITHUB_WORKSPACE/custom_addons","$GITHUB_WORKSPACE/third_party_addons/erp_heritage_19","$GITHUB_WORKSPACE/third_party_addons/odoomates_19" \
             -d baseer_operations_ui_ci -u baseer_operations_report --without-demo=all \
-            '--test-tags=/baseer_operations_report:TestOperationsBrowser.test_preview_filters_detail_and_scroll,/baseer_operations_report:TestOperationsBrowserMobile.test_preview_filters_detail_and_scroll' \
+            '--test-tags=/baseer_operations_report:TestOperationsBrowser.test_preview_filters_detail_and_scroll,/baseer_operations_report:TestOperationsBrowserMobile.test_preview_filters_detail_and_scroll,reports_unified_drill_browser' \
             --test-enable --stop-after-init --max-cron-threads=0 --workers=0 --log-level=test \
             2>&1 | tee "$RUNNER_TEMP/baseer-operations-browser.log"
-          grep -Fq '0 failed, 0 error(s) of 2 tests' "$RUNNER_TEMP/baseer-operations-browser.log"
+          grep -Fq '0 failed, 0 error(s) of 4 tests' "$RUNNER_TEMP/baseer-operations-browser.log"
+          test "$(grep -Fc 'BASEER_UNIFIED_DRILL_METRICS' "$RUNNER_TEMP/baseer-operations-browser.log")" -ge 2
           grep -Fq 'TestOperationsBrowser.test_preview_filters_detail_and_scroll.browser: test successful' "$RUNNER_TEMP/baseer-operations-browser.log"
           grep -Fq 'TestOperationsBrowserMobile.test_preview_filters_detail_and_scroll.browser: test successful' "$RUNNER_TEMP/baseer-operations-browser.log"
       - name: Preserve browser diagnostics

@@ -5,6 +5,7 @@ import { click, waitUntil } from "@odoo/hoot-dom";
 import { App } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { user } from "@web/core/user";
+import { download } from "@web/core/network/download";
 import { patchWithCleanup } from "@web/../tests/web_test_helpers";
 import { BaseerGeneralLedgerReport } from "@baseer_general_ledger_report/general_ledger";
 
@@ -64,24 +65,29 @@ function mockOrm(calls, accountOverrides = {}) {
     };
 }
 
-async function mount(calls, actions, accountOverrides = {}) {
+async function mount(calls, actions, accountOverrides = {}, dialogs = []) {
     patchWithCleanup(user, { activeCompany: { id: 1 } });
     const response = await withFetch(globals.fetch, () =>
         fetch("/baseer_general_ledger_report/static/src/general_ledger.xml")
     );
     expect(response.ok).toBe(true);
+    const shared = await withFetch(globals.fetch, () => fetch("/baseer_reports_menu/static/src/report_export.xml"));
+    expect(shared.ok).toBe(true);
+    const templates = "<templates>" + [await response.text(), await shared.text()].map((text) =>
+        text.replace(/<\?xml[^>]*>/, "").replace(/<templates[^>]*>/, "").replace("</templates>", "")).join("") + "</templates>";
     const app = new App(BaseerGeneralLedgerReport, {
         env: { services: {
             orm: mockOrm(calls, accountOverrides), action: { doAction: async (action) => actions.push(action) },
+            notification: { add() {} }, dialog: { add(_component, props) { dialogs.push(props); } },
         } },
-        templates: await response.text(), props: {}, test: true,
+        templates, props: {}, test: true,
     });
     after(() => app.destroy());
     await app.mount(getFixture());
     await waitUntil(() => document.querySelector(".o_baseer_gl_account"));
 }
 
-test("ledger remains accounting-only and exposes a real PDF, not placeholder XLSX", () => {
+test("ledger remains accounting-only with shared export controls", () => {
     const descriptor = registry.category("baseer_reports").get("general_ledger");
     expect(descriptor.component).toBe(BaseerGeneralLedgerReport);
     expect(descriptor.groups).toEqual([
@@ -92,15 +98,19 @@ test("ledger remains accounting-only and exposes a real PDF, not placeholder XLS
     expect(amountClass(true, "-1,200.00")).toBe("is-negative");
 });
 
-test("PDF uses applied filters and opens the server action", async () => {
+test("shared PDF export downloads the applied report scope", async () => {
     patchWithCleanup(user, { lang: "en_US" });
+    const requests = [];
+    patchWithCleanup(download, { _download: async (request) => requests.push(request) });
     const calls = [], actions = [];
     await mount(calls, actions);
-    await click(".o_baseer_gl_pdf");
-    await waitUntil(() => actions.length === 1);
-    expect(calls.at(-1)[0]).toBe("action_print");
-    expect(calls.at(-1)[1][0].date_from).toBe("2026-10-01");
-    expect(actions[0].report_name).toBe("baseer_general_ledger_report.general_ledger_pdf");
+    await click(".o_baseer_report_exports .o_baseer_pl_pdf");
+    await waitUntil(() => requests.length === 1);
+    expect(requests[0].data.report_key).toBe("general_ledger");
+    expect(requests[0].data.file_format).toBe("pdf");
+    expect(JSON.parse(requests[0].data.filters).date_from).toBe("2026-10-01");
+    expect(actions.length).toBe(0);
+    expect(document.querySelector(".o_baseer_report_xlsx").disabled).toBe(false);
 });
 
 test("PDF ignores a stale A action after A-to-B-to-A company switch", async () => {
@@ -135,7 +145,7 @@ test("ledger opens a native journal-items page instead of inserting entries", as
     expect(document.querySelector(".o_baseer_gl_account .o_baseer_report_amount").classList.contains("is-zero")).toBe(true);
     expect(document.querySelectorAll(".o_baseer_gl_account .o_baseer_report_amount")[3].classList.contains("is-negative")).toBe(true);
     expect(document.querySelector(".o_baseer_gl_report .o_baseer_report_pdf")).toBe(null);
-    expect(document.querySelector(".o_baseer_gl_report .o_baseer_report_xlsx")).toBe(null);
+    expect(document.querySelector(".o_baseer_gl_report .o_baseer_report_xlsx").textContent.trim()).toBe("Excel");
     await click('.o_baseer_gl_account button[aria-label="View entry 101000 Bank"]');
     await waitUntil(() => actions.length === 1);
     expect(calls.map(([method]) => method)).toEqual([
@@ -232,13 +242,38 @@ test("A to B to A company switch rejects the delayed original A report", async (
     expect(instance.state.report.company.name).toBe("fresh 1");
 });
 
-test("opening balance opens its own native source even with period movements", async () => {
+test("opening balance opens its exact unified selector even with period movements", async () => {
     patchWithCleanup(user, { lang: "en_US" });
-    const calls = [], actions = [];
-    await mount(calls, actions, { opening: "140.00", opening_source_count: 2 });
-    await click('.o_baseer_gl_account button[aria-label="View opening balance source 101000 Bank"]');
-    await waitUntil(() => actions.length === 1);
-    expect(calls.at(-1)[0]).toBe("get_account_action");
-    expect(calls.at(-1)[1][2]).toBe("opening");
-    expect(actions[0].res_model).toBe("account.move.line");
+    const calls = [], actions = [], dialogs = [];
+    await mount(calls, actions, { opening: "140.00", opening_source_count: 2 }, dialogs);
+    await click('.o_baseer_gl_account button[data-drill="opening"]');
+    expect(dialogs.length).toBe(1);
+    expect(dialogs[0].selector).toEqual({ kind: "account", measure: "opening", account_id: 7 });
+    expect(dialogs[0].filters.date_from).toBe("2026-10-01");
+    expect(actions).toEqual([]);
+});
+
+
+test("general_ledger every visible amount opens a scoped shared drill including zero", async () => {
+    patchWithCleanup(user, { lang: "en_US" });
+    const dialogs = [];
+    await mount([], [], {}, dialogs);
+    const buttons = [...document.querySelectorAll(".o_baseer_amount_link")];
+    expect(buttons.length).toBe(8);
+    expect(buttons.some((button) => button.textContent.trim() === "0.00")).toBe(true);
+    for (const button of buttons) {
+        expect(button.tagName).toBe("BUTTON");
+        expect(button.disabled).toBe(false);
+        await click(button);
+    }
+    expect(dialogs.length).toBe(8);
+    for (const props of dialogs) {
+        expect(props.reportKey).toBe("general_ledger");
+        expect(props.filters).toEqual({ company_id: 1, date_from: "2026-10-01", date_to: "2026-10-31", journal_ids: [] });
+        expect(Object.hasOwn(props.selector, "amount")).toBe(false);
+        expect(Object.hasOwn(props.selector, "domain")).toBe(false);
+    }
+    patchWithCleanup(user, { activeCompany: { id: 2 } });
+    await click(buttons[0]);
+    expect(dialogs.length).toBe(8);
 });

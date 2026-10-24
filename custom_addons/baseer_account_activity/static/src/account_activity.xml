@@ -9,6 +9,7 @@
                 <div t-if="!props.embedded" class="o_baseer_report_toolbar_identity">
                     <button class="o_baseer_report_switcher" type="button" t-on-click="goToReports" t-esc="labels.backToReports"/>
                 </div>
+                <ReportExportButtons t-if="state.data &amp;&amp; state.appliedFilters" reportKey="'activity'" filters="state.appliedFilters" lang="lang" disabled="state.loading || state.accountsLoading"/>
                 <div class="o_baseer_report_filters" t-att-aria-label="labels.scope">
                     <label class="o_baseer_report_select_filter"><span class="visually-hidden" t-esc="labels.account"/>
                         <select t-att-aria-label="labels.account" t-att-value="state.accountId" t-on-change="onAccountChange">
@@ -42,10 +43,7 @@
                 <div class="o_baseer_activity_period_summary" t-att-aria-label="labels.periodTotals">
                     <div class="o_baseer_activity_summary_title" t-esc="labels.periodTotals"/>
                     <div class="o_baseer_activity_period_totals">
-                        <div><span t-esc="labels.opening"/><b t-att-class="'o_baseer_report_amount ' + amountClass(state.data.opening)" t-esc="formatAmount(state.data.opening)"/></div>
-                        <div><span t-esc="labels.debit"/><b t-att-class="'o_baseer_report_amount ' + amountClass(state.data.debit)" t-esc="formatAmount(state.data.debit)"/></div>
-                        <div><span t-esc="labels.credit"/><b t-att-class="'o_baseer_report_amount ' + amountClass(state.data.credit)" t-esc="formatAmount(state.data.credit)"/></div>
-                        <div><span t-esc="labels.closing"/><b t-att-class="'o_baseer_report_amount ' + amountClass(state.data.closing)" t-esc="formatAmount(state.data.closing)"/></div>
+                        <div t-foreach="['opening', 'debit', 'credit', 'closing']" t-as="measure" t-key="measure"><span t-esc="labels[measure]"/><button type="button" t-on-click="() => this.drill.open({kind: 'summary', measure})" t-att-class="'o_baseer_amount_link o_baseer_report_amount fw-bold ' + amountClass(state.data[measure])" t-esc="formatAmount(state.data[measure])"/></div>
                     </div>
                 </div>
                 <div class="o_baseer_report_desktop"><table class="o_baseer_report_table">
@@ -55,9 +53,7 @@
                             <td dir="ltr" t-esc="line.date"/>
                             <td><button class="o_baseer_activity_link" type="button" t-att-title="labels.source" t-on-click="() => this.openMove(line)" t-esc="line.move_name"/></td>
                             <td t-esc="line.label"/>
-                            <td class="is-number"><span t-att-class="'o_baseer_report_amount ' + amountClass(line.debit)" t-esc="formatAmount(line.debit)"/></td>
-                            <td class="is-number"><span t-att-class="'o_baseer_report_amount ' + amountClass(line.credit)" t-esc="formatAmount(line.credit)"/></td>
-                            <td class="is-number"><b t-att-class="'o_baseer_report_amount ' + amountClass(line.running)" t-esc="formatAmount(line.running)"/></td>
+                            <td t-foreach="['debit', 'credit', 'running']" t-as="measure" t-key="measure" class="is-number"><button type="button" t-on-click="() => this.drill.open({kind: 'line', measure, line_id: line.id})" t-att-class="'o_baseer_amount_link o_baseer_report_amount ' + amountClass(line[measure])" t-esc="formatAmount(line[measure])"/></td>
                         </tr>
                     </tbody>
                 </table></div>
@@ -65,9 +61,7 @@
                     <article t-foreach="state.data.lines" t-as="line" t-key="line.id" class="o_baseer_report_entry">
                         <div class="o_baseer_report_entry_head"><button class="o_baseer_activity_link" type="button" t-on-click="() => this.openMove(line)" t-esc="line.move_name"/><time dir="ltr" t-esc="line.date"/></div>
                         <div class="o_baseer_report_entry_details" t-esc="line.label"/>
-                        <div class="o_baseer_report_entry_value"><span t-esc="labels.debit"/><span t-att-class="'o_baseer_report_amount ' + amountClass(line.debit)" t-esc="formatAmount(line.debit)"/></div>
-                        <div class="o_baseer_report_entry_value"><span t-esc="labels.credit"/><span t-att-class="'o_baseer_report_amount ' + amountClass(line.credit)" t-esc="formatAmount(line.credit)"/></div>
-                        <div class="o_baseer_report_entry_value"><strong t-esc="labels.running"/><strong t-att-class="'o_baseer_report_amount ' + amountClass(line.running)" t-esc="formatAmount(line.running)"/></div>
+                        <div t-foreach="['debit', 'credit', 'running']" t-as="measure" t-key="measure" class="o_baseer_report_entry_value"><span t-esc="labels[measure]"/><button type="button" t-on-click="() => this.drill.open({kind: 'line', measure, line_id: line.id})" t-att-class="'o_baseer_amount_link o_baseer_report_amount ' + amountClass(line[measure])" t-esc="formatAmount(line[measure])"/></div>
                     </article>
                 </div>
                 <p t-if="!state.data.lines.length" class="o_baseer_report_empty" t-esc="labels.empty"/>

@@ -5,6 +5,8 @@ import { registry } from "@web/core/registry";
 import { user, userBus } from "@web/core/user";
 import { useBus, useService } from "@web/core/utils/hooks";
 import { ReportSelector } from "@baseer_reports_menu/report_selector";
+import { ReportExportButtons } from "@baseer_reports_menu/report_export";
+import { useReportDrill } from "@baseer_reports_menu/report_drill";
 
 const MODEL = "baseer.balance.sheet.report";
 const copy = {
@@ -38,7 +40,7 @@ const copy = {
 
 export class BaseerBalanceSheetReport extends Component {
     static template = "baseer_balance_sheet_report.Report";
-    static components = { ReportSelector };
+    static components = { ReportSelector, ReportExportButtons };
     static props = ["*"];
 
     setup() {
@@ -52,6 +54,7 @@ export class BaseerBalanceSheetReport extends Component {
             expanded: {}, accountPages: {}, sectionLoading: {},
         });
         this.appliedFilters = null;
+        this.drill = useReportDrill("balance_sheet", () => this.appliedFilters, () => this.lang);
         this.requestToken = 0;
         useBus(userBus, "ACTIVE_COMPANIES_CHANGED", () => this.refreshCompany());
         onWillStart(async () => this.refreshCompany());
@@ -210,6 +213,12 @@ export class BaseerBalanceSheetReport extends Component {
         } finally {
             if (token === this.requestToken) { this.state.sectionLoading[key] = false; }
         }
+    }
+    openAmount(kind, key, accountId) {
+        if (!this.state.report || this.state.loading || !this.appliedFilters) { return; }
+        const selector = kind === "equation" ? { kind, equation: key } : { kind, section: key };
+        if (accountId !== undefined) { selector.account_id = accountId; }
+        this.drill.open(selector);
     }
     async openAccount(accountId, section) {
         if (!this.appliedFilters || this.appliedFilters.company_id !== this.activeCompanyId) { return; }

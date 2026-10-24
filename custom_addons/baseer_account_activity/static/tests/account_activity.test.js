@@ -3,6 +3,22 @@
 import { expect, test } from "@odoo/hoot";
 import { registry } from "@web/core/registry";
 import { AccountActivity } from "@baseer_account_activity/account_activity";
+import { ReportExportButtons } from "@baseer_reports_menu/report_export";
+
+test("activity entry names use guarded line membership, never trust client move id", () => {
+    const selectors = [];
+    AccountActivity.prototype.openMove.call({ drill: { openSource: (selector) => selectors.push(selector) } }, { id: 7, move_id: 999 });
+    expect(selectors).toEqual([{ kind: "source", parent: { kind: "line", measure: "debit", line_id: 7 }, line_id: 7 }]);
+});
+
+test("activity export uses the shared control and discards filters with invalidated data", () => {
+    expect(AccountActivity.components.ReportExportButtons).toBe(ReportExportButtons);
+    const report = Object.create(AccountActivity.prototype);
+    Object.assign(report, { requestEpoch: 0, state: { appliedFilters: { company_id: 7 }, data: {} } });
+    report.invalidateReport();
+    expect(report.state.appliedFilters).toBe(null);
+    expect(report.state.data).toBe(null);
+});
 
 test("account activity registers only its real report component", () => {
     const descriptor = registry.category("baseer_reports").get("activity");

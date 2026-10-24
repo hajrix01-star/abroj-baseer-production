@@ -5,6 +5,7 @@ import { click, waitUntil } from "@odoo/hoot-dom";
 import { defineMailModels } from "@mail/../tests/mail_test_helpers";
 import { registry } from "@web/core/registry";
 import { user } from "@web/core/user";
+import { download } from "@web/core/network/download";
 import { mockService, mountWithCleanup, patchWithCleanup } from "@web/../tests/web_test_helpers";
 import { BaseerProfitLossReport } from "@baseer_profit_loss_report/profit_loss";
 
@@ -74,16 +75,52 @@ async function mountReport(calls) {
     patchWithCleanup(user, { activeCompany: { id: 1 } });
     const response = await withFetch(globals.fetch, () => fetch("/baseer_profit_loss_report/static/src/profit_loss.xml"));
     expect(response.ok).toBe(true);
+    const shared = await withFetch(globals.fetch, () => fetch("/baseer_reports_menu/static/src/report_export.xml"));
+    expect(shared.ok).toBe(true);
+    const templates = "<templates>" + [await response.text(), await shared.text()].map((text) =>
+        text.replace(/<\?xml[^>]*>/, "").replace(/<templates[^>]*>/, "").replace("</templates>", "")).join("") + "</templates>";
     mockService("orm", mockReportRequests(calls));
-    await mountWithCleanup(BaseerProfitLossReport, { templates: await response.text(), props: {} });
+    mockService("notification", { add() {} });
+    const dialogs = [];
+    mockService("dialog", { add: (_component, props) => dialogs.push(props) });
+    await mountWithCleanup(BaseerProfitLossReport, { templates, props: {} });
     await waitUntil(() => document.querySelector(".o_baseer_report_title"));
+    return dialogs;
 }
+
+test("profit and loss summary and zero-period account amounts open applied-scope details", async () => {
+    const dialogs = await mountReport([]);
+    await click(".o_baseer_pl_income td .o_baseer_amount_link");
+    expect(dialogs[0].selector).toEqual({ kind: "row", row_key: "income", period_key: "current" });
+    expect(dialogs[0].filters.company_id).toBe(1);
+    await click(".o_baseer_pl_income .o_baseer_pl_toggle");
+    await waitUntil(() => document.querySelectorAll(".o_baseer_pl_account_amount").length === 2);
+    const buttons = document.querySelectorAll(".o_baseer_pl_account_amount");
+    expect(buttons[1].disabled).toBe(false);
+    buttons[1].click();
+    await waitUntil(() => dialogs.length === 2);
+    expect(dialogs[1].selector).toEqual({ kind: "account", account_id: 7, period_key: "previous_1" });
+});
 
 test("profit and loss remains a real accounting-only report component", () => {
     const descriptor = registry.category("baseer_reports").get("profit_loss");
     expect(descriptor.kind).toBe("component");
     expect(descriptor.component).toBe(BaseerProfitLossReport);
     expect(descriptor.groups).toEqual(["account.group_account_readonly", "account.group_account_user", "account.group_account_manager"]);
+});
+
+test("profit and loss shared exports send only the applied report filters", async () => {
+    const requests = [];
+    patchWithCleanup(download, { _download: async (request) => requests.push(request) });
+    await mountReport([]);
+    await click(".o_baseer_report_exports .o_baseer_report_xlsx");
+    await waitUntil(() => requests.length === 1);
+    expect(requests[0].data.report_key).toBe("profit_loss");
+    expect(requests[0].data.file_format).toBe("xlsx");
+    const selected = JSON.parse(requests[0].data.filters);
+    expect(selected.company_id).toBe(1);
+    expect(selected.period.anchor_date).toBe("2026-10-15");
+    expect(Object.keys(requests[0].data).sort()).toEqual(["file_format", "filters", "report_key"]);
 });
 
 test("amount styling receives only server-formatted values", () => {
@@ -170,7 +207,7 @@ test("account click opens the native journal-items page for its selected period"
     const calls = [];
     const actions = [];
     const context = { appliedFilters: structuredClone(filters), requestToken: 0, state: { accountOpening: {}, error: "" }, labels: { error: "Could not open" }, orm: { call: async (...args) => { calls.push(args); return { type: "ir.actions.act_window", res_model: "account.move.line", target: "current", domain: [["account_id", "=", 7]] }; } }, env: { services: { action: { doAction: async (action) => actions.push(action) } } }, accountKey: BaseerProfitLossReport.prototype.accountKey };
-    await BaseerProfitLossReport.prototype.openAccount.call(context, { id: 7, code: "400000" }, "previous_1");
+    await BaseerProfitLossReport.prototype.openAccount.call(context, { id: 7, code: "400000", move_line_counts: { previous_1: 1 } }, "previous_1");
     expect(calls[0][1]).toBe("get_account_action");
     expect(calls[0][2][2]).toBe("previous_1");
     expect(actions[0].target).toBe("current");
@@ -273,6 +310,28 @@ test("profit and loss A-to-B-to-A ignores stale contexts", async () => {
     expect(report.state.filters.company_id).toBe(1);
     expect(report.state.journals).toEqual([{ id: 30 }]);
     expect(report.state.report.company_id).toBe(1);
+});
+
+test("applied export scope never adopts an unfinished draft edited during report load", async () => {
+    patchWithCleanup(user, { activeCompany: { id: 1 } });
+    let resolve;
+    const report = Object.create(BaseerProfitLossReport.prototype);
+    Object.assign(report, {
+        companyGeneration: 0, requestToken: 0, appliedFilters: null, lang: "en",
+        state: { filters: structuredClone(filters), journals: [], report: null, error: "", loading: false,
+            expanded: {}, pages: {}, accountLoading: {}, accountOpening: {} },
+        orm: { call: () => new Promise((done) => { resolve = done; }) },
+    });
+    const pending = report.apply();
+    report.state.filters.period.kind = "custom";
+    report.state.filters.period.date_from = "2026-12-01";
+    report.state.filters.journal_ids.push(99);
+    resolve({ rows: [], periods, period_controls: { anchor_date: "2026-10-15" } });
+    await pending;
+    expect(report.appliedFilters.period.kind).toBe("month");
+    expect(report.appliedFilters.period.date_from).toBe("");
+    expect(report.appliedFilters.journal_ids).toEqual([]);
+    expect(report.state.filters.period.kind).toBe("custom");
 });
 
 test("native period and comparison controls open Odoo popovers", async () => {

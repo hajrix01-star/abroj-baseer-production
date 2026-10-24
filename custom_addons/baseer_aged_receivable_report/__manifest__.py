@@ -1,7 +1,7 @@
 {
     "name": "Baseer Aged Receivables",
     "summary": "Posted customer receivables at a historical cutoff",
-    "version": "19.0.1.0.0",
+    "version": "19.0.1.1.0",
     "author": "Baseer",
     "license": "LGPL-3",
     "category": "Accounting/Reporting",

@@ -5,6 +5,8 @@ import { registry } from "@web/core/registry";
 import { user, userBus } from "@web/core/user";
 import { useBus, useService } from "@web/core/utils/hooks";
 import { ReportSelector } from "@baseer_reports_menu/report_selector";
+import { ReportExportButtons } from "@baseer_reports_menu/report_export";
+import { useReportDrill } from "@baseer_reports_menu/report_drill";
 
 const MODEL = "baseer.aged.payable.report";
 const copy = {
@@ -48,7 +50,7 @@ const BUCKET_KEYS = ["not_due", "d1_30", "d31_60", "d61_90", "over_90"];
 
 export class BaseerAgedPayableReport extends Component {
     static template = "baseer_aged_payable_report.Report";
-    static components = { ReportSelector };
+    static components = { ReportSelector, ReportExportButtons };
     static props = ["*"];
 
     setup() {
@@ -60,6 +62,7 @@ export class BaseerAgedPayableReport extends Component {
             expandedPartnerId: null, lines: null, linesLoading: false, openingLineId: null,
         });
         this.appliedCutoff = null;
+        this.drill = useReportDrill("aged_payable", () => this.drillFilters, () => this.lang);
         this.requestToken = 0;
         this.linesToken = 0;
         useBus(userBus, "ACTIVE_COMPANIES_CHANGED", () => this.refreshCompany());
@@ -69,6 +72,14 @@ export class BaseerAgedPayableReport extends Component {
     get labels() { return copy[this.lang]; }
     get activeCompanyId() { return Number(user.activeCompany?.id || 0); }
     get buckets() { return BUCKET_KEYS; }
+    get appliedFilters() {
+        return this.state.report && this.appliedCutoff && this.activeCompanyId
+            ? { company_id: this.activeCompanyId, cutoff_date: this.appliedCutoff, page: 1 } : null;
+    }
+    get drillFilters() {
+        return this.state.report && this.appliedCutoff && this.activeCompanyId
+            ? { company_id: this.activeCompanyId, cutoff_date: this.appliedCutoff } : null;
+    }
     labelFor(value) { return this.labels[value] || value || ""; }
     amountClass(amount) {
         const value = String(amount || "").replace(/,/g, "");

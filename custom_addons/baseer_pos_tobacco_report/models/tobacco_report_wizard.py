@@ -161,8 +161,12 @@ class BaseerPosTobaccoReportWizard(models.TransientModel):
             'to_text': data['to_text'],
             'currency': data['currency'],
             'show_products': data['show_products'],
-            'rows': [dict(row) for row in data['rows'][start:start + PREVIEW_PAGE_SIZE]],
-            'exceptions': [dict(row) for row in data['exceptions'][:PREVIEW_PAGE_SIZE]],
+            'rows': [{**{key: value for key, value in row.items() if not key.startswith('_')},
+                      'drill': {'kind': 'fee_row', 'order_id': row['_order_id'], 'line_id': row['_line_id']}}
+                     for row in data['rows'][start:start + PREVIEW_PAGE_SIZE]],
+            'exceptions': [{**{key: value for key, value in row.items() if not key.startswith('_')},
+                            'drill': {'kind': 'exception', 'order_id': row['_order_id'], 'metric': 'computed_total'}}
+                           for row in data['exceptions'][:PREVIEW_PAGE_SIZE]],
             'opening': data['opening'],
             'debit_total': data['debit_total'],
             'credit_total': data['credit_total'],

@@ -75,11 +75,15 @@ class TestTobaccoReport(TransactionCase):
                 'date': '01-09-2026 00:00', 'order': f'ORDER-{index:03d}',
                 'products': 'Shisha × 1', 'type': 'Sale', 'debit': '0.00',
                 'credit': '1.00', 'running': f'{index}.00',
+                '_order_id': index, '_line_id': 1000 + index,
+                '_fee': Decimal('1.00'),
             } for index in range(1, 102)],
             'closing': '101.00',
             'exceptions': [{
                 'date': '01-09-2026 00:00', 'order': f'MISMATCH-{index:03d}',
                 'computed_total': '1.00', 'saved_total': '0.99',
+                '_order_id': 2000 + index,
+                '_computed_total': Decimal('1.00'), '_saved_total': Decimal('0.99'),
             } for index in range(101)],
             'exception_count': '101',
         })
@@ -91,7 +95,19 @@ class TestTobaccoReport(TransactionCase):
         self.assertEqual((second['page'], len(second['rows'])), (2, 1))
         self.assertEqual(first['rows'][0]['order'], 'ORDER-001')
         self.assertEqual(second['rows'][0]['order'], 'ORDER-101')
+        self.assertEqual(first['rows'][0]['drill'], {
+            'kind': 'fee_row', 'order_id': 1, 'line_id': 1001,
+        })
+        self.assertNotIn('_order_id', first['rows'][0])
+        self.assertNotIn('_line_id', first['rows'][0])
+        self.assertNotIn('_fee', first['rows'][0])
         self.assertEqual(len(first['exceptions']), 100)
+        self.assertEqual(first['exceptions'][0]['drill'], {
+            'kind': 'exception', 'order_id': 2000, 'metric': 'computed_total',
+        })
+        self.assertNotIn('_order_id', first['exceptions'][0])
+        self.assertNotIn('_computed_total', first['exceptions'][0])
+        self.assertNotIn('_saved_total', first['exceptions'][0])
         self.assertEqual(first['closing'], '101.00')
         self.assertEqual((first['period_kind'], first['date_from'], first['date_to']),
                          ('month', '2026-09-01', '2026-09-30'))
@@ -470,10 +486,16 @@ class TestTobaccoReport(TransactionCase):
     def test_pdf_rows_keep_mixed_directions_and_zero_fee_exception(self):
         currency = self.env.company.currency_id
         order = SimpleNamespace(
-            name='١٢', date_order=datetime(2026, 9, 1, 0), currency_id=currency,
+            id=701, name='١٢', date_order=datetime(2026, 9, 1, 0), currency_id=currency,
         )
-        sale = SimpleNamespace(qty=4, product_id=FakeProduct('[ARZ-PRD-026-65] شيشة ٥٥', 'شيشة ٥٥'))
-        refund = SimpleNamespace(qty=-1, product_id=FakeProduct('[ARZ-PRD-026-65] شيشة ٥٥', 'شيشة ٥٥'))
+        sale = SimpleNamespace(
+            id=702, qty=4,
+            product_id=FakeProduct('[ARZ-PRD-026-65] شيشة ٥٥', 'شيشة ٥٥'),
+        )
+        refund = SimpleNamespace(
+            id=703, qty=-1,
+            product_id=FakeProduct('[ARZ-PRD-026-65] شيشة ٥٥', 'شيشة ٥٥'),
+        )
         with patch.object(BaseerPosTobaccoReport, '_order_fee_data', return_value=(
             [(sale, Decimal('100.00')), (refund, Decimal('-25.00'))],
             False, Decimal('220.00'), Decimal('220.00'),
@@ -484,6 +506,10 @@ class TestTobaccoReport(TransactionCase):
         self.assertEqual([row['debit'] for row in rows], ['0.00', '25.00'])
         self.assertEqual([row['credit'] for row in rows], ['100.00', '0.00'])
         self.assertEqual([row['running'] for row in rows], ['100.00', '75.00'])
+        self.assertEqual(
+            [(row['_order_id'], row['_line_id'], row['_fee']) for row in rows],
+            [(701, 702, Decimal('100.00')), (701, 703, Decimal('-25.00'))],
+        )
         self.assertIn('55', rows[0]['products'])
         self.assertNotIn('ARZ-PRD-026-65', rows[0]['products'])
         self.assertEqual((debit, credit, running), (
@@ -499,6 +525,9 @@ class TestTobaccoReport(TransactionCase):
         self.assertFalse(rows)
         self.assertEqual(len(exceptions), 1)
         self.assertEqual(exceptions[0]['order'], '12')
+        self.assertEqual(exceptions[0]['_order_id'], 701)
+        self.assertEqual(exceptions[0]['_computed_total'], Decimal('220.00'))
+        self.assertEqual(exceptions[0]['_saved_total'], Decimal('219.99'))
 
     def test_drift_is_disclosed_not_silently_reconciled(self):
         fee_lines, mismatch, computed, saved = self._fee_case(

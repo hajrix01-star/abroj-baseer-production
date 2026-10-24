@@ -1,14 +1,19 @@
 {
     "name": "Baseer Reports Menu",
     "summary": "Unified Invoicing report page for Baseer-owned financial reports",
-    "version": "19.0.1.0.6",
+    "version": "19.0.1.1.0",
     "author": "Baseer",
     "license": "LGPL-3",
     "category": "Accounting/Reporting",
     "depends": ["account"],
     "data": ["views/reports_menu.xml"],
+    "external_dependencies": {"python": ["openpyxl"]},
     "assets": {
         "web.assets_backend": [
+            "baseer_reports_menu/static/src/report_drill.js",
+            "baseer_reports_menu/static/src/report_drill.xml",
+            "baseer_reports_menu/static/src/report_export.js",
+            "baseer_reports_menu/static/src/report_export.xml",
             "baseer_reports_menu/static/src/report_selector.js",
             "baseer_reports_menu/static/src/report_selector.xml",
             "baseer_reports_menu/static/src/report_hub.js",
@@ -17,6 +22,8 @@
         ],
         "web.assets_unit_tests": [
             "baseer_reports_menu/static/tests/report_hub.test.js",
+            "baseer_reports_menu/static/tests/report_export.test.js",
+            "baseer_reports_menu/static/tests/report_drill.test.js",
         ],
     },
     "application": False,

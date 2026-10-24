@@ -101,6 +101,9 @@ class BaseerPosTobaccoReport(models.AbstractModel):
                     'order': order_text,
                     'computed_total': _format_money(_money(computed_total, quantum)),
                     'saved_total': _format_money(_money(saved_total, quantum)),
+                    '_order_id': order.id,
+                    '_computed_total': _money(computed_total, quantum),
+                    '_saved_total': _money(saved_total, quantum),
                 })
             for line, fee in fee_lines:
                 debit = max(-fee, Decimal('0'))
@@ -117,6 +120,9 @@ class BaseerPosTobaccoReport(models.AbstractModel):
                     'debit': _format_money(debit),
                     'credit': _format_money(credit),
                     'running': _format_money(running),
+                    '_order_id': order.id,
+                    '_line_id': line.id,
+                    '_fee': fee,
                 })
         return rows, exceptions, debit_total, credit_total, running
 

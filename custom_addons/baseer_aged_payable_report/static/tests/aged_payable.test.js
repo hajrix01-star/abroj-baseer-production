@@ -74,3 +74,14 @@ test("late report responses are ignored after the cutoff changes", async () => {
     expect(report.appliedCutoff).toBe(null);
     expect(report.state.cutoffDate).toBe("2026-10-08");
 });
+
+test("unified export captures the applied cutoff, not a later draft date or page", async () => {
+    const report = instance(async () => ({}));
+    report.state.report = { partner_count: 101 };
+    report.appliedCutoff = "2026-10-09";
+    expect(report.appliedFilters).toEqual({ company_id: 1, cutoff_date: "2026-10-09", page: 1 });
+    report.state.cutoffDate = "2026-10-31";
+    expect(report.appliedFilters).toEqual({ company_id: 1, cutoff_date: "2026-10-09", page: 1 });
+    report.state.report = null;
+    expect(report.appliedFilters).toBe(null);
+});

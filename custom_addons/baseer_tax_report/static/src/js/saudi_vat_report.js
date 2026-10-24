@@ -2,6 +2,8 @@
 
 import { Component, onWillStart, useState } from "@odoo/owl";
 import { ReportSelector } from "@baseer_reports_menu/report_selector";
+import { ReportExportButtons } from "@baseer_reports_menu/report_export";
+import { useReportDrill } from "@baseer_reports_menu/report_drill";
 import { useBus, useService } from "@web/core/utils/hooks";
 import { user, userBus } from "@web/core/user";
 
@@ -45,7 +47,7 @@ const copy = {
 };
 
 export class SaudiVatReport extends Component {
-    static components = { ReportSelector };
+    static components = { ReportSelector, ReportExportButtons };
     static template = "baseer_tax_report.SaudiVatReport";
     static props = ["*"];
 
@@ -57,9 +59,10 @@ export class SaudiVatReport extends Component {
         this.state = useState({
             journals: [], companyId: 0, periodType: "quarter", year: 0,
             month: "1", quarter: "1", displayMode: "simple", journalIds: [],
-            data: null, expanded: {}, loading: true, printing: false, exporting: false, error: "",
+            data: null, appliedFilters: null, expanded: {}, loading: true, printing: false, exporting: false, error: "",
         });
         this.companyGeneration = 0;
+        this.drill = useReportDrill("vat", () => this.state.appliedFilters, () => this.lang);
         useBus(userBus, "ACTIVE_COMPANIES_CHANGED", () => this.loadOptions());
         onWillStart(() => this.loadOptions());
     }
@@ -94,6 +97,7 @@ export class SaudiVatReport extends Component {
     invalidate() {
         this.epoch += 1;
         this.state.data = null;
+        this.state.appliedFilters = null;
         this.state.expanded = {};
         this.state.error = "";
         this.state.loading = false;
@@ -146,7 +150,10 @@ export class SaudiVatReport extends Component {
         this.state.expanded = {};
         try {
             const data = await this.orm.call("baseer.tax.report.wizard", "get_hub_report", [this.payload()]);
-            if (epoch === this.epoch && generation === this.companyGeneration && companyId === this.activeCompanyId) { this.state.data = data; }
+            if (epoch === this.epoch && generation === this.companyGeneration && companyId === this.activeCompanyId) {
+                this.state.data = data;
+                this.state.appliedFilters = this.payload();
+            }
         } catch (error) {
             if (epoch === this.epoch && generation === this.companyGeneration) { this.state.error = this.labels.error; }
         } finally {
@@ -185,25 +192,9 @@ export class SaudiVatReport extends Component {
         }
     }
 
-    async openCell(box, column) {
-        if (!this.state.data) { return; }
-        const epoch = this.epoch;
-        const companyId = this.activeCompanyId;
-        try {
-            const action = await this.orm.call("baseer.tax.report.wizard", "open_hub_cell", [this.payload(), box, column]);
-            if (epoch === this.epoch && companyId === this.activeCompanyId) { await this.action.doAction(action); }
-        } catch (error) { if (epoch === this.epoch) { this.state.error = this.labels.error; } }
-    }
+    openCell(box, column) { this.drill.open({ kind: "cell", box, column }); }
 
-    async openException(kind) {
-        if (!this.state.data) { return; }
-        const epoch = this.epoch;
-        const companyId = this.activeCompanyId;
-        try {
-            const action = await this.orm.call("baseer.tax.report.wizard", "open_hub_exception", [this.payload(), kind]);
-            if (epoch === this.epoch && companyId === this.activeCompanyId) { await this.action.doAction(action); }
-        } catch (error) { if (epoch === this.epoch) { this.state.error = this.labels.error; } }
-    }
+    openException(kind) { this.drill.open({ kind: "exception", class: kind }); }
 
     toggleComponents(box, column) {
         const key = `${box}:${column}`;

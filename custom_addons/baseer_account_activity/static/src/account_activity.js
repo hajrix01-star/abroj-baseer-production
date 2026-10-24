@@ -2,6 +2,8 @@
 
 import { Component, onWillStart, useState } from "@odoo/owl";
 import { ReportSelector } from "@baseer_reports_menu/report_selector";
+import { ReportExportButtons } from "@baseer_reports_menu/report_export";
+import { useReportDrill } from "@baseer_reports_menu/report_drill";
 import { registry } from "@web/core/registry";
 import { useBus, useService } from "@web/core/utils/hooks";
 import { user, userBus } from "@web/core/user";
@@ -49,7 +51,7 @@ function completedPeriod(kind) {
 }
 
 export class AccountActivity extends Component {
-    static components = { ReportSelector };
+    static components = { ReportSelector, ReportExportButtons };
     static template = "baseer_account_activity.Report";
     static props = ["*"];
 
@@ -64,8 +66,9 @@ export class AccountActivity extends Component {
         this.state = useState({
             accounts: [], companyId: 0, accountId: 0, accountsLoading: false,
             period: "month", dateFrom, dateTo, data: null, loading: false,
-            error: "", cursors: [null], page: 0, appliedPeriod: null,
+            error: "", cursors: [null], page: 0, appliedPeriod: null, appliedFilters: null,
         });
+        this.drill = useReportDrill("activity", () => this.state.appliedFilters, () => this.lang);
         useBus(userBus, "ACTIVE_COMPANIES_CHANGED", () => this.loadOptions());
         onWillStart(() => this.loadOptions());
     }
@@ -94,6 +97,7 @@ export class AccountActivity extends Component {
         this.state.cursors = [null];
         this.state.page = 0;
         this.state.appliedPeriod = null;
+        this.state.appliedFilters = null;
     }
 
     async loadOptions() {
@@ -179,12 +183,14 @@ export class AccountActivity extends Component {
                 dateTo !== this.state.dateTo) { return; }
             this.state.data = data;
             this.state.appliedPeriod = { kind: this.state.period, dateFrom, dateTo };
+            this.state.appliedFilters = { company_id: companyId, account_id: accountId, date_from: dateFrom, date_to: dateTo };
             this.state.page = page;
             if (data.next_cursor) { this.state.cursors[page + 1] = data.next_cursor; }
             else { this.state.cursors.splice(page + 1); }
         } catch (error) {
             if (epoch !== this.requestEpoch || generation !== this.companyGeneration) { return; }
             this.state.data = null;
+            this.state.appliedFilters = null;
             this.state.error = error?.data?.message || error?.message || this.labels.loadError;
         } finally {
             if (epoch === this.requestEpoch && generation === this.companyGeneration) { this.state.loading = false; }
@@ -197,11 +203,7 @@ export class AccountActivity extends Component {
     }
 
     openMove(line) {
-        this.action.doAction({
-            type: "ir.actions.act_window", name: this.labels.entry,
-            res_model: "account.move", res_id: line.move_id,
-            views: [[false, "form"]], target: "current",
-        });
+        return this.drill.openSource({ kind: "source", parent: { kind: "line", measure: "debit", line_id: line.id }, line_id: line.id });
     }
 
     formatAmount(text) {

@@ -95,6 +95,7 @@ function loadingContext(companyId = 1) {
 
 async function loadingTemplates() {
     const paths = ["/baseer_operations_report/static/src/operations.xml",
+        "/baseer_reports_menu/static/src/report_export.xml",
         "/baseer_reports_menu/static/src/report_selector.xml"];
     const templates = await Promise.all(paths.map(async (path) => {
         const response = await withFetch(globals.fetch, () => fetch(path));
@@ -130,6 +131,7 @@ async function mountLoadingReport(call, doAction = async () => {}) {
         return call(model, method, ...args);
     } }) });
     services.add("action", { start: () => ({ doAction }) });
+    services.add("notification", { start: () => ({ add: () => {} }) });
     const component = await mountWithCleanup(BaseerOperationsPreview, { templates: await loadingTemplates(), props: {} });
     return { component, destroy: () => destroy(component.__owl__.app) };
 }

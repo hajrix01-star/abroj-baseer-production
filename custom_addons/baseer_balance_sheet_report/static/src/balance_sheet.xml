@@ -7,7 +7,7 @@
                     selectedKey="props.selectedReportKey" label="props.reportSelectorLabel"
                     lang="lang" onSelect="props.onReportSelect"/>
                 <div class="o_baseer_report_filters" t-att-aria-label="labels.title">
-                    <button type="button" class="btn o_baseer_gl_pdf" t-att-disabled="!state.report || state.loading || state.printing" t-on-click="printReport" t-esc="labels.print"/>
+                <ReportExportButtons reportKey="'balance_sheet'" filters="appliedFilters || undefined" lang="lang" disabled="!state.report || state.loading || state.printing"/>
                     <details class="o_baseer_gl_period">
                         <summary t-att-aria-label="labels.period"><i class="fa fa-calendar" aria-hidden="true"/> <span t-esc="periodSummary"/></summary>
                         <div class="o_baseer_gl_period_list">
@@ -70,14 +70,14 @@
                                         <i t-att-class="state.expanded[section.key] ? 'fa fa-caret-down' : 'fa fa-caret-right'" aria-hidden="true"/>
                                         <span t-esc="labels[section.key]"/>
                                     </button></th>
-                                    <td t-att-class="'is-number ' + amountClass(section.amount, section.negative)" t-esc="section.amount"/></tr>
+                                    <td t-att-class="'is-number ' + amountClass(section.amount, section.negative)" ><button type="button" class="o_baseer_amount_link" data-drill="section" t-on-click="() => this.openAmount('section', section.key)" t-esc="section.amount"/></td></tr>
                                 <tr t-if="state.expanded[section.key] &amp;&amp; state.sectionLoading[section.key]"><td colspan="2" role="status" t-esc="labels.loading"/></tr>
                                 <t t-if="state.expanded[section.key] &amp;&amp; state.accountPages[section.key]">
                                     <tr t-foreach="state.accountPages[section.key].accounts" t-as="account" t-key="account.id" class="o_baseer_bs_account">
                                         <th scope="row"><button type="button" class="o_baseer_gl_source" t-att-disabled="!account.source_line_count"
                                             t-att-aria-label="labels.source + ' ' + account.code + ' ' + account.name"
                                             t-on-click="() => this.openAccount(account.id, section.key)"><span t-esc="account.code"/> <span t-esc="account.name"/></button></th>
-                                        <td t-att-class="'is-number ' + amountClass(account.amount, account.negative)" t-esc="account.amount"/></tr>
+                                        <td t-att-class="'is-number ' + amountClass(account.amount, account.negative)" ><button type="button" class="o_baseer_amount_link" data-drill="account" t-on-click="() => this.openAmount('account', section.key, account.id)" t-esc="account.amount"/></td></tr>
                                     <tr t-if="!state.accountPages[section.key].account_count" class="o_baseer_gl_status"><td colspan="2" t-esc="labels.noAccounts"/></tr>
                                     <tr t-if="state.accountPages[section.key].account_count > state.accountPages[section.key].page_size" class="o_baseer_gl_pager"><td colspan="2">
                                         <button type="button" t-att-disabled="state.accountPages[section.key].page &lt;= 1"
@@ -89,8 +89,8 @@
                                     </td></tr>
                                 </t>
                             </t>
-                            <tr class="o_baseer_bs_total"><th scope="row" t-esc="labels.totalAssets"/><td class="is-number" t-esc="state.report.equation.assets"/></tr>
-                            <tr class="o_baseer_bs_total"><th scope="row" t-esc="labels.totalOther"/><td class="is-number" t-esc="state.report.equation.liabilities_equity_results"/></tr>
+                            <tr class="o_baseer_bs_total"><th scope="row" t-esc="labels.totalAssets"/><td class="is-number" ><button type="button" class="o_baseer_amount_link" data-drill="equation" t-on-click="() => this.openAmount('equation', 'assets')" t-esc="state.report.equation.assets"/></td></tr>
+                            <tr class="o_baseer_bs_total"><th scope="row" t-esc="labels.totalOther"/><td class="is-number" ><button type="button" class="o_baseer_amount_link" data-drill="equation" t-on-click="() => this.openAmount('equation', 'liabilities_equity_results')" t-esc="state.report.equation.liabilities_equity_results"/></td></tr>
                         </tbody>
                     </table>
                 </section>

@@ -5,6 +5,7 @@ import { click, waitUntil } from "@odoo/hoot-dom";
 import { App } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { user } from "@web/core/user";
+import { download } from "@web/core/network/download";
 import { patchWithCleanup } from "@web/../tests/web_test_helpers";
 import { BaseerTrialBalanceReport } from "@baseer_trial_balance_report/trial_balance";
 
@@ -64,16 +65,20 @@ function mockOrm(calls) {
     };
 }
 
-async function mount(calls, actions) {
+async function mount(calls, actions, dialogs = []) {
     patchWithCleanup(user, { activeCompany: { id: 1 } });
     const response = await withFetch(globals.fetch, () =>
         fetch("/baseer_trial_balance_report/static/src/trial_balance.xml")
     );
     expect(response.ok).toBe(true);
+    const shared = await withFetch(globals.fetch, () => fetch("/baseer_reports_menu/static/src/report_export.xml"));
+    expect(shared.ok).toBe(true);
+    const templates = "<templates>" + [await response.text(), await shared.text()].map((text) =>
+        text.replace(/<\?xml[^>]*>/, "").replace(/<templates[^>]*>/, "").replace("</templates>", "")).join("") + "</templates>";
     const app = new App(BaseerTrialBalanceReport, {
         env: { services: { orm: mockOrm(calls),
-            action: { doAction: async (action) => actions.push(action) } } },
-        templates: await response.text(), props: {}, test: true,
+            action: { doAction: async (action) => actions.push(action) }, notification: { add() {} }, dialog: { add(_component, props) { dialogs.push(props); } } } },
+        templates, props: {}, test: true,
     });
     after(() => app.destroy());
     await app.mount(getFixture());
@@ -110,17 +115,20 @@ test("period and journals change server filters", async () => {
 
 test("account drill-down opens native journal items and PDF uses applied filters", async () => {
     patchWithCleanup(user, { lang: "en_US" });
+    const requests = [];
+    patchWithCleanup(download, { _download: async (request) => requests.push(request) });
     const calls = [], actions = [];
     await mount(calls, actions);
     await click('.o_baseer_gl_account button[aria-label="View entries 101000 Bank"]');
     await waitUntil(() => actions.length === 1);
     expect(actions[0].res_model).toBe("account.move.line");
     expect(actions[0].target).toBe("current");
-    await click(".o_baseer_gl_pdf");
-    await waitUntil(() => actions.length === 2);
-    expect(calls.at(-1)[0]).toBe("action_print");
-    expect(calls.at(-1)[1][0].date_from).toBe("2026-10-01");
-    expect(actions[1].report_name).toBe("baseer_trial_balance_report.trial_balance_pdf");
+    await click(".o_baseer_report_exports .o_baseer_pl_pdf");
+    await waitUntil(() => requests.length === 1);
+    expect(requests[0].data.report_key).toBe("trial_balance");
+    expect(requests[0].data.file_format).toBe("pdf");
+    expect(JSON.parse(requests[0].data.filters).date_from).toBe("2026-10-01");
+    expect(actions.length).toBe(1);
 });
 
 test("Arabic layout is RTL while numbers stay western", async () => {
@@ -129,4 +137,29 @@ test("Arabic layout is RTL while numbers stay western", async () => {
     expect(document.querySelector(".o_baseer_tb_report").getAttribute("dir")).toBe("rtl");
     expect(document.querySelector(".o_baseer_report_title").textContent).toBe("ميزان المراجعة");
     expect(document.querySelector(".o_baseer_gl_account").textContent.includes("110.00")).toBe(true);
+});
+
+
+test("trial_balance every visible amount opens a scoped shared drill including zero", async () => {
+    patchWithCleanup(user, { lang: "en_US" });
+    const dialogs = [];
+    await mount([], [], dialogs);
+    const buttons = [...document.querySelectorAll(".o_baseer_amount_link")];
+    expect(buttons.length).toBe(12);
+    expect(buttons.some((button) => button.textContent.trim() === "0.00")).toBe(true);
+    for (const button of buttons) {
+        expect(button.tagName).toBe("BUTTON");
+        expect(button.disabled).toBe(false);
+        await click(button);
+    }
+    expect(dialogs.length).toBe(12);
+    for (const props of dialogs) {
+        expect(props.reportKey).toBe("trial_balance");
+        expect(props.filters).toEqual({ company_id: 1, date_from: "2026-10-01", date_to: "2026-10-31", journal_ids: [] });
+        expect(Object.hasOwn(props.selector, "amount")).toBe(false);
+        expect(Object.hasOwn(props.selector, "domain")).toBe(false);
+    }
+    patchWithCleanup(user, { activeCompany: { id: 2 } });
+    await click(buttons[0]);
+    expect(dialogs.length).toBe(12);
 });

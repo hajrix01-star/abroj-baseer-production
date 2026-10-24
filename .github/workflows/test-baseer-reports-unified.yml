@@ -1,0 +1,106 @@
+name: Test Baseer unified report exports and details
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - custom_addons/baseer_reports_menu/**
+      - custom_addons/baseer_operations_report/**
+      - custom_addons/baseer_account_activity/**
+      - custom_addons/baseer_general_ledger_report/**
+      - custom_addons/baseer_trial_balance_report/**
+      - custom_addons/baseer_balance_sheet_report/**
+      - custom_addons/baseer_profit_loss_report/**
+      - custom_addons/baseer_aged_receivable_report/**
+      - custom_addons/baseer_aged_payable_report/**
+      - custom_addons/baseer_tax_report/**
+      - custom_addons/baseer_pos_tobacco_report/**
+      - custom_addons/baseer_pos_summary/**
+      - custom_addons/baseer_purchase_batch/**
+      - custom_addons/baseer_payroll/**
+      - custom_addons/baseer_service_seed/**
+      - third_party_addons/erp_heritage_19/**
+      - third_party_addons/odoomates_19/**
+      - .github/workflows/test-baseer-reports-unified.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  unified-export-tests:
+    name: Odoo 19 ten-provider exports and details
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres@sha256:f1c3376c26f2609ab9f29f71f824103fe2fcd8ee0346485cb6122a4f93df6f94
+        env:
+          POSTGRES_DB: postgres
+          POSTGRES_USER: odoo
+          POSTGRES_PASSWORD: odoo
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U odoo -d postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare local synthetic export evidence
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/baseer-unified-exports/files"
+          # Only this new runner-temporary directory is writable by container Odoo.
+          # No generated files are uploaded outside the ephemeral runner.
+          chmod 0777 "$RUNNER_TEMP/baseer-unified-exports/files"
+      - name: Test the pure document serializer in the pinned runtime
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          docker run --rm --network none \
+            --mount type=bind,src="$GITHUB_WORKSPACE/custom_addons",dst=/mnt/baseer-addons,readonly \
+            --entrypoint python3 \
+            odoo@sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd \
+            /mnt/baseer-addons/baseer_reports_menu/tests/test_report_document.py -v \
+            2>&1 | tee "$RUNNER_TEMP/baseer-unified-exports/serializer.log"
+      - name: Install all providers and run only unified export tests
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          modules=(
+            baseer_operations_report baseer_account_activity
+            baseer_general_ledger_report baseer_trial_balance_report
+            baseer_balance_sheet_report baseer_profit_loss_report
+            baseer_aged_receivable_report baseer_aged_payable_report
+            baseer_tax_report baseer_pos_tobacco_report
+          )
+          install_modules="$(IFS=,; echo "${modules[*]}")"
+          docker run --rm --network host \
+            -e HOST=127.0.0.1 -e USER=odoo -e PASSWORD=odoo \
+            -e BASEER_EXPORT_EVIDENCE_DIR=/mnt/export-evidence \
+            --mount type=bind,src="$GITHUB_WORKSPACE/custom_addons",dst=/mnt/baseer-addons,readonly \
+            --mount type=bind,src="$GITHUB_WORKSPACE/third_party_addons/erp_heritage_19",dst=/mnt/heritage-addons,readonly \
+            --mount type=bind,src="$GITHUB_WORKSPACE/third_party_addons/odoomates_19",dst=/mnt/payroll-addons,readonly \
+            --mount type=bind,src="$RUNNER_TEMP/baseer-unified-exports/files",dst=/mnt/export-evidence \
+            odoo@sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd \
+            odoo --db_host=127.0.0.1 --db_port=5432 --db_user=odoo --db_password=odoo \
+            --http-interface=127.0.0.1 --http-port=8079 \
+            --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/baseer-addons,/mnt/heritage-addons,/mnt/payroll-addons \
+            -d baseer_unified_exports_ci -i "$install_modules,baseer_payroll,baseer_service_seed" \
+            --without-demo=all --test-enable --test-tags=reports_unified_export,reports_unified_drill \
+            --stop-after-init --max-cron-threads=0 --workers=0 --log-level=test \
+            2>&1 | tee "$RUNNER_TEMP/baseer-unified-exports/odoo.log"
+          log="$RUNNER_TEMP/baseer-unified-exports/odoo.log"
+          # Fail if the tag silently selects no tests or an entire provider is absent.
+          grep -Eq '0 failed, 0 error\(s\) of [1-9][0-9]* tests' "$log"
+          for module in "${modules[@]}"; do
+            grep -F "$module.tests." "$log" | grep 'Starting ' > /dev/null
+          done
+          for provider in owner activity general_ledger trial_balance balance_sheet profit_loss aged_receivable aged_payable vat tobacco; do
+            for format in xlsx pdf; do
+              test -s "$RUNNER_TEMP/baseer-unified-exports/files/$provider-export-ar.$format"
+            done
+          done

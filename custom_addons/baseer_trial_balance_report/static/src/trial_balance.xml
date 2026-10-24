@@ -7,7 +7,7 @@
                     selectedKey="props.selectedReportKey" label="props.reportSelectorLabel"
                     lang="lang" onSelect="props.onReportSelect"/>
                 <div class="o_baseer_report_filters" t-att-aria-label="labels.title">
-                    <button type="button" class="btn o_baseer_gl_pdf" t-att-disabled="!state.report || state.loading || state.printing" t-on-click="printReport" t-esc="labels.print"/>
+                <ReportExportButtons reportKey="'trial_balance'" filters="appliedFilters || undefined" lang="lang" disabled="!state.report || state.loading || state.printing"/>
                     <details class="o_baseer_gl_period">
                         <summary t-att-aria-label="labels.period"><i class="fa fa-calendar" aria-hidden="true"/> <span t-esc="periodSummary"/></summary>
                         <div class="o_baseer_gl_period_list">
@@ -76,19 +76,19 @@
                                     <th scope="row"><button type="button" class="o_baseer_gl_toggle" t-att-aria-expanded="state.rbfOpen"
                                         t-on-click="toggleRbf"><i t-att-class="state.rbfOpen ? 'fa fa-caret-down' : 'fa fa-caret-right'" aria-hidden="true"/>
                                         <span t-esc="labels.rbf"/></button></th>
-                                    <td class="is-number" t-att-data-label="labels.opening + ' · ' + labels.debit" t-esc="state.report.rbf.opening_debit"/>
-                                    <td class="is-number" t-att-data-label="labels.opening + ' · ' + labels.credit" t-esc="state.report.rbf.opening_credit"/>
+                                    <td class="is-number" t-att-data-label="labels.opening + ' · ' + labels.debit" ><button type="button" class="o_baseer_amount_link" data-drill="opening_debit" t-on-click="() => this.openAmount('rbf', 'opening_debit')" t-esc="state.report.rbf.opening_debit"/></td>
+                                    <td class="is-number" t-att-data-label="labels.opening + ' · ' + labels.credit" ><button type="button" class="o_baseer_amount_link" data-drill="opening_credit" t-on-click="() => this.openAmount('rbf', 'opening_credit')" t-esc="state.report.rbf.opening_credit"/></td>
                                     <td class="is-number" t-att-data-label="labels.movement + ' · ' + labels.debit"/>
                                     <td class="is-number" t-att-data-label="labels.movement + ' · ' + labels.credit"/>
-                                    <td class="is-number" t-att-data-label="labels.closing + ' · ' + labels.debit" t-esc="state.report.rbf.closing_debit"/>
-                                    <td class="is-number" t-att-data-label="labels.closing + ' · ' + labels.credit" t-esc="state.report.rbf.closing_credit"/>
+                                    <td class="is-number" t-att-data-label="labels.closing + ' · ' + labels.debit" ><button type="button" class="o_baseer_amount_link" data-drill="closing_debit" t-on-click="() => this.openAmount('rbf', 'closing_debit')" t-esc="state.report.rbf.closing_debit"/></td>
+                                    <td class="is-number" t-att-data-label="labels.closing + ' · ' + labels.credit" ><button type="button" class="o_baseer_amount_link" data-drill="closing_credit" t-on-click="() => this.openAmount('rbf', 'closing_credit')" t-esc="state.report.rbf.closing_credit"/></td>
                                 </tr>
                                 <tr t-if="state.rbfOpen &amp;&amp; state.rbfLoading"><td colspan="7" role="status" t-esc="labels.loading"/></tr>
                                 <t t-if="state.rbfOpen &amp;&amp; state.rbfAccounts">
                                     <tr t-foreach="state.rbfAccounts.accounts" t-as="account" t-key="account.id" class="o_baseer_gl_rbf_account">
                                         <th scope="row"><button type="button" class="o_baseer_gl_source"
                                             t-on-click="() => this.openAccount(account.id, 'rbf')"><span t-esc="account.code"/> <span t-esc="account.name"/></button></th>
-                                        <td colspan="6" class="is-number" t-esc="account.amount"/>
+                                        <td colspan="6" class="is-number" ><button type="button" class="o_baseer_amount_link" data-drill="amount" t-on-click="() => this.openAmount('rbf_account', 'amount', account.id)" t-esc="account.amount"/></td>
                                     </tr>
                                     <tr t-if="state.rbfAccounts.account_count > state.rbfAccounts.page_size" class="o_baseer_gl_pager"><td colspan="7">
                                         <button type="button" t-att-disabled="state.rbfAccounts.page &lt;= 1" t-on-click="() => this.loadRbfPage(state.rbfAccounts.page - 1)" t-esc="labels.previous"/>
@@ -102,21 +102,21 @@
                                         t-att-disabled="!(account.period_line_count || account.opening_source_count)"
                                         t-att-aria-label="labels.source + ' ' + account.code + ' ' + account.name"
                                         t-on-click="() => this.openAccount(account.id)"><span t-esc="account.code"/> <span t-esc="account.name"/></button></th>
-                                    <td class="is-number" t-att-data-label="labels.opening + ' · ' + labels.debit" t-esc="account.opening_debit"/>
-                                    <td class="is-number" t-att-data-label="labels.opening + ' · ' + labels.credit" t-esc="account.opening_credit"/>
-                                    <td t-att-class="'is-number ' + amountClass(account.debit, account.debit_negative)" t-att-data-label="labels.movement + ' · ' + labels.debit" t-esc="account.debit"/>
-                                    <td t-att-class="'is-number ' + amountClass(account.credit, account.credit_negative)" t-att-data-label="labels.movement + ' · ' + labels.credit" t-esc="account.credit"/>
-                                    <td class="is-number" t-att-data-label="labels.closing + ' · ' + labels.debit" t-esc="account.closing_debit"/>
-                                    <td class="is-number" t-att-data-label="labels.closing + ' · ' + labels.credit" t-esc="account.closing_credit"/>
+                                    <td class="is-number" t-att-data-label="labels.opening + ' · ' + labels.debit" ><button type="button" class="o_baseer_amount_link" data-drill="opening_debit" t-on-click="() => this.openAmount('account', 'opening_debit', account.id)" t-esc="account.opening_debit"/></td>
+                                    <td class="is-number" t-att-data-label="labels.opening + ' · ' + labels.credit" ><button type="button" class="o_baseer_amount_link" data-drill="opening_credit" t-on-click="() => this.openAmount('account', 'opening_credit', account.id)" t-esc="account.opening_credit"/></td>
+                                    <td t-att-class="'is-number ' + amountClass(account.debit, account.debit_negative)" t-att-data-label="labels.movement + ' · ' + labels.debit" ><button type="button" class="o_baseer_amount_link" data-drill="debit" t-on-click="() => this.openAmount('account', 'debit', account.id)" t-esc="account.debit"/></td>
+                                    <td t-att-class="'is-number ' + amountClass(account.credit, account.credit_negative)" t-att-data-label="labels.movement + ' · ' + labels.credit" ><button type="button" class="o_baseer_amount_link" data-drill="credit" t-on-click="() => this.openAmount('account', 'credit', account.id)" t-esc="account.credit"/></td>
+                                    <td class="is-number" t-att-data-label="labels.closing + ' · ' + labels.debit" ><button type="button" class="o_baseer_amount_link" data-drill="closing_debit" t-on-click="() => this.openAmount('account', 'closing_debit', account.id)" t-esc="account.closing_debit"/></td>
+                                    <td class="is-number" t-att-data-label="labels.closing + ' · ' + labels.credit" ><button type="button" class="o_baseer_amount_link" data-drill="closing_credit" t-on-click="() => this.openAmount('account', 'closing_credit', account.id)" t-esc="account.closing_credit"/></td>
                                 </tr>
                                 <tr t-if="!state.report.account_count" class="o_baseer_gl_status"><td colspan="7" t-esc="labels.noAccounts"/></tr>
                                 <tr class="o_baseer_gl_total"><th scope="row" t-esc="labels.total"/>
-                                    <td class="is-number" t-att-data-label="labels.opening + ' · ' + labels.debit" t-esc="state.report.total.opening_debit"/>
-                                    <td class="is-number" t-att-data-label="labels.opening + ' · ' + labels.credit" t-esc="state.report.total.opening_credit"/>
-                                    <td class="is-number" t-att-data-label="labels.movement + ' · ' + labels.debit" t-esc="state.report.total.debit"/>
-                                    <td class="is-number" t-att-data-label="labels.movement + ' · ' + labels.credit" t-esc="state.report.total.credit"/>
-                                    <td class="is-number" t-att-data-label="labels.closing + ' · ' + labels.debit" t-esc="state.report.total.closing_debit"/>
-                                    <td class="is-number" t-att-data-label="labels.closing + ' · ' + labels.credit" t-esc="state.report.total.closing_credit"/>
+                                    <td class="is-number" t-att-data-label="labels.opening + ' · ' + labels.debit" ><button type="button" class="o_baseer_amount_link" data-drill="opening_debit" t-on-click="() => this.openAmount('total', 'opening_debit')" t-esc="state.report.total.opening_debit"/></td>
+                                    <td class="is-number" t-att-data-label="labels.opening + ' · ' + labels.credit" ><button type="button" class="o_baseer_amount_link" data-drill="opening_credit" t-on-click="() => this.openAmount('total', 'opening_credit')" t-esc="state.report.total.opening_credit"/></td>
+                                    <td class="is-number" t-att-data-label="labels.movement + ' · ' + labels.debit" ><button type="button" class="o_baseer_amount_link" data-drill="debit" t-on-click="() => this.openAmount('total', 'debit')" t-esc="state.report.total.debit"/></td>
+                                    <td class="is-number" t-att-data-label="labels.movement + ' · ' + labels.credit" ><button type="button" class="o_baseer_amount_link" data-drill="credit" t-on-click="() => this.openAmount('total', 'credit')" t-esc="state.report.total.credit"/></td>
+                                    <td class="is-number" t-att-data-label="labels.closing + ' · ' + labels.debit" ><button type="button" class="o_baseer_amount_link" data-drill="closing_debit" t-on-click="() => this.openAmount('total', 'closing_debit')" t-esc="state.report.total.closing_debit"/></td>
+                                    <td class="is-number" t-att-data-label="labels.closing + ' · ' + labels.credit" ><button type="button" class="o_baseer_amount_link" data-drill="closing_credit" t-on-click="() => this.openAmount('total', 'closing_credit')" t-esc="state.report.total.closing_credit"/></td>
                                 </tr>
                             </tbody>
                         </table>

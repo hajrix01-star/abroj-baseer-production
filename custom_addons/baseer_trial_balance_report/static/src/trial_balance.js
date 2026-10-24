@@ -5,6 +5,8 @@ import { registry } from "@web/core/registry";
 import { user, userBus } from "@web/core/user";
 import { useBus, useService } from "@web/core/utils/hooks";
 import { ReportSelector } from "@baseer_reports_menu/report_selector";
+import { ReportExportButtons } from "@baseer_reports_menu/report_export";
+import { useReportDrill } from "@baseer_reports_menu/report_drill";
 
 const MODEL = "baseer.trial.balance.report";
 const copy = {
@@ -36,7 +38,7 @@ const copy = {
 
 export class BaseerTrialBalanceReport extends Component {
     static template = "baseer_trial_balance_report.Report";
-    static components = { ReportSelector };
+    static components = { ReportSelector, ReportExportButtons };
     static props = ["*"];
 
     setup() {
@@ -50,6 +52,7 @@ export class BaseerTrialBalanceReport extends Component {
             rbfOpen: false, rbfLoading: false, rbfAccounts: null,
         });
         this.appliedFilters = null;
+        this.drill = useReportDrill("trial_balance", () => this.appliedFilters, () => this.lang);
         this.requestToken = 0;
         useBus(userBus, "ACTIVE_COMPANIES_CHANGED", () => this.refreshCompany());
         onWillStart(async () => this.refreshCompany());
@@ -239,6 +242,12 @@ export class BaseerTrialBalanceReport extends Component {
         } finally {
             if (token === this.requestToken) { this.state.rbfLoading = false; }
         }
+    }
+    openAmount(kind, measure, accountId) {
+        if (!this.state.report || this.state.loading || !this.appliedFilters) { return; }
+        const selector = { kind, measure };
+        if (accountId !== undefined) { selector.account_id = accountId; }
+        this.drill.open(selector);
     }
     async openAccount(accountId, scope = "period") {
         if (!this.appliedFilters || this.appliedFilters.company_id !== this.activeCompanyId) { return; }

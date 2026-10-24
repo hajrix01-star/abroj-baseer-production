@@ -6,6 +6,8 @@
                 <ReportSelector t-if="props.reportOptions" options="props.reportOptions"
                     selectedKey="props.selectedReportKey" label="props.reportSelectorLabel"
                     lang="lang" onSelect="props.onReportSelect"/>
+                <ReportExportButtons reportKey="'aged_payable'" filters="appliedFilters || undefined" lang="lang"
+                    disabled="!state.report || state.loading || state.printing"/>
                 <div class="o_baseer_report_filters" t-att-aria-label="labels.title">
                     <label class="o_baseer_report_date_filter">
                         <span t-esc="labels.cutoff"/>
@@ -36,29 +38,29 @@
                     <div class="o_baseer_aged_summary" t-att-aria-label="labels.title">
                         <div class="o_baseer_aged_summary_item">
                             <span t-esc="labels.payables"/>
-                            <strong class="o_baseer_report_amount" t-att-class="amountClass(state.report.summary.payables)" t-esc="state.report.summary.payables"/>
+                            <button type="button" class="o_baseer_report_amount o_baseer_amount_link" t-att-class="amountClass(state.report.summary.payables)" t-on-click="() => this.drill.open({kind: 'summary', metric: 'payables'})" t-esc="state.report.summary.payables"/>
                         </div>
                         <div class="o_baseer_aged_summary_item o_baseer_aged_credit">
                             <span t-esc="labels.counter_balances"/>
-                            <strong class="o_baseer_report_amount" t-att-class="amountClass(state.report.summary.counter_balances)" t-esc="state.report.summary.counter_balances"/>
+                            <button type="button" class="o_baseer_report_amount o_baseer_amount_link" t-att-class="amountClass(state.report.summary.counter_balances)" t-on-click="() => this.drill.open({kind: 'summary', metric: 'counter_balances'})" t-esc="state.report.summary.counter_balances"/>
                         </div>
                         <div class="o_baseer_aged_summary_item o_baseer_aged_net">
                             <span t-esc="labels.net"/>
-                            <strong class="o_baseer_report_amount" t-att-class="amountClass(state.report.summary.net)" t-esc="state.report.summary.net"/>
+                            <button type="button" class="o_baseer_report_amount o_baseer_amount_link" t-att-class="amountClass(state.report.summary.net)" t-on-click="() => this.drill.open({kind: 'summary', metric: 'net'})" t-esc="state.report.summary.net"/>
                         </div>
                     </div>
                     <h2 class="o_baseer_aged_bucket_heading" t-esc="labels.payableAging"/>
                     <div class="o_baseer_aged_buckets" t-att-aria-label="labels.payableAging">
                         <div t-foreach="buckets" t-as="bucket" t-key="bucket" class="o_baseer_aged_bucket">
                             <span t-esc="labelFor(bucket)"/>
-                            <strong class="o_baseer_report_amount" t-att-class="amountClass(state.report.summary.buckets[bucket])" t-esc="state.report.summary.buckets[bucket]"/>
+                            <button type="button" class="o_baseer_report_amount o_baseer_amount_link" t-att-class="amountClass(state.report.summary.buckets[bucket])" t-on-click="() => this.drill.open({kind: 'bucket', side: 'payable', bucket})" t-esc="state.report.summary.buckets[bucket]"/>
                         </div>
                     </div>
                     <h2 class="o_baseer_aged_bucket_heading" t-esc="labels.counterAging"/>
                     <div class="o_baseer_aged_buckets o_baseer_aged_credit_buckets" t-att-aria-label="labels.counterAging">
                         <div t-foreach="buckets" t-as="bucket" t-key="bucket" class="o_baseer_aged_bucket">
                             <span t-esc="labelFor(bucket)"/>
-                            <strong class="o_baseer_report_amount" t-att-class="amountClass(state.report.summary.counter_buckets[bucket])" t-esc="state.report.summary.counter_buckets[bucket]"/>
+                            <button type="button" class="o_baseer_report_amount o_baseer_amount_link" t-att-class="amountClass(state.report.summary.counter_buckets[bucket])" t-on-click="() => this.drill.open({kind: 'bucket', side: 'counter', bucket})" t-esc="state.report.summary.counter_buckets[bucket]"/>
                         </div>
                     </div>
                     <div class="o_baseer_aged_table_wrap">
@@ -81,9 +83,9 @@
                                             <i t-att-class="state.expandedPartnerId === partner.id ? 'fa fa-caret-down' : 'fa fa-caret-right'" aria-hidden="true"/>
                                             <span t-esc="partner.name"/>
                                         </button></th>
-                                        <td class="is-number" t-att-data-label="labels.payables"><span class="o_baseer_report_amount" t-att-class="amountClass(partner.payables)" t-esc="partner.payables"/></td>
-                                        <td class="is-number" t-att-data-label="labels.counter_balances"><span class="o_baseer_report_amount" t-att-class="amountClass(partner.counter_balances)" t-esc="partner.counter_balances"/></td>
-                                        <td class="is-number" t-att-data-label="labels.net"><strong class="o_baseer_report_amount" t-att-class="amountClass(partner.net)" t-esc="partner.net"/></td>
+                                        <td class="is-number" t-att-data-label="labels.payables"><button type="button" class="o_baseer_report_amount o_baseer_amount_link" t-att-class="amountClass(partner.payables)" t-on-click="() => this.drill.open({kind: 'partner', partner_id: partner.id, metric: 'payables'})" t-esc="partner.payables"/></td>
+                                        <td class="is-number" t-att-data-label="labels.counter_balances"><button type="button" class="o_baseer_report_amount o_baseer_amount_link" t-att-class="amountClass(partner.counter_balances)" t-on-click="() => this.drill.open({kind: 'partner', partner_id: partner.id, metric: 'counter_balances'})" t-esc="partner.counter_balances"/></td>
+                                        <td class="is-number" t-att-data-label="labels.net"><button type="button" class="o_baseer_report_amount o_baseer_amount_link" t-att-class="amountClass(partner.net)" t-on-click="() => this.drill.open({kind: 'partner', partner_id: partner.id, metric: 'net'})" t-esc="partner.net"/></td>
                                         <td class="is-number" t-att-data-label="labels.openCount"><span dir="ltr" t-esc="partner.open_count"/></td>
                                     </tr>
                                     <tr t-if="state.expandedPartnerId === partner.id" class="o_baseer_aged_detail_row">
@@ -112,7 +114,7 @@
                                                                 t-on-click="() => this.openLine(line.id)" t-esc="line.move_name"/></th>
                                                             <td t-att-data-label="labels.kind" t-esc="labelFor(line.kind)"/>
                                                             <td t-att-data-label="labels.bucket" t-esc="line.counter_age_bucket ? labels.counter + ' · ' + labelFor(line.counter_age_bucket) : labelFor(line.bucket)"/>
-                                                            <td class="is-number" t-att-data-label="labels.open"><span class="o_baseer_report_amount" t-att-class="amountClass(line.open)" t-esc="line.open"/></td>
+                                                            <td class="is-number" t-att-data-label="labels.open"><button type="button" class="o_baseer_report_amount o_baseer_amount_link" t-att-class="amountClass(line.open)" t-on-click="() => this.drill.open({kind: 'line', line_id: line.id})" t-esc="line.open"/></td>
                                                         </tr>
                                                     </tbody>
                                                 </table></div>

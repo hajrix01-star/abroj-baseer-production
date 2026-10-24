@@ -4,9 +4,23 @@ import { after, expect, getFixture, globals, test, withFetch } from "@odoo/hoot"
 import { click, queryOne, waitUntil } from "@odoo/hoot-dom";
 import { App } from "@odoo/owl";
 import { registry } from "@web/core/registry";
+import { download } from "@web/core/network/download";
 import { user } from "@web/core/user";
 import { patchWithCleanup } from "@web/../tests/web_test_helpers";
 import { SaudiVatReport } from "@baseer_tax_report/js/saudi_vat_report";
+
+async function vatTemplates() {
+    const [reportResponse, exportResponse] = await Promise.all([
+        withFetch(globals.fetch, () => fetch("/baseer_tax_report/static/src/xml/saudi_vat_report.xml")),
+        withFetch(globals.fetch, () => fetch("/baseer_reports_menu/static/src/report_export.xml")),
+    ]);
+    expect(reportResponse.ok).toBe(true);
+    expect(exportResponse.ok).toBe(true);
+    const extra = (await exportResponse.text())
+        .replace(/^\s*<\?xml[^>]*>\s*<templates[^>]*>/, "")
+        .replace(/<\/templates>\s*$/, "");
+    return (await reportResponse.text()).replace("</templates>", `${extra}</templates>`);
+}
 
 async function mountVisualReport(lang, withWarnings = false) {
     patchWithCleanup(user, { lang, activeCompany: { id: 3 } });
@@ -55,13 +69,9 @@ async function mountVisualReport(lang, withWarnings = false) {
             throw new Error(`Unexpected RPC: ${model}.${method}`);
         },
     };
-    const response = await withFetch(globals.fetch, () =>
-        fetch("/baseer_tax_report/static/src/xml/saudi_vat_report.xml")
-    );
-    expect(response.ok).toBe(true);
     const app = new App(SaudiVatReport, {
-        env: { services: { orm, action: { doAction: async () => {} } } },
-        templates: await response.text(), props: {}, test: true,
+        env: { services: { orm, action: { doAction: async () => {} }, notification: { add: () => {} }, dialog: { add: () => {} } } },
+        templates: await vatTemplates(), props: {}, test: true,
     });
     after(() => app.destroy());
     await app.mount(getFixture());
@@ -89,11 +99,11 @@ test("VAT warning describes remaining untagged fees in English", async () => {
     expect(warnings[1].querySelector(".o_baseer_vat_warning_help").title.includes("Review the classification of the remaining untagged taxes and fees")).toBe(true);
 });
 
-test("clicking VAT XLSX exports the selected quarter, detailed view, and journals once", async () => {
+test("VAT unified export captures the applied detailed quarter and journals once", async () => {
     patchWithCleanup(user, { activeCompany: { id: 3 } });
     const calls = [];
-    const downloads = [];
-    let resolveExport;
+    const requests = [];
+    patchWithCleanup(download, { _download: async (request) => requests.push(request) });
     const orm = {
         async call(model, method, args) {
             calls.push({ model, method, args });
@@ -116,19 +126,12 @@ test("clicking VAT XLSX exports the selected quarter, detailed view, and journal
                     currency: "SAR", rows: [], exception: { count: 0, other_count: 0 },
                 };
             }
-            if (method === "export_hub_xlsx") {
-                return new Promise((resolve) => { resolveExport = resolve; });
-            }
             throw new Error(`Unexpected RPC: ${model}.${method}`);
         },
     };
-    const response = await withFetch(globals.fetch, () =>
-        fetch("/baseer_tax_report/static/src/xml/saudi_vat_report.xml")
-    );
-    expect(response.ok).toBe(true);
     const app = new App(SaudiVatReport, {
-        env: { services: { orm, action: { doAction: async (action) => downloads.push(action) } } },
-        templates: await response.text(), props: {}, test: true,
+        env: { services: { orm, action: { doAction: async () => {} }, notification: { add: () => {} }, dialog: { add: () => {} } } },
+        templates: await vatTemplates(), props: {}, test: true,
     });
     after(() => app.destroy());
 
@@ -145,22 +148,17 @@ test("clicking VAT XLSX exports the selected quarter, detailed view, and journal
     await waitUntil(() => !queryOne(".o_baseer_report_xlsx").disabled);
 
     const button = queryOne(".o_baseer_report_xlsx");
-    expect(button.textContent.trim()).toBe("XLSX");
+    expect(button.textContent.trim()).toBe("Excel");
     await click(".o_baseer_report_xlsx");
-    const exports = calls.filter((call) => call.method === "export_hub_xlsx");
-    expect(exports.length).toBe(1);
-    expect(exports[0].args[0]).toEqual({
+    await waitUntil(() => requests.length === 1);
+    expect(requests[0].data.report_key).toBe("vat");
+    expect(requests[0].data.file_format).toBe("xlsx");
+    expect(JSON.parse(requests[0].data.filters)).toEqual({
         company_id: 3, period_type: "quarter", year: 2026, month: "1", quarter: "3",
         display_mode: "detailed", journal_ids: [5, 7],
     });
-    await waitUntil(() => queryOne(".o_baseer_report_xlsx").disabled);
-    button.click();
-    expect(calls.filter((call) => call.method === "export_hub_xlsx").length).toBe(1);
-
-    const download = { type: "ir.actions.act_url", target: "download", url: "/baseer/tax/vat/export/1" };
-    resolveExport(download);
+    expect(calls.filter((call) => call.method === "export_hub_xlsx").length).toBe(0);
     await waitUntil(() => !queryOne(".o_baseer_report_xlsx").disabled);
-    expect(downloads).toEqual([download]);
     expect(queryOne(".o_baseer_report_xlsx").disabled).toBe(false);
     expect(document.querySelector('select[aria-label="Company"]')).toBe(null);
 });

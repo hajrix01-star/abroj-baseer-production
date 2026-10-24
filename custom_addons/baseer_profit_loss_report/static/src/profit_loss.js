@@ -7,6 +7,8 @@ import { DropdownItem } from "@web/core/dropdown/dropdown_item";
 import { user, userBus } from "@web/core/user";
 import { useBus, useService } from "@web/core/utils/hooks";
 import { ReportSelector } from "@baseer_reports_menu/report_selector";
+import { ReportExportButtons } from "@baseer_reports_menu/report_export";
+import { useReportDrill } from "@baseer_reports_menu/report_drill";
 
 const MODEL = "baseer.profit.loss.report";
 const ZERO = Object.freeze({ amount: "0.00", negative: false });
@@ -36,7 +38,7 @@ const COMPARISON_KINDS = ["none", "previous_period", "same_period_last_year", "c
 
 export class BaseerProfitLossReport extends Component {
     static template = "baseer_profit_loss_report.Report";
-    static components = { ReportSelector, Dropdown, DropdownItem };
+    static components = { ReportSelector, ReportExportButtons, Dropdown, DropdownItem };
     static props = ["*"];
 
     setup() {
@@ -45,6 +47,7 @@ export class BaseerProfitLossReport extends Component {
         this.state = useState({ loading: true, printing: false, error: "", journals: [], report: null,
             filters: this.emptyFilters(), expanded: {}, pages: {}, accountLoading: {}, accountOpening: {} });
         this.appliedFilters = null;
+        this.drill = useReportDrill("profit_loss", () => this.appliedFilters, () => this.lang);
         this.requestToken = 0;
         this.companyGeneration = 0;
         useBus(userBus, "ACTIVE_COMPANIES_CHANGED", () => this.refreshActiveCompany());
@@ -206,7 +209,12 @@ export class BaseerProfitLossReport extends Component {
                 this.state.report = report;
                 if (report.period_controls?.anchor_date) { this.state.filters.period.anchor_date = report.period_controls.anchor_date; }
                 this.state.filters.period.direction = 0;
-                this.appliedFilters = this.cloneFilters();
+                this.appliedFilters = {
+                    ...filters,
+                    period: { ...filters.period, direction: 0,
+                        anchor_date: report.period_controls?.anchor_date || filters.period.anchor_date },
+                    comparison: { ...filters.comparison }, journal_ids: [...filters.journal_ids],
+                };
             }
         } catch (error) {
             if (token === this.requestToken && generation === this.companyGeneration) { this.state.error = error?.data?.message || this.labels.error; }
@@ -238,6 +246,9 @@ export class BaseerProfitLossReport extends Component {
     async openAccount(account, periodKey) {
         const key = this.accountKey(account, periodKey);
         if (!this.appliedFilters || this.state.accountOpening[key]) { return; }
+        if (!account.move_line_counts?.[periodKey]) {
+            return this.drill.open({ kind: "account", account_id: account.id, period_key: periodKey });
+        }
         const token = this.requestToken;
         const companyId = this.activeCompanyId;
         this.state.accountOpening[key] = true;

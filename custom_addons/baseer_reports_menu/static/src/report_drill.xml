@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="baseer_reports_menu.DrillDialog">
+        <Dialog title="state.data?.title || labels.title" size="'lg'">
+            <div class="o_baseer_report_drill" t-att-dir="props.lang === 'ar' ? 'rtl' : 'ltr'" t-att-lang="props.lang" t-att-aria-busy="state.busy ? 'true' : 'false'">
+                <p class="text-muted small" t-esc="labels.current"/>
+                <p t-if="state.busy" role="status" t-esc="labels.loading"/>
+                <div t-if="state.error" role="alert" class="alert alert-danger"><span t-esc="state.error"/> <button type="button" class="btn btn-light" t-on-click="load" t-att-disabled="state.busy" t-esc="labels.retry"/></div>
+                <t t-if="state.data">
+                    <strong dir="ltr" class="o_baseer_drill_value" t-esc="state.data.value"/>
+                    <p class="o_baseer_drill_basis" t-esc="state.data.basis"/>
+                    <div class="table-responsive">
+                        <table class="table table-sm o_baseer_drill_table"><thead><tr><th t-foreach="state.data.columns" t-as="column" t-key="column.key" t-esc="column.label"/></tr></thead>
+                            <tbody><tr t-foreach="state.data.rows" t-as="row" t-key="row.key"><td t-foreach="state.data.columns" t-as="column" t-key="column.key" t-att-dir="column.numeric ? 'ltr' : undefined">
+                                <button t-if="row.drill || row.source" type="button" class="o_baseer_amount_link" t-att-disabled="state.busy" t-on-click="() => this.activate(row)" t-esc="row.cells[column.key] || '—'"/>
+                                <span t-else="" t-esc="row.cells[column.key] || '—'"/>
+                            </td></tr></tbody>
+                        </table>
+                    </div>
+                    <p t-if="!state.data.rows.length" t-esc="labels.empty"/>
+                    <nav t-if="state.data.total_count > state.data.page_size" class="d-flex gap-2 align-items-center" t-att-aria-label="labels.page">
+                        <button type="button" class="btn btn-light" t-att-disabled="state.busy || state.data.page === 1" t-on-click="() => this.page(-1)" t-esc="labels.previous"/>
+                        <span><t t-esc="labels.page"/> <t t-esc="state.data.page"/></span>
+                        <button type="button" class="btn btn-light" t-att-disabled="state.busy || state.data.page * state.data.page_size >= state.data.total_count" t-on-click="() => this.page(1)" t-esc="labels.next"/>
+                    </nav>
+                </t>
+            </div>
+            <t t-set-slot="footer"><button type="button" class="btn btn-primary" t-on-click="props.close" t-esc="labels.close"/><button t-if="state.history.length" type="button" class="btn btn-secondary" t-att-disabled="state.busy" t-on-click="back" t-esc="labels.back"/></t>
+        </Dialog>
+    </t>
+</templates>

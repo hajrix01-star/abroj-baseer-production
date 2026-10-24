@@ -75,10 +75,22 @@ class TestOperationsBrowser(HttpCase):
             switcher.click();
             const operations = await waitFor(() => [...document.querySelectorAll('.dropdown-item')].find(
                 (item) => /Sales and Payments Summary|ملخص المبيعات والمدفوعات/.test(item.textContent)), 'owner summary selector entry');
+            const openingStarted = performance.now();
             operations.click();
             await waitFor(() => host.querySelector('.o_baseer_go_report'), 'operations mounted through selector');
             if (host.querySelector('.o_baseer_vat_report')) { throw new Error('Previous VAT report remained visible'); }
             await waitFor(() => host.querySelector('.o_baseer_go_report .o_baseer_owner_difference'), 'owner summary preview');
+            console.log('BASEER_METRIC owner_open_ms=' + Math.round(performance.now() - openingStarted));
+            await document.fonts.load('12px "IBM Plex Sans Arabic"', 'ملخص المبيعات 123');
+            await document.fonts.load('700 12px "IBM Plex Sans Arabic"', 'الإجمالي 123');
+            if (!document.fonts.check('12px "IBM Plex Sans Arabic"', 'ملخص المبيعات 123') ||
+                !getComputedStyle(hub).fontFamily.includes('IBM Plex Sans Arabic')) {
+                throw new Error('Central professional report font did not load');
+            }
+            const exportButtons = [...host.querySelectorAll('.o_baseer_report_exports button')];
+            if (exportButtons.length !== 2 || exportButtons.some(button => button.disabled)) {
+                throw new Error('Unified Excel/PDF controls are unavailable for the loaded report');
+            }
             const ownerTable = () => host.querySelector('.o_baseer_pl_table.o_baseer_owner_table');
             if (!ownerTable()) { throw new Error('Owner P&L table was not rendered'); }
             // Regression: percentages must share the amount's line at both
@@ -162,9 +174,11 @@ class TestOperationsBrowser(HttpCase):
                     button.dataset.ownerRow === spec.row && button.dataset.ownerPeriod === spec.period);
                 link.focus();
                 if (document.activeElement !== link) { throw new Error('Detail link is not keyboard accessible'); }
+                const detailStarted = performance.now();
                 link.click();
                 const details = await waitFor(() => host.querySelector('.o_baseer_owner_detail_page'), 'detail page');
                 await waitFor(() => details.querySelector('.o_baseer_owner_detail_total'), 'real detail RPC');
+                console.log('BASEER_METRIC owner_detail_ms=' + Math.round(performance.now() - detailStarted));
                 if (details.querySelector('.alert-danger, .o_baseer_owner_refresh')) { throw new Error('Detail request failed'); }
                 if (details.scrollWidth > details.clientWidth + 1) { throw new Error('Details overflowed viewport'); }
                 if (spec.row === 'total:cash_total') {
@@ -216,6 +230,9 @@ class TestOperationsBrowser(HttpCase):
                 (row) => /Month|شهر/.test(row.textContent)), 'month navigation');
             previousMonth.querySelector('.o_baseer_pl_row_navigation button').click();
             await waitFor(() => host.querySelector('.o_baseer_go_incomplete'), 'unproven prior month');
+            if ([...host.querySelectorAll('.o_baseer_report_exports button')].some(button => !button.disabled)) {
+                throw new Error('Incomplete source exposed active export controls');
+            }
             if (host.querySelector('.o_baseer_owner_summary') || periodButton().textContent === currentMonth) {
                 throw new Error('Unproven period leaked amounts or did not advance');
             }

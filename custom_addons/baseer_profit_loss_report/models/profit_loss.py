@@ -700,7 +700,7 @@ class BaseerProfitLossReport(models.AbstractModel):
         except AccessError:
             return {UNALLOCATED: ('', amount)}
 
-    def _revenue_channels(self, company, domain):
+    def _revenue_channels(self, company, domain, provenance=None):
         """Only attribute a whole move/account after exact POS net matching."""
         lines = self.env['account.move.line'].search(domain)
         self._verify_links(lines)
@@ -764,6 +764,9 @@ class BaseerProfitLossReport(models.AbstractModel):
                 pass
             target = result.setdefault(account_id, {})
             for key, (name, value) in allocation.items():
+                if provenance is not None:
+                    provenance.append({'move_id': move_id, 'account_id': account_id,
+                                       'channel_key': key, 'name': name, 'value': value})
                 previous = target.get(key, (name, Decimal('0')))
                 target[key] = (name, previous[1] + value)
         return result

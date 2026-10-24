@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="baseer_reports_menu.ExportButtons">
+        <div class="o_baseer_report_exports" role="group" t-att-aria-label="labels.title" t-att-aria-busy="state.busy ? 'true' : 'false'">
+            <button type="button" class="btn btn-secondary o_baseer_report_xlsx" t-att-disabled="disabled" t-on-click="() => this.exportFile('xlsx')"><i class="fa fa-file-excel-o" aria-hidden="true"/> <t t-esc="labels.excel"/></button>
+            <button type="button" class="btn btn-primary o_baseer_pl_pdf" t-att-disabled="disabled" t-on-click="() => this.exportFile('pdf')"><i class="fa fa-file-pdf-o" aria-hidden="true"/> <t t-esc="labels.pdf"/></button>
+            <span t-if="state.busy" class="o_baseer_report_export_status" role="status" aria-live="polite" t-esc="labels.busy"/>
+        </div>
+    </t>
+</templates>

@@ -2,6 +2,8 @@
 
 ## BRUE055 — Uniform number-click UX accepted locally
 
+BRUE056 / protected source merge: PR507 all11 CI checks PASS on0d0dac2021369577987b954e7c7971ff22723a89, including ten-provider exports/details, operations backend/Hoot, PL/VAT Hoot and source integrity. Squash merged2026-10-24T05:24:55Z as53479878878a848fd278150a59e56547eb0795a4; changed module trees match the tested candidate exactly. Independent delivery review GO for QA queue after greenCI only, not Live. QA-only policy pins merged source and unchanged exactreport11. Prequeue QA identity stillab51ea7e; receiver timeractive. Browser attachment twice timed out at Emulation.setFocusEmulationEnabled, so no new QA UI acceptance claimed. Existing final export-file/valid-latency gates remain.
+
 Final owner-only rerun PASS: 16 Hoot cases per viewport and two actual browser journeys, 0 failed/0 errors of4 Odoo wrappers. Together with unchanged accepted core suites: common6 + PL18 + VAT13 + owner16 =53 Hoot cases per viewport, and6 actual journeys across1280/375. Close/ESC/focus, empty, guarded source, paging/retry and formatted values covered. Synthetic owner opening101/102ms; these are not valid QA/WAN latency certification. Evidence `output/reports-uniform-click-owner-r2-20261024.log`, SHA256 `87F722B5CE4A2BB4510BAD02E9DCEE74E850F6CB7DA5B76519F30E377F7A5EF5`. Independent security_review noP0–P2; its G5/G6 source GO condition is now satisfied. No financial/backend/ACL/export change. Source PR/CI required next; actual QA export-file and <=1s acceptance remain unresolved, no Live GO.
 
 ## BRUE051 — Uniform number-click UX delta (2026-10-24, current work)

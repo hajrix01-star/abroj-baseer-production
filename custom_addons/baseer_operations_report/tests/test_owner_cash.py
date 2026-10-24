@@ -340,18 +340,25 @@ class TestOwnerCash(TransactionCase):
         line = self._posted_bill_line()
         bill = line.move_id
         self.method.payment_account_id = self.bank.default_account_id
-        payment = self.env['account.payment.register'].with_context(
-            active_model='account.move', active_ids=bill.ids,
-        ).create({
-            'journal_id': self.bank.id,
-            'payment_method_line_id': self.method.id,
-            'amount': bill.amount_total,
-            'payment_date': '2026-06-20',
-            'installments_mode': 'full',
-            'payment_difference_handling': 'open',
-        })._create_payments()
+        other_line = self._posted_bill_line(self.category_leaf_two)
+        other_bill = other_line.move_id
 
-        def collect(read_facts):
+        def pay(move, day):
+            return self.env['account.payment.register'].with_context(
+                active_model='account.move', active_ids=move.ids,
+            ).create({
+                'journal_id': self.bank.id,
+                'payment_method_line_id': self.method.id,
+                'amount': move.amount_total,
+                'payment_date': day,
+                'installments_mode': 'full',
+                'payment_difference_handling': 'open',
+            })._create_payments()
+
+        payment = pay(bill, '2026-06-20')
+        other_payment = pay(other_bill, '2026-06-21')
+
+        def collect(read_facts, prefetch_bills):
             sections = {key: {} for key in (
                 'income', 'income_other', 'expense_direct_cost', 'expense',
                 'expense_depreciation', 'expense_other',
@@ -359,16 +366,195 @@ class TestOwnerCash(TransactionCase):
             excluded = Counter()
             self.report._native_payment_outflows(
                 self.company, '2026-06-01', '2026-06-30', [], sections, excluded,
-                read_facts=read_facts,
+                read_facts=read_facts, prefetch_bills=prefetch_bills,
             )
             events = [event for section in sections.values()
                       for entry in section.values() for event in entry['events']]
             return events, dict(excluded), self.report._coverage_complete(excluded)
 
-        baseline = collect(None)
-        memoized = collect({})
+        self.env.invalidate_all()
+        baseline = collect(None, False)
+        original = type(bill).with_prefetch
+        hints = []
+
+        def captured(records, prefetch_ids=None):
+            if (records._name == 'account.move' and len(records) == 1
+                    and records.ids[0] in (bill.id, other_bill.id)
+                    and prefetch_ids and {int(item) for item in prefetch_ids}
+                    == {bill.id, other_bill.id}):
+                hints.append((records.ids[0], tuple(prefetch_ids)))
+            return original(records, prefetch_ids)
+
+        with patch.object(type(bill), 'with_prefetch', new=captured):
+            self.env.invalidate_all()
+            hinted = collect(None, True)
+        self.env.invalidate_all()
+        memoized = collect({}, True)
+        self.assertEqual(hinted, baseline)
         self.assertEqual(memoized, baseline)
-        self.assertEqual({event['source_id'] for event in memoized[0]}, {payment.id})
+        self.assertEqual({hint[0] for hint in hints}, {bill.id, other_bill.id})
+        self.assertTrue(all(len(hint[1]) <= 1000 for hint in hints))
+        self.assertEqual({event['source_id'] for event in memoized[0]},
+                         {payment.id, other_payment.id})
+
+    def test_record_many_read_facts_keep_default_empty_failure_and_environment_contracts(self):
+        """Final native recording may reuse only a successful same-env proof."""
+        def sections():
+            return {key: {} for key in (
+                'income', 'income_other', 'expense_direct_cost', 'expense',
+                'expense_depreciation', 'expense_other',
+            )}
+
+        original = type(self.expense).check_access
+        calls = []
+        depth = 0
+
+        def counted(records, operation):
+            nonlocal depth
+            outer = depth == 0
+            depth += 1
+            try:
+                if outer:
+                    calls.append((records.env, tuple(records.ids), operation))
+                return original(records, operation)
+            finally:
+                depth -= 1
+
+        with patch.object(type(self.expense), 'check_access', new=counted):
+            # No facts preserves the original check on every record call.
+            self.report._record(sections(), 'expense', self.expense, Decimal('1'), 'native')
+            self.report._record(sections(), 'expense', self.expense, Decimal('1'), 'native')
+            self.assertEqual(len(calls), 2)
+
+            calls.clear()
+            facts = {}
+            self.report._record(
+                sections(), 'expense', self.expense, Decimal('1'), 'native', read_facts=facts)
+            self.report._record(
+                sections(), 'expense', self.expense, Decimal('1'), 'native', read_facts=facts)
+            # A foreign account is re-browsed in the current report env.
+            contextual = self.expense.with_context(baseer_owner_record_probe='other-env')
+            self.report._record(
+                sections(), 'expense', contextual, Decimal('1'), 'native', read_facts=facts)
+            # `_record_many` deliberately re-browses in its own report env, so
+            # a foreign account record alone remains the same successful fact.
+            self.assertEqual(len(calls), 1)
+            other_report = self.report.with_context(baseer_owner_record_probe='other-env')
+            other_report._record(
+                sections(), 'expense', self.expense, Decimal('1'), 'native', read_facts=facts)
+            self.assertEqual(len(calls), 2)
+            self.assertEqual(
+                {id(call[0]) for call in calls},
+                {id(self.report.env), id(other_report.env)},
+            )
+            # Empty entries retain the legacy model-level check rather than
+            # silently entering the memoized nonempty path.
+            self.report._record_many(sections(), [], read_facts=facts)
+            self.assertEqual(calls[-1][1:], ((), 'read'))
+            self.assertIs(calls[-1][0], self.report.env)
+
+        facts = {}
+        failed = {'once': True}
+
+        def fails_once(records, operation):
+            if self.expense.id in records.ids and failed['once']:
+                failed['once'] = False
+                raise AccessError('deliberate record proof failure')
+            return original(records, operation)
+
+        with patch.object(type(self.expense), 'check_access', new=fails_once):
+            with self.assertRaises(AccessError):
+                self.report._record(
+                    sections(), 'expense', self.expense, Decimal('1'), 'native', read_facts=facts)
+            self.report._record(
+                sections(), 'expense', self.expense, Decimal('1'), 'native', read_facts=facts)
+        key = (self.report.env, 'account.account', 'read')
+        self.assertEqual(facts[key], {self.expense.id})
+
+    def test_native_bill_prefetch_hidden_peer_falls_back_then_reachable_peer_denies(self):
+        """A hidden sibling is never an early permission bypass or silent skip."""
+        first_line = self._posted_bill_line()
+        second_line = self._posted_bill_line(self.category_leaf_two)
+        self.method.payment_account_id = self.bank.default_account_id
+        other_bank = self.env['account.journal'].with_company(self.company).create({
+            'name': 'Owner cash alternate bank',
+            'code': 'OCA',
+            'type': 'bank',
+            'company_id': self.company.id,
+        })
+        other_method = other_bank.outbound_payment_method_line_ids.filtered(
+            lambda line: line.payment_method_id.code == 'manual',
+        )[:1]
+        self.assertTrue(other_bank.default_account_id and other_method)
+        other_method.payment_account_id = other_bank.default_account_id
+
+        def pay(move, day, journal, method):
+            return self.env['account.payment.register'].with_context(
+                active_model='account.move', active_ids=move.ids,
+            ).create({
+                'journal_id': journal.id,
+                'payment_method_line_id': method.id,
+                'amount': move.amount_total,
+                'payment_date': day,
+                'installments_mode': 'full',
+                'payment_difference_handling': 'open',
+            })._create_payments()
+
+        first_payment = pay(first_line.move_id, '2026-06-20', self.bank, self.method)
+        second_payment = pay(second_line.move_id, '2026-06-21', other_bank, other_method)
+        self.assertLess(first_payment.id, second_payment.id)
+        reader = self._reader()
+        secured = self.report.with_user(reader).with_context(
+            allowed_company_ids=self.company.ids,
+        )
+        rule = self.env['ir.rule'].create({
+            'name': 'Owner native prefetch hidden later bill',
+            'model_id': self.env['ir.model']._get('account.move').id,
+            'domain_force': "[('id', '!=', %s)]" % second_line.move_id.id,
+        })
+
+        def collect(journal_ids, claimed=frozenset()):
+            sections = {key: {} for key in (
+                'income', 'income_other', 'expense_direct_cost', 'expense',
+                'expense_depreciation', 'expense_other',
+            )}
+            excluded = Counter()
+            secured._native_payment_outflows(
+                self.company, '2026-06-01', '2026-06-30', journal_ids, sections, excluded,
+                claimed_payment_ids=claimed, read_facts={}, prefetch_bills=True,
+            )
+            events = [event for section in sections.values()
+                      for entry in section.values() for event in entry['events']]
+            return events, dict(excluded)
+
+        try:
+            rule.flush_recordset()
+            secured.env.invalidate_all()
+            # The peer entered the native census, but its different journal is
+            # skipped at the original journal guard before the bill guard.
+            # Its hidden bill must make the first bill fall back, not fail.
+            events, excluded = collect([self.bank.id])
+            self.assertEqual({event['source_id'] for event in events}, {first_payment.id})
+            self.assertEqual(
+                {key: value for key, value in excluded.items() if value},
+                {'unconfirmed_payment_link': 1},
+            )
+
+            secured.env.invalidate_all()
+            with self.assertRaises(AccessError):
+                collect([])
+
+            # The current bill still uses the original scalar check before
+            # its lazy hint; no cached peer can make it visible.
+            rule.write({
+                'domain_force': "[('id', '!=', %s)]" % first_line.move_id.id,
+            })
+            secured.env.invalidate_all()
+            with self.assertRaises(AccessError):
+                collect([self.bank.id])
+        finally:
+            rule.unlink()
+            secured.env.invalidate_all()
 
     def test_owner_cash_fresh_invocation_does_not_reuse_revoked_read_access(self):
         line = self._posted_bill_line()

@@ -1,6 +1,22 @@
-// Legion paints the navbar white; native mobile entries also need dark text.
-.o_main_navbar {
-    --NavBar-entry-color: #212529;
-    --NavBar-entry-color--active: #212529;
-    --NavBar-brand-color: #212529;
+// The vendor marks its light navbar !important; overrides stay in this addon.
+.o_web_client .o_main_navbar {
+    --NavBar-entry-color: #fff;
+    --NavBar-entry-color--active: #fff;
+    --NavBar-brand-color: #fff;
+    --NavBar-entry-backgroundColor: transparent;
+    --NavBar-entry-backgroundColor--hover: rgba(255, 255, 255, .12);
+    --NavBar-entry-backgroundColor--focus: rgba(255, 255, 255, .12);
+    --NavBar-entry-backgroundColor--active: rgba(255, 255, 255, .16);
+    background: linear-gradient(110deg, #7b38b9, #5b04a0 55%, #4b0287) !important;
+    box-shadow: inset 0 -1px 0 rgba(255, 255, 255, .18);
+
+    .o_menu_brand, .o_menu_toggle, .dropdown-toggle, .o_menu_sections a {
+        color: #fff !important;
+        background: transparent !important;
+        &:hover, &:focus, &:active, &.active {
+            color: #fff !important;
+            background: rgba(255, 255, 255, .12) !important;
+        }
+    }
+    .dropdown-menu .dropdown-toggle { color: #212529 !important; }
 }

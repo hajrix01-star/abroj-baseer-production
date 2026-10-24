@@ -1,0 +1,46 @@
+.o_web_client {
+    --baseer-purple-light: #7b38b9;
+    --baseer-purple: #5b04a0;
+    --baseer-purple-dark: #4b0287;
+    --baseer-purple-tint: #f0e7f8;
+    --baseer-brand-gradient: linear-gradient(110deg, #7b38b9, #5b04a0 55%, #4b0287);
+
+    .btn-primary {
+        background-image: var(--baseer-brand-gradient);
+        border-color: var(--baseer-purple);
+        color: #fff;
+        &:hover, &:active {
+            background-image: linear-gradient(110deg, #6d2ba9, #4b0287);
+        }
+    }
+    .o_field_widget.o_field_many2one .o_external_button,
+    .nav-tabs .nav-link.active { color: var(--baseer-purple); }
+    .nav-tabs .nav-link.active { border-top-color: var(--baseer-purple); }
+    .o_search_panel_category_value.active:has(.o_dashboard_name) {
+        background-color: var(--baseer-purple-tint);
+        color: var(--baseer-purple-dark);
+    }
+    .o_baseer_executive {
+        .o_bec_daily {
+            background: var(--baseer-brand-gradient);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, .22),
+                inset 0 0 0 1px rgba(255, 255, 255, .1);
+        }
+        .o_bec_company_tab.o_bec_active {
+            background: var(--baseer-purple-tint);
+            border-color: var(--baseer-purple);
+        }
+        .o_bec_date { color: var(--baseer-purple); }
+        .o_bec_company_options input { accent-color: var(--baseer-purple); }
+        button:focus-visible, summary:focus-visible { outline-color: var(--baseer-purple); }
+        .o_bec_bar_fill { background: var(--baseer-purple); }
+        .o_bec_point_partial .o_bec_bar_fill { background: #ac86c8; }
+        .o_bec_point_closed .o_bec_bar_fill { background: #b8afa0; }
+        .o_bec_point_missing .o_bec_bar_fill { background: transparent; }
+        .o_bec_point_negative .o_bec_bar_fill { background: #ba4736; }
+        @media (hover: hover) and (pointer: fine) {
+            .o_bec_bar:hover .o_bec_bar_fill { background: var(--baseer-purple-dark); }
+            .o_bec_bar.o_bec_point_negative:hover .o_bec_bar_fill { background: #ba4736; }
+        }
+    }
+}

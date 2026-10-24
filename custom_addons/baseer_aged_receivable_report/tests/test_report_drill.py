@@ -81,6 +81,7 @@ class TestAgedReceivableDrill(TransactionCase):
         self.assertEqual(bucket['value'], partner_detail['value'])
         action = self.env['baseer.report.drill'].open_source('aged_receivable', filters, result['rows'][0]['source'])
         self.assertEqual(action['res_model'], 'account.move.line')
+        self.assertEqual(action['views'], [[False, 'list'], [False, 'form']])
         income_line = move.line_ids.filtered(lambda line: line.account_id == income)
         with self.assertRaises(AccessError):
             self.env['baseer.report.drill'].open_source('aged_receivable', filters, {**result['rows'][0]['source'], 'line_id': income_line.id})

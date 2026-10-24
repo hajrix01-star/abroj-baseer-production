@@ -70,6 +70,7 @@ class TestVatDrillSelectors(TransactionCase):
                 self.assertEqual(row['source'], {'kind': 'source', 'parent': selector, 'line_id': line.id})
                 action = engine.open_source('vat', filters, row['source'])
                 self.assertEqual(action['res_model'], 'account.move.line')
+                self.assertEqual(action['views'], [[False, 'list'], [False, 'form']])
                 self.assertEqual(action['domain'], [('id', '=', line.id)])
                 actual = engine.env['account.move.line'].search(action['domain'])
                 self.assertEqual(actual.ids, line.ids)

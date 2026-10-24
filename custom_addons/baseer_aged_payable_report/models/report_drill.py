@@ -137,5 +137,6 @@ class AgedPayableDrill(models.AbstractModel):
         line.check_access('read')
         line.check_access_rule('read')
         return {'type': 'ir.actions.act_window', 'name': _('Journal Items'),
-                'res_model': 'account.move.line', 'view_mode': 'list,form',
+                'res_model': 'account.move.line', 'views': [[False, 'list'], [False, 'form']],
+                'view_mode': 'list,form',
                 'domain': [('id', '=', line.id)], 'target': 'current'}

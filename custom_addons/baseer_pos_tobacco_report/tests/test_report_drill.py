@@ -49,6 +49,7 @@ class TestTobaccoDrillSelectors(TransactionCase):
         self.assertEqual(running['value'], fee['value'])
         action = self.env['baseer.report.drill'].open_source('tobacco', filters, result['rows'][0]['source'])
         self.assertEqual(action['res_model'], 'pos.order')
+        self.assertEqual(action['views'], [[False, 'form']])
         with self.assertRaises(AccessError):
             self.env['baseer.report.drill'].open_source('tobacco', filters, {
                 **result['rows'][0]['source'], 'order_id': other.id, 'line_id': other.lines.id,

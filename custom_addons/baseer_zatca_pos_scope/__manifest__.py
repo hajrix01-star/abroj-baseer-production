@@ -9,6 +9,7 @@
     'assets': {
         'point_of_sale._assets_pos': [
             'baseer_zatca_pos_scope/static/src/overrides/models/pos_order.js',
+            'baseer_zatca_pos_scope/static/src/overrides/pos_store.js',
         ],
     },
     'installable': True,

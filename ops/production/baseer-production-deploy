@@ -27,6 +27,7 @@ google_compose_files=()
 dms_old_compose_files=()
 dms_new_compose_files=()
 dms_runtime_required=0
+zatca_bootstrap_recompute_requested=0
 die() {
     printf 'DEPLOY=FAILED\nREASON=%s\n' "$*" >&2
     # Explicit policy/acceptance failures may sit on the right of an OR list,
@@ -194,7 +195,7 @@ print(paths[0])
 }
 
 load_policy() {
-    local policy key value seen_release=0 seen_commit=0 seen_modules_field=0 seen_third_party_modules_field=0 seen_revision=0 seen_approval_run=0
+    local policy key value seen_release=0 seen_commit=0 seen_modules_field=0 seen_third_party_modules_field=0 seen_revision=0 seen_approval_run=0 seen_zatca_bootstrap=0
     policy="$POLICY_DIR/$release_id.env"
     [ -f "$policy" ] && [ ! -L "$policy" ] || die 'release policy is missing or unsafe'
     [ "$(stat -c '%U:%G:%a' -- "$policy")" = 'root:root:600' ] || die 'release policy ownership or mode is unsafe'
@@ -205,6 +206,7 @@ load_policy() {
             COMMIT) [ "$seen_commit" -eq 0 ] || die 'duplicate policy commit'; commit=$value; seen_commit=1 ;;
             MODULES) [ "$seen_modules_field" -eq 0 ] || die 'duplicate policy modules'; policy_modules=$value; seen_modules_field=1 ;;
             THIRD_PARTY_MODULES) [ "$seen_third_party_modules_field" -eq 0 ] || die 'duplicate policy third-party modules'; policy_third_party_modules=$value; seen_third_party_modules_field=1 ;;
+            ZATCA_BOOTSTRAP_RECOMPUTE) [ "$seen_zatca_bootstrap" -eq 0 ] || die 'duplicate ZATCA bootstrap policy'; zatca_bootstrap_recompute=$value; seen_zatca_bootstrap=1 ;;
             POLICY_REVISION) [ "$seen_revision" -eq 0 ] || die 'duplicate policy revision'; policy_revision=$value; seen_revision=1 ;;
             APPROVED_RUN_ID) [ "$seen_approval_run" -eq 0 ] || die 'duplicate policy approval run'; approved_run_id=$value; seen_approval_run=1 ;;
             ''|'#'*) ;;
@@ -245,6 +247,12 @@ load_policy() {
         for approved_module in baseer_dms_trial baseer_dms_bill_link baseer_dms_departments; do
             [ -n "${seen_module_names[$approved_module]+x}" ] || die 'DMS release requires the exact four private modules'
         done
+    fi
+    if [ "$seen_zatca_bootstrap" -eq 1 ]; then
+        [ "$zatca_bootstrap_recompute" = 1 ] || die 'ZATCA bootstrap policy is invalid'
+        [ "${#APPROVED_MODULES[@]}" -eq 1 ] && [ "${APPROVED_MODULES[0]}" = baseer_zatca_pos_scope ] \
+            && [ "${#APPROVED_THIRD_PARTY_MODULES[@]}" -eq 0 ] || die 'ZATCA bootstrap requires only the POS scope module'
+        zatca_bootstrap_recompute_requested=1
     fi
 }
 
@@ -331,7 +339,17 @@ verify_installed_baseer_module_source() {
 
 snapshot_sql=$(cat <<'SQL'
 SELECT jsonb_build_object(
-  'account.move', (SELECT jsonb_build_object('n', count(*), 'ids', coalesce(sum(id), 0), 'w', coalesce(max(write_date)::text, '')) FROM account_move),
+  'account.move', (SELECT jsonb_build_object(
+      'n', count(*), 'ids', coalesce(sum(id), 0), 'w', coalesce(max(write_date)::text, ''),
+      'f', md5(coalesce(string_agg(concat_ws('|',
+          id::text, coalesce(company_id::text, ''), coalesce(journal_id::text, ''),
+          coalesce(move_type, ''), coalesce(state, ''), coalesce(name, ''), coalesce(date::text, ''),
+          coalesce(invoice_date::text, ''), coalesce(partner_id::text, ''), coalesce(currency_id::text, ''),
+          coalesce(amount_untaxed::text, ''), coalesce(amount_tax::text, ''), coalesce(amount_total::text, ''),
+          coalesce(amount_residual::text, ''), coalesce(payment_state, ''), coalesce(ref, ''),
+          coalesce(invoice_origin, ''), coalesce(invoice_payment_term_id::text, ''),
+          coalesce(invoice_user_id::text, '')), E'\n' ORDER BY id), '')))
+      FROM account_move),
   'account.move.line', (SELECT jsonb_build_object('n', count(*), 'ids', coalesce(sum(id), 0), 'w', coalesce(max(write_date)::text, '')) FROM account_move_line),
   'account.payment', (SELECT jsonb_build_object('n', count(*), 'ids', coalesce(sum(id), 0), 'w', coalesce(max(write_date)::text, '')) FROM account_payment),
   'purchase.order', (SELECT jsonb_build_object('n', count(*), 'ids', coalesce(sum(id), 0), 'w', coalesce(max(write_date)::text, '')) FROM purchase_order),
@@ -342,7 +360,16 @@ SELECT jsonb_build_object(
   'stock.move', (SELECT jsonb_build_object('n', count(*), 'ids', coalesce(sum(id), 0), 'w', coalesce(max(write_date)::text, '')) FROM stock_move),
   'hr.employee', (SELECT jsonb_build_object('n', count(*), 'ids', coalesce(sum(id), 0), 'w', coalesce(max(write_date)::text, '')) FROM hr_employee),
   'hr.payslip', (SELECT jsonb_build_object('n', count(*), 'ids', coalesce(sum(id), 0), 'w', coalesce(max(write_date)::text, '')) FROM hr_payslip),
-  'res.partner.non_user', (SELECT jsonb_build_object('n', count(*), 'ids', coalesce(sum(p.id), 0), 'w', coalesce(max(p.write_date)::text, '')) FROM res_partner p WHERE NOT EXISTS (SELECT 1 FROM res_users u WHERE u.partner_id = p.id)),
+  'res.partner.non_user', (SELECT jsonb_build_object(
+      'n', count(*), 'ids', coalesce(sum(p.id), 0), 'w', coalesce(max(p.write_date)::text, ''),
+      'f', md5(coalesce(string_agg(concat_ws('|',
+          p.id::text, coalesce(p.name, ''), coalesce(p.active::text, ''), coalesce(p.company_id::text, ''),
+          coalesce(p.parent_id::text, ''), coalesce(p.type, ''), coalesce(p.vat, ''), coalesce(p.street, ''),
+          coalesce(p.street2, ''), coalesce(p.city, ''), coalesce(p.zip, ''), coalesce(p.state_id::text, ''),
+          coalesce(p.country_id::text, ''), coalesce(p.email, ''), coalesce(p.phone, ''),
+          coalesce(p.website, ''), coalesce(p.lang, ''),
+          coalesce(p.customer_rank::text, ''), coalesce(p.supplier_rank::text, '')), E'\n' ORDER BY p.id), '')))
+      FROM res_partner p WHERE NOT EXISTS (SELECT 1 FROM res_users u WHERE u.partner_id = p.id)),
   'baseer.pos.summary', (SELECT jsonb_build_object('n', count(*), 'ids', coalesce(sum(id), 0), 'w', coalesce(max(write_date)::text, '')) FROM baseer_pos_summary),
   'baseer.pos.summary.allocation', (SELECT jsonb_build_object('n', count(*), 'ids', coalesce(sum(id), 0), 'w', coalesce(max(write_date)::text, '')) FROM baseer_pos_summary_allocation),
   'baseer.heat.target', (SELECT jsonb_build_object('n', count(*), 'ids', coalesce(sum(id), 0), 'w', coalesce(max(write_date)::text, '')) FROM baseer_heat_calendar_target),
@@ -353,6 +380,32 @@ SQL
 
 snapshot() {
     printf '%s\n' "$snapshot_sql" | docker exec -i "$DB_CONTAINER" sh -lc 'psql -U "$POSTGRES_USER" -d baseer_prod -Atq'
+}
+
+verify_zatca_bootstrap_recompute() {
+    # Installing Odoo's native Saudi EDI dependencies computes only
+    # account.move.edi_state and res.partner.vies_valid.  Both computations
+    # update write_date; the checked business fingerprints, row counts and ID
+    # sums must remain exactly unchanged.  No other protected model may vary.
+    jq -e '
+        . as $before | input as $after |
+        ($before | type == "object") and ($after | type == "object") and
+        ($before | has("account.move") and has("res.partner.non_user")) and
+        ($after | has("account.move") and has("res.partner.non_user")) and
+        (($before | del(.["account.move"].w, .["res.partner.non_user"].w))
+         == ($after | del(.["account.move"].w, .["res.partner.non_user"].w))) and
+        (["account.move", "res.partner.non_user"] | all(. as $model |
+            ($before[$model] | has("f")) and ($after[$model] | has("f")) and
+            ($before[$model].f == $after[$model].f)))
+    ' "$backup/protected-before.json" "$backup/protected-after.json" >/dev/null
+}
+
+assert_zatca_bootstrap_module_states() {
+    local expected=$1 actual
+    actual="$(docker exec "$DB_CONTAINER" sh -lc \
+        'psql -U "$POSTGRES_USER" -d baseer_prod -Atqc "SELECT name || '\''='\'' || state FROM ir_module_module WHERE name IN ('\''account_edi'\'', '\''base_vat'\'', '\''l10n_sa_edi'\'', '\''l10n_sa_edi_pos'\'') ORDER BY name"')" \
+        || die 'could not read native ZATCA dependency states'
+    [ "$actual" = "$expected" ] || die 'native ZATCA dependency states are not the reviewed bootstrap transition'
 }
 
 wait_for_login() {
@@ -888,6 +941,9 @@ old_release="$(readlink -f "$BASE/current")"
 [ -f "$old_release/config/odoo.conf" ] || die 'current odoo.conf is missing'
 prepare_google_runtime
 prepare_dms_runtime
+if [ "$zatca_bootstrap_recompute_requested" -eq 1 ]; then
+    assert_zatca_bootstrap_module_states $'account_edi=uninstalled\nbase_vat=uninstalled\nl10n_sa_edi=uninstalled\nl10n_sa_edi_pos=uninstalled'
+fi
 if [ -f "$old_release/RELEASE_COMMIT" ]; then
     live_commit="$(tr -d '\r\n' < "$old_release/RELEASE_COMMIT")"
     [[ "$live_commit" =~ ^[a-f0-9]{40}$ ]] || die 'current release commit marker is invalid'
@@ -1049,7 +1105,12 @@ if [ "$dms_release_requested" -eq 1 ]; then
 fi
 
 snapshot > "$backup/protected-after.json"
-cmp "$backup/protected-before.json" "$backup/protected-after.json"
+if [ "$zatca_bootstrap_recompute_requested" -eq 1 ]; then
+    assert_zatca_bootstrap_module_states $'account_edi=installed\nbase_vat=installed\nl10n_sa_edi=installed\nl10n_sa_edi_pos=installed'
+    verify_zatca_bootstrap_recompute || die 'native ZATCA bootstrap changed protected business data'
+else
+    cmp "$backup/protected-before.json" "$backup/protected-after.json"
+fi
 wait_for_data_init
 "${compose[@]}" up -d odoo
 wait_for_login

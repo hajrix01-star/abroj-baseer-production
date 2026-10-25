@@ -133,9 +133,9 @@ done
 # Fixed production constants/policy stay authoritative; fixtures above do not
 # change the production script or normalize unknown installed wrapper hashes.
 grep -Fxq 'readonly TARGET=/usr/local/sbin/baseer-production-deploy' "$sut"
-grep -Fxq 'readonly OLD_SHA=b6cc1d577947faa6cc1d44e9c244cdac57452ed309e8a15f188864c4693dc5b9' "$sut"
-grep -Fxq 'readonly NEW_SHA=8a407bfaea03e177f9546a3a3e81d5c07fd4bdc9704670503a82f5dd2d9be85c' "$sut"
-grep -Fxq 'readonly LIVE_SOURCE=ac9bfd96553d7ff3b467097ae9628795613ed0a6' "$sut"
+grep -Fxq 'readonly OLD_SHA=8a407bfaea03e177f9546a3a3e81d5c07fd4bdc9704670503a82f5dd2d9be85c' "$sut"
+grep -Fxq 'readonly NEW_SHA=df51cbb4a39491d69f33b9d3e0210d76f99c0f07b2eafb0b6da29a4440be7532' "$sut"
+grep -Fxq 'readonly LIVE_SOURCE=b071cf811fe2525cda7e6f71c030d712aafa0a57' "$sut"
 grep -Fxq 'readonly LOCK=/var/lock/baseer-production-deploy.lock' "$sut"
 grep -Fxq 'readonly NATIVE_LOCK_PARENT=/var/lock' "$sut"
 [ "$(wc -l < "$script_dir/release-policies/baseer-2026-10-21-bwork-production.env")" -eq 3 ]

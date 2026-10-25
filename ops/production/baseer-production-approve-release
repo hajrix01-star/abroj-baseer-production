@@ -50,13 +50,14 @@ third_party_module_path() {
 }
 
 parse_policy() {
-    local policy=$1 key value seen_release=0 seen_commit=0 seen_modules_field=0 seen_third_party_modules_field=0
+    local policy=$1 key value seen_release=0 seen_commit=0 seen_modules_field=0 seen_third_party_modules_field=0 seen_zatca_bootstrap=0
     while IFS='=' read -r key value || [ -n "$key" ]; do
         case "$key" in
             RELEASE_ID) [ "$seen_release" -eq 0 ] || die 'duplicate policy release id'; policy_release_id=$value; seen_release=1 ;;
             COMMIT) [ "$seen_commit" -eq 0 ] || die 'duplicate policy commit'; commit=$value; seen_commit=1 ;;
             MODULES) [ "$seen_modules_field" -eq 0 ] || die 'duplicate policy modules'; policy_modules=$value; seen_modules_field=1 ;;
             THIRD_PARTY_MODULES) [ "$seen_third_party_modules_field" -eq 0 ] || die 'duplicate policy third-party modules'; policy_third_party_modules=$value; seen_third_party_modules_field=1 ;;
+            ZATCA_BOOTSTRAP_RECOMPUTE) [ "$seen_zatca_bootstrap" -eq 0 ] || die 'duplicate ZATCA bootstrap policy'; zatca_bootstrap_recompute=$value; seen_zatca_bootstrap=1 ;;
             ''|'#'*) ;;
             *) die 'policy has an unknown key' ;;
         esac
@@ -92,6 +93,11 @@ parse_policy() {
         for module in baseer_dms_trial baseer_dms_bill_link baseer_dms_departments; do
             [ -n "${names[$module]+x}" ] || die 'DMS release requires the exact four private modules'
         done
+    fi
+    if [ "$seen_zatca_bootstrap" -eq 1 ]; then
+        [ "$zatca_bootstrap_recompute" = 1 ] || die 'ZATCA bootstrap policy is invalid'
+        [ "${#modules[@]}" -eq 1 ] && [ "${modules[0]}" = baseer_zatca_pos_scope ] \
+            && [ "${#third_party_modules[@]}" -eq 0 ] || die 'ZATCA bootstrap requires only the POS scope module'
     fi
 }
 
@@ -137,6 +143,7 @@ fi
 {
     printf 'RELEASE_ID=%s\nCOMMIT=%s\nMODULES=%s\n' "$release_id" "$commit" "$policy_modules"
     [ -z "${policy_third_party_modules:-}" ] || printf 'THIRD_PARTY_MODULES=%s\n' "$policy_third_party_modules"
+    [ "${zatca_bootstrap_recompute:-0}" != 1 ] || printf 'ZATCA_BOOTSTRAP_RECOMPUTE=1\n'
     printf 'POLICY_REVISION=%s\nAPPROVED_RUN_ID=%s\n' "$policy_revision" "$run_id"
 } > "$candidate.canonical"
 mv "$candidate.canonical" "$candidate"

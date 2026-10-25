@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="pos_config_view_form" model="ir.ui.view">
+        <field name="name">pos.config.form.zatca.phase2.scope</field>
+        <field name="model">pos.config</field>
+        <field name="inherit_id" ref="point_of_sale.pos_config_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='configuration']/div" position="inside">
+                <setting string="ZATCA Phase 2 POS invoicing" help="Require a customer invoice and report it through ZATCA for this POS only.">
+                    <field name="baseer_zatca_phase2_enabled" readonly="has_active_session"/>
+                </setting>
+            </xpath>
+        </field>
+    </record>
+</odoo>

@@ -138,6 +138,10 @@ grep -Fxq 'readonly NEW_SHA=df51cbb4a39491d69f33b9d3e0210d76f99c0f07b2eafb0b6da2
 grep -Fxq 'readonly LIVE_SOURCE=b071cf811fe2525cda7e6f71c030d712aafa0a57' "$sut"
 grep -Fxq 'readonly LOCK=/var/lock/baseer-production-deploy.lock' "$sut"
 grep -Fxq 'readonly NATIVE_LOCK_PARENT=/var/lock' "$sut"
+grep -Fxq 'TARGET=/usr/local/sbin/baseer-production-deploy' "$sut"
+grep -Fxq '    TARGET=/usr/local/sbin/baseer-production-approve-release' "$sut"
+grep -Fxq '    OLD_SHA=bd211f576dfeabb8a844c0dd7a5b0cadaa5472af21f94b41c9ff5856be2a5053' "$sut"
+grep -Fxq '    NEW_SHA=1b3cfbb6f714ba85162dd500fbddd7e5255cecbc01463014116a1c70690d35a1' "$sut"
 [ "$(wc -l < "$script_dir/release-policies/baseer-2026-10-21-bwork-production.env")" -eq 3 ]
 grep -Fxq 'COMMIT=81fdd415521670b8c7ad681e97dd583e6f9c85e0' "$script_dir/release-policies/baseer-2026-10-21-bwork-production.env"
 printf 'PASS %s isolated wrapper cases; mocked root metadata/flock/sync, no host or database\n' "$pass"

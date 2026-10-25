@@ -7,15 +7,23 @@ umask 077
 
 readonly BASE=/srv/abroj-baseer-production
 readonly CURRENT="$BASE/current"
-readonly TARGET=/usr/local/sbin/baseer-production-deploy
+TARGET=/usr/local/sbin/baseer-production-deploy
 readonly LOCK=/var/lock/baseer-production-deploy.lock
 readonly NATIVE_LOCK_PARENT=/var/lock
 readonly BACKUP_ROOT="$BASE/control-plane-backups"
-readonly OLD_SHA=8a407bfaea03e177f9546a3a3e81d5c07fd4bdc9704670503a82f5dd2d9be85c
-readonly NEW_SHA=df51cbb4a39491d69f33b9d3e0210d76f99c0f07b2eafb0b6da29a4440be7532
+OLD_SHA=8a407bfaea03e177f9546a3a3e81d5c07fd4bdc9704670503a82f5dd2d9be85c
+NEW_SHA=df51cbb4a39491d69f33b9d3e0210d76f99c0f07b2eafb0b6da29a4440be7532
 readonly LIVE_SOURCE=b071cf811fe2525cda7e6f71c030d712aafa0a57
 readonly SCRIPT_DIR="$(dirname -- "$(realpath -m -s -- "${BASH_SOURCE[0]}")")"
-readonly CANDIDATE="$SCRIPT_DIR/baseer-production-deploy"
+CANDIDATE="$SCRIPT_DIR/baseer-production-deploy"
+backup_prefix=bwork-wrapper
+configure_approver() {
+    TARGET=/usr/local/sbin/baseer-production-approve-release
+    OLD_SHA=bd211f576dfeabb8a844c0dd7a5b0cadaa5472af21f94b41c9ff5856be2a5053
+    NEW_SHA=1b3cfbb6f714ba85162dd500fbddd7e5255cecbc01463014116a1c70690d35a1
+    CANDIDATE="$SCRIPT_DIR/baseer-production-approve-release"
+    backup_prefix=zatca-approve-wrapper
+}
 replacement_started=0 backup='' pending=''
 
 digest() { sha256sum -- "$1" | cut -d ' ' -f 1; }
@@ -117,6 +125,7 @@ rollback() {
 main() {
     local apply=0 current_sha lock_identity
     [ "$(id -u)" -eq 0 ] || die 'root is required'
+    if [ "${1:-}" = --approve-wrapper ]; then configure_approver; shift; fi
     case "$#:$*" in 0:) ;; 1:--dry-run) ;; 1:--apply) apply=1 ;; *) die 'expected no argument, --dry-run or --apply' ;; esac
     require_target
     current_sha="$(digest "$TARGET")"
@@ -153,7 +162,7 @@ main() {
     else
         install -d -o root -g root -m 0700 -- "$BACKUP_ROOT"
     fi
-    backup="$(mktemp -d "$BACKUP_ROOT/bwork-wrapper.XXXXXXXX")"
+    backup="$(mktemp -d "$BACKUP_ROOT/$backup_prefix.XXXXXXXX")"
     install -o root -g root -m 0600 -- "$TARGET" "$backup/previous-wrapper"
     [ "$(stat -c '%u:%g:%a' -- "$backup/previous-wrapper")" = 0:0:600 ] || die 'preimage backup must be root:root 0600'
     [ "$(digest "$backup/previous-wrapper")" = "$OLD_SHA" ] || die 'private preimage backup differs'

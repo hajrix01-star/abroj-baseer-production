@@ -39,7 +39,7 @@ jobs:
           for path in "${changed[@]}"; do
             [ -f "$path" ] || continue
             case "$path" in
-              ops/production/baseer-production-*|ops/production/upgrade-zatca-approve-wrapper.sh|ops/qa/baseer-qa-*|ops/qa/install-qa-release-poller.sh) bash -n "$path" ;;
+              ops/production/baseer-production-*|ops/qa/baseer-qa-*|ops/qa/install-qa-release-poller.sh) bash -n "$path" ;;
               .github/workflows/*.yml) ruby -e 'require "yaml"; YAML.safe_load(File.read(ARGV.fetch(0)), aliases: false)' "$path" ;;
             esac
           done

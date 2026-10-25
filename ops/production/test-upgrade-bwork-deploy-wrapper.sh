@@ -36,6 +36,9 @@ fixture_case() (
     # Load actual functions only, with all fixed filesystem constants mapped to
     # this NEW synthetic directory. Never execute production top-level paths.
     source <(sed -n '/^digest()/,$p' "$sut" | sed '/^main "\$@"$/d')
+    active_old_sha=$OLD_SHA
+    active_new_sha=$NEW_SHA
+    backup_prefix=bwork-wrapper
     id() { if [ "$case_name" = nonroot ]; then printf '1000\n'; else printf '0\n'; fi; }
     stat() {
         local format=$2 path=${@: -1}

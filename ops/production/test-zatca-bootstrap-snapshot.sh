@@ -29,4 +29,20 @@ if verify_zatca_bootstrap_recompute; then
     exit 1
 fi
 
+cat > "$work/protected-after.json" <<'JSON'
+{"account.move":{"n":2,"ids":3,"w":"after","f":"move-hash"},"res.partner.non_user":{"n":3,"ids":9,"w":"after","f":"tampered"},"stock.move":{"n":5,"ids":15,"w":"same"}}
+JSON
+if verify_zatca_bootstrap_recompute; then
+    printf '%s\n' 'tampered partner fingerprint was accepted' >&2
+    exit 1
+fi
+
+cat > "$work/protected-after.json" <<'JSON'
+{"account.move":{"n":2,"ids":3,"w":"after","f":"move-hash"},"res.partner.non_user":{"n":3,"ids":9,"w":"after","f":"partner-hash"},"stock.move":{"n":5,"ids":15,"w":"changed"}}
+JSON
+if verify_zatca_bootstrap_recompute; then
+    printf '%s\n' 'write_date change outside the reviewed models was accepted' >&2
+    exit 1
+fi
+
 printf '%s\n' 'ZATCA_BOOTSTRAP_SNAPSHOT_GUARD=PASS'

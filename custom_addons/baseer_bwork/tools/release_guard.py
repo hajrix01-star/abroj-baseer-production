@@ -408,6 +408,7 @@ def run_canonical_ops_contract() -> None:
     subprocess.run([sys.executable, '-m', 'unittest', 'discover', '-s',
                     'ops/tests', '-p', 'test_bwork_recovery*.py', '-v'], cwd=ROOT, check=True)
     subprocess.run(['bash', 'ops/production/test-upgrade-bwork-deploy-wrapper.sh'], cwd=ROOT, check=True)
+    subprocess.run(['bash', 'ops/production/test-zatca-bootstrap-snapshot.sh'], cwd=ROOT, check=True)
 
 
 RUNNERS: dict[str, Callable[[], None]] = {
@@ -444,6 +445,7 @@ def changed_guard(base: str, head: str, registry: dict) -> set[str]:
         "ops/lib/bwork_release_source.py", "ops/tests/test_bwork_release_source.py",
         "ops/lib/bwork_recovery.py", "ops/tests/test_bwork_recovery",
         "ops/production/upgrade-bwork-deploy-wrapper.sh", "ops/production/test-upgrade-bwork-deploy-wrapper.sh",
+        "ops/production/test-zatca-bootstrap-snapshot.sh",
         "ops/tests/run-bwork-canonical-ci.sh", "ops/tests/fixtures/",
         ".github/workflows/test-bwork-canonical-migration.yml",
         "custom_addons/baseer_access_roles/models/res_users.py",

@@ -11,13 +11,13 @@ patch(PosStore.prototype, {
             const status = await this.data.call("pos.session", "baseer_zatca_phase2_status", [
                 this.session.id,
             ]);
-            const summary = _t("ZATCA: %s sent, %s pending, %s errors.", status.sent, status.pending, status.error);
+            const summary = _t("زاتكا: مُرحّل %s، معلّق %s، أخطاء %s.", status.sent, status.pending, status.error);
             if (status.pending || status.error) {
                 const proceed = await ask(this.dialog, {
-                    title: _t("ZATCA needs attention"),
+                    title: _t("زاتكا تحتاج إلى متابعة"),
                     body: summary,
-                    confirmLabel: _t("Review later and continue"),
-                    cancelLabel: _t("Stay in the register"),
+                    confirmLabel: _t("المتابعة لاحقًا والاستمرار"),
+                    cancelLabel: _t("البقاء في الكاشير"),
                 });
                 if (!proceed) {
                     return;

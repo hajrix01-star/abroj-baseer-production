@@ -7,15 +7,24 @@ umask 077
 
 readonly BASE=/srv/abroj-baseer-production
 readonly CURRENT="$BASE/current"
-readonly TARGET=/usr/local/sbin/baseer-production-deploy
+TARGET=/usr/local/sbin/baseer-production-deploy
 readonly LOCK=/var/lock/baseer-production-deploy.lock
 readonly NATIVE_LOCK_PARENT=/var/lock
 readonly BACKUP_ROOT="$BASE/control-plane-backups"
 readonly OLD_SHA=8a407bfaea03e177f9546a3a3e81d5c07fd4bdc9704670503a82f5dd2d9be85c
 readonly NEW_SHA=df51cbb4a39491d69f33b9d3e0210d76f99c0f07b2eafb0b6da29a4440be7532
+active_old_sha=$OLD_SHA active_new_sha=$NEW_SHA
 readonly LIVE_SOURCE=b071cf811fe2525cda7e6f71c030d712aafa0a57
 readonly SCRIPT_DIR="$(dirname -- "$(realpath -m -s -- "${BASH_SOURCE[0]}")")"
-readonly CANDIDATE="$SCRIPT_DIR/baseer-production-deploy"
+CANDIDATE="$SCRIPT_DIR/baseer-production-deploy"
+backup_prefix=bwork-wrapper
+configure_approver() {
+    TARGET=/usr/local/sbin/baseer-production-approve-release
+    active_old_sha=bd211f576dfeabb8a844c0dd7a5b0cadaa5472af21f94b41c9ff5856be2a5053
+    active_new_sha=1b3cfbb6f714ba85162dd500fbddd7e5255cecbc01463014116a1c70690d35a1
+    CANDIDATE="$SCRIPT_DIR/baseer-production-approve-release"
+    backup_prefix=zatca-approve-wrapper
+}
 replacement_started=0 backup='' pending=''
 
 digest() { sha256sum -- "$1" | cut -d ' ' -f 1; }
@@ -101,9 +110,9 @@ rollback() {
     if [ "$replacement_started" -eq 1 ]; then
         restore="$(mktemp "$(dirname -- "$TARGET")/.baseer-production-deploy.rollback.XXXXXXXX")"
         if [ -n "$restore" ] && install -o root -g root -m 0750 -- "$backup/previous-wrapper" "$restore" \
-            && [ "$(digest "$restore")" = "$OLD_SHA" ] && sync -f -- "$restore" \
+            && [ "$(digest "$restore")" = "$active_old_sha" ] && sync -f -- "$restore" \
             && mv -T -- "$restore" "$TARGET" && sync -f -- "$(dirname -- "$TARGET")" \
-            && [ "$(digest "$TARGET")" = "$OLD_SHA" ] \
+            && [ "$(digest "$TARGET")" = "$active_old_sha" ] \
             && [ "$(stat -c '%u:%g:%a' -- "$TARGET")" = 0:0:750 ]; then
             result=0
         fi
@@ -117,13 +126,14 @@ rollback() {
 main() {
     local apply=0 current_sha lock_identity
     [ "$(id -u)" -eq 0 ] || die 'root is required'
+    if [ "${1:-}" = --approve-wrapper ]; then configure_approver; shift; fi
     case "$#:$*" in 0:) ;; 1:--dry-run) ;; 1:--apply) apply=1 ;; *) die 'expected no argument, --dry-run or --apply' ;; esac
     require_target
     current_sha="$(digest "$TARGET")"
-    if [ "$current_sha" = "$NEW_SHA" ]; then printf 'WRAPPER_UPGRADE=ALREADY_CURRENT\n'; return; fi
-    [ "$current_sha" = "$OLD_SHA" ] || die 'unexpected installed wrapper hash'
+    if [ "$current_sha" = "$active_new_sha" ]; then printf 'WRAPPER_UPGRADE=ALREADY_CURRENT\n'; return; fi
+    [ "$current_sha" = "$active_old_sha" ] || die 'unexpected installed wrapper hash'
     safe_file "$CANDIDATE"
-    [ "$(digest "$CANDIDATE")" = "$NEW_SHA" ] || die 'candidate is not the exact reviewed raw Git LF blob'
+    [ "$(digest "$CANDIDATE")" = "$active_new_sha" ] || die 'candidate is not the exact reviewed raw Git LF blob'
     /bin/bash -n "$CANDIDATE" || die 'candidate shell syntax failed'
     require_live_source
     # Reuse the existing wrapper's exact lock inode. Read-only open avoids even
@@ -143,9 +153,9 @@ main() {
     flock -n 9 || die 'production approval/deployment lock is busy'
     require_lock_binding "$lock_identity"
     require_target
-    [ "$(digest "$TARGET")" = "$OLD_SHA" ] || die 'wrapper changed while acquiring lock'
+    [ "$(digest "$TARGET")" = "$active_old_sha" ] || die 'wrapper changed while acquiring lock'
     require_live_source
-    if [ "$apply" -eq 0 ]; then printf 'WRAPPER_UPGRADE=DRY_RUN\nSOURCE=%s\nOLD_SHA256=%s\nNEW_SHA256=%s\n' "$LIVE_SOURCE" "$OLD_SHA" "$NEW_SHA"; return; fi
+    if [ "$apply" -eq 0 ]; then printf 'WRAPPER_UPGRADE=DRY_RUN\nSOURCE=%s\nOLD_SHA256=%s\nNEW_SHA256=%s\n' "$LIVE_SOURCE" "$active_old_sha" "$active_new_sha"; return; fi
     safe_chain "$BASE"
     if [ -e "$BACKUP_ROOT" ] || [ -L "$BACKUP_ROOT" ]; then
         safe_chain "$BACKUP_ROOT"
@@ -153,11 +163,11 @@ main() {
     else
         install -d -o root -g root -m 0700 -- "$BACKUP_ROOT"
     fi
-    backup="$(mktemp -d "$BACKUP_ROOT/bwork-wrapper.XXXXXXXX")"
+    backup="$(mktemp -d "$BACKUP_ROOT/$backup_prefix.XXXXXXXX")"
     install -o root -g root -m 0600 -- "$TARGET" "$backup/previous-wrapper"
     [ "$(stat -c '%u:%g:%a' -- "$backup/previous-wrapper")" = 0:0:600 ] || die 'preimage backup must be root:root 0600'
-    [ "$(digest "$backup/previous-wrapper")" = "$OLD_SHA" ] || die 'private preimage backup differs'
-    printf 'SOURCE=%s\nOLD_SHA256=%s\nNEW_SHA256=%s\nOLD_OWNER=0:0\nOLD_MODE=0750\n' "$LIVE_SOURCE" "$OLD_SHA" "$NEW_SHA" > "$backup/metadata.env"
+    [ "$(digest "$backup/previous-wrapper")" = "$active_old_sha" ] || die 'private preimage backup differs'
+    printf 'SOURCE=%s\nOLD_SHA256=%s\nNEW_SHA256=%s\nOLD_OWNER=0:0\nOLD_MODE=0750\n' "$LIVE_SOURCE" "$active_old_sha" "$active_new_sha" > "$backup/metadata.env"
     chmod 0600 "$backup/metadata.env"
     sync -f -- "$backup/previous-wrapper"
     sync -f -- "$backup/metadata.env"
@@ -169,7 +179,7 @@ main() {
     trap 'rollback 129' HUP
     pending="$(mktemp "$(dirname -- "$TARGET")/.baseer-production-deploy.new.XXXXXXXX")"
     install -o root -g root -m 0750 -- "$CANDIDATE" "$pending"
-    [ "$(digest "$pending")" = "$NEW_SHA" ] || die 'staged wrapper differs'
+    [ "$(digest "$pending")" = "$active_new_sha" ] || die 'staged wrapper differs'
     /bin/bash -n "$pending"
     sync -f -- "$pending"
     # Set before mv: interruption after rename must restore the saved preimage.
@@ -178,8 +188,8 @@ main() {
     pending=''
     sync -f -- "$(dirname -- "$TARGET")"
     require_target
-    [ "$(digest "$TARGET")" = "$NEW_SHA" ] || die 'post-install wrapper differs'
+    [ "$(digest "$TARGET")" = "$active_new_sha" ] || die 'post-install wrapper differs'
     trap - ERR INT TERM HUP
-    printf 'WRAPPER_UPGRADE=GO\nSHA256=%s\nPRIVATE_BACKUP=%s\n' "$NEW_SHA" "$backup"
+    printf 'WRAPPER_UPGRADE=GO\nSHA256=%s\nPRIVATE_BACKUP=%s\n' "$active_new_sha" "$backup"
 }
 main "$@"

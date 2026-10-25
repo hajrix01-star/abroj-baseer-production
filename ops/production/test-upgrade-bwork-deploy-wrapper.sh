@@ -36,6 +36,9 @@ fixture_case() (
     # Load actual functions only, with all fixed filesystem constants mapped to
     # this NEW synthetic directory. Never execute production top-level paths.
     source <(sed -n '/^digest()/,$p' "$sut" | sed '/^main "\$@"$/d')
+    active_old_sha=$OLD_SHA
+    active_new_sha=$NEW_SHA
+    backup_prefix=bwork-wrapper
     id() { if [ "$case_name" = nonroot ]; then printf '1000\n'; else printf '0\n'; fi; }
     stat() {
         local format=$2 path=${@: -1}
@@ -132,12 +135,16 @@ done
 
 # Fixed production constants/policy stay authoritative; fixtures above do not
 # change the production script or normalize unknown installed wrapper hashes.
-grep -Fxq 'readonly TARGET=/usr/local/sbin/baseer-production-deploy' "$sut"
+grep -Fxq 'TARGET=/usr/local/sbin/baseer-production-deploy' "$sut"
 grep -Fxq 'readonly OLD_SHA=8a407bfaea03e177f9546a3a3e81d5c07fd4bdc9704670503a82f5dd2d9be85c' "$sut"
 grep -Fxq 'readonly NEW_SHA=df51cbb4a39491d69f33b9d3e0210d76f99c0f07b2eafb0b6da29a4440be7532' "$sut"
 grep -Fxq 'readonly LIVE_SOURCE=b071cf811fe2525cda7e6f71c030d712aafa0a57' "$sut"
 grep -Fxq 'readonly LOCK=/var/lock/baseer-production-deploy.lock' "$sut"
 grep -Fxq 'readonly NATIVE_LOCK_PARENT=/var/lock' "$sut"
+grep -Fxq 'TARGET=/usr/local/sbin/baseer-production-deploy' "$sut"
+grep -Fxq '    TARGET=/usr/local/sbin/baseer-production-approve-release' "$sut"
+grep -Fxq '    active_old_sha=bd211f576dfeabb8a844c0dd7a5b0cadaa5472af21f94b41c9ff5856be2a5053' "$sut"
+grep -Fxq '    active_new_sha=1b3cfbb6f714ba85162dd500fbddd7e5255cecbc01463014116a1c70690d35a1' "$sut"
 [ "$(wc -l < "$script_dir/release-policies/baseer-2026-10-21-bwork-production.env")" -eq 3 ]
 grep -Fxq 'COMMIT=81fdd415521670b8c7ad681e97dd583e6f9c85e0' "$script_dir/release-policies/baseer-2026-10-21-bwork-production.env"
 printf 'PASS %s isolated wrapper cases; mocked root metadata/flock/sync, no host or database\n' "$pass"

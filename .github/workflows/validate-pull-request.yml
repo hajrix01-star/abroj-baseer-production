@@ -48,8 +48,9 @@ jobs:
           fi
           if printf '%s\n' "${changed[@]}" | grep -q '^ops/production/'; then
             sudo python3 -m unittest discover -s ops/production/tests -v
+            bash ops/production/test-zatca-bootstrap-snapshot.sh
           fi
-          if printf '%s\n' "${changed[@]}" | grep -Eq '^(custom_addons/(baseer_b(chat|work)(_(admin|procurement|permission_guards|document_permission_guards|dashboard))?)/|mobile/(chatwoot|bwork)/|android/(bchat|bwork-legacy)/|ops/(lib/bwork_(release_source|recovery).py|tests/test_bwork_(release_source|recovery[^/]*).py|qa/baseer-qa-deploy|production/(baseer-production-deploy|(test-)?upgrade-bwork-deploy-wrapper.sh|test-zatca-bootstrap-snapshot.sh))$|\.github/workflows/(validate-pull-request|b(chat|work)-cumulative-contracts|test-bwork-admin|test-bwork-gallery|test-bwork-retention)\.yml$|\.github/CODEOWNERS$)'; then
+          if printf '%s\n' "${changed[@]}" | grep -Eq '^(custom_addons/(baseer_b(chat|work)(_(admin|procurement|permission_guards|document_permission_guards|dashboard))?)/|mobile/(chatwoot|bwork)/|android/(bchat|bwork-legacy)/|ops/(lib/bwork_(release_source|recovery).py|tests/test_bwork_(release_source|recovery[^/]*).py|qa/baseer-qa-deploy|production/(baseer-production-deploy|(test-)?upgrade-bwork-deploy-wrapper.sh))$|\.github/workflows/(validate-pull-request|b(chat|work)-cumulative-contracts|test-bwork-admin|test-bwork-gallery|test-bwork-retention)\.yml$|\.github/CODEOWNERS$)'; then
             python3 custom_addons/baseer_bwork/tools/release_guard.py --changed "$BASE_SHA" "$HEAD_SHA"
           fi
           python3 - "$BASE_SHA" "$HEAD_SHA" <<'PY'

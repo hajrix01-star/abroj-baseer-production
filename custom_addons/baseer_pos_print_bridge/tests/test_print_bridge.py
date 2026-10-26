@@ -823,7 +823,12 @@ class TestBaseerPrintBridgeHybrid(TransactionCase):
         self.agent.with_context(baseer_print_internal=True).write({'agent_version': '1.4.0'})
         self.receipt.paper_width = '80'
         self.config.baseer_native_receipt_enabled = True
-        self.company.country_id = self.env.ref('base.sa')
+        self.company.write({
+            'country_id': self.env.ref('base.sa').id,
+            # This test isolates the Phase 2 scope.  Native receipts still
+            # require the ordinary Saudi seller identity needed for their QR.
+            'vat': '300000000000003',
+        })
         order = self._order()
         order.state = 'paid'
 

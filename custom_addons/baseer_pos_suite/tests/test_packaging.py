@@ -6,7 +6,8 @@ from ..hooks import uninstall_hook
 class TestSuitePackaging(TransactionCase):
     def test_one_application_and_dependency_closure(self):
         names = ['baseer_pos_suite', 'baseer_pos_print_bridge',
-                 'baseer_pos_receipt_layout', 'baseer_pos_product_substitution']
+                 'baseer_pos_receipt_layout', 'baseer_pos_product_substitution',
+                 'baseer_pos_company_session_guard']
         modules = self.env['ir.module.module'].search([('name', 'in', names)])
         self.assertEqual(set(modules.mapped('name')), set(names))
         self.assertEqual(modules.filtered('application').mapped('name'), ['baseer_pos_suite'])
@@ -37,4 +38,5 @@ class TestSuitePackaging(TransactionCase):
                                      'baseer_substitution_enabled', 'baseer_receipt_layout_mode']), before)
         self.assertTrue(all(m.state == 'installed' for m in self.env['ir.module.module'].search([
             ('name', 'in', ['baseer_pos_print_bridge', 'baseer_pos_receipt_layout',
-                           'baseer_pos_product_substitution'])])))
+                           'baseer_pos_product_substitution',
+                           'baseer_pos_company_session_guard'])])))

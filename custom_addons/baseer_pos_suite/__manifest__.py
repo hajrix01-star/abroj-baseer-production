@@ -1,7 +1,7 @@
 {
     'name': 'Baseer POS Suite',
     'summary': 'Install and configure Baseer POS printing and item controls',
-    'version': '19.0.1.3.0',
+    'version': '19.0.1.3.1',
     'category': 'Baseer/POS',
     'author': 'Baseer',
     'license': 'LGPL-3',
@@ -9,6 +9,7 @@
         'baseer_pos_print_bridge',
         'baseer_pos_receipt_layout',
         'baseer_pos_product_substitution',
+        'baseer_pos_company_session_guard',
     ],
     'data': [
         'views/suite_views.xml',

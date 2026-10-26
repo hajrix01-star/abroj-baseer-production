@@ -116,10 +116,17 @@ class TestOfficeReceipt(TransactionCase):
         with self.assertRaises(UserError):
             self.order.baseer_office_receipt_data()
 
-    def test_sa_phase_two_requires_accepted_signed_invoice(self):
+    def test_sa_without_phase_two_does_not_require_an_edi_invoice(self):
         self.env.company.country_id = self.env.ref('base.sa')
         with patch.object(type(self.env['ir.module.module']), 'search_count', return_value=1):
-            with self.assertRaises(UserError):
-                self.order.action_baseer_office_receipt()
-            with self.assertRaises(UserError):
-                self.order.baseer_office_receipt_data()
+            self.order.action_baseer_office_receipt()
+            self.order.baseer_office_receipt_data()
+
+    def test_sa_phase_two_requires_accepted_signed_invoice(self):
+        self.env.company.country_id = self.env.ref('base.sa')
+        with patch.object(type(self.config), 'baseer_zatca_phase2_enabled', True, create=True):
+            with patch.object(type(self.env['ir.module.module']), 'search_count', return_value=1):
+                with self.assertRaises(UserError):
+                    self.order.action_baseer_office_receipt()
+                with self.assertRaises(UserError):
+                    self.order.baseer_office_receipt_data()

@@ -818,6 +818,27 @@ class TestBaseerPrintBridgeHybrid(TransactionCase):
         self.assertNotEqual(recaptured['job_id'], job.id)
         self.assertEqual(self.env['baseer.print.job'].browse(recaptured['job_id']).reprint_of_id, job)
 
+    def test_sa_native_receipt_does_not_require_edi_when_phase_two_is_disabled(self):
+        self._enable()
+        self.agent.with_context(baseer_print_internal=True).write({'agent_version': '1.4.0'})
+        self.receipt.paper_width = '80'
+        self.config.baseer_native_receipt_enabled = True
+        self.company.write({
+            'country_id': self.env.ref('base.sa').id,
+            # This test isolates the Phase 2 scope.  Native receipts still
+            # require the ordinary Saudi seller identity needed for their QR.
+            'vat': '300000000000003',
+        })
+        order = self._order()
+        order.state = 'paid'
+
+        # The Saudi EDI module can be installed for other POS configurations.
+        # A configuration without the explicit Phase 2 flag must still print.
+        with patch.object(type(self.env['ir.module.module']), 'search_count', return_value=1):
+            result = order.baseer_enqueue_native_receipt(self._native_receipt_sample())
+
+        self.assertTrue(result['job_id'])
+
     def test_native_receipt_rejects_draft_and_missing_jpeg(self):
         self._enable()
         self.agent.with_context(baseer_print_internal=True).write({'agent_version': '1.4.0'})

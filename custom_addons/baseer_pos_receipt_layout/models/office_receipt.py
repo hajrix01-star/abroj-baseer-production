@@ -45,9 +45,11 @@ class PosOrder(models.Model):
             raise AccessError(_('The receipt belongs to a company that is not selected.'))
         if self.state not in ('paid', 'done', 'invoiced'):
             raise UserError(_('Complete payment before printing the customer receipt.'))
-        if self.company_id.country_id.code == 'SA' and self.env['ir.module.module'].sudo().search_count([
+        if (self.company_id.country_id.code == 'SA'
+                and getattr(self.config_id, 'baseer_zatca_phase2_enabled', False)
+                and self.env['ir.module.module'].sudo().search_count([
             ('name', '=', 'l10n_sa_edi_pos'), ('state', '=', 'installed'),
-        ]):
+        ])):
             move = self.account_move
             if (not move or move.company_id != self.company_id or move.state != 'posted'
                     or not move.l10n_sa_qr_code_str or move.edi_state != 'sent'):

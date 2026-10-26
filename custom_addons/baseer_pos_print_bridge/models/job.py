@@ -299,7 +299,8 @@ class BaseerPrintJob(models.Model):
                 or not printer._allows_company(order.company_id)):
             raise ValidationError(_('The 80 mm receipt printer is not available for this company.'))
         config._baseer_assert_native_receipt_company_ready()
-        if order.company_id.country_id.code == 'SA':
+        if (order.company_id.country_id.code == 'SA'
+                and getattr(config, 'baseer_zatca_phase2_enabled', False)):
             if not order.date_order:
                 raise ValidationError(_('The customer receipt order date is missing.'))
             phase_two = self.env['ir.module.module'].sudo().search_count([

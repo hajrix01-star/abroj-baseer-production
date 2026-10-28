@@ -48,6 +48,43 @@ class SalesSummaryOnboardingCase(TransactionCase):
         self.assertFalse(reopened.setup_summary_hungerstation)
         self._assert_no_financial_documents(company)
 
+    def test_selected_platforms_get_independent_journals(self):
+        company = self._new_company()
+        action = company.action_baseer_open_onboarding()
+        wizard = self.env[action['res_model']].browse(action['res_id'])
+        wizard.write({
+            'sales_mode': 'summary',
+            'setup_summary_hungerstation': True,
+            'setup_summary_keeta': True,
+            'setup_summary_jahez': True,
+        })
+        wizard.action_apply_selected()
+        config = self.env['pos.config'].search([
+            ('company_id', '=', company.id), ('baseer_summary_only', '=', True)], limit=1)
+        expected = {
+            'هنقرستيشن | HungerStation': ('HUNG', '101008', '102110'),
+            'كيتا | Keeta': ('KEET', '101007', '102111'),
+            'جاهز | Jahez': ('JAHZ', '101009', '102112'),
+        }
+        methods = config.with_company(company).payment_method_ids.filtered(
+            lambda method: method.baseer_category_id.kind == 'platform')
+        self.assertEqual(len(methods), len(expected))
+        self.assertEqual(len(methods.mapped('journal_id')), len(expected))
+        for method in methods:
+            journal_code, liquidity_code, clearing_code = expected[method.name]
+            self.assertEqual(method.journal_id.code, journal_code)
+            liquidity = method.journal_id.with_company(company).default_account_id
+            self.assertEqual(liquidity.code, liquidity_code)
+            self.assertEqual(liquidity.account_type, 'asset_cash')
+            self.assertEqual(method.outstanding_account_id.code, clearing_code)
+            self.assertEqual(method.outstanding_account_id.account_type, 'asset_current')
+            self.assertTrue(method.outstanding_account_id.reconcile)
+
+        wizard.action_apply_selected()
+        self.assertEqual(len(config.payment_method_ids.filtered(
+            lambda method: method.baseer_category_id.kind == 'platform')), len(expected))
+        self._assert_no_financial_documents(company)
+
     def test_native_direct_pos_can_start_without_a_financial_document(self):
         company = self._new_company()
         config = self.env['pos.config'].with_context(

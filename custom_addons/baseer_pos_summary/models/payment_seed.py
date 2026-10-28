@@ -6,9 +6,13 @@ from odoo.tools.misc import clean_context
 
 
 APPLICATIONS = (
-    ('hungerstation', 'هنقرستيشن | HungerStation', '102110'),
-    ('keeta', 'كيتا | Keeta', '102111'),
-    ('jahez', 'جاهز | Jahez', '102112'),
+    # A platform is a distinct collection channel.  Its journal must never
+    # collapse into the sales-summary bank journal, even for a newly seeded
+    # company.  The clearing account remains separate from the journal's
+    # liquidity account: it represents the receivable from the platform.
+    ('hungerstation', 'هنقرستيشن | HungerStation', '102110', '101008', 'HUNG'),
+    ('keeta', 'كيتا | Keeta', '102111', '101007', 'KEET'),
+    ('jahez', 'جاهز | Jahez', '102112', '101009', 'JAHZ'),
 )
 _logger = logging.getLogger(__name__)
 
@@ -141,11 +145,15 @@ class Company(models.Model):
             methods |= self._baseer_pos_method('cash', 'نقدي | Cash', categories['cash'], cash, receivable)
         if not methods.filtered(lambda m: m.baseer_category_id.kind == 'bank'):
             methods |= self._baseer_pos_method('bank', 'بنك | Bank', categories['bank'], bank, receivable, bank_account)
-        for key, label, code in APPLICATIONS:
+        for key, label, code, liquidity_code, journal_code in APPLICATIONS:
             arabic, english = label.split(' | ')
-            account = self._baseer_pos_account(key + '_clearing', code,
+            clearing = self._baseer_pos_account(key + '_clearing', code,
                 f'مستحقات {arabic} | {english} receivable', 'asset_current')
-            methods |= self._baseer_pos_method(key, label, categories['platform'], bank, receivable, account)
+            liquidity = self._baseer_pos_account(key + '_liquidity', liquidity_code,
+                label, 'asset_cash', False)
+            journal = self._baseer_pos_journal(key + '_journal', journal_code,
+                label, 'bank', liquidity)
+            methods |= self._baseer_pos_method(key, label, categories['platform'], journal, receivable, clearing)
         if not config:
             config = self.env['pos.config'].create({'name': 'ملخص المبيعات | Sales summaries',
                 'company_id': self.id, 'baseer_summary_only': True,

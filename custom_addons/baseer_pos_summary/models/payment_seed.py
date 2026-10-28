@@ -5,9 +5,12 @@ from odoo.tools.misc import clean_context
 
 
 APPLICATIONS = (
-    ('hungerstation', 'هنقرستيشن | HungerStation', '102110'),
-    ('keeta', 'كيتا | Keeta', '102111'),
-    ('jahez', 'جاهز | Jahez', '102112'),
+    # Each delivery platform is a separate collection channel.  Keep its
+    # bank journal and liquidity account separate from the summary bank
+    # journal, while its outstanding receivable remains independently tracked.
+    ('hungerstation', 'هنقرستيشن | HungerStation', '102110', '101008', 'HUNG'),
+    ('keeta', 'كيتا | Keeta', '102111', '101007', 'KEET'),
+    ('jahez', 'جاهز | Jahez', '102112', '101009', 'JAHZ'),
 )
 class Company(models.Model):
     _inherit = 'res.company'
@@ -90,14 +93,14 @@ class Company(models.Model):
     def _baseer_create_pos_defaults(self):
         """Compatibility wrapper; new code must pass the user's explicit choices."""
         return self._baseer_apply_summary_payment_choices(
-            {'cash', 'bank', *(key for key, _label, _code in APPLICATIONS)}
+            {'cash', 'bank', *(key for key, _label, _code, _liquidity, _journal in APPLICATIONS)}
         )
 
     def _baseer_apply_summary_payment_choices(self, selected_keys):
         """Add only selected summary methods for one company; never replace history."""
         self.ensure_one()
         selected = set(selected_keys or ())
-        supported = {'cash', 'bank', *(key for key, _label, _code in APPLICATIONS)}
+        supported = {'cash', 'bank', *(key for key, _label, _code, _liquidity, _journal in APPLICATIONS)}
         if not selected or not selected <= supported:
             raise ValidationError(_('Choose one or more supported sales-summary payment methods.'))
         if self.parent_id or self.chart_template != 'sa' or self.currency_id.name != 'SAR':
@@ -124,7 +127,7 @@ class Company(models.Model):
             'platform': ('تطبيقات | Applications', 30),
         }
         categories = {}
-        for kind in ({'cash'} if 'cash' in selected else set()) | ({'bank'} if 'bank' in selected else set()) | ({'platform'} if selected & {key for key, _label, _code in APPLICATIONS} else set()):
+        for kind in ({'cash'} if 'cash' in selected else set()) | ({'bank'} if 'bank' in selected else set()) | ({'platform'} if selected & {key for key, _label, _code, _liquidity, _journal in APPLICATIONS} else set()):
             name, sequence = category_definitions[kind]
             categories[kind] = company._baseer_pos_category(kind, name, sequence)
         receivable = company.account_default_pos_receivable_account_id
@@ -148,13 +151,17 @@ class Company(models.Model):
                 'تحصيلات ملخص المبيعات | Sales summary receipts', 'bank', bank_account)
         if 'bank' in selected:
             methods |= company._baseer_pos_method('bank', 'بنك | Bank', categories['bank'], bank, receivable, bank_account)
-        for key, label, code in APPLICATIONS:
+        for key, label, code, liquidity_code, journal_code in APPLICATIONS:
             if key not in selected:
                 continue
             arabic, english = label.split(' | ')
-            account = company._baseer_pos_account(key + '_clearing', code,
+            clearing = company._baseer_pos_account(key + '_clearing', code,
                 f'مستحقات {arabic} | {english} receivable', 'asset_current')
-            methods |= company._baseer_pos_method(key, label, categories['platform'], bank, receivable, account)
+            liquidity = company._baseer_pos_account(key + '_liquidity', liquidity_code,
+                label, 'asset_cash', False)
+            journal = company._baseer_pos_journal(key + '_journal', journal_code,
+                label, 'bank', liquidity)
+            methods |= company._baseer_pos_method(key, label, categories['platform'], journal, receivable, clearing)
         if not config:
             config = company.env['pos.config'].create({'name': 'ملخص المبيعات | Sales summaries',
                 'company_id': company.id, 'baseer_summary_only': True,

@@ -4,6 +4,10 @@
 
 The Project menu opens an RTL dashboard with filters, project details, budget categories and phase dates. Project and task access uses the current user's record rules and allowed companies. Install `project`, `analytic` and `account`; contracting is optional.
 
+تاريخ بداية المرحلة هو المرجع، والمدة بالأيام الصحيحة لا تقل عن يوم واحد. الحساب شامل ليوم البداية: ثلاثة أيام تبدأ الأحد تنتهي الثلاثاء. عند تغيير البداية أو المدة يتغير تاريخ النهاية تلقائياً؛ وعند غياب البداية يبقى الموعد الموجود كما هو. عند الترقية تُستخلص المدة من التاريخين الموجودين (وبحد أدنى يوم واحد) دون تغيير الموعد.
+
+The phase start date is the anchor and duration is a whole number of days, at least one. Counting is inclusive: three days starting Sunday end Tuesday. Changing the start or duration recalculates the end; without a start, the existing deadline is preserved. On upgrade, existing dates are used to backfill the duration (minimum one day) without changing the deadline.
+
 ## مصادر البيانات / Data assumptions
 
 - Project budget and contract value are manual. If manual contract value is zero and `abroj_contracting` is installed, its project contract value is used.
@@ -27,7 +31,7 @@ The script creates illustrative projects in `base.main_company` and adds it to t
 
 ## Tests / الاختبارات
 
-Run Odoo with `-i abroj_project_dashboard --without-demo=all --test-enable --test-tags=/abroj_project_dashboard --stop-after-init --workers=0 --max-cron-threads=0` on a fresh test database. The workflow runs 26 methods across the model and HTTP test classes. To exercise voucher integration too, install `abroj_contracting` and run the dashboard tests on that database.
+Run Odoo with `-i abroj_project_dashboard --without-demo=all --test-enable --test-tags=/abroj_project_dashboard --stop-after-init --workers=0 --max-cron-threads=0` on a fresh test database. The workflow runs 31 methods across the model and HTTP test classes. To exercise voucher integration too, install `abroj_contracting` and run the dashboard tests on that database.
 
 ## Remaining / المتبقي
 

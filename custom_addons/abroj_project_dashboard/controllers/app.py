@@ -30,7 +30,7 @@ class AbrojApp(http.Controller):
 
     @http.route('/abroj/app/save', type='jsonrpc', auth='user')
     def save(self, model, values, record_id=None):
-        allowed = {'project.task': {'name', 'project_id', 'x_abroj_date_start', 'date_deadline', 'state', 'x_abroj_progress'}, 'project.project': {'abroj_type', 'last_update_status', 'abroj_manual_progress', 'abroj_use_manual_progress', 'abroj_budget', 'abroj_contract_value', 'abroj_budget_line_ids'}}
+        allowed = {'project.task': {'name', 'project_id', 'x_abroj_date_start', 'x_abroj_duration_days', 'state', 'x_abroj_progress'}, 'project.project': {'abroj_type', 'last_update_status', 'abroj_manual_progress', 'abroj_use_manual_progress', 'abroj_budget', 'abroj_contract_value', 'abroj_budget_line_ids'}}
         try:
             if model not in allowed or set(values) - allowed[model]:
                 raise AccessError('عملية غير مسموحة')

@@ -11,7 +11,44 @@ class ProjectTask(models.Model):
     _inherit = 'project.task'
 
     x_abroj_date_start = fields.Date(string='تاريخ بداية المرحلة')
+    x_abroj_duration_days = fields.Integer(string='المدة (أيام)', default=1, required=True)
     x_abroj_progress = fields.Float(string='نسبة إنجاز المرحلة')
+
+    @api.constrains('x_abroj_duration_days')
+    def _check_abroj_duration(self):
+        for task in self:
+            if task.x_abroj_duration_days < 1:
+                raise ValidationError('مدة المرحلة يجب أن تكون يوماً واحداً على الأقل.')
+
+    @api.onchange('x_abroj_date_start', 'x_abroj_duration_days')
+    def _onchange_abroj_dates(self):
+        for task in self:
+            if task.x_abroj_date_start and task.x_abroj_duration_days >= 1:
+                task.date_deadline = fields.Datetime.to_datetime(
+                    task.x_abroj_date_start + timedelta(days=task.x_abroj_duration_days - 1))
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            start = vals.get('x_abroj_date_start')
+            duration = vals.get('x_abroj_duration_days', 1)
+            if start and duration and duration >= 1:
+                vals['date_deadline'] = fields.Datetime.to_datetime(
+                    fields.Date.to_date(start) + timedelta(days=duration - 1))
+        return super().create(vals_list)
+
+    def write(self, vals):
+        if {'x_abroj_date_start', 'x_abroj_duration_days', 'date_deadline'} & vals.keys():
+            for task in self:
+                values = dict(vals)
+                start = values.get('x_abroj_date_start', task.x_abroj_date_start)
+                duration = values.get('x_abroj_duration_days', task.x_abroj_duration_days)
+                if start and duration and duration >= 1:
+                    values['date_deadline'] = fields.Datetime.to_datetime(
+                        fields.Date.to_date(start) + timedelta(days=duration - 1))
+                super(ProjectTask, task).write(values)
+            return True
+        return super().write(vals)
 
     @api.constrains('x_abroj_progress')
     def _check_abroj_task_progress(self):
@@ -122,7 +159,7 @@ class Project(models.Model):
         delayed = not completed and bool(self.date and self.date < today or delayed_tasks)
         last_activity = max([self.write_date] + tasks.mapped('write_date')) if tasks else self.write_date
         stalled = not completed and (self.last_update_status in ('off_track', 'on_hold') or bool(last_activity and last_activity.date() < today - timedelta(days=stall_days)))
-        phases = [{'id': t.id, 'name': t.name, 'start': str(t.x_abroj_date_start or (t.date_assign.date() if t.date_assign else '')), 'end': str(t.date_deadline.date() if t.date_deadline else ''), 'done': t in done, 'state': t.state, 'progress': t.x_abroj_progress, 'can_write': t.has_access('write'), 'delayed': t in delayed_tasks, 'assignee': ', '.join(t.user_ids.mapped('name'))} for t in tasks]
+        phases = [{'id': t.id, 'name': t.name, 'start': str(t.x_abroj_date_start or (t.date_assign.date() if t.date_assign else '')), 'end': str(t.date_deadline.date() if t.date_deadline else ''), 'duration': t.x_abroj_duration_days, 'done': t in done, 'state': t.state, 'progress': t.x_abroj_progress, 'can_write': t.has_access('write'), 'delayed': t in delayed_tasks, 'assignee': ', '.join(t.user_ids.mapped('name'))} for t in tasks]
         return {'id': self.id, 'can_write': self.has_access('write'), 'can_create_task': self.env['project.task'].has_access('create'), 'can_edit_budget': self.env.user.has_group('project.group_project_manager') and self.has_access('write'), 'name': self.name, 'type': self.abroj_type, 'type_label': dict(TYPES).get(self.abroj_type, ''), 'status': self.last_update_status, 'status_label': STATUS.get(self.last_update_status, ''), 'client': self.partner_id.name or '—', 'manager': self.user_id.name or '—', 'start': str(self.date_start or ''), 'end': str(self.date or ''), 'progress': round(progress, 1), 'budget': self.abroj_budget, 'actual': actual, 'over': max(actual - self.abroj_budget, 0), 'over_categories': sum(c['actual'] > c['budget'] for c in categories), 'contract': self.abroj_contract_value or (self.contract_value if 'contract_value' in self._fields else 0), 'received': received, 'paid': paid, 'liquidity': received - paid, 'categories': categories, 'contracts': contracts, 'phases': phases, 'delayed': delayed, 'stalled': stalled, 'completed': completed, 'vouchers': [{'name': v.name, 'kind': v.kind, 'partner': v.partner_id.name, 'amount': v.amount, 'date': str(v.date)} for v in vouchers]}
 
     @api.model

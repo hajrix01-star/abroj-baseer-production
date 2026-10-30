@@ -32,7 +32,7 @@ for index, (name, kind, status) in enumerate([
             voucher = env['abroj.contracting.voucher'].create({'project_id': project.id, 'partner_id': partner.id, 'kind': kind, 'amount': amount, 'subcontractor_id': subcontract.id if kind == 'payment' else False})
             voucher.action_issue()
     for n, phase in enumerate(['تنظيف 3 أيام', 'حفر', 'قواعد', 'هيكل خرساني', 'مباني', 'كهرباء وسباكة', 'تشطيبات']):
-        env['project.task'].create({'name': phase, 'project_id': project.id, 'x_abroj_date_start': today + timedelta(days=-180+n*30), 'date_deadline': fields.Datetime.to_datetime(today + timedelta(days=-177+n*30)), 'state': '1_done' if n < 2 else '01_in_progress'})
+        env['project.task'].create({'name': phase, 'project_id': project.id, 'x_abroj_date_start': today + timedelta(days=-180+n*30), 'x_abroj_duration_days': 3, 'state': '1_done' if n < 2 else '01_in_progress'})
     for n, category in enumerate(['الحفر والأساسات', 'الخرسانة والهيكل', 'الكهرباء', 'السباكة', 'المقاولون من الباطن', 'التشطيبات']):
         line = env['abroj.project.budget.line'].create({'project_id': project.id, 'name': category, 'budget': 300000})
         env['account.analytic.line'].create({'name': category, 'account_id': account.id, 'amount': -[320000, 540000, 95000, 165000, 210000, 35000][n], 'date': today, 'company_id': company.id, 'abroj_budget_line_id': line.id})

@@ -3,7 +3,8 @@ from datetime import timedelta
 from urllib.parse import unquote
 
 from odoo import Command, fields
-from odoo.exceptions import AccessError
+from odoo.exceptions import AccessError, ValidationError
+from odoo.addons.abroj_project_dashboard.hooks import backfill_duration
 from odoo.tests import HttpCase, TransactionCase, tagged
 
 
@@ -28,6 +29,36 @@ class AbrojProjectDashboardCase(TransactionCase):
 
     def ids(self, filters):
         return [p['id'] for p in self.env['project.project'].get_abroj_dashboard_data(filters)['projects']]
+
+    def test_duration_inclusive_and_recompute(self):
+        task = self.env['project.task'].create({'name': 'Phase', 'project_id': self.project.id, 'x_abroj_date_start': '2026-11-01', 'x_abroj_duration_days': 3})
+        self.assertEqual(fields.Date.to_date(task.date_deadline), fields.Date.to_date('2026-11-03'))
+        task.write({'x_abroj_date_start': '2026-11-08'})
+        self.assertEqual(fields.Date.to_date(task.date_deadline), fields.Date.to_date('2026-11-10'))
+        task.write({'x_abroj_duration_days': 1})
+        self.assertEqual(fields.Date.to_date(task.date_deadline), fields.Date.to_date('2026-11-08'))
+        task.write({'date_deadline': '2027-01-01 00:00:00'})
+        self.assertEqual(fields.Date.to_date(task.date_deadline), fields.Date.to_date('2026-11-08'))
+
+    def test_duration_without_start_preserves_deadline(self):
+        task = self.env['project.task'].create({'name': 'Unscheduled', 'project_id': self.project.id, 'date_deadline': '2026-11-03 12:00:00'})
+        task.write({'x_abroj_duration_days': 3})
+        self.assertEqual(fields.Datetime.to_string(task.date_deadline), '2026-11-03 12:00:00')
+
+    def test_duration_validation(self):
+        task = self.env['project.task'].create({'name': 'Phase', 'project_id': self.project.id})
+        for duration in (0, -1):
+            with self.assertRaises(ValidationError), self.env.cr.savepoint():
+                task.write({'x_abroj_duration_days': duration})
+
+    def test_duration_backfill(self):
+        task = self.env['project.task'].create({'name': 'Legacy', 'project_id': self.project.id, 'x_abroj_date_start': '2026-11-01'})
+        task.flush_recordset()
+        self.env.cr.execute("UPDATE project_task SET date_deadline = '2026-11-03 12:00:00' WHERE id = %s", [task.id])
+        backfill_duration(self.env.cr)
+        task.invalidate_recordset(['x_abroj_duration_days', 'date_deadline'])
+        self.assertEqual(task.x_abroj_duration_days, 3)
+        self.assertEqual(fields.Datetime.to_string(task.date_deadline), '2026-11-03 12:00:00')
 
     def test_analytic_actual_cost(self):
         plan = self.env['account.analytic.plan'].create({'name': 'Dashboard plan'})
@@ -191,6 +222,15 @@ class AbrojDashboardHttpCase(HttpCase):
         self.assertEqual(attachment.raw, original)
         gallery = self.rpc('/abroj/app/attachments', {'model': 'project.project', 'record_id': project.id})
         self.assertIn(attachment_id, [item['id'] for item in gallery])
+
+    def test_create_phase_with_duration(self):
+        project = self.env['project.project'].create({'name': 'Phase HTTP', 'company_id': self.env.company.id})
+        self.authenticate('admin', 'admin')
+        result = self.rpc('/abroj/app/save', {'model': 'project.task', 'values': {'name': 'Phase', 'project_id': project.id, 'x_abroj_date_start': '2026-11-01', 'x_abroj_duration_days': 3}})
+        self.assertIn('id', result)
+        detail = self.rpc('/abroj/app/data', {'project_id': project.id})
+        phase = next(p for p in detail['phases'] if p['id'] == result['id'])
+        self.assertEqual((phase['duration'], phase['end']), (3, '2026-11-03'))
 
     def test_engineer_permission_endpoints(self):
         project = self.env['project.project'].create({'name': 'Engineer fixture', 'company_id': self.env.company.id, 'privacy_visibility': 'employees'})

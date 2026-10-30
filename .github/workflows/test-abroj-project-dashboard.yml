@@ -8,7 +8,7 @@ on:
 permissions:
   contents: read
 jobs:
-  contracting-runtime:
+  project-dashboard-runtime:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     services:
@@ -47,7 +47,7 @@ jobs:
             exit 1
           fi
           grep -F '0 failed, 0 error(s)' abroj-project-dashboard-runtime.log
-          test "$(grep -Ec 'Starting (AbrojProjectDashboardCase|AbrojDashboardHttpCase)\.' abroj-project-dashboard-runtime.log)" -eq 26
+          test "$(grep -Ec 'Starting (AbrojProjectDashboardCase|AbrojDashboardHttpCase)\.' abroj-project-dashboard-runtime.log)" -eq 31
       - name: Preserve dashboard runtime evidence
         if: always()
         uses: actions/upload-artifact@v4

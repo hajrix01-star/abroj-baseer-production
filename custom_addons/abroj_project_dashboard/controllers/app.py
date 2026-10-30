@@ -169,6 +169,51 @@ class AbrojApp(http.Controller):
         except (AccessError, UserError):
             return {'error': self._message('تعذر عرض المرفقات. تحقق من صلاحياتك.', 'Could not view attachments. Check your permissions.')}
 
+    @http.route('/abroj/app/library', type='jsonrpc', auth='user')
+    def library(self, project_id):
+        try:
+            project = request.env['project.project'].with_context(active_test=False).browse(int(project_id)).exists()
+            if not project:
+                raise AccessError('Project not found')
+            project.check_access('read')
+            tasks = request.env['project.task'].with_context(active_test=False).search([('project_id', '=', project.id)])
+            attachments = request.env['ir.attachment'].search(['|', '&', ('res_model', '=', 'project.project'), ('res_id', '=', project.id), '&', ('res_model', '=', 'project.task'), ('res_id', 'in', tasks.ids), ('type', '=', 'binary')])
+            return [{'id': a.id, 'name': a.name, 'mimetype': a.mimetype or ''} for a in attachments]
+        except (AccessError, UserError, ValueError, TypeError):
+            return {'error': self._message('تعذر عرض المكتبة. تحقق من صلاحياتك.', 'Could not view the library. Check your permissions.')}
+
+    @http.route('/abroj/app/invoice', type='http', auth='user', methods=['POST'])
+    def invoice_upload(self, project_id=None, file=None, **kwargs):
+        import base64
+        if 'account.move' not in request.env:
+            return request.make_json_response({'error': self._message('تطبيق المحاسبة غير متاح.', 'The Accounting app is not available.')}, status=400)
+        try:
+            with request.env.cr.savepoint():
+                project = request.env['project.project'].with_context(active_test=False).browse(int(project_id)).exists()
+                if not project or not file:
+                    raise AccessError('Project or file missing')
+                project.check_access('write')
+                content = file.read(25 * 1024 * 1024 + 1)
+                if not content or len(content) > 25 * 1024 * 1024:
+                    raise UserError('Invalid file size')
+                # An empty bill cannot yet have analytic lines; keep an explicit project reference.
+                bill = request.env['account.move'].with_company(project.company_id).create({
+                    'move_type': 'in_invoice', 'company_id': project.company_id.id,
+                    'ref': 'Project: %s (ID %s) — pending extraction' % (project.name, project.id),
+                })
+                request.env['ir.attachment'].with_context(image_no_postprocess=True).create({
+                    'name': file.filename, 'res_model': 'account.move', 'res_id': bill.id,
+                    'datas': base64.b64encode(content), 'mimetype': file.content_type,
+                })
+                request.env['abroj.contracting.inbox'].create({
+                    'project_id': project.id, 'filename': file.filename, 'mimetype': file.content_type,
+                    'file': base64.b64encode(content), 'abroj_invoice_bill_id': bill.id,
+                    'note': 'Invoice — pending extraction',
+                })
+            return request.make_json_response({'id': bill.id, 'state': bill.state, 'extraction': 'pending'})
+        except (AccessError, UserError, ValidationError, ValueError, TypeError):
+            return request.make_json_response({'error': self._message('تعذر إنشاء الفاتورة المسودة. تحقق من الصلاحيات والملف وإعدادات المحاسبة.', 'Could not create the draft bill. Check permissions, the file and accounting setup.')}, status=403)
+
     @http.route('/abroj/app/upload', type='http', auth='user', methods=['POST'])
     def upload(self, model=None, record_id=None, file=None, **kwargs):
         import base64

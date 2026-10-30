@@ -38,6 +38,11 @@ class AbrojProjectDashboardCase(TransactionCase):
             self.assertNotIn('alert(', source, path.name)
             self.assertNotIn('confirm(', source, path.name)
 
+    def test_voice_gesture_translations(self):
+        source = (Path(__file__).resolve().parents[1] / 'static' / 'pwa' / 'js' / 'i18n.js').read_text(encoding='utf-8')
+        self.assertIn("holdRecord:['اضغط مطوّلاً للتسجيل','Press and hold to record']", source)
+        self.assertIn("slideCancel:['اسحب للإلغاء','Slide to cancel']", source)
+
     def test_my_day_grouping_dates_and_permissions(self):
         public = self.env['project.project'].create({'name': 'My Day public', 'company_id': self.env.company.id, 'privacy_visibility': 'employees'})
         private = self.env['project.project'].create({'name': 'My Day private', 'company_id': self.env.company.id, 'privacy_visibility': 'followers'})

@@ -326,7 +326,7 @@ class AbrojContractingCase(TransactionCase):
 
     def test_bilingual_pdf_reports(self):
         from io import BytesIO
-        from pypdf import PdfReader
+        from odoo.tools.pdf import PdfFileReader
         self.project.partner_id = self.partner
         self.project.company_id.write({'contracting_name_en': 'Report Company English', 'company_registry': '544-TEST'})
         self.project.contract_payment_schedule = '50% advance / مقدم، 50% completion / إنجاز'
@@ -343,12 +343,13 @@ class AbrojContractingCase(TransactionCase):
             pdf, kind = self.env['ir.actions.report'].with_context(force_report_rendering=True)._render_qweb_pdf(name, record.ids)
             self.assertEqual(kind, 'pdf')
             self.assertTrue(pdf.startswith(b'%PDF-'))
-            pages = PdfReader(BytesIO(pdf)).pages
+            pages = PdfFileReader(BytesIO(pdf), strict=False).pages
             self.assertGreater(len(pages), 0)
-            self.assertIn(text, ''.join(page.extract_text() for page in pages))
+            extract_text = lambda page: (getattr(page, 'extract_text', None) or page.extractText)() or ''
+            self.assertIn(text, ''.join(extract_text(page) for page in pages))
             for page in pages:
-                self.assertIn('Report Company English', page.extract_text())
-                self.assertIn('544-TEST', page.extract_text())
+                self.assertIn('Report Company English', extract_text(page))
+                self.assertIn('544-TEST', extract_text(page))
 
     def test_report_header_company_contacts(self):
         from lxml import html
@@ -516,6 +517,24 @@ class AbrojContractingCase(TransactionCase):
         self.assertIn('twenty-five', voucher.amount_in_words('en'))
         voucher.amount = 8000
         self.assertEqual(voucher.amount_in_words('en'), 'Eight thousand Saudi Riyals only')
+
+    def test_default_clause_content_and_numbering(self):
+        templates = self.env['abroj.contract.clause.template'].search([('is_default', '=', True)])
+        required = {'Force majeure', 'Insurance', 'Initial and final acceptance', 'Confidentiality', 'Notices', 'VAT'}
+        for kind in ('client', 'subcontract'):
+            defaults = templates.filtered(lambda t: t.contract_type in (kind, 'both'))
+            self.assertTrue(required <= set(defaults.mapped('title_en')))
+            if kind == 'subcontract':
+                self.assertIn('No assignment or sub-subcontracting', defaults.mapped('title_en'))
+            for template in defaults:
+                for body in (template.body_ar, template.body_en):
+                    for forbidden in ('أبروج', 'ابروج', 'abroj'):
+                        self.assertNotIn(forbidden, body.lower())
+        self.project.company_id.write({'contracting_name_ar': 'شركة اختبار', 'contracting_name_en': 'Test Company'})
+        line = self.project.clause_line_ids[0]
+        line.write({'body_ar': '{company} أول\nثان', 'body_en': '{company} first\nsecond'})
+        self.assertEqual(line.numbered_body('en', 3), '3.1 Test Company first\n3.2 second')
+        self.assertEqual(line.numbered_body('ar', 3), '3.1 شركة اختبار أول\n3.2 ثان')
 
     def test_clause_filtering_and_migration(self):
         templates = self.env['abroj.contract.clause.template']

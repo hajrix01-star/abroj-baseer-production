@@ -2,13 +2,13 @@
 import base64
 from pathlib import Path
 
-assert env.cr.dbname == 'abroj_contracting_544_test', 'Samples must only run in the throwaway test database'
+assert env.cr.dbname == 'abroj_contracting_544_run9', 'Samples must only run in the throwaway test database'
 out = Path('/workspace/abroj-contract-samples')
 out.mkdir(exist_ok=True)
 company_values = {
     'name': 'Abroj Contracting — شركة أبروج للمقاولات (عينة)',
-    'contracting_name_ar': 'شركة أبروج للمقاولات — عينة',
-    'contracting_name_en': 'Abroj Contracting — SAMPLE',
+    'contracting_name_ar': 'مؤسسة ابرج للمقاولات',
+    'contracting_name_en': 'ABROJ',
     'company_registry': '1010000000', 'vat': '300000000000003',
     'street': 'طريق الملك فهد / King Fahd Road', 'city': 'الرياض / Riyadh',
     'country_id': env.ref('base.sa').id,

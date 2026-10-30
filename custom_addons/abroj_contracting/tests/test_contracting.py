@@ -350,6 +350,34 @@ class AbrojContractingCase(TransactionCase):
                 self.assertIn('Report Company English', page.extract_text())
                 self.assertIn('544-TEST', page.extract_text())
 
+    def test_report_header_company_contacts(self):
+        from lxml import html
+        self.project.partner_id = self.partner
+        company = self.project.company_id
+        reports = [
+            ('agreement', self.project), ('subcontract', self.sub),
+            ('voucher', self.voucher()),
+            ('voucher', self.voucher(kind='receipt', subcontractor_id=False)),
+        ]
+        for website, email in [
+            ('https://header.example.com', 'header@example.com'),
+            ('https://header.example.com', False),
+            (False, 'header@example.com'), (False, False),
+        ]:
+            company.write({'website': website, 'email': email})
+            for report, record in reports:
+                with self.subTest(report=report, record=record.id, website=website, email=email):
+                    rendered, _ = self.env['ir.actions.report']._render_qweb_html(
+                        'abroj_contracting.' + report, record.ids)
+                    tree = html.fromstring(rendered)
+                    for field, value in [('website', website), ('email', email)]:
+                        nodes = tree.xpath('//small[@class="header-contact"]/span[@class="header-%s"]' % field)
+                        self.assertEqual([node.text_content() for node in nodes], [value] if value else [])
+                    contact = tree.xpath('//small[@class="header-contact"]')
+                    self.assertEqual(len(contact), int(bool(website or email)))
+                    if contact:
+                        self.assertEqual(' · ' in contact[0].text_content(), bool(website and email))
+
     def test_both_voucher_memos_and_layout(self):
         from lxml import html
         self.project.company_id.currency_id = self.env.ref('base.SAR')

@@ -215,6 +215,11 @@ class CompanyReportLogo(models.Model):
     _inherit = 'res.company'
     contracting_white_logo = fields.Binary('الشعار الأبيض للعقود', attachment=True, help='ارفع شعار الشركة الأبيض ليظهر على شريط العقود الكحلي.')
 
+    def contract_header_logo(self):
+        """Embed the trimmed artwork so PDF rendering needs no HTTP asset fetch."""
+        with file_open('abroj_contracting/static/img/abroj-logo-core-white-20261004.png', 'rb') as logo:
+            return 'data:image/png;base64,' + base64.b64encode(logo.read()).decode()
+
     def contract_report_name(self, record, language):
         """Split authored bilingual names while preserving single-language names."""
         return report_text(record, 'name', language) or record.name

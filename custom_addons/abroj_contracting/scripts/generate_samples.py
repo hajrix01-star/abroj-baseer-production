@@ -20,8 +20,8 @@ if not company:
     company = env['res.company'].with_context(install_mode=True, install_demo=True).create(company_values)
 else:
     company.write(company_values)
-company.contracting_white_logo = base64.b64encode(Path('/workspace/abroj-baseer-production/custom_addons/abroj_contracting/static/img/abroj-logo-vector-white-20260928.svg').read_bytes())
-logo = Path('/workspace/abroj-baseer-production/custom_addons/abroj_contracting/static/img/abroj-logo-approved-20260928.png')
+company.contracting_white_logo = base64.b64encode(Path('/workspace/abroj-baseer-production/custom_addons/abroj_contracting/static/img/abroj-logo-core-white-20261004.svg').read_bytes())
+logo = Path('/workspace/abroj-baseer-production/custom_addons/abroj_contracting/static/img/abroj-logo-core-primary-20261004.png')
 if logo.exists():
     company.logo = base64.b64encode(logo.read_bytes())
 env = env(context=dict(env.context, allowed_company_ids=[company.id]))

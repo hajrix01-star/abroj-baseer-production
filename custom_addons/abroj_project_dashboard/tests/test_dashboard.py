@@ -106,17 +106,51 @@ class AbrojProjectDashboardCase(TransactionCase):
         spanning = phase(public, 'Spanning', self.today - timedelta(days=1), 3)
         due = phase(public, 'Due', deadline=fields.Datetime.to_datetime(self.today))
         other = phase(self.project, 'Today', self.today)
-        phase(public, 'Past', self.today - timedelta(days=2))
+        past = phase(public, 'Past', self.today - timedelta(days=2))
         phase(public, 'Future', self.today + timedelta(days=1))
         hidden = phase(private, 'Hidden', self.today)
         groups = self.env['project.project'].get_abroj_my_day()
         by_project = {g['id']: {p['id'] for p in g['phases']} for g in groups}
-        self.assertEqual(by_project[public.id], {spanning.id, due.id})
+        self.assertEqual(by_project[public.id], {past.id, spanning.id, due.id})
         self.assertIn(other.id, by_project[self.project.id])
         self.assertIn(hidden.id, by_project[private.id])
         visible = self.env['project.project'].with_user(self.engineer).get_abroj_my_day()
         self.assertNotIn(private.id, {g['id'] for g in visible})
-        self.assertEqual({p['id'] for g in visible if g['id'] == public.id for p in g['phases']}, {spanning.id, due.id})
+        self.assertEqual({p['id'] for g in visible if g['id'] == public.id for p in g['phases']}, {past.id, spanning.id, due.id})
+
+    def test_my_day_priority_and_local_day(self):
+        import pytz
+
+        model = self.env['project.project'].with_context(tz='Pacific/Kiritimati')
+        today = fields.Date.context_today(model)
+        local_start = pytz.timezone('Pacific/Kiritimati').localize(fields.Datetime.to_datetime(today))
+        utc_start = local_start.astimezone(pytz.UTC).replace(tzinfo=None)
+        projects = self.env['project.project'].create([
+            {'name': 'My Day rest first'}, {'name': 'My Day priority second'},
+            {'name': 'My Day priority third'}, {'name': 'My Day rest last'},
+        ])
+        tasks = self.env['project.task']
+        def phase(project, name, start, deadline, state='01_in_progress'):
+            task = tasks.create({'project_id': project.id, 'name': name, 'x_abroj_date_start': start, 'state': state})
+            # Set explicit datetime deadlines to exercise the local midnight boundary.
+            self.env.cr.execute('UPDATE project_task SET date_deadline = %s WHERE id = %s', [deadline, task.id])
+            task.invalidate_recordset(['date_deadline'])
+            return task
+
+        future = today + timedelta(days=1)
+        rest1 = phase(projects[0], 'Rest first', future, utc_start + timedelta(hours=1))
+        rest2 = phase(projects[1], 'Rest in priority group', future, utc_start + timedelta(hours=1))
+        current = phase(projects[1], 'Today', today, utc_start + timedelta(hours=1))
+        late1 = phase(projects[1], 'Overdue earlier', today - timedelta(days=3), utc_start - timedelta(minutes=1))
+        late2 = phase(projects[1], 'Overdue later', today - timedelta(days=2), utc_start - timedelta(days=1))
+        phase(projects[1], 'Done overdue', today - timedelta(days=2), utc_start - timedelta(days=1), '1_done')
+        phase(projects[1], 'Canceled overdue', today - timedelta(days=2), utc_start - timedelta(days=1), '1_canceled')
+        current2 = phase(projects[2], 'Another today', today, utc_start + timedelta(hours=1))
+        rest3 = phase(projects[3], 'Rest last', future, utc_start + timedelta(hours=1))
+        groups = [group for group in model.get_abroj_my_day() if group['id'] in projects.ids]
+        self.assertEqual([group['id'] for group in groups], [projects[1].id, projects[2].id, projects[0].id, projects[3].id])
+        self.assertEqual([p['id'] for p in groups[0]['phases']], [late1.id, late2.id, current.id, rest2.id])
+        self.assertEqual([[p['id'] for p in group['phases']] for group in groups[1:]], [[current2.id], [rest1.id], [rest3.id]])
 
     def test_dashboard_labels_follow_language(self):
         from odoo.addons.abroj_project_dashboard.models.dashboard import STATUS, TYPES

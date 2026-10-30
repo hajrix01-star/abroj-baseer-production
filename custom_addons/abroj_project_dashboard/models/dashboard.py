@@ -1,5 +1,7 @@
 from datetime import timedelta
 
+import pytz
+
 from odoo import api, fields, models
 from odoo.exceptions import AccessError, ValidationError
 
@@ -203,17 +205,23 @@ class Project(models.Model):
     @api.model
     def get_abroj_my_day(self):
         today = fields.Date.context_today(self)
-        start = fields.Datetime.to_datetime(today)
-        tomorrow = start + timedelta(days=1)
+        tz = pytz.timezone(self.env.context.get('tz') or self.env.user.tz or 'UTC')
+        start = tz.localize(fields.Datetime.to_datetime(today)).astimezone(pytz.UTC).replace(tzinfo=None)
+        tomorrow = tz.localize(fields.Datetime.to_datetime(today + timedelta(days=1))).astimezone(pytz.UTC).replace(tzinfo=None)
         projects = self.search([('abroj_closed_date', '=', False), ('abroj_stage_closed', '=', False), ('last_update_status', '!=', 'done')])
         tasks = self.env['project.task'].search([
-            ('project_id', 'in', projects.ids), ('date_deadline', '>=', start),
+            ('project_id', 'in', projects.ids),
+            '|', '&', ('date_deadline', '<', start), ('state', 'not in', ('1_done', '1_canceled')),
+            '&', ('date_deadline', '>=', start),
             '|', ('x_abroj_date_start', '<=', today), ('date_deadline', '<', tomorrow),
         ], order='project_id, x_abroj_date_start, id')
         grouped = {}
+        priorities = {}
         for task in tasks:
             project = task.project_id
             group = grouped.setdefault(project.id, {'id': project.id, 'name': project.name, 'phases': []})
+            priority = 0 if task.date_deadline < start else 1 if not task.x_abroj_date_start or task.x_abroj_date_start <= today else 2
+            priorities[task.id] = priority
             group['phases'].append({
                 'id': task.id, 'name': task.name,
                 'start': str(task.x_abroj_date_start or ''),
@@ -222,7 +230,9 @@ class Project(models.Model):
                 'assignee': ', '.join(task.user_ids.mapped('name')),
                 'assignees': [{'name': u.name, 'is_system': u.id in (1, self.env.ref('base.user_admin').id) or u.login == '__system__' or u.name == 'Administrator'} for u in task.user_ids],
             })
-        return list(grouped.values())
+        for group in grouped.values():
+            group['phases'].sort(key=lambda phase: priorities[phase['id']])
+        return sorted(grouped.values(), key=lambda group: min(priorities[phase['id']] for phase in group['phases']) == 2)
 
     @api.model
     def get_abroj_dashboard_data(self, filters=None, include_archived=False):

@@ -1,101 +1,129 @@
 <?xml version='1.0' encoding='utf-8'?>
 <odoo noupdate="1">
-  <record id="clause_client_1" model="abroj.contracting.clause">
-    <field name="name">Scope / النطاق</field>
+  <record id="clause_client_1" model="abroj.contract.clause.template">
+    <field name="title_ar">النطاق</field>
     <field name="sequence">10</field>
-    <field name="kind">client</field>
-    <field name="text_ar">ينفذ الطرف الأول الأعمال وفق النطاق والمخططات المعتمدة وهدف المشروع المبين أعلاه.</field>
-    <field name="text_en">The company shall perform the works in accordance with the approved scope, drawings and project goal stated above.</field>
+    <field name="contract_type">client</field>
+    <field name="body_ar">ينفذ الطرف الأول الأعمال وفق النطاق والمخططات المعتمدة وهدف المشروع المبين أعلاه.</field>
+    <field name="body_en">The company shall perform the works in accordance with the approved scope, drawings and project goal stated above.</field>
+    <field name="title_en">Scope</field>
+    <field name="is_default">True</field>
   </record>
-  <record id="clause_client_2" model="abroj.contracting.clause">
-    <field name="name">Payments / الدفعات</field>
+  <record id="clause_client_2" model="abroj.contract.clause.template">
+    <field name="title_ar">الدفعات</field>
     <field name="sequence">20</field>
-    <field name="kind">client</field>
-    <field name="text_ar">تستحق الدفعات حسب مراحل الإنجاز المبينة، بعد اعتماد الأعمال وتقديم المستندات اللازمة.</field>
-    <field name="text_en">Payments fall due according to the stated milestones, following approval of the works and supporting documents.</field>
+    <field name="contract_type">client</field>
+    <field name="body_ar">تستحق الدفعات حسب مراحل الإنجاز المبينة، بعد اعتماد الأعمال وتقديم المستندات اللازمة.</field>
+    <field name="body_en">Payments fall due according to the stated milestones, following approval of the works and supporting documents.</field>
+    <field name="title_en">Payments</field>
+    <field name="is_default">True</field>
   </record>
-  <record id="clause_client_3" model="abroj.contracting.clause">
-    <field name="name">Retention / الضمان</field>
+  <record id="clause_client_3" model="abroj.contract.clause.template">
+    <field name="title_ar">الضمان</field>
     <field name="sequence">30</field>
-    <field name="kind">client</field>
-    <field name="text_ar">تحجز نسبة الضمان المبينة من المستخلصات وتفرج بعد الاستلام النهائي ومعالجة العيوب.</field>
-    <field name="text_en">The stated retention percentage is withheld from progress payments and released after final acceptance and remedy of defects.</field>
+    <field name="contract_type">client</field>
+    <field name="body_ar">تحجز نسبة الضمان المبينة من المستخلصات وتفرج بعد الاستلام النهائي ومعالجة العيوب.</field>
+    <field name="body_en">The stated retention percentage is withheld from progress payments and released after final acceptance and remedy of defects.</field>
+    <field name="title_en">Retention</field>
+    <field name="is_default">True</field>
   </record>
-  <record id="clause_client_4" model="abroj.contracting.clause">
-    <field name="name">Variations / التغييرات</field>
+  <record id="clause_client_4" model="abroj.contract.clause.template">
+    <field name="title_ar">التغييرات</field>
     <field name="sequence">40</field>
-    <field name="kind">client</field>
-    <field name="text_ar">لا تنفذ الأعمال الإضافية إلا بموافقة كتابية تحدد القيمة وأثرها على المدة.</field>
-    <field name="text_en">Variations require written approval specifying their price and effect on the completion period.</field>
+    <field name="contract_type">client</field>
+    <field name="body_ar">لا تنفذ الأعمال الإضافية إلا بموافقة كتابية تحدد القيمة وأثرها على المدة.</field>
+    <field name="body_en">Variations require written approval specifying their price and effect on the completion period.</field>
+    <field name="title_en">Variations</field>
+    <field name="is_default">True</field>
   </record>
-  <record id="clause_client_5" model="abroj.contracting.clause">
-    <field name="name">Warranty / الصيانة</field>
+  <record id="clause_client_5" model="abroj.contract.clause.template">
+    <field name="title_ar">الصيانة</field>
     <field name="sequence">50</field>
-    <field name="kind">client</field>
-    <field name="text_ar">يلتزم الطرف الأول بإصلاح عيوب التنفيذ لمدة سنة من الاستلام، دون الإخلال بالضمانات النظامية.</field>
-    <field name="text_en">The company shall remedy workmanship defects for one year from acceptance, without prejudice to statutory warranties.</field>
+    <field name="contract_type">client</field>
+    <field name="body_ar">يلتزم الطرف الأول بإصلاح عيوب التنفيذ لمدة سنة من الاستلام، دون الإخلال بالضمانات النظامية.</field>
+    <field name="body_en">The company shall remedy workmanship defects for one year from acceptance, without prejudice to statutory warranties.</field>
+    <field name="title_en">Warranty</field>
+    <field name="is_default">True</field>
   </record>
-  <record id="clause_client_6" model="abroj.contracting.clause">
-    <field name="name">Termination / الإنهاء</field>
+  <record id="clause_client_6" model="abroj.contract.clause.template">
+    <field name="title_ar">الإنهاء</field>
     <field name="sequence">60</field>
-    <field name="kind">client</field>
-    <field name="text_ar">يجوز إنهاء العقد عند إخلال جوهري لم يعالج خلال خمسة عشر يوماً من الإشعار الكتابي، وتسوى الأعمال المنفذة والمعتمدة.</field>
-    <field name="text_en">Either party may terminate for a material breach unremedied within fifteen days of written notice; approved completed works shall be settled.</field>
+    <field name="contract_type">client</field>
+    <field name="body_ar">يجوز إنهاء العقد عند إخلال جوهري لم يعالج خلال خمسة عشر يوماً من الإشعار الكتابي، وتسوى الأعمال المنفذة والمعتمدة.</field>
+    <field name="body_en">Either party may terminate for a material breach unremedied within fifteen days of written notice; approved completed works shall be settled.</field>
+    <field name="title_en">Termination</field>
+    <field name="is_default">True</field>
   </record>
-  <record id="clause_client_7" model="abroj.contracting.clause">
-    <field name="name">Governing law / النظام</field>
+  <record id="clause_client_7" model="abroj.contract.clause.template">
+    <field name="title_ar">النظام</field>
     <field name="sequence">70</field>
-    <field name="kind">client</field>
-    <field name="text_ar">يخضع العقد لأنظمة المملكة العربية السعودية، وتختص المحاكم السعودية المختصة بالفصل في النزاع.</field>
-    <field name="text_en">This contract is governed by the laws of Saudi Arabia. Disputes are subject to the competent Saudi courts.</field>
+    <field name="contract_type">client</field>
+    <field name="body_ar">يخضع العقد لأنظمة المملكة العربية السعودية، وتختص المحاكم السعودية المختصة بالفصل في النزاع.</field>
+    <field name="body_en">This contract is governed by the laws of Saudi Arabia. Disputes are subject to the competent Saudi courts.</field>
+    <field name="title_en">Governing law</field>
+    <field name="is_default">True</field>
   </record>
-  <record id="clause_subcontractor_1" model="abroj.contracting.clause">
-    <field name="name">Scope / النطاق</field>
+  <record id="clause_subcontractor_1" model="abroj.contract.clause.template">
+    <field name="title_ar">النطاق</field>
     <field name="sequence">10</field>
-    <field name="kind">subcontractor</field>
-    <field name="text_ar">ينفذ مقاول الباطن النطاق المتفق عليه وفق المخططات وتعليمات أبروج وبحسب نوع العقد المبين.</field>
-    <field name="text_en">The subcontractor shall perform the agreed scope according to drawings, Abroj instructions and the stated contract type.</field>
+    <field name="contract_type">subcontract</field>
+    <field name="body_ar">ينفذ مقاول الباطن النطاق المتفق عليه وفق المخططات وتعليمات أبروج وبحسب نوع العقد المبين.</field>
+    <field name="body_en">The subcontractor shall perform the agreed scope according to drawings, Abroj instructions and the stated contract type.</field>
+    <field name="title_en">Scope</field>
+    <field name="is_default">True</field>
   </record>
-  <record id="clause_subcontractor_2" model="abroj.contracting.clause">
-    <field name="name">Materials invoices / فواتير المواد</field>
+  <record id="clause_subcontractor_2" model="abroj.contract.clause.template">
+    <field name="title_ar">فواتير المواد</field>
     <field name="sequence">20</field>
-    <field name="kind">subcontractor</field>
-    <field name="text_ar">يجب إصدار جميع الفواتير الضريبية للمواد باسم شركة أبروج ورقمها الضريبي المبين في العقد، وإلا فلا تقبل. تخصم فواتير المواد الصادرة باسم أبروج من قيمة عقد مقاول الباطن ولا تعد إضافة عليها.</field>
-    <field name="text_en">All materials tax invoices must be issued in Abroj’s company name and VAT number stated in this contract; otherwise they are not accepted. Materials invoices in Abroj’s name are deducted from the subcontract value and do not increase it.</field>
+    <field name="contract_type">subcontract</field>
+    <field name="body_ar">يجب إصدار جميع الفواتير الضريبية للمواد باسم شركة أبروج ورقمها الضريبي المبين في العقد، وإلا فلا تقبل. تخصم فواتير المواد الصادرة باسم أبروج من قيمة عقد مقاول الباطن ولا تعد إضافة عليها.</field>
+    <field name="body_en">All materials tax invoices must be issued in Abroj’s company name and VAT number stated in this contract; otherwise they are not accepted. Materials invoices in Abroj’s name are deducted from the subcontract value and do not increase it.</field>
+    <field name="title_en">Materials invoices</field>
+    <field name="is_default">True</field>
   </record>
-  <record id="clause_subcontractor_3" model="abroj.contracting.clause">
-    <field name="name">Payments and retention / الدفعات والضمان</field>
+  <record id="clause_subcontractor_3" model="abroj.contract.clause.template">
+    <field name="title_ar">الدفعات والضمان</field>
     <field name="sequence">30</field>
-    <field name="kind">subcontractor</field>
-    <field name="text_ar">تصرف الدفعات بعد اعتماد الإنجاز وخصم المواد ونسبة الضمان المبينة. يفرج الضمان بعد الاستلام النهائي ومعالجة العيوب.</field>
-    <field name="text_en">Payments follow approval of progress, less materials and the stated retention percentage. Retention is released after final acceptance and remedy of defects.</field>
+    <field name="contract_type">subcontract</field>
+    <field name="body_ar">تصرف الدفعات بعد اعتماد الإنجاز وخصم المواد ونسبة الضمان المبينة. يفرج الضمان بعد الاستلام النهائي ومعالجة العيوب.</field>
+    <field name="body_en">Payments follow approval of progress, less materials and the stated retention percentage. Retention is released after final acceptance and remedy of defects.</field>
+    <field name="title_en">Payments and retention</field>
+    <field name="is_default">True</field>
   </record>
-  <record id="clause_subcontractor_4" model="abroj.contracting.clause">
-    <field name="name">Duration and penalties / المدة والغرامات</field>
+  <record id="clause_subcontractor_4" model="abroj.contract.clause.template">
+    <field name="title_ar">المدة والغرامات</field>
     <field name="sequence">40</field>
-    <field name="kind">subcontractor</field>
-    <field name="text_ar">يلتزم المقاول بالمدة والتواريخ والغرامات المبينة أعلاه، مع مراعاة أي تمديد معتمد كتابياً.</field>
-    <field name="text_en">The subcontractor shall comply with the stated duration, dates and penalties, subject to extensions approved in writing.</field>
+    <field name="contract_type">subcontract</field>
+    <field name="body_ar">يلتزم المقاول بالمدة والتواريخ والغرامات المبينة أعلاه، مع مراعاة أي تمديد معتمد كتابياً.</field>
+    <field name="body_en">The subcontractor shall comply with the stated duration, dates and penalties, subject to extensions approved in writing.</field>
+    <field name="title_en">Duration and penalties</field>
+    <field name="is_default">True</field>
   </record>
-  <record id="clause_subcontractor_5" model="abroj.contracting.clause">
-    <field name="name">Safety / السلامة</field>
+  <record id="clause_subcontractor_5" model="abroj.contract.clause.template">
+    <field name="title_ar">السلامة</field>
     <field name="sequence">50</field>
-    <field name="kind">subcontractor</field>
-    <field name="text_ar">يلتزم المقاول باشتراطات السلامة ومعدات الوقاية وأنظمة العمل وحماية العاملين والموقع، ويبلغ فوراً عن الحوادث.</field>
-    <field name="text_en">The subcontractor shall comply with safety requirements, protective equipment and labor regulations, protect workers and the site, and report incidents promptly.</field>
+    <field name="contract_type">subcontract</field>
+    <field name="body_ar">يلتزم المقاول باشتراطات السلامة ومعدات الوقاية وأنظمة العمل وحماية العاملين والموقع، ويبلغ فوراً عن الحوادث.</field>
+    <field name="body_en">The subcontractor shall comply with safety requirements, protective equipment and labor regulations, protect workers and the site, and report incidents promptly.</field>
+    <field name="title_en">Safety</field>
+    <field name="is_default">True</field>
   </record>
-  <record id="clause_subcontractor_6" model="abroj.contracting.clause">
-    <field name="name">Termination / الإنهاء</field>
+  <record id="clause_subcontractor_6" model="abroj.contract.clause.template">
+    <field name="title_ar">الإنهاء</field>
     <field name="sequence">60</field>
-    <field name="kind">subcontractor</field>
-    <field name="text_ar">لأبروج إنهاء العقد بعد إشعار كتابي وإمهال خمسة عشر يوماً لمعالجة الإخلال، أو فوراً عند خطر جسيم على السلامة، مع تسوية الأعمال المعتمدة والخصومات.</field>
-    <field name="text_en">Abroj may terminate after written notice and fifteen days to remedy a breach, or immediately for a serious safety hazard, with settlement of approved works and deductions.</field>
+    <field name="contract_type">subcontract</field>
+    <field name="body_ar">لأبروج إنهاء العقد بعد إشعار كتابي وإمهال خمسة عشر يوماً لمعالجة الإخلال، أو فوراً عند خطر جسيم على السلامة، مع تسوية الأعمال المعتمدة والخصومات.</field>
+    <field name="body_en">Abroj may terminate after written notice and fifteen days to remedy a breach, or immediately for a serious safety hazard, with settlement of approved works and deductions.</field>
+    <field name="title_en">Termination</field>
+    <field name="is_default">True</field>
   </record>
-  <record id="clause_subcontractor_7" model="abroj.contracting.clause">
-    <field name="name">Governing law / النظام</field>
+  <record id="clause_subcontractor_7" model="abroj.contract.clause.template">
+    <field name="title_ar">النظام</field>
     <field name="sequence">70</field>
-    <field name="kind">subcontractor</field>
-    <field name="text_ar">تسري أنظمة المملكة العربية السعودية وتختص المحاكم السعودية المختصة.</field>
-    <field name="text_en">Saudi Arabian laws apply and the competent Saudi courts have jurisdiction.</field>
+    <field name="contract_type">subcontract</field>
+    <field name="body_ar">تسري أنظمة المملكة العربية السعودية وتختص المحاكم السعودية المختصة.</field>
+    <field name="body_en">Saudi Arabian laws apply and the competent Saudi courts have jurisdiction.</field>
+    <field name="title_en">Governing law</field>
+    <field name="is_default">True</field>
   </record>
 </odoo>

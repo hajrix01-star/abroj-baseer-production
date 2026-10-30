@@ -2,31 +2,35 @@
 <odoo>
   <record id="clause_list" model="ir.ui.view">
     <field name="name">Contract clauses</field>
-    <field name="model">abroj.contracting.clause</field>
+    <field name="model">abroj.contract.clause.template</field>
     <field name="arch" type="xml">
       <list>
         <field name="sequence" widget="handle"/>
-        <field name="name"/>
-        <field name="kind"/>
+        <field name="title_ar"/>
+        <field name="is_default"/>
+        <field name="title_en"/>
+        <field name="contract_type"/>
         <field name="active"/>
       </list>
     </field>
   </record>
   <record id="clause_form" model="ir.ui.view">
     <field name="name">Contract clause</field>
-    <field name="model">abroj.contracting.clause</field>
+    <field name="model">abroj.contract.clause.template</field>
     <field name="arch" type="xml">
       <form>
         <sheet>
           <group>
-            <field name="name"/>
-            <field name="kind"/>
+            <field name="title_ar"/>
+            <field name="is_default"/>
+            <field name="title_en"/>
+            <field name="contract_type"/>
             <field name="sequence"/>
             <field name="active"/>
           </group>
           <group>
-            <field name="text_ar" dir="rtl"/>
-            <field name="text_en"/>
+            <field name="body_ar" dir="rtl"/>
+            <field name="body_en"/>
           </group>
         </sheet>
       </form>
@@ -34,10 +38,11 @@
   </record>
   <record id="clause_action" model="ir.actions.act_window">
     <field name="name">بنود العقود / Contract clauses</field>
-    <field name="res_model">abroj.contracting.clause</field>
+    <field name="res_model">abroj.contract.clause.template</field>
     <field name="view_mode">list,form</field>
   </record>
-  <menuitem id="menu_clauses" name="بنود العقود" parent="menu_contracting" action="clause_action" sequence="30"/>
+  <menuitem id="menu_contract_configuration" name="الإعدادات" parent="menu_contracting" sequence="30" groups="project.group_project_manager"/>
+  <menuitem id="menu_clauses" name="بنود العقود" parent="menu_contract_configuration" action="clause_action" sequence="30"/>
   <record id="project_print_form" model="ir.ui.view">
     <field name="name">Project contract print</field>
     <field name="model">project.project</field>
@@ -59,6 +64,20 @@
         <field name="contracting_goal_en"/>
         <field name="contracting_goal_ar" dir="rtl"/>
       </xpath>
+      <xpath expr="//sheet" position="inside">
+        <group string="بنود العقد">
+          <button name="action_reload_default_clauses" type="object" string="إعادة تحميل البنود الافتراضية" confirm="سيتم استبدال جميع بنود هذا العقد. هل تريد المتابعة؟" help="استبدال بنود هذا العقد بنسخة جديدة من القوالب الافتراضية."/>
+          <field name="clause_line_ids" nolabel="1">
+            <list editable="bottom">
+              <field name="sequence" widget="handle"/>
+              <field name="title_ar"/>
+              <field name="title_en"/>
+              <field name="body_ar"/>
+              <field name="body_en"/>
+            </list>
+          </field>
+        </group>
+      </xpath>
     </field>
   </record>
   <record id="native_project_print_form" model="ir.ui.view">
@@ -70,6 +89,20 @@
         <header>
           <button name="action_print_contract" type="object" string="طباعة عقد العميل" help="طباعة عقد العميل بالعربية والإنجليزية."/>
         </header>
+      </xpath>
+      <xpath expr="//sheet" position="inside">
+        <group string="بنود العقد">
+          <button name="action_reload_default_clauses" type="object" string="إعادة تحميل البنود الافتراضية" confirm="سيتم استبدال جميع بنود هذا العقد. هل تريد المتابعة؟" help="استبدال بنود هذا العقد بنسخة جديدة من القوالب الافتراضية."/>
+          <field name="clause_line_ids" nolabel="1">
+            <list editable="bottom">
+              <field name="sequence" widget="handle"/>
+              <field name="title_ar"/>
+              <field name="title_en"/>
+              <field name="body_ar"/>
+              <field name="body_en"/>
+            </list>
+          </field>
+        </group>
       </xpath>
     </field>
   </record>
@@ -95,6 +128,20 @@
       <xpath expr="//field[@name='payment_terms']" position="after">
         <field name="payment_terms_en"/>
         <field name="payment_terms_ar" dir="rtl"/>
+      </xpath>
+      <xpath expr="//sheet" position="inside">
+        <group string="بنود العقد">
+          <button name="action_reload_default_clauses" type="object" string="إعادة تحميل البنود الافتراضية" confirm="سيتم استبدال جميع بنود هذا العقد. هل تريد المتابعة؟" help="استبدال بنود هذا العقد بنسخة جديدة من القوالب الافتراضية."/>
+          <field name="clause_line_ids" nolabel="1">
+            <list editable="bottom">
+              <field name="sequence" widget="handle"/>
+              <field name="title_ar"/>
+              <field name="title_en"/>
+              <field name="body_ar"/>
+              <field name="body_en"/>
+            </list>
+          </field>
+        </group>
       </xpath>
     </field>
   </record>
@@ -124,6 +171,7 @@
     <field name="inherit_id" ref="base.view_company_form"/>
     <field name="arch" type="xml">
       <xpath expr="//field[@name='company_registry']" position="after">
+        <field name="contracting_white_logo" widget="image"/>
         <field name="contracting_name_ar"/>
         <field name="contracting_name_en"/>
       </xpath>

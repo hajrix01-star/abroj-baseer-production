@@ -4,3 +4,5 @@ from . import inbox
 from . import project_note
 
 from . import printing
+
+from . import clauses

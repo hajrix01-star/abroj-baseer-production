@@ -1,0 +1,112 @@
+<?xml version='1.0' encoding='utf-8'?>
+<odoo>
+  <record id="clause_list" model="ir.ui.view">
+    <field name="name">Contract clauses</field>
+    <field name="model">abroj.contracting.clause</field>
+    <field name="arch" type="xml">
+      <list>
+        <field name="sequence" widget="handle"/>
+        <field name="name"/>
+        <field name="kind"/>
+        <field name="active"/>
+      </list>
+    </field>
+  </record>
+  <record id="clause_form" model="ir.ui.view">
+    <field name="name">Contract clause</field>
+    <field name="model">abroj.contracting.clause</field>
+    <field name="arch" type="xml">
+      <form>
+        <sheet>
+          <group>
+            <field name="name"/>
+            <field name="kind"/>
+            <field name="sequence"/>
+            <field name="active"/>
+          </group>
+          <group>
+            <field name="text_ar" dir="rtl"/>
+            <field name="text_en"/>
+          </group>
+        </sheet>
+      </form>
+    </field>
+  </record>
+  <record id="clause_action" model="ir.actions.act_window">
+    <field name="name">بنود العقود / Contract clauses</field>
+    <field name="res_model">abroj.contracting.clause</field>
+    <field name="view_mode">list,form</field>
+  </record>
+  <menuitem id="menu_clauses" name="بنود العقود" parent="menu_contracting" action="clause_action" sequence="30"/>
+  <record id="project_print_form" model="ir.ui.view">
+    <field name="name">Project contract print</field>
+    <field name="model">project.project</field>
+    <field name="inherit_id" ref="project_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//sheet" position="before">
+        <header>
+          <button name="action_print_contract" type="object" string="طباعة عقد العميل" help="طباعة عقد العميل بالعربية والإنجليزية مع القيمة والضريبة وجدول الدفعات."/>
+        </header>
+      </xpath>
+      <xpath expr="//field[@name='contract_value']" position="after">
+        <field name="contract_vat_percent"/>
+        <field name="contract_retention_percent"/>
+        <field name="contract_payment_schedule"/>
+      </xpath>
+    </field>
+  </record>
+  <record id="native_project_print_form" model="ir.ui.view">
+    <field name="name">Native project contract print</field>
+    <field name="model">project.project</field>
+    <field name="inherit_id" ref="project.edit_project"/>
+    <field name="arch" type="xml">
+      <xpath expr="//sheet" position="before">
+        <header>
+          <button name="action_print_contract" type="object" string="طباعة عقد العميل" help="طباعة عقد العميل بالعربية والإنجليزية."/>
+        </header>
+      </xpath>
+    </field>
+  </record>
+  <record id="sub_print_form" model="ir.ui.view">
+    <field name="name">Subcontract print</field>
+    <field name="model">abroj.contracting.subcontractor</field>
+    <field name="inherit_id" ref="subcontractor_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//header" position="inside">
+        <button name="action_print_contract" type="object" string="طباعة عقد الباطن" help="طباعة عقد مقاول الباطن وشروط فواتير المواد والضمان بالعربية والإنجليزية."/>
+      </xpath>
+      <xpath expr="//field[@name='duration_days']" position="after">
+        <field name="start_date"/>
+        <field name="end_date"/>
+        <field name="penalties"/>
+      </xpath>
+    </field>
+  </record>
+  <record id="voucher_balance_form" model="ir.ui.view">
+    <field name="name">Voucher contract balance</field>
+    <field name="model">abroj.contracting.voucher</field>
+    <field name="inherit_id" ref="voucher_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//field[@name='subcontractor_id']" position="after">
+        <field name="vendor_contract_reference" readonly="state != 'draft'"/>
+        <field name="vendor_contract_value" readonly="state != 'draft'"/>
+      </xpath>
+      <xpath expr="//sheet" position="inside">
+        <group string="رصيد العقد / Contract balance">
+          <field name="balance_html" nolabel="1"/>
+        </group>
+      </xpath>
+    </field>
+  </record>
+  <record id="company_contract_names" model="ir.ui.view">
+    <field name="name">Company contract names</field>
+    <field name="model">res.company</field>
+    <field name="inherit_id" ref="base.view_company_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//field[@name='company_registry']" position="after">
+        <field name="contracting_name_ar"/>
+        <field name="contracting_name_en"/>
+      </xpath>
+    </field>
+  </record>
+</odoo>

@@ -49,3 +49,45 @@
 هذه سجلات تشغيلية ولا تنشئ فواتير مورد أو قيود ضريبة في دفتر الأستاذ؛ التسجيل الضريبي معلومة فقط.
 الضمان نسبة اختيارية للمراجعة، ضمن إجمالي المستحق ولا يخصم تلقائياً.
 زر تسوية نهاية المشروع يطبع ملخصاً دون إنشاء دفعات أو إقفال العقد.
+
+## Printable bilingual contracts and vouchers
+
+Project and subcontractor forms provide Arabic print buttons. Contracts place English
+on the left and Arabic (`dir="rtl"`) on the right in a separate table for each clause.
+Project contract value is shown with the separately configured VAT rate, VAT amount
+and VAT-inclusive total. Enter payment milestones, retention and contract dates before
+printing. Subcontracts also expose start/end dates and penalties.
+
+The **بنود العقود** menu contains sequenced Arabic/English clause templates by contract
+kind. Internal users can read them; Project Managers can edit, archive and create them.
+Default clauses use `noupdate="1"`, so module upgrades preserve edits. Reports reflect
+current terms and balances when printed; PDFs are not immutable signed snapshots.
+
+Receipt vouchers without a subcontract must name the project's customer. Payments
+must reference a subcontract or a vendor contract reference before issuance. Vendor
+contract value is entered on each vendor voucher. Subcontract receipts remain supported
+as refunds. The form and PDF calculate:
+
+- Client receipt: contract value − previous issued receipts − current receipt.
+- Subcontract: agreed value − confirmed Abroj materials − previous net payments
+  − current payment (a refund increases the balance).
+- Vendor payment: vendor contract value − previous payments − current payment.
+
+History is scoped by company, project, party, subcontract and vendor reference.
+Issued vouchers use issuance time, with ID as a tie breaker, rather than business date;
+backdating does not reorder issuance history. Existing issued records are initialized
+from creation time during upgrade. Cancelled vouchers are excluded. Retention remains
+within the balance and is displayed separately on contracts, matching existing accounting.
+
+Company forms expose Arabic and English contract names. The custom report layout uses
+the document company for names, CR, VAT, address, contacts and logo. Set both names for
+bilingual branding; an unset name falls back to the company's name. DejaVu Sans and its
+license are bundled and embedded as a data URI. Report bodies, headers and footers are
+self-contained, so wkhtmltopdf does not need an HTTP asset server. A patched-Qt
+wkhtmltopdf installation is required for repeating headers and footers.
+
+Sample generator (strictly restricted to `abroj_contracting_544_test`):
+`custom_addons/abroj_contracting/scripts/generate_samples.py`.
+Feed it to `odoo-bin shell` with the same test DB/addons/data-dir arguments. It creates
+an isolated sample company, loads the website's Abroj logo, writes the four PDFs into
+`/workspace/abroj-contract-samples`, then rolls back all sample database records.

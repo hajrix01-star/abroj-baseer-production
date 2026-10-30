@@ -9,9 +9,11 @@ class Capture(http.Controller):
     def capture(self, **kwargs):
         projects = request.env['project.project'].search([('company_id', 'in', request.env.companies.ids)])
         if request.httprequest.method == 'POST':
+            if not kwargs.get('project_id'):
+                raise BadRequest('يجب اختيار المشروع')
             try:
                 project_id = int(kwargs.get('project_id', '0'))
-            except ValueError:
+            except (TypeError, ValueError):
                 raise BadRequest('المشروع غير صالح')
             project = projects.filtered(lambda p: p.id == project_id)
             if not project:

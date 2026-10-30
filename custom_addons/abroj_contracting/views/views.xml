@@ -124,6 +124,7 @@
       <form string="السندات">
         <header>
           <button name="action_issue" type="object" string="إصدار واعتماد" class="btn-primary" invisible="state != 'draft'" help="عرض السجل أو اعتماد العملية حسب حالتها؛ راجع البيانات والمرفقات قبل التنفيذ."/>
+          <button name="action_accounting_approve" type="object" string="اعتماد محاسبي" groups="account.group_account_manager,account.group_account_invoice" invisible="state != 'issued' or payment_id" help="إنشاء دفعة محاسبية مرتبطة بحساب المشروع التحليلي؛ يجب أن يعتمد السند محاسب غير مصدره، ولا يسمح لوكيل الاستخراج بالاعتماد."/>
           <button name="action_cancel" type="object" string="إلغاء" invisible="state == 'cancelled'" help="عرض السجل أو اعتماد العملية حسب حالتها؛ راجع البيانات والمرفقات قبل التنفيذ."/>
           <field name="state" widget="statusbar"/>
         </header>
@@ -142,8 +143,7 @@
             <field name="memo" readonly="state != 'draft'"/>
             <field name="attachment" readonly="state != 'draft'"/>
             <field name="filename" readonly="state != 'draft'"/>
-            <field name="create_payment" readonly="state != 'draft'"/>
-            <field name="journal_id" invisible="not create_payment" readonly="state != 'draft'"/>
+            <field name="journal_id" readonly="state != 'draft'"/>
             <field name="payment_id"/>
             <field name="issued_by"/>
             <field name="state"/>

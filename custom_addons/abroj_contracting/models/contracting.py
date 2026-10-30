@@ -186,9 +186,9 @@ class Voucher(models.Model):
     attachment = fields.Binary('المرفق', attachment=True, help='حدد المرفق لهذا السجل وفق مستند المشروع الأصلي.')
     filename = fields.Char('اسم الملف', help='حدد اسم الملف لهذا السجل وفق مستند المشروع الأصلي.')
     state = fields.Selection([('draft', 'مسودة'), ('issued', 'صادر'), ('cancelled', 'ملغى')], string='الحالة', default='draft', readonly=True, copy=False, help='المسودة قابلة للتعديل؛ الاعتماد يقفل المستند ويحدث الإجماليات.')
-    create_payment = fields.Boolean('إنشاء دفعة محاسبية', default=False, help='إنشاء دفعة محاسبية عند إصدار السند؛ يتطلب صلاحية المحاسبة وحساب المشروع التحليلي ودفتر دفع.')
-    journal_id = fields.Many2one('account.journal', string='دفتر الدفع', check_company=True, domain="[('type', 'in', ['bank', 'cash'])]", help='حدد دفتر الدفع لهذا السجل وفق مستند المشروع الأصلي.')
-    payment_id = fields.Many2one('account.payment', string='الدفعة المحاسبية', readonly=True, copy=False, check_company=True, help='حدد الدفعة المحاسبية لهذا السجل وفق مستند المشروع الأصلي.')
+    create_payment = fields.Boolean('إنشاء دفعة محاسبية', default=False, help='حقل قديم؛ أنشئ الدفعة عبر زر الاعتماد المحاسبي بعد إصدار السند.')
+    journal_id = fields.Many2one('account.journal', string='دفتر الدفع', check_company=True, domain="[('type', 'in', ['bank', 'cash'])]", help='اختر دفتر الدفع قبل الإصدار؛ عند تركه فارغاً يختار الاعتماد المحاسبي دفتر نقد أو بنك متاحاً من شركة المشروع حسب طريقة الدفع.')
+    payment_id = fields.Many2one('account.payment', string='الدفعة المحاسبية', readonly=True, copy=False, check_company=True, help='الدفعة التي أنشأها محاسب آخر عبر الاعتماد المحاسبي؛ يخصص حسابها المقابل للحساب التحليلي للمشروع.')
     issued_by = fields.Many2one('res.users', string='أصدره', readonly=True, copy=False, help='حدد أصدره لهذا السجل وفق مستند المشروع الأصلي.')
 
     @api.model_create_multi
@@ -218,33 +218,52 @@ class Voucher(models.Model):
             r.invalidate_recordset(['state'])
             if r.state != 'draft':
                 raise UserError('تم إصدار السند مسبقاً.')
-            payment = False
-            if r.create_payment:
-                if not self.env.user.has_group('account.group_account_user'):
-                    raise AccessError('إنشاء دفعة يتطلب صلاحية المحاسبة.')
-                account = r.project_id.account_id
-                if not account or not r.journal_id or r.journal_id.company_id != r.company_id:
-                    raise UserError('حدد حساب المشروع التحليلي ودفتر دفع من نفس الشركة.')
-                direction = 'outbound' if r.kind == 'payment' else 'inbound'
-                lines = r.journal_id.outbound_payment_method_line_ids if direction == 'outbound' else r.journal_id.inbound_payment_method_line_ids
-                if not lines:
-                    raise UserError('لا توجد طريقة دفع في الدفتر.')
-                payment = self.env['account.payment'].create({
-                    'payment_type': direction, 'partner_type': 'supplier' if direction == 'outbound' else 'customer',
-                    'partner_id': r.partner_id.id, 'amount': r.amount, 'date': r.date,
-                    'currency_id': r.currency_id.id, 'journal_id': r.journal_id.id,
-                    'payment_method_line_id': lines[0].id, 'company_id': r.company_id.id,
-                })
-                payment._generate_journal_entry()
-                if not payment.move_id:
-                    raise UserError('يلزم دفتر يولد قيد دفع لتخصيص الحساب التحليلي.')
-                counterpart = payment.move_id.line_ids.filtered(lambda line: line.account_id == payment.destination_account_id)
-                counterpart.write({'analytic_distribution': {str(account.id): 100}})
-                payment.action_post()
             values = {'state': 'issued', 'issued_by': self.env.uid,
                       'name': self.env['ir.sequence'].with_company(r.company_id).next_by_code('abroj.contracting.' + r.kind),
-                      'payment_id': payment.id if payment else False}
+                      'payment_id': False}
             super(FrozenDocument, r).write(values)
+        return True
+
+    def action_accounting_approve(self):
+        # This prohibition also applies to agents holding accounting groups.
+        if self.env.user.has_group('abroj_contracting.group_extraction_agent'):
+            raise AccessError('وكيل الاستخراج لا يملك صلاحية الاعتماد المحاسبي.')
+        if not (self.env.user.has_group('account.group_account_manager')
+                or self.env.user.has_group('account.group_account_invoice')):
+            raise AccessError('الاعتماد المحاسبي يتطلب صلاحية المحاسبة.')
+        self.check_access('write')
+        for r in self:
+            self.env.cr.execute('SELECT id FROM abroj_contracting_voucher WHERE id = %s FOR UPDATE', [r.id])
+            r.invalidate_recordset(['state', 'payment_id', 'issued_by'])
+            if r.state != 'issued' or r.payment_id:
+                raise UserError('الاعتماد المحاسبي متاح لسند صادر دون دفعة فقط.')
+            if r.issued_by == self.env.user:
+                raise AccessError('لا يجوز لمصدر السند اعتماده محاسبياً.')
+            account = r.project_id.account_id
+            journal = r.journal_id or self.env['account.journal'].search([
+                ('company_id', '=', r.company_id.id),
+                ('type', '=', 'cash' if r.method == 'cash' else 'bank'),
+            ], limit=1)
+            if not account or not journal or journal.company_id != r.company_id or journal.type not in ('bank', 'cash'):
+                raise UserError('حدد حساب المشروع التحليلي ودفتر نقد أو بنك من نفس الشركة.')
+            direction = 'outbound' if r.kind == 'payment' else 'inbound'
+            lines = journal.outbound_payment_method_line_ids if direction == 'outbound' else journal.inbound_payment_method_line_ids
+            if not lines:
+                raise UserError('لا توجد طريقة دفع في الدفتر.')
+            payment = self.env['account.payment'].with_company(r.company_id).create({
+                'payment_type': direction, 'partner_type': 'supplier' if direction == 'outbound' else 'customer',
+                'partner_id': r.partner_id.id, 'amount': r.amount, 'date': r.date,
+                'currency_id': r.currency_id.id, 'journal_id': journal.id,
+                'payment_method_line_id': lines[0].id, 'company_id': r.company_id.id,
+                'memo': r.name,
+            })
+            payment._generate_journal_entry()
+            if not payment.move_id:
+                raise UserError('يلزم دفتر يولد قيد دفع لتخصيص الحساب التحليلي.')
+            counterpart = payment.move_id.line_ids.filtered(lambda line: line.account_id == payment.destination_account_id)
+            counterpart.write({'analytic_distribution': {str(account.id): 100}})
+            payment.action_post()
+            super(FrozenDocument, r).write({'payment_id': payment.id})
         return True
 
     def action_cancel(self):

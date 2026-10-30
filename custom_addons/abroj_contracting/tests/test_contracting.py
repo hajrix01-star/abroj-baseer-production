@@ -350,6 +350,39 @@ class AbrojContractingCase(TransactionCase):
                 self.assertIn('Report Company English', page.extract_text())
                 self.assertIn('544-TEST', page.extract_text())
 
+    def test_report_column_languages(self):
+        from lxml import html
+        import re
+        self.project.write({
+            'contracting_goal': 'نطاق العمل / Work scope',
+            'contract_payment_schedule_en': '30% advance; 70% handover',
+            'contract_payment_schedule_ar': '30% مقدم؛ 70% عند التسليم',
+        })
+        self.sub.write({'scope': 'التشطيبات / Fit-out',
+                        'payment_terms': '20% مقدم\n20% advance',
+                        'penalties': '500 ريال\nSAR 500'})
+        self.sub.scope_en = 'Supply/install fit-out'
+        self.assertEqual(self.sub.report_text('scope', 'en'), 'Supply/install fit-out')
+        self.assertEqual(self.sub.report_text('payment_terms', 'en'), '20% advance')
+        self.assertEqual(self.sub.report_text('payment_terms', 'ar'), '20% مقدم')
+        self.assertEqual(self.project.report_text('contract_payment_schedule', 'en'),
+                         '30% advance; 70% handover')
+        for report, record in [('agreement', self.project), ('subcontract', self.sub),
+                               ('voucher', self.voucher(memo='دفعة / Payment'))]:
+            rendered, _ = self.env['ir.actions.report']._render_qweb_html(
+                'abroj_contracting.' + report, record.ids)
+            tree = html.fromstring(rendered)
+            for language, pattern in [('en', r'[\u0600-\u06ff]'), ('ar', r'[A-Za-z]')]:
+                for cell in tree.xpath('//td[@class="%s"]' % language):
+                    # Names and identifiers are intentionally preserved as entered.
+                    text = cell.text_content()
+                    for name in [self.project.name, self.partner.name, self.env.company.name,
+                                 self.env.company.contracting_name_en or '',
+                                 self.env.company.contracting_name_ar or '', self.env.company.currency_id.name]:
+                        if name:
+                            text = text.replace(name, '')
+                    self.assertFalse(re.search(pattern, text), text)
+
     def test_voucher_contract_balances(self):
         self.project.partner_id = self.partner
         first = self.voucher(amount=500)

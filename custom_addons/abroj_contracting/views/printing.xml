@@ -52,6 +52,12 @@
         <field name="contract_vat_percent"/>
         <field name="contract_retention_percent"/>
         <field name="contract_payment_schedule"/>
+        <field name="contract_payment_schedule_en"/>
+        <field name="contract_payment_schedule_ar" dir="rtl"/>
+      </xpath>
+      <xpath expr="//field[@name='contracting_goal']" position="after">
+        <field name="contracting_goal_en"/>
+        <field name="contracting_goal_ar" dir="rtl"/>
       </xpath>
     </field>
   </record>
@@ -79,6 +85,16 @@
         <field name="start_date"/>
         <field name="end_date"/>
         <field name="penalties"/>
+        <field name="penalties_en"/>
+        <field name="penalties_ar" dir="rtl"/>
+      </xpath>
+      <xpath expr="//field[@name='scope']" position="after">
+        <field name="scope_en"/>
+        <field name="scope_ar" dir="rtl"/>
+      </xpath>
+      <xpath expr="//field[@name='payment_terms']" position="after">
+        <field name="payment_terms_en"/>
+        <field name="payment_terms_ar" dir="rtl"/>
       </xpath>
     </field>
   </record>
@@ -95,6 +111,10 @@
         <group string="رصيد العقد / Contract balance">
           <field name="balance_html" nolabel="1"/>
         </group>
+      </xpath>
+      <xpath expr="//field[@name='memo']" position="after">
+        <field name="memo_en" readonly="state != 'draft'"/>
+        <field name="memo_ar" dir="rtl" readonly="state != 'draft'"/>
       </xpath>
     </field>
   </record>

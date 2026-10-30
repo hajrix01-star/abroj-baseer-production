@@ -80,8 +80,8 @@
             </table>
             <table class="clause" dir="ltr">
               <tr>
-                <td class="en" dir="ltr">Company: <span t-out="o.company_id.name"/><br/>VAT: <span t-out="o.company_id.vat"/></td>
-                <td class="ar" dir="rtl">الشركة: <span t-out="o.company_id.name"/><br/>الرقم الضريبي: <span t-out="o.company_id.vat"/></td>
+                <td class="en" dir="ltr">Company: <span t-out="o.company_id.contracting_name_en or o.company_id.name"/><br/>VAT: <span t-out="o.company_id.vat"/></td>
+                <td class="ar" dir="rtl">الشركة: <span t-out="o.company_id.contracting_name_ar or o.company_id.name"/><br/>الرقم الضريبي: <span t-out="o.company_id.vat"/></td>
               </tr>
             </table>
             <table class="clause" dir="ltr">
@@ -92,14 +92,14 @@
             </table>
             <table class="clause" dir="ltr">
               <tr>
-                <td class="en" dir="ltr">Project / Scope: <span t-out="o.contracting_goal"/></td>
-                <td class="ar" dir="rtl">المشروع / النطاق: <span t-out="o.contracting_goal"/></td>
+                <td class="en" dir="ltr">Project / Scope: <span t-out="o.report_text('contracting_goal', 'en')"/></td>
+                <td class="ar" dir="rtl">المشروع / النطاق: <span t-out="o.report_text('contracting_goal', 'ar')"/></td>
               </tr>
             </table>
             <table class="clause" dir="ltr">
               <tr>
-                <td class="en" dir="ltr">Contract value: <span t-out="o.contract_value" t-options="{'widget': 'monetary', 'display_currency': o.currency_id}" dir="ltr"/> <span t-out="o.currency_id.name"/></td>
-                <td class="ar" dir="rtl">قيمة العقد: <span t-out="o.contract_value" t-options="{'widget': 'monetary', 'display_currency': o.currency_id}" dir="ltr"/> <span t-out="o.currency_id.name"/></td>
+                <td class="en" dir="ltr">Contract value: <span t-out="o.contract_value" t-options="{'widget': 'monetary', 'display_currency': o.currency_id}" dir="ltr"/></td>
+                <td class="ar" dir="rtl">قيمة العقد: <span t-out="o.contract_value" t-options="{'widget': 'monetary', 'display_currency': o.currency_id}" dir="ltr"/></td>
               </tr>
             </table>
             <table class="clause" dir="ltr">
@@ -116,19 +116,19 @@
             </table>
             <table class="clause" dir="ltr">
               <tr>
-                <td class="en" dir="ltr">Payment milestones: <span t-out="o.contract_payment_schedule"/><br/>Retention: <span t-out="o.contract_retention_percent"/>%</td>
-                <td class="ar" dir="rtl">مراحل الدفع: <span t-out="o.contract_payment_schedule"/><br/>الضمان: <span t-out="o.contract_retention_percent"/>%</td>
+                <td class="en" dir="ltr">Payment milestones: <span t-out="o.report_text('contract_payment_schedule', 'en')"/><br/>Retention: <span t-out="o.contract_retention_percent"/>%</td>
+                <td class="ar" dir="rtl">مراحل الدفع: <span t-out="o.report_text('contract_payment_schedule', 'ar')"/><br/>الضمان: <span t-out="o.contract_retention_percent"/>%</td>
               </tr>
             </table>
             <t t-foreach="o.contract_clauses()" t-as="clause">
               <table class="clause" dir="ltr">
                 <tr>
                   <td class="en" dir="ltr">
-                    <strong t-out="clause.name"/>
+                    <strong t-out="clause.report_text('name', 'en')"/>
                     <p t-out="clause.text_en"/>
                   </td>
                   <td class="ar" dir="rtl">
-                    <strong t-out="clause.name"/>
+                    <strong t-out="clause.report_text('name', 'ar')"/>
                     <p t-out="clause.text_ar"/>
                   </td>
                 </tr>
@@ -168,8 +168,8 @@
             </table>
             <table class="clause" dir="ltr">
               <tr>
-                <td class="en" dir="ltr">Company: <span t-out="o.company_id.name"/><br/>VAT: <span t-out="o.company_id.vat"/></td>
-                <td class="ar" dir="rtl">الشركة: <span t-out="o.company_id.name"/><br/>الرقم الضريبي: <span t-out="o.company_id.vat"/></td>
+                <td class="en" dir="ltr">Company: <span t-out="o.company_id.contracting_name_en or o.company_id.name"/><br/>VAT: <span t-out="o.company_id.vat"/></td>
+                <td class="ar" dir="rtl">الشركة: <span t-out="o.company_id.contracting_name_ar or o.company_id.name"/><br/>الرقم الضريبي: <span t-out="o.company_id.vat"/></td>
               </tr>
             </table>
             <table class="clause" dir="ltr">
@@ -180,26 +180,26 @@
             </table>
             <table class="clause" dir="ltr">
               <tr>
-                <td class="en" dir="ltr">Project / Scope: <span t-out="o.scope"/></td>
-                <td class="ar" dir="rtl">المشروع / النطاق: <span t-out="o.scope"/></td>
+                <td class="en" dir="ltr">Project / Scope: <span t-out="o.report_text('scope', 'en')"/></td>
+                <td class="ar" dir="rtl">المشروع / النطاق: <span t-out="o.report_text('scope', 'ar')"/></td>
               </tr>
             </table>
             <table class="clause" dir="ltr">
               <tr>
-                <td class="en" dir="ltr">Contract value: <span t-out="o.agreed_amount" t-options="{'widget': 'monetary', 'display_currency': o.currency_id}" dir="ltr"/> <span t-out="o.currency_id.name"/></td>
-                <td class="ar" dir="rtl">قيمة العقد: <span t-out="o.agreed_amount" t-options="{'widget': 'monetary', 'display_currency': o.currency_id}" dir="ltr"/> <span t-out="o.currency_id.name"/></td>
+                <td class="en" dir="ltr">Contract value: <span t-out="o.agreed_amount" t-options="{'widget': 'monetary', 'display_currency': o.currency_id}" dir="ltr"/></td>
+                <td class="ar" dir="rtl">قيمة العقد: <span t-out="o.agreed_amount" t-options="{'widget': 'monetary', 'display_currency': o.currency_id}" dir="ltr"/></td>
               </tr>
             </table>
             <table class="clause" dir="ltr">
               <tr>
-                <td class="en" dir="ltr">Type: <span t-out="{'labor': 'Labor only / عمالة فقط', 'materials': 'Materials inclusive / شامل المواد', 'lump': 'Lump sum / مقطوعية', 'other': 'Other / أخرى'}.get(o.contract_type, '')"/></td>
-                <td class="ar" dir="rtl">نوع العقد: <span t-out="{'labor': 'Labor only / عمالة فقط', 'materials': 'Materials inclusive / شامل المواد', 'lump': 'Lump sum / مقطوعية', 'other': 'Other / أخرى'}.get(o.contract_type, '')"/></td>
+                <td class="en" dir="ltr">Type: <span t-out="{'labor': 'Labor only', 'materials': 'Materials inclusive', 'lump': 'Lump sum', 'other': 'Other'}.get(o.contract_type, '')"/></td>
+                <td class="ar" dir="rtl">نوع العقد: <span t-out="{'labor': 'عمالة فقط', 'materials': 'شامل المواد', 'lump': 'مقطوعية', 'other': 'أخرى'}.get(o.contract_type, '')"/></td>
               </tr>
             </table>
             <table class="clause" dir="ltr">
               <tr>
-                <td class="en" dir="ltr">Penalties: <span t-out="o.penalties"/></td>
-                <td class="ar" dir="rtl">الغرامات: <span t-out="o.penalties"/></td>
+                <td class="en" dir="ltr">Penalties: <span t-out="o.report_text('penalties', 'en')"/></td>
+                <td class="ar" dir="rtl">الغرامات: <span t-out="o.report_text('penalties', 'ar')"/></td>
               </tr>
             </table>
             <table class="clause" dir="ltr">
@@ -210,19 +210,19 @@
             </table>
             <table class="clause" dir="ltr">
               <tr>
-                <td class="en" dir="ltr">Payment milestones: <span t-out="o.payment_terms"/><br/>Retention: <span t-out="o.retention_percent"/>%</td>
-                <td class="ar" dir="rtl">مراحل الدفع: <span t-out="o.payment_terms"/><br/>الضمان: <span t-out="o.retention_percent"/>%</td>
+                <td class="en" dir="ltr">Payment milestones: <span t-out="o.report_text('payment_terms', 'en')"/><br/>Retention: <span t-out="o.retention_percent"/>%</td>
+                <td class="ar" dir="rtl">مراحل الدفع: <span t-out="o.report_text('payment_terms', 'ar')"/><br/>الضمان: <span t-out="o.retention_percent"/>%</td>
               </tr>
             </table>
             <t t-foreach="o.contract_clauses()" t-as="clause">
               <table class="clause" dir="ltr">
                 <tr>
                   <td class="en" dir="ltr">
-                    <strong t-out="clause.name"/>
+                    <strong t-out="clause.report_text('name', 'en')"/>
                     <p t-out="clause.text_en"/>
                   </td>
                   <td class="ar" dir="rtl">
-                    <strong t-out="clause.name"/>
+                    <strong t-out="clause.report_text('name', 'ar')"/>
                     <p t-out="clause.text_ar"/>
                   </td>
                 </tr>
@@ -259,8 +259,8 @@
             </h2>
             <table class="clause" dir="ltr">
               <tr>
-                <td class="en" dir="ltr">Company: <span t-out="o.company_id.name"/><br/>VAT: <span t-out="o.company_id.vat"/></td>
-                <td class="ar" dir="rtl">الشركة: <span t-out="o.company_id.name"/><br/>الرقم الضريبي: <span t-out="o.company_id.vat"/></td>
+                <td class="en" dir="ltr">Company: <span t-out="o.company_id.contracting_name_en or o.company_id.name"/><br/>VAT: <span t-out="o.company_id.vat"/></td>
+                <td class="ar" dir="rtl">الشركة: <span t-out="o.company_id.contracting_name_ar or o.company_id.name"/><br/>الرقم الضريبي: <span t-out="o.company_id.vat"/></td>
               </tr>
             </table>
             <table class="clause" dir="ltr">
@@ -271,8 +271,8 @@
             </table>
             <table class="clause" dir="ltr">
               <tr>
-                <td class="en" dir="ltr">Number: <span t-out="o.name"/> | Date: <span t-out="o.date" dir="ltr"/><br/>Project: <span t-out="o.project_id.name"/><br/>Contract: <span t-out="o.subcontractor_id.display_name or o.vendor_contract_reference or o.project_id.name"/><br/>Status: <span t-out="{'draft': 'Draft / مسودة', 'issued': 'Issued / صادر', 'cancelled': 'Cancelled / ملغى'}.get(o.state)"/><br/>Method: <span t-out="{'cash': 'Cash / نقداً', 'bank': 'Bank transfer / تحويل بنكي', 'other': 'Other / أخرى'}.get(o.method)"/><br/><span t-out="o.memo"/></td>
-                <td class="ar" dir="rtl">الرقم: <span t-out="o.name"/> | التاريخ: <span t-out="o.date" dir="ltr"/><br/>المشروع: <span t-out="o.project_id.name"/><br/>العقد: <span t-out="o.subcontractor_id.display_name or o.vendor_contract_reference or o.project_id.name"/><br/>الحالة: <span t-out="{'draft': 'Draft / مسودة', 'issued': 'Issued / صادر', 'cancelled': 'Cancelled / ملغى'}.get(o.state)"/><br/>البيان: <span t-out="o.memo"/></td>
+                <td class="en" dir="ltr">Number: <span t-out="o.name"/> | Date: <span t-out="o.date" dir="ltr"/><br/>Project: <span t-out="o.project_id.name"/><br/>Contract: <span t-out="o.subcontractor_id.display_name or o.vendor_contract_reference or o.project_id.name"/><br/>Status: <span t-out="{'draft': 'Draft', 'issued': 'Issued', 'cancelled': 'Cancelled'}.get(o.state)"/><br/>Method: <span t-out="{'cash': 'Cash', 'bank': 'Bank transfer', 'other': 'Other'}.get(o.method)"/><br/>Memo: <span t-out="o.report_text('memo', 'en')"/></td>
+                <td class="ar" dir="rtl">الرقم: <span t-out="o.name"/> | التاريخ: <span t-out="o.date" dir="ltr"/><br/>المشروع: <span t-out="o.project_id.name"/><br/>العقد: <span t-out="o.subcontractor_id.display_name or o.vendor_contract_reference or o.project_id.name"/><br/>الحالة: <span t-out="{'draft': 'مسودة', 'issued': 'صادر', 'cancelled': 'ملغى'}.get(o.state)"/><br/>طريقة الدفع: <span t-out="{'cash': 'نقداً', 'bank': 'تحويل بنكي', 'other': 'أخرى'}.get(o.method)"/><br/>البيان: <span t-out="o.report_text('memo', 'ar')"/></td>
               </tr>
             </table>
             <h4>Previous issued vouchers / السندات السابقة الصادرة</h4>

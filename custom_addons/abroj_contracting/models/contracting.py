@@ -26,6 +26,21 @@ class Project(models.Model):
     profit = fields.Monetary('ربح العقد', compute='_compute_totals', store=True)
     cash_balance = fields.Monetary('صافي التدفق النقدي', compute='_compute_totals', store=True)
 
+    project_note_ids = fields.One2many('abroj.contracting.project.note', 'project_id', string='الملاحظات')
+    project_note_count = fields.Integer('عدد الملاحظات', compute='_compute_project_note_count')
+
+    @api.depends('project_note_ids')
+    def _compute_project_note_count(self):
+        for project in self:
+            project.project_note_count = len(project.project_note_ids)
+
+    def action_project_notes(self):
+        self.ensure_one()
+        return {'type': 'ir.actions.act_window', 'name': 'الملاحظات',
+                'res_model': 'abroj.contracting.project.note', 'view_mode': 'list,form',
+                'domain': [('project_id', '=', self.id)],
+                'context': {'default_project_id': self.id}}
+
     @api.depends('contracting_start', 'contracting_end')
     def _compute_duration(self):
         for r in self:

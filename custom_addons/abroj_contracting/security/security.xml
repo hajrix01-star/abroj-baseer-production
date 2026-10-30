@@ -29,4 +29,9 @@
     <field name="model_id" ref="model_abroj_contracting_inbox"/>
     <field name="domain_force">[('company_id', 'in', company_ids)]</field>
   </record>
+  <record id="rule_project_note_company" model="ir.rule">
+    <field name="name">عزل الشركات: project note</field>
+    <field name="model_id" ref="model_abroj_contracting_project_note"/>
+    <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+  </record>
 </odoo>

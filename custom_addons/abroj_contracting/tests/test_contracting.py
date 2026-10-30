@@ -129,3 +129,55 @@ class AbrojContractingCase(TransactionCase):
         inbox = self.env['abroj.contracting.inbox']
         with patch('odoo.addons.abroj_contracting.models.inbox.requests.post', side_effect=RuntimeError('offline')):
             inbox._send_webhook('https://example.invalid', '', {'id': 1})
+
+    def test_project_note_posts_chatter(self):
+        before = self.project.message_ids
+        note = self.env['abroj.contracting.project.note'].create({
+            'project_id': self.project.id, 'body': 'تقدم العمل <جاهز>',
+            'note_type': 'audio', 'attachment': 'YWJj',
+            'filename': 'voice.ogg', 'mimetype': 'audio/ogg',
+        })
+        messages = self.project.message_ids - before
+        self.assertEqual(len(messages), 1)
+        self.assertIn('تقدم العمل &lt;جاهز&gt;', str(messages.body))
+        attachment = messages.attachment_ids
+        self.assertEqual(len(attachment), 1)
+        self.assertEqual((attachment.res_model, attachment.res_id), ('project.project', self.project.id))
+        self.assertEqual(attachment.datas, b'YWJj')
+        self.assertEqual(attachment.name, 'voice.ogg')
+        self.assertEqual(note.author_id, self.env.user)
+        self.assertEqual(self.project.project_note_count, 1)
+        # Empty notes still leave a meaningful chatter entry.
+        self.env['abroj.contracting.project.note'].create({'project_id': self.project.id})
+        self.assertEqual(len(self.project.message_ids - before), 2)
+
+    def test_inbox_project_note_exactly_once(self):
+        inbox = self.env['abroj.contracting.inbox'].with_user(self.agent).create({
+            'project_id': self.project.id, 'filename': 'voice.ogg',
+            'mimetype': 'audio/ogg', 'file': 'YWJj', 'note': 'ملاحظة صوتية',
+        })
+        note = inbox.project_note_ids
+        self.assertEqual(len(note), 1)
+        self.assertEqual(note.project_id, self.project)
+        self.assertEqual(note.note_type, 'audio')
+        self.assertEqual(note.body, inbox.note)
+        self.assertEqual(note.attachment, inbox.file)
+        self.assertEqual(note.author_id, self.agent)
+        inbox.write({'project_id': self.project.id})
+        inbox.write({'state': 'analyzed'})
+        self.assertEqual(inbox.project_note_ids, note)
+        self.assertEqual(self.env['abroj.contracting.project.note'].search_count([('inbox_id', '=', inbox.id)]), 1)
+
+    def test_inbox_project_assigned_later(self):
+        inbox = self.env['abroj.contracting.inbox'].with_user(self.agent).create({
+            'filename': 'ملاحظة', 'note': 'زيارة الموقع',
+        })
+        self.assertFalse(inbox.project_note_ids)
+        self.assertEqual(inbox.company_id, self.env.company)
+        inbox.write({'project_id': self.project.id})
+        self.assertEqual(len(inbox.project_note_ids), 1)
+        self.assertEqual(inbox.project_note_ids.project_id, self.project)
+        self.assertEqual(inbox.project_note_ids.note_type, 'text')
+        self.assertEqual(inbox.project_note_ids.body, 'زيارة الموقع')
+        inbox.write({'project_id': self.project.id})
+        self.assertEqual(len(inbox.project_note_ids), 1)

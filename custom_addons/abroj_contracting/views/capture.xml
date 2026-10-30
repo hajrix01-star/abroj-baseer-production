@@ -8,7 +8,7 @@
         <p t-if="saved" role="status">تم حفظ السجل بنجاح</p>
         <form method="post" enctype="multipart/form-data" action="/abroj/contracting/capture">
           <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
-          <label for="project">المشروع</label>
+          <label for="project">المشروع (مطلوب؛ تحفظ الملاحظات والملفات داخله تلقائياً)</label>
           <select id="project" name="project_id" required="required" style="width:100%;padding:12px">
             <option t-foreach="projects" t-as="p" t-att-value="p.id">
               <t t-out="p.name"/>

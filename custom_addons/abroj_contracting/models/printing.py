@@ -47,9 +47,19 @@ class Company(models.Model):
     contracting_name_en = fields.Char('English contract name')
 
     def contract_font_css(self):
-        with file_open('abroj_contracting/static/src/fonts/DejaVuSans.ttf', 'rb') as font:
-            data = base64.b64encode(font.read()).decode()
-        return "@font-face {font-family:AbrojArabic;src:url(data:font/truetype;base64,%s) format('truetype');} .header,.article,.footer {font-family:AbrojArabic,DejaVu Sans !important;}" % data
+        rules = []
+        for family, filename, weight in [
+            ('AbrojBody', 'IBMPlexSansArabic-Regular.ttf', 400),
+            ('AbrojBody', 'IBMPlexSansArabic-Bold.ttf', 700),
+            ('AbrojHeading', 'Amiri-Regular.ttf', 400),
+            ('AbrojHeading', 'Amiri-Bold.ttf', 700),
+        ]:
+            with file_open('abroj_contracting/static/fonts/' + filename, 'rb') as font:
+                data = base64.b64encode(font.read()).decode()
+            rules.append("@font-face {font-family:%s;font-weight:%s;src:url(data:font/truetype;base64,%s) format('truetype');}" % (family, weight, data))
+        rules.append('.header,.article,.footer {font-family:AbrojBody !important;} h2,h3,h4,.clause strong {font-family:AbrojHeading !important;}')
+        return Markup(''.join(rules))
+
 
 
 class Project(models.Model):

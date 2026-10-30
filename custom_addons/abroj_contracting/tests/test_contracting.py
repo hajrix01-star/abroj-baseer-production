@@ -323,3 +323,81 @@ class AbrojContractingCase(TransactionCase):
         select = template.xpath('//select[@name="project_id"]')[0]
         self.assertEqual(select.get('required'), 'required')
         self.assertEqual(select[0].get('value'), '')
+
+    def test_bilingual_pdf_reports(self):
+        from io import BytesIO
+        from pypdf import PdfReader
+        self.project.partner_id = self.partner
+        self.project.company_id.write({'contracting_name_en': 'Report Company English', 'company_registry': '544-TEST'})
+        self.project.contract_payment_schedule = '50% advance / مقدم، 50% completion / إنجاز'
+        for report, record, text in [
+            ('agreement', self.project, 'Client contract'),
+            ('subcontract', self.sub, 'Subcontract'),
+            ('voucher', self.voucher(), 'voucher'),
+            ('voucher', self.voucher(kind='receipt', subcontractor_id=False), 'voucher'),
+        ]:
+            name = 'abroj_contracting.' + report
+            html, _ = self.env['ir.actions.report']._render_qweb_html(name, record.ids)
+            self.assertIn(b'dir="rtl"', html)
+            self.assertIn(b'class="en"', html)
+            pdf, kind = self.env['ir.actions.report'].with_context(force_report_rendering=True)._render_qweb_pdf(name, record.ids)
+            self.assertEqual(kind, 'pdf')
+            self.assertTrue(pdf.startswith(b'%PDF-'))
+            pages = PdfReader(BytesIO(pdf)).pages
+            self.assertGreater(len(pages), 0)
+            self.assertIn(text, ''.join(page.extract_text() for page in pages))
+            for page in pages:
+                self.assertIn('Report Company English', page.extract_text())
+                self.assertIn('544-TEST', page.extract_text())
+
+    def test_voucher_contract_balances(self):
+        self.project.partner_id = self.partner
+        first = self.voucher(amount=500)
+        first.action_issue()
+        invoice = self.env['abroj.contracting.invoice'].create({
+            'project_id': self.project.id, 'subcontractor_id': self.sub.id,
+            'number': 'MAT-BAL', 'amount': 800, 'invoice_kind': 'materials_company',
+            'buyer_vat': '300000000000003'})
+        self.project.company_id.vat = '300000000000003'
+        invoice.action_confirm()
+        second = self.voucher(amount=700)
+        self.assertEqual(second.balance_before, 500)
+        self.assertEqual(second.balance_remaining, 2000)
+        self.assertIn(first.name, second.balance_html)
+        second.action_issue()
+        self.assertEqual(second.previous_vouchers(), first)
+        self.assertEqual(second.balance_remaining, 2000)
+        third = self.voucher(amount=100)
+        third.action_issue()
+        second.invalidate_recordset()
+        self.assertEqual(second.balance_remaining, 2000)
+        third.action_cancel()
+        receipt = self.voucher(kind='receipt', subcontractor_id=False, amount=1200)
+        receipt.action_issue()
+        next_receipt = self.voucher(kind='receipt', subcontractor_id=False, amount=300)
+        self.assertEqual(next_receipt.balance_before, 1200)
+        self.assertEqual(next_receipt.balance_remaining, 8500)
+        receipt.action_cancel()
+        self.assertEqual(next_receipt.balance_remaining, 9700)
+        vendor = self.voucher(subcontractor_id=False, vendor_contract_reference='PO-1', vendor_contract_value=5000, amount=500)
+        vendor.action_issue()
+        other = self.voucher(subcontractor_id=False, vendor_contract_reference='PO-2', vendor_contract_value=3000, amount=100)
+        self.assertFalse(other.previous_vouchers())
+        self.assertEqual(other.balance_remaining, 2900)
+
+    def test_voucher_contract_party_guards(self):
+        self.project.partner_id = self.partner
+        stranger = self.env['res.partner'].create({'name': 'Other client'})
+        with self.assertRaises(ValidationError), self.cr.savepoint():
+            self.voucher(kind='receipt', subcontractor_id=False, partner_id=stranger.id)
+        vendor = self.voucher(subcontractor_id=False)
+        with self.assertRaises(ValidationError):
+            vendor.action_issue()
+        with self.assertRaises(ValidationError):
+            vendor.write({'issued_at': '2026-01-01 00:00:00'})
+        earlier_draft = self.voucher(amount=100)
+        later_draft = self.voucher(amount=200)
+        later_draft.action_issue()
+        earlier_draft.action_issue()
+        self.assertEqual(earlier_draft.previous_vouchers(), later_draft)
+        self.assertFalse(later_draft.previous_vouchers())

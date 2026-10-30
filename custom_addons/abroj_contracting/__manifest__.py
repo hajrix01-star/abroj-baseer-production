@@ -5,8 +5,10 @@
  'data': ['security/security.xml',
           'security/ir.model.access.csv',
           'data/sequences.xml',
+          'data/clauses.xml',
           'views/views.xml',
           'report/reports.xml',
-          'views/capture.xml'],
+          'views/capture.xml',
+          'views/printing.xml'],
  'application': True,
  'installable': True}

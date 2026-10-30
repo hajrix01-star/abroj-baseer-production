@@ -7,3 +7,5 @@ access_inbox_user,مستخدم المقاولات,model_abroj_contracting_inbox,
 access_agent_project,قراءة المشاريع,project.model_project_project,group_extraction_agent,1,0,0,0
 access_project_note_user,ملاحظات المشروع,model_abroj_contracting_project_note,base.group_user,1,1,1,1
 access_project_note_agent,ملاحظات الوكيل,model_abroj_contracting_project_note,group_extraction_agent,1,0,1,0
+access_clause_user,Read contract clauses,model_abroj_contracting_clause,base.group_user,1,0,0,0
+access_clause_manager,Manage contract clauses,model_abroj_contracting_clause,project.group_project_manager,1,1,1,1

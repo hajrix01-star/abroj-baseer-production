@@ -1,8 +1,27 @@
 import base64
+import re
 from markupsafe import Markup
 from odoo.tools import file_open
 from odoo import api, fields, models
 from odoo.exceptions import ValidationError
+
+
+def report_text(record, field, language):
+    """Prefer an authored translation; split legacy slash/newline bilingual text.
+
+    Never invent translations or print the opposite language in a report column.
+    Mixed legacy segments need an explicit translation in the form.
+    """
+    value = record[field + '_' + language] if field + '_' + language in record._fields else False
+    value = value or record[field] or ''
+    def matches(part):
+        arabic = bool(re.search(r'[\u0600-\u06ff]', part))
+        english = bool(re.search(r'[A-Za-z]', part))
+        return not (arabic if language == 'en' else english)
+    if matches(value):
+        return value
+    parts = re.split(r'[\n/]+', value)
+    return '\n'.join(part.strip() for part in parts if part.strip() and matches(part))
 
 
 class Clause(models.Model):
@@ -16,6 +35,10 @@ class Clause(models.Model):
     text_ar = fields.Text(required=True)
     text_en = fields.Text(required=True)
     active = fields.Boolean(default=True)
+
+    def report_text(self, field, language):
+        self.ensure_one()
+        return report_text(self, field, language)
 
 
 class Company(models.Model):
@@ -31,6 +54,15 @@ class Company(models.Model):
 
 class Project(models.Model):
     _inherit = 'project.project'
+    contracting_goal_en = fields.Text('Contracting Goal (EN)')
+    contracting_goal_ar = fields.Text('Contracting Goal (AR)')
+    contract_payment_schedule_en = fields.Text('Payment milestones (English)', help='English report text. Enter each milestone and percentage; overrides the legacy bilingual schedule.')
+    contract_payment_schedule_ar = fields.Text('مراحل الدفع (العربية)', help='Arabic report text. Enter each milestone and percentage; overrides the legacy bilingual schedule.')
+
+    def report_text(self, field, language):
+        self.ensure_one()
+        return report_text(self, field, language)
+
     contract_vat_percent = fields.Float('VAT % / الضريبة', default=15)
     contract_retention_percent = fields.Float('Retention % / الضمان')
     contract_payment_schedule = fields.Text('Payment milestones / مراحل الدفع')
@@ -44,6 +76,17 @@ class Project(models.Model):
 
 class Subcontractor(models.Model):
     _inherit = 'abroj.contracting.subcontractor'
+    scope_en = fields.Text('Scope (EN)')
+    scope_ar = fields.Text('Scope (AR)')
+    payment_terms_en = fields.Text('Payment Terms (EN)')
+    payment_terms_ar = fields.Text('Payment Terms (AR)')
+    penalties_en = fields.Text('Penalties (EN)')
+    penalties_ar = fields.Text('Penalties (AR)')
+
+    def report_text(self, field, language):
+        self.ensure_one()
+        return report_text(self, field, language)
+
     start_date = fields.Date('Start / البدء')
     end_date = fields.Date('End / الانتهاء')
     penalties = fields.Text('Penalties / الغرامات')
@@ -57,6 +100,13 @@ class Subcontractor(models.Model):
 
 class Voucher(models.Model):
     _inherit = 'abroj.contracting.voucher'
+    memo_en = fields.Text('Memo (EN)')
+    memo_ar = fields.Text('Memo (AR)')
+
+    def report_text(self, field, language):
+        self.ensure_one()
+        return report_text(self, field, language)
+
     vendor_contract_reference = fields.Char('Vendor contract / مرجع عقد المورد')
     vendor_contract_value = fields.Monetary('Vendor contract value / قيمة عقد المورد')
     balance_contract_value = fields.Monetary(compute='_compute_contract_balance', string='Contract value / قيمة العقد')

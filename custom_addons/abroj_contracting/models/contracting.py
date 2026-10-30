@@ -6,28 +6,29 @@ from .guards import check_agent
 class Project(models.Model):
     _inherit = 'project.project'
 
-    contracting_goal = fields.Text('الهدف')
-    contract_value = fields.Monetary('قيمة العقد')
-    contracting_start = fields.Date('تاريخ الاتفاقية / البدء')
-    contracting_end = fields.Date('تاريخ الانتهاء')
-    duration_days = fields.Integer('مدة التنفيذ بالأيام', compute='_compute_duration', store=True)
-    value_type = fields.Selection([('materials', 'شامل مواد'), ('labor', 'بدون مواد')], string='نوع القيمة')
-    estimated_cost = fields.Monetary('التكلفة التقديرية')
-    expected_profit = fields.Monetary('الربح المتوقع', compute='_compute_totals', store=True)
-    subcontractor_ids = fields.One2many('abroj.contracting.subcontractor', 'project_id', string='مقاولو الباطن')
-    voucher_ids = fields.One2many('abroj.contracting.voucher', 'project_id', string='السندات')
-    invoice_ids = fields.One2many('abroj.contracting.invoice', 'project_id', string='فواتير المقاولين')
-    cost_ids = fields.One2many('abroj.contracting.cost', 'project_id', string='المصروفات')
-    inbox_ids = fields.One2many('abroj.contracting.inbox', 'project_id', string='السجلات')
-    total_costs = fields.Monetary('إجمالي التكاليف', compute='_compute_totals', store=True)
-    total_paid = fields.Monetary('المدفوع', compute='_compute_totals', store=True)
-    total_received = fields.Monetary('المقبوض', compute='_compute_totals', store=True)
-    remaining = fields.Monetary('المتبقي من العقد', compute='_compute_totals', store=True)
-    profit = fields.Monetary('ربح العقد', compute='_compute_totals', store=True)
-    cash_balance = fields.Monetary('صافي التدفق النقدي', compute='_compute_totals', store=True)
+    contracting_goal = fields.Text('الهدف', help='حدد الهدف لهذا السجل وفق مستند المشروع الأصلي.')
+    contract_value = fields.Monetary('قيمة العقد', help='قيمة عقد العميل؛ تستخدم لحساب ربح المشروع والمتبقي للتحصيل.')
+    contracting_start = fields.Date('تاريخ الاتفاقية / البدء', help='حدد تاريخ الاتفاقية / البدء لهذا السجل وفق مستند المشروع الأصلي.')
+    contracting_end = fields.Date('تاريخ الانتهاء', help='حدد تاريخ الانتهاء لهذا السجل وفق مستند المشروع الأصلي.')
+    duration_days = fields.Integer('مدة التنفيذ بالأيام', compute='_compute_duration', store=True, help='حدد مدة التنفيذ بالأيام لهذا السجل وفق مستند المشروع الأصلي.')
+    value_type = fields.Selection([('materials', 'شامل مواد'), ('labor', 'بدون مواد')], string='نوع القيمة', help='حدد نوع القيمة لهذا السجل وفق مستند المشروع الأصلي.')
+    estimated_cost = fields.Monetary('التكلفة التقديرية', help='حدد التكلفة التقديرية لهذا السجل وفق مستند المشروع الأصلي.')
+    expected_profit = fields.Monetary('الربح المتوقع', compute='_compute_totals', store=True, help='حدد الربح المتوقع لهذا السجل وفق مستند المشروع الأصلي.')
+    subcontractor_ids = fields.One2many('abroj.contracting.subcontractor', 'project_id', string='مقاولو الباطن', help='حدد مقاولو الباطن لهذا السجل وفق مستند المشروع الأصلي.')
+    voucher_ids = fields.One2many('abroj.contracting.voucher', 'project_id', string='السندات', help='حدد السندات لهذا السجل وفق مستند المشروع الأصلي.')
+    invoice_ids = fields.One2many('abroj.contracting.invoice', 'project_id', string='فواتير المقاولين', help='حدد فواتير المقاولين لهذا السجل وفق مستند المشروع الأصلي.')
+    cost_ids = fields.One2many('abroj.contracting.cost', 'project_id', string='المصروفات', help='حدد المصروفات لهذا السجل وفق مستند المشروع الأصلي.')
+    inbox_ids = fields.One2many('abroj.contracting.inbox', 'project_id', string='السجلات', help='حدد السجلات لهذا السجل وفق مستند المشروع الأصلي.')
+    materials_purchase_total = fields.Monetary('مشتريات المواد عن المقاولين', compute='_compute_totals', store=True, help='مواد أبروج المعتمدة المسجلة كشراء ضمن تكلفة عقود الباطن؛ لا تضاف إلى قيمة العقود مرة أخرى.')
+    total_costs = fields.Monetary('إجمالي التكاليف', compute='_compute_totals', store=True, help='إجمالي عقود الباطن والمصروفات المستقلة المعتمدة؛ مواد العقود جزء من قيمتها وليست إضافة عليها.')
+    total_paid = fields.Monetary('المدفوع', compute='_compute_totals', store=True, help='حدد المدفوع لهذا السجل وفق مستند المشروع الأصلي.')
+    total_received = fields.Monetary('المقبوض', compute='_compute_totals', store=True, help='حدد المقبوض لهذا السجل وفق مستند المشروع الأصلي.')
+    remaining = fields.Monetary('المتبقي من العقد', compute='_compute_totals', store=True, help='المبلغ المتبقي من عقد العميل بعد سندات القبض الصادرة.')
+    profit = fields.Monetary('ربح العقد', compute='_compute_totals', store=True, help='حدد ربح العقد لهذا السجل وفق مستند المشروع الأصلي.')
+    cash_balance = fields.Monetary('صافي التدفق النقدي', compute='_compute_totals', store=True, help='المقبوض ناقص المدفوع حسب السندات الصادرة؛ لا يشمل الالتزامات غير المسددة.')
 
-    project_note_ids = fields.One2many('abroj.contracting.project.note', 'project_id', string='الملاحظات')
-    project_note_count = fields.Integer('عدد الملاحظات', compute='_compute_project_note_count')
+    project_note_ids = fields.One2many('abroj.contracting.project.note', 'project_id', string='الملاحظات', help='حدد الملاحظات لهذا السجل وفق مستند المشروع الأصلي.')
+    project_note_count = fields.Integer('عدد الملاحظات', compute='_compute_project_note_count', help='حدد عدد الملاحظات لهذا السجل وفق مستند المشروع الأصلي.')
 
     @api.depends('project_note_ids')
     def _compute_project_note_count(self):
@@ -53,13 +54,14 @@ class Project(models.Model):
                 raise ValidationError('تاريخ الانتهاء يسبق تاريخ البدء.')
 
     @api.depends('contract_value', 'estimated_cost', 'company_id.currency_id', 'voucher_ids.amount', 'voucher_ids.state',
-                 'voucher_ids.kind', 'invoice_ids.amount', 'invoice_ids.state', 'cost_ids.amount', 'cost_ids.state')
+                 'voucher_ids.kind', 'invoice_ids.amount', 'invoice_ids.state', 'cost_ids.amount', 'cost_ids.state', 'subcontractor_ids.agreed_amount', 'subcontractor_ids.materials_total')
     def _compute_totals(self):
         for r in self:
             issued = r.voucher_ids.filtered(lambda v: v.state == 'issued')
             r.total_paid = sum(issued.filtered(lambda v: v.kind == 'payment').mapped('amount'))
             r.total_received = sum(issued.filtered(lambda v: v.kind == 'receipt').mapped('amount'))
-            r.total_costs = sum(r.invoice_ids.filtered(lambda i: i.state == 'confirmed').mapped('amount')) + sum(r.cost_ids.filtered(lambda i: i.state == 'confirmed').mapped('amount'))
+            r.materials_purchase_total = sum(r.subcontractor_ids.mapped('materials_total'))
+            r.total_costs = sum(r.subcontractor_ids.mapped('agreed_amount')) + sum(r.cost_ids.filtered(lambda i: i.state == 'confirmed').mapped('amount'))
             r.remaining = r.contract_value - r.total_received
             r.profit = r.contract_value - r.total_costs
             r.expected_profit = r.contract_value - r.estimated_cost
@@ -71,9 +73,9 @@ class ProjectDocument(models.AbstractModel):
     _description = 'مستند مشروع'
     _check_company_auto = True
 
-    project_id = fields.Many2one('project.project', string='المشروع', required=True, check_company=True, ondelete='restrict')
-    company_id = fields.Many2one('res.company', string='الشركة', related='project_id.company_id', store=True)
-    currency_id = fields.Many2one('res.currency', string='العملة', related='company_id.currency_id')
+    project_id = fields.Many2one('project.project', string='المشروع', required=True, check_company=True, ondelete='restrict', help='حدد المشروع لهذا السجل وفق مستند المشروع الأصلي.')
+    company_id = fields.Many2one('res.company', string='الشركة', related='project_id.company_id', store=True, help='حدد الشركة لهذا السجل وفق مستند المشروع الأصلي.')
+    currency_id = fields.Many2one('res.currency', string='العملة', related='company_id.currency_id', help='حدد العملة لهذا السجل وفق مستند المشروع الأصلي.')
 
     @api.constrains('project_id')
     def _check_project_company(self):
@@ -87,8 +89,8 @@ class FrozenDocument(models.AbstractModel):
     _inherit = 'abroj.contracting.document'
     _description = 'مستند مالي'
 
-    amount = fields.Monetary('المبلغ', required=True)
-    date = fields.Date('التاريخ', default=fields.Date.context_today, required=True)
+    amount = fields.Monetary('المبلغ', required=True, help='مبلغ المستند بعملة الشركة؛ مبلغ مواد أبروج يخصم من المستحق كما أدخل دون احتساب ضريبة تلقائي.')
+    date = fields.Date('التاريخ', default=fields.Date.context_today, required=True, help='حدد التاريخ لهذا السجل وفق مستند المشروع الأصلي.')
 
     @api.constrains('amount')
     def _check_amount(self):
@@ -130,27 +132,43 @@ class Subcontractor(models.Model):
     _description = 'مقاول باطن'
     _rec_name = 'partner_id'
 
-    partner_id = fields.Many2one('res.partner', string='المقاول', required=True, check_company=True)
-    scope = fields.Text('نطاق العمل')
-    contract_type = fields.Selection([('labor', 'عمالة'), ('materials', 'شامل مواد'), ('lump', 'مقطوعية'), ('other', 'أخرى')], string='نوع العقد')
-    payment_terms = fields.Text('شروط الدفع')
-    duration_days = fields.Integer('مدة الإنجاز بالأيام')
-    agreed_amount = fields.Monetary('القيمة المتفق عليها')
-    voucher_ids = fields.One2many('abroj.contracting.voucher', 'subcontractor_id', string='السندات')
-    invoice_ids = fields.One2many('abroj.contracting.invoice', 'subcontractor_id', string='الفواتير')
-    paid = fields.Monetary('المدفوع', compute='_compute_balances', store=True)
-    received = fields.Monetary('المسترد', compute='_compute_balances', store=True)
-    invoiced = fields.Monetary('المفوتر', compute='_compute_balances', store=True)
-    remaining = fields.Monetary('المتبقي', compute='_compute_balances', store=True, help='المتفق عليه - المدفوع + المسترد')
+    partner_id = fields.Many2one('res.partner', string='المقاول', required=True, check_company=True, help='حدد المقاول لهذا السجل وفق مستند المشروع الأصلي.')
+    scope = fields.Text('نطاق العمل', help='حدد نطاق العمل لهذا السجل وفق مستند المشروع الأصلي.')
+    contract_type = fields.Selection([('labor', 'بدون مواد'), ('materials', 'شامل المواد'), ('lump', 'مقطوعية'), ('other', 'أخرى')], string='نوع العقد', help='بدون مواد للعمالة فقط وشامل المواد عند دخول المواد في قيمة العقد؛ مقطوعية وأخرى محفوظتان للعقود السابقة.')
+    vat_registered = fields.Boolean('المقاول مسجل بالضريبة', help='حدد vat_registered لهذا السجل وفق مستند المشروع الأصلي.')
+    retention_percent = fields.Float('نسبة الضمان %', help='نسبة اختيارية من العقد؛ لا تخصم من المستحق الإجمالي.')
+    materials_total = fields.Monetary('دفعة عن المقاول — المواد', compute='_compute_balances', store=True, help='مواد أبروج المعتمدة التي تخصم من مستحق المقاول.')
+    payment_terms = fields.Text('شروط الدفع', help='حدد شروط الدفع لهذا السجل وفق مستند المشروع الأصلي.')
+    duration_days = fields.Integer('مدة الإنجاز بالأيام', help='حدد مدة الإنجاز بالأيام لهذا السجل وفق مستند المشروع الأصلي.')
+    agreed_amount = fields.Monetary('القيمة المتفق عليها', help='إجمالي تكلفة عقد الباطن المتفق عليها بعملة الشركة، تشمل المواد ولا تتكرر عند تسجيل فواتيرها.')
+    voucher_ids = fields.One2many('abroj.contracting.voucher', 'subcontractor_id', string='السندات', help='حدد السندات لهذا السجل وفق مستند المشروع الأصلي.')
+    invoice_ids = fields.One2many('abroj.contracting.invoice', 'subcontractor_id', string='الفواتير', help='حدد الفواتير لهذا السجل وفق مستند المشروع الأصلي.')
+    paid = fields.Monetary('المدفوع', compute='_compute_balances', store=True, help='مجموع سندات الصرف الصادرة؛ مواد أبروج تظهر منفصلة كدفعة عن المقاول.')
+    received = fields.Monetary('المسترد', compute='_compute_balances', store=True, help='مجموع سندات القبض الصادرة؛ المسترد من المقاول يزيد مستحقه المتبقي.')
+    invoiced = fields.Monetary('المفوتر', compute='_compute_balances', store=True, help='إجمالي المستندات المعتمدة بما فيها المرفقات الداعمة؛ لا يمثل تكلفة إضافية.')
+    remaining = fields.Monetary('المتبقي', compute='_compute_balances', store=True, help='قيمة العقد ناقص مواد أبروج ناقص المدفوع مع إضافة المسترد؛ يشمل الضمان.')
 
-    @api.depends('agreed_amount', 'voucher_ids.amount', 'voucher_ids.state', 'voucher_ids.kind', 'invoice_ids.amount', 'invoice_ids.state')
+    @api.depends('agreed_amount', 'voucher_ids.amount', 'voucher_ids.state', 'voucher_ids.kind', 'invoice_ids.amount', 'invoice_ids.state', 'invoice_ids.invoice_kind')
     def _compute_balances(self):
         for r in self:
             issued = r.voucher_ids.filtered(lambda v: v.state == 'issued')
             r.paid = sum(issued.filtered(lambda v: v.kind == 'payment').mapped('amount'))
             r.received = sum(issued.filtered(lambda v: v.kind == 'receipt').mapped('amount'))
             r.invoiced = sum(r.invoice_ids.filtered(lambda i: i.state == 'confirmed').mapped('amount'))
-            r.remaining = r.agreed_amount - r.paid + r.received
+            r.materials_total = sum(r.invoice_ids.filtered(lambda i: i.state == 'confirmed' and i.invoice_kind == 'materials_company').mapped('amount'))
+            r.remaining = r.agreed_amount - r.materials_total - r.paid + r.received
+
+    @api.constrains('agreed_amount', 'retention_percent', 'invoice_ids')
+    def _check_contract_limits(self):
+        for r in self:
+            if r.agreed_amount < 0 or not 0 <= r.retention_percent <= 100:
+                raise ValidationError('قيمة العقد غير سالبة ونسبة الضمان بين صفر و١٠٠.')
+            if r.currency_id.compare_amounts(r.materials_total, r.agreed_amount) > 0:
+                raise ValidationError('مواد أبروج تتجاوز قيمة عقد المقاول.')
+
+    def action_settlement(self):
+        self.ensure_one()
+        return self.env.ref('abroj_contracting.report_settlement').report_action(self)
 
 
 class Voucher(models.Model):
@@ -159,19 +177,19 @@ class Voucher(models.Model):
     _description = 'سند صرف / قبض'
     _order = 'date desc, id desc'
 
-    name = fields.Char('رقم السند', default='/', readonly=True, copy=False)
-    kind = fields.Selection([('payment', 'سند صرف'), ('receipt', 'سند قبض')], string='نوع السند', required=True, default='payment')
-    partner_id = fields.Many2one('res.partner', string='الطرف', required=True, check_company=True)
-    subcontractor_id = fields.Many2one('abroj.contracting.subcontractor', string='مقاول الباطن', check_company=True, ondelete='restrict')
-    method = fields.Selection([('cash', 'نقداً'), ('bank', 'تحويل بنكي'), ('other', 'أخرى')], string='طريقة الدفع', default='cash', required=True)
-    memo = fields.Text('البيان')
-    attachment = fields.Binary('المرفق', attachment=True)
-    filename = fields.Char('اسم الملف')
-    state = fields.Selection([('draft', 'مسودة'), ('issued', 'صادر'), ('cancelled', 'ملغى')], string='الحالة', default='draft', readonly=True, copy=False)
-    create_payment = fields.Boolean('إنشاء دفعة محاسبية', default=False)
-    journal_id = fields.Many2one('account.journal', string='دفتر الدفع', check_company=True, domain="[('type', 'in', ['bank', 'cash'])]")
-    payment_id = fields.Many2one('account.payment', string='الدفعة المحاسبية', readonly=True, copy=False, check_company=True)
-    issued_by = fields.Many2one('res.users', string='أصدره', readonly=True, copy=False)
+    name = fields.Char('رقم السند', default='/', readonly=True, copy=False, help='حدد رقم السند لهذا السجل وفق مستند المشروع الأصلي.')
+    kind = fields.Selection([('payment', 'سند صرف'), ('receipt', 'سند قبض')], string='نوع السند', required=True, default='payment', help='حدد نوع السند لهذا السجل وفق مستند المشروع الأصلي.')
+    partner_id = fields.Many2one('res.partner', string='الطرف', required=True, check_company=True, help='حدد الطرف لهذا السجل وفق مستند المشروع الأصلي.')
+    subcontractor_id = fields.Many2one('abroj.contracting.subcontractor', string='مقاول الباطن', check_company=True, ondelete='restrict', help='حدد مقاول الباطن لهذا السجل وفق مستند المشروع الأصلي.')
+    method = fields.Selection([('cash', 'نقداً'), ('bank', 'تحويل بنكي'), ('other', 'أخرى')], string='طريقة الدفع', default='cash', required=True, help='حدد طريقة الدفع لهذا السجل وفق مستند المشروع الأصلي.')
+    memo = fields.Text('البيان', help='حدد البيان لهذا السجل وفق مستند المشروع الأصلي.')
+    attachment = fields.Binary('المرفق', attachment=True, help='حدد المرفق لهذا السجل وفق مستند المشروع الأصلي.')
+    filename = fields.Char('اسم الملف', help='حدد اسم الملف لهذا السجل وفق مستند المشروع الأصلي.')
+    state = fields.Selection([('draft', 'مسودة'), ('issued', 'صادر'), ('cancelled', 'ملغى')], string='الحالة', default='draft', readonly=True, copy=False, help='المسودة قابلة للتعديل؛ الاعتماد يقفل المستند ويحدث الإجماليات.')
+    create_payment = fields.Boolean('إنشاء دفعة محاسبية', default=False, help='إنشاء دفعة محاسبية عند إصدار السند؛ يتطلب صلاحية المحاسبة وحساب المشروع التحليلي ودفتر دفع.')
+    journal_id = fields.Many2one('account.journal', string='دفتر الدفع', check_company=True, domain="[('type', 'in', ['bank', 'cash'])]", help='حدد دفتر الدفع لهذا السجل وفق مستند المشروع الأصلي.')
+    payment_id = fields.Many2one('account.payment', string='الدفعة المحاسبية', readonly=True, copy=False, check_company=True, help='حدد الدفعة المحاسبية لهذا السجل وفق مستند المشروع الأصلي.')
+    issued_by = fields.Many2one('res.users', string='أصدره', readonly=True, copy=False, help='حدد أصدره لهذا السجل وفق مستند المشروع الأصلي.')
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -248,10 +266,26 @@ class Invoice(models.Model):
     _description = 'فاتورة مقاول باطن'
     _rec_name = 'number'
 
-    number = fields.Char('رقم الفاتورة', required=True)
-    subcontractor_id = fields.Many2one('abroj.contracting.subcontractor', string='مقاول الباطن', required=True, check_company=True, ondelete='restrict')
-    attachment_ids = fields.Many2many('ir.attachment', string='المرفقات')
-    state = fields.Selection([('draft', 'مسودة'), ('confirmed', 'مؤكدة')], string='الحالة', default='draft', readonly=True, copy=False)
+    invoice_kind = fields.Selection([('subcontract', 'مستخلص المقاول'), ('materials_company', 'مواد باسم أبروج'), ('materials_subcontractor', 'مواد باسم المقاول — مرفقات فقط')], string='معالجة الفاتورة', default='subcontract', required=True, help='مواد أبروج تسجل عند الاعتماد ضمن تكلفة العقد ودفعة عن المقاول. مواد المقاول للإثبات بلا تكلفة أو ضريبة. المستخلص لا يكرر تكلفة العقد.')
+    buyer_vat = fields.Char('الرقم الضريبي للمشتري', help='الرقم المطبوع في الفاتورة؛ يجب أن يطابق شركة المشروع لمواد أبروج.')
+
+    def action_confirm(self):
+        check_agent(self.env)
+        for r in self.sorted('subcontractor_id'):
+            self.env.cr.execute('SELECT id FROM abroj_contracting_subcontractor WHERE id = %s FOR UPDATE', [r.subcontractor_id.id])
+            r.subcontractor_id.invalidate_recordset()
+            if r.invoice_kind == 'materials_company' and (not r.company_id.vat or (r.buyer_vat or '').strip() != r.company_id.vat.strip()):
+                raise ValidationError('يلزم رقم أبروج الضريبي المطابق للفاتورة.')
+            if r.invoice_kind == 'materials_subcontractor' and not r.attachment_ids:
+                raise ValidationError('أرفق فاتورة المواد باسم المقاول كمستند داعم.')
+        result = super().action_confirm()
+        self.subcontractor_id._check_contract_limits()
+        return result
+
+    number = fields.Char('رقم الفاتورة', required=True, help='حدد رقم الفاتورة لهذا السجل وفق مستند المشروع الأصلي.')
+    subcontractor_id = fields.Many2one('abroj.contracting.subcontractor', string='مقاول الباطن', required=True, check_company=True, ondelete='restrict', help='حدد مقاول الباطن لهذا السجل وفق مستند المشروع الأصلي.')
+    attachment_ids = fields.Many2many('ir.attachment', string='المرفقات', help='حدد المرفقات لهذا السجل وفق مستند المشروع الأصلي.')
+    state = fields.Selection([('draft', 'مسودة'), ('confirmed', 'مؤكدة')], string='الحالة', default='draft', readonly=True, copy=False, help='المسودة قابلة للتعديل؛ الاعتماد يقفل المستند ويحدث الإجماليات.')
 
     @api.constrains('project_id', 'subcontractor_id')
     def _check_subcontractor(self):
@@ -265,9 +299,9 @@ class Cost(models.Model):
     _inherit = 'abroj.contracting.frozen'
     _description = 'مصروف مشروع'
 
-    name = fields.Char('الوصف', required=True)
-    partner_id = fields.Many2one('res.partner', string='المورد', check_company=True)
-    category = fields.Char('التصنيف')
-    invoice_number = fields.Char('رقم الفاتورة')
-    attachment = fields.Binary('المرفق', attachment=True)
-    state = fields.Selection([('draft', 'مسودة'), ('confirmed', 'مؤكد')], string='الحالة', default='draft', readonly=True, copy=False)
+    name = fields.Char('الوصف', required=True, help='حدد الوصف لهذا السجل وفق مستند المشروع الأصلي.')
+    partner_id = fields.Many2one('res.partner', string='المورد', check_company=True, help='حدد المورد لهذا السجل وفق مستند المشروع الأصلي.')
+    category = fields.Char('التصنيف', help='حدد التصنيف لهذا السجل وفق مستند المشروع الأصلي.')
+    invoice_number = fields.Char('رقم الفاتورة', help='حدد رقم الفاتورة لهذا السجل وفق مستند المشروع الأصلي.')
+    attachment = fields.Binary('المرفق', attachment=True, help='حدد المرفق لهذا السجل وفق مستند المشروع الأصلي.')
+    state = fields.Selection([('draft', 'مسودة'), ('confirmed', 'مؤكد')], string='الحالة', default='draft', readonly=True, copy=False, help='المسودة قابلة للتعديل؛ الاعتماد يقفل المستند ويحدث الإجماليات.')

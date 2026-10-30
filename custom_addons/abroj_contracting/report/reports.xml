@@ -94,4 +94,5 @@
       </t>
     </t>
   </template>
-</odoo>
+<record id="report_settlement" model="ir.actions.report"><field name="name">تسوية نهاية المشروع</field><field name="model">abroj.contracting.subcontractor</field><field name="report_type">qweb-pdf</field><field name="report_name">abroj_contracting.settlement</field><field name="binding_model_id" ref="model_abroj_contracting_subcontractor"/><field name="binding_type">report</field></record>
+<template id="settlement"><t t-call="web.html_container"><t t-foreach="docs" t-as="o"><t t-call="web.external_layout"><div class="page" dir="rtl"><h2>تسوية نهاية المشروع</h2><p t-field="o.project_id.name"/><p t-field="o.partner_id.name"/><p>قيمة العقد: <span t-field="o.agreed_amount"/></p><p>مواد أبروج — دفعة عن المقاول: <span t-field="o.materials_total"/></p><p>المدفوع: <span t-field="o.paid"/></p><p>المسترد: <span t-field="o.received"/></p><p>المستحق المتبقي: <span t-field="o.remaining"/></p><p>نسبة الضمان: <span t-field="o.retention_percent"/> % (ضمن المستحق)</p></div></t></t></t></template></odoo>

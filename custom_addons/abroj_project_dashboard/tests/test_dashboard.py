@@ -31,6 +31,19 @@ class AbrojProjectDashboardCase(TransactionCase):
     def ids(self, filters):
         return [p['id'] for p in self.env['project.project'].get_abroj_dashboard_data(filters)['projects']]
 
+    def test_project_navigation_includes_closed_and_inactive(self):
+        closed = self.env['project.project'].create({'name': 'Closed navigation', 'last_update_status': 'done'})
+        inactive = self.env['project.project'].create({'name': 'Inactive navigation', 'active': False})
+        model = self.env['project.project']
+        normal = model.get_abroj_dashboard_data()['projects']
+        all_projects = model.get_abroj_dashboard_data(include_archived=True)['projects']
+        self.assertNotIn(inactive.id, [p['id'] for p in normal])
+        by_id = {p['id']: p for p in all_projects}
+        self.assertFalse(by_id[self.project.id]['archived'])
+        self.assertTrue(by_id[closed.id]['archived'])
+        self.assertTrue(by_id[inactive.id]['archived'])
+        self.assertEqual(model.get_abroj_project_detail(inactive.id)['id'], inactive.id)
+
     def test_pwa_has_no_native_dialogs(self):
         js_dir = Path(__file__).resolve().parents[1] / 'static' / 'pwa' / 'js'
         for path in js_dir.glob('*.js'):

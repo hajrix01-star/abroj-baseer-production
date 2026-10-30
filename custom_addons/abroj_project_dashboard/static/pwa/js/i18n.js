@@ -1,5 +1,10 @@
 'use strict';
 const translations = {
+  "toggleProjects": {"ar": "توسيع أو طي المشاريع", "en": "Expand or collapse projects"},
+  "archive": {"ar": "أرشيف", "en": "Archive"},
+  "activeProjects": {"ar": "المشاريع النشطة", "en": "Active projects"},
+  "newProject": {"ar": "مشروع جديد", "en": "New project"},
+  "projectName": {"ar": "اسم المشروع", "en": "Project name"},
   "s0": {
     "ar": "أخرى",
     "en": "Other"

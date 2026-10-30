@@ -188,7 +188,7 @@ class Project(models.Model):
         return list(grouped.values())
 
     @api.model
-    def get_abroj_dashboard_data(self, filters=None):
+    def get_abroj_dashboard_data(self, filters=None, include_archived=False):
         filters = filters or {}
         domain = ['|', ('company_id', '=', False), ('company_id', 'in', self.env.companies.ids)]
         for key, field in [('type', 'abroj_type'), ('manager', 'user_id'), ('client', 'partner_id')]:
@@ -200,8 +200,10 @@ class Project(models.Model):
             domain += ['|', ('date', '=', False), ('date', '>=', filters['from'])]
         if filters.get('to'):
             domain += ['|', ('date_start', '=', False), ('date_start', '<=', filters['to'])]
-        projects = self.search(domain)
+        projects = self.with_context(active_test=False).search(domain) if include_archived else self.search(domain)
         data = [p._abroj_data() for p in projects]
+        for project, item in zip(projects, data):
+            item['archived'] = not project.active or item['completed']
         status = filters.get('status')
         if status in ('delayed', 'stalled', 'completed'):
             data = [p for p in data if p[status]]
@@ -214,5 +216,5 @@ class Project(models.Model):
 
     @api.model
     def get_abroj_project_detail(self, project_id):
-        project = self.search([('id', '=', project_id), '|', ('company_id', '=', False), ('company_id', 'in', self.env.companies.ids)], limit=1)
+        project = self.with_context(active_test=False).search([('id', '=', project_id), '|', ('company_id', '=', False), ('company_id', 'in', self.env.companies.ids)], limit=1)
         return project._abroj_data() if project else False

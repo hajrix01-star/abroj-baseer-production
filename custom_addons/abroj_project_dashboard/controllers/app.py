@@ -42,9 +42,20 @@ class AbrojApp(http.Controller):
         return request.make_response(source, [('Content-Type', 'application/javascript'), ('Service-Worker-Allowed', '/abroj/app'), ('Cache-Control', 'no-store')])
 
     @http.route('/abroj/app/data', type='jsonrpc', auth='user')
-    def data(self, filters=None, project_id=None):
+    def data(self, filters=None, project_id=None, include_archived=False):
         projects = request.env['project.project']
-        return projects.get_abroj_project_detail(project_id) if project_id else projects.get_abroj_dashboard_data(filters)
+        return projects.get_abroj_project_detail(project_id) if project_id else projects.get_abroj_dashboard_data(filters, include_archived=include_archived)
+
+    @http.route('/abroj/app/project/create', type='jsonrpc', auth='user')
+    def create_project(self, name):
+        try:
+            if not isinstance(name, str) or not name.strip():
+                raise ValidationError('Name is required')
+            with request.env.cr.savepoint():
+                project = request.env['project.project'].create({'name': name.strip(), 'company_id': request.env.company.id})
+            return {'id': project.id}
+        except (AccessError, UserError, ValidationError):
+            return {'error': self._message('تعذر إنشاء المشروع. تحقق من صلاحياتك والبيانات المدخلة.', 'Could not create the project. Check your permissions and input.')}
 
     @http.route('/abroj/app/my-day', type='jsonrpc', auth='user')
     def my_day(self):

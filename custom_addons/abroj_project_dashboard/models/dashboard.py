@@ -165,6 +165,29 @@ class Project(models.Model):
         return {'id': self.id, 'can_write': self.has_access('write'), 'can_create_task': self.env['project.task'].has_access('create'), 'can_edit_budget': self.env.user.has_group('project.group_project_manager') and self.has_access('write'), 'name': self.name, 'type': self.abroj_type, 'type_label': (dict(TYPES) if (self.env.lang or '').startswith('ar') else TYPES_EN).get(self.abroj_type, ''), 'status': self.last_update_status, 'status_label': (STATUS if (self.env.lang or '').startswith('ar') else STATUS_EN).get(self.last_update_status, ''), 'client': self.partner_id.name or '—', 'manager': self.user_id.name or '—', 'start': str(self.date_start or ''), 'end': str(self.date or ''), 'progress': round(progress, 1), 'budget': self.abroj_budget, 'actual': actual, 'over': max(actual - self.abroj_budget, 0), 'over_categories': sum(c['actual'] > c['budget'] for c in categories), 'contract': self.abroj_contract_value or (self.contract_value if 'contract_value' in self._fields else 0), 'received': received, 'paid': paid, 'liquidity': received - paid, 'categories': categories, 'contracts': contracts, 'phases': phases, 'delayed': delayed, 'stalled': stalled, 'completed': completed, 'vouchers': [{'name': v.name, 'kind': v.kind, 'partner': v.partner_id.name, 'amount': v.amount, 'date': str(v.date)} for v in vouchers]}
 
     @api.model
+    def get_abroj_my_day(self):
+        today = fields.Date.context_today(self)
+        start = fields.Datetime.to_datetime(today)
+        tomorrow = start + timedelta(days=1)
+        projects = self.search([])
+        tasks = self.env['project.task'].search([
+            ('project_id', 'in', projects.ids), ('date_deadline', '>=', start),
+            '|', ('x_abroj_date_start', '<=', today), ('date_deadline', '<', tomorrow),
+        ], order='project_id, x_abroj_date_start, id')
+        grouped = {}
+        for task in tasks:
+            project = task.project_id
+            group = grouped.setdefault(project.id, {'id': project.id, 'name': project.name, 'phases': []})
+            group['phases'].append({
+                'id': task.id, 'name': task.name,
+                'start': str(task.x_abroj_date_start or ''),
+                'end': str(task.date_deadline.date()),
+                'duration': task.x_abroj_duration_days,
+                'assignee': ', '.join(task.user_ids.mapped('name')),
+            })
+        return list(grouped.values())
+
+    @api.model
     def get_abroj_dashboard_data(self, filters=None):
         filters = filters or {}
         domain = ['|', ('company_id', '=', False), ('company_id', 'in', self.env.companies.ids)]

@@ -1,7 +1,7 @@
 'use strict';
-const CACHE = 'abroj-v5';
+const CACHE = 'abroj-v9';
 const SHELL = '/abroj_project_dashboard/static/pwa/index.html';
-const ASSETS = [SHELL, '/abroj_project_dashboard/static/pwa/app.js', '/abroj_project_dashboard/static/pwa/i18n.js', '/abroj_project_dashboard/static/pwa/app.css'];
+const ASSETS = [SHELL, '/abroj_project_dashboard/static/pwa/js/media.js', '/abroj_project_dashboard/static/pwa/js/app.js', '/abroj_project_dashboard/static/pwa/js/screens.js', '/abroj_project_dashboard/static/pwa/js/i18n.js', '/abroj_project_dashboard/static/pwa/css/tokens.css', '/abroj_project_dashboard/static/pwa/css/base.css', '/abroj_project_dashboard/static/pwa/css/components.css', '/abroj_project_dashboard/static/pwa/css/screens.css', '/abroj_project_dashboard/static/pwa/logo-navy.png', '/abroj_project_dashboard/static/pwa/logo-white.png', '/abroj_project_dashboard/static/pwa/icon-192.png', '/abroj_project_dashboard/static/pwa/icon-512.png', '/abroj_project_dashboard/static/pwa/icon-maskable-512.png', '/abroj_project_dashboard/static/pwa/apple-touch-icon.png'];
 self.addEventListener('install', event => event.waitUntil(
   caches.open(CACHE).then(cache => cache.addAll(ASSETS.map(url => new Request(url, {credentials: 'omit'})))).then(() => self.skipWaiting())
 ));

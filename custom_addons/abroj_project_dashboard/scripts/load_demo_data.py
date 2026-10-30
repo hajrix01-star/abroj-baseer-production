@@ -36,6 +36,7 @@ for index, (name, kind, status) in enumerate([
     env['abroj.promissory.note'].create({'project_id': project.id, 'partner_id': contractor.id, 'amount': 25000, 'due_date': today + timedelta(days=90), 'place': 'الرياض'})
     env['abroj.contracting.project.note'].create({'project_id': project.id, 'body': 'متابعة أعمال المشروع'})
     env['ir.attachment'].create({'name': 'ملاحظات.txt', 'raw': 'ملف تجريبي'.encode(), 'res_model': 'project.project', 'res_id': project.id})
+    env['project.task'].create({'name': ['إزالة مخلفات', 'صب خرسانة', 'أعمال التشطيب'][index], 'project_id': project.id, 'x_abroj_date_start': today - timedelta(days=1), 'x_abroj_duration_days': 3, 'user_ids': [Command.set([admin.id])]})
     for n, phase in enumerate(['تنظيف 3 أيام', 'حفر', 'قواعد', 'هيكل خرساني', 'مباني', 'كهرباء وسباكة', 'تشطيبات']):
         env['project.task'].create({'name': phase, 'project_id': project.id, 'x_abroj_date_start': today + timedelta(days=-180+n*30), 'x_abroj_duration_days': 3, 'state': '1_done' if n < 2 else '01_in_progress'})
     for n, category in enumerate(['الحفر والأساسات', 'الخرسانة والهيكل', 'الكهرباء', 'السباكة', 'المقاولون من الباطن', 'التشطيبات']):

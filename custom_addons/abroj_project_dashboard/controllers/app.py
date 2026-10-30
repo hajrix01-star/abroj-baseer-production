@@ -26,14 +26,14 @@ class AbrojApp(http.Controller):
         try:
             with request.env.cr.savepoint():
                 request.env.user.write({'lang': code})
-            request.session.context['lang'] = code
+            request.session.context = dict(request.session.context, lang=code)
             return {'ok': True}
         except (AccessError, UserError, ValidationError):
             return {'ok': False}
 
     @http.route('/abroj/app/manifest.webmanifest', type='http', auth='public', methods=['GET'])
     def manifest(self):
-        data = {'name': 'أبرج للمقاولات', 'short_name': 'أبرج', 'start_url': '/abroj/app', 'scope': '/abroj/app', 'display': 'standalone', 'dir': 'rtl', 'lang': 'ar', 'theme_color': '#12243b', 'background_color': '#f5f6f8', 'icons': [{'src': '/abroj_project_dashboard/static/pwa/icon-%d.png' % n, 'sizes': '%dx%d' % (n, n), 'type': 'image/png'} for n in (192, 512)]}
+        data = {'name': self._message('أبرج للمقاولات', 'Abroj Contracting'), 'short_name': self._message('أبرج', 'Abroj'), 'start_url': '/abroj/app', 'scope': '/abroj/app', 'display': 'standalone', 'dir': self._message('rtl', 'ltr'), 'lang': self._message('ar', 'en'), 'theme_color': '#12243b', 'background_color': '#f5f6f8', 'icons': [{'src': '/abroj_project_dashboard/static/pwa/icon-%d.png' % n, 'sizes': '%dx%d' % (n, n), 'type': 'image/png'} for n in (192, 512)] + [{'src': '/abroj_project_dashboard/static/pwa/icon-maskable-512.png', 'sizes': '512x512', 'type': 'image/png', 'purpose': 'maskable'}]}
         return request.make_response(json.dumps(data, ensure_ascii=False), [('Content-Type', 'application/manifest+json'), ('Cache-Control', 'no-store, no-cache, must-revalidate'), ('Pragma', 'no-cache'), ('Expires', '0')])
 
     @http.route('/abroj/app/sw.js', type='http', auth='public', methods=['GET'])
@@ -45,6 +45,10 @@ class AbrojApp(http.Controller):
     def data(self, filters=None, project_id=None):
         projects = request.env['project.project']
         return projects.get_abroj_project_detail(project_id) if project_id else projects.get_abroj_dashboard_data(filters)
+
+    @http.route('/abroj/app/my-day', type='jsonrpc', auth='user')
+    def my_day(self):
+        return request.env['project.project'].get_abroj_my_day()
 
     @http.route('/abroj/app/save', type='jsonrpc', auth='user')
     def save(self, model, values, record_id=None):

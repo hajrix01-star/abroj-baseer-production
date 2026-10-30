@@ -656,6 +656,13 @@ const translations = {
     "ar": "يوم",
     "en": "days"
   },
+  "myDay": {"ar": "مهامي اليوم", "en": "My Day"},
+  "myDayEmpty": {"ar": "لا توجد مراحل لهذا اليوم", "en": "No phases for today"},
+  "assignee": {"ar": "المسؤول", "en": "Assignee"},
+  "unassigned": {"ar": "غير معيّن", "en": "Unassigned"},
+  "english": {"ar": "English", "en": "English"},
+  "logout": {"ar": "تسجيل الخروج", "en": "Log out"},
+  "sessionExpired": {"ar": "انتهت الجلسة", "en": "Session expired"},
   "menu": {"ar": "القائمة", "en": "Menu"},
   "switchLanguage": {"ar": "تغيير اللغة", "en": "Change language"},
   "arabic": {"ar": "العربية", "en": "العربية"},
@@ -668,3 +675,7 @@ const translations = {
   "state_cancel": {"ar": "ملغي", "en": "Cancelled"},
   "state_confirmed": {"ar": "معتمد", "en": "Confirmed"}
 };
+
+const mediaText={gallery:['اختيار صور وملفات','Choose photos and files'],native:['كاميرا الجهاز','Device camera'],switch:['تبديل الكاميرا','Switch camera'],flash:['الفلاش','Torch'],capture:['التقاط','Capture'],retry:['إعادة المحاولة','Retry'],queued:['بانتظار الاتصال','Waiting for connection'],uploading:['جارٍ الرفع','Uploading'],done:['تم الرفع','Uploaded'],failed:['فشل الرفع','Upload failed'],record:['بدء التسجيل','Start recording'],pause:['إيقاف مؤقت','Pause'],resume:['استئناف','Resume'],stop:['إيقاف','Stop'],discard:['حذف وإعادة التسجيل','Discard and record again'],save:['حفظ التسجيل','Save recording'],preview:['معاينة التسجيل','Recording preview']};
+Object.entries(mediaText).forEach(([key,value])=>translations['media_'+key]={ar:value[0],en:value[1]});
+

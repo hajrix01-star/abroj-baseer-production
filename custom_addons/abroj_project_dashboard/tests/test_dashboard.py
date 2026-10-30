@@ -30,6 +30,32 @@ class AbrojProjectDashboardCase(TransactionCase):
     def ids(self, filters):
         return [p['id'] for p in self.env['project.project'].get_abroj_dashboard_data(filters)['projects']]
 
+    def test_my_day_grouping_dates_and_permissions(self):
+        public = self.env['project.project'].create({'name': 'My Day public', 'company_id': self.env.company.id, 'privacy_visibility': 'employees'})
+        private = self.env['project.project'].create({'name': 'My Day private', 'company_id': self.env.company.id, 'privacy_visibility': 'followers'})
+        tasks = self.env['project.task']
+        def phase(project, name, start=None, duration=1, deadline=None):
+            values = {'project_id': project.id, 'name': name, 'x_abroj_duration_days': duration}
+            if start:
+                values['x_abroj_date_start'] = start
+            if deadline:
+                values['date_deadline'] = deadline
+            return tasks.create(values)
+        spanning = phase(public, 'Spanning', self.today - timedelta(days=1), 3)
+        due = phase(public, 'Due', deadline=fields.Datetime.to_datetime(self.today))
+        other = phase(self.project, 'Today', self.today)
+        phase(public, 'Past', self.today - timedelta(days=2))
+        phase(public, 'Future', self.today + timedelta(days=1))
+        hidden = phase(private, 'Hidden', self.today)
+        groups = self.env['project.project'].get_abroj_my_day()
+        by_project = {g['id']: {p['id'] for p in g['phases']} for g in groups}
+        self.assertEqual(by_project[public.id], {spanning.id, due.id})
+        self.assertIn(other.id, by_project[self.project.id])
+        self.assertIn(hidden.id, by_project[private.id])
+        visible = self.env['project.project'].with_user(self.engineer).get_abroj_my_day()
+        self.assertNotIn(private.id, {g['id'] for g in visible})
+        self.assertEqual({p['id'] for g in visible if g['id'] == public.id for p in g['phases']}, {spanning.id, due.id})
+
     def test_dashboard_labels_follow_language(self):
         from odoo.addons.abroj_project_dashboard.models.dashboard import STATUS, TYPES
         self.project.last_update_status = 'on_track'
@@ -215,6 +241,19 @@ class AbrojDashboardHttpCase(HttpCase):
         self.assertIn('no-store', self.url_open('/abroj/app').headers['Cache-Control'])
         self.assertIn('no-cache', self.url_open('/abroj/app/manifest.webmanifest').headers['Cache-Control'])
 
+    def test_brand_assets_and_manifest(self):
+        manifest = self.url_open('/abroj/app/manifest.webmanifest').json()
+        icons = manifest['icons']
+        self.assertEqual({icon['sizes'] for icon in icons}, {'192x192', '512x512'})
+        self.assertTrue(any(icon.get('purpose') == 'maskable' for icon in icons))
+        for icon in icons:
+            response = self.url_open(icon['src'])
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.content[:8], b'\x89PNG\r\n\x1a\n')
+        worker = self.url_open('/abroj/app/sw.js').text
+        for asset in ('js/screens.js', 'css/tokens.css', 'logo-white.png'):
+            self.assertIn(asset, worker)
+
     def test_unauthenticated_json_session_expired(self):
         response = self.url_open('/abroj/app/data', data=json.dumps({'jsonrpc': '2.0', 'method': 'call', 'params': {}, 'id': 1}), headers={'Content-Type': 'application/json'})
         self.assertEqual(response.json()['error']['code'], 100)
@@ -232,6 +271,23 @@ class AbrojDashboardHttpCase(HttpCase):
         self.assertEqual(self.env.ref('base.user_admin').lang, 'en_US')
         self.assertIn('name="user-lang" content="en"', self.url_open('/abroj/app').text)
 
+    def test_language_switch_translates_dashboard_and_errors(self):
+        self.env['res.lang']._activate_lang('ar_001')
+        project = self.env['project.project'].create({
+            'name': 'Language fixture', 'company_id': self.env.company.id,
+            'abroj_type': 'residential', 'last_update_status': 'on_track',
+        })
+        self.authenticate('admin', 'admin')
+        self.assertTrue(self.rpc('/abroj/app/language', {'lang': 'ar'})['ok'])
+        arabic = self.rpc('/abroj/app/data', {'project_id': project.id})
+        self.assertEqual(arabic['type_label'], 'سكني / فلل')
+        self.assertTrue(self.rpc('/abroj/app/language', {'lang': 'en'})['ok'])
+        english = self.rpc('/abroj/app/data', {'project_id': project.id})
+        self.assertEqual(english['type_label'], 'Residential / villas')
+        self.assertEqual(english['status_label'], 'On track')
+        self.assertEqual(self.rpc('/abroj/app/save', {'model': 'invalid', 'values': {}})['error'],
+                         'Could not save. Check your permissions and input.')
+
     def test_language_rejects_unknown_code(self):
         self.authenticate('admin', 'admin')
         self.assertFalse(self.rpc('/abroj/app/language', {'lang': 'invalid'})['ok'])
@@ -247,6 +303,23 @@ class AbrojDashboardHttpCase(HttpCase):
         self.authenticate('admin', 'admin')
         result = self.rpc('/abroj/app/save', {'model': 'project.project', 'values': {'name': 'forbidden'}})
         self.assertIn('error', result)
+
+    def test_media_original_bytes_and_audio_mimes(self):
+        import re
+        project = self.env['project.project'].create({'name': 'Media quality', 'company_id': self.env.company.id})
+        self.authenticate('admin', 'admin')
+        token = re.search(r'name="csrf-token" content="([^"]+)', self.url_open('/abroj/app').text).group(1)
+        original = bytes(range(256)) * 4097
+        for name, mime in [('original.jpg', 'image/jpeg'), ('voice.webm', 'audio/webm;codecs=opus'), ('voice.mp4', 'audio/mp4')]:
+            response = self.url_open('/abroj/app/upload', data={'csrf_token': token, 'model': 'project.project', 'record_id': str(project.id)}, files={'file': (name, original, mime)})
+            attachment = self.env['ir.attachment'].browse(response.json()['id'])
+            self.assertEqual(attachment.raw, original)
+            self.assertEqual(self.url_open('/web/content/%s' % attachment.id).content, original)
+        too_large = self.url_open('/abroj/app/upload', data={'csrf_token': token, 'model': 'project.project', 'record_id': str(project.id)}, files={'file': ('large.bin', b'x' * (25 * 1024 * 1024 + 1), 'application/octet-stream')})
+        self.assertIn('error', too_large.json())
+        for name, mime in [('voice.webm', 'audio/webm;codecs=opus'), ('voice.mp4', 'audio/mp4')]:
+            response = self.url_open('/abroj/app/voice', data={'csrf_token': token, 'project_id': str(project.id), 'body': 'Voice'}, files={'file': (name, original, mime)})
+            self.assertIn('id', response.json())
 
     def test_upload_and_gallery(self):
         import io

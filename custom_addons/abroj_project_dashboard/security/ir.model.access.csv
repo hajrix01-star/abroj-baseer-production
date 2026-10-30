@@ -3,3 +3,4 @@ access_abroj_budget_user,abroj budget user,model_abroj_project_budget_line,proje
 access_abroj_budget_manager,abroj budget manager,model_abroj_project_budget_line,project.group_project_manager,1,1,1,1
 access_promissory_user,Promissory user,model_abroj_promissory_note,base.group_user,1,0,1,0
 access_promissory_manager,Promissory manager,model_abroj_promissory_note,project.group_project_manager,1,1,1,1
+access_project_manager_create_customer,Project manager create customer,base.model_res_partner,project.group_project_manager,0,0,1,0

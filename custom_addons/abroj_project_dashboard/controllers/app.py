@@ -1,5 +1,8 @@
 import json
 from pathlib import Path
+import math
+
+from odoo import fields
 
 from odoo import http
 from odoo.exceptions import AccessError, UserError, ValidationError
@@ -57,16 +60,55 @@ class AbrojApp(http.Controller):
         projects = request.env['project.project']
         return projects.get_abroj_project_detail(project_id) if project_id else projects.get_abroj_dashboard_data(filters, include_archived=include_archived)
 
-    @http.route('/abroj/app/project/create', type='jsonrpc', auth='user')
-    def create_project(self, name):
+    @http.route('/abroj/app/project/options', type='jsonrpc', auth='user')
+    def project_options(self, search=''):
         try:
+            if not request.env['project.project'].has_access('create'):
+                raise AccessError('Project create access required')
+            partners = request.env['res.partner'].search([('name', 'ilike', str(search or '')[:100])], limit=20) if search else request.env['res.partner']
+            users = request.env['res.users'].search([('share', '=', False)])
+            return {'partners': [{'id': p.id, 'name': p.name} for p in partners],
+                    'users': [{'id': u.id, 'name': u.name} for u in users], 'current_user': request.env.uid}
+        except AccessError:
+            return {'error': self._message('لا تملك صلاحية إنشاء مشروع.', 'You do not have permission to create a project.')}
+
+    @http.route('/abroj/app/project/create', type='jsonrpc', auth='user')
+    def create_project(self, name='', customer_id=None, customer_name='', location='', budget=0, start='', end='', manager_id=None, project_type='other'):
+        try:
+            if not request.env['project.project'].has_access('create'):
+                raise AccessError('Project create access required')
             if not isinstance(name, str) or not name.strip():
-                raise ValidationError('Name is required')
+                return {'field': 'name', 'error': self._message('اسم المشروع مطلوب.', 'Project name is required.')}
+            start_date = fields.Date.to_date(start) if start else False
+            end_date = fields.Date.to_date(end) if end else False
+            if start_date and end_date and end_date < start_date:
+                return {'field': 'end', 'error': self._message('يجب أن يكون تاريخ النهاية بعد البداية أو مساوياً لها.', 'End date must be on or after start date.')}
+            if not isinstance(location, str) or not isinstance(customer_name, str):
+                raise ValueError('Invalid text')
+            amount = float(budget or 0)
+            if not math.isfinite(amount) or amount < 0:
+                raise ValueError('Invalid budget')
+            if project_type not in dict(request.env['project.project']._fields['abroj_type'].selection):
+                raise ValueError('Invalid type')
             with request.env.cr.savepoint():
-                project = request.env['project.project'].create({'name': name.strip(), 'company_id': request.env.company.id})
+                partner = request.env['res.partner']
+                if customer_id:
+                    partner = partner.search([('id', '=', int(customer_id))], limit=1)
+                    if not partner:
+                        raise AccessError('Customer unavailable')
+                elif customer_name.strip():
+                    partner = partner.create({'name': customer_name.strip()})
+                manager = request.env['res.users'].search([('id', '=', int(manager_id or request.env.uid)), ('share', '=', False)], limit=1)
+                if not manager:
+                    raise AccessError('Manager unavailable')
+                project = request.env['project.project'].create({'name': name.strip(), 'company_id': request.env.company.id,
+                    'partner_id': partner.id or False, 'user_id': manager.id, 'abroj_location': location.strip(),
+                    'abroj_budget': amount, 'date_start': start_date, 'date': end_date, 'abroj_type': project_type})
             return {'id': project.id}
-        except (AccessError, UserError, ValidationError):
-            return {'error': self._message('تعذر إنشاء المشروع. تحقق من صلاحياتك والبيانات المدخلة.', 'Could not create the project. Check your permissions and input.')}
+        except AccessError:
+            return {'error': self._message('لا تملك صلاحية إنشاء المشروع أو العميل المحدد.', 'You do not have permission to create the project or selected customer.')}
+        except (UserError, ValidationError, ValueError, TypeError, OverflowError):
+            return {'error': self._message('تعذر إنشاء المشروع. تحقق من البيانات المدخلة.', 'Could not create the project. Check your input.')}
 
     @http.route('/abroj/app/project/close-summary', type='jsonrpc', auth='user')
     def close_summary(self, project_id):

@@ -111,6 +111,7 @@ class AnalyticLine(models.Model):
 class Project(models.Model):
     _inherit = 'project.project'
 
+    abroj_location = fields.Char(string='موقع المشروع')
     abroj_type = fields.Selection(TYPES, string='نوع المشروع', default='other')
     abroj_budget = fields.Monetary(string='الميزانية', currency_field='abroj_currency_id')
     abroj_contract_value = fields.Monetary(string='قيمة العقد', currency_field='abroj_currency_id')
@@ -247,7 +248,7 @@ class Project(models.Model):
         elif status:
             data = [p for p in data if p['status'] == status]
         types = dict(TYPES) if (self.env.lang or '').startswith('ar') else TYPES_EN
-        return {'projects': data, 'types': [{'id': k, 'name': types[k]} for k, _ in TYPES], 'managers': [{'id': p.id, 'name': p.name} for p in projects.mapped('user_id')], 'clients': [{'id': p.id, 'name': p.name} for p in projects.mapped('partner_id')]}
+        return {'can_create_project': self.has_access('create'), 'projects': data, 'types': [{'id': k, 'name': types[k]} for k, _ in TYPES], 'managers': [{'id': p.id, 'name': p.name} for p in projects.mapped('user_id')], 'clients': [{'id': p.id, 'name': p.name} for p in projects.mapped('partner_id')]}
 
     @api.model
     def get_abroj_project_detail(self, project_id):

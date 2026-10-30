@@ -1,5 +1,11 @@
 'use strict';
 const translations = {
+  "customer": {"ar":"العميل", "en":"Customer"},
+  "customerHint": {"ar":"ابحث أو أدخل اسم عميل جديد", "en":"Search or enter a new customer name"},
+  "location": {"ar":"الموقع", "en":"Location"},
+  "manager": {"ar":"مدير المشروع", "en":"Project manager"},
+  "nameRequired": {"ar":"اسم المشروع مطلوب.", "en":"Project name is required."},
+  "dateOrder": {"ar":"يجب أن يكون تاريخ النهاية بعد البداية أو مساوياً لها.", "en":"End date must be on or after start date."},
   "closeProject": {"ar": "إغلاق المشروع", "en": "Close project"},
   "reopenProject": {"ar": "إعادة فتح", "en": "Reopen"},
   "closeSummaryHint": {"ar": "راجع العناصر المتبقية قبل الإغلاق.", "en": "Review outstanding items before closing."},

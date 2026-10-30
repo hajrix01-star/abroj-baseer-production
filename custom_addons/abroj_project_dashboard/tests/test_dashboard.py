@@ -280,6 +280,39 @@ class AbrojDashboardHttpCase(HttpCase):
         response = self.url_open(path, data=json.dumps({'jsonrpc': '2.0', 'method': 'call', 'params': params, 'id': 1}), headers={'Content-Type': 'application/json'})
         return response.json()['result']
 
+    def test_create_project_fields(self):
+        self.authenticate('admin', 'admin')
+        partner = self.env['res.partner'].create({'name': 'Creation customer'})
+        result = self.rpc('/abroj/app/project/create', {'name': ' New project ', 'customer_id': partner.id,
+            'location': 'Riyadh', 'budget': 1250.5, 'start': '2026-01-01', 'end': '2026-02-01',
+            'manager_id': self.env.ref('base.user_admin').id, 'project_type': 'commercial'})
+        project = self.env['project.project'].browse(result['id'])
+        self.assertEqual((project.name, project.partner_id.id, project.abroj_location, project.abroj_budget, project.abroj_type),
+                         ('New project', partner.id, 'Riyadh', 1250.5, 'commercial'))
+        self.assertEqual(str(project.date_start), '2026-01-01')
+        self.assertEqual(str(project.date), '2026-02-01')
+        self.assertEqual(project.user_id, self.env.ref('base.user_admin'))
+        self.env['res.users'].create({'name': 'Create owner', 'login': 'create_owner', 'password': 'create_owner',
+            'group_ids': [Command.set([self.env.ref('base.group_user').id, self.env.ref('project.group_project_manager').id])]})
+        self.authenticate('create_owner', 'create_owner')
+        result = self.rpc('/abroj/app/project/create', {'name': 'Customer creation', 'customer_name': 'New customer'})
+        self.assertEqual(self.env['project.project'].browse(result['id']).partner_id.name, 'New customer')
+
+    def test_create_project_validation(self):
+        self.authenticate('admin', 'admin')
+        self.assertEqual(self.rpc('/abroj/app/project/create', {'name': '  '})['field'], 'name')
+        self.assertEqual(self.rpc('/abroj/app/project/create', {'name': 'Invalid dates', 'start': '2026-02-01', 'end': '2026-01-01'})['field'], 'end')
+        self.assertIn('error', self.rpc('/abroj/app/project/create', {'name': 'Invalid budget', 'budget': -1}))
+
+    def test_create_project_engineer_denied(self):
+        self.env['res.users'].create({'name': 'Create engineer', 'login': 'create_engineer', 'password': 'create_engineer',
+            'group_ids': [Command.set([self.env.ref('base.group_user').id, self.env.ref('project.group_project_user').id])]})
+        self.authenticate('create_engineer', 'create_engineer')
+        self.assertFalse(self.rpc('/abroj/app/data', {})['can_create_project'])
+        self.assertIn('error', self.rpc('/abroj/app/project/options', {}))
+        self.assertIn('error', self.rpc('/abroj/app/project/create', {'name': 'Denied', 'customer_name': 'Must not exist'}))
+        self.assertFalse(self.env['res.partner'].search([('name', '=', 'Must not exist')]))
+
     def test_login_redirect(self):
         response = self.url_open('/abroj/app', allow_redirects=False)
         self.assertIn('/web/login', response.headers['Location'])

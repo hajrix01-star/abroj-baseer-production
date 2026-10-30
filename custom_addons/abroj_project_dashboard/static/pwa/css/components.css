@@ -44,7 +44,9 @@ html[dir=rtl] .drawer-project-row svg{transform:scaleX(-1)}
 /* Keep both navigation headers aligned, including the safe area. */
 header{height:var(--header-height);min-height:var(--header-height);padding-bottom:14px}
 header .brand img,.drawer-head img{width:var(--logo-width);height:var(--logo-height);max-height:none;object-fit:contain}
-.drawer-head{height:var(--header-height);display:flex;align-items:center;padding: max(14px, env(safe-area-inset-top)) 20px 14px;line-height:0}
+.drawer-head{height:var(--header-height);display:flex;align-items:center;position:relative;padding: max(14px, env(safe-area-inset-top)) 20px 14px;line-height:0}
+header .brand img,.drawer-head img{position:absolute;inset-inline-start:calc(var(--drawer-w) / 2);top:50%;transform:translate(-50%,-50%)}
+html[dir=rtl] header .brand img,html[dir=rtl] .drawer-head img{transform:translate(50%,-50%)}
 .overlay{background:rgba(8,13,20,0.8)}
 
 .drawer .drawer-project-inner .archive-row button,.drawer .drawer-archive summary{font-size:inherit;padding:13px;min-height:44px}

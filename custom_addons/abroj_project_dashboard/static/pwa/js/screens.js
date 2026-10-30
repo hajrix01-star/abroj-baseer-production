@@ -1,9 +1,24 @@
 let drawerExpanded=false, drawerAllProjects=[];
+function renderDrawer(){
+    const d=document.getElementById('drawer');
+    d.innerHTML=`<div class="drawer-head"><img src="/abroj_project_dashboard/static/pwa/logo-white.png" alt="Abroj"></div><div class="drawer-content"><button onclick="closeDrawer();goMyDay()">${t("myDay")}</button><button class="drawer-project-toggle" aria-expanded="${drawerExpanded}" aria-controls="drawer-project-panel" onclick="toggleDrawerProjects()"><span class="drawer-project-title"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>${t("s50")}</span><svg class="drawer-chevron" aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></button><div id="drawer-project-panel" class="drawer-project-panel ${drawerExpanded?'expanded':''}" ${drawerExpanded?'':'inert'}><div class="drawer-project-inner"><div id="drawer-project-search"></div><div id="drawer-projects"></div><button class="drawer-all-projects" onclick="closeDrawer();projectsList()">${t('allProjects')}</button></div></div>${[['overview',t("s62")],['tracking',t("s45")],['finance',t("s42")],['timeline',t("s28")],['delayed',t("s44")]].map(([k,n])=>`<button onclick="closeDrawer();goDashboard('${k}')">${n}</button>`).join('')}</div>`;
+}
+function measureDrawer(){
+    const d=document.getElementById('drawer'), closed=d.hidden;
+    if(closed){d.style.setProperty('display','block','important');d.style.visibility='hidden'}
+    document.documentElement.style.setProperty('--drawer-w',`${d.getBoundingClientRect().width}px`);
+    if(closed){d.style.removeProperty('display');d.style.removeProperty('visibility')}
+}
+renderDrawer();
+measureDrawer();
+window.addEventListener('resize',measureDrawer);
+new ResizeObserver(()=>{if(!document.getElementById('drawer').hidden)measureDrawer()}).observe(document.getElementById('drawer'));
 async function openDrawer(){
     drawerExpanded=!!currentProject;
     document.getElementById('overlay').hidden=false;
     const d=document.getElementById('drawer');d.hidden=false;
-    d.innerHTML=`<div class="drawer-head"><img src="/abroj_project_dashboard/static/pwa/logo-white.png" alt="Abroj"></div><div class="drawer-content"><button onclick="closeDrawer();goMyDay()">${t("myDay")}</button><button class="drawer-project-toggle" aria-expanded="${drawerExpanded}" aria-controls="drawer-project-panel" onclick="toggleDrawerProjects()"><span class="drawer-project-title"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>${t("s50")}</span><svg class="drawer-chevron" aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></button><div id="drawer-project-panel" class="drawer-project-panel ${drawerExpanded?'expanded':''}" ${drawerExpanded?'':'inert'}><div class="drawer-project-inner"><div id="drawer-project-search"></div><div id="drawer-projects"></div><button class="drawer-all-projects" onclick="closeDrawer();projectsList()">${t('allProjects')}</button></div></div>${[['overview',t("s62")],['tracking',t("s45")],['finance',t("s42")],['timeline',t("s28")],['delayed',t("s44")]].map(([k,n])=>`<button onclick="closeDrawer();goDashboard('${k}')">${n}</button>`).join('')}</div>`;
+    renderDrawer();
+    measureDrawer();
     try { const result=await rpc('/abroj/app/data',{include_archived:true}); drawerAllProjects=result.projects; if(!d.hidden){document.getElementById('drawer-project-search').innerHTML=drawerAllProjects.length>6?`<input type="search" aria-label="${t('s17')}" placeholder="${t('s17')}" oninput="drawerProjects(this.value)">`:'';drawerProjects('')} } catch(e) { toast(e.message); }
 }
 function toggleDrawerProjects(force){

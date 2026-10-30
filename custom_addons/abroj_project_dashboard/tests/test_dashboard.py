@@ -253,3 +253,56 @@ class AbrojDashboardHttpCase(HttpCase):
         self.assertIn('id', uploaded.json())
         denied = self.url_open('/abroj/app/upload', data={'csrf_token': token, 'model': 'res.users', 'record_id': '1'}, files={'file': ('voice.webm', b'voice bytes', 'audio/webm')})
         self.assertEqual(denied.status_code, 403)
+
+    def test_documents_create_and_workflow(self):
+        partner = self.env['res.partner'].create({'name': 'Document partner'})
+        project = self.env['project.project'].create({'name': 'Documents HTTP', 'company_id': self.env.company.id, 'partner_id': partner.id})
+        self.authenticate('admin', 'admin')
+        def save(kind, values):
+            result = self.rpc('/abroj/app/document/save', {'project_id': project.id, 'kind': kind, 'values': values})
+            self.assertIn('id', result, result)
+            return result['id']
+        contract = save('contract', {'partner_id': partner.id, 'agreed_amount': 100})
+        for kind in ('payment', 'receipt'):
+            voucher = save(kind, {'partner_id': partner.id, 'amount': 10, **({'subcontractor_id': contract} if kind == 'payment' else {})})
+            result = self.rpc('/abroj/app/document/action', {'project_id': project.id, 'kind': kind, 'record_id': voucher, 'action': 'issue'})
+            self.assertTrue(result.get('ok'), result)
+        save('note', {'body': 'Test note'})
+        save('invoice', {'number': 'INV', 'subcontractor_id': contract, 'amount': 10})
+        save('cost', {'name': 'Cost', 'amount': 10})
+        note = save('promissory', {'partner_id': partner.id, 'amount': 25, 'issue_date': '2026-01-01', 'due_date': '2026-02-01'})
+        self.assertTrue(self.rpc('/abroj/app/document/action', {'project_id': project.id, 'kind': 'promissory', 'record_id': note, 'action': 'issue'}).get('ok'))
+        docs = self.rpc('/abroj/app/documents', {'project_id': project.id})
+        self.assertEqual(docs['records']['promissory'][0]['state'], 'issued')
+        self.assertNotIn('error', docs)
+
+    def test_promissory_engineer_restriction(self):
+        project = self.env['project.project'].create({'name': 'Promissory HTTP', 'company_id': self.env.company.id, 'privacy_visibility': 'employees'})
+        partner = self.env['res.partner'].create({'name': 'Promissory partner'})
+        self.env['res.users'].create({'name': 'Promissory engineer', 'login': 'promissory_engineer', 'password': 'promissory_engineer', 'group_ids': [Command.set([self.env.ref('base.group_user').id, self.env.ref('project.group_project_user').id])]})
+        self.authenticate('promissory_engineer', 'promissory_engineer')
+        result = self.rpc('/abroj/app/document/save', {'project_id': project.id, 'kind': 'promissory', 'values': {'partner_id': partner.id, 'amount': 10, 'due_date': '2027-01-01'}})
+        self.assertIn('id', result)
+        action = self.rpc('/abroj/app/document/action', {'project_id': project.id, 'kind': 'promissory', 'record_id': result['id'], 'action': 'issue'})
+        self.assertIn('error', action)
+
+    def test_voice_and_pdf_access(self):
+        from unittest.mock import patch
+        import re
+        partner = self.env['res.partner'].create({'name': 'PDF partner'})
+        project = self.env['project.project'].create({'name': 'PDF project', 'company_id': self.env.company.id, 'privacy_visibility': 'employees'})
+        note = self.env['abroj.promissory.note'].create({'project_id': project.id, 'partner_id': partner.id, 'amount': 10, 'due_date': '2027-01-01'})
+        self.authenticate('admin', 'admin')
+        token = re.search(r'name="csrf-token" content="([^"]+)', self.url_open('/abroj/app').text).group(1)
+        voice = self.url_open('/abroj/app/voice', data={'csrf_token': token, 'project_id': str(project.id), 'body': 'Voice'}, files={'file': ('voice.webm', b'voice bytes', 'audio/webm')})
+        self.assertIn('id', voice.json())
+        report_class = type(self.env['ir.actions.report'])
+        with patch.object(report_class, '_render_qweb_pdf', return_value=(b'%PDF-1.4\n', 'pdf')):
+            response = self.url_open('/abroj/app/pdf/promissory/%d' % note.id)
+            self.assertEqual(response.status_code, 200)
+            self.assertTrue(response.content.startswith(b'%PDF'))
+        private = self.env['project.project'].create({'name': 'Private PDF', 'company_id': self.env.company.id, 'privacy_visibility': 'followers'})
+        hidden = self.env['abroj.promissory.note'].create({'project_id': private.id, 'partner_id': partner.id, 'amount': 10, 'due_date': '2027-01-01'})
+        self.env['res.users'].create({'name': 'PDF engineer', 'login': 'pdf_engineer', 'password': 'pdf_engineer', 'group_ids': [Command.set([self.env.ref('base.group_user').id, self.env.ref('project.group_project_user').id])]})
+        self.authenticate('pdf_engineer', 'pdf_engineer')
+        self.assertEqual(self.url_open('/abroj/app/pdf/promissory/%d' % hidden.id).status_code, 403)

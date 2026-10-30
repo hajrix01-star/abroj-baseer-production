@@ -30,7 +30,7 @@ class AbrojApp(http.Controller):
 
     @http.route('/abroj/app/save', type='jsonrpc', auth='user')
     def save(self, model, values, record_id=None):
-        allowed = {'project.task': {'name', 'project_id', 'x_abroj_date_start', 'x_abroj_duration_days', 'state', 'x_abroj_progress'}, 'project.project': {'abroj_type', 'last_update_status', 'abroj_manual_progress', 'abroj_use_manual_progress', 'abroj_budget', 'abroj_contract_value', 'abroj_budget_line_ids'}}
+        allowed = {'project.task': {'name', 'project_id', 'x_abroj_date_start', 'x_abroj_duration_days', 'state', 'x_abroj_progress'}, 'project.project': {'abroj_type', 'last_update_status', 'abroj_manual_progress', 'abroj_use_manual_progress', 'abroj_budget', 'abroj_contract_value', 'abroj_budget_line_ids', 'contracting_goal_ar', 'contracting_goal_en', 'contract_payment_schedule_ar', 'contract_payment_schedule_en', 'contracting_start', 'contracting_end', 'contract_value', 'value_type', 'estimated_cost', 'contract_vat_percent', 'contract_retention_percent'}}
         try:
             if model not in allowed or set(values) - allowed[model]:
                 raise AccessError('عملية غير مسموحة')
@@ -76,3 +76,140 @@ class AbrojApp(http.Controller):
             return request.make_json_response({'id': attachment.id})
         except (AccessError, UserError, ValueError):
             return request.make_json_response({'error': 'تعذر رفع الملف. تحقق من الصلاحيات وحجم الملف.'}, status=403)
+
+    # Only project-owned business documents are exposed here. All operations use
+    # the current user's environment, including record rules and model guards.
+    _documents = {
+        'contract': ('abroj.contracting.subcontractor', {'partner_id', 'scope', 'agreed_amount', 'contract_type', 'payment_terms', 'duration_days'}),
+        'payment': ('abroj.contracting.voucher', {'partner_id', 'amount', 'date', 'method', 'memo', 'subcontractor_id', 'vendor_contract_reference', 'vendor_contract_value'}),
+        'receipt': ('abroj.contracting.voucher', {'partner_id', 'amount', 'date', 'method', 'memo'}),
+        'promissory': ('abroj.promissory.note', {'partner_id', 'amount', 'issue_date', 'due_date', 'place', 'notes', 'currency_id'}),
+        'note': ('abroj.contracting.project.note', {'body', 'note_type'}),
+        'invoice': ('abroj.contracting.invoice', {'number', 'subcontractor_id', 'amount', 'date', 'invoice_kind', 'buyer_vat'}),
+        'cost': ('abroj.contracting.cost', {'name', 'partner_id', 'amount', 'date', 'category', 'invoice_number'}),
+    }
+
+    @http.route('/abroj/app/documents', type='jsonrpc', auth='user')
+    def documents(self, project_id):
+        try:
+            project = request.env['project.project'].browse(int(project_id)).exists()
+            if not project:
+                raise AccessError('المشروع غير موجود')
+            project.check_access('read')
+            result = {'partners': [{'id': p.id, 'name': p.display_name} for p in request.env['res.partner'].search([], limit=500)], 'records': {}, 'capabilities': {}, 'agreement': {name: (str(project[name]) if project._fields[name].type == 'date' and project[name] else project[name]) for name in ('contracting_goal_ar', 'contracting_goal_en', 'contract_payment_schedule_ar', 'contract_payment_schedule_en', 'contracting_start', 'contracting_end', 'contract_value', 'value_type', 'estimated_cost', 'contract_vat_percent', 'contract_retention_percent')}}
+            for key, (model, allowed) in self._documents.items():
+                records = request.env[model]
+                result['capabilities'][key] = {'create': records.has_access('create')}
+                if not records.has_access('read'):
+                    result['records'][key] = []
+                    continue
+                domain = [('project_id', '=', project.id)]
+                if key in ('payment', 'receipt'):
+                    domain.append(('kind', '=', key))
+                rows = []
+                for rec in records.search(domain, limit=200):
+                    vals = {}
+                    for name in allowed:
+                        field = rec._fields[name]
+                        val = rec[name]
+                        vals[name] = val.id if field.type == 'many2one' else (str(val) if field.type in ('date', 'datetime') and val else val)
+                    rows.append({'id': rec.id, 'name': rec.display_name, 'state': rec.state if 'state' in rec._fields else '', 'values': vals, 'can_write': rec.has_access('write')})
+                result['records'][key] = rows
+            return result
+        except (AccessError, UserError, ValueError):
+            return {'error': 'تعذر عرض مستندات المشروع. تحقق من صلاحياتك.'}
+
+    @http.route('/abroj/app/document/save', type='jsonrpc', auth='user')
+    def document_save(self, project_id, kind, values, record_id=None):
+        try:
+            if kind not in self._documents:
+                raise AccessError('عملية غير مسموحة')
+            model, allowed = self._documents[kind]
+            if set(values) - allowed:
+                raise AccessError('حقول غير مسموحة')
+            project = request.env['project.project'].browse(int(project_id)).exists()
+            if not project:
+                raise AccessError('المشروع غير موجود')
+            project.check_access('read')
+            vals = dict(values)
+            if record_id:
+                record = request.env[model].browse(int(record_id)).exists()
+                if not record or record.project_id != project or (kind in ('payment', 'receipt') and record.kind != kind):
+                    raise AccessError('المستند غير موجود')
+                with request.env.cr.savepoint():
+                    record.write(vals)
+            else:
+                vals['project_id'] = project.id
+                if kind in ('payment', 'receipt'):
+                    vals['kind'] = kind
+                with request.env.cr.savepoint():
+                    record = request.env[model].create(vals)
+            return {'id': record.id}
+        except (AccessError, UserError, ValidationError, ValueError):
+            return {'error': 'تعذر حفظ المستند. تحقق من صلاحياتك والبيانات المدخلة.'}
+
+    @http.route('/abroj/app/document/action', type='jsonrpc', auth='user')
+    def document_action(self, project_id, kind, record_id, action):
+        try:
+            actions = {'payment': ('issue', 'cancel'), 'receipt': ('issue', 'cancel'), 'promissory': ('issue', 'paid', 'cancel'), 'invoice': ('confirm',), 'cost': ('confirm',)}
+            if action not in actions.get(kind, ()):
+                raise AccessError('عملية غير مسموحة')
+            project = request.env['project.project'].browse(int(project_id)).exists()
+            if not project:
+                raise AccessError('المشروع غير موجود')
+            project.check_access('read')
+            record = request.env[self._documents[kind][0]].browse(int(record_id)).exists()
+            if not record or record.project_id != project or (kind in ('payment', 'receipt') and record.kind != kind):
+                raise AccessError('المستند غير موجود')
+            record.check_access('write')
+            with request.env.cr.savepoint():
+                getattr(record, 'action_' + action)()
+            return {'ok': True}
+        except (AccessError, UserError, ValidationError, ValueError):
+            return {'error': 'تعذر تنفيذ العملية. تحقق من صلاحياتك وحالة المستند.'}
+
+    @http.route('/abroj/app/pdf/<string:kind>/<int:record_id>', type='http', auth='user', methods=['GET'])
+    def document_pdf(self, kind, record_id):
+        reports = {
+            'agreement': ('project.project', 'abroj_contracting.agreement'),
+            'contract': ('abroj.contracting.subcontractor', 'abroj_contracting.subcontract'),
+            'payment': ('abroj.contracting.voucher', 'abroj_contracting.voucher'),
+            'receipt': ('abroj.contracting.voucher', 'abroj_contracting.voucher'),
+            'promissory': ('abroj.promissory.note', 'abroj_project_dashboard.promissory_document'),
+        }
+        try:
+            if kind not in reports:
+                raise AccessError('تقرير غير متاح')
+            model, report = reports[kind]
+            record = request.env[model].browse(record_id).exists()
+            if not record:
+                raise AccessError('المستند غير موجود')
+            record.check_access('read')
+            project = record if kind == 'agreement' else record.project_id
+            project.check_access('read')
+            if kind in ('payment', 'receipt') and record.kind != kind:
+                raise AccessError('المستند غير موجود')
+            pdf, _ = request.env['ir.actions.report']._render_qweb_pdf(report, res_ids=record.ids)
+            return request.make_response(pdf, [('Content-Type', 'application/pdf'), ('Content-Disposition', 'attachment; filename="document.pdf"')])
+        except (AccessError, UserError, ValueError):
+            return request.make_response('تعذر تنزيل التقرير. تحقق من صلاحياتك.', status=403)
+
+    @http.route('/abroj/app/voice', type='http', auth='user', methods=['POST'])
+    def voice_note(self, project_id=None, body='', file=None, **kwargs):
+        import base64
+        try:
+            project = request.env['project.project'].browse(int(project_id)).exists()
+            if not project or not file:
+                raise AccessError('المشروع أو التسجيل غير موجود')
+            project.check_access('read')
+            content = file.read(25 * 1024 * 1024 + 1)
+            if not content or len(content) > 25 * 1024 * 1024 or not (file.content_type or '').startswith('audio/'):
+                raise ValidationError('التسجيل غير صالح')
+            note = request.env['abroj.contracting.project.note'].create({
+                'project_id': project.id, 'note_type': 'audio', 'body': body,
+                'attachment': base64.b64encode(content), 'filename': file.filename,
+                'mimetype': file.content_type,
+            })
+            return request.make_json_response({'id': note.id})
+        except (AccessError, UserError, ValidationError, ValueError):
+            return request.make_json_response({'error': 'تعذر حفظ الملاحظة الصوتية.'}, status=403)

@@ -4,6 +4,7 @@ on:
     branches: [main]
     paths:
       - 'custom_addons/abroj_project_dashboard/**'
+      - 'custom_addons/abroj_contracting/**'
       - '.github/workflows/test-abroj-project-dashboard.yml'
 permissions:
   contents: read
@@ -35,7 +36,7 @@ jobs:
             odoo@sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd \
             odoo --db_host=127.0.0.1 --db_port=5432 --db_user=odoo --db_password=odoo \
             --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/baseer-addons \
-            -d abroj_project_dashboard_ci -i abroj_project_dashboard --without-demo=all \
+            -d abroj_project_dashboard_ci -i abroj_contracting,abroj_project_dashboard --without-demo=all \
             --test-enable \
             --test-tags=/abroj_project_dashboard \
             --stop-after-init --max-cron-threads=0 --workers=0 --log-level=test 2>&1 | tee abroj-project-dashboard-runtime.log
@@ -47,7 +48,7 @@ jobs:
             exit 1
           fi
           grep -F '0 failed, 0 error(s)' abroj-project-dashboard-runtime.log
-          test "$(grep -Ec 'Starting (AbrojProjectDashboardCase|AbrojDashboardHttpCase)\.' abroj-project-dashboard-runtime.log)" -eq 31
+          test "$(grep -Ec 'Starting (AbrojProjectDashboardCase|AbrojDashboardHttpCase)\.' abroj-project-dashboard-runtime.log)" -eq 34
       - name: Preserve dashboard runtime evidence
         if: always()
         uses: actions/upload-artifact@v4

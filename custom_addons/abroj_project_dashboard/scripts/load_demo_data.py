@@ -19,18 +19,20 @@ contractor = env['res.partner'].search([('name', '=', 'مقاول أبرج ال�
 plan = env['account.analytic.plan'].search([], limit=1) or env['account.analytic.plan'].create({'name': 'مشاريع أبرج'})
 for index, (name, kind, status) in enumerate([
     ('فيلا أم فالح', 'residential', 'at_risk'), ('مجمع تجاري', 'commercial', 'on_track'),
-    ('ترميم مبنى', 'renovation', 'off_track'), ('مشروع البنية التحتية', 'infrastructure', 'on_hold'),
-    ('فيلا مكتملة', 'residential', 'done'), ('مبنى إداري', 'commercial', 'on_track'),
+    ('ترميم مبنى', 'renovation', 'off_track'),
 ]):
     if env['project.project'].search_count([('name', '=', name), ('company_id', '=', company.id)]):
         continue
     account = env['account.analytic.account'].create({'name': name, 'plan_id': plan.id, 'company_id': company.id})
-    project = env['project.project'].create({'name': name, 'company_id': company.id, 'account_id': account.id, 'partner_id': client.id, 'user_id': admin.id, 'abroj_type': kind, 'abroj_budget': 1900000, 'abroj_contract_value': 2400000, 'abroj_use_manual_progress': True, 'abroj_manual_progress': [68, 40, 30, 20, 100, 60][index], 'date_start': today - timedelta(days=180), 'date': today + timedelta(days=100 if index != 2 else -20), 'last_update_status': status})
+    project = env['project.project'].create({'name': name, 'company_id': company.id, 'account_id': account.id, 'partner_id': client.id, 'user_id': admin.id, 'abroj_type': kind, 'abroj_budget': 1900000, 'abroj_contract_value': 2400000, 'contracting_goal_ar': 'تنفيذ أعمال المشروع', 'contract_payment_schedule_ar': 'دفعات حسب تقدم الأعمال', 'abroj_use_manual_progress': True, 'abroj_manual_progress': [68, 40, 30, 20, 100, 60][index], 'date_start': today - timedelta(days=180), 'date': today + timedelta(days=100 if index != 2 else -20), 'last_update_status': status})
     if 'abroj.contracting.voucher' in env:
         subcontract = env['abroj.contracting.subcontractor'].create({'project_id': project.id, 'partner_id': contractor.id, 'agreed_amount': 450000, 'scope': 'أعمال الهيكل'})
         for kind, amount, partner in [('receipt', 900000, client), ('payment', 400000, contractor)]:
             voucher = env['abroj.contracting.voucher'].create({'project_id': project.id, 'partner_id': partner.id, 'kind': kind, 'amount': amount, 'subcontractor_id': subcontract.id if kind == 'payment' else False})
             voucher.action_issue()
+    env['abroj.promissory.note'].create({'project_id': project.id, 'partner_id': contractor.id, 'amount': 25000, 'due_date': today + timedelta(days=90), 'place': 'الرياض'})
+    env['abroj.contracting.project.note'].create({'project_id': project.id, 'body': 'متابعة أعمال المشروع'})
+    env['ir.attachment'].create({'name': 'ملاحظات.txt', 'raw': 'ملف تجريبي'.encode(), 'res_model': 'project.project', 'res_id': project.id})
     for n, phase in enumerate(['تنظيف 3 أيام', 'حفر', 'قواعد', 'هيكل خرساني', 'مباني', 'كهرباء وسباكة', 'تشطيبات']):
         env['project.task'].create({'name': phase, 'project_id': project.id, 'x_abroj_date_start': today + timedelta(days=-180+n*30), 'x_abroj_duration_days': 3, 'state': '1_done' if n < 2 else '01_in_progress'})
     for n, category in enumerate(['الحفر والأساسات', 'الخرسانة والهيكل', 'الكهرباء', 'السباكة', 'المقاولون من الباطن', 'التشطيبات']):

@@ -2,7 +2,7 @@
 
 لوحة عربية في تطبيق المشاريع تعرض المؤشرات والمالية ومراحل المهام والمتأخرات. تتيح صفحة المشروع تفاصيل الميزانية والسندات. حقول الإعداد موجودة في تبويب «لوحة أبرج» وتاريخ بداية المرحلة في المهمة.
 
-The Project menu opens an RTL dashboard with filters, project details, budget categories and phase dates. Project and task access uses the current user's record rules and allowed companies. Install `project`, `analytic` and `account`; contracting is optional.
+The Project menu opens an RTL dashboard with filters, project details, budget categories and phase dates. Project and task access uses the current user's record rules and allowed companies. The module depends on `abroj_contracting` as well as `project`, `analytic` and `account`.
 
 تاريخ بداية المرحلة هو المرجع، والمدة بالأيام الصحيحة لا تقل عن يوم واحد. الحساب شامل ليوم البداية: ثلاثة أيام تبدأ الأحد تنتهي الثلاثاء. عند تغيير البداية أو المدة يتغير تاريخ النهاية تلقائياً؛ وعند غياب البداية يبقى الموعد الموجود كما هو. عند الترقية تُستخلص المدة من التاريخين الموجودين (وبحد أدنى يوم واحد) دون تغيير الموعد.
 
@@ -31,7 +31,7 @@ The script creates illustrative projects in `base.main_company` and adds it to t
 
 ## Tests / الاختبارات
 
-Run Odoo with `-i abroj_project_dashboard --without-demo=all --test-enable --test-tags=/abroj_project_dashboard --stop-after-init --workers=0 --max-cron-threads=0` on a fresh test database. The workflow runs 31 methods across the model and HTTP test classes. To exercise voucher integration too, install `abroj_contracting` and run the dashboard tests on that database.
+Run Odoo with `-i abroj_project_dashboard --without-demo=all --test-enable --test-tags=/abroj_project_dashboard --stop-after-init --workers=0 --max-cron-threads=0` on a fresh test database. The workflow expects 34 methods across the model and HTTP test classes. `abroj_contracting` is installed as a dependency.
 
 ## Remaining / المتبقي
 
@@ -46,3 +46,21 @@ Open `/abroj/app` with an Odoo account and choose Add to Home Screen. Service wo
 مدير المشروع يستطيع تعديل الميزانية؛ مستخدم المشروع لا يستطيع تعديل الميزانية أو بنودها أو قيمة العقد. تطبق الصلاحيات وقواعد السجلات في Odoo. Project managers can edit budgets; project users cannot edit budgets, budget lines or contract values. Odoo access rights and record rules apply. If a user cannot write a particular project, its project edit action is hidden; task actions depend on task permissions. Users without analytic-line read access see only manual actual costs.
 
 تُخفى أزرار التعديل حسب صلاحية السجل؛ وتقتصر التكاليف الفعلية للمستخدم الذي لا يملك صلاحية قراءة القيود التحليلية على القيم اليدوية.
+
+### واجهة المشروع وسند الأمر / Project navigation and promissory notes
+
+الدرج الأيمن يعرض المشاريع والبحث وأقسام اللوحة. داخل المشروع توجد تبويبات وزر إضافة؛ وتشمل النماذج الحالية عقد الباطن والسندات والملاحظات والفاتورة والمصروف. اتفاقية العميل هي حقول المشروع في إضافة المقاولات وليست سجلاً مستقلاً. نموذج `abroj.promissory.note` أُضيف حديثاً هنا، مع ترقيم وحالات وطباعة وصلاحية قراءة وإنشاء للمستخدم وصلاحيات كاملة لمدير المشاريع. ألوان الواجهة مأخوذة من `lib/theme.dart` في تطبيق Flutter؛ تستعمل واجهة PWA مكدس النظام ووجه Noto العربي الذي يحمّله Odoo من نطاق خطوطه.
+
+The right drawer provides project search and dashboard navigation. Project tabs and the floating button expose the current subcontract, voucher, note, invoice and cost forms. The client agreement is represented by project fields in contracting rather than a separate record. `abroj.promissory.note` is newly added here, with a sequence, states, PDF and read/create access for users and full access for project managers. PWA colours come from the Flutter `lib/theme.dart`; its system font stack includes Odoo's CDN-hosted Arabic Noto face.
+
+تستخدم واجهة التطبيق صلاحيات المستخدم دون `sudo` لبيانات الأعمال. تنشئ الملاحظات عبر ORM بصلاحيات المستخدم؛ وتستخدم إضافة المقاولات نفسها `sudo` داخلياً بعد التحقق من قراءة المشروع لنشر الملاحظة ونسخ المرفق إلى سجل المحادثة.
+
+The PWA calls the ORM as the current user. The existing contracting note model internally uses `sudo` after checking project read access to post the note and copy its attachment to chatter.
+
+تنزيل PDF يتحقق من صلاحية قراءة المستند والمشروع. الاختبارات تحاكي توليد PDF؛ يتطلب التحقق من التوليد الفعلي بيئة CI أو خادماً مثبتاً عليه wkhtmltopdf، وهو غير متاح على جهاز Debian 13 المحلي.
+
+PDF downloads check document and project read access. Tests mock the renderer; actual rendering must be verified in CI or a live environment with wkhtmltopdf, which is unavailable on this Debian 13 host.
+
+لا تزال بعض حقول المقاولات المتقدمة (مثل البنود الثنائية اللغة والمرفقات المرتبطة بالمستند نفسه) وإجراء الاعتماد المحاسبي غير متاحة في واجهة الهاتف. أزرار PDF متاحة للاتفاقية وعقد الباطن والسندات فقط؛ الفواتير والمصروفات والملاحظات ليس لها زر PDF في هذه الواجهة.
+
+Some advanced contracting fields (including bilingual clauses and document-specific attachments) and accounting approval are not yet exposed in the PWA. PDF buttons cover the client agreement, subcontract and vouchers; invoices, costs and notes do not have PDF buttons in this interface.

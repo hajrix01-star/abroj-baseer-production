@@ -1,3 +1,5 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_abroj_budget_user,abroj budget user,model_abroj_project_budget_line,project.group_project_user,1,0,0,0
 access_abroj_budget_manager,abroj budget manager,model_abroj_project_budget_line,project.group_project_manager,1,1,1,1
+access_promissory_user,Promissory user,model_abroj_promissory_note,base.group_user,1,0,1,0
+access_promissory_manager,Promissory manager,model_abroj_promissory_note,project.group_project_manager,1,1,1,1

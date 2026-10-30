@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="pos_config_view_form" model="ir.ui.view">
+        <field name="name">pos.config.form.baseer.zatca.b2c</field>
+        <field name="model">pos.config</field>
+        <field name="inherit_id" ref="point_of_sale.pos_config_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='configuration']//div[contains(@class, 'o_settings_container')]" position="inside">
+                <setting id="baseer_zatca_anonymous_b2c" string="Anonymous consumer sales for ZATCA" help="Allow a Saudi B2C sale without selecting a customer while preserving the native invoice and ZATCA route." groups="base.group_system">
+                    <field name="baseer_zatca_allow_anonymous_b2c"/>
+                    <div class="content-group mt16" invisible="not baseer_zatca_allow_anonymous_b2c">
+                        <label for="baseer_zatca_anonymous_partner_id" string="Internal anonymous consumer"/>
+                        <field name="baseer_zatca_anonymous_partner_id" options="{'no_create': True}"/>
+                    </div>
+                </setting>
+            </xpath>
+        </field>
+    </record>
+</odoo>

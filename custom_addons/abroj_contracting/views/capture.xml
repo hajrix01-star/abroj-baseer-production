@@ -10,6 +10,7 @@
           <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
           <label for="project">المشروع (مطلوب؛ تحفظ الملاحظات والملفات داخله تلقائياً)</label>
           <select id="project" name="project_id" required="required" style="width:100%;padding:12px">
+            <option value="" selected="selected" disabled="disabled">اختر المشروع</option>
             <option t-foreach="projects" t-as="p" t-att-value="p.id">
               <t t-out="p.name"/>
             </option>

@@ -225,3 +225,101 @@ class AbrojContractingCase(TransactionCase):
         self.assertEqual(self.project.total_costs, 4000)
         with self.assertRaises(ValidationError), self.cr.savepoint():
             self.sub.retention_percent = 101
+
+    def accountant(self, group='account.group_account_invoice'):
+        return self.env['res.users'].with_context(no_reset_password=True).create({
+            'name': 'محاسب اختبار', 'login': 'abroj-accountant-' + group,
+            'company_id': self.env.company.id, 'company_ids': [Command.set(self.env.company.ids)],
+            'group_ids': [Command.set([self.env.ref(group).id])],
+        })
+
+    def test_accounting_approval_permissions(self):
+        accountant = self.accountant()
+        voucher = self.voucher()
+        with self.assertRaises(UserError):
+            voucher.with_user(accountant).action_accounting_approve()
+        voucher.with_user(accountant).action_issue()
+        with self.assertRaises(AccessError):
+            voucher.with_user(accountant).action_accounting_approve()
+        user = self.accountant('base.group_user')
+        with self.assertRaises(AccessError):
+            voucher.with_user(user).action_accounting_approve()
+        self.agent.group_ids = [Command.link(self.env.ref('account.group_account_manager').id)]
+        with self.assertRaises(AccessError):
+            voucher.with_user(self.agent).action_accounting_approve()
+        with self.assertRaises(AccessError):
+            voucher.with_user(self.agent).sudo().action_accounting_approve()
+        with self.assertRaises(AccessError):
+            voucher.write({'payment_id': False})
+        self.assertFalse(voucher.payment_id)
+
+    def test_accounting_payment_and_receipt(self):
+        accountant = self.accountant()
+        plan = self.env['account.analytic.plan'].create({'name': 'اختبار المشاريع'})
+        self.project.account_id = self.env['account.analytic.account'].create({
+            'name': 'حساب المشروع', 'plan_id': plan.id, 'company_id': self.env.company.id,
+        })
+        accounts = {}
+        for suffix, kind in [('1', 'asset_receivable'), ('2', 'liability_payable'), ('3', 'asset_current')]:
+            accounts[kind] = self.env['account.account'].create({
+                'name': 'اختبار ' + kind, 'code': 'ABR544' + suffix,
+                'account_type': kind, 'reconcile': True,
+            })
+        self.partner.property_account_receivable_id = accounts['asset_receivable']
+        self.partner.property_account_payable_id = accounts['liability_payable']
+        journal = self.env['account.journal'].create({
+            'name': 'دفتر الاختبار', 'code': 'AB54', 'type': 'bank',
+            'company_id': self.env.company.id,
+        })
+        (journal.inbound_payment_method_line_ids | journal.outbound_payment_method_line_ids).payment_account_id = accounts['asset_current']
+        manager = self.accountant('account.group_account_manager')
+        self.env['account.journal'].search([('type', '=', 'bank'), ('id', '!=', journal.id)]).active = False
+        for kind, direction in [('payment', 'outbound'), ('receipt', 'inbound')]:
+            approver = accountant if kind == 'payment' else manager
+            voucher = self.voucher(kind=kind, method='bank', journal_id=journal.id if kind == 'payment' else False, create_payment=True)
+            voucher.action_issue()
+            self.assertFalse(voucher.payment_id)
+            voucher.with_user(approver).action_accounting_approve()
+            payment = voucher.payment_id
+            self.assertEqual(payment.journal_id, journal)
+            self.assertEqual(payment.move_id.state, 'posted')
+            self.assertEqual(payment.payment_type, direction)
+            self.assertEqual(payment.amount, voucher.amount)
+            self.assertEqual(payment.partner_id, self.partner)
+            self.assertEqual(payment.company_id, voucher.company_id)
+            counterpart = payment.move_id.line_ids.filtered(lambda line: line.account_id == payment.destination_account_id)
+            self.assertEqual(counterpart.analytic_distribution, {str(self.project.account_id.id): 100})
+            with self.assertRaises(UserError):
+                voucher.with_user(accountant).action_accounting_approve()
+            with self.assertRaises(UserError):
+                voucher.action_cancel()
+
+    def test_optional_expense_guards(self):
+        methods = {
+            'hr.expense': ['action_approve', 'action_approve_duplicates', 'action_post', '_do_approve', '_post_without_wizard'],
+            'hr.expense.sheet': ['action_approve_expense_sheets', 'approve_expense_sheets', 'action_sheet_move_create', 'action_post', 'action_approve'],
+        }
+        self.agent.group_ids = [Command.link(self.env.ref('account.group_account_manager').id)]
+        for model, names in methods.items():
+            if model not in self.env.registry:
+                continue
+            records = self.env[model].with_user(self.agent)
+            for name in names:
+                if hasattr(records, name):
+                    with self.subTest(model=model, method=name), self.assertRaises(AccessError):
+                        getattr(records, name)()
+
+    def test_capture_requires_project(self):
+        from types import SimpleNamespace
+        from werkzeug.exceptions import BadRequest
+        from odoo.addons.abroj_contracting.controllers.capture import Capture
+        request = SimpleNamespace(env=self.env, httprequest=SimpleNamespace(method='POST'))
+        with patch('odoo.addons.abroj_contracting.controllers.capture.request', request):
+            for value in (None, '', '0', 'invalid', '-1'):
+                with self.subTest(value=value), self.assertRaises(BadRequest):
+                    Capture().capture(project_id=value)
+        from lxml import etree
+        template = etree.fromstring(self.env.ref('abroj_contracting.capture').arch_db.encode())
+        select = template.xpath('//select[@name="project_id"]')[0]
+        self.assertEqual(select.get('required'), 'required')
+        self.assertEqual(select[0].get('value'), '')

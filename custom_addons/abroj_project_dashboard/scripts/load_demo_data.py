@@ -11,7 +11,10 @@ admin.write({'company_id': company.id, 'company_ids': [Command.link(company.id)]
 env = env(user=admin, context=dict(env.context, allowed_company_ids=[company.id]))
 for login, group in [('owner', 'project.group_project_manager'), ('engineer', 'project.group_project_user')]:
     user = env['res.users'].search([('login', '=', login)], limit=1)
-    values = {'name': login.title(), 'login': login, 'password': login, 'company_id': company.id, 'company_ids': [Command.set([company.id])], 'group_ids': [Command.set([env.ref('base.group_user').id, env.ref(group).id])]}
+    groups = [env.ref('base.group_user').id, env.ref(group).id]
+    if login == 'owner':
+        groups.append(env.ref('account.group_account_invoice').id)
+    values = {'name': login.title(), 'login': login, 'password': login, 'company_id': company.id, 'company_ids': [Command.set([company.id])], 'group_ids': [Command.set(groups)]}
     if user:
         user.write(values)
     else:

@@ -1,4 +1,5 @@
 import json
+import logging
 from pathlib import Path
 import math
 
@@ -9,10 +10,22 @@ from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.http import request
 
 
+_logger = logging.getLogger(__name__)
+
+
 class AbrojApp(http.Controller):
     @staticmethod
     def _message(ar, en):
         return ar if (request.env.lang or '').startswith('ar') else en
+
+    @staticmethod
+    def _can_create_invoice():
+        user = request.env.user
+        purchase_group = request.env.ref('purchase.group_purchase_user', raise_if_not_found=False)
+        return bool('account.move' in request.env and
+                    (user.has_group('account.group_account_invoice') or
+                     (purchase_group and user.has_group('purchase.group_purchase_user'))) and
+                    request.env['account.move'].has_access('create'))
 
     @http.route('/abroj/app', type='http', auth='user', methods=['GET'])
     def app(self):
@@ -58,7 +71,10 @@ class AbrojApp(http.Controller):
     @http.route('/abroj/app/data', type='jsonrpc', auth='user')
     def data(self, filters=None, project_id=None, include_archived=False):
         projects = request.env['project.project']
-        return projects.get_abroj_project_detail(project_id) if project_id else projects.get_abroj_dashboard_data(filters, include_archived=include_archived)
+        result = projects.get_abroj_project_detail(project_id) if project_id else projects.get_abroj_dashboard_data(filters, include_archived=include_archived)
+        if isinstance(result, dict):
+            result['can_create_invoice'] = self._can_create_invoice()
+        return result
 
     @http.route('/abroj/app/project/options', type='jsonrpc', auth='user')
     def project_options(self, search=''):
@@ -206,6 +222,8 @@ class AbrojApp(http.Controller):
         if 'account.move' not in request.env:
             return request.make_json_response({'error': self._message('تطبيق المحاسبة غير متاح.', 'The Accounting app is not available.')}, status=400)
         try:
+            if not self._can_create_invoice():
+                return request.make_json_response({'error': self._message('لا تملك صلاحية إنشاء فواتير الموردين.', 'You do not have permission to create vendor bills.')}, status=403)
             with request.env.cr.savepoint():
                 project = request.env['project.project'].with_context(active_test=False).browse(int(project_id)).exists()
                 if not project or not file:
@@ -229,7 +247,8 @@ class AbrojApp(http.Controller):
                     'note': 'Invoice — pending extraction',
                 })
             return request.make_json_response({'id': bill.id, 'state': bill.state, 'extraction': 'pending'})
-        except (AccessError, UserError, ValidationError, ValueError, TypeError):
+        except Exception:
+            _logger.exception('Could not create the draft vendor bill')
             return request.make_json_response({'error': self._message('تعذر إنشاء الفاتورة المسودة. تحقق من الصلاحيات والملف وإعدادات المحاسبة.', 'Could not create the draft bill. Check permissions, the file and accounting setup.')}, status=403)
 
     @http.route('/abroj/app/upload', type='http', auth='user', methods=['POST'])

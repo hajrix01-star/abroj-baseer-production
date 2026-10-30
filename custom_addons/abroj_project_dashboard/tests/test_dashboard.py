@@ -463,10 +463,31 @@ class AbrojDashboardHttpCase(HttpCase):
         gallery = self.rpc('/abroj/app/attachments', {'model': 'project.project', 'record_id': project.id})
         self.assertIn(attachment_id, [item['id'] for item in gallery])
 
+    def test_invoice_upload_requires_invoicing_rights(self):
+        import re
+        user = self.env['res.users'].create({'name': 'Invoice denied', 'login': 'invoice_denied', 'password': 'invoice_denied',
+            'group_ids': [Command.set([self.env.ref('base.group_user').id, self.env.ref('project.group_project_manager').id])]})
+        project = self.env['project.project'].create({'name': 'Invoice denied fixture', 'company_id': self.env.company.id, 'user_id': user.id})
+        self.authenticate('invoice_denied', 'invoice_denied')
+        self.assertFalse(self.rpc('/abroj/app/data', {})['can_create_invoice'])
+        detail = self.rpc('/abroj/app/data', {'project_id': project.id})
+        self.assertTrue(detail['can_write'])
+        self.assertFalse(detail['can_create_invoice'])
+        source = (Path(__file__).resolve().parents[1] / 'static' / 'pwa' / 'js' / 'screens.js').read_text(encoding='utf-8')
+        self.assertIn('currentProject.can_write&&currentProject.can_create_invoice?`<button onclick="closeDrawer();invoiceChoice()"', source)
+        token = re.search(r'name="csrf-token" content="([^"]+)', self.url_open('/abroj/app').text).group(1)
+        response = self.url_open('/abroj/app/invoice', data={'csrf_token': token, 'project_id': str(project.id)}, files={'file': ('invoice.pdf', b'invoice bytes', 'application/pdf')})
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.json()['error'], 'You do not have permission to create vendor bills.')
+
     def test_invoice_upload_creates_draft_and_inbox(self):
         import re
         project = self.env['project.project'].create({'name': 'Invoice fixture', 'company_id': self.env.company.id})
-        self.authenticate('admin', 'admin')
+        self.env['res.users'].create({'name': 'Invoice owner', 'login': 'invoice_owner', 'password': 'invoice_owner',
+            'group_ids': [Command.set([self.env.ref('base.group_user').id, self.env.ref('project.group_project_manager').id, self.env.ref('account.group_account_invoice').id])]})
+        self.authenticate('invoice_owner', 'invoice_owner')
+        self.assertTrue(self.rpc('/abroj/app/data', {})['can_create_invoice'])
+        self.assertTrue(self.rpc('/abroj/app/data', {'project_id': project.id})['can_create_invoice'])
         token = re.search(r'name="csrf-token" content="([^"]+)', self.url_open('/abroj/app').text).group(1)
         response = self.url_open('/abroj/app/invoice', data={'csrf_token': token, 'project_id': str(project.id)}, files={'file': ('invoice.pdf', b'invoice bytes', 'application/pdf')})
         result = response.json()

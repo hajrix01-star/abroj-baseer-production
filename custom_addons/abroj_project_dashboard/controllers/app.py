@@ -1,6 +1,7 @@
 import base64
 import binascii
 import json
+import html
 import logging
 from pathlib import Path
 import math
@@ -43,6 +44,7 @@ class AbrojApp(http.Controller):
     def app(self):
         page = (Path(__file__).parent.parent / 'static/pwa/index.html').read_text(encoding='utf-8')
         page = page.replace('CSRF_TOKEN_PLACEHOLDER', request.csrf_token())
+        page = page.replace('SESSION_UID_PLACEHOLDER', str(request.session.uid)).replace('SESSION_DB_PLACEHOLDER', html.escape(request.session.db, quote=True))
         page = page.replace('USER_LANG_PLACEHOLDER', 'ar' if (request.env.user.lang or '').startswith('ar') else 'en')
         return request.make_response(page, [('Content-Type', 'text/html; charset=utf-8'), ('Cache-Control', 'no-store')])
 
@@ -279,6 +281,8 @@ class AbrojApp(http.Controller):
     def upload(self, model=None, record_id=None, file=None, **kwargs):
         import base64
         try:
+            if kwargs.get('owner_uid') is not None and str(kwargs['owner_uid']) != str(request.session.uid):
+                raise AccessError('Upload owner does not match session')
             if model not in ('project.project', 'project.task') or not file:
                 raise AccessError('عملية غير مسموحة')
             record = request.env[model].browse(int(record_id)).exists()
@@ -414,6 +418,8 @@ class AbrojApp(http.Controller):
     def voice_note(self, project_id=None, body='', file=None, **kwargs):
         import base64
         try:
+            if kwargs.get('owner_uid') is not None and str(kwargs['owner_uid']) != str(request.session.uid):
+                raise AccessError('Upload owner does not match session')
             project = request.env['project.project'].browse(int(project_id)).exists()
             if not project or not file:
                 raise AccessError('المشروع أو التسجيل غير موجود')

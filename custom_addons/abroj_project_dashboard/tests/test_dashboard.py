@@ -512,6 +512,16 @@ class AbrojDashboardHttpCase(HttpCase):
             response = self.url_open('/abroj/app/voice', data={'csrf_token': token, 'project_id': str(project.id), 'body': 'Voice'}, files={'file': (name, original, mime)})
             self.assertIn('id', response.json())
 
+    def test_upload_rejects_mismatched_owner(self):
+        import re
+        project = self.env['project.project'].create({'name': 'Owner mismatch', 'company_id': self.env.company.id})
+        self.authenticate('admin', 'admin')
+        token = re.search(r'name="csrf-token" content="([^"]+)', self.url_open('/abroj/app').text).group(1)
+        response = self.url_open('/abroj/app/upload', data={'csrf_token': token, 'model': 'project.project', 'record_id': str(project.id), 'owner_uid': str(self.env.ref('base.user_admin').id + 99999)}, files={'file': ('mismatch.jpg', b'photo', 'image/jpeg')})
+        self.assertEqual(response.status_code, 403)
+        self.assertIn('error', response.json())
+        self.assertFalse(self.env['ir.attachment'].search([('res_model', '=', 'project.project'), ('res_id', '=', project.id), ('name', '=', 'mismatch.jpg')]))
+
     def test_camera_caption_and_translations(self):
         import re
         project = self.env['project.project'].create({'name': 'Captioned photo', 'company_id': self.env.company.id})

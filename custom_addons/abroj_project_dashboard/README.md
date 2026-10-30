@@ -102,3 +102,7 @@ PY
 ```
 
 Closing requires a folded project stage and reopening requires an unfolded stage available to the project's company. Remaining payable sums the contracting subcontract balances; receivable is contract value less issued receipts. Draft contracting vouchers are listed separately.
+
+## Offline media queue
+
+Offline uploads are scoped to the user ID and database that created them. Pending uploads remain on the device after logout and resume when that user returns to the same database. Legacy entries without both owner fields remain in IndexedDB, hidden and never uploaded automatically, because their owner cannot be established safely.

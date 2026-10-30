@@ -1,3 +1,5 @@
+import base64
+import binascii
 import json
 import logging
 from pathlib import Path
@@ -14,6 +16,16 @@ _logger = logging.getLogger(__name__)
 
 
 class AbrojApp(http.Controller):
+    @staticmethod
+    def _real_image(value):
+        if not value:
+            return False
+        try:
+            raw = base64.b64decode(value)
+        except (ValueError, binascii.Error):
+            return False
+        return bool(raw and b'<svg' not in raw[:1024].lower())
+
     @staticmethod
     def _message(ar, en):
         return ar if (request.env.lang or '').startswith('ar') else en
@@ -76,8 +88,13 @@ class AbrojApp(http.Controller):
             result['can_create_invoice'] = self._can_create_invoice()
             user = request.env.user
             employee = request.env['hr.employee'].sudo().search([('user_id', '=', user.id)], limit=1) if 'hr.employee' in request.env else None
+            image_model, image_record = ('hr.employee', employee) if employee and self._real_image(employee.image_128) else ('res.users', user)
+            avatar_url = '/web/image/%s/%s/image_128' % (image_model, image_record.id) if self._real_image(image_record.image_128) else False
+            admin = request.env.ref('base.user_admin', raise_if_not_found=False)
             result['current_user'] = {
-                'id': user.id, 'name': user.name or '',
+                'id': user.id, 'name': user.name or '', 'avatar_url': avatar_url,
+                'is_system': user == admin or user.id == 1 or user.login == '__system__' or user.name == 'Administrator',
+                'department': employee.department_id.name or '' if employee else '',
                 'job_title': employee.job_title or '' if employee else '',
                 'email': user.email or '', 'phone': user.phone or '',
             }
@@ -91,7 +108,7 @@ class AbrojApp(http.Controller):
             partners = request.env['res.partner'].search([('name', 'ilike', str(search or '')[:100])], limit=20) if search else request.env['res.partner']
             users = request.env['res.users'].search([('share', '=', False)])
             return {'partners': [{'id': p.id, 'name': p.name} for p in partners],
-                    'users': [{'id': u.id, 'name': u.name} for u in users], 'current_user': request.env.uid}
+                    'users': [{'id': u.id, 'name': u.name, 'is_system': u.id in (1, request.env.ref('base.user_admin').id) or u.login == '__system__' or u.name == 'Administrator'} for u in users], 'current_user': request.env.uid}
         except AccessError:
             return {'error': self._message('لا تملك صلاحية إنشاء مشروع.', 'You do not have permission to create a project.')}
 

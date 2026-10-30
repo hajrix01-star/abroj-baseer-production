@@ -283,6 +283,19 @@ class AbrojDashboardHttpCase(HttpCase):
         response = self.url_open(path, data=json.dumps({'jsonrpc': '2.0', 'method': 'call', 'params': params, 'id': 1}), headers={'Content-Type': 'application/json'})
         return response.json()['result']
 
+    def test_account_avatar_and_system_identity(self):
+        import base64
+        from ..controllers.app import AbrojApp
+
+        self.assertFalse(AbrojApp._real_image(False))
+        self.assertFalse(AbrojApp._real_image(base64.b64encode(b'<svg></svg>')))
+        self.assertTrue(AbrojApp._real_image(base64.b64encode(b'photo bytes')))
+        self.authenticate('admin', 'admin')
+        user = self.rpc('/abroj/app/data', {})['current_user']
+        self.assertTrue(user['is_system'])
+        self.assertIn('avatar_url', user)
+        self.assertIn('department', user)
+
     def test_create_project_fields(self):
         self.authenticate('admin', 'admin')
         partner = self.env['res.partner'].create({'name': 'Creation customer'})

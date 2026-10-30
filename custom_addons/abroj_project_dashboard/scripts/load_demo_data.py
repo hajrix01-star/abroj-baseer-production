@@ -42,4 +42,8 @@ for index, (name, kind, status) in enumerate([
     for n, category in enumerate(['الحفر والأساسات', 'الخرسانة والهيكل', 'الكهرباء', 'السباكة', 'المقاولون من الباطن', 'التشطيبات']):
         line = env['abroj.project.budget.line'].create({'project_id': project.id, 'name': category, 'budget': 300000})
         env['account.analytic.line'].create({'name': category, 'account_id': account.id, 'amount': -[320000, 540000, 95000, 165000, 210000, 35000][n], 'date': today, 'company_id': company.id, 'abroj_budget_line_id': line.id})
+env['project.project'].ensure_abroj_closed_stage()
+closed_demo = env['project.project'].search([('name', '=', 'ترميم مبنى'), ('company_id', '=', company.id)], limit=1)
+if closed_demo and not closed_demo.abroj_closed_date:
+    closed_demo.abroj_set_closed(True, 'بيانات تجريبية')
 env.cr.commit()

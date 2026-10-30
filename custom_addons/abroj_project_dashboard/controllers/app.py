@@ -68,6 +68,30 @@ class AbrojApp(http.Controller):
         except (AccessError, UserError, ValidationError):
             return {'error': self._message('تعذر إنشاء المشروع. تحقق من صلاحياتك والبيانات المدخلة.', 'Could not create the project. Check your permissions and input.')}
 
+    @http.route('/abroj/app/project/close-summary', type='jsonrpc', auth='user')
+    def close_summary(self, project_id):
+        try:
+            project = request.env['project.project'].with_context(active_test=False).browse(int(project_id)).exists()
+            if not project:
+                raise AccessError('Project not found')
+            return project.abroj_close_summary()
+        except (AccessError, UserError, ValidationError):
+            return {'error': self._message('تعذر عرض ملخص الإغلاق. تحقق من صلاحياتك.', 'Could not view the close summary. Check your permissions.')}
+
+    @http.route('/abroj/app/project/set-closed', type='jsonrpc', auth='user')
+    def set_closed(self, project_id, closed, note=''):
+        try:
+            if not isinstance(closed, bool) or not isinstance(note, str):
+                raise ValidationError('Invalid input')
+            with request.env.cr.savepoint():
+                project = request.env['project.project'].with_context(active_test=False).browse(int(project_id)).exists()
+                if not project:
+                    raise AccessError('Project not found')
+                project.abroj_set_closed(closed, note)
+            return {'ok': True}
+        except (AccessError, UserError, ValidationError):
+            return {'error': self._message('تعذر تغيير حالة المشروع. تحقق من صلاحياتك وإعداد المراحل.', 'Could not change the project status. Check your permissions and stage setup.')}
+
     @http.route('/abroj/app/my-day', type='jsonrpc', auth='user')
     def my_day(self):
         return request.env['project.project'].get_abroj_my_day()

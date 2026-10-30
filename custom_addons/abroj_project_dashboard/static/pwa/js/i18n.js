@@ -1,5 +1,17 @@
 'use strict';
 const translations = {
+  "closeProject": {"ar": "إغلاق المشروع", "en": "Close project"},
+  "reopenProject": {"ar": "إعادة فتح", "en": "Reopen"},
+  "closeSummaryHint": {"ar": "راجع العناصر المتبقية قبل الإغلاق.", "en": "Review outstanding items before closing."},
+  "unfinishedPhases": {"ar": "المراحل والمهام غير المكتملة", "en": "Unfinished phases and tasks"},
+  "receivable": {"ar": "المتبقي للتحصيل", "en": "Remaining receivable"},
+  "payable": {"ar": "المتبقي للمقاولين والموردين", "en": "Remaining payable"},
+  "draftVouchers": {"ar": "السندات غير المعتمدة", "en": "Draft vouchers"},
+  "optionalNote": {"ar": "ملاحظة اختيارية", "en": "Optional note"},
+  "reopenConfirm": {"ar": "هل تريد إعادة فتح المشروع؟", "en": "Reopen this project?"},
+  "none": {"ar": "لا يوجد", "en": "None"},
+  "confirm": {"ar": "تأكيد", "en": "Confirm"},
+  "cancel": {"ar": "إلغاء", "en": "Cancel"},
   "toggleProjects": {"ar": "توسيع أو طي المشاريع", "en": "Expand or collapse projects"},
   "archive": {"ar": "أرشيف", "en": "Archive"},
   "activeProjects": {"ar": "المشاريع النشطة", "en": "Active projects"},

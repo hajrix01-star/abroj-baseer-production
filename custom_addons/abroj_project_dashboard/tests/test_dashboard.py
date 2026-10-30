@@ -44,6 +44,39 @@ class AbrojProjectDashboardCase(TransactionCase):
         self.assertTrue(by_id[inactive.id]['archived'])
         self.assertEqual(model.get_abroj_project_detail(inactive.id)['id'], inactive.id)
 
+    def test_close_summary_and_permissions(self):
+        self.env['project.task'].create({'name': 'Outstanding', 'project_id': self.project.id})
+        self.env['abroj.contracting.subcontractor'].create({'project_id': self.project.id, 'partner_id': self.client.id, 'agreed_amount': 80})
+        voucher = self.env['abroj.contracting.voucher'].create({'project_id': self.project.id, 'partner_id': self.client.id, 'kind': 'receipt', 'amount': 50})
+        voucher.action_issue()
+        self.env['abroj.contracting.voucher'].create({'project_id': self.project.id, 'partner_id': self.client.id, 'kind': 'receipt', 'amount': 10})
+        summary = self.project.abroj_close_summary()
+        self.assertIn('Outstanding', summary['unfinished'])
+        self.assertEqual(summary['receivable'], 150)
+        self.assertEqual(summary['payable'], 80)
+        self.assertEqual(len(summary['draft_vouchers']), 1)
+        with self.assertRaises(AccessError):
+            self.project.with_user(self.engineer).abroj_close_summary()
+        with self.assertRaises(AccessError):
+            self.project.with_user(self.engineer).abroj_set_closed(True)
+
+    def test_close_reopen_and_active_views(self):
+        owner = self.env['res.users'].create({'name': 'Close owner', 'login': 'close_owner_test', 'group_ids': [Command.set([self.env.ref('project.group_project_manager').id])]})
+        self.env['project.project'].ensure_abroj_closed_stage()
+        self.env['project.project.stage'].search([('fold', '=', False)], limit=1) or self.env['project.project.stage'].create({'name': 'Active'})
+        self.env['project.task'].create({'name': 'Today', 'project_id': self.project.id, 'x_abroj_date_start': self.today, 'x_abroj_duration_days': 1})
+        self.project.with_user(owner).abroj_set_closed(True, 'Finished')
+        self.assertTrue(self.project.stage_id.fold)
+        self.assertEqual(self.project.abroj_closed_date, self.today)
+        self.assertNotIn(self.project.id, self.ids({}))
+        self.assertNotIn(self.project.id, [p['id'] for p in self.env['project.project'].get_abroj_my_day()])
+        archive = [p for p in self.env['project.project'].get_abroj_dashboard_data(include_archived=True)['projects'] if p['archived']]
+        self.assertIn(self.project.id, [p['id'] for p in archive])
+        self.project.with_user(owner).abroj_set_closed(False)
+        self.assertFalse(self.project.abroj_closed_date)
+        self.assertFalse(self.project.stage_id.fold)
+        self.assertIn(self.project.id, self.ids({}))
+
     def test_pwa_has_no_native_dialogs(self):
         js_dir = Path(__file__).resolve().parents[1] / 'static' / 'pwa' / 'js'
         for path in js_dir.glob('*.js'):
@@ -205,8 +238,10 @@ class AbrojProjectDashboardCase(TransactionCase):
         self.assertIn(self.project.id, self.ids({'status': 'off_track'}))
         self.project.date = self.today - timedelta(days=1)
         self.assertIn(self.project.id, self.ids({'status': 'delayed'}))
+        self.project.date = self.today + timedelta(days=30)
         self.project.last_update_status = 'done'
-        self.assertIn(self.project.id, self.ids({'status': 'completed'}))
+        self.assertNotIn(self.project.id, self.ids({'status': 'completed'}))
+        self.assertIn(self.project.id, [p['id'] for p in self.env['project.project'].get_abroj_dashboard_data({'status': 'completed'}, include_archived=True)['projects']])
         self.assertNotIn(self.project.id, self.ids({'status': 'ongoing'}))
 
     def test_filter_manager(self):
@@ -410,6 +445,9 @@ class AbrojDashboardHttpCase(HttpCase):
         self.authenticate('engineer_http', 'engineer_http')
         detail = self.rpc('/abroj/app/data', {'project_id': project.id})
         self.assertFalse(detail['can_edit_budget'])
+        self.assertFalse(detail['can_close'])
+        self.assertIn('error', self.rpc('/abroj/app/project/close-summary', {'project_id': project.id}))
+        self.assertIn('error', self.rpc('/abroj/app/project/set-closed', {'project_id': project.id, 'closed': True}))
         result = self.rpc('/abroj/app/save', {'model': 'project.project', 'record_id': project.id, 'values': {'abroj_budget': 999}})
         self.assertIn('error', result)
         result = self.rpc('/abroj/app/save', {'model': 'project.project', 'record_id': project.id, 'values': {'abroj_budget_line_ids': [[0, 0, {'name': 'Forbidden', 'budget': 99}]]}})

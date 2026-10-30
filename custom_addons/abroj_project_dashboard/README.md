@@ -31,7 +31,7 @@ The script creates illustrative projects in `base.main_company` and adds it to t
 
 ## Tests / الاختبارات
 
-Run Odoo with `-i abroj_project_dashboard --without-demo=all --test-enable --test-tags=/abroj_project_dashboard --stop-after-init --workers=0 --max-cron-threads=0` on a fresh test database. The workflow expects 48 methods across the model and HTTP test classes. `abroj_contracting` is installed as a dependency.
+Run Odoo with `-i abroj_project_dashboard --without-demo=all --test-enable --test-tags=/abroj_project_dashboard --stop-after-init --workers=0 --max-cron-threads=0` on a fresh test database. The workflow expects 50 methods across the model and HTTP test classes. `abroj_contracting` is installed as a dependency.
 
 ## Remaining / المتبقي
 
@@ -88,3 +88,17 @@ Brand assets in `static/pwa/` include navy and white logos, app icons, a maskabl
 The camera action opens a full-screen live view directly. Capture several photos, remove individual shots, add a shared caption and send them through the offline upload queue; captions are stored on each attachment. Zoom, focus and torch controls depend on device capabilities. If access is denied, the permission sheet offers the device file picker.
 
 For the mobile browser check, install Playwright and run `scripts/check_camera_playwright.py` against an isolated demo database with `M5_BASE_URL`, `M5_USER`, `M5_PASSWORD` and `M5_SCREENSHOT_DIR` set as needed. Chromium uses fake camera and microphone devices; the script exercises multi-shot upload, captions, permission fallback and voice states.
+
+### Closed stage setup (test database only)
+
+Run this in an Odoo shell connected to the intended disposable test database. It reuses a shared folded stage or creates one, and commits the result:
+
+```bash
+/opt/odoo19/venv/bin/python /opt/odoo19/src/odoo-bin shell --db_host=/tmp --db_port=5433 --db_user=odoo --addons-path=/opt/odoo19/src/addons,/workspace/abroj-baseer-production/custom_addons --data-dir=/tmp/abroj_odoo_data -d TEST_DB <<'PY'
+stage = env['project.project'].ensure_abroj_closed_stage()
+env.cr.commit()
+print(stage.id, stage.name)
+PY
+```
+
+Closing requires a folded project stage and reopening requires an unfolded stage available to the project's company. Remaining payable sums the contracting subcontract balances; receivable is contract value less issued receipts. Draft contracting vouchers are listed separately.

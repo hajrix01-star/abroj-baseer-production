@@ -1,0 +1,46 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# \t* baseer_pos_zatca_b2c
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 19.0\\n"
+"Language: ar\\n"
+"Content-Type: text/plain; charset=UTF-8\\n"
+"Content-Transfer-Encoding: 8bit\\n"
+
+#. odoo-python
+#: code:addons/baseer_pos_zatca_b2c/models/pos_config.py:0
+msgid "Anonymous B2C ZATCA sales are available only for a Saudi company."
+msgstr "تتوفر مبيعات المستهلك دون اختيار عميل عبر زاتكا للشركات السعودية فقط."
+
+#. odoo-python
+#: code:addons/baseer_pos_zatca_b2c/models/pos_config.py:0
+msgid "Choose the internal anonymous consumer before enabling anonymous B2C ZATCA sales."
+msgstr "اختر المستهلك الداخلي قبل تفعيل مبيعات المستهلك دون اختيار عميل عبر زاتكا."
+
+#: model:ir.model.fields,field_description:baseer_pos_zatca_b2c.field_pos_config__baseer_zatca_allow_anonymous_b2c
+msgid "Allow anonymous B2C ZATCA sales"
+msgstr "السماح بمبيعات المستهلك دون اختيار عميل عبر زاتكا"
+
+#: model:ir.model.fields,field_description:baseer_pos_zatca_b2c.field_pos_config__baseer_zatca_anonymous_partner_id
+msgid "Internal anonymous consumer"
+msgstr "مستهلك داخلي"
+
+#. odoo-python
+#: code:addons/baseer_pos_zatca_b2c/models/pos_config.py:0
+msgid "The internal anonymous consumer must be an individual without a VAT number."
+msgstr "يجب أن يكون المستهلك الداخلي فردًا بلا رقم ضريبي."
+
+#. odoo-python
+#: code:addons/baseer_pos_zatca_b2c/models/pos_config.py:0
+msgid "The internal anonymous consumer must belong to this company or be shared."
+msgstr "يجب أن يتبع المستهلك الداخلي هذه الشركة أو أن يكون مشتركًا."
+
+#: model_terms:ir.ui.view,arch_db:baseer_pos_zatca_b2c.pos_config_view_form
+msgid "Anonymous consumer sales for ZATCA"
+msgstr "مبيعات المستهلك دون عميل عبر زاتكا"
+
+#: model_terms:ir.ui.view,arch_db:baseer_pos_zatca_b2c.pos_config_view_form
+msgid "Allow a Saudi B2C sale without selecting a customer while preserving the native invoice and ZATCA route."
+msgstr "اسمح ببيع مستهلك سعودي بلا اختيار عميل، مع المحافظة على مسار الفاتورة وزاتكا الأصلي."

@@ -4,8 +4,8 @@
     <field name="title_ar">النطاق</field>
     <field name="sequence">10</field>
     <field name="contract_type">client</field>
-    <field name="body_ar">ينفذ الطرف الأول الأعمال وفق النطاق والمخططات المعتمدة وهدف المشروع المبين أعلاه.</field>
-    <field name="body_en">The company shall perform the works in accordance with the approved scope, drawings and project goal stated above.</field>
+    <field name="body_ar">ينفذ الطرف الأول ({company}) الأعمال وفق النطاق والمخططات المعتمدة وهدف المشروع المبين أعلاه.</field>
+    <field name="body_en">The First Party ({company}) shall perform the works in accordance with the approved scope, drawings and project goal stated above.</field>
     <field name="title_en">Scope</field>
     <field name="is_default">True</field>
   </record>
@@ -41,7 +41,7 @@
     <field name="sequence">50</field>
     <field name="contract_type">client</field>
     <field name="body_ar">يلتزم الطرف الأول بإصلاح عيوب التنفيذ لمدة سنة من الاستلام، دون الإخلال بالضمانات النظامية.</field>
-    <field name="body_en">The company shall remedy workmanship defects for one year from acceptance, without prejudice to statutory warranties.</field>
+    <field name="body_en">The First Party shall remedy workmanship defects for one year from acceptance, without prejudice to statutory warranties.</field>
     <field name="title_en">Warranty</field>
     <field name="is_default">True</field>
   </record>
@@ -49,7 +49,7 @@
     <field name="title_ar">الإنهاء</field>
     <field name="sequence">60</field>
     <field name="contract_type">client</field>
-    <field name="body_ar">يجوز إنهاء العقد عند إخلال جوهري لم يعالج خلال خمسة عشر يوماً من الإشعار الكتابي، وتسوى الأعمال المنفذة والمعتمدة.</field>
+    <field name="body_ar">يجوز لأي من الطرفين إنهاء العقد عند إخلال جوهري لم يعالج خلال خمسة عشر يوماً من الإشعار الكتابي، وتسوى الأعمال المنفذة والمعتمدة.</field>
     <field name="body_en">Either party may terminate for a material breach unremedied within fifteen days of written notice; approved completed works shall be settled.</field>
     <field name="title_en">Termination</field>
     <field name="is_default">True</field>
@@ -67,8 +67,8 @@
     <field name="title_ar">النطاق</field>
     <field name="sequence">10</field>
     <field name="contract_type">subcontract</field>
-    <field name="body_ar">ينفذ مقاول الباطن النطاق المتفق عليه وفق المخططات وتعليمات أبروج وبحسب نوع العقد المبين.</field>
-    <field name="body_en">The subcontractor shall perform the agreed scope according to drawings, Abroj instructions and the stated contract type.</field>
+    <field name="body_ar">ينفذ مقاول الباطن النطاق المتفق عليه وفق المخططات وتعليمات {company} وبحسب نوع العقد المبين.</field>
+    <field name="body_en">The subcontractor shall perform the agreed scope according to drawings, {company} instructions and the stated contract type.</field>
     <field name="title_en">Scope</field>
     <field name="is_default">True</field>
   </record>
@@ -76,8 +76,8 @@
     <field name="title_ar">فواتير المواد</field>
     <field name="sequence">20</field>
     <field name="contract_type">subcontract</field>
-    <field name="body_ar">يجب إصدار جميع الفواتير الضريبية للمواد باسم شركة أبروج ورقمها الضريبي المبين في العقد، وإلا فلا تقبل. تخصم فواتير المواد الصادرة باسم أبروج من قيمة عقد مقاول الباطن ولا تعد إضافة عليها.</field>
-    <field name="body_en">All materials tax invoices must be issued in Abroj’s company name and VAT number stated in this contract; otherwise they are not accepted. Materials invoices in Abroj’s name are deducted from the subcontract value and do not increase it.</field>
+    <field name="body_ar">يجب إصدار جميع الفواتير الضريبية للمواد باسم {company} ورقمها الضريبي المبين في العقد، وإلا فلا تقبل. تخصم فواتير المواد الصادرة باسم {company} من قيمة عقد مقاول الباطن ولا تعد إضافة عليها.</field>
+    <field name="body_en">All materials tax invoices must be issued in the name of {company} and VAT number stated in this contract; otherwise they are not accepted. Materials invoices in the name of {company} are deducted from the subcontract value and do not increase it.</field>
     <field name="title_en">Materials invoices</field>
     <field name="is_default">True</field>
   </record>
@@ -112,8 +112,8 @@
     <field name="title_ar">الإنهاء</field>
     <field name="sequence">60</field>
     <field name="contract_type">subcontract</field>
-    <field name="body_ar">لأبروج إنهاء العقد بعد إشعار كتابي وإمهال خمسة عشر يوماً لمعالجة الإخلال، أو فوراً عند خطر جسيم على السلامة، مع تسوية الأعمال المعتمدة والخصومات.</field>
-    <field name="body_en">Abroj may terminate after written notice and fifteen days to remedy a breach, or immediately for a serious safety hazard, with settlement of approved works and deductions.</field>
+    <field name="body_ar">يجوز لـ {company} إنهاء العقد بعد إشعار كتابي وإمهال خمسة عشر يوماً لمعالجة الإخلال، أو فوراً عند خطر جسيم على السلامة، مع تسوية الأعمال المعتمدة والخصومات.</field>
+    <field name="body_en">{company} may terminate after written notice and fifteen days to remedy a breach, or immediately for a serious safety hazard, with settlement of approved works and deductions.</field>
     <field name="title_en">Termination</field>
     <field name="is_default">True</field>
   </record>
@@ -124,6 +124,123 @@
     <field name="body_ar">تسري أنظمة المملكة العربية السعودية وتختص المحاكم السعودية المختصة.</field>
     <field name="body_en">Saudi Arabian laws apply and the competent Saudi courts have jurisdiction.</field>
     <field name="title_en">Governing law</field>
+    <field name="is_default">True</field>
+  </record>
+  <record id="clause_client_force" model="abroj.contract.clause.template">
+    <field name="title_ar">القوة القاهرة</field>
+    <field name="title_en">Force majeure</field>
+    <field name="sequence">80</field>
+    <field name="contract_type">client</field>
+    <field name="body_ar">يخطر الطرف المتأثر الطرف الآخر كتابةً دون تأخير بواقعة القوة القاهرة وأثرها، ويتخذ التدابير المعقولة للحد من آثارها. تمدد المدة بقدر التأخير المثبت، ويتشاور الطرفان بشأن استمرار العقد إذا طال أثر الواقعة.</field>
+    <field name="body_en">The affected party shall promptly notify the other in writing of the force majeure event and its effects and take reasonable steps to mitigate them. Time shall be extended for the demonstrated delay; the parties shall consult on continuation if the event persists.</field>
+    <field name="is_default">True</field>
+  </record>
+  <record id="clause_client_insurance" model="abroj.contract.clause.template">
+    <field name="title_ar">التأمين</field>
+    <field name="title_en">Insurance</field>
+    <field name="sequence">90</field>
+    <field name="contract_type">client</field>
+    <field name="body_ar">يلتزم كل طرف بالمحافظة على التأمينات اللازمة لأعماله وعامليه وفق الأنظمة السعودية ومتطلبات العقد، وتقديم ما يثبتها عند الطلب.</field>
+    <field name="body_en">Each party shall maintain insurance required for its work and personnel under Saudi regulations and the contract and provide evidence upon request.</field>
+    <field name="is_default">True</field>
+  </record>
+  <record id="clause_client_acceptance" model="abroj.contract.clause.template">
+    <field name="title_ar">الاستلام الابتدائي والنهائي</field>
+    <field name="title_en">Initial and final acceptance</field>
+    <field name="sequence">100</field>
+    <field name="contract_type">client</field>
+    <field name="body_ar">يتم الاستلام الابتدائي بمحضر يحدد الملاحظات والعيوب المطلوب معالجتها. يتم الاستلام النهائي بعد معالجة الملاحظات وانقضاء مدة الضمان المتفق عليها، دون الإخلال بالحقوق النظامية.</field>
+    <field name="body_en">Initial acceptance shall be recorded in a report identifying outstanding items and defects. Final acceptance follows their remedy and expiry of the agreed warranty period, without prejudice to statutory rights.</field>
+    <field name="is_default">True</field>
+  </record>
+  <record id="clause_client_confidentiality" model="abroj.contract.clause.template">
+    <field name="title_ar">السرية</field>
+    <field name="title_en">Confidentiality</field>
+    <field name="sequence">110</field>
+    <field name="contract_type">client</field>
+    <field name="body_ar">يلتزم الطرفان بسرية معلومات العقد والمشروع وعدم إفشائها إلا لتنفيذ العقد أو بموافقة كتابية أو إذا تطلب النظام ذلك.</field>
+    <field name="body_en">The parties shall keep contract and project information confidential and disclose it only for contract performance, with written consent, or as required by law.</field>
+    <field name="is_default">True</field>
+  </record>
+  <record id="clause_client_notices" model="abroj.contract.clause.template">
+    <field name="title_ar">الإشعارات</field>
+    <field name="title_en">Notices</field>
+    <field name="sequence">120</field>
+    <field name="contract_type">client</field>
+    <field name="body_ar">تكون الإشعارات كتابية وترسل إلى عناوين الطرفين المبينة في العقد أو إلى عنوان بديل يخطر به كتابةً.</field>
+    <field name="body_en">Notices shall be in writing and sent to the parties’ addresses stated in the contract or to a replacement address notified in writing.</field>
+    <field name="is_default">True</field>
+  </record>
+  <record id="clause_client_vat" model="abroj.contract.clause.template">
+    <field name="title_ar">الضريبة</field>
+    <field name="title_en">VAT</field>
+    <field name="sequence">130</field>
+    <field name="contract_type">client</field>
+    <field name="body_ar">تحدد مبالغ العقد باعتبارها شاملة أو غير شاملة لضريبة القيمة المضافة بنسبة 15% وفق ما هو مبين في العقد، وتصدر الفواتير الضريبية وفق الأنظمة المعمول بها.</field>
+    <field name="body_en">Contract amounts are inclusive or exclusive of 15% VAT as stated in the contract. Tax invoices shall be issued in accordance with applicable regulations.</field>
+    <field name="is_default">True</field>
+  </record>
+  <record id="clause_subcontract_force" model="abroj.contract.clause.template">
+    <field name="title_ar">القوة القاهرة</field>
+    <field name="title_en">Force majeure</field>
+    <field name="sequence">80</field>
+    <field name="contract_type">subcontract</field>
+    <field name="body_ar">يخطر الطرف المتأثر الطرف الآخر كتابةً دون تأخير بواقعة القوة القاهرة وأثرها، ويتخذ التدابير المعقولة للحد من آثارها. تمدد المدة بقدر التأخير المثبت، ويتشاور الطرفان بشأن استمرار العقد إذا طال أثر الواقعة.</field>
+    <field name="body_en">The affected party shall promptly notify the other in writing of the force majeure event and its effects and take reasonable steps to mitigate them. Time shall be extended for the demonstrated delay; the parties shall consult on continuation if the event persists.</field>
+    <field name="is_default">True</field>
+  </record>
+  <record id="clause_subcontract_insurance" model="abroj.contract.clause.template">
+    <field name="title_ar">التأمين</field>
+    <field name="title_en">Insurance</field>
+    <field name="sequence">90</field>
+    <field name="contract_type">subcontract</field>
+    <field name="body_ar">يلتزم كل طرف بالمحافظة على التأمينات اللازمة لأعماله وعامليه وفق الأنظمة السعودية ومتطلبات العقد، وتقديم ما يثبتها عند الطلب.</field>
+    <field name="body_en">Each party shall maintain insurance required for its work and personnel under Saudi regulations and the contract and provide evidence upon request.</field>
+    <field name="is_default">True</field>
+  </record>
+  <record id="clause_subcontract_acceptance" model="abroj.contract.clause.template">
+    <field name="title_ar">الاستلام الابتدائي والنهائي</field>
+    <field name="title_en">Initial and final acceptance</field>
+    <field name="sequence">100</field>
+    <field name="contract_type">subcontract</field>
+    <field name="body_ar">يتم الاستلام الابتدائي بمحضر يحدد الملاحظات والعيوب المطلوب معالجتها. يتم الاستلام النهائي بعد معالجة الملاحظات وانقضاء مدة الضمان المتفق عليها، دون الإخلال بالحقوق النظامية.</field>
+    <field name="body_en">Initial acceptance shall be recorded in a report identifying outstanding items and defects. Final acceptance follows their remedy and expiry of the agreed warranty period, without prejudice to statutory rights.</field>
+    <field name="is_default">True</field>
+  </record>
+  <record id="clause_subcontract_confidentiality" model="abroj.contract.clause.template">
+    <field name="title_ar">السرية</field>
+    <field name="title_en">Confidentiality</field>
+    <field name="sequence">110</field>
+    <field name="contract_type">subcontract</field>
+    <field name="body_ar">يلتزم الطرفان بسرية معلومات العقد والمشروع وعدم إفشائها إلا لتنفيذ العقد أو بموافقة كتابية أو إذا تطلب النظام ذلك.</field>
+    <field name="body_en">The parties shall keep contract and project information confidential and disclose it only for contract performance, with written consent, or as required by law.</field>
+    <field name="is_default">True</field>
+  </record>
+  <record id="clause_subcontract_notices" model="abroj.contract.clause.template">
+    <field name="title_ar">الإشعارات</field>
+    <field name="title_en">Notices</field>
+    <field name="sequence">120</field>
+    <field name="contract_type">subcontract</field>
+    <field name="body_ar">تكون الإشعارات كتابية وترسل إلى عناوين الطرفين المبينة في العقد أو إلى عنوان بديل يخطر به كتابةً.</field>
+    <field name="body_en">Notices shall be in writing and sent to the parties’ addresses stated in the contract or to a replacement address notified in writing.</field>
+    <field name="is_default">True</field>
+  </record>
+  <record id="clause_subcontract_vat" model="abroj.contract.clause.template">
+    <field name="title_ar">الضريبة</field>
+    <field name="title_en">VAT</field>
+    <field name="sequence">130</field>
+    <field name="contract_type">subcontract</field>
+    <field name="body_ar">تحدد مبالغ العقد باعتبارها شاملة أو غير شاملة لضريبة القيمة المضافة بنسبة 15% وفق ما هو مبين في العقد، وتصدر الفواتير الضريبية وفق الأنظمة المعمول بها.</field>
+    <field name="body_en">Contract amounts are inclusive or exclusive of 15% VAT as stated in the contract. Tax invoices shall be issued in accordance with applicable regulations.</field>
+    <field name="is_default">True</field>
+  </record>
+  <record id="clause_subcontract_assignment" model="abroj.contract.clause.template">
+    <field name="title_ar">منع التنازل</field>
+    <field name="title_en">No assignment or sub-subcontracting</field>
+    <field name="sequence">140</field>
+    <field name="contract_type">subcontract</field>
+    <field name="body_ar">لا يجوز لمقاول الباطن التنازل عن العقد أو إسناد أي من الأعمال إلى مقاول باطن آخر دون موافقة كتابية مسبقة من {company}.</field>
+    <field name="body_en">The subcontractor shall not assign this contract or sub-subcontract any work without the prior written approval of {company}.</field>
     <field name="is_default">True</field>
   </record>
 </odoo>

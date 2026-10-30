@@ -74,6 +74,14 @@ class Line(models.Model):
     def report_text(self, field, language):
         return self['title_' + language]
 
+    def numbered_body(self, language, section):
+        self.ensure_one()
+        company = self.company_id
+        name = (company.contracting_name_ar if language == 'ar' else company.contracting_name_en) or company.name or ''
+        lines = (self['body_' + language] or '').replace('{company}', name).splitlines()
+        return '\n'.join('%s.%s %s' % (section, index, line.strip())
+                         for index, line in enumerate((line for line in lines if line.strip()), 1))
+
     text_ar = fields.Text(related='body_ar', string='نص التقرير العربي', help=HELP)
     text_en = fields.Text(related='body_en', string='نص التقرير الإنجليزي', help=HELP)
 

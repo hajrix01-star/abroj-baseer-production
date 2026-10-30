@@ -331,8 +331,8 @@ class AbrojContractingCase(TransactionCase):
         self.project.company_id.write({'contracting_name_en': 'Report Company English', 'company_registry': '544-TEST'})
         self.project.contract_payment_schedule = '50% advance / مقدم، 50% completion / إنجاز'
         for report, record, text in [
-            ('agreement', self.project, 'Client contract'),
-            ('subcontract', self.sub, 'Subcontract'),
+            ('agreement', self.project, 'CLIENT CONTRACT'),
+            ('subcontract', self.sub, 'SUBCONTRACT'),
             ('voucher', self.voucher(), 'VOUCHER'),
             ('voucher', self.voucher(kind='receipt', subcontractor_id=False), 'VOUCHER'),
         ]:
@@ -349,6 +349,23 @@ class AbrojContractingCase(TransactionCase):
             for page in pages:
                 self.assertIn('Report Company English', page.extract_text())
                 self.assertIn('544-TEST', page.extract_text())
+
+    def test_both_voucher_memos_and_layout(self):
+        from lxml import html
+        self.project.company_id.currency_id = self.env.ref('base.SAR')
+        for kind in ('payment', 'receipt'):
+            voucher = self.voucher(kind=kind, memo='دفعة وفق العقد / Payment under contract')
+            rendered, _ = self.env['ir.actions.report']._render_qweb_html(
+                'abroj_contracting.voucher', voucher.ids)
+            tree = html.fromstring(rendered)
+            memo = tree.xpath('//div[@class="memo"]')
+            self.assertEqual(len(memo), 1)
+            self.assertIn(voucher.memo, memo[0].text_content())
+            self.assertIn('Saudi Riyals only', tree.text_content())
+            voucher.memo = False
+            rendered, _ = self.env['ir.actions.report']._render_qweb_html(
+                'abroj_contracting.voucher', voucher.ids)
+            self.assertFalse(html.fromstring(rendered).xpath('//div[@class="memo"]'))
 
     def test_report_column_languages(self):
         from lxml import html
@@ -463,11 +480,14 @@ class AbrojContractingCase(TransactionCase):
     def test_voucher_amount_words(self):
         self.project.company_id.currency_id = self.env.ref('base.SAR')
         voucher = self.voucher(amount=8000.25)
-        self.assertIn('Eight Thousand', voucher.amount_in_words('en'))
+        self.assertTrue(voucher.amount_in_words('en').startswith('Eight thousand'))
+        self.assertTrue(voucher.amount_in_words('en').endswith(' Saudi Riyals only'))
         self.assertIn('ثمانية', voucher.amount_in_words('ar'))
         self.assertIn('خمس', voucher.amount_in_words('ar'))
         self.assertNotRegex(voucher.amount_in_words('ar'), '[A-Za-z]')
-        self.assertIn('Twenty-Five', voucher.amount_in_words('en'))
+        self.assertIn('twenty-five', voucher.amount_in_words('en'))
+        voucher.amount = 8000
+        self.assertEqual(voucher.amount_in_words('en'), 'Eight thousand Saudi Riyals only')
 
     def test_clause_filtering_and_migration(self):
         templates = self.env['abroj.contract.clause.template']

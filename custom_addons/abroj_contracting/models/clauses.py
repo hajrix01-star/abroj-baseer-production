@@ -127,4 +127,9 @@ class Voucher(models.Model):
             words = num2words(self.currency_id.round(self.amount), lang='ar',
                               to='currency', currency=self.currency_id.name)
             return 'فقط %s لا غير' % words
-        return '%s only' % self.currency_id.with_context(lang='en_US').amount_to_text(self.amount)
+        words = self.currency_id.with_context(lang='en_US').amount_to_text(self.amount)
+        if self.currency_id.name == 'SAR':
+            # Odoo's singular currency label is not the approved voucher wording.
+            words = words.replace(' Saudi Riyals', '').replace(' Saudi Riyal', '').replace(' Riyals', '').replace(' Riyal', '')
+            return '%s Saudi Riyals only' % words.capitalize()
+        return '%s only' % words

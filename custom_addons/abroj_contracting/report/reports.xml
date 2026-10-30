@@ -9,6 +9,7 @@
     <field name="margin_left">10</field>
     <field name="margin_right">10</field>
     <field name="dpi">90</field>
+    <field name="disable_shrinking">True</field>
   </record>
   <template id="pdf_document_layout" inherit_id="web.minimal_layout" primary="True">
     <xpath expr="//t[@t-call-assets='web.report_assets_pdf']" position="replace"/>
@@ -32,21 +33,21 @@
   </template>
   <template id="contract_layout">
     <t t-set="company" t-value="o.company_id"/>
-    <div t-attf-class="header o_company_#{company.id}_layout" style="font-size:12px;color:white;background:#003A71;border-bottom:3px solid #B8955A;height:42mm;box-sizing:border-box;padding:12px 16mm;">
+    <div t-attf-class="header o_company_#{company.id}_layout" style="font-size:10.667px;line-height:1.35;color:#d9c39a;background:#003A71;border-bottom:3px solid #B8955A;height:34mm;box-sizing:border-box;padding:8px 16mm;">
       <style t-out="company.contract_font_css()"/>
       <table style="width:100%;table-layout:fixed;height:100%;" dir="ltr">
         <tr>
           <td style="width:34%;vertical-align:middle;">
-            <strong t-out="company.contracting_name_en or company.name" style="font-size:17px;"/>
-            <br/>CR: <span t-field="company.company_registry"/> | VAT: <span t-field="company.vat"/>
+            <strong t-out="company.contracting_name_en or company.name" style="font-size:12.5pt;color:white;"/>
+            <br/><span style="font-size:13.333px;color:white;letter-spacing:1px;">INTEGRATED CONSTRUCTION</span><br/>CR <span t-field="company.company_registry"/> · VAT <span t-field="company.vat"/>
           </td>
           <td style="width:32%;text-align:center;vertical-align:middle;">
-            <img t-if="company.contracting_white_logo or company.logo" t-att-src="image_data_uri(company.contracting_white_logo or company.logo)" style="width:100%;max-width:210px;max-height:110px;"/>
+            <!-- Tight artwork bounds keep the visible mark dominant in the band. -->
+            <img t-if="company.contracting_white_logo or company.logo" t-att-src="'/abroj_contracting/static/img/abroj-logo-white-cropped.png'" style="width:36mm;height:19mm;max-width:none;"/>
           </td>
           <td dir="rtl" style="width:34%;text-align:right;vertical-align:middle;">
-            <strong t-out="company.contracting_name_ar or company.name" style="font-size:17px;"/>
-            <br/>السجل التجاري: <span t-field="company.company_registry"/>
-            <br/>الرقم الضريبي: <span t-field="company.vat"/>
+            <strong t-out="company.contracting_name_ar or company.name" style="font-size:12.5pt;color:white;"/>
+            <br/><span style="font-size:13.333px;color:white;">تصميم · تنفيذ · إشراف</span><br/>س.ت <span t-field="company.company_registry"/> · الرقم الضريبي <span t-field="company.vat"/>
           </td>
         </tr>
       </table>
@@ -87,17 +88,15 @@ h4 {font-size:17px;color:#003A71;margin:12px 0 6px;}
 .meta {width:100%;table-layout:fixed;margin:12px 0;border-collapse:separate;border-spacing:6px;}.meta td {border:1px solid #d9dee6;border-top:2px solid #B8955A;text-align:center;padding:6px;color:#003A71;}.meta small{font-size:9px;color:#5d6778;display:block;}.parties {width:100%;table-layout:fixed;border-collapse:separate;border-spacing:6px;margin-bottom:12px;}.parties td {background:#f6f8fb;text-align:center;padding:8px;vertical-align:top;color:#003A71;}.parties small{font-size:9px;color:#5d6778;}.parties h4{font-size:10px;color:#B8955A;margin:0 0 4px;}.parties p{margin:0;}.amount-summary {width:100%;border:1px solid #003A71;margin-top:12px;page-break-inside:avoid;}.amount-summary th{background:#003A71;color:white;padding:6px;}.amount-summary td{padding:5px 10px;border-bottom:1px solid #d9dee6;}.amount-summary .total td{background:#efe6d4;color:#003A71;font-weight:bold;}.amount-summary .number{text-align:center;font-weight:bold;}.terms{margin-top:10px;}.title-band {border:0;margin:10px 0 0;padding:0;}.title-band h2{line-height:1.3;font-size:26px;}.title-band small{display:block;color:#B8955A;font-size:12px;letter-spacing:2px;text-align:center;}.clause td.en{border-right:0;}.clause strong{color:#003A71;}.signatures .clause{border:0;}
 
 .article {font-size:14px !important;line-height:1.65 !important;}.clause strong{font-size:15px;}.clause td{padding-top:7px;padding-bottom:7px;}.terms h4{font-size:17px;}.parties td{padding:10px 8px;}.meta td{padding:8px 6px;}.title-band{margin:14px 0 0;}.continuation{page-break-before:always;}.signatures{margin-top:22px;}.signatures td{height:95px;}.terms-title{width:100%;border-bottom:2px solid #003A71;color:#003A71;font-size:17px;font-weight:bold;margin-bottom:8px;}.terms-title td{width:50%;}.terms-title .ar{text-align:right;}.amount-summary td{padding:7px 10px;}
+.article {font-size:12px !important;line-height:1.6 !important;}.clause strong{font-size:13.333px;}.clause td{padding-top:4px;padding-bottom:4px;}.clause td.en p{line-height:1.5;}.parties p{font-weight:bold;line-height:1.4;}.parties small,.meta small{font-size:10.667px;}.amount-summary {font-size:14px;table-layout:fixed;border-radius:2mm;overflow:hidden;}.amount-summary .ar{text-align:right;direction:rtl;}.amount-summary th:last-child{text-align:right;}.amount-summary .milestones td{border:0;padding:2mm 1mm;font-size:11.333px;color:#5d6778;text-align:center;}.amount-summary .milestones>td{padding:0;}.amount-summary .total td{font-size:15.333px;}.amount-summary td{padding:3.4px 18px;}.title-band small{text-transform:uppercase;font-size:14.667px;}.title-band h2{font-size:28px;}
 </style>
       <t t-out="0"/>
     </div>
-    <div t-attf-class="footer o_company_#{company.id}_layout" style="font-size:9px;line-height:1.6;color:#667789;text-align:center;border-top:1px solid #b8975a;padding-top:7px;margin:0 16mm;">
+    <div t-attf-class="footer o_company_#{company.id}_layout" style="font-size:9px;line-height:1.35;color:#667789;text-align:center;border-top:1px solid #b8975a;padding-top:4px;margin:0 16mm;">
       <style t-out="company.contract_font_css()"/>
       <div t-out="company.partner_id.contact_address"/>
       <div>
-        <span t-field="company.phone"/> | <span t-field="company.email"/> | <span t-field="company.website"/>
-      </div>
-      <div>
-        <span t-out="company.contracting_name_en or company.name"/> / <span dir="rtl" t-out="company.contracting_name_ar or company.name"/> — <span dir="ltr" style="display:inline-block">Page <span class="page"/> of <span class="topage"/>
+        <span t-field="company.phone"/> | <span t-field="company.email"/> | <span t-field="company.website"/> — <span dir="ltr" style="display:inline-block">Page <span class="page"/> of <span class="topage"/>
         </span>
       </div>
     </div>
@@ -106,11 +105,12 @@ h4 {font-size:17px;color:#003A71;margin:12px 0 6px;}
     <field name="name">Abroj bilingual A4</field>
     <field name="format">A4</field>
     <field name="margin_top">40</field>
-    <field name="margin_bottom">20</field>
+    <field name="margin_bottom">19</field>
     <field name="margin_left">0</field>
     <field name="margin_right">0</field>
     <field name="header_spacing">5</field>
     <field name="dpi">90</field>
+    <field name="disable_shrinking">True</field>
     <field name="orientation">Portrait</field>
   </record>
   <record id="report_agreement" model="ir.actions.report">
@@ -235,14 +235,9 @@ h4 {font-size:17px;color:#003A71;margin:12px 0 6px;}
                   </td>
                   <td class="ar">الإجمالي شامل الضريبة</td>
                 </tr>
-              </table>
-              <table class="clause">
-                <tr>
-                  <td class="en">Payment milestones: <span t-out="o.report_text('contract_payment_schedule','en')"/>
-                  </td>
-                  <td class="ar" dir="rtl">مراحل الدفع: <span t-out="o.report_text('contract_payment_schedule','ar')"/>
-                  </td>
-                </tr>
+                <tr class="milestones"><td colspan="3"><table style="width:100%;table-layout:fixed;"><tr>
+                  <td t-foreach="o.contract_payment_milestones()" t-as="milestone"><span dir="rtl" t-out="milestone[1]"/> · <span dir="ltr" t-out="milestone[0]"/></td>
+                </tr></table></td></tr>
               </table>
             </div>
             <div class="continuation">
@@ -396,14 +391,10 @@ h4 {font-size:17px;color:#003A71;margin:12px 0 6px;}
                   </td>
                   <td class="ar">نسبة الضمان</td>
                 </tr>
-              </table>
-              <table class="clause">
-                <tr>
-                  <td class="en">Payment milestones: <span t-out="o.report_text('payment_terms','en')"/>
-                  </td>
-                  <td class="ar" dir="rtl">مراحل الدفع: <span t-out="o.report_text('payment_terms','ar')"/>
-                  </td>
-                </tr>
+                <tr class="milestones"><td colspan="3"><table style="width:100%;table-layout:fixed"><tr>
+                  <td class="en" t-out="o.report_text('payment_terms','en')"/>
+                  <td class="ar" dir="rtl" t-out="o.report_text('payment_terms','ar')"/>
+                </tr></table></td></tr>
               </table>
             </div>
             <div class="continuation">
@@ -517,9 +508,11 @@ h4 {font-size:17px;color:#003A71;margin:12px 0 6px;}
         <div class="article" t-att-data-oe-model="o._name" t-att-data-oe-id="o.id">
           <style t-out="company.contract_font_css()"/>
           <style>
-.voucher{font-size:13px;color:#1d2433;line-height:1.45}.voucher table{width:100%;border-collapse:collapse;table-layout:fixed}.voucher td{padding:4px 8px;vertical-align:top}.hd{border-bottom:3px solid #B8955A;color:#003A71}.hd td{vertical-align:middle}.hd small{font-size:10px}.hd img{max-height:60px;max-width:100px}.tt{margin:15px 0}.tt td{border:1px solid #d9dee6;text-align:center;color:#003A71}.tt h2{font-size:28px;margin:0}.tt small{color:#B8955A}.info{background:#f6f8fb;margin-bottom:10px}.amt{border:2px solid #003A71;margin:10px 0}.amt .fig{background:#003A71;color:white;width:30%;font-size:23px;vertical-align:middle;text-align:center}.words{font-size:13px}.lower th{background:#003A71;color:white;padding:4px;font-size:11px}.lower td{border-bottom:1px solid #d9dee6;font-size:12px}.remaining{background:#efe6d4;color:#003A71;font-weight:bold}.sg{margin-top:16px}.sg td{border:1px solid #d9dee6;height:85px;text-align:center;color:#5d6778;font-size:11px}.ar{direction:rtl;text-align:right}.en{direction:ltr;text-align:left}
+.voucher{font-size:13px;color:#1d2433;line-height:1.45}.voucher table{width:100%;border-collapse:collapse;table-layout:fixed}.voucher td{padding:4px 8px;vertical-align:top}.hd{border-bottom:3px solid #B8955A;color:#003A71}.hd td{vertical-align:middle}.hd small{font-size:10px}.voucher .hd img{width:26.5mm;height:auto;max-height:none;max-width:none;}.tt{margin:15px 0}.tt td{border:1px solid #d9dee6;text-align:center;color:#003A71}.tt h2{font-size:28px;margin:0}.tt small{color:#B8955A}.info{background:#f6f8fb;margin-bottom:10px}.amt{border:2px solid #003A71;margin:10px 0}.amt .fig{background:#003A71;color:white;width:30%;font-size:23px;vertical-align:middle;text-align:center}.words{font-size:13px}.lower th{background:#003A71;color:white;padding:4px;font-size:11px}.lower td{border-bottom:1px solid #d9dee6;font-size:12px}.remaining{background:#efe6d4;color:#003A71;font-weight:bold}.sg{margin-top:16px}.sg td{border:1px solid #d9dee6;height:85px;text-align:center;color:#5d6778;font-size:11px}.ar{direction:rtl;text-align:right}.en{direction:ltr;text-align:left}
 
 .voucher .tt{border-collapse:separate;border-spacing:0;margin:20px 0;}.tt td{border-top:2px solid #B8955A;}.tt td:nth-child(2){border:0;}.voucher .info{border-collapse:separate;border-spacing:6px 0;background:transparent;}.info td{background:#f6f8fb;border-radius:5px;padding:8px;}.amt{margin:14px 0;border-radius:6px;}.words .ar{font-weight:bold;color:#003A71;}.words .en{font-size:11px;color:#5d6778;}.lower td{padding-top:6px;padding-bottom:6px;}.voucher .sg{border-collapse:separate;border-spacing:6px 0;margin-top:20px;}.sg td{border-radius:5px;}
+.voucher .amt{border:1.5px solid #003A71;margin:13.23px 0;border-radius:7.56px;}.voucher .amt .fig{font-size:20px;font-weight:800;width:22%;padding:5.67px 18.9px;white-space:nowrap;}.voucher .amt .words{font-size:13.333px;line-height:1.45;padding:3.78px 15.12px;}.voucher .words .en{font-size:11.333px;}.voucher .hd{border-bottom:2px solid #003A71;}.voucher .info td{padding:4.54px 11.34px;}.voucher .sg td{height:83.15px;}.voucher .tt{margin:15px 0;}.voucher .lower td{padding:2.65px 7.56px;font-size:11.333px;}.voucher .sg{margin-top:17px;}.voucher .info{margin-bottom:13px;}.voucher .info b{font-size:12px;}.voucher .lower td:first-child{width:67%;}.voucher .lower td{line-height:1.4;}.voucher .sg td{height:75px;}.voucher .tt{margin:12px 0;}.voucher .info td{padding:4px 8px;}
+.voucher .memo{font-size:10px;line-height:1.4;color:#5d6778;white-space:nowrap;margin:-5px 8px 9px;}
 </style>
           <div class="page voucher" dir="rtl">
             <table class="hd" dir="ltr">
@@ -531,7 +524,7 @@ h4 {font-size:17px;color:#003A71;margin:12px 0 6px;}
                   </small>
                 </td>
                 <td style="width:20%;text-align:center">
-                  <img t-if="company.logo" t-att-src="image_data_uri(company.logo)"/>
+                  <img t-if="company.logo" t-att-src="'/abroj_contracting/static/img/abroj-logo-navy-cropped.png'"/>
                 </td>
                 <td class="ar">
                   <b t-out="company.contracting_name_ar or company.name"/>
@@ -581,6 +574,7 @@ h4 {font-size:17px;color:#003A71;margin:12px 0 6px;}
                 </td>
               </tr>
             </table>
+            <div t-if="o.memo" class="memo" dir="rtl">البيان · Memo: <span t-out="' '.join(o.memo.split())"/></div>
             <table>
               <tr>
                 <td style="width:54%;padding-left:0">
@@ -596,8 +590,6 @@ h4 {font-size:17px;color:#003A71;margin:12px 0 6px;}
                       <td t-out="'{:,.2f}'.format(v.amount)"/>
                     </tr>
                   </table>
-                  <p class="ar" t-out="o.report_text('memo','ar')"/>
-                  <p t-out="o.report_text('memo','en')"/>
                 </td>
                 <td style="padding-right:0">
                   <table class="lower">

@@ -1,0 +1,97 @@
+<?xml version='1.0' encoding='utf-8'?>
+<odoo>
+  <record id="report_agreement" model="ir.actions.report">
+    <field name="name">اتفاقية مشروع</field>
+    <field name="model">project.project</field>
+    <field name="report_type">qweb-pdf</field>
+    <field name="report_name">abroj_contracting.agreement</field>
+    <field name="binding_model_id" ref="project.model_project_project"/>
+    <field name="binding_type">report</field>
+  </record>
+  <template id="agreement">
+    <t t-call="web.html_container">
+      <t t-foreach="docs" t-as="o">
+        <t t-call="web.external_layout">
+          <div class="page" dir="rtl" style="text-align:right;font-family:DejaVu Sans">
+            <h2>اتفاقية مشروع</h2>
+            <table style="width:100%;table-layout:fixed" dir="rtl">
+              <tr>
+                <td style="width:50%;vertical-align:top">
+                  <h3>الطرف الأول</h3>
+                  <p t-field="o.company_id.name"/>
+                  <p t-field="o.company_id.partner_id" t-options="{'widget': 'contact', 'fields': ['address', 'phone', 'email'], 'no_marker': True}"/>
+                  <p>السجل التجاري: <span t-field="o.company_id.company_registry"/></p>
+                  <p>الرقم الضريبي: <span t-field="o.company_id.vat"/></p>
+                </td>
+                <td style="width:50%;vertical-align:top">
+                  <h3>الطرف الثاني</h3>
+                  <p t-field="o.partner_id" t-options="{'widget': 'contact', 'fields': ['name', 'address', 'phone'], 'no_marker': True}"/>
+                </td>
+              </tr>
+            </table>
+            <h3 t-field="o.name"/>
+            <p>الهدف: <span t-field="o.contracting_goal"/></p>
+            <p>قيمة العقد: <span t-field="o.contract_value"/></p>
+            <p>نوع القيمة: <span t-field="o.value_type"/></p>
+            <p>البدء: <span t-field="o.contracting_start"/> — الانتهاء: <span t-field="o.contracting_end"/></p>
+            <p>مدة التنفيذ: <span t-field="o.duration_days"/> يوم</p>
+            <table style="width:100%;margin-top:60px">
+              <tr>
+                <td style="width:50%">توقيع الطرف الأول: __________</td>
+                <td>توقيع الطرف الثاني: __________</td>
+              </tr>
+            </table>
+          </div>
+        </t>
+      </t>
+    </t>
+  </template>
+  <record id="report_voucher" model="ir.actions.report">
+    <field name="name">سند صرف / قبض</field>
+    <field name="model">abroj.contracting.voucher</field>
+    <field name="report_type">qweb-pdf</field>
+    <field name="report_name">abroj_contracting.voucher</field>
+    <field name="binding_model_id" ref="model_abroj_contracting_voucher"/>
+    <field name="binding_type">report</field>
+  </record>
+  <template id="voucher">
+    <t t-call="web.html_container">
+      <t t-foreach="docs" t-as="o">
+        <t t-call="web.external_layout">
+          <div class="page" dir="rtl" style="text-align:right;font-family:DejaVu Sans">
+            <h2>سند صرف / قبض</h2>
+            <table style="width:100%;table-layout:fixed" dir="rtl">
+              <tr>
+                <td style="width:50%;vertical-align:top">
+                  <h3>الطرف الأول</h3>
+                  <p t-field="o.company_id.name"/>
+                  <p t-field="o.company_id.partner_id" t-options="{'widget': 'contact', 'fields': ['address', 'phone', 'email'], 'no_marker': True}"/>
+                  <p>السجل التجاري: <span t-field="o.company_id.company_registry"/></p>
+                  <p>الرقم الضريبي: <span t-field="o.company_id.vat"/></p>
+                </td>
+                <td style="width:50%;vertical-align:top">
+                  <h3>الطرف الثاني</h3>
+                  <p t-field="o.partner_id" t-options="{'widget': 'contact', 'fields': ['name', 'address', 'phone'], 'no_marker': True}"/>
+                </td>
+              </tr>
+            </table>
+            <h3 t-field="o.kind"/>
+            <p>رقم السند: <span t-field="o.name"/> — الحالة: <span t-field="o.state"/></p>
+            <p>المشروع: <span t-field="o.project_id.name"/></p>
+            <p>التاريخ: <span t-field="o.date"/></p>
+            <p>المبلغ: <span t-field="o.amount"/></p>
+            <p>الطريقة: <span t-field="o.method"/></p>
+            <p>البيان: <span t-field="o.memo"/></p>
+            <p>أصدره واعتمده: <span t-field="o.issued_by.name"/></p>
+            <table style="width:100%;margin-top:60px">
+              <tr>
+                <td style="width:50%">توقيع الطرف الأول: __________</td>
+                <td>توقيع الطرف الثاني: __________</td>
+              </tr>
+            </table>
+          </div>
+        </t>
+      </t>
+    </t>
+  </template>
+</odoo>

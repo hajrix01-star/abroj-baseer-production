@@ -1,0 +1,7 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_subcontractor_user,مستخدم المقاولات,model_abroj_contracting_subcontractor,base.group_user,1,1,1,1
+access_voucher_user,مستخدم المقاولات,model_abroj_contracting_voucher,base.group_user,1,1,1,1
+access_invoice_user,مستخدم المقاولات,model_abroj_contracting_invoice,base.group_user,1,1,1,1
+access_cost_user,مستخدم المقاولات,model_abroj_contracting_cost,base.group_user,1,1,1,1
+access_inbox_user,مستخدم المقاولات,model_abroj_contracting_inbox,base.group_user,1,1,1,1
+access_agent_project,قراءة المشاريع,project.model_project_project,group_extraction_agent,1,0,0,0

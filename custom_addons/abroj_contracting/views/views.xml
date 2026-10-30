@@ -1,0 +1,364 @@
+<?xml version='1.0' encoding='utf-8'?>
+<odoo>
+  <record id="project_form" model="ir.ui.view">
+    <field name="name">abroj.contracting.project.form</field>
+    <field name="model">project.project</field>
+    <field name="arch" type="xml">
+      <form string="المشروع">
+        <sheet>
+          <group>
+            <field name="name" string="اسم المشروع"/>
+            <field name="partner_id" string="العميل / المالك"/>
+            <field name="company_id"/>
+            <field name="currency_id" invisible="1"/>
+            <field name="account_id" string="الحساب التحليلي"/>
+            <field name="active" string="نشط"/>
+            <field name="contracting_goal"/>
+            <field name="contract_value"/>
+            <field name="value_type"/>
+            <field name="contracting_start"/>
+            <field name="contracting_end"/>
+            <field name="duration_days"/>
+            <field name="estimated_cost"/>
+          </group>
+          <group string="ملخص المشروع" col="4">
+            <field name="total_costs"/>
+            <field name="total_paid"/>
+            <field name="total_received"/>
+            <field name="remaining"/>
+            <field name="profit"/>
+            <field name="expected_profit"/>
+          </group>
+          <notebook>
+            <page string="السجلات">
+              <field name="inbox_ids" context="{'default_project_id': id}"/>
+              <separator string="المصروفات"/>
+              <field name="cost_ids" context="{'default_project_id': id}"/>
+            </page>
+            <page string="السندات">
+              <field name="voucher_ids" context="{'default_project_id': id, 'default_kind': 'payment'}" domain="[('kind', '=', 'payment')]"/>
+            </page>
+            <page string="مقاولو الباطن">
+              <field name="subcontractor_ids" context="{'default_project_id': id}"/>
+              <field name="invoice_ids" context="{'default_project_id': id}"/>
+            </page>
+            <page string="المقبوضات">
+              <field name="voucher_ids" context="{'default_project_id': id, 'default_kind': 'receipt'}" domain="[('kind', '=', 'receipt')]"/>
+            </page>
+            <page string="التدفق النقدي">
+              <group>
+                <field name="total_received"/>
+                <field name="total_paid"/>
+                <field name="cash_balance"/>
+              </group>
+              <field name="voucher_ids" readonly="1" domain="[('state', '=', 'issued')]"/>
+            </page>
+          </notebook>
+        </sheet>
+      </form>
+    </field>
+  </record>
+  <record id="project_list" model="ir.ui.view">
+    <field name="name">abroj.contracting.project.list</field>
+    <field name="model">project.project</field>
+    <field name="arch" type="xml">
+      <list string="المشاريع">
+        <field name="name" string="المشروع"/>
+        <field name="partner_id" string="العميل"/>
+        <field name="company_id"/>
+        <field name="currency_id" column_invisible="True"/>
+        <field name="contract_value"/>
+        <field name="total_costs"/>
+        <field name="total_paid"/>
+        <field name="total_received"/>
+        <field name="remaining"/>
+        <field name="profit"/>
+      </list>
+    </field>
+  </record>
+  <record id="voucher_form" model="ir.ui.view">
+    <field name="name">abroj.contracting.voucher.form</field>
+    <field name="model">abroj.contracting.voucher</field>
+    <field name="arch" type="xml">
+      <form string="السندات">
+        <header>
+          <button name="action_issue" type="object" string="إصدار واعتماد" class="btn-primary" invisible="state != 'draft'"/>
+          <button name="action_cancel" type="object" string="إلغاء" invisible="state == 'cancelled'"/>
+          <field name="state" widget="statusbar"/>
+        </header>
+        <sheet>
+          <group>
+            <field name="name"/>
+            <field name="kind" readonly="state != 'draft'"/>
+            <field name="project_id" readonly="state != 'draft'"/>
+            <field name="company_id"/>
+            <field name="currency_id" invisible="1"/>
+            <field name="partner_id" readonly="state != 'draft'"/>
+            <field name="subcontractor_id" domain="[('project_id', '=', project_id)]" readonly="state != 'draft'"/>
+            <field name="amount" readonly="state != 'draft'"/>
+            <field name="date" readonly="state != 'draft'"/>
+            <field name="method" readonly="state != 'draft'"/>
+            <field name="memo" readonly="state != 'draft'"/>
+            <field name="attachment" readonly="state != 'draft'"/>
+            <field name="filename" readonly="state != 'draft'"/>
+            <field name="create_payment" readonly="state != 'draft'"/>
+            <field name="journal_id" invisible="not create_payment" readonly="state != 'draft'"/>
+            <field name="payment_id"/>
+            <field name="issued_by"/>
+            <field name="state"/>
+          </group>
+        </sheet>
+      </form>
+    </field>
+  </record>
+  <record id="voucher_list" model="ir.ui.view">
+    <field name="name">abroj.contracting.voucher.list</field>
+    <field name="model">abroj.contracting.voucher</field>
+    <field name="arch" type="xml">
+      <list string="السندات">
+        <field name="name"/>
+        <field name="kind"/>
+        <field name="project_id"/>
+        <field name="company_id"/>
+        <field name="currency_id" column_invisible="True"/>
+        <field name="partner_id"/>
+        <field name="subcontractor_id"/>
+        <field name="amount"/>
+        <field name="date"/>
+        <field name="method"/>
+        <field name="state"/>
+      </list>
+    </field>
+  </record>
+  <record id="subcontractor_form" model="ir.ui.view">
+    <field name="name">abroj.contracting.subcontractor.form</field>
+    <field name="model">abroj.contracting.subcontractor</field>
+    <field name="arch" type="xml">
+      <form string="مقاولو الباطن">
+        <sheet>
+          <group>
+            <field name="project_id"/>
+            <field name="company_id"/>
+            <field name="currency_id" invisible="1"/>
+            <field name="partner_id"/>
+            <field name="scope"/>
+            <field name="contract_type"/>
+            <field name="payment_terms"/>
+            <field name="duration_days"/>
+            <field name="agreed_amount"/>
+            <field name="paid"/>
+            <field name="received"/>
+            <field name="invoiced"/>
+            <field name="remaining"/>
+          </group>
+        </sheet>
+      </form>
+    </field>
+  </record>
+  <record id="subcontractor_list" model="ir.ui.view">
+    <field name="name">abroj.contracting.subcontractor.list</field>
+    <field name="model">abroj.contracting.subcontractor</field>
+    <field name="arch" type="xml">
+      <list string="مقاولو الباطن">
+        <field name="project_id"/>
+        <field name="company_id"/>
+        <field name="currency_id" column_invisible="True"/>
+        <field name="partner_id"/>
+        <field name="contract_type"/>
+        <field name="duration_days"/>
+        <field name="agreed_amount"/>
+        <field name="paid"/>
+        <field name="received"/>
+        <field name="invoiced"/>
+        <field name="remaining"/>
+      </list>
+    </field>
+  </record>
+  <record id="invoice_form" model="ir.ui.view">
+    <field name="name">abroj.contracting.invoice.form</field>
+    <field name="model">abroj.contracting.invoice</field>
+    <field name="arch" type="xml">
+      <form string="فواتير مقاولي الباطن">
+        <header>
+          <button name="action_confirm" type="object" string="تأكيد" class="btn-primary" invisible="state != 'draft'"/>
+          <field name="state" widget="statusbar"/>
+        </header>
+        <sheet>
+          <group>
+            <field name="project_id" readonly="state != 'draft'"/>
+            <field name="company_id"/>
+            <field name="currency_id" invisible="1"/>
+            <field name="subcontractor_id" domain="[('project_id', '=', project_id)]" readonly="state != 'draft'"/>
+            <field name="number" readonly="state != 'draft'"/>
+            <field name="date" readonly="state != 'draft'"/>
+            <field name="amount" readonly="state != 'draft'"/>
+            <field name="attachment_ids" widget="many2many_binary" readonly="state != 'draft'"/>
+            <field name="state"/>
+          </group>
+        </sheet>
+      </form>
+    </field>
+  </record>
+  <record id="invoice_list" model="ir.ui.view">
+    <field name="name">abroj.contracting.invoice.list</field>
+    <field name="model">abroj.contracting.invoice</field>
+    <field name="arch" type="xml">
+      <list string="فواتير مقاولي الباطن">
+        <field name="project_id"/>
+        <field name="company_id"/>
+        <field name="currency_id" column_invisible="True"/>
+        <field name="subcontractor_id"/>
+        <field name="number"/>
+        <field name="date"/>
+        <field name="amount"/>
+        <field name="state"/>
+      </list>
+    </field>
+  </record>
+  <record id="cost_form" model="ir.ui.view">
+    <field name="name">abroj.contracting.cost.form</field>
+    <field name="model">abroj.contracting.cost</field>
+    <field name="arch" type="xml">
+      <form string="المصروفات">
+        <header>
+          <button name="action_confirm" type="object" string="تأكيد" class="btn-primary" invisible="state != 'draft'"/>
+          <field name="state" widget="statusbar"/>
+        </header>
+        <sheet>
+          <group>
+            <field name="project_id" readonly="state != 'draft'"/>
+            <field name="company_id"/>
+            <field name="currency_id" invisible="1"/>
+            <field name="name"/>
+            <field name="partner_id" readonly="state != 'draft'"/>
+            <field name="category" readonly="state != 'draft'"/>
+            <field name="invoice_number" readonly="state != 'draft'"/>
+            <field name="date" readonly="state != 'draft'"/>
+            <field name="amount" readonly="state != 'draft'"/>
+            <field name="attachment" readonly="state != 'draft'"/>
+            <field name="state"/>
+          </group>
+        </sheet>
+      </form>
+    </field>
+  </record>
+  <record id="cost_list" model="ir.ui.view">
+    <field name="name">abroj.contracting.cost.list</field>
+    <field name="model">abroj.contracting.cost</field>
+    <field name="arch" type="xml">
+      <list string="المصروفات">
+        <field name="project_id"/>
+        <field name="company_id"/>
+        <field name="currency_id" column_invisible="True"/>
+        <field name="name"/>
+        <field name="partner_id"/>
+        <field name="category"/>
+        <field name="invoice_number"/>
+        <field name="date"/>
+        <field name="amount"/>
+        <field name="state"/>
+      </list>
+    </field>
+  </record>
+  <record id="inbox_form" model="ir.ui.view">
+    <field name="name">abroj.contracting.inbox.form</field>
+    <field name="model">abroj.contracting.inbox</field>
+    <field name="arch" type="xml">
+      <form string="صندوق الوارد">
+        <sheet>
+          <group>
+            <field name="project_id"/>
+            <field name="company_id"/>
+            <field name="filename"/>
+            <field name="mimetype"/>
+            <field name="file"/>
+            <field name="note"/>
+            <field name="state"/>
+            <field name="extracted_text"/>
+          </group>
+        </sheet>
+      </form>
+    </field>
+  </record>
+  <record id="inbox_list" model="ir.ui.view">
+    <field name="name">abroj.contracting.inbox.list</field>
+    <field name="model">abroj.contracting.inbox</field>
+    <field name="arch" type="xml">
+      <list string="صندوق الوارد">
+        <field name="project_id"/>
+        <field name="company_id"/>
+        <field name="mimetype"/>
+        <field name="state"/>
+      </list>
+    </field>
+  </record>
+  <record id="action_projects" model="ir.actions.act_window">
+    <field name="name">المشاريع</field>
+    <field name="res_model">project.project</field>
+    <field name="view_mode">list,form</field>
+    <field name="domain">[]</field>
+    <field name="context">{}</field>
+  </record>
+  <record id="project_action_list" model="ir.actions.act_window.view">
+    <field name="sequence">1</field>
+    <field name="view_mode">list</field>
+    <field name="view_id" ref="project_list"/>
+    <field name="act_window_id" ref="action_projects"/>
+  </record>
+  <record id="project_action_form" model="ir.actions.act_window.view">
+    <field name="sequence">2</field>
+    <field name="view_mode">form</field>
+    <field name="view_id" ref="project_form"/>
+    <field name="act_window_id" ref="action_projects"/>
+  </record>
+  <record id="action_payments" model="ir.actions.act_window">
+    <field name="name">سندات الصرف</field>
+    <field name="res_model">abroj.contracting.voucher</field>
+    <field name="view_mode">list,form</field>
+    <field name="domain">[('kind','=','payment')]</field>
+    <field name="context">{'default_kind':'payment'}</field>
+  </record>
+  <record id="action_receipts" model="ir.actions.act_window">
+    <field name="name">سندات القبض</field>
+    <field name="res_model">abroj.contracting.voucher</field>
+    <field name="view_mode">list,form</field>
+    <field name="domain">[('kind','=','receipt')]</field>
+    <field name="context">{'default_kind':'receipt'}</field>
+  </record>
+  <record id="action_subcontractors" model="ir.actions.act_window">
+    <field name="name">مقاولو الباطن</field>
+    <field name="res_model">abroj.contracting.subcontractor</field>
+    <field name="view_mode">list,form</field>
+    <field name="domain">[]</field>
+    <field name="context">{}</field>
+  </record>
+  <record id="action_invoices" model="ir.actions.act_window">
+    <field name="name">فواتير مقاولي الباطن</field>
+    <field name="res_model">abroj.contracting.invoice</field>
+    <field name="view_mode">list,form</field>
+    <field name="domain">[]</field>
+    <field name="context">{}</field>
+  </record>
+  <record id="action_inbox" model="ir.actions.act_window">
+    <field name="name">صندوق الوارد</field>
+    <field name="res_model">abroj.contracting.inbox</field>
+    <field name="view_mode">list,form</field>
+    <field name="domain">[]</field>
+    <field name="context">{}</field>
+  </record>
+  <record id="action_cash" model="ir.actions.act_window">
+    <field name="name">التدفق النقدي</field>
+    <field name="res_model">abroj.contracting.voucher</field>
+    <field name="view_mode">list,form</field>
+    <field name="domain">[('state','=','issued')]</field>
+    <field name="context">{}</field>
+  </record>
+  <menuitem id="menu_contracting" name="المقاولات" parent="project.menu_main_pm" sequence="25" groups="base.group_user"/>
+  <menuitem id="menu_projects" name="المشاريع" parent="menu_contracting" action="action_projects" sequence="1"/>
+  <menuitem id="menu_payments" name="سندات الصرف" parent="menu_contracting" action="action_payments" sequence="2"/>
+  <menuitem id="menu_receipts" name="سندات القبض" parent="menu_contracting" action="action_receipts" sequence="3"/>
+  <menuitem id="menu_subcontractors" name="مقاولو الباطن" parent="menu_contracting" action="action_subcontractors" sequence="4"/>
+  <menuitem id="menu_invoices" name="فواتير مقاولي الباطن" parent="menu_contracting" action="action_invoices" sequence="5"/>
+  <menuitem id="menu_inbox" name="صندوق الوارد" parent="menu_contracting" action="action_inbox" sequence="6"/>
+  <menuitem id="menu_cash" name="التدفق النقدي" parent="menu_contracting" action="action_cash" sequence="7"/>
+</odoo>

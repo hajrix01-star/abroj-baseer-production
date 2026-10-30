@@ -1,0 +1,32 @@
+<?xml version='1.0' encoding='utf-8'?>
+<odoo>
+  <record id="group_extraction_agent" model="res.groups">
+    <field name="name">وكيل الاستخراج</field>
+    <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+  </record>
+  <record id="rule_subcontractor_company" model="ir.rule">
+    <field name="name">عزل الشركات: subcontractor</field>
+    <field name="model_id" ref="model_abroj_contracting_subcontractor"/>
+    <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+  </record>
+  <record id="rule_voucher_company" model="ir.rule">
+    <field name="name">عزل الشركات: voucher</field>
+    <field name="model_id" ref="model_abroj_contracting_voucher"/>
+    <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+  </record>
+  <record id="rule_invoice_company" model="ir.rule">
+    <field name="name">عزل الشركات: invoice</field>
+    <field name="model_id" ref="model_abroj_contracting_invoice"/>
+    <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+  </record>
+  <record id="rule_cost_company" model="ir.rule">
+    <field name="name">عزل الشركات: cost</field>
+    <field name="model_id" ref="model_abroj_contracting_cost"/>
+    <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+  </record>
+  <record id="rule_inbox_company" model="ir.rule">
+    <field name="name">عزل الشركات: inbox</field>
+    <field name="model_id" ref="model_abroj_contracting_inbox"/>
+    <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+  </record>
+</odoo>

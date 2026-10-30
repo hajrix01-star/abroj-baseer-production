@@ -1,0 +1,17 @@
+<?xml version='1.0' encoding='utf-8'?>
+<odoo noupdate="1">
+  <record id="sequence_payment" model="ir.sequence">
+    <field name="name">ترقيم السندات PAY</field>
+    <field name="code">abroj.contracting.payment</field>
+    <field name="prefix">PAY/%(year)s/</field>
+    <field name="padding">5</field>
+    <field name="company_id" eval="False"/>
+  </record>
+  <record id="sequence_receipt" model="ir.sequence">
+    <field name="name">ترقيم السندات REC</field>
+    <field name="code">abroj.contracting.receipt</field>
+    <field name="prefix">REC/%(year)s/</field>
+    <field name="padding">5</field>
+    <field name="company_id" eval="False"/>
+  </record>
+</odoo>

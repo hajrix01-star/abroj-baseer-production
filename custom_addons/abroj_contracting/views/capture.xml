@@ -1,0 +1,26 @@
+<?xml version='1.0' encoding='utf-8'?>
+<odoo>
+  <template id="capture" name="التقاط مستند مشروع">
+    <t t-call="web.layout">
+      <t t-set="title">التقاط مستند مشروع</t>
+      <div dir="rtl" style="max-width:600px;margin:2rem auto;padding:1rem;font-family:sans-serif">
+        <h1>إضافة سجل مشروع</h1>
+        <p t-if="saved" role="status">تم حفظ السجل بنجاح</p>
+        <form method="post" enctype="multipart/form-data" action="/abroj/contracting/capture">
+          <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+          <label for="project">المشروع</label>
+          <select id="project" name="project_id" required="required" style="width:100%;padding:12px">
+            <option t-foreach="projects" t-as="p" t-att-value="p.id">
+              <t t-out="p.name"/>
+            </option>
+          </select>
+          <label for="note">ملاحظة</label>
+          <textarea id="note" name="note" style="width:100%;min-height:100px"/>
+          <label for="file">صوت / صورة / فيديو / PDF (حتى 25 ميغابايت)</label>
+          <input id="file" name="file" type="file" accept="audio/*,image/*,video/*,application/pdf" capture="environment" style="width:100%;padding:12px"/>
+          <button type="submit" style="padding:12px;width:100%">حفظ في صندوق الوارد</button>
+        </form>
+      </div>
+    </t>
+  </template>
+</odoo>

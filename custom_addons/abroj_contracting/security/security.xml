@@ -34,4 +34,5 @@
     <field name="model_id" ref="model_abroj_contracting_project_note"/>
     <field name="domain_force">[('company_id', 'in', company_ids)]</field>
   </record>
+  <record id="rule_clause_line_company" model="ir.rule"><field name="name">عزل شركات بنود العقود</field><field name="model_id" ref="model_abroj_contract_clause_line"/><field name="domain_force">[('company_id', 'in', company_ids)]</field></record>
 </odoo>

@@ -9,3 +9,6 @@ access_project_note_user,ملاحظات المشروع,model_abroj_contracting_p
 access_project_note_agent,ملاحظات الوكيل,model_abroj_contracting_project_note,group_extraction_agent,1,0,1,0
 access_clause_user,Read contract clauses,model_abroj_contracting_clause,base.group_user,1,0,0,0
 access_clause_manager,Manage contract clauses,model_abroj_contracting_clause,project.group_project_manager,1,1,1,1
+access_clause_template_user,Contract clauses,model_abroj_contract_clause_template,base.group_user,1,0,0,0
+access_clause_template_manager,Contract clauses,model_abroj_contract_clause_template,project.group_project_manager,1,1,1,1
+access_clause_line_user,Contract clauses,model_abroj_contract_clause_line,base.group_user,1,1,1,1

@@ -30,6 +30,7 @@ class Clause(models.Model):
     _order = 'sequence, id'
 
     name = fields.Char(required=True)
+    template_migrated = fields.Boolean(readonly=True, help='تم نقل هذا القالب إلى إعدادات البنود الجديدة.')
     sequence = fields.Integer(default=10)
     kind = fields.Selection([('client', 'Client / العميل'), ('subcontractor', 'Subcontractor / مقاول الباطن')], required=True)
     text_ar = fields.Text(required=True)
@@ -48,16 +49,10 @@ class Company(models.Model):
 
     def contract_font_css(self):
         rules = []
-        for family, filename, weight in [
-            ('AbrojBody', 'IBMPlexSansArabic-Regular.ttf', 400),
-            ('AbrojBody', 'IBMPlexSansArabic-Bold.ttf', 700),
-            ('AbrojHeading', 'Amiri-Regular.ttf', 400),
-            ('AbrojHeading', 'Amiri-Bold.ttf', 700),
-        ]:
-            with file_open('abroj_contracting/static/fonts/' + filename, 'rb') as font:
-                data = base64.b64encode(font.read()).decode()
-            rules.append("@font-face {font-family:%s;font-weight:%s;src:url(data:font/truetype;base64,%s) format('truetype');}" % (family, weight, data))
-        rules.append('.header,.article,.footer {font-family:AbrojBody !important;} h2,h3,h4,.clause strong {font-family:AbrojHeading !important;}')
+        with file_open('abroj_contracting/static/fonts/Cairo.ttf', 'rb') as font:
+            data = base64.b64encode(font.read()).decode()
+        rules.append("@font-face {font-family:Cairo;src:url(data:font/truetype;base64,%s) format('truetype');} " % data)
+        rules.append('* {font-family:Cairo !important;}')
         return Markup(''.join(rules))
 
 
@@ -78,7 +73,7 @@ class Project(models.Model):
     contract_payment_schedule = fields.Text('Payment milestones / مراحل الدفع')
 
     def contract_clauses(self):
-        return self.env['abroj.contracting.clause'].search([('kind', '=', 'client')])
+        return self.clause_line_ids.sorted(lambda line: (line.sequence, line.id))
 
     def action_print_contract(self):
         return self.env.ref('abroj_contracting.report_agreement').report_action(self)
@@ -102,7 +97,7 @@ class Subcontractor(models.Model):
     penalties = fields.Text('Penalties / الغرامات')
 
     def contract_clauses(self):
-        return self.env['abroj.contracting.clause'].search([('kind', '=', 'subcontractor')])
+        return self.clause_line_ids.sorted(lambda line: (line.sequence, line.id))
 
     def action_print_contract(self):
         return self.env.ref('abroj_contracting.report_subcontract').report_action(self)
@@ -208,3 +203,11 @@ class ContractReport(models.Model):
         if self.report_name in ('abroj_contracting.agreement', 'abroj_contracting.subcontract', 'abroj_contracting.voucher'):
             return self.env.ref('abroj_contracting.pdf_document_layout')
         return super()._get_layout()
+
+class CompanyReportLogo(models.Model):
+    _inherit = 'res.company'
+    contracting_white_logo = fields.Binary('الشعار الأبيض للعقود', attachment=True, help='ارفع شعار الشركة الأبيض ليظهر على شريط العقود الكحلي.')
+
+    def contract_report_name(self, record, language):
+        """Split authored bilingual names while preserving single-language names."""
+        return report_text(record, 'name', language) or record.name

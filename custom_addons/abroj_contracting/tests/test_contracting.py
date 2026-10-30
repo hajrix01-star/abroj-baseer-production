@@ -333,8 +333,8 @@ class AbrojContractingCase(TransactionCase):
         for report, record, text in [
             ('agreement', self.project, 'Client contract'),
             ('subcontract', self.sub, 'Subcontract'),
-            ('voucher', self.voucher(), 'voucher'),
-            ('voucher', self.voucher(kind='receipt', subcontractor_id=False), 'voucher'),
+            ('voucher', self.voucher(), 'VOUCHER'),
+            ('voucher', self.voucher(kind='receipt', subcontractor_id=False), 'VOUCHER'),
         ]:
             name = 'abroj_contracting.' + report
             html, _ = self.env['ir.actions.report']._render_qweb_html(name, record.ids)
@@ -434,3 +434,71 @@ class AbrojContractingCase(TransactionCase):
         earlier_draft.action_issue()
         self.assertEqual(earlier_draft.previous_vouchers(), later_draft)
         self.assertFalse(later_draft.previous_vouchers())
+
+    def test_clause_default_copy_edit_reload(self):
+        template = self.env['abroj.contract.clause.template'].create({
+            'title_ar': 'بند تجريبي', 'title_en': 'Test clause',
+            'body_ar': 'نص تجريبي', 'body_en': 'Original body', 'contract_type': 'both',
+        })
+        project = self.env['project.project'].create({'name': 'Clause copy', 'company_id': self.env.company.id})
+        sub = self.env['abroj.contracting.subcontractor'].create({'project_id': project.id, 'partner_id': self.partner.id})
+        for record in (project, sub):
+            template.body_en = 'Original body'
+            line = record.clause_line_ids.filtered(lambda l: l.title_en == 'Test clause')
+            self.assertEqual(len(line), 1)
+            line.write({'body_en': 'Edited per contract', 'sequence': 1})
+            self.assertEqual(record.contract_clauses()[0], line)
+            report = 'agreement' if record._name == 'project.project' else 'subcontract'
+            html, _ = self.env['ir.actions.report']._render_qweb_html('abroj_contracting.' + report, record.ids)
+            self.assertIn(b'Edited per contract', html)
+            self.assertEqual(template.body_en, 'Original body')
+            template.body_en = 'Updated default'
+            self.assertEqual(line.body_en, 'Edited per contract')
+            line.unlink()
+            record.action_reload_default_clauses()
+            self.assertEqual(record.clause_line_ids.filtered(lambda l: l.title_en == 'Test clause').body_en, 'Updated default')
+        explicit = self.env['project.project'].create({'name': 'Empty clauses', 'clause_line_ids': []})
+        self.assertFalse(explicit.clause_line_ids)
+
+    def test_voucher_amount_words(self):
+        self.project.company_id.currency_id = self.env.ref('base.SAR')
+        voucher = self.voucher(amount=8000.25)
+        self.assertIn('Eight Thousand', voucher.amount_in_words('en'))
+        self.assertIn('ثمانية', voucher.amount_in_words('ar'))
+        self.assertIn('خمس', voucher.amount_in_words('ar'))
+        self.assertNotRegex(voucher.amount_in_words('ar'), '[A-Za-z]')
+        self.assertIn('Twenty-Five', voucher.amount_in_words('en'))
+
+    def test_clause_filtering_and_migration(self):
+        templates = self.env['abroj.contract.clause.template']
+        values = {'title_ar': 'عنوان', 'title_en': 'Title', 'body_ar': 'النص', 'body_en': 'Body'}
+        client = templates.create(dict(values, contract_type='client'))
+        sub = templates.create(dict(values, contract_type='subcontract'))
+        inactive = templates.create(dict(values, active=False))
+        optional = templates.create(dict(values, is_default=False))
+        for model, included, excluded in [('project.project', client, sub), ('abroj.contracting.subcontractor', sub, client)]:
+            # Give each template a distinct body to verify the selection.
+            included.body_en = 'Included'
+            excluded.body_en = 'Excluded'
+            inactive.body_en = 'Inactive'
+            optional.body_en = 'Optional'
+            bodies = [command[2]['body_en'] for command in self.env[model]._default_clause_commands()]
+            self.assertIn('Included', bodies)
+            for body in ('Excluded', 'Inactive', 'Optional'):
+                self.assertNotIn(body, bodies)
+        legacy = self.env['abroj.contracting.clause'].create({
+            'name': 'Legacy / قديم', 'kind': 'client', 'text_ar': 'نص مخصص',
+            'text_en': 'Custom authored legacy body', 'sequence': 123, 'active': False,
+        })
+        templates.migrate_defaults()
+        migrated = templates.with_context(active_test=False).search([('legacy_id', '=', legacy.id)])
+        self.assertEqual(len(migrated), 1)
+        self.assertEqual(migrated.title_ar, 'قديم')
+        self.assertEqual(migrated.body_en, legacy.text_en)
+        self.assertEqual(migrated.sequence, 123)
+        self.assertFalse(migrated.active)
+        templates.migrate_defaults()
+        self.assertEqual(templates.with_context(active_test=False).search_count([('legacy_id', '=', legacy.id)]), 1)
+        migrated.unlink()
+        templates.migrate_defaults()
+        self.assertFalse(templates.with_context(active_test=False).search([('legacy_id', '=', legacy.id)]))

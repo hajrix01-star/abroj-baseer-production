@@ -18,6 +18,7 @@ const translations = {
   "none": {"ar": "لا يوجد", "en": "None"},
   "confirm": {"ar": "تأكيد", "en": "Confirm"},
   "cancel": {"ar": "إلغاء", "en": "Cancel"},
+  "allProjects": {"ar": "كل المشاريع", "en": "All projects"},
   "toggleProjects": {"ar": "توسيع أو طي المشاريع", "en": "Expand or collapse projects"},
   "archive": {"ar": "أرشيف", "en": "Archive"},
   "activeProjects": {"ar": "المشاريع النشطة", "en": "Active projects"},

@@ -1,28 +1,28 @@
 let drawerExpanded=false, drawerAllProjects=[];
-try { drawerExpanded=sessionStorage.getItem('abroj.drawerProjectsExpanded')==='true'; } catch (_) {}
 async function openDrawer(){
+    drawerExpanded=!!currentProject;
     document.getElementById('overlay').hidden=false;
     const d=document.getElementById('drawer');d.hidden=false;
-    d.innerHTML=`<div class="drawer-head"><img src="/abroj_project_dashboard/static/pwa/logo-white.png" alt="Abroj"></div><div class="drawer-content"><button onclick="closeDrawer();goMyDay()">${t("myDay")}</button><div class="drawer-project-heading"><button class="drawer-project-link" onclick="closeDrawer();projectsList()"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>${t("s50")}</button><button class="drawer-project-toggle" aria-label="${t('toggleProjects')}" aria-expanded="${drawerExpanded}" aria-controls="drawer-project-panel" onclick="toggleDrawerProjects()"><span>${currentProject?esc(currentProject.name):''}</span><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></button></div><div id="drawer-project-panel" class="drawer-project-panel ${drawerExpanded?'expanded':''}" ${drawerExpanded?'':'inert'}><div class="drawer-project-inner"><div id="drawer-project-search"></div><div id="drawer-projects"></div></div></div>${[['overview',t("s62")],['tracking',t("s45")],['finance',t("s42")],['timeline',t("s28")],['delayed',t("s44")]].map(([k,n])=>`<button onclick="closeDrawer();goDashboard('${k}')">${n}</button>`).join('')}</div>`;
+    d.innerHTML=`<div class="drawer-head"><img src="/abroj_project_dashboard/static/pwa/logo-white.png" alt="Abroj"></div><div class="drawer-content"><button onclick="closeDrawer();goMyDay()">${t("myDay")}</button><button class="drawer-project-toggle" aria-expanded="${drawerExpanded}" aria-controls="drawer-project-panel" onclick="toggleDrawerProjects()"><span class="drawer-project-title"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>${t("s50")}</span><svg class="drawer-chevron" aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></button><div id="drawer-project-panel" class="drawer-project-panel ${drawerExpanded?'expanded':''}" ${drawerExpanded?'':'inert'}><div class="drawer-project-inner"><div id="drawer-project-search"></div><div id="drawer-projects"></div><button class="drawer-all-projects" onclick="closeDrawer();projectsList()">${t('allProjects')}</button></div></div>${[['overview',t("s62")],['tracking',t("s45")],['finance',t("s42")],['timeline',t("s28")],['delayed',t("s44")]].map(([k,n])=>`<button onclick="closeDrawer();goDashboard('${k}')">${n}</button>`).join('')}</div>`;
     try { const result=await rpc('/abroj/app/data',{include_archived:true}); drawerAllProjects=result.projects; if(!d.hidden){document.getElementById('drawer-project-search').innerHTML=drawerAllProjects.length>6?`<input type="search" aria-label="${t('s17')}" placeholder="${t('s17')}" oninput="drawerProjects(this.value)">`:'';drawerProjects('')} } catch(e) { toast(e.message); }
 }
 function toggleDrawerProjects(force){
     drawerExpanded=typeof force==='boolean'?force:!drawerExpanded;
-    try { sessionStorage.setItem('abroj.drawerProjectsExpanded',String(drawerExpanded)); } catch (_) {}
     const panel=document.getElementById('drawer-project-panel');
     panel.classList.toggle('expanded',drawerExpanded);panel.toggleAttribute('inert',!drawerExpanded);
     document.querySelector('.drawer-project-toggle').setAttribute('aria-expanded',String(drawerExpanded));
 }
-function selectDrawerProject(id){toggleDrawerProjects(false);closeDrawer();detail(id)}
+function selectDrawerProject(id){closeDrawer();detail(id)}
 function drawerProjects(q){
     const matches=drawerAllProjects.filter(p=>p.name.toLocaleLowerCase().includes(q.toLocaleLowerCase()));
     const active=matches.filter(p=>!p.archived), archived=matches.filter(p=>p.archived);
-    const rows=ps=>ps.map(p=>`<div class="archive-row"><button onclick="selectDrawerProject(${p.id})">${esc(p.name)}</button>${p.archived&&p.can_close?`<button onclick="closeDrawer();projectStatusSheet(${p.id},false)">${t('reopenProject')}</button>`:''}</div>`).join('');
-    document.getElementById('drawer-projects').innerHTML=rows(active)+`<details class="drawer-archive"><summary>${t('archive')} (${number(archived.length)})</summary>${rows(archived)}</details>`;
+    const rows=ps=>ps.map(p=>`<div class="archive-row"><button class="drawer-project-row ${currentProject?.id===p.id?'selected':''}" ${currentProject?.id===p.id?'aria-current="page"':''} onclick="selectDrawerProject(${p.id})"><span title="${esc(p.name)}">${esc(p.name)}</span><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg></button></div>`).join('');
+    document.getElementById('drawer-projects').innerHTML=rows(active)+`<details class="drawer-archive" open><summary>${t('archive')} (${number(archived.length)})</summary>${rows(archived)}</details>`;
 }
 function closeDrawer(){document.getElementById('overlay').hidden=true;document.getElementById('drawer').hidden=true;document.querySelector('.sheet')?.remove()}
 async function projectsList(updateRoute=true){
     if(updateRoute){navigate('#/projects');return}
+    currentProject=null;
     app.innerHTML=`<div class="projects-header"><h2>${t('s50')}</h2>${data.can_create_project?`<button onclick="newProject()">+ ${t('newProject')}</button>`:''}</div><input type="search" aria-label="${t('s17')}" placeholder="${t('s17')}" oninput="renderProjectsList(this.value)"><div id="project-list"></div>`;
     try { const result=await rpc('/abroj/app/data',{include_archived:true}); drawerAllProjects=result.projects; if(document.getElementById('project-list')) renderProjectsList(document.querySelector('main input[type=search]')?.value||''); } catch(e){toast(e.message)}
 }
@@ -70,11 +70,11 @@ async function myDay(restore=false){
   } catch(e){app.innerHTML=`<div class="card error-state"><p>${esc(e.message||t('s83'))}</p><button onclick="myDay()">${lang==='ar'?'إعادة المحاولة':'Retry'}</button></div>`}
 }
 function openMyDayPhase(event,project,task){event.preventDefault();myDayScroll=window.scrollY;history.replaceState({myDay:true,scroll:myDayScroll},'', '#/my-day');history.pushState({fromMyDay:true},'', `#/project/${project}/phases?task=${task}`);route()}
-function goMyDay(){history.pushState({myDay:true},'', '#/my-day');updateBottomNav('my-day');myDay()}
+function goMyDay(){currentProject=null;history.pushState({myDay:true},'', '#/my-day');updateBottomNav('my-day');myDay()}
 function updateBottomNav(active){document.querySelectorAll('#bottom-nav button').forEach(button=>{const selected=button.dataset.route===active;button.classList.toggle('active',selected);if(selected)button.setAttribute('aria-current','page');else button.removeAttribute('aria-current')})}
 function navigate(hash){if(location.hash!==hash)history.pushState({},'',hash);route()}
 function goDashboard(section){navigate('#/dashboard/'+section)}
-function route(){if(!data)return;const hash=location.hash, match=hash.match(/^#\/project\/(\d+)\/phases\?task=(\d+)$/), dashboard=hash.match(/^#\/dashboard(?:\/(overview|tracking|finance|timeline|delayed))?$/);if(match){updateBottomNav(history.state?.fromMyDay?'my-day':'projects');detail(Number(match[1]),'phases',Number(match[2]),!!history.state?.fromMyDay)}else if(hash==='#/projects'){updateBottomNav('projects');projectsList(false)}else if(dashboard){tab=dashboard[1]||'overview';updateBottomNav('dashboard');render()}else{updateBottomNav('my-day');myDayScroll=history.state?.scroll||0;myDay(!!history.state?.myDay)}}
+function route(){if(!data)return;const hash=location.hash, match=hash.match(/^#\/project\/(\d+)\/phases\?task=(\d+)$/), dashboard=hash.match(/^#\/dashboard(?:\/(overview|tracking|finance|timeline|delayed))?$/);if(match){updateBottomNav(history.state?.fromMyDay?'my-day':'projects');detail(Number(match[1]),'phases',Number(match[2]),!!history.state?.fromMyDay)}else if(hash==='#/projects'){updateBottomNav('projects');projectsList(false)}else if(dashboard){currentProject=null;tab=dashboard[1]||'overview';updateBottomNav('dashboard');render()}else{currentProject=null;updateBottomNav('my-day');myDayScroll=history.state?.scroll||0;myDay(!!history.state?.myDay)}}
 window.addEventListener('popstate',route);
 window.addEventListener('hashchange',route);
 

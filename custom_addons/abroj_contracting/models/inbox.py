@@ -12,6 +12,43 @@ class Inbox(models.Model):
     _rec_name = 'filename'
     _order = 'id desc'
 
+    project_id = fields.Many2one(required=False)
+    company_id = fields.Many2one('res.company', related=False, compute='_compute_inbox_company', store=True)
+    project_note_ids = fields.One2many('abroj.contracting.project.note', 'inbox_id', string='ملاحظة المشروع', readonly=True)
+
+    @api.depends('project_id.company_id')
+    def _compute_inbox_company(self):
+        for item in self:
+            item.company_id = item.project_id.company_id if item.project_id else (item.company_id or self.env.company)
+
+    @api.constrains('project_id')
+    def _check_project_company(self):
+        super(Inbox, self.filtered('project_id'))._check_project_company()
+
+    def _ensure_project_note(self):
+        # Serialize repeated/concurrent assignment before checking the unique link.
+        for item in self.filtered('project_id').sorted('id'):
+            self.env.cr.execute('SELECT id FROM abroj_contracting_inbox WHERE id = %s FOR UPDATE', [item.id])
+            item.invalidate_recordset(['project_note_ids'])
+            if item.project_note_ids:
+                continue
+            mimetype = item.mimetype or ''
+            kind = next((kind for kind in ('audio', 'image', 'video') if mimetype.startswith(kind + '/')), 'text')
+            if mimetype == 'application/pdf':
+                kind = 'pdf'
+            self.env['abroj.contracting.project.note'].create({
+                'project_id': item.project_id.id, 'inbox_id': item.id,
+                'body': item.note, 'attachment': item.file, 'filename': item.filename,
+                'mimetype': item.mimetype, 'note_type': kind,
+                'author_id': item.create_uid.id, 'date': item.create_date,
+            })
+
+    def write(self, vals):
+        result = super().write(vals)
+        if 'project_id' in vals:
+            self._ensure_project_note()
+        return result
+
     file = fields.Binary('الملف', attachment=True)
     filename = fields.Char('اسم الملف', required=True)
     mimetype = fields.Char('نوع الملف')
@@ -30,6 +67,7 @@ class Inbox(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         records = super().create(vals_list)
+        records._ensure_project_note()
         params = self.env['ir.config_parameter'].sudo()
         url = params.get_param('abroj_contracting.agent_webhook_url')
         if not url:

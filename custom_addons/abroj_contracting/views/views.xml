@@ -1,11 +1,42 @@
 <?xml version='1.0' encoding='utf-8'?>
 <odoo>
+  <record id="project_note_list" model="ir.ui.view">
+    <field name="name">abroj.contracting.project.note.list</field>
+    <field name="model">abroj.contracting.project.note</field>
+    <field name="arch" type="xml">
+      <list string="الملاحظات">
+        <field name="project_id"/><field name="author_id"/><field name="date"/>
+        <field name="note_type"/><field name="body"/>
+        <field name="filename" column_invisible="True"/>
+        <field name="attachment" filename="filename"/>
+      </list>
+    </field>
+  </record>
+  <record id="project_note_form" model="ir.ui.view">
+    <field name="name">abroj.contracting.project.note.form</field>
+    <field name="model">abroj.contracting.project.note</field>
+    <field name="arch" type="xml">
+      <form string="ملاحظة المشروع">
+        <sheet><group>
+          <field name="project_id"/><field name="company_id"/>
+          <field name="author_id"/><field name="date"/><field name="note_type"/>
+          <field name="body"/><field name="attachment" filename="filename"/>
+          <field name="filename"/><field name="mimetype"/><field name="inbox_id" readonly="1"/>
+        </group></sheet>
+      </form>
+    </field>
+  </record>
   <record id="project_form" model="ir.ui.view">
     <field name="name">abroj.contracting.project.form</field>
     <field name="model">project.project</field>
     <field name="arch" type="xml">
       <form string="المشروع">
         <sheet>
+          <div class="oe_button_box" name="button_box">
+            <button name="action_project_notes" type="object" class="oe_stat_button" icon="fa-sticky-note">
+              <field name="project_note_count" widget="statinfo" string="الملاحظات"/>
+            </button>
+          </div>
           <group>
             <field name="name" string="اسم المشروع"/>
             <field name="partner_id" string="العميل / المالك"/>
@@ -30,6 +61,15 @@
             <field name="expected_profit"/>
           </group>
           <notebook>
+            <page string="الملاحظات" name="project_notes">
+              <field name="project_note_ids" context="{'default_project_id': id}">
+                <list editable="bottom">
+                  <field name="author_id"/><field name="date"/><field name="note_type"/>
+                  <field name="body"/><field name="filename" column_invisible="True"/>
+                  <field name="attachment" filename="filename"/><field name="mimetype" optional="hide"/>
+                </list>
+              </field>
+            </page>
             <page string="السجلات">
               <field name="inbox_ids" context="{'default_project_id': id}"/>
               <separator string="المصروفات"/>
@@ -55,6 +95,7 @@
             </page>
           </notebook>
         </sheet>
+        <chatter/>
       </form>
     </field>
   </record>

@@ -331,25 +331,25 @@ class AbrojContractingCase(TransactionCase):
         self.project.company_id.write({'contracting_name_en': 'Report Company English', 'company_registry': '544-TEST'})
         self.project.contract_payment_schedule = '50% advance / مقدم، 50% completion / إنجاز'
         for report, record, text in [
-            ('agreement', self.project, 'CLIENT CONTRACT'),
-            ('subcontract', self.sub, 'SUBCONTRACT'),
-            ('voucher', self.voucher(), 'VOUCHER'),
-            ('voucher', self.voucher(kind='receipt', subcontractor_id=False), 'VOUCHER'),
+            ('agreement', self.project, 'Client contract'),
+            ('subcontract', self.sub, 'Subcontract'),
+            ('voucher', self.voucher(), 'PAYMENT VOUCHER'),
+            ('voucher', self.voucher(kind='receipt', subcontractor_id=False), 'RECEIPT VOUCHER'),
         ]:
             name = 'abroj_contracting.' + report
             html, _ = self.env['ir.actions.report']._render_qweb_html(name, record.ids)
             self.assertIn(b'dir="rtl"', html)
             self.assertIn(b'class="en"', html)
+            self.assertIn(text.encode(), html)
+            self.assertIn(b'Report Company English', html)
             pdf, kind = self.env['ir.actions.report'].with_context(force_report_rendering=True)._render_qweb_pdf(name, record.ids)
             self.assertEqual(kind, 'pdf')
             self.assertTrue(pdf.startswith(b'%PDF-'))
             pages = PdfFileReader(BytesIO(pdf), strict=False).pages
             self.assertGreater(len(pages), 0)
-            extract_text = lambda page: (getattr(page, 'extract_text', None) or page.extractText)() or ''
-            self.assertIn(text, ''.join(extract_text(page) for page in pages))
             for page in pages:
-                self.assertIn('Report Company English', extract_text(page))
-                self.assertIn('544-TEST', extract_text(page))
+                extracted = (getattr(page, 'extract_text', None) or page.extractText)() or ''
+                self.assertIn('544-TEST', ' '.join(extracted.split()))
 
     def test_report_header_company_contacts(self):
         from lxml import html

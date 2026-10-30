@@ -92,8 +92,14 @@ class AbrojProjectDashboardCase(TransactionCase):
             self.skipTest('Node.js is required to execute the PWA formatter')
         source = (Path(__file__).resolve().parents[1] / 'static' / 'pwa' / 'js' / 'app.js').read_text(encoding='utf-8')
         formatter = next(line for line in source.splitlines() if line.startswith('const date='))
-        script = formatter + "\n" + """
-            for (const lang of ['ar', 'en']) {
+        number_formatter = next(line for line in source.splitlines() if line.startswith('const number='))
+        money_formatter = next(line for line in source.splitlines() if line.startswith('const money='))
+        locale_formatter = next(line for line in source.splitlines() if line.startswith('const locale='))
+        for path in (Path(__file__).resolve().parents[1] / 'static' / 'pwa' / 'js').glob('*.js'):
+            self.assertNotRegex(path.read_text(encoding='utf-8'), r'[٠-٩۰-۹]', path.name)
+        script = "let lang;\n" + locale_formatter + "\n" + number_formatter + "\n" + money_formatter + "\n" + formatter + "\n" + """
+            for (lang of ['ar', 'en']) {
+                if (/[٠-٩۰-۹]/.test(number(1234.5) + money(1234))) throw new Error('Non-Latin digits');
                 if (date('2026-10-30') !== '30/10/2026' ||
                     date('2024-02-29') !== '29/02/2024' ||
                     date('2026-02-29') !== '—' || date('') !== '—') {

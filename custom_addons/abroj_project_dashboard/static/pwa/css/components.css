@@ -25,8 +25,8 @@ button.active{background:var(--orange)}
 .bottom-nav button.active{color:#fff;background:var(--orange)}.bottom-nav button.active svg{stroke-width:2.5}@media(max-width:767px){.kpi-grid .card:last-child{grid-column:span 2}}@media(min-width:768px){.kpi-grid .card:nth-last-child(2){grid-column:span 2}}
 
 /* The drawer's intrinsic width includes its project tree, up to the viewport cap. */
-.drawer{inset-inline-start:0;inset-inline-end:auto;width:max-content;max-width:85vw}
-.drawer-content{width:max-content;max-width:100%;box-sizing:border-box}
+.drawer{inset-inline-start:0;inset-inline-end:auto;width:max-content;min-width:62vw;max-width:85vw}
+.drawer-content{width:max-content;min-width:100%;max-width:100%;box-sizing:border-box;padding:14px 24px}
 .drawer button,.drawer-archive summary{white-space:nowrap}
 .drawer .drawer-project-toggle{width:100%;font-weight:700}
 .drawer-project-title{display:flex;align-items:center;gap:8px}
@@ -40,3 +40,12 @@ button.active{background:var(--orange)}
 html[dir=rtl] .drawer-project-row svg{transform:scaleX(-1)}
 .drawer .drawer-project-row.selected{font-weight:700}
 .drawer .drawer-all-projects{font-weight:600}
+
+/* Keep both navigation headers aligned, including the safe area. */
+header{height:var(--header-height);min-height:var(--header-height);padding-bottom:14px}
+header .brand img,.drawer-head img{width:var(--logo-width);height:var(--logo-height);max-height:none;object-fit:contain}
+.drawer-head{height:var(--header-height);display:flex;align-items:center;padding: max(14px, env(safe-area-inset-top)) 20px 14px;line-height:0}
+.overlay{background:rgba(8,13,20,0.8)}
+
+.drawer .drawer-project-inner .archive-row button,.drawer .drawer-archive summary{font-size:inherit;padding:13px;min-height:44px}
+.drawer-head{margin:0;border:0}

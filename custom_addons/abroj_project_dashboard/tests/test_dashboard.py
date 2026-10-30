@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 from datetime import timedelta
 from urllib.parse import unquote
 
@@ -29,6 +30,13 @@ class AbrojProjectDashboardCase(TransactionCase):
 
     def ids(self, filters):
         return [p['id'] for p in self.env['project.project'].get_abroj_dashboard_data(filters)['projects']]
+
+    def test_pwa_has_no_native_dialogs(self):
+        js_dir = Path(__file__).resolve().parents[1] / 'static' / 'pwa' / 'js'
+        for path in js_dir.glob('*.js'):
+            source = path.read_text(encoding='utf-8')
+            self.assertNotIn('alert(', source, path.name)
+            self.assertNotIn('confirm(', source, path.name)
 
     def test_my_day_grouping_dates_and_permissions(self):
         public = self.env['project.project'].create({'name': 'My Day public', 'company_id': self.env.company.id, 'privacy_visibility': 'employees'})

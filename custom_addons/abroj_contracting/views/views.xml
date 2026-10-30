@@ -33,7 +33,7 @@
       <form string="المشروع">
         <sheet>
           <div class="oe_button_box" name="button_box">
-            <button name="action_project_notes" type="object" class="oe_stat_button" icon="fa-sticky-note">
+            <button name="action_project_notes" type="object" class="oe_stat_button" icon="fa-sticky-note" help="عرض السجل أو اعتماد العملية حسب حالتها؛ راجع البيانات والمرفقات قبل التنفيذ.">
               <field name="project_note_count" widget="statinfo" string="الملاحظات"/>
             </button>
           </div>
@@ -53,7 +53,7 @@
             <field name="estimated_cost"/>
           </group>
           <group string="ملخص المشروع" col="4">
-            <field name="total_costs"/>
+            <field name="total_costs"/><field name="materials_purchase_total"/>
             <field name="total_paid"/>
             <field name="total_received"/>
             <field name="remaining"/>
@@ -109,7 +109,7 @@
         <field name="company_id"/>
         <field name="currency_id" column_invisible="True"/>
         <field name="contract_value"/>
-        <field name="total_costs"/>
+        <field name="total_costs"/><field name="materials_purchase_total"/>
         <field name="total_paid"/>
         <field name="total_received"/>
         <field name="remaining"/>
@@ -123,8 +123,8 @@
     <field name="arch" type="xml">
       <form string="السندات">
         <header>
-          <button name="action_issue" type="object" string="إصدار واعتماد" class="btn-primary" invisible="state != 'draft'"/>
-          <button name="action_cancel" type="object" string="إلغاء" invisible="state == 'cancelled'"/>
+          <button name="action_issue" type="object" string="إصدار واعتماد" class="btn-primary" invisible="state != 'draft'" help="عرض السجل أو اعتماد العملية حسب حالتها؛ راجع البيانات والمرفقات قبل التنفيذ."/>
+          <button name="action_cancel" type="object" string="إلغاء" invisible="state == 'cancelled'" help="عرض السجل أو اعتماد العملية حسب حالتها؛ راجع البيانات والمرفقات قبل التنفيذ."/>
           <field name="state" widget="statusbar"/>
         </header>
         <sheet>
@@ -175,7 +175,7 @@
     <field name="name">abroj.contracting.subcontractor.form</field>
     <field name="model">abroj.contracting.subcontractor</field>
     <field name="arch" type="xml">
-      <form string="مقاولو الباطن">
+      <form string="مقاولو الباطن"><header><button name="action_settlement" type="object" string="تسوية نهاية المشروع" help="طباعة قيمة العقد والمواد والمدفوع والمستحق والضمان للمراجعة دون إنشاء دفعة."/></header>
         <sheet>
           <group>
             <field name="project_id"/>
@@ -183,7 +183,7 @@
             <field name="currency_id" invisible="1"/>
             <field name="partner_id"/>
             <field name="scope"/>
-            <field name="contract_type"/>
+            <field name="contract_type"/><field name="vat_registered"/><field name="retention_percent"/><field name="materials_total"/>
             <field name="payment_terms"/>
             <field name="duration_days"/>
             <field name="agreed_amount"/>
@@ -192,6 +192,8 @@
             <field name="invoiced"/>
             <field name="remaining"/>
           </group>
+          <separator string="فواتير العقد والمواد"/>
+          <field name="invoice_ids" context="{'default_project_id': project_id, 'default_subcontractor_id': id}"/>
         </sheet>
       </form>
     </field>
@@ -205,7 +207,7 @@
         <field name="company_id"/>
         <field name="currency_id" column_invisible="True"/>
         <field name="partner_id"/>
-        <field name="contract_type"/>
+        <field name="contract_type"/><field name="vat_registered"/><field name="retention_percent"/><field name="materials_total"/>
         <field name="duration_days"/>
         <field name="agreed_amount"/>
         <field name="paid"/>
@@ -221,7 +223,7 @@
     <field name="arch" type="xml">
       <form string="فواتير مقاولي الباطن">
         <header>
-          <button name="action_confirm" type="object" string="تأكيد" class="btn-primary" invisible="state != 'draft'"/>
+          <button name="action_confirm" type="object" string="تأكيد" class="btn-primary" invisible="state != 'draft'" help="عرض السجل أو اعتماد العملية حسب حالتها؛ راجع البيانات والمرفقات قبل التنفيذ."/>
           <field name="state" widget="statusbar"/>
         </header>
         <sheet>
@@ -230,7 +232,7 @@
             <field name="company_id"/>
             <field name="currency_id" invisible="1"/>
             <field name="subcontractor_id" domain="[('project_id', '=', project_id)]" readonly="state != 'draft'"/>
-            <field name="number" readonly="state != 'draft'"/>
+            <field name="invoice_kind" readonly="state != 'draft'"/><field name="buyer_vat" invisible="invoice_kind != 'materials_company'" readonly="state != 'draft'"/><field name="number" readonly="state != 'draft'"/>
             <field name="date" readonly="state != 'draft'"/>
             <field name="amount" readonly="state != 'draft'"/>
             <field name="attachment_ids" widget="many2many_binary" readonly="state != 'draft'"/>
@@ -262,7 +264,7 @@
     <field name="arch" type="xml">
       <form string="المصروفات">
         <header>
-          <button name="action_confirm" type="object" string="تأكيد" class="btn-primary" invisible="state != 'draft'"/>
+          <button name="action_confirm" type="object" string="تأكيد" class="btn-primary" invisible="state != 'draft'" help="عرض السجل أو اعتماد العملية حسب حالتها؛ راجع البيانات والمرفقات قبل التنفيذ."/>
           <field name="state" widget="statusbar"/>
         </header>
         <sheet>

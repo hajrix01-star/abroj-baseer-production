@@ -28,12 +28,12 @@ class AbrojContractingCase(TransactionCase):
         self.voucher().action_issue()
         self.voucher(kind='receipt', amount=200).action_issue()
         invoice = self.env['abroj.contracting.invoice'].create({'project_id': self.project.id, 'subcontractor_id': self.sub.id, 'number': 'INV1', 'amount': 3000})
-        self.assertEqual(self.project.total_costs, 0)
+        self.assertEqual(self.project.total_costs, 4000)
         invoice.action_confirm()
         self.assertEqual(self.sub.remaining, 3200)
         self.assertEqual(self.sub.invoiced, 3000)
-        self.assertEqual(self.project.total_costs, 3000)
-        self.assertEqual(self.project.profit, 7000)
+        self.assertEqual(self.project.total_costs, 4000)
+        self.assertEqual(self.project.profit, 6000)
         self.assertEqual(self.project.expected_profit, 4000)
         self.assertEqual(self.project.remaining, 9800)
         self.assertEqual(self.project.cash_balance, -800)
@@ -88,8 +88,8 @@ class AbrojContractingCase(TransactionCase):
         self.assertEqual(self.project.duration_days, 30)
         c = self.env['abroj.contracting.cost'].create({'project_id': self.project.id, 'name': 'مواد', 'amount': 500})
         c.action_confirm()
-        self.assertEqual(self.project.total_costs, 500)
-        self.assertEqual(self.project.profit, 9500)
+        self.assertEqual(self.project.total_costs, 4500)
+        self.assertEqual(self.project.profit, 5500)
 
     def test_mismatched_subcontractor(self):
         other = self.env['project.project'].create({'name': 'مشروع آخر', 'company_id': self.env.company.id})
@@ -181,3 +181,47 @@ class AbrojContractingCase(TransactionCase):
         self.assertEqual(inbox.project_note_ids.body, 'زيارة الموقع')
         inbox.write({'project_id': self.project.id})
         self.assertEqual(len(inbox.project_note_ids), 1)
+
+    def material_invoice(self, amount=80000, **extra):
+        vals = dict(project_id=self.project.id, subcontractor_id=self.sub.id,
+                    number='MAT', amount=amount, invoice_kind='materials_company',
+                    buyer_vat=self.env.company.vat)
+        vals.update(extra)
+        return self.env['abroj.contracting.invoice'].create(vals)
+
+    def test_materials_settlement(self):
+        self.env.company.vat = 'TEST-VAT'
+        self.sub.agreed_amount = 100000
+        invoice = self.material_invoice()
+        self.assertEqual(self.sub.materials_total, 0)
+        invoice.action_confirm()
+        self.assertEqual(self.sub.materials_total, 80000)
+        self.assertEqual(self.project.materials_purchase_total, 80000)
+        self.assertEqual(self.sub.remaining, 20000)
+        self.assertEqual(self.project.total_costs, 100000)
+        self.voucher(amount=20000).action_issue()
+        self.assertEqual(self.sub.remaining, 0)
+        self.assertEqual(self.project.total_costs, 100000)
+        with self.assertRaises(ValidationError), self.cr.savepoint():
+            self.material_invoice(amount=20001).action_confirm()
+        with self.assertRaises(ValidationError), self.cr.savepoint():
+            self.sub.agreed_amount = 79999
+        with self.assertRaises(UserError):
+            invoice.write({'amount': 1})
+        action = self.sub.with_context(discard_logo_check=True).action_settlement()
+        self.assertEqual(action['report_name'], 'abroj_contracting.settlement')
+        html, _ = self.env['ir.actions.report']._render_qweb_html(action['report_name'], self.sub.ids)
+        self.assertIn(b'80000', html.replace(b',', b''))
+
+    def test_supporting_materials_and_vat(self):
+        with self.assertRaises(ValidationError), self.cr.savepoint():
+            self.material_invoice(amount=100, buyer_vat='wrong').action_confirm()
+        attachment = self.env['ir.attachment'].create({'name': 'material.pdf', 'datas': 'YWJj'})
+        invoice = self.material_invoice(amount=90000, invoice_kind='materials_subcontractor',
+                                        attachment_ids=[Command.set(attachment.ids)])
+        invoice.action_confirm()
+        self.assertEqual(self.sub.materials_total, 0)
+        self.assertEqual(self.sub.remaining, 4000)
+        self.assertEqual(self.project.total_costs, 4000)
+        with self.assertRaises(ValidationError), self.cr.savepoint():
+            self.sub.retention_percent = 101

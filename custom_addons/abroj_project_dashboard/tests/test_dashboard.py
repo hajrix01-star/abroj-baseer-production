@@ -474,9 +474,24 @@ class AbrojDashboardHttpCase(HttpCase):
         bill = self.env['account.move'].browse(result['id'])
         self.assertEqual((bill.move_type, bill.state, result['extraction']), ('in_invoice', 'draft', 'pending'))
         self.assertIn(str(project.id), bill.ref)
-        self.assertEqual(self.env['ir.attachment'].search([('res_model', '=', 'account.move'), ('res_id', '=', bill.id)]).raw, b'invoice bytes')
+        invoice_attachment = self.env['ir.attachment'].search([('res_model', '=', 'account.move'), ('res_id', '=', bill.id)])
+        self.assertEqual(invoice_attachment.raw, b'invoice bytes')
+        self.assertTrue(invoice_attachment.abroj_is_invoice)
         inbox = self.env['abroj.contracting.inbox'].search([('abroj_invoice_bill_id', '=', bill.id)])
         self.assertEqual((inbox.project_id.id, inbox.state), (project.id, 'pending'))
+        inbox_attachment = self.env['ir.attachment'].search([('res_model', '=', inbox._name), ('res_id', '=', inbox.id), ('res_field', '=', 'file')])
+        self.assertTrue(inbox_attachment)
+        self.assertFalse(inbox.project_note_ids)
+        doc = self.url_open('/abroj/app/upload', data={'csrf_token': token, 'model': 'project.project', 'record_id': str(project.id)}, files={'file': ('site.jpg', b'photo', 'image/jpeg')}).json()['id']
+        flagged = self.env['ir.attachment'].create({'name': 'flagged.pdf', 'datas': 'eA==', 'res_model': 'project.project', 'res_id': project.id, 'abroj_is_invoice': True})
+        legacy = self.env['ir.attachment'].create({'name': 'invoice.pdf', 'raw': b'invoice bytes', 'res_model': 'project.project', 'res_id': project.id})
+        task = self.env['project.task'].create({'name': 'Documentation task', 'project_id': project.id})
+        task_doc = self.env['ir.attachment'].create({'name': 'invoice.pdf', 'raw': b'invoice bytes', 'res_model': 'project.task', 'res_id': task.id})
+        result = self.rpc('/abroj/app/library', {'project_id': project.id})
+        ids = {item['id'] for item in result}
+        self.assertIn(doc, ids)
+        self.assertIn(task_doc.id, ids)
+        self.assertTrue(ids.isdisjoint(set(invoice_attachment.ids + inbox_attachment.ids + flagged.ids + legacy.ids)))
 
     def test_project_library_includes_task_files(self):
         project = self.env['project.project'].create({'name': 'Library', 'company_id': self.env.company.id})

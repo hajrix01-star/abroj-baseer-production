@@ -576,7 +576,7 @@ const translations = {
     "en": "Contractor invoice"
   },
   "s138": {
-    "ar": "مشاريع أبروج",
+    "ar": "مشاريع أبرج",
     "en": "Abroj Projects"
   },
   "s139": {
@@ -624,7 +624,7 @@ const translations = {
     "en": "Project overview"
   },
   "s150": {
-    "ar": "مواد باسم أبروج",
+    "ar": "مواد باسم أبرج",
     "en": "Materials in Abroj's name"
   },
   "s151": {

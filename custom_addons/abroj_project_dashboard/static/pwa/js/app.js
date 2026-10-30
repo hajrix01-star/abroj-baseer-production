@@ -7,7 +7,7 @@ if (!['ar','en'].includes(lang)) lang=userLang==='ar'?'ar':'en';
 const t=key=>translations[key]?.[lang] ?? key;
 const locale=()=>lang==='ar'?'ar-SA':'en-US';
 const number=n=>new Intl.NumberFormat(locale(),{maximumFractionDigits:1}).format(Number(n)||0);
-const date=value=>{if(!value)return '—'; const d=new Date(value+'T00:00:00Z');return Number.isNaN(d.valueOf())?esc(value):new Intl.DateTimeFormat(locale(),{dateStyle:'medium',timeZone:'UTC'}).format(d)};
+const date=value=>{if(!value||!/^\d{4}-\d{2}-\d{2}$/.test(value))return '—';const d=new Date(value+'T00:00:00Z');if(Number.isNaN(d.valueOf())||d.toISOString().slice(0,10)!==value)return '—';return new Intl.DateTimeFormat('en-GB',{calendar:'gregory',numberingSystem:'latn',day:'2-digit',month:'2-digit',year:'numeric',timeZone:'UTC'}).format(d)};
 document.documentElement.lang=lang; document.documentElement.dir=lang==='ar'?'rtl':'ltr';
 document.title=t('s138');
 document.getElementById('header-title').textContent=t('s138');

@@ -1,4 +1,6 @@
 import json
+import shutil
+import subprocess
 from pathlib import Path
 from datetime import timedelta
 from urllib.parse import unquote
@@ -83,6 +85,23 @@ class AbrojProjectDashboardCase(TransactionCase):
             source = path.read_text(encoding='utf-8')
             self.assertNotIn('alert(', source, path.name)
             self.assertNotIn('confirm(', source, path.name)
+
+    def test_pwa_gregorian_date_formatter(self):
+        node = shutil.which('node')
+        if not node:
+            self.skipTest('Node.js is required to execute the PWA formatter')
+        source = (Path(__file__).resolve().parents[1] / 'static' / 'pwa' / 'js' / 'app.js').read_text(encoding='utf-8')
+        formatter = next(line for line in source.splitlines() if line.startswith('const date='))
+        script = formatter + "\n" + """
+            for (const lang of ['ar', 'en']) {
+                if (date('2026-10-30') !== '30/10/2026' ||
+                    date('2024-02-29') !== '29/02/2024' ||
+                    date('2026-02-29') !== '—' || date('') !== '—') {
+                    throw new Error('Unexpected date format for ' + lang);
+                }
+            }
+        """
+        subprocess.run([node, '-e', script], check=True, capture_output=True, text=True)
 
     def test_voice_gesture_translations(self):
         source = (Path(__file__).resolve().parents[1] / 'static' / 'pwa' / 'js' / 'i18n.js').read_text(encoding='utf-8')

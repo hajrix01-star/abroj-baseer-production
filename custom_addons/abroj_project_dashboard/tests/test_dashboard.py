@@ -30,6 +30,17 @@ class AbrojProjectDashboardCase(TransactionCase):
     def ids(self, filters):
         return [p['id'] for p in self.env['project.project'].get_abroj_dashboard_data(filters)['projects']]
 
+    def test_dashboard_labels_follow_language(self):
+        from odoo.addons.abroj_project_dashboard.models.dashboard import STATUS, TYPES
+        self.project.last_update_status = 'on_track'
+        project = self.project.with_context(lang='en_US')
+        detail = project._abroj_data()
+        self.assertEqual(detail['type_label'], 'Residential / villas')
+        self.assertEqual(detail['status_label'], 'On track')
+        self.assertEqual(next(t['name'] for t in project.get_abroj_dashboard_data()['types'] if t['id'] == 'residential'), 'Residential / villas')
+        self.assertEqual(dict(TYPES)['residential'], 'سكني / فلل')
+        self.assertEqual(STATUS['on_track'], 'على المسار')
+
     def test_duration_inclusive_and_recompute(self):
         task = self.env['project.task'].create({'name': 'Phase', 'project_id': self.project.id, 'x_abroj_date_start': '2026-11-01', 'x_abroj_duration_days': 3})
         self.assertEqual(fields.Date.to_date(task.date_deadline), fields.Date.to_date('2026-11-03'))
@@ -187,11 +198,43 @@ class AbrojDashboardHttpCase(HttpCase):
         self.assertIn('/web/login', response.headers['Location'])
         self.assertIn('/abroj/app', unquote(response.headers['Location']))
 
+    def test_pwa_cache_policy(self):
+        response = self.url_open('/abroj/app/sw.js')
+        self.assertIn('no-store', response.headers['Cache-Control'])
+        self.assertIn('/web/', response.text)
+        self.assertIn("request.mode === 'navigate'", response.text)
+        self.assertIn("url.pathname !== '/abroj/app'", response.text)
+        self.assertIn('ASSETS.includes(url.pathname)', response.text)
+        self.assertIn("request.method !== 'GET'", response.text)
+        self.assertIn("includes('json')", response.text)
+        self.assertIn('self.skipWaiting()', response.text)
+        self.assertIn('self.clients.claim()', response.text)
+        self.assertIn('caches.delete(key)', response.text)
+        self.assertIn('fetch(request).catch(', response.text)
+        self.authenticate('admin', 'admin')
+        self.assertIn('no-store', self.url_open('/abroj/app').headers['Cache-Control'])
+        self.assertIn('no-cache', self.url_open('/abroj/app/manifest.webmanifest').headers['Cache-Control'])
+
+    def test_unauthenticated_json_session_expired(self):
+        response = self.url_open('/abroj/app/data', data=json.dumps({'jsonrpc': '2.0', 'method': 'call', 'params': {}, 'id': 1}), headers={'Content-Type': 'application/json'})
+        self.assertEqual(response.json()['error']['code'], 100)
+
     def test_dashboard_json(self):
         self.authenticate('admin', 'admin')
         result = self.rpc('/abroj/app/data', {'filters': {'search': 'no such project'}})
         self.assertEqual(result['projects'], [])
         self.assertTrue(result['types'])
+
+    def test_language_preference(self):
+        self.authenticate('admin', 'admin')
+        self.assertTrue(self.rpc('/abroj/app/language', {'lang': 'en'})['ok'])
+        self.env.user.invalidate_recordset(['lang'])
+        self.assertEqual(self.env.ref('base.user_admin').lang, 'en_US')
+        self.assertIn('name="user-lang" content="en"', self.url_open('/abroj/app').text)
+
+    def test_language_rejects_unknown_code(self):
+        self.authenticate('admin', 'admin')
+        self.assertFalse(self.rpc('/abroj/app/language', {'lang': 'invalid'})['ok'])
 
     def test_detail_json(self):
         project = self.env['project.project'].create({'name': 'HTTP detail', 'company_id': self.env.company.id})

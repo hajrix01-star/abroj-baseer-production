@@ -5,6 +5,8 @@ from odoo.exceptions import AccessError, ValidationError
 
 TYPES = [('residential', 'سكني / فلل'), ('commercial', 'تجاري'), ('renovation', 'ترميم'), ('infrastructure', 'بنية تحتية'), ('other', 'أخرى')]
 STATUS = {'on_track': 'على المسار', 'at_risk': 'معرّض للخطر', 'off_track': 'متعثر', 'on_hold': 'متوقف', 'done': 'مكتمل', 'to_define': 'غير محدد'}
+TYPES_EN = dict(residential='Residential / villas', commercial='Commercial', renovation='Renovation', infrastructure='Infrastructure', other='Other')
+STATUS_EN = dict(on_track='On track', at_risk='At risk', off_track='Off track', on_hold='On hold', done='Completed', to_define='Undefined')
 
 
 class ProjectTask(models.Model):
@@ -160,7 +162,7 @@ class Project(models.Model):
         last_activity = max([self.write_date] + tasks.mapped('write_date')) if tasks else self.write_date
         stalled = not completed and (self.last_update_status in ('off_track', 'on_hold') or bool(last_activity and last_activity.date() < today - timedelta(days=stall_days)))
         phases = [{'id': t.id, 'name': t.name, 'start': str(t.x_abroj_date_start or (t.date_assign.date() if t.date_assign else '')), 'end': str(t.date_deadline.date() if t.date_deadline else ''), 'duration': t.x_abroj_duration_days, 'done': t in done, 'state': t.state, 'progress': t.x_abroj_progress, 'can_write': t.has_access('write'), 'delayed': t in delayed_tasks, 'assignee': ', '.join(t.user_ids.mapped('name'))} for t in tasks]
-        return {'id': self.id, 'can_write': self.has_access('write'), 'can_create_task': self.env['project.task'].has_access('create'), 'can_edit_budget': self.env.user.has_group('project.group_project_manager') and self.has_access('write'), 'name': self.name, 'type': self.abroj_type, 'type_label': dict(TYPES).get(self.abroj_type, ''), 'status': self.last_update_status, 'status_label': STATUS.get(self.last_update_status, ''), 'client': self.partner_id.name or '—', 'manager': self.user_id.name or '—', 'start': str(self.date_start or ''), 'end': str(self.date or ''), 'progress': round(progress, 1), 'budget': self.abroj_budget, 'actual': actual, 'over': max(actual - self.abroj_budget, 0), 'over_categories': sum(c['actual'] > c['budget'] for c in categories), 'contract': self.abroj_contract_value or (self.contract_value if 'contract_value' in self._fields else 0), 'received': received, 'paid': paid, 'liquidity': received - paid, 'categories': categories, 'contracts': contracts, 'phases': phases, 'delayed': delayed, 'stalled': stalled, 'completed': completed, 'vouchers': [{'name': v.name, 'kind': v.kind, 'partner': v.partner_id.name, 'amount': v.amount, 'date': str(v.date)} for v in vouchers]}
+        return {'id': self.id, 'can_write': self.has_access('write'), 'can_create_task': self.env['project.task'].has_access('create'), 'can_edit_budget': self.env.user.has_group('project.group_project_manager') and self.has_access('write'), 'name': self.name, 'type': self.abroj_type, 'type_label': (dict(TYPES) if (self.env.lang or '').startswith('ar') else TYPES_EN).get(self.abroj_type, ''), 'status': self.last_update_status, 'status_label': (STATUS if (self.env.lang or '').startswith('ar') else STATUS_EN).get(self.last_update_status, ''), 'client': self.partner_id.name or '—', 'manager': self.user_id.name or '—', 'start': str(self.date_start or ''), 'end': str(self.date or ''), 'progress': round(progress, 1), 'budget': self.abroj_budget, 'actual': actual, 'over': max(actual - self.abroj_budget, 0), 'over_categories': sum(c['actual'] > c['budget'] for c in categories), 'contract': self.abroj_contract_value or (self.contract_value if 'contract_value' in self._fields else 0), 'received': received, 'paid': paid, 'liquidity': received - paid, 'categories': categories, 'contracts': contracts, 'phases': phases, 'delayed': delayed, 'stalled': stalled, 'completed': completed, 'vouchers': [{'name': v.name, 'kind': v.kind, 'partner': v.partner_id.name, 'amount': v.amount, 'date': str(v.date)} for v in vouchers]}
 
     @api.model
     def get_abroj_dashboard_data(self, filters=None):
@@ -184,7 +186,8 @@ class Project(models.Model):
             data = [p for p in data if not p['completed']]
         elif status:
             data = [p for p in data if p['status'] == status]
-        return {'projects': data, 'types': [{'id': k, 'name': v} for k, v in TYPES], 'managers': [{'id': p.id, 'name': p.name} for p in projects.mapped('user_id')], 'clients': [{'id': p.id, 'name': p.name} for p in projects.mapped('partner_id')]}
+        types = dict(TYPES) if (self.env.lang or '').startswith('ar') else TYPES_EN
+        return {'projects': data, 'types': [{'id': k, 'name': types[k]} for k, _ in TYPES], 'managers': [{'id': p.id, 'name': p.name} for p in projects.mapped('user_id')], 'clients': [{'id': p.id, 'name': p.name} for p in projects.mapped('partner_id')]}
 
     @api.model
     def get_abroj_project_detail(self, project_id):

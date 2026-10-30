@@ -31,13 +31,17 @@ The script creates illustrative projects in `base.main_company` and adds it to t
 
 ## Tests / الاختبارات
 
-Run Odoo with `-i abroj_project_dashboard --without-demo=all --test-enable --test-tags=/abroj_project_dashboard --stop-after-init --workers=0 --max-cron-threads=0` on a fresh test database. The workflow expects 34 methods across the model and HTTP test classes. `abroj_contracting` is installed as a dependency.
+Run Odoo with `-i abroj_project_dashboard --without-demo=all --test-enable --test-tags=/abroj_project_dashboard --stop-after-init --workers=0 --max-cron-threads=0` on a fresh test database. The workflow expects 39 methods across the model and HTTP test classes. `abroj_contracting` is installed as a dependency.
 
 ## Remaining / المتبقي
 
 Live installation requires approval. Removal of `abroj_project_costing` is a separate future task. Link and validate real contracts, vouchers and cost categorisation with the business before relying on financial results.
 
 ### تطبيق الهاتف / Mobile app
+
+تستخدم الواجهة هوامش المناطق الآمنة وأحجاماً مناسبة للّمس، مع حقول إدخال بحجم خط لا يقل عن 16 بكسل. لا تزال ترجمة واجهة الهاتف الكاملة والتحقق من جميع المقاسات قيد التنفيذ.
+
+The PWA includes safe-area padding, larger touch controls and input text of at least 16px. Full PWA translation and verification at all viewport sizes are still in progress.
 
 افتح `/abroj/app` بحساب Odoo ثم اختر «إضافة إلى الشاشة الرئيسية» من المتصفح. يتطلب تشغيل عامل الخدمة والكاميرا والميكروفون HTTPS في الإنتاج (أو localhost للتطوير). تتوفر نماذج المراحل والمشروع ومعرض المرفقات والتسجيل الصوتي والتقاط الصور. الحد الأقصى للملف 25 ميغابايت، وتُرفع الملفات الأصلية دون ضغط من التطبيق.
 

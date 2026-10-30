@@ -7,21 +7,39 @@ from odoo.http import request
 
 
 class AbrojApp(http.Controller):
+    @staticmethod
+    def _message(ar, en):
+        return ar if (request.env.lang or '').startswith('ar') else en
+
     @http.route('/abroj/app', type='http', auth='user', methods=['GET'])
     def app(self):
         page = (Path(__file__).parent.parent / 'static/pwa/index.html').read_text(encoding='utf-8')
         page = page.replace('CSRF_TOKEN_PLACEHOLDER', request.csrf_token())
-        return request.make_response(page, [('Content-Type', 'text/html; charset=utf-8')])
+        page = page.replace('USER_LANG_PLACEHOLDER', 'ar' if (request.env.user.lang or '').startswith('ar') else 'en')
+        return request.make_response(page, [('Content-Type', 'text/html; charset=utf-8'), ('Cache-Control', 'no-store')])
+
+    @http.route('/abroj/app/language', type='jsonrpc', auth='user')
+    def language(self, lang):
+        code = {'ar': 'ar_001', 'en': 'en_US'}.get(lang)
+        if not code or not request.env['res.lang'].search_count([('code', '=', code), ('active', '=', True)]):
+            return {'ok': False}
+        try:
+            with request.env.cr.savepoint():
+                request.env.user.write({'lang': code})
+            request.session.context['lang'] = code
+            return {'ok': True}
+        except (AccessError, UserError, ValidationError):
+            return {'ok': False}
 
     @http.route('/abroj/app/manifest.webmanifest', type='http', auth='public', methods=['GET'])
     def manifest(self):
         data = {'name': 'أبرج للمقاولات', 'short_name': 'أبرج', 'start_url': '/abroj/app', 'scope': '/abroj/app', 'display': 'standalone', 'dir': 'rtl', 'lang': 'ar', 'theme_color': '#12243b', 'background_color': '#f5f6f8', 'icons': [{'src': '/abroj_project_dashboard/static/pwa/icon-%d.png' % n, 'sizes': '%dx%d' % (n, n), 'type': 'image/png'} for n in (192, 512)]}
-        return request.make_response(json.dumps(data, ensure_ascii=False), [('Content-Type', 'application/manifest+json')])
+        return request.make_response(json.dumps(data, ensure_ascii=False), [('Content-Type', 'application/manifest+json'), ('Cache-Control', 'no-store, no-cache, must-revalidate'), ('Pragma', 'no-cache'), ('Expires', '0')])
 
     @http.route('/abroj/app/sw.js', type='http', auth='public', methods=['GET'])
     def sw(self):
-        source = "self.addEventListener('install',e=>e.waitUntil(caches.open('abroj-v2').then(c=>c.addAll(['/abroj_project_dashboard/static/pwa/index.html','/abroj_project_dashboard/static/pwa/app.js','/abroj_project_dashboard/static/pwa/app.css']))));self.addEventListener('fetch',e=>{if(e.request.method==='GET')e.respondWith(fetch(e.request).catch(()=>caches.match(e.request).then(r=>r||(e.request.mode==='navigate'?caches.match('/abroj_project_dashboard/static/pwa/index.html'):Response.error()))))});"
-        return request.make_response(source, [('Content-Type', 'application/javascript'), ('Service-Worker-Allowed', '/abroj/app')])
+        source = (Path(__file__).parent.parent / 'static/pwa/sw.js').read_text(encoding='utf-8')
+        return request.make_response(source, [('Content-Type', 'application/javascript'), ('Service-Worker-Allowed', '/abroj/app'), ('Cache-Control', 'no-store')])
 
     @http.route('/abroj/app/data', type='jsonrpc', auth='user')
     def data(self, filters=None, project_id=None):
@@ -43,7 +61,7 @@ class AbrojApp(http.Controller):
                 record = record.create(values)
             return {'id': record.id}
         except (AccessError, UserError, ValidationError):
-            return {'error': 'تعذر الحفظ. تحقق من صلاحياتك والبيانات المدخلة.'}
+            return {'error': self._message('تعذر الحفظ. تحقق من صلاحياتك والبيانات المدخلة.', 'Could not save. Check your permissions and input.')}
 
     @http.route('/abroj/app/attachments', type='jsonrpc', auth='user')
     def attachments(self, model, record_id):
@@ -57,7 +75,7 @@ class AbrojApp(http.Controller):
             attachments = request.env['ir.attachment'].search([('res_model', '=', model), ('res_id', '=', record.id), ('type', '=', 'binary')])
             return [{'id': a.id, 'name': a.name, 'mimetype': a.mimetype or ''} for a in attachments]
         except (AccessError, UserError):
-            return {'error': 'تعذر عرض المرفقات. تحقق من صلاحياتك.'}
+            return {'error': self._message('تعذر عرض المرفقات. تحقق من صلاحياتك.', 'Could not view attachments. Check your permissions.')}
 
     @http.route('/abroj/app/upload', type='http', auth='user', methods=['POST'])
     def upload(self, model=None, record_id=None, file=None, **kwargs):
@@ -75,7 +93,7 @@ class AbrojApp(http.Controller):
             attachment = request.env['ir.attachment'].with_context(image_no_postprocess=True).create({'name': file.filename, 'res_model': model, 'res_id': record.id, 'datas': base64.b64encode(content), 'mimetype': file.content_type})
             return request.make_json_response({'id': attachment.id})
         except (AccessError, UserError, ValueError):
-            return request.make_json_response({'error': 'تعذر رفع الملف. تحقق من الصلاحيات وحجم الملف.'}, status=403)
+            return request.make_json_response({'error': self._message('تعذر رفع الملف. تحقق من الصلاحيات وحجم الملف.', 'Could not upload the file. Check permissions and file size.')}, status=403)
 
     # Only project-owned business documents are exposed here. All operations use
     # the current user's environment, including record rules and model guards.
@@ -117,7 +135,7 @@ class AbrojApp(http.Controller):
                 result['records'][key] = rows
             return result
         except (AccessError, UserError, ValueError):
-            return {'error': 'تعذر عرض مستندات المشروع. تحقق من صلاحياتك.'}
+            return {'error': self._message('تعذر عرض مستندات المشروع. تحقق من صلاحياتك.', 'Could not view project documents. Check your permissions.')}
 
     @http.route('/abroj/app/document/save', type='jsonrpc', auth='user')
     def document_save(self, project_id, kind, values, record_id=None):
@@ -146,7 +164,7 @@ class AbrojApp(http.Controller):
                     record = request.env[model].create(vals)
             return {'id': record.id}
         except (AccessError, UserError, ValidationError, ValueError):
-            return {'error': 'تعذر حفظ المستند. تحقق من صلاحياتك والبيانات المدخلة.'}
+            return {'error': self._message('تعذر حفظ المستند. تحقق من صلاحياتك والبيانات المدخلة.', 'Could not save the document. Check your permissions and input.')}
 
     @http.route('/abroj/app/document/action', type='jsonrpc', auth='user')
     def document_action(self, project_id, kind, record_id, action):
@@ -166,7 +184,7 @@ class AbrojApp(http.Controller):
                 getattr(record, 'action_' + action)()
             return {'ok': True}
         except (AccessError, UserError, ValidationError, ValueError):
-            return {'error': 'تعذر تنفيذ العملية. تحقق من صلاحياتك وحالة المستند.'}
+            return {'error': self._message('تعذر تنفيذ العملية. تحقق من صلاحياتك وحالة المستند.', 'Could not complete the operation. Check your permissions and document status.')}
 
     @http.route('/abroj/app/pdf/<string:kind>/<int:record_id>', type='http', auth='user', methods=['GET'])
     def document_pdf(self, kind, record_id):
@@ -192,7 +210,7 @@ class AbrojApp(http.Controller):
             pdf, _ = request.env['ir.actions.report']._render_qweb_pdf(report, res_ids=record.ids)
             return request.make_response(pdf, [('Content-Type', 'application/pdf'), ('Content-Disposition', 'attachment; filename="document.pdf"')])
         except (AccessError, UserError, ValueError):
-            return request.make_response('تعذر تنزيل التقرير. تحقق من صلاحياتك.', status=403)
+            return request.make_response(self._message('تعذر تنزيل التقرير. تحقق من صلاحياتك.', 'Could not download the report. Check your permissions.'), status=403)
 
     @http.route('/abroj/app/voice', type='http', auth='user', methods=['POST'])
     def voice_note(self, project_id=None, body='', file=None, **kwargs):
@@ -212,4 +230,4 @@ class AbrojApp(http.Controller):
             })
             return request.make_json_response({'id': note.id})
         except (AccessError, UserError, ValidationError, ValueError):
-            return request.make_json_response({'error': 'تعذر حفظ الملاحظة الصوتية.'}, status=403)
+            return request.make_json_response({'error': self._message('تعذر حفظ الملاحظة الصوتية.', 'Could not save the voice note.')}, status=403)

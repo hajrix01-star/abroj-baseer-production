@@ -15,7 +15,6 @@ class PosConfig(models.Model):
         'res.partner',
         string='Internal anonymous consumer',
         check_company=True,
-        domain="[('company_type', '=', 'person')]",
         help='Internal person record used only for an unnamed consumer sale. It must not represent a real customer.',
     )
 

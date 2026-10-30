@@ -34,3 +34,8 @@ class TestAnonymousB2CPolicy(TransactionCase):
         self.assertFalse(self.config._baseer_zatca_anonymous_partner_for_order(named))
         self.assertFalse(self.config._baseer_zatca_anonymous_partner_for_order(draft))
         self.assertFalse(self.config._baseer_zatca_anonymous_partner_for_order(shipping))
+
+    def test_internal_consumer_field_uses_no_client_side_domain(self):
+        """The POS form cannot resolve partner-only fields in its own domain."""
+        field = self.env['pos.config']._fields['baseer_zatca_anonymous_partner_id']
+        self.assertFalse(field.domain)

@@ -304,7 +304,9 @@ class AbrojDashboardHttpCase(HttpCase):
             'abroj_type': 'residential', 'last_update_status': 'on_track',
         })
         self.authenticate('admin', 'admin')
-        self.assertTrue(self.rpc('/abroj/app/language', {'lang': 'ar'})['ok'])
+        self.assertTrue(self.rpc('/abroj/app/language', {'lang': 'ar'})['server_synced'])
+        self.env.ref('base.user_admin').invalidate_recordset(['lang'])
+        self.assertEqual(self.env.ref('base.user_admin').lang, 'ar_001')
         arabic = self.rpc('/abroj/app/data', {'project_id': project.id})
         self.assertEqual(arabic['type_label'], 'سكني / فلل')
         self.assertTrue(self.rpc('/abroj/app/language', {'lang': 'en'})['ok'])
@@ -314,9 +316,23 @@ class AbrojDashboardHttpCase(HttpCase):
         self.assertEqual(self.rpc('/abroj/app/save', {'model': 'invalid', 'values': {}})['error'],
                          'Could not save. Check your permissions and input.')
 
-    def test_language_rejects_unknown_code(self):
+    def test_language_unavailable_falls_back_to_ui(self):
+        self.env['res.lang'].search([('code', '=like', 'ar%')]).write({'active': False})
         self.authenticate('admin', 'admin')
-        self.assertFalse(self.rpc('/abroj/app/language', {'lang': 'invalid'})['ok'])
+        result = self.rpc('/abroj/app/language', {'lang': 'ar'})
+        self.assertEqual(result, {'ok': True, 'server_synced': False, 'ui_lang': 'ar'})
+        self.assertEqual(self.rpc('/abroj/app/language', {'lang': 'invalid'}),
+                         {'ok': True, 'server_synced': False, 'ui_lang': 'en'})
+
+    def test_language_maps_to_active_arabic(self):
+        self.env['res.lang'].search([('code', '=like', 'ar%')]).write({'active': False})
+        self.env['res.lang']._activate_lang('ar_SY')
+        self.authenticate('admin', 'admin')
+        result = self.rpc('/abroj/app/language', {'lang': 'ar'})
+        self.assertEqual(result, {'ok': True, 'server_synced': True, 'ui_lang': 'ar'})
+        admin = self.env.ref('base.user_admin')
+        admin.invalidate_recordset(['lang'])
+        self.assertEqual(admin.lang, 'ar_SY')
 
     def test_detail_json(self):
         project = self.env['project.project'].create({'name': 'HTTP detail', 'company_id': self.env.company.id})

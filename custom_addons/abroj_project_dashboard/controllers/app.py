@@ -20,16 +20,27 @@ class AbrojApp(http.Controller):
 
     @http.route('/abroj/app/language', type='jsonrpc', auth='user')
     def language(self, lang):
-        code = {'ar': 'ar_001', 'en': 'en_US'}.get(lang)
-        if not code or not request.env['res.lang'].search_count([('code', '=', code), ('active', '=', True)]):
-            return {'ok': False}
+        requested = lang if isinstance(lang, str) else ''
+        ui_lang = 'ar' if requested.lower().startswith('ar') else 'en'
+        languages = request.env['res.lang'].sudo()
+        if requested in ('ar', 'en'):
+            preferred = 'ar_001' if requested == 'ar' else 'en_US'
+            language = languages.search([('code', '=', preferred), ('active', '=', True)], limit=1)
+            if not language:
+                language = languages.search([('code', '=like', 'ar%' if requested == 'ar' else 'en_%'), ('active', '=', True)], order='code', limit=1)
+        else:
+            language = languages.search([('code', '=', requested), ('active', '=', True)], limit=1)
+        result = {'ok': True, 'server_synced': False, 'ui_lang': ui_lang}
+        if not language:
+            return result
         try:
             with request.env.cr.savepoint():
-                request.env.user.write({'lang': code})
-            request.session.context = dict(request.session.context, lang=code)
-            return {'ok': True}
+                request.env.user.write({'lang': language.code})
+            request.session.context = dict(request.session.context, lang=language.code)
+            result['server_synced'] = True
         except (AccessError, UserError, ValidationError):
-            return {'ok': False}
+            pass
+        return result
 
     @http.route('/abroj/app/manifest.webmanifest', type='http', auth='public', methods=['GET'])
     def manifest(self):

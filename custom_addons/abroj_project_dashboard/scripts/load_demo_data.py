@@ -3,7 +3,7 @@ from datetime import timedelta
 from odoo import Command, fields
 
 for code in ('en_US', 'ar_001'):
-    env['res.lang']._activate_lang(code)
+    env['res.lang']._activate_and_install_lang(code)
 
 company = env.ref('base.main_company')
 admin = env.ref('base.user_admin')

@@ -31,7 +31,7 @@ The script creates illustrative projects in `base.main_company` and adds it to t
 
 ## Tests / الاختبارات
 
-Run Odoo with `-i abroj_project_dashboard --without-demo=all --test-enable --test-tags=/abroj_project_dashboard --stop-after-init --workers=0 --max-cron-threads=0` on a fresh test database. The workflow expects 46 methods across the model and HTTP test classes. `abroj_contracting` is installed as a dependency.
+Run Odoo with `-i abroj_project_dashboard --without-demo=all --test-enable --test-tags=/abroj_project_dashboard --stop-after-init --workers=0 --max-cron-threads=0` on a fresh test database. The workflow expects 48 methods across the model and HTTP test classes. `abroj_contracting` is installed as a dependency.
 
 ## Remaining / المتبقي
 

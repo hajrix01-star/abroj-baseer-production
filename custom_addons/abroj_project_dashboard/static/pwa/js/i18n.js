@@ -671,6 +671,7 @@ const translations = {
   "menu": {"ar": "القائمة", "en": "Menu"},
   "switchLanguage": {"ar": "تغيير اللغة", "en": "Change language"},
   "arabic": {"ar": "العربية", "en": "العربية"},
+  "languageSyncInfo": {"ar": "تم تغيير لغة الواجهة، لكن تعذرت مزامنتها مع الحساب.", "en": "The display language changed, but could not be synced to your account."},
   "languageError": {"ar": "تعذر تغيير اللغة.", "en": "Could not change language."},
   "state_": {"ar": "", "en": ""},
   "state_draft": {"ar": "مسودة", "en": "Draft"},

@@ -31,6 +31,25 @@ with sync_playwright() as playwright:
         assert toggle.inner_text() == name
         assert page.locator('.drawer-project-link').inner_text() == ('المشاريع' if lang == 'ar' else 'Projects')
         assert page.locator('#drawer button').filter(has_text='+').count() == 0
+        assert page.locator('#drawer [onclick*=switchLanguage]').count() == 0
+        assert page.locator('#drawer a[href*=logout]').count() == 0
+        page.evaluate('closeDrawer()')
+        account = page.locator('#account-button')
+        account.click()
+        menu = page.locator('#account-menu')
+        assert menu.is_visible()
+        assert menu.locator('.account-info strong').inner_text() == page.evaluate('data.current_user.name')
+        assert menu.locator('.account-languages button').all_inner_texts() == ['العربية', 'English']
+        assert menu.locator('a').count() == 2
+        assert menu.locator('a').last.inner_text() == ('تسجيل الخروج' if lang == 'ar' else 'Log out')
+        page.keyboard.press('Escape')
+        assert menu.is_hidden()
+        account.click()
+        page.locator('#header-title').click()
+        assert menu.is_hidden()
+        page.locator('.menu-button').click()
+        assert page.locator('.drawer-project-link svg').count() == 1
+        assert int(page.locator('.drawer-project-link').evaluate('(el) => getComputedStyle(el).fontWeight')) >= 700
         assert page.locator('#drawer-project-panel').get_attribute('inert') is not None
         page.screenshot(path=str(OUT / f'm5_{lang}_drawer_collapsed.png'))
         toggle.click()
@@ -39,7 +58,10 @@ with sync_playwright() as playwright:
         assert page.locator('#drawer-project-search input').is_visible()
         archive = page.locator('.drawer-archive')
         assert archive.locator('summary').inner_text().startswith('أرشيف' if lang == 'ar' else 'Archive')
+        assert not archive.evaluate('(el) => el.open')
         assert archive.locator('button').count() > 0
+        assert page.locator('.drawer-project-inner').evaluate('(el) => parseFloat(getComputedStyle(el).borderInlineStartWidth)') > 0
+        assert archive.locator('.archive-row').first.evaluate('(el) => parseFloat(getComputedStyle(el).borderInlineStartWidth)') > 0
         assert not archive.locator('button').first.is_visible()
         page.screenshot(path=str(OUT / f'm5_{lang}_drawer_expanded.png'))
         page.locator('#drawer-project-search input').fill(name)

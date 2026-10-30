@@ -88,6 +88,9 @@ class AbrojProjectDashboardCase(TransactionCase):
         source = (Path(__file__).resolve().parents[1] / 'static' / 'pwa' / 'js' / 'i18n.js').read_text(encoding='utf-8')
         self.assertIn("holdRecord:['اضغط مطوّلاً للتسجيل','Press and hold to record']", source)
         self.assertIn("slideCancel:['اسحب للإلغاء','Slide to cancel']", source)
+        self.assertIn("invoiceCapture:['فاتورة','Invoice']", source)
+        self.assertIn("invoiceChoice:['إضافة فاتورة','Add invoice']", source)
+        self.assertIn("invoiceDraft:['فاتورة مورد مسودة','Draft vendor bill']", source)
 
     def test_my_day_grouping_dates_and_permissions(self):
         public = self.env['project.project'].create({'name': 'My Day public', 'company_id': self.env.company.id, 'privacy_visibility': 'employees'})
@@ -357,6 +360,12 @@ class AbrojDashboardHttpCase(HttpCase):
         result = self.rpc('/abroj/app/data', {'filters': {'search': 'no such project'}})
         self.assertEqual(result['projects'], [])
         self.assertTrue(result['types'])
+        user = self.env.ref('base.user_admin')
+        self.assertEqual(result['current_user']['id'], user.id)
+        self.assertEqual(result['current_user']['name'], user.name)
+        self.assertEqual(result['current_user']['email'], user.email or '')
+        self.assertEqual(result['current_user']['phone'], user.phone or '')
+        self.assertIn('job_title', result['current_user'])
 
     def test_language_preference(self):
         self.authenticate('admin', 'admin')

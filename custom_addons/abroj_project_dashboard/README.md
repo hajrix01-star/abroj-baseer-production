@@ -43,7 +43,7 @@ Live installation requires approval. Removal of `abroj_project_costing` is a sep
 
 تستخدم الواجهة هوامش المناطق الآمنة وأحجاماً مناسبة للّمس، مع حقول إدخال بحجم خط لا يقل عن 16 بكسل. تتوفر واجهة الهاتف بالعربية والإنجليزية.
 
-The PWA includes safe-area padding, larger touch controls and input text of at least 16px. Arabic and English can be selected in the header or drawer; the choice is stored locally and synced to the current Odoo user. Numbers use Intl with ar-SA or en-US, and dates use the same locale with UTC to preserve calendar dates.
+The PWA includes safe-area padding, larger touch controls and input text of at least 16px. The header account menu shows the current user’s contact details and offers Arabic and English; the choice is stored locally and synced to the current Odoo user. Numbers use Intl with ar-SA or en-US, and dates use the same locale with UTC to preserve calendar dates.
 
 افتح `/abroj/app` بحساب Odoo ثم اختر «إضافة إلى الشاشة الرئيسية» من المتصفح. يتطلب تشغيل عامل الخدمة والكاميرا والميكروفون HTTPS في الإنتاج (أو localhost للتطوير). تتوفر نماذج المراحل والمشروع ومعرض المرفقات والتسجيل الصوتي والتقاط الصور. الحد الأقصى للملف 25 ميغابايت، وتُرفع الملفات الأصلية دون ضغط من التطبيق.
 

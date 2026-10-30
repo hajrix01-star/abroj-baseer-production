@@ -74,6 +74,13 @@ class AbrojApp(http.Controller):
         result = projects.get_abroj_project_detail(project_id) if project_id else projects.get_abroj_dashboard_data(filters, include_archived=include_archived)
         if isinstance(result, dict):
             result['can_create_invoice'] = self._can_create_invoice()
+            user = request.env.user
+            employee = request.env['hr.employee'].sudo().search([('user_id', '=', user.id)], limit=1) if 'hr.employee' in request.env else None
+            result['current_user'] = {
+                'id': user.id, 'name': user.name or '',
+                'job_title': employee.job_title or '' if employee else '',
+                'email': user.email or '', 'phone': user.phone or '',
+            }
         return result
 
     @http.route('/abroj/app/project/options', type='jsonrpc', auth='user')

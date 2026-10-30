@@ -687,6 +687,8 @@ const translations = {
   "logout": {"ar": "تسجيل الخروج", "en": "Log out"},
   "sessionExpired": {"ar": "انتهت الجلسة", "en": "Session expired"},
   "menu": {"ar": "القائمة", "en": "Menu"},
+  "accountMenu": {"ar": "الحساب", "en": "Account"},
+  "anotherAccount": {"ar": "تسجيل الدخول بحساب آخر", "en": "Sign in with another account"},
   "switchLanguage": {"ar": "تغيير اللغة", "en": "Change language"},
   "arabic": {"ar": "العربية", "en": "العربية"},
   "languageSyncInfo": {"ar": "تم تغيير لغة الواجهة، لكن تعذرت مزامنتها مع الحساب.", "en": "The display language changed, but could not be synced to your account."},
@@ -700,7 +702,7 @@ const translations = {
   "state_confirmed": {"ar": "معتمد", "en": "Confirmed"}
 };
 
-Object.entries({invoiceCapture:['إنفويس','Invoice'],invoiceChoice:['إضافة إنفويس','Add invoice'],attachFile:['إرفاق ملف','Attach file'],takePhoto:['التقاط صورة','Take photo'],invoiceDraft:['فاتورة مورد مسودة','Draft vendor bill'],pendingExtraction:['بانتظار استخراج البيانات','Pending extraction'],viewBill:['فتح الفاتورة','Open bill'],projectLibrary:['مكتبة المشروع','Project library'],viewFile:['عرض الملف','View file']}).forEach(([key,value])=>translations[key]={ar:value[0],en:value[1]});
+Object.entries({invoiceCapture:['فاتورة','Invoice'],invoiceChoice:['إضافة فاتورة','Add invoice'],attachFile:['إرفاق ملف','Attach file'],takePhoto:['التقاط صورة','Take photo'],invoiceDraft:['فاتورة مورد مسودة','Draft vendor bill'],pendingExtraction:['بانتظار استخراج البيانات','Pending extraction'],viewBill:['فتح الفاتورة','Open bill'],projectLibrary:['مكتبة المشروع','Project library'],viewFile:['عرض الملف','View file']}).forEach(([key,value])=>translations[key]={ar:value[0],en:value[1]});
 const mediaText={gallery:['اختيار صور وملفات','Choose photos and files'],native:['كاميرا الجهاز','Device camera'],switch:['تبديل الكاميرا','Switch camera'],flash:['الفلاش','Torch'],capture:['التقاط','Capture'],retry:['إعادة المحاولة','Retry'],queued:['بانتظار الاتصال','Waiting for connection'],uploading:['جارٍ الرفع','Uploading'],done:['تم الرفع','Uploaded'],failed:['فشل الرفع','Upload failed'],record:['بدء التسجيل','Start recording'],pause:['إيقاف مؤقت','Pause'],resume:['استئناف','Resume'],stop:['إيقاف','Stop'],discard:['حذف وإعادة التسجيل','Discard and record again'],save:['حفظ التسجيل','Save recording'],preview:['معاينة التسجيل','Recording preview']};
 Object.entries(mediaText).forEach(([key,value])=>translations['media_'+key]={ar:value[0],en:value[1]});
 

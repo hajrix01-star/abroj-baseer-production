@@ -334,6 +334,20 @@ class AbrojDashboardHttpCase(HttpCase):
             response = self.url_open('/abroj/app/voice', data={'csrf_token': token, 'project_id': str(project.id), 'body': 'Voice'}, files={'file': (name, original, mime)})
             self.assertIn('id', response.json())
 
+    def test_camera_caption_and_translations(self):
+        import re
+        project = self.env['project.project'].create({'name': 'Captioned photo', 'company_id': self.env.company.id})
+        self.authenticate('admin', 'admin')
+        token = re.search(r'name="csrf-token" content="([^"]+)', self.url_open('/abroj/app').text).group(1)
+        original = b'original photo bytes\x00\xff'
+        response = self.url_open('/abroj/app/upload', data={'csrf_token': token, 'model': 'project.project', 'record_id': str(project.id), 'description': 'Site progress'}, files={'file': ('photo.jpg', original, 'image/jpeg')})
+        attachment = self.env['ir.attachment'].browse(response.json()['id'])
+        self.assertEqual(attachment.raw, original)
+        self.assertEqual(attachment.description, 'Site progress')
+        source = (Path(__file__).resolve().parents[1] / 'static' / 'pwa' / 'js' / 'i18n.js').read_text(encoding='utf-8')
+        for key in ('choosePhotos', 'photoPreview', 'addPhoto', 'caption', 'zoom'):
+            self.assertRegex(source, rf"{key}:\['[^']+','[^']+'\]")
+
     def test_upload_and_gallery(self):
         import io
         import re

@@ -94,7 +94,7 @@ class AbrojApp(http.Controller):
             content = file.read(25 * 1024 * 1024 + 1)
             if len(content) > 25 * 1024 * 1024:
                 raise UserError('الملف أكبر من 25 ميغابايت')
-            attachment = request.env['ir.attachment'].with_context(image_no_postprocess=True).create({'name': file.filename, 'res_model': model, 'res_id': record.id, 'datas': base64.b64encode(content), 'mimetype': file.content_type})
+            attachment = request.env['ir.attachment'].with_context(image_no_postprocess=True).create({'name': file.filename, 'res_model': model, 'res_id': record.id, 'datas': base64.b64encode(content), 'mimetype': file.content_type, 'description': kwargs.get('description', '')})
             return request.make_json_response({'id': attachment.id})
         except (AccessError, UserError, ValueError):
             return request.make_json_response({'error': self._message('تعذر رفع الملف. تحقق من الصلاحيات وحجم الملف.', 'Could not upload the file. Check permissions and file size.')}, status=403)

@@ -31,7 +31,7 @@ The script creates illustrative projects in `base.main_company` and adds it to t
 
 ## Tests / الاختبارات
 
-Run Odoo with `-i abroj_project_dashboard --without-demo=all --test-enable --test-tags=/abroj_project_dashboard --stop-after-init --workers=0 --max-cron-threads=0` on a fresh test database. The workflow expects 45 methods across the model and HTTP test classes. `abroj_contracting` is installed as a dependency.
+Run Odoo with `-i abroj_project_dashboard --without-demo=all --test-enable --test-tags=/abroj_project_dashboard --stop-after-init --workers=0 --max-cron-threads=0` on a fresh test database. The workflow expects 46 methods across the model and HTTP test classes. `abroj_contracting` is installed as a dependency.
 
 ## Remaining / المتبقي
 
@@ -84,3 +84,7 @@ The layout adapts to phones and tablets, with horizontally scrollable project ta
 توجد أصول الهوية في `static/pwa/`: الشعار الكحلي والأبيض وأيقونات التطبيق ونسخة maskable وأيقونة Apple. تعرف `css/tokens.css` ألوان الهوية والمسافات والزوايا والظلال، وتجمع ملفات CSS الأخرى أنماط الأساس والمكونات والشاشات. تستخدم الواجهة خط النظام مع التركيز المرئي وتقليل الحركة عند طلبه.
 
 Brand assets in `static/pwa/` include navy and white logos, app icons, a maskable icon and an Apple touch icon. `css/tokens.css` defines the palette, spacing, radii and shadows; the other CSS files cover base styles, components and screens. The interface uses system fonts, visible focus styles and reduced motion when requested.
+
+The camera action opens a full-screen live view directly. Capture several photos, remove individual shots, add a shared caption and send them through the offline upload queue; captions are stored on each attachment. Zoom, focus and torch controls depend on device capabilities. If access is denied, the permission sheet offers the device file picker.
+
+For the mobile browser check, install Playwright and run `scripts/check_camera_playwright.py` against an isolated demo database with `M5_BASE_URL`, `M5_USER`, `M5_PASSWORD` and `M5_SCREENSHOT_DIR` set as needed. Chromium uses fake camera and microphone devices; the script exercises multi-shot upload, captions, permission fallback and voice states.

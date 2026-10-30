@@ -56,10 +56,16 @@ function agreementForm(){const fields=[['contracting_goal_ar',t("s162"),'text'],
 
 
 let myDayScroll=0;
+function myDayStatus(p){
+  if(p.status==='done')return t('myDayDone');
+  if(p.status!=='overdue')return t('myDayOnTime');
+  const n=p.overdue_days, key=n===1?'myDayLateOne':n===2?'myDayLateTwo':n<=10?'myDayLateFew':'myDayLateMany';
+  return t(key).replace('{n}',number(n));
+}
 async function myDay(restore=false){
   try {
     const groups=await rpc('/abroj/app/my-day');
-    app.innerHTML=`<h2>${t('myDay')}</h2>${groups.map(g=>`<section class="my-day-group"><h3>${esc(g.name)}</h3>${g.phases.map(p=>`<a class="my-day-link" href="#/project/${g.id}/phases?task=${p.id}" onclick="openMyDayPhase(event,${g.id},${p.id})"><strong>${esc(p.name)}</strong><span>${days(p.duration)} · ${date(p.start)} — ${date(p.end)}</span><small>${t('assignee')}: ${esc(p.assignees?.length?p.assignees.map(u=>lang==='ar'&&u.is_system?'مدير النظام':u.name).join(', '):t('unassigned'))}</small></a>`).join('')}</section>`).join('')||emptyState(t('myDayEmpty'))}`;
+    app.innerHTML=`<h2>${t('myDay')}</h2>${groups.map(g=>`<section class="my-day-group"><h3>${esc(g.name)}</h3>${g.phases.map(p=>`<a class="my-day-link" href="#/project/${g.id}/phases?task=${p.id}" onclick="openMyDayPhase(event,${g.id},${p.id})"><div class="my-day-name-row"><strong>${esc(p.name)}</strong><span class="my-day-status ${esc(p.status)}">${esc(myDayStatus(p))}</span></div><span>${days(p.duration)} · ${date(p.start)} — ${date(p.end)}</span><small>${t('assignee')}: ${esc(p.assignees?.length?p.assignees.map(u=>lang==='ar'&&u.is_system?'مدير النظام':u.name).join(', '):t('unassigned'))}</small></a>`).join('')}</section>`).join('')||emptyState(t('myDayEmpty'))}`;
     if(restore)window.scrollTo(0,myDayScroll);else window.scrollTo(0,0);
   } catch(e){app.innerHTML=`<div class="card error-state"><p>${esc(e.message||t('s83'))}</p><button onclick="myDay()">${lang==='ar'?'إعادة المحاولة':'Retry'}</button></div>`}
 }

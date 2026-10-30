@@ -222,8 +222,11 @@ class Project(models.Model):
             group = grouped.setdefault(project.id, {'id': project.id, 'name': project.name, 'phases': []})
             priority = 0 if task.date_deadline < start else 1 if not task.x_abroj_date_start or task.x_abroj_date_start <= today else 2
             priorities[task.id] = priority
+            local_end = pytz.UTC.localize(task.date_deadline).astimezone(tz).date()
+            overdue_days = max((today - local_end).days, 0)
+            status = 'done' if task.state in ('1_done', '1_canceled') else 'overdue' if overdue_days else 'on_time'
             group['phases'].append({
-                'id': task.id, 'name': task.name,
+                'id': task.id, 'name': task.name, 'status': status, 'overdue_days': overdue_days,
                 'start': str(task.x_abroj_date_start or ''),
                 'end': str(task.date_deadline.date()),
                 'duration': task.x_abroj_duration_days,

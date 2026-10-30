@@ -680,6 +680,12 @@ const translations = {
     "en": "days"
   },
   "myDay": {"ar": "مهامي اليوم", "en": "My Day"},
+  "myDayOnTime": {"ar": "في الموعد", "en": "On time"},
+  "myDayDone": {"ar": "مكتمل", "en": "Done"},
+  "myDayLateOne": {"ar": "متأخر يوم", "en": "1 day overdue"},
+  "myDayLateTwo": {"ar": "متأخر يومين", "en": "2 days overdue"},
+  "myDayLateFew": {"ar": "متأخر {n} أيام", "en": "{n} days overdue"},
+  "myDayLateMany": {"ar": "متأخر {n} يوماً", "en": "{n} days overdue"},
   "myDayEmpty": {"ar": "لا توجد مراحل لهذا اليوم", "en": "No phases for today"},
   "assignee": {"ar": "المسؤول", "en": "Assignee"},
   "unassigned": {"ar": "غير معيّن", "en": "Unassigned"},

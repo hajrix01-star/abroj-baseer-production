@@ -145,11 +145,17 @@ class AbrojProjectDashboardCase(TransactionCase):
         late2 = phase(projects[1], 'Overdue later', today - timedelta(days=2), utc_start - timedelta(days=1))
         phase(projects[1], 'Done overdue', today - timedelta(days=2), utc_start - timedelta(days=1), '1_done')
         phase(projects[1], 'Canceled overdue', today - timedelta(days=2), utc_start - timedelta(days=1), '1_canceled')
+        done = phase(projects[1], 'Done today', today, utc_start + timedelta(hours=1), '1_done')
         current2 = phase(projects[2], 'Another today', today, utc_start + timedelta(hours=1))
         rest3 = phase(projects[3], 'Rest last', future, utc_start + timedelta(hours=1))
         groups = [group for group in model.get_abroj_my_day() if group['id'] in projects.ids]
         self.assertEqual([group['id'] for group in groups], [projects[1].id, projects[2].id, projects[0].id, projects[3].id])
-        self.assertEqual([p['id'] for p in groups[0]['phases']], [late1.id, late2.id, current.id, rest2.id])
+        self.assertEqual([p['id'] for p in groups[0]['phases']], [late1.id, late2.id, current.id, done.id, rest2.id])
+        statuses = {p['id']: (p['status'], p['overdue_days']) for p in groups[0]['phases']}
+        self.assertEqual(statuses[late1.id], ('overdue', 1))
+        self.assertEqual(statuses[late2.id], ('overdue', 1))
+        self.assertEqual(statuses[current.id], ('on_time', 0))
+        self.assertEqual(statuses[done.id], ('done', 0))
         self.assertEqual([[p['id'] for p in group['phases']] for group in groups[1:]], [[current2.id], [rest1.id], [rest3.id]])
 
     def test_dashboard_labels_follow_language(self):

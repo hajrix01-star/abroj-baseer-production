@@ -72,6 +72,13 @@ class Project(models.Model):
     contract_retention_percent = fields.Float('Retention % / الضمان')
     contract_payment_schedule = fields.Text('Payment milestones / مراحل الدفع')
 
+    def contract_payment_milestones(self):
+        """Pair authored milestone lines for the summary's final row."""
+        from itertools import zip_longest
+        return list(zip_longest(self.report_text('contract_payment_schedule', 'en').splitlines(),
+                                self.report_text('contract_payment_schedule', 'ar').splitlines(),
+                                fillvalue=''))
+
     def contract_clauses(self):
         return self.clause_line_ids.sorted(lambda line: (line.sequence, line.id))
 

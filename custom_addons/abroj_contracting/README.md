@@ -81,8 +81,8 @@ within the balance and is displayed separately on contracts, matching existing a
 
 Company forms expose Arabic and English contract names. The custom report layout uses
 the document company for names, CR, VAT, address, contacts and logo. Set both names for
-bilingual branding; an unset name falls back to the company's name. DejaVu Sans and its
-license are bundled and embedded as a data URI. Report bodies, headers and footers are
+bilingual branding; an unset name falls back to the company's name. Cairo is embedded as a data URI for all report text. Project date ranges use
+an ASCII hyphen instead of an unsupported arrow to avoid font fallback. Report bodies, headers and footers are
 self-contained, so wkhtmltopdf does not need an HTTP asset server. A patched-Qt
 wkhtmltopdf installation is required for repeating headers and footers.
 
@@ -91,3 +91,7 @@ Sample generator (strictly restricted to `abroj_contracting_544_test`):
 Feed it to `odoo-bin shell` with the same test DB/addons/data-dir arguments. It creates
 an isolated sample company, loads the website's Abroj logo, writes the four PDFs into
 `/workspace/abroj-contract-samples`, then rolls back all sample database records.
+
+Both receipt and payment vouchers use the same A5 landscape layout, amount words,
+history and conditional single-line memo. Logo CSS widths compensate for the
+90-DPI PDF renderer: approximately 30 mm on A4 contracts and 23 mm on A5 vouchers.

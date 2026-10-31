@@ -112,7 +112,7 @@ function phaseSheet(id){
 async function phaseUpload(id,files){const chosen=Array.from(files);closeDrawer();try{for(const file of chosen)await uploadFile('project.task',id,file);if(!navigator.onLine)toast(mt('queued'))}catch(e){toast(e.message)}}
 function phaseTextNote(id){const sheet=document.querySelector('.phase-sheet');sheet.innerHTML=`<h3>${t('textNote')}</h3><form id="phase-note-form"><textarea name="body" required aria-label="${t('textNote')}"></textarea><button type="submit">${t('s92')}</button><button type="button" onclick="closeDrawer()">${t('cancel')}</button></form>`;sheet.querySelector('form').onsubmit=async e=>{e.preventDefault();try{const r=await rpc('/abroj/app/note',{model:'project.task',record_id:id,body:e.target.elements.body.value});if(r.error)throw Error(r.error);closeDrawer();toast(mt('done'))}catch(err){toast(err.message)}}}
 
-const tr=(ar,en)=>lang==='ar'?ar:en;
+function tr(ar,en){return lang==='ar'?ar:en;}
 let reportEngineers=[], activeReport=null, reportReviewed=false;
 function managerSelect(p){return `<label class="report-manager">${tr('مسؤول المشروع','Project manager')}<select onchange="setProjectManager(${p.id},this.value)"><option value="">${tr('غير معيّن','Unassigned')}</option>${reportEngineers.map(u=>`<option value="${u.id}" ${u.id===p.manager_id?'selected':''}>${esc(u.name)}</option>`).join('')}</select></label>`}
 async function setProjectManager(project_id,manager_id){try{await rpc('/abroj/app/project/set-manager',{project_id,manager_id:Number(manager_id)||null});data=await rpc('/abroj/app/data');toast(tr('تم تحديث مسؤول المشروع','Project manager updated'))}catch(e){toast(e.message)}}

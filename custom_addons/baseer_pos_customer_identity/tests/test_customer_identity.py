@@ -6,11 +6,14 @@ from odoo.addons.baseer_pos_customer_identity.models.res_partner import _saudi_m
 
 @tagged('post_install', '-at_install')
 class TestPosCustomerIdentity(TransactionCase):
-    def _cashier_customer_capability(self, cashier, partner=False):
+    def _test_pos_config(self):
         PosConfig = self.env['pos.config']
         domain = [('baseer_summary_only', '=', False)] if 'baseer_summary_only' in PosConfig._fields else []
         config = PosConfig.search(domain, limit=1)
-        self.assertTrue(config)
+        return config or PosConfig.create({'name': 'POS customer identity test'})
+
+    def _cashier_customer_capability(self, cashier, partner=False):
+        config = self._test_pos_config()
         session = self.env['pos.session'].sudo().search([
             ('config_id', '=', config.id), ('state', '=', 'opened'),
         ], limit=1)
@@ -125,10 +128,7 @@ class TestPosCustomerIdentity(TransactionCase):
             'name': 'Session-bound customer', 'phone': '0515555555',
         })
         capability = self._cashier_customer_capability(cashier, customer)
-        config = self.env['pos.config'].search(
-            [('baseer_summary_only', '=', False)] if 'baseer_summary_only' in self.env['pos.config']._fields else [],
-            limit=1,
-        )
+        config = self._test_pos_config()
         session = self.env['pos.session'].sudo().search([
             ('config_id', '=', config.id), ('user_id', '=', cashier.id), ('state', '=', 'opened'),
         ], limit=1)
@@ -224,8 +224,7 @@ class TestPosCustomerIdentity(TransactionCase):
             })
 
     def test_pos_search_finds_a_phone_variant_outside_the_initial_batch(self):
-        config = self.env['pos.config'].search([], limit=1)
-        self.assertTrue(config)
+        config = self._test_pos_config()
         partner = self.env['res.partner'].create({
             'name': 'POS phone search customer',
             'phone': '0512345678',

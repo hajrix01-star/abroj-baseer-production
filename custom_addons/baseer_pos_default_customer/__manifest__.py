@@ -1,7 +1,7 @@
 {
     'name': 'Baseer POS Default Customer',
-    'version': '19.0.1.0.0',
-    'summary': 'Select a configured visible customer on new POS orders',
+    'version': '19.0.1.0.1',
+    'summary': 'Select a configured visible customer on empty POS orders',
     'category': 'Point of Sale',
     'license': 'LGPL-3',
     'depends': ['point_of_sale'],

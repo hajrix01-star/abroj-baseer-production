@@ -6,6 +6,23 @@ import { PaymentScreen } from "@point_of_sale/app/screens/payment_screen/payment
 import { patch } from "@web/core/utils/patch";
 
 patch(PosOrder.prototype, {
+    baseerCanUseAnonymousB2c() {
+        // This mirrors the eligibility test used when assigning the internal
+        // consumer, without mutating the order while the payment screen is
+        // deciding whether its confirmation button may be enabled.
+        const config = this.config_id || this.config;
+        const configuredPartner = config?.baseer_zatca_anonymous_partner_id;
+        const partnerId = configuredPartner?.id ?? configuredPartner;
+        return Boolean(
+            config?.baseer_zatca_allow_anonymous_b2c &&
+                this.company?.country_id?.code === "SA" &&
+                this.isInvoiceMandatoryForSA?.() &&
+                !this.getPartner() &&
+                !this.getShippingDate() &&
+                partnerId
+        );
+    },
+
     baseerAssignAnonymousB2cPartner() {
         // ``config_id`` is the order's own POS configuration.  Reading it
         // avoids relying on the store-wide first config when POS data is
@@ -13,14 +30,7 @@ patch(PosOrder.prototype, {
         const config = this.config_id || this.config;
         const configuredPartner = config?.baseer_zatca_anonymous_partner_id;
         const partnerId = configuredPartner?.id ?? configuredPartner;
-        const isEligible =
-            config?.baseer_zatca_allow_anonymous_b2c &&
-            this.company?.country_id?.code === "SA" &&
-            this.isInvoiceMandatoryForSA?.() &&
-            !this.getPartner() &&
-            !this.getShippingDate() &&
-            partnerId;
-        if (!isEligible) {
+        if (!this.baseerCanUseAnonymousB2c()) {
             return false;
         }
         const partner = this.models["res.partner"].get(partnerId);
@@ -29,6 +39,17 @@ patch(PosOrder.prototype, {
         }
         this.setPartner(partner);
         return true;
+    },
+
+    canBeValidated() {
+        // Odoo evaluates this before OrderPaymentValidation runs.  The sale
+        // will receive the configured internal consumer immediately before
+        // native validation, so only bypass the customer prerequisite here;
+        // every payment and order-line prerequisite stays native.
+        if (this.baseerCanUseAnonymousB2c()) {
+            return this.isPaid() && this._isValidEmptyOrder();
+        }
+        return super.canBeValidated(...arguments);
     },
 });
 

@@ -114,7 +114,7 @@ class AbrojProjectDashboardCase(TransactionCase):
         translations = (js_dir / 'i18n.js').read_text(encoding='utf-8')
         self.assertIn('"openInOdoo": {"ar": "فتح في أودو", "en": "Open in Odoo"}', translations)
         renderer = source[source.index('function renderDrawer()'):source.index('function measureDrawer()')]
-        script = "let currentProject, drawerExpanded=false; const drawer={}; const document={getElementById:()=>drawer}; const t=k=>k;\n" + renderer + """
+        script = "let currentProject, drawerExpanded=false; const drawer={}; const document={getElementById:()=>drawer}; const t=k=>k; const tr=(a,b)=>a; const data={is_owner:false};\n" + renderer + """
             for (const [project, href] of [[null, '/odoo/project'], [{id: 42}, '/odoo/project/42']]) {
                 currentProject = project; renderDrawer();
                 if (!drawer.innerHTML.includes(`href="${href}" target="_blank" rel="noopener"`) ||
@@ -176,6 +176,7 @@ class AbrojProjectDashboardCase(TransactionCase):
         self.assertEqual(by_project[public.id], {past.id, spanning.id, due.id})
         self.assertIn(other.id, by_project[self.project.id])
         self.assertIn(hidden.id, by_project[private.id])
+        public.user_id = self.engineer
         visible = self.env['project.project'].with_user(self.engineer).get_abroj_my_day()
         self.assertNotIn(private.id, {g['id'] for g in visible})
         self.assertEqual({p['id'] for g in visible if g['id'] == public.id for p in g['phases']}, {past.id, spanning.id, due.id})
@@ -530,7 +531,7 @@ class AbrojDashboardHttpCase(HttpCase):
             self.assertTrue(asset.endswith('?v=' + version), asset)
         for icon in self.url_open('/abroj/app/manifest.webmanifest').json()['icons']:
             self.assertTrue(icon['src'].endswith('?v=' + version))
-        self.assertIn("'abroj-v36-' + VERSION", worker)
+        self.assertIn("'abroj-v37-' + VERSION", worker)
         self.assertIn("cache: 'reload'", worker)
         self.assertIn("url.searchParams.get('v') !== VERSION", worker)
         self.assertNotIn('static/pwa/index.html', worker)
@@ -762,7 +763,8 @@ class AbrojDashboardHttpCase(HttpCase):
 
     def test_engineer_permission_endpoints(self):
         project = self.env['project.project'].create({'name': 'Engineer fixture', 'company_id': self.env.company.id, 'privacy_visibility': 'employees'})
-        self.env['res.users'].create({'name': 'Engineer HTTP', 'login': 'engineer_http', 'password': 'engineer_http', 'group_ids': [Command.set([self.env.ref('base.group_user').id, self.env.ref('project.group_project_user').id])]})
+        engineer = self.env['res.users'].create({'name': 'Engineer HTTP', 'login': 'engineer_http', 'password': 'engineer_http', 'group_ids': [Command.set([self.env.ref('base.group_user').id, self.env.ref('project.group_project_user').id])]})
+        project.user_id = engineer
         self.authenticate('engineer_http', 'engineer_http')
         detail = self.rpc('/abroj/app/data', {'project_id': project.id})
         self.assertFalse(detail['can_edit_budget'])
@@ -812,7 +814,8 @@ class AbrojDashboardHttpCase(HttpCase):
     def test_promissory_engineer_restriction(self):
         project = self.env['project.project'].create({'name': 'Promissory HTTP', 'company_id': self.env.company.id, 'privacy_visibility': 'employees'})
         partner = self.env['res.partner'].create({'name': 'Promissory partner'})
-        self.env['res.users'].create({'name': 'Promissory engineer', 'login': 'promissory_engineer', 'password': 'promissory_engineer', 'group_ids': [Command.set([self.env.ref('base.group_user').id, self.env.ref('project.group_project_user').id])]})
+        engineer = self.env['res.users'].create({'name': 'Promissory engineer', 'login': 'promissory_engineer', 'password': 'promissory_engineer', 'group_ids': [Command.set([self.env.ref('base.group_user').id, self.env.ref('project.group_project_user').id])]})
+        project.user_id = engineer
         self.authenticate('promissory_engineer', 'promissory_engineer')
         result = self.rpc('/abroj/app/document/save', {'project_id': project.id, 'kind': 'promissory', 'values': {'partner_id': partner.id, 'amount': 10, 'due_date': '2027-01-01'}})
         self.assertIn('id', result)

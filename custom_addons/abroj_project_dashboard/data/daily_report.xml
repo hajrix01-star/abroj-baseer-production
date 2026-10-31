@@ -1,0 +1,5 @@
+<odoo noupdate="1">
+  <record id="cron_daily_report" model="ir.cron">
+    <field name="name">Daily engineer reports</field><field name="model_id" ref="model_abroj_daily_report"/><field name="state">code</field><field name="code">model.cron_auto_send()</field><field name="interval_number">1</field><field name="interval_type">days</field><field name="nextcall" eval="(DateTime.now().replace(hour=17, minute=0, second=0, microsecond=0) + timedelta(days=1 if DateTime.now().hour &gt;= 17 else 0)).strftime('%Y-%m-%d %H:%M:%S')"/>
+  </record>
+</odoo>

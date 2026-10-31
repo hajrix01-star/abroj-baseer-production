@@ -33,6 +33,13 @@ ASSET_VERSION = _asset_hash.hexdigest()[:12]
 
 class AbrojApp(http.Controller):
     @staticmethod
+    def _check_project(record):
+        project = record if record._name == 'project.project' else record.project_id
+        if not project or (request.env['project.project']._abroj_scope_domain() and project.user_id != request.env.user):
+            raise AccessError('Project is not assigned to this user')
+        return project
+
+    @staticmethod
     def _real_image(value):
         if not value:
             return False
@@ -101,9 +108,13 @@ class AbrojApp(http.Controller):
     @http.route('/abroj/app/data', type='jsonrpc', auth='user')
     def data(self, filters=None, project_id=None, include_archived=False):
         projects = request.env['project.project']
+
+        if project_id:
+            self._check_project(projects.with_context(active_test=False).browse(int(project_id)).exists())
         result = projects.get_abroj_project_detail(project_id) if project_id else projects.get_abroj_dashboard_data(filters, include_archived=include_archived)
         if isinstance(result, dict):
             result['can_create_invoice'] = self._can_create_invoice()
+            result['is_owner'] = not bool(projects._abroj_scope_domain())
             user = request.env.user
             employee = request.env['hr.employee'].sudo().search([('user_id', '=', user.id)], limit=1) if 'hr.employee' in request.env else None
             image_model, image_record = ('hr.employee', employee) if employee and self._real_image(employee.image_128) else ('res.users', user)
@@ -121,10 +132,10 @@ class AbrojApp(http.Controller):
     @http.route('/abroj/app/project/options', type='jsonrpc', auth='user')
     def project_options(self, search=''):
         try:
-            if not request.env['project.project'].has_access('create'):
+            if request.env['project.project']._abroj_scope_domain() or not request.env['project.project'].has_access('create'):
                 raise AccessError('Project create access required')
             partners = request.env['res.partner'].search([('name', 'ilike', str(search or '')[:100])], limit=20) if search else request.env['res.partner']
-            users = request.env['res.users'].search([('share', '=', False)])
+            users = request.env['res.users'].search([('share', '=', False)]).filtered(lambda u: not u.has_group('base.group_system') and not u.has_group('project.group_project_manager'))
             return {'partners': [{'id': p.id, 'name': p.name} for p in partners],
                     'users': [{'id': u.id, 'name': u.name, 'is_system': u.id in (1, request.env.ref('base.user_admin').id) or u.login == '__system__' or u.name == 'Administrator'} for u in users], 'current_user': request.env.uid}
         except AccessError:
@@ -133,7 +144,7 @@ class AbrojApp(http.Controller):
     @http.route('/abroj/app/project/create', type='jsonrpc', auth='user')
     def create_project(self, name='', customer_id=None, customer_name='', location='', budget=0, start='', end='', manager_id=None, project_type='other'):
         try:
-            if not request.env['project.project'].has_access('create'):
+            if request.env['project.project']._abroj_scope_domain() or not request.env['project.project'].has_access('create'):
                 raise AccessError('Project create access required')
             if not isinstance(name, str) or not name.strip():
                 return {'field': 'name', 'error': self._message('اسم المشروع مطلوب.', 'Project name is required.')}
@@ -174,6 +185,7 @@ class AbrojApp(http.Controller):
             project = request.env['project.project'].with_context(active_test=False).browse(int(project_id)).exists()
             if not project:
                 raise AccessError('Project not found')
+            self._check_project(project)
             return project.abroj_close_summary()
         except (AccessError, UserError, ValidationError):
             return {'error': self._message('تعذر عرض ملخص الإغلاق. تحقق من صلاحياتك.', 'Could not view the close summary. Check your permissions.')}
@@ -187,6 +199,7 @@ class AbrojApp(http.Controller):
                 project = request.env['project.project'].with_context(active_test=False).browse(int(project_id)).exists()
                 if not project:
                     raise AccessError('Project not found')
+                self._check_project(project)
                 project.abroj_set_closed(closed, note)
             return {'ok': True}
         except (AccessError, UserError, ValidationError):
@@ -206,8 +219,15 @@ class AbrojApp(http.Controller):
             if record_id and not record:
                 raise AccessError('السجل غير موجود')
             if record_id:
+                self._check_project(record)
+                if model == 'project.task' and values.get('project_id'):
+                    self._check_project(request.env['project.project'].browse(int(values['project_id'])).exists())
                 record.write(values)
             else:
+                if model == 'project.task':
+                    self._check_project(request.env['project.project'].browse(int(values.get('project_id') or 0)).exists())
+                elif request.env['project.project']._abroj_scope_domain():
+                    raise AccessError('Owner access required')
                 record = record.create(values)
             return {'id': record.id}
         except (AccessError, UserError, ValidationError):
@@ -221,6 +241,7 @@ class AbrojApp(http.Controller):
             record = request.env[model].browse(int(record_id)).exists()
             if not record:
                 raise AccessError('Record not found')
+            self._check_project(record)
             record.check_access('write')
             message = record.message_post(body=body.strip(), message_type='comment', subtype_xmlid='mail.mt_note')
             return {'id': message.id}
@@ -230,6 +251,11 @@ class AbrojApp(http.Controller):
     @http.route('/abroj/app/attachments', type='jsonrpc', auth='user')
     def attachments(self, model, record_id, type=None, task_id=None, uploader_id=None, sort='desc'):
         try:
+            if model not in ('project.project', 'project.task'):
+                raise AccessError('Invalid model')
+            project = self._check_project(request.env[model].browse(int(record_id)).exists())
+            if task_id and self._check_project(request.env['project.task'].browse(int(task_id)).exists()) != project:
+                raise AccessError('Invalid task')
             return request.env['abroj.gallery'].get_items(model, record_id, type, task_id, uploader_id, sort)
         except (AccessError, UserError, ValidationError, ValueError, TypeError):
             return {'error': self._message('تعذر عرض المرفقات. تحقق من صلاحياتك.', 'Could not view attachments. Check your permissions.')}
@@ -240,6 +266,7 @@ class AbrojApp(http.Controller):
             project = request.env['project.project'].with_context(active_test=False).browse(int(project_id)).exists()
             if not project:
                 raise AccessError('Project not found')
+            self._check_project(project)
             project.check_access('read')
             tasks = request.env['project.task'].with_context(active_test=False).search([('project_id', '=', project.id)])
             attachments = request.env['ir.attachment'].search([
@@ -277,6 +304,7 @@ class AbrojApp(http.Controller):
                 project = request.env['project.project'].with_context(active_test=False).browse(int(project_id)).exists()
                 if not project or not file:
                     raise AccessError('Project or file missing')
+                self._check_project(project)
                 project.check_access('write')
                 content = file.read(25 * 1024 * 1024 + 1)
                 if not content or len(content) > 25 * 1024 * 1024:
@@ -311,6 +339,7 @@ class AbrojApp(http.Controller):
             record = request.env[model].browse(int(record_id)).exists()
             if not record:
                 raise AccessError('السجل غير موجود')
+            self._check_project(record)
             record.check_access('write')
             content = file.read(25 * 1024 * 1024 + 1)
             if len(content) > 25 * 1024 * 1024:
@@ -338,6 +367,7 @@ class AbrojApp(http.Controller):
             project = request.env['project.project'].browse(int(project_id)).exists()
             if not project:
                 raise AccessError('المشروع غير موجود')
+            self._check_project(project)
             project.check_access('read')
             result = {'partners': [{'id': p.id, 'name': p.display_name} for p in request.env['res.partner'].search([], limit=500)], 'records': {}, 'capabilities': {}, 'agreement': {name: (str(project[name]) if project._fields[name].type == 'date' and project[name] else project[name]) for name in ('contracting_goal_ar', 'contracting_goal_en', 'contract_payment_schedule_ar', 'contract_payment_schedule_en', 'contracting_start', 'contracting_end', 'contract_value', 'value_type', 'estimated_cost', 'contract_vat_percent', 'contract_retention_percent')}}
             for key, (model, allowed) in self._documents.items():
@@ -373,6 +403,7 @@ class AbrojApp(http.Controller):
             project = request.env['project.project'].browse(int(project_id)).exists()
             if not project:
                 raise AccessError('المشروع غير موجود')
+            self._check_project(project)
             project.check_access('read')
             vals = dict(values)
             if record_id:
@@ -400,6 +431,7 @@ class AbrojApp(http.Controller):
             project = request.env['project.project'].browse(int(project_id)).exists()
             if not project:
                 raise AccessError('المشروع غير موجود')
+            self._check_project(project)
             project.check_access('read')
             record = request.env[self._documents[kind][0]].browse(int(record_id)).exists()
             if not record or record.project_id != project or (kind in ('payment', 'receipt') and record.kind != kind):
@@ -429,6 +461,7 @@ class AbrojApp(http.Controller):
                 raise AccessError('المستند غير موجود')
             record.check_access('read')
             project = record if kind == 'agreement' else record.project_id
+            self._check_project(project)
             project.check_access('read')
             if kind in ('payment', 'receipt') and record.kind != kind:
                 raise AccessError('المستند غير موجود')
@@ -448,6 +481,7 @@ class AbrojApp(http.Controller):
             project = request.env['project.project'].browse(int(project_id)).exists()
             if not project or not file:
                 raise AccessError('المشروع أو التسجيل غير موجود')
+            self._check_project(project)
             project.check_access('read')
             content = file.read(25 * 1024 * 1024 + 1)
             if not content or len(content) > 25 * 1024 * 1024 or not (file.content_type or '').startswith('audio/'):
@@ -460,3 +494,64 @@ class AbrojApp(http.Controller):
             return request.make_json_response({'id': note.id})
         except (AccessError, UserError, ValidationError, ValueError):
             return request.make_json_response({'error': self._message('تعذر حفظ الملاحظة الصوتية.', 'Could not save the voice note.')}, status=403)
+
+    @http.route('/abroj/app/project/set-manager', type='jsonrpc', auth='user')
+    def set_manager(self, project_id, manager_id=None):
+        if request.env['project.project']._abroj_scope_domain():
+            raise AccessError('Owner access required')
+        project = request.env['project.project'].with_context(active_test=False).browse(int(project_id)).exists()
+        manager = request.env['res.users'].search([('id', '=', int(manager_id)), ('share', '=', False)]) if manager_id else request.env['res.users']
+        if not project or (manager_id and (not manager or manager.has_group('base.group_system') or manager.has_group('project.group_project_manager'))):
+            raise AccessError('Project or engineer unavailable')
+        project.write({'user_id': manager.id or False})
+        return {'ok': True}
+
+    def _report_data(self, report, project_id=None):
+        return {'id': report.id, 'date': str(report.date), 'engineer': report.engineer_id.name, 'state': report.state, 'sent_at': str(report.sent_at or ''), 'lines': [{'id': line.id, 'project_id': line.project_id.id, 'project': line.project_id.name, 'task': line.task_id.name, 'progress_from': line.progress_from, 'progress_to': line.progress_to, 'status': line.status, 'notes': line.notes or '', 'photo_count': line.photo_count, 'tomorrow_plan': line.tomorrow_plan or ''} for line in report.line_ids if (not project_id or line.project_id.id == int(project_id)) and (not request.env['project.project']._abroj_scope_domain() or line.project_id.user_id == request.env.user)]}
+
+    @http.route('/abroj/app/report/generate', type='jsonrpc', auth='user')
+    def report_generate(self):
+        from ..models.daily_report import today_riyadh
+        reports = request.env['abroj.daily.report'].sudo()
+        report = reports.search([('engineer_id', '=', request.env.uid), ('date', '=', today_riyadh())], limit=1) or reports.create({'engineer_id': request.env.uid, 'date': today_riyadh()})
+        report.generate()
+        return self._report_data(report)
+
+    @http.route('/abroj/app/report/get', type='jsonrpc', auth='user')
+    def report_get(self, report_id=None, project_id=None):
+        reports = request.env['abroj.daily.report'].sudo()
+        if project_id:
+            self._check_project(request.env['project.project'].browse(int(project_id)).exists())
+            lines = request.env['abroj.daily.report.line'].sudo().search([('project_id', '=', int(project_id))])
+            return [self._report_data(r, project_id) for r in lines.mapped('report_id') if not request.env['project.project']._abroj_scope_domain() or r.engineer_id.id == request.env.uid]
+        report = reports.browse(int(report_id)).exists()
+        if not report or (request.env['project.project']._abroj_scope_domain() and report.engineer_id.id != request.env.uid):
+            raise AccessError('Report unavailable')
+        return self._report_data(report)
+
+    @http.route('/abroj/app/report/edit', type='jsonrpc', auth='user')
+    def report_edit(self, line_id, tomorrow_plan):
+        line = request.env['abroj.daily.report.line'].sudo().browse(int(line_id)).exists()
+        if not line or line.report_id.engineer_id.id != request.env.uid or line.report_id.state != 'draft' or not isinstance(tomorrow_plan, str):
+            raise AccessError('Report unavailable')
+        self._check_project(line.project_id)
+        line.write({'tomorrow_plan': tomorrow_plan})
+        return {'ok': True}
+
+    @http.route('/abroj/app/report/approve', type='jsonrpc', auth='user')
+    def report_approve(self, report_id):
+        report = request.env['abroj.daily.report'].sudo().browse(int(report_id)).exists()
+        if not report or report.engineer_id.id != request.env.uid or report.state != 'draft':
+            raise AccessError('Report unavailable')
+        now = fields.Datetime.now()
+        report.write({'state': 'approved', 'approved_at': now, 'sent_at': now})
+        return self._report_data(report)
+
+    @http.route('/abroj/app/report/overview', type='jsonrpc', auth='user')
+    def report_overview(self):
+        from ..models.daily_report import today_riyadh
+        if request.env['project.project']._abroj_scope_domain():
+            raise AccessError('Owner access required')
+        projects = request.env['project.project'].search([('user_id', '!=', False)])
+        reports = request.env['abroj.daily.report'].sudo().search([('date', '=', today_riyadh())])
+        return [{'engineer': user.name, 'projects': projects.filtered(lambda p: p.user_id == user).mapped('name'), 'report': self._report_data(reports.filtered(lambda r: r.engineer_id == user)[:1]) if reports.filtered(lambda r: r.engineer_id == user) else False} for user in projects.mapped('user_id') if not user.has_group('base.group_system') and not user.has_group('project.group_project_manager')]

@@ -1,4 +1,5 @@
 import json
+import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -433,6 +434,24 @@ class AbrojDashboardHttpCase(HttpCase):
         self.authenticate('admin', 'admin')
         self.assertIn('no-store', self.url_open('/abroj/app').headers['Cache-Control'])
         self.assertIn('no-cache', self.url_open('/abroj/app/manifest.webmanifest').headers['Cache-Control'])
+
+    def test_pwa_asset_versions_match(self):
+        self.authenticate('admin', 'admin')
+        page = self.url_open('/abroj/app').text
+        worker = self.url_open('/abroj/app/sw.js').text
+        version = re.search(r"const VERSION = '([0-9a-f]{12})'", worker).group(1)
+        self.assertNotIn('ASSET_VERSION_PLACEHOLDER', page)
+        self.assertNotIn('ASSET_VERSION_PLACEHOLDER', worker)
+        assets = re.findall(r'(?:src|href)="(/abroj_project_dashboard/static/pwa/[^"]+)"', page)
+        self.assertTrue(assets)
+        for asset in assets:
+            self.assertTrue(asset.endswith('?v=' + version), asset)
+        for icon in self.url_open('/abroj/app/manifest.webmanifest').json()['icons']:
+            self.assertTrue(icon['src'].endswith('?v=' + version))
+        self.assertIn("'abroj-v32-' + VERSION", worker)
+        self.assertIn("cache: 'reload'", worker)
+        self.assertIn("url.searchParams.get('v') !== VERSION", worker)
+        self.assertNotIn('static/pwa/index.html', worker)
 
     def test_brand_assets_and_manifest(self):
         manifest = self.url_open('/abroj/app/manifest.webmanifest').json()

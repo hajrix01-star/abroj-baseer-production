@@ -2,6 +2,8 @@ import base64
 import binascii
 import json
 import html
+import hashlib
+import re
 import logging
 from pathlib import Path
 import math
@@ -14,6 +16,19 @@ from odoo.http import request
 
 
 _logger = logging.getLogger(__name__)
+
+_PWA_DIR = Path(__file__).parent.parent / 'static/pwa'
+# The worker's ASSETS list is the source of truth for the versioned files.
+_worker_source = (_PWA_DIR / 'sw.js').read_text(encoding='utf-8')
+_asset_list = re.search(r'const ASSETS = \[(.*?)\];', _worker_source, re.DOTALL).group(1)
+_asset_paths = re.findall(r"'(/abroj_project_dashboard/static/pwa/[^']+)'", _asset_list)
+if not _asset_paths:
+    raise ValueError('The service worker asset list is empty')
+_asset_hash = hashlib.sha1()
+for _asset in _asset_paths:
+    _asset_hash.update(_asset.encode('utf-8') + b'\0')
+    _asset_hash.update((_PWA_DIR / _asset.rsplit('/static/pwa/', 1)[1]).read_bytes())
+ASSET_VERSION = _asset_hash.hexdigest()[:12]
 
 
 class AbrojApp(http.Controller):
@@ -43,6 +58,7 @@ class AbrojApp(http.Controller):
     @http.route('/abroj/app', type='http', auth='user', methods=['GET'])
     def app(self):
         page = (Path(__file__).parent.parent / 'static/pwa/index.html').read_text(encoding='utf-8')
+        page = page.replace('ASSET_VERSION_PLACEHOLDER', ASSET_VERSION)
         page = page.replace('CSRF_TOKEN_PLACEHOLDER', request.csrf_token())
         page = page.replace('SESSION_UID_PLACEHOLDER', str(request.session.uid)).replace('SESSION_DB_PLACEHOLDER', html.escape(request.session.db, quote=True))
         page = page.replace('USER_LANG_PLACEHOLDER', 'ar' if (request.env.user.lang or '').startswith('ar') else 'en')
@@ -74,12 +90,12 @@ class AbrojApp(http.Controller):
 
     @http.route('/abroj/app/manifest.webmanifest', type='http', auth='public', methods=['GET'])
     def manifest(self):
-        data = {'name': self._message('أبرج للمقاولات', 'Abroj Contracting'), 'short_name': self._message('أبرج', 'Abroj'), 'start_url': '/abroj/app', 'scope': '/abroj/app', 'display': 'standalone', 'dir': self._message('rtl', 'ltr'), 'lang': self._message('ar', 'en'), 'theme_color': '#12243b', 'background_color': '#f5f6f8', 'icons': [{'src': '/abroj_project_dashboard/static/pwa/icon-%d.png' % n, 'sizes': '%dx%d' % (n, n), 'type': 'image/png'} for n in (192, 512)] + [{'src': '/abroj_project_dashboard/static/pwa/icon-maskable-512.png', 'sizes': '512x512', 'type': 'image/png', 'purpose': 'maskable'}]}
+        data = {'name': self._message('أبرج للمقاولات', 'Abroj Contracting'), 'short_name': self._message('أبرج', 'Abroj'), 'start_url': '/abroj/app', 'scope': '/abroj/app', 'display': 'standalone', 'dir': self._message('rtl', 'ltr'), 'lang': self._message('ar', 'en'), 'theme_color': '#12243b', 'background_color': '#f5f6f8', 'icons': [{'src': '/abroj_project_dashboard/static/pwa/icon-%d.png?v=%s' % (n, ASSET_VERSION), 'sizes': '%dx%d' % (n, n), 'type': 'image/png'} for n in (192, 512)] + [{'src': '/abroj_project_dashboard/static/pwa/icon-maskable-512.png?v=%s' % ASSET_VERSION, 'sizes': '512x512', 'type': 'image/png', 'purpose': 'maskable'}]}
         return request.make_response(json.dumps(data, ensure_ascii=False), [('Content-Type', 'application/manifest+json'), ('Cache-Control', 'no-store, no-cache, must-revalidate'), ('Pragma', 'no-cache'), ('Expires', '0')])
 
     @http.route('/abroj/app/sw.js', type='http', auth='public', methods=['GET'])
     def sw(self):
-        source = (Path(__file__).parent.parent / 'static/pwa/sw.js').read_text(encoding='utf-8')
+        source = _worker_source.replace('ASSET_VERSION_PLACEHOLDER', ASSET_VERSION)
         return request.make_response(source, [('Content-Type', 'application/javascript'), ('Service-Worker-Allowed', '/abroj/app'), ('Cache-Control', 'no-store')])
 
     @http.route('/abroj/app/data', type='jsonrpc', auth='user')

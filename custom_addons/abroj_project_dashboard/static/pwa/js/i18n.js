@@ -1,5 +1,8 @@
 'use strict';
 const translations = {
+  connectionErrorTitle: {ar:'تعذر الاتصال', en:'Unable to connect'},
+  connectionErrorText: {ar:'تحقق من اتصالك بالإنترنت ثم أعد المحاولة', en:'Check your internet connection and try again'},
+  connectionRetry: {ar:'إعادة المحاولة', en:'Retry'},
   "customer": {"ar":"العميل", "en":"Customer"},
   "customerHint": {"ar":"ابحث أو أدخل اسم عميل جديد", "en":"Search or enter a new customer name"},
   "location": {"ar":"الموقع", "en":"Location"},

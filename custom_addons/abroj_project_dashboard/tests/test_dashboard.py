@@ -580,7 +580,7 @@ class AbrojDashboardHttpCase(HttpCase):
             self.assertTrue(asset.endswith('?v=' + version), asset)
         for icon in self.url_open('/abroj/app/manifest.webmanifest').json()['icons']:
             self.assertTrue(icon['src'].endswith('?v=' + version))
-        self.assertIn("'abroj-v51-' + VERSION", worker)
+        self.assertIn("'abroj-v52-' + VERSION", worker)
         self.assertIn("cache: 'reload'", worker)
         self.assertIn("url.searchParams.get('v') !== VERSION", worker)
         self.assertNotIn('static/pwa/index.html', worker)
@@ -832,22 +832,20 @@ class AbrojDashboardHttpCase(HttpCase):
         Party = self.env['abroj.contracting.party']
         client = Party.create({'name': 'Document client', 'party_type': 'client'})
         project = self.env['project.project'].create({'name': 'Documents HTTP', 'company_id': self.env.company.id, 'abroj_client_party_id': client.id})
-        unrelated_tag = self.env['res.partner.category'].create({'name': 'Contact-only tag'})
         self.authenticate('admin', 'admin')
         partner_count = self.env['res.partner'].search_count([])
-        contracting_tag = self.env.ref('abroj_contracting.party_tag_contracting')
-        created = self.rpc('/abroj/app/party/create', {'project_id': project.id, 'name': 'Manual subcontractor', 'party_type': 'subcontractor', 'phone': '0500000000', 'category_ids': [contracting_tag.id]})
+        created = self.rpc('/abroj/app/party/create', {'project_id': project.id, 'name': 'Manual subcontractor', 'party_type': 'subcontractor', 'phone': '0500000000'})
         self.assertEqual(created['type'], 'subcontractor')
-        self.assertEqual(created['tags'], ['مقاولات'])
+        self.assertNotIn('tags', created)
+        self.assertFalse(self.env['abroj.contracting.party'].browse(created['id']).category_ids)
         again = self.rpc('/abroj/app/party/create', {'project_id': project.id, 'name': 'Manual subcontractor', 'party_type': 'subcontractor'})
         self.assertEqual(again['id'], created['id'])
         self.assertEqual(self.env['res.partner'].search_count([]), partner_count, 'manual parties must not create contacts')
         listing = self.rpc('/abroj/app/documents', {'project_id': project.id})
         listed = listing['parties']
-        self.assertIn({'id': created['id'], 'name': 'Manual subcontractor', 'type': 'subcontractor', 'tags': ['مقاولات']}, listed)
-        self.assertIn({'id': client.id, 'name': 'Document client', 'type': 'client', 'tags': ['عملاء']}, listed)
-        self.assertIn({'id': contracting_tag.id, 'name': 'مقاولات'}, listing['party_tags'])
-        self.assertNotIn(unrelated_tag.id, [t['id'] for t in listing['party_tags']], 'PWA must not list unrelated contact tags')
+        self.assertIn({'id': created['id'], 'name': 'Manual subcontractor', 'type': 'subcontractor', 'phone': '0500000000'}, listed)
+        self.assertIn({'id': client.id, 'name': 'Document client', 'type': 'client', 'phone': ''}, listed)
+        self.assertNotIn('party_tags', listing)
         sub_party = created['id']
         def save(kind, values):
             result = self.rpc('/abroj/app/document/save', {'project_id': project.id, 'kind': kind, 'values': values})
@@ -878,10 +876,14 @@ class AbrojDashboardHttpCase(HttpCase):
         partner = self.env['res.partner'].create({'name': 'Legacy contact'})
         self.authenticate('admin', 'admin')
         partner_count = self.env['res.partner'].search_count([])
-        supplier = self.rpc('/abroj/app/party/create', {'project_id': project.id, 'name': 'Picker supplier', 'party_type': 'supplier',
-                                                         'category_ids': [self.env.ref('abroj_contracting.party_tag_suppliers').id]})
-        self.assertEqual((supplier['type'], supplier['tags']), ('supplier', ['موردين']))
-        self.assertEqual(Party.browse(supplier['id']).category_ids, self.env.ref('abroj_contracting.party_tag_suppliers'))
+        supplier = self.rpc('/abroj/app/party/create', {'project_id': project.id, 'name': 'Picker supplier', 'party_type': 'supplier'})
+        self.assertEqual(supplier['type'], 'supplier')
+        citizen = self.rpc('/abroj/app/party/create', {'project_id': project.id, 'name': 'Picker citizen', 'party_type': 'citizen'})
+        self.assertEqual(citizen['type'], 'citizen')
+        self.assertIn('error', self.rpc('/abroj/app/party/create', {'project_id': project.id, 'name': 'Bad type', 'party_type': 'vendor'}))
+        # Old cached PWA clients may still send tags; they are ignored, not required.
+        legacy = self.rpc('/abroj/app/party/create', {'project_id': project.id, 'name': 'Legacy tags', 'party_type': 'client', 'category_ids': [1]})
+        self.assertIn('id', legacy)
         self.assertEqual(self.env['res.partner'].search_count([]), partner_count, 'supplier parties must not create contacts')
         save = lambda kind, values: self.rpc('/abroj/app/document/save', {'project_id': project.id, 'kind': kind, 'values': values})
         cost = save('cost', {'name': 'Cement', 'amount': 50, 'party_id': supplier['id']})
@@ -897,6 +899,24 @@ class AbrojDashboardHttpCase(HttpCase):
         docs = self.rpc('/abroj/app/documents', {'project_id': project.id})
         self.assertEqual(docs['records']['promissory'][0]['values']['party_id'], client.id)
         self.assertTrue(any(r['values'].get('party_id') == supplier['id'] for r in docs['records']['cost']))
+        # Any party type is accepted by every picker: citizen as cost supplier and promissory party.
+        self.assertIn('id', save('cost', {'name': 'Citizen cost', 'amount': 5, 'party_id': citizen['id']}))
+        self.assertIn('id', save('promissory', {'party_id': citizen['id'], 'amount': 5, 'issue_date': '2026-01-01', 'due_date': '2026-03-01'}))
+        types = {p['type'] for p in docs['parties']}
+        self.assertLessEqual({'citizen', 'client', 'supplier'}, types)
+        # Picker search (Arabic-normalized name or phone) and citizen as project client.
+        citizen = Party.create({'name': 'أبو مسعود', 'party_type': 'citizen', 'phone': '0557654321'})
+        found = self.rpc('/abroj/app/project/options', {'search': 'ابو مسعود'})['partners']
+        self.assertIn({'id': citizen.id, 'name': 'أبو مسعود', 'type': 'citizen'}, found)
+        self.assertIn(citizen.id, [p['id'] for p in self.rpc('/abroj/app/project/options', {'search': '7654321'})['partners']])
+        result = self.rpc('/abroj/app/project/create', {'name': 'Citizen project', 'customer_id': citizen.id, 'manager_id': self.env.ref('base.user_admin').id})
+        self.assertEqual(self.env['project.project'].browse(result['id']).abroj_client_party_id, citizen)
+        source = (Path(__file__).resolve().parents[1] / 'static' / 'pwa' / 'js' / 'screens.js').read_text(encoding='utf-8')
+        self.assertIn("const PARTY_TYPES=['citizen','client','subcontractor','supplier'];", source)
+        self.assertIn('data-psearch', source)
+        self.assertIn("replace(/[أإآٱا]/g,'ا').replace(/ة/g,'ه')", source)
+        self.assertNotIn('party_tags', source)
+        self.assertNotIn('.filter(x=>ptype', source, 'pickers must list all party types')
 
     def test_promissory_engineer_restriction(self):
         project = self.env['project.project'].create({'name': 'Promissory HTTP', 'company_id': self.env.company.id, 'privacy_visibility': 'employees'})

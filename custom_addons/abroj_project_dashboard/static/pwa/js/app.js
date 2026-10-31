@@ -68,3 +68,11 @@ function toggleAccountMenu(force){const menu=document.getElementById('account-me
 document.addEventListener('click',event=>{if(!event.target.closest('.account'))toggleAccountMenu(false)});
 document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!document.getElementById('account-menu').hidden){toggleAccountMenu(false);document.getElementById('account-button').focus()}});
 initialize();
+
+async function refreshNotifications(){try{const result=await rpc('/abroj/app/notifications');if(!result)return null;const badge=document.getElementById('notification-count');badge.hidden=!result.count;badge.textContent=result.count>99?'99+':String(result.count);document.getElementById('notification-button').setAttribute('aria-label',lang==='ar'?'الإشعارات':'Notifications');return result}catch(_){return null}}
+function notificationTime(value){if(!value)return '';const date=new Date(value.replace(' ','T')+'Z');return Number.isNaN(date.getTime())?value:new Intl.DateTimeFormat('en-GB',{dateStyle:'medium',timeStyle:'short'}).format(date)}
+async function toggleNotifications(force){const panel=document.getElementById('notification-panel'),open=typeof force==='boolean'?force:panel.hidden;panel.hidden=!open;document.getElementById('notification-button').setAttribute('aria-expanded',String(open));if(!open)return;const result=await refreshNotifications();if(!result)return;panel.innerHTML=`<div class="notification-head"><strong>${lang==='ar'?'الإشعارات':'Notifications'}</strong><button type="button" onclick="readNotification()">${lang==='ar'?'تعليم الكل كمقروء':'Mark all as read'}</button></div>`+(result.items.map(item=>`<button class="notification-item" type="button" onclick="readNotification(${item.id})"><span class="notification-dot ${esc(item.category)}"></span><span>${esc(item.body)}<small>${esc(notificationTime(item.date))}</small></span></button>`).join('')||`<div class="notification-empty">${lang==='ar'?'لا توجد إشعارات جديدة':'No new notifications'}</div>`)}
+async function readNotification(id){try{await rpc('/abroj/app/notifications/read',id?{message_id:id}:{});await toggleNotifications(true)}catch(_){toast(t('s83'))}}
+document.addEventListener('click',event=>{if(!event.target.closest('.notification-wrap'))toggleNotifications(false)});
+window.addEventListener('hashchange',refreshNotifications);
+refreshNotifications();

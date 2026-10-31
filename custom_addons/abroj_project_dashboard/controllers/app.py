@@ -233,6 +233,21 @@ class AbrojApp(http.Controller):
         except (AccessError, UserError, ValidationError):
             return {'error': self._message('تعذر الحفظ. تحقق من صلاحياتك والبيانات المدخلة.', 'Could not save. Check your permissions and input.')}
 
+    @http.route('/abroj/app/notifications', type='jsonrpc', auth='user')
+    def notifications(self):
+        return request.env['project.project']._abroj_notification_feed()
+
+    @http.route('/abroj/app/notifications/read', type='jsonrpc', auth='user')
+    def notifications_read(self, message_id=None):
+        if message_id is not None:
+            try:
+                message_id = int(message_id)
+                if message_id <= 0:
+                    raise ValueError()
+            except (ValueError, TypeError):
+                return {'error': 'Invalid message'}
+        return request.env['project.project']._abroj_notification_feed(message_id=message_id, mark=True)
+
     @http.route('/abroj/app/note', type='jsonrpc', auth='user')
     def text_note(self, model, record_id, body):
         try:
@@ -244,6 +259,8 @@ class AbrojApp(http.Controller):
             self._check_project(record)
             record.check_access('write')
             message = record.message_post(body=body.strip(), message_type='comment', subtype_xmlid='mail.mt_note')
+            project = self._check_project(record)
+            project._abroj_notify('تمت إضافة ملاحظة — %s' % project.name)
             return {'id': message.id}
         except (AccessError, UserError, ValidationError, ValueError, TypeError):
             return {'error': self._message('تعذر حفظ الملاحظة.', 'Could not save the note.')}
@@ -323,6 +340,7 @@ class AbrojApp(http.Controller):
                     'file': base64.b64encode(content), 'abroj_invoice_bill_id': bill.id,
                     'note': 'Invoice — pending extraction',
                 })
+            project._abroj_notify('تم رفع فاتورة — %s' % project.name)
             return request.make_json_response({'id': bill.id, 'state': bill.state, 'extraction': 'pending'})
         except Exception:
             _logger.exception('Could not create the draft vendor bill')
@@ -345,6 +363,8 @@ class AbrojApp(http.Controller):
             if len(content) > 25 * 1024 * 1024:
                 raise UserError('الملف أكبر من 25 ميغابايت')
             attachment = request.env['ir.attachment'].with_context(image_no_postprocess=True).create({'name': file.filename, 'res_model': model, 'res_id': record.id, 'datas': base64.b64encode(content), 'mimetype': file.content_type, 'description': kwargs.get('description', '')})
+            project = self._check_project(record)
+            project._abroj_notify('تم رفع ملف — %s' % project.name)
             return request.make_json_response({'id': attachment.id})
         except (AccessError, UserError, ValueError):
             return request.make_json_response({'error': self._message('تعذر رفع الملف. تحقق من الصلاحيات وحجم الملف.', 'Could not upload the file. Check permissions and file size.')}, status=403)
@@ -466,6 +486,8 @@ class AbrojApp(http.Controller):
             if kind in ('payment', 'receipt') and record.kind != kind:
                 raise AccessError('المستند غير موجود')
             pdf, _ = request.env['ir.actions.report']._render_qweb_pdf(report, res_ids=record.ids)
+            if kind not in ('agreement', 'contract'):
+                project._abroj_notify('تم تصدير مستند PDF — %s' % project.name)
             return request.make_response(pdf, [('Content-Type', 'application/pdf'), ('Content-Disposition', 'attachment; filename="document.pdf"')])
         except AccessError:
             return request.make_response(self._message('تعذر تنزيل التقرير. تحقق من صلاحياتك.', 'Could not download the report. Check your permissions.'), status=403)
@@ -491,6 +513,7 @@ class AbrojApp(http.Controller):
                 'attachment': base64.b64encode(content), 'filename': file.filename,
                 'mimetype': file.content_type,
             })
+            project._abroj_notify('تم رفع تسجيل صوتي — %s' % project.name)
             return request.make_json_response({'id': note.id})
         except (AccessError, UserError, ValidationError, ValueError):
             return request.make_json_response({'error': self._message('تعذر حفظ الملاحظة الصوتية.', 'Could not save the voice note.')}, status=403)

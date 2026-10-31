@@ -531,7 +531,7 @@ class AbrojDashboardHttpCase(HttpCase):
             self.assertTrue(asset.endswith('?v=' + version), asset)
         for icon in self.url_open('/abroj/app/manifest.webmanifest').json()['icons']:
             self.assertTrue(icon['src'].endswith('?v=' + version))
-        self.assertIn("'abroj-v38-' + VERSION", worker)
+        self.assertIn("'abroj-v39-' + VERSION", worker)
         self.assertIn("cache: 'reload'", worker)
         self.assertIn("url.searchParams.get('v') !== VERSION", worker)
         self.assertNotIn('static/pwa/index.html', worker)
@@ -761,6 +761,19 @@ class AbrojDashboardHttpCase(HttpCase):
         phase = next(p for p in detail['phases'] if p['id'] == result['id'])
         self.assertEqual((phase['duration'], phase['end']), (3, '2026-11-03'))
 
+    def test_notification_endpoints_scope_and_read(self):
+        engineer = self.env['res.users'].create({'name': 'Feed engineer', 'login': 'feed_engineer', 'password': 'feed_engineer', 'group_ids': [Command.set([self.env.ref('base.group_user').id, self.env.ref('project.group_project_user').id])]})
+        project = self.env['project.project'].create({'name': 'Feed assigned', 'company_id': self.env.company.id, 'user_id': engineer.id, 'privacy_visibility': 'employees'})
+        hidden = self.env['project.project'].create({'name': 'Feed hidden', 'company_id': self.env.company.id, 'privacy_visibility': 'employees'})
+        self.env['ir.config_parameter'].sudo().set_param('abroj.notify_owner_ids', str(engineer.id))
+        project._abroj_notify('visible')
+        hidden._abroj_notify('hidden')
+        self.authenticate('feed_engineer', 'feed_engineer')
+        feed = self.rpc('/abroj/app/notifications', {})
+        self.assertEqual([item['body'] for item in feed['items']], ['visible'])
+        self.rpc('/abroj/app/notifications/read', {'message_id': feed['items'][0]['id']})
+        self.assertEqual(self.rpc('/abroj/app/notifications', {})['count'], 0)
+
     def test_engineer_permission_endpoints(self):
         project = self.env['project.project'].create({'name': 'Engineer fixture', 'company_id': self.env.company.id, 'privacy_visibility': 'employees'})
         engineer = self.env['res.users'].create({'name': 'Engineer HTTP', 'login': 'engineer_http', 'password': 'engineer_http', 'group_ids': [Command.set([self.env.ref('base.group_user').id, self.env.ref('project.group_project_user').id])]})
@@ -851,3 +864,31 @@ class AbrojDashboardHttpCase(HttpCase):
         self.env['res.users'].create({'name': 'PDF engineer', 'login': 'pdf_engineer', 'password': 'pdf_engineer', 'group_ids': [Command.set([self.env.ref('base.group_user').id, self.env.ref('project.group_project_user').id])]})
         self.authenticate('pdf_engineer', 'pdf_engineer')
         self.assertEqual(self.url_open('/abroj/app/pdf/promissory/%d' % hidden.id).status_code, 403)
+
+    def test_notification_recipients_for_document_endpoints(self):
+        import re
+        from unittest.mock import patch
+        groups = [self.env.ref('base.group_user').id, self.env.ref('project.group_project_user').id]
+        users = self.env['res.users'].create([
+            {'name': 'Endpoint engineer', 'login': 'endpoint_engineer', 'group_ids': [Command.set(groups)]},
+            {'name': 'Endpoint owner', 'login': 'endpoint_owner', 'group_ids': [Command.set(groups)]},
+        ])
+        self.env['ir.config_parameter'].sudo().set_param('abroj.notify_owner_ids', str(users[1].id))
+        self.env['ir.config_parameter'].sudo().set_param('abroj.notify_accountant_ids', '[]')
+        project = self.env['project.project'].create({'name': 'Endpoint notifications', 'user_id': users[0].id, 'company_id': self.env.company.id})
+        task = self.env['project.task'].create({'name': 'Endpoint phase', 'project_id': project.id})
+        partner = self.env['res.partner'].create({'name': 'Endpoint partner'})
+        note = self.env['abroj.promissory.note'].create({'project_id': project.id, 'partner_id': partner.id, 'amount': 10, 'due_date': '2027-01-01'})
+        self.authenticate('admin', 'admin')
+        token = re.search(r'name="csrf-token" content="([^"]+)', self.url_open('/abroj/app').text).group(1)
+        self.assertIn('id', self.rpc('/abroj/app/note', {'model': 'project.task', 'record_id': task.id, 'body': 'Progress'}))
+        self.assertIn('id', self.url_open('/abroj/app/upload', data={'csrf_token': token, 'model': 'project.task', 'record_id': str(task.id)}, files={'file': ('site.jpg', b'photo', 'image/jpeg')}).json())
+        self.assertIn('id', self.url_open('/abroj/app/voice', data={'csrf_token': token, 'project_id': str(project.id), 'body': 'Voice'}, files={'file': ('voice.webm', b'audio', 'audio/webm')}).json())
+        with patch.object(type(self.env['ir.actions.report']), '_render_qweb_pdf', return_value=(b'%PDF-1.4', 'pdf')):
+            self.assertEqual(self.url_open('/abroj/app/pdf/promissory/%d' % note.id).status_code, 200)
+        messages = self.env['mail.message'].sudo().search([('model', '=', 'project.project'), ('res_id', '=', project.id), ('abroj_notification_category', '=', 'document')])
+        for text in ('تمت إضافة ملاحظة', 'تم رفع ملف', 'تم رفع تسجيل صوتي', 'تم تصدير مستند PDF'):
+            message = messages.filtered(lambda m: text in m.body)
+            self.assertEqual(len(message), 1, text)
+            recipients = self.env['mail.notification'].sudo().search([('mail_message_id', '=', message.id), ('notification_type', '=', 'inbox')]).mapped('res_partner_id')
+            self.assertTrue(set(users.partner_id.ids) <= set(recipients.ids), text)

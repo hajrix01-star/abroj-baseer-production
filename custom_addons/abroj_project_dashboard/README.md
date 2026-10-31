@@ -106,3 +106,7 @@ Closing requires a folded project stage and reopening requires an unfolded stage
 ## Offline media queue
 
 Offline uploads are scoped to the user ID and database that created them. Pending uploads remain on the device after logout and resume when that user returns to the same database. Legacy entries without both owner fields remain in IndexedDB, hidden and never uploaded automatically, because their owner cannot be established safely.
+
+### Project notifications
+
+The dashboard posts project alerts to native Odoo mail and displays unread alerts in the app bell. Recipients are the project manager, system administrators (except the superuser and `__system__`), and accounting managers. Administrators can override the two groups in Settings → Abroj Notifications with comma-separated internal user IDs; alternatively set `abroj.notify_owner_ids` and `abroj.notify_accountant_ids` as comma-separated IDs or JSON arrays in system parameters. Set a parameter to `[]` to select nobody in that group. The daily scheduled action checks overdue phases once per phase. The app feed also applies the dashboard's project scope and Odoo record rules; reading an alert affects only the current user's mail notification.

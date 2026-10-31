@@ -1,7 +1,7 @@
 from odoo import api, fields, models
 from odoo.exceptions import ValidationError
 
-PARTY_TYPES = [('client', 'عميل'), ('subcontractor', 'مقاول باطن')]
+PARTY_TYPES = [('client', 'عميل'), ('subcontractor', 'مقاول باطن'), ('supplier', 'مورد')]
 
 
 class ContractParty(models.Model):
@@ -21,7 +21,8 @@ class ContractParty(models.Model):
     # Reuses contact tags only; parties never link to res.partner records.
     category_ids = fields.Many2many('res.partner.category', 'abroj_contracting_party_category_rel', 'party_id', 'category_id', string='الوسوم')
 
-    _TYPE_TAGS = {'client': 'abroj_contracting.party_tag_clients', 'subcontractor': 'abroj_contracting.party_tag_subcontractors'}
+    _TYPE_TAGS = {'client': 'abroj_contracting.party_tag_clients', 'subcontractor': 'abroj_contracting.party_tag_subcontractors',
+                  'supplier': 'abroj_contracting.party_tag_suppliers'}
 
     def _default_type_tags(self, party_type):
         tag = self.env.ref(self._TYPE_TAGS.get(party_type, ''), raise_if_not_found=False) if party_type else None

@@ -443,6 +443,19 @@ class AbrojContractingCase(TransactionCase):
             self.assertEqual(form.category_ids[:], subs)
         self.assertEqual(self.env['res.partner'].search_count([]), partners)
 
+    def test_cost_supplier_party(self):
+        Party = self.env['abroj.contracting.party']
+        suppliers = self.env.ref('abroj_contracting.party_tag_suppliers')
+        party = Party.create({'name': 'مورد مستقل', 'party_type': 'supplier'})
+        self.assertEqual(party.category_ids, suppliers)
+        pid, _ = Party.with_context(default_party_type='supplier').name_create('مورد سريع')
+        self.assertEqual((Party.browse(pid).party_type, Party.browse(pid).category_ids), ('supplier', suppliers))
+        partners = self.env['res.partner'].search_count([])
+        cost = self.env['abroj.contracting.cost'].create({'project_id': self.project.id, 'name': 'إسمنت', 'amount': 100, 'party_id': party.id})
+        self.assertEqual((cost.party_id, cost.partner_id.id), (party, False))
+        self.assertEqual(self.env['abroj.contracting.cost']._fields['party_id'].domain, "[('party_type', '=', 'supplier')]")
+        self.assertEqual(self.env['res.partner'].search_count([]), partners)
+
     def test_optional_expense_guards(self):
         methods = {
             'hr.expense': ['action_approve', 'action_approve_duplicates', 'action_post', '_do_approve', '_post_without_wizard'],

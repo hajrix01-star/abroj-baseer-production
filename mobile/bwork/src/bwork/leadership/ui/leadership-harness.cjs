@@ -2,13 +2,16 @@
 const React = require('react'), renderer = require('react-test-renderer'), ts = require('typescript'), vm = require('node:vm');
 const { readFileSync } = require('node:fs'), { resolve, dirname, extname } = require('node:path');
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+// Pin the screen clock to the October 2026 fixtures so the calendar month does not roll with the real date.
+const FIXED_NOW = Date.parse('2026-10-19T09:00:00Z');
+class FixedDate extends Date { constructor(...args) { super(...(args.length ? args : [FIXED_NOW])); } static now() { return FIXED_NOW; } }
 function harness(initial = {}, component = 'LeadershipScreen') {
   const cache = new Map(), calls = []; let mounted;
   const load = filename => {
     filename = resolve(filename); if (cache.has(filename)) return cache.get(filename);
     const raw = readFileSync(filename, 'utf8'), output = { exports: {} }; cache.set(filename, output.exports);
     const code = ts.transpileModule(raw, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022, esModuleInterop: true } }).outputText;
-    vm.runInNewContext(code, { module: output, exports: output.exports, Date, Intl, Math, JSON, console, setTimeout, clearTimeout, require(name) {
+    vm.runInNewContext(code, { module: output, exports: output.exports, Date: FixedDate, Intl, Math, JSON, console, setTimeout, clearTimeout, require(name) {
       if (['react', 'react/jsx-runtime'].includes(name)) return require(name);
       if (name === 'react-native') return { ...Object.fromEntries(['View', 'Text', 'Pressable', 'ScrollView', 'ActivityIndicator', 'Modal'].map(n => [n, n])), StyleSheet: { create: value => value, absoluteFillObject: { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 } } };
       if (name === 'react-native-safe-area-context') return { SafeAreaView: 'SafeAreaView' };

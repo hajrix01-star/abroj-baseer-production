@@ -47,7 +47,7 @@ jobs:
             exit 1
           fi
           grep -F '0 failed, 0 error(s)' abroj-contracting-runtime.log
-          test "$(grep -Ec 'Starting AbrojContractingCase\.' abroj-contracting-runtime.log)" -eq 35
+          test "$(grep -Ec 'Starting AbrojContractingCase\.' abroj-contracting-runtime.log)" -eq 36
       - name: Preserve contracting runtime evidence
         if: always()
         uses: actions/upload-artifact@v4

@@ -1,7 +1,7 @@
 {
     'name': 'Baseer POS Customer Identity',
-    'version': '19.0.1.0.12',
-    'summary': 'Saudi mobile identity, customer filters and duplicate prevention in Point of Sale',
+    'version': '19.0.1.0.13',
+    'summary': 'POS customer identity, optional billing details and duplicate prevention',
     'category': 'Point of Sale',
     'license': 'LGPL-3',
     'depends': ['point_of_sale', 'phone_validation', 'hr', 'baseer_access_roles'],

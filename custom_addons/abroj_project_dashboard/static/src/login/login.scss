@@ -1,0 +1,78 @@
+$abroj-navy: #102a5c;
+$abroj-navy-dark: #0b1e42;
+$abroj-ink: #14273e;
+$abroj-muted: #50637a;
+$abroj-border: #d8dfe6;
+$abroj-canvas: #f5f6fa;
+$abroj-focus: #32629c;
+
+body.abroj-login-body { background: #e4e8f0; min-height: 100%; }
+.abroj-login {
+    position: relative; min-height: 100vh; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; padding: 64px 8px 32px;
+    font-family: "Tajawal", "IBM Plex Sans Arabic", "Segoe UI", system-ui, sans-serif; color: $abroj-ink;
+    &__bg {
+        position: absolute; inset: 0 0 auto 0; height: 52vh; z-index: 0;
+        background: linear-gradient(180deg, $abroj-navy-dark 0%, $abroj-navy 100%);
+        clip-path: ellipse(140% 100% at 50% 0%);
+    }
+    &__langs {
+        position: absolute; top: 16px; inset-inline-end: 16px; z-index: 2; font-size: 14px;
+        color: rgba(255,255,255,.6); display: flex; gap: 6px;
+        a { color: rgba(255,255,255,.8); text-decoration: none; &.active { color: #fff; font-weight: 700; } }
+    }
+    &__card {
+        position: relative; z-index: 1; width: 100%; max-width: 420px; background: #fff;
+        border-radius: 20px; box-shadow: 0 18px 50px rgba(11,30,66,.18); padding: 36px 28px 24px;
+    }
+    &__logo { text-align: center; margin-bottom: 20px;
+        img { max-height: 64px; max-width: 70%; width: auto; } }
+    &__title { text-align: center; font-size: 22px; font-weight: 700; color: $abroj-navy; margin: 0 0 6px; }
+    &__welcome { text-align: center; color: $abroj-muted; font-size: 13px; margin-bottom: 26px; }
+    .form-label { font-weight: 600; font-size: 13px; color: $abroj-ink; }
+    .form-control {
+        height: 46px; border-radius: 10px; border-color: $abroj-border; background: #f8f9fb; font-size: 16px;
+        &:focus { border-color: $abroj-focus; box-shadow: 0 0 0 3px rgba(50,98,156,.15); background: #fff; }
+    }
+    .field-login { margin-bottom: 18px !important; }
+    .input-group .o_show_password { border-color: $abroj-border !important; border-radius: 0 10px 10px 0; background: #f8f9fb; }
+    &.abroj-rtl .input-group {
+        > .form-control { border-radius: 0 10px 10px 0 !important; }
+        > .o_show_password { border-radius: 10px 0 0 10px !important; border-left: 1px solid $abroj-border !important; border-right: 0 !important; }
+    }
+    &.abroj-ltr .input-group > .form-control { border-radius: 10px 0 0 10px !important; }
+    &__row { display: flex; justify-content: space-between; align-items: center; margin: 18px 0 8px; font-size: 14px; }
+    &__remember { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; margin: 0;
+        input { width: 18px; height: 18px; accent-color: $abroj-navy; } }
+    &__forgot { color: $abroj-navy; text-decoration: none; &:hover { text-decoration: underline; } }
+    a[href^="/web/reset_password"]:not(.abroj-login__forgot) { display: none !important; }
+    &__submit.btn.btn-primary {
+        height: 48px; border-radius: 12px; font-size: 16px; font-weight: 700;
+        background: $abroj-navy; border-color: $abroj-navy;
+        &:hover, &:focus { background: $abroj-navy-dark; border-color: $abroj-navy-dark; }
+    }
+    .alert { border-radius: 10px; font-size: 14px; margin-top: 12px; }
+    &__footer { text-align: center; color: #9aa6b5; font-size: 12px; margin: 18px 0 0; }
+    @media (max-width: 480px) {
+        padding-top: 72px;
+        &__card { padding: 30px 20px 20px; border-radius: 18px; }
+    }
+}
+
+// Option C (no card): light page, full-page faint navy sketch + watermark
+body.abroj-login-body { background: #f3f5f9; }
+.abroj-login {
+    &__bg { inset: 0; height: auto; clip-path: none; overflow: hidden; pointer-events: none;
+        background: linear-gradient(180deg, #ffffff 0%, #eef2f8 100%); }
+    &__sketch { position: absolute; inset: 0; width: 100%; height: 100%; opacity: .35; }
+    &__wm { position: absolute; top: 6vh; left: 50%; transform: translateX(-50%); width: 85vw; max-width: 560px; opacity: .05; }
+    &__langs { color: rgba(16,42,92,.5); a { color: rgba(16,42,92,.75); &.active { color: #102a5c; } } }
+    &__card { background: transparent; box-shadow: none; border-radius: 0; }
+    .form-control, .input-group .o_show_password { background: #fff; }
+    &__submit.btn.btn-primary { border-bottom: 3px solid #f28c28; }
+}
+
+// Hide signup link, passkey button and "- or -" separator
+.abroj-login {
+    a[href^="/web/signup"], .o_login_auth { display: none !important; }
+}

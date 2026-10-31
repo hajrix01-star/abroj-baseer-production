@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!-- Server-side session GC (ir.http._gc_sessions) and default cookie Max-Age:
+         90 days of inactivity, so "remember me" sessions survive browser restarts. -->
+    <record id="param_session_max_inactivity" model="ir.config_parameter">
+        <field name="key">sessions.max_inactivity_seconds</field>
+        <field name="value">7776000</field>
+    </record>
+</odoo>

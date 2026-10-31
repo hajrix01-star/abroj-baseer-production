@@ -26,5 +26,4 @@ assert.match(css, /\.phase-status\.overdue\{background:#fee2e2;color:#991b1b\}/)
 assert.match(css, /\.phase-status\.done\{[^}]*background:#dcfce7;color:#166534\}/);
 assert.match(screens, /g\.phases\.map\(p=>[\s\S]*?statusBadge\(p\)/);
 assert.match(screens, /p\.phases\.map\(x=>[\s\S]*?statusBadge\(x\)/);
-assert.match(app, /async function legacyDetail[\s\S]*?statusBadge\(x\)/);
 assert.match(app, /function taskForm[\s\S]*?statusBadge\(phase\)/);

@@ -113,7 +113,7 @@ class AbrojProjectDashboardCase(TransactionCase):
         source = (js_dir / 'screens.js').read_text(encoding='utf-8')
         translations = (js_dir / 'i18n.js').read_text(encoding='utf-8')
         self.assertIn('"openInOdoo": {"ar": "فتح في أودو", "en": "Open in Odoo"}', translations)
-        renderer = source[source.index('function renderDrawer()'):source.index('function measureDrawer()')]
+        renderer = source[source.index('function renderDrawer()'):source.index('async function openDrawer(')]
         script = "let currentProject, drawerExpanded=false; const drawer={}; const document={getElementById:()=>drawer}; const t=k=>k; const tr=(a,b)=>a; const data={is_owner:false};\n" + renderer + """
             for (const [project, href] of [[null, '/odoo/project'], [{id: 42}, '/odoo/project/42']]) {
                 currentProject = project; renderDrawer();
@@ -531,7 +531,7 @@ class AbrojDashboardHttpCase(HttpCase):
             self.assertTrue(asset.endswith('?v=' + version), asset)
         for icon in self.url_open('/abroj/app/manifest.webmanifest').json()['icons']:
             self.assertTrue(icon['src'].endswith('?v=' + version))
-        self.assertIn("'abroj-v40-' + VERSION", worker)
+        self.assertIn("'abroj-v42-' + VERSION", worker)
         self.assertIn("cache: 'reload'", worker)
         self.assertIn("url.searchParams.get('v') !== VERSION", worker)
         self.assertNotIn('static/pwa/index.html', worker)

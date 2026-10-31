@@ -6,3 +6,11 @@
 
 .my-day-name-row{display:flex;align-items:flex-start;gap:12px}.my-day-name-row strong{min-width:0}.phase-status,.my-day-link .phase-status{margin-inline-start:auto;flex-shrink:0;border-radius:999px;padding:4px 9px;font-size:.78rem;font-weight:700;line-height:1.4;white-space:nowrap}.phase-status.on_time{background:rgba(16,42,92,.1);color:var(--primary)}.phase-status.overdue{background:#fee2e2;color:#991b1b}.phase-status.done{display:inline-flex;align-items:center;gap:4px;background:#dcfce7;color:#166534}.phase-status.done svg{width:1em;height:1em;flex-shrink:0}
 .report-table-wrap{overflow-x:auto}.report-table{border-collapse:collapse;width:100%;min-width:850px;text-align:start}.report-table th,.report-table td{padding:12px;border-bottom:1px solid #e7ebf0;text-align:start}.report-table th{background:#f6f8fb}.report-table .report-project th{background:#eef2f8;color:#102a5c}.report-table textarea{min-width:150px}.report-manager{display:block;margin:12px 0;max-width:300px}.report-manager select{width:100%}
+
+/* Shared hierarchy and empty states across lists, galleries and reports. */
+main h2{font-size:1.5rem;line-height:1.3;margin:12px 0}
+main h3{font-size:1.125rem;line-height:1.35;margin:12px 0}
+.grid h3{font-size:1rem}
+#gallery-results>.empty-state,.library-grid>.empty-state{grid-column:1/-1}
+.empty-state p{margin:0 0 12px}
+.empty-state p:last-child{margin-bottom:0}

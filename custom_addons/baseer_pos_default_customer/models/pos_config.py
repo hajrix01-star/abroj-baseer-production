@@ -23,5 +23,5 @@ class PosConfig(models.Model):
     def _load_pos_data_read(self, records, config):
         payload = super()._load_pos_data_read(records, config)
         if payload:
-            payload[0]['baseer_default_customer_id'] = self.baseer_default_customer_id.id
+            payload[0]['baseer_default_customer_id'] = config.baseer_default_customer_id.id
         return payload

@@ -16,7 +16,7 @@ class TestPosDefaultCustomer(TransactionCase):
         fields_to_load = config._load_pos_data_fields(config)
         self.assertNotIn('baseer_default_customer_id', fields_to_load)
 
-        payload = config._load_pos_data_read(config, config)
+        payload = self.env['pos.config']._load_pos_data_read(config, config)
         self.assertEqual(payload[0]['baseer_default_customer_id'], customer.id)
 
         partner_ids = config.get_limited_partners_loading()
@@ -24,5 +24,5 @@ class TestPosDefaultCustomer(TransactionCase):
 
     def test_empty_configuration_keeps_native_partner_loading(self):
         config = self.env['pos.config'].create({'name': 'POS no default customer test'})
-        payload = config._load_pos_data_read(config, config)
+        payload = self.env['pos.config']._load_pos_data_read(config, config)
         self.assertFalse(payload[0]['baseer_default_customer_id'])

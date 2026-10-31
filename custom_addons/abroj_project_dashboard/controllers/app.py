@@ -74,6 +74,7 @@ class AbrojApp(http.Controller):
         page = (Path(__file__).parent.parent / 'static/pwa/index.html').read_text(encoding='utf-8')
         page = page.replace('APP_BASE_PLACEHOLDER', self._app_base())
         page = page.replace('ASSET_VERSION_PLACEHOLDER', ASSET_VERSION)
+        page = page.replace('APP_SWITCH_ATTR_PLACEHOLDER', '' if request.env.user._abroj_can_use_projects_app() else 'hidden')
         page = page.replace('CSRF_TOKEN_PLACEHOLDER', request.csrf_token())
         page = page.replace('SESSION_UID_PLACEHOLDER', str(request.session.uid)).replace('SESSION_DB_PLACEHOLDER', html.escape(request.session.db, quote=True))
         page = page.replace('USER_LANG_PLACEHOLDER', 'ar' if (request.env.user.lang or '').startswith('ar') else 'en')

@@ -85,6 +85,11 @@ class AbrojLogin(Home):
         request.params['abroj_labels'] = LABELS[short]
         response = super().web_login(redirect=redirect, **kw)
         if request.params.get('login_success'):
+            # 'Projects' chosen by a user without projects access (or outside
+            # the Abroj company): fall back to the Odoo backend gracefully.
+            user = request.env['res.users'].browse(request.session.uid)
+            if _is_app_path(redirect) and not user.with_user(user)._abroj_can_use_projects_app(user.company_id):
+                response = request.redirect('/odoo')
             # Unchecked box -> browser-session cookie (see models/session_cookie.py).
             request.session['abroj_remember'] = bool(kw.get('remember'))
             # Remember the username only (never the password) after a successful login.
@@ -99,9 +104,15 @@ class AbrojLogin(Home):
 
 class AbrojSwitch(http.Controller):
 
-    @http.route(['/abroj/switch', '/app/switch'], type='http', auth='user', methods=['GET'])
+    @http.route(['/abroj/switch', '/app/switch'], type='http', auth='user', methods=['GET'], website=True)
     def abroj_switch(self, **kw):
-        """Logged-in app chooser: Odoo backend or the projects PWA (no password form)."""
+        """Logged-in app chooser: Odoo backend or the projects PWA (no password form).
+
+        website=True: with the website module installed, web.frontend_layout
+        needs the request's website (otherwise KeyError 'website' -> 500).
+        """
+        if not request.env.user._abroj_can_use_projects_app():
+            return request.redirect('/odoo')
         short = 'ar' if (request.env.user.lang or '').startswith('ar') else 'en'
         request.params['abroj_lang'] = short
         request.params['abroj_labels'] = dict(LABELS[short], switch='')

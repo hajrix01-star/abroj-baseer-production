@@ -14,7 +14,7 @@ class TestPosDefaultCustomer(TransactionCase):
         })
 
         fields_to_load = config._load_pos_data_fields(config)
-        self.assertNotIn('baseer_default_customer_id', fields_to_load)
+        self.assertIn('baseer_default_customer_id', fields_to_load)
 
         payload = self.env['pos.config']._load_pos_data_read(config, config)
         self.assertEqual(payload[0]['baseer_default_customer_id'], customer.id)

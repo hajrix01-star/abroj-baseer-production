@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="abroj_login_layout" inherit_id="web.login_layout" name="Abroj Login Layout">
+        <xpath expr="//t[@t-call='web.frontend_layout']" position="replace">
+            <t t-set="abroj_lang" t-value="request.params.get('abroj_lang') or 'ar'"/>
+            <t t-call="web.frontend_layout">
+                <t t-set="html_data" t-value="{'style': 'height: 100%;', 'lang': abroj_lang, 'dir': 'rtl' if abroj_lang == 'ar' else 'ltr'}"/>
+                <t t-set="body_classname" t-value="'abroj-login-body'"/>
+                <t t-set="no_header" t-value="True"/>
+                <t t-set="no_footer" t-value="True"/>
+                <div t-attf-class="abroj-login #{'abroj-rtl' if abroj_lang == 'ar' else 'abroj-ltr'}" t-att-dir="'rtl' if abroj_lang == 'ar' else 'ltr'">
+                    <div class="abroj-login__bg"/>
+                    <nav class="abroj-login__langs" aria-label="Language">
+                        <a t-attf-href="/web/login?lang=ar#{'&amp;redirect=' + redirect if redirect else ''}" t-att-class="'active' if abroj_lang == 'ar' else None" lang="ar">عربي</a>
+                        <span>|</span>
+                        <a t-attf-href="/web/login?lang=en#{'&amp;redirect=' + redirect if redirect else ''}" t-att-class="'active' if abroj_lang == 'en' else None" lang="en">English</a>
+                    </nav>
+                    <div t-attf-class="abroj-login__card o_database_list {{login_card_classes}}">
+                        <div class="abroj-login__logo">
+                            <img src="/abroj_project_dashboard/static/pwa/logo-navy.png" alt="أبرج"/>
+                        </div>
+                        <t t-out="0"/>
+                    </div>
+                </div>
+            </t>
+        </xpath>
+    </template>
+
+    <template id="abroj_login" inherit_id="web.login" name="Abroj Login Form">
+        <xpath expr="//form" position="before">
+            <t t-set="L" t-value="request.params.get('abroj_labels') or {}"/>
+            <h1 class="abroj-login__title" t-out="L['title']"/>
+            <p class="abroj-login__welcome" t-out="L['welcome']"/>
+        </xpath>
+        <xpath expr="//div[hasclass('field-login')]/label" position="replace">
+            <label for="login" class="form-label" t-out="L['login']"/>
+        </xpath>
+        <xpath expr="//input[@name='login']" position="attributes">
+            <attribute name="placeholder">name@abroj.sa</attribute>
+            <attribute name="dir">ltr</attribute>
+        </xpath>
+        <xpath expr="//label[@for='password']" position="replace">
+            <label for="password" class="form-label" t-out="L['password']"/>
+        </xpath>
+        <xpath expr="//input[@name='password']" position="attributes">
+            <attribute name="placeholder">••••••••</attribute>
+            <attribute name="dir">ltr</attribute>
+        </xpath>
+        <xpath expr="//button[hasclass('o_show_password')]" position="attributes">
+            <attribute name="t-att-aria-label">L['show']</attribute>
+        </xpath>
+        <xpath expr="//p[hasclass('alert-danger')]" position="before">
+            <div class="abroj-login__row">
+                <label class="abroj-login__remember">
+                    <input type="checkbox" name="remember" value="1" id="abroj_remember" checked="checked"/>
+                    <span t-out="L['remember']"/>
+                </label>
+                <a t-if="reset_password_enabled" class="abroj-login__forgot" t-attf-href="/web/reset_password?{{ keep_query() }}" t-out="L['forgot']"/>
+            </div>
+        </xpath>
+        <xpath expr="//div[hasclass('oe_login_buttons')]/button[@type='submit']" position="replace">
+            <button type="submit" class="btn btn-primary abroj-login__submit" t-out="L['submit']"/>
+        </xpath>
+        <xpath expr="//form" position="inside">
+            <input type="hidden" name="lang" t-att-value="request.params.get('abroj_lang')"/>
+        </xpath>
+        <xpath expr="//div[@id='oe_structure_login_bottom']" position="after">
+            <p class="abroj-login__footer" t-out="L['footer']"/>
+        </xpath>
+    </template>
+</odoo>

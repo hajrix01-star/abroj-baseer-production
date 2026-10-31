@@ -277,38 +277,6 @@ class AbrojApp(http.Controller):
         except (AccessError, UserError, ValidationError, ValueError, TypeError):
             return {'error': self._message('تعذر عرض المرفقات. تحقق من صلاحياتك.', 'Could not view attachments. Check your permissions.')}
 
-    @http.route('/abroj/app/library', type='jsonrpc', auth='user')
-    def library(self, project_id):
-        try:
-            project = request.env['project.project'].with_context(active_test=False).browse(int(project_id)).exists()
-            if not project:
-                raise AccessError('Project not found')
-            self._check_project(project)
-            project.check_access('read')
-            tasks = request.env['project.task'].with_context(active_test=False).search([('project_id', '=', project.id)])
-            attachments = request.env['ir.attachment'].search([
-                ('type', '=', 'binary'), ('abroj_is_invoice', '=', False),
-                '|', '&', ('res_model', '=', 'project.project'), ('res_id', '=', project.id),
-                '&', ('res_model', '=', 'project.task'), ('res_id', 'in', tasks.ids),
-            ])
-            # Older invoice inbox items generated a project note and an unmarked
-            # project attachment. Match that copy by project, filename and bytes.
-            inboxes = request.env['abroj.contracting.inbox'].sudo().search([
-                ('project_id', '=', project.id), ('abroj_invoice_bill_id', '!=', False),
-            ])
-            invoice_files = request.env['ir.attachment'].sudo().search([
-                ('res_model', '=', 'abroj.contracting.inbox'), ('res_id', 'in', inboxes.ids),
-                ('res_field', '=', 'file'),
-            ])
-            filenames = {inbox.id: inbox.filename for inbox in inboxes}
-            invoice_keys = {(filenames[attachment.res_id], attachment.checksum)
-                            for attachment in invoice_files if attachment.checksum}
-            attachments = attachments.filtered(lambda attachment: attachment.res_model != 'project.project'
-                                               or (attachment.name, attachment.checksum) not in invoice_keys)
-            return [{'id': a.id, 'name': a.name, 'mimetype': a.mimetype or ''} for a in attachments]
-        except (AccessError, UserError, ValueError, TypeError):
-            return {'error': self._message('تعذر عرض المكتبة. تحقق من صلاحياتك.', 'Could not view the library. Check your permissions.')}
-
     @http.route('/abroj/app/invoice', type='http', auth='user', methods=['POST'])
     def invoice_upload(self, project_id=None, file=None, **kwargs):
         import base64

@@ -29,3 +29,10 @@ test('contracting form keeps financial totals once and gallery on both distinct 
   assert.match(xml, /inherit_id" ref="project\.edit_project"/);
   assert.match(xml, /inherit_id" ref="abroj_contracting\.project_form"/);
 });
+
+test('removed project feature is absent from client scripts', () => {
+  const forbidden = ['project' + 'Lib' + 'rary', 'lib' + 'rary'];
+  for (const file of ['static/pwa/js/screens.js', 'static/pwa/js/i18n.js']) {
+    for (const term of forbidden) assert.ok(!read(file).includes(term));
+  }
+});

@@ -23,7 +23,7 @@ class DailyReportHttpCase(HttpCase):
             self.assertNotIn(projects[1-i].id, ids)
             self.assertNotIn(projects[1-i].id, {g['id'] for g in self.call('/abroj/app/my-day')['result']})
             self.assertIn('error', self.call('/abroj/app/data', {'project_id': projects[1-i].id}))
-            for path, args in [('/abroj/app/documents', {'project_id': projects[1-i].id}), ('/abroj/app/library', {'project_id': projects[1-i].id}), ('/abroj/app/attachments', {'model': 'project.task', 'record_id': tasks[1-i].id}), ('/abroj/app/note', {'model': 'project.task', 'record_id': tasks[1-i].id, 'body': 'denied'}), ('/abroj/app/save', {'model': 'project.task', 'record_id': tasks[1-i].id, 'values': {'name': 'denied'}})]:
+            for path, args in [('/abroj/app/documents', {'project_id': projects[1-i].id}), ('/abroj/app/attachments', {'model': 'project.task', 'record_id': tasks[1-i].id}), ('/abroj/app/note', {'model': 'project.task', 'record_id': tasks[1-i].id, 'body': 'denied'}), ('/abroj/app/save', {'model': 'project.task', 'record_id': tasks[1-i].id, 'values': {'name': 'denied'}})]:
                 self.assertIn('error', self.call(path, args).get('result', {}), path)
             self.assertIn('error', self.call('/abroj/app/project/set-manager', {'project_id': projects[i].id, 'manager_id': users[i].id}))
         self.authenticate('report_first', 'report_first')

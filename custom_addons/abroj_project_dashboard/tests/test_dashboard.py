@@ -531,7 +531,7 @@ class AbrojDashboardHttpCase(HttpCase):
             self.assertTrue(asset.endswith('?v=' + version), asset)
         for icon in self.url_open('/abroj/app/manifest.webmanifest').json()['icons']:
             self.assertTrue(icon['src'].endswith('?v=' + version))
-        self.assertIn("'abroj-v42-' + VERSION", worker)
+        self.assertIn("'abroj-v43-' + VERSION", worker)
         self.assertIn("cache: 'reload'", worker)
         self.assertIn("url.searchParams.get('v') !== VERSION", worker)
         self.assertNotIn('static/pwa/index.html', worker)
@@ -720,28 +720,6 @@ class AbrojDashboardHttpCase(HttpCase):
         inbox_attachment = self.env['ir.attachment'].search([('res_model', '=', inbox._name), ('res_id', '=', inbox.id), ('res_field', '=', 'file')])
         self.assertTrue(inbox_attachment)
         self.assertFalse(inbox.project_note_ids)
-        doc = self.url_open('/abroj/app/upload', data={'csrf_token': token, 'model': 'project.project', 'record_id': str(project.id)}, files={'file': ('site.jpg', b'photo', 'image/jpeg')}).json()['id']
-        flagged = self.env['ir.attachment'].create({'name': 'flagged.pdf', 'datas': 'eA==', 'res_model': 'project.project', 'res_id': project.id, 'abroj_is_invoice': True})
-        legacy = self.env['ir.attachment'].create({'name': 'invoice.pdf', 'raw': b'invoice bytes', 'res_model': 'project.project', 'res_id': project.id})
-        task = self.env['project.task'].create({'name': 'Documentation task', 'project_id': project.id})
-        task_doc = self.env['ir.attachment'].create({'name': 'invoice.pdf', 'raw': b'invoice bytes', 'res_model': 'project.task', 'res_id': task.id})
-        result = self.rpc('/abroj/app/library', {'project_id': project.id})
-        ids = {item['id'] for item in result}
-        self.assertIn(doc, ids)
-        self.assertIn(task_doc.id, ids)
-        self.assertTrue(ids.isdisjoint(set(invoice_attachment.ids + inbox_attachment.ids + flagged.ids + legacy.ids)))
-
-    def test_project_library_includes_task_files(self):
-        project = self.env['project.project'].create({'name': 'Library', 'company_id': self.env.company.id})
-        task = self.env['project.task'].create({'name': 'Phase', 'project_id': project.id})
-        other = self.env['project.project'].create({'name': 'Other', 'company_id': self.env.company.id})
-        attachments = self.env['ir.attachment'].create([{'name': name, 'type': 'binary', 'datas': 'eA==', 'res_model': model, 'res_id': record} for name, model, record in [('site.jpg', 'project.project', project.id), ('phase.pdf', 'project.task', task.id), ('other.jpg', 'project.project', other.id)]])
-        self.authenticate('admin', 'admin')
-        result = self.rpc('/abroj/app/library', {'project_id': project.id})
-        ids = {item['id'] for item in result}
-        self.assertTrue(set(attachments[:2].ids).issubset(ids))
-        self.assertNotIn(attachments[2].id, ids)
-
     def test_document_upload_does_not_create_invoice_inbox(self):
         import re
         project = self.env['project.project'].create({'name': 'Documentation', 'company_id': self.env.company.id})

@@ -15,7 +15,9 @@ _ARABIC_DIGITS = str.maketrans('٠١٢٣٤٥٦٧٨٩', '0123456789')
 _SAUDI_MOBILE = re.compile(r'^5\d{8}$')
 _POS_CUSTOMER_CAPABILITY_PARAM = 'baseer_pos_customer_identity.customer_capability_secret'
 _POS_CUSTOMER_CAPABILITY_TTL_SECONDS = 300
-_POS_CUSTOMER_EDITABLE_FIELDS = frozenset({'name', 'phone', 'city'})
+_POS_CUSTOMER_EDITABLE_FIELDS = frozenset({
+    'name', 'phone', 'vat', 'street', 'street2', 'zip', 'city', 'state_id', 'country_id',
+})
 
 
 def _saudi_mobile_key(value):
@@ -163,7 +165,7 @@ class ResPartner(models.Model):
             if config:
                 unexpected = set(values) - _POS_CUSTOMER_EDITABLE_FIELDS
                 if unexpected:
-                    raise AccessError(_('Only name, mobile number and city can be set from Point of Sale.'))
+                    raise AccessError(_('Only customer identity and optional address details can be set from Point of Sale.'))
                 values['company_id'] = False
                 values['is_company'] = False
             phone = values.get('phone')
@@ -189,7 +191,7 @@ class ResPartner(models.Model):
         if config:
             unexpected = set(values) - _POS_CUSTOMER_EDITABLE_FIELDS
             if unexpected:
-                raise AccessError(_('Only name, mobile number and city can be changed from Point of Sale.'))
+                raise AccessError(_('Only customer identity and optional address details can be changed from Point of Sale.'))
             self._baseer_pos_assert_customer_editable(config)
         if (config or self.env.context.get('import_file')) and 'phone' in values:
             self._baseer_validate_saudi_mobile(values['phone'])

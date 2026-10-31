@@ -43,6 +43,29 @@ class TestPosCustomerIdentity(TransactionCase):
         })
         self.assertEqual(customer.create_uid, cashier)
 
+    def test_cashier_can_create_optional_tax_and_address_details_from_pos(self):
+        cashier = self.env['res.users'].with_context(no_reset_password=True).create({
+            'name': 'POS customer details cashier',
+            'login': 'pos-customer-details-cashier',
+            'baseer_access_role': 'pos_cashier',
+        })
+        capability = self._cashier_customer_capability(cashier)
+        customer = self.env['res.partner'].with_user(cashier).with_context(
+            baseer_pos_customer_capability=capability
+        ).create({
+            'name': 'POS customer with optional details',
+            'vat': '300123456700003',
+            'street': 'King Fahd Road',
+            'street2': 'Building 12',
+            'city': 'Dammam',
+            'zip': '32241',
+        })
+        self.assertEqual(customer.vat, '300123456700003')
+        self.assertEqual(customer.street, 'King Fahd Road')
+        self.assertEqual(customer.street2, 'Building 12')
+        self.assertEqual(customer.city, 'Dammam')
+        self.assertEqual(customer.zip, '32241')
+
     def test_cashier_can_edit_only_from_the_pos_customer_form(self):
         cashier = self.env['res.users'].with_context(no_reset_password=True).create({
             'name': 'POS customer editor',

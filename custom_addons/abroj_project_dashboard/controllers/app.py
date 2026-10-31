@@ -333,7 +333,7 @@ class AbrojApp(http.Controller):
                         field = rec._fields[name]
                         val = rec[name]
                         vals[name] = val.id if field.type == 'many2one' else (str(val) if field.type in ('date', 'datetime') and val else val)
-                    rows.append({'id': rec.id, 'name': rec.display_name, 'state': rec.state if 'state' in rec._fields else '', 'values': vals, 'can_write': rec.has_access('write')})
+                    rows.append({'id': rec.id, 'name': '' if rec.display_name == '/' else rec.display_name, 'state': rec.state if 'state' in rec._fields else '', 'values': vals, 'can_write': rec.has_access('write')})
                 result['records'][key] = rows
             return result
         except (AccessError, UserError, ValueError):
@@ -411,8 +411,10 @@ class AbrojApp(http.Controller):
                 raise AccessError('المستند غير موجود')
             pdf, _ = request.env['ir.actions.report']._render_qweb_pdf(report, res_ids=record.ids)
             return request.make_response(pdf, [('Content-Type', 'application/pdf'), ('Content-Disposition', 'attachment; filename="document.pdf"')])
-        except (AccessError, UserError, ValueError):
+        except AccessError:
             return request.make_response(self._message('تعذر تنزيل التقرير. تحقق من صلاحياتك.', 'Could not download the report. Check your permissions.'), status=403)
+        except Exception as error:
+            return request.make_response(str(error), [('Content-Type', 'text/plain; charset=utf-8')], status=500)
 
     @http.route('/abroj/app/voice', type='http', auth='user', methods=['POST'])
     def voice_note(self, project_id=None, body='', file=None, **kwargs):

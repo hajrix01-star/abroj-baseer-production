@@ -10,7 +10,6 @@ const number=n=>new Intl.NumberFormat(locale(),{maximumFractionDigits:1,numberin
 const date=value=>{if(!value||!/^\d{4}-\d{2}-\d{2}$/.test(value))return '—';const d=new Date(value+'T00:00:00Z');if(Number.isNaN(d.valueOf())||d.toISOString().slice(0,10)!==value)return '—';return new Intl.DateTimeFormat('en-GB',{calendar:'gregory',numberingSystem:'latn',day:'2-digit',month:'2-digit',year:'numeric',timeZone:'UTC'}).format(d)};
 document.documentElement.lang=lang; document.documentElement.dir=lang==='ar'?'rtl':'ltr';
 document.title=t('s138');
-document.getElementById('header-title').textContent=t('s138');
 document.querySelector('.menu-button').setAttribute('aria-label',t('menu'));
 document.getElementById('drawer').setAttribute('aria-label',t('menu'));
 document.getElementById('account-button').setAttribute('aria-label',t('accountMenu'));

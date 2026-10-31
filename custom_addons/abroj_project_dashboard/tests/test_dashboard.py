@@ -677,6 +677,8 @@ class AbrojDashboardHttpCase(HttpCase):
         contract = save('contract', {'partner_id': partner.id, 'agreed_amount': 100})
         for kind in ('payment', 'receipt'):
             voucher = save(kind, {'partner_id': partner.id, 'amount': 10, **({'subcontractor_id': contract} if kind == 'payment' else {})})
+            docs = self.rpc('/abroj/app/documents', {'project_id': project.id})
+            self.assertEqual(docs['records'][kind][0]['name'], '')
             result = self.rpc('/abroj/app/document/action', {'project_id': project.id, 'kind': kind, 'record_id': voucher, 'action': 'issue'})
             self.assertTrue(result.get('ok'), result)
         save('note', {'body': 'Test note'})
@@ -713,6 +715,15 @@ class AbrojDashboardHttpCase(HttpCase):
             response = self.url_open('/abroj/app/pdf/promissory/%d' % note.id)
             self.assertEqual(response.status_code, 200)
             self.assertTrue(response.content.startswith(b'%PDF'))
+        from odoo.exceptions import AccessError, UserError
+        with patch.object(report_class, '_render_qweb_pdf', side_effect=UserError('wkhtmltopdf failed')):
+            response = self.url_open('/abroj/app/pdf/promissory/%d' % note.id)
+            self.assertEqual(response.status_code, 500)
+            self.assertIn('wkhtmltopdf failed', response.text)
+        with patch.object(report_class, '_render_qweb_pdf', side_effect=AccessError('denied')):
+            response = self.url_open('/abroj/app/pdf/promissory/%d' % note.id)
+            self.assertEqual(response.status_code, 403)
+            self.assertNotIn('denied', response.text)
         private = self.env['project.project'].create({'name': 'Private PDF', 'company_id': self.env.company.id, 'privacy_visibility': 'followers'})
         hidden = self.env['abroj.promissory.note'].create({'project_id': private.id, 'partner_id': partner.id, 'amount': 10, 'due_date': '2027-01-01'})
         self.env['res.users'].create({'name': 'PDF engineer', 'login': 'pdf_engineer', 'password': 'pdf_engineer', 'group_ids': [Command.set([self.env.ref('base.group_user').id, self.env.ref('project.group_project_user').id])]})

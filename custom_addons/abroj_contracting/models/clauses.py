@@ -77,7 +77,7 @@ class Line(models.Model):
     def numbered_body(self, language, section):
         self.ensure_one()
         company = self.company_id
-        name = (company.contracting_name_ar if language == 'ar' else company.contracting_name_en) or company.name or ''
+        name = company.contract_company_name(language) or company.contract_company_name('ar') or ''
         lines = (self['body_' + language] or '').replace('{company}', name).splitlines()
         return '\n'.join('%s.%s %s' % (section, index, line.strip())
                          for index, line in enumerate((line for line in lines if line.strip()), 1))

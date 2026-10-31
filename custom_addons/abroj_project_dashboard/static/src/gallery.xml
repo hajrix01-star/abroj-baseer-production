@@ -7,7 +7,9 @@
       <select class="form-select" t-model="state.phase" aria-label="Phase"><option value="">المرحلة</option><t t-foreach="phases" t-as="phase" t-key="phase[0]"><option t-att-value="phase[0]" t-esc="phase[1]"/></t></select>
       <select class="form-select" t-model="state.uploader" aria-label="Uploader"><option value="">رافع الملف</option><t t-foreach="uploaders" t-as="user" t-key="user[0]"><option t-att-value="user[0]" t-esc="user[1]"/></t></select>
       <select class="form-select" t-model="state.sort" aria-label="Sort"><option value="desc">الأحدث</option><option value="asc">الأقدم</option></select>
+      <button t-if="props.record.resId" type="button" t-att-class="'btn abroj-voice-toggle ' + (state.rec === 'recording' ? 'btn-danger is-recording' : 'btn-primary')" t-att-disabled="state.rec === 'starting' or state.rec === 'saving'" t-att-aria-pressed="state.rec === 'recording' ? 'true' : 'false'" t-on-click="toggleRecording"><i t-att-class="'fa me-1 ' + (state.rec === 'recording' ? 'fa-stop' : 'fa-microphone')"/><t t-esc="recordLabel"/><span t-if="state.rec === 'recording'" class="abroj-voice-timer ms-2" dir="ltr" t-esc="timer"/></button>
     </div>
+    <div t-if="state.recError" class="alert alert-warning" role="alert" t-esc="state.recError"/>
     <t t-foreach="groups" t-as="group" t-key="group.day"><h4 dir="ltr" t-esc="group.day"/><div class="abroj-gallery-grid"><t t-foreach="group.items" t-as="item" t-key="item.type + ':' + item.id"><article class="abroj-gallery-item">
       <button t-if="item.type === 'image'" type="button" class="abroj-gallery-thumb" t-on-click="() => this.open(item)"><img t-att-src="'/web/image/' + item.id + '/320x320'" t-att-alt="item.name"/></button>
       <audio t-elif="item.type === 'audio'" controls="controls" preload="none" t-att-src="'/web/content/' + item.id"/>

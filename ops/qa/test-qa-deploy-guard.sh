@@ -157,8 +157,10 @@ restore_step_failure() (
     old_release="$QA_BASE/old"
     backup="$QA_BASE/backup"
     QA_DB_CONTAINER=qa-db QA_ODOO_VOLUME=qa-volume QA_DATABASE=baseer_qa
+    QA_ENV_FILE="$QA_BASE/runtime.env"
     ODOO_SERVICE=odoo
     mkdir -p "$old_release" "$backup"
+    printf 'USER=qa_runner\n' > "$QA_ENV_FILE"
     : > "$backup/database.dump"
     sha256sum() {
         printf 'checksum\n' >> "$QA_BASE/restore.trace"
@@ -195,8 +197,10 @@ rollback_restore_failure() (
     old_release="$QA_BASE/old"
     backup="$QA_BASE/backup"
     QA_DB_CONTAINER=qa-db QA_ODOO_VOLUME=qa-volume QA_DATABASE=baseer_qa
+    QA_ENV_FILE="$QA_BASE/runtime.env"
     ODOO_SERVICE=odoo
     mkdir -p "$old_release" "$backup"
+    printf 'USER=qa_runner\n' > "$QA_ENV_FILE"
     : > "$backup/database.dump"
     release_switched=1 database_mutated=1 service_quiesced=1
     sha256sum() { [ "$mode" != checksum ]; }
@@ -234,6 +238,16 @@ smoke_failure() (
     verify_smoke_log
 )
 
+restore_ownership_failure() (
+    load_guard
+    QA_BASE="$test_dir/restore-ownership"
+    QA_DATABASE=baseer_qa QA_DB_CONTAINER=qa-db QA_ENV_FILE="$QA_BASE/runtime.env"
+    mkdir -p "$QA_BASE"
+    printf 'USER=qa_runner\n' > "$QA_ENV_FILE"
+    docker() { return 28; }
+    normalize_restored_database_ownership
+)
+
 expect_failed low-bytes 'insufficient QA free bytes before prefetch' low_bytes
 expect_failed low-inodes 'insufficient QA free inodes before prefetch' low_inodes
 expect_failed estimate 'cannot estimate QA database size' failed_estimate
@@ -242,6 +256,7 @@ expect_failed backup-capture '' backup_capture_failure
 expect_failed filestore-enospc 'QA filestore backup failed' filestore_capture_enospc
 expect_failed smoke 'fatal QA smoke log entry' smoke_failure
 expect_failed smoke-read 'cannot scan QA smoke log' smoke_failure unreadable
+expect_failed restore-ownership 'QA database ownership normalization failed' restore_ownership_failure
 for step in checksum stop dropdb createdb pg_restore filestore_restore; do
     restore_step_failure "$step"
 done

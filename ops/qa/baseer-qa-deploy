@@ -220,6 +220,33 @@ capture_recovery_pair() {
         || die 'QA recovery checksum failed'
 }
 
+qa_database_app_user() {
+    local app_user
+    app_user="$(awk -F= '
+        /^USER=[A-Za-z_][A-Za-z0-9_]*$/ { count++; app_user=$2 }
+        END { if (count != 1) exit 1; print app_user }
+    ' "$QA_ENV_FILE")" || die 'cannot determine the QA Odoo database user'
+    printf '%s\n' "$app_user"
+}
+
+normalize_restored_database_ownership() {
+    local app_user
+    app_user="$(qa_database_app_user)"
+    docker exec "$QA_DB_CONTAINER" sh -lc "psql -v ON_ERROR_STOP=1 -U \"\$POSTGRES_USER\" -d postgres \\
+        -c 'ALTER DATABASE \"$QA_DATABASE\" OWNER TO \"$app_user\"' \\
+        && psql -v ON_ERROR_STOP=1 -U \"\$POSTGRES_USER\" -d '$QA_DATABASE' \\
+        -c 'ALTER SCHEMA public OWNER TO \"$app_user\"' \\
+        -c 'GRANT USAGE, CREATE ON SCHEMA public TO \"$app_user\"' \\
+        -c \"DO \\\$\\\$ DECLARE record_to_fix record; BEGIN \\
+            FOR record_to_fix IN SELECT schemaname, tablename FROM pg_tables WHERE schemaname = 'public' LOOP \\
+                EXECUTE format('ALTER TABLE %I.%I OWNER TO %I', record_to_fix.schemaname, record_to_fix.tablename, '$app_user'); \\
+            END LOOP; \\
+            FOR record_to_fix IN SELECT sequence_schema, sequence_name FROM information_schema.sequences WHERE sequence_schema = 'public' LOOP \\
+                EXECUTE format('ALTER SEQUENCE %I.%I OWNER TO %I', record_to_fix.sequence_schema, record_to_fix.sequence_name, '$app_user'); \\
+            END LOOP; \\
+        END \\\$\\\$;\"" || die 'QA database ownership normalization failed'
+}
+
 verify_smoke_log() {
     local result
     if grep -Eq 'Traceback \(most recent call last\)|CRITICAL|FATAL' "$backup/odoo-smoke.log"; then
@@ -239,6 +266,7 @@ restore_pair() (
     docker exec "$QA_DB_CONTAINER" sh -lc "dropdb -U \"\$POSTGRES_USER\" --if-exists '$QA_DATABASE'" || return 1
     docker exec "$QA_DB_CONTAINER" sh -lc "createdb -U \"\$POSTGRES_USER\" '$QA_DATABASE'" || return 1
     docker exec -i "$QA_DB_CONTAINER" sh -lc "pg_restore -U \"\$POSTGRES_USER\" --no-owner --no-privileges -d '$QA_DATABASE'" < "$backup/database.dump" || return 1
+    normalize_restored_database_ownership || return 1
     docker run --rm --network none -v "$QA_ODOO_VOLUME":/target -v "$backup":/backup:ro alpine:3.20 sh -lc '
         set -eu
         rm -rf -- "/target/filestore/'"$QA_DATABASE"'"

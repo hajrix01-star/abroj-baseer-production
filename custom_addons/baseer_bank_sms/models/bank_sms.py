@@ -591,7 +591,7 @@ class BaseerBankSmsRule(models.Model):
     contains_text = fields.Char(translate=True, help='Required text fragment after sender and identifier matching.')
     instrument_id = fields.Many2one('baseer.bank.sms.instrument', ondelete='restrict', index=True)
     direction = fields.Selection([
-        ('in', _('Incoming')), ('out', _('Outgoing')), ('unknown', _('Unknown')),
+        ('in', 'Incoming'), ('out', 'Outgoing'), ('unknown', 'Unknown'),
     ], help='Optional direction condition.')
     company_id = fields.Many2one('res.company', ondelete='restrict', index=True)
     journal_id = fields.Many2one('account.journal', ondelete='restrict', index=True)
@@ -707,19 +707,19 @@ class BaseerBankSmsMessage(models.Model):
         help='Phone receipt time when available, otherwise the system receipt time.',
     )
     direction = fields.Selection([
-        ('in', _('Incoming')), ('out', _('Outgoing')), ('unknown', _('Needs review')),
+        ('in', 'Incoming'), ('out', 'Outgoing'), ('unknown', 'Needs review'),
     ], default='unknown', readonly=True, index=True)
     operation_type = fields.Selection([
-        ('transfer_in', _('Incoming transfer')), ('transfer_out', _('Outgoing transfer')),
-        ('deposit', _('Deposit')), ('card_purchase', _('Card purchase')), ('cash_withdrawal', _('Cash withdrawal')),
-        ('bill_payment', _('Bill payment')), ('otp', _('Temporary code')), ('declined', _('Declined transaction')),
-        ('beneficiary_added', _('Beneficiary added')), ('card_fee', _('Bank fee')),
-        ('internal_transfer_candidate', _('Possible internal transfer')), ('nonfinancial_notice', _('Non-financial notice')),
-        ('unknown', _('Unknown')),
+        ('transfer_in', 'Incoming transfer'), ('transfer_out', 'Outgoing transfer'),
+        ('deposit', 'Deposit'), ('card_purchase', 'Card purchase'), ('cash_withdrawal', 'Cash withdrawal'),
+        ('bill_payment', 'Bill payment'), ('otp', 'Temporary code'), ('declined', 'Declined transaction'),
+        ('beneficiary_added', 'Beneficiary added'), ('card_fee', 'Bank fee'),
+        ('internal_transfer_candidate', 'Possible internal transfer'), ('nonfinancial_notice', 'Non-financial notice'),
+        ('unknown', 'Unknown'),
     ], default='unknown', readonly=True, index=True)
     suspected_otp = fields.Boolean(readonly=True, index=True)
     state = fields.Selection([
-        ('new', _('New')), ('routed', _('Routed')), ('review', _('Needs review')), ('rejected', _('Rejected operations')), ('trash', _('Trash')),
+        ('new', 'New'), ('routed', 'Routed'), ('review', 'Needs review'), ('rejected', 'Rejected operations'), ('trash', 'Trash'),
     ], default='new', readonly=True, index=True)
     applied_rule_id = fields.Many2one('baseer.bank.sms.rule', readonly=True, ondelete='restrict')
     company_id = fields.Many2one('res.company', readonly=True, ondelete='restrict', index=True)

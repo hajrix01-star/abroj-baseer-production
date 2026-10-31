@@ -18,6 +18,25 @@ class PosConfig(models.Model):
         help='Internal person record used only for an unnamed consumer sale. It must not represent a real customer.',
     )
 
+    @api.model
+    def _load_pos_data_fields(self, config):
+        """Expose the opt-in policy and its internal partner to the POS client.
+
+        The Saudi localization performs its mandatory-invoice validation in the
+        browser before the order reaches ``_process_order``.  Therefore the
+        client must receive both fields so it can assign the internal consumer
+        first; the server-side assignment remains the authoritative fallback.
+        """
+        inherited = super()._load_pos_data_fields(config)
+        if not inherited:
+            # An empty list is the native "load all permitted fields" marker.
+            # Preserve it instead of accidentally narrowing POS bootstrap data.
+            return inherited
+        return list(dict.fromkeys(inherited + [
+            'baseer_zatca_allow_anonymous_b2c',
+            'baseer_zatca_anonymous_partner_id',
+        ]))
+
     @api.constrains('baseer_zatca_allow_anonymous_b2c', 'baseer_zatca_anonymous_partner_id', 'company_id')
     def _check_baseer_zatca_anonymous_b2c(self):
         for config in self:

@@ -7,10 +7,14 @@ import { patch } from "@web/core/utils/patch";
 
 patch(PosOrder.prototype, {
     baseerAssignAnonymousB2cPartner() {
-        const config = this.config;
-        const partnerId = config.baseer_zatca_anonymous_partner_id?.id;
+        // ``config_id`` is the order's own POS configuration.  Reading it
+        // avoids relying on the store-wide first config when POS data is
+        // bootstrapped with the legacy empty-fields marker.
+        const config = this.config_id || this.config;
+        const configuredPartner = config?.baseer_zatca_anonymous_partner_id;
+        const partnerId = configuredPartner?.id ?? configuredPartner;
         const isEligible =
-            config.baseer_zatca_allow_anonymous_b2c &&
+            config?.baseer_zatca_allow_anonymous_b2c &&
             this.company?.country_id?.code === "SA" &&
             this.isInvoiceMandatoryForSA?.() &&
             !this.getPartner() &&

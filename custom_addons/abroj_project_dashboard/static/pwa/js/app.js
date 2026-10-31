@@ -8,7 +8,8 @@ const t=key=>translations[key]?.[lang] ?? key;
 function statusBadge(p){
   const status=['done','overdue','on_time'].includes(p.status)?p.status:'on_time';
   const n=Number(p.overdue_days)||0, key=status==='done'?'myDayDone':status==='on_time'?'myDayOnTime':n===1?'myDayLateOne':n===2?'myDayLateTwo':n<=10?'myDayLateFew':'myDayLateMany';
-  return `<span class="phase-status ${status}">${esc(t(key).replace('{n}',number(n)))}</span>`;
+  const icon=status==='done'?'<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3 8l3.2 3.2L13 4.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>':'';
+  return `<span class="phase-status ${status}">${icon}${esc(t(key).replace('{n}',number(n)))}</span>`;
 }
 const locale=()=>lang==='ar'?'ar-SA':'en-US';
 const number=n=>new Intl.NumberFormat(locale(),{maximumFractionDigits:1,numberingSystem:'latn'}).format(Number(n)||0);

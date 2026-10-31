@@ -701,7 +701,7 @@ const translations = {
   },
   "myDay": {"ar": "مهامي اليوم", "en": "My Day"},
   "myDayOnTime": {"ar": "في الموعد", "en": "On time"},
-  "myDayDone": {"ar": "مكتمل", "en": "Done"},
+  "myDayDone": {"ar": "منجز", "en": "Done"},
   "myDayLateOne": {"ar": "متأخر يوم", "en": "1 day overdue"},
   "myDayLateTwo": {"ar": "متأخر يومين", "en": "2 days overdue"},
   "myDayLateFew": {"ar": "متأخر {n} أيام", "en": "{n} days overdue"},

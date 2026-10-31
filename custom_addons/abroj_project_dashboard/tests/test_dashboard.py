@@ -385,6 +385,26 @@ class AbrojDashboardHttpCase(HttpCase):
         response = self.url_open(path, data=json.dumps({'jsonrpc': '2.0', 'method': 'call', 'params': params, 'id': 1}), headers={'Content-Type': 'application/json'})
         return response.json()['result']
 
+    def test_phase_status_payload(self):
+        today = fields.Date.today()
+        project = self.env['project.project'].create({'name': 'Phase status payload'})
+        tasks = self.env['project.task'].create([
+            {'name': 'Done', 'project_id': project.id, 'x_abroj_date_start': today - timedelta(days=3), 'state': '1_done'},
+            {'name': 'On time', 'project_id': project.id, 'x_abroj_date_start': today + timedelta(days=2)},
+            {'name': 'Overdue', 'project_id': project.id, 'x_abroj_date_start': today - timedelta(days=2)},
+            {'name': 'No deadline', 'project_id': project.id},
+        ])
+        self.authenticate('admin', 'admin')
+        detail = self.rpc('/abroj/app/data', {'project_id': project.id})
+        phases = {p['id']: (p['status'], p['overdue_days']) for p in detail['phases']}
+        self.assertEqual(phases[tasks[0].id], ('done', 3))
+        self.assertEqual(phases[tasks[1].id], ('on_time', 0))
+        self.assertEqual(phases[tasks[2].id], ('overdue', 2))
+        self.assertEqual(phases[tasks[3].id], ('on_time', 0))
+        dashboard = self.rpc('/abroj/app/data', {})
+        listed = next(p for p in dashboard['projects'] if p['id'] == project.id)
+        self.assertEqual({p['id']: (p['status'], p['overdue_days']) for p in listed['phases']}, phases)
+
     def test_gallery_metadata_filters_and_text_note(self):
         project = self.env['project.project'].create({'name': 'Gallery project', 'company_id': self.env.company.id})
         task = self.env['project.task'].create({'name': 'Gallery phase', 'project_id': project.id})
@@ -510,7 +530,7 @@ class AbrojDashboardHttpCase(HttpCase):
             self.assertTrue(asset.endswith('?v=' + version), asset)
         for icon in self.url_open('/abroj/app/manifest.webmanifest').json()['icons']:
             self.assertTrue(icon['src'].endswith('?v=' + version))
-        self.assertIn("'abroj-v32-' + VERSION", worker)
+        self.assertIn("'abroj-v34-' + VERSION", worker)
         self.assertIn("cache: 'reload'", worker)
         self.assertIn("url.searchParams.get('v') !== VERSION", worker)
         self.assertNotIn('static/pwa/index.html', worker)

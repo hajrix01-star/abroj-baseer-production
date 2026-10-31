@@ -18,6 +18,15 @@ class ProjectTask(models.Model):
     x_abroj_duration_days = fields.Integer(string='المدة (أيام)', default=1, required=True)
     x_abroj_progress = fields.Float(string='نسبة إنجاز المرحلة')
 
+    def _abroj_phase_status(self):
+        self.ensure_one()
+        today = fields.Date.context_today(self)
+        tz = pytz.timezone(self.env.context.get('tz') or self.env.user.tz or 'UTC')
+        local_end = pytz.UTC.localize(self.date_deadline).astimezone(tz).date() if self.date_deadline else False
+        overdue_days = max((today - local_end).days, 0) if local_end else 0
+        status = 'done' if self.state in ('1_done', '1_canceled') else 'overdue' if overdue_days else 'on_time'
+        return {'status': status, 'overdue_days': overdue_days}
+
     @api.constrains('x_abroj_duration_days')
     def _check_abroj_duration(self):
         for task in self:
@@ -199,7 +208,7 @@ class Project(models.Model):
         delayed = not completed and bool(self.date and self.date < today or delayed_tasks)
         last_activity = max([self.write_date] + tasks.mapped('write_date')) if tasks else self.write_date
         stalled = not completed and (self.last_update_status in ('off_track', 'on_hold') or bool(last_activity and last_activity.date() < today - timedelta(days=stall_days)))
-        phases = [{'id': t.id, 'name': t.name, 'start': str(t.x_abroj_date_start or (t.date_assign.date() if t.date_assign else '')), 'end': str(t.date_deadline.date() if t.date_deadline else ''), 'duration': t.x_abroj_duration_days, 'done': t in done, 'state': t.state, 'progress': t.x_abroj_progress, 'can_write': t.has_access('write'), 'delayed': t in delayed_tasks, 'assignee': ', '.join(t.user_ids.mapped('name'))} for t in tasks]
+        phases = [{'id': t.id, 'name': t.name, 'start': str(t.x_abroj_date_start or (t.date_assign.date() if t.date_assign else '')), 'end': str(t.date_deadline.date() if t.date_deadline else ''), 'duration': t.x_abroj_duration_days, 'done': t in done, 'state': t.state, 'progress': t.x_abroj_progress, 'can_write': t.has_access('write'), 'delayed': t in delayed_tasks, 'assignee': ', '.join(t.user_ids.mapped('name')), **t._abroj_phase_status()} for t in tasks]
         return {'id': self.id, 'archived': not self.active or completed, 'can_close': self.env.user.has_group('project.group_project_manager') and self.has_access('write'), 'can_write': self.has_access('write'), 'can_create_task': self.env['project.task'].has_access('create'), 'can_edit_budget': self.env.user.has_group('project.group_project_manager') and self.has_access('write'), 'name': self.name, 'type': self.abroj_type, 'type_label': (dict(TYPES) if (self.env.lang or '').startswith('ar') else TYPES_EN).get(self.abroj_type, ''), 'status': self.last_update_status, 'status_label': (STATUS if (self.env.lang or '').startswith('ar') else STATUS_EN).get(self.last_update_status, ''), 'client': self.partner_id.name or '—', 'manager': self.user_id.name or '—', 'manager_is_system': bool(self.user_id and (self.user_id.id in (1, self.env.ref('base.user_admin').id) or self.user_id.login == '__system__' or self.user_id.name == 'Administrator')), 'start': str(self.date_start or ''), 'end': str(self.date or ''), 'progress': round(progress, 1), 'budget': self.abroj_budget, 'actual': actual, 'over': max(actual - self.abroj_budget, 0), 'over_categories': sum(c['actual'] > c['budget'] for c in categories), 'contract': self.abroj_contract_value or (self.contract_value if 'contract_value' in self._fields else 0), 'received': received, 'paid': paid, 'liquidity': received - paid, 'categories': categories, 'contracts': contracts, 'phases': phases, 'delayed': delayed, 'stalled': stalled, 'completed': completed, 'vouchers': [{'name': v.name, 'kind': v.kind, 'partner': v.partner_id.name, 'amount': v.amount, 'date': str(v.date)} for v in vouchers]}
 
     @api.model
@@ -222,11 +231,8 @@ class Project(models.Model):
             group = grouped.setdefault(project.id, {'id': project.id, 'name': project.name, 'phases': []})
             priority = 0 if task.date_deadline < start else 1 if not task.x_abroj_date_start or task.x_abroj_date_start <= today else 2
             priorities[task.id] = priority
-            local_end = pytz.UTC.localize(task.date_deadline).astimezone(tz).date()
-            overdue_days = max((today - local_end).days, 0)
-            status = 'done' if task.state in ('1_done', '1_canceled') else 'overdue' if overdue_days else 'on_time'
             group['phases'].append({
-                'id': task.id, 'name': task.name, 'status': status, 'overdue_days': overdue_days,
+                'id': task.id, 'name': task.name, **task._abroj_phase_status(),
                 'start': str(task.x_abroj_date_start or ''),
                 'end': str(task.date_deadline.date()),
                 'duration': task.x_abroj_duration_days,

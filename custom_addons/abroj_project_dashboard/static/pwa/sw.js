@@ -1,6 +1,6 @@
 'use strict';
 const VERSION = 'ASSET_VERSION_PLACEHOLDER';
-const CACHE = 'abroj-v35-' + VERSION;
+const CACHE = 'abroj-v36-' + VERSION;
 const SHELL = '/abroj/app';
 const ASSETS = ['/abroj_project_dashboard/static/pwa/js/media.js', '/abroj_project_dashboard/static/pwa/js/app.js', '/abroj_project_dashboard/static/pwa/js/screens.js', '/abroj_project_dashboard/static/pwa/js/i18n.js', '/abroj_project_dashboard/static/pwa/css/tokens.css', '/abroj_project_dashboard/static/pwa/css/base.css', '/abroj_project_dashboard/static/pwa/css/components.css', '/abroj_project_dashboard/static/pwa/css/screens.css', '/abroj_project_dashboard/static/pwa/logo-navy.png', '/abroj_project_dashboard/static/pwa/logo-white.png', '/abroj_project_dashboard/static/pwa/icon-192.png', '/abroj_project_dashboard/static/pwa/icon-512.png', '/abroj_project_dashboard/static/pwa/icon-maskable-512.png', '/abroj_project_dashboard/static/pwa/apple-touch-icon.png'];
 self.addEventListener('install', event => event.waitUntil(

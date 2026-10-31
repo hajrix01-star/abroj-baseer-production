@@ -88,6 +88,27 @@ class TestPosCustomerIdentity(TransactionCase):
         self.assertEqual(customer.name, 'POS edit is allowed')
         self.assertEqual(customer.baseer_pos_phone_key, '966511111111')
 
+    def test_cashier_cannot_mint_a_capability_for_a_customer_hidden_by_record_rules(self):
+        cashier = self.env['res.users'].with_context(no_reset_password=True).create({
+            'name': 'POS hidden customer cashier',
+            'login': 'pos-hidden-customer-cashier',
+            'baseer_access_role': 'cashier',
+        })
+        hidden_customer = self.env['res.partner'].create({
+            'name': 'Hidden from this cashier', 'phone': '0516666666',
+        })
+        self.env['ir.rule'].sudo().create({
+            'name': 'Hide one POS customer during this test',
+            'model_id': self.env.ref('base.model_res_partner').id,
+            'domain_force': "[('id', '!=', %s)]" % hidden_customer.id,
+            'perm_read': True,
+            'perm_write': False,
+            'perm_create': False,
+            'perm_unlink': False,
+        })
+        with self.assertRaises(AccessError):
+            self._cashier_customer_capability(cashier, hidden_customer)
+
     def test_pos_customer_capability_rejects_protected_fields_and_companies(self):
         cashier = self.env['res.users'].with_context(no_reset_password=True).create({
             'name': 'POS customer protection cashier',

@@ -291,9 +291,14 @@ class PosConfig(models.Model):
         session = self._baseer_require_customer_form_session()
         Partner = self.env['res.partner']
         if partner_id:
-            partner = Partner.sudo().browse(int(partner_id)).exists()
+            # Do not mint a capability from an arbitrary ID supplied by the POS
+            # client.  The cashier must first be able to read the requested
+            # customer under their normal ACLs and record rules.
+            partner = Partner.browse(int(partner_id)).exists()
             if not partner:
                 raise AccessError(_('This customer no longer exists.'))
+            partner.check_access('read')
+            partner.check_access_rule('read')
             partner._baseer_pos_assert_customer_editable(self)
             return Partner._baseer_pos_customer_capability(self, 'write', partner.id, session)
         return Partner._baseer_pos_customer_capability(self, 'create', session=session)

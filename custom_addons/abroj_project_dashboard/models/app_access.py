@@ -1,42 +1,60 @@
 """Who may use the Abroj projects app, and in which company.
 
-The projects app/switcher is for any user with access to Projects, and
-only while the current company is the Abroj company.  The Abroj company is
-the one set in the system parameter ``abroj_project_dashboard.company_id``;
-without it, a company named أبرج / Abroj; a single-company database is
-treated as Abroj.
+The Abroj company is ONLY the id in the system parameter
+``abroj_project_dashboard.company_id``; if it is empty or invalid, company
+id 56 is used.  There is no name matching or other fallback.
+
+The projects app / switch button is for users with access to Projects whose
+allowed companies include that company, while it is the active company.
 """
 from odoo import api, models
+from odoo.http import request
 
 COMPANY_PARAM = 'abroj_project_dashboard.company_id'
+DEFAULT_COMPANY_ID = 56
 
 
 class ResUsers(models.Model):
     _inherit = 'res.users'
 
     @api.model
-    def _abroj_company(self):
-        companies = self.env['res.company'].sudo().search([])
-        param = self.env['ir.config_parameter'].sudo().get_param(COMPANY_PARAM)
-        if param and param.isdigit() and int(param) in companies.ids:
-            return companies.browse(int(param))
-        named = companies.filtered(lambda c: any(
-            key in (n or '').lower() for key in ('أبرج', 'abroj')
-            for n in (c.name, getattr(c, 'contracting_name_ar', ''), getattr(c, 'contracting_name_en', ''))))
-        if named:
-            return named[:1]
-        return companies if len(companies) == 1 else companies.browse()
+    def _abroj_company_id(self):
+        value = (self.env['ir.config_parameter'].sudo().get_param(COMPANY_PARAM) or '').strip()
+        return int(value) if value.isdigit() and int(value) > 0 else DEFAULT_COMPANY_ID
 
-    def _abroj_can_use_projects_app(self, company=None):
+    @api.model
+    def _abroj_company(self):
+        return self.env['res.company'].sudo().browse(self._abroj_company_id()).exists()
+
+    def _abroj_has_projects_access(self):
         user = self or self.env.user
         user.ensure_one()
-        # Anyone with (at least read) access to the Projects app.
-        if user.share or not (user.has_group('project.group_project_user')
-                              or user.has_group('base.group_system')):
+        return not user.share and (user.has_group('project.group_project_user')
+                                   or user.has_group('base.group_system'))
+
+    def _abroj_active_company(self):
+        """Company active in the web client: first id of the 'cids' cookie
+        (plain http routes do not apply it to env.company), else env.company."""
+        user = self or self.env.user
+        try:
+            cids = (request and request.httprequest.cookies.get('cids')) or ''
+        except RuntimeError:
+            cids = ''
+        first = str(cids).split('-')[0].split(',')[0]
+        if first.isdigit() and int(first) in user.company_ids.ids:
+            return user.company_ids.browse(int(first))
+        return self.env.company
+
+    def _abroj_can_use_projects_app(self, company=None):
+        """Projects access + Abroj in the user's companies + Abroj active
+        (``company`` overrides the active company, e.g. at login)."""
+        user = self or self.env.user
+        user.ensure_one()
+        abroj_id = self._abroj_company_id()
+        if not user._abroj_has_projects_access() or abroj_id not in user.company_ids.ids:
             return False
-        abroj = self._abroj_company()
-        company = company or self.env.company
-        return bool(abroj) and company == abroj
+        company = company or user._abroj_active_company()
+        return company.id == abroj_id
 
 
 class IrHttp(models.AbstractModel):
@@ -44,6 +62,10 @@ class IrHttp(models.AbstractModel):
 
     def session_info(self):
         info = super().session_info()
-        if self.env.user and not self.env.user._is_public():
-            info['abroj_can_switch'] = self.env.user._abroj_can_use_projects_app()
+        user = self.env.user
+        if user and not user._is_public():
+            abroj_id = user._abroj_company_id()
+            allowed = user._abroj_has_projects_access() and abroj_id in user.company_ids.ids
+            info['abroj_switch_company_id'] = abroj_id if allowed else False
+            info['abroj_can_switch'] = bool(allowed) and user._abroj_can_use_projects_app()
         return info

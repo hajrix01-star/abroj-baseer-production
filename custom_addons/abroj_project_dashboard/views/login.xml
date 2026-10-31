@@ -9,7 +9,18 @@
                 <t t-set="no_header" t-value="True"/>
                 <t t-set="no_footer" t-value="True"/>
                 <div t-attf-class="abroj-login #{'abroj-rtl' if abroj_lang == 'ar' else 'abroj-ltr'}" t-att-dir="'rtl' if abroj_lang == 'ar' else 'ltr'">
-                    <div class="abroj-login__bg"/>
+                    <div class="abroj-login__bg" aria-hidden="true">
+                        <svg class="abroj-login__sketch" viewBox="0 0 412 900" preserveAspectRatio="xMidYMax slice" fill="none" stroke="#102a5c" stroke-width="1.1">
+                            <g opacity=".5"><path d="M0 900V820h30V790h25v110M70 900V700h40v200M60 700l30-30 30 30M130 900V780h20V755h30v145M195 900V640h35v260M212 640V615M240 900V775h40v125M290 900V720h28v180M300 720l5-25 5 25M330 900V790h40v110M380 900V745h32v155"/>
+                            <path d="M75 715h30M75 735h30M75 755h30M75 775h30M200 660h25M200 680h25M200 700h25M200 720h25M295 740h18M295 760h18" stroke-width=".7"/>
+                            <path d="M212 615h80M290 615V640" stroke-dasharray="3 3"/></g>
+                            <g stroke="#f28c28" stroke-width="1.1" opacity=".55"><path d="M150 900V600M150 600H260M150 600h-40M150 600l15-14v14M150 620l12-20M150 640l-8-20M150 660l8-20M150 680l-8-20M150 700l8-20M240 600v38"/><path d="M234 638h12v8h-12z" fill="#f28c28"/></g>
+                            <g stroke-width=".7" opacity=".45"><path d="M330 790V730h40v60M330 760h40M330 730l40 30M370 730l-40 30M350 730v60"/></g>
+                            <g opacity=".22"><path d="M0 0V120h40V60h30v60M360 0V90h52M20 20h20M20 40h20M380 30h20M380 55h20"/><path d="M90 0V40h60M150 40V0M110 40l20-25" stroke-dasharray="3 3"/></g>
+                            <path d="M0 898H412" stroke="#f28c28" stroke-width="1.5" opacity=".6"/>
+                        </svg>
+                        <img class="abroj-login__wm" src="/abroj_project_dashboard/static/pwa/logo-navy.png" alt=""/>
+                    </div>
                     <nav class="abroj-login__langs" aria-label="Language">
                         <a t-attf-href="/web/login?lang=ar#{'&amp;redirect=' + redirect if redirect else ''}" t-att-class="'active' if abroj_lang == 'ar' else None" lang="ar">عربي</a>
                         <span>|</span>

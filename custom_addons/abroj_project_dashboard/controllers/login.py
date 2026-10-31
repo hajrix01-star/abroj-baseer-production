@@ -88,7 +88,8 @@ class AbrojLogin(Home):
             # 'Projects' chosen by a user without projects access (or outside
             # the Abroj company): fall back to the Odoo backend gracefully.
             user = request.env['res.users'].browse(request.session.uid)
-            if _is_app_path(redirect) and not user.with_user(user)._abroj_can_use_projects_app(user.company_id):
+            abroj = user.sudo()._abroj_company()
+            if _is_app_path(redirect) and not (abroj and user.with_user(user)._abroj_can_use_projects_app(abroj)):
                 response = request.redirect('/odoo')
             # Unchecked box -> browser-session cookie (see models/session_cookie.py).
             request.session['abroj_remember'] = bool(kw.get('remember'))

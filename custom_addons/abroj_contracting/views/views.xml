@@ -39,7 +39,7 @@
           </div>
           <group>
             <field name="name" string="اسم المشروع"/>
-            <field name="abroj_client_party_id" context="{'default_party_type': 'client', 'default_company_id': company_id}"/>
+            <field name="abroj_client_party_id" context="{'abroj_party_show_type': True, 'default_party_type': 'client', 'default_company_id': company_id}"/>
             <field name="partner_id" invisible="1"/>
             <field name="company_id"/>
             <field name="currency_id" invisible="1"/>
@@ -134,7 +134,7 @@
             <field name="analytic_account_id" readonly="1"/>
             <field name="company_id"/>
             <field name="currency_id" invisible="1"/>
-            <field name="party_id" required="not partner_id" readonly="state != 'draft'" context="{'default_party_type': 'client' if kind == 'receipt' and not subcontractor_id else 'subcontractor', 'default_company_id': company_id}"/>
+            <field name="party_id" required="not partner_id" readonly="state != 'draft'" context="{'abroj_party_show_type': True, 'default_party_type': 'client' if kind == 'receipt' and not subcontractor_id else 'subcontractor', 'default_company_id': company_id}"/>
             <field name="partner_id" invisible="1"/>
             <field name="subcontractor_id" domain="[('project_id', '=', project_id)]" readonly="state != 'draft'"/>
             <field name="amount" readonly="state != 'draft'"/>
@@ -190,7 +190,7 @@
             <field name="project_id"/>
             <field name="company_id"/>
             <field name="currency_id" invisible="1"/>
-            <field name="party_id" required="not partner_id" context="{'default_party_type': 'subcontractor', 'default_company_id': company_id}"/>
+            <field name="party_id" required="not partner_id" context="{'abroj_party_show_type': True, 'default_party_type': 'subcontractor', 'default_company_id': company_id}"/>
             <field name="partner_id" invisible="1"/>
             <field name="scope"/>
             <field name="contract_type"/><field name="vat_registered"/><field name="retention_percent"/><field name="materials_total"/>
@@ -283,7 +283,7 @@
             <field name="company_id"/>
             <field name="currency_id" invisible="1"/>
             <field name="name"/>
-            <field name="party_id" readonly="state != 'draft'" context="{'default_party_type': 'supplier', 'default_company_id': company_id}"/>
+            <field name="party_id" readonly="state != 'draft'" context="{'abroj_party_show_type': True, 'default_party_type': 'supplier', 'default_company_id': company_id}"/>
             <field name="partner_id" invisible="1"/>
             <field name="category" readonly="state != 'draft'"/>
             <field name="invoice_number" readonly="state != 'draft'"/>
@@ -385,7 +385,7 @@
     <field name="model">abroj.contracting.party</field>
     <field name="arch" type="xml">
       <form string="طرف عقد"><sheet><group>
-        <field name="name"/><field name="party_type"/><field name="category_ids" widget="many2many_tags" required="1" options="{'color_field': 'color'}"/><field name="phone"/><field name="vat"/>
+        <field name="name"/><field name="party_type"/><field name="phone"/><field name="vat"/>
         <field name="company_id" groups="base.group_multi_company"/><field name="active" invisible="1"/><field name="notes"/>
       </group></sheet></form>
     </field>
@@ -394,24 +394,20 @@
     <field name="name">abroj.contracting.party.list</field>
     <field name="model">abroj.contracting.party</field>
     <field name="arch" type="xml">
-      <list string="أطراف العقود"><field name="name"/><field name="party_type"/><field name="category_ids" widget="many2many_tags" options="{'color_field': 'color'}"/><field name="phone"/><field name="vat"/><field name="company_id" groups="base.group_multi_company"/></list>
+      <list string="أطراف العقود"><field name="name"/><field name="party_type"/><field name="phone"/><field name="vat"/><field name="company_id" groups="base.group_multi_company"/></list>
     </field>
   </record>
   <record id="party_search" model="ir.ui.view">
     <field name="name">abroj.contracting.party.search</field>
     <field name="model">abroj.contracting.party</field>
     <field name="arch" type="xml">
-      <search><field name="name"/><field name="phone"/><field name="vat"/><field name="category_ids"/>
+      <search><field name="name"/><field name="phone"/><field name="vat"/>
+        <filter name="citizen" string="المواطنون" domain="[('party_type', '=', 'citizen')]"/>
         <filter name="client" string="العملاء" domain="[('party_type', '=', 'client')]"/>
         <filter name="subcontractor" string="مقاولو الباطن" domain="[('party_type', '=', 'subcontractor')]"/>
         <filter name="supplier" string="الموردون" domain="[('party_type', '=', 'supplier')]"/>
         <filter name="archived" string="مؤرشف" domain="[('active', '=', False)]"/>
-        <separator/>
-        <filter name="tag_clients" string="عملاء" domain="[('category_ids.name', '=', 'عملاء')]"/>
-        <filter name="tag_subcontractors" string="مقاولين" domain="[('category_ids.name', '=', 'مقاولين')]"/>
-        <filter name="tag_suppliers" string="موردين" domain="[('category_ids.name', '=', 'موردين')]"/>
-        <filter name="tag_contracting" string="مقاولات" domain="[('category_ids.name', '=', 'مقاولات')]"/>
-        <group><filter name="group_tag" string="الوسم" context="{'group_by': 'category_ids'}"/><filter name="group_type" string="النوع" context="{'group_by': 'party_type'}"/></group>
+        <group><filter name="group_type" string="النوع" context="{'group_by': 'party_type'}"/></group>
       </search>
     </field>
   </record>

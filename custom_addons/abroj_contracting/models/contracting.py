@@ -6,8 +6,7 @@ from .guards import check_agent
 class Project(models.Model):
     _inherit = 'project.project'
 
-    abroj_client_party_id = fields.Many2one('abroj.contracting.party', string='العميل / المالك', check_company=True, ondelete='restrict',
-        domain="[('party_type', '=', 'client')]", help='طرف العقد من قائمة أطراف العقود؛ مستقل عن جهات الاتصال.')
+    abroj_client_party_id = fields.Many2one('abroj.contracting.party', string='العميل / المالك', check_company=True, ondelete='restrict', help='طرف العقد من قائمة أطراف العقود؛ مستقل عن جهات الاتصال.')
     contracting_goal = fields.Text('الهدف', help='حدد الهدف لهذا السجل وفق مستند المشروع الأصلي.')
     contract_value = fields.Monetary('قيمة العقد', help='قيمة عقد العميل؛ تستخدم لحساب ربح المشروع والمتبقي للتحصيل.')
     contracting_start = fields.Date('تاريخ الاتفاقية / البدء', help='حدد تاريخ الاتفاقية / البدء لهذا السجل وفق مستند المشروع الأصلي.')
@@ -133,8 +132,7 @@ class Subcontractor(models.Model):
     _name = 'abroj.contracting.subcontractor'
     _inherit = 'abroj.contracting.document'
     _description = 'مقاول باطن'
-    party_id = fields.Many2one('abroj.contracting.party', string='المقاول', check_company=True, ondelete='restrict', index=True,
-        domain="[('party_type', '=', 'subcontractor')]", help='المقاول من قائمة أطراف العقود؛ مستقل عن جهات الاتصال.')
+    party_id = fields.Many2one('abroj.contracting.party', string='المقاول', check_company=True, ondelete='restrict', index=True, help='المقاول من قائمة أطراف العقود؛ مستقل عن جهات الاتصال.')
     partner_id = fields.Many2one('res.partner', string='جهة الاتصال (قديم)', check_company=True, help='حقل قديم للسجلات السابقة؛ استخدم المقاول من أطراف العقود.')
 
     @api.depends('party_id', 'partner_id')
@@ -147,8 +145,6 @@ class Subcontractor(models.Model):
         for r in self:
             if not r.party_id and not r.partner_id:
                 raise ValidationError('حدد المقاول من أطراف العقود.')
-            if r.party_id and r.party_id.party_type != 'subcontractor':
-                raise ValidationError('المقاول يجب أن يكون طرفاً من نوع مقاول باطن.')
     scope = fields.Text('نطاق العمل', help='حدد نطاق العمل لهذا السجل وفق مستند المشروع الأصلي.')
     contract_type = fields.Selection([('labor', 'بدون مواد'), ('materials', 'شامل المواد'), ('lump', 'مقطوعية'), ('other', 'أخرى')], string='نوع العقد', help='بدون مواد للعمالة فقط وشامل المواد عند دخول المواد في قيمة العقد؛ مقطوعية وأخرى محفوظتان للعقود السابقة.')
     vat_registered = fields.Boolean('المقاول مسجل بالضريبة', help='حدد vat_registered لهذا السجل وفق مستند المشروع الأصلي.')
@@ -196,7 +192,6 @@ class Voucher(models.Model):
     name = fields.Char('رقم السند', default='/', readonly=True, copy=False, help='حدد رقم السند لهذا السجل وفق مستند المشروع الأصلي.')
     kind = fields.Selection([('payment', 'سند صرف'), ('receipt', 'سند قبض')], string='نوع السند', required=True, default='payment', help='حدد نوع السند لهذا السجل وفق مستند المشروع الأصلي.')
     party_id = fields.Many2one('abroj.contracting.party', string='الطرف', check_company=True, ondelete='restrict', index=True,
-        domain="[('party_type', '=', 'client' if kind == 'receipt' and not subcontractor_id else 'subcontractor')]",
         help='الطرف من قائمة أطراف العقود؛ مستقل عن جهات الاتصال.')
     partner_id = fields.Many2one('res.partner', string='جهة الاتصال (قديم)', check_company=True, help='حقل قديم للسجلات السابقة؛ لا يلزم للسندات الجديدة.')
     subcontractor_id = fields.Many2one('abroj.contracting.subcontractor', string='مقاول الباطن', check_company=True, ondelete='restrict', help='حدد مقاول الباطن لهذا السجل وفق مستند المشروع الأصلي.')
@@ -382,8 +377,7 @@ class Cost(models.Model):
     _description = 'مصروف مشروع'
 
     name = fields.Char('الوصف', required=True, help='حدد الوصف لهذا السجل وفق مستند المشروع الأصلي.')
-    party_id = fields.Many2one('abroj.contracting.party', string='المورد', check_company=True, ondelete='restrict', index=True,
-        domain="[('party_type', '=', 'supplier')]", help='المورد من قائمة أطراف العقود؛ مستقل عن جهات الاتصال.')
+    party_id = fields.Many2one('abroj.contracting.party', string='المورد', check_company=True, ondelete='restrict', index=True, help='المورد من قائمة أطراف العقود؛ مستقل عن جهات الاتصال.')
     partner_id = fields.Many2one('res.partner', string='جهة الاتصال (قديم)', check_company=True, help='حقل قديم للسجلات السابقة؛ استخدم المورد من أطراف العقود.')
     category = fields.Char('التصنيف', help='حدد التصنيف لهذا السجل وفق مستند المشروع الأصلي.')
     invoice_number = fields.Char('رقم الفاتورة', help='حدد رقم الفاتورة لهذا السجل وفق مستند المشروع الأصلي.')

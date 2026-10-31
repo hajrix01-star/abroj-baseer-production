@@ -395,19 +395,19 @@ class AbrojContractingCase(TransactionCase):
         project = self.env['project.project'].create({'name': 'مشروع الأطراف', 'company_id': self.env.company.id, 'abroj_client_party_id': client.id})
         sub = self.env['abroj.contracting.subcontractor'].create({'project_id': project.id, 'party_id': sub_party_id, 'agreed_amount': 500})
         self.assertEqual(sub.display_name, 'مقاول طرف مستقل')
-        with self.assertRaises(ValidationError), self.cr.savepoint():
-            self.env['abroj.contracting.subcontractor'].create({'project_id': project.id, 'party_id': client.id, 'agreed_amount': 1})
+        # party_type is only a label: any party type can be a subcontract party.
+        self.assertTrue(self.env['abroj.contracting.subcontractor'].create({'project_id': project.id, 'party_id': client.id, 'agreed_amount': 1}))
         with self.assertRaises(ValidationError), self.cr.savepoint():
             self.env['abroj.contracting.subcontractor'].create({'project_id': project.id, 'agreed_amount': 1})
         Voucher = self.env['abroj.contracting.voucher']
-        with self.assertRaises(ValidationError), self.cr.savepoint():
+        with self.assertRaises(ValidationError), self.cr.savepoint():  # receipts must match the project client
             Voucher.create({'project_id': project.id, 'kind': 'receipt', 'party_id': sub_party_id, 'amount': 5})
         receipt = Voucher.create({'project_id': project.id, 'kind': 'receipt', 'party_id': client.id, 'amount': 5})
         self.assertFalse(receipt.partner_id)
         with self.assertRaises(ValidationError), self.cr.savepoint():
             Voucher.create({'project_id': project.id, 'kind': 'payment', 'party_id': client.id, 'subcontractor_id': sub.id, 'amount': 5})
         payment = Voucher.create({'project_id': project.id, 'kind': 'payment', 'party_id': sub_party_id, 'subcontractor_id': sub.id, 'amount': 50, 'method': 'bank'})
-        self.assertIn("party_type", str(Voucher._fields['party_id'].domain))
+        self.assertNotIn("party_type", str(Voucher._fields['party_id'].domain or ''))
         # Accounting approval keeps working without a res.partner on the payment.
         plan = self.env['account.analytic.plan'].create({'name': 'خطة الأطراف'})
         project.account_id = self.env['account.analytic.account'].create({'name': 'حساب الأطراف', 'plan_id': plan.id, 'company_id': self.env.company.id})
@@ -424,55 +424,61 @@ class AbrojContractingCase(TransactionCase):
             html = self.env['ir.actions.report']._render_qweb_html(report, record.ids)[0].decode()
             self.assertIn('مقاول طرف مستقل' if record == sub else 'عميل طرف مستقل', html)
 
-    def test_party_default_tags(self):
+    def test_party_type_is_only_classification(self):
         Party = self.env['abroj.contracting.party']
-        clients, subs = self.env.ref('abroj_contracting.party_tag_clients'), self.env.ref('abroj_contracting.party_tag_subcontractors')
-        self.assertEqual(Party.create({'name': 'وسم عميل', 'party_type': 'client'}).category_ids, clients)
-        self.assertEqual(Party.create({'name': 'وسم مقاول', 'party_type': 'subcontractor'}).category_ids, subs)
-        supplier = self.env.ref('abroj_contracting.party_tag_suppliers')
-        self.assertEqual(Party.create({'name': 'وسم مخصص', 'party_type': 'client', 'category_ids': [Command.set(supplier.ids)]}).category_ids, supplier)
-        pid, _ = Party.with_context(default_party_type='client').name_create('وسم سريع')
-        self.assertEqual(Party.browse(pid).category_ids, clients)
-        partners = self.env['res.partner'].search_count([])
-        from odoo.tests import Form
-        with Form(Party) as form:
-            form.name = 'وسم نموذج'
-            form.party_type = 'client'
-            self.assertEqual(form.category_ids[:], clients)
-            form.party_type = 'subcontractor'
-            self.assertEqual(form.category_ids[:], subs)
-        self.assertEqual(self.env['res.partner'].search_count([]), partners)
+        self.assertEqual([k for k, _ in Party._fields['party_type'].selection], ['citizen', 'client', 'subcontractor', 'supplier'])
+        self.assertEqual(dict(Party._fields['party_type'].selection)['citizen'], 'مواطن')
+        self.assertFalse(Party._fields['category_ids'].required)
+        tags_before = self.env['res.partner.category'].search_count([])
+        citizen = Party.create({'name': 'مواطن بلا وسم', 'party_type': 'citizen'})
+        self.assertFalse(citizen.category_ids, 'no tag defaults by type anymore')
+        legacy = self.env.ref('abroj_contracting.party_tag_clients')
+        kept = Party.create({'name': 'طرف بوسم قديم', 'party_type': 'client', 'category_ids': [Command.set(legacy.ids)]})
+        self.assertEqual(kept.category_ids, legacy, 'existing tag data is kept')
+        kept.category_ids = [Command.clear()]
+        self.assertEqual(self.env['res.partner.category'].search_count([]), tags_before)
+        # No party_type domain on any party many2one; citizen works as project client and on every document.
+        fields_ = [self.env['project.project']._fields['abroj_client_party_id']] + [
+            self.env[m]._fields['party_id'] for m in ('abroj.contracting.subcontractor', 'abroj.contracting.voucher', 'abroj.contracting.cost')]
+        for field in fields_:
+            self.assertNotIn('party_type', str(field.domain or ''), field)
+        project = self.env['project.project'].create({'name': 'مشروع مواطن', 'company_id': self.env.company.id, 'abroj_client_party_id': citizen.id})
+        self.assertEqual(project.abroj_client_party_id, citizen)
+        self.assertTrue(self.env['abroj.contracting.cost'].create({'project_id': project.id, 'name': 'بند', 'amount': 1, 'party_id': citizen.id}))
+        self.assertEqual(citizen.with_context(abroj_party_show_type=True).display_name, 'مواطن بلا وسم · مواطن')
+        self.assertEqual(citizen.display_name, 'مواطن بلا وسم')
+        views = self.env['ir.ui.view'].search([('model', '=', 'abroj.contracting.party')])
+        self.assertTrue(views)
+        for view in views:
+            self.assertNotIn('category_ids', view.arch_db or '', view.name)
+        search_arch = self.env.ref('abroj_contracting.party_search').arch_db
+        for ptype in ('citizen', 'client', 'subcontractor', 'supplier'):
+            self.assertIn(f"('party_type', '=', '{ptype}')", search_arch)
 
-    def test_party_tag_domain_only_relevant_tags(self):
-        Tag, Party = self.env['res.partner.category'], self.env['abroj.contracting.party']
-        seeded = Tag.browse([self.env.ref(x).id for x in ('abroj_contracting.party_tag_subcontractors', 'abroj_contracting.party_tag_clients',
-                                                          'abroj_contracting.party_tag_suppliers', 'abroj_contracting.party_tag_contracting')])
-        unrelated, used = Tag.create({'name': 'وسم جهات اتصال فقط'}), Tag.create({'name': 'وسم طرف مستخدم'})
-        allowed = Tag.search([('abroj_party_tag', '=', True)])
-        self.assertLessEqual(seeded, allowed)
-        self.assertNotIn(unrelated, allowed)
-        self.assertNotIn(used, allowed)
-        Party.create({'name': 'طرف بوسم مخصص', 'party_type': 'client', 'category_ids': [Command.set(used.ids)]})
-        allowed = Tag.search([('abroj_party_tag', '=', True)])
-        self.assertIn(used, allowed)
-        self.assertNotIn(unrelated, allowed)
-        self.assertIn(unrelated, Tag.search([('abroj_party_tag', '!=', True)]))
-        self.assertEqual(Party._fields['category_ids'].domain, [('abroj_party_tag', '=', True)])
-        self.assertTrue(seeded[0].abroj_party_tag)
-        self.assertFalse(unrelated.abroj_party_tag)
-        self.assertTrue(unrelated.exists(), 'existing contact tags must not be deleted')
+    def test_party_name_search(self):
+        Party = self.env['abroj.contracting.party']
+        target = Party.create({'name': 'أبو مسعود للمقاولات', 'party_type': 'subcontractor', 'phone': '0551234567'})
+        other = Party.create({'name': 'مؤسسة الإنارة', 'party_type': 'supplier', 'phone': '0509999999'})
+        ids = lambda term: [i for i, _ in Party.name_search(term, limit=50)]
+        self.assertIn(target.id, ids('ابو مسعود'))
+        self.assertIn(target.id, ids('أبو'))
+        self.assertIn(target.id, ids('مَسعود'))
+        self.assertNotIn(other.id, ids('ابو مسعود'))
+        self.assertIn(other.id, ids('الانارة'))
+        self.assertIn(other.id, ids('مؤسسه'))
+        self.assertIn(target.id, ids('1234567'))
+        self.assertNotIn(target.id, ids('9999999'))
+        self.assertEqual(Party.search([('display_name', 'ilike', 'ابو مسعود')]), target)
 
     def test_cost_supplier_party(self):
         Party = self.env['abroj.contracting.party']
-        suppliers = self.env.ref('abroj_contracting.party_tag_suppliers')
         party = Party.create({'name': 'مورد مستقل', 'party_type': 'supplier'})
-        self.assertEqual(party.category_ids, suppliers)
         pid, _ = Party.with_context(default_party_type='supplier').name_create('مورد سريع')
-        self.assertEqual((Party.browse(pid).party_type, Party.browse(pid).category_ids), ('supplier', suppliers))
+        self.assertEqual(Party.browse(pid).party_type, 'supplier')
         partners = self.env['res.partner'].search_count([])
         cost = self.env['abroj.contracting.cost'].create({'project_id': self.project.id, 'name': 'إسمنت', 'amount': 100, 'party_id': party.id})
         self.assertEqual((cost.party_id, cost.partner_id.id), (party, False))
-        self.assertEqual(self.env['abroj.contracting.cost']._fields['party_id'].domain, "[('party_type', '=', 'supplier')]")
+        self.assertFalse(self.env['abroj.contracting.cost']._fields['party_id'].domain)
         self.assertEqual(self.env['res.partner'].search_count([]), partners)
 
     def test_optional_expense_guards(self):

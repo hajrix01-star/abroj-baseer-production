@@ -35,6 +35,23 @@ class AbrojProjectDashboardCase(TransactionCase):
             'group_ids': [Command.set([cls.env.ref('base.group_user').id, cls.env.ref('project.group_project_user').id])],
         })
 
+    def test_contracting_project_notebook(self):
+        arch = self.env.ref('abroj_contracting.project_form')._get_combined_arch()
+        pages = arch.xpath('//notebook/page')
+        self.assertEqual([page.get('string') for page in pages], [
+            'المراحل', 'العقود والاتفاقيات', 'السندات', 'المقبوضات',
+            'الملاحظات', 'المكتبة', 'الفواتير والمصروفات', 'التدفق النقدي',
+            'التقارير اليومية', 'السجلات',
+        ])
+        page = arch.xpath("//page[@name='invoices_costs']")[0]
+        self.assertEqual(page.xpath('./field/@name'), ['invoice_ids', 'cost_ids'])
+        for field in page.xpath('./field'):
+            self.assertTrue(field.xpath("./list/button[@name='action_confirm'][@invisible=\"state != 'draft'\"]"))
+        self.assertFalse(arch.xpath("//page[@name='logs']//field[@name='cost_ids']"))
+        self.assertFalse(arch.xpath("//page[@name='contractors']//field[@name='invoice_ids']"))
+        for name in ('vouchers', 'receipts'):
+            self.assertTrue(arch.xpath("//page[@name='%s']//list/button[@name='action_accounting_approve'][@invisible='not abroj_can_accounting_approve']" % name))
+
     def ids(self, filters):
         return [p['id'] for p in self.env['project.project'].get_abroj_dashboard_data(filters)['projects']]
 
@@ -538,7 +555,7 @@ class AbrojDashboardHttpCase(HttpCase):
             self.assertTrue(asset.endswith('?v=' + version), asset)
         for icon in self.url_open('/abroj/app/manifest.webmanifest').json()['icons']:
             self.assertTrue(icon['src'].endswith('?v=' + version))
-        self.assertIn("'abroj-v44-' + VERSION", worker)
+        self.assertIn("'abroj-v46-' + VERSION", worker)
         self.assertIn("cache: 'reload'", worker)
         self.assertIn("url.searchParams.get('v') !== VERSION", worker)
         self.assertNotIn('static/pwa/index.html', worker)

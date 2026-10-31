@@ -61,6 +61,15 @@
             <field name="expected_profit"/>
           </group>
           <notebook>
+            <page string="مقاولو الباطن" name="contractors">
+              <field name="subcontractor_ids" context="{'default_project_id': id}"/>
+            </page>
+            <page string="السندات" name="vouchers">
+              <field name="voucher_ids" context="{'default_project_id': id, 'default_kind': 'payment'}" domain="[('kind', '=', 'payment')]"><list><field name="name"/><field name="partner_id"/><field name="amount"/><field name="date"/><field name="method"/><field name="state"/><field name="abroj_can_accounting_approve" column_invisible="True"/><button name="action_accounting_approve" type="object" string="اعتماد محاسبي" groups="account.group_account_manager,account.group_account_invoice" invisible="not abroj_can_accounting_approve"/></list></field>
+            </page>
+            <page string="المقبوضات" name="receipts">
+              <field name="voucher_ids" context="{'default_project_id': id, 'default_kind': 'receipt'}" domain="[('kind', '=', 'receipt')]"><list><field name="name"/><field name="partner_id"/><field name="amount"/><field name="date"/><field name="method"/><field name="state"/><field name="abroj_can_accounting_approve" column_invisible="True"/><button name="action_accounting_approve" type="object" string="اعتماد محاسبي" groups="account.group_account_manager,account.group_account_invoice" invisible="not abroj_can_accounting_approve"/></list></field>
+            </page>
             <page string="الملاحظات" name="project_notes">
               <field name="project_note_ids" context="{'default_project_id': id}">
                 <list editable="bottom">
@@ -70,29 +79,15 @@
                 </list>
               </field>
             </page>
-            <page string="السجلات">
-              <field name="inbox_ids" context="{'default_project_id': id}"/>
-              <separator string="المصروفات"/>
-              <field name="cost_ids" context="{'default_project_id': id}"/>
+            <page string="الفواتير والمصروفات" name="invoices_costs">
+              <field name="invoice_ids" context="{'default_project_id': id}"><list><field name="number"/><field name="subcontractor_id"/><field name="amount"/><field name="date"/><field name="state"/><button name="action_confirm" type="object" string="تأكيد" invisible="state != 'draft'"/></list></field>
+              <field name="cost_ids" context="{'default_project_id': id}"><list><field name="name"/><field name="partner_id"/><field name="amount"/><field name="date"/><field name="state"/><button name="action_confirm" type="object" string="تأكيد" invisible="state != 'draft'"/></list></field>
             </page>
-            <page string="السندات">
-              <field name="voucher_ids" context="{'default_project_id': id, 'default_kind': 'payment'}" domain="[('kind', '=', 'payment')]"/>
-            </page>
-            <page string="مقاولو الباطن">
-              <field name="subcontractor_ids" context="{'default_project_id': id}"/>
-              <field name="invoice_ids" context="{'default_project_id': id}"/>
-            </page>
-            <page string="المقبوضات">
-              <field name="voucher_ids" context="{'default_project_id': id, 'default_kind': 'receipt'}" domain="[('kind', '=', 'receipt')]"/>
-            </page>
-            <page string="التدفق النقدي">
-              <group>
-                <field name="total_received"/>
-                <field name="total_paid"/>
-                <field name="cash_balance"/>
-              </group>
+            <page string="التدفق النقدي" name="cash_flow">
+              <group><field name="total_received"/><field name="total_paid"/><field name="cash_balance"/></group>
               <field name="voucher_ids" readonly="1" domain="[('state', '=', 'issued')]"/>
             </page>
+            <page string="السجلات" name="logs"><field name="inbox_ids" context="{'default_project_id': id}"/></page>
           </notebook>
         </sheet>
         <chatter/>
@@ -123,8 +118,9 @@
     <field name="arch" type="xml">
       <form string="السندات">
         <header>
+          <field name="abroj_can_accounting_approve" invisible="1"/>
           <button name="action_issue" type="object" string="إصدار واعتماد" class="btn-primary" invisible="state != 'draft'" help="عرض السجل أو اعتماد العملية حسب حالتها؛ راجع البيانات والمرفقات قبل التنفيذ."/>
-          <button name="action_accounting_approve" type="object" string="اعتماد محاسبي" groups="account.group_account_manager,account.group_account_invoice" invisible="state != 'issued' or payment_id" help="إنشاء دفعة محاسبية مرتبطة بحساب المشروع التحليلي؛ يجب أن يعتمد السند محاسب غير مصدره، ولا يسمح لوكيل الاستخراج بالاعتماد."/>
+          <button name="action_accounting_approve" type="object" string="اعتماد محاسبي" groups="account.group_account_manager,account.group_account_invoice" invisible="not abroj_can_accounting_approve" help="إنشاء دفعة محاسبية مرتبطة بحساب المشروع التحليلي؛ يجب أن يعتمد السند محاسب غير مصدره، ولا يسمح لوكيل الاستخراج بالاعتماد."/>
           <button name="action_cancel" type="object" string="إلغاء" invisible="state == 'cancelled'" help="عرض السجل أو اعتماد العملية حسب حالتها؛ راجع البيانات والمرفقات قبل التنفيذ."/>
           <field name="state" widget="statusbar"/>
         </header>

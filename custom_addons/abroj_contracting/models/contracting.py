@@ -191,6 +191,21 @@ class Voucher(models.Model):
     payment_id = fields.Many2one('account.payment', string='الدفعة المحاسبية', readonly=True, copy=False, check_company=True, help='الدفعة التي أنشأها محاسب آخر عبر الاعتماد المحاسبي؛ يخصص حسابها المقابل للحساب التحليلي للمشروع.')
     issued_by = fields.Many2one('res.users', string='أصدره', readonly=True, copy=False, help='حدد أصدره لهذا السجل وفق مستند المشروع الأصلي.')
 
+    abroj_can_accounting_approve = fields.Boolean(compute='_compute_can_accounting_approve')
+
+    @api.depends('state', 'payment_id', 'issued_by')
+    @api.depends_context('uid')
+    def _compute_can_accounting_approve(self):
+        user = self.env.user
+        accountant = (user.has_group('account.group_account_manager')
+                      or user.has_group('account.group_account_invoice'))
+        allowed = accountant and not user.has_group('abroj_contracting.group_extraction_agent')
+        for voucher in self:
+            voucher.abroj_can_accounting_approve = bool(
+                allowed and voucher.state == 'issued' and not voucher.payment_id
+                and voucher.issued_by != user
+            )
+
     @api.model_create_multi
     def create(self, vals_list):
         if any(set(v) & {'name', 'payment_id', 'issued_by'} for v in vals_list):

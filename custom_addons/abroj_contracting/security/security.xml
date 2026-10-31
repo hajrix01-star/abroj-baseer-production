@@ -35,4 +35,16 @@
     <field name="domain_force">[('company_id', 'in', company_ids)]</field>
   </record>
   <record id="rule_clause_line_company" model="ir.rule"><field name="name">عزل شركات بنود العقود</field><field name="model_id" ref="model_abroj_contract_clause_line"/><field name="domain_force">[('company_id', 'in', company_ids)]</field></record>
+  <record id="rule_agent_draft_vendor_moves" model="ir.rule">
+    <field name="name">Extraction agent: draft vendor bills</field>
+    <field name="model_id" ref="account.model_account_move"/>
+    <field name="groups" eval="[(4, ref('group_extraction_agent'))]"/>
+    <field name="domain_force">[('move_type', 'in', ('in_invoice', 'in_refund')), ('state', '=', 'draft')]</field>
+  </record>
+  <record id="rule_agent_draft_vendor_move_lines" model="ir.rule">
+    <field name="name">Extraction agent: draft vendor bill lines</field>
+    <field name="model_id" ref="account.model_account_move_line"/>
+    <field name="groups" eval="[(4, ref('group_extraction_agent'))]"/>
+    <field name="domain_force">[('move_id.move_type', 'in', ('in_invoice', 'in_refund')), ('move_id.state', '=', 'draft')]</field>
+  </record>
 </odoo>

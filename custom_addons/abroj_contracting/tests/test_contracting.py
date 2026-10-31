@@ -1,5 +1,5 @@
 from unittest.mock import patch
-from odoo import Command
+from odoo import Command, fields
 from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.tests import TransactionCase, tagged
 
@@ -15,7 +15,7 @@ class AbrojContractingCase(TransactionCase):
         cls.agent = cls.env['res.users'].with_context(no_reset_password=True).create({
             'name': 'وكيل اختبار', 'login': 'abroj-contracting-test-agent',
             'company_id': cls.env.company.id, 'company_ids': [Command.set(cls.env.company.ids)],
-            'group_ids': [Command.set([cls.env.ref('abroj_contracting.group_extraction_agent').id])],
+            'group_ids': [Command.set([cls.env.ref('abroj_contracting.group_extraction_agent').id, cls.env.ref('base.group_user').id])],
         })
         cls.env['ir.config_parameter'].sudo().set_param('abroj_contracting.agent_webhook_url', '')
 
@@ -69,6 +69,60 @@ class AbrojContractingCase(TransactionCase):
         with self.assertRaises(AccessError):
             move.with_user(self.agent).action_post()
         self.assertEqual(move.state, 'draft')
+
+    def test_agent_fills_uploaded_vendor_bill(self):
+        agent = self.agent
+        journal = self.env['account.journal'].create({
+            'name': 'Agent purchase journal', 'code': 'AGPB', 'type': 'purchase',
+            'company_id': self.env.company.id,
+        })
+        expense = self.env['account.account'].create({
+            'name': 'Agent expense', 'code': 'AGEXP', 'account_type': 'expense',
+        })
+        plan = self.env['account.analytic.plan'].create({'name': 'Agent plan'})
+        analytic = self.env['account.analytic.account'].create({'name': 'Agent analytic', 'plan_id': plan.id})
+        bill = self.env['account.move'].create({
+            'move_type': 'in_invoice', 'journal_id': journal.id, 'partner_id': self.partner.id,
+        })
+        inbox = self.env['abroj.contracting.inbox'].create({
+            'filename': 'bill.pdf', 'mimetype': 'application/pdf', 'file': 'YWJj',
+        })
+        attachment = self.env['ir.attachment'].create({
+            'name': 'bill.pdf', 'datas': 'YWJj', 'res_model': 'account.move', 'res_id': bill.id,
+        })
+        self.assertEqual(inbox.with_user(agent).read(['filename'])[0]['filename'], 'bill.pdf')
+        self.assertEqual(attachment.with_user(agent).read(['datas'])[0]['datas'], b'YWJj')
+        vendor = self.env['res.partner'].with_user(agent).create({'name': 'Extracted vendor', 'vat': '123456789'})
+        unit = self.env.ref('uom.product_uom_unit').with_user(agent)
+        self.assertTrue(unit.read(['name']))
+        products = self.env['product.product'].with_user(agent).create([
+            {'name': 'Extracted product %s' % i} for i in range(3)
+        ])
+        lines = [Command.create({
+            'name': product.name, 'product_id': product.id, 'account_id': expense.id,
+            'quantity': i + 1, 'product_uom_id': unit.id, 'price_unit': 100 + i,
+            'analytic_distribution': {str(analytic.id): 100},
+        }) for i, product in enumerate(products)]
+        bill.with_user(agent).write({'partner_id': vendor.id, 'invoice_line_ids': lines})
+        self.assertEqual(len(bill.invoice_line_ids), 3)
+        self.assertEqual(bill.state, 'draft')
+        inbox.with_user(agent).write({'note': 'Extracted'})
+        self.assertEqual(inbox.note, 'Extracted')
+        with self.assertRaises(AccessError), self.cr.savepoint():
+            bill.with_user(agent).action_post()
+        with self.assertRaises(AccessError), self.cr.savepoint():
+            bill.with_user(agent).write({'state': 'posted'})
+        with self.assertRaises(AccessError), self.cr.savepoint():
+            bill.with_user(agent).write({'move_type': 'out_invoice'})
+        bill.sudo().write({'invoice_date': fields.Date.today()})
+        bill.sudo().action_post()
+        with self.assertRaises(AccessError), self.cr.savepoint():
+            bill.with_user(agent).write({'ref': 'forbidden'})
+        customer_invoice = self.env['account.move'].create({
+            'move_type': 'out_invoice', 'partner_id': self.partner.id,
+        })
+        with self.assertRaises(AccessError), self.cr.savepoint():
+            customer_invoice.with_user(agent).write({'ref': 'forbidden'})
 
     def test_agent_payment_and_purchase_denied(self):
         with self.assertRaises(AccessError):
@@ -239,12 +293,16 @@ class AbrojContractingCase(TransactionCase):
         with self.assertRaises(UserError):
             voucher.with_user(accountant).action_accounting_approve()
         voucher.with_user(accountant).action_issue()
+        self.assertFalse(voucher.with_user(accountant).abroj_can_accounting_approve)
+        self.assertTrue(voucher.with_user(self.env.user).abroj_can_accounting_approve)
         with self.assertRaises(AccessError):
             voucher.with_user(accountant).action_accounting_approve()
         user = self.accountant('base.group_user')
+        self.assertFalse(voucher.with_user(user).abroj_can_accounting_approve)
         with self.assertRaises(AccessError):
             voucher.with_user(user).action_accounting_approve()
         self.agent.group_ids = [Command.link(self.env.ref('account.group_account_manager').id)]
+        self.assertFalse(voucher.with_user(self.agent).abroj_can_accounting_approve)
         with self.assertRaises(AccessError):
             voucher.with_user(self.agent).action_accounting_approve()
         with self.assertRaises(AccessError):
@@ -279,7 +337,9 @@ class AbrojContractingCase(TransactionCase):
             voucher = self.voucher(kind=kind, method='bank', journal_id=journal.id if kind == 'payment' else False, create_payment=True)
             voucher.action_issue()
             self.assertFalse(voucher.payment_id)
-            voucher.with_user(approver).action_accounting_approve()
+            self.assertTrue(voucher.with_user(approver).abroj_can_accounting_approve)
+            voucher.with_user(approver).with_context(active_model='project.project', active_id=self.project.id, default_project_id=self.project.id).action_accounting_approve()
+            self.assertFalse(voucher.with_user(approver).abroj_can_accounting_approve)
             payment = voucher.payment_id
             self.assertEqual(payment.memo, voucher.name)
             self.assertEqual(payment.abroj_voucher_id, voucher)

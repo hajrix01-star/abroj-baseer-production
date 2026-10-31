@@ -18,6 +18,14 @@ class AccountMove(models.Model):
         return {'type': 'ir.actions.act_window', 'name': 'السند', 'res_model': 'abroj.contracting.voucher',
                 'res_id': self.abroj_voucher_id.id, 'view_mode': 'form', 'target': 'current'}
 
+    def write(self, vals):
+        # Record rules check the existing record; prevent moving a permitted
+        # draft out of the permitted state or document types via direct writes.
+        if (vals.get('state', 'draft') != 'draft'
+                or vals.get('move_type', 'in_invoice') not in ('in_invoice', 'in_refund')):
+            check_agent(self.env)
+        return super().write(vals)
+
     def action_post(self):
         check_agent(self.env)
         return super().action_post()

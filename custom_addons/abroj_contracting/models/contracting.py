@@ -255,16 +255,25 @@ class Voucher(models.Model):
                 'partner_id': r.partner_id.id, 'amount': r.amount, 'date': r.date,
                 'currency_id': r.currency_id.id, 'journal_id': journal.id,
                 'payment_method_line_id': lines[0].id, 'company_id': r.company_id.id,
-                'memo': r.name,
+                'memo': r.name, 'abroj_voucher_id': r.id,
             })
             payment._generate_journal_entry()
             if not payment.move_id:
                 raise UserError('يلزم دفتر يولد قيد دفع لتخصيص الحساب التحليلي.')
+            payment.move_id.write({'ref': r.name, 'abroj_voucher_id': r.id})
             counterpart = payment.move_id.line_ids.filtered(lambda line: line.account_id == payment.destination_account_id)
             counterpart.write({'analytic_distribution': {str(account.id): 100}})
             payment.action_post()
             super(FrozenDocument, r).write({'payment_id': payment.id})
         return True
+
+    def action_open_journal_entry(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window', 'name': 'القيد المحاسبي',
+            'res_model': 'account.move', 'res_id': self.payment_id.move_id.id,
+            'view_mode': 'form', 'target': 'current',
+        }
 
     def action_cancel(self):
         check_agent(self.env)

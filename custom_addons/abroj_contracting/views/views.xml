@@ -129,6 +129,9 @@
           <field name="state" widget="statusbar"/>
         </header>
         <sheet>
+          <div class="oe_button_box" name="button_box">
+            <button name="action_open_journal_entry" type="object" class="oe_stat_button" icon="fa-book" string="القيد المحاسبي" invisible="not payment_id"/>
+          </div>
           <group>
             <field name="name"/>
             <field name="kind" readonly="state != 'draft'"/>

@@ -281,6 +281,22 @@ class AbrojContractingCase(TransactionCase):
             self.assertFalse(voucher.payment_id)
             voucher.with_user(approver).action_accounting_approve()
             payment = voucher.payment_id
+            self.assertEqual(payment.memo, voucher.name)
+            self.assertEqual(payment.abroj_voucher_id, voucher)
+            self.assertEqual(payment.move_id.abroj_voucher_id, voucher)
+            self.assertEqual(payment.move_id.ref, voucher.name)
+            self.assertTrue(payment.move_id.name)
+            self.assertNotEqual(payment.move_id.name, '/')
+            self.assertNotIn(voucher.name, payment.move_id.name)
+            action = voucher.action_open_journal_entry()
+            self.assertEqual((action['res_model'], action['res_id']), ('account.move', payment.move_id.id))
+            for record in (payment, payment.move_id):
+                action = record.action_open_abroj_voucher()
+                self.assertEqual((action['res_model'], action['res_id']), ('abroj.contracting.voucher', voucher.id))
+            found = self.env['account.move.line'].search([
+                ('move_id', '=', payment.move_id.id), ('ref', 'ilike', voucher.name),
+            ])
+            self.assertEqual(found, payment.move_id.line_ids)
             self.assertEqual(payment.journal_id, journal)
             self.assertEqual(payment.move_id.state, 'posted')
             self.assertEqual(payment.payment_type, direction)

@@ -382,7 +382,9 @@ class Cost(models.Model):
     _description = 'مصروف مشروع'
 
     name = fields.Char('الوصف', required=True, help='حدد الوصف لهذا السجل وفق مستند المشروع الأصلي.')
-    partner_id = fields.Many2one('res.partner', string='المورد', check_company=True, help='حدد المورد لهذا السجل وفق مستند المشروع الأصلي.')
+    party_id = fields.Many2one('abroj.contracting.party', string='المورد', check_company=True, ondelete='restrict', index=True,
+        domain="[('party_type', '=', 'supplier')]", help='المورد من قائمة أطراف العقود؛ مستقل عن جهات الاتصال.')
+    partner_id = fields.Many2one('res.partner', string='جهة الاتصال (قديم)', check_company=True, help='حقل قديم للسجلات السابقة؛ استخدم المورد من أطراف العقود.')
     category = fields.Char('التصنيف', help='حدد التصنيف لهذا السجل وفق مستند المشروع الأصلي.')
     invoice_number = fields.Char('رقم الفاتورة', help='حدد رقم الفاتورة لهذا السجل وفق مستند المشروع الأصلي.')
     attachment = fields.Binary('المرفق', attachment=True, help='حدد المرفق لهذا السجل وفق مستند المشروع الأصلي.')

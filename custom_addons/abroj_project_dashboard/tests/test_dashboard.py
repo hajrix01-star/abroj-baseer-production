@@ -580,7 +580,7 @@ class AbrojDashboardHttpCase(HttpCase):
             self.assertTrue(asset.endswith('?v=' + version), asset)
         for icon in self.url_open('/abroj/app/manifest.webmanifest').json()['icons']:
             self.assertTrue(icon['src'].endswith('?v=' + version))
-        self.assertIn("'abroj-v49-' + VERSION", worker)
+        self.assertIn("'abroj-v50-' + VERSION", worker)
         self.assertIn("cache: 'reload'", worker)
         self.assertIn("url.searchParams.get('v') !== VERSION", worker)
         self.assertNotIn('static/pwa/index.html', worker)
@@ -864,11 +864,37 @@ class AbrojDashboardHttpCase(HttpCase):
         save('note', {'body': 'Test note'})
         save('invoice', {'number': 'INV', 'subcontractor_id': contract, 'amount': 10})
         save('cost', {'name': 'Cost', 'amount': 10})
-        note = save('promissory', {'partner_id': partner.id, 'amount': 25, 'issue_date': '2026-01-01', 'due_date': '2026-02-01'})
+        note = save('promissory', {'party_id': sub_party, 'amount': 25, 'issue_date': '2026-01-01', 'due_date': '2026-02-01'})
         self.assertTrue(self.rpc('/abroj/app/document/action', {'project_id': project.id, 'kind': 'promissory', 'record_id': note, 'action': 'issue'}).get('ok'))
         docs = self.rpc('/abroj/app/documents', {'project_id': project.id})
         self.assertEqual(docs['records']['promissory'][0]['state'], 'issued')
         self.assertNotIn('error', docs)
+
+    def test_cost_and_promissory_party_pickers(self):
+        Party = self.env['abroj.contracting.party']
+        project = self.env['project.project'].create({'name': 'Party pickers', 'company_id': self.env.company.id})
+        partner = self.env['res.partner'].create({'name': 'Legacy contact'})
+        self.authenticate('admin', 'admin')
+        partner_count = self.env['res.partner'].search_count([])
+        supplier = self.rpc('/abroj/app/party/create', {'project_id': project.id, 'name': 'Picker supplier', 'party_type': 'supplier',
+                                                         'category_ids': [self.env.ref('abroj_contracting.party_tag_suppliers').id]})
+        self.assertEqual((supplier['type'], supplier['tags']), ('supplier', ['موردين']))
+        self.assertEqual(Party.browse(supplier['id']).category_ids, self.env.ref('abroj_contracting.party_tag_suppliers'))
+        self.assertEqual(self.env['res.partner'].search_count([]), partner_count, 'supplier parties must not create contacts')
+        save = lambda kind, values: self.rpc('/abroj/app/document/save', {'project_id': project.id, 'kind': kind, 'values': values})
+        cost = save('cost', {'name': 'Cement', 'amount': 50, 'party_id': supplier['id']})
+        self.assertEqual(self.env['abroj.contracting.cost'].browse(cost['id']).party_id.id, supplier['id'])
+        self.assertIn('id', save('cost', {'name': 'No supplier', 'amount': 5}))
+        self.assertIn('error', save('cost', {'name': 'Contact supplier', 'amount': 5, 'partner_id': partner.id}))
+        client = Party.create({'name': 'Picker client', 'party_type': 'client'})
+        note = save('promissory', {'party_id': client.id, 'amount': 30, 'issue_date': '2026-01-01', 'due_date': '2026-03-01'})
+        record = self.env['abroj.promissory.note'].browse(note['id'])
+        self.assertEqual((record.party_id, record.party_type, record.partner_id.id), (client, 'client', False))
+        self.assertIn('error', save('promissory', {'partner_id': partner.id, 'amount': 30, 'due_date': '2027-01-01'}))
+        self.assertIn('error', save('promissory', {'amount': 30, 'due_date': '2027-01-01'}))
+        docs = self.rpc('/abroj/app/documents', {'project_id': project.id})
+        self.assertEqual(docs['records']['promissory'][0]['values']['party_id'], client.id)
+        self.assertTrue(any(r['values'].get('party_id') == supplier['id'] for r in docs['records']['cost']))
 
     def test_promissory_engineer_restriction(self):
         project = self.env['project.project'].create({'name': 'Promissory HTTP', 'company_id': self.env.company.id, 'privacy_visibility': 'employees'})
@@ -876,7 +902,8 @@ class AbrojDashboardHttpCase(HttpCase):
         engineer = self.env['res.users'].create({'name': 'Promissory engineer', 'login': 'promissory_engineer', 'password': 'promissory_engineer', 'group_ids': [Command.set([self.env.ref('base.group_user').id, self.env.ref('project.group_project_user').id])]})
         project.user_id = engineer
         self.authenticate('promissory_engineer', 'promissory_engineer')
-        result = self.rpc('/abroj/app/document/save', {'project_id': project.id, 'kind': 'promissory', 'values': {'partner_id': partner.id, 'amount': 10, 'due_date': '2027-01-01'}})
+        party = self.env['abroj.contracting.party'].create({'name': 'Promissory party', 'party_type': 'subcontractor'})
+        result = self.rpc('/abroj/app/document/save', {'project_id': project.id, 'kind': 'promissory', 'values': {'party_id': party.id, 'amount': 10, 'due_date': '2027-01-01'}})
         self.assertIn('id', result)
         action = self.rpc('/abroj/app/document/action', {'project_id': project.id, 'kind': 'promissory', 'record_id': result['id'], 'action': 'issue'})
         self.assertIn('error', action)

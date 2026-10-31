@@ -11,7 +11,10 @@ class PromissoryNote(models.Model):
     project_id = fields.Many2one('project.project', required=True, ondelete='restrict', index=True)
     company_id = fields.Many2one(related='project_id.company_id', store=True, index=True)
     analytic_account_id = fields.Many2one('account.analytic.account', string='الحساب التحليلي', related='project_id.account_id', store=True, readonly=True, index=True)
-    partner_id = fields.Many2one('res.partner', string='الطرف', required=True, check_company=True)
+    party_id = fields.Many2one('abroj.contracting.party', string='الطرف', check_company=True, ondelete='restrict', index=True,
+        help='الطرف من قائمة أطراف العقود؛ مستقل عن جهات الاتصال.')
+    party_type = fields.Selection(related='party_id.party_type', string='نوع الطرف')
+    partner_id = fields.Many2one('res.partner', string='جهة الاتصال (قديم)', check_company=True, help='حقل قديم للسجلات السابقة؛ استخدم الطرف من أطراف العقود.')
     currency_id = fields.Many2one('res.currency', required=True, default=lambda self: self.env.company.currency_id)
     amount = fields.Monetary('المبلغ', required=True)
     issue_date = fields.Date('تاريخ الإصدار', required=True, default=fields.Date.context_today)
@@ -20,6 +23,12 @@ class PromissoryNote(models.Model):
     notes = fields.Text('ملاحظات')
     attachment_ids = fields.Many2many('ir.attachment', string='المرفقات')
     state = fields.Selection([('draft', 'مسودة'), ('issued', 'صادر'), ('paid', 'مدفوع'), ('cancelled', 'ملغى')], default='draft', required=True, readonly=True, copy=False)
+
+    @api.constrains('party_id', 'partner_id', 'project_id')
+    def _check_party(self):
+        for note in self:
+            if not note.party_id and not note.partner_id:
+                raise ValidationError('حدد الطرف من أطراف العقود.')
 
     @api.constrains('amount', 'issue_date', 'due_date')
     def _check_values(self):

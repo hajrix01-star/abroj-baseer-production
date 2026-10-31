@@ -84,7 +84,7 @@
             </page>
             <page string="الفواتير والمصروفات" name="invoices_costs">
               <field name="invoice_ids" context="{'default_project_id': id}"><list><field name="number"/><field name="subcontractor_id"/><field name="amount"/><field name="date"/><field name="state"/><button name="action_confirm" type="object" string="تأكيد" invisible="state != 'draft'"/></list></field>
-              <field name="cost_ids" context="{'default_project_id': id}"><list><field name="name"/><field name="partner_id"/><field name="amount"/><field name="date"/><field name="state"/><button name="action_confirm" type="object" string="تأكيد" invisible="state != 'draft'"/></list></field>
+              <field name="cost_ids" context="{'default_project_id': id}"><list><field name="name"/><field name="party_id"/><field name="amount"/><field name="date"/><field name="state"/><button name="action_confirm" type="object" string="تأكيد" invisible="state != 'draft'"/></list></field>
             </page>
             <page string="السجلات" name="logs"><field name="inbox_ids" context="{'default_project_id': id}"/></page>
           </notebook>
@@ -283,7 +283,8 @@
             <field name="company_id"/>
             <field name="currency_id" invisible="1"/>
             <field name="name"/>
-            <field name="partner_id" readonly="state != 'draft'"/>
+            <field name="party_id" readonly="state != 'draft'" context="{'default_party_type': 'supplier', 'default_company_id': company_id}"/>
+            <field name="partner_id" invisible="1"/>
             <field name="category" readonly="state != 'draft'"/>
             <field name="invoice_number" readonly="state != 'draft'"/>
             <field name="date" readonly="state != 'draft'"/>
@@ -304,7 +305,8 @@
         <field name="company_id"/>
         <field name="currency_id" column_invisible="True"/>
         <field name="name"/>
-        <field name="partner_id"/>
+        <field name="party_id"/>
+        <field name="partner_id" optional="hide"/>
         <field name="category"/>
         <field name="invoice_number"/>
         <field name="date"/>
@@ -402,6 +404,7 @@
       <search><field name="name"/><field name="phone"/><field name="vat"/><field name="category_ids"/>
         <filter name="client" string="العملاء" domain="[('party_type', '=', 'client')]"/>
         <filter name="subcontractor" string="مقاولو الباطن" domain="[('party_type', '=', 'subcontractor')]"/>
+        <filter name="supplier" string="الموردون" domain="[('party_type', '=', 'supplier')]"/>
         <filter name="archived" string="مؤرشف" domain="[('active', '=', False)]"/>
         <separator/>
         <filter name="tag_clients" string="عملاء" domain="[('category_ids.name', '=', 'عملاء')]"/>

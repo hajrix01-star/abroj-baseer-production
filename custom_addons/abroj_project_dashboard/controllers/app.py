@@ -358,10 +358,10 @@ class AbrojApp(http.Controller):
         'contract': ('abroj.contracting.subcontractor', {'party_id', 'scope', 'agreed_amount', 'contract_type', 'payment_terms', 'duration_days'}),
         'payment': ('abroj.contracting.voucher', {'party_id', 'amount', 'date', 'method', 'memo', 'subcontractor_id', 'vendor_contract_reference', 'vendor_contract_value'}),
         'receipt': ('abroj.contracting.voucher', {'party_id', 'amount', 'date', 'method', 'memo'}),
-        'promissory': ('abroj.promissory.note', {'partner_id', 'amount', 'issue_date', 'due_date', 'place', 'notes', 'currency_id'}),
+        'promissory': ('abroj.promissory.note', {'party_id', 'amount', 'issue_date', 'due_date', 'place', 'notes', 'currency_id'}),
         'note': ('abroj.contracting.project.note', {'body', 'note_type'}),
         'invoice': ('abroj.contracting.invoice', {'number', 'subcontractor_id', 'amount', 'date', 'invoice_kind', 'buyer_vat'}),
-        'cost': ('abroj.contracting.cost', {'name', 'partner_id', 'amount', 'date', 'category', 'invoice_number'}),
+        'cost': ('abroj.contracting.cost', {'name', 'party_id', 'amount', 'date', 'category', 'invoice_number'}),
     }
 
     def _parties(self, company):
@@ -384,7 +384,7 @@ class AbrojApp(http.Controller):
                 raise AccessError('المشروع غير موجود')
             self._check_project(project)
             project.check_access('read')
-            if party_type not in ('client', 'subcontractor') or not all(isinstance(v, str) for v in (name, phone, vat, notes)):
+            if party_type not in ('client', 'subcontractor', 'supplier') or not all(isinstance(v, str) for v in (name, phone, vat, notes)):
                 raise ValueError('Invalid party')
             if not name.strip():
                 return {'error': self._message('اسم الطرف مطلوب.', 'Party name is required.')}

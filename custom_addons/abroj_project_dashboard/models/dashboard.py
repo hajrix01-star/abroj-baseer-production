@@ -14,8 +14,9 @@ STATUS_EN = dict(on_track='On track', at_risk='At risk', off_track='Off track', 
 class ProjectTask(models.Model):
     _inherit = 'project.task'
 
+    date_deadline = fields.Datetime(tracking=True)
     x_abroj_date_start = fields.Date(string='تاريخ بداية المرحلة')
-    x_abroj_duration_days = fields.Integer(string='المدة (أيام)', default=1, required=True)
+    x_abroj_duration_days = fields.Integer(string='المدة (أيام)', default=1, required=True, tracking=True)
     x_abroj_progress = fields.Float(string='نسبة إنجاز المرحلة', tracking=True)
 
     def _abroj_phase_status(self):

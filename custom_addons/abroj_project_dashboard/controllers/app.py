@@ -530,7 +530,14 @@ class AbrojApp(http.Controller):
         return {'ok': True}
 
     def _report_data(self, report, project_id=None):
-        return {'id': report.id, 'date': str(report.date), 'engineer': report.engineer_id.name, 'state': report.state, 'sent_at': str(report.sent_at or ''), 'lines': [{'id': line.id, 'project_id': line.project_id.id, 'project': line.project_id.name, 'task': line.task_id.name, 'progress_from': line.progress_from, 'progress_to': line.progress_to, 'status': line.status, 'notes': line.notes or '', 'photo_count': line.photo_count, 'tomorrow_plan': line.tomorrow_plan or ''} for line in report.line_ids if (not project_id or line.project_id.id == int(project_id)) and (not request.env['project.project']._abroj_scope_domain() or line.project_id.user_id == request.env.user)]}
+        projects = report.report_projects()
+        if request.env['project.project']._abroj_scope_domain():
+            viewer_tasks = request.env['project.task'].sudo().search([('user_ids', 'in', request.env.uid)])
+            projects = projects.filtered(lambda p: p.user_id == request.env.user or p.id in viewer_tasks.mapped('project_id').ids)
+        if project_id:
+            projects = projects.filtered(lambda p: p.id == int(project_id))
+        financial = report.financial_operations(projects)
+        return {'projects': [{'id': p.id, 'name': p.name, 'has_activity': any(l.has_activity for l in report.line_ids if l.project_id == p) or any(f['project_id'] == p.id for f in financial)} for p in projects], 'financial': financial, 'id': report.id, 'date': str(report.date), 'engineer': report.engineer_id.display_name, 'state': report.state, 'sent_at': str(report.sent_at or ''), 'lines': [{'id': line.id, 'project_id': line.project_id.id, 'project': line.project_id.name, 'task': line.task_id.name, 'progress_from': line.progress_from, 'progress_to': line.progress_to, 'status': line.status, 'notes': line.notes or '', 'photo_count': line.photo_count, 'tomorrow_plan': line.tomorrow_plan or '', 'deadline_old': str(line.deadline_old or ''), 'deadline_new': str(line.deadline_new or ''), 'deadline_change_days': line.deadline_change_days, 'change_kind': line.change_kind or '', 'overdue_days': max((report.date - fields.Date.to_date(line.task_id.date_deadline)).days, 0) if line.task_id.date_deadline else 0} for line in report.line_ids if line.project_id.id in projects.ids]}
 
     @http.route('/abroj/app/report/generate', type='jsonrpc', auth='user')
     def report_generate(self):

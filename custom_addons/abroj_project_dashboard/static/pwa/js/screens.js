@@ -118,18 +118,68 @@ function managerSelect(p){return `<label class="report-manager">${tr('مسؤول
 async function setProjectManager(project_id,manager_id){try{await rpc('/abroj/app/project/set-manager',{project_id,manager_id:Number(manager_id)||null});data=await rpc('/abroj/app/data');toast(tr('تم تحديث مسؤول المشروع','Project manager updated'))}catch(e){toast(e.message)}}
 async function dailyReport(){try{activeReport=await rpc('/abroj/app/report/generate');reportReviewed=false;renderDailyReport()}catch(e){toast(e.message)}}
 async function viewDailyReport(id){try{activeReport=await rpc('/abroj/app/report/get',{report_id:id});reportReviewed=false;renderDailyReport(true)}catch(e){toast(e.message)}}
-function renderDailyReport(readonly=false){const r=activeReport,editable=!readonly&&r.state==='draft';let previous=null;const rows=r.lines.map(l=>{let group='';if(previous!==l.project_id){previous=l.project_id;group=`<tr class="report-project"><th colspan="6">${esc(l.project)}</th></tr>`}return group+`<tr><td>${esc(l.task)}</td><td dir="ltr">${number(l.progress_from)}% → ${number(l.progress_to)}%</td><td>${statusBadge({status:l.status==='late'?'overdue':l.status,overdue_days:0})}</td><td>${esc(l.notes)}</td><td>${number(l.photo_count)}</td><td>${editable?`<textarea aria-label="${tr('خطة الغد','Tomorrow plan')}" onchange="saveReportLine(${l.id},this.value)">${esc(l.tomorrow_plan)}</textarea>`:esc(l.tomorrow_plan)}</td></tr>`}).join('');app.innerHTML=`<h2>${tr('تقرير نهاية اليوم','End-of-day report')}</h2><div class="card"><h3>${esc(r.engineer)} · ${esc(r.date)}</h3><p>${reportState(r.state)}</p><div class="report-table-wrap"><table class="report-table"><thead><tr>${[tr('المرحلة','Phase'),tr('ما تم اليوم','Today’s work'),tr('الحالة','Status'),tr('ملاحظات','Notes'),tr('الصور','Photos'),tr('خطة الغد','Tomorrow plan')].map(x=>`<th>${x}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div>${editable?`<p>${tr('راجع التفاصيل ثم اعتمد التقرير.','Review the details and approve the report.')}</p><button class="secondary" onclick="reviewDailyReport()">${tr('مراجعة','Review')}</button> <button onclick="approveDailyReport()" ${reportReviewed?'':'disabled'}>${tr('اعتماد','Approve')}</button>`:''} ${r.state==='approved'?`<button onclick="shareDailyReport()">${tr('مشاركة واتساب كصورة','Share image on WhatsApp')}</button>`:''}</div><p>${tr('إذا لم يُعتمد التقرير قبل 8:00 م، يُرسل تلقائياً للمالك بحالة «لم يُراجع».','Unapproved reports are sent to the owner at 8:00 PM as unreviewed.')}</p>`}
+function renderDailyReport(readonly=false){const r=activeReport,editable=!readonly&&r.state==='draft';let previous=null;const rows=r.lines.map(l=>{let group='';if(previous!==l.project_id){previous=l.project_id;group=`<tr class="report-project"><th colspan="6">${esc(l.project)}</th></tr>`}return group+`<tr><td>${esc(l.task)}</td><td dir="ltr">${l.progress_from!==l.progress_to?`${number(l.progress_from)}% → ${number(l.progress_to)}%`:''}</td><td>${statusBadge({status:l.status==='late'?'overdue':l.status,overdue_days:0})}</td><td>${esc(l.notes)}</td><td>${number(l.photo_count)}</td><td>${editable?`<textarea aria-label="${tr('خطة الغد','Tomorrow plan')}" onchange="saveReportLine(${l.id},this.value)">${esc(l.tomorrow_plan)}</textarea>`:esc(l.tomorrow_plan)}</td></tr>`}).join('');app.innerHTML=`<h2>${tr('تقرير نهاية اليوم','End-of-day report')}</h2><div class="card"><h3>${esc(r.engineer)} · ${esc(r.date)}</h3><p>${reportState(r.state)}</p><div class="report-table-wrap"><table class="report-table"><thead><tr>${[tr('المرحلة','Phase'),tr('ما تم اليوم','Today’s work'),tr('الحالة','Status'),tr('ملاحظات','Notes'),tr('الصور','Photos'),tr('خطة الغد','Tomorrow plan')].map(x=>`<th>${x}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div>${editable?`<p>${tr('راجع التفاصيل ثم اعتمد التقرير.','Review the details and approve the report.')}</p><button class="secondary" onclick="reviewDailyReport()">${tr('مراجعة','Review')}</button> <button onclick="approveDailyReport()" ${reportReviewed?'':'disabled'}>${tr('اعتماد','Approve')}</button>`:''} ${r.state==='approved'?`<button onclick="shareDailyReport()">${tr('مشاركة واتساب كصورة','Share image on WhatsApp')}</button>`:''}</div><p>${tr('إذا لم يُعتمد التقرير قبل 8:00 م، يُرسل تلقائياً للمالك بحالة «لم يُراجع».','Unapproved reports are sent to the owner at 8:00 PM as unreviewed.')}</p>`}
 function reportState(s){return s==='approved'?tr('✓ معتمد','✓ Approved'):s==='auto_sent'?tr('لم يُراجع','Unreviewed'):tr('مسودة','Draft')}
 function reviewDailyReport(){reportReviewed=true;renderDailyReport()}
 async function saveReportLine(line_id,tomorrow_plan){try{await rpc('/abroj/app/report/edit',{line_id,tomorrow_plan});const line=activeReport.lines.find(l=>l.id===line_id);if(line)line.tomorrow_plan=tomorrow_plan}catch(e){toast(e.message)}}
 async function approveDailyReport(){try{activeReport=await rpc('/abroj/app/report/approve',{report_id:activeReport.id});renderDailyReport()}catch(e){toast(e.message)}}
 async function reportOverview(){try{const rows=await rpc('/abroj/app/report/overview');app.innerHTML=`<h2>${tr('تقارير اليوم','Today’s reports')}</h2><div class="card report-table-wrap"><table class="report-table"><thead><tr>${[tr('المهندس','Engineer'),tr('المشاريع','Projects'),tr('حالة التقرير','Report status'),tr('وقت الإرسال','Sent time'),tr('عرض','View')].map(x=>`<th>${x}</th>`).join('')}</tr></thead><tbody>${rows.map(x=>`<tr><td>${esc(x.engineer)}</td><td>${esc(x.projects.join('، '))}</td><td>${reportState(x.report?.state)}</td><td>${x.report?.sent_at?esc(reportTime(x.report.sent_at)):'—'}</td><td>${x.report?`<button onclick="viewDailyReport(${x.report.id})">${tr('عرض','View')}</button>`:'—'}</td></tr>`).join('')}</tbody></table></div>`}catch(e){toast(e.message)}}
+function westernDigits(value){return String(value ?? '').replace(/[\u0660-\u0669\u06F0-\u06F9]/g, c => {const code=c.charCodeAt(0);return String(code-(code<=0x0669?0x0660:0x06F0))})}
+function extensionSentence(line){
+ const name=westernDigits(line.task), old=westernDigits(line.deadline_old), next=westernDigits(line.deadline_new), days=westernDigits(line.deadline_change_days);
+ if(!line.change_kind || !old || !next)return '';
+ if(line.change_kind==='extended')return `تم تمديد ${name} من ${old} إلى ${next} (${days} أيام)`;
+ if(line.change_kind==='postponed')return `تم تأجيل ${name} من ${old} إلى ${next} (${days} أيام)`;
+ if(line.change_kind==='advanced')return `تم تقديم ${name} من ${old} إلى ${next} (${days} أيام)`;
+ return '';
+}
+function cleanReportNotes(value){
+ const seen=new Set();return String(value||'').split(/\n+/).map(s=>s.replace(/\s+/g,' ').trim()).filter(s=>{const key=s.toLocaleLowerCase();if(!key||seen.has(key)||['تم إنشاء مهمة جديدة','task created'].includes(key))return false;seen.add(key);return true});
+}
+function wrapReportText(ctx,value,width){
+ const lines=[];let line='';
+ for(const word of String(value||'').split(/\s+/).filter(Boolean)){
+  let remaining=word;
+  while(remaining){
+   const candidate=line?line+' '+remaining:remaining;
+   if(ctx.measureText(candidate).width<=width){line=candidate;break}
+   if(line){lines.push(line);line='';continue}
+   let chars=Array.from(remaining),count=0;
+   while(count<chars.length&&ctx.measureText(chars.slice(0,count+1).join('')).width<=width)count++;
+   count=Math.max(count,1);lines.push(chars.slice(0,count).join(''));remaining=chars.slice(count).join('');
+  }
+ }
+ if(line)lines.push(line);return lines;
+}
+function buildDailyReportModel(report){
+ const projects=new Map();
+ const addProject=(id,name,hasActivity)=>projects.set(id,{name:westernDigits(name),hasActivity,sections:{'منجز':[],'لم يُنجز':[],'متأخر':[]},changes:[],noteKeys:new Set()});
+ for(const project of report.projects || [])addProject(project.id,project.name,project.has_activity);
+ for(const line of report.lines || []){
+  if(!projects.has(line.project_id))addProject(line.project_id,line.project,true);
+  const project=projects.get(line.project_id), section=line.status==='done'?'منجز':line.status==='late'?'متأخر':'لم يُنجز';
+  let text=westernDigits(line.task)+(section==='متأخر'?` (${westernDigits(line.overdue_days || 0)} أيام)`:'');
+  if(line.progress_from!=null&&line.progress_to!=null&&Number(line.progress_from)!==Number(line.progress_to))text+=` — ${westernDigits(line.progress_from)}% → ${westernDigits(line.progress_to)}%`;
+  project.sections[section].push(text);for(const note of cleanReportNotes(line.notes)){const key=note.toLocaleLowerCase();if(!project.noteKeys.has(key)){project.noteKeys.add(key);project.sections[section].push(westernDigits(note))}}
+  const change=extensionSentence(line);if(change)project.changes.push(change);
+ }
+ return {engineer:westernDigits(report.engineer),date:westernDigits(report.date),projects:[...projects.values()],financial:(report.financial || []).map(item=>westernDigits(item.sentence))};
+}
 async function shareDailyReport(){
- const r=activeReport,canvas=document.createElement('canvas'),ctx=canvas.getContext('2d'),font=getComputedStyle(document.body).fontFamily;canvas.width=1200;ctx.font='20px '+font;
- const wrap=text=>{const lines=[];let line='';for(const word of String(text||'—').split(/\s+/)){const next=line?line+' '+word:word;if(ctx.measureText(next).width>1080&&line){lines.push(line);line=word}else line=next}lines.push(line);return lines};
- const blocks=r.lines.map(l=>({line:l,notes:wrap(l.notes),plan:wrap(l.tomorrow_plan)}));canvas.height=140+blocks.reduce((n,b)=>n+110+26*(b.notes.length+b.plan.length),0);ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.fillStyle='#102a5c';ctx.fillRect(0,0,1200,100);ctx.fillStyle='#fff';ctx.textAlign='right';ctx.direction=lang==='ar'?'rtl':'ltr';ctx.font='bold 30px '+font;ctx.fillText(tr('أبرج | التقرير اليومي','Abroj | Daily report'),1160,44);ctx.font='20px '+font;ctx.fillText(`${r.engineer} · ${r.date}`,1160,78);ctx.fillStyle='#14273e';let y=140;
- for(const b of blocks){const l=b.line;ctx.font='bold 23px '+font;ctx.fillText(`${l.project} — ${l.task}`,1160,y);y+=30;ctx.font='20px '+font;ctx.fillText(`${number(l.progress_from)}% → ${number(l.progress_to)}%  ·  ${reportLineStatus(l.status)}  ·  ${number(l.photo_count)} ${tr('صور','photos')}`,1160,y);y+=28;for(const line of b.notes){ctx.fillText(`${tr('ملاحظات','Notes')}: ${line}`,1160,y);y+=26}for(const line of b.plan){ctx.fillText(`${tr('خطة الغد','Tomorrow')}: ${line}`,1160,y);y+=26}y+=35}
- const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));const file=new File([blob],'daily-report.png',{type:'image/png'});if(navigator.canShare?.({files:[file]})){try{await navigator.share({files:[file],title:tr('التقرير اليومي','Daily report')});return}catch(e){if(e.name==='AbortError')return}}const link=document.createElement('a');link.href=URL.createObjectURL(blob);link.download=file.name;link.click();setTimeout(()=>URL.revokeObjectURL(link.href),10000);window.open('https://wa.me/?text='+encodeURIComponent(tr('التقرير اليومي','Daily report')),'_blank','noopener')
+ const model=buildDailyReportModel(activeReport),canvas=document.createElement('canvas'),ctx=canvas.getContext('2d'),font=getComputedStyle(document.body).fontFamily;
+ canvas.width=1080;ctx.direction='rtl';ctx.textAlign='right';
+ const blocks=[];
+ for(const project of model.projects){
+  blocks.push({title:project.name,rows:(!project.hasActivity?[{text:'لا يوجد نشاط اليوم'}]:[]).concat(Object.entries(project.sections).flatMap(([title,items])=>items.length?[{heading:title},...items.map(text=>({text}))]:[]),project.changes.length?[{heading:'التمديد والتأجيل'},...project.changes.map(text=>({text}))]:[])});
+ }
+ if(model.financial.length)blocks.push({title:'العمليات المالية',rows:model.financial.map(text=>({text}))});
+ for(const block of blocks){ctx.font='bold 40px '+font;block.titleLines=wrapReportText(ctx,block.title,920);for(const row of block.rows){ctx.font=(row.heading?'bold ':'')+'34px '+font;row.lines=wrapReportText(ctx,row.heading||row.text,880)}block.height=48+block.titleLines.length*52+block.rows.reduce((sum,row)=>sum+row.lines.length*48+12,0)+24}
+ ctx.font='bold 48px '+font;const headerTitle=wrapReportText(ctx,'أبرج | التقرير اليومي',960);ctx.font='36px '+font;const headerEngineer=wrapReportText(ctx,model.engineer,960),headerDate=wrapReportText(ctx,model.date,960);const headerHeight=40+headerTitle.length*55+(headerEngineer.length+headerDate.length)*45;
+ canvas.height=headerHeight+30+blocks.reduce((sum,b)=>sum+b.height+24,0)+40;
+ ctx.direction='rtl';ctx.textAlign='right';ctx.fillStyle='#f2f5fa';ctx.fillRect(0,0,1080,canvas.height);ctx.fillStyle='#102a5c';ctx.fillRect(0,0,1080,headerHeight);ctx.fillStyle='#fff';let headerY=55;ctx.font='bold 48px '+font;for(const line of headerTitle){ctx.fillText(line,1020,headerY);headerY+=55}ctx.font='36px '+font;for(const line of [...headerEngineer,...headerDate]){ctx.fillText(line,1020,headerY);headerY+=45}
+ let y=headerHeight+30;
+ for(const block of blocks){ctx.fillStyle='#fff';ctx.fillRect(40,y,1000,block.height);let cursor=y+48;ctx.fillStyle='#102a5c';ctx.font='bold 40px '+font;for(const line of block.titleLines){ctx.fillText(line,1000,cursor);cursor+=52}for(const row of block.rows){ctx.font=(row.heading?'bold ':'')+'34px '+font;ctx.fillStyle=row.heading?'#102a5c':'#25364b';for(const line of row.lines){ctx.fillText(line,980,cursor);cursor+=48}cursor+=12}y+=block.height+24}
+ const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));const file=new File([blob],'daily-report.png',{type:'image/png'});if(navigator.canShare?.({files:[file]})){try{await navigator.share({files:[file],title:'التقرير اليومي'});return}catch(e){if(e.name==='AbortError')return}}const link=document.createElement('a');link.href=URL.createObjectURL(blob);link.download=file.name;link.click();setTimeout(()=>URL.revokeObjectURL(link.href),10000);window.open('https://wa.me/?text='+encodeURIComponent('التقرير اليومي'),'_blank','noopener')
 }
 function reportLineStatus(s){return s==='done'?tr('منجز','Done'):s==='late'?tr('متأخر','Late'):tr('في الموعد','On time')}
 

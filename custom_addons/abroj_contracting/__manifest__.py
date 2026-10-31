@@ -1,5 +1,5 @@
 {'name': 'أبروج للمقاولات',
- 'version': '19.0.1.5.0',
+ 'version': '19.0.1.5.1',
  'license': 'LGPL-3',
  'depends': ['project', 'project_account', 'analytic', 'account', 'purchase'],
  'data': ['security/security.xml',

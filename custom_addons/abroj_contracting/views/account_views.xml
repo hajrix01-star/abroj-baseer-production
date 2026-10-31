@@ -8,6 +8,9 @@
         <field name="abroj_voucher_id" invisible="1"/>
         <button name="action_open_abroj_voucher" type="object" class="oe_stat_button" icon="fa-file-text-o" string="السند" invisible="not abroj_voucher_id"/>
       </xpath>
+      <xpath expr="//group[@id='header_right_group']" position="inside">
+        <field name="abroj_project_id" readonly="state != 'draft'" options="{'no_create': True}"/>
+      </xpath>
     </field>
   </record>
   <record id="account_payment_form_voucher" model="ir.ui.view">

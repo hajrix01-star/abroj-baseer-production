@@ -10,6 +10,7 @@ class PromissoryNote(models.Model):
     name = fields.Char('الرقم', required=True, default='/', readonly=True, copy=False)
     project_id = fields.Many2one('project.project', required=True, ondelete='restrict', index=True)
     company_id = fields.Many2one(related='project_id.company_id', store=True, index=True)
+    analytic_account_id = fields.Many2one('account.analytic.account', string='الحساب التحليلي', related='project_id.account_id', store=True, readonly=True, index=True)
     partner_id = fields.Many2one('res.partner', string='الطرف', required=True, check_company=True)
     currency_id = fields.Many2one('res.currency', required=True, default=lambda self: self.env.company.currency_id)
     amount = fields.Monetary('المبلغ', required=True)

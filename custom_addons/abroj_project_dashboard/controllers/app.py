@@ -298,6 +298,7 @@ class AbrojApp(http.Controller):
                 # An empty bill cannot yet have analytic lines; keep an explicit project reference.
                 bill = request.env['account.move'].with_company(project.company_id).create({
                     'move_type': 'in_invoice', 'company_id': project.company_id.id,
+                    'abroj_project_id': project.id,
                     'ref': 'Project: %s (ID %s) — pending extraction' % (project.name, project.id),
                 })
                 request.env['ir.attachment'].with_context(image_no_postprocess=True).create({

@@ -76,6 +76,7 @@ class ProjectDocument(models.AbstractModel):
     project_id = fields.Many2one('project.project', string='المشروع', required=True, check_company=True, ondelete='restrict', help='حدد المشروع لهذا السجل وفق مستند المشروع الأصلي.')
     company_id = fields.Many2one('res.company', string='الشركة', related='project_id.company_id', store=True, help='حدد الشركة لهذا السجل وفق مستند المشروع الأصلي.')
     currency_id = fields.Many2one('res.currency', string='العملة', related='company_id.currency_id', help='حدد العملة لهذا السجل وفق مستند المشروع الأصلي.')
+    analytic_account_id = fields.Many2one('account.analytic.account', string='الحساب التحليلي', related='project_id.account_id', store=True, readonly=True, index=True, help='الحساب التحليلي للمشروع؛ يُنسخ تلقائياً من المشروع.')
 
     @api.constrains('project_id')
     def _check_project_company(self):
@@ -292,7 +293,7 @@ class Voucher(models.Model):
             payment._generate_journal_entry()
             if not payment.move_id:
                 raise UserError('يلزم دفتر يولد قيد دفع لتخصيص الحساب التحليلي.')
-            payment.move_id.write({'ref': r.name, 'abroj_voucher_id': r.id})
+            payment.move_id.write({'ref': r.name, 'abroj_voucher_id': r.id, 'abroj_project_id': r.project_id.id})
             counterpart = payment.move_id.line_ids.filtered(lambda line: line.account_id == payment.destination_account_id)
             counterpart.write({'analytic_distribution': {str(account.id): 100}})
             payment.action_post()

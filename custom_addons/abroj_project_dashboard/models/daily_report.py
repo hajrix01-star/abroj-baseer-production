@@ -141,6 +141,7 @@ class DailyReportLine(models.Model):
     _order = 'project_id, id'
     report_id = fields.Many2one('abroj.daily.report', required=True, ondelete='cascade', index=True)
     project_id = fields.Many2one('project.project', required=True, ondelete='cascade')
+    analytic_account_id = fields.Many2one('account.analytic.account', string='الحساب التحليلي', related='project_id.account_id', store=True, readonly=True, index=True)
     task_id = fields.Many2one('project.task', required=True, ondelete='cascade')
     has_activity = fields.Boolean()
     progress_from = fields.Float()

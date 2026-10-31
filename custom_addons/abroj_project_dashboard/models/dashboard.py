@@ -77,6 +77,7 @@ class BudgetLine(models.Model):
     _check_company_auto = True
 
     project_id = fields.Many2one('project.project', required=True, ondelete='cascade', check_company=True)
+    analytic_account_id = fields.Many2one('account.analytic.account', string='الحساب التحليلي', related='project_id.account_id', store=True, readonly=True, index=True)
     company_id = fields.Many2one(related='project_id.company_id', store=True)
     currency_id = fields.Many2one(related='company_id.currency_id')
     name = fields.Char(string='بند التكلفة', required=True)

@@ -130,6 +130,7 @@
             <field name="name"/>
             <field name="kind" readonly="state != 'draft'"/>
             <field name="project_id" readonly="state != 'draft'"/>
+            <field name="analytic_account_id" readonly="1"/>
             <field name="company_id"/>
             <field name="currency_id" invisible="1"/>
             <field name="partner_id" readonly="state != 'draft'"/>

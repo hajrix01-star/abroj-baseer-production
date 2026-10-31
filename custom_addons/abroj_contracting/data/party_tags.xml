@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+  <record id="party_tag_subcontractors" model="res.partner.category"><field name="name">مقاولين</field></record>
+  <record id="party_tag_clients" model="res.partner.category"><field name="name">عملاء</field></record>
+  <record id="party_tag_suppliers" model="res.partner.category"><field name="name">موردين</field></record>
+  <record id="party_tag_contracting" model="res.partner.category"><field name="name">مقاولات</field></record>
+</odoo>

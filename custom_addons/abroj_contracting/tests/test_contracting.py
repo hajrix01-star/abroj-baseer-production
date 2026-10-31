@@ -424,6 +424,25 @@ class AbrojContractingCase(TransactionCase):
             html = self.env['ir.actions.report']._render_qweb_html(report, record.ids)[0].decode()
             self.assertIn('مقاول طرف مستقل' if record == sub else 'عميل طرف مستقل', html)
 
+    def test_party_default_tags(self):
+        Party = self.env['abroj.contracting.party']
+        clients, subs = self.env.ref('abroj_contracting.party_tag_clients'), self.env.ref('abroj_contracting.party_tag_subcontractors')
+        self.assertEqual(Party.create({'name': 'وسم عميل', 'party_type': 'client'}).category_ids, clients)
+        self.assertEqual(Party.create({'name': 'وسم مقاول', 'party_type': 'subcontractor'}).category_ids, subs)
+        supplier = self.env.ref('abroj_contracting.party_tag_suppliers')
+        self.assertEqual(Party.create({'name': 'وسم مخصص', 'party_type': 'client', 'category_ids': [Command.set(supplier.ids)]}).category_ids, supplier)
+        pid, _ = Party.with_context(default_party_type='client').name_create('وسم سريع')
+        self.assertEqual(Party.browse(pid).category_ids, clients)
+        partners = self.env['res.partner'].search_count([])
+        from odoo.tests import Form
+        with Form(Party) as form:
+            form.name = 'وسم نموذج'
+            form.party_type = 'client'
+            self.assertEqual(form.category_ids[:], clients)
+            form.party_type = 'subcontractor'
+            self.assertEqual(form.category_ids[:], subs)
+        self.assertEqual(self.env['res.partner'].search_count([]), partners)
+
     def test_optional_expense_guards(self):
         methods = {
             'hr.expense': ['action_approve', 'action_approve_duplicates', 'action_post', '_do_approve', '_post_without_wizard'],

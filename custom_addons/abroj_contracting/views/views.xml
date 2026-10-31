@@ -383,7 +383,7 @@
     <field name="model">abroj.contracting.party</field>
     <field name="arch" type="xml">
       <form string="طرف عقد"><sheet><group>
-        <field name="name"/><field name="party_type"/><field name="phone"/><field name="vat"/>
+        <field name="name"/><field name="party_type"/><field name="category_ids" widget="many2many_tags" required="1" options="{'color_field': 'color'}"/><field name="phone"/><field name="vat"/>
         <field name="company_id" groups="base.group_multi_company"/><field name="active" invisible="1"/><field name="notes"/>
       </group></sheet></form>
     </field>
@@ -392,17 +392,23 @@
     <field name="name">abroj.contracting.party.list</field>
     <field name="model">abroj.contracting.party</field>
     <field name="arch" type="xml">
-      <list string="أطراف العقود"><field name="name"/><field name="party_type"/><field name="phone"/><field name="vat"/><field name="company_id" groups="base.group_multi_company"/></list>
+      <list string="أطراف العقود"><field name="name"/><field name="party_type"/><field name="category_ids" widget="many2many_tags" options="{'color_field': 'color'}"/><field name="phone"/><field name="vat"/><field name="company_id" groups="base.group_multi_company"/></list>
     </field>
   </record>
   <record id="party_search" model="ir.ui.view">
     <field name="name">abroj.contracting.party.search</field>
     <field name="model">abroj.contracting.party</field>
     <field name="arch" type="xml">
-      <search><field name="name"/><field name="phone"/><field name="vat"/>
+      <search><field name="name"/><field name="phone"/><field name="vat"/><field name="category_ids"/>
         <filter name="client" string="العملاء" domain="[('party_type', '=', 'client')]"/>
         <filter name="subcontractor" string="مقاولو الباطن" domain="[('party_type', '=', 'subcontractor')]"/>
         <filter name="archived" string="مؤرشف" domain="[('active', '=', False)]"/>
+        <separator/>
+        <filter name="tag_clients" string="عملاء" domain="[('category_ids.name', '=', 'عملاء')]"/>
+        <filter name="tag_subcontractors" string="مقاولين" domain="[('category_ids.name', '=', 'مقاولين')]"/>
+        <filter name="tag_suppliers" string="موردين" domain="[('category_ids.name', '=', 'موردين')]"/>
+        <filter name="tag_contracting" string="مقاولات" domain="[('category_ids.name', '=', 'مقاولات')]"/>
+        <group><filter name="group_tag" string="الوسم" context="{'group_by': 'category_ids'}"/><filter name="group_type" string="النوع" context="{'group_by': 'party_type'}"/></group>
       </search>
     </field>
   </record>

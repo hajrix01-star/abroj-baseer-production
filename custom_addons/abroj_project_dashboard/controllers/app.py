@@ -369,10 +369,14 @@ class AbrojApp(http.Controller):
         if not Party.has_access('read'):
             return []
         domain = [('company_id', '=', company.id)] if company else []
-        return [{'id': p.id, 'name': p.name, 'type': p.party_type} for p in Party.search(domain, limit=1000)]
+        return [{'id': p.id, 'name': p.name, 'type': p.party_type, 'tags': p.category_ids.mapped('name')} for p in Party.search(domain, limit=1000)]
+
+    def _party_tags(self):
+        Tag = request.env['res.partner.category']
+        return [{'id': t.id, 'name': t.name} for t in Tag.search([], limit=200)] if Tag.has_access('read') else []
 
     @http.route('/abroj/app/party/create', type='jsonrpc', auth='user')
-    def party_create(self, project_id, name='', party_type='subcontractor', phone='', vat='', notes=''):
+    def party_create(self, project_id, name='', party_type='subcontractor', phone='', vat='', notes='', category_ids=None):
         """Manual contract party; deliberately not a res.partner contact."""
         try:
             project = request.env['project.project'].browse(int(project_id)).exists()
@@ -389,9 +393,16 @@ class AbrojApp(http.Controller):
             party = Party.search([('name', '=', name.strip()), ('party_type', '=', party_type), ('company_id', '=', company.id)], limit=1)
             if not party:
                 with request.env.cr.savepoint():
-                    party = Party.create({'name': name.strip()[:200], 'party_type': party_type, 'company_id': company.id,
-                                          'phone': phone.strip()[:64] or False, 'vat': vat.strip()[:64] or False, 'notes': notes.strip() or False})
-            return {'id': party.id, 'name': party.name, 'type': party.party_type}
+                    vals = {'name': name.strip()[:200], 'party_type': party_type, 'company_id': company.id,
+                            'phone': phone.strip()[:64] or False, 'vat': vat.strip()[:64] or False, 'notes': notes.strip() or False}
+                    if not category_ids:
+                        return {'error': self._message('اختر وسماً واحداً على الأقل.', 'Choose at least one tag.')}
+                    if category_ids:
+                        if not isinstance(category_ids, list) or not all(isinstance(i, int) for i in category_ids):
+                            raise ValueError('Invalid tags')
+                        vals['category_ids'] = [(6, 0, request.env['res.partner.category'].browse(category_ids).exists().ids)]
+                    party = Party.create(vals)
+            return {'id': party.id, 'name': party.name, 'type': party.party_type, 'tags': party.category_ids.mapped('name')}
         except (AccessError, UserError, ValidationError, ValueError, TypeError):
             return {'error': self._message('تعذر إضافة الطرف. تحقق من الصلاحيات والبيانات.', 'Could not add the party. Check permissions and input.')}
 
@@ -403,7 +414,7 @@ class AbrojApp(http.Controller):
                 raise AccessError('المشروع غير موجود')
             self._check_project(project)
             project.check_access('read')
-            result = {'partners': [{'id': p.id, 'name': p.display_name} for p in request.env['res.partner'].search([], limit=500)], 'parties': self._parties(project.company_id), 'records': {}, 'capabilities': {}, 'agreement': {name: (str(project[name]) if project._fields[name].type == 'date' and project[name] else project[name]) for name in ('contracting_goal_ar', 'contracting_goal_en', 'contract_payment_schedule_ar', 'contract_payment_schedule_en', 'contracting_start', 'contracting_end', 'contract_value', 'value_type', 'estimated_cost', 'contract_vat_percent', 'contract_retention_percent')}}
+            result = {'partners': [{'id': p.id, 'name': p.display_name} for p in request.env['res.partner'].search([], limit=500)], 'parties': self._parties(project.company_id), 'party_tags': self._party_tags(), 'records': {}, 'capabilities': {}, 'agreement': {name: (str(project[name]) if project._fields[name].type == 'date' and project[name] else project[name]) for name in ('contracting_goal_ar', 'contracting_goal_en', 'contract_payment_schedule_ar', 'contract_payment_schedule_en', 'contracting_start', 'contracting_end', 'contract_value', 'value_type', 'estimated_cost', 'contract_vat_percent', 'contract_retention_percent')}}
             result['voucher_summary'] = request.env['abroj.contracting.voucher'].abroj_voucher_summary([('project_id', '=', project.id)]) if request.env['abroj.contracting.voucher'].has_access('read') else {'received': 0, 'paid': 0, 'balance': 0}
             result['logs'] = [{'author': m.author_id.display_name, 'date': str(m.date or ''), 'body': html2plaintext(m.body or '')} for m in project.message_ids if m.body]
             for key, (model, allowed) in self._documents.items():

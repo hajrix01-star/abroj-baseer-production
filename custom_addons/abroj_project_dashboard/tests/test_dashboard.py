@@ -828,14 +828,18 @@ class AbrojDashboardHttpCase(HttpCase):
         project = self.env['project.project'].create({'name': 'Documents HTTP', 'company_id': self.env.company.id, 'abroj_client_party_id': client.id})
         self.authenticate('admin', 'admin')
         partner_count = self.env['res.partner'].search_count([])
-        created = self.rpc('/abroj/app/party/create', {'project_id': project.id, 'name': 'Manual subcontractor', 'party_type': 'subcontractor', 'phone': '0500000000'})
+        contracting_tag = self.env.ref('abroj_contracting.party_tag_contracting')
+        created = self.rpc('/abroj/app/party/create', {'project_id': project.id, 'name': 'Manual subcontractor', 'party_type': 'subcontractor', 'phone': '0500000000', 'category_ids': [contracting_tag.id]})
         self.assertEqual(created['type'], 'subcontractor')
+        self.assertEqual(created['tags'], ['مقاولات'])
         again = self.rpc('/abroj/app/party/create', {'project_id': project.id, 'name': 'Manual subcontractor', 'party_type': 'subcontractor'})
         self.assertEqual(again['id'], created['id'])
         self.assertEqual(self.env['res.partner'].search_count([]), partner_count, 'manual parties must not create contacts')
-        listed = self.rpc('/abroj/app/documents', {'project_id': project.id})['parties']
-        self.assertIn({'id': created['id'], 'name': 'Manual subcontractor', 'type': 'subcontractor'}, listed)
-        self.assertIn({'id': client.id, 'name': 'Document client', 'type': 'client'}, listed)
+        listing = self.rpc('/abroj/app/documents', {'project_id': project.id})
+        listed = listing['parties']
+        self.assertIn({'id': created['id'], 'name': 'Manual subcontractor', 'type': 'subcontractor', 'tags': ['مقاولات']}, listed)
+        self.assertIn({'id': client.id, 'name': 'Document client', 'type': 'client', 'tags': ['عملاء']}, listed)
+        self.assertIn({'id': contracting_tag.id, 'name': 'مقاولات'}, listing['party_tags'])
         sub_party = created['id']
         def save(kind, values):
             result = self.rpc('/abroj/app/document/save', {'project_id': project.id, 'kind': kind, 'values': values})

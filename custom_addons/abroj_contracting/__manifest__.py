@@ -6,6 +6,7 @@
           'security/ir.model.access.csv',
           'data/sequences.xml',
           'data/clauses.xml',
+          'data/party_tags.xml',
           'views/views.xml',
           'views/account_views.xml',
           'report/reports.xml',

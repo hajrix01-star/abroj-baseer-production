@@ -115,7 +115,7 @@ class DailyReport(models.Model):
         contracts = self.env['abroj.contracting.subcontractor'].sudo().search([
             ('project_id', 'in', projects.ids), ('create_date', '>=', start), ('create_date', '<', end)])
         for contract in contracts:
-            add(contract.project_id, 'تم إصدار عقد %s — %s' % (contract.partner_id.name, contract.project_id.name))
+            add(contract.project_id, 'تم إصدار عقد %s — %s' % (contract.display_name, contract.project_id.name))
         moves = self.env['account.move'].sudo().search([('state', '=', 'posted'), ('date', '=', self.date), ('move_type', 'in', ('out_invoice', 'out_refund', 'in_invoice', 'in_refund', 'out_receipt', 'in_receipt'))])
         for move in moves:
             for project in move._abroj_projects() & projects:

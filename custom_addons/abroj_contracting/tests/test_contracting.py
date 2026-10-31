@@ -385,6 +385,45 @@ class AbrojContractingCase(TransactionCase):
             with self.assertRaises(UserError):
                 voucher.action_cancel()
 
+    def test_party_standalone_and_accounting_without_contact(self):
+        Party = self.env['abroj.contracting.party']
+        partners_before = self.env['res.partner'].search_count([])
+        sub_party_id, _ = Party.with_context(default_party_type='subcontractor').name_create('مقاول طرف مستقل')
+        self.assertEqual(Party.with_context(default_party_type='subcontractor').name_create('مقاول طرف مستقل')[0], sub_party_id)
+        client = Party.create({'name': 'عميل طرف مستقل', 'party_type': 'client'})
+        self.assertEqual(self.env['res.partner'].search_count([]), partners_before)
+        project = self.env['project.project'].create({'name': 'مشروع الأطراف', 'company_id': self.env.company.id, 'abroj_client_party_id': client.id})
+        sub = self.env['abroj.contracting.subcontractor'].create({'project_id': project.id, 'party_id': sub_party_id, 'agreed_amount': 500})
+        self.assertEqual(sub.display_name, 'مقاول طرف مستقل')
+        with self.assertRaises(ValidationError), self.cr.savepoint():
+            self.env['abroj.contracting.subcontractor'].create({'project_id': project.id, 'party_id': client.id, 'agreed_amount': 1})
+        with self.assertRaises(ValidationError), self.cr.savepoint():
+            self.env['abroj.contracting.subcontractor'].create({'project_id': project.id, 'agreed_amount': 1})
+        Voucher = self.env['abroj.contracting.voucher']
+        with self.assertRaises(ValidationError), self.cr.savepoint():
+            Voucher.create({'project_id': project.id, 'kind': 'receipt', 'party_id': sub_party_id, 'amount': 5})
+        receipt = Voucher.create({'project_id': project.id, 'kind': 'receipt', 'party_id': client.id, 'amount': 5})
+        self.assertFalse(receipt.partner_id)
+        with self.assertRaises(ValidationError), self.cr.savepoint():
+            Voucher.create({'project_id': project.id, 'kind': 'payment', 'party_id': client.id, 'subcontractor_id': sub.id, 'amount': 5})
+        payment = Voucher.create({'project_id': project.id, 'kind': 'payment', 'party_id': sub_party_id, 'subcontractor_id': sub.id, 'amount': 50, 'method': 'bank'})
+        self.assertIn("party_type", str(Voucher._fields['party_id'].domain))
+        # Accounting approval keeps working without a res.partner on the payment.
+        plan = self.env['account.analytic.plan'].create({'name': 'خطة الأطراف'})
+        project.account_id = self.env['account.analytic.account'].create({'name': 'حساب الأطراف', 'plan_id': plan.id, 'company_id': self.env.company.id})
+        journal = self.env['account.journal'].create({'name': 'دفتر الأطراف', 'code': 'ABPT', 'type': 'bank', 'company_id': self.env.company.id})
+        payment.write({'journal_id': journal.id})
+        payment.action_issue()
+        payment.with_user(self.accountant('account.group_account_manager')).action_accounting_approve()
+        self.assertTrue(payment.payment_id)
+        self.assertFalse(payment.payment_id.partner_id)
+        self.assertEqual(payment.payment_id.move_id.state, 'posted')
+        self.assertEqual(self.env['res.partner'].search_count([]), partners_before + 1)  # only the accountant user's own partner
+        for report in ('abroj_contracting.report_subcontract', 'abroj_contracting.report_agreement', 'abroj_contracting.report_settlement'):
+            record = project if report.endswith('agreement') else sub
+            html = self.env['ir.actions.report']._render_qweb_html(report, record.ids)[0].decode()
+            self.assertIn('مقاول طرف مستقل' if record == sub else 'عميل طرف مستقل', html)
+
     def test_optional_expense_guards(self):
         methods = {
             'hr.expense': ['action_approve', 'action_approve_duplicates', 'action_post', '_do_approve', '_post_without_wizard'],

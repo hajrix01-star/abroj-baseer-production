@@ -130,7 +130,7 @@ class Voucher(models.Model):
     def previous_vouchers(self):
         self.ensure_one()
         domain = [('state', '=', 'issued'), ('company_id', '=', self.company_id.id),
-                  ('project_id', '=', self.project_id.id), ('partner_id', '=', self.partner_id.id),
+                  ('project_id', '=', self.project_id.id), ('partner_id', '=', self.partner_id.id), ('party_id', '=', self.party_id.id),
                   ('subcontractor_id', '=', self.subcontractor_id.id or False),
                   ('vendor_contract_reference', '=', self.vendor_contract_reference or False)]
         domain += [('id', '!=', self.id or 0)]
@@ -146,11 +146,11 @@ class Voucher(models.Model):
     def init(self):
         self.env.cr.execute("UPDATE abroj_contracting_voucher SET issued_at = create_date WHERE state = 'issued' AND issued_at IS NULL")
 
-    @api.depends('amount', 'kind', 'partner_id', 'project_id', 'subcontractor_id', 'vendor_contract_reference', 'vendor_contract_value', 'state', 'issued_at',
+    @api.depends('amount', 'kind', 'partner_id', 'party_id', 'project_id', 'subcontractor_id', 'vendor_contract_reference', 'vendor_contract_value', 'state', 'issued_at',
                  'project_id.voucher_ids.state', 'project_id.voucher_ids.amount', 'project_id.contract_value', 'subcontractor_id.materials_total', 'subcontractor_id.agreed_amount')
     def _compute_contract_balance(self):
         for v in self:
-            previous = v.previous_vouchers() if v.project_id and v.partner_id else self.browse()
+            previous = v.previous_vouchers() if v.project_id and (v.party_id or v.partner_id) else self.browse()
             sub = v.subcontractor_id
             value = sub.agreed_amount if sub else (v.vendor_contract_value if v.kind == 'payment' else v.project_id.contract_value)
             materials = sub.materials_total if sub else 0
@@ -170,15 +170,23 @@ class Voucher(models.Model):
     @api.onchange('project_id', 'kind', 'subcontractor_id')
     def _onchange_contract_party(self):
         if self.subcontractor_id:
+            self.party_id = self.subcontractor_id.party_id
             self.partner_id = self.subcontractor_id.partner_id
         elif self.kind == 'receipt':
-            self.partner_id = self.project_id.partner_id
+            self.party_id = self.project_id.abroj_client_party_id
+            if not self.party_id:
+                self.partner_id = self.project_id.partner_id
 
-    @api.constrains('kind', 'partner_id', 'project_id', 'subcontractor_id')
+    @api.constrains('kind', 'partner_id', 'party_id', 'project_id', 'subcontractor_id')
     def _check_client_party(self):
         for v in self:
             # Receipts on subcontractor contracts are refunds, supported by existing accounting.
-            if v.kind == 'receipt' and not v.subcontractor_id and v.partner_id != v.project_id.partner_id:
+            if v.kind != 'receipt' or v.subcontractor_id:
+                continue
+            if v.party_id:
+                if v.party_id != v.project_id.abroj_client_party_id:
+                    raise ValidationError('سند القبض يجب أن يرتبط بعميل عقد المشروع.')
+            elif v.partner_id != v.project_id.partner_id:
                 raise ValidationError('سند القبض يجب أن يرتبط بعميل عقد المشروع.')
 
     @api.model_create_multi

@@ -9,16 +9,20 @@ LANG_COOKIE = 'frontend_lang'
 
 LABELS = {
     'ar': {
-        'title': 'تسجيل الدخول', 'welcome': 'مرحبًا بك في نظام أبرج',
+        'title': 'أهلاً بك في أبرج', 'welcome': 'مساحة واحدة لإدارة مشاريعك',
         'login': 'البريد الإلكتروني أو اسم المستخدم', 'password': 'كلمة المرور',
-        'remember': 'تذكرني', 'forgot': 'نسيت كلمة المرور؟', 'submit': 'دخول',
+        'remember': 'تذكرني', 'forgot': 'نسيت كلمة المرور؟', 'submit': 'تسجيل الدخول',
         'footer': '© أبرج للمقاولات', 'show': 'إظهار كلمة المرور',
+        'target_label': 'وجهة الدخول', 'target_app': 'أدخل المشاريع', 'target_odoo': 'أدخل أودو',
+        'switch': 'English', 'tagline': 'من التخطيط إلى الإنجاز',
     },
     'en': {
         'title': 'Sign in', 'welcome': 'Welcome to Abroj',
         'login': 'Email or username', 'password': 'Password',
         'remember': 'Remember me', 'forgot': 'Forgot password?', 'submit': 'Sign in',
         'footer': '© Abroj Contracting', 'show': 'Show password',
+        'target_label': 'Sign in to', 'target_app': 'Projects app', 'target_odoo': 'Odoo backend',
+        'switch': 'عربي', 'tagline': 'From planning to delivery',
     },
 }
 
@@ -35,10 +39,43 @@ def _login_lang():
     return 'ar'
 
 
+APP_PATHS = ('/abroj/app', '/app')
+APP_LOGIN_PATHS = ('/abroj/app/login', '/app/login')
+
+
+def _is_app_path(url):
+    url = (url or '').split('?')[0].split('#')[0]
+    return any(url == p or url.startswith(p + '/') for p in APP_PATHS) and url not in APP_LOGIN_PATHS
+
+
+def _login_target(redirect, kw):
+    """'app' (Abroj projects PWA) or 'odoo' (backend)."""
+    target = kw.get('abroj_target')
+    if target in ('app', 'odoo'):
+        return target
+    if request.httprequest.path in APP_LOGIN_PATHS or _is_app_path(redirect):
+        return 'app'
+    if redirect:
+        return 'odoo'
+    return 'app'
+
+
 class AbrojLogin(Home):
 
-    @http.route()
+    @http.route(['/web/login', '/app/login', '/abroj/app/login'], type='http', auth='none', readonly=False)
     def web_login(self, redirect=None, **kw):
+        path = request.httprequest.path
+        if path in APP_LOGIN_PATHS and not redirect:
+            redirect = '/app' if path == '/app/login' else '/abroj/app'
+        target = _login_target(redirect, kw)
+        if request.httprequest.method == 'POST':
+            # One shared form: the chosen destination decides where we land.
+            if target == 'app' and not _is_app_path(redirect):
+                redirect = '/abroj/app'
+            elif target == 'odoo' and (not redirect or _is_app_path(redirect)):
+                redirect = '/odoo'
+        request.params['abroj_target'] = target
+        request.params['redirect'] = redirect
         short = _login_lang()
         code = LOGIN_LANGS[short]
         installed = {c for c, _n in request.env['res.lang'].sudo().get_installed()}
@@ -50,6 +87,24 @@ class AbrojLogin(Home):
         if request.params.get('login_success'):
             # Unchecked box -> browser-session cookie (see models/session_cookie.py).
             request.session['abroj_remember'] = bool(kw.get('remember'))
+            # Remember the username only (never the password) after a successful login.
+            if kw.get('remember') and kw.get('login'):
+                response.set_cookie('abroj_last_login', kw['login'].strip()[:200], max_age=365 * 24 * 3600, samesite='Lax', cookie_type='optional')
+            else:
+                response.delete_cookie('abroj_last_login')
         if kw.get('lang') in LOGIN_LANGS or kw.get('lang') in LOGIN_LANGS.values():
             response.set_cookie(LANG_COOKIE, code, max_age=365 * 24 * 3600, cookie_type='optional')
         return response
+
+
+class AbrojSwitch(http.Controller):
+
+    @http.route(['/abroj/switch', '/app/switch'], type='http', auth='user', methods=['GET'])
+    def abroj_switch(self, **kw):
+        """Logged-in app chooser: Odoo backend or the projects PWA (no password form)."""
+        short = 'ar' if (request.env.user.lang or '').startswith('ar') else 'en'
+        request.params['abroj_lang'] = short
+        request.params['abroj_labels'] = dict(LABELS[short], switch='')
+        return request.render('abroj_project_dashboard.abroj_switch', {
+            'L': LABELS[short], 'switch_title': 'تبديل التطبيق' if short == 'ar' else 'Switch app',
+            'user_name': request.env.user.name})

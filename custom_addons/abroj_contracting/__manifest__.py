@@ -1,5 +1,5 @@
 {'name': 'أبروج للمقاولات',
- 'version': '19.0.1.1.0',
+ 'version': '19.0.1.5.1',
  'license': 'LGPL-3',
  'depends': ['project', 'project_account', 'analytic', 'account', 'purchase'],
  'data': ['security/security.xml',
@@ -7,9 +7,11 @@
           'data/sequences.xml',
           'data/clauses.xml',
           'views/views.xml',
+          'views/account_views.xml',
           'report/reports.xml',
           'views/capture.xml',
           'views/printing.xml'],
+ 'assets': {'web.assets_backend': ['abroj_contracting/static/src/voucher_list.js', 'abroj_contracting/static/src/voucher_list.xml']},
  'external_dependencies': {'python': ['num2words']},
  'application': True,
  'installable': True}

@@ -1,0 +1,58 @@
+name: Test Abroj project dashboard in isolated Odoo
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'custom_addons/abroj_project_dashboard/**'
+      - 'custom_addons/abroj_contracting/**'
+      - '.github/workflows/test-abroj-project-dashboard.yml'
+permissions:
+  contents: read
+jobs:
+  project-dashboard-runtime:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres@sha256:f1c3376c26f2609ab9f29f71f824103fe2fcd8ee0346485cb6122a4f93df6f94
+        env:
+          POSTGRES_DB: postgres
+          POSTGRES_USER: odoo
+          POSTGRES_PASSWORD: odoo
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U odoo -d postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Project dashboard runtime
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          docker run --rm --network host \
+            -e HOST=127.0.0.1 -e USER=odoo -e PASSWORD=odoo \
+            -e PGOPTIONS='-c lock_timeout=5000 -c statement_timeout=30000' \
+            --mount type=bind,src="$GITHUB_WORKSPACE/custom_addons",dst=/mnt/baseer-addons,readonly \
+            odoo@sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd \
+            odoo --db_host=127.0.0.1 --db_port=5432 --db_user=odoo --db_password=odoo \
+            --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/baseer-addons \
+            -d abroj_project_dashboard_ci -i abroj_contracting,abroj_project_dashboard --without-demo=all \
+            --test-enable \
+            --test-tags=/abroj_project_dashboard \
+            --stop-after-init --max-cron-threads=0 --workers=0 --log-level=test 2>&1 | tee abroj-project-dashboard-runtime.log
+          for test_class in AbrojProjectDashboardCase AbrojDashboardHttpCase; do
+            grep -F "Starting $test_class." abroj-project-dashboard-runtime.log
+          done
+          if grep -Eq ': skipped .+ : |[1-9][0-9]* failed,|[1-9][0-9]* error\(s\)' abroj-project-dashboard-runtime.log; then
+            echo 'Dashboard runtime tests were skipped or failed' >&2
+            exit 1
+          fi
+          grep -F '0 failed, 0 error(s)' abroj-project-dashboard-runtime.log
+          test "$(grep -Ec 'Starting (AbrojProjectDashboardCase|AbrojDashboardHttpCase)\.' abroj-project-dashboard-runtime.log)" -eq 70
+      - name: Preserve dashboard runtime evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: abroj-project-dashboard-runtime
+          path: abroj-project-dashboard-runtime.log
+          if-no-files-found: error

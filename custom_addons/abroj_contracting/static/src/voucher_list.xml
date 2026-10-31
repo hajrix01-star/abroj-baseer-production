@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+  <t t-name="abroj_contracting.VoucherList" t-inherit="web.ListView" t-inherit-mode="primary">
+    <xpath expr="//t[@t-component='props.Renderer']" position="before">
+      <div class="row g-2 m-2">
+        <div class="col"><div class="card p-3"><strong>المقبوض</strong><span t-esc="formatSummary(summary.received)"/></div></div>
+        <div class="col"><div class="card p-3"><strong>المدفوع</strong><span t-esc="formatSummary(summary.paid)"/></div></div>
+        <div class="col"><div class="card p-3"><strong>الرصيد</strong><span t-esc="formatSummary(summary.balance)"/></div></div>
+      </div>
+    </xpath>
+  </t>
+</templates>

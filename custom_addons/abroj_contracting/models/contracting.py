@@ -76,6 +76,7 @@ class ProjectDocument(models.AbstractModel):
     project_id = fields.Many2one('project.project', string='المشروع', required=True, check_company=True, ondelete='restrict', help='حدد المشروع لهذا السجل وفق مستند المشروع الأصلي.')
     company_id = fields.Many2one('res.company', string='الشركة', related='project_id.company_id', store=True, help='حدد الشركة لهذا السجل وفق مستند المشروع الأصلي.')
     currency_id = fields.Many2one('res.currency', string='العملة', related='company_id.currency_id', help='حدد العملة لهذا السجل وفق مستند المشروع الأصلي.')
+    analytic_account_id = fields.Many2one('account.analytic.account', string='الحساب التحليلي', related='project_id.account_id', store=True, readonly=True, index=True, help='الحساب التحليلي للمشروع؛ يُنسخ تلقائياً من المشروع.')
 
     @api.constrains('project_id')
     def _check_project_company(self):
@@ -191,6 +192,38 @@ class Voucher(models.Model):
     payment_id = fields.Many2one('account.payment', string='الدفعة المحاسبية', readonly=True, copy=False, check_company=True, help='الدفعة التي أنشأها محاسب آخر عبر الاعتماد المحاسبي؛ يخصص حسابها المقابل للحساب التحليلي للمشروع.')
     issued_by = fields.Many2one('res.users', string='أصدره', readonly=True, copy=False, help='حدد أصدره لهذا السجل وفق مستند المشروع الأصلي.')
 
+    abroj_stage = fields.Selection([
+        ('draft', 'مسودة'), ('issued', 'صادر بانتظار الاعتماد المحاسبي'),
+        ('approved', 'معتمد محاسبيًا'), ('cancelled', 'ملغي'),
+    ], string='المرحلة', compute='_compute_abroj_stage', store=True)
+
+    @api.depends('state', 'payment_id')
+    def _compute_abroj_stage(self):
+        for voucher in self:
+            voucher.abroj_stage = ('approved' if voucher.payment_id else 'issued') if voucher.state == 'issued' else voucher.state
+
+    @api.model
+    def abroj_voucher_summary(self, domain):
+        vouchers = self.search((domain or []) + [('state', '=', 'issued')])
+        received = sum(vouchers.filtered(lambda v: v.kind == 'receipt').mapped('amount'))
+        paid = sum(vouchers.filtered(lambda v: v.kind == 'payment').mapped('amount'))
+        return {'received': received, 'paid': paid, 'balance': received - paid}
+
+    abroj_can_accounting_approve = fields.Boolean(compute='_compute_can_accounting_approve')
+
+    @api.depends('state', 'payment_id', 'issued_by')
+    @api.depends_context('uid')
+    def _compute_can_accounting_approve(self):
+        user = self.env.user
+        accountant = (user.has_group('account.group_account_manager')
+                      or user.has_group('account.group_account_invoice'))
+        allowed = accountant and not user.has_group('abroj_contracting.group_extraction_agent')
+        for voucher in self:
+            voucher.abroj_can_accounting_approve = bool(
+                allowed and voucher.state == 'issued' and not voucher.payment_id
+                and voucher.issued_by != user
+            )
+
     @api.model_create_multi
     def create(self, vals_list):
         if any(set(v) & {'name', 'payment_id', 'issued_by'} for v in vals_list):
@@ -255,16 +288,25 @@ class Voucher(models.Model):
                 'partner_id': r.partner_id.id, 'amount': r.amount, 'date': r.date,
                 'currency_id': r.currency_id.id, 'journal_id': journal.id,
                 'payment_method_line_id': lines[0].id, 'company_id': r.company_id.id,
-                'memo': r.name,
+                'memo': r.name, 'abroj_voucher_id': r.id,
             })
             payment._generate_journal_entry()
             if not payment.move_id:
                 raise UserError('يلزم دفتر يولد قيد دفع لتخصيص الحساب التحليلي.')
+            payment.move_id.write({'ref': r.name, 'abroj_voucher_id': r.id, 'abroj_project_id': r.project_id.id})
             counterpart = payment.move_id.line_ids.filtered(lambda line: line.account_id == payment.destination_account_id)
             counterpart.write({'analytic_distribution': {str(account.id): 100}})
             payment.action_post()
             super(FrozenDocument, r).write({'payment_id': payment.id})
         return True
+
+    def action_open_journal_entry(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window', 'name': 'القيد المحاسبي',
+            'res_model': 'account.move', 'res_id': self.payment_id.move_id.id,
+            'view_mode': 'form', 'target': 'current',
+        }
 
     def action_cancel(self):
         check_agent(self.env)

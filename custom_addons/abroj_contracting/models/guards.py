@@ -1,4 +1,4 @@
-from odoo import models
+from odoo import fields, models
 from odoo.exceptions import AccessError
 
 
@@ -11,6 +11,21 @@ def check_agent(env):
 class AccountMove(models.Model):
     _inherit = 'account.move'
 
+    abroj_voucher_id = fields.Many2one('abroj.contracting.voucher', string='السند', readonly=True, index=True, copy=False)
+
+    def action_open_abroj_voucher(self):
+        self.ensure_one()
+        return {'type': 'ir.actions.act_window', 'name': 'السند', 'res_model': 'abroj.contracting.voucher',
+                'res_id': self.abroj_voucher_id.id, 'view_mode': 'form', 'target': 'current'}
+
+    def write(self, vals):
+        # Record rules check the existing record; prevent moving a permitted
+        # draft out of the permitted state or document types via direct writes.
+        if (vals.get('state', 'draft') != 'draft'
+                or vals.get('move_type', 'in_invoice') not in ('in_invoice', 'in_refund')):
+            check_agent(self.env)
+        return super().write(vals)
+
     def action_post(self):
         check_agent(self.env)
         return super().action_post()
@@ -18,6 +33,13 @@ class AccountMove(models.Model):
 
 class AccountPayment(models.Model):
     _inherit = 'account.payment'
+
+    abroj_voucher_id = fields.Many2one('abroj.contracting.voucher', string='السند', readonly=True, index=True, copy=False)
+
+    def action_open_abroj_voucher(self):
+        self.ensure_one()
+        return {'type': 'ir.actions.act_window', 'name': 'السند', 'res_model': 'abroj.contracting.voucher',
+                'res_id': self.abroj_voucher_id.id, 'view_mode': 'form', 'target': 'current'}
 
     def action_post(self):
         check_agent(self.env)

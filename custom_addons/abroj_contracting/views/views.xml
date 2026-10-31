@@ -61,6 +61,17 @@
             <field name="expected_profit"/>
           </group>
           <notebook>
+            <page string="مقاولو الباطن" name="contractors">
+              <field name="subcontractor_ids" context="{'default_project_id': id}"/>
+            </page>
+            <page string="السندات" name="vouchers">
+              <div class="row g-2 mb-3">
+                <div class="col"><div class="card p-3"><strong>المقبوض</strong><field name="total_received" nolabel="1" readonly="1"/></div></div>
+                <div class="col"><div class="card p-3"><strong>المدفوع</strong><field name="total_paid" nolabel="1" readonly="1"/></div></div>
+                <div class="col"><div class="card p-3"><strong>الرصيد</strong><field name="cash_balance" nolabel="1" readonly="1"/></div></div>
+              </div>
+              <field name="voucher_ids" context="{'default_project_id': id}"><list><field name="name"/><field name="kind"/><field name="partner_id"/><field name="amount"/><field name="date"/><field name="method"/><field name="abroj_stage"/><field name="abroj_can_accounting_approve" column_invisible="True"/><button name="action_accounting_approve" type="object" string="اعتماد محاسبي" groups="account.group_account_manager,account.group_account_invoice" invisible="not abroj_can_accounting_approve"/></list></field>
+            </page>
             <page string="الملاحظات" name="project_notes">
               <field name="project_note_ids" context="{'default_project_id': id}">
                 <list editable="bottom">
@@ -70,29 +81,11 @@
                 </list>
               </field>
             </page>
-            <page string="السجلات">
-              <field name="inbox_ids" context="{'default_project_id': id}"/>
-              <separator string="المصروفات"/>
-              <field name="cost_ids" context="{'default_project_id': id}"/>
+            <page string="الفواتير والمصروفات" name="invoices_costs">
+              <field name="invoice_ids" context="{'default_project_id': id}"><list><field name="number"/><field name="subcontractor_id"/><field name="amount"/><field name="date"/><field name="state"/><button name="action_confirm" type="object" string="تأكيد" invisible="state != 'draft'"/></list></field>
+              <field name="cost_ids" context="{'default_project_id': id}"><list><field name="name"/><field name="partner_id"/><field name="amount"/><field name="date"/><field name="state"/><button name="action_confirm" type="object" string="تأكيد" invisible="state != 'draft'"/></list></field>
             </page>
-            <page string="السندات">
-              <field name="voucher_ids" context="{'default_project_id': id, 'default_kind': 'payment'}" domain="[('kind', '=', 'payment')]"/>
-            </page>
-            <page string="مقاولو الباطن">
-              <field name="subcontractor_ids" context="{'default_project_id': id}"/>
-              <field name="invoice_ids" context="{'default_project_id': id}"/>
-            </page>
-            <page string="المقبوضات">
-              <field name="voucher_ids" context="{'default_project_id': id, 'default_kind': 'receipt'}" domain="[('kind', '=', 'receipt')]"/>
-            </page>
-            <page string="التدفق النقدي">
-              <group>
-                <field name="total_received"/>
-                <field name="total_paid"/>
-                <field name="cash_balance"/>
-              </group>
-              <field name="voucher_ids" readonly="1" domain="[('state', '=', 'issued')]"/>
-            </page>
+            <page string="السجلات" name="logs"><field name="inbox_ids" context="{'default_project_id': id}"/></page>
           </notebook>
         </sheet>
         <chatter/>
@@ -123,16 +116,21 @@
     <field name="arch" type="xml">
       <form string="السندات">
         <header>
-          <button name="action_issue" type="object" string="إصدار واعتماد" class="btn-primary" invisible="state != 'draft'" help="عرض السجل أو اعتماد العملية حسب حالتها؛ راجع البيانات والمرفقات قبل التنفيذ."/>
-          <button name="action_accounting_approve" type="object" string="اعتماد محاسبي" groups="account.group_account_manager,account.group_account_invoice" invisible="state != 'issued' or payment_id" help="إنشاء دفعة محاسبية مرتبطة بحساب المشروع التحليلي؛ يجب أن يعتمد السند محاسب غير مصدره، ولا يسمح لوكيل الاستخراج بالاعتماد."/>
+          <field name="abroj_can_accounting_approve" invisible="1"/>
+          <button name="action_issue" type="object" string="إصدار" class="btn-primary" invisible="state != 'draft'" help="عرض السجل أو اعتماد العملية حسب حالتها؛ راجع البيانات والمرفقات قبل التنفيذ."/>
+          <button name="action_accounting_approve" type="object" string="اعتماد محاسبي" groups="account.group_account_manager,account.group_account_invoice" invisible="not abroj_can_accounting_approve" help="إنشاء دفعة محاسبية مرتبطة بحساب المشروع التحليلي؛ يجب أن يعتمد السند محاسب غير مصدره، ولا يسمح لوكيل الاستخراج بالاعتماد."/>
           <button name="action_cancel" type="object" string="إلغاء" invisible="state == 'cancelled'" help="عرض السجل أو اعتماد العملية حسب حالتها؛ راجع البيانات والمرفقات قبل التنفيذ."/>
           <field name="state" widget="statusbar"/>
         </header>
         <sheet>
+          <div class="oe_button_box" name="button_box">
+            <button name="action_open_journal_entry" type="object" class="oe_stat_button" icon="fa-book" string="القيد المحاسبي" invisible="not payment_id"/>
+          </div>
           <group>
             <field name="name"/>
             <field name="kind" readonly="state != 'draft'"/>
             <field name="project_id" readonly="state != 'draft'"/>
+            <field name="analytic_account_id" readonly="1"/>
             <field name="company_id"/>
             <field name="currency_id" invisible="1"/>
             <field name="partner_id" readonly="state != 'draft'"/>
@@ -156,7 +154,7 @@
     <field name="name">abroj.contracting.voucher.list</field>
     <field name="model">abroj.contracting.voucher</field>
     <field name="arch" type="xml">
-      <list string="السندات">
+      <list string="السندات" js_class="abroj_voucher_list">
         <field name="name"/>
         <field name="kind"/>
         <field name="project_id"/>
@@ -167,9 +165,18 @@
         <field name="amount"/>
         <field name="date"/>
         <field name="method"/>
-        <field name="state"/>
+        <field name="abroj_stage"/>
       </list>
     </field>
+  </record>
+  <record id="voucher_search" model="ir.ui.view">
+    <field name="name">abroj.contracting.voucher.search</field><field name="model">abroj.contracting.voucher</field>
+    <field name="arch" type="xml"><search>
+      <field name="name"/><field name="project_id"/><field name="partner_id"/>
+      <filter name="payment" string="صرف" domain="[('kind', '=', 'payment')]"/><filter name="receipt" string="قبض" domain="[('kind', '=', 'receipt')]"/><separator/>
+      <filter name="draft" string="مسودة" domain="[('abroj_stage', '=', 'draft')]"/><filter name="issued" string="صادر بانتظار الاعتماد المحاسبي" domain="[('abroj_stage', '=', 'issued')]"/><filter name="approved" string="معتمد محاسبيًا" domain="[('abroj_stage', '=', 'approved')]"/><filter name="cancelled" string="ملغي" domain="[('abroj_stage', '=', 'cancelled')]"/>
+      <group><filter name="group_kind" string="النوع" context="{'group_by': 'kind'}"/><filter name="group_stage" string="المرحلة" context="{'group_by': 'abroj_stage'}"/><filter name="group_project" string="المشروع" context="{'group_by': 'project_id'}"/></group>
+    </search></field>
   </record>
   <record id="subcontractor_form" model="ir.ui.view">
     <field name="name">abroj.contracting.subcontractor.form</field>
@@ -355,11 +362,11 @@
     <field name="act_window_id" ref="action_projects"/>
   </record>
   <record id="action_payments" model="ir.actions.act_window">
-    <field name="name">سندات الصرف</field>
+    <field name="name">السندات</field>
     <field name="res_model">abroj.contracting.voucher</field>
     <field name="view_mode">list,form</field>
-    <field name="domain">[('kind','=','payment')]</field>
-    <field name="context">{'default_kind':'payment'}</field>
+    <field name="domain">[]</field>
+    <field name="context">{}</field>
   </record>
   <record id="action_receipts" model="ir.actions.act_window">
     <field name="name">سندات القبض</field>
@@ -398,10 +405,10 @@
   </record>
   <menuitem id="menu_contracting" name="المقاولات" parent="project.menu_main_pm" sequence="25" groups="base.group_user"/>
   <menuitem id="menu_projects" name="المشاريع" parent="menu_contracting" action="action_projects" sequence="1"/>
-  <menuitem id="menu_payments" name="سندات الصرف" parent="menu_contracting" action="action_payments" sequence="2"/>
-  <menuitem id="menu_receipts" name="سندات القبض" parent="menu_contracting" action="action_receipts" sequence="3"/>
+  <menuitem id="menu_payments" name="السندات" parent="menu_contracting" action="action_payments" sequence="2"/>
+  <menuitem id="menu_receipts" name="سندات القبض" parent="menu_contracting" action="action_receipts"/><record id="menu_receipts" model="ir.ui.menu"><field name="active" eval="False"/></record>
   <menuitem id="menu_subcontractors" name="مقاولو الباطن" parent="menu_contracting" action="action_subcontractors" sequence="4"/>
   <menuitem id="menu_invoices" name="فواتير مقاولي الباطن" parent="menu_contracting" action="action_invoices" sequence="5"/>
   <menuitem id="menu_inbox" name="صندوق الوارد" parent="menu_contracting" action="action_inbox" sequence="6"/>
-  <menuitem id="menu_cash" name="التدفق النقدي" parent="menu_contracting" action="action_cash" sequence="7"/>
+  <menuitem id="menu_cash" name="التدفق النقدي" parent="menu_contracting" action="action_cash"/><record id="menu_cash" model="ir.ui.menu"><field name="active" eval="False"/></record>
 </odoo>

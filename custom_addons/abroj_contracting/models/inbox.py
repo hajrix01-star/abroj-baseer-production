@@ -80,6 +80,8 @@ class Inbox(models.Model):
                        'project_name': r.project_id.name, 'filename': r.filename,
                        'mimetype': r.mimetype, 'state': r.state,
                        'create_uid': r.create_uid.id, 'create_date': fields.Datetime.to_string(r.create_date)}
+            if 'abroj_invoice_bill_id' in r._fields and r.abroj_invoice_bill_id:
+                payload.update({'document_type': 'invoice', 'bill_id': r.abroj_invoice_bill_id.id})
             def notify(payload=payload):
                 try:
                     sender(url, key, payload)

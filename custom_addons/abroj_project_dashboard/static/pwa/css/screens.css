@@ -1,0 +1,16 @@
+
+.project:hover,.my-day-link:hover{border-color:#b9c8d8} .project-tabs button.active{background:var(--primary);font-weight:700} .sheet{box-shadow:0 -8px 30px #102a5c22} .fab{background:var(--primary);bottom:calc(88px + env(safe-area-inset-bottom))} html[dir=ltr] .fab{bottom:calc(88px + env(safe-area-inset-bottom))} @media(max-width:360px){header .brand strong{display:none}} @media(min-width:768px){main{padding-top:24px}.grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.media-actions{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}.media-tools video{width:100%;max-height:55vh;object-fit:contain;background:var(--navy-dark)}.media-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(135px,1fr));gap:10px}.media-item{min-width:0;border:1px solid #e6eaf0;border-radius:var(--radius);padding:8px;overflow-wrap:anywhere}.media-item img{width:100%;aspect-ratio:1;object-fit:cover}.media-item progress,.voice-controls progress{width:100%}.media-item small{display:block}.voice-controls canvas{width:100%;height:80px;background:var(--navy);border-radius:8px}.voice-controls output{display:block;font-variant-numeric:tabular-nums}.voice-controls audio{display:block;width:100%;margin:12px 0}
+
+.invoice-file{display:block;padding:12px;cursor:pointer}
+
+.my-day-name-row{display:flex;align-items:flex-start;gap:12px}.my-day-name-row strong{min-width:0}.phase-status,.my-day-link .phase-status{margin-inline-start:auto;flex-shrink:0;border-radius:999px;padding:4px 9px;font-size:.78rem;font-weight:700;line-height:1.4;white-space:nowrap}.phase-status.on_time{background:rgba(16,42,92,.1);color:var(--primary)}.phase-status.overdue{background:#fee2e2;color:#991b1b}.phase-status.done{display:inline-flex;align-items:center;gap:4px;background:#dcfce7;color:#166534}.phase-status.done svg{width:1em;height:1em;flex-shrink:0}
+.report-table-wrap{overflow-x:auto}.report-table{border-collapse:collapse;width:100%;min-width:850px;text-align:start}.report-table th,.report-table td{padding:12px;border-bottom:1px solid #e7ebf0;text-align:start}.report-table th{background:#f6f8fb}.report-table .report-project th{background:#eef2f8;color:#102a5c}.report-table textarea{min-width:150px}.report-manager{display:block;margin:12px 0;max-width:300px}.report-manager select{width:100%}
+
+/* Shared hierarchy and empty states across lists, galleries and reports. */
+main h2{font-size:1.5rem;line-height:1.3;margin:12px 0}
+main h3{font-size:1.125rem;line-height:1.35;margin:12px 0}
+.grid h3{font-size:1rem}
+#gallery-results>.empty-state{grid-column:1/-1}
+.empty-state p{margin:0 0 12px}
+.empty-state p:last-child{margin-bottom:0}

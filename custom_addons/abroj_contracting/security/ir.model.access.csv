@@ -12,3 +12,17 @@ access_clause_manager,Manage contract clauses,model_abroj_contracting_clause,pro
 access_clause_template_user,Contract clauses,model_abroj_contract_clause_template,base.group_user,1,0,0,0
 access_clause_template_manager,Contract clauses,model_abroj_contract_clause_template,project.group_project_manager,1,1,1,1
 access_clause_line_user,Contract clauses,model_abroj_contract_clause_line,base.group_user,1,1,1,1
+access_extraction_move,Extraction agent move,account.model_account_move,group_extraction_agent,1,1,1,0
+access_extraction_move_line,Extraction agent move_line,account.model_account_move_line,group_extraction_agent,1,1,1,1
+access_extraction_partner,Extraction agent partner,base.model_res_partner,group_extraction_agent,1,1,1,0
+access_extraction_product,Extraction agent product,product.model_product_product,group_extraction_agent,1,1,1,0
+access_extraction_product_template,Extraction agent product_template,product.model_product_template,group_extraction_agent,1,1,1,0
+access_extraction_product_category,Extraction agent product_category,product.model_product_category,group_extraction_agent,1,0,0,0
+access_extraction_uom,Extraction agent uom,uom.model_uom_uom,group_extraction_agent,1,0,1,0
+access_extraction_tax,Extraction agent tax,account.model_account_tax,group_extraction_agent,1,0,0,0
+access_extraction_account,Extraction agent account,account.model_account_account,group_extraction_agent,1,0,0,0
+access_extraction_journal,Extraction agent journal,account.model_account_journal,group_extraction_agent,1,0,0,0
+access_extraction_analytic_account,Extraction agent analytic_account,analytic.model_account_analytic_account,group_extraction_agent,1,0,0,0
+access_extraction_attachment,Extraction agent attachment,base.model_ir_attachment,group_extraction_agent,1,0,1,0
+access_extraction_inbox,Extraction agent inbox,model_abroj_contracting_inbox,group_extraction_agent,1,1,0,0
+access_extraction_currency,Extraction agent currency,base.model_res_currency,group_extraction_agent,1,0,0,0

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+<t t-name="abroj_project_dashboard.Gallery">
+  <div class="abroj-backend-gallery" dir="rtl">
+    <div class="abroj-gallery-filters">
+      <t t-foreach="types" t-as="kind" t-key="kind[0]"><button type="button" t-att-class="state.type === kind[0] ? 'btn btn-primary' : 'btn btn-secondary'" t-on-click="() => { state.type = kind[0]; }"><t t-esc="kind[1]"/></button></t>
+      <select class="form-select" t-model="state.phase" aria-label="Phase"><option value="">المرحلة</option><t t-foreach="phases" t-as="phase" t-key="phase[0]"><option t-att-value="phase[0]" t-esc="phase[1]"/></t></select>
+      <select class="form-select" t-model="state.uploader" aria-label="Uploader"><option value="">رافع الملف</option><t t-foreach="uploaders" t-as="user" t-key="user[0]"><option t-att-value="user[0]" t-esc="user[1]"/></t></select>
+      <select class="form-select" t-model="state.sort" aria-label="Sort"><option value="desc">الأحدث</option><option value="asc">الأقدم</option></select>
+    </div>
+    <t t-foreach="groups" t-as="group" t-key="group.day"><h4 dir="ltr" t-esc="group.day"/><div class="abroj-gallery-grid"><t t-foreach="group.items" t-as="item" t-key="item.type + ':' + item.id"><article class="abroj-gallery-item">
+      <button t-if="item.type === 'image'" type="button" class="abroj-gallery-thumb" t-on-click="() => this.open(item)"><img t-att-src="'/web/image/' + item.id + '/320x320'" t-att-alt="item.name"/></button>
+      <audio t-elif="item.type === 'audio'" controls="controls" preload="none" t-att-src="'/web/content/' + item.id"/>
+      <a t-elif="item.type === 'file'" t-att-href="'/web/content/' + item.id + '?download=true'" t-esc="item.name"/>
+      <p t-if="item.description" t-esc="item.description"/><small><t t-esc="item.create_uid"/> · <span dir="ltr" t-esc="dateTime(item.create_date)"/><t t-if="item.phase"> · <t t-esc="item.phase"/></t></small>
+    </article></t></div></t>
+    <div t-if="state.index >= 0 and current" class="abroj-gallery-viewer" role="dialog" aria-modal="true">
+      <button type="button" class="abroj-viewer-close" t-on-click="close" aria-label="Close">×</button><button type="button" t-on-click="() => this.move(-1)" aria-label="Previous">‹</button>
+      <div class="abroj-viewer-stage" t-on-wheel="wheel" t-on-dblclick="() => this.zoom(state.scale > 1 ? 1 : 2.5)" t-on-touchstart="touchStart" t-on-touchmove="touchMove" t-on-touchend="touchEnd"><img t-att-src="'/web/content/' + current.id" t-att-alt="current.name" t-att-style="'transform: scale(' + state.scale + ')'"/></div>
+      <button type="button" t-on-click="() => this.move(1)" aria-label="Next">›</button><div class="abroj-viewer-details"><t t-esc="current.create_uid"/> · <span dir="ltr" t-esc="dateTime(current.create_date)"/> · <t t-esc="current.phase"/><p t-esc="current.description"/></div>
+    </div>
+  </div>
+</t>
+</templates>

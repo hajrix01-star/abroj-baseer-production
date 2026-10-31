@@ -110,7 +110,7 @@ class AbrojApp(http.Controller):
             avatar_url = '/web/image/%s/%s/image_128' % (image_model, image_record.id) if self._real_image(image_record.image_128) else False
             admin = request.env.ref('base.user_admin', raise_if_not_found=False)
             result['current_user'] = {
-                'id': user.id, 'name': user.name or '', 'avatar_url': avatar_url,
+                'id': user.id, 'name': user.name or '', 'avatar_url': avatar_url, 'tz': user.tz or False,
                 'is_system': user == admin or user.id == 1 or user.login == '__system__' or user.name == 'Administrator',
                 'department': employee.department_id.name or '' if employee else '',
                 'job_title': employee.job_title or '' if employee else '',
@@ -213,18 +213,25 @@ class AbrojApp(http.Controller):
         except (AccessError, UserError, ValidationError):
             return {'error': self._message('تعذر الحفظ. تحقق من صلاحياتك والبيانات المدخلة.', 'Could not save. Check your permissions and input.')}
 
-    @http.route('/abroj/app/attachments', type='jsonrpc', auth='user')
-    def attachments(self, model, record_id):
+    @http.route('/abroj/app/note', type='jsonrpc', auth='user')
+    def text_note(self, model, record_id, body):
         try:
-            if model not in ('project.project', 'project.task'):
-                raise AccessError('عملية غير مسموحة')
-            record = request.env[model].browse(record_id).exists()
+            if model not in ('project.project', 'project.task') or not isinstance(body, str) or not body.strip():
+                raise ValidationError('Invalid note')
+            record = request.env[model].browse(int(record_id)).exists()
             if not record:
-                raise AccessError('السجل غير موجود')
-            record.check_access('read')
-            attachments = request.env['ir.attachment'].search([('res_model', '=', model), ('res_id', '=', record.id), ('type', '=', 'binary')])
-            return [{'id': a.id, 'name': a.name, 'mimetype': a.mimetype or ''} for a in attachments]
-        except (AccessError, UserError):
+                raise AccessError('Record not found')
+            record.check_access('write')
+            message = record.message_post(body=body.strip(), message_type='comment', subtype_xmlid='mail.mt_note')
+            return {'id': message.id}
+        except (AccessError, UserError, ValidationError, ValueError, TypeError):
+            return {'error': self._message('تعذر حفظ الملاحظة.', 'Could not save the note.')}
+
+    @http.route('/abroj/app/attachments', type='jsonrpc', auth='user')
+    def attachments(self, model, record_id, type=None, task_id=None, uploader_id=None, sort='desc'):
+        try:
+            return request.env['abroj.gallery'].get_items(model, record_id, type, task_id, uploader_id, sort)
+        except (AccessError, UserError, ValidationError, ValueError, TypeError):
             return {'error': self._message('تعذر عرض المرفقات. تحقق من صلاحياتك.', 'Could not view attachments. Check your permissions.')}
 
     @http.route('/abroj/app/library', type='jsonrpc', auth='user')

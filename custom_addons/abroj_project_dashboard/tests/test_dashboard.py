@@ -1,3 +1,5 @@
+import base64
+import io
 import json
 import re
 import shutil
@@ -5,6 +7,8 @@ import subprocess
 from pathlib import Path
 from datetime import timedelta
 from urllib.parse import unquote
+
+from PIL import Image
 
 from odoo import Command, fields
 from odoo.exceptions import AccessError, ValidationError
@@ -33,6 +37,20 @@ class AbrojProjectDashboardCase(TransactionCase):
 
     def ids(self, filters):
         return [p['id'] for p in self.env['project.project'].get_abroj_dashboard_data(filters)['projects']]
+
+    def test_shared_gallery_metadata(self):
+        task = self.env['project.task'].create({'name': 'Gallery phase', 'project_id': self.project.id})
+        other = self.env['project.project'].create({'name': 'Other gallery'})
+        image = self.env['ir.attachment'].create({'name': 'image.png', 'mimetype': 'image/png', 'datas': 'eA==', 'res_model': 'project.task', 'res_id': task.id})
+        self.env['ir.attachment'].create({'name': 'other.png', 'mimetype': 'image/png', 'datas': 'eA==', 'res_model': 'project.project', 'res_id': other.id})
+        task.message_post(body='Gallery test note', message_type='comment', subtype_xmlid='mail.mt_note')
+        gallery = self.env['abroj.gallery']
+        rows = self.project.get_abroj_gallery()
+        self.assertTrue(any(row['id'] == image.id and row['phase'] == task.name and row['type'] == 'image' for row in rows))
+        self.assertTrue(any(row['type'] == 'note' and row['description'] == 'Gallery test note' for row in rows))
+        self.assertEqual(rows, gallery.get_items('project.project', self.project.id))
+        self.assertEqual([row['id'] for row in gallery.get_items('project.project', self.project.id, type='image')], [image.id])
+        self.assertEqual(gallery.get_items('project.project', self.project.id, task_id=99999999), [])
 
     def test_project_navigation_includes_closed_and_inactive(self):
         closed = self.env['project.project'].create({'name': 'Closed navigation', 'last_update_status': 'done'})
@@ -366,6 +384,50 @@ class AbrojDashboardHttpCase(HttpCase):
     def rpc(self, path, params):
         response = self.url_open(path, data=json.dumps({'jsonrpc': '2.0', 'method': 'call', 'params': params, 'id': 1}), headers={'Content-Type': 'application/json'})
         return response.json()['result']
+
+    def test_gallery_metadata_filters_and_text_note(self):
+        project = self.env['project.project'].create({'name': 'Gallery project', 'company_id': self.env.company.id})
+        task = self.env['project.task'].create({'name': 'Gallery phase', 'project_id': project.id})
+        png = io.BytesIO()
+        Image.new('RGB', (2000, 1500), (0, 0, 255)).save(png, format='PNG')
+        attachments = self.env['ir.attachment'].create([
+            {'name': 'project.png', 'mimetype': 'image/png', 'datas': base64.b64encode(png.getvalue()), 'res_model': 'project.project', 'res_id': project.id, 'description': 'Project photo'},
+            {'name': 'phase.webm', 'mimetype': 'audio/webm', 'datas': 'eA==', 'res_model': 'project.task', 'res_id': task.id},
+        ])
+        self.authenticate('admin', 'admin')
+        note = self.rpc('/abroj/app/note', {'model': 'project.task', 'record_id': task.id, 'body': 'Phase progress'})
+        self.assertIn('id', note)
+        args = {'model': 'project.project', 'record_id': project.id}
+        rows = self.rpc('/abroj/app/attachments', args)
+        image = next(x for x in rows if x['type'] == 'image' and x['id'] == attachments[0].id)
+        audio = next(x for x in rows if x['type'] == 'audio' and x['id'] == attachments[1].id)
+        text = next(x for x in rows if x['type'] == 'note' and x['id'] == note['id'])
+        self.assertTrue(image['create_uid'])
+        self.assertRegex(image['create_date'], r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$')
+        self.assertRegex(text['create_date'], r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$')
+        thumbnail = self.url_open('/web/image/%s/320x320' % attachments[0].id)
+        self.assertEqual(thumbnail.status_code, 200)
+        with Image.open(io.BytesIO(thumbnail.content)) as preview:
+            self.assertLessEqual(max(preview.size), 320)
+            self.assertEqual(preview.convert('RGB').getpixel((0, 0)), (0, 0, 255))
+        self.assertEqual(image['description'], 'Project photo')
+        self.assertIsNone(image['phase'])
+        self.assertEqual(audio['phase'], 'Gallery phase')
+        self.assertEqual(text['description'], 'Phase progress')
+        self.assertTrue(all(x['type'] == 'audio' for x in self.rpc('/abroj/app/attachments', dict(args, type='audio'))))
+        self.assertTrue(all(x['res_model'] == 'project.task' and x['res_id'] == task.id for x in self.rpc('/abroj/app/attachments', dict(args, task_id=task.id))))
+        self.assertTrue(all(x['uploader_id'] == image['uploader_id'] for x in self.rpc('/abroj/app/attachments', dict(args, uploader_id=image['uploader_id']))))
+        self.assertEqual(self.rpc('/abroj/app/attachments', dict(args, uploader_id=99999999)), [])
+        asc = self.rpc('/abroj/app/attachments', dict(args, sort='asc'))
+        self.assertEqual([(x['type'], x['id']) for x in asc], list(reversed([(x['type'], x['id']) for x in rows])))
+
+    def test_gallery_private_project_access(self):
+        project = self.env['project.project'].create({'name': 'Private gallery', 'company_id': self.env.company.id, 'privacy_visibility': 'followers'})
+        self.env['ir.attachment'].create({'name': 'secret.jpg', 'datas': 'eA==', 'res_model': 'project.project', 'res_id': project.id})
+        self.env['res.users'].create({'name': 'Gallery outsider', 'login': 'gallery_outsider', 'password': 'gallery_outsider', 'group_ids': [Command.set([self.env.ref('base.group_user').id, self.env.ref('project.group_project_user').id])]})
+        self.authenticate('gallery_outsider', 'gallery_outsider')
+        self.assertIn('error', self.rpc('/abroj/app/attachments', {'model': 'project.project', 'record_id': project.id}))
+        self.assertIn('error', self.rpc('/abroj/app/note', {'model': 'project.project', 'record_id': project.id, 'body': 'Denied'}))
 
     def test_account_avatar_and_system_identity(self):
         import base64

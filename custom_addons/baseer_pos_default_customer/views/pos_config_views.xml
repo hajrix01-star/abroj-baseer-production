@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="pos_config_view_form" model="ir.ui.view">
+        <field name="name">pos.config.form.baseer.default.customer</field>
+        <field name="model">pos.config</field>
+        <field name="inherit_id" ref="point_of_sale.pos_config_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='configuration']/div" position="inside">
+                <setting string="Default customer" help="Select this visible customer automatically on each new POS order. The cashier can change it before payment.">
+                    <field name="baseer_default_customer_id" readonly="has_active_session" domain="[('company_id', 'in', [False, company_id])]"/>
+                </setting>
+            </xpath>
+        </field>
+    </record>
+</odoo>

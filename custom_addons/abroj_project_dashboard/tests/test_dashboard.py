@@ -580,7 +580,7 @@ class AbrojDashboardHttpCase(HttpCase):
             self.assertTrue(asset.endswith('?v=' + version), asset)
         for icon in self.url_open('/abroj/app/manifest.webmanifest').json()['icons']:
             self.assertTrue(icon['src'].endswith('?v=' + version))
-        self.assertIn("'abroj-v50-' + VERSION", worker)
+        self.assertIn("'abroj-v51-' + VERSION", worker)
         self.assertIn("cache: 'reload'", worker)
         self.assertIn("url.searchParams.get('v') !== VERSION", worker)
         self.assertNotIn('static/pwa/index.html', worker)
@@ -832,6 +832,7 @@ class AbrojDashboardHttpCase(HttpCase):
         Party = self.env['abroj.contracting.party']
         client = Party.create({'name': 'Document client', 'party_type': 'client'})
         project = self.env['project.project'].create({'name': 'Documents HTTP', 'company_id': self.env.company.id, 'abroj_client_party_id': client.id})
+        unrelated_tag = self.env['res.partner.category'].create({'name': 'Contact-only tag'})
         self.authenticate('admin', 'admin')
         partner_count = self.env['res.partner'].search_count([])
         contracting_tag = self.env.ref('abroj_contracting.party_tag_contracting')
@@ -846,6 +847,7 @@ class AbrojDashboardHttpCase(HttpCase):
         self.assertIn({'id': created['id'], 'name': 'Manual subcontractor', 'type': 'subcontractor', 'tags': ['مقاولات']}, listed)
         self.assertIn({'id': client.id, 'name': 'Document client', 'type': 'client', 'tags': ['عملاء']}, listed)
         self.assertIn({'id': contracting_tag.id, 'name': 'مقاولات'}, listing['party_tags'])
+        self.assertNotIn(unrelated_tag.id, [t['id'] for t in listing['party_tags']], 'PWA must not list unrelated contact tags')
         sub_party = created['id']
         def save(kind, values):
             result = self.rpc('/abroj/app/document/save', {'project_id': project.id, 'kind': kind, 'values': values})

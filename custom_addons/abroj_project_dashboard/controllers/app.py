@@ -372,8 +372,9 @@ class AbrojApp(http.Controller):
         return [{'id': p.id, 'name': p.name, 'type': p.party_type, 'tags': p.category_ids.mapped('name')} for p in Party.search(domain, limit=1000)]
 
     def _party_tags(self):
+        # Only contract-party tags (seeded 4 + tags used on parties), not every contact tag.
         Tag = request.env['res.partner.category']
-        return [{'id': t.id, 'name': t.name} for t in Tag.search([], limit=200)] if Tag.has_access('read') else []
+        return [{'id': t.id, 'name': t.name} for t in Tag.search([('abroj_party_tag', '=', True)], limit=200)] if Tag.has_access('read') else []
 
     @http.route('/abroj/app/party/create', type='jsonrpc', auth='user')
     def party_create(self, project_id, name='', party_type='subcontractor', phone='', vat='', notes='', category_ids=None):
@@ -400,7 +401,7 @@ class AbrojApp(http.Controller):
                     if category_ids:
                         if not isinstance(category_ids, list) or not all(isinstance(i, int) for i in category_ids):
                             raise ValueError('Invalid tags')
-                        vals['category_ids'] = [(6, 0, request.env['res.partner.category'].browse(category_ids).exists().ids)]
+                        vals['category_ids'] = [(6, 0, request.env['res.partner.category'].search([('id', 'in', category_ids), ('abroj_party_tag', '=', True)]).ids)]
                     party = Party.create(vals)
             return {'id': party.id, 'name': party.name, 'type': party.party_type, 'tags': party.category_ids.mapped('name')}
         except (AccessError, UserError, ValidationError, ValueError, TypeError):

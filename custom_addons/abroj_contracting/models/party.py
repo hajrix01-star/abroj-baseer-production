@@ -19,7 +19,8 @@ class ContractParty(models.Model):
     company_id = fields.Many2one('res.company', string='الشركة', required=True, default=lambda self: self.env.company)
     active = fields.Boolean('نشط', default=True)
     # Reuses contact tags only; parties never link to res.partner records.
-    category_ids = fields.Many2many('res.partner.category', 'abroj_contracting_party_category_rel', 'party_id', 'category_id', string='الوسوم')
+    category_ids = fields.Many2many('res.partner.category', 'abroj_contracting_party_category_rel', 'party_id', 'category_id', string='الوسوم',
+                                    domain=[('abroj_party_tag', '=', True)])
 
     _TYPE_TAGS = {'client': 'abroj_contracting.party_tag_clients', 'subcontractor': 'abroj_contracting.party_tag_subcontractors',
                   'supplier': 'abroj_contracting.party_tag_suppliers'}
@@ -64,3 +65,38 @@ class ContractParty(models.Model):
         if existing:
             return existing.id, existing.display_name
         return super().name_create(name)
+
+
+PARTY_TAG_XMLIDS = ('abroj_contracting.party_tag_subcontractors', 'abroj_contracting.party_tag_clients',
+                    'abroj_contracting.party_tag_suppliers', 'abroj_contracting.party_tag_contracting')
+
+
+class PartnerCategory(models.Model):
+    """Flags the contact tags relevant to contract parties (not stored)."""
+    _inherit = 'res.partner.category'
+
+    abroj_party_tag = fields.Boolean('وسم أطراف العقود', compute='_compute_abroj_party_tag', search='_search_abroj_party_tag')
+
+    @api.model
+    def _abroj_party_tag_ids(self):
+        """The 4 seeded party tags plus any tag already used on a contract party."""
+        ids = set()
+        for xid in PARTY_TAG_XMLIDS:
+            tag = self.env.ref(xid, raise_if_not_found=False)
+            if tag:
+                ids.add(tag.id)
+        self.env['abroj.contracting.party'].flush_model(['category_ids'])
+        self.env.cr.execute('SELECT DISTINCT category_id FROM abroj_contracting_party_category_rel')
+        ids.update(row[0] for row in self.env.cr.fetchall())
+        return list(ids)
+
+    def _compute_abroj_party_tag(self):
+        allowed = set(self._abroj_party_tag_ids())
+        for tag in self:
+            tag.abroj_party_tag = tag.id in allowed
+
+    def _search_abroj_party_tag(self, operator, value):
+        if operator not in ('=', '!=') or not isinstance(value, bool):
+            return NotImplemented
+        positive = (operator == '=') == value
+        return [('id', 'in' if positive else 'not in', self._abroj_party_tag_ids())]

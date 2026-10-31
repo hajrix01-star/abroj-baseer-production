@@ -443,6 +443,25 @@ class AbrojContractingCase(TransactionCase):
             self.assertEqual(form.category_ids[:], subs)
         self.assertEqual(self.env['res.partner'].search_count([]), partners)
 
+    def test_party_tag_domain_only_relevant_tags(self):
+        Tag, Party = self.env['res.partner.category'], self.env['abroj.contracting.party']
+        seeded = Tag.browse([self.env.ref(x).id for x in ('abroj_contracting.party_tag_subcontractors', 'abroj_contracting.party_tag_clients',
+                                                          'abroj_contracting.party_tag_suppliers', 'abroj_contracting.party_tag_contracting')])
+        unrelated, used = Tag.create({'name': 'وسم جهات اتصال فقط'}), Tag.create({'name': 'وسم طرف مستخدم'})
+        allowed = Tag.search([('abroj_party_tag', '=', True)])
+        self.assertLessEqual(seeded, allowed)
+        self.assertNotIn(unrelated, allowed)
+        self.assertNotIn(used, allowed)
+        Party.create({'name': 'طرف بوسم مخصص', 'party_type': 'client', 'category_ids': [Command.set(used.ids)]})
+        allowed = Tag.search([('abroj_party_tag', '=', True)])
+        self.assertIn(used, allowed)
+        self.assertNotIn(unrelated, allowed)
+        self.assertIn(unrelated, Tag.search([('abroj_party_tag', '!=', True)]))
+        self.assertEqual(Party._fields['category_ids'].domain, [('abroj_party_tag', '=', True)])
+        self.assertTrue(seeded[0].abroj_party_tag)
+        self.assertFalse(unrelated.abroj_party_tag)
+        self.assertTrue(unrelated.exists(), 'existing contact tags must not be deleted')
+
     def test_cost_supplier_party(self):
         Party = self.env['abroj.contracting.party']
         suppliers = self.env.ref('abroj_contracting.party_tag_suppliers')

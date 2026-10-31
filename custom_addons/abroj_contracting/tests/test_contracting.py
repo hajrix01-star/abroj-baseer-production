@@ -532,6 +532,33 @@ class AbrojContractingCase(TransactionCase):
                 extracted = (getattr(page, 'extract_text', None) or page.extractText)() or ''
                 self.assertIn('544-TEST', ' '.join(extracted.split()))
 
+    def _check_agreement_names_print_once(self):
+        company = self.project.company_id
+        company.write({'name': 'أبراج المقاولات | Abroj Contracting', 'contracting_name_ar': False, 'contracting_name_en': False})
+        self.assertEqual(company.contract_company_name('ar'), 'أبراج المقاولات')
+        self.assertEqual(company.contract_company_name('en'), 'Abroj Contracting')
+        clause = self.env['abroj.contract.clause.line'].search([('body_en', 'ilike', '{company}'), ('company_id', '=', company.id)], limit=1)
+        if clause:
+            self.assertIn('(Abroj Contracting)', clause.numbered_body('en', 1))
+            self.assertNotIn('|', clause.numbered_body('ar', 1))
+        arabic_only = self.env['res.partner'].create({'name': 'عميل عربي فقط'})
+        english_only = self.env['res.partner'].create({'name': 'English Only Client'})
+        piped = self.env['res.partner'].create({'name': 'عميل | Client Co'})
+        self.assertEqual(company.contract_report_name(arabic_only, 'ar'), 'عميل عربي فقط')
+        self.assertEqual(company.contract_report_name(arabic_only, 'en'), '')
+        self.assertEqual(company.contract_report_name(english_only, 'ar'), 'English Only Client')
+        self.assertEqual(company.contract_report_name(english_only, 'en'), '')
+        self.assertEqual(company.contract_report_name(piped, 'en'), 'Client Co')
+        self.project.write({'partner_id': arabic_only.id, 'contracting_start': False})
+        self.project.abroj_client_party_id = False
+        html, _ = self.env['ir.actions.report']._render_qweb_html('abroj_contracting.agreement', self.project.ids)
+        text = html.decode()
+        self.assertEqual(text.count('عميل عربي فقط'), 1)
+        self.assertEqual(text.count('مشروع اختبار'), 1)
+        self.assertIn('—', text)
+        if not self.project.duration_days:
+            self.assertNotIn('Duration', text)
+
     def test_report_header_company_contacts(self):
         from lxml import html
         self.project.partner_id = self.partner
@@ -578,6 +605,7 @@ class AbrojContractingCase(TransactionCase):
             self.assertFalse(html.fromstring(rendered).xpath('//div[@class="memo"]'))
 
     def test_report_column_languages(self):
+        self._check_agreement_names_print_once()
         from lxml import html
         import re
         self.project.write({

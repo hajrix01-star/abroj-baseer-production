@@ -20,7 +20,7 @@ def report_text(record, field, language):
         return not (arabic if language == 'en' else english)
     if matches(value):
         return value
-    parts = re.split(r'[\n/]+', value)
+    parts = re.split(r'[\n/|]+', value)
     return '\n'.join(part.strip() for part in parts if part.strip() and matches(part))
 
 
@@ -229,5 +229,22 @@ class CompanyReportLogo(models.Model):
             return 'data:image/png;base64,' + base64.b64encode(logo.read()).decode()
 
     def contract_report_name(self, record, language):
-        """Split authored bilingual names while preserving single-language names."""
-        return report_text(record, 'name', language) or record.name
+        """Split authored bilingual names while preserving single-language names.
+
+        Only the Arabic line falls back to the raw name; the English line is
+        empty when it would merely repeat the Arabic line.
+        """
+        arabic = (report_text(record, 'name', 'ar') or record.name or '').strip()
+        if language == 'ar':
+            return arabic
+        english = (report_text(record, 'name', 'en') or '').strip()
+        return english if english and english != arabic else ''
+
+    def contract_company_name(self, language):
+        """Company name for contract headers, split like other bilingual names."""
+        self.ensure_one()
+        arabic = (self.contracting_name_ar or report_text(self, 'name', 'ar') or self.name or '').strip()
+        if language == 'ar':
+            return arabic
+        english = (self.contracting_name_en or report_text(self, 'name', 'en') or '').strip()
+        return english if english and english != arabic else ''

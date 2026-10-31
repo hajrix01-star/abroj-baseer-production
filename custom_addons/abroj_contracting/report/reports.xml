@@ -35,8 +35,8 @@
     <t t-set="company" t-value="o.company_id"/>
     <div t-attf-class="header o_company_#{company.id}_layout" style="font-size:10.667px;line-height:1.35;color:#d9c39a;background:#003A71;border-bottom:3px solid #B8955A;height:34mm;position:relative;box-sizing:border-box;padding:8px 16mm;">
       <style t-out="company.contract_font_css()"/>
-<div style="position:absolute;left:16mm;top:10.6mm;"><img t-att-src="company.contract_header_logo()" style="width:37.65mm;height:auto;max-width:none;display:block;"/></div><div dir="rtl" style="position:absolute;right:16mm;top:7mm;text-align:right;line-height:1.3;"><strong t-out="company.contracting_name_ar or company.name" style="font-size:16pt;color:white;display:block;"/>
-            <span dir="ltr" t-out="company.contracting_name_en or company.name" style="font-size:11pt;font-weight:400;color:#c4d2e1;display:block;text-align:right;"/>
+<div style="position:absolute;left:16mm;top:10.6mm;"><img t-att-src="company.contract_header_logo()" style="width:37.65mm;height:auto;max-width:none;display:block;"/></div><div dir="rtl" style="position:absolute;right:16mm;top:7mm;text-align:right;line-height:1.3;"><strong t-out="company.contract_company_name('ar')" style="font-size:16pt;color:white;display:block;"/>
+            <span dir="ltr" t-if="company.contract_company_name('en')" t-out="company.contract_company_name('en')" style="font-size:11pt;font-weight:400;color:#c4d2e1;display:block;text-align:right;"/>
             <small style="font-size:7.5pt;color:#d9c39a;display:block;margin-top:1mm;">س.ت <span dir="ltr" style="display:inline-block;" t-field="company.company_registry"/> · الرقم الضريبي <span dir="ltr" style="display:inline-block;" t-field="company.vat"/></small>
             <small t-if="company.website or company.email" class="header-contact" dir="ltr" style="font-family:Cairo;font-size:7pt;color:#d9c39a;display:block;text-align:right;line-height:1.3;margin-top:0.5mm;white-space:nowrap;">
               <span t-if="company.website" class="header-website" t-out="company.website"/>
@@ -133,13 +133,15 @@ h4 {font-size:17px;color:#003A71;margin:12px 0 6px;}
                 </td>
                 <td>
                   <small>التاريخ · Date</small>
-                  <b t-out="o.contracting_start"/>
+                  <b t-out="o.contracting_start or '—'"/>
                 </td>
                 <td>
+                  <t t-if="o.duration_days">
                   <small>المدة · Duration</small>
                   <span dir="rtl" style="display:inline-block;">
                     <b t-out="o.duration_days"/> يوماً</span>
                   <span dir="ltr" style="display:inline-block;"> · <b t-out="o.duration_days"/> days</span>
+                  </t>
                 </td>
               </tr>
             </table>
@@ -147,24 +149,24 @@ h4 {font-size:17px;color:#003A71;margin:12px 0 6px;}
               <tr>
                 <td>
                   <h4>الطرف الأول · First Party</h4>
-                  <p dir="rtl" t-out="o.company_id.contracting_name_ar or o.company_id.name"/>
-                  <p t-out="o.company_id.contracting_name_en or o.company_id.name"/>
+                  <p dir="rtl" t-out="o.company_id.contract_company_name('ar')"/>
+                  <p dir="ltr" t-if="o.company_id.contract_company_name('en')" t-out="o.company_id.contract_company_name('en')"/>
                   <small>VAT <span t-out="o.company_id.vat"/>
                   </small>
                 </td>
                 <td>
                   <h4>الطرف الثاني · Second Party</h4>
                   <p dir="rtl" t-out="o.company_id.contract_report_name((o.abroj_client_party_id or o.partner_id), 'ar')"/>
-                  <p dir="ltr" t-out="o.company_id.contract_report_name((o.abroj_client_party_id or o.partner_id), 'en')"/>
+                  <p dir="ltr" t-if="o.company_id.contract_report_name((o.abroj_client_party_id or o.partner_id), 'en')" t-out="o.company_id.contract_report_name((o.abroj_client_party_id or o.partner_id), 'en')"/>
                   <small>VAT <span t-out="(o.abroj_client_party_id or o.partner_id).vat"/>
                   </small>
                 </td>
                 <td>
                   <h4>المشروع · Project</h4>
                   <p dir="rtl" t-out="o.company_id.contract_report_name(o, 'ar')"/>
-                  <p dir="ltr" t-out="o.company_id.contract_report_name(o, 'en')"/>
+                  <p dir="ltr" t-if="o.company_id.contract_report_name(o, 'en')" t-out="o.company_id.contract_report_name(o, 'en')"/>
                   <small>
-                    <span t-out="o.contracting_start"/> - <span t-out="o.contracting_end"/>
+                    <span t-out="o.contracting_start or '—'"/> - <span t-out="o.contracting_end"/>
                   </small>
                 </td>
               </tr>
@@ -309,13 +311,15 @@ h4 {font-size:17px;color:#003A71;margin:12px 0 6px;}
                 </td>
                 <td>
                   <small>التاريخ · Date</small>
-                  <b t-out="o.start_date"/>
+                  <b t-out="o.start_date or '—'"/>
                 </td>
                 <td>
+                  <t t-if="o.duration_days">
                   <small>المدة · Duration</small>
                   <span dir="rtl" style="display:inline-block;">
                     <b t-out="o.duration_days"/> يوماً</span>
                   <span dir="ltr" style="display:inline-block;"> · <b t-out="o.duration_days"/> days</span>
+                  </t>
                 </td>
               </tr>
             </table>
@@ -323,24 +327,24 @@ h4 {font-size:17px;color:#003A71;margin:12px 0 6px;}
               <tr>
                 <td>
                   <h4>الطرف الأول · First Party</h4>
-                  <p dir="rtl" t-out="o.company_id.contracting_name_ar or o.company_id.name"/>
-                  <p t-out="o.company_id.contracting_name_en or o.company_id.name"/>
+                  <p dir="rtl" t-out="o.company_id.contract_company_name('ar')"/>
+                  <p dir="ltr" t-if="o.company_id.contract_company_name('en')" t-out="o.company_id.contract_company_name('en')"/>
                   <small>VAT <span t-out="o.company_id.vat"/>
                   </small>
                 </td>
                 <td>
                   <h4>الطرف الثاني · Second Party</h4>
                   <p dir="rtl" t-out="o.company_id.contract_report_name((o.party_id or o.partner_id), 'ar')"/>
-                  <p dir="ltr" t-out="o.company_id.contract_report_name((o.party_id or o.partner_id), 'en')"/>
+                  <p dir="ltr" t-if="o.company_id.contract_report_name((o.party_id or o.partner_id), 'en')" t-out="o.company_id.contract_report_name((o.party_id or o.partner_id), 'en')"/>
                   <small>VAT <span t-out="(o.party_id or o.partner_id).vat"/>
                   </small>
                 </td>
                 <td>
                   <h4>المشروع · Project</h4>
                   <p dir="rtl" t-out="o.company_id.contract_report_name(o.project_id, 'ar')"/>
-                  <p dir="ltr" t-out="o.company_id.contract_report_name(o.project_id, 'en')"/>
+                  <p dir="ltr" t-if="o.company_id.contract_report_name(o.project_id, 'en')" t-out="o.company_id.contract_report_name(o.project_id, 'en')"/>
                   <small>
-                    <span t-out="o.start_date"/> - <span t-out="o.end_date"/>
+                    <span t-out="o.start_date or '—'"/> - <span t-out="o.end_date"/>
                   </small>
                 </td>
               </tr>
@@ -519,8 +523,8 @@ h4 {font-size:17px;color:#003A71;margin:12px 0 6px;}
             <img t-att-src="company.contract_header_logo()" style="width:28.24mm;height:auto;max-width:none;display:block;"/>
           </td>
           <td dir="rtl" style="width:70%;text-align:right;vertical-align:middle;padding:0 10mm 0 0;line-height:1.3;">
-            <strong t-out="company.contracting_name_ar or company.name" style="font-size:13pt;color:white;display:block;"/>
-            <span dir="ltr" t-out="company.contracting_name_en or company.name" style="font-size:9.5pt;font-weight:400;color:#c4d2e1;display:block;text-align:right;"/>
+            <strong t-out="company.contract_company_name('ar')" style="font-size:13pt;color:white;display:block;"/>
+            <span dir="ltr" t-if="company.contract_company_name('en')" t-out="company.contract_company_name('en')" style="font-size:9.5pt;font-weight:400;color:#c4d2e1;display:block;text-align:right;"/>
             <small style="font-size:7pt;color:#d9c39a;display:block;margin-top:1mm;">س.ت <span dir="ltr" style="display:inline-block;" t-field="company.company_registry"/> · الرقم الضريبي <span dir="ltr" style="display:inline-block;" t-field="company.vat"/></small>
             <small t-if="company.website or company.email" class="header-contact" dir="ltr" style="font-family:Cairo;font-size:7pt;color:#d9c39a;display:block;text-align:right;line-height:1.3;margin-top:0.5mm;white-space:nowrap;">
               <span t-if="company.website" class="header-website" t-out="company.website"/>

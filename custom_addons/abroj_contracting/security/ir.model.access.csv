@@ -26,3 +26,5 @@ access_extraction_analytic_account,Extraction agent analytic_account,analytic.mo
 access_extraction_attachment,Extraction agent attachment,base.model_ir_attachment,group_extraction_agent,1,0,1,0
 access_extraction_inbox,Extraction agent inbox,model_abroj_contracting_inbox,group_extraction_agent,1,1,0,0
 access_extraction_currency,Extraction agent currency,base.model_res_currency,group_extraction_agent,1,0,0,0
+access_party_user,أطراف العقود,model_abroj_contracting_party,base.group_user,1,1,1,0
+access_party_manager,أطراف العقود,model_abroj_contracting_party,project.group_project_manager,1,1,1,1

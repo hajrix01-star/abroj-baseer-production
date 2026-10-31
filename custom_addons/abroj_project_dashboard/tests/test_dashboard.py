@@ -385,8 +385,12 @@ class AbrojProjectDashboardCase(TransactionCase):
         self.assertNotIn(self.project.id, self.ids({'manager': self.engineer.id}))
 
     def test_filter_client(self):
-        self.assertIn(self.project.id, self.ids({'client': self.client.id}))
-        self.assertNotIn(self.project.id, self.ids({'client': self.engineer.partner_id.id}))
+        Party = self.env['abroj.contracting.party']
+        party = Party.create({'name': 'Filter client party', 'party_type': 'client'})
+        other = Party.create({'name': 'Other client party', 'party_type': 'client'})
+        self.project.abroj_client_party_id = party
+        self.assertIn(self.project.id, self.ids({'client': party.id}))
+        self.assertNotIn(self.project.id, self.ids({'client': other.id}))
 
     def test_filter_search(self):
         self.assertIn(self.project.id, self.ids({'search': 'fixture'}))
@@ -495,12 +499,13 @@ class AbrojDashboardHttpCase(HttpCase):
 
     def test_create_project_fields(self):
         self.authenticate('admin', 'admin')
-        partner = self.env['res.partner'].create({'name': 'Creation customer'})
+        partner = self.env['abroj.contracting.party'].create({'name': 'Creation customer', 'party_type': 'client'})
         result = self.rpc('/abroj/app/project/create', {'name': ' New project ', 'customer_id': partner.id,
             'location': 'Riyadh', 'budget': 1250.5, 'start': '2026-01-01', 'end': '2026-02-01',
             'manager_id': self.env.ref('base.user_admin').id, 'project_type': 'commercial'})
         project = self.env['project.project'].browse(result['id'])
-        self.assertEqual((project.name, project.partner_id.id, project.abroj_location, project.abroj_budget, project.abroj_type),
+        self.assertFalse(project.partner_id)
+        self.assertEqual((project.name, project.abroj_client_party_id.id, project.abroj_location, project.abroj_budget, project.abroj_type),
                          ('New project', partner.id, 'Riyadh', 1250.5, 'commercial'))
         self.assertEqual(str(project.date_start), '2026-01-01')
         self.assertEqual(str(project.date), '2026-02-01')
@@ -509,7 +514,7 @@ class AbrojDashboardHttpCase(HttpCase):
             'group_ids': [Command.set([self.env.ref('base.group_user').id, self.env.ref('project.group_project_manager').id])]})
         self.authenticate('create_owner', 'create_owner')
         result = self.rpc('/abroj/app/project/create', {'name': 'Customer creation', 'customer_name': 'New customer'})
-        self.assertEqual(self.env['project.project'].browse(result['id']).partner_id.name, 'New customer')
+        self.assertEqual(self.env['project.project'].browse(result['id']).abroj_client_party_id.name, 'New customer')
 
     def test_create_project_validation(self):
         self.authenticate('admin', 'admin')
@@ -575,7 +580,7 @@ class AbrojDashboardHttpCase(HttpCase):
             self.assertTrue(asset.endswith('?v=' + version), asset)
         for icon in self.url_open('/abroj/app/manifest.webmanifest').json()['icons']:
             self.assertTrue(icon['src'].endswith('?v=' + version))
-        self.assertIn("'abroj-v48-' + VERSION", worker)
+        self.assertIn("'abroj-v49-' + VERSION", worker)
         self.assertIn("cache: 'reload'", worker)
         self.assertIn("url.searchParams.get('v') !== VERSION", worker)
         self.assertNotIn('static/pwa/index.html', worker)
@@ -824,15 +829,34 @@ class AbrojDashboardHttpCase(HttpCase):
 
     def test_documents_create_and_workflow(self):
         partner = self.env['res.partner'].create({'name': 'Document partner'})
-        project = self.env['project.project'].create({'name': 'Documents HTTP', 'company_id': self.env.company.id, 'partner_id': partner.id})
+        Party = self.env['abroj.contracting.party']
+        client = Party.create({'name': 'Document client', 'party_type': 'client'})
+        project = self.env['project.project'].create({'name': 'Documents HTTP', 'company_id': self.env.company.id, 'abroj_client_party_id': client.id})
         self.authenticate('admin', 'admin')
+        partner_count = self.env['res.partner'].search_count([])
+        contracting_tag = self.env.ref('abroj_contracting.party_tag_contracting')
+        created = self.rpc('/abroj/app/party/create', {'project_id': project.id, 'name': 'Manual subcontractor', 'party_type': 'subcontractor', 'phone': '0500000000', 'category_ids': [contracting_tag.id]})
+        self.assertEqual(created['type'], 'subcontractor')
+        self.assertEqual(created['tags'], ['مقاولات'])
+        again = self.rpc('/abroj/app/party/create', {'project_id': project.id, 'name': 'Manual subcontractor', 'party_type': 'subcontractor'})
+        self.assertEqual(again['id'], created['id'])
+        self.assertEqual(self.env['res.partner'].search_count([]), partner_count, 'manual parties must not create contacts')
+        listing = self.rpc('/abroj/app/documents', {'project_id': project.id})
+        listed = listing['parties']
+        self.assertIn({'id': created['id'], 'name': 'Manual subcontractor', 'type': 'subcontractor', 'tags': ['مقاولات']}, listed)
+        self.assertIn({'id': client.id, 'name': 'Document client', 'type': 'client', 'tags': ['عملاء']}, listed)
+        self.assertIn({'id': contracting_tag.id, 'name': 'مقاولات'}, listing['party_tags'])
+        sub_party = created['id']
         def save(kind, values):
             result = self.rpc('/abroj/app/document/save', {'project_id': project.id, 'kind': kind, 'values': values})
             self.assertIn('id', result, result)
             return result['id']
-        contract = save('contract', {'partner_id': partner.id, 'agreed_amount': 100})
+        self.assertIn('error', self.rpc('/abroj/app/document/save', {'project_id': project.id, 'kind': 'contract', 'values': {'partner_id': partner.id, 'agreed_amount': 100}}))
+        contract = save('contract', {'party_id': sub_party, 'agreed_amount': 100})
         for kind in ('payment', 'receipt'):
-            voucher = save(kind, {'partner_id': partner.id, 'amount': 10, **({'subcontractor_id': contract} if kind == 'payment' else {})})
+            # Party is filled from the subcontract (payment) or the project client (receipt).
+            voucher = save(kind, {'amount': 10, **({'subcontractor_id': contract} if kind == 'payment' else {})})
+            self.assertEqual(self.env['abroj.contracting.voucher'].browse(voucher).party_id.id, sub_party if kind == 'payment' else client.id)
             docs = self.rpc('/abroj/app/documents', {'project_id': project.id})
             self.assertEqual(docs['records'][kind][0]['name'], '')
             result = self.rpc('/abroj/app/document/action', {'project_id': project.id, 'kind': kind, 'record_id': voucher, 'action': 'issue'})

@@ -6,6 +6,8 @@ from .guards import check_agent
 class Project(models.Model):
     _inherit = 'project.project'
 
+    abroj_client_party_id = fields.Many2one('abroj.contracting.party', string='العميل / المالك', check_company=True, ondelete='restrict',
+        domain="[('party_type', '=', 'client')]", help='طرف العقد من قائمة أطراف العقود؛ مستقل عن جهات الاتصال.')
     contracting_goal = fields.Text('الهدف', help='حدد الهدف لهذا السجل وفق مستند المشروع الأصلي.')
     contract_value = fields.Monetary('قيمة العقد', help='قيمة عقد العميل؛ تستخدم لحساب ربح المشروع والمتبقي للتحصيل.')
     contracting_start = fields.Date('تاريخ الاتفاقية / البدء', help='حدد تاريخ الاتفاقية / البدء لهذا السجل وفق مستند المشروع الأصلي.')
@@ -131,9 +133,22 @@ class Subcontractor(models.Model):
     _name = 'abroj.contracting.subcontractor'
     _inherit = 'abroj.contracting.document'
     _description = 'مقاول باطن'
-    _rec_name = 'partner_id'
+    party_id = fields.Many2one('abroj.contracting.party', string='المقاول', check_company=True, ondelete='restrict', index=True,
+        domain="[('party_type', '=', 'subcontractor')]", help='المقاول من قائمة أطراف العقود؛ مستقل عن جهات الاتصال.')
+    partner_id = fields.Many2one('res.partner', string='جهة الاتصال (قديم)', check_company=True, help='حقل قديم للسجلات السابقة؛ استخدم المقاول من أطراف العقود.')
 
-    partner_id = fields.Many2one('res.partner', string='المقاول', required=True, check_company=True, help='حدد المقاول لهذا السجل وفق مستند المشروع الأصلي.')
+    @api.depends('party_id', 'partner_id')
+    def _compute_display_name(self):
+        for r in self:
+            r.display_name = (r.party_id or r.partner_id).display_name or ''
+
+    @api.constrains('party_id', 'partner_id', 'project_id')
+    def _check_party(self):
+        for r in self:
+            if not r.party_id and not r.partner_id:
+                raise ValidationError('حدد المقاول من أطراف العقود.')
+            if r.party_id and r.party_id.party_type != 'subcontractor':
+                raise ValidationError('المقاول يجب أن يكون طرفاً من نوع مقاول باطن.')
     scope = fields.Text('نطاق العمل', help='حدد نطاق العمل لهذا السجل وفق مستند المشروع الأصلي.')
     contract_type = fields.Selection([('labor', 'بدون مواد'), ('materials', 'شامل المواد'), ('lump', 'مقطوعية'), ('other', 'أخرى')], string='نوع العقد', help='بدون مواد للعمالة فقط وشامل المواد عند دخول المواد في قيمة العقد؛ مقطوعية وأخرى محفوظتان للعقود السابقة.')
     vat_registered = fields.Boolean('المقاول مسجل بالضريبة', help='حدد vat_registered لهذا السجل وفق مستند المشروع الأصلي.')
@@ -180,7 +195,10 @@ class Voucher(models.Model):
 
     name = fields.Char('رقم السند', default='/', readonly=True, copy=False, help='حدد رقم السند لهذا السجل وفق مستند المشروع الأصلي.')
     kind = fields.Selection([('payment', 'سند صرف'), ('receipt', 'سند قبض')], string='نوع السند', required=True, default='payment', help='حدد نوع السند لهذا السجل وفق مستند المشروع الأصلي.')
-    partner_id = fields.Many2one('res.partner', string='الطرف', required=True, check_company=True, help='حدد الطرف لهذا السجل وفق مستند المشروع الأصلي.')
+    party_id = fields.Many2one('abroj.contracting.party', string='الطرف', check_company=True, ondelete='restrict', index=True,
+        domain="[('party_type', '=', 'client' if kind == 'receipt' and not subcontractor_id else 'subcontractor')]",
+        help='الطرف من قائمة أطراف العقود؛ مستقل عن جهات الاتصال.')
+    partner_id = fields.Many2one('res.partner', string='جهة الاتصال (قديم)', check_company=True, help='حقل قديم للسجلات السابقة؛ لا يلزم للسندات الجديدة.')
     subcontractor_id = fields.Many2one('abroj.contracting.subcontractor', string='مقاول الباطن', check_company=True, ondelete='restrict', help='حدد مقاول الباطن لهذا السجل وفق مستند المشروع الأصلي.')
     method = fields.Selection([('cash', 'نقداً'), ('bank', 'تحويل بنكي'), ('other', 'أخرى')], string='طريقة الدفع', default='cash', required=True, help='حدد طريقة الدفع لهذا السجل وفق مستند المشروع الأصلي.')
     memo = fields.Text('البيان', help='حدد البيان لهذا السجل وفق مستند المشروع الأصلي.')
@@ -235,10 +253,13 @@ class Voucher(models.Model):
             raise AccessError('بيانات الإصدار للقراءة فقط.')
         return super().write(vals)
 
-    @api.constrains('subcontractor_id', 'project_id', 'partner_id')
+    @api.constrains('subcontractor_id', 'project_id', 'partner_id', 'party_id')
     def _check_subcontractor(self):
         for r in self:
-            if r.subcontractor_id and (r.subcontractor_id.project_id != r.project_id or r.subcontractor_id.partner_id != r.partner_id):
+            if not r.party_id and not r.partner_id:
+                raise ValidationError('حدد الطرف من أطراف العقود.')
+            sub = r.subcontractor_id
+            if sub and (sub.project_id != r.project_id or sub.party_id != r.party_id or sub.partner_id != r.partner_id):
                 raise ValidationError('المقاول يجب أن يطابق المشروع والطرف.')
 
     def action_issue(self):
@@ -285,7 +306,7 @@ class Voucher(models.Model):
                 raise UserError('لا توجد طريقة دفع في الدفتر.')
             payment = self.env['account.payment'].with_company(r.company_id).create({
                 'payment_type': direction, 'partner_type': 'supplier' if direction == 'outbound' else 'customer',
-                'partner_id': r.partner_id.id, 'amount': r.amount, 'date': r.date,
+                'partner_id': r.partner_id.id or False, 'amount': r.amount, 'date': r.date,
                 'currency_id': r.currency_id.id, 'journal_id': journal.id,
                 'payment_method_line_id': lines[0].id, 'company_id': r.company_id.id,
                 'memo': r.name, 'abroj_voucher_id': r.id,

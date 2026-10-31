@@ -154,9 +154,9 @@ h4 {font-size:17px;color:#003A71;margin:12px 0 6px;}
                 </td>
                 <td>
                   <h4>الطرف الثاني · Second Party</h4>
-                  <p dir="rtl" t-out="o.company_id.contract_report_name(o.partner_id, 'ar')"/>
-                  <p dir="ltr" t-out="o.company_id.contract_report_name(o.partner_id, 'en')"/>
-                  <small>VAT <span t-out="o.partner_id.vat"/>
+                  <p dir="rtl" t-out="o.company_id.contract_report_name((o.abroj_client_party_id or o.partner_id), 'ar')"/>
+                  <p dir="ltr" t-out="o.company_id.contract_report_name((o.abroj_client_party_id or o.partner_id), 'en')"/>
+                  <small>VAT <span t-out="(o.abroj_client_party_id or o.partner_id).vat"/>
                   </small>
                 </td>
                 <td>
@@ -330,9 +330,9 @@ h4 {font-size:17px;color:#003A71;margin:12px 0 6px;}
                 </td>
                 <td>
                   <h4>الطرف الثاني · Second Party</h4>
-                  <p dir="rtl" t-out="o.company_id.contract_report_name(o.partner_id, 'ar')"/>
-                  <p dir="ltr" t-out="o.company_id.contract_report_name(o.partner_id, 'en')"/>
-                  <small>VAT <span t-out="o.partner_id.vat"/>
+                  <p dir="rtl" t-out="o.company_id.contract_report_name((o.party_id or o.partner_id), 'ar')"/>
+                  <p dir="ltr" t-out="o.company_id.contract_report_name((o.party_id or o.partner_id), 'en')"/>
+                  <small>VAT <span t-out="(o.party_id or o.partner_id).vat"/>
                   </small>
                 </td>
                 <td>
@@ -482,7 +482,7 @@ h4 {font-size:17px;color:#003A71;margin:12px 0 6px;}
           <div class="page" dir="rtl">
             <h2>تسوية نهاية المشروع</h2>
             <p t-field="o.project_id.name"/>
-            <p t-field="o.partner_id.name"/>
+            <p t-out="(o.party_id or o.partner_id).name"/>
             <p>قيمة العقد: <span t-field="o.agreed_amount"/>
             </p>
             <p>مواد أبروج — دفعة عن المقاول: <span t-field="o.materials_total"/>
@@ -546,7 +546,7 @@ h4 {font-size:17px;color:#003A71;margin:12px 0 6px;}
             <table class="info">
               <tr>
                 <td class="ar bilingual">الطرف · Party<br/>
-                  <b t-out="o.partner_id.name"/>
+                  <b t-out="(o.party_id or o.partner_id).name"/>
                 </td>
                 <td class="ar bilingual">المشروع · Project<br/>
                   <b t-out="o.project_id.name"/>

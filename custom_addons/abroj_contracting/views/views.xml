@@ -39,7 +39,8 @@
           </div>
           <group>
             <field name="name" string="اسم المشروع"/>
-            <field name="partner_id" string="العميل / المالك"/>
+            <field name="abroj_client_party_id" context="{'default_party_type': 'client', 'default_company_id': company_id}"/>
+            <field name="partner_id" invisible="1"/>
             <field name="company_id"/>
             <field name="currency_id" invisible="1"/>
             <field name="account_id" string="الحساب التحليلي"/>
@@ -70,7 +71,7 @@
                 <div class="col"><div class="card p-3"><strong>المدفوع</strong><field name="total_paid" nolabel="1" readonly="1"/></div></div>
                 <div class="col"><div class="card p-3"><strong>الرصيد</strong><field name="cash_balance" nolabel="1" readonly="1"/></div></div>
               </div>
-              <field name="voucher_ids" context="{'default_project_id': id}"><list><field name="name"/><field name="kind"/><field name="partner_id"/><field name="amount"/><field name="date"/><field name="method"/><field name="abroj_stage"/><field name="abroj_can_accounting_approve" column_invisible="True"/><button name="action_accounting_approve" type="object" string="اعتماد محاسبي" groups="account.group_account_manager,account.group_account_invoice" invisible="not abroj_can_accounting_approve"/></list></field>
+              <field name="voucher_ids" context="{'default_project_id': id}"><list><field name="name"/><field name="kind"/><field name="party_id"/><field name="amount"/><field name="date"/><field name="method"/><field name="abroj_stage"/><field name="abroj_can_accounting_approve" column_invisible="True"/><button name="action_accounting_approve" type="object" string="اعتماد محاسبي" groups="account.group_account_manager,account.group_account_invoice" invisible="not abroj_can_accounting_approve"/></list></field>
             </page>
             <page string="الملاحظات" name="project_notes">
               <field name="project_note_ids" context="{'default_project_id': id}">
@@ -98,7 +99,7 @@
     <field name="arch" type="xml">
       <list string="المشاريع">
         <field name="name" string="المشروع"/>
-        <field name="partner_id" string="العميل"/>
+        <field name="abroj_client_party_id" string="العميل"/>
         <field name="company_id"/>
         <field name="currency_id" column_invisible="True"/>
         <field name="contract_value"/>
@@ -133,7 +134,8 @@
             <field name="analytic_account_id" readonly="1"/>
             <field name="company_id"/>
             <field name="currency_id" invisible="1"/>
-            <field name="partner_id" readonly="state != 'draft'"/>
+            <field name="party_id" required="not partner_id" readonly="state != 'draft'" context="{'default_party_type': 'client' if kind == 'receipt' and not subcontractor_id else 'subcontractor', 'default_company_id': company_id}"/>
+            <field name="partner_id" invisible="1"/>
             <field name="subcontractor_id" domain="[('project_id', '=', project_id)]" readonly="state != 'draft'"/>
             <field name="amount" readonly="state != 'draft'"/>
             <field name="date" readonly="state != 'draft'"/>
@@ -160,7 +162,7 @@
         <field name="project_id"/>
         <field name="company_id"/>
         <field name="currency_id" column_invisible="True"/>
-        <field name="partner_id"/>
+        <field name="party_id"/>
         <field name="subcontractor_id"/>
         <field name="amount"/>
         <field name="date"/>
@@ -172,7 +174,7 @@
   <record id="voucher_search" model="ir.ui.view">
     <field name="name">abroj.contracting.voucher.search</field><field name="model">abroj.contracting.voucher</field>
     <field name="arch" type="xml"><search>
-      <field name="name"/><field name="project_id"/><field name="partner_id"/>
+      <field name="name"/><field name="project_id"/><field name="party_id"/>
       <filter name="payment" string="صرف" domain="[('kind', '=', 'payment')]"/><filter name="receipt" string="قبض" domain="[('kind', '=', 'receipt')]"/><separator/>
       <filter name="draft" string="مسودة" domain="[('abroj_stage', '=', 'draft')]"/><filter name="issued" string="صادر بانتظار الاعتماد المحاسبي" domain="[('abroj_stage', '=', 'issued')]"/><filter name="approved" string="معتمد محاسبيًا" domain="[('abroj_stage', '=', 'approved')]"/><filter name="cancelled" string="ملغي" domain="[('abroj_stage', '=', 'cancelled')]"/>
       <group><filter name="group_kind" string="النوع" context="{'group_by': 'kind'}"/><filter name="group_stage" string="المرحلة" context="{'group_by': 'abroj_stage'}"/><filter name="group_project" string="المشروع" context="{'group_by': 'project_id'}"/></group>
@@ -188,7 +190,8 @@
             <field name="project_id"/>
             <field name="company_id"/>
             <field name="currency_id" invisible="1"/>
-            <field name="partner_id"/>
+            <field name="party_id" required="not partner_id" context="{'default_party_type': 'subcontractor', 'default_company_id': company_id}"/>
+            <field name="partner_id" invisible="1"/>
             <field name="scope"/>
             <field name="contract_type"/><field name="vat_registered"/><field name="retention_percent"/><field name="materials_total"/>
             <field name="payment_terms"/>
@@ -213,7 +216,7 @@
         <field name="project_id"/>
         <field name="company_id"/>
         <field name="currency_id" column_invisible="True"/>
-        <field name="partner_id"/>
+        <field name="party_id"/>
         <field name="contract_type"/><field name="vat_registered"/><field name="retention_percent"/><field name="materials_total"/>
         <field name="duration_days"/>
         <field name="agreed_amount"/>
@@ -375,6 +378,45 @@
     <field name="domain">[('kind','=','receipt')]</field>
     <field name="context">{'default_kind':'receipt'}</field>
   </record>
+  <record id="party_form" model="ir.ui.view">
+    <field name="name">abroj.contracting.party.form</field>
+    <field name="model">abroj.contracting.party</field>
+    <field name="arch" type="xml">
+      <form string="طرف عقد"><sheet><group>
+        <field name="name"/><field name="party_type"/><field name="category_ids" widget="many2many_tags" required="1" options="{'color_field': 'color'}"/><field name="phone"/><field name="vat"/>
+        <field name="company_id" groups="base.group_multi_company"/><field name="active" invisible="1"/><field name="notes"/>
+      </group></sheet></form>
+    </field>
+  </record>
+  <record id="party_list" model="ir.ui.view">
+    <field name="name">abroj.contracting.party.list</field>
+    <field name="model">abroj.contracting.party</field>
+    <field name="arch" type="xml">
+      <list string="أطراف العقود"><field name="name"/><field name="party_type"/><field name="category_ids" widget="many2many_tags" options="{'color_field': 'color'}"/><field name="phone"/><field name="vat"/><field name="company_id" groups="base.group_multi_company"/></list>
+    </field>
+  </record>
+  <record id="party_search" model="ir.ui.view">
+    <field name="name">abroj.contracting.party.search</field>
+    <field name="model">abroj.contracting.party</field>
+    <field name="arch" type="xml">
+      <search><field name="name"/><field name="phone"/><field name="vat"/><field name="category_ids"/>
+        <filter name="client" string="العملاء" domain="[('party_type', '=', 'client')]"/>
+        <filter name="subcontractor" string="مقاولو الباطن" domain="[('party_type', '=', 'subcontractor')]"/>
+        <filter name="archived" string="مؤرشف" domain="[('active', '=', False)]"/>
+        <separator/>
+        <filter name="tag_clients" string="عملاء" domain="[('category_ids.name', '=', 'عملاء')]"/>
+        <filter name="tag_subcontractors" string="مقاولين" domain="[('category_ids.name', '=', 'مقاولين')]"/>
+        <filter name="tag_suppliers" string="موردين" domain="[('category_ids.name', '=', 'موردين')]"/>
+        <filter name="tag_contracting" string="مقاولات" domain="[('category_ids.name', '=', 'مقاولات')]"/>
+        <group><filter name="group_tag" string="الوسم" context="{'group_by': 'category_ids'}"/><filter name="group_type" string="النوع" context="{'group_by': 'party_type'}"/></group>
+      </search>
+    </field>
+  </record>
+  <record id="action_parties" model="ir.actions.act_window">
+    <field name="name">أطراف العقود</field>
+    <field name="res_model">abroj.contracting.party</field>
+    <field name="view_mode">list,form</field>
+  </record>
   <record id="action_subcontractors" model="ir.actions.act_window">
     <field name="name">مقاولو الباطن</field>
     <field name="res_model">abroj.contracting.subcontractor</field>
@@ -408,6 +450,7 @@
   <menuitem id="menu_payments" name="السندات" parent="menu_contracting" action="action_payments" sequence="2"/>
   <menuitem id="menu_receipts" name="سندات القبض" parent="menu_contracting" action="action_receipts"/><record id="menu_receipts" model="ir.ui.menu"><field name="active" eval="False"/></record>
   <menuitem id="menu_subcontractors" name="مقاولو الباطن" parent="menu_contracting" action="action_subcontractors" sequence="4"/>
+  <menuitem id="menu_parties" name="أطراف العقود" parent="menu_contracting" action="action_parties" sequence="4"/>
   <menuitem id="menu_invoices" name="فواتير مقاولي الباطن" parent="menu_contracting" action="action_invoices" sequence="5"/>
   <menuitem id="menu_inbox" name="صندوق الوارد" parent="menu_contracting" action="action_inbox" sequence="6"/>
   <menuitem id="menu_cash" name="التدفق النقدي" parent="menu_contracting" action="action_cash"/><record id="menu_cash" model="ir.ui.menu"><field name="active" eval="False"/></record>

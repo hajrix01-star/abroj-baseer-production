@@ -71,3 +71,8 @@ body.abroj-login-body { background: #f3f5f9; }
     .form-control, .input-group .o_show_password { background: #fff; }
     &__submit.btn.btn-primary { border-bottom: 3px solid #f28c28; }
 }
+
+// Hide signup link, passkey button and "- or -" separator
+.abroj-login {
+    a[href^="/web/signup"], .o_login_auth { display: none !important; }
+}

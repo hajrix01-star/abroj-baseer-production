@@ -3,6 +3,10 @@ const translations = {
   "phaseAdd": {"ar":"إضافة إلى المرحلة", "en":"Add to phase"},
   "voiceNote": {"ar":"ملاحظة صوتية", "en":"Voice note"},
   "textNote": {"ar":"ملاحظة نصية", "en":"Text note"},
+  "contractProfit": {"ar":"ربح العقد", "en":"Contract profit"},
+  "contractRemaining": {"ar":"المتبقي من العقد", "en":"Remaining contract value"},
+  "received": {"ar":"المقبوض", "en":"Received"},
+  "paid": {"ar":"المدفوع", "en":"Paid"},
   "uploadGallery": {"ar":"رفع من المعرض", "en":"Upload from gallery"},
   "galleryAll": {"ar":"الكل", "en":"All"},
   "galleryImages": {"ar":"صور", "en":"Images"},
@@ -276,8 +280,8 @@ const translations = {
     "en": "Summary"
   },
   "s58": {
-    "ar": "الملفات والصور",
-    "en": "Files and photos"
+    "ar": "المكتبة",
+    "en": "Library"
   },
   "s59": {
     "ar": "المورد",

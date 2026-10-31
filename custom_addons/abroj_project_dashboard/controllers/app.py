@@ -8,6 +8,7 @@ import logging
 from pathlib import Path
 import math
 
+from odoo.tools import html2plaintext
 from odoo import fields
 
 from odoo import http
@@ -358,6 +359,7 @@ class AbrojApp(http.Controller):
             self._check_project(project)
             project.check_access('read')
             result = {'partners': [{'id': p.id, 'name': p.display_name} for p in request.env['res.partner'].search([], limit=500)], 'records': {}, 'capabilities': {}, 'agreement': {name: (str(project[name]) if project._fields[name].type == 'date' and project[name] else project[name]) for name in ('contracting_goal_ar', 'contracting_goal_en', 'contract_payment_schedule_ar', 'contract_payment_schedule_en', 'contracting_start', 'contracting_end', 'contract_value', 'value_type', 'estimated_cost', 'contract_vat_percent', 'contract_retention_percent')}}
+            result['logs'] = [{'author': m.author_id.display_name, 'date': str(m.date or ''), 'body': html2plaintext(m.body or '')} for m in project.message_ids if m.body]
             for key, (model, allowed) in self._documents.items():
                 records = request.env[model]
                 result['capabilities'][key] = {'create': records.has_access('create')}

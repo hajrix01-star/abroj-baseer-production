@@ -12,7 +12,7 @@ test('project summary avoids repeated phase and financial lists while retaining 
   assert.doesNotMatch(legacy, /p\.phases\.map|p\.contracts\.map|p\.vouchers\.map|cards\(\[p\]\)/);
   assert.match(screens, /\['phases',t\("s47"\)\]/);
   assert.match(screens, /documentList\(\['contract'\]\)/);
-  assert.match(screens, /documentList\(\['payment','receipt','promissory'\]\)/);
+  assert.match(screens, /documentList\(\['receipt'\]\)/);
   assert.match(screens, /cards\(\[p\]\)/);
 });
 test('shared empty state does not offer a redundant projects link by default', () => {
@@ -31,7 +31,7 @@ test('contracting form keeps financial totals once and gallery on both distinct 
 });
 
 test('removed project feature is absent from client scripts', () => {
-  const forbidden = ['project' + 'Lib' + 'rary', 'lib' + 'rary'];
+  const forbidden = ['projectLibrary', '/abroj/app/library'];
   for (const file of ['static/pwa/js/screens.js', 'static/pwa/js/i18n.js']) {
     for (const term of forbidden) assert.ok(!read(file).includes(term));
   }

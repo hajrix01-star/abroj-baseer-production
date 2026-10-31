@@ -284,6 +284,13 @@ class AbrojProjectDashboardCase(TransactionCase):
         data = self.project._abroj_data()
         self.assertEqual((data['over'], data['over_categories']), (0, 1))
 
+    def test_project_metrics_match_dashboard(self):
+        self.project.write({'abroj_use_manual_progress': True, 'abroj_manual_progress': 42, 'abroj_budget': 100})
+        data = self.project._abroj_data()
+        self.assertEqual(self.project.abroj_progress, data['progress'])
+        self.assertEqual(self.project.abroj_actual, data['actual'])
+        self.assertEqual(self.project.abroj_over, data['over'])
+
     def test_manual_progress(self):
         self.project.write({'abroj_use_manual_progress': True, 'abroj_manual_progress': 75})
         self.assertEqual(self.project._abroj_data()['progress'], 75)
@@ -531,7 +538,7 @@ class AbrojDashboardHttpCase(HttpCase):
             self.assertTrue(asset.endswith('?v=' + version), asset)
         for icon in self.url_open('/abroj/app/manifest.webmanifest').json()['icons']:
             self.assertTrue(icon['src'].endswith('?v=' + version))
-        self.assertIn("'abroj-v43-' + VERSION", worker)
+        self.assertIn("'abroj-v44-' + VERSION", worker)
         self.assertIn("cache: 'reload'", worker)
         self.assertIn("url.searchParams.get('v') !== VERSION", worker)
         self.assertNotIn('static/pwa/index.html', worker)

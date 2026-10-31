@@ -124,6 +124,9 @@ class Project(models.Model):
     _inherit = 'project.project'
 
     abroj_daily_line_ids = fields.One2many('abroj.daily.report.line', 'project_id', string='التقارير اليومية')
+    abroj_progress = fields.Float(string='نسبة الإنجاز', compute='_compute_abroj_metrics')
+    abroj_actual = fields.Monetary(string='التكلفة الفعلية', currency_field='abroj_currency_id', compute='_compute_abroj_metrics')
+    abroj_over = fields.Monetary(string='تجاوز الميزانية', currency_field='abroj_currency_id', compute='_compute_abroj_metrics')
     abroj_location = fields.Char(string='موقع المشروع')
     abroj_type = fields.Selection(TYPES, string='نوع المشروع', default='other')
     abroj_budget = fields.Monetary(string='الميزانية', currency_field='abroj_currency_id')
@@ -188,14 +191,26 @@ class Project(models.Model):
         self.message_post(body=('%s%s' % ('Project closed / تم إغلاق المشروع' if closed else 'Project reopened / تم إعادة فتح المشروع', (' — ' + note.strip()) if note and note.strip() else '')))
         return True
 
+    def _abroj_metrics(self, tasks=None):
+        self.ensure_one()
+        tasks = tasks if tasks is not None else self.env['project.task'].search([('project_id', '=', self.id)])
+        done = tasks.filtered(lambda t: t.state in ('1_done', '1_canceled'))
+        progress = self.abroj_manual_progress if self.abroj_use_manual_progress else (100 * len(done) / len(tasks) if tasks else 0)
+        analytic = self.env['account.analytic.line'].search([('account_id', '=', self.account_id.id), ('amount', '<', 0)]) if self.account_id and self.env['account.analytic.line'].has_access('read') else self.env['account.analytic.line']
+        actual = sum(-line.amount for line in analytic) + sum(self.abroj_budget_line_ids.mapped('manual_actual'))
+        return round(progress, 1), actual, max(actual - self.abroj_budget, 0)
+
+    @api.depends('abroj_use_manual_progress', 'abroj_manual_progress', 'task_ids.state', 'abroj_budget', 'abroj_budget_line_ids.manual_actual', 'account_id')
+    def _compute_abroj_metrics(self):
+        for project in self:
+            project.abroj_progress, project.abroj_actual, project.abroj_over = project._abroj_metrics()
+
     def _abroj_data(self, stall_days=30):
         self.ensure_one()
         today = fields.Date.context_today(self)
         tasks = self.env['project.task'].search([('project_id', '=', self.id)])
         done = tasks.filtered(lambda t: t.state in ('1_done', '1_canceled'))
-        progress = self.abroj_manual_progress if self.abroj_use_manual_progress else (100 * len(done) / len(tasks) if tasks else 0)
-        analytic = self.env['account.analytic.line'].search([('account_id', '=', self.account_id.id), ('amount', '<', 0)]) if self.account_id and self.env['account.analytic.line'].has_access('read') else self.env['account.analytic.line']
-        actual = sum(-line.amount for line in analytic) + sum(self.abroj_budget_line_ids.mapped('manual_actual'))
+        progress, actual, over = self._abroj_metrics(tasks)
         categories = [{'id': line.id, 'name': line.name, 'budget': line.budget, 'actual': line.actual, 'manual_actual': line.manual_actual} for line in self.abroj_budget_line_ids]
         vouchers = []
         if 'abroj.contracting.voucher' in self.env and self.env['abroj.contracting.voucher'].has_access('read'):
@@ -211,7 +226,7 @@ class Project(models.Model):
         last_activity = max([self.write_date] + tasks.mapped('write_date')) if tasks else self.write_date
         stalled = not completed and (self.last_update_status in ('off_track', 'on_hold') or bool(last_activity and last_activity.date() < today - timedelta(days=stall_days)))
         phases = [{'id': t.id, 'name': t.name, 'start': str(t.x_abroj_date_start or (t.date_assign.date() if t.date_assign else '')), 'end': str(t.date_deadline.date() if t.date_deadline else ''), 'duration': t.x_abroj_duration_days, 'done': t in done, 'state': t.state, 'progress': t.x_abroj_progress, 'can_write': t.has_access('write'), 'delayed': t in delayed_tasks, 'assignee': ', '.join(t.user_ids.mapped('name')), **t._abroj_phase_status()} for t in tasks]
-        return {'id': self.id, 'archived': not self.active or completed, 'can_close': self.env.user.has_group('project.group_project_manager') and self.has_access('write'), 'can_write': self.has_access('write'), 'can_create_task': self.env['project.task'].has_access('create'), 'can_edit_budget': self.env.user.has_group('project.group_project_manager') and self.has_access('write'), 'name': self.name, 'type': self.abroj_type, 'type_label': (dict(TYPES) if (self.env.lang or '').startswith('ar') else TYPES_EN).get(self.abroj_type, ''), 'status': self.last_update_status, 'status_label': (STATUS if (self.env.lang or '').startswith('ar') else STATUS_EN).get(self.last_update_status, ''), 'client': self.partner_id.name or '—', 'manager': self.user_id.name or '—', 'manager_id': self.user_id.id or False, 'manager_is_system': bool(self.user_id and (self.user_id.id in (1, self.env.ref('base.user_admin').id) or self.user_id.login == '__system__' or self.user_id.name == 'Administrator')), 'start': str(self.date_start or ''), 'end': str(self.date or ''), 'progress': round(progress, 1), 'budget': self.abroj_budget, 'actual': actual, 'over': max(actual - self.abroj_budget, 0), 'over_categories': sum(c['actual'] > c['budget'] for c in categories), 'contract': self.abroj_contract_value or (self.contract_value if 'contract_value' in self._fields else 0), 'received': received, 'paid': paid, 'liquidity': received - paid, 'categories': categories, 'contracts': contracts, 'phases': phases, 'delayed': delayed, 'stalled': stalled, 'completed': completed, 'vouchers': [{'name': v.name, 'kind': v.kind, 'partner': v.partner_id.name, 'amount': v.amount, 'date': str(v.date)} for v in vouchers]}
+        return {'id': self.id, 'archived': not self.active or completed, 'can_close': self.env.user.has_group('project.group_project_manager') and self.has_access('write'), 'can_write': self.has_access('write'), 'can_create_task': self.env['project.task'].has_access('create'), 'can_edit_budget': self.env.user.has_group('project.group_project_manager') and self.has_access('write'), 'name': self.name, 'type': self.abroj_type, 'type_label': (dict(TYPES) if (self.env.lang or '').startswith('ar') else TYPES_EN).get(self.abroj_type, ''), 'status': self.last_update_status, 'status_label': (STATUS if (self.env.lang or '').startswith('ar') else STATUS_EN).get(self.last_update_status, ''), 'client': self.partner_id.name or '—', 'manager': self.user_id.name or '—', 'manager_id': self.user_id.id or False, 'manager_is_system': bool(self.user_id and (self.user_id.id in (1, self.env.ref('base.user_admin').id) or self.user_id.login == '__system__' or self.user_id.name == 'Administrator')), 'start': str(self.date_start or ''), 'end': str(self.date or ''), 'progress': round(progress, 1), 'budget': self.abroj_budget, 'actual': actual, 'over': over, 'over_categories': sum(c['actual'] > c['budget'] for c in categories), 'contract': self.abroj_contract_value or (self.contract_value if 'contract_value' in self._fields else 0), 'received': received, 'paid': paid, 'contract_profit': self.profit, 'remaining': self.remaining, 'expected_profit': self.expected_profit, 'liquidity': received - paid, 'categories': categories, 'contracts': contracts, 'phases': phases, 'delayed': delayed, 'stalled': stalled, 'completed': completed, 'vouchers': [{'name': v.name, 'kind': v.kind, 'partner': v.partner_id.name, 'amount': v.amount, 'date': str(v.date)} for v in vouchers]}
 
     @api.model
     def _abroj_scope_domain(self):

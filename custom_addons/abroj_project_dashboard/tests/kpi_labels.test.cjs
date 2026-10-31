@@ -13,9 +13,16 @@ const t = key => translations[key][lang];
 const money = n => String(n);
 ${cards}`, context);
 
-const project = [{contract: 100, actual: 40, liquidity: 25}];
+const project = [{contract: 100, actual: 40, expected_profit: 60, contract_profit: 55, remaining: 70, received: 30, paid: 5, liquidity: 25}];
 assert.match(context.cards(project), /<small>الربح المتوقع<\/small><h3>60 /);
 assert.match(context.cards(project), /<small>صافي التدفق النقدي<\/small><h3>25 /);
 vm.runInContext("lang = 'en'", context);
 assert.match(context.cards(project), /<small>Expected profit<\/small><h3>60 /);
 assert.match(context.cards(project), /<small>Net cash flow<\/small><h3>25 /);
+
+assert.match(context.cards(project), /<small>Contract profit<\/small><h3>55 /);
+assert.match(context.cards(project), /<small>Remaining contract value<\/small><h3>70 /);
+assert.match(context.cards(project), /<small>Received<\/small><h3>30 /);
+assert.match(context.cards(project), /<small>Paid<\/small><h3>5 /);
+const screens = fs.readFileSync(path.join(js, 'screens.js'), 'utf8');
+for (const label of ['السجلات', 'التدفق النقدي', 'المقبوضات', 'التقارير اليومية']) assert.ok(screens.includes(label));

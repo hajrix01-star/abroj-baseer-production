@@ -2,6 +2,8 @@ from pathlib import Path
 import os
 from playwright.sync_api import sync_playwright
 out=Path(os.environ.get('M5_SCREENSHOT_DIR', '/workspace/abroj-dashboard-impl'))
+def mediaStream_active(page):
+    return page.evaluate('!!mediaStream')
 with sync_playwright() as p:
     browser=p.chromium.launch(executable_path='/usr/bin/google-chrome',args=['--no-sandbox','--use-fake-ui-for-media-stream','--use-fake-device-for-media-stream'])
     context=browser.new_context(viewport={'width':390,'height':844},device_scale_factor=2,is_mobile=True,has_touch=True)
@@ -19,8 +21,9 @@ with sync_playwright() as p:
             page.wait_for_timeout(400)
             page.screenshot(path=str(out / f'm5_{lang}_{name}.png'))
         page.evaluate('voiceForm()');shot('voice_idle')
-        box=page.locator('#voice-mic').bounding_box();page.mouse.move(box['x']+box['width']/2,box['y']+box['height']/2);page.mouse.down()
-        page.wait_for_function("recorder && recorder.state === 'recording'");page.wait_for_timeout(700);shot('voice_holding');page.mouse.up();page.locator('#voice-preview').wait_for(state='visible');shot('voice_preview');page.evaluate('closeMedia()')
+        page.locator('#voice-mic').click();page.wait_for_function("recorder && recorder.state === 'recording'");page.wait_for_timeout(700);shot('voice_recording')
+        assert page.locator('#voice-mic').get_attribute('aria-pressed')=='true'
+        page.locator('#voice-mic').click();page.wait_for_function('!document.getElementById("media-modal")');assert not mediaStream_active(page)
         page.evaluate('fabSheet()');page.locator('.sheet button').filter(has_text='مرفق أو صورة / كاميرا' if lang=='ar' else 'Attachment or photo / camera').click();page.wait_for_function("mediaStream && document.getElementById('camera').videoWidth > 0");shot('camera_live')
         page.evaluate('switchCamera()');page.wait_for_function("mediaStream && facing === 'user' && document.getElementById('camera').videoWidth > 0");shot('camera_front')
         page.evaluate('switchCamera()');page.wait_for_function("mediaStream && facing === 'environment' && document.getElementById('camera').videoWidth > 0")

@@ -165,8 +165,14 @@ class AbrojProjectDashboardCase(TransactionCase):
 
     def test_voice_gesture_translations(self):
         source = (Path(__file__).resolve().parents[1] / 'static' / 'pwa' / 'js' / 'i18n.js').read_text(encoding='utf-8')
-        self.assertIn("holdRecord:['اضغط مطوّلاً للتسجيل','Press and hold to record']", source)
-        self.assertIn("slideCancel:['اسحب للإلغاء','Slide to cancel']", source)
+        self.assertIn("stopRecord:['إيقاف التسجيل','Stop recording']", source)
+        self.assertIn("tapRecord:['اضغط لبدء التسجيل','Tap to start recording']", source)
+        media = (Path(__file__).resolve().parents[1] / 'static' / 'pwa' / 'js' / 'media.js').read_text(encoding='utf-8')
+        voice = media[media.index('function openVoice'):media.index('function updateTimer')]
+        for hold in ('pointerdown', 'pointerup', 'touchstart', 'touchend', 'mousedown', 'mouseup', 'holdRecord'):
+            self.assertNotIn(hold, voice)
+        gallery = (Path(__file__).resolve().parents[1] / 'static' / 'src' / 'gallery.xml').read_text(encoding='utf-8')
+        self.assertIn('t-on-click="toggleRecording"', gallery)
         self.assertIn("invoiceCapture:['فاتورة','Invoice']", source)
         self.assertIn("invoiceChoice:['إضافة فاتورة','Add invoice']", source)
         self.assertIn("invoiceDraft:['فاتورة مورد مسودة','Draft vendor bill']", source)
@@ -569,7 +575,7 @@ class AbrojDashboardHttpCase(HttpCase):
             self.assertTrue(asset.endswith('?v=' + version), asset)
         for icon in self.url_open('/abroj/app/manifest.webmanifest').json()['icons']:
             self.assertTrue(icon['src'].endswith('?v=' + version))
-        self.assertIn("'abroj-v47-' + VERSION", worker)
+        self.assertIn("'abroj-v48-' + VERSION", worker)
         self.assertIn("cache: 'reload'", worker)
         self.assertIn("url.searchParams.get('v') !== VERSION", worker)
         self.assertNotIn('static/pwa/index.html', worker)

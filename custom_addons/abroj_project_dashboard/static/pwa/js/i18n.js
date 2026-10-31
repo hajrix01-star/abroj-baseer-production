@@ -18,6 +18,7 @@ const translations = {
   "none": {"ar": "لا يوجد", "en": "None"},
   "confirm": {"ar": "تأكيد", "en": "Confirm"},
   "cancel": {"ar": "إلغاء", "en": "Cancel"},
+  "openInOdoo": {"ar": "فتح في أودو", "en": "Open in Odoo"},
   "allProjects": {"ar": "كل المشاريع", "en": "All projects"},
   "toggleProjects": {"ar": "توسيع أو طي المشاريع", "en": "Expand or collapse projects"},
   "archive": {"ar": "أرشيف", "en": "Archive"},

@@ -51,3 +51,5 @@ html[dir=rtl] header .brand img,html[dir=rtl] .drawer-head img{transform:transla
 
 .drawer .drawer-project-inner .archive-row button,.drawer .drawer-archive summary{font-size:inherit;padding:13px;min-height:44px}
 .drawer-head{margin:0;border:0}
+
+.drawer .drawer-odoo-link{display:flex;align-items:center;gap:8px;width:100%;box-sizing:border-box;text-align:start;background:transparent;color:#102A5C;padding:13px;min-height:44px;font-weight:700;text-decoration:none;white-space:nowrap}.drawer .drawer-odoo-link:hover{background:#f0f2f7}.drawer-odoo-link svg{flex:none}

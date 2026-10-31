@@ -86,6 +86,24 @@ class AbrojProjectDashboardCase(TransactionCase):
             self.assertNotIn('alert(', source, path.name)
             self.assertNotIn('confirm(', source, path.name)
 
+    def test_drawer_open_in_odoo(self):
+        node = shutil.which('node')
+        if not node:
+            self.skipTest('Node.js is required to execute the drawer renderer')
+        js_dir = Path(__file__).resolve().parents[1] / 'static' / 'pwa' / 'js'
+        source = (js_dir / 'screens.js').read_text(encoding='utf-8')
+        translations = (js_dir / 'i18n.js').read_text(encoding='utf-8')
+        self.assertIn('"openInOdoo": {"ar": "فتح في أودو", "en": "Open in Odoo"}', translations)
+        renderer = source[source.index('function renderDrawer()'):source.index('function measureDrawer()')]
+        script = "let currentProject, drawerExpanded=false; const drawer={}; const document={getElementById:()=>drawer}; const t=k=>k;\n" + renderer + """
+            for (const [project, href] of [[null, '/odoo/project'], [{id: 42}, '/odoo/project/42']]) {
+                currentProject = project; renderDrawer();
+                if (!drawer.innerHTML.includes(`href="${href}" target="_blank" rel="noopener"`) ||
+                    !drawer.innerHTML.includes('openInOdoo')) throw new Error('Incorrect drawer link');
+            }
+        """
+        subprocess.run([node, '-e', script], check=True, capture_output=True, text=True)
+
     def test_pwa_gregorian_date_formatter(self):
         node = shutil.which('node')
         if not node:

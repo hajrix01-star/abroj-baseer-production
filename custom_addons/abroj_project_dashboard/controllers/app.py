@@ -63,9 +63,16 @@ class AbrojApp(http.Controller):
                      (purchase_group and user.has_group('purchase.group_purchase_user'))) and
                     request.env['account.move'].has_access('create'))
 
-    @http.route('/abroj/app', type='http', auth='user', methods=['GET'])
+    @staticmethod
+    def _app_base():
+        """The PWA is served at both /abroj/app and the short /app alias."""
+        path = request.httprequest.path or ''
+        return '/app' if path == '/app' or path.startswith('/app/') else '/abroj/app'
+
+    @http.route(['/abroj/app', '/app'], type='http', auth='user', methods=['GET'])
     def app(self):
         page = (Path(__file__).parent.parent / 'static/pwa/index.html').read_text(encoding='utf-8')
+        page = page.replace('APP_BASE_PLACEHOLDER', self._app_base())
         page = page.replace('ASSET_VERSION_PLACEHOLDER', ASSET_VERSION)
         page = page.replace('CSRF_TOKEN_PLACEHOLDER', request.csrf_token())
         page = page.replace('SESSION_UID_PLACEHOLDER', str(request.session.uid)).replace('SESSION_DB_PLACEHOLDER', html.escape(request.session.db, quote=True))
@@ -96,15 +103,15 @@ class AbrojApp(http.Controller):
             pass
         return result
 
-    @http.route('/abroj/app/manifest.webmanifest', type='http', auth='public', methods=['GET'])
+    @http.route(['/abroj/app/manifest.webmanifest', '/app/manifest.webmanifest'], type='http', auth='public', methods=['GET'])
     def manifest(self):
-        data = {'name': self._message('أبرج للمقاولات', 'Abroj Contracting'), 'short_name': self._message('أبرج', 'Abroj'), 'start_url': '/abroj/app', 'scope': '/abroj/app', 'display': 'standalone', 'dir': self._message('rtl', 'ltr'), 'lang': self._message('ar', 'en'), 'theme_color': '#12243b', 'background_color': '#f5f6f8', 'icons': [{'src': '/abroj_project_dashboard/static/pwa/icon-%d.png?v=%s' % (n, ASSET_VERSION), 'sizes': '%dx%d' % (n, n), 'type': 'image/png'} for n in (192, 512)] + [{'src': '/abroj_project_dashboard/static/pwa/icon-maskable-512.png?v=%s' % ASSET_VERSION, 'sizes': '512x512', 'type': 'image/png', 'purpose': 'maskable'}]}
+        data = {'name': self._message('أبرج للمقاولات', 'Abroj Contracting'), 'short_name': self._message('أبرج', 'Abroj'), 'start_url': self._app_base(), 'scope': self._app_base(), 'display': 'standalone', 'dir': self._message('rtl', 'ltr'), 'lang': self._message('ar', 'en'), 'theme_color': '#12243b', 'background_color': '#f5f6f8', 'icons': [{'src': '/abroj_project_dashboard/static/pwa/icon-%d.png?v=%s' % (n, ASSET_VERSION), 'sizes': '%dx%d' % (n, n), 'type': 'image/png'} for n in (192, 512)] + [{'src': '/abroj_project_dashboard/static/pwa/icon-maskable-512.png?v=%s' % ASSET_VERSION, 'sizes': '512x512', 'type': 'image/png', 'purpose': 'maskable'}]}
         return request.make_response(json.dumps(data, ensure_ascii=False), [('Content-Type', 'application/manifest+json'), ('Cache-Control', 'no-store, no-cache, must-revalidate'), ('Pragma', 'no-cache'), ('Expires', '0')])
 
-    @http.route('/abroj/app/sw.js', type='http', auth='public', methods=['GET'])
+    @http.route(['/abroj/app/sw.js', '/app/sw.js'], type='http', auth='public', methods=['GET'])
     def sw(self):
         source = _worker_source.replace('ASSET_VERSION_PLACEHOLDER', ASSET_VERSION)
-        return request.make_response(source, [('Content-Type', 'application/javascript'), ('Service-Worker-Allowed', '/abroj/app'), ('Cache-Control', 'no-store')])
+        return request.make_response(source, [('Content-Type', 'application/javascript'), ('Service-Worker-Allowed', self._app_base()), ('Cache-Control', 'no-store')])
 
     @http.route('/abroj/app/data', type='jsonrpc', auth='user')
     def data(self, filters=None, project_id=None, include_archived=False):

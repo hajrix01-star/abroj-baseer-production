@@ -1,5 +1,5 @@
 'use strict';
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('/abroj/app/sw.js', {scope:'/abroj/app'}).catch(()=>{});
+if ('serviceWorker' in navigator) (function(){const base=(document.querySelector('meta[name="app-base"]')||{}).content||'/abroj/app';return navigator.serviceWorker.register(base+'/sw.js', {scope:base});})().catch(()=>{});
 window.addEventListener('pageshow', event => { if (event.persisted) window.location.reload(); });
 const userLang=document.querySelector('[name=user-lang]').content;
 let lang; try { lang=localStorage.getItem('abroj.language'); } catch (_) {}

@@ -29,9 +29,12 @@ class PosConfig(models.Model):
         """
         inherited = super()._load_pos_data_fields(config)
         if not inherited:
-            # An empty list is the native "load all permitted fields" marker.
-            # Preserve it instead of accidentally narrowing POS bootstrap data.
-            return inherited
+            # ``pos.load.mixin`` uses [] as its legacy "load all permitted
+            # fields" marker.  Resolve it before appending our two fields;
+            # returning [] here would leave the browser without the B2C
+            # policy and Saudi POS would block payment before the server can
+            # apply its fallback.
+            inherited = list(self.fields_get())
         return list(dict.fromkeys(inherited + [
             'baseer_zatca_allow_anonymous_b2c',
             'baseer_zatca_anonymous_partner_id',

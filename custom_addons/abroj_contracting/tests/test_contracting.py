@@ -24,6 +24,21 @@ class AbrojContractingCase(TransactionCase):
         vals.update(extra)
         return self.env['abroj.contracting.voucher'].create(vals)
 
+    def test_voucher_stage_and_domain_summary(self):
+        receipt = self.voucher(kind='receipt', amount=100)
+        payment = self.voucher(kind='payment', amount=30)
+        draft = self.voucher(kind='receipt', amount=20)
+        receipt.action_issue()
+        payment.action_issue()
+        self.assertEqual(receipt.abroj_stage, 'issued')
+        self.assertEqual(draft.abroj_stage, 'draft')
+        summary = self.env['abroj.contracting.voucher'].abroj_voucher_summary([('id', 'in', (receipt | payment | draft).ids)])
+        self.assertEqual(summary, {'received': 100, 'paid': 30, 'balance': 70})
+        summary = self.env['abroj.contracting.voucher'].abroj_voucher_summary([('id', '=', payment.id)])
+        self.assertEqual(summary, {'received': 0, 'paid': 30, 'balance': -30})
+        draft.action_cancel()
+        self.assertEqual(draft.abroj_stage, 'cancelled')
+
     def test_balances_and_profit(self):
         self.voucher().action_issue()
         self.voucher(kind='receipt', amount=200).action_issue()

@@ -359,6 +359,7 @@ class AbrojApp(http.Controller):
             self._check_project(project)
             project.check_access('read')
             result = {'partners': [{'id': p.id, 'name': p.display_name} for p in request.env['res.partner'].search([], limit=500)], 'records': {}, 'capabilities': {}, 'agreement': {name: (str(project[name]) if project._fields[name].type == 'date' and project[name] else project[name]) for name in ('contracting_goal_ar', 'contracting_goal_en', 'contract_payment_schedule_ar', 'contract_payment_schedule_en', 'contracting_start', 'contracting_end', 'contract_value', 'value_type', 'estimated_cost', 'contract_vat_percent', 'contract_retention_percent')}}
+            result['voucher_summary'] = request.env['abroj.contracting.voucher'].abroj_voucher_summary([('project_id', '=', project.id)]) if request.env['abroj.contracting.voucher'].has_access('read') else {'received': 0, 'paid': 0, 'balance': 0}
             result['logs'] = [{'author': m.author_id.display_name, 'date': str(m.date or ''), 'body': html2plaintext(m.body or '')} for m in project.message_ids if m.body]
             for key, (model, allowed) in self._documents.items():
                 records = request.env[model]
@@ -376,7 +377,7 @@ class AbrojApp(http.Controller):
                         field = rec._fields[name]
                         val = rec[name]
                         vals[name] = val.id if field.type == 'many2one' else (str(val) if field.type in ('date', 'datetime') and val else val)
-                    rows.append({'id': rec.id, 'name': '' if rec.display_name == '/' else rec.display_name, 'state': rec.state if 'state' in rec._fields else '', 'values': vals, 'can_write': rec.has_access('write')})
+                    rows.append({'id': rec.id, 'name': '' if rec.display_name == '/' else rec.display_name, 'state': rec.state if 'state' in rec._fields else '', 'stage': rec.abroj_stage if key in ('payment', 'receipt') else (rec.state if 'state' in rec._fields else ''), 'values': vals, 'can_write': rec.has_access('write')})
                 result['records'][key] = rows
             return result
         except (AccessError, UserError, ValueError):

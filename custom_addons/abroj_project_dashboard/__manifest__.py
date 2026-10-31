@@ -1,6 +1,6 @@
 {
     'name': 'Abroj Project Dashboard',
-    'version': '19.0.1.6.0',
+    'version': '19.0.1.7.0',
     'license': 'LGPL-3',
     'depends': ['project', 'analytic', 'account', 'abroj_contracting'],
     'data': ['security/ir.model.access.csv', 'security/rules.xml', 'views/dashboard.xml', 'views/notification_settings.xml', 'views/daily_report.xml', 'data/daily_report.xml', 'data/promissory.xml', 'data/notifications.xml', 'report/promissory.xml'],

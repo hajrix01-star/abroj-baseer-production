@@ -6,7 +6,7 @@ const vm = require('node:vm');
 const js = path.join(__dirname, '..', 'static', 'pwa', 'js');
 const i18n = fs.readFileSync(path.join(js, 'i18n.js'), 'utf8');
 const app = fs.readFileSync(path.join(js, 'app.js'), 'utf8');
-const cards = app.match(/^function cards\(ps\).*$/m)[0];
+const cards = app.match(/^function cards\(ps,.*$/m)[0];
 const context = vm.createContext({});
 vm.runInContext(`${i18n}\nlet lang = 'ar';
 const t = key => translations[key][lang];
@@ -25,4 +25,4 @@ assert.match(context.cards(project), /<small>Remaining contract value<\/small><h
 assert.match(context.cards(project), /<small>Received<\/small><h3>30 /);
 assert.match(context.cards(project), /<small>Paid<\/small><h3>5 /);
 const screens = fs.readFileSync(path.join(js, 'screens.js'), 'utf8');
-for (const label of ['السجلات', 'التدفق النقدي', 'المقبوضات', 'التقارير اليومية']) assert.ok(screens.includes(label));
+for (const label of ['السجلات', 'سند أمر', 'التقارير اليومية']) assert.ok(screens.includes(label));

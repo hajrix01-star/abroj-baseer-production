@@ -39,8 +39,8 @@ class AbrojProjectDashboardCase(TransactionCase):
         arch = self.env.ref('abroj_contracting.project_form')._get_combined_arch()
         pages = arch.xpath('//notebook/page')
         self.assertEqual([page.get('string') for page in pages], [
-            'المراحل', 'العقود والاتفاقيات', 'السندات', 'المقبوضات',
-            'الملاحظات', 'المكتبة', 'الفواتير والمصروفات', 'التدفق النقدي',
+            'المراحل', 'العقود والاتفاقيات', 'السندات',
+            'الملاحظات', 'المكتبة', 'الفواتير والمصروفات',
             'التقارير اليومية', 'السجلات',
         ])
         page = arch.xpath("//page[@name='invoices_costs']")[0]
@@ -49,7 +49,7 @@ class AbrojProjectDashboardCase(TransactionCase):
             self.assertTrue(field.xpath("./list/button[@name='action_confirm'][@invisible=\"state != 'draft'\"]"))
         self.assertFalse(arch.xpath("//page[@name='logs']//field[@name='cost_ids']"))
         self.assertFalse(arch.xpath("//page[@name='contractors']//field[@name='invoice_ids']"))
-        for name in ('vouchers', 'receipts'):
+        for name in ('vouchers',):
             self.assertTrue(arch.xpath("//page[@name='%s']//list/button[@name='action_accounting_approve'][@invisible='not abroj_can_accounting_approve']" % name))
 
     def ids(self, filters):
@@ -555,7 +555,7 @@ class AbrojDashboardHttpCase(HttpCase):
             self.assertTrue(asset.endswith('?v=' + version), asset)
         for icon in self.url_open('/abroj/app/manifest.webmanifest').json()['icons']:
             self.assertTrue(icon['src'].endswith('?v=' + version))
-        self.assertIn("'abroj-v46-' + VERSION", worker)
+        self.assertIn("'abroj-v47-' + VERSION", worker)
         self.assertIn("cache: 'reload'", worker)
         self.assertIn("url.searchParams.get('v') !== VERSION", worker)
         self.assertNotIn('static/pwa/index.html', worker)

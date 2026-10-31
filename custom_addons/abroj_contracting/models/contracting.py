@@ -191,6 +191,23 @@ class Voucher(models.Model):
     payment_id = fields.Many2one('account.payment', string='الدفعة المحاسبية', readonly=True, copy=False, check_company=True, help='الدفعة التي أنشأها محاسب آخر عبر الاعتماد المحاسبي؛ يخصص حسابها المقابل للحساب التحليلي للمشروع.')
     issued_by = fields.Many2one('res.users', string='أصدره', readonly=True, copy=False, help='حدد أصدره لهذا السجل وفق مستند المشروع الأصلي.')
 
+    abroj_stage = fields.Selection([
+        ('draft', 'مسودة'), ('issued', 'صادر بانتظار الاعتماد المحاسبي'),
+        ('approved', 'معتمد محاسبيًا'), ('cancelled', 'ملغي'),
+    ], string='المرحلة', compute='_compute_abroj_stage', store=True)
+
+    @api.depends('state', 'payment_id')
+    def _compute_abroj_stage(self):
+        for voucher in self:
+            voucher.abroj_stage = ('approved' if voucher.payment_id else 'issued') if voucher.state == 'issued' else voucher.state
+
+    @api.model
+    def abroj_voucher_summary(self, domain):
+        vouchers = self.search((domain or []) + [('state', '=', 'issued')])
+        received = sum(vouchers.filtered(lambda v: v.kind == 'receipt').mapped('amount'))
+        paid = sum(vouchers.filtered(lambda v: v.kind == 'payment').mapped('amount'))
+        return {'received': received, 'paid': paid, 'balance': received - paid}
+
     abroj_can_accounting_approve = fields.Boolean(compute='_compute_can_accounting_approve')
 
     @api.depends('state', 'payment_id', 'issued_by')

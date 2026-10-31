@@ -12,8 +12,9 @@ test('project summary avoids repeated phase and financial lists while retaining 
   assert.doesNotMatch(legacy, /p\.phases\.map|p\.contracts\.map|p\.vouchers\.map|cards\(\[p\]\)/);
   assert.match(screens, /\['phases',t\("s47"\)\]/);
   assert.match(screens, /documentList\(\['contract'\]\)/);
-  assert.match(screens, /documentList\(\['receipt'\]\)/);
-  assert.match(screens, /cards\(\[p\]\)/);
+  assert.match(screens, /voucherScreen\(\)/);
+  assert.match(screens, /\['payment','receipt','promissory'\]/);
+  assert.match(screens, /cards\(\[p\],true\)/);
 });
 test('shared empty state does not offer a redundant projects link by default', () => {
   const app = read('static/pwa/js/app.js');
@@ -23,8 +24,7 @@ test('shared empty state does not offer a redundant projects link by default', (
 });
 test('contracting form keeps financial totals once and gallery on both distinct forms', () => {
   const xml = read('views/dashboard.xml');
-  assert.match(xml, /cash_balance.*total_received.*position="replace"/);
-  assert.match(xml, /cash_balance.*total_paid.*position="replace"/);
+  assert.doesNotMatch(xml, /cash_balance.*position="replace"/);
   assert.equal((xml.match(/name="abroj_gallery_widget"/g) || []).length, 2);
   assert.match(xml, /inherit_id" ref="project\.edit_project"/);
   assert.match(xml, /inherit_id" ref="abroj_contracting\.project_form"/);

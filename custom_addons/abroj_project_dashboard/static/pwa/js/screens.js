@@ -22,7 +22,7 @@ function drawerProjects(q){
     const matches=drawerAllProjects.filter(p=>p.name.toLocaleLowerCase().includes(q.toLocaleLowerCase()));
     const active=matches.filter(p=>!p.archived), archived=matches.filter(p=>p.archived);
     const rows=ps=>ps.map(p=>`<div class="archive-row"><button class="drawer-project-row ${currentProject?.id===p.id?'selected':''}" ${currentProject?.id===p.id?'aria-current="page"':''} onclick="selectDrawerProject(${p.id})"><span title="${esc(p.name)}">${esc(p.name)}</span><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg></button></div>`).join('');
-    document.getElementById('drawer-projects').innerHTML=rows(active)+`<details class="drawer-archive" open><summary>${t('archive')} (${number(archived.length)})</summary>${rows(archived)}</details>`;
+    document.getElementById('drawer-projects').innerHTML=rows(active)+`<details class="drawer-archive"><summary>${t('archive')} (${number(archived.length)})</summary>${rows(archived)}</details>`;
 }
 function closeDrawer(){document.getElementById('overlay').hidden=true;document.getElementById('drawer').hidden=true;document.querySelector('.sheet')?.remove()}
 async function projectsList(updateRoute=true){
@@ -34,7 +34,7 @@ async function projectsList(updateRoute=true){
 function renderProjectsList(q){
     const matches=drawerAllProjects.filter(p=>p.name.toLocaleLowerCase().includes(q.toLocaleLowerCase()));
     const section=(title,ps)=>`<section><h3>${title} (${number(ps.length)})</h3>${ps.length?ps.map(p=>projects([p])+(data?.is_owner?managerSelect(p):'')+(p.archived&&p.can_close?`<button class="secondary" onclick="projectStatusSheet(${p.id},false)">${t('reopenProject')}</button>`:'')).join(''):emptyState(t('s122'))}</section>`;
-    document.getElementById('project-list').innerHTML=section(t('activeProjects'),matches.filter(p=>!p.archived))+section(t('archive'),matches.filter(p=>p.archived));
+    document.getElementById('project-list').innerHTML=section(t('activeProjects'),matches.filter(p=>!p.archived))+`<details class="projects-archive"><summary><h3 style="display:inline">${t('archive')} (${number(matches.filter(p=>p.archived).length)})</h3></summary>`+section('',matches.filter(p=>p.archived)).replace(/<h3>[^<]*<\/h3>/,'')+`</details>`;
 }
 async function newProject(){
     try {

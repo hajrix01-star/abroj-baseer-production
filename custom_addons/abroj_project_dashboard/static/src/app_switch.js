@@ -1,6 +1,7 @@
 import { Component, xml } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { session } from "@web/session";
+import { user } from "@web/core/user";
 
 class AbrojAppSwitch extends Component {
     static props = {};
@@ -10,4 +11,6 @@ class AbrojAppSwitch extends Component {
         </a></div>`;
 }
 // Only engineers / project managers / admins, and only in the Abroj company.
-if (session.abroj_can_switch) registry.category("systray").add("abroj_app_switch", { Component: AbrojAppSwitch }, { sequence: 1 });
+const abrojCompanies = session.abroj_switch_company_ids || [];
+const abrojActive = user.activeCompany && user.activeCompany.id;
+if (abrojActive ? abrojCompanies.includes(abrojActive) : session.abroj_can_switch) registry.category("systray").add("abroj_app_switch", { Component: AbrojAppSwitch }, { sequence: 1 });

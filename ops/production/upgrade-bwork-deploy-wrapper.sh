@@ -11,17 +11,17 @@ TARGET=/usr/local/sbin/baseer-production-deploy
 readonly LOCK=/var/lock/baseer-production-deploy.lock
 readonly NATIVE_LOCK_PARENT=/var/lock
 readonly BACKUP_ROOT="$BASE/control-plane-backups"
-readonly OLD_SHA=8a407bfaea03e177f9546a3a3e81d5c07fd4bdc9704670503a82f5dd2d9be85c
-readonly NEW_SHA=df51cbb4a39491d69f33b9d3e0210d76f99c0f07b2eafb0b6da29a4440be7532
+readonly OLD_SHA=df51cbb4a39491d69f33b9d3e0210d76f99c0f07b2eafb0b6da29a4440be7532
+readonly NEW_SHA=eb48d8b33cbba1957b2e09717d021d6ff6046b802e79fc5a8b180165ad9ff0c8
 active_old_sha=$OLD_SHA active_new_sha=$NEW_SHA
-readonly LIVE_SOURCE=b071cf811fe2525cda7e6f71c030d712aafa0a57
+readonly LIVE_SOURCE=aa487a9659074d48fe607d942b57305826c26caa
 readonly SCRIPT_DIR="$(dirname -- "$(realpath -m -s -- "${BASH_SOURCE[0]}")")"
 CANDIDATE="$SCRIPT_DIR/baseer-production-deploy"
 backup_prefix=bwork-wrapper
 configure_approver() {
     TARGET=/usr/local/sbin/baseer-production-approve-release
-    active_old_sha=bd211f576dfeabb8a844c0dd7a5b0cadaa5472af21f94b41c9ff5856be2a5053
-    active_new_sha=1b3cfbb6f714ba85162dd500fbddd7e5255cecbc01463014116a1c70690d35a1
+    active_old_sha=1b3cfbb6f714ba85162dd500fbddd7e5255cecbc01463014116a1c70690d35a1
+    active_new_sha=dca89cf1ca97a26e5ed50a04aac890a83944e27dce4b6cf67dff7ebf9fe646bf
     CANDIDATE="$SCRIPT_DIR/baseer-production-approve-release"
     backup_prefix=zatca-approve-wrapper
 }

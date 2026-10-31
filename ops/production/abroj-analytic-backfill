@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# Post-deploy Abroj analytic backfill (run separately, after a successful
+# DEPLOY of abroj_contracting / abroj_project_dashboard, with owner approval).
+# Writes account_move.abroj_project_id and analytic_distribution on DRAFT
+# invoice lines only; posted entries are never touched.
+# Usage: abroj-analytic-backfill [--dry-run] [--container NAME] [--db NAME]
+set -euo pipefail
+container=baseer-odoo-prod-odoo-1
+db=baseer_prod
+dry=0
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --dry-run) dry=1 ;;
+        --container) container=$2; shift ;;
+        --db) db=$2; shift ;;
+        *) echo "unknown argument: $1" >&2; exit 2 ;;
+    esac
+    shift
+done
+[[ "$container" =~ ^[a-zA-Z0-9_.-]+$ ]] || { echo 'unsafe container' >&2; exit 2; }
+[[ "$db" =~ ^[a-zA-Z0-9_]+$ ]] || { echo 'unsafe db' >&2; exit 2; }
+docker exec -i -e ABROJ_BACKFILL_DRY="$dry" "$container" sh -lc \
+    "odoo shell --config=/etc/odoo/odoo.conf -d $db --no-http --workers=0 --max-cron-threads=0 --log-level=warn" <<'PY'
+import json, os
+from odoo.addons.abroj_contracting.backfill import run_analytic_backfill
+mods = env['ir.module.module'].search([('name', 'in', ['abroj_contracting', 'abroj_project_dashboard']), ('state', '=', 'installed')]).mapped('name')
+assert 'abroj_contracting' in mods, 'abroj_contracting is not installed'
+stats = run_analytic_backfill(env)
+missing = env['project.project'].with_context(active_test=False).search_count([('account_id', '=', False), ('is_template', '=', False)])
+stats['projects_without_analytic'] = missing
+if os.environ.get('ABROJ_BACKFILL_DRY') == '1':
+    env.cr.rollback(); stats['mode'] = 'dry-run (rolled back)'
+else:
+    env.cr.commit(); stats['mode'] = 'committed'
+print('ABROJ_ANALYTIC_BACKFILL=' + json.dumps(stats, sort_keys=True))
+PY

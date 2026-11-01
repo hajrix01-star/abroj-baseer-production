@@ -31,7 +31,7 @@ class ContractParty(models.Model):
     phone = fields.Char('الجوال')
     vat = fields.Char('الرقم الضريبي')
     notes = fields.Text('ملاحظات')
-    company_id = fields.Many2one('res.company', string='الشركة', required=True, default=lambda self: self.env.company)
+    company_id = fields.Many2one('res.company', string='الشركة', required=True, default=lambda self: self.env['res.company']._abroj_company())
     active = fields.Boolean('نشط', default=True)
     # Legacy contact tags: kept for existing data only; party_type is the sole classification.
     category_ids = fields.Many2many('res.partner.category', 'abroj_contracting_party_category_rel', 'party_id', 'category_id', string='الوسوم',
@@ -71,13 +71,18 @@ class ContractParty(models.Model):
     _name_type_company_uniq = models.Constraint('unique(name, party_type, company_id)', 'هذا الطرف موجود مسبقاً بنفس النوع.')
 
     @api.model
+    @api.model_create_multi
+    def create(self, vals_list):
+        self.env['res.company']._abroj_force_company(vals_list)
+        return super().create(vals_list)
+
     def name_create(self, name):
         # Quick-create from a Many2one: reuse an existing party with the same name.
         name = (name or '').strip()
         if not name:
             raise ValidationError('اسم الطرف مطلوب.')
         party_type = self.env.context.get('default_party_type') or 'subcontractor'
-        company_id = self.env.context.get('default_company_id') or self.env.company.id
+        company_id = self.env['res.company']._abroj_company().id
         existing = self.search([('name', '=', name), ('party_type', '=', party_type), ('company_id', '=', company_id)], limit=1)
         if existing:
             return existing.id, existing.display_name

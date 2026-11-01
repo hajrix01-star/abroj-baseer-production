@@ -19,7 +19,7 @@ class Inbox(models.Model):
     @api.depends('project_id.company_id')
     def _compute_inbox_company(self):
         for item in self:
-            item.company_id = item.project_id.company_id if item.project_id else (item.company_id or self.env.company)
+            item.company_id = item.project_id.company_id if item.project_id else (item.company_id or self.env['res.company']._abroj_company())
 
     @api.constrains('project_id')
     def _check_project_company(self):

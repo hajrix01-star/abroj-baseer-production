@@ -68,6 +68,25 @@ function isProductThumbnail(url) {
         /^image_(128|256|512|1024|1920)$/.test(url.searchParams.get("field") || "");
 }
 
+function isLegacyForeignFont(value) {
+    try {
+        const url = new URL(value);
+        if (url.protocol !== "https:" || url.origin === self.location.origin || url.username || url.password) {
+            return false;
+        }
+        if (url.hostname === "fonts.odoocdn.com") {
+            return url.port === "" && url.pathname.startsWith("/fonts/noto/");
+        }
+        if (url.hostname === "fonts.googleapis.com" && url.port === "" && url.pathname === "/css2") {
+            const families = url.searchParams.getAll("family");
+            return families.length > 0 && families.every((family) => /^Inter(?::|$)/.test(family));
+        }
+    } catch {
+        // Unknown legacy URLs are preserved rather than guessed safe to remove.
+    }
+    return false;
+}
+
 async function measure(response, limit) {
     if (!response?.body) {
         return 0;
@@ -148,9 +167,16 @@ async function initialize(cache) {
     }
 }
 
-async function removeThumbnails(cache) {
+async function removeLegacyResources(cache) {
     for (const request of await cache.keys()) {
-        if (isProductThumbnail(parsedUrl(request.url))) {
+        let removable = isProductThumbnail(parsedUrl(request.url));
+        if (!removable && isLegacyForeignFont(request.url)) {
+            const response = await cache.match(request);
+            // Native POS cached no-cors fonts with browser quota padding. These
+            // foreign URLs cannot be read by this worker's same-origin fallback.
+            removable = response?.type === "opaque";
+        }
+        if (removable) {
             await cache.delete(request);
             inventory?.delete(entryKey(request));
         }
@@ -173,7 +199,7 @@ async function saveResource(request, response) {
             if (!legacyCleaned) {
                 // Only after a successful network fetch; never clean during an
                 // offline bootstrap where old thumbnails can still be useful.
-                await removeThumbnails(cache);
+                await removeLegacyResources(cache);
                 legacyCleaned = true;
             }
             const size = await measure(response.clone(), MAX_ENTRY_BYTES);
@@ -191,7 +217,7 @@ async function saveResource(request, response) {
                 if (error?.name !== "QuotaExceededError") {
                     throw error;
                 }
-                await removeThumbnails(cache);
+                await removeLegacyResources(cache);
                 await cache.put(request, response.clone());
             }
             for (const key of replacedKeys) {
@@ -231,6 +257,13 @@ async function networkOrCache(event) {
 }
 
 async function cacheManifest(event) {
+    // A page can explicitly post to an installing/waiting worker. Only a client
+    // actually controlled by THIS worker may initiate cache writes or migration.
+    // Default includeUncontrolled=false is essential to the handover boundary.
+    const controlledClients = await self.clients.matchAll({ type: "window" });
+    if (!event.source?.id || !controlledClients.some((client) => client.id === event.source.id)) {
+        return;
+    }
     const client = event.source?.id ? await self.clients.get(event.source.id) : null;
     const sourceUrl = client && parsedUrl(client.url);
     const config = sourceUrl?.pathname.match(/^\/pos\/ui\/(\d+)(?:\/|$)/)?.[1];

@@ -144,7 +144,7 @@ class AbrojApp(http.Controller):
             if request.env['project.project']._abroj_scope_domain() or not request.env['project.project'].has_access('create'):
                 raise AccessError('Project create access required')
             Party = request.env['abroj.contracting.party']
-            partners = Party.browse(Party._abroj_search_ids(str(search or '')[:100], [('company_id', '=', request.env.company.id)], limit=20)) if search else Party
+            partners = Party.browse(Party._abroj_search_ids(str(search or '')[:100], [('company_id', '=', request.env['res.company']._abroj_company().id)], limit=20)) if search else Party
             users = request.env['res.users'].search([('share', '=', False)]).filtered(lambda u: not u.has_group('base.group_system') and not u.has_group('project.group_project_manager'))
             return {'partners': [{'id': p.id, 'name': p.name, 'type': p.party_type} for p in partners],
                     'users': [{'id': u.id, 'name': u.name, 'is_system': u.id in (1, request.env.ref('base.user_admin').id) or u.login == '__system__' or u.name == 'Administrator'} for u in users], 'current_user': request.env.uid}
@@ -172,7 +172,7 @@ class AbrojApp(http.Controller):
             with request.env.cr.savepoint():
                 # The client is a standalone contract party, never a res.partner contact.
                 Party = request.env['abroj.contracting.party']
-                company = request.env.company
+                company = request.env['res.company']._abroj_company()
                 partner = Party
                 if customer_id:
                     partner = Party.search([('id', '=', int(customer_id)), ('company_id', '=', company.id)], limit=1)
@@ -184,7 +184,7 @@ class AbrojApp(http.Controller):
                 manager = request.env['res.users'].search([('id', '=', int(manager_id or request.env.uid)), ('share', '=', False)], limit=1)
                 if not manager:
                     raise AccessError('Manager unavailable')
-                project = request.env['project.project'].create({'name': name.strip(), 'company_id': request.env.company.id,
+                project = request.env['project.project'].create({'name': name.strip(), 'company_id': company.id,
                     'abroj_client_party_id': partner.id or False, 'user_id': manager.id, 'abroj_location': location.strip(),
                     'abroj_budget': amount, 'date_start': start_date, 'date': end_date, 'abroj_type': project_type})
             return {'id': project.id}
@@ -384,7 +384,7 @@ class AbrojApp(http.Controller):
                 raise ValueError('Invalid party')
             if not name.strip():
                 return {'error': self._message('اسم الطرف مطلوب.', 'Party name is required.')}
-            company = project.company_id or request.env.company
+            company = project.company_id or request.env['res.company']._abroj_company()
             Party = request.env['abroj.contracting.party']
             party = Party.search([('name', '=', name.strip()), ('party_type', '=', party_type), ('company_id', '=', company.id)], limit=1)
             if not party:

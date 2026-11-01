@@ -167,7 +167,10 @@ class AbrojContractingCase(TransactionCase):
 
     def test_company_isolation(self):
         company = self.env['res.company'].create({'name': 'شركة معزولة'})
-        project = self.env['project.project'].create({'name': 'خاص', 'company_id': company.id})
+        # create() always lands on the Abroj company; move it explicitly to test isolation.
+        project = self.env['project.project'].create({'name': 'خاص'})
+        project.write({'company_id': company.id})
+        project.account_id.write({'company_id': company.id})
         inbox = self.env['abroj.contracting.inbox'].create({'project_id': project.id, 'filename': 'private.pdf'})
         self.assertFalse(self.env['abroj.contracting.inbox'].with_user(self.agent).search([('id', '=', inbox.id)]))
         with self.assertRaises(AccessError):

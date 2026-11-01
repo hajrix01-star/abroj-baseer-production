@@ -61,6 +61,7 @@ class ProjectAnalyticAuto(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        self.env['res.company']._abroj_force_company(vals_list)
         projects = super().create(vals_list)
         projects._abroj_ensure_analytic_account()
         return projects

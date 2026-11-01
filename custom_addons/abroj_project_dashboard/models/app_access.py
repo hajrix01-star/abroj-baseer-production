@@ -2,7 +2,7 @@
 
 The Abroj company is ONLY the id in the system parameter
 ``abroj_project_dashboard.company_id``; if it is empty or invalid, company
-id 56 is used.  There is no name matching or other fallback.
+id 56 is used (resolved by res.company._abroj_company in abroj_contracting).
 
 The projects app / switch button is for users with access to Projects whose
 allowed companies include that company, while it is the active company.
@@ -19,8 +19,7 @@ class ResUsers(models.Model):
 
     @api.model
     def _abroj_company_id(self):
-        value = (self.env['ir.config_parameter'].sudo().get_param(COMPANY_PARAM) or '').strip()
-        return int(value) if value.isdigit() and int(value) > 0 else DEFAULT_COMPANY_ID
+        return self.env['res.company']._abroj_company().id
 
     @api.model
     def _abroj_company(self):

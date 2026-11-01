@@ -29,13 +29,21 @@ class FakeCache {
     }
     async match(value) {
         const entry = this.entries.find((candidate) => this.matches(candidate, this.request(value)));
-        return entry?.response.clone();
+        if (!entry) return undefined;
+        const result = entry.response.clone();
+        for (const flag of ["type", "redirected"]) {
+            if (result[flag] !== entry.response[flag]) Object.defineProperty(result, flag, { value: entry.response[flag] });
+        }
+        return result;
     }
     async put(value, response) {
         const request = this.request(value);
         this.attempts++;
         await this.beforePut?.(request, response, this.attempts);
         const copy = new Response(await response.arrayBuffer(), { status: response.status, headers: response.headers });
+        for (const flag of ["type", "redirected"]) {
+            if (copy[flag] !== response[flag]) Object.defineProperty(copy, flag, { value: response[flag] });
+        }
         this.entries = this.entries.filter((entry) => !this.matches(entry, request));
         this.entries.push({ request: request.clone(), response: copy });
     }
@@ -46,7 +54,7 @@ class FakeCache {
     }
 }
 
-function environment({ source = ORIGINAL, caches: sharedCaches = new Map(), network } = {}) {
+function environment({ source = ORIGINAL, caches: sharedCaches = new Map(), network, controlledIds = null } = {}) {
     const handlers = {};
     const notices = [];
     const calls = [];
@@ -67,7 +75,10 @@ function environment({ source = ORIGINAL, caches: sharedCaches = new Map(), netw
             location: { origin: ORIGIN },
             clients: {
                 get: async (id) => sources.get(id),
-                matchAll: async () => [...sources.values()],
+                matchAll: async (options) => {
+                    assert.notEqual(options?.includeUncontrolled, true, "never treat waiting-worker sources as controlled");
+                    return [...sources.values()].filter((client) => controlledIds === null || controlledIds.includes(client.id));
+                },
                 claim() { throw new Error("No takeover"); },
             },
             addEventListener: (name, handler) => { handlers[name] = handler; },
@@ -308,4 +319,64 @@ test("client sends one manifest per controller and throttles only trusted warnin
     workers.controller = { postMessage: (data) => posts.push(data) };
     events.controllerchange();
     assert.equal(posts.length, 2, "new controller must receive current manifest");
+});
+
+const opaqueFont = () => {
+    const response = new Response("font");
+    Object.defineProperty(response, "type", { value: "opaque" });
+    return response;
+};
+
+test("active online migration reclaims only evidenced foreign opaque font paths", async () => {
+    const env = environment();
+    const cache = await env.cache();
+    const removable = [
+        "https://fonts.odoocdn.com/fonts/noto/NotoSans-Regular.woff2",
+        "https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap",
+    ];
+    const retainedOpaque = [
+        "https://fonts.odoocdn.com/unknown/font.woff2",
+        "https://fonts.googleapis.com/css2?family=OtherFont",
+        "https://fonts.googleapis.com/css2?family=Inter&family=OtherFont",
+        "https://unknown.example/fonts/noto/font.woff2",
+        "http://fonts.odoocdn.com/fonts/noto/font.woff2",
+        "https://fonts.odoocdn.com:8443/fonts/noto/font.woff2",
+        "/web/assets/local-font.woff2",
+    ];
+    for (const url of [...removable, ...retainedOpaque]) {
+        await cache.put(req(url), opaqueFont());
+    }
+    const nonopaque = "https://fonts.odoocdn.com/fonts/noto/Readable-Regular.woff2";
+    await cache.put(req(nonopaque), new Response("readable font"));
+    const unrelated = await env.cache("odoo-sw-cache");
+    await unrelated.put(req(removable[0]), opaqueFont());
+    await cache.put(req("/pos/ui/8"), new Response("previous POS boot"));
+    await env.request("/web/assets/current.js");
+    for (const url of removable) assert.equal(await cache.match(req(url)), undefined, url);
+    for (const url of retainedOpaque) assert.ok(await cache.match(req(url)), url);
+    assert.ok(await cache.match(req(nonopaque)));
+    assert.ok(await unrelated.match(req(removable[0])));
+    assert.equal(await (await cache.match(req("/pos/ui/8"))).text(), "previous POS boot");
+});
+
+test("offline manifest does not remove foreign opaque fonts", async () => {
+    const env = environment({ network: () => { throw new Error("offline"); } });
+    const cache = await env.cache();
+    const font = "https://fonts.odoocdn.com/fonts/noto/NotoSans-Regular.woff2";
+    await cache.put(req(font), opaqueFont());
+    await env.message(manifest(["/pos/ui/7"]));
+    assert.ok(await cache.match(req(font)));
+});
+
+test("waiting worker rejects even a forged new-format manifest before writes or cleanup", async () => {
+    const env = environment({ controlledIds: [] });
+    const cache = await env.cache();
+    const font = "https://fonts.odoocdn.com/fonts/noto/NotoSans-Regular.woff2";
+    await cache.put(req(font), opaqueFont());
+    const attempts = cache.attempts;
+    await env.message(manifest(["/pos/ui/7", "/web/assets/current.js"]));
+    assert.ok(await cache.match(req(font)));
+    assert.equal(cache.attempts, attempts);
+    assert.equal(env.calls.length, 0);
+    assert.equal(env.sharedCaches.has("baseer-pos-cache-metadata-v1"), false);
 });

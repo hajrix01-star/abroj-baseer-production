@@ -1,6 +1,6 @@
 {
     'name': 'Baseer POS Cache Resilience',
-    'version': '19.0.1.0.0',
+    'version': '19.0.1.0.1',
     'summary': 'Bound POS resource caching without touching unsynchronized orders',
     'category': 'Point of Sale',
     'license': 'LGPL-3',

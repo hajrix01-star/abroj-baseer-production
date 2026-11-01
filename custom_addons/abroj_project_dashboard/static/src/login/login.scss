@@ -109,3 +109,6 @@ body.abroj-login-body #wrapwrap, body.abroj-login-body main { background: $al-sa
         &__footer { margin-top: 20px; }
     }
 }
+
+.abroj-login__target.is-invalid .abroj-login__opt { outline: 2px solid #c0392b; outline-offset: 1px; }
+.abroj-login__target-error { margin: .5rem 0; font-size: .9rem; }

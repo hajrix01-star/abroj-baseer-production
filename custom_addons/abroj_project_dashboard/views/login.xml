@@ -4,13 +4,13 @@
         <xpath expr="//t[@t-call]" position="replace">
             <t t-set="abroj_lang" t-value="request.params.get('abroj_lang') or 'ar'"/>
             <t t-set="LL" t-value="request.params.get('abroj_labels') or {}"/>
-            <t t-set="abroj_other" t-value="'en' if abroj_lang == 'ar' else 'ar'"/>
+            <t t-set="abroj_other" t-value="'en' if request.params.get('abroj_lang', 'ar') == 'ar' else 'ar'"/>
             <t t-call="web.frontend_layout">
-                <t t-set="html_data" t-value="{'style': 'height: 100%;', 'lang': abroj_lang, 'dir': 'rtl' if abroj_lang == 'ar' else 'ltr'}"/>
+                <t t-set="html_data" t-value="{'style': 'height: 100%;', 'lang': abroj_lang, 'dir': 'rtl' if request.params.get('abroj_lang', 'ar') == 'ar' else 'ltr'}"/>
                 <t t-set="body_classname" t-value="'abroj-login-body'"/>
                 <t t-set="no_header" t-value="True"/>
                 <t t-set="no_footer" t-value="True"/>
-                <div t-attf-class="abroj-login #{'abroj-rtl' if abroj_lang == 'ar' else 'abroj-ltr'}" t-att-dir="'rtl' if abroj_lang == 'ar' else 'ltr'">
+                <div t-attf-class="abroj-login #{'abroj-rtl' if request.params.get('abroj_lang', 'ar') == 'ar' else 'abroj-ltr'}" t-att-dir="'rtl' if abroj_lang == 'ar' else 'ltr'">
                     <div class="abroj-login__pane">
                         <a t-if="LL.get('switch')" class="abroj-login__lang" t-att-lang="abroj_other" t-attf-href="#{request.httprequest.path}?lang=#{abroj_other}#{'&amp;redirect=' + quote_plus(redirect) if redirect else ''}">
                             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>
@@ -42,16 +42,16 @@
             <p class="abroj-login__welcome" t-out="L['welcome']"/>
         </xpath>
         <xpath expr="//div[hasclass('field-login')]" position="before">
-            <t t-set="abroj_target" t-value="request.params.get('abroj_target') or 'app'"/>
+            <t t-set="abroj_target" t-value="False"/>
             <fieldset class="abroj-login__target">
                 <legend class="visually-hidden" t-out="L['target_label']"/>
                 <label t-attf-class="abroj-login__opt #{'is-active' if abroj_target == 'app' else ''}">
-                    <input type="radio" name="abroj_target" value="app" t-att-checked="'checked' if abroj_target == 'app' else None"/>
+                    <input type="radio" autocomplete="off" name="abroj_target" value="app" t-att-data-required-msg="'اختر وجهة الدخول' if request.params.get('abroj_lang', 'ar') == 'ar' else 'Choose where to sign in: Projects or Odoo'"/>
                     <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
                     <span t-out="L['target_app']"/>
                 </label>
                 <label t-attf-class="abroj-login__opt #{'is-active' if abroj_target == 'odoo' else ''}">
-                    <input type="radio" name="abroj_target" value="odoo" t-att-checked="'checked' if abroj_target == 'odoo' else None"/>
+                    <input type="radio" autocomplete="off" name="abroj_target" value="odoo"/>
                     <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
                     <span t-out="L['target_odoo']"/>
                 </label>

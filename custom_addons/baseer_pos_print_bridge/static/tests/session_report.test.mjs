@@ -61,15 +61,48 @@ const handlerSource = readFileSync(new URL("../src/app/session_report.js", impor
 const setup = `
 const _t = (v) => v; class Component {}; class Navbar {}; const useState = (v) => v;
 const ensureSessionReportSynced = async () => {}; const reportJpeg = () => 'jpeg';
+const Node = { TEXT_NODE: 3 };
+const rasterCalls = [];
+const toCanvas = async (node, options) => { rasterCalls.push({ node, options }); return { width: options.width * options.pixelRatio }; };
 let extension; const patch = (_target, value) => { extension = value; };
 `;
-const { extension } = await import(`data:text/javascript;base64,${Buffer.from(setup + handlerSource + '\nexport { extension };').toString("base64")}`);
+const { extension, rasterCalls, renderCurrentSessionReport } = await import(`data:text/javascript;base64,${Buffer.from(setup + handlerSource + '\nexport { extension, rasterCalls };').toString("base64")}`);
+const classes = new Set();
+const reportText = { nodeType: 3, textContent: 'Cash\u0000 / نقدي\n40.00\u000b' };
+const nestedText = { nodeType: 3, textContent: 'Bank\u001f / بنك\t20.00' };
+const reportElement = {
+    nodeType: 1, childNodes: [reportText, { nodeType: 1, childNodes: [nestedText] }],
+    classList: { add: (value) => classes.add(value) }, clientWidth: 270, clientHeight: 801.2,
+};
+let mounted = 0;
+const renderer = {
+    async toHtml(component, props) {
+        assert.equal(component.template, "baseer_pos_print_bridge.CurrentSessionReport");
+        assert.ok(props.report);
+        return reportElement;
+    },
+    async whenMounted({ el, callback }) {
+        assert.equal(el, reportElement);
+        assert.ok(classes.has("pos-receipt-print"));
+        mounted++;
+        return callback(el);
+    },
+    async toCanvas() { throw new Error("Do not use the wrapper that drops font options"); },
+};
+await renderCurrentSessionReport(renderer, { summary: { total_amount: "40.00" } });
+assert.equal(reportText.textContent, "Cash / نقدي\n40.00", "strip XML-invalid controls but preserve Arabic and newline");
+assert.equal(nestedText.textContent, "Bank / بنك\t20.00", "sanitize nested text and preserve tab");
+assert.deepEqual(rasterCalls[0].options, {
+    backgroundColor: "#ffffff", width: 270, height: 802,
+    pixelRatio: 2.2, includeQueryParams: true, skipFonts: true,
+});
+assert.equal(mounted, 1);
 const notices = [];
 const host = {
     baseerSessionReport: { busy: false }, baseerReportAttempt: null,
     pos: {
         session: { id: 7 }, notification: { add: (...args) => notices.push(args) },
-        printer: { renderer: { toCanvas: async () => ({}) } },
+        printer: { renderer },
         data: { async call(_model, method) {
             if (method === "baseer_prepare_current_report") return { token: "original", report: {}, expires_at: Date.now() / 1000 + 300 };
             throw new Error("Lost enqueue response");
@@ -79,6 +112,7 @@ const host = {
 await extension.baseerPrintCurrentSession.call(host);
 assert.equal(host.baseerSessionReport.busy, false);
 assert.equal(host.baseerReportAttempt.token, "original");
+const rendersBeforeRetry = rasterCalls.length;
 host.pos.data.call = async (_model, method, args) => {
     assert.equal(method, "baseer_enqueue_current_report", "retry must not create a second snapshot");
     assert.equal(args[1], "original");
@@ -86,8 +120,9 @@ host.pos.data.call = async (_model, method, args) => {
 };
 await extension.baseerPrintCurrentSession.call(host);
 assert.equal(host.baseerReportAttempt, null);
+assert.equal(rasterCalls.length, rendersBeforeRetry, "network retry must reuse the first rendered raster");
 host.baseerSessionReport.busy = true;
 host.pos.data.call = async () => { throw new Error("must not execute"); };
 await extension.baseerPrintCurrentSession.call(host);
 assert.equal(notices.length, 2);
-console.log("Session report sync, draft preservation, retry and busy tests passed.");
+console.log("Session report sync, draft preservation, local-font native rendering, sanitation, retry and busy tests passed.");

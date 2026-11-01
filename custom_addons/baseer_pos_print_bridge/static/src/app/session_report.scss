@@ -4,7 +4,9 @@
     box-sizing: border-box;
     color: #000;
     background: #fff;
-    font-family: "Segoe UI", sans-serif;
+    // No web fonts are embedded in this raster. Keep headings and table cells
+    // on local fonts as well, regardless of the wider POS theme's font rules.
+    &, * { font-family: "Segoe UI", Tahoma, Arial, sans-serif !important; }
     font-size: 11px;
     line-height: 1.45;
     h2 { font-size: 16px; margin: 2px 0; text-align: center; }

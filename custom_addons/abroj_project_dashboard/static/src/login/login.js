@@ -38,7 +38,32 @@
                 });
             });
         });
-        form.addEventListener("submit", () => {
+        // Never preselect a destination (no localStorage restore); force an explicit choice.
+        const radios = form.querySelectorAll("input[name=abroj_target]");
+        radios.forEach((radio) => { radio.checked = false; });
+        form.querySelectorAll(".abroj-login__opt").forEach((opt) => opt.classList.remove("is-active"));
+        const fieldset = form.querySelector(".abroj-login__target");
+        const MSG = (radios[0] && radios[0].dataset.requiredMsg) || "اختر وجهة الدخول";
+        function showTargetError(show) {
+            let box = form.querySelector(".abroj-login__target-error");
+            if (show && !box && fieldset) {
+                box = document.createElement("p");
+                box.className = "abroj-login__target-error alert alert-danger";
+                box.setAttribute("role", "alert");
+                box.textContent = MSG;
+                fieldset.after(box);
+            }
+            if (!show && box) box.remove();
+            if (fieldset) fieldset.classList.toggle("is-invalid", show);
+        }
+        radios.forEach((radio) => radio.addEventListener("change", () => showTargetError(false)));
+        form.addEventListener("submit", (ev) => {
+            if (radios.length && !form.querySelector("input[name=abroj_target]:checked")) {
+                ev.preventDefault();
+                ev.stopImmediatePropagation();
+                showTargetError(true);
+                return;
+            }
             try {
                 const name = remember && remember.checked && login ? login.value.trim() : "";
                 window.sessionStorage.setItem(PENDING, name);

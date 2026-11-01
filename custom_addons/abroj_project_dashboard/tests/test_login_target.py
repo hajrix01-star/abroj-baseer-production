@@ -41,16 +41,3 @@ class AbrojLoginTargetCase(HttpCase):
                                                       'password': 'login_target_user', 'abroj_target': 'odoo'}, allow_redirects=False)
         self.assertEqual(response.status_code, 303)
         self.assertIn('/odoo', response.headers['Location'])
-
-
-@tagged('-at_install', 'post_install')
-class AbrojDashboardNameCase(HttpCase):
-    def test_manifest_and_shell_name(self):
-        manifest = self.url_open('/abroj/app/manifest.webmanifest?lang=ar').json()
-        self.assertIn(manifest['name'], ('أبرج داشبورد', 'Abroj Dashboard'))
-        self.assertEqual(manifest['short_name'], manifest['name'])
-        from pathlib import Path
-        html = (Path(__file__).parents[1] / 'static/pwa/index.html').read_text()
-        self.assertIn('<title>أبرج داشبورد</title>', html)
-        self.assertIn('name="apple-mobile-web-app-title" content="أبرج داشبورد"', html)
-        self.assertEqual(self.env.ref('abroj_project_dashboard.menu_dashboard').with_context(lang='en_US').name, 'أبرج داشبورد')

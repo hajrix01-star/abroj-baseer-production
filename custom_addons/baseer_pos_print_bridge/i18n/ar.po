@@ -1,6 +1,104 @@
 # Translation of Odoo Server.
 
 #. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/pos_session.py:0
+msgid "A Point of Sale user is required to print a session report."
+msgstr "يلزم مستخدم نقاط بيع لطباعة تقرير الجلسة."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/pos_session.py:0
+msgid "You can only print your own current session report."
+msgstr "يمكنك طباعة تقرير جلستك الحالية فقط."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/pos_session.py:0
+msgid "The current session report requires the open Point of Sale session."
+msgstr "يتطلب تقرير الجلسة الحالية جلسة نقاط بيع مفتوحة."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/pos_session.py:0
+msgid "Update the print agent before printing the current session report."
+msgstr "حدّث وكيل الطباعة قبل طباعة تقرير الجلسة الحالية."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/pos_session.py:0
+msgid "The session report authorization is invalid."
+msgstr "تفويض تقرير الجلسة غير صالح."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/pos_session.py:0
+msgid "The session report authorization is invalid or expired."
+msgstr "تفويض تقرير الجلسة غير صالح أو انتهت صلاحيته."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/job.py:0
+msgid "The session report image differs from its first recorded copy."
+msgstr "صورة تقرير الجلسة تختلف عن النسخة المسجلة أولًا."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/job.py:0
+msgid "The report print job failed. Ask a manager to review Print Jobs before retrying."
+msgstr "تعذّر تنفيذ طباعة التقرير. اطلب من المدير مراجعة مهام الطباعة قبل إعادة المحاولة."
+
+#. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/session_report.js:0
+msgid "Reconnect before printing the current session report."
+msgstr "أعد الاتصال قبل طباعة تقرير الجلسة الحالية."
+
+#. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/session_report.js:0
+msgid "Wait for pending operations to synchronize, then print the session report."
+msgstr "انتظر مزامنة العمليات المعلّقة، ثم اطبع تقرير الجلسة."
+
+#. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/session_report.js:0
+msgid "Some operations have not synchronized. The session report was not printed."
+msgstr "لم تتزامن بعض العمليات. لم تتم طباعة تقرير الجلسة."
+
+#. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/session_report.js:0
+msgid "The session report was already accepted by Windows."
+msgstr "سبق قبول تقرير الجلسة في طباعة ويندوز."
+
+#. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/session_report.js:0
+msgid "The current session report is queued for printing."
+msgstr "أُضيف تقرير الجلسة الحالية إلى قائمة الطباعة."
+
+#. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/session_report.js:0
+msgid "The session report could not be printed."
+msgstr "تعذّرت طباعة تقرير الجلسة."
+
+#. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/session_report.js:0
+msgid "Preparing session report…"
+msgstr "جارٍ تجهيز تقرير الجلسة…"
+
+#. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/session_report.js:0
+msgid "Print current session report"
+msgstr "طباعة تقرير الجلسة الحالية"
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/job.py:0
+msgid "Current session report"
+msgstr "تقرير الجلسة الحالية"
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/job.py:0
+msgid "The stored session report image has expired. Request a new current-session report; the original snapshot cannot be recreated."
+msgstr "انتهت مدة حفظ صورة تقرير الجلسة. اطلب تقريرًا جديدًا للجلسة الحالية؛ لا يمكن إعادة إنشاء الصورة الأصلية لنفس اللحظة."
+
+#. module: baseer_pos_print_bridge
 #. odoo-javascript
 #: code:addons/baseer_pos_print_bridge/static/src/app/line_actions.js:0
 msgid "Reconnect to the server to check the pending kitchen action."

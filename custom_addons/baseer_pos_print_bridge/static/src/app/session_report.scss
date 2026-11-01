@@ -1,0 +1,20 @@
+.baseer-current-session-report {
+    width: 270px;
+    padding: 6px;
+    box-sizing: border-box;
+    color: #000;
+    background: #fff;
+    font-family: "Segoe UI", sans-serif;
+    font-size: 11px;
+    line-height: 1.45;
+    h2 { font-size: 16px; margin: 2px 0; text-align: center; }
+    h3 { font-size: 12px; margin: 12px 0 4px; text-align: center; }
+    .report-subtitle { text-align: center; margin-bottom: 12px; }
+    table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+    th, td { border: 1px solid #555; padding: 4px; overflow-wrap: anywhere; }
+    th { width: 57%; text-align: start; font-weight: normal; }
+    td { text-align: center; font-variant-numeric: tabular-nums; }
+    .report-total { font-weight: bold; border-top: 2px solid #000; }
+    .report-total th { font-weight: bold; }
+    p { margin: 12px 0 0; text-align: center; font-size: 10px; }
+}

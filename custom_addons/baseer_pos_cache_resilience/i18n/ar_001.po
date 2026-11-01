@@ -1,0 +1,11 @@
+msgid ""
+msgstr ""
+"Language: ar_001\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. module: baseer_pos_cache_resilience
+#. odoo-javascript
+#: code:addons/baseer_pos_cache_resilience/static/src/cache_status.js:0
+msgid "Some offline files could not be saved. Keep this register connected to the internet. Do not clear site data; contact your administrator if this warning returns."
+msgstr "تعذّر حفظ بعض ملفات العمل دون اتصال. أبقِ الكاشير متصلًا بالإنترنت. لا تمسح بيانات الموقع، وتواصل مع المسؤول إذا تكرر التنبيه."

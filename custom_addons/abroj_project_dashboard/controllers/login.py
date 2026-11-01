@@ -1,7 +1,7 @@
 """Abroj bilingual login page with a real "remember me" option."""
 
 from odoo import http
-from odoo.addons.web.controllers.home import Home
+from odoo.addons.web.controllers.home import Home, ensure_db, SIGN_UP_REQUEST_PARAMS
 from odoo.http import request
 
 LOGIN_LANGS = {'ar': 'ar_001', 'en': 'en_US'}
@@ -48,16 +48,15 @@ def _is_app_path(url):
     return any(url == p or url.startswith(p + '/') for p in APP_PATHS) and url not in APP_LOGIN_PATHS
 
 
+TARGET_REQUIRED = {'ar': 'اختر وجهة الدخول', 'en': 'Choose where to sign in: Projects or Odoo'}
+
+
 def _login_target(redirect, kw):
-    """'app' (Abroj projects PWA) or 'odoo' (backend)."""
+    """'app' (Abroj projects PWA), 'odoo' (backend) or None.
+
+    Never inferred from the URL or redirect: the user must choose explicitly."""
     target = kw.get('abroj_target')
-    if target in ('app', 'odoo'):
-        return target
-    if request.httprequest.path in APP_LOGIN_PATHS or _is_app_path(redirect):
-        return 'app'
-    if redirect:
-        return 'odoo'
-    return 'app'
+    return target if target in ('app', 'odoo') else None
 
 
 class AbrojLogin(Home):
@@ -83,6 +82,18 @@ class AbrojLogin(Home):
             request.update_context(lang=code)
         request.params['abroj_lang'] = short
         request.params['abroj_labels'] = LABELS[short]
+        if request.httprequest.method == 'POST' and not target:
+            # No destination chosen: re-render the form with an error, never authenticate.
+            ensure_db()
+            if request.env.uid is None and request.session.uid is None:
+                request.env['ir.http']._auth_method_public()
+            values = {k: v for k, v in request.params.items() if k in SIGN_UP_REQUEST_PARAMS}
+            values.update(error=TARGET_REQUIRED[short], disable_database_manager=True, databases=None)
+            response = request.render('web.login', values)
+            response.headers['Cache-Control'] = 'no-cache'
+            response.headers['X-Frame-Options'] = 'SAMEORIGIN'
+            response.headers['Content-Security-Policy'] = "frame-ancestors 'self'"
+            return response
         response = super().web_login(redirect=redirect, **kw)
         if request.params.get('login_success'):
             # 'Projects' chosen by a user without projects access (or outside

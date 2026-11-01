@@ -59,14 +59,14 @@ const handlerSource = readFileSync(new URL("../src/app/session_report.js", impor
     .replace(/^import .*;\r?\n/gm, "")
     .replace("export class", "class");
 const setup = `
-const _t = (v) => v; class Component {}; class Navbar {}; const useState = (v) => v;
+const _t = (v) => v; class Component {}; class Navbar {}; class Dialog {}; const useState = (v) => v;
 const ensureSessionReportSynced = async () => {}; const reportJpeg = () => 'jpeg';
 const Node = { TEXT_NODE: 3 };
 const rasterCalls = [];
 const toCanvas = async (node, options) => { rasterCalls.push({ node, options }); return { width: options.width * options.pixelRatio }; };
 let extension; const patch = (_target, value) => { extension = value; };
 `;
-const { extension, rasterCalls, renderCurrentSessionReport } = await import(`data:text/javascript;base64,${Buffer.from(setup + handlerSource + '\nexport { extension, rasterCalls };').toString("base64")}`);
+const { extension, rasterCalls, renderCurrentSessionReport, BaseerCurrentSessionReportDialog } = await import(`data:text/javascript;base64,${Buffer.from(setup + handlerSource + '\nexport { extension, rasterCalls };').toString("base64")}`);
 const classes = new Set();
 const reportText = { nodeType: 3, textContent: 'Cash\u0000 / نقدي\n40.00\u000b' };
 const nestedText = { nodeType: 3, textContent: 'Bank\u001f / بنك\t20.00' };
@@ -98,31 +98,91 @@ assert.deepEqual(rasterCalls[0].options, {
 });
 assert.equal(mounted, 1);
 const notices = [];
+const openedDialogs = [];
+const calls = [];
+const originalSnapshot = { token: "original", report: {}, expires_at: Date.now() / 1000 + 300, print_available: true };
 const host = {
-    baseerSessionReport: { busy: false }, baseerReportAttempt: null,
+    baseerSessionReport: { busy: false },
+    dialog: { add: (component, props) => openedDialogs.push({ component, props }) },
     pos: {
         session: { id: 7 }, notification: { add: (...args) => notices.push(args) },
         printer: { renderer },
         data: { async call(_model, method) {
-            if (method === "baseer_prepare_current_report") return { token: "original", report: {}, expires_at: Date.now() / 1000 + 300 };
+            calls.push(method);
+            if (method === "baseer_prepare_current_report") return originalSnapshot;
             throw new Error("Lost enqueue response");
         } },
     },
 };
-await extension.baseerPrintCurrentSession.call(host);
+const rendersBeforePreview = rasterCalls.length;
+await extension.baseerViewCurrentSession.call(host);
 assert.equal(host.baseerSessionReport.busy, false);
-assert.equal(host.baseerReportAttempt.token, "original");
+assert.deepEqual(calls, ["baseer_prepare_current_report"]);
+assert.equal(rasterCalls.length, rendersBeforePreview, "opening preview must never rasterize");
+assert.equal(openedDialogs.length, 1);
+assert.equal(openedDialogs[0].component, BaseerCurrentSessionReportDialog);
+function createDialog(snapshot) {
+    const dialog = Object.create(BaseerCurrentSessionReportDialog.prototype);
+    dialog.props = { pos: host.pos, snapshot, close: () => {} };
+    dialog.setup();
+    return dialog;
+}
+const dialog = createDialog(openedDialogs[0].props.snapshot);
+assert.equal(dialog.reportImage, null);
+await dialog.printReport();
+assert.equal(dialog.state.busy, false);
+assert.equal(dialog.state.printed, false);
+assert.equal(dialog.state.snapshot.token, "original");
+assert.equal(dialog.reportImage, "jpeg");
+assert.match(dialog.state.error, /Lost enqueue response/);
 const rendersBeforeRetry = rasterCalls.length;
 host.pos.data.call = async (_model, method, args) => {
     assert.equal(method, "baseer_enqueue_current_report", "retry must not create a second snapshot");
     assert.equal(args[1], "original");
+    calls.push(method);
     return { state: "pending" };
 };
-await extension.baseerPrintCurrentSession.call(host);
-assert.equal(host.baseerReportAttempt, null);
+await dialog.printReport();
+assert.equal(dialog.state.printed, true);
 assert.equal(rasterCalls.length, rendersBeforeRetry, "network retry must reuse the first rendered raster");
+const callsAfterPrint = calls.length;
+await dialog.printReport();
+assert.equal(calls.length, callsAfterPrint, "successful preview is not silently printed a second time");
+
+const refreshedSnapshot = { token: "refreshed", report: { summary: { total_amount: "50.00" } }, expires_at: Date.now() / 1000 + 300, print_available: true };
+host.pos.data.call = async (_model, method) => {
+    assert.equal(method, "baseer_prepare_current_report", "refresh is read-only and must not enqueue");
+    return refreshedSnapshot;
+};
+await dialog.refreshReport();
+assert.equal(dialog.state.snapshot, refreshedSnapshot);
+assert.equal(dialog.state.printed, false);
+assert.equal(dialog.reportImage, null);
+assert.equal(rasterCalls.length, rendersBeforeRetry, "refresh must never rasterize");
+
+host.pos.data.call = async () => { throw new Error("must not call server"); };
+const expiredDialog = createDialog({ ...originalSnapshot, expires_at: 0 });
+await expiredDialog.printReport();
+assert.match(expiredDialog.state.error, /expired.*Refresh/);
+assert.equal(expiredDialog.state.snapshot.token, "original", "Print must not replace visible figures with an unseen fresh report");
+assert.equal(expiredDialog.reportImage, null);
+const noPrinterDialog = createDialog({ ...originalSnapshot, print_available: false });
+await noPrinterDialog.printReport();
+assert.equal(noPrinterDialog.reportImage, null);
+assert.equal(noPrinterDialog.state.busy, false);
+assert.equal(rasterCalls.length, rendersBeforeRetry);
+
 host.baseerSessionReport.busy = true;
 host.pos.data.call = async () => { throw new Error("must not execute"); };
-await extension.baseerPrintCurrentSession.call(host);
-assert.equal(notices.length, 2);
-console.log("Session report sync, draft preservation, local-font native rendering, sanitation, retry and busy tests passed.");
+await extension.baseerViewCurrentSession.call(host);
+assert.equal(openedDialogs.length, 1);
+host.baseerSessionReport.busy = false;
+await extension.baseerViewCurrentSession.call(host);
+assert.equal(host.baseerSessionReport.busy, false);
+assert.equal(notices.length, 1);
+const template = readFileSync(new URL("../src/app/session_report.xml", import.meta.url), "utf8");
+assert.match(template, /onSelected="\(\) => this\.baseerViewCurrentSession\(\)"/);
+assert.match(template, /View session report/);
+assert.doesNotMatch(template, /DropdownItem t-if="pos\.config\.baseer_direct_print_enabled"/);
+assert.match(template, /t-if="state\.snapshot\.print_available"[\s\S]*t-on-click="printReport"/);
+console.log("Session report preview-only opening/refresh, explicit printing, expiry, permissions visibility, rendering and retry tests passed.");

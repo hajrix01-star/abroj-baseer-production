@@ -2,12 +2,27 @@
 <templates id="template" xml:space="preserve">
     <t t-name="baseer_pos_print_bridge.CurrentSessionReportMenu" t-inherit="point_of_sale.Navbar" t-inherit-mode="extension">
         <xpath expr="//div[hasclass('pos-burger-menu-items')]" position="inside">
-            <DropdownItem t-if="pos.config.baseer_direct_print_enabled"
-                          onSelected="() => this.baseerPrintCurrentSession()">
+            <DropdownItem onSelected="() => this.baseerViewCurrentSession()">
                 <span t-if="baseerSessionReport.busy">Preparing session report…</span>
-                <span t-else="">Print current session report</span>
+                <span t-else="">View session report</span>
             </DropdownItem>
         </xpath>
+    </t>
+    <t t-name="baseer_pos_print_bridge.CurrentSessionReportDialog">
+        <Dialog title="title" size="'md'">
+            <div t-if="state.error" class="alert alert-warning" role="alert" t-esc="state.error"/>
+            <div t-if="state.printed" class="alert alert-success" role="status">The session report was sent to the print queue.</div>
+            <div class="baseer-session-report-preview">
+                <BaseerCurrentSessionReport report="state.snapshot.report"/>
+            </div>
+            <p t-if="!state.snapshot.print_available" class="text-muted mt-3 mb-0">Printing is unavailable. You can still view and refresh this report.</p>
+            <t t-set-slot="footer">
+                <button t-if="state.snapshot.print_available" class="btn btn-primary"
+                        t-att-disabled="state.busy or state.printed" t-on-click="printReport">Print</button>
+                <button class="btn btn-secondary" t-att-disabled="state.busy" t-on-click="refreshReport">Refresh report</button>
+                <button class="btn btn-secondary" t-on-click="() => props.close()">Close</button>
+            </t>
+        </Dialog>
     </t>
     <t t-name="baseer_pos_print_bridge.CurrentSessionReport">
         <div class="pos-receipt baseer-current-session-report" dir="rtl">

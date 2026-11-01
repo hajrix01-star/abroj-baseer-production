@@ -20,3 +20,12 @@
     .report-total th { font-weight: bold; }
     p { margin: 12px 0 0; text-align: center; font-size: 10px; }
 }
+
+// Screen preview uses the same report component at a readable dialog width.
+// Raster mounting is outside this wrapper and retains its 270px thermal layout.
+.baseer-session-report-preview .baseer-current-session-report {
+    width: 100%;
+    max-width: 600px;
+    margin-inline: auto;
+    font-size: 13px;
+}

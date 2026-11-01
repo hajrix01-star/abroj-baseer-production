@@ -1817,12 +1817,32 @@ class TestBaseerPrintBridgeHybrid(TransactionCase):
     def test_current_report_rejects_unsupported_or_unauthorized_printer(self):
         _cashier, _order, session = self._current_report_session()
         self.agent.with_context(baseer_print_internal=True).write({'agent_version': '1.3.0'})
+        snapshot = session.baseer_prepare_current_report()
+        self.assertFalse(snapshot['print_available'])
         with self.assertRaises(ValidationError):
-            session.baseer_prepare_current_report()
+            session.baseer_enqueue_current_report(snapshot['token'], self._native_receipt_sample())
         self.agent.with_context(baseer_print_internal=True).write({'agent_version': '1.4.6'})
         self.receipt.active = False
+        snapshot = session.baseer_prepare_current_report()
+        self.assertFalse(snapshot['print_available'])
         with self.assertRaises(ValidationError):
-            session.baseer_prepare_current_report()
+            session.baseer_enqueue_current_report(snapshot['token'], self._native_receipt_sample())
+
+    def test_current_report_preview_without_printing_does_not_mutate_operations(self):
+        _cashier, order, session = self._current_report_session()
+        self.config.baseer_direct_print_enabled = False
+        before_order = order.read(['state', 'amount_total', 'nb_print', 'account_move', 'write_date'])
+        before_session = session.read(['state', 'stop_at', 'write_date'])
+        Job = self.env['baseer.print.job']
+        before_jobs = Job.search_count([('source_session_id', '=', session.id)])
+        snapshot = session.baseer_prepare_current_report()
+        self.assertFalse(snapshot['print_available'])
+        self.assertEqual(snapshot['report']['summary']['total_amount'], '10.00')
+        self.assertEqual(before_jobs, Job.search_count([('source_session_id', '=', session.id)]))
+        self.assertEqual(before_order, order.read(['state', 'amount_total', 'nb_print', 'account_move', 'write_date']))
+        self.assertEqual(before_session, session.read(['state', 'stop_at', 'write_date']))
+        with self.assertRaises(ValidationError):
+            session.baseer_enqueue_current_report(snapshot['token'], self._native_receipt_sample())
 
     def test_current_report_raster_claim_reprint_and_purge_leave_orders_untouched(self):
         _cashier, order, session = self._current_report_session()

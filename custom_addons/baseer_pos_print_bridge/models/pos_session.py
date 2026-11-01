@@ -22,20 +22,23 @@ class PosSession(models.Model):
         related='config_id.baseer_print_session_close_report', readonly=True,
     )
 
-    def _baseer_current_report_printer(self):
-        """Authorize before reading aggregate or privileged hardware data."""
+    def _baseer_assert_current_report_access(self):
+        """Authorize viewing the current session independently of printing hardware."""
         self.ensure_one()
         self.check_access('read')
         self.config_id.check_access('read')
         user = self.env.user
         if not user.has_group('point_of_sale.group_pos_user'):
-            raise AccessError(_('A Point of Sale user is required to print a session report.'))
+            raise AccessError(_('A Point of Sale user is required to view a session report.'))
         if self.company_id not in self.env.companies:
             raise AccessError(_('You do not have access to this session company.'))
         if (self.user_id != user and not user.has_group('point_of_sale.group_pos_manager')):
-            raise AccessError(_('You can only print your own current session report.'))
+            raise AccessError(_('You can only view your own current session report.'))
         if self.state != 'opened' or self.config_id.current_session_id != self:
             raise ValidationError(_('The current session report requires the open Point of Sale session.'))
+    def _baseer_current_report_printer(self):
+        """Printing retains all report authorization and hardware checks."""
+        self._baseer_assert_current_report_access()
         config = self.config_id
         printer = config.sudo().baseer_receipt_printer_id
         if (not config.baseer_direct_print_enabled or not printer or not printer.active
@@ -47,7 +50,12 @@ class PosSession(models.Model):
 
     def baseer_prepare_current_report(self):
         """Return server values plus a short-lived, user/session-bound snapshot."""
-        self._baseer_current_report_printer()
+        self._baseer_assert_current_report_access()
+        try:
+            self._baseer_current_report_printer()
+            print_available = True
+        except ValidationError:
+            print_available = False
         as_of = fields.Datetime.now()
         report = self.env['baseer.print.job']._session_close_payload(self, as_of=as_of)
         report['ticket_type'] = 'session_report'
@@ -64,7 +72,10 @@ class PosSession(models.Model):
         }
         encoded = base64.urlsafe_b64encode(json.dumps(snapshot, separators=(',', ':'), ensure_ascii=False).encode()).decode()
         signature = odoo_hmac(self.env(su=True), 'baseer.current-session-report.v1', encoded)
-        return {'report': report, 'token': encoded + '.' + signature, 'expires_at': snapshot['expires_at']}
+        return {
+            'report': report, 'token': encoded + '.' + signature,
+            'expires_at': snapshot['expires_at'], 'print_available': print_available,
+        }
 
     def baseer_enqueue_current_report(self, token, jpeg_base64):
         printer = self._baseer_current_report_printer()

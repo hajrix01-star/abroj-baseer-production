@@ -12,12 +12,12 @@ function completedPending(pos) {
 
 export async function ensureSessionReportSynced(pos) {
     if (pos.data.network.offline) {
-        throw new Error(_t("Reconnect before printing the current session report."));
+        throw new Error(_t("Reconnect to load the current session report."));
     }
     // Native syncAllOrders also processes deletions, even with an explicit order
     // list. Do not let a reporting action delete or synchronize an active basket.
     if (pos.getOrderIdsToDelete().length || pos.syncingOrders.size || pos.data.network.unsyncData.length) {
-        throw new Error(_t("Wait for pending operations to synchronize, then print the session report."));
+        throw new Error(_t("Wait for pending operations to synchronize, then open the session report."));
     }
     const orders = completedPending(pos);
     if (orders.length) {
@@ -25,7 +25,7 @@ export async function ensureSessionReportSynced(pos) {
     }
     if (pos.data.network.offline || completedPending(pos).length || pos.syncingOrders.size
             || pos.getOrderIdsToDelete().length || pos.data.network.unsyncData.length) {
-        throw new Error(_t("Some operations have not synchronized. The session report was not printed."));
+        throw new Error(_t("Some operations have not synchronized. The session report is not ready."));
     }
 }
 

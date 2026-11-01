@@ -1,6 +1,62 @@
 # Translation of Odoo Server.
 
 #. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/session_report.js:0
+#: code:addons/baseer_pos_print_bridge/static/src/app/session_report.xml:0
+msgid "View session report"
+msgstr "عرض تقرير الجلسة"
+
+#. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/session_report.js:0
+#: code:addons/baseer_pos_print_bridge/static/src/app/session_report.xml:0
+msgid "The session report could not be loaded."
+msgstr "تعذّر تحميل تقرير الجلسة."
+
+#. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/session_report.js:0
+#: code:addons/baseer_pos_print_bridge/static/src/app/session_report.xml:0
+msgid "This preview has expired. Refresh the report before printing."
+msgstr "انتهت صلاحية هذه المعاينة. حدّث التقرير قبل الطباعة."
+
+#. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/session_report.js:0
+#: code:addons/baseer_pos_print_bridge/static/src/app/session_report.xml:0
+msgid "The session report was sent to the print queue."
+msgstr "أُرسل تقرير الجلسة إلى قائمة الطباعة."
+
+#. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/session_report.js:0
+#: code:addons/baseer_pos_print_bridge/static/src/app/session_report.xml:0
+msgid "Printing is unavailable. You can still view and refresh this report."
+msgstr "الطباعة غير متاحة. يمكنك عرض التقرير وتحديثه."
+
+#. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/session_report.js:0
+#: code:addons/baseer_pos_print_bridge/static/src/app/session_report.xml:0
+msgid "Print"
+msgstr "طباعة"
+
+#. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/session_report.js:0
+#: code:addons/baseer_pos_print_bridge/static/src/app/session_report.xml:0
+msgid "Refresh report"
+msgstr "تحديث التقرير"
+
+#. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/session_report.js:0
+#: code:addons/baseer_pos_print_bridge/static/src/app/session_report.xml:0
+msgid "Close"
+msgstr "إغلاق"
+
+#. module: baseer_pos_print_bridge
 #: code:addons/baseer_pos_print_bridge/models/pos_session.py:0
 msgid "A Point of Sale user is required to print a session report."
 msgstr "يلزم مستخدم نقاط بيع لطباعة تقرير الجلسة."
@@ -43,20 +99,20 @@ msgstr "تعذّر تنفيذ طباعة التقرير. اطلب من المد�
 #. module: baseer_pos_print_bridge
 #. odoo-javascript
 #: code:addons/baseer_pos_print_bridge/static/src/app/session_report.js:0
-msgid "Reconnect before printing the current session report."
-msgstr "أعد الاتصال قبل طباعة تقرير الجلسة الحالية."
+msgid "Reconnect to load the current session report."
+msgstr "أعد الاتصال لتحميل تقرير الجلسة الحالية."
 
 #. module: baseer_pos_print_bridge
 #. odoo-javascript
 #: code:addons/baseer_pos_print_bridge/static/src/app/session_report.js:0
-msgid "Wait for pending operations to synchronize, then print the session report."
-msgstr "انتظر مزامنة العمليات المعلّقة، ثم اطبع تقرير الجلسة."
+msgid "Wait for pending operations to synchronize, then open the session report."
+msgstr "انتظر مزامنة العمليات المعلّقة، ثم افتح تقرير الجلسة."
 
 #. module: baseer_pos_print_bridge
 #. odoo-javascript
 #: code:addons/baseer_pos_print_bridge/static/src/app/session_report.js:0
-msgid "Some operations have not synchronized. The session report was not printed."
-msgstr "لم تتزامن بعض العمليات. لم تتم طباعة تقرير الجلسة."
+msgid "Some operations have not synchronized. The session report is not ready."
+msgstr "لم تتزامن بعض العمليات. تقرير الجلسة غير جاهز."
 
 #. module: baseer_pos_print_bridge
 #. odoo-javascript
@@ -89,6 +145,8 @@ msgid "Print current session report"
 msgstr "طباعة تقرير الجلسة الحالية"
 
 #. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/session_report.js:0
 #: code:addons/baseer_pos_print_bridge/models/job.py:0
 msgid "Current session report"
 msgstr "تقرير الجلسة الحالية"

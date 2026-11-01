@@ -4,11 +4,42 @@ import { Component, useState } from "@odoo/owl";
 import { patch } from "@web/core/utils/patch";
 import { _t } from "@web/core/l10n/translation";
 import { Navbar } from "@point_of_sale/app/components/navbar/navbar";
+import { toCanvas } from "@point_of_sale/app/utils/html-to-image";
 import { ensureSessionReportSynced, reportJpeg } from "./session_report_flow";
 
 export class BaseerCurrentSessionReport extends Component {
     static template = "baseer_pos_print_bridge.CurrentSessionReport";
     static props = { report: Object };
+}
+
+function sanitizeReportText(node) {
+    // Preserve the native renderer's SVG/XML text sanitation when using its
+    // lower-level image utility. This only touches the report's mounted copy.
+    if (node.nodeType === Node.TEXT_NODE) {
+        node.textContent = node.textContent.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, ""); // eslint-disable-line no-control-regex
+        return;
+    }
+    for (const child of node.childNodes) sanitizeReportText(child);
+}
+
+export async function renderCurrentSessionReport(renderer, report) {
+    const el = await renderer.toHtml(BaseerCurrentSessionReport, { report });
+    el.classList.add("pos-receipt-print");
+    sanitizeReportText(el);
+    // Odoo's renderer.toCanvas wrapper does not forward skipFonts and fixes
+    // pixelRatio to 1. Use its public mounting API and native image utility
+    // for this system-font-only report; other receipts remain unchanged.
+    return renderer.whenMounted({
+        el,
+        callback: (node) => toCanvas(node, {
+            backgroundColor: "#ffffff",
+            width: Math.ceil(node.clientWidth),
+            height: Math.ceil(node.clientHeight),
+            pixelRatio: 2.2,
+            includeQueryParams: true,
+            skipFonts: true,
+        }),
+    });
 }
 
 patch(Navbar.prototype, {
@@ -32,10 +63,7 @@ patch(Navbar.prototype, {
             }
             const attempt = this.baseerReportAttempt;
             if (!attempt.image) {
-                const canvas = await this.pos.printer.renderer.toCanvas(
-                    BaseerCurrentSessionReport, { report: attempt.report },
-                    { addClass: "pos-receipt-print", pixelRatio: 2.2 }
-                );
+                const canvas = await renderCurrentSessionReport(this.pos.printer.renderer, attempt.report);
                 attempt.image = reportJpeg(canvas);
             }
             const result = await this.pos.data.call(

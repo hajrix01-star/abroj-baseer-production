@@ -28,8 +28,10 @@ Assumption: four active business companies, up to 20 simultaneous cashiers; repo
 | G1 | Approved | Conservative assumptions; independent reviews log 4–5 |
 | G2 | Approved | ERP/report and cache reviewer conditions log 4–5 |
 | G3 | Approved | Native Odoo 19 + existing dependencies; no packages; log 4–5 |
-| G4 | Draft | Existing native components and closing-report layout contract |
-| G5–G8 | Not started | Implementation/tests/QA/independent delivery pending |
+| G4 | Implemented; visual QA pending | Native components and existing closing-report layout |
+| G5–G6 | Source checks passed | PR #609; complete Odoo CI and both Node suites |
+| G7 | QA pending | Protected QA release policy; no Live authorization |
+| G8 | Source review GO; operational review pending | Independent delivery review, log 9–10 |
 
 ## Focused architecture and acceptance map
 
@@ -62,3 +64,4 @@ Delivery review is focused on changed boundaries only: independent `pos_delivery
 7. QA read-only check: current source `2a9df1de08ba26fbf94cba539980a36b0b11ddcd`; protected poller active. Local isolated DB started successfully; unrelated local containers left unchanged. CI extended to run both new Node suites and install/test the cache module alongside guarded POS regressions. No application data or server configuration changed.
 8. First real Odoo run: 163 tests, 0 assertions failed, 3 new report fixture errors (native paid-to-draft denial, unconfigured payment method, same-transaction queue timestamp). Implementer corrected fixture setup without weakening production guards. Re-running these three affected cases only. Cache endpoint authentication/scope and report cross-user/company rejection passed. Output logs private under `output/pos-session-cache-odoo-r1.log` and `r2.log`.
 9. Corrected fixtures passed: 0 failed/0 errors across all 3 rerun cases; remaining 160 cases passed in r1. Report Node sync/draft/retry/busy suite passed; final cache Node suite 15/15 passed. Independent delivery reviewer verified quota retry fresh-body handling, Vary-aware byte accounting and startup manifest deduplication; no P0/P1 source findings. PR/full fresh CI required next, followed by QA renderer/UI/offline acceptance. Local rerun filestore warnings arose from disposable runner data directory; no operational data involved and no visual acceptance claimed from that run.
+10. PR #609 passed all five checks, including the complete Odoo POS suite (run 41311860440), and merged as `78d8203e0c693423eff7a8f1121048848a0806a4`. Independent review authorizes the bounded QA deployment, not Live. Local isolated test database container stopped with data preserved. QA policy updates only the print bridge and installs cache resilience.

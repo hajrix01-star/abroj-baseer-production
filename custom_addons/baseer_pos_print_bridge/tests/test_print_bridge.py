@@ -1709,3 +1709,148 @@ class TestBaseerPrintBridgeHybrid(TransactionCase):
         self.assertEqual(reprint.reprint_of_id, original)
         self.assertEqual(reprint.source_session_id, session)
         self.assertEqual(reprint.payload, original.payload)
+
+    def _current_report_session(self, state='paid'):
+        cashier, order = self._cashier_native_receipt_order(state=state)
+        session = order.session_id
+        session.write({'state': 'opened', 'user_id': cashier.id, 'start_at': fields.Datetime.now() - timedelta(hours=1)})
+        return cashier, order, session.with_user(cashier)
+
+    def test_current_report_cashier_snapshot_is_immutable_and_idempotent(self):
+        cashier, order, session = self._current_report_session()
+        before = order.read(['state', 'amount_total', 'nb_print', 'account_move', 'write_date'])
+        before_session = session.read(['state', 'stop_at', 'write_date'])
+        snapshot = session.baseer_prepare_current_report()
+        self.assertFalse(snapshot['report']['session']['closed_at'])
+        self.assertTrue(snapshot['report']['session']['as_of'])
+        self.assertEqual(snapshot['report']['summary']['total_amount'], '10.00')
+        # A later committed-equivalent sale in this transaction must not replace
+        # the values the cashier rendered from the first signed snapshot.
+        later = self._order(2)
+        later.write({'state': 'paid', 'amount_paid': 20})
+        image = self._native_receipt_sample()
+        first = session.baseer_enqueue_current_report(snapshot['token'], image)
+        second = session.baseer_enqueue_current_report(snapshot['token'], image)
+        self.assertEqual(first['job_id'], second['job_id'])
+        job = self.env['baseer.print.job'].browse(first['job_id'])
+        self.assertEqual(job.ticket_type, 'session_report')
+        self.assertFalse(job.source_order_id)
+        self.assertEqual(job.source_session_id, session)
+        self.assertEqual(job.payload['report_snapshot']['summary']['total_amount'], '10.00')
+        self.assertEqual(job.payload['requested_by'], cashier.id)
+        self.assertEqual(before, order.read(['state', 'amount_total', 'nb_print', 'account_move', 'write_date']))
+        self.assertEqual(before_session, session.read(['state', 'stop_at', 'write_date']))
+        fresh = session.baseer_prepare_current_report()
+        self.assertEqual(fresh['report']['summary']['total_amount'], '30.00')
+        self.assertNotEqual(first['job_id'], session.baseer_enqueue_current_report(fresh['token'], image)['job_id'])
+
+    def test_current_report_matches_closing_engine_with_split_payment_and_refund(self):
+        second_method = self.env['pos.payment.method'].create({'name': 'Report bank', 'company_id': self.company.id})
+        self.config.write({'payment_method_ids': [Command.link(second_method.id)]})
+        _cashier, order, session = self._current_report_session()
+        first_method = self.config.payment_method_ids.filtered(lambda method: method != second_method)[:1]
+        self.env['pos.payment'].create([
+            {'pos_order_id': order.id, 'payment_method_id': first_method.id, 'amount': 6},
+            {'pos_order_id': order.id, 'payment_method_id': second_method.id, 'amount': 4},
+        ])
+        refund = self._order(-1)
+        refund.write({'state': 'paid', 'amount_paid': -10, 'is_refund': True})
+        self.env['pos.payment'].create({'pos_order_id': refund.id, 'payment_method_id': first_method.id, 'amount': -10})
+        self._order(100)  # Draft is excluded.
+        cancelled = self._order(100)
+        cancelled.state = 'cancel'
+        report = session.baseer_prepare_current_report()['report']
+        original = self.env['baseer.print.job']._session_close_payload(session)
+        self.assertEqual(report['summary'], original['summary'])
+        self.assertEqual(report['payments'], original['payments'])
+        self.assertEqual(report['summary']['total_amount'], '0.00')
+        self.assertEqual(report['summary']['payment_total'], '0.00')
+        self.assertEqual(report['summary']['invoice_count'], 2)
+        self.assertEqual(report['summary']['refund_count'], 1)
+        self.assertEqual(report['summary']['cancelled_orders'], 1)
+        self.assertEqual({row['amount'] for row in report['payments']}, {'-4.00', '4.00'})
+
+    def test_current_report_empty_session_is_zero(self):
+        _cashier, _order, session = self._current_report_session(state='draft')
+        report = session.baseer_prepare_current_report()['report']
+        self.assertEqual(report['summary']['invoice_count'], 0)
+        self.assertEqual(report['summary']['total_amount'], '0.00')
+        self.assertEqual(report['payments'], [])
+
+    def test_current_report_rejects_other_cashier_and_closed_session(self):
+        _cashier, _order, session = self._current_report_session()
+        other = self._native_receipt_cashier()
+        with self.assertRaises(AccessError):
+            session.with_user(other).baseer_prepare_current_report()
+        session.sudo().write({'state': 'closed', 'stop_at': fields.Datetime.now()})
+        with self.assertRaises(ValidationError):
+            session.baseer_prepare_current_report()
+
+    def test_current_report_rejects_inactive_company_and_non_pos_user(self):
+        _cashier, _order, session = self._current_report_session()
+        other_company = self.env['res.company'].create({'name': 'Current report isolated company'})
+        manager = self.env.user
+        with self.assertRaises(AccessError):
+            session.with_user(manager).with_context(allowed_company_ids=other_company.ids).baseer_prepare_current_report()
+        outsider = self.env['res.users'].with_context(no_reset_password=True).create({
+            'name': 'Report outsider', 'login': 'report-outsider',
+            'company_id': self.company.id, 'company_ids': [Command.set(self.company.ids)],
+            'group_ids': [Command.set([self.env.ref('base.group_user').id])],
+        })
+        with self.assertRaises(AccessError):
+            session.with_user(outsider).baseer_prepare_current_report()
+
+    def test_current_report_rejects_tampered_expired_and_transferred_tokens(self):
+        _cashier, _order, session = self._current_report_session()
+        snapshot = session.baseer_prepare_current_report()
+        image = self._native_receipt_sample()
+        encoded, signature = snapshot['token'].rsplit('.', 1)
+        with self.assertRaises(AccessError):
+            session.baseer_enqueue_current_report(encoded + '.' + '0' * len(signature), image)
+        with patch('odoo.addons.baseer_pos_print_bridge.models.pos_session.time.time', return_value=snapshot['expires_at'] + 1):
+            with self.assertRaises(AccessError):
+                session.baseer_enqueue_current_report(snapshot['token'], image)
+        # Even a manager able to read this session cannot reuse another user's token.
+        with self.assertRaises(AccessError):
+            session.with_user(self.env.user).baseer_enqueue_current_report(snapshot['token'], image)
+
+    def test_current_report_rejects_unsupported_or_unauthorized_printer(self):
+        _cashier, _order, session = self._current_report_session()
+        self.agent.with_context(baseer_print_internal=True).write({'agent_version': '1.3.0'})
+        with self.assertRaises(ValidationError):
+            session.baseer_prepare_current_report()
+        self.agent.with_context(baseer_print_internal=True).write({'agent_version': '1.4.6'})
+        self.receipt.active = False
+        with self.assertRaises(ValidationError):
+            session.baseer_prepare_current_report()
+
+    def test_current_report_raster_claim_reprint_and_purge_leave_orders_untouched(self):
+        _cashier, order, session = self._current_report_session()
+        image = self._native_receipt_sample()
+        snapshot = session.baseer_prepare_current_report()
+        result = session.baseer_enqueue_current_report(snapshot['token'], image)
+        Job = self.env['baseer.print.job']
+        job = Job.browse(result['job_id'])
+        with self.assertRaises(ValidationError):
+            session.baseer_enqueue_current_report(snapshot['token'], self._native_receipt_sample(color='black'))
+        # Real polling happens in a later transaction. Here PostgreSQL NOW()
+        # remains the TransactionCase start time while Python's clock advances.
+        job.available_at = fields.Datetime.now() - timedelta(minutes=5)
+        claimed = Job._claim_for_agent(self.agent)
+        self.assertEqual(claimed['id'], job.id)
+        self.assertEqual(claimed['payload']['schema'], 4)
+        self.assertEqual(claimed['payload']['ticket_type'], 'receipt')
+        self.assertEqual(claimed['payload']['receipt_image']['base64'], image)
+        job._complete_for_agent(self.agent, claimed['lease_token'])
+        self.assertFalse(order.nb_print)
+        job.action_reprint()
+        reprint = Job.search([('reprint_of_id', '=', job.id)])
+        self.assertEqual(reprint.receipt_image_sha256, job.receipt_image_sha256)
+        self.assertEqual(reprint.receipt_image, job.receipt_image)
+        job.completed_at = fields.Datetime.now() - timedelta(days=2)
+        Job._purge_accepted_native_receipt_images()
+        self.assertFalse(job.receipt_image)
+        self.assertTrue(job.receipt_image_purged_at)
+        self.assertTrue(reprint.receipt_image)  # Pending job remains printable.
+        with self.assertRaises(ValidationError):
+            job.action_reprint()

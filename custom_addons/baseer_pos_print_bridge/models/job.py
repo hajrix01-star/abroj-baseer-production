@@ -46,7 +46,7 @@ class BaseerPrintJob(models.Model):
     )
     ticket_type = fields.Selection([
         ('receipt', 'Receipt'), ('preparation', 'Preparation'),
-        ('session_close', 'Session closing report'), ('test', 'Test'),
+        ('session_close', 'Session closing report'), ('session_report', 'Current session report'), ('test', 'Test'),
     ],
                                    required=True, index=True)
     payload = fields.Json(required=True, readonly=True)
@@ -481,7 +481,7 @@ class BaseerPrintJob(models.Model):
         return format(Decimal(amount or 0).quantize(quantizer, rounding=ROUND_HALF_UP), 'f')
 
     @api.model
-    def _session_close_payload(self, session, printer=None):
+    def _session_close_payload(self, session, printer=None, as_of=None):
         """Build a bounded aggregate snapshot without loading session orders."""
         self.env.flush_all()
         self.env.cr.execute('''
@@ -543,7 +543,7 @@ class BaseerPrintJob(models.Model):
             ('action', '=', 'cancel'),
         ])
 
-        closed_at = session.stop_at or fields.Datetime.now()
+        closed_at = as_of or session.stop_at or fields.Datetime.now()
         opened_at = session.start_at or session.create_date or closed_at
         duration_seconds = max(0, int((closed_at - opened_at).total_seconds()))
         hours, remainder = divmod(duration_seconds, 3600)
@@ -592,6 +592,31 @@ class BaseerPrintJob(models.Model):
         }
 
     @api.model
+    def _enqueue_current_session_report(self, session, printer, snapshot, jpeg_base64):
+        """Private trusted snapshot consumer; never alter the session or any order."""
+        raw, width, height, digest = self._validated_native_receipt_image(jpeg_base64)
+        key = self._canonical_key('current-session-report-v1', snapshot['uid'], session.id, snapshot['request_id'])
+        payload = {
+            # The existing agent's raster protocol is intentionally reused.
+            'schema': 4, 'ticket_type': 'receipt', 'document_kind': 'session_report',
+            'printer': {'machine_identifier': printer.machine_identifier, 'paper_width': '80', 'copies': 1},
+            'receipt_image': {'sha256': digest, 'width': width, 'height': height, 'format': 'jpeg'},
+            'report_snapshot': snapshot['report'], 'requested_by': snapshot['uid'],
+        }
+        job = self._create_once({
+            'company_id': session.company_id.id, 'pos_config_id': session.config_id.id,
+            'agent_id': printer.agent_id.id, 'printer_id': printer.id,
+            'source_session_id': session.id, 'ticket_type': 'session_report',
+            'payload': payload, 'receipt_image': base64.b64encode(raw),
+            'receipt_image_sha256': digest, 'idempotency_key': key,
+        })
+        if job.receipt_image_sha256 != digest:
+            raise ValidationError(_('The session report image differs from its first recorded copy.'))
+        if job.state in ('failed', 'cancelled'):
+            raise ValidationError(_('The report print job failed. Ask a manager to review Print Jobs before retrying.'))
+        return job
+
+    @api.model
     def _enqueue_session_close(self, session):
         session.ensure_one()
         session = session.sudo().with_company(session.company_id)
@@ -637,7 +662,7 @@ class BaseerPrintJob(models.Model):
         # so make freshly created/rescheduled jobs visible before SKIP LOCKED.
         self.flush_model(['agent_id', 'state', 'available_at'])
         native_filter = '' if self._agent_supports_native_receipts(agent) else (
-            "AND NOT (ticket_type = 'receipt' AND payload->>'schema' = '4')"
+            "AND NOT (ticket_type IN ('receipt', 'session_report') AND payload->>'schema' = '4')"
         )
         self.env.cr.execute(f'''SELECT id FROM baseer_print_job WHERE agent_id = %s AND state = 'pending'
             AND available_at <= NOW() {native_filter}
@@ -647,7 +672,7 @@ class BaseerPrintJob(models.Model):
             return False
         job = self.sudo().browse(row[0]).exists()
         payload = dict(job.payload)
-        if job.ticket_type == 'receipt' and payload.get('schema') == 4:
+        if job.ticket_type in ('receipt', 'session_report') and payload.get('schema') == 4:
             image_b64 = job.receipt_image
             try:
                 raw = base64.b64decode(image_b64 or b'', validate=True)
@@ -670,14 +695,14 @@ class BaseerPrintJob(models.Model):
     def _purge_accepted_native_receipt_images(self):
         cutoff = fields.Datetime.now() - timedelta(hours=24)
         jobs = self.sudo().search([
-            ('ticket_type', '=', 'receipt'), ('receipt_image_sha256', '!=', False),
+            ('ticket_type', 'in', ('receipt', 'session_report')), ('receipt_image_sha256', '!=', False),
             ('receipt_image_purged_at', '=', False), ('state', '=', 'done'),
             ('completed_at', '<', cutoff),
         ], limit=100)
         for job in jobs:
             job.write({'receipt_image': False, 'receipt_image_purged_at': fields.Datetime.now()})
         backlog = self.sudo().search_count([
-            ('ticket_type', '=', 'receipt'), ('receipt_image_sha256', '!=', False),
+            ('ticket_type', 'in', ('receipt', 'session_report')), ('receipt_image_sha256', '!=', False),
             ('state', 'in', ('pending', 'leased')), ('create_date', '<', cutoff),
         ])
         if backlog:
@@ -730,7 +755,11 @@ class BaseerPrintJob(models.Model):
                 raise AccessError(_('Only a Point of Sale manager can reprint a job.'))
             if job.state not in ('done', 'failed', 'cancelled'):
                 raise ValidationError(_('Only a completed, failed, or cancelled job can be reprinted.'))
-            if job.ticket_type == 'receipt' and job.payload.get('schema') == 4 and not job.receipt_image:
+            if job.ticket_type in ('receipt', 'session_report') and job.payload.get('schema') == 4 and not job.receipt_image:
+                if job.ticket_type == 'session_report':
+                    raise ValidationError(_(
+                        'The stored session report image has expired. Request a new current-session report; the original snapshot cannot be recreated.'
+                    ))
                 raise ValidationError(_(
                     'The receipt image has expired. A manager must recapture it from the original Odoo receipt screen.'
                 ))
@@ -745,7 +774,7 @@ class BaseerPrintJob(models.Model):
                                'preparation_event_id': job.preparation_event_id.id,
                                'preparation_event_ids': [(6, 0, job.preparation_event_ids.ids)],
                                'ticket_type': job.ticket_type, 'payload': job.payload,
-                               'receipt_image': job.receipt_image if job.ticket_type == 'receipt' else False,
+                               'receipt_image': job.receipt_image if job.ticket_type in ('receipt', 'session_report') else False,
                                'receipt_image_sha256': job.receipt_image_sha256,
                                'idempotency_key': self._canonical_key('manual-reprint', job.id, sequence),
                                'reprint_of_id': job.id, 'reprint_sequence': sequence})

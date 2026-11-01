@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="baseer_pos_print_bridge.CurrentSessionReportMenu" t-inherit="point_of_sale.Navbar" t-inherit-mode="extension">
+        <xpath expr="//div[hasclass('pos-burger-menu-items')]" position="inside">
+            <DropdownItem t-if="pos.config.baseer_direct_print_enabled"
+                          onSelected="() => this.baseerPrintCurrentSession()">
+                <span t-if="baseerSessionReport.busy">Preparing session report…</span>
+                <span t-else="">Print current session report</span>
+            </DropdownItem>
+        </xpath>
+    </t>
+    <t t-name="baseer_pos_print_bridge.CurrentSessionReport">
+        <div class="pos-receipt baseer-current-session-report" dir="rtl">
+            <t t-set="s" t-value="props.report.session"/>
+            <t t-set="v" t-value="props.report.summary"/>
+            <h2>تقرير الجلسة الحالية</h2>
+            <div class="report-subtitle" dir="ltr">CURRENT SESSION REPORT</div>
+            <table>
+                <tbody>
+                    <tr><th>الجلسة / Session</th><td t-esc="s.reference"/></tr>
+                    <tr><th>نقطة البيع / POS</th><td t-esc="s.point_of_sale"/></tr>
+                    <tr><th>الكاشير / Cashier</th><td t-esc="s.cashier"/></tr>
+                    <tr><th>البداية / Opened</th><td dir="ltr" t-esc="s.opened_label"/></tr>
+                    <tr><th>حتى / As of</th><td dir="ltr" t-esc="s.as_of_label"/></tr>
+                    <tr><th>المدة / Duration</th><td dir="ltr" t-esc="s.duration_label"/></tr>
+                </tbody>
+            </table>
+            <h3>طرق الدفع / PAYMENT METHODS</h3>
+            <table>
+                <tbody>
+                    <tr t-foreach="props.report.payments" t-as="payment" t-key="payment_index">
+                        <th t-esc="payment.method"/><td dir="ltr"><t t-esc="payment.amount"/> <t t-esc="s.currency_code"/></td>
+                    </tr>
+                    <tr t-if="!props.report.payments.length"><td colspan="2">لا توجد مدفوعات / No payments</td></tr>
+                    <tr class="report-total"><th>إجمالي المدفوعات / Payments</th><td dir="ltr"><t t-esc="v.payment_total"/> <t t-esc="s.currency_code"/></td></tr>
+                </tbody>
+            </table>
+            <h3>ملخص الجلسة / SESSION SUMMARY</h3>
+            <table>
+                <tbody>
+                    <tr><th>عدد الفواتير / Invoices</th><td t-esc="v.invoice_count"/></tr>
+                    <tr><th>المرتجعات / Refunds</th><td t-esc="v.refund_count"/></tr>
+                    <tr class="report-total"><th>إجمالي المبيعات / Sales</th><td dir="ltr"><t t-esc="v.total_amount"/> <t t-esc="s.currency_code"/></td></tr>
+                    <tr><th>متوسط الفاتورة / Average invoice</th><td dir="ltr"><t t-esc="v.average_invoice"/> <t t-esc="s.currency_code"/></td></tr>
+                    <tr><th>الإلغاءات / Cancellations</th><td t-esc="v.cancellation_count"/></tr>
+                    <tr><th>الطلبات الملغاة / Cancelled orders</th><td t-esc="v.cancelled_orders"/></tr>
+                    <tr><th>الأصناف الملغاة / Cancelled items</th><td t-esc="v.cancelled_items"/></tr>
+                </tbody>
+            </table>
+            <p>الجلسة مفتوحة — ليست تسوية للصندوق<br/>Open session — not a cash drawer reconciliation</p>
+        </div>
+    </t>
+</templates>

@@ -1,0 +1,49 @@
+<?xml version='1.0' encoding='utf-8'?>
+<odoo>
+  <record id="subcontractor_form_contract_number" model="ir.ui.view">
+    <field name="name">abroj.contracting.subcontractor.form.contract.number</field>
+    <field name="model">abroj.contracting.subcontractor</field>
+    <field name="inherit_id" ref="abroj_contracting.subcontractor_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//header" position="inside">
+        <button name="action_issue_contract" type="object" string="إصدار رقم العقد" class="btn-primary"
+                invisible="contract_number != '/'" confirm="سيتم إصدار رقم عقد نهائي من التسلسل. متابعة؟"/>
+      </xpath>
+      <xpath expr="//sheet" position="inside">
+        <group name="abroj_contract_number"><field name="contract_number"/></group>
+      </xpath>
+    </field>
+  </record>
+  <record id="subcontractor_list_contract_number" model="ir.ui.view">
+    <field name="name">abroj.contracting.subcontractor.list.contract.number</field>
+    <field name="model">abroj.contracting.subcontractor</field>
+    <field name="inherit_id" ref="abroj_contracting.subcontractor_list"/>
+    <field name="arch" type="xml">
+      <xpath expr="//list" position="inside"><field name="contract_number" optional="show"/></xpath>
+    </field>
+  </record>
+  <record id="project_form_contract_number" model="ir.ui.view">
+    <field name="name">abroj.contracting.project.form.contract.number</field>
+    <field name="model">project.project</field>
+    <field name="inherit_id" ref="abroj_contracting.project_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//sheet" position="before">
+        <header>
+          <button name="action_issue_client_contract" type="object" string="إصدار رقم عقد العميل" class="btn-primary"
+                  invisible="abroj_contract_number != '/'" confirm="سيتم إصدار رقم عقد عميل نهائي من التسلسل. متابعة؟"/>
+        </header>
+      </xpath>
+      <xpath expr="//sheet" position="inside">
+        <group name="abroj_client_contract_number"><field name="abroj_contract_number"/></group>
+      </xpath>
+    </field>
+  </record>
+  <record id="project_list_contract_number" model="ir.ui.view">
+    <field name="name">abroj.contracting.project.list.contract.number</field>
+    <field name="model">project.project</field>
+    <field name="inherit_id" ref="abroj_contracting.project_list"/>
+    <field name="arch" type="xml">
+      <xpath expr="//list" position="inside"><field name="abroj_contract_number" optional="show"/></xpath>
+    </field>
+  </record>
+</odoo>

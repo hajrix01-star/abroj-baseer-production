@@ -9,3 +9,4 @@ from . import printing
 
 from . import clauses
 from . import project_analytic
+from . import contract_numbering

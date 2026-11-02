@@ -1,0 +1,18 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!-- Records already exist in prod (ids 658/659); xml ids pre-registered so these are skipped (noupdate). -->
+<odoo noupdate="1">
+  <record id="sequence_subcontract" model="ir.sequence">
+    <field name="name">ترقيم عقود الباطن SC</field>
+    <field name="code">abroj.contracting.subcontract</field>
+    <field name="prefix">SC-</field>
+    <field name="padding">4</field>
+    <field name="implementation">no_gap</field>
+  </record>
+  <record id="sequence_client_contract" model="ir.sequence">
+    <field name="name">ترقيم عقود العملاء CC</field>
+    <field name="code">abroj.contracting.client.contract</field>
+    <field name="prefix">CC-</field>
+    <field name="padding">4</field>
+    <field name="implementation">no_gap</field>
+  </record>
+</odoo>

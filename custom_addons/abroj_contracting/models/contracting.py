@@ -190,6 +190,7 @@ class Voucher(models.Model):
     _order = 'date desc, id desc'
 
     name = fields.Char('رقم السند', default='/', readonly=True, copy=False, help='حدد رقم السند لهذا السجل وفق مستند المشروع الأصلي.')
+    project_name = fields.Char(related='project_id.name', store=True, readonly=True, string='Project Name')
     kind = fields.Selection([('payment', 'سند صرف'), ('receipt', 'سند قبض')], string='نوع السند', required=True, default='payment', help='حدد نوع السند لهذا السجل وفق مستند المشروع الأصلي.')
     party_id = fields.Many2one('abroj.contracting.party', string='الطرف', check_company=True, ondelete='restrict', index=True,
         help='الطرف من قائمة أطراف العقود؛ مستقل عن جهات الاتصال.')

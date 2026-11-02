@@ -41,8 +41,10 @@ class AbrojProjectDashboardCase(TransactionCase):
         self.assertEqual([page.get('string') for page in pages], [
             'المراحل', 'العقود والاتفاقيات', 'السندات',
             'الملاحظات', 'المكتبة', 'الفواتير والمصروفات',
-            'التقارير اليومية', 'السجلات',
+            'التقارير اليومية', 'السجلات', 'بنود الميزانية',
         ])
+        budget = arch.xpath("//page[@name='abroj_budget_lines']/field[@name='abroj_budget_line_ids']/list")[0]
+        self.assertEqual(budget.xpath('./field/@name'), ['name', 'currency_id', 'budget', 'manual_actual', 'actual'])
         page = arch.xpath("//page[@name='invoices_costs']")[0]
         self.assertEqual(page.xpath('./field/@name'), ['invoice_ids', 'cost_ids'])
         for field in page.xpath('./field'):

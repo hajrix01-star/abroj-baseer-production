@@ -1,12 +1,13 @@
 {
     "name": "Baseer Web Navigation",
     "summary": "Native application icons and a quick interface language selector",
-    "version": "19.0.1.1.1",
+    "version": "19.0.1.1.2",
     "author": "Baseer",
     "license": "LGPL-3",
     "depends": ["web"],
     "assets": {
         "web.assets_backend": [
+            "baseer_web_navigation/static/src/user_menu.js",
             "baseer_web_navigation/static/src/app_order.js",
             "baseer_web_navigation/static/src/app_order_service.js",
             "baseer_web_navigation/static/src/apps_menu.xml",

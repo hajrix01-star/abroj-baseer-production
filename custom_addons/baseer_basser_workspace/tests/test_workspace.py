@@ -16,6 +16,80 @@ class BasserWorkspaceCase(TransactionCase):
             'baseer_access_role': role,
         })
 
+    def test_branch_manager_pos_route_uses_existing_cashier_rights(self):
+        manager = self._user('cashier')
+        workspace = self.env['baseer.basser.workspace.section'].with_user(manager)
+        card = self.env.ref(
+            'baseer_basser_workspace.workspace_item_branch_manager_point_of_sale'
+        )
+        items = {item['id'] for section in workspace.get_workspace()['sections']
+                 for item in section['items']}
+        self.assertIn(card.id, items)
+        self.assertEqual(workspace.open_workspace_item(card.id), {
+            'action_id': self.env.ref('point_of_sale.action_pos_config_kanban').id,
+        })
+        self.assertTrue(manager.has_group('point_of_sale.group_pos_user'))
+        for group in ('point_of_sale.group_pos_manager',
+                      'baseer_access_roles.group_pos_cashier',
+                      'account.group_account_invoice', 'base.group_system'):
+            self.assertFalse(manager.has_group(group))
+        for model in ('pos.order', 'pos.order.line', 'pos.session', 'pos.make.payment'):
+            for operation in ('read', 'write', 'create'):
+                # Odoo 19 succeeds by returning None and raises on denial.
+                self.env[model].with_user(manager).check_access(operation)
+        with self.assertRaises(AccessError):
+            self.env['account.payment'].with_user(manager).check_access('read')
+        with self.assertRaises(AccessError):
+            self.env['pos.make.payment'].with_user(manager).check_access('unlink')
+
+    def test_branch_manager_pos_route_preserves_role_and_company_gates(self):
+        manager = self._user('cashier')
+        card = self.env.ref(
+            'baseer_basser_workspace.workspace_item_branch_manager_point_of_sale'
+        )
+        for role in ('accountant', 'pos_cashier'):
+            with self.assertRaises(AccessError):
+                self.env['baseer.basser.workspace.section'].with_user(
+                    self._user(role)
+                ).open_workspace_item(card.id)
+        company_b = self.env['res.company'].create({'name': 'POS forbidden company'})
+        with self.assertRaises(AccessError):
+            self.env['baseer.basser.workspace.section'].with_user(manager).with_context(
+                allowed_company_ids=[company_b.id],
+            ).open_workspace_item(card.id)
+        card.action_hide_from_basser()
+        with self.assertRaises(AccessError):
+            self.env['baseer.basser.workspace.section'].with_user(manager).open_workspace_item(card.id)
+        card.action_show_in_basser()
+        self.assertTrue(self.env['baseer.basser.workspace.section'].with_user(
+            manager
+        ).open_workspace_item(card.id))
+
+    def test_branch_manager_role_label_is_distinct_from_pos_cashier(self):
+        labels = dict(self.env['baseer.basser.workspace.section'].with_context(
+            lang='en_US'
+        ).fields_get(['role'])['role']['selection'])
+        self.assertEqual(labels['cashier'], 'Branch Manager')
+        self.assertEqual(labels['pos_cashier'], 'Cashier')
+
+    def test_retired_hidden_target_cannot_be_reactivated_or_opened(self):
+        item = self.env['baseer.basser.workspace.item'].create({
+            'section_id': self.env.ref(
+                'baseer_basser_workspace.workspace_section_cashier_operations'
+            ).id,
+            'menu_id': self.env.ref('point_of_sale.menu_point_of_sale_list').id,
+            'active': False,
+        })
+        manager = self._user('cashier')
+        with self.assertRaises(AccessError):
+            self.env['baseer.basser.workspace.section'].with_user(manager).open_workspace_item(item.id)
+        with self.assertRaises(ValidationError), self.env.cr.savepoint():
+            item.action_show_in_basser()
+        self.assertFalse(item.active)
+        with self.assertRaises(ValidationError), self.env.cr.savepoint():
+            item.write({'active': True})
+        self.assertFalse(item.active)
+
     def test_basser_t00_pos_cashier_gets_only_the_native_pos_dashboard(self):
         """A POS-only cashier reaches the native dashboard, never config list."""
         cashier = self._user('pos_cashier')
@@ -90,6 +164,7 @@ class BasserWorkspaceCase(TransactionCase):
         self.assertFalse(workspace['can_manage'])
         item_ids = {item['id'] for section in workspace['sections'] for item in section['items']}
         expected = {
+            self.env.ref('baseer_basser_workspace.workspace_item_branch_manager_point_of_sale').id,
             self.env.ref('baseer_basser_workspace.workspace_item_cashier_new_procurement').id,
             self.env.ref('baseer_basser_workspace.workspace_item_cashier_procurement_requests').id,
             self.env.ref('baseer_basser_workspace.workspace_item_cashier_sales_summaries').id,
@@ -292,7 +367,7 @@ class BasserWorkspaceCase(TransactionCase):
         owner = self._user('owner')
         section_model = self.env['baseer.basser.workspace.section'].with_user(owner)
         item_model = self.env['baseer.basser.workspace.item'].with_user(owner)
-        for sequence in range(1, 35):
+        for sequence in range(1, 34):
             section = section_model.create({
                 'name': 'Bounded cashier section %s' % sequence,
                 'role': 'cashier',

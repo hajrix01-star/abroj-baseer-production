@@ -24,6 +24,10 @@ BASEER_WORKSPACE_TARGET_POLICY = {
         },
     },
     'cashier': {
+        'baseer_basser_workspace.menu_pos_cashier_point_of_sale_dashboard': {
+            'action_type': 'ir.actions.act_window',
+            'icon': 'fa fa-shopping-cart',
+        },
         'baseer_procurement_requests.menu_procurement_catalog': {
             'action_type': 'ir.actions.client',
             'tag': 'baseer_procurement_requests.catalog',
@@ -89,7 +93,7 @@ BASEER_WORKSPACE_TARGET_POLICY = {
 
 ROLE_SELECTION = [
     ('pos_cashier', 'Cashier'),
-    ('cashier', 'Cashier'),
+    ('cashier', 'Branch Manager'),
     ('accountant', 'Accountant'),
 ]
 
@@ -429,7 +433,9 @@ class BasserWorkspaceItem(models.Model):
     @api.constrains('section_id', 'menu_id', 'active')
     def _check_target_and_limits(self):
         for item in self:
-            if not item.section_id or not item.menu_id:
+            # Retired targets may be kept hidden. Reactivation always validates
+            # the current policy; runtime opening also independently enforces it.
+            if not item.active or not item.section_id or not item.menu_id:
                 continue
             if not item.section_id._validate_target_definition(
                 item.menu_id, item.section_id.role,

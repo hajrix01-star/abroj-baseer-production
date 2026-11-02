@@ -9,3 +9,4 @@ access_owner_advance_entry,Owner advance entries,model_baseer_advance_entry,grou
 access_accountant_advance_entry,Accountant advance entries,model_baseer_advance_entry,group_accountant,1,1,1,1
 access_cashier_advance_entry,Cashier own advance entries,model_baseer_advance_entry,group_cashier,1,1,1,1
 access_pos_cashier_make_payment,POS cashier payment completion wizard,point_of_sale.model_pos_make_payment,group_pos_cashier,1,1,1,0
+access_branch_manager_make_payment,Branch manager POS payment completion wizard,point_of_sale.model_pos_make_payment,group_cashier,1,1,1,0

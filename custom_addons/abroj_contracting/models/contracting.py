@@ -235,7 +235,7 @@ class Voucher(models.Model):
         for voucher in self:
             voucher.abroj_can_accounting_approve = bool(
                 allowed and voucher.state == 'issued' and not voucher.payment_id
-                and voucher.issued_by != user
+                and (voucher.issued_by != user or user.has_group('base.group_system'))
             )
 
     @api.model_create_multi
@@ -287,7 +287,7 @@ class Voucher(models.Model):
             r.invalidate_recordset(['state', 'payment_id', 'issued_by'])
             if r.state != 'issued' or r.payment_id:
                 raise UserError('الاعتماد المحاسبي متاح لسند صادر دون دفعة فقط.')
-            if r.issued_by == self.env.user:
+            if r.issued_by == self.env.user and not self.env.user.has_group('base.group_system'):
                 raise AccessError('لا يجوز لمصدر السند اعتماده محاسبياً.')
             account = r.project_id.account_id
             journal = r.journal_id or self.env['account.journal'].search([

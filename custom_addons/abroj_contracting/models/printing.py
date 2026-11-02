@@ -152,7 +152,8 @@ class Voucher(models.Model):
         for v in self:
             previous = v.previous_vouchers() if v.project_id and (v.party_id or v.partner_id) else self.browse()
             sub = v.subcontractor_id
-            value = sub.agreed_amount if sub else (v.vendor_contract_value if v.kind == 'payment' else v.project_id.contract_value)
+            # Receipt PDFs show this amount to voucher readers who cannot read the project.
+            value = sub.agreed_amount if sub else (v.vendor_contract_value if v.kind == 'payment' else v.project_id.sudo().contract_value)
             materials = sub.materials_total if sub else 0
             before = sum((p.amount if p.kind == 'payment' else -p.amount) if sub else p.amount for p in previous)
             current = -v.amount if sub and v.kind == 'receipt' else v.amount

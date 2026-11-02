@@ -506,7 +506,7 @@ h4 {font-size:17px;color:#003A71;margin:12px 0 6px;}
   <template id="voucher">
     <t t-call="abroj_contracting.document_container">
       <t t-foreach="docs" t-as="o">
-        <t t-set="company" t-value="o.company_id"/>
+        <t t-set="company" t-value="o.company_id or o.env.company"/>
         <div class="article" t-att-data-oe-model="o._name" t-att-data-oe-id="o.id">
           <style t-out="company.contract_font_css()"/>
           <style>
@@ -553,7 +553,7 @@ h4 {font-size:17px;color:#003A71;margin:12px 0 6px;}
                   <b t-out="(o.party_id or o.partner_id).name"/>
                 </td>
                 <td class="ar bilingual">المشروع · Project<br/>
-                  <b t-out="o.project_id.name"/>
+                  <b t-out="o.project_name or ''"/>
                 </td>
                 <td class="ar bilingual" style="width:22%">الطريقة · Method<br/>
                   <b t-out="dict(o._fields['method'].selection).get(o.method)"/>

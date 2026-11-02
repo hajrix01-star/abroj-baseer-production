@@ -787,3 +787,43 @@ class AbrojContractingCase(TransactionCase):
         migrated.unlink()
         templates.migrate_defaults()
         self.assertFalse(templates.with_context(active_test=False).search([('legacy_id', '=', legacy.id)]))
+
+    def test_voucher_report_without_project_follower(self):
+        user = self.env['res.users'].with_context(no_reset_password=True).create({
+            'name': 'مستخدم سند', 'login': 'abroj-voucher-report-user',
+            'company_id': self.env.company.id, 'company_ids': [Command.set(self.env.company.ids)],
+            'group_ids': [Command.set([self.env.ref('base.group_user').id])],
+        })
+        self.assertTrue(user.has_group('base.group_user'))
+        self.assertFalse(user.has_group('project.group_project_user'))
+        self.assertFalse(user.has_group('project.group_project_manager'))
+        partner = self.env['res.partner'].create({'name': 'عميل مشروع خاص'})
+        project = self.env['project.project'].create({
+            'name': 'مشروع المتابعين فقط', 'company_id': self.env.company.id,
+            'privacy_visibility': 'followers', 'partner_id': partner.id, 'contract_value': 9000,
+        })
+        project.message_unsubscribe(partner_ids=user.partner_id.ids)
+        self.assertNotIn(user.partner_id, project.message_partner_ids)
+        with self.assertRaises(AccessError):
+            project.with_user(user).read(['name'])
+        sub = self.env['abroj.contracting.subcontractor'].create({
+            'project_id': project.id, 'partner_id': partner.id, 'agreed_amount': 4000,
+        })
+        payment = self.env['abroj.contracting.voucher'].create({
+            'project_id': project.id, 'partner_id': partner.id, 'subcontractor_id': sub.id,
+            'kind': 'payment', 'amount': 250,
+        })
+        receipt = self.env['abroj.contracting.voucher'].create({
+            'project_id': project.id, 'partner_id': partner.id, 'kind': 'receipt', 'amount': 400,
+        })
+        project.name = 'مشروع المتابعين بعد التعديل'
+        for voucher in (payment, receipt):
+            self.assertEqual(voucher.project_name, project.name)
+        arch = self.env.ref('abroj_contracting.voucher').arch
+        self.assertNotIn('project_id', arch)
+        self.assertIn("o.project_name or ''", arch)
+        self.assertIn('o.company_id or o.env.company', arch)
+        report = self.env['ir.actions.report'].with_user(user)
+        for voucher in (payment, receipt):
+            rendered, _ = report._render_qweb_html('abroj_contracting.voucher', voucher.ids)
+            self.assertIn(project.name, rendered.decode())

@@ -329,6 +329,20 @@ class AbrojContractingCase(TransactionCase):
             voucher.write({'payment_id': False})
         self.assertFalse(voucher.payment_id)
 
+    def test_system_admin_issuer_can_approve(self):
+        admin = self.env.user
+        self.assertTrue(admin.has_group('base.group_system'))
+        voucher = self.voucher()
+        voucher.action_issue()
+        self.assertEqual(voucher.issued_by, admin)
+        self.assertTrue(voucher.with_user(admin).abroj_can_accounting_approve)
+        accountant = self.accountant('account.group_account_manager')
+        other = self.voucher()
+        other.with_user(accountant).action_issue()
+        self.assertFalse(other.with_user(accountant).abroj_can_accounting_approve)
+        with self.assertRaises(AccessError):
+            other.with_user(accountant).action_accounting_approve()
+
     def test_accounting_payment_and_receipt(self):
         accountant = self.accountant()
         plan = self.env['account.analytic.plan'].create({'name': 'اختبار المشاريع'})

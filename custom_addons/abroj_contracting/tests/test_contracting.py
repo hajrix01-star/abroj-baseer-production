@@ -597,17 +597,39 @@ class AbrojContractingCase(TransactionCase):
                         self.assertEqual(' · ' in contact[0].text_content(), bool(website and email))
 
     def test_both_voucher_memos_and_layout(self):
+        from io import BytesIO
         from lxml import html
+        from odoo.tools.pdf import PdfFileReader
         self.project.company_id.currency_id = self.env.ref('base.SAR')
+        self.project.name = 'مجلس ام فالح'
+        self.partner.name = 'Unnamed Cash / مورد نقدي غير مسمى Vendor'
+        self.project.company_id.write({'website': 'https://abroj.sa', 'email': 'info@abroj.sa'})
+        memo_text = 'إيجار حاوية مخلفات – مهمة 47 (الهدم والإزالة والترحيل 1.2) – مشروع مجلس ام فالح. المبلغ 400 ريال بدون ضريبة، دون فاتورة مورد.'
         for kind in ('payment', 'receipt'):
-            voucher = self.voucher(kind=kind, memo='دفعة وفق العقد / Payment under contract')
+            voucher = self.voucher(kind=kind, amount=400, memo=memo_text)
             rendered, _ = self.env['ir.actions.report']._render_qweb_html(
                 'abroj_contracting.voucher', voucher.ids)
             tree = html.fromstring(rendered)
             memo = tree.xpath('//div[@class="memo"]')
             self.assertEqual(len(memo), 1)
             self.assertIn(voucher.memo, memo[0].text_content())
-            self.assertIn('Saudi Riyals only', tree.text_content())
+            text = tree.text_content()
+            self.assertIn('Saudi Riyals only', text)
+            self.assertIn('مجلس ام فالح', text)
+            self.assertIn('Company Stamp', text)
+            self.assertIn('ختم الشركة', text)
+            self.assertIn('page-break-inside:avoid', rendered.decode())
+            title = 'PAYMENT VOUCHER' if kind == 'payment' else 'RECEIPT VOUCHER'
+            self.assertIn(title, text)
+            pdf, kind_name = self.env['ir.actions.report'].with_context(force_report_rendering=True)._render_qweb_pdf(
+                'abroj_contracting.voucher', voucher.ids)
+            self.assertEqual(kind_name, 'pdf')
+            pages = PdfFileReader(BytesIO(pdf), strict=False).pages
+            self.assertEqual(len(pages), 1)
+            extracted = (getattr(pages[0], 'extract_text', None) or pages[0].extractText)() or ''
+            flat = ' '.join(extracted.split())
+            self.assertIn('Company Stamp', flat)
+            self.assertIn(title, flat)
             voucher.memo = False
             rendered, _ = self.env['ir.actions.report']._render_qweb_html(
                 'abroj_contracting.voucher', voucher.ids)

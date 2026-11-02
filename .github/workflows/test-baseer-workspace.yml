@@ -40,9 +40,9 @@ jobs:
             --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/baseer-addons,/mnt/heritage,/mnt/payroll \
             -d baseer_workspace_ci -i baseer_basser_workspace --without-demo=all \
             --test-enable \
-            --test-tags=/baseer_basser_workspace:BasserWorkspaceCase.test_branch_manager_pos_route_uses_existing_cashier_rights,/baseer_basser_workspace:BasserWorkspaceCase.test_branch_manager_pos_route_preserves_role_and_company_gates,/baseer_basser_workspace:BasserWorkspaceCase.test_branch_manager_role_label_is_distinct_from_pos_cashier,/baseer_basser_workspace:BasserWorkspaceCase.test_basser_t00_pos_cashier_gets_only_the_native_pos_dashboard,/baseer_basser_workspace:BasserWorkspaceCase.test_basser_t01_cashier_gets_only_seeded_shortcuts_and_native_actions,/baseer_basser_workspace:BasserWorkspaceCase.test_basser_t04_company_scope_uses_server_active_company_only \
+            --test-tags=/baseer_basser_workspace:BasserWorkspaceCase.test_retired_hidden_target_cannot_be_reactivated_or_opened,/baseer_basser_workspace:BasserWorkspaceCase.test_branch_manager_pos_route_uses_existing_cashier_rights,/baseer_basser_workspace:BasserWorkspaceCase.test_branch_manager_pos_route_preserves_role_and_company_gates,/baseer_basser_workspace:BasserWorkspaceCase.test_branch_manager_role_label_is_distinct_from_pos_cashier,/baseer_basser_workspace:BasserWorkspaceCase.test_basser_t00_pos_cashier_gets_only_the_native_pos_dashboard,/baseer_basser_workspace:BasserWorkspaceCase.test_basser_t01_cashier_gets_only_seeded_shortcuts_and_native_actions,/baseer_basser_workspace:BasserWorkspaceCase.test_basser_t04_company_scope_uses_server_active_company_only \
             --stop-after-init --max-cron-threads=0 --workers=0 --log-level=test 2>&1 | tee workspace-pos.log
-          test "$(grep -c 'Starting BasserWorkspaceCase.test_' workspace-pos.log)" -eq 6
+          test "$(grep -c 'Starting BasserWorkspaceCase.test_' workspace-pos.log)" -eq 7
           if grep -Eq ': skipped .+ : |[1-9][0-9]* failed,|[1-9][0-9]* error\(s\)' workspace-pos.log; then
             exit 1
           fi

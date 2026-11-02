@@ -433,7 +433,9 @@ class BasserWorkspaceItem(models.Model):
     @api.constrains('section_id', 'menu_id', 'active')
     def _check_target_and_limits(self):
         for item in self:
-            if not item.section_id or not item.menu_id:
+            # Retired targets may be kept hidden. Reactivation always validates
+            # the current policy; runtime opening also independently enforces it.
+            if not item.active or not item.section_id or not item.menu_id:
                 continue
             if not item.section_id._validate_target_definition(
                 item.menu_id, item.section_id.role,

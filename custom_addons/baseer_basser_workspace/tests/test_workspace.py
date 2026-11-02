@@ -71,6 +71,24 @@ class BasserWorkspaceCase(TransactionCase):
         self.assertEqual(labels['cashier'], 'Branch Manager')
         self.assertEqual(labels['pos_cashier'], 'Cashier')
 
+    def test_retired_hidden_target_cannot_be_reactivated_or_opened(self):
+        item = self.env['baseer.basser.workspace.item'].create({
+            'section_id': self.env.ref(
+                'baseer_basser_workspace.workspace_section_cashier_operations'
+            ).id,
+            'menu_id': self.env.ref('point_of_sale.menu_point_of_sale_list').id,
+            'active': False,
+        })
+        manager = self._user('cashier')
+        with self.assertRaises(AccessError):
+            self.env['baseer.basser.workspace.section'].with_user(manager).open_workspace_item(item.id)
+        with self.assertRaises(ValidationError), self.env.cr.savepoint():
+            item.action_show_in_basser()
+        self.assertFalse(item.active)
+        with self.assertRaises(ValidationError), self.env.cr.savepoint():
+            item.write({'active': True})
+        self.assertFalse(item.active)
+
     def test_basser_t00_pos_cashier_gets_only_the_native_pos_dashboard(self):
         """A POS-only cashier reaches the native dashboard, never config list."""
         cashier = self._user('pos_cashier')

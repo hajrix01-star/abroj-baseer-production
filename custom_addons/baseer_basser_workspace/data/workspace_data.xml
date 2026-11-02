@@ -107,6 +107,9 @@
         <field name="sequence">40</field>
     </record>
     <record id="workspace_item_accountant_supplier_bills" model="baseer.basser.workspace.item">
+        <!-- Retired target: keep its stable identity, never expose it on a
+             fresh installation. Existing owner configuration is noupdate. -->
+        <field name="active" eval="False"/>
         <field name="section_id" ref="workspace_section_accountant_operations"/>
         <field name="name">Supplier bills and expenses</field>
         <field name="description">Review posted supplier bills, refunds, and expenses in the active company.</field>

@@ -35,7 +35,8 @@ class BasserWorkspaceCase(TransactionCase):
             self.assertFalse(manager.has_group(group))
         for model in ('pos.order', 'pos.order.line', 'pos.session', 'pos.make.payment'):
             for operation in ('read', 'write', 'create'):
-                self.assertTrue(self.env[model].with_user(manager).check_access(operation))
+                # Odoo 19 succeeds by returning None and raises on denial.
+                self.env[model].with_user(manager).check_access(operation)
         with self.assertRaises(AccessError):
             self.env['account.payment'].with_user(manager).check_access('read')
         with self.assertRaises(AccessError):

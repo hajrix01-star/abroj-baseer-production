@@ -30,7 +30,7 @@ async function appFetch(url,options){const r=await fetch(url,options);if(r.statu
 async function responseJSON(r){const j=await r.json();if(j.session_expired || j.error?.code===100 || j.error?.data?.name?.includes('SessionExpired')) expiredSession();return j;}
 async function rpc(url,params={},options={}) {const r=await appFetch(url,{...options,method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({jsonrpc:'2.0',method:'call',params,id:1})}); const j=await responseJSON(r); if(j.error) throw Error(t("s84")); if(url.endsWith('/save') && !j.result?.error) toast(lang==='ar'?'تم الحفظ بنجاح':'Saved successfully'); return j.result;}
 const emptyState=(message,action=null)=>`<div class="card empty-state"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 7h18v13H3zM3 7l3-4h12l3 4M8 12h8"/></svg><p>${message}</p>${action?`<button class="secondary" onclick="${action}">${action==='fabSheet()'?t('s3'):t('s50')}</button>`:''}</div>`;
-const money=n=>new Intl.NumberFormat(locale(),{maximumFractionDigits:0,numberingSystem:'latn'}).format(Number(n)||0);
+const money=n=>new Intl.NumberFormat(locale(),{minimumFractionDigits:2,maximumFractionDigits:2,numberingSystem:'latn'}).format(Number(n)||0);
 const percent=n=>`<bdi dir="ltr">${number(n)}%</bdi>`;
 const days=n=>`${number(n)} ${lang==='ar'?(n===1?'يوم':n===2?'يومان':n>=3&&n<=10?'أيام':'يومًا'):(n===1?'day':'days')}`;
 const displayName=name=>lang==='ar'&&['Administrator','__system__'].includes(name)?'مدير النظام':name;

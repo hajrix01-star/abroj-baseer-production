@@ -69,3 +69,13 @@ Contract margin remains contract minus registered commitments, labeled according
 7. r5 repeated the stale final test assertion because the text replacement did
    not match Windows line endings. Applied a direct patch and verified the saved
    assertion is100; no application behavior changed. r6 checks only that test.
+8. r6 passed the expanded cache regression:0 failed/0 errors. Final source
+   independently reviewed through7307797d; conditional acceptance requires green
+   CI on the final SHA. The sole subsequent UI adjustment retains two money
+   decimals in the existing shared PWA formatter (no finance calculation change).
+9. Headless Chrome used the actual PWA cards function, translation dictionary and
+   existing CSS with synthetic financial data at AR390px and EN1280px. Both had
+   no horizontal overflow, correct unknown-budget markers and no missing labels;
+   the AR screenshot was visually inspected. Artifacts: output/finance-cards-*.png
+   and output/finance-cards-smoke.cjs. This is a component rendering check, not a
+   claim of live browser/session acceptance. No user browser tab was touched.

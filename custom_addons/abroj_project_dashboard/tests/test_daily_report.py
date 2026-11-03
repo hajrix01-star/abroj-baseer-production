@@ -83,7 +83,7 @@ class DailyReportHttpCase(HttpCase):
         self.assertEqual(line.deadline_change_days, 3)
         self.assertEqual((line.deadline_new - line.deadline_old).days, 3)
         self.env['abroj.contracting.subcontractor'].create({'project_id': project.id, 'partner_id': partner.id})
-        voucher = self.env['abroj.contracting.voucher'].create({'project_id': project.id, 'partner_id': project.partner_id.id or partner.id, 'kind': 'receipt', 'amount': 15000})
+        voucher = self.env['abroj.contracting.voucher'].create({'project_id': project.id, 'partner_id': project.partner_id.id or partner.id, 'kind': 'receipt', 'payment_purpose': 'advance', 'amount': 15000})
         voucher.action_issue()
         entries = report.financial_operations(project)
         self.assertTrue(any('تم إصدار عقد' in entry['sentence'] for entry in entries))

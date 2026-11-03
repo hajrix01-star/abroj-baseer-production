@@ -40,7 +40,7 @@ jobs:
             --test-enable \
             --test-tags=/abroj_project_dashboard \
             --stop-after-init --max-cron-threads=0 --workers=0 --log-level=test 2>&1 | tee abroj-project-dashboard-runtime.log
-          for test_class in AbrojProjectDashboardCase AbrojDashboardHttpCase; do
+          for test_class in AbrojProjectDashboardCase AbrojDashboardHttpCase AbrojVoucherWorkflowCase; do
             grep -F "Starting $test_class." abroj-project-dashboard-runtime.log
           done
           if grep -Eq ': skipped .+ : |[1-9][0-9]* failed,|[1-9][0-9]* error\(s\)' abroj-project-dashboard-runtime.log; then
@@ -49,6 +49,7 @@ jobs:
           fi
           grep -F '0 failed, 0 error(s)' abroj-project-dashboard-runtime.log
           test "$(grep -Ec 'Starting (AbrojProjectDashboardCase|AbrojDashboardHttpCase)\.' abroj-project-dashboard-runtime.log)" -eq 80
+          test "$(grep -Ec 'Starting AbrojVoucherWorkflowCase\.' abroj-project-dashboard-runtime.log)" -eq 27
       - name: Preserve dashboard runtime evidence
         if: always()
         uses: actions/upload-artifact@v4

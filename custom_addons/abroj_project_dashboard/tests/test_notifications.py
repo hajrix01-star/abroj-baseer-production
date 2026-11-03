@@ -46,7 +46,7 @@ class NotificationsCase(TransactionCase):
     def test_contract_vouchers_and_promissory(self):
         sub = self.env['abroj.contracting.subcontractor'].create({'project_id': self.project.id, 'partner_id': self.partner.id, 'agreed_amount': 50000})
         for kind in ('receipt', 'payment'):
-            voucher = self.env['abroj.contracting.voucher'].create({'project_id': self.project.id, 'partner_id': self.partner.id, 'kind': kind, 'amount': 15000, **({'subcontractor_id': sub.id} if kind == 'payment' else {})})
+            voucher = self.env['abroj.contracting.voucher'].create({'project_id': self.project.id, 'partner_id': self.partner.id, 'kind': kind, 'payment_purpose': 'advance', 'amount': 15000, **({'subcontractor_id': sub.id} if kind == 'payment' else {})})
             voucher.action_issue()
         note = self.env['abroj.promissory.note'].create({'project_id': self.project.id, 'partner_id': self.partner.id, 'amount': 100, 'due_date': fields.Date.today()})
         note.action_issue()

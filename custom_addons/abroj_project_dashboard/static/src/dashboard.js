@@ -39,7 +39,9 @@ class Dashboard extends Component {
             {label: _t('Actual cost'), value:values.actual, icon:'⚙'},
             {label: _t('Over budget'), value:values.over, icon:'⚠', note:missing},
             {label: _t('Expected margin against budget'), value:values.expected_profit, icon:'★', note:missing},
-            {label: _t('Cash balance'), value:values.liquidity, icon:'⇄'},
+            {label: _t('Recognized revenue'), value:values.recognized_revenue, icon:'▤'},
+            {label: _t('Recognized profit / loss'), value:values.recognized_profit, icon:'★'},
+            {label: _t('Voucher cash-flow balance'), value:values.liquidity, icon:'⇄'},
         ];
     }
     bar(phase, phases) {

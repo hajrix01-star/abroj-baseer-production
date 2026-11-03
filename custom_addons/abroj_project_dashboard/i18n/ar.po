@@ -1,0 +1,569 @@
+msgid ""
+msgstr ""
+"Language: ar\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5;\n"
+
+#. module: abroj_project_dashboard
+#. odoo-javascript
+#: model:ir.model.fields,field_description:abroj_project_dashboard.field_project_project__abroj_effective_budget
+#: code:addons/abroj_project_dashboard/static/src/dashboard.js:0
+msgid "Comparison budget"
+msgstr "ميزانية المقارنة"
+
+#. module: abroj_project_dashboard
+#. odoo-javascript
+#: model:ir.model.fields,field_description:abroj_project_dashboard.field_project_project__abroj_expected_profit
+#: code:addons/abroj_project_dashboard/static/src/dashboard.js:0
+msgid "Expected margin against budget"
+msgstr "الهامش المتوقع حسب الميزانية"
+
+#. module: abroj_project_dashboard
+#: model:ir.model.fields,field_description:abroj_project_dashboard.field_project_project__abroj_budget_lines_total
+msgid "Detailed budget total (unapproved)"
+msgstr "مجموع بنود الميزانية — للمراجعة"
+
+#. module: abroj_project_dashboard
+#: model_terms:ir.ui.view,arch_db:abroj_project_dashboard.contracting_project_form_gallery
+msgid "No comparison budget: enter the project budget or estimated cost to calculate the expected margin and budget variance."
+msgstr "ميزانية المقارنة غير محددة؛ أدخل ميزانية المشروع أو التكلفة التقديرية لحساب الهامش المتوقع وتجاوز الميزانية."
+
+#. module: abroj_project_dashboard
+#: model_terms:ir.ui.view,arch_db:abroj_project_dashboard.contracting_project_form_gallery
+msgid "The detailed budget differs from the comparison budget. Review overlapping items before approval."
+msgstr "مجموع بنود الميزانية لا يطابق ميزانية المقارنة. راجع البنود المتداخلة قبل الاعتماد."
+
+#. module: abroj_project_dashboard
+#. odoo-javascript
+#: code:addons/abroj_project_dashboard/static/src/dashboard.js:0
+msgid "Actual cost"
+msgstr "التكلفة الفعلية"
+
+#. module: abroj_project_dashboard
+#. odoo-javascript
+#: code:addons/abroj_project_dashboard/static/src/dashboard.js:0
+msgid "Over budget"
+msgstr "تجاوز الميزانية"
+
+#. module: abroj_project_dashboard
+#. odoo-javascript
+#: code:addons/abroj_project_dashboard/static/src/dashboard.js:0
+msgid "Cash balance"
+msgstr "الرصيد النقدي"
+
+#. module: abroj_project_dashboard
+#. odoo-javascript
+#: code:addons/abroj_project_dashboard/static/src/dashboard.js:0
+msgid "Comparison budget is missing"
+msgstr "ميزانية المقارنة غير محددة"
+
+#. module: abroj_project_dashboard
+#: model:ir.model.fields,field_description:abroj_project_dashboard.field_abroj_contracting_voucher__payment_purpose
+#: model:ir.model.fields,field_description:abroj_project_dashboard.field_abroj_project_voucher_review__purpose
+msgid "Payment purpose"
+msgstr "الغرض المحاسبي"
+
+#. module: abroj_project_dashboard
+#: model:ir.model.fields,field_description:abroj_project_dashboard.field_abroj_contracting_voucher__workflow_reviewed
+msgid "Purpose reviewed"
+msgstr "تمت مراجعة المعالجة"
+
+#. module: abroj_project_dashboard
+#: model:ir.model.fields,field_description:abroj_project_dashboard.field_abroj_contracting_voucher__workflow_reviewed_by
+msgid "Reviewed by"
+msgstr "راجعه"
+
+#. module: abroj_project_dashboard
+#: model:ir.model.fields,field_description:abroj_project_dashboard.field_abroj_contracting_voucher__workflow_reviewed_at
+msgid "Reviewed at"
+msgstr "تاريخ المراجعة"
+
+#. module: abroj_project_dashboard
+#: model:ir.model.fields,field_description:abroj_project_dashboard.field_abroj_contracting_voucher__workflow_evidence
+msgid "Review evidence"
+msgstr "مستندات المراجعة وقرارها"
+
+#. module: abroj_project_dashboard
+#: model:ir.model.fields,field_description:abroj_project_dashboard.field_abroj_contracting_voucher__recognition_move_id
+#: model_terms:ir.ui.view,arch_db:abroj_project_dashboard.voucher_workflow_form
+#: model_terms:ir.ui.view,arch_db:abroj_project_dashboard.project_voucher_workflow_list
+msgid "Recognition document"
+msgstr "مستند الإثبات المحاسبي"
+
+#. module: abroj_project_dashboard
+#: model:ir.model.fields,field_description:abroj_project_dashboard.field_abroj_contracting_voucher__abroj_budget_line_id
+#: model:ir.model.fields,field_description:abroj_project_dashboard.field_abroj_project_voucher_review__budget_line_id
+#: model:ir.model.fields,field_description:abroj_project_dashboard.field_account_move_line__abroj_budget_line_id
+msgid "Cost category"
+msgstr "بند التكلفة"
+
+#. module: abroj_project_dashboard
+#: model:ir.model.fields,field_description:abroj_project_dashboard.field_abroj_contracting_voucher__workflow_status
+msgid "Purpose review"
+msgstr "مراجعة المعالجة"
+
+#. module: abroj_project_dashboard
+#: model:ir.model.fields,field_description:abroj_project_dashboard.field_abroj_project_voucher_review__voucher_id
+#: model_terms:ir.ui.view,arch_db:abroj_project_dashboard.voucher_review_form
+msgid "Voucher"
+msgstr "السند"
+
+#. module: abroj_project_dashboard
+#: model:ir.model.fields,field_description:abroj_project_dashboard.field_abroj_project_voucher_review__kind
+msgid "Kind"
+msgstr "نوع السند"
+
+#. module: abroj_project_dashboard
+#: model:ir.model.fields,field_description:abroj_project_dashboard.field_abroj_project_voucher_review__company_id
+#: model_terms:ir.ui.view,arch_db:abroj_project_dashboard.voucher_review_form
+msgid "Company"
+msgstr "الشركة"
+
+#. module: abroj_project_dashboard
+#: model:ir.model.fields,field_description:abroj_project_dashboard.field_abroj_project_voucher_review__project_id
+#: model_terms:ir.ui.view,arch_db:abroj_project_dashboard.voucher_review_form
+msgid "Project"
+msgstr "المشروع"
+
+#. module: abroj_project_dashboard
+#: model:ir.model.fields,field_description:abroj_project_dashboard.field_abroj_project_voucher_review__currency_id
+msgid "Currency"
+msgstr "العملة"
+
+#. module: abroj_project_dashboard
+#: model:ir.model.fields,field_description:abroj_project_dashboard.field_abroj_project_voucher_review__amount
+msgid "Amount"
+msgstr "المبلغ"
+
+#. module: abroj_project_dashboard
+#: model:ir.model.fields,field_description:abroj_project_dashboard.field_abroj_project_voucher_review__existing_payment_id
+msgid "Existing Payment"
+msgstr "الدفعة المحاسبية القائمة"
+
+#. module: abroj_project_dashboard
+#: model:ir.model.fields,field_description:abroj_project_dashboard.field_abroj_project_voucher_review__partner_id
+msgid "Accounting partner"
+msgstr "الطرف المحاسبي"
+
+#. module: abroj_project_dashboard
+#: model:ir.model.fields,field_description:abroj_project_dashboard.field_abroj_project_voucher_review__journal_id
+msgid "Payment journal"
+msgstr "دفتر الدفع أو التحصيل"
+
+#. module: abroj_project_dashboard
+#: model:ir.model.fields,field_description:abroj_project_dashboard.field_abroj_project_voucher_review__invoice_journal_id
+msgid "Invoice journal"
+msgstr "دفتر الفاتورة"
+
+#. module: abroj_project_dashboard
+#: model:ir.model.fields,field_description:abroj_project_dashboard.field_abroj_project_voucher_review__invoice_id
+msgid "Existing posted invoice / credit note"
+msgstr "الفاتورة أو الإشعار الدائن المرحل"
+
+#. module: abroj_project_dashboard
+#: model:ir.model.fields,field_description:abroj_project_dashboard.field_abroj_project_voucher_review__expense_id
+msgid "Existing confirmed expense"
+msgstr "المصروف المؤكد القائم"
+
+#. module: abroj_project_dashboard
+#: model:ir.model.fields,field_description:abroj_project_dashboard.field_abroj_project_voucher_review__name
+msgid "Description"
+msgstr "الوصف"
+
+#. module: abroj_project_dashboard
+#: model:ir.model.fields,field_description:abroj_project_dashboard.field_abroj_project_voucher_review__document_reference
+msgid "Source reference"
+msgstr "مرجع المستند"
+
+#. module: abroj_project_dashboard
+#: model:ir.model.fields,field_description:abroj_project_dashboard.field_abroj_project_voucher_review__evidence_note
+msgid "Evidence and review decision"
+msgstr "المستندات المؤيدة وقرار المراجعة"
+
+#. module: abroj_project_dashboard
+#: model:ir.model.fields,field_description:abroj_project_dashboard.field_abroj_project_voucher_review__account_id
+msgid "Expense / income account"
+msgstr "حساب المصروف أو الإيراد"
+
+#. module: abroj_project_dashboard
+#: model:ir.model.fields,field_description:abroj_project_dashboard.field_abroj_project_voucher_review__tax_ids
+msgid "Reviewed taxes"
+msgstr "الضرائب المراجعة"
+
+#. module: abroj_project_dashboard
+#: model:ir.model.fields,field_description:abroj_project_dashboard.field_abroj_project_voucher_review__invoice_date
+msgid "Invoice date"
+msgstr "تاريخ الفاتورة"
+
+#. module: abroj_project_dashboard
+#: model:ir.model.fields,field_description:abroj_project_dashboard.field_abroj_project_voucher_review__date
+msgid "Recognition date"
+msgstr "تاريخ إثبات المصروف أو الإيراد"
+
+#. module: abroj_project_dashboard
+#: model:ir.model.fields,field_description:abroj_project_dashboard.field_account_move__abroj_recognition_voucher_id
+msgid "Recognition source voucher"
+msgstr "سند مصدر الإثبات المحاسبي"
+
+#. module: abroj_project_dashboard
+#: model:ir.model.fields.selection,name:abroj_project_dashboard.selection__abroj_contracting_voucher__payment_purpose__direct
+#: model:ir.model.fields.selection,name:abroj_project_dashboard.selection__abroj_project_voucher_review__purpose__direct
+msgid "Direct expense / earned income"
+msgstr "مصروف مباشر أو إيراد مستحق"
+
+#. module: abroj_project_dashboard
+#: model:ir.model.fields.selection,name:abroj_project_dashboard.selection__abroj_contracting_voucher__payment_purpose__settlement
+#: model:ir.model.fields.selection,name:abroj_project_dashboard.selection__abroj_project_voucher_review__purpose__settlement
+msgid "Settle an existing invoice"
+msgstr "تسوية فاتورة قائمة"
+
+#. module: abroj_project_dashboard
+#: model:ir.model.fields.selection,name:abroj_project_dashboard.selection__abroj_contracting_voucher__payment_purpose__advance
+#: model:ir.model.fields.selection,name:abroj_project_dashboard.selection__abroj_project_voucher_review__purpose__advance
+msgid "Advance payment / collection"
+msgstr "دفعة أو تحصيل مقدم"
+
+#. module: abroj_project_dashboard
+#: model:ir.model.fields.selection,name:abroj_project_dashboard.selection__abroj_contracting_voucher__payment_purpose__supplier_refund
+#: model:ir.model.fields.selection,name:abroj_project_dashboard.selection__abroj_project_voucher_review__purpose__supplier_refund
+msgid "Supplier refund against a credit note"
+msgstr "استرداد من المورد مقابل إشعار دائن"
+
+#. module: abroj_project_dashboard
+#: model:ir.model.fields.selection,name:abroj_project_dashboard.selection__abroj_contracting_voucher__workflow_status__pending
+msgid "Needs purpose review"
+msgstr "بانتظار مراجعة المعالجة"
+
+#. module: abroj_project_dashboard
+#: model:ir.model.fields.selection,name:abroj_project_dashboard.selection__abroj_contracting_voucher__workflow_status__reviewed
+msgid "Reviewed"
+msgstr "تمت المراجعة"
+
+#. module: abroj_project_dashboard
+#: model_terms:ir.ui.view,arch_db:abroj_project_dashboard.voucher_workflow_form
+#: model_terms:ir.ui.view,arch_db:abroj_project_dashboard.project_voucher_workflow_list
+msgid "Review accounting purpose"
+msgstr "مراجعة المعالجة المحاسبية"
+
+#. module: abroj_project_dashboard
+#: model_terms:ir.ui.view,arch_db:abroj_project_dashboard.voucher_review_form
+msgid "Review voucher accounting"
+msgstr "مراجعة محاسبة السند"
+
+#. module: abroj_project_dashboard
+#: model_terms:ir.ui.view,arch_db:abroj_project_dashboard.voucher_review_form
+msgid "An advance is a payment or collection on account. It does not recognize an expense or earned income until its supporting document is recorded."
+msgstr "الدفعة أو التحصيل المقدم حركة على الحساب. يُثبت المصروف أو الإيراد المستحق عند تسجيل المستند المؤيد له."
+
+#. module: abroj_project_dashboard
+#: model_terms:ir.ui.view,arch_db:abroj_project_dashboard.voucher_review_form
+msgid "The source amount is the gross total including selected taxes. Use an existing expense when it already represents this transaction."
+msgstr "مبلغ المصدر هو الإجمالي شاملًا الضرائب المختارة. اختر المصروف القائم إذا كان يمثل العملية نفسها."
+
+#. module: abroj_project_dashboard
+#: model_terms:ir.ui.view,arch_db:abroj_project_dashboard.voucher_review_form
+msgid "The existing payment remains the payment source. Review its accounting purpose without issuing a second payment."
+msgstr "تبقى الدفعة المحاسبية القائمة مصدر حركة النقد. راجع معالجتها المحاسبية دون إصدار دفعة ثانية."
+
+#. module: abroj_project_dashboard
+#: model_terms:ir.ui.view,arch_db:abroj_project_dashboard.voucher_review_form
+msgid "Apply accounting review"
+msgstr "اعتماد المراجعة المحاسبية"
+
+#. module: abroj_project_dashboard
+#: model_terms:ir.ui.view,arch_db:abroj_project_dashboard.voucher_review_form
+msgid "Cancel"
+msgstr "إلغاء"
+
+#. module: abroj_project_dashboard
+#. odoo-python
+#: code:addons/abroj_project_dashboard/models/voucher_workflow.py:0
+msgid "Accounting links are managed by the review action."
+msgstr "تُدار الروابط المحاسبية من خلال إجراء المراجعة."
+
+#. module: abroj_project_dashboard
+#. odoo-python
+#: code:addons/abroj_project_dashboard/models/voucher_workflow.py:0
+msgid "Choose the payment purpose before issuing the voucher."
+msgstr "اختر الغرض المحاسبي قبل إصدار السند."
+
+#. module: abroj_project_dashboard
+#. odoo-python
+#: code:addons/abroj_project_dashboard/models/voucher_workflow.py:0
+msgid "A supplier refund must be a receipt voucher."
+msgstr "يجب تسجيل استرداد المورد بسند قبض."
+
+#. module: abroj_project_dashboard
+#. odoo-python
+#: code:addons/abroj_project_dashboard/models/voucher_workflow.py:0
+msgid "A subcontractor receipt must use the supplier refund purpose."
+msgstr "اختر غرض استرداد من المورد لسند قبض مقاول الباطن."
+
+#. module: abroj_project_dashboard
+#. odoo-python
+#: code:addons/abroj_project_dashboard/models/voucher_workflow.py:0
+msgid "Use Review payment purpose to approve or link this voucher."
+msgstr "استخدم مراجعة الغرض المحاسبي لاعتماد هذا السند أو ربطه بمستنده."
+
+#. module: abroj_project_dashboard
+#. odoo-python
+#: code:addons/abroj_project_dashboard/models/voucher_workflow.py:0
+msgid "Issue the voucher before reviewing its accounting purpose."
+msgstr "أصدر السند قبل مراجعة غرضه المحاسبي."
+
+#. module: abroj_project_dashboard
+#. odoo-python
+#: code:addons/abroj_project_dashboard/models/voucher_workflow.py:0
+msgid "Review payment purpose"
+msgstr "مراجعة الغرض المحاسبي"
+
+#. module: abroj_project_dashboard
+#. odoo-python
+#: code:addons/abroj_project_dashboard/models/voucher_workflow.py:0
+msgid "Voucher payment links are managed by the review action."
+msgstr "تُدار روابط دفعة السند من خلال إجراء المراجعة."
+
+#. module: abroj_project_dashboard
+#. odoo-python
+#: code:addons/abroj_project_dashboard/models/voucher_workflow.py:0
+msgid "Correct the original voucher payment through a native reversal."
+msgstr "صحح دفعة السند الأصلية من خلال العكس المحاسبي الأصلي في أودو."
+
+#. module: abroj_project_dashboard
+#. odoo-python
+#: code:addons/abroj_project_dashboard/models/voucher_workflow.py:0
+msgid "Recognition links are managed by the review action."
+msgstr "تُدار روابط الإثبات المحاسبي من خلال إجراء المراجعة."
+
+#. module: abroj_project_dashboard
+#. odoo-python
+#: code:addons/abroj_project_dashboard/models/voucher_workflow.py:0
+msgid "Correct the recognition document through a native credit note or reversal."
+msgstr "صحح مستند الإثبات من خلال إشعار دائن أو عكس محاسبي أصلي في أودو."
+
+#. module: abroj_project_dashboard
+#. odoo-python
+#: code:addons/abroj_project_dashboard/models/voucher_workflow.py:0
+msgid "The cost category must match the expense company and 100% project allocation."
+msgstr "يجب أن يتطابق بند التكلفة مع شركة المصروف، وأن يخصص المصروف بنسبة 100% للمشروع."
+
+#. module: abroj_project_dashboard
+#. odoo-python
+#: code:addons/abroj_project_dashboard/models/voucher_workflow.py:0
+msgid "Use an issued voucher in the company currency."
+msgstr "استخدم سندًا صادرًا بعملة الشركة."
+
+#. module: abroj_project_dashboard
+#. odoo-python
+#: code:addons/abroj_project_dashboard/models/voucher_workflow.py:0
+msgid "Record the evidence and accounting decision."
+msgstr "سجل المستندات المؤيدة وقرار المراجعة المحاسبية."
+
+#. module: abroj_project_dashboard
+#. odoo-python
+#: code:addons/abroj_project_dashboard/models/voucher_workflow.py:0
+msgid "Choose the source document accounting partner from the same company."
+msgstr "اختر الطرف المحاسبي لمستند المصدر من الشركة نفسها."
+
+#. module: abroj_project_dashboard
+#. odoo-python
+#: code:addons/abroj_project_dashboard/models/voucher_workflow.py:0
+msgid "Select an analytic account from the native project plan."
+msgstr "اختر حسابًا تحليليًا من خطة المشاريع الأصلية في أودو."
+
+#. module: abroj_project_dashboard
+#. odoo-python
+#: code:addons/abroj_project_dashboard/models/voucher_workflow.py:0
+msgid "The original payment needs accountant reclassification; its party, company, direction and amount must match."
+msgstr "تحتاج الدفعة الأصلية إلى مراجعة تصنيفها لدى المحاسب؛ يجب أن يتطابق الطرف والشركة والاتجاه والمبلغ."
+
+#. module: abroj_project_dashboard
+#. odoo-python
+#: code:addons/abroj_project_dashboard/models/voucher_workflow.py:0
+msgid "Choose an active cash or bank journal matching the voucher payment method."
+msgstr "اختر دفتر صندوق أو بنك نشطًا يطابق طريقة دفع السند."
+
+#. module: abroj_project_dashboard
+#. odoo-python
+#: code:addons/abroj_project_dashboard/models/voucher_workflow.py:0
+msgid "Configure a native payment method for this journal."
+msgstr "اضبط طريقة دفع أصلية لهذا الدفتر في أودو."
+
+#. module: abroj_project_dashboard
+#. odoo-python
+#: code:addons/abroj_project_dashboard/models/voucher_workflow.py:0
+msgid "The payment journal must generate a native accounting entry."
+msgstr "يجب أن ينشئ دفتر الدفع قيدًا محاسبيًا أصليًا في أودو."
+
+#. module: abroj_project_dashboard
+#. odoo-python
+#: code:addons/abroj_project_dashboard/models/voucher_workflow.py:0
+msgid "Review the source reference, dates, recognition account and invoice journal."
+msgstr "راجع مرجع المستند والتواريخ وحساب الإثبات ودفتر الفاتورة."
+
+#. module: abroj_project_dashboard
+#. odoo-python
+#: code:addons/abroj_project_dashboard/models/voucher_workflow.py:0
+msgid "Choose a cost category from this project."
+msgstr "اختر بند تكلفة من هذا المشروع."
+
+#. module: abroj_project_dashboard
+#. odoo-python
+#: code:addons/abroj_project_dashboard/models/voucher_workflow.py:0
+msgid "Customer income cannot use an expense source or cost category."
+msgstr "لا يمكن استخدام مصدر مصروف أو بند تكلفة لإثبات إيراد العميل."
+
+#. module: abroj_project_dashboard
+#. odoo-python
+#: code:addons/abroj_project_dashboard/models/voucher_workflow.py:0
+msgid "This source reference already has an invoice. Settle the existing invoice instead."
+msgstr "توجد فاتورة مسجلة بهذا المرجع. استخدم تسوية الفاتورة القائمة."
+
+#. module: abroj_project_dashboard
+#. odoo-python
+#: code:addons/abroj_project_dashboard/models/voucher_workflow.py:0
+msgid "Choose supported, explicitly reviewed percentage taxes from this company."
+msgstr "اختر ضرائب نسبية مدعومة من هذه الشركة بعد مراجعتها صراحة."
+
+#. module: abroj_project_dashboard
+#. odoo-python
+#: code:addons/abroj_project_dashboard/models/voucher_workflow.py:0
+msgid "The confirmed expense must match this project, supplier and amount and have no accounting document."
+msgstr "يجب أن يتطابق المصروف المؤكد مع المشروع والمورد والمبلغ، وألا يكون مرتبطًا بمستند محاسبي."
+
+#. module: abroj_project_dashboard
+#. odoo-python
+#: code:addons/abroj_project_dashboard/models/voucher_workflow.py:0
+msgid "The native invoice date or total changed. Review the period and taxes."
+msgstr "تغير تاريخ فاتورة أودو أو إجماليها. راجع الفترة المحاسبية والضرائب."
+
+#. module: abroj_project_dashboard
+#. odoo-python
+#: code:addons/abroj_project_dashboard/models/voucher_workflow.py:0
+msgid "Choose a posted invoice matching the purpose, company, currency, partner and project."
+msgstr "اختر فاتورة مرحلة تتطابق مع الغرض والشركة والعملة والطرف والمشروع."
+
+#. module: abroj_project_dashboard
+#. odoo-python
+#: code:addons/abroj_project_dashboard/models/voucher_workflow.py:0
+msgid "The invoice recognition lines must allocate 100% to this project."
+msgstr "يجب تخصيص بنود الإثبات في الفاتورة بنسبة 100% لهذا المشروع."
+
+#. module: abroj_project_dashboard
+#. odoo-python
+#: code:addons/abroj_project_dashboard/models/voucher_workflow.py:0
+msgid "Use the cost category already recorded on the posted invoice."
+msgstr "استخدم بند التكلفة المسجل على الفاتورة المرحلة."
+
+#. module: abroj_project_dashboard
+#. odoo-python
+#: code:addons/abroj_project_dashboard/models/voucher_workflow.py:0
+msgid "The payment and invoice must have open lines on the same receivable or payable account."
+msgstr "يجب أن تتضمن الدفعة والفاتورة بنودًا مفتوحة في حساب الذمم المدينة أو الدائنة نفسه."
+
+#. module: abroj_project_dashboard
+#. odoo-python
+#: code:addons/abroj_project_dashboard/models/voucher_workflow.py:0
+msgid "Every settlement line must have the reviewed original accounting partner."
+msgstr "يجب أن يتطابق طرف كل بند تسوية مع الطرف المحاسبي الأصلي الذي راجعته."
+
+#. module: abroj_project_dashboard
+#. odoo-python
+#: code:addons/abroj_project_dashboard/models/voucher_workflow.py:0
+msgid "The payment residual exceeds the invoice residual. Keep the excess as an explicit advance."
+msgstr "المتبقي من الدفعة أكبر من المتبقي على الفاتورة. أبق المبلغ الزائد دفعة مقدمة موضحة."
+
+#. module: abroj_project_dashboard
+#. odoo-python
+#: code:addons/abroj_project_dashboard/models/voucher_workflow.py:0
+msgid "The payment and invoice settlement directions must be opposite."
+msgstr "يجب أن يكون اتجاه بند تسوية الدفعة مقابلًا لاتجاه بند الفاتورة."
+
+#. module: abroj_project_dashboard
+#. odoo-python
+#: code:addons/abroj_project_dashboard/models/voucher_workflow.py:0
+msgid "The original payment was not fully matched; review its open balance."
+msgstr "لم تُسوَّ الدفعة الأصلية بالكامل؛ راجع رصيدها المفتوح."
+
+#. module: abroj_project_dashboard
+#. odoo-python
+#: code:addons/abroj_project_dashboard/models/voucher_workflow.py:0
+msgid "Choose a supported payment purpose."
+msgstr "اختر غرضًا محاسبيًا مدعومًا."
+
+#. module: abroj_project_dashboard
+#. odoo-python
+#: code:addons/abroj_project_dashboard/models/voucher_workflow.py:0
+msgid "Only a project manager may approve the comparison budget."
+msgstr "اعتماد ميزانية المقارنة متاح لمدير المشروع فقط."
+
+#. module: abroj_project_dashboard
+#. odoo-python
+#: code:addons/abroj_project_dashboard/models/voucher_workflow.py:0
+msgid "Budget categories cannot have negative amounts."
+msgstr "لا يمكن أن تكون مبالغ بنود الميزانية سالبة."
+
+#. module: abroj_project_dashboard
+#: model:ir.model,name:abroj_project_dashboard.model_abroj_project_voucher_review
+msgid "Review contracting payment purpose"
+msgstr "مراجعة الغرض المحاسبي لسند المقاولات"
+
+#. module: abroj_project_dashboard
+#. odoo-javascript
+#: code:addons/abroj_project_dashboard/static/src/dashboard.js:0
+msgid "Recognized revenue"
+msgstr "الإيراد المثبت محاسبيًا"
+
+#. module: abroj_project_dashboard
+#. odoo-javascript
+#: code:addons/abroj_project_dashboard/static/src/dashboard.js:0
+msgid "Recognized profit / loss"
+msgstr "الربح أو الخسارة المثبتة محاسبيًا"
+
+#. module: abroj_project_dashboard
+#: model_terms:ir.ui.view,arch_db:abroj_project_dashboard.voucher_review_form
+msgid "Gross voucher amount"
+msgstr "إجمالي مبلغ السند"
+
+#. module: abroj_project_dashboard
+#: model_terms:ir.ui.view,arch_db:abroj_project_dashboard.voucher_review_form
+msgid "Existing accounting payment"
+msgstr "الدفعة المحاسبية القائمة"
+
+#. module: abroj_project_dashboard
+#. odoo-python
+#: code:addons/abroj_project_dashboard/models/voucher_workflow.py:0
+msgid "An advance cannot contain an invoice, expense, cost category or taxes."
+msgstr "لا يمكن أن تتضمن الدفعة أو التحصيل المقدم فاتورة أو مصروفًا أو بند تكلفة أو ضرائب."
+
+#. module: abroj_project_dashboard
+#. odoo-python
+#: code:addons/abroj_project_dashboard/models/voucher_workflow.py:0
+msgid "The voucher issuer cannot approve their own payment."
+msgstr "لا يجوز لمصدر السند اعتماد دفعته المحاسبية."
+
+#. module: abroj_project_dashboard
+#: model_terms:ir.ui.view,arch_db:abroj_project_dashboard.voucher_review_form
+msgid "Odoo clearing account — bank/cash reconciliation is still required."
+msgstr "حساب قيد التسوية في أودو — ما زالت تسوية البنك أو الصندوق مطلوبة."
+
+#. module: abroj_project_dashboard
+#: model_terms:ir.ui.view,arch_db:abroj_project_dashboard.project_budget_approval
+msgid "Approve the detailed total as the project comparison budget after reviewing overlapping or repeated items."
+msgstr "اعتمد مجموع البنود ميزانية مقارنة للمشروع بعد مراجعة البنود المتداخلة أو المكررة."
+
+#. module: abroj_project_dashboard
+#: model_terms:ir.ui.view,arch_db:abroj_project_dashboard.project_budget_approval
+msgid "Approve detailed comparison budget"
+msgstr "اعتماد بنود ميزانية المقارنة"
+
+#. module: abroj_project_dashboard
+#. odoo-javascript
+#: code:addons/abroj_project_dashboard/static/src/dashboard.js:0
+msgid "Voucher cash-flow balance"
+msgstr "رصيد حركة السندات"
+
+#. module: abroj_project_dashboard
+#: model:ir.model.fields,field_description:abroj_project_dashboard.field_abroj_project_voucher_review__payment_account_id
+msgid "Payment posting account"
+msgstr "حساب ترحيل الدفعة"

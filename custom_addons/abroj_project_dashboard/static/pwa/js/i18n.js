@@ -1,5 +1,19 @@
 'use strict';
 const translations = {
+  "voucherCashFlowNote": {"ar":"من مبالغ السندات؛ قد يختلف عن النقد المؤكد في البنك أو الصندوق.", "en":"Based on voucher amounts; may differ from confirmed bank or cash balances."},
+  "recognizedRevenue": {"ar":"الإيراد المثبت محاسبيًا", "en":"Recognized revenue"},
+  "recognizedProfit": {"ar":"الربح أو الخسارة المثبتة محاسبيًا", "en":"Recognized profit / loss"},
+  "voucherPurpose": {"ar":"الغرض المحاسبي","en":"Accounting purpose"},
+  "voucherPurposeReview": {"ar":"مراجعة المعالجة","en":"Purpose review"},
+  "voucherReviewOdoo": {"ar":"مراجعة المعالجة في أودو","en":"Review purpose in Odoo"},
+  "voucherRecognitionOdoo": {"ar":"عرض مستند الإثبات في أودو","en":"View supporting document in Odoo"},
+  "voucherDirectExpense": {"ar":"مصروف مباشر","en":"Direct expense"},
+  "voucherEarnedIncome": {"ar":"إيراد مستحق","en":"Earned income"},
+  "voucherSettleInvoice": {"ar":"تسوية فاتورة قائمة","en":"Settle existing invoice"},
+  "voucherAdvancePayment": {"ar":"دفعة مقدمة","en":"Advance payment"},
+  "voucherAdvanceCollection": {"ar":"تحصيل مقدم","en":"Advance collection"},
+  "voucherSupplierRefund": {"ar":"استرداد من المورد","en":"Supplier refund"},
+
   "issueEntryOdoo": {"ar":"إصدار القيد في أودو", "en":"Issue entry in Odoo"},
   "viewEntryOdoo": {"ar":"عرض القيد في أودو", "en":"View entry in Odoo"},
   "budgetReview": {"ar":"مجموع بنود الميزانية للمراجعة؛ لا يُعتمد تلقائيًا عند الاختلاف عن الميزانية الإجمالية.", "en":"Review the detailed budget total; differences are not approved automatically."},

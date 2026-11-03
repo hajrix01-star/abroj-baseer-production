@@ -197,7 +197,7 @@
 
 .o_prc_request_fields { display: grid; flex: 0 0 auto; grid-template-columns: 1fr 1fr; gap: .65rem; padding: 0 1rem .9rem; border-bottom: 1px solid var(--prc-border); }
 .o_prc_request_fields label { display: flex; min-width: 0; flex-direction: column; gap: .3rem; color: #475467; font-size: .72rem; font-weight: 600; }
-.o_prc_request_fields label:last-child { grid-column: 1 / -1; }
+.o_prc_request_fields label:nth-child(2):last-child { grid-column: 1 / -1; }
 .o_prc_request_fields b { color: #b42318; }
 .o_prc_request_fields select, .o_prc_request_fields input { width: 100%; min-height: 2.65rem; padding: .45rem .65rem; border: 1px solid var(--prc-border); border-radius: .6rem; outline: none; background: #fff; font-size: .82rem; }
 .o_prc_request_fields select:focus, .o_prc_request_fields input:focus { border-color: var(--prc-brand); box-shadow: 0 0 0 3px rgba(113, 75, 103, .12); }
@@ -386,18 +386,22 @@
     .o_prc_inline_loader, .o_prc_button_spinner { animation-duration: 1.2s; }
 }
 .o_prc_purchase_routes {
-    display: flex;
-    flex-wrap: wrap;
+    // Use the full cart width: a half-width grid cell stacked the three
+    // routes and squeezed the item list on landscape tablets.
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: .5rem;
     button {
-        flex: 1 1 110px;
-        min-height: 44px;
+        min-width: 0;
+        min-height: 48px;
         border: 1px solid #cbd5e1;
         border-radius: .5rem;
         background: #fff;
         padding: .5rem;
+        overflow-wrap: anywhere;
         &[aria-pressed="true"] { background: #e8f4f1; border-color: #147d64; color: #115e4c; }
         &:focus-visible { outline: 2px solid #147d64; outline-offset: 2px; }
     }
 }
-.o_prc_route_badge { font-size: .85rem; color: #475569; }
+.o_prc_route_badge { grid-column: 1 / -1; font-size: .85rem; color: #475569; }

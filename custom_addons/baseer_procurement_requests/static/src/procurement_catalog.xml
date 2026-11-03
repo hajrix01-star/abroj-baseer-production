@@ -211,22 +211,23 @@
                         <article t-foreach="state.cart" t-as="line" t-key="line.option_id" t-att-class="{'o_prc_cart_line': true, 'is_not_received': isNotReceived(line)}">
                             <div class="o_prc_line_content">
                                 <div class="o_prc_line_heading"><div><strong t-esc="line.name"/><small><t t-esc="line.unit"/><t t-if="line.packaging and line.packaging !== line.unit"> · <t t-esc="line.packaging"/></t></small></div><strong t-if="quoteLine(line)" class="o_prc_line_total" t-esc="moneyText(quoteLine(line).line_total_text)"/><span t-else="" class="o_prc_quote_placeholder">—</span></div>
-                                <div class="o_prc_line_controls">
+                                <div t-if="isNotReceived(line)" class="o_prc_not_received_label">Not received</div>
+                                <div class="o_prc_line_controls" t-att-class="{'has_receipt_action': state.existingRequest}">
                                     <div class="o_prc_stepper" role="group" aria-label="Quantity">
-                                        <button type="button" t-on-click="() => this.stepQuantity(line, -1)" aria-label="Decrease quantity"><i class="fa fa-minus"/></button>
-                                        <input type="number" min="0.01" step="0.01" inputmode="decimal" dir="ltr" t-att-value="line.quantity" t-on-input="(event) => this.setQuantity(line, event.target.value)" aria-label="Quantity"/>
+                                        <button type="button" t-on-click="() => this.stepQuantity(line, -1)" t-att-disabled="isNotReceived(line)" aria-label="Decrease quantity"><i class="fa fa-minus"/></button>
+                                        <input type="number" min="0" step="0.01" inputmode="decimal" dir="ltr" t-att-value="line.quantity" t-on-input="(event) => this.setQuantity(line, event.target.value)" t-on-change="() => this.commitQuantity(line)" aria-label="Quantity"/>
                                         <button type="button" t-on-click="() => this.stepQuantity(line, 1)" aria-label="Increase quantity"><i class="fa fa-plus"/></button>
                                     </div>
                                     <div class="o_prc_line_amount">
                                         <label t-if="state.existingRequest" t-att-class="{'o_prc_actual_price': true, 'is_invalid': requiresActualPrice(line)}">
                                             <span class="visually-hidden">Actual unit price</span>
                                             <span class="o_prc_actual_price_currency" t-esc="line.currency_symbol"/>
-                                            <input type="number" min="0.01" step="0.01" inputmode="decimal" dir="ltr" t-att-value="line.actual_price" t-on-input="(event) => this.setActualPrice(line, event.target.value)" aria-label="Actual unit price"/>
+                                            <input type="number" min="0.01" step="0.01" inputmode="decimal" dir="ltr" t-att-value="line.actual_price" t-att-disabled="isNotReceived(line)" t-on-input="(event) => this.setActualPrice(line, event.target.value)" aria-label="Actual unit price"/>
                                         </label>
                                         <small t-if="requiresActualPrice(line)" class="o_prc_actual_price_hint">Enter the price</small>
                                         <small t-elif="!state.existingRequest and quoteLine(line)"><t t-esc="quoteLine(line).unit_price_text"/> <t t-esc="state.quote.currency_symbol"/> / <t t-esc="line.unit"/></small>
                                     </div>
-                                    <button type="button" class="o_prc_remove" t-on-click="() => this.remove(line)" t-att-aria-label="removeLineAriaLabel(line)"><i t-att-class="state.existingRequest ? (isNotReceived(line) ? 'fa fa-undo' : 'fa fa-times') : 'fa fa-trash-o'"/></button>
+                                    <button type="button" class="o_prc_remove" t-on-click="() => this.remove(line)" t-att-aria-label="removeLineAriaLabel(line)" t-att-title="removeLineAriaLabel(line)"><i t-att-class="state.existingRequest ? (isNotReceived(line) ? 'fa fa-undo' : 'fa fa-times') : 'fa fa-trash-o'" aria-hidden="true"/><span t-if="state.existingRequest"><t t-if="isNotReceived(line)">Restore</t><t t-else="">Not received</t></span></button>
                                 </div>
                             </div>
                         </article>

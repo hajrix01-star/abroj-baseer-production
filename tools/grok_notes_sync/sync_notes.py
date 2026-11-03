@@ -7,7 +7,22 @@ import os
 import sys
 import xmlrpc.client
 
+COLOR_KEYS = ['default', 'red', 'orange', 'yellow', 'green', 'teal', 'blue', 'darkblue', 'purple', 'pink', 'brown', 'gray']
+
 FIELDS = ['grok_uid', 'title', 'body', 'is_list', 'color', 'pinned', 'active', 'label_ids', 'res_model', 'res_id', 'res_name', 'user_id', 'write_date', 'item_ids']
+
+
+def normalize_color(value):
+    if isinstance(value, bool):
+        raise ValueError('Invalid color')
+    if isinstance(value, str):
+        if value in COLOR_KEYS:
+            return value
+        if value.isascii() and value.isdecimal():
+            value = int(value)
+    if isinstance(value, int) and 0 <= value < len(COLOR_KEYS):
+        return COLOR_KEYS[value]
+    raise ValueError('Invalid color')
 
 
 def parse_time(value):
@@ -64,6 +79,8 @@ def main(argv=None):
             notes = notes.get('notes')
         if not isinstance(notes, list) or any(not isinstance(n, dict) or not isinstance(n.get('grok_uid'), str) or not n['grok_uid'].strip() for n in notes):
             raise ValueError('Input must be a list of notes with grok_uid')
+        for note in notes:
+            note['color'] = normalize_color(note.get('color', 'default'))
         if args.confirm:
             result = call('grok.note', 'grok_upsert', [notes])
         else:
@@ -79,7 +96,8 @@ def main(argv=None):
         result = []
         for n in notes:
             ordered = sorted((items[i] for i in n['item_ids'] if i in items), key=lambda i: (i['sequence'], i['id']))
-            result.append({**{k: n[k] for k in ('id', 'grok_uid', 'title', 'body', 'is_list', 'color', 'pinned', 'res_model', 'res_id', 'res_name')}, 'archived': not n['active'], 'labels': [labels[i] for i in n['label_ids'] if i in labels], 'items': [{k: i[k] for k in ('name', 'done', 'sequence')} for i in ordered], 'updated_at': n['write_date']})
+            color = normalize_color(n['color'])
+            result.append({**{k: n[k] for k in ('id', 'grok_uid', 'title', 'body', 'is_list', 'pinned', 'res_model', 'res_id', 'res_name')}, 'color': color, 'color_index': COLOR_KEYS.index(color), 'archived': not n['active'], 'labels': [labels[i] for i in n['label_ids'] if i in labels], 'items': [{k: i[k] for k in ('name', 'done', 'sequence')} for i in ordered], 'updated_at': n['write_date']})
         line = build_js_line(result)
         if getattr(args, 'out', None):
             with open(args.out, 'w', encoding='utf-8') as output:

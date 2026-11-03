@@ -1,0 +1,56 @@
+name: Test Abroj Grok notes in isolated Odoo
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'custom_addons/abroj_grok_notes/**'
+      - 'tools/grok_notes_sync/**'
+      - 'tests/test_grok_notes_sync.py'
+      - '.github/workflows/test-abroj-grok-notes.yml'
+permissions:
+  contents: read
+jobs:
+  grok-notes-runtime:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres@sha256:f1c3376c26f2609ab9f29f71f824103fe2fcd8ee0346485cb6122a4f93df6f94
+        env:
+          POSTGRES_DB: postgres
+          POSTGRES_USER: odoo
+          POSTGRES_PASSWORD: odoo
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U odoo -d postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Grok notes sync unit tests
+        run: python3 -m unittest tests/test_grok_notes_sync.py
+      - name: Grok notes runtime tests
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          docker run --rm --network host \
+            -e HOST=127.0.0.1 -e USER=odoo -e PASSWORD=odoo \
+            -e PGOPTIONS='-c lock_timeout=5000 -c statement_timeout=30000' \
+            --mount type=bind,src="$GITHUB_WORKSPACE/custom_addons",dst=/mnt/baseer-addons,readonly \
+            odoo@sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd \
+            odoo --db_host=127.0.0.1 --db_port=5432 --db_user=odoo --db_password=odoo \
+            --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/baseer-addons \
+            -d abroj_grok_notes_ci -i abroj_grok_notes --without-demo=all \
+            --test-enable --test-tags=/abroj_grok_notes \
+            --stop-after-init --max-cron-threads=0 --workers=0 --log-level=test 2>&1 | tee abroj-grok-notes-runtime.log
+          if grep -Eq '(^|[[:space:]])(ERROR|FAIL)([[:space:]:]|$)|: skipped .+ : |[1-9][0-9]* failed,|[1-9][0-9]* error\(s\)' abroj-grok-notes-runtime.log; then
+            echo 'Grok notes runtime tests were skipped or failed' >&2
+            exit 1
+          fi
+          grep -F '0 failed, 0 error(s)' abroj-grok-notes-runtime.log
+      - name: Preserve Grok notes runtime evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: abroj-grok-notes-runtime
+          path: abroj-grok-notes-runtime.log
+          if-no-files-found: error

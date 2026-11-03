@@ -107,3 +107,14 @@ monetary storage/API boundaries retained; decimal validation up to2 decimals.
     the reviewed candidate. Bounded policy upgrades onlyabroj_contracting and
     abroj_project_dashboard; no live issue/adoption action will be invoked as
     part of deployment. Source acceptance is GO, protected activation pending.
+13. Policy-only CI transport blocked activation: Source integrity attempt1
+    timed out10m during fetch of every branch/tag, before any test; retry2 also
+    remained in that fetch. Cumulative backend clone took11m58 before passing.
+    Diagnosed from completed checkout logs, not an application/test failure.
+    Operational G2/G3 reopened and independently approved partial-clone checkout
+    `filter: blob:none` with fetch-depth0 retained in validate-pull-request and
+    backend cumulative checkout only. Official checkout@v4 action.yml confirms
+    the input. Commits/trees/refs/history and every comparison/check/timeout stay
+    unchanged; current working tree materializes fully and historical content
+    lazily fetches when checked. A fetch error remains a failed check.
+    Financial source stays0a813514; no module tree or deployment permission change.

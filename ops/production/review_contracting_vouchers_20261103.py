@@ -31,6 +31,10 @@ category = env['abroj.project.budget.line'].browse(14)
 assert category.project_id == project and category.budget == 1200
 assert sum(Decimal(str(b.budget)) for b in project.abroj_budget_line_ids) == Decimal('170780')
 assert not any(project.abroj_budget_line_ids.mapped('manual_actual'))
+direct_ids = {source_id for source_id, item in MANIFEST.items() if item[-1] == 'direct'}
+assert sum(Decimal(str(s.agreed_amount)) for s in project.subcontractor_ids) == Decimal('17000')
+assert all(c.state == 'confirmed' and c.account_move_id.abroj_recognition_voucher_id.id in direct_ids
+           for c in project.cost_ids), 'Unreviewed project costs exist; review the inventory again.'
 journal = env['account.journal'].browse(415)
 account = env['account.account'].browse(3554)  # Existing cleaning expense chart account.
 assert journal.company_id.id == COMPANY and journal.type == 'purchase'
@@ -89,13 +93,16 @@ if APPLY:
     data = project._abroj_data()
     expected = {'actual': 1200, 'paid': 4700, 'received': 5000, 'liquidity': 300,
                 'budget': 170780, 'expected_profit': 4220, 'remaining': 170000,
-                'recognized_revenue': 0, 'recognized_profit': -1200}
+                'recognized_revenue': 0, 'recognized_profit': -1200, 'contract_profit': 156800}
     assert {key: data[key] for key in expected} == expected, data
     direct = vouchers.filtered(lambda v: v.id in MANIFEST and MANIFEST[v.id][-1] == 'direct')
     assert len(direct.recognition_move_id) == 2
     assert all(move.state == 'posted' and move.amount_residual == 0 for move in direct.recognition_move_id)
     assert sum(direct.recognition_move_id.mapped('amount_total')) == 1200
     assert not any(direct.recognition_move_id.mapped('amount_tax'))
+    assert project.total_costs == 18200
+    assert len(project.cost_ids) == 2 and set(project.cost_ids.ids) == set(direct.recognition_move_id.abroj_cost_id.ids)
+    assert sum(project.cost_ids.mapped('amount')) == 1200
     report.update(metrics=expected, recognition_documents=[(v.id, v.recognition_move_id.id,
                    v.recognition_move_id.name) for v in direct], payment_count_unchanged=True,
                    original_financial_fingerprints_unchanged=True)

@@ -31,7 +31,7 @@ const translations = {
   "phaseAdd": {"ar":"إضافة إلى المرحلة", "en":"Add to phase"},
   "voiceNote": {"ar":"ملاحظة صوتية", "en":"Voice note"},
   "textNote": {"ar":"ملاحظة نصية", "en":"Text note"},
-  "contractProfit": {"ar":"الهامش بعد الالتزامات المسجلة", "en":"Margin after recorded commitments"},
+  "contractProfit": {"ar":"هامش العقد بعد الالتزامات", "en":"Contract margin after commitments"},
   "contractRemaining": {"ar":"المتبقي من العقد", "en":"Remaining contract value"},
   "received": {"ar":"المقبوض", "en":"Received"},
   "paid": {"ar":"المدفوع", "en":"Paid"},

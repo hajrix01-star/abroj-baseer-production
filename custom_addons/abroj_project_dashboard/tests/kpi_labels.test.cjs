@@ -29,7 +29,7 @@ assert.match(context.cards(project), /<small>Net cash flow<\/small><h3>25 /);
 assert.match(context.cards(project), /<small>Recognized revenue<\/small><h3>20 /);
 assert.match(context.cards(project), /<small>Recognized profit \/ loss<\/small><h3>-20 /);
 
-assert.match(context.cards(project), /<small>Margin after recorded commitments<\/small><h3>55 /);
+assert.match(context.cards(project), /<small>Contract margin after commitments<\/small><h3>55 /);
 assert.match(context.cards(project), /<small>Remaining contract value<\/small><h3>70 /);
 assert.match(context.cards(project), /<small>Received<\/small><h3>30 /);
 assert.match(context.cards(project), /<small>Paid<\/small><h3>5 /);

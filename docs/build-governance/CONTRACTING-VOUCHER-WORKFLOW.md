@@ -120,3 +120,9 @@ translations; issue_tests new focused suite. No overlapping ownership.
     User approval audit, native workflow actions, comparison-budget action, original
     fingerprint/payment-count/actual/budget/profit assertions and single finalcommit.
     Execution waits for independent review, finalCI and protected runtime activation.
+13. Independent delivery accepted native UI,27cases and both races onbc6f03508;
+    G4/G5/G6 closed. Added requested operational-only precommit guard: contract
+    commitments17000, no unrelated/unreviewed project costs, exact2container cost
+    sources matching recognition bills, finaltotal18200/commitmentmargin156800.
+    PWA caption clarifies this margin is after commitments, distinct from earned
+    profit; KPIlabeltestpassed, financial formulas unchanged. FinalSHA CI pending.

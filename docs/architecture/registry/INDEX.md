@@ -992,3 +992,9 @@ BWork protocol retained. Existing company/role/active catalogue guards remain.
 Independent G0–G3 approved. Version19.0.14.0.19 candidate; CI, QA, independent
 release review and protected activation pending. No operational order save/confirm
 is allowed during acceptance. [Contract and evidence](../../build-governance/PROCUREMENT-SENT-RECEIPT-INCREASE-20261103.md).
+
+QA amendment: sourcee62d7cb9/.19 passed desktop functional acceptance,22procurement
+and68BWork cases. Actual IAB375/1024 testing exposed a hidden packaging modal
+under the catalogue pane while editing cart. Production held. Focused19.0.14.0.20
+moves the existing fixed overlay to the shared shell; backend contract unchanged.
+Affected mobile QA and independent acceptance required before promotion.

@@ -297,6 +297,8 @@ export class ProcurementCatalog extends Component {
             this.state.editRequest = false;
             this.state.cart = [];
             this.state.quote = this.emptyQuote();
+            this.state.quotePending = false;
+            this.state.quoteError = false;
             this.state.workspaceTab = "recent";
             this.quoteSequence++;
             globalThis.clearTimeout(this.quoteTimer);
@@ -672,6 +674,7 @@ export class ProcurementCatalog extends Component {
             }
             if (target?.option_id === option.id) {
                 this.state.replacementLine = false;
+                this.state.mobilePane = "cart";
                 return;
             }
             const duplicate = this.state.cart.find((line) => line.product_id === option.product_id && line !== target);
@@ -686,7 +689,10 @@ export class ProcurementCatalog extends Component {
                 unit: option.option_name, packaging: option.packaging_note, image_url: option.image_url,
                 quantity: target?.quantity || "1", unit_price: option.last_price, currency_symbol: option.currency_symbol,
             };
-            if (target) this.state.cart.splice(this.state.cart.indexOf(target), 1, row);
+            if (target) {
+                this.state.cart.splice(this.state.cart.indexOf(target), 1, row);
+                this.state.mobilePane = "cart";
+            }
             else this.state.cart.push(row);
             this.state.replacementLine = false;
             this.scheduleQuote();

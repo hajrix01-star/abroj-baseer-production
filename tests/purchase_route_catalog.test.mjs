@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 
 const source = readFileSync(new URL('../custom_addons/baseer_procurement_requests/static/src/procurement_catalog.js', import.meta.url), 'utf8');
+const template = readFileSync(new URL('../custom_addons/baseer_procurement_requests/static/src/procurement_catalog.xml', import.meta.url), 'utf8');
 // Execute the actual component methods without fabricating Owl/browser acceptance.
 const routeBody = source.match(/setPurchaseRoute\(route\) \{([\s\S]*?)\n    \}/)[1];
 const saveBody = source.match(/get canSave\(\) \{([\s\S]*?)\n    \}/)[1];
@@ -117,6 +118,7 @@ function cartComponent(existing = false) {
         isNotReceived: ['line'], stepQuantity: ['line', 'step'],
         add: ['option'], quoteLine: ['line'], receiptLines: [],
         editorLines: [], editorFingerprint: [], restoreEditorLine: ['line'], setPlannedPrice: ['line', 'value'],
+        closeProductOptions: [], selectProductOption: ['option'],
     })) {
         const body = source.match(new RegExp(`    ${name}\\([^\\n]*\\) \\{([\\s\\S]*?)\\n    \\}`));
         if (body) {
@@ -209,6 +211,42 @@ test('a removed replacement target cannot replace an unrelated final cart row', 
     assert.deepEqual(c.state.cart, [other]);
 });
 
+test('size selection overlay is outside panes that can be hidden on mobile', () => {
+    const stack = [];
+    let overlays = 0;
+    for (const match of template.matchAll(/<(\/?)([\w:.-]+)\b((?:"[^"]*"|'[^']*'|[^'">])*)>/g)) {
+        const [, closing, tag, attributes] = match;
+        if (closing) { assert.equal(stack.pop().tag, tag); continue; }
+        if (/class="o_prc_option_overlay"/.test(attributes)) {
+            overlays++;
+            assert.equal(stack.some((ancestor) => /o_prc_(product|cart)_pane/.test(ancestor.attributes)), false);
+            assert.equal(stack.at(-1).tag, 'main');
+        }
+        if (!/\/\s*$/.test(attributes)) stack.push({ tag, attributes });
+    }
+    assert.equal(overlays, 1);
+});
+
+test('packaging selection, unchanged choice and cancellation keep the mobile cart visible', async () => {
+    for (const choice of ['different', 'same', 'cancel']) {
+        const c = editorComponent();
+        const target = { line_id: 2, option_id: 4, product_id: 7, quantity: '1', unit_price: '18.75' };
+        c.state.cart = [target];
+        c.state.mobilePane = 'cart';
+        c.orm = { call: async () => [{ id: 8, product_id: 7, last_price: '35' }] };
+        const body = source.match(/    async changePackaging\(line\) \{([\s\S]*?)\n    \}/)[1];
+        await new AsyncFunction('line', '_t', body).call(c, target, (text) => text);
+        assert.equal(c.state.mobilePane, 'cart');
+        assert.equal(c.state.selectedProduct.options.length, 1);
+        if (choice === 'cancel') c.closeProductOptions();
+        else c.selectProductOption({ id: choice === 'same' ? 4 : 8, product_id: 7, last_price: '35' });
+        assert.equal(c.state.mobilePane, 'cart');
+        assert.equal(c.state.selectedProduct, false);
+        assert.equal(c.state.replacementLine, false);
+        assert.equal(c.state.cart[0].option_id, choice === 'different' ? 8 : 4);
+    }
+});
+
 test('editor save changes calls only planned-save RPC and applies the returned snapshot', async () => {
     const c = editorComponent();
     c.state.cart = [{ line_id: 2, option_id: 4, product_id: 7, quantity: '6', unit_price: '18.75' }];
@@ -261,6 +299,8 @@ test('editor quote sends planned price and snapshot and never invokes receipt or
 test('cancellation sends reason and snapshot without saving staged order changes', async () => {
     const c = editorComponent();
     c.state.cancelReason = 'Duplicate order';
+    c.state.quotePending = true;
+    c.state.quoteError = 'Stale quote error';
     const calls = [];
     c.orm = { call: async (...args) => { calls.push(args); return { id: 71, state: 'cancel' }; } };
     c.emptyQuote = () => ({ lines: [], total_text: '0.00' });
@@ -270,6 +310,8 @@ test('cancellation sends reason and snapshot without saving staged order changes
     assert.deepEqual(calls, [['baseer.procurement.request', 'cancel_catalog_edit', [71, 'snapshot-a', 'Duplicate order']]]);
     assert.equal(c.state.workspaceTab, 'recent');
     assert.equal(c.state.editRequest, false);
+    assert.equal(c.state.quotePending, false);
+    assert.equal(c.state.quoteError, false);
 });
 
 test('receipt minus at zero never restores a missing item or its price', () => {

@@ -625,13 +625,14 @@ class ProcurementFlowCase(TransactionCase):
             [rows[0]] + [rows[1]] * 200,
         ]
         for payload in invalid_payloads:
-            with self.subTest(payload=payload), self.assertRaises((AccessError, ValidationError)):
+            with self.subTest(payload=payload), self.assertRaises(ValidationError):
                 request.quote_actual_cart(request.id, payload)
-            with self.subTest(confirm_payload=payload), self.assertRaises((AccessError, ValidationError)):
+            with self.subTest(confirm_payload=payload), self.assertRaises(ValidationError):
                 request.confirm_actual_from_catalog(request.id, payload)
         another_option = self.env['baseer.procurement.purchase.option'].create({
             'name': 'Same product second option', 'company_id': self.company.id,
             'product_id': self.product.id, 'uom_id': self.uom.id,
+            'packaging_note': 'Another purchase size',
         })
         with self.assertRaises(ValidationError):
             request.quote_actual_cart(request.id, [rows[0], dict(rows[1], option_id=another_option.id)])

@@ -92,3 +92,9 @@ Contract margin remains contract minus registered commitments, labeled according
     conditional GO becoming GO. Current production baseline observed read-only:
     ec5a394ce7e445a5df8332a23fb0288cecb57254. Registry updated for the changed read
     contract; existing unrelated maps and tests reused without a broad audit.
+12. All final PR checks on498bfb25 passed; independent Alpha delivery GO for
+    financial scope. PR656 squash-merged as19713722c09ea68bd92215ca87926ce051f8681a.
+    Repository disallows merge commits, so original2e707727 is not an ancestor
+    of main. Rebind the not-yet-registered release policy to the merged SHA;
+    compare the two module trees before approval. This changes policy metadata
+    only, not the reviewed runtime source or test contract.

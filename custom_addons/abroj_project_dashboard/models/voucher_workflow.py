@@ -9,7 +9,7 @@ from odoo import _, api, Command, fields, models
 from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.addons.abroj_contracting.models.accounting_issue import (
     ACCOUNTING_GROUPS, EXPENSE_TYPES, can_account, check_source, move_action,
-    require_accountant, validate_amount,
+    require_accountant, validate_amount, validate_project_distribution, validate_review_distribution_values,
 )
 from odoo.addons.abroj_contracting.models.contracting import FrozenDocument
 
@@ -107,6 +107,19 @@ class Voucher(models.Model):
 
 class OldIssueWizard(models.TransientModel):
     _inherit = 'abroj.contracting.accounting.issue'
+
+    budget_line_id = fields.Many2one('abroj.project.budget.line', string='Cost category', check_company=True)
+
+    def _prepare_bill_line_values(self, cost, unit):
+        values = super()._prepare_bill_line_values(cost, unit)
+        if cost.project_id.abroj_budget_line_ids and not self.budget_line_id:
+            raise ValidationError(_('Choose a cost category from this project.'))
+        if self.budget_line_id:
+            self.budget_line_id.check_access('read')
+            if self.budget_line_id.project_id != cost.project_id:
+                raise ValidationError(_('Choose a cost category from this project.'))
+            values['abroj_budget_line_id'] = self.budget_line_id.id
+        return values
 
     def action_issue(self):
         if self.filtered('voucher_id'):
@@ -244,6 +257,7 @@ class RecognitionLine(models.Model):
 
 class VoucherReview(models.TransientModel):
     _name = 'abroj.project.voucher.review'
+    _inherit = 'analytic.mixin'
     _description = 'Review contracting payment purpose'
     _check_company_auto = True
 
@@ -270,6 +284,10 @@ class VoucherReview(models.TransientModel):
     date = fields.Date(string='Recognition date', default=fields.Date.context_today)
     payment_account_id = fields.Many2one('account.account', string='Payment posting account', compute='_compute_posting_account')
     uses_clearing_account = fields.Boolean(compute='_compute_posting_account')
+
+    def _sanitize_values(self, vals, decimal_precision):
+        validate_review_distribution_values(self, vals)
+        return super()._sanitize_values(vals, decimal_precision)
 
     @api.depends('existing_payment_id', 'journal_id', 'partner_id', 'purpose')
     def _compute_posting_account(self):
@@ -299,6 +317,9 @@ class VoucherReview(models.TransientModel):
             self.expense_id = False
             self.budget_line_id = False
             self.tax_ids = [Command.clear()]
+            self.analytic_distribution = False
+        elif self.project_id.account_id:
+            self.analytic_distribution = {str(self.project_id.account_id.id): 100}
 
     @api.model
     def default_get(self, names):
@@ -310,6 +331,8 @@ class VoucherReview(models.TransientModel):
                         partner_id=(voucher.payment_id.partner_id or voucher.accounting_partner_id or voucher.partner_id).id,
                         journal_id=voucher.journal_id.id, name=voucher.memo or voucher.name,
                         invoice_date=voucher.date, date=voucher.date)
+            if voucher.payment_purpose == 'direct':
+                vals.setdefault('analytic_distribution', {str(voucher.project_id.account_id.id): 100})
         return vals
 
     def _validate(self, voucher):
@@ -333,7 +356,7 @@ class VoucherReview(models.TransientModel):
             raise ValidationError(_('A supplier refund must be a receipt voucher.'))
         if voucher.kind == 'receipt' and voucher.subcontractor_id and self.purpose != 'supplier_refund':
             raise ValidationError(_('A subcontractor receipt must use the supplier refund purpose.'))
-        if self.purpose == 'advance' and (self.invoice_id or self.expense_id or self.budget_line_id or self.tax_ids):
+        if self.purpose == 'advance' and (self.invoice_id or self.expense_id or self.budget_line_id or self.tax_ids or self.analytic_distribution):
             raise ValidationError(_('An advance cannot contain an invoice, expense, cost category or taxes.'))
     def _payment(self, voucher):
         payment = voucher.payment_id
@@ -377,6 +400,8 @@ class VoucherReview(models.TransientModel):
         company = voucher.company_id
         account = self.account_id
         journal = self.invoice_journal_id
+        distribution = validate_project_distribution(voucher.project_id,
+            self.analytic_distribution or {str(voucher.project_id.account_id.id): 100})
         if (not self.date or not self.invoice_date or not self.document_reference
                 or not account or not account.active or company not in account.company_ids
                 or account.account_type not in (EXPENSE_TYPES if expense else ('income', 'income_other'))
@@ -419,7 +444,7 @@ class VoucherReview(models.TransientModel):
             'date': self.date, 'ref': self.document_reference, 'abroj_project_id': voucher.project_id.id,
             'invoice_line_ids': [Command.create({'name': self.name, 'account_id': account.id, 'quantity': 1,
                 'price_unit': unit, 'tax_ids': [Command.set(self.tax_ids.ids)],
-                'analytic_distribution': {str(voucher.project_id.account_id.id): 100},
+                'analytic_distribution': distribution,
                 'abroj_budget_line_id': self.budget_line_id.id if expense else False})]})
         if cost:
             move._abroj_bind_cost(cost)

@@ -20,7 +20,7 @@ MANIFEST = {
     11: ('REC/2026/00001', 5000, 8194, 17941, 17037, 'advance'),
     12: ('PAY/2026/00006', 400, 8199, 17963, 17040, 'direct'),
 }
-assert env['ir.module.module'].search([('name', '=', 'abroj_project_dashboard')]).latest_version == '19.0.1.9.0'
+assert env['ir.module.module'].search([('name', '=', 'abroj_project_dashboard')]).latest_version == '19.0.1.9.1'
 project = env['project.project'].browse(PROJECT).with_company(env['res.company'].browse(COMPANY))
 assert project.company_id.id == COMPANY
 vouchers = env['abroj.contracting.voucher'].search([('project_id', '=', PROJECT)])
@@ -37,6 +37,10 @@ assert all(c.state == 'confirmed' and c.account_move_id.abroj_recognition_vouche
            for c in project.cost_ids), 'Unreviewed project costs exist; review the inventory again.'
 journal = env['account.journal'].browse(415)
 account = env['account.account'].browse(3554)  # Existing cleaning expense chart account.
+spend = env['account.analytic.account'].browse(12)
+spend_root = env.ref('baseer_native_spend.spend_plan')
+assert spend.active and not spend.company_id and spend.root_plan_id == spend_root and spend_root.id == 2
+assert spend.name == 'صيانة وتشغيل' and project.account_id.id == 84
 assert journal.company_id.id == COMPANY and journal.type == 'purchase'
 assert project.company_id in account.company_ids and account.account_type == 'expense'
 
@@ -68,6 +72,9 @@ evidence = ('Owner approved the exact 2026-11-03 historical review in the implem
             'without additional attachments: container services800+400 recognized as expense '
             'without input-VAT deduction; contractor1000+2500 and customer5000 remain on-account '
             'advances pending supporting invoices. Original payments retained unchanged.')
+evidence += (' Reviewed spend classification12 maintenance/operations is used only for the two '
+             'documented waste-container hauling/replacement services on cleaning account3554; '
+             'project84 and spend classification are preserved together, not inferred for other suppliers.')
 report = {'mode': 'apply' if APPLY else 'dry_run', 'inventory': list(MANIFEST),
           'original_fingerprints': before, 'approved_budget': 170780}
 if APPLY:
@@ -80,7 +87,8 @@ if APPLY:
                 'invoice_date': voucher.date, 'date': voucher.date}
         if purpose == 'direct':
             vals.update(invoice_journal_id=journal.id, account_id=account.id,
-                        budget_line_id=category.id, document_reference='OWNER-REVIEW/' + voucher.name)
+                        budget_line_id=category.id, document_reference='OWNER-REVIEW/' + voucher.name,
+                        analytic_distribution={'84,12': 100})
         env['abroj.project.voucher.review'].create(vals).action_apply()
     if project.abroj_budget != 170780:
         project.action_approve_detailed_budget()
@@ -100,6 +108,10 @@ if APPLY:
     assert all(move.state == 'posted' and move.amount_residual == 0 for move in direct.recognition_move_id)
     assert sum(direct.recognition_move_id.mapped('amount_total')) == 1200
     assert not any(direct.recognition_move_id.mapped('amount_tax'))
+    for move in direct.recognition_move_id:
+        entries = move.invoice_line_ids.analytic_line_ids
+        assert len(entries) == 1 and entries.account_id == project.account_id
+        assert entries[spend_root._column_name()] == spend and entries.abroj_budget_line_id == category
     assert project.total_costs == 18200
     assert len(project.cost_ids) == 2 and set(project.cost_ids.ids) == set(direct.recognition_move_id.abroj_cost_id.ids)
     assert sum(project.cost_ids.mapped('amount')) == 1200

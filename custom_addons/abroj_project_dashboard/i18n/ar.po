@@ -94,6 +94,7 @@ msgstr "مستند الإثبات المحاسبي"
 #: model:ir.model.fields,field_description:abroj_project_dashboard.field_abroj_contracting_voucher__abroj_budget_line_id
 #: model:ir.model.fields,field_description:abroj_project_dashboard.field_abroj_project_voucher_review__budget_line_id
 #: model:ir.model.fields,field_description:abroj_project_dashboard.field_account_move_line__abroj_budget_line_id
+#: model:ir.model.fields,field_description:abroj_project_dashboard.field_abroj_contracting_accounting_issue__budget_line_id
 msgid "Cost category"
 msgstr "بند التكلفة"
 
@@ -573,3 +574,13 @@ msgstr "حساب ترحيل الدفعة"
 #: code:addons/abroj_project_dashboard/models/voucher_workflow.py:0
 msgid "Classify every expense line and its analytics under this project budget before settling the invoice."
 msgstr "صنّف كل بند مصروف وقيوده التحليلية ضمن ميزانية هذا المشروع على الفاتورة الأصلية قبل تسويتها."
+
+#. module: abroj_project_dashboard
+#: model_terms:ir.ui.view,arch_db:abroj_project_dashboard.voucher_review_form
+msgid "Analytic distribution"
+msgstr "التوزيع التحليلي"
+
+#. module: abroj_project_dashboard
+#: model_terms:ir.ui.view,arch_db:abroj_project_dashboard.voucher_review_form
+msgid "Keep the project allocation at 100% and complete the required analytic dimensions."
+msgstr "أبق تخصيص المشروع بنسبة 100%، وأكمل الأبعاد التحليلية المطلوبة."

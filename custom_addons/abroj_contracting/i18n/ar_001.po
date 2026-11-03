@@ -342,3 +342,25 @@ msgstr "حساب ترحيل الدفعة"
 #: model_terms:ir.ui.view,arch_db:abroj_contracting.accounting_issue_form
 msgid "This journal posts through an outstanding account. Cash/bank recognition follows native reconciliation."
 msgstr "يرحّل هذا الدفتر عبر حساب مبالغ قيد التسوية. يظهر الأثر في النقد أو البنك وفق التسوية الأصلية في أودو."
+
+#. module: abroj_contracting
+#: model_terms:ir.ui.view,arch_db:abroj_contracting.accounting_issue_form
+msgid "Analytic distribution"
+msgstr "التوزيع التحليلي"
+
+#. module: abroj_contracting
+#: model_terms:ir.ui.view,arch_db:abroj_contracting.accounting_issue_form
+msgid "Keep the project allocation at 100% and complete the required analytic dimensions."
+msgstr "أبق تخصيص المشروع بنسبة 100%، وأكمل الأبعاد التحليلية المطلوبة."
+
+#. module: abroj_contracting
+#. odoo-python
+#: code:addons/abroj_contracting/models/accounting_issue.py:0
+msgid "Choose a valid analytic distribution with this project at 100% and active accounts from the same company or shared accounts."
+msgstr "اختر توزيعًا تحليليًا صالحًا يخصص 100% لهذا المشروع، باستخدام حسابات نشطة مشتركة أو تابعة للشركة نفسها."
+
+#. module: abroj_contracting
+#. odoo-python
+#: code:addons/abroj_contracting/models/accounting_issue.py:0
+msgid "Choose a source project before reviewing the analytic distribution."
+msgstr "اختر مشروع المستند قبل مراجعة التوزيع التحليلي."

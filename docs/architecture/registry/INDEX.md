@@ -960,3 +960,14 @@ a502e5bd40b8c709555091e8d5e2b0d472c177b8 (PR660 squash integration), identical m
 and bounded manifest to86d6194d. All5checks passed,119runtimecases, native UI/races
 and independent financial GO. Policybaseer-2026-11-03-voucher-flow upgrades only
 abroj_project_dashboard19.0.1.9.0; protected activation/historical execution pending.
+
+Native-dimension integration amendment: a502e5bd4 was activated by protected run
+41696477386, but native mandatory Spend Classification rejected the bounded
+historical posting; whole transaction rolled back (all reviewflagsfalse/cost0).
+Source correction reuses analytic.mixin/widget and shared validated distribution
+in both contracting cost issue and voucher review, retaining project100% plus
+native mandatory dimensions and original expense/category once. Existing
+baseer_native_spend remains unchanged; integration fixture/CI now installs it.
+Versionscontracting19.0.1.8.1/dashboard19.0.1.9.1;32focused cases and native
+AR390/EN1280 two-wizard multi-plan picker verified, finalCI/activation pending.
+Exact historical source/rationale preserved in the same governance record.

@@ -149,3 +149,36 @@ translations; issue_tests new focused suite. No overlapping ownership.
     compared against reviewed86d6194d with emptydiff. Named policy upgrades only
     abroj_project_dashboard, version19.0.1.9.0. Native core and prior contracting
     module unchanged. Protected activation and bounded operational review pending.
+17. Protected approval41696403861 and deployment41696477386 succeeded for
+    a502e5bd4. Read-only operational dry-run passed exact originals. Apply failed
+    inside native baseer_native_spend validation: company56 requires spendroot2
+    in addition to project84. Whole transaction rolled back; independent read
+    confirmed costcount0, all5reviewflagsfalse and original payments unchanged.
+    Initial mapping missed this existing registry boundary; no native guard was
+    bypassed and no partial historical write persisted.
+18. G0–G3 reopened and independently approved native analytic.mixin/widget for
+    both voucher review and standalone cost issue. Shared backend validator:
+    valid reviewed JSON, active readable company/shared accounts, project100%,
+    one account per root/allocation; native posting owns mandatory-plan checks.
+    Small bill-line preparation hook reuses existing tax/post engine and permits
+    dashboard budget metadata without circular dependencies. Integration test/CI
+    installs existing baseer_native_spend (source unchanged), reproduces mandatory
+    spend and combined multi-plan analytics. Same fixture DB, no cloned production.
+    Reviewer approved explicit account12 'maintenance/operations' for exact2
+    container services using cleaningexpense3554; no supplier-wide default orVAT.
+19. Implemented shared reviewed-distribution validator and nativeMixin on both
+    wizards; core prepare-line hook keeps the same native tax/post engine and
+    dashboard adds budget category before analytics. Integration32cases with
+    installed baseer_native_spend passed (native-analytics-tests-r2.log). First
+    run exposed nativeMixin rounding/raw-string behavior before action validation;
+    fixed pre-sanitize validation before native rounding on create/write. Expanded
+    malformedJSON []/0 and write paths passed targetedr3 (0failures/errors).
+20. Actual native multi-plan picker selected project+spend in bothwizards at
+    EN1280/AR390. Synthetic admin lacked analytic permission; owner LIVE read-only
+    check confirmed all native accounting/analytic groups and read permissions.
+    Added analytic group to synthetic admin only. Test adapted native mobile
+    readonly many2one input to selection dialog, no application change. Native
+    popup had8pxoverflow at390; shared scoped mobileSCSS bounds it to372px, all
+    actual rectangle/scroll/Western-digit checks passed. Screenshots native-analytic-*
+    and script native-analytic-widget-ui.cjs retained; AR screenshot visually read.
+    Unchanged locking/race proof reused per independent review. FinalCI pending.

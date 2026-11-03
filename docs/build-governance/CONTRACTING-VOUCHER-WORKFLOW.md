@@ -182,3 +182,9 @@ translations; issue_tests new focused suite. No overlapping ownership.
     actual rectangle/scroll/Western-digit checks passed. Screenshots native-analytic-*
     and script native-analytic-widget-ui.cjs retained; AR screenshot visually read.
     Unchanged locking/race proof reused per independent review. FinalCI pending.
+21. All6final checks passed on8ef909c4c, including65contracting and123dashboard
+    cases withnativeSpend (32workflow). Independent delivery accepted exactSHA.
+    PR662 squash-merged as9a9f812a3ef88c6599547ed9ad3b757b0b30a1d9; bothmodule trees
+    and operational manifest match reviewedcandidate. New named policy upgrades
+    onlycontracting19.0.1.8.1/dashboard19.0.1.9.1; nativeSpend source/config unchanged.
+    Protected activation and approved exact historical review remain pending.

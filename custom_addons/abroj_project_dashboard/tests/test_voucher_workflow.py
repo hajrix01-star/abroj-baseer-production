@@ -584,3 +584,133 @@ class AbrojVoucherWorkflowCase(TransactionCase):
         self.assertEqual((self.budget.actual, second_budget.actual), (50, 50))
         self.assertEqual(self.actual(), self.budget.actual + second_budget.actual)
         self.assertEqual(self.actual(), 100)
+
+    def _mandatory_spend_fixture(self):
+        """Activate the real independent addon's guard in this test only."""
+        plan = self.env.ref('baseer_native_spend.spend_plan')
+        self.assertFalse(plan.parent_id)
+        self.assertEqual(plan.default_applicability, 'unavailable')
+        child = self.env['account.analytic.plan'].create({
+            'name': 'Voucher integration spend child', 'parent_id': plan.id,
+        })
+        account = self.env['account.analytic.account'].create({
+            'name': 'Voucher integration spend classification', 'plan_id': child.id,
+            'company_id': False,
+        })
+        applicability = self.env['account.analytic.applicability'].search([
+            ('analytic_plan_id', '=', plan.id), ('company_id', '=', self.company.id),
+            ('business_domain', '=', 'bill'), ('account_prefix', '=', False),
+            ('product_categ_id', '=', False),
+        ])
+        if applicability:
+            applicability.write({'applicability': 'mandatory'})
+        else:
+            self.env['account.analytic.applicability'].create({
+                'analytic_plan_id': plan.id, 'company_id': self.company.id,
+                'business_domain': 'bill', 'applicability': 'mandatory',
+            })
+        return plan, child, account
+
+    def test_mandatory_spend_missing_rolls_back_invoice_and_payment(self):
+        self._mandatory_spend_fixture()
+        voucher = self.voucher(purpose='direct')
+        moves, payments = self.env['account.move'].search_count([]), self.env['account.payment'].search_count([])
+        with self.assertRaises(UserError), self.cr.savepoint():
+            self.review(voucher, analytic_distribution={str(self.project.account_id.id): 100}).action_apply()
+        voucher.invalidate_recordset()
+        self.assertFalse(voucher.payment_id)
+        self.assertFalse(voucher.recognition_move_id)
+        self.assertFalse(voucher.workflow_reviewed)
+        self.assertEqual(self.env['account.move'].search_count([]), moves)
+        self.assertEqual(self.env['account.payment'].search_count([]), payments)
+        self.assertEqual((self.actual(), self.budget.actual), (0, 0))
+
+    def test_combined_project_and_mandatory_spend_count_actual_once(self):
+        plan, _child, spend = self._mandatory_spend_fixture()
+        distribution = {'%s,%s' % (self.project.account_id.id, spend.id): 100}
+        voucher = self.voucher(purpose='direct')
+        self.review(voucher, analytic_distribution=distribution).action_apply()
+        invoice = voucher.recognition_move_id
+        self.assertEqual(invoice.invoice_line_ids.analytic_distribution, distribution)
+        self.assertEqual((invoice.state, invoice.amount_total, invoice.amount_residual), ('posted', 100, 0))
+        lines = self.env['account.analytic.line'].search([
+            ('move_line_id', 'in', invoice.invoice_line_ids.ids),
+            ('account_id', '=', self.project.account_id.id),
+        ])
+        self.assertEqual(len(lines), 1)
+        self.assertEqual(lines.amount, -100)
+        self.assertNotEqual(plan._column_name(), 'account_id')
+        self.assertEqual(lines[plan._column_name()], spend)
+        self.assertEqual(lines.abroj_budget_line_id, self.budget)
+        self.assertEqual((self.actual(), self.budget.actual), (100, 100))
+        self.assertEqual(self.budget.manual_actual, 0)
+
+    def test_review_rejects_invalid_or_foreign_native_distribution(self):
+        _plan, child, spend = self._mandatory_spend_fixture()
+        company = self.env['res.company'].create({'name': 'Foreign distribution company'})
+        foreign = self.env['account.analytic.account'].with_company(company).create({
+            'name': 'Foreign spend account', 'plan_id': child.id, 'company_id': company.id,
+        })
+        inactive = self.env['account.analytic.account'].create({
+            'name': 'Inactive spend account', 'plan_id': child.id, 'company_id': False, 'active': False,
+        })
+        other_project = self.env['project.project'].create({'name': 'Wrong distribution project'})
+        project = self.project.account_id.id
+        bad = [
+            {'%s,%s' % (project, foreign.id): 100},
+            {'%s,%s' % (project, inactive.id): 100},
+            {'%s,%s' % (other_project.account_id.id, spend.id): 100},
+            {'not_an_account_id': 100},
+            {'%s,%s,%s' % (project, project, spend.id): 100},
+            {'%s,%s' % (project, spend.id): 100.001},
+            {'%s,%s' % (project, spend.id): 'NaN'},
+            [],
+            0,
+        ]
+        voucher = self.voucher(purpose='direct')
+        valid = {'%s,%s' % (project, spend.id): 100}
+        wizard = self.review(voucher, analytic_distribution=valid)
+        moves, payments = self.env['account.move'].search_count([]), self.env['account.payment'].search_count([])
+        for distribution in bad:
+            with self.subTest(distribution=distribution), self.assertRaises(UserError), self.cr.savepoint():
+                self.review(voucher, analytic_distribution=distribution).action_apply()
+            with self.subTest(write_distribution=distribution), self.assertRaises(UserError), self.cr.savepoint():
+                wizard.write({'analytic_distribution': distribution})
+            wizard.invalidate_recordset(['analytic_distribution'])
+            self.assertEqual(wizard.analytic_distribution, valid)
+        self.assertFalse(voucher.payment_id)
+        self.assertFalse(voucher.recognition_move_id)
+        self.assertEqual(self.env['account.move'].search_count([]), moves)
+        self.assertEqual(self.env['account.payment'].search_count([]), payments)
+
+    def test_standalone_cost_wizard_supports_mandatory_spend_and_budget(self):
+        plan, _child, spend = self._mandatory_spend_fixture()
+        baseline = self.project.total_costs
+        cost = self.env['abroj.contracting.cost'].create({
+            'project_id': self.project.id, 'partner_id': self.partner.id,
+            'name': 'Standalone classified expense', 'amount': 100, 'date': self.today,
+        })
+        cost.action_confirm()
+        distribution = {'%s,%s' % (self.project.account_id.id, spend.id): 100}
+        payments = self.env['account.payment'].search_count([])
+        wizard = self.env['abroj.contracting.accounting.issue'].create({
+            'cost_id': cost.id, 'mode': 'create', 'partner_id': self.partner.id,
+            'journal_id': self.purchase.id, 'expense_account_id': self.accounts['expense'].id,
+            'budget_line_id': self.budget.id, 'analytic_distribution': distribution,
+            'invoice_date': self.today, 'date': self.today,
+        })
+        action = wizard.action_issue()
+        invoice = cost.account_move_id
+        self.assertEqual(action['res_id'], invoice.id)
+        self.assertEqual((invoice.state, invoice.amount_total), ('posted', 100))
+        self.assertEqual(invoice.invoice_line_ids.analytic_distribution, distribution)
+        self.assertEqual(invoice.invoice_line_ids.abroj_budget_line_id, self.budget)
+        lines = self.env['account.analytic.line'].search([
+            ('move_line_id', 'in', invoice.invoice_line_ids.ids),
+            ('account_id', '=', self.project.account_id.id),
+        ])
+        self.assertEqual(len(lines), 1)
+        self.assertEqual(lines[plan._column_name()], spend)
+        self.assertEqual((self.actual(), self.budget.actual), (100, 100))
+        self.assertEqual(self.project.total_costs, baseline + 100)
+        self.assertEqual(self.env['account.payment'].search_count([]), payments)

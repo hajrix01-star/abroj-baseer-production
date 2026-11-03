@@ -60,9 +60,10 @@
     <field name="name">abroj.project.voucher.review.form</field>
     <field name="model">abroj.project.voucher.review</field>
     <field name="arch" type="xml">
-      <form string="Review voucher accounting">
+      <form string="Review voucher accounting" class="abroj_accounting_review">
         <field name="kind" invisible="1"/>
         <field name="currency_id" invisible="1"/>
+        <field name="analytic_precision" invisible="1"/>
         <field name="uses_clearing_account" invisible="1"/>
         <group>
           <field name="voucher_id" string="Voucher" readonly="1"/>
@@ -84,6 +85,9 @@
           <field name="document_reference"/>
           <field name="account_id" required="purpose == 'direct'"
                  domain="[('company_ids', 'in', [company_id]), ('account_type', 'in', ['expense', 'expense_direct_cost', 'expense_depreciation'] if kind == 'payment' else ['income', 'income_other'])]" options="{'no_create': True}"/>
+          <field name="analytic_distribution" string="Analytic distribution" widget="analytic_distribution"
+                 options="{'account_field': 'account_id', 'disable_save': True}"
+                 business_domain_compute="'bill' if kind == 'payment' else 'invoice'"/>
           <field name="budget_line_id" invisible="kind != 'payment'" domain="[('project_id', '=', project_id)]" options="{'no_create': True}"/>
           <field name="tax_ids" widget="many2many_tags"
                  domain="[('company_id', '=', company_id), ('type_tax_use', '=', 'purchase' if kind == 'payment' else 'sale')]" options="{'no_create': True}"/>
@@ -96,6 +100,7 @@
         </group>
         <p class="text-muted" invisible="purpose != 'advance'">An advance is a payment or collection on account. It does not recognize an expense or earned income until its supporting document is recorded.</p>
         <p class="text-muted" invisible="purpose != 'direct'">The source amount is the gross total including selected taxes. Use an existing expense when it already represents this transaction.</p>
+        <p class="text-muted" invisible="purpose != 'direct'">Keep the project allocation at 100% and complete the required analytic dimensions.</p>
         <p class="text-muted" invisible="not existing_payment_id">The existing payment remains the payment source. Review its accounting purpose without issuing a second payment.</p>
         <p class="text-warning" invisible="not uses_clearing_account">Odoo clearing account — bank/cash reconciliation is still required.</p>
         <group>
@@ -135,6 +140,17 @@
       <xpath expr="//field[@name='invoice_line_ids']/list" position="inside">
         <field name="abroj_budget_line_id" optional="show" readonly="parent.state != 'draft'"
                domain="[('project_id', '=', parent.abroj_project_id)]" options="{'no_create': True}"/>
+      </xpath>
+    </field>
+  </record>
+  <record id="cost_issue_budget_category" model="ir.ui.view">
+    <field name="name">abroj.contracting.accounting.issue.budget.category</field>
+    <field name="model">abroj.contracting.accounting.issue</field>
+    <field name="inherit_id" ref="abroj_contracting.accounting_issue_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//field[@name='expense_account_id']" position="after">
+        <field name="budget_line_id" invisible="not cost_id or mode != 'create'"
+               domain="[('project_id', '=', project_id)]" options="{'no_create': True}"/>
       </xpath>
     </field>
   </record>

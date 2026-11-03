@@ -54,6 +54,66 @@ def move_action(move):
             'view_mode': 'form', 'target': 'current'}
 
 
+def validate_project_distribution(project, distribution):
+    """Validate reviewed native dimensions without dropping mandatory plans."""
+    env = project.env
+    invalid = env._('Choose a valid analytic distribution with this project at 100% and active accounts from the same company or shared accounts.')
+    if not isinstance(distribution, dict) or not distribution:
+        raise ValidationError(invalid)
+    selections, ids = [], set()
+    for key, value in distribution.items():
+        parts = key.split(',') if isinstance(key, str) else []
+        if (not parts or any(not p.isascii() or not p.isdigit() or int(p) <= 0
+                             or str(int(p)) != p for p in parts) or isinstance(value, bool)
+                or not isinstance(value, (int, float))):
+            raise ValidationError(invalid)
+        chosen = [int(p) for p in parts]
+        if len(chosen) != len(set(chosen)):
+            raise ValidationError(invalid)
+        try:
+            percent = Decimal(str(value))
+            valid = percent.is_finite() and 0 <= percent <= 100 and percent == percent.quantize(Decimal('0.01'))
+        except (InvalidOperation, ValueError, TypeError):
+            valid = False
+        if not valid:
+            raise ValidationError(invalid)
+        selections.append((chosen, percent))
+        ids.update(chosen)
+    accounts = env['account.analytic.account'].browse(sorted(ids)).exists()
+    accounts.check_access('read')
+    if set(accounts.ids) != ids or any(not a.active or (a.company_id and a.company_id != project.company_id) for a in accounts):
+        raise ValidationError(invalid)
+    source = project.account_id
+    if not source or source.plan_id._column_name() != 'account_id':
+        raise ValidationError(invalid)
+    if any(a.root_plan_id == source.root_plan_id and a != source for a in accounts):
+        raise ValidationError(invalid)
+    roots = {a.id: a.root_plan_id.id for a in accounts}
+    if any(len({roots[ident] for ident in chosen}) != len(chosen) for chosen, _ in selections):
+        raise ValidationError(invalid)
+    if sum((percent for chosen, percent in selections if source.id in chosen), Decimal('0')) != Decimal('100'):
+        raise ValidationError(invalid)
+    return dict(distribution)
+
+
+def validate_review_distribution_values(wizard, vals):
+    # Native analytic.mixin rounds before storing. Validate the raw review
+    # input first, so bad precision or non-numeric JSON cannot be normalized
+    # into an approved allocation or raise a native arithmetic TypeError.
+    raw = vals.get('analytic_distribution', wizard.env.context.get('default_analytic_distribution'))
+    if raw is None or raw is False or (isinstance(raw, dict) and not raw):
+        return
+    cost_id = vals.get('cost_id', wizard.env.context.get('default_cost_id'))
+    voucher_id = vals.get('voucher_id', wizard.env.context.get('default_voucher_id'))
+    source = (wizard.env['abroj.contracting.cost'].browse(cost_id).exists()
+              or wizard.env['abroj.contracting.voucher'].browse(voucher_id).exists())
+    projects = source.project_id if source else wizard.project_id
+    if not projects:
+        raise ValidationError(wizard.env._('Choose a source project before reviewing the analytic distribution.'))
+    for project in projects:
+        validate_project_distribution(project, raw)
+
+
 class ContractingCost(models.Model):
     _inherit = 'abroj.contracting.cost'
 
@@ -238,12 +298,14 @@ class AccountingMoveLine(models.Model):
 
 class AccountingIssue(models.TransientModel):
     _name = 'abroj.contracting.accounting.issue'
+    _inherit = 'analytic.mixin'
     _description = 'Contracting accounting review'
     _check_company_auto = True
 
     cost_id = fields.Many2one('abroj.contracting.cost', string='Expense', readonly=True, ondelete='cascade')
     voucher_id = fields.Many2one('abroj.contracting.voucher', string='Voucher', readonly=True, ondelete='cascade')
     company_id = fields.Many2one('res.company', compute='_compute_source')
+    project_id = fields.Many2one('project.project', compute='_compute_source')
     currency_id = fields.Many2one('res.currency', compute='_compute_source')
     amount = fields.Monetary(string='Gross amount including selected taxes', compute='_compute_source')
     mode = fields.Selection([('create', 'Create accounting document'), ('existing', 'Link existing posted bill')], default='create', required=True)
@@ -256,6 +318,10 @@ class AccountingIssue(models.TransientModel):
     existing_move_id = fields.Many2one('account.move', string='Existing posted bill', check_company=True)
     payment_account_id = fields.Many2one('account.account', string='Payment posting account', compute='_compute_payment_account')
     payment_uses_clearing = fields.Boolean(compute='_compute_payment_account')
+
+    def _sanitize_values(self, vals, decimal_precision):
+        validate_review_distribution_values(self, vals)
+        return super()._sanitize_values(vals, decimal_precision)
 
     @api.depends('voucher_id', 'journal_id', 'partner_id')
     def _compute_payment_account(self):
@@ -283,6 +349,7 @@ class AccountingIssue(models.TransientModel):
         for wizard in self:
             source = wizard.cost_id or wizard.voucher_id
             wizard.company_id = source.company_id
+            wizard.project_id = source.project_id
             wizard.currency_id = source.currency_id
             wizard.amount = source.amount
 
@@ -299,6 +366,8 @@ class AccountingIssue(models.TransientModel):
             kind = 'purchase' if source._name == 'abroj.contracting.cost' else ('cash' if source.method == 'cash' else 'bank')
             journal = self.env['account.journal'].search([('company_id', '=', source.company_id.id), ('type', '=', kind)], limit=1)
             vals['journal_id'] = journal.id
+            if source._name == 'abroj.contracting.cost':
+                vals.setdefault('analytic_distribution', {str(source.project_id.account_id.id): 100})
         return vals
 
     def _validate_review(self, source):
@@ -338,6 +407,13 @@ class AccountingIssue(models.TransientModel):
         if not lines or not cost.project_id.account_id:
             raise ValidationError(_('Every expense line must allocate 100% to this project.'))
 
+    def _prepare_bill_line_values(self, cost, unit):
+        distribution = validate_project_distribution(cost.project_id,
+            self.analytic_distribution or {str(cost.project_id.account_id.id): 100})
+        return {'name': cost.name, 'account_id': self.expense_account_id.id, 'quantity': 1,
+                'price_unit': unit, 'tax_ids': [Command.set(self.tax_ids.ids)],
+                'analytic_distribution': distribution}
+
     def _create_bill(self, cost):
         company = cost.company_id
         account = self.expense_account_id
@@ -363,9 +439,7 @@ class AccountingIssue(models.TransientModel):
             'currency_id': cost.currency_id.id, 'journal_id': self.journal_id.id,
             'partner_id': self.partner_id.id, 'invoice_date': self.invoice_date, 'date': self.date,
             'ref': cost.invoice_number or 'COST/%s' % cost.id, 'abroj_project_id': cost.project_id.id,
-            'invoice_line_ids': [Command.create({'name': cost.name, 'account_id': account.id,
-                'quantity': 1, 'price_unit': unit, 'tax_ids': [Command.set(self.tax_ids.ids)],
-                'analytic_distribution': {str(cost.project_id.account_id.id): 100}})]})
+            'invoice_line_ids': [Command.create(self._prepare_bill_line_values(cost, unit))]})
         if cost.currency_id.compare_amounts(move.amount_total, cost.amount):
             raise ValidationError(_('The native bill total does not match the confirmed gross expense. Review the selected taxes.'))
         move._abroj_bind_cost(cost)

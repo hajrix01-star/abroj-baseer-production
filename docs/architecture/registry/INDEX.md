@@ -954,3 +954,9 @@ of5existing payments and170780budget prepared, no historical writes yet. Local27
 cases plus91existing cases,2RR races and actual native AR390/EN1280 UI evidence.
 Final candidateCI/independent acceptance/protected activation pending.
 [Contract, gates and evidence](../../build-governance/CONTRACTING-VOUCHER-WORKFLOW.md).
+
+Voucher workflow source accepted: lastVerifiedCommit
+a502e5bd40b8c709555091e8d5e2b0d472c177b8 (PR660 squash integration), identical module
+and bounded manifest to86d6194d. All5checks passed,119runtimecases, native UI/races
+and independent financial GO. Policybaseer-2026-11-03-voucher-flow upgrades only
+abroj_project_dashboard19.0.1.9.0; protected activation/historical execution pending.

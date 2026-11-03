@@ -1311,6 +1311,7 @@ class ProcurementRequest(models.Model):
         currency = self.env.company.currency_id
         return {
             'id': request.id, 'name': request.name, 'state': request.state,
+            'can_add_materials': request._cashier_can_add_receipt_materials(),
             'purchase_route': request.purchase_route,
             'purchase_route_label': request._purchase_route_label(),
             'warehouse_id': request.warehouse_id.id,
@@ -1328,6 +1329,9 @@ class ProcurementRequest(models.Model):
                 'packaging': line.option_id.packaging_note or '',
                 'image_url': '/web/image/product.product/%s/image_128' % line.option_id.product_id.id if line.option_id.product_id.image_128 else '',
                 'quantity': _decimal_text(line.requested_qty).replace(',', ''),
+                'maximum_quantity': _decimal_text(
+                    line.requested_qty if request.state == 'sent' else line.manager_received_qty
+                ).replace(',', ''),
                 'last_price': _decimal_text(line.option_id.last_price).replace(',', ''),
                 'currency_symbol': currency.symbol or currency.name,
             } for line in request.line_ids],
@@ -1463,6 +1467,88 @@ class ProcurementRequest(models.Model):
             })
         return self._money_response(response_lines, total)
 
+    def _cashier_can_add_receipt_materials(self):
+        """Do not broaden manager-approved receipts or BWork's exact-ID contract."""
+        self.ensure_one()
+        bwork_owned = (
+            'source_channel' in self._fields
+            and getattr(self, '_bwork_source_channel', None) is not None
+            and self.source_channel == self._bwork_source_channel
+        )
+        return bool(
+            self.state == 'sent' and not bwork_owned
+            and not _is_bwork_receipt_internal(self.env)
+            and self.env.user.has_group('baseer_procurement_requests.group_procurement_cashier')
+        )
+
+    def _prepare_actual_cart(self, lines, *, confirming=False):
+        """Validate the entire mixed cart before a quote or any receipt mutation."""
+        self.ensure_one()
+        if not isinstance(lines, list) or not lines or len(lines) > MAX_CATALOG_LINES:
+            raise ValidationError(_('The cart must contain between 1 and %s materials.') % MAX_CATALOG_LINES)
+        original_by_id = {line.id: line for line in self.line_ids}
+        original_ids, product_ids, option_ids = set(), set(), set()
+        plan = []
+
+        def identifier(value):
+            text = str(value)
+            if (isinstance(value, bool) or len(text) > 10
+                    or not re.fullmatch(r'[1-9][0-9]*', text)
+                    or int(text) > 2147483647):
+                raise ValidationError(_('The actual-purchase cart contains an invalid line.'))
+            return int(text)
+
+        for row in lines:
+            if not isinstance(row, dict):
+                raise ValidationError(_('The actual-purchase cart contains an invalid line.'))
+            has_line = row.get('line_id') not in (None, False, '')
+            has_option = row.get('option_id') not in (None, False, '')
+            if has_line == has_option:
+                raise ValidationError(_('The actual-purchase cart contains an invalid line.'))
+            line = self.env['baseer.procurement.request.line']
+            if has_line:
+                line_id = identifier(row['line_id'])
+                line = original_by_id.get(line_id)
+                if not line or line_id in original_ids:
+                    raise ValidationError(_('The actual-purchase cart does not match the request lines.'))
+                original_ids.add(line_id)
+                option = line.option_id
+            else:
+                if not self._cashier_can_add_receipt_materials():
+                    raise AccessError(_('New materials can only be added to a native sent request before representative handover.'))
+                option = self.env['baseer.procurement.purchase.option'].browse(identifier(row['option_id'])).exists()
+                if not option:
+                    raise AccessError(_('The cart contains an unavailable material.'))
+            # Validate the complete original request below too, even if the
+            # caller attempts to omit one of its lines from the payload.
+            self._assert_catalog_options(option)
+            if option.id in option_ids or option.product_id.id in product_ids:
+                raise ValidationError(_('A material cannot appear twice in the same request.'))
+            option_ids.add(option.id)
+            product_ids.add(option.product_id.id)
+            try:
+                quantity = _decimal_input(row.get('actual_qty'), _('Actual quantity'), positive=not has_line)
+                price_value = row.get('actual_price')
+                if not has_line and price_value in (None, ''):
+                    price_value = option.last_price
+                price = _decimal_input(price_value, _('Actual unit price'))
+            except (ValidationError, InvalidOperation):
+                raise ValidationError(_('Actual quantity or price is invalid for %s.') % option.product_id.display_name)
+            if has_line:
+                maximum = line.requested_qty if self.state == 'sent' else line.manager_received_qty
+                if (quantity > _decimal_input(maximum, _('Received quantity'))
+                        and not (confirming and _bwork_receipt_overage_allowed(self))):
+                    raise ValidationError(_('Actual quantity is invalid for %s.') % option.product_id.display_name)
+            # An unpriced temporary addition can be previewed without erasing
+            # the valid subtotal. Explicit confirmation is always fail-closed.
+            if quantity and not price and (has_line or confirming):
+                raise ValidationError(_('Every purchased material needs a positive price.'))
+            plan.append({'line': line, 'option': option, 'quantity': quantity, 'price': price})
+        if original_ids != set(original_by_id):
+            raise ValidationError(_('The actual-purchase cart must contain every request line.'))
+        self._assert_catalog_options(self.line_ids.option_id)
+        return plan
+
     @api.model
     def quote_actual_cart(self, request_id, lines):
         if not self.env.user.has_group('baseer_procurement_requests.group_procurement_cashier'):
@@ -1471,36 +1557,16 @@ class ProcurementRequest(models.Model):
         if not request or request.company_id != self.env.company:
             raise AccessError(_('The procurement request is unavailable in the active company.'))
         request._require_state('sent', 'received')
-        self._assert_catalog_options(request.line_ids.option_id)
-        request_product_ids = [line.option_id.product_id.id for line in request.line_ids]
-        if len(request_product_ids) != len(set(request_product_ids)):
-            raise ValidationError(_('A material cannot appear twice in the same request.'))
-        if not isinstance(lines, list) or len(lines) != len(request.line_ids):
-            raise ValidationError(_('The actual-purchase cart must contain every request line.'))
-        try:
-            incoming = {int(row.get('line_id')): row for row in lines if row.get('line_id')}
-        except (AttributeError, TypeError, ValueError):
-            raise ValidationError(_('The actual-purchase cart contains an invalid line.'))
-        if len(incoming) != len(lines) or set(incoming) != set(request.line_ids.ids):
-            raise ValidationError(_('The actual-purchase cart does not match the request lines.'))
+        plan = request._prepare_actual_cart(lines)
         response_lines = []
         total = Decimal('0.00')
-        for line in request.line_ids:
-            row = incoming[line.id]
-            try:
-                quantity = _decimal_input(row.get('actual_qty'), _('Actual quantity'))
-                price = _decimal_input(row.get('actual_price'), _('Actual unit price'))
-            except ValidationError:
-                raise ValidationError(_('Actual quantity or price is invalid for %s.') % line.option_id.product_id.display_name)
-            maximum = line.requested_qty if request.state == 'sent' else line.manager_received_qty
-            if quantity > _decimal_input(maximum, _('Received quantity')):
-                raise ValidationError(_('Actual quantity is invalid for %s.') % line.option_id.product_id.display_name)
-            if quantity and not price:
-                raise ValidationError(_('Every purchased material needs a positive price.'))
+        for entry in plan:
+            quantity, price = entry['quantity'], entry['price']
             line_total = (quantity * price).quantize(MONEY_QUANTUM, rounding=ROUND_HALF_UP)
             total += line_total
             response_lines.append({
-                'line_id': line.id,
+                'line_id': entry['line'].id or False,
+                'option_id': entry['option'].id,
                 'quantity': _decimal_text(quantity).replace(',', ''),
                 'quantity_text': _decimal_text(quantity),
                 'unit_price': _decimal_text(price).replace(',', ''),
@@ -1578,37 +1644,57 @@ class ProcurementRequest(models.Model):
         request.invalidate_recordset()
         request._require_state('sent', 'received')
         cashier_receipt = request.state == 'sent'
-        if not isinstance(lines, list) or len(lines) != len(request.line_ids):
-            raise ValidationError(_('The actual-purchase cart must contain every request line.'))
-        incoming = {int(row.get('line_id')): row for row in lines if row.get('line_id')}
-        if set(incoming) != set(request.line_ids.ids):
-            raise ValidationError(_('The actual-purchase cart does not match the request lines.'))
-        for line in request.line_ids:
-            row = incoming[line.id]
-            try:
-                quantity = _decimal_input(row.get('actual_qty'), _('Actual quantity'))
-                price = _decimal_input(row.get('actual_price'), _('Actual unit price'))
-            except ValidationError:
-                raise ValidationError(_('Actual quantity or price is invalid for %s.') % line.option_id.product_id.display_name)
-            maximum = line.requested_qty if cashier_receipt else line.manager_received_qty
-            if (quantity > _decimal_input(maximum, _('Received quantity'))
-                    and not _bwork_receipt_overage_allowed(request)):
-                raise ValidationError(_('Actual quantity or price is invalid for %s.') % line.option_id.product_id.display_name)
+        plan = request._prepare_actual_cart(lines, confirming=True)
+        additions = [entry for entry in plan if not entry['line']]
+        requested_before = sum((
+            _decimal_total(line.requested_qty, line.requested_price) for line in request.line_ids
+        ), Decimal('0.00'))
+        # Explicit savepoint also protects server-side callers which catch a
+        # later native stock/setup error inside their surrounding transaction.
+        with self.env.cr.savepoint():
+            for entry in additions:
+                entry['line'] = self.env['baseer.procurement.request.line'].sudo().with_context(
+                    **{REQUEST_CREATE_INTERNAL: True}
+                ).create({
+                    'request_id': request.id,
+                    'option_id': entry['option'].id,
+                    'requested_qty': float(entry['quantity']),
+                    'requested_price': float(_decimal_input(entry['option'].last_price, _('Unit price'))),
+                }).with_env(request.env)
+            if additions:
+                request.invalidate_recordset(['line_ids'])
+            for entry in plan:
+                if cashier_receipt:
+                    entry['line'].sudo().with_context(cashier_receipt_internal=True).write({
+                        'manager_received_qty': float(entry['quantity']),
+                    })
             if cashier_receipt:
-                line.sudo().with_context(cashier_receipt_internal=True).write({
-                    'manager_received_qty': float(quantity),
+                super(ProcurementRequest, request.sudo()).write({
+                    'state': 'received', 'manager_received_at': fields.Datetime.now(),
                 })
-        if cashier_receipt:
-            super(ProcurementRequest, request.sudo()).write({
-                'state': 'received', 'manager_received_at': fields.Datetime.now(),
-            })
-            request.invalidate_recordset()
-        for line in request.line_ids:
-            row = incoming[line.id]
-            quantity = _decimal_input(row.get('actual_qty'), _('Actual quantity'))
-            price = _decimal_input(row.get('actual_price'), _('Actual unit price'))
-            line.write({'actual_qty': float(quantity), 'actual_price': float(price)})
-        return request.action_confirm_actual_purchase()
+                request.invalidate_recordset()
+            for entry in plan:
+                entry['line'].write({
+                    'actual_qty': float(entry['quantity']), 'actual_price': float(entry['price']),
+                })
+            action = request.action_confirm_actual_purchase()
+            if additions:
+                requested_after = sum((
+                    _decimal_total(line.requested_qty, line.requested_price) for line in request.line_ids
+                ), Decimal('0.00'))
+                request.message_post(
+                    body=_(
+                        'Materials added during cashier receipt by %(actor)s: %(materials)s. '
+                        'Requested total before: %(before)s; after: %(after)s.',
+                        actor=self.env.user.display_name,
+                        materials=', '.join('%s (%s)' % (
+                            entry['option'].product_id.display_name, _decimal_text(entry['quantity'])
+                        ) for entry in additions),
+                        before=_decimal_text(requested_before), after=_decimal_text(requested_after),
+                    ),
+                    subtype_xmlid='mail.mt_note',
+                )
+            return action
 
     def action_open_picking(self):
         self.ensure_one()

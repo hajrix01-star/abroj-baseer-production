@@ -227,7 +227,7 @@
                                         <small t-if="requiresActualPrice(line)" class="o_prc_actual_price_hint">Enter the price</small>
                                         <small t-elif="!state.existingRequest and quoteLine(line)"><t t-esc="quoteLine(line).unit_price_text"/> <t t-esc="state.quote.currency_symbol"/> / <t t-esc="line.unit"/></small>
                                     </div>
-                                    <button type="button" class="o_prc_remove" t-on-click="() => this.remove(line)" t-att-aria-label="removeLineAriaLabel(line)" t-att-title="removeLineAriaLabel(line)"><i t-att-class="state.existingRequest ? (isNotReceived(line) ? 'fa fa-undo' : 'fa fa-times') : 'fa fa-trash-o'" aria-hidden="true"/><span t-if="state.existingRequest"><t t-if="isNotReceived(line)">Restore</t><t t-else="">Not received</t></span></button>
+                                    <button type="button" class="o_prc_remove" t-on-click="() => this.remove(line)" t-att-aria-label="removeLineAriaLabel(line)" t-att-title="removeLineAriaLabel(line)"><i t-att-class="state.existingRequest and line.line_id ? (isNotReceived(line) ? 'fa fa-undo' : 'fa fa-times') : 'fa fa-trash-o'" aria-hidden="true"/><span t-if="state.existingRequest"><t t-if="!line.line_id">Remove item</t><t t-elif="isNotReceived(line)">Restore</t><t t-else="">Not received</t></span></button>
                                 </div>
                             </div>
                         </article>
@@ -236,7 +236,8 @@
                     <footer class="o_prc_cart_footer">
                         <div class="o_prc_total_row">
                             <div><span><t t-if="state.existingRequest">Actual total</t><t t-else="">Estimated total</t></span><small t-if="state.existingRequest">Updated using receipt prices</small><small t-else="">Based on the latest recorded prices</small></div>
-                            <strong t-if="!state.quotePending" t-esc="moneyText(state.quote.total_text)"/>
+                            <strong t-if="!state.quotePending and !state.quoteError" t-esc="moneyText(state.quote.total_text)"/>
+                            <span t-elif="!state.quotePending and state.quoteError" class="o_prc_quote_placeholder">—</span>
                             <span t-else="" class="o_prc_total_loading">Calculating…</span>
                         </div>
                         <p t-if="state.existingRequest and unpricedReceivedLines.length" class="o_prc_cart_warning">Enter the actual price for <t t-esc="unpricedReceivedLines[0].name"/> to enable confirmation.</p>

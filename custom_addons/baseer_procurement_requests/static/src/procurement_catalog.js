@@ -454,11 +454,20 @@ export class ProcurementCatalog extends Component {
     add(option) {
         const row = this.state.cart.find((line) => line.option_id === option.id);
         if (row) {
-            row.quantity = String((Number(row.quantity) || 0) + 1);
+            this.stepQuantity(row, 1);
+            return;
         } else {
+            if (this.state.existingRequest && !this.state.existingRequest.can_add_materials) {
+                this.notification.add(_t("New materials cannot be added after handover or to a BWork request."), { type: "warning" });
+                return;
+            }
             this.state.cart.push({
                 option_id: option.id, product_id: option.product_id, name: option.product_name,
                 unit: option.option_name, packaging: option.packaging_note, image_url: option.image_url, quantity: "1",
+                ...(this.state.existingRequest ? {
+                    actual_price: option.last_price, last_price: option.last_price,
+                    currency_symbol: option.currency_symbol,
+                } : {}),
             });
         }
         this.scheduleQuote();
@@ -482,7 +491,7 @@ export class ProcurementCatalog extends Component {
     }
 
     remove(line) {
-        if (this.state.existingRequest) {
+        if (this.state.existingRequest && line.line_id) {
             if (this.isNotReceived(line)) {
                 this.restoreReceived(line);
             } else {
@@ -512,12 +521,13 @@ export class ProcurementCatalog extends Component {
     }
 
     setQuantity(line, value) {
-        const wasZeroOrBlank = this.state.existingRequest && Number(line.quantity) === 0;
-        if (this.state.existingRequest && Number(line.quantity) > 0) {
+        const originalReceiptLine = this.state.existingRequest && line.line_id;
+        const wasZeroOrBlank = originalReceiptLine && Number(line.quantity) === 0;
+        if (originalReceiptLine && Number(line.quantity) > 0) {
             line.receivedSnapshot = { quantity: line.quantity, actual_price: line.actual_price };
         }
         line.quantity = value;
-        if (this.state.existingRequest && String(value).trim() !== "" && Number(value) === 0) {
+        if (originalReceiptLine && String(value).trim() !== "" && Number(value) === 0) {
             this.markNotReceived(line);
             return;
         }
@@ -530,7 +540,7 @@ export class ProcurementCatalog extends Component {
     commitQuantity(line) {
         // Commit zero on blur/change, so typing 0.5 never removes the row mid-input.
         if (String(line.quantity).trim() !== "" && Number(line.quantity) === 0) {
-            if (this.state.existingRequest) this.markNotReceived(line);
+            if (this.state.existingRequest && line.line_id) this.markNotReceived(line);
             else this.remove(line);
         }
     }
@@ -541,7 +551,7 @@ export class ProcurementCatalog extends Component {
     }
 
     isNotReceived(line) {
-        return Boolean(this.state.existingRequest && String(line.quantity).trim() !== "" && Number(line.quantity) === 0);
+        return Boolean(this.state.existingRequest && line.line_id && String(line.quantity).trim() !== "" && Number(line.quantity) === 0);
     }
 
     requiresActualPrice(line) {
@@ -557,8 +567,13 @@ export class ProcurementCatalog extends Component {
         if (String(line.quantity).trim() === "" || !Number.isFinite(current) || current < 0) return;
         if (step < 0 && current === 0) return;
         const next = Math.max(0, current + step);
+        if (this.state.existingRequest && line.line_id && step > 0 &&
+                next > Number(line.maximum_quantity ?? line.requested_quantity)) {
+            this.notification.add(_t("The quantity cannot exceed the request's received limit."), { type: "warning" });
+            return;
+        }
         if (!next) {
-            if (this.state.existingRequest) this.markNotReceived(line);
+            if (this.state.existingRequest && line.line_id) this.markNotReceived(line);
             else this.remove(line);
             return;
         }
@@ -583,7 +598,7 @@ export class ProcurementCatalog extends Component {
         const sequence = ++this.quoteSequence;
         this.state.quoteError = false;
         const lines = this.state.existingRequest
-            ? this.state.cart.map((line) => ({ line_id: line.line_id, actual_qty: line.quantity, actual_price: line.actual_price }))
+            ? this.receiptLines()
             : this.state.cart.map((line) => ({ option_id: line.option_id, quantity: line.quantity }));
         try {
             const quote = await this.orm.call(
@@ -604,8 +619,16 @@ export class ProcurementCatalog extends Component {
 
     quoteLine(line) {
         return this.state.quote.lines.find((item) => this.state.existingRequest
-            ? item.line_id === line.line_id
+            ? (line.line_id ? item.line_id === line.line_id : !item.line_id && item.option_id === line.option_id)
             : item.option_id === line.option_id);
+    }
+
+    receiptLines() {
+        return this.state.cart.map((line) => ({
+            ...(line.line_id ? { line_id: line.line_id } : { option_id: line.option_id }),
+            actual_qty: line.quantity,
+            actual_price: line.actual_price,
+        }));
     }
 
     cartQuantity(productId) {
@@ -624,7 +647,7 @@ export class ProcurementCatalog extends Component {
     }
 
     removeLineAriaLabel(line) {
-        if (!this.state.existingRequest) return _t("Remove item");
+        if (!this.state.existingRequest || !line.line_id) return _t("Remove item");
         return this.isNotReceived(line)
             ? _t("Restore received quantity")
             : _t("Mark not received");
@@ -677,11 +700,7 @@ export class ProcurementCatalog extends Component {
                 const requestName = this.state.existingRequest.name;
                 await this.orm.call("baseer.procurement.request", "confirm_actual_from_catalog", [
                     this.state.existingRequest.id,
-                    this.state.cart.map((line) => ({
-                        line_id: line.line_id,
-                        actual_qty: line.quantity,
-                        actual_price: line.actual_price,
-                    })),
+                    this.receiptLines(),
                 ]);
                 this.state.existingRequest = false;
                 this.state.cart = [];

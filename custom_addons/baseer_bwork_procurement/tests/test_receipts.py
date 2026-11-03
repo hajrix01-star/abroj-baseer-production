@@ -360,6 +360,23 @@ class BWorkReceiptCase(TransactionCase):
                  if row['kind'] == 'order' and row.get('order_id') == self.order_id]
         self.assertEqual(len(after), 2)
 
+    def test_native_cashier_cannot_append_material_to_bwork_owned_request(self):
+        self.env.user.group_ids |= self.env.ref('baseer_procurement_requests.group_procurement_cashier')
+        self.env.user.company_ids |= self.company
+        request = self.order.with_company(self.company)
+        self.assertEqual(request.source_channel, LEGACY_SOURCE_CHANNEL)
+        self.assertFalse(request.env.context.get('bwork_receipt_internal'))
+        self.assertFalse(request.cashier_request_cart(request.id)['can_add_materials'])
+        rows = [{'line_id': line.id, 'actual_qty': '1.00', 'actual_price': '7.25'}
+                for line in request.line_ids]
+        rows.append({'option_id': request.line_ids[0].option_id.id,
+                     'actual_qty': '1.00', 'actual_price': '7.25'})
+        for method in ('quote_actual_cart', 'confirm_actual_from_catalog'):
+            with self.assertRaises(AccessError):
+                getattr(request, method)(request.id, rows)
+        self.assertEqual(request.state, 'sent')
+        self.assertEqual(len(request.line_ids), 1)
+
     def test_receipt_role_company_lines_and_decimals(self):
         native_lines = [{'line_id': self.order.line_ids.id,
                          'actual_qty': '1.00', 'actual_price': '7.25'}]

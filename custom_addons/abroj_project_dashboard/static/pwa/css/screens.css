@@ -14,3 +14,15 @@ main h3{font-size:1.125rem;line-height:1.35;margin:12px 0}
 #gallery-results>.empty-state{grid-column:1/-1}
 .empty-state p{margin:0 0 12px}
 .empty-state p:last-child{margin-bottom:0}
+
+.contract-card{cursor:pointer;overflow-wrap:anywhere}
+.contract-card:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+.contract-card-heading{display:flex;align-items:center;gap:8px}
+.contract-card-chevron{margin-inline-start:auto;transition:transform .2s ease}
+.contract-card[aria-expanded=true] .contract-card-chevron{transform:rotate(180deg)}
+.contract-card-meta{display:flex;flex-wrap:wrap;gap:4px 16px;margin-block:6px;font-size:.875rem}
+.contract-card-progress{position:relative;height:6px;border-radius:999px;background:#e6eaf0;overflow:hidden}
+.contract-card-progress span{position:absolute;inset-block:0;inset-inline-start:0;background:var(--primary);border-radius:inherit}
+.contract-card-details{margin-block-start:12px;padding-block-start:8px;border-block-start:1px solid #e6eaf0;cursor:default}
+.contract-card-details p{margin-block:6px}
+.contract-card-vouchers{padding-inline-start:20px;margin-block:6px 12px}

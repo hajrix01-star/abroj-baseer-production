@@ -931,3 +931,10 @@ G0–G3 approved independently; local155 tests and new context guard/two-cursor
 proof passed. Candidate versions contracting19.0.1.8.0/dashboard19.0.1.8.12;
 final CI/UI acceptance and protected activation pending.
 [Contract and evidence](../../build-governance/CONTRACTING-ACCOUNTING-ISSUE.md).
+
+Contracting accounting issue source integrated by PR658:
+lastVerifiedCommit0a813514491727a35abc925e9c096a48db6375bf. All final checks passed,
+including65 contracting/80 dashboard cases. NativeAR390/EN1280 review and RR
+concurrency evidence accepted independently. Policybaseer-2026-11-03-contracting-issue
+upgrades those two modules only; protected activation pending. No historical
+financial document has been posted or adopted by this release preparation.

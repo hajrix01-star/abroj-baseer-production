@@ -100,3 +100,10 @@ monetary storage/API boundaries retained; decimal validation up to2 decimals.
     same posted-link/context checks while avoiding N+1 queries on unrelated
     native accounting batches/POS closures. No new source, permission or amount
     policy; the same regression suite validates the batched implementation.
+12. All6 final checks passed on75066434. Independent scoped Alpha GO conditions
+    fulfilled:65 contracting cases,80 dashboard cases, source and cumulative
+    checks, local native UI and two-cursor proof. PR658 squash-merged as
+    0a813514491727a35abc925e9c096a48db6375bf. Module-tree identity checked against
+    the reviewed candidate. Bounded policy upgrades onlyabroj_contracting and
+    abroj_project_dashboard; no live issue/adoption action will be invoked as
+    part of deployment. Source acceptance is GO, protected activation pending.

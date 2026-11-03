@@ -66,3 +66,6 @@ Contract margin remains contract minus registered commitments, labeled according
    confirmed all cache transitions but exposed a stale final expected test value
    after adding an uncategorized-cost edit; corrected expected80 to100. Re-run
    only this affected test; full final isolated CI remains required.
+7. r5 repeated the stale final test assertion because the text replacement did
+   not match Windows line endings. Applied a direct patch and verified the saved
+   assertion is100; no application behavior changed. r6 checks only that test.

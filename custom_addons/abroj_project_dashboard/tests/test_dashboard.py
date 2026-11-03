@@ -455,7 +455,7 @@ class AbrojProjectDashboardCase(TransactionCase):
         self.assertEqual((self.project.abroj_actual, category.actual), (80, 10))
         analytic.amount = -90
         self.assertEqual((self.project.abroj_actual, category.actual), (100, 10))
-        self.assertEqual(self.project._abroj_data()['actual'], 80)
+        self.assertEqual(self.project._abroj_data()['actual'], 100)
 
     def test_financial_summary_preserves_project_overruns_and_unknown_budget(self):
         self.env['abroj.project.budget.line'].create({

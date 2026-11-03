@@ -216,6 +216,10 @@
 .o_prc_actual_price.is_invalid input { border-color: #d92d20; background: #fff6f5; }
 .o_prc_actual_price_hint { color: #b42318 !important; font-weight: 600; }
 .o_prc_cart_line.is_not_received { opacity: .62; background: #fafafa; }
+.o_prc_not_received_label { color: #b42318; font-size: .72rem; font-weight: 600; }
+.o_prc_line_controls.has_receipt_action { grid-template-columns: max-content minmax(0, 1fr) 5rem; }
+.has_receipt_action .o_prc_remove { width: 100%; display: flex; justify-content: center; gap: .25rem; font-size: .7rem; }
+.o_prc_stepper button:disabled { opacity: .4; cursor: default; }
 .o_prc_quote_placeholder { color: var(--prc-muted); }
 
 .o_prc_cart_footer { flex: 0 0 auto; padding: .85rem 1rem 1rem; border-top: 1px solid var(--prc-border); background: #fff; box-shadow: 0 -6px 18px rgba(16, 24, 40, .04); }

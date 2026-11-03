@@ -484,22 +484,55 @@ export class ProcurementCatalog extends Component {
     remove(line) {
         if (this.state.existingRequest) {
             if (this.isNotReceived(line)) {
-                line.quantity = line.requested_quantity;
-                line.actual_price = line.last_price;
+                this.restoreReceived(line);
             } else {
-                line.quantity = "0";
-                line.actual_price = "0";
+                this.markNotReceived(line);
             }
-            this.scheduleQuote();
             return;
         }
-        this.state.cart.splice(this.state.cart.indexOf(line), 1);
+        const index = this.state.cart.indexOf(line);
+        if (index < 0) return;
+        this.state.cart.splice(index, 1);
+        this.scheduleQuote();
+    }
+
+    markNotReceived(line) {
+        if (Number(line.quantity) > 0) {
+            line.receivedSnapshot = { quantity: line.quantity, actual_price: line.actual_price };
+        }
+        line.quantity = "0";
+        line.actual_price = "0";
+        this.scheduleQuote();
+    }
+
+    restoreReceived(line) {
+        line.quantity = line.receivedSnapshot?.quantity ?? line.requested_quantity;
+        line.actual_price = line.receivedSnapshot?.actual_price ?? line.last_price;
         this.scheduleQuote();
     }
 
     setQuantity(line, value) {
+        const wasZeroOrBlank = this.state.existingRequest && Number(line.quantity) === 0;
+        if (this.state.existingRequest && Number(line.quantity) > 0) {
+            line.receivedSnapshot = { quantity: line.quantity, actual_price: line.actual_price };
+        }
         line.quantity = value;
+        if (this.state.existingRequest && String(value).trim() !== "" && Number(value) === 0) {
+            this.markNotReceived(line);
+            return;
+        }
+        if (wasZeroOrBlank && Number(value) > 0) {
+            line.actual_price = line.receivedSnapshot?.actual_price ?? line.last_price;
+        }
         this.scheduleQuote();
+    }
+
+    commitQuantity(line) {
+        // Commit zero on blur/change, so typing 0.5 never removes the row mid-input.
+        if (String(line.quantity).trim() !== "" && Number(line.quantity) === 0) {
+            if (this.state.existingRequest) this.markNotReceived(line);
+            else this.remove(line);
+        }
     }
 
     setActualPrice(line, value) {
@@ -508,7 +541,7 @@ export class ProcurementCatalog extends Component {
     }
 
     isNotReceived(line) {
-        return Boolean(this.state.existingRequest && !(Number(line.quantity) > 0));
+        return Boolean(this.state.existingRequest && String(line.quantity).trim() !== "" && Number(line.quantity) === 0);
     }
 
     requiresActualPrice(line) {
@@ -520,14 +553,22 @@ export class ProcurementCatalog extends Component {
     }
 
     stepQuantity(line, step) {
-        const next = Math.max(0, (Number(line.quantity) || 0) + step);
-        if (!next) return this.remove(line);
-        line.quantity = String(next);
-        this.scheduleQuote();
+        const current = Number(line.quantity);
+        if (String(line.quantity).trim() === "" || !Number.isFinite(current) || current < 0) return;
+        if (step < 0 && current === 0) return;
+        const next = Math.max(0, current + step);
+        if (!next) {
+            if (this.state.existingRequest) this.markNotReceived(line);
+            else this.remove(line);
+            return;
+        }
+        this.setQuantity(line, String(next));
     }
 
     scheduleQuote() {
         globalThis.clearTimeout(this.quoteTimer);
+        // Invalidate in-flight responses immediately, including when the last row is removed.
+        this.quoteSequence++;
         if (!this.state.cart.length) {
             this.state.quote = this.emptyQuote();
             this.state.quoteError = false;

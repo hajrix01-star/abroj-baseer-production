@@ -87,3 +87,8 @@ Contract margin remains contract minus registered commitments, labeled according
     Existing test_invoice_upload_requires_invoicing_rights then passed locally
     (r7:0 failed/0 errors): project data200, invoice creation403. Complete final
     CI must pass before merging/deployment; earlier failed runs are not approval.
+11. Prepared bounded production policy pointing at source2e707727 (both modules
+    only). Deployment remains gated on successful final PR checks and independent
+    conditional GO becoming GO. Current production baseline observed read-only:
+    ec5a394ce7e445a5df8332a23fb0288cecb57254. Registry updated for the changed read
+    contract; existing unrelated maps and tests reused without a broad audit.

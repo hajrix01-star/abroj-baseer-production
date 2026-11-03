@@ -892,3 +892,19 @@ Release update: PR501 source06d8364e passed27CI checks and deployed through the 
 ## POS default customer (2026-10-31; QA candidate)
 
 A deliberately small POS extension selects one administrator-configured, visible customer only for each new order. It uses Odoo 19's native `PosStore.getDefaultPartnerId` hook, keeps the native customer picker available, and does not change ZATCA, invoice validation, payment methods, journals, taxes, or server-side POS orders. POS configurations without a selected customer retain native behavior; ARZ is explicitly out of scope. [Build contract](../../build-governance/POS-DEFAULT-CUSTOMER.md).
+
+## CONTRACTING-METRICS-20261103 — Financial indicators
+
+ARCHITECTURAL financial read-contract repair; candidate source and lastVerifiedCommit
+`2e707727923c3d74578f3a63bae7cd4ce02be6ea`. Owners: `abroj_contracting` and
+`abroj_project_dashboard`. Posted expense analytics are netted, balance-sheet
+settlements/collections excluded; existing standalone/manual costs retained with
+company/account/read access. Explicit budget precedes estimated cost; detail sums
+remain informational. Unknown forecasts stay unknown; contract commitment margin
+is accurately labeled. Customer remaining excludes subcontractor refunds.
+Nonstored concrete project-plan analytic inverse supports cache dependencies;
+upgrade refreshes project summaries only, with no journal or voucher rewrite.
+Independent financial source GO, targeted ORM/cache/access and AR390/EN1280
+component rendering evidence recorded. Final CI is the deployment prerequisite.
+Policy: `baseer-2026-11-03-contracting-metrics`; protected Actions only.
+[Contract, gates and evidence](../../build-governance/CONTRACTING-FINANCIAL-METRICS.md).

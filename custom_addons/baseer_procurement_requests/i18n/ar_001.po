@@ -1885,6 +1885,124 @@ msgstr "المندوب: %s"
 msgid "Done"
 msgstr "تم"
 
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+msgid "The order changed. Reload it before editing."
+msgstr "تغيّر الطلب. أعد تحميله قبل التعديل."
+
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+#: code:addons/baseer_procurement_requests/models/procurement.py:0
+msgid "Open WhatsApp"
+msgstr "فتح واتساب"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+#: code:addons/baseer_procurement_requests/models/procurement.py:0
+msgid "Share purchase request"
+msgstr "مشاركة طلب الشراء"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+#: code:addons/baseer_procurement_requests/models/procurement.py:0
+msgid "Save your changes before opening WhatsApp."
+msgstr "احفظ تعديلاتك قبل فتح واتساب."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+#: code:addons/baseer_procurement_requests/models/procurement.py:0
+msgid "Preparing message…"
+msgstr "جارٍ تجهيز الرسالة…"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+#: code:addons/baseer_procurement_requests/models/procurement.py:0
+msgid "Choose the recipient in WhatsApp, review the message, then send it."
+msgstr "اختر المستلم في واتساب، وراجع الرسالة ثم أرسلها."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+#: code:addons/baseer_procurement_requests/models/procurement.py:0
+msgid "If WhatsApp does not open, copy the message and paste it into the app."
+msgstr "إذا لم يفتح واتساب، انسخ الرسالة والصقها في التطبيق."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+#: code:addons/baseer_procurement_requests/models/procurement.py:0
+msgid "Message text"
+msgstr "نص الرسالة"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+#: code:addons/baseer_procurement_requests/models/procurement.py:0
+msgid "Copy message"
+msgstr "نسخ الرسالة"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+#: code:addons/baseer_procurement_requests/models/procurement.py:0
+msgid "Message copied."
+msgstr "نُسخت الرسالة."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+#: code:addons/baseer_procurement_requests/models/procurement.py:0
+msgid "Select the message below and copy it manually."
+msgstr "حدّد نص الرسالة أدناه وانسخه يدويًا."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+#: code:addons/baseer_procurement_requests/models/procurement.py:0
+msgid "Could not prepare the WhatsApp message."
+msgstr "تعذر تجهيز رسالة واتساب."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+#: code:addons/baseer_procurement_requests/models/procurement.py:0
+msgid "Could not record the opening time. You can still use the share link."
+msgstr "تعذر تسجيل وقت الفتح. يمكنك استخدام رابط المشاركة."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+#: code:addons/baseer_procurement_requests/models/procurement.py:0
+msgid "The request was saved. Open it to retry sharing or sending."
+msgstr "حُفظ الطلب. افتحه لإعادة محاولة المشاركة أو الإرسال."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+#: code:addons/baseer_procurement_requests/models/procurement.py:0
+msgid "WhatsApp sharing is only available for purchase-representative requests."
+msgstr "المشاركة عبر واتساب متاحة لطلبات مندوب المشتريات فقط."
 
 #. module: baseer_procurement_requests
 #. odoo-javascript

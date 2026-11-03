@@ -239,7 +239,12 @@
                         </div>
                         <p t-if="state.existingRequest and unpricedReceivedLines.length" class="o_prc_cart_warning">Enter the actual price for <t t-esc="unpricedReceivedLines[0].name"/> to enable confirmation.</p>
                         <p t-elif="state.quoteError" class="o_prc_cart_warning" role="alert"><t t-if="state.editRequest" t-esc="state.quoteError"/><t t-else="">The total could not be calculated. Check the quantities and prices.</t></p>
-                        <div t-if="state.editRequest" class="o_prc_cart_actions"><button type="button" class="btn btn-light" t-on-click="reloadEditor" t-att-disabled="state.saving">Reload order</button><button type="button" class="btn btn-primary" t-on-click="saveEditor" t-att-disabled="!canSave or !editorDirty"><i class="fa fa-save"/> Save changes</button></div>
+                        <p t-if="state.editRequest and state.purchaseRoute === 'representative' and editorDirty" class="o_prc_cart_warning">Save your changes before opening WhatsApp.</p>
+                        <div t-if="state.editRequest" class="o_prc_cart_actions o_prc_editor_actions">
+                            <button type="button" class="btn btn-light" t-on-click="reloadEditor" t-att-disabled="state.saving or state.shareLoading">Reload order</button>
+                            <button type="button" class="btn btn-primary" t-on-click="saveEditor" t-att-disabled="!canSave or !editorDirty or state.shareLoading"><i class="fa fa-save"/> Save changes</button>
+                            <button t-if="state.purchaseRoute === 'representative'" type="button" class="btn btn-success o_prc_whatsapp_button" t-on-click="openEditorWhatsApp" t-att-disabled="state.saving or state.shareLoading or editorDirty"><i class="fa fa-whatsapp"/> <t t-if="state.shareLoading">Preparing message…</t><t t-else="">Open WhatsApp</t></button>
+                        </div>
                         <div t-else="" class="o_prc_cart_actions">
                             <button t-if="!state.existingRequest" type="button" class="btn btn-light" t-on-click="() => this.saveDraft(false)" t-att-disabled="!canSave"><i class="fa fa-save" aria-hidden="true"/> Save request</button>
                             <button type="button" class="btn btn-primary" t-on-click="() => this.saveDraft(!state.existingRequest)" t-att-disabled="!canSave"><i t-att-class="state.existingRequest ? 'fa fa-check' : (state.purchaseRoute === 'representative' ? 'fa fa-whatsapp' : 'fa fa-paper-plane')" aria-hidden="true"/> <t t-if="state.existingRequest">Confirm receipt</t><t t-elif="state.purchaseRoute === 'representative'">Save and open WhatsApp</t><t t-else="">Save and send request</t></button>
@@ -264,6 +269,21 @@
             </div>
             <div t-if="state.cancelOpen" class="o_prc_quick_overlay" role="dialog" aria-modal="true" aria-labelledby="o_prc_cancel_order_title"><button type="button" class="o_prc_option_backdrop" t-att-disabled="state.saving" t-on-click="closeCancel" aria-label="Close"/><form t-ref="cancelDialog" class="o_prc_quick_dialog" t-on-submit.prevent="cancelEditor"><header><h2 id="o_prc_cancel_order_title">Cancel order</h2></header><p>The order will be cancelled with the reason below. Unsaved changes will be discarded.</p><label><span>Cancellation reason</span><textarea t-ref="cancelReasonInput" required="required" maxlength="1000" t-model="state.cancelReason" t-att-disabled="state.saving"/></label><footer><button type="button" class="btn btn-light" t-on-click="closeCancel" t-att-disabled="state.saving">Keep order</button><button type="submit" class="btn btn-danger" t-att-disabled="state.saving or !state.cancelReason.trim()">Confirm cancellation</button></footer></form></div>
         </main>
+    </t>
+
+    <t t-name="baseer_procurement_requests.WhatsAppShareDialog">
+        <Dialog title="title" size="'md'">
+            <p><strong t-esc="props.payload.name"/></p>
+            <p>Choose the recipient in WhatsApp, review the message, then send it.</p>
+            <p>If WhatsApp does not open, copy the message and paste it into the app.</p>
+            <label class="w-100"><span class="visually-hidden">Message text</span><textarea class="form-control" rows="9" readonly="readonly" dir="auto" aria-label="Message text" t-esc="props.payload.text"/></label>
+            <p t-if="state.copyStatus" class="mt-2 mb-0" role="status" t-esc="state.copyStatus"/>
+            <t t-set-slot="footer">
+                <a t-att-href="props.payload.url" target="_blank" rel="noopener noreferrer" class="btn btn-success" t-on-click="recordOpened"><i class="fa fa-whatsapp"/> Open WhatsApp</a>
+                <button type="button" class="btn btn-secondary" t-on-click="copyMessage">Copy message</button>
+                <button type="button" class="btn btn-light" t-on-click="props.close">Close</button>
+            </t>
+        </Dialog>
     </t>
 
     <t t-name="baseer_procurement_requests.ProcurementActualCatalog">

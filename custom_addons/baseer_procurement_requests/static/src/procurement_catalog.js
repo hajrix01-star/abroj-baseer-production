@@ -9,11 +9,48 @@ import { DropdownItem } from "@web/core/dropdown/dropdown_item";
 import { useDropdownState } from "@web/core/dropdown/dropdown_hooks";
 import { ConfirmationDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
 import { useSetupAction } from "@web/search/action_hook";
+import { Dialog } from "@web/core/dialog/dialog";
 
 const CATALOG_PAGE_SIZE = 48;
 const RECENT_PAGE_SIZE = 24;
 function newClientToken() {
     return globalThis.crypto.randomUUID();
+}
+
+export class ProcurementWhatsAppDialog extends Component {
+    static template = "baseer_procurement_requests.WhatsAppShareDialog";
+    static components = { Dialog };
+    static props = { close: Function, payload: Object, onOpened: { type: Function, optional: true } };
+
+    setup() {
+        this.notification = useService("notification");
+        this.state = useState({ copyStatus: "" });
+    }
+
+    get title() {
+        return _t("Share purchase request");
+    }
+
+    async recordOpened() {
+        // The real anchor navigates directly on the gesture. Audit must not delay it.
+        try {
+            // The audit can finish after this dialog is closed or the app is backgrounded.
+            await this.env.services.orm.call("baseer.procurement.request", "action_mark_whatsapp_opened", [[this.props.payload.request_id]]);
+        } catch {
+            this.notification.add(_t("Could not record the opening time. You can still use the share link."), { type: "warning" });
+            return;
+        }
+        await this.props.onOpened?.();
+    }
+
+    async copyMessage() {
+        try {
+            await navigator.clipboard.writeText(this.props.payload.text);
+            this.state.copyStatus = _t("Message copied.");
+        } catch {
+            this.state.copyStatus = _t("Select the message below and copy it manually.");
+        }
+    }
 }
 
 export class ProcurementCatalog extends Component {
@@ -24,6 +61,7 @@ export class ProcurementCatalog extends Component {
     setup() {
         this.orm = useService("orm");
         this.action = useService("action");
+        this.catalogAlive = true;
         this.notification = useService("notification");
         this.dialog = useService("dialog");
         this.searchTimer = null;
@@ -69,7 +107,7 @@ export class ProcurementCatalog extends Component {
             recentRequests: [], recentSearch: "", recentState: "all", recentOffset: 0,
             recentHasMore: false, recentLoading: false, recentLoadingMore: false, recentError: false,
             existingRequest: false, editRequest: false, editorBaseline: "", removedLines: [], replacementLine: false,
-            cancelOpen: false, cancelReason: "", editorLoading: false, quoteError: false, selectedProduct: false,
+            cancelOpen: false, cancelReason: "", editorLoading: false, quoteError: false, selectedProduct: false, shareLoading: false,
             canCurateCatalog: false, highlights: [], highlightsLoading: false,
             quickProductOpen: false, quickProductName: "", quickProductPrice: "",
             quickProductSaving: false, quickProductError: false,
@@ -125,6 +163,7 @@ export class ProcurementCatalog extends Component {
         });
         onMounted(() => globalThis.addEventListener("keydown", this.handleWindowKeydown, true));
         onWillUnmount(() => {
+            this.catalogAlive = false;
             globalThis.removeEventListener("keydown", this.handleWindowKeydown, true);
             this.catalogSequence++;
             this.recentSequence++;
@@ -173,7 +212,7 @@ export class ProcurementCatalog extends Component {
     }
 
     async allowEditorLeave() {
-        if (this.state.saving) return false;
+        if (this.state.saving) return Boolean(this.allowSavedRequestNavigation && !this.state.editRequest);
         if (!this.editorDirty) return true;
         return new Promise((resolve) => this.dialog.add(ConfirmationDialog, {
             title: _t("Unsaved order changes"),
@@ -274,6 +313,37 @@ export class ProcurementCatalog extends Component {
             this.notification.add(error?.data?.arguments?.[0] || error.message || _t("Could not save order changes."), { type: "danger" });
         } finally {
             this.state.saving = false;
+        }
+    }
+
+    async openEditorWhatsApp() {
+        if (!this.state.editRequest || this.state.purchaseRoute !== "representative" ||
+                this.state.saving || this.state.shareLoading || this.editorDirty) return;
+        const requestId = this.state.editRequest.id;
+        const fingerprint = this.editorFingerprint();
+        this.state.shareLoading = true;
+        try {
+            const payload = await this.orm.call("baseer.procurement.request", "prepare_catalog_whatsapp", [
+                requestId, this.state.editRequest.snapshot,
+            ]);
+            if (this.state.editRequest?.id !== requestId || this.editorDirty || this.editorFingerprint() !== fingerprint) return;
+            this.dialog.add(ProcurementWhatsAppDialog, { payload, onOpened: () => this.refreshSharedEditor(requestId) });
+        } catch (error) {
+            this.notification.add(error?.data?.arguments?.[0] || error.message || _t("Could not prepare the WhatsApp message."), { type: "danger" });
+        } finally {
+            this.state.shareLoading = false;
+        }
+    }
+
+    async refreshSharedEditor(requestId) {
+        if (this.catalogAlive === false || this.state.editRequest?.id !== requestId || this.editorDirty ||
+                this.state.saving || this.state.editorLoading || this.state.selectedProduct || this.state.replacementLine) return;
+        try {
+            const request = await this.orm.call("baseer.procurement.request", "load_catalog_editor", [requestId]);
+            if (this.catalogAlive !== false && this.state.editRequest?.id === requestId && !this.editorDirty &&
+                    !this.state.saving && !this.state.editorLoading && !this.state.selectedProduct && !this.state.replacementLine) this.applyEditor(request);
+        } catch {
+            this.notification.add(_t("The order changed. Reload it before editing."), { type: "warning" });
         }
     }
 
@@ -986,24 +1056,48 @@ export class ProcurementCatalog extends Component {
                 this.state.warehouseId, false, false, this.state.clientToken, this.state.representativePartnerId, this.state.purchaseRoute,
             ]);
             this.state.clientToken = newClientToken();
+            // Creation is committed: never leave this cart available for a second create
+            // if sharing or marking sent subsequently fails.
+            this.state.cart = [];
+            this.state.quote = this.emptyQuote();
+            let whatsappAction = false;
             if (openWhatsApp) {
-                if (this.state.purchaseRoute === "representative") {
-                    const whatsappAction = await this.orm.call("baseer.procurement.request", "action_open_whatsapp", [[id]]);
-                    await this.action.doAction(whatsappAction);
-                } else {
-                    await this.orm.call("baseer.procurement.request", "action_mark_sent", [[id]]);
+                try {
+                    if (this.state.purchaseRoute === "representative") {
+                        whatsappAction = await this.orm.call("baseer.procurement.request", "action_open_whatsapp", [[id]]);
+                    } else {
+                        await this.orm.call("baseer.procurement.request", "action_mark_sent", [[id]]);
+                    }
+                } catch (error) {
+                    this.notification.add(error?.data?.arguments?.[0] || error.message || _t("The request was saved. Open it to retry sharing or sending."), { type: "warning" });
                 }
             }
-            await this.action.doAction({ type: "ir.actions.act_window", res_model: "baseer.procurement.request",
-                res_id: id, views: [[false, "form"]], view_mode: "form" });
+            this.allowSavedRequestNavigation = true;
+            if (whatsappAction) {
+                // The global action function survives catalogue unmount and opens
+                // the dialog after form navigation has closed previous dialogs.
+                await this.action.doAction({ ...whatsappAction,
+                    params: { ...whatsappAction.params, open_saved_request: true } });
+            } else {
+                await this.action.doAction({ type: "ir.actions.act_window", res_model: "baseer.procurement.request",
+                    res_id: id, views: [[false, "form"]], view_mode: "form" });
+            }
         } catch (error) {
             this.notification.add(error?.data?.arguments?.[0] || error?.data?.message || error.message || _t("Could not save the procurement request."), { type: "danger" });
         } finally {
+            this.allowSavedRequestNavigation = false;
             this.state.saving = false;
         }
     }
 }
 registry.category("actions").add("baseer_procurement_requests.catalog", ProcurementCatalog);
+registry.category("actions").add("baseer_procurement_requests.whatsapp_share", async (env, action) => {
+    if (action.params.open_saved_request) {
+        await env.services.action.doAction({ type: "ir.actions.act_window", res_model: "baseer.procurement.request",
+            res_id: action.params.request_id, views: [[false, "form"]], view_mode: "form" });
+    }
+    env.services.dialog.add(ProcurementWhatsAppDialog, { payload: action.params });
+});
 
 export class ProcurementActualCatalog extends Component {
     static template = "baseer_procurement_requests.ProcurementActualCatalog";

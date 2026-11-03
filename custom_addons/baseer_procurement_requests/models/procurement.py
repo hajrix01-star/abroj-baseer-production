@@ -542,23 +542,44 @@ class ProcurementRequest(models.Model):
         if any(request.company_id != self.env.company for request in self):
             raise AccessError(_('The procurement request is unavailable in the active company.'))
 
-    def action_mark_whatsapp_opened(self):
-        self._require_active_company_for_cashier()
+    @api.model
+    def prepare_catalog_whatsapp(self, request_id, snapshot=False):
+        """Prepare a saved request for a direct, user-initiated share link."""
         if not self.env.user.has_group('baseer_procurement_requests.group_procurement_user'):
             raise AccessError(_('You are not allowed to send procurement requests.'))
-        if self.state == 'cancel':
+        request = self.browse(_catalog_identifier(request_id)).exists()
+        if not request or request.company_id != self.env.company:
+            raise AccessError(_('The procurement request is unavailable in the active company.'))
+        request.check_access('read')
+        if request.state == 'cancel':
             raise UserError(_('A cancelled procurement request cannot be shared on WhatsApp.'))
+        if request.purchase_route != 'representative':
+            raise UserError(_('WhatsApp sharing is only available for purchase-representative requests.'))
+        if snapshot is not False and snapshot is not None:
+            request._check_catalog_editor_snapshot(snapshot)
+        text = request.whatsapp_text or ''
+        return {
+            'request_id': request.id, 'name': request.display_name,
+            'text': text, 'url': 'https://wa.me/?text=%s' % quote(text),
+        }
+
+    def action_mark_whatsapp_opened(self):
+        self.ensure_one()
+        self.prepare_catalog_whatsapp(self.id)
+        self._lock_catalog_parent_rows()
+        # Recheck the route/state after waiting for any concurrent editor.
+        self.prepare_catalog_whatsapp(self.id)
         super(ProcurementRequest, self).write({'whatsapp_opened_at': fields.Datetime.now()})
         return True
 
     def action_open_whatsapp(self):
         """Open a human-confirmed WhatsApp share; the user chooses the recipient."""
         self.ensure_one()
-        self.action_mark_whatsapp_opened()
         return {
-            'type': 'ir.actions.act_url',
-            'url': 'https://wa.me/?text=%s' % quote(self.whatsapp_text or ''),
-            'target': 'new',
+            'type': 'ir.actions.client',
+            'tag': 'baseer_procurement_requests.whatsapp_share',
+            'name': self.display_name,
+            'params': self.prepare_catalog_whatsapp(self.id),
         }
 
     def action_mark_sent(self):

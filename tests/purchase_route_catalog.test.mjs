@@ -2,8 +2,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 
-const source = readFileSync(new URL('../custom_addons/baseer_procurement_requests/static/src/procurement_catalog.js', import.meta.url), 'utf8');
-const template = readFileSync(new URL('../custom_addons/baseer_procurement_requests/static/src/procurement_catalog.xml', import.meta.url), 'utf8');
+const source = readFileSync(process.env.PROCUREMENT_SOURCE_FILE || new URL('../custom_addons/baseer_procurement_requests/static/src/procurement_catalog.js', import.meta.url), 'utf8');
+const template = readFileSync(process.env.PROCUREMENT_TEMPLATE_FILE || new URL('../custom_addons/baseer_procurement_requests/static/src/procurement_catalog.xml', import.meta.url), 'utf8');
 // Execute the actual component methods without fabricating Owl/browser acceptance.
 const routeBody = source.match(/setPurchaseRoute\(route\) \{([\s\S]*?)\n    \}/)[1];
 const saveBody = source.match(/get canSave\(\) \{([\s\S]*?)\n    \}/)[1];
@@ -59,10 +59,11 @@ function submission(route) {
     Object.defineProperty(c, 'canSave', { get: () => canSave.call(c) });
     c.orm = { call: async (model, method, args) => {
         calls.push({ model, method, args });
-        return method === 'action_open_whatsapp' ? { type: 'ir.actions.act_url', url: 'wa.me/test' } : 91;
+        return method === 'action_open_whatsapp' ? { type: 'ir.actions.client', tag: 'baseer_procurement_requests.whatsapp_share', params: { request_id: 91, url: 'https://wa.me/?text=test', text: 'test' } } : 91;
     } };
     c.action = { doAction: async (action) => actions.push(action) };
     c.notification = { add: (...args) => notices.push(args) };
+    c.emptyQuote = () => ({ lines: [], total_text: '0.00' });
     return { c, calls, actions, notices };
 }
 
@@ -89,8 +90,11 @@ test('representative primary action preserves WhatsApp and representative RPC ar
     assert.equal(calls[0].args[5], 42);
     assert.equal(calls[0].args[6], 'representative');
     assert.deepEqual(calls[1].args, [[91]]);
-    assert.equal(actions[0].type, 'ir.actions.act_url');
-    assert.equal(actions[1].res_id, 91);
+    assert.equal(actions[0].type, 'ir.actions.client');
+    assert.equal(actions[0].tag, 'baseer_procurement_requests.whatsapp_share');
+    assert.equal(actions[0].params.open_saved_request, true);
+    assert.equal(actions.length, 1);
+    assert.deepEqual(c.state.cart, []);
     assert.deepEqual(notices, []);
 });
 
@@ -494,4 +498,138 @@ test('old quote responses cannot repopulate an emptied cart or unlock a newer ed
         assert.equal(c.state.quotePending, !empty);
         if (empty) assert.deepEqual(c.state.quote.lines, []);
     }
+});
+
+function whatsappEditor() {
+    const c = editorComponent();
+    c.state.purchaseRoute = 'representative';
+    c.state.cart = [{ line_id: 2, option_id: 4, quantity: '1.00', unit_price: '9.25' }];
+    c.state.editorBaseline = c.editorFingerprint();
+    c.state.shareLoading = false;
+    c.calls = []; c.dialogs = [];
+    c.orm = { call: async (...args) => { c.calls.push(args); return { request_id: 71, text: 'saved message', url: 'https://wa.me/?text=saved' }; } };
+    c.dialog = { add: (_component, props) => c.dialogs.push(props) };
+    const body = source.match(/    async openEditorWhatsApp\(\) \{([\s\S]*?)\n    \}/)?.[1];
+    assert.ok(body, 'draft editor exposes a WhatsApp preparation action');
+    const open = new AsyncFunction('_t', 'ProcurementWhatsAppDialog', body);
+    c.openWhatsApp = () => open.call(c, (text) => text, {});
+    return c;
+}
+
+test('draft WhatsApp opens a read-only saved preview without save, send, receipt or opening audit', async () => {
+    const c = whatsappEditor();
+    await c.openWhatsApp();
+    assert.deepEqual(c.calls, [['baseer.procurement.request', 'prepare_catalog_whatsapp', [71, 'snapshot-a']]]);
+    assert.equal(c.dialogs[0].payload.text, 'saved message');
+    assert.equal(c.state.shareLoading, false);
+    for (const guard of ['dirty', 'cash', 'saving', 'pending']) {
+        const guarded = whatsappEditor();
+        if (guard === 'dirty') guarded.state.cart[0].unit_price = '10';
+        if (guard === 'cash') guarded.state.purchaseRoute = 'cash';
+        if (guard === 'saving') guarded.state.saving = true;
+        if (guard === 'pending') guarded.state.shareLoading = true;
+        await guarded.openWhatsApp();
+        assert.deepEqual(guarded.calls, []);
+    }
+});
+
+test('draft WhatsApp ignores a late response after local edits or a different request', async () => {
+    for (const changed of ['price', 'request']) {
+        const c = whatsappEditor(); let done;
+        c.orm = { call: () => new Promise((resolve) => { done = resolve; }) };
+        const pending = c.openWhatsApp();
+        if (changed === 'price') c.state.cart[0].unit_price = '12';
+        else c.state.editRequest = { id: 72, snapshot: 'other' };
+        done({ request_id: 71, text: 'stale' });
+        await pending;
+        assert.equal(c.dialogs.length, 0);
+        assert.equal(c.state.shareLoading, false);
+    }
+});
+
+test('draft WhatsApp failure keeps the order and enables retry without creating anything', async () => {
+    const c = whatsappEditor();
+    const before = c.editorFingerprint();
+    c.orm = { call: async () => { throw { data: { arguments: ['Reload the order'] } }; } };
+    await c.openWhatsApp();
+    assert.equal(c.state.shareLoading, false);
+    assert.equal(c.editorFingerprint(), before);
+    assert.equal(c.dialogs.length, 0);
+    assert.equal(c.notices[0][0], 'Reload the order');
+});
+
+test('WhatsApp direct link keeps the browser gesture and offers a readable copy fallback', () => {
+    const dialog = template.slice(template.indexOf('<t t-name="baseer_procurement_requests.WhatsAppShareDialog">'));
+    assert.match(dialog, /<a[^>]+t-att-href="props.payload.url"[^>]+target="_blank"[^>]+rel="noopener noreferrer"/);
+    assert.doesNotMatch(dialog.match(/<a[^>]+>/)?.[0] || '', /\.prevent/);
+    assert.match(dialog, /<textarea[^>]+readonly="readonly"[^>]+t-esc="props.payload.text"/);
+    assert.match(dialog, /Copy message/);
+    assert.doesNotMatch(source, /window\.open\(/);
+});
+
+test('WhatsApp copy uses the saved message and reports a manual fallback when clipboard is unavailable', async () => {
+    const body = source.match(/    async copyMessage\(\) \{([\s\S]*?)\n    \}/)?.[1];
+    assert.ok(body);
+    const copy = new AsyncFunction('navigator', '_t', body);
+    const c = { props: { payload: { text: 'طلب مشتريات\n9.25 SR' } }, state: {} };
+    let copied;
+    await copy.call(c, { clipboard: { writeText: async (text) => { copied = text; } } }, (text) => text);
+    assert.equal(copied, c.props.payload.text);
+    assert.equal(c.state.copyStatus, 'Message copied.');
+    await copy.call(c, {}, (text) => text);
+    assert.equal(c.state.copyStatus, 'Select the message below and copy it manually.');
+});
+
+test('WhatsApp opening audit is separate from preparation and cannot block the native link', async () => {
+    const body = source.match(/    async recordOpened\(\) \{([\s\S]*?)\n    \}/)?.[1];
+    assert.ok(body);
+    const audit = new AsyncFunction('_t', body);
+    const calls = [], notices = [];
+    const c = { props: { payload: { request_id: 71 } }, orm: { call: async (...args) => { calls.push(args); throw Error('offline'); } }, notification: { add: (...args) => notices.push(args) } };
+    await audit.call(c, (text) => text);
+    assert.deepEqual(calls, [['baseer.procurement.request', 'action_mark_whatsapp_opened', [[71]]]]);
+    assert.equal(notices.length, 1);
+});
+
+test('saved-new-request handoff allows its own navigation while protecting saving editors', async () => {
+    const body = source.match(/    async allowEditorLeave\(\) \{([\s\S]*?)\n    \}/)[1];
+    const leave = new AsyncFunction('_t', 'ConfirmationDialog', body);
+    const c = { state: { saving: true, editRequest: false }, allowSavedRequestNavigation: false };
+    assert.equal(await leave.call(c), false);
+    c.allowSavedRequestNavigation = true;
+    assert.equal(await leave.call(c), true);
+    c.state.editRequest = { id: 71 };
+    assert.equal(await leave.call(c), false);
+});
+
+test('WhatsApp share action opens the saved form before adding its dialog and keeps native callers in place', async () => {
+    const body = source.match(/add\("baseer_procurement_requests.whatsapp_share", async \(env, action\) => \{([\s\S]*?)\n\}\);/)[1];
+    const run = new AsyncFunction('env', 'action', 'ProcurementWhatsAppDialog', body);
+    for (const newRequest of [false, true]) {
+        const events = [], dialogs = [];
+        const env = { services: {
+            action: { doAction: async (action) => { events.push('form'); assert.equal(action.res_id, 91); dialogs.length = 0; } },
+            dialog: { add: (_component, props) => { events.push('dialog'); dialogs.push(props); } },
+        } };
+        await run(env, { params: { request_id: 91, text: 'saved', open_saved_request: newRequest } }, {});
+        assert.deepEqual(events, newRequest ? ['form', 'dialog'] : ['dialog']);
+        assert.equal(dialogs.length, 1);
+    }
+});
+
+test('sharing failure after creation retains the saved request and cannot create a duplicate', async () => {
+    const { c, calls, actions, notices } = submission('representative');
+    c.orm.call = async (model, method, args) => {
+        calls.push({ model, method, args });
+        if (method === 'action_open_whatsapp') throw Error('network failure');
+        return 91;
+    };
+    await saveDraft.call(c, true, () => 'new-token', (text) => text);
+    assert.deepEqual(calls.map((call) => call.method), ['create_from_catalog', 'action_open_whatsapp']);
+    assert.deepEqual(c.state.cart, []);
+    assert.equal(c.state.clientToken, 'new-token');
+    assert.equal(actions[0].res_id, 91);
+    assert.equal(notices.length, 1);
+    assert.equal(c.allowSavedRequestNavigation, false);
+    assert.equal(c.state.saving, false);
 });

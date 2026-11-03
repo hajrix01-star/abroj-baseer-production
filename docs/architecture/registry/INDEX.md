@@ -998,3 +998,12 @@ and68BWork cases. Actual IAB375/1024 testing exposed a hidden packaging modal
 under the catalogue pane while editing cart. Production held. Focused19.0.14.0.20
 moves the existing fixed overlay to the shared shell; backend contract unchanged.
 Affected mobile QA and independent acceptance required before promotion.
+
+## PROCUREMENT-DRAFT-WHATSAPP-20261104 — bounded regression
+
+Runtime0175d5b2484f/.20 reused. Draft editor omitted sharing; async new-window
+opening risks Safari user activation. Candidate.21 adds guarded read-only message
+preparation, shared Odoo Dialog with direct user-gesture anchor and copy fallback,
+plus form-before-dialog completion. Original state/receipt/accounting unchanged.
+41Node/AST/XML/PO/SCSS pass; CI/QA/independent release pending.
+[Contract and evidence](../../build-governance/PROCUREMENT-DRAFT-WHATSAPP-20261104.md).

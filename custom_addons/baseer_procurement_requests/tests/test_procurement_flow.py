@@ -4,6 +4,7 @@ from odoo.exceptions import AccessError, UserError, ValidationError
 from datetime import timedelta
 from uuid import uuid4
 from unittest.mock import patch
+from urllib.parse import parse_qs, urlparse
 import hashlib
 import json
 
@@ -491,11 +492,16 @@ class ProcurementFlowCase(TransactionCase):
         self.assertIn('الإجمالي التقديري:', request.whatsapp_text)
 
         def assert_share_keeps_stage(expected_state):
+            before = request.whatsapp_opened_at
             action = request.action_open_whatsapp()
             self.assertEqual(request.state, expected_state)
-            self.assertEqual(action['type'], 'ir.actions.act_url')
-            self.assertIn('wa.me/?text=', action['url'])
+            self.assertEqual(action['type'], 'ir.actions.client')
+            self.assertEqual(action['tag'], 'baseer_procurement_requests.whatsapp_share')
+            self.assertIn('wa.me/?text=', action['params']['url'])
+            self.assertEqual(request.whatsapp_opened_at, before)
+            request.action_mark_whatsapp_opened()
             self.assertTrue(request.whatsapp_opened_at)
+            self.assertEqual(request.state, expected_state)
 
         assert_share_keeps_stage('draft')
         request.action_mark_sent()
@@ -512,6 +518,87 @@ class ProcurementFlowCase(TransactionCase):
         cancelled.action_cancel()
         with self.assertRaises(UserError):
             cancelled.action_open_whatsapp()
+
+    def test_catalog_whatsapp_preparation_is_readonly_and_encodes_saved_arabic(self):
+        self.product.name = 'لبنة & جبن = 5% / كجم ؟'
+        request = self._request()
+        snapshot = request.load_catalog_editor(request.id)['snapshot']
+        before = request.read([
+            'state', 'write_date', 'line_ids', 'whatsapp_opened_at', 'whatsapp_sent_at',
+            'manager_received_at', 'actual_confirmed_at', 'client_token', 'client_payload_hash',
+        ])[0]
+        lines_before = request.line_ids.read([
+            'option_id', 'requested_qty', 'requested_price', 'manager_received_qty',
+            'actual_qty', 'actual_price', 'write_date',
+        ])
+        counts = {model: self.env[model].search_count([]) for model in (
+            'baseer.procurement.request', 'baseer.procurement.request.line',
+            'baseer.procurement.purchase.option', 'baseer.procurement.price.history',
+            'stock.picking', 'stock.move', 'account.move', 'account.payment', 'mail.message',
+        )}
+        payload = request.prepare_catalog_whatsapp(request.id, snapshot)
+        action = request.action_open_whatsapp()
+        self.assertEqual(set(payload), {'request_id', 'name', 'text', 'url'})
+        self.assertEqual(payload['request_id'], request.id)
+        self.assertEqual(payload['text'], request.whatsapp_text)
+        parsed = urlparse(payload['url'])
+        self.assertEqual((parsed.scheme, parsed.netloc), ('https', 'wa.me'))
+        self.assertEqual(parse_qs(parsed.query)['text'], [payload['text']])
+        self.assertIn('لبنة & جبن = 5% / كجم ؟', payload['text'])
+        self.assertEqual(action['params'], payload)
+        self.assertEqual(request.read(list(before.keys() - {'id'}))[0], before)
+        self.assertEqual(request.line_ids.read([
+            'option_id', 'requested_qty', 'requested_price', 'manager_received_qty',
+            'actual_qty', 'actual_price', 'write_date',
+        ]), lines_before)
+        self.assertEqual(request._catalog_editor_snapshot(), snapshot)
+        for model, count in counts.items():
+            self.assertEqual(self.env[model].search_count([]), count, model)
+
+    def test_catalog_whatsapp_rejects_stale_foreign_role_route_and_cancel(self):
+        request = self._request()
+        snapshot = request.load_catalog_editor(request.id)['snapshot']
+        request.line_ids.write({'requested_qty': 6})
+        with self.assertRaisesRegex(ValidationError, 'changed since'):
+            request.prepare_catalog_whatsapp(request.id, snapshot)
+        for value in ('', 'forged', True):
+            with self.subTest(snapshot=value), self.assertRaises(ValidationError):
+                request.prepare_catalog_whatsapp(request.id, value)
+        requester = self._route_requester()
+        self.assertEqual(requester.prepare_catalog_whatsapp(request.id)['text'], request.whatsapp_text)
+        outsider = self.env['res.users'].with_context(no_reset_password=True).create({
+            'name': 'PRC share outsider', 'login': 'prc-share-no-%s' % uuid4(),
+            'company_id': self.company.id, 'company_ids': [Command.set(self.company.ids)],
+            'group_ids': [Command.set([self.env.ref('base.group_user').id])],
+        })
+        with self.assertRaises(AccessError):
+            request.with_user(outsider).prepare_catalog_whatsapp(request.id)
+        with self.assertRaises(AccessError):
+            request.with_user(outsider).action_mark_whatsapp_opened()
+        other = self.env['res.company'].create({'name': 'PRC share active-company boundary'})
+        self.env.user.company_ids |= other
+        foreign = request.with_context(allowed_company_ids=[other.id, self.company.id])
+        with self.assertRaises(AccessError):
+            foreign.prepare_catalog_whatsapp(request.id)
+        with self.assertRaises(AccessError):
+            foreign.action_mark_whatsapp_opened()
+        for route in ('cash', 'bank_transfer'):
+            direct = self._request()
+            direct.write({'purchase_route': route, 'purchaser_id': False, 'representative_partner_id': False})
+            with self.subTest(route=route), self.assertRaises(UserError):
+                direct.prepare_catalog_whatsapp(direct.id)
+            with self.subTest(mark_route=route), self.assertRaises(UserError):
+                direct.action_mark_whatsapp_opened()
+            self.assertFalse(direct.whatsapp_opened_at)
+        cancelled = self._request()
+        cancelled.cancellation_reason = 'PRC sharing cancelled fixture'
+        cancelled.action_cancel()
+        with self.assertRaises(UserError):
+            cancelled.prepare_catalog_whatsapp(cancelled.id)
+        with self.assertRaises(UserError):
+            cancelled.action_mark_whatsapp_opened()
+        self.assertFalse(request.whatsapp_opened_at)
+        self.assertFalse(cancelled.whatsapp_opened_at)
 
     def test_cashier_quote_accepts_sent_request_with_actual_price(self):
         """A cashier can price a sent request before the guarded confirmation."""

@@ -243,7 +243,7 @@
                         <div t-if="state.editRequest" class="o_prc_cart_actions o_prc_editor_actions">
                             <button type="button" class="btn btn-light" t-on-click="reloadEditor" t-att-disabled="state.saving or state.shareLoading">Reload order</button>
                             <button type="button" class="btn btn-primary" t-on-click="saveEditor" t-att-disabled="!canSave or !editorDirty or state.shareLoading"><i class="fa fa-save"/> Save changes</button>
-                            <button t-if="state.purchaseRoute === 'representative'" type="button" class="btn btn-success o_prc_whatsapp_button" t-on-click="openEditorWhatsApp" t-att-disabled="state.saving or state.shareLoading or editorDirty"><i class="fa fa-whatsapp"/> <t t-if="state.shareLoading">Preparing message…</t><t t-else="">Open WhatsApp</t></button>
+                            <button t-if="state.purchaseRoute === 'representative'" type="button" class="btn btn-primary text-white o_prc_whatsapp_button" t-on-click="openEditorWhatsApp" t-att-disabled="state.saving or state.shareLoading or editorDirty"><i class="fa fa-whatsapp"/> <t t-if="state.shareLoading">Preparing message…</t><t t-else="">Open WhatsApp</t></button>
                         </div>
                         <div t-else="" class="o_prc_cart_actions">
                             <button t-if="!state.existingRequest" type="button" class="btn btn-light" t-on-click="() => this.saveDraft(false)" t-att-disabled="!canSave"><i class="fa fa-save" aria-hidden="true"/> Save request</button>
@@ -279,7 +279,7 @@
             <label class="w-100"><span class="visually-hidden">Message text</span><textarea class="form-control" rows="9" readonly="readonly" dir="auto" aria-label="Message text" t-esc="props.payload.text"/></label>
             <p t-if="state.copyStatus" class="mt-2 mb-0" role="status" t-esc="state.copyStatus"/>
             <t t-set-slot="footer">
-                <a t-att-href="props.payload.url" target="_blank" rel="noopener noreferrer" class="btn btn-success" t-on-click="recordOpened"><i class="fa fa-whatsapp"/> Open WhatsApp</a>
+                <a t-att-href="props.payload.url" target="_blank" rel="noopener noreferrer" class="btn btn-primary text-white" t-on-click="recordOpened"><i class="fa fa-whatsapp"/> Open WhatsApp</a>
                 <button type="button" class="btn btn-secondary" t-on-click="copyMessage">Copy message</button>
                 <button type="button" class="btn btn-light" t-on-click="props.close">Close</button>
             </t>

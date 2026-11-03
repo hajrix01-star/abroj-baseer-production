@@ -1005,5 +1005,5 @@ Runtime0175d5b2484f/.20 reused. Draft editor omitted sharing; async new-window
 opening risks Safari user activation. Candidate.21 adds guarded read-only message
 preparation, shared Odoo Dialog with direct user-gesture anchor and copy fallback,
 plus form-before-dialog completion. Original state/receipt/accounting unchanged.
-41Node/AST/XML/PO/SCSS pass; CI/QA/independent release pending.
+44Node/AST/XML/PO/SCSS pass; CI/QA/independent release pending.
 [Contract and evidence](../../build-governance/PROCUREMENT-DRAFT-WHATSAPP-20261104.md).

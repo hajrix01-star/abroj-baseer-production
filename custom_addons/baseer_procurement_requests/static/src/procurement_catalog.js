@@ -61,6 +61,7 @@ export class ProcurementCatalog extends Component {
     setup() {
         this.orm = useService("orm");
         this.action = useService("action");
+        this.catalogAlive = true;
         this.notification = useService("notification");
         this.dialog = useService("dialog");
         this.searchTimer = null;
@@ -162,6 +163,7 @@ export class ProcurementCatalog extends Component {
         });
         onMounted(() => globalThis.addEventListener("keydown", this.handleWindowKeydown, true));
         onWillUnmount(() => {
+            this.catalogAlive = false;
             globalThis.removeEventListener("keydown", this.handleWindowKeydown, true);
             this.catalogSequence++;
             this.recentSequence++;
@@ -334,10 +336,12 @@ export class ProcurementCatalog extends Component {
     }
 
     async refreshSharedEditor(requestId) {
-        if (this.state.editRequest?.id !== requestId || this.editorDirty || this.state.saving) return;
+        if (this.catalogAlive === false || this.state.editRequest?.id !== requestId || this.editorDirty ||
+                this.state.saving || this.state.editorLoading || this.state.selectedProduct || this.state.replacementLine) return;
         try {
             const request = await this.orm.call("baseer.procurement.request", "load_catalog_editor", [requestId]);
-            if (this.state.editRequest?.id === requestId && !this.editorDirty && !this.state.saving) this.applyEditor(request);
+            if (this.catalogAlive !== false && this.state.editRequest?.id === requestId && !this.editorDirty &&
+                    !this.state.saving && !this.state.editorLoading && !this.state.selectedProduct && !this.state.replacementLine) this.applyEditor(request);
         } catch {
             this.notification.add(_t("The order changed. Reload it before editing."), { type: "warning" });
         }

@@ -659,3 +659,30 @@ test('WhatsApp metadata refresh never overwrites a locally changed order', async
         assert.equal(Boolean(c.applied), dirtyWhen === 'clean');
     }
 });
+
+test('WhatsApp metadata refresh respects unmount, another request, in-flight save and packaging selection', async () => {
+    const body = source.match(/    async refreshSharedEditor\(requestId\) \{([\s\S]*?)\n    \}/)[1];
+    const refresh = new AsyncFunction('requestId', '_t', body);
+    for (const stage of ['before', 'during']) {
+        for (const condition of ['unmount', 'request', 'saving', 'packaging', 'loading', 'replacement']) {
+            const c = whatsappEditor(); let finish;
+            c.catalogAlive = true;
+            c.applyEditor = () => { c.applied = true; };
+            c.orm = { call: () => new Promise((resolve) => { finish = resolve; }) };
+            const change = () => {
+                if (condition === 'unmount') c.catalogAlive = false;
+                if (condition === 'request') c.state.editRequest = { id: 72 };
+                if (condition === 'saving') c.state.saving = true;
+                if (condition === 'packaging') c.state.selectedProduct = { id: 7 };
+                if (condition === 'loading') c.state.editorLoading = true;
+                if (condition === 'replacement') c.state.replacementLine = { id: 4 };
+            };
+            if (stage === 'before') change();
+            const pending = refresh.call(c, 71, (text) => text);
+            if (stage === 'during') change();
+            if (finish) finish({ id: 71, snapshot: 'after-audit' });
+            await pending;
+            assert.equal(Boolean(c.applied), false, `${stage}/${condition}`);
+        }
+    }
+});

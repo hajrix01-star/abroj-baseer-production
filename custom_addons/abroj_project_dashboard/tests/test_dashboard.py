@@ -450,6 +450,11 @@ class AbrojProjectDashboardCase(TransactionCase):
         self.assertEqual((self.project.abroj_actual, category.actual), (60, 60))
         analytic.amount = -70
         self.assertEqual((self.project.abroj_actual, category.actual), (80, 80))
+        # Uncategorized project costs must invalidate the project cache too.
+        analytic.abroj_budget_line_id = False
+        self.assertEqual((self.project.abroj_actual, category.actual), (80, 10))
+        analytic.amount = -90
+        self.assertEqual((self.project.abroj_actual, category.actual), (100, 10))
         self.assertEqual(self.project._abroj_data()['actual'], 80)
 
     def test_financial_summary_preserves_project_overruns_and_unknown_budget(self):

@@ -49,3 +49,20 @@ Contract margin remains contract minus registered commitments, labeled according
    budget precedence/missing/mismatch; refund does not reduce customer receivable.
    Rollback is prior source through protected release; no accounting data rollback
    should be required because no accounting source is edited.
+4. Implemented decimal aggregation, posted expense/net analytics with retained
+   independent costs, explicit budget availability/mismatch, server-side finance
+   summaries and customer-refund separation. Added native Arabic translations and
+   preserved existing layouts. Source review by independent ERP reviewer closed
+   the finance-policy concerns; runtime evidence remains required.
+5. Local Docker connection using the old shared configuration failed before
+   tests. Created a fresh private PostgreSQL test container without public ports
+   or production data. Initial in-progress run found an omitted summary helper
+   and one incomplete test customer fixture; both fixed before source freeze.
+6. Local r3: 86 ORM tests, 85 passed / one cache regression failed. Root cause:
+   Odoo analytic account `line_ids` uses context-dependent `auto_account_id`;
+   added a concrete nonstored One2many for the existing project-plan `account_id`
+   and connected cache dependencies to that column. Category/project dependencies
+   include company, amount, source posting state and account type. Targeted r4
+   confirmed all cache transitions but exposed a stale final expected test value
+   after adding an uncategorized-cost edit; corrected expected80 to100. Re-run
+   only this affected test; full final isolated CI remains required.

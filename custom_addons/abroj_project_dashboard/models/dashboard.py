@@ -109,7 +109,7 @@ class BudgetLine(models.Model):
         self._check_budget_manager()
         return super().unlink()
 
-    @api.depends('manual_actual', 'analytic_line_ids.amount', 'analytic_line_ids.move_line_id.move_id.state', 'analytic_line_ids.move_line_id.account_id.account_type')
+    @api.depends('manual_actual', 'project_id.account_id', 'project_id.company_id', 'analytic_line_ids.amount', 'analytic_line_ids.company_id', 'analytic_line_ids.move_line_id.move_id.state', 'analytic_line_ids.move_line_id.account_id.account_type')
     @api.depends_context('uid', 'company')
     def _compute_actual(self):
         for line in self:
@@ -118,6 +118,14 @@ class BudgetLine(models.Model):
                 ('abroj_budget_line_id', '=', line.id),
             ]) if Analytic.has_access('read') else Analytic
             line.actual = money_sum([line.manual_actual] + [-a.amount for a in entries])
+
+
+class AnalyticAccount(models.Model):
+    _inherit = 'account.analytic.account'
+
+    # Native line_ids uses the context-dependent auto_account_id magic inverse.
+    # Project cost cache dependencies need the concrete project-plan column.
+    abroj_project_cost_line_ids = fields.One2many('account.analytic.line', 'account_id')
 
 
 class AnalyticLine(models.Model):
@@ -259,7 +267,7 @@ class Project(models.Model):
         return round(progress, 1), float(actual), float(over)
 
     @api.depends_context('uid', 'company')
-    @api.depends('abroj_use_manual_progress', 'abroj_manual_progress', 'task_ids.state', 'abroj_budget', 'estimated_cost', 'abroj_budget_line_ids.manual_actual', 'account_id', 'account_id.line_ids.amount', 'account_id.line_ids.move_line_id.move_id.state', 'account_id.line_ids.move_line_id.account_id.account_type')
+    @api.depends('abroj_use_manual_progress', 'abroj_manual_progress', 'task_ids.state', 'abroj_budget', 'estimated_cost', 'abroj_budget_line_ids.manual_actual', 'account_id', 'company_id', 'account_id.abroj_project_cost_line_ids.amount', 'account_id.abroj_project_cost_line_ids.company_id', 'account_id.abroj_project_cost_line_ids.move_line_id.move_id.state', 'account_id.abroj_project_cost_line_ids.move_line_id.account_id.account_type')
     def _compute_abroj_metrics(self):
         for project in self:
             project.abroj_progress, project.abroj_actual, project.abroj_over = project._abroj_metrics()

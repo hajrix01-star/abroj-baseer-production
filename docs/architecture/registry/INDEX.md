@@ -915,3 +915,19 @@ Contracting metrics source integration: PR656 is merged as
 contracting tests. Independent Alpha financial GO; production activation pending
 policy registration and protected Actions. Original candidate commit is retained
 above as review history, not a deployable main ancestor.
+
+## CONTRACTING-ISSUE-20261103 — Explicit native accounting
+
+ARCHITECTURAL; owners abroj_contracting/accounting_issue and existing project
+actual-cost indicators. Confirmed cost -> accountant review -> one native vendor
+bill, or explicit validated adoption of a posted bill. Canonical protected
+account.move.abroj_cost_id, unique constraint and NO KEY UPDATE source lock;
+audit metadata touch enables native RR retry. No context privilege bypass or
+sudo posting. Gross amount/tax/project allocation/native supplier reviewed;
+original linked document frozen, corrections via native reversal. Payment
+settlement remains outside actual cost, with no automatic old-document posting
+or native-party inference. Wizard shows payment posting account/clearing warning.
+G0–G3 approved independently; local155 tests and new context guard/two-cursor
+proof passed. Candidate versions contracting19.0.1.8.0/dashboard19.0.1.8.12;
+final CI/UI acceptance and protected activation pending.
+[Contract and evidence](../../build-governance/CONTRACTING-ACCOUNTING-ISSUE.md).

@@ -71,7 +71,7 @@
                 <div class="col"><div class="card p-3"><strong>المدفوع</strong><field name="total_paid" nolabel="1" readonly="1"/></div></div>
                 <div class="col"><div class="card p-3"><strong>الرصيد</strong><field name="cash_balance" nolabel="1" readonly="1"/></div></div>
               </div>
-              <field name="voucher_ids" context="{'default_project_id': id}"><list><field name="name"/><field name="kind"/><field name="party_id"/><field name="amount"/><field name="date"/><field name="method"/><field name="abroj_stage"/><field name="abroj_can_accounting_approve" column_invisible="True"/><button name="action_accounting_approve" type="object" string="اعتماد محاسبي" groups="account.group_account_manager,account.group_account_invoice" invisible="not abroj_can_accounting_approve"/></list></field>
+              <field name="voucher_ids" context="{'default_project_id': id}"><list><field name="name"/><field name="kind"/><field name="party_id"/><field name="amount"/><field name="date"/><field name="method"/><field name="abroj_stage"/><field name="abroj_can_accounting_approve" column_invisible="True"/><button name="action_open_accounting_issue" type="object" string="Issue accounting entry" groups="account.group_account_manager,account.group_account_invoice" invisible="not abroj_can_accounting_approve"/><field name="payment_id" column_invisible="True"/><button name="action_open_journal_entry" type="object" string="View journal entry" groups="account.group_account_manager,account.group_account_invoice" invisible="not payment_id"/></list></field>
             </page>
             <page string="الملاحظات" name="project_notes">
               <field name="project_note_ids" context="{'default_project_id': id}">
@@ -84,7 +84,7 @@
             </page>
             <page string="الفواتير والمصروفات" name="invoices_costs">
               <field name="invoice_ids" context="{'default_project_id': id}"><list><field name="number"/><field name="subcontractor_id"/><field name="amount"/><field name="date"/><field name="state"/><button name="action_confirm" type="object" string="تأكيد" invisible="state != 'draft'"/></list></field>
-              <field name="cost_ids" context="{'default_project_id': id}"><list><field name="name"/><field name="party_id"/><field name="amount"/><field name="date"/><field name="state"/><button name="action_confirm" type="object" string="تأكيد" invisible="state != 'draft'"/></list></field>
+              <field name="cost_ids" context="{'default_project_id': id}"><list><field name="name"/><field name="party_id"/><field name="amount"/><field name="date"/><field name="state"/><button name="action_confirm" type="object" string="تأكيد" invisible="state != 'draft'"/><field name="abroj_can_accounting_issue" column_invisible="True"/><field name="account_move_id" column_invisible="True" groups="account.group_account_manager,account.group_account_invoice"/><field name="accounting_stage" groups="account.group_account_manager,account.group_account_invoice" optional="show"/><button name="action_open_accounting_issue" type="object" string="Issue accounting entry" groups="account.group_account_manager,account.group_account_invoice" invisible="not abroj_can_accounting_issue"/><button name="action_open_journal_entry" type="object" string="View journal entry" groups="account.group_account_manager,account.group_account_invoice" invisible="not account_move_id"/></list></field>
             </page>
             <page string="السجلات" name="logs"><field name="inbox_ids" context="{'default_project_id': id}"/></page>
           </notebook>
@@ -119,13 +119,13 @@
         <header>
           <field name="abroj_can_accounting_approve" invisible="1"/>
           <button name="action_issue" type="object" string="إصدار" class="btn-primary" invisible="state != 'draft'" help="عرض السجل أو اعتماد العملية حسب حالتها؛ راجع البيانات والمرفقات قبل التنفيذ."/>
-          <button name="action_accounting_approve" type="object" string="اعتماد محاسبي" groups="account.group_account_manager,account.group_account_invoice" invisible="not abroj_can_accounting_approve" help="إنشاء دفعة محاسبية مرتبطة بحساب المشروع التحليلي؛ يجب أن يعتمد السند محاسب غير مصدره، ولا يسمح لوكيل الاستخراج بالاعتماد."/>
+          <button name="action_open_accounting_issue" type="object" string="Issue accounting entry" groups="account.group_account_manager,account.group_account_invoice" invisible="not abroj_can_accounting_approve" help="إنشاء دفعة محاسبية مرتبطة بحساب المشروع التحليلي؛ يجب أن يعتمد السند محاسب غير مصدره، ولا يسمح لوكيل الاستخراج بالاعتماد."/>
           <button name="action_cancel" type="object" string="إلغاء" invisible="state == 'cancelled'" help="عرض السجل أو اعتماد العملية حسب حالتها؛ راجع البيانات والمرفقات قبل التنفيذ."/>
           <field name="state" widget="statusbar"/>
         </header>
         <sheet>
           <div class="oe_button_box" name="button_box">
-            <button name="action_open_journal_entry" type="object" class="oe_stat_button" icon="fa-book" string="القيد المحاسبي" invisible="not payment_id"/>
+            <button name="action_open_journal_entry" type="object" class="oe_stat_button" icon="fa-book" string="View journal entry" invisible="not payment_id"/>
           </div>
           <group>
             <field name="name"/>
@@ -275,20 +275,20 @@
       <form string="المصروفات">
         <header>
           <button name="action_confirm" type="object" string="تأكيد" class="btn-primary" invisible="state != 'draft'" help="عرض السجل أو اعتماد العملية حسب حالتها؛ راجع البيانات والمرفقات قبل التنفيذ."/>
-          <field name="state" widget="statusbar"/>
+          <field name="abroj_can_accounting_issue" invisible="1"/><button name="action_open_accounting_issue" type="object" string="Issue accounting entry" class="btn-primary" groups="account.group_account_manager,account.group_account_invoice" invisible="not abroj_can_accounting_issue"/><field name="state" widget="statusbar"/>
         </header>
-        <sheet>
+        <sheet><div class="oe_button_box" name="button_box"><button name="action_open_journal_entry" type="object" class="oe_stat_button" icon="fa-book" string="View journal entry" groups="account.group_account_manager,account.group_account_invoice" invisible="not account_move_id"/></div>
           <group>
             <field name="project_id" readonly="state != 'draft'"/>
             <field name="company_id"/>
             <field name="currency_id" invisible="1"/>
-            <field name="name"/>
+            <field name="name" readonly="state != 'draft'"/>
             <field name="party_id" readonly="state != 'draft'" context="{'abroj_party_show_type': True, 'default_party_type': 'supplier', 'default_company_id': company_id}"/>
             <field name="partner_id" invisible="1"/>
             <field name="category" readonly="state != 'draft'"/>
             <field name="invoice_number" readonly="state != 'draft'"/>
             <field name="date" readonly="state != 'draft'"/>
-            <field name="amount" readonly="state != 'draft'"/>
+            <field name="amount" readonly="state != 'draft'"/><field name="account_move_id" readonly="1" groups="account.group_account_manager,account.group_account_invoice"/><field name="accounting_stage" readonly="1" groups="account.group_account_manager,account.group_account_invoice"/>
             <field name="attachment" readonly="state != 'draft'"/>
             <field name="state"/>
           </group>
@@ -311,7 +311,7 @@
         <field name="invoice_number"/>
         <field name="date"/>
         <field name="amount"/>
-        <field name="state"/>
+        <field name="state"/><field name="abroj_can_accounting_issue" column_invisible="True"/><field name="account_move_id" column_invisible="True" groups="account.group_account_manager,account.group_account_invoice"/><field name="accounting_stage" groups="account.group_account_manager,account.group_account_invoice" optional="show"/><button name="action_open_accounting_issue" type="object" string="Issue accounting entry" groups="account.group_account_manager,account.group_account_invoice" invisible="not abroj_can_accounting_issue"/><button name="action_open_journal_entry" type="object" string="View journal entry" groups="account.group_account_manager,account.group_account_invoice" invisible="not account_move_id"/>
       </list>
     </field>
   </record>

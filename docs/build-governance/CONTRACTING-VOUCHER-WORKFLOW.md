@@ -126,3 +126,20 @@ translations; issue_tests new focused suite. No overlapping ownership.
     sources matching recognition bills, finaltotal18200/commitmentmargin156800.
     PWA caption clarifies this margin is after commitments, distinct from earned
     profit; KPIlabeltestpassed, financial formulas unchanged. FinalSHA CI pending.
+14. Final acceptance check reopened G2 for uncategorized existing supplier bills:
+    project actual could be correct while category actual remained incomplete.
+    Independent reviewer approved the shortest remedy: when project categories
+    exist, validate each original expense AML and matching AAL category before
+    settlement; allow multiple valid categories, reject missing/inconsistent tags
+    before payment creation. Do not rewrite posted classification in this wizard.
+    Added one focused rejection/multi-category test; historical direct invoices
+    remain unchanged. Only this delta requires fresh scoped validation/finalCI.
+15. All5required CI checks passed on4223c559, including27new+91existing runtime
+    cases. Added budget validation delta then tested28workflow cases locally,
+   0failures/errors (output/workflow-tests-r5.log). New case rejects unclassified
+    posted invoice without a payment, reverses its synthetic source natively,
+    then settles50/50across2categories with actual100/categorysum100. Existing
+    same-invoice race fixture already carries valid budget metadata; no locking,
+    amount or UI change. Payment-count operational assertion scoped tocompany56
+    to avoid unrelated companies' concurrent cash movements causing false failure.
+    G2 amendment approved independently; finalSHA CI pending before activation.

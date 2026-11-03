@@ -49,7 +49,7 @@ jobs:
           fi
           grep -F '0 failed, 0 error(s)' abroj-project-dashboard-runtime.log
           test "$(grep -Ec 'Starting (AbrojProjectDashboardCase|AbrojDashboardHttpCase)\.' abroj-project-dashboard-runtime.log)" -eq 80
-          test "$(grep -Ec 'Starting AbrojVoucherWorkflowCase\.' abroj-project-dashboard-runtime.log)" -eq 27
+          test "$(grep -Ec 'Starting AbrojVoucherWorkflowCase\.' abroj-project-dashboard-runtime.log)" -eq 28
       - name: Preserve dashboard runtime evidence
         if: always()
         uses: actions/upload-artifact@v4

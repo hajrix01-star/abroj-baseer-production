@@ -567,3 +567,9 @@ msgstr "رصيد حركة السندات"
 #: model:ir.model.fields,field_description:abroj_project_dashboard.field_abroj_project_voucher_review__payment_account_id
 msgid "Payment posting account"
 msgstr "حساب ترحيل الدفعة"
+
+#. module: abroj_project_dashboard
+#. odoo-python
+#: code:addons/abroj_project_dashboard/models/voucher_workflow.py:0
+msgid "Classify every expense line and its analytics under this project budget before settling the invoice."
+msgstr "صنّف كل بند مصروف وقيوده التحليلية ضمن ميزانية هذا المشروع على الفاتورة الأصلية قبل تسويتها."

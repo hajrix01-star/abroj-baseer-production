@@ -442,6 +442,14 @@ class VoucherReview(models.TransientModel):
         if not lines or any(l.account_id.account_type not in types or sum(Decimal(str(value))
                 for ids, value in (l.analytic_distribution or {}).items() if key in ids.split(',')) != Decimal('100') for l in lines):
             raise ValidationError(_('The invoice recognition lines must allocate 100% to this project.'))
+        if expected in ('in_invoice', 'in_refund') and voucher.project_id.abroj_budget_line_ids:
+            for line in lines:
+                category = line.abroj_budget_line_id
+                entries = line.analytic_line_ids.filtered(lambda a: a.account_id == voucher.project_id.account_id)
+                if (not category or category.project_id != voucher.project_id
+                        or (line.balance and not entries)
+                        or any(a.abroj_budget_line_id != category for a in entries)):
+                    raise ValidationError(_('Classify every expense line and its analytics under this project budget before settling the invoice.'))
         if voucher.kind == 'payment' and self.budget_line_id:
             if self.budget_line_id.project_id != voucher.project_id or any(l.abroj_budget_line_id != self.budget_line_id for l in lines):
                 raise ValidationError(_('Use the cost category already recorded on the posted invoice.'))

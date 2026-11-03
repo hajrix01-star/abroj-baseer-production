@@ -63,7 +63,7 @@ for source_id, (name, amount, payment_id, move_id, partner_id, purpose) in MANIF
         if purpose == 'direct':
             assert voucher.recognition_move_id.ref == 'OWNER-REVIEW/' + name
     before[source_id] = fingerprint(voucher)
-payments_before = env['account.payment'].search_count([])
+payments_before = env['account.payment'].search_count([('company_id', '=', COMPANY)])
 evidence = ('Owner approved the exact 2026-11-03 historical review in the implementation chat, '
             'without additional attachments: container services800+400 recognized as expense '
             'without input-VAT deduction; contractor1000+2500 and customer5000 remain on-account '
@@ -86,7 +86,7 @@ if APPLY:
         project.action_approve_detailed_budget()
     env.flush_all()
     env.invalidate_all()
-    assert env['account.payment'].search_count([]) == payments_before, 'No new cash payment is permitted.'
+    assert env['account.payment'].search_count([('company_id', '=', COMPANY)]) == payments_before, 'No new cash payment is permitted.'
     assert before == {source_id: fingerprint(vouchers.browse(source_id)) for source_id in MANIFEST}
     assert all(vouchers.browse(source_id).workflow_reviewed for source_id in MANIFEST)
     assert category.actual == 1200

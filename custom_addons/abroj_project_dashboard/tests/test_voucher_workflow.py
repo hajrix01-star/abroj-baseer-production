@@ -104,9 +104,13 @@ class AbrojVoucherWorkflowCase(TransactionCase):
         values.update(extra)
         return self.env['abroj.project.voucher.review'].create(values)
 
-    def bill(self, amount=100, move_type='in_invoice', posted=True, project=None, partner=None, currency=None):
+    def bill(self, amount=100, move_type='in_invoice', posted=True, project=None, partner=None, currency=None, budget=None):
         project, partner = project or self.project, partner or self.partner
         supplier = move_type in ('in_invoice', 'in_refund')
+        if budget is None:
+            budget = self.budget if project == self.project else self.env['abroj.project.budget.line'].search([
+                ('project_id', '=', project.id),
+            ], limit=1)
         bill = self.env['account.move'].create({
             'move_type': move_type, 'partner_id': partner.id,
             'currency_id': (currency or self.company.currency_id).id,
@@ -118,6 +122,7 @@ class AbrojVoucherWorkflowCase(TransactionCase):
                 'account_id': self.accounts['expense' if supplier else 'income'].id,
                 'tax_ids': [Command.clear()],
                 'analytic_distribution': {str(project.account_id.id): 100},
+                'abroj_budget_line_id': budget.id if supplier and budget else False,
             })],
         })
         if posted:
@@ -534,3 +539,48 @@ class AbrojVoucherWorkflowCase(TransactionCase):
         self.assertEqual(self.project.abroj_customer_received, 0)
         self.assertEqual(self.project.remaining, 10000)
         self.assertEqual(self.project._abroj_data()['remaining'], 10000)
+
+    def test_unclassified_invoice_blocks_payment_and_split_categories_settle(self):
+        invoice = self.bill(budget=False)
+        voucher = self.voucher(purpose='settlement')
+        payments = self.env['account.payment'].search_count([])
+        original = [(line.id, line.abroj_budget_line_id.id, dict(line.analytic_distribution or {}))
+                    for line in invoice.invoice_line_ids]
+        with self.assertRaises(UserError), self.cr.savepoint():
+            self.review(voucher, invoice_id=invoice.id).action_apply()
+        self.assertFalse(voucher.payment_id)
+        self.assertEqual(self.env['account.payment'].search_count([]), payments)
+        self.assertEqual([(line.id, line.abroj_budget_line_id.id, dict(line.analytic_distribution or {}))
+                          for line in invoice.invoice_line_ids], original)
+        self.assertFalse(invoice.invoice_line_ids.mapped('abroj_budget_line_id'))
+        self.assertEqual(invoice.amount_residual, 100)
+        # Correct the first synthetic fact natively; do not rewrite its posted
+        # accounting or analytic classification to make the review pass.
+        credit = invoice._reverse_moves([{
+            'date': self.today, 'invoice_date': self.today, 'ref': 'Unclassified source correction',
+        }], cancel=False)
+        credit.action_post()
+        self.assertEqual(self.actual(), 0)
+        second_budget = self.env['abroj.project.budget.line'].create({
+            'project_id': self.project.id, 'name': 'Second valid split category', 'budget': 500,
+        })
+        split = self.env['account.move'].create({
+            'move_type': 'in_invoice', 'partner_id': self.partner.id,
+            'journal_id': self.purchase.id, 'invoice_date': self.today, 'date': self.today,
+            'abroj_project_id': self.project.id, 'ref': 'VFLOW/SPLIT',
+            'invoice_line_ids': [Command.create({
+                'name': 'Classified half', 'quantity': 1, 'price_unit': 50,
+                'account_id': self.accounts['expense'].id, 'tax_ids': [Command.clear()],
+                'analytic_distribution': {str(self.project.account_id.id): 100},
+                'abroj_budget_line_id': category.id,
+            }) for category in (self.budget, second_budget)],
+        })
+        split.action_post()
+        self.review(voucher, invoice_id=split.id).action_apply()
+        self.assertEqual(split.amount_residual, 0)
+        self.assertEqual(voucher.recognition_move_id, split)
+        self.assertEqual(voucher.payment_id.amount, 100)
+        self.assertEqual(self.env['account.payment'].search_count([]), payments + 1)
+        self.assertEqual((self.budget.actual, second_budget.actual), (50, 50))
+        self.assertEqual(self.actual(), self.budget.actual + second_budget.actual)
+        self.assertEqual(self.actual(), 100)

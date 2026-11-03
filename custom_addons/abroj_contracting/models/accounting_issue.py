@@ -212,10 +212,10 @@ class AccountingMoveLine(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
-        for vals in vals_list:
-            move = self.env['account.move'].browse(vals.get('move_id', self.env.context.get('default_move_id'))).exists()
-            if move.abroj_cost_id and move.state == 'posted':
-                raise UserError(_('Correct a linked expense through a credit note or reversal.'))
+        move_ids = {vals.get('move_id', self.env.context.get('default_move_id')) for vals in vals_list}
+        moves = self.env['account.move'].browse([ident for ident in move_ids if ident]).exists()
+        if moves.filtered(lambda move: move.abroj_cost_id and move.state == 'posted'):
+            raise UserError(_('Correct a linked expense through a credit note or reversal.'))
         lines = super().create(vals_list)
         if lines.move_id.filtered(lambda m: m.abroj_cost_id and m.state == 'posted'):
             raise UserError(_('Correct a linked expense through a credit note or reversal.'))

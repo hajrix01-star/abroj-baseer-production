@@ -95,3 +95,8 @@ monetary storage/API boundaries retained; decimal validation up to2 decimals.
     contracting and80 dashboard cases. Final presentation-only delta is now
     frozen for the mandatory final-SHA checks. Independent delivery consumes
     the same financial/concurrency evidence; no repeated load or data cloning.
+11. Final hot-path review batched the new journal-line destination guard by
+    unique move IDs instead of a search per line. This preserves exactly the
+    same posted-link/context checks while avoiding N+1 queries on unrelated
+    native accounting batches/POS closures. No new source, permission or amount
+    policy; the same regression suite validates the batched implementation.

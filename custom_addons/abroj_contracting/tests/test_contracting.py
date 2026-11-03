@@ -50,8 +50,24 @@ class AbrojContractingCase(TransactionCase):
         self.assertEqual(self.project.total_costs, 4000)
         self.assertEqual(self.project.profit, 6000)
         self.assertEqual(self.project.expected_profit, 4000)
-        self.assertEqual(self.project.remaining, 9800)
+        # A receipt linked to a subcontractor refunds that contractor's advance;
+        # it does not settle the customer's contract balance.
+        self.assertEqual(self.project.remaining, 10000)
         self.assertEqual(self.project.cash_balance, -800)
+
+    def test_customer_remaining_excludes_subcontractor_refunds(self):
+        self.project.partner_id = self.partner
+        customer_receipt = self.voucher(kind='receipt', amount=1500, subcontractor_id=False)
+        customer_receipt.action_issue()
+        self.voucher(kind='receipt', amount=200).action_issue()
+        self.assertEqual(self.project.total_received, 1700)
+        self.assertEqual(self.project.abroj_customer_received, 1500)
+        self.assertEqual(self.project.remaining, 8500)
+        self.assertEqual(self.project.cash_balance, 1700)
+        customer_receipt.action_cancel()
+        self.assertEqual(self.project.abroj_customer_received, 0)
+        self.assertEqual(self.project.remaining, 10000)
+        self.assertEqual(self.project.total_received, 200)
 
     def test_issue_and_cancel(self):
         v = self.voucher()

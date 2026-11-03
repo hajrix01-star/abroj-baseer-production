@@ -1,4 +1,5 @@
 from datetime import timedelta
+from decimal import Decimal
 
 import pytz
 
@@ -8,6 +9,11 @@ from odoo.exceptions import AccessError, ValidationError
 TYPES = [('residential', 'سكني / فلل'), ('commercial', 'تجاري'), ('renovation', 'ترميم'), ('infrastructure', 'بنية تحتية'), ('other', 'أخرى')]
 STATUS = {'on_track': 'على المسار', 'at_risk': 'معرّض للخطر', 'off_track': 'متعثر', 'on_hold': 'متوقف', 'done': 'مكتمل', 'to_define': 'غير محدد'}
 TYPES_EN = dict(residential='Residential / villas', commercial='Commercial', renovation='Renovation', infrastructure='Infrastructure', other='Other')
+
+
+def money_sum(values):
+    """Decimal aggregation; native Monetary/JSON converts at the boundary."""
+    return sum((Decimal(str(value or 0)) for value in values), Decimal('0'))
 STATUS_EN = dict(on_track='On track', at_risk='At risk', off_track='Off track', on_hold='On hold', done='Completed', to_define='Undefined')
 
 
@@ -103,16 +109,35 @@ class BudgetLine(models.Model):
         self._check_budget_manager()
         return super().unlink()
 
-    @api.depends_context('uid')
+    @api.depends('manual_actual', 'analytic_line_ids.amount', 'analytic_line_ids.move_line_id.move_id.state', 'analytic_line_ids.move_line_id.account_id.account_type')
+    @api.depends_context('uid', 'company')
     def _compute_actual(self):
         for line in self:
-            line.actual = line.manual_actual + (sum(-a.amount for a in line.analytic_line_ids if a.amount < 0) if self.env['account.analytic.line'].has_access('read') else 0)
+            Analytic = self.env['account.analytic.line']
+            entries = Analytic.search(Analytic._abroj_cost_domain(line.project_id) + [
+                ('abroj_budget_line_id', '=', line.id),
+            ]) if Analytic.has_access('read') else Analytic
+            line.actual = money_sum([line.manual_actual] + [-a.amount for a in entries])
 
 
 class AnalyticLine(models.Model):
     _inherit = 'account.analytic.line'
 
     abroj_budget_line_id = fields.Many2one('abroj.project.budget.line', string='بند ميزانية أبرج', ondelete='set null', check_company=True)
+
+    @api.model
+    def _abroj_cost_domain(self, project):
+        # A debit on a receipt/settlement is not an expense. Net both signs of
+        # posted expenses so credit notes and reversals reduce project cost.
+        # Standalone negative analytics remain a separate, existing cost source.
+        return [
+            ('account_id', '=', project.account_id.id or 0),
+            ('company_id', '=', project.company_id.id or self.env.company.id),
+            '|', '&', ('move_line_id', '=', False), ('amount', '<', 0),
+            '&', ('move_line_id.move_id.state', '=', 'posted'),
+            ('move_line_id.account_id.account_type', 'in',
+             ['expense', 'expense_depreciation', 'expense_direct_cost']),
+        ]
 
     @api.constrains('abroj_budget_line_id', 'account_id')
     def _check_abroj_budget_account(self):
@@ -140,6 +165,35 @@ class Project(models.Model):
     abroj_closed_date = fields.Date(string='تاريخ الإغلاق')
     abroj_stage_closed = fields.Boolean(related='stage_id.fold', store=True)
     abroj_budget_line_ids = fields.One2many('abroj.project.budget.line', 'project_id', string='بنود الميزانية')
+    abroj_budget_available = fields.Boolean(compute='_compute_abroj_financials')
+    abroj_effective_budget = fields.Monetary(string='Comparison budget', currency_field='abroj_currency_id', compute='_compute_abroj_financials')
+    abroj_expected_profit = fields.Monetary(string='Expected margin against budget', currency_field='abroj_currency_id', compute='_compute_abroj_financials')
+    abroj_budget_lines_total = fields.Monetary(string='Detailed budget total (unapproved)', currency_field='abroj_currency_id', compute='_compute_abroj_financials')
+    abroj_budget_mismatch = fields.Boolean(compute='_compute_abroj_financials')
+
+    def _abroj_financials(self):
+        self.ensure_one()
+        budget = Decimal(str(self.abroj_budget or self.estimated_cost or 0))
+        contract = Decimal(str(self.contract_value or self.abroj_contract_value or 0))
+        details = money_sum(self.abroj_budget_line_ids.mapped('budget'))
+        available = budget > 0
+        return {
+            'budget': float(budget), 'budget_available': available,
+            'contract': float(contract),
+            'expected_profit': float(contract - budget) if available else None,
+            'budget_lines_total': float(details),
+            'budget_mismatch': bool(self.abroj_budget_line_ids) and (not available or self.abroj_currency_id.compare_amounts(float(details), float(budget)) != 0),
+        }
+
+    @api.depends('abroj_budget', 'estimated_cost', 'contract_value', 'abroj_contract_value', 'abroj_budget_line_ids.budget')
+    def _compute_abroj_financials(self):
+        for project in self:
+            values = project._abroj_financials()
+            project.abroj_budget_available = values['budget_available']
+            project.abroj_effective_budget = values['budget']
+            project.abroj_expected_profit = values['expected_profit'] or 0
+            project.abroj_budget_lines_total = values['budget_lines_total']
+            project.abroj_budget_mismatch = values['budget_mismatch']
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -176,7 +230,7 @@ class Project(models.Model):
         data = self._abroj_data()
         subcontractors = self.env['abroj.contracting.subcontractor'].search([('project_id', '=', self.id)]) if 'abroj.contracting.subcontractor' in self.env and self.env['abroj.contracting.subcontractor'].has_access('read') else []
         drafts = self.env['abroj.contracting.voucher'].search([('project_id', '=', self.id), ('state', '=', 'draft')]) if 'abroj.contracting.voucher' in self.env and self.env['abroj.contracting.voucher'].has_access('read') else []
-        return {'unfinished': [p['name'] for p in data['phases'] if not p['done']], 'receivable': data['contract'] - data['received'], 'payable': sum(sub.remaining for sub in subcontractors), 'draft_vouchers': [{'name': v.name, 'amount': v.amount} for v in drafts]}
+        return {'unfinished': [p['name'] for p in data['phases'] if not p['done']], 'receivable': data['remaining'], 'payable': sum(sub.remaining for sub in subcontractors), 'draft_vouchers': [{'name': v.name, 'amount': v.amount} for v in drafts]}
 
     def abroj_set_closed(self, closed, note=''):
         self._abroj_check_close_access()
@@ -197,11 +251,15 @@ class Project(models.Model):
         tasks = tasks if tasks is not None else self.env['project.task'].search([('project_id', '=', self.id)])
         done = tasks.filtered(lambda t: t.state in ('1_done', '1_canceled'))
         progress = self.abroj_manual_progress if self.abroj_use_manual_progress else (100 * len(done) / len(tasks) if tasks else 0)
-        analytic = self.env['account.analytic.line'].search([('account_id', '=', self.account_id.id), ('amount', '<', 0)]) if self.account_id and self.env['account.analytic.line'].has_access('read') else self.env['account.analytic.line']
-        actual = sum(-line.amount for line in analytic) + sum(self.abroj_budget_line_ids.mapped('manual_actual'))
-        return round(progress, 1), actual, max(actual - self.abroj_budget, 0)
+        Analytic = self.env['account.analytic.line']
+        analytic = Analytic.search(Analytic._abroj_cost_domain(self)) if self.account_id and Analytic.has_access('read') else Analytic
+        actual = money_sum([-line.amount for line in analytic] + self.abroj_budget_line_ids.mapped('manual_actual'))
+        financials = self._abroj_financials()
+        over = max(actual - Decimal(str(financials['budget'])), Decimal('0')) if financials['budget_available'] else Decimal('0')
+        return round(progress, 1), float(actual), float(over)
 
-    @api.depends('abroj_use_manual_progress', 'abroj_manual_progress', 'task_ids.state', 'abroj_budget', 'abroj_budget_line_ids.manual_actual', 'account_id')
+    @api.depends_context('uid', 'company')
+    @api.depends('abroj_use_manual_progress', 'abroj_manual_progress', 'task_ids.state', 'abroj_budget', 'estimated_cost', 'abroj_budget_line_ids.manual_actual', 'account_id', 'account_id.line_ids.amount', 'account_id.line_ids.move_line_id.move_id.state', 'account_id.line_ids.move_line_id.account_id.account_type')
     def _compute_abroj_metrics(self):
         for project in self:
             project.abroj_progress, project.abroj_actual, project.abroj_over = project._abroj_metrics()
@@ -212,22 +270,37 @@ class Project(models.Model):
         tasks = self.env['project.task'].search([('project_id', '=', self.id)])
         done = tasks.filtered(lambda t: t.state in ('1_done', '1_canceled'))
         progress, actual, over = self._abroj_metrics(tasks)
-        categories = [{'id': line.id, 'name': line.name, 'budget': line.budget, 'actual': line.actual, 'manual_actual': line.manual_actual} for line in self.abroj_budget_line_ids]
+        financials = self._abroj_financials()
+        categories = [{'id': line.id, 'name': line.name, 'budget': line.budget, 'actual': line.actual, 'manual_actual': line.manual_actual, 'over': float(max(Decimal(str(line.actual)) - Decimal(str(line.budget)), Decimal('0')))} for line in self.abroj_budget_line_ids]
         vouchers = []
         if 'abroj.contracting.voucher' in self.env and self.env['abroj.contracting.voucher'].has_access('read'):
             vouchers = self.env['abroj.contracting.voucher'].search([('project_id', '=', self.id), ('state', '=', 'issued')])
         contracts = []
         if 'abroj.contracting.subcontractor' in self.env and self.env['abroj.contracting.subcontractor'].has_access('read'):
             contracts = [{'name': sub.display_name, 'partner': sub.display_name, 'amount': sub.agreed_amount} for sub in self.env['abroj.contracting.subcontractor'].search([('project_id', '=', self.id)])]
-        received = sum(v.amount for v in vouchers if v.kind == 'receipt')
-        paid = sum(v.amount for v in vouchers if v.kind == 'payment')
+        received = float(money_sum(v.amount for v in vouchers if v.kind == 'receipt'))
+        paid = float(money_sum(v.amount for v in vouchers if v.kind == 'payment'))
         delayed_tasks = tasks.filtered(lambda t: t not in done and t.date_deadline and t.date_deadline.date() < today)
         completed = self.last_update_status == 'done' or bool(self.abroj_closed_date) or self.abroj_stage_closed
         delayed = not completed and bool(self.date and self.date < today or delayed_tasks)
         last_activity = max([self.write_date] + tasks.mapped('write_date')) if tasks else self.write_date
         stalled = not completed and (self.last_update_status in ('off_track', 'on_hold') or bool(last_activity and last_activity.date() < today - timedelta(days=stall_days)))
         phases = [{'id': t.id, 'name': t.name, 'start': str(t.x_abroj_date_start or (t.date_assign.date() if t.date_assign else '')), 'end': str(t.date_deadline.date() if t.date_deadline else ''), 'duration': t.x_abroj_duration_days, 'done': t in done, 'state': t.state, 'progress': t.x_abroj_progress, 'can_write': t.has_access('write'), 'delayed': t in delayed_tasks, 'assignee': ', '.join(t.user_ids.mapped('name')), **t._abroj_phase_status()} for t in tasks]
-        return {'id': self.id, 'archived': not self.active or completed, 'can_close': self.env.user.has_group('project.group_project_manager') and self.has_access('write'), 'can_write': self.has_access('write'), 'can_create_task': self.env['project.task'].has_access('create'), 'can_edit_budget': self.env.user.has_group('project.group_project_manager') and self.has_access('write'), 'name': self.name, 'type': self.abroj_type, 'type_label': (dict(TYPES) if (self.env.lang or '').startswith('ar') else TYPES_EN).get(self.abroj_type, ''), 'status': self.last_update_status, 'status_label': (STATUS if (self.env.lang or '').startswith('ar') else STATUS_EN).get(self.last_update_status, ''), 'client': (self.abroj_client_party_id or self.partner_id).name or '—', 'manager': self.user_id.name or '—', 'manager_id': self.user_id.id or False, 'manager_is_system': bool(self.user_id and (self.user_id.id in (1, self.env.ref('base.user_admin').id) or self.user_id.login == '__system__' or self.user_id.name == 'Administrator')), 'start': str(self.date_start or ''), 'end': str(self.date or ''), 'progress': round(progress, 1), 'budget': self.abroj_budget, 'actual': actual, 'over': over, 'over_categories': sum(c['actual'] > c['budget'] for c in categories), 'contract': self.abroj_contract_value or (self.contract_value if 'contract_value' in self._fields else 0), 'received': received, 'paid': paid, 'contract_profit': self.profit, 'remaining': self.remaining, 'expected_profit': self.expected_profit, 'liquidity': received - paid, 'categories': categories, 'contracts': contracts, 'phases': phases, 'delayed': delayed, 'stalled': stalled, 'completed': completed, 'vouchers': [{'name': v.name, 'kind': v.kind, 'partner': (v.party_id or v.partner_id).name, 'amount': v.amount, 'date': str(v.date)} for v in vouchers]}
+        return {'id': self.id, 'archived': not self.active or completed, 'can_close': self.env.user.has_group('project.group_project_manager') and self.has_access('write'), 'can_write': self.has_access('write'), 'can_create_task': self.env['project.task'].has_access('create'), 'can_edit_budget': self.env.user.has_group('project.group_project_manager') and self.has_access('write'), 'name': self.name, 'type': self.abroj_type, 'type_label': (dict(TYPES) if (self.env.lang or '').startswith('ar') else TYPES_EN).get(self.abroj_type, ''), 'status': self.last_update_status, 'status_label': (STATUS if (self.env.lang or '').startswith('ar') else STATUS_EN).get(self.last_update_status, ''), 'client': (self.abroj_client_party_id or self.partner_id).name or '—', 'manager': self.user_id.name or '—', 'manager_id': self.user_id.id or False, 'manager_is_system': bool(self.user_id and (self.user_id.id in (1, self.env.ref('base.user_admin').id) or self.user_id.login == '__system__' or self.user_id.name == 'Administrator')), 'start': str(self.date_start or ''), 'end': str(self.date or ''), 'progress': round(progress, 1), **financials, 'actual': actual, 'over': over if financials['budget_available'] else None, 'over_categories': sum(c['actual'] > c['budget'] for c in categories), 'contract': financials['contract'], 'received': received, 'customer_received': self.abroj_customer_received, 'paid': paid, 'contract_profit': float(Decimal(str(financials['contract'])) - Decimal(str(self.total_costs))), 'remaining': float(Decimal(str(financials['contract'])) - Decimal(str(self.abroj_customer_received))), 'liquidity': float(Decimal(str(received)) - Decimal(str(paid))), 'categories': categories, 'contracts': contracts, 'phases': phases, 'delayed': delayed, 'stalled': stalled, 'completed': completed, 'vouchers': [{'name': v.name, 'kind': v.kind, 'partner': (v.party_id or v.partner_id).name, 'amount': v.amount, 'date': str(v.date)} for v in vouchers]}
+
+    @api.model
+    def _abroj_financial_summary(self, projects):
+        # Unknown estimates cannot become zero-cost projects in aggregates.
+        available = bool(projects) and all(p['budget_available'] for p in projects)
+        result = {key: float(money_sum(p[key] for p in projects))
+                  for key in ('actual', 'liquidity', 'contract_profit', 'remaining', 'received', 'paid')}
+        result.update({
+            'budget_available': available,
+            'budget': float(money_sum(p['budget'] for p in projects)) if available else None,
+            'expected_profit': float(money_sum(p['expected_profit'] for p in projects)) if available else None,
+            'over': float(money_sum(p['over'] for p in projects)) if available else None,
+        })
+        return result
 
     @api.model
     def _abroj_scope_domain(self):
@@ -291,7 +364,8 @@ class Project(models.Model):
         elif status:
             data = [p for p in data if p['status'] == status]
         types = dict(TYPES) if (self.env.lang or '').startswith('ar') else TYPES_EN
-        return {'can_create_project': not bool(self._abroj_scope_domain()) and self.has_access('create'), 'projects': data, 'types': [{'id': k, 'name': types[k]} for k, _ in TYPES], 'managers': [{'id': p.id, 'name': p.name} for p in projects.mapped('user_id')], 'clients': [{'id': p.id, 'name': p.name} for p in projects.mapped('abroj_client_party_id')]}
+        summary = self._abroj_financial_summary(data)
+        return {'financial_summary': summary, 'can_create_project': not bool(self._abroj_scope_domain()) and self.has_access('create'), 'projects': data, 'types': [{'id': k, 'name': types[k]} for k, _ in TYPES], 'managers': [{'id': p.id, 'name': p.name} for p in projects.mapped('user_id')], 'clients': [{'id': p.id, 'name': p.name} for p in projects.mapped('abroj_client_party_id')]}
 
     @api.model
     def get_abroj_project_detail(self, project_id):

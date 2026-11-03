@@ -300,6 +300,185 @@ class AbrojProjectDashboardCase(TransactionCase):
         self.assertEqual(engineer_data['actual'], 5)
         self.assertEqual(engineer_data['categories'][0]['actual'], 5)
 
+    def _financial_analytic_fixture(self):
+        plan = self.env['account.analytic.plan'].create({'name': 'Financial metrics plan'})
+        self.project.account_id = self.env['account.analytic.account'].create({
+            'name': 'Financial metrics account', 'plan_id': plan.id,
+            'company_id': self.env.company.id,
+        })
+        category = self.env['abroj.project.budget.line'].create({
+            'project_id': self.project.id, 'name': 'Financial costs',
+            'budget': 100, 'manual_actual': 5,
+        })
+        journal = self.env['account.journal'].create({
+            'name': 'Financial metrics journal', 'code': 'FMET', 'type': 'general',
+            'company_id': self.env.company.id,
+        })
+        accounts = {}
+        for index, kind in enumerate(('expense', 'expense_direct_cost', 'expense_depreciation',
+                                      'asset_current', 'asset_cash', 'asset_receivable',
+                                      'liability_payable', 'equity')):
+            accounts[kind] = self.env['account.account'].create({
+                'name': 'Metrics ' + kind, 'code': 'FMET%s' % index,
+                'account_type': kind,
+                'reconcile': kind in ('asset_receivable', 'liability_payable'),
+            })
+        return category, journal, accounts
+
+    def _linked_financial_analytic(self, category, journal, accounts, kind, balance, posted=True):
+        move = self.env['account.move'].create({
+            'journal_id': journal.id, 'date': self.today,
+            'line_ids': [
+                Command.create({'name': 'Metrics source', 'account_id': accounts[kind].id,
+                                'partner_id': self.client.id,
+                                'date_maturity': self.today if kind in ('asset_receivable', 'liability_payable') else False,
+                                'debit': max(balance, 0), 'credit': max(-balance, 0)}),
+                Command.create({'name': 'Metrics offset', 'account_id': accounts['equity'].id,
+                                'debit': max(-balance, 0), 'credit': max(balance, 0)}),
+            ],
+        })
+        if posted:
+            move.action_post()
+        source = move.line_ids.filtered(lambda line: line.account_id == accounts[kind])
+        analytic = self.env['account.analytic.line'].create({
+            'name': 'Metrics analytic', 'account_id': self.project.account_id.id,
+            'company_id': self.env.company.id, 'date': self.today, 'amount': -balance,
+            'move_line_id': source.id, 'abroj_budget_line_id': category.id,
+        })
+        return move, analytic
+
+    def test_actual_excludes_receipt_and_payment_balance_sheet_lines(self):
+        category, journal, accounts = self._financial_analytic_fixture()
+        # These are the debit sides that previously made 5,000 received + 4,700
+        # paid appear as 9,700 of actual expense. They are balance-sheet movements.
+        self._linked_financial_analytic(category, journal, accounts, 'asset_current', 5000)
+        self._linked_financial_analytic(category, journal, accounts, 'asset_receivable', -5000)
+        self._linked_financial_analytic(category, journal, accounts, 'liability_payable', 4700)
+        self._linked_financial_analytic(category, journal, accounts, 'asset_cash', -4700)
+        self.assertEqual(self.project._abroj_data()['actual'], 5)
+        self.assertEqual(category.actual, 5)
+
+    def test_actual_nets_posted_expense_refund_and_reversal(self):
+        category, journal, accounts = self._financial_analytic_fixture()
+        self._linked_financial_analytic(category, journal, accounts, 'expense', 100)
+        self._linked_financial_analytic(category, journal, accounts, 'expense', -20)
+        self._linked_financial_analytic(category, journal, accounts, 'expense_direct_cost', 30)
+        self._linked_financial_analytic(category, journal, accounts, 'expense_direct_cost', -30)
+        self._linked_financial_analytic(category, journal, accounts, 'expense_depreciation', 10)
+        self.assertEqual(self.project._abroj_data()['actual'], 95)
+        self.assertEqual(category.actual, 95)
+
+    def test_actual_excludes_draft_expense(self):
+        category, journal, accounts = self._financial_analytic_fixture()
+        self._linked_financial_analytic(category, journal, accounts, 'expense', 100, posted=False)
+        self.assertEqual(self.project._abroj_data()['actual'], 5)
+        self.assertEqual(category.actual, 5)
+
+    def test_actual_shared_analytic_account_is_company_scoped(self):
+        plan = self.env['account.analytic.plan'].create({'name': 'Shared metrics plan'})
+        account = self.env['account.analytic.account'].create({
+            'name': 'Shared metrics account', 'plan_id': plan.id, 'company_id': False,
+        })
+        self.project.account_id = account
+        other_company = self.env['res.company'].create({'name': 'Other metrics company'})
+        for company, amount in ((self.env.company, -10), (other_company, -900)):
+            self.env['account.analytic.line'].with_company(company).create({
+                'name': 'Shared account cost', 'account_id': account.id,
+                'company_id': company.id, 'date': self.today, 'amount': amount,
+            })
+        data = self.project.with_context(allowed_company_ids=(self.env.company | other_company).ids)._abroj_data()
+        self.assertEqual(data['actual'], 10)
+
+    def test_financial_budget_precedence_and_canonical_contract(self):
+        self.project.write({'contract_value': 300, 'abroj_contract_value': 200,
+                            'estimated_cost': 80, 'abroj_budget': 100})
+        data = self.project._abroj_data()
+        self.assertEqual(data['contract'], 300)
+        self.assertTrue(data['budget_available'])
+        self.assertEqual((data['budget'], data['expected_profit']), (100, 200))
+        self.assertEqual(self.project.abroj_effective_budget, 100)
+        self.assertEqual(self.project.abroj_expected_profit, 200)
+        self.project.abroj_budget = 0
+        data = self.project._abroj_data()
+        self.assertEqual((data['budget'], data['expected_profit']), (80, 220))
+
+    def test_missing_budget_does_not_claim_forecast_or_overrun(self):
+        self.project.write({'abroj_budget': 0, 'estimated_cost': 0})
+        self.env['abroj.project.budget.line'].create({
+            'project_id': self.project.id, 'name': 'Unapproved detail',
+            'budget': 80, 'manual_actual': 120,
+        })
+        data = self.project._abroj_data()
+        self.assertFalse(data['budget_available'])
+        self.assertIsNone(data['expected_profit'])
+        self.assertIsNone(data['over'])
+        self.assertEqual(data['actual'], 120)
+        self.assertEqual(data['budget'], 0)
+        self.assertEqual(data['budget_lines_total'], 80)
+        self.assertFalse(self.project.abroj_budget_available)
+        self.assertEqual(self.project.abroj_over, 0)
+
+    def test_budget_detail_mismatch_does_not_replace_approved_total(self):
+        line = self.env['abroj.project.budget.line'].create({
+            'project_id': self.project.id, 'name': 'Partial or overlapping detail',
+            'budget': 150,
+        })
+        data = self.project._abroj_data()
+        self.assertEqual(data['budget'], 100)
+        self.assertEqual(data['budget_lines_total'], 150)
+        self.assertTrue(data['budget_mismatch'])
+        self.assertEqual(data['expected_profit'], 100)
+        line.budget = 100
+        self.assertFalse(self.project._abroj_data()['budget_mismatch'])
+
+    def test_cached_actual_refreshes_after_manual_and_analytic_edits(self):
+        plan = self.env['account.analytic.plan'].create({'name': 'Cached metrics plan'})
+        self.project.account_id = self.env['account.analytic.account'].create({
+            'name': 'Cached metrics account', 'plan_id': plan.id,
+            'company_id': self.env.company.id,
+        })
+        category = self.env['abroj.project.budget.line'].create({
+            'project_id': self.project.id, 'name': 'Editable cost', 'manual_actual': 5,
+        })
+        analytic = self.env['account.analytic.line'].create({
+            'name': 'Editable operational cost', 'account_id': self.project.account_id.id,
+            'company_id': self.env.company.id, 'date': self.today,
+            'amount': -50, 'abroj_budget_line_id': category.id,
+        })
+        self.assertEqual((self.project.abroj_actual, category.actual), (55, 55))
+        category.manual_actual = 10
+        self.assertEqual((self.project.abroj_actual, category.actual), (60, 60))
+        analytic.amount = -70
+        self.assertEqual((self.project.abroj_actual, category.actual), (80, 80))
+        self.assertEqual(self.project._abroj_data()['actual'], 80)
+
+    def test_financial_summary_preserves_project_overruns_and_unknown_budget(self):
+        self.env['abroj.project.budget.line'].create({
+            'project_id': self.project.id, 'name': 'Overrun', 'manual_actual': 120,
+        })
+        other = self.env['project.project'].create({
+            'name': 'Under budget metrics project', 'company_id': self.env.company.id,
+            'contract_value': 300, 'abroj_budget': 100,
+        })
+        self.env['abroj.project.budget.line'].create({
+            'project_id': other.id, 'name': 'Under budget', 'manual_actual': 50,
+        })
+        summary = self.env['project.project']._abroj_financial_summary([
+            self.project._abroj_data(), other._abroj_data(),
+        ])
+        self.assertEqual(summary['actual'], 170)
+        self.assertEqual(summary['budget'], 200)
+        # An underrun on one project must not hide another project's overrun.
+        self.assertEqual(summary['over'], 20)
+        self.assertEqual(summary['expected_profit'], 300)
+        other.abroj_budget = 0
+        summary = self.env['project.project']._abroj_financial_summary([
+            self.project._abroj_data(), other._abroj_data(),
+        ])
+        self.assertFalse(summary['budget_available'])
+        self.assertIsNone(summary['expected_profit'])
+        self.assertIsNone(summary['over'])
+
     def test_over_budget_positive(self):
         self.env['abroj.project.budget.line'].create({'project_id': self.project.id, 'name': 'Cost', 'manual_actual': 120})
         self.assertEqual(self.project._abroj_data()['over'], 20)
@@ -330,9 +509,19 @@ class AbrojProjectDashboardCase(TransactionCase):
             for kind, amount in [('receipt', 150), ('payment', 40)]:
                 voucher = self.env['abroj.contracting.voucher'].create({'project_id': self.project.id, 'partner_id': self.client.id, 'kind': kind, 'amount': amount, 'subcontractor_id': subcontract.id if kind == 'payment' else False})
                 voucher.action_issue()
+            refund = self.env['abroj.contracting.voucher'].create({
+                'project_id': self.project.id, 'partner_id': self.client.id,
+                'kind': 'receipt', 'amount': 10, 'subcontractor_id': subcontract.id,
+            })
+            refund.action_issue()
             data = self.project._abroj_data()
-            self.assertEqual((data['received'], data['paid'], data['liquidity']), (150, 40, 110))
-            self.assertEqual(len(data['vouchers']), 2)
+            self.assertEqual((data['received'], data['paid'], data['liquidity']), (160, 40, 120))
+            self.assertEqual(data['customer_received'], 150)
+            # Legacy contract value remains the fallback when contract_value is 0.
+            self.assertEqual(data['contract'], 200)
+            self.assertEqual(data['remaining'], 50)
+            self.assertEqual(self.project.abroj_close_summary()['receivable'], 50)
+            self.assertEqual(len(data['vouchers']), 3)
         else:
             self.assertEqual(self.project._abroj_data()['liquidity'], 0)
 

@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_note_user,grok.note user,model_grok_note,group_grok_user,1,1,1,1
+access_item_user,grok.note.item user,model_grok_note_item,group_grok_user,1,1,1,1
+access_label_user,grok.note.label user,model_grok_note_label,group_grok_user,1,0,1,0
+access_label_manager,grok.note.label manager,model_grok_note_label,group_grok_manager,1,1,1,1

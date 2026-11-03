@@ -1,0 +1,4 @@
+$grok-colors: (default: #fff, red: #f8d7da, orange: #ffe0b2, yellow: #fff3b0, green: #d9efcb, teal: #c8eee8, blue: #d5e9fa, darkblue: #b8cee9, purple: #e6d4f1, pink: #f8d9e8, brown: #e8d6c8, gray: #e1e4e8);
+@each $name, $color in $grok-colors {
+  .grok-note-color-#{$name} { background-color: $color; padding: .75rem; border-radius: .5rem; }
+}

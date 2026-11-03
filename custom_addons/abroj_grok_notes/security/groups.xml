@@ -1,0 +1,7 @@
+<odoo>
+  <record id="category_grok_notes" model="ir.module.category"><field name="name">Grok Notes</field></record>
+  <record id="privilege_grok_notes" model="res.groups.privilege"><field name="name">Grok Notes</field><field name="category_id" ref="category_grok_notes"/></record>
+  <record id="group_grok_user" model="res.groups"><field name="name">Grok Notes User</field><field name="privilege_id" ref="privilege_grok_notes"/></record>
+  <record id="base.group_user" model="res.groups"><field name="implied_ids" eval="[(4, ref('group_grok_user'))]"/></record>
+  <record id="group_grok_manager" model="res.groups"><field name="name">Grok Notes Manager</field><field name="privilege_id" ref="privilege_grok_notes"/><field name="implied_ids" eval="[(4, ref('group_grok_user'))]"/></record>
+</odoo>

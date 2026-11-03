@@ -423,7 +423,18 @@ class AbrojApp(http.Controller):
                         field = rec._fields[name]
                         val = rec[name]
                         vals[name] = val.id if field.type == 'many2one' else (str(val) if field.type in ('date', 'datetime') and val else val)
-                    rows.append({'id': rec.id, 'name': '' if rec.display_name == '/' else rec.display_name, 'state': rec.state if 'state' in rec._fields else '', 'stage': rec.abroj_stage if key in ('payment', 'receipt') else (rec.state if 'state' in rec._fields else ''), 'values': vals, 'can_write': rec.has_access('write')})
+                    row = {'id': rec.id, 'name': '' if rec.display_name == '/' else rec.display_name, 'state': rec.state if 'state' in rec._fields else '', 'stage': rec.abroj_stage if key in ('payment', 'receipt') else (rec.state if 'state' in rec._fields else ''), 'values': vals, 'can_write': rec.has_access('write')}
+                    accountant = (request.env.user.has_group('account.group_account_manager')
+                                  or request.env.user.has_group('account.group_account_invoice'))
+                    if (key in ('cost', 'payment', 'receipt') and accountant
+                            and not request.env.user.has_group('abroj_contracting.group_extraction_agent')):
+                        linked = rec.account_move_id if key == 'cost' else rec.payment_id.move_id
+                        can_issue = rec.abroj_can_accounting_issue if key == 'cost' else rec.abroj_can_accounting_approve
+                        if linked or can_issue:
+                            row['accounting_action_url'] = ('/odoo/account.move/%s' % linked.id
+                                                            if linked else '/odoo/%s/%s' % (model, rec.id))
+                            row['accounting_entry_exists'] = bool(linked)
+                    rows.append(row)
                 result['records'][key] = rows
             return result
         except (AccessError, UserError, ValueError):

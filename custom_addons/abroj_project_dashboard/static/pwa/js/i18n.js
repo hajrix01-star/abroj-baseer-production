@@ -1,5 +1,7 @@
 'use strict';
 const translations = {
+  "issueEntryOdoo": {"ar":"إصدار القيد في أودو", "en":"Issue entry in Odoo"},
+  "viewEntryOdoo": {"ar":"عرض القيد في أودو", "en":"View entry in Odoo"},
   "budgetReview": {"ar":"مجموع بنود الميزانية للمراجعة؛ لا يُعتمد تلقائيًا عند الاختلاف عن الميزانية الإجمالية.", "en":"Review the detailed budget total; differences are not approved automatically."},
   "budgetMissing": {"ar":"ميزانية المقارنة غير محددة", "en":"Comparison budget is missing"},
   "contractCardPaid": {"ar":"المدفوع", "en":"Paid"},

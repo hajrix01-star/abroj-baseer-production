@@ -1,0 +1,81 @@
+# Contracting accounting issue — 2026-11-03
+
+Baseline62de4aff; isolated branch codex/contracting-accounting-issue-20261103.
+Owner abroj_contracting; existing dashboard actual-cost contract19713722 reused.
+User authorized the proposed expense accounting step and receipt entry visibility,
+with no duplicate journal or actual cost. No retrospective posting of live data.
+
+## G0–G3 contract (independent ERP gate approval)
+
+Confirmed cost -> accountant review wizard -> native posted vendor bill. One
+canonical account.move.abroj_cost_id link, SQL uniqueness and cost row lock;
+retries open the original bill. Posting is atomic and failures roll back.
+Alternative explicit adoption of an existing posted supplier bill validates
+company/currency/partner/gross amount/expense lines/project100% and unique link.
+Gross source amount is preserved; default no tax, native tax engine only for
+selected purchase tax and total validation. User explicitly selects native
+supplier, expense account, purchase journal, invoice/accounting dates and taxes.
+Recovery via native credit note/reversal; original cannot detach/reset/delete.
+No sudo, context bypass, auto partner creation, historical payment edits or
+automatic payable reconciliation. Existing payments remain settlements, outside
+actual expense. Neither manual_actual nor a second cost source is incremented.
+
+| Gate | State | Independent reviewer/evidence |
+| --- | --- | --- |
+| G0 | approved | erp_review: authorized accounting action, no automatic old postings |
+| G1 | approved | owner project example1 project/5 issued vouchers/14 budget lines; assume2 concurrent accounting clicks, retain native indexes; focused two-request serialization test, no broad load |
+| G2 | approved | erp_review: canonical protected link, unique constraint, locks, native bill/tax/analytic source, explicit existing-bill adoption |
+| G3 | approved | existing Odoo19 ORM/accounting/TransientModel; no libraries |
+| G4 | in review | existing native form/list/dialog and PWA native-record links; AR/EN labels, Western digits, mobile width |
+| G5–G8 | pending | permission/idempotency/tax/reversal/actual-cost tests, independent review, protected release |
+
+## Architecture / authority
+
+Cost confirmed amount(gross) -> native bill expense+VAT/payable -> native posted
+analytic expenses -> existing actual indicator. Voucher approval -> native
+payment cash/receivable/payable -> existing incoming/outgoing and paid indicators.
+Adoption links a validated bill; it creates no expense line. Commitment includes
+the confirmed source cost once. Refunds net through the existing expense filter.
+All numeric validation/rounding and posting decisions are server-owned. Native
+monetary storage/API boundaries retained; decimal validation up to2 decimals.
+
+## Operations (append-only)
+
+1. Read existing source, registry, prior metrics acceptance, accounting guards,
+   party identity, native Odoo tax API and payment approval flow. Reused current
+   financial map; no broad re-audit. New worktree from official/main.
+2. Independent ERP reviewer approved G0–G3 with the conditions above before code.
+   Direct route: reuse native vendor bill rather than custom journal calculator;
+   one link authority avoids inconsistent pointers. Explicit existing-bill option
+   handles already-recorded facts without issuing a duplicate bill.
+3. Verification planned before creating test state: new protected posting/link
+   schema and concurrency are not covered by the previous read-only metric suite;
+   reuse the isolated synthetic test PostgreSQL from the prior task. Test one
+   owner project and2 simultaneous issue requests; no production load or data
+   cloning. Retain raw live documents and existing frozen release procedure.
+4. Built native review wizard, protected canonical bill link, inverse source
+   view, existing-bill adoption and native posting. Source amounts remain gross;
+   supported percentage taxes use Odoo inverse tax details and native total
+   validation. Unsupported compound/fixed/mixed-inclusion configurations reject
+   explicitly. Native plan column is validated so posted expenses reach actual.
+5. First synthetic run found Odoo assertRaises tuple incompatibility and a
+   non-project-plan test fixture. Corrected fixtures, then closed source-review
+   findings: destination line protection, immutable native supplier match and
+   fixed voucher date. Independent reviewer accepted all narrow fixes.
+6. Local r3:155 tests passed, zero failures/errors, covering24 new issue tests,
+   40 existing contracting cases and91 dashboard/HTTP/module cases. Added25th
+   regression for context defaults (cost link, posted move destination, voucher
+   accounting partner and confirmed state). It passed in a focused follow-up
+   after handling default_move_id before the native line API.
+7. Two independent RR cursors through odoo.service.model.retrying returned one
+   posted bill and one100 expense/commitment. Initial FOR UPDATE introduced a
+   FK KEY SHARE upgrade deadlock (native retry recovered); reviewed change to
+   FOR NO KEY UPDATE removed that conflict. Final proof: move111, two requests,
+   attempts1/2, one linked bill, actual100, commitment100. Native RR serialization
+   retry reloads the winning bill. A script-only metadata typo was corrected
+   before the final proof; no application change was required for that typo.
+   Artifacts: output/concurrent-issue-final.log, context-guard-final.log and
+   verify-concurrent-issue.py. Test data is synthetic and local only.
+8. Native form/list/dialog reuse recorded at G4; accountant-only PWA links open
+   the issue source or existing native journal. Arabic/English labels and errors
+   are present. UI screenshot review and full final-SHA CI remain release gates.

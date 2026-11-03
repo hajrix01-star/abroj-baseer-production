@@ -52,7 +52,7 @@ class AbrojProjectDashboardCase(TransactionCase):
         self.assertFalse(arch.xpath("//page[@name='logs']//field[@name='cost_ids']"))
         self.assertFalse(arch.xpath("//page[@name='contractors']//field[@name='invoice_ids']"))
         for name in ('vouchers',):
-            self.assertTrue(arch.xpath("//page[@name='%s']//list/button[@name='action_accounting_approve'][@invisible='not abroj_can_accounting_approve']" % name))
+            self.assertTrue(arch.xpath("//page[@name='%s']//list/button[@name='action_open_accounting_issue'][@invisible='not abroj_can_accounting_approve']" % name))
 
     def ids(self, filters):
         return [p['id'] for p in self.env['project.project'].get_abroj_dashboard_data(filters)['projects']]

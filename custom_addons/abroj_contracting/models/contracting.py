@@ -117,7 +117,7 @@ class FrozenDocument(models.AbstractModel):
 
     @api.model_create_multi
     def create(self, vals_list):
-        if any(v.get('state', 'draft') != 'draft' for v in vals_list):
+        if any(v.get('state', self.env.context.get('default_state', 'draft')) != 'draft' for v in vals_list):
             raise AccessError('أنشئ مسودة أولاً.')
         return super().create(vals_list)
 
@@ -279,7 +279,7 @@ class Voucher(models.Model):
             if r.state != 'draft':
                 raise UserError('يمكن إصدار المسودة فقط.')
             # Serialize concurrent issue requests before creating a native payment.
-            self.env.cr.execute('SELECT id FROM abroj_contracting_voucher WHERE id = %s FOR UPDATE', [r.id])
+            self.env.cr.execute('SELECT id FROM abroj_contracting_voucher WHERE id = %s FOR NO KEY UPDATE', [r.id])
             r.invalidate_recordset(['state'])
             if r.state != 'draft':
                 raise UserError('تم إصدار السند مسبقاً.')
@@ -298,7 +298,7 @@ class Voucher(models.Model):
             raise AccessError('الاعتماد المحاسبي يتطلب صلاحية المحاسبة.')
         self.check_access('write')
         for r in self:
-            self.env.cr.execute('SELECT id FROM abroj_contracting_voucher WHERE id = %s FOR UPDATE', [r.id])
+            self.env.cr.execute('SELECT id FROM abroj_contracting_voucher WHERE id = %s FOR NO KEY UPDATE', [r.id])
             r.invalidate_recordset(['state', 'payment_id', 'issued_by'])
             if r.state != 'issued' or r.payment_id:
                 raise UserError('الاعتماد المحاسبي متاح لسند صادر دون دفعة فقط.')
@@ -317,7 +317,7 @@ class Voucher(models.Model):
                 raise UserError('لا توجد طريقة دفع في الدفتر.')
             payment = self.env['account.payment'].with_company(r.company_id).create({
                 'payment_type': direction, 'partner_type': 'supplier' if direction == 'outbound' else 'customer',
-                'partner_id': r.partner_id.id or False, 'amount': r.amount, 'date': r.date,
+                'partner_id': (r.accounting_partner_id or r.partner_id).id or False, 'amount': r.amount, 'date': r.date,
                 'currency_id': r.currency_id.id, 'journal_id': journal.id,
                 'payment_method_line_id': lines[0].id, 'company_id': r.company_id.id,
                 'memo': r.name, 'abroj_voucher_id': r.id,
@@ -343,7 +343,7 @@ class Voucher(models.Model):
     def action_cancel(self):
         check_agent(self.env)
         for r in self:
-            self.env.cr.execute('SELECT id FROM abroj_contracting_voucher WHERE id = %s FOR UPDATE', [r.id])
+            self.env.cr.execute('SELECT id FROM abroj_contracting_voucher WHERE id = %s FOR NO KEY UPDATE', [r.id])
             r.invalidate_recordset(['state', 'payment_id'])
             if r.state not in ('draft', 'issued'):
                 raise UserError('السند ملغى مسبقاً.')
@@ -365,7 +365,7 @@ class Invoice(models.Model):
     def action_confirm(self):
         check_agent(self.env)
         for r in self.sorted('subcontractor_id'):
-            self.env.cr.execute('SELECT id FROM abroj_contracting_subcontractor WHERE id = %s FOR UPDATE', [r.subcontractor_id.id])
+            self.env.cr.execute('SELECT id FROM abroj_contracting_subcontractor WHERE id = %s FOR NO KEY UPDATE', [r.subcontractor_id.id])
             r.subcontractor_id.invalidate_recordset()
             if r.invoice_kind == 'materials_company' and (not r.company_id.vat or (r.buyer_vat or '').strip() != r.company_id.vat.strip()):
                 raise ValidationError('يلزم رقم أبروج الضريبي المطابق للفاتورة.')

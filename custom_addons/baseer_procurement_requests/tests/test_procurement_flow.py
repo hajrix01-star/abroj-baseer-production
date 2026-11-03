@@ -3,6 +3,7 @@ from odoo import Command, fields
 from odoo.exceptions import AccessError, UserError, ValidationError
 from datetime import timedelta
 from uuid import uuid4
+from unittest.mock import patch
 import hashlib
 import json
 
@@ -523,6 +524,186 @@ class ProcurementFlowCase(TransactionCase):
         self.assertEqual(quote['lines'][0]['unit_price'], '7.25')
         self.assertEqual(request.state, 'sent')
         self.assertFalse(request.picking_id)
+
+    def _receipt_added_fixture(self):
+        request = self._request()
+        request.action_mark_sent()
+        product = self.env['product.product'].create({
+            'name': 'PRC receipt added material', 'company_id': self.company.id,
+            'categ_id': self.category.id, 'uom_id': self.uom.id, 'is_storable': True,
+        })
+        option = self.env['baseer.procurement.purchase.option'].create({
+            'name': 'Added piece', 'company_id': self.company.id,
+            'product_id': product.id, 'uom_id': self.uom.id,
+        })
+        option.with_context(_baseer_procurement_option_system_write=True).write({'last_price': 8.75})
+        rows = [
+            {'line_id': request.line_ids.id, 'actual_qty': '5.00', 'actual_price': '4.00'},
+            {'option_id': option.id, 'actual_qty': '2.50'},
+        ]
+        return request, option, rows
+
+    def test_receipt_added_quote_defaults_price_without_writes(self):
+        request, option, rows = self._receipt_added_fixture()
+        original = request.line_ids
+        before = request.read(['state', 'write_date', 'line_ids'])[0]
+        counts = {model: self.env[model].search_count([]) for model in (
+            'baseer.procurement.request.line', 'baseer.procurement.price.history',
+            'stock.picking', 'stock.move', 'account.move', 'account.payment',
+        )}
+        quote = request.quote_actual_cart(request.id, rows)
+        self.assertEqual(quote['total'], '41.88')
+        self.assertEqual(quote['lines'][0]['line_id'], original.id)
+        self.assertFalse(quote['lines'][1]['line_id'])
+        self.assertEqual(quote['lines'][1]['option_id'], option.id)
+        self.assertEqual(quote['lines'][1]['unit_price'], '8.75')
+        self.assertEqual(quote['lines'][1]['line_total'], '21.88')
+        rows[1]['actual_price'] = '0.00'
+        self.assertEqual(request.quote_actual_cart(request.id, rows)['total'], '20.00')
+        with self.assertRaises(ValidationError):
+            request.confirm_actual_from_catalog(request.id, rows)
+        self.assertEqual(request.read(['state', 'write_date', 'line_ids'])[0], before)
+        for model, count in counts.items():
+            self.assertEqual(self.env[model].search_count([]), count, model)
+        cart = request.cashier_request_cart(request.id)
+        self.assertTrue(cart['can_add_materials'])
+        self.assertEqual(cart['items'][0]['maximum_quantity'], '5.00')
+
+    def test_receipt_added_confirmation_preserves_original_and_native_effects(self):
+        request, option, rows = self._receipt_added_fixture()
+        original = request.line_ids
+        cashier = self.env['res.users'].with_context(no_reset_password=True).create({
+            'name': 'PRC added material cashier', 'login': 'prc-added-%s' % uuid4(),
+            'company_id': self.company.id, 'company_ids': [Command.set(self.company.ids)],
+            'group_ids': [Command.set([self.env.ref('baseer_procurement_requests.group_procurement_cashier').id])],
+        })
+        rows[1]['actual_price'] = '9.00'
+        account_counts = {model: self.env[model].search_count([]) for model in ('account.move', 'account.payment')}
+        request.with_user(cashier).confirm_actual_from_catalog(request.id, rows)
+        request.invalidate_recordset()
+        self.assertEqual(request.state, 'purchased')
+        self.assertEqual(request.actual_confirmed_by_id, cashier)
+        self.assertEqual(len(request.line_ids), 2)
+        original.invalidate_recordset()
+        self.assertEqual((original.requested_qty, original.requested_price), (5, 4))
+        added = request.line_ids - original
+        self.assertEqual(added.option_id, option)
+        self.assertEqual((added.requested_qty, added.requested_price), (2.5, 8.75))
+        self.assertEqual((added.manager_received_qty, added.actual_qty, added.actual_price), (2.5, 2.5, 9))
+        self.assertEqual(request.actual_total, 42.5)
+        self.assertEqual(request.picking_id.state, 'done')
+        self.assertEqual(len(request.picking_id.move_ids), 2)
+        self.assertEqual(self.env['baseer.procurement.price.history'].search_count([('request_id', '=', request.id)]), 2)
+        audit = request.message_ids.filtered(lambda m: 'Materials added during cashier receipt' in str(m.body))
+        self.assertEqual(len(audit), 1)
+        self.assertIn(cashier.display_name, str(audit.body))
+        self.assertIn('20.00', str(audit.body))
+        self.assertIn('41.88', str(audit.body))
+        with self.assertRaises(UserError):
+            request.confirm_actual_from_catalog(request.id, rows)
+        self.assertEqual(len(request.line_ids), 2)
+        self.assertEqual(self.env['stock.picking'].search_count([('origin', '=', request.name)]), 1)
+        for model, count in account_counts.items():
+            self.assertEqual(self.env[model].search_count([]), count, model)
+
+    def test_receipt_added_rejects_tampering_and_cross_company(self):
+        request, option, rows = self._receipt_added_fixture()
+        invalid_payloads = [
+            rows[1:],  # an existing original cannot be omitted
+            [rows[0], rows[0], rows[1]],
+            [rows[0], rows[1], rows[1]],
+            [dict(rows[0], option_id=option.id), rows[1]],
+            [dict(rows[0], line_id=True), rows[1]],
+            [dict(rows[0], line_id=987654321), rows[1]],
+            [rows[0], dict(rows[1], option_id='9' * 100)],
+            [dict(rows[0], actual_qty='5.01'), rows[1]],
+            [rows[0], dict(rows[1], actual_qty='0')],
+            [rows[0], dict(rows[1], actual_qty='1.001')],
+            [rows[0], dict(rows[1], actual_price='NaN')],
+            [rows[0], dict(rows[1], actual_price='-1')],
+            [rows[0], dict(rows[1], option_id=self.option.id)],
+            [rows[0]] + [rows[1]] * 200,
+        ]
+        for payload in invalid_payloads:
+            with self.subTest(payload=payload), self.assertRaises(ValidationError):
+                request.quote_actual_cart(request.id, payload)
+            with self.subTest(confirm_payload=payload), self.assertRaises(ValidationError):
+                request.confirm_actual_from_catalog(request.id, payload)
+        another_option = self.env['baseer.procurement.purchase.option'].create({
+            'name': 'Same product second option', 'company_id': self.company.id,
+            'product_id': self.product.id, 'uom_id': self.uom.id,
+            'packaging_note': 'Another purchase size',
+        })
+        with self.assertRaises(ValidationError):
+            request.quote_actual_cart(request.id, [rows[0], dict(rows[1], option_id=another_option.id)])
+        other = self.env['res.company'].create({'name': 'PRC added isolation'})
+        self.env.user.company_ids |= other
+        other_product = self.env['product.product'].with_company(other).create({
+            'name': 'PRC foreign addition', 'company_id': other.id, 'uom_id': self.uom.id,
+        })
+        other_option = self.env['baseer.procurement.purchase.option'].with_company(other).create({
+            'name': 'Foreign piece', 'company_id': other.id,
+            'product_id': other_product.id, 'uom_id': self.uom.id,
+        })
+        allowed_both = request.with_context(allowed_company_ids=[self.company.id, other.id])
+        with self.assertRaises(AccessError):
+            allowed_both.quote_actual_cart(request.id, [rows[0], dict(rows[1], option_id=other_option.id)])
+        option.active = False
+        with self.assertRaises(AccessError):
+            request.quote_actual_cart(request.id, rows)
+        self.assertEqual(len(request.line_ids), 1)
+        self.assertEqual(request.state, 'sent')
+
+    def test_receipt_added_rejects_handover_bwork_and_wrong_role(self):
+        request, option, rows = self._receipt_added_fixture()
+        requester = self._route_requester()
+        for method in ('quote_actual_cart', 'confirm_actual_from_catalog'):
+            with self.assertRaises(AccessError):
+                getattr(requester, method)(request.id, rows)
+        internal = request.sudo().with_context(**{BWORK_RECEIPT_INTERNAL: True})
+        with self.assertRaises(AccessError):
+            internal.confirm_actual_from_catalog(request.id, rows)
+        request.line_ids.manager_received_qty = 4
+        request.action_confirm_manager_receipt()
+        rows[0]['actual_qty'] = '4.00'
+        self.assertFalse(request.cashier_request_cart(request.id)['can_add_materials'])
+        self.assertEqual(request.cashier_request_cart(request.id)['items'][0]['maximum_quantity'], '4.00')
+        for method in ('quote_actual_cart', 'confirm_actual_from_catalog'):
+            with self.assertRaises(AccessError):
+                getattr(request, method)(request.id, rows)
+        self.assertEqual(request.quote_actual_cart(request.id, rows[:1])['total'], '16.00')
+        with self.assertRaises(AccessError):
+            self.env['baseer.procurement.request.line'].with_context(
+                _baseer_procurement_request_create_internal=True,
+            ).with_user(requester.env.user).create({
+                'request_id': request.id, 'option_id': option.id, 'requested_qty': 2,
+            })
+        self.assertEqual(len(request.line_ids), 1)
+
+    def test_receipt_added_rolls_back_later_native_failure(self):
+        request, option, rows = self._receipt_added_fixture()
+        rows[1]['actual_price'] = '9.00'
+        before = request.read(['state', 'write_date', 'line_ids', 'manager_received_at'])[0]
+        counts = {model: self.env[model].search_count([]) for model in (
+            'baseer.procurement.request.line', 'baseer.procurement.price.history',
+            'stock.picking', 'stock.move', 'account.move', 'mail.message',
+        )}
+        native_action = type(request).action_confirm_actual_purchase
+
+        def fail_after_native(record):
+            native_action(record)
+            raise UserError('PRC added fixture post-native failure')
+
+        with patch.object(type(request), 'action_confirm_actual_purchase', fail_after_native):
+            with self.assertRaisesRegex(UserError, 'post-native failure'):
+                request.confirm_actual_from_catalog(request.id, rows)
+        request.invalidate_recordset()
+        self.assertEqual(request.read(['state', 'write_date', 'line_ids', 'manager_received_at'])[0], before)
+        self.assertEqual(request.line_ids.manager_received_qty, 0)
+        self.assertEqual(request.line_ids.actual_qty, 0)
+        self.assertEqual(option.last_price, 8.75)
+        for model, count in counts.items():
+            self.assertEqual(self.env[model].search_count([]), count, model)
 
     def test_cashier_confirms_sent_request_with_actual_price(self):
         """A sent request can be priced and received from its cashier cart."""

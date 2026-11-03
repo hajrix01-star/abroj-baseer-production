@@ -109,20 +109,26 @@ test('save-only never sends; pending quote prevents all submission RPCs', async 
 function cartComponent(existing = false) {
     const c = { state: { existingRequest: existing, cart: [] }, quotes: 0,
         scheduleQuote() { this.quotes++; } };
+    c.notices = [];
+    c.notification = { add: (...args) => c.notices.push(args) };
     for (const [name, args] of Object.entries({
         remove: ['line'], markNotReceived: ['line'], restoreReceived: ['line'],
         setQuantity: ['line', 'value'], commitQuantity: ['line'],
         isNotReceived: ['line'], stepQuantity: ['line', 'step'],
+        add: ['option'], quoteLine: ['line'], receiptLines: [],
     })) {
         const body = source.match(new RegExp(`    ${name}\\([^\\n]*\\) \\{([\\s\\S]*?)\\n    \\}`));
-        if (body) c[name] = new Function(...args, body[1]);
+        if (body) {
+            const method = new Function(...args, '_t', body[1]);
+            c[name] = (...values) => method.call(c, ...values, (text) => text);
+        }
     }
     return c;
 }
 
 test('receipt minus at zero never restores a missing item or its price', () => {
     const c = cartComponent(true);
-    const line = { quantity: '0', actual_price: '0', requested_quantity: '4', last_price: '10' };
+    const line = { line_id: 1, quantity: '0', actual_price: '0', requested_quantity: '4', last_price: '10' };
     c.state.cart = [line];
     c.stepQuantity(line, -1);
     c.stepQuantity(line, -1);
@@ -159,7 +165,7 @@ test('typing a fractional new quantity retains the row until input is committed'
 test('receipt zero, remove and repeated minus preserve the edited snapshot for explicit restore', () => {
     for (const action of ['manual', 'remove', 'minus']) {
         const c = cartComponent(true);
-        const line = { quantity: '0.5', actual_price: '13.25', requested_quantity: '4', last_price: '10' };
+        const line = { line_id: 1, quantity: '0.5', actual_price: '13.25', requested_quantity: '4', last_price: '10' };
         c.state.cart = [line];
         if (action === 'manual') { c.setQuantity(line, '0'); c.commitQuantity(line); }
         else if (action === 'remove') c.remove(line);
@@ -176,7 +182,7 @@ test('receipt zero, remove and repeated minus preserve the edited snapshot for e
 
 test('receipt plus from zero restores price while increasing to one', () => {
     const c = cartComponent(true);
-    const line = { quantity: '3', actual_price: '12', requested_quantity: '4', last_price: '10' };
+    const line = { line_id: 1, quantity: '3', actual_price: '12', requested_quantity: '4', last_price: '10' };
     c.remove(line);
     c.stepQuantity(line, 1);
     assert.equal(Number(line.quantity), 1);
@@ -185,7 +191,7 @@ test('receipt plus from zero restores price while increasing to one', () => {
 
 test('receipt typing through a blank field restores the last edited price', () => {
     const c = cartComponent(true);
-    const line = { quantity: '3', actual_price: '12', requested_quantity: '4', last_price: '10' };
+    const line = { line_id: 1, quantity: '3', actual_price: '12', requested_quantity: '4', last_price: '10' };
     c.remove(line);
     c.setQuantity(line, '');
     c.setQuantity(line, '2');
@@ -196,8 +202,85 @@ test('receipt typing through a blank field restores the last edited price', () =
 
 test('blank and negative receipt quantities are invalid input, not a not-received state', () => {
     const c = cartComponent(true);
-    for (const quantity of ['', '-1', 'invalid']) assert.equal(c.isNotReceived({ quantity }), false);
-    assert.equal(c.isNotReceived({ quantity: '0' }), true);
+    for (const quantity of ['', '-1', 'invalid']) assert.equal(c.isNotReceived({ line_id: 1, quantity }), false);
+    assert.equal(c.isNotReceived({ line_id: 1, quantity: '0' }), true);
+});
+
+const receiptOption = { id: 7, product_id: 9, product_name: 'Added material', option_name: 'kg', last_price: '10.25', currency_symbol: 'SR' };
+test('receipt addition starts at catalogue price and has only option identity in the payload', () => {
+    const c = cartComponent({ id: 3, state: 'sent', can_add_materials: true });
+    c.add(receiptOption);
+    assert.equal(c.state.cart[0].actual_price, '10.25');
+    assert.equal(c.state.cart[0].currency_symbol, 'SR');
+    assert.deepEqual(c.receiptLines(), [{ option_id: 7, actual_qty: '1', actual_price: '10.25' }]);
+});
+
+test('unpriced receipt addition is explicit zero price rather than an undefined field', () => {
+    const c = cartComponent({ id: 3, can_add_materials: true });
+    c.add({ ...receiptOption, last_price: '0.00' });
+    assert.equal(c.state.cart[0].actual_price, '0.00');
+});
+
+test('temporary receipt rows delete on trash or committed zero and never remove originals', () => {
+    for (const operation of ['trash', 'zero', 'minus']) {
+        const c = cartComponent({ id: 3, can_add_materials: true });
+        const original = { line_id: 4, option_id: 2, quantity: '1', actual_price: '5' };
+        c.state.cart.push(original);
+        c.add(receiptOption);
+        const added = c.state.cart[1];
+        if (operation === 'trash') c.remove(added);
+        else if (operation === 'minus') c.stepQuantity(added, -1);
+        else { c.setQuantity(added, '0'); c.commitQuantity(added); }
+        assert.deepEqual(c.state.cart, [original]);
+    }
+});
+
+test('multiple new receipt rows match their own quote identities', () => {
+    const c = cartComponent({ id: 3 });
+    c.state.quote = { lines: [{ line_id: 4, option_id: 2, line_total_text: '5.00' },
+        { line_id: false, option_id: 7, line_total_text: '10.25' },
+        { line_id: false, option_id: 8, line_total_text: '20.00' }] };
+    assert.equal(c.quoteLine({ option_id: 7 }).line_total_text, '10.25');
+    assert.equal(c.quoteLine({ option_id: 8 }).line_total_text, '20.00');
+    assert.equal(c.quoteLine({ line_id: 4, option_id: 2 }).line_total_text, '5.00');
+});
+
+test('handover and BWork flags prevent unsupportable temporary additions', () => {
+    for (const state of ['sent', 'received']) {
+        const c = cartComponent({ id: 3, state, can_add_materials: false });
+        c.add(receiptOption);
+        assert.deepEqual(c.state.cart, []);
+        assert.equal(c.notices.length, 1);
+    }
+});
+
+test('clicking an existing original honours its cap and restores the last price at zero', () => {
+    const c = cartComponent({ id: 3, can_add_materials: true });
+    const original = { line_id: 4, option_id: 7, quantity: '1', actual_price: '20', maximum_quantity: '1', requested_quantity: '1', last_price: '10' };
+    c.state.cart = [original];
+    c.add(receiptOption);
+    assert.equal(original.quantity, '1');
+    assert.equal(c.notices.length, 1);
+    c.remove(original);
+    c.add(receiptOption);
+    assert.equal(original.quantity, '1');
+    assert.equal(original.actual_price, '20');
+});
+
+test('confirmation sends both original and new identities without snapshots or view metadata', async () => {
+    const c = cartComponent({ id: 3, can_add_materials: true, name: 'test' });
+    c.state.cart = [{ line_id: 4, option_id: 2, quantity: '1', actual_price: '5', receivedSnapshot: { quantity: '2' } }];
+    c.add(receiptOption);
+    c.canSave = true;
+    c.emptyQuote = () => ({ lines: [] });
+    c.loadRecentRequests = async () => {};
+    const calls = [];
+    c.orm = { call: async (...args) => calls.push(args) };
+    await saveDraft.call(c, false, () => 'unused', (text) => text);
+    assert.deepEqual(calls, [['baseer.procurement.request', 'confirm_actual_from_catalog', [3, [
+        { line_id: 4, actual_qty: '1', actual_price: '5' },
+        { option_id: 7, actual_qty: '1', actual_price: '10.25' },
+    ]]]]);
 });
 
 test('old quote responses cannot repopulate an emptied cart or unlock a newer edit', async () => {

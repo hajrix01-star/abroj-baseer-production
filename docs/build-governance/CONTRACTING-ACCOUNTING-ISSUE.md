@@ -79,3 +79,19 @@ monetary storage/API boundaries retained; decimal validation up to2 decimals.
 8. Native form/list/dialog reuse recorded at G4; accountant-only PWA links open
    the issue source or existing native journal. Arabic/English labels and errors
    are present. UI screenshot review and full final-SHA CI remain release gates.
+9. Native Odoo dialog verified in isolated preview at EN1280/AR390; no horizontal
+   overflow, proper field visibility and voucher/source reuse. Visual review
+   exposed a missing Python-code translation marker and native Arabic date
+   numerals. Added odoo-python markers and a scoped DateTimeField subclass using
+   numberingSystem latn with the native picker/ISO value unchanged. No global
+   formatter, tax or business calculation changed. Both dialogs now pass title,
+   digits and layout assertions; Arabic calendar digits and editing04/11/2026
+   also pass. Test selector corrections reflected the native edit/display
+   transition and did not require additional application behavior changes.
+   Artifacts: output/issue-dialog-*.png, issue-datepicker-ar-390.png,
+   native-issue-ui.cjs and native-date-ui.cjs. These are actual local Odoo views,
+   not mocked layouts or live business posting. G4 is closed for the scoped form.
+10. All6 PR658 checks passed on initial runtime sourcef1c033cd, including65
+    contracting and80 dashboard cases. Final presentation-only delta is now
+    frozen for the mandatory final-SHA checks. Independent delivery consumes
+    the same financial/concurrency evidence; no repeated load or data cloning.

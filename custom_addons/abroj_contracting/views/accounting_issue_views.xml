@@ -22,8 +22,8 @@
                  domain="[('company_ids', 'in', [company_id]), ('account_type', 'in', ['expense', 'expense_direct_cost', 'expense_depreciation'])]" options="{'no_create': True}"/>
           <field name="tax_ids" widget="many2many_tags" invisible="not cost_id or mode != 'create'"
                  domain="[('company_id', '=', company_id), ('type_tax_use', '=', 'purchase')]" options="{'no_create': True}"/>
-          <field name="invoice_date" invisible="not cost_id or mode != 'create'" required="cost_id and mode == 'create'"/>
-          <field name="date" invisible="cost_id and mode == 'existing'" required="not cost_id or mode == 'create'" readonly="voucher_id"/>
+          <field name="invoice_date" widget="abroj_accounting_date" invisible="not cost_id or mode != 'create'" required="cost_id and mode == 'create'" options="{'numeric': True}"/>
+          <field name="date" widget="abroj_accounting_date" invisible="cost_id and mode == 'existing'" required="not cost_id or mode == 'create'" readonly="voucher_id" options="{'numeric': True}"/>
         </group>
         <p class="text-muted" invisible="not cost_id">The source amount is the gross payable total, including any selected tax. Leave taxes empty only when no tax applies.</p>
         <p class="text-muted" invisible="not cost_id or mode != 'existing'">Link the existing posted bill when this expense has already been recorded. Its company, supplier, amount and project allocation must match.</p>

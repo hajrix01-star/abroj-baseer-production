@@ -100,3 +100,21 @@ monetary storage/API boundaries retained; decimal validation up to2 decimals.
     same posted-link/context checks while avoiding N+1 queries on unrelated
     native accounting batches/POS closures. No new source, permission or amount
     policy; the same regression suite validates the batched implementation.
+12. All6 final checks passed on75066434. Independent scoped Alpha GO conditions
+    fulfilled:65 contracting cases,80 dashboard cases, source and cumulative
+    checks, local native UI and two-cursor proof. PR658 squash-merged as
+    0a813514491727a35abc925e9c096a48db6375bf. Module-tree identity checked against
+    the reviewed candidate. Bounded policy upgrades onlyabroj_contracting and
+    abroj_project_dashboard; no live issue/adoption action will be invoked as
+    part of deployment. Source acceptance is GO, protected activation pending.
+13. Policy-only CI transport blocked activation: Source integrity attempt1
+    timed out10m during fetch of every branch/tag, before any test; retry2 also
+    remained in that fetch. Cumulative backend clone took11m58 before passing.
+    Diagnosed from completed checkout logs, not an application/test failure.
+    Operational G2/G3 reopened and independently approved partial-clone checkout
+    `filter: blob:none` with fetch-depth0 retained in validate-pull-request and
+    backend cumulative checkout only. Official checkout@v4 action.yml confirms
+    the input. Commits/trees/refs/history and every comparison/check/timeout stay
+    unchanged; current working tree materializes fully and historical content
+    lazily fetches when checked. A fetch error remains a failed check.
+    Financial source stays0a813514; no module tree or deployment permission change.

@@ -59,7 +59,7 @@
             <field name="total_received"/>
             <field name="remaining"/>
             <field name="profit"/>
-            <field name="expected_profit"/>
+            <field name="expected_profit" invisible="estimated_cost &lt;= 0"/>
           </group>
           <notebook>
             <page string="مقاولو الباطن" name="contractors">

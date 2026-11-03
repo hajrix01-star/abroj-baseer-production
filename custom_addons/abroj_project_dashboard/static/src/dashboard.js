@@ -1,5 +1,6 @@
 /** @odoo-module **/
 import { Component, onWillStart, useState } from '@odoo/owl';
+import { _t } from '@web/core/l10n/translation';
 import { registry } from '@web/core/registry';
 import { useService } from '@web/core/utils/hooks';
 
@@ -29,12 +30,17 @@ class Dashboard extends Component {
         return [{label:'إجمالي المشاريع', value:ps.length, icon:'▣'}, {label:'المشاريع الجارية', value:ps.filter(p => !p.completed).length, icon:'◉'}, {label:'المشاريع المكتملة', value:ps.filter(p => p.completed).length, icon:'✓'}, {label:'المتأخرة', value:ps.filter(p => p.delayed).length, icon:'⚠'}, {label:'المتعثرة', value:ps.filter(p => p.stalled).length, icon:'⏸'}];
     }
     total(key) { return this.projects.reduce((sum, p) => sum + (p[key] || 0), 0); }
-    money(n) { return Math.round(n || 0).toLocaleString('en-US'); }
+    money(n) { return n == null ? '—' : Number(n).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}); }
     get cards() {
-        const ps = this.state.detail ? [this.state.detail] : this.projects;
-        const sum = (key) => ps.reduce((a, p) => a + (p[key] || 0), 0);
-        const over = sum('actual') - sum('budget');
-        return [{label:'الميزانية', value:sum('budget'), icon:'◎'}, {label:'التكلفة الفعلية', value:sum('actual'), icon:'⚙'}, {label:'تجاوز الميزانية', value:Math.max(over, 0), note: over > 0 ? 'تجاوز الميزانية' : `داخل الميزانية · ${sum('over_categories')} بنود متجاوزة`, icon:'⚠'}, {label:'الربح', value:sum('contract') - sum('actual'), icon:'★'}, {label:'السيولة', value:sum('liquidity'), note:'المحصّل − المدفوع', icon:'⇄'}];
+        const values = this.state.detail || this.state.data.financial_summary || {};
+        const missing = values.budget_available ? '' : _t('Comparison budget is missing');
+        return [
+            {label: _t('Comparison budget'), value: values.budget_available ? values.budget : null, icon:'◎', note:missing},
+            {label: _t('Actual cost'), value:values.actual, icon:'⚙'},
+            {label: _t('Over budget'), value:values.over, icon:'⚠', note:missing},
+            {label: _t('Expected margin against budget'), value:values.expected_profit, icon:'★', note:missing},
+            {label: _t('Cash balance'), value:values.liquidity, icon:'⇄'},
+        ];
     }
     bar(phase, phases) {
         const dates = phases.flatMap(p => [p.start, p.end]).filter(Boolean).map(d => Date.parse(d));

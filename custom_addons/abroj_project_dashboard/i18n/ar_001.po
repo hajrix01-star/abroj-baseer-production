@@ -1,0 +1,52 @@
+msgid ""
+msgstr ""
+"Language: ar_001\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5;\n"
+
+#. module: abroj_project_dashboard
+#: model:ir.model.fields,field_description:abroj_project_dashboard.field_project_project__abroj_effective_budget
+#: code:addons/abroj_project_dashboard/static/src/dashboard.js:0
+msgid "Comparison budget"
+msgstr "ميزانية المقارنة"
+
+#. module: abroj_project_dashboard
+#: model:ir.model.fields,field_description:abroj_project_dashboard.field_project_project__abroj_expected_profit
+#: code:addons/abroj_project_dashboard/static/src/dashboard.js:0
+msgid "Expected margin against budget"
+msgstr "الهامش المتوقع حسب الميزانية"
+
+#. module: abroj_project_dashboard
+#: model:ir.model.fields,field_description:abroj_project_dashboard.field_project_project__abroj_budget_lines_total
+msgid "Detailed budget total (unapproved)"
+msgstr "مجموع بنود الميزانية — للمراجعة"
+
+#. module: abroj_project_dashboard
+#: model_terms:ir.ui.view,arch_db:abroj_project_dashboard.contracting_project_form_gallery
+msgid "No comparison budget: enter the project budget or estimated cost to calculate the expected margin and budget variance."
+msgstr "ميزانية المقارنة غير محددة؛ أدخل ميزانية المشروع أو التكلفة التقديرية لحساب الهامش المتوقع وتجاوز الميزانية."
+
+#. module: abroj_project_dashboard
+#: model_terms:ir.ui.view,arch_db:abroj_project_dashboard.contracting_project_form_gallery
+msgid "The detailed budget differs from the comparison budget. Review overlapping items before approval."
+msgstr "مجموع بنود الميزانية لا يطابق ميزانية المقارنة. راجع البنود المتداخلة قبل الاعتماد."
+
+#. module: abroj_project_dashboard
+#: code:addons/abroj_project_dashboard/static/src/dashboard.js:0
+msgid "Actual cost"
+msgstr "التكلفة الفعلية"
+
+#. module: abroj_project_dashboard
+#: code:addons/abroj_project_dashboard/static/src/dashboard.js:0
+msgid "Over budget"
+msgstr "تجاوز الميزانية"
+
+#. module: abroj_project_dashboard
+#: code:addons/abroj_project_dashboard/static/src/dashboard.js:0
+msgid "Cash balance"
+msgstr "الرصيد النقدي"
+
+#. module: abroj_project_dashboard
+#: code:addons/abroj_project_dashboard/static/src/dashboard.js:0
+msgid "Comparison budget is missing"
+msgstr "ميزانية المقارنة غير محددة"

@@ -1,5 +1,7 @@
 'use strict';
 const translations = {
+  "budgetReview": {"ar":"مجموع بنود الميزانية للمراجعة؛ لا يُعتمد تلقائيًا عند الاختلاف عن الميزانية الإجمالية.", "en":"Review the detailed budget total; differences are not approved automatically."},
+  "budgetMissing": {"ar":"ميزانية المقارنة غير محددة", "en":"Comparison budget is missing"},
   "contractCardPaid": {"ar":"المدفوع", "en":"Paid"},
   "contractCardRemaining": {"ar":"المتبقي", "en":"Remaining"},
   "contractCardType": {"ar":"نوع العقد", "en":"Contract type"},
@@ -13,7 +15,7 @@ const translations = {
   "phaseAdd": {"ar":"إضافة إلى المرحلة", "en":"Add to phase"},
   "voiceNote": {"ar":"ملاحظة صوتية", "en":"Voice note"},
   "textNote": {"ar":"ملاحظة نصية", "en":"Text note"},
-  "contractProfit": {"ar":"ربح العقد", "en":"Contract profit"},
+  "contractProfit": {"ar":"الهامش بعد الالتزامات المسجلة", "en":"Margin after recorded commitments"},
   "contractRemaining": {"ar":"المتبقي من العقد", "en":"Remaining contract value"},
   "received": {"ar":"المقبوض", "en":"Received"},
   "paid": {"ar":"المدفوع", "en":"Paid"},
@@ -178,8 +180,8 @@ const translations = {
     "en": "Project timeline"
   },
   "s30": {
-    "ar": "الربح المتوقع",
-    "en": "Expected profit"
+    "ar": "الهامش المتوقع حسب الميزانية",
+    "en": "Expected margin against budget"
   },
   "s31": {
     "ar": "الرقم الضريبي للمشتري",

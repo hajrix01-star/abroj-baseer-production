@@ -1,6 +1,12 @@
+from decimal import Decimal
+
 from odoo import api, fields, models
 from odoo.exceptions import AccessError, UserError, ValidationError
 from .guards import check_agent
+
+
+def money_sum(values):
+    return sum((Decimal(str(value or 0)) for value in values), Decimal('0'))
 
 
 class Project(models.Model):
@@ -25,7 +31,8 @@ class Project(models.Model):
     total_paid = fields.Monetary('المدفوع', compute='_compute_totals', store=True, help='حدد المدفوع لهذا السجل وفق مستند المشروع الأصلي.')
     total_received = fields.Monetary('المقبوض', compute='_compute_totals', store=True, help='حدد المقبوض لهذا السجل وفق مستند المشروع الأصلي.')
     remaining = fields.Monetary('المتبقي من العقد', compute='_compute_totals', store=True, help='المبلغ المتبقي من عقد العميل بعد سندات القبض الصادرة.')
-    profit = fields.Monetary('ربح العقد', compute='_compute_totals', store=True, help='حدد ربح العقد لهذا السجل وفق مستند المشروع الأصلي.')
+    profit = fields.Monetary('Margin after recorded commitments', compute='_compute_totals', store=True, help='حدد ربح العقد لهذا السجل وفق مستند المشروع الأصلي.')
+    abroj_customer_received = fields.Monetary('Customer collections', compute='_compute_customer_received')
     cash_balance = fields.Monetary('صافي التدفق النقدي', compute='_compute_totals', store=True, help='المقبوض ناقص المدفوع حسب السندات الصادرة؛ لا يشمل الالتزامات غير المسددة.')
 
     project_note_ids = fields.One2many('abroj.contracting.project.note', 'project_id', string='الملاحظات', help='حدد الملاحظات لهذا السجل وفق مستند المشروع الأصلي.')
@@ -54,19 +61,27 @@ class Project(models.Model):
             if r.contracting_start and r.contracting_end and r.contracting_end < r.contracting_start:
                 raise ValidationError('تاريخ الانتهاء يسبق تاريخ البدء.')
 
+    @api.depends('voucher_ids.amount', 'voucher_ids.state', 'voucher_ids.kind', 'voucher_ids.subcontractor_id')
+    def _compute_customer_received(self):
+        for project in self:
+            project.abroj_customer_received = sum((Decimal(str(v.amount)) for v in project.voucher_ids
+                if v.state == 'issued' and v.kind == 'receipt' and not v.subcontractor_id), Decimal('0'))
+
     @api.depends('contract_value', 'estimated_cost', 'company_id.currency_id', 'voucher_ids.amount', 'voucher_ids.state',
-                 'voucher_ids.kind', 'invoice_ids.amount', 'invoice_ids.state', 'cost_ids.amount', 'cost_ids.state', 'subcontractor_ids.agreed_amount', 'subcontractor_ids.materials_total')
+                 'voucher_ids.kind', 'voucher_ids.subcontractor_id', 'invoice_ids.amount', 'invoice_ids.state', 'cost_ids.amount', 'cost_ids.state', 'subcontractor_ids.agreed_amount', 'subcontractor_ids.materials_total')
     def _compute_totals(self):
         for r in self:
             issued = r.voucher_ids.filtered(lambda v: v.state == 'issued')
-            r.total_paid = sum(issued.filtered(lambda v: v.kind == 'payment').mapped('amount'))
-            r.total_received = sum(issued.filtered(lambda v: v.kind == 'receipt').mapped('amount'))
-            r.materials_purchase_total = sum(r.subcontractor_ids.mapped('materials_total'))
-            r.total_costs = sum(r.subcontractor_ids.mapped('agreed_amount')) + sum(r.cost_ids.filtered(lambda i: i.state == 'confirmed').mapped('amount'))
-            r.remaining = r.contract_value - r.total_received
-            r.profit = r.contract_value - r.total_costs
-            r.expected_profit = r.contract_value - r.estimated_cost
-            r.cash_balance = r.total_received - r.total_paid
+            r.total_paid = money_sum(issued.filtered(lambda v: v.kind == 'payment').mapped('amount'))
+            r.total_received = money_sum(issued.filtered(lambda v: v.kind == 'receipt').mapped('amount'))
+            r.materials_purchase_total = money_sum(r.subcontractor_ids.mapped('materials_total'))
+            r.total_costs = money_sum(r.subcontractor_ids.mapped('agreed_amount')) + money_sum(r.cost_ids.filtered(lambda i: i.state == 'confirmed').mapped('amount'))
+            customer_received = sum((Decimal(str(v.amount)) for v in issued
+                if v.kind == 'receipt' and not v.subcontractor_id), Decimal('0'))
+            r.remaining = Decimal(str(r.contract_value)) - customer_received
+            r.profit = Decimal(str(r.contract_value)) - Decimal(str(r.total_costs))
+            r.expected_profit = Decimal(str(r.contract_value)) - Decimal(str(r.estimated_cost)) if r.estimated_cost > 0 else 0
+            r.cash_balance = Decimal(str(r.total_received)) - Decimal(str(r.total_paid))
 
 
 class ProjectDocument(models.AbstractModel):

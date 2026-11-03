@@ -908,3 +908,10 @@ Independent financial source GO, targeted ORM/cache/access and AR390/EN1280
 component rendering evidence recorded. Final CI is the deployment prerequisite.
 Policy: `baseer-2026-11-03-contracting-metrics`; protected Actions only.
 [Contract, gates and evidence](../../build-governance/CONTRACTING-FINANCIAL-METRICS.md).
+
+Contracting metrics source integration: PR656 is merged as
+`19713722c09ea68bd92215ca87926ce051f8681a`; this is the release source and updated
+`lastVerifiedCommit`. All six PR checks passed, including80 dashboard and40
+contracting tests. Independent Alpha financial GO; production activation pending
+policy registration and protected Actions. Original candidate commit is retained
+above as review history, not a deployable main ancestor.

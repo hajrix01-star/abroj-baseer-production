@@ -32,9 +32,9 @@
                             <DropdownItem tag="'button'" class="{'is_active': state.purchaseRoute === 'representative'}" closingMode="'none'" onSelected="() => this.setPurchaseRoute('representative')">Purchase Representative</DropdownItem>
                             <label t-if="state.purchaseRoute === 'representative'" class="o_prc_route_representative">
                                 <span>Purchase representative <b>*</b></span>
-                                <select t-att-value="state.representativePartnerId || ''" t-on-change="onRepresentativeChange" aria-label="Purchase representative">
-                                    <option value="">Choose a representative</option>
-                                    <option t-foreach="state.representatives" t-as="representative" t-key="representative.id" t-att-value="representative.id" t-esc="representative.name"/>
+                                <select t-on-change="onRepresentativeChange" aria-label="Purchase representative">
+                                    <option value="" t-att-selected="!state.representativePartnerId">Choose a representative</option>
+                                    <option t-foreach="state.representatives" t-as="representative" t-key="representative.id" t-att-value="representative.id" t-att-selected="representative.id === state.representativePartnerId" t-esc="representative.name"/>
                                 </select>
                             </label>
                             <DropdownItem tag="'button'" class="'o_prc_route_done'">Done</DropdownItem>

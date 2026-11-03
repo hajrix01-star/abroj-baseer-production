@@ -1885,6 +1885,12 @@ msgstr "المندوب: %s"
 msgid "Done"
 msgstr "تم"
 
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+msgid "The order changed. Reload it before editing."
+msgstr "تغيّر الطلب. أعد تحميله قبل التعديل."
+
 
 #. module: baseer_procurement_requests
 #. odoo-javascript

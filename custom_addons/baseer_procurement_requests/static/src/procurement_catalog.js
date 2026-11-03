@@ -20,10 +20,9 @@ function newClientToken() {
 export class ProcurementWhatsAppDialog extends Component {
     static template = "baseer_procurement_requests.WhatsAppShareDialog";
     static components = { Dialog };
-    static props = { close: Function, payload: Object };
+    static props = { close: Function, payload: Object, onOpened: { type: Function, optional: true } };
 
     setup() {
-        this.orm = useService("orm");
         this.notification = useService("notification");
         this.state = useState({ copyStatus: "" });
     }
@@ -35,10 +34,13 @@ export class ProcurementWhatsAppDialog extends Component {
     async recordOpened() {
         // The real anchor navigates directly on the gesture. Audit must not delay it.
         try {
-            await this.orm.call("baseer.procurement.request", "action_mark_whatsapp_opened", [[this.props.payload.request_id]]);
+            // The audit can finish after this dialog is closed or the app is backgrounded.
+            await this.env.services.orm.call("baseer.procurement.request", "action_mark_whatsapp_opened", [[this.props.payload.request_id]]);
         } catch {
             this.notification.add(_t("Could not record the opening time. You can still use the share link."), { type: "warning" });
+            return;
         }
+        await this.props.onOpened?.();
     }
 
     async copyMessage() {
@@ -323,11 +325,21 @@ export class ProcurementCatalog extends Component {
                 requestId, this.state.editRequest.snapshot,
             ]);
             if (this.state.editRequest?.id !== requestId || this.editorDirty || this.editorFingerprint() !== fingerprint) return;
-            this.dialog.add(ProcurementWhatsAppDialog, { payload });
+            this.dialog.add(ProcurementWhatsAppDialog, { payload, onOpened: () => this.refreshSharedEditor(requestId) });
         } catch (error) {
             this.notification.add(error?.data?.arguments?.[0] || error.message || _t("Could not prepare the WhatsApp message."), { type: "danger" });
         } finally {
             this.state.shareLoading = false;
+        }
+    }
+
+    async refreshSharedEditor(requestId) {
+        if (this.state.editRequest?.id !== requestId || this.editorDirty || this.state.saving) return;
+        try {
+            const request = await this.orm.call("baseer.procurement.request", "load_catalog_editor", [requestId]);
+            if (this.state.editRequest?.id === requestId && !this.editorDirty && !this.state.saving) this.applyEditor(request);
+        } catch {
+            this.notification.add(_t("The order changed. Reload it before editing."), { type: "warning" });
         }
     }
 

@@ -585,7 +585,7 @@ test('WhatsApp opening audit is separate from preparation and cannot block the n
     assert.ok(body);
     const audit = new AsyncFunction('_t', body);
     const calls = [], notices = [];
-    const c = { props: { payload: { request_id: 71 } }, orm: { call: async (...args) => { calls.push(args); throw Error('offline'); } }, notification: { add: (...args) => notices.push(args) } };
+    const c = { props: { payload: { request_id: 71 } }, env: { services: { orm: { call: async (...args) => { calls.push(args); throw Error('offline'); } } } }, notification: { add: (...args) => notices.push(args) } };
     await audit.call(c, (text) => text);
     assert.deepEqual(calls, [['baseer.procurement.request', 'action_mark_whatsapp_opened', [[71]]]]);
     assert.equal(notices.length, 1);
@@ -632,4 +632,30 @@ test('sharing failure after creation retains the saved request and cannot create
     assert.equal(notices.length, 1);
     assert.equal(c.allowSavedRequestNavigation, false);
     assert.equal(c.state.saving, false);
+});
+
+test('successful WhatsApp audit refreshes the clean editor version after the metadata write', async () => {
+    const body = source.match(/    async recordOpened\(\) \{([\s\S]*?)\n    \}/)[1];
+    const audit = new AsyncFunction('_t', body);
+    const events = [];
+    const c = { props: { payload: { request_id: 71 }, onOpened: async () => events.push('refresh') },
+        env: { services: { orm: { call: async () => events.push('audit') } } } };
+    await audit.call(c, (text) => text);
+    assert.deepEqual(events, ['audit', 'refresh']);
+});
+
+test('WhatsApp metadata refresh never overwrites a locally changed order', async () => {
+    const body = source.match(/    async refreshSharedEditor\(requestId\) \{([\s\S]*?)\n    \}/)[1];
+    const refresh = new AsyncFunction('requestId', '_t', body);
+    for (const dirtyWhen of ['before', 'during', 'clean']) {
+        const c = whatsappEditor(); let finish;
+        c.applyEditor = (value) => { c.applied = value; };
+        c.orm = { call: () => new Promise((resolve) => { finish = resolve; }) };
+        if (dirtyWhen === 'before') c.state.cart[0].unit_price = '12';
+        const pending = refresh.call(c, 71, (text) => text);
+        if (dirtyWhen === 'during') c.state.cart[0].unit_price = '12';
+        if (finish) finish({ id: 71, snapshot: 'after-audit' });
+        await pending;
+        assert.equal(Boolean(c.applied), dirtyWhen === 'clean');
+    }
 });

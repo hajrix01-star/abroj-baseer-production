@@ -168,16 +168,6 @@
                             </div>
                         </div>
 
-                        <div t-if="state.selectedProduct" class="o_prc_option_overlay" role="dialog" aria-modal="true" aria-label="Choose size">
-                            <button type="button" class="o_prc_option_backdrop" t-on-click="closeProductOptions" aria-label="Close size selection"/>
-                            <section class="o_prc_option_sheet">
-                                <header><div><span>Choose a size or package</span><strong t-esc="state.selectedProduct.product_name"/></div><button type="button" t-on-click="closeProductOptions" aria-label="Close"><i class="fa fa-times"/></button></header>
-                                <button t-foreach="state.selectedProduct.options" t-as="option" t-key="option.id" type="button" class="o_prc_option_choice" t-on-click="() => this.selectProductOption(option)">
-                                    <span><strong t-esc="option.option_name"/><small t-if="option.packaging_note and option.packaging_note !== option.option_name" t-esc="option.packaging_note"/></span>
-                                    <b><t t-esc="option.last_price_text"/> <small t-esc="option.currency_symbol"/></b>
-                                </button>
-                            </section>
-                        </div>
 
                         <div t-if="state.hasMore and !state.loadingOptions" class="o_prc_load_more">
                             <button type="button" class="btn btn-light" t-on-click="() => this.loadCatalogue(false)" t-att-disabled="state.loadingMore">
@@ -262,6 +252,16 @@
                 <button type="button" t-att-class="{'is_active': state.mobilePane === 'products'}" t-on-click="() => state.mobilePane = 'products'"><i class="fa fa-th-large"/><span>Materials</span></button>
                 <button type="button" t-att-class="{'is_active': state.mobilePane === 'cart'}" t-on-click="() => state.mobilePane = 'cart'"><i class="fa fa-shopping-basket"/><span><span>Cart</span> (<t t-esc="state.cart.length"/>)</span><strong t-if="state.cart.length and !state.quotePending and !state.quoteError" t-esc="moneyText(state.quote.total_text)"/><strong t-elif="state.cart.length and state.quotePending">Calculating…</strong><strong t-elif="state.cart.length">—</strong></button>
             </nav>
+            <div t-if="state.selectedProduct" class="o_prc_option_overlay" role="dialog" aria-modal="true" aria-label="Choose size">
+                <button type="button" class="o_prc_option_backdrop" t-on-click="closeProductOptions" aria-label="Close size selection"/>
+                <section class="o_prc_option_sheet">
+                    <header><div><span>Choose a size or package</span><strong t-esc="state.selectedProduct.product_name"/></div><button type="button" t-on-click="closeProductOptions" aria-label="Close"><i class="fa fa-times"/></button></header>
+                    <button t-foreach="state.selectedProduct.options" t-as="option" t-key="option.id" type="button" class="o_prc_option_choice" t-on-click="() => this.selectProductOption(option)">
+                        <span><strong t-esc="option.option_name"/><small t-if="option.packaging_note and option.packaging_note !== option.option_name" t-esc="option.packaging_note"/></span>
+                        <b><t t-esc="option.last_price_text"/> <small t-esc="option.currency_symbol"/></b>
+                    </button>
+                </section>
+            </div>
             <div t-if="state.cancelOpen" class="o_prc_quick_overlay" role="dialog" aria-modal="true" aria-labelledby="o_prc_cancel_order_title"><button type="button" class="o_prc_option_backdrop" t-att-disabled="state.saving" t-on-click="closeCancel" aria-label="Close"/><form t-ref="cancelDialog" class="o_prc_quick_dialog" t-on-submit.prevent="cancelEditor"><header><h2 id="o_prc_cancel_order_title">Cancel order</h2></header><p>The order will be cancelled with the reason below. Unsaved changes will be discarded.</p><label><span>Cancellation reason</span><textarea t-ref="cancelReasonInput" required="required" maxlength="1000" t-model="state.cancelReason" t-att-disabled="state.saving"/></label><footer><button type="button" class="btn btn-light" t-on-click="closeCancel" t-att-disabled="state.saving">Keep order</button><button type="submit" class="btn btn-danger" t-att-disabled="state.saving or !state.cancelReason.trim()">Confirm cancellation</button></footer></form></div>
         </main>
     </t>

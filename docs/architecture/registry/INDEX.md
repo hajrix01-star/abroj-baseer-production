@@ -938,3 +938,19 @@ including65 contracting/80 dashboard cases. NativeAR390/EN1280 review and RR
 concurrency evidence accepted independently. Policybaseer-2026-11-03-contracting-issue
 upgrades those two modules only; protected activation pending. No historical
 financial document has been posted or adopted by this release preparation.
+
+## CONTRACTING-VOUCHER-FLOW-20261103 — Purpose, recognition and settlement
+
+ARCHITECTURAL; baseline761eb0c99, prior runtime0a813514 reused. Integration owner
+abroj_project_dashboard/models/voucher_workflow.py avoids a contracting-budget
+dependency cycle. Explicit purposes direct expense/earned income, invoice settlement,
+advance and supplier refund; native invoices/payments/reconciliation remain sole
+financial authority. Unique direct-recognition source and payment per voucher,
+NO KEY UPDATE/RR retry and residual guards, immutable original documents. Budget
+category propagates from native expense AML to analytic line; no manual actual.
+Recognized revenue/profit separate from commitments and cash movement. Native/PWA
+AR/EN links and purpose review; version19.0.1.9.0. Bounded owner-authorized review
+of5existing payments and170780budget prepared, no historical writes yet. Local27new
+cases plus91existing cases,2RR races and actual native AR390/EN1280 UI evidence.
+Final candidateCI/independent acceptance/protected activation pending.
+[Contract, gates and evidence](../../build-governance/CONTRACTING-VOUCHER-WORKFLOW.md).

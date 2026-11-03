@@ -87,9 +87,9 @@ class AbrojProjectDashboardCase(TransactionCase):
     def test_close_summary_and_permissions(self):
         self.env['project.task'].create({'name': 'Outstanding', 'project_id': self.project.id})
         self.env['abroj.contracting.subcontractor'].create({'project_id': self.project.id, 'partner_id': self.client.id, 'agreed_amount': 80})
-        voucher = self.env['abroj.contracting.voucher'].create({'project_id': self.project.id, 'partner_id': self.client.id, 'kind': 'receipt', 'amount': 50})
+        voucher = self.env['abroj.contracting.voucher'].create({'project_id': self.project.id, 'partner_id': self.client.id, 'kind': 'receipt', 'payment_purpose': 'advance', 'amount': 50})
         voucher.action_issue()
-        self.env['abroj.contracting.voucher'].create({'project_id': self.project.id, 'partner_id': self.client.id, 'kind': 'receipt', 'amount': 10})
+        self.env['abroj.contracting.voucher'].create({'project_id': self.project.id, 'partner_id': self.client.id, 'kind': 'receipt', 'payment_purpose': 'advance', 'amount': 10})
         summary = self.project.abroj_close_summary()
         self.assertIn('Outstanding', summary['unfinished'])
         self.assertEqual(summary['receivable'], 150)
@@ -512,11 +512,11 @@ class AbrojProjectDashboardCase(TransactionCase):
         if 'abroj.contracting.voucher' in self.env:
             subcontract = self.env['abroj.contracting.subcontractor'].create({'project_id': self.project.id, 'partner_id': self.client.id, 'agreed_amount': 200})
             for kind, amount in [('receipt', 150), ('payment', 40)]:
-                voucher = self.env['abroj.contracting.voucher'].create({'project_id': self.project.id, 'partner_id': self.client.id, 'kind': kind, 'amount': amount, 'subcontractor_id': subcontract.id if kind == 'payment' else False})
+                voucher = self.env['abroj.contracting.voucher'].create({'project_id': self.project.id, 'partner_id': self.client.id, 'kind': kind, 'payment_purpose': 'advance', 'amount': amount, 'subcontractor_id': subcontract.id if kind == 'payment' else False})
                 voucher.action_issue()
             refund = self.env['abroj.contracting.voucher'].create({
                 'project_id': self.project.id, 'partner_id': self.client.id,
-                'kind': 'receipt', 'amount': 10, 'subcontractor_id': subcontract.id,
+                'kind': 'receipt', 'payment_purpose': 'supplier_refund', 'amount': 10, 'subcontractor_id': subcontract.id,
             })
             refund.action_issue()
             data = self.project._abroj_data()
@@ -1051,7 +1051,7 @@ class AbrojDashboardHttpCase(HttpCase):
         contract = save('contract', {'party_id': sub_party, 'agreed_amount': 100})
         for kind in ('payment', 'receipt'):
             # Party is filled from the subcontract (payment) or the project client (receipt).
-            voucher = save(kind, {'amount': 10, **({'subcontractor_id': contract} if kind == 'payment' else {})})
+            voucher = save(kind, {'amount': 10, 'payment_purpose': 'advance', **({'subcontractor_id': contract} if kind == 'payment' else {})})
             self.assertEqual(self.env['abroj.contracting.voucher'].browse(voucher).party_id.id, sub_party if kind == 'payment' else client.id)
             docs = self.rpc('/abroj/app/documents', {'project_id': project.id})
             self.assertEqual(docs['records'][kind][0]['name'], '')

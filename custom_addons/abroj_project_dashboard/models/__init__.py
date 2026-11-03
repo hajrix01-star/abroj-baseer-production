@@ -1,5 +1,6 @@
 from . import inbox
 from . import dashboard
+from . import voucher_workflow
 from . import promissory
 
 from . import gallery

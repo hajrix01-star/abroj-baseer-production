@@ -356,8 +356,8 @@ class AbrojApp(http.Controller):
     # the current user's environment, including record rules and model guards.
     _documents = {
         'contract': ('abroj.contracting.subcontractor', {'party_id', 'scope', 'agreed_amount', 'contract_type', 'payment_terms', 'duration_days'}),
-        'payment': ('abroj.contracting.voucher', {'party_id', 'amount', 'date', 'method', 'memo', 'subcontractor_id', 'vendor_contract_reference', 'vendor_contract_value'}),
-        'receipt': ('abroj.contracting.voucher', {'party_id', 'amount', 'date', 'method', 'memo'}),
+        'payment': ('abroj.contracting.voucher', {'party_id', 'amount', 'date', 'method', 'memo', 'subcontractor_id', 'vendor_contract_reference', 'vendor_contract_value', 'payment_purpose'}),
+        'receipt': ('abroj.contracting.voucher', {'party_id', 'amount', 'date', 'method', 'memo', 'payment_purpose'}),
         'promissory': ('abroj.promissory.note', {'party_id', 'amount', 'issue_date', 'due_date', 'place', 'notes', 'currency_id'}),
         'note': ('abroj.contracting.project.note', {'body', 'note_type'}),
         'invoice': ('abroj.contracting.invoice', {'number', 'subcontractor_id', 'amount', 'date', 'invoice_kind', 'buyer_vat'}),
@@ -424,6 +424,11 @@ class AbrojApp(http.Controller):
                         val = rec[name]
                         vals[name] = val.id if field.type == 'many2one' else (str(val) if field.type in ('date', 'datetime') and val else val)
                     row = {'id': rec.id, 'name': '' if rec.display_name == '/' else rec.display_name, 'state': rec.state if 'state' in rec._fields else '', 'stage': rec.abroj_stage if key in ('payment', 'receipt') else (rec.state if 'state' in rec._fields else ''), 'values': vals, 'can_write': rec.has_access('write')}
+                    if key in ('payment', 'receipt'):
+                        purpose_labels = dict(rec._fields['payment_purpose']._description_selection(request.env))
+                        review_labels = dict(rec._fields['workflow_status']._description_selection(request.env))
+                        row['payment_purpose_label'] = purpose_labels.get(rec.payment_purpose, '')
+                        row['workflow_status_label'] = review_labels.get(rec.workflow_status, '')
                     accountant = (request.env.user.has_group('account.group_account_manager')
                                   or request.env.user.has_group('account.group_account_invoice'))
                     if (key in ('cost', 'payment', 'receipt') and accountant
@@ -434,6 +439,11 @@ class AbrojApp(http.Controller):
                             row['accounting_action_url'] = ('/odoo/account.move/%s' % linked.id
                                                             if linked else '/odoo/%s/%s' % (model, rec.id))
                             row['accounting_entry_exists'] = bool(linked)
+                        if key in ('payment', 'receipt'):
+                            if rec.state == 'issued' and (not rec.workflow_reviewed or rec.payment_purpose == 'advance'):
+                                row['workflow_review_url'] = '/odoo/abroj.contracting.voucher/%s' % rec.id
+                            if rec.recognition_move_id:
+                                row['recognition_url'] = '/odoo/account.move/%s' % rec.recognition_move_id.id
                     rows.append(row)
                 result['records'][key] = rows
             return result
@@ -458,12 +468,16 @@ class AbrojApp(http.Controller):
                 sub = request.env['abroj.contracting.subcontractor'].browse(int(vals['subcontractor_id'])).exists()
                 if sub and sub.project_id == project and sub.party_id:
                     vals['party_id'] = sub.party_id.id
-            if kind == 'receipt' and not vals.get('party_id') and project.abroj_client_party_id:
-                vals['party_id'] = project.abroj_client_party_id.id
+            record = request.env[model].browse()
             if record_id:
                 record = request.env[model].browse(int(record_id)).exists()
                 if not record or record.project_id != project or (kind in ('payment', 'receipt') and record.kind != kind):
                     raise AccessError('المستند غير موجود')
+            if kind == 'receipt':
+                purpose = vals.get('payment_purpose', record.payment_purpose if record else False)
+                if purpose != 'supplier_refund' and not vals.get('party_id') and project.abroj_client_party_id:
+                    vals['party_id'] = project.abroj_client_party_id.id
+            if record_id:
                 with request.env.cr.savepoint():
                     record.write(vals)
             else:

@@ -11,7 +11,7 @@ test('project summary avoids repeated phase and financial lists while retaining 
   const legacy = app.slice(app.indexOf('async function legacyDetail'), app.indexOf('function edit('));
   assert.doesNotMatch(legacy, /p\.phases\.map|p\.contracts\.map|p\.vouchers\.map|cards\(\[p\]\)/);
   assert.match(screens, /\['phases',t\("s47"\)\]/);
-  assert.match(screens, /documentList\(\['contract'\]\)/);
+  assert.match(screens, /\+contractCards\(\)/);
   assert.match(screens, /voucherScreen\(\)/);
   assert.match(screens, /\['payment','receipt','promissory'\]/);
   assert.match(screens, /cards\(\[p\],true\)/);

@@ -1,5 +1,15 @@
 'use strict';
 const translations = {
+  "contractCardPaid": {"ar":"المدفوع", "en":"Paid"},
+  "contractCardRemaining": {"ar":"المتبقي", "en":"Remaining"},
+  "contractCardType": {"ar":"نوع العقد", "en":"Contract type"},
+  "contractCardTerms": {"ar":"شروط الدفع", "en":"Payment terms"},
+  "contractCardDuration": {"ar":"المدة بالأيام", "en":"Duration (days)"},
+  "contractCardScope": {"ar":"نطاق العمل", "en":"Scope"},
+  "contractCardVouchers": {"ar":"سندات الدفع", "en":"Payment vouchers"},
+  "contractCardNoVouchers": {"ar":"لا توجد سندات دفع", "en":"No payment vouchers"},
+  "contractCardValue": {"ar":"قيمة العقد", "en":"Contract value"},
+  "contractCardParty": {"ar":"الطرف", "en":"Party"},
   "phaseAdd": {"ar":"إضافة إلى المرحلة", "en":"Add to phase"},
   "voiceNote": {"ar":"ملاحظة صوتية", "en":"Voice note"},
   "textNote": {"ar":"ملاحظة نصية", "en":"Text note"},

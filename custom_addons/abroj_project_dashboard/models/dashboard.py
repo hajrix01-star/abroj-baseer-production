@@ -138,9 +138,16 @@ class AnalyticLine(models.Model):
         # A debit on a receipt/settlement is not an expense. Net both signs of
         # posted expenses so credit notes and reversals reduce project cost.
         # Standalone negative analytics remain a separate, existing cost source.
-        return [
+        scope = [
             ('account_id', '=', project.account_id.id or 0),
             ('company_id', '=', project.company_id.id or self.env.company.id),
+        ]
+        # Project managers can read operational analytics without accounting
+        # rights. Do not traverse protected journal items or elevate access.
+        if not all(self.env[model].has_access('read') for model in
+                   ('account.move.line', 'account.move', 'account.account')):
+            return scope + [('move_line_id', '=', False), ('amount', '<', 0)]
+        return scope + [
             '|', '&', ('move_line_id', '=', False), ('amount', '<', 0),
             '&', ('move_line_id.move_id.state', '=', 'posted'),
             ('move_line_id.account_id.account_type', 'in',

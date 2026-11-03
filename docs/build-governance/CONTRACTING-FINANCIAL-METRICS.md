@@ -79,3 +79,11 @@ Contract margin remains contract minus registered commitments, labeled according
    the AR screenshot was visually inspected. Artifacts: output/finance-cards-*.png
    and output/finance-cards-smoke.cjs. This is a component rendering check, not a
    claim of live browser/session acceptance. No user browser tab was touched.
+10. Final CI on7307797d exposed one HTTP access failure (all other dashboard tests
+    passed): a project manager without accounting read rights could not traverse
+    journal items in the expense domain. Added model-read checks before that
+    traversal; restricted users retain readable standalone/manual costs, with
+    no sudo or ACL expansion. Independent ERP reviewer approved the fallback.
+    Existing test_invoice_upload_requires_invoicing_rights then passed locally
+    (r7:0 failed/0 errors): project data200, invoice creation403. Complete final
+    CI must pass before merging/deployment; earlier failed runs are not approval.

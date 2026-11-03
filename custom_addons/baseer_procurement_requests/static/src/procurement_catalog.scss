@@ -342,6 +342,14 @@
     .o_prc_inline_loader, .o_prc_button_spinner { animation-duration: 1.2s; }
 }
 .o_prc_route_badge { font-size: .85rem; color: #475569; }
+.o_prc_editor_line_actions { display: flex; flex-wrap: wrap; gap: .15rem .5rem; }
+.o_prc_editor_line_actions .btn { padding: .25rem 0; min-height: 36px; font-size: .8rem; text-align: start; }
+.o_prc_edit_notice { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; padding: .65rem; margin-bottom: .65rem; border: 1px solid var(--prc-border); border-radius: .6rem; background: #f8f6f8; }
+.o_prc_removed_lines { display: grid; gap: .4rem; padding: .75rem; border: 1px dashed var(--prc-border); border-radius: .6rem; }
+.o_prc_removed_lines > div { display: flex; justify-content: space-between; align-items: center; gap: .5rem; }
+.o_prc_removed_lines > div > span { min-width: 0; overflow-wrap: anywhere; }
+.o_prc_removed_lines .btn { flex: 0 0 auto; min-height: 44px; }
+.o_prc_quick_dialog textarea { width: 100%; min-height: 6rem; padding: .65rem; border: 1px solid var(--prc-border); border-radius: .45rem; resize: vertical; }
 
 .o_prc_workspace_toolbar { display: flex; flex: 0 0 auto; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem 1rem; padding: .6rem 1rem; border-bottom: 1px solid var(--prc-border); background: #fff; }
 .o_prc_request_summary { display: flex; min-width: 0; max-width: 100%; align-items: center; flex-wrap: wrap; gap: .5rem .8rem; }

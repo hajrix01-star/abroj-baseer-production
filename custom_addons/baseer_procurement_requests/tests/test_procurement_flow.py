@@ -543,6 +543,271 @@ class ProcurementFlowCase(TransactionCase):
         ]
         return request, option, rows
 
+    def test_catalog_editor_load_quote_are_readonly(self):
+        request, option, _rows = self._receipt_added_fixture()
+        before = request.read(['state', 'write_date', 'line_ids', 'client_payload_hash'])[0]
+        counts = {model: self.env[model].search_count([]) for model in (
+            'baseer.procurement.request.line', 'baseer.procurement.purchase.option',
+            'baseer.procurement.price.history', 'stock.picking', 'stock.move',
+            'account.move', 'account.payment', 'mail.message',
+        )}
+        loaded = request.load_catalog_editor(request.id)
+        self.assertTrue(request.can_edit_plan)
+        self.assertTrue(loaded['can_open_receipt'])
+        self.assertEqual(loaded['warehouse_id'], self.warehouse.id)
+        self.assertEqual(loaded['quote']['total'], '20.00')
+        options = request.catalog_editor_options(request.id, option.product_id.id, loaded['snapshot'])
+        self.assertEqual(len(options), 1)
+        self.assertEqual(options[0]['id'], option.id)
+        self.assertEqual(options[0]['last_price'], '8.75')
+        self.assertIn('packaging_note', options[0])
+        rows = [
+            {'line_id': request.line_ids.id, 'option_id': self.option.id, 'quantity': '5', 'unit_price': '4'},
+            {'option_id': option.id, 'quantity': '2.5', 'unit_price': '8.75'},
+        ]
+        quote = request.quote_catalog_edit(request.id, rows, 'representative', False, loaded['snapshot'])
+        self.assertEqual(quote['total'], '41.88')
+        self.assertEqual(quote['lines'][1]['line_total'], '21.88')
+        self.assertFalse(quote['lines'][1]['line_id'])
+        self.assertEqual(request.read(['state', 'write_date', 'line_ids', 'client_payload_hash'])[0], before)
+        for model, count in counts.items():
+            self.assertEqual(self.env[model].search_count([]), count, model)
+        self.assertEqual(request.open_cashier_request(request.id)['params'], {'edit_request_id': request.id})
+        self.assertEqual(request.open_catalog_receipt(request.id)['params']['request_id'], request.id)
+
+    def test_catalog_editor_save_full_plan_and_route(self):
+        request, option, _rows = self._receipt_added_fixture()
+        original = request.line_ids
+        package = self.env['baseer.procurement.purchase.option'].create({
+            'name': 'Editor larger package', 'company_id': self.company.id,
+            'product_id': self.product.id, 'uom_id': self.uom.id, 'packaging_note': 'Editor box',
+        })
+        representative = self.env['res.partner'].with_company(self.company).create({
+            'name': 'Editor representative', 'is_purchase_representative': True,
+        })
+        cashier = self.env['res.users'].with_context(no_reset_password=True).create({
+            'name': 'Editor cashier', 'login': 'editor-%s' % uuid4(),
+            'company_id': self.company.id, 'company_ids': [Command.set(self.company.ids)],
+            'group_ids': [Command.set([self.env.ref('baseer_procurement_requests.group_procurement_cashier').id])],
+        })
+        original.manager_received_qty = 4
+        counts = {model: self.env[model].search_count([]) for model in (
+            'baseer.procurement.price.history', 'stock.picking', 'stock.move', 'account.move', 'account.payment',
+        )}
+        actor = request.with_user(cashier)
+        loaded = actor.load_catalog_editor(request.id)
+        result = actor.save_catalog_edit(request.id, [
+            {'line_id': original.id, 'option_id': package.id, 'quantity': '8.5', 'unit_price': '6'},
+            {'option_id': option.id, 'quantity': '2', 'unit_price': '8.75'},
+        ], 'cash', False, loaded['snapshot'])
+        request.invalidate_recordset()
+        original.invalidate_recordset()
+        self.assertEqual(request.state, 'sent')
+        self.assertEqual(request.purchase_route, 'cash')
+        self.assertFalse(request.purchaser_id)
+        self.assertFalse(request.representative_partner_id)
+        self.assertEqual(original.option_id, package)
+        self.assertEqual((original.requested_qty, original.requested_price), (8.5, 6))
+        self.assertEqual(original.manager_received_qty, 0)
+        self.assertEqual(original.actual_qty, 0)
+        self.assertEqual(original.actual_price, 0)
+        self.assertEqual(result['quote']['total'], '68.50')
+        self.assertNotEqual(result['snapshot'], loaded['snapshot'])
+        added = request.line_ids - original
+        final = actor.save_catalog_edit(request.id, [{
+            'line_id': added.id, 'option_id': option.id, 'quantity': '3', 'unit_price': '9',
+        }], 'representative', representative.id, result['snapshot'])
+        request.invalidate_recordset()
+        self.assertFalse(original.exists())
+        self.assertEqual(request.line_ids.ids, added.ids)
+        self.assertEqual(request.representative_partner_id, representative)
+        self.assertEqual(final['quote']['total'], '27.00')
+        notes = request.message_ids.filtered(lambda m: 'Request plan edited by' in str(m.body))
+        self.assertEqual(len(notes), 2)
+        self.assertTrue(all(cashier.display_name in str(note.body) for note in notes))
+        self.assertTrue(all('Staged received quantities' in str(note.body) for note in notes))
+        for model, count in counts.items():
+            self.assertEqual(self.env[model].search_count([]), count, model)
+        # Planned quantities may increase; actual receipt caps were not relaxed.
+        with self.assertRaises(ValidationError):
+            request.quote_actual_cart(request.id, [{
+                'line_id': added.id, 'actual_qty': '3.01', 'actual_price': '9',
+            }])
+        with self.assertRaises(UserError):
+            request.line_ids.write({'requested_qty': 4})
+
+    def test_catalog_editor_rejects_stale_and_invalid_payloads(self):
+        token = str(uuid4())
+        request_id = self.env['baseer.procurement.request'].create_from_catalog(
+            [{'option_id': self.option.id, 'quantity': '2'}], self.warehouse.id,
+            self.purchaser.id, False, token,
+        )
+        request = self.env['baseer.procurement.request'].browse(request_id)
+        request.action_mark_sent()
+        fingerprint = (request.client_token, request.client_payload_hash)
+        loaded = request.load_catalog_editor(request.id)
+        row = {'line_id': request.line_ids.id, 'option_id': self.option.id, 'quantity': '3', 'unit_price': '7'}
+        request.line_ids.manager_received_qty = 1
+        with self.assertRaisesRegex(ValidationError, 'changed since'):
+            request.save_catalog_edit(request.id, [row], 'representative', False, loaded['snapshot'])
+        loaded = request.load_catalog_editor(request.id)
+        invalid = [[], [row, row], [dict(row, line_id=987654321)], [dict(row, option_id=True)],
+                   [dict(row, quantity='0')], [dict(row, quantity='1.001')],
+                   [dict(row, unit_price='-1')], [dict(row, unit_price='NaN')], [row] * 201]
+        for rows in invalid:
+            with self.subTest(rows=rows), self.assertRaises(ValidationError):
+                request.save_catalog_edit(request.id, rows, 'representative', False, loaded['snapshot'])
+        with self.assertRaises(ValidationError):
+            request.save_catalog_edit(request.id, [row], 'invalid', False, loaded['snapshot'])
+        with self.assertRaises(ValidationError):
+            request.save_catalog_edit(request.id, [row], 'cash', self.env.user.partner_id.id, loaded['snapshot'])
+        with self.assertRaises(ValidationError):
+            request.save_catalog_edit(request.id, [row], 'cash', False, 'forged')
+        saved = request.save_catalog_edit(request.id, [row], 'bank_transfer', False, loaded['snapshot'])
+        request.invalidate_recordset()
+        self.assertEqual((request.client_token, request.client_payload_hash), fingerprint)
+        self.assertEqual(saved['purchase_route'], 'bank_transfer')
+
+    def test_catalog_editor_locks_closed_foreign_and_forged_contexts(self):
+        request, option, _rows = self._receipt_added_fixture()
+        loaded = request.load_catalog_editor(request.id)
+        rows = [{'line_id': request.line_ids.id, 'option_id': self.option.id, 'quantity': '6', 'unit_price': '4'}]
+        requester = self._route_requester()
+        with self.assertRaises(AccessError):
+            requester.load_catalog_editor(request.id)
+        other = self.env['res.company'].create({'name': 'Editor active company boundary'})
+        self.env.user.company_ids |= other
+        foreign = request.with_context(allowed_company_ids=[other.id, self.company.id])
+        for method in ('load_catalog_editor', 'save_catalog_edit'):
+            with self.assertRaises(AccessError):
+                if method == 'load_catalog_editor':
+                    getattr(foreign, method)(request.id)
+                else:
+                    getattr(foreign, method)(request.id, rows, 'cash', False, loaded['snapshot'])
+        with self.assertRaises(UserError):
+            request.sudo().with_context(**{BWORK_RECEIPT_INTERNAL: True}).load_catalog_editor(request.id)
+        for fake in (True, 'approved', {'proof': True}, object()):
+            forged = request.with_context(_baseer_catalog_editor_proof=fake)
+            with self.assertRaises(UserError):
+                forged.line_ids.write({'requested_qty': 6})
+            with self.assertRaises(AccessError):
+                forged.env['baseer.procurement.request.line'].create({
+                    'request_id': request.id, 'option_id': option.id, 'requested_qty': 1,
+                })
+            with self.assertRaises(UserError):
+                forged.line_ids.unlink()
+        request.line_ids.manager_received_qty = 4
+        request.action_confirm_manager_receipt()
+        for method in ('load_catalog_editor', 'save_catalog_edit'):
+            with self.assertRaises(UserError):
+                if method == 'load_catalog_editor':
+                    getattr(request, method)(request.id)
+                else:
+                    getattr(request, method)(request.id, rows, 'cash', False, loaded['snapshot'])
+        self.assertFalse(request.can_edit_plan)
+        with self.assertRaises(ValidationError):
+            request.quote_actual_cart(request.id, [{'line_id': request.line_ids.id, 'actual_qty': '4.01', 'actual_price': '4'}])
+        self.assertFalse(request.cashier_request_cart(request.id)['can_edit_plan'])
+
+    def test_catalog_editor_cancel_and_atomic_rollback(self):
+        request, option, _rows = self._receipt_added_fixture()
+        request.line_ids.manager_received_qty = 2
+        before = request.load_catalog_editor(request.id)
+        rows = [{'option_id': option.id, 'quantity': '3', 'unit_price': '8.75'}]
+        counts = {model: self.env[model].search_count([]) for model in (
+            'baseer.procurement.request.line', 'baseer.procurement.price.history',
+            'stock.picking', 'stock.move', 'account.move', 'mail.message',
+        )}
+        with patch.object(type(request), 'message_post', side_effect=UserError('Editor audit fixture failure')):
+            with self.assertRaisesRegex(UserError, 'audit fixture failure'):
+                request.save_catalog_edit(request.id, rows, 'cash', False, before['snapshot'])
+        request.invalidate_recordset()
+        self.assertEqual(request.load_catalog_editor(request.id), before)
+        for model, count in counts.items():
+            self.assertEqual(self.env[model].search_count([]), count, model)
+        with self.assertRaises(ValidationError):
+            request.cancel_catalog_edit(request.id, before['snapshot'], '')
+        with self.assertRaises(ValidationError):
+            request.cancel_catalog_edit(request.id, 'stale', 'Changed purchasing plan')
+        result = request.cancel_catalog_edit(request.id, before['snapshot'], 'Changed purchasing plan')
+        self.assertEqual(result['state'], 'cancel')
+        self.assertEqual(request.cancellation_reason, 'Changed purchasing plan')
+        self.assertFalse(request.picking_id)
+        with self.assertRaises(UserError):
+            request.load_catalog_editor(request.id)
+
+    def test_catalog_editor_mutations_share_parent_lock(self):
+        request = self._request()
+        other = self._request()
+        locks = []
+        execute = type(self.env.cr).execute
+
+        def capture(cursor, query, *args, **kwargs):
+            if isinstance(query, str) and 'FROM baseer_procurement_request WHERE id IN' in query:
+                locks.append(args[0][0])
+            return execute(cursor, query, *args, **kwargs)
+
+        with patch.object(type(self.env.cr), 'execute', capture):
+            (other.line_ids | request.line_ids).write({'requested_price': 3})
+            self.assertIn(tuple(sorted([request.id, other.id])), locks)
+            request.write({'whatsapp_number': 'editor-fixture'})
+            self.assertIn((request.id,), locks)
+            before_insert = request.load_catalog_editor(request.id)
+            created = self.env['baseer.procurement.request.line'].create({
+                'request_id': request.id, 'option_id': self.option.id, 'requested_qty': 1,
+            })
+            self.assertNotEqual(request._catalog_editor_snapshot(), before_insert['snapshot'])
+            with self.assertRaisesRegex(ValidationError, 'changed since'):
+                request.save_catalog_edit(request.id, [{
+                    'line_id': (request.line_ids - created).id, 'option_id': self.option.id,
+                    'quantity': '3', 'unit_price': '2',
+                }], 'cash', False, before_insert['snapshot'])
+            created.unlink()
+            self.assertGreaterEqual(locks.count((request.id,)), 3)
+        request.action_mark_sent()
+        loaded = request.load_catalog_editor(request.id)
+        events = []
+        lock_method = type(request)._lock_catalog_parent_rows
+        snapshot_method = type(request)._check_catalog_editor_snapshot
+
+        def lock(record):
+            events.append('lock')
+            return lock_method(record)
+
+        def snapshot(record, value):
+            events.append('snapshot')
+            return snapshot_method(record, value)
+
+        with patch.object(type(request), '_lock_catalog_parent_rows', lock), patch.object(
+                type(request), '_check_catalog_editor_snapshot', snapshot):
+            request.save_catalog_edit(request.id, [{
+                'line_id': request.line_ids.id, 'option_id': self.option.id, 'quantity': '3', 'unit_price': '2',
+            }], 'cash', False, loaded['snapshot'])
+        self.assertLess(events.index('lock'), events.index('snapshot'))
+        company = self.env['res.company'].create({'name': 'Editor lock boundary'})
+        cashier = self.env['res.users'].with_context(no_reset_password=True).create({
+            'name': 'Editor multi-company cashier', 'login': 'editor-lock-%s' % uuid4(),
+            'company_id': company.id, 'company_ids': [Command.set([company.id, self.company.id])],
+            'group_ids': [Command.set([self.env.ref('baseer_procurement_requests.group_procurement_cashier').id])],
+        })
+        foreign = request.with_user(cashier).with_context(allowed_company_ids=[company.id, self.company.id])
+        locks.clear()
+        with patch.object(type(self.env.cr), 'execute', capture):
+            for action in ('action_mark_sent', 'action_confirm_manager_receipt', 'action_cancel'):
+                with self.subTest(action=action), self.assertRaises(AccessError):
+                    getattr(foreign, action)()
+            with self.assertRaises(AccessError):
+                foreign.write({'whatsapp_number': 'forged active company'})
+            with self.assertRaises(AccessError):
+                foreign.line_ids.write({'requested_price': 5})
+            with self.assertRaises(AccessError):
+                foreign.line_ids.unlink()
+            with self.assertRaises(AccessError):
+                foreign.env['baseer.procurement.request.line'].create({
+                    'request_id': request.id, 'option_id': self.option.id, 'requested_qty': 1,
+                })
+        self.assertEqual(locks, [])
+
     def test_receipt_added_quote_defaults_price_without_writes(self):
         request, option, rows = self._receipt_added_fixture()
         original = request.line_ids

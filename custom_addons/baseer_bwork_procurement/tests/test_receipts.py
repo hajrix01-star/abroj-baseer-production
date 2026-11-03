@@ -5,7 +5,7 @@ from uuid import uuid4
 from odoo.addons.baseer_bwork.compatibility import LEGACY_SOURCE_CHANNEL
 
 from odoo import Command
-from odoo.exceptions import AccessError, ValidationError
+from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.tests import TransactionCase, tagged
 
 from odoo.addons.baseer_bwork.contracts import ProtocolError
@@ -101,6 +101,26 @@ class BWorkReceiptCase(TransactionCase):
         company.write({'bwork_hidden': False})
         self.assertEqual([row['id'] for row in self.service._v2_receipts_all()['orders']], [self.order_id])
         self.assertEqual(self.order.read(['company_id', 'state', 'requested_total', 'line_ids']), before)
+
+    def test_native_catalog_editor_cannot_edit_bwork_owned_request(self):
+        cashier = self.env['res.users'].with_context(no_reset_password=True).create({
+            'name': 'BWork native editor boundary', 'login': 'bwork-editor-%s' % uuid4().hex,
+            'company_id': self.company.id, 'company_ids': [Command.set(self.company.ids)],
+            'group_ids': [Command.set([
+                self.env.ref('baseer_procurement_requests.group_procurement_cashier').id,
+            ])],
+        })
+        native = self.order.with_user(cashier).with_context(allowed_company_ids=self.company.ids)
+        before = self.order.read(['state', 'line_ids', 'client_payload_hash', 'write_date'])
+        self.assertFalse(native.can_edit_plan)
+        with self.assertRaises(UserError):
+            native.load_catalog_editor(self.order.id)
+        with self.assertRaises(UserError):
+            native.save_catalog_edit(self.order.id, [{
+                'line_id': self.order.line_ids.id, 'option_id': self.option.id,
+                'quantity': '9', 'unit_price': '2',
+            }], 'cash', False, 'forged-snapshot')
+        self.assertEqual(self.order.read(['state', 'line_ids', 'client_payload_hash', 'write_date']), before)
 
     def test_global_receipts_page_filters_company_state_channel_and_rechecks_grants(self):
         self.operator.write({'company_ids': [Command.link(self.foreign.id)]})

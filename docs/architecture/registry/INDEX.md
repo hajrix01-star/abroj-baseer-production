@@ -971,3 +971,10 @@ baseer_native_spend remains unchanged; integration fixture/CI now installs it.
 Versionscontracting19.0.1.8.1/dashboard19.0.1.9.1;32focused cases and native
 AR390/EN1280 two-wizard multi-plan picker verified, finalCI/activation pending.
 Exact historical source/rationale preserved in the same governance record.
+
+Native-dimension amendment accepted: lastVerifiedCommit
+9a9f812a3ef88c6599547ed9ad3b757b0b30a1d9 (PR662), identical to reviewed8ef909c4c.
+All6checks passed,65contracting+123dashboard cases; nativeSpend mandatory fixture,
+native two-wizard UI and independent GO complete. Policybaseer-2026-11-03-voucher-analytics
+upgrades contracting19.0.1.8.1/dashboard19.0.1.9.1 only. Existing nativeSpend
+configuration retained; protected activation and bounded historical review pending.

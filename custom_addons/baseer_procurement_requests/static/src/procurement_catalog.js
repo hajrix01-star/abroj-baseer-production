@@ -4,6 +4,9 @@ import { Component, onMounted, onWillStart, onWillUnmount, useRef, useState } fr
 import { registry } from "@web/core/registry";
 import { _t } from "@web/core/l10n/translation";
 import { useService } from "@web/core/utils/hooks";
+import { Dropdown } from "@web/core/dropdown/dropdown";
+import { DropdownItem } from "@web/core/dropdown/dropdown_item";
+import { useDropdownState } from "@web/core/dropdown/dropdown_hooks";
 
 const CATALOG_PAGE_SIZE = 48;
 const RECENT_PAGE_SIZE = 24;
@@ -14,6 +17,7 @@ function newClientToken() {
 export class ProcurementCatalog extends Component {
     static template = "baseer_procurement_requests.ProcurementCatalog";
     static props = ["*"];
+    static components = { Dropdown, DropdownItem };
 
     setup() {
         this.orm = useService("orm");
@@ -28,7 +32,12 @@ export class ProcurementCatalog extends Component {
         this.quickProductButton = useRef("quickProductButton");
         this.quickProductDialog = useRef("quickProductDialog");
         this.quickProductName = useRef("quickProductName");
+        this.routeDropdown = useDropdownState();
         this.handleWindowKeydown = (event) => {
+            if (this.routeDropdown.isOpen) {
+                if (event.key === "Escape") this.routeDropdown.close();
+                return;
+            }
             if (this.state.quickProductOpen) {
                 if (event.key === "Escape") this.closeQuickProduct();
                 else if (event.key === "Tab") this.trapQuickProductFocus(event);
@@ -595,6 +604,15 @@ export class ProcurementCatalog extends Component {
 
     recentMoneyText(request) {
         return this.formatMoney(request.total_text, request.currency_symbol, request.currency_position);
+    }
+
+    get purchaseRouteSummary() {
+        if (this.state.purchaseRoute === "cash") return _t("Cash");
+        if (this.state.purchaseRoute === "bank_transfer") return _t("Bank Transfer");
+        const name = this.state.existingRequest?.representative_name ||
+            this.state.representatives.find((representative) => representative.id === this.state.representativePartnerId)?.name;
+        if (name) return _t("Representative: %s", name);
+        return this.state.existingRequest ? _t("Legacy request linked to a purchasing employee") : _t("Choose a representative");
     }
 
     get canSave() {

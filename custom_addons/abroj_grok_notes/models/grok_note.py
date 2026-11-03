@@ -43,7 +43,7 @@ class GrokNote(models.Model):
     title = fields.Char()
     body = fields.Text()
     is_list = fields.Boolean()
-    item_ids = fields.One2many('grok.note.item', 'note_id')
+    item_ids = fields.One2many('grok.note.item', 'note_id', order='sequence, id')
     item_count = fields.Integer(compute='_compute_item_counts')
     done_count = fields.Integer(compute='_compute_item_counts')
     color = fields.Selection(COLORS, default='default')

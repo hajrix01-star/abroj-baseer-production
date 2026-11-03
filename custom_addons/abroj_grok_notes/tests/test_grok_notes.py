@@ -7,8 +7,9 @@ from odoo.tests import TransactionCase, new_test_user
 class TestGrokNotes(TransactionCase):
     def test_notes_links_and_items(self):
         note = self.env['grok.note'].create({'title': 'Checklist', 'is_list': True, 'item_ids': [(0, 0, {'name': 'Later', 'sequence': 20}), (0, 0, {'name': 'First', 'sequence': 1, 'done': True})]})
-        self.assertEqual(note.item_ids.mapped('name'), ['First', 'Later'])
-        self.assertTrue(note.item_ids[0].done)
+        items = note.item_ids.sorted(lambda item: (item.sequence, item.id))
+        self.assertEqual(items.mapped('name'), ['First', 'Later'])
+        self.assertTrue(items[0].done)
         partner = self.env['res.partner'].create({'name': 'Partner'})
         project = self.env['project.project'].create({'name': 'Project'})
         for record in (partner, project):

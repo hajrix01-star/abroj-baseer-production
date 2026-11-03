@@ -18,6 +18,8 @@ OPTION_SYSTEM_WRITE = '_baseer_procurement_option_system_write'
 FAVORITE_SYSTEM_WRITE = '_baseer_procurement_favorite_system_write'
 IDENTITY_SYSTEM_WRITE = '_baseer_procurement_identity_system_write'
 BWORK_RECEIPT_INTERNAL = 'bwork_receipt_internal'
+_CATALOG_EDITOR_CONTEXT = '_baseer_catalog_editor_proof'
+_CATALOG_EDITOR_PROOF = object()
 MONEY_QUANTUM = Decimal('0.01')
 MAX_CATALOG_LINES = 200
 MAX_CATALOG_HIGHLIGHTS = 12
@@ -29,6 +31,20 @@ def _is_finite_number(value):
         return math.isfinite(float(value))
     except (TypeError, ValueError):
         return False
+
+
+def _catalog_editor_proven(records):
+    return bool(records.env.su and records.env.context.get(
+        _CATALOG_EDITOR_CONTEXT
+    ) is _CATALOG_EDITOR_PROOF)
+
+
+def _catalog_identifier(value):
+    text = str(value)
+    if (isinstance(value, bool) or len(text) > 10
+            or not re.fullmatch(r'[1-9][0-9]*', text) or int(text) > 2147483647):
+        raise ValidationError(_('The cart contains an invalid material.'))
+    return int(text)
 
 
 def _decimal_input(value, label, *, positive=False):
@@ -380,6 +396,13 @@ class ProcurementRequest(models.Model):
         ('cash', 'Cash'),
         ('bank_transfer', 'Bank Transfer'),
     ], string='Purchase route', default='representative', required=True, index=True, tracking=True)
+    can_edit_plan = fields.Boolean(compute='_compute_can_edit_catalog_plan')
+
+    @api.depends('state', 'company_id')
+    @api.depends_context('uid', 'company')
+    def _compute_can_edit_catalog_plan(self):
+        for request in self:
+            request.can_edit_plan = request._can_edit_catalog_plan()
 
     @api.constrains('purchase_route', 'representative_partner_id', 'purchaser_id')
     def _check_purchase_route(self):
@@ -542,6 +565,7 @@ class ProcurementRequest(models.Model):
         self._require_active_company_for_cashier()
         if not self.env.user.has_group('baseer_procurement_requests.group_procurement_user'):
             raise AccessError(_('You are not allowed to send procurement requests.'))
+        self._lock_catalog_parent_rows()
         self._require_state('draft')
         if not self.line_ids:
             raise UserError(_('Add at least one raw material before sending the request.'))
@@ -554,6 +578,7 @@ class ProcurementRequest(models.Model):
         self._require_active_company_for_cashier()
         if not self.env.user.has_group('baseer_procurement_requests.group_procurement_manager'):
             raise AccessError(_('Only a procurement manager can confirm the operational receipt.'))
+        self._lock_catalog_parent_rows()
         self._require_state('sent')
         if not any(line.manager_received_qty > 0 for line in self.line_ids):
             raise UserError(_('Enter at least one physically received quantity.'))
@@ -576,6 +601,7 @@ class ProcurementRequest(models.Model):
         self._require_active_company_for_cashier()
         if not self.env.user.has_group('baseer_procurement_requests.group_procurement_user'):
             raise AccessError(_('You are not allowed to cancel procurement requests.'))
+        self._lock_catalog_parent_rows()
         self._require_state('draft', 'sent')
         if not self.cancellation_reason or not self.cancellation_reason.strip():
             raise ValidationError(_('Enter a cancellation reason before cancelling the procurement request.'))
@@ -958,11 +984,12 @@ class ProcurementRequest(models.Model):
         }
 
     @api.model
-    def _serialize_catalog_products(self, products, favorite_ids=None, usage_stats=None):
+    def _serialize_catalog_products(self, products, favorite_ids=None, usage_stats=None, *, ensure_defaults=True):
         products = products.exists()
         if not products:
             return []
-        self._default_options_for_products(products)
+        if ensure_defaults:
+            self._default_options_for_products(products)
         product_ids = products.ids
         favorite_ids = self._catalog_favorite_ids(product_ids) if favorite_ids is None else set(favorite_ids)
         usage_stats = usage_stats or {}
@@ -1251,6 +1278,7 @@ class ProcurementRequest(models.Model):
                 'name': record.name,
                 'state': record.state,
                 'state_label': labels.get(record.state, record.state),
+                'can_edit_plan': record._can_edit_catalog_plan(),
                 'purchase_route': record.purchase_route,
                 'purchase_route_label': record._purchase_route_label(),
                 'request_date': fields.Datetime.to_string(record.request_date),
@@ -1272,6 +1300,266 @@ class ProcurementRequest(models.Model):
             'currency_position': currency.position or 'after',
         }
 
+    def _lock_catalog_parent_rows(self):
+        """Every supported header/line mutation uses the same parent lock order."""
+        if self:
+            self._require_active_company_for_cashier()
+            self.check_access('write')
+            self.flush_recordset()
+            self.env.cr.execute(
+                'SELECT id FROM baseer_procurement_request WHERE id IN %s ORDER BY id FOR UPDATE',
+                [tuple(sorted(self.ids))],
+            )
+            self.invalidate_recordset()
+            self.env['baseer.procurement.request.line'].invalidate_model()
+        return self.exists()
+
+    def _touch_catalog_parent_rows(self):
+        """Make line mutations visible to repeatable-read parent lock waiters.
+
+        A parent lock alone does not change its MVCC version. Bumping it under
+        that lock forces a stale editor to retry instead of missing a newly
+        inserted line in its older transaction snapshot.
+        """
+        if self:
+            self.env.cr.execute(
+                "UPDATE baseer_procurement_request SET write_date = clock_timestamp() AT TIME ZONE 'UTC', "
+                'write_uid = %s WHERE id IN %s',
+                [self.env.uid, tuple(sorted(self.ids))],
+            )
+            self.invalidate_recordset(['write_date', 'write_uid', 'line_ids'])
+
+    def _can_edit_catalog_plan(self):
+        self.ensure_one()
+        bwork_owned = (
+            'source_channel' in self._fields
+            and getattr(self, '_bwork_source_channel', None) is not None
+            and self.source_channel == self._bwork_source_channel
+        )
+        return bool(
+            self.state in ('draft', 'sent') and self.company_id == self.env.company
+            and not bwork_owned and not _is_bwork_receipt_internal(self.env)
+            and self.env.user.has_group('baseer_procurement_requests.group_procurement_cashier')
+        )
+
+    @api.model
+    def _catalog_editor_request(self, request_id, *, lock=False):
+        request = self.browse(_catalog_identifier(request_id)).exists()
+        if not request or request.company_id != self.env.company:
+            raise AccessError(_('The procurement request is unavailable in the active company.'))
+        if not self.env.user.has_group('baseer_procurement_requests.group_procurement_cashier'):
+            raise AccessError(_('Only a procurement cashier can edit this request.'))
+        if lock:
+            request = request._lock_catalog_parent_rows()
+        if not request or not request._can_edit_catalog_plan():
+            raise UserError(_('This request is locked for editing after representative handover or completion.'))
+        return request
+
+    def _catalog_editor_snapshot(self):
+        self.ensure_one()
+        payload = {
+            'id': self.id, 'company': self.company_id.id, 'warehouse': self.warehouse_id.id,
+            'state': self.state, 'route': self.purchase_route,
+            'representative': self.representative_partner_id.id, 'purchaser': self.purchaser_id.id,
+            'write_date': str(self.write_date),
+            'lines': [{
+                'id': line.id, 'option': line.option_id.id,
+                'quantity': str(line.requested_qty), 'price': str(line.requested_price),
+                'manager_quantity': str(line.manager_received_qty),
+                'actual_quantity': str(line.actual_qty), 'actual_price': str(line.actual_price),
+                'write_date': str(line.write_date),
+            } for line in self.line_ids.sorted('id')],
+        }
+        return hashlib.sha256(json.dumps(payload, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
+
+    def _check_catalog_editor_snapshot(self, snapshot):
+        self.ensure_one()
+        if not isinstance(snapshot, str) or snapshot != self._catalog_editor_snapshot():
+            raise ValidationError(_('This request changed since it was opened. Reload it before saving.'))
+
+    def _prepare_catalog_edit(self, lines, purchase_route, representative_partner_id):
+        self.ensure_one()
+        if not isinstance(lines, list) or not lines or len(lines) > MAX_CATALOG_LINES:
+            raise ValidationError(_('The cart must contain between 1 and %s materials.') % MAX_CATALOG_LINES)
+        if purchase_route not in ('representative', 'cash', 'bank_transfer'):
+            raise ValidationError(_('Choose a valid purchase route.'))
+        header = {'purchase_route': purchase_route, 'representative_partner_id': False, 'purchaser_id': False}
+        if purchase_route != 'representative':
+            if representative_partner_id:
+                raise ValidationError(_('Cash and bank-transfer requests cannot have a purchase representative.'))
+        elif representative_partner_id:
+            partner = self.env['res.partner'].browse(_catalog_identifier(representative_partner_id)).exists()
+            if (not partner or not partner.active or partner.is_company or partner.parent_id
+                    or (partner.company_id and partner.company_id != self.company_id)
+                    or not partner.with_company(self.company_id).is_purchase_representative):
+                raise ValidationError(_('Choose a purchase representative enabled for this company.'))
+            header['representative_partner_id'] = partner.id
+        elif self.purchase_route == 'representative' and self.purchaser_id:
+            header['purchaser_id'] = self.purchaser_id.id
+        else:
+            raise ValidationError(_('Choose the purchasing representative before saving the request.'))
+        originals = {line.id: line for line in self.line_ids}
+        old_ids, option_ids = set(), set()
+        parsed = []
+        for row in lines:
+            if not isinstance(row, dict):
+                raise ValidationError(_('The cart contains an invalid material.'))
+            line_id = _catalog_identifier(row['line_id']) if row.get('line_id') else False
+            if line_id and (line_id not in originals or line_id in old_ids):
+                raise ValidationError(_('The edited cart contains an invalid request line.'))
+            if line_id:
+                old_ids.add(line_id)
+            option_id = _catalog_identifier(row.get('option_id'))
+            if option_id in option_ids:
+                raise ValidationError(_('A material cannot appear twice in the same cart.'))
+            option_ids.add(option_id)
+            try:
+                quantity = _decimal_input(row.get('quantity'), _('Quantity'), positive=True)
+                price = _decimal_input(row.get('unit_price'), _('Unit price'))
+            except (ValidationError, InvalidOperation):
+                raise ValidationError(_('Each material needs a positive quantity and a nonnegative price with at most two decimal places.'))
+            parsed.append((line_id, option_id, quantity, price))
+        options = self.env['baseer.procurement.purchase.option'].browse(sorted(option_ids)).exists()
+        if len(options) != len(option_ids):
+            raise AccessError(_('The cart contains an unavailable material.'))
+        self._assert_catalog_options(options)
+        if len(options.product_id) != len(options):
+            raise ValidationError(_('A material cannot appear twice in the same cart.'))
+        by_option = {option.id: option for option in options}
+        return header, [{
+            'line': originals[line_id] if line_id else self.env['baseer.procurement.request.line'],
+            'option': by_option[option_id], 'quantity': quantity, 'price': price,
+        } for line_id, option_id, quantity, price in parsed]
+
+    def _catalog_edit_quote(self, plan):
+        rows, total = [], Decimal('0.00')
+        for entry in plan:
+            amount = (entry['quantity'] * entry['price']).quantize(MONEY_QUANTUM, rounding=ROUND_HALF_UP)
+            total += amount
+            rows.append({
+                'line_id': entry['line'].id or False, 'option_id': entry['option'].id,
+                'quantity': _decimal_text(entry['quantity']).replace(',', ''),
+                'quantity_text': _decimal_text(entry['quantity']),
+                'unit_price': _decimal_text(entry['price']).replace(',', ''),
+                'unit_price_text': _decimal_text(entry['price']),
+                'line_total': _decimal_text(amount).replace(',', ''), 'line_total_text': _decimal_text(amount),
+            })
+        return self._money_response(rows, total)
+
+    @api.model
+    def load_catalog_editor(self, request_id):
+        request = self._catalog_editor_request(request_id)
+        currency = self.env.company.currency_id
+        plan = [{
+            'line': line, 'option': line.option_id,
+            'quantity': _decimal_input(line.requested_qty, _('Quantity'), positive=True),
+            'price': _decimal_input(line.requested_price, _('Unit price')),
+        } for line in request.line_ids.sorted('id')]
+        return {
+            'id': request.id, 'name': request.name, 'state': request.state,
+            'warehouse_id': request.warehouse_id.id,
+            'purchase_route': request.purchase_route,
+            'representative_partner_id': request.representative_partner_id.id or False,
+            'representative_name': request.representative_partner_id.display_name or request.purchaser_id.name or '',
+            'snapshot': request._catalog_editor_snapshot(), 'can_cancel': True,
+            'can_open_receipt': request.state == 'sent',
+            'items': [{
+                'line_id': entry['line'].id, 'option_id': entry['option'].id,
+                'product_id': entry['option'].product_id.id,
+                'name': entry['option'].product_id.name, 'unit': entry['option'].name,
+                'packaging': entry['option'].packaging_note or '',
+                'quantity': _decimal_text(entry['quantity']).replace(',', ''),
+                'unit_price': _decimal_text(entry['price']).replace(',', ''),
+                'currency_symbol': currency.symbol or currency.name,
+            } for entry in plan],
+            'quote': request._catalog_edit_quote(plan),
+        }
+
+    @api.model
+    def quote_catalog_edit(self, request_id, lines, purchase_route='representative',
+                           representative_partner_id=False, snapshot=False):
+        request = self._catalog_editor_request(request_id)
+        request._check_catalog_editor_snapshot(snapshot)
+        _header, plan = request._prepare_catalog_edit(lines, purchase_route, representative_partner_id)
+        return {**request._catalog_edit_quote(plan), 'snapshot': snapshot}
+
+    @api.model
+    def catalog_editor_options(self, request_id, product_id, snapshot):
+        request = self._catalog_editor_request(request_id)
+        request._check_catalog_editor_snapshot(snapshot)
+        product = self.env['product.product'].browse(_catalog_identifier(product_id)).exists()
+        if not product:
+            raise AccessError(_('The cart contains an unavailable material.'))
+        self._assert_catalog_products(product)
+        return self._serialize_catalog_products(product, ensure_defaults=False)
+
+    @api.model
+    def save_catalog_edit(self, request_id, lines, purchase_route='representative',
+                          representative_partner_id=False, snapshot=False):
+        request = self._catalog_editor_request(request_id, lock=True)
+        request._check_catalog_editor_snapshot(snapshot)
+        header, plan = request._prepare_catalog_edit(lines, purchase_route, representative_partner_id)
+        before = request.load_catalog_editor(request.id)
+        retained = {entry['line'].id for entry in plan if entry['line']}
+        proof = {_CATALOG_EDITOR_CONTEXT: _CATALOG_EDITOR_PROOF}
+        with self.env.cr.savepoint():
+            (request.line_ids - request.line_ids.browse(sorted(retained))).sudo().with_context(**proof).unlink()
+            for entry in plan:
+                values = {
+                    'option_id': entry['option'].id, 'requested_qty': float(entry['quantity']),
+                    'requested_price': float(entry['price']),
+                    'manager_received_qty': 0, 'actual_qty': 0, 'actual_price': 0,
+                }
+                if entry['line']:
+                    entry['line'].sudo().with_context(**proof).write(values)
+                else:
+                    self.env['baseer.procurement.request.line'].sudo().with_context(**proof).create({
+                        'request_id': request.id, **values,
+                    })
+            request.sudo().with_context(**proof).write(header)
+            request.invalidate_recordset()
+            after = request.load_catalog_editor(request.id)
+            request.message_post(
+                body=_(
+                    'Request plan edited by %(actor)s. Before: %(before)s. After: %(after)s. '
+                    'Staged received quantities and actual prices were reset; no receipt was confirmed.',
+                    actor=self.env.user.display_name,
+                    before=json.dumps({'route': before['purchase_route'], 'representative': before['representative_name'], 'items': before['items']}, ensure_ascii=False),
+                    after=json.dumps({'route': after['purchase_route'], 'representative': after['representative_name'], 'items': after['items']}, ensure_ascii=False),
+                ), subtype_xmlid='mail.mt_note',
+            )
+            # mail.thread may update the parent write_date, so return the final version.
+            request.invalidate_recordset()
+            return request.load_catalog_editor(request.id)
+
+    @api.model
+    def cancel_catalog_edit(self, request_id, snapshot, reason):
+        request = self._catalog_editor_request(request_id, lock=True)
+        request._check_catalog_editor_snapshot(snapshot)
+        if not isinstance(reason, str) or not reason.strip() or len(reason) > 1000:
+            raise ValidationError(_('Enter a cancellation reason of at most 1000 characters.'))
+        with self.env.cr.savepoint():
+            request.write({'cancellation_reason': reason.strip()})
+            request.action_cancel()
+        return {'id': request.id, 'name': request.name, 'state': request.state}
+
+    def action_open_catalog_editor(self):
+        self.ensure_one()
+        request = self._catalog_editor_request(self.id)
+        return {'type': 'ir.actions.client', 'tag': 'baseer_procurement_requests.catalog',
+                'name': request.display_name, 'params': {'edit_request_id': request.id}}
+
+    @api.model
+    def open_catalog_receipt(self, request_id):
+        request = self.browse(_catalog_identifier(request_id)).exists()
+        if not request or request.company_id != self.env.company:
+            raise AccessError(_('The procurement request is unavailable in the active company.'))
+        request._require_state('sent', 'received')
+        if not self.env.user.has_group('baseer_procurement_requests.group_procurement_cashier'):
+            raise AccessError(_('Only a procurement cashier can confirm a received request.'))
+        return {'type': 'ir.actions.client', 'tag': 'baseer_procurement_requests.catalog',
+                'name': request.display_name, 'params': {'request_id': request.id, 'mode': 'cashier_receipt'}}
+
     @api.model
     def open_cashier_request(self, request_id):
         """Open the original request only; this method never clones a cart."""
@@ -1279,6 +1567,8 @@ class ProcurementRequest(models.Model):
         request = self.browse(int(request_id)).exists()
         if not request or request.company_id != self.env.company:
             raise AccessError(_('The procurement request is unavailable in the active company.'))
+        if request._can_edit_catalog_plan():
+            return request.action_open_catalog_editor()
         if request.state in ('sent', 'received'):
             if not self.env.user.has_group('baseer_procurement_requests.group_procurement_cashier'):
                 raise AccessError(_('Only a procurement cashier can confirm a received request.'))
@@ -1312,6 +1602,7 @@ class ProcurementRequest(models.Model):
         return {
             'id': request.id, 'name': request.name, 'state': request.state,
             'can_add_materials': request._cashier_can_add_receipt_materials(),
+            'can_edit_plan': request._can_edit_catalog_plan(),
             'purchase_route': request.purchase_route,
             'purchase_route_label': request._purchase_route_label(),
             'warehouse_id': request.warehouse_id.id,
@@ -1723,6 +2014,13 @@ class ProcurementRequest(models.Model):
         }
 
     def write(self, vals):
+        self._lock_catalog_parent_rows()
+        if _catalog_editor_proven(self):
+            if set(vals) - {'purchase_route', 'representative_partner_id', 'purchaser_id'}:
+                raise AccessError(_('The editor cannot change controlled request fields.'))
+            if any(not request._can_edit_catalog_plan() for request in self):
+                raise UserError(_('This request is locked for editing after representative handover or completion.'))
+            return super().write(vals)
         self._require_active_company_for_cashier()
         if 'company_id' in vals and self.env.user.has_group(
             'baseer_procurement_requests.group_procurement_cashier'
@@ -1750,6 +2048,8 @@ class ProcurementRequest(models.Model):
         return super().write(vals)
 
     def unlink(self):
+        self.check_access('unlink')
+        self._lock_catalog_parent_rows()
         self._require_active_company_for_cashier()
         if any(request.state != 'draft' for request in self):
             raise UserError(_('Sent, received, or purchased procurement requests cannot be deleted. Use the authorized correction process.'))
@@ -1917,6 +2217,20 @@ class ProcurementRequestLine(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        self.check_access('create')
+        parent_ids = sorted({_catalog_identifier(vals.get('request_id')) for vals in vals_list})
+        parents = self.env['baseer.procurement.request'].browse(parent_ids)._lock_catalog_parent_rows()
+        if _catalog_editor_proven(self):
+            if len(parents) != len(parent_ids) or any(not request._can_edit_catalog_plan() for request in parents):
+                raise UserError(_('This request is locked for editing after representative handover or completion.'))
+            allowed = {'request_id', 'option_id', 'requested_qty', 'requested_price',
+                       'manager_received_qty', 'actual_qty', 'actual_price'}
+            if any(set(vals) - allowed or any(vals.get(key) not in (None, False, 0) for key in (
+                    'manager_received_qty', 'actual_qty', 'actual_price')) for vals in vals_list):
+                raise AccessError(_('The editor cannot change controlled request fields.'))
+            records = super().create(vals_list)
+            parents._touch_catalog_parent_rows()
+            return records
         for vals in vals_list:
             if self.env.context.get(REQUEST_CREATE_INTERNAL) and self.env.su:
                 continue
@@ -1927,7 +2241,9 @@ class ProcurementRequestLine(models.Model):
             protected = ('manager_received_qty', 'actual_qty', 'actual_price')
             if any(vals.get(field) not in (False, 0, 0.0, None) for field in protected):
                 raise AccessError(_('Received quantities and actual prices are controlled by the receipt workflow.'))
-        return super().create(vals_list)
+        records = super().create(vals_list)
+        parents._touch_catalog_parent_rows()
+        return records
 
     @api.depends('requested_qty', 'manager_received_qty', 'actual_qty')
     def _compute_quantity_variances(self):
@@ -1936,7 +2252,22 @@ class ProcurementRequestLine(models.Model):
             line.cashier_shortage_qty = max(line.manager_received_qty - line.actual_qty, 0)
 
     def write(self, vals):
-        self.mapped('request_id')._require_active_company_for_cashier()
+        self.check_access('write')
+        parents = self.mapped('request_id')._lock_catalog_parent_rows()
+        if 'request_id' in vals and any(line.request_id.id != vals['request_id'] for line in self):
+            raise AccessError(_('Request lines cannot be moved to another request.'))
+        if _catalog_editor_proven(self):
+            allowed = {'option_id', 'requested_qty', 'requested_price',
+                       'manager_received_qty', 'actual_qty', 'actual_price'}
+            if set(vals) - allowed or any(vals.get(key) not in (None, False, 0) for key in (
+                    'manager_received_qty', 'actual_qty', 'actual_price')):
+                raise AccessError(_('The editor cannot change controlled request fields.'))
+            if any(not request._can_edit_catalog_plan() for request in parents):
+                raise UserError(_('This request is locked for editing after representative handover or completion.'))
+            result = super().write(vals)
+            parents._touch_catalog_parent_rows()
+            return result
+        parents._require_active_company_for_cashier()
         protected = {'requested_qty', 'requested_price', 'manager_received_qty', 'actual_qty', 'actual_price', 'option_id'}
         if protected & set(vals):
             locked = self.filtered(lambda line: line.request_id.state in ('purchased', 'cancel'))
@@ -1958,10 +2289,22 @@ class ProcurementRequestLine(models.Model):
                     raise AccessError(_('Only a procurement cashier can enter actual purchase details.'))
                 if any(line.request_id.state != 'received' for line in self):
                     raise UserError(_('Actual purchase details can only be entered after manager receipt.'))
-        return super().write(vals)
+        result = super().write(vals)
+        parents._touch_catalog_parent_rows()
+        return result
 
     def unlink(self):
-        self.mapped('request_id')._require_active_company_for_cashier()
+        self.check_access('unlink')
+        parents = self.mapped('request_id')._lock_catalog_parent_rows()
+        if _catalog_editor_proven(self):
+            if any(not request._can_edit_catalog_plan() for request in parents):
+                raise UserError(_('This request is locked for editing after representative handover or completion.'))
+            result = super().unlink()
+            parents._touch_catalog_parent_rows()
+            return result
+        parents._require_active_company_for_cashier()
         if any(line.request_id.state != 'draft' for line in self):
             raise UserError(_('Lines on sent, received, or purchased procurement requests cannot be deleted.'))
-        return super().unlink()
+        result = super().unlink()
+        parents._touch_catalog_parent_rows()
+        return result

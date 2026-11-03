@@ -978,3 +978,17 @@ All6checks passed,65contracting+123dashboard cases; nativeSpend mandatory fixtur
 native two-wizard UI and independent GO complete. Policybaseer-2026-11-03-voucher-analytics
 upgrades contracting19.0.1.8.1/dashboard19.0.1.9.1 only. Existing nativeSpend
 configuration retained; protected activation and bounded historical review pending.
+
+## PROCUREMENT-FULL-ORDER-EDIT-20261103 — planned-order editor
+
+ARCHITECTURAL bounded procurement change from b28294663 / accepted runtime ec5a394c.
+User chose full native draft/sent order edits and lock after representative handover.
+Reuse catalogue OWL/route/stepper/option controls; add requested-plan load/quote/save
+and reasoned cancellation contracts. Decimal server authority; parent locks and
+canonical snapshots serialize edits; line CRUD shares the lock. Save preserves
+creation idempotency fingerprints and state, adds before/after audit, resets staged
+receipt values, and creates no stock/account/history. Existing receipt caps and
+BWork protocol retained. Existing company/role/active catalogue guards remain.
+Independent G0–G3 approved. Version19.0.14.0.19 candidate; CI, QA, independent
+release review and protected activation pending. No operational order save/confirm
+is allowed during acceptance. [Contract and evidence](../../build-governance/PROCUREMENT-SENT-RECEIPT-INCREASE-20261103.md).

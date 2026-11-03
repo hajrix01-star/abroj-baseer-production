@@ -116,6 +116,7 @@ function cartComponent(existing = false) {
         setQuantity: ['line', 'value'], commitQuantity: ['line'],
         isNotReceived: ['line'], stepQuantity: ['line', 'step'],
         add: ['option'], quoteLine: ['line'], receiptLines: [],
+        editorLines: [], editorFingerprint: [], restoreEditorLine: ['line'], setPlannedPrice: ['line', 'value'],
     })) {
         const body = source.match(new RegExp(`    ${name}\\([^\\n]*\\) \\{([\\s\\S]*?)\\n    \\}`));
         if (body) {
@@ -125,6 +126,151 @@ function cartComponent(existing = false) {
     }
     return c;
 }
+
+function editorComponent() {
+    const c = cartComponent();
+    c.state.editRequest = { id: 71, snapshot: 'snapshot-a', purchase_route: 'cash' };
+    c.state.removedLines = [];
+    c.state.purchaseRoute = 'cash';
+    c.state.representativePartnerId = false;
+    c.state.warehouseId = 1;
+    c.state.quote = { lines: [{}] };
+    c.unpricedReceivedLines = [];
+    Object.defineProperty(c, 'canSave', { get: () => canSave.call(c) });
+    Object.defineProperty(c, 'editorDirty', { get: () => c.editorFingerprint() !== c.state.editorBaseline });
+    return c;
+}
+
+test('order editor increases requested quantity freely while receipt caps remain unchanged', () => {
+    const c = editorComponent();
+    const line = { line_id: 2, option_id: 4, product_id: 7, quantity: '5', requested_quantity: '5', maximum_quantity: '5', unit_price: '20' };
+    c.state.cart = [line];
+    c.stepQuantity(line, 1);
+    assert.equal(line.quantity, '6');
+    assert.equal(c.notices.length, 0);
+    assert.deepEqual(c.editorLines(), [{ line_id: 2, option_id: 4, quantity: '6', unit_price: '20' }]);
+});
+
+test('quantity buttons preserve two-decimal inputs without binary rounding digits', () => {
+    const c = editorComponent();
+    const line = { quantity: '0.14' };
+    c.stepQuantity(line, 1);
+    assert.equal(line.quantity, '1.14');
+    c.stepQuantity(line, -1);
+    assert.equal(line.quantity, '0.14');
+});
+
+test('editor zero and delete preserve quantity and price for explicit restoration', () => {
+    for (const manual of [false, true]) {
+        const c = editorComponent();
+        const line = { line_id: 2, option_id: 4, product_id: 7, quantity: '1', unit_price: '18.75' };
+        c.state.cart = [line];
+        if (manual) { c.setQuantity(line, '0'); c.commitQuantity(line); }
+        else c.stepQuantity(line, -1);
+        assert.equal(c.state.cart.length, 0);
+        assert.equal(c.state.removedLines.length, 1);
+        c.restoreEditorLine(c.state.removedLines[0]);
+        assert.equal(c.state.cart[0].quantity, '1');
+        assert.equal(c.state.cart[0].unit_price, '18.75');
+        assert.equal(c.state.removedLines.length, 0);
+    }
+});
+
+test('packaging and material replacement preserve original line identity and use selected price', () => {
+    const c = editorComponent();
+    const original = { line_id: 2, option_id: 4, product_id: 7, quantity: '6.50', unit_price: '18.75' };
+    c.state.cart = [original];
+    c.state.replacementLine = original;
+    c.add({ id: 8, product_id: 7, product_name: 'Rice', option_name: 'Carton', packaging_note: '12 packs', last_price: '35.25', currency_symbol: 'SR' });
+    assert.equal(c.state.cart.length, 1);
+    assert.deepEqual(c.editorLines(), [{ line_id: 2, option_id: 8, quantity: '6.50', unit_price: '35.25' }]);
+    assert.equal(c.state.replacementLine, false);
+    c.add({ id: 9, product_id: 7, last_price: '10' });
+    assert.equal(c.state.cart.length, 1);
+    assert.equal(c.notices.length, 1);
+});
+
+test('a removed replacement target cannot replace an unrelated final cart row', async () => {
+    const c = editorComponent();
+    const target = { line_id: 2, option_id: 4, product_id: 7, quantity: '1', unit_price: '18.75' };
+    const other = { line_id: 3, option_id: 5, product_id: 8, quantity: '2', unit_price: '10' };
+    c.state.cart = [target, other];
+    let finish;
+    c.orm = { call: () => new Promise((resolve) => { finish = resolve; }) };
+    const body = source.match(/    async changePackaging\(line\) \{([\s\S]*?)\n    \}/)[1];
+    const loading = new AsyncFunction('line', '_t', body).call(c, target, (text) => text);
+    c.remove(target);
+    finish([{ id: 8, product_id: 7, last_price: '35' }]);
+    await loading;
+    assert.equal(c.state.selectedProduct, undefined);
+    assert.equal(Boolean(c.state.replacementLine), false);
+    c.state.replacementLine = target; // a stale option click must also be harmless
+    c.add({ id: 8, product_id: 7, last_price: '35' });
+    assert.deepEqual(c.state.cart, [other]);
+});
+
+test('editor save changes calls only planned-save RPC and applies the returned snapshot', async () => {
+    const c = editorComponent();
+    c.state.cart = [{ line_id: 2, option_id: 4, product_id: 7, quantity: '6', unit_price: '18.75' }];
+    c.state.editorBaseline = 'before';
+    const calls = [];
+    const response = { id: 71, snapshot: 'snapshot-b' };
+    c.orm = { call: async (...args) => { calls.push(args); return response; } };
+    c.applyEditor = (value) => { c.applied = value; };
+    c.loadRecentRequests = async () => {};
+    const body = source.match(/    async saveEditor\(\) \{([\s\S]*?)\n    \}/)[1];
+    await new AsyncFunction('_t', body).call(c, (text) => text);
+    assert.deepEqual(calls, [['baseer.procurement.request', 'save_catalog_edit', [71,
+        [{ line_id: 2, option_id: 4, quantity: '6', unit_price: '18.75' }], 'cash', false, 'snapshot-a']]]);
+    assert.equal(c.applied, response);
+    assert.equal(c.state.saving, false);
+});
+
+test('dirty editor navigation waits for explicit discard and supports keeping edits', async () => {
+    const c = editorComponent();
+    c.state.cart = [{ option_id: 4, quantity: '6', unit_price: '18.75' }];
+    c.state.editorBaseline = 'before';
+    let dialog;
+    c.dialog = { add: (_component, props) => { dialog = props; } };
+    const body = source.match(/    async allowEditorLeave\(\) \{([\s\S]*?)\n    \}/)[1];
+    const leave = new AsyncFunction('_t', 'ConfirmationDialog', body);
+    const kept = leave.call(c, (text) => text, {});
+    dialog.cancel();
+    assert.equal(await kept, false);
+    const discarded = leave.call(c, (text) => text, {});
+    dialog.confirm();
+    assert.equal(await discarded, true);
+    c.state.saving = true;
+    assert.equal(await leave.call(c, (text) => text, {}), false);
+});
+
+test('editor quote sends planned price and snapshot and never invokes receipt or creation', async () => {
+    const c = editorComponent();
+    c.state.cart = [{ option_id: 4, quantity: '6', unit_price: '18.75' }];
+    c.quoteSequence = 0;
+    const calls = [];
+    c.orm = { call: async (...args) => { calls.push(args); return { lines: [{ option_id: 4 }], total_text: '112.50' }; } };
+    const body = source.match(/    async refreshQuote\(\) \{([\s\S]*?)\n    \}/)[1];
+    await new AsyncFunction('_t', body).call(c, (text) => text);
+    assert.deepEqual(calls, [['baseer.procurement.request', 'quote_catalog_edit', [71,
+        [{ option_id: 4, quantity: '6', unit_price: '18.75' }], 'cash', false, 'snapshot-a']]]);
+    assert.equal(c.state.quote.total_text, '112.50');
+    assert.equal(c.state.quotePending, false);
+});
+
+test('cancellation sends reason and snapshot without saving staged order changes', async () => {
+    const c = editorComponent();
+    c.state.cancelReason = 'Duplicate order';
+    const calls = [];
+    c.orm = { call: async (...args) => { calls.push(args); return { id: 71, state: 'cancel' }; } };
+    c.emptyQuote = () => ({ lines: [], total_text: '0.00' });
+    c.loadRecentRequests = async () => {};
+    const body = source.match(/    async cancelEditor\(\) \{([\s\S]*?)\n    \}/)[1];
+    await new AsyncFunction('_t', body).call(c, (text) => text);
+    assert.deepEqual(calls, [['baseer.procurement.request', 'cancel_catalog_edit', [71, 'snapshot-a', 'Duplicate order']]]);
+    assert.equal(c.state.workspaceTab, 'recent');
+    assert.equal(c.state.editRequest, false);
+});
 
 test('receipt minus at zero never restores a missing item or its price', () => {
     const c = cartComponent(true);

@@ -24,6 +24,8 @@
         <field name="arch" type="xml">
             <form string="Procurement request">
                 <header>
+                    <field name="can_edit_plan" invisible="1"/>
+                    <button name="action_open_catalog_editor" type="object" string="Edit order" icon="fa-pencil" class="btn-secondary" invisible="not can_edit_plan" groups="baseer_procurement_requests.group_procurement_user"/>
                     <button name="action_open_whatsapp" type="object" icon="fa-whatsapp" title="Open WhatsApp" class="btn-secondary" invisible="state == 'cancel' or purchase_route != 'representative'" groups="baseer_procurement_requests.group_procurement_user"/>
                     <button name="action_mark_sent" type="object" string="Confirm sent" class="oe_highlight" invisible="state != 'draft'"/>
                     <button name="action_cancel" type="object" string="Cancel request" class="btn-secondary" invisible="state not in ('draft', 'sent')" groups="baseer_procurement_requests.group_procurement_user"/>

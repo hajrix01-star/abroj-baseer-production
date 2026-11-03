@@ -1884,3 +1884,269 @@ msgstr "المندوب: %s"
 #: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
 msgid "Done"
 msgstr "تم"
+
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "Unsaved order changes"
+msgstr "تعديلات غير محفوظة"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "Discard your changes and leave the order editor?"
+msgstr "هل تريد تجاهل التعديلات ومغادرة تحرير الطلب؟"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "Discard changes"
+msgstr "تجاهل التعديلات"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "Keep editing"
+msgstr "متابعة التعديل"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "Could not load packaging options."
+msgstr "تعذر تحميل خيارات التغليف."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "This material is already in the order. Edit its existing row."
+msgstr "الصنف موجود في الطلب. عدّل السطر الموجود."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "Order changes were saved."
+msgstr "حُفظت تعديلات الطلب."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "Could not save order changes."
+msgstr "تعذر حفظ تعديلات الطلب."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "The order was cancelled."
+msgstr "أُلغي الطلب."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "Could not cancel the order."
+msgstr "تعذر إلغاء الطلب."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "Edit purchase order"
+msgstr "تعديل طلب الشراء"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "Editing is available until representative handover is confirmed."
+msgstr "يمكن تعديل الطلب حتى تأكيد تسليم المندوب."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_request_form
+msgid "Edit order"
+msgstr "تعديل الطلب"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "Receive order"
+msgstr "استلام الطلب"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "Cancel order"
+msgstr "إلغاء الطلب"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "Choose a replacement for"
+msgstr "اختر صنفًا بديلًا عن"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "Cancel replacement"
+msgstr "إلغاء الاستبدال"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "Change packaging"
+msgstr "تغيير التغليف"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "Replace material"
+msgstr "استبدال الصنف"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "Requested unit price"
+msgstr "سعر الوحدة المطلوب"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "Removed materials"
+msgstr "الأصناف المحذوفة"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "Order total"
+msgstr "إجمالي الطلب"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "Saving changes does not confirm receipt."
+msgstr "حفظ التعديلات لا يؤكد الاستلام."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "The order will be cancelled with the reason below. Unsaved changes will be discarded."
+msgstr "سيُلغى الطلب بالسبب أدناه، وتُتجاهل التعديلات غير المحفوظة."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "Cancellation reason"
+msgstr "سبب الإلغاء"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "Keep order"
+msgstr "إبقاء الطلب"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "Confirm cancellation"
+msgstr "تأكيد الإلغاء"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "Save changes"
+msgstr "حفظ التعديلات"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+msgid "Could not calculate the purchase total."
+msgstr "تعذر حساب إجمالي الطلب."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "Reload order"
+msgstr "إعادة تحميل الطلب"
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/procurement.py:0
+msgid "The editor cannot change controlled request fields."
+msgstr "لا يمكن تغيير حقول الطلب المحمية من شاشة التعديل."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/procurement.py:0
+msgid "Request lines cannot be moved to another request."
+msgstr "لا يمكن نقل أصناف الطلب إلى طلب آخر."
+
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/procurement.py:0
+msgid "Only a procurement cashier can edit this request."
+msgstr "تعديل هذا الطلب متاح لكاشير المشتريات فقط."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/procurement.py:0
+msgid "This request is locked for editing after representative handover or completion."
+msgstr "هذا الطلب مقفل للتعديل. لا يمكن تعديل الطلب بعد تأكيد التسليم أو إكماله."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/procurement.py:0
+msgid "This request changed since it was opened. Reload it before saving."
+msgstr "عُدّل الطلب منذ فتحه. أعد تحميله قبل الحفظ."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/procurement.py:0
+msgid "The cart must contain between 1 and %s materials."
+msgstr "يجب أن تضم السلة من 1 إلى %s صنفًا."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/procurement.py:0
+msgid "Choose a purchase representative enabled for this company."
+msgstr "اختر مندوب مشتريات مفعّلًا لهذه الشركة."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/procurement.py:0
+msgid "The edited cart contains an invalid request line."
+msgstr "تحتوي السلة المعدّلة على سطر غير صالح."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/procurement.py:0
+msgid "Each material needs a positive quantity and a nonnegative price with at most two decimal places."
+msgstr "أدخل لكل صنف كمية أكبر من صفر وسعرًا لا يقل عن صفر، وبحد أقصى منزلتين عشريتين."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/procurement.py:0
+msgid "Enter a cancellation reason of at most 1000 characters."
+msgstr "أدخل سبب الإلغاء بما لا يتجاوز 1000 حرف."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/procurement.py:0
+msgid "Request plan edited by %(actor)s. Before: %(before)s. After: %(after)s. Staged received quantities and actual prices were reset; no receipt was confirmed."
+msgstr "عدّل %(actor)s بيانات الطلب. قبل التعديل: %(before)s. بعد التعديل: %(after)s. صُفّرت كميات الاستلام والأسعار الفعلية المدخلة مسبقًا، ولم يُؤكد الاستلام."

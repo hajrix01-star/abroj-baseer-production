@@ -245,8 +245,10 @@
 .o_prc_cart_actions .btn { min-height: 3rem; border-radius: .65rem; font-size: .78rem; font-weight: 600; transition: transform 120ms ease-out, background-color 140ms ease, border-color 140ms ease; }
 .o_prc_cart_actions .btn-primary { border-color: var(--prc-brand); background: var(--prc-brand); }
 .o_prc_cart_actions .btn-primary:hover { border-color: var(--prc-brand-dark); background: var(--prc-brand-dark); }
-.o_prc_cart_actions.o_prc_editor_actions { grid-template-columns: .8fr 1.2fr; }
-.o_prc_editor_actions .o_prc_whatsapp_button { grid-column: 1 / -1; }
+.o_prc_cart_actions.o_prc_editor_actions { grid-template-columns: minmax(0, 1fr) auto; }
+.o_prc_editor_actions > .btn { min-width: 0; white-space: normal; }
+.o_prc_editor_menu { min-width: 12rem; max-width: calc(100vw - 24px); padding: .4rem; }
+.o_prc_editor_menu .dropdown-item { min-height: 44px; white-space: normal; }
 .o_prc_mobile_nav { display: none; }
 
 .o_prc_actual_pos { max-width: 76rem; min-height: calc(100vh - 7rem); margin: 1rem auto; overflow: hidden; border: 1px solid var(--prc-border); border-radius: .9rem; color: var(--prc-text); background: #fff; box-shadow: 0 6px 24px rgba(16, 24, 40, .08); }

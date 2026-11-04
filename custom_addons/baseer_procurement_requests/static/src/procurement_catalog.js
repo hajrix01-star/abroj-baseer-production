@@ -156,6 +156,7 @@ export class ProcurementCatalog extends Component {
         this.cancelReasonInput = useRef("cancelReasonInput");
         this.cancelOrderButton = useRef("cancelOrderButton");
         this.routeDropdown = useDropdownState();
+        this.editorActionsDropdown = useDropdownState();
         this.handleWindowKeydown = (event) => {
             if (this.state.cancelOpen) {
                 if (event.key === "Escape") this.closeCancel();
@@ -164,6 +165,10 @@ export class ProcurementCatalog extends Component {
             }
             if (this.routeDropdown.isOpen) {
                 if (event.key === "Escape") this.routeDropdown.close();
+                return;
+            }
+            if (this.editorActionsDropdown.isOpen) {
+                if (event.key === "Escape") this.editorActionsDropdown.close();
                 return;
             }
             if (this.state.quickProductOpen) {
@@ -186,7 +191,7 @@ export class ProcurementCatalog extends Component {
             recentRequests: [], recentSearch: "", recentState: "all", recentOffset: 0,
             recentHasMore: false, recentLoading: false, recentLoadingMore: false, recentError: false,
             existingRequest: false, editRequest: false, editorBaseline: "", removedLines: [], replacementLine: false,
-            cancelOpen: false, cancelReason: "", editorLoading: false, quoteError: false, selectedProduct: false, shareLoading: false,
+            cancelOpen: false, cancelReason: "", editorLoading: false, quoteError: false, selectedProduct: false, shareLoading: false, receiptPromptOpen: false,
             canCurateCatalog: false, highlights: [], highlightsLoading: false,
             quickProductOpen: false, quickProductName: "", quickProductPrice: "",
             quickProductSaving: false, quickProductError: false,
@@ -305,6 +310,7 @@ export class ProcurementCatalog extends Component {
     async switchWorkspace(tab) {
         if (!(await this.allowEditorLeave())) return;
         this.routeDropdown.close();
+        this.editorActionsDropdown.close();
         if (this.state.editRequest) {
             this.state.editRequest = false;
             this.state.cart = [];
@@ -320,12 +326,55 @@ export class ProcurementCatalog extends Component {
     }
 
     async openReceipt() {
-        if (this.state.saving) return;
+        const request = this.state.editRequest;
+        if (!request || this.state.saving || this.state.shareLoading || this.state.editorLoading || this.state.receiptPromptOpen ||
+                this.state.selectedProduct || this.state.replacementLine) return false;
+        if (this.editorDirty) {
+            this.notification.add(_t("Save changes before receiving the order."), { type: "warning" });
+            return false;
+        }
+        if (!request.can_open_receipt && !request.can_send) return false;
+        const fingerprint = this.editorFingerprint();
+        if (request.can_send) {
+            this.state.receiptPromptOpen = true;
+            try {
+                const approved = await new Promise((resolve) => this.dialog.add(ConfirmationDialog, {
+                    title: _t("Confirm sent and review receipt"),
+                    body: _t("Confirm that this order was sent for purchase. The next screen lets you review receipt details; this does not confirm final receipt."),
+                    confirmLabel: _t("Confirm sent and review receipt"), cancelLabel: _t("Keep editing"),
+                    confirm: () => resolve(true), cancel: () => resolve(false),
+                }));
+                if (!approved) return false;
+            } finally {
+                this.state.receiptPromptOpen = false;
+            }
+        }
+        if (this.catalogAlive === false || this.state.editRequest !== request || this.editorDirty || this.editorFingerprint() !== fingerprint ||
+                this.state.saving || this.state.shareLoading || this.state.editorLoading) return false;
+        this.state.saving = true;
+        let sent = false;
         try {
-            const action = await this.orm.call("baseer.procurement.request", "open_catalog_receipt", [this.state.editRequest.id]);
+            if (request.can_send) {
+                const updated = await this.orm.call("baseer.procurement.request", "send_catalog_edit", [request.id, request.snapshot]);
+                sent = true;
+                if (this.catalogAlive === false || this.state.editRequest !== request || this.editorDirty || this.editorFingerprint() !== fingerprint) {
+                    this.notification.add(_t("The order was marked as sent. Reload it before continuing."), { type: "warning" });
+                    return false;
+                }
+                this.applyEditor(updated);
+            }
+            const action = await this.orm.call("baseer.procurement.request", "open_catalog_receipt", [request.id]);
+            if (this.catalogAlive === false || this.state.editRequest?.id !== request.id || this.editorDirty) return false;
+            // Permit the normal action leave hook only after the saved editor is clean.
+            this.state.saving = false;
             await this.action.doAction(action);
+            return true;
         } catch (error) {
-            this.notification.add(error.message || _t("Could not open this request."), { type: "danger" });
+            this.notification.add(error?.data?.arguments?.[0] || error.message || (request.can_send && !sent
+                ? _t("Could not mark the order as sent.") : _t("Could not open this request.")), { type: "danger" });
+            return false;
+        } finally {
+            this.state.saving = false;
         }
     }
 
@@ -379,7 +428,7 @@ export class ProcurementCatalog extends Component {
     }
 
     async saveEditor() {
-        if (!this.state.editRequest || !this.canSave || !this.editorDirty) return;
+        if (!this.state.editRequest || !this.canSave || !this.editorDirty || this.state.shareLoading) return false;
         this.state.saving = true;
         try {
             const request = await this.orm.call("baseer.procurement.request", "save_catalog_edit", [
@@ -389,16 +438,28 @@ export class ProcurementCatalog extends Component {
             this.applyEditor(request);
             this.notification.add(_t("Order changes were saved."), { type: "success" });
             await this.loadRecentRequests();
+            return true;
         } catch (error) {
             this.notification.add(error?.data?.arguments?.[0] || error.message || _t("Could not save order changes."), { type: "danger" });
+            return false;
         } finally {
             this.state.saving = false;
         }
     }
 
+    async saveAndOpenEditorWhatsApp() {
+        if (!this.state.editRequest || this.state.purchaseRoute !== "representative" || this.state.saving ||
+                this.state.shareLoading || this.state.editorLoading) return false;
+        const requestId = this.state.editRequest.id;
+        if (this.editorDirty && !(await this.saveEditor())) return false;
+        if (this.catalogAlive === false || this.state.editRequest?.id !== requestId || this.editorDirty ||
+                this.state.purchaseRoute !== "representative") return false;
+        return this.openEditorWhatsApp();
+    }
+
     async openEditorWhatsApp() {
         if (!this.state.editRequest || this.state.purchaseRoute !== "representative" ||
-                this.state.saving || this.state.shareLoading || this.editorDirty) return;
+                this.state.saving || this.state.shareLoading || this.state.editorLoading || this.editorDirty) return false;
         const requestId = this.state.editRequest.id;
         const fingerprint = this.editorFingerprint();
         this.state.shareLoading = true;
@@ -406,10 +467,12 @@ export class ProcurementCatalog extends Component {
             const payload = await this.orm.call("baseer.procurement.request", "prepare_catalog_whatsapp", [
                 requestId, this.state.editRequest.snapshot,
             ]);
-            if (this.state.editRequest?.id !== requestId || this.editorDirty || this.editorFingerprint() !== fingerprint) return;
+            if (this.catalogAlive === false || this.state.editRequest?.id !== requestId || this.editorDirty || this.editorFingerprint() !== fingerprint) return false;
             this.dialog.add(ProcurementWhatsAppDialog, { payload, onOpened: () => this.refreshSharedEditor(requestId) });
+            return true;
         } catch (error) {
             this.notification.add(error?.data?.arguments?.[0] || error.message || _t("Could not prepare the WhatsApp message."), { type: "danger" });
+            return false;
         } finally {
             this.state.shareLoading = false;
         }
@@ -462,7 +525,7 @@ export class ProcurementCatalog extends Component {
     }
 
     openCancel() {
-        if (this.state.saving) return;
+        if (this.state.saving || this.state.shareLoading || this.state.editorLoading) return;
         this.state.cancelOpen = true;
         this.state.cancelReason = "";
         globalThis.requestAnimationFrame(() => this.cancelReasonInput.el?.focus());
@@ -1100,7 +1163,7 @@ export class ProcurementCatalog extends Component {
             (this.state.editRequest?.purchase_route === "representative" && !this.state.editRequest.representative_partner_id && this.state.editRequest.representative_name);
         const custodyReady = !this.state.existingRequest || this.state.receiptCustody.ready;
         return Boolean(this.state.warehouseId && representativeReady && custodyReady && this.state.cart.length &&
-            !this.state.saving && !this.state.quotePending && !this.state.quoteError && !this.unpricedReceivedLines.length &&
+            !this.state.saving && !this.state.editorLoading && !this.state.quotePending && !this.state.quoteError && !this.unpricedReceivedLines.length &&
             this.state.quote.lines.length === this.state.cart.length);
     }
 

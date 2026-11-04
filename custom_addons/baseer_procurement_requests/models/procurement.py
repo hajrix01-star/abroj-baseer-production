@@ -1483,6 +1483,7 @@ class ProcurementRequest(models.Model):
             'representative_partner_id': request.representative_partner_id.id or False,
             'representative_name': request.representative_partner_id.display_name or request.purchaser_id.name or '',
             'snapshot': request._catalog_editor_snapshot(), 'can_cancel': True,
+            'can_send': request.state == 'draft',
             'can_open_receipt': request.state == 'sent',
             'items': [{
                 'line_id': entry['line'].id, 'option_id': entry['option'].id,
@@ -1552,6 +1553,13 @@ class ProcurementRequest(models.Model):
             # mail.thread may update the parent write_date, so return the final version.
             request.invalidate_recordset()
             return request.load_catalog_editor(request.id)
+
+    @api.model
+    def send_catalog_edit(self, request_id, snapshot):
+        request = self._catalog_editor_request(request_id, lock=True)
+        request._check_catalog_editor_snapshot(snapshot)
+        request.action_mark_sent()
+        return request.load_catalog_editor(request.id)
 
     @api.model
     def cancel_catalog_edit(self, request_id, snapshot, reason):

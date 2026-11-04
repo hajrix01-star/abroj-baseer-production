@@ -392,7 +392,7 @@ test('editor save changes calls only planned-save RPC and applies the returned s
     c.applyEditor = (value) => { c.applied = value; };
     c.loadRecentRequests = async () => {};
     const body = source.match(/    async saveEditor\(\) \{([\s\S]*?)\n    \}/)[1];
-    await new AsyncFunction('_t', body).call(c, (text) => text);
+    assert.equal(await new AsyncFunction('_t', body).call(c, (text) => text), true);
     assert.deepEqual(calls, [['baseer.procurement.request', 'save_catalog_edit', [71,
         [{ line_id: 2, option_id: 4, quantity: '6', unit_price: '18.75' }], 'cash', false, 'snapshot-a']]]);
     assert.equal(c.applied, response);
@@ -634,6 +634,7 @@ test('old quote responses cannot repopulate an emptied cart or unlock a newer ed
 function whatsappEditor() {
     const c = editorComponent();
     c.state.purchaseRoute = 'representative';
+    c.state.representativePartnerId = 42;
     c.state.cart = [{ line_id: 2, option_id: 4, quantity: '1.00', unit_price: '9.25' }];
     c.state.editorBaseline = c.editorFingerprint();
     c.state.shareLoading = false;
@@ -646,6 +647,143 @@ function whatsappEditor() {
     c.openWhatsApp = () => open.call(c, (text) => text, {});
     return c;
 }
+
+function receiptEntryEditor(state = 'draft') {
+    const c = editorComponent();
+    c.state.editRequest = { ...c.state.editRequest, state, can_send: state === 'draft', can_open_receipt: state === 'sent' };
+    c.state.cart = [{ line_id: 2, option_id: 4, quantity: '1.00', unit_price: '9.25' }];
+    c.state.editorBaseline = c.editorFingerprint();
+    c.calls = []; c.dialogs = []; c.actions = [];
+    c.dialog = { add: (_component, props) => c.dialogs.push(props) };
+    c.orm = { call: async (...args) => {
+        c.calls.push(args);
+        return args[1] === 'send_catalog_edit' ? { ...c.state.editRequest, state: 'sent', can_send: false, can_open_receipt: true, snapshot: 'sent-v2' }
+            : { type: 'ir.actions.client', params: { request_id: 71 } };
+    } };
+    c.applyEditor = (request) => { c.state.editRequest = request; c.applied = request; c.state.editorBaseline = c.editorFingerprint(); };
+    c.action = { doAction: async (action) => { assert.equal(c.state.saving, false); c.actions.push(action); } };
+    const body = source.match(/    async openReceipt\(\) \{([\s\S]*?)\n    \}/)[1];
+    const open = new AsyncFunction('_t', 'ConfirmationDialog', body);
+    c.openReceipt = () => open.call(c, (text) => text, {});
+    return c;
+}
+
+test('draft Receive order cancellation performs no save, send, receipt or funding RPC', async () => {
+    const c = receiptEntryEditor();
+    const pending = c.openReceipt();
+    assert.equal(c.dialogs.length, 1);
+    assert.match(c.dialogs[0].body, /does not confirm final receipt/);
+    c.dialogs[0].cancel();
+    assert.equal(await pending, false);
+    assert.deepEqual(c.calls, []);
+    assert.deepEqual(c.actions, []);
+    assert.equal(c.state.editRequest.state, 'draft');
+});
+
+test('approved draft Receive order marks sent with snapshot then opens only the review screen', async () => {
+    const c = receiptEntryEditor();
+    const pending = c.openReceipt();
+    c.dialogs[0].confirm();
+    assert.equal(await pending, true);
+    assert.deepEqual(c.calls, [
+        ['baseer.procurement.request', 'send_catalog_edit', [71, 'snapshot-a']],
+        ['baseer.procurement.request', 'open_catalog_receipt', [71]],
+    ]);
+    assert.equal(c.applied.snapshot, 'sent-v2');
+    assert.equal(c.state.editRequest.state, 'sent');
+    assert.equal(c.actions.length, 1);
+});
+
+test('dirty, busy and failed-send editors never open receipt or silently discard changes', async () => {
+    for (const guard of ['dirty', 'saving', 'shareLoading', 'editorLoading']) {
+        const c = receiptEntryEditor();
+        if (guard === 'dirty') c.state.cart[0].quantity = '2';
+        else c.state[guard] = true;
+        assert.equal(await c.openReceipt(), false);
+        assert.deepEqual(c.calls, []);
+        assert.equal(c.dialogs.length, 0);
+    }
+    const c = receiptEntryEditor();
+    c.orm.call = async (...args) => { c.calls.push(args); throw { data: { arguments: ['Reload the changed order.'] } }; };
+    const pending = c.openReceipt();
+    c.dialogs[0].confirm();
+    assert.equal(await pending, false);
+    assert.deepEqual(c.calls.map((call) => call[1]), ['send_catalog_edit']);
+    assert.equal(c.actions.length, 0);
+    assert.equal(c.state.editRequest.state, 'draft');
+    assert.equal(c.state.saving, false);
+});
+
+test('sent Receive order keeps draft edits and opens clean saved requests without another send', async () => {
+    const c = receiptEntryEditor('sent');
+    c.state.cart[0].quantity = '2';
+    assert.equal(await c.openReceipt(), false);
+    assert.equal(c.state.cart[0].quantity, '2');
+    assert.equal(c.calls.length, 0);
+    c.state.editorBaseline = c.editorFingerprint();
+    assert.equal(await c.openReceipt(), true);
+    assert.deepEqual(c.calls.map((call) => call[1]), ['open_catalog_receipt']);
+    assert.equal(c.dialogs.length, 0);
+});
+
+test('a delayed send result cannot overwrite local changes or enter receipt', async () => {
+    const c = receiptEntryEditor();
+    let finish;
+    c.orm.call = (...args) => { c.calls.push(args); return new Promise((resolve) => { finish = resolve; }); };
+    const pending = c.openReceipt();
+    c.dialogs[0].confirm();
+    await Promise.resolve();
+    c.state.cart[0].quantity = '3';
+    finish({ state: 'sent', snapshot: 'sent-v2' });
+    assert.equal(await pending, false);
+    assert.equal(c.state.cart[0].quantity, '3');
+    assert.equal(c.applied, undefined);
+    assert.equal(c.actions.length, 0);
+    assert.deepEqual(c.calls.map((call) => call[1]), ['send_catalog_edit']);
+});
+
+test('combined Save and open WhatsApp requires successful saving before preparing the saved message', async () => {
+    const c = whatsappEditor();
+    const saveBody = source.match(/    async saveEditor\(\) \{([\s\S]*?)\n    \}/)[1];
+    const save = new AsyncFunction('_t', saveBody);
+    c.saveEditor = () => save.call(c, (text) => text);
+    c.openEditorWhatsApp = c.openWhatsApp;
+    c.loadRecentRequests = async () => {};
+    c.applyEditor = (request) => {
+        c.state.editRequest = request;
+        c.state.editorBaseline = c.editorFingerprint();
+    };
+    c.state.cart[0].unit_price = '12.50';
+    c.orm.call = async (...args) => {
+        c.calls.push(args);
+        return args[1] === 'save_catalog_edit' ? { id: 71, snapshot: 'saved-v2' } : { request_id: 71, text: 'saved changed message' };
+    };
+    const body = source.match(/    async saveAndOpenEditorWhatsApp\(\) \{([\s\S]*?)\n    \}/)[1];
+    const combined = new AsyncFunction(body);
+    assert.equal(await combined.call(c), true);
+    assert.deepEqual(c.calls.map((call) => call[1]), ['save_catalog_edit', 'prepare_catalog_whatsapp']);
+    assert.deepEqual(c.calls[1][2], [71, 'saved-v2']);
+    assert.equal(c.dialogs[0].payload.text, 'saved changed message');
+    c.state.cart[0].unit_price = '13';
+    c.calls = []; c.dialogs = [];
+    c.orm.call = async (...args) => { c.calls.push(args); throw { data: { arguments: ['Save failed.'] } }; };
+    assert.equal(await combined.call(c), false);
+    assert.deepEqual(c.calls.map((call) => call[1]), ['save_catalog_edit']);
+    assert.equal(c.dialogs.length, 0);
+});
+
+test('combined WhatsApp preparation failure after saving retries sharing without another save', async () => {
+    const c = whatsappEditor();
+    const calls = [];
+    c.state.cart[0].unit_price = '12.50';
+    c.saveEditor = async () => { calls.push('save'); c.state.editorBaseline = c.editorFingerprint(); return true; };
+    c.openEditorWhatsApp = async () => { calls.push('prepare'); return false; };
+    const body = source.match(/    async saveAndOpenEditorWhatsApp\(\) \{([\s\S]*?)\n    \}/)[1];
+    const combined = new AsyncFunction(body);
+    assert.equal(await combined.call(c), false);
+    assert.equal(await combined.call(c), false);
+    assert.deepEqual(calls, ['save', 'prepare', 'prepare']);
+});
 
 test('draft WhatsApp opens a read-only saved preview without save, send, receipt or opening audit', async () => {
     const c = whatsappEditor();

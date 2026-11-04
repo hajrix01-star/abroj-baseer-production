@@ -42,8 +42,7 @@
                     </Dropdown>
                     <span t-else="" class="o_prc_existing_route" t-esc="purchaseRouteSummary"/>
                     <button t-if="state.existingRequest and state.existingRequest.can_edit_plan" type="button" class="btn btn-light" t-on-click="openOrderEditor" t-att-disabled="state.saving">Edit order</button>
-                    <button t-if="state.editRequest and state.editRequest.can_open_receipt" type="button" class="btn btn-light" t-on-click="openReceipt" t-att-disabled="state.saving">Receive order</button>
-                    <button t-if="state.editRequest and state.editRequest.can_cancel" type="button" class="btn btn-outline-danger" t-ref="cancelOrderButton" t-on-click="openCancel" t-att-disabled="state.saving">Cancel order</button>
+                    <button t-if="state.editRequest and (state.editRequest.can_open_receipt or state.editRequest.can_send)" type="button" class="btn btn-light" t-on-click="openReceipt" t-att-disabled="state.saving or state.shareLoading or state.editorLoading or state.receiptPromptOpen">Receive order</button>
                 </div>
             </div>
             <p t-if="state.workspaceTab === 'new' and !state.loadingOptions and !state.warehouseId" class="o_prc_warehouse_error" role="alert">No warehouse is configured for this company. Ask the company manager to add one before saving a purchase request.</p>
@@ -234,11 +233,17 @@
                         </div>
                         <p t-if="state.existingRequest and unpricedReceivedLines.length" class="o_prc_cart_warning">Enter the actual price for <t t-esc="unpricedReceivedLines[0].name"/> to enable confirmation.</p>
                         <p t-elif="state.quoteError" class="o_prc_cart_warning" role="alert"><t t-if="state.editRequest" t-esc="state.quoteError"/><t t-else="">The total could not be calculated. Check the quantities and prices.</t></p>
-                        <p t-if="state.editRequest and state.purchaseRoute === 'representative' and editorDirty" class="o_prc_cart_warning">Save your changes before opening WhatsApp.</p>
                         <div t-if="state.editRequest" class="o_prc_cart_actions o_prc_editor_actions">
-                            <button type="button" class="btn btn-light" t-on-click="reloadEditor" t-att-disabled="state.saving or state.shareLoading">Reload order</button>
-                            <button type="button" class="btn btn-primary" t-on-click="saveEditor" t-att-disabled="!canSave or !editorDirty or state.shareLoading"><i class="fa fa-save"/> Save changes</button>
-                            <button t-if="state.purchaseRoute === 'representative'" type="button" class="btn btn-primary text-white o_prc_whatsapp_button" t-on-click="openEditorWhatsApp" t-att-disabled="state.saving or state.shareLoading or editorDirty"><i class="fa fa-whatsapp"/> <t t-if="state.shareLoading">Preparing message…</t><t t-else="">Open WhatsApp</t></button>
+                            <button t-if="state.purchaseRoute === 'representative'" type="button" class="btn btn-primary text-white o_prc_whatsapp_button" t-on-click="saveAndOpenEditorWhatsApp" t-att-disabled="state.saving or state.shareLoading or state.editorLoading or (editorDirty and !canSave)"><i class="fa fa-whatsapp"/> <t t-if="state.shareLoading">Preparing message…</t><t t-elif="editorDirty">Save and open WhatsApp</t><t t-else="">Open WhatsApp</t></button>
+                            <button t-else="" type="button" class="btn btn-primary" t-on-click="saveEditor" t-att-disabled="!canSave or !editorDirty or state.shareLoading"><i class="fa fa-save"/> Save changes</button>
+                            <Dropdown state="editorActionsDropdown" menuClass="'o_prc_editor_menu'">
+                                <button type="button" t-ref="cancelOrderButton" class="btn btn-light" aria-label="More options" t-att-disabled="state.saving or state.shareLoading or state.editorLoading"><i class="fa fa-ellipsis-h" aria-hidden="true"/> More options</button>
+                                <t t-set-slot="content">
+                                    <DropdownItem tag="'button'" attrs="{'disabled': !canSave or !editorDirty}" onSelected="() => this.saveEditor()">Save changes</DropdownItem>
+                                    <DropdownItem tag="'button'" onSelected="() => this.reloadEditor()">Reload order</DropdownItem>
+                                    <DropdownItem t-if="state.editRequest.can_cancel" tag="'button'" class="'text-danger'" onSelected="() => this.openCancel()">Cancel order</DropdownItem>
+                                </t>
+                            </Dropdown>
                         </div>
                         <div t-else="" class="o_prc_cart_actions">
                             <button t-if="!state.existingRequest" type="button" class="btn btn-light" t-on-click="() => this.saveDraft(false)" t-att-disabled="!canSave"><i class="fa fa-save" aria-hidden="true"/> Save request</button>

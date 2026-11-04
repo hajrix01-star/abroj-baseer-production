@@ -900,7 +900,7 @@ export class ProcurementCatalog extends Component {
                 ...(target?.line_id ? { line_id: target.line_id } : {}),
                 option_id: option.id, product_id: option.product_id, name: option.product_name,
                 unit: option.option_name, packaging: option.packaging_note, image_url: option.image_url,
-                quantity: target?.quantity || "1", unit_price: option.last_price, currency_symbol: option.currency_symbol,
+                quantity: target?.quantity || "1", unit_price: String(option.last_price ?? "0"), currency_symbol: option.currency_symbol,
             };
             if (target) {
                 this.state.cart.splice(this.state.cart.indexOf(target), 1, row);
@@ -922,11 +922,10 @@ export class ProcurementCatalog extends Component {
             }
             this.state.cart.push({
                 option_id: option.id, product_id: option.product_id, name: option.product_name,
-                unit: option.option_name, packaging: option.packaging_note, image_url: option.image_url, quantity: "1",
+                unit: option.option_name, packaging: option.packaging_note, image_url: option.image_url, quantity: "1", currency_symbol: option.currency_symbol,
                 ...(this.state.existingRequest ? {
                     actual_price: option.last_price, last_price: option.last_price,
-                    currency_symbol: option.currency_symbol,
-                } : {}),
+                } : { unit_price: String(option.last_price ?? "0") }),
             });
         }
         this.scheduleQuote();
@@ -1075,7 +1074,7 @@ export class ProcurementCatalog extends Component {
         this.state.quoteError = false;
         const lines = this.state.editRequest ? this.editorLines() : this.state.existingRequest
             ? this.receiptLines()
-            : this.state.cart.map((line) => ({ option_id: line.option_id, quantity: line.quantity }));
+            : this.state.cart.map((line) => ({ option_id: line.option_id, quantity: line.quantity, unit_price: line.unit_price }));
         try {
             const quote = await this.orm.call(
                 "baseer.procurement.request",
@@ -1197,7 +1196,7 @@ export class ProcurementCatalog extends Component {
                 return;
             }
             const id = await this.orm.call("baseer.procurement.request", "create_from_catalog", [
-                this.state.cart.map((line) => ({ option_id: line.option_id, quantity: line.quantity })),
+                this.state.cart.map((line) => ({ option_id: line.option_id, quantity: line.quantity, unit_price: line.unit_price })),
                 this.state.warehouseId, false, false, this.state.clientToken, this.state.representativePartnerId, this.state.purchaseRoute,
             ]);
             this.state.clientToken = newClientToken();

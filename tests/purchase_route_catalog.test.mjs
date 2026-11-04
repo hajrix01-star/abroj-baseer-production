@@ -185,7 +185,7 @@ function submission(route) {
     const c = component();
     setRoute.call(c, route);
     c.state.clientToken = 'original-token';
-    c.state.cart = [{ option_id: 5, quantity: '2.00' }];
+    c.state.cart = [{ option_id: 5, quantity: '2.00', unit_price: '9.25' }];
     const calls = [], actions = [], notices = [];
     Object.defineProperty(c, 'canSave', { get: () => canSave.call(c) });
     c.orm = { call: async (model, method, args) => {
@@ -203,7 +203,7 @@ test('cash/bank primary action submits route then sends without WhatsApp', async
         const { c, calls, actions, notices } = submission(route);
         await saveDraft.call(c, true, () => 'next-token', (text) => text);
         assert.deepEqual(calls.map((call) => call.method), ['create_from_catalog', 'action_mark_sent']);
-        assert.deepEqual(calls[0].args, [[{ option_id: 5, quantity: '2.00' }], 1, false, false, 'original-token', false, route]);
+        assert.deepEqual(calls[0].args, [[{ option_id: 5, quantity: '2.00', unit_price: '9.25' }], 1, false, false, 'original-token', false, route]);
         assert.deepEqual(calls[1].args, [[91]]);
         assert.equal(actions.length, 1);
         assert.equal(actions[0].res_id, 91);
@@ -277,6 +277,74 @@ function editorComponent() {
     Object.defineProperty(c, 'editorDirty', { get: () => c.editorFingerprint() !== c.state.editorBaseline });
     return c;
 }
+
+test('new-cart unit prices start at the latest price and retain edits when quantity increases', () => {
+    for (const latest of ['10.25', 0]) {
+        const c = cartComponent();
+        const option = { id: 5, product_id: 9, product_name: 'Rice', last_price: latest, currency_symbol: 'SR' };
+        c.add(option);
+        const row = c.state.cart[0];
+        assert.equal(row.unit_price, String(latest));
+        assert.equal(row.currency_symbol, 'SR');
+        c.setPlannedPrice(row, '13.40');
+        c.add(option);
+        assert.equal(c.state.cart.length, 1);
+        assert.equal(row.quantity, '2');
+        assert.equal(row.unit_price, '13.40');
+        assert.equal(option.last_price, latest);
+    }
+});
+
+test('new-cart quote and creation use the same raw price and display the authoritative quote', async () => {
+    for (const price of ['13.40', '0']) {
+        const { c, calls } = submission('cash');
+        c.state.cart[0].unit_price = price;
+        c.quoteSequence = 0;
+        c.state.quotePending = true;
+        const quote = { lines: [{ option_id: 5, unit_price_text: price }], total_text: 'SERVER TOTAL' };
+        c.orm.call = async (model, method, args) => { calls.push({ model, method, args }); return method === 'quote_catalog_cart' ? quote : 91; };
+        const body = source.match(/    async refreshQuote\(\) \{([\s\S]*?)\n    \}/)[1];
+        await new AsyncFunction('_t', body).call(c, (text) => text);
+        assert.deepEqual(calls[0].args, [[{ option_id: 5, quantity: '2.00', unit_price: price }]]);
+        assert.equal(c.state.quote, quote);
+        assert.equal(c.state.quote.total_text, 'SERVER TOTAL');
+        await saveDraft.call(c, false, () => 'next-token', (text) => text);
+        assert.deepEqual(calls.map((call) => call.method), ['quote_catalog_cart', 'create_from_catalog']);
+        assert.deepEqual(calls[1].args[0], calls[0].args[0]);
+    }
+});
+
+test('a rejected new-cart price remains editable and blocks creation until the quote is valid', async () => {
+    for (const price of ['', '-1', '1.234']) {
+        const { c, calls } = submission('cash');
+        const row = c.state.cart[0];
+        row.unit_price = price;
+        c.quoteSequence = 0;
+        c.state.quotePending = true;
+        c.orm.call = async (model, method, args) => {
+            calls.push({ model, method, args });
+            throw { data: { arguments: ['Enter a non-negative price with at most two decimal places.'] } };
+        };
+        const body = source.match(/    async refreshQuote\(\) \{([\s\S]*?)\n    \}/)[1];
+        await new AsyncFunction('_t', body).call(c, (text) => text);
+        assert.equal(calls[0].args[0][0].unit_price, price);
+        assert.equal(row.unit_price, price);
+        assert.equal(c.canSave, false);
+        await saveDraft.call(c, false, () => 'next-token', (text) => text);
+        assert.deepEqual(calls.map((call) => call.method), ['quote_catalog_cart']);
+        assert.equal(c.state.clientToken, 'original-token');
+    }
+});
+
+test('draft zero-price edits survive deletion and restoration without a latest-price fallback', () => {
+    const c = editorComponent();
+    const row = { line_id: 2, option_id: 5, product_id: 9, quantity: '2', unit_price: '12.50' };
+    c.state.cart = [row];
+    c.setPlannedPrice(row, '0');
+    c.remove(row);
+    c.restoreEditorLine(c.state.removedLines[0]);
+    assert.deepEqual(c.editorLines(), [{ line_id: 2, option_id: 5, quantity: '2', unit_price: '0' }]);
+});
 
 test('order editor increases requested quantity freely while receipt caps remain unchanged', () => {
     const c = editorComponent();

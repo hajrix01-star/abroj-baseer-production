@@ -221,6 +221,8 @@
 .o_prc_line_amount small { color: var(--prc-muted); font-size: .72rem; }
 .o_prc_line_amount strong { color: var(--prc-accent); font-size: .84rem; }
 .o_prc_actual_price { display: inline-flex; align-items: center; gap: .15rem; color: var(--prc-muted); }
+.o_prc_planned_price { display: flex; max-width: 100%; flex-direction: column; align-items: flex-end; gap: .2rem; }
+.o_prc_unit_price_label { color: var(--prc-muted); font-size: .72rem; font-weight: 600; }
 .o_prc_actual_price_currency { color: var(--prc-muted); font-size: .62rem; font-weight: 600; }
 .o_prc_actual_price input { width: 4rem; max-width: 100%; min-width: 0; height: 44px; padding: .2rem; border: 1px solid var(--prc-border); border-radius: .4rem; outline: none; text-align: center; font-size: 1rem; }
 .o_prc_actual_price input:focus { border-color: var(--prc-brand); box-shadow: 0 0 0 2px rgba(113, 75, 103, .12); }

@@ -208,14 +208,13 @@
                                         <button type="button" t-on-click="() => this.stepQuantity(line, 1)" aria-label="Increase quantity"><i class="fa fa-plus"/></button>
                                     </div>
                                     <div class="o_prc_line_amount">
-                                        <label t-if="state.editRequest" class="o_prc_actual_price"><span class="visually-hidden">Requested unit price</span><span class="o_prc_actual_price_currency" t-esc="line.currency_symbol"/><input type="number" min="0" step="0.01" inputmode="decimal" dir="ltr" t-att-value="line.unit_price" t-att-disabled="state.saving" t-on-input="(event) => this.setPlannedPrice(line, event.target.value)" aria-label="Requested unit price"/></label>
+                                        <label t-if="!state.existingRequest" class="o_prc_planned_price"><span class="o_prc_unit_price_label">Unit price</span><span class="o_prc_actual_price"><span class="o_prc_actual_price_currency" t-esc="line.currency_symbol"/><input type="number" min="0" step="0.01" inputmode="decimal" dir="ltr" t-att-value="line.unit_price" t-att-disabled="state.saving" t-on-input="(event) => this.setPlannedPrice(line, event.target.value)" aria-label="Unit price"/></span></label>
                                         <label t-if="state.existingRequest" t-att-class="{'o_prc_actual_price': true, 'is_invalid': requiresActualPrice(line)}">
                                             <span class="visually-hidden">Actual unit price</span>
                                             <span class="o_prc_actual_price_currency" t-esc="line.currency_symbol"/>
                                             <input type="number" min="0.01" step="0.01" inputmode="decimal" dir="ltr" t-att-value="line.actual_price" t-att-disabled="isNotReceived(line)" t-on-input="(event) => this.setActualPrice(line, event.target.value)" aria-label="Actual unit price"/>
                                         </label>
                                         <small t-if="requiresActualPrice(line)" class="o_prc_actual_price_hint">Enter the price</small>
-                                        <small t-elif="!state.existingRequest and !state.editRequest and quoteLine(line)"><t t-esc="quoteLine(line).unit_price_text"/> <t t-esc="state.quote.currency_symbol"/> / <t t-esc="line.unit"/></small>
                                     </div>
                                     <button type="button" class="o_prc_remove" t-on-click="() => this.remove(line)" t-att-aria-label="removeLineAriaLabel(line)" t-att-title="removeLineAriaLabel(line)"><i t-att-class="state.existingRequest and line.line_id ? (isNotReceived(line) ? 'fa fa-undo' : 'fa fa-times') : 'fa fa-trash-o'" aria-hidden="true"/><span t-if="state.existingRequest"><t t-if="!line.line_id">Remove item</t><t t-elif="isNotReceived(line)">Restore</t><t t-else="">Not received</t></span></button>
                                 </div>
@@ -226,7 +225,7 @@
 
                     <footer class="o_prc_cart_footer">
                         <div class="o_prc_total_row">
-                            <div><span><t t-if="state.editRequest">Order total</t><t t-elif="state.existingRequest">Actual total</t><t t-else="">Estimated total</t></span><small t-if="state.editRequest">Saving changes does not confirm receipt.</small><small t-elif="state.existingRequest">Updated using receipt prices</small><small t-else="">Based on the latest recorded prices</small></div>
+                            <div><span><t t-if="state.editRequest">Order total</t><t t-elif="state.existingRequest">Actual total</t><t t-else="">Estimated total</t></span><small t-if="state.editRequest">Saving changes does not confirm receipt.</small><small t-elif="state.existingRequest">Updated using receipt prices</small><small t-else="">Review unit prices before saving.</small></div>
                             <strong t-if="!state.quotePending and !state.quoteError" t-esc="moneyText(state.quote.total_text)"/>
                             <span t-elif="!state.quotePending and state.quoteError" class="o_prc_quote_placeholder">—</span>
                             <span t-else="" class="o_prc_total_loading">Calculating…</span>

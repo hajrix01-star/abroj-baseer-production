@@ -62,7 +62,7 @@
                     <notebook>
                         <page string="Materials">
                             <field name="line_ids" readonly="state in ('purchased', 'cancel')">
-                                <list editable="bottom"><field name="product_id" readonly="1"/><field name="option_id" readonly="parent.state != 'draft'"/><field name="requested_qty" readonly="parent.state != 'draft'"/><field name="requested_price" readonly="parent.state != 'draft'"/><field name="manager_received_qty" readonly="parent.state != 'sent'"/><field name="actual_qty" readonly="parent.state != 'received'" groups="baseer_procurement_requests.group_procurement_cashier"/><field name="actual_price" readonly="parent.state != 'received'" groups="baseer_procurement_requests.group_procurement_cashier"/></list>
+                                <list editable="bottom"><field name="product_id" readonly="1" context="{'display_default_code': False}"/><field name="option_id" readonly="parent.state != 'draft'"/><field name="requested_qty" readonly="parent.state != 'draft'"/><field name="requested_price" readonly="parent.state != 'draft'"/><field name="manager_received_qty" readonly="parent.state != 'sent'"/><field name="actual_qty" readonly="parent.state != 'received'" groups="baseer_procurement_requests.group_procurement_cashier"/><field name="actual_price" readonly="parent.state != 'received'" groups="baseer_procurement_requests.group_procurement_cashier"/></list>
                             </field>
                             <group class="oe_subtotal_footer oe_right"><field name="requested_total" readonly="1"/><field name="actual_total" readonly="1"/></group>
                         </page>

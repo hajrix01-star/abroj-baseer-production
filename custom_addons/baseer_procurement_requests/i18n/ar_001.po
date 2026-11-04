@@ -2445,3 +2445,9 @@ msgstr "يلزم أن تكون حسابات العهدة ودفاترها بعم
 #: code:addons/baseer_procurement_requests/models/receipt_custody.py:0
 msgid "Enter a valid actual representative advance."
 msgstr "أدخل قيمة عهدة فعلية صحيحة للمندوب."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "Review the receipt details before confirming."
+msgstr "راجع بيانات الاستلام قبل التأكيد."

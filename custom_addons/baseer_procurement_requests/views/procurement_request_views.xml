@@ -35,7 +35,7 @@
                 <sheet>
                     <div class="oe_button_box" name="button_box">
                         <field name="receipt_custody_confirmed" invisible="1"/>
-                        <button name="action_open_receipt_custody" type="object" class="oe_stat_button" icon="fa-exchange" invisible="not receipt_custody_confirmed">
+                        <button name="action_open_receipt_custody" type="object" class="oe_stat_button" icon="fa-exchange" invisible="not receipt_custody_confirmed" groups="base.group_system,baseer_procurement_requests.group_procurement_manager,baseer_procurement_requests.group_procurement_accountant,baseer_procurement_requests.group_procurement_cashier">
                             <div class="o_stat_info"><span class="o_stat_text">Representative advance</span></div>
                         </button>
                         <button name="action_open_picking" type="object" class="oe_stat_button" icon="fa-truck" invisible="not picking_id"><field name="picking_id" widget="statinfo" string="Receipt"/></button>

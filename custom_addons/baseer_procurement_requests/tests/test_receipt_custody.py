@@ -4,11 +4,12 @@ from uuid import uuid4
 
 from odoo import Command, fields
 from odoo.exceptions import AccessError, UserError, ValidationError
-from odoo.tests.common import TransactionCase
+from odoo.tests.common import TransactionCase, tagged
 
 from .test_representative_petty_cash import RepresentativePettyCashCase
 
 
+@tagged('post_install', '-at_install')
 class ReceiptCustodyCase(TransactionCase):
     """All financial writes use rollback-only isolated test fixtures."""
     def setUp(self):
@@ -137,6 +138,19 @@ class ReceiptCustodyCase(TransactionCase):
             request.action_confirm_actual_purchase()
         with self.assertRaises(ValidationError):
             request.confirm_actual_from_catalog(request.id, self._rows(request))
+        lock_date_before = self.company.fiscalyear_lock_date
+        funding_count = self.env['baseer.procurement.representative.advance'].search_count([])
+        move_count = self.env['account.move'].search_count([])
+        self.company.write({'fiscalyear_lock_date': fields.Date.context_today(self)})
+        try:
+            with self.assertRaisesRegex(ValidationError, 'locked accounting period'):
+                request.confirm_actual_from_catalog(request.id, self._rows(request), payload)
+            self.assertEqual(self.env['baseer.procurement.representative.advance'].search_count([]), funding_count)
+            self.assertEqual(self.env['account.move'].search_count([]), move_count)
+            self.assertEqual(request.state, 'sent')
+            self.assertFalse(request.receipt_custody_confirmed)
+        finally:
+            self.company.write({'fiscalyear_lock_date': lock_date_before})
         for proof in (True, 'proof', {}):
             with self.assertRaises(AccessError):
                 request.sudo().with_context(_baseer_receipt_custody_proof=proof).write({'receipt_custody_confirmed': True})

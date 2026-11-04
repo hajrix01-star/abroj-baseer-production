@@ -84,7 +84,7 @@ class Voucher(models.Model):
 
     def action_accounting_approve(self):
         require_accountant(self.env)
-        raise UserError(_('Use Review payment purpose to approve or link this voucher.'))
+        return self.action_open_voucher_review()
 
     def action_open_accounting_issue(self):
         return self.action_open_voucher_review()
@@ -327,10 +327,29 @@ class VoucherReview(models.TransientModel):
         voucher = self.env['abroj.contracting.voucher'].browse(vals.get('voucher_id')).exists()
         if voucher:
             check_source(voucher)
+            journal = voucher.journal_id or self.env['account.journal'].search([
+                ('company_id', '=', voucher.company_id.id),
+                ('type', '=', 'cash' if voucher.method == 'cash' else 'bank'),
+                ('active', '=', True),
+            ], order='sequence, id', limit=1)
             vals.update(purpose=voucher.payment_purpose,
                         partner_id=(voucher.payment_id.partner_id or voucher.accounting_partner_id or voucher.partner_id).id,
-                        journal_id=voucher.journal_id.id, name=voucher.memo or voucher.name,
+                        journal_id=journal.id, name=voucher.memo or voucher.name,
                         invoice_date=voucher.date, date=voucher.date)
+            if 'evidence_note' not in vals:
+                notes = {
+                    ('direct', 'payment'): _('Direct expense payment for voucher %s'),
+                    ('direct', 'receipt'): _('Earned income receipt for voucher %s'),
+                    ('settlement', 'payment'): _('Invoice settlement payment for voucher %s'),
+                    ('settlement', 'receipt'): _('Invoice settlement receipt for voucher %s'),
+                    ('advance', 'payment'): _('Advance payment for voucher %s'),
+                    ('advance', 'receipt'): _('Advance receipt for voucher %s'),
+                    ('supplier_refund', 'receipt'): _('Supplier refund receipt for voucher %s'),
+                    ('supplier_refund', 'payment'): _('Supplier refund payment for voucher %s'),
+                }
+                template = notes.get((voucher.payment_purpose, voucher.kind))
+                if template:
+                    vals['evidence_note'] = template % voucher.name
             if voucher.payment_purpose == 'direct':
                 vals.setdefault('analytic_distribution', {str(voucher.project_id.account_id.id): 100})
         return vals

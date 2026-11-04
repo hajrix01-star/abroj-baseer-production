@@ -383,10 +383,22 @@ class AbrojVoucherWorkflowCase(TransactionCase):
         self.assertEqual(self.env['account.move'].search_count([]), moves + 2)
         self.assertEqual(self.env['abroj.contracting.cost'].search_count([('project_id', '=', self.project.id)]), cost_count)
 
+    def test_review_defaults_journal_and_evidence(self):
+        self.cash.sequence = -10000
+        voucher = self.voucher(purpose='advance')
+        wizard_model = self.env['abroj.project.voucher.review'].with_context(default_voucher_id=voucher.id)
+        values = wizard_model.default_get(['voucher_id', 'journal_id', 'evidence_note'])
+        self.assertEqual(values['journal_id'], self.cash.id)
+        self.assertIn(voucher.name, values['evidence_note'])
+        values = wizard_model.with_context(default_evidence_note='Reviewed evidence').default_get(
+            ['voucher_id', 'journal_id', 'evidence_note'])
+        self.assertEqual(values['evidence_note'], 'Reviewed evidence')
+
     def test_legacy_accounting_entrypoints_cannot_bypass_purpose_review(self):
         voucher = self.voucher(purpose='direct')
-        with self.assertRaises(UserError):
-            voucher.action_accounting_approve()
+        action = voucher.action_accounting_approve()
+        self.assertEqual(action['res_model'], 'abroj.project.voucher.review')
+        self.assertEqual(action['context']['default_voucher_id'], voucher.id)
         old = self.env['abroj.contracting.accounting.issue'].create({
             'voucher_id': voucher.id, 'partner_id': self.partner.id,
             'journal_id': self.cash.id, 'date': self.today,

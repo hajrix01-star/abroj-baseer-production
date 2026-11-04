@@ -1,4 +1,5 @@
-from datetime import timedelta
+from datetime import date, timedelta
+import re
 from decimal import Decimal
 
 import pytz
@@ -83,6 +84,7 @@ class BudgetLine(models.Model):
     _check_company_auto = True
 
     project_id = fields.Many2one('project.project', required=True, ondelete='cascade', check_company=True)
+    task_id = fields.Many2one('project.task', string='المرحلة', domain="[('project_id', '=', project_id)]", ondelete='set null')
     analytic_account_id = fields.Many2one('account.analytic.account', string='الحساب التحليلي', related='project_id.account_id', store=True, readonly=True, index=True)
     company_id = fields.Many2one(related='project_id.company_id', store=True)
     currency_id = fields.Many2one(related='company_id.currency_id')
@@ -93,6 +95,12 @@ class BudgetLine(models.Model):
     manual_actual = fields.Monetary(string='الفعلي اليدوي')
     actual = fields.Monetary(string='التكلفة الفعلية', compute='_compute_actual')
     analytic_line_ids = fields.One2many('account.analytic.line', 'abroj_budget_line_id')
+
+    @api.constrains('task_id', 'project_id')
+    def _check_task_project(self):
+        for line in self.filtered('task_id'):
+            if line.task_id.project_id != line.project_id:
+                raise ValidationError('يجب أن تكون المرحلة من نفس المشروع.')
 
     def _check_budget_manager(self):
         if not self.env.su and not self.env.user.has_group('project.group_project_manager'):
@@ -288,10 +296,44 @@ class Project(models.Model):
         done = tasks.filtered(lambda t: t.state in ('1_done', '1_canceled'))
         progress, actual, over = self._abroj_metrics(tasks)
         financials = self._abroj_financials()
-        categories = [{'id': line.id, 'name': line.name, 'budget': line.budget, 'actual': line.actual, 'manual_actual': line.manual_actual, 'advance_paid': line.advance_paid, 'total_spent': line.total_spent, 'over_budget': line.over_budget, 'over': float(max(Decimal(str(line.total_spent)) - Decimal(str(line.budget)), Decimal('0'))) if line.over_budget else 0} for line in self.abroj_budget_line_ids]
+        lines = self.abroj_budget_line_ids
+
+        def phase_start(line):
+            task = line.task_id
+            return task.x_abroj_date_start or (task.date_assign.date() if task.date_assign else False) or (task.date_deadline.date() if task.date_deadline else False)
+
+        def sort_key(line):
+            start = phase_start(line)
+            code = re.match(r'^\s*(\d+)', line.name or '')
+            return (not bool(start), start or date.max, int(code.group(1)) if code else float('inf'), line.id)
+
+        by_parent = {}
+        ids = set(lines.ids)
+        for line in lines:
+            parent = line.parent_id.id if line.parent_id.id in ids else False
+            by_parent.setdefault(parent, []).append(line)
+        ordered, visited = [], set()
+
+        def append_tree(line):
+            if line.id in visited:
+                return
+            visited.add(line.id)
+            ordered.append(line)
+            for child in sorted(by_parent.get(line.id, []), key=sort_key):
+                append_tree(child)
+
+        for line in sorted(by_parent.get(False, []), key=sort_key):
+            append_tree(line)
+        # Keep malformed cyclic hierarchies visible exactly once as well.
+        for line in sorted(lines, key=sort_key):
+            append_tree(line)
+        categories = [{'id': line.id, 'name': line.name, 'phase': line.task_id.name or '', 'phase_start': str(phase_start(line) or ''), 'budget': line.budget, 'actual': line.actual, 'manual_actual': line.manual_actual, 'advance_paid': line.advance_paid, 'total_spent': line.total_spent, 'remaining': line.remaining_budget, 'over_budget': line.over_budget, 'over': float(max(Decimal(str(line.total_spent)) - Decimal(str(line.budget)), Decimal('0'))) if line.over_budget else 0} for line in ordered]
         vouchers = []
         if 'abroj.contracting.voucher' in self.env and self.env['abroj.contracting.voucher'].has_access('read'):
             vouchers = self.env['abroj.contracting.voucher'].search([('project_id', '=', self.id), ('state', '=', 'issued')])
+        # Each line owns its amounts; parents do not aggregate children. Sum the flat list once.
+        categories_total = {key: float(money_sum(c[key] for c in categories))
+                            for key in ('budget', 'actual', 'advance_paid', 'total_spent', 'remaining')}
         contracts = []
         if 'abroj.contracting.subcontractor' in self.env and self.env['abroj.contracting.subcontractor'].has_access('read'):
             contracts = [{'name': sub.display_name, 'partner': sub.display_name, 'amount': sub.agreed_amount} for sub in self.env['abroj.contracting.subcontractor'].search([('project_id', '=', self.id)])]
@@ -314,7 +356,7 @@ class Project(models.Model):
         last_activity = max([self.write_date] + tasks.mapped('write_date')) if tasks else self.write_date
         stalled = not completed and (self.last_update_status in ('off_track', 'on_hold') or bool(last_activity and last_activity.date() < today - timedelta(days=stall_days)))
         phases = [{'id': t.id, 'name': t.name, 'start': str(t.x_abroj_date_start or (t.date_assign.date() if t.date_assign else '')), 'end': str(t.date_deadline.date() if t.date_deadline else ''), 'duration': t.x_abroj_duration_days, 'done': t in done, 'state': t.state, 'progress': t.x_abroj_progress, 'can_write': t.has_access('write'), 'delayed': t in delayed_tasks, 'assignee': ', '.join(t.user_ids.mapped('name')), **t._abroj_phase_status()} for t in tasks]
-        return {'id': self.id, 'archived': not self.active or completed, 'can_close': self.env.user.has_group('project.group_project_manager') and self.has_access('write'), 'can_write': self.has_access('write'), 'can_create_task': self.env['project.task'].has_access('create'), 'can_edit_budget': self.env.user.has_group('project.group_project_manager') and self.has_access('write'), 'name': self.name, 'type': self.abroj_type, 'type_label': (dict(TYPES) if (self.env.lang or '').startswith('ar') else TYPES_EN).get(self.abroj_type, ''), 'status': self.last_update_status, 'status_label': (STATUS if (self.env.lang or '').startswith('ar') else STATUS_EN).get(self.last_update_status, ''), 'client': (self.abroj_client_party_id or self.partner_id).name or '—', 'manager': self.user_id.name or '—', 'manager_id': self.user_id.id or False, 'manager_is_system': bool(self.user_id and (self.user_id.id in (1, self.env.ref('base.user_admin').id) or self.user_id.login == '__system__' or self.user_id.name == 'Administrator')), 'start': str(self.date_start or ''), 'end': str(self.date or ''), 'progress': round(progress, 1), **financials, **kpis, 'actual': actual, 'over': over if financials['budget_available'] else None, 'advance_paid': float(advance_paid), 'total_spent': float(total_spent), 'over_categories': sum(c['over_budget'] for c in categories), 'contract': financials['contract'], 'received': received, 'customer_received': self.abroj_customer_received, 'paid': paid, 'contract_profit': float(Decimal(str(financials['contract'])) - Decimal(str(self.total_costs))), 'remaining': float(Decimal(str(financials['contract'])) - Decimal(str(self.abroj_customer_received))), 'liquidity': float(Decimal(str(received)) - Decimal(str(paid))), 'categories': categories, 'contracts': contracts, 'phases': phases, 'delayed': delayed, 'stalled': stalled, 'completed': completed, 'vouchers': [{'name': v.name, 'kind': v.kind, 'partner': (v.party_id or v.partner_id).name, 'amount': v.amount, 'date': str(v.date)} for v in vouchers]}
+        return {'id': self.id, 'archived': not self.active or completed, 'can_close': self.env.user.has_group('project.group_project_manager') and self.has_access('write'), 'can_write': self.has_access('write'), 'can_create_task': self.env['project.task'].has_access('create'), 'can_edit_budget': self.env.user.has_group('project.group_project_manager') and self.has_access('write'), 'name': self.name, 'type': self.abroj_type, 'type_label': (dict(TYPES) if (self.env.lang or '').startswith('ar') else TYPES_EN).get(self.abroj_type, ''), 'status': self.last_update_status, 'status_label': (STATUS if (self.env.lang or '').startswith('ar') else STATUS_EN).get(self.last_update_status, ''), 'client': (self.abroj_client_party_id or self.partner_id).name or '—', 'manager': self.user_id.name or '—', 'manager_id': self.user_id.id or False, 'manager_is_system': bool(self.user_id and (self.user_id.id in (1, self.env.ref('base.user_admin').id) or self.user_id.login == '__system__' or self.user_id.name == 'Administrator')), 'start': str(self.date_start or ''), 'end': str(self.date or ''), 'progress': round(progress, 1), **financials, **kpis, 'actual': actual, 'over': over if financials['budget_available'] else None, 'advance_paid': float(advance_paid), 'total_spent': float(total_spent), 'over_categories': sum(c['over_budget'] for c in categories), 'contract': financials['contract'], 'received': received, 'customer_received': self.abroj_customer_received, 'paid': paid, 'contract_profit': float(Decimal(str(financials['contract'])) - Decimal(str(self.total_costs))), 'remaining': float(Decimal(str(financials['contract'])) - Decimal(str(self.abroj_customer_received))), 'liquidity': float(Decimal(str(received)) - Decimal(str(paid))), 'categories': categories, 'categories_total': categories_total, 'contracts': contracts, 'phases': phases, 'delayed': delayed, 'stalled': stalled, 'completed': completed, 'vouchers': [{'name': v.name, 'kind': v.kind, 'partner': (v.party_id or v.partner_id).name, 'amount': v.amount, 'date': str(v.date)} for v in vouchers]}
 
     @api.model
     def _abroj_financial_summary(self, projects):

@@ -1,6 +1,9 @@
 'use strict';
 const translations = {
+  "budgetPhase": {"ar":"المرحلة", "en":"Phase"},
   "costItem": {"ar":"بند التكلفة", "en":"Cost item"},
+  "categoryRemaining": {"ar":"المتبقي", "en":"Remaining"},
+  "categoryTotal": {"ar":"المجموع", "en":"Total"},
   "paidInAdvance": {"ar":"مدفوع مقدماً", "en":"Paid in advance"},
   "totalSpent": {"ar":"إجمالي المصروف", "en":"Total spent"},
   "progressBill": {"ar":"مستخلص", "en":"Progress bill"},
@@ -48,6 +51,7 @@ const translations = {
   "contractCardNoVouchers": {"ar":"لا توجد سندات دفع", "en":"No payment vouchers"},
   "contractCardValue": {"ar":"قيمة العقد", "en":"Contract value"},
   "contractCardParty": {"ar":"الطرف", "en":"Party"},
+  "timelineToday": {"ar":"اليوم", "en":"Today"},
   "phaseAdd": {"ar":"إضافة إلى المرحلة", "en":"Add to phase"},
   "voiceNote": {"ar":"ملاحظة صوتية", "en":"Voice note"},
   "textNote": {"ar":"ملاحظة نصية", "en":"Text note"},

@@ -694,7 +694,7 @@ msgstr "الربح المتوقع"
 #. odoo-javascript
 #: code:addons/abroj_project_dashboard/static/src/dashboard.js:0
 msgid "Remaining"
-msgstr "الباقي"
+msgstr "المتبقي"
 
 #. module: abroj_project_dashboard
 #. odoo-javascript
@@ -725,3 +725,16 @@ msgstr "لا توجد ميزانية"
 #: code:addons/abroj_project_dashboard/static/src/dashboard.js:0
 msgid "Contract value − max(budget, total spent)"
 msgstr "قيمة العقد − الأكبر من الميزانية وإجمالي المنصرف"
+
+#. module: abroj_project_dashboard
+msgid "Total"
+msgstr "المجموع"
+
+#. module: abroj_project_dashboard
+#. odoo-javascript
+msgid "Today"
+msgstr "اليوم"
+
+#. module: abroj_project_dashboard
+msgid "Phase"
+msgstr "المرحلة"

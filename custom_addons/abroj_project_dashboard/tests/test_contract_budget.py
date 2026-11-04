@@ -2,6 +2,7 @@ from datetime import timedelta
 
 from odoo import Command, fields
 from odoo.tests import TransactionCase, tagged
+from odoo.exceptions import ValidationError
 from odoo.addons.abroj_contracting.models.contracting import FrozenDocument
 
 
@@ -47,6 +48,39 @@ class AbrojContractBudgetCase(TransactionCase):
         self.project.abroj_budget = 0
         data = self.project._abroj_data()
         self.assertEqual((data['budget_remaining'], data['budget_overrun'], data['projected_profit']), (None, None, None))
+
+    def test_category_totals_include_parent_and_child_once(self):
+        self.budget.manual_actual = 1200
+        child = self.env['abroj.project.budget.line'].create({
+            'project_id': self.project.id, 'name': 'Child', 'parent_id': self.budget.id,
+            'budget': 300, 'manual_actual': 200,
+        })
+        data = self.project._abroj_data()
+        categories = {line['id']: line for line in data['categories']}
+        self.assertEqual(categories[self.budget.id]['remaining'], -200)
+        self.assertEqual(categories[child.id]['remaining'], 100)
+        self.assertEqual(data['categories_total'], {
+            'budget': 1300, 'actual': 1400, 'advance_paid': 0,
+            'total_spent': 1400, 'remaining': -100,
+        })
+
+    def test_category_phase_order_and_project_constraint(self):
+        Task = self.env['project.task']
+        Line = self.env['abroj.project.budget.line']
+        early = Task.create({'name': 'Early', 'project_id': self.project.id, 'x_abroj_date_start': '2025-01-01'})
+        late = Task.create({'name': 'Late', 'project_id': self.project.id, 'x_abroj_date_start': '2025-02-01'})
+        self.budget.write({'name': '02 - Parent', 'task_id': early.id})
+        first = Line.create({'project_id': self.project.id, 'name': '01 - First', 'task_id': early.id})
+        child = Line.create({'project_id': self.project.id, 'name': 'Child', 'parent_id': self.budget.id, 'task_id': late.id})
+        later = Line.create({'project_id': self.project.id, 'name': '03 - Later', 'task_id': late.id})
+        undated = Line.create({'project_id': self.project.id, 'name': '00 - Undated'})
+        categories = self.project._abroj_data()['categories']
+        self.assertEqual([row['id'] for row in categories], [first.id, self.budget.id, child.id, later.id, undated.id])
+        self.assertEqual((categories[0]['phase'], categories[0]['phase_start']), ('Early', '2025-01-01'))
+        other = self.env['project.project'].create({'name': 'Other project'})
+        foreign_task = Task.create({'name': 'Foreign', 'project_id': other.id})
+        with self.assertRaises(ValidationError), self.env.cr.savepoint():
+            undated.task_id = foreign_task
 
     def test_contract_suggestion(self):
         contract = self.env['abroj.contracting.subcontractor'].create({

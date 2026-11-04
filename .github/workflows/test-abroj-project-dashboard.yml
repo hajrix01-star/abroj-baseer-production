@@ -51,7 +51,7 @@ jobs:
           test "$(grep -Ec 'Starting AbrojProjectDashboardCase\.' abroj-project-dashboard-runtime.log)" -eq 46
           test "$(grep -Ec 'Starting AbrojDashboardHttpCase\.' abroj-project-dashboard-runtime.log)" -eq 36
           test "$(grep -Ec 'Starting AbrojVoucherWorkflowCase\.' abroj-project-dashboard-runtime.log)" -eq 39
-          test "$(grep -Ec 'Starting AbrojContractBudgetCase\.' abroj-project-dashboard-runtime.log)" -eq 9
+          test "$(grep -Ec 'Starting AbrojContractBudgetCase\.' abroj-project-dashboard-runtime.log)" -eq 11
       - name: Preserve dashboard runtime evidence
         if: always()
         uses: actions/upload-artifact@v4

@@ -11,7 +11,7 @@ from .test_representative_petty_cash import RepresentativePettyCashCase
 
 @tagged('post_install', '-at_install')
 class ReceiptCustodyCase(TransactionCase):
-    """All financial writes use rollback-only isolated test fixtures."""
+    """Isolated rollback fixtures, plus an explicitly guarded CI-only committed race."""
     def setUp(self):
         super().setUp()
         if self._testMethodName == 'test_receipt_custody_real_repeatable_read_manual_receipt_races':
@@ -267,7 +267,9 @@ class ReceiptCustodyCase(TransactionCase):
                 'company_id': company.id, 'company_ids': [Command.set(company.ids)],
                 'group_ids': [Command.set(groups)],
             })
-            env = api.Environment(setup_cr, actor.id, {'allowed_company_ids': company.ids})
+            # Master-data setup needs administrative CRUD; the actual competing
+            # financial methods below always execute as the non-sudo actor.
+            env = api.Environment(setup_cr, SUPERUSER_ID, {'allowed_company_ids': company.ids})
             warehouse = env['stock.warehouse'].search([('company_id', '=', company.id)], limit=1)
             if not warehouse:
                 warehouse = env['stock.warehouse'].sudo().create({
@@ -299,7 +301,7 @@ class ReceiptCustodyCase(TransactionCase):
                     'company_id': company.id, 'warehouse_id': warehouse.id,
                     'representative_partner_id': representative.id,
                     'line_ids': [Command.create({'option_id': option.id, 'requested_qty': 5, 'requested_price': 4})]})
-                request.action_mark_sent()
+                request.with_user(actor).action_mark_sent()
                 requests |= request
             ids = requests.ids
             company_id, actor_id, representative_id, bank_id = company.id, actor.id, representative.id, bank.id

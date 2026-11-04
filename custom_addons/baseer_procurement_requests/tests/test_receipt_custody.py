@@ -14,6 +14,10 @@ class ReceiptCustodyCase(TransactionCase):
     """All financial writes use rollback-only isolated test fixtures."""
     def setUp(self):
         super().setUp()
+        if self._testMethodName == 'test_receipt_custody_real_repeatable_read_manual_receipt_races':
+            # Native company.create updates UID1. An outer fixture write to
+            # that user would block the independently committed CI fixture.
+            return
         self.env.user.group_ids |= self.env.ref('baseer_procurement_requests.group_procurement_accountant')
         self.env.user.group_ids |= self.env.ref('baseer_procurement_requests.group_procurement_manager')
         self.env.user.group_ids |= self.env.ref('base.group_erp_manager')
@@ -246,6 +250,8 @@ class ReceiptCustodyCase(TransactionCase):
         owned = uuid4().hex[:10]
         # Independent cursor: never commit the TransactionCase transaction.
         with db.cursor() as setup_cr:
+            setup_cr.execute("SET LOCAL lock_timeout = '10s'")
+            setup_cr.execute("SET LOCAL statement_timeout = '45s'")
             setup = api.Environment(setup_cr, SUPERUSER_ID, {})
             company = setup['res.company'].create({'name': 'Receipt race %s' % owned})
             groups = [setup.ref(name).id for name in (
@@ -298,6 +304,9 @@ class ReceiptCustodyCase(TransactionCase):
         ctx = {'allowed_company_ids': [company_id]}
         for request_id, order in zip(ids, ('manual_first', 'receipt_first')):
             with self.subTest(order=order), db.cursor() as winner_cr, db.cursor() as waiter_cr:
+                for cursor in (winner_cr, waiter_cr):
+                    cursor.execute("SET LOCAL lock_timeout = '10s'")
+                    cursor.execute("SET LOCAL statement_timeout = '45s'")
                 winner = api.Environment(winner_cr, actor_id, ctx)
                 waiter = api.Environment(waiter_cr, actor_id, ctx)
                 winning_request = winner['baseer.procurement.request'].browse(request_id)
@@ -331,6 +340,8 @@ class ReceiptCustodyCase(TransactionCase):
                 # Observe an actual database lock wait; no scheduling assumptions.
                 with db.cursor() as observer:
                     while time.monotonic() < deadline and thread.is_alive():
+                        observer.execute("SET LOCAL lock_timeout = '10s'")
+                        observer.execute("SET LOCAL statement_timeout = '45s'")
                         observer.execute('SELECT wait_event_type FROM pg_stat_activity WHERE pid = %s', [pid])
                         row = observer.fetchone()
                         observer.rollback()  # fresh stats snapshot on the next observation
@@ -348,6 +359,8 @@ class ReceiptCustodyCase(TransactionCase):
                 self.assertIsInstance(errors[0], SerializationFailure)
                 waiter_cr.rollback()
             with db.cursor() as retry_cr:
+                retry_cr.execute("SET LOCAL lock_timeout = '10s'")
+                retry_cr.execute("SET LOCAL statement_timeout = '45s'")
                 retry = api.Environment(retry_cr, actor_id, ctx)
                 request = retry['baseer.procurement.request'].browse(request_id)
                 if order == 'manual_first':

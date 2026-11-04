@@ -63,17 +63,18 @@ class Dashboard extends Component {
     }
     total(key) { return this.projects.reduce((sum, p) => sum + (p[key] || 0), 0); }
     money(n) { return n == null ? '—' : Number(n).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}); }
+    get currency() { return _t('SAR'); }
     get categoryLabels() { return {remaining: _t('Remaining'), total: _t('Total'), phase: _t('Phase')}; }
     get cards() {
         const values = this.state.detail || this.state.data.financial_summary || {};
         const missing = _t('No budget');
         return [
             {label: _t('Contract value'), value: values.contract, icon:'▤'},
-            {label: _t('Customer collections'), value: values.customer_received, icon:'⇣', sub: `${_t('Remaining')}: ${this.money(values.remaining)}`},
-            {label: _t('Total spent'), value: values.total_spent, icon:'⚙', sub: `${_t('Actual')} ${this.money(values.actual)} + ${_t('Advance')} ${this.money(values.advance_paid)}`},
-            {label: _t('Remaining budget'), value: values.budget_remaining, icon:'◎', sub: !values.budget_available ? missing : values.budget_overrun > 0 ? `${_t('Budget overrun')}: ${this.money(values.budget_overrun)}` : '', subRed: values.budget_available && values.budget_overrun > 0},
-            {label: _t('Project cash'), value: values.project_cash, icon:'⇄'},
-            {label: _t('Projected profit'), value: values.projected_profit, icon:'★', sub: _t('Contract value − max(budget, total spent)')},
+            {label: _t('Collected from client'), value: values.customer_received, icon:'⇣', sub: `${_t('Left to collect')} ${this.money(values.remaining)}`},
+            {label: _t('Spent'), value: values.total_spent, icon:'⚙', sub: `${_t('Actual')} ${this.money(values.actual)} + ${_t('Advances')} ${this.money(values.advance_paid)}`},
+            {label: _t('Budget remaining'), value: values.budget_remaining, icon:'◎', sub: !values.budget_available ? missing : values.budget_overrun > 0 ? `${_t('Overrun')} ${this.money(values.budget_overrun)}` : `${_t('of budget')} ${this.money(values.budget)}`, subRed: values.budget_available && values.budget_overrun > 0},
+            {label: _t('Project cash available'), value: values.project_cash, icon:'⇄', sub: `${_t('Collected')} ${this.money(values.customer_received)} − ${_t('paid')} ${this.money(values.paid)}`},
+            {label: _t('Expected profit'), value: values.projected_profit, icon:'★', sub: _t('Contract value minus the higher of budget or spent')},
         ];
     }
     timeline(phases) { return timelineLayout(phases, new Date(), localization.code || 'en'); }

@@ -727,6 +727,8 @@ msgid "Contract value − max(budget, total spent)"
 msgstr "قيمة العقد − الأكبر من الميزانية وإجمالي المنصرف"
 
 #. module: abroj_project_dashboard
+#. odoo-javascript
+#: code:addons/abroj_project_dashboard/static/src/dashboard.js:0
 msgid "Total"
 msgstr "المجموع"
 
@@ -736,5 +738,152 @@ msgid "Today"
 msgstr "اليوم"
 
 #. module: abroj_project_dashboard
+#. odoo-javascript
+#: code:addons/abroj_project_dashboard/static/src/dashboard.js:0
 msgid "Phase"
 msgstr "المرحلة"
+
+
+#. module: abroj_project_dashboard
+#. odoo-javascript
+#: code:addons/abroj_project_dashboard/static/src/dashboard.js:0
+msgid "Collected from client"
+msgstr "المحصّل من العميل"
+
+#. module: abroj_project_dashboard
+#. odoo-javascript
+#: code:addons/abroj_project_dashboard/static/src/dashboard.js:0
+msgid "Left to collect"
+msgstr "متبقي للتحصيل"
+
+#. module: abroj_project_dashboard
+#. odoo-javascript
+#: code:addons/abroj_project_dashboard/static/src/dashboard.js:0
+msgid "Spent"
+msgstr "المصروف"
+
+#. module: abroj_project_dashboard
+#. odoo-javascript
+#: code:addons/abroj_project_dashboard/static/src/dashboard.js:0
+msgid "Advances"
+msgstr "مقدّمات"
+
+#. module: abroj_project_dashboard
+#. odoo-javascript
+#: code:addons/abroj_project_dashboard/static/src/dashboard.js:0
+msgid "Budget remaining"
+msgstr "المتبقي من الميزانية"
+
+#. module: abroj_project_dashboard
+#. odoo-javascript
+#: code:addons/abroj_project_dashboard/static/src/dashboard.js:0
+msgid "Overrun"
+msgstr "تجاوز"
+
+#. module: abroj_project_dashboard
+#. odoo-javascript
+#: code:addons/abroj_project_dashboard/static/src/dashboard.js:0
+msgid "of budget"
+msgstr "من ميزانية"
+
+#. module: abroj_project_dashboard
+#. odoo-javascript
+#: code:addons/abroj_project_dashboard/static/src/dashboard.js:0
+msgid "Project cash available"
+msgstr "النقد المتاح للمشروع"
+
+#. module: abroj_project_dashboard
+#. odoo-javascript
+#: code:addons/abroj_project_dashboard/static/src/dashboard.js:0
+msgid "Collected"
+msgstr "محصّل"
+
+#. module: abroj_project_dashboard
+#. odoo-javascript
+#: code:addons/abroj_project_dashboard/static/src/dashboard.js:0
+msgid "paid"
+msgstr "مدفوع"
+
+#. module: abroj_project_dashboard
+#. odoo-javascript
+#: code:addons/abroj_project_dashboard/static/src/dashboard.js:0
+msgid "Expected profit"
+msgstr "الربح المتوقع"
+
+#. module: abroj_project_dashboard
+#. odoo-javascript
+#: code:addons/abroj_project_dashboard/static/src/dashboard.js:0
+msgid "Contract value minus the higher of budget or spent"
+msgstr "قيمة العقد ناقص الأعلى من الميزانية أو المصروف"
+
+#. module: abroj_project_dashboard
+#. odoo-javascript
+#: code:addons/abroj_project_dashboard/static/src/dashboard.js:0
+msgid "SAR"
+msgstr "ر.س"
+
+#. module: abroj_project_dashboard
+#. odoo-javascript
+#: code:addons/abroj_project_dashboard/static/src/dashboard.js:0
+msgid "ملاحظات"
+msgstr "ملاحظات"
+
+#. module: abroj_project_dashboard
+#. odoo-javascript
+#: code:addons/abroj_project_dashboard/static/src/dashboard.js:0
+msgid "الكل"
+msgstr "الكل"
+
+#. module: abroj_project_dashboard
+#. odoo-javascript
+#: code:addons/abroj_project_dashboard/static/src/dashboard.js:0
+msgid "تعذر حفظ التسجيل الصوتي."
+msgstr "تعذر حفظ التسجيل الصوتي."
+
+#. module: abroj_project_dashboard
+#. odoo-javascript
+#: code:addons/abroj_project_dashboard/static/src/dashboard.js:0
+msgid "تعذر بدء التسجيل. تحقق من إذن الميكروفون والاتصال الآمن."
+msgstr "تعذر بدء التسجيل. تحقق من إذن الميكروفون والاتصال الآمن."
+
+#. module: abroj_project_dashboard
+#. odoo-javascript
+#: code:addons/abroj_project_dashboard/static/src/dashboard.js:0
+msgid "إيقاف التسجيل"
+msgstr "إيقاف التسجيل"
+
+#. module: abroj_project_dashboard
+#. odoo-javascript
+#: code:addons/abroj_project_dashboard/static/src/dashboard.js:0
+msgid "تسجيل صوتي"
+msgstr "تسجيل صوتي"
+
+#. module: abroj_project_dashboard
+#. odoo-javascript
+#: code:addons/abroj_project_dashboard/static/src/dashboard.js:0
+msgid "صور"
+msgstr "صور"
+
+#. module: abroj_project_dashboard
+#. odoo-javascript
+#: code:addons/abroj_project_dashboard/static/src/dashboard.js:0
+msgid "صوت"
+msgstr "صوت"
+
+#. module: abroj_project_dashboard
+#. odoo-javascript
+#: code:addons/abroj_project_dashboard/static/src/dashboard.js:0
+msgid "ملفات"
+msgstr "ملفات"
+
+#. module: abroj_project_dashboard
+#. odoo-javascript
+#: code:addons/abroj_project_dashboard/static/src/dashboard.js:0
+msgid "جارٍ الحفظ…"
+msgstr "جارٍ الحفظ…"
+
+#. module: abroj_project_dashboard
+#. odoo-javascript
+#: code:addons/abroj_project_dashboard/static/src/dashboard.js:0
+msgid "جارٍ تشغيل الميكروفون…"
+msgstr "جارٍ تشغيل الميكروفون…"

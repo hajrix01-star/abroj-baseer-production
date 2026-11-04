@@ -217,7 +217,7 @@ class Voucher(models.Model):
     filename = fields.Char('اسم الملف', help='حدد اسم الملف لهذا السجل وفق مستند المشروع الأصلي.')
     state = fields.Selection([('draft', 'مسودة'), ('issued', 'صادر'), ('cancelled', 'ملغى')], string='الحالة', default='draft', readonly=True, copy=False, help='المسودة قابلة للتعديل؛ الاعتماد يقفل المستند ويحدث الإجماليات.')
     create_payment = fields.Boolean('إنشاء دفعة محاسبية', default=False, help='حقل قديم؛ أنشئ الدفعة عبر زر الاعتماد المحاسبي بعد إصدار السند.')
-    journal_id = fields.Many2one('account.journal', string='دفتر الدفع', check_company=True, domain="[('type', 'in', ['bank', 'cash'])]", help='اختر دفتر الدفع قبل الإصدار؛ عند تركه فارغاً يختار الاعتماد المحاسبي دفتر نقد أو بنك متاحاً من شركة المشروع حسب طريقة الدفع.')
+    journal_id = fields.Many2one('account.journal', string='دفتر الدفع', check_company=True, domain="[('type', 'in', ['bank', 'cash'])]", help='عند تركه فارغاً تقترح المراجعة المحاسبية دفتر نقد أو بنك نشطاً من شركة المشروع حسب طريقة الدفع، ويمكن تعديله.')
     payment_id = fields.Many2one('account.payment', string='الدفعة المحاسبية', readonly=True, copy=False, check_company=True, help='الدفعة التي أنشأها محاسب آخر عبر الاعتماد المحاسبي؛ يخصص حسابها المقابل للحساب التحليلي للمشروع.')
     issued_by = fields.Many2one('res.users', string='أصدره', readonly=True, copy=False, help='حدد أصدره لهذا السجل وفق مستند المشروع الأصلي.')
 

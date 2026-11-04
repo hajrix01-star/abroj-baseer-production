@@ -584,3 +584,43 @@ msgstr "التوزيع التحليلي"
 #: model_terms:ir.ui.view,arch_db:abroj_project_dashboard.voucher_review_form
 msgid "Keep the project allocation at 100% and complete the required analytic dimensions."
 msgstr "أبق تخصيص المشروع بنسبة 100%، وأكمل الأبعاد التحليلية المطلوبة."
+
+#. module: abroj_project_dashboard
+#: code:addons/abroj_project_dashboard/models/voucher_workflow.py:0
+msgid "Direct expense payment for voucher %s"
+msgstr "دفعة مصروف مباشر حسب السند %s"
+
+#. module: abroj_project_dashboard
+#: code:addons/abroj_project_dashboard/models/voucher_workflow.py:0
+msgid "Earned income receipt for voucher %s"
+msgstr "تحصيل إيراد مكتسب حسب السند %s"
+
+#. module: abroj_project_dashboard
+#: code:addons/abroj_project_dashboard/models/voucher_workflow.py:0
+msgid "Invoice settlement payment for voucher %s"
+msgstr "دفعة تسوية فاتورة حسب السند %s"
+
+#. module: abroj_project_dashboard
+#: code:addons/abroj_project_dashboard/models/voucher_workflow.py:0
+msgid "Invoice settlement receipt for voucher %s"
+msgstr "تحصيل تسوية فاتورة حسب السند %s"
+
+#. module: abroj_project_dashboard
+#: code:addons/abroj_project_dashboard/models/voucher_workflow.py:0
+msgid "Advance payment for voucher %s"
+msgstr "دفعة مقدمة حسب السند %s"
+
+#. module: abroj_project_dashboard
+#: code:addons/abroj_project_dashboard/models/voucher_workflow.py:0
+msgid "Advance receipt for voucher %s"
+msgstr "تحصيل مقدم حسب السند %s"
+
+#. module: abroj_project_dashboard
+#: code:addons/abroj_project_dashboard/models/voucher_workflow.py:0
+msgid "Supplier refund receipt for voucher %s"
+msgstr "تحصيل استرداد مورد حسب السند %s"
+
+#. module: abroj_project_dashboard
+#: code:addons/abroj_project_dashboard/models/voucher_workflow.py:0
+msgid "Supplier refund payment for voucher %s"
+msgstr "دفعة استرداد مورد حسب السند %s"

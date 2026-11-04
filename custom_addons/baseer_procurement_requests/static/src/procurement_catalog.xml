@@ -291,7 +291,7 @@
         <main class="o_prc_actual_pos">
             <header class="o_prc_actual_header">
                 <div><span class="o_prc_eyebrow">Cashier receipt</span><h1>Confirm actual purchase</h1><p><t t-esc="state.request.name"/> · <t t-esc="state.request.warehouse_id[1]"/></p></div>
-                <div class="o_prc_actual_total"><span>Actual purchase total</span><strong t-if="!state.quotePending" t-esc="moneyText(state.quote.total_text)"/><small>This updates quantities and the latest price only.</small></div>
+                <div class="o_prc_actual_total"><span>Actual purchase total</span><strong t-if="!state.quotePending" t-esc="moneyText(state.quote.total_text)"/><small>Review the receipt details before confirming.</small></div>
             </header>
             <section class="o_prc_actual_notice"><i class="fa fa-info-circle"/><span>This confirmation creates a quantity-only stock receipt. It does not create accounting inventory value.</span></section>
             <section class="o_prc_actual_lines">
@@ -309,8 +309,8 @@
     </t>
 
     <t t-name="baseer_procurement_requests.ReceiptCustodyFields">
-        <section t-if="state.loading or state.error or state.context?.required" class="o_prc_receipt_custody" aria-label="Representative advance" t-att-aria-busy="state.loading ? 'true' : 'false'">
-            <h3>Advance handed to the representative</h3>
+        <section t-if="state.loading or state.error or state.context?.required" class="o_prc_receipt_custody" t-att-aria-labelledby="custodyTitleId" t-att-aria-busy="state.loading ? 'true' : 'false'">
+            <h3 t-att-id="custodyTitleId">Advance handed to the representative</h3>
             <p t-if="state.loading" role="status">Loading advance details…</p>
             <div t-elif="state.error" role="alert"><p t-esc="state.error"/><button type="button" class="btn btn-light" t-on-click="reloadCustody" t-att-disabled="props.saving">Reload advance details</button></div>
             <t t-else="">

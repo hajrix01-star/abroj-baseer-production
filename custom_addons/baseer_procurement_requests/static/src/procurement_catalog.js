@@ -35,6 +35,7 @@ export class ReceiptCustodyFields extends Component {
     setup() {
         this.orm = useService("orm");
         this.state = useState(this.props.value);
+        this.custodyTitleId = `o_prc_receipt_custody_${newClientToken()}`;
         this.loadSequence = 0;
         onMounted(() => this.reloadCustody());
         onWillUnmount(() => this.loadSequence++);

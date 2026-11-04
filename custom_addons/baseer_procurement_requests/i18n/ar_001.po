@@ -2620,3 +2620,8 @@ msgstr "سبب الإلغاء"
 #: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_procurement_request__picking_id
 msgid "Picking"
 msgstr "إذن الاستلام"
+
+#. module: baseer_procurement_requests
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_request_form
+msgid "Purchasing representative custody"
+msgstr "عهدة مندوب المشتريات"

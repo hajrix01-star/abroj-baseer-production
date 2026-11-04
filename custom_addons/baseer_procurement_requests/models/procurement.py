@@ -2215,6 +2215,7 @@ class ProcurementRequestLine(models.Model):
         related='request_id.representative_partner_id', store=True, index=True, readonly=True,
     )
     option_id = fields.Many2one('baseer.procurement.purchase.option', required=True, ondelete='restrict', check_company=True)
+    product_id = fields.Many2one(related='option_id.product_id', readonly=True, string='Material')
     currency_id = fields.Many2one(related='request_id.currency_id')
     requested_qty = fields.Float(required=True, digits='Product Unit of Measure', default=1)
     requested_price = fields.Monetary(currency_field='currency_id', default=0)

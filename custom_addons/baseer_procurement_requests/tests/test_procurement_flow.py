@@ -673,7 +673,7 @@ class ProcurementFlowCase(TransactionCase):
             {'line_id': request.line_ids.id, 'option_id': self.option.id, 'quantity': '5', 'unit_price': '4'},
             {'option_id': option.id, 'quantity': '2.5', 'unit_price': '8.75'},
         ]
-        quote = request.quote_catalog_edit(request.id, rows, 'representative', False, loaded['snapshot'])
+        quote = request.quote_catalog_edit(request.id, rows, 'cash', False, loaded['snapshot'])
         self.assertEqual(quote['total'], '41.88')
         self.assertEqual(quote['lines'][1]['line_total'], '21.88')
         self.assertFalse(quote['lines'][1]['line_id'])

@@ -23,6 +23,7 @@ class ReceiptCustodyCase(TransactionCase):
         self.env.user.group_ids |= self.env.ref('base.group_erp_manager')
         self.env.user.group_ids |= self.env.ref('baseer_procurement_requests.group_procurement_cashier')
         self.company = self.env.company
+        self.company.currency_id = self.env.ref('base.SAR')
         self.company.currency_id.active = True
         self.warehouse = self.env['stock.warehouse'].search([('company_id', '=', self.company.id)], limit=1)
         category = self.env['product.category'].create({'name': 'Representative petty cash test category'})
@@ -253,7 +254,9 @@ class ReceiptCustodyCase(TransactionCase):
             setup_cr.execute("SET LOCAL lock_timeout = '10s'")
             setup_cr.execute("SET LOCAL statement_timeout = '45s'")
             setup = api.Environment(setup_cr, SUPERUSER_ID, {})
-            company = setup['res.company'].create({'name': 'Receipt race %s' % owned})
+            company = setup['res.company'].create({
+                'name': 'Receipt race %s' % owned, 'currency_id': setup.ref('base.SAR').id,
+            })
             groups = [setup.ref(name).id for name in (
                 'baseer_procurement_requests.group_procurement_manager',
                 'baseer_procurement_requests.group_procurement_cashier',

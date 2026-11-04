@@ -192,7 +192,7 @@
 .o_prc_receipt_custody h3 { margin: 0 0 .5rem; font-size: 1rem; }
 .o_prc_receipt_custody p { margin-bottom: .5rem; color: var(--prc-muted); font-size: .85rem; }
 .o_prc_receipt_custody .o_prc_custody_request { color: var(--prc-text); }
-.o_prc_custody_fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr)); gap: .65rem; }
+.o_prc_custody_fields { display: grid; grid-template-columns: minmax(0, 1fr); gap: .65rem; }
 .o_prc_custody_fields label { display: flex; flex-direction: column; min-width: 0; gap: .35rem; font-size: .85rem; }
 .o_prc_custody_fields b { color: #b42318; }
 .o_prc_custody_fields input, .o_prc_custody_fields select { width: 100%; min-width: 0; min-height: 44px; padding: .45rem; border: 1px solid var(--prc-border); border-radius: .45rem; background: #fff; font-size: 1rem; }

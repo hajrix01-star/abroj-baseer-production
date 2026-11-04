@@ -653,3 +653,51 @@ msgstr "أكمل التوزيع التحليلي للخطط الإلزامية: 
 #: code:addons/abroj_project_dashboard/models/company.py:0
 msgid "The default project expense account must be an expense account."
 msgstr "يجب أن يكون حساب مصروفات المشاريع الافتراضي حساب مصروفات."
+
+#. module: abroj_project_dashboard
+msgid "Contract value"
+msgstr "قيمة العقد"
+
+#. module: abroj_project_dashboard
+msgid "Customer collections"
+msgstr "المحصّل من العميل"
+
+#. module: abroj_project_dashboard
+msgid "Total spent"
+msgstr "المنصرف"
+
+#. module: abroj_project_dashboard
+msgid "Remaining budget"
+msgstr "الباقي من الميزانية"
+
+#. module: abroj_project_dashboard
+msgid "Project cash"
+msgstr "الكاش بيد المشروع"
+
+#. module: abroj_project_dashboard
+msgid "Projected profit"
+msgstr "الربح المتوقع"
+
+#. module: abroj_project_dashboard
+msgid "Remaining"
+msgstr "الباقي"
+
+#. module: abroj_project_dashboard
+msgid "Actual"
+msgstr "فعلي"
+
+#. module: abroj_project_dashboard
+msgid "Advance"
+msgstr "مقدّم"
+
+#. module: abroj_project_dashboard
+msgid "Budget overrun"
+msgstr "تجاوز الميزانية"
+
+#. module: abroj_project_dashboard
+msgid "No budget"
+msgstr "لا توجد ميزانية"
+
+#. module: abroj_project_dashboard
+msgid "Contract value − max(budget, total spent)"
+msgstr "قيمة العقد − max(الميزانية، المنصرف)"

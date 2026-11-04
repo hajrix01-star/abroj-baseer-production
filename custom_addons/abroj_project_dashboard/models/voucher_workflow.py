@@ -647,7 +647,9 @@ class VoucherReview(models.TransientModel):
             super(FrozenDocument, voucher).write({'payment_purpose': self.purpose, 'workflow_reviewed': True,
                 'workflow_reviewed_by': self.env.uid, 'workflow_reviewed_at': fields.Datetime.now(),
                 'workflow_evidence': previous + ('\n\n' if previous else '') + audit,
-                'recognition_move_id': invoice.id, 'abroj_budget_line_id': self.budget_line_id.id})
+                'recognition_move_id': invoice.id,
+                'abroj_budget_line_id': (voucher.abroj_budget_line_id.id if self.purpose == 'advance'
+                                         else self.budget_line_id.id)})
             return move_action(invoice or payment.move_id)
 
 

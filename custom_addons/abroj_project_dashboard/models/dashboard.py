@@ -288,7 +288,7 @@ class Project(models.Model):
         done = tasks.filtered(lambda t: t.state in ('1_done', '1_canceled'))
         progress, actual, over = self._abroj_metrics(tasks)
         financials = self._abroj_financials()
-        categories = [{'id': line.id, 'name': line.name, 'budget': line.budget, 'actual': line.actual, 'manual_actual': line.manual_actual, 'over': float(max(Decimal(str(line.actual)) - Decimal(str(line.budget)), Decimal('0')))} for line in self.abroj_budget_line_ids]
+        categories = [{'id': line.id, 'name': line.name, 'budget': line.budget, 'actual': line.actual, 'manual_actual': line.manual_actual, 'advance_paid': line.advance_paid, 'total_spent': line.total_spent, 'over_budget': line.over_budget, 'over': float(max(Decimal(str(line.total_spent)) - Decimal(str(line.budget)), Decimal('0'))) if line.over_budget else 0} for line in self.abroj_budget_line_ids]
         vouchers = []
         if 'abroj.contracting.voucher' in self.env and self.env['abroj.contracting.voucher'].has_access('read'):
             vouchers = self.env['abroj.contracting.voucher'].search([('project_id', '=', self.id), ('state', '=', 'issued')])
@@ -297,22 +297,35 @@ class Project(models.Model):
             contracts = [{'name': sub.display_name, 'partner': sub.display_name, 'amount': sub.agreed_amount} for sub in self.env['abroj.contracting.subcontractor'].search([('project_id', '=', self.id)])]
         received = float(money_sum(v.amount for v in vouchers if v.kind == 'receipt'))
         paid = float(money_sum(v.amount for v in vouchers if v.kind == 'payment'))
+        advance_paid = money_sum(c['advance_paid'] for c in categories)
+        total_spent = Decimal(str(actual)) + advance_paid
+        budget = Decimal(str(financials['budget'])) if financials['budget_available'] else None
+        contract = Decimal(str(financials['contract']))
+        collected = Decimal(str(self.abroj_customer_received))
+        kpis = {
+            'budget_remaining': float(budget - total_spent) if budget is not None else None,
+            'budget_overrun': float(max(total_spent - budget, Decimal('0'))) if budget is not None else None,
+            'project_cash': float(collected - Decimal(str(paid))),
+            'projected_profit': float(contract - max(budget, total_spent)) if budget is not None else None,
+        }
         delayed_tasks = tasks.filtered(lambda t: t not in done and t.date_deadline and t.date_deadline.date() < today)
         completed = self.last_update_status == 'done' or bool(self.abroj_closed_date) or self.abroj_stage_closed
         delayed = not completed and bool(self.date and self.date < today or delayed_tasks)
         last_activity = max([self.write_date] + tasks.mapped('write_date')) if tasks else self.write_date
         stalled = not completed and (self.last_update_status in ('off_track', 'on_hold') or bool(last_activity and last_activity.date() < today - timedelta(days=stall_days)))
         phases = [{'id': t.id, 'name': t.name, 'start': str(t.x_abroj_date_start or (t.date_assign.date() if t.date_assign else '')), 'end': str(t.date_deadline.date() if t.date_deadline else ''), 'duration': t.x_abroj_duration_days, 'done': t in done, 'state': t.state, 'progress': t.x_abroj_progress, 'can_write': t.has_access('write'), 'delayed': t in delayed_tasks, 'assignee': ', '.join(t.user_ids.mapped('name')), **t._abroj_phase_status()} for t in tasks]
-        return {'id': self.id, 'archived': not self.active or completed, 'can_close': self.env.user.has_group('project.group_project_manager') and self.has_access('write'), 'can_write': self.has_access('write'), 'can_create_task': self.env['project.task'].has_access('create'), 'can_edit_budget': self.env.user.has_group('project.group_project_manager') and self.has_access('write'), 'name': self.name, 'type': self.abroj_type, 'type_label': (dict(TYPES) if (self.env.lang or '').startswith('ar') else TYPES_EN).get(self.abroj_type, ''), 'status': self.last_update_status, 'status_label': (STATUS if (self.env.lang or '').startswith('ar') else STATUS_EN).get(self.last_update_status, ''), 'client': (self.abroj_client_party_id or self.partner_id).name or '—', 'manager': self.user_id.name or '—', 'manager_id': self.user_id.id or False, 'manager_is_system': bool(self.user_id and (self.user_id.id in (1, self.env.ref('base.user_admin').id) or self.user_id.login == '__system__' or self.user_id.name == 'Administrator')), 'start': str(self.date_start or ''), 'end': str(self.date or ''), 'progress': round(progress, 1), **financials, 'actual': actual, 'over': over if financials['budget_available'] else None, 'over_categories': sum(c['actual'] > c['budget'] for c in categories), 'contract': financials['contract'], 'received': received, 'customer_received': self.abroj_customer_received, 'paid': paid, 'contract_profit': float(Decimal(str(financials['contract'])) - Decimal(str(self.total_costs))), 'remaining': float(Decimal(str(financials['contract'])) - Decimal(str(self.abroj_customer_received))), 'liquidity': float(Decimal(str(received)) - Decimal(str(paid))), 'categories': categories, 'contracts': contracts, 'phases': phases, 'delayed': delayed, 'stalled': stalled, 'completed': completed, 'vouchers': [{'name': v.name, 'kind': v.kind, 'partner': (v.party_id or v.partner_id).name, 'amount': v.amount, 'date': str(v.date)} for v in vouchers]}
+        return {'id': self.id, 'archived': not self.active or completed, 'can_close': self.env.user.has_group('project.group_project_manager') and self.has_access('write'), 'can_write': self.has_access('write'), 'can_create_task': self.env['project.task'].has_access('create'), 'can_edit_budget': self.env.user.has_group('project.group_project_manager') and self.has_access('write'), 'name': self.name, 'type': self.abroj_type, 'type_label': (dict(TYPES) if (self.env.lang or '').startswith('ar') else TYPES_EN).get(self.abroj_type, ''), 'status': self.last_update_status, 'status_label': (STATUS if (self.env.lang or '').startswith('ar') else STATUS_EN).get(self.last_update_status, ''), 'client': (self.abroj_client_party_id or self.partner_id).name or '—', 'manager': self.user_id.name or '—', 'manager_id': self.user_id.id or False, 'manager_is_system': bool(self.user_id and (self.user_id.id in (1, self.env.ref('base.user_admin').id) or self.user_id.login == '__system__' or self.user_id.name == 'Administrator')), 'start': str(self.date_start or ''), 'end': str(self.date or ''), 'progress': round(progress, 1), **financials, **kpis, 'actual': actual, 'over': over if financials['budget_available'] else None, 'advance_paid': float(advance_paid), 'total_spent': float(total_spent), 'over_categories': sum(c['over_budget'] for c in categories), 'contract': financials['contract'], 'received': received, 'customer_received': self.abroj_customer_received, 'paid': paid, 'contract_profit': float(Decimal(str(financials['contract'])) - Decimal(str(self.total_costs))), 'remaining': float(Decimal(str(financials['contract'])) - Decimal(str(self.abroj_customer_received))), 'liquidity': float(Decimal(str(received)) - Decimal(str(paid))), 'categories': categories, 'contracts': contracts, 'phases': phases, 'delayed': delayed, 'stalled': stalled, 'completed': completed, 'vouchers': [{'name': v.name, 'kind': v.kind, 'partner': (v.party_id or v.partner_id).name, 'amount': v.amount, 'date': str(v.date)} for v in vouchers]}
 
     @api.model
     def _abroj_financial_summary(self, projects):
         # Unknown estimates cannot become zero-cost projects in aggregates.
         available = bool(projects) and all(p['budget_available'] for p in projects)
         result = {key: float(money_sum(p[key] for p in projects))
-                  for key in ('actual', 'liquidity', 'contract_profit', 'remaining', 'received', 'paid')}
+                  for key in ('actual', 'liquidity', 'contract_profit', 'remaining', 'received', 'paid', 'advance_paid', 'total_spent', 'contract', 'customer_received', 'project_cash')}
         result.update({
             'budget_available': available,
+            **{key: float(money_sum(p[key] for p in projects)) if available else None
+               for key in ('budget_remaining', 'budget_overrun', 'projected_profit')},
             'budget': float(money_sum(p['budget'] for p in projects)) if available else None,
             'expected_profit': float(money_sum(p['expected_profit'] for p in projects)) if available else None,
             'over': float(money_sum(p['over'] for p in projects)) if available else None,

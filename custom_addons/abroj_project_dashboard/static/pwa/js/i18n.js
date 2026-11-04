@@ -1,5 +1,17 @@
 'use strict';
 const translations = {
+  "kpiContract": {"ar":"قيمة العقد", "en":"Contract value"},
+  "kpiCollected": {"ar":"المحصّل من العميل", "en":"Customer collections"},
+  "kpiSpent": {"ar":"المنصرف", "en":"Total spent"},
+  "kpiBudgetRemaining": {"ar":"الباقي من الميزانية", "en":"Remaining budget"},
+  "kpiCash": {"ar":"الكاش بيد المشروع", "en":"Project cash"},
+  "kpiProfit": {"ar":"الربح المتوقع", "en":"Projected profit"},
+  "kpiRemaining": {"ar":"الباقي", "en":"Remaining"},
+  "kpiActual": {"ar":"فعلي", "en":"Actual"},
+  "kpiAdvance": {"ar":"مقدّم", "en":"Advance"},
+  "kpiOverrun": {"ar":"تجاوز الميزانية", "en":"Budget overrun"},
+  "kpiNoBudget": {"ar":"لا توجد ميزانية", "en":"No budget"},
+  "kpiProfitFormula": {"ar":"قيمة العقد − max(الميزانية، المنصرف)", "en":"Contract value − max(budget, total spent)"},
   "voucherCashFlowNote": {"ar":"من مبالغ السندات؛ قد يختلف عن النقد المؤكد في البنك أو الصندوق.", "en":"Based on voucher amounts; may differ from confirmed bank or cash balances."},
   "recognizedRevenue": {"ar":"الإيراد المثبت محاسبيًا", "en":"Recognized revenue"},
   "recognizedProfit": {"ar":"الربح أو الخسارة المثبتة محاسبيًا", "en":"Recognized profit / loss"},

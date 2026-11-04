@@ -2623,5 +2623,5 @@ msgstr "إذن الاستلام"
 
 #. module: baseer_procurement_requests
 #: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_request_form
-msgid "Purchasing representative custody"
-msgstr "عهدة مندوب المشتريات"
+msgid "<span class=\"o_stat_text\">Purchasing representative custody</span>"
+msgstr "<span class=\"o_stat_text\">عهدة مندوب المشتريات</span>"

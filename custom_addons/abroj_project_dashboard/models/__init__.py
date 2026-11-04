@@ -9,3 +9,5 @@ from . import daily_report
 from . import notifications
 from . import session_cookie
 from . import app_access
+
+from . import company

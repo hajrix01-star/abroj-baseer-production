@@ -7,6 +7,7 @@ from decimal import Decimal
 
 from odoo import _, api, Command, fields, models
 from odoo.exceptions import AccessError, UserError, ValidationError
+from odoo.tools.float_utils import float_compare
 from odoo.addons.abroj_contracting.models.accounting_issue import (
     ACCOUNTING_GROUPS, EXPENSE_TYPES, can_account, check_source, move_action,
     require_accountant, validate_amount, validate_project_distribution, validate_review_distribution_values,
@@ -328,17 +329,58 @@ class VoucherReview(models.TransientModel):
         partner_field = 'property_account_expense_id' if expense else 'property_account_income_id'
         if partner and partner_field in partner._fields:
             candidates.append(partner.with_company(company)[partner_field])
-        candidates.append(journal.default_account_id)
+        if expense:
+            candidates.append(company.abroj_project_expense_account_id)
+        else:
+            candidates.append(journal.default_account_id)
         category_field = 'property_account_expense_categ_id' if expense else 'property_account_income_categ_id'
         if category_field in self.env['product.category']._fields:
             account_id = self.env['ir.default'].with_company(company)._get('product.category', category_field)
             if account_id:
                 candidates.append(self.env['account.account'].browse(account_id).exists())
+        if expense:
+            candidates.append(journal.default_account_id)
         types = EXPENSE_TYPES if expense else ('income', 'income_other')
         account = next((a for a in candidates if a and a.active and company in a.company_ids and a.account_type in types), self.env['account.account'])
         return {'invoice_journal_id': journal.id, 'document_reference': reference,
                 'budget_line_id': budget_line.id if expense else False, 'account_id': account.id,
                 'invoice_date': voucher.date, 'date': voucher.date}
+
+    @api.model
+    def _mandatory_plans(self, voucher, account):
+        return [plan for plan in self.env['account.analytic.plan'].sudo().with_company(voucher.company_id).get_relevant_plans(
+            company_id=voucher.company_id.id, account=account.id, product=False,
+            business_domain='bill' if voucher.kind == 'payment' else 'invoice',
+        ) if plan['applicability'] == 'mandatory']
+
+    @api.model
+    def _default_direct_distribution(self, voucher, account):
+        analytic = voucher.project_id.account_id
+        if not analytic:
+            return False
+        ids = [analytic.id]
+        for plan in self._mandatory_plans(voucher, account):
+            if plan['id'] == analytic.root_plan_id.id:
+                continue
+            accounts = self.env['account.analytic.account'].search([
+                ('root_plan_id', '=', plan['id']), ('active', '=', True),
+                ('company_id', 'in', [False, voucher.company_id.id]),
+            ], limit=2)
+            if len(accounts) == 1:
+                ids.append(accounts.id)
+        return {','.join(map(str, ids)): 100}
+
+    def _check_mandatory_distribution(self, voucher, account, distribution):
+        totals = {}
+        for key, percentage in distribution.items():
+            for analytic in self.env['account.analytic.account'].browse(map(int, key.split(','))).exists():
+                root_id = analytic.root_plan_id.id
+                totals[root_id] = totals.get(root_id, 0) + percentage
+        precision = self.env['decimal.precision'].precision_get('Percentage Analytic')
+        missing = [plan['name'] for plan in self._mandatory_plans(voucher, account)
+                   if float_compare(totals.get(plan['id'], 0), 100, precision_digits=precision)]
+        if missing:
+            raise ValidationError(_('Complete the analytic distribution for mandatory plan(s): %s') % ', '.join(missing))
 
     @api.onchange('budget_line_id')
     def _onchange_budget_line_id(self):
@@ -354,13 +396,12 @@ class VoucherReview(models.TransientModel):
             self.tax_ids = [Command.clear()]
             self.analytic_distribution = False
         else:
-            if self.project_id.account_id:
-                self.analytic_distribution = {str(self.project_id.account_id.id): 100}
             if self.voucher_id:
                 defaults = self._direct_defaults(self.voucher_id, self.partner_id, self.budget_line_id, self.invoice_journal_id)
                 for name, value in defaults.items():
                     if not self[name] and value:
                         self[name] = value
+                self.analytic_distribution = self._default_direct_distribution(self.voucher_id, self.account_id)
 
     @api.model
     def default_get(self, names):
@@ -396,7 +437,8 @@ class VoucherReview(models.TransientModel):
                 for name, value in defaults.items():
                     if not vals.get(name) and value:
                         vals[name] = value
-                vals.setdefault('analytic_distribution', {str(voucher.project_id.account_id.id): 100})
+                vals.setdefault('analytic_distribution', self._default_direct_distribution(
+                    voucher, self.env['account.account'].browse(vals.get('account_id'))))
         return vals
 
     def _validate(self, voucher):
@@ -472,6 +514,7 @@ class VoucherReview(models.TransientModel):
                 or not journal or journal.company_id != company or not journal.active
                 or journal.type != ('purchase' if expense else 'sale')):
             raise ValidationError(_('Review the source reference, dates, recognition account and invoice journal.'))
+        self._check_mandatory_distribution(voucher, account, distribution)
         if expense and (not self.budget_line_id or self.budget_line_id.project_id != voucher.project_id):
             raise ValidationError(_('Choose a cost category from this project.'))
         if not expense and (self.budget_line_id or self.expense_id):

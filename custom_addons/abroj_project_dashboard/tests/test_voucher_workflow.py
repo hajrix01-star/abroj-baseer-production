@@ -1,7 +1,7 @@
 from unittest.mock import patch
 
 from odoo import Command, fields
-from odoo.exceptions import AccessError, UserError
+from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.tests import TransactionCase, tagged
 
 from odoo.addons.abroj_contracting.models.contracting import FrozenDocument
@@ -115,6 +115,49 @@ class AbrojVoucherWorkflowCase(TransactionCase):
         self.assertEqual(payment.move_id.state, 'posted')
         self.assertEqual(invoice.amount_residual, 0)
         self.assertTrue(invoice.line_ids.filtered(lambda line: line.account_id.account_type == 'liability_payable').reconciled)
+
+    def _mandatory_bill_plan(self, count):
+        plan = self.env['account.analytic.plan'].create({
+            'name': 'Mandatory voucher dimension', 'default_applicability': 'optional',
+            'applicability_ids': [Command.create({
+                'business_domain': 'bill', 'applicability': 'mandatory', 'company_id': self.company.id,
+            })],
+        })
+        accounts = self.env['account.analytic.account']
+        for index in range(count):
+            accounts |= accounts.create({'name': 'Dimension %s' % index, 'plan_id': plan.id,
+                                         'company_id': self.company.id})
+        return plan, accounts
+
+    def test_direct_defaults_cover_single_mandatory_bill_account(self):
+        plan, accounts = self._mandatory_bill_plan(1)
+        self.budget.account_id = self.accounts['expense']
+        voucher = self.voucher(purpose='direct', journal_id=self.cash.id)
+        wizard = self.env['abroj.project.voucher.review'].with_context(default_voucher_id=voucher.id).create({})
+        wizard.action_apply()
+        distribution = voucher.recognition_move_id.invoice_line_ids.analytic_distribution
+        self.assertEqual(distribution, {'%s,%s' % (self.project.account_id.id, accounts.id): 100})
+
+    def test_direct_missing_mandatory_plan_names_plan(self):
+        plan, accounts = self._mandatory_bill_plan(2)
+        self.budget.account_id = self.accounts['expense']
+        voucher = self.voucher(purpose='direct', journal_id=self.cash.id)
+        wizard = self.env['abroj.project.voucher.review'].with_context(default_voucher_id=voucher.id).create({})
+        with self.assertRaisesRegex(ValidationError, 'Mandatory voucher dimension'):
+            wizard.action_apply()
+
+    def test_direct_company_expense_default_precedes_journal(self):
+        journal_account = self.env['account.account'].create({
+            'name': 'Journal expense', 'code': 'VFLOWJ', 'account_type': 'expense',
+        })
+        self.purchase.default_account_id = journal_account
+        self.company.abroj_project_expense_account_id = self.accounts['expense']
+        if 'property_account_expense_id' in self.partner._fields:
+            self.partner.with_company(self.company).property_account_expense_id = False
+        voucher = self.voucher(purpose='direct')
+        defaults = self.env['abroj.project.voucher.review']._direct_defaults(
+            voucher, self.partner, journal=self.purchase)
+        self.assertEqual(defaults['account_id'], self.accounts['expense'].id)
 
     def voucher(self, kind='payment', purpose='advance', amount=100, issued=True, **extra):
         values = {

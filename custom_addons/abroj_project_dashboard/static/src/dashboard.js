@@ -33,15 +33,14 @@ class Dashboard extends Component {
     money(n) { return n == null ? '—' : Number(n).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}); }
     get cards() {
         const values = this.state.detail || this.state.data.financial_summary || {};
-        const missing = values.budget_available ? '' : _t('Comparison budget is missing');
+        const missing = _t('No budget');
         return [
-            {label: _t('Comparison budget'), value: values.budget_available ? values.budget : null, icon:'◎', note:missing},
-            {label: _t('Actual cost'), value:values.actual, icon:'⚙'},
-            {label: _t('Over budget'), value:values.over, icon:'⚠', note:missing},
-            {label: _t('Expected margin against budget'), value:values.expected_profit, icon:'★', note:missing},
-            {label: _t('Recognized revenue'), value:values.recognized_revenue, icon:'▤'},
-            {label: _t('Recognized profit / loss'), value:values.recognized_profit, icon:'★'},
-            {label: _t('Voucher cash-flow balance'), value:values.liquidity, icon:'⇄'},
+            {label: _t('Contract value'), value: values.contract, icon:'▤'},
+            {label: _t('Customer collections'), value: values.customer_received, icon:'⇣', sub: `${_t('Remaining')}: ${this.money(values.remaining)}`},
+            {label: _t('Total spent'), value: values.total_spent, icon:'⚙', sub: `${_t('Actual')} ${this.money(values.actual)} + ${_t('Advance')} ${this.money(values.advance_paid)}`},
+            {label: _t('Remaining budget'), value: values.budget_remaining, icon:'◎', sub: !values.budget_available ? missing : values.budget_overrun > 0 ? `${_t('Budget overrun')}: ${this.money(values.budget_overrun)}` : '', subRed: values.budget_available && values.budget_overrun > 0},
+            {label: _t('Project cash'), value: values.project_cash, icon:'⇄'},
+            {label: _t('Projected profit'), value: values.projected_profit, icon:'★', sub: _t('Contract value − max(budget, total spent)')},
         ];
     }
     bar(phase, phases) {

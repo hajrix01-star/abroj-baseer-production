@@ -293,9 +293,11 @@ class AbrojVoucherWorkflowCase(TransactionCase):
     def test_advances_create_no_recognition_for_both_directions(self):
         for kind in ('payment', 'receipt'):
             voucher = self.voucher(kind=kind, purpose='advance')
+            super(FrozenDocument, voucher).write({'abroj_budget_line_id': self.budget.id})
             self.review(voucher).action_apply()
             self.assertTrue(voucher.payment_id)
             self.assertFalse(voucher.recognition_move_id)
+            self.assertEqual(voucher.abroj_budget_line_id, self.budget)
             self.assertEqual(self.actual(), 0)
 
     def test_supplier_advance_later_settles_existing_bill_with_same_payment(self):

@@ -63,3 +63,5 @@ button:disabled{opacity:.8;cursor:not-allowed}
 .party-picker{display:flex;flex-wrap:wrap;gap:6px;width:100%}.party-picker [data-psearch]{flex:1 1 60%}.party-picker [data-pfilter]{flex:0 1 auto}.party-picker select[data-party-type]{flex:1 1 100%}
 
 .budget-phase-name { display: inline-block; max-width: 12rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; }
+
+.kpi-title{font-size:15px;font-weight:600;color:#1f2a44}.kpi-amount{display:flex;align-items:baseline;gap:6px;direction:ltr}.kpi-amount strong{font-size:30px;font-weight:700}.kpi-currency,.kpi-sub{font-size:12px;color:#8b93a7}.kpi-sub{display:block}.kpi-sub.kpi-danger{color:#dc3545}

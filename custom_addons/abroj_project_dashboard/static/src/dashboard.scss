@@ -10,3 +10,8 @@
 }
 
 .ab_phase_name { display: block; max-width: 12rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.abroj_dashboard .ab_kpi .ab_kpi_title { color:#1f2a44; font-size:15px; font-weight:600; }
+.abroj_dashboard .ab_kpi_amount { display:flex; align-items:baseline; gap:6px; direction:ltr; justify-content:flex-end; }
+.abroj_dashboard .ab_kpi .ab_kpi_currency { font-size:12px; color:#8b93a7; }
+.abroj_dashboard .ab_kpi small { font-size:12px; }

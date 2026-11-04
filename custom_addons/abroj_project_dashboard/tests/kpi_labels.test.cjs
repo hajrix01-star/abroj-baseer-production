@@ -16,25 +16,29 @@ ${cards}`, context);
 
 const project = [{contract: 100, customer_received: 30, remaining: 70, actual: 40,
     advance_paid: 10, total_spent: 50, budget_available: true, budget_remaining: -10,
-    budget_overrun: 10, project_cash: 25, projected_profit: 50}];
+    budget_overrun: 10, budget: 40, paid: 5, project_cash: 25, projected_profit: 50}];
 context.project = project;
 vm.runInContext('data = {financial_summary: project[0]}', context);
 for (const detail of [false, true]) {
     const html = context.cards(project, detail);
     assert.equal((html.match(/class="card"/g) || []).length, 6);
-    for (const label of ['قيمة العقد', 'المحصّل من العميل', 'المنصرف', 'الباقي من الميزانية', 'الكاش بيد المشروع', 'الربح المتوقع']) assert.ok(html.includes(label));
-    assert.match(html, /الباقي: 70/);
-    assert.match(html, /فعلي 40 \+ مقدّم 10/);
-    assert.match(html, /class="kpi-danger">تجاوز الميزانية: 10/);
-    assert.match(html, /قيمة العقد − الأكبر من الميزانية وإجمالي المنصرف/);
+    for (const label of ['قيمة العقد', 'المحصّل من العميل', 'المصروف', 'المتبقي من الميزانية', 'النقد المتاح للمشروع', 'الربح المتوقع']) assert.ok(html.includes(label));
+    assert.match(html, /متبقي للتحصيل 70/);
+    assert.match(html, /فعلي 40 \+ مقدّمات 10/);
+    assert.match(html, /kpi-danger">تجاوز 10/);
+    assert.match(html, /محصّل 30 − مدفوع 5/);
+    assert.match(html, /<strong>100<\/strong><span class="kpi-currency">ر.س<\/span>/);
+    assert.match(html, /قيمة العقد ناقص الأعلى من الميزانية أو المصروف/);
 }
+project[0].budget_overrun = 0;
+assert.match(context.cards(project), /من ميزانية 40/);
 project[0].budget_available = false;
 project[0].budget_remaining = null;
 project[0].budget_overrun = null;
 assert.match(context.cards(project), /لا توجد ميزانية/);
 assert.doesNotMatch(context.cards(project), /kpi-danger/);
 vm.runInContext("lang = 'en'", context);
-assert.match(context.cards(project), /Customer collections/);
+assert.match(context.cards(project), /Collected from client/);
 assert.match(context.cards(project), /No budget/);
 const screens = fs.readFileSync(path.join(js, 'screens.js'), 'utf8');
 for (const label of ['السجلات', 'سند أمر', 'التقارير اليومية']) assert.ok(screens.includes(label));
@@ -63,3 +67,8 @@ assert.ok(xml.includes('categoryLabels.phase'));
 assert.ok(xml.includes('t-att-title="c.phase'));
 assert.ok(app.includes("t('budgetPhase')"));
 assert.ok(app.includes("esc(c.phase||'—')"));
+const backend = fs.readFileSync(path.join(__dirname, '..', 'static', 'src', 'dashboard.js'), 'utf8');
+for (const label of ['Collected from client', 'Left to collect', 'Spent', 'Advances', 'Budget remaining', 'of budget', 'Overrun', 'Project cash available', 'Collected', 'paid', 'Expected profit', 'Contract value minus the higher of budget or spent']) assert.ok(backend.includes(`_t('${label}')`), label);
+assert.match(xml, /class="ab_kpi_amount"><strong t-esc="money\(card.value\)"\/><span class="ab_kpi_currency" t-esc="currency"\/>/);
+vm.runInContext("lang = 'en'", context);
+assert.match(context.cards(project), /<strong>100<\/strong><span class="kpi-currency">SAR<\/span>/);

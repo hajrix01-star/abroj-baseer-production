@@ -14,7 +14,7 @@ class ReceiptCustodyCase(TransactionCase):
     """Isolated rollback fixtures, plus an explicitly guarded CI-only committed race."""
     def setUp(self):
         super().setUp()
-        if self._testMethodName == 'test_receipt_custody_real_repeatable_read_manual_receipt_races':
+        if self._testMethodName == 'test_receipt_custody_zz_real_repeatable_read_manual_receipt_races':
             # Native company.create updates UID1. An outer fixture write to
             # that user would block the independently committed CI fixture.
             return
@@ -233,7 +233,7 @@ class ReceiptCustodyCase(TransactionCase):
         self.assertEqual(request.read(['write_date', 'receipt_custody_confirmed', 'state'])[0], before)
         self.assertFalse(request.receipt_custody_confirmed)
 
-    def test_receipt_custody_real_repeatable_read_manual_receipt_races(self):
+    def test_receipt_custody_zz_real_repeatable_read_manual_receipt_races(self):
         """Real competing financial RPCs, exclusively in the disposable CI database."""
         import logging
         import os
@@ -292,7 +292,15 @@ class ReceiptCustodyCase(TransactionCase):
                 'baseer_procurement_representative_petty_cash_account_id': account.id,
                 'baseer_procurement_representative_petty_cash_journal_id': journal.id,
                 'baseer_procurement_representative_petty_cash_payment_journal_ids': [Command.set(bank.ids)]})
-            product = env['product.product'].create({'name': 'Receipt race material', 'company_id': company.id})
+            category_values = {'name': 'Receipt race standard-cost category'}
+            if 'property_cost_method' in env['product.category']._fields:
+                category_values['property_cost_method'] = 'standard'
+            if 'property_valuation' in env['product.category']._fields:
+                category_values['property_valuation'] = 'periodic'
+            category = env['product.category'].create(category_values)
+            product = env['product.product'].create({
+                'name': 'Receipt race material', 'company_id': company.id, 'categ_id': category.id,
+            })
             option = env['baseer.procurement.purchase.option'].create({
                 'name': 'Unit', 'company_id': company.id, 'product_id': product.id, 'uom_id': product.uom_id.id})
             requests = env['baseer.procurement.request']

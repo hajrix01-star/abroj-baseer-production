@@ -202,6 +202,7 @@ msgstr "طلب جديد"
 msgid "Requests"
 msgstr "الطلبات"
 
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_request_form
 #. module: baseer_procurement_requests
 #: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_request_form
 msgid "Cashier purchase receipt"
@@ -381,6 +382,7 @@ msgstr "سلة الطلب"
 msgid "Back to materials"
 msgstr "العودة إلى المواد"
 
+#: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_procurement_request__warehouse_id
 #. module: baseer_procurement_requests
 #. odoo-javascript
 #: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
@@ -477,6 +479,7 @@ msgstr "حفظ وفتح واتساب"
 msgid "Request screen"
 msgstr "شاشة الطلب"
 
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_request_form
 #. module: baseer_procurement_requests
 #. odoo-javascript
 #: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
@@ -683,6 +686,7 @@ msgstr "تصفية حسب الحالة"
 msgid "All statuses"
 msgstr "جميع الحالات"
 
+#: model:ir.model.fields.selection,name:baseer_procurement_requests.selection__baseer_procurement_request__state__draft
 #. module: baseer_procurement_requests
 #. odoo-javascript
 #: code:addons/baseer_procurement_requests/models/procurement.py:0
@@ -707,6 +711,7 @@ msgstr "بانتظار تأكيد الكاشير"
 msgid "Completed"
 msgstr "مكتمل"
 
+#: model:ir.model.fields.selection,name:baseer_procurement_requests.selection__baseer_procurement_request__state__cancel
 #. module: baseer_procurement_requests
 #. odoo-javascript
 #: code:addons/baseer_procurement_requests/models/procurement.py:0
@@ -1018,6 +1023,7 @@ msgstr "حركة صندوق العهدة"
 msgid "Post movement"
 msgstr "ترحيل الحركة"
 
+#: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_procurement_request__representative_partner_id
 #. module: baseer_procurement_requests
 #. odoo-javascript
 #: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_procurement_custody_event__representative_partner_id
@@ -1280,6 +1286,7 @@ msgstr "يومية عهد المشتريات"
 msgid "Petty Cash destination / source account"
 msgstr "حساب صندوق العهدة (من/إلى)"
 
+#: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_procurement_request__company_id
 #. module: baseer_procurement_requests
 #: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_procurement_custody__company_id
 #: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_procurement_custody_event__company_id
@@ -1287,6 +1294,7 @@ msgstr "حساب صندوق العهدة (من/إلى)"
 msgid "Company"
 msgstr "الشركة"
 
+#: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_procurement_request__state
 #. module: baseer_procurement_requests
 #: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_procurement_custody__state
 #: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_procurement_custody_event__state
@@ -2086,6 +2094,7 @@ msgstr "تعديل طلب الشراء"
 msgid "Editing is available until representative handover is confirmed."
 msgstr "يمكن تعديل الطلب حتى تأكيد تسليم المندوب."
 
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_request_form
 #. module: baseer_procurement_requests
 #. odoo-javascript
 #: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
@@ -2486,3 +2495,128 @@ msgstr "تعذر تأكيد إرسال الطلب. حدّث بيانات الط�
 #: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
 msgid "The order was marked as sent. Reload it before continuing."
 msgstr "تم تأكيد إرسال الطلب. أعد تحميل بياناته قبل المتابعة."
+
+#. module: baseer_procurement_requests
+#: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_procurement_request__name
+msgid "Name"
+msgstr "رقم الطلب"
+
+#. module: baseer_procurement_requests
+#: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_procurement_request__request_date
+msgid "Request Date"
+msgstr "تاريخ الطلب"
+
+#. module: baseer_procurement_requests
+#: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_procurement_request__requester_id
+msgid "Requester"
+msgstr "مقدم الطلب"
+
+#. module: baseer_procurement_requests
+#: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_procurement_request__whatsapp_sent_at
+msgid "Whatsapp Sent At"
+msgstr "تاريخ تأكيد الإرسال"
+
+#. module: baseer_procurement_requests
+#: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_procurement_request__manager_received_at
+msgid "Manager Received At"
+msgstr "تاريخ استلام المدير"
+
+#. module: baseer_procurement_requests
+#: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_procurement_request__actual_confirmed_at
+msgid "Actual Confirmed At"
+msgstr "تاريخ تأكيد الاستلام"
+
+#. module: baseer_procurement_requests
+#: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_procurement_request__requested_total
+msgid "Requested Total"
+msgstr "إجمالي الطلب"
+
+#. module: baseer_procurement_requests
+#: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_procurement_request__actual_total
+msgid "Actual Total"
+msgstr "الإجمالي الفعلي"
+
+#. module: baseer_procurement_requests
+#: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_procurement_request_line__product_id
+msgid "Material"
+msgstr "الصنف"
+
+#. module: baseer_procurement_requests
+#: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_procurement_request_line__option_id
+msgid "Option"
+msgstr "التغليف / الوحدة"
+
+#. module: baseer_procurement_requests
+#: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_procurement_request_line__requested_qty
+msgid "Requested Qty"
+msgstr "الكمية المطلوبة"
+
+#. module: baseer_procurement_requests
+#: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_procurement_request_line__requested_price
+msgid "Requested Price"
+msgstr "السعر المطلوب"
+
+#. module: baseer_procurement_requests
+#: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_procurement_request_line__manager_received_qty
+msgid "Manager Received Qty"
+msgstr "الكمية المستلمة"
+
+#. module: baseer_procurement_requests
+#: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_procurement_request_line__actual_qty
+msgid "Actual Qty"
+msgstr "الكمية الفعلية"
+
+#. module: baseer_procurement_requests
+#: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_procurement_request_line__actual_price
+msgid "Actual Price"
+msgstr "السعر الفعلي"
+
+#. module: baseer_procurement_requests
+#: model:ir.model.fields.selection,name:baseer_procurement_requests.selection__baseer_procurement_request__state__sent
+msgid "Sent for purchase"
+msgstr "مرسل للشراء"
+
+#. module: baseer_procurement_requests
+#: model:ir.model.fields.selection,name:baseer_procurement_requests.selection__baseer_procurement_request__state__received
+msgid "Cashier receipt confirmed"
+msgstr "تم تأكيد تسليم المندوب"
+
+#. module: baseer_procurement_requests
+#: model:ir.model.fields.selection,name:baseer_procurement_requests.selection__baseer_procurement_request__state__purchased
+msgid "Quantity receipt completed"
+msgstr "اكتمل استلام الكميات"
+
+#. module: baseer_procurement_requests
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_request_form
+msgid "Audit"
+msgstr "سجل المراجعة"
+
+#. module: baseer_procurement_requests
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_request_form
+msgid "Confirm sent"
+msgstr "تأكيد الإرسال"
+
+#. module: baseer_procurement_requests
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_request_form
+msgid "Cancel request"
+msgstr "إلغاء الطلب"
+
+#. module: baseer_procurement_requests
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_request_form
+msgid "Receipt"
+msgstr "الاستلام"
+
+#. module: baseer_procurement_requests
+#: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_procurement_request__actual_confirmed_by_id
+msgid "Actual Confirmed By"
+msgstr "أكد الاستلام"
+
+#. module: baseer_procurement_requests
+#: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_procurement_request__cancellation_reason
+msgid "Cancellation Reason"
+msgstr "سبب الإلغاء"
+
+#. module: baseer_procurement_requests
+#: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_procurement_request__picking_id
+msgid "Picking"
+msgstr "إذن الاستلام"

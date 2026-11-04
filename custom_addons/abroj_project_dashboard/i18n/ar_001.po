@@ -624,3 +624,8 @@ msgstr "تحصيل استرداد مورد حسب السند %s"
 #: code:addons/abroj_project_dashboard/models/voucher_workflow.py:0
 msgid "Supplier refund payment for voucher %s"
 msgstr "دفعة استرداد مورد حسب السند %s"
+
+#. module: abroj_project_dashboard
+#: model:ir.model.fields,field_description:abroj_project_dashboard.field_abroj_project_budget_line__account_id
+msgid "الحساب"
+msgstr "الحساب"

@@ -73,6 +73,49 @@ class AbrojVoucherWorkflowCase(TransactionCase):
                                                cls.env.ref('abroj_contracting.group_extraction_agent').id])],
         })
 
+    def test_direct_review_defaults_from_budget(self):
+        self.budget.account_id = self.accounts['expense']
+        voucher = self.voucher(purpose='direct')
+        wizard = self.env['abroj.project.voucher.review'].with_context(default_voucher_id=voucher.id).create({})
+        journal = self.env['account.journal'].search([
+            ('company_id', '=', self.company.id), ('type', '=', 'purchase'), ('active', '=', True),
+        ], order='sequence, id', limit=1)
+        self.assertEqual(wizard.invoice_journal_id, journal)
+        self.assertEqual(wizard.document_reference, voucher.name)
+        self.assertEqual(wizard.budget_line_id, self.budget)
+        self.assertEqual(wizard.account_id, self.accounts['expense'])
+        self.assertEqual((wizard.invoice_date, wizard.date), (voucher.date, voucher.date))
+        self.assertFalse(wizard.tax_ids)
+
+    def test_direct_review_partner_account_and_purpose_onchange(self):
+        voucher = self.voucher(purpose='advance')
+        wizard = self.env['abroj.project.voucher.review'].with_context(default_voucher_id=voucher.id).create({})
+        self.assertFalse(wizard.budget_line_id)
+        wizard._validate(voucher)
+        if 'property_account_expense_id' in self.partner._fields:
+            self.partner.with_company(self.company).property_account_expense_id = self.accounts['expense']
+            wizard.purpose = 'direct'
+            wizard._onchange_purpose()
+            self.assertEqual(wizard.account_id, self.accounts['expense'])
+            self.assertEqual(wizard.budget_line_id, self.budget)
+        self.budget.account_id = self.accounts['expense']
+        wizard.budget_line_id = self.budget
+        wizard._onchange_budget_line_id()
+        self.assertEqual(wizard.account_id, self.accounts['expense'])
+
+    def test_direct_apply_with_defaults_and_evidence(self):
+        self.budget.account_id = self.accounts['expense']
+        voucher = self.voucher(purpose='direct', journal_id=self.cash.id)
+        wizard = self.env['abroj.project.voucher.review'].with_context(default_voucher_id=voucher.id).create({
+            'evidence_note': 'Reviewed supporting evidence',
+        })
+        wizard.action_apply()
+        invoice, payment = voucher.recognition_move_id, voucher.payment_id
+        self.assertEqual((invoice.move_type, invoice.state), ('in_invoice', 'posted'))
+        self.assertEqual(payment.move_id.state, 'posted')
+        self.assertEqual(invoice.amount_residual, 0)
+        self.assertTrue(invoice.line_ids.filtered(lambda line: line.account_id.account_type == 'liability_payable').reconciled)
+
     def voucher(self, kind='payment', purpose='advance', amount=100, issued=True, **extra):
         values = {
             'project_id': self.project.id, 'partner_id': self.partner.id, 'kind': kind,

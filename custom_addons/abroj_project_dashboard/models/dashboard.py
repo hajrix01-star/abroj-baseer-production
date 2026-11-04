@@ -87,6 +87,8 @@ class BudgetLine(models.Model):
     company_id = fields.Many2one(related='project_id.company_id', store=True)
     currency_id = fields.Many2one(related='company_id.currency_id')
     name = fields.Char(string='بند التكلفة', required=True)
+    account_id = fields.Many2one('account.account', string='الحساب', check_company=True,
+                                 domain=[('account_type', 'in', ('expense', 'expense_depreciation', 'expense_direct_cost'))])
     budget = fields.Monetary(string='الميزانية')
     manual_actual = fields.Monetary(string='الفعلي اليدوي')
     actual = fields.Monetary(string='التكلفة الفعلية', compute='_compute_actual')

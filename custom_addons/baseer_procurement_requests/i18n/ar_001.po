@@ -2625,3 +2625,27 @@ msgstr "إذن الاستلام"
 #: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_request_form
 msgid "<span class=\"o_stat_text\">Purchasing representative custody</span>"
 msgstr "<span class=\"o_stat_text\">عهدة مندوب المشتريات</span>"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "Unit price"
+msgstr "سعر الوحدة"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "Review unit prices before saving."
+msgstr "راجع أسعار الوحدات قبل الحفظ."
+
+#. module: baseer_procurement_requests
+#. odoo-python
+#: code:addons/baseer_procurement_requests/models/procurement.py:0
+msgid "Enter a nonnegative unit price with at most two decimal places."
+msgstr "أدخل سعر وحدة صفرًا أو أكبر، وبحد أقصى منزلتين عشريتين."
+
+#. module: baseer_procurement_requests
+#. odoo-python
+#: code:addons/baseer_procurement_requests/models/procurement.py:0
+msgid "The cart amount exceeds the supported decimal precision."
+msgstr "مبلغ السلة أكبر من الحد الذي يدعمه النظام."

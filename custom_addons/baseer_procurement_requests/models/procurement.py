@@ -71,6 +71,23 @@ def _decimal_text(value):
     return format(Decimal(value).quantize(MONEY_QUANTUM, rounding=ROUND_HALF_UP), ',.2f')
 
 
+def _catalog_cart_amounts(row, option, quantity, previous_total):
+    """Share the decimal price/total boundary before persistence or display."""
+    value = row['unit_price'] if 'unit_price' in row else option.last_price
+    if value is None or value == '':
+        raise ValidationError(_('Enter a nonnegative unit price with at most two decimal places.'))
+    try:
+        unit_price = _decimal_input(value, _('Unit price'))
+    except (ValidationError, InvalidOperation):
+        raise ValidationError(_('Enter a nonnegative unit price with at most two decimal places.')) from None
+    try:
+        line_total = (quantity * unit_price).quantize(MONEY_QUANTUM, rounding=ROUND_HALF_UP)
+        total = (previous_total + line_total).quantize(MONEY_QUANTUM, rounding=ROUND_HALF_UP)
+    except InvalidOperation:
+        raise ValidationError(_('The cart amount exceeds the supported decimal precision.')) from None
+    return unit_price, line_total, total
+
+
 def _is_bwork_receipt_internal(env):
     """Only the sudoed BWork bridge may reuse receipt logic after its checks."""
     return bool(env.su and env.context.get(BWORK_RECEIPT_INTERNAL))
@@ -1773,9 +1790,7 @@ class ProcurementRequest(models.Model):
         for row, option_id in zip(lines, option_ids):
             quantity = _decimal_input(row.get('quantity'), _('Quantity'), positive=True)
             option = option_by_id[option_id]
-            unit_price = _decimal_input(option.last_price, _('Unit price'))
-            line_total = (quantity * unit_price).quantize(MONEY_QUANTUM, rounding=ROUND_HALF_UP)
-            total += line_total
+            unit_price, line_total, total = _catalog_cart_amounts(row, option, quantity, total)
             response_lines.append({
                 'option_id': option.id,
                 'quantity': _decimal_text(quantity).replace(',', ''),
@@ -2126,15 +2141,22 @@ class ProcurementRequest(models.Model):
             raise ValidationError(_('A material cannot appear twice in the same cart.'))
         values = []
         canonical_lines = []
+        cart_total = Decimal('0.00')
         for row in lines:
             option = option_by_id[int(row['option_id'])]
             try:
                 quantity = _decimal_input(row.get('quantity'), _('Quantity'), positive=True)
             except ValidationError:
                 raise ValidationError(_('Every cart row needs a positive quantity with at most two decimal places.'))
+            unit_price, _line_total, cart_total = _catalog_cart_amounts(row, option, quantity, cart_total)
             values.append(Command.create({'option_id': option.id, 'requested_qty': float(quantity),
-                                          'requested_price': option.last_price}))
-            canonical_lines.append({'option_id': option.id, 'quantity': _decimal_text(quantity).replace(',', '')})
+                                          'requested_price': float(unit_price)}))
+            canonical = {'option_id': option.id, 'quantity': _decimal_text(quantity).replace(',', '')}
+            # Absent prices preserve historical token fingerprints exactly;
+            # explicit prices are part of the caller's immutable intent.
+            if 'unit_price' in row:
+                canonical['unit_price'] = _decimal_text(unit_price).replace(',', '')
+            canonical_lines.append(canonical)
         warehouse = self.env['stock.warehouse'].browse(
             int(warehouse_id or self.env.company.baseer_procurement_default_warehouse_id.id)
         ).exists()

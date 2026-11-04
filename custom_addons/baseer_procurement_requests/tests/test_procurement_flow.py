@@ -1287,6 +1287,122 @@ class ProcurementFlowCase(TransactionCase):
         self.assertEqual(len(request.picking_id.move_ids), 1)
         self.assertEqual(request.line_ids[1].actual_qty, 0)
         self.assertEqual(request.line_ids[1].actual_price, 0)
+    def test_catalog_cart_unit_price_quote_and_create(self):
+        Request = self._route_requester()
+        self.assertFalse(Request.env.su)
+        self.option.with_context(_baseer_procurement_option_system_write=True).write({'last_price': 2.75})
+        option_before = self.option.read(['last_price', 'last_price_at', 'write_date'])[0]
+        cost_before = self.product.standard_price
+        unchanged_models = ('baseer.procurement.price.history', 'stock.picking', 'stock.move',
+                            'account.move', 'account.payment')
+        counts = {model: self.env[model].search_count([]) for model in unchanged_models}
+        for row, expected_price, expected_total in (
+                ({'option_id': self.option.id, 'quantity': '3', 'unit_price': '6.25'}, 6.25, '18.75'),
+                ({'option_id': self.option.id, 'quantity': '2', 'unit_price': '0'}, 0, '0.00'),
+                ({'option_id': self.option.id, 'quantity': '4'}, 2.75, '11.00')):
+            with self.subTest(row=row):
+                quote_counts = {model: self.env[model].search_count([]) for model in (
+                    'baseer.procurement.request', 'baseer.procurement.request.line', 'mail.message')}
+                quote = Request.quote_catalog_cart([row])
+                self.assertEqual(quote['total'], expected_total)
+                self.assertEqual(quote['lines'][0]['unit_price'], '%.2f' % expected_price)
+                for model, count in quote_counts.items():
+                    self.assertEqual(self.env[model].search_count([]), count, model)
+                request_id = Request.create_from_catalog(
+                    [row], self.warehouse.id, client_token=str(uuid4()), purchase_route='cash')
+                request = Request.browse(request_id)
+                self.assertEqual(request.state, 'draft')
+                self.assertEqual(request.requester_id, Request.env.user)
+                self.assertEqual(request.line_ids.requested_price, expected_price)
+                self.assertEqual(request.requested_total, float(expected_total))
+        self.assertEqual(self.option.read(['last_price', 'last_price_at', 'write_date'])[0], option_before)
+        self.assertEqual(self.product.standard_price, cost_before)
+        for model, count in counts.items():
+            self.assertEqual(self.env[model].search_count([]), count, model)
+
+    def test_catalog_cart_unit_price_validation(self):
+        Request = self._route_requester()
+        counts = {model: self.env[model].search_count([]) for model in (
+            'baseer.procurement.request', 'baseer.procurement.request.line',
+            'baseer.procurement.price.history', 'stock.picking', 'stock.move', 'account.move', 'account.payment')}
+        invalid_rows = [('2', price) for price in (
+            '', ' ', None, '-0.01', '1.001', 'NaN', 'Infinity', '1e1000', True, False, [], {})]
+        invalid_rows.append(('100', '1e25'))  # valid price, unsupported line-total precision
+        for quantity, price in invalid_rows:
+            row = {'option_id': self.option.id, 'quantity': quantity, 'unit_price': price}
+            with self.subTest(quantity=quantity, price=price):
+                with self.assertRaises(ValidationError):
+                    Request.quote_catalog_cart([row])
+                with self.assertRaises(ValidationError):
+                    Request.create_from_catalog(
+                        [row], self.warehouse.id, client_token=str(uuid4()), purchase_route='cash')
+        product = self.env['product.product'].create({
+            'name': 'Price precision second product', 'categ_id': self.category.id,
+            'company_id': self.company.id, 'uom_id': self.uom.id,
+        })
+        option = self.env['baseer.procurement.purchase.option'].create({
+            'name': 'Piece', 'company_id': self.company.id, 'product_id': product.id,
+            'uom_id': self.uom.id,
+        })
+        # Each line can be quoted independently; their sum exceeds the same
+        # Decimal context at two currency decimals and must reject on save too.
+        rows = [{'option_id': option_id, 'quantity': '1', 'unit_price': '8e25'}
+                for option_id in (self.option.id, option.id)]
+        for row in rows:
+            Request.quote_catalog_cart([row])
+        with self.assertRaisesRegex(ValidationError, 'supported decimal precision'):
+            Request.quote_catalog_cart(rows)
+        with self.assertRaisesRegex(ValidationError, 'supported decimal precision'):
+            Request.create_from_catalog(
+                rows, self.warehouse.id, client_token=str(uuid4()), purchase_route='cash')
+        for model, count in counts.items():
+            self.assertEqual(self.env[model].search_count([]), count, model)
+
+    def test_catalog_cart_unit_price_idempotency_legacy_and_explicit(self):
+        Request = self._route_requester()
+        representative = self.env['res.partner'].with_company(self.company).create({
+            'name': 'Price fingerprint representative', 'is_purchase_representative': True,
+        })
+        self.option.with_context(_baseer_procurement_option_system_write=True).write({'last_price': 3.5})
+        legacy = [{'option_id': self.option.id, 'quantity': '2'}]
+        legacy_token = str(uuid4())
+        legacy_id = Request.create_from_catalog(
+            legacy, self.warehouse.id, client_token=legacy_token, representative_partner_id=representative.id)
+        legacy_payload = {
+            'warehouse_id': self.warehouse.id, 'purchaser_id': False,
+            'representative_partner_id': representative.id, 'whatsapp_number': '',
+            'lines': [{'option_id': self.option.id, 'quantity': '2.00'}],
+        }
+        self.assertEqual(Request.browse(legacy_id).client_payload_hash, hashlib.sha256(json.dumps(
+            legacy_payload, sort_keys=True, separators=(',', ':')).encode()).hexdigest())
+        explicit_token = str(uuid4())
+        explicit = [{'option_id': self.option.id, 'quantity': '2', 'unit_price': '7.5'}]
+        explicit_id = Request.create_from_catalog(
+            explicit, self.warehouse.id, client_token=explicit_token, representative_partner_id=representative.id)
+        explicit_payload = {**legacy_payload, 'lines': [
+            {'option_id': self.option.id, 'quantity': '2.00', 'unit_price': '7.50'}]}
+        self.assertEqual(Request.browse(explicit_id).client_payload_hash, hashlib.sha256(json.dumps(
+            explicit_payload, sort_keys=True, separators=(',', ':')).encode()).hexdigest())
+        self.option.with_context(_baseer_procurement_option_system_write=True).write({'last_price': 9})
+        self.assertEqual(Request.create_from_catalog(
+            legacy, self.warehouse.id, client_token=legacy_token,
+            representative_partner_id=representative.id), legacy_id)
+        self.assertEqual(Request.browse(legacy_id).line_ids.requested_price, 3.5)
+        self.assertEqual(Request.create_from_catalog(
+            [{'option_id': self.option.id, 'quantity': '2.00', 'unit_price': '7.50'}],
+            self.warehouse.id, client_token=explicit_token,
+            representative_partner_id=representative.id), explicit_id)
+        self.assertEqual(Request.browse(explicit_id).line_ids.requested_price, 7.5)
+        for token, rows in (
+                (legacy_token, [{'option_id': self.option.id, 'quantity': '2', 'unit_price': '3.5'}]),
+                (explicit_token, legacy),
+                (explicit_token, [{'option_id': self.option.id, 'quantity': '2', 'unit_price': '7.51'}])):
+            with self.subTest(token=token, rows=rows), self.assertRaisesRegex(ValidationError, 'different request details'):
+                Request.create_from_catalog(
+                    rows, self.warehouse.id, client_token=token, representative_partner_id=representative.id)
+        self.assertEqual(self.env['baseer.procurement.request'].search_count([
+            ('client_token', 'in', [legacy_token, explicit_token])]), 2)
+
     def test_pos_catalog_page_quote_and_idempotent_create(self):
         self.option.with_context(
             _baseer_procurement_option_system_write=True,

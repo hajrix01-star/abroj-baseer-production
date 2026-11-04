@@ -56,12 +56,30 @@ class ProcurementFlowCase(TransactionCase):
         })
         self.purchaser = self.env['hr.employee'].create({'name': 'PRC standard buyer', 'company_id': self.company.id})
 
-    def _request(self):
+    def _request(self, purchase_route='representative'):
         return self.env['baseer.procurement.request'].create({
             'company_id': self.company.id, 'warehouse_id': self.warehouse.id,
-            'purchaser_id': self.purchaser.id,
+            'purchase_route': purchase_route,
+            'purchaser_id': self.purchaser.id if purchase_route == 'representative' else False,
             'line_ids': [(0, 0, {'option_id': self.option.id, 'requested_qty': 5, 'requested_price': 4})],
         })
+
+    def _fund_representative_receipt(self, request, representative=None):
+        """Use the real accountant path for representative receipt fixtures."""
+        representative = representative or request.representative_partner_id
+        if not representative:
+            representative = self.env['res.partner'].create({
+                'name': 'PRC receipt contact', 'company_id': self.company.id,
+                'is_purchase_representative': True,
+            })
+            request.write({'purchaser_id': False, 'representative_partner_id': representative.id})
+        account, _cash_account, _bank_account, journal, _cash, bank = self._custody_accounting_fixture('RCF')
+        self.company.write({
+            'baseer_procurement_representative_petty_cash_account_id': account.id,
+            'baseer_procurement_representative_petty_cash_journal_id': journal.id,
+            'baseer_procurement_representative_petty_cash_payment_journal_ids': [Command.set([bank.id])],
+        })
+        return bank
 
     def _route_requester(self):
         user = self.env['res.users'].with_context(no_reset_password=True).create({
@@ -359,7 +377,7 @@ class ProcurementFlowCase(TransactionCase):
         return custody_account, cash_account, bank_account, journal, cash, bank
 
     def _complete_request(self, actual_quantity=5, actual_price=4):
-        request = self._request()
+        request = self._request(purchase_route='cash')
         request.action_mark_sent()
         request.line_ids.manager_received_qty = actual_quantity
         request.action_confirm_manager_receipt()
@@ -432,7 +450,7 @@ class ProcurementFlowCase(TransactionCase):
         return request
 
     def test_quantity_receipt_creates_one_picking_and_price_history(self):
-        request = self._request()
+        request = self._request(purchase_route='cash')
         request.action_mark_sent()
         with self.assertRaisesRegex(Exception, 'cannot be deleted'):
             request.unlink()
@@ -482,6 +500,7 @@ class ProcurementFlowCase(TransactionCase):
     def test_whatsapp_can_be_resent_during_every_active_request_stage(self):
         self.product.name = '[NOORIX-D6FF9A261F210586] PRC tomato'
         request = self._request()
+        bank = self._fund_representative_receipt(request)
         self.assertNotIn(request.name, request.whatsapp_text)
         self.assertNotIn('[NOORIX-D6FF9A261F210586]', request.whatsapp_text)
         self.assertIn('طلب مشتريات — %s' % self.company.name, request.whatsapp_text)
@@ -506,6 +525,8 @@ class ProcurementFlowCase(TransactionCase):
         assert_share_keeps_stage('draft')
         request.action_mark_sent()
         assert_share_keeps_stage('sent')
+        self.env['baseer.procurement.representative.advance'].submit_funding(
+            request.id, bank.id, request.representative_partner_id.id, 20, str(uuid4()), fields.Date.context_today(self))
         request.line_ids.manager_received_qty = 5
         request.action_confirm_manager_receipt()
         assert_share_keeps_stage('received')
@@ -613,7 +634,7 @@ class ProcurementFlowCase(TransactionCase):
         self.assertFalse(request.picking_id)
 
     def _receipt_added_fixture(self):
-        request = self._request()
+        request = self._request(purchase_route='cash')
         request.action_mark_sent()
         product = self.env['product.product'].create({
             'name': 'PRC receipt added material', 'company_id': self.company.id,
@@ -652,7 +673,7 @@ class ProcurementFlowCase(TransactionCase):
             {'line_id': request.line_ids.id, 'option_id': self.option.id, 'quantity': '5', 'unit_price': '4'},
             {'option_id': option.id, 'quantity': '2.5', 'unit_price': '8.75'},
         ]
-        quote = request.quote_catalog_edit(request.id, rows, 'representative', False, loaded['snapshot'])
+        quote = request.quote_catalog_edit(request.id, rows, 'cash', False, loaded['snapshot'])
         self.assertEqual(quote['total'], '41.88')
         self.assertEqual(quote['lines'][1]['line_total'], '21.88')
         self.assertFalse(quote['lines'][1]['line_id'])
@@ -1059,7 +1080,7 @@ class ProcurementFlowCase(TransactionCase):
 
     def test_cashier_confirms_sent_request_with_actual_price(self):
         """A sent request can be priced and received from its cashier cart."""
-        request = self._request()
+        request = self._request(purchase_route='cash')
         request.action_mark_sent()
 
         request.confirm_actual_from_catalog(
@@ -1085,7 +1106,7 @@ class ProcurementFlowCase(TransactionCase):
             'group_ids': [Command.set([self.env.ref('base.group_user').id])],
         })
         self.assertFalse(user.has_group('baseer_procurement_requests.group_procurement_cashier'))
-        request = self._request()
+        request = self._request(purchase_route='cash')
         request.action_mark_sent()
         lines = [{
             'line_id': request.line_ids.id,
@@ -1269,7 +1290,7 @@ class ProcurementFlowCase(TransactionCase):
             )
 
     def test_non_finite_quantities_and_prices_are_rejected(self):
-        request = self._request()
+        request = self._request(purchase_route='cash')
         with self.assertRaises(Exception):
             request.line_ids.write({'requested_qty': float('inf')})
         request.action_mark_sent()
@@ -1304,7 +1325,7 @@ class ProcurementFlowCase(TransactionCase):
             'company_id': self.company.id, 'company_ids': [Command.set([self.company.id])],
             'group_ids': [Command.set([cashier_group.id])],
         })
-        request = self._request()
+        request = self._request(purchase_route='cash')
         request.action_mark_sent()
         request.line_ids.manager_received_qty = 4
         request.action_confirm_manager_receipt()
@@ -1359,13 +1380,13 @@ class ProcurementFlowCase(TransactionCase):
                 'procurement_auto_draft': True,
             })
         with self.assertRaisesRegex(AccessError, 'controlled by the server'):
-            batch.write({'procurement_request_id': self._request().id})
+            batch.write({'procurement_request_id': self._request(purchase_route='cash').id})
         with self.assertRaisesRegex(AccessError, 'cannot be deleted'):
             batch.unlink()
         with self.assertRaisesRegex(ValidationError, 'completed purchase receipt'):
             self.env['baseer.purchase.batch'].create({
                 'company_id': self.company.id,
-                'procurement_request_id': self._request().id,
+                'procurement_request_id': self._request(purchase_route='cash').id,
             })
 
     def test_completed_representative_receipt_uses_invoice_level_settlement(self):
@@ -1442,7 +1463,7 @@ class ProcurementFlowCase(TransactionCase):
     def test_real_time_material_is_refused(self):
         if 'property_valuation' not in self.category._fields:
             self.skipTest('stock_account is not installed in this quantity-only QA database')
-        request = self._request()
+        request = self._request(purchase_route='cash')
         request.action_mark_sent()
         request.line_ids.manager_received_qty = 1
         request.action_confirm_manager_receipt()

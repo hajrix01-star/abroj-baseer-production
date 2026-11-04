@@ -3,7 +3,7 @@
     <t t-name="baseer_procurement_requests.RepresentativePettyCash">
         <main class="o_rep_pc" t-att-dir="languageDirection()">
             <header class="o_rep_pc_header">
-                <div><h1>Representative Petty Cash</h1><p>Record a transfer from a company payment point to a purchasing representative.</p></div>
+                <div><h1>Representative Petty Cash</h1><p t-if="state.data?.can_record">Record a transfer from a company payment point to a purchasing representative.</p><p t-else="">Review your restaurant's representative advances and purchase references.</p></div>
                 <div class="o_rep_pc_filters"><label>Representative
                     <Dropdown>
                         <button type="button" class="o_rep_pc_select btn btn-light" t-att-title="representativeLabel()"><span t-esc="representativeLabel()"/><i class="fa fa-chevron-down" aria-hidden="true"/></button>
@@ -86,12 +86,22 @@
                         <button type="button" class="btn btn-outline-primary" t-on-click="saveReturn" t-att-disabled="state.saving or state.data.setup_issue or !state.data.payment_points_configured">Save return</button>
                     </div>
                 </section>
-                <section t-if="!state.data.can_record" class="o_rep_pc_empty">This is a review screen. Only the accountant can record petty cash or a return.</section>
+                <section t-if="!state.data.can_record" class="o_rep_pc_empty">Advances recorded at purchase receipt appear here. Contact the accountant for returns or corrections.</section>
                 <section class="o_rep_pc_rows">
                     <h2>This month's movements</h2>
                     <p t-if="!state.data.movements.length" class="o_rep_pc_empty">No movements in the selected month.</p>
                     <table t-else=""><thead><tr><th>Date</th><th>Movement number</th><th>Purchase request</th><th>From</th><th>To</th><th>Amount</th></tr></thead><tbody>
-                        <tr t-foreach="state.data.movements" t-as="movement" t-key="movement.id"><td t-att-data-label="movementColumnLabels.date"><t t-esc="movement.date"/></td><td t-att-data-label="movementColumnLabels.movement"><t t-esc="movement.name"/></td><td t-att-data-label="movementColumnLabels.request"><t t-esc="movement.request_name || 'Return'"/></td><td t-att-data-label="movementColumnLabels.from"><t t-esc="movement.from_name"/></td><td t-att-data-label="movementColumnLabels.to"><t t-esc="movement.to_name"/></td><td t-att-data-label="movementColumnLabels.amount" dir="ltr"><t t-esc="money(movement.amount)"/></td></tr>
+                        <tr t-foreach="state.data.movements" t-as="movement" t-key="movement.id">
+                            <td t-att-data-label="movementColumnLabels.date"><t t-esc="movement.date"/></td>
+                            <td t-att-data-label="movementColumnLabels.movement"><t t-esc="movement.name"/></td>
+                            <td t-att-data-label="movementColumnLabels.request">
+                                <button t-if="movement.request_id" type="button" class="btn btn-link p-0" t-on-click="() => this.openRequest(movement.request_id)"><t t-esc="movement.request_name"/></button>
+                                <t t-else="" t-esc="movement.request_name || 'Return'"/>
+                            </td>
+                            <td t-att-data-label="movementColumnLabels.from"><t t-esc="movement.from_name"/></td>
+                            <td t-att-data-label="movementColumnLabels.to"><t t-esc="movement.to_name"/></td>
+                            <td t-att-data-label="movementColumnLabels.amount" dir="ltr"><t t-esc="money(movement.amount)"/></td>
+                        </tr>
                     </tbody></table>
                 </section>
             </t>

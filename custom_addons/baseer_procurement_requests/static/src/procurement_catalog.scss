@@ -188,6 +188,17 @@
 
 
 .o_prc_cart_lines { min-height: 0; flex: 1 1 auto; overflow-y: auto; overscroll-behavior: contain; }
+.o_prc_receipt_custody { margin: .75rem; padding: .85rem; border: 1px solid var(--prc-border); border-radius: .65rem; background: #faf8fa; overflow-wrap: anywhere; }
+.o_prc_receipt_custody h3 { margin: 0 0 .5rem; font-size: 1rem; }
+.o_prc_receipt_custody p { margin-bottom: .5rem; color: var(--prc-muted); font-size: .85rem; }
+.o_prc_receipt_custody .o_prc_custody_request { color: var(--prc-text); }
+.o_prc_custody_fields { display: grid; grid-template-columns: minmax(0, 1fr); gap: .65rem; }
+.o_prc_custody_fields label { display: flex; flex-direction: column; min-width: 0; gap: .35rem; font-size: .85rem; }
+.o_prc_custody_fields b { color: #b42318; }
+.o_prc_custody_fields input, .o_prc_custody_fields select { width: 100%; min-width: 0; min-height: 44px; padding: .45rem; border: 1px solid var(--prc-border); border-radius: .45rem; background: #fff; font-size: 1rem; }
+.o_prc_custody_existing { display: grid; gap: .4rem; padding: 0; margin: .5rem 0; list-style: none; }
+.o_prc_custody_existing li { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem .75rem; font-size: .8rem; }
+.o_prc_custody_reload { min-height: 44px; padding-inline: 0; text-align: start; }
 .o_prc_empty_cart { display: flex; min-height: 15rem; align-items: center; justify-content: center; flex-direction: column; padding: 2rem 1rem; color: var(--prc-muted); text-align: center; }
 .o_prc_empty_cart > span { display: grid; width: 3.5rem; height: 3.5rem; place-items: center; border-radius: 50%; color: var(--prc-brand); background: #eee8ec; font-size: 1.2rem; }
 .o_prc_empty_cart h3 { margin: .8rem 0 .2rem; color: var(--prc-text); font-size: 1rem; }

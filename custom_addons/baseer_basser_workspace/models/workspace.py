@@ -24,6 +24,11 @@ BASEER_WORKSPACE_TARGET_POLICY = {
         },
     },
     'cashier': {
+        'baseer_procurement_requests.menu_procurement_representative_petty_cash': {
+            'action_type': 'ir.actions.client',
+            'tag': 'baseer_procurement_requests.representative_petty_cash',
+            'icon': 'fa fa-exchange',
+        },
         'baseer_basser_workspace.menu_pos_cashier_point_of_sale_dashboard': {
             'action_type': 'ir.actions.act_window',
             'icon': 'fa fa-shopping-cart',

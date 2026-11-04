@@ -1007,3 +1007,6 @@ preparation, shared Odoo Dialog with direct user-gesture anchor and copy fallbac
 plus form-before-dialog completion. Original state/receipt/accounting unchanged.
 44Node/AST/XML/PO/SCSS pass; CI/QA/independent release pending.
 [Contract and evidence](../../build-governance/PROCUREMENT-DRAFT-WHATSAPP-20261104.md).
+## PROCUREMENT-RECEIPT-CUSTODY-20261104 — native receipt funding
+
+ARCHITECTURAL delta over source `9c21f7851` / procurement19.0.14.0.22. User-approved actual representative advance and approved bank/cash source are recorded atomically at final native purchase receipt, with server-derived partner/request and existing shared custody accounting. Reuse existing request funding, protected final-confirm marker and company→representative→request lock order prevent manual/receipt duplication. Branch-manager Basser review reuses the accountant ledger without GL permissions; plain POS cashier, BWork, nonrepresentative routes and history remain outside the new posting path. Independent G0–G3 GO; implementation and targeted financial/concurrency/role tests in progress, no release approval yet. [Contract, gates and live evidence](../../build-governance/PROCUREMENT-RECEIPT-CUSTODY-20261104.md).

@@ -38,3 +38,28 @@ assert.match(context.cards(project), /Customer collections/);
 assert.match(context.cards(project), /No budget/);
 const screens = fs.readFileSync(path.join(js, 'screens.js'), 'utf8');
 for (const label of ['السجلات', 'سند أمر', 'التقارير اليومية']) assert.ok(screens.includes(label));
+
+const categoryCards = app.match(/^function categoryCards\(p\).*$/m)[0];
+vm.runInContext(`const esc = s => s; const emptyState = s => s; ${categoryCards}`, context);
+const categories = {categories: [{name: 'Parent', budget: 100, actual: 110, advance_paid: 10, total_spent: 120, remaining: -20}],
+    categories_total: {budget: 100, actual: 110, advance_paid: 10, total_spent: 120, remaining: -20}};
+categories.categories[0].phase = 'Foundation';
+let categoryHtml = context.categoryCards(categories);
+assert.match(categoryHtml, /Phase:.*title="Foundation"/);
+categories.categories[0].phase = '';
+assert.match(context.categoryCards(categories), /title="—"/);
+assert.match(categoryHtml, /Remaining -20/);
+assert.match(categoryHtml, /Total/);
+assert.equal((categoryHtml.match(/class="kpi-danger"/g) || []).length, 2);
+vm.runInContext("lang = 'ar'", context);
+categoryHtml = context.categoryCards(categories);
+assert.match(categoryHtml, /المتبقي -20/);
+assert.match(categoryHtml, /المجموع/);
+const xml = fs.readFileSync(path.join(__dirname, '..', 'static', 'src', 'dashboard.xml'), 'utf8');
+for (const value of ['categoryLabels.remaining', 'categoryLabels.total', 'c.remaining', 'categories_total.budget', 'categories_total.actual', 'categories_total.advance_paid', 'categories_total.total_spent', 'categories_total.remaining']) assert.ok(xml.includes(value));
+assert.match(xml, /categories_total.remaining &lt; 0/);
+
+assert.ok(xml.includes('categoryLabels.phase'));
+assert.ok(xml.includes('t-att-title="c.phase'));
+assert.ok(app.includes("t('budgetPhase')"));
+assert.ok(app.includes("esc(c.phase||'—')"));

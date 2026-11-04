@@ -115,7 +115,7 @@
                     <div class="o_prc_product_scroll">
                         <section t-if="state.canCurateCatalog and !state.existingRequest and !state.editRequest and !state.search and !state.selectedCategoryId and (state.highlights.length or state.highlightsLoading)" class="o_prc_highlights" aria-label="Favorites and most ordered">
                             <header>
-                                <div><i class="fa fa-star" aria-hidden="true"/><strong>Favorites and most ordered</strong></div>
+                                <div><strong>Favorites and most ordered</strong></div>
                                 <small>Quick access</small>
                             </header>
                             <div t-if="state.highlightsLoading and !state.highlights.length" class="o_prc_highlight_track" aria-hidden="true">
@@ -125,9 +125,6 @@
                                 <div t-foreach="state.highlights" t-as="product" t-key="product.product_id" class="o_prc_highlight_tile">
                                     <button type="button" class="o_prc_highlight_card" t-on-click="() => this.selectProduct(product)" t-att-aria-label="productAriaLabel(product)">
                                         <span><strong t-esc="product.product_name"/><small t-if="product.usage_count"><t t-esc="product.usage_count"/> confirmed purchases</small><small t-else="">Favorite</small></span>
-                                    </button>
-                                    <button type="button" class="o_prc_favorite_button" t-att-class="{'is_favorite': product.is_favorite, 'is_saving': product.favoriteSaving}" t-att-aria-pressed="product.is_favorite ? 'true' : 'false'" t-att-aria-label="product.is_favorite ? 'Remove from favorites' : 'Add to favorites'" t-att-disabled="product.favoriteSaving" t-on-click.stop="() => this.setFavorite(product)">
-                                        <i t-att-class="product.is_favorite ? 'fa fa-star' : 'fa fa-star-o'" aria-hidden="true"/>
                                     </button>
                                 </div>
                             </div>
@@ -161,9 +158,6 @@
                                         <span t-if="product.options.length === 1" class="o_prc_product_price"><t t-esc="product.last_price_text"/> <small t-esc="product.currency_symbol"/></span>
                                     </span>
                                     <span t-if="cartQuantity(product.product_id)" class="o_prc_product_qty" aria-label="Quantity in cart" t-esc="cartQuantity(product.product_id)"/>
-                                </button>
-                                <button t-if="state.canCurateCatalog and !state.existingRequest and !state.editRequest" type="button" class="o_prc_favorite_button" t-att-class="{'is_favorite': product.is_favorite, 'is_saving': product.favoriteSaving}" t-att-aria-pressed="product.is_favorite ? 'true' : 'false'" t-att-aria-label="product.is_favorite ? 'Remove from favorites' : 'Add to favorites'" t-att-disabled="product.favoriteSaving" t-on-click.stop="() => this.setFavorite(product)">
-                                    <i t-att-class="product.is_favorite ? 'fa fa-star' : 'fa fa-star-o'" aria-hidden="true"/>
                                 </button>
                             </div>
                         </div>

@@ -22,11 +22,12 @@ class AbrojContractBudgetCase(TransactionCase):
         }, **values))
 
     def test_dashboard_kpi_formulas(self):
-        self.project.write({'abroj_contract_value': 2000, 'abroj_budget': 1000})
+        client = self.env['res.partner'].create({'name': 'Budget project client'})
+        self.project.write({'partner_id': client.id, 'abroj_contract_value': 2000, 'abroj_budget': 1000})
         self.budget.manual_actual = 950
         contract, journal, payable, expense = self._progress_setup()
         self._progress_payment(contract, journal, payable, 100, fields.Date.today())
-        receipt = self._voucher(kind='receipt', payment_purpose='advance', amount=700)
+        receipt = self._voucher(kind='receipt', payment_purpose='advance', partner_id=client.id, amount=700)
         receipt.action_issue()
         refund = self._voucher(kind='receipt', payment_purpose='supplier_refund',
                                subcontractor_id=contract.id, amount=50)

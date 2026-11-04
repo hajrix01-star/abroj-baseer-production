@@ -2,6 +2,7 @@ import logging
 import unicodedata
 
 from odoo import api, fields, models
+from odoo.exceptions import AccessError, UserError
 from odoo.addons.abroj_contracting.models.contracting import FrozenDocument
 
 _logger = logging.getLogger(__name__)
@@ -109,6 +110,15 @@ class Voucher(models.Model):
         else:
             return self.env['abroj.project.budget.line']
         return self.search(domain, order='date desc, id desc', limit=1).abroj_budget_line_id
+
+    def _app_set_budget_line(self, line):
+        self.ensure_one()
+        self.check_access('write')
+        if self.state != 'draft':
+            raise UserError('Only draft vouchers can be edited.')
+        if line and line.project_id != self.project_id:
+            raise AccessError('Budget line belongs to another project.')
+        return super(FrozenDocument, self).write({'abroj_budget_line_id': line.id if line else False})
 
     def _autofill_budget_line(self):
         for voucher in self.filtered(lambda v: v.state == 'draft' and v.project_id and not v.abroj_budget_line_id):

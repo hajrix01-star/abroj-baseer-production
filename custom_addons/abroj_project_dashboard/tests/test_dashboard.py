@@ -1183,3 +1183,68 @@ class AbrojDashboardHttpCase(HttpCase):
             self.assertEqual(len(message), 1, text)
             recipients = self.env['mail.notification'].sudo().search([('mail_message_id', '=', message.id), ('notification_type', '=', 'inbox')]).mapped('res_partner_id')
             self.assertTrue(set(users.partner_id.ids) <= set(recipients.ids), text)
+
+    def test_app_cost_item_serialization(self):
+        project = self.env['project.project'].create({'name': 'Cost item HTTP'})
+        other = self.env['project.project'].create({'name': 'Other HTTP'})
+        Line = self.env['abroj.project.budget.line']
+        line = Line.create({'project_id': project.id, 'name': 'Cost item'})
+        foreign = Line.create({'project_id': other.id, 'name': 'Foreign'})
+        party = self.env['abroj.contracting.party'].create({'name': 'Cost party', 'party_type': 'subcontractor'})
+        self.authenticate('admin', 'admin')
+        save = lambda kind, values, **kw: self.rpc('/abroj/app/document/save', dict(project_id=project.id, kind=kind, values=values, **kw))
+        contract = save('contract', {'party_id': party.id, 'agreed_amount': 100, 'budget_line_id': line.id})['id']
+        payment = save('payment', {'party_id': party.id, 'amount': 10, 'budget_line_id': line.id})['id']
+        save('contract', {'budget_line_id': foreign.id}, record_id=contract)
+        docs = self.rpc('/abroj/app/documents', {'project_id': project.id})
+        self.assertIn({'id': line.id, 'name': line.name}, docs['budget_lines'])
+        for kind, record_id in [('contract', contract), ('payment', payment)]:
+            row = next(row for row in docs['records'][kind] if row['id'] == record_id)
+            self.assertEqual((row['values']['budget_line_id'], row['budget_line_name']), (line.id, line.name))
+        inherited = self.env['abroj.contracting.voucher'].create({'project_id': project.id, 'party_id': party.id, 'kind': 'payment', 'amount': 5, 'subcontractor_id': contract})
+        from odoo.addons.abroj_contracting.models.contracting import FrozenDocument
+        super(FrozenDocument, inherited).write({'abroj_budget_line_id': False})
+        row = next(row for row in self.rpc('/abroj/app/documents', {'project_id': project.id})['records']['payment'] if row['id'] == inherited.id)
+        self.assertEqual((row['values']['budget_line_id'], row['budget_line_name']), (line.id, line.name))
+        category = self.rpc('/abroj/app/data', {'project_id': project.id})['categories'][0]
+        self.assertIn('advance_paid', category)
+        self.assertIn('total_spent', category)
+
+    def test_app_contract_bill_actions(self):
+        from odoo.addons.abroj_contracting.models.contracting import FrozenDocument
+        project = self.env['project.project'].create({'name': 'Bill HTTP'})
+        partner = self.env['res.partner'].create({'name': 'Bill supplier'})
+        payable = self.env['account.account'].create({'name': 'HTTP payable', 'code': 'HTTPAY', 'account_type': 'liability_payable', 'reconcile': True})
+        cash = self.env['account.account'].create({'name': 'HTTP cash', 'code': 'HTCASH', 'account_type': 'asset_cash'})
+        expense = self.env['account.account'].create({'name': 'HTTP expense', 'code': 'HTEXPN', 'account_type': 'expense'})
+        partner.property_account_payable_id = payable
+        line = self.env['abroj.project.budget.line'].create({'project_id': project.id, 'name': 'Bill line', 'account_id': expense.id})
+        plan = self.env['project.project']._abroj_project_analytic_plan()
+        project.account_id = self.env['account.analytic.account'].create({'name': 'HTTP project', 'plan_id': plan.id})
+        journal = self.env['account.journal'].create({'name': 'HTTP cash', 'code': 'HTC', 'type': 'cash', 'default_account_id': cash.id})
+        journal.outbound_payment_method_line_ids.payment_account_id = cash
+        self.env['account.journal'].create({'name': 'HTTP purchase', 'code': 'HTP', 'type': 'purchase'})
+        contract = self.env['abroj.contracting.subcontractor'].create({'project_id': project.id, 'partner_id': partner.id, 'budget_line_id': line.id})
+        voucher = self.env['abroj.contracting.voucher'].create({'project_id': project.id, 'partner_id': partner.id, 'kind': 'payment', 'payment_purpose': 'advance', 'subcontractor_id': contract.id, 'amount': 75})
+        voucher.action_issue()
+        payment = self.env['account.payment'].create({'payment_type': 'outbound', 'partner_type': 'supplier', 'partner_id': partner.id, 'amount': 75, 'date': fields.Date.today(), 'journal_id': journal.id, 'payment_method_line_id': journal.outbound_payment_method_line_ids[0].id, 'destination_account_id': payable.id})
+        payment._generate_journal_entry()
+        payment.action_post()
+        super(FrozenDocument, voucher).write({'payment_id': payment.id})
+        self.authenticate('admin', 'admin')
+        params = {'project_id': project.id, 'kind': 'contract', 'record_id': contract.id}
+        row = next(row for row in self.rpc('/abroj/app/documents', {'project_id': project.id})['records']['contract'] if row['id'] == contract.id)
+        self.assertEqual(row['total_paid'], 75)
+        self.assertIn('error', self.rpc('/abroj/app/document/action', dict(params, action='progress_bill', amount=0)))
+        result = self.rpc('/abroj/app/document/action', dict(params, action='progress_bill', amount=20))
+        bill = self.env['account.move'].browse(result['bill_id'])
+        self.assertEqual((bill.state, result['bill_name'], result['contract_state']), ('posted', bill.name, 'open'))
+        self.assertNotIn('AGENT:', bill.ref)
+        result = self.rpc('/abroj/app/document/action', dict(params, action='end_contract'))
+        self.assertEqual((self.env['account.move'].browse(result['bill_id']).amount_total, result['contract_state']), (75, 'closed'))
+        group = self.env['res.groups'].create({'name': 'HTTP restricted contract'})
+        user = self.env['res.users'].create({'name': 'HTTP restricted', 'login': 'http_restricted', 'password': 'http_restricted', 'group_ids': [Command.set([self.env.ref('base.group_user').id, self.env.ref('project.group_project_user').id, group.id])]})
+        project.user_id = user
+        self.env['ir.rule'].create({'name': 'Deny contract write HTTP', 'model_id': self.env['ir.model']._get_id('abroj.contracting.subcontractor'), 'domain_force': "[('id', '=', 0)]", 'groups': [Command.set(group.ids)], 'perm_read': False, 'perm_write': True, 'perm_create': False, 'perm_unlink': False})
+        self.authenticate('http_restricted', 'http_restricted')
+        self.assertIn('error', self.rpc('/abroj/app/document/action', dict(params, action='progress_bill', amount=1)))

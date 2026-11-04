@@ -1,5 +1,13 @@
 'use strict';
 const translations = {
+  "costItem": {"ar":"بند التكلفة", "en":"Cost item"},
+  "paidInAdvance": {"ar":"مدفوع مقدماً", "en":"Paid in advance"},
+  "totalSpent": {"ar":"إجمالي المصروف", "en":"Total spent"},
+  "progressBill": {"ar":"مستخلص", "en":"Progress bill"},
+  "endContract": {"ar":"إنهاء العقد", "en":"End contract"},
+  "billAmount": {"ar":"مبلغ المستخلص", "en":"Bill amount"},
+  "positiveAmount": {"ar":"أدخل مبلغاً أكبر من صفر", "en":"Enter an amount greater than zero"},
+  "confirmEndContract": {"ar":"هل تريد إنهاء العقد؟", "en":"End this contract?"},
   "kpiContract": {"ar":"قيمة العقد", "en":"Contract value"},
   "kpiCollected": {"ar":"المحصّل من العميل", "en":"Customer collections"},
   "kpiSpent": {"ar":"المنصرف", "en":"Total spent"},

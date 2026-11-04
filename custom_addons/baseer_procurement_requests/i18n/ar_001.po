@@ -2268,3 +2268,136 @@ msgstr "أدخل سبب الإلغاء بما لا يتجاوز 1000 حرف."
 #: code:addons/baseer_procurement_requests/models/procurement.py:0
 msgid "Request plan edited by %(actor)s. Before: %(before)s. After: %(after)s. Staged received quantities and actual prices were reset; no receipt was confirmed."
 msgstr "عدّل %(actor)s بيانات الطلب. قبل التعديل: %(before)s. بعد التعديل: %(after)s. صُفّرت كميات الاستلام والأسعار الفعلية المدخلة مسبقًا، ولم يُؤكد الاستلام."
+
+#. module: baseer_procurement_requests
+msgid "Advances recorded at purchase receipt appear here. Contact the accountant for returns or corrections."
+msgstr "تظهر هنا العهد المسجلة عند استلام طلبات الشراء. راجع المحاسب لإرجاع المتبقي أو تصحيح حركة."
+
+#. module: baseer_procurement_requests
+msgid "Review your restaurant's representative advances and purchase references."
+msgstr "متابعة عهد مندوبي مطعمك ومراجع طلبات الشراء."
+
+#. module: baseer_procurement_requests
+msgid "Advance handed to the representative"
+msgstr "العهدة المسلّمة للمندوب"
+
+#. module: baseer_procurement_requests
+msgid "Loading advance details…"
+msgstr "جارٍ تحميل بيانات العهدة…"
+
+#. module: baseer_procurement_requests
+msgid "Reload advance details"
+msgstr "تحديث بيانات العهدة"
+
+#. module: baseer_procurement_requests
+msgid "An advance is already recorded for this request. It will be reused."
+msgstr "سبق تسجيل عهدة لهذا الطلب؛ سيُستخدم السجل الحالي دون تكراره."
+
+#. module: baseer_procurement_requests
+msgid "Record the amount that was actually handed to the representative."
+msgstr "أدخل المبلغ الفعلي الذي سُلّم أو حُوّل إلى المندوب."
+
+#. module: baseer_procurement_requests
+msgid "Advance amount"
+msgstr "قيمة العهدة"
+
+#. module: baseer_procurement_requests
+msgid "Bank or cash source"
+msgstr "مصدر العهدة: بنك أو نقد"
+
+#. module: baseer_procurement_requests
+msgid "Choose a source"
+msgstr "اختر مصدر العهدة"
+
+#. module: baseer_procurement_requests
+msgid "Actual transfer date"
+msgstr "تاريخ تسليم العهدة الفعلي"
+
+#. module: baseer_procurement_requests
+msgid "No approved bank or cash source is available for this company."
+msgstr "لا يوجد مصدر بنك أو نقد معتمد للعهدة في هذا المطعم."
+
+#. module: baseer_procurement_requests
+msgid "Could not load the representative advance details."
+msgstr "تعذّر تحميل بيانات عهدة المندوب."
+
+#. module: baseer_procurement_requests
+msgid "Receipt funding confirmation is managed by the receipt workflow."
+msgstr "تُسجّل عهدة الاستلام من شاشة تأكيد الطلب فقط."
+
+#. module: baseer_procurement_requests
+msgid "Only a procurement cashier can confirm the quantity receipt."
+msgstr "تأكيد الاستلام متاح لمسؤول المشتريات المخوّل فقط."
+
+#. module: baseer_procurement_requests
+msgid "The existing request funding has an inconsistent accounting link. Contact an accountant."
+msgstr "الربط المحاسبي للعهدة المسجلة على هذا الطلب غير مكتمل. راجع المحاسب."
+
+#. module: baseer_procurement_requests
+msgid "Representative funding is entered only at final receipt confirmation."
+msgstr "تُدخل عهدة المندوب عند التأكيد النهائي لاستلام الطلب فقط."
+
+#. module: baseer_procurement_requests
+msgid "Select an active purchase representative contact on the request before confirming receipt."
+msgstr "اختر جهة اتصال مفعّلة كمندوب مشتريات في الطلب قبل تأكيد الاستلام."
+
+#. module: baseer_procurement_requests
+msgid "Configure an approved company-currency bank or cash payment point before confirming receipt."
+msgstr "يلزم إعداد مصدر بنك أو نقد معتمد بعملة المطعم قبل تأكيد الاستلام."
+
+#. module: baseer_procurement_requests
+msgid "The request changed. Reload the receipt before confirming."
+msgstr "تغيّر الطلب. أعد تحميل شاشة الاستلام قبل التأكيد."
+
+#. module: baseer_procurement_requests
+msgid "Only an unconfirmed receipt can record representative funding."
+msgstr "تسجيل العهدة متاح للطلب الذي لم يُؤكد استلامه نهائيًا بعد."
+
+#. module: baseer_procurement_requests
+msgid "Invalid representative funding details."
+msgstr "بيانات عهدة المندوب غير صالحة."
+
+#. module: baseer_procurement_requests
+msgid "The request funding changed. Reload the receipt before confirming."
+msgstr "تغيّرت عهدة الطلب. حدّث بيانات العهدة قبل تأكيد الاستلام."
+
+#. module: baseer_procurement_requests
+msgid "Existing request funding is read-only. Reload the receipt."
+msgstr "العهدة المسجلة على الطلب للقراءة فقط. حدّث بيانات العهدة."
+
+#. module: baseer_procurement_requests
+msgid "Enter the actual representative advance and payment point before confirming receipt."
+msgstr "أدخل قيمة العهدة الفعلية ومصدرها قبل تأكيد الاستلام."
+
+#. module: baseer_procurement_requests
+msgid "Actual representative advance"
+msgstr "قيمة العهدة الفعلية للمندوب"
+
+#. module: baseer_procurement_requests
+msgid "Choose an approved company-currency payment point."
+msgstr "اختر مصدرًا معتمدًا بعملة المطعم."
+
+#. module: baseer_procurement_requests
+#, python-format
+msgid "Representative advance reused or recorded with final receipt by %s."
+msgstr "تم تسجيل عهدة المندوب أو استخدام العهدة السابقة مع تأكيد الاستلام النهائي بواسطة %s."
+
+#. module: baseer_procurement_requests
+msgid "Enter the actual representative advance and payment point in the receipt screen before confirming."
+msgstr "أدخل قيمة العهدة الفعلية ومصدرها في شاشة الاستلام قبل التأكيد."
+
+#. module: baseer_procurement_requests
+msgid "This receipt already confirmed its representative advance. Contact an accountant for corrections."
+msgstr "سبق تأكيد عهدة هذا الطلب. راجع المحاسب لأي تصحيح."
+
+#. module: baseer_procurement_requests
+msgid "Confirming receipt records this advance; it does not make a bank transfer."
+msgstr "عند تأكيد الاستلام تُوثّق هذه العهدة؛ ولا يُنفّذ تحويل بنكي جديد."
+
+#. module: baseer_procurement_requests
+msgid "Representative receipt funding requires company-currency accounts and journals."
+msgstr "يلزم أن تكون حسابات العهدة ودفاترها بعملة المطعم لتسجيلها عند الاستلام."
+
+#. module: baseer_procurement_requests
+msgid "Enter a valid actual representative advance."
+msgstr "أدخل قيمة عهدة فعلية صحيحة للمندوب."

@@ -67,12 +67,16 @@ export class RepresentativePettyCash extends Component {
 
     setup() {
         this.orm = useService("orm");
+        this.action = useService("action");
         this.notification = useService("notification");
+        const params = this.props.action?.params || {};
         this.state = useState({
             loading: true, saving: false, error: false, data: false,
             representativeId: "", monthStart: "", destinationId: "", requestId: "", paymentPointId: "", amount: "", movementDate: today(), clientToken: newClientToken(),
             returnRepresentativeId: "", returnPaymentPointId: "", returnAmount: "", returnClientToken: newClientToken(),
         });
+        this.state.representativeId = params.representative_id ? String(params.representative_id) : "";
+        this.state.monthStart = params.month_start || "";
         // Render the shell and its loading state immediately. Waiting in
         // onWillStart leaves a blank mobile page until the dashboard RPC ends.
         onMounted(() => this.load());
@@ -99,6 +103,14 @@ export class RepresentativePettyCash extends Component {
         this.state.destinationId = "";
         this.state.requestId = "";
         this.load();
+    }
+
+    async openRequest(requestId) {
+        if (!requestId) return;
+        await this.action.doAction({
+            type: "ir.actions.act_window", res_model: "baseer.procurement.request",
+            res_id: requestId, views: [[false, "form"]], target: "current",
+        });
     }
 
     onMonthChange(event) {

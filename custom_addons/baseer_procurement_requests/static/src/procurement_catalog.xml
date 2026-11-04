@@ -195,6 +195,7 @@
 
                 <aside class="o_prc_cart_pane" t-att-class="{'is_mobile_hidden': state.mobilePane !== 'cart'}" aria-label="Procurement request cart">
                     <div class="o_prc_cart_lines">
+                        <ReceiptCustodyFields t-if="state.existingRequest" value="state.receiptCustody" requestId="state.existingRequest.id" saving="state.saving"/>
                         <div t-if="!state.cart.length" class="o_prc_empty_cart">
                             <span><i class="fa fa-shopping-basket" aria-hidden="true"/></span>
                             <h3>Your cart is empty</h3>
@@ -302,7 +303,34 @@
                     <strong class="o_prc_actual_line_total" t-if="state.mode !== 'manager_receipt' and quoteLine(line)" t-esc="moneyText(quoteLine(line).line_total_text)"/>
                 </article>
             </section>
-            <footer class="o_prc_actual_footer"><button type="button" class="btn btn-primary" t-on-click="confirm" t-att-disabled="state.saving || (state.mode !== 'manager_receipt' and (state.quotePending || state.quote.lines.length !== state.lines.length))"><i class="fa fa-check"/> <t t-if="state.mode === 'manager_receipt'">Confirm representative handover</t><t t-else="">Confirm quantity receipt and update latest prices</t></button></footer>
+            <ReceiptCustodyFields t-if="state.mode !== 'manager_receipt'" value="state.receiptCustody" requestId="state.request.id" saving="state.saving"/>
+            <footer class="o_prc_actual_footer"><button type="button" class="btn btn-primary" t-on-click="confirm" t-att-disabled="state.saving || (state.mode !== 'manager_receipt' and (!state.receiptCustody.ready or state.quotePending || state.quote.lines.length !== state.lines.length))"><i class="fa fa-check"/> <t t-if="state.mode === 'manager_receipt'">Confirm representative handover</t><t t-else="">Confirm quantity receipt and update latest prices</t></button></footer>
         </main>
+    </t>
+
+    <t t-name="baseer_procurement_requests.ReceiptCustodyFields">
+        <section t-if="state.loading or state.error or state.context?.required" class="o_prc_receipt_custody" aria-label="Representative advance" t-att-aria-busy="state.loading ? 'true' : 'false'">
+            <h3>Advance handed to the representative</h3>
+            <p t-if="state.loading" role="status">Loading advance details…</p>
+            <div t-elif="state.error" role="alert"><p t-esc="state.error"/><button type="button" class="btn btn-light" t-on-click="reloadCustody" t-att-disabled="props.saving">Reload advance details</button></div>
+            <t t-else="">
+                <p class="o_prc_custody_request"><strong t-esc="state.context.request_name"/> · <span t-esc="state.context.representative_name"/></p>
+                <t t-if="state.context.existing_funded">
+                    <p>An advance is already recorded for this request. It will be reused.</p>
+                    <strong dir="ltr" t-esc="custodyMoney(state.context.funded_amount_text)"/>
+                    <ul class="o_prc_custody_existing"><li t-foreach="state.context.funding_records" t-as="funding" t-key="funding.id"><span t-esc="funding.payment_point_name"/><span dir="ltr" t-esc="funding.movement_date"/><span dir="ltr" t-esc="custodyMoney(funding.amount_text)"/></li></ul>
+                </t>
+                <t t-else="">
+                    <p>Record the amount that was actually handed to the representative.</p>
+                    <p>Confirming receipt records this advance; it does not make a bank transfer.</p>
+                    <div class="o_prc_custody_fields">
+                        <label><span>Advance amount <b>*</b></span><input type="number" min="0.01" step="0.01" inputmode="decimal" dir="ltr" required="required" t-att-value="state.amount" t-att-disabled="props.saving" t-on-input="(event) => this.setCustodyField('amount', event.target.value)" aria-label="Advance amount"/></label>
+                        <label><span>Bank or cash source <b>*</b></span><select required="required" t-att-disabled="props.saving" t-on-change="(event) => this.setCustodyField('paymentJournalId', event.target.value)" aria-label="Bank or cash source"><option value="" t-att-selected="!state.paymentJournalId">Choose a source</option><option t-foreach="state.context.payment_points" t-as="point" t-key="point.id" t-att-value="point.id" t-att-selected="state.paymentJournalId === point.id" t-esc="point.name"/></select></label>
+                        <label><span>Actual transfer date <b>*</b></span><input type="date" required="required" dir="ltr" t-att-value="state.movementDate" t-att-disabled="props.saving" t-on-input="(event) => this.setCustodyField('movementDate', event.target.value)" aria-label="Actual transfer date"/></label>
+                    </div>
+                </t>
+                <button type="button" class="btn btn-link o_prc_custody_reload" t-on-click="reloadCustody" t-att-disabled="props.saving">Reload advance details</button>
+            </t>
+        </section>
     </t>
 </templates>

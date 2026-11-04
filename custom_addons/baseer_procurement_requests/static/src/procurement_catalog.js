@@ -17,6 +17,84 @@ function newClientToken() {
     return globalThis.crypto.randomUUID();
 }
 
+function newReceiptCustodyState() {
+    return { context: false, loading: true, error: false, ready: false, amount: "", paymentJournalId: false, movementDate: "" };
+}
+
+function receiptCustodyArguments(value) {
+    if (!value.context?.required) return [];
+    return [{ snapshot: value.context.snapshot, ...(value.context.existing_funded ? {} : {
+        amount: value.amount, payment_journal_id: value.paymentJournalId, movement_date: value.movementDate,
+    }) }];
+}
+
+export class ReceiptCustodyFields extends Component {
+    static template = "baseer_procurement_requests.ReceiptCustodyFields";
+    static props = { value: Object, requestId: Number, saving: Boolean };
+
+    setup() {
+        this.orm = useService("orm");
+        this.state = useState(this.props.value);
+        this.loadSequence = 0;
+        onMounted(() => this.reloadCustody());
+        onWillUnmount(() => this.loadSequence++);
+    }
+
+    async reloadCustody() {
+        if (this.props.saving) return;
+        const sequence = ++this.loadSequence;
+        this.state.loading = true;
+        this.state.ready = false;
+        this.state.error = false;
+        try {
+            const context = await this.orm.call("baseer.procurement.request", "prepare_receipt_custody", [this.props.requestId]);
+            if (sequence !== this.loadSequence) return;
+            this.state.context = context;
+            this.state.amount = "";
+            this.state.paymentJournalId = context.payment_points?.length === 1 ? context.payment_points[0].id : false;
+            this.state.movementDate = context.movement_date || "";
+            if (context.required && !context.existing_funded && !context.payment_points?.length) {
+                this.state.error = _t("No approved bank or cash source is available for this company.");
+            }
+        } catch (error) {
+            if (sequence !== this.loadSequence) return;
+            this.state.context = false;
+            this.state.error = this.custodyErrorMessage(error);
+        } finally {
+            if (sequence === this.loadSequence) {
+                this.state.loading = false;
+                this.updateCustodyReady();
+            }
+        }
+    }
+
+    updateCustodyReady() {
+        const context = this.state.context;
+        this.state.ready = Boolean(!this.state.loading && !this.state.error && context &&
+            (!context.required || (context.snapshot && (context.existing_funded ||
+                (String(this.state.amount).trim() && this.state.paymentJournalId && this.state.movementDate)))));
+    }
+
+    custodyErrorMessage(error) {
+        const businessErrors = ["odoo.exceptions.AccessError", "odoo.exceptions.UserError", "odoo.exceptions.ValidationError"];
+        const message = error?.data?.arguments?.[0];
+        return businessErrors.includes(error?.data?.name) && typeof message === "string" && message.trim()
+            ? message : _t("Could not load the representative advance details.");
+    }
+
+    setCustodyField(field, value) {
+        if (this.props.saving || this.state.loading || this.state.context?.existing_funded) return;
+        if (!["amount", "paymentJournalId", "movementDate"].includes(field)) return;
+        this.state[field] = field === "paymentJournalId" ? Number(value) || false : value;
+        this.updateCustodyReady();
+    }
+
+    custodyMoney(text) {
+        const context = this.state.context;
+        return context.currency_position === "before" ? `${context.currency_symbol} ${text}` : `${text} ${context.currency_symbol}`;
+    }
+}
+
 export class ProcurementWhatsAppDialog extends Component {
     static template = "baseer_procurement_requests.WhatsAppShareDialog";
     static components = { Dialog };
@@ -56,7 +134,7 @@ export class ProcurementWhatsAppDialog extends Component {
 export class ProcurementCatalog extends Component {
     static template = "baseer_procurement_requests.ProcurementCatalog";
     static props = ["*"];
-    static components = { Dropdown, DropdownItem };
+    static components = { Dropdown, DropdownItem, ReceiptCustodyFields };
 
     setup() {
         this.orm = useService("orm");
@@ -111,6 +189,7 @@ export class ProcurementCatalog extends Component {
             canCurateCatalog: false, highlights: [], highlightsLoading: false,
             quickProductOpen: false, quickProductName: "", quickProductPrice: "",
             quickProductSaving: false, quickProductError: false,
+            receiptCustody: newReceiptCustodyState(),
         });
         useSetupAction({
             beforeLeave: () => this.allowEditorLeave(),
@@ -1018,7 +1097,8 @@ export class ProcurementCatalog extends Component {
     get canSave() {
         const representativeReady = this.state.existingRequest || this.state.purchaseRoute !== "representative" || this.state.representativePartnerId ||
             (this.state.editRequest?.purchase_route === "representative" && !this.state.editRequest.representative_partner_id && this.state.editRequest.representative_name);
-        return Boolean(this.state.warehouseId && representativeReady && this.state.cart.length &&
+        const custodyReady = !this.state.existingRequest || this.state.receiptCustody.ready;
+        return Boolean(this.state.warehouseId && representativeReady && custodyReady && this.state.cart.length &&
             !this.state.saving && !this.state.quotePending && !this.state.quoteError && !this.unpricedReceivedLines.length &&
             this.state.quote.lines.length === this.state.cart.length);
     }
@@ -1041,6 +1121,7 @@ export class ProcurementCatalog extends Component {
                 await this.orm.call("baseer.procurement.request", "confirm_actual_from_catalog", [
                     this.state.existingRequest.id,
                     this.receiptLines(),
+                    ...receiptCustodyArguments(this.state.receiptCustody),
                 ]);
                 this.state.existingRequest = false;
                 this.state.cart = [];
@@ -1102,6 +1183,7 @@ registry.category("actions").add("baseer_procurement_requests.whatsapp_share", a
 export class ProcurementActualCatalog extends Component {
     static template = "baseer_procurement_requests.ProcurementActualCatalog";
     static props = ["*"];
+    static components = { ReceiptCustodyFields };
 
     setup() {
         this.orm = useService("orm");
@@ -1109,7 +1191,7 @@ export class ProcurementActualCatalog extends Component {
         this.notification = useService("notification");
         this.quoteTimer = null;
         this.quoteSequence = 0;
-        this.state = useState({ request: false, lines: [], quote: this.emptyQuote(), quotePending: true, saving: false, mode: "cashier" });
+        this.state = useState({ request: false, lines: [], quote: this.emptyQuote(), quotePending: true, saving: false, mode: "cashier", receiptCustody: newReceiptCustodyState() });
         onWillStart(async () => {
             const requestId = this.props.action.params.request_id;
             this.state.mode = this.props.action.params.mode || "cashier";
@@ -1172,17 +1254,18 @@ export class ProcurementActualCatalog extends Component {
 
     async confirm() {
         if (this.state.saving || (this.state.mode !== "manager_receipt" &&
-            (this.state.quotePending || this.state.quote.lines.length !== this.state.lines.length))) return;
+            (!this.state.receiptCustody.ready || this.state.quotePending || this.state.quote.lines.length !== this.state.lines.length))) return;
         this.state.saving = true;
         try {
             const action = this.state.mode === "manager_receipt"
                 ? await this.orm.call("baseer.procurement.request", "confirm_manager_receipt_from_catalog", [this.state.request.id,
                     this.state.lines.map((line) => ({ line_id: line.id, manager_received_qty: line.manager_received_qty }))])
                 : await this.orm.call("baseer.procurement.request", "confirm_actual_from_catalog", [this.state.request.id,
-                    this.state.lines.map((line) => ({ line_id: line.id, actual_qty: line.actual_qty, actual_price: line.actual_price }))]);
+                    this.state.lines.map((line) => ({ line_id: line.id, actual_qty: line.actual_qty, actual_price: line.actual_price })),
+                    ...receiptCustodyArguments(this.state.receiptCustody)]);
             await this.action.doAction(action);
         } catch (error) {
-            this.notification.add(error.message || _t("Could not confirm the quantity receipt."), { type: "danger" });
+            this.notification.add(error?.data?.arguments?.[0] || error.message || _t("Could not confirm the quantity receipt."), { type: "danger" });
         } finally {
             this.state.saving = false;
         }

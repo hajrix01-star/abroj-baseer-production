@@ -164,6 +164,7 @@ class BasserWorkspaceCase(TransactionCase):
         self.assertFalse(workspace['can_manage'])
         item_ids = {item['id'] for section in workspace['sections'] for item in section['items']}
         expected = {
+            self.env.ref('baseer_basser_workspace.workspace_item_branch_manager_representative_advances').id,
             self.env.ref('baseer_basser_workspace.workspace_item_branch_manager_point_of_sale').id,
             self.env.ref('baseer_basser_workspace.workspace_item_cashier_new_procurement').id,
             self.env.ref('baseer_basser_workspace.workspace_item_cashier_procurement_requests').id,
@@ -204,6 +205,38 @@ class BasserWorkspaceCase(TransactionCase):
             self.env['baseer.heat.calendar.target'].with_user(cashier).check_access('create')
         with self.assertRaises(AccessError):
             self.env['baseer.official.occasion'].with_user(cashier).check_access('create')
+
+    def test_branch_manager_advance_review_has_no_accountant_rights(self):
+        manager = self._user('cashier')
+        workspace = self.env['baseer.basser.workspace.section'].with_user(manager)
+        card = self.env.ref(
+            'baseer_basser_workspace.workspace_item_branch_manager_representative_advances'
+        )
+        items = {item['id'] for section in workspace.get_workspace()['sections']
+                 for item in section['items']}
+        self.assertIn(card.id, items)
+        self.assertEqual(workspace.open_workspace_item(card.id)['action']['tag'],
+                         'baseer_procurement_requests.representative_petty_cash')
+        dashboard = self.env['baseer.procurement.representative.advance'].with_user(
+            manager
+        ).dashboard_data()
+        self.assertFalse(dashboard['can_record'])
+        self.assertEqual(dashboard['payment_points'], [])
+        self.assertFalse(manager.has_group(
+            'baseer_procurement_requests.group_procurement_accountant'
+        ))
+        for operation in ('create', 'write'):
+            with self.assertRaises(AccessError):
+                self.env['account.move'].with_user(manager).check_access(operation)
+        for role in ('pos_cashier', 'accountant'):
+            other_workspace = self.env['baseer.basser.workspace.section'].with_user(
+                self._user(role)
+            )
+            with self.assertRaises(AccessError):
+                other_workspace.open_workspace_item(card.id)
+        foreign = self.env['res.company'].create({'name': 'Unrelated advance company'})
+        with self.assertRaises(AccessError):
+            workspace.with_context(allowed_company_ids=[foreign.id]).open_workspace_item(card.id)
 
     def test_basser_t01a_accountant_gets_custody_and_monthly_reconciliation(self):
         accountant = self._user('accountant')

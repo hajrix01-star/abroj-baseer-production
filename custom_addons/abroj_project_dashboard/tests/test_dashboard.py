@@ -44,7 +44,7 @@ class AbrojProjectDashboardCase(TransactionCase):
             'التقارير اليومية', 'السجلات', 'بنود الميزانية',
         ])
         budget = arch.xpath("//page[@name='abroj_budget_lines']/field[@name='abroj_budget_line_ids']/list")[0]
-        self.assertEqual(budget.xpath('./field/@name'), ['name', 'parent_id', 'group_name', 'currency_id', 'account_id', 'budget', 'manual_actual', 'actual', 'advance_paid', 'total_spent', 'remaining_budget', 'over_budget'])
+        self.assertEqual(budget.xpath('./field/@name'), ['name', 'task_id', 'parent_id', 'group_name', 'currency_id', 'account_id', 'budget', 'manual_actual', 'actual', 'advance_paid', 'total_spent', 'remaining_budget', 'over_budget'])
         page = arch.xpath("//page[@name='invoices_costs']")[0]
         self.assertEqual(page.xpath('./field/@name'), ['invoice_ids', 'cost_ids'])
         for field in page.xpath('./field'):
@@ -776,7 +776,7 @@ class AbrojDashboardHttpCase(HttpCase):
             self.assertTrue(asset.endswith('?v=' + version), asset)
         for icon in self.url_open('/abroj/app/manifest.webmanifest').json()['icons']:
             self.assertTrue(icon['src'].endswith('?v=' + version))
-        self.assertIn("'abroj-v52-' + VERSION", worker)
+        self.assertIn("'abroj-v53-' + VERSION", worker)
         self.assertIn("cache: 'reload'", worker)
         self.assertIn("url.searchParams.get('v') !== VERSION", worker)
         self.assertNotIn('static/pwa/index.html', worker)

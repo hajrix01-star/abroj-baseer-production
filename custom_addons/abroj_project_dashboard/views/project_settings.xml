@@ -1,0 +1,16 @@
+<odoo>
+    <record id="res_config_settings_project_expense" model="ir.ui.view">
+        <field name="name">res.config.settings.project.expense</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="account.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//app[@name='account']" position="inside">
+                <block title="Project accounting">
+                    <setting string="Default project expense account" company_dependent="1">
+                        <field name="abroj_project_expense_account_id"/>
+                    </setting>
+                </block>
+            </xpath>
+        </field>
+    </record>
+</odoo>

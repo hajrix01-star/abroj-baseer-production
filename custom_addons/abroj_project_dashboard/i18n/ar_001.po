@@ -629,3 +629,27 @@ msgstr "دفعة استرداد مورد حسب السند %s"
 #: model:ir.model.fields,field_description:abroj_project_dashboard.field_abroj_project_budget_line__account_id
 msgid "الحساب"
 msgstr "الحساب"
+
+#. module: abroj_project_dashboard
+#: model:ir.model.fields,field_description:abroj_project_dashboard.field_res_company__abroj_project_expense_account_id
+#: model:ir.model.fields,field_description:abroj_project_dashboard.field_res_config_settings__abroj_project_expense_account_id
+#: model_terms:ir.ui.view,arch_db:abroj_project_dashboard.res_config_settings_project_expense
+msgid "Default project expense account"
+msgstr "حساب مصروفات المشاريع الافتراضي"
+
+#. module: abroj_project_dashboard
+#: model_terms:ir.ui.view,arch_db:abroj_project_dashboard.res_config_settings_project_expense
+msgid "Project accounting"
+msgstr "محاسبة المشاريع"
+
+#. module: abroj_project_dashboard
+#. odoo-python
+#: code:addons/abroj_project_dashboard/models/voucher_workflow.py:0
+msgid "Complete the analytic distribution for mandatory plan(s): %s"
+msgstr "أكمل التوزيع التحليلي للخطط الإلزامية: %s"
+
+#. module: abroj_project_dashboard
+#. odoo-python
+#: code:addons/abroj_project_dashboard/models/company.py:0
+msgid "The default project expense account must be an expense account."
+msgstr "يجب أن يكون حساب مصروفات المشاريع الافتراضي حساب مصروفات."

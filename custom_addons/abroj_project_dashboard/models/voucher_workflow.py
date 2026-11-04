@@ -310,6 +310,41 @@ class VoucherReview(models.TransientModel):
             wizard.payment_account_id = account
             wizard.uses_clearing_account = bool(account and account.account_type != 'asset_cash')
 
+    @api.model
+    def _direct_defaults(self, voucher, partner, budget_line=None, journal=None):
+        company = voucher.company_id
+        expense = voucher.kind == 'payment'
+        journal = journal or self.env['account.journal'].search([
+            ('company_id', '=', company.id), ('type', '=', 'purchase' if expense else 'sale'),
+            ('active', '=', True),
+        ], order='sequence, id', limit=1)
+        lines = voucher.project_id.abroj_budget_line_ids
+        budget_line = budget_line or (lines if expense and len(lines) == 1 else self.env['abroj.project.budget.line'])
+        reference = next((voucher[name] for name in ('invoice_reference', 'bill_reference', 'invoice_number', 'bill_number')
+                          if name in voucher._fields and voucher[name]), voucher.name)
+        candidates = []
+        if expense and budget_line:
+            candidates.append(budget_line.account_id)
+        partner_field = 'property_account_expense_id' if expense else 'property_account_income_id'
+        if partner and partner_field in partner._fields:
+            candidates.append(partner.with_company(company)[partner_field])
+        candidates.append(journal.default_account_id)
+        category_field = 'property_account_expense_categ_id' if expense else 'property_account_income_categ_id'
+        if category_field in self.env['product.category']._fields:
+            account_id = self.env['ir.default'].with_company(company)._get('product.category', category_field)
+            if account_id:
+                candidates.append(self.env['account.account'].browse(account_id).exists())
+        types = EXPENSE_TYPES if expense else ('income', 'income_other')
+        account = next((a for a in candidates if a and a.active and company in a.company_ids and a.account_type in types), self.env['account.account'])
+        return {'invoice_journal_id': journal.id, 'document_reference': reference,
+                'budget_line_id': budget_line.id if expense else False, 'account_id': account.id,
+                'invoice_date': voucher.date, 'date': voucher.date}
+
+    @api.onchange('budget_line_id')
+    def _onchange_budget_line_id(self):
+        if self.budget_line_id.account_id:
+            self.account_id = self.budget_line_id.account_id
+
     @api.onchange('purpose')
     def _onchange_purpose(self):
         self.invoice_id = False
@@ -318,8 +353,14 @@ class VoucherReview(models.TransientModel):
             self.budget_line_id = False
             self.tax_ids = [Command.clear()]
             self.analytic_distribution = False
-        elif self.project_id.account_id:
-            self.analytic_distribution = {str(self.project_id.account_id.id): 100}
+        else:
+            if self.project_id.account_id:
+                self.analytic_distribution = {str(self.project_id.account_id.id): 100}
+            if self.voucher_id:
+                defaults = self._direct_defaults(self.voucher_id, self.partner_id, self.budget_line_id, self.invoice_journal_id)
+                for name, value in defaults.items():
+                    if not self[name] and value:
+                        self[name] = value
 
     @api.model
     def default_get(self, names):
@@ -351,6 +392,10 @@ class VoucherReview(models.TransientModel):
                 if template:
                     vals['evidence_note'] = template % voucher.name
             if voucher.payment_purpose == 'direct':
+                defaults = self._direct_defaults(voucher, self.env['res.partner'].browse(vals['partner_id']))
+                for name, value in defaults.items():
+                    if not vals.get(name) and value:
+                        vals[name] = value
                 vals.setdefault('analytic_distribution', {str(voucher.project_id.account_id.id): 100})
         return vals
 

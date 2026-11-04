@@ -26,7 +26,7 @@ for (const detail of [false, true]) {
     assert.match(html, /الباقي: 70/);
     assert.match(html, /فعلي 40 \+ مقدّم 10/);
     assert.match(html, /class="kpi-danger">تجاوز الميزانية: 10/);
-    assert.match(html, /قيمة العقد − max\(الميزانية، المنصرف\)/);
+    assert.match(html, /قيمة العقد − الأكبر من الميزانية وإجمالي المنصرف/);
 }
 project[0].budget_available = false;
 project[0].budget_remaining = null;

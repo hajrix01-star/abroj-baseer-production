@@ -655,49 +655,73 @@ msgid "The default project expense account must be an expense account."
 msgstr "يجب أن يكون حساب مصروفات المشاريع الافتراضي حساب مصروفات."
 
 #. module: abroj_project_dashboard
+#. odoo-javascript
+#: code:addons/abroj_project_dashboard/static/src/dashboard.js:0
 msgid "Contract value"
 msgstr "قيمة العقد"
 
 #. module: abroj_project_dashboard
+#. odoo-javascript
+#: code:addons/abroj_project_dashboard/static/src/dashboard.js:0
 msgid "Customer collections"
 msgstr "المحصّل من العميل"
 
 #. module: abroj_project_dashboard
+#. odoo-javascript
+#: code:addons/abroj_project_dashboard/static/src/dashboard.js:0
 msgid "Total spent"
 msgstr "المنصرف"
 
 #. module: abroj_project_dashboard
+#. odoo-javascript
+#: code:addons/abroj_project_dashboard/static/src/dashboard.js:0
 msgid "Remaining budget"
 msgstr "الباقي من الميزانية"
 
 #. module: abroj_project_dashboard
+#. odoo-javascript
+#: code:addons/abroj_project_dashboard/static/src/dashboard.js:0
 msgid "Project cash"
 msgstr "الكاش بيد المشروع"
 
 #. module: abroj_project_dashboard
+#. odoo-javascript
+#: code:addons/abroj_project_dashboard/static/src/dashboard.js:0
 msgid "Projected profit"
 msgstr "الربح المتوقع"
 
 #. module: abroj_project_dashboard
+#. odoo-javascript
+#: code:addons/abroj_project_dashboard/static/src/dashboard.js:0
 msgid "Remaining"
 msgstr "الباقي"
 
 #. module: abroj_project_dashboard
+#. odoo-javascript
+#: code:addons/abroj_project_dashboard/static/src/dashboard.js:0
 msgid "Actual"
 msgstr "فعلي"
 
 #. module: abroj_project_dashboard
+#. odoo-javascript
+#: code:addons/abroj_project_dashboard/static/src/dashboard.js:0
 msgid "Advance"
 msgstr "مقدّم"
 
 #. module: abroj_project_dashboard
+#. odoo-javascript
+#: code:addons/abroj_project_dashboard/static/src/dashboard.js:0
 msgid "Budget overrun"
 msgstr "تجاوز الميزانية"
 
 #. module: abroj_project_dashboard
+#. odoo-javascript
+#: code:addons/abroj_project_dashboard/static/src/dashboard.js:0
 msgid "No budget"
 msgstr "لا توجد ميزانية"
 
 #. module: abroj_project_dashboard
+#. odoo-javascript
+#: code:addons/abroj_project_dashboard/static/src/dashboard.js:0
 msgid "Contract value − max(budget, total spent)"
-msgstr "قيمة العقد − max(الميزانية، المنصرف)"
+msgstr "قيمة العقد − الأكبر من الميزانية وإجمالي المنصرف"

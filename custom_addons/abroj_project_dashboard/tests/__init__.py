@@ -6,3 +6,5 @@ from . import test_login_target
 from . import test_voucher_workflow
 
 from . import test_contract_budget
+
+from . import test_advance_budget

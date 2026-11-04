@@ -1,7 +1,7 @@
 import logging
 import unicodedata
 
-from odoo import api, fields, models
+from odoo import _, api, fields, models
 from odoo.exceptions import AccessError, UserError
 from odoo.addons.abroj_contracting.models.contracting import FrozenDocument
 
@@ -36,6 +36,16 @@ class Subcontractor(models.Model):
             except Exception:
                 _logger.exception('Could not suggest subcontract budget line')
         return records
+
+    def write(self, vals):
+        result = super().write(vals)
+        if 'budget_line_id' in vals:
+            vouchers = self.env['abroj.contracting.voucher'].search([
+                ('subcontractor_id', 'in', self.ids), ('kind', '=', 'payment'),
+                ('payment_purpose', '=', 'advance'), ('state', '!=', 'cancelled'),
+            ])
+            vouchers._sync_advance_budget_line()
+        return result
 
 
 class ClauseLine(models.Model):
@@ -121,7 +131,8 @@ class Voucher(models.Model):
         return super(FrozenDocument, self).write({'abroj_budget_line_id': line.id if line else False})
 
     def _autofill_budget_line(self):
-        for voucher in self.filtered(lambda v: v.state == 'draft' and v.project_id and not v.abroj_budget_line_id):
+        for voucher in self.filtered(lambda v: v.state == 'draft' and v.project_id and not v.abroj_budget_line_id
+                                     and not (v.kind == 'payment' and v.payment_purpose == 'advance')):
             try:
                 with self.env.cr.savepoint():
                     line = voucher._suggest_budget_line()
@@ -130,14 +141,41 @@ class Voucher(models.Model):
             except Exception:
                 _logger.exception('Could not suggest voucher budget line')
 
+    def _sync_advance_budget_line(self, missing_only=False):
+        updated = []
+        for voucher in self.filtered(lambda v: v.kind == 'payment' and v.payment_purpose == 'advance'
+                                     and v.state != 'cancelled'):
+            line = voucher.subcontractor_id.budget_line_id
+            if (line and line.project_id == voucher.project_id and line != voucher.abroj_budget_line_id
+                    and (not missing_only or not voucher.abroj_budget_line_id)):
+                super(FrozenDocument, voucher).write({'abroj_budget_line_id': line.id})
+                updated.append({'id': voucher.id, 'name': voucher.name, 'budget_line_id': line.id})
+        return updated
+
+    @api.model
+    def abroj_backfill_advance_budget_lines(self):
+        if not self.env.su and not (self.env.user.has_group('project.group_project_manager')
+                                    or self.env.user.has_group('account.group_account_user')):
+            raise AccessError(_('Only project managers or accountants can backfill advance budget lines.'))
+        vouchers = self.search([('kind', '=', 'payment'), ('payment_purpose', '=', 'advance'),
+                                ('state', '!=', 'cancelled'), ('abroj_budget_line_id', '=', False),
+                                ('subcontractor_id', '!=', False)])
+        return vouchers._sync_advance_budget_line(missing_only=True)
+
+    def action_issue(self):
+        self._sync_advance_budget_line()
+        return super().action_issue()
+
     @api.model_create_multi
     def create(self, vals_list):
         vouchers = super().create(vals_list)
+        vouchers._sync_advance_budget_line()
         vouchers._autofill_budget_line()
         return vouchers
 
     def write(self, vals):
         result = super().write(vals)
-        if {'subcontractor_id', 'project_id'} & vals.keys():
+        if {'subcontractor_id', 'project_id', 'payment_purpose', 'kind'} & vals.keys():
+            self._sync_advance_budget_line()
             self._autofill_budget_line()
         return result

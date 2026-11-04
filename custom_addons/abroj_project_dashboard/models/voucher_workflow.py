@@ -650,6 +650,7 @@ class VoucherReview(models.TransientModel):
                 'recognition_move_id': invoice.id,
                 'abroj_budget_line_id': (voucher.abroj_budget_line_id.id if self.purpose == 'advance'
                                          else self.budget_line_id.id)})
+            voucher._sync_advance_budget_line()
             return move_action(invoice or payment.move_id)
 
 

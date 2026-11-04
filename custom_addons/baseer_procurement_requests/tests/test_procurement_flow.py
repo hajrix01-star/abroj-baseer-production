@@ -683,6 +683,72 @@ class ProcurementFlowCase(TransactionCase):
         self.assertEqual(request.open_cashier_request(request.id)['params'], {'edit_request_id': request.id})
         self.assertEqual(request.open_catalog_receipt(request.id)['params']['request_id'], request.id)
 
+    def test_catalog_editor_send_draft_and_guard_transitions(self):
+        request = self._request(purchase_route='cash')
+        cashier = self.env['res.users'].with_context(no_reset_password=True).create({
+            'name': 'Editor send procurement cashier', 'login': 'editor-send-cashier-%s' % uuid4(),
+            'company_id': self.company.id, 'company_ids': [Command.set(self.company.ids)],
+            'group_ids': [Command.set([
+                self.env.ref('baseer_procurement_requests.group_procurement_cashier').id,
+            ])],
+        })
+        cashier_request = request.with_user(cashier)
+        self.assertFalse(cashier_request.env.su)
+        loaded = cashier_request.load_catalog_editor(request.id)
+        self.assertTrue(loaded['can_send'])
+        self.assertFalse(loaded['can_open_receipt'])
+        fingerprint = (request.client_token, request.client_payload_hash)
+        counts = {model: self.env[model].search_count([('company_id', '=', self.company.id)])
+                  for model in ('stock.picking', 'stock.move', 'account.move', 'account.payment',
+                                'baseer.procurement.representative.advance')}
+        # Merely preparing the existing WhatsApp action leaves a separate
+        # representative draft editable and unsubmitted.
+        preview = self._request()
+        preview.action_open_whatsapp()
+        self.assertEqual(preview.state, 'draft')
+        self.assertFalse(preview.whatsapp_sent_at)
+        self.assertTrue(preview.load_catalog_editor(preview.id)['can_send'])
+        with self.assertRaises(UserError):
+            request.confirm_actual_from_catalog(request.id, [{
+                'line_id': request.line_ids.id, 'actual_qty': '1', 'actual_price': '4',
+            }])
+        pos_user = self.env['res.users'].with_context(no_reset_password=True).create({
+            'name': 'Editor send POS only', 'login': 'editor-send-pos-%s' % uuid4(),
+            'company_id': self.company.id, 'company_ids': [Command.set(self.company.ids)],
+            'group_ids': [Command.set([self.env.ref('point_of_sale.group_pos_user').id])],
+        })
+        with self.assertRaises(AccessError):
+            request.with_user(pos_user).send_catalog_edit(request.id, loaded['snapshot'])
+        other = self.env['res.company'].create({'name': 'Editor send foreign company'})
+        self.env.user.company_ids |= other
+        with self.assertRaises(AccessError):
+            request.with_context(allowed_company_ids=[other.id, self.company.id]).send_catalog_edit(
+                request.id, loaded['snapshot'])
+        request.line_ids.write({'requested_qty': 6})
+        with self.assertRaises(ValidationError):
+            cashier_request.send_catalog_edit(request.id, loaded['snapshot'])
+        loaded = cashier_request.load_catalog_editor(request.id)
+        sent = cashier_request.send_catalog_edit(request.id, loaded['snapshot'])
+        self.assertEqual(sent['state'], 'sent')
+        self.assertFalse(sent['can_send'])
+        self.assertTrue(sent['can_open_receipt'])
+        self.assertNotEqual(sent['snapshot'], loaded['snapshot'])
+        self.assertTrue(request.whatsapp_sent_at)
+        self.assertEqual((request.client_token, request.client_payload_hash), fingerprint)
+        self.assertEqual((request.line_ids.requested_qty, request.line_ids.requested_price), (6, 4))
+        for model, count in counts.items():
+            self.assertEqual(self.env[model].search_count([('company_id', '=', self.company.id)]), count, model)
+        with self.assertRaises(UserError):
+            request.send_catalog_edit(request.id, sent['snapshot'])
+        request.line_ids.manager_received_qty = 4
+        request.action_confirm_manager_receipt()
+        with self.assertRaises(UserError):
+            request.send_catalog_edit(request.id, sent['snapshot'])
+        request.line_ids.write({'actual_qty': 4, 'actual_price': 4})
+        request.action_confirm_actual_purchase()
+        with self.assertRaises(UserError):
+            request.send_catalog_edit(request.id, sent['snapshot'])
+
     def test_catalog_editor_save_full_plan_and_route(self):
         request, option, _rows = self._receipt_added_fixture()
         original = request.line_ids

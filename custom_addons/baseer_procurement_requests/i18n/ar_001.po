@@ -2451,3 +2451,38 @@ msgstr "أدخل قيمة عهدة فعلية صحيحة للمندوب."
 #: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
 msgid "Review the receipt details before confirming."
 msgstr "راجع بيانات الاستلام قبل التأكيد."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "More options"
+msgstr "المزيد"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+msgid "Save changes before receiving the order."
+msgstr "احفظ تعديلات الطلب قبل الانتقال إلى الاستلام."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+msgid "Confirm sent and review receipt"
+msgstr "تأكيد الإرسال ومراجعة الاستلام"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+msgid "Confirm that this order was sent for purchase. The next screen lets you review receipt details; this does not confirm final receipt."
+msgstr "أكد أن الطلب أُرسل للشراء. ستفتح شاشة مراجعة الكميات والأسعار والعهدة، ولن يُعتمد الاستلام النهائي في هذه الخطوة."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+msgid "Could not mark the order as sent."
+msgstr "تعذر تأكيد إرسال الطلب. حدّث بيانات الطلب وحاول مرة أخرى."
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+msgid "The order was marked as sent. Reload it before continuing."
+msgstr "تم تأكيد إرسال الطلب. أعد تحميل بياناته قبل المتابعة."

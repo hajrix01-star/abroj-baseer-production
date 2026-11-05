@@ -1019,7 +1019,8 @@ Bounded extension of catalogue quote/create: new carts accept an explicit reques
 
 ## TOBACCO-PDF-FILENAME-20261105 — restore period filename
 
-LOCAL regression fix owned by `baseer_pos_tobacco_report` 19.0.1.5.3 over
+LOCAL regression fix owned by `baseer_pos_tobacco_report` 19.0.1.5.4 over
 `d58255772`. Restores the legacy month/year or custom-date PDF filename after
-the unchanged unified exporter; XLSX, other providers and financial data remain.
+the unified exporter. Owner amendment fixes portrait A4 only for tobacco in
+`baseer_reports_menu`19.0.1.1.1; XLSX, other providers and financial data remain.
 [Scope and release evidence](../../build-governance/TOBACCO-PDF-FILENAME-20261105.md).

@@ -62,3 +62,23 @@ class TobaccoReportExport(models.TransientModel):
                                metadata=[(report['labels']['from'].rstrip(':： '), report['from_text']),
                                          (report['labels']['to'].rstrip(':： '), report['to_text'])],
                                notes=[report['labels']['mismatch']] if report['exceptions'] else [])
+
+
+class TobaccoPdfExportFilename(models.AbstractModel):
+    _inherit = 'baseer.report.export'
+
+    @api.model
+    def _export(self, report_key, filters, file_format):
+        payload, mimetype, filename = super()._export(report_key, filters, file_format)
+        if report_key == 'tobacco' and file_format == 'pdf':
+            # Reuse the validated period and the legacy report's naming rule.
+            report = self.env['baseer.pos.tobacco.report.wizard']
+            company, values = report._hub_wizard_values(filters)
+            wizard = report.with_company(company).new(values)
+            if (wizard.date_from, wizard.date_to) == wizard._month_range():
+                filename = f'رسوم التبغ لـ {wizard.month}-{wizard.year}.pdf'
+            else:
+                start = wizard.date_from.strftime('%d-%m-%Y')
+                end = wizard.date_to.strftime('%d-%m-%Y')
+                filename = f'رسوم التبغ من {start} إلى {end}.pdf'
+        return payload, mimetype, filename

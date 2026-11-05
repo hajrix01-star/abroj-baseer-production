@@ -82,6 +82,10 @@ class TestTobaccoUnifiedExport(TransactionCase):
             for file_format in ('xlsx', 'pdf'):
                 payload, mime, filename = exports.with_context(lang=lang)._export('tobacco', self.filters, file_format)
                 self.assertTrue(filename.endswith('.' + file_format))
+                if file_format == 'pdf':
+                    self.assertEqual(filename, 'رسوم التبغ لـ 10-2099.pdf')
+                else:
+                    self.assertEqual(filename, localized['title'] + '.xlsx')
                 if file_format == 'xlsx':
                     self.assertIn('spreadsheetml.sheet', mime)
                     sheet = load_workbook(BytesIO(payload)).active
@@ -105,6 +109,19 @@ class TestTobaccoUnifiedExport(TransactionCase):
                 target = os.environ.get('BASEER_EXPORT_EVIDENCE_DIR')
                 if target and os.path.isdir(target):
                     Path(target, f'tobacco-export-{suffix}.{file_format}').write_bytes(payload)
+
+    def test_pdf_filename_custom_range_and_full_month(self):
+        exports = self.env['baseer.report.export']
+        for start, end, expected in (
+            ('2099-10-01', '2099-10-31', 'رسوم التبغ لـ 10-2099.pdf'),
+            ('2099-10-05', '2099-11-03', 'رسوم التبغ من 05-10-2099 إلى 03-11-2099.pdf'),
+        ):
+            filters = {**self.filters, 'period': 'custom', 'date_from': start, 'date_to': end}
+            with self.subTest(start=start, end=end):
+                payload, mime, filename = exports._export('tobacco', filters, 'pdf')
+                self.assertEqual(filename, expected)
+                self.assertEqual(mime, 'application/pdf')
+                self.assertTrue(payload.startswith(b'%PDF-'))
 
     def test_denied_user_foreign_company_and_malformed_filters(self):
         for suffix, accounting, pos in (('none', False, False), ('account_only', True, False)):

@@ -40,3 +40,10 @@ all other providers retain their existing column-based orientation. A4 was
 already fixed. Real PDF tests assert actual 595.28×841.89 point page dimensions
 in AR/EN, custom periods and with/without products. Versions: menu19.0.1.1.1,
 tobacco19.0.1.5.4. No new document schema, data, permissions or dependency.
+
+CI orientation candidate531e3a143: all native PDF dimension/name tests passed
+(93 tests); tobacco UI, report Hoot and operations suites passed. The unrelated
+activity desktop browser twice exceeded Odoo's cold-start10-second Chrome
+budget while its mobile/browser and17backend cases passed. Add one bounded
+blank-page Chrome warm-up to that existing runner workflow, keeping both real
+desktop/mobile success gates. No application source change for this CI repair.

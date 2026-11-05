@@ -27,3 +27,16 @@ period cases. Initial tobacco UI job passed 32 backend tests but Chrome failed
 to start; only that job was retried, job127292389001 passed. Source unchanged.
 QA baseline: ARZ October2026, 68 rows, opening/refunds0.00, net2270.60 SAR.
 Both release policies pin the exact merged source and this single module only.
+
+Owner amendment before Live: make the tobacco PDF portrait A4, then publish both
+changes together. The first filename-only source was accepted on QA: module
+19.0.1.5.3 installed; actual `رسوم التبغ لـ 10-2026 (3).pdf` downloaded at
+2026-11-05 14:18:33 UTC,32602bytes,SHA256
+1738DCB589F19949971E0C2EF2A0EF1DFCA79405530CF5B0D24C2C77B68E4A03.
+Chrome added the duplicate suffix. The first production policy was approved but
+never deployed; it is superseded by a new combined candidate/release policy.
+The renderer now selects portrait for the fixed validated `tobacco` key only;
+all other providers retain their existing column-based orientation. A4 was
+already fixed. Real PDF tests assert actual 595.28×841.89 point page dimensions
+in AR/EN, custom periods and with/without products. Versions: menu19.0.1.1.1,
+tobacco19.0.1.5.4. No new document schema, data, permissions or dependency.

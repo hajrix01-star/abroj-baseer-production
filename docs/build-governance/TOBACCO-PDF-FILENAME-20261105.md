@@ -17,3 +17,13 @@ and custom-full-month assertions. Reuse existing CI; no new test environment or
 load test is warranted for the owner's single-report filename change. Independent
 scoped delivery review, protected single-module QA/production and actual owner
 download-name evidence are required before claiming completion.
+
+Source acceptance: PR707 head `08359332b5fa7649a6704da0115342f4dc0266fe`,
+frozen merge `444f59b3d963315f4044b3a74ee52262ff4029c8`. Independent scoped
+review GO, no P0–P2 findings. All seven CI checks passed. Native ten-provider
+export/detail job127289835663 ran 93 tests with zero failures/errors, including
+exact Arabic/English PDF monthly names, unchanged XLSX names, and both custom
+period cases. Initial tobacco UI job passed 32 backend tests but Chrome failed
+to start; only that job was retried, job127292389001 passed. Source unchanged.
+QA baseline: ARZ October2026, 68 rows, opening/refunds0.00, net2270.60 SAR.
+Both release policies pin the exact merged source and this single module only.

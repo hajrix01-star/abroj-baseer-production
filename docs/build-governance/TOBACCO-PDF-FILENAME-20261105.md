@@ -47,3 +47,13 @@ activity desktop browser twice exceeded Odoo's cold-start10-second Chrome
 budget while its mobile/browser and17backend cases passed. Add one bounded
 blank-page Chrome warm-up to that existing runner workflow, keeping both real
 desktop/mobile success gates. No application source change for this CI repair.
+
+Combined source accepted: PR709 final head538a4128ab5c619ecbbb8b6f0c9cfc2327619d80,
+frozen mergee95a90715a0aee7d40bc8c34d7dc2b1dcb18426f. All10CI checks passed;
+native export run42045847718 verifies93tests including exact PDF names and A4
+dimensions; activity/tobacco desktop+mobile passed with the Chrome warm-up.
+One Gradle setup HTTP504 was retried only for failed jobs and then passed.
+Independent runtime and CI delta reviews GO. New QA/production policies pin
+the combined source and only menu+tobacco. The old filename-only production
+policy remains unused; no Live deployment has occurred yet. Final acceptance
+requires actual QA/live PDF dimensions, visual layout and download-name checks.

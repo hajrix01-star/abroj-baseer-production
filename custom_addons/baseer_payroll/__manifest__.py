@@ -1,11 +1,12 @@
 {
     'name': 'Baseer Payroll and Employee Advances',
-    'version': '19.0.1.5.1',
+    'version': '19.0.1.6.0',
     'license': 'LGPL-3',
     'depends': ['om_hr_payroll_account', 'hr_holidays', 'baseer_report_layout'],
     'data': [
         'data/work_schedules.xml',
-        'security/security.xml', 'security/ir.model.access.csv',
+        'security/security.xml', 'security/advance_snapshot_security.xml', 'security/ir.model.access.csv',
+        'views/advance_snapshot_views.xml',
         'views/payroll_views.xml', 'views/loan_views.xml',
         'views/settings_views.xml', 'report/payslip_report.xml',
         'views/settlement_views.xml', 'report/payment_receipt.xml',

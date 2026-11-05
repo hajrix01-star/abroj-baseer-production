@@ -1,0 +1,8 @@
+# No secrets in this file. Register this server from Codex MCP settings.
+[mcp_servers.baseer_owner_local]
+command = 'C:\Users\hp\.cache\codex-runtimes\codex-primary-runtime\dependencies\native\powershell\pwsh.exe'
+args = ['-NoProfile', '-File', 'D:\Codex\Baseer-odoo\.worktrees\baseer-api-access-20261105\tools\odoo-connection\Start-BaseerMcp.ps1']
+startup_timeout_sec = 15
+tool_timeout_sec = 30
+enabled_tools = ['baseer_connection_status', 'baseer_identity', 'baseer_payroll_read']
+default_tools_approval_mode = 'prompt'

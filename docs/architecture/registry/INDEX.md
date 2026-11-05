@@ -1016,3 +1016,10 @@ CONTROLLED delta over da044cba / procurement19.0.14.0.25. Full editor introduced
 
 ## PRC-PRE-SAVE-PRICE-20261105 — request-local unit prices
 Bounded extension of catalogue quote/create: new carts accept an explicit request-local unit price under the existing decimal and access boundary. Existing draft editor and final receipt pricing remain. Legacy omitted-price token identity is preserved; explicit prices are included in duplicate protection. Implementation/acceptance in [contract and log](../../build-governance/PROCUREMENT-PRE-SAVE-PRICE-20261105.md).
+
+## TOBACCO-PDF-FILENAME-20261105 — restore period filename
+
+LOCAL regression fix owned by `baseer_pos_tobacco_report` 19.0.1.5.3 over
+`d58255772`. Restores the legacy month/year or custom-date PDF filename after
+the unchanged unified exporter; XLSX, other providers and financial data remain.
+[Scope and release evidence](../../build-governance/TOBACCO-PDF-FILENAME-20261105.md).

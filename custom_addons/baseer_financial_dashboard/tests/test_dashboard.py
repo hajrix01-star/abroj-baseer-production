@@ -36,6 +36,8 @@ class TestFinancialDashboard(TransactionCase):
         self.assertNotIn('orm.call', source)
         self.assertIn('t-inherit="baseer_operations_report.Preview"', template)
         self.assertIn('t-inherit-mode="primary"', template)
+        self.assertIn('t-set="salesDashboardData"', template)
+        self.assertNotIn('t-set="dashboard"', template)
         self.assertIn('data-owner-row', template)
         self.assertIn('hasUnclassifiedOutflows', template)
 

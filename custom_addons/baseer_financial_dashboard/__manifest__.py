@@ -20,6 +20,9 @@
         'web.assets_backend': [
             'baseer_financial_dashboard/static/src/**/*.scss',
         ],
+        'web.assets_unit_tests': [
+            'baseer_financial_dashboard/static/tests/financial_dashboard.test.js',
+        ],
     },
     'installable': True,
 }

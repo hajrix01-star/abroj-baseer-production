@@ -31,8 +31,8 @@ class TestFinancialDashboard(TransactionCase):
     def test_dashboard_integration_preserves_existing_dashboard_boundaries(self):
         module = Path(__file__).resolve().parents[1]
         integration = (module / 'static/src/financial_dashboard.xml').read_text(encoding='utf-8')
-        # The finance extension runs last and must not re-enable native chrome
-        # on procurement (or another custom dashboard) according to asset order.
-        self.assertIn('priority="100"', integration)
+        # Finance guards wrap rather than overwrite the shared nodes. This
+        # survives later extension replacement regardless of asset order.
+        self.assertEqual(integration.count('position="replace"'), 5)
+        self.assertEqual(integration.count('<t t-if="!isBaseerFinancialDashboard">'), 5)
         self.assertEqual(integration.count('!isBaseerProcurementOperationsDashboard'), 5)
-        self.assertEqual(integration.count('!isBaseerFinancialDashboard'), 5)

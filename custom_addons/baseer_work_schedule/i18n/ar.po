@@ -788,3 +788,66 @@ msgstr "اختيار الوقت: %s"
 #: code:addons/baseer_work_schedule/static/src/time_field.xml:0
 msgid "Apply"
 msgstr "تطبيق"
+#. module: baseer_work_schedule
+#: model:ir.model.fields,field_description:baseer_work_schedule.field_baseer_schedule_wizard__shared_ten_hour
+msgid "Shared flexible schedule: 10 hours, 7 days"
+msgstr "جدول مرن مشترك: 10 ساعات، 7 أيام"
+
+#. module: baseer_work_schedule
+#: model:ir.model.fields,field_description:baseer_work_schedule.field_resource_calendar__baseer_shared_duration
+msgid "Shared duration schedule"
+msgstr "جدول مدة مشترك"
+
+#. module: baseer_work_schedule
+#. odoo-python
+#: code:addons/baseer_work_schedule/models/schedule.py:0
+msgid "Shared duration schedules cannot be edited. Create a new schedule instead."
+msgstr "لا يمكن تعديل جداول المدة المشتركة. أنشئ جدولًا جديدًا بدلاً من ذلك."
+
+#. module: baseer_work_schedule
+#. odoo-python
+#: code:addons/baseer_work_schedule/models/schedule.py:0
+msgid "More than one shared duration schedule exists. Contact an administrator."
+msgstr "يوجد أكثر من جدول مدة مشترك. تواصل مع مسؤول النظام."
+
+#. module: baseer_work_schedule
+#. odoo-python
+#: code:addons/baseer_work_schedule/models/schedule.py:0
+msgid "The shared duration schedule is archived or invalid. Contact an administrator."
+msgstr "جدول المدة المشترك مؤرشف أو غير صالح. تواصل مع مسؤول النظام."
+
+#. module: baseer_work_schedule
+#. odoo-python
+#: code:addons/baseer_work_schedule/models/schedule.py:0
+msgid "Create a shared duration schedule from a new template form."
+msgstr "أنشئ جدول المدة المشترك من نموذج قالب جديد."
+
+#. module: baseer_work_schedule
+#. odoo-python
+#: code:addons/baseer_work_schedule/models/schedule.py:0
+msgid "This schedule is already shared; do not create another template."
+msgstr "هذا الجدول مشترك بالفعل؛ لا تنشئ قالبًا آخر."
+
+#. module: baseer_work_schedule
+#. odoo-python
+#: code:addons/baseer_work_schedule/models/schedule.py:0
+msgid "10 hours"
+msgstr "10 ساعات"
+
+#. module: baseer_work_schedule
+#. odoo-python
+#: code:addons/baseer_work_schedule/models/schedule.py:0
+msgid "Public holidays cannot be attached to a shared duration schedule."
+msgstr "لا يمكن ربط العطلات الرسمية بجدول المدة المشترك."
+
+#. module: baseer_work_schedule
+#. odoo-python
+#: code:addons/baseer_work_schedule/models/schedule.py:0
+msgid "The current schedule has future public holidays not covered by the company calendar. Review them before assigning the shared schedule."
+msgstr "يحتوي جدول الدوام الحالي على عطلات رسمية مستقبلية لا يغطيها تقويم الشركة. راجعها قبل تطبيق الجدول المشترك."
+
+#. module: baseer_work_schedule
+#. odoo-python
+#: code:addons/baseer_work_schedule/models/schedule.py:0
+msgid "Assign or change shared schedules through Set working times."
+msgstr "استخدم تحديد جدول الدوام لإسناد الجدول المشترك أو تغييره."

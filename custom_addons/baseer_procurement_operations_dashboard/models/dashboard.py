@@ -182,6 +182,16 @@ class ProcurementOperationsDashboard(models.Model):
         Request = self.env['baseer.procurement.request']
         cohort_domain = self._baseer_procurement_domain(first, last, 'request_date') + [('state', 'in', VISIBLE_STATES)]
         counts = self._read_group_counts(Request, cohort_domain, 'state')
+        # An operational alert only: it neither changes the request nor asserts
+        # any supplier, invoice, payment, or accounting delay.
+        overdue_before, _unused = _day_bounds(
+            fields.Date.context_today(self.with_context(tz='Asia/Riyadh')) - timedelta(days=3),
+            fields.Date.context_today(self.with_context(tz='Asia/Riyadh')) - timedelta(days=3),
+        )
+        aged_pending = Request.search_count([
+            ('company_id', '=', self.env.company.id), ('state', 'in', PENDING_STATES),
+            ('request_date', '<', fields.Datetime.to_string(overdue_before)),
+        ])
         completed_domain = self._baseer_procurement_domain(first, last, 'actual_confirmed_at') + [('state', '=', 'purchased')]
         source_action = {
             'type': 'ir.actions.act_window',
@@ -198,6 +208,7 @@ class ProcurementOperationsDashboard(models.Model):
             'cards': {
                 'total': {'value': sum(int(counts.get(state, 0)) for state in VISIBLE_STATES), 'display': f"{sum(int(counts.get(state, 0)) for state in VISIBLE_STATES):,}"},
                 **{state: {'value': int(counts.get(state, 0)), 'display': f"{int(counts.get(state, 0)):,}"} for state in VISIBLE_STATES},
+                'aged_pending': {'value': aged_pending, 'display': f"{aged_pending:,}"},
             },
             'cohort_timeline': self._baseer_procurement_timeline(Request, cohort_domain, 'request_date', states=True),
             'completion_timeline': self._baseer_procurement_timeline(Request, completed_domain, 'actual_confirmed_at'),

@@ -112,7 +112,8 @@ class TestNoorixSales(NoorixEvidenceFixtures, AccountTestInvoicingCommon):
             self._metrics(True)
 
     def test_native_invoice_overlap_is_explicit_even_for_one_riyal(self):
-        self._import_day()
+        move = self._noorix_entry('invoice-scope-overlap', '2026-11-01', '115.00')
+        row = self._noorix_row(move, 'invoice-scope-overlap')
         product = self.env['product.product'].create({
             'name': 'Independent identity requires proof', 'type': 'service', 'invoice_policy': 'order',
             'property_account_income_id': self.company_data['default_account_revenue'].id,
@@ -125,9 +126,19 @@ class TestNoorixSales(NoorixEvidenceFixtures, AccountTestInvoicingCommon):
         invoice = sale._create_invoices()
         invoice.invoice_date = '2026-11-01'
         invoice.action_post()
-        self.assertEqual(self._metrics(False)['cards']['sales']['value'], '1.00')
-        with self.assertRaises(ValidationError):
-            self._metrics(True)
+        heat = self.env.ref('baseer_sales_heat_calendar.dashboard_sales_heat_calendar', raise_if_not_found=False)
+        heat_off = heat.get_baseer_heat_calendar('2026-11') if heat else None
+        for scope in ('all', 'morning', 'evening'):
+            with self.subTest(scope=scope):
+                evidence = self.Evidence.browse(self.Evidence.import_evidence([dict(row, period_scope=scope)]))
+                self.assertEqual(self._metrics(False)['cards']['sales']['value'], '1.00')
+                with self.assertRaises(ValidationError):
+                    self._metrics(True)
+                if heat:
+                    self.assertEqual(heat.get_baseer_heat_calendar('2026-11'), heat_off)
+                    with self.assertRaises(ValidationError):
+                        heat.get_baseer_heat_calendar('2026-11', include_noorix=True)
+                evidence.unlink()
 
     def test_authorized_non_admin_reader_uses_same_secured_rpc(self):
         self._import_day()

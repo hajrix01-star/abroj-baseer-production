@@ -1766,8 +1766,8 @@ msgstr "يوجد عكس لقيد نوركس لا تسمح صلاحياتك بق�
 #. module: baseer_sales_dashboard
 #. odoo-python
 #: code:addons/baseer_sales_dashboard/models/noorix_reporting.py:0
-msgid "Full-day Noorix sales overlap native sales without verified source ownership. Reconcile their identities before combining sales."
-msgstr "تتداخل مبيعات نوركس ليوم كامل مع مبيعات أودو دون إثبات مصدر العملية. طابق هوياتها قبل جمع المبيعات."
+msgid "Noorix sales overlap native sales without verified source ownership. Reconcile their identities before combining sales."
+msgstr "تتداخل مبيعات نوركس مع مبيعات أودو دون إثبات مصدر العملية. طابق هوياتها قبل جمع المبيعات."
 
 #. module: baseer_sales_dashboard
 #: model:ir.model.constraint,message:baseer_sales_dashboard.baseer_noorix_sales_evidence_source_unique

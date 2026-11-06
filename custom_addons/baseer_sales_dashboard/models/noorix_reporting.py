@@ -232,9 +232,9 @@ class NoorixSalesReporting(models.Model):
                 raise ValidationError(_(
                     'Noorix evidence overlaps an approved summary. Resolve the source ownership before combining sales.'
                 ))
-            if row['scope'] == 'all' and day in native_days:
+            if day in native_days:
                 raise ValidationError(_(
-                    'Full-day Noorix sales overlap native sales without verified source ownership. Reconcile their identities before combining sales.'
+                    'Noorix sales overlap native sales without verified source ownership. Reconcile their identities before combining sales.'
                 ))
             period['totals']['noorix'] += amount
             period['by_day'][day] += amount

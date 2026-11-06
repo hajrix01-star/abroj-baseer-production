@@ -77,12 +77,22 @@ class TestUnifiedSales(AccountTestInvoicingCommon):
         NoorixEvidenceFixtures._setup_noorix_evidence_fixtures.__func__(self)
         move = NoorixEvidenceFixtures._noorix_entry(self, 'native-overlap', '2026-10-01', '115.00')
         row = NoorixEvidenceFixtures._noorix_row(self, move, 'native-overlap', 3)
-        self.env['baseer.noorix.sales.evidence'].import_evidence([row])
         self._pos(price=1, guests=1)
-        self.assertEqual(self._metrics()['cards']['sales']['value'], '1.00')
-        with self.assertRaises(ValidationError):
-            self.dashboard.get_baseer_sales_metrics({'preset': 'custom',
-                'date_from': '2026-10-01', 'date_to': '2026-10-31'}, include_noorix=True)
+        Evidence = self.env['baseer.noorix.sales.evidence']
+        heat = self.env.ref('baseer_sales_heat_calendar.dashboard_sales_heat_calendar', raise_if_not_found=False)
+        heat_off = heat.get_baseer_heat_calendar('2026-10') if heat else None
+        for scope in ('all', 'morning', 'evening'):
+            with self.subTest(scope=scope):
+                records = Evidence.browse(Evidence.import_evidence([dict(row, period_scope=scope)]))
+                self.assertEqual(self._metrics()['cards']['sales']['value'], '1.00')
+                with self.assertRaises(ValidationError):
+                    self.dashboard.get_baseer_sales_metrics({'preset': 'custom',
+                        'date_from': '2026-10-01', 'date_to': '2026-10-31'}, include_noorix=True)
+                if heat:
+                    self.assertEqual(heat.get_baseer_heat_calendar('2026-10'), heat_off)
+                    with self.assertRaises(ValidationError):
+                        heat.get_baseer_heat_calendar('2026-10', include_noorix=True)
+                records.unlink()
 
     def test_noorix_full_day_never_silently_merges_an_approved_summary(self):
         from types import SimpleNamespace

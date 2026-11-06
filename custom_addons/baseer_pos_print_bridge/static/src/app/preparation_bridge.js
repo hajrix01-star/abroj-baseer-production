@@ -9,6 +9,7 @@ import { SelectionPopup } from "@point_of_sale/app/components/popups/selection_p
 import { TextInputPopup } from "@point_of_sale/app/components/popups/text_input_popup/text_input_popup";
 import { ask, makeAwaitable } from "@point_of_sale/app/utils/make_awaitable_dialog";
 import { buildBaseerPreparationAction } from "./line_actions";
+import { encodeReceiptJpeg } from "./receipt_image";
 
 const BASEER_CANCELLATION_REASONS = [
     ["customer_cancelled", _t("Customer cancelled")],
@@ -738,22 +739,7 @@ patch(PosStore.prototype, {
                     { order, basic_receipt: false },
                     { addClass: "pos-receipt-print p-3", pixelRatio: 2.2 }
                 );
-                // Keep the persisted snapshot at the 80 mm print-head width,
-                // even if a browser applies a different device pixel ratio.
-                // This avoids Windows enlarging a low-resolution receipt.
-                const thermalWidth = 576;
-                const scale = thermalWidth / renderedCanvas.width;
-                const canvas = document.createElement("canvas");
-                canvas.width = thermalWidth;
-                canvas.height = Math.max(1, Math.round(renderedCanvas.height * scale));
-                const context = canvas.getContext("2d", { alpha: false });
-                context.fillStyle = "#ffffff";
-                context.fillRect(0, 0, canvas.width, canvas.height);
-                context.imageSmoothingEnabled = true;
-                context.imageSmoothingQuality = "high";
-                context.drawImage(renderedCanvas, 0, 0, canvas.width, canvas.height);
-                const image = canvas.toDataURL("image/jpeg", 0.95)
-                    .replace("data:image/jpeg;base64,", "");
+                const image = encodeReceiptJpeg(renderedCanvas);
                 const result = await this.data.call(
                     "pos.order", "baseer_enqueue_native_receipt", [[order.id], image]
                 );

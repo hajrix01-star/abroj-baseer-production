@@ -13,12 +13,14 @@ msgstr ""
 #. module: baseer_procurement_operations_dashboard
 #. odoo-javascript
 #: code:addons/baseer_procurement_operations_dashboard/static/src/procurement_dashboard.js:0
+#: model:spreadsheet.dashboard.group,name:baseer_procurement_operations_dashboard.dashboard_group_procurement
 msgid "Procurement"
 msgstr "المشتريات"
 
 #. module: baseer_procurement_operations_dashboard
 #. odoo-javascript
 #: code:addons/baseer_procurement_operations_dashboard/static/src/procurement_dashboard.js:0
+#: model:spreadsheet.dashboard,name:baseer_procurement_operations_dashboard.dashboard_procurement_operations
 msgid "Procurement operations"
 msgstr "تشغيل المشتريات"
 
@@ -51,6 +53,12 @@ msgstr "تم تأكيد استلام أمين الصندوق"
 #: code:addons/baseer_procurement_operations_dashboard/static/src/procurement_dashboard.js:0
 msgid "Quantity receipt completed"
 msgstr "اكتمل استلام الكمية"
+
+#. module: baseer_procurement_operations_dashboard
+#. odoo-javascript
+#: code:addons/baseer_procurement_operations_dashboard/static/src/procurement_dashboard.js:0
+msgid "Pending for more than 3 days"
+msgstr "معلق لأكثر من 3 أيام"
 
 #. module: baseer_procurement_operations_dashboard
 #. odoo-javascript

@@ -34,6 +34,7 @@ export class BaseerProcurementOperationsDashboard extends Component {
             requests: _t("Requests created in period"),
             draft: _t("Draft"), sent: _t("Sent for purchase"),
             received: _t("Cashier receipt confirmed"), purchased: _t("Quantity receipt completed"),
+            agedPending: _t("Pending for more than 3 days"),
             completion: _t("Completed in the selected period"),
             completionNote: _t("Completion is recorded when quantity receipt is confirmed; it does not mean a supplier bill or payment was posted."),
             dailyStates: _t("Request states by creation date"),
@@ -63,6 +64,7 @@ export class BaseerProcurementOperationsDashboard extends Component {
             { key: "sent", title: this.labels.sent, icon: "fa-paper-plane", tone: "info" },
             { key: "received", title: this.labels.received, icon: "fa-inbox", tone: "warning" },
             { key: "purchased", title: this.labels.purchased, icon: "fa-check-circle", tone: "success" },
+            { key: "aged_pending", title: this.labels.agedPending, icon: "fa-exclamation-triangle", tone: "danger" },
         ].map((spec) => ({ ...spec, display: cards[spec.key]?.display || "0" }));
     }
     get queue() { return this.state.payload?.pending_queue || []; }

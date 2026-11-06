@@ -2567,3 +2567,28 @@ msgstr "فئات نقاط البيع"
 #: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_pos_config_form_direct_print
 msgid "Test kitchen printer"
 msgstr "اختبار طابعة المطبخ"
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/static/src/app/receipt_image.js:0
+msgid "The receipt could not be rendered. Reload the receipt and retry."
+msgstr "تعذر تجهيز الإيصال. أعد تحميله وحاول مجددًا."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/static/src/app/receipt_image.js:0
+msgid "The receipt exceeds the supported print length. Ask a manager to inspect it."
+msgstr "يتجاوز الإيصال طول الطباعة المدعوم. اطلب من المدير مراجعته."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/static/src/app/receipt_image.js:0
+msgid "The receipt image could not be created. Reload and retry."
+msgstr "تعذر إنشاء صورة الإيصال. أعد التحميل وحاول مجددًا."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/static/src/app/receipt_image.js:0
+msgid "The browser could not create a JPEG receipt. Reload and retry."
+msgstr "تعذر على المتصفح إنشاء صورة الإيصال. أعد التحميل وحاول مجددًا."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/static/src/app/receipt_image.js:0
+msgid "The receipt image exceeds 256 KB. Ask a manager to inspect it."
+msgstr "يتجاوز حجم صورة الإيصال الحد المسموح بعد تجهيزها. اطلب من المدير مراجعتها."

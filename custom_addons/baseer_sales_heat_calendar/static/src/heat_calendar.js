@@ -1,7 +1,9 @@
 import { Component, onMounted, onWillStart, onWillUnmount, onWillUpdateProps, useRef, useState } from "@odoo/owl";
 import { Dialog } from "@web/core/dialog/dialog";
 import { _t } from "@web/core/l10n/translation";
-import { useService } from "@web/core/utils/hooks";
+import { useBus, useService } from "@web/core/utils/hooks";
+import { user, userBus } from "@web/core/user";
+import { noorixScope, getNoorixSelection, setNoorixSelection, subscribeNoorixSelection } from "@baseer_sales_dashboard/noorix_toggle";
 
 const monthShift = (value, shift) => {
     const [year, month] = value.split("-").map(Number);
@@ -401,6 +403,20 @@ export class BaseerHeatCalendar extends Component {
             error: "",
             payload: null,
             selectedDay: null,
+            includeNoorix: getNoorixSelection(this.noorixSelectionScope),
+        });
+        this.requestGeneration = 0;
+        this.disposed = false;
+        useBus(userBus, "ACTIVE_COMPANIES_CHANGED", () => this.load());
+        const unsubscribeNoorix = subscribeNoorixSelection((scope, included) => {
+            if (scope !== this.noorixSelectionScope || this.disposed || this.state.includeNoorix === included) { return; }
+            this.state.includeNoorix = included;
+            this.load();
+        });
+        onWillUnmount(() => {
+            unsubscribeNoorix();
+            this.disposed = true;
+            this.requestGeneration++;
         });
         this._openedDayButton = null;
         onWillStart(() => this.load());
@@ -416,6 +432,7 @@ export class BaseerHeatCalendar extends Component {
             previous: _t("Previous month"),
             next: _t("Next month"),
             refresh: _t("Refresh"),
+            includeNoorix: _t("Include Noorix sales"),
             loading: _t("Loading the heat calendar…"),
             retry: _t("Retry"),
             details: _t("Day details"),
@@ -435,22 +452,42 @@ export class BaseerHeatCalendar extends Component {
         };
     }
 
-    async load(dashboardId = this.props.dashboardId, allowWhileLoading = false) {
-        if (this.state.loading && !allowWhileLoading) {
-            return;
-        }
+    get noorixSelectionScope() { return noorixScope(user.userId, user.activeCompany.id); }
+
+    get subtitle() {
+        return this.state.includeNoorix
+            ? _t("Unified sales including Noorix and VAT. Noorix sales use their recorded business date.")
+            : this.labels.subtitle;
+    }
+
+    toggleNoorix(event) {
+        const included = Boolean(event.target.checked);
+        this.state.includeNoorix = included;
+        setNoorixSelection(this.noorixSelectionScope, included);
+        return this.load();
+    }
+
+    async load(dashboardId = this.props.dashboardId) {
+        const generation = ++this.requestGeneration;
+        this.state.includeNoorix = getNoorixSelection(this.noorixSelectionScope);
         this.state.loading = true;
         this.state.error = "";
+        this.state.payload = null;
+        this.state.selectedDay = null;
         try {
-            this.state.payload = await this.orm.call("spreadsheet.dashboard", "get_baseer_heat_calendar", [
+            const payload = await this.orm.call("spreadsheet.dashboard", "get_baseer_heat_calendar", [
                 [dashboardId], this.state.month,
-            ]);
-            this.state.month = this.state.payload.month;
-            this.state.selectedDay = null;
+            ], { include_noorix: this.state.includeNoorix });
+            if (this.disposed || generation !== this.requestGeneration) { return; }
+            this.state.payload = payload;
+            this.state.month = payload.month;
         } catch (error) {
+            if (this.disposed || generation !== this.requestGeneration) { return; }
             this.state.error = error?.message || _t("The heat calendar could not be loaded.");
         } finally {
-            this.state.loading = false;
+            if (!this.disposed && generation === this.requestGeneration) {
+                this.state.loading = false;
+            }
         }
     }
 
@@ -517,13 +554,18 @@ export class BaseerHeatCalendar extends Component {
         }
         this.state.loading = true;
         this.state.error = "";
+        const generation = ++this.requestGeneration;
         try {
             await this.orm.call("baseer.official.occasion", "action_seed_saudi_fixed_holidays", []);
-            await this.load(this.props.dashboardId, true);
+            if (this.disposed || generation !== this.requestGeneration) { return; }
+            await this.load();
         } catch (error) {
+            if (this.disposed || generation !== this.requestGeneration) { return; }
             this.state.error = error?.message || _t("Official occasions could not be fed.");
         } finally {
-            this.state.loading = false;
+            if (!this.disposed && generation === this.requestGeneration) {
+                this.state.loading = false;
+            }
         }
     }
 }

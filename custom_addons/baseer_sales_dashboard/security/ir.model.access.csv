@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+noorix_evidence_reader,Noorix evidence accounting reader,model_baseer_noorix_sales_evidence,account.group_account_readonly,1,0,0,0
+noorix_evidence_manager,Noorix evidence accounting manager,model_baseer_noorix_sales_evidence,account.group_account_manager,1,0,1,0
+noorix_evidence_system,Noorix evidence system administrator,model_baseer_noorix_sales_evidence,base.group_system,1,0,1,1

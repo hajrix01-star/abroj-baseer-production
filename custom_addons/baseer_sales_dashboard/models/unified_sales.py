@@ -10,7 +10,7 @@ from decimal import Decimal
 
 from odoo import _, api, fields, models
 from odoo.exceptions import AccessError, ValidationError
-from odoo.addons.baseer_pos_summary.models.common import ZERO, money
+from odoo.addons.baseer_pos_summary.models.common import ZERO, money, clean_context
 
 from .dashboard import MAX_SOURCE_ROWS, _card, _display
 from .executive import _utc_at
@@ -547,7 +547,8 @@ class UnifiedSalesDashboard(models.Model):
 
         invoice_unknown = period['totals']['sales']
         unclassified_sales = by_category.get(-1, {}).get('sales', ZERO)
-        complete = not (mismatched_count or unclassified_count or period['invoices'])
+        complete = not (mismatched_count or unclassified_count or period['invoices']
+                        or period.get('noorix_rows'))
         shares_available = complete and sales_total > ZERO
         category_result = self._baseer_category_performance(by_category, sales_total, shares_available)
 
@@ -576,6 +577,7 @@ class UnifiedSalesDashboard(models.Model):
         application_sales = sum((bucket['sales'] for bucket in by_category.values()
                                  if bucket['kind'] == 'platform'), ZERO)
         invoice_card = _card(invoice_unknown)
+        noorix_card = _card(period['totals'].get('noorix', ZERO))
         difference_card = _card(settlement_difference)
         unclassified_card = _card(unclassified_sales)
         coverage = {
@@ -591,6 +593,7 @@ class UnifiedSalesDashboard(models.Model):
             'settlement_difference': difference_card,
             'settlement_difference_absolute': _card(absolute_difference),
             'invoice_tender_unknown': invoice_card,
+            'noorix_tender_unknown': noorix_card,
             'unclassified_sales': unclassified_card,
         }
         return {
@@ -603,13 +606,18 @@ class UnifiedSalesDashboard(models.Model):
             ),
             'coverage': coverage,
             'invoice_tender_unknown': invoice_card,
+            'noorix_tender_unknown': noorix_card,
             'settlement_difference': difference_card,
             'unclassified_sales': unclassified_card,
         }
 
     @api.readonly
-    def get_baseer_sales_metrics(self, filters=None):
-        payload = super().get_baseer_sales_metrics(filters=filters)
+    def get_baseer_sales_metrics(self, filters=None, include_noorix=False):
+        if type(include_noorix) is not bool:
+            raise ValidationError(_('Choose a valid Noorix sales option.'))
+        self = (clean_context(self, self.env.company) if include_noorix else self).with_context(
+            baseer_include_noorix=include_noorix)
+        payload = super().get_baseer_sales_metrics(filters=filters, include_noorix=include_noorix)
         company = self.env.company
         self._baseer_unified_access()
         first = fields.Date.to_date(payload['filters']['date_from'])
@@ -721,6 +729,7 @@ class UnifiedSalesDashboard(models.Model):
         payload['cards'] = cards
         payload['has_data'] = current_sample
         payload['unified_sources'] = True
+        payload['include_noorix'] = include_noorix
         payload['sources_complete'] = True
         payload['customer_coverage'] = {
             'known_count': current_guests['known_count'],
@@ -741,4 +750,11 @@ class UnifiedSalesDashboard(models.Model):
                 ('sales', _('Sales invoices')),
             )
         ]
+        if include_noorix:
+            payload['source_breakdown'].append({
+                'key': 'noorix', 'name': _('Noorix sales entries'),
+                'sales': _card(current['totals']['noorix']),
+                'source_action': self._noorix_source_action(
+                    company, [row['move'].id for row in current['noorix_rows']]),
+            })
         return payload

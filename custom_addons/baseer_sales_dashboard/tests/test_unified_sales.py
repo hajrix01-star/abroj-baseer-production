@@ -9,6 +9,7 @@ from odoo import Command
 from odoo.addons.account.tests.common import AccountTestInvoicingCommon
 from odoo.exceptions import AccessError, ValidationError
 from odoo.tests.common import new_test_user, tagged
+from .test_noorix_evidence import NoorixEvidenceFixtures
 
 
 @tagged('post_install', '-at_install')
@@ -71,6 +72,42 @@ class TestUnifiedSales(AccountTestInvoicingCommon):
         sale = self.env['sale.order'].create(values)
         sale.action_confirm()
         return sale
+
+    def test_noorix_full_day_never_silently_merges_a_native_pos_order(self):
+        NoorixEvidenceFixtures._setup_noorix_evidence_fixtures.__func__(self)
+        move = NoorixEvidenceFixtures._noorix_entry(self, 'native-overlap', '2026-10-01', '115.00')
+        row = NoorixEvidenceFixtures._noorix_row(self, move, 'native-overlap', 3)
+        self.env['baseer.noorix.sales.evidence'].import_evidence([row])
+        self._pos(price=1, guests=1)
+        self.assertEqual(self._metrics()['cards']['sales']['value'], '1.00')
+        with self.assertRaises(ValidationError):
+            self.dashboard.get_baseer_sales_metrics({'preset': 'custom',
+                'date_from': '2026-10-01', 'date_to': '2026-10-31'}, include_noorix=True)
+
+    def test_noorix_full_day_never_silently_merges_an_approved_summary(self):
+        from types import SimpleNamespace
+        dashboard, summary = self._approved_manual_fixture(zero=True)
+        scoped = summary.env
+        company = summary.company_id
+        company_data = {
+            'default_account_revenue': scoped['account.account'].search([
+                ('company_ids', 'in', company.ids), ('account_type', '=', 'income')], limit=1),
+            'default_journal_bank': scoped['account.journal'].search([
+                ('company_id', '=', company.id), ('type', '=', 'bank')], limit=1),
+            'default_journal_misc': scoped['account.journal'].search([
+                ('company_id', '=', company.id), ('type', '=', 'general')], limit=1),
+            'default_tax_sale': scoped['account.tax'].search([
+                ('company_id', '=', company.id), ('type_tax_use', '=', 'sale')], limit=1),
+        }
+        helper = SimpleNamespace(env=scoped, company_data=company_data)
+        NoorixEvidenceFixtures._setup_noorix_evidence_fixtures.__func__(helper)
+        move = NoorixEvidenceFixtures._noorix_entry(helper, 'summary-overlap', '2026-10-02', '115.00')
+        row = NoorixEvidenceFixtures._noorix_row(helper, move, 'summary-overlap', 3)
+        scoped['baseer.noorix.sales.evidence'].import_evidence([row])
+        self.assertEqual(self._metrics(dashboard=dashboard)['cards']['sales']['value'], '0.00')
+        with self.assertRaises(ValidationError):
+            dashboard.get_baseer_sales_metrics({'preset': 'custom',
+                'date_from': '2026-10-01', 'date_to': '2026-10-31'}, include_noorix=True)
 
     def _invoice(self, sale, date='2026-10-02', final=False):
         invoice = sale._create_invoices(final=final)

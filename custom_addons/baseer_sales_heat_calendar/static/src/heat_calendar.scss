@@ -28,6 +28,7 @@
     .o_baseer_heat_scope { margin-top: .35rem; }
     .o_baseer_heat_scope > span + span { margin-inline-start: .75rem; }
     .o_baseer_heat_actions { display: flex; flex-wrap: wrap; gap: .5rem; justify-content: flex-end; }
+    .o_baseer_heat_noorix_toggle { min-height: 44px; cursor: pointer; input { flex-shrink: 0; } }
     .o_baseer_heat_month_switcher { align-items: center; display: flex; gap: .75rem; justify-content: center; margin: 1rem 0; }
     .o_baseer_heat_state { align-items: center; display: flex; gap: .5rem; justify-content: center; min-height: 20rem; }
 

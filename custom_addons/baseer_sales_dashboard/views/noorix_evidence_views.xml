@@ -1,0 +1,26 @@
+<odoo>
+    <record id="noorix_evidence_list" model="ir.ui.view">
+        <field name="name">baseer.noorix.sales.evidence.list</field>
+        <field name="model">baseer.noorix.sales.evidence</field>
+        <field name="arch" type="xml">
+            <list string="Noorix report evidence" edit="0">
+                <field name="company_id"/>
+                <field name="business_date"/>
+                <field name="source_id"/>
+                <field name="move_id"/>
+                <field name="period_scope"/>
+                <field name="customer_count"/>
+                <field name="source_gross"/>
+                <field name="currency_id" column_invisible="True"/>
+            </list>
+        </field>
+    </record>
+    <record id="noorix_evidence_action" model="ir.actions.act_window">
+        <field name="name">Noorix report evidence</field>
+        <field name="res_model">baseer.noorix.sales.evidence</field>
+        <field name="view_mode">list,form</field>
+    </record>
+    <menuitem id="noorix_evidence_menu" name="Noorix report evidence"
+              parent="base.menu_administration" action="noorix_evidence_action"
+              groups="base.group_system" sequence="99"/>
+</odoo>

@@ -1,7 +1,9 @@
 import { Component, onWillStart, onWillUnmount, onWillUpdateProps, useRef, useState, useEffect } from "@odoo/owl";
 import { _t } from "@web/core/l10n/translation";
-import { useService } from "@web/core/utils/hooks";
+import { useBus, useService } from "@web/core/utils/hooks";
 import { localization } from "@web/core/l10n/localization";
+import { user, userBus } from "@web/core/user";
+import { noorixScope, getNoorixSelection, setNoorixSelection, subscribeNoorixSelection } from "./noorix_toggle";
 
 // Odoo-inspired data palette. It is visual only: the server owns all numbers,
 // ordering, ratios, and the optional Other bucket.
@@ -23,6 +25,7 @@ export class BaseerSalesDashboard extends Component {
         this.state = useState({
             payload: null, loading: true, error: "", shiftMetric: "sales",
             shiftTab: "chart", paymentTab: "chart",
+            includeNoorix: getNoorixSelection(this.noorixSelectionScope),
         });
         this.salesRef = useRef("salesChart");
         this.shiftRef = useRef("shiftChart");
@@ -32,6 +35,12 @@ export class BaseerSalesDashboard extends Component {
         this.requestGeneration = 0;
         this.charts = [];
         this.disposed = false;
+        useBus(userBus, "ACTIVE_COMPANIES_CHANGED", () => this.load());
+        const unsubscribeNoorix = subscribeNoorixSelection((scope, included) => {
+            if (scope !== this.noorixSelectionScope || this.disposed || this.state.includeNoorix === included) { return; }
+            this.state.includeNoorix = included;
+            this.load();
+        });
         // Mount the native loading state while the first read is in flight.
         onWillStart(() => { this.load(); });
         onWillUpdateProps((nextProps) => {
@@ -44,6 +53,7 @@ export class BaseerSalesDashboard extends Component {
             return () => this.destroyCharts();
         }, () => [this.state.payload, this.state.shiftMetric, this.state.shiftTab, this.state.paymentTab]);
         onWillUnmount(() => {
+            unsubscribeNoorix();
             this.disposed = true;
             this.requestGeneration++;
             this.destroyCharts();
@@ -83,6 +93,13 @@ export class BaseerSalesDashboard extends Component {
     get points() { return this.state.payload?.timeline?.points || []; }
     get hasRecordedData() { return this.state.payload?.has_data === true; }
     get title() { return _t("Sales overview"); }
+    get noorixSelectionScope() { return noorixScope(user.userId, user.activeCompany.id); }
+    toggleNoorix(event) {
+        const included = Boolean(event.target.checked);
+        this.state.includeNoorix = included;
+        setNoorixSelection(this.noorixSelectionScope, included);
+        return this.load();
+    }
     get sourceRows() { return this.state.payload?.source_breakdown || []; }
     openSalesSource(row) {
         if (row.source_action) { return this.action.doAction(row.source_action); }
@@ -93,8 +110,11 @@ export class BaseerSalesDashboard extends Component {
     get labels() {
         return {
             subtitle: _t("Unified sales sources"),
+            includeNoorix: _t("Include Noorix sales"),
             sourceBreakdown: _t("Sales by source"),
-            sourceDateBasis: _t("Summaries: business date · POS: session opening day · Sales: invoice date"),
+            sourceDateBasis: this.state.payload?.include_noorix
+                ? _t("Summaries and Noorix: business date · POS: session opening day · Sales: invoice date")
+                : _t("Summaries: business date · POS: session opening day · Sales: invoice date"),
             manualScope: _t("Approved summaries only"),
             refresh: _t("Refresh"), sources: _t("View approved summaries"),
             loading: _t("Loading the selected period…"), retry: _t("Try again"),
@@ -110,6 +130,7 @@ export class BaseerSalesDashboard extends Component {
             knownCustomers: _t("Recorded customer counts are partial when source rows have no guest count."),
             missingCustomerRows: _t("Source rows without guest counts"),
             invoiceTenderUnknown: _t("Invoice sales with unknown payment category"),
+            noorixTenderUnknown: _t("Noorix sales with unknown payment category"),
             settlementDifference: _t("Sale and tender difference"),
             unclassifiedSales: _t("Unclassified payment amounts"),
             paymentShare: _t("Share of total sales (%)"),
@@ -155,6 +176,7 @@ export class BaseerSalesDashboard extends Component {
 
     async loadForProps(props) {
         const generation = ++this.requestGeneration;
+        this.state.includeNoorix = getNoorixSelection(this.noorixSelectionScope);
         const filters = { native: props.dateFilter ?? null };
         this.state.loading = true;
         this.state.error = "";
@@ -162,7 +184,7 @@ export class BaseerSalesDashboard extends Component {
         try {
             const payload = await this.orm.call("spreadsheet.dashboard", "get_baseer_sales_metrics", [
                 [props.dashboardId], filters,
-            ]);
+            ], { include_noorix: this.state.includeNoorix });
             if (this.disposed || generation !== this.requestGeneration) { return; }
             this.state.payload = payload;
         } catch (error) {

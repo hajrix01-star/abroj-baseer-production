@@ -35,6 +35,26 @@
 .o_baseer_financial_dashboard_panel > .o_baseer_pl_report,
 .o_baseer_financial_dashboard_panel > .o_baseer_go_report { min-width: 0; }
 
+.o_baseer_financial_sales_dashboard {
+    .o_baseer_financial_kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .o_baseer_financial_kpi {
+        width: 100%;
+        border-inline: 1px solid var(--financial-line);
+        border-bottom: 1px solid var(--financial-line);
+        background: var(--financial-surface);
+        text-align: start;
+    }
+    .o_baseer_financial_kpi:not(:disabled) { cursor: pointer; }
+    .o_baseer_financial_kpi:not(:disabled):hover { background: #fbfaff; }
+    .o_baseer_financial_kpi:focus-visible { outline: 2px solid var(--financial-purple); outline-offset: 3px; }
+    .o_baseer_financial_sales_kpi_caption { display: block; color: var(--financial-muted); font-size: .69rem; line-height: 1.4; }
+    .o_baseer_financial_sales_list .o_baseer_financial_account { cursor: pointer; }
+}
+
+@media (max-width: 680px) {
+    .o_baseer_financial_sales_dashboard .o_baseer_financial_kpis { grid-template-columns: 1fr; }
+}
+
 @media (max-width: 390px) {
     .o_baseer_financial_dashboard_shell { padding: .5rem; }
     .o_baseer_financial_dashboard_tabs { display: grid; grid-template-columns: 1fr; }

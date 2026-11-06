@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="baseer_financial_dashboard.DashboardIntegration" t-inherit="spreadsheet_dashboard.DashboardAction" t-inherit-mode="extension" priority="90">
+        <xpath expr="//DashboardSearchBar" position="attributes">
+            <attribute name="t-if">!isBaseerSalesDashboard and !isBaseerHeatCalendar and !isBaseerPurchasesDashboard and !isBaseerFinancialDashboard and status === Status.Loaded and loader.getActiveDashboard().model.getters.getGlobalFilters().length</attribute>
+        </xpath>
+        <xpath expr="//SpreadsheetShareButton" position="attributes">
+            <attribute name="t-if">!isBaseerSalesDashboard and !isBaseerHeatCalendar and !isBaseerPurchasesDashboard and !isBaseerFinancialDashboard</attribute>
+        </xpath>
+        <xpath expr="//div[hasclass('o_search_toggler')]" position="attributes">
+            <attribute name="t-if">env.isSmall and !isBaseerSalesDashboard and !isBaseerHeatCalendar and !isBaseerPurchasesDashboard and !isBaseerFinancialDashboard</attribute>
+        </xpath>
+        <xpath expr="//MobileFigureContainer" position="before">
+            <BaseerFinancialDashboard t-if="isBaseerFinancialDashboard" dashboardId="dashboard.data.id" t-key="dashboard.data.id"/>
+        </xpath>
+        <xpath expr="//MobileFigureContainer" position="attributes">
+            <attribute name="t-if">env.isSmall and !isBaseerSalesDashboard and !isBaseerHeatCalendar and !isBaseerPurchasesDashboard and !isBaseerFinancialDashboard</attribute>
+        </xpath>
+        <xpath expr="//div[hasclass('o_renderer')]" position="attributes">
+            <attribute name="t-else"/>
+            <attribute name="t-if">!env.isSmall and !isBaseerSalesDashboard and !isBaseerHeatCalendar and !isBaseerPurchasesDashboard and !isBaseerFinancialDashboard</attribute>
+        </xpath>
+    </t>
+
+    <t t-name="baseer_financial_dashboard.Dashboard">
+        <section class="o_baseer_financial_dashboard_shell" t-att-dir="lang === 'ar' ? 'rtl' : 'ltr'" t-att-lang="lang">
+            <div class="o_baseer_financial_dashboard_tabs" role="tablist" t-att-aria-label="lang === 'ar' ? 'لوحة الأداء المالي' : 'Financial performance dashboard'">
+                <button t-foreach="tabs" t-as="tab" t-key="tab.key" type="button" role="tab" class="o_baseer_financial_dashboard_tab"
+                    t-att-data-financial-tab="tab.key" t-att-id="tabId(tab)" t-att-aria-controls="panelId(tab)"
+                    t-att-aria-selected="state.active === tab.key ? 'true' : 'false'" t-att-tabindex="state.active === tab.key ? 0 : -1"
+                    t-att-class="state.active === tab.key ? 'o_baseer_financial_dashboard_tab is-active' : 'o_baseer_financial_dashboard_tab'"
+                    t-on-click="() => this.select(tab.key)" t-on-keydown="onTabKeydown" t-esc="label(tab)"/>
+            </div>
+            <section role="tabpanel" t-att-id="panelId(activeTab)" t-att-aria-labelledby="tabId(activeTab)" class="o_baseer_financial_dashboard_panel">
+                <t t-component="activeComponent" t-key="state.active"/>
+            </section>
+        </section>
+    </t>
+</templates>

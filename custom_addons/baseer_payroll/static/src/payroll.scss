@@ -11,3 +11,12 @@
     }
     .o_list_table td[name="baseer_deduction_reason"] { min-width: 160px; }
 }
+
+.baseer_payroll_run_form .o_form_renderer > .o_form_sheet_bg {
+    max-width: none;
+
+    > .o_form_sheet {
+        max-width: none;
+        width: 100%;
+    }
+}

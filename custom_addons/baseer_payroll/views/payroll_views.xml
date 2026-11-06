@@ -30,7 +30,7 @@
         <field name="name">baseer.payroll.run.form</field>
         <field name="model">hr.payslip.run</field>
         <field name="arch" type="xml">
-            <form string="Payroll Run" class="baseer_payroll_form" create="0">
+            <form string="Payroll Run" class="baseer_payroll_form baseer_payroll_run_form" create="0">
                 <header>
                     <button name="action_approve" string="Approve Payroll" type="object" class="oe_highlight" invisible="state != 'draft'" groups="om_hr_payroll.group_hr_payroll_manager"/>
                     <button name="action_pay" string="Pay Salaries" type="object" class="oe_highlight" invisible="state == 'draft' or baseer_residual &lt;= 0" groups="om_hr_payroll.group_hr_payroll_manager"/>

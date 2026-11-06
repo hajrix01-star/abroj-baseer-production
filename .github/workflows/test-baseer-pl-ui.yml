@@ -67,6 +67,14 @@ jobs:
           source = source_path.read_text(encoding='utf-8')
           assert 'width: 22rem;\n        max-width: 90vw;' in source
           assert 'max-width: min(22rem, 90vw)' not in source
+          # Design monitor: the wide analysis column is the waterfall as in
+          # the approved financial dashboard contract, and status colours
+          # retain their semantic green/amber/red/purple roles at all widths.
+          assert 'grid-template-columns: minmax(24rem, 1.35fr) minmax(18rem, 0.96fr);' in source
+          for token in ('--financial-green: #18845b;', '--financial-amber: #b97013;',
+                        '--financial-red: #c14242;', '--financial-purple: #5b0aa5;',
+                        '@media (max-width: 720px)', '@media (prefers-reduced-motion: reduce)'):
+              assert token in source, token
           compiled = sass.compile(filename=str(source_path))
           assert '.o_baseer_pl_journal_list' in compiled
           print('BASEER_PL_SCSS_COMPILE=PASS')

@@ -114,6 +114,27 @@ class TestProfitLoss(TransactionCase):
         self.assertEqual(self._section(result, 'expense_depreciation')['amount'], '-5.00')
         self.assertEqual(result['gross_profit']['amount'], '120.00')
         self.assertEqual(result['net_profit']['amount'], '91.00')
+        dashboard = result['dashboard']
+        self.assertEqual([card['key'] for card in dashboard['cards']], [
+            'income', 'cost_of_sales', 'gross_profit', 'gross_margin', 'expense', 'net_income',
+        ])
+        dashboard_cards = {card['key']: card for card in dashboard['cards']}
+        self.assertEqual(dashboard_cards['income']['value']['amount'], '180.00')
+        self.assertEqual(dashboard_cards['cost_of_sales']['value']['amount'], '60.00')
+        self.assertEqual(dashboard_cards['gross_profit']['value']['amount'], '120.00')
+        self.assertEqual(dashboard_cards['gross_margin']['value']['display'], '66.67%')
+        self.assertEqual(dashboard_cards['expense']['value']['amount'], '35.00')
+        self.assertEqual(dashboard_cards['net_income']['value']['amount'], '91.00')
+        self.assertEqual([step['key'] for step in dashboard['waterfall']], [
+            'income', 'cost_of_sales', 'expense', 'net_other_income', 'net_income',
+        ])
+        self.assertEqual(dashboard['waterfall'][3]['amount']['amount'], '6.00')
+        shares = {account['amount']['amount']: account['share']['display']
+                  for account in dashboard['revenue_accounts']}
+        self.assertEqual(shares['180.00'], '94.74%')
+        self.assertEqual(shares['10.00'], '5.26%')
+        self.assertIn('posted_only', dashboard['notes'])
+        self.assertIn('comparison_unavailable', dashboard['notes'])
         sources = self.env['account.move.line'].search([
             ('company_id', '=', self.company.id),
             ('parent_state', '=', 'posted'),
@@ -231,12 +252,21 @@ class TestProfitLoss(TransactionCase):
     def test_empty_reversal_and_late_posting_changes_rerun(self):
         empty = self.report.get_report(self.filters)
         self.assertEqual(empty['net_profit']['amount'], '0.00')
+        dashboard_cards = {card['key']: card for card in empty['dashboard']['cards']}
+        self.assertFalse(dashboard_cards['gross_margin']['value']['available'])
+        self.assertEqual(empty['dashboard']['waterfall'][-1]['amount']['amount'], '0.00')
         self.assertEqual(self.report.get_accounts(self.filters, 'income')['accounts'], [])
         self._entry('income', '10')
         self._entry('income', '-15')
         first = self.report.get_report(self.filters)
         self.assertEqual(first['net_profit']['amount'], '-5.00')
         self.assertTrue(first['net_profit']['negative'])
+        dashboard_cards = {card['key']: card for card in first['dashboard']['cards']}
+        self.assertFalse(dashboard_cards['gross_margin']['value']['available'])
+        self.assertIn('gross_margin_unavailable', first['dashboard']['notes'])
+        self.assertTrue(first['dashboard']['revenue_accounts'])
+        self.assertFalse(first['dashboard']['revenue_accounts'][0]['share']['available'])
+        self.assertIn('revenue_share_unavailable', first['dashboard']['notes'])
         self._entry('income', '8', day='2041-02-01')
         self.assertEqual(self.report.get_report(self.filters)['net_profit']['amount'], '3.00')
 

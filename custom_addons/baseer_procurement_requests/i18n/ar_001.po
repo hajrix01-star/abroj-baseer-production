@@ -144,6 +144,7 @@ msgstr "إجمالي المستلم"
 
 #. module: baseer_procurement_requests
 #: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_purchase_batch_auto_draft_list
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_request_form
 msgid "Representative advance"
 msgstr "عهدة المندوب"
 
@@ -201,6 +202,7 @@ msgstr "طلب جديد"
 msgid "Requests"
 msgstr "الطلبات"
 
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_request_form
 #. module: baseer_procurement_requests
 #: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_request_form
 msgid "Cashier purchase receipt"
@@ -380,6 +382,7 @@ msgstr "سلة الطلب"
 msgid "Back to materials"
 msgstr "العودة إلى المواد"
 
+#: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_procurement_request__warehouse_id
 #. module: baseer_procurement_requests
 #. odoo-javascript
 #: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
@@ -476,6 +479,7 @@ msgstr "حفظ وفتح واتساب"
 msgid "Request screen"
 msgstr "شاشة الطلب"
 
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_request_form
 #. module: baseer_procurement_requests
 #. odoo-javascript
 #: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
@@ -682,6 +686,7 @@ msgstr "تصفية حسب الحالة"
 msgid "All statuses"
 msgstr "جميع الحالات"
 
+#: model:ir.model.fields.selection,name:baseer_procurement_requests.selection__baseer_procurement_request__state__draft
 #. module: baseer_procurement_requests
 #. odoo-javascript
 #: code:addons/baseer_procurement_requests/models/procurement.py:0
@@ -706,6 +711,7 @@ msgstr "بانتظار تأكيد الكاشير"
 msgid "Completed"
 msgstr "مكتمل"
 
+#: model:ir.model.fields.selection,name:baseer_procurement_requests.selection__baseer_procurement_request__state__cancel
 #. module: baseer_procurement_requests
 #. odoo-javascript
 #: code:addons/baseer_procurement_requests/models/procurement.py:0
@@ -892,6 +898,40 @@ msgid "Mark not received"
 msgstr "تحديد كمادة غير مستلمة"
 
 #. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+msgid "New materials cannot be added after handover or to a BWork request."
+msgstr "لا يمكن إضافة مواد بعد اعتماد تسليم المندوب أو إلى طلب من BWork."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+msgid "The quantity cannot exceed the request's received limit."
+msgstr "لا يمكن زيادة الكمية عن الحد المعتمد في الطلب."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/procurement.py:0
+msgid "New materials can only be added to a native sent request before representative handover."
+msgstr "يمكن إضافة مواد جديدة إلى الطلب الأصلي المرسل فقط، قبل اعتماد تسليم المندوب."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/procurement.py:0
+msgid "Materials added during cashier receipt by %(actor)s: %(materials)s. Requested total before: %(before)s; after: %(after)s."
+msgstr "مواد أضافها %(actor)s أثناء الاستلام: %(materials)s. إجمالي الطلب قبل الإضافة: %(before)s؛ وبعدها: %(after)s."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "Not received"
+msgstr "غير مستلم"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "Restore"
+msgstr "استعادة"
+
+#. module: baseer_procurement_requests
 #: code:addons/baseer_procurement_requests/models/procurement.py:0
 msgid "Search text cannot exceed 128 characters."
 msgstr "يجب ألا يتجاوز نص البحث 128 حرفًا."
@@ -983,6 +1023,7 @@ msgstr "حركة صندوق العهدة"
 msgid "Post movement"
 msgstr "ترحيل الحركة"
 
+#: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_procurement_request__representative_partner_id
 #. module: baseer_procurement_requests
 #. odoo-javascript
 #: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_procurement_custody_event__representative_partner_id
@@ -1245,6 +1286,7 @@ msgstr "يومية عهد المشتريات"
 msgid "Petty Cash destination / source account"
 msgstr "حساب صندوق العهدة (من/إلى)"
 
+#: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_procurement_request__company_id
 #. module: baseer_procurement_requests
 #: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_procurement_custody__company_id
 #: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_procurement_custody_event__company_id
@@ -1252,6 +1294,7 @@ msgstr "حساب صندوق العهدة (من/إلى)"
 msgid "Company"
 msgstr "الشركة"
 
+#: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_procurement_request__state
 #. module: baseer_procurement_requests
 #: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_procurement_custody__state
 #: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_procurement_custody_event__state
@@ -1835,7 +1878,6 @@ msgstr "اختر نوع شراء صالحًا."
 msgid "Cash and bank-transfer requests cannot have a purchase representative."
 msgstr "لا يمكن ربط طلب شراء نقدي أو تحويل بنكي بمندوب مشتريات."
 
-
 #. module: baseer_procurement_requests
 #. odoo-javascript
 #: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
@@ -1843,10 +1885,767 @@ msgstr "لا يمكن ربط طلب شراء نقدي أو تحويل بنكي �
 msgid "Representative: %s"
 msgstr "المندوب: %s"
 
-
 #. module: baseer_procurement_requests
 #. odoo-javascript
 #: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
 #: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
 msgid "Done"
 msgstr "تم"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+msgid "The order changed. Reload it before editing."
+msgstr "تغيّر الطلب. أعد تحميله قبل التعديل."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+#: code:addons/baseer_procurement_requests/models/procurement.py:0
+msgid "Open WhatsApp"
+msgstr "فتح واتساب"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+#: code:addons/baseer_procurement_requests/models/procurement.py:0
+msgid "Share purchase request"
+msgstr "مشاركة طلب الشراء"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+#: code:addons/baseer_procurement_requests/models/procurement.py:0
+msgid "Save your changes before opening WhatsApp."
+msgstr "احفظ تعديلاتك قبل فتح واتساب."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+#: code:addons/baseer_procurement_requests/models/procurement.py:0
+msgid "Preparing message…"
+msgstr "جارٍ تجهيز الرسالة…"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+#: code:addons/baseer_procurement_requests/models/procurement.py:0
+msgid "Choose the recipient in WhatsApp, review the message, then send it."
+msgstr "اختر المستلم في واتساب، وراجع الرسالة ثم أرسلها."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+#: code:addons/baseer_procurement_requests/models/procurement.py:0
+msgid "If WhatsApp does not open, copy the message and paste it into the app."
+msgstr "إذا لم يفتح واتساب، انسخ الرسالة والصقها في التطبيق."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+#: code:addons/baseer_procurement_requests/models/procurement.py:0
+msgid "Message text"
+msgstr "نص الرسالة"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+#: code:addons/baseer_procurement_requests/models/procurement.py:0
+msgid "Copy message"
+msgstr "نسخ الرسالة"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+#: code:addons/baseer_procurement_requests/models/procurement.py:0
+msgid "Message copied."
+msgstr "نُسخت الرسالة."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+#: code:addons/baseer_procurement_requests/models/procurement.py:0
+msgid "Select the message below and copy it manually."
+msgstr "حدّد نص الرسالة أدناه وانسخه يدويًا."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+#: code:addons/baseer_procurement_requests/models/procurement.py:0
+msgid "Could not prepare the WhatsApp message."
+msgstr "تعذر تجهيز رسالة واتساب."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+#: code:addons/baseer_procurement_requests/models/procurement.py:0
+msgid "Could not record the opening time. You can still use the share link."
+msgstr "تعذر تسجيل وقت الفتح. يمكنك استخدام رابط المشاركة."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+#: code:addons/baseer_procurement_requests/models/procurement.py:0
+msgid "The request was saved. Open it to retry sharing or sending."
+msgstr "حُفظ الطلب. افتحه لإعادة محاولة المشاركة أو الإرسال."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+#: code:addons/baseer_procurement_requests/models/procurement.py:0
+msgid "WhatsApp sharing is only available for purchase-representative requests."
+msgstr "المشاركة عبر واتساب متاحة لطلبات مندوب المشتريات فقط."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "Unsaved order changes"
+msgstr "تعديلات غير محفوظة"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "Discard your changes and leave the order editor?"
+msgstr "هل تريد تجاهل التعديلات ومغادرة تحرير الطلب؟"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "Discard changes"
+msgstr "تجاهل التعديلات"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "Keep editing"
+msgstr "متابعة التعديل"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "Could not load packaging options."
+msgstr "تعذر تحميل خيارات التغليف."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "This material is already in the order. Edit its existing row."
+msgstr "الصنف موجود في الطلب. عدّل السطر الموجود."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "Order changes were saved."
+msgstr "حُفظت تعديلات الطلب."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "Could not save order changes."
+msgstr "تعذر حفظ تعديلات الطلب."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "The order was cancelled."
+msgstr "أُلغي الطلب."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "Could not cancel the order."
+msgstr "تعذر إلغاء الطلب."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "Edit purchase order"
+msgstr "تعديل طلب الشراء"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "Editing is available until representative handover is confirmed."
+msgstr "يمكن تعديل الطلب حتى تأكيد تسليم المندوب."
+
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_request_form
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_request_form
+msgid "Edit order"
+msgstr "تعديل الطلب"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "Receive order"
+msgstr "استلام الطلب"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "Cancel order"
+msgstr "إلغاء الطلب"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "Choose a replacement for"
+msgstr "اختر صنفًا بديلًا عن"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "Cancel replacement"
+msgstr "إلغاء الاستبدال"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "Change packaging"
+msgstr "تغيير التغليف"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "Replace material"
+msgstr "استبدال الصنف"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "Requested unit price"
+msgstr "سعر الوحدة المطلوب"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "Removed materials"
+msgstr "الأصناف المحذوفة"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "Order total"
+msgstr "إجمالي الطلب"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "Saving changes does not confirm receipt."
+msgstr "حفظ التعديلات لا يؤكد الاستلام."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "The order will be cancelled with the reason below. Unsaved changes will be discarded."
+msgstr "سيُلغى الطلب بالسبب أدناه، وتُتجاهل التعديلات غير المحفوظة."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "Cancellation reason"
+msgstr "سبب الإلغاء"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "Keep order"
+msgstr "إبقاء الطلب"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "Confirm cancellation"
+msgstr "تأكيد الإلغاء"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "Save changes"
+msgstr "حفظ التعديلات"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+msgid "Could not calculate the purchase total."
+msgstr "تعذر حساب إجمالي الطلب."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "Reload order"
+msgstr "إعادة تحميل الطلب"
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/procurement.py:0
+msgid "The editor cannot change controlled request fields."
+msgstr "لا يمكن تغيير حقول الطلب المحمية من شاشة التعديل."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/procurement.py:0
+msgid "Request lines cannot be moved to another request."
+msgstr "لا يمكن نقل أصناف الطلب إلى طلب آخر."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/procurement.py:0
+msgid "Only a procurement cashier can edit this request."
+msgstr "تعديل هذا الطلب متاح لكاشير المشتريات فقط."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/procurement.py:0
+msgid "This request is locked for editing after representative handover or completion."
+msgstr "هذا الطلب مقفل للتعديل. لا يمكن تعديل الطلب بعد تأكيد التسليم أو إكماله."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/procurement.py:0
+msgid "This request changed since it was opened. Reload it before saving."
+msgstr "عُدّل الطلب منذ فتحه. أعد تحميله قبل الحفظ."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/procurement.py:0
+msgid "The cart must contain between 1 and %s materials."
+msgstr "يجب أن تضم السلة من 1 إلى %s صنفًا."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/procurement.py:0
+msgid "Choose a purchase representative enabled for this company."
+msgstr "اختر مندوب مشتريات مفعّلًا لهذه الشركة."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/procurement.py:0
+msgid "The edited cart contains an invalid request line."
+msgstr "تحتوي السلة المعدّلة على سطر غير صالح."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/procurement.py:0
+msgid "Each material needs a positive quantity and a nonnegative price with at most two decimal places."
+msgstr "أدخل لكل صنف كمية أكبر من صفر وسعرًا لا يقل عن صفر، وبحد أقصى منزلتين عشريتين."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/procurement.py:0
+msgid "Enter a cancellation reason of at most 1000 characters."
+msgstr "أدخل سبب الإلغاء بما لا يتجاوز 1000 حرف."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/procurement.py:0
+msgid "Request plan edited by %(actor)s. Before: %(before)s. After: %(after)s. Staged received quantities and actual prices were reset; no receipt was confirmed."
+msgstr "عدّل %(actor)s بيانات الطلب. قبل التعديل: %(before)s. بعد التعديل: %(after)s. صُفّرت كميات الاستلام والأسعار الفعلية المدخلة مسبقًا، ولم يُؤكد الاستلام."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+msgid "Advances recorded at purchase receipt appear here. Contact the accountant for returns or corrections."
+msgstr "تظهر هنا العهد المسجلة عند استلام طلبات الشراء. راجع المحاسب لإرجاع المتبقي أو تصحيح حركة."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+msgid "Review your restaurant's representative advances and purchase references."
+msgstr "متابعة عهد مندوبي مطعمك ومراجع طلبات الشراء."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "Advance handed to the representative"
+msgstr "العهدة المسلّمة للمندوب"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "Loading advance details…"
+msgstr "جارٍ تحميل بيانات العهدة…"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "Reload advance details"
+msgstr "تحديث بيانات العهدة"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "An advance is already recorded for this request. It will be reused."
+msgstr "سبق تسجيل عهدة لهذا الطلب؛ سيُستخدم السجل الحالي دون تكراره."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "Record the amount that was actually handed to the representative."
+msgstr "أدخل المبلغ الفعلي الذي سُلّم أو حُوّل إلى المندوب."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "Advance amount"
+msgstr "قيمة العهدة"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "Bank or cash source"
+msgstr "مصدر العهدة: بنك أو نقد"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "Choose a source"
+msgstr "اختر مصدر العهدة"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "Actual transfer date"
+msgstr "تاريخ تسليم العهدة الفعلي"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+msgid "No approved bank or cash source is available for this company."
+msgstr "لا يوجد مصدر بنك أو نقد معتمد للعهدة في هذا المطعم."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+msgid "Could not load the representative advance details."
+msgstr "تعذّر تحميل بيانات عهدة المندوب."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/receipt_custody.py:0
+msgid "Receipt funding confirmation is managed by the receipt workflow."
+msgstr "تُسجّل عهدة الاستلام من شاشة تأكيد الطلب فقط."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/receipt_custody.py:0
+msgid "Only a procurement cashier can confirm the quantity receipt."
+msgstr "تأكيد الاستلام متاح لمسؤول المشتريات المخوّل فقط."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/receipt_custody.py:0
+msgid "The existing request funding has an inconsistent accounting link. Contact an accountant."
+msgstr "الربط المحاسبي للعهدة المسجلة على هذا الطلب غير مكتمل. راجع المحاسب."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/receipt_custody.py:0
+msgid "Representative funding is entered only at final receipt confirmation."
+msgstr "تُدخل عهدة المندوب عند التأكيد النهائي لاستلام الطلب فقط."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/receipt_custody.py:0
+msgid "Select an active purchase representative contact on the request before confirming receipt."
+msgstr "اختر جهة اتصال مفعّلة كمندوب مشتريات في الطلب قبل تأكيد الاستلام."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/receipt_custody.py:0
+msgid "Configure an approved company-currency bank or cash payment point before confirming receipt."
+msgstr "يلزم إعداد مصدر بنك أو نقد معتمد بعملة المطعم قبل تأكيد الاستلام."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/receipt_custody.py:0
+msgid "The request changed. Reload the receipt before confirming."
+msgstr "تغيّر الطلب. أعد تحميل شاشة الاستلام قبل التأكيد."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/receipt_custody.py:0
+msgid "Only an unconfirmed receipt can record representative funding."
+msgstr "تسجيل العهدة متاح للطلب الذي لم يُؤكد استلامه نهائيًا بعد."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/receipt_custody.py:0
+msgid "Invalid representative funding details."
+msgstr "بيانات عهدة المندوب غير صالحة."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/receipt_custody.py:0
+msgid "The request funding changed. Reload the receipt before confirming."
+msgstr "تغيّرت عهدة الطلب. حدّث بيانات العهدة قبل تأكيد الاستلام."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/receipt_custody.py:0
+msgid "Existing request funding is read-only. Reload the receipt."
+msgstr "العهدة المسجلة على الطلب للقراءة فقط. حدّث بيانات العهدة."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/receipt_custody.py:0
+msgid "Enter the actual representative advance and payment point before confirming receipt."
+msgstr "أدخل قيمة العهدة الفعلية ومصدرها قبل تأكيد الاستلام."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/receipt_custody.py:0
+msgid "Actual representative advance"
+msgstr "قيمة العهدة الفعلية للمندوب"
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/receipt_custody.py:0
+msgid "Choose an approved company-currency payment point."
+msgstr "اختر مصدرًا معتمدًا بعملة المطعم."
+
+#. module: baseer_procurement_requests
+#, python-format
+#: code:addons/baseer_procurement_requests/models/receipt_custody.py:0
+msgid "Representative advance reused or recorded with final receipt by %s."
+msgstr "تم تسجيل عهدة المندوب أو استخدام العهدة السابقة مع تأكيد الاستلام النهائي بواسطة %s."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/receipt_custody.py:0
+msgid "Enter the actual representative advance and payment point in the receipt screen before confirming."
+msgstr "أدخل قيمة العهدة الفعلية ومصدرها في شاشة الاستلام قبل التأكيد."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/receipt_custody.py:0
+msgid "This receipt already confirmed its representative advance. Contact an accountant for corrections."
+msgstr "سبق تأكيد عهدة هذا الطلب. راجع المحاسب لأي تصحيح."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "Confirming receipt records this advance; it does not make a bank transfer."
+msgstr "عند تأكيد الاستلام تُوثّق هذه العهدة؛ ولا يُنفّذ تحويل بنكي جديد."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/receipt_custody.py:0
+msgid "Representative receipt funding requires company-currency accounts and journals."
+msgstr "يلزم أن تكون حسابات العهدة ودفاترها بعملة المطعم لتسجيلها عند الاستلام."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/receipt_custody.py:0
+msgid "Enter a valid actual representative advance."
+msgstr "أدخل قيمة عهدة فعلية صحيحة للمندوب."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "Review the receipt details before confirming."
+msgstr "راجع بيانات الاستلام قبل التأكيد."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "More options"
+msgstr "المزيد"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+msgid "Save changes before receiving the order."
+msgstr "احفظ تعديلات الطلب قبل الانتقال إلى الاستلام."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+msgid "Confirm sent and review receipt"
+msgstr "تأكيد الإرسال ومراجعة الاستلام"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+msgid "Confirm that this order was sent for purchase. The next screen lets you review receipt details; this does not confirm final receipt."
+msgstr "أكد أن الطلب أُرسل للشراء. ستفتح شاشة مراجعة الكميات والأسعار والعهدة، ولن يُعتمد الاستلام النهائي في هذه الخطوة."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+msgid "Could not mark the order as sent."
+msgstr "تعذر تأكيد إرسال الطلب. حدّث بيانات الطلب وحاول مرة أخرى."
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+msgid "The order was marked as sent. Reload it before continuing."
+msgstr "تم تأكيد إرسال الطلب. أعد تحميل بياناته قبل المتابعة."
+
+#. module: baseer_procurement_requests
+#: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_procurement_request__name
+msgid "Name"
+msgstr "رقم الطلب"
+
+#. module: baseer_procurement_requests
+#: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_procurement_request__request_date
+msgid "Request Date"
+msgstr "تاريخ الطلب"
+
+#. module: baseer_procurement_requests
+#: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_procurement_request__requester_id
+msgid "Requester"
+msgstr "مقدم الطلب"
+
+#. module: baseer_procurement_requests
+#: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_procurement_request__whatsapp_sent_at
+msgid "Whatsapp Sent At"
+msgstr "تاريخ تأكيد الإرسال"
+
+#. module: baseer_procurement_requests
+#: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_procurement_request__manager_received_at
+msgid "Manager Received At"
+msgstr "تاريخ استلام المدير"
+
+#. module: baseer_procurement_requests
+#: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_procurement_request__actual_confirmed_at
+msgid "Actual Confirmed At"
+msgstr "تاريخ تأكيد الاستلام"
+
+#. module: baseer_procurement_requests
+#: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_procurement_request__requested_total
+msgid "Requested Total"
+msgstr "إجمالي الطلب"
+
+#. module: baseer_procurement_requests
+#: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_procurement_request__actual_total
+msgid "Actual Total"
+msgstr "الإجمالي الفعلي"
+
+#. module: baseer_procurement_requests
+#: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_procurement_request_line__product_id
+msgid "Material"
+msgstr "الصنف"
+
+#. module: baseer_procurement_requests
+#: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_procurement_request_line__option_id
+msgid "Option"
+msgstr "التغليف / الوحدة"
+
+#. module: baseer_procurement_requests
+#: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_procurement_request_line__requested_qty
+msgid "Requested Qty"
+msgstr "الكمية المطلوبة"
+
+#. module: baseer_procurement_requests
+#: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_procurement_request_line__requested_price
+msgid "Requested Price"
+msgstr "السعر المطلوب"
+
+#. module: baseer_procurement_requests
+#: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_procurement_request_line__manager_received_qty
+msgid "Manager Received Qty"
+msgstr "الكمية المستلمة"
+
+#. module: baseer_procurement_requests
+#: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_procurement_request_line__actual_qty
+msgid "Actual Qty"
+msgstr "الكمية الفعلية"
+
+#. module: baseer_procurement_requests
+#: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_procurement_request_line__actual_price
+msgid "Actual Price"
+msgstr "السعر الفعلي"
+
+#. module: baseer_procurement_requests
+#: model:ir.model.fields.selection,name:baseer_procurement_requests.selection__baseer_procurement_request__state__sent
+msgid "Sent for purchase"
+msgstr "مرسل للشراء"
+
+#. module: baseer_procurement_requests
+#: model:ir.model.fields.selection,name:baseer_procurement_requests.selection__baseer_procurement_request__state__received
+msgid "Cashier receipt confirmed"
+msgstr "تم تأكيد تسليم المندوب"
+
+#. module: baseer_procurement_requests
+#: model:ir.model.fields.selection,name:baseer_procurement_requests.selection__baseer_procurement_request__state__purchased
+msgid "Quantity receipt completed"
+msgstr "اكتمل استلام الكميات"
+
+#. module: baseer_procurement_requests
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_request_form
+msgid "Audit"
+msgstr "سجل المراجعة"
+
+#. module: baseer_procurement_requests
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_request_form
+msgid "Confirm sent"
+msgstr "تأكيد الإرسال"
+
+#. module: baseer_procurement_requests
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_request_form
+msgid "Cancel request"
+msgstr "إلغاء الطلب"
+
+#. module: baseer_procurement_requests
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_request_form
+msgid "Receipt"
+msgstr "الاستلام"
+
+#. module: baseer_procurement_requests
+#: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_procurement_request__actual_confirmed_by_id
+msgid "Actual Confirmed By"
+msgstr "أكد الاستلام"
+
+#. module: baseer_procurement_requests
+#: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_procurement_request__cancellation_reason
+msgid "Cancellation Reason"
+msgstr "سبب الإلغاء"
+
+#. module: baseer_procurement_requests
+#: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_procurement_request__picking_id
+msgid "Picking"
+msgstr "إذن الاستلام"
+
+#. module: baseer_procurement_requests
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_request_form
+msgid "<span class=\"o_stat_text\">Purchasing representative custody</span>"
+msgstr "<span class=\"o_stat_text\">عهدة مندوب المشتريات</span>"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "Unit price"
+msgstr "سعر الوحدة"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "Review unit prices before saving."
+msgstr "راجع أسعار الوحدات قبل الحفظ."
+
+#. module: baseer_procurement_requests
+#. odoo-python
+#: code:addons/baseer_procurement_requests/models/procurement.py:0
+msgid "Enter a nonnegative unit price with at most two decimal places."
+msgstr "أدخل سعر وحدة صفرًا أو أكبر، وبحد أقصى منزلتين عشريتين."
+
+#. module: baseer_procurement_requests
+#. odoo-python
+#: code:addons/baseer_procurement_requests/models/procurement.py:0
+msgid "The cart amount exceeds the supported decimal precision."
+msgstr "مبلغ السلة أكبر من الحد الذي يدعمه النظام."

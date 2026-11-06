@@ -34,6 +34,8 @@ jobs:
           --health-retries 12
     steps:
       - uses: actions/checkout@v4
+      - name: Test Noorix toggle presentation contract
+        run: node --test custom_addons/baseer_sales_dashboard/static/tests/noorix_toggle.test.mjs
       - name: Test secured session-day projection in an isolated database
         shell: bash
         run: |
@@ -46,6 +48,6 @@ jobs:
             odoo@sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd \
             odoo --db_host=127.0.0.1 --db_port=5432 --db_user=odoo --db_password=odoo \
             --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/baseer-addons,/mnt/heritage-addons,/mnt/payroll-addons \
-            -d baseer_command_center_ci -i baseer_bwork_dashboard,pos_restaurant --without-demo=all \
-            --test-enable --test-tags=/baseer_sales_dashboard:ExecutivePosCase,/baseer_sales_dashboard:TestUnifiedSales,/baseer_sales_dashboard:SalesCategoryPerformanceCase,/baseer_sales_heat_calendar,/baseer_bwork_dashboard \
+            -d baseer_command_center_ci -i baseer_bwork_dashboard,pos_restaurant,account_edi --without-demo=all \
+            --test-enable --test-tags=/baseer_sales_dashboard:ExecutivePosCase,/baseer_sales_dashboard:TestUnifiedSales,/baseer_sales_dashboard:SalesCategoryPerformanceCase,/baseer_sales_dashboard:TestNoorixEvidence,/baseer_sales_dashboard:TestNoorixSales,/baseer_sales_dashboard:TestNoorixLineage,/baseer_sales_dashboard:TestDashboardNavigation,/baseer_sales_heat_calendar,/baseer_bwork_dashboard \
             --stop-after-init --max-cron-threads=0 --workers=0 --log-level=test

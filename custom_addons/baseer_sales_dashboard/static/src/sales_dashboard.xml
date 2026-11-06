@@ -11,6 +11,10 @@
                     </div>
                 </div>
                 <div class="o_baseer_sales_header_actions">
+                <label class="d-inline-flex align-items-center gap-2 mb-0 o_baseer_sales_noorix_toggle" t-on-click.stop="() => {}">
+                    <input type="checkbox" class="form-check-input mt-0" t-model="state.includeNoorix" t-on-change="toggleNoorix"/>
+                    <span t-esc="labels.includeNoorix"/>
+                </label>
                 <button t-if="state.payload and state.payload.source_action" type="button"
                         class="btn btn-link o_baseer_sales_sources" t-on-click="openSources">
                     <span t-esc="labels.sources"/>
@@ -229,6 +233,7 @@
                                 <div t-if="paymentCoverage.missing_summary_count"><span t-esc="labels.missingAllocations"/><span class="o_baseer_sales_numeric" t-esc="paymentCoverage.missing_summary_count"/></div>
                                 <div t-if="paymentCoverage.mismatched_summary_count"><span t-esc="labels.mismatchedAllocations"/><span class="o_baseer_sales_numeric" t-esc="paymentCoverage.mismatched_summary_count"/></div>
                                 <div t-if="paymentPerformance.invoice_tender_unknown"><span t-esc="labels.invoiceTenderUnknown"/><span class="o_baseer_sales_numeric" t-esc="paymentPerformance.invoice_tender_unknown.display"/></div>
+                                <div t-if="state.payload.include_noorix and paymentCoverage.noorix_tender_unknown"><span t-esc="labels.noorixTenderUnknown"/><span class="o_baseer_sales_numeric" t-esc="paymentCoverage.noorix_tender_unknown.display"/></div>
                                 <div t-if="paymentPerformance.settlement_difference"><span t-esc="labels.settlementDifference"/><span class="o_baseer_sales_numeric" t-esc="paymentPerformance.settlement_difference.display"/></div>
                                 <div t-if="paymentPerformance.unclassified_sales"><span t-esc="labels.unclassifiedSales"/><span class="o_baseer_sales_numeric" t-esc="paymentPerformance.unclassified_sales.display"/></div>
                             </div>

@@ -10,6 +10,7 @@
 
     .o_baseer_sales_content { width: 100%; max-width: 1050px; margin-inline: auto; }
     .o_baseer_sales_header_actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; }
+    .o_baseer_sales_noorix_toggle { min-height: 44px; cursor: pointer; input { flex-shrink: 0; } }
 
     .o_baseer_sales_numeric {
         /*rtl:ignore*/

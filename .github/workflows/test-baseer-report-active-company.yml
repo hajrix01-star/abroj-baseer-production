@@ -56,6 +56,14 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             "$RUNNER_TEMP/odoo_19.0.20260926_all.deb" python3-websocket
           odoo --version
+      - name: Warm Chrome before the first Odoo browser test
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          # Avoid spending Odoo's 10-second first-browser startup budget on
+          # a cold runner profile. Keep the real desktop/mobile tests required.
+          timeout 45s google-chrome --headless --no-sandbox --disable-gpu \
+            --disable-dev-shm-usage --dump-dom about:blank > "$RUNNER_TEMP/chrome-warmup.html"
       - name: Run focused backend and desktop/mobile Hoot tests
         shell: bash
         env:

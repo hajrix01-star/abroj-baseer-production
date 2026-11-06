@@ -1,0 +1,157 @@
+<odoo>
+  <record id="voucher_workflow_form" model="ir.ui.view">
+    <field name="name">abroj.contracting.voucher.workflow.form</field>
+    <field name="model">abroj.contracting.voucher</field>
+    <field name="inherit_id" ref="abroj_contracting.voucher_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//header/field[@name='state']" position="before">
+        <field name="workflow_reviewed" invisible="1"/>
+        <button name="action_open_voucher_review" type="object" string="Review accounting purpose"
+                groups="account.group_account_manager,account.group_account_invoice"
+                invisible="state != 'issued' or not payment_id or (workflow_reviewed and payment_purpose != 'advance')"/>
+      </xpath>
+      <xpath expr="//div[@name='button_box']" position="inside">
+        <button name="action_open_recognition" type="object" class="oe_stat_button" icon="fa-file-text-o"
+                string="Recognition document" groups="account.group_account_manager,account.group_account_invoice"
+                invisible="not recognition_move_id"/>
+      </xpath>
+      <xpath expr="//field[@name='method']" position="after">
+        <field name="payment_purpose" readonly="state != 'draft'"/>
+        <field name="workflow_status" readonly="1" widget="badge"/>
+      </xpath>
+      <xpath expr="//field[@name='payment_id']" position="after">
+        <field name="recognition_move_id" readonly="1" groups="account.group_account_manager,account.group_account_invoice"/>
+        <field name="abroj_budget_line_id" readonly="1"/>
+      </xpath>
+    </field>
+  </record>
+  <record id="voucher_workflow_list" model="ir.ui.view">
+    <field name="name">abroj.contracting.voucher.workflow.list</field>
+    <field name="model">abroj.contracting.voucher</field>
+    <field name="inherit_id" ref="abroj_contracting.voucher_list"/>
+    <field name="arch" type="xml">
+      <xpath expr="//field[@name='abroj_stage']" position="after">
+        <field name="payment_purpose" optional="show"/>
+        <field name="workflow_status" optional="show" widget="badge"/>
+      </xpath>
+    </field>
+  </record>
+  <record id="project_voucher_workflow_list" model="ir.ui.view">
+    <field name="name">abroj.contracting.project.voucher.workflow.list</field>
+    <field name="model">project.project</field>
+    <field name="inherit_id" ref="abroj_contracting.project_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//field[@name='voucher_ids']/list/field[@name='abroj_stage']" position="after">
+        <field name="payment_purpose" optional="show"/>
+        <field name="workflow_status" optional="show" widget="badge"/>
+        <field name="workflow_reviewed" column_invisible="True"/>
+      </xpath>
+      <xpath expr="//field[@name='voucher_ids']/list" position="inside">
+        <button name="action_open_voucher_review" type="object" string="Review accounting purpose"
+                groups="account.group_account_manager,account.group_account_invoice"
+                invisible="state != 'issued' or not payment_id or (workflow_reviewed and payment_purpose != 'advance')"/>
+        <field name="recognition_move_id" column_invisible="True" groups="account.group_account_manager,account.group_account_invoice"/>
+        <button name="action_open_recognition" type="object" string="Recognition document"
+                groups="account.group_account_manager,account.group_account_invoice" invisible="not recognition_move_id"/>
+      </xpath>
+    </field>
+  </record>
+  <record id="voucher_review_form" model="ir.ui.view">
+    <field name="name">abroj.project.voucher.review.form</field>
+    <field name="model">abroj.project.voucher.review</field>
+    <field name="arch" type="xml">
+      <form string="Review voucher accounting" class="abroj_accounting_review">
+        <field name="kind" invisible="1"/>
+        <field name="currency_id" invisible="1"/>
+        <field name="analytic_precision" invisible="1"/>
+        <field name="uses_clearing_account" invisible="1"/>
+        <group>
+          <field name="voucher_id" string="Voucher" readonly="1"/>
+          <field name="company_id" string="Company" readonly="1"/>
+          <field name="project_id" string="Project" readonly="1"/>
+          <field name="amount" string="Gross voucher amount" readonly="1"/>
+          <field name="existing_payment_id" string="Existing accounting payment" readonly="1" invisible="not existing_payment_id"/>
+          <field name="purpose" required="1"/>
+          <field name="partner_id" required="1" options="{'no_create': True}"/>
+          <field name="journal_id" invisible="existing_payment_id" required="not existing_payment_id"
+                 domain="[('company_id', '=', company_id), ('type', 'in', ['cash', 'bank'])]" options="{'no_create': True}"/>
+          <field name="payment_account_id" readonly="1"/>
+        </group>
+        <group invisible="purpose != 'direct'">
+          <field name="expense_id" invisible="kind != 'payment'" domain="[('project_id', '=', project_id), ('state', '=', 'confirmed')]" options="{'no_create': True}"/>
+          <field name="invoice_journal_id" required="purpose == 'direct'"
+                 domain="[('company_id', '=', company_id), ('type', '=', 'purchase' if kind == 'payment' else 'sale')]" options="{'no_create': True}"/>
+          <field name="name" required="purpose == 'direct'"/>
+          <field name="document_reference"/>
+          <field name="account_id" required="purpose == 'direct'"
+                 domain="[('company_ids', 'in', [company_id]), ('account_type', 'in', ['expense', 'expense_direct_cost', 'expense_depreciation'] if kind == 'payment' else ['income', 'income_other'])]" options="{'no_create': True}"/>
+          <field name="analytic_distribution" string="Analytic distribution" widget="analytic_distribution"
+                 options="{'account_field': 'account_id', 'disable_save': True}"
+                 business_domain_compute="'bill' if kind == 'payment' else 'invoice'"/>
+          <field name="budget_line_id" invisible="kind != 'payment'" domain="[('project_id', '=', project_id)]" options="{'no_create': True}"/>
+          <field name="tax_ids" widget="many2many_tags"
+                 domain="[('company_id', '=', company_id), ('type_tax_use', '=', 'purchase' if kind == 'payment' else 'sale')]" options="{'no_create': True}"/>
+          <field name="invoice_date" widget="abroj_accounting_date" required="purpose == 'direct'" options="{'numeric': True}"/>
+          <field name="date" widget="abroj_accounting_date" required="purpose == 'direct'" options="{'numeric': True}"/>
+        </group>
+        <group invisible="purpose not in ['settlement', 'supplier_refund']">
+          <field name="invoice_id" required="purpose in ['settlement', 'supplier_refund']"
+                 domain="[('company_id', '=', company_id), ('partner_id', '=', partner_id), ('state', '=', 'posted'), ('move_type', '=', 'in_refund' if purpose == 'supplier_refund' else ('in_invoice' if kind == 'payment' else 'out_invoice'))]" options="{'no_create': True}"/>
+        </group>
+        <p class="text-muted" invisible="purpose != 'advance'">An advance is a payment or collection on account. It does not recognize an expense or earned income until its supporting document is recorded.</p>
+        <p class="text-muted" invisible="purpose != 'direct'">The source amount is the gross total including selected taxes. Use an existing expense when it already represents this transaction.</p>
+        <p class="text-muted" invisible="purpose != 'direct'">Keep the project allocation at 100% and complete the required analytic dimensions.</p>
+        <p class="text-muted" invisible="not existing_payment_id">The existing payment remains the payment source. Review its accounting purpose without issuing a second payment.</p>
+        <p class="text-warning" invisible="not uses_clearing_account">Odoo clearing account — bank/cash reconciliation is still required.</p>
+        <group>
+          <field name="evidence_note" required="1"/>
+        </group>
+        <footer>
+          <button name="action_apply" type="object" string="Apply accounting review" class="btn-primary"/>
+          <button string="Cancel" special="cancel" class="btn-secondary"/>
+        </footer>
+      </form>
+    </field>
+  </record>
+  <record id="project_budget_approval" model="ir.ui.view">
+    <field name="name">abroj.project.detailed.budget.approval</field>
+    <field name="model">project.project</field>
+    <field name="inherit_id" ref="abroj_project_dashboard.project_form_budget_lines_tab"/>
+    <field name="arch" type="xml">
+      <xpath expr="//page[@name='abroj_budget_lines']/field[@name='abroj_budget_line_ids']" position="before">
+        <group>
+          <field name="abroj_effective_budget" readonly="1"/>
+          <field name="abroj_budget_lines_total" readonly="1"/>
+        </group>
+        <p class="text-muted">Approve the detailed total as the project comparison budget after reviewing overlapping or repeated items.</p>
+        <button name="action_approve_detailed_budget" type="object" string="Approve detailed comparison budget"
+                class="btn-primary mb-3" groups="project.group_project_manager"/>
+      </xpath>
+    </field>
+  </record>
+  <record id="recognition_invoice_form" model="ir.ui.view">
+    <field name="name">account.move.contracting.recognition.form</field>
+    <field name="model">account.move</field>
+    <field name="inherit_id" ref="abroj_contracting.account_move_form_voucher"/>
+    <field name="arch" type="xml">
+      <xpath expr="//group[@id='header_right_group']" position="inside">
+        <field name="abroj_recognition_voucher_id" readonly="1" invisible="not abroj_recognition_voucher_id"/>
+      </xpath>
+      <xpath expr="//field[@name='invoice_line_ids']/list" position="inside">
+        <field name="abroj_budget_line_id" optional="show" readonly="parent.state != 'draft'"
+               domain="[('project_id', '=', parent.abroj_project_id)]" options="{'no_create': True}"/>
+      </xpath>
+    </field>
+  </record>
+  <record id="cost_issue_budget_category" model="ir.ui.view">
+    <field name="name">abroj.contracting.accounting.issue.budget.category</field>
+    <field name="model">abroj.contracting.accounting.issue</field>
+    <field name="inherit_id" ref="abroj_contracting.accounting_issue_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//field[@name='expense_account_id']" position="after">
+        <field name="budget_line_id" invisible="not cost_id or mode != 'create'"
+               domain="[('project_id', '=', project_id)]" options="{'no_create': True}"/>
+      </xpath>
+    </field>
+  </record>
+</odoo>

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="dashboard_group_sales_operations" model="spreadsheet.dashboard.group">
+        <field name="name">Sales operations</field>
+        <field name="sequence">150</field>
+    </record>
+    <function model="spreadsheet.dashboard" name="_baseer_reorganize_dashboard_navigation"/>
+</odoo>

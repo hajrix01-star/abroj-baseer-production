@@ -6,8 +6,8 @@
                 <div class="o_prc_pos_identity">
                     <span class="o_prc_pos_mark" aria-hidden="true"><i class="fa fa-shopping-basket"/></span>
                     <div>
-                        <h1><t t-if="state.existingRequest">Receipt confirmation cart</t><t t-else="">New procurement request</t></h1>
-                        <p><t t-if="state.existingRequest"><t t-esc="state.existingRequest.name"/> <span aria-hidden="true">·</span> <t>Update the quantities in the cart, then confirm receipt.</t></t><t t-else="">Choose raw materials, a purchase route, and review the cart.</t></p>
+                        <h1><t t-if="state.editRequest">Edit purchase order</t><t t-elif="state.existingRequest">Receipt confirmation cart</t><t t-else="">New procurement request</t></h1>
+                        <p><t t-if="state.editRequest"><t t-esc="state.editRequest.name"/> <span aria-hidden="true">·</span> <t>Editing is available until representative handover is confirmed.</t></t><t t-elif="state.existingRequest"><t t-esc="state.existingRequest.name"/> <span aria-hidden="true">·</span> <t>Update the quantities in the cart, then confirm receipt.</t></t><t t-else="">Choose raw materials, a purchase route, and review the cart.</t></p>
                     </div>
                 </div>
                 <div class="o_prc_pos_steps" aria-label="Request workflow">
@@ -19,8 +19,8 @@
 
             <div class="o_prc_workspace_toolbar">
                 <nav class="o_prc_workspace_tabs" aria-label="Procurement workspace">
-                    <button type="button" t-att-class="{'is_active': state.workspaceTab === 'new'}" t-on-click="() => { this.routeDropdown.close(); state.workspaceTab = 'new'; }"><i class="fa fa-plus-circle"/> New request</button>
-                    <button type="button" t-att-class="{'is_active': state.workspaceTab === 'recent'}" t-on-click="() => { this.routeDropdown.close(); state.workspaceTab = 'recent'; this.loadRecentRequests(); }"><i class="fa fa-history"/> Previous requests</button>
+                    <button type="button" t-att-class="{'is_active': state.workspaceTab === 'new'}" t-on-click="() => this.switchWorkspace('new')" t-att-disabled="state.saving"><i class="fa fa-plus-circle"/> New request</button>
+                    <button type="button" t-att-class="{'is_active': state.workspaceTab === 'recent'}" t-on-click="() => this.switchWorkspace('recent')" t-att-disabled="state.saving"><i class="fa fa-history"/> Previous requests</button>
                 </nav>
                 <div t-if="state.workspaceTab === 'new'" class="o_prc_request_summary">
                     <span class="o_prc_current_request">Current request <span class="o_prc_count" t-esc="state.cart.length"/></span>
@@ -41,6 +41,8 @@
                         </t>
                     </Dropdown>
                     <span t-else="" class="o_prc_existing_route" t-esc="purchaseRouteSummary"/>
+                    <button t-if="state.existingRequest and state.existingRequest.can_edit_plan" type="button" class="btn btn-light" t-on-click="openOrderEditor" t-att-disabled="state.saving">Edit order</button>
+                    <button t-if="state.editRequest and (state.editRequest.can_open_receipt or state.editRequest.can_send)" type="button" class="btn btn-light" t-on-click="openReceipt" t-att-disabled="state.saving or state.shareLoading or state.editorLoading or state.receiptPromptOpen">Receive order</button>
                 </div>
             </div>
             <p t-if="state.workspaceTab === 'new' and !state.loadingOptions and !state.warehouseId" class="o_prc_warehouse_error" role="alert">No warehouse is configured for this company. Ask the company manager to add one before saving a purchase request.</p>
@@ -94,7 +96,7 @@
                             <input type="search" t-att-value="state.search" t-on-input="onSearchInput" t-on-keydown="onSearchKeydown" placeholder="Search raw materials, sizes, or units" autocomplete="off"/>
                             <span t-if="state.loadingOptions" class="o_prc_inline_loader" role="status" aria-label="Loading"/>
                         </label>
-                        <button t-if="state.canCurateCatalog and !state.existingRequest" t-ref="quickProductButton" type="button" class="btn o_prc_quick_product_button" t-on-click="openQuickProduct" aria-label="Add product">
+                        <button t-if="state.canCurateCatalog and !state.existingRequest and !state.editRequest" t-ref="quickProductButton" type="button" class="btn o_prc_quick_product_button" t-on-click="openQuickProduct" aria-label="Add product">
                             <i class="fa fa-plus" aria-hidden="true"/><span>Add product</span>
                         </button>
                         <div class="o_prc_result_hint"><t t-esc="state.options.length"/> materials shown</div>
@@ -110,9 +112,9 @@
                     </nav>
 
                     <div class="o_prc_product_scroll">
-                        <section t-if="state.canCurateCatalog and !state.existingRequest and !state.search and !state.selectedCategoryId and (state.highlights.length or state.highlightsLoading)" class="o_prc_highlights" aria-label="Favorites and most ordered">
+                        <section t-if="state.canCurateCatalog and !state.existingRequest and !state.editRequest and !state.search and !state.selectedCategoryId and (state.highlights.length or state.highlightsLoading)" class="o_prc_highlights" aria-label="Favorites and most ordered">
                             <header>
-                                <div><i class="fa fa-star" aria-hidden="true"/><strong>Favorites and most ordered</strong></div>
+                                <div><strong>Favorites and most ordered</strong></div>
                                 <small>Quick access</small>
                             </header>
                             <div t-if="state.highlightsLoading and !state.highlights.length" class="o_prc_highlight_track" aria-hidden="true">
@@ -123,13 +125,11 @@
                                     <button type="button" class="o_prc_highlight_card" t-on-click="() => this.selectProduct(product)" t-att-aria-label="productAriaLabel(product)">
                                         <span><strong t-esc="product.product_name"/><small t-if="product.usage_count"><t t-esc="product.usage_count"/> confirmed purchases</small><small t-else="">Favorite</small></span>
                                     </button>
-                                    <button type="button" class="o_prc_favorite_button" t-att-class="{'is_favorite': product.is_favorite, 'is_saving': product.favoriteSaving}" t-att-aria-pressed="product.is_favorite ? 'true' : 'false'" t-att-aria-label="product.is_favorite ? 'Remove from favorites' : 'Add to favorites'" t-att-disabled="product.favoriteSaving" t-on-click.stop="() => this.setFavorite(product)">
-                                        <i t-att-class="product.is_favorite ? 'fa fa-star' : 'fa fa-star-o'" aria-hidden="true"/>
-                                    </button>
                                 </div>
                             </div>
                         </section>
 
+                        <div t-if="state.editRequest and state.replacementLine and !state.selectedProduct" class="o_prc_edit_notice" role="status"><span>Choose a replacement for <strong t-esc="state.replacementLine.name"/>.</span><button type="button" class="btn btn-light" t-on-click="() => state.replacementLine = false">Cancel replacement</button></div>
                         <div t-if="state.loadingOptions" class="o_prc_product_grid" aria-hidden="true">
                             <div t-foreach="[1,2,3,4,5,6,7,8]" t-as="placeholder" t-key="placeholder" class="o_prc_product_card o_prc_skeleton_card"><b/><small/></div>
                         </div>
@@ -158,22 +158,9 @@
                                     </span>
                                     <span t-if="cartQuantity(product.product_id)" class="o_prc_product_qty" aria-label="Quantity in cart" t-esc="cartQuantity(product.product_id)"/>
                                 </button>
-                                <button t-if="state.canCurateCatalog and !state.existingRequest" type="button" class="o_prc_favorite_button" t-att-class="{'is_favorite': product.is_favorite, 'is_saving': product.favoriteSaving}" t-att-aria-pressed="product.is_favorite ? 'true' : 'false'" t-att-aria-label="product.is_favorite ? 'Remove from favorites' : 'Add to favorites'" t-att-disabled="product.favoriteSaving" t-on-click.stop="() => this.setFavorite(product)">
-                                    <i t-att-class="product.is_favorite ? 'fa fa-star' : 'fa fa-star-o'" aria-hidden="true"/>
-                                </button>
                             </div>
                         </div>
 
-                        <div t-if="state.selectedProduct" class="o_prc_option_overlay" role="dialog" aria-modal="true" aria-label="Choose size">
-                            <button type="button" class="o_prc_option_backdrop" t-on-click="closeProductOptions" aria-label="Close size selection"/>
-                            <section class="o_prc_option_sheet">
-                                <header><div><span>Choose a size or package</span><strong t-esc="state.selectedProduct.product_name"/></div><button type="button" t-on-click="closeProductOptions" aria-label="Close"><i class="fa fa-times"/></button></header>
-                                <button t-foreach="state.selectedProduct.options" t-as="option" t-key="option.id" type="button" class="o_prc_option_choice" t-on-click="() => this.selectProductOption(option)">
-                                    <span><strong t-esc="option.option_name"/><small t-if="option.packaging_note and option.packaging_note !== option.option_name" t-esc="option.packaging_note"/></span>
-                                    <b><t t-esc="option.last_price_text"/> <small t-esc="option.currency_symbol"/></b>
-                                </button>
-                            </section>
-                        </div>
 
                         <div t-if="state.hasMore and !state.loadingOptions" class="o_prc_load_more">
                             <button type="button" class="btn btn-light" t-on-click="() => this.loadCatalogue(false)" t-att-disabled="state.loadingMore">
@@ -201,6 +188,7 @@
 
                 <aside class="o_prc_cart_pane" t-att-class="{'is_mobile_hidden': state.mobilePane !== 'cart'}" aria-label="Procurement request cart">
                     <div class="o_prc_cart_lines">
+                        <ReceiptCustodyFields t-if="state.existingRequest" value="state.receiptCustody" requestId="state.existingRequest.id" saving="state.saving"/>
                         <div t-if="!state.cart.length" class="o_prc_empty_cart">
                             <span><i class="fa fa-shopping-basket" aria-hidden="true"/></span>
                             <h3>Your cart is empty</h3>
@@ -211,36 +199,52 @@
                         <article t-foreach="state.cart" t-as="line" t-key="line.option_id" t-att-class="{'o_prc_cart_line': true, 'is_not_received': isNotReceived(line)}">
                             <div class="o_prc_line_content">
                                 <div class="o_prc_line_heading"><div><strong t-esc="line.name"/><small><t t-esc="line.unit"/><t t-if="line.packaging and line.packaging !== line.unit"> · <t t-esc="line.packaging"/></t></small></div><strong t-if="quoteLine(line)" class="o_prc_line_total" t-esc="moneyText(quoteLine(line).line_total_text)"/><span t-else="" class="o_prc_quote_placeholder">—</span></div>
-                                <div class="o_prc_line_controls">
+                                <div t-if="isNotReceived(line)" class="o_prc_not_received_label">Not received</div>
+                                <div t-if="state.editRequest" class="o_prc_editor_line_actions"><button type="button" class="btn btn-link" t-on-click="() => this.changePackaging(line)" t-att-disabled="state.editorLoading or state.saving">Change packaging</button><button type="button" class="btn btn-link" t-on-click="() => this.replaceMaterial(line)" t-att-disabled="state.saving">Replace material</button></div>
+                                <div class="o_prc_line_controls" t-att-class="{'has_receipt_action': state.existingRequest}">
                                     <div class="o_prc_stepper" role="group" aria-label="Quantity">
-                                        <button type="button" t-on-click="() => this.stepQuantity(line, -1)" aria-label="Decrease quantity"><i class="fa fa-minus"/></button>
-                                        <input type="number" min="0.01" step="0.01" inputmode="decimal" dir="ltr" t-att-value="line.quantity" t-on-input="(event) => this.setQuantity(line, event.target.value)" aria-label="Quantity"/>
+                                        <button type="button" t-on-click="() => this.stepQuantity(line, -1)" t-att-disabled="isNotReceived(line)" aria-label="Decrease quantity"><i class="fa fa-minus"/></button>
+                                        <input type="number" min="0" step="0.01" inputmode="decimal" dir="ltr" t-att-value="line.quantity" t-att-disabled="state.saving" t-on-input="(event) => this.setQuantity(line, event.target.value)" t-on-change="() => this.commitQuantity(line)" aria-label="Quantity"/>
                                         <button type="button" t-on-click="() => this.stepQuantity(line, 1)" aria-label="Increase quantity"><i class="fa fa-plus"/></button>
                                     </div>
                                     <div class="o_prc_line_amount">
+                                        <label t-if="!state.existingRequest" class="o_prc_planned_price"><span class="o_prc_unit_price_label">Unit price</span><span class="o_prc_actual_price"><span class="o_prc_actual_price_currency" t-esc="line.currency_symbol"/><input type="number" min="0" step="0.01" inputmode="decimal" dir="ltr" t-att-value="line.unit_price" t-att-disabled="state.saving" t-on-input="(event) => this.setPlannedPrice(line, event.target.value)" aria-label="Unit price"/></span></label>
                                         <label t-if="state.existingRequest" t-att-class="{'o_prc_actual_price': true, 'is_invalid': requiresActualPrice(line)}">
                                             <span class="visually-hidden">Actual unit price</span>
                                             <span class="o_prc_actual_price_currency" t-esc="line.currency_symbol"/>
-                                            <input type="number" min="0.01" step="0.01" inputmode="decimal" dir="ltr" t-att-value="line.actual_price" t-on-input="(event) => this.setActualPrice(line, event.target.value)" aria-label="Actual unit price"/>
+                                            <input type="number" min="0.01" step="0.01" inputmode="decimal" dir="ltr" t-att-value="line.actual_price" t-att-disabled="isNotReceived(line)" t-on-input="(event) => this.setActualPrice(line, event.target.value)" aria-label="Actual unit price"/>
                                         </label>
                                         <small t-if="requiresActualPrice(line)" class="o_prc_actual_price_hint">Enter the price</small>
-                                        <small t-elif="!state.existingRequest and quoteLine(line)"><t t-esc="quoteLine(line).unit_price_text"/> <t t-esc="state.quote.currency_symbol"/> / <t t-esc="line.unit"/></small>
                                     </div>
-                                    <button type="button" class="o_prc_remove" t-on-click="() => this.remove(line)" t-att-aria-label="removeLineAriaLabel(line)"><i t-att-class="state.existingRequest ? (isNotReceived(line) ? 'fa fa-undo' : 'fa fa-times') : 'fa fa-trash-o'"/></button>
+                                    <button type="button" class="o_prc_remove" t-on-click="() => this.remove(line)" t-att-aria-label="removeLineAriaLabel(line)" t-att-title="removeLineAriaLabel(line)"><i t-att-class="state.existingRequest and line.line_id ? (isNotReceived(line) ? 'fa fa-undo' : 'fa fa-times') : 'fa fa-trash-o'" aria-hidden="true"/><span t-if="state.existingRequest"><t t-if="!line.line_id">Remove item</t><t t-elif="isNotReceived(line)">Restore</t><t t-else="">Not received</t></span></button>
                                 </div>
                             </div>
                         </article>
+                        <section t-if="state.editRequest and state.removedLines.length" class="o_prc_removed_lines" aria-label="Removed materials"><strong>Removed materials</strong><div t-foreach="state.removedLines" t-as="removed" t-key="removed.option_id"><span t-esc="removed.name"/><button type="button" class="btn btn-link" t-on-click="() => this.restoreEditorLine(removed)" t-att-disabled="state.saving"><i class="fa fa-undo"/> Restore</button></div></section>
                     </div>
 
                     <footer class="o_prc_cart_footer">
                         <div class="o_prc_total_row">
-                            <div><span><t t-if="state.existingRequest">Actual total</t><t t-else="">Estimated total</t></span><small t-if="state.existingRequest">Updated using receipt prices</small><small t-else="">Based on the latest recorded prices</small></div>
-                            <strong t-if="!state.quotePending" t-esc="moneyText(state.quote.total_text)"/>
+                            <div><span><t t-if="state.editRequest">Order total</t><t t-elif="state.existingRequest">Actual total</t><t t-else="">Estimated total</t></span><small t-if="state.editRequest">Saving changes does not confirm receipt.</small><small t-elif="state.existingRequest">Updated using receipt prices</small><small t-else="">Review unit prices before saving.</small></div>
+                            <strong t-if="!state.quotePending and !state.quoteError" t-esc="moneyText(state.quote.total_text)"/>
+                            <span t-elif="!state.quotePending and state.quoteError" class="o_prc_quote_placeholder">—</span>
                             <span t-else="" class="o_prc_total_loading">Calculating…</span>
                         </div>
                         <p t-if="state.existingRequest and unpricedReceivedLines.length" class="o_prc_cart_warning">Enter the actual price for <t t-esc="unpricedReceivedLines[0].name"/> to enable confirmation.</p>
-                        <p t-elif="state.quoteError" class="o_prc_cart_warning">The total could not be calculated. Check the quantities and prices.</p>
-                        <div class="o_prc_cart_actions">
+                        <p t-elif="state.quoteError" class="o_prc_cart_warning" role="alert"><t t-if="state.editRequest" t-esc="state.quoteError"/><t t-else="">The total could not be calculated. Check the quantities and prices.</t></p>
+                        <div t-if="state.editRequest" class="o_prc_cart_actions o_prc_editor_actions">
+                            <button t-if="state.purchaseRoute === 'representative'" type="button" class="btn btn-primary text-white o_prc_whatsapp_button" t-on-click="saveAndOpenEditorWhatsApp" t-att-disabled="state.saving or state.shareLoading or state.editorLoading or (editorDirty and !canSave)"><i class="fa fa-whatsapp"/> <t t-if="state.shareLoading">Preparing message…</t><t t-elif="editorDirty">Save and open WhatsApp</t><t t-else="">Open WhatsApp</t></button>
+                            <button t-else="" type="button" class="btn btn-primary" t-on-click="saveEditor" t-att-disabled="!canSave or !editorDirty or state.shareLoading"><i class="fa fa-save"/> Save changes</button>
+                            <Dropdown state="editorActionsDropdown" menuClass="'o_prc_editor_menu'">
+                                <button type="button" t-ref="cancelOrderButton" class="btn btn-light" aria-label="More options" t-att-disabled="state.saving or state.shareLoading or state.editorLoading"><i class="fa fa-ellipsis-h" aria-hidden="true"/> More options</button>
+                                <t t-set-slot="content">
+                                    <DropdownItem tag="'button'" attrs="{'disabled': !canSave or !editorDirty}" onSelected="() => this.saveEditor()">Save changes</DropdownItem>
+                                    <DropdownItem tag="'button'" onSelected="() => this.reloadEditor()">Reload order</DropdownItem>
+                                    <DropdownItem t-if="state.editRequest.can_cancel" tag="'button'" class="'text-danger'" onSelected="() => this.openCancel()">Cancel order</DropdownItem>
+                                </t>
+                            </Dropdown>
+                        </div>
+                        <div t-else="" class="o_prc_cart_actions">
                             <button t-if="!state.existingRequest" type="button" class="btn btn-light" t-on-click="() => this.saveDraft(false)" t-att-disabled="!canSave"><i class="fa fa-save" aria-hidden="true"/> Save request</button>
                             <button type="button" class="btn btn-primary" t-on-click="() => this.saveDraft(!state.existingRequest)" t-att-disabled="!canSave"><i t-att-class="state.existingRequest ? 'fa fa-check' : (state.purchaseRoute === 'representative' ? 'fa fa-whatsapp' : 'fa fa-paper-plane')" aria-hidden="true"/> <t t-if="state.existingRequest">Confirm receipt</t><t t-elif="state.purchaseRoute === 'representative'">Save and open WhatsApp</t><t t-else="">Save and send request</t></button>
                         </div>
@@ -250,16 +254,42 @@
 
             <nav class="o_prc_mobile_nav" aria-label="Request screen">
                 <button type="button" t-att-class="{'is_active': state.mobilePane === 'products'}" t-on-click="() => state.mobilePane = 'products'"><i class="fa fa-th-large"/><span>Materials</span></button>
-                <button type="button" t-att-class="{'is_active': state.mobilePane === 'cart'}" t-on-click="() => state.mobilePane = 'cart'"><i class="fa fa-shopping-basket"/><span><span>Cart</span> (<t t-esc="state.cart.length"/>)</span><strong t-if="state.cart.length" t-esc="moneyText(state.quote.total_text)"/></button>
+                <button type="button" t-att-class="{'is_active': state.mobilePane === 'cart'}" t-on-click="() => state.mobilePane = 'cart'"><i class="fa fa-shopping-basket"/><span><span>Cart</span> (<t t-esc="state.cart.length"/>)</span><strong t-if="state.cart.length and !state.quotePending and !state.quoteError" t-esc="moneyText(state.quote.total_text)"/><strong t-elif="state.cart.length and state.quotePending">Calculating…</strong><strong t-elif="state.cart.length">—</strong></button>
             </nav>
+            <div t-if="state.selectedProduct" class="o_prc_option_overlay" role="dialog" aria-modal="true" aria-label="Choose size">
+                <button type="button" class="o_prc_option_backdrop" t-on-click="closeProductOptions" aria-label="Close size selection"/>
+                <section class="o_prc_option_sheet">
+                    <header><div><span>Choose a size or package</span><strong t-esc="state.selectedProduct.product_name"/></div><button type="button" t-on-click="closeProductOptions" aria-label="Close"><i class="fa fa-times"/></button></header>
+                    <button t-foreach="state.selectedProduct.options" t-as="option" t-key="option.id" type="button" class="o_prc_option_choice" t-on-click="() => this.selectProductOption(option)">
+                        <span><strong t-esc="option.option_name"/><small t-if="option.packaging_note and option.packaging_note !== option.option_name" t-esc="option.packaging_note"/></span>
+                        <b><t t-esc="option.last_price_text"/> <small t-esc="option.currency_symbol"/></b>
+                    </button>
+                </section>
+            </div>
+            <div t-if="state.cancelOpen" class="o_prc_quick_overlay" role="dialog" aria-modal="true" aria-labelledby="o_prc_cancel_order_title"><button type="button" class="o_prc_option_backdrop" t-att-disabled="state.saving" t-on-click="closeCancel" aria-label="Close"/><form t-ref="cancelDialog" class="o_prc_quick_dialog" t-on-submit.prevent="cancelEditor"><header><h2 id="o_prc_cancel_order_title">Cancel order</h2></header><p>The order will be cancelled with the reason below. Unsaved changes will be discarded.</p><label><span>Cancellation reason</span><textarea t-ref="cancelReasonInput" required="required" maxlength="1000" t-model="state.cancelReason" t-att-disabled="state.saving"/></label><footer><button type="button" class="btn btn-light" t-on-click="closeCancel" t-att-disabled="state.saving">Keep order</button><button type="submit" class="btn btn-danger" t-att-disabled="state.saving or !state.cancelReason.trim()">Confirm cancellation</button></footer></form></div>
         </main>
+    </t>
+
+    <t t-name="baseer_procurement_requests.WhatsAppShareDialog">
+        <Dialog title="title" size="'md'">
+            <p><strong t-esc="props.payload.name"/></p>
+            <p>Choose the recipient in WhatsApp, review the message, then send it.</p>
+            <p>If WhatsApp does not open, copy the message and paste it into the app.</p>
+            <label class="w-100"><span class="visually-hidden">Message text</span><textarea class="form-control" rows="9" readonly="readonly" dir="auto" aria-label="Message text" t-esc="props.payload.text"/></label>
+            <p t-if="state.copyStatus" class="mt-2 mb-0" role="status" t-esc="state.copyStatus"/>
+            <t t-set-slot="footer">
+                <a t-att-href="props.payload.url" target="_blank" rel="noopener noreferrer" class="btn btn-primary text-white" t-on-click="recordOpened"><i class="fa fa-whatsapp"/> Open WhatsApp</a>
+                <button type="button" class="btn btn-secondary" t-on-click="copyMessage">Copy message</button>
+                <button type="button" class="btn btn-light" t-on-click="props.close">Close</button>
+            </t>
+        </Dialog>
     </t>
 
     <t t-name="baseer_procurement_requests.ProcurementActualCatalog">
         <main class="o_prc_actual_pos">
             <header class="o_prc_actual_header">
                 <div><span class="o_prc_eyebrow">Cashier receipt</span><h1>Confirm actual purchase</h1><p><t t-esc="state.request.name"/> · <t t-esc="state.request.warehouse_id[1]"/></p></div>
-                <div class="o_prc_actual_total"><span>Actual purchase total</span><strong t-if="!state.quotePending" t-esc="moneyText(state.quote.total_text)"/><small>This updates quantities and the latest price only.</small></div>
+                <div class="o_prc_actual_total"><span>Actual purchase total</span><strong t-if="!state.quotePending" t-esc="moneyText(state.quote.total_text)"/><small>Review the receipt details before confirming.</small></div>
             </header>
             <section class="o_prc_actual_notice"><i class="fa fa-info-circle"/><span>This confirmation creates a quantity-only stock receipt. It does not create accounting inventory value.</span></section>
             <section class="o_prc_actual_lines">
@@ -271,7 +301,34 @@
                     <strong class="o_prc_actual_line_total" t-if="state.mode !== 'manager_receipt' and quoteLine(line)" t-esc="moneyText(quoteLine(line).line_total_text)"/>
                 </article>
             </section>
-            <footer class="o_prc_actual_footer"><button type="button" class="btn btn-primary" t-on-click="confirm" t-att-disabled="state.saving || (state.mode !== 'manager_receipt' and (state.quotePending || state.quote.lines.length !== state.lines.length))"><i class="fa fa-check"/> <t t-if="state.mode === 'manager_receipt'">Confirm representative handover</t><t t-else="">Confirm quantity receipt and update latest prices</t></button></footer>
+            <ReceiptCustodyFields t-if="state.mode !== 'manager_receipt'" value="state.receiptCustody" requestId="state.request.id" saving="state.saving"/>
+            <footer class="o_prc_actual_footer"><button type="button" class="btn btn-primary" t-on-click="confirm" t-att-disabled="state.saving || (state.mode !== 'manager_receipt' and (!state.receiptCustody.ready or state.quotePending || state.quote.lines.length !== state.lines.length))"><i class="fa fa-check"/> <t t-if="state.mode === 'manager_receipt'">Confirm representative handover</t><t t-else="">Confirm quantity receipt and update latest prices</t></button></footer>
         </main>
+    </t>
+
+    <t t-name="baseer_procurement_requests.ReceiptCustodyFields">
+        <section t-if="state.loading or state.error or state.context?.required" class="o_prc_receipt_custody" t-att-aria-labelledby="custodyTitleId" t-att-aria-busy="state.loading ? 'true' : 'false'">
+            <h3 t-att-id="custodyTitleId">Advance handed to the representative</h3>
+            <p t-if="state.loading" role="status">Loading advance details…</p>
+            <div t-elif="state.error" role="alert"><p t-esc="state.error"/><button type="button" class="btn btn-light" t-on-click="reloadCustody" t-att-disabled="props.saving">Reload advance details</button></div>
+            <t t-else="">
+                <p class="o_prc_custody_request"><strong t-esc="state.context.request_name"/> · <span t-esc="state.context.representative_name"/></p>
+                <t t-if="state.context.existing_funded">
+                    <p>An advance is already recorded for this request. It will be reused.</p>
+                    <strong dir="ltr" t-esc="custodyMoney(state.context.funded_amount_text)"/>
+                    <ul class="o_prc_custody_existing"><li t-foreach="state.context.funding_records" t-as="funding" t-key="funding.id"><span t-esc="funding.payment_point_name"/><span dir="ltr" t-esc="funding.movement_date"/><span dir="ltr" t-esc="custodyMoney(funding.amount_text)"/></li></ul>
+                </t>
+                <t t-else="">
+                    <p>Record the amount that was actually handed to the representative.</p>
+                    <p>Confirming receipt records this advance; it does not make a bank transfer.</p>
+                    <div class="o_prc_custody_fields">
+                        <label><span>Advance amount <b>*</b></span><input type="number" min="0.01" step="0.01" inputmode="decimal" dir="ltr" required="required" t-att-value="state.amount" t-att-disabled="props.saving" t-on-input="(event) => this.setCustodyField('amount', event.target.value)" aria-label="Advance amount"/></label>
+                        <label><span>Bank or cash source <b>*</b></span><select required="required" t-att-disabled="props.saving" t-on-change="(event) => this.setCustodyField('paymentJournalId', event.target.value)" aria-label="Bank or cash source"><option value="" t-att-selected="!state.paymentJournalId">Choose a source</option><option t-foreach="state.context.payment_points" t-as="point" t-key="point.id" t-att-value="point.id" t-att-selected="state.paymentJournalId === point.id" t-esc="point.name"/></select></label>
+                        <label><span>Actual transfer date <b>*</b></span><input type="date" required="required" dir="ltr" t-att-value="state.movementDate" t-att-disabled="props.saving" t-on-input="(event) => this.setCustodyField('movementDate', event.target.value)" aria-label="Actual transfer date"/></label>
+                    </div>
+                </t>
+                <button type="button" class="btn btn-link o_prc_custody_reload" t-on-click="reloadCustody" t-att-disabled="props.saving">Reload advance details</button>
+            </t>
+        </section>
     </t>
 </templates>

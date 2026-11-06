@@ -62,6 +62,7 @@ class Day(models.Model):
 class Calendar(models.Model):
     _inherit = 'resource.calendar'
     baseer_simple = fields.Boolean(copy=False, readonly=True)
+    baseer_shared_duration = fields.Boolean(string='Shared duration schedule', copy=False, readonly=True)
     baseer_is_template = fields.Boolean(string='Work schedule template', copy=False)
     baseer_superseded_by_id = fields.Many2one('resource.calendar', string='Latest work schedule', copy=False, readonly=True, ondelete='restrict')
     baseer_effective_date = fields.Date(string='Applies from', copy=False, readonly=True)
@@ -69,11 +70,19 @@ class Calendar(models.Model):
     baseer_average_label = fields.Char(compute='_compute_baseer_schedule_summary', string='Average working day (HH:MM)')
 
     @api.depends('attendance_ids.hour_from', 'attendance_ids.hour_to', 'attendance_ids.dayofweek', 'baseer_simple',
+                 'attendance_ids.duration_hours', 'duration_based',
                  'attendance_ids.baseer_origin_day', 'attendance_ids.baseer_period_start',
                  'attendance_ids.baseer_period_end', 'hours_per_day')
     @api.depends_context('lang')
     def _compute_baseer_schedule_summary(self):
         for calendar in self:
+            if calendar.duration_based:
+                durations = defaultdict(Decimal)
+                for row in calendar._get_global_attendances():
+                    durations[int(row.dayofweek)] += Decimal(str(row.duration_hours))
+                calendar.baseer_average_label = hhmm(int((Decimal(str(calendar.hours_per_day)) * 60).quantize(Decimal('1'), rounding=ROUND_HALF_UP)))
+                calendar.baseer_schedule_summary = '\n'.join('%s: %s' % (day.name, hhmm(int((durations[day.weekday] * 60).quantize(Decimal('1'), rounding=ROUND_HALF_UP)))) for day in self.env['baseer.schedule.day'].search([]) if day.weekday in durations)
+                continue
             periods = defaultdict(set)
             for row in calendar._get_global_attendances():
                 if calendar.baseer_simple:
@@ -95,9 +104,43 @@ class Calendar(models.Model):
             return len(set(self._get_global_attendances().mapped('baseer_origin_day')))
         return super()._get_days_per_week()
 
+    def _leave_intervals_batch(self, start_dt, end_dt, resources=None, domain=None, tz=None):
+        if len(self) != 1 or not self.baseer_shared_duration:
+            return super()._leave_intervals_batch(start_dt, end_dt, resources=resources, domain=domain, tz=tz)
+        # Keep native employee-specific leaves and company-neutral public leaves.
+        # A shared calendar additionally needs the public holidays attached to
+        # each resource's company calendar, not holidays from another company.
+        original_domain = [('time_type', '=', 'leave')] if domain is None else list(domain)
+        result = super()._leave_intervals_batch(start_dt, end_dt, resources=resources, domain=original_domain, tz=tz)
+        empty_resources = self.env['resource.resource']
+        current_company = self.env.company
+        scoped = original_domain + [('company_id', '=', current_company.id)]
+        result[False] = super()._leave_intervals_batch(
+            start_dt, end_dt, resources=empty_resources, domain=scoped, tz=tz)[False]
+        grouped = defaultdict(lambda: self.env['resource.resource'])
+        for resource in resources or empty_resources:
+            if resource.company_id:
+                grouped[resource.company_id.id] |= resource
+        # The resource-less result is interpreted in the selected company only.
+        grouped.setdefault(current_company.id, empty_resources)
+        for company_id, company_resources in grouped.items():
+            company = self.env['res.company'].browse(company_id)
+            company_calendar = company.resource_calendar_id
+            if not company_calendar or company_calendar == self:
+                continue
+            company_domain = original_domain + [('company_id', '=', company_id),
+                ('calendar_id', '=', company_calendar.id), ('resource_id', '=', False)]
+            extra = super(Calendar, company_calendar)._leave_intervals_batch(
+                start_dt, end_dt, resources=company_resources, domain=company_domain, tz=tz)
+            for resource in company_resources:
+                result[resource.id] = result[resource.id] | extra[resource.id]
+            if company_id == current_company.id:
+                result[False] = result[False] | extra[False]
+        return result
+
     @api.model_create_multi
     def create(self, vals_list):
-        revision_fields = ('baseer_superseded_by_id', 'baseer_effective_date', 'write_date', 'create_date')
+        revision_fields = ('baseer_superseded_by_id', 'baseer_effective_date', 'baseer_shared_duration', 'write_date', 'create_date')
         if not trusted(self) and any(any(key in vals or self.env.context.get('default_' + key) for key in revision_fields) for vals in vals_list):
             raise ValidationError(_('Schedule revision details are managed by Edit work schedule.'))
         if not trusted(self) and any(v.get('baseer_simple', self.env.context.get('default_baseer_simple', False)) for v in vals_list):
@@ -105,11 +148,13 @@ class Calendar(models.Model):
         return super().create(vals_list)
 
     def write(self, vals):
-        if not trusted(self) and ({'baseer_superseded_by_id', 'baseer_effective_date', 'write_date', 'create_date'}.intersection(vals)
+        if not trusted(self) and ({'baseer_superseded_by_id', 'baseer_effective_date', 'baseer_shared_duration', 'write_date', 'create_date'}.intersection(vals)
                 or vals.get('baseer_is_template') and any(self.mapped('baseer_superseded_by_id'))):
             raise ValidationError(_('Schedule revision details are managed by Edit work schedule.'))
         protected = {'attendance_ids', 'attendance_ids_1st_week', 'attendance_ids_2nd_week', 'two_weeks_calendar',
                      'duration_based', 'schedule_type', 'flexible_hours', 'tz', 'company_id', 'hours_per_day', 'hours_per_week', 'baseer_simple'}
+        if 'global_leave_ids' in vals and not trusted(self) and any(self.mapped('baseer_shared_duration')):
+            raise ValidationError(_('Public holidays cannot be attached to a shared duration schedule.'))
         if protected.intersection(vals) and not trusted(self) and (any(self.mapped('baseer_simple')) or vals.get('baseer_simple')):
             raise ValidationError(_('Use Set working times to create a new schedule. Existing employee schedules must remain unchanged.'))
         return super().write(vals)
@@ -139,6 +184,8 @@ class Calendar(models.Model):
 
     def _baseer_check_editable(self):
         self.ensure_one()
+        if self.baseer_shared_duration:
+            raise ValidationError(_('Shared duration schedules cannot be edited. Create a new schedule instead.'))
         if not self.baseer_is_template or self.baseer_superseded_by_id or not self.active:
             raise ValidationError(_('This template was replaced or archived. Open the latest work schedule.'))
         if self.company_id != self.env.company:
@@ -210,6 +257,36 @@ class AttendanceLine(models.Model):
         return super().unlink()
 
 
+class CalendarLeave(models.Model):
+    _inherit = 'resource.calendar.leaves'
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        if not trusted(self):
+            defaults = self.default_get(['calendar_id', 'resource_id'])
+            for vals in vals_list:
+                calendar_id = vals.get('calendar_id', defaults.get('calendar_id'))
+                resource_id = vals.get('resource_id', defaults.get('resource_id'))
+                if calendar_id and not resource_id and self.env['resource.calendar'].browse(calendar_id).baseer_shared_duration:
+                    raise ValidationError(_('Public holidays cannot be attached to a shared duration schedule.'))
+        return super().create(vals_list)
+
+    def write(self, vals):
+        if not trusted(self):
+            for leave in self:
+                calendar = self.env['resource.calendar'].browse(vals['calendar_id']) if 'calendar_id' in vals else leave.calendar_id
+                resource_id = vals.get('resource_id', leave.resource_id.id)
+                if (leave.calendar_id.baseer_shared_duration and not leave.resource_id or
+                        calendar.baseer_shared_duration and not resource_id):
+                    raise ValidationError(_('Public holidays cannot be attached to a shared duration schedule.'))
+        return super().write(vals)
+
+    def unlink(self):
+        if not trusted(self) and any(leave.calendar_id.baseer_shared_duration and not leave.resource_id for leave in self):
+            raise ValidationError(_('Public holidays cannot be attached to a shared duration schedule.'))
+        return super().unlink()
+
+
 class Employee(models.Model):
     _inherit = 'hr.employee'
 
@@ -252,10 +329,39 @@ class Version(models.Model):
         lock_for_create(self, vals_list)
         # Native defaults/computes may choose the calendar during create. Employees
         # are already locked; touch the resulting calendars before returning.
-        records = super().create(vals_list)
-        touch_calendars(records.resource_calendar_id)
-        for record in records:
-            record.resource_calendar_id._baseer_check_assignment_date(record.date_version)
+        with self.env.cr.savepoint():
+            records = super().create(vals_list)
+            if not trusted(self):
+                # A normal future salary/contract version may retain a shared
+                # calendar already assigned to this same employee. This is not
+                # a schedule change. The first assignment and all backdating
+                # must still use the schedule wizard and its preflight checks.
+                for record in records:
+                    if not record.employee_id:
+                        if record.resource_calendar_id.baseer_shared_duration:
+                            raise ValidationError(self.env._('Assign or change shared schedules through Set working times.'))
+                        continue
+                    # Narrow history checks must not miss a protected version
+                    # hidden by a record rule; no history details are exposed.
+                    versions = self.env['hr.version'].sudo().with_context(active_test=False)
+                    previous = versions.search([
+                        ('employee_id', '=', record.employee_id.id), ('id', 'not in', records.ids), ('active', '=', True),
+                        ('date_version', '<=', record.date_version),
+                    ], order='date_version desc, id desc', limit=1)
+                    shared_transition = (record.resource_calendar_id.baseer_shared_duration or
+                                         previous.resource_calendar_id.baseer_shared_duration)
+                    if record.date_version < fields.Date.context_today(self):
+                        shared_transition = shared_transition or bool(versions.search_count([
+                            ('employee_id', '=', record.employee_id.id), ('id', 'not in', records.ids),
+                            ('resource_calendar_id.baseer_shared_duration', '=', True)], limit=1))
+                    if shared_transition and (not record.active or not previous or
+                            record.date_version < fields.Date.context_today(self) or
+                            previous.date_version >= record.date_version or
+                            previous.resource_calendar_id.id != record.resource_calendar_id.id):
+                        raise ValidationError(self.env._('Assign or change shared schedules through Set working times.'))
+            touch_calendars(records.resource_calendar_id)
+            for record in records:
+                record.resource_calendar_id._baseer_check_assignment_date(record.date_version)
         return records
 
     def write(self, vals):
@@ -266,6 +372,37 @@ class Version(models.Model):
             self.check_access('write')
             employees = self.employee_id | self.env['hr.employee'].browse(vals.get('employee_id'))
             lock_employees(employees)
+            self.invalidate_recordset(['employee_id', 'resource_calendar_id', 'date_version', 'active'])
+        if membership and not trusted(self):
+            target_calendar = self.env['resource.calendar'].browse(vals.get('resource_calendar_id'))
+            for record in self:
+                changed = set()
+                for key in membership:
+                    if key in ('employee_id', 'resource_calendar_id'):
+                        previous_value = record[key].id or False
+                        new_value = vals[key] or False
+                    elif key == 'date_version':
+                        previous_value = fields.Date.to_date(record[key])
+                        new_value = fields.Date.to_date(vals[key])
+                    else:
+                        previous_value = bool(record[key])
+                        new_value = bool(vals[key])
+                    if previous_value != new_value:
+                        changed.add(key)
+                if not changed:
+                    continue
+                # Archiving an employee may archive its versions after the
+                # employee itself has been archived. Do not block that path.
+                archived_employee = changed == {'active'} and not vals['active'] and not record.employee_id.active
+                if archived_employee:
+                    continue
+                if record.resource_calendar_id.baseer_shared_duration or target_calendar.baseer_shared_duration:
+                    raise ValidationError(self.env._('Assign or change shared schedules through Set working times.'))
+                if changed & {'date_version', 'employee_id', 'active'}:
+                    impacted = record.employee_id | self.env['hr.employee'].browse(vals.get('employee_id'))
+                    if impacted and self.env['hr.version'].sudo().with_context(active_test=False).search_count([
+                            ('employee_id', 'in', impacted.ids), ('resource_calendar_id.baseer_shared_duration', '=', True)], limit=1):
+                        raise ValidationError(self.env._('Assign or change shared schedules through Set working times.'))
         if membership:
             calendars = self.resource_calendar_id | self.env['resource.calendar'].browse(vals.get('resource_calendar_id'))
             touch_calendars(calendars)
@@ -280,6 +417,22 @@ class Version(models.Model):
     def unlink(self):
         self.check_access('unlink')
         lock_employees(self.employee_id)
+        self.invalidate_recordset(['employee_id', 'resource_calendar_id', 'date_version', 'active'])
+        if not trusted(self):
+            versions = self.env['hr.version'].sudo().with_context(active_test=False)
+            for record in self:
+                if record.resource_calendar_id.baseer_shared_duration:
+                    previous = versions.search([
+                        ('employee_id', '=', record.employee_id.id), ('id', 'not in', self.ids),
+                        ('active', '=', True), ('date_version', '<', record.date_version),
+                    ], order='date_version desc, id desc', limit=1)
+                    if (not record.active or record.date_version <= fields.Date.context_today(self) or not previous or
+                            previous.resource_calendar_id.id != record.resource_calendar_id.id):
+                        raise ValidationError(self.env._('Assign or change shared schedules through Set working times.'))
+                elif record.employee_id and versions.search_count([
+                        ('employee_id', '=', record.employee_id.id), ('id', 'not in', self.ids),
+                        ('resource_calendar_id.baseer_shared_duration', '=', True)], limit=1):
+                    raise ValidationError(self.env._('Assign or change shared schedules through Set working times.'))
         calendars = self.resource_calendar_id
         touch_calendars(calendars)
         return super().unlink()
@@ -393,9 +546,16 @@ class Wizard(models.TransientModel):
     expected_revision = fields.Char()
     applied_calendar_id = fields.Many2one('resource.calendar', readonly=True)
     edit_template = fields.Boolean(string='Edit work schedule')
+    shared_ten_hour = fields.Boolean(string='Shared flexible schedule: 10 hours, 7 days')
+    shared_duration_source = fields.Boolean(compute='_compute_shared_duration_source')
     template_revision = fields.Char(readonly=True)
     affected_employee_ids = fields.Many2many('hr.employee', compute='_compute_affected_employees', string='Employees to update')
     affected_count = fields.Integer(compute='_compute_affected_employees', string='Employees to update')
+
+    @api.depends('source_calendar_id', 'source_calendar_id.baseer_shared_duration')
+    def _compute_shared_duration_source(self):
+        for wizard in self:
+            wizard.shared_duration_source = bool(wizard.source_calendar_id.baseer_shared_duration)
 
     def _affected_employees(self, candidates):
         self.ensure_one()
@@ -494,12 +654,17 @@ class Wizard(models.TransientModel):
         if not source:
             self.source_warning = False
             return
+        if source.baseer_shared_duration:
+            self.save_as_template = False
+            self.template_name = False
         self.update(self._source_values(source))
 
     @api.model
     def _source_values(self, source):
         source.check_access('read')
         values = {'name': source.name, 'period_ids': [Command.clear()], 'source_warning': False}
+        if source.baseer_shared_duration:
+            return values
         if source.duration_based or source.two_weeks_calendar or source.schedule_type != 'fully_fixed':
             values['source_warning'] = _('This schedule has no simple weekly clock times. Enter the actual working times to create a new schedule.')
             return values
@@ -575,6 +740,70 @@ class Wizard(models.TransientModel):
                 'global_leave_ids': [Command.create(value) for value in holidays]})
         return calendar
 
+    def _shared_ten_hour_calendar(self):
+        """Create one immutable duration template, atomically reusable by all companies."""
+        self.ensure_one()
+        self.env.cr.execute("SELECT pg_advisory_xact_lock(hashtext('baseer_shared_10h_7d'))")
+        calendars = self.env['resource.calendar'].with_context(active_test=False).search([
+            ('baseer_shared_duration', '=', True), ('company_id', '=', False)], limit=2)
+        if len(calendars) > 1:
+            raise ValidationError(_('More than one shared duration schedule exists. Contact an administrator.'))
+        if calendars:
+            calendar = calendars[0]
+            rows = calendar._get_global_attendances()
+            valid_rows = len(rows) == 7 and set(rows.mapped('dayofweek')) == {str(day) for day in range(7)} and all(row.duration_hours == 10 for row in rows)
+            if not calendar.active or not calendar.baseer_is_template or not calendar.duration_based or not valid_rows:
+                raise ValidationError(_('The shared duration schedule is archived or invalid. Contact an administrator.'))
+            return calendar
+        context = {key: value for key, value in self.env.context.items() if not key.startswith('default_')}
+        calendar = self.env['resource.calendar'].with_context(context, _baseer_schedule_change=_TOKEN).create({
+            'name': self.name, 'company_id': False, 'tz': self.time_zone or 'Asia/Riyadh',
+            'schedule_type': 'fully_fixed', 'duration_based': True, 'two_weeks_calendar': False,
+            'baseer_simple': True, 'baseer_is_template': True, 'baseer_shared_duration': True,
+            'global_leave_ids': [Command.clear()],
+            'attendance_ids': [Command.clear()] + [Command.create({
+                'name': _('10 hours'), 'dayofweek': str(day), 'day_period': 'full_day',
+                'duration_hours': 10, 'baseer_origin_day': day, 'sequence': day,
+            }) for day in range(7)],
+        })
+        # Unique external id is a final database-enforced duplicate guard when a
+        # concurrent REPEATABLE READ transaction held an older search snapshot.
+        self.env['ir.model.data'].sudo().create({'module': 'baseer_work_schedule',
+            'name': 'shared_duration_10h_7d', 'model': 'resource.calendar',
+            'res_id': calendar.id, 'noupdate': True})
+        return calendar
+
+    def _check_shared_holiday_coverage(self, employee, old_calendar, start, stop):
+        """Refuse a future assignment that would lose calendar-specific holidays."""
+        if not old_calendar or old_calendar.baseer_shared_duration:
+            return
+        company = employee.company_id
+        if old_calendar == company.resource_calendar_id:
+            return
+        # Existence/coverage checks are scoped to this employee's company and
+        # expose no leave details; elevation avoids silently ignoring protected
+        # public holidays when a schedule manager lacks permission to edit them.
+        leaves = self.env['resource.calendar.leaves'].sudo()
+        common = [('company_id', '=', company.id), ('resource_id', '=', False),
+                  ('date_from', '<', stop), ('date_to', '>', start)]
+        previous = leaves.search(common + [('calendar_id', '=', old_calendar.id)])
+        if not previous:
+            return
+        coverage = leaves.search(common + [('calendar_id', 'in', [False, company.resource_calendar_id.id])], order='date_from, id')
+        for holiday in previous:
+            covered_until = max(holiday.date_from, start)
+            end = min(holiday.date_to, stop)
+            for replacement in coverage:
+                if replacement.time_type != holiday.time_type or replacement.date_to <= covered_until:
+                    continue
+                if replacement.date_from > covered_until:
+                    break
+                covered_until = max(covered_until, replacement.date_to)
+                if covered_until >= end:
+                    break
+            if covered_until < end:
+                raise ValidationError(self.env._('The current schedule has future public holidays not covered by the company calendar. Review them before assigning the shared schedule.'))
+
     def _employee_preflight(self, employee=None, expected_revision=None, already_locked=False):
         employee = self.employee_id if employee is None else employee
         employee.check_access('write')
@@ -603,6 +832,8 @@ class Wizard(models.TransientModel):
         tz = pytz.timezone(calendar.tz or 'Asia/Riyadh')
         start = tz.localize(datetime.combine(self.effective_date, time.min)).astimezone(pytz.utc).replace(tzinfo=None)
         stop = tz.localize(datetime.combine(end_date, time.min)).astimezone(pytz.utc).replace(tzinfo=None) if end_date else datetime.max
+        if self.source_calendar_id.baseer_shared_duration:
+            self._check_shared_holiday_coverage(employee, calendar, start, stop)
         # Narrow read-only existence checks avoid exposing payroll/leave records to HR.
         common = [('employee_id', '=', employee.id)]
         if self.env['hr.attendance'].sudo().search_count(common + [('check_in', '<', stop), '|', ('check_out', '=', False), ('check_out', '>', start)], limit=1):
@@ -680,14 +911,22 @@ class Wizard(models.TransientModel):
             self.source_calendar_id.check_access('read')
             if self.source_calendar_id.company_id and self.source_calendar_id.company_id != self.company_id:
                 raise ValidationError(_('Choose a work schedule from the same company.'))
-        self._compiled()
+        shared_source = bool(self.employee_id and self.source_calendar_id.baseer_shared_duration)
+        if self.shared_ten_hour and (self.employee_id or self.edit_template or self.source_calendar_id):
+            raise ValidationError(_('Create a shared duration schedule from a new template form.'))
+        if shared_source and (self.save_as_template or self.template_name):
+            raise ValidationError(_('This schedule is already shared; do not create another template.'))
+        if not (self.shared_ten_hour or shared_source):
+            self._compiled()
         with self.env.cr.savepoint():
             if self.edit_template:
                 return self._apply_template_edit()
             if self.employee_id and self.source_calendar_id:
                 self.source_calendar_id._baseer_check_assignment_date(self.effective_date)
             initial = self._employee_preflight() if self.employee_id else self.env['hr.version']
-            calendar = self._create_calendar(self.name, not bool(self.employee_id))
+            calendar = (self._shared_ten_hour_calendar() if self.shared_ten_hour else
+                        self.source_calendar_id if shared_source else
+                        self._create_calendar(self.name, not bool(self.employee_id)))
             if self.employee_id:
                 old = self.employee_id._get_version(self.effective_date)
                 if not initial and self.effective_date.day != 1 and old.sudo()._baseer_schedule_payroll_signature() != old.sudo()._baseer_schedule_payroll_signature(calendar):

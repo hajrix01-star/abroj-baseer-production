@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="baseer_procurement_operations_dashboard.DashboardIntegration" t-inherit="spreadsheet_dashboard.DashboardAction" t-inherit-mode="extension" priority="90">
+        <!-- This final integration retains the pre-existing custom dashboard conditions. -->
+        <xpath expr="//DashboardSearchBar" position="replace">
+            <t t-if="!isBaseerExecutiveDashboard"><DashboardSearchBar t-if="!isBaseerSalesDashboard and !isBaseerHeatCalendar and !isBaseerPurchasesDashboard and !isBaseerProcurementOperationsDashboard and status === Status.Loaded and loader.getActiveDashboard().model.getters.getGlobalFilters().length" t-key="activeDashboardId" model="loader.getActiveDashboard().model" toggler="searchBarToggler"/></t>
+        </xpath>
+        <xpath expr="//DashboardSearchBar" position="after">
+            <div t-if="isBaseerProcurementOperationsDashboard" class="o_sp_date_filter_button d-flex ms-auto">
+                <BaseerDashboardDateFilter value="baseerDate.value || undefined" update.bind="updateBaseerDate"/>
+            </div>
+        </xpath>
+        <xpath expr="//SpreadsheetShareButton" position="replace">
+            <t t-if="!isBaseerExecutiveDashboard"><SpreadsheetShareButton t-if="!isBaseerSalesDashboard and !isBaseerHeatCalendar and !isBaseerPurchasesDashboard and !isBaseerProcurementOperationsDashboard" t-key="activeDashboardId" model="loader.getActiveDashboard()?.model" onSpreadsheetShared.bind="shareSpreadsheet" togglerClass="'btn-light'"/></t>
+        </xpath>
+        <xpath expr="//div[hasclass('o_search_toggler')]" position="replace">
+            <t t-if="!isBaseerExecutiveDashboard"><div class="ms-1 o_search_toggler" t-if="env.isSmall and !isBaseerSalesDashboard and !isBaseerHeatCalendar and !isBaseerPurchasesDashboard and !isBaseerProcurementOperationsDashboard"><t t-component="searchBarToggler.component" t-props="searchBarToggler.props"/></div></t>
+        </xpath>
+        <xpath expr="//MobileFigureContainer" position="replace">
+            <t t-if="!isBaseerExecutiveDashboard"><MobileFigureContainer t-if="env.isSmall and !isBaseerSalesDashboard and !isBaseerHeatCalendar and !isBaseerPurchasesDashboard and !isBaseerProcurementOperationsDashboard" spreadsheetModel="dashboard.model" t-key="dashboard.data.id"/></t>
+        </xpath>
+        <xpath expr="//MobileFigureContainer" position="before">
+            <BaseerProcurementOperationsDashboard t-if="isBaseerProcurementOperationsDashboard" dashboardId="dashboard.data.id" dateFilter="baseerDate.value || undefined" t-key="dashboard.data.id"/>
+        </xpath>
+        <xpath expr="//div[hasclass('o_renderer')]" position="replace">
+            <t t-if="!isBaseerExecutiveDashboard"><div t-if="!env.isSmall and !isBaseerSalesDashboard and !isBaseerHeatCalendar and !isBaseerPurchasesDashboard and !isBaseerProcurementOperationsDashboard" class="o_renderer" t-att-class="{'o-sample-dashboard': dashboard.isSample}"><SpreadsheetComponent model="dashboard.model" t-key="dashboard.data.id"/></div></t>
+        </xpath>
+    </t>
+
+    <t t-name="baseer_procurement_operations_dashboard.ProcurementOperationsDashboard">
+        <section class="o_baseer_procurement_dashboard" t-att-aria-busy="state.loading ? 'true' : 'false'">
+            <div class="o_baseer_procurement_content">
+                <header class="o_baseer_procurement_header">
+                    <div>
+                        <h1 t-esc="labels.title"/>
+                        <p class="text-muted mb-0"><span class="o_baseer_procurement_numeric" t-esc="period"/> · <span t-esc="labels.subtitle"/></p>
+                    </div>
+                    <div class="d-flex gap-2 flex-wrap">
+                        <button type="button" class="btn btn-secondary" t-on-click="() => this.load()" t-att-disabled="state.loading"><i class="fa fa-refresh me-1"/> <span t-esc="labels.refresh"/></button>
+                        <button t-if="state.payload" type="button" class="btn btn-primary" t-on-click="openSource"><i class="fa fa-list me-1"/> <span t-esc="labels.source"/></button>
+                    </div>
+                </header>
+                <div t-if="state.loading and !state.payload" class="o_baseer_procurement_state"><i class="fa fa-circle-o-notch fa-spin text-muted"/><span t-esc="labels.loading"/></div>
+                <div t-elif="state.error" class="alert alert-danger"><span t-esc="state.error"/> <button type="button" class="btn btn-outline-danger btn-sm ms-2" t-on-click="() => this.load()" t-esc="labels.retry"/></div>
+                <t t-elif="state.payload">
+                    <div class="o_baseer_procurement_cards">
+                        <article t-foreach="cards" t-as="card" t-key="card.key" class="o_baseer_procurement_card" t-att-data-tone="card.tone">
+                            <i t-att-class="'fa ' + card.icon" aria-hidden="true"/>
+                            <h2 t-esc="card.title"/>
+                            <strong class="o_baseer_procurement_numeric" t-esc="card.display"/>
+                        </article>
+                    </div>
+                    <div t-if="!state.payload.cards.total.value" class="alert alert-secondary mt-3 mb-0" role="status" t-esc="labels.empty"/>
+                    <div class="o_baseer_procurement_grid">
+                        <section class="o_baseer_procurement_panel">
+                            <header><div><h2 t-esc="labels.actionQueue"/><p t-esc="labels.actionQueueNote"/></div></header>
+                            <p t-if="!queue.length" class="text-muted mb-0" t-esc="labels.noPending"/>
+                            <div t-else="" class="table-responsive"><table class="table table-sm mb-0"><thead><tr><th scope="col" t-esc="labels.request"/><th scope="col" t-esc="labels.state"/><th scope="col" t-esc="labels.warehouse"/><th scope="col" class="text-end" t-esc="labels.date"/></tr></thead><tbody>
+                                <tr t-foreach="queue" t-as="row" t-key="row.id"><th scope="row"><button class="btn btn-link p-0" type="button" t-on-click="() => this.openRequest(row)" t-esc="row.name"/></th><td t-esc="row.state_label"/><td t-esc="row.warehouse || labels.noWarehouse"/><td class="text-end o_baseer_procurement_numeric" t-esc="row.request_date"/></tr>
+                            </tbody></table></div>
+                        </section>
+                        <section class="o_baseer_procurement_panel">
+                            <header><div><h2 t-esc="labels.completion"/><p t-esc="labels.completionNote"/></div></header>
+                            <p t-if="!completionRows.length" class="text-muted mb-0" t-esc="labels.noCompleted"/>
+                            <div t-else="" class="table-responsive"><table class="table table-sm mb-0"><thead><tr><th scope="col" t-esc="labels.date"/><th scope="col" class="text-end" t-esc="labels.count"/></tr></thead><tbody>
+                                <tr t-foreach="completionRows" t-as="row" t-key="row.key"><th scope="row" class="o_baseer_procurement_numeric" t-esc="row.label"/><td class="text-end o_baseer_procurement_numeric" t-esc="row.count"/></tr>
+                            </tbody></table></div>
+                        </section>
+                        <section class="o_baseer_procurement_panel">
+                            <header><div><h2 t-esc="labels.dailyStates"/><p t-esc="labels.dailyStatesNote"/></div></header>
+                            <p t-if="!cohortRows.length" class="text-muted mb-0" t-esc="labels.empty"/>
+                            <div t-else="" class="table-responsive"><table class="table table-sm mb-0"><thead><tr><th scope="col" t-esc="labels.date"/><th scope="col" t-esc="labels.draft"/><th scope="col" t-esc="labels.sent"/><th scope="col" t-esc="labels.received"/><th scope="col" t-esc="labels.purchased"/></tr></thead><tbody>
+                                <tr t-foreach="cohortRows" t-as="row" t-key="row.key"><th scope="row" class="o_baseer_procurement_numeric" t-esc="row.label"/><td class="o_baseer_procurement_numeric" t-esc="row.states.draft"/><td class="o_baseer_procurement_numeric" t-esc="row.states.sent"/><td class="o_baseer_procurement_numeric" t-esc="row.states.received"/><td class="o_baseer_procurement_numeric" t-esc="row.states.purchased"/></tr>
+                            </tbody></table></div>
+                        </section>
+                        <section class="o_baseer_procurement_panel">
+                            <header><div><h2 t-esc="labels.breakdown"/><p t-esc="labels.requests"/></div></header>
+                            <div class="o_baseer_procurement_breakdowns">
+                                <div><h3 t-esc="labels.route"/><ul><li t-foreach="dimensions.routes" t-as="row" t-key="row.key"><span t-esc="row.label"/><strong class="o_baseer_procurement_numeric" t-esc="row.count"/></li></ul></div>
+                                <div><h3 t-esc="labels.warehouse"/><ul><li t-foreach="dimensions.warehouses" t-as="row" t-key="row.key"><span t-esc="row.label"/><strong class="o_baseer_procurement_numeric" t-esc="row.count"/></li></ul></div>
+                            </div>
+                        </section>
+                    </div>
+                </t>
+            </div>
+        </section>
+    </t>
+</templates>

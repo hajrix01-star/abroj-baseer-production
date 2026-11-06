@@ -37,9 +37,9 @@ jobs:
             --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/baseer-addons \
             -d abroj_contracting_ci -i abroj_contracting --without-demo=all \
             --test-enable \
-            --test-tags=/abroj_contracting:AbrojContractingCase \
+            --test-tags=/abroj_contracting:AbrojContractingCase,/abroj_contracting:AbrojAccountingIssueCase \
             --stop-after-init --max-cron-threads=0 --workers=0 --log-level=test 2>&1 | tee abroj-contracting-runtime.log
-          for test_class in AbrojContractingCase; do
+          for test_class in AbrojContractingCase AbrojAccountingIssueCase; do
             grep -F "Starting $test_class." abroj-contracting-runtime.log
           done
           if grep -Eq ': skipped .+ : |[1-9][0-9]* failed,|[1-9][0-9]* error\(s\)' abroj-contracting-runtime.log; then
@@ -47,7 +47,8 @@ jobs:
             exit 1
           fi
           grep -F '0 failed, 0 error(s)' abroj-contracting-runtime.log
-          test "$(grep -Ec 'Starting AbrojContractingCase\.' abroj-contracting-runtime.log)" -eq 39
+          test "$(grep -Ec 'Starting AbrojContractingCase\.' abroj-contracting-runtime.log)" -eq 40
+          test "$(grep -Ec 'Starting AbrojAccountingIssueCase\.' abroj-contracting-runtime.log)" -eq 25
       - name: Preserve contracting runtime evidence
         if: always()
         uses: actions/upload-artifact@v4

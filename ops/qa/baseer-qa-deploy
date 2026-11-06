@@ -247,10 +247,30 @@ normalize_restored_database_ownership() {
         END \\\$\\\$;\"" || die 'QA database ownership normalization failed'
 }
 
+is_known_websocket_startup_traceback() {
+    local log=$1 traceback_count request_error_count socket_keyerror_count websocket_runtime_count websocket_500_count
+    traceback_count="$(grep -Ec 'Traceback \(most recent call last\):' "$log")" || return 1
+    request_error_count="$(grep -Ec 'Exception during request handling\.' "$log")" || return 1
+    socket_keyerror_count="$(grep -Ec "KeyError: 'socket'" "$log")" || return 1
+    websocket_runtime_count="$(grep -Ec "RuntimeError: Couldn't bind the websocket\. Is the connection opened on the evented port \(8072\)\?" "$log")" || return 1
+    websocket_500_count="$(grep -Ec 'GET /websocket\?version=.* HTTP/1\.1" 500 ' "$log")" || return 1
+    [ "$traceback_count" -eq 2 ] &&
+        [ "$request_error_count" -eq 1 ] &&
+        [ "$socket_keyerror_count" -eq 1 ] &&
+        [ "$websocket_runtime_count" -eq 1 ] &&
+        [ "$websocket_500_count" -eq 1 ]
+}
+
 verify_smoke_log() {
-    local result
-    if grep -Eq 'Traceback \(most recent call last\)|CRITICAL|FATAL' "$backup/odoo-smoke.log"; then
+    local result log="$backup/odoo-smoke.log"
+    if grep -Eq 'CRITICAL|FATAL' "$log"; then
         die 'fatal QA smoke log entry'
+    else
+        result=$?
+        [ "$result" -eq 1 ] || die 'cannot scan QA smoke log'
+    fi
+    if grep -Eq 'Traceback \(most recent call last\):' "$log"; then
+        is_known_websocket_startup_traceback "$log" || die 'fatal QA smoke log entry'
     else
         result=$?
         [ "$result" -eq 1 ] || die 'cannot scan QA smoke log'

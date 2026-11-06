@@ -27,13 +27,17 @@
             <header class="o_baseer_heat_header">
                 <div>
                     <h1 t-esc="labels.title"/>
-                    <p class="text-muted mb-0" t-esc="labels.subtitle"/>
+                    <p class="text-muted mb-0" t-esc="subtitle"/>
                     <p t-if="state.payload" class="o_baseer_heat_scope text-muted mb-0">
                         <span t-esc="state.payload.company.name"/>
                         <span class="o_baseer_heat_numeric" t-esc="state.payload.month_label"/>
                     </p>
                 </div>
                 <div class="o_baseer_heat_actions">
+                    <label class="d-inline-flex align-items-center gap-2 mb-0 o_baseer_heat_noorix_toggle" t-on-click.stop="() => {}">
+                        <input type="checkbox" class="form-check-input mt-0" t-model="state.includeNoorix" t-on-change="toggleNoorix"/>
+                        <span t-esc="labels.includeNoorix"/>
+                    </label>
                     <button t-if="state.payload and state.payload.can_manage_occasions" type="button" class="btn btn-secondary" t-on-click="manageOccasions">
                         <i class="fa fa-calendar me-1" aria-hidden="true"/><span t-esc="labels.manage"/>
                     </button>

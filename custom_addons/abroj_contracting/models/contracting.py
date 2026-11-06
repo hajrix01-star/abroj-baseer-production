@@ -1,6 +1,12 @@
+from decimal import Decimal
+
 from odoo import api, fields, models
 from odoo.exceptions import AccessError, UserError, ValidationError
 from .guards import check_agent
+
+
+def money_sum(values):
+    return sum((Decimal(str(value or 0)) for value in values), Decimal('0'))
 
 
 class Project(models.Model):
@@ -25,7 +31,8 @@ class Project(models.Model):
     total_paid = fields.Monetary('المدفوع', compute='_compute_totals', store=True, help='حدد المدفوع لهذا السجل وفق مستند المشروع الأصلي.')
     total_received = fields.Monetary('المقبوض', compute='_compute_totals', store=True, help='حدد المقبوض لهذا السجل وفق مستند المشروع الأصلي.')
     remaining = fields.Monetary('المتبقي من العقد', compute='_compute_totals', store=True, help='المبلغ المتبقي من عقد العميل بعد سندات القبض الصادرة.')
-    profit = fields.Monetary('ربح العقد', compute='_compute_totals', store=True, help='حدد ربح العقد لهذا السجل وفق مستند المشروع الأصلي.')
+    profit = fields.Monetary('Margin after recorded commitments', compute='_compute_totals', store=True, help='حدد ربح العقد لهذا السجل وفق مستند المشروع الأصلي.')
+    abroj_customer_received = fields.Monetary('Customer collections', compute='_compute_customer_received')
     cash_balance = fields.Monetary('صافي التدفق النقدي', compute='_compute_totals', store=True, help='المقبوض ناقص المدفوع حسب السندات الصادرة؛ لا يشمل الالتزامات غير المسددة.')
 
     project_note_ids = fields.One2many('abroj.contracting.project.note', 'project_id', string='الملاحظات', help='حدد الملاحظات لهذا السجل وفق مستند المشروع الأصلي.')
@@ -54,19 +61,27 @@ class Project(models.Model):
             if r.contracting_start and r.contracting_end and r.contracting_end < r.contracting_start:
                 raise ValidationError('تاريخ الانتهاء يسبق تاريخ البدء.')
 
+    @api.depends('voucher_ids.amount', 'voucher_ids.state', 'voucher_ids.kind', 'voucher_ids.subcontractor_id')
+    def _compute_customer_received(self):
+        for project in self:
+            project.abroj_customer_received = sum((Decimal(str(v.amount)) for v in project.voucher_ids
+                if v.state == 'issued' and v.kind == 'receipt' and not v.subcontractor_id), Decimal('0'))
+
     @api.depends('contract_value', 'estimated_cost', 'company_id.currency_id', 'voucher_ids.amount', 'voucher_ids.state',
-                 'voucher_ids.kind', 'invoice_ids.amount', 'invoice_ids.state', 'cost_ids.amount', 'cost_ids.state', 'subcontractor_ids.agreed_amount', 'subcontractor_ids.materials_total')
+                 'voucher_ids.kind', 'voucher_ids.subcontractor_id', 'invoice_ids.amount', 'invoice_ids.state', 'cost_ids.amount', 'cost_ids.state', 'subcontractor_ids.agreed_amount', 'subcontractor_ids.materials_total')
     def _compute_totals(self):
         for r in self:
             issued = r.voucher_ids.filtered(lambda v: v.state == 'issued')
-            r.total_paid = sum(issued.filtered(lambda v: v.kind == 'payment').mapped('amount'))
-            r.total_received = sum(issued.filtered(lambda v: v.kind == 'receipt').mapped('amount'))
-            r.materials_purchase_total = sum(r.subcontractor_ids.mapped('materials_total'))
-            r.total_costs = sum(r.subcontractor_ids.mapped('agreed_amount')) + sum(r.cost_ids.filtered(lambda i: i.state == 'confirmed').mapped('amount'))
-            r.remaining = r.contract_value - r.total_received
-            r.profit = r.contract_value - r.total_costs
-            r.expected_profit = r.contract_value - r.estimated_cost
-            r.cash_balance = r.total_received - r.total_paid
+            r.total_paid = money_sum(issued.filtered(lambda v: v.kind == 'payment').mapped('amount'))
+            r.total_received = money_sum(issued.filtered(lambda v: v.kind == 'receipt').mapped('amount'))
+            r.materials_purchase_total = money_sum(r.subcontractor_ids.mapped('materials_total'))
+            r.total_costs = money_sum(r.subcontractor_ids.mapped('agreed_amount')) + money_sum(r.cost_ids.filtered(lambda i: i.state == 'confirmed').mapped('amount'))
+            customer_received = sum((Decimal(str(v.amount)) for v in issued
+                if v.kind == 'receipt' and not v.subcontractor_id), Decimal('0'))
+            r.remaining = Decimal(str(r.contract_value)) - customer_received
+            r.profit = Decimal(str(r.contract_value)) - Decimal(str(r.total_costs))
+            r.expected_profit = Decimal(str(r.contract_value)) - Decimal(str(r.estimated_cost)) if r.estimated_cost > 0 else 0
+            r.cash_balance = Decimal(str(r.total_received)) - Decimal(str(r.total_paid))
 
 
 class ProjectDocument(models.AbstractModel):
@@ -102,7 +117,7 @@ class FrozenDocument(models.AbstractModel):
 
     @api.model_create_multi
     def create(self, vals_list):
-        if any(v.get('state', 'draft') != 'draft' for v in vals_list):
+        if any(v.get('state', self.env.context.get('default_state', 'draft')) != 'draft' for v in vals_list):
             raise AccessError('أنشئ مسودة أولاً.')
         return super().create(vals_list)
 
@@ -202,7 +217,7 @@ class Voucher(models.Model):
     filename = fields.Char('اسم الملف', help='حدد اسم الملف لهذا السجل وفق مستند المشروع الأصلي.')
     state = fields.Selection([('draft', 'مسودة'), ('issued', 'صادر'), ('cancelled', 'ملغى')], string='الحالة', default='draft', readonly=True, copy=False, help='المسودة قابلة للتعديل؛ الاعتماد يقفل المستند ويحدث الإجماليات.')
     create_payment = fields.Boolean('إنشاء دفعة محاسبية', default=False, help='حقل قديم؛ أنشئ الدفعة عبر زر الاعتماد المحاسبي بعد إصدار السند.')
-    journal_id = fields.Many2one('account.journal', string='دفتر الدفع', check_company=True, domain="[('type', 'in', ['bank', 'cash'])]", help='اختر دفتر الدفع قبل الإصدار؛ عند تركه فارغاً يختار الاعتماد المحاسبي دفتر نقد أو بنك متاحاً من شركة المشروع حسب طريقة الدفع.')
+    journal_id = fields.Many2one('account.journal', string='دفتر الدفع', check_company=True, domain="[('type', 'in', ['bank', 'cash'])]", help='عند تركه فارغاً تقترح المراجعة المحاسبية دفتر نقد أو بنك نشطاً من شركة المشروع حسب طريقة الدفع، ويمكن تعديله.')
     payment_id = fields.Many2one('account.payment', string='الدفعة المحاسبية', readonly=True, copy=False, check_company=True, help='الدفعة التي أنشأها محاسب آخر عبر الاعتماد المحاسبي؛ يخصص حسابها المقابل للحساب التحليلي للمشروع.')
     issued_by = fields.Many2one('res.users', string='أصدره', readonly=True, copy=False, help='حدد أصدره لهذا السجل وفق مستند المشروع الأصلي.')
 
@@ -264,7 +279,7 @@ class Voucher(models.Model):
             if r.state != 'draft':
                 raise UserError('يمكن إصدار المسودة فقط.')
             # Serialize concurrent issue requests before creating a native payment.
-            self.env.cr.execute('SELECT id FROM abroj_contracting_voucher WHERE id = %s FOR UPDATE', [r.id])
+            self.env.cr.execute('SELECT id FROM abroj_contracting_voucher WHERE id = %s FOR NO KEY UPDATE', [r.id])
             r.invalidate_recordset(['state'])
             if r.state != 'draft':
                 raise UserError('تم إصدار السند مسبقاً.')
@@ -283,7 +298,7 @@ class Voucher(models.Model):
             raise AccessError('الاعتماد المحاسبي يتطلب صلاحية المحاسبة.')
         self.check_access('write')
         for r in self:
-            self.env.cr.execute('SELECT id FROM abroj_contracting_voucher WHERE id = %s FOR UPDATE', [r.id])
+            self.env.cr.execute('SELECT id FROM abroj_contracting_voucher WHERE id = %s FOR NO KEY UPDATE', [r.id])
             r.invalidate_recordset(['state', 'payment_id', 'issued_by'])
             if r.state != 'issued' or r.payment_id:
                 raise UserError('الاعتماد المحاسبي متاح لسند صادر دون دفعة فقط.')
@@ -302,7 +317,7 @@ class Voucher(models.Model):
                 raise UserError('لا توجد طريقة دفع في الدفتر.')
             payment = self.env['account.payment'].with_company(r.company_id).create({
                 'payment_type': direction, 'partner_type': 'supplier' if direction == 'outbound' else 'customer',
-                'partner_id': r.partner_id.id or False, 'amount': r.amount, 'date': r.date,
+                'partner_id': (r.accounting_partner_id or r.partner_id).id or False, 'amount': r.amount, 'date': r.date,
                 'currency_id': r.currency_id.id, 'journal_id': journal.id,
                 'payment_method_line_id': lines[0].id, 'company_id': r.company_id.id,
                 'memo': r.name, 'abroj_voucher_id': r.id,
@@ -328,7 +343,7 @@ class Voucher(models.Model):
     def action_cancel(self):
         check_agent(self.env)
         for r in self:
-            self.env.cr.execute('SELECT id FROM abroj_contracting_voucher WHERE id = %s FOR UPDATE', [r.id])
+            self.env.cr.execute('SELECT id FROM abroj_contracting_voucher WHERE id = %s FOR NO KEY UPDATE', [r.id])
             r.invalidate_recordset(['state', 'payment_id'])
             if r.state not in ('draft', 'issued'):
                 raise UserError('السند ملغى مسبقاً.')
@@ -350,7 +365,7 @@ class Invoice(models.Model):
     def action_confirm(self):
         check_agent(self.env)
         for r in self.sorted('subcontractor_id'):
-            self.env.cr.execute('SELECT id FROM abroj_contracting_subcontractor WHERE id = %s FOR UPDATE', [r.subcontractor_id.id])
+            self.env.cr.execute('SELECT id FROM abroj_contracting_subcontractor WHERE id = %s FOR NO KEY UPDATE', [r.subcontractor_id.id])
             r.subcontractor_id.invalidate_recordset()
             if r.invoice_kind == 'materials_company' and (not r.company_id.vat or (r.buyer_vat or '').strip() != r.company_id.vat.strip()):
                 raise ValidationError('يلزم رقم أبروج الضريبي المطابق للفاتورة.')

@@ -355,9 +355,9 @@ class AbrojApp(http.Controller):
     # Only project-owned business documents are exposed here. All operations use
     # the current user's environment, including record rules and model guards.
     _documents = {
-        'contract': ('abroj.contracting.subcontractor', {'party_id', 'scope', 'agreed_amount', 'contract_type', 'payment_terms', 'duration_days'}),
-        'payment': ('abroj.contracting.voucher', {'party_id', 'amount', 'date', 'method', 'memo', 'subcontractor_id', 'vendor_contract_reference', 'vendor_contract_value'}),
-        'receipt': ('abroj.contracting.voucher', {'party_id', 'amount', 'date', 'method', 'memo'}),
+        'contract': ('abroj.contracting.subcontractor', {'party_id', 'scope', 'agreed_amount', 'contract_type', 'payment_terms', 'duration_days', 'budget_line_id'}),
+        'payment': ('abroj.contracting.voucher', {'party_id', 'amount', 'date', 'method', 'memo', 'subcontractor_id', 'vendor_contract_reference', 'vendor_contract_value', 'payment_purpose', 'budget_line_id'}),
+        'receipt': ('abroj.contracting.voucher', {'party_id', 'amount', 'date', 'method', 'memo', 'payment_purpose'}),
         'promissory': ('abroj.promissory.note', {'party_id', 'amount', 'issue_date', 'due_date', 'place', 'notes', 'currency_id'}),
         'note': ('abroj.contracting.project.note', {'body', 'note_type'}),
         'invoice': ('abroj.contracting.invoice', {'number', 'subcontractor_id', 'amount', 'date', 'invoice_kind', 'buyer_vat'}),
@@ -405,6 +405,7 @@ class AbrojApp(http.Controller):
             self._check_project(project)
             project.check_access('read')
             result = {'partners': [{'id': p.id, 'name': p.display_name} for p in request.env['res.partner'].search([], limit=500)], 'parties': self._parties(project.company_id), 'records': {}, 'capabilities': {}, 'agreement': {name: (str(project[name]) if project._fields[name].type == 'date' and project[name] else project[name]) for name in ('contracting_goal_ar', 'contracting_goal_en', 'contract_payment_schedule_ar', 'contract_payment_schedule_en', 'contracting_start', 'contracting_end', 'contract_value', 'value_type', 'estimated_cost', 'contract_vat_percent', 'contract_retention_percent')}}
+            result['budget_lines'] = [{'id': line.id, 'name': line.name} for line in project.abroj_budget_line_ids]
             result['voucher_summary'] = request.env['abroj.contracting.voucher'].abroj_voucher_summary([('project_id', '=', project.id)]) if request.env['abroj.contracting.voucher'].has_access('read') else {'received': 0, 'paid': 0, 'balance': 0}
             result['logs'] = [{'author': m.author_id.display_name, 'date': str(m.date or ''), 'body': html2plaintext(m.body or '')} for m in project.message_ids if m.body]
             for key, (model, allowed) in self._documents.items():
@@ -420,10 +421,39 @@ class AbrojApp(http.Controller):
                 for rec in records.search(domain, limit=200):
                     vals = {}
                     for name in allowed:
-                        field = rec._fields[name]
-                        val = rec[name]
+                        field_name = 'abroj_budget_line_id' if key == 'payment' and name == 'budget_line_id' else name
+                        field = rec._fields[field_name]
+                        val = rec[field_name]
+                        if key == 'payment' and name == 'budget_line_id' and not val:
+                            val = rec.subcontractor_id.budget_line_id
                         vals[name] = val.id if field.type == 'many2one' else (str(val) if field.type in ('date', 'datetime') and val else val)
-                    rows.append({'id': rec.id, 'name': '' if rec.display_name == '/' else rec.display_name, 'state': rec.state if 'state' in rec._fields else '', 'stage': rec.abroj_stage if key in ('payment', 'receipt') else (rec.state if 'state' in rec._fields else ''), 'values': vals, 'can_write': rec.has_access('write')})
+                    row = {'id': rec.id, 'name': '' if rec.display_name == '/' else rec.display_name, 'state': rec.state if 'state' in rec._fields else '', 'stage': rec.abroj_stage if key in ('payment', 'receipt') else (rec.state if 'state' in rec._fields else ''), 'values': vals, 'can_write': rec.has_access('write')}
+                    if key in ('contract', 'payment'):
+                        line = (rec.budget_line_id if key == 'contract' else rec.abroj_budget_line_id or rec.subcontractor_id.budget_line_id)
+                        row['budget_line_name'] = line.name or ''
+                    if key == 'contract':
+                        row['total_paid'] = self._contract_total_paid(rec)
+                    if key in ('payment', 'receipt'):
+                        purpose_labels = dict(rec._fields['payment_purpose']._description_selection(request.env))
+                        review_labels = dict(rec._fields['workflow_status']._description_selection(request.env))
+                        row['payment_purpose_label'] = purpose_labels.get(rec.payment_purpose, '')
+                        row['workflow_status_label'] = review_labels.get(rec.workflow_status, '')
+                    accountant = (request.env.user.has_group('account.group_account_manager')
+                                  or request.env.user.has_group('account.group_account_invoice'))
+                    if (key in ('cost', 'payment', 'receipt') and accountant
+                            and not request.env.user.has_group('abroj_contracting.group_extraction_agent')):
+                        linked = rec.account_move_id if key == 'cost' else rec.payment_id.move_id
+                        can_issue = rec.abroj_can_accounting_issue if key == 'cost' else rec.abroj_can_accounting_approve
+                        if linked or can_issue:
+                            row['accounting_action_url'] = ('/odoo/account.move/%s' % linked.id
+                                                            if linked else '/odoo/%s/%s' % (model, rec.id))
+                            row['accounting_entry_exists'] = bool(linked)
+                        if key in ('payment', 'receipt'):
+                            if rec.state == 'issued' and (not rec.workflow_reviewed or rec.payment_purpose == 'advance'):
+                                row['workflow_review_url'] = '/odoo/abroj.contracting.voucher/%s' % rec.id
+                            if rec.recognition_move_id:
+                                row['recognition_url'] = '/odoo/account.move/%s' % rec.recognition_move_id.id
+                    rows.append(row)
                 result['records'][key] = rows
             return result
         except (AccessError, UserError, ValueError):
@@ -443,32 +473,50 @@ class AbrojApp(http.Controller):
             self._check_project(project)
             project.check_access('read')
             vals = dict(values)
+            payment_line = None
+            if kind in ('contract', 'payment') and 'budget_line_id' in vals:
+                line_id = vals.pop('budget_line_id')
+                line = request.env['abroj.project.budget.line'].search([('id', '=', int(line_id)), ('project_id', '=', project.id)], limit=1) if line_id else False
+                if line or not line_id:
+                    if kind == 'payment':
+                        payment_line = line if line else request.env['abroj.project.budget.line']
+                    else:
+                        vals['budget_line_id'] = line.id if line else False
             if kind == 'payment' and vals.get('subcontractor_id') and not vals.get('party_id'):
                 sub = request.env['abroj.contracting.subcontractor'].browse(int(vals['subcontractor_id'])).exists()
                 if sub and sub.project_id == project and sub.party_id:
                     vals['party_id'] = sub.party_id.id
-            if kind == 'receipt' and not vals.get('party_id') and project.abroj_client_party_id:
-                vals['party_id'] = project.abroj_client_party_id.id
+            record = request.env[model].browse()
             if record_id:
                 record = request.env[model].browse(int(record_id)).exists()
                 if not record or record.project_id != project or (kind in ('payment', 'receipt') and record.kind != kind):
                     raise AccessError('المستند غير موجود')
-                with request.env.cr.savepoint():
+            if kind == 'receipt':
+                purpose = vals.get('payment_purpose', record.payment_purpose if record else False)
+                if purpose != 'supplier_refund' and not vals.get('party_id') and project.abroj_client_party_id:
+                    vals['party_id'] = project.abroj_client_party_id.id
+            with request.env.cr.savepoint():
+                if record_id:
                     record.write(vals)
-            else:
-                vals['project_id'] = project.id
-                if kind in ('payment', 'receipt'):
-                    vals['kind'] = kind
-                with request.env.cr.savepoint():
+                else:
+                    vals['project_id'] = project.id
+                    if kind in ('payment', 'receipt'):
+                        vals['kind'] = kind
                     record = request.env[model].create(vals)
+                if payment_line is not None:
+                    record._app_set_budget_line(payment_line)
             return {'id': record.id}
         except (AccessError, UserError, ValidationError, ValueError):
             return {'error': self._message('تعذر حفظ المستند. تحقق من صلاحياتك والبيانات المدخلة.', 'Could not save the document. Check your permissions and input.')}
 
+    @staticmethod
+    def _contract_total_paid(contract):
+        return sum(contract.voucher_ids.filtered(lambda v: v.kind == 'payment' and v.state == 'issued' and v.payment_id.move_id.state == 'posted').mapped('amount'))
+
     @http.route('/abroj/app/document/action', type='jsonrpc', auth='user')
-    def document_action(self, project_id, kind, record_id, action):
+    def document_action(self, project_id, kind, record_id, action, amount=None):
         try:
-            actions = {'payment': ('issue', 'cancel'), 'receipt': ('issue', 'cancel'), 'promissory': ('issue', 'paid', 'cancel'), 'invoice': ('confirm',), 'cost': ('confirm',)}
+            actions = {'contract': ('progress_bill', 'end_contract'), 'payment': ('issue', 'cancel'), 'receipt': ('issue', 'cancel'), 'promissory': ('issue', 'paid', 'cancel'), 'invoice': ('confirm',), 'cost': ('confirm',)}
             if action not in actions.get(kind, ()):
                 raise AccessError('عملية غير مسموحة')
             project = request.env['project.project'].browse(int(project_id)).exists()
@@ -481,9 +529,17 @@ class AbrojApp(http.Controller):
                 raise AccessError('المستند غير موجود')
             record.check_access('write')
             with request.env.cr.savepoint():
+                if kind == 'contract':
+                    bill_amount = self._contract_total_paid(record) if action == 'end_contract' and amount is None else float(amount)
+                    if not math.isfinite(bill_amount) or bill_amount <= 0:
+                        raise ValueError('Invalid amount')
+                    bill = record.action_create_progress_bill(bill_amount, by_agent=False)
+                    if action == 'end_contract':
+                        record.state = 'closed'
+                    return {'ok': True, 'bill_id': bill.id, 'bill_name': bill.name, 'contract_state': record.state}
                 getattr(record, 'action_' + action)()
             return {'ok': True}
-        except (AccessError, UserError, ValidationError, ValueError):
+        except (AccessError, UserError, ValidationError, ValueError, TypeError, OverflowError):
             return {'error': self._message('تعذر تنفيذ العملية. تحقق من صلاحياتك وحالة المستند.', 'Could not complete the operation. Check your permissions and document status.')}
 
     @http.route('/abroj/app/pdf/<string:kind>/<int:record_id>', type='http', auth='user', methods=['GET'])

@@ -1,0 +1,366 @@
+msgid ""
+msgstr ""
+"Language: ar_001\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5;\n"
+
+#. module: abroj_contracting
+#: model:ir.model.fields,field_description:abroj_contracting.field_project_project__profit
+msgid "Margin after recorded commitments"
+msgstr "الهامش بعد الالتزامات المسجلة"
+
+#. module: abroj_contracting
+#: model:ir.model.fields,field_description:abroj_contracting.field_project_project__abroj_customer_received
+msgid "Customer collections"
+msgstr "المحصّل من العميل"
+
+#. module: abroj_contracting
+#. odoo-python
+#: model_terms:ir.ui.view,arch_db:abroj_contracting.project_form
+#: model_terms:ir.ui.view,arch_db:abroj_contracting.voucher_form
+#: model_terms:ir.ui.view,arch_db:abroj_contracting.cost_form
+#: model_terms:ir.ui.view,arch_db:abroj_contracting.cost_list
+#: code:addons/abroj_contracting/models/accounting_issue.py:0
+msgid "Issue accounting entry"
+msgstr "إصدار قيد محاسبي"
+
+#. module: abroj_contracting
+#: model_terms:ir.ui.view,arch_db:abroj_contracting.project_form
+#: model_terms:ir.ui.view,arch_db:abroj_contracting.voucher_form
+#: model_terms:ir.ui.view,arch_db:abroj_contracting.cost_form
+#: model_terms:ir.ui.view,arch_db:abroj_contracting.cost_list
+msgid "View journal entry"
+msgstr "عرض القيد المحاسبي"
+
+#. module: abroj_contracting
+#: model_terms:ir.ui.view,arch_db:abroj_contracting.account_move_form_voucher
+msgid "Project expense"
+msgstr "مصروف المشروع"
+
+#. module: abroj_contracting
+#: model_terms:ir.ui.view,arch_db:abroj_contracting.accounting_issue_form
+msgid "Accounting review"
+msgstr "مراجعة الإصدار المحاسبي"
+
+#. module: abroj_contracting
+#: model_terms:ir.ui.view,arch_db:abroj_contracting.accounting_issue_form
+msgid "Gross source amount"
+msgstr "إجمالي مبلغ المصروف أو السند"
+
+#. module: abroj_contracting
+#: model_terms:ir.ui.view,arch_db:abroj_contracting.accounting_issue_form
+msgid "Confirm accounting"
+msgstr "تأكيد الإصدار المحاسبي"
+
+#. module: abroj_contracting
+#: model_terms:ir.ui.view,arch_db:abroj_contracting.accounting_issue_form
+msgid "Cancel"
+msgstr "إلغاء"
+
+#. module: abroj_contracting
+#: model_terms:ir.ui.view,arch_db:abroj_contracting.accounting_issue_form
+msgid "The source amount is the gross payable total, including any selected tax. Leave taxes empty only when no tax applies."
+msgstr "مبلغ المصروف هو الإجمالي المستحق، شاملًا أي ضريبة تختارها. اترك الضرائب فارغة فقط إذا كان المصروف بلا ضريبة."
+
+#. module: abroj_contracting
+#: model_terms:ir.ui.view,arch_db:abroj_contracting.accounting_issue_form
+msgid "Link the existing posted bill when this expense has already been recorded. Its company, supplier, amount and project allocation must match."
+msgstr "إذا سبق تسجيل المصروف محاسبيًا، اربطه بفاتورته المرحلة. يجب أن تتطابق الشركة والمورد والمبلغ والتخصيص التحليلي للمشروع."
+
+#. module: abroj_contracting
+#: model_terms:ir.ui.view,arch_db:abroj_contracting.accounting_issue_form
+msgid "Review the receiving or paying cash/bank journal before issuing the accounting entry."
+msgstr "راجع دفتر الصندوق أو البنك الذي يستلم المبلغ أو يدفعه قبل إصدار القيد المحاسبي."
+
+#. module: abroj_contracting
+#: model:ir.model.fields,field_description:abroj_contracting.field_abroj_contracting_cost__account_move_id
+msgid "Accounting document"
+msgstr "المستند المحاسبي"
+
+#. module: abroj_contracting
+#: model:ir.model.fields,field_description:abroj_contracting.field_abroj_contracting_cost__accounting_stage
+msgid "Accounting status"
+msgstr "الحالة المحاسبية"
+
+#. module: abroj_contracting
+#: model:ir.model.fields,field_description:abroj_contracting.field_abroj_contracting_voucher__accounting_partner_id
+#: model:ir.model.fields,field_description:abroj_contracting.field_abroj_contracting_accounting_issue__partner_id
+msgid "Accounting partner"
+msgstr "الطرف المحاسبي"
+
+#. module: abroj_contracting
+#: model:ir.model.fields,field_description:abroj_contracting.field_account_move__abroj_cost_id
+msgid "Contracting expense"
+msgstr "مصروف المقاولات"
+
+#. module: abroj_contracting
+#: model:ir.model.fields,field_description:abroj_contracting.field_abroj_contracting_accounting_issue__cost_id
+msgid "Expense"
+msgstr "المصروف"
+
+#. module: abroj_contracting
+#: model:ir.model.fields,field_description:abroj_contracting.field_abroj_contracting_accounting_issue__voucher_id
+msgid "Voucher"
+msgstr "السند"
+
+#. module: abroj_contracting
+#: model:ir.model.fields,field_description:abroj_contracting.field_abroj_contracting_accounting_issue__company_id
+msgid "Company"
+msgstr "الشركة"
+
+#. module: abroj_contracting
+#: model:ir.model.fields,field_description:abroj_contracting.field_abroj_contracting_accounting_issue__currency_id
+msgid "Currency"
+msgstr "العملة"
+
+#. module: abroj_contracting
+#: model:ir.model.fields,field_description:abroj_contracting.field_abroj_contracting_accounting_issue__amount
+msgid "Gross amount including selected taxes"
+msgstr "المبلغ الإجمالي شامل الضريبة المختارة"
+
+#. module: abroj_contracting
+#: model:ir.model.fields,field_description:abroj_contracting.field_abroj_contracting_accounting_issue__mode
+msgid "Mode"
+msgstr "الإجراء المحاسبي"
+
+#. module: abroj_contracting
+#: model:ir.model.fields,field_description:abroj_contracting.field_abroj_contracting_accounting_issue__journal_id
+msgid "Journal"
+msgstr "دفتر اليومية"
+
+#. module: abroj_contracting
+#: model:ir.model.fields,field_description:abroj_contracting.field_abroj_contracting_accounting_issue__expense_account_id
+msgid "Expense account"
+msgstr "حساب المصروف"
+
+#. module: abroj_contracting
+#: model:ir.model.fields,field_description:abroj_contracting.field_abroj_contracting_accounting_issue__tax_ids
+msgid "Purchase taxes"
+msgstr "ضرائب المشتريات"
+
+#. module: abroj_contracting
+#: model:ir.model.fields,field_description:abroj_contracting.field_abroj_contracting_accounting_issue__invoice_date
+msgid "Invoice date"
+msgstr "تاريخ الفاتورة"
+
+#. module: abroj_contracting
+#: model:ir.model.fields,field_description:abroj_contracting.field_abroj_contracting_accounting_issue__date
+msgid "Accounting date"
+msgstr "التاريخ المحاسبي"
+
+#. module: abroj_contracting
+#: model:ir.model.fields,field_description:abroj_contracting.field_abroj_contracting_accounting_issue__existing_move_id
+msgid "Existing posted bill"
+msgstr "الفاتورة المرحلة القائمة"
+
+#. module: abroj_contracting
+#: model:ir.model.fields.selection,name:abroj_contracting.selection__abroj_contracting_cost__accounting_stage__draft
+msgid "Draft"
+msgstr "مسودة"
+
+#. module: abroj_contracting
+#: model:ir.model.fields.selection,name:abroj_contracting.selection__abroj_contracting_cost__accounting_stage__confirmed
+msgid "Pending accounting"
+msgstr "بانتظار الإصدار المحاسبي"
+
+#. module: abroj_contracting
+#: model:ir.model.fields.selection,name:abroj_contracting.selection__abroj_contracting_cost__accounting_stage__posted
+msgid "Posted"
+msgstr "مرحل محاسبيًا"
+
+#. module: abroj_contracting
+#: model:ir.model.fields.selection,name:abroj_contracting.selection__abroj_contracting_accounting_issue__mode__create
+msgid "Create accounting document"
+msgstr "إصدار مستند محاسبي"
+
+#. module: abroj_contracting
+#: model:ir.model.fields.selection,name:abroj_contracting.selection__abroj_contracting_accounting_issue__mode__existing
+msgid "Link existing posted bill"
+msgstr "ربط فاتورة مرحلة قائمة"
+
+#. module: abroj_contracting
+#. odoo-python
+#: code:addons/abroj_contracting/models/accounting_issue.py:0
+msgid "Only an accountant can issue accounting entries."
+msgstr "إصدار القيود المحاسبية متاح للمحاسب فقط."
+
+#. module: abroj_contracting
+#. odoo-python
+#: code:addons/abroj_contracting/models/accounting_issue.py:0
+msgid "Enter a positive amount with at most two decimals."
+msgstr "أدخل مبلغًا موجبًا لا يزيد على منزلتين عشريتين."
+
+#. module: abroj_contracting
+#. odoo-python
+#: code:addons/abroj_contracting/models/accounting_issue.py:0
+msgid "Select an allowed company for this document."
+msgstr "اختر شركة مسموحًا لك بالوصول إليها لهذا المستند."
+
+#. module: abroj_contracting
+#. odoo-python
+#: code:addons/abroj_contracting/models/accounting_issue.py:0
+msgid "Journal entry"
+msgstr "القيد المحاسبي"
+
+#. module: abroj_contracting
+#. odoo-python
+#: code:addons/abroj_contracting/models/accounting_issue.py:0
+msgid "Accounting links are managed by the issue action."
+msgstr "تُدار الروابط المحاسبية من خلال إجراء إصدار القيد."
+
+#. module: abroj_contracting
+#. odoo-python
+#: code:addons/abroj_contracting/models/accounting_issue.py:0
+msgid "Confirm the expense before issuing its accounting entry."
+msgstr "أكد المصروف قبل إصدار قيده المحاسبي."
+
+#. module: abroj_contracting
+#. odoo-python
+#: code:addons/abroj_contracting/models/accounting_issue.py:0
+msgid "This expense has no accounting document yet."
+msgstr "لم يصدر مستند محاسبي لهذا المصروف بعد."
+
+#. module: abroj_contracting
+#. odoo-python
+#: code:addons/abroj_contracting/models/accounting_issue.py:0
+msgid "This voucher is not available for accounting approval."
+msgstr "هذا السند غير متاح للاعتماد المحاسبي."
+
+#. module: abroj_contracting
+#. odoo-python
+#: code:addons/abroj_contracting/models/accounting_issue.py:0
+msgid "The accounting document is already linked or belongs to another company."
+msgstr "المستند المحاسبي مرتبط بمصروف آخر أو يتبع شركة مختلفة."
+
+#. module: abroj_contracting
+#. odoo-python
+#: code:addons/abroj_contracting/models/accounting_issue.py:0
+msgid "Correct a linked expense through a credit note or reversal."
+msgstr "صحح المصروف المرتبط من خلال إشعار دائن أو قيد عكسي."
+
+#. module: abroj_contracting
+#. odoo-python
+#: code:addons/abroj_contracting/models/accounting_issue.py:0
+msgid "Choose an accounting partner from the document company."
+msgstr "اختر طرفًا محاسبيًا متاحًا لشركة المستند."
+
+#. module: abroj_contracting
+#. odoo-python
+#: code:addons/abroj_contracting/models/accounting_issue.py:0
+msgid "Choose an active journal from the document company."
+msgstr "اختر دفتر يومية نشطًا من شركة المستند."
+
+#. module: abroj_contracting
+#. odoo-python
+#: code:addons/abroj_contracting/models/accounting_issue.py:0
+msgid "The existing bill must match the expense supplier, company, currency, total and project."
+msgstr "يجب أن تتطابق الفاتورة القائمة مع مورد المصروف وشركته وعملته ومبلغه الإجمالي ومشروعه."
+
+#. module: abroj_contracting
+#. odoo-python
+#: code:addons/abroj_contracting/models/accounting_issue.py:0
+msgid "Every expense line must allocate 100% to this project."
+msgstr "يجب تخصيص كل بند مصروف بنسبة 100% لهذا المشروع."
+
+#. module: abroj_contracting
+#. odoo-python
+#: code:addons/abroj_contracting/models/accounting_issue.py:0
+msgid "Choose a purchase journal, an expense account and the project analytic account."
+msgstr "اختر دفتر مشتريات وحساب مصروف، وتأكد من وجود الحساب التحليلي للمشروع."
+
+#. module: abroj_contracting
+#. odoo-python
+#: code:addons/abroj_contracting/models/accounting_issue.py:0
+msgid "Choose supported purchase percentage taxes from this company."
+msgstr "اختر ضرائب مشتريات نسبية مدعومة من هذه الشركة."
+
+#. module: abroj_contracting
+#. odoo-python
+#: code:addons/abroj_contracting/models/accounting_issue.py:0
+msgid "Choose taxes with the same price-inclusion setting."
+msgstr "اختر ضرائب تتفق في إعداد شمول السعر للضريبة."
+
+#. module: abroj_contracting
+#. odoo-python
+#: code:addons/abroj_contracting/models/accounting_issue.py:0
+msgid "A supplier bill with this reference already exists. Use Link existing posted bill."
+msgstr "توجد فاتورة مورد بهذا المرجع بالفعل. استخدم خيار ربط فاتورة مرحلة قائمة."
+
+#. module: abroj_contracting
+#. odoo-python
+#: code:addons/abroj_contracting/models/accounting_issue.py:0
+msgid "The native bill total does not match the confirmed gross expense. Review the selected taxes."
+msgstr "إجمالي فاتورة أودو لا يطابق إجمالي المصروف المؤكد. راجع الضرائب المختارة."
+
+#. module: abroj_contracting
+#. odoo-python
+#: code:addons/abroj_contracting/models/accounting_issue.py:0
+msgid "The accounting date or total changed during posting. Review the accounting period and taxes."
+msgstr "تغير التاريخ المحاسبي أو المبلغ الإجمالي أثناء الترحيل. راجع الفترة المحاسبية والضرائب."
+
+#. module: abroj_contracting
+#. odoo-python
+#: code:addons/abroj_contracting/models/accounting_issue.py:0
+msgid "Choose exactly one source document."
+msgstr "اختر مستند مصدر واحدًا فقط."
+
+#. module: abroj_contracting
+#. odoo-python
+#: code:addons/abroj_contracting/models/accounting_issue.py:0
+msgid "The journal and accounting partner must match the issued voucher."
+msgstr "يجب أن يتطابق دفتر اليومية والطرف المحاسبي مع السند الصادر."
+
+#. module: abroj_contracting
+#: model:ir.model,name:abroj_contracting.model_abroj_contracting_accounting_issue
+msgid "Contracting accounting review"
+msgstr "مراجعة محاسبة المقاولات"
+
+#. module: abroj_contracting
+#. odoo-python
+#: code:addons/abroj_contracting/models/accounting_issue.py:0
+msgid "The accounting partner must match the source document supplier."
+msgstr "يجب أن يتطابق الطرف المحاسبي مع مورد مستند المصروف."
+
+#. module: abroj_contracting
+#. odoo-python
+#: code:addons/abroj_contracting/models/accounting_issue.py:0
+msgid "Select an analytic account from the native project plan."
+msgstr "اختر حسابًا تحليليًا من خطة المشاريع الأصلية في أودو."
+
+#. module: abroj_contracting
+#. odoo-python
+#: code:addons/abroj_contracting/models/accounting_issue.py:0
+msgid "Keep the accounting date of the issued voucher."
+msgstr "احتفظ بالتاريخ المحاسبي للسند الصادر."
+
+#. module: abroj_contracting
+#: model:ir.model.fields,field_description:abroj_contracting.field_abroj_contracting_accounting_issue__payment_account_id
+msgid "Payment posting account"
+msgstr "حساب ترحيل الدفعة"
+
+#. module: abroj_contracting
+#: model_terms:ir.ui.view,arch_db:abroj_contracting.accounting_issue_form
+msgid "This journal posts through an outstanding account. Cash/bank recognition follows native reconciliation."
+msgstr "يرحّل هذا الدفتر عبر حساب مبالغ قيد التسوية. يظهر الأثر في النقد أو البنك وفق التسوية الأصلية في أودو."
+
+#. module: abroj_contracting
+#: model_terms:ir.ui.view,arch_db:abroj_contracting.accounting_issue_form
+msgid "Analytic distribution"
+msgstr "التوزيع التحليلي"
+
+#. module: abroj_contracting
+#: model_terms:ir.ui.view,arch_db:abroj_contracting.accounting_issue_form
+msgid "Keep the project allocation at 100% and complete the required analytic dimensions."
+msgstr "أبق تخصيص المشروع بنسبة 100%، وأكمل الأبعاد التحليلية المطلوبة."
+
+#. module: abroj_contracting
+#. odoo-python
+#: code:addons/abroj_contracting/models/accounting_issue.py:0
+msgid "Choose a valid analytic distribution with this project at 100% and active accounts from the same company or shared accounts."
+msgstr "اختر توزيعًا تحليليًا صالحًا يخصص 100% لهذا المشروع، باستخدام حسابات نشطة مشتركة أو تابعة للشركة نفسها."
+
+#. module: abroj_contracting
+#. odoo-python
+#: code:addons/abroj_contracting/models/accounting_issue.py:0
+msgid "Choose a source project before reviewing the analytic distribution."
+msgstr "اختر مشروع المستند قبل مراجعة التوزيع التحليلي."

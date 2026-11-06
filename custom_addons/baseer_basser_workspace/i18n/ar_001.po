@@ -359,3 +359,13 @@ msgstr "العودة إلى بصير"
 #: code:addons/baseer_basser_workspace/static/src/workspace.js:0
 msgid "Manage Baseer configuration"
 msgstr "إدارة إعدادات بصير"
+
+#. module: baseer_basser_workspace
+#: model:baseer.basser.workspace.item,name:baseer_basser_workspace.workspace_item_branch_manager_representative_advances
+msgid "Representative advances"
+msgstr "العهد"
+
+#. module: baseer_basser_workspace
+#: model:baseer.basser.workspace.item,description:baseer_basser_workspace.workspace_item_branch_manager_representative_advances
+msgid "Review advances recorded when receiving your restaurant's purchase orders."
+msgstr "متابعة عهد مندوبي المشتريات المسجلة عند استلام طلبات مطعمك."

@@ -59,18 +59,20 @@ class BaseerReportExport(models.AbstractModel):
                 mimetype = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
             else:
                 body = render_html(document)
+                # The tobacco register keeps its established portrait A4 layout.
+                landscape = report_key != 'tobacco' and len(document['columns']) > 4
                 # Only the installed low-level converter is reused. Baseer owns
                 # document/schema/layout; no account.report or report_action.
                 paper = self.env['report.paperformat'].new({
                     'name': 'Baseer unified A4', 'format': 'A4',
-                    'orientation': 'Landscape' if len(document['columns']) > 4 else 'Portrait',
+                    'orientation': 'Landscape' if landscape else 'Portrait',
                     'margin_top': 12, 'margin_bottom': 16, 'margin_left': 12, 'margin_right': 12,
                     'header_line': False, 'header_spacing': 0, 'dpi': 96,
                     'disable_shrinking': True,
                 })
                 renderer = self.env['ir.actions.report'].new({'paperformat_id': paper})
                 data = renderer._run_wkhtmltopdf(
-                    [body], landscape=len(document['columns']) > 4,
+                    [body], landscape=landscape,
                     footer=_PAGE_FOOTER.replace('__BASEER_FIXED_FONT_STYLES__', _font_styles()),
                     specific_paperformat_args={
                         'data-report-margin-top': 12,

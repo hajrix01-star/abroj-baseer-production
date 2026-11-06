@@ -11,3 +11,6 @@ access_daily_line_user,daily line user,model_abroj_daily_report_line,base.group_
 access_daily_line_manager,daily line manager,model_abroj_daily_report_line,project.group_project_manager,1,1,1,1
 access_daily_report_system,daily report system,model_abroj_daily_report,base.group_system,1,1,1,1
 access_daily_line_system,daily line system,model_abroj_daily_report_line,base.group_system,1,1,1,1
+access_voucher_review_invoice,Voucher accounting review,model_abroj_project_voucher_review,account.group_account_invoice,1,1,1,1
+access_voucher_review_manager,Voucher accounting review manager,model_abroj_project_voucher_review,account.group_account_manager,1,1,1,1
+access_progress_bill_wizard,Progress bill wizard,model_abroj_contract_progress_bill_wizard,account.group_account_invoice,1,1,1,1

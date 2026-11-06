@@ -230,6 +230,18 @@ smoke_failure() (
     : > "$QA_BASE/current"
     if [ "$mode" = fatal ]; then
         printf 'FATAL: boot failed\n' > "$backup/odoo-smoke.log"
+    elif [ "$mode" = websocket ]; then
+        cat > "$backup/odoo-smoke.log" <<'EOF'
+ERROR odoo.http: Exception during request handling.
+Traceback (most recent call last):
+KeyError: 'socket'
+The above exception was the direct cause of the following exception:
+Traceback (most recent call last):
+RuntimeError: Couldn't bind the websocket. Is the connection opened on the evented port (8072)?
+INFO werkzeug: GET /websocket?version=19.0-2 HTTP/1.1" 500 - 9 0.026 0.169
+EOF
+    elif [ "$mode" = traceback ]; then
+        printf 'Traceback (most recent call last):\nValueError: unexpected failure\n' > "$backup/odoo-smoke.log"
     fi
     release_switched=1 database_mutated=0 service_quiesced=1 phase_guard_active=1
     compose_cmd() { printf '%s\n' "$*" >> "$QA_BASE/compose.trace"; }
@@ -256,6 +268,8 @@ expect_failed backup-capture '' backup_capture_failure
 expect_failed filestore-enospc 'QA filestore backup failed' filestore_capture_enospc
 expect_failed smoke 'fatal QA smoke log entry' smoke_failure
 expect_failed smoke-read 'cannot scan QA smoke log' smoke_failure unreadable
+expect_failed smoke-traceback 'fatal QA smoke log entry' smoke_failure traceback
+smoke_failure websocket
 expect_failed restore-ownership 'QA database ownership normalization failed' restore_ownership_failure
 for step in checksum stop dropdb createdb pg_restore filestore_restore; do
     restore_step_failure "$step"

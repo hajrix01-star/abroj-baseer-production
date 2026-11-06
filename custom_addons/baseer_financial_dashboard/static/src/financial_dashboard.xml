@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="baseer_financial_dashboard.DashboardIntegration" t-inherit="spreadsheet_dashboard.DashboardAction" t-inherit-mode="extension" priority="90">
+        <!-- The outer finance guard survives later dashboard extensions. -->
+        <xpath expr="//DashboardSearchBar" position="replace">
+            <t t-if="!isBaseerFinancialDashboard"><DashboardSearchBar t-if="!isBaseerSalesDashboard and !isBaseerHeatCalendar and !isBaseerPurchasesDashboard and !isBaseerProcurementOperationsDashboard and status === Status.Loaded and loader.getActiveDashboard().model.getters.getGlobalFilters().length" t-key="activeDashboardId" model="loader.getActiveDashboard().model" toggler="searchBarToggler"/></t>
+        </xpath>
+        <xpath expr="//SpreadsheetShareButton" position="replace">
+            <t t-if="!isBaseerFinancialDashboard"><SpreadsheetShareButton t-if="!isBaseerSalesDashboard and !isBaseerHeatCalendar and !isBaseerPurchasesDashboard and !isBaseerProcurementOperationsDashboard" t-key="activeDashboardId" model="loader.getActiveDashboard()?.model" onSpreadsheetShared.bind="shareSpreadsheet" togglerClass="'btn-light'"/></t>
+        </xpath>
+        <xpath expr="//div[hasclass('o_search_toggler')]" position="replace">
+            <t t-if="!isBaseerFinancialDashboard"><div class="ms-1 o_search_toggler" t-if="env.isSmall and !isBaseerSalesDashboard and !isBaseerHeatCalendar and !isBaseerPurchasesDashboard and !isBaseerProcurementOperationsDashboard"><t t-component="searchBarToggler.component" t-props="searchBarToggler.props"/></div></t>
+        </xpath>
+        <xpath expr="//MobileFigureContainer" position="before">
+            <BaseerFinancialDashboard t-if="isBaseerFinancialDashboard" dashboardId="dashboard.data.id" t-key="dashboard.data.id"/>
+        </xpath>
+        <xpath expr="//MobileFigureContainer" position="replace">
+            <t t-if="!isBaseerFinancialDashboard"><MobileFigureContainer t-if="env.isSmall and !isBaseerSalesDashboard and !isBaseerHeatCalendar and !isBaseerPurchasesDashboard and !isBaseerProcurementOperationsDashboard" spreadsheetModel="dashboard.model" t-key="dashboard.data.id"/></t>
+        </xpath>
+        <xpath expr="//div[hasclass('o_renderer')]" position="replace">
+            <t t-if="!isBaseerFinancialDashboard"><div t-if="!env.isSmall and !isBaseerSalesDashboard and !isBaseerHeatCalendar and !isBaseerPurchasesDashboard and !isBaseerProcurementOperationsDashboard" class="o_renderer" t-att-class="{'o-sample-dashboard': dashboard.isSample}"><SpreadsheetComponent model="dashboard.model" t-key="dashboard.data.id"/></div></t>
+        </xpath>
+    </t>
+
+    <t t-name="baseer_financial_dashboard.Dashboard">
+        <section class="o_baseer_financial_dashboard_shell" t-att-dir="lang === 'ar' ? 'rtl' : 'ltr'" t-att-lang="lang">
+            <div class="o_baseer_financial_dashboard_tabs" role="tablist" t-att-aria-label="lang === 'ar' ? 'لوحة الأداء المالي' : 'Financial performance dashboard'">
+                <button t-foreach="tabs" t-as="tab" t-key="tab.key" type="button" role="tab" class="o_baseer_financial_dashboard_tab"
+                    t-att-data-financial-tab="tab.key" t-att-id="tabId(tab)" t-att-aria-controls="panelId(tab)"
+                    t-att-aria-selected="state.active === tab.key ? 'true' : 'false'" t-att-tabindex="state.active === tab.key ? 0 : -1"
+                    t-att-class="state.active === tab.key ? 'o_baseer_financial_dashboard_tab is-active' : 'o_baseer_financial_dashboard_tab'"
+                    t-on-click="() => this.select(tab.key)" t-on-keydown="onTabKeydown" t-esc="label(tab)"/>
+            </div>
+            <section role="tabpanel" t-att-id="panelId(activeTab)" t-att-aria-labelledby="tabId(activeTab)" class="o_baseer_financial_dashboard_panel">
+                <t t-component="activeComponent" t-key="state.active"/>
+            </section>
+        </section>
+    </t>
+
+    <t t-name="baseer_financial_dashboard.SalesPayments" t-inherit="baseer_operations_report.Preview" t-inherit-mode="primary">
+        <xpath expr="//div[hasclass('o_baseer_report_canvas')]" position="replace">
+            <div t-if="state.report" class="o_baseer_report_canvas o_baseer_financial_dashboard o_baseer_financial_sales_dashboard">
+                <t t-set="salesDashboardData" t-value="salesDashboard"/>
+                <section t-if="salesDashboardData" class="o_baseer_report o_baseer_pl_paper" t-att-aria-label="state.report.title || labels.title">
+                    <header class="o_baseer_financial_head">
+                        <div><p class="o_baseer_financial_eyebrow" t-esc="labels.title"/><h1 class="o_baseer_report_title" t-esc="state.report.title || labels.title"/><p class="o_baseer_report_period"><span t-esc="state.report.company.name"/> · <span t-esc="salesDashboardData.period.display_label || salesDashboardData.period.label"/></p></div>
+                        <span class="o_baseer_financial_currency" t-esc="state.report.company.currency_code"/>
+                    </header>
+                    <p t-if="state.report.is_partial_journals" class="o_baseer_pl_partial" role="status" t-esc="labels.selectedJournals"/>
+
+                    <section class="o_baseer_financial_kpis" t-att-aria-label="labels.title">
+                        <button t-foreach="salesDashboardData.cards" t-as="card" t-key="card.key" type="button"
+                            t-att-class="'o_baseer_financial_kpi ' + card.tone + (card.value.negative ? ' is-negative' : '')"
+                            t-att-data-owner-row="card.row.key" t-att-data-owner-period="salesDashboardData.period.key"
+                            t-att-aria-label="cardLabel(card) + ' · ' + salesDashboardData.period.display_label"
+                            t-on-click="() => this.openOwnerDetails(card.row, salesDashboardData.period.key)">
+                            <span class="o_baseer_financial_kpi_top"><span t-esc="cardLabel(card)"/><i t-att-class="'fa ' + card.icon" aria-hidden="true"/></span>
+                            <strong t-att-class="ownerAmountClass(card.value) + ' o_baseer_financial_kpi_value'" t-esc="card.value.amount"/>
+                            <span t-if="card.comparisons.length" t-foreach="card.comparisons" t-as="comparison" t-key="comparison.key" class="o_baseer_financial_change is-unavailable"><span t-esc="comparison.label + ': '"/><strong t-att-class="ownerAmountClass(comparison.value)" t-esc="comparison.value.amount"/></span>
+                            <small class="o_baseer_financial_sales_kpi_caption" t-esc="cardCaption(card)"/>
+                        </button>
+                    </section>
+
+                    <div class="o_baseer_financial_grid o_baseer_financial_grid_detail">
+                        <section class="o_baseer_financial_panel o_baseer_financial_sales_list" t-att-aria-label="salesDashboardLabels.channels">
+                            <header><div><h2 t-esc="salesDashboardLabels.channels"/><p t-esc="salesDashboardLabels.channelsCaption"/></div><i class="fa fa-credit-card" aria-hidden="true"/></header>
+                            <div t-if="salesDashboardData.salesRows.length" class="o_baseer_financial_account_list">
+                                <button t-foreach="salesDashboardData.salesRows" t-as="row" t-key="row.key" type="button" class="o_baseer_financial_account"
+                                    t-att-data-owner-row="row.key" t-att-data-owner-period="salesDashboardData.period.key"
+                                    t-on-click="() => this.openOwnerDetails(row, salesDashboardData.period.key)">
+                                    <span class="o_baseer_financial_account_name" t-esc="row.label"/>
+                                    <span class="o_baseer_financial_account_amount"><strong t-att-class="ownerAmountClass(ownerValue(row, salesDashboardData.period.key))" t-esc="ownerValue(row, salesDashboardData.period.key).amount"/><small t-if="ownerValue(row, salesDashboardData.period.key).percentage" t-esc="ownerValue(row, salesDashboardData.period.key).percentage"/></span>
+                                </button>
+                            </div>
+                            <p t-else="" class="o_baseer_financial_empty" t-esc="salesDashboardLabels.noChannels"/>
+                        </section>
+
+                        <section class="o_baseer_financial_panel o_baseer_financial_sales_list" t-att-aria-label="salesDashboardLabels.outflows">
+                            <header><div><h2 t-esc="salesDashboardLabels.outflows"/><p t-esc="salesDashboardLabels.outflowsCaption"/></div><i class="fa fa-money" aria-hidden="true"/></header>
+                            <div t-if="salesDashboardData.paymentRows.length" class="o_baseer_financial_account_list">
+                                <button t-foreach="salesDashboardData.paymentRows" t-as="row" t-key="row.key" type="button" class="o_baseer_financial_account"
+                                    t-att-data-owner-row="row.key" t-att-data-owner-period="salesDashboardData.period.key"
+                                    t-on-click="() => this.openOwnerDetails(row, salesDashboardData.period.key)">
+                                    <span class="o_baseer_financial_account_name" t-esc="row.label"/>
+                                    <span class="o_baseer_financial_account_amount"><strong t-att-class="ownerAmountClass(ownerValue(row, salesDashboardData.period.key))" t-esc="ownerValue(row, salesDashboardData.period.key).amount"/></span>
+                                </button>
+                            </div>
+                            <p t-else="" class="o_baseer_financial_empty" t-esc="salesDashboardLabels.noOutflows"/>
+                        </section>
+                    </div>
+
+                    <section class="o_baseer_financial_panel o_baseer_financial_notes" t-att-aria-label="salesDashboardLabels.sourceBasis">
+                        <header><div><h2 t-esc="salesDashboardLabels.sourceBasis"/><p t-esc="state.report.basis"/></div><i class="fa fa-shield" aria-hidden="true"/></header>
+                        <ul><li><i class="fa fa-info-circle" aria-hidden="true"/> <span t-esc="salesDashboardLabels.differenceCaption"/></li><li t-if="hasUnclassifiedOutflows"><i class="fa fa-exclamation-circle" aria-hidden="true"/> <span t-esc="labels.unclassified"/></li></ul>
+                    </section>
+                </section>
+            </div>
+        </xpath>
+    </t>
+</templates>

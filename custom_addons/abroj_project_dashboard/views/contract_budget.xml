@@ -1,0 +1,29 @@
+<odoo>
+  <record id="subcontractor_form_budget_line" model="ir.ui.view">
+    <field name="name">abroj.contracting.subcontractor.form.budget.line</field>
+    <field name="model">abroj.contracting.subcontractor</field>
+    <field name="inherit_id" ref="abroj_contracting.subcontractor_form"/>
+    <field name="arch" type="xml">
+      <header position="inside"><button name="action_open_progress_bill" type="object" string="مستخلص"/><button name="action_open_final_bill" type="object" string="إنهاء العقد" invisible="state == 'closed'"/><field name="state" widget="statusbar"/></header>
+      <field name="scope" position="after"><field name="budget_line_id"/><field name="progress_bill_partner_id"/><field name="progress_bill_ids" widget="many2many_tags" readonly="1"/></field>
+    </field>
+  </record>
+  <record id="progress_bill_wizard_form" model="ir.ui.view">
+    <field name="name">abroj.contract.progress.bill.wizard.form</field><field name="model">abroj.contract.progress.bill.wizard</field>
+    <field name="arch" type="xml"><form string="مستخلص"><group><field name="contract_id" readonly="1"/><field name="mode" readonly="1"/><field name="currency_id" invisible="1"/><field name="amount"/><field name="date"/></group><footer><button name="action_confirm" type="object" string="تأكيد" class="btn-primary"/><button string="إلغاء" special="cancel"/></footer></form></field>
+  </record>
+  <record id="budget_line_list" model="ir.ui.view">
+    <field name="name">abroj.project.budget.line.list</field>
+    <field name="model">abroj.project.budget.line</field>
+    <field name="arch" type="xml"><list decoration-danger="over_budget"><field name="name"/><field name="project_id"/><field name="group_name"/><field name="currency_id" column_invisible="True"/><field name="budget"/><field name="actual"/><field name="advance_paid"/><field name="total_spent"/><field name="remaining_budget"/><field name="over_budget" column_invisible="True"/></list></field>
+  </record>
+  <record id="budget_line_search" model="ir.ui.view">
+    <field name="name">abroj.project.budget.line.search</field>
+    <field name="model">abroj.project.budget.line</field>
+    <field name="arch" type="xml"><search><field name="name"/><field name="project_id"/><group><filter name="group_name" string="مجموعة البند" context="{'group_by': 'group_name'}"/></group></search></field>
+  </record>
+  <record id="budget_line_action" model="ir.actions.act_window">
+    <field name="name">بنود الميزانية</field><field name="res_model">abroj.project.budget.line</field><field name="view_mode">list,form</field><field name="search_view_id" ref="budget_line_search"/>
+  </record>
+  <menuitem id="menu_budget_lines" name="بنود الميزانية" parent="project.menu_main_pm" action="budget_line_action" groups="project.group_project_user"/>
+</odoo>

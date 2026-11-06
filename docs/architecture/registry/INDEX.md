@@ -1,5 +1,39 @@
 # سجل معمارية بصير أودو
 
+<<<<<<< HEAD
+=======
+## SALES-DASHBOARD-CONSOLIDATION-20261106 — تنظيم تنقل لوحات المبيعات (مرشح QA)
+
+فرق metadata محصور في `baseer_sales_dashboard`: ينقل لوحات Sales وPOS وPOS
+Restaurant الأصلية إلى مجموعة `Sales operations / التشغيل` ويمنحها أسماء
+تشغيلية واضحة، مع بقاء `Sales summaries` وHeat calendar ضمن Sales للإدارة. لا
+نسخ للوحة أو مؤشر، ولا تغيير محتوى spreadsheet أو قارئ المبيعات أو
+POS/account.move/ZATCA/EDI أو الصلاحيات والشركات والمفضلة. XML IDs الاختيارية
+تحل بأمان، والسياسة idempotent. ثلاثة اختبارات مركزة تثبت النقل وإعادة التطبيق
+وثبات النشر/بصمة المحتوى/الشركات/المجموعات/المفضلة واللغة المؤرشفة، وتجاوزت مجموعة اختبارات الموديول
+المحلية. خطأ `#ERROR` السابق في لوحة Restaurant منفصل وباقٍ خارج النطاق. مرشح
+QA فقط؛ قبول المتصفح والنشر المحمي وCI لازمة قبل أي قرار لاحق.
+[العقد وسجل الدليل](../../build-governance/SALES-DASHBOARD-CONSOLIDATION-20261106.md).
+
+## NOORIX-SALES-TOGGLE-QA-20261106 — optional reporting source
+
+ARCHITECTURAL reporting delta over `f636d72ef`: sales19.0.1.8.0 / heat19.0.1.2.0. One default-off Boolean selection extends the existing unified sales reader with immutable, company-scoped Noorix source evidence and recorded daily customer counts. Posted ledger lines remain the money authority. Source/move uniqueness, drift checks, exact reversal lineage, bounded reads and explicit native-source collisions prevent silent duplication. No accounting/EDI write, new financial document, external send or LIVE release. Local isolated QA:32 Odoo post-tests and14 Node tests passed; five synthetic acceptance days44804 SAR/658 daily customer counts match both dashboards. [Contract, evidence and remaining release gates](../../build-governance/NOORIX-SALES-TOGGLE-QA-20261106.md).
+
+TechnicalQA delivery GO: merged sourcef85c81e199ac, protected host receipt42218419477/12:34:17UTC, actual installed1.8.0/1.2.0, fullCI172Odoo+14Node passed and sharedQA switch/synchronization/OFF verified. SharedQA has no posted NoorixNovember entries/evidence, so real-data acceptance is pending verified import and ownership reconciliation. Existing QA websocket routing issue caused a restored first attempt; one quiet protected retry succeeded with the guard unchanged. LIVE untouched. Details and exact recovery/source evidence in NSI010–011 of the contract.
+
+## PROCUREMENT-RECEIPT-ADDED-ITEMS-20261103 — مرشح QA
+
+المرجع المعاد استخدامهc4f4cd4c/procurement19.0.14.0.17؛ المرشح19.0.14.0.18 يطابق سلة الاستلام مع عقد خلفي موحد للأصناف الأصلية والمؤقتة. الأثر ARCHITECTURAL محدود بعقد RPC داخل موديول المشتريات: معاينة Decimal دون كتابة، وإضافة مؤقتة بسعر الكتالوج؛ لا تُنشأ أسطر إلا عند التأكيد الصريح تحت قفل الطلب وsavepoint، مع حفظ الكميات المطلوبة القديمة ورسالة تدقيق. الإضافة للطلبsent الأصلي فقط؛ received وBWork محميان. لا schema/ACL/اعتماديات أو تغيير في خوارزمية المخزون/المحاسبة. اعتمد حارس مستقلG0–G3؛21حالةJS ناجحة بعد إثبات7إخفاقات على المصدر السابق. مرشحCI/QA مقبول مستقلًا بشرط اختبارات أودو المعزولة وقبول المتصفح قبل الأصلية. لا حفظ/تأكيد طلب فعلي أثناء القبول. [العقد والسجل الحي](../../build-governance/PROCUREMENT-RECEIPT-ADDED-ITEMS-20261103.md).
+
+## PROCUREMENT-CART-CONSISTENCY-20261103 — مرشح إصلاح السلة
+
+مرجع المعمارية السابق50497529، مرشح الإصلاحa2159403/procurement19.0.14.0.17. أثر محلي داخل مكوّن الكتالوج: الناقص يتوقف عند0؛ الصفر اليدوي يحذف الصنف من الطلب الجديد عند انتهاء الإدخال ويعني «غير مستلم» في الاستلام؛ الاستعادة تعيد آخر كمية وسعر قبل عدم الاستلام. أضيف توضيح عربي وحماية من استجابة احتساب قديمة. لا فرق model/RPC/security/accounting؛ لقطة الاستعادة محلية ولا تدخل payload. نجحت14/14 حالة مركزة بعد إثبات فشل السلوك القديم، وفحوص JS/XML/SCSS/PO. المراجعة المستقلة GO لمرشح QA؛ النشر الأصلي مشروط بـCI وقبول QA لسطح المكتب و375px. [الدليل المختصر](../../../output/PROCUREMENT-CART-CONSISTENCY-20261103.md).
+
+## PROJECT-DASHBOARD-CONTRACT-CARDS-20261103 — بطاقات العقود في PWA
+
+بطاقات عقود قابلة للتوسعة مع تقدم الدفعات في واجهة PWA للوحة المشاريع. المصدر `7c74cc81`/PR648، واجهة أمامية فقط (static/pwa)، موديول `abroj_project_dashboard` وحده، لا تعديل نماذج أو صلاحيات أو بيانات. CI ناجحة؛ النشر على الأصلية بموافقة المالك الصريحة. إيصالات النشر مرتبطة بالسياسة `baseer-2026-11-03-project-dashboard-contract-cards`.
+
+>>>>>>> official/main
 ## PROCUREMENT-COMPACT-CART-20261103 — QA مقبول وترقية الأصلية معتمدة
 
 اعتمد المالك نشر الأصلية بعد قبول QA النهائي للمصدر `50497529`/procurement19.0.14.0.16، المنشور على QA بإيصالGO41584902181 واسترجاعSHA256 سليم. أثبت القبول بقاء المندوب محددًا، وعدم اقتطاع الأزرار في1024×768 و820×1180 و375×812 و1440×900، وانعدام صور المنيو والسلة، وسلامة الإجماليات والحذف والاستعادة والتنقل دون حفظ. مساحة أصناف السلة النهائية432px بعرض1024 وصفوف86px. مراجعة الترقية المستقلةGO: خمسة ملفات واجهة/ترجمة/إصدار فقط منذ الأصلية294ae5de، مع إعادة استخدام الأدلة دون فحوص مكررة. سياسة الإنتاج `baseer-2026-11-03-procurement-compact-cart` للموديول وحده؛ إتمام النشر مشروط بإيصال الغلاف المحمي والتحقق اللاحق، ويسجل في مخرج المهمة `output/PROCUREMENT-COMPACT-CART-20261103.md`. الفحص بكروم بمقاسات متجاوبة وليس Safari فعليًا. الفقرات التالية تاريخ QA.
@@ -880,3 +914,135 @@ Release update: PR501 source06d8364e passed27CI checks and deployed through the 
 ## POS default customer (2026-10-31; QA candidate)
 
 A deliberately small POS extension selects one administrator-configured, visible customer only for each new order. It uses Odoo 19's native `PosStore.getDefaultPartnerId` hook, keeps the native customer picker available, and does not change ZATCA, invoice validation, payment methods, journals, taxes, or server-side POS orders. POS configurations without a selected customer retain native behavior; ARZ is explicitly out of scope. [Build contract](../../build-governance/POS-DEFAULT-CUSTOMER.md).
+
+## CONTRACTING-METRICS-20261103 — Financial indicators
+
+ARCHITECTURAL financial read-contract repair; candidate source and lastVerifiedCommit
+`2e707727923c3d74578f3a63bae7cd4ce02be6ea`. Owners: `abroj_contracting` and
+`abroj_project_dashboard`. Posted expense analytics are netted, balance-sheet
+settlements/collections excluded; existing standalone/manual costs retained with
+company/account/read access. Explicit budget precedes estimated cost; detail sums
+remain informational. Unknown forecasts stay unknown; contract commitment margin
+is accurately labeled. Customer remaining excludes subcontractor refunds.
+Nonstored concrete project-plan analytic inverse supports cache dependencies;
+upgrade refreshes project summaries only, with no journal or voucher rewrite.
+Independent financial source GO, targeted ORM/cache/access and AR390/EN1280
+component rendering evidence recorded. Final CI is the deployment prerequisite.
+Policy: `baseer-2026-11-03-contracting-metrics`; protected Actions only.
+[Contract, gates and evidence](../../build-governance/CONTRACTING-FINANCIAL-METRICS.md).
+
+Contracting metrics source integration: PR656 is merged as
+`19713722c09ea68bd92215ca87926ce051f8681a`; this is the release source and updated
+`lastVerifiedCommit`. All six PR checks passed, including80 dashboard and40
+contracting tests. Independent Alpha financial GO; production activation pending
+policy registration and protected Actions. Original candidate commit is retained
+above as review history, not a deployable main ancestor.
+
+## CONTRACTING-ISSUE-20261103 — Explicit native accounting
+
+ARCHITECTURAL; owners abroj_contracting/accounting_issue and existing project
+actual-cost indicators. Confirmed cost -> accountant review -> one native vendor
+bill, or explicit validated adoption of a posted bill. Canonical protected
+account.move.abroj_cost_id, unique constraint and NO KEY UPDATE source lock;
+audit metadata touch enables native RR retry. No context privilege bypass or
+sudo posting. Gross amount/tax/project allocation/native supplier reviewed;
+original linked document frozen, corrections via native reversal. Payment
+settlement remains outside actual cost, with no automatic old-document posting
+or native-party inference. Wizard shows payment posting account/clearing warning.
+G0–G3 approved independently; local155 tests and new context guard/two-cursor
+proof passed. Candidate versions contracting19.0.1.8.0/dashboard19.0.1.8.12;
+final CI/UI acceptance and protected activation pending.
+[Contract and evidence](../../build-governance/CONTRACTING-ACCOUNTING-ISSUE.md).
+
+Contracting accounting issue source integrated by PR658:
+lastVerifiedCommit0a813514491727a35abc925e9c096a48db6375bf. All final checks passed,
+including65 contracting/80 dashboard cases. NativeAR390/EN1280 review and RR
+concurrency evidence accepted independently. Policybaseer-2026-11-03-contracting-issue
+upgrades those two modules only; protected activation pending. No historical
+financial document has been posted or adopted by this release preparation.
+
+## CONTRACTING-VOUCHER-FLOW-20261103 — Purpose, recognition and settlement
+
+ARCHITECTURAL; baseline761eb0c99, prior runtime0a813514 reused. Integration owner
+abroj_project_dashboard/models/voucher_workflow.py avoids a contracting-budget
+dependency cycle. Explicit purposes direct expense/earned income, invoice settlement,
+advance and supplier refund; native invoices/payments/reconciliation remain sole
+financial authority. Unique direct-recognition source and payment per voucher,
+NO KEY UPDATE/RR retry and residual guards, immutable original documents. Budget
+category propagates from native expense AML to analytic line; no manual actual.
+Recognized revenue/profit separate from commitments and cash movement. Native/PWA
+AR/EN links and purpose review; version19.0.1.9.0. Bounded owner-authorized review
+of5existing payments and170780budget prepared, no historical writes yet. Local27new
+cases plus91existing cases,2RR races and actual native AR390/EN1280 UI evidence.
+Final candidateCI/independent acceptance/protected activation pending.
+[Contract, gates and evidence](../../build-governance/CONTRACTING-VOUCHER-WORKFLOW.md).
+
+Voucher workflow source accepted: lastVerifiedCommit
+a502e5bd40b8c709555091e8d5e2b0d472c177b8 (PR660 squash integration), identical module
+and bounded manifest to86d6194d. All5checks passed,119runtimecases, native UI/races
+and independent financial GO. Policybaseer-2026-11-03-voucher-flow upgrades only
+abroj_project_dashboard19.0.1.9.0; protected activation/historical execution pending.
+
+Native-dimension integration amendment: a502e5bd4 was activated by protected run
+41696477386, but native mandatory Spend Classification rejected the bounded
+historical posting; whole transaction rolled back (all reviewflagsfalse/cost0).
+Source correction reuses analytic.mixin/widget and shared validated distribution
+in both contracting cost issue and voucher review, retaining project100% plus
+native mandatory dimensions and original expense/category once. Existing
+baseer_native_spend remains unchanged; integration fixture/CI now installs it.
+Versionscontracting19.0.1.8.1/dashboard19.0.1.9.1;32focused cases and native
+AR390/EN1280 two-wizard multi-plan picker verified, finalCI/activation pending.
+Exact historical source/rationale preserved in the same governance record.
+
+Native-dimension amendment accepted: lastVerifiedCommit
+9a9f812a3ef88c6599547ed9ad3b757b0b30a1d9 (PR662), identical to reviewed8ef909c4c.
+All6checks passed,65contracting+123dashboard cases; nativeSpend mandatory fixture,
+native two-wizard UI and independent GO complete. Policybaseer-2026-11-03-voucher-analytics
+upgrades contracting19.0.1.8.1/dashboard19.0.1.9.1 only. Existing nativeSpend
+configuration retained; protected activation and bounded historical review pending.
+
+## PROCUREMENT-FULL-ORDER-EDIT-20261103 — planned-order editor
+
+ARCHITECTURAL bounded procurement change from b28294663 / accepted runtime ec5a394c.
+User chose full native draft/sent order edits and lock after representative handover.
+Reuse catalogue OWL/route/stepper/option controls; add requested-plan load/quote/save
+and reasoned cancellation contracts. Decimal server authority; parent locks and
+canonical snapshots serialize edits; line CRUD shares the lock. Save preserves
+creation idempotency fingerprints and state, adds before/after audit, resets staged
+receipt values, and creates no stock/account/history. Existing receipt caps and
+BWork protocol retained. Existing company/role/active catalogue guards remain.
+Independent G0–G3 approved. Version19.0.14.0.19 candidate; CI, QA, independent
+release review and protected activation pending. No operational order save/confirm
+is allowed during acceptance. [Contract and evidence](../../build-governance/PROCUREMENT-SENT-RECEIPT-INCREASE-20261103.md).
+
+QA amendment: sourcee62d7cb9/.19 passed desktop functional acceptance,22procurement
+and68BWork cases. Actual IAB375/1024 testing exposed a hidden packaging modal
+under the catalogue pane while editing cart. Production held. Focused19.0.14.0.20
+moves the existing fixed overlay to the shared shell; backend contract unchanged.
+Affected mobile QA and independent acceptance required before promotion.
+
+## PROCUREMENT-DRAFT-WHATSAPP-20261104 — bounded regression
+
+Runtime0175d5b2484f/.20 reused. Draft editor omitted sharing; async new-window
+opening risks Safari user activation. Candidate.21 adds guarded read-only message
+preparation, shared Odoo Dialog with direct user-gesture anchor and copy fallback,
+plus form-before-dialog completion. Original state/receipt/accounting unchanged.
+44Node/AST/XML/PO/SCSS pass; CI/QA/independent release pending.
+[Contract and evidence](../../build-governance/PROCUREMENT-DRAFT-WHATSAPP-20261104.md).
+## PROCUREMENT-RECEIPT-CUSTODY-20261104 — native receipt funding
+
+ARCHITECTURAL delta over source `9c21f7851` / procurement19.0.14.0.22. User-approved actual representative advance and approved bank/cash source are recorded atomically at final native purchase receipt, with server-derived partner/request and existing shared custody accounting. Reuse existing request funding, protected final-confirm marker and company→representative→request lock order prevent manual/receipt duplication. Branch-manager Basser review reuses the accountant ledger without GL permissions; plain POS cashier, BWork, nonrepresentative routes and history remain outside the new posting path. Independent G0–G8 GO. Released source985bb401a80d5733730579563663369a7111ec16: procurement19.0.14.0.24/workspace19.0.1.0.16; protected QA41787569108 and production41788366874 both GO. Financial32, Node51, workspace8, BWork68 and real RR races passed; actual QA/live acceptance preserved all inspected order data without confirmation or funding. [Contract, gates and live evidence](../../build-governance/PROCUREMENT-RECEIPT-CUSTODY-20261104.md).
+
+## PRC-DRAFT-RECEIPT-ENTRY-20261104 — compact editor workflow
+CONTROLLED delta over da044cba / procurement19.0.14.0.25. Full editor introduced by e62d7cb9a omitted the native draft confirm-sent entry, so previous draft orders lacked receipt navigation. New snapshot-checked send_catalog_edit reuses existing lock/state/role transition, never final-receives a draft or treats WhatsApp opening as sent. Shared editor combines save+WhatsApp after explicit success; save-only/reload/cancel move into existing Dropdown, Receive entry asks draft acknowledgement then opens read-only receipt review. Company/roles/accounting unchanged. Procurement.26 candidate; actual non-sudo cashier and UI regression evidence, bounded release status in [existing contract and log](../../build-governance/PROCUREMENT-RECEIPT-CUSTODY-20261104.md).
+
+## PRC-PRE-SAVE-PRICE-20261105 — request-local unit prices
+Bounded extension of catalogue quote/create: new carts accept an explicit request-local unit price under the existing decimal and access boundary. Existing draft editor and final receipt pricing remain. Legacy omitted-price token identity is preserved; explicit prices are included in duplicate protection. Implementation/acceptance in [contract and log](../../build-governance/PROCUREMENT-PRE-SAVE-PRICE-20261105.md).
+
+## TOBACCO-PDF-FILENAME-20261105 — restore period filename
+
+LOCAL regression fix owned by `baseer_pos_tobacco_report` 19.0.1.5.4 over
+`d58255772`. Restores the legacy month/year or custom-date PDF filename after
+the unified exporter. Owner amendment fixes portrait A4 only for tobacco in
+`baseer_reports_menu`19.0.1.1.1; XLSX, other providers and financial data remain.
+[Scope and release evidence](../../build-governance/TOBACCO-PDF-FILENAME-20261105.md).

@@ -28,3 +28,6 @@ access_extraction_inbox,Extraction agent inbox,model_abroj_contracting_inbox,gro
 access_extraction_currency,Extraction agent currency,base.model_res_currency,group_extraction_agent,1,0,0,0
 access_party_user,أطراف العقود,model_abroj_contracting_party,base.group_user,1,1,1,0
 access_party_manager,أطراف العقود,model_abroj_contracting_party,project.group_project_manager,1,1,1,1
+
+access_accounting_issue_invoice,Contracting accounting review,model_abroj_contracting_accounting_issue,account.group_account_invoice,1,1,1,1
+access_accounting_issue_manager,Contracting accounting review manager,model_abroj_contracting_accounting_issue,account.group_account_manager,1,1,1,1

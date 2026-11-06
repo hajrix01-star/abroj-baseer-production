@@ -45,7 +45,10 @@ checkboxأصلي واحد موحدالنص بجوارفلتر/تحديث كلل�
 | G2 | معتمد من خبير ERP المستقل | قائدالبناء | عقد الهوية والمساهمة والأدلة والعكس مقبول قبل الكود؛ مراجعة المعماري المستقلة لبقية البوابات؛ NSI005 |
 | G3 | معتمدة | قائدالبناء/أمينالمكتبات | معماري الخريطة المستقل أجاز Odoo/Owl القائمين بلا اعتماد جديد |
 | G4 | معتمدة للتصميم | بناءالواجهة | معماري الخريطة المستقل أجاز checkbox أصلي؛ القبول البصري لاحقًا |
-| G5–G8 | غير مبدوءة | — | التنفيذ والفحوص والتسليم المستقل بعداعتمادG0–G3 |
+| G5 | مكتملة | فريق البناء | المصدر المدمج PR715، والاستيراد الإداري والجامع والواجهتان |
+| G6 | ناجحة | مختبر ERP/الواجهة | CI42213094429:172اختبارOdoo دون فشل/أخطاء، Node14/14؛ التفاصيل NSI007–009 |
+| G7 | قبول محلي ناجح؛ QA البعيد قيد النشر | قائد البناء | AR/EN و390px،44804/658، تفاصيل المصدر والإخفاء؛ لا قبول LIVE |
+| G8 | CONDITIONAL GO للـQA | الحارس المستقل | لاP1مفتوح بعد تصحيح الوردية الجزئية؛ ينتظر إيصال QA والتحقق بعد النشر |
 
 ### NSI006 — اعتماد البوابات قبل الشفرة
 
@@ -80,3 +83,7 @@ G5 implementation complete; G6 backend/UI automated checks passed. G7 browser na
 Arabic and English actual browser acceptance passed on the new assets. Sales and heat switches remain visible and usable at390px; page scrollWidth equals390px in both views. English ON returns44804/658. Local administrator language restored toArabic and temporary viewport override reset. Warm single-reader ORM timing on five synthetic days: sales0.1187s, heat0.0724s; ledger digests unchanged. Installed versions confirmed19.0.1.8.0/19.0.1.2.0. This is not a concurrency or large-data certification.
 
 PR715 first Source integrity run caught a trailing blank line in the newly tracked reporting file; corrected without semantic change. The subsequent full CI Odoo job42212171897 passed, alongside Source integrity and cumulative contract checks. Before merge, a focused independent review confirmed an additionalP1: morning/evening Noorix evidence could overlap native sales because the first guard applied only toall-day. The guard now rejects native same-day overlap for **every scope**, including reversal rows, until ownership is proved; a partial flag never legitimizes an uncertain sum. Targeted local QA `baseer-noorix-toggle-partial-tests-20261106`:2post-tests/0failures/0errors,8.28s, covering all/morning/evening×nativePOS/invoice, both report endpoints, and unchangedfalse results. Translations updated. This arithmetic safeguard requires the new candidate's CI; the earlier passing candidate will not be deployed.
+
+### NSI009 — reviewed source freeze
+
+Final CI42213094429/job127876311095 succeeded:172Odoo tests/0failures/0errors (152post-tests215.97s), Node14/14. All five PR checks passed, including Source integrity42213094319 and cumulative BWork/BChat contracts42213094104. Independent delivery reviewer confirmedP1closed in96144aaaa and conditionally approved protected remoteQA after CI. Source PR715 was merged as repository-required **squash** to `f85c81e199acdf328a27f73719d29143b91fbd73`; merge commits are prohibited by GitHub policy. The application trees are preserved. A separate policy-only release branch pins the actual reviewed mainSHA (rather than the pre-squash candidate which is not a main ancestor). No production policy or dispatch.

@@ -452,7 +452,9 @@ class SalesDashboard(models.Model):
         return {'granularity': granularity, 'points': points}
 
     @api.readonly
-    def get_baseer_sales_metrics(self, filters=None):
+    def get_baseer_sales_metrics(self, filters=None, include_noorix=False):
+        if type(include_noorix) is not bool:
+            raise ValidationError(_('Choose a valid Noorix sales option.'))
         self.ensure_one()
         self.check_access('read')
         if self.baseer_dashboard_kind != 'sales_summary' or not self.is_published:
@@ -462,7 +464,7 @@ class SalesDashboard(models.Model):
             raise AccessError(_('This dashboard is not available for the active company.'))
         if not self.env.user.has_group('point_of_sale.group_pos_user'):
             raise AccessError(_('Point of Sale access is required to view sales summaries.'))
-        scoped = clean_context(self, company)
+        scoped = clean_context(self, company).with_context(baseer_include_noorix=include_noorix)
         preset, first, last, previous_first, previous_last, granularity = scoped._baseer_periods({} if filters is None else filters)
         scoped._baseer_check_capacity(company, [(first, last), (previous_first, previous_last)])
         current = scoped._baseer_metrics(company, first, last)

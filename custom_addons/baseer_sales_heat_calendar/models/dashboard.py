@@ -109,6 +109,17 @@ class SalesHeatCalendarDashboard(models.Model):
                 'sales_display': _money_display(money(Decimal(str(record.amount_gross)))),
                 'customers_display': _integer_display(record.customer_count),
             })
+        if self._noorix_enabled():
+            for row in self._noorix_events(company, first, last):
+                item = row['evidence']
+                by_day.setdefault(row['day'], []).append({
+                    'period': {'all': _('Full day'), 'morning': _('Morning'),
+                               'evening': _('Evening')}[row['scope']],
+                    'configuration': _('Noorix sales entries'),
+                    'sales_display': _money_display(row['amount']),
+                    'customers_display': (_integer_display(item.customer_count)
+                                          if row['original'] else '—'),
+                })
         return by_day
 
     def _heat_grid(self, first, rows):
@@ -127,7 +138,8 @@ class SalesHeatCalendarDashboard(models.Model):
         # A private shared reader does not authorize or bound its own callers.
         # Sanitize even direct adapter callers, and budget history + month once.
         self = self.with_context({'allowed_company_ids': [company.id],
-                                  'lang': self.env.lang, 'tz': 'Asia/Riyadh'})
+                                  'lang': self.env.lang, 'tz': 'Asia/Riyadh',
+                                  'baseer_include_noorix': self._noorix_enabled()})
         company = self.env.company
         self._baseer_unified_access()
         self._baseer_check_capacity(company, [(first, last)])
@@ -157,6 +169,8 @@ class SalesHeatCalendarDashboard(models.Model):
             order_counts[day] += 1
         for invoice in period['invoices']:
             sources[invoice.invoice_date].add('sales')
+        for row in period.get('noorix_rows', []):
+            sources[row['day']].add('noorix')
         open_ids = set(sessions.filtered(lambda session: session.state != 'closed').ids)
         today = now.replace(tzinfo=timezone.utc).astimezone(RIYADH).date()
         rows = report['days']
@@ -174,7 +188,8 @@ class SalesHeatCalendarDashboard(models.Model):
                 if closed_slots == {'morning', 'evening'}:
                     row['status'] = 'conflict'
                 elif day >= today or day_sessions[day] & open_ids or (
-                        'manual' in kinds and original_status == 'incomplete'):
+                        'manual' in kinds and original_status == 'incomplete') or (
+                        day in period.get('noorix_incomplete_days', set())):
                     row['status'] = 'incomplete'
                 else:
                     row['status'] = 'complete'
@@ -190,7 +205,9 @@ class SalesHeatCalendarDashboard(models.Model):
                 customers = row['customers']
             actions = []
             for key in kinds:
-                action = self._baseer_unified_action(company, day, day, key)
+                action = (self._noorix_source_action(company, [item['move'].id
+                    for item in period.get('noorix_rows', []) if item['day'] == day])
+                    if key == 'noorix' else self._baseer_unified_action(company, day, day, key))
                 action['views'] = [(False, 'list'), (False, 'form')]
                 action['context'].update(edit=False, delete=False)
                 actions.append({'key': key, 'action': action})
@@ -198,15 +215,18 @@ class SalesHeatCalendarDashboard(models.Model):
                        has_sales=has_sales, source_kinds=kinds,
                        source_kind=('summary' if kinds == ['manual'] else
                                     'direct' if kinds in (['pos'], ['restaurant']) else
-                                    'invoice' if kinds == ['sales'] else 'mixed' if kinds else 'none'),
+                                    'invoice' if kinds == ['sales'] else
+                                    'noorix' if kinds == ['noorix'] else 'mixed' if kinds else 'none'),
                        order_count=order_counts[day], outside_count=0,
                        source_actions=actions,
                        source_action=actions[0]['action'] if len(actions) == 1 else None)
         return rows
 
     @api.readonly
-    def get_baseer_heat_calendar(self, month=None):
+    def get_baseer_heat_calendar(self, month=None, include_noorix=False):
         """Return a month of heat data without copying or changing sales data."""
+        if type(include_noorix) is not bool:
+            raise ValidationError(_('Choose a valid Noorix sales option.'))
         self.ensure_one()
         self.check_access('read')
         if self.baseer_dashboard_kind != 'sales_heat_calendar' or not self.is_published:
@@ -219,7 +239,8 @@ class SalesHeatCalendarDashboard(models.Model):
             raise AccessError(_('Switch to a company enabled for this heat calendar.'))
         active_company(self, company)
         # Only the selected company and presentation context may reach source queries.
-        self = self.with_context({'allowed_company_ids': [company.id], 'lang': self.env.lang, 'tz': 'Asia/Riyadh'})
+        self = self.with_context({'allowed_company_ids': [company.id], 'lang': self.env.lang,
+                                  'tz': 'Asia/Riyadh', 'baseer_include_noorix': include_noorix})
         company = self.env.company
         now = fields.Datetime.to_datetime(fields.Datetime.now())
         first, last = self._heat_month_bounds(month)
@@ -328,7 +349,8 @@ class SalesHeatCalendarDashboard(models.Model):
             source_kind = raw.get('source_kind', 'summary' if raw['has_sales'] else 'none')
             count_label = _('Recorded customers')
             source_label = {'summary': _('Approved summary'), 'direct': _('Direct POS sales'),
-                            'invoice': _('Sales invoices'), 'mixed': _('Combined sales sources'),
+                            'invoice': _('Sales invoices'), 'noorix': _('Noorix sales entries'),
+                            'mixed': _('Combined sales sources'),
                             'none': _('No sales source'), 'conflict': _('Conflicting daily sources')}[source_kind]
             source_action = raw.get('source_action')
             aria = _('%(date)s: %(sales)s; %(count)s %(count_label)s; %(status)s',
@@ -379,6 +401,7 @@ class SalesHeatCalendarDashboard(models.Model):
             })
 
         return {
+            'include_noorix': include_noorix,
             'company': {'id': company.id, 'name': company.name, 'currency': company.currency_id.name},
             # ``strftime('%Y')`` is not zero-padded for years below 1000 on
             # every supported platform.  Keep the RPC contract a strict

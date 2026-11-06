@@ -921,3 +921,39 @@ msgstr "تغيّرت الأهداف في جلسة أخرى. يجب التحدي�
 #: code:addons/baseer_sales_heat_calendar/static/src/heat_calendar.js:0
 msgid "Manage heat calendar targets"
 msgstr "إدارة أهداف التقويم الحراري"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-javascript
+#: code:addons/baseer_sales_heat_calendar/static/src/heat_calendar.js:0
+msgid "Include Noorix sales"
+msgstr "تضمين مبيعات نوركس"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+#: code:addons/baseer_sales_heat_calendar/models/dashboard.py:0
+msgid "Noorix sales"
+msgstr "مبيعات نوركس"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+#: code:addons/baseer_sales_heat_calendar/models/dashboard.py:0
+msgid "Noorix sales entries"
+msgstr "قيود مبيعات نوركس"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+#: code:addons/baseer_sales_heat_calendar/models/dashboard.py:0
+msgid "Choose a valid Noorix sales option."
+msgstr "اختر حالة صحيحة لتضمين مبيعات نوركس."
+
+#. module: baseer_sales_heat_calendar
+#. odoo-python
+#: code:addons/baseer_sales_heat_calendar/models/dashboard.py:0
+msgid "Full day"
+msgstr "يوم كامل"
+
+#. module: baseer_sales_heat_calendar
+#. odoo-javascript
+#: code:addons/baseer_sales_heat_calendar/static/src/heat_calendar.js:0
+msgid "Unified sales including Noorix and VAT. Noorix sales use their recorded business date."
+msgstr "مبيعات موحّدة تشمل نوركس وضريبة القيمة المضافة. تُعرض مبيعات نوركس بتاريخ العمل المسجل."

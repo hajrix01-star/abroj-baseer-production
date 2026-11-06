@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="baseer_financial_dashboard.DashboardIntegration" t-inherit="spreadsheet_dashboard.DashboardAction" t-inherit-mode="extension" priority="90">
+        <!-- The outer finance guard survives later dashboard extensions. -->
+        <xpath expr="//DashboardSearchBar" position="replace">
+            <t t-if="!isBaseerFinancialDashboard"><DashboardSearchBar t-if="!isBaseerSalesDashboard and !isBaseerHeatCalendar and !isBaseerPurchasesDashboard and !isBaseerProcurementOperationsDashboard and status === Status.Loaded and loader.getActiveDashboard().model.getters.getGlobalFilters().length" t-key="activeDashboardId" model="loader.getActiveDashboard().model" toggler="searchBarToggler"/></t>
+        </xpath>
+        <xpath expr="//SpreadsheetShareButton" position="replace">
+            <t t-if="!isBaseerFinancialDashboard"><SpreadsheetShareButton t-if="!isBaseerSalesDashboard and !isBaseerHeatCalendar and !isBaseerPurchasesDashboard and !isBaseerProcurementOperationsDashboard" t-key="activeDashboardId" model="loader.getActiveDashboard()?.model" onSpreadsheetShared.bind="shareSpreadsheet" togglerClass="'btn-light'"/></t>
+        </xpath>
+        <xpath expr="//div[hasclass('o_search_toggler')]" position="replace">
+            <t t-if="!isBaseerFinancialDashboard"><div class="ms-1 o_search_toggler" t-if="env.isSmall and !isBaseerSalesDashboard and !isBaseerHeatCalendar and !isBaseerPurchasesDashboard and !isBaseerProcurementOperationsDashboard"><t t-component="searchBarToggler.component" t-props="searchBarToggler.props"/></div></t>
+        </xpath>
+        <xpath expr="//MobileFigureContainer" position="before">
+            <BaseerFinancialDashboard t-if="isBaseerFinancialDashboard" dashboardId="dashboard.data.id" t-key="dashboard.data.id"/>
+        </xpath>
+        <xpath expr="//MobileFigureContainer" position="replace">
+            <t t-if="!isBaseerFinancialDashboard"><MobileFigureContainer t-if="env.isSmall and !isBaseerSalesDashboard and !isBaseerHeatCalendar and !isBaseerPurchasesDashboard and !isBaseerProcurementOperationsDashboard" spreadsheetModel="dashboard.model" t-key="dashboard.data.id"/></t>
+        </xpath>
+        <xpath expr="//div[hasclass('o_renderer')]" position="replace">
+            <t t-if="!isBaseerFinancialDashboard"><div t-if="!env.isSmall and !isBaseerSalesDashboard and !isBaseerHeatCalendar and !isBaseerPurchasesDashboard and !isBaseerProcurementOperationsDashboard" class="o_renderer" t-att-class="{'o-sample-dashboard': dashboard.isSample}"><SpreadsheetComponent model="dashboard.model" t-key="dashboard.data.id"/></div></t>
+        </xpath>
+    </t>
+
+    <t t-name="baseer_financial_dashboard.Dashboard">
+        <section class="o_baseer_financial_dashboard_shell" t-att-dir="lang === 'ar' ? 'rtl' : 'ltr'" t-att-lang="lang">
+            <div class="o_baseer_financial_dashboard_tabs" role="tablist" t-att-aria-label="lang === 'ar' ? 'لوحة الأداء المالي' : 'Financial performance dashboard'">
+                <button t-foreach="tabs" t-as="tab" t-key="tab.key" type="button" role="tab" class="o_baseer_financial_dashboard_tab"
+                    t-att-data-financial-tab="tab.key" t-att-id="tabId(tab)" t-att-aria-controls="panelId(tab)"
+                    t-att-aria-selected="state.active === tab.key ? 'true' : 'false'" t-att-tabindex="state.active === tab.key ? 0 : -1"
+                    t-att-class="state.active === tab.key ? 'o_baseer_financial_dashboard_tab is-active' : 'o_baseer_financial_dashboard_tab'"
+                    t-on-click="() => this.select(tab.key)" t-on-keydown="onTabKeydown" t-esc="label(tab)"/>
+            </div>
+            <section role="tabpanel" t-att-id="panelId(activeTab)" t-att-aria-labelledby="tabId(activeTab)" class="o_baseer_financial_dashboard_panel">
+                <t t-component="activeComponent" t-key="state.active"/>
+            </section>
+        </section>
+    </t>
+</templates>

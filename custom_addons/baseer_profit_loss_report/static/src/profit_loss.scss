@@ -355,6 +355,32 @@
     .o_baseer_sr_only { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 }
 
+// Baseer Reports remains the printable, text-first accounting surface.  The
+// richer visual composition is shown only when this shared component is mounted
+// inside the dedicated Financial dashboard.
+.o_baseer_reports_hub .o_baseer_financial_dashboard {
+    .o_baseer_financial_eyebrow,
+    .o_baseer_financial_currency,
+    .o_baseer_financial_kpis,
+    .o_baseer_financial_waterfall,
+    .o_baseer_financial_revenue,
+    .o_baseer_financial_notes { display: none; }
+
+    .o_baseer_financial_grid_analysis { display: block; }
+    .o_baseer_financial_statement {
+        border: 0;
+        border-radius: 0;
+        box-shadow: none;
+        padding: 0;
+    }
+    .o_baseer_financial_statement > header { display: none; }
+    .o_baseer_financial_head {
+        display: block;
+        padding: 0 0 1rem;
+        border-bottom: 1px solid #dfe3e7;
+    }
+}
+
 @media (max-width: 1180px) {
     .o_baseer_financial_dashboard .o_baseer_financial_kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     .o_baseer_financial_dashboard .o_baseer_financial_grid_analysis { grid-template-columns: 1fr; }

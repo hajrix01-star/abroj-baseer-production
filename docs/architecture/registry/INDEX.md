@@ -1,5 +1,18 @@
 # سجل معمارية بصير أودو
 
+## SALES-DASHBOARD-CONSOLIDATION-20261106 — تنظيم تنقل لوحات المبيعات (مرشح QA)
+
+فرق metadata محصور في `baseer_sales_dashboard`: ينقل لوحات Sales وPOS وPOS
+Restaurant الأصلية إلى مجموعة `Sales operations / التشغيل` ويمنحها أسماء
+تشغيلية واضحة، مع بقاء `Sales summaries` وHeat calendar ضمن Sales للإدارة. لا
+نسخ للوحة أو مؤشر، ولا تغيير محتوى spreadsheet أو قارئ المبيعات أو
+POS/account.move/ZATCA/EDI أو الصلاحيات والشركات والمفضلة. XML IDs الاختيارية
+تحل بأمان، والسياسة idempotent. ثلاثة اختبارات مركزة تثبت النقل وإعادة التطبيق
+وثبات النشر/بصمة المحتوى/الشركات/المجموعات/المفضلة واللغة المؤرشفة، وتجاوزت مجموعة اختبارات الموديول
+المحلية. خطأ `#ERROR` السابق في لوحة Restaurant منفصل وباقٍ خارج النطاق. مرشح
+QA فقط؛ قبول المتصفح والنشر المحمي وCI لازمة قبل أي قرار لاحق.
+[العقد وسجل الدليل](../../build-governance/SALES-DASHBOARD-CONSOLIDATION-20261106.md).
+
 ## NOORIX-SALES-TOGGLE-QA-20261106 — optional reporting source
 
 ARCHITECTURAL reporting delta over `f636d72ef`: sales19.0.1.8.0 / heat19.0.1.2.0. One default-off Boolean selection extends the existing unified sales reader with immutable, company-scoped Noorix source evidence and recorded daily customer counts. Posted ledger lines remain the money authority. Source/move uniqueness, drift checks, exact reversal lineage, bounded reads and explicit native-source collisions prevent silent duplication. No accounting/EDI write, new financial document, external send or LIVE release. Local isolated QA:32 Odoo post-tests and14 Node tests passed; five synthetic acceptance days44804 SAR/658 daily customer counts match both dashboards. [Contract, evidence and remaining release gates](../../build-governance/NOORIX-SALES-TOGGLE-QA-20261106.md).

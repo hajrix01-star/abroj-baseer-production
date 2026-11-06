@@ -3,3 +3,4 @@ from . import executive
 from . import unified_sales
 from . import noorix_evidence
 from . import noorix_reporting
+from . import dashboard_navigation

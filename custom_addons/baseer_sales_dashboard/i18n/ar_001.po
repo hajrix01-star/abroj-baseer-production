@@ -600,6 +600,26 @@ msgid "Sales summaries"
 msgstr "ملخصات المبيعات"
 
 #. module: baseer_sales_dashboard
+#: model:spreadsheet.dashboard.group,name:baseer_sales_dashboard.dashboard_group_sales_operations
+msgid "Sales operations"
+msgstr "التشغيل"
+
+#. module: baseer_sales_dashboard
+#: code:addons/baseer_sales_dashboard/models/dashboard_navigation.py:0
+msgid "Sales order performance"
+msgstr "أداء أوامر البيع"
+
+#. module: baseer_sales_dashboard
+#: code:addons/baseer_sales_dashboard/models/dashboard_navigation.py:0
+msgid "Direct point of sale performance"
+msgstr "أداء نقاط البيع المباشر"
+
+#. module: baseer_sales_dashboard
+#: code:addons/baseer_sales_dashboard/models/dashboard_navigation.py:0
+msgid "Restaurant point of sale performance"
+msgstr "أداء نقاط بيع المطاعم"
+
+#. module: baseer_sales_dashboard
 #. odoo-javascript
 #: code:addons/baseer_sales_dashboard/static/src/sales_dashboard.js:0
 msgid "Share of total sales (%)"

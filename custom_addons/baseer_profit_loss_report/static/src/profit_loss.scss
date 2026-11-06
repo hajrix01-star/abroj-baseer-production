@@ -359,6 +359,10 @@
 // richer visual composition is shown only when this shared component is mounted
 // inside the dedicated Financial dashboard.
 .o_baseer_reports_hub .o_baseer_financial_dashboard {
+    // Match the text-first Sales and Payments Summary reading measure.  The
+    // Financial dashboard keeps its wider analytical canvas outside this hub.
+    .o_baseer_pl_paper { max-width: 900px; }
+
     .o_baseer_financial_eyebrow,
     .o_baseer_financial_currency,
     .o_baseer_financial_kpis,

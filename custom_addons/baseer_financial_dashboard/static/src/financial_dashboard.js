@@ -3,11 +3,11 @@
 import { Component, useState } from "@odoo/owl";
 import { user } from "@web/core/user";
 import { BaseerProfitLossReport } from "@baseer_profit_loss_report/profit_loss";
-import { BaseerOperationsPreview } from "@baseer_operations_report/operations";
+import { SalesPaymentsDashboard } from "./financial_sales_payments";
 
 const TABS = Object.freeze([
     { key: "profit_loss", ar: "الأداء المالي — الربح والخسارة", en: "Financial performance — Profit and Loss", component: BaseerProfitLossReport },
-    { key: "sales_payments", ar: "ملخص المبيعات والمدفوعات", en: "Sales and Payments Summary", component: BaseerOperationsPreview },
+    { key: "sales_payments", ar: "ملخص المبيعات والمدفوعات", en: "Sales and Payments Summary", component: SalesPaymentsDashboard },
 ]);
 
 export class BaseerFinancialDashboard extends Component {

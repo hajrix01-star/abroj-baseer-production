@@ -25,14 +25,27 @@ class TestFinancialDashboard(TransactionCase):
         self.assertIn('role="tabpanel"', (module / 'static/src/financial_dashboard.xml').read_text(encoding='utf-8'))
         self.assertEqual(template.getroot().tag, 'templates')
         self.assertIn('BaseerProfitLossReport', source)
-        self.assertIn('BaseerOperationsPreview', source)
+        self.assertIn('SalesPaymentsDashboard', source)
         self.assertIn('t-component="activeComponent"', (module / 'static/src/financial_dashboard.xml').read_text(encoding='utf-8'))
+
+    def test_sales_payments_dashboard_is_a_presentation_only_extension(self):
+        module = Path(__file__).resolve().parents[1]
+        source = (module / 'static/src/financial_sales_payments.js').read_text(encoding='utf-8')
+        template = (module / 'static/src/financial_dashboard.xml').read_text(encoding='utf-8')
+        self.assertIn('extends BaseerOperationsPreview', source)
+        self.assertNotIn('orm.call', source)
+        self.assertIn('t-inherit="baseer_operations_report.Preview"', template)
+        self.assertIn('t-inherit-mode="primary"', template)
+        self.assertIn('data-owner-row', template)
+        self.assertIn('hasUnclassifiedOutflows', template)
 
     def test_dashboard_integration_preserves_existing_dashboard_boundaries(self):
         module = Path(__file__).resolve().parents[1]
         integration = (module / 'static/src/financial_dashboard.xml').read_text(encoding='utf-8')
         # Finance guards wrap rather than overwrite the shared nodes. This
         # survives later extension replacement regardless of asset order.
-        self.assertEqual(integration.count('position="replace"'), 5)
+        # Five replacements protect the shared dashboard nodes; the sixth is
+        # the primary-inherited sales canvas used only by this dashboard.
+        self.assertEqual(integration.count('position="replace"'), 6)
         self.assertEqual(integration.count('<t t-if="!isBaseerFinancialDashboard">'), 5)
         self.assertEqual(integration.count('!isBaseerProcurementOperationsDashboard'), 5)

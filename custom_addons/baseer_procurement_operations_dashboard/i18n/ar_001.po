@@ -1,0 +1,233 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+#   * baseer_procurement_operations_dashboard
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 19.0\n"
+"Language: ar_001\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5;\n"
+
+#. module: baseer_procurement_operations_dashboard
+#. odoo-javascript
+#: code:addons/baseer_procurement_operations_dashboard/static/src/procurement_dashboard.js:0
+msgid "Procurement"
+msgstr "المشتريات"
+
+#. module: baseer_procurement_operations_dashboard
+#. odoo-javascript
+#: code:addons/baseer_procurement_operations_dashboard/static/src/procurement_dashboard.js:0
+msgid "Procurement operations"
+msgstr "تشغيل المشتريات"
+
+#. module: baseer_procurement_operations_dashboard
+#. odoo-javascript
+#: code:addons/baseer_procurement_operations_dashboard/static/src/procurement_dashboard.js:0
+msgid "Request workflow only; supplier bills, payments, and expenses remain in Finance."
+msgstr "مسار طلبات المشتريات فقط؛ فواتير الموردين والمدفوعات والمصروفات تبقى في المالية."
+
+#. module: baseer_procurement_operations_dashboard
+#. odoo-javascript
+#: code:addons/baseer_procurement_operations_dashboard/static/src/procurement_dashboard.js:0
+msgid "Requests created in period"
+msgstr "الطلبات المنشأة خلال الفترة"
+
+#. module: baseer_procurement_operations_dashboard
+#. odoo-javascript
+#: code:addons/baseer_procurement_operations_dashboard/static/src/procurement_dashboard.js:0
+msgid "Sent for purchase"
+msgstr "مرسل للشراء"
+
+#. module: baseer_procurement_operations_dashboard
+#. odoo-javascript
+#: code:addons/baseer_procurement_operations_dashboard/static/src/procurement_dashboard.js:0
+msgid "Cashier receipt confirmed"
+msgstr "تم تأكيد استلام أمين الصندوق"
+
+#. module: baseer_procurement_operations_dashboard
+#. odoo-javascript
+#: code:addons/baseer_procurement_operations_dashboard/static/src/procurement_dashboard.js:0
+msgid "Quantity receipt completed"
+msgstr "اكتمل استلام الكمية"
+
+#. module: baseer_procurement_operations_dashboard
+#. odoo-javascript
+#: code:addons/baseer_procurement_operations_dashboard/static/src/procurement_dashboard.js:0
+msgid "Completed in the selected period"
+msgstr "المكتمل خلال الفترة المحددة"
+
+#. module: baseer_procurement_operations_dashboard
+#. odoo-javascript
+#: code:addons/baseer_procurement_operations_dashboard/static/src/procurement_dashboard.js:0
+msgid "Completion is recorded when quantity receipt is confirmed; it does not mean a supplier bill or payment was posted."
+msgstr "يُسجّل الإنجاز عند تأكيد استلام الكمية؛ ولا يعني ذلك ترحيل فاتورة مورد أو دفعة."
+
+#. module: baseer_procurement_operations_dashboard
+#. odoo-javascript
+#: code:addons/baseer_procurement_operations_dashboard/static/src/procurement_dashboard.js:0
+msgid "Request states by creation date"
+msgstr "حالات الطلبات حسب تاريخ الإنشاء"
+
+#. module: baseer_procurement_operations_dashboard
+#. odoo-javascript
+#: code:addons/baseer_procurement_operations_dashboard/static/src/procurement_dashboard.js:0
+msgid "Current state of requests created on each date"
+msgstr "الحالة الحالية للطلبات المنشأة في كل تاريخ"
+
+#. module: baseer_procurement_operations_dashboard
+#. odoo-javascript
+#: code:addons/baseer_procurement_operations_dashboard/static/src/procurement_dashboard.js:0
+msgid "Pending action queue"
+msgstr "قائمة الإجراءات المعلقة"
+
+#. module: baseer_procurement_operations_dashboard
+#. odoo-javascript
+#: code:addons/baseer_procurement_operations_dashboard/static/src/procurement_dashboard.js:0
+msgid "Oldest pending requests created in the selected period"
+msgstr "أقدم الطلبات المعلقة المنشأة خلال الفترة المحددة"
+
+#. module: baseer_procurement_operations_dashboard
+#. odoo-javascript
+#: code:addons/baseer_procurement_operations_dashboard/static/src/procurement_dashboard.js:0
+msgid "Purchase route"
+msgstr "مسار الشراء"
+
+#. module: baseer_procurement_operations_dashboard
+#. odoo-javascript
+#: code:addons/baseer_procurement_operations_dashboard/static/src/procurement_dashboard.js:0
+msgid "Warehouse"
+msgstr "المستودع"
+
+#. module: baseer_procurement_operations_dashboard
+#. odoo-javascript
+#: code:addons/baseer_procurement_operations_dashboard/static/src/procurement_dashboard.js:0
+msgid "Operational breakdown"
+msgstr "التقسيم التشغيلي"
+
+#. module: baseer_procurement_operations_dashboard
+#. odoo-javascript
+#: code:addons/baseer_procurement_operations_dashboard/static/src/procurement_dashboard.js:0
+msgid "Date"
+msgstr "التاريخ"
+
+#. module: baseer_procurement_operations_dashboard
+#. odoo-javascript
+#: code:addons/baseer_procurement_operations_dashboard/static/src/procurement_dashboard.js:0
+msgid "State"
+msgstr "الحالة"
+
+#. module: baseer_procurement_operations_dashboard
+#. odoo-javascript
+#: code:addons/baseer_procurement_operations_dashboard/static/src/procurement_dashboard.js:0
+msgid "Request"
+msgstr "الطلب"
+
+#. module: baseer_procurement_operations_dashboard
+#. odoo-javascript
+#: code:addons/baseer_procurement_operations_dashboard/static/src/procurement_dashboard.js:0
+msgid "No warehouse"
+msgstr "لا يوجد مستودع"
+
+#. module: baseer_procurement_operations_dashboard
+#. odoo-javascript
+#: code:addons/baseer_procurement_operations_dashboard/static/src/procurement_dashboard.js:0
+msgid "View requests"
+msgstr "عرض الطلبات"
+
+#. module: baseer_procurement_operations_dashboard
+#. odoo-javascript
+#: code:addons/baseer_procurement_operations_dashboard/static/src/procurement_dashboard.js:0
+msgid "Refresh"
+msgstr "تحديث"
+
+#. module: baseer_procurement_operations_dashboard
+#. odoo-javascript
+#: code:addons/baseer_procurement_operations_dashboard/static/src/procurement_dashboard.js:0
+msgid "Loading procurement operations…"
+msgstr "جارٍ تحميل تشغيل المشتريات…"
+
+#. module: baseer_procurement_operations_dashboard
+#. odoo-javascript
+#: code:addons/baseer_procurement_operations_dashboard/static/src/procurement_dashboard.js:0
+msgid "Try again"
+msgstr "حاول مجددًا"
+
+#. module: baseer_procurement_operations_dashboard
+#. odoo-javascript
+#: code:addons/baseer_procurement_operations_dashboard/static/src/procurement_dashboard.js:0
+msgid "No procurement requests were created in this period."
+msgstr "لم تُنشأ طلبات مشتريات خلال هذه الفترة."
+
+#. module: baseer_procurement_operations_dashboard
+#. odoo-javascript
+#: code:addons/baseer_procurement_operations_dashboard/static/src/procurement_dashboard.js:0
+msgid "No quantity receipts were completed in this period."
+msgstr "لم يكتمل استلام أي كمية خلال هذه الفترة."
+
+#. module: baseer_procurement_operations_dashboard
+#. odoo-javascript
+#: code:addons/baseer_procurement_operations_dashboard/static/src/procurement_dashboard.js:0
+msgid "No pending requests in this period."
+msgstr "لا توجد طلبات معلقة خلال هذه الفترة."
+
+#. module: baseer_procurement_operations_dashboard
+#. odoo-javascript
+#: code:addons/baseer_procurement_operations_dashboard/static/src/procurement_dashboard.js:0
+msgid "Count"
+msgstr "العدد"
+
+#. module: baseer_procurement_operations_dashboard
+#. odoo-javascript
+#: code:addons/baseer_procurement_operations_dashboard/static/src/procurement_dashboard.js:0
+msgid "This procurement operations dashboard is not available."
+msgstr "لوحة تشغيل المشتريات غير متاحة."
+
+#. module: baseer_procurement_operations_dashboard
+#. odoo-javascript
+#: code:addons/baseer_procurement_operations_dashboard/static/src/procurement_dashboard.js:0
+msgid "This dashboard is not available for the active company."
+msgstr "هذه اللوحة غير متاحة للشركة النشطة."
+
+#. module: baseer_procurement_operations_dashboard
+#. odoo-javascript
+#: code:addons/baseer_procurement_operations_dashboard/static/src/procurement_dashboard.js:0
+msgid "Procurement manager or cashier access is required."
+msgstr "يلزم وصول مدير المشتريات أو أمين الصندوق."
+
+#. module: baseer_procurement_operations_dashboard
+#. odoo-javascript
+#: code:addons/baseer_procurement_operations_dashboard/static/src/procurement_dashboard.js:0
+msgid "Choose a valid dashboard date filter."
+msgstr "اختر مرشح تاريخ صالحًا للوحة التحكم."
+
+#. module: baseer_procurement_operations_dashboard
+#. odoo-javascript
+#: code:addons/baseer_procurement_operations_dashboard/static/src/procurement_dashboard.js:0
+msgid "Choose a date range of at most 366 days."
+msgstr "اختر نطاق تاريخ لا يتجاوز 366 يومًا."
+
+#. module: baseer_procurement_operations_dashboard
+#. odoo-javascript
+#: code:addons/baseer_procurement_operations_dashboard/static/src/procurement_dashboard.js:0
+msgid "Choose valid dashboard filters."
+msgstr "اختر مرشحات صالحة للوحة التحكم."
+
+#. module: baseer_procurement_operations_dashboard
+#. odoo-javascript
+#: code:addons/baseer_procurement_operations_dashboard/static/src/procurement_dashboard.js:0
+msgid "Other"
+msgstr "أخرى"
+
+#. module: baseer_procurement_operations_dashboard
+#. odoo-javascript
+#: code:addons/baseer_procurement_operations_dashboard/static/src/procurement_dashboard.js:0
+msgid "Procurement requests"
+msgstr "طلبات المشتريات"
+
+#. module: baseer_procurement_operations_dashboard
+#. odoo-javascript
+#: code:addons/baseer_procurement_operations_dashboard/static/src/procurement_dashboard.js:0
+msgid "The dashboard could not be loaded. Please try again."
+msgstr "تعذر تحميل اللوحة. حاول مجددًا."

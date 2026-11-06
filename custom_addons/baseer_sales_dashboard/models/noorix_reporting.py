@@ -276,4 +276,3 @@ class NoorixSalesReporting(models.Model):
                 'domain': [('id', 'in', sorted(set(ids))), ('company_id', '=', company.id)],
                 'context': {'allowed_company_ids': [company.id], 'create': False,
                             'edit': False, 'delete': False}}
-

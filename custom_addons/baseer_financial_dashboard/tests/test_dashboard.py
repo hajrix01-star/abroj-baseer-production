@@ -27,3 +27,12 @@ class TestFinancialDashboard(TransactionCase):
         self.assertIn('BaseerProfitLossReport', source)
         self.assertIn('BaseerOperationsPreview', source)
         self.assertIn('t-component="activeComponent"', (module / 'static/src/financial_dashboard.xml').read_text(encoding='utf-8'))
+
+    def test_dashboard_integration_preserves_existing_dashboard_boundaries(self):
+        module = Path(__file__).resolve().parents[1]
+        integration = (module / 'static/src/financial_dashboard.xml').read_text(encoding='utf-8')
+        # The finance extension runs last and must not re-enable native chrome
+        # on procurement (or another custom dashboard) according to asset order.
+        self.assertIn('priority="100"', integration)
+        self.assertEqual(integration.count('!isBaseerProcurementOperationsDashboard'), 5)
+        self.assertEqual(integration.count('!isBaseerFinancialDashboard'), 5)

@@ -1,24 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
-    <t t-name="baseer_financial_dashboard.DashboardIntegration" t-inherit="spreadsheet_dashboard.DashboardAction" t-inherit-mode="extension" priority="90">
+    <!-- Apply after shared dashboard integrations while retaining their boundaries. -->
+    <t t-name="baseer_financial_dashboard.DashboardIntegration" t-inherit="spreadsheet_dashboard.DashboardAction" t-inherit-mode="extension" priority="100">
         <xpath expr="//DashboardSearchBar" position="attributes">
-            <attribute name="t-if">!isBaseerSalesDashboard and !isBaseerHeatCalendar and !isBaseerPurchasesDashboard and !isBaseerFinancialDashboard and status === Status.Loaded and loader.getActiveDashboard().model.getters.getGlobalFilters().length</attribute>
+            <attribute name="t-if">!isBaseerSalesDashboard and !isBaseerHeatCalendar and !isBaseerPurchasesDashboard and !isBaseerProcurementOperationsDashboard and !isBaseerFinancialDashboard and status === Status.Loaded and loader.getActiveDashboard().model.getters.getGlobalFilters().length</attribute>
         </xpath>
         <xpath expr="//SpreadsheetShareButton" position="attributes">
-            <attribute name="t-if">!isBaseerSalesDashboard and !isBaseerHeatCalendar and !isBaseerPurchasesDashboard and !isBaseerFinancialDashboard</attribute>
+            <attribute name="t-if">!isBaseerSalesDashboard and !isBaseerHeatCalendar and !isBaseerPurchasesDashboard and !isBaseerProcurementOperationsDashboard and !isBaseerFinancialDashboard</attribute>
         </xpath>
         <xpath expr="//div[hasclass('o_search_toggler')]" position="attributes">
-            <attribute name="t-if">env.isSmall and !isBaseerSalesDashboard and !isBaseerHeatCalendar and !isBaseerPurchasesDashboard and !isBaseerFinancialDashboard</attribute>
+            <attribute name="t-if">env.isSmall and !isBaseerSalesDashboard and !isBaseerHeatCalendar and !isBaseerPurchasesDashboard and !isBaseerProcurementOperationsDashboard and !isBaseerFinancialDashboard</attribute>
         </xpath>
         <xpath expr="//MobileFigureContainer" position="before">
             <BaseerFinancialDashboard t-if="isBaseerFinancialDashboard" dashboardId="dashboard.data.id" t-key="dashboard.data.id"/>
         </xpath>
         <xpath expr="//MobileFigureContainer" position="attributes">
-            <attribute name="t-if">env.isSmall and !isBaseerSalesDashboard and !isBaseerHeatCalendar and !isBaseerPurchasesDashboard and !isBaseerFinancialDashboard</attribute>
+            <attribute name="t-if">env.isSmall and !isBaseerSalesDashboard and !isBaseerHeatCalendar and !isBaseerPurchasesDashboard and !isBaseerProcurementOperationsDashboard and !isBaseerFinancialDashboard</attribute>
         </xpath>
         <xpath expr="//div[hasclass('o_renderer')]" position="attributes">
             <attribute name="t-else"/>
-            <attribute name="t-if">!env.isSmall and !isBaseerSalesDashboard and !isBaseerHeatCalendar and !isBaseerPurchasesDashboard and !isBaseerFinancialDashboard</attribute>
+            <attribute name="t-if">!env.isSmall and !isBaseerSalesDashboard and !isBaseerHeatCalendar and !isBaseerPurchasesDashboard and !isBaseerProcurementOperationsDashboard and !isBaseerFinancialDashboard</attribute>
         </xpath>
     </t>
 

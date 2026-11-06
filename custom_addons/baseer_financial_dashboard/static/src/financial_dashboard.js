@@ -40,7 +40,10 @@ export class BaseerFinancialDashboard extends Component {
         if (event.key === "ArrowLeft") { next = (index + (rtl ? 1 : -1) + TABS.length) % TABS.length; }
         if (next === null) { return; }
         event.preventDefault();
+        // DOM events clear currentTarget after dispatch.  Preserve the tablist
+        // before Owl re-renders the active panel, then restore roving focus.
+        const tablist = event.currentTarget.parentElement;
         this.select(TABS[next].key);
-        queueMicrotask(() => event.currentTarget.parentElement?.querySelector(`[data-financial-tab="${TABS[next].key}"]`)?.focus());
+        queueMicrotask(() => tablist?.querySelector(`[data-financial-tab="${TABS[next].key}"]`)?.focus());
     }
 }

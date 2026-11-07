@@ -1,3 +1,5 @@
+import hashlib
+import json
 import logging
 import math
 
@@ -21,6 +23,7 @@ class PosOrder(models.Model):
     )
     baseer_merge_expected_quantities = fields.Json(readonly=True, copy=False)
     baseer_merge_expected_total = fields.Monetary(currency_field='currency_id', readonly=True, copy=False)
+    baseer_merge_request_digest = fields.Char(readonly=True, copy=False)
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -29,13 +32,32 @@ class PosOrder(models.Model):
             'baseer_merge_destination_id',
             'baseer_merge_expected_quantities',
             'baseer_merge_expected_total',
+            'baseer_merge_request_digest',
         }
         if any(protected_fields.intersection(vals) for vals in vals_list):
             raise AccessError(_('Restaurant merge links can only be recorded by the protected merge workflow.'))
         return super().create(vals_list)
 
     @api.model
+    def sync_from_ui(self, orders):
+        merge = self.env.context.get('baseer_restaurant_merge')
+        if not merge:
+            return super().sync_from_ui(orders)
+        if not isinstance(merge, dict) or len(orders) != 1:
+            raise ValidationError(_('The restaurant merge destination is invalid.'))
+        destination = self._get_open_order(orders[0])
+        if not destination or destination.state != 'draft' or merge.get('destination_id') != destination.id:
+            raise ValidationError(_('The restaurant merge destination is invalid.'))
+        # Native synchronization mutates the order payload before _process_order.
+        # Bind the durable receipt to the original request.
+        digest = hashlib.sha256(json.dumps([merge, orders], sort_keys=True).encode()).hexdigest()
+        return super(PosOrder, self.with_context(baseer_restaurant_merge_digest=digest)).sync_from_ui(orders)
+
+    @api.model
     def _process_order(self, order, existing_order):
+        merge = self.env.context.get('baseer_restaurant_merge')
+        if merge:
+            return self._baseer_process_restaurant_merge(order, existing_order, merge)
         self._baseer_strip_merge_sync_echo(order, existing_order)
         raw_action = order.pop('baseer_preparation_action', False)
         if not raw_action:
@@ -103,7 +125,7 @@ class PosOrder(models.Model):
         No extra row lock: preparation retains its action/order lock ordering.
         """
         names = ('baseer_merged_into_order_id', 'baseer_merge_destination_id',
-                 'baseer_merge_expected_quantities', 'baseer_merge_expected_total')
+                 'baseer_merge_expected_quantities', 'baseer_merge_expected_total', 'baseer_merge_request_digest')
         present = [name for name in names if name in order]
         if not present:
             return
@@ -123,6 +145,8 @@ class PosOrder(models.Model):
             elif kind == 'monetary':
                 matches = ((value is False and expected == 0)
                            or (type(value) in (int, float) and value == expected and math.isfinite(value)))
+            elif kind == 'char':
+                matches = type(value) is type(expected) and value == expected
             else:
                 # This field is a native product-ID -> quantity map. JS
                 # echoes 1.0 as 1; that is exact numeric equality, not a
@@ -291,7 +315,99 @@ class PosOrder(models.Model):
             quantities[key] = quantities.get(key, 0.0) + line.qty
         return quantities
 
-    def baseer_begin_restaurant_merge(self, destination_id):
+    def _baseer_restaurant_merge_baseline(self):
+        """Fingerprint both saved orders and their frozen kitchen destinations."""
+        self.invalidate_recordset()
+        lines = self.lines
+        lines.invalidate_recordset()
+        states = self._baseer_preparation_states()
+        states.invalidate_recordset()
+        baseline = [
+            self.sorted('id').read(['uuid', 'state', 'write_date', 'amount_total', 'lines']),
+            lines.sorted('id').read(['uuid', 'write_date', 'qty']),
+            [self._baseer_merge_line_key(line) for line in lines.sorted('id')],
+            states.sorted('id').read(['order_id', 'line_uuid', 'printer_id', 'copies', 'quantity', 'details']),
+        ]
+        return hashlib.sha256(json.dumps(baseline, default=str, sort_keys=True).encode()).hexdigest()
+
+    @api.model
+    def _baseer_merge_line_key(self, line):
+        parent = line.combo_parent_id
+        return (
+            line.product_id.id, line.product_uom_id.id, line.full_product_name or '',
+            line.note or '', line.customer_note or '', line.price_unit, line.discount,
+            tuple(sorted(line.tax_ids.ids)), tuple(sorted(line.attribute_value_ids.ids)),
+            tuple(sorted((value.custom_product_template_attribute_value_id.id, value.custom_value or '')
+                         for value in line.custom_attribute_value_ids)),
+            line.combo_item_id.id, parent.product_id.id, tuple(sorted(parent.attribute_value_ids.ids)),
+            tuple(sorted(lot.lot_name or '' for lot in line.pack_lot_ids)),
+        )
+
+    def _baseer_merge_item_quantities(self):
+        quantities = {}
+        for line in self.lines:
+            key = self._baseer_merge_line_key(line)
+            quantities[key] = quantities.get(key, 0.0) + line.qty
+        return quantities
+
+    @api.model
+    def _baseer_process_restaurant_merge(self, order, destination, merge):
+        if (
+            not isinstance(merge, dict)
+            or type(merge.get('source_id')) is not int
+            or not destination
+            or merge.get('destination_id') != destination.id
+            or order.get('uuid') != destination.uuid
+            or order.get('session_id') != destination.session_id.id
+            or order.get('state', 'draft') != 'draft'
+            or order.get('payment_ids')
+            or order.get('baseer_preparation_action')
+        ):
+            raise ValidationError(_('The restaurant merge destination is invalid.'))
+        source = self.browse(merge['source_id']).exists()
+        if not source or source == destination:
+            raise ValidationError(_('The restaurant merge orders are no longer available.'))
+        orders = source | destination
+        orders.check_access('write')
+        if not self.env.user.has_group('point_of_sale.group_pos_user') or any(
+            candidate.company_id not in self.env.companies for candidate in orders
+        ):
+            raise AccessError(_('This kitchen order does not belong to an allowed company.'))
+        State = self.env['baseer.print.preparation.state']
+        State._lock_orders_states(orders)
+        orders.invalidate_recordset()
+        digest = self.env.context.get('baseer_restaurant_merge_digest')
+        if not digest:
+            raise ValidationError(_('The restaurant merge destination is invalid.'))
+        if source.baseer_merged_into_order_id == destination and source.state == 'cancel':
+            if source.baseer_merge_request_digest != digest:
+                raise ValidationError(_('This restaurant merge has already been completed with different order data.'))
+            return destination.id
+        orders._baseer_assert_cancellation_batch(source.session_id.id)
+        source._baseer_assert_restaurant_merge_destination(destination)
+        if not source._baseer_preparation_states() or merge.get('baseline') != orders._baseer_restaurant_merge_baseline():
+            raise ValidationError(_('The restaurant orders changed. Reload both orders before merging again.'))
+
+        expected_quantities = orders._baseer_merge_item_quantities()
+        expected_total = destination.amount_total + source.amount_total
+        self._baseer_strip_merge_sync_echo(order, destination)
+        order_id = super()._process_order(order, destination)
+        destination.invalidate_recordset()
+        orders._baseer_assert_cancellation_batch(source.session_id.id)
+        source._baseer_assert_restaurant_merge_destination(destination)
+        quantities = destination._baseer_merge_item_quantities()
+        if (
+            order_id != destination.id
+            or set(quantities) != set(expected_quantities)
+            or any(abs(quantities[product] - quantity) > 0.000001 for product, quantity in expected_quantities.items())
+            or not destination.currency_id.is_zero(destination.amount_total - expected_total)
+        ):
+            raise ValidationError(_('The restaurant merge destination does not retain the source order total.'))
+        source._baseer_transfer_restaurant_merge_states(destination, merge.get('line_uuid_map'))
+        source._baseer_complete_restaurant_merge(destination, digest)
+        return order_id
+
+    def baseer_begin_restaurant_merge(self, destination_id, atomic=False):
         """Record the destination baseline before native POS moves the lines."""
         self.ensure_one()
         self.check_access('write')
@@ -313,6 +429,20 @@ class PosOrder(models.Model):
             return {'requires_transfer': False}
         source._baseer_assert_cancellation_batch(source.session_id.id)
         source._baseer_assert_restaurant_merge_destination(destination)
+        if atomic is True:
+            (source | destination)._baseer_assert_cancellation_batch(source.session_id.id)
+            destination.check_access('write')
+            return {
+                'requires_transfer': True,
+                'preparation_line_uuids': sorted(set(states.mapped('line_uuid'))),
+                'baseline': (source | destination)._baseer_restaurant_merge_baseline(),
+            }
+        # Existing browser tabs can still use the old two-request workflow.
+        # Do not let them start a transfer they cannot roll back safely.
+        signatures = {(state.printer_id.id, state.copies)
+                      for state in (source | destination)._baseer_preparation_states()}
+        if len(signatures) > 1:
+            raise ValidationError(_('Reload Point of Sale before merging orders sent to different printers or copy settings.'))
         expected_quantities = destination._baseer_merge_line_quantities()
         for key, quantity in source._baseer_merge_line_quantities().items():
             expected_quantities[key] = expected_quantities.get(key, 0.0) + quantity
@@ -347,6 +477,39 @@ class PosOrder(models.Model):
                for uuid in required_uuids):
             raise ValidationError(_('The restaurant merge is missing a transferred kitchen line.'))
         destination_states = State._states_for_orders(destination)
+        # Validate all groups before moving any state. A line sent to different
+        # printers cannot be folded into one line without leaving inconsistent
+        # per-printer quantities, even if the native POS would merge it.
+        source_groups = {}
+        for state in source_states:
+            source_groups.setdefault(state.line_uuid, State.sudo().browse())
+            source_groups[state.line_uuid] |= state
+        destination_signatures = {}
+        target_quantities = {}
+        for source_uuid, group in source_groups.items():
+            target_uuid = line_uuid_map[source_uuid]
+            target_line = destination_lines.get(target_uuid)
+            if not target_line or not State._same_logical_line(group[0], State._line_details(target_line)):
+                raise ValidationError(_('The restaurant merge kitchen line does not match its destination.'))
+            signature = frozenset((state.printer_id.id, state.copies) for state in group)
+            existing_states = destination_states.filtered(lambda state: state.line_uuid == target_uuid)
+            existing_signature = frozenset((state.printer_id.id, state.copies) for state in existing_states)
+            unequal_source = any(abs(state.quantity - group[0].quantity) > 0.000001 for state in group)
+            unequal_target = existing_states and any(
+                abs(state.quantity - existing_states[0].quantity) > 0.000001 for state in existing_states
+            )
+            if unequal_source or unequal_target or (existing_states and signature != existing_signature) or (
+                    target_uuid in destination_signatures and destination_signatures[target_uuid] != signature):
+                raise ValidationError(_(
+                    'These kitchen items cannot be merged because they were sent to different printers or copy settings. '
+                    'Keep them as separate items.'
+                ))
+            destination_signatures[target_uuid] = signature
+            target_quantities[target_uuid] = target_quantities.get(
+                target_uuid, existing_states[0].quantity if existing_states else 0
+            ) + group[0].quantity
+            if target_quantities[target_uuid] - State._kitchen_quantity(target_line) > 0.000001:
+                raise ValidationError(_('The restaurant merge kitchen line does not match its destination.'))
         for source_state in source_states:
             destination_line = destination_lines.get(line_uuid_map[source_state.line_uuid])
             details = State._line_details(destination_line) if destination_line else False
@@ -403,17 +566,20 @@ class PosOrder(models.Model):
         source._baseer_assert_restaurant_merge_destination(destination)
         source._baseer_assert_restaurant_merge_transfer(destination)
         source._baseer_transfer_restaurant_merge_states(destination, line_uuid_map)
+        return source._baseer_complete_restaurant_merge(destination)
 
+    def _baseer_complete_restaurant_merge(self, destination, digest=False):
         # This link is immutable from regular ORM writes.  It is both an audit
         # trail and the narrowly-scoped proof that the following native cancel
         # is a restaurant merge, not a silent kitchen cancellation.
-        super(PosOrder, source).write({
+        super(PosOrder, self).write({
             'baseer_merged_into_order_id': destination.id,
             'baseer_merge_destination_id': False,
             'baseer_merge_expected_quantities': False,
             'baseer_merge_expected_total': False,
+            'baseer_merge_request_digest': digest,
         })
-        return source._baseer_native_action_pos_order_cancel()
+        return self._baseer_native_action_pos_order_cancel()
 
     def _baseer_assert_payment_source_integrity(self):
         """Prove synchronized headers from native taxes before accepting payment.
@@ -577,6 +743,7 @@ class PosOrder(models.Model):
             'baseer_merge_destination_id',
             'baseer_merge_expected_quantities',
             'baseer_merge_expected_total',
+            'baseer_merge_request_digest',
         }.intersection(vals):
             raise AccessError(_('Restaurant merge links can only be recorded by the protected merge workflow.'))
         if vals.get('state') == 'cancel':

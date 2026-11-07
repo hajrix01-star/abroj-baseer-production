@@ -118,17 +118,18 @@ class TestBaseerPrintBridgeHybrid(TransactionCase):
         self.assertEqual(self.env['baseer.print.route']._select_binding(self.config, explicit), explicit_route)
         self.assertEqual(self.env['baseer.print.route']._select_binding(self.config, other), default_route)
 
-    def test_preparation_category_cannot_belong_to_two_active_routes(self):
-        category = self.env['pos.category'].create({'name': 'Exclusive preparation category'})
-        self.env['baseer.print.route'].create({
+    def test_preparation_category_can_belong_to_two_printers(self):
+        category = self.env['pos.category'].create({'name': 'Shared preparation category'})
+        first = self.env['baseer.print.route'].create({
             'pos_config_id': self.config.id, 'printer_id': self.kitchen_a.id,
             'pos_category_ids': [Command.link(category.id)],
         })
-        with self.assertRaises(ValidationError):
-            self.env['baseer.print.route'].create({
-                'pos_config_id': self.config.id, 'printer_id': self.kitchen_b.id,
-                'pos_category_ids': [Command.link(category.id)],
-            })
+        second = self.env['baseer.print.route'].create({
+            'pos_config_id': self.config.id, 'printer_id': self.kitchen_b.id,
+            'pos_category_ids': [Command.link(category.id)],
+        })
+        self.assertEqual(set((first | second).mapped('printer_id').ids),
+                         {self.kitchen_a.id, self.kitchen_b.id})
 
     def test_only_one_active_default_preparation_route_is_allowed(self):
         self.env['baseer.print.route'].create({
@@ -188,7 +189,7 @@ class TestBaseerPrintBridgeHybrid(TransactionCase):
                 'pos_config_id': self.config.id, 'printer_id': self.kitchen_b.id,
             })
 
-    def test_upgrade_preflight_rejects_historic_category_overlap(self):
+    def test_upgrade_preflight_accepts_category_on_distinct_printers(self):
         category = self.env['pos.category'].create({'name': 'Historic overlapping category'})
         self.env['baseer.print.route'].create({
             'pos_config_id': self.config.id, 'printer_id': self.kitchen_a.id,
@@ -196,11 +197,11 @@ class TestBaseerPrintBridgeHybrid(TransactionCase):
         })
         duplicate = self.env['baseer.print.route'].create({
             'pos_config_id': self.config.id, 'printer_id': self.kitchen_b.id,
-            'pos_category_ids': [Command.link(category.id)], 'active': False,
+            'pos_category_ids': [Command.link(category.id)],
         })
-        self.env.cr.execute('UPDATE baseer_print_route SET active = TRUE WHERE id = %s', [duplicate.id])
-        with self.assertRaises(ValidationError):
-            self.env['baseer.print.route'].init()
+        self.env['baseer.print.route'].init()
+        duplicate.invalidate_recordset(['pos_category_ids'])
+        self.assertIn(category, duplicate.pos_category_ids)
 
     def test_upgrade_preflight_rejects_historic_default_overlap(self):
         self.env['baseer.print.route'].create({
@@ -978,6 +979,58 @@ class TestBaseerPrintBridgeHybrid(TransactionCase):
         self.assertEqual(state.line_uuid, destination.lines.uuid)
         self.assertEqual(state.quantity, source_line.qty)
 
+    def _restaurant_merge_shared_printer_orders(self, matching_destinations):
+        self._enable()
+        category = self.env['pos.category'].create({'name': 'Merge printer test category'})
+        routes = self.env['baseer.print.route'].create([
+            {'pos_config_id': self.config.id, 'printer_id': printer.id,
+             'pos_category_ids': [Command.link(category.id)], 'copies': 1}
+            for printer in (self.kitchen_a, self.kitchen_b)
+        ])
+        source = self._order()
+        source_line = source.lines.ensure_one()
+        source_line.product_id.product_tmpl_id.write({'pos_categ_ids': [Command.link(category.id)]})
+        State = self.env['baseer.print.preparation.state']
+        State._apply_action(source, self._preparation_action(source, 0, 1))
+        if not matching_destinations:
+            routes.filtered(lambda route: route.printer_id == self.kitchen_b).write({'active': False})
+        destination = self.env['pos.order'].create({
+            'company_id': self.company.id, 'session_id': source.session_id.id,
+            'amount_tax': 0, 'amount_total': 10, 'amount_paid': 0, 'amount_return': 0,
+            'lines': [Command.create({
+                'product_id': source_line.product_id.id, 'qty': 1, 'price_unit': 10,
+                'price_subtotal': 10, 'price_subtotal_incl': 10,
+                'full_product_name': source_line.full_product_name,
+            })],
+        })
+        State._apply_action(destination, self._preparation_action(destination, 0, 1))
+        return source, destination
+
+    def test_restaurant_merge_rejects_different_kitchen_printer_sets(self):
+        source, destination = self._restaurant_merge_shared_printer_orders(False)
+        State = self.env['baseer.print.preparation.state']
+        before = State._states_for_orders(source | destination)
+        with self.assertRaises(ValidationError):
+            source._baseer_transfer_restaurant_merge_states(
+                destination, {source.lines.uuid: destination.lines.uuid},
+            )
+        self.assertEqual(State._states_for_orders(source | destination), before)
+        self.assertEqual(len(State._states_for_orders(source)), 2)
+        self.assertEqual(len(State._states_for_orders(destination)), 1)
+
+    def test_restaurant_merge_accepts_matching_kitchen_printer_sets(self):
+        source, destination = self._restaurant_merge_shared_printer_orders(True)
+        State = self.env['baseer.print.preparation.state']
+        destination.lines.write({'qty': 2})
+        source._baseer_transfer_restaurant_merge_states(
+            destination, {source.lines.uuid: destination.lines.uuid},
+        )
+        states = State._states_for_orders(destination)
+        self.assertEqual(set(states.mapped('printer_id').ids), {self.kitchen_a.id, self.kitchen_b.id})
+        self.assertEqual(len(states), 2)
+        self.assertTrue(all(state.quantity == 2 for state in states))
+        self.assertFalse(State._states_for_orders(source))
+
     def test_restaurant_merge_rejects_a_destination_missing_source_lines(self):
         source = self._kitchen_order()
         destination = self._order()
@@ -1421,6 +1474,99 @@ class TestBaseerPrintBridgeHybrid(TransactionCase):
         ], order='id')
         self.assertEqual(timeline.mapped('action'), ['new', 'cancel', 'new'])
         self.assertEqual(timeline.mapped('new_quantity'), [5, 0, 1])
+
+    def test_shared_category_prints_to_both_and_keeps_original_destinations(self):
+        self._enable()
+        category, extra_category = self.env['pos.category'].create([
+            {'name': 'Shared salad category'}, {'name': 'Additional matching category'},
+        ])
+        routes = self.env['baseer.print.route'].create([
+            {'pos_config_id': self.config.id, 'printer_id': self.kitchen_a.id,
+             'pos_category_ids': [Command.set([category.id, extra_category.id])], 'copies': 1},
+            {'pos_config_id': self.config.id, 'printer_id': self.kitchen_b.id,
+             'pos_category_ids': [Command.link(category.id)], 'copies': 2},
+        ])
+        order = self._order(2)
+        order.lines.product_id.product_tmpl_id.write({
+            'pos_categ_ids': [Command.set([category.id, extra_category.id])],
+        })
+        State = self.env['baseer.print.preparation.state']
+        Event = self.env['baseer.print.preparation.event']
+        Job = self.env['baseer.print.job']
+        action = self._preparation_action(order, 0, 2)
+        result = State._apply_action(order, action)
+        events = Event.sudo().browse(result['event_ids'])
+        jobs = Job.sudo().browse(result['job_ids'])
+        self.assertEqual(len(events), 1)
+        self.assertEqual(len(jobs), 2)
+        self.assertEqual(set(jobs.mapped('printer_id').ids), {self.kitchen_a.id, self.kitchen_b.id})
+        self.assertEqual({j.printer_id.id: j.payload['printer']['copies'] for j in jobs},
+                         {self.kitchen_a.id: 1, self.kitchen_b.id: 2})
+        self.assertTrue(all(len(j.payload['lines']) == 1 for j in jobs))
+        self.assertEqual(set(Event._retry_events(action).job_ids.ids), set(jobs.ids))
+        self.assertEqual(len(Job.sudo().search([('source_order_id', '=', order.id),
+                                                 ('ticket_type', '=', 'preparation')])), 2)
+        self.assertEqual(len(State.sudo().search([('order_id', '=', order.id)])), 2)
+
+        # Later configuration changes cannot redirect updates or cancellations.
+        routes.write({'active': False})
+        order.lines.write({'qty': 3})
+        change = State._apply_action(order, self._preparation_action(order, 2, 3))
+        changed_jobs = Job.sudo().browse(change['job_ids'])
+        self.assertEqual(set(changed_jobs.mapped('printer_id').ids), {self.kitchen_a.id, self.kitchen_b.id})
+        self.assertTrue(all(j.payload['lines'][0]['action'] == 'add' for j in changed_jobs))
+        order.lines.write({'qty': 0})
+        order.write({'amount_total': 0, 'amount_tax': 0})
+        cancel = State._apply_action(order, self._preparation_action(order, 3, 0, 'customer_cancelled'))
+        cancel_jobs = Job.sudo().browse(cancel['job_ids'])
+        self.assertEqual(set(cancel_jobs.mapped('printer_id').ids), {self.kitchen_a.id, self.kitchen_b.id})
+        self.assertTrue(all(j.payload['lines'][0]['action'] == 'cancel' for j in cancel_jobs))
+        self.assertFalse(State.sudo().search([('order_id', '=', order.id)]))
+
+    def test_legacy_enqueue_keeps_both_kitchens_on_update(self):
+        self._enable()
+        category = self.env['pos.category'].create({'name': 'Legacy shared destination'})
+        routes = self.env['baseer.print.route'].create([
+            {'pos_config_id': self.config.id, 'printer_id': printer.id,
+             'pos_category_ids': [Command.link(category.id)]}
+            for printer in (self.kitchen_a, self.kitchen_b)
+        ])
+        order = self._order(1)
+        order.lines.product_id.product_tmpl_id.write({'pos_categ_ids': [Command.link(category.id)]})
+        State = self.env['baseer.print.preparation.state']
+        Job = self.env['baseer.print.job']
+        State._enqueue_order(order, str(uuid4()))
+        states = State.sudo().search([('order_id', '=', order.id)])
+        self.assertEqual(set(states.mapped('printer_id').ids), {self.kitchen_a.id, self.kitchen_b.id})
+        routes.write({'active': False})
+        order.lines.write({'qty': 2})
+        State._enqueue_order(order, str(uuid4()))
+        jobs = Job.sudo().search([('source_order_id', '=', order.id), ('ticket_type', '=', 'preparation')])
+        self.assertEqual(len(jobs), 4)
+        for printer in (self.kitchen_a, self.kitchen_b):
+            self.assertEqual(len(jobs.filtered(lambda j: j.printer_id == printer)), 2)
+
+    def test_shared_kitchen_order_cancellation_notifies_both_printers(self):
+        self._enable()
+        category = self.env['pos.category'].create({'name': 'Shared cancellation category'})
+        self.env['baseer.print.route'].create([
+            {'pos_config_id': self.config.id, 'printer_id': printer.id,
+             'pos_category_ids': [Command.link(category.id)]}
+            for printer in (self.kitchen_a, self.kitchen_b)
+        ])
+        order = self._order(1)
+        order.session_id.write({'state': 'opened'})
+        order.lines.product_id.product_tmpl_id.write({'pos_categ_ids': [Command.link(category.id)]})
+        State = self.env['baseer.print.preparation.state']
+        State._apply_action(order, self._preparation_action(order, 0, 1))
+        order.baseer_cancel_with_preparation(order.session_id.id, 'wrong_order', False)
+        cancellation = self.env['baseer.print.cancellation'].search([('order_id', '=', order.id)])
+        self.assertEqual(len(cancellation), 1)
+        self.assertEqual(set(cancellation.job_ids.mapped('printer_id').ids),
+                         {self.kitchen_a.id, self.kitchen_b.id})
+        destinations = cancellation.snapshot['destinations']
+        self.assertEqual(len(destinations), 2)
+        self.assertTrue(all(len(destination['lines']) == 1 for destination in destinations))
 
     def test_preparation_action_is_idempotent_and_rejects_stale_quantity(self):
         self._enable()

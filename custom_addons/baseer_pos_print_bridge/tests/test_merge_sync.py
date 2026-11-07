@@ -4,7 +4,7 @@ from copy import deepcopy
 from uuid import uuid4
 
 from odoo import Command
-from odoo.exceptions import AccessError
+from odoo.exceptions import AccessError, ValidationError
 from odoo.tests.common import TransactionCase, tagged
 
 from . import test_payment_integrity, test_print_bridge
@@ -104,6 +104,107 @@ class TestBaseerMergeSync(TransactionCase):
             'baseer_merge_expected_quantities': deepcopy(order.baseer_merge_expected_quantities),
             'baseer_merge_expected_total': order.baseer_merge_expected_total,
         }
+
+    def _atomic_multi_printer_merge(self, same_destinations):
+        category = self.env['pos.category'].create({'name': 'Atomic merge shared kitchen'})
+        self.product.product_tmpl_id.write({'pos_categ_ids': [Command.link(category.id)]})
+        first_route = self.env['baseer.print.route'].search([('pos_config_id', '=', self.config.id)])
+        first_route.write({'pos_category_ids': [Command.link(category.id)]})
+        second_printer = self.env['baseer.print.printer'].with_context(baseer_print_discovery=True).create({
+            'name': 'Atomic merge second kitchen', 'agent_id': self.agent.id,
+            'machine_identifier': 'MERGE-SECOND-' + uuid4().hex, 'active': True,
+            'allowed_company_ids': [Command.set(self.company.ids)],
+        })
+        second_route = self.env['baseer.print.route'].create({
+            'pos_config_id': self.config.id, 'printer_id': second_printer.id,
+            'pos_category_ids': [Command.link(category.id)],
+        })
+        source = self._sync(self._draft_payload())
+        State = self.env['baseer.print.preparation.state']
+        State._enqueue_order(source, str(uuid4()))
+        if not same_destinations:
+            second_route.write({'active': False})
+        destination = self._sync(self._draft_payload())
+        State._enqueue_order(destination, str(uuid4()))
+        baseline = source.baseer_begin_restaurant_merge(destination.id, True)['baseline']
+        line_map = {source.lines.uuid: destination.lines.uuid}
+        context = {'source_id': source.id, 'destination_id': destination.id,
+                   'baseline': baseline, 'line_uuid_map': line_map}
+        payload = self._draft_payload(destination, total=230, tax=30, lines=[Command.update(
+            destination.lines.id, {'qty': 2, 'price_subtotal': 200, 'price_subtotal_incl': 230},
+        )])
+        return source, destination, context, payload
+
+    def _atomic_merge_snapshot(self, source, destination):
+        self.env.invalidate_all()
+        states = self.env['baseer.print.preparation.state'].sudo()._states_for_orders(source | destination)
+        jobs = self.env['baseer.print.job'].sudo().search([
+            ('source_order_id', 'in', (source | destination).ids),
+        ])
+        return (
+            source.state, source.amount_total, source.lines.qty,
+            destination.state, destination.amount_total, destination.lines.qty,
+            sorted((s.order_id.id, s.line_uuid, s.printer_id.id, s.quantity) for s in states),
+            sorted(jobs.ids),
+        )
+
+    def test_atomic_merge_rejects_printer_mismatch_and_rolls_back_sync(self):
+        source, destination, context, payload = self._atomic_multi_printer_merge(False)
+        before = self._atomic_merge_snapshot(source, destination)
+        with self.assertRaises(ValidationError), self.env.cr.savepoint():
+            self.Pos.with_context(baseer_restaurant_merge=context).sync_from_ui([deepcopy(payload)])
+        self.assertEqual(self._atomic_merge_snapshot(source, destination), before)
+
+    def test_atomic_merge_keeps_lines_with_different_printers_separate(self):
+        source, destination, context, _payload = self._atomic_multi_printer_merge(False)
+        old_destination_uuid = destination.lines.uuid
+        transferred = deepcopy(self._draft_payload()['lines'][0][2])
+        context['line_uuid_map'] = {source.lines.uuid: transferred['uuid']}
+        payload = self._draft_payload(destination, total=230, tax=30, lines=[Command.create(transferred)])
+        self.Pos.with_context(baseer_restaurant_merge=context).sync_from_ui([payload])
+        self.env.invalidate_all()
+        self.assertEqual(source.state, 'cancel')
+        self.assertEqual(len(destination.lines), 2)
+        states = self.env['baseer.print.preparation.state']._states_for_orders(destination)
+        self.assertEqual(len(states.filtered(lambda state: state.line_uuid == old_destination_uuid)), 1)
+        self.assertEqual(len(states.filtered(lambda state: state.line_uuid == transferred['uuid'])), 2)
+        self.assertTrue(all(state.quantity == 1 for state in states))
+
+    def test_atomic_merge_sync_is_idempotent_for_matching_printers(self):
+        source, destination, context, payload = self._atomic_multi_printer_merge(True)
+        Pos = self.Pos.with_context(baseer_restaurant_merge=context)
+        Pos.sync_from_ui([deepcopy(payload)])
+        self.env.invalidate_all()
+        self.assertEqual(source.state, 'cancel')
+        self.assertEqual(source.baseer_merged_into_order_id, destination)
+        self.assertEqual(destination.lines.qty, 2)
+        states = self.env['baseer.print.preparation.state'].sudo()._states_for_orders(destination)
+        self.assertEqual(len(states), 2)
+        self.assertTrue(all(state.quantity == 2 for state in states))
+        after = self._atomic_merge_snapshot(source, destination)
+        Pos.sync_from_ui([deepcopy(payload)])
+        self.assertEqual(self._atomic_merge_snapshot(source, destination), after)
+        different = deepcopy(payload)
+        different['amount_total'] += 1
+        with self.assertRaises(ValidationError), self.env.cr.savepoint():
+            Pos.sync_from_ui([different])
+        self.assertEqual(self._atomic_merge_snapshot(source, destination), after)
+
+    def test_old_client_cannot_start_a_two_printer_merge(self):
+        source, destination, _context, _payload = self._atomic_multi_printer_merge(True)
+        before = self._atomic_merge_snapshot(source, destination)
+        with self.assertRaises(ValidationError):
+            source.baseer_begin_restaurant_merge(destination.id)
+        self.assertFalse(source.baseer_merge_destination_id)
+        self.assertEqual(self._atomic_merge_snapshot(source, destination), before)
+
+    def test_atomic_merge_rejects_stale_baseline(self):
+        source, destination, context, payload = self._atomic_multi_printer_merge(True)
+        destination.lines.write({'qty': 3})
+        before = self._atomic_merge_snapshot(source, destination)
+        with self.assertRaises(ValidationError), self.env.cr.savepoint():
+            self.Pos.with_context(baseer_restaurant_merge=context).sync_from_ui([deepcopy(payload)])
+        self.assertEqual(self._atomic_merge_snapshot(source, destination), before)
 
     def test_native_empty_serialization_creates_draft_order(self):
         payload = {**self._draft_payload(), **self._empty_echo()}

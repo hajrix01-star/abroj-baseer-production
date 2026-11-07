@@ -209,8 +209,8 @@ const mergeRuntime = runtime('preparation_bridge.js', {
 const mergeStore = new mergeRuntime.PosStore();
 mergeStore.config = {baseer_direct_print_enabled: true, current_session_id: 4};
 mergeStore.env = {services: {ui: {block() {}, unblock() {}}}};
-const mergedSource = {id: 41, uuid: 'source', isSynced: true, uiState: {}, isDirty: () => false};
-const mergedDestination = {id: 42, uuid: 'destination', isSynced: true, uiState: {}, isDirty: () => false,
+const mergedSource = {id: 41, uuid: 'source', isSynced: true, state: 'draft', uiState: {}, isDirty: () => false};
+const mergedDestination = {id: 42, uuid: 'destination', isSynced: true, state: 'draft', uiState: {}, isDirty: () => false,
     serializeForORM: () => ({id: 42, uuid: 'destination'})};
 const mergeCalls = [];
 let committed = false;
@@ -227,7 +227,16 @@ mergeStore.data = {network: {offline: false}, synchronizeLocalDataInIndexedDB: a
         throw new Error(`unexpected ${method}`);
     }};
 mergeStore.models = {'pos.order': {getBy: (_field, uuid) => uuid === 'source' ? mergedSource : mergedDestination}};
-mergeStore.getPendingOrder = () => ({orderToCreate: [], orderToUpdate: []});
+let queuedOrders = [mergedSource, mergedDestination];
+mergeStore.getPendingOrder = () => ({orderToCreate: [], orderToUpdate: queuedOrders});
+mergeStore.syncAllOrders = async ({orders, force, throw: throwOnError}) => {
+    assert.equal(force, true);
+    assert.equal(throwOnError, true);
+    assert.deepEqual(Array.from(orders, order => order.id), [41, 42]);
+    mergeCalls.push(['flush']);
+    queuedOrders = [];
+    return orders;
+};
 mergeStore.preSyncAllOrders = async orders => orders;
 mergeStore.getSyncAllOrdersContext = (_orders, options) => options.context;
 mergeStore._baseerRestoreCanonicalOrder = async () => true;
@@ -236,6 +245,8 @@ mergeStore.removeOrder = order => { mergeStore.removed = order; };
 mergeStore.removePendingOrder = () => {};
 mergedDestination.uiState.unmerge = {'target-line': {formerUuid: 'source-line'}};
 assert.equal(await mergeStore.mergeOrders(mergedSource, mergedDestination), mergedDestination);
+assert.equal(mergeCalls[0][0], 'flush');
+assert.equal(mergeCalls[1][1], 'baseer_begin_restaurant_merge');
 assert.equal(mergeStore.nativeMergeCalled, true);
 assert.equal(mergeStore.removed, mergedSource);
 assert.equal(mergedDestination.uiState.baseerRestaurantMergePending, undefined);
@@ -245,8 +256,11 @@ assert.equal(JSON.stringify(mergeSync[3].context.baseer_restaurant_merge.line_uu
 // Never replace a preexisting unsaved edit with a canonical server snapshot.
 mergedSource.isDirty = () => true;
 mergedSource.localEdit = 'preserve me';
+mergeStore.syncAllOrders = async () => [];
+const mergeCallsBeforeFailedSave = mergeCalls.length;
 await assert.rejects(mergeStore.mergeOrders(mergedSource, mergedDestination), /Save both orders/);
 assert.equal(mergedSource.localEdit, 'preserve me');
+assert.equal(mergeCalls.length, mergeCallsBeforeFailedSave);
 mergedSource.isDirty = () => false;
 mergeStore._baseerAtomicMergeLines = new Set(['sent']);
 assert.equal(await mergeStore._mergeLines({uuid: 'sent'}, {id: 4}), null);

@@ -23,6 +23,9 @@ const BASEER_CANCELLATION_REASONS = [
 ];
 
 function assertMergeNotPending(order) {
+    if (order?._baseerSavingForMerge) {
+        throw new Error(_t("This order is being saved for the merge."));
+    }
     if (order?.uiState?.baseerRestaurantMergePending && !order._baseerMergeMutation) {
         throw new Error(_t("The kitchen order merge is awaiting recovery. Reconnect and try again."));
     }
@@ -628,13 +631,6 @@ patch(PosStore.prototype, {
             || !(await this.baseerResolvePreparationOutcome(destinationOrder))) {
             throw new Error(_t("Confirm the pending kitchen change before merging orders."));
         }
-        // Never restore a server snapshot over edits that were already local
-        // before this merge. The cashier must synchronize those edits first.
-        const pendingOrders = this.getPendingOrder();
-        const pendingIds = new Set([...pendingOrders.orderToCreate, ...pendingOrders.orderToUpdate].map((order) => order.id));
-        if ([sourceOrder, destinationOrder].some((order) => order.isDirty() || pendingIds.has(order.id))) {
-            throw new Error(_t("Save both orders before merging the kitchen order."));
-        }
         if (!Number.isInteger(destinationOrder?.id)) {
             const sessionId = this.config.current_session_id?.id || this.config.current_session_id;
             const preview = await this._baseerCancellationPreview([sourceOrder.id], sessionId);
@@ -643,6 +639,42 @@ patch(PosStore.prototype, {
             }
             return await super.mergeOrders(...arguments);
         }
+        const orders = [sourceOrder, destinationOrder];
+        const getUnsavedOrders = () => {
+            const {orderToCreate, orderToUpdate} = this.getPendingOrder();
+            const pendingIds = new Set([...orderToCreate, ...orderToUpdate].map((order) => order.id));
+            return orders.filter((order) => order.isDirty() || pendingIds.has(order.id));
+        };
+        const canStartMerge = () => orders.every((order) =>
+            this.models["pos.order"].getBy("uuid", order.uuid) === order
+            && order.state === "draft"
+            && !order._baseerSavingForMerge
+            && !order.uiState.baseerPreparationAction
+            && !order.uiState.baseerKitchenLineActionPending
+            && !order.uiState.baseerRestaurantMergePending
+        );
+        if (!canStartMerge()) {
+            throw new Error(_t("Save both orders before merging the kitchen order."));
+        }
+        const unsavedOrders = getUnsavedOrders();
+        if (unsavedOrders.length) {
+            // A successful kitchen send may queue a follow-up save even when
+            // the order is clean. Await native sync before taking the baseline.
+            const ui = this.env.services.ui;
+            let savedOrders;
+            ui.block();
+            for (const order of orders) order._baseerSavingForMerge = true;
+            try {
+                savedOrders = await this.syncAllOrders({orders: unsavedOrders, force: true, throw: true});
+            } finally {
+                for (const order of orders) delete order._baseerSavingForMerge;
+                ui.unblock();
+            }
+            const savedIds = new Set((savedOrders || []).map((order) => order.id));
+            if (unsavedOrders.some((order) => !savedIds.has(order.id)) || getUnsavedOrders().length || !canStartMerge()) {
+                throw new Error(_t("Save both orders before merging the kitchen order."));
+            }
+        }
         // Capture the destination's server-side line quantities before native
         // POS transfers the source lines. Finalization requires the resulting
         // baseline plus source quantities and the exact native line mapping.
@@ -650,12 +682,10 @@ patch(PosStore.prototype, {
             "pos.order", "baseer_begin_restaurant_merge",
             [[sourceOrder.id], destinationOrder.id, true], {}, false
         );
-        if (!merge?.requires_transfer) return await super.mergeOrders(...arguments);
-        const pendingAfterBegin = this.getPendingOrder();
-        const pendingAfterIds = new Set([...pendingAfterBegin.orderToCreate, ...pendingAfterBegin.orderToUpdate].map((order) => order.id));
-        if ([sourceOrder, destinationOrder].some((order) => order.isDirty() || pendingAfterIds.has(order.id))) {
+        if (getUnsavedOrders().length || !canStartMerge()) {
             throw new Error(_t("Save both orders before merging the kitchen order."));
         }
+        if (!merge?.requires_transfer) return await super.mergeOrders(...arguments);
         if (typeof merge.baseline !== "string" || !merge.baseline) throw new Error("Invalid kitchen merge baseline");
         const sourceLines = this.models["pos.order.line"]?.filter((line) => line.order_id?.id === sourceOrder.id) || [];
         const sourceLineIds = new Set(sourceLines.map((line) => line.id));

@@ -8,7 +8,7 @@ function runtime(file, native = {}) {
     class PosStore {}
     Object.assign(PosStore.prototype, native);
     const sandbox = {
-        PosStore, PosOrder: class {}, Orderline: class {}, OrderSummary: class {},
+        PosStore, PosOrder: class {}, PosOrderline: class {}, Orderline: class {}, OrderSummary: class {},
         SelectionPopup: class {}, TextInputPopup: class {}, ConfirmationDialog: class {},
         AlertDialog: class {}, NumberPopup: class {}, OrderReceipt: class {}, crypto: webcrypto,
         makeAwaitable: native.makeAwaitable || (async () => null),
@@ -202,36 +202,141 @@ new posExitRuntime.PosStore().redirectToBackend();
 assert.equal(backendLocation.href, "/odoo/action-point_of_sale.action_pos_config_kanban");
 const mergeRuntime = runtime('preparation_bridge.js', {
     async _mergeOrders() { this.nativeMergeCalled = true; },
+    async _mergeLines(_source, destination) { return destination; },
+    async mergeOrders() { this.nativeWholeMergeCalled = true; },
     async deleteOrders(orders) { this.nativeDeleteOrders = orders; return true; },
 });
 const mergeStore = new mergeRuntime.PosStore();
 mergeStore.config = {baseer_direct_print_enabled: true, current_session_id: 4};
-const mergedSource = {id: 41, isSynced: true, uiState: {}};
-const mergedDestination = {id: 42, isSynced: true, uiState: {}};
+mergeStore.env = {services: {ui: {block() {}, unblock() {}}}};
+const mergedSource = {id: 41, uuid: 'source', isSynced: true, uiState: {}, isDirty: () => false};
+const mergedDestination = {id: 42, uuid: 'destination', isSynced: true, uiState: {}, isDirty: () => false,
+    serializeForORM: () => ({id: 42, uuid: 'destination'})};
 const mergeCalls = [];
-mergeStore.data = {silentCall: async (model, method, args) => {
-    mergeCalls.push([model, method, args]);
-    if (method === 'baseer_begin_restaurant_merge') return {requires_transfer: true, preparation_line_uuids: ['source-line']};
-    if (method === 'baseer_preview_preparation_cancellations') return {order_ids: [41]};
-    return {};
-}};
-mergedDestination.uiState.unmerge = {'target-line': {formerUuid: 'source-line'}};
-await mergeStore._mergeOrders(mergedSource, mergedDestination);
-assert.equal(mergeStore.nativeMergeCalled, true);
-assert.equal(mergedSource.uiState.baseerRestaurantMergeDestinationId, 42);
-assert.equal(mergeCalls[0][1], 'baseer_begin_restaurant_merge');
-mergeStore.baseerResolvePreparationOutcome = async () => true;
-mergeStore.removeOrder = (order) => { mergeStore.removed = order; };
+let committed = false;
+mergeStore.data = {network: {offline: false}, synchronizeLocalDataInIndexedDB: async () => true,
+    silentCall: async (model, method, args) => {
+        mergeCalls.push([model, method, args]);
+        return {requires_transfer: true, preparation_line_uuids: ['source-line'], baseline: 'baseline'};
+    },
+    call: async (model, method, args, kwargs) => {
+        mergeCalls.push([model, method, args, kwargs]);
+        if (method === 'sync_from_ui') { committed = true; return {'pos.order': [{id: 42, uuid: 'destination'}]}; }
+        if (method === 'read') return [{id: 41, uuid: 'source', state: committed ? 'cancel' : 'draft',
+            baseer_merged_into_order_id: committed ? [42, 'destination'] : false}];
+        throw new Error(`unexpected ${method}`);
+    }};
+mergeStore.models = {'pos.order': {getBy: (_field, uuid) => uuid === 'source' ? mergedSource : mergedDestination}};
+mergeStore.getPendingOrder = () => ({orderToCreate: [], orderToUpdate: []});
+mergeStore.preSyncAllOrders = async orders => orders;
+mergeStore.getSyncAllOrdersContext = (_orders, options) => options.context;
+mergeStore._baseerRestoreCanonicalOrder = async () => true;
+mergeStore._baseerPersistRestaurantMergeMarkers = async () => true;
+mergeStore.removeOrder = order => { mergeStore.removed = order; };
 mergeStore.removePendingOrder = () => {};
-mergeStore.notification = {add() { throw new Error('A verified merge must not create a kitchen cancellation notice'); }};
-await mergeStore.deleteOrders([mergedSource], [], true);
+mergedDestination.uiState.unmerge = {'target-line': {formerUuid: 'source-line'}};
+assert.equal(await mergeStore.mergeOrders(mergedSource, mergedDestination), mergedDestination);
+assert.equal(mergeStore.nativeMergeCalled, true);
 assert.equal(mergeStore.removed, mergedSource);
-assert.equal(mergeCalls[2][0], 'pos.order');
-assert.equal(mergeCalls[2][1], 'baseer_finalize_restaurant_merge');
-assert.equal(mergeCalls[2][2][0][0], 41);
-assert.equal(mergeCalls[2][2][1], 42);
-assert.equal(JSON.stringify(mergeCalls[2][2][2]), JSON.stringify({'source-line': 'target-line'}));
-assert.deepEqual(mergeStore.nativeDeleteOrders, []);
+assert.equal(mergedDestination.uiState.baseerRestaurantMergePending, undefined);
+const mergeSync = mergeCalls.find(call => call[1] === 'sync_from_ui');
+assert.equal(mergeSync[3].context.baseer_restaurant_merge.source_id, 41);
+assert.equal(JSON.stringify(mergeSync[3].context.baseer_restaurant_merge.line_uuid_map), JSON.stringify({'source-line': 'target-line'}));
+// Never replace a preexisting unsaved edit with a canonical server snapshot.
+mergedSource.isDirty = () => true;
+mergedSource.localEdit = 'preserve me';
+await assert.rejects(mergeStore.mergeOrders(mergedSource, mergedDestination), /Save both orders/);
+assert.equal(mergedSource.localEdit, 'preserve me');
+mergedSource.isDirty = () => false;
+mergeStore._baseerAtomicMergeLines = new Set(['sent']);
+assert.equal(await mergeStore._mergeLines({uuid: 'sent'}, {id: 4}), null);
+assert.equal((await mergeStore._mergeLines({uuid: 'other'}, {id: 4})).id, 4);
+delete mergeStore._baseerAtomicMergeLines;
+// An uncertain send retains both markers and retries the exact original payload.
+const uncertainSource = {id: 51, uuid: 'uncertain-source', uiState: {}};
+const uncertainDestination = {id: 52, uuid: 'uncertain-destination', uiState: {}};
+const uncertainMarker = {source_id: 51, destination_id: 52, source_uuid: 'uncertain-source',
+    destination_uuid: 'uncertain-destination', baseline: 'b', payload: {uuid: 'uncertain-destination', lines: [[0, 0, {qty: 2}]]},
+    context: {baseer_restaurant_merge: {source_id: 51, destination_id: 52, baseline: 'b'}}};
+uncertainSource.uiState.baseerRestaurantMergePending = uncertainMarker;
+uncertainDestination.uiState.baseerRestaurantMergePending = uncertainMarker;
+let replay = false;
+const attempts = [];
+mergeStore.models['pos.order'].getBy = (_field, uuid) => uuid === uncertainSource.uuid ? uncertainSource : uncertainDestination;
+mergeStore.data.call = async (_model, method, args) => {
+    if (method === 'sync_from_ui') {
+        attempts.push(JSON.stringify(args));
+        if (!replay) throw new Error('connection lost');
+        return {'pos.order': [{id: 52, uuid: 'uncertain-destination'}]};
+    }
+    return [{id: 51, uuid: 'uncertain-source', state: 'cancel', baseer_merged_into_order_id: [52, 'destination']}];
+};
+assert.equal(await mergeStore._baseerRecoverRestaurantMerge(uncertainSource, uncertainDestination, uncertainMarker, true), false);
+assert.equal(uncertainSource.uiState.baseerRestaurantMergePending, uncertainMarker);
+assert.equal(uncertainDestination.uiState.baseerRestaurantMergePending, uncertainMarker);
+replay = true;
+assert.equal(await mergeStore._baseerRecoverRestaurantMerge(uncertainSource, uncertainDestination, uncertainMarker), true);
+assert.equal(attempts[0], attempts[1]);
+assert.equal(uncertainDestination.uiState.baseerRestaurantMergePending, undefined);
+// A definite server rollback restores both drafts and must not delete source.
+const rejectedSource = {id: 61, uuid: 'rejected-source', uiState: {}};
+const rejectedDestination = {id: 62, uuid: 'rejected-destination', uiState: {}};
+const rejectedMarker = {source_id: 61, destination_id: 62, source_uuid: 'rejected-source',
+    destination_uuid: 'rejected-destination', baseline: 'b2', payload: {uuid: 'rejected-destination'}, context: {}};
+rejectedSource.uiState.baseerRestaurantMergePending = rejectedMarker;
+rejectedDestination.uiState.baseerRestaurantMergePending = rejectedMarker;
+mergeStore.models['pos.order'].getBy = (_field, uuid) => uuid === rejectedSource.uuid ? rejectedSource : rejectedDestination;
+const restored = [];
+mergeStore._baseerRestoreCanonicalOrder = async order => { restored.push(order.id); return true; };
+mergeStore.removed = undefined;
+mergeStore.data.call = async (_model, method) => {
+    if (method === 'sync_from_ui') throw {data: {name: 'odoo.exceptions.ValidationError'}};
+    return [{id: 61, uuid: 'rejected-source', state: 'draft', baseer_merged_into_order_id: false}];
+};
+assert.equal(await mergeStore._baseerRecoverRestaurantMerge(rejectedSource, rejectedDestination, rejectedMarker), false);
+assert.deepEqual(restored, [61, 62]);
+assert.equal(mergeStore.removed, undefined);
+assert.equal(rejectedSource.uiState.baseerRestaurantMergePending, undefined);
+assert.equal(rejectedDestination.uiState.baseerRestaurantMergePending, undefined);
+// A successful IDB request is not a commit: a later abort must reject and
+// leave both in-memory markers intact.
+const storageStore = new mergeRuntime.PosStore();
+const storageOrders = [1, 2].map(id => ({id, uiState: {baseerRestaurantMergePending: {baseline: 'b'},
+    baseerPreparationOutcomeUnknown: true}, serializeForIndexedDB() {
+        return {id, JSONuiState: JSON.stringify(this.uiState)};
+    }}));
+const handlers = {};
+const transaction = {error: new Error('abort after request success'),
+    addEventListener(name, callback) { handlers[name] = callback; },
+    objectStore() { return {put() {}, delete() {}}; }, abort() { handlers.abort(); }};
+storageStore.data = {indexedDBMutex: {exec: callback => callback()}, opts: {databaseTable: {'pos.order': {key: 'id'}}},
+    indexedDB: {activeTransactions: new Set([transaction]), getNewTransaction() {
+        queueMicrotask(() => handlers.abort()); return transaction;
+    }}};
+await assert.rejects(storageStore._baseerPersistRestaurantMergeMarkers(storageOrders, {clear: true}), /abort/);
+assert.ok(storageOrders.every(order => order.uiState.baseerRestaurantMergePending));
+// Reload can omit the cancelled source; the durable source receipt is then
+// the only authority allowing the surviving destination to be unblocked.
+const reloadDestination = {id: 72, uuid: 'reload-destination', uiState: {}};
+const reloadMarker = {source_id: 71, destination_id: 72, source_uuid: 'reload-source',
+    destination_uuid: 'reload-destination', source_order_key: 71,
+    source_stale_keys: [['pos.order.line', 901]], baseline: 'reload-b'};
+reloadDestination.uiState.baseerRestaurantMergePending = reloadMarker;
+reloadDestination.uiState.baseerPreparationOutcomeUnknown = true;
+mergeStore.models['pos.order'].getBy = (_field, uuid) => uuid === reloadDestination.uuid ? reloadDestination : undefined;
+let clearedSourceKey = false;
+mergeStore.data.call = async (_model, method) => {
+    assert.equal(method, 'read');
+    return [{id: 71, uuid: 'reload-source', state: 'cancel', baseer_merged_into_order_id: [72, 'destination']}];
+};
+mergeStore._baseerRestoreCanonicalOrder = async () => ({'pos.order': [{id: 72}], 'pos.order.line': []});
+mergeStore._baseerPersistRestaurantMergeMarkers = async (_orders, options) => {
+    clearedSourceKey = options.removeSource && options.marker.source_order_key === 71
+        && options.staleKeys.some(([model, key]) => model === 'pos.order.line' && key === 901);
+};
+assert.equal(await mergeStore.baseerResolvePreparationOutcome(reloadDestination), true);
+assert.equal(clearedSourceKey, true);
+assert.equal(reloadDestination.uiState.baseerRestaurantMergePending, undefined);
 const selectionPopupSources = ["preparation_bridge.js", "line_actions.js"]
     .map((file) => readFileSync(new URL(`../static/src/app/${file}`, import.meta.url), "utf8"));
 const selectionPopupBodies = selectionPopupSources.flatMap((source) => source.match(/SelectionPopup,\s*\{[\s\S]*?\n\s*\}\);/g) || []);

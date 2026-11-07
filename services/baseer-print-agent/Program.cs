@@ -16,6 +16,9 @@ using System.Runtime.InteropServices;
 var configPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "BaseerPrintAgent", "config.json");
 var executablePath = Environment.ProcessPath ?? throw new InvalidOperationException("Agent executable path is unavailable.");
 
+if (args.Length > 0 && args[0].Equals("preview-kitchen", StringComparison.OrdinalIgnoreCase))
+    return KitchenTicketPreview.Run(args.Skip(1).ToArray());
+
 if (args.Length > 0 && args[0].Equals("install", StringComparison.OrdinalIgnoreCase))
     return AgentLifecycle.Install(executablePath);
 
@@ -451,6 +454,7 @@ static class ThermalPrinter
         var receiptRowIndex = 0;
         var receiptPage = 0;
         var nativeOffset = 0;
+        KitchenTicketRenderer? kitchenRenderer = null;
         if (printableNativeImage is not null)
         {
             var nativeWidth = Math.Min((float)(paperWidth == "58" ? 218 : 305), SessionReportMaxWidth);
@@ -511,114 +515,11 @@ static class ThermalPrinter
                     receiptPage, normal, bold, headline, subhead, Math.Min(width, SessionReportMaxWidth));
                 return;
             }
-            var y = 5f;
-            var orderInfo = payload.GetProperty("order");
-            var order = orderInfo.GetProperty("reference").GetString() ?? "Baseer";
-            if (payload.TryGetProperty("cancellation", out var cancellation))
-            {
-                DrawCentered(eventArgs.Graphics, "CANCEL / إلغاء الطلب", headline, y, width);
-                y += 24;
-                var reason = cancellation.TryGetProperty("reason_label", out var reasonValue)
-                    ? reasonValue.GetString() ?? "Other"
-                    : "Other";
-                var note = cancellation.TryGetProperty("reason_note", out var noteValue)
-                    ? noteValue.GetString() ?? ""
-                    : "";
-                eventArgs.Graphics.DrawString($"Reason / السبب: {reason}", bold, Brushes.Black, Left, y);
-                y += 18;
-                if (!string.IsNullOrWhiteSpace(note))
-                {
-                    y += DrawWrapped(eventArgs.Graphics, note, normal, Left, y, width);
-                }
-            }
-            else
-            {
-                var actions = payload.GetProperty("lines").EnumerateArray()
-                    .Select(line => line.TryGetProperty("action", out var action) ? action.GetString() : "")
-                    .ToList();
-                var normalizedActions = actions.Select(action => action?.ToLowerInvariant() ?? "").ToList();
-                var allCancelled = normalizedActions.Count > 0 && normalizedActions.All(action => action == "cancel");
-                var hasChanges = normalizedActions.Any(action => action is "add" or "reduce" or "cancel" or "update");
-                DrawCentered(eventArgs.Graphics, allCancelled ? "CANCEL / إلغاء الطلب" :
-                    (hasChanges ? "KITCHEN CHANGES / تغييرات المطبخ" : "KITCHEN ORDER / طلب مطبخ"), headline, y, width);
-                y += 24;
-            }
-            DrawCentered(eventArgs.Graphics, order, subhead, y, width);
-            y += 18;
-            y = DrawHeaderValue(
-                eventArgs.Graphics, "Time / الوقت",
-                FormatTicketTime(GetString(orderInfo, "created_at")), normal, y, width
-            );
-            y = DrawHeaderValue(eventArgs.Graphics, "Cashier / الكاشير", GetString(orderInfo, "requested_by"), normal, y, width);
-            y = DrawHeaderValue(eventArgs.Graphics, "Table / الطاولة", GetString(orderInfo, "table"), normal, y, width);
-            DrawDivider(eventArgs.Graphics, y, width);
-            y += 5;
-
-            const float quantityWidth = 38f;
-            eventArgs.Graphics.DrawString("QTY", bold, Brushes.Black, Left, y);
-            eventArgs.Graphics.DrawString("ITEM / الصنف", bold, Brushes.Black, Left + quantityWidth, y);
-            y += 16;
-            DrawDivider(eventArgs.Graphics, y, width);
-            y += 4;
-            foreach (var line in payload.GetProperty("lines").EnumerateArray())
-            {
-                var action = NormalizeAction(line);
-                var name = GetString(line, "name");
-                var quantity = GetQuantity(line, "quantity");
-                var previousQuantity = GetQuantity(line, "previous_quantity");
-                var deltaQuantity = GetQuantity(line, "delta_quantity");
-                var displayedQuantity = action switch
-                {
-                    "new" => $"+{FormatQuantity(quantity)}",
-                    "add" => $"+{FormatQuantity(Math.Abs(deltaQuantity))}",
-                    "reduce" => $"-{FormatQuantity(Math.Abs(deltaQuantity))}",
-                    "cancel" => $"×{FormatQuantity(previousQuantity != 0 ? previousQuantity : Math.Abs(deltaQuantity))}",
-                    _ => FormatQuantity(quantity),
-                };
-                eventArgs.Graphics.DrawString(displayedQuantity, bold, Brushes.Black, Left, y);
-                var actionLabel = action switch
-                {
-                    "new" => "NEW / جديد",
-                    "add" => "ADD / إضافة",
-                    "reduce" => "REDUCE / تخفيض",
-                    "cancel" => "CANCEL / إلغاء",
-                    _ => "NEW / جديد",
-                };
-                var label = $"[{actionLabel}] {name}";
-                var rowHeight = DrawWrapped(eventArgs.Graphics, label, bold, Left + quantityWidth, y, width - quantityWidth);
-                y += Math.Max(16f, rowHeight) + 3;
-                if (action == "add")
-                {
-                    y += DrawWrapped(eventArgs.Graphics,
-                        $"Total / الإجمالي: {FormatQuantity(quantity)}", normal,
-                        Left + quantityWidth, y, width - quantityWidth);
-                }
-                else if (action == "reduce")
-                {
-                    y += DrawWrapped(eventArgs.Graphics,
-                        $"Remaining / المتبقي: {FormatQuantity(quantity)}", normal,
-                        Left + quantityWidth, y, width - quantityWidth);
-                }
-
-                var reason = GetString(line, "reason_label");
-                var reasonNote = GetString(line, "reason_note");
-                if (!string.IsNullOrWhiteSpace(reason))
-                {
-                    y += DrawWrapped(eventArgs.Graphics, $"Reason / السبب: {Shorten(reason, 80)}", normal,
-                        Left + quantityWidth, y, width - quantityWidth);
-                }
-                if (!string.IsNullOrWhiteSpace(reasonNote))
-                {
-                    y += DrawWrapped(eventArgs.Graphics, Shorten(reasonNote, 120), normal,
-                        Left + quantityWidth, y, width - quantityWidth);
-                }
-                var note = GetString(line, "note");
-                if (!string.IsNullOrWhiteSpace(note))
-                {
-                    y += DrawWrapped(eventArgs.Graphics, $"Note / ملاحظة: {Shorten(note, 120)}", normal,
-                        Left + quantityWidth, y, width - quantityWidth);
-                }
-            }
+            // The server snapshot remains authoritative; page breaks never discard rows.
+            kitchenRenderer ??= new KitchenTicketRenderer(payload);
+            var kitchenWidth = Math.Min(width, paperWidth == "58" ? 190f : 270f);
+            eventArgs.HasMorePages = kitchenRenderer.DrawPage(
+                eventArgs.Graphics, Left, kitchenWidth, eventArgs.PageBounds.Height - 15f);
         };
         document.Print(); // confirms Windows spooler acceptance only; paper output is not observable programmatically.
     }

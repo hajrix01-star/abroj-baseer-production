@@ -7,7 +7,7 @@ using Microsoft.Win32;
 
 static class AgentBuild
 {
-    public const string Version = "1.5.12";
+    public const string Version = "1.5.15";
 }
 
 static class AgentLog

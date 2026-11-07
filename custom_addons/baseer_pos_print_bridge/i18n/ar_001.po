@@ -2636,3 +2636,8 @@ msgstr "تحقق من نتيجة تعديل المطبخ المعلّق قبل �
 #: code:addons/baseer_pos_print_bridge/static/src/app/preparation_bridge.js:0
 msgid "Save both orders before merging the kitchen order."
 msgstr "احفظ الطلبين قبل دمج طلب المطبخ."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/static/src/app/preparation_bridge.js:0
+msgid "This order is being saved for the merge."
+msgstr "جارٍ حفظ هذا الطلب للدمج."

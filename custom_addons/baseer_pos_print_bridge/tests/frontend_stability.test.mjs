@@ -208,7 +208,8 @@ const mergeRuntime = runtime('preparation_bridge.js', {
 });
 const mergeStore = new mergeRuntime.PosStore();
 mergeStore.config = {baseer_direct_print_enabled: true, current_session_id: 4};
-mergeStore.env = {services: {ui: {block() {}, unblock() {}}}};
+let mergeUiBlocks = 0;
+mergeStore.env = {services: {ui: {block() { mergeUiBlocks++; }, unblock() { mergeUiBlocks--; }}}};
 const mergedSource = {id: 41, uuid: 'source', isSynced: true, state: 'draft', uiState: {}, isDirty: () => false};
 const mergedDestination = {id: 42, uuid: 'destination', isSynced: true, state: 'draft', uiState: {}, isDirty: () => false,
     serializeForORM: () => ({id: 42, uuid: 'destination'})};
@@ -234,6 +235,12 @@ mergeStore.syncAllOrders = async ({orders, force, throw: throwOnError}) => {
     assert.equal(throwOnError, true);
     assert.deepEqual(Array.from(orders, order => order.id), [41, 42]);
     mergeCalls.push(['flush']);
+    await Promise.resolve();
+    assert.equal(mergeUiBlocks, 1);
+    for (const order of [mergedSource, mergedDestination]) {
+        assert.throws(() => mergeRuntime.PosOrderline.prototype.setQuantity.call({order_id: order}, 9),
+            /being saved for the merge/);
+    }
     queuedOrders = [];
     return orders;
 };
@@ -247,6 +254,7 @@ mergedDestination.uiState.unmerge = {'target-line': {formerUuid: 'source-line'}}
 assert.equal(await mergeStore.mergeOrders(mergedSource, mergedDestination), mergedDestination);
 assert.equal(mergeCalls[0][0], 'flush');
 assert.equal(mergeCalls[1][1], 'baseer_begin_restaurant_merge');
+assert.equal(mergeUiBlocks, 0);
 assert.equal(mergeStore.nativeMergeCalled, true);
 assert.equal(mergeStore.removed, mergedSource);
 assert.equal(mergedDestination.uiState.baseerRestaurantMergePending, undefined);
@@ -261,6 +269,8 @@ const mergeCallsBeforeFailedSave = mergeCalls.length;
 await assert.rejects(mergeStore.mergeOrders(mergedSource, mergedDestination), /Save both orders/);
 assert.equal(mergedSource.localEdit, 'preserve me');
 assert.equal(mergeCalls.length, mergeCallsBeforeFailedSave);
+assert.equal(mergeUiBlocks, 0);
+assert.equal(mergedSource._baseerSavingForMerge, undefined);
 mergedSource.isDirty = () => false;
 mergeStore._baseerAtomicMergeLines = new Set(['sent']);
 assert.equal(await mergeStore._mergeLines({uuid: 'sent'}, {id: 4}), null);

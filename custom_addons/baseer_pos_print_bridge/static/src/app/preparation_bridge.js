@@ -23,6 +23,9 @@ const BASEER_CANCELLATION_REASONS = [
 ];
 
 function assertMergeNotPending(order) {
+    if (order?._baseerSavingForMerge) {
+        throw new Error(_t("This order is being saved for the merge."));
+    }
     if (order?.uiState?.baseerRestaurantMergePending && !order._baseerMergeMutation) {
         throw new Error(_t("The kitchen order merge is awaiting recovery. Reconnect and try again."));
     }
@@ -645,6 +648,7 @@ patch(PosStore.prototype, {
         const canStartMerge = () => orders.every((order) =>
             this.models["pos.order"].getBy("uuid", order.uuid) === order
             && order.state === "draft"
+            && !order._baseerSavingForMerge
             && !order.uiState.baseerPreparationAction
             && !order.uiState.baseerKitchenLineActionPending
             && !order.uiState.baseerRestaurantMergePending
@@ -656,7 +660,16 @@ patch(PosStore.prototype, {
         if (unsavedOrders.length) {
             // A successful kitchen send may queue a follow-up save even when
             // the order is clean. Await native sync before taking the baseline.
-            const savedOrders = await this.syncAllOrders({orders: unsavedOrders, force: true, throw: true});
+            const ui = this.env.services.ui;
+            let savedOrders;
+            ui.block();
+            for (const order of orders) order._baseerSavingForMerge = true;
+            try {
+                savedOrders = await this.syncAllOrders({orders: unsavedOrders, force: true, throw: true});
+            } finally {
+                for (const order of orders) delete order._baseerSavingForMerge;
+                ui.unblock();
+            }
             const savedIds = new Set((savedOrders || []).map((order) => order.id));
             if (unsavedOrders.some((order) => !savedIds.has(order.id)) || getUnsavedOrders().length || !canStartMerge()) {
                 throw new Error(_t("Save both orders before merging the kitchen order."));

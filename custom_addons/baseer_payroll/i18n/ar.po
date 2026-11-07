@@ -4045,3 +4045,347 @@ msgstr "تغيرت بيانات الموظف. حدّث الموظفين لحسا
 #: code:addons/baseer_payroll/models/payroll.py:0
 msgid "Refresh employees before approving this salary."
 msgstr "حدّث الموظفين قبل اعتماد هذا الراتب."
+#. module: baseer_payroll
+#: model:ir.model.fields.selection,name:baseer_payroll.selection__baseer_hr_loan__source_type__regular
+msgid "Regular"
+msgstr "سلفة عادية"
+
+#. module: baseer_payroll
+#: model:ir.model.fields.selection,name:baseer_payroll.selection__baseer_hr_loan__source_type__legacy
+msgid "Migrated opening balance"
+msgstr "رصيد افتتاحي مرحّل"
+
+#. module: baseer_payroll
+#: model:ir.model.fields,field_description:baseer_payroll.field_baseer_hr_loan__source_type
+msgid "Source Type"
+msgstr "نوع المصدر"
+
+#. module: baseer_payroll
+#: model:ir.model.fields,field_description:baseer_payroll.field_baseer_hr_loan__source_reference
+msgid "Source Reference"
+msgstr "مرجع المصدر"
+
+#. module: baseer_payroll
+#: model:ir.model.fields,field_description:baseer_payroll.field_baseer_hr_loan__principal_line_id
+msgid "Principal Line"
+msgstr "سطر ذمة السلفة"
+
+#. module: baseer_payroll
+#: model:ir.model.fields,field_description:baseer_payroll.field_baseer_hr_loan__historical_original_amount
+msgid "Historical Original Amount"
+msgstr "المبلغ الأصلي التاريخي"
+
+#. module: baseer_payroll
+#: model:ir.model.fields,field_description:baseer_payroll.field_baseer_hr_loan__historical_recovery_amount
+msgid "Historical Recovery Amount"
+msgstr "المبلغ المسدد تاريخيًا"
+
+#. module: baseer_payroll
+#: model:ir.model.fields,field_description:baseer_payroll.field_baseer_hr_loan_allocation__bridge_move_id
+msgid "Bridge Move"
+msgstr "قيد تسوية الشريك"
+
+#. module: baseer_payroll
+#: model:ir.model.fields,field_description:baseer_payroll.field_hr_payslip__baseer_legacy_repayment
+msgid "Open advance repayment"
+msgstr "خصم السلف المرنة لهذا الشهر"
+
+#. module: baseer_payroll
+#: model:ir.model.fields,help:baseer_payroll.field_hr_payslip__baseer_legacy_repayment
+msgid "Amount to recover from flexible advances in this payroll; zero means no recovery."
+msgstr "المبلغ الذي يُخصم من السلف المرنة في هذا المسير. اتركه صفرًا إذا لم تُرد الخصم."
+
+#. module: baseer_payroll
+#: model_terms:ir.ui.view,arch_db:baseer_payroll.view_baseer_loan_form
+msgid "Link Existing Receivable"
+msgstr "ربط ذمة قائمة"
+
+#. module: baseer_payroll
+#. odoo-python
+#: code:addons/baseer_payroll/models/loan.py:0
+msgid "The migration source reference already exists for this company."
+msgstr "مرجع الترحيل موجود مسبقًا لهذه الشركة."
+
+#. module: baseer_payroll
+#. odoo-python
+#: code:addons/baseer_payroll/models/loan.py:0
+msgid "This receivable is already linked to an advance."
+msgstr "سطر الذمة هذا مرتبط بسلفة مسبقًا."
+
+#. module: baseer_payroll
+#. odoo-python
+#: code:addons/baseer_payroll/models/loan.py:0
+msgid "The employee must belong to the advance company."
+msgstr "يجب أن ينتمي الموظف إلى الشركة المسجلة عليها السلفة."
+
+#. module: baseer_payroll
+#. odoo-python
+#: code:addons/baseer_payroll/models/loan.py:0
+msgid "A migrated opening balance cannot be disbursed."
+msgstr "لا يمكن صرف الرصيد الافتتاحي المرحّل كسلفة جديدة."
+
+#. module: baseer_payroll
+#. odoo-python
+#: code:addons/baseer_payroll/models/loan.py:0
+msgid "Accounting access is required to link migrated advances."
+msgstr "تتطلب عملية ربط السلف المرحّلة صلاحية المحاسبة."
+
+#. module: baseer_payroll
+#. odoo-python
+#: code:addons/baseer_payroll/models/loan.py:0
+msgid "Only a draft migrated advance in the active company can be linked."
+msgstr "يمكن ربط السلفة المرحّلة وهي مسودة وفي الشركة النشطة فقط."
+
+#. module: baseer_payroll
+#. odoo-python
+#: code:addons/baseer_payroll/models/loan.py:0
+msgid "The source, historical recovery and posted receivable must match this advance."
+msgstr "يجب أن يتطابق المصدر والسداد التاريخي والذمة المرحلة مع هذه السلفة."
+
+#. module: baseer_payroll
+#. odoo-python
+#: code:addons/baseer_payroll/models/loan.py:0
+msgid "The selected recovery exceeds the migrated advance balance."
+msgstr "مبلغ السداد المحدد يتجاوز الرصيد المتبقي للسلف المرحّلة."
+
+#. module: baseer_payroll
+#. odoo-python
+#: code:addons/baseer_payroll/models/loan.py:0
+msgid "Migrated advance employee, account or company mismatch."
+msgstr "الموظف أو الحساب أو الشركة لا يطابق بيانات السلفة المرحّلة."
+
+#. module: baseer_payroll
+#. odoo-python
+#: code:addons/baseer_payroll/models/loan.py:0
+msgid "The recovery entry does not contain the expected employee credit."
+msgstr "لا يحتوي قيد السداد على السطر الدائن المتوقع للموظف."
+
+#. module: baseer_payroll
+#. odoo-python
+#: code:addons/baseer_payroll/models/loan.py:0
+msgid "Migrated advance partner reclassification"
+msgstr "إعادة تصنيف شريك السلفة المرحّلة"
+
+#. module: baseer_payroll
+#. odoo-python
+#: code:addons/baseer_payroll/models/loan.py:0
+msgid "Advance partner reclassification: %s"
+msgstr "إعادة تصنيف شريك السلفة: %s"
+
+#. module: baseer_payroll
+#. odoo-python
+#: code:addons/baseer_payroll/models/loan.py:0
+msgid "The reclassification accounting date changed."
+msgstr "تغيّر التاريخ المحاسبي لقيد إعادة التصنيف."
+
+#. module: baseer_payroll
+#. odoo-python
+#: code:addons/baseer_payroll/models/loan.py:0
+msgid "The payroll recovery could not be reclassified."
+msgstr "تعذّرت إعادة تصنيف استقطاع مسير الرواتب."
+
+#. module: baseer_payroll
+#. odoo-python
+#: code:addons/baseer_payroll/models/loan.py:0
+msgid "The migrated receivable could not be reconciled."
+msgstr "تعذّرت تسوية ذمة السلفة المرحّلة."
+
+#. module: baseer_payroll
+#. odoo-python
+#: code:addons/baseer_payroll/models/payroll.py:0
+msgid "Advance repayment cannot be negative."
+msgstr "لا يمكن أن يكون مبلغ سداد السلفة سالبًا."
+
+#. module: baseer_payroll
+#. odoo-python
+#: code:addons/baseer_payroll/models/payroll.py:0
+msgid "Open advance repayment exceeds the eligible balance."
+msgstr "مبلغ خصم السلف يتجاوز الرصيد المتاح لهذا المسير."
+
+#. module: baseer_payroll
+#: model:ir.model.fields,field_description:baseer_payroll.field_hr_payslip__baseer_open_advance_balance
+#: model_terms:ir.ui.view,arch_db:baseer_payroll.view_baseer_payroll_run_form
+msgid "Open advance balance"
+msgstr "رصيد السلف المرنة"
+
+#. module: baseer_payroll
+#: model:ir.model.fields,field_description:baseer_payroll.field_baseer_hr_loan__repayment_mode
+msgid "Repayment Mode"
+msgstr "طريقة السداد"
+
+#. module: baseer_payroll
+#: model:ir.model.fields.selection,name:baseer_payroll.selection__baseer_hr_loan__repayment_mode__scheduled
+msgid "Scheduled installments"
+msgstr "أقساط مجدولة"
+
+#. module: baseer_payroll
+#: model:ir.model.fields.selection,name:baseer_payroll.selection__baseer_hr_loan__repayment_mode__flexible
+msgid "Flexible repayment"
+msgstr "سداد مرن بدون أقساط"
+
+#. module: baseer_payroll
+#. odoo-python
+#: code:addons/baseer_payroll/models/payroll.py:0
+msgid "When collecting a flexible advance, total advance deductions may not exceed 10% of gross salary, and all deductions may not exceed 50%."
+msgstr "عند سداد سلفة مرنة، يجب ألا يتجاوز مجموع خصم السلف 10% من إجمالي الراتب، وألا يتجاوز مجموع الخصومات 50%."
+
+#. module: baseer_payroll
+#. odoo-python
+#: code:addons/baseer_payroll/models/payroll.py:0
+msgid "The salary or advance deductions changed. Refresh the draft payroll before approving it."
+msgstr "تغيّر الراتب أو خصم السلف. حدّث مسودة المسير قبل اعتمادها."
+
+#. module: baseer_payroll
+#. odoo-python
+#: code:addons/baseer_payroll/models/loan.py:0
+msgid "The advance receivable must match the employee accounting contact."
+msgstr "يجب أن يطابق شريك قيد السلفة جهة الاتصال المحاسبية للموظف."
+
+#. module: baseer_payroll
+#. odoo-python
+#: code:addons/baseer_payroll/models/loan.py:0
+msgid "The reference of an imported Noorix advance cannot be renamed."
+msgstr "لا يمكن تغيير مرجع سلفة مستوردة من نوركس."
+
+#. module: baseer_payroll
+#. odoo-python
+#: code:addons/baseer_payroll/models/loan.py:0
+msgid "Confirmed migrated identity cannot be changed. Cancel and prepare a new reviewed record."
+msgstr "لا يمكن تغيير الهوية المرحّلة بعد تأكيدها. ألغِ السجل وأعدّ سجلًا جديدًا للمراجعة."
+
+#. module: baseer_payroll
+#. odoo-python
+#: code:addons/baseer_payroll/models/loan.py:0
+msgid "Accounting access is required to attest migrated identities."
+msgstr "يتطلب اعتماد هويات السلف المرحّلة صلاحية المحاسبة."
+
+#. module: baseer_payroll
+#. odoo-python
+#: code:addons/baseer_payroll/models/loan.py:0
+msgid "Review the employee, historical partner, source reference and evidence before attesting."
+msgstr "راجع الموظف والشريك التاريخي ومرجع المصدر والأدلة قبل الاعتماد."
+
+#. module: baseer_payroll
+#: model_terms:ir.ui.view,arch_db:baseer_payroll.view_baseer_loan_form
+msgid "Confirm Historical Identity"
+msgstr "تأكيد الهوية التاريخية"
+
+#. module: baseer_payroll
+#: model_terms:ir.ui.view,arch_db:baseer_payroll.view_baseer_loan_form
+msgid "Historical Identity Review"
+msgstr "مراجعة الهوية التاريخية"
+
+#. module: baseer_payroll
+#: model:ir.model.fields,field_description:baseer_payroll.field_baseer_hr_loan__legacy_identity_evidence
+msgid "Legacy Identity Evidence"
+msgstr "دليل الهوية التاريخية"
+
+#. module: baseer_payroll
+#: model:ir.model.fields,field_description:baseer_payroll.field_baseer_hr_loan__legacy_identity_employee_id
+msgid "Legacy Identity Employee"
+msgstr "الموظف المعتمد للسلفة التاريخية"
+
+#. module: baseer_payroll
+#: model:ir.model.fields,field_description:baseer_payroll.field_baseer_hr_loan__legacy_identity_partner_id
+msgid "Legacy Identity Partner"
+msgstr "الشريك التاريخي المعتمد"
+
+#. module: baseer_payroll
+#: model:ir.model.fields,field_description:baseer_payroll.field_baseer_hr_loan__legacy_identity_principal_id
+msgid "Legacy Identity Principal"
+msgstr "سطر الذمة التاريخي المعتمد"
+
+#. module: baseer_payroll
+#: model:ir.model.fields,field_description:baseer_payroll.field_baseer_hr_loan__legacy_identity_reference
+msgid "Legacy Identity Reference"
+msgstr "مرجع المصدر التاريخي المعتمد"
+
+#. module: baseer_payroll
+#: model:ir.model.fields,field_description:baseer_payroll.field_baseer_hr_loan__legacy_identity_confirmed_by
+msgid "Legacy Identity Confirmed By"
+msgstr "اعتمد الهوية التاريخية"
+
+#. module: baseer_payroll
+#: model:ir.model.fields,field_description:baseer_payroll.field_baseer_hr_loan__legacy_identity_confirmed_at
+msgid "Legacy Identity Confirmed At"
+msgstr "تاريخ اعتماد الهوية التاريخية"
+
+#. module: baseer_payroll
+#: model:ir.model.fields,field_description:baseer_payroll.field_account_move__baseer_legacy_origin_move_id
+msgid "Baseer Legacy Origin Move"
+msgstr "قيد السداد الأصلي للسلفة المرحّلة"
+
+#. module: baseer_payroll
+#: model:ir.model.fields,field_description:baseer_payroll.field_hr_payslip__baseer_legacy_preview
+msgid "Advance repayment allocation"
+msgstr "توزيع سداد السلف"
+
+#. module: baseer_payroll
+#: model:ir.model.fields,field_description:baseer_payroll.field_baseer_hr_loan__historical_recovery_evidence
+msgid "Historical Recovery Evidence"
+msgstr "دليل السداد التاريخي"
+
+#. module: baseer_payroll
+#: model:ir.model.fields,help:baseer_payroll.field_baseer_hr_loan__historical_recovery_evidence
+msgid "Record the dates, amounts and source references of historical recoveries. These are evidence, not new payments."
+msgstr "سجّل تواريخ السداد السابق ومبالغه ومراجع مصادره. تُحفظ هذه البيانات كدليل، ولا تُسجّل دفعات جديدة."
+
+#. module: baseer_payroll
+#: model:ir.model.fields,field_description:baseer_payroll.field_baseer_hr_loan_repay__legacy_is_employee
+msgid "Legacy Is Employee"
+msgstr "السلفة مرحّلة للموظف"
+
+#. module: baseer_payroll
+#: model:ir.model.fields,field_description:baseer_payroll.field_baseer_hr_loan_repay__legacy_employee_balance
+msgid "Legacy Employee Balance"
+msgstr "رصيد الموظف من السلف المرحّلة"
+
+#. module: baseer_payroll
+#: model_terms:ir.ui.view,arch_db:baseer_payroll.view_baseer_loan_repay_form
+msgid "Employee Open Advance Balance"
+msgstr "رصيد سلف الموظف المتبقي"
+
+#. module: baseer_payroll
+#: model_terms:ir.ui.view,arch_db:baseer_payroll.view_baseer_loan_repay_form
+msgid "Repayment is allocated to this employee's open migrated advances, oldest source first."
+msgstr "يُوزَّع السداد على سلف الموظف المرحّلة المتبقية، بدءًا بالسلفة الأقدم."
+
+#. module: baseer_payroll
+#: model_terms:ir.ui.view,arch_db:baseer_payroll.view_baseer_loan_form
+msgid "Partner Reclassification"
+msgstr "إعادة تصنيف الشريك"
+
+#. module: baseer_payroll
+#. odoo-python
+#: code:addons/baseer_payroll/models/loan.py:0
+msgid "Migrated advance uniqueness protection is unavailable. Contact the system administrator."
+msgstr "حماية السلف المرحّلة من التكرار غير متاحة. تواصل مع مسؤول النظام."
+
+#. module: baseer_payroll
+#. odoo-python
+#: code:addons/baseer_payroll/models/loan.py:0
+msgid "Enter the complete source reference without spaces."
+msgstr "أدخل مرجع المصدر كاملًا دون مسافات."
+
+#. module: baseer_payroll
+#. odoo-python
+#: code:addons/baseer_payroll/models/loan.py:0
+msgid "An advance with a confirmed historical identity cannot be deleted. Cancel the draft and keep its review history."
+msgstr "لا يمكن حذف سلفة أُكدت هويتها التاريخية. ألغِ المسودة واحتفظ بسجل مراجعتها."
+
+#. module: baseer_payroll
+#. odoo-python
+#: code:addons/baseer_payroll/models/correction.py:0
+msgid "Migrated advance recovery corrections require a dedicated reviewed workflow."
+msgstr "تتطلب تصحيحات سداد السلف المرحّلة إجراءً مخصصًا ومراجعًا."
+
+#. module: baseer_payroll
+#. odoo-python
+#: code:addons/baseer_payroll/models/correction.py:0
+msgid "Migrated opening advances cannot be reversed through the disbursement correction."
+msgstr "لا يمكن عكس السلف الافتتاحية المرحّلة من خلال تصحيح الصرف."
+
+#. module: baseer_payroll
+#: model:ir.model.constraint,message:baseer_payroll.constraint_account_move_legacy_origin_unique
+msgid "A partner reclassification already exists for this recovery."
+msgstr "يوجد بالفعل قيد إعادة تصنيف للشريك لهذا السداد."

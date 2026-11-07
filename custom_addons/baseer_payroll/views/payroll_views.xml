@@ -51,6 +51,7 @@
                     <field name="slip_ids" mode="list,kanban" readonly="state != 'draft'">
                         <list editable="bottom" create="0" delete="0" open_form_view="1" string="Employees">
                             <field name="employee_id" readonly="1"/>
+                            <field name="state" column_invisible="1"/>
                             <field name="baseer_readiness" widget="badge" decoration-warning="baseer_readiness == 'pending'" readonly="1"/>
                             <field name="baseer_readiness_warning" readonly="1" optional="show"/>
                             <field name="currency_id" column_invisible="1"/>
@@ -60,6 +61,8 @@
                             <field name="baseer_allowance" readonly="1" optional="hide"/>
                             <field name="baseer_gross" readonly="1" sum="Total salaries"/>
                             <field name="baseer_loan_amount" readonly="1" sum="Loan deductions"/>
+                            <field name="baseer_open_advance_balance" readonly="1" invisible="state != 'draft'"/>
+                            <field name="baseer_legacy_repayment" readonly="state != 'draft'"/>
                             <field name="baseer_defer_loan" widget="boolean_toggle"/>
                             <field name="baseer_deduction"/>
                             <field name="baseer_deduction_reason" optional="show" required="baseer_deduction &gt; 0"/>
@@ -67,10 +70,12 @@
                             <field name="baseer_residual" readonly="1" optional="hide"/>
                         </list>
                         <kanban class="o_kanban_mobile" create="0" delete="0">
+                            <field name="state"/>
                             <templates><t t-name="card">
                                 <strong class="d-block mb-2"><field name="employee_id"/></strong>
                                 <div class="text-warning"><field name="baseer_readiness_warning"/></div>
                                 <div class="d-flex justify-content-between"><span t-translation="on">Salary before deductions</span><field name="baseer_gross"/></div>
+                                <div t-if="record.state.raw_value === 'draft'" class="d-flex justify-content-between"><span>Open advance balance</span><field name="baseer_open_advance_balance"/></div>
                                 <div class="d-flex justify-content-between"><span t-translation="on">Loan deduction</span><field name="baseer_loan_amount"/></div>
                                 <div class="d-flex justify-content-between"><span t-translation="on">Other deductions</span><field name="baseer_deduction"/></div>
                                 <div class="d-flex justify-content-between fw-bold mt-2"><span t-translation="on">Net salary</span><field name="baseer_net"/></div>
@@ -82,7 +87,7 @@
                                 <h2><field name="employee_id" readonly="1"/></h2>
                                 <div class="alert alert-warning" role="alert" invisible="not baseer_readiness_warning"><field name="baseer_readiness_warning" readonly="1"/></div>
                                 <group><group string="Salary"><field name="baseer_days" readonly="1"/><field name="baseer_basic" readonly="1"/><field name="baseer_overtime" readonly="1"/><field name="baseer_allowance" readonly="1"/><field name="baseer_gross" readonly="1"/></group>
-                                <group string="Deductions"><field name="baseer_loan_amount" readonly="1"/><field name="baseer_defer_loan" widget="boolean_toggle" readonly="state != 'draft'"/><field name="baseer_deduction" readonly="state != 'draft'"/><field name="baseer_deduction_reason" required="baseer_deduction &gt; 0" readonly="state != 'draft'"/><field name="baseer_net" readonly="1"/></group></group>
+                                <group string="Deductions"><field name="baseer_loan_amount" readonly="1"/><field name="baseer_open_advance_balance" readonly="1" invisible="state != 'draft'"/><field name="baseer_legacy_repayment" readonly="state != 'draft'"/><field name="baseer_needs_refresh" invisible="1"/><field name="baseer_legacy_preview" readonly="1" invisible="not baseer_legacy_repayment or baseer_needs_refresh"/><field name="baseer_defer_loan" widget="boolean_toggle" readonly="state != 'draft'"/><field name="baseer_deduction" readonly="state != 'draft'"/><field name="baseer_deduction_reason" required="baseer_deduction &gt; 0" readonly="state != 'draft'"/><field name="baseer_net" readonly="1"/></group></group>
                             </sheet>
                         </form>
                     </field>

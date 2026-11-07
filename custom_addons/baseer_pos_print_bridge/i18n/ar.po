@@ -2592,3 +2592,38 @@ msgstr "تعذر على المتصفح إنشاء صورة الإيصال. أع�
 #: code:addons/baseer_pos_print_bridge/static/src/app/receipt_image.js:0
 msgid "The receipt image exceeds 256 KB. Ask a manager to inspect it."
 msgstr "يتجاوز حجم صورة الإيصال الحد المسموح بعد تجهيزها. اطلب من المدير مراجعتها."
+
+#. module: baseer_pos_print_bridge
+msgid "These kitchen items cannot be merged because they were sent to different printers or copy settings. Keep them as separate items."
+msgstr "لا يمكن دمج أصناف المطبخ هذه لأنها أُرسلت إلى طابعات مختلفة أو بإعدادات نسخ مختلفة. أبقِ كل صنف منفصلاً."
+
+#. module: baseer_pos_print_bridge
+msgid "A POS category may only be assigned once to the same printer."
+msgstr "يمكن ربط فئة نقطة البيع بالطابعة نفسها مرة واحدة فقط."
+
+#. module: baseer_pos_print_bridge
+msgid "The restaurant orders changed. Reload both orders before merging again."
+msgstr "تغيّرت الطلبات. أعد تحميل الطلبين قبل محاولة الدمج مرة أخرى."
+
+#. module: baseer_pos_print_bridge
+msgid "This restaurant merge has already been completed with different order data."
+msgstr "تم دمج هذين الطلبين مسبقًا ببيانات مختلفة."
+
+#. module: baseer_pos_print_bridge
+msgid "Reload Point of Sale before merging orders sent to different printers or copy settings."
+msgstr "أعد تحميل نقطة البيع قبل دمج طلبات أُرسلت إلى طابعات مختلفة أو بإعدادات نسخ مختلفة."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/static/src/app/preparation_bridge.js:0
+msgid "The kitchen order merge is awaiting recovery. Reconnect and try again."
+msgstr "نتيجة دمج طلب المطبخ غير مؤكدة. أعد الاتصال وحاول مرة أخرى."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/static/src/app/preparation_bridge.js:0
+msgid "Confirm the pending kitchen change before merging orders."
+msgstr "تحقق من نتيجة تعديل المطبخ المعلّق قبل دمج الطلبات."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/static/src/app/preparation_bridge.js:0
+msgid "Save both orders before merging the kitchen order."
+msgstr "احفظ الطلبين قبل دمج طلب المطبخ."

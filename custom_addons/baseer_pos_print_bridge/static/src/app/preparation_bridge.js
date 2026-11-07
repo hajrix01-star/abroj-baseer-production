@@ -3,6 +3,8 @@
 import { patch } from "@web/core/utils/patch";
 import { _t } from "@web/core/l10n/translation";
 import { PosStore } from "@point_of_sale/app/services/pos_store";
+import { PosOrder } from "@point_of_sale/app/models/pos_order";
+import { PosOrderline } from "@point_of_sale/app/models/pos_order_line";
 import { SERIALIZED_UI_STATE_PROP } from "@point_of_sale/app/models/related_models/utils";
 import { OrderReceipt } from "@point_of_sale/app/screens/receipt_screen/receipt/order_receipt";
 import { SelectionPopup } from "@point_of_sale/app/components/popups/selection_popup/selection_popup";
@@ -19,6 +21,28 @@ const BASEER_CANCELLATION_REASONS = [
     ["staff_error", _t("Staff error")],
     ["other", _t("Other")],
 ];
+
+function assertMergeNotPending(order) {
+    if (order?.uiState?.baseerRestaurantMergePending && !order._baseerMergeMutation) {
+        throw new Error(_t("The kitchen order merge is awaiting recovery. Reconnect and try again."));
+    }
+}
+
+patch(PosOrder.prototype, {
+    assertEditable() {
+        assertMergeNotPending(this);
+        return super.assertEditable(...arguments);
+    },
+});
+
+patch(PosOrderline.prototype, {
+    setQuantity() { assertMergeNotPending(this.order_id); return super.setQuantity(...arguments); },
+    setUnitPrice() { assertMergeNotPending(this.order_id); return super.setUnitPrice(...arguments); },
+    setDiscount() { assertMergeNotPending(this.order_id); return super.setDiscount(...arguments); },
+    setNote() { assertMergeNotPending(this.order_id); return super.setNote(...arguments); },
+    setCustomerNote() { assertMergeNotPending(this.order_id); return super.setCustomerNote(...arguments); },
+    setPackLotLines() { assertMergeNotPending(this.order_id); return super.setPackLotLines(...arguments); },
+});
 
 /**
  * Native POS remains responsible for syncing and for its own preparation flow.
@@ -88,6 +112,17 @@ patch(PosStore.prototype, {
     },
 
     async baseerResolvePreparationOutcome(order) {
+        const merge = order?.uiState?.baseerRestaurantMergePending;
+        if (merge) {
+            const source = this.models["pos.order"].getBy("uuid", merge.source_uuid) || null;
+            const destination = this.models["pos.order"].getBy("uuid", merge.destination_uuid);
+            if (!destination) return false;
+            // A rolled-back merge restores two editable orders; a committed
+            // merge removes the source. Both are safe resolved outcomes.
+            await this._baseerRecoverRestaurantMerge(source, destination, merge);
+            return !destination.uiState?.baseerRestaurantMergePending
+                && Boolean(this.models["pos.order"].getBy("uuid", order.uuid));
+        }
         // Persistence clears flags before its asynchronous commit. Controls
         // entering in that window must still await the same durable result.
         if (this._baseerPreparationResolutions?.has(order?.uuid)) {
@@ -137,72 +172,7 @@ patch(PosStore.prototype, {
                 );
             }
             if (!status?.accepted || !isCurrent()) return false;
-            // This native point read returns the complete financial graph, even
-            // when write_date is unchanged. Do not merge via callRelated/read or
-            // autosync the uncertain intent while obtaining the snapshot.
-            let snapshot = await this.data.call("pos.order", "read_pos_data_uuid", [order.uuid], {}, false);
-            if (!isCurrent() || !this._baseerValidPreparationSnapshot(snapshot, order, status)) return false;
-            snapshot = await this.data.missingRecursive(snapshot);
-            if (!isCurrent() || !this._baseerValidPreparationSnapshot(snapshot, order, status)) return false;
-            // missingRecursive intentionally tolerates some read failures.
-            // An unresolved relation is not a complete recovery snapshot.
-            for (const [model, records] of Object.entries(snapshot)) {
-                for (const field of Object.values(this.data.relations[model] || {})) {
-                    if (!field.relation || !this.models[field.relation]) continue;
-                    for (const record of records) {
-                        const ids = Array.isArray(record[field.name]) ? record[field.name] : [record[field.name]];
-                        if (ids.some((id) => typeof id === "number" && id
-                            && !snapshot[field.relation]?.some((related) => related.id === id)
-                            && !this.models[field.relation].get(id))) return false;
-                    }
-                }
-            }
-
-            // Native loading retains unsynced children in x2many fields. Remove
-            // this order's stale children first, including detached backrefs.
-            // Deletion records ORM commands even when silent: consume those
-            // locally BEFORE loading, so they cannot cancel canonical lines on
-            // the next payment. No serialized payload is sent to the server.
-            const localLines = this.models["pos.order.line"].filter((line) => line.order_id?.id === order.id);
-            const localCourses = this.models["restaurant.order.course"]?.filter((course) => course.order_id?.id === order.id) || [];
-            // Keep deletion tombstones with the uncertain intent until their
-            // IndexedDB removal succeeds, including retries after a failed save.
-            const staleKeys = order.uiState.baseerPreparationStaleRecords || [];
-            order.uiState.baseerPreparationStaleRecords = staleKeys;
-            for (const [model, inverse, owners] of [
-                ["pos.pack.operation.lot", "pos_order_line_id", localLines],
-                ["product.attribute.custom.value", "pos_order_line_id", localLines],
-                ["pos.order.line", "order_id", [order]],
-                ["pos.payment", "pos_order_id", [order]],
-                ["restaurant.order.course", "order_id", [order]],
-            ]) {
-                const ownerIds = new Set(owners.map((owner) => owner.id));
-                const serverIds = new Set((snapshot[model] || []).map((record) => record.id));
-                const stale = this.models[model]?.filter((record) => ownerIds.has(record[inverse]?.id) && !serverIds.has(record.id)) || [];
-                for (const record of stale) {
-                    const key = this.data.opts.databaseTable[model]?.key || "id";
-                    staleKeys.push([model, record[key]]);
-                    record.delete({ silent: true });
-                }
-            }
-            for (const line of localLines) line.serializeForORM();
-            for (const course of localCourses) course.serializeForORM();
-            order.serializeForORM();
-            this.models.loadConnectedData(snapshot, []);
-            if (!isCurrent()) return false;
-            const canonical = snapshot["pos.order"][0];
-            if (order.state !== canonical.state || order.company_id?.id !== companyId
-                || order.config_id?.id !== configId
-                || !this._baseerSamePreparationIds(order.lines, canonical.lines)
-                || !this._baseerSamePreparationIds(order.payment_ids, canonical.payment_ids)
-                || order.lines.some((line) => line.order_id !== order)
-                || order.payment_ids.some((payment) => payment.pos_order_id !== order)) return false;
-            if (canonical.course_ids && (!this._baseerSamePreparationIds(order.course_ids, canonical.course_ids)
-                || order.course_ids.some((course) => course.order_id !== order))) return false;
-            // Keep recovery flags in memory until the entire canonical graph,
-            // stale deletions and unblocked order have committed atomically.
-            await this._baseerPersistPreparationSnapshot(snapshot, order, staleKeys, fields, isCurrent);
-            if (!isCurrent()) return false;
+            if (!(await this._baseerRestoreCanonicalOrder(order, status, fields, isCurrent))) return false;
             for (const field of fields) delete order.uiState[field];
             this.removePendingOrder(order);
             this._baseerNotifyPreparationStatus(status);
@@ -210,6 +180,78 @@ patch(PosStore.prototype, {
         } catch {
             return false;
         }
+    },
+
+    async _baseerRestoreCanonicalOrder(order, status, fields, isCurrent) {
+        const companyId = order.company_id?.id;
+        const configId = order.config_id?.id;
+    // This native point read returns the complete financial graph, even
+        // when write_date is unchanged. Do not merge via callRelated/read or
+        // autosync the uncertain intent while obtaining the snapshot.
+        let snapshot = await this.data.call("pos.order", "read_pos_data_uuid", [order.uuid], {}, false);
+        if (!isCurrent() || !this._baseerValidPreparationSnapshot(snapshot, order, status)) return false;
+        snapshot = await this.data.missingRecursive(snapshot);
+        if (!isCurrent() || !this._baseerValidPreparationSnapshot(snapshot, order, status)) return false;
+        // missingRecursive intentionally tolerates some read failures.
+        // An unresolved relation is not a complete recovery snapshot.
+        for (const [model, records] of Object.entries(snapshot)) {
+            for (const field of Object.values(this.data.relations[model] || {})) {
+                if (!field.relation || !this.models[field.relation]) continue;
+                for (const record of records) {
+                    const ids = Array.isArray(record[field.name]) ? record[field.name] : [record[field.name]];
+                    if (ids.some((id) => typeof id === "number" && id
+                        && !snapshot[field.relation]?.some((related) => related.id === id)
+                        && !this.models[field.relation].get(id))) return false;
+                }
+            }
+        }
+
+        // Native loading retains unsynced children in x2many fields. Remove
+        // this order's stale children first, including detached backrefs.
+        // Deletion records ORM commands even when silent: consume those
+        // locally BEFORE loading, so they cannot cancel canonical lines on
+        // the next payment. No serialized payload is sent to the server.
+        const localLines = this.models["pos.order.line"].filter((line) => line.order_id?.id === order.id);
+        const localCourses = this.models["restaurant.order.course"]?.filter((course) => course.order_id?.id === order.id) || [];
+        // Keep deletion tombstones with the uncertain intent until their
+        // IndexedDB removal succeeds, including retries after a failed save.
+        const staleKeys = order.uiState.baseerPreparationStaleRecords || [];
+        order.uiState.baseerPreparationStaleRecords = staleKeys;
+        for (const [model, inverse, owners] of [
+            ["pos.pack.operation.lot", "pos_order_line_id", localLines],
+            ["product.attribute.custom.value", "pos_order_line_id", localLines],
+            ["pos.order.line", "order_id", [order]],
+            ["pos.payment", "pos_order_id", [order]],
+            ["restaurant.order.course", "order_id", [order]],
+        ]) {
+            const ownerIds = new Set(owners.map((owner) => owner.id));
+            const serverIds = new Set((snapshot[model] || []).map((record) => record.id));
+            const stale = this.models[model]?.filter((record) => ownerIds.has(record[inverse]?.id) && !serverIds.has(record.id)) || [];
+            for (const record of stale) {
+                const key = this.data.opts.databaseTable[model]?.key || "id";
+                staleKeys.push([model, record[key]]);
+                record.delete({ silent: true });
+            }
+        }
+        for (const line of localLines) line.serializeForORM();
+        for (const course of localCourses) course.serializeForORM();
+        order.serializeForORM();
+        this.models.loadConnectedData(snapshot, []);
+        if (!isCurrent()) return false;
+        const canonical = snapshot["pos.order"][0];
+        if (order.state !== canonical.state || order.company_id?.id !== companyId
+            || order.config_id?.id !== configId
+            || !this._baseerSamePreparationIds(order.lines, canonical.lines)
+            || !this._baseerSamePreparationIds(order.payment_ids, canonical.payment_ids)
+            || order.lines.some((line) => line.order_id !== order)
+            || order.payment_ids.some((payment) => payment.pos_order_id !== order)) return false;
+        if (canonical.course_ids && (!this._baseerSamePreparationIds(order.course_ids, canonical.course_ids)
+            || order.course_ids.some((course) => course.order_id !== order))) return false;
+        // Keep recovery flags in memory until the entire canonical graph,
+        // stale deletions and unblocked order have committed atomically.
+        await this._baseerPersistPreparationSnapshot(snapshot, order, staleKeys, fields, isCurrent);
+        if (!isCurrent()) return false;
+        return snapshot;
     },
 
     async _baseerPersistPreparationSnapshot(snapshot, order, staleKeys, fields, isCurrent) {
@@ -341,7 +383,8 @@ patch(PosStore.prototype, {
         const pending = this.getPendingOrder();
         const requested = options.orders || [...pending.orderToCreate, ...pending.orderToUpdate];
         const blocked = requested.filter(
-            (order) => this._baseerPreparationResolutions?.has(order?.uuid)
+            (order) => order?.uiState?.baseerRestaurantMergePending
+                || this._baseerPreparationResolutions?.has(order?.uuid)
                 || (order?.uiState?.baseerPreparationOutcomeUnknown
                     && (!order._baseerPreparationRetrySync
                         || order._baseerPreparationRetrySync !== order.uiState.baseerPreparationAction?.action_uuid))
@@ -566,9 +609,31 @@ patch(PosStore.prototype, {
         return true;
     },
 
-    async _mergeOrders(sourceOrder, destinationOrder) {
+    async _mergeLines(sourceLine, destinationLine, destinationOrder, sourceOrder, courses) {
+        if (this._baseerAtomicMergeLines?.has(sourceLine.uuid)) destinationLine = null;
+        return await super._mergeLines(sourceLine, destinationLine, destinationOrder, sourceOrder, courses);
+    },
+
+    async mergeOrders(sourceOrder, destinationOrder) {
+        const pending = sourceOrder?.uiState?.baseerRestaurantMergePending
+            || destinationOrder?.uiState?.baseerRestaurantMergePending;
+        if (pending) {
+            if (await this._baseerRecoverRestaurantMerge(sourceOrder, destinationOrder, pending)) return destinationOrder;
+            throw new Error(_t("The kitchen order merge is awaiting recovery. Reconnect and try again."));
+        }
         if (!this.config.baseer_direct_print_enabled || !sourceOrder?.isSynced) {
-            return await super._mergeOrders(...arguments);
+            return await super.mergeOrders(...arguments);
+        }
+        if (!(await this.baseerResolvePreparationOutcome(sourceOrder))
+            || !(await this.baseerResolvePreparationOutcome(destinationOrder))) {
+            throw new Error(_t("Confirm the pending kitchen change before merging orders."));
+        }
+        // Never restore a server snapshot over edits that were already local
+        // before this merge. The cashier must synchronize those edits first.
+        const pendingOrders = this.getPendingOrder();
+        const pendingIds = new Set([...pendingOrders.orderToCreate, ...pendingOrders.orderToUpdate].map((order) => order.id));
+        if ([sourceOrder, destinationOrder].some((order) => order.isDirty() || pendingIds.has(order.id))) {
+            throw new Error(_t("Save both orders before merging the kitchen order."));
         }
         if (!Number.isInteger(destinationOrder?.id)) {
             const sessionId = this.config.current_session_id?.id || this.config.current_session_id;
@@ -576,29 +641,195 @@ patch(PosStore.prototype, {
             if (preview?.order_ids?.includes(sourceOrder.id)) {
                 throw new Error(_t("Save the destination table before merging a kitchen order."));
             }
-            return await super._mergeOrders(...arguments);
+            return await super.mergeOrders(...arguments);
         }
         // Capture the destination's server-side line quantities before native
         // POS transfers the source lines. Finalization requires the resulting
         // baseline plus source quantities and the exact native line mapping.
         const merge = await this.data.silentCall(
             "pos.order", "baseer_begin_restaurant_merge",
-            [[sourceOrder.id], destinationOrder.id], {}, false
+            [[sourceOrder.id], destinationOrder.id, true], {}, false
         );
-        await super._mergeOrders(...arguments);
-        if (!merge?.requires_transfer) return;
-        const preparationLineUuids = new Set(merge.preparation_line_uuids || []);
-        const lineMap = Object.fromEntries(Object.entries(destinationOrder.uiState?.unmerge || {})
-            .filter(([targetUuid, entry]) => targetUuid && preparationLineUuids.has(entry?.formerUuid))
-            .map(([targetUuid, entry]) => [entry.formerUuid, targetUuid]));
-        if (Object.keys(lineMap).length !== preparationLineUuids.size) {
-            throw new Error(_t("The kitchen order merge could not be verified. Reload POS and try again."));
+        if (!merge?.requires_transfer) return await super.mergeOrders(...arguments);
+        const pendingAfterBegin = this.getPendingOrder();
+        const pendingAfterIds = new Set([...pendingAfterBegin.orderToCreate, ...pendingAfterBegin.orderToUpdate].map((order) => order.id));
+        if ([sourceOrder, destinationOrder].some((order) => order.isDirty() || pendingAfterIds.has(order.id))) {
+            throw new Error(_t("Save both orders before merging the kitchen order."));
         }
-        // Native restaurant merging synchronizes the destination and only then
-        // deletes the source. Preserve the verified server intent and exact
-        // source-to-target line mapping for deleteOrders.
-        sourceOrder.uiState.baseerRestaurantMergeDestinationId = destinationOrder.id;
-        sourceOrder.uiState.baseerRestaurantMergeLineMap = lineMap;
+        if (typeof merge.baseline !== "string" || !merge.baseline) throw new Error("Invalid kitchen merge baseline");
+        const sourceLines = this.models["pos.order.line"]?.filter((line) => line.order_id?.id === sourceOrder.id) || [];
+        const sourceLineIds = new Set(sourceLines.map((line) => line.id));
+        const sourceRecords = [
+            ["pos.order.line", sourceLines],
+            ["pos.payment", this.models["pos.payment"]?.filter((item) => item.pos_order_id?.id === sourceOrder.id) || []],
+            ["restaurant.order.course", this.models["restaurant.order.course"]?.filter((item) => item.order_id?.id === sourceOrder.id) || []],
+            ["pos.pack.operation.lot", this.models["pos.pack.operation.lot"]?.filter((item) => sourceLineIds.has(item.pos_order_line_id?.id)) || []],
+            ["product.attribute.custom.value", this.models["product.attribute.custom.value"]?.filter((item) => sourceLineIds.has(item.pos_order_line_id?.id)) || []],
+        ];
+        const staleKeys = sourceRecords.flatMap(([model, records]) => {
+            const table = this.data.opts?.databaseTable?.[model];
+            return table ? records.map((record) => [model, record[table.key || "id"]]) : [];
+        });
+        const orderKey = this.data.opts?.databaseTable?.["pos.order"]?.key || "id";
+        const marker = {source_id: sourceOrder.id, destination_id: destinationOrder.id,
+            source_uuid: sourceOrder.uuid, destination_uuid: destinationOrder.uuid, baseline: merge.baseline,
+            source_order_key: sourceOrder[orderKey], source_stale_keys: staleKeys};
+        for (const order of [sourceOrder, destinationOrder]) {
+            order.uiState.baseerRestaurantMergePending = marker;
+            order.uiState.baseerPreparationOutcomeUnknown = true;
+        }
+        await this._baseerPersistRestaurantMergeMarkers([sourceOrder, destinationOrder]);
+        try {
+            this._baseerAtomicMergeLines = new Set(merge.preparation_line_uuids || []);
+            this.env.services.ui.block();
+            sourceOrder._baseerMergeMutation = true;
+            destinationOrder._baseerMergeMutation = true;
+            try {
+                await super._mergeOrders(sourceOrder, destinationOrder);
+            } finally {
+                delete sourceOrder._baseerMergeMutation;
+                delete destinationOrder._baseerMergeMutation;
+                this.env.services.ui.unblock();
+            }
+            const lineMap = Object.fromEntries(Object.entries(destinationOrder.uiState?.unmerge || {})
+                .filter(([targetUuid, entry]) => targetUuid && this._baseerAtomicMergeLines.has(entry?.formerUuid))
+                .map(([targetUuid, entry]) => [entry.formerUuid, targetUuid]));
+            if (Object.keys(lineMap).length !== this._baseerAtomicMergeLines.size) {
+                throw new Error("Incomplete kitchen merge mapping");
+            }
+            marker.intent = {source_id: sourceOrder.id, destination_id: destinationOrder.id,
+                line_uuid_map: lineMap, baseline: merge.baseline};
+            const options = {context: {baseer_restaurant_merge: marker.intent}, force: true, throw: true};
+            const prepared = await this.preSyncAllOrders([destinationOrder]);
+            if (!prepared?.length) throw new Error("Kitchen merge preparation failed");
+            marker.context = this.getSyncAllOrdersContext([destinationOrder], options);
+            marker.payload = JSON.parse(JSON.stringify(destinationOrder.serializeForORM({keepCommands: true})));
+            await this._baseerPersistRestaurantMergeMarkers([sourceOrder, destinationOrder]);
+            if (!(await this._baseerRecoverRestaurantMerge(sourceOrder, destinationOrder, marker, true))) {
+                throw new Error("Kitchen merge requires recovery");
+            }
+            return destinationOrder;
+        } finally {
+            delete this._baseerAtomicMergeLines;
+        }
+    },
+
+    async _baseerRecoverRestaurantMerge(sourceOrder, destinationOrder, marker, send = false) {
+        if (this.data.network?.offline || (sourceOrder && (sourceOrder.id !== marker.source_id
+            || sourceOrder.uuid !== marker.source_uuid))
+            || destinationOrder.id !== marker.destination_id
+            || destinationOrder.uuid !== marker.destination_uuid) return false;
+        const peer = destinationOrder.uiState?.baseerRestaurantMergePending;
+        if (!peer || peer.baseline !== marker.baseline || peer.source_id !== marker.source_id
+            || peer.destination_id !== marker.destination_id
+            || JSON.stringify(peer.payload) !== JSON.stringify(marker.payload)) return false;
+        // IndexedDB restores two independent objects; use one shared marker for
+        // subsequent durable transitions, so their recovery data cannot diverge.
+        if (sourceOrder) sourceOrder.uiState.baseerRestaurantMergePending = marker;
+        destinationOrder.uiState.baseerRestaurantMergePending = marker;
+        const current = (order) => () => order.uiState?.baseerRestaurantMergePending?.baseline === marker.baseline
+            && this.models["pos.order"].getBy("uuid", order.uuid) === order && !this.data.network?.offline;
+        try {
+            if (sourceOrder && (send || marker.payload)) {
+                try {
+                    if (!marker.payload || !marker.context) return false;
+                    await this.data.call("pos.order", "sync_from_ui", [[marker.payload]], {context: marker.context}, false);
+                } catch (error) {
+                    // Only a server-declared validation/access error proves rollback.
+                    const name = error?.data?.name || "";
+                    if (!name.includes("ValidationError") && !name.includes("AccessError") && !name.includes("UserError")) return false;
+                    marker.payload = null;
+                    marker.context = null;
+                    await this._baseerPersistRestaurantMergeMarkers([sourceOrder, destinationOrder]);
+                }
+            }
+            const records = await this.data.call("pos.order", "read", [[marker.source_id],
+                ["id", "uuid", "state", "baseer_merged_into_order_id"]], {}, false);
+            const source = records?.[0];
+            const targetId = Array.isArray(source?.baseer_merged_into_order_id)
+                ? source.baseer_merged_into_order_id[0] : source?.baseer_merged_into_order_id;
+            if (!source || source.id !== marker.source_id || source.uuid !== marker.source_uuid) return false;
+            const merged = source.state === "cancel" && targetId === marker.destination_id;
+            if (!sourceOrder && !merged) return false;
+            if (!merged && (source.state !== "draft" || marker.payload)) return false;
+            const cleanupFields = ["baseerPreparationStaleRecords"];
+            if (!merged && !(await this._baseerRestoreCanonicalOrder(sourceOrder, {}, cleanupFields, current(sourceOrder)))) return false;
+            if (!merged) delete sourceOrder.uiState.baseerPreparationStaleRecords;
+            const destinationSnapshot = await this._baseerRestoreCanonicalOrder(destinationOrder, {}, cleanupFields, current(destinationOrder));
+            if (!destinationSnapshot) return false;
+            delete destinationOrder.uiState.baseerPreparationStaleRecords;
+            const retainedKeys = new Set();
+            if (merged && typeof destinationSnapshot === "object") {
+                for (const [model, records] of Object.entries(destinationSnapshot)) {
+                    const key = this.data.opts?.databaseTable?.[model]?.key || "id";
+                    for (const record of records) retainedKeys.add(`${model}:${record[key]}`);
+                }
+            }
+            const staleKeys = merged ? (marker.source_stale_keys || []).filter(
+                ([model, key]) => !retainedKeys.has(`${model}:${key}`)
+            ) : [];
+            // Commit both marker removals (or the merged source removal) in
+            // one durable transaction before changing the in-memory controls.
+            await this._baseerPersistRestaurantMergeMarkers(
+                [sourceOrder, destinationOrder], {clear: true, removeSource: merged, marker, staleKeys}
+            );
+            if (sourceOrder) {
+                if (merged) this.removeOrder(sourceOrder, false);
+                this.removePendingOrder(sourceOrder);
+                delete sourceOrder.uiState.baseerRestaurantMergePending;
+                delete sourceOrder.uiState.baseerPreparationOutcomeUnknown;
+            }
+            this.removePendingOrder(destinationOrder);
+            delete destinationOrder.uiState.baseerRestaurantMergePending;
+            delete destinationOrder.uiState.baseerPreparationOutcomeUnknown;
+            return merged;
+        } catch {
+            return false;
+        }
+    },
+
+    async _baseerPersistRestaurantMergeMarkers(orders, {clear = false, removeSource = false, marker = null, staleKeys = []} = {}) {
+        return this.data.indexedDBMutex.exec(() => new Promise((resolve, reject) => {
+            const database = this.data.indexedDB;
+            const transaction = database.getNewTransaction([...new Set(["pos.order", ...staleKeys.map(([model]) => model)])]);
+            if (!transaction) return reject(new Error("Kitchen merge storage is unavailable"));
+            let settled = false;
+            const timeout = setTimeout(() => fail(new Error("Kitchen merge storage timed out")), 15000);
+            const finish = (error) => {
+                if (settled) return;
+                settled = true;
+                clearTimeout(timeout);
+                database.activeTransactions.delete(transaction);
+                error ? reject(error) : resolve();
+            };
+            const fail = (error) => {
+                try { transaction.abort(); } catch { /* Already settled. */ }
+                finish(error);
+            };
+            transaction.addEventListener("complete", () => finish(), {once: true});
+            transaction.addEventListener("abort", () => finish(transaction.error || new Error("Kitchen merge storage aborted")), {once: true});
+            transaction.addEventListener("error", () => fail(transaction.error || new Error("Kitchen merge storage failed")), {once: true});
+            try {
+                const store = transaction.objectStore("pos.order");
+                for (const [model, key] of staleKeys) transaction.objectStore(model).delete(key);
+                for (const [index, order] of orders.entries()) {
+                    if (index === 0 && removeSource) {
+                        const key = this.data.opts.databaseTable["pos.order"]?.key || "id";
+                        store.delete(order ? order[key] : marker.source_order_key);
+                        continue;
+                    }
+                    if (!order) throw new Error("Kitchen merge source is unavailable");
+                    const row = JSON.parse(JSON.stringify(order.serializeForIndexedDB()));
+                    if (clear) {
+                        const state = JSON.parse(row[SERIALIZED_UI_STATE_PROP]);
+                        delete state.baseerRestaurantMergePending;
+                        delete state.baseerPreparationOutcomeUnknown;
+                        row[SERIALIZED_UI_STATE_PROP] = JSON.stringify(state);
+                    }
+                    store.put(row);
+                }
+            } catch (error) { fail(error); }
+        }));
     },
 
     async deleteOrders(orders, serverIds = [], ignoreChange = false) {

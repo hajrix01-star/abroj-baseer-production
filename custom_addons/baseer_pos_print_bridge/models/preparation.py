@@ -158,7 +158,10 @@ class BaseerPrintPreparationState(models.Model):
     @api.model
     def _validate_expected_quantities(self, order, action):
         states = self.sudo().search([('order_id', '=', order.id)])
-        by_uuid = {state.line_uuid: state for state in states}
+        by_uuid = {}
+        for state in states:
+            by_uuid.setdefault(state.line_uuid, self.sudo().browse())
+            by_uuid[state.line_uuid] |= state
         lines_by_uuid = {line.uuid: line for line in order.lines}
         for requested in action['lines']:
             current = by_uuid.get(requested['line_uuid'])
@@ -171,8 +174,8 @@ class BaseerPrintPreparationState(models.Model):
                 categories = line.product_id.product_tmpl_id.pos_categ_ids
                 if not self.env['baseer.print.route']._select_binding(order.config_id, categories):
                     continue
-            current_quantity = current.quantity if current else 0.0
-            if abs(current_quantity - requested['expected_quantity']) > 0.000001:
+            current_quantities = current.mapped('quantity') if current else [0.0]
+            if any(abs(qty - requested['expected_quantity']) > 0.000001 for qty in current_quantities):
                 raise ValidationError(_(
                     'This kitchen item changed on another device. Refresh the order and try again.'
                 ))
@@ -230,7 +233,7 @@ class BaseerPrintPreparationState(models.Model):
     def _record_quantity_event(self, order, line, old, printer, binding, copies, action_uuid,
                                previous, target, reason_code=False, reason_note='',
                                action_type='line_change', request_fingerprint=False,
-                               enqueue_job=True):
+                               enqueue_job=True, destinations=None):
         action = self._action_name(previous, target)
         if action == 'cancel':
             if not reason_code:
@@ -247,6 +250,13 @@ class BaseerPrintPreparationState(models.Model):
             order, line, old, printer, binding, copies, action, previous, target,
             reason_code, reason_note, action_type, request_fingerprint,
         )
+        if destinations:
+            # Retain the historical first-destination field for old consumers;
+            # this immutable list records every destination of the same event.
+            snapshot['destinations'] = [{
+                'printer_id': item[0].id, 'printer_name': item[0].display_name,
+                'route_id': item[1].id if item[1] else False, 'copies': item[2],
+            } for item in destinations]
         cashier = (
             order.employee_id
             if 'employee_id' in order._fields and order.employee_id
@@ -312,10 +322,13 @@ class BaseerPrintPreparationState(models.Model):
         self._assert_order_can_prepare(order)
         self._validate_expected_quantities(order, action)
         states = self.sudo().search([('order_id', '=', order.id)])
-        by_uuid = {state.line_uuid: state for state in states}
+        by_uuid = {}
+        for state in states:
+            by_uuid.setdefault(state.line_uuid, self.sudo().browse())
+            by_uuid[state.line_uuid] |= state
         lines_by_uuid = {line.uuid: line for line in order.lines}
-        events = self.env['baseer.print.preparation.event']
-        jobs = self.env['baseer.print.job']
+        events = self.env['baseer.print.preparation.event'].sudo()
+        jobs = self.env['baseer.print.job'].sudo()
         request_fingerprint = events._action_request_fingerprint(action)
         print_groups = {}
         for requested in action['lines']:
@@ -327,7 +340,7 @@ class BaseerPrintPreparationState(models.Model):
             if abs(actual - target) > 0.000001 or (target > 0 and not line):
                 raise ValidationError(_('The synchronized kitchen item quantity does not match the requested change.'))
             if old:
-                printer, binding, copies = old.printer_id, old.route_id, old.copies
+                destinations = [(state.printer_id, state.route_id, state.copies, state) for state in old]
             else:
                 if not line:
                     # No durable preparation baseline means this was never a
@@ -337,48 +350,44 @@ class BaseerPrintPreparationState(models.Model):
                 binding = self.env['baseer.print.route']._select_binding(order.config_id, categories)
                 if not binding:
                     continue
-                printer, copies = binding.printer_id, binding.copies
+                destinations = [(route.printer_id, route, route.copies, self.sudo().browse()) for route in binding]
                 if previous:
                     raise ValidationError(_('The kitchen item baseline is missing. Refresh the order and try again.'))
+            printer, binding, copies, first_old = destinations[0]
             event, job = self._record_quantity_event(
-                order, line, old, printer, binding, copies, action['action_uuid'], previous, target,
+                order, line, first_old, printer, binding, copies, action['action_uuid'], previous, target,
                 requested['reason_code'], requested['reason_note'], action['action_type'],
-                request_fingerprint, enqueue_job=False,
+                request_fingerprint, enqueue_job=False, destinations=destinations,
             )
             events |= event
             jobs |= job
-            details = self._line_details(line) if line else dict(old.details)
-            group = print_groups.setdefault(
-                (printer.id, copies),
-                {'printer': printer, 'binding': binding, 'events': events.browse(), 'changes': []},
-            )
-            group['events'] |= event
-            group['changes'].append(details)
-            if target == 0:
-                old.unlink()
-                continue
-            details = self._line_details(line)
-            vals = {
-                'company_id': order.company_id.id,
-                'order_id': order.id,
-                'order_line_id': line.id,
-                'line_uuid': line.uuid,
-                'product_id': line.product_id.id,
-                'printer_id': printer.id,
-                'route_id': binding.id if binding else False,
-                'copies': copies,
-                'quantity': target,
-                'details': details,
-            }
-            if old:
-                old.write(vals)
-            else:
-                self.sudo().create(vals)
+            for printer, binding, copies, destination_state in destinations:
+                details = self._line_details(line) if line else dict(destination_state.details)
+                group = print_groups.setdefault(
+                    (printer.id, copies),
+                    {'printer': printer, 'binding': binding, 'copies': copies,
+                     'events': events.browse(), 'changes': []},
+                )
+                group['events'] |= event
+                group['changes'].append(details)
+                if target == 0:
+                    destination_state.unlink()
+                    continue
+                vals = {
+                    'company_id': order.company_id.id, 'order_id': order.id,
+                    'order_line_id': line.id, 'line_uuid': line.uuid,
+                    'product_id': line.product_id.id, 'printer_id': printer.id,
+                    'route_id': binding.id if binding else False, 'copies': copies,
+                    'quantity': target, 'details': details,
+                }
+                if destination_state:
+                    destination_state.write(vals)
+                else:
+                    self.sudo().create(vals)
         for group in print_groups.values():
             jobs |= self.env['baseer.print.job']._enqueue_preparation_batch(
-                order, group['printer'], group['binding'], group['changes'], copies=group['events'][0].snapshot[
-                    'destination'
-                ]['copies'], events=group['events'],
+                order, group['printer'], group['binding'], group['changes'],
+                copies=group['copies'], events=group['events'],
             )
         zero_lines = order.lines.filtered(lambda candidate: candidate.qty == 0)
         if zero_lines:
@@ -390,10 +399,10 @@ class BaseerPrintPreparationState(models.Model):
     def _enqueue_cancellation_jobs(self, order, cancellation, states):
         grouped = {}
         for state in states:
-            grouped.setdefault((state.printer_id.id, state.copies), self.browse())
+            grouped.setdefault((state.printer_id.id, state.copies), self.sudo().browse())
             grouped[(state.printer_id.id, state.copies)] |= state
         Job = self.env['baseer.print.job']
-        jobs = self.env['baseer.print.job']
+        jobs = self.env['baseer.print.job'].sudo()
         for (printer_id, copies), grouped_states in grouped.items():
             printer = self.env['baseer.print.printer'].browse(printer_id)
             if not printer.active or not printer._allows_company(order.company_id):
@@ -407,9 +416,12 @@ class BaseerPrintPreparationState(models.Model):
         self._lock_order_state(order)
         State = self.sudo()
         existing = State.search([('order_id', '=', order.id)])
-        prior_by_line = {state.line_uuid: state for state in existing}
-        Job = self.env['baseer.print.job']
-        Event = self.env['baseer.print.preparation.event']
+        prior_by_line = {}
+        for state in existing:
+            prior_by_line.setdefault(state.line_uuid, State.browse())
+            prior_by_line[state.line_uuid] |= state
+        Job = self.env['baseer.print.job'].sudo()
+        Event = self.env['baseer.print.preparation.event'].sudo()
         events = Event
         jobs = Job
         if client_event_uuid:
@@ -432,84 +444,85 @@ class BaseerPrintPreparationState(models.Model):
             if not old:
                 # See _same_logical_line: only recover an unambiguous replacement
                 # so a sync/reload cannot issue a false NEW followed by CANCEL.
-                candidates = [state for state in prior_by_line.values()
-                              if self._same_logical_line(state, details)]
+                candidates = [group for group in prior_by_line.values()
+                              if self._same_logical_line(group[0], details)]
                 # A sole product line can legitimately receive a changed note
                 # or presentation name in the same synchronization.  Keep it
                 # as an update, but never apply this looser match to duplicates.
                 if not candidates:
-                    candidates = [state for state in prior_by_line.values()
-                                  if state.product_id.id == details['product_id']]
+                    candidates = [group for group in prior_by_line.values()
+                                  if group[0].product_id.id == details['product_id']]
                 if len(candidates) == 1:
                     old = candidates[0]
-                    prior_by_line.pop(old.line_uuid)
+                    prior_by_line.pop(old[0].line_uuid)
             # POS represents a deleted line as quantity zero until the next
             # synchronization. Treat that state as a kitchen cancellation,
             # never as an UPDATE with a visible quantity of zero.
             if kitchen_quantity <= 0:
                 if old:
-                    event, job = self._record_quantity_event(
-                        order, line, old, old.printer_id, old.route_id, old.copies,
-                        action_uuid, old.quantity, 0, reason_code, reason_note,
-                    )
-                    events |= event
-                    jobs |= job
+                    destinations = [(state.printer_id, state.route_id, state.copies, state) for state in old]
+                    for state in old:
+                        event, job = self._record_quantity_event(
+                            order, line, state, state.printer_id, state.route_id, state.copies,
+                            action_uuid, state.quantity, 0, reason_code, reason_note,
+                            destinations=destinations,
+                        )
+                        events |= event
+                        jobs |= job
                     old.unlink()
                 continue
             # Destination freezes at first send. Later mapping changes never redirect updates or cancellations.
             if old:
-                printer, binding, copies = old.printer_id, old.route_id, old.copies
+                destinations = [(state.printer_id, state.route_id, state.copies, state) for state in old]
             else:
                 categories = line.product_id.product_tmpl_id.pos_categ_ids
                 binding = self.env['baseer.print.route']._select_binding(order.config_id, categories)
                 if not binding:
                     continue
-                printer, copies = binding.printer_id, binding.copies
-            vals = {'company_id': order.company_id.id, 'order_id': order.id, 'order_line_id': line.id,
-                    'line_uuid': line.uuid, 'product_id': line.product_id.id, 'printer_id': printer.id,
-                    'route_id': binding.id if binding else False, 'copies': copies, 'quantity': kitchen_quantity,
-                    'details': details}
-            changed = not old or old.quantity != kitchen_quantity or self._details_changed(old, details)
-            # Persist the new UUID/line ID even where the kitchen details did not
-            # change; it becomes the baseline for the next synchronization.
-            if old and not changed:
-                old.write(vals)
-                continue
-            if not changed:
-                continue
-            previous = old.quantity if old else 0
-            if abs(kitchen_quantity - previous) > 0.000001:
+                destinations = [(route.printer_id, route, route.copies, State.browse()) for route in binding]
+            for printer, binding, copies, state in destinations:
+                vals = {'company_id': order.company_id.id, 'order_id': order.id, 'order_line_id': line.id,
+                        'line_uuid': line.uuid, 'product_id': line.product_id.id, 'printer_id': printer.id,
+                        'route_id': binding.id if binding else False, 'copies': copies, 'quantity': kitchen_quantity,
+                        'details': details}
+                changed = not state or state.quantity != kitchen_quantity or self._details_changed(state, details)
+                if state and not changed:
+                    state.write(vals)
+                    continue
+                previous = state.quantity if state else 0
+                if abs(kitchen_quantity - previous) > 0.000001:
+                    event, job = self._record_quantity_event(
+                        order, line, state, printer, binding, copies, action_uuid, previous, kitchen_quantity,
+                        destinations=destinations,
+                    )
+                    events |= event
+                    jobs |= job
+                else:
+                    change = {
+                        **details, 'action': 'update', 'delta_quantity': 0,
+                        'previous_quantity': previous, 'new_quantity': kitchen_quantity,
+                    }
+                    jobs |= Job._enqueue_preparation(order, printer, binding, change, copies)
+                if state:
+                    state.write(vals)
+                else:
+                    try:
+                        with self.env.cr.savepoint():
+                            State.create(vals)
+                    except IntegrityError:
+                        State.search([('order_id', '=', order.id), ('line_uuid', '=', line.uuid),
+                                      ('printer_id', '=', printer.id)], limit=1).write(vals)
+        # Missing lines cancel on their original snapshot destination.
+        for old in prior_by_line.values():
+            destinations = [(state.printer_id, state.route_id, state.copies, state) for state in old]
+            for state in old:
                 event, job = self._record_quantity_event(
-                    order, line, old, printer, binding, copies, action_uuid, previous, kitchen_quantity,
+                    order, False, state, state.printer_id, state.route_id, state.copies,
+                    action_uuid, state.quantity, 0, reason_code, reason_note,
+                    destinations=destinations,
                 )
                 events |= event
                 jobs |= job
-            else:
-                # Presentation/name/note changes remain compatible with the
-                # legacy kitchen UPDATE. Quantity lineage is recorded only by
-                # immutable semantic events.
-                change = {
-                    **details, 'action': 'update', 'delta_quantity': 0,
-                    'previous_quantity': previous, 'new_quantity': kitchen_quantity,
-                }
-                jobs |= Job._enqueue_preparation(order, printer, binding, change, copies)
-            if old:
-                old.write(vals)
-            else:
-                try:
-                    with self.env.cr.savepoint():
-                        State.create(vals)
-                except IntegrityError:
-                    State.search([('order_id', '=', order.id), ('line_uuid', '=', line.uuid),
-                                  ('printer_id', '=', printer.id)], limit=1).write(vals)
-        # Missing lines cancel on their original snapshot destination.
-        for old in prior_by_line.values():
-            event, job = self._record_quantity_event(
-                order, False, old, old.printer_id, old.route_id, old.copies,
-                action_uuid, old.quantity, 0, reason_code, reason_note,
-            )
-            events |= event
-            jobs |= job
             old.unlink()
         zero_lines = order.lines.filtered(lambda candidate: candidate.qty == 0)
         if zero_lines:

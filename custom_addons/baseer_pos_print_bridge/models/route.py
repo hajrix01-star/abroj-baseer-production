@@ -74,7 +74,7 @@ class BaseerPrintRoute(models.Model):
             if not record.printer_id._allows_company(record.pos_config_id.company_id):
                 raise ValidationError(_('This Windows printer is not authorized for the point-of-sale company.'))
 
-    @api.constrains('pos_config_id', 'pos_category_id', 'pos_category_ids', 'active', 'ticket_type')
+    @api.constrains('pos_config_id', 'pos_category_id', 'pos_category_ids', 'printer_id', 'active', 'ticket_type')
     def _check_duplicate(self):
         self._check_active_category_ownership()
 
@@ -94,7 +94,7 @@ class BaseerPrintRoute(models.Model):
         return self.pos_category_ids
 
     def _check_active_category_ownership(self):
-        """Keep each active category (and the optional default) unambiguous.
+        """Prevent repeated category-to-printer bindings and duplicate defaults.
 
         ORM constraints alone can race between two administrators.  Acquiring
         a transaction lock before the conflict search serialises competing
@@ -119,10 +119,11 @@ class BaseerPrintRoute(models.Model):
                     duplicate = self.search([
                         ('id', '!=', route.id), ('active', '=', True), ('ticket_type', '=', 'preparation'),
                         ('pos_config_id', '=', route.pos_config_id.id),
+                        ('printer_id', '=', route.printer_id.id),
                         ('pos_category_ids', 'in', category.id),
                     ], limit=1)
                     if duplicate:
-                        raise ValidationError(_('Only one active preparation binding may use this POS category.'))
+                        raise ValidationError(_('A POS category may only be assigned once to the same printer.'))
             else:
                 duplicate = self.search([
                     ('id', '!=', route.id), ('active', '=', True), ('ticket_type', '=', 'preparation'),
@@ -146,8 +147,8 @@ class BaseerPrintRoute(models.Model):
     def init(self):
         """Backfill legacy category links once the M2M table exists.
 
-        The insert is idempotent. Upgrade preflight stops rather than silently
-        choosing a destination whenever historic routes already conflict.
+        The insert is idempotent. Upgrade preflight stops on duplicate routes
+        for the same category and printer or multiple default routes.
         """
         self.env.cr.execute('''
             INSERT INTO baseer_print_route_pos_category_rel (route_id, category_id)
@@ -162,13 +163,13 @@ class BaseerPrintRoute(models.Model):
               JOIN baseer_print_route_pos_category_rel AS relation ON relation.route_id = route.id
              WHERE route.active = TRUE
                AND route.ticket_type = 'preparation'
-             GROUP BY route.pos_config_id, relation.category_id
+             GROUP BY route.pos_config_id, relation.category_id, route.printer_id
             HAVING COUNT(*) > 1
         ''')
         duplicate_categories = self.env.cr.fetchall()
         if duplicate_categories:
             raise ValidationError(_(
-                'Cannot upgrade preparation routing: an active POS category belongs to more than one route. '
+                'Cannot upgrade preparation routing: an active POS category is repeated for one printer. '
                 'Deactivate or correct the overlapping routes, then upgrade again.'
             ))
 
@@ -207,4 +208,12 @@ class BaseerPrintRoute(models.Model):
             ('printer_id.active', '=', True), ('printer_id.agent_id.active', '=', True),
         ], order='priority, id')
         candidates = bindings.filtered(lambda binding: bool(binding._routing_categories() & categories))
-        return candidates[:1] or bindings.filtered(lambda binding: not binding._routing_categories())[:1]
+        candidates = candidates or bindings.filtered(lambda binding: not binding._routing_categories())[:1]
+        # One product can match multiple categories assigned to the same printer.
+        selected = self.sudo().browse()
+        seen = set()
+        for binding in candidates:
+            if binding.printer_id.id not in seen:
+                selected |= binding
+                seen.add(binding.printer_id.id)
+        return selected

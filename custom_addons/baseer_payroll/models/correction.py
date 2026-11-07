@@ -90,7 +90,8 @@ class CorrectionLoan(models.Model):
 
     def action_view_moves(self):
         action = super().action_view_moves()
-        action['domain'] = [('id', 'in', (self.move_id | self.reversal_move_id | self.allocation_ids.move_id | self.allocation_ids.reversal_move_id).ids)]
+        action['domain'] = [('id', 'in', (self.move_id | self.reversal_move_id | self.allocation_ids.move_id |
+                                          self.allocation_ids.bridge_move_id | self.allocation_ids.reversal_move_id).ids)]
         return action
 
 
@@ -214,11 +215,13 @@ class PayrollCorrection(models.TransientModel):
         else:
             active = self.loan_id.allocation_ids.filtered(lambda row: not row.reversal_move_id).sorted('id')
             source = active[-1:].move_id
-            allocations = active.filtered(lambda row: row.move_id == source)
+            allocations = Allocation.search([('move_id', '=', source.id), ('reversal_move_id', '=', False)]) if source else active
             if allocations.filtered(lambda row: row.kind != 'repayment'):
                 raise ValidationError(_('The latest recovery belongs to payroll. Open that payslip to reverse it.'))
         if not allocations:
             raise ValidationError(_('There is no active recovery to reverse.'))
+        if allocations.bridge_move_id:
+            raise UserError(_('Migrated advance recovery corrections require a dedicated reviewed workflow.'))
         for loan in allocations.loan_id:
             active = loan.allocation_ids.filtered(lambda row: not row.reversal_move_id)
             if max(active.ids) not in allocations.ids:
@@ -247,17 +250,20 @@ class PayrollCorrection(models.TransientModel):
             if money(sum(decimal(partial.amount) for partial in partials)) != money(sum(decimal(row.amount) for row in rows)):
                 raise ValidationError(_('Recovery history differs from its native reconciliation. Review it before correction.'))
             partials.with_context(baseer_payroll_internal=INTERNAL).unlink()
-        accounts = allocations.loan_id._principal_lines().account_id if len(allocations.loan_id) == 1 else allocations.loan_id.mapped('move_id.line_ids').filtered(lambda line: line.debit > 0 and line.account_id.reconcile).account_id
+        accounts = allocations.loan_id.mapped(lambda loan: loan._principal_lines().account_id)
         for account in accounts:
             credits = source.line_ids.filtered(lambda line: line.account_id == account and line.credit > 0)
             debits = move.line_ids.filtered(lambda line: line.account_id == account and line.debit > 0)
             (credits | debits).with_context(baseer_payroll_internal=INTERNAL).reconcile()
         allocations.with_context(baseer_payroll_internal=INTERNAL).write({'reversal_move_id': move.id})
         allocations.loan_id.with_context(baseer_payroll_internal=INTERNAL).write({'state': 'running'})
+        allocations.loan_id.filtered(lambda loan: loan._uses_open_repayment()).employee_id._baseer_invalidate_draft_payroll()
         return move
 
     def _reverse_advance(self):
         loan = self.loan_id
+        if loan.source_type == 'legacy':
+            raise UserError(_('Migrated opening advances cannot be reversed through the disbursement correction.'))
         if loan.allocation_ids.filtered(lambda row: not row.reversal_move_id) or money(loan.balance) != money(loan.amount):
             raise ValidationError(_('Reverse all advance recoveries before reversing the disbursement.'))
         previous = loan.allocation_ids.reversal_move_id
@@ -272,6 +278,8 @@ class PayrollCorrection(models.TransientModel):
         if lines:
             lines.with_context(baseer_payroll_internal=INTERNAL).reconcile()
         loan.with_context(baseer_payroll_internal=INTERNAL).write({'state': 'cancel', 'reversal_move_id': move.id})
+        if loan._uses_open_repayment():
+            loan.employee_id._baseer_invalidate_draft_payroll()
         return move
 
     def action_confirm(self):

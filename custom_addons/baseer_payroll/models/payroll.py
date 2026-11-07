@@ -389,6 +389,12 @@ class Payslip(models.Model):
     baseer_days = fields.Float(readonly=True, digits=(16,2), string='Eligible days')
     baseer_month_days = fields.Integer(readonly=True, string='Month days')
     baseer_loan_amount = fields.Monetary(readonly=True, string='Advance deduction')
+    baseer_open_advance_balance = fields.Monetary(compute='_compute_legacy_preview', string='Open advance balance',
+        groups='om_hr_payroll.group_hr_payroll_manager')
+    baseer_legacy_repayment = fields.Monetary(string='Open advance repayment', default=0, copy=False,
+        help='Amount to recover from flexible advances in this payroll; zero means no recovery.')
+    baseer_legacy_preview = fields.Char(compute='_compute_legacy_preview', string='Advance repayment allocation',
+                                        groups='om_hr_payroll.group_hr_payroll_manager')
     baseer_defer_loan = fields.Boolean(string='Defer installments')
     baseer_deduction = fields.Monetary(string='Other deductions')
     baseer_deduction_reason = fields.Char(string='Deduction reason')
@@ -404,6 +410,27 @@ class Payslip(models.Model):
     baseer_pending = fields.Monetary(compute='_compute_baseer_payment', string='Payments in process')
     baseer_settled = fields.Monetary(compute='_compute_baseer_payment', string='Liability settled')
     baseer_residual = fields.Monetary(compute='_compute_baseer_payment', string='Remaining salary')
+
+    @api.depends('employee_id', 'company_id', 'date_to', 'baseer_managed', 'state',
+                 'baseer_legacy_repayment', 'baseer_needs_refresh')
+    def _compute_legacy_preview(self):
+        for slip in self:
+            remaining = money(slip.baseer_legacy_repayment)
+            parts = []
+            balance = Decimal(0)
+            if slip.baseer_managed and slip.state == 'draft' and slip.employee_id and slip.company_id and slip.date_to:
+                loans = self.env['baseer.hr.loan'].search([('employee_id', '=', slip.employee_id.id),
+                    ('company_id', '=', slip.company_id.id), ('state', '=', 'running'), '|',
+                    ('source_type', '=', 'legacy'), ('repayment_mode', '=', 'flexible')])
+                for loan in loans._open_available(slip.date_to):
+                    residual = money(loan._principal_lines().amount_residual)
+                    balance += residual
+                    portion = min(remaining, residual) if not slip.baseer_needs_refresh else Decimal(0)
+                    if portion > 0:
+                        parts.append('%s: %s' % (loan.source_reference or loan.name, format(portion, '.2f')))
+                        remaining -= portion
+            slip.baseer_open_advance_balance = float(balance)
+            slip.baseer_legacy_preview = '; '.join(parts) or False
 
     @api.depends('baseer_gross','baseer_loan_amount','baseer_deduction', 'baseer_needs_refresh', 'state', 'baseer_correction_ids.state',
                  'baseer_correction_ids.line_ids.balance', 'baseer_correction_ids.line_ids.account_id')
@@ -525,11 +552,14 @@ class Payslip(models.Model):
                 raise UserError(_('Posted payroll is protected. Corrections require a reviewed reversal; it cannot be edited or cancelled.'))
             if 'baseer_deduction' in vals:
                 validate_money(vals['baseer_deduction'])
+            if 'baseer_legacy_repayment' in vals:
+                if validate_money(vals['baseer_legacy_repayment']) < 0:
+                    raise ValidationError(_('Advance repayment cannot be negative.'))
         result=super().write(vals)
         self._baseer_company_check()
         if self.env.context.get('baseer_payroll_internal') is not INTERNAL and {'employee_id','version_id','date_from','date_to','payslip_run_id'}.intersection(vals):
             self._baseer_clear_draft_calculation()
-        if self.env.context.get('baseer_payroll_internal') is not INTERNAL and {'baseer_deduction','baseer_defer_loan'}.intersection(vals):
+        if self.env.context.get('baseer_payroll_internal') is not INTERNAL and {'baseer_deduction','baseer_defer_loan','baseer_legacy_repayment'}.intersection(vals):
             for slip in self.filtered('baseer_managed'):
                 if slip._baseer_setup_problem() or slip.baseer_needs_refresh:
                     slip._baseer_clear_draft_calculation()
@@ -603,10 +633,16 @@ class Payslip(models.Model):
             else:
                 overtime=money(gross-basic-allowance)
             loans=self.env['baseer.hr.loan'].search([('employee_id','=',slip.employee_id.id),('company_id','=',slip.company_id.id),('state','=','running')])
-            loan=money(0 if slip.baseer_defer_loan or not days else loans._due_amount(last))
+            legacy_repayment = validate_money(slip.baseer_legacy_repayment)
+            legacy_available = loans._open_balance(last) if legacy_repayment else Decimal(0)
+            if legacy_repayment < 0 or legacy_repayment > legacy_available or (legacy_repayment and not days):
+                raise ValidationError(_('Open advance repayment exceeds the eligible balance.'))
+            loan=money((0 if slip.baseer_defer_loan or not days else loans._due_amount(last)) + legacy_repayment)
             deduction=validate_money(slip.baseer_deduction)
             if loan+deduction>gross:
                 raise ValidationError(_('Deductions exceed the salary. Defer installments or adjust the deduction.'))
+            if legacy_repayment and (loan > gross / 10 or loan + deduction > gross / 2):
+                raise ValidationError(_('When collecting a flexible advance, total advance deductions may not exceed 10% of gross salary, and all deductions may not exceed 50%.'))
             slip.with_context(baseer_payroll_internal=INTERNAL).write({'baseer_needs_refresh':False,'baseer_gross':float(gross),'baseer_basic':float(basic),'baseer_allowance':float(allowance),'baseer_overtime':float(overtime),'baseer_days':days,'baseer_month_days':denom,'baseer_loan_amount':float(loan)})
 
     def compute_sheet(self):
@@ -633,6 +669,11 @@ class Payslip(models.Model):
                     raise ValidationError(_('Monthly payroll must be posted on the last day of its period.'))
                 if slip.struct_id!=slip.company_id._baseer_structure():
                     raise ValidationError(_('Use the company Baseer salary structure.'))
+                if slip.baseer_legacy_repayment:
+                    reviewed = (slip.baseer_loan_amount, slip.baseer_gross)
+                    slip._refresh_amounts()
+                    if reviewed != (slip.baseer_loan_amount, slip.baseer_gross):
+                        raise ValidationError(_('The salary or advance deductions changed. Refresh the draft payroll before approving it.'))
             if slip.company_id._get_violated_lock_dates(posting_date,False,slip.journal_id):
                 raise ValidationError(_('The payroll accounting date is locked.'))
             existing=self.search([('id','!=',slip.id),('employee_id','=',slip.employee_id.id),('company_id','=',slip.company_id.id),('state','=','done'),('date_from','<=',slip.date_to),('date_to','>=',slip.date_from)],limit=1)
@@ -658,7 +699,7 @@ class Payslip(models.Model):
                 loans=self.env['baseer.hr.loan'].search([('employee_id','=',slip.employee_id.id),('company_id','=',slip.company_id.id),('state','=','running')],order='date,id')
                 if slip.baseer_defer_loan:
                     loans._defer_due(slip.date_to,_('Deferred from payroll %s') % slip.name)
-                elif slip.baseer_loan_amount:
+                if slip.baseer_loan_amount:
                     loans._apply_payroll(slip,slip.move_id)
                 payable=slip.move_id.line_ids.filtered(lambda l:l.account_id==slip.company_id.baseer_salary_payable_id)
                 if money(-sum((decimal(l.balance) for l in payable),Decimal(0)))!=money(slip.baseer_net):
@@ -804,7 +845,7 @@ class Run(models.Model):
             for obsolete in run.slip_ids.filtered(lambda s:s.employee_id not in employees):
                 obsolete._lock()
                 obsolete._baseer_clear_draft_calculation()
-                if not (obsolete.baseer_deduction or obsolete.baseer_defer_loan or obsolete.input_line_ids):
+                if not (obsolete.baseer_deduction or obsolete.baseer_defer_loan or obsolete.baseer_legacy_repayment or obsolete.input_line_ids):
                     obsolete.unlink()
             for employee in employees:
                 lock_employee(self.env,employee.id,run.company_id.id)
@@ -816,7 +857,7 @@ class Run(models.Model):
                     if existing:
                         existing._lock()
                         existing._baseer_clear_draft_calculation()
-                        if not (existing.baseer_deduction or existing.baseer_defer_loan or existing.input_line_ids):
+                        if not (existing.baseer_deduction or existing.baseer_defer_loan or existing.baseer_legacy_repayment or existing.input_line_ids):
                             existing.unlink()
                     continue
                 if existing:

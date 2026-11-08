@@ -25,15 +25,21 @@ class PayrollSettlement(models.TransientModel):
     payment_method_line_id = fields.Many2one('account.payment.method.line',
         domain="[('id', 'in', available_payment_method_line_ids)]")
     available_payment_method_line_ids = fields.Many2many('account.payment.method.line', compute='_compute_methods')
+    second_journal_id = fields.Many2one('account.journal')
+    second_payment_method_line_id = fields.Many2one('account.payment.method.line')
+    available_second_method_ids = fields.Many2many('account.payment.method.line', compute='_compute_methods')
+    second_amount = fields.Monetary()
     line_ids = fields.One2many('baseer.payroll.settlement.line', 'settlement_id', readonly=False, copy=False)
     state = fields.Selection([('draft', 'Draft'), ('done', 'Recorded')], default='draft', required=True, readonly=True)
     payment_ids = fields.Many2many('account.payment', readonly=True, copy=False)
     amount_total = fields.Monetary(compute='_compute_total')
+    amount_primary = fields.Monetary(compute='_compute_total')
 
-    @api.depends('journal_id')
+    @api.depends('journal_id.outbound_payment_method_line_ids', 'second_journal_id.outbound_payment_method_line_ids')
     def _compute_methods(self):
         for wizard in self:
             wizard.available_payment_method_line_ids = wizard.journal_id.outbound_payment_method_line_ids
+            wizard.available_second_method_ids = wizard.second_journal_id.outbound_payment_method_line_ids
 
     @api.onchange('journal_id')
     def _onchange_journal(self):
@@ -42,19 +48,32 @@ class PayrollSettlement(models.TransientModel):
             if wizard.payment_method_line_id not in available:
                 wizard.payment_method_line_id = available[:1]
 
-    @api.depends('line_ids.amount')
+    @api.onchange('second_journal_id')
+    def _onchange_second_journal(self):
+        for wizard in self:
+            available = wizard.second_journal_id.outbound_payment_method_line_ids
+            if wizard.second_payment_method_line_id not in available:
+                wizard.second_payment_method_line_id = available[:1]
+            if not wizard.second_journal_id:
+                wizard.second_amount = 0
+
+    @api.depends('line_ids.amount', 'second_amount')
     def _compute_total(self):
         for wizard in self:
-            wizard.amount_total = float(money(sum((decimal(line.amount) for line in wizard.line_ids), Decimal('0'))))
+            total = money(sum((decimal(line.amount) for line in wizard.line_ids), Decimal('0')))
+            wizard.amount_total = float(total)
+            wizard.amount_primary = float(total - decimal(wizard.second_amount))
 
     @api.model_create_multi
     def create(self, vals_list):
         require_manager(self)
-        protected = ['state', 'line_ids', 'payment_ids', 'amount_total', 'company_id', 'currency_id', 'available_payment_method_line_ids']
-        defaults = self.default_get(protected + ['run_id'])
+        protected = ['state', 'line_ids', 'payment_ids', 'amount_total', 'amount_primary', 'company_id',
+                     'currency_id', 'available_payment_method_line_ids', 'available_second_method_ids']
+        defaults = self.default_get(protected + ['run_id', 'second_amount'])
         runs = self.env['hr.payslip.run']
         for vals in vals_list:
             effective = dict(defaults, **vals)
+            validate_money(effective.get('second_amount'))
             if not _internal(self) and (
                 effective.get('state', 'draft') != 'draft'
                 or any(effective.get(key) for key in protected if key != 'state')
@@ -99,8 +118,11 @@ class PayrollSettlement(models.TransientModel):
             self._lock()
             if self.filtered(lambda wizard: wizard.state == 'done'):
                 raise UserError(_('This payroll payment has already been recorded. Open a new payment for the remaining salaries.'))
-            if set(vals) - {'payment_date', 'journal_id', 'payment_method_line_id', 'line_ids'}:
+            if set(vals) - {'payment_date', 'journal_id', 'payment_method_line_id', 'line_ids',
+                            'second_journal_id', 'second_payment_method_line_id', 'second_amount'}:
                 raise AccessError(_('Payroll payment sources and results cannot be changed manually.'))
+            if 'second_amount' in vals:
+                validate_money(vals['second_amount'])
             # Native editable one2many saves updates through the parent. Only amounts may change.
             for command in vals.get('line_ids', []):
                 if len(command) != 3 or command[0] != Command.UPDATE:
@@ -118,9 +140,9 @@ class PayrollSettlement(models.TransientModel):
                 raise UserError(_('Completed payroll payment screens cannot be deleted manually.'))
         return super().unlink()
 
-    def _check_payment_configuration(self):
+    def _check_payment_configuration(self, journal, method):
         self.ensure_one()
-        company, journal, method = self.company_id, self.journal_id, self.payment_method_line_id
+        company = self.company_id
         if not self.env.user.has_group('account.group_account_user'):
             raise AccessError(_('Accounting access is required to record salary payments.'))
         if not journal or journal.company_id != company or journal.type not in ('bank', 'cash'):
@@ -141,17 +163,22 @@ class PayrollSettlement(models.TransientModel):
         if company._get_violated_lock_dates(self.payment_date, False, journal):
             raise ValidationError(_('The selected salary payment date is in a locked accounting period.'))
 
+    def _allocation_lines(self):
+        self.ensure_one()
+        return self.line_ids.sorted(lambda line: (line.employee_id.id, line.slip_id.id))
+
     def action_confirm(self):
         self.ensure_one()
         self._lock()
         if self.state == 'done':
             return self.run_id._baseer_open_run()
-        self._check_payment_configuration()
+        self._check_payment_configuration(self.journal_id, self.payment_method_line_id)
         if self.run_id.state != 'done' or not self.run_id.baseer_managed:
             raise ValidationError(_('The payroll run must remain approved before payment.'))
-        lines = self.line_ids.sorted(lambda line: (line.employee_id.id, line.slip_id.id))
+        lines = self._allocation_lines()
         lines.invalidate_recordset()
         seen = set()
+        amounts = []
         for line in lines:
             slip = line.slip_id
             if slip.id in seen or slip not in self.run_id.slip_ids or slip.company_id != self.company_id or slip.state != 'done' or not slip.baseer_managed:
@@ -166,37 +193,71 @@ class PayrollSettlement(models.TransientModel):
                 raise ValidationError(_('An employee payment cannot exceed the remaining salary.'))
             if amount and self.payment_date < slip.move_id.date:
                 raise ValidationError(_('The salary payment date cannot precede the payroll accounting date.'))
-        if not any(money(line.amount) > 0 for line in lines):
+            if amount:
+                amounts.append((line, amount, remaining))
+        total = sum((amount for _, amount, _ in amounts), Decimal('0'))
+        if not total:
             raise ValidationError(_('Enter a positive payment amount for at least one employee.'))
-        payments = self.env['account.payment']
-        for line in lines:
-            amount = money(line.amount)
-            if not amount:
-                continue
-            slip = line.slip_id
-            action = slip.action_pay()
-            context = dict(clean_context(self.env.context), **action['context'])
-            register = self.env['account.payment.register'].with_context(context).create({
-                'payment_date': self.payment_date,
-                'journal_id': self.journal_id.id,
-                'payment_method_line_id': self.payment_method_line_id.id,
-                'amount': float(amount),
-                'group_payment': True,
-                'payment_difference_handling': 'open',
+
+        second = validate_money(self.second_amount)
+        if self.second_journal_id:
+            self._check_payment_configuration(self.second_journal_id, self.second_payment_method_line_id)
+            if self.journal_id.default_account_id == self.second_journal_id.default_account_id:
+                raise ValidationError(_('Choose two journals with different bank or cash accounts.'))
+            if not 0 < second < total:
+                raise ValidationError(_('The second account amount must be positive and less than the payment total.'))
+        elif second or self.second_payment_method_line_id:
+            raise ValidationError(_('Choose a second bank or cash journal to split the payment.'))
+
+        # Allocate the primary budget in the displayed employee order. This preserves
+        # every employee total and splits at most one employee across two payments.
+        primary = total - second
+        with self.env.cr.savepoint():
+            payments = self.env['account.payment']
+            for line, amount, remaining in amounts:
+                first_share = min(primary, amount)
+                primary -= first_share
+                second_share = amount - first_share
+                recorded = self.env['account.payment']
+                if first_share:
+                    recorded |= self._record_allocation(
+                        line.slip_id, first_share, remaining, self.journal_id, self.payment_method_line_id,
+                    )
+                if second_share:
+                    recorded |= self._record_allocation(
+                        line.slip_id, second_share, remaining - first_share,
+                        self.second_journal_id, self.second_payment_method_line_id,
+                    )
+                line.with_context(baseer_payroll_internal=INTERNAL).write({'payment_ids': [Command.set(recorded.ids)]})
+                payments |= recorded
+            self.with_context(baseer_payroll_internal=INTERNAL).write({
+                'state': 'done', 'payment_ids': [Command.set(payments.ids)],
             })
-            recorded = register._create_payments()
-            slip.invalidate_recordset()
-            expected = money(decimal(line.remaining) - amount)
-            if (not recorded or money(sum((decimal(payment.amount) for payment in recorded), Decimal('0'))) != amount
-                or money(slip.baseer_residual) != expected
-                or any(payment.company_id != self.company_id or payment.currency_id != self.currency_id
-                       or payment.date != self.payment_date or payment.state != 'paid'
-                       or payment.move_id.state != 'posted' or payment.move_id.date != self.payment_date for payment in recorded)):
-                raise ValidationError(_('The recorded payment does not match the selected employee amount and date. No payroll payment was committed.'))
-            line.with_context(baseer_payroll_internal=INTERNAL).write({'payment_ids': [Command.set(recorded.ids)]})
-            payments |= recorded
-        self.with_context(baseer_payroll_internal=INTERNAL).write({'state': 'done', 'payment_ids': [Command.set(payments.ids)]})
         return self.run_id._baseer_open_run()
+
+    def _record_allocation(self, slip, amount, remaining, journal, method):
+        action = slip.action_pay()
+        context = dict(clean_context(self.env.context), **action['context'])
+        register = self.env['account.payment.register'].with_context(context).create({
+            'payment_date': self.payment_date,
+            'journal_id': journal.id,
+            'payment_method_line_id': method.id,
+            'amount': float(amount),
+            'group_payment': True,
+            'payment_difference_handling': 'open',
+        })
+        recorded = register._create_payments()
+        slip.invalidate_recordset()
+        liquidity = recorded.move_id.line_ids.filtered(lambda line: line.account_id == journal.default_account_id)
+        if (not recorded or money(sum((decimal(payment.amount) for payment in recorded), Decimal('0'))) != amount
+            or money(slip.baseer_residual) != remaining - amount
+            or money(sum((decimal(line.balance) for line in liquidity), Decimal('0'))) != -amount
+            or any(payment.company_id != self.company_id or payment.currency_id != self.currency_id
+                   or payment.journal_id != journal or payment.payment_method_line_id != method
+                   or payment.date != self.payment_date or payment.state != 'paid'
+                   or payment.move_id.state != 'posted' or payment.move_id.date != self.payment_date for payment in recorded)):
+            raise ValidationError(_('The recorded payment does not match the selected amount, account and date. No payroll payment was committed.'))
+        return recorded
 
 
 class PayrollSettlementLine(models.TransientModel):
@@ -211,7 +272,19 @@ class PayrollSettlementLine(models.TransientModel):
     currency_id = fields.Many2one(related='settlement_id.currency_id')
     remaining = fields.Monetary(required=True, readonly=True)
     amount = fields.Monetary(required=True)
+    second_journal_id = fields.Many2one(related='settlement_id.second_journal_id')
+    allocation_order = fields.Integer(compute='_compute_allocation_order')
     payment_ids = fields.Many2many('account.payment', readonly=True, copy=False)
+
+    @api.depends('settlement_id.line_ids')
+    def _compute_allocation_order(self):
+        positions = {
+            line.id: position
+            for wizard in self.settlement_id
+            for position, line in enumerate(wizard._allocation_lines(), start=1)
+        }
+        for line in self:
+            line.allocation_order = positions.get(line.id, 0)
 
     @api.model_create_multi
     def create(self, vals_list):

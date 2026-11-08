@@ -596,6 +596,65 @@ msgid "Bank / Cash"
 msgstr "البنك / النقد"
 
 #. module: baseer_payroll
+#: model_terms:ir.ui.view,arch_db:baseer_payroll.view_baseer_settlement_form
+msgid "Split payment"
+msgstr "تقسيم الدفع"
+
+#. module: baseer_payroll
+#: model_terms:ir.ui.view,arch_db:baseer_payroll.view_baseer_settlement_form
+msgid "Second account (optional)"
+msgstr "الحساب الثاني (اختياري)"
+
+#. module: baseer_payroll
+#: model_terms:ir.ui.view,arch_db:baseer_payroll.view_baseer_settlement_form
+msgid "Second payment method"
+msgstr "طريقة الدفع من الحساب الثاني"
+
+#. module: baseer_payroll
+#: model_terms:ir.ui.view,arch_db:baseer_payroll.view_baseer_settlement_form
+msgid "Amount from second account"
+msgstr "المبلغ من الحساب الثاني"
+
+#. module: baseer_payroll
+#: model_terms:ir.ui.view,arch_db:baseer_payroll.view_baseer_settlement_form
+msgid "Amount from first account"
+msgstr "المبلغ من الحساب الأول"
+
+#. module: baseer_payroll
+#: model_terms:ir.ui.view,arch_db:baseer_payroll.view_baseer_settlement_form
+msgid "Allocation order"
+msgstr "ترتيب الدفع"
+
+#. module: baseer_payroll
+#: model_terms:ir.ui.view,arch_db:baseer_payroll.view_baseer_settlement_form
+msgid "The first account covers payments in numbered order, then the second account covers the rest. If you already transferred the salaries, check that this order matches your transfers."
+msgstr "يغطي الحساب الأول الدفعات حسب الأرقام، ثم يغطي الحساب الثاني الباقي. إذا حوّلت الرواتب مسبقًا، تأكد أن هذا الترتيب يطابق تحويلاتك."
+
+#. module: baseer_payroll
+#. odoo-python
+#: code:addons/baseer_payroll/models/settlement.py:0
+msgid "Choose two journals with different bank or cash accounts."
+msgstr "اختر يوميتين بحسابَي بنك أو نقدية مختلفين."
+
+#. module: baseer_payroll
+#. odoo-python
+#: code:addons/baseer_payroll/models/settlement.py:0
+msgid "The second account amount must be positive and less than the payment total."
+msgstr "أدخل مبلغًا للحساب الثاني أكبر من صفر وأقل من إجمالي الدفع."
+
+#. module: baseer_payroll
+#. odoo-python
+#: code:addons/baseer_payroll/models/settlement.py:0
+msgid "Choose a second bank or cash journal to split the payment."
+msgstr "اختر يومية بنك أو نقدية ثانية لتقسيم الدفع."
+
+#. module: baseer_payroll
+#. odoo-python
+#: code:addons/baseer_payroll/models/settlement.py:0
+msgid "The recorded payment does not match the selected amount, account and date. No payroll payment was committed."
+msgstr "لم تطابق الدفعة المبلغ والحساب والتاريخ المحددة. لم تُحفظ أي دفعة من هذه العملية."
+
+#. module: baseer_payroll
 #: model:ir.model.fields,field_description:baseer_payroll.field_account_bank_statement_line__baseer_eos_id
 #: model:ir.model.fields,field_description:baseer_payroll.field_account_move__baseer_eos_id
 #: model:ir.model.fields,field_description:baseer_payroll.field_hr_employee__baseer_eos_ids

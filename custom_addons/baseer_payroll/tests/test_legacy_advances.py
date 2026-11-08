@@ -704,10 +704,10 @@ class LegacyAdvanceMigrationCase(TransactionCase):
         run, slip = self._run('2026-12-01')
         self.assertEqual((slip.baseer_open_advance_balance, slip.baseer_legacy_repayment), (5000, 0))
         with self.assertRaises(ValidationError), self.cr.savepoint():
-            slip.write({'baseer_legacy_repayment': 250.01})
-        slip.write({'baseer_legacy_repayment': 200})
+            slip.write({'baseer_legacy_repayment': 2500.01})
+        slip.write({'baseer_legacy_repayment': 1300})
         run.action_approve()
-        self.assertEqual((first.balance, second.balance, slip.baseer_net), (2400, 2400, 2300))
+        self.assertEqual((first.balance, second.balance, slip.baseer_net), (1300, 2400, 1200))
         self.assertEqual(first.allocation_ids.move_id, slip.move_id)
         self.assertFalse(first.allocation_ids.bridge_move_id)
         self.assertFalse(second.allocation_ids)

@@ -4226,12 +4226,6 @@ msgstr "سداد مرن بدون أقساط"
 #. module: baseer_payroll
 #. odoo-python
 #: code:addons/baseer_payroll/models/payroll.py:0
-msgid "When collecting a flexible advance, total advance deductions may not exceed 10% of gross salary, and all deductions may not exceed 50%."
-msgstr "عند سداد سلفة مرنة، يجب ألا يتجاوز مجموع خصم السلف 10% من إجمالي الراتب، وألا يتجاوز مجموع الخصومات 50%."
-
-#. module: baseer_payroll
-#. odoo-python
-#: code:addons/baseer_payroll/models/payroll.py:0
 msgid "The salary or advance deductions changed. Refresh the draft payroll before approving it."
 msgstr "تغيّر الراتب أو خصم السلف. حدّث مسودة المسير قبل اعتمادها."
 

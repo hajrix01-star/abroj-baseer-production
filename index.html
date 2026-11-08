@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>فحص صورة الإيصال على الآيباد</title>
+<style>body{font:20px system-ui,sans-serif;line-height:1.7;margin:2rem auto;padding:0 1rem;max-width:40rem;color:#17212b}button{font:inherit;background:#164c8c;color:#fff;border:0;border-radius:.5rem;padding:.7rem 1rem}pre{direction:ltr;text-align:left;white-space:pre-wrap;border:1px solid #ccd4de;padding:1rem;border-radius:.5rem}</style>
+<h1>فحص صورة الإيصال</h1>
+<p>يُنشئ الفحص صورة تجريبية على هذا الجهاز، ولا يقرأ أي طلبات أو يرسل بيانات إلى الإنترنت. أرسل صورة النتيجة للمساعدة في التشخيص.</p>
+<button id="run">ابدأ الفحص</button>
+<pre id="result">اضغط «ابدأ الفحص».</pre>
+<script>
+document.getElementById('run').onclick = () => {
+  const out = document.getElementById('result');
+  try {
+    const canvas = document.createElement('canvas');
+    canvas.width = 576; canvas.height = 1500;
+    const ctx = canvas.getContext('2d', {alpha:false});
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, 576, 1500);
+    ctx.fillStyle = '#000'; ctx.font = '32px sans-serif';
+    for (let y = 45; y < 1450; y += 55) ctx.fillText('طلب تجريبي  2 × سندويتش', 20, y);
+    const url = canvas.toDataURL('image/jpeg', 0.95);
+    const parts = url.split(',');
+    if (parts[0] !== 'data:image/jpeg;base64') throw Error('JPEG export unavailable');
+    const data = atob(parts[1]);
+    let exifEntries = 0, exifPresent = false, pos = 2, markers = [];
+    if (data.charCodeAt(0) !== 255 || data.charCodeAt(1) !== 216) throw Error('Invalid JPEG header');
+    while (pos + 4 <= data.length && data.charCodeAt(pos) === 255) {
+      const marker = data.charCodeAt(pos + 1);
+      if (marker === 0xda || marker === 0xd9) break;
+      const size = data.charCodeAt(pos + 2) * 256 + data.charCodeAt(pos + 3);
+      if (size < 2 || pos + 2 + size > data.length) throw Error('Invalid JPEG segment');
+      markers.push(marker.toString(16).toUpperCase());
+      if (marker === 0xe1 && data.slice(pos + 4, pos + 10) === 'Exif\u0000\u0000') {
+        exifPresent = true;
+        const start = pos + 10, little = data.slice(start, start + 2) === 'II';
+        const view = new DataView(Uint8Array.from(data, c => c.charCodeAt(0)).buffer);
+        const ifd = start + view.getUint32(start + 4, little);
+        if (ifd + 2 <= pos + 2 + size) exifEntries += view.getUint16(ifd, little);
+      }
+      pos += size + 2;
+    }
+    out.textContent = `JPEG: OK\nWidth: ${canvas.width}\nHeight: ${canvas.height}\nBytes: ${data.length}\nEXIF present: ${exifPresent}\nEXIF entries: ${exifEntries}\nJPEG markers: ${markers.join(' ')}\nUser agent: ${navigator.userAgent}`;
+  } catch (error) { out.textContent = 'Diagnostic error: ' + error.message; }
+};
+</script>
+</html>

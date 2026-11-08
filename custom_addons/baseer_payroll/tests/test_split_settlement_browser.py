@@ -6,6 +6,107 @@ from .test_split_settlement import SplitSettlementFixture
 
 
 class SplitSettlementBrowserJourney(SplitSettlementFixture):
+    def _check_entry(self, lang, width, label):
+        self.env['res.lang']._activate_lang(lang)
+        admin = self.env.ref('base.user_admin')
+        admin.write({'lang': lang, 'password': admin.login})
+        run, variable, fixed = self._variable_draft_run()
+        action = self.env.ref('baseer_payroll.action_baseer_payroll_runs')
+        fixture = json.dumps({
+            'variable': variable.employee_id.name,
+            'fixed': fixed.employee_id.name,
+            'width': width,
+            'label': label,
+            'direction': 'rtl' if lang == 'ar_001' else 'ltr',
+            'lang': lang,
+        })
+        script = r"""
+        (async () => {
+            const fixture = __FIXTURE__;
+            const wait = async (predicate, description) => {
+                const deadline = performance.now() + 15000;
+                while (performance.now() < deadline) {
+                    const result = predicate();
+                    if (result) {
+                        return result;
+                    }
+                    await new Promise(resolve => setTimeout(resolve, 50));
+                }
+                throw new Error('Monthly wage timeout: ' + description);
+            };
+            const rows = () => [...document.querySelectorAll(
+                '.o_field_widget[name="slip_ids"] :is(.o_kanban_record, .o_data_row)'
+            )];
+            const employeeRow = name => rows().find(row => row.textContent.includes(name));
+            const fieldName = 'baseer_monthly_wage_input';
+            const mobile = fixture.width === 375;
+            const row = await wait(() => employeeRow(fixture.variable), 'variable employee');
+            const dialog = () => [...document.querySelectorAll('.o_dialog:not(.o_inactive_modal)')]
+                .find(el => el.querySelector('.o_field_widget[name="' + fieldName + '"]'));
+            if (innerWidth !== fixture.width || getComputedStyle(row).direction !== fixture.direction) {
+                throw new Error('Unexpected payroll viewport or direction');
+            }
+            if (mobile) {
+                row.click();
+                const editor = await wait(dialog, 'mobile employee form');
+                if (!editor.textContent.includes(fixture.label)) {
+                    throw new Error('Missing translated monthly wage label');
+                }
+            } else {
+                const header = [...document.querySelectorAll('th')].find(th =>
+                    th.textContent.trim() === fixture.label);
+                if (!header) {
+                    throw new Error('Missing monthly wage column');
+                }
+                row.querySelector('td[name="' + fieldName + '"]').click();
+            }
+            const input = await wait(() => (mobile ? dialog() : employeeRow(fixture.variable))
+                ?.querySelector('.o_field_widget[name="' + fieldName + '"] input'), 'wage input');
+            const rect = input.getBoundingClientRect();
+            if (rect.left < -1 || rect.right > innerWidth + 1) {
+                throw new Error('Wage input extends outside the viewport');
+            }
+            input.focus();
+            input.value = '1850';
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+            input.blur();
+            if (mobile) {
+                dialog().querySelector('button.o_form_button_save').click();
+                await wait(() => !dialog(), 'mobile row saved');
+            } else {
+                document.querySelector('.o_form_view .oe_title h1').click();
+            }
+            const save = () => {
+                const button = document.querySelector('button.o_form_button_save');
+                return button?.getClientRects().length && getComputedStyle(button).visibility === 'visible' && button;
+            };
+            const saveRun = await wait(() => {
+                const button = save();
+                return button && !button.disabled && button;
+            }, 'payroll save button');
+            saveRun.click();
+            await wait(() => !save(), 'payroll saved');
+            await wait(() => /1[,.s٬]?850/.test(employeeRow(fixture.variable)?.textContent),
+                'saved monthly gross on employee row');
+            console.log('PAYROLL_VARIABLE_WAGE_UI_PASS ' + fixture.lang + ' ' + innerWidth);
+            console.log('test successful');
+        })().catch(error => { console.error(error); throw error; });
+        """.replace('__FIXTURE__', fixture)
+        self.browser_js(
+            f'/odoo/action-{action.id}/{run.id}',
+            script,
+            ready='!!document.querySelector(\'button[name="action_approve"]\')',
+            login=admin.login,
+            timeout=90,
+        )
+        variable.invalidate_recordset()
+        fixed.invalidate_recordset()
+        self.assertEqual(variable.baseer_monthly_wage_input, 1850)
+        self.assertEqual(variable.baseer_net, 1850)
+        self.assertEqual(fixed.baseer_net, 1000)
+
+
     def _check_split(self, lang, width, add_label):
         self.env['res.lang']._activate_lang(lang)
         admin = self.env.ref('base.user_admin')
@@ -160,6 +261,9 @@ class SplitSettlementBrowserJourney(SplitSettlementFixture):
 class PayrollSplitSettlementDesktop(SplitSettlementBrowserJourney, HttpCase):
     browser_size = '1440x900'
 
+    def test_monthly_wage_en(self):
+        self._check_entry('en_US', 1440, 'Wage for this month')
+
     def test_split_payroll_en(self):
         self._check_split('en_US', 1440, 'Add payment method')
 
@@ -168,6 +272,9 @@ class PayrollSplitSettlementDesktop(SplitSettlementBrowserJourney, HttpCase):
 class PayrollSplitSettlementMobile(SplitSettlementBrowserJourney, HttpCase):
     browser_size = '375x812'
     touch_enabled = True
+
+    def test_monthly_wage_ar(self):
+        self._check_entry('ar_001', 375, 'أجر هذا الشهر')
 
     def test_split_payroll_ar(self):
         self._check_split('ar_001', 375, 'إضافة طريقة دفع')

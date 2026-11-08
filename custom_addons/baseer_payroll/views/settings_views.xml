@@ -71,15 +71,16 @@
             <xpath expr="//page[@name='payroll_information']/group[@name='payroll_group']" position="inside">
                 <group name="baseer_salary_setup" string="Salary Setup" groups="om_hr_payroll.group_hr_payroll_manager">
                     <field name="baseer_payroll_enabled"/>
-                    <field name="baseer_salary_total"/>
                     <field name="baseer_salary_mode"/>
-                    <field name="baseer_allowance_total"/>
+                    <field name="baseer_salary_total" invisible="baseer_salary_mode == 'variable' and not baseer_salary_total"/>
+                    <field name="baseer_allowance_total" invisible="baseer_salary_mode == 'variable' and not baseer_allowance_total"/>
+                    <div class="text-muted" colspan="2" invisible="baseer_salary_mode != 'variable'">Enter the full wage in each draft payroll.</div>
                     <field name="baseer_work_calendar_id" string="Work Schedule" readonly="1" options="{'no_open':True}" groups="om_hr_payroll.group_hr_payroll_manager,!hr.group_hr_manager"/>
                     <field name="baseer_daily_hours" readonly="1" invisible="baseer_salary_mode != 'inclusive'"/>
                     <field name="baseer_work_days" string="Monthly Salary Basis (Days)" help="Days used to split the agreed monthly salary; attendance remains based on the work schedule." invisible="baseer_salary_mode != 'inclusive'"/>
-                    <separator string="Salary Calculation"/>
-                    <field name="baseer_basic_salary" readonly="1"/>
-                    <field name="baseer_overtime_salary" readonly="1"/>
+                    <separator string="Salary Calculation" invisible="baseer_salary_mode == 'variable'"/>
+                    <field name="baseer_basic_salary" readonly="1" invisible="baseer_salary_mode == 'variable'"/>
+                    <field name="baseer_overtime_salary" readonly="1" invisible="baseer_salary_mode == 'variable'"/>
                     <div class="alert alert-warning mb-0" role="alert" colspan="2" invisible="not baseer_salary_warning">
                         <field name="baseer_salary_warning" nolabel="1" readonly="1"/>
                     </div>

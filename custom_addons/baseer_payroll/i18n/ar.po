@@ -4466,3 +4466,63 @@ msgstr "لا يمكن عكس السلف الافتتاحية المرحّلة م
 #: model:ir.model.constraint,message:baseer_payroll.constraint_account_move_legacy_origin_unique
 msgid "A partner reclassification already exists for this recovery."
 msgstr "يوجد بالفعل قيد إعادة تصنيف للشريك لهذا السداد."
+#. module: baseer_payroll
+#: model:ir.model.fields.selection,name:baseer_payroll.selection__hr_version__baseer_salary_mode__variable
+msgid "Variable monthly wage"
+msgstr "أجر شهري متغيّر"
+
+#. module: baseer_payroll
+#: model:ir.model.fields,field_description:baseer_payroll.field_hr_payslip__baseer_monthly_wage_input
+msgid "Wage for this month"
+msgstr "أجر هذا الشهر"
+
+#. module: baseer_payroll
+#: model:ir.model.fields,help:baseer_payroll.field_hr_payslip__baseer_monthly_wage_input
+msgid "Enter the full wage for this payroll period before deductions."
+msgstr "أدخل كامل أجر هذه الفترة قبل الخصومات."
+
+#. module: baseer_payroll
+#: model_terms:ir.ui.view,arch_db:baseer_payroll.view_baseer_payroll_run_form
+msgid "Review the warnings on employee rows before approving this payroll."
+msgstr "راجع التنبيهات في سطور الموظفين قبل اعتماد المسير."
+
+#. module: baseer_payroll
+#: model_terms:ir.ui.view,arch_db:baseer_payroll.view_baseer_employee_payroll
+msgid "Enter the full wage in each draft payroll."
+msgstr "أدخل كامل أجر الشهر في مسودة كل مسير."
+
+#. module: baseer_payroll
+#. odoo-python
+#: code:addons/baseer_payroll/models/payroll.py:0
+msgid "Enter a positive wage for this month before approving payroll."
+msgstr "أدخل أجر هذا الشهر بمبلغ أكبر من صفر قبل اعتماد المسير."
+
+#. module: baseer_payroll
+#. odoo-python
+#: code:addons/baseer_payroll/models/payroll.py:0
+msgid "Clear the fixed salary and allowances before selecting a variable monthly wage."
+msgstr "صفّر الراتب الثابت والبدلات قبل اختيار الأجر الشهري المتغيّر."
+
+#. module: baseer_payroll
+#. odoo-python
+#: code:addons/baseer_payroll/models/payroll.py:0
+msgid "Clear the monthly wage entered for this employee after changing the salary calculation."
+msgstr "امسح أجر الشهر المدخل لهذا الموظف بعد تغيير طريقة حساب الراتب."
+
+#. module: baseer_payroll
+#. odoo-python
+#: code:addons/baseer_payroll/models/payroll.py:0
+msgid "Clear the monthly wage before changing the employee or payroll period."
+msgstr "امسح أجر الشهر قبل تغيير الموظف أو فترة المسير."
+
+#. module: baseer_payroll
+#. odoo-python
+#: code:addons/baseer_payroll/models/payroll.py:0
+msgid "The wage for this month exceeds the allowed amount."
+msgstr "أجر هذا الشهر يتجاوز الحد المسموح."
+
+#. module: baseer_payroll
+#. odoo-python
+#: code:addons/baseer_payroll/models/payroll.py:0
+msgid "A monthly wage can only be entered for a variable wage employee in a draft payroll."
+msgstr "يمكن إدخال أجر الشهر لموظف بأجر متغيّر في مسودة المسير فقط."

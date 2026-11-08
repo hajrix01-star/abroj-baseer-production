@@ -38,9 +38,11 @@
                 <table class="payroll_table eh_pdf_table">
                     <thead><tr><th>Description</th><th class="payroll_number">Amount</th></tr></thead>
                     <tbody t-if="o.baseer_managed">
-                        <tr><td>Basic salary</td><td class="payroll_number" t-out="'%.2f' % o.baseer_basic"/></tr>
-                        <tr><td>Overtime</td><td class="payroll_number" t-out="'%.2f' % o.baseer_overtime"/></tr>
-                        <tr><td>Allowances</td><td class="payroll_number" t-out="'%.2f' % o.baseer_allowance"/></tr>
+                        <t t-if="not o.baseer_monthly_wage_input">
+                            <tr><td>Basic salary</td><td class="payroll_number" t-out="'%.2f' % o.baseer_basic"/></tr>
+                            <tr><td>Overtime</td><td class="payroll_number" t-out="'%.2f' % o.baseer_overtime"/></tr>
+                            <tr><td>Allowances</td><td class="payroll_number" t-out="'%.2f' % o.baseer_allowance"/></tr>
+                        </t>
                         <tr class="payroll_total"><td>Salary before deductions</td><td class="payroll_number" t-out="'%.2f' % o.baseer_gross"/></tr>
                         <tr><td>Loan deduction <span t-if="o.baseer_defer_loan">— deferred</span></td><td class="payroll_number" t-out="'%.2f' % o.baseer_loan_amount"/></tr>
                         <tr><td>Other deductions <div t-if="o.baseer_deduction_reason" class="text-muted" t-field="o.baseer_deduction_reason"/></td><td class="payroll_number" t-out="'%.2f' % o.baseer_deduction"/></tr>

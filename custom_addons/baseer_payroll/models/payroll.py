@@ -195,7 +195,10 @@ class Company(models.Model):
 class Version(models.Model):
     _inherit = 'hr.version'
     wage = fields.Monetary(groups='hr.group_hr_manager,om_hr_payroll.group_hr_payroll_manager')
-    baseer_salary_mode = fields.Selection([('fixed','Fixed monthly'),('inclusive','Total includes overtime')], default='fixed', required=True, string='Salary calculation', groups='hr.group_hr_manager,om_hr_payroll.group_hr_payroll_manager')
+    baseer_salary_mode = fields.Selection([
+        ('fixed', 'Fixed monthly'), ('inclusive', 'Total includes overtime'), ('variable', 'Variable monthly wage'),
+    ], default='fixed', required=True, string='Salary calculation',
+        groups='hr.group_hr_manager,om_hr_payroll.group_hr_payroll_manager')
     baseer_daily_hours = fields.Float(related='resource_calendar_id.hours_per_day', string='Hours per day', readonly=True, store=False, digits=(16, 2), groups='hr.group_hr_manager,om_hr_payroll.group_hr_payroll_manager')
     baseer_work_days = fields.Integer(default=26, string='Working days per month', groups='hr.group_hr_manager,om_hr_payroll.group_hr_payroll_manager')
     baseer_allowance_total = fields.Monetary(string='Allowances included in total', groups='hr.group_hr_manager,om_hr_payroll.group_hr_payroll_manager')
@@ -223,6 +226,8 @@ class Version(models.Model):
         # Internal validation only: HR can create an incomplete native profile
         # without acquiring read/write access to payroll-restricted fields.
         for rec in self.sudo():
+            if rec.baseer_salary_mode == 'variable' and (rec.wage or rec.baseer_allowance_total):
+                raise ValidationError(_('Clear the fixed salary and allowances before selecting a variable monthly wage.'))
             if rec.employee_id.baseer_payroll_enabled:
                 validate_money(rec.wage)
                 validate_money(rec.baseer_allowance_total)
@@ -383,6 +388,11 @@ class Payslip(models.Model):
     baseer_managed = fields.Boolean(default=False, copy=False, index=True)
     currency_id = fields.Many2one(related='company_id.currency_id')
     baseer_gross = fields.Monetary(readonly=True, string='Salary before deductions')
+    baseer_variable_wage = fields.Boolean(compute='_compute_baseer_variable_wage')
+    baseer_monthly_wage_input = fields.Monetary(
+        string='Wage for this month', copy=False,
+        help='Enter the full wage for this payroll period before deductions.',
+        groups='om_hr_payroll.group_hr_payroll_manager')
     baseer_basic = fields.Monetary(readonly=True, string='Basic salary')
     baseer_overtime = fields.Monetary(readonly=True, string='Included overtime')
     baseer_allowance = fields.Monetary(readonly=True, string='Allowances')
@@ -445,6 +455,14 @@ class Payslip(models.Model):
             rec.baseer_original_net, rec.baseer_adjustment = float(original), float(money(adjustment))
             rec.baseer_net = float(money(original + adjustment))
 
+    @api.depends('baseer_managed', 'state', 'version_id.baseer_salary_mode', 'baseer_monthly_wage_input')
+    def _compute_baseer_variable_wage(self):
+        for slip in self:
+            source = slip.sudo()
+            slip.baseer_variable_wage = slip.baseer_managed and (
+                source.version_id.baseer_salary_mode == 'variable' if slip.state == 'draft'
+                else bool(source.baseer_monthly_wage_input))
+
     def _baseer_setup_problem(self):
         self.ensure_one()
         self.check_access('read')
@@ -460,15 +478,21 @@ class Payslip(models.Model):
             return _('Enter the employee contract start date, then refresh employees. No salary or deductions have been calculated.')
         if version.contract_date_start > self.date_to or (version.contract_date_end and version.contract_date_end < self.date_from):
             return _('The employee contract does not cover this month. Refresh employees to review this row.')
-        if not version.wage:
-            return _('Enter the employee monthly salary, then refresh employees. No salary or deductions have been calculated.')
         if version != self.employee_id._baseer_version_for_period(self.date_from, self.date_to):
             return _('The employee salary version changed. Refresh the payroll run before approval.')
+        if self.baseer_variable_wage:
+            if not self.baseer_monthly_wage_input:
+                return _('Enter a positive wage for this month before approving payroll.')
+        elif self.baseer_monthly_wage_input:
+            return _('Clear the monthly wage entered for this employee after changing the salary calculation.')
+        elif not version.wage:
+            return _('Enter the employee monthly salary, then refresh employees. No salary or deductions have been calculated.')
         return False
 
     @api.depends_context('lang')
     @api.depends('baseer_needs_refresh', 'state', 'version_id', 'version_id.contract_date_start',
-                 'version_id.contract_date_end', 'version_id.wage', 'employee_id.active', 'employee_id.baseer_payroll_enabled')
+                 'version_id.contract_date_end', 'version_id.wage', 'baseer_variable_wage', 'baseer_monthly_wage_input',
+                 'employee_id.active', 'employee_id.baseer_payroll_enabled')
     def _compute_baseer_readiness(self):
         for slip in self:
             warning = slip._baseer_setup_problem()
@@ -529,7 +553,7 @@ class Payslip(models.Model):
         internal = self.env.context.get('baseer_payroll_internal') is INTERNAL
         for vals in vals_list:
             if not internal:
-                keys=['state','move_id','paid','baseer_managed','baseer_gross','baseer_basic','baseer_overtime','baseer_allowance','baseer_days','baseer_month_days','baseer_loan_amount','baseer_net','baseer_needs_refresh','baseer_readiness','baseer_readiness_warning']
+                keys=['state','move_id','paid','baseer_managed','baseer_gross','baseer_basic','baseer_overtime','baseer_allowance','baseer_days','baseer_month_days','baseer_loan_amount','baseer_net','baseer_needs_refresh','baseer_readiness','baseer_readiness_warning','baseer_monthly_wage_input']
                 effective={**self.default_get(keys),**vals}
                 if effective.get('state','draft')!='draft' or any(effective.get(k) for k in keys if k!='state'):
                     raise AccessError(_('Payroll financial fields are set by the approved workflow.'))
@@ -543,13 +567,28 @@ class Payslip(models.Model):
                 raise ValidationError(_('Employee, contract, structure, journal and run must belong to the same company.'))
 
     def write(self, vals):
-        if self.env.context.get('baseer_payroll_internal') is not INTERNAL:
+        internal = self.env.context.get('baseer_payroll_internal') is INTERNAL
+        wage_changed = 'baseer_monthly_wage_input' in vals
+        identity_changed = {'employee_id', 'company_id', 'version_id', 'date_from', 'date_to', 'payslip_run_id'}.intersection(vals)
+        if not internal:
             self._lock()
             protected={'state','move_id','paid','baseer_managed','baseer_gross','baseer_basic','baseer_overtime','baseer_allowance','baseer_days','baseer_month_days','baseer_loan_amount','baseer_net','baseer_needs_refresh','baseer_readiness','baseer_readiness_warning'}
             if protected.intersection(vals):
                 raise AccessError(_('Payroll financial fields are set by the approved workflow.'))
             if any(s.state=='done' or s.move_id for s in self) and set(vals)-{'message_follower_ids','message_ids','activity_ids'}:
                 raise UserError(_('Posted payroll is protected. Corrections require a reviewed reversal; it cannot be edited or cancelled.'))
+            if identity_changed and (wage_changed or any(self.mapped('baseer_monthly_wage_input'))):
+                raise ValidationError(_('Clear the monthly wage before changing the employee or payroll period.'))
+            if wage_changed:
+                amount = decimal(vals['baseer_monthly_wage_input'])
+                if amount > Decimal('999999999999.99'):
+                    raise ValidationError(_('The wage for this month exceeds the allowed amount.'))
+                validate_money(amount)
+                for slip in self:
+                    run = slip.payslip_run_id
+                    if (not slip.baseer_managed or slip.state != 'draft' or not run.baseer_managed
+                            or run.state != 'draft' or (amount and not slip.baseer_variable_wage)):
+                        raise ValidationError(_('A monthly wage can only be entered for a variable wage employee in a draft payroll.'))
             if 'baseer_deduction' in vals:
                 validate_money(vals['baseer_deduction'])
             if 'baseer_legacy_repayment' in vals:
@@ -557,11 +596,11 @@ class Payslip(models.Model):
                     raise ValidationError(_('Advance repayment cannot be negative.'))
         result=super().write(vals)
         self._baseer_company_check()
-        if self.env.context.get('baseer_payroll_internal') is not INTERNAL and {'employee_id','version_id','date_from','date_to','payslip_run_id'}.intersection(vals):
+        if not internal and identity_changed:
             self._baseer_clear_draft_calculation()
-        if self.env.context.get('baseer_payroll_internal') is not INTERNAL and {'baseer_deduction','baseer_defer_loan','baseer_legacy_repayment'}.intersection(vals):
+        if not internal and (wage_changed or {'baseer_deduction','baseer_defer_loan','baseer_legacy_repayment'}.intersection(vals)):
             for slip in self.filtered('baseer_managed'):
-                if slip._baseer_setup_problem() or slip.baseer_needs_refresh:
+                if slip._baseer_setup_problem() or (slip.baseer_needs_refresh and not wage_changed):
                     slip._baseer_clear_draft_calculation()
                 else:
                     slip._refresh_amounts()
@@ -587,7 +626,6 @@ class Payslip(models.Model):
                     raise ValidationError(_('The payslip period must match its monthly payroll run.'))
                 if version!=slip.employee_id._baseer_version_for_period(slip.date_from,slip.date_to):
                     raise ValidationError(_('The employee salary version changed. Refresh the payroll run before approval.'))
-            version._baseer_split()
             first,last=slip.date_from,slip.date_to
             start=max(first,version.contract_date_start or first)
             end=min(last,version.contract_date_end or last)
@@ -624,14 +662,19 @@ class Payslip(models.Model):
                 ratio = max(Decimal(0), covered - unpaid / 30)
             else:
                 ratio=min(Decimal(1), days / Decimal(denom))
-            gross=money(decimal(version.wage)*ratio)
-            b,o,a=version._baseer_split()
-            basic,allowance=money(b*ratio),money(a*ratio)
-            if version.baseer_salary_mode=='fixed':
-                overtime=money(0)
-                basic=money(gross-allowance)
+            if slip.baseer_variable_wage:
+                gross = basic = validate_money(slip.baseer_monthly_wage_input)
+                overtime = allowance = Decimal(0)
             else:
-                overtime=money(gross-basic-allowance)
+                gross = money(decimal(version.wage) * ratio)
+                version_basic, _overtime, version_allowance = version._baseer_split()
+                allowance = money(version_allowance * ratio)
+                if version.baseer_salary_mode == 'fixed':
+                    basic = money(gross - allowance)
+                    overtime = Decimal(0)
+                else:
+                    basic = money(version_basic * ratio)
+                    overtime = money(gross - basic - allowance)
             loans=self.env['baseer.hr.loan'].search([('employee_id','=',slip.employee_id.id),('company_id','=',slip.company_id.id),('state','=','running')])
             legacy_repayment = validate_money(slip.baseer_legacy_repayment)
             legacy_available = loans._open_balance(last) if legacy_repayment else Decimal(0)
@@ -797,6 +840,13 @@ class Run(models.Model):
     baseer_settled=fields.Monetary(compute='_totals',string='Liability settled')
     baseer_residual=fields.Monetary(compute='_totals',string='Remaining')
     baseer_pending_setup_count=fields.Integer(compute='_totals', string='Employees requiring setup')
+    baseer_show_monthly_wage = fields.Boolean(compute='_compute_baseer_show_monthly_wage')
+
+    @api.depends('slip_ids.baseer_variable_wage', 'slip_ids.baseer_monthly_wage_input')
+    def _compute_baseer_show_monthly_wage(self):
+        for run in self:
+            run.baseer_show_monthly_wage = any(
+                slip.baseer_variable_wage or slip.baseer_monthly_wage_input for slip in run.slip_ids)
 
     @api.depends('slip_ids.baseer_gross','slip_ids.baseer_deduction','slip_ids.baseer_loan_amount','slip_ids.baseer_net','slip_ids.baseer_paid','slip_ids.baseer_residual','slip_ids.baseer_pending','slip_ids.baseer_settled','slip_ids.baseer_readiness','slip_ids.state')
     def _totals(self):
@@ -843,7 +893,8 @@ class Run(models.Model):
             for obsolete in run.slip_ids.filtered(lambda s:s.employee_id not in employees):
                 obsolete._lock()
                 obsolete._baseer_clear_draft_calculation()
-                if not (obsolete.baseer_deduction or obsolete.baseer_defer_loan or obsolete.baseer_legacy_repayment or obsolete.input_line_ids):
+                if not (obsolete.baseer_monthly_wage_input or obsolete.baseer_deduction or obsolete.baseer_defer_loan
+                        or obsolete.baseer_legacy_repayment or obsolete.input_line_ids):
                     obsolete.unlink()
             for employee in employees:
                 lock_employee(self.env,employee.id,run.company_id.id)
@@ -855,7 +906,8 @@ class Run(models.Model):
                     if existing:
                         existing._lock()
                         existing._baseer_clear_draft_calculation()
-                        if not (existing.baseer_deduction or existing.baseer_defer_loan or existing.baseer_legacy_repayment or existing.input_line_ids):
+                        if not (existing.baseer_monthly_wage_input or existing.baseer_deduction or existing.baseer_defer_loan
+                                or existing.baseer_legacy_repayment or existing.input_line_ids):
                             existing.unlink()
                     continue
                 if existing:
@@ -868,7 +920,12 @@ class Run(models.Model):
                     continue
                 if self.env['hr.payslip'].search_count([('employee_id','=',employee.id),('company_id','=',run.company_id.id),('state','!=','cancel'),('date_from','<=',run.date_end),('date_to','>=',run.date_start)]):
                     raise ValidationError(_('An employee already has a payslip for this month. Open the existing run.'))
-                slip=self.env['hr.payslip'].with_context(baseer_payroll_internal=INTERNAL).create({'baseer_managed':True,'company_id':run.company_id.id,'employee_id':employee.id,'version_id':version.id,'struct_id':structure.id,'journal_id':run.journal_id.id,'date_from':run.date_start,'date_to':run.date_end,'name':run.name+' / '+employee.name,'payslip_run_id':run.id})
+                slip=self.env['hr.payslip'].with_context(baseer_payroll_internal=INTERNAL).create({
+                    'baseer_managed': True, 'company_id': run.company_id.id, 'employee_id': employee.id,
+                    'version_id': version.id, 'struct_id': structure.id, 'journal_id': run.journal_id.id,
+                    'date_from': run.date_start, 'date_to': run.date_end, 'name': run.name + ' / ' + employee.name,
+                    'payslip_run_id': run.id, 'baseer_monthly_wage_input': 0,
+                })
                 if slip._baseer_setup_problem():
                     slip._baseer_clear_draft_calculation()
                 else:

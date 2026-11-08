@@ -641,8 +641,6 @@ class Payslip(models.Model):
             deduction=validate_money(slip.baseer_deduction)
             if loan+deduction>gross:
                 raise ValidationError(_('Deductions exceed the salary. Defer installments or adjust the deduction.'))
-            if legacy_repayment and (loan > gross / 10 or loan + deduction > gross / 2):
-                raise ValidationError(_('When collecting a flexible advance, total advance deductions may not exceed 10% of gross salary, and all deductions may not exceed 50%.'))
             slip.with_context(baseer_payroll_internal=INTERNAL).write({'baseer_needs_refresh':False,'baseer_gross':float(gross),'baseer_basic':float(basic),'baseer_allowance':float(allowance),'baseer_overtime':float(overtime),'baseer_days':days,'baseer_month_days':denom,'baseer_loan_amount':float(loan)})
 
     def compute_sheet(self):

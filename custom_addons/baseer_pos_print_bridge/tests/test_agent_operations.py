@@ -112,6 +112,21 @@ class TestBaseerAgentOperations(TransactionCase):
             release.action_download()['url'],
         )
 
+    def test_approved_release_github_link_is_restricted(self):
+        release = self.env['baseer.print.agent.release'].create({
+            'version': '9.9.9-github-link',
+            'artifact_filename': 'Baseer.PrintAgent.exe',
+            'artifact': base64.b64encode(b'installer'),
+        })
+        release.action_approve()
+        url = ('https://github.com/hajrix01-star/abroj-baseer-production/'
+               'releases/download/9.9.9/Baseer.PrintAgent.exe')
+        release.write({'github_download_url': url})
+        self.assertEqual(release.github_download_url, url)
+        with self.assertRaises(ValidationError), self.env.cr.savepoint():
+            release.write({'github_download_url': 'https://example.com/installer.exe'})
+        self.assertEqual(release.github_download_url, url)
+
     def test_last_approved_release_cannot_be_retired(self):
         release = self.env['baseer.print.agent.release'].create({
             'name': 'Permanent QA Windows agent',

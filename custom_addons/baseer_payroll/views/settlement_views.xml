@@ -112,18 +112,58 @@
         <field name="arch" type="xml">
             <form string="Pay Salaries">
                 <field name="state" invisible="1"/><field name="company_id" invisible="1"/><field name="currency_id" invisible="1"/><field name="available_payment_method_line_ids" invisible="1"/>
+                <field name="eligible_journal_ids" invisible="1"/><field name="used_treasury_ids" invisible="1"/><field name="has_split" invisible="1"/>
                 <group>
                     <group><field name="run_id" string="Payroll Run" readonly="1" options="{'no_open':True}"/><field name="payment_date" string="Payment Date" widget="baseer_latin_date" readonly="state != 'draft'"/></group>
-                    <group><field name="journal_id" string="Bank / Cash" required="1" options="{'no_create':True}" domain="[('company_id','=',company_id),('type','in',['bank','cash'])]" readonly="state != 'draft'"/><field name="payment_method_line_id" string="Payment Method" required="1" options="{'no_create':True}" domain="[('id','in',available_payment_method_line_ids)]" readonly="state != 'draft'"/></group>
+                    <group>
+                        <field name="journal_id" string="First account" required="1" options="{'no_create':True}"
+                               domain="[('id','in',eligible_journal_ids),'|',('id','=',journal_id),('default_account_id','not in',used_treasury_ids)]" readonly="state != 'draft'"/>
+                        <field name="payment_method_line_id" string="Payment Method" required="1" options="{'no_create':True}"
+                               domain="[('id','in',available_payment_method_line_ids)]" readonly="state != 'draft'"/>
+                        <field name="amount_primary" string="Amount from first account"/>
+                    </group>
                 </group>
                 <div class="text-muted mb-3">This records salary payments; it does not send a bank transfer.</div>
+                <field name="funding_line_ids" mode="list,kanban" add-label="Add payment method" readonly="state != 'draft'">
+                    <list string="Additional payment methods" default_order="id">
+                        <control><create string="Add payment method"/></control>
+                        <field name="allocation_order" string="Allocation order"/>
+                        <field name="journal_id" string="Bank / Cash"/>
+                        <field name="payment_method_line_id" string="Payment Method"/>
+                        <field name="currency_id" column_invisible="1"/>
+                        <field name="amount" string="Payment amount"/>
+                    </list>
+                    <kanban class="o_kanban_mobile" default_order="id" records_draggable="false">
+                        <field name="currency_id"/>
+                        <templates>
+                        <t t-name="menu"><a t-if="widget.deletable" type="delete" class="dropdown-item">Remove</a></t>
+                        <t t-name="card">
+                            <strong class="d-block"><field name="allocation_order"/>. <field name="journal_id"/></strong>
+                            <field name="payment_method_line_id"/>
+                            <field name="amount"/>
+                        </t></templates>
+                    </kanban>
+                    <form string="Additional payment method">
+                        <group>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="available_method_ids" invisible="1"/>
+                            <field name="journal_id" string="Bank / Cash" options="{'no_create':True}"
+                                   domain="[('id','in',parent.eligible_journal_ids),'|',('id','=',journal_id),('default_account_id','not in',parent.used_treasury_ids)]"/>
+                            <field name="payment_method_line_id" string="Payment Method" options="{'no_create':True}"
+                                   domain="[('id','in',available_method_ids)]"/>
+                            <field name="amount" string="Payment amount"/>
+                        </group>
+                    </form>
+                </field>
+                <p class="text-muted mb-3" invisible="not has_split">The first account covers payments in numbered order, followed by the added accounts in their numbered order. If salaries were already transferred, check that this order matches your transfers.</p>
                 <field name="line_ids" mode="list,kanban" readonly="state != 'draft'">
                     <list string="Salary Payments" editable="bottom" create="0" delete="0" open_form_view="1">
+                        <field name="allocation_order" string="Allocation order" column_invisible="not parent.has_split"/>
                         <field name="employee_id" readonly="1"/><field name="slip_id" column_invisible="1"/><field name="currency_id" column_invisible="1"/>
                         <field name="remaining" string="Remaining salary" readonly="1" sum="Remaining salaries"/><field name="amount" string="Payment amount" sum="Payment total"/>
                     </list>
-                    <kanban class="o_kanban_mobile" create="0" delete="0"><templates><t t-name="card">
-                        <strong class="d-block mb-2"><field name="employee_id"/></strong>
+                    <kanban class="o_kanban_mobile" create="0" delete="0"><field name="has_split"/><templates><t t-name="card">
+                        <strong class="d-block mb-2"><span t-if="record.has_split.raw_value" class="me-2">#<field name="allocation_order"/></span><field name="employee_id"/></strong>
                         <div class="d-flex justify-content-between"><span t-translation="on">Remaining salary</span><field name="remaining"/></div>
                         <div class="d-flex justify-content-between fw-bold"><span t-translation="on">Payment amount</span><field name="amount"/></div>
                     </t></templates></kanban>

@@ -8,3 +8,4 @@ access_baseer_loan_repay_manager,Loan repayment wizard,model_baseer_hr_loan_repa
 access_baseer_payroll_create,Create monthly payroll,model_baseer_payroll_create,om_hr_payroll.group_hr_payroll_manager,1,1,1,1
 access_baseer_settlement,Payroll settlement,model_baseer_payroll_settlement,om_hr_payroll.group_hr_payroll_manager,1,1,1,1
 access_baseer_settlement_line,Payroll settlement employee,model_baseer_payroll_settlement_line,om_hr_payroll.group_hr_payroll_manager,1,1,1,1
+access_baseer_settlement_funding,Payroll settlement payment source,model_baseer_payroll_settlement_funding,om_hr_payroll.group_hr_payroll_manager,1,1,1,1

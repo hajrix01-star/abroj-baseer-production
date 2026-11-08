@@ -41,11 +41,21 @@ class SplitSettlementBrowserJourney(SplitSettlementFixture):
             const input = name => widget(name)?.querySelector('input');
             const chooseJournal = async (name, journal) => {
                 const field = await waitFor(() => input(name), name + ' input');
-                field.focus();
-                field.value = journal;
-                field.dispatchEvent(new Event('input', { bubbles: true }));
-                const item = await waitFor(() => [...widget(name).querySelectorAll('[role="option"]')]
-                    .find(el => visible(el) && el.textContent.trim() === journal), journal + ' option');
+                let item;
+                if (field.readOnly) {
+                    // Odoo opens a full-screen record picker on small screens.
+                    field.click();
+                    item = await waitFor(() => [...document.querySelectorAll(
+                        '.o_dialog:not(.o_inactive_modal) .o_select_create_dialog_content ' +
+                        ':is(.o_data_row, .o_kanban_record)'
+                    )].find(el => visible(el) && el.textContent.includes(journal)), journal + ' mobile record');
+                } else {
+                    field.focus();
+                    field.value = journal;
+                    field.dispatchEvent(new Event('input', { bubbles: true }));
+                    item = await waitFor(() => [...widget(name).querySelectorAll('[role="option"]')]
+                        .find(el => visible(el) && el.textContent.trim() === journal), journal + ' option');
+                }
                 item.click();
                 await waitFor(() => input(name)?.value === journal, journal + ' selection');
             };

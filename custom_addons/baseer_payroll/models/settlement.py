@@ -293,6 +293,9 @@ class PayrollSettlementLine(models.TransientModel):
     _name = 'baseer.payroll.settlement.line'
     _description = 'Employee Salary Payment'
     _order = 'id'
+    # Expire the whole wizard together; dropping a row would change its payment total.
+    _transient_max_hours = 0
+    _transient_max_count = 0
 
     settlement_id = fields.Many2one('baseer.payroll.settlement', required=True, readonly=True, ondelete='cascade', index=True)
     slip_id = fields.Many2one('hr.payslip', required=True, readonly=True)
@@ -342,6 +345,9 @@ class PayrollSettlementFunding(models.TransientModel):
     _name = 'baseer.payroll.settlement.funding'
     _description = 'Additional Payroll Payment Source'
     _order = 'id'
+    # Parent deletion cascades; independent expiry would silently shift the first account's share.
+    _transient_max_hours = 0
+    _transient_max_count = 0
 
     settlement_id = fields.Many2one('baseer.payroll.settlement', required=True, ondelete='cascade', index=True)
     company_id = fields.Many2one(related='settlement_id.company_id')

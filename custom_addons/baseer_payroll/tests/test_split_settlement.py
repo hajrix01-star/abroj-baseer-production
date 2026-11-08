@@ -1,7 +1,7 @@
 from unittest.mock import patch
 
 from odoo import Command
-from odoo.exceptions import UserError, ValidationError
+from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.tests.common import TransactionCase, tagged
 
 from ..models.common import money
@@ -231,6 +231,57 @@ class PayrollSplitSettlementCase(SplitSettlementFixture, TransactionCase):
                 self._funding(foreign_journal, foreign_journal.outbound_payment_method_line_ids[:1], 100),
             ]})
             wizard.action_confirm()
+        self.assertFalse(run._baseer_payment_rows())
+
+    def test_same_company_manager_cannot_access_another_users_payment_draft(self):
+        run = self._run()
+        owner_wizard = self._wizard(run)
+        owner_wizard.write({'funding_line_ids': [
+            self._funding(self.secondary, self.secondary_method, 100),
+        ]})
+        owner_row = owner_wizard.funding_line_ids.ensure_one()
+        company = run.company_id
+        other = self.env['res.users'].create({
+            'name': 'Another payroll manager',
+            'login': 'another.split.payroll.manager',
+            'company_id': company.id,
+            'company_ids': [Command.set(company.ids)],
+            'group_ids': [Command.set([
+                self.env.ref(xmlid).id for xmlid in (
+                    'base.group_user',
+                    'account.group_account_user',
+                    'account.group_account_manager',
+                    'hr.group_hr_manager',
+                    'om_hr_payroll.group_hr_payroll_manager',
+                )
+            ])],
+        })
+        own_wizard = self._wizard(run.with_user(other))
+        self.assertFalse(owner_wizard.env.su)
+        self.assertFalse(own_wizard.env.su)
+        own_wizard.write({'funding_line_ids': [self._funding(self.third, self.third_method, 200)]})
+        self.assertEqual(own_wizard.funding_line_ids.amount, 200)
+
+        foreign_wizard = owner_wizard.with_user(other)
+        foreign_row = owner_row.with_user(other)
+        add_source = self._funding(self.third, self.third_method, 300)
+        operations = {
+            'attach through the wizard': lambda: foreign_wizard.write({'funding_line_ids': [add_source]}),
+            'attach directly': lambda: foreign_row.env[foreign_row._name].create({
+                **add_source[2], 'settlement_id': foreign_wizard.id,
+            }),
+            'read source': lambda: foreign_row.read(['amount']),
+            'edit source': lambda: foreign_row.write({'amount': 400}),
+            'delete source': foreign_row.unlink,
+            'confirm draft': foreign_wizard.action_confirm,
+        }
+        for name, action in operations.items():
+            with self.subTest(operation=name), self.assertRaises(AccessError), self.cr.savepoint():
+                action()
+
+        self.assertEqual(owner_wizard.funding_line_ids, owner_row)
+        self.assertEqual(owner_row.amount, 100)
+        self.assertEqual(owner_wizard.state, 'draft')
         self.assertFalse(run._baseer_payment_rows())
 
     def test_locked_accounting_period_blocks_split_payment(self):

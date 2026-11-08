@@ -30,7 +30,7 @@ function stripReceiptExif(image) {
   }
   throw Error('Incomplete JPEG');
 }
-document.getElementById('run').onclick = () => {
+document.getElementById('run').onclick = async () => {
   const out = document.getElementById('result');
   try {
     const canvas = document.createElement('canvas');
@@ -70,7 +70,14 @@ document.getElementById('run').onclick = () => {
       if (marker === 0xe1 && cleaned.slice(cleanPos + 4, cleanPos + 10) === 'Exif\u0000\u0000') exifAfter = true;
       cleanPos += size + 2;
     }
-    out.textContent = `JPEG: OK\nWidth: ${canvas.width}\nHeight: ${canvas.height}\nBytes: ${data.length}\nEXIF present: ${exifPresent}\nEXIF entries: ${exifEntries}\nEXIF after fix: ${exifAfter}\nClean bytes: ${cleaned.length}\nJPEG markers: ${markers.join(' ')}\nUser agent: ${navigator.userAgent}`;
+    const loadImage = src => new Promise((resolve, reject) => {
+      const img = new Image(); img.onload = () => resolve(img); img.onerror = () => reject(Error('JPEG decode failed')); img.src = src;
+    });
+    const [before, after] = await Promise.all([loadImage(url), loadImage('data:image/jpeg;base64,' + btoa(cleaned))]);
+    const pixels = img => { const c = document.createElement('canvas'); c.width = img.naturalWidth; c.height = img.naturalHeight; const x = c.getContext('2d'); x.drawImage(img, 0, 0); return x.getImageData(0, 0, c.width, c.height).data; };
+    const first = pixels(before), second = pixels(after);
+    const identical = before.naturalWidth === after.naturalWidth && before.naturalHeight === after.naturalHeight && first.length === second.length && first.every((v, i) => v === second[i]);
+    out.textContent = `JPEG: OK\nWidth: ${canvas.width}\nHeight: ${canvas.height}\nBytes: ${data.length}\nEXIF present: ${exifPresent}\nEXIF entries: ${exifEntries}\nEXIF after fix: ${exifAfter}\nPixels unchanged: ${identical}\nClean bytes: ${cleaned.length}\nJPEG markers: ${markers.join(' ')}\nUser agent: ${navigator.userAgent}`;
   } catch (error) { out.textContent = 'Diagnostic error: ' + error.message; }
 };
 </script>

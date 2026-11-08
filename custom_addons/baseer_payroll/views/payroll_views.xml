@@ -42,7 +42,8 @@
                     <field name="baseer_managed" invisible="1"/>
                     <field name="currency_id" invisible="1"/>
                     <field name="baseer_pending_setup_count" invisible="1"/>
-                    <div class="alert alert-warning" role="alert" invisible="not baseer_pending_setup_count">Complete employee setup, then refresh this payroll. Rows requiring setup have no calculated salary or deductions; saved manual inputs will apply after refresh.</div>
+                    <field name="baseer_show_monthly_wage" invisible="1"/>
+                    <div class="alert alert-warning" role="alert" invisible="not baseer_pending_setup_count">Review the warnings on employee rows before approving this payroll.</div>
                     <div class="oe_title"><h1><field name="name" readonly="1" placeholder="Monthly payroll"/></h1></div>
                     <group>
                         <group><field name="baseer_month" widget="baseer_payroll_month" readonly="state != 'draft'"/><field name="company_id" readonly="1" groups="base.group_multi_company"/></group>
@@ -55,6 +56,9 @@
                             <field name="baseer_readiness" widget="badge" decoration-warning="baseer_readiness == 'pending'" readonly="1"/>
                             <field name="baseer_readiness_warning" readonly="1" optional="show"/>
                             <field name="currency_id" column_invisible="1"/>
+                            <field name="baseer_variable_wage" column_invisible="1"/>
+                            <field name="baseer_monthly_wage_input" column_invisible="not parent.baseer_show_monthly_wage"
+                                   invisible="not baseer_variable_wage and not baseer_monthly_wage_input" readonly="state != 'draft'"/>
                             <field name="baseer_days" readonly="1" optional="hide"/>
                             <field name="baseer_basic" readonly="1" optional="hide"/>
                             <field name="baseer_overtime" readonly="1" optional="hide"/>
@@ -84,9 +88,17 @@
                         <form string="Employee Salary">
                             <sheet>
                                 <field name="currency_id" invisible="1"/><field name="state" invisible="1"/>
+                                <field name="baseer_variable_wage" invisible="1"/>
                                 <h2><field name="employee_id" readonly="1"/></h2>
                                 <div class="alert alert-warning" role="alert" invisible="not baseer_readiness_warning"><field name="baseer_readiness_warning" readonly="1"/></div>
-                                <group><group string="Salary"><field name="baseer_days" readonly="1"/><field name="baseer_basic" readonly="1"/><field name="baseer_overtime" readonly="1"/><field name="baseer_allowance" readonly="1"/><field name="baseer_gross" readonly="1"/></group>
+                                <group><group string="Salary">
+                                    <field name="baseer_monthly_wage_input" invisible="not baseer_variable_wage and not baseer_monthly_wage_input" readonly="state != 'draft'"/>
+                                    <field name="baseer_days" readonly="1"/>
+                                    <field name="baseer_basic" readonly="1" invisible="baseer_variable_wage or baseer_monthly_wage_input"/>
+                                    <field name="baseer_overtime" readonly="1" invisible="baseer_variable_wage or baseer_monthly_wage_input"/>
+                                    <field name="baseer_allowance" readonly="1" invisible="baseer_variable_wage or baseer_monthly_wage_input"/>
+                                    <field name="baseer_gross" readonly="1"/>
+                                </group>
                                 <group string="Deductions"><field name="baseer_loan_amount" readonly="1"/><field name="baseer_open_advance_balance" readonly="1" invisible="state != 'draft'"/><field name="baseer_legacy_repayment" readonly="state != 'draft'"/><field name="baseer_needs_refresh" invisible="1"/><field name="baseer_legacy_preview" readonly="1" invisible="not baseer_legacy_repayment or baseer_needs_refresh"/><field name="baseer_defer_loan" widget="boolean_toggle" readonly="state != 'draft'"/><field name="baseer_deduction" readonly="state != 'draft'"/><field name="baseer_deduction_reason" required="baseer_deduction &gt; 0" readonly="state != 'draft'"/><field name="baseer_net" readonly="1"/></group></group>
                             </sheet>
                         </form>

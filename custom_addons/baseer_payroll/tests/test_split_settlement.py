@@ -1,3 +1,4 @@
+from decimal import Decimal
 from unittest.mock import patch
 
 from odoo import Command
@@ -98,6 +99,23 @@ class SplitSettlementFixture:
             })
             cls.employees |= employee
 
+    def _variable_draft_run(self, month='2026-06-01'):
+        self.employees[0].version_id.write({
+            'baseer_salary_mode': 'variable',
+            'wage': 0,
+            'contract_date_start': '2026-06-11',
+        })
+        run = self.payroll_env['hr.payslip.run'].with_context(default_baseer_monthly_wage_input=999).create({
+            'baseer_managed': True,
+            'baseer_month': month,
+        })
+        run = run.with_context(default_baseer_monthly_wage_input=None)
+        run.slip_ids.filtered(lambda slip: slip.employee_id not in self.employees).unlink()
+        variable = run.slip_ids.filtered('baseer_variable_wage').ensure_one()
+        fixed = (run.slip_ids - variable).ensure_one()
+        return run, variable, fixed
+
+
     def _run(self):
         run = self.payroll_env['hr.payslip.run'].create({
             'baseer_managed': True,
@@ -111,6 +129,77 @@ class SplitSettlementFixture:
 
 @tagged('post_install', '-at_install')
 class PayrollSplitSettlementCase(SplitSettlementFixture, TransactionCase):
+    def test_mixed_run_posts_entered_full_gross_and_deductions(self):
+        run, variable, fixed = self._variable_draft_run()
+        self.assertTrue(run.baseer_show_monthly_wage)
+        self.assertEqual(variable.baseer_readiness, 'pending')
+        self.assertEqual(variable.baseer_monthly_wage_input, 0)
+        self.assertEqual(fixed.baseer_gross, 1000)
+        with self.assertRaisesRegex(ValidationError, 'positive wage'), self.env.cr.savepoint():
+            run.action_approve()
+        self.assertFalse(run.slip_ids.move_id)
+
+        variable.write({
+            'baseer_monthly_wage_input': 1850.55,
+            'baseer_deduction': 234.12,
+            'baseer_deduction_reason': 'Reviewed payroll deduction',
+        })
+        run.action_load_employees()
+        run.slip_ids.filtered(lambda slip: slip.employee_id not in self.employees).unlink()
+        self.assertEqual(variable.baseer_readiness, 'ready')
+        self.assertEqual(money(variable.baseer_gross), Decimal('1850.55'))
+        self.assertEqual(money(variable.baseer_net), Decimal('1616.43'))
+        self.assertEqual(variable.baseer_days, 20)
+        self.assertEqual(variable.version_id.wage, 0)
+
+        run.action_approve()
+        move = variable.move_id
+        self.assertEqual(move.state, 'posted')
+        self.assertEqual(money(sum(move.line_ids.mapped('balance'))), Decimal('0.00'))
+        expense = move.line_ids.filtered(lambda line: line.account_id == run.company_id.baseer_salary_expense_id)
+        payable = move.line_ids.filtered(lambda line: line.account_id == self.payable)
+        self.assertEqual(money(sum(expense.mapped('balance'))), Decimal('1850.55'))
+        self.assertEqual(money(sum(payable.mapped('balance'))), Decimal('-1616.43'))
+        run.action_approve()
+        self.assertEqual(variable.move_id, move)
+        with self.assertRaises(UserError), self.env.cr.savepoint():
+            variable.baseer_monthly_wage_input = 10
+
+        next_run, next_variable, _fixed = self._variable_draft_run('2026-07-01')
+        self.assertEqual(next_run.baseer_pending_setup_count, 1)
+        self.assertEqual(next_variable.baseer_monthly_wage_input, 0)
+
+    def test_draft_input_is_scoped_validated_and_cleared_explicitly(self):
+        run, variable, fixed = self._variable_draft_run()
+        for invalid in (-1, 12.345, 1000000000000):
+            with self.assertRaises(ValidationError), self.env.cr.savepoint():
+                variable.baseer_monthly_wage_input = invalid
+        with self.assertRaisesRegex(ValidationError, 'variable wage employee'), self.env.cr.savepoint():
+            fixed.baseer_monthly_wage_input = 100
+
+        other_company = self.env['res.company'].create({'name': 'Other payroll company'})
+        self.payroll_env.user.sudo().write({'company_ids': [Command.link(other_company.id)]})
+        with self.assertRaises(AccessError), self.env.cr.savepoint():
+            variable.with_company(other_company).baseer_monthly_wage_input = 100
+
+        variable.baseer_monthly_wage_input = 450
+        with self.assertRaisesRegex(ValidationError, 'before changing'), self.env.cr.savepoint():
+            variable.write({'employee_id': fixed.employee_id.id})
+        variable.baseer_monthly_wage_input = 0
+        self.assertEqual(variable.baseer_readiness, 'pending')
+        self.assertEqual(variable.baseer_net, 0)
+        self.assertFalse(variable.move_id)
+
+        variable.baseer_monthly_wage_input = 450
+        variable.employee_id.version_id.write({'baseer_salary_mode': 'fixed', 'wage': 500})
+        run.action_load_employees()
+        self.assertEqual(variable.baseer_monthly_wage_input, 450)
+        self.assertEqual(variable.baseer_readiness, 'pending')
+        variable.baseer_monthly_wage_input = 0
+        self.assertEqual(variable.baseer_readiness, 'ready')
+        self.assertGreater(variable.baseer_gross, 0)
+
+
     def _wizard(self, run):
         action = run.action_pay()
         wizard = run.env[action['res_model']].browse(action['res_id'])

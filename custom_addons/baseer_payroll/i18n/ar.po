@@ -597,23 +597,23 @@ msgstr "البنك / النقد"
 
 #. module: baseer_payroll
 #: model_terms:ir.ui.view,arch_db:baseer_payroll.view_baseer_settlement_form
-msgid "Split payment"
-msgstr "تقسيم الدفع"
+msgid "Add payment method"
+msgstr "إضافة طريقة دفع"
 
 #. module: baseer_payroll
 #: model_terms:ir.ui.view,arch_db:baseer_payroll.view_baseer_settlement_form
-msgid "Second account (optional)"
-msgstr "الحساب الثاني (اختياري)"
+msgid "First account"
+msgstr "الحساب الأول"
 
 #. module: baseer_payroll
 #: model_terms:ir.ui.view,arch_db:baseer_payroll.view_baseer_settlement_form
-msgid "Second payment method"
-msgstr "طريقة الدفع من الحساب الثاني"
+msgid "Additional payment methods"
+msgstr "طرق الدفع الإضافية"
 
 #. module: baseer_payroll
 #: model_terms:ir.ui.view,arch_db:baseer_payroll.view_baseer_settlement_form
-msgid "Amount from second account"
-msgstr "المبلغ من الحساب الثاني"
+msgid "Additional payment method"
+msgstr "طريقة دفع إضافية"
 
 #. module: baseer_payroll
 #: model_terms:ir.ui.view,arch_db:baseer_payroll.view_baseer_settlement_form
@@ -627,26 +627,50 @@ msgstr "ترتيب الدفع"
 
 #. module: baseer_payroll
 #: model_terms:ir.ui.view,arch_db:baseer_payroll.view_baseer_settlement_form
-msgid "The first account covers payments in numbered order, then the second account covers the rest. If you already transferred the salaries, check that this order matches your transfers."
-msgstr "يغطي الحساب الأول الدفعات حسب الأرقام، ثم يغطي الحساب الثاني الباقي. إذا حوّلت الرواتب مسبقًا، تأكد أن هذا الترتيب يطابق تحويلاتك."
+msgid "The first account covers payments in numbered order, followed by the added accounts in their numbered order. If salaries were already transferred, check that this order matches your transfers."
+msgstr "يغطي الحساب الأول الدفعات حسب ترتيب الموظفين، ثم تغطي الحسابات المضافة الباقي حسب أرقامها. إذا حوّلت الرواتب مسبقًا، تأكد أن الترتيب يطابق تحويلاتك."
 
 #. module: baseer_payroll
 #. odoo-python
 #: code:addons/baseer_payroll/models/settlement.py:0
-msgid "Choose two journals with different bank or cash accounts."
-msgstr "اختر يوميتين بحسابَي بنك أو نقدية مختلفين."
+msgid "Each payment source must use a different bank or cash account."
+msgstr "اختر حساب بنك أو نقد مختلفًا لكل مصدر دفع."
 
 #. module: baseer_payroll
 #. odoo-python
 #: code:addons/baseer_payroll/models/settlement.py:0
-msgid "The second account amount must be positive and less than the payment total."
-msgstr "أدخل مبلغًا للحساب الثاني أكبر من صفر وأقل من إجمالي الدفع."
+msgid "Enter a positive amount for every added payment source."
+msgstr "أدخل مبلغًا أكبر من صفر لكل حساب مضاف."
 
 #. module: baseer_payroll
 #. odoo-python
 #: code:addons/baseer_payroll/models/settlement.py:0
-msgid "Choose a second bank or cash journal to split the payment."
-msgstr "اختر يومية بنك أو نقدية ثانية لتقسيم الدفع."
+msgid "The added payment amounts must leave a positive amount for the first account."
+msgstr "يجب أن يتبقى مبلغ أكبر من صفر للحساب الأول."
+
+#. module: baseer_payroll
+#. odoo-python
+#: code:addons/baseer_payroll/models/settlement.py:0
+msgid "Payment sources must be added, edited or removed within this payment screen."
+msgstr "أضف مصادر الدفع أو عدّلها أو احذفها داخل شاشة الدفع نفسها."
+
+#. module: baseer_payroll
+#. odoo-python
+#: code:addons/baseer_payroll/models/settlement.py:0
+msgid "Recorded payroll payment sources cannot be changed."
+msgstr "لا يمكن تعديل مصادر الدفع بعد تسجيل المسير."
+
+#. module: baseer_payroll
+#. odoo-python
+#: code:addons/baseer_payroll/models/settlement.py:0
+msgid "Only the account, payment method and amount may be set on a payment source."
+msgstr "يمكن تحديد الحساب وطريقة الدفع والمبلغ لكل مصدر دفع."
+
+#. module: baseer_payroll
+#. odoo-python
+#: code:addons/baseer_payroll/models/settlement.py:0
+msgid "Add payment sources from a payroll payment screen."
+msgstr "أضف مصادر الدفع من شاشة دفع المسير."
 
 #. module: baseer_payroll
 #. odoo-python

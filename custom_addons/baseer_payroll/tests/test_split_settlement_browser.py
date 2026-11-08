@@ -6,7 +6,7 @@ from .test_split_settlement import SplitSettlementFixture
 
 
 class SplitSettlementBrowserJourney(SplitSettlementFixture):
-    def _check_split(self, lang, width, label):
+    def _check_split(self, lang, width, add_label):
         self.env['res.lang']._activate_lang(lang)
         admin = self.env.ref('base.user_admin')
         admin.write({'lang': lang, 'password': admin.login})
@@ -15,7 +15,9 @@ class SplitSettlementBrowserJourney(SplitSettlementFixture):
         fixture = json.dumps({
             'primary': self.primary.name,
             'secondary': self.secondary.name,
-            'label': label,
+            'third': self.third.name,
+            'sameTreasury': self.same_treasury.name,
+            'addLabel': add_label,
             'lang': lang,
             'direction': 'rtl' if lang == 'ar_001' else 'ltr',
             'width': width,
@@ -35,29 +37,37 @@ class SplitSettlementBrowserJourney(SplitSettlementFixture):
                 }
                 throw new Error('Payroll payment timeout: ' + description);
             };
-            const dialog = () => [...document.querySelectorAll('.o_dialog:not(.o_inactive_modal)')]
-                .find(el => el.querySelector('button[name="action_confirm"]'));
-            const widget = name => dialog()?.querySelector('.o_field_widget[name="' + name + '"]');
-            const input = name => widget(name)?.querySelector('input');
-            const chooseJournal = async (name, journal) => {
-                const field = await waitFor(() => input(name), name + ' input');
-                let item;
+            const dialogs = () => [...document.querySelectorAll('.o_dialog:not(.o_inactive_modal)')];
+            const payrollDialog = () => dialogs().find(el => el.querySelector('button[name="action_confirm"]'));
+            const widget = (scope, name) => scope?.querySelector('.o_field_widget[name="' + name + '"]');
+            const input = (scope, name) => widget(scope, name)?.querySelector('input');
+            const chooseJournal = async (scope, journal, unavailable = []) => {
+                const field = await waitFor(() => input(scope, 'journal_id'), 'journal input');
+                let choices;
                 if (field.readOnly) {
                     // Odoo opens a full-screen record picker on small screens.
                     field.click();
-                    item = await waitFor(() => [...document.querySelectorAll(
+                    choices = () => [...document.querySelectorAll(
                         '.o_dialog:not(.o_inactive_modal) .o_select_create_dialog_content ' +
                         ':is(.o_data_row, .o_kanban_record)'
-                    )].find(el => visible(el) && el.textContent.includes(journal)), journal + ' mobile record');
+                    )].filter(visible);
                 } else {
                     field.focus();
-                    field.value = journal;
+                    field.value = unavailable.length ? 'Split test' : journal;
                     field.dispatchEvent(new Event('input', { bubbles: true }));
-                    item = await waitFor(() => [...widget(name).querySelectorAll('[role="option"]')]
-                        .find(el => visible(el) && el.textContent.trim() === journal), journal + ' option');
+                    choices = () => [...widget(scope, 'journal_id').querySelectorAll('[role="option"]')]
+                        .filter(visible);
+                }
+                const item = await waitFor(() => choices().find(el => el.textContent.includes(journal) &&
+                    !el.textContent.includes(fixture.sameTreasury)),
+                    journal + ' available choice');
+                for (const excluded of unavailable) {
+                    if (choices().some(el => el.textContent.includes(excluded))) {
+                        throw new Error('Previously used treasury remains selectable: ' + excluded);
+                    }
                 }
                 item.click();
-                await waitFor(() => input(name)?.value === journal, journal + ' selection');
+                await waitFor(() => input(scope, 'journal_id')?.value === journal, journal + ' selection');
             };
             const withinViewport = (element, description) => {
                 const rect = element.getBoundingClientRect();
@@ -65,53 +75,64 @@ class SplitSettlementBrowserJourney(SplitSettlementFixture):
                     throw new Error(description + ' extends outside the viewport');
                 }
             };
-            const shownAmount = (name, digit) => {
-                const value = widget(name)?.textContent.trim() || '';
+            const shownAmount = (scope, name, digit) => {
+                const value = widget(scope, name)?.textContent.trim() || '';
                 return new RegExp('(?:^|\\D)' + digit + '[,.\\s\\u066c]?000(?:\\D|$)').test(value);
             };
             if (innerWidth !== fixture.width) {
                 throw new Error('Unexpected viewport width: ' + innerWidth);
             }
             document.querySelector('button[name="action_pay"]').click();
-            const wizard = await waitFor(dialog, 'settlement wizard');
+            const wizard = await waitFor(payrollDialog, 'settlement wizard');
             if (getComputedStyle(wizard).direction !== fixture.direction) {
                 throw new Error('Unexpected direction: ' + getComputedStyle(wizard).direction);
             }
-            if (visible(input('second_amount'))) {
-                throw new Error('Secondary amount must be hidden until a second account is selected');
-            }
-            await chooseJournal('journal_id', fixture.primary);
-            await chooseJournal('second_journal_id', fixture.secondary);
-            await waitFor(() => shownAmount('amount_total', '3'), 'payment total of 3000');
-            const second = await waitFor(() => visible(input('second_amount')) && input('second_amount'),
-                'single second amount input');
-            const fieldLabel = [...wizard.querySelectorAll('label')].find(el => el.htmlFor === second.id);
-            if (!fieldLabel || fieldLabel.textContent.trim() !== fixture.label) {
-                throw new Error('Unexpected second amount label: ' + fieldLabel?.textContent);
-            }
-            if (wizard.querySelectorAll('.o_field_widget[name="second_amount"]').length !== 1) {
-                throw new Error('The secondary amount must appear once for the entire run');
-            }
-            second.focus();
-            second.value = '1000';
-            second.dispatchEvent(new Event('input', { bubbles: true }));
-            second.dispatchEvent(new Event('change', { bubbles: true }));
-            second.blur();
-            await waitFor(() => shownAmount('amount_primary', '2'), 'calculated first amount of 2000');
-            if (!shownAmount('amount_total', '3')) {
+            const funding = () => widget(wizard, 'funding_line_ids');
+            const addControl = () => [...(funding()?.querySelectorAll('button, a, .o-kanban-button-new') || [])]
+                .find(el => visible(el) && el.textContent.trim() === fixture.addLabel);
+            const enterFunding = async (journal, amount, excluded) => {
+                const add = await waitFor(addControl, 'Add payment method control');
+                withinViewport(add, 'Add payment method control');
+                add.click();
+                const editor = await waitFor(() => dialogs().find(el => el !== wizard && input(el, 'amount')),
+                    'additional payment editor');
+                await chooseJournal(editor, journal, excluded);
+                await waitFor(() => input(editor, 'payment_method_line_id')?.value,
+                    'default outbound payment method');
+                const editorAmount = input(editor, 'amount');
+                for (const control of [input(editor, 'journal_id'), input(editor, 'payment_method_line_id'), editorAmount]) {
+                    withinViewport(control, 'Additional payment control');
+                }
+                editorAmount.focus();
+                editorAmount.value = amount;
+                editorAmount.dispatchEvent(new Event('input', { bubbles: true }));
+                editorAmount.dispatchEvent(new Event('change', { bubbles: true }));
+                editorAmount.blur();
+                editor.querySelector('button.o_form_button_save').click();
+                await waitFor(() => !editor.isConnected && funding().textContent.includes(journal),
+                    journal + ' saved in payment sources');
+            };
+            await chooseJournal(wizard, fixture.primary);
+            await waitFor(() => input(wizard, 'payment_method_line_id')?.value,
+                'primary outbound payment method');
+            await waitFor(() => shownAmount(wizard, 'amount_total', '3'), 'payment total of 3000');
+            await enterFunding(fixture.secondary, '800', [fixture.primary, fixture.sameTreasury]);
+            await enterFunding(fixture.third, '200', [fixture.primary, fixture.sameTreasury, fixture.secondary]);
+            await waitFor(() => shownAmount(wizard, 'amount_primary', '2'), 'calculated first amount of 2000');
+            if (!shownAmount(wizard, 'amount_total', '3')) {
                 throw new Error('Dividing the payment changed the original total');
             }
-            const rowView = await waitFor(() => wizard.querySelector(
+            const rowView = await waitFor(() => widget(wizard, 'line_ids')?.querySelector(
                 fixture.width === 375 ? '.o_kanban_record' : '.o_list_renderer .o_data_row'
             ), 'employee rows');
             const confirm = wizard.querySelector('button[name="action_confirm"]');
-            for (const control of [input('journal_id'), input('second_journal_id'), second,
-                widget('amount_primary'), widget('amount_total'), rowView, confirm]) {
+            for (const control of [input(wizard, 'journal_id'), funding(),
+                widget(wizard, 'amount_primary'), widget(wizard, 'amount_total'), rowView, confirm]) {
                 withinViewport(control, 'Payroll payment control');
             }
             await waitFor(() => visible(confirm) && !confirm.disabled, 'enabled confirmation');
             confirm.click();
-            await waitFor(() => !dialog() && !visible(document.querySelector('button[name="action_pay"]')),
+            await waitFor(() => !payrollDialog() && !visible(document.querySelector('button[name="action_pay"]')),
                 'return to the fully paid run');
             console.log('PAYROLL_SPLIT_UI_PASS ' + fixture.lang + ' ' + innerWidth);
             console.log('test successful');
@@ -128,10 +149,10 @@ class SplitSettlementBrowserJourney(SplitSettlementFixture):
         self.assertEqual(run.baseer_payment_state, 'paid')
         self.assertEqual(run.baseer_residual, 0)
         payments = run.slip_ids._baseer_payments()
-        self.assertEqual(len(payments), 2)
+        self.assertEqual(len(payments), 3)
         self.assertEqual(
             {payment.journal_id.id: payment.amount for payment in payments},
-            {self.primary.id: 2000, self.secondary.id: 1000},
+            {self.primary.id: 2000, self.secondary.id: 800, self.third.id: 200},
         )
 
 
@@ -140,7 +161,7 @@ class PayrollSplitSettlementDesktop(SplitSettlementBrowserJourney, HttpCase):
     browser_size = '1440x900'
 
     def test_split_payroll_en(self):
-        self._check_split('en_US', 1440, 'Amount from second account')
+        self._check_split('en_US', 1440, 'Add payment method')
 
 
 @tagged('post_install', '-at_install')
@@ -149,4 +170,4 @@ class PayrollSplitSettlementMobile(SplitSettlementBrowserJourney, HttpCase):
     touch_enabled = True
 
     def test_split_payroll_ar(self):
-        self._check_split('ar_001', 375, 'المبلغ من الحساب الثاني')
+        self._check_split('ar_001', 375, 'إضافة طريقة دفع')

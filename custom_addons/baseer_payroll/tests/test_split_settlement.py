@@ -49,15 +49,16 @@ class SplitSettlementFixture:
         payroll_journal = journal('Split test payroll', 'STP', 'general')
         cls.primary = journal('Split test bank', 'STB', 'bank', account('978205', 'asset_cash'))
         cls.secondary = journal('Split test cash', 'STC', 'cash', account('978206', 'asset_cash'))
+        cls.third = journal('Split test reserve', 'STR', 'bank', account('978207', 'asset_cash'))
+        cls.same_treasury = journal('Split test bank alias', 'STA', 'bank', cls.primary.default_account_id)
         manual = cls.env.ref('account.account_payment_method_manual_out')
-        cls.primary_method = cls.primary.outbound_payment_method_line_ids.filtered(
-            lambda line: line.payment_method_id == manual
-        ).ensure_one()
-        cls.secondary_method = cls.secondary.outbound_payment_method_line_ids.filtered(
-            lambda line: line.payment_method_id == manual
-        ).ensure_one()
-        for method in cls.primary_method | cls.secondary_method:
+        for field in ('primary', 'secondary', 'third', 'same_treasury'):
+            source = getattr(cls, field)
+            method = source.outbound_payment_method_line_ids.filtered(
+                lambda line: line.payment_method_id == manual
+            ).ensure_one()
             method.payment_account_id = method.journal_id.default_account_id
+            setattr(cls, field + '_method', method)
 
         analytic = cls.env['account.analytic.account'].create({
             'name': 'Split payroll test cost center',
@@ -110,38 +111,46 @@ class SplitSettlementFixture:
 
 @tagged('post_install', '-at_install')
 class PayrollSplitSettlementCase(SplitSettlementFixture, TransactionCase):
-    def _wizard(self, run, split=True):
+    def _wizard(self, run):
         action = run.action_pay()
         wizard = run.env[action['res_model']].browse(action['res_id'])
-        vals = {
+        wizard.write({
             'journal_id': self.primary.id,
             'payment_method_line_id': self.primary_method.id,
-        }
-        if split:
-            vals.update(second_journal_id=self.secondary.id,
-                        second_payment_method_line_id=self.secondary_method.id)
-        wizard.write(vals)
+        })
         return wizard
+
+    @staticmethod
+    def _funding(journal, method, amount):
+        return Command.create({
+            'journal_id': journal.id,
+            'payment_method_line_id': method.id,
+            'amount': amount,
+        })
 
     def test_split_posts_native_payments_and_keeps_remaining_salary(self):
         run = self._run()
         wizard = self._wizard(run)
-        stale = self._wizard(run, split=False)
+        stale = self._wizard(run)
         line = wizard.line_ids.filtered(lambda row: row.employee_id == self.employees[0])
         wizard.write({
             'line_ids': [Command.update(line.id, {'amount': 1500.23})],
-            'second_amount': 600.11,
+            'funding_line_ids': [
+                self._funding(self.secondary, self.secondary_method, 600.11),
+                self._funding(self.third, self.third_method, 500.10),
+            ],
         })
-        self.assertEqual((wizard.amount_primary, wizard.second_amount), (1900.12, 600.11))
+        self.assertEqual(wizard.amount_primary, 1400.02)
         result = wizard.action_confirm()
         self.assertEqual((result['res_model'], result['res_id']), (run._name, run.id))
-        self.assertEqual(len(wizard.payment_ids), 3)
+        self.assertEqual(len(wizard.payment_ids), 4)
         self.assertEqual(run.baseer_residual, 499.77)
         self.assertEqual(run.baseer_payment_state, 'partial')
         expected = {
-            (self.employees[0].work_contact_id.id, self.primary.id): money('1500.23'),
-            (self.employees[1].work_contact_id.id, self.primary.id): money('399.89'),
-            (self.employees[1].work_contact_id.id, self.secondary.id): money('600.11'),
+            (self.employees[0].work_contact_id.id, self.primary.id): money('1400.02'),
+            (self.employees[0].work_contact_id.id, self.secondary.id): money('100.21'),
+            (self.employees[1].work_contact_id.id, self.secondary.id): money('499.90'),
+            (self.employees[1].work_contact_id.id, self.third.id): money('500.10'),
         }
         for payment in wizard.payment_ids:
             amount = expected.pop((payment.partner_id.id, payment.journal_id.id))
@@ -166,7 +175,7 @@ class PayrollSplitSettlementCase(SplitSettlementFixture, TransactionCase):
         with self.assertRaises(ValidationError):
             stale.action_confirm()
 
-        remainder = self._wizard(run, split=False)
+        remainder = self._wizard(run)
         remainder.action_confirm()
         self.assertEqual(len(remainder.payment_ids), 1)
         self.assertEqual(remainder.payment_ids.journal_id, self.primary)
@@ -179,22 +188,30 @@ class PayrollSplitSettlementCase(SplitSettlementFixture, TransactionCase):
         wizard = self._wizard(run)
         payment_count = self.env['account.payment'].search_count([])
         for invalid in (-1, 1.001):
-            with self.assertRaises(ValidationError):
-                wizard.second_amount = invalid
-        with self.assertRaises(ValidationError):
-            wizard.action_confirm()
-        wizard.second_amount = 3000.01
-        with self.assertRaises(ValidationError):
-            wizard.action_confirm()
-        wizard.second_amount = 100
-        wizard.second_payment_method_line_id = self.primary_method
-        with self.assertRaises(ValidationError):
-            wizard.action_confirm()
+            with self.subTest(amount=invalid), self.assertRaises(ValidationError), self.cr.savepoint():
+                wizard.write({'funding_line_ids': [self._funding(self.secondary, self.secondary_method, invalid)]})
+        for case, lines in {
+            'zero': [self._funding(self.secondary, self.secondary_method, 0)],
+            'total exhausted': [self._funding(self.secondary, self.secondary_method, 3000)],
+            'total exceeded': [
+                self._funding(self.secondary, self.secondary_method, 1600),
+                self._funding(self.third, self.third_method, 1500),
+            ],
+            'method from another journal': [self._funding(self.secondary, self.primary_method, 100)],
+            'duplicate journal': [
+                self._funding(self.secondary, self.secondary_method, 100),
+                self._funding(self.secondary, self.secondary_method, 200),
+            ],
+            'duplicate liquidity account': [self._funding(self.same_treasury, self.same_treasury_method, 100)],
+        }.items():
+            with self.subTest(case=case), self.assertRaises(ValidationError), self.cr.savepoint():
+                wizard.write({'funding_line_ids': lines})
+                wizard.action_confirm()
         self.assertEqual(self.env['account.payment'].search_count([]), payment_count)
         self.assertEqual(run.baseer_residual, 3000)
         self.assertEqual(wizard.state, 'draft')
 
-    def test_second_journal_cannot_belong_to_another_allowed_company(self):
+    def test_funding_journal_cannot_belong_to_another_allowed_company(self):
         run = self._run()
         wizard = self._wizard(run)
         other = self.env['res.company'].create({
@@ -209,43 +226,44 @@ class PayrollSplitSettlementCase(SplitSettlementFixture, TransactionCase):
             'company_id': other.id,
         })
         wizard = wizard.with_context(allowed_company_ids=[run.company_id.id, other.id])
-        wizard.write({
-            'second_journal_id': foreign_journal.id,
-            'second_payment_method_line_id': foreign_journal.outbound_payment_method_line_ids[:1].id,
-            'second_amount': 100,
-        })
-        with self.assertRaisesRegex(ValidationError, 'belonging to this company'):
+        with self.assertRaises(ValidationError), self.cr.savepoint():
+            wizard.write({'funding_line_ids': [
+                self._funding(foreign_journal, foreign_journal.outbound_payment_method_line_ids[:1], 100),
+            ]})
             wizard.action_confirm()
         self.assertFalse(run._baseer_payment_rows())
 
     def test_locked_accounting_period_blocks_split_payment(self):
         run = self._run()
         wizard = self._wizard(run)
-        wizard.second_amount = 100
+        wizard.write({'funding_line_ids': [self._funding(self.secondary, self.secondary_method, 100)]})
         run.company_id.sudo().fiscalyear_lock_date = wizard.payment_date
         with self.assertRaisesRegex(ValidationError, 'locked accounting period'):
             wizard.action_confirm()
         self.assertFalse(run._baseer_payment_rows())
 
-    def test_second_journal_failure_rolls_back_first_native_posting(self):
+    def test_last_funding_journal_failure_rolls_back_all_postings(self):
         run = self._run()
         wizard = self._wizard(run)
-        wizard.second_amount = 100
+        wizard.write({'funding_line_ids': [
+            self._funding(self.secondary, self.secondary_method, 400),
+            self._funding(self.third, self.third_method, 600),
+        ]})
         payments_before = self.env['account.payment'].search_count([])
         moves_before = self.env['account.move'].search_count([])
         record_allocation = type(wizard)._record_allocation
         posted = []
 
-        def fail_second(record, slip, amount, remaining, journal, method):
-            if journal == self.secondary:
-                self.assertTrue(posted)
-                raise UserError('Injected second journal posting failure')
+        def fail_last(record, slip, amount, remaining, journal, method):
+            if journal == self.third:
+                self.assertEqual(posted, [self.primary.id, self.secondary.id])
+                raise UserError('Injected last journal posting failure')
             result = record_allocation(record, slip, amount, remaining, journal, method)
-            posted.append(result.ids)
+            posted.append(journal.id)
             return result
 
-        with patch.object(type(wizard), '_record_allocation', fail_second):
-            with self.assertRaisesRegex(UserError, 'Injected second journal'):
+        with patch.object(type(wizard), '_record_allocation', fail_last):
+            with self.assertRaisesRegex(UserError, 'Injected last journal'):
                 wizard.action_confirm()
 
         self.assertEqual(self.env['account.payment'].search_count([]), payments_before)

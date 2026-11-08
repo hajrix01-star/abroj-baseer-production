@@ -2,6 +2,42 @@
 
 import { _t } from "@web/core/l10n/translation";
 
+// Safari's JPEG encoder may add EXIF to a canvas image. The server rejects
+// EXIF metadata; remove only those APP1 segments without touching image data.
+function stripReceiptExif(image) {
+    const binary = atob(image);
+    const invalid = () => new Error(_t("The browser could not create a JPEG receipt. Reload and retry."));
+    if (binary.charCodeAt(0) !== 0xff || binary.charCodeAt(1) !== 0xd8) throw invalid();
+    const parts = [binary.slice(0, 2)];
+    let offset = 2;
+    let removed = false;
+    while (offset < binary.length) {
+        const start = offset;
+        if (binary.charCodeAt(offset++) !== 0xff) throw invalid();
+        while (binary.charCodeAt(offset) === 0xff) offset++;
+        const marker = binary.charCodeAt(offset++);
+        if (marker === 0xda || marker === 0xd9) {
+            parts.push(binary.slice(start));
+            return removed ? btoa(parts.join("")) : image;
+        }
+        if (marker === 0x01 || (marker >= 0xd0 && marker <= 0xd7)) {
+            parts.push(binary.slice(start, offset));
+            continue;
+        }
+        if (offset + 2 > binary.length) throw invalid();
+        const length = binary.charCodeAt(offset) * 256 + binary.charCodeAt(offset + 1);
+        const end = offset + length;
+        if (length < 2 || end > binary.length) throw invalid();
+        if (marker === 0xe1 && binary.slice(offset + 2, offset + 8) === "Exif\x00\x00") {
+            removed = true;
+        } else {
+            parts.push(binary.slice(start, end));
+        }
+        offset = end;
+    }
+    throw invalid();
+}
+
 // Match the server's bounded JPEG contract. Preserve the print-head width;
 // compress bytes, never crop the receipt or silently remove fiscal content.
 export function encodeReceiptJpeg(renderedCanvas, createCanvas = () => document.createElement("canvas")) {
@@ -28,7 +64,7 @@ export function encodeReceiptJpeg(renderedCanvas, createCanvas = () => document.
         if (!url.startsWith("data:image/jpeg;base64,")) {
             throw new Error(_t("The browser could not create a JPEG receipt. Reload and retry."));
         }
-        const image = url.slice("data:image/jpeg;base64,".length);
+        const image = stripReceiptExif(url.slice("data:image/jpeg;base64,".length));
         const padding = image.endsWith("==") ? 2 : image.endsWith("=") ? 1 : 0;
         const bytes = image.length * 3 / 4 - padding;
         console.debug("Baseer receipt image sizing", JSON.stringify({width, height, quality, bytes, accepted: bytes > 0 && bytes <= 256 * 1024}));

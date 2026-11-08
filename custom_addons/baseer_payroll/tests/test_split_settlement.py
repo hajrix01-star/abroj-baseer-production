@@ -60,13 +60,19 @@ class PayrollSplitSettlementCase(TransactionCase):
         for method in cls.primary_method | cls.secondary_method:
             method.payment_account_id = method.journal_id.default_account_id
 
+        analytic = cls.env['account.analytic.account'].create({
+            'name': 'Split payroll test cost center',
+            'plan_id': cls.env.ref('baseer_payroll.payroll_cost_plan').id,
+            'company_id': company.id,
+        })
         company.write({
             'baseer_salary_expense_id': expense.id,
             'baseer_salary_payable_id': payable.id,
             'baseer_loan_account_id': advance.id,
             'baseer_deduction_account_id': deduction.id,
             'baseer_payroll_journal_id': payroll_journal.id,
-            'baseer_payroll_analytic_enabled': False,
+            'baseer_payroll_analytic_account_id': analytic.id,
+            'baseer_payroll_analytic_enabled': True,
             'baseer_structure_id': False,
         })
         cls.payable = payable

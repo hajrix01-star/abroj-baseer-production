@@ -31,6 +31,9 @@ jobs:
           --health-retries 12
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
       - name: Verify the runner's headless Chrome
         run: google-chrome --version
       - name: Install the pinned Odoo 19 package
@@ -46,6 +49,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             "$RUNNER_TEMP/odoo_19.0.20260926_all.deb" python3-websocket
+          npm install --global rtlcss@4.3.0
+          rtlcss --version
       - name: Confirm split payroll in English desktop and Arabic mobile browsers
         shell: bash
         run: |

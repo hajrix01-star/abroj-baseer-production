@@ -33,7 +33,10 @@ class BaseerPrintAgentRelease(models.Model):
     artifact_filename = fields.Char(required=True, groups='base.group_system')
     artifact_sha256 = fields.Char(readonly=True, copy=False)
     release_notes = fields.Text()
-    github_download_url = fields.Char(string='رابط تنزيل GitHub')
+    github_download_url = fields.Char(
+        string='تنزيل تحديث جهاز مرتبط من GitHub',
+        help='Downloads the general installer. It does not create a new pairing.',
+    )
     signer_identity = fields.Char(help='Optional Authenticode publisher identity.')
     state = fields.Selection([
         ('draft', 'Draft'),

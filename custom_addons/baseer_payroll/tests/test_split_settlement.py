@@ -7,8 +7,7 @@ from odoo.tests.common import TransactionCase, tagged
 from ..models.common import money
 
 
-@tagged('post_install', '-at_install')
-class PayrollSplitSettlementCase(TransactionCase):
+class SplitSettlementFixture:
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -108,6 +107,9 @@ class PayrollSplitSettlementCase(TransactionCase):
         self.assertEqual(run.baseer_residual, 3000)
         return run
 
+
+@tagged('post_install', '-at_install')
+class PayrollSplitSettlementCase(SplitSettlementFixture, TransactionCase):
     def _wizard(self, run, split=True):
         action = run.action_pay()
         wizard = run.env[action['res_model']].browse(action['res_id'])

@@ -33,6 +33,7 @@ class BaseerPrintAgentRelease(models.Model):
     artifact_filename = fields.Char(required=True, groups='base.group_system')
     artifact_sha256 = fields.Char(readonly=True, copy=False)
     release_notes = fields.Text()
+    github_download_url = fields.Char(string='رابط تنزيل GitHub')
     signer_identity = fields.Char(help='Optional Authenticode publisher identity.')
     state = fields.Selection([
         ('draft', 'Draft'),
@@ -64,6 +65,15 @@ class BaseerPrintAgentRelease(models.Model):
             filename = (record.artifact_filename or '').lower()
             if filename and not filename.endswith('.exe'):
                 raise ValidationError(_('The Windows agent download must be an .exe installer.'))
+
+    @api.constrains('github_download_url')
+    def _check_github_download_url(self):
+        for record in self.filtered('github_download_url'):
+            parsed = urlparse(record.github_download_url)
+            if (parsed.scheme != 'https' or parsed.netloc != 'github.com'
+                    or not parsed.path.startswith('/hajrix01-star/abroj-baseer-production/releases/download/')
+                    or parsed.query or parsed.fragment):
+                raise ValidationError(_('Use a Baseer GitHub release download URL.'))
 
     def _artifact_bytes(self):
         self.ensure_one()

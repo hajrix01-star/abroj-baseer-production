@@ -61,16 +61,24 @@ paymentBridge.buildBaseerPreparationAction = lineRuntime.buildBaseerPreparationA
 const paymentStore = new paymentBridge.PosStore();
 const food = { id: 9, pos_categ_ids: [{ id: 2 }] };
 const foodLine = { uuid: 'food-line', product_id: food, getQuantity: () => 1 };
-const paymentOrder = { uuid: 'order-for-payment', uiState: {}, getOrderlines: () => [foodLine],
+const retail = { id: 10, pos_categ_ids: [{ id: 3 }] };
+let retailQuantity = 1;
+const retailLine = { uuid: 'retail-line', product_id: retail, getQuantity: () => retailQuantity };
+let cartLines = [foodLine, retailLine];
+const paymentOrder = { uuid: 'order-for-payment', uiState: {}, getOrderlines: () => cartLines,
     last_order_preparation_change: { lines: {} } };
 paymentStore.config = { baseer_direct_print_enabled: true, baseer_preparation_bindings: [{ category_id: 2 }] };
 paymentStore.getOrder = () => paymentOrder;
-paymentStore.models = { 'product.product': new Map([[food.id, food]]) };
+paymentStore.models = { 'product.product': new Map([[food.id, food], [retail.id, retail]]) };
 paymentStore.notification = { add: () => paymentSteps.push('send error') };
 paymentStore.baseerSendCurrentOrder = async (actionType) => {
     assert.equal(actionType, 'send_before_payment');
     paymentSteps.push('send');
-    paymentOrder.last_order_preparation_change.lines[foodLine.uuid] = { quantity: 1 };
+    for (const line of cartLines) {
+        paymentOrder.last_order_preparation_change.lines[line.uuid] = {
+            uuid: line.uuid, product_id: line.product_id.id, quantity: line.getQuantity(),
+        };
+    }
     return true;
 };
 assert.equal(await paymentStore.pay(), false);
@@ -78,6 +86,12 @@ assert.deepEqual(paymentSteps.splice(0), ['prompt']);
 confirmSend = true;
 await paymentStore.pay();
 assert.deepEqual(paymentSteps.splice(0), ['prompt', 'send', 'pay']);
+await paymentStore.pay();
+assert.deepEqual(paymentSteps.splice(0), ['pay']);
+retailQuantity++;
+await paymentStore.pay();
+assert.deepEqual(paymentSteps.splice(0), ['pay']);
+cartLines = [foodLine];
 await paymentStore.pay();
 assert.deepEqual(paymentSteps.splice(0), ['pay']);
 paymentOrder.last_order_preparation_change.lines = {};

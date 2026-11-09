@@ -58,14 +58,20 @@ patch(PosStore.prototype, {
         if (order.isRefund) return [];
         const bindings = this.config.baseer_preparation_bindings || [];
         const categoryIds = new Set(bindings.map((binding) => binding.category_id));
-        const routedLines = new Set(order.getOrderlines().filter((line) => {
-            const product = line.product_id;
+        const productsByLine = new Map(order.getOrderlines().map((line) => [line.uuid, line.product_id]));
+        const previousLines = new Map(Object.values(order.last_order_preparation_change?.lines || {})
+            .map((line) => [line.uuid, line.product_id]));
+        return buildBaseerPreparationAction(order, "send").lines.filter((line) => {
+            if (categoryIds.has(false)) return true;
+            const product = productsByLine.get(line.line_uuid)
+                || this.models?.["product.product"]?.get(previousLines.get(line.line_uuid));
+            // The native baseline includes unrouted products. Only keep a
+            // previously sent candidate without routing data if its product
+            // cannot be identified safely.
+            if (!product) return line.expected_quantity > 0;
             const categories = product?.product_tmpl_id?.pos_categ_ids ?? product?.pos_categ_ids ?? [];
-            return categoryIds.has(false) || categories.some((category) => categoryIds.has(category.id ?? category));
-        }).map((line) => line.uuid));
-        return buildBaseerPreparationAction(order, "send").lines.filter(
-            (line) => line.expected_quantity > 0 || routedLines.has(line.line_uuid)
-        );
+            return categories.some((category) => categoryIds.has(category.id ?? category));
+        });
     },
 
     async _baseerSendKitchenBeforePayment() {

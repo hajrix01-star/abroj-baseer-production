@@ -1940,6 +1940,12 @@ msgid "The kitchen changes could not be sent. Check the order and try again."
 msgstr "تعذّر الإرسال للمطبخ. راجع الطلب وحاول مرة أخرى."
 
 #. module: baseer_pos_print_bridge
+#. odoo-python
+#: code:addons/baseer_pos_print_bridge/models/preparation.py:0
+msgid "A pending kitchen item has no available printer. Check kitchen routing and try again."
+msgstr "لا توجد طابعة متاحة لصنف معلّق للمطبخ. تحقق من ربط الطابعات وحاول مرة أخرى."
+
+#. module: baseer_pos_print_bridge
 #: model:ir.model.constraint,message:baseer_pos_print_bridge.constraint_baseer_print_job_idempotency_unique
 msgid "This print job has already been created."
 msgstr "أُنشئت مهمة الطباعة هذه من قبل."

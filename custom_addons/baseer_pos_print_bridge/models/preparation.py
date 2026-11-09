@@ -101,7 +101,7 @@ class BaseerPrintPreparationState(models.Model):
             raise ValidationError(_('The kitchen action is invalid.'))
         action_uuid = self.env['baseer.print.preparation.event']._canonical_uuid(raw_action.get('action_uuid'))
         action_type = raw_action.get('action_type')
-        if action_type not in ('send', 'line_change'):
+        if action_type not in ('send', 'send_before_payment', 'line_change'):
             raise ValidationError(_('The kitchen action type is invalid.'))
         raw_lines = raw_action.get('lines')
         if not isinstance(raw_lines, list) or not raw_lines or len(raw_lines) > 500:
@@ -330,6 +330,7 @@ class BaseerPrintPreparationState(models.Model):
         events = self.env['baseer.print.preparation.event'].sudo()
         jobs = self.env['baseer.print.job'].sudo()
         request_fingerprint = events._action_request_fingerprint(action)
+        require_dispatch = action['action_type'] == 'send_before_payment'
         print_groups = {}
         for requested in action['lines']:
             old = by_uuid.get(requested['line_uuid'])
@@ -342,13 +343,12 @@ class BaseerPrintPreparationState(models.Model):
             if old:
                 destinations = [(state.printer_id, state.route_id, state.copies, state) for state in old]
             else:
-                if not line:
-                    # No durable preparation baseline means this was never a
-                    # kitchen-routed item; ignore the browser's generic delta.
-                    continue
-                categories = line.product_id.product_tmpl_id.pos_categ_ids
-                binding = self.env['baseer.print.route']._select_binding(order.config_id, categories)
+                binding = self.env['baseer.print.route']
+                if line:
+                    binding = binding._select_binding(order.config_id, line.product_id.product_tmpl_id.pos_categ_ids)
                 if not binding:
+                    if require_dispatch:
+                        raise ValidationError(_('A pending kitchen item has no available printer. Check kitchen routing and try again.'))
                     continue
                 destinations = [(route.printer_id, route, route.copies, self.sudo().browse()) for route in binding]
                 if previous:

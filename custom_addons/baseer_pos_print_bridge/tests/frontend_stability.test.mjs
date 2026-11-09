@@ -67,7 +67,8 @@ paymentStore.config = { baseer_direct_print_enabled: true, baseer_preparation_bi
 paymentStore.getOrder = () => paymentOrder;
 paymentStore.models = { 'product.product': new Map([[food.id, food]]) };
 paymentStore.notification = { add: () => paymentSteps.push('send error') };
-paymentStore.baseerSendCurrentOrder = async () => {
+paymentStore.baseerSendCurrentOrder = async (actionType) => {
+    assert.equal(actionType, 'send_before_payment');
     paymentSteps.push('send');
     paymentOrder.last_order_preparation_change.lines[foodLine.uuid] = { quantity: 1 };
     return true;

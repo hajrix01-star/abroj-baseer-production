@@ -54,9 +54,18 @@ patch(PosOrderline.prototype, {
  * by the browser.
  */
 patch(PosStore.prototype, {
-    _baseerHasKitchenChangesForPayment(order) {
-        return !order.isRefund && (this.baseerCategoryCount.length > 0
-            || buildBaseerPreparationAction(order, "send").lines.some((line) => line.expected_quantity > 0));
+    _baseerKitchenChangesForPayment(order) {
+        if (order.isRefund) return [];
+        const bindings = this.config.baseer_preparation_bindings || [];
+        const categoryIds = new Set(bindings.map((binding) => binding.category_id));
+        const routedLines = new Set(order.getOrderlines().filter((line) => {
+            const product = line.product_id;
+            const categories = product?.product_tmpl_id?.pos_categ_ids ?? product?.pos_categ_ids ?? [];
+            return categoryIds.has(false) || categories.some((category) => categoryIds.has(category.id ?? category));
+        }).map((line) => line.uuid));
+        return buildBaseerPreparationAction(order, "send").lines.filter(
+            (line) => line.expected_quantity > 0 || routedLines.has(line.line_uuid)
+        );
     },
 
     async _baseerSendKitchenBeforePayment() {
@@ -82,7 +91,7 @@ patch(PosStore.prototype, {
             this.notification.add(_t("Confirm the pending kitchen change before payment."), { type: "warning" });
             return false;
         }
-        if (!this._baseerHasKitchenChangesForPayment(order)) {
+        if (!this._baseerKitchenChangesForPayment(order).length) {
             return true;
         }
         const confirmed = await ask(this.dialog, {
@@ -94,7 +103,7 @@ patch(PosStore.prototype, {
         if (!confirmed || this.getOrder()?.uuid !== order.uuid) return false;
 
         try {
-            if (!(await this.baseerSendCurrentOrder())) return false;
+            if (!(await this.baseerSendCurrentOrder("send_before_payment"))) return false;
         } catch (error) {
             this.notification.add(
                 error?.data?.message || _t("The kitchen changes could not be sent. Check the order and try again."),
@@ -105,7 +114,7 @@ patch(PosStore.prototype, {
         const current = this.getOrder();
         return current?.uuid === order.uuid
             && !current.uiState?.baseerPreparationAction
-            && !this._baseerHasKitchenChangesForPayment(current);
+            && !this._baseerKitchenChangesForPayment(current).length;
     },
 
     async _askForPreparation() {
@@ -532,7 +541,7 @@ patch(PosStore.prototype, {
         return Object.values(counts);
     },
 
-    async baseerSendCurrentOrder() {
+    async baseerSendCurrentOrder(actionType = "send") {
         const order = this.getOrder();
         if (!this.config.baseer_direct_print_enabled || !order) {
             return;
@@ -565,7 +574,8 @@ patch(PosStore.prototype, {
             this.notification.add(_t("The kitchen result is still unknown. Reconnect and check it before retrying."), { type: "warning" });
             return false;
         }
-        const action = order.uiState.baseerPreparationAction || buildBaseerPreparationAction(order, "send");
+        const paymentLines = actionType === "send_before_payment" ? this._baseerKitchenChangesForPayment(order) : null;
+        const action = order.uiState.baseerPreparationAction || buildBaseerPreparationAction(order, actionType, paymentLines);
         if (!action.lines.length) {
             this.notification.add(_t("There are no kitchen changes to send."), { type: "info" });
             return false;

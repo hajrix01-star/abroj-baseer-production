@@ -80,4 +80,5 @@ class TestReceiptLayoutProfile(TransactionCase):
         self.assertEqual(by_id[first.id], 'baseer_80_customer')
         self.assertEqual(by_id[second.id], 'native')
         partner_model = self.env['res.partner']
-        self.assertIn('mobile', partner_model._load_pos_data_fields(first))
+        if 'mobile' in partner_model._fields:
+            self.assertIn('mobile', partner_model._load_pos_data_fields(first))

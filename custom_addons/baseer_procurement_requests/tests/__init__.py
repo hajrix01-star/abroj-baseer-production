@@ -6,3 +6,4 @@ from . import test_company_onboarding
 from . import test_product_source
 from . import test_catalog_quick
 from . import test_receipt_custody
+from . import test_vendor_bill_settlement

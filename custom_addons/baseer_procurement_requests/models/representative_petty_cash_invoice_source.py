@@ -23,8 +23,12 @@ class RepresentativePettyCashInvoiceSettlement(models.Model):
     company_id = fields.Many2one('res.company', required=True, readonly=True, index=True, ondelete='restrict')
     representative_partner_id = fields.Many2one('res.partner', required=True, readonly=True, index=True,
                                                  ondelete='restrict', check_company=True)
-    batch_line_id = fields.Many2one('baseer.purchase.batch.line', required=True, readonly=True, index=True,
+    # Purchase-batch invoice settlement still uses the batch row. Existing
+    # vendor-bill settlement uses vendor_bill_id and does not create a batch.
+    batch_line_id = fields.Many2one('baseer.purchase.batch.line', readonly=True, index=True,
                                     ondelete='restrict', check_company=True)
+    vendor_bill_id = fields.Many2one('account.move', readonly=True, index=True, ondelete='restrict',
+                                     check_company=True, copy=False)
     move_id = fields.Many2one('account.move', required=True, readonly=True, ondelete='restrict', check_company=True)
     currency_id = fields.Many2one(related='company_id.currency_id', readonly=True)
     amount = fields.Monetary(required=True, readonly=True, currency_field='currency_id')
@@ -35,11 +39,19 @@ class RepresentativePettyCashInvoiceSettlement(models.Model):
          'A supplier invoice can be settled from Representative Petty Cash only once.'),
     ]
 
-    @api.constrains('company_id', 'representative_partner_id', 'batch_line_id', 'move_id', 'amount')
+    @api.constrains('company_id', 'representative_partner_id', 'batch_line_id', 'vendor_bill_id', 'move_id', 'amount')
     def _check_relationships(self):
         for record in self:
-            if (record.batch_line_id.company_id != record.company_id
-                    or record.move_id.company_id != record.company_id
+            if bool(record.batch_line_id) == bool(record.vendor_bill_id):
+                raise ValidationError(_('A representative petty-cash invoice settlement references either a purchase-batch row or an existing vendor bill.'))
+            if record.batch_line_id and record.batch_line_id.company_id != record.company_id:
+                raise ValidationError(_('Representative Petty Cash invoice settlements must remain within one company.'))
+            if record.vendor_bill_id and (
+                record.vendor_bill_id.company_id != record.company_id
+                or record.vendor_bill_id.move_type != 'in_invoice'
+            ):
+                raise ValidationError(_('The settled vendor bill must be a supplier invoice in the same company.'))
+            if (record.move_id.company_id != record.company_id
                     or (record.representative_partner_id.company_id
                         and record.representative_partner_id.company_id != record.company_id)):
                 raise ValidationError(_('Representative Petty Cash invoice settlements must remain within one company.'))
@@ -50,6 +62,10 @@ class RepresentativePettyCashInvoiceSettlement(models.Model):
     def create(self, vals_list):
         if not (self.env.su and self.env.context.get(INTERNAL)):
             raise AccessError(_('Representative Petty Cash settlements are created only by the approval workflow.'))
+        if any(values.get('vendor_bill_id') for values in vals_list) and not self.env.context.get(
+            'baseer_vendor_bill_settlement_internal'
+        ):
+            raise AccessError(_('Existing vendor-bill settlements are created only by the settlement action.'))
         return super().create(vals_list)
 
     def write(self, vals):

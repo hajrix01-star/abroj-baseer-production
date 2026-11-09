@@ -11,10 +11,6 @@ class PosConfig(models.Model):
         RECEIPT_LAYOUT_MODES, string='Customer receipt layout', default='native', required=True,
         help='Original Odoo keeps the native visual layout. Baseer professional 80 mm changes presentation only.',
     )
-    baseer_receipt_tax_qr_bottom = fields.Boolean(
-        string='Move tax QR below receipt details', default=False,
-        help='For the professional receipt, place the original Saudi tax QR below the receipt details and emphasize the reference and date.',
-    )
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -36,7 +32,7 @@ class PosConfig(models.Model):
     )
     def _check_baseer_receipt_layout(self):
         for config in self:
-            if config.baseer_receipt_layout_mode != 'baseer_80':
+            if config.baseer_receipt_layout_mode not in ('baseer_80', 'baseer_80_customer'):
                 continue
             if not config.baseer_direct_print_enabled or not config.baseer_native_receipt_enabled:
                 raise ValidationError(_(
@@ -56,5 +52,4 @@ class PosConfig(models.Model):
             record = by_id.get(value.get('id'))
             if record:
                 value['baseer_receipt_layout_mode'] = record.baseer_receipt_layout_mode
-                value['baseer_receipt_tax_qr_bottom'] = record.baseer_receipt_tax_qr_bottom
         return values

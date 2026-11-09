@@ -28,8 +28,6 @@
                 <field name="baseer_receipt_layout_mode"
                        string="Customer receipt layout"
                        help="Choose the look of the printed customer receipt. It does not change totals or taxes."/>
-                <field name="baseer_receipt_tax_qr_bottom" string="رمز الضريبة أسفل الإيصال"
-                       invisible="baseer_receipt_layout_mode != 'baseer_80'" groups="base.group_system"/>
             </xpath>
         </field>
     </record>

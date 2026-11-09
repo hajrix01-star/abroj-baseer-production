@@ -65,3 +65,18 @@ class TestReceiptLayoutProfile(TransactionCase):
             self.env['pos.config'].browse()
         )
         self.assertIn('phone', fields_to_load)
+
+    def test_tax_qr_position_is_opt_in_per_point_of_sale(self):
+        self.company.write({'baseer_receipt_profile_enabled': False})
+        first, second = self.env['pos.config'].create([
+            {'name': 'Receipt QR position first'}, {'name': 'Receipt QR position second'},
+        ])
+        self.assertFalse(first.baseer_receipt_tax_qr_bottom)
+        self.assertFalse(second.baseer_receipt_tax_qr_bottom)
+        first.baseer_receipt_tax_qr_bottom = True
+        self.assertTrue(first.baseer_receipt_tax_qr_bottom)
+        self.assertFalse(second.baseer_receipt_tax_qr_bottom)
+        loaded = self.env['pos.config']._load_pos_data_read(first | second, first)
+        by_id = {record['id']: record['baseer_receipt_tax_qr_bottom'] for record in loaded}
+        self.assertTrue(by_id[first.id])
+        self.assertFalse(by_id[second.id])

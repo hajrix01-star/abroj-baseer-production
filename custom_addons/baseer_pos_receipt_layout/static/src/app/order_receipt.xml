@@ -2,8 +2,12 @@
 <templates id="template" xml:space="preserve">
     <t t-name="baseer_pos_receipt_layout.OrderReceipt"
        t-inherit="point_of_sale.OrderReceipt" t-inherit-mode="extension">
+        <xpath expr="//div[hasclass('pos-receipt')]" position="before">
+            <t t-set="baseerReceiptDetails" t-value="order.config.baseer_receipt_layout_mode === 'baseer_80' and order.config.baseer_receipt_tax_qr_bottom"/>
+            <t t-set="baseerTaxQr" t-value="baseerReceiptDetails and order.isSACompany?.() and !order.isSettlement() ? order.generateQrcode() : false"/>
+        </xpath>
         <xpath expr="//div[hasclass('pos-receipt')]" position="attributes">
-            <attribute name="t-attf-class">pos-receipt p-2 #{order.config.baseer_receipt_layout_mode === 'baseer_80' ? 'baseer-pos-receipt-80' : ''}</attribute>
+            <attribute name="t-attf-class">pos-receipt p-2 #{order.config.baseer_receipt_layout_mode === 'baseer_80' ? 'baseer-pos-receipt-80' : ''} #{baseerReceiptDetails ? 'baseer-receipt-details' : ''} #{baseerTaxQr ? 'baseer-move-tax-qr' : ''}</attribute>
         </xpath>
         <xpath expr="//ReceiptHeader" position="after">
             <div t-if="order.config.baseer_receipt_layout_mode === 'baseer_80'"
@@ -17,6 +21,11 @@
                  class="baseer-receipt-summary-label text-center">
                 <span>ملخص الفاتورة</span>
                 <span class="baseer-receipt-summary-label-en">Invoice Summary</span>
+            </div>
+        </xpath>
+        <xpath expr="//div[hasclass('after-footer')]" position="after">
+            <div t-if="baseerTaxQr" class="baseer-receipt-bottom-tax-qr text-center">
+                <img t-att-src="baseerTaxQr" class="pos-receipt-qrcode baseer-moved-tax-qr" alt="Tax QR code"/>
             </div>
         </xpath>
         <!-- Display-only ordering: copy the native groups; never mutate tax data. -->
@@ -47,6 +56,9 @@
 
     <t t-name="baseer_pos_receipt_layout.ReceiptHeader"
        t-inherit="point_of_sale.ReceiptHeader" t-inherit-mode="extension">
+        <xpath expr="//div[@t-if='order.partner_id.pos_contact_address']" position="attributes">
+            <attribute name="class">baseer-original-customer-address</attribute>
+        </xpath>
         <xpath expr="//div[hasclass('pos-receipt-customer')]" position="attributes">
             <attribute name="t-attf-class">pos-receipt-customer mt-2 #{order.config.baseer_receipt_layout_mode === 'baseer_80' ? 'baseer-receipt-customer' : ''}</attribute>
         </xpath>
@@ -56,6 +68,10 @@
                 <span class="baseer-receipt-customer-mobile-label">الجوال / Mobile</span>
                 <span class="baseer-receipt-customer-mobile-number" dir="ltr"
                       t-esc="order.partner_id.phone"/>
+            </div>
+            <div t-if="order.config.baseer_receipt_layout_mode === 'baseer_80' and order.config.baseer_receipt_tax_qr_bottom and order.partner_id and order.partner_id.pos_contact_address"
+                 class="baseer-receipt-customer-address text-center">
+                <span>العنوان / Address: </span><span t-esc="order.partner_id.pos_contact_address"/>
             </div>
         </xpath>
     </t>

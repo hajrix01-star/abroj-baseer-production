@@ -54,51 +54,77 @@ patch(PosOrderline.prototype, {
  * by the browser.
  */
 patch(PosStore.prototype, {
-    async _baseerConfirmPaymentWithoutKitchen() {
+    _baseerHasKitchenChangesForPayment(order) {
+        return !order.isRefund && (this.baseerCategoryCount.length > 0
+            || buildBaseerPreparationAction(order, "send").lines.some((line) => line.expected_quantity > 0));
+    },
+
+    async _baseerSendKitchenBeforePayment() {
+        if (this._baseerKitchenPaymentPending) return false;
+        this._baseerKitchenPaymentPending = true;
+        try {
+            return await this._baseerConfirmKitchenBeforePayment();
+        } finally {
+            this._baseerKitchenPaymentPending = false;
+        }
+    },
+
+    async _baseerConfirmKitchenBeforePayment() {
         let order = this.getOrder();
+        if (!order) return false;
         if (order?.uiState?.baseerPreparationOutcomeUnknown || this._baseerPreparationResolutions?.has(order?.uuid)) {
             if (!(await this.baseerResolvePreparationOutcome(order))) return false;
-            order = this.models?.["pos.order"]?.getBy("uuid", order.uuid) || order;
+            const current = this.getOrder();
+            if (current?.uuid !== order.uuid) return false;
+            order = current;
         }
         if (order?.uiState?.baseerPreparationAction) {
             this.notification.add(_t("Confirm the pending kitchen change before payment."), { type: "warning" });
             return false;
         }
-        const hasBaseerChanges = order
-            ? buildBaseerPreparationAction(order, "send").lines.length > 0
-            : false;
-        if (!hasBaseerChanges || order.isRefund) {
+        if (!this._baseerHasKitchenChangesForPayment(order)) {
             return true;
         }
-        return await ask(this.dialog, {
+        const confirmed = await ask(this.dialog, {
             title: _t("Kitchen changes not sent"),
-            body: _t(
-                "This order has changes that were not sent to the kitchen. Continue to payment without sending them?"
-            ),
-            confirmLabel: _t("Continue payment without sending"),
-            confirmClass: "btn-warning",
-            cancelLabel: _t("Back"),
+            body: _t("Send the pending kitchen changes to continue to payment."),
+            confirmLabel: _t("Send to kitchen and continue to payment"),
+            cancelLabel: _t("Back to order"),
         });
+        if (!confirmed || this.getOrder()?.uuid !== order.uuid) return false;
+
+        try {
+            if (!(await this.baseerSendCurrentOrder())) return false;
+        } catch (error) {
+            this.notification.add(
+                error?.data?.message || _t("The kitchen changes could not be sent. Check the order and try again."),
+                { type: "warning" }
+            );
+            return false;
+        }
+        const current = this.getOrder();
+        return current?.uuid === order.uuid
+            && !current.uiState?.baseerPreparationAction
+            && !this._baseerHasKitchenChangesForPayment(current);
     },
 
     async _askForPreparation() {
         if (!this.config.baseer_direct_print_enabled) {
             return await super._askForPreparation(...arguments);
         }
-        // Baseer intentionally separates payment from kitchen dispatch. Only
-        // the explicit Send/Update Kitchen actions may create an audited event.
+        // Baseer uses the audited dispatch flow, including the payment prompt.
         return false;
     },
 
     async pay() {
-        if (this.config.baseer_direct_print_enabled && !(await this._baseerConfirmPaymentWithoutKitchen())) {
+        if (this.config.baseer_direct_print_enabled && !(await this._baseerSendKitchenBeforePayment())) {
             return false;
         }
         return await super.pay(...arguments);
     },
 
     async validateOrderFast(paymentMethod) {
-        if (this.config.baseer_direct_print_enabled && !(await this._baseerConfirmPaymentWithoutKitchen())) {
+        if (this.config.baseer_direct_print_enabled && !(await this._baseerSendKitchenBeforePayment())) {
             return false;
         }
         return await super.validateOrderFast(paymentMethod);

@@ -45,6 +45,48 @@ assert.equal(lineRuntime.buildBaseerPreparationAction(order).lines.length, 0);
 order.last_order_preparation_change = { lines: {} };
 assert.equal(lineRuntime.getBaseerSentQuantity(order, line), 0);
 
+const paymentSteps = [];
+let confirmSend = false;
+const paymentBridge = runtime('preparation_bridge.js', {
+    ask: async (_dialog, options) => {
+        assert.equal(options.confirmLabel, 'Send to kitchen and continue to payment');
+        assert.equal(options.cancelLabel, 'Back to order');
+        paymentSteps.push('prompt');
+        return confirmSend;
+    },
+    async pay() { paymentSteps.push('pay'); },
+    async validateOrderFast() { paymentSteps.push('fast pay'); },
+});
+paymentBridge.buildBaseerPreparationAction = lineRuntime.buildBaseerPreparationAction;
+const paymentStore = new paymentBridge.PosStore();
+const food = { id: 9, pos_categ_ids: [{ id: 2 }] };
+const foodLine = { uuid: 'food-line', product_id: food, getQuantity: () => 1 };
+const paymentOrder = { uuid: 'order-for-payment', uiState: {}, getOrderlines: () => [foodLine],
+    last_order_preparation_change: { lines: {} } };
+paymentStore.config = { baseer_direct_print_enabled: true, baseer_preparation_bindings: [{ category_id: 2 }] };
+paymentStore.getOrder = () => paymentOrder;
+paymentStore.models = { 'product.product': new Map([[food.id, food]]) };
+paymentStore.notification = { add: () => paymentSteps.push('send error') };
+paymentStore.baseerSendCurrentOrder = async () => {
+    paymentSteps.push('send');
+    paymentOrder.last_order_preparation_change.lines[foodLine.uuid] = { quantity: 1 };
+    return true;
+};
+assert.equal(await paymentStore.pay(), false);
+assert.deepEqual(paymentSteps.splice(0), ['prompt']);
+confirmSend = true;
+await paymentStore.pay();
+assert.deepEqual(paymentSteps.splice(0), ['prompt', 'send', 'pay']);
+await paymentStore.pay();
+assert.deepEqual(paymentSteps.splice(0), ['pay']);
+paymentOrder.last_order_preparation_change.lines = {};
+paymentStore.baseerSendCurrentOrder = async () => { throw new Error('offline'); };
+assert.equal(await paymentStore.validateOrderFast(), false);
+assert.deepEqual(paymentSteps.splice(0), ['prompt', 'send error']);
+paymentStore.config.baseer_preparation_bindings = [];
+await paymentStore.validateOrderFast();
+assert.deepEqual(paymentSteps, ['fast pay']);
+
 const bridge = runtime('preparation_bridge.js', { async sendOrderInPreparation() { return true; } });
 bridge.buildBaseerPreparationAction = lineRuntime.buildBaseerPreparationAction;
 const store = new bridge.PosStore();
@@ -86,7 +128,7 @@ await assert.rejects(store.sendOrderInPreparation(draft), /not been acknowledged
 assert.equal(draft.uiState.baseerPreparationOutcomeUnknown, true);
 assert.equal(draft.uiState.baseerPreparationAction.action_uuid, 'pending');
 store.getOrder = () => draft;
-assert.equal(await store._baseerConfirmPaymentWithoutKitchen(), false);
+assert.equal(await store._baseerSendKitchenBeforePayment(), false);
 function installRecoveryContract(record) {
     Object.assign(record, { id: 7, uuid: record.uuid || 'retry-draft', isSynced: true,
         company_id: { id: 2 }, config_id: { id: 3 }, state: 'draft', lines: [], payment_ids: [] });

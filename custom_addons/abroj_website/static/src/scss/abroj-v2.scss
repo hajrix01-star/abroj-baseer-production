@@ -90,8 +90,10 @@
 .abroj-whatsapp-fab {
   position: fixed;
   z-index: 1050;
-  right: max(1rem, env(safe-area-inset-right));
-  bottom: max(1rem, env(safe-area-inset-bottom));
+  right: 1rem;
+  right: unquote('max(1rem, env(safe-area-inset-right))');
+  bottom: 1rem;
+  bottom: unquote('max(1rem, env(safe-area-inset-bottom))');
   display: flex;
   align-items: center;
   justify-content: center;

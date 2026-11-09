@@ -428,39 +428,6 @@ class RepresentativePettyCash(models.Model):
                 )) from error
             raise UserError(_('تعذر تحميل لوحة عهدة مندوب المشتريات. تم تسجيل الخطأ للمراجعة.')) from error
 
-    @api.model
-    def _custody_vendor_payment_total(self, company, start, end, representative_id=False):
-        """Count company-currency custody credits on posted vendor payment moves."""
-        account = company.sudo().baseer_procurement_representative_petty_cash_account_id
-        if not account:
-            return Decimal('0.00')
-        Payment = self.env['account.payment'].sudo().with_company(company)
-        payments = Payment.search([
-            ('company_id', '=', company.id), ('payment_type', '=', 'outbound'),
-            ('partner_type', '=', 'supplier'), ('state', 'in', ['in_process', 'paid']),
-            ('journal_id.default_account_id', '=', account.id),
-            ('move_id.state', '=', 'posted'), ('move_id.date', '>=', start),
-            ('move_id.date', '<', end),
-        ])
-        moves = payments.mapped('move_id')
-        if not moves:
-            return Decimal('0.00')
-        # A settlement already contributes its own amount, regardless of how
-        # its move came to be linked to a payment.
-        excluded = self.env['account.move']
-        for model in ('baseer.procurement.representative.advance.settlement',
-                      'baseer.procurement.custody.settlement'):
-            excluded |= self.env[model].sudo().search([('move_id', 'in', moves.ids)]).mapped('move_id')
-        domain = [
-            ('move_id', 'in', (moves - excluded).ids), ('company_id', '=', company.id),
-            ('account_id', '=', account.id), ('parent_state', '=', 'posted'),
-            ('credit', '>', 0),
-        ]
-        if representative_id:
-            domain.append(('partner_id', '=', int(representative_id)))
-        lines = self.env['account.move.line'].sudo().search(domain)
-        return sum((Decimal(str(line.credit)) for line in lines), Decimal('0.00'))
-
     def _dashboard_data(self, representative_id=False, month_start=False):
         stage = _('إعداد الفترة')
         try:
@@ -515,7 +482,9 @@ class RepresentativePettyCash(models.Model):
                 settlement_domain.append(('advance_id.representative_partner_id', '=', int(representative_id)))
             settlements = self.env['baseer.procurement.representative.advance.settlement'].sudo().search(settlement_domain)
             settled = sum((Decimal(str(amount)) for amount in settlements.mapped('amount')), Decimal('0.00'))
-            settled += self._custody_vendor_payment_total(company, start, end, representative_id)
+            settled += company._baseer_custody_vendor_payment_total(
+                company.baseer_procurement_representative_petty_cash_account_id, start, end,
+            )
             stage = _('نقاط الدفع')
             can_record = self.env.user.has_group('baseer_procurement_requests.group_procurement_accountant')
             payment_points = []

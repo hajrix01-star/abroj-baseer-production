@@ -67,7 +67,7 @@ class RepresentativePettyCashCase(TransactionCase):
         request.action_mark_sent()
         return request
 
-    def test_dashboard_counts_attributed_vendor_payment_credits_once(self):
+    def test_dashboard_counts_vendor_payment_credits_once(self):
         Model = self.env['baseer.procurement.representative.advance']
         request = self._sent_request()
         today = fields.Date.context_today(self.env.user)
@@ -83,7 +83,6 @@ class RepresentativePettyCashCase(TransactionCase):
             'reconcile': True, 'company_ids': [Command.set(self.company.ids)],
         })
         vendor = self.env['res.partner'].create({'name': 'Vendor'})
-        other = self.env['res.partner'].create({'name': 'Other representative'})
         journal = self.env['account.journal'].create({
             'name': 'Custody payments', 'code': 'RPAC', 'type': 'cash',
             'company_id': self.company.id, 'default_account_id': self.petty_cash_account.id,
@@ -91,7 +90,7 @@ class RepresentativePettyCashCase(TransactionCase):
         journal.outbound_payment_method_line_ids.payment_account_id = self.petty_cash_account
         self.bank_journal.outbound_payment_method_line_ids.payment_account_id = self.bank_journal.default_account_id
 
-        def payment(point, amount, representative):
+        def payment(point, amount):
             record = self.env['account.payment'].create({
                 'company_id': self.company.id, 'payment_type': 'outbound', 'partner_type': 'supplier',
                 'partner_id': vendor.id, 'amount': amount, 'date': today, 'journal_id': point.id,
@@ -99,21 +98,22 @@ class RepresentativePettyCashCase(TransactionCase):
                 'destination_account_id': payable.id,
             })
             record._generate_journal_entry()
-            record.move_id.line_ids.filtered(
+            liquidity = record.move_id.line_ids.filtered(
                 lambda line: line.account_id == point.default_account_id and line.credit
-            ).partner_id = representative
+            )
+            self.assertEqual(liquidity.partner_id, vendor)
             record.action_post()
             return record
 
-        payment(journal, 3, self.representative)
-        payment(journal, 4, other)
-        payment(self.bank_journal, 5, self.representative)
-        self.assertEqual(summary(self.representative)['settled'], 3)
-        self.assertEqual(summary(self.representative)['remaining'], 17)
+        payment(journal, 3)
+        payment(journal, 4)
+        payment(self.bank_journal, 5)
+        self.assertEqual(summary(self.representative)['settled'], 7)
+        self.assertEqual(summary(self.representative)['remaining'], 13)
         self.assertEqual(summary()['settled'], 7)
         self.assertEqual(advance.remaining_amount, 20)
 
-        linked = payment(journal, 2, self.representative)
+        linked = payment(journal, 2)
         batch = self.env['baseer.purchase.batch'].create({'company_id': self.company.id})
         self.env['baseer.procurement.representative.advance.settlement'].sudo().with_context(
             baseer_representative_petty_cash_internal=True,
@@ -121,8 +121,8 @@ class RepresentativePettyCashCase(TransactionCase):
             'company_id': self.company.id, 'advance_id': advance.id, 'batch_id': batch.id,
             'move_id': linked.move_id.id, 'amount': 2,
         })
-        self.assertEqual(summary(self.representative)['settled'], 5)
-        self.assertEqual(summary(self.representative)['remaining'], 15)
+        self.assertEqual(summary(self.representative)['settled'], 9)
+        self.assertEqual(summary(self.representative)['remaining'], 11)
         self.assertEqual(summary()['settled'], 9)
 
     def test_funding_posts_once_and_is_immutable(self):

@@ -1,4 +1,5 @@
 from datetime import timedelta
+from decimal import Decimal
 
 from odoo import api, fields, models, tools, _, Command
 from odoo.exceptions import AccessError, UserError, ValidationError
@@ -53,6 +54,37 @@ class ResCompany(models.Model):
 
     baseer_procurement_custody_account_id = fields.Many2one('account.account', string='Petty Cash receivable', check_company=True)
     baseer_procurement_custody_journal_id = fields.Many2one('account.journal', string='Petty Cash journal', check_company=True)
+
+    def _baseer_custody_vendor_payment_total(self, account, start=False, end=False):
+        """Company-currency custody credits from posted vendor payment journals.
+
+        Journal/account identifies the company pool; vendor partners cannot
+        identify the representative or individual custody holding the funds.
+        """
+        self.ensure_one()
+        if not account:
+            return Decimal('0.00')
+        domain = [
+            ('company_id', '=', self.id), ('payment_type', '=', 'outbound'),
+            ('partner_type', '=', 'supplier'), ('state', 'in', ['in_process', 'paid']),
+            ('journal_id.default_account_id', '=', account.id), ('move_id.state', '=', 'posted'),
+        ]
+        if start:
+            domain.append(('move_id.date', '>=', start))
+        if end:
+            domain.append(('move_id.date', '<', end))
+        moves = self.env['account.payment'].sudo().with_company(self).search(domain).mapped('move_id')
+        if not moves:
+            return Decimal('0.00')
+        excluded = self.env['account.move']
+        for model in ('baseer.procurement.representative.advance.settlement',
+                      'baseer.procurement.custody.settlement'):
+            excluded |= self.env[model].sudo().search([('move_id', 'in', moves.ids)]).mapped('move_id')
+        lines = self.env['account.move.line'].sudo().search([
+            ('move_id', 'in', (moves - excluded).ids), ('company_id', '=', self.id),
+            ('account_id', '=', account.id), ('parent_state', '=', 'posted'), ('credit', '>', 0),
+        ])
+        return sum((Decimal(str(line.credit)) for line in lines), Decimal('0.00'))
 
     def _baseer_procurement_custody_ready(self):
         self.ensure_one()
@@ -212,7 +244,10 @@ class ProcurementCustody(models.Model):
              WHERE custody_id = %s AND state = 'active' {representative_filter}
         """, settlement_params)
         settled = self.env.cr.fetchone()[0]
-        return float(event_balance - settled)
+        payments = self.company_id._baseer_custody_vendor_payment_total(
+            self.company_id.baseer_procurement_custody_account_id,
+        )
+        return float(event_balance - settled - payments)
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -320,7 +355,9 @@ class ProcurementCustody(models.Model):
         settlement_totals = dict(self.env.cr.fetchall())
         for custody in self:
             funded, returned = event_totals.get(custody.id, (0, 0))
-            settled = settlement_totals.get(custody.id, 0)
+            settled = settlement_totals.get(custody.id, 0) + custody.company_id._baseer_custody_vendor_payment_total(
+                custody.company_id.baseer_procurement_custody_account_id,
+            )
             custody.funded_amount = float(funded)
             custody.returned_amount = float(returned)
             custody.settled_amount = float(settled)

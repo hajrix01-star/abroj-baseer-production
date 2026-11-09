@@ -56,6 +56,15 @@
 
     <t t-name="baseer_pos_receipt_layout.ReceiptHeader"
        t-inherit="point_of_sale.ReceiptHeader" t-inherit-mode="extension">
+        <xpath expr="//div[@id='order-date']" position="before">
+            <div t-if="['baseer_80', 'baseer_80_customer'].includes(order.config.baseer_receipt_layout_mode)
+                       and !order.config.module_pos_restaurant and order.tracking_number
+                       and !order.config.displayTrackingNumber and !order.config.displayBigTrackingNumber"
+                 class="baseer-receipt-order-number">
+                <span>رقم الطلب</span>
+                <bdi dir="ltr" t-esc="order.tracking_number"/>
+            </div>
+        </xpath>
         <xpath expr="//div[@t-if='order.partner_id.pos_contact_address']" position="attributes">
             <attribute name="class">baseer-original-customer-address</attribute>
         </xpath>

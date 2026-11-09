@@ -11,10 +11,13 @@ patch(PosOrder.prototype, {
     generateQrcode() {
         // The EDI module replaces the Phase 1 generator globally, including
         // POS configurations where this module disables Phase 2 invoicing.
-        if (this.config_id?.baseer_zatca_phase2_enabled !== false || !this.isSACompany()) {
+        if (this.config_id?.baseer_zatca_phase2_enabled !== false || !this.isSACompany()
+                || this.l10n_sa_invoice_qr_code_str) {
             return super.generateQrcode(...arguments);
         }
-        if (this.isSettlement() || !this.company?.name || !this.company?.vat || !this.date_order) {
+        // Never replace a missing or unfinished invoice QR with Phase 1 data.
+        if (this.account_move || this.to_invoice || this.l10n_sa_invoice_edi_state || this.isSettlement()
+                || !this.company?.name || !this.company?.vat || !this.date_order) {
             return false;
         }
         const qrValues = this.compute_sa_qr_code(

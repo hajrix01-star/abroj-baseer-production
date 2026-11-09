@@ -16,10 +16,17 @@ class TestSiteRedesignTemplate(TestCase):
         cls.template = etree.parse(str(cls.template_path))
 
     def test_public_contact_details_are_consistent(self):
-        self.assertIn('href="tel:+966552210049"', self.source)
-        self.assertIn('href="https://wa.me/966552210049"', self.source)
+        self.assertIn('href="tel:+966533507223"', self.source)
+        self.assertIn('href="https://wa.me/966533507223"', self.source)
         self.assertIn('href="mailto:info@abroj.sa"', self.source)
         self.assertNotIn("0550000000", self.source)
+
+    def test_public_layout_hides_legacy_chrome_and_has_whatsapp(self):
+        layout = self.template.xpath("//record[@id='abroj_remove_legacy_footer']")[0]
+        self.assertEqual(layout.xpath("string(.//xpath[@expr='//header']/attribute[@name='t-if'])"), "False")
+        self.assertEqual(len(layout.xpath(".//a[@class='abroj-whatsapp-fab' and starts-with(@href, 'https://wa.me/966533507223?text=')]")), 1)
+        self.assertNotIn("baseer.abroj.sa/web/login", self.source)
+        self.assertIn("تصور بصري توضيحي", self.source)
 
     def test_site_copy_does_not_claim_unverified_history_or_guarantees(self):
         self.assertNotIn("2018", self.source)

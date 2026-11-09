@@ -46,6 +46,7 @@ class WebsitePage(models.Model):
         arch = arch.replace(self._ABROJ_LEGACY_LOGO, self._ABROJ_CORE_LOGO)
         view.with_context(lang=None).write({"arch_db": arch})
         page.write({"view_id": view.id})
+        self._set_abroj_homepage_seo()
 
     @api.model
     def _replace_abroj_legacy_logo_sources(self):

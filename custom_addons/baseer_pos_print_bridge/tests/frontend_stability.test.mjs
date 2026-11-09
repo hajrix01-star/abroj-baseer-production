@@ -108,7 +108,15 @@ assert.equal(await paymentStore.validateOrderFast(), false);
 assert.deepEqual(paymentSteps.splice(0), ['prompt', 'send error']);
 hasKitchenRoute = false;
 await paymentStore.validateOrderFast();
-assert.deepEqual(paymentSteps, ['fast pay']);
+assert.deepEqual(paymentSteps.splice(0), ['fast pay']);
+let finishRouting;
+paymentStore.data.call = () => new Promise((resolve) => { finishRouting = resolve; });
+cartLines = [retailLine];
+const paymentWithCartEdit = paymentStore.pay();
+cartLines.push(foodLine);
+finishRouting([]);
+assert.equal(await paymentWithCartEdit, false);
+assert.deepEqual(paymentSteps, ['send error']);
 
 const bridge = runtime('preparation_bridge.js', { async sendOrderInPreparation() { return true; } });
 bridge.buildBaseerPreparationAction = lineRuntime.buildBaseerPreparationAction;

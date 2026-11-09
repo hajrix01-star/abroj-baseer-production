@@ -54,22 +54,30 @@ patch(PosOrderline.prototype, {
  * by the browser.
  */
 patch(PosStore.prototype, {
-    async _baseerKitchenChangesForPayment(order) {
-        if (order.isRefund) return [];
+    _baseerKitchenPaymentSnapshot(order) {
         const changes = buildBaseerPreparationAction(order, "send").lines;
-        if (!changes.length) return [];
         const productsByLine = new Map(order.getOrderlines().map((line) => [line.uuid, line.product_id?.id]));
         const previousLines = new Map(Object.values(order.last_order_preparation_change?.lines || {})
             .map((line) => [line.uuid, line.product_id]));
         const candidates = Object.fromEntries(changes.map(({ line_uuid }) => [
             line_uuid, productsByLine.get(line_uuid) || previousLines.get(line_uuid) || false,
         ]));
+        return { changes, candidates };
+    },
+
+    async _baseerKitchenChangesForPayment(order) {
+        if (order.isRefund) return [];
+        const snapshot = this._baseerKitchenPaymentSnapshot(order);
+        if (!snapshot.changes.length) return [];
         const routedLines = await this.data.call(
-            "pos.config", "baseer_kitchen_payment_lines", [this.config.id, order.uuid, candidates], {}, false
+            "pos.config", "baseer_kitchen_payment_lines", [this.config.id, order.uuid, snapshot.candidates], {}, false
         );
-        if (!Array.isArray(routedLines)) throw new Error("Invalid kitchen routing response");
+        if (!Array.isArray(routedLines) || order.isRefund
+            || JSON.stringify(snapshot) !== JSON.stringify(this._baseerKitchenPaymentSnapshot(order))) {
+            throw new Error("Kitchen routing no longer matches the order");
+        }
         const routed = new Set(routedLines);
-        return changes.filter((line) => routed.has(line.line_uuid));
+        return snapshot.changes.filter((line) => routed.has(line.line_uuid));
     },
 
     async _baseerSendKitchenBeforePayment() {
@@ -78,7 +86,7 @@ patch(PosStore.prototype, {
         try {
             return await this._baseerConfirmKitchenBeforePayment();
         } catch {
-            this.notification.add(_t("Kitchen routing could not be checked. Reconnect and try again."), { type: "warning" });
+            this.notification.add(_t("Kitchen routing could not be checked. Review the order and try again."), { type: "warning" });
             return false;
         } finally {
             this._baseerKitchenPaymentPending = false;

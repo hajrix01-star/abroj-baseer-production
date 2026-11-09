@@ -1176,7 +1176,12 @@ class TestBaseerPrintBridgeHybrid(TransactionCase):
         self.assertEqual(order.last_order_preparation_change, baseline)
         self.assertFalse(attempt._for_action(action['action_uuid']))
 
-        route = self.env['baseer.print.route'].create({'pos_config_id': self.config.id, 'printer_id': self.kitchen_a.id})
+        category = self.env['pos.category'].create({'name': 'Kitchen payment QA'})
+        order.lines.product_id.product_tmpl_id.pos_categ_ids = [Command.link(category.id)]
+        route = self.env['baseer.print.route'].create({
+            'pos_config_id': self.config.id, 'printer_id': self.kitchen_a.id,
+            'pos_category_ids': [Command.link(category.id)],
+        })
         self.assertEqual(self.config.baseer_kitchen_payment_lines(self.config.id, order.uuid, products), list(products))
         self.assertEqual(order_model._process_order(self._recovery_payload(order, action), order), order.id)
         events = self.env['baseer.print.preparation.event']._retry_events(action)

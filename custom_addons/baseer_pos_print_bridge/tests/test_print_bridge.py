@@ -1161,6 +1161,26 @@ class TestBaseerPrintBridgeHybrid(TransactionCase):
         self.env['pos.order']._process_order(payload, order)
         self.assertEqual(order.amount_total, 50)
 
+    def test_send_before_payment_requires_an_available_kitchen_route(self):
+        self._enable()
+        order = self._recovery_order(5)
+        action = self._preparation_action(order, 0, 5)
+        action['action_type'] = 'send_before_payment'
+        attempt = self.env['baseer.print.preparation.attempt']
+        order_model = self.env['pos.order']
+        baseline = order.last_order_preparation_change
+        with self.assertRaisesRegex(ValidationError, 'no available printer'), self.env.cr.savepoint():
+            order_model._process_order(self._recovery_payload(order, action), order)
+        self.assertEqual(order.last_order_preparation_change, baseline)
+        self.assertFalse(attempt._for_action(action['action_uuid']))
+
+        self.env['baseer.print.route'].create({'pos_config_id': self.config.id, 'printer_id': self.kitchen_a.id})
+        self.assertEqual(order_model._process_order(self._recovery_payload(order, action), order), order.id)
+        events = self.env['baseer.print.preparation.event']._retry_events(action)
+        self.assertEqual(len(events.job_ids), 1)
+        self.assertEqual(order_model._process_order(self._recovery_payload(order, action), order), order.id)
+        self.assertEqual(len(events.job_ids), 1)
+
     def test_recovery_of_accepted_legacy_event_never_reprints(self):
         self._enable()
         self.env['baseer.print.route'].create({'pos_config_id': self.config.id, 'printer_id': self.kitchen_a.id})

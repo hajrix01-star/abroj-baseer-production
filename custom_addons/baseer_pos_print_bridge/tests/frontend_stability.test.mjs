@@ -67,9 +67,17 @@ const retailLine = { uuid: 'retail-line', product_id: retail, getQuantity: () =>
 let cartLines = [foodLine, retailLine];
 const paymentOrder = { uuid: 'order-for-payment', uiState: {}, getOrderlines: () => cartLines,
     last_order_preparation_change: { lines: {} } };
-paymentStore.config = { baseer_direct_print_enabled: true, baseer_preparation_bindings: [{ category_id: 2 }] };
+paymentStore.config = { id: 7, baseer_direct_print_enabled: true };
 paymentStore.getOrder = () => paymentOrder;
-paymentStore.models = { 'product.product': new Map([[food.id, food], [retail.id, retail]]) };
+let hasKitchenRoute = true;
+paymentStore.data = { call: async (model, method, [configId, orderUuid, products], _kwargs, queue) => {
+    assert.equal(model, 'pos.config');
+    assert.equal(method, 'baseer_kitchen_payment_lines');
+    assert.equal(configId, paymentStore.config.id);
+    assert.equal(orderUuid, paymentOrder.uuid);
+    assert.equal(queue, false);
+    return Object.keys(products).filter((key) => hasKitchenRoute && products[key] === food.id);
+} };
 paymentStore.notification = { add: () => paymentSteps.push('send error') };
 paymentStore.baseerSendCurrentOrder = async (actionType) => {
     assert.equal(actionType, 'send_before_payment');
@@ -98,9 +106,17 @@ paymentOrder.last_order_preparation_change.lines = {};
 paymentStore.baseerSendCurrentOrder = async () => { throw new Error('offline'); };
 assert.equal(await paymentStore.validateOrderFast(), false);
 assert.deepEqual(paymentSteps.splice(0), ['prompt', 'send error']);
-paymentStore.config.baseer_preparation_bindings = [];
+hasKitchenRoute = false;
 await paymentStore.validateOrderFast();
-assert.deepEqual(paymentSteps, ['fast pay']);
+assert.deepEqual(paymentSteps.splice(0), ['fast pay']);
+let finishRouting;
+paymentStore.data.call = () => new Promise((resolve) => { finishRouting = resolve; });
+cartLines = [retailLine];
+const paymentWithCartEdit = paymentStore.pay();
+cartLines.push(foodLine);
+finishRouting([]);
+assert.equal(await paymentWithCartEdit, false);
+assert.deepEqual(paymentSteps, ['send error']);
 
 const bridge = runtime('preparation_bridge.js', { async sendOrderInPreparation() { return true; } });
 bridge.buildBaseerPreparationAction = lineRuntime.buildBaseerPreparationAction;

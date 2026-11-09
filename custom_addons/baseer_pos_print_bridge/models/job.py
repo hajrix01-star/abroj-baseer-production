@@ -189,6 +189,8 @@ class BaseerPrintJob(models.Model):
             'created_at': fields.Datetime.to_string(fields.Datetime.now()),
         }
         if order:
+            if ticket_type == 'preparation' and not order.config_id.module_pos_restaurant and order.tracking_number:
+                order_payload['reference'] = f"{order.tracking_number}\n{order_payload['reference']}"
             cashier = (
                 order.employee_id
                 if 'employee_id' in order._fields and order.employee_id

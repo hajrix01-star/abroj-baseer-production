@@ -1487,6 +1487,7 @@ class TestBaseerPrintBridgeHybrid(TransactionCase):
              'pos_category_ids': [Command.link(category.id)], 'copies': 2},
         ])
         order = self._order(2)
+        order.tracking_number = '1011'
         order.lines.product_id.product_tmpl_id.write({
             'pos_categ_ids': [Command.set([category.id, extra_category.id])],
         })
@@ -1503,6 +1504,8 @@ class TestBaseerPrintBridgeHybrid(TransactionCase):
         self.assertEqual({j.printer_id.id: j.payload['printer']['copies'] for j in jobs},
                          {self.kitchen_a.id: 1, self.kitchen_b.id: 2})
         self.assertTrue(all(len(j.payload['lines']) == 1 for j in jobs))
+        self.assertEqual({job.payload['order']['reference'] for job in jobs},
+                         {f'1011\n{order.pos_reference or order.name}'})
         self.assertEqual(set(Event._retry_events(action).job_ids.ids), set(jobs.ids))
         self.assertEqual(len(Job.sudo().search([('source_order_id', '=', order.id),
                                                  ('ticket_type', '=', 'preparation')])), 2)

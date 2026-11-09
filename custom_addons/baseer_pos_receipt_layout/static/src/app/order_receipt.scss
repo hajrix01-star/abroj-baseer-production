@@ -39,6 +39,33 @@
         font-weight: 800;
     }
 
+    &.baseer-receipt-details {
+        .pos-receipt-vat {
+            font-size: 16px;
+            font-weight: 700;
+        }
+        #order-date {
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .baseer-original-customer-address {
+            display: none;
+        }
+        .baseer-receipt-customer-address {
+            padding-block: 1.5mm;
+            border-block-end: 1px solid #172b36;
+            overflow-wrap: anywhere;
+        }
+    }
+
+    &.baseer-move-tax-qr .pos-receipt-qrcode:not(.baseer-moved-tax-qr) {
+        display: none;
+    }
+
+    .baseer-receipt-bottom-tax-qr {
+        padding-block: 2mm;
+    }
+
     .baseer-receipt-customer-mobile {
         border-block-start: 0;
         margin-block-start: 0;

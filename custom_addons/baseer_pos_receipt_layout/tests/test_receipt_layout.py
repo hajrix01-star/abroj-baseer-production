@@ -65,3 +65,17 @@ class TestReceiptLayoutProfile(TransactionCase):
             self.env['pos.config'].browse()
         )
         self.assertIn('phone', fields_to_load)
+
+    def test_customer_details_receipt_is_a_separate_layout(self):
+        self.company.write({'baseer_receipt_profile_enabled': False})
+        first = self.env['pos.config'].create({'name': 'Receipt QR position first'})
+        self.assertEqual(first.baseer_receipt_layout_mode, 'native')
+        first.write({'baseer_receipt_printer_id': self.printer.id, 'baseer_direct_print_enabled': True,
+                     'baseer_native_receipt_enabled': True, 'baseer_receipt_layout_mode': 'baseer_80_customer'})
+        self.assertEqual(first.baseer_receipt_layout_mode, 'baseer_80_customer')
+        loaded = self.env['pos.config']._load_pos_data_read(first, first)
+        by_id = {record['id']: record['baseer_receipt_layout_mode'] for record in loaded}
+        self.assertEqual(by_id[first.id], 'baseer_80_customer')
+        partner_model = self.env['res.partner']
+        if 'mobile' in partner_model._fields:
+            self.assertIn('mobile', partner_model._load_pos_data_fields(first))

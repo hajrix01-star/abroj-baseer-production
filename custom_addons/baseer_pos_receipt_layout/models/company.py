@@ -5,6 +5,7 @@ from odoo.exceptions import ValidationError
 RECEIPT_LAYOUT_MODES = [
     ('native', 'Original Odoo receipt'),
     ('baseer_80', 'Baseer professional 80 mm receipt'),
+    ('baseer_80_customer', 'إيصال ٨٠ مم - بيانات العميل ورمز الضريبة أسفل الإيصال'),
 ]
 
 

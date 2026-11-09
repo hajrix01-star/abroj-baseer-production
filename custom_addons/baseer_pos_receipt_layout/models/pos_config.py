@@ -32,7 +32,7 @@ class PosConfig(models.Model):
     )
     def _check_baseer_receipt_layout(self):
         for config in self:
-            if config.baseer_receipt_layout_mode != 'baseer_80':
+            if config.baseer_receipt_layout_mode not in ('baseer_80', 'baseer_80_customer'):
                 continue
             if not config.baseer_direct_print_enabled or not config.baseer_native_receipt_enabled:
                 raise ValidationError(_(

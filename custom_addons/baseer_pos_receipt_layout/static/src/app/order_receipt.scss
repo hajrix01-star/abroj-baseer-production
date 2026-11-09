@@ -60,12 +60,13 @@
             font-size: 14px;
             font-weight: 600;
         }
-        .baseer-original-customer-address {
+        .baseer-original-customer-address,
+        .pos-receipt-contact > .cashier,
+        .footer-powered-by {
             display: none;
         }
         .baseer-receipt-customer-address {
             padding-block: 1.5mm;
-            border-block-end: 1px solid #172b36;
             overflow-wrap: anywhere;
         }
     }

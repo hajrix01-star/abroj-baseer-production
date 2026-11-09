@@ -54,24 +54,22 @@ patch(PosOrderline.prototype, {
  * by the browser.
  */
 patch(PosStore.prototype, {
-    _baseerKitchenChangesForPayment(order) {
+    async _baseerKitchenChangesForPayment(order) {
         if (order.isRefund) return [];
-        const bindings = this.config.baseer_preparation_bindings || [];
-        const categoryIds = new Set(bindings.map((binding) => binding.category_id));
-        const productsByLine = new Map(order.getOrderlines().map((line) => [line.uuid, line.product_id]));
+        const changes = buildBaseerPreparationAction(order, "send").lines;
+        if (!changes.length) return [];
+        const productsByLine = new Map(order.getOrderlines().map((line) => [line.uuid, line.product_id?.id]));
         const previousLines = new Map(Object.values(order.last_order_preparation_change?.lines || {})
             .map((line) => [line.uuid, line.product_id]));
-        return buildBaseerPreparationAction(order, "send").lines.filter((line) => {
-            if (categoryIds.has(false)) return true;
-            const product = productsByLine.get(line.line_uuid)
-                || this.models?.["product.product"]?.get(previousLines.get(line.line_uuid));
-            // The native baseline includes unrouted products. Only keep a
-            // previously sent candidate without routing data if its product
-            // cannot be identified safely.
-            if (!product) return line.expected_quantity > 0;
-            const categories = product?.product_tmpl_id?.pos_categ_ids ?? product?.pos_categ_ids ?? [];
-            return categories.some((category) => categoryIds.has(category.id ?? category));
-        });
+        const candidates = Object.fromEntries(changes.map(({ line_uuid }) => [
+            line_uuid, productsByLine.get(line_uuid) || previousLines.get(line_uuid) || false,
+        ]));
+        const routedLines = await this.data.call(
+            "pos.config", "baseer_kitchen_payment_lines", [this.config.id, order.uuid, candidates], {}, false
+        );
+        if (!Array.isArray(routedLines)) throw new Error("Invalid kitchen routing response");
+        const routed = new Set(routedLines);
+        return changes.filter((line) => routed.has(line.line_uuid));
     },
 
     async _baseerSendKitchenBeforePayment() {
@@ -79,6 +77,9 @@ patch(PosStore.prototype, {
         this._baseerKitchenPaymentPending = true;
         try {
             return await this._baseerConfirmKitchenBeforePayment();
+        } catch {
+            this.notification.add(_t("Kitchen routing could not be checked. Reconnect and try again."), { type: "warning" });
+            return false;
         } finally {
             this._baseerKitchenPaymentPending = false;
         }
@@ -97,7 +98,9 @@ patch(PosStore.prototype, {
             this.notification.add(_t("Confirm the pending kitchen change before payment."), { type: "warning" });
             return false;
         }
-        if (!this._baseerKitchenChangesForPayment(order).length) {
+        const changes = await this._baseerKitchenChangesForPayment(order);
+        if (this.getOrder()?.uuid !== order.uuid) return false;
+        if (!changes.length) {
             return true;
         }
         const confirmed = await ask(this.dialog, {
@@ -118,9 +121,9 @@ patch(PosStore.prototype, {
             return false;
         }
         const current = this.getOrder();
-        return current?.uuid === order.uuid
-            && !current.uiState?.baseerPreparationAction
-            && !this._baseerKitchenChangesForPayment(current).length;
+        if (current?.uuid !== order.uuid || current.uiState?.baseerPreparationAction) return false;
+        const remaining = await this._baseerKitchenChangesForPayment(current);
+        return this.getOrder()?.uuid === order.uuid && !remaining.length;
     },
 
     async _askForPreparation() {
@@ -580,7 +583,8 @@ patch(PosStore.prototype, {
             this.notification.add(_t("The kitchen result is still unknown. Reconnect and check it before retrying."), { type: "warning" });
             return false;
         }
-        const paymentLines = actionType === "send_before_payment" ? this._baseerKitchenChangesForPayment(order) : null;
+        const paymentLines = actionType === "send_before_payment" ? await this._baseerKitchenChangesForPayment(order) : null;
+        if (this.getOrder()?.uuid !== order.uuid) return false;
         const action = order.uiState.baseerPreparationAction || buildBaseerPreparationAction(order, actionType, paymentLines);
         if (!action.lines.length) {
             this.notification.add(_t("There are no kitchen changes to send."), { type: "info" });

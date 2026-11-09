@@ -1946,6 +1946,12 @@ msgid "A pending kitchen item has no available printer. Check kitchen routing an
 msgstr "لا توجد طابعة متاحة لصنف معلّق للمطبخ. تحقق من ربط الطابعات وحاول مرة أخرى."
 
 #. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/preparation_bridge.js:0
+msgid "Kitchen routing could not be checked. Reconnect and try again."
+msgstr "تعذّر التحقق من ربط طابعات المطبخ. أعد الاتصال وحاول مرة أخرى."
+
+#. module: baseer_pos_print_bridge
 #: model:ir.model.constraint,message:baseer_pos_print_bridge.constraint_baseer_print_job_idempotency_unique
 msgid "This print job has already been created."
 msgstr "أُنشئت مهمة الطباعة هذه من قبل."

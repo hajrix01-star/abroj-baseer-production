@@ -1169,17 +1169,22 @@ class TestBaseerPrintBridgeHybrid(TransactionCase):
         attempt = self.env['baseer.print.preparation.attempt']
         order_model = self.env['pos.order']
         baseline = order.last_order_preparation_change
+        products = {order.lines.uuid: order.lines.product_id.id}
+        self.assertFalse(self.config.baseer_kitchen_payment_lines(self.config.id, order.uuid, products))
         with self.assertRaisesRegex(ValidationError, 'no available printer'), self.env.cr.savepoint():
             order_model._process_order(self._recovery_payload(order, action), order)
         self.assertEqual(order.last_order_preparation_change, baseline)
         self.assertFalse(attempt._for_action(action['action_uuid']))
 
-        self.env['baseer.print.route'].create({'pos_config_id': self.config.id, 'printer_id': self.kitchen_a.id})
+        route = self.env['baseer.print.route'].create({'pos_config_id': self.config.id, 'printer_id': self.kitchen_a.id})
+        self.assertEqual(self.config.baseer_kitchen_payment_lines(self.config.id, order.uuid, products), list(products))
         self.assertEqual(order_model._process_order(self._recovery_payload(order, action), order), order.id)
         events = self.env['baseer.print.preparation.event']._retry_events(action)
         self.assertEqual(len(events.job_ids), 1)
         self.assertEqual(order_model._process_order(self._recovery_payload(order, action), order), order.id)
         self.assertEqual(len(events.job_ids), 1)
+        route.active = False
+        self.assertEqual(self.config.baseer_kitchen_payment_lines(self.config.id, order.uuid, products), list(products))
 
     def test_recovery_of_accepted_legacy_event_never_reprints(self):
         self._enable()

@@ -171,6 +171,8 @@ class CustodyRemediationCase(TransactionCase):
         return batch.line_ids
 
     def test_vendor_payments_reduce_custody_balance_without_double_counting(self):
+        representative = self.env['res.partner'].create({'name': 'Custody representative'})
+        self.custody.write({'employee_id': False, 'representative_partner_id': representative.id})
         self._post_funding(3150)
         self.assertEqual(self.custody.balance, 3150)
         vendor = self.env['res.partner'].create({'name': 'Custody payment vendor'})
@@ -202,6 +204,37 @@ class CustodyRemediationCase(TransactionCase):
         self.assertAlmostEqual(self.custody.settled_amount, 2036.77, places=2)
         self.assertAlmostEqual(self.custody.balance, 1113.23, places=2)
         self.assertAlmostEqual(self.custody._representative_balance(), 1113.23, places=2)
+
+        pool = self.env['baseer.procurement.custody'].create({
+            'company_id': self.company.id, 'is_company_pool': True,
+        })
+        closed = self.env['baseer.procurement.custody'].create({
+            'company_id': self.company.id, 'representative_partner_id': representative.id,
+        })
+        closed.action_close()
+        legacy = self.env['baseer.procurement.custody'].create({
+            'company_id': self.company.id, 'employee_id': self.employee.id,
+        })
+        self.assertEqual(legacy.settled_amount, 0)
+        self.assertEqual(legacy._representative_balance(), 0)
+        self.assertEqual(pool.settled_amount, 0)
+        self.assertEqual(pool.balance, 0)
+        self.assertEqual(closed.settled_amount, 0)
+        self.assertEqual(closed.balance, 0)
+        self.assertEqual(pool._representative_balance(representative), 0)
+        self.assertEqual(closed._representative_balance(), 0)
+        other = self.env['baseer.procurement.custody'].create({
+            'company_id': self.company.id, 'representative_partner_id': representative.id,
+        })
+        self.custody.invalidate_recordset(['settled_amount', 'balance'])
+        with self.assertLogs('odoo.addons.baseer_procurement_requests.models.custody', level='WARNING'):
+            self.assertEqual(self.custody.settled_amount, 0)
+        self.assertEqual(self.custody.balance, 3150)
+        self.assertEqual(other.settled_amount, 0)
+        self.assertEqual(self.custody._representative_balance(), 3150)
+        self.assertEqual(other._representative_balance(), 0)
+        other.action_close()
+        self.custody.invalidate_recordset(['settled_amount', 'balance'])
 
         linked = payment(journal, 10)
         batch_line = self._draft_batch_line(vendor)

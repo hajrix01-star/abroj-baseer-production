@@ -67,7 +67,7 @@ class RepresentativePettyCashCase(TransactionCase):
         request.action_mark_sent()
         return request
 
-    def test_dashboard_counts_vendor_payment_credits_once(self):
+    def test_dashboard_ignores_vendor_payments(self):
         Model = self.env['baseer.procurement.representative.advance']
         request = self._sent_request()
         today = fields.Date.context_today(self.env.user)
@@ -108,9 +108,9 @@ class RepresentativePettyCashCase(TransactionCase):
         payment(journal, 3)
         payment(journal, 4)
         payment(self.bank_journal, 5)
-        self.assertEqual(summary(self.representative)['settled'], 7)
-        self.assertEqual(summary(self.representative)['remaining'], 13)
-        self.assertEqual(summary()['settled'], 7)
+        self.assertEqual(summary(self.representative)['settled'], 0)
+        self.assertEqual(summary(self.representative)['remaining'], 20)
+        self.assertEqual(summary()['settled'], 0)
         self.assertEqual(advance.remaining_amount, 20)
 
         linked = payment(journal, 2)
@@ -121,9 +121,9 @@ class RepresentativePettyCashCase(TransactionCase):
             'company_id': self.company.id, 'advance_id': advance.id, 'batch_id': batch.id,
             'move_id': linked.move_id.id, 'amount': 2,
         })
-        self.assertEqual(summary(self.representative)['settled'], 9)
-        self.assertEqual(summary(self.representative)['remaining'], 11)
-        self.assertEqual(summary()['settled'], 9)
+        self.assertEqual(summary(self.representative)['settled'], 2)
+        self.assertEqual(summary(self.representative)['remaining'], 18)
+        self.assertEqual(summary()['settled'], 2)
 
     def test_funding_posts_once_and_is_immutable(self):
         request = self._sent_request()

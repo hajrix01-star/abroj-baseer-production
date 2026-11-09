@@ -1,9 +1,13 @@
+import logging
+
 from datetime import timedelta
 from decimal import Decimal
 
 from odoo import api, fields, models, tools, _, Command
 from odoo.exceptions import AccessError, UserError, ValidationError
 
+
+_logger = logging.getLogger(__name__)
 
 INTERNAL = 'baseer_procurement_custody_internal'
 
@@ -58,8 +62,7 @@ class ResCompany(models.Model):
     def _baseer_custody_vendor_payment_total(self, account, start=False, end=False):
         """Company-currency custody credits from posted vendor payment journals.
 
-        Journal/account identifies the company pool; vendor partners cannot
-        identify the representative or individual custody holding the funds.
+        Settlement-linked moves are excluded to avoid counting them twice.
         """
         self.ensure_one()
         if not account:
@@ -221,6 +224,24 @@ class ProcurementCustody(models.Model):
         )
         return bool(legacy_contact and legacy_contact.commercial_partner_id == representative)
 
+    def _vendor_payment_deduction(self):
+        self.ensure_one()
+        company = self.company_id
+        account = company.baseer_procurement_custody_account_id
+        if not account or not self.id or self.state != 'open' or self.is_company_pool or not self.representative_partner_id:
+            return Decimal('0.00')
+        eligible = self.sudo().search([
+            ('company_id', '=', company.id), ('state', '=', 'open'),
+            ('is_company_pool', '=', False), ('representative_partner_id', '!=', False),
+        ])
+        if len(eligible) > 1:
+            _logger.warning('Ambiguous custody vendor payments for company %s (id %s): custody ids %s',
+                            company.display_name, company.id, eligible.ids)
+            return Decimal('0.00')
+        if eligible != self.sudo():
+            return Decimal('0.00')
+        return company._baseer_custody_vendor_payment_total(account)
+
     def _representative_balance(self, representative_partner=False):
         """Open Petty Cash balance for one representative within the shared pool."""
         self.ensure_one()
@@ -244,9 +265,7 @@ class ProcurementCustody(models.Model):
              WHERE custody_id = %s AND state = 'active' {representative_filter}
         """, settlement_params)
         settled = self.env.cr.fetchone()[0]
-        payments = self.company_id._baseer_custody_vendor_payment_total(
-            self.company_id.baseer_procurement_custody_account_id,
-        )
+        payments = self._vendor_payment_deduction()
         return float(event_balance - settled - payments)
 
     @api.model_create_multi
@@ -319,7 +338,8 @@ class ProcurementCustody(models.Model):
         )
         self.invalidate_recordset()
 
-    @api.depends('event_ids.state', 'event_ids.event_type', 'event_ids.amount', 'settlement_ids.state', 'settlement_ids.amount')
+    @api.depends('state', 'is_company_pool', 'representative_partner_id', 'company_id',
+                 'event_ids.state', 'event_ids.event_type', 'event_ids.amount', 'settlement_ids.state', 'settlement_ids.amount')
     def _compute_totals(self):
         if not self:
             return
@@ -355,9 +375,7 @@ class ProcurementCustody(models.Model):
         settlement_totals = dict(self.env.cr.fetchall())
         for custody in self:
             funded, returned = event_totals.get(custody.id, (0, 0))
-            settled = settlement_totals.get(custody.id, 0) + custody.company_id._baseer_custody_vendor_payment_total(
-                custody.company_id.baseer_procurement_custody_account_id,
-            )
+            settled = settlement_totals.get(custody.id, 0) + custody._vendor_payment_deduction()
             custody.funded_amount = float(funded)
             custody.returned_amount = float(returned)
             custody.settled_amount = float(settled)

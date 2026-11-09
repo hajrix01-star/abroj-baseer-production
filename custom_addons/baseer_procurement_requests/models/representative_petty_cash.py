@@ -482,9 +482,6 @@ class RepresentativePettyCash(models.Model):
                 settlement_domain.append(('advance_id.representative_partner_id', '=', int(representative_id)))
             settlements = self.env['baseer.procurement.representative.advance.settlement'].sudo().search(settlement_domain)
             settled = sum((Decimal(str(amount)) for amount in settlements.mapped('amount')), Decimal('0.00'))
-            settled += company._baseer_custody_vendor_payment_total(
-                company.baseer_procurement_representative_petty_cash_account_id, start, end,
-            )
             stage = _('نقاط الدفع')
             can_record = self.env.user.has_group('baseer_procurement_requests.group_procurement_accountant')
             payment_points = []

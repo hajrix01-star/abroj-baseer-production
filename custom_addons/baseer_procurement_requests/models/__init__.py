@@ -6,3 +6,4 @@ from . import representative_petty_cash_invoice_source
 from . import company_onboarding
 from . import procurement_auto_draft
 from . import receipt_custody
+from . import vendor_bill_settlement

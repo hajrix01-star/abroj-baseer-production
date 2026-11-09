@@ -57,3 +57,7 @@ def post_init_hook(env):
         """
     )
     env['baseer.procurement.custody.monthly.statement']._rebuild_view()
+    from odoo.addons.baseer_procurement_requests.models.vendor_bill_settlement import (
+        ensure_vendor_bill_settlement_indexes,
+    )
+    ensure_vendor_bill_settlement_indexes(env.cr)

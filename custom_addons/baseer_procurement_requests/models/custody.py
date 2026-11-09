@@ -1140,7 +1140,10 @@ class ProcurementCustodySettlement(models.Model):
     custody_id = fields.Many2one('baseer.procurement.custody', required=True, readonly=True, index=True, ondelete='restrict', check_company=True)
     # Nullable only for historical settlements created before PRC-CUSTODY2.
     representative_partner_id = fields.Many2one('res.partner', readonly=True, index=True, ondelete='restrict', check_company=True)
-    batch_line_id = fields.Many2one('baseer.purchase.batch.line', required=True, readonly=True, index=True, ondelete='restrict', check_company=True)
+    # Batch approval still supplies the row. Existing vendor-bill settlement
+    # supplies vendor_bill_id instead and never invents a purchase batch.
+    batch_line_id = fields.Many2one('baseer.purchase.batch.line', readonly=True, index=True, ondelete='restrict', check_company=True)
+    vendor_bill_id = fields.Many2one('account.move', readonly=True, index=True, ondelete='restrict', check_company=True, copy=False)
     move_id = fields.Many2one('account.move', required=True, readonly=True, ondelete='restrict', check_company=True)
     reversal_move_id = fields.Many2one('account.move', readonly=True, copy=False, ondelete='restrict', check_company=True)
     state = fields.Selection([('active', 'Active'), ('reversed', 'Reversed')], default='active', required=True, readonly=True, index=True)
@@ -1148,15 +1151,31 @@ class ProcurementCustodySettlement(models.Model):
     currency_id = fields.Many2one(related='company_id.currency_id', readonly=True)
     amount = fields.Monetary(required=True, readonly=True, currency_field='currency_id')
 
-    @api.constrains('company_id', 'custody_id', 'batch_line_id', 'move_id', 'reversal_move_id')
+    @api.constrains('company_id', 'custody_id', 'batch_line_id', 'vendor_bill_id', 'move_id', 'reversal_move_id')
     def _check_settlement_company(self):
         for settlement in self:
+            if bool(settlement.batch_line_id) == bool(settlement.vendor_bill_id):
+                raise ValidationError(_('A petty-cash settlement references either a purchase-batch row or an existing vendor bill.'))
+            if settlement.batch_line_id and settlement.batch_line_id.company_id != settlement.company_id:
+                raise ValidationError(_('Petty Cash settlement records must stay within one company.'))
+            if settlement.vendor_bill_id and (
+                settlement.vendor_bill_id.company_id != settlement.company_id
+                or settlement.vendor_bill_id.move_type != 'in_invoice'
+            ):
+                raise ValidationError(_('The settled vendor bill must be a supplier invoice in the same company.'))
             if (settlement.custody_id.company_id != settlement.company_id
                     or (settlement.representative_partner_id.company_id and settlement.representative_partner_id.company_id != settlement.company_id)
-                    or settlement.batch_line_id.company_id != settlement.company_id
                     or settlement.move_id.company_id != settlement.company_id
                     or (settlement.reversal_move_id and settlement.reversal_move_id.company_id != settlement.company_id)):
                 raise ValidationError(_('Petty Cash settlement records must stay within one company.'))
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        if any(values.get('vendor_bill_id') for values in vals_list) and not (
+            self.env.su and self.env.context.get('baseer_vendor_bill_settlement_internal')
+        ):
+            raise AccessError(_('Existing vendor-bill petty-cash settlements are created only by the settlement action.'))
+        return super().create(vals_list)
 
     def write(self, vals):
         allowed = {'reversal_reason'}
@@ -1171,6 +1190,8 @@ class ProcurementCustodySettlement(models.Model):
         if not self.env.user.has_group('baseer_procurement_requests.group_procurement_accountant'):
             raise AccessError(_('Only a procurement accountant can reverse a Petty Cash settlement.'))
         for settlement in self:
+            if settlement.vendor_bill_id:
+                raise UserError(_('An existing vendor-bill petty-cash settlement cannot be reversed from the purchase-batch action.'))
             with self.env.cr.savepoint():
                 settlement.custody_id._lock()
                 self.env.cr.execute('SELECT id FROM baseer_procurement_custody_settlement WHERE id = %s FOR UPDATE', [settlement.id])

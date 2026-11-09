@@ -45,6 +45,7 @@ jobs:
           node --test tests/receipt_image.test.mjs
           node --test custom_addons/baseer_pos_print_bridge/static/tests/session_report.test.mjs
           node --test custom_addons/baseer_pos_cache_resilience/static/tests/cache_resilience.test.mjs
+          node --test custom_addons/baseer_zatca_pos_scope/static/tests/pos_scope.test.mjs custom_addons/baseer_zatca_pos_scope/static/tests/phase1_qr.test.mjs
       - name: Test native synchronization, kitchen, payment and merge boundaries
         shell: bash
         run: |

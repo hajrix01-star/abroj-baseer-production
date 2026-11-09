@@ -20,6 +20,7 @@ runInNewContext(source, {
 const order = new PosOrder();
 Object.assign(order, {
     config_id: { baseer_zatca_phase2_enabled: false },
+    account_move: false, to_invoice: false, l10n_sa_invoice_edi_state: false,
     company: { name: "QA", vat: "123" }, date_order: "2026-11-10", priceIncl: 11.5, amountTaxes: 1.5,
     isSACompany: () => true, isSettlement: () => false,
     compute_sa_qr_code: (...values) => { calls.push(values); return "encoded"; },
@@ -40,13 +41,16 @@ delete order.l10n_sa_invoice_qr_code_str;
 calls.length = 0;
 order.account_move = { id: 1 };
 assert.equal(order.generateQrcode(), false);
-delete order.account_move;
+order.account_move = false;
 order.to_invoice = true;
 assert.equal(order.generateQrcode(), false);
-delete order.to_invoice;
+order.to_invoice = false;
 order.l10n_sa_invoice_edi_state = "to_send";
 assert.equal(order.generateQrcode(), false);
-delete order.l10n_sa_invoice_edi_state;
+order.l10n_sa_invoice_edi_state = false;
+delete order.account_move;
+assert.equal(order.generateQrcode(), false);
+order.account_move = false;
 order.isSettlement = () => true;
 assert.equal(order.generateQrcode(), false);
 assert.deepEqual(calls, []);

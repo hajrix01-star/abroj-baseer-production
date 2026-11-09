@@ -16,7 +16,9 @@ patch(PosOrder.prototype, {
             return super.generateQrcode(...arguments);
         }
         // Never replace a missing or unfinished invoice QR with Phase 1 data.
-        if (this.account_move || this.to_invoice || this.l10n_sa_invoice_edi_state || this.isSettlement()
+        if (this.account_move === undefined || this.to_invoice === undefined
+                || this.l10n_sa_invoice_edi_state === undefined
+                || this.account_move || this.to_invoice || this.l10n_sa_invoice_edi_state || this.isSettlement()
                 || !this.company?.name || !this.company?.vat || !this.date_order) {
             return false;
         }

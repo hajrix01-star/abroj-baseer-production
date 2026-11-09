@@ -12,6 +12,18 @@
     line-height: 1.45;
     font-weight: 500;
 
+    .baseer-receipt-order-number {
+        margin-block: 1mm;
+        font-size: 13px;
+        font-weight: 700;
+
+        bdi {
+            display: block;
+            font-size: 22px;
+            line-height: 1.2;
+        }
+    }
+
     .baseer-receipt-fiscal-title {
         margin-block: 2mm 2.5mm;
         padding-block: 1.5mm;

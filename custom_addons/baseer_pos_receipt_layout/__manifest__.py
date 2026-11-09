@@ -1,7 +1,7 @@
 {
     'name': 'Baseer POS Receipt Layout',
     'summary': 'Optional 80 mm layout for the original POS receipt',
-    'version': '19.0.1.1.2',
+    'version': '19.0.1.1.3',
     'category': 'Baseer/POS',
     'author': 'Baseer',
     'license': 'LGPL-3',

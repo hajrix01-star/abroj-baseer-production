@@ -155,12 +155,40 @@ class TestBaseerAgentOperations(TransactionCase):
         self.assertEqual(replacement.state, 'approved')
 
     def test_pos_settings_open_the_permanent_download_url(self):
+        self.env['baseer.print.agent.release'].search([('catalog_only', '=', True)]).write({'state': 'retired'})
         action = self.config.action_baseer_download_agent()
         self.assertEqual(action, {
             'type': 'ir.actions.act_url',
             'url': 'https://baseer.abroj.sa/downloads/Baseer.PrintAgent.exe',
             'target': 'new',
         })
+
+    def test_reviewed_github_release_is_idempotent_and_keeps_pairing_available(self):
+        releases = self.env['baseer.print.agent.release']
+        legacy = releases.create({
+            'version': '9.9.20-legacy',
+            'artifact_filename': 'Baseer.PrintAgent.exe',
+            'artifact': base64.b64encode(b'pairing installer'),
+        })
+        legacy.action_approve()
+        digest = hashlib.sha256(b'GitHub installer').hexdigest()
+        releases.sudo()._register_github_release('9.9.20', digest)
+        releases.sudo()._register_github_release('9.9.20', digest)
+        current = releases.search([('version', '=', '9.9.20')])
+        self.assertEqual(len(current), 1)
+        self.assertFalse(current.artifact)
+        self.assertEqual(current.artifact_sha256, digest)
+        self.assertEqual(current.state, 'approved')
+        self.assertEqual(self.config.action_baseer_download_agent()['url'], current.github_download_url)
+        self.assertEqual(releases._approved_pairing_release(), legacy)
+        with self.assertRaises(UserError):
+            legacy.action_retire()
+        with self.assertRaises(ValidationError):
+            releases.sudo()._register_github_release('9.9.20', '0' * 64)
+        releases.sudo()._register_github_release('9.9.21', digest)
+        releases.sudo()._register_github_release('9.9.20', digest)
+        self.assertEqual(current.state, 'retired')
+        self.assertEqual(legacy.state, 'approved')
 
     def test_one_click_download_uses_pending_agent_and_one_time_envelope(self):
         release = self.env['baseer.print.agent.release'].create({

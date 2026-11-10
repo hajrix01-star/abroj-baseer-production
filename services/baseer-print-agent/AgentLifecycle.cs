@@ -7,14 +7,12 @@ using Microsoft.Win32;
 
 static class AgentBuild
 {
-    public const string Version = "1.5.16";
+    public static readonly string Version = typeof(AgentBuild).Assembly.GetName().Version!.ToString(3);
 }
 
 static class AgentLog
 {
-    private static readonly string Path = System.IO.Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
-        "BaseerPrintAgent", "agent.log");
+    private static readonly string Path = System.IO.Path.Combine(AgentRuntime.DataDirectory, "agent.log");
 
     /// <summary>Keep background diagnostics available without a console window.</summary>
     public static void Write(string message)
@@ -33,9 +31,18 @@ static class AgentLog
 
 static class AgentRuntime
 {
+#if QA_PROFILE
+    public const string WatchdogMutexName = @"Global\BaseerPrintAgent.QA.Watchdog";
+    public const string RunnerMutexName = @"Global\BaseerPrintAgent.QA.Runner";
+    public static readonly string DataDirectory = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "BaseerPrintAgent-QA");
+#else
     public const string WatchdogMutexName = @"Global\BaseerPrintAgent.Watchdog";
     public const string RunnerMutexName = @"Global\BaseerPrintAgent.Runner";
-    public static readonly string InstanceId = Guid.NewGuid().ToString("N");
+    public static readonly string DataDirectory = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "BaseerPrintAgent");
+#endif
+    public static string InstanceId { get; set; } = Guid.NewGuid().ToString("N");
 
     private static string RuntimePath(string configPath) => Path.Combine(
         Path.GetDirectoryName(configPath) ?? throw new InvalidOperationException("Agent configuration directory is unavailable."),
@@ -162,7 +169,6 @@ static class AgentLifecycle
         File.Copy(sourceExecutable, InstalledExecutable, overwrite: true);
         RegisterRepairProtocol(InstalledExecutable);
         RegisterLogonTask(InstalledExecutable);
-        RegisterUpdateTask(InstalledExecutable);
         var configPath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
             "BaseerPrintAgent", "config.json");
@@ -205,8 +211,6 @@ static class AgentLifecycle
             }
         }
     }
-
-    public static void PrepareForUpdate() => StopPreviousAgents();
 
     public static int Repair(string executablePath, string configPath)
     {
@@ -275,30 +279,8 @@ static class AgentLifecycle
             return 0;
         try
         {
-            var retryDelays = new[] { 2000, 5000, 10000, 30000 };
-            var failures = 0;
-            while (true)
-            {
-                if (!File.Exists(configPath))
-                    return 2;
-                try
-                {
-                    using var agent = Process.Start(new ProcessStartInfo(executablePath, "run") {
-                        UseShellExecute = false,
-                        CreateNoWindow = true,
-                        WindowStyle = ProcessWindowStyle.Hidden,
-                    }) ?? throw new InvalidOperationException("The print agent could not be started.");
-                    agent.WaitForExit();
-                }
-                catch (Exception error)
-                {
-                    // A transient launch failure must be supervised just like an
-                    // agent exit; otherwise a bad first launch defeats recovery.
-                    AgentLog.Write($"Launcher: {error.Message}");
-                }
-                var delay = retryDelays[Math.Min(failures++, retryDelays.Length - 1)];
-                Thread.Sleep(delay);
-            }
+            AutoUpdate.Watch(executablePath, configPath);
+            return 0;
         }
         finally
         {
@@ -390,6 +372,21 @@ static class AgentLifecycle
 
     private static void EnsureWatchdog(string executablePath)
     {
+        if (IsInstalled(executablePath))
+        {
+            var command = new ProcessStartInfo(Path.Combine(Environment.SystemDirectory, "schtasks.exe"))
+            {
+                UseShellExecute = false, CreateNoWindow = true,
+            };
+            command.ArgumentList.Add("/Run");
+            command.ArgumentList.Add("/TN");
+            command.ArgumentList.Add(TaskName);
+            using var task = Process.Start(command) ?? throw new InvalidOperationException("Windows could not start the agent task.");
+            task.WaitForExit();
+            if (task.ExitCode != 0)
+                throw new InvalidOperationException("Windows could not run the limited agent task.");
+            return;
+        }
         Process.Start(new ProcessStartInfo(executablePath, "watch") {
             UseShellExecute = true,
             WindowStyle = ProcessWindowStyle.Hidden,
@@ -452,15 +449,4 @@ static class AgentLifecycle
             throw new InvalidOperationException("Windows could not register automatic agent startup. " + task.StandardError.ReadToEnd().Trim());
     }
 
-    private static void RegisterUpdateTask(string executablePath)
-    {
-        var info = new ProcessStartInfo("schtasks.exe") { UseShellExecute = false, CreateNoWindow = true, RedirectStandardError = true };
-        info.ArgumentList.Add("/Create"); info.ArgumentList.Add("/TN"); info.ArgumentList.Add("Baseer Print Agent Update");
-        info.ArgumentList.Add("/SC"); info.ArgumentList.Add("ONCE"); info.ArgumentList.Add("/ST"); info.ArgumentList.Add("00:00");
-        info.ArgumentList.Add("/RU"); info.ArgumentList.Add("SYSTEM"); info.ArgumentList.Add("/RL"); info.ArgumentList.Add("HIGHEST");
-        info.ArgumentList.Add("/TR"); info.ArgumentList.Add($"\"{executablePath}\" apply-update"); info.ArgumentList.Add("/F");
-        using var task = Process.Start(info) ?? throw new InvalidOperationException("Windows could not register the agent update task.");
-        task.WaitForExit();
-        if (task.ExitCode != 0) throw new InvalidOperationException("Windows could not register automatic agent updates. " + task.StandardError.ReadToEnd().Trim());
-    }
 }

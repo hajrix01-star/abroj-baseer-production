@@ -163,6 +163,20 @@ class BaseerPrintAgentRelease(models.Model):
         approved_catalog.filtered(lambda record: catalog_version(record) < version_key).action_retire()
 
     @api.model
+    def _pilot_update_manifest(self):
+        release = self.search([
+            ('state', '=', 'approved'),
+            ('catalog_only', '=', True),
+        ], limit=1)
+        if not release or tuple(map(int, release.version.split('.'))) <= (1, 5, 18):
+            return None
+        return {
+            'version': release.version,
+            'download_url': release.github_download_url,
+            'sha256': release.artifact_sha256,
+        }
+
+    @api.model
     def auto_update_manifest(self):
         """Return only the most recently approved, externally hosted release.
 

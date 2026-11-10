@@ -150,6 +150,17 @@ class BaseerPrintAgentApi(http.Controller):
         # until the elevated installation path has passed security acceptance.
         return self._response({'update': None})
 
+    @http.route('/baseer/print/v2/update/manifest', type='http', auth='public', methods=['GET'], csrf=False, save_session=False)
+    def update_manifest_v2(self, **kwargs):
+        agent = self._agent()
+        if not agent:
+            return self._invalid()
+        pilot_agent = request.env['ir.config_parameter'].sudo().get_param('baseer_print_bridge.update_v2_agent_id')
+        if pilot_agent != str(agent.id):
+            return self._response({'update': None})
+        manifest = request.env['baseer.print.agent.release'].sudo()._pilot_update_manifest()
+        return self._response({'update': manifest})
+
     @http.route('/baseer/print/v1/runtime/release', type='http', auth='public', methods=['POST'], csrf=False, save_session=False)
     def release_runtime(self, **kwargs):
         """Accept an exact local runtime handover; never release a job lease."""

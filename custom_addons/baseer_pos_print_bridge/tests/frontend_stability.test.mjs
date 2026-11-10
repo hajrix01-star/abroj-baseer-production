@@ -402,6 +402,8 @@ kitchenStore.sendOrderInPreparation = async () => true;
 kitchenStore.addPendingOrder = () => retained++;
 kitchenStore.removePendingOrder = () => {};
 kitchenStore.showDefault = () => {};
+kitchenStore.router = { state: { current: 'ProductScreen', params: { orderUuid: 'payment-draft' } } };
+kitchenStore.getOrder = () => paymentDraft;
 kitchenStore.notification = { add() {} };
 kitchenStore.dialog = { add() {} };
 const otherLineRemoval = { id: 18, parentId: 9 };
@@ -410,7 +412,7 @@ const removalCommands = {
     unlink: new Map([['lines', [otherLineRemoval, otherOrderRemoval]]]),
     delete: new Map([['lines', [{ id: 17, parentId: 9 }]]]),
 };
-const paymentDraft = { id: 9, state: 'draft', uiState: {},
+const paymentDraft = { id: 9, uuid: 'payment-draft', state: 'draft', uiState: {},
     models: { commands: { 'pos.order': removalCommands } },
     last_order_preparation_change: { lines: {} }, getOrderlines: () => [],
     removeOrderline(line) {

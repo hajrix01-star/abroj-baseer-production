@@ -10,7 +10,7 @@ import { OrderReceipt } from "@point_of_sale/app/screens/receipt_screen/receipt/
 import { SelectionPopup } from "@point_of_sale/app/components/popups/selection_popup/selection_popup";
 import { TextInputPopup } from "@point_of_sale/app/components/popups/text_input_popup/text_input_popup";
 import { ask, makeAwaitable } from "@point_of_sale/app/utils/make_awaitable_dialog";
-import { buildBaseerPreparationAction } from "./line_actions";
+import { buildBaseerPreparationAction, captureBaseerCancellationRoute, navigateBaseerAfterCancellation } from "./line_actions";
 import { encodeReceiptJpeg } from "./receipt_image";
 
 const BASEER_CANCELLATION_REASONS = [
@@ -689,6 +689,22 @@ patch(PosStore.prototype, {
         return await this.data.silentCall(
             "pos.order", "baseer_preview_preparation_cancellations", [orderIds, sessionId], {}, false
         );
+    },
+
+    async onDeleteOrder(order) {
+        if (!this.config.baseer_direct_print_enabled || this.config.module_pos_restaurant) {
+            return super.onDeleteOrder(...arguments);
+        }
+        const route = captureBaseerCancellationRoute(this, order);
+        const deleted = await super.onDeleteOrder(...arguments);
+        // Normal POS selects the next order in afterOrderDeletion, but leaves
+        // the product route pointing at the deleted order. Keep native deletion
+        // and kitchen printing intact; repair only that completed UI transition.
+        if (deleted && route.owned && !this.models["pos.order"].getBy("uuid", order.uuid)) {
+            await this.data.synchronizeLocalDataInIndexedDB();
+            navigateBaseerAfterCancellation(this, route);
+        }
+        return deleted;
     },
 
     async beforeDeleteOrder(order) {

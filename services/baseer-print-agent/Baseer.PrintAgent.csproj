@@ -9,9 +9,10 @@
     <PublishSingleFile>true</PublishSingleFile>
     <SelfContained>true</SelfContained>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
-    <Version>1.5.17</Version>
-    <AssemblyVersion>1.5.17.0</AssemblyVersion>
-    <FileVersion>1.5.17.0</FileVersion>
-    <InformationalVersion>1.5.17</InformationalVersion>
+    <Version>1.5.18</Version>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(QaProfile)' == 'true'">
+    <DefineConstants>$(DefineConstants);QA_PROFILE</DefineConstants>
+    <AssemblyName>Baseer.PrintAgent.QA</AssemblyName>
   </PropertyGroup>
 </Project>

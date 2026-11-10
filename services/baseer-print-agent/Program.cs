@@ -13,11 +13,20 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Runtime.InteropServices;
 
-var configPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "BaseerPrintAgent", "config.json");
+var configPath = Path.Combine(AgentRuntime.DataDirectory, "config.json");
 var executablePath = Environment.ProcessPath ?? throw new InvalidOperationException("Agent executable path is unavailable.");
 
 if (args.Length > 0 && args[0].Equals("preview-kitchen", StringComparison.OrdinalIgnoreCase))
     return KitchenTicketPreview.Run(args.Skip(1).ToArray());
+
+#if QA_PROFILE
+if (args.Length == 0 || !AutoUpdate.IsLimitedUser()
+    || args[0] is not ("watch" or "run-supervised"))
+    return 2;
+if (AgentConfig.SecureBaseUri(AgentConfig.Load(configPath).ServerUrl).AbsoluteUri
+    != "https://baseer-live-qa.tail938958.ts.net/")
+    return 2;
+#endif
 
 if (args.Length > 0 && args[0].Equals("install", StringComparison.OrdinalIgnoreCase))
     return AgentLifecycle.Install(executablePath);
@@ -27,9 +36,6 @@ if (args.Length > 0 && args[0].Equals("watch", StringComparison.OrdinalIgnoreCas
 
 if (args.Length > 0 && args[0].Equals("repair", StringComparison.OrdinalIgnoreCase))
     return AgentLifecycle.Repair(Environment.ProcessPath ?? throw new InvalidOperationException("Agent executable path is unavailable."), configPath);
-
-if (args.Length > 0 && args[0].Equals("apply-update", StringComparison.OrdinalIgnoreCase))
-    return AutoUpdate.Apply(Environment.ProcessPath ?? throw new InvalidOperationException("Agent executable path is unavailable."), configPath);
 
 if (args.Length > 0 && args[0].Equals("pair-ui", StringComparison.OrdinalIgnoreCase))
     return AgentLifecycle.ShowPairingWindow(configPath, Environment.ProcessPath ?? throw new InvalidOperationException("Agent executable path is unavailable."));
@@ -63,7 +69,12 @@ if (args.Length > 0 && args[0].Equals("pair", StringComparison.OrdinalIgnoreCase
     return 0;
 }
 
-if (args.Length == 0 || args[0].Equals("run", StringComparison.OrdinalIgnoreCase))
+var supervised = args.Length > 0 && args[0] == "run-supervised";
+if (supervised && (!AutoUpdate.IsLimitedUser() || args.Length is < 2 or > 3
+    || args.Skip(1).Any(value => !Guid.TryParseExact(value, "N", out _))))
+    return 2;
+
+if (supervised || args.Length == 0 || args[0].Equals("run", StringComparison.OrdinalIgnoreCase))
 {
     if (!File.Exists(configPath))
     {
@@ -71,8 +82,12 @@ if (args.Length == 0 || args[0].Equals("run", StringComparison.OrdinalIgnoreCase
         return 2;
     }
     var config = AgentConfig.Load(configPath);
-    await new PrintAgent(config, configPath).RunAsync();
-    return 0;
+    if (supervised)
+    {
+        AgentRuntime.InstanceId = args[1];
+        AutoUpdate.InitializeProfile(config);
+    }
+    return new PrintAgent(config, configPath).Run(supervised, args.Length == 3 && supervised ? args[2] : null);
 }
 
 Console.Error.WriteLine("Commands: pair, run");
@@ -168,7 +183,7 @@ sealed class PrintAgent
         _http.DefaultRequestHeaders.Authorization = new("Bearer", config.Token);
     }
 
-    public async Task RunAsync()
+    public int Run(bool supervised, string? trialKey)
     {
         using var runner = new Mutex(false, AgentRuntime.RunnerMutexName);
         var ownsRunner = false;
@@ -184,47 +199,75 @@ sealed class PrintAgent
         if (!ownsRunner)
         {
             AgentLog.Write($"{AgentName}: another agent is already running on this Windows computer.");
-            return;
+            return 1;
         }
         try
         {
             AgentRuntime.WriteCurrentId(_configPath);
-            await RecoverUnknownJobsAsync();
-            var nextUpdateCheck = DateTimeOffset.UtcNow;
-            while (true)
-            {
-                try
-                {
-                    await HeartbeatAsync();
-                    if (DateTimeOffset.UtcNow >= nextUpdateCheck)
-                    {
-                        nextUpdateCheck = DateTimeOffset.UtcNow.AddHours(6);
-                        if (_config.InFlightJobs.Count == 0 && await AutoUpdate.TryStageAndStartAsync(_http, _configPath))
-                            return;
-                    }
-                    await SyncPrintersAsync();
-                    var job = await ClaimAsync();
-                    if (job is not null) await ExecuteAsync(job);
-                    else await Task.Delay(TimeSpan.FromSeconds(2));
-                }
-                catch (AgentRuntimeBusyException)
-                {
-                    // Another active instance owns this paired device. Stay
-                    // passive; this runner automatically takes over if its
-                    // server lease expires, but it never claims or prints now.
-                    await Task.Delay(TimeSpan.FromSeconds(10));
-                }
-                catch (Exception error)
-                {
-                    AgentLog.Write($"{AgentName}: {error.Message}");
-                    await Task.Delay(TimeSpan.FromSeconds(5));
-                }
-            }
+            // Keep ownership and release of the thread-affine mutex on the same thread.
+            return RunLoopAsync(supervised, trialKey).GetAwaiter().GetResult();
         }
         finally
         {
             AgentRuntime.ClearCurrentId(_configPath);
             runner.ReleaseMutex();
+        }
+    }
+
+    private async Task<int> RunLoopAsync(bool supervised, string? trialKey)
+    {
+        if (trialKey is not null)
+        {
+            await HeartbeatAsync();
+            await SyncPrintersAsync();
+#if QA_PROFILE
+            if (Environment.GetEnvironmentVariable("BASEER_QA_REJECT_TRIAL_VERSION") == AgentBuild.Version)
+                return 1;
+#endif
+            if (!AutoUpdate.ConfirmStartup(trialKey))
+                return 1;
+        }
+        await RecoverUnknownJobsAsync();
+        var nextCheck = DateTimeOffset.UtcNow;
+        Task<AgentUpdate?>? stage = null;
+        while (true)
+        {
+            try
+            {
+                await HeartbeatAsync();
+                await SyncPrintersAsync();
+                if (supervised && stage is null && DateTimeOffset.UtcNow >= nextCheck)
+                {
+                    nextCheck = DateTimeOffset.UtcNow + AutoUpdate.CheckInterval;
+                    stage = AutoUpdate.StageAsync(_http);
+                }
+                var job = await ClaimAsync();
+                if (job is not null)
+                {
+                    await ExecuteAsync(job);
+                    continue;
+                }
+                if (stage?.IsCompleted == true && _config.InFlightJobs.Count == 0)
+                {
+                    var candidate = await stage;
+                    stage = null;
+                    if (candidate is not null)
+                    {
+                        AutoUpdate.Queue(candidate);
+                        return AutoUpdate.StagedExit;
+                    }
+                }
+                await Task.Delay(TimeSpan.FromSeconds(2));
+            }
+            catch (AgentRuntimeBusyException)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(10));
+            }
+            catch (Exception error)
+            {
+                AgentLog.Write($"{AgentName}: {error.Message}");
+                await Task.Delay(TimeSpan.FromSeconds(5));
+            }
         }
     }
 

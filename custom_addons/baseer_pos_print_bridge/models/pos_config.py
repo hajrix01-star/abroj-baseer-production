@@ -287,7 +287,14 @@ class PosConfig(models.Model):
             ('state', '=', 'approved'),
         ], order='approved_at desc, id desc', limit=1)
         if not release:
-            raise UserError(_('No approved Windows print agent is available. Ask a system administrator to publish one first.'))
+            # Preserve the install/recovery path before the first release
+            # record is entered.  Once an administrator approves an external
+            # GitHub asset, `action_download()` takes precedence below.
+            return {
+                'type': 'ir.actions.act_url',
+                'url': self.env['baseer.print.agent.release']._PUBLIC_DOWNLOAD_URL,
+                'target': 'new',
+            }
         action = release.action_download()
         action['target'] = 'new'
         return action

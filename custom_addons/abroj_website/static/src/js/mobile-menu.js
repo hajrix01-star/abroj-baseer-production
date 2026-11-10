@@ -7,7 +7,7 @@ function enhanceAbrojMobileMenu() {
     if (!nav.querySelector(".abroj-v2__mobile-logo")) {
         const logo = document.createElement("img");
         logo.className = "abroj-v2__mobile-logo";
-        logo.src = "/abroj_website/static/src/img/abroj-logo-vector-white-20260928.svg";
+        logo.src = main.querySelector(".abroj-v2__brand img")?.getAttribute("src") || "/abroj_website/static/src/img/abroj-logo-core-white-20261004.svg";
         logo.alt = "Abroj";
         nav.prepend(logo);
     }

@@ -114,6 +114,19 @@ patch(Orderline.prototype, {
         this.pos = usePos();
     },
 
+    get lineScreenValues() {
+        if (this.props.mode === "display") {
+            const { uuid, order_id: order } = this.line;
+            // A cancellation can remove the line's price entries before OWL
+            // unmounts its row. Skip that row before native price getters run.
+            if (!order?.unitPrices?.baseLineByLineUuids?.[uuid]?.tax_details ||
+                !order.prices?.baseLineByLineUuids?.[uuid]?.tax_details) {
+                return null;
+            }
+        }
+        return super.lineScreenValues;
+    },
+
     get baseerLineActionsVisible() {
         const substitutionProtected = this.pos.baseerIsSubstitutionProtected?.(this.line) || false;
         return (

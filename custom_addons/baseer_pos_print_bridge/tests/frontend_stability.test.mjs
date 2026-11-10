@@ -6,9 +6,11 @@ import { webcrypto } from 'node:crypto';
 
 function runtime(file, native = {}) {
     class PosStore {}
+    class Orderline {}
     Object.assign(PosStore.prototype, native);
+    Object.defineProperties(Orderline.prototype, Object.getOwnPropertyDescriptors(native.orderline || {}));
     const sandbox = {
-        PosStore, PosOrder: class {}, PosOrderline: class {}, Orderline: class {}, OrderSummary: class {},
+        PosStore, PosOrder: class {}, PosOrderline: class {}, Orderline, OrderSummary: class {},
         SelectionPopup: class {}, TextInputPopup: class {}, ConfirmationDialog: class {},
         AlertDialog: class {}, NumberPopup: class {}, OrderReceipt: class {}, crypto: webcrypto,
         makeAwaitable: native.makeAwaitable || (async () => null),
@@ -17,7 +19,7 @@ function runtime(file, native = {}) {
         window: native.window || { location: {} },
         _t: (message, value) => message.replace('%s', value ?? '%s'),
         patch(target, extension) {
-            Object.setPrototypeOf(extension, { ...target });
+            Object.setPrototypeOf(extension, Object.create(null, Object.getOwnPropertyDescriptors(target)));
             Object.defineProperties(target, Object.getOwnPropertyDescriptors(extension));
         },
     };
@@ -29,6 +31,28 @@ function runtime(file, native = {}) {
 }
 
 const lineRuntime = runtime('line_actions.js');
+const displayRuntime = runtime('line_actions.js', { orderline: {
+    get lineScreenValues() {
+        const { uuid, order_id } = this.line;
+        return order_id.unitPrices.baseLineByLineUuids[uuid].tax_details;
+    },
+} });
+const displayLine = new displayRuntime.Orderline();
+const validTaxDetails = { total_included: 1.15 };
+const priceData = { baseLineByLineUuids: { salad: { tax_details: validTaxDetails } } };
+displayLine.props = { mode: 'display' };
+displayLine.line = { uuid: 'salad', order_id: { unitPrices: priceData, prices: priceData } };
+assert.equal(displayLine.lineScreenValues, validTaxDetails);
+// The server can remove the price entries before OWL unmounts the old row.
+delete priceData.baseLineByLineUuids.salad;
+assert.equal(displayLine.lineScreenValues, null);
+displayLine.line.order_id = null;
+assert.equal(displayLine.lineScreenValues, null);
+priceData.baseLineByLineUuids.salad = { tax_details: validTaxDetails };
+displayLine.line.order_id = { unitPrices: priceData, prices: priceData };
+displayLine.props.mode = 'receipt';
+assert.equal(displayLine.lineScreenValues, validTaxDetails);
+
 const line = { uuid: 'replacement', baseer_substitution_silent_quantity: 1, qty: 1,
     getQuantity() { return this.qty; } };
 const order = { getOrderlines: () => [line], last_order_preparation_change: { lines: {

@@ -254,6 +254,7 @@ const unfinalized = await store.printReceipt({ order: { isSynced: true, id: 2, s
 assert.equal(unfinalized.successful, false);
 assert.ok(notices.at(-1).includes('not finalized'));
 const kitchenStore = new lineRuntime.PosStore();
+kitchenStore.config = { baseer_direct_print_enabled: true };
 let retired = 0;
 let retained = 0;
 kitchenStore.data = { network: { offline: false },
@@ -265,16 +266,36 @@ kitchenStore.removePendingOrder = () => {};
 kitchenStore.showDefault = () => {};
 kitchenStore.notification = { add() {} };
 kitchenStore.dialog = { add() {} };
+const otherLineRemoval = { id: 18, parentId: 9 };
+const otherOrderRemoval = { id: 19, parentId: 10 };
+const removalCommands = {
+    unlink: new Map([['lines', [otherLineRemoval, otherOrderRemoval]]]),
+    delete: new Map([['lines', [{ id: 17, parentId: 9 }]]]),
+};
 const paymentDraft = { id: 9, state: 'draft', uiState: {},
-    last_order_preparation_change: { lines: {} }, getOrderlines: () => [], removeOrderline() {} };
-const cancellingLine = { uuid: 'cancel-me', order_id: paymentDraft, getQuantity: () => 1,
+    models: { commands: { 'pos.order': removalCommands } },
+    last_order_preparation_change: { lines: {} }, getOrderlines: () => [],
+    removeOrderline(line) {
+        // Native removeOrderline queues a command even when the server has
+        // already removed the line during the kitchen action.
+        removalCommands.unlink.get('lines').push({ id: line.id, parentId: this.id });
+    } };
+const cancellingLine = { id: 17, uuid: 'cancel-me', order_id: paymentDraft, getQuantity: () => 1,
     setQuantity: () => true };
 assert.equal(await kitchenStore._baseerCommitSentLineQuantity(cancellingLine, 0), true);
+assert.deepEqual(removalCommands.unlink.get('lines'), [otherLineRemoval, otherOrderRemoval]);
+assert.equal(removalCommands.delete.has('lines'), false);
 assert.equal(retired, 0); // Empty draft may still contain a deposit; server decides.
 assert.equal(retained, 1);
 paymentDraft.state = 'cancel';
 assert.equal(await kitchenStore._baseerCommitSentLineQuantity(cancellingLine, 0), true);
 assert.equal(retired, 1);
+kitchenStore.config.baseer_direct_print_enabled = false;
+paymentDraft.state = 'draft';
+assert.equal(await kitchenStore._baseerCommitSentLineQuantity(cancellingLine, 0), true);
+assert.deepEqual(removalCommands.unlink.get('lines'), [
+    otherLineRemoval, otherOrderRemoval, { id: 17, parentId: 9 },
+]);
 let resolveCancellationChoice;
 const serializedRuntime = runtime('line_actions.js', {
     makeAwaitable: async () => await new Promise((resolve) => { resolveCancellationChoice = resolve; }),

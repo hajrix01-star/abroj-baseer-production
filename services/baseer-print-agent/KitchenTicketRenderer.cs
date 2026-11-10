@@ -69,7 +69,9 @@ sealed class KitchenTicketRenderer
             rows.Add(new Row(label, action == "cancel" ? 18 : 10, Bold: true, ItemStart: true));
             Add($"الكمية: {qtyText}", 13, true);
             // full_product_name is one authoritative string; never guess how to split attributes.
-            Add(Get(line, "name"), 13, true);
+            // Keep names easy to scan, while giving long Arabic names a little
+            // more room before wrapping on 80 mm kitchen paper.
+            Add(Get(line, "name"), 12, true);
             if (action == "add") Header("الإجمالي", Format(qty));
             if (action == "reduce") Header("المتبقي", Format(qty));
             Header("السبب", Get(line, "reason_label"));
@@ -186,7 +188,7 @@ static class KitchenTicketPreview
             !mixedRows.Contains(("SHAMI/000018", 10f)) ||
             mixedRows.Count(row => row == ("CANCEL", 18f)) != 1 ||
             !mixedRows.Contains(("تخفيض", 10f)) || !mixedRows.Contains(("جديد", 10f)) ||
-            !mixedRows.Contains(("الكمية: ×2", 13f)) || !mixedRows.Contains(("المتبقي: 1", 10f)))
+            !mixedRows.Contains(("الكمية: ×2", 13f)) || !mixedRows.Contains(("2 نص مسحب مع رز مع 1 لتر بيبسي", 12f)) || !mixedRows.Contains(("المتبقي: 1", 10f)))
             throw new InvalidOperationException("Mixed kitchen action labels or quantities changed unexpectedly.");
         var cancelledTicket = JsonSerializer.SerializeToElement(new {
             order = document.RootElement.GetProperty("order"),

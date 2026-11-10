@@ -1,5 +1,6 @@
 import json
 import hashlib
+import re
 import time
 
 from odoo import http
@@ -155,9 +156,27 @@ class BaseerPrintAgentApi(http.Controller):
         agent = self._agent()
         if not agent:
             return self._invalid()
-        pilot_agent = request.env['ir.config_parameter'].sudo().get_param('baseer_print_bridge.update_v2_agent_id')
+        params = request.env['ir.config_parameter'].sudo()
+        pilot_agent = params.get_param('baseer_print_bridge.update_v2_agent_id')
         if pilot_agent != str(agent.id):
             return self._response({'update': None})
+        if kwargs.get('channel') == 'qa':
+            if (params.get_param('database.is_neutralized') != 'true'
+                    or not agent.device_uid.startswith('QA-BASEER-')):
+                return self._response({'update': None})
+            offer = params.get_param('baseer_print_bridge.qa_update_offer', '')
+            match = re.fullmatch(r'([0-9]{1,4}\.[0-9]{1,4}\.[0-9]{1,4}):([a-f0-9]{64})', offer)
+            if not match:
+                return self._response({'update': None})
+            version, digest = match.groups()
+            return self._response({'update': {
+                'version': version,
+                'download_url': (
+                    'https://github.com/hajrix01-star/abroj-baseer-production/releases/download/'
+                    f'baseer-print-agent-qa-{version}/Baseer.PrintAgent.QA.exe'
+                ),
+                'sha256': digest,
+            }})
         manifest = request.env['baseer.print.agent.release'].sudo()._pilot_update_manifest()
         return self._response({'update': manifest})
 

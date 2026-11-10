@@ -18,7 +18,7 @@ static class AutoUpdate
         get
         {
 #if QA_PROFILE
-            if (File.Exists(Path.Combine(Root, "qa-offer.json")))
+            if (QaNetworkPilot || File.Exists(Path.Combine(Root, "qa-offer.json")))
                 return TimeSpan.FromSeconds(5);
 #endif
             return TimeSpan.FromHours(6) + TimeSpan.FromMinutes(Random.Shared.Next(15));
@@ -26,7 +26,10 @@ static class AutoUpdate
     }
     private const long MaxBytes = 256L * 1024 * 1024;
 #if QA_PROFILE
-    private static string Root => Path.Combine(AgentRuntime.DataDirectory, "updates-v2");
+    private static bool QaNetworkPilot =>
+        Environment.GetEnvironmentVariable("BASEER_QA_NETWORK_PILOT") == "1";
+    private static string Root => Path.Combine(AgentRuntime.DataDirectory,
+        QaNetworkPilot ? "updates-v2-network" : "updates-v2");
     private const string WorkerFilename = "Baseer.PrintAgent.QA.exe";
 #else
     private static string Root => Path.Combine(
@@ -69,8 +72,12 @@ static class AutoUpdate
             || version.Build < 0 || version.Revision >= 0 || version.ToString() != update.Version
             || update.Sha256 is not { Length: 64 } || !update.Sha256.All(Uri.IsHexDigit))
             return false;
-        return update.DownloadUrl == "https://github.com/hajrix01-star/abroj-baseer-production/releases/download/"
-            + $"baseer-print-agent-{update.Version}/Baseer.PrintAgent.exe";
+        const string releases = "https://github.com/hajrix01-star/abroj-baseer-production/releases/download/";
+#if QA_PROFILE
+        if (QaNetworkPilot)
+            return update.DownloadUrl == releases + $"baseer-print-agent-qa-{update.Version}/{WorkerFilename}";
+#endif
+        return update.DownloadUrl == releases + $"baseer-print-agent-{update.Version}/Baseer.PrintAgent.exe";
     }
 
     private static string Binary(AgentUpdate update) =>
@@ -105,14 +112,20 @@ static class AutoUpdate
         if (!IsLimitedUser()) return null;
         try
         {
+            var manifestPath = "baseer/print/v2/update/manifest";
 #if QA_PROFILE
             // Test-only local offer. The QA binary uses isolated credentials,
             // process names and storage and cannot enter the Windows installer.
-            var localOffer = Read("qa-offer.json");
-            if (localOffer is not null)
-                return IsNewOffer(localOffer) && Verified(localOffer) ? localOffer : null;
+            if (QaNetworkPilot)
+                manifestPath += "?channel=qa";
+            else
+            {
+                var localOffer = Read("qa-offer.json");
+                if (localOffer is not null)
+                    return IsNewOffer(localOffer) && Verified(localOffer) ? localOffer : null;
+            }
 #endif
-            using var response = await server.GetAsync("baseer/print/v2/update/manifest");
+            using var response = await server.GetAsync(manifestPath);
             response.EnsureSuccessStatusCode();
             using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
             var candidate = document.RootElement.GetProperty("update").Deserialize<AgentUpdate>();
@@ -120,7 +133,10 @@ static class AutoUpdate
                 return null;
             var path = Binary(candidate);
             if (!Verified(candidate))
+            {
                 await DownloadAsync(candidate, path);
+                AgentLog.Write($"Update {candidate.Version} downloaded from GitHub and verified.");
+            }
             return candidate;
         }
         catch (Exception error)

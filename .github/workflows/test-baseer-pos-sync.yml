@@ -9,6 +9,7 @@ on:
       - custom_addons/baseer_pos_cache_resilience/**
       - custom_addons/baseer_pos_default_customer/**
       - custom_addons/baseer_pos_customer_identity/**
+      - custom_addons/baseer_pos_product_substitution/**
       - custom_addons/baseer_zatca_pos_scope/**
       - .github/workflows/test-baseer-pos-sync.yml
   workflow_dispatch:
@@ -43,6 +44,7 @@ jobs:
       - name: Test session report flow and browser cache lifecycle
         run: |
           node --test custom_addons/baseer_pos_print_bridge/tests/frontend_stability.test.mjs custom_addons/baseer_pos_print_bridge/tests/kitchen_recovery.test.mjs
+          node --test custom_addons/baseer_pos_product_substitution/tests/*.test.mjs
           node --test tests/receipt_image.test.mjs
           node --test custom_addons/baseer_pos_print_bridge/static/tests/session_report.test.mjs
           node --test custom_addons/baseer_pos_cache_resilience/static/tests/cache_resilience.test.mjs

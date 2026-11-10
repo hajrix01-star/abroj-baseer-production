@@ -211,6 +211,10 @@ patch(PosStore.prototype, {
     },
 
     async baseerReconcileProtectedState(result, orderUuid) {
+        const routePage = this.router.state.current;
+        const routeOrderUuid = this.router.state.params.orderUuid;
+        const wasCurrent = this.getOrder()?.uuid === orderUuid
+            && routeOrderUuid === orderUuid && routePage !== "TicketScreen";
         const data = result.data;
         const rawOrder = data?.["pos.order"]?.find((item) => item.uuid === orderUuid);
         if (!rawOrder || !Array.isArray(data["pos.order.line"]) || !Array.isArray(data["pos.payment"])) throw new Error(_t("The server did not return the complete order. Check the result again."));
@@ -241,8 +245,22 @@ patch(PosStore.prototype, {
         this.removePendingOrder(order);
         // Keep acknowledgement durable before releasing the pending intent.
         await this.data.synchronizeLocalDataInIndexedDB();
-        if (order.state === "cancel" && this.getOrder()?.uuid === order.uuid) {
-            this.showDefault();
+        // Canonical loading can trigger ProductScreen's native fallback order
+        // while IndexedDB is awaited. Preserve the original navigation intent,
+        // but never redirect an action whose routed order has since changed.
+        if (order.state === "cancel" && wasCurrent
+                && this.router.state.current === routePage
+                && this.router.state.params.orderUuid === routeOrderUuid) {
+            if (this.config.module_pos_restaurant) {
+                // Match native restaurant order deletion. A reused direct-sale
+                // draft must stay intact, without becoming the cancelled table.
+                this.setOrder(null);
+                this.navigate("FloorScreen");
+            } else if (this.getOrder()?.state === "draft") {
+                this.navigate("ProductScreen", { orderUuid: this.getOrder().uuid });
+            } else {
+                this.showDefault();
+            }
         }
         return order;
     },

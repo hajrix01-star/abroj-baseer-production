@@ -194,6 +194,13 @@ class BaseerPrintJob(models.Model):
                 # reference in both operating modes. The queued JSON freezes it
                 # for the original print and any later reprint.
                 order_payload['tracking_number'] = str(order.tracking_number)
+                try:
+                    version = tuple(int(part) for part in (printer.agent_id.agent_version or '').split('.')[:3])
+                except ValueError:
+                    version = ()
+                if version < (1, 5, 16):
+                    # Older agents display only the reference, not tracking_number.
+                    order_payload['reference'] = f"{order.tracking_number}\n{order_payload['reference']}"
             cashier = (
                 order.employee_id
                 if 'employee_id' in order._fields and order.employee_id

@@ -1540,6 +1540,7 @@ class TestBaseerPrintBridgeHybrid(TransactionCase):
 
     def test_shared_category_prints_to_both_and_keeps_original_destinations(self):
         self._enable()
+        self.agent.with_context(baseer_print_internal=True).write({'agent_version': '1.5.16'})
         category, extra_category = self.env['pos.category'].create([
             {'name': 'Shared salad category'}, {'name': 'Additional matching category'},
         ])
@@ -1591,6 +1592,7 @@ class TestBaseerPrintBridgeHybrid(TransactionCase):
         self.assertFalse(State.sudo().search([('order_id', '=', order.id)]))
 
     def test_kitchen_tracking_number_in_both_modes_and_every_change(self):
+        self.agent.with_context(baseer_print_internal=True).write({'agent_version': '1.5.16'})
         State = self.env['baseer.print.preparation.state']
         Job = self.env['baseer.print.job']
         for restaurant in (False, True):
@@ -1635,6 +1637,7 @@ class TestBaseerPrintBridgeHybrid(TransactionCase):
                 self.assertEqual(reprint.payload['order']['tracking_number'], '1011')
 
     def test_whole_kitchen_cancellation_keeps_number_in_both_modes(self):
+        self.agent.with_context(baseer_print_internal=True).write({'agent_version': '1.5.16'})
         Job = self.env['baseer.print.job']
         for restaurant in (False, True):
             with self.subTest(restaurant=restaurant):
@@ -1663,6 +1666,15 @@ class TestBaseerPrintBridgeHybrid(TransactionCase):
         self.assertEqual(payload['order']['reference'], '261-39-001011')
         test_payload = self.env['baseer.print.job']._job_payload('test', False, self.kitchen_a)
         self.assertNotIn('tracking_number', test_payload['order'])
+
+    def test_legacy_kitchen_agent_receives_tracking_number_in_reference(self):
+        order = self._order()
+        order.write({'tracking_number': '1011', 'pos_reference': 'POS/QA/000011'})
+        for version in ('1.4.6', '', 'invalid'):
+            self.agent.with_context(baseer_print_internal=True).write({'agent_version': version})
+            payload = self.env['baseer.print.job']._job_payload('preparation', order, self.kitchen_a)
+            self.assertEqual(payload['order']['reference'], '1011\nPOS/QA/000011')
+            self.assertEqual(payload['order']['tracking_number'], '1011')
 
     def test_legacy_enqueue_keeps_both_kitchens_on_update(self):
         self._enable()

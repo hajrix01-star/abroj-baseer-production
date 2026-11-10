@@ -2,6 +2,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
+import test from 'node:test';
 import { webcrypto } from 'node:crypto';
 
 function runtime(file, native = {}) {
@@ -141,6 +142,136 @@ cartLines.push(foodLine);
 finishRouting([]);
 assert.equal(await paymentWithCartEdit, false);
 assert.deepEqual(paymentSteps, ['send error']);
+
+// Exercise the real payment -> shared send -> acknowledgement chain, including
+// a mixed cart whose non-kitchen change survives the native preparation update.
+function paymentFixture() {
+    const calls = { routing: 0, sent: 0, pay: 0, blocked: 0, notices: [] };
+    const food = { uuid: 'food', product_id: { id: 1 }, qty: 1, getQuantity() { return this.qty; } };
+    const retail = { uuid: 'retail', product_id: { id: 2 }, qty: 1, getQuantity() { return this.qty; } };
+    const order = { id: 7, uuid: 'payment', isSynced: true, uiState: {},
+        getOrderlines: () => [food, retail], last_order_preparation_change: { lines: {} } };
+    const hooks = { confirm: async () => true, beforeSync: async () => {}, accepted: true };
+    const bridge = runtime('preparation_bridge.js', {
+        ask: async () => await hooks.confirm(),
+        async pay() { calls.pay++; },
+        async validateOrderFast() { calls.pay++; },
+        async sendOrderInPreparation(current) {
+            calls.sent++;
+            current.last_order_preparation_change.lines.food = {
+                uuid: 'food', product_id: 1, quantity: food.qty,
+            };
+            return false; // Direct printer bypass: server acknowledgement is authoritative.
+        },
+    });
+    bridge.buildBaseerPreparationAction = lineRuntime.buildBaseerPreparationAction;
+    const store = new bridge.PosStore();
+    store.config = { id: 1, baseer_direct_print_enabled: true };
+    store.getOrder = () => order;
+    store.env = { services: { ui: { block() { calls.blocked++; }, unblock() { calls.blocked--; } } } };
+    store.notification = { add(message) { calls.notices.push(message); return () => {}; } };
+    store.data = { network: { offline: false },
+        call: async () => { calls.routing++; return ['food']; },
+        synchronizeLocalDataInIndexedDB: async () => {},
+    };
+    store.syncAllOrders = async () => { await hooks.beforeSync(); order.isSynced = true; return [order]; };
+    store._baseerPreparationStatus = async () => ({ accepted: hooks.accepted });
+    store._baseerNotifyPreparationStatus = () => {};
+    store.addPendingOrder = () => {};
+    return { store, order, food, retail, calls, hooks };
+}
+
+test('payment sends a mixed cart with one routing lookup and durable acknowledgement', async () => {
+    const { store, calls } = paymentFixture();
+    await store.pay();
+    assert.equal(calls.routing, 1);
+    assert.equal(calls.sent, 1);
+    assert.equal(calls.pay, 1);
+    assert.equal(calls.blocked, 0);
+});
+
+test('already sent cart opens payment without routing or a new kitchen send', async () => {
+    const { store, order, calls } = paymentFixture();
+    for (const line of order.getOrderlines()) order.last_order_preparation_change.lines[line.uuid] = {
+        uuid: line.uuid, product_id: line.product_id.id, quantity: line.qty,
+    };
+    await store.pay();
+    assert.equal(calls.routing, 0);
+    assert.equal(calls.sent, 0);
+    assert.equal(calls.pay, 1);
+});
+
+test('Back leaves the order unsent and payment closed', async () => {
+    const { store, calls, hooks } = paymentFixture();
+    hooks.confirm = async () => false;
+    await store.pay();
+    assert.equal(calls.sent, 0);
+    assert.equal(calls.pay, 0);
+});
+
+test('editing the cart during confirmation requires review without sending', async () => {
+    const { store, food, calls, hooks } = paymentFixture();
+    hooks.confirm = async () => { food.qty++; return true; };
+    await store.pay();
+    assert.equal(calls.sent, 0);
+    assert.equal(calls.pay, 0);
+    assert.ok(calls.notices.includes('The order changed. Review it and press Payment again.'));
+});
+
+test('editing a new order during draft sync cannot reuse the previous approval', async () => {
+    const { store, order, food, calls, hooks } = paymentFixture();
+    order.isSynced = false;
+    hooks.beforeSync = async () => { food.qty++; };
+    await store.pay();
+    assert.equal(calls.routing, 1);
+    assert.equal(calls.sent, 0);
+    assert.equal(calls.pay, 0);
+    assert.equal(calls.blocked, 0);
+});
+
+test('cart edit during dispatch prevents payment without another routing request', async () => {
+    const { store, retail, calls, hooks } = paymentFixture();
+    hooks.beforeSync = async () => { retail.qty++; };
+    await store.pay();
+    assert.equal(calls.routing, 1);
+    assert.equal(calls.sent, 1);
+    assert.equal(calls.pay, 0);
+});
+
+test('manual Send and repeated Payment cannot overlap a payment kitchen send', { timeout: 1000 }, async () => {
+    const { store, calls, hooks } = paymentFixture();
+    let ready, finish;
+    const started = new Promise(resolve => { ready = resolve; });
+    hooks.beforeSync = () => new Promise(resolve => { finish = resolve; ready(); });
+    const paying = store.pay();
+    await started;
+    assert.equal(await store.pay(), false);
+    assert.equal(await store.baseerSendCurrentOrder(), false);
+    finish();
+    await paying;
+    assert.equal(calls.routing, 1);
+    assert.equal(calls.sent, 1);
+    assert.equal(calls.pay, 1);
+    assert.equal(calls.blocked, 0);
+});
+
+test('a missing acknowledgement keeps payment closed and releases the UI lock', async () => {
+    const { store, order, calls, hooks } = paymentFixture();
+    hooks.accepted = false;
+    await store.pay();
+    assert.equal(calls.pay, 0);
+    assert.equal(order.uiState.baseerPreparationOutcomeUnknown, true);
+    assert.equal(calls.blocked, 0);
+});
+
+test('native guest dialog stays interactive before dispatch locks the UI', async () => {
+    const { store, calls } = paymentFixture();
+    store.ensureGuestCustomerCount = async () => { assert.equal(calls.blocked, 0); };
+    await store.pay();
+    assert.equal(calls.sent, 1);
+    assert.equal(calls.pay, 1);
+    assert.equal(calls.blocked, 0);
+});
 
 const bridge = runtime('preparation_bridge.js', { async sendOrderInPreparation() { return false; } });
 bridge.buildBaseerPreparationAction = lineRuntime.buildBaseerPreparationAction;

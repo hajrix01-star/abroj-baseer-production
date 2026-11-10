@@ -331,6 +331,20 @@ class BaseerPrintPreparationState(models.Model):
         jobs = self.env['baseer.print.job'].sudo()
         request_fingerprint = events._action_request_fingerprint(action)
         require_dispatch = action['action_type'] == 'send_before_payment'
+        if require_dispatch:
+            # Recheck omitted pending items in the send transaction, not with
+            # another browser round trip. Routing may change while the cashier
+            # is confirming the preview. Historical destinations still count.
+            included = {item['line_uuid'] for item in action['lines']}
+            omitted = {
+                line.uuid: line.product_id.id for line in order.lines
+                if line.uuid not in included and any(
+                    abs(self._kitchen_quantity(line) - qty) > 0.000001
+                    for qty in (by_uuid[line.uuid].mapped('quantity') if line.uuid in by_uuid else [0.0])
+                )
+            }
+            if omitted and order.config_id.baseer_kitchen_payment_lines(order.config_id.id, order.uuid, omitted):
+                raise ValidationError(_('Kitchen routing changed. Review the order and press Payment again.'))
         print_groups = {}
         for requested in action['lines']:
             old = by_uuid.get(requested['line_uuid'])

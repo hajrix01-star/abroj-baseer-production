@@ -114,6 +114,43 @@ class PosConfig(models.Model):
         return payload
 
     @api.model
+    def baseer_kitchen_payment_lines(self, pos_config_id, order_uuid, products_by_line):
+        """Return pending line keys with a configured or historical kitchen destination."""
+        if not self.env.user.has_group('point_of_sale.group_pos_user') or type(pos_config_id) is not int:
+            raise AccessError(_('The point of sale is not valid.'))
+        config = self.browse(pos_config_id).exists()
+        if not config or config.company_id not in self.env.companies:
+            raise AccessError(_('The point of sale is not available.'))
+        config.check_access('read')
+        if not config.baseer_direct_print_enabled:
+            return []
+        if (not isinstance(order_uuid, str) or not 0 < len(order_uuid) <= 128
+                or not isinstance(products_by_line, dict) or len(products_by_line) > 500
+                or any(not isinstance(key, str) or not 0 < len(key) <= 128
+                       or (product_id is not False and (type(product_id) is not int or product_id <= 0))
+                       for key, product_id in products_by_line.items())):
+            raise ValidationError(_('The kitchen action is invalid.'))
+
+        order = self.env['pos.order'].search([
+            ('uuid', '=', order_uuid), ('config_id', '=', config.id),
+            ('company_id', '=', config.company_id.id), ('state', '=', 'draft'),
+        ], limit=1)
+        states = self.env['baseer.print.preparation.state']._states_for_orders(order)
+        sent_lines = set(states.mapped('line_uuid'))
+        category_ids = {binding['category_id'] for binding in config._baseer_preparation_bindings_payload()}
+        if False in category_ids:
+            return list(products_by_line)
+        if not category_ids:
+            return [key for key in products_by_line if key in sent_lines]
+        products = self.env['product.product'].with_context(active_test=False).search([
+            ('id', 'in', [product_id for product_id in products_by_line.values() if product_id]),
+        ])
+        routed_products = set(products.filtered(
+            lambda product: category_ids.intersection(product.product_tmpl_id.pos_categ_ids.ids)
+        ).ids)
+        return [key for key, product_id in products_by_line.items() if key in sent_lines or product_id in routed_products]
+
+    @api.model
     def baseer_agent_status(self, pos_config_id):
         """Return a deliberately small, server-authoritative POS health view.
 

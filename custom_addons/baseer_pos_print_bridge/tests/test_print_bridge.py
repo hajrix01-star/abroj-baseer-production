@@ -1191,6 +1191,39 @@ class TestBaseerPrintBridgeHybrid(TransactionCase):
         route.active = False
         self.assertEqual(self.config.baseer_kitchen_payment_lines(self.config.id, order.uuid, products), list(products))
 
+    def test_payment_send_rechecks_omitted_routing_in_its_transaction(self):
+        self._enable()
+        order = self._recovery_order()
+        food = order.lines
+        category = self.env['pos.category'].create({'name': 'Payment route change QA'})
+        food.product_id.product_tmpl_id.pos_categ_ids = [Command.link(category.id)]
+        self.env['baseer.print.route'].create({
+            'pos_config_id': self.config.id, 'printer_id': self.kitchen_a.id,
+            'pos_category_ids': [Command.link(category.id)],
+        })
+        action = self._preparation_action(order, 0, 1)
+        action['action_type'] = 'send_before_payment'
+        retail_product = self.env['product.template'].create({
+            'name': 'Initially non-kitchen item', 'available_in_pos': True, 'list_price': 10,
+        }).product_variant_id
+        retail = food.copy({'order_id': order.id, 'uuid': str(uuid4()), 'product_id': retail_product.id})
+        candidates = {food.uuid: food.product_id.id, retail.uuid: retail.product_id.id}
+        self.assertEqual(self.config.baseer_kitchen_payment_lines(self.config.id, order.uuid, candidates), [food.uuid])
+        retail_product.product_tmpl_id.pos_categ_ids = [Command.link(category.id)]
+        with self.assertRaisesRegex(ValidationError, 'Kitchen routing changed'), self.env.cr.savepoint():
+            self.env['pos.order']._process_order(self._recovery_payload(order, action), order)
+        self.assertFalse(self.env['baseer.print.preparation.attempt']._for_action(action['action_uuid']))
+        self.assertFalse(self.env['baseer.print.preparation.event']._retry_events(action))
+        # Unchanged non-kitchen items may remain outside the action.
+        retail_product.product_tmpl_id.pos_categ_ids = [Command.clear()]
+        self.env['pos.order']._process_order(self._recovery_payload(order, action), order)
+        self.assertEqual(len(self.env['baseer.print.preparation.event']._retry_events(action).job_ids), 1)
+        # A previously sent, unchanged food line must not block another send.
+        retail_product.product_tmpl_id.pos_categ_ids = [Command.link(category.id)]
+        second = dict(action, action_uuid=str(uuid4()), lines=[dict(action['lines'][0], line_uuid=retail.uuid)])
+        self.env['pos.order']._process_order(self._recovery_payload(order, second), order)
+        self.assertEqual(len(self.env['baseer.print.preparation.event']._retry_events(second).job_ids), 1)
+
     def test_recovery_of_accepted_legacy_event_never_reprints(self):
         self._enable()
         self.env['baseer.print.route'].create({'pos_config_id': self.config.id, 'printer_id': self.kitchen_a.id})

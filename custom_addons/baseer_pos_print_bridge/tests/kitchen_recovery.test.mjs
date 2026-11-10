@@ -78,7 +78,8 @@ function fixture({ status = { accepted: false }, canonical = null } = {}) {
             qty: data['pos.order.line'][0]?.qty ?? 0 });
     };
     store.removePendingOrder = () => { calls.trace.push('unpend'); };
-    store.notification = { add: (message) => calls.notices.push(message) };
+    store.notification = { add: (message) => { calls.notices.push(message); return () => {}; } };
+    store.env = { services: { ui: { block() {}, unblock() {} } } };
     store._baseerPreparationStatus = async () => { calls.status++; return status; };
     store.data = { network: { offline: false }, fields: {}, relations: {}, opts: { databaseTable: {
         'pos.order': { key: 'uuid' }, 'pos.order.line': { key: 'uuid' },

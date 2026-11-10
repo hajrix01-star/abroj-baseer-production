@@ -2663,3 +2663,18 @@ msgstr "احفظ الطلبين قبل دمج طلب المطبخ."
 #: code:addons/baseer_pos_print_bridge/static/src/app/preparation_bridge.js:0
 msgid "This order is being saved for the merge."
 msgstr "جارٍ حفظ هذا الطلب للدمج."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/static/src/app/preparation_bridge.js:0
+msgid "Sending to kitchen. Please wait."
+msgstr "جارٍ الإرسال للمطبخ، انتظر لحظة."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/static/src/app/preparation_bridge.js:0
+msgid "The order changed. Review it and press Payment again."
+msgstr "تغيّر الطلب. راجعه ثم اضغط الدفع مرة أخرى."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/preparation.py:0
+msgid "Kitchen routing changed. Review the order and press Payment again."
+msgstr "تغيّر توجيه أصناف المطبخ. راجع الطلب ثم اضغط الدفع مرة أخرى."

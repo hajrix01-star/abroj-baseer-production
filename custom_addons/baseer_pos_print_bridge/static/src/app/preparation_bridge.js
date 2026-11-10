@@ -65,9 +65,15 @@ patch(PosStore.prototype, {
         return { changes, candidates };
     },
 
-    async _baseerKitchenChangesForPayment(order) {
+    _baseerKitchenPaymentCart(order) {
+        return JSON.stringify(order.getOrderlines().map((line) => [
+            line.uuid, line.product_id?.id, line.getQuantity(),
+            line.baseer_substitution_silent_quantity || 0,
+        ]));
+    },
+
+    async _baseerKitchenChangesForPayment(order, snapshot = this._baseerKitchenPaymentSnapshot(order)) {
         if (order.isRefund) return [];
-        const snapshot = this._baseerKitchenPaymentSnapshot(order);
         if (!snapshot.changes.length) return [];
         const routedLines = await this.data.call(
             "pos.config", "baseer_kitchen_payment_lines", [this.config.id, order.uuid, snapshot.candidates], {}, false
@@ -96,6 +102,10 @@ patch(PosStore.prototype, {
     async _baseerConfirmKitchenBeforePayment() {
         let order = this.getOrder();
         if (!order) return false;
+        if (this._baseerKitchenSends?.has(order.uuid)) {
+            this.notification.add(_t("Sending to kitchen. Please wait."), { type: "info" });
+            return false;
+        }
         if (order?.uiState?.baseerPreparationOutcomeUnknown || this._baseerPreparationResolutions?.has(order?.uuid)) {
             if (!(await this.baseerResolvePreparationOutcome(order))) return false;
             const current = this.getOrder();
@@ -106,7 +116,8 @@ patch(PosStore.prototype, {
             this.notification.add(_t("Confirm the pending kitchen change before payment."), { type: "warning" });
             return false;
         }
-        const changes = await this._baseerKitchenChangesForPayment(order);
+        const snapshot = this._baseerKitchenPaymentSnapshot(order);
+        const changes = await this._baseerKitchenChangesForPayment(order, snapshot);
         if (this.getOrder()?.uuid !== order.uuid) return false;
         if (!changes.length) {
             return true;
@@ -118,9 +129,14 @@ patch(PosStore.prototype, {
             cancelLabel: _t("Back to order"),
         });
         if (!confirmed || this.getOrder()?.uuid !== order.uuid) return false;
+        if (JSON.stringify(snapshot) !== JSON.stringify(this._baseerKitchenPaymentSnapshot(order))) {
+            this.notification.add(_t("The order changed. Review it and press Payment again."), { type: "warning" });
+            return false;
+        }
 
+        const cart = this._baseerKitchenPaymentCart(order);
         try {
-            if (!(await this.baseerSendCurrentOrder("send_before_payment"))) return false;
+            if (!(await this.baseerSendCurrentOrder("send_before_payment", { snapshot, lines: changes }))) return false;
         } catch (error) {
             this.notification.add(
                 error?.data?.message || _t("The kitchen changes could not be sent. Check the order and try again."),
@@ -130,8 +146,17 @@ patch(PosStore.prototype, {
         }
         const current = this.getOrder();
         if (current?.uuid !== order.uuid || current.uiState?.baseerPreparationAction) return false;
-        const remaining = await this._baseerKitchenChangesForPayment(current);
-        return this.getOrder()?.uuid === order.uuid && !remaining.length;
+        // The server already validated and acknowledged the routed lines.
+        // Only unchanged, previously classified non-kitchen deltas may remain.
+        const routed = new Set(changes.map((line) => line.line_uuid));
+        const allowed = new Set(snapshot.changes.filter((line) => !routed.has(line.line_uuid)).map((line) => JSON.stringify(line)));
+        const remaining = this._baseerKitchenPaymentSnapshot(current).changes;
+        if (current.isRefund || cart !== this._baseerKitchenPaymentCart(current)
+            || remaining.some((line) => !allowed.has(JSON.stringify(line)))) {
+            this.notification.add(_t("The order changed. Review it and press Payment again."), { type: "warning" });
+            return false;
+        }
+        return true;
     },
 
     async _askForPreparation() {
@@ -558,7 +583,30 @@ patch(PosStore.prototype, {
         return Object.values(counts);
     },
 
-    async baseerSendCurrentOrder(actionType = "send") {
+    async baseerSendCurrentOrder(actionType = "send", paymentReview = null) {
+        const order = this.getOrder();
+        if (!this.config.baseer_direct_print_enabled || !order) return;
+        this._baseerKitchenSends ||= new Set();
+        if (this._baseerKitchenSends.has(order.uuid)) return false;
+        this._baseerKitchenSends.add(order.uuid);
+        let closeNotice;
+        let blocked = false;
+        try {
+            // Native guest/preset dialogs must remain usable before the network lock.
+            if (this.ensureGuestCustomerCount) await this.ensureGuestCustomerCount(order);
+            if (this.getOrder()?.uuid !== order.uuid) return false;
+            closeNotice = this.notification.add(_t("Sending to kitchen. Please wait."), { type: "info", sticky: true });
+            this.env.services.ui.block();
+            blocked = true;
+            return await this._baseerSendCurrentOrder(actionType, paymentReview);
+        } finally {
+            this._baseerKitchenSends.delete(order.uuid);
+            if (blocked) this.env.services.ui.unblock();
+            closeNotice?.();
+        }
+    },
+
+    async _baseerSendCurrentOrder(actionType, paymentReview) {
         const order = this.getOrder();
         if (!this.config.baseer_direct_print_enabled || !order) {
             return;
@@ -569,9 +617,6 @@ patch(PosStore.prototype, {
         }
         if (this.data.network.offline) {
             throw new Error("Baseer direct printing needs an online POS connection before sending to kitchen.");
-        }
-        if (this.ensureGuestCustomerCount) {
-            await this.ensureGuestCustomerCount(order);
         }
         // A brand-new order needs an id before its first auditable preparation
         // action. Existing orders must not be pre-synced here: doing so would
@@ -591,7 +636,13 @@ patch(PosStore.prototype, {
             this.notification.add(_t("The kitchen result is still unknown. Reconnect and check it before retrying."), { type: "warning" });
             return false;
         }
-        const paymentLines = actionType === "send_before_payment" ? await this._baseerKitchenChangesForPayment(order) : null;
+        if (actionType === "send_before_payment" && (!paymentReview || order.isRefund
+            || order.uiState.baseerPreparationAction
+            || JSON.stringify(paymentReview.snapshot) !== JSON.stringify(this._baseerKitchenPaymentSnapshot(order)))) {
+            this.notification.add(_t("The order changed. Review it and press Payment again."), { type: "warning" });
+            return false;
+        }
+        const paymentLines = actionType === "send_before_payment" ? paymentReview.lines : null;
         if (this.getOrder()?.uuid !== order.uuid) return false;
         const action = order.uiState.baseerPreparationAction || buildBaseerPreparationAction(order, actionType, paymentLines);
         if (!action.lines.length) {
@@ -600,7 +651,8 @@ patch(PosStore.prototype, {
         }
         order.uiState.baseerPreparationAction = action;
         try {
-            await this.sendOrderInPreparation(order);
+            const result = await this.sendOrderInPreparation(order);
+            if (result === false) return false;
             this.addPendingOrder([order.id]);
             return true;
         } finally {

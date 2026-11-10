@@ -2665,11 +2665,13 @@ msgid "This order is being saved for the merge."
 msgstr "جارٍ حفظ هذا الطلب للدمج."
 
 #. module: baseer_pos_print_bridge
+#. odoo-javascript
 #: code:addons/baseer_pos_print_bridge/static/src/app/preparation_bridge.js:0
 msgid "Sending to kitchen. Please wait."
 msgstr "جارٍ الإرسال للمطبخ، انتظر لحظة."
 
 #. module: baseer_pos_print_bridge
+#. odoo-javascript
 #: code:addons/baseer_pos_print_bridge/static/src/app/preparation_bridge.js:0
 msgid "The order changed. Review it and press Payment again."
 msgstr "تغيّر الطلب. راجعه ثم اضغط الدفع مرة أخرى."

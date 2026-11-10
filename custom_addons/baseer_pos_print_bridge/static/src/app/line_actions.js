@@ -259,6 +259,7 @@ patch(PosStore.prototype, {
         const previousQuantity = line.getQuantity();
         const previousPreparation = clonePreparationState(order);
         const expectedQuantity = getBaseerSentQuantity(order, line);
+        const lineId = line.id;
         const result = line.setQuantity(newQuantity, Boolean(line.combo_line_ids?.length));
         if (result !== true) {
             this.dialog.add(AlertDialog, result);
@@ -281,6 +282,22 @@ patch(PosStore.prototype, {
             if (result === false || !stillCurrent()) return false;
             if (newQuantity === 0 && line.order_id) {
                 order.removeOrderline(line);
+            }
+            if (newQuantity === 0 && this.config.baseer_direct_print_enabled) {
+                // The acknowledged kitchen action already removed the line on
+                // the server. Keep native cart cleanup, but don't send its
+                // duplicate removal command with the next sync or payment.
+                const { unlink, delete: remove } = order.models.commands["pos.order"];
+                for (const commands of [unlink, remove]) {
+                    const remaining = commands.get("lines")?.filter(
+                        ({ id, parentId }) => id !== lineId || parentId !== order.id
+                    );
+                    if (remaining?.length) {
+                        commands.set("lines", remaining);
+                    } else {
+                        commands.delete("lines");
+                    }
+                }
             }
             // Only native sync's authoritative cancelled state permits local
             // retirement. Empty drafts can still hold deposits or refunds.

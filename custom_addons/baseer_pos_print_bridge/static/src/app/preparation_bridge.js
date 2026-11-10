@@ -1188,6 +1188,9 @@ patch(PosStore.prototype, {
                 if (status?.pending) {
                     void this._baseerWatchPreparationStatus(order, auditedAction, status);
                 }
+                // The native result reports browser printing, which is
+                // bypassed here. The durable kitchen acknowledgement is success.
+                return true;
             }
             return result;
         } catch (error) {

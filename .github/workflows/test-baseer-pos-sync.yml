@@ -43,7 +43,7 @@ jobs:
           node-version: '22'
       - name: Test session report flow and browser cache lifecycle
         run: |
-          node --test custom_addons/baseer_pos_print_bridge/tests/frontend_stability.test.mjs custom_addons/baseer_pos_print_bridge/tests/kitchen_recovery.test.mjs
+          node --test custom_addons/baseer_pos_print_bridge/tests/frontend_stability.test.mjs custom_addons/baseer_pos_print_bridge/tests/kitchen_recovery.test.mjs custom_addons/baseer_pos_print_bridge/tests/cancelled_order_cleanup.test.mjs
           node --test custom_addons/baseer_pos_product_substitution/tests/*.test.mjs
           node --test tests/receipt_image.test.mjs
           node --test custom_addons/baseer_pos_print_bridge/static/tests/session_report.test.mjs

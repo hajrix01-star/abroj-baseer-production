@@ -26,30 +26,6 @@ function clonePreparationState(order) {
     return JSON.parse(JSON.stringify(order.last_order_preparation_change || { lines: {} }));
 }
 
-export function captureBaseerCancellationRoute(pos, order) {
-    const { current: page, params } = pos.router.state;
-    return {
-        page, orderUuid: params.orderUuid,
-        owned: pos.getOrder()?.uuid === order?.uuid
-            && params.orderUuid === order?.uuid && page !== "TicketScreen",
-    };
-}
-
-export function navigateBaseerAfterCancellation(pos, route) {
-    if (!route.owned || pos.router.state.current !== route.page
-            || pos.router.state.params.orderUuid !== route.orderUuid) return;
-    // Follow native restaurant deletion without opening or modifying an
-    // unrelated direct-sale draft that a render may have selected meanwhile.
-    if (pos.config.module_pos_restaurant) {
-        pos.setOrder(null);
-        pos.navigate("FloorScreen");
-    } else if (pos.getOrder()?.state === "draft") {
-        pos.navigate("ProductScreen", { orderUuid: pos.getOrder().uuid });
-    } else {
-        pos.showDefault();
-    }
-}
-
 function preparationLine(order, line) {
     const entries = Object.entries(order?.last_order_preparation_change?.lines || {});
     return entries.find(
@@ -136,19 +112,6 @@ patch(Orderline.prototype, {
     setup() {
         super.setup(...arguments);
         this.pos = usePos();
-    },
-
-    get lineScreenValues() {
-        if (this.props.mode === "display") {
-            const { uuid, order_id: order } = this.line;
-            // A cancellation can remove the line's price entries before OWL
-            // unmounts its row. Skip that row before native price getters run.
-            if (!order?.unitPrices?.baseLineByLineUuids?.[uuid]?.tax_details ||
-                !order.prices?.baseLineByLineUuids?.[uuid]?.tax_details) {
-                return null;
-            }
-        }
-        return super.lineScreenValues;
     },
 
     get baseerLineActionsVisible() {
@@ -268,7 +231,6 @@ patch(PosStore.prototype, {
         line = await this._baseerCurrentKitchenLine(line);
         if (!line) return false;
         const order = line.order_id;
-        const cancellationRoute = captureBaseerCancellationRoute(this, order);
         if (order.uiState.baseerPreparationAction) {
             this.notification.add(_t("The kitchen result is still unknown. Reconnect and check it before retrying."), { type: "warning" });
             return false;
@@ -284,7 +246,6 @@ patch(PosStore.prototype, {
         const previousQuantity = line.getQuantity();
         const previousPreparation = clonePreparationState(order);
         const expectedQuantity = getBaseerSentQuantity(order, line);
-        const lineId = line.id;
         const result = line.setQuantity(newQuantity, Boolean(line.combo_line_ids?.length));
         if (result !== true) {
             this.dialog.add(AlertDialog, result);
@@ -300,49 +261,26 @@ patch(PosStore.prototype, {
         }]);
         order.uiState.baseerPreparationAction = action;
         const stillCurrent = () => order.uiState.baseerPreparationAction?.action_uuid === action.action_uuid;
-        let retiredCancellation = false;
 
         this.env.services.ui.block();
         try {
             const result = await this.sendOrderInPreparation(order, { byPassPrint: true });
             if (result === false || !stillCurrent()) return false;
-            // Native synchronization can finalize an empty order as cancelled.
-            // removeOrderline asserts editability, so it is only valid for a
-            // surviving draft, never for this acknowledged terminal state.
-            if (order.state === "cancel") {
-                this.removePendingOrder(order);
-                this.data.localDeleteCascade(order);
-                retiredCancellation = true;
-                return true;
-            }
             if (newQuantity === 0 && line.order_id) {
                 order.removeOrderline(line);
             }
-            if (newQuantity === 0 && this.config.baseer_direct_print_enabled) {
-                // The acknowledged kitchen action already removed the line on
-                // the server. Keep native cart cleanup, but don't send its
-                // duplicate removal command with the next sync or payment.
-                const { unlink, delete: remove } = order.models.commands["pos.order"];
-                for (const commands of [unlink, remove]) {
-                    const remaining = commands.get("lines")?.filter(
-                        ({ id, parentId }) => id !== lineId || parentId !== order.id
-                    );
-                    if (remaining?.length) {
-                        commands.set("lines", remaining);
-                    } else {
-                        commands.delete("lines");
-                    }
-                }
+            // Only native sync's authoritative cancelled state permits local
+            // retirement. Empty drafts can still hold deposits or refunds.
+            if (order.state === "cancel") {
+                this.removePendingOrder(order);
+                this.data.localDeleteCascade(order);
+                this.showDefault();
+            } else {
+                this.addPendingOrder([order.id]);
             }
-            this.addPendingOrder([order.id]);
             return true;
         } catch (error) {
             if (!stillCurrent()) return false;
-            // A local cleanup error cannot undo an acknowledged cancellation.
-            if (order.state === "cancel") {
-                this.notification.add(_t("Kitchen cancellation was recorded."), { type: "warning" });
-                return false;
-            }
             if (error?.baseerPreparationOutcomeUnknown) {
                 this.notification.add(
                     _t("The kitchen result is still unknown. Reconnect and check it before retrying."),
@@ -366,7 +304,6 @@ patch(PosStore.prototype, {
             }
             try {
                 await this.data.synchronizeLocalDataInIndexedDB();
-                if (retiredCancellation) navigateBaseerAfterCancellation(this, cancellationRoute);
             } finally {
                 this.env.services.ui.unblock();
             }

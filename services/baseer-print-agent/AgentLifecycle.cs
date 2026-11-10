@@ -162,6 +162,7 @@ static class AgentLifecycle
         File.Copy(sourceExecutable, InstalledExecutable, overwrite: true);
         RegisterRepairProtocol(InstalledExecutable);
         RegisterLogonTask(InstalledExecutable);
+        RegisterUpdateTask(InstalledExecutable);
         var configPath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
             "BaseerPrintAgent", "config.json");
@@ -204,6 +205,8 @@ static class AgentLifecycle
             }
         }
     }
+
+    public static void PrepareForUpdate() => StopPreviousAgents();
 
     public static int Repair(string executablePath, string configPath)
     {
@@ -447,5 +450,17 @@ static class AgentLifecycle
         task.WaitForExit();
         if (task.ExitCode != 0)
             throw new InvalidOperationException("Windows could not register automatic agent startup. " + task.StandardError.ReadToEnd().Trim());
+    }
+
+    private static void RegisterUpdateTask(string executablePath)
+    {
+        var info = new ProcessStartInfo("schtasks.exe") { UseShellExecute = false, CreateNoWindow = true, RedirectStandardError = true };
+        info.ArgumentList.Add("/Create"); info.ArgumentList.Add("/TN"); info.ArgumentList.Add("Baseer Print Agent Update");
+        info.ArgumentList.Add("/SC"); info.ArgumentList.Add("ONCE"); info.ArgumentList.Add("/ST"); info.ArgumentList.Add("00:00");
+        info.ArgumentList.Add("/RU"); info.ArgumentList.Add("SYSTEM"); info.ArgumentList.Add("/RL"); info.ArgumentList.Add("HIGHEST");
+        info.ArgumentList.Add("/TR"); info.ArgumentList.Add($"\"{executablePath}\" apply-update"); info.ArgumentList.Add("/F");
+        using var task = Process.Start(info) ?? throw new InvalidOperationException("Windows could not register the agent update task.");
+        task.WaitForExit();
+        if (task.ExitCode != 0) throw new InvalidOperationException("Windows could not register automatic agent updates. " + task.StandardError.ReadToEnd().Trim());
     }
 }

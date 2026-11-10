@@ -283,11 +283,21 @@ class PosConfig(models.Model):
         self.ensure_one()
         if not self.env.user.has_group('base.group_system'):
             raise AccessError(_('Only a system administrator can download the Windows print agent.'))
-        return {
-            'type': 'ir.actions.act_url',
-            'url': self.env['baseer.print.agent.release']._PUBLIC_DOWNLOAD_URL,
-            'target': 'new',
-        }
+        release = self.env['baseer.print.agent.release'].search([
+            ('state', '=', 'approved'),
+        ], order='approved_at desc, id desc', limit=1)
+        if not release:
+            # Preserve the install/recovery path before the first release
+            # record is entered.  Once an administrator approves an external
+            # GitHub asset, `action_download()` takes precedence below.
+            return {
+                'type': 'ir.actions.act_url',
+                'url': self.env['baseer.print.agent.release']._PUBLIC_DOWNLOAD_URL,
+                'target': 'new',
+            }
+        action = release.action_download()
+        action['target'] = 'new'
+        return action
 
     def action_baseer_open_guided_print_setup(self):
         self.ensure_one()

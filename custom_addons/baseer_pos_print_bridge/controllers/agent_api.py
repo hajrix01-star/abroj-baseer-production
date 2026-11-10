@@ -140,6 +140,15 @@ class BaseerPrintAgentApi(http.Controller):
             return self._runtime_busy()
         return self._response({'ok': True})
 
+    @http.route('/baseer/print/v1/update/manifest', type='http', auth='public', methods=['GET'], csrf=False, save_session=False)
+    def update_manifest(self, **kwargs):
+        """Authenticated release decision for an already paired agent."""
+        agent = self._agent()
+        if not agent:
+            return self._invalid()
+        manifest = request.env['baseer.print.agent.release'].sudo().auto_update_manifest()
+        return self._response({'update': manifest})
+
     @http.route('/baseer/print/v1/runtime/release', type='http', auth='public', methods=['POST'], csrf=False, save_session=False)
     def release_runtime(self, **kwargs):
         """Accept an exact local runtime handover; never release a job lease."""

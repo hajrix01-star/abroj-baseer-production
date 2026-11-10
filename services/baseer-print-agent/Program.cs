@@ -28,6 +28,9 @@ if (args.Length > 0 && args[0].Equals("watch", StringComparison.OrdinalIgnoreCas
 if (args.Length > 0 && args[0].Equals("repair", StringComparison.OrdinalIgnoreCase))
     return AgentLifecycle.Repair(Environment.ProcessPath ?? throw new InvalidOperationException("Agent executable path is unavailable."), configPath);
 
+if (args.Length > 0 && args[0].Equals("apply-update", StringComparison.OrdinalIgnoreCase))
+    return AutoUpdate.Apply(Environment.ProcessPath ?? throw new InvalidOperationException("Agent executable path is unavailable."), configPath);
+
 if (args.Length > 0 && args[0].Equals("pair-ui", StringComparison.OrdinalIgnoreCase))
     return AgentLifecycle.ShowPairingWindow(configPath, Environment.ProcessPath ?? throw new InvalidOperationException("Agent executable path is unavailable."));
 
@@ -187,11 +190,18 @@ sealed class PrintAgent
         {
             AgentRuntime.WriteCurrentId(_configPath);
             await RecoverUnknownJobsAsync();
+            var nextUpdateCheck = DateTimeOffset.UtcNow;
             while (true)
             {
                 try
                 {
                     await HeartbeatAsync();
+                    if (DateTimeOffset.UtcNow >= nextUpdateCheck)
+                    {
+                        nextUpdateCheck = DateTimeOffset.UtcNow.AddHours(6);
+                        if (_config.InFlightJobs.Count == 0 && await AutoUpdate.TryStageAndStartAsync(_http, _configPath))
+                            return;
+                    }
                     await SyncPrintersAsync();
                     var job = await ClaimAsync();
                     if (job is not null) await ExecuteAsync(job);

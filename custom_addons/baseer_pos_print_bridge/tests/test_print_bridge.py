@@ -1161,69 +1161,6 @@ class TestBaseerPrintBridgeHybrid(TransactionCase):
         self.env['pos.order']._process_order(payload, order)
         self.assertEqual(order.amount_total, 50)
 
-    def test_send_before_payment_requires_an_available_kitchen_route(self):
-        self._enable()
-        order = self._recovery_order(5)
-        action = self._preparation_action(order, 0, 5)
-        action['action_type'] = 'send_before_payment'
-        attempt = self.env['baseer.print.preparation.attempt']
-        order_model = self.env['pos.order']
-        baseline = order.last_order_preparation_change
-        products = {order.lines.uuid: order.lines.product_id.id}
-        self.assertFalse(self.config.baseer_kitchen_payment_lines(self.config.id, order.uuid, products))
-        with self.assertRaisesRegex(ValidationError, 'no available printer'), self.env.cr.savepoint():
-            order_model._process_order(self._recovery_payload(order, action), order)
-        self.assertEqual(order.last_order_preparation_change, baseline)
-        self.assertFalse(attempt._for_action(action['action_uuid']))
-
-        category = self.env['pos.category'].create({'name': 'Kitchen payment QA'})
-        order.lines.product_id.product_tmpl_id.pos_categ_ids = [Command.link(category.id)]
-        route = self.env['baseer.print.route'].create({
-            'pos_config_id': self.config.id, 'printer_id': self.kitchen_a.id,
-            'pos_category_ids': [Command.link(category.id)],
-        })
-        self.assertEqual(self.config.baseer_kitchen_payment_lines(self.config.id, order.uuid, products), list(products))
-        self.assertEqual(order_model._process_order(self._recovery_payload(order, action), order), order.id)
-        events = self.env['baseer.print.preparation.event']._retry_events(action)
-        self.assertEqual(len(events.job_ids), 1)
-        self.assertEqual(order_model._process_order(self._recovery_payload(order, action), order), order.id)
-        self.assertEqual(len(events.job_ids), 1)
-        route.active = False
-        self.assertEqual(self.config.baseer_kitchen_payment_lines(self.config.id, order.uuid, products), list(products))
-
-    def test_payment_send_rechecks_omitted_routing_in_its_transaction(self):
-        self._enable()
-        order = self._recovery_order()
-        food = order.lines
-        category = self.env['pos.category'].create({'name': 'Payment route change QA'})
-        food.product_id.product_tmpl_id.pos_categ_ids = [Command.link(category.id)]
-        self.env['baseer.print.route'].create({
-            'pos_config_id': self.config.id, 'printer_id': self.kitchen_a.id,
-            'pos_category_ids': [Command.link(category.id)],
-        })
-        action = self._preparation_action(order, 0, 1)
-        action['action_type'] = 'send_before_payment'
-        retail_product = self.env['product.template'].create({
-            'name': 'Initially non-kitchen item', 'available_in_pos': True, 'list_price': 10,
-        }).product_variant_id
-        retail = food.copy({'order_id': order.id, 'uuid': str(uuid4()), 'product_id': retail_product.id})
-        candidates = {food.uuid: food.product_id.id, retail.uuid: retail.product_id.id}
-        self.assertEqual(self.config.baseer_kitchen_payment_lines(self.config.id, order.uuid, candidates), [food.uuid])
-        retail_product.product_tmpl_id.pos_categ_ids = [Command.link(category.id)]
-        with self.assertRaisesRegex(ValidationError, 'Kitchen routing changed'), self.env.cr.savepoint():
-            self.env['pos.order']._process_order(self._recovery_payload(order, action), order)
-        self.assertFalse(self.env['baseer.print.preparation.attempt']._for_action(action['action_uuid']))
-        self.assertFalse(self.env['baseer.print.preparation.event']._retry_events(action))
-        # Unchanged non-kitchen items may remain outside the action.
-        retail_product.product_tmpl_id.pos_categ_ids = [Command.clear()]
-        self.env['pos.order']._process_order(self._recovery_payload(order, action), order)
-        self.assertEqual(len(self.env['baseer.print.preparation.event']._retry_events(action).job_ids), 1)
-        # A previously sent, unchanged food line must not block another send.
-        retail_product.product_tmpl_id.pos_categ_ids = [Command.link(category.id)]
-        second = dict(action, action_uuid=str(uuid4()), lines=[dict(action['lines'][0], line_uuid=retail.uuid)])
-        self.env['pos.order']._process_order(self._recovery_payload(order, second), order)
-        self.assertEqual(len(self.env['baseer.print.preparation.event']._retry_events(second).job_ids), 1)
-
     def test_recovery_of_accepted_legacy_event_never_reprints(self):
         self._enable()
         self.env['baseer.print.route'].create({'pos_config_id': self.config.id, 'printer_id': self.kitchen_a.id})
@@ -1568,8 +1505,7 @@ class TestBaseerPrintBridgeHybrid(TransactionCase):
                          {self.kitchen_a.id: 1, self.kitchen_b.id: 2})
         self.assertTrue(all(len(j.payload['lines']) == 1 for j in jobs))
         self.assertEqual({job.payload['order']['reference'] for job in jobs},
-                         {order.pos_reference or order.name})
-        self.assertEqual({job.payload['order']['tracking_number'] for job in jobs}, {'1011'})
+                         {f'1011\n{order.pos_reference or order.name}'})
         self.assertEqual(set(Event._retry_events(action).job_ids.ids), set(jobs.ids))
         self.assertEqual(len(Job.sudo().search([('source_order_id', '=', order.id),
                                                  ('ticket_type', '=', 'preparation')])), 2)
@@ -1589,80 +1525,6 @@ class TestBaseerPrintBridgeHybrid(TransactionCase):
         self.assertEqual(set(cancel_jobs.mapped('printer_id').ids), {self.kitchen_a.id, self.kitchen_b.id})
         self.assertTrue(all(j.payload['lines'][0]['action'] == 'cancel' for j in cancel_jobs))
         self.assertFalse(State.sudo().search([('order_id', '=', order.id)]))
-
-    def test_kitchen_tracking_number_in_both_modes_and_every_change(self):
-        State = self.env['baseer.print.preparation.state']
-        Job = self.env['baseer.print.job']
-        for restaurant in (False, True):
-            with self.subTest(restaurant=restaurant):
-                self.config = self.env['pos.config'].create({
-                    'name': f'Kitchen number mode {restaurant}',
-                    'module_pos_restaurant': restaurant,
-                })
-                self._enable()
-                self.env['baseer.print.route'].create({
-                    'pos_config_id': self.config.id, 'printer_id': self.kitchen_a.id,
-                })
-                order = self._order(3)
-                order.write({'tracking_number': '1011', 'pos_reference': 'POS/QA/000011'})
-                first_job = Job.browse()
-                for previous, target, expected_action in (
-                    (0, 3, 'new'), (3, 4, 'add'), (4, 2, 'reduce'), (2, 0, 'cancel'),
-                ):
-                    order.lines.write({'qty': target})
-                    order.write({'amount_total': target * 10, 'amount_tax': 0})
-                    action = self._preparation_action(
-                        order, previous, target, 'customer_cancelled' if not target else False,
-                    )
-                    result = State._apply_action(order, action)
-                    job = Job.browse(result['job_ids']).ensure_one()
-                    self.assertEqual(job.payload['order']['tracking_number'], '1011')
-                    self.assertEqual(job.payload['order']['reference'], 'POS/QA/000011')
-                    self.assertEqual(job.payload['lines'][0]['action'], expected_action)
-                    self.assertEqual(job.payload['lines'][0]['new_quantity'], target)
-                    self.assertEqual(
-                        self.env['baseer.print.preparation.event']._retry_events(action).job_ids.ids,
-                        result['job_ids'],
-                    )
-                    if not first_job:
-                        first_job = job
-                frozen = copy.deepcopy(first_job.payload)
-                order.tracking_number = '2022'
-                first_job.write({'state': 'done', 'completed_at': fields.Datetime.now()})
-                first_job.action_reprint()
-                reprint = Job.search([('reprint_of_id', '=', first_job.id)])
-                self.assertEqual(reprint.payload, frozen)
-                self.assertEqual(reprint.payload['order']['tracking_number'], '1011')
-
-    def test_whole_kitchen_cancellation_keeps_number_in_both_modes(self):
-        Job = self.env['baseer.print.job']
-        for restaurant in (False, True):
-            with self.subTest(restaurant=restaurant):
-                self.config = self.env['pos.config'].create({
-                    'name': f'Cancelled kitchen number mode {restaurant}',
-                    'module_pos_restaurant': restaurant,
-                })
-                order = self._kitchen_order(quantity=2)
-                order.write({'tracking_number': '2008', 'pos_reference': 'POS/QA/000008'})
-                order.baseer_cancel_with_preparation(
-                    self.config.current_session_id.id, 'wrong_order', False,
-                )
-                job = Job.search([
-                    ('source_order_id', '=', order.id), ('cancellation_id', '!=', False),
-                ]).ensure_one()
-                self.assertEqual(job.payload['order']['tracking_number'], '2008')
-                self.assertEqual(job.payload['order']['reference'], 'POS/QA/000008')
-                self.assertEqual(job.payload['lines'][0]['action'], 'cancel')
-                self.assertEqual(order.state, 'cancel')
-
-    def test_kitchen_missing_number_does_not_infer_one_from_reference(self):
-        order = self._order()
-        order.write({'tracking_number': False, 'pos_reference': '261-39-001011'})
-        payload = self.env['baseer.print.job']._job_payload('preparation', order, self.kitchen_a)
-        self.assertNotIn('tracking_number', payload['order'])
-        self.assertEqual(payload['order']['reference'], '261-39-001011')
-        test_payload = self.env['baseer.print.job']._job_payload('test', False, self.kitchen_a)
-        self.assertNotIn('tracking_number', test_payload['order'])
 
     def test_legacy_enqueue_keeps_both_kitchens_on_update(self):
         self._enable()

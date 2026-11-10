@@ -1568,7 +1568,8 @@ class TestBaseerPrintBridgeHybrid(TransactionCase):
                          {self.kitchen_a.id: 1, self.kitchen_b.id: 2})
         self.assertTrue(all(len(j.payload['lines']) == 1 for j in jobs))
         self.assertEqual({job.payload['order']['reference'] for job in jobs},
-                         {f'1011\n{order.pos_reference or order.name}'})
+                         {order.pos_reference or order.name})
+        self.assertEqual({job.payload['order']['tracking_number'] for job in jobs}, {'1011'})
         self.assertEqual(set(Event._retry_events(action).job_ids.ids), set(jobs.ids))
         self.assertEqual(len(Job.sudo().search([('source_order_id', '=', order.id),
                                                  ('ticket_type', '=', 'preparation')])), 2)
@@ -1588,6 +1589,80 @@ class TestBaseerPrintBridgeHybrid(TransactionCase):
         self.assertEqual(set(cancel_jobs.mapped('printer_id').ids), {self.kitchen_a.id, self.kitchen_b.id})
         self.assertTrue(all(j.payload['lines'][0]['action'] == 'cancel' for j in cancel_jobs))
         self.assertFalse(State.sudo().search([('order_id', '=', order.id)]))
+
+    def test_kitchen_tracking_number_in_both_modes_and_every_change(self):
+        State = self.env['baseer.print.preparation.state']
+        Job = self.env['baseer.print.job']
+        for restaurant in (False, True):
+            with self.subTest(restaurant=restaurant):
+                self.config = self.env['pos.config'].create({
+                    'name': f'Kitchen number mode {restaurant}',
+                    'module_pos_restaurant': restaurant,
+                })
+                self._enable()
+                self.env['baseer.print.route'].create({
+                    'pos_config_id': self.config.id, 'printer_id': self.kitchen_a.id,
+                })
+                order = self._order(3)
+                order.write({'tracking_number': '1011', 'pos_reference': 'POS/QA/000011'})
+                first_job = Job.browse()
+                for previous, target, expected_action in (
+                    (0, 3, 'new'), (3, 4, 'add'), (4, 2, 'reduce'), (2, 0, 'cancel'),
+                ):
+                    order.lines.write({'qty': target})
+                    order.write({'amount_total': target * 10, 'amount_tax': 0})
+                    action = self._preparation_action(
+                        order, previous, target, 'customer_cancelled' if not target else False,
+                    )
+                    result = State._apply_action(order, action)
+                    job = Job.browse(result['job_ids']).ensure_one()
+                    self.assertEqual(job.payload['order']['tracking_number'], '1011')
+                    self.assertEqual(job.payload['order']['reference'], 'POS/QA/000011')
+                    self.assertEqual(job.payload['lines'][0]['action'], expected_action)
+                    self.assertEqual(job.payload['lines'][0]['new_quantity'], target)
+                    self.assertEqual(
+                        self.env['baseer.print.preparation.event']._retry_events(action).job_ids.ids,
+                        result['job_ids'],
+                    )
+                    if not first_job:
+                        first_job = job
+                frozen = copy.deepcopy(first_job.payload)
+                order.tracking_number = '2022'
+                first_job.write({'state': 'done', 'completed_at': fields.Datetime.now()})
+                first_job.action_reprint()
+                reprint = Job.search([('reprint_of_id', '=', first_job.id)])
+                self.assertEqual(reprint.payload, frozen)
+                self.assertEqual(reprint.payload['order']['tracking_number'], '1011')
+
+    def test_whole_kitchen_cancellation_keeps_number_in_both_modes(self):
+        Job = self.env['baseer.print.job']
+        for restaurant in (False, True):
+            with self.subTest(restaurant=restaurant):
+                self.config = self.env['pos.config'].create({
+                    'name': f'Cancelled kitchen number mode {restaurant}',
+                    'module_pos_restaurant': restaurant,
+                })
+                order = self._kitchen_order(quantity=2)
+                order.write({'tracking_number': '2008', 'pos_reference': 'POS/QA/000008'})
+                order.baseer_cancel_with_preparation(
+                    self.config.current_session_id.id, 'wrong_order', False,
+                )
+                job = Job.search([
+                    ('source_order_id', '=', order.id), ('cancellation_id', '!=', False),
+                ]).ensure_one()
+                self.assertEqual(job.payload['order']['tracking_number'], '2008')
+                self.assertEqual(job.payload['order']['reference'], 'POS/QA/000008')
+                self.assertEqual(job.payload['lines'][0]['action'], 'cancel')
+                self.assertEqual(order.state, 'cancel')
+
+    def test_kitchen_missing_number_does_not_infer_one_from_reference(self):
+        order = self._order()
+        order.write({'tracking_number': False, 'pos_reference': '261-39-001011'})
+        payload = self.env['baseer.print.job']._job_payload('preparation', order, self.kitchen_a)
+        self.assertNotIn('tracking_number', payload['order'])
+        self.assertEqual(payload['order']['reference'], '261-39-001011')
+        test_payload = self.env['baseer.print.job']._job_payload('test', False, self.kitchen_a)
+        self.assertNotIn('tracking_number', test_payload['order'])
 
     def test_legacy_enqueue_keeps_both_kitchens_on_update(self):
         self._enable()

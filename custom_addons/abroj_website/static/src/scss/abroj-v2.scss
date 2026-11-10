@@ -176,3 +176,6 @@ html[dir="rtl"] .abroj-v2 h3 { line-height: 1.5; }
 }
 
 @media (max-width: 780px) { .abroj-v2__hero:has(.abroj-v2__mobile-menu[open]) { z-index: 10001; } }
+
+html[dir="rtl"] .abroj-v2 .abroj-v2__hero h1 { max-width: 720px; font-size: clamp(2.1rem, 4.4vw, 3.4rem); }
+@media (min-width: 1800px) { html[dir="rtl"] .abroj-v2 .abroj-v2__hero h1 { font-size: 3.1rem; } }

@@ -189,11 +189,8 @@ class BaseerPrintJob(models.Model):
             'created_at': fields.Datetime.to_string(fields.Datetime.now()),
         }
         if order:
-            if ticket_type == 'preparation' and order.tracking_number:
-                # Keep the native customer-facing number distinct from the POS
-                # reference in both operating modes. The queued JSON freezes it
-                # for the original print and any later reprint.
-                order_payload['tracking_number'] = str(order.tracking_number)
+            if ticket_type == 'preparation' and not order.config_id.module_pos_restaurant and order.tracking_number:
+                order_payload['reference'] = f"{order.tracking_number}\n{order_payload['reference']}"
             cashier = (
                 order.employee_id
                 if 'employee_id' in order._fields and order.employee_id

@@ -30,7 +30,7 @@
             <details class="abroj-v2__mobile-menu">
               <summary><span><t t-if="is_ar">القائمة</t><t t-else="">Menu</t></span><i aria-hidden="true"/></summary>
               <nav t-att-aria-label="'التنقل في الموقع' if is_ar else 'Mobile navigation'">
-                <img class="abroj-v2__mobile-logo" src="/abroj_website/static/src/img/abroj-logo-vector-white-20260928.svg" alt="Abroj"/>
+                <img class="abroj-v2__mobile-logo" src="/abroj_website/static/src/img/abroj-logo-core-white-20261004.svg" alt="Abroj"/>
                 <a href="#home"><t t-if="is_ar">الرئيسية</t><t t-else="">Home</t></a><a href="#services"><t t-if="is_ar">خدماتنا</t><t t-else="">Services</t></a><a href="#projects"><t t-if="is_ar">تصفح مشاريعنا</t><t t-else="">Browse our projects</t></a><a href="#approach"><t t-if="is_ar">منهجنا</t><t t-else="">Approach</t></a><a href="#contact"><t t-if="is_ar">تواصل معنا</t><t t-else="">Contact</t></a>
                 <a class="abroj-v2__mobile-cta" href="#contact"><t t-if="is_ar">اطلب عرض سعر</t><t t-else="">Request a quote</t><span aria-hidden="true">←</span></a>
               </nav>

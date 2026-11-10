@@ -2,16 +2,13 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
-import test from 'node:test';
 import { webcrypto } from 'node:crypto';
 
 function runtime(file, native = {}) {
     class PosStore {}
-    class Orderline {}
     Object.assign(PosStore.prototype, native);
-    Object.defineProperties(Orderline.prototype, Object.getOwnPropertyDescriptors(native.orderline || {}));
     const sandbox = {
-        PosStore, PosOrder: class {}, PosOrderline: class {}, Orderline, OrderSummary: class {},
+        PosStore, PosOrder: class {}, PosOrderline: class {}, Orderline: class {}, OrderSummary: class {},
         SelectionPopup: class {}, TextInputPopup: class {}, ConfirmationDialog: class {},
         AlertDialog: class {}, NumberPopup: class {}, OrderReceipt: class {}, crypto: webcrypto,
         makeAwaitable: native.makeAwaitable || (async () => null),
@@ -20,7 +17,7 @@ function runtime(file, native = {}) {
         window: native.window || { location: {} },
         _t: (message, value) => message.replace('%s', value ?? '%s'),
         patch(target, extension) {
-            Object.setPrototypeOf(extension, Object.create(null, Object.getOwnPropertyDescriptors(target)));
+            Object.setPrototypeOf(extension, { ...target });
             Object.defineProperties(target, Object.getOwnPropertyDescriptors(extension));
         },
     };
@@ -32,28 +29,6 @@ function runtime(file, native = {}) {
 }
 
 const lineRuntime = runtime('line_actions.js');
-const displayRuntime = runtime('line_actions.js', { orderline: {
-    get lineScreenValues() {
-        const { uuid, order_id } = this.line;
-        return order_id.unitPrices.baseLineByLineUuids[uuid].tax_details;
-    },
-} });
-const displayLine = new displayRuntime.Orderline();
-const validTaxDetails = { total_included: 1.15 };
-const priceData = { baseLineByLineUuids: { salad: { tax_details: validTaxDetails } } };
-displayLine.props = { mode: 'display' };
-displayLine.line = { uuid: 'salad', order_id: { unitPrices: priceData, prices: priceData } };
-assert.equal(displayLine.lineScreenValues, validTaxDetails);
-// The server can remove the price entries before OWL unmounts the old row.
-delete priceData.baseLineByLineUuids.salad;
-assert.equal(displayLine.lineScreenValues, null);
-displayLine.line.order_id = null;
-assert.equal(displayLine.lineScreenValues, null);
-priceData.baseLineByLineUuids.salad = { tax_details: validTaxDetails };
-displayLine.line.order_id = { unitPrices: priceData, prices: priceData };
-displayLine.props.mode = 'receipt';
-assert.equal(displayLine.lineScreenValues, validTaxDetails);
-
 const line = { uuid: 'replacement', baseer_substitution_silent_quantity: 1, qty: 1,
     getQuantity() { return this.qty; } };
 const order = { getOrderlines: () => [line], last_order_preparation_change: { lines: {
@@ -70,210 +45,7 @@ assert.equal(lineRuntime.buildBaseerPreparationAction(order).lines.length, 0);
 order.last_order_preparation_change = { lines: {} };
 assert.equal(lineRuntime.getBaseerSentQuantity(order, line), 0);
 
-const paymentSteps = [];
-let confirmSend = false;
-const paymentBridge = runtime('preparation_bridge.js', {
-    ask: async (_dialog, options) => {
-        assert.equal(options.confirmLabel, 'Send to kitchen and continue to payment');
-        assert.equal(options.cancelLabel, 'Back to order');
-        paymentSteps.push('prompt');
-        return confirmSend;
-    },
-    async pay() { paymentSteps.push('pay'); },
-    async validateOrderFast() { paymentSteps.push('fast pay'); },
-});
-paymentBridge.buildBaseerPreparationAction = lineRuntime.buildBaseerPreparationAction;
-const paymentStore = new paymentBridge.PosStore();
-const food = { id: 9, pos_categ_ids: [{ id: 2 }] };
-const foodLine = { uuid: 'food-line', product_id: food, getQuantity: () => 1 };
-const retail = { id: 10, pos_categ_ids: [{ id: 3 }] };
-let retailQuantity = 1;
-const retailLine = { uuid: 'retail-line', product_id: retail, getQuantity: () => retailQuantity };
-let cartLines = [foodLine, retailLine];
-const paymentOrder = { uuid: 'order-for-payment', uiState: {}, getOrderlines: () => cartLines,
-    last_order_preparation_change: { lines: {} } };
-paymentStore.config = { id: 7, baseer_direct_print_enabled: true };
-paymentStore.getOrder = () => paymentOrder;
-let hasKitchenRoute = true;
-paymentStore.data = { call: async (model, method, [configId, orderUuid, products], _kwargs, queue) => {
-    assert.equal(model, 'pos.config');
-    assert.equal(method, 'baseer_kitchen_payment_lines');
-    assert.equal(configId, paymentStore.config.id);
-    assert.equal(orderUuid, paymentOrder.uuid);
-    assert.equal(queue, false);
-    return Object.keys(products).filter((key) => hasKitchenRoute && products[key] === food.id);
-} };
-paymentStore.notification = { add: () => paymentSteps.push('send error') };
-paymentStore.baseerSendCurrentOrder = async (actionType) => {
-    assert.equal(actionType, 'send_before_payment');
-    paymentSteps.push('send');
-    for (const line of cartLines) {
-        paymentOrder.last_order_preparation_change.lines[line.uuid] = {
-            uuid: line.uuid, product_id: line.product_id.id, quantity: line.getQuantity(),
-        };
-    }
-    return true;
-};
-assert.equal(await paymentStore.pay(), false);
-assert.deepEqual(paymentSteps.splice(0), ['prompt']);
-confirmSend = true;
-await paymentStore.pay();
-assert.deepEqual(paymentSteps.splice(0), ['prompt', 'send', 'pay']);
-await paymentStore.pay();
-assert.deepEqual(paymentSteps.splice(0), ['pay']);
-retailQuantity++;
-await paymentStore.pay();
-assert.deepEqual(paymentSteps.splice(0), ['pay']);
-cartLines = [foodLine];
-await paymentStore.pay();
-assert.deepEqual(paymentSteps.splice(0), ['pay']);
-paymentOrder.last_order_preparation_change.lines = {};
-paymentStore.baseerSendCurrentOrder = async () => { throw new Error('offline'); };
-assert.equal(await paymentStore.validateOrderFast(), false);
-assert.deepEqual(paymentSteps.splice(0), ['prompt', 'send error']);
-hasKitchenRoute = false;
-await paymentStore.validateOrderFast();
-assert.deepEqual(paymentSteps.splice(0), ['fast pay']);
-let finishRouting;
-paymentStore.data.call = () => new Promise((resolve) => { finishRouting = resolve; });
-cartLines = [retailLine];
-const paymentWithCartEdit = paymentStore.pay();
-cartLines.push(foodLine);
-finishRouting([]);
-assert.equal(await paymentWithCartEdit, false);
-assert.deepEqual(paymentSteps, ['send error']);
-
-// Exercise the real payment -> shared send -> acknowledgement chain, including
-// a mixed cart whose non-kitchen change survives the native preparation update.
-function paymentFixture() {
-    const calls = { routing: 0, sent: 0, pay: 0, blocked: 0, notices: [] };
-    const food = { uuid: 'food', product_id: { id: 1 }, qty: 1, getQuantity() { return this.qty; } };
-    const retail = { uuid: 'retail', product_id: { id: 2 }, qty: 1, getQuantity() { return this.qty; } };
-    const order = { id: 7, uuid: 'payment', isSynced: true, uiState: {},
-        getOrderlines: () => [food, retail], last_order_preparation_change: { lines: {} } };
-    const hooks = { confirm: async () => true, beforeSync: async () => {}, accepted: true };
-    const bridge = runtime('preparation_bridge.js', {
-        ask: async () => await hooks.confirm(),
-        async pay() { calls.pay++; },
-        async validateOrderFast() { calls.pay++; },
-        async sendOrderInPreparation(current) {
-            calls.sent++;
-            current.last_order_preparation_change.lines.food = {
-                uuid: 'food', product_id: 1, quantity: food.qty,
-            };
-            return false; // Direct printer bypass: server acknowledgement is authoritative.
-        },
-    });
-    bridge.buildBaseerPreparationAction = lineRuntime.buildBaseerPreparationAction;
-    const store = new bridge.PosStore();
-    store.config = { id: 1, baseer_direct_print_enabled: true };
-    store.getOrder = () => order;
-    store.env = { services: { ui: { block() { calls.blocked++; }, unblock() { calls.blocked--; } } } };
-    store.notification = { add(message) { calls.notices.push(message); return () => {}; } };
-    store.data = { network: { offline: false },
-        call: async () => { calls.routing++; return ['food']; },
-        synchronizeLocalDataInIndexedDB: async () => {},
-    };
-    store.syncAllOrders = async () => { await hooks.beforeSync(); order.isSynced = true; return [order]; };
-    store._baseerPreparationStatus = async () => ({ accepted: hooks.accepted });
-    store._baseerNotifyPreparationStatus = () => {};
-    store.addPendingOrder = () => {};
-    return { store, order, food, retail, calls, hooks };
-}
-
-test('payment sends a mixed cart with one routing lookup and durable acknowledgement', async () => {
-    const { store, calls } = paymentFixture();
-    await store.pay();
-    assert.equal(calls.routing, 1);
-    assert.equal(calls.sent, 1);
-    assert.equal(calls.pay, 1);
-    assert.equal(calls.blocked, 0);
-});
-
-test('already sent cart opens payment without routing or a new kitchen send', async () => {
-    const { store, order, calls } = paymentFixture();
-    for (const line of order.getOrderlines()) order.last_order_preparation_change.lines[line.uuid] = {
-        uuid: line.uuid, product_id: line.product_id.id, quantity: line.qty,
-    };
-    await store.pay();
-    assert.equal(calls.routing, 0);
-    assert.equal(calls.sent, 0);
-    assert.equal(calls.pay, 1);
-});
-
-test('Back leaves the order unsent and payment closed', async () => {
-    const { store, calls, hooks } = paymentFixture();
-    hooks.confirm = async () => false;
-    await store.pay();
-    assert.equal(calls.sent, 0);
-    assert.equal(calls.pay, 0);
-});
-
-test('editing the cart during confirmation requires review without sending', async () => {
-    const { store, food, calls, hooks } = paymentFixture();
-    hooks.confirm = async () => { food.qty++; return true; };
-    await store.pay();
-    assert.equal(calls.sent, 0);
-    assert.equal(calls.pay, 0);
-    assert.ok(calls.notices.includes('The order changed. Review it and press Payment again.'));
-});
-
-test('editing a new order during draft sync cannot reuse the previous approval', async () => {
-    const { store, order, food, calls, hooks } = paymentFixture();
-    order.isSynced = false;
-    hooks.beforeSync = async () => { food.qty++; };
-    await store.pay();
-    assert.equal(calls.routing, 1);
-    assert.equal(calls.sent, 0);
-    assert.equal(calls.pay, 0);
-    assert.equal(calls.blocked, 0);
-});
-
-test('cart edit during dispatch prevents payment without another routing request', async () => {
-    const { store, retail, calls, hooks } = paymentFixture();
-    hooks.beforeSync = async () => { retail.qty++; };
-    await store.pay();
-    assert.equal(calls.routing, 1);
-    assert.equal(calls.sent, 1);
-    assert.equal(calls.pay, 0);
-});
-
-test('manual Send and repeated Payment cannot overlap a payment kitchen send', { timeout: 1000 }, async () => {
-    const { store, calls, hooks } = paymentFixture();
-    let ready, finish;
-    const started = new Promise(resolve => { ready = resolve; });
-    hooks.beforeSync = () => new Promise(resolve => { finish = resolve; ready(); });
-    const paying = store.pay();
-    await started;
-    assert.equal(await store.pay(), false);
-    assert.equal(await store.baseerSendCurrentOrder(), false);
-    finish();
-    await paying;
-    assert.equal(calls.routing, 1);
-    assert.equal(calls.sent, 1);
-    assert.equal(calls.pay, 1);
-    assert.equal(calls.blocked, 0);
-});
-
-test('a missing acknowledgement keeps payment closed and releases the UI lock', async () => {
-    const { store, order, calls, hooks } = paymentFixture();
-    hooks.accepted = false;
-    await store.pay();
-    assert.equal(calls.pay, 0);
-    assert.equal(order.uiState.baseerPreparationOutcomeUnknown, true);
-    assert.equal(calls.blocked, 0);
-});
-
-test('native guest dialog stays interactive before dispatch locks the UI', async () => {
-    const { store, calls } = paymentFixture();
-    store.ensureGuestCustomerCount = async () => { assert.equal(calls.blocked, 0); };
-    await store.pay();
-    assert.equal(calls.sent, 1);
-    assert.equal(calls.pay, 1);
-    assert.equal(calls.blocked, 0);
-});
-
-const bridge = runtime('preparation_bridge.js', { async sendOrderInPreparation() { return false; } });
+const bridge = runtime('preparation_bridge.js', { async sendOrderInPreparation() { return true; } });
 bridge.buildBaseerPreparationAction = lineRuntime.buildBaseerPreparationAction;
 const store = new bridge.PosStore();
 store.config = { baseer_direct_print_enabled: true, baseer_native_receipt_enabled: true,
@@ -314,7 +86,7 @@ await assert.rejects(store.sendOrderInPreparation(draft), /not been acknowledged
 assert.equal(draft.uiState.baseerPreparationOutcomeUnknown, true);
 assert.equal(draft.uiState.baseerPreparationAction.action_uuid, 'pending');
 store.getOrder = () => draft;
-assert.equal(await store._baseerSendKitchenBeforePayment(), false);
+assert.equal(await store._baseerConfirmPaymentWithoutKitchen(), false);
 function installRecoveryContract(record) {
     Object.assign(record, { id: 7, uuid: record.uuid || 'retry-draft', isSynced: true,
         company_id: { id: 2 }, config_id: { id: 3 }, state: 'draft', lines: [], payment_ids: [] });
@@ -363,13 +135,6 @@ store._baseerPreparationStatus = async () => ({ accepted: true });
 assert.equal(await store.sendOrderInPreparation(draft), true);
 assert.equal(draft.uiState.baseerPreparationOutcomeUnknown, undefined);
 assert.equal(draftReads(), 1);
-const acknowledgedDraft = { isSynced: true,
-    uiState: { baseerPreparationAction: { action_uuid: 'confirmed-direct-action' } },
-    last_order_preparation_change: { lines: {} } };
-assert.equal(await store.sendOrderInPreparation(acknowledgedDraft), true);
-store.config.baseer_direct_print_enabled = false;
-assert.equal(await store.sendOrderInPreparation(acknowledgedDraft), false);
-store.config.baseer_direct_print_enabled = true;
 const recoverable = {
     uuid: 'reconcile-confirmed-cancellation',
     uiState: {
@@ -392,7 +157,6 @@ const unfinalized = await store.printReceipt({ order: { isSynced: true, id: 2, s
 assert.equal(unfinalized.successful, false);
 assert.ok(notices.at(-1).includes('not finalized'));
 const kitchenStore = new lineRuntime.PosStore();
-kitchenStore.config = { baseer_direct_print_enabled: true };
 let retired = 0;
 let retained = 0;
 kitchenStore.data = { network: { offline: false },
@@ -402,40 +166,18 @@ kitchenStore.sendOrderInPreparation = async () => true;
 kitchenStore.addPendingOrder = () => retained++;
 kitchenStore.removePendingOrder = () => {};
 kitchenStore.showDefault = () => {};
-kitchenStore.router = { state: { current: 'ProductScreen', params: { orderUuid: 'payment-draft' } } };
-kitchenStore.getOrder = () => paymentDraft;
 kitchenStore.notification = { add() {} };
 kitchenStore.dialog = { add() {} };
-const otherLineRemoval = { id: 18, parentId: 9 };
-const otherOrderRemoval = { id: 19, parentId: 10 };
-const removalCommands = {
-    unlink: new Map([['lines', [otherLineRemoval, otherOrderRemoval]]]),
-    delete: new Map([['lines', [{ id: 17, parentId: 9 }]]]),
-};
-const paymentDraft = { id: 9, uuid: 'payment-draft', state: 'draft', uiState: {},
-    models: { commands: { 'pos.order': removalCommands } },
-    last_order_preparation_change: { lines: {} }, getOrderlines: () => [],
-    removeOrderline(line) {
-        // Native removeOrderline queues a command even when the server has
-        // already removed the line during the kitchen action.
-        removalCommands.unlink.get('lines').push({ id: line.id, parentId: this.id });
-    } };
-const cancellingLine = { id: 17, uuid: 'cancel-me', order_id: paymentDraft, getQuantity: () => 1,
+const paymentDraft = { id: 9, state: 'draft', uiState: {},
+    last_order_preparation_change: { lines: {} }, getOrderlines: () => [], removeOrderline() {} };
+const cancellingLine = { uuid: 'cancel-me', order_id: paymentDraft, getQuantity: () => 1,
     setQuantity: () => true };
 assert.equal(await kitchenStore._baseerCommitSentLineQuantity(cancellingLine, 0), true);
-assert.deepEqual(removalCommands.unlink.get('lines'), [otherLineRemoval, otherOrderRemoval]);
-assert.equal(removalCommands.delete.has('lines'), false);
 assert.equal(retired, 0); // Empty draft may still contain a deposit; server decides.
 assert.equal(retained, 1);
 paymentDraft.state = 'cancel';
 assert.equal(await kitchenStore._baseerCommitSentLineQuantity(cancellingLine, 0), true);
 assert.equal(retired, 1);
-kitchenStore.config.baseer_direct_print_enabled = false;
-paymentDraft.state = 'draft';
-assert.equal(await kitchenStore._baseerCommitSentLineQuantity(cancellingLine, 0), true);
-assert.deepEqual(removalCommands.unlink.get('lines'), [
-    otherLineRemoval, otherOrderRemoval, { id: 17, parentId: 9 },
-]);
 let resolveCancellationChoice;
 const serializedRuntime = runtime('line_actions.js', {
     makeAwaitable: async () => await new Promise((resolve) => { resolveCancellationChoice = resolve; }),

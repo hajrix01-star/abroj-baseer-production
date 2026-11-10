@@ -568,14 +568,8 @@ msgstr "اتصل بالإنترنت قبل تعديل صنف أُرسل إلى �
 #. module: baseer_pos_print_bridge
 #. odoo-javascript
 #: code:addons/baseer_pos_print_bridge/static/src/app/preparation_bridge.js:0
-msgid "Send to kitchen and continue to payment"
-msgstr "أرسل للمطبخ وأكمل الدفع"
-
-#. module: baseer_pos_print_bridge
-#. odoo-javascript
-#: code:addons/baseer_pos_print_bridge/static/src/app/preparation_bridge.js:0
-msgid "Back to order"
-msgstr "رجوع للطلب"
+msgid "Continue payment without sending"
+msgstr "متابعة الدفع دون إرسال"
 
 #. module: baseer_pos_print_bridge
 #: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_baseer_print_preparation_state__copies
@@ -1930,26 +1924,10 @@ msgstr "لا يمكن إرسال هذا الطلب إلى التحضير."
 #. module: baseer_pos_print_bridge
 #. odoo-javascript
 #: code:addons/baseer_pos_print_bridge/static/src/app/preparation_bridge.js:0
-msgid "Send the pending kitchen changes to continue to payment."
-msgstr "أرسل الأصناف والتعديلات المعلّقة للمطبخ للمتابعة إلى الدفع."
-
-#. module: baseer_pos_print_bridge
-#. odoo-javascript
-#: code:addons/baseer_pos_print_bridge/static/src/app/preparation_bridge.js:0
-msgid "The kitchen changes could not be sent. Check the order and try again."
-msgstr "تعذّر الإرسال للمطبخ. راجع الطلب وحاول مرة أخرى."
-
-#. module: baseer_pos_print_bridge
-#. odoo-python
-#: code:addons/baseer_pos_print_bridge/models/preparation.py:0
-msgid "A pending kitchen item has no available printer. Check kitchen routing and try again."
-msgstr "لا توجد طابعة متاحة لصنف معلّق للمطبخ. تحقق من ربط الطابعات وحاول مرة أخرى."
-
-#. module: baseer_pos_print_bridge
-#. odoo-javascript
-#: code:addons/baseer_pos_print_bridge/static/src/app/preparation_bridge.js:0
-msgid "Kitchen routing could not be checked. Review the order and try again."
-msgstr "تعذّر التحقق من ربط طابعات المطبخ. راجع الطلب وحاول مرة أخرى."
+msgid ""
+"This order has changes that were not sent to the kitchen. Continue to "
+"payment without sending them?"
+msgstr "يحتوي الطلب على تغييرات لم تُرسل إلى المطبخ. هل تريد متابعة الدفع دون إرسالها؟"
 
 #. module: baseer_pos_print_bridge
 #: model:ir.model.constraint,message:baseer_pos_print_bridge.constraint_baseer_print_job_idempotency_unique
@@ -2663,20 +2641,3 @@ msgstr "احفظ الطلبين قبل دمج طلب المطبخ."
 #: code:addons/baseer_pos_print_bridge/static/src/app/preparation_bridge.js:0
 msgid "This order is being saved for the merge."
 msgstr "جارٍ حفظ هذا الطلب للدمج."
-
-#. module: baseer_pos_print_bridge
-#. odoo-javascript
-#: code:addons/baseer_pos_print_bridge/static/src/app/preparation_bridge.js:0
-msgid "Sending to kitchen. Please wait."
-msgstr "جارٍ الإرسال للمطبخ، انتظر لحظة."
-
-#. module: baseer_pos_print_bridge
-#. odoo-javascript
-#: code:addons/baseer_pos_print_bridge/static/src/app/preparation_bridge.js:0
-msgid "The order changed. Review it and press Payment again."
-msgstr "تغيّر الطلب. راجعه ثم اضغط الدفع مرة أخرى."
-
-#. module: baseer_pos_print_bridge
-#: code:addons/baseer_pos_print_bridge/models/preparation.py:0
-msgid "Kitchen routing changed. Review the order and press Payment again."
-msgstr "تغيّر توجيه أصناف المطبخ. راجع الطلب ثم اضغط الدفع مرة أخرى."

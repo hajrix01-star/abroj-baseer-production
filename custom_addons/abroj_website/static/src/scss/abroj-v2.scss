@@ -1,3 +1,40 @@
+@font-face {
+  font-family: Tajawal;
+  src: url("/abroj_website/static/src/fonts/Tajawal-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: Tajawal;
+  src: url("/abroj_website/static/src/fonts/Tajawal-Medium.ttf") format("truetype");
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: Tajawal;
+  src: url("/abroj_website/static/src/fonts/Tajawal-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: Cairo;
+  src: url("/abroj_website/static/src/fonts/Cairo-Variable.ttf") format("truetype");
+  font-weight: 200 1000;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Open Sans';
+  src: url("/web/static/fonts/google/Open_Sans/Open_Sans-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Open Sans';
+  src: url("/web/static/fonts/google/Open_Sans/Open_Sans-SemiBold.ttf") format("truetype");
+  font-weight: 600;
+  font-display: swap;
+}
+
 /* Abroj v2: editorial construction identity, scoped so it does not alter Odoo's Website editor. */
 .abroj-v2 {
   --abroj-navy: #0a2638;

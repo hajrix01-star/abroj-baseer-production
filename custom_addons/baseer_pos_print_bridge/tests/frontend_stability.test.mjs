@@ -142,7 +142,7 @@ finishRouting([]);
 assert.equal(await paymentWithCartEdit, false);
 assert.deepEqual(paymentSteps, ['send error']);
 
-const bridge = runtime('preparation_bridge.js', { async sendOrderInPreparation() { return true; } });
+const bridge = runtime('preparation_bridge.js', { async sendOrderInPreparation() { return false; } });
 bridge.buildBaseerPreparationAction = lineRuntime.buildBaseerPreparationAction;
 const store = new bridge.PosStore();
 store.config = { baseer_direct_print_enabled: true, baseer_native_receipt_enabled: true,
@@ -232,6 +232,13 @@ store._baseerPreparationStatus = async () => ({ accepted: true });
 assert.equal(await store.sendOrderInPreparation(draft), true);
 assert.equal(draft.uiState.baseerPreparationOutcomeUnknown, undefined);
 assert.equal(draftReads(), 1);
+const acknowledgedDraft = { isSynced: true,
+    uiState: { baseerPreparationAction: { action_uuid: 'confirmed-direct-action' } },
+    last_order_preparation_change: { lines: {} } };
+assert.equal(await store.sendOrderInPreparation(acknowledgedDraft), true);
+store.config.baseer_direct_print_enabled = false;
+assert.equal(await store.sendOrderInPreparation(acknowledgedDraft), false);
+store.config.baseer_direct_print_enabled = true;
 const recoverable = {
     uuid: 'reconcile-confirmed-cancellation',
     uiState: {

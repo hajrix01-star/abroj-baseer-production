@@ -145,3 +145,11 @@
   &:hover, &:focus-visible { background: #1ebe5a; color: #fff; }
   &:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
 }
+
+html[dir="rtl"] .abroj-v2 h1,
+html[dir="rtl"] .abroj-v2 h2,
+html[dir="rtl"] .abroj-v2 h3,
+html[dir="rtl"] .abroj-v2 h4 {
+  font-family: Cairo, Tajawal, "Open Sans", Arial, sans-serif;
+  letter-spacing: 0;
+}

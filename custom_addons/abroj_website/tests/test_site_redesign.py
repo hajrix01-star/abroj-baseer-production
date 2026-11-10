@@ -43,6 +43,6 @@ class TestSiteRedesignTemplate(TestCase):
         self.assertEqual(form.xpath(".//input[@type='file']"), [])
 
     def test_bilingual_primary_navigation_and_empty_gallery_remain_available(self):
-        self.assertIn("تنفيذ وتجهيز واضحان", self.source)
+        self.assertIn("نجهّز مقهاك أو مطعمك أو محلك من الألف للياء.", self.source)
         self.assertIn("Clear fit-out delivery", self.source)
         self.assertEqual(len(self.template.xpath("//*[@id='projects' and @data-abroj-project-gallery='empty']")), 1)

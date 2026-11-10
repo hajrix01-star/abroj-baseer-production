@@ -1,6 +1,7 @@
 import base64
 import hashlib
 import json
+import re
 import struct
 from urllib.parse import urlparse
 
@@ -29,8 +30,9 @@ class BaseerPrintAgentRelease(models.Model):
 
     name = fields.Char(required=True, default='Baseer Print Agent')
     version = fields.Char(required=True, index=True)
-    artifact = fields.Binary(required=True, attachment=True, groups='base.group_system')
+    artifact = fields.Binary(attachment=True, groups='base.group_system')
     artifact_filename = fields.Char(required=True, groups='base.group_system')
+    catalog_only = fields.Boolean(readonly=True, copy=False)
     artifact_sha256 = fields.Char(readonly=True, copy=False)
     release_notes = fields.Text()
     github_download_url = fields.Char(
@@ -105,13 +107,60 @@ class BaseerPrintAgentRelease(models.Model):
         self._require_system_admin()
         approved = self.env['baseer.print.agent.release'].search([('state', '=', 'approved')])
         retiring = self.filtered(lambda release: release.state == 'approved')
-        if retiring and len(approved - retiring) == 0:
+        pairing_releases = approved.filtered(lambda release: not release.catalog_only)
+        if retiring and (not (approved - retiring)
+                         or (pairing_releases and not (pairing_releases - retiring))):
             raise UserError(_(
                 'لا يمكن إيقاف آخر إصدار معتمد لوكيل الطباعة. '
                 'ارفع واعتمد إصدارًا بديلاً أولًا، ليبقى التنزيل متاحًا للأجهزة الجديدة.'
             ))
         retiring.write({'state': 'retired'})
         return True
+
+    @api.model
+    def _approved_pairing_release(self):
+        return self.search([('state', '=', 'approved'), ('catalog_only', '=', False)], limit=1)
+
+    @api.model
+    def _register_github_release(self, version, digest):
+        """Import the version and digest pinned in reviewed module data."""
+        if not self.env.su:
+            raise AccessError(_('Only a trusted module upgrade can register this release.'))
+        if not re.fullmatch(r'(?:0|[1-9][0-9]{0,8})(?:\.(?:0|[1-9][0-9]{0,8})){2}', version):
+            raise ValidationError(_('Enter a valid agent version.'))
+        if not re.fullmatch(r'[a-f0-9]{64}', digest):
+            raise ValidationError(_('Enter a valid SHA-256 fingerprint.'))
+        url = (
+            'https://github.com/hajrix01-star/abroj-baseer-production/releases/download/'
+            f'baseer-print-agent-{version}/Baseer.PrintAgent.exe'
+        )
+        version_key = tuple(map(int, version.split('.')))
+        approved_catalog = self.search([('catalog_only', '=', True), ('state', '=', 'approved')])
+
+        def catalog_version(record):
+            return tuple(map(int, record.version.split('.')))
+
+        release = self.search([('version', '=', version)], limit=1)
+        if release:
+            if release.artifact_sha256 != digest or release.github_download_url not in (False, url):
+                raise ValidationError(_('The registered installer differs from the reviewed GitHub release.'))
+            if release.state != 'approved':
+                return
+            if not release.github_download_url:
+                release.write({'github_download_url': url})
+        else:
+            superseded = any(catalog_version(record) > version_key for record in approved_catalog)
+            self.create({
+                'version': version,
+                'artifact_filename': 'Baseer.PrintAgent.exe',
+                'artifact_sha256': digest,
+                'github_download_url': url,
+                'catalog_only': True,
+                'state': 'retired' if superseded else 'approved',
+                'approved_at': fields.Datetime.now(),
+                'approved_by': self.env.user.id,
+            })
+        approved_catalog.filtered(lambda record: catalog_version(record) < version_key).action_retire()
 
     @api.model
     def auto_update_manifest(self):
@@ -157,6 +206,8 @@ class BaseerPrintAgentRelease(models.Model):
         agent.ensure_one()
         if self.state != 'approved':
             raise UserError(_('Approve the release before downloading it.'))
+        if self.catalog_only:
+            raise UserError(_('Select an approved release with a pairing installer.'))
         if (agent.state != 'new' or not agent.active
                 or not agent.device_uid.startswith('PENDING-')):
             raise ValidationError(_('Create a new pending Windows print computer before downloading its connection file.'))
@@ -175,6 +226,11 @@ class BaseerPrintAgentRelease(models.Model):
         """
         self.ensure_one()
         self._require_system_admin()
+        if self.state != 'approved':
+            raise UserError(_('Approve the release before downloading it.'))
+        release = self._approved_pairing_release() if self.catalog_only else self
+        if not release:
+            raise UserError(_('Select an approved release with a pairing installer.'))
         company = self.env.company
         if company._baseer_effective_print_agent():
             raise UserError(_('A Windows print computer is already active for this company. Use its repair action instead.'))
@@ -191,7 +247,7 @@ class BaseerPrintAgentRelease(models.Model):
                 'device_uid': 'PENDING-%s' % new_secret(24),
                 'allowed_company_ids': [Command.set(company.ids)],
             })
-        return self.action_download_and_connect(pending)
+        return release.action_download_and_connect(pending)
 
     def _bootstrap_artifact(self, server_url, pairing_code):
         """Attach only a bounded, one-time HTTPS pairing envelope to an EXE."""
@@ -213,7 +269,9 @@ class BaseerPrintAgentRelease(models.Model):
 
     def write(self, vals):
         self._require_system_admin()
-        immutable = {'version', 'artifact', 'artifact_filename', 'artifact_sha256', 'signer_identity'}
+        immutable = {'version', 'artifact', 'artifact_filename', 'artifact_sha256', 'signer_identity', 'catalog_only'}
+        if 'github_download_url' in vals and self.filtered('catalog_only'):
+            raise UserError(_('A reviewed GitHub release URL is immutable.'))
         if immutable.intersection(vals) and self.filtered(lambda release: release.state != 'draft'):
             raise UserError(_('An approved agent release is immutable. Publish a new version instead.'))
         if 'state' in vals and vals['state'] == 'draft' and self.filtered(lambda release: release.state != 'draft'):

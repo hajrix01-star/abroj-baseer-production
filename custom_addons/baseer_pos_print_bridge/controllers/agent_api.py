@@ -41,7 +41,7 @@ class BaseerPrintAgentApi(http.Controller):
         if not request.env.user.has_group('base.group_system'):
             return request.not_found()
         release = request.env['baseer.print.agent.release'].sudo().browse(release_id).exists()
-        if not release or release.state != 'approved':
+        if not release or release.state != 'approved' or release.catalog_only:
             return request.not_found()
         payload = release._artifact_bytes()
         filename = release.artifact_filename
@@ -146,8 +146,9 @@ class BaseerPrintAgentApi(http.Controller):
         agent = self._agent()
         if not agent:
             return self._invalid()
-        manifest = request.env['baseer.print.agent.release'].sudo().auto_update_manifest()
-        return self._response({'update': manifest})
+        # Keep the download catalog separate from unattended Windows updates
+        # until the elevated installation path has passed security acceptance.
+        return self._response({'update': None})
 
     @http.route('/baseer/print/v1/runtime/release', type='http', auth='public', methods=['POST'], csrf=False, save_session=False)
     def release_runtime(self, **kwargs):

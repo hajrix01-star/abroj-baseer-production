@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <function model="baseer.print.agent.release" name="_register_github_release"
+              eval="('1.5.16', 'b610a4dda1759e059780e35e0960b24f65552f5d0f51d6f8cecfcb6f1bdf9d3b')"/>
+</odoo>

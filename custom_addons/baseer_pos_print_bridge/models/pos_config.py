@@ -267,7 +267,7 @@ class PosConfig(models.Model):
                 'device_uid': 'PENDING-%s' % new_secret(24),
                 'allowed_company_ids': [Command.set(company.ids)],
             })
-        release = self.env['baseer.print.agent.release'].search([('state', '=', 'approved')], limit=1)
+        release = self.env['baseer.print.agent.release']._approved_pairing_release()
         if not release:
             raise UserError(_('No approved Windows print agent is available. Ask a system administrator to publish one first.'))
         return release.action_download_and_connect(pending)
@@ -285,7 +285,7 @@ class PosConfig(models.Model):
             raise AccessError(_('Only a system administrator can download the Windows print agent.'))
         release = self.env['baseer.print.agent.release'].search([
             ('state', '=', 'approved'),
-        ], order='approved_at desc, id desc', limit=1)
+        ], order='catalog_only desc, approved_at desc, id desc', limit=1)
         if not release:
             # Preserve the install/recovery path before the first release
             # record is entered.  Once an administrator approves an external

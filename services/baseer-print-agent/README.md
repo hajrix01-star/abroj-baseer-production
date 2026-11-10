@@ -2,6 +2,8 @@
 
 Windows source and local QA build for the pull-only agent used by `baseer_pos_print_bridge`.
 
+Every installer release follows the [Odoo registration and QA release runbook](../../docs/build-governance/PRINT-AGENT-RELEASE-PROCESS.md). Verify the release in Print Agent Center before closing the release.
+
 The standalone Windows x64 QA executable is built at `artifacts/win-x64/Baseer.PrintAgent.exe`. It has not been installed, paired with a real HTTPS Odoo system, or tested against a physical thermal printer. The agent never exposes `localhost`; it rejects non-HTTPS server URLs, pairs once, stores its token with machine-level DPAPI in an ACL-restricted ProgramData directory, polls Odoo over HTTPS, and records a durable in-flight job before asking the Windows spooler to print. Pairing or updating this protected configuration must run from an elevated Administrator console.
 
 To rebuild the executable from source:

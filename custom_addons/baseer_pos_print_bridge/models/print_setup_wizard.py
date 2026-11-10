@@ -120,7 +120,7 @@ class BaseerPrintSetupWizard(models.TransientModel):
                 'device_uid': 'PENDING-%s' % new_secret(24),
                 'allowed_company_ids': [Command.set(self.company_id.ids)],
             })
-        release = self.env['baseer.print.agent.release'].search([('state', '=', 'approved')], limit=1)
+        release = self.env['baseer.print.agent.release']._approved_pairing_release()
         if not release:
             raise UserError(_('No approved Windows print agent is available. Ask a system administrator to publish one first.'))
         return release.action_download_and_connect(self.agent_id)

@@ -123,6 +123,11 @@ class TestBaseerAgentOperations(TransactionCase):
                'releases/download/9.9.9/Baseer.PrintAgent.exe')
         release.write({'github_download_url': url})
         self.assertEqual(release.github_download_url, url)
+        self.assertEqual(release.action_download()['url'], url)
+        self.assertEqual(self.env['baseer.print.agent.release'].auto_update_manifest(), {
+            'version': '9.9.9-github-link', 'download_url': url,
+            'sha256': hashlib.sha256(b'installer').hexdigest(),
+        })
         with self.assertRaises(ValidationError), self.env.cr.savepoint():
             release.write({'github_download_url': 'https://example.com/installer.exe'})
         self.assertEqual(release.github_download_url, url)

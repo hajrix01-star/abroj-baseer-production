@@ -283,11 +283,14 @@ class PosConfig(models.Model):
         self.ensure_one()
         if not self.env.user.has_group('base.group_system'):
             raise AccessError(_('Only a system administrator can download the Windows print agent.'))
-        return {
-            'type': 'ir.actions.act_url',
-            'url': self.env['baseer.print.agent.release']._PUBLIC_DOWNLOAD_URL,
-            'target': 'new',
-        }
+        release = self.env['baseer.print.agent.release'].search([
+            ('state', '=', 'approved'),
+        ], order='approved_at desc, id desc', limit=1)
+        if not release:
+            raise UserError(_('No approved Windows print agent is available. Ask a system administrator to publish one first.'))
+        action = release.action_download()
+        action['target'] = 'new'
+        return action
 
     def action_baseer_open_guided_print_setup(self):
         self.ensure_one()

@@ -113,6 +113,26 @@ class BaseerPrintAgentRelease(models.Model):
         retiring.write({'state': 'retired'})
         return True
 
+    @api.model
+    def auto_update_manifest(self):
+        """Return only the most recently approved, externally hosted release.
+
+        The agent still decides whether the version is newer.  Odoo is the
+        approval authority; GitHub only hosts the immutable executable.
+        """
+        release = self.search([
+            ('state', '=', 'approved'),
+            ('github_download_url', '!=', False),
+            ('artifact_sha256', '!=', False),
+        ], order='approved_at desc, id desc', limit=1)
+        if not release:
+            return False
+        return {
+            'version': release.version,
+            'download_url': release.github_download_url,
+            'sha256': release.artifact_sha256,
+        }
+
     def action_download(self):
         self.ensure_one()
         self._require_system_admin()
@@ -120,7 +140,7 @@ class BaseerPrintAgentRelease(models.Model):
             raise UserError(_('Approve the release before downloading it.'))
         return {
             'type': 'ir.actions.act_url',
-            'url': self._PUBLIC_DOWNLOAD_URL,
+            'url': self.github_download_url or self._PUBLIC_DOWNLOAD_URL,
             'target': 'self',
         }
 

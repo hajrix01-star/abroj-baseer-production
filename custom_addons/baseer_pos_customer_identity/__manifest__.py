@@ -1,6 +1,6 @@
 {
     'name': 'Baseer POS Customer Identity',
-    'version': '19.0.1.0.13',
+    'version': '19.0.1.0.14',
     'summary': 'POS customer identity, optional billing details and duplicate prevention',
     'category': 'Point of Sale',
     'license': 'LGPL-3',

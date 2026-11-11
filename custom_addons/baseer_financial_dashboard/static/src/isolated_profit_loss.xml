@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="baseer_financial_dashboard.ProfitLoss">
+        <main class="o_baseer_pl_report" t-att-dir="lang === 'ar' ? 'rtl' : 'ltr'" t-att-lang="lang">
+            <header class="o_baseer_report_toolbar o_baseer_pl_toolbar">
+                <ReportSelector t-if="props.reportOptions" options="props.reportOptions" selectedKey="props.selectedReportKey" label="props.reportSelectorLabel" lang="lang" onSelect="props.onReportSelect"/>
+                <ReportExportButtons reportKey="'profit_loss'" filters="appliedFilters || undefined" lang="lang" disabled="!state.report || state.loading || state.printing"/>
+                <div class="o_baseer_report_filters" data-testid="financial-filters" t-att-aria-label="labels.title">
+                    <Dropdown menuClass="'o_baseer_pl_native_dropdown o_baseer_pl_period_menu'">
+                        <button type="button" class="o_baseer_pl_filter_menu o_baseer_pl_filter_chip" t-att-aria-label="labels.period"><i class="fa fa-calendar" aria-hidden="true"/> <span t-esc="periodSummary"/></button>
+                        <t t-set-slot="content"><div class="o_baseer_pl_native_menu o_baseer_pl_period_popover">
+                            <div t-foreach="periodOptions" t-as="option" t-key="option.kind" t-att-class="state.filters.period.kind === option.kind ? 'o_baseer_pl_menu_row is-selected' : 'o_baseer_pl_menu_row'">
+                                <button type="button" class="o_baseer_pl_menu_select o-navigable" t-on-click="() => this.setPeriodKind(option.kind)"><i t-if="state.filters.period.kind === option.kind" class="fa fa-check" aria-hidden="true"/><span t-else="" class="o_baseer_pl_check_spacer"/><span t-esc="periodKindLabel(option.kind)"/><span class="o_baseer_pl_menu_value" t-esc="option.display_label"/></button>
+                                <span t-if="option.kind !== 'custom'" class="o_baseer_pl_row_navigation"><button type="button" class="o-navigable" t-att-disabled="state.loading" t-att-title="labels.previous" t-att-aria-label="labels.previous + ' ' + periodKindLabel(option.kind)" t-on-click.stop="() => this.navigatePeriodKind(option.kind, -1)"><i class="fa fa-chevron-left" aria-hidden="true"/></button><button type="button" class="o-navigable" t-att-disabled="state.loading" t-att-title="labels.next" t-att-aria-label="labels.next + ' ' + periodKindLabel(option.kind)" t-on-click.stop="() => this.navigatePeriodKind(option.kind, 1)"><i class="fa fa-chevron-right" aria-hidden="true"/></button></span>
+                            </div>
+                            <div t-if="state.filters.period.kind === 'custom'" class="o_baseer_pl_date_range"><label><span t-esc="labels.from"/><input type="date" name="date_from" t-att-value="state.filters.period.date_from" t-on-change="onPeriodDateChange"/></label><label><span t-esc="labels.to"/><input type="date" name="date_to" t-att-value="state.filters.period.date_to" t-on-change="onPeriodDateChange"/></label></div>
+                        </div></t>
+                    </Dropdown>
+                    <Dropdown menuClass="'o_baseer_pl_native_dropdown o_baseer_pl_comparison_menu'">
+                        <button type="button" class="o_baseer_pl_filter_menu o_baseer_pl_filter_chip" t-att-aria-label="labels.comparison"><i class="fa fa-percent" aria-hidden="true"/> <span t-esc="comparisonSummary"/></button>
+                        <t t-set-slot="content"><div class="o_baseer_pl_native_menu o_baseer_pl_comparison_popover">
+                            <DropdownItem t-foreach="['none', 'previous_period', 'same_period_last_year']" t-as="kind" t-key="kind" onSelected="() => this.setComparisonKind(kind)"><i t-if="state.filters.comparison.kind === kind" class="fa fa-check" aria-hidden="true"/><span class="o_baseer_pl_comparison_choice" t-esc="comparisonKindLabel(kind)"/></DropdownItem>
+                            <button type="button" class="dropdown-item o-navigable o_baseer_pl_custom_choice" t-on-click.stop="() => this.setComparisonKind('custom')"><i t-if="state.filters.comparison.kind === 'custom'" class="fa fa-check" aria-hidden="true"/><span class="o_baseer_pl_comparison_choice" t-esc="labels.customDates"/></button>
+                            <div t-if="state.filters.comparison.kind === 'custom'" class="o_baseer_pl_date_range"><label><span t-esc="labels.from"/><input type="date" name="date_from" t-att-value="state.filters.comparison.date_from" t-on-change="onComparisonChange"/></label><label><span t-esc="labels.to"/><input type="date" name="date_to" t-att-value="state.filters.comparison.date_to" t-on-change="onComparisonChange"/></label></div>
+                            <div class="o_baseer_pl_control_row o_baseer_pl_order_row"><label><span t-esc="labels.periodOrder"/><select name="order" t-att-value="state.filters.comparison.order" t-on-change="onComparisonChange"><option value="descending" t-esc="labels.descending"/><option value="ascending" t-esc="labels.ascending"/></select></label></div>
+                        </div></t>
+                    </Dropdown>
+                    <details class="o_baseer_pl_filter_menu o_baseer_pl_journals">
+                        <summary><i class="fa fa-book" aria-hidden="true"/> <span t-esc="state.filters.journal_ids.length ? labels.selectedJournals : labels.allJournals"/></summary>
+                        <div class="o_baseer_pl_popover o_baseer_pl_journal_list">
+                            <label t-foreach="state.journals" t-as="journal" t-key="journal.id"><input type="checkbox" t-att-value="journal.id" t-att-checked="state.filters.journal_ids.includes(journal.id)" t-on-change="onJournalChange"/><span t-esc="journal.code + ' · ' + journal.name"/></label>
+                        </div>
+                    </details>
+                </div>
+            </header>
+            <div class="o_baseer_report_notice" role="note" t-esc="labels.posted"/>
+            <div t-if="state.error" class="alert alert-danger o_baseer_reports_hub_alert" role="alert" t-esc="state.error"/>
+            <div t-if="state.loading" class="o_baseer_reports_hub_status" role="status" t-esc="labels.loading"/>
+            <div t-if="state.report" class="o_baseer_report_canvas o_baseer_financial_dashboard">
+                <section class="o_baseer_report o_baseer_pl_paper" t-att-aria-label="labels.title">
+                    <header class="o_baseer_financial_head" data-testid="financial-header">
+                        <div>
+                            <p class="o_baseer_financial_eyebrow" t-esc="labels.financialPerformance"/>
+                            <h1 class="o_baseer_report_title" t-esc="labels.title"/>
+                            <p class="o_baseer_report_period"><span t-esc="state.report.company.name"/> · <span t-if="primaryPeriod" t-esc="reportPeriodCaption"/></p>
+                        </div>
+                        <span class="o_baseer_financial_currency"><i class="fa fa-building-o" aria-hidden="true"/> <span t-esc="state.report.company.currency_code"/></span>
+                    </header>
+                    <p t-if="state.report.is_partial_journals" class="o_baseer_pl_partial" role="status" t-esc="labels.selectedJournals"/>
+
+                    <section class="o_baseer_financial_kpis" data-testid="financial-kpis" t-att-aria-label="labels.keyIndicators">
+                        <article t-foreach="dashboard.cards" t-as="card" t-key="card.key" t-att-data-testid="'financial-kpi-' + card.key" t-att-class="'o_baseer_financial_kpi is-' + card.key + (card.value.negative ? ' is-negative' : '')">
+                            <div class="o_baseer_financial_kpi_top"><span t-esc="dashboardLabel(card.key)"/><i t-att-class="'fa ' + dashboardIcon(card.key)" aria-hidden="true"/></div>
+                            <strong class="o_baseer_financial_kpi_value" t-esc="dashboardValue(card)"/>
+                            <span t-if="card.change.available" t-att-class="'o_baseer_financial_change is-' + card.change.tone"><i t-att-class="'fa ' + (card.change.direction === 'down' ? 'fa-arrow-down' : (card.change.direction === 'up' ? 'fa-arrow-up' : 'fa-minus'))" aria-hidden="true"/> <span t-esc="card.change.display"/> <span t-esc="labels.vsComparison"/></span>
+                            <span t-else="" class="o_baseer_financial_change is-unavailable" t-esc="labels.noComparisonData"/>
+                        </article>
+                    </section>
+
+                    <div class="o_baseer_financial_grid o_baseer_financial_grid_analysis">
+                        <section class="o_baseer_financial_panel o_baseer_financial_waterfall" data-testid="financial-waterfall" t-att-aria-label="labels.waterfallTitle">
+                            <header><div><h2 t-esc="labels.waterfallTitle"/><p t-esc="labels.waterfallCaption"/></div><span class="o_baseer_financial_panel_badge" t-esc="labels.postedShort"/></header>
+                            <div class="o_baseer_financial_waterfall_body" role="list">
+                                <div t-foreach="dashboard.waterfall" t-as="step" t-key="step.key" class="o_baseer_financial_waterfall_row" role="listitem">
+                                    <span class="o_baseer_financial_waterfall_label" t-esc="dashboardLabel(step.key)"/>
+                                    <span class="o_baseer_financial_waterfall_track"><span t-att-class="'o_baseer_financial_waterfall_bar is-' + step.tone" t-att-style="'--financial-bar-width: ' + step.visual_width + '%'"/></span>
+                                    <strong t-att-class="amountClass(step.amount)" t-esc="step.amount.amount"/>
+                                </div>
+                            </div>
+                            <p class="o_baseer_sr_only" t-esc="labels.waterfallAccessible"/>
+                        </section>
+
+                        <section class="o_baseer_financial_panel o_baseer_financial_statement" data-testid="financial-statement" t-att-aria-label="labels.statementTitle">
+                            <header><div><h2 t-esc="labels.statementTitle"/><p t-esc="labels.statementCaption"/></div><span class="o_baseer_financial_panel_badge" t-esc="state.report.company.currency_code"/></header>
+                            <div class="o_baseer_pl_table_wrap"><table class="o_baseer_pl_table">
+                        <thead><tr><th scope="col" rowspan="2" t-esc="labels.account"/><th t-foreach="reportPeriods" t-as="period" t-key="period.key" scope="col" class="is-number"><span t-att-title="period.label" t-att-aria-label="period.label" t-esc="period.display_label || period.label"/></th></tr><tr><th t-foreach="reportPeriods" t-as="period" t-key="period.key" scope="col" class="is-number"><small t-esc="labels.balance"/></th></tr></thead>
+                        <tbody>
+                            <t t-foreach="state.report.rows" t-as="row" t-key="row.key">
+                                <tr t-att-class="rowClass(row)">
+                                    <th scope="row" t-att-data-label="labels.account"><button t-if="row.expandable" type="button" class="o_baseer_pl_toggle" t-att-aria-expanded="state.expanded[row.section || row.key] ? 'true' : 'false'" t-att-aria-label="row.label" t-on-click="() => this.toggleSection(row)"><i t-att-class="state.expanded[row.section || row.key] ? 'fa fa-caret-down' : 'fa fa-caret-right'" aria-hidden="true"/><span t-esc="row.label"/></button><button t-else="" type="button" class="o_baseer_amount_link" t-on-click="() => this.drill.open({kind: 'row', row_key: row.key, period_key: primaryPeriod.key})" t-esc="row.label"/></th>
+                                    <td t-foreach="reportPeriods" t-as="period" t-key="period.key" class="is-number" t-att-data-label="period.display_label || period.label"><button type="button" t-on-click="() => this.drill.open({kind: 'row', row_key: row.key, period_key: period.key})" t-att-class="'o_baseer_amount_link fw-bold ' + amountClass(amountFor(row, period.key))" t-esc="amountFor(row, period.key).amount"/></td>
+                                </tr>
+                                <tr t-if="row.expandable &amp;&amp; state.expanded[row.section || row.key] &amp;&amp; state.accountLoading[row.section || row.key]"><td t-att-colspan="rowColspan()" class="o_baseer_pl_status" role="status" t-esc="labels.accountsLoading"/></tr>
+                                <t t-if="row.expandable &amp;&amp; state.expanded[row.section || row.key] &amp;&amp; state.pages[row.section || row.key]">
+                                    <t t-foreach="state.pages[row.section || row.key].accounts" t-as="account" t-key="account.id">
+                                        <tr class="o_baseer_pl_account"><th scope="row" t-att-data-label="labels.account"><button type="button" class="o_baseer_amount_link" t-on-click="() => this.openAccount(account, primaryPeriod.key)"><span t-esc="account.code"/> <span t-esc="account.name"/></button></th><td t-foreach="reportPeriods" t-as="period" t-key="period.key" class="is-number" t-att-data-label="period.display_label || period.label"><button type="button" class="o_baseer_pl_account_amount" t-att-aria-label="labels.source + ' ' + (period.display_label || period.label) + ' ' + account.code + ' ' + account.name" t-on-click="() => this.openAccount(account, period.key)"><span t-att-class="amountClass(amountFor(account, period.key))" t-esc="amountFor(account, period.key).amount"/></button></td></tr>
+                                        <tr t-foreach="account.channels || []" t-as="channel" t-key="channel.key" class="o_baseer_pl_channel"><th scope="row" t-att-data-label="labels.account"><button type="button" class="o_baseer_amount_link" t-on-click="() => this.drill.open({kind: 'channel', account_id: account.id, channel_key: channel.key, period_key: primaryPeriod.key})" t-esc="channel.name"/></th><td t-foreach="reportPeriods" t-as="period" t-key="period.key" class="is-number" t-att-data-label="period.display_label || period.label"><button type="button" t-on-click="() => this.drill.open({kind: 'channel', account_id: account.id, channel_key: channel.key, period_key: period.key})" t-att-class="'o_baseer_amount_link ' + amountClass(amountFor(channel, period.key))" t-esc="amountFor(channel, period.key).amount"/></td></tr>
+                                    </t>
+                                    <tr t-if="!state.pages[row.section || row.key].accounts.length"><td t-att-colspan="rowColspan()" class="o_baseer_pl_status" t-esc="labels.noAccounts"/></tr>
+                                    <tr t-if="state.pages[row.section || row.key].total_count > state.pages[row.section || row.key].page_size" class="o_baseer_pl_pager"><td t-att-colspan="rowColspan()"><button type="button" t-att-disabled="state.pages[row.section || row.key].page &lt;= 1" t-on-click="() => this.loadAccounts(row.section || row.key, state.pages[row.section || row.key].page - 1)" t-esc="labels.previous"/><span><t t-esc="labels.page"/> <t t-esc="state.pages[row.section || row.key].page"/></span><button type="button" t-att-disabled="state.pages[row.section || row.key].page * state.pages[row.section || row.key].page_size >= state.pages[row.section || row.key].total_count" t-on-click="() => this.loadAccounts(row.section || row.key, state.pages[row.section || row.key].page + 1)" t-esc="labels.next"/></td></tr>
+                                </t>
+                            </t>
+                        </tbody>
+                            </table></div>
+                        </section>
+                    </div>
+
+                    <div class="o_baseer_financial_grid o_baseer_financial_grid_detail">
+                        <section class="o_baseer_financial_panel o_baseer_financial_revenue" data-testid="financial-revenue-accounts" t-att-aria-label="labels.revenueAccountsTitle">
+                            <header><div><h2 t-esc="labels.revenueAccountsTitle"/><p t-esc="labels.revenueAccountsCaption"/></div><i class="fa fa-line-chart" aria-hidden="true"/></header>
+                            <div t-if="dashboard.revenue_accounts.length" class="o_baseer_financial_account_list">
+                                <button t-foreach="dashboard.revenue_accounts" t-as="account" t-key="account.id" type="button" class="o_baseer_financial_account" t-on-click="() => this.openAccount(account, primaryPeriod.key)">
+                                    <span class="o_baseer_financial_account_name"><small t-esc="account.code"/> <span t-esc="account.name"/></span>
+                                    <span class="o_baseer_financial_account_amount"><strong t-att-class="amountClass(account.amount)" t-esc="account.amount.amount"/><small t-if="account.share.available" t-esc="account.share.display"/></span>
+                                </button>
+                            </div>
+                            <p t-else="" class="o_baseer_financial_empty" t-esc="labels.noRevenueAccounts"/>
+                        </section>
+
+                        <section class="o_baseer_financial_panel o_baseer_financial_notes" data-testid="financial-notes" t-att-aria-label="labels.financialNotesTitle">
+                            <header><div><h2 t-esc="labels.financialNotesTitle"/><p t-esc="labels.financialNotesCaption"/></div><i class="fa fa-shield" aria-hidden="true"/></header>
+                            <ul><li t-foreach="dashboard.notes" t-as="note" t-key="note"><i class="fa fa-check-circle" aria-hidden="true"/> <span t-esc="noteLabel(note)"/></li></ul>
+                        </section>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </t>
+</templates>

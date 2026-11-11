@@ -325,7 +325,7 @@
     .o_baseer_financial_panel > header > .fa { color: var(--financial-purple); font-size: 1rem; }
     .o_baseer_financial_waterfall_body { display: grid; gap: 0.8rem; padding: 1rem; }
     .o_baseer_financial_waterfall_row { display: grid; grid-template-columns: minmax(7.5rem, 0.9fr) minmax(5rem, 1.4fr) minmax(5.25rem, auto); gap: 0.6rem; align-items: center; }
-    .o_baseer_financial_waterfall_label { overflow: hidden; color: var(--financial-muted); font-size: 0.75rem; text-overflow: ellipsis; white-space: nowrap; }
+    .o_baseer_financial_waterfall_label { min-width: 0; color: var(--financial-muted); font-size: 0.75rem; line-height: 1.35; white-space: normal; overflow-wrap: anywhere; }
     .o_baseer_financial_waterfall_track { display: block; height: 0.6rem; overflow: hidden; border-radius: 999px; background: #eef0f5; }
     .o_baseer_financial_waterfall_bar { display: block; width: var(--financial-bar-width); min-width: 0.22rem; height: 100%; border-radius: inherit; }
     .o_baseer_financial_waterfall_bar.is-positive { background: var(--financial-green); }

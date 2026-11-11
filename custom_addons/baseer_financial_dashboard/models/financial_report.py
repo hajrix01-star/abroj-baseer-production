@@ -1,7 +1,7 @@
 """Isolated projection of the posted P&L, preserving the billing report."""
 from decimal import Decimal, ROUND_HALF_UP, localcontext
 from odoo import _, api, models
-from odoo.exceptions import AccessError
+from odoo.exceptions import AccessError, ValidationError
 from odoo.addons.baseer_profit_loss_report.models.profit_loss import SECTION_KEYS, EXPENSE_KEYS
 
 
@@ -162,10 +162,19 @@ class FinancialDashboardReport(models.AbstractModel):
     @api.model
     def get_dashboard_report(self, filters):
         dashboard = self.env.ref('baseer_financial_dashboard.dashboard_financial_performance', raise_if_not_found=False)
-        if not dashboard or not dashboard.is_published:
+        if not dashboard:
             raise AccessError(_('The financial dashboard is not available.'))
         dashboard.check_access('read')
+        dashboard.check_access_rule('read')
+        if dashboard.baseer_dashboard_kind != 'financial_dashboard' or not dashboard.is_published:
+            raise AccessError(_('The financial dashboard is not available.'))
+        if dashboard.group_ids and not (dashboard.group_ids & self.env.user.all_group_ids):
+            raise AccessError(_('The financial dashboard is not available.'))
         company, journal_ids, periods, period_control, comparison_control = self._scope(filters)
+        if dashboard.company_ids and (company not in dashboard.company_ids or self.env.company not in dashboard.company_ids):
+            raise AccessError(_('The financial dashboard is not available for this company.'))
+        if len(periods) > 2:
+            raise ValidationError(_('Select no more than one comparison period.'))
         grouped_by_period = {
             period['key']: self._section_rows(period['domain']) for period in periods
         }

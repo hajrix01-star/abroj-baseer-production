@@ -2,7 +2,7 @@ from pathlib import Path
 from xml.etree import ElementTree
 
 from odoo import Command
-from odoo.exceptions import AccessError
+from odoo.exceptions import AccessError, ValidationError
 from odoo.tests.common import TransactionCase, tagged
 
 
@@ -57,9 +57,14 @@ class TestFinancialDashboard(TransactionCase):
     def test_projection_matches_report_without_overriding_it(self):
         company = self.env.company
         account_model = self.env['account.account'].with_company(company)
-        income = account_model.search([('company_ids', 'in', company.id), ('account_type', '=', 'income')], limit=1)
-        other = account_model.search([('company_ids', 'in', company.id), ('account_type', '=', 'income_other')], limit=1)
-        expense = account_model.search([('company_ids', 'in', company.id), ('account_type', '=', 'expense')], limit=1)
+        def find_or_create(kind, code):
+            return account_model.search([('company_ids', 'in', company.id), ('account_type', '=', kind)], limit=1) or account_model.create({
+                'code': code, 'name': 'Financial dashboard test ' + kind, 'account_type': kind,
+                'company_ids': [Command.set(company.ids)],
+            })
+        income = find_or_create('income', '959011')
+        other = find_or_create('income_other', '959012')
+        expense = find_or_create('expense', '959013')
         balance = account_model.search([('company_ids', 'in', company.id), ('account_type', '=', 'asset_current'), ('reconcile', '=', False)], limit=1)
         journal = self.env['account.journal'].search([('company_id', '=', company.id), ('type', '=', 'general')], limit=1)
         self.assertTrue(income and other and expense and balance and journal)
@@ -108,3 +113,31 @@ class TestFinancialDashboard(TransactionCase):
         })
         with self.assertRaises(AccessError):
             self.env['baseer.financial.dashboard.report'].get_dashboard_report({**filters, 'journal_ids': [journal.id]})
+
+    def test_projection_checks_dashboard_audience_company_and_comparison_bound(self):
+        company = self.env.company
+        dashboard = self.env.ref('baseer_financial_dashboard.dashboard_financial_performance')
+        filters = {'company_id': company.id, 'date_from': '2041-01-01', 'date_to': '2041-12-31', 'journal_ids': []}
+        report = self.env['baseer.financial.dashboard.report']
+        with self.assertRaises(ValidationError):
+            report.get_dashboard_report({**filters, 'comparison': {'kind': 'previous_periods', 'count': 2}})
+        dashboard.write({'is_published': False})
+        with self.assertRaises(AccessError):
+            report.get_dashboard_report(filters)
+        dashboard.write({'is_published': True, 'baseer_dashboard_kind': 'sales_summary'})
+        with self.assertRaises(AccessError):
+            report.get_dashboard_report(filters)
+        dashboard.write({'baseer_dashboard_kind': 'financial_dashboard'})
+        other = self.env['res.company'].create({'name': 'Dashboard restricted company'})
+        dashboard.write({'company_ids': [Command.set(other.ids)]})
+        with self.assertRaises(AccessError):
+            report.get_dashboard_report(filters)
+        dashboard.write({'company_ids': [Command.clear()]})
+        accountant = self.env['res.users'].create({
+            'name': 'Restricted dashboard accountant', 'login': 'restricted-dashboard-accountant',
+            'group_ids': [Command.set([self.env.ref('base.group_user').id, self.env.ref('account.group_account_readonly').id])],
+            'company_id': company.id, 'company_ids': [Command.set(company.ids)],
+        })
+        dashboard.write({'group_ids': [Command.set(self.env.ref('base.group_system').ids)]})
+        with self.assertRaises(AccessError):
+            report.with_user(accountant).get_dashboard_report(filters)

@@ -141,3 +141,52 @@ class TestFinancialDashboard(TransactionCase):
         dashboard.write({'group_ids': [Command.set(self.env.ref('base.group_system').ids)]})
         with self.assertRaises(AccessError):
             report.with_user(accountant).get_dashboard_report(filters)
+
+    def test_authorized_accountant_reads_permitted_posted_entries(self):
+        company = self.env.company
+        accountant = self.env['res.users'].create({
+            'name': 'Financial dashboard accountant', 'login': 'financial-dashboard-allowed-accountant',
+            'group_ids': [Command.set([self.env.ref('base.group_user').id, self.env.ref('account.group_account_readonly').id])],
+            'company_id': company.id, 'company_ids': [Command.set(company.ids)],
+        })
+        accounts = self.env['account.account'].with_company(company)
+        income = accounts.search([('company_ids', 'in', company.id), ('account_type', '=', 'income')], limit=1)
+        balance = accounts.search([('company_ids', 'in', company.id), ('account_type', '=', 'asset_current'), ('reconcile', '=', False)], limit=1)
+        journal = self.env['account.journal'].search([('company_id', '=', company.id), ('type', '=', 'general')], limit=1)
+        self.assertTrue(income and balance and journal)
+        move = self.env['account.move'].with_company(company).create({
+            'date': '2043-02-03', 'journal_id': journal.id, 'move_type': 'entry',
+            'line_ids': [
+                Command.create({'name': 'Allowed income', 'account_id': income.id, 'credit': 75, 'debit': 0}),
+                Command.create({'name': 'Counterpart', 'account_id': balance.id, 'debit': 75, 'credit': 0}),
+            ],
+        })
+        move._post(soft=False)
+        filters = {'company_id': company.id, 'date_from': '2043-02-01', 'date_to': '2043-02-28', 'journal_ids': []}
+        context = {'allowed_company_ids': company.ids}
+        engine = self.env['baseer.profit.loss.report'].with_user(accountant).with_context(**context)
+        projection = self.env['baseer.financial.dashboard.report'].with_user(accountant).with_context(**context)
+        expected = engine.get_report(filters)
+        actual = projection.get_dashboard_report(filters)
+        self.assertEqual(actual['rows'], expected['rows'])
+        self.assertEqual(actual['net_profit'], expected['net_profit'])
+        cards = {item['key']: item for item in actual['dashboard']['cards']}
+        self.assertEqual(cards['income']['value']['amount'], '75.00')
+
+    def test_dashboard_company_limit_applies_to_allowed_multicompany_user(self):
+        company = self.env.company
+        other = self.env['res.company'].create({'name': 'Dashboard allowed second company'})
+        accountant = self.env['res.users'].create({
+            'name': 'Multicompany dashboard accountant', 'login': 'financial-dashboard-multicompany',
+            'group_ids': [Command.set([self.env.ref('base.group_user').id, self.env.ref('account.group_account_readonly').id])],
+            'company_id': company.id, 'company_ids': [Command.set((company | other).ids)],
+        })
+        dashboard = self.env.ref('baseer_financial_dashboard.dashboard_financial_performance')
+        dashboard.write({'company_ids': [Command.set(company.ids)]})
+        report = self.env['baseer.financial.dashboard.report'].with_user(accountant).with_context(
+            allowed_company_ids=[company.id, other.id],
+        )
+        filters = {'company_id': company.id, 'date_from': '2043-02-01', 'date_to': '2043-02-28', 'journal_ids': []}
+        self.assertEqual(report.get_dashboard_report(filters)['company']['id'], company.id)
+        with self.assertRaises(AccessError):
+            report.get_dashboard_report({**filters, 'company_id': other.id})

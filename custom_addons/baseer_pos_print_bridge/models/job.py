@@ -6,6 +6,7 @@ import json
 import logging
 from datetime import timedelta
 from decimal import Decimal, ROUND_HALF_UP
+from uuid import UUID
 
 from psycopg2 import IntegrityError
 from PIL import Image, UnidentifiedImageError
@@ -296,7 +297,7 @@ class BaseerPrintJob(models.Model):
         return raw, width, height, hashlib.sha256(raw).hexdigest()
 
     @api.model
-    def _enqueue_native_receipt(self, order, jpeg_base64):
+    def _native_receipt_printer(self, order):
         order.ensure_one()
         config = order.config_id
         if (not config.baseer_direct_print_enabled or not config.baseer_native_receipt_enabled
@@ -310,6 +311,72 @@ class BaseerPrintJob(models.Model):
         if (not printer or not printer.active or printer.paper_width != '80'
                 or not printer._allows_company(order.company_id)):
             raise ValidationError(_('The 80 mm receipt printer is not available for this company.'))
+        return printer
+
+    @api.model
+    def _enqueue_native_receipt_reprint(self, order, request_uuid):
+        if not isinstance(request_uuid, str) or len(request_uuid) != 36:
+            raise ValidationError(_('Invalid receipt reprint request.'))
+        try:
+            request_uuid = str(UUID(request_uuid))
+        except ValueError as error:
+            raise ValidationError(_('Invalid receipt reprint request.')) from error
+
+        printer = self._native_receipt_printer(order)
+        original = self.sudo().search([
+            ('idempotency_key', '=', self._canonical_key('receipt-native-v1', order.uuid)),
+            ('source_order_id', '=', order.id),
+            ('company_id', '=', order.company_id.id),
+            ('ticket_type', '=', 'receipt'),
+        ], limit=1)
+        if not original:
+            return original
+
+        self.env.cr.execute('SELECT id FROM baseer_print_job WHERE id = %s FOR UPDATE', [original.id])
+        key = self._canonical_key('receipt-native-reprint-v1', original.id, request_uuid)
+        existing = self.sudo().search([('idempotency_key', '=', key)], limit=1)
+        if existing:
+            return existing
+        original = original.with_context(bin_size=False)
+        original.invalidate_recordset(['state', 'receipt_image', 'receipt_image_purged_at'])
+        if original.state in ('pending', 'leased'):
+            raise ValidationError(_('The original receipt is still in the print queue.'))
+        if original.receipt_image_purged_at or not original.receipt_image:
+            raise ValidationError(_(
+                'The original receipt image has expired. Use Reprint Invoice for an issued invoice.'
+            ))
+        previous = self.sudo().search([('reprint_of_id', '=', original.id)],
+                                      order='reprint_sequence desc', limit=1)
+        payload = dict(original.payload, printer=self._receipt_printer_payload(
+            printer, order.config_id.baseer_receipt_copies,
+        ))
+        return self._create_once({
+            'company_id': original.company_id.id,
+            'pos_config_id': original.pos_config_id.id,
+            'agent_id': printer.agent_id.id,
+            'printer_id': printer.id,
+            'source_order_id': order.id,
+            'ticket_type': 'receipt',
+            'payload': payload,
+            'receipt_image': original.receipt_image,
+            'receipt_image_sha256': original.receipt_image_sha256,
+            'idempotency_key': key,
+            'reprint_of_id': original.id,
+            'reprint_sequence': previous.reprint_sequence + 1 if previous else 1,
+        })
+
+    @api.model
+    def _receipt_printer_payload(self, printer, copies):
+        return {
+            'machine_identifier': printer.machine_identifier,
+            'paper_width': printer.paper_width,
+            'copies': copies,
+        }
+
+    @api.model
+    def _enqueue_native_receipt(self, order, jpeg_base64):
+        printer = self._native_receipt_printer(order)
+        config = order.config_id
         config._baseer_assert_native_receipt_company_ready()
         if (order.company_id.country_id.code == 'SA'
                 and getattr(config, 'baseer_zatca_phase2_enabled', False)):
@@ -341,6 +408,7 @@ class BaseerPrintJob(models.Model):
                                               order='reprint_sequence desc', limit=1)
                 sequence = previous.reprint_sequence + 1 if previous else 1
                 payload = dict(existing.payload)
+                payload['printer'] = self._receipt_printer_payload(printer, config.baseer_receipt_copies)
                 payload['receipt_image'] = {
                     'sha256': digest, 'width': width, 'height': height, 'format': 'jpeg',
                 }

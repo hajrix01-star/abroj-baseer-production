@@ -8,7 +8,7 @@ function fixture({ status = { accepted: false }, canonical = null } = {}) {
     PosStore.prototype.sendOrderInPreparation = async () => true;
     PosStore.prototype.syncAllOrders = async options => options.orders;
     const sandbox = {
-        PosStore, PosOrder: class {}, PosOrderline: class {},
+        PosStore, PosOrder: class {}, PosOrderline: class {}, TicketScreen: class {},
         OrderReceipt: class {}, SelectionPopup: class {}, TextInputPopup: class {},
         _t: (s) => s, ask: async () => true, SERIALIZED_UI_STATE_PROP: 'JSONuiState', setTimeout, clearTimeout,
         patch(target, extension) {

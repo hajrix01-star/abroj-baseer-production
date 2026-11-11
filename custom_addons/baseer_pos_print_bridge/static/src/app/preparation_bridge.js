@@ -7,6 +7,7 @@ import { PosOrder } from "@point_of_sale/app/models/pos_order";
 import { PosOrderline } from "@point_of_sale/app/models/pos_order_line";
 import { SERIALIZED_UI_STATE_PROP } from "@point_of_sale/app/models/related_models/utils";
 import { OrderReceipt } from "@point_of_sale/app/screens/receipt_screen/receipt/order_receipt";
+import { TicketScreen } from "@point_of_sale/app/screens/ticket_screen/ticket_screen";
 import { SelectionPopup } from "@point_of_sale/app/components/popups/selection_popup/selection_popup";
 import { TextInputPopup } from "@point_of_sale/app/components/popups/text_input_popup/text_input_popup";
 import { ask, makeAwaitable } from "@point_of_sale/app/utils/make_awaitable_dialog";
@@ -30,6 +31,15 @@ function assertMergeNotPending(order) {
         throw new Error(_t("The kitchen order merge is awaiting recovery. Reconnect and try again."));
     }
 }
+
+patch(TicketScreen.prototype, {
+    async print(order) {
+        if (this.pos.config.baseer_direct_print_enabled && this.pos.config.baseer_native_receipt_enabled) {
+            return this.pos.printReceipt({ order, baseerReprint: true });
+        }
+        return super.print(...arguments);
+    },
+});
 
 patch(PosOrder.prototype, {
     assertEditable() {
@@ -1093,6 +1103,17 @@ patch(PosStore.prototype, {
                 return { successful: false };
             }
             try {
+                if (options.baseerReprint) {
+                    const result = await this.data.call(
+                        "pos.order", "baseer_reprint_native_receipt", [[order.id], crypto.randomUUID()]
+                    );
+                    if (result) {
+                        this.notification.add(_t("The original receipt copy was sent to the print queue."), {
+                            type: "success",
+                        });
+                        return { successful: true, queued: true };
+                    }
+                }
                 // A normal POS tab reload can reuse server data from IndexedDB.
                 // Refresh the one native company record before taking a fiscal
                 // snapshot, so a VAT/address update is not merely server-ready

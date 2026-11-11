@@ -733,6 +733,15 @@ class PosOrder(models.Model):
         job = self.env['baseer.print.job']._enqueue_native_receipt(self, jpeg_base64)
         return {'job_id': job.id, 'state': job.state}
 
+    def baseer_reprint_native_receipt(self, request_uuid):
+        self.ensure_one()
+        if not self.env.user.has_group('point_of_sale.group_pos_user'):
+            raise AccessError(_('Only a Point of Sale user can print customer receipts.'))
+        self.check_access_rights('read')
+        self.check_access_rule('read')
+        job = self.env['baseer.print.job']._enqueue_native_receipt_reprint(self, request_uuid)
+        return {'job_id': job.id, 'state': job.state} if job else False
+
     def action_pos_order_cancel(self):
         self._baseer_assert_cancellation_events_exist()
         return super().action_pos_order_cancel()

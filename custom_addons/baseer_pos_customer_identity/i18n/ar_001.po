@@ -14,16 +14,28 @@ msgid "Baseer POS Customer Identity"
 msgstr "هوية عملاء نقاط البيع"
 
 #. module: baseer_pos_customer_identity
+#. odoo-javascript
+#: code:addons/baseer_pos_customer_identity/static/src/app/partner_identity.xml:0
+msgid "Customer type filters"
+msgstr "فلاتر نوع العميل"
+
+#. module: baseer_pos_customer_identity
+#. odoo-javascript
+#: code:addons/baseer_pos_customer_identity/static/src/app/partner_identity.xml:0
 msgid "Individuals"
-msgstr "أفراد"
+msgstr "الأفراد"
 
 #. module: baseer_pos_customer_identity
+#. odoo-javascript
+#: code:addons/baseer_pos_customer_identity/static/src/app/partner_identity.xml:0
 msgid "Companies"
-msgstr "شركات"
+msgstr "الشركات"
 
 #. module: baseer_pos_customer_identity
+#. odoo-javascript
+#: code:addons/baseer_pos_customer_identity/static/src/app/partner_identity.xml:0
 msgid "Employees"
-msgstr "موظفون"
+msgstr "الموظفون"
 
 #. module: baseer_pos_customer_identity
 msgid "POS Saudi Mobile Key"

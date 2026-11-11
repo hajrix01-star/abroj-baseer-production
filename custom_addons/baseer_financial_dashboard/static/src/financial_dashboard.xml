@@ -38,6 +38,9 @@
     </t>
 
     <t t-name="baseer_financial_dashboard.SalesPayments" t-inherit="baseer_operations_report.Preview" t-inherit-mode="primary">
+        <xpath expr="//ReportExportButtons" position="attributes">
+            <attribute name="revisions">state.report ? state.report.periods.map((period) => ({key: period.key, revision: period.revision})) : []</attribute>
+        </xpath>
         <xpath expr="//div[hasclass('o_baseer_report_canvas')]" position="replace">
             <div t-if="state.report" class="o_baseer_report_canvas o_baseer_financial_dashboard o_baseer_financial_sales_dashboard">
                 <t t-set="salesDashboardData" t-value="salesDashboard"/>

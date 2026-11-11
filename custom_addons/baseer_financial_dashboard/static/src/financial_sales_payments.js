@@ -1,6 +1,54 @@
 /** @odoo-module **/
 
 import { BaseerOperationsPreview } from "@baseer_operations_report/operations";
+import { ReportExportButtons } from "@baseer_reports_menu/report_export";
+import { download } from "@web/core/network/download";
+import { user } from "@web/core/user";
+
+const DASHBOARD_MODEL = "baseer.financial.dashboard.operations";
+const REPORT_MODEL = "baseer.operations.report";
+
+// Scope the model substitution to this one component instance. The shared ORM
+// service and the billing-report client action retain their original model.
+export function dashboardOperationsOrm(orm, getRevisions = () => []) {
+    return new Proxy(orm, {
+        get(target, property) {
+            if (property === "call") {
+                return (model, method, args, ...rest) => target.call(
+                    model === REPORT_MODEL ? DASHBOARD_MODEL : model,
+                    method,
+                    model === REPORT_MODEL && method === "action_print_owner" ? [...args, getRevisions()] : args,
+                    ...rest,
+                );
+            }
+            const value = Reflect.get(target, property, target);
+            return typeof value === "function" ? value.bind(target) : value;
+        },
+    });
+}
+
+// The generic report-download route has a deliberately fixed provider map.
+// This component uses the dashboard's own fixed route instead of changing it.
+export class FinancialDashboardExportButtons extends ReportExportButtons {
+    static props = { ...ReportExportButtons.props, revisions: Array };
+
+    async exportFile(format) {
+        if (this.disabled || !this.props.revisions.length || !["xlsx", "pdf"].includes(format)) { return; }
+        const companyId = Number(user.activeCompany?.id) || 0;
+        if (this.props.filters.company_id !== companyId) { return; }
+        this.state.busy = true;
+        try {
+            await download({ url: "/baseer/financial-dashboard/export", data: {
+                file_format: format, filters: JSON.stringify(this.props.filters),
+                revisions: JSON.stringify(this.props.revisions),
+            } });
+        } catch {
+            this.notification.add(this.labels.error, { type: "danger" });
+        } finally {
+            this.state.busy = false;
+        }
+    }
+}
 
 const labels = {
     ar: {
@@ -40,6 +88,13 @@ const labels = {
 // only the canvas template is replaced for the Financial dashboard.
 export class SalesPaymentsDashboard extends BaseerOperationsPreview {
     static template = "baseer_financial_dashboard.SalesPayments";
+    static components = { ...BaseerOperationsPreview.components, ReportExportButtons: FinancialDashboardExportButtons };
+
+    setup() {
+        super.setup();
+        this.orm = dashboardOperationsOrm(this.orm, () =>
+            (this.state.report?.periods || []).map(({ key, revision }) => ({ key, revision })));
+    }
 
     get salesDashboardLabels() {
         return labels[this.lang];

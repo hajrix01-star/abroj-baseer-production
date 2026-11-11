@@ -4,12 +4,15 @@ from decimal import Decimal
 from collections import Counter
 from io import BytesIO
 import logging
+from time import perf_counter
+from unittest.mock import patch
 
 from openpyxl import load_workbook
 
 from odoo import Command
 from odoo.exceptions import AccessError, ValidationError
 from odoo.tests.common import TransactionCase, tagged
+from odoo.addons.baseer_financial_dashboard.models import owner_coverage
 
 _logger = logging.getLogger(__name__)
 
@@ -101,10 +104,10 @@ class TestIsolatedOwnerCoverage(TransactionCase):
         return bill, payment, liquidity, payable
 
     def _split_payment(self, extra_unsettled=0, adjustment_day='2046-06-12',
-                       adjustment_account=None):
-        bill = self._bill(3220)
+                       adjustment_account=None, bill_amount=3220):
+        bill = self._bill(bill_amount)
         payment = self.env['account.payment'].with_company(self.company).create({
-            'date': '2046-06-12', 'amount': 3221 + extra_unsettled,
+            'date': '2046-06-12', 'amount': bill_amount + 1 + extra_unsettled,
             'payment_type': 'outbound', 'partner_type': 'supplier',
             'partner_id': self.partner.id, 'journal_id': self.bank.id,
             'company_id': self.company.id, 'currency_id': self.company.currency_id.id,
@@ -133,9 +136,19 @@ class TestIsolatedOwnerCoverage(TransactionCase):
         return bill, payment, adjustment, liquidity, payable
 
     def _cash(self, report=None):
-        return (report or self.report)._owner_cash(
+        return (self.report if report is None else report)._owner_cash(
             self.company, '2046-06-01', '2046-06-30', [],
         )
+
+    def _ordinary_payment(self, amount):
+        bill = self._bill(amount)
+        return self.env['account.payment.register'].with_context(
+            active_model='account.move', active_ids=bill.ids,
+        ).create({
+            'journal_id': self.bank.id, 'payment_method_line_id': self.method.id,
+            'amount': amount, 'payment_date': '2046-06-12',
+            'installments_mode': 'full', 'payment_difference_handling': 'open',
+        })._create_payments()
 
     def _assert_exact_cash(self, result, liquidity, amount, expected_count):
         self.assertTrue(result['coverage_complete'], result['excluded'])
@@ -188,25 +201,53 @@ class TestIsolatedOwnerCoverage(TransactionCase):
         ])
         self.assertFalse(self.billing.get_owner_snapshot(self.filters)['complete'])
 
-    def test_ten_candidate_query_growth_is_recorded_on_an_isolated_database(self):
+    def test_twenty_payments_six_candidates_measure_original_vs_isolated(self):
+        # Representative of the observed volume, built in this test database:
+        # fourteen already-supported payments, two inline write-offs, and four
+        # split settlements.  This is not a production/concurrency benchmark.
+        for amount in range(100, 114):
+            self._ordinary_payment(amount)
         self._payment_with_embedded_writeoff()
-        self.env.flush_all()
-        self.env.invalidate_all()
-        before = self.env.cr.sql_log_count
-        one = self._cash()
-        one_queries = self.env.cr.sql_log_count - before
-        self.assertTrue(one['coverage_complete'], one['excluded'])
-        for amount in range(1519, 1528):
-            self._payment_with_embedded_writeoff(amount, amount - 0.04)
-        self.env.flush_all()
-        self.env.invalidate_all()
-        before = self.env.cr.sql_log_count
-        ten = self._cash()
-        ten_queries = self.env.cr.sql_log_count - before
-        self.assertTrue(ten['coverage_complete'], ten['excluded'])
-        self.assertEqual(len(ten['liquidity_totals']), 10)
-        _logger.info('ISOLATED_OWNER_QUERY_GROWTH one=%s ten=%s delta=%s',
-                     one_queries, ten_queries, ten_queries - one_queries)
+        self._payment_with_embedded_writeoff(1519, 1518.96)
+        for index in range(4):
+            self._split_payment(bill_amount=3220 + index)
+
+        def measure(report):
+            self.env.flush_all()
+            self.env.invalidate_all()
+            before_queries = self.env.cr.sql_log_count
+            started = perf_counter()
+            result = self._cash(report)
+            return result, self.env.cr.sql_log_count - before_queries, perf_counter() - started
+
+        baseline, original_queries, original_seconds = measure(self.billing)
+        isolated, isolated_queries, isolated_seconds = measure(self.report)
+        self.assertFalse(baseline['coverage_complete'])
+        self.assertEqual(baseline['excluded'].get('unsupported_native_payment'), 2)
+        self.assertEqual(baseline['excluded'].get('unassigned_native_payment'), 4)
+        self.assertTrue(isolated['coverage_complete'], isolated['excluded'])
+        self.assertEqual(len(isolated['liquidity_totals']), 20)
+        _logger.info(
+            'ISOLATED_OWNER_20_6 original_queries=%s isolated_queries=%s '
+            'original_seconds=%.3f isolated_seconds=%.3f',
+            original_queries, isolated_queries, original_seconds, isolated_seconds,
+        )
+
+    def test_second_census_bound_accepts_n_and_fails_closed_at_n_plus_one(self):
+        # Reduce the named bound in the isolated test only: this exercises the
+        # exact <=N and >N branches without generating a thousand accounting
+        # records.  The original source census retains its real production cap.
+        self._payment_with_embedded_writeoff()
+        self._payment_with_embedded_writeoff(1519, 1518.96)
+        with patch.object(owner_coverage, 'NATIVE_PAYMENT_CENSUS_BATCH_SIZE', 2):
+            at_limit = self._cash()
+            self.assertTrue(at_limit['coverage_complete'], at_limit['excluded'])
+            self.assertEqual(len(at_limit['liquidity_totals']), 2)
+            self._ordinary_payment(42)
+            beyond_limit = self._cash()
+            self.assertFalse(beyond_limit['coverage_complete'])
+            self.assertEqual(beyond_limit['excluded'].get('unsupported_native_payment'), 2)
+            self.assertFalse(self.report.get_owner_snapshot(self.filters)['complete'])
 
     def test_incomplete_partial_and_unknown_receivable_remain_hidden(self):
         _bill, _payment, _adjustment, _liquidity, _payable = self._split_payment(extra_unsettled=1)

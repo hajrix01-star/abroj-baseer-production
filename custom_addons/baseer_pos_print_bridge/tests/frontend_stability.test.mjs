@@ -11,7 +11,7 @@ function runtime(file, native = {}) {
     Object.assign(PosStore.prototype, native);
     Object.defineProperties(Orderline.prototype, Object.getOwnPropertyDescriptors(native.orderline || {}));
     const sandbox = {
-        PosStore, PosOrder: class {}, PosOrderline: class {}, Orderline, OrderSummary: class {},
+        PosStore, PosOrder: class {}, PosOrderline: class {}, TicketScreen: class {}, Orderline, OrderSummary: class {},
         SelectionPopup: class {}, TextInputPopup: class {}, ConfirmationDialog: class {},
         AlertDialog: class {}, NumberPopup: class {}, OrderReceipt: class {}, crypto: webcrypto,
         makeAwaitable: native.makeAwaitable || (async () => null),
@@ -30,6 +30,31 @@ function runtime(file, native = {}) {
     vm.runInContext(source, sandbox);
     return sandbox;
 }
+
+test('paid-order print button queues the archived receipt without rendering a new image', async () => {
+    const { PosStore, TicketScreen } = runtime('preparation_bridge.js');
+    const screen = new TicketScreen();
+    const pos = new PosStore();
+    const calls = [];
+    screen.pos = pos;
+    pos.config = { baseer_direct_print_enabled: true, baseer_native_receipt_enabled: true };
+    pos.notification = { add() {} };
+    pos.data = {
+        async call(model, method, args) {
+            calls.push([model, method, args]);
+            return { job_id: 42, state: 'pending' };
+        },
+    };
+    const result = await screen.print({ id: 17, isSynced: true, state: 'paid' });
+    assert.equal(result.successful, true);
+    assert.equal(result.queued, true);
+    assert.equal(calls.length, 1);
+    const [[model, method, [[orderId], requestUuid]]] = calls;
+    assert.equal(model, 'pos.order');
+    assert.equal(method, 'baseer_reprint_native_receipt');
+    assert.equal(orderId, 17);
+    assert.match(requestUuid, /^[\da-f-]{36}$/);
+});
 
 const lineRuntime = runtime('line_actions.js');
 const displayRuntime = runtime('line_actions.js', { orderline: {

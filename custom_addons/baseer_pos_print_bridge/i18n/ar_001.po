@@ -2680,3 +2680,24 @@ msgstr "تغيّر الطلب. راجعه ثم اضغط الدفع مرة أخر
 #: code:addons/baseer_pos_print_bridge/models/preparation.py:0
 msgid "Kitchen routing changed. Review the order and press Payment again."
 msgstr "تغيّر توجيه أصناف المطبخ. راجع الطلب ثم اضغط الدفع مرة أخرى."
+
+#. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/preparation_bridge.js:0
+msgid "The original receipt copy was sent to the print queue."
+msgstr "أُضيفت نسخة الإيصال الأصلي إلى قائمة انتظار الطباعة."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/job.py:0
+msgid "The original receipt image has expired. Use Reprint Invoice for an issued invoice."
+msgstr "انتهت مدة حفظ صورة الإيصال الأصلية. لطباعة الفاتورة الصادرة، اختر «إعادة طباعة الفاتورة»."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/job.py:0
+msgid "The original receipt is still in the print queue."
+msgstr "الإيصال الأصلي ما زال في قائمة انتظار الطباعة."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/job.py:0
+msgid "Invalid receipt reprint request."
+msgstr "طلب إعادة طباعة الإيصال غير صالح."

@@ -819,6 +819,46 @@ class TestBaseerPrintBridgeHybrid(TransactionCase):
         self.assertNotEqual(recaptured['job_id'], job.id)
         self.assertEqual(self.env['baseer.print.job'].browse(recaptured['job_id']).reprint_of_id, job)
 
+    def test_cashier_reprints_archived_receipt_on_current_printer(self):
+        self._enable()
+        self.agent.with_context(baseer_print_internal=True).write({'agent_version': '1.4.0'})
+        self.receipt.paper_width = '80'
+        self.config.baseer_native_receipt_enabled = True
+        self.company.country_id = self.env.ref('base.us')
+        cashier, order = self._cashier_native_receipt_order()
+        order = order.with_user(cashier).with_context(allowed_company_ids=self.company.ids)
+        request_uuid = str(uuid4())
+        self.assertFalse(order.baseer_reprint_native_receipt(request_uuid))
+        image = self._native_receipt_sample()
+        first = order.baseer_enqueue_native_receipt(image)
+        Job = self.env['baseer.print.job'].sudo()
+        original = Job.browse(first['job_id'])
+        with self.assertRaisesRegex(ValidationError, 'still in the print queue'):
+            order.baseer_reprint_native_receipt(request_uuid)
+        original.write({'state': 'done'})
+
+        replacement = self.receipt.with_context(baseer_print_discovery=True).copy({
+            'name': 'Replacement receipt printer',
+            'machine_identifier': 'REPLACEMENT-RECEIPT',
+        })
+        self.config.baseer_receipt_printer_id = replacement
+        result = order.baseer_reprint_native_receipt(request_uuid)
+        reprint = Job.browse(result['job_id'])
+        self.assertNotEqual(reprint, original)
+        self.assertEqual(reprint.state, 'pending')
+        self.assertEqual(reprint.reprint_of_id, original)
+        self.assertEqual(reprint.receipt_image, original.receipt_image)
+        self.assertEqual(reprint.receipt_image_sha256, original.receipt_image_sha256)
+        self.assertEqual(reprint.printer_id, replacement)
+        self.assertEqual(reprint.payload['printer']['machine_identifier'], replacement.machine_identifier)
+        self.assertEqual(original.payload['printer']['machine_identifier'], self.receipt.machine_identifier)
+        self.assertEqual(order.baseer_reprint_native_receipt(request_uuid), result)
+        self.assertNotEqual(order.baseer_reprint_native_receipt(str(uuid4()))['job_id'], reprint.id)
+
+        original.write({'receipt_image': False, 'receipt_image_purged_at': fields.Datetime.now()})
+        with self.assertRaisesRegex(ValidationError, 'image has expired'):
+            order.baseer_reprint_native_receipt(str(uuid4()))
+
     def test_sa_native_receipt_does_not_require_edi_when_phase_two_is_disabled(self):
         self._enable()
         self.agent.with_context(baseer_print_internal=True).write({'agent_version': '1.4.0'})

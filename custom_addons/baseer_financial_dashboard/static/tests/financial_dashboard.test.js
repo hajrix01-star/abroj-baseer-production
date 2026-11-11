@@ -2,7 +2,29 @@
 
 import { expect, test } from "@odoo/hoot";
 import { BaseerFinancialDashboard } from "@baseer_financial_dashboard/financial_dashboard";
-import { SalesPaymentsDashboard } from "@baseer_financial_dashboard/financial_sales_payments";
+import { SalesPaymentsDashboard, dashboardOperationsOrm } from "@baseer_financial_dashboard/financial_sales_payments";
+
+test("only dashboard operations calls use the isolated source", () => {
+    const calls = [];
+    const original = { call(model, method, args) { calls.push({ model, method, args }); return method; } };
+    const revisions = [{ key: "current", revision: "a".repeat(64) }];
+    const dashboard = dashboardOperationsOrm(original, () => revisions);
+    const filters = { company_id: 2 };
+    for (const method of ["get_owner_snapshot", "get_owner_details", "action_owner_source"]) {
+        dashboard.call("baseer.operations.report", method, [filters]);
+    }
+    dashboard.call("baseer.operations.report", "action_print_owner", [filters]);
+    dashboard.call("baseer.profit.loss.report", "get_context", [2]);
+    // The regular billing report retains its original service and provider.
+    original.call("baseer.operations.report", "get_owner_snapshot", [filters]);
+    expect(calls.map((call) => call.model)).toEqual([
+        "baseer.financial.dashboard.operations", "baseer.financial.dashboard.operations",
+        "baseer.financial.dashboard.operations", "baseer.financial.dashboard.operations",
+        "baseer.profit.loss.report", "baseer.operations.report",
+    ]);
+    expect(calls[3].args).toEqual([filters, revisions]);
+    expect(calls[4].args).toEqual([2]);
+});
 
 function component(language = "en") {
     const instance = Object.create(BaseerFinancialDashboard.prototype);

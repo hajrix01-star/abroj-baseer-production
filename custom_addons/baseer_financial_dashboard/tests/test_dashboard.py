@@ -30,12 +30,13 @@ class TestFinancialDashboard(TransactionCase):
         self.assertIn('SalesPaymentsDashboard', source)
         self.assertIn('t-component="activeComponent"', (module / 'static/src/financial_dashboard.xml').read_text(encoding='utf-8'))
 
-    def test_sales_payments_dashboard_is_a_presentation_only_extension(self):
+    def test_sales_payments_dashboard_uses_the_isolated_source_and_export(self):
         module = Path(__file__).resolve().parents[1]
         source = (module / 'static/src/financial_sales_payments.js').read_text(encoding='utf-8')
         template = (module / 'static/src/financial_dashboard.xml').read_text(encoding='utf-8')
         self.assertIn('extends BaseerOperationsPreview', source)
-        self.assertNotIn('orm.call', source)
+        self.assertIn('baseer.financial.dashboard.operations', source)
+        self.assertIn('/baseer/financial-dashboard/export', source)
         self.assertIn('t-inherit="baseer_operations_report.Preview"', template)
         self.assertIn('t-inherit-mode="primary"', template)
         self.assertIn('t-set="salesDashboardData"', template)

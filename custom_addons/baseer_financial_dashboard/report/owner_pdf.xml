@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_dashboard_owner_pdf_portrait" model="ir.actions.report">
+        <field name="name">Sales and Payments / ملخص المبيعات والمدفوعات</field>
+        <field name="model">baseer.financial.dashboard.operations</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">baseer_financial_dashboard.dashboard_owner_pdf_portrait</field>
+        <field name="report_file">baseer_financial_dashboard.dashboard_owner_pdf_portrait</field>
+        <field name="paperformat_id" ref="baseer_operations_report.paperformat_operations_portrait"/>
+    </record>
+    <record id="action_dashboard_owner_pdf_landscape" model="ir.actions.report">
+        <field name="name">Sales and Payments / ملخص المبيعات والمدفوعات</field>
+        <field name="model">baseer.financial.dashboard.operations</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">baseer_financial_dashboard.dashboard_owner_pdf_landscape</field>
+        <field name="report_file">baseer_financial_dashboard.dashboard_owner_pdf_landscape</field>
+        <field name="paperformat_id" ref="baseer_operations_report.paperformat_operations_landscape"/>
+    </record>
+    <template id="dashboard_owner_pdf_portrait"><t t-call="baseer_operations_report.owner_pdf_body"/></template>
+    <template id="dashboard_owner_pdf_landscape"><t t-call="baseer_operations_report.owner_pdf_body"/></template>
+</odoo>

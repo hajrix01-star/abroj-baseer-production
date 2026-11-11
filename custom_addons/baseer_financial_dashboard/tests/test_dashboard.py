@@ -190,3 +190,69 @@ class TestFinancialDashboard(TransactionCase):
         self.assertEqual(report.get_dashboard_report(filters)['company']['id'], company.id)
         with self.assertRaises(AccessError):
             report.get_dashboard_report({**filters, 'company_id': other.id})
+
+    def test_projection_compares_margins_and_handles_negative_revenue(self):
+        company = self.env.company
+        accounts = self.env['account.account'].with_company(company)
+
+        def find_or_create(kind, code):
+            return accounts.search([('company_ids', 'in', company.id), ('account_type', '=', kind)], limit=1) or accounts.create({
+                'code': code, 'name': 'Dashboard comparison ' + kind, 'account_type': kind,
+                'company_ids': [Command.set(company.ids)],
+            })
+
+        income = find_or_create('income', '959021')
+        cost = find_or_create('expense_direct_cost', '959022')
+        balance = accounts.search([('company_ids', 'in', company.id), ('account_type', '=', 'asset_current'), ('reconcile', '=', False)], limit=1)
+        journal = self.env['account.journal'].search([('company_id', '=', company.id), ('type', '=', 'general')], limit=1)
+        self.assertTrue(balance and journal)
+        for day, account, debit, credit in (
+            ('2045-01-05', income, 0, 100), ('2045-01-05', cost, 50, 0),
+            ('2045-02-05', income, 0, 200), ('2045-02-05', cost, 60, 0),
+            ('2045-03-05', income, 25, 0),
+        ):
+            move = self.env['account.move'].with_company(company).create({
+                'date': day, 'journal_id': journal.id, 'move_type': 'entry',
+                'line_ids': [
+                    Command.create({'name': 'Dashboard source', 'account_id': account.id, 'debit': debit, 'credit': credit}),
+                    Command.create({'name': 'Counterpart', 'account_id': balance.id, 'debit': credit, 'credit': debit}),
+                ],
+            })
+            move._post(soft=False)
+
+        filters = {
+            'company_id': company.id,
+            'period': {'kind': 'month', 'anchor_date': '2045-02-01', 'direction': 0},
+            'comparison': {'kind': 'previous_periods', 'count': 1, 'order': 'descending'},
+            'journal_ids': [],
+        }
+        original = self.env['baseer.profit.loss.report']
+        projection = self.env['baseer.financial.dashboard.report']
+        actual = projection.get_dashboard_report(filters)
+        expected = original.get_report(filters)
+        self.assertEqual(actual['rows'], expected['rows'])
+        self.assertEqual(actual['periods'], expected['periods'])
+        self.assertEqual(actual['net_profit'], expected['net_profit'])
+        cards = {card['key']: card for card in actual['dashboard']['cards']}
+        self.assertEqual(cards['gross_margin']['value']['display'], '70.00%')
+        self.assertEqual(cards['gross_margin']['change']['display'], '20.00 pp')
+        self.assertEqual(cards['gross_margin']['change']['tone'], 'positive')
+        self.assertEqual(cards['net_income']['value']['amount'], '140.00')
+        bridge = {step['key']: step['amount']['amount'] for step in actual['dashboard']['waterfall']}
+        self.assertEqual(bridge, {
+            'income': '200.00', 'cost_of_sales': '-60.00', 'expense': '0.00',
+            'net_other_income': '0.00', 'net_income': '140.00',
+        })
+
+        negative_filters = {**filters, 'period': {'kind': 'month', 'anchor_date': '2045-03-01', 'direction': 0}}
+        negative = projection.get_dashboard_report(negative_filters)
+        negative_original = original.get_report(negative_filters)
+        self.assertEqual(negative['rows'], negative_original['rows'])
+        self.assertEqual(negative['net_profit'], negative_original['net_profit'])
+        negative_cards = {card['key']: card for card in negative['dashboard']['cards']}
+        self.assertFalse(negative_cards['gross_margin']['value']['available'])
+        self.assertFalse(negative_cards['gross_margin']['change']['available'])
+        self.assertEqual(negative_cards['net_income']['value']['amount'], '-25.00')
+        negative_bridge = {step['key']: step['amount']['amount'] for step in negative['dashboard']['waterfall']}
+        self.assertEqual(negative_bridge['income'], '-25.00')
+        self.assertEqual(negative_bridge['net_income'], '-25.00')

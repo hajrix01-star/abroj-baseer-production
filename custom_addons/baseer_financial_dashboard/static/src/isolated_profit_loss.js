@@ -275,4 +275,3 @@ export class IsolatedFinancialProfitLoss extends Component {
         }
     }
 }
-

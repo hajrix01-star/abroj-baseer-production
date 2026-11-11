@@ -212,4 +212,3 @@ class FinancialDashboardReport(models.AbstractModel):
                 grouped_by_period, totals, periods, currency, journal_ids,
             ),
         }
-

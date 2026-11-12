@@ -106,6 +106,8 @@ class TestOperationsOwnerSales(TransactionCase):
         sale = entry('Daily sales', [(cash, 46, 0), (self.receivable, 69, 0),
                                      (self.income, 0, 100), (self.tax_account, 0, 15)])
         settlement = entry('Settlement', [(cash, 69, 0), (self.receivable, 0, 69)])
+        expense = self._account('953106', 'expense')
+        entry('Unrelated cash expense', [(expense, 25, 0), (cash, 0, 25)])
         order = self._sale()
         events = self._read()
         self.assertEqual({(row['source_model'], row['source_id']) for row in events},

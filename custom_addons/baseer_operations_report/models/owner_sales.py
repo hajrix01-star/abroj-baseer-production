@@ -209,22 +209,44 @@ class OperationsOwnerSales(models.AbstractModel):
         return result
 
     def _owner_sales_entries(self, company, start, end, journal_ids):
-        domain = [('company_id', '=', company.id), ('state', '=', 'posted'),
-                  ('move_type', '=', 'entry'), ('date', '>=', start), ('date', '<=', end)]
-        if journal_ids:
-            domain.append(('journal_id', 'in', list(journal_ids)))
-        moves = self.env['account.move'].search(domain)
-        moves.check_access('read')
-        sql = "company_id=%s AND state='posted' AND move_type='entry' AND date >= %s AND date <= %s"
+        # Only entries that credit income. A census of every miscellaneous
+        # move would fail closed on hidden payroll or opening-balance journals.
+        self.env['account.move'].flush_model(['company_id', 'state', 'move_type', 'date', 'journal_id'])
+        self.env['account.move.line'].flush_model(['move_id', 'account_id', 'credit'])
+        self.env['account.account'].flush_model(['account_type'])
+        sql = (
+            "SELECT DISTINCT m.id FROM account_move m "
+            "JOIN account_move_line l ON l.move_id=m.id "
+            "JOIN account_account a ON a.id=l.account_id "
+            "WHERE m.company_id=%s AND m.state='posted' AND m.move_type='entry' "
+            "AND m.date >= %s AND m.date <= %s "
+            "AND a.account_type IN ('income', 'income_other') AND l.credit > 0"
+        )
         params = [company.id, start, end]
         if journal_ids:
-            sql += ' AND journal_id=ANY(%s)'
+            sql += ' AND m.journal_id=ANY(%s)'
             params.append(list(journal_ids))
-        self._assert_visible('account_move', sql, params, moves)
+        self.env.cr.execute(sql, params)
+        move_ids = [row[0] for row in self.env.cr.fetchall()]
+        moves = self.env['account.move'].search([('id', 'in', move_ids)], order='id')
+        moves.check_access('read')
+        self._assert_visible(
+            'account_move',
+            'id IN (SELECT DISTINCT m.id FROM account_move m '
+            'JOIN account_move_line l ON l.move_id=m.id '
+            'JOIN account_account a ON a.id=l.account_id '
+            "WHERE m.company_id=%s AND m.state='posted' AND m.move_type='entry' "
+            "AND m.date >= %s AND m.date <= %s "
+            "AND a.account_type IN ('income', 'income_other') AND l.credit > 0"
+            + (' AND m.journal_id=ANY(%s)' if journal_ids else '') + ')',
+            params, moves)
+        if not moves:
+            return []
         lines = self._owner_sales_pairs(moves, 'line_ids', 'account.move.line', 'move_id')
         lines.account_id.check_access('read')
         # Manual journal entries may credit the configured output VAT account
-        # without a tax_line_id. Prove its identity through the sales tax setup.
+        # without a tax_line_id. Prove its identity through the visible sales
+        # tax setup; a hidden unused tax must not fail the snapshot.
         liabilities = lines.account_id.filtered(
             lambda account: account.account_type in ('liability_current', 'liability_non_current'))
         tax_accounts = self.env['account.account']
@@ -233,12 +255,13 @@ class OperationsOwnerSales(models.AbstractModel):
             taxes = self.env['account.tax'].search([
                 ('company_id', '=', company.id), ('type_tax_use', '=', 'sale'),
             ])
-            self._assert_visible('account_tax', "company_id=%s AND type_tax_use='sale'",
-                                 [company.id], taxes)
-            repartitions = self._owner_sales_pairs(
-                taxes, 'repartition_line_ids', 'account.tax.repartition.line', 'tax_id')
-            repartitions.account_id.check_access('read')
-            tax_accounts = repartitions.filtered(lambda row: row.repartition_type == 'tax' and row.document_type == 'invoice').account_id
+            taxes.check_access('read')
+            if taxes:
+                repartitions = self._owner_sales_pairs(
+                    taxes, 'repartition_line_ids', 'account.tax.repartition.line', 'tax_id')
+                repartitions.account_id.check_access('read')
+                tax_accounts = repartitions.filtered(
+                    lambda row: row.repartition_type == 'tax' and row.document_type == 'invoice').account_id
         moves.journal_id.check_access('read')
         self._owner_sales_pairs(moves, 'pos_session_ids', 'pos.session', 'move_id')
         self._owner_sales_pairs(moves, 'pos_order_ids', 'pos.order', 'account_move')

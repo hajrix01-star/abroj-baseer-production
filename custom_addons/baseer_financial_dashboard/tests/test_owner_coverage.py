@@ -140,13 +140,13 @@ class TestIsolatedOwnerCoverage(TransactionCase):
             self.company, '2046-06-01', '2046-06-30', [],
         )
 
-    def _ordinary_payment(self, amount):
+    def _ordinary_payment(self, amount, payment_date='2046-06-12'):
         bill = self._bill(amount)
         return self.env['account.payment.register'].with_context(
             active_model='account.move', active_ids=bill.ids,
         ).create({
             'journal_id': self.bank.id, 'payment_method_line_id': self.method.id,
-            'amount': amount, 'payment_date': '2046-06-12',
+            'amount': amount, 'payment_date': payment_date,
             'installments_mode': 'full', 'payment_difference_handling': 'open',
         })._create_payments()
 
@@ -166,6 +166,179 @@ class TestIsolatedOwnerCoverage(TransactionCase):
         result = self._cash()
         self._assert_exact_cash(result, liquidity, Decimal('1517.96'), 1)
         self.assertEqual(self.billing.get_owner_snapshot(self.filters), before)
+
+    def test_partially_paid_bill_reports_only_the_actual_cash_outflow(self):
+        bill = self._bill(4348.17)
+        payment = self.env['account.payment.register'].with_context(
+            active_model='account.move', active_ids=bill.ids,
+        ).create({
+            'journal_id': self.bank.id, 'payment_method_line_id': self.method.id,
+            'amount': 1708.25, 'payment_date': '2046-06-12',
+            'installments_mode': 'full', 'payment_difference_handling': 'open',
+        })._create_payments()
+        self.assertEqual(Decimal(str(bill.amount_residual)), Decimal('2639.92'))
+        payable = payment.move_id.line_ids.filtered(lambda line: line.account_id == self.payable)
+        liquidity = payment.move_id.line_ids.filtered(
+            lambda line: line.account_id == self.bank.default_account_id,
+        )
+        self.assertEqual((len(payable), len(liquidity)), (1, 1))
+        self.assertEqual(len(payable.matched_credit_ids), 1)
+        self.assertEqual(Decimal(str(payable.amount_residual)), Decimal('0.0'))
+
+        result = self._cash()
+        self.assertTrue(result['coverage_complete'], result['excluded'])
+        self.assertEqual(result['liquidity_totals'], {liquidity.id: Decimal('1708.25')})
+        self.assertEqual(sum((event['amount'] for event in result['events']), Decimal('0')),
+                         Decimal('1708.25'))
+        self.assertEqual({event['payment_line_id'] for event in result['events']}, {liquidity.id})
+        snapshot = self.report.get_owner_snapshot(self.filters)
+        self.assertTrue(snapshot['complete'])
+        self.assertEqual(next(row['amount'] for row in snapshot['periods'][0]['totals']
+                              if row['key'] == 'cash_total'), '1,708.25')
+
+    def test_enabled_companies_with_duplicate_move_names_keep_cash_separate(self):
+        # Preserve the actual owner-report company allowlist; an absent fixture
+        # is a failure, not a skipped isolation test presented as success.
+        other = self.env['res.company'].sudo().search([
+            ('id', 'in', [1, 2, 3, 56]), ('id', '!=', self.company.id),
+        ], limit=1)
+        if not other:
+            # Only the disposable, single-worker CI database may temporarily
+            # select an unused allowed id. Sequence increments from previous
+            # rolled-back tests otherwise make a fresh company id 5 or later.
+            # Never alter a sequence in QA, production, or an unnamed test DB.
+            self.assertEqual(self.env.cr.dbname, 'baseer_financial_dashboard_ci',
+                             'A second authorized company is required outside disposable CI')
+            self.env.cr.execute('SELECT id FROM res_company WHERE id = ANY(%s)', [[1, 2, 3, 56]])
+            occupied = {row[0] for row in self.env.cr.fetchall()}
+            available = [identity for identity in (1, 2, 3, 56) if identity not in occupied]
+            self.assertTrue(available, 'No unused authorized company fixture id')
+            identity = available[0]
+            self.env.cr.execute('SELECT last_value, is_called FROM res_company_id_seq')
+            old_value, old_called = self.env.cr.fetchone()
+            try:
+                # Roll back an ORM/SQL failure to a savepoint before the
+                # finally block restores this non-transactional sequence.
+                with self.env.cr.savepoint():
+                    self.env.cr.execute("SELECT setval('res_company_id_seq', %s, false)", [identity])
+                    other = self.env['res.company'].create({
+                        'name': 'Owner scope second company',
+                        'currency_id': self.company.currency_id.id,
+                    })
+                    self.assertEqual(other.id, identity)
+            finally:
+                self.env.cr.execute('SELECT last_value FROM res_company_id_seq')
+                current_value = self.env.cr.fetchone()[0]
+                restored = max(old_value, current_value)
+                self.env.cr.execute("SELECT setval('res_company_id_seq', %s, %s)", [
+                    restored, old_called if restored == old_value else True,
+                ])
+        self.assertIn(other.id, {1, 2, 3, 56},
+                      'The company-isolation test needs two authorized fixture companies')
+        self.env.user.write({'company_ids': [Command.link(other.id)]})
+        companies = [self.company.id, other.id]
+
+        def payment_for(company, amount, suffix):
+            scoped = self.env(context=dict(self.env.context, allowed_company_ids=[company.id] + [
+                identity for identity in companies if identity != company.id
+            ]))
+            accounts = scoped['account.account'].with_company(company)
+            def account(code, kind, reconcile=False):
+                return accounts.create({
+                    'code': code, 'name': 'Scope test ' + suffix + code,
+                    'account_type': kind, 'reconcile': reconcile,
+                    'company_ids': [Command.set(company.ids)],
+                })
+            payable = account('958901', 'liability_payable', True)
+            expense = account('958902', 'expense')
+            cash = account('958903', 'asset_cash')
+            partner = scoped['res.partner'].with_company(company).create({
+                'name': 'Scope vendor ' + suffix,
+                'property_account_payable_id': payable.id,
+            })
+            bank = scoped['account.journal'].with_company(company).create({
+                'name': 'Scope bank ' + suffix, 'code': 'ISC', 'type': 'bank',
+                'company_id': company.id, 'default_account_id': cash.id,
+            })
+            purchase = scoped['account.journal'].with_company(company).create({
+                'name': 'Scope purchase ' + suffix, 'code': 'ISP', 'type': 'purchase',
+                'company_id': company.id,
+            })
+            method = bank.outbound_payment_method_line_ids.filtered(
+                lambda row: row.payment_method_id.code == 'manual',
+            )[:1]
+            self.assertTrue(method)
+            method.payment_account_id = cash
+            bill = scoped['account.move'].with_company(company).create({
+                'move_type': 'in_invoice', 'partner_id': partner.id,
+                'journal_id': purchase.id, 'invoice_date': '2046-06-10',
+                'invoice_line_ids': [Command.create({
+                    'name': 'Scope invoice', 'quantity': 1, 'price_unit': amount,
+                    'account_id': expense.id, 'tax_ids': [Command.clear()],
+                })],
+            })
+            bill.action_post()
+            payment = scoped['account.payment.register'].with_company(company).with_context(
+                active_model='account.move', active_ids=bill.ids,
+            ).create({
+                'journal_id': bank.id, 'payment_method_line_id': method.id,
+                'amount': amount, 'payment_date': '2046-06-12',
+                'installments_mode': 'full', 'payment_difference_handling': 'open',
+            })._create_payments()
+            liquidity = payment.move_id.line_ids.filtered(lambda line: line.account_id == cash)
+            self.assertEqual(len(liquidity), 1)
+            return payment, liquidity
+
+        first, first_line = payment_for(self.company, 1707.75, 'A')
+        second, second_line = payment_for(other, 18.99, 'B')
+        self.assertNotEqual(first.move_id.id, second.move_id.id)
+        self.assertEqual(first.move_id.name, second.move_id.name)
+        for company, payment, selected_line, expected in (
+            (self.company, first, first_line, Decimal('1707.75')),
+            (other, second, second_line, Decimal('18.99')),
+        ):
+            ordered = [company.id] + [identity for identity in companies if identity != company.id]
+            selected = self.report.with_context(allowed_company_ids=ordered).with_company(company)
+            multi = selected._owner_cash(company, '2046-06-01', '2046-06-30', [])
+            single = selected.with_context(allowed_company_ids=[company.id])._owner_cash(
+                company, '2046-06-01', '2046-06-30', [],
+            )
+            self.assertEqual(multi, single)
+            self.assertTrue(multi['coverage_complete'], multi['excluded'])
+            self.assertEqual(multi['liquidity_totals'], {selected_line.id: expected})
+            self.assertEqual({event['company_id'] for event in multi['events']}, {company.id})
+            self.assertEqual({event['payment_line_id'] for event in multi['events']},
+                             {selected_line.id})
+            for event in multi['events']:
+                witness = selected.env['account.move.line'].browse(event['payment_line_id'])
+                allocation = selected.env['account.move.line'].browse(event['line_id'])
+                self.assertEqual(witness.company_id, company)
+                self.assertEqual(witness.move_id.company_id, company)
+                self.assertEqual(allocation.company_id, company)
+                self.assertEqual(event['source_model'], 'account.payment')
+                self.assertEqual(event['source_id'], payment.id)
+            filters = {**self.filters, 'company_id': company.id}
+            snapshot = selected.get_owner_snapshot(filters)
+            self.assertTrue(snapshot['complete'])
+            self.assertEqual(snapshot['company_id'], company.id)
+            period = snapshot['periods'][0]
+            total = next(row for row in period['totals'] if row['key'] == 'cash_total')
+            self.assertEqual(Decimal(total['amount'].replace(',', '')), expected)
+            detail = selected.get_owner_details(
+                filters, 'total:cash_total', period['key'], period['revision'],
+            )
+            self.assertFalse(detail['changed'])
+            self.assertEqual(detail['company_id'], company.id)
+            self.assertEqual(Decimal(detail['amount'].replace(',', '')), expected)
+            self.assertEqual(len(detail['events']), 1)
+            action = selected.action_owner_source(
+                filters, 'total:cash_total', period['key'], period['revision'],
+                detail['events'][0]['event_key'],
+            )
+            self.assertEqual((action['res_model'], action['res_id']), ('account.payment', payment.id))
+            self.assertEqual(selected.env[action['res_model']].browse(action['res_id']).company_id,
+                             company)
+            self.assertFalse(action['context']['edit'])
 
     def test_split_writeoff_witness_reconciles_snapshot_details_and_export(self):
         _bill, _payment, _adjustment, liquidity, _payable = self._split_payment()
@@ -290,6 +463,204 @@ class TestIsolatedOwnerCoverage(TransactionCase):
         except AccessError:
             return
         self.assertFalse(result['coverage_complete'])
+
+    def test_reversal_pair_proof_requires_a_posted_whole_reversal(self):
+        payment = self._ordinary_payment(1707.75)
+        self.assertFalse(self.report._dashboard_reversal_pair(payment, self.company))
+        reversal = payment.move_id._reverse_moves([{'date': '2046-06-13'}])
+        if reversal.state == 'draft':
+            reversal._post(soft=False)
+        proof = self.report._dashboard_reversal_pair(payment, self.company)
+        self.assertTrue(proof)
+        self.assertEqual(proof['move'], payment.move_id)
+        self.assertEqual(proof['reversal'], reversal)
+        self.assertEqual(proof['amount'], Decimal('1707.75'))
+        self.assertEqual(self.report._decimal(proof['outflow'].balance), Decimal('-1707.75'))
+        self.assertEqual(self.report._decimal(proof['refund'].balance), Decimal('1707.75'))
+
+    def _posted_payment_reversal(self, reversal_date='2046-06-13', reversal_journal=None,
+                                 payment_date='2046-06-12'):
+        payment = self._ordinary_payment(1707.75, payment_date=payment_date)
+        values = {'date': reversal_date}
+        if reversal_journal:
+            values['journal_id'] = reversal_journal.id
+        reversal = payment.move_id._reverse_moves([values])
+        if reversal.state == 'draft':
+            reversal._post(soft=False)
+        self.assertEqual(reversal.reversed_entry_id, payment.move_id)
+        self.assertEqual(reversal.state, 'posted')
+        return payment, reversal
+
+    def _assert_reversal_report(self, filters, expected_total, expected_details):
+        snapshot = self.report.get_owner_snapshot(filters)
+        self.assertTrue(snapshot['complete'])
+        period = snapshot['periods'][0]
+        total = next(row for row in period['totals'] if row['key'] == 'cash_total')
+        self.assertEqual(Decimal(total['amount'].replace(',', '')), expected_total)
+        detail = self.report.get_owner_details(
+            filters, 'total:cash_total', period['key'], period['revision'],
+        )
+        self.assertFalse(detail['changed'])
+        self.assertEqual(Decimal(detail['amount'].replace(',', '')), expected_total)
+        amounts = [Decimal(row['amount'].replace(',', '')) for row in detail['events']]
+        self.assertCountEqual(amounts, expected_details)
+        self.assertEqual(sum(amounts, Decimal('0')), expected_total)
+        return period
+
+    def test_reversal_same_period_matches_total_details_and_source(self):
+        payment, reversal = self._posted_payment_reversal()
+        period = self._assert_reversal_report(
+            self.filters, Decimal('0.00'), [Decimal('1707.75'), Decimal('-1707.75')],
+        )
+        detail = self.report.get_owner_details(
+            self.filters, 'total:cash_total', period['key'], period['revision'],
+        )
+        for event in detail['events']:
+            action = self.report.action_owner_source(
+                self.filters, 'total:cash_total', period['key'], period['revision'],
+                event['event_key'],
+            )
+            self.assertEqual(action['target'], 'new')
+            self.assertFalse(action['context']['edit'])
+        self.assertEqual(payment.move_id.reversal_move_ids, reversal)
+
+    def test_reversal_in_next_period_keeps_each_periods_actual_movement(self):
+        self._posted_payment_reversal('2046-07-02')
+        self._assert_reversal_report(
+            self.filters, Decimal('1707.75'), [Decimal('1707.75')],
+        )
+        july = {**self.filters, 'date_from': '2046-07-01', 'date_to': '2046-07-31'}
+        self._assert_reversal_report(july, Decimal('-1707.75'), [Decimal('-1707.75')])
+
+    def test_reversal_source_and_xlsx_match_negative_detail_total(self):
+        _payment, reversal = self._posted_payment_reversal('2046-07-02')
+        filters = {**self.filters, 'date_from': '2046-07-01', 'date_to': '2046-07-31'}
+        snapshot = self.report.get_owner_snapshot(filters)
+        self.assertTrue(snapshot['complete'])
+        period = snapshot['periods'][0]
+        total = next(row for row in period['totals'] if row['key'] == 'cash_total')
+        detail = self.report.get_owner_details(
+            filters, 'total:cash_total', period['key'], period['revision'],
+        )
+        self.assertFalse(detail['changed'])
+        self.assertEqual(len(detail['events']), 1)
+        detail_amount = Decimal(detail['events'][0]['amount'].replace(',', ''))
+        self.assertEqual(detail_amount, Decimal('-1707.75'))
+        self.assertEqual(Decimal(total['amount'].replace(',', '')), detail_amount)
+        action = self.report.action_owner_source(
+            filters, 'total:cash_total', period['key'], period['revision'],
+            detail['events'][0]['event_key'],
+        )
+        self.assertEqual((action['res_model'], action['res_id']), ('account.move', reversal.id))
+        self.assertFalse(action['context']['edit'])
+        revisions = [{'key': period['key'], 'revision': period['revision']}]
+        exporter = self.env['baseer.financial.dashboard.export'].with_context(
+            _financial_dashboard_export_revisions=revisions,
+        )
+        payload, mimetype, _name = exporter._export('financial_dashboard_operations', filters, 'xlsx')
+        self.assertIn('spreadsheetml.sheet', mimetype)
+        sheet = load_workbook(BytesIO(payload), data_only=True).active
+        matching_rows = [row for row in sheet.iter_rows()
+                         if any(cell.value == total['label'] for cell in row)]
+        self.assertEqual(len(matching_rows), 1)
+        numeric_values = [Decimal(str(cell.value)) for cell in matching_rows[0]
+                          if isinstance(cell.value, (int, float)) and not isinstance(cell.value, bool)]
+        self.assertIn(detail_amount, numeric_values)
+
+    def test_outside_period_reproof_limit_accepts_n_and_rejects_n_plus_one(self):
+        july = {**self.filters, 'date_from': '2046-07-01', 'date_to': '2046-07-31'}
+        self._posted_payment_reversal('2046-07-02', payment_date='2046-06-12')
+        # Use N=1 to cover the exact boundary with two genuinely distinct
+        # original dates, rather than manufacturing eight more payments.
+        with patch.object(owner_coverage, '_MAX_OUTSIDE_PERIOD_REPROOFS', 1):
+            self._assert_reversal_report(july, Decimal('-1707.75'), [Decimal('-1707.75')])
+            self._posted_payment_reversal('2046-07-02', payment_date='2046-06-13')
+            with self.assertRaises(AccessError):
+                self.report.get_owner_snapshot(july)
+
+    def test_hidden_original_move_makes_reversal_period_fail_closed(self):
+        payment, _reversal = self._posted_payment_reversal('2046-07-02')
+        groups = [self.env.ref('base.group_user').id,
+                  self.env.ref('account.group_account_user').id,
+                  self.env.ref('point_of_sale.group_pos_user').id]
+        if 'baseer.procurement.representative.advance' in self.env:
+            groups.append(self.env.ref('baseer_procurement_requests.group_procurement_accountant').id)
+        reader = self.env['res.users'].create({
+            'name': 'Restricted reversal accountant', 'login': 'restricted-reversal-owner',
+            'group_ids': [Command.set(groups)], 'company_id': self.company.id,
+            'company_ids': [Command.set(self.company.ids)],
+        })
+        filters = {**self.filters, 'date_from': '2046-07-01', 'date_to': '2046-07-31'}
+        secured = self.report.with_user(reader).with_context(allowed_company_ids=self.company.ids)
+        self.assertTrue(secured.get_owner_snapshot(filters)['complete'])
+        rule = self.env['ir.rule'].create({
+            'name': 'Hide original payment move from owner reversal',
+            'model_id': self.env['ir.model']._get('account.move').id,
+            'domain_force': f"[('id', '!=', {payment.move_id.id})]",
+        })
+        try:
+            rule.flush_recordset()
+            with self.assertRaises(AccessError):
+                secured.get_owner_snapshot(filters)
+        finally:
+            rule.unlink()
+
+    def test_reversal_journal_filter_follows_each_actual_move(self):
+        reverse_bank = self.env['account.journal'].with_company(self.company).create({
+            'name': 'Reversal filter bank', 'code': 'IRV', 'type': 'bank',
+            'company_id': self.company.id, 'default_account_id': self.bank.default_account_id.id,
+        })
+        payment, reversal = self._posted_payment_reversal(reversal_journal=reverse_bank)
+        self.assertNotEqual(payment.move_id.journal_id, reversal.journal_id)
+        original_filter = {**self.filters, 'journal_ids': self.bank.ids}
+        reverse_filter = {**self.filters, 'journal_ids': reverse_bank.ids}
+        self._assert_reversal_report(
+            original_filter, Decimal('1707.75'), [Decimal('1707.75')],
+        )
+        self._assert_reversal_report(
+            reverse_filter, Decimal('-1707.75'), [Decimal('-1707.75')],
+        )
+
+    def test_adding_reversal_invalidates_original_snapshot_revision(self):
+        payment = self._ordinary_payment(1707.75)
+        before = self.report.get_owner_snapshot(self.filters)
+        self.assertTrue(before['complete'])
+        period = before['periods'][0]
+        reversal = payment.move_id._reverse_moves([{'date': '2046-06-13'}])
+        if reversal.state == 'draft':
+            reversal._post(soft=False)
+        after = self.report.get_owner_snapshot(self.filters)
+        self.assertTrue(after['complete'])
+        self.assertNotEqual(after['periods'][0]['revision'], period['revision'])
+        stale = self.report.get_owner_details(
+            self.filters, 'total:cash_total', period['key'], period['revision'],
+        )
+        self.assertTrue(stale['changed'])
+
+    def test_unproved_payment_reversal_does_not_expose_complete_totals(self):
+        payment, reversal = self._posted_payment_reversal()
+        # Deliberate corruption exists only within this rolled-back test
+        # transaction. It proves that a visibly related but non-exact pair
+        # cannot be accepted just because the names and amounts resemble one.
+        cash = reversal.line_ids.filtered(lambda line: line.account_id.account_type == 'asset_cash')
+        self.assertEqual(len(cash), 1)
+        foreign = self.env['res.partner'].create({'name': 'Mismatched reversal witness'})
+        original_partner_id = cash.partner_id.id or None
+        cash.flush_recordset(['partner_id'])
+        try:
+            self.env.cr.execute('UPDATE account_move_line SET partner_id=%s WHERE id=%s',
+                                [foreign.id, cash.id])
+            cash.invalidate_recordset(['partner_id'])
+            try:
+                snapshot = self.report.get_owner_snapshot(self.filters)
+            except AccessError:
+                return
+            self.assertFalse(snapshot['complete'])
+            self.assertNotIn('totals', snapshot['periods'][0])
+        finally:
+            self.env.cr.execute('UPDATE account_move_line SET partner_id=%s WHERE id=%s',
+                                [original_partner_id, cash.id])
+            cash.invalidate_recordset(['partner_id'])
 
     def test_inconsistent_settlement_identity_is_never_accepted(self):
         _bill, _payment, adjustment, _liquidity, _payable = self._split_payment()

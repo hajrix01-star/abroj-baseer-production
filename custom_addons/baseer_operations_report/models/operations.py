@@ -2007,15 +2007,22 @@ class BaseerOperationsReport(models.AbstractModel):
             bill_sections, bill_excluded, entries = {key: {} for key in SECTION_KEYS}, Counter(), []
             self._invoice_amounts(bill, company, bill_sections, bill_excluded, entries, read_facts=read_facts)
             total, paid = self._decimal(bill.amount_total), self._decimal(partial.amount)
-            if (not entries or any(entry[1] not in EXPENSE_KEYS for entry in entries)
-                    or any(bill_excluded.values()) or sum((entry[3] for entry in entries), Decimal(0)) != total
-                    or paid > total):
+            if paid <= 0 or paid > total:
                 return None
-            # A partial multi-line bill has no independently witnessed line allocation.
-            if paid != total and len(entries) != 1:
+            classifiable = (
+                entries and not any(bill_excluded.values())
+                and all(entry[1] in EXPENSE_KEYS for entry in entries)
+                and sum((entry[3] for entry in entries), Decimal(0)) == total
+            )
+            if classifiable and (paid == total or len(entries) == 1):
+                sources.extend((line_id, section, acc, gross if paid == total else paid)
+                               for line_id, section, acc, gross in entries)
+            elif paid == total:
+                # A fully paid bill can include prepaid or input-VAT lines.
+                # The cash is still a payment; classification stays unconfirmed.
+                sources.append((bill_line.id, 'expense', bill_line.account_id, paid))
+            else:
                 return None
-            sources.extend((line_id, section, acc, gross if paid == total else paid)
-                           for line_id, section, acc, gross in entries)
         exclusion = 'unassigned_native_payment' if len(partials) != 1 else 'unsupported_native_bill'
         events = [(section, acc, value, 'native_vendor_payment_unconfirmed',
                    {'source_model': 'account.payment', 'source_id': payment.id,

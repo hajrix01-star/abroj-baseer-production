@@ -80,8 +80,6 @@ class OperationsOwnerDetails(models.AbstractModel):
             start = fields.Date.to_date(period['date_from'])
             end = fields.Date.to_date(period['date_to'])
             data = self._owner_period_data(company, start, end, journals)
-            if not data['coverage_complete']:
-                self._deny_incomplete_source()
             entries.append((period, data))
         selected = next((entry for entry in entries if entry[0]['key'] == period_key), None)
         if not selected:

@@ -103,10 +103,7 @@ export class SalesPaymentsDashboard extends BaseerOperationsPreview {
     get salesDashboard() {
         const period = this.state.report?.periods?.find((item) => item.key === "current") ||
             this.state.report?.periods?.[0];
-        // The owner report intentionally withholds all financial values while
-        // coverage is incomplete. Keep that contract: the inherited notice
-        // remains visible, but this dashboard never renders partial cards.
-        if (!this.state.report?.complete || !period) {
+        if (!period) {
             return null;
         }
         const [sales, payments] = this.ownerTable.sections;

@@ -4,7 +4,7 @@ from odoo import _, fields, models
 from odoo.exceptions import AccessError, ValidationError
 
 
-from ..models.owner_presentation import owner_print_rows as _owner_print_rows
+from ..models.owner_presentation import owner_print_rows as _owner_print_rows, owner_snapshot_has_figures
 
 
 class _OwnerPdfValues:
@@ -17,7 +17,7 @@ class _OwnerPdfValues:
         if type(filters.get('company_id')) is not int or filters['company_id'] != self.env.company.id:
             raise AccessError(_('Print the report for the active company only.'))
         snapshot = self.env['baseer.operations.report'].get_owner_snapshot(filters)
-        if snapshot.get('complete') is not True or snapshot.get('company_id') != self.env.company.id:
+        if not owner_snapshot_has_figures(snapshot, self.env.company.id):
             raise AccessError(_('Printing is unavailable until all movement sources are verified.'))
         periods = snapshot['periods']
         if not 1 <= len(periods) <= 4 or (len(periods) > 1) != self._pdf_landscape:

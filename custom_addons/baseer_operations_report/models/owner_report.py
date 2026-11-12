@@ -126,12 +126,10 @@ class OperationsOwnerReport(models.AbstractModel):
         """Rebuild one period from the same private, access-checked collectors."""
         sales = self._owner_sales(company, start, end, journal_ids)
         cash = self._owner_cash(company, start, end, journal_ids)
-        if not cash['coverage_complete']:
-            return {'coverage_complete': False}
         summary = build_owner_summary(sales + cash['events'], cash['liquidity_totals'], company_id=company.id)
         display = self._owner_display(summary, company)
         return {
-            'coverage_complete': True,
+            'coverage_complete': cash['coverage_complete'],
             'sales': sales,
             'cash': cash,
             'summary': summary,
@@ -154,18 +152,17 @@ class OperationsOwnerReport(models.AbstractModel):
                 'label': period['label'], 'display_label': period['display_label'],
                 'coverage_complete': data['coverage_complete'],
             }
-            if data['coverage_complete']:
-                result.update(data['display'])
-                result['revision'] = data['revision']
+            result.update(data['display'])
+            result['revision'] = data['revision']
+            result['blocking_exclusions'] = self._blocking_exclusions(data['cash']['excluded'])
+            result['unclassified_count'] = sum(result['blocking_exclusions'].values())
             results.append(result)
         complete = all(period['coverage_complete'] for period in results)
-        if not complete:
-            for period in results:
-                for key in ('totals', 'channels', 'outflows', 'has_unclassified_outflows', 'revision'):
-                    period.pop(key, None)
         arabic = (self.env.context.get('lang') or self.env.user.lang or '').startswith('ar')
         return {
             'complete': complete, 'coverage_complete': complete,
+            'unclassified_count': sum(period['unclassified_count'] for period in results),
+            'has_coverage_warning': not complete,
             'company_id': company.id, 'currency_code': company.currency_id.name,
             'title': OWNER_LABELS['title'][0 if arabic else 1],
             'basis': OWNER_LABELS['basis'][0 if arabic else 1],
@@ -179,7 +176,8 @@ class OperationsOwnerReport(models.AbstractModel):
     def action_print_owner(self, filters):
         """Validate now and rebuild again when the PDF request is rendered."""
         snapshot = self.get_owner_snapshot(filters)
-        if not snapshot['complete']:
+        from .owner_presentation import owner_snapshot_has_figures
+        if not owner_snapshot_has_figures(snapshot, self.env.company.id):
             self._deny_incomplete_source()
         layout = 'landscape' if len(snapshot['periods']) > 1 else 'portrait'
         return self.env.ref(

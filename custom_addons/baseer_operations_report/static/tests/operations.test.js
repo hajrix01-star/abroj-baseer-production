@@ -261,19 +261,19 @@ test("owner PDF request sends only active server filters to its new action", asy
     expect("periods" in printArgs).toBe(false);
 });
 
-test("incomplete owner source never leaves an old financial display", async () => {
+test("incomplete owner source displays figures with a warning", async () => {
     const { component } = await mountLoadingReport((_model, method) => {
         if (method === "get_context") { return Promise.resolve(loadingContext()); }
         if (method === "get_owner_snapshot") {
-            return Promise.resolve({ ...ownerSnapshot(), complete: false, periods: [{ key: "current", label: "October",
-                display_label: "October", date_from: "2026-10-01", date_to: "2026-10-31" }] });
+            return Promise.resolve({ ...ownerSnapshot(), complete: false,
+                periods: ownerSnapshot().periods.map((period) => ({ ...period, unclassified_count: 1 })) });
         }
         throw new Error("Unexpected RPC");
     });
     await waitUntil(() => component.state.incomplete);
-    expect(component.state.report).toBe(null);
-    expect(document.querySelector(".o_baseer_owner_summary")).toBe(null);
-    expect(document.querySelector(".o_baseer_go_incomplete").textContent).toBe(component.labels.incomplete);
+    expect(component.state.report).not.toBe(null);
+    expect(document.querySelector(".o_baseer_owner_summary")).not.toBe(null);
+    expect(document.querySelector(".o_baseer_go_incomplete").textContent.includes(component.labels.incomplete)).toBe(true);
 });
 
 test("leaving owner summary fences a late response", async () => {

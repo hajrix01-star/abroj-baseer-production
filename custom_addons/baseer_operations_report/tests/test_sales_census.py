@@ -124,19 +124,17 @@ class TestOperationsSalesCensus(TransactionCase):
                           return_value=False):
             hidden = self.report.get_source_snapshot(filters)
             self.assertFalse(hidden['complete'])
-            self.assertNotIn('rows', hidden['periods'][0])
-            self.assertNotIn('accounts', hidden['periods'][0])
-            with self.assertRaises(AccessError):
-                self.report.get_account_events(
-                    filters, 'income', self.income.id,
-                    proven['periods'][0]['key'], account['fingerprint'],
-                )
-            with self.assertRaises(AccessError):
-                self.env['report.baseer_operations_report.operations_pdf_portrait']._get_report_values(
-                    [], {'filters': filters},
-                )
-            with self.assertRaises(AccessError):
-                self.report.action_print(filters)
+            self.assertIn('rows', hidden['periods'][0])
+            self.assertIn('accounts', hidden['periods'][0])
+            self.assertEqual(self.report.get_account_events(
+                filters, 'income', self.income.id,
+                proven['periods'][0]['key'], account['fingerprint'],
+            )['total_count'], 1)
+            self.env['report.baseer_operations_report.operations_pdf_portrait']._get_report_values(
+                [], {'filters': filters},
+            )
+            self.assertEqual(self.report.action_print(filters)['report_name'],
+                             'baseer_operations_report.operations_pdf_portrait')
 
     def test_census_rejects_a_posted_receipt_without_its_counted_event(self):
         self._receipt('2041-06-10')

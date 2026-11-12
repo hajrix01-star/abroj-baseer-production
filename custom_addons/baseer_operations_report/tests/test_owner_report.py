@@ -74,7 +74,7 @@ class TestOperationsOwnerReport(TransactionCase):
         self.assertEqual(self._amounts(second['periods'][0])['cash_total'], '50.00')
         self.assertEqual(self._amounts(second['periods'][0])['difference'], '-50.00')
 
-    def test_incomplete_adapter_hides_amounts_for_every_period(self):
+    def test_incomplete_adapter_keeps_amounts_and_warns(self):
         periods = [
             {'key': 'a', 'date_from': '2026-06-01', 'date_to': '2026-06-30',
              'label': 'June', 'display_label': 'June 2026'},
@@ -93,8 +93,11 @@ class TestOperationsOwnerReport(TransactionCase):
         self.assertFalse(snapshot['coverage_complete'])
         for period in snapshot['periods']:
             self.assertFalse(period['coverage_complete'])
-            for hidden in ('totals', 'channels', 'outflows', 'has_unclassified_outflows'):
-                self.assertNotIn(hidden, period)
+            self.assertEqual(period['unclassified_count'], 1)
+            self.assertEqual(period['blocking_exclusions'], {'unsupported': 1})
+            for key in ('totals', 'channels', 'outflows', 'has_unclassified_outflows'):
+                self.assertIn(key, period)
+        self.assertEqual(snapshot['unclassified_count'], 2)
 
     def test_active_company_and_context_selected_company_are_rejected_server_side(self):
         other = self.env['res.company'].create({'name': 'Owner snapshot other company'})

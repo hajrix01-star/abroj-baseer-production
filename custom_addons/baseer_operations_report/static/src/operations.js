@@ -15,7 +15,7 @@ const labels = {
     ar: {
         title: "ملخص المبيعات والمدفوعات", company: "الشركة", journals: "الدفاتر",
         allJournals: "جميع الدفاتر", selectedJournals: "الدفاتر المختارة",
-        incomplete: "لا يمكن عرض أي أرقام قبل التحقق من جميع مصادر الحركة.",
+        incomplete: "الأرقام المعروضة جزئية؛ توجد حركات غير مصنفة تحتاج إلى مراجعة.",
         unclassified: "توجد مدفوعات مثبتة غير مصنفة ضمن المجموع.",
         loading: "جارٍ تحميل الملخص…",
         error: "تعذر عرض الملخص. تحقق من الفترة والصلاحيات ثم أعد المحاولة.",
@@ -38,7 +38,7 @@ const labels = {
     en: {
         title: "Sales and Payments Summary", company: "Company", journals: "Journals",
         allJournals: "All journals", selectedJournals: "Selected journals only",
-        incomplete: "No amounts can be shown until every movement source is verified.",
+        incomplete: "Figures are shown; some movements remain unclassified and need review.",
         unclassified: "Proven payments are included but remain unclassified.",
         loading: "Loading summary…",
         error: "Could not load the summary. Check the period and access rights, then retry.",
@@ -91,13 +91,6 @@ export function prepareOperationsSnapshot(snapshot, companyName, selectedJournal
             throw new Error("Incomplete owner-summary period");
         }
         periodKeys.add(period.key);
-        if (!snapshot.complete) {
-            if ("totals" in period || "channels" in period || "outflows" in period) {
-                throw new Error("Incomplete owner-summary leaked amounts");
-            }
-            return { ...period, role: period.key === "current" ? "primary" : "comparison",
-                display_label: period.display_label || period.label };
-        }
         const totals = period.totals;
         if (!/^[a-f0-9]{64}$/.test(period.revision || "") ||
             !Array.isArray(totals) || totals.length !== TOTAL_KEYS.length ||
@@ -369,7 +362,7 @@ export class BaseerOperationsPreview extends BaseerProfitLossReport {
     }
 
     openOwnerDetails(row, periodKey = null) {
-        if (!this.appliedFilters || this.state.loading || !this.state.report?.complete) { return; }
+        if (!this.appliedFilters || this.state.loading || !this.state.report) { return; }
         // Labels prefer the current period, then the first column containing
         // this row. Each amount always selects its own column, never a guess.
         const period = periodKey ? this.reportPeriods.find((item) => item.key === periodKey) :
@@ -523,18 +516,7 @@ export class BaseerOperationsPreview extends BaseerProfitLossReport {
             }
             this.state.filters.period.direction = 0;
             const prepared = prepareOperationsSnapshot(snapshot, this.companyName || "", !!filters.journal_ids.length);
-            if (!prepared.complete) {
-                this.state.incomplete = true;
-                this.state.incompleteControls = prepared.period_controls || null;
-                this.state.incompletePeriod = prepared.periods.find((period) => period.role === "primary") || prepared.periods[0] || null;
-                if (this.state.incompletePeriod) {
-                    this.state.filters.period.date_from = this.state.incompletePeriod.date_from;
-                    this.state.filters.period.date_to = this.state.incompletePeriod.date_to;
-                }
-                this.state.report = null;
-                this.appliedFilters = null;
-                return;
-            }
+            this.state.incomplete = !prepared.complete;
             this.state.report = prepared;
             this.resetOwnerExpansion();
             this.appliedFilters = this.cloneFilters();
@@ -549,7 +531,7 @@ export class BaseerOperationsPreview extends BaseerProfitLossReport {
     }
 
     async printReport() {
-        if (!this.appliedFilters || !this.state.report?.complete || this.state.loading || this.state.printing) { return; }
+        if (!this.appliedFilters || !this.state.report || this.state.loading || this.state.printing) { return; }
         const token = this.requestToken;
         const generation = this.companyGeneration;
         const companyId = this.activeCompanyId;

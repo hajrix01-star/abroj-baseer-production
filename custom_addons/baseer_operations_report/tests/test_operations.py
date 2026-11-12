@@ -346,6 +346,35 @@ class TestOperationsGrossCalculator(TransactionCase):
         self.assertFalse(consistent(gross, net, tax, Decimal('53.01'),
                                     1, 2, cent))
 
+    def test_configured_two_line_cash_proofs(self):
+        journal = self._journal('general', 'GOC')
+        loan = self._account('958171', 'asset_current')
+        custody = self._account('958172', 'asset_current')
+        values = {'baseer_loan_account_id': loan.id}
+        custody_field = 'baseer_procurement_representative_petty_cash_account_id'
+        if custody_field in self.company._fields:
+            values[custody_field] = custody.id
+        self.company.write(values)
+        moves = self.env['account.move']
+        for account in (loan, self.tax_account, custody):
+            move = self.env['account.move'].create({
+                'move_type': 'entry', 'journal_id': journal.id, 'date': '2046-06-10',
+                'line_ids': [Command.create({'account_id': account.id, 'debit': 17}),
+                             Command.create({'account_id': self.cash.id, 'credit': 17})],
+            })
+            move.action_post()
+            moves |= move
+        start, end = map(fields.Date.to_date, ('2046-06-01', '2046-06-30'))
+        events = self.report._owner_configured_cash_events(
+            self.company, start, end, [journal.id], set())
+        self.assertEqual({event['classification'] for event in events},
+                         {'employee_advance', 'operating_account'})
+        if custody_field in self.company._fields:
+            custody_move = moves.filtered(lambda move: custody in move.line_ids.account_id)
+            cash_line = custody_move.line_ids.filtered(lambda line: line.account_id == self.cash)
+            self.assertTrue(self.report._is_proven_representative_advance(
+                self.company, cash_line, custody_move.line_ids))
+
     def test_unknown_asset_funding_remains_unproven(self):
         asset = self._account('958121', 'asset_current')
         journal = self._journal('general', 'GOA')

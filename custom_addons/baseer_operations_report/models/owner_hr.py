@@ -491,7 +491,7 @@ class OperationsOwnerHr(models.AbstractModel):
             and all(name in self.env['hr.payslip']._fields for name in (
                 'move_id', 'employee_id', 'baseer_correction_ids')))
         result = {'events': [], 'claimed_payment_ids': set(), 'claimed_statement_ids': set(),
-                  'claimed_liquidity_ids': set(), 'excluded': {}}
+                  'claimed_liquidity_ids': set(), 'excluded_liquidity_ids': set(), 'excluded': {}}
         if not loans_available and not salary_available:
             return result
         domain = [('company_id', '=', company.id), ('parent_state', '=', 'posted'),
@@ -539,6 +539,7 @@ class OperationsOwnerHr(models.AbstractModel):
                     continue
                 if hr_source:
                     excluded['unsupported_hr_cash'] += 1
+                    result['excluded_liquidity_ids'].add(line.id)
                     continue
                 events, hr_source, statement_id = (self._owner_hr_statement(
                     line, company, read_facts)
@@ -550,6 +551,7 @@ class OperationsOwnerHr(models.AbstractModel):
                     continue
                 if hr_source:
                     excluded['unsupported_hr_cash'] += 1
+                    result['excluded_liquidity_ids'].add(line.id)
                     continue
                 events, hr_source, payment_id = (
                     self._owner_hr_salary(
@@ -562,5 +564,6 @@ class OperationsOwnerHr(models.AbstractModel):
                     result['claimed_liquidity_ids'].add(line.id)
                 elif hr_source:
                     excluded['unsupported_hr_cash'] += 1
+                    result['excluded_liquidity_ids'].add(line.id)
         result['excluded'] = dict(excluded)
         return result

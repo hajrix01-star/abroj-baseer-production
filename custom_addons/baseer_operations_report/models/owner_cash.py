@@ -54,6 +54,71 @@ class OperationsOwnerCash(models.AbstractModel):
                                  })
         return result
 
+    def _owner_configured_cash_events(self, company, start, end, journal_ids, claimed):
+        """Prove simple cash payments from the complete posted move."""
+        domain = [('company_id', '=', company.id), ('parent_state', '=', 'posted'),
+                  ('date', '>=', start), ('date', '<=', end),
+                  ('account_id.account_type', '=', 'asset_cash'), ('balance', '<', 0)]
+        if journal_ids:
+            domain.append(('journal_id', 'in', journal_ids))
+        liquidity_lines = self.env['account.move.line'].search(domain)
+        liquidity_lines.check_access('read')
+        events = []
+        for liquidity in liquidity_lines:
+            if liquidity.id in claimed:
+                continue
+            move = liquidity.move_id
+            move.check_access('read')
+            lines = move.line_ids
+            self._assert_visible('account_move_line', 'move_id=%s', [move.id], lines)
+            self._assert_visible('account_move', 'reversed_entry_id=%s', [move.id], move.reversal_move_ids)
+            lines.mapped('account_id').check_access('read')
+            other = lines - liquidity
+            amount = -self._decimal(liquidity.balance)
+            if (len(lines) != 2 or len(other) != 1 or move.company_id != company
+                    or move.move_type != 'entry' or move.state != 'posted'
+                    or move.statement_line_id or move.reversed_entry_id or move.reversal_move_ids
+                    or move.currency_id != company.currency_id or amount <= 0
+                    or any(line.company_id != company or line.currency_id != company.currency_id for line in lines)
+                    or self._decimal(other.balance) != amount):
+                continue
+            loan = company['baseer_loan_account_id'] if 'baseer_loan_account_id' in company._fields else self.env['account.account']
+            salary = company['baseer_salary_payable_id'] if 'baseer_salary_payable_id' in company._fields else self.env['account.account']
+            (loan | salary).check_access('read')
+            payment = move.origin_payment_id
+            if payment:
+                payment.check_access('read')
+                journal = payment.journal_id
+                journal.check_access('read')
+                if (not salary or other.account_id != salary or payment.company_id != company
+                        or payment.move_id != move or payment.payment_type != 'outbound'
+                        or payment.state not in ('in_process', 'paid')
+                        or payment.currency_id != company.currency_id
+                        or journal != move.journal_id or journal.company_id != company
+                        or journal.type not in ('bank', 'cash')
+                        or journal.default_account_id != liquidity.account_id
+                        or self._decimal(payment.amount) != amount):
+                    continue
+                classification = 'payroll'
+                source_model, source_id = 'account.payment', payment.id
+            else:
+                if loan and other.account_id == loan:
+                    classification = 'employee_advance'
+                elif other.account_id.account_type == 'liability_current':
+                    classification = 'operating_account'
+                else:
+                    continue
+                source_model, source_id = 'account.move', move.id
+            event = {'source_model': source_model, 'source_id': source_id,
+                     'line_model': 'account.move.line', 'line_id': other.id,
+                     'payment_move_id': move.id, 'payment_line_id': liquidity.id,
+                     'date': fields.Date.to_string(move.date), 'amount': amount,
+                     'classification': classification}
+            if classification == 'operating_account':
+                event.update(account_id=other.account_id.id, account_name=other.account_id.name)
+            events.append(event)
+        return events
+
     def _owner_cash_classification(self, line, company, service_products=None):
         """Label an already-proven allocation; never establish cash from a bill."""
         line = self.env['account.move.line'].browse(line.id).exists()
@@ -177,10 +242,15 @@ class OperationsOwnerCash(models.AbstractModel):
                         if row['source_model'] == 'account.bank.statement.line'} != hr['claimed_statement_ids']):
                 self._deny_incomplete_source()
             excluded.update(hr['excluded'])
-            for collector in (self._purchase_outflows, self._batch_purchase_outflows,
+            configured_events = self._owner_configured_cash_events(
+                company, start, end, journal_ids, set(by_liquidity) | hr.get('excluded_liquidity_ids', set()))
+            claim(configured_events)
+            configured_payment_ids = {event['source_id'] for event in configured_events
+                                      if event['source_model'] == 'account.payment'}
+            for collector in (self._direct_cash_expenses, self._purchase_outflows, self._batch_purchase_outflows,
                               self._native_payment_outflows):
                 sections = {key: {} for key in SECTION_KEYS}
-                kwargs = ({'claimed_payment_ids': frozenset(hr['claimed_payment_ids'])}
+                kwargs = ({'claimed_payment_ids': frozenset(hr['claimed_payment_ids'] | configured_payment_ids)}
                           if collector == self._native_payment_outflows else {})
                 if collector == self._purchase_outflows:
                     kwargs = {'claimed_statement_ids': frozenset(hr['claimed_statement_ids'])}
@@ -219,8 +289,8 @@ class OperationsOwnerCash(models.AbstractModel):
                 line = source_lines.browse(original['line_id'])
                 if line.company_id != company:
                     self._deny_incomplete_source()
-                if original.get('classification') in ('payroll', 'employee_advance'):
-                    classification = {'classification': original['classification']}
+                if original.get('classification') in ('payroll', 'employee_advance', 'operating_account'):
+                    classification = {key: original[key] for key in ('classification', 'account_id', 'account_name') if key in original}
                 elif original.get('link_status') == 'unconfirmed':
                     classification = {'classification': 'unconfirmed_bill_classification'}
                 else:

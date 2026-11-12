@@ -91,5 +91,7 @@ test("sales dashboard cards preserve the server-owned amounts without calculatio
     expect(view.cards[0].comparisons.map((comparison) => comparison.value.amount)).toEqual(["75.00"]);
     expect(view.paymentRows.map((row) => row.key)).toEqual(["current-row"]);
     dashboard.state.report.complete = false;
+    expect(dashboard.salesDashboard.cards.map((card) => card.value.amount)).toEqual(["100.00", "40.00", "60.00"]);
+    dashboard.state.report.periods = [];
     expect(dashboard.salesDashboard).toBe(null);
 });

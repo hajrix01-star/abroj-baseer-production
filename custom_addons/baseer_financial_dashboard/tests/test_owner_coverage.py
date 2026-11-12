@@ -13,6 +13,7 @@ from odoo import Command
 from odoo.exceptions import AccessError, ValidationError
 from odoo.tests.common import TransactionCase, tagged
 from odoo.addons.baseer_financial_dashboard.models import owner_coverage
+from odoo.addons.baseer_operations_report.models import operations
 
 _logger = logging.getLogger(__name__)
 
@@ -162,14 +163,21 @@ class TestIsolatedOwnerCoverage(TransactionCase):
     def test_embedded_writeoff_reports_actual_cash_once_and_preserves_billing(self):
         _bill, _payment, liquidity, _payable = self._payment_with_embedded_writeoff()
         before = self.billing.get_owner_snapshot(self.filters)
-        self.assertFalse(before['complete'])
+        self.assertTrue(before['complete'])
+        cash = next(row for row in before['periods'][0]['totals'] if row['key'] == 'cash_total')
+        self.assertEqual(cash['amount'], '1,517.96')
         result = self._cash()
         self._assert_exact_cash(result, liquidity, Decimal('1517.96'), 1)
         self.assertEqual(self.billing.get_owner_snapshot(self.filters), before)
 
     def test_split_writeoff_witness_reconciles_snapshot_details_and_export(self):
         _bill, _payment, _adjustment, liquidity, _payable = self._split_payment()
-        self.assertFalse(self.billing.get_owner_snapshot(self.filters)['complete'])
+        billing = self.billing.get_owner_snapshot(self.filters)
+        dashboard = self.report.get_owner_snapshot(self.filters)
+        self.assertEqual(billing['complete'], dashboard['complete'])
+        self.assertEqual(
+            next(row['amount'] for row in billing['periods'][0]['totals'] if row['key'] == 'cash_total'),
+            next(row['amount'] for row in dashboard['periods'][0]['totals'] if row['key'] == 'cash_total'))
 
         result = self._cash()
         self._assert_exact_cash(result, liquidity, Decimal('3221.00'), 2)
@@ -199,7 +207,12 @@ class TestIsolatedOwnerCoverage(TransactionCase):
             cell for row in document['rows'] for cell in row['cells'].values()
             if isinstance(cell, Decimal)
         ])
-        self.assertFalse(self.billing.get_owner_snapshot(self.filters)['complete'])
+        billing = self.billing.get_owner_snapshot(self.filters)
+        dashboard = self.report.get_owner_snapshot(self.filters)
+        self.assertEqual(billing['complete'], dashboard['complete'])
+        self.assertEqual(
+            next(row['amount'] for row in billing['periods'][0]['totals'] if row['key'] == 'cash_total'),
+            next(row['amount'] for row in dashboard['periods'][0]['totals'] if row['key'] == 'cash_total'))
 
     def test_twenty_payments_six_candidates_measure_original_vs_isolated(self):
         # Representative of the observed volume, built in this test database:
@@ -222,9 +235,8 @@ class TestIsolatedOwnerCoverage(TransactionCase):
 
         baseline, original_queries, original_seconds = measure(self.billing)
         isolated, isolated_queries, isolated_seconds = measure(self.report)
-        self.assertFalse(baseline['coverage_complete'])
-        self.assertEqual(baseline['excluded'].get('unsupported_native_payment'), 2)
-        self.assertEqual(baseline['excluded'].get('unassigned_native_payment'), 4)
+        self.assertTrue(baseline['coverage_complete'], baseline['excluded'])
+        self.assertEqual(baseline['liquidity_totals'], isolated['liquidity_totals'])
         self.assertTrue(isolated['coverage_complete'], isolated['excluded'])
         self.assertEqual(len(isolated['liquidity_totals']), 20)
         _logger.info(
@@ -239,7 +251,8 @@ class TestIsolatedOwnerCoverage(TransactionCase):
         # records.  The original source census retains its real production cap.
         self._payment_with_embedded_writeoff()
         self._payment_with_embedded_writeoff(1519, 1518.96)
-        with patch.object(owner_coverage, 'NATIVE_PAYMENT_CENSUS_BATCH_SIZE', 2):
+        with patch.object(owner_coverage, 'NATIVE_PAYMENT_CENSUS_BATCH_SIZE', 2), \
+                patch.object(operations, 'NATIVE_PAYMENT_CENSUS_BATCH_SIZE', 2):
             at_limit = self._cash()
             self.assertTrue(at_limit['coverage_complete'], at_limit['excluded'])
             self.assertEqual(len(at_limit['liquidity_totals']), 2)
@@ -393,7 +406,12 @@ class TestIsolatedOwnerCoverage(TransactionCase):
             provider._get_report_values([], {'filters': self.filters, 'revisions': stale})
         with self.assertRaises(AccessError):
             self.report.action_print_owner(self.filters, stale)
-        self.assertFalse(self.billing.get_owner_snapshot(self.filters)['complete'])
+        billing = self.billing.get_owner_snapshot(self.filters)
+        dashboard = self.report.get_owner_snapshot(self.filters)
+        self.assertEqual(billing['complete'], dashboard['complete'])
+        self.assertEqual(
+            next(row['amount'] for row in billing['periods'][0]['totals'] if row['key'] == 'cash_total'),
+            next(row['amount'] for row in dashboard['periods'][0]['totals'] if row['key'] == 'cash_total'))
 
     def test_three_cash_lines_to_receivable_do_not_become_an_expense(self):
         move = self.env['account.move'].with_company(self.company).create({
@@ -411,7 +429,8 @@ class TestIsolatedOwnerCoverage(TransactionCase):
         self.assertEqual(result['excluded'].get('unproven_liquidity_outflow'), 3)
         snapshot = self.report.get_owner_snapshot(self.filters)
         self.assertFalse(snapshot['complete'])
-        self.assertNotIn('totals', snapshot['periods'][0])
+        self.assertIn('totals', snapshot['periods'][0])
+        self.assertFalse(result['events'])
 
     def test_non_accountant_and_foreign_company_are_rejected(self):
         user = self.env['res.users'].create({

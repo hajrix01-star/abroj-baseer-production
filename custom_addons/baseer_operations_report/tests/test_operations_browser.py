@@ -239,17 +239,24 @@ class TestOperationsBrowser(HttpCase):
                 (row) => /Month|شهر/.test(row.textContent)), 'month navigation');
             previousMonth.querySelector('.o_baseer_pl_row_navigation button').click();
             await waitFor(() => host.querySelector('.o_baseer_go_incomplete'), 'unproven prior month');
-            if ([...host.querySelectorAll('.o_baseer_report_exports button')].some(button => !button.disabled)) {
-                throw new Error('Incomplete source exposed active export controls');
+            const incompleteExports = [...host.querySelectorAll('.o_baseer_report_exports button')];
+            if (incompleteExports.length !== 2 || incompleteExports.some(button => button.disabled)) {
+                throw new Error('Incomplete source export controls are unavailable');
             }
-            if (host.querySelector('.o_baseer_owner_summary') || periodButton().textContent === currentMonth) {
-                throw new Error('Unproven period leaked amounts or did not advance');
+            const incompleteSummary = host.querySelector('.o_baseer_owner_summary');
+            if (!incompleteSummary || !incompleteSummary.getClientRects().length) {
+                throw new Error('Incomplete source summary is not visible');
+            }
+            if (periodButton().textContent === currentMonth) {
+                throw new Error('Unproven period did not advance');
             }
             periodButton().click();
             const nextMonth = await waitFor(() => [...document.querySelectorAll('.o_baseer_pl_period_menu .o_baseer_pl_menu_row')].find(
                 (row) => /Month|شهر/.test(row.textContent)), 'return month navigation');
             nextMonth.querySelectorAll('.o_baseer_pl_row_navigation button')[1].click();
-            await waitFor(() => host.querySelector('.o_baseer_go_report .o_baseer_owner_difference'), 'proven month restored');
+            await waitFor(() => periodButton().textContent === currentMonth
+                && host.querySelector('.o_baseer_go_report .o_baseer_owner_difference')
+                && !host.querySelector('.o_baseer_go_incomplete'), 'proven month restored');
             if (periodButton().textContent !== currentMonth) { throw new Error('Month anchor was not restored'); }
 
             const journals = host.querySelector('.o_baseer_pl_journals');

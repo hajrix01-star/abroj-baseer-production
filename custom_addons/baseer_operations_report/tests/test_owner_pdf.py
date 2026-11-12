@@ -82,6 +82,12 @@ class TestOwnerPdf(HttpCase):
             portrait._get_report_values([], {'filters': {**self.filters, 'company_id': True}})
         with self.assertRaises(ValidationError):
             landscape._get_report_values([], {'filters': self.filters})
+        snapshot = self.report.get_owner_snapshot(self.filters)
+        snapshot['complete'] = False
+        with patch.object(type(self.report), 'get_owner_snapshot', return_value=snapshot):
+            values = portrait._get_report_values([], {'filters': self.filters})
+            self.assertEqual(values['periods'], snapshot['periods'])
+            self.assertTrue(self.report.action_print_owner(self.filters))
         with patch.object(type(self.report), 'get_owner_snapshot', return_value={'complete': False}):
             with self.assertRaises(AccessError):
                 self.report.action_print_owner(self.filters)

@@ -136,6 +136,11 @@ class TestOwnerUnifiedExport(TransactionCase):
                 'complete': False, 'company_id': self.company.id}):
             with self.assertRaises(AccessError):
                 self.exports._document('operations_gross', self.filters)
+        snapshot = self.report.get_owner_snapshot(self.filters)
+        snapshot.update(complete=False, unclassified_count=1)
+        with patch.object(type(self.report), 'get_owner_snapshot', return_value=snapshot):
+            document = self.exports._document('operations_gross', self.filters)
+            self.assertTrue(any('1' in note for note in document['notes']))
         other = self.env['res.company'].create({'name': 'Unified export foreign company'})
         with self.assertRaises(AccessError):
             self.exports._document('operations_gross', {**self.filters, 'company_id': other.id})

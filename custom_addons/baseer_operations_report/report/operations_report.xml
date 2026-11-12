@@ -64,6 +64,7 @@
                     <div><span t-esc="'أُنشئ في' if arabic else 'Generated at'"/>: <span dir="ltr" t-esc="generated_at.strftime('%Y-%m-%d %H:%M')"/></div>
                     <div><span t-if="is_partial_journals" t-esc="'الدفاتر المختارة — تقرير جزئي' if arabic else 'Selected journals — partial report'"/><span t-else="" t-esc="'جميع الدفاتر' if arabic else 'All journals'"/><span t-if="is_partial_journals">: <span t-esc="journal_names"/></span></div>
                 </div>
+                <div t-if="any(period['unclassified_count'] for period in periods)" class="notice" t-esc="('حركات تحتاج إلى مراجعة: ' if arabic else 'Movements needing review: ') + str(sum(period['unclassified_count'] for period in periods))"/>
                 <div class="notice" t-esc="'حركة العمليات شاملة الضريبة المسجلة، وليست ربحاً محاسبياً. يُعاد حساب التقرير عند الطباعة.' if arabic else 'Recorded-tax-inclusive operations movement, not accounting profit. Recalculated when printed.'"/>
                 <table>
                     <thead><tr>

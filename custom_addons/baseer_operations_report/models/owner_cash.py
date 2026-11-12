@@ -243,7 +243,7 @@ class OperationsOwnerCash(models.AbstractModel):
                 self._deny_incomplete_source()
             excluded.update(hr['excluded'])
             configured_events = self._owner_configured_cash_events(
-                company, start, end, journal_ids, set(by_liquidity))
+                company, start, end, journal_ids, set(by_liquidity) | hr.get('excluded_liquidity_ids', set()))
             claim(configured_events)
             configured_payment_ids = {event['source_id'] for event in configured_events
                                       if event['source_model'] == 'account.payment'}

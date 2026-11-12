@@ -273,7 +273,7 @@ test("incomplete owner source displays figures with a warning", async () => {
     await waitUntil(() => component.state.incomplete);
     expect(component.state.report).not.toBe(null);
     expect(document.querySelector(".o_baseer_owner_summary")).not.toBe(null);
-    expect(document.querySelector(".o_baseer_go_incomplete").textContent).toContain(component.labels.incomplete);
+    expect(document.querySelector(".o_baseer_go_incomplete").textContent.includes(component.labels.incomplete)).toBe(true);
 });
 
 test("leaving owner summary fences a late response", async () => {

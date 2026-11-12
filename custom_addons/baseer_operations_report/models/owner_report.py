@@ -176,6 +176,9 @@ class OperationsOwnerReport(models.AbstractModel):
     def action_print_owner(self, filters):
         """Validate now and rebuild again when the PDF request is rendered."""
         snapshot = self.get_owner_snapshot(filters)
+        from .owner_presentation import owner_snapshot_has_figures
+        if not owner_snapshot_has_figures(snapshot, self.env.company.id):
+            self._deny_incomplete_source()
         layout = 'landscape' if len(snapshot['periods']) > 1 else 'portrait'
         return self.env.ref(
             f'baseer_operations_report.action_owner_pdf_{layout}'

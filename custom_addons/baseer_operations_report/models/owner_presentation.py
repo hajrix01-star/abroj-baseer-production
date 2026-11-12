@@ -33,3 +33,22 @@ def owner_print_rows(periods):
         rows.extend(group['children'].values())
     rows.append(totals['difference'])
     return rows
+
+
+def owner_snapshot_has_figures(snapshot, company_id):
+    """Reject partial snapshots before presenting or exporting figures."""
+    if not isinstance(snapshot, dict) or snapshot.get('company_id') != company_id:
+        return False
+    periods = snapshot.get('periods')
+    if not isinstance(periods, list) or not periods:
+        return False
+    for period in periods:
+        if not isinstance(period, dict) or not all(key in period for key in (
+                'key', 'date_from', 'date_to', 'totals', 'channels', 'outflows')):
+            return False
+        if not all(isinstance(period[key], list) for key in ('totals', 'channels', 'outflows')):
+            return False
+        if not {'incoming_total', 'cash_total', 'difference'}.issubset(
+                {row.get('key') for row in period['totals'] if isinstance(row, dict)}):
+            return False
+    return True

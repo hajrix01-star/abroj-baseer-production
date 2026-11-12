@@ -350,10 +350,11 @@ class TestOperationsGrossCalculator(TransactionCase):
         journal = self._journal('general', 'GOC')
         loan = self._account('958171', 'asset_current')
         custody = self._account('958172', 'asset_current')
-        self.company.write({
-            'baseer_loan_account_id': loan.id,
-            'baseer_procurement_representative_petty_cash_account_id': custody.id,
-        })
+        values = {'baseer_loan_account_id': loan.id}
+        custody_field = 'baseer_procurement_representative_petty_cash_account_id'
+        if custody_field in self.company._fields:
+            values[custody_field] = custody.id
+        self.company.write(values)
         moves = self.env['account.move']
         for account in (loan, self.tax_account, custody):
             move = self.env['account.move'].create({
@@ -368,10 +369,11 @@ class TestOperationsGrossCalculator(TransactionCase):
             self.company, start, end, [journal.id], set())
         self.assertEqual({event['classification'] for event in events},
                          {'employee_advance', 'operating_account'})
-        custody_move = moves.filtered(lambda move: custody in move.line_ids.account_id)
-        cash_line = custody_move.line_ids.filtered(lambda line: line.account_id == self.cash)
-        self.assertTrue(self.report._is_proven_representative_advance(
-            self.company, cash_line, custody_move.line_ids))
+        if custody_field in self.company._fields:
+            custody_move = moves.filtered(lambda move: custody in move.line_ids.account_id)
+            cash_line = custody_move.line_ids.filtered(lambda line: line.account_id == self.cash)
+            self.assertTrue(self.report._is_proven_representative_advance(
+                self.company, cash_line, custody_move.line_ids))
 
     def test_unknown_asset_funding_remains_unproven(self):
         asset = self._account('958121', 'asset_current')

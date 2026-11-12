@@ -79,6 +79,79 @@ class TestDashboardSalesNotes(TransactionCase):
             with self.assertRaises(AccessError):
                 self.report._owner_sales_invoices(self.invoice, self.company)
 
+    def test_note_handling_does_not_change_hr_or_accept_context_flag(self):
+        # HR uses the same account-move relation census as invoices. It must
+        # still receive the accountless note and reject it, even when callers
+        # try to provide a context value resembling an internal flag.
+        for context in ({}, {'_dashboard_sales_note_scope': True}):
+            report = self.report.with_context(**context)
+            lines = report._owner_sales_pairs(self.invoice, 'line_ids', 'account.move.line', 'move_id')
+            self.assertIn(self.note, lines)
+            with self.assertRaises(AccessError):
+                report._owner_hr_move_lines(self.invoice, self.company)
+        with self.assertRaises(AccessError):
+            self.billing._owner_hr_move_lines(self.invoice, self.company)
+
+    def test_tax_relation_on_note_is_not_silently_ignored(self):
+        tax = self.env['account.tax'].create({
+            'name': 'Display note test tax', 'amount': 0, 'type_tax_use': 'sale',
+            'company_id': self.company.id,
+        })
+        # Test-only malformed relation, inserted directly so this case cannot
+        # be normalized away by the invoice form's nonfinancial-line logic.
+        self.env.cr.execute(
+            'INSERT INTO account_move_line_account_tax_rel '
+            '(account_move_line_id, account_tax_id) VALUES (%s, %s)',
+            [self.note.id, tax.id],
+        )
+        self.note.invalidate_recordset(['tax_ids'])
+        try:
+            with self.assertRaises(AccessError):
+                self.report._owner_sales_invoices(self.invoice, self.company)
+        finally:
+            self.env.cr.execute(
+                'DELETE FROM account_move_line_account_tax_rel '
+                'WHERE account_move_line_id=%s AND account_tax_id=%s',
+                [self.note.id, tax.id],
+            )
+            self.note.invalidate_recordset(['tax_ids'])
+
+    def test_rule_hidden_tax_relation_is_not_treated_as_absent(self):
+        tax = self.env['account.tax'].create({
+            'name': 'Hidden display note tax', 'amount': 0, 'type_tax_use': 'sale',
+            'company_id': self.company.id,
+        })
+        self.env.cr.execute(
+            'INSERT INTO account_move_line_account_tax_rel '
+            '(account_move_line_id, account_tax_id) VALUES (%s, %s)',
+            [self.note.id, tax.id],
+        )
+        self.note.invalidate_recordset(['tax_ids'])
+        reader = self.env['res.users'].create({
+            'name': 'Hidden tax accountant', 'login': 'hidden-display-tax-accountant',
+            'group_ids': [Command.set([self.env.ref('base.group_user').id,
+                                       self.env.ref('account.group_account_user').id])],
+            'company_id': self.company.id, 'company_ids': [Command.set(self.company.ids)],
+        })
+        rule = self.env['ir.rule'].create({
+            'name': 'Display test hide tax',
+            'model_id': self.env['ir.model']._get('account.tax').id,
+            'domain_force': "[('id', '!=', %d)]" % tax.id,
+        })
+        try:
+            rule.flush_recordset()
+            with self.assertRaises(AccessError):
+                self.report.with_user(reader)._owner_sales_invoices(
+                    self.invoice.with_user(reader), self.company.with_user(reader))
+        finally:
+            rule.unlink()
+            self.env.cr.execute(
+                'DELETE FROM account_move_line_account_tax_rel '
+                'WHERE account_move_line_id=%s AND account_tax_id=%s',
+                [self.note.id, tax.id],
+            )
+            self.note.invalidate_recordset(['tax_ids'])
+
     def test_hidden_note_still_fails_complete_source_census(self):
         reader = self.env['res.users'].create({
             'name': 'Display test accountant', 'login': 'display-note-accountant',

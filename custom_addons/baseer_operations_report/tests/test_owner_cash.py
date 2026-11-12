@@ -305,6 +305,131 @@ class TestOwnerCash(TransactionCase):
         self.assertEqual(result['events'], [])
         self.assertNotIn('unsupported_native_payment', result['excluded'])
 
+    def test_native_multiline_bill_is_an_unconfirmed_cash_outflow(self):
+        bill = self.env['account.move'].with_company(self.company).create({
+            'move_type': 'in_invoice', 'partner_id': self.partner.id,
+            'journal_id': self.purchase.id, 'invoice_date': '2026-06-18',
+            'invoice_line_ids': [Command.create({
+                'name': name, 'quantity': 1, 'price_unit': value,
+                'account_id': self.expense.id, 'tax_ids': [Command.clear()],
+            }) for name, value in [('First', 20), ('Second', 30)]],
+        })
+        bill.action_post()
+        self.method.payment_account_id = self.bank.default_account_id
+        payment = self.env['account.payment.register'].with_context(
+            active_model='account.move', active_ids=bill.ids,
+        ).create({
+            'journal_id': self.bank.id, 'payment_method_line_id': self.method.id,
+            'amount': 50, 'payment_date': '2026-06-20', 'installments_mode': 'full',
+            'payment_difference_handling': 'open',
+        })._create_payments()
+        result = self.report._owner_cash(self.company, '2026-06-01', '2026-06-30', [])
+        events = [row for row in result['events'] if row['source_id'] == payment.id
+                  and row['source_model'] == 'account.payment']
+        self.assertEqual(sum((row['amount'] for row in events), Decimal(0)), Decimal('50'))
+        self.assertEqual(len(events), 2)
+        self.assertTrue(all(row['classification'] == 'unconfirmed_bill_classification' for row in events))
+        self.assertTrue(result['coverage_complete'])
+
+    def test_cash_journal_multiline_bill_is_counted(self):
+        cash = self.env['account.journal'].with_company(self.company).create({
+            'name': 'Owner cash till', 'code': 'OCT', 'type': 'cash',
+            'company_id': self.company.id,
+        })
+        self.assertTrue(cash.default_account_id)
+        method = cash.outbound_payment_method_line_ids.filtered(
+            lambda line: line.payment_method_id.code == 'manual')[:1]
+        self.assertTrue(method)
+        method.payment_account_id = cash.default_account_id
+        bill = self.env['account.move'].with_company(self.company).create({
+            'move_type': 'in_invoice', 'partner_id': self.partner.id,
+            'journal_id': self.purchase.id, 'invoice_date': '2026-06-18',
+            'invoice_line_ids': [Command.create({
+                'name': name, 'quantity': 1, 'price_unit': value,
+                'account_id': self.expense.id, 'tax_ids': [Command.clear()],
+            }) for name, value in [('Bread', 16), ('Milk', 4)]],
+        })
+        bill.action_post()
+        payment = self.env['account.payment.register'].with_context(
+            active_model='account.move', active_ids=bill.ids,
+        ).create({
+            'journal_id': cash.id, 'payment_method_line_id': method.id,
+            'amount': 20, 'payment_date': '2026-06-20', 'installments_mode': 'full',
+            'payment_difference_handling': 'open',
+        })._create_payments()
+        result = self.report._owner_cash(self.company, '2026-06-01', '2026-06-30', [])
+        events = [row for row in result['events'] if row['source_id'] == payment.id
+                  and row['source_model'] == 'account.payment']
+        self.assertEqual(sum((row['amount'] for row in events), Decimal(0)), Decimal('20'))
+        self.assertTrue(result['coverage_complete'])
+
+    def test_bank_to_cash_transfer_is_not_a_payment(self):
+        cash = self.env['account.journal'].with_company(self.company).create({
+            'name': 'Owner custody till', 'code': 'OCU', 'type': 'cash',
+            'company_id': self.company.id,
+        })
+        move = self.env['account.move'].with_company(self.company).create({
+            'move_type': 'entry', 'journal_id': self.bank.id, 'date': '2026-06-20',
+            'line_ids': [
+                Command.create({'name': 'Fund custody', 'account_id': cash.default_account_id.id, 'debit': 80}),
+                Command.create({'name': 'Fund custody', 'account_id': self.bank.default_account_id.id, 'credit': 80}),
+            ],
+        })
+        move.action_post()
+        result = self.report._owner_cash(self.company, '2026-06-01', '2026-06-30', [])
+        self.assertFalse(any(row['payment_move_id'] == move.id for row in result['events']))
+        self.assertEqual(result['excluded'].get('proven_internal_transfer', 0), 1)
+        self.assertTrue(result['coverage_complete'])
+
+    def test_opening_advance_reclass_is_not_a_paid_advance(self):
+        loan = self.env['account.account'].with_company(self.company).create({
+            'code': '959190', 'name': 'Owner cash advances',
+            'account_type': 'asset_receivable', 'reconcile': True,
+            'company_ids': [Command.set(self.company.ids)],
+        })
+        clearing = self.env['account.account'].with_company(self.company).create({
+            'code': '959191', 'name': 'Owner cash advance clearing',
+            'account_type': 'asset_cash',
+            'company_ids': [Command.set(self.company.ids)],
+        })
+        transfer = self.env['account.journal'].with_company(self.company).create({
+            'name': 'Owner cash advance transfer', 'code': 'OAT', 'type': 'cash',
+            'company_id': self.company.id, 'default_account_id': clearing.id,
+        })
+        if 'baseer_loan_account_id' in self.company._fields:
+            self.company.write({'baseer_loan_account_id': loan.id})
+        partner = self.env['res.partner'].with_company(self.company).create({
+            'name': 'Owner cash advance partner',
+            'property_account_receivable_id': loan.id,
+        })
+        close = self.env['account.move'].with_company(self.company).create({
+            'move_type': 'entry', 'journal_id': self.bank.id, 'date': '2026-06-20',
+            'ref': 'Opening reclass without cash movement',
+            'line_ids': [
+                Command.create({'name': 'Clearing', 'account_id': clearing.id, 'debit': 2000}),
+                Command.create({'name': 'Close legacy', 'account_id': loan.id, 'credit': 2000,
+                                'partner_id': partner.id}),
+            ],
+        })
+        close.action_post()
+        issue = self.env['account.move'].with_company(self.company).create({
+            'move_type': 'entry', 'journal_id': transfer.id, 'date': '2026-06-20',
+            'ref': 'Imported opening advance, not a new disbursement',
+            'line_ids': [
+                Command.create({'name': 'Imported advance', 'account_id': loan.id, 'debit': 2000,
+                                'partner_id': partner.id}),
+                Command.create({'name': 'Clearing', 'account_id': clearing.id, 'credit': 2000,
+                                'partner_id': partner.id}),
+            ],
+        })
+        issue.action_post()
+        result = self.report._owner_cash(self.company, '2026-06-01', '2026-06-30', [])
+        self.assertFalse(any(row['payment_move_id'] in (close.id, issue.id) for row in result['events']))
+        self.assertFalse(any(row.get('classification') == 'employee_advance'
+                             and row['amount'] == Decimal('2000') for row in result['events']))
+        self.assertEqual(result['excluded'].get('proven_noncash_advance_reclass', 0), 1)
+        self.assertTrue(result['coverage_complete'])
+
     def test_native_vendor_payment_with_product_stays_unconfirmed(self):
         line = self._posted_bill_line()
         bill = line.move_id

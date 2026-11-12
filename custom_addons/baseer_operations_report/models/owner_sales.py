@@ -208,6 +208,88 @@ class OperationsOwnerSales(models.AbstractModel):
             }
         return result
 
+    def _owner_sales_entries(self, company, start, end, journal_ids):
+        domain = [('company_id', '=', company.id), ('state', '=', 'posted'),
+                  ('move_type', '=', 'entry'), ('date', '>=', start), ('date', '<=', end)]
+        if journal_ids:
+            domain.append(('journal_id', 'in', list(journal_ids)))
+        moves = self.env['account.move'].search(domain)
+        moves.check_access('read')
+        sql = "company_id=%s AND state='posted' AND move_type='entry' AND date >= %s AND date <= %s"
+        params = [company.id, start, end]
+        if journal_ids:
+            sql += ' AND journal_id=ANY(%s)'
+            params.append(list(journal_ids))
+        self._assert_visible('account_move', sql, params, moves)
+        lines = self._owner_sales_pairs(moves, 'line_ids', 'account.move.line', 'move_id')
+        lines.account_id.check_access('read')
+        # Manual journal entries may credit the configured output VAT account
+        # without a tax_line_id. Prove its identity through the sales tax setup.
+        liabilities = lines.account_id.filtered(
+            lambda account: account.account_type in ('liability_current', 'liability_non_current'))
+        tax_accounts = self.env['account.account']
+        if liabilities:
+            self._require_read(('account.tax', 'account.tax.repartition.line'))
+            taxes = self.env['account.tax'].search([
+                ('company_id', '=', company.id), ('type_tax_use', '=', 'sale'),
+            ])
+            self._assert_visible('account_tax', "company_id=%s AND type_tax_use='sale'",
+                                 [company.id], taxes)
+            repartitions = self._owner_sales_pairs(
+                taxes, 'repartition_line_ids', 'account.tax.repartition.line', 'tax_id')
+            repartitions.account_id.check_access('read')
+            tax_accounts = repartitions.filtered(lambda row: row.repartition_type == 'tax' and row.document_type == 'invoice').account_id
+        moves.journal_id.check_access('read')
+        self._owner_sales_pairs(moves, 'pos_session_ids', 'pos.session', 'move_id')
+        self._owner_sales_pairs(moves, 'pos_order_ids', 'pos.order', 'account_move')
+        self._owner_sales_pairs(moves, 'reversal_move_ids', 'account.move', 'reversed_entry_id')
+        events = []
+        for move in moves:
+            if (move.company_id != company or move.journal_id.company_id != company
+                    or move.currency_id != company.currency_id or move.pos_session_ids
+                    or move.pos_order_ids or move.origin_payment_id or move.statement_line_id
+                    or move.reversed_entry_id or move.reversal_move_ids):
+                continue
+            rows = lines.filtered(lambda line: line.move_id == move)
+            channels, income, total = {}, False, Decimal(0)
+            valid = bool(rows)
+            for line in rows:
+                account = line.account_id
+                balance = self._owner_sales_money(line.balance, company.currency_id)
+                debit = self._owner_sales_money(line.debit, company.currency_id)
+                credit = self._owner_sales_money(line.credit, company.currency_id)
+                if line.display_type in ('line_note', 'line_section', 'line_subsection'):
+                    if debit or credit or balance:
+                        self._deny_incomplete_source()
+                    continue
+                if (line.company_id != company or line.journal_id != move.journal_id
+                        or line.currency_id != company.currency_id or not account
+                        or company not in account.company_ids):
+                    self._deny_incomplete_source()
+                if (debit - credit != balance or debit < 0 or credit < 0
+                        or self._owner_sales_money(line.amount_currency, company.currency_id) != balance):
+                    self._deny_incomplete_source()
+                total += balance
+                if debit and not credit and account.account_type in ('asset_cash', 'asset_receivable', 'asset_current'):
+                    key = 'account_%s' % account.id
+                    channels[key] = (account.name, channels.get(key, (account.name, Decimal(0)))[1] + debit)
+                elif credit and not debit and account.account_type in ('income', 'income_other'):
+                    income = True
+                elif (credit and not debit and account.account_type in ('liability_current', 'liability_non_current')
+                      and (line.tax_line_id or account in tax_accounts)):
+                    line.tax_line_id.check_access('read')
+                elif debit or credit:
+                    valid = False
+            amount = sum((value for _name, value in channels.values()), Decimal(0))
+            if valid and income and not total and amount > 0:
+                events.append({'company_id': company.id, 'direction': 'incoming',
+                               'source_model': 'account.move', 'source_id': move.id,
+                               'line_model': 'account.move', 'line_id': move.id,
+                               'amount': amount, 'date': move.date, 'ledger_confirmed': False,
+                               'sales_posted': True,
+                               'channels': [(key, name, value) for key, (name, value) in sorted(channels.items())]})
+        return events
+
     @api.model
     def _owner_sales(self, company, start, end, journal_ids):
         """Stored signed headers only, under the current user's active company."""
@@ -266,4 +348,5 @@ class OperationsOwnerSales(models.AbstractModel):
                         fact['invoice_not_readded'] = True
                     events.append(fact)
             events.extend(invoice_facts[move.id] for move in period_moves if move.id not in skipped)
+            events.extend(self._owner_sales_entries(company, start, end, journal_ids))
             return events

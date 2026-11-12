@@ -1,6 +1,6 @@
 {
     "name": "Baseer Google Ads",
-    "version": "19.0.4.0.0",
+    "version": "19.0.4.0.1",
     "summary": "Read-only Google Ads reporting for Baseer",
     "category": "Baseer",
     "author": "Abroj",

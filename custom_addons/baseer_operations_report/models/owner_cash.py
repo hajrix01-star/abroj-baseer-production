@@ -121,6 +121,116 @@ class OperationsOwnerCash(models.AbstractModel):
             events.append(event)
         return events
 
+    def _owner_receivable_funded_payroll(self, company, start, end, journal_ids, claimed):
+        """Prove a manual cash funding only from a unique payable clearing."""
+        if 'baseer_salary_payable_id' not in company._fields:
+            return []
+        salary = company.baseer_salary_payable_id
+        if not salary:
+            return []
+        loan = (company.baseer_loan_account_id if 'baseer_loan_account_id' in company._fields
+                else self.env['account.account'])
+        (salary | loan).check_access('read')
+        Line = self.env['account.move.line']
+        domain = [('company_id', '=', company.id), ('parent_state', '=', 'posted'),
+                  ('date', '>=', start), ('date', '<=', end),
+                  ('account_id.account_type', '=', 'asset_cash'), ('balance', '<', 0)]
+        if journal_ids:
+            domain.append(('journal_id', 'in', journal_ids))
+        liquidity = Line.search(domain)
+        liquidity.check_access('read')
+
+        def lines_for(move):
+            move.check_access('read')
+            lines = move.line_ids
+            self._assert_visible('account_move_line', 'move_id=%s', [move.id], lines)
+            lines.check_access('read')
+            lines.mapped('account_id').check_access('read')
+            return lines
+
+        def funding(move):
+            lines = lines_for(move)
+            self._assert_visible('account_move', 'reversed_entry_id=%s', [move.id], move.reversal_move_ids)
+            if (move.company_id != company or move.state != 'posted' or move.move_type != 'entry'
+                    or move.currency_id != company.currency_id or move.reversed_entry_id
+                    or move.reversal_move_ids or move.statement_line_id or move.origin_payment_id
+                    or any(line.company_id != company or line.currency_id != company.currency_id for line in lines)):
+                return None
+            cash = lines.filtered(lambda line: line.account_id.account_type == 'asset_cash')
+            other = lines - cash
+            if (not cash or not other or any(self._decimal(line.balance) >= 0 for line in cash)
+                    or len(other.mapped('account_id')) != 1):
+                return None
+            account = other[0].account_id
+            if (account.account_type not in ('asset_current', 'asset_receivable')
+                    or account in (salary | loan)
+                    or any(self._decimal(line.balance) <= 0 for line in other)):
+                return None
+            amount = sum((-self._decimal(line.balance) for line in cash), Decimal(0))
+            if sum((self._decimal(line.balance) for line in other), Decimal(0)) != amount:
+                return None
+            return account, amount, cash, other
+
+        events = []
+        for move in liquidity.mapped('move_id'):
+            proof = funding(move)
+            if not proof:
+                continue
+            account, amount, cash, other = proof
+            if any(line.id in claimed for line in cash):
+                continue
+            # Restrict both censuses to this parking account and company. Raw
+            # inverse visibility prevents record rules from hiding ambiguity.
+            candidates = Line.search([('company_id', '=', company.id),
+                ('parent_state', '=', 'posted'), ('account_id', '=', account.id)])
+            Line.flush_model(['company_id', 'parent_state', 'account_id'])
+            self.env.cr.execute(
+                'SELECT id FROM account_move_line '
+                'WHERE company_id=%s AND parent_state=%s AND account_id=%s',
+                [company.id, 'posted', account.id],
+            )
+            # A hidden sibling on the parking account makes uniqueness unprovable.
+            # Skip this funding rather than failing the whole snapshot.
+            if {row[0] for row in self.env.cr.fetchall()} != set(candidates.ids):
+                continue
+            candidates.check_access('read')
+            clearings = []
+            for follow in candidates.filtered(lambda line: line.balance < 0 and line.date >= move.date).mapped('move_id'):
+                if follow == move:
+                    continue
+                lines = lines_for(follow)
+                if (follow.company_id != company or follow.state != 'posted'
+                        or follow.move_type != 'entry' or follow.currency_id != company.currency_id
+                        or any(line.company_id != company or line.currency_id != company.currency_id for line in lines)):
+                    continue
+                credits = lines.filtered(lambda line: line.account_id == account)
+                debits = lines - credits
+                if (not credits or not debits
+                        or any(self._decimal(line.balance) >= 0 for line in credits)
+                        or any(line.account_id != salary or self._decimal(line.balance) <= 0 for line in debits)
+                        or sum((-self._decimal(line.balance) for line in credits), Decimal(0)) != amount
+                        or sum((self._decimal(line.balance) for line in debits), Decimal(0)) != amount):
+                    continue
+                clearings.append(follow)
+            if len(clearings) != 1:
+                continue
+            competing = set()
+            possible_moves = candidates.filtered(
+                lambda line: line.balance > 0 and line.date <= clearings[0].date).mapped('move_id')
+            for possible in possible_moves:
+                possible_proof = funding(possible)
+                if possible_proof and possible_proof[0] == account and possible_proof[1] == amount:
+                    competing.add(possible.id)
+            if competing != {move.id}:
+                continue
+            for line in cash:
+                events.append({'source_model': 'account.move', 'source_id': move.id,
+                    'line_model': 'account.move.line', 'line_id': other[0].id,
+                    'payment_move_id': move.id, 'payment_line_id': line.id,
+                    'date': fields.Date.to_string(move.date), 'amount': -self._decimal(line.balance),
+                    'classification': 'payroll'})
+        return events
+
     def _owner_cash_classification(self, line, company, service_products=None):
         """Label an already-proven allocation; never establish cash from a bill."""
         line = self.env['account.move.line'].browse(line.id).exists()
@@ -247,6 +357,8 @@ class OperationsOwnerCash(models.AbstractModel):
             configured_events = self._owner_configured_cash_events(
                 company, start, end, journal_ids, set(by_liquidity) | hr.get('excluded_liquidity_ids', set()))
             claim(configured_events)
+            claim(self._owner_receivable_funded_payroll(
+                company, start, end, journal_ids, set(by_liquidity) | hr.get('excluded_liquidity_ids', set())))
             configured_payment_ids = {event['source_id'] for event in configured_events
                                       if event['source_model'] == 'account.payment'}
             for collector in (self._direct_cash_expenses, self._purchase_outflows, self._batch_purchase_outflows,

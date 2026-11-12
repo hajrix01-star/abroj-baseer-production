@@ -33,8 +33,6 @@ class _OperationsPdfValues:
         # The source enforces accounting/source ACLs, record rules, period and
         # journal validity. Never elevate privileges or trust a browser payload.
         snapshot = self.env['baseer.operations.report'].get_source_snapshot(filters)
-        if snapshot.get('complete') is not True:
-            raise AccessError(_('Gross operations printing is unavailable until the source is complete.'))
         if snapshot.get('company_id') != self.env.company.id:
             raise AccessError(_('Print the report for the active company only.'))
         periods = snapshot.get('periods')

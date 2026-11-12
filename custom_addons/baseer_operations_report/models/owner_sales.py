@@ -168,14 +168,21 @@ class OperationsOwnerSales(models.AbstractModel):
         by_move = {move.id: [] for move in moves}
         for line in lines:
             if (line.company_id != company or line.journal_id != line.move_id.journal_id
-                    or line.currency_id != company.currency_id
-                    or not line.account_id or company not in line.account_id.company_ids):
+                    or line.currency_id != company.currency_id):
                 self._deny_incomplete_source()
             balance = self._owner_sales_money(line.balance, company.currency_id)
             debit = self._owner_sales_money(line.debit, company.currency_id)
             credit = self._owner_sales_money(line.credit, company.currency_id)
+            amount_currency = self._owner_sales_money(line.amount_currency, company.currency_id)
+            if line.display_type in ('line_note', 'line_section', 'line_subsection'):
+                if debit or credit or balance or amount_currency:
+                    self._deny_incomplete_source()
+                if not line.account_id:
+                    continue
+            if not line.account_id or company not in line.account_id.company_ids:
+                self._deny_incomplete_source()
             if (debit < 0 or credit < 0 or debit - credit != balance
-                    or self._owner_sales_money(line.amount_currency, company.currency_id) != balance):
+                    or amount_currency != balance):
                 self._deny_incomplete_source()
             by_move[line.move_id.id].append((line.account_id.account_type, balance))
         result = {}

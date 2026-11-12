@@ -60,6 +60,7 @@
                 </tbody>
             </table>
             <p class="period" t-esc="'النسب المعروضة لطرق الدفع من إجمالي المبيعات.' if arabic else 'Payment-channel percentages are shares of total sales.'"/>
+            <p t-if="snapshot['unclassified_count']" class="notice" t-esc="('حركات تحتاج إلى مراجعة: ' if arabic else 'Movements needing review: ') + str(snapshot['unclassified_count'])"/>
             <p t-if="any(period['has_unclassified_outflows'] for period in periods)" class="notice" t-esc="'يشمل الإجمالي مدفوعات لم يكتمل تصنيفها، وهي ظاهرة أعلاه.' if arabic else 'Totals include payments with incomplete classification, shown above.'"/>
         </xpath>
     </template>

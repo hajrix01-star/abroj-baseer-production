@@ -2,7 +2,8 @@
 
 from datetime import timedelta
 from decimal import Decimal
-from unittest.mock import patch
+from types import SimpleNamespace
+from unittest.mock import MagicMock, patch
 
 from odoo import Command, fields
 from odoo.exceptions import AccessError
@@ -145,6 +146,46 @@ class TestOperationsOwnerSales(TransactionCase):
         })
         self.assertTrue(all(row['sales_posted'] and not row['ledger_confirmed'] for row in events))
         self.assertTrue(all(row['channels'][0][0] == 'unallocated' for row in events))
+
+    def test_invoice_note_without_account_and_missing_product_account(self):
+        self.day = fields.Date.to_date('2046-06-10')
+        invoice = self.env['account.move'].with_company(self.company).create({
+            'move_type': 'out_invoice', 'partner_id': self.partner.id,
+            'journal_id': self.sale_journal.id, 'invoice_date': self.day,
+            'date': self.day,
+            'invoice_line_ids': [
+                Command.create({'display_type': 'line_note', 'name': 'Information'}),
+                Command.create({'name': 'Sale', 'quantity': 1, 'price_unit': 100,
+                                'account_id': self.income.id, 'tax_ids': [Command.clear()]}),
+            ],
+        })
+        invoice.action_post()
+        note = invoice.line_ids.filtered(lambda line: line.display_type == 'line_note')
+        self.assertEqual(len(note), 1)
+        self.assertFalse(note.account_id)
+        events = self._read()
+        self.assertEqual({row['source_id']: row['amount'] for row in events},
+                         {invoice.id: Decimal('100')})
+
+        # Model an incomplete source without violating Odoo's SQL constraint on
+        # posted accountable lines in the disposable test database.
+        product = invoice.line_ids.filtered(lambda line: line.display_type == 'product')[:1]
+        self.assertTrue(product)
+        bad_line = SimpleNamespace(
+            company_id=product.company_id, journal_id=product.journal_id,
+            move_id=invoice, currency_id=product.currency_id, account_id=False,
+            display_type='product', balance=product.balance, debit=product.debit,
+            credit=product.credit, amount_currency=product.amount_currency,
+        )
+        lines = MagicMock()
+        lines.account_id = invoice.line_ids.account_id
+        lines.__iter__.side_effect = lambda: iter([bad_line])
+        with patch.object(type(self.report), '_owner_sales_pairs', return_value=lines):
+            with self.assertRaises(AccessError):
+                self.report._owner_sales_invoices(invoice, self.company)
+            bad_line.display_type = 'line_note'
+            with self.assertRaises(AccessError):
+                self.report._owner_sales_invoices(invoice, self.company)
 
     def test_linked_pos_invoice_is_not_added_twice(self):
         sale = self._sale()

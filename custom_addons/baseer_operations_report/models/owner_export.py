@@ -24,7 +24,7 @@ class OwnerExport(models.AbstractModel):
         if type(filters.get('company_id')) is not int or filters['company_id'] != self.env.company.id:
             raise AccessError(_('Export the report for the active company only.'))
         snapshot = self.get_owner_snapshot(filters)
-        if snapshot.get('complete') is not True or snapshot['company_id'] != self.env.company.id:
+        if snapshot['company_id'] != self.env.company.id:
             self._deny_incomplete_source()
         arabic = (self.env.context.get('lang') or self.env.user.lang or '').startswith('ar')
         periods = snapshot['periods']
@@ -66,4 +66,4 @@ class OwnerExport(models.AbstractModel):
         metadata.append(('وقت التصدير UTC' if arabic else 'Exported UTC', fields.Datetime.to_string(fields.Datetime.now())))
         return {'title': snapshot['title'], 'company': company.name, 'currency': snapshot['currency_code'],
             'lang': 'ar' if arabic else 'en', 'decimals': company.currency_id.decimal_places,
-            'metadata': metadata, 'columns': columns, 'rows': rows, 'notes': [snapshot['basis']]}
+            'metadata': metadata, 'columns': columns, 'rows': rows, 'notes': [snapshot['basis']] + ([(('حركات تحتاج إلى مراجعة: ' if arabic else 'Movements needing review: ') + str(snapshot['unclassified_count']))] if snapshot['unclassified_count'] else [])}

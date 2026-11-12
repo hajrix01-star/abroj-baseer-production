@@ -167,6 +167,124 @@ class TestIsolatedOwnerCoverage(TransactionCase):
         self._assert_exact_cash(result, liquidity, Decimal('1517.96'), 1)
         self.assertEqual(self.billing.get_owner_snapshot(self.filters), before)
 
+    def test_partially_paid_bill_reports_only_the_actual_cash_outflow(self):
+        bill = self._bill(4348.17)
+        payment = self.env['account.payment.register'].with_context(
+            active_model='account.move', active_ids=bill.ids,
+        ).create({
+            'journal_id': self.bank.id, 'payment_method_line_id': self.method.id,
+            'amount': 1708.25, 'payment_date': '2046-06-12',
+            'installments_mode': 'full', 'payment_difference_handling': 'open',
+        })._create_payments()
+        self.assertEqual(Decimal(str(bill.amount_residual)), Decimal('2639.92'))
+        payable = payment.move_id.line_ids.filtered(lambda line: line.account_id == self.payable)
+        liquidity = payment.move_id.line_ids.filtered(
+            lambda line: line.account_id == self.bank.default_account_id,
+        )
+        self.assertEqual((len(payable), len(liquidity)), (1, 1))
+        self.assertEqual(len(payable.matched_credit_ids), 1)
+        self.assertEqual(Decimal(str(payable.amount_residual)), Decimal('0.0'))
+
+        result = self._cash()
+        self.assertTrue(result['coverage_complete'], result['excluded'])
+        self.assertEqual(result['liquidity_totals'], {liquidity.id: Decimal('1708.25')})
+        self.assertEqual(sum((event['amount'] for event in result['events']), Decimal('0')),
+                         Decimal('1708.25'))
+        self.assertEqual({event['payment_line_id'] for event in result['events']}, {liquidity.id})
+        snapshot = self.report.get_owner_snapshot(self.filters)
+        self.assertTrue(snapshot['complete'])
+        self.assertEqual(next(row['amount'] for row in snapshot['periods'][0]['totals']
+                              if row['key'] == 'cash_total'), '1,708.25')
+
+    def test_enabled_companies_with_duplicate_move_names_keep_cash_separate(self):
+        # Preserve the actual owner-report company allowlist; an absent fixture
+        # is a failure, not a skipped isolation test presented as success.
+        other = self.env['res.company'].search([
+            ('id', 'in', [1, 2, 3, 56]), ('id', '!=', self.company.id),
+            ('currency_id', '=', self.company.currency_id.id),
+        ], limit=1)
+        if not other:
+            other = self.env['res.company'].create({
+                'name': 'Owner scope second company',
+                'currency_id': self.company.currency_id.id,
+            })
+        self.assertIn(other.id, {1, 2, 3, 56},
+                      'The company-isolation test needs two authorized fixture companies')
+        self.env.user.write({'company_ids': [Command.link(other.id)]})
+        companies = [self.company.id, other.id]
+
+        def payment_for(company, amount, suffix):
+            scoped = self.env(context=dict(self.env.context, allowed_company_ids=[company.id] + [
+                identity for identity in companies if identity != company.id
+            ]))
+            accounts = scoped['account.account'].with_company(company)
+            def account(code, kind, reconcile=False):
+                return accounts.create({
+                    'code': code, 'name': 'Scope test ' + suffix + code,
+                    'account_type': kind, 'reconcile': reconcile,
+                    'company_ids': [Command.set(company.ids)],
+                })
+            payable = account('958901', 'liability_payable', True)
+            expense = account('958902', 'expense')
+            cash = account('958903', 'asset_cash')
+            partner = scoped['res.partner'].with_company(company).create({
+                'name': 'Scope vendor ' + suffix,
+                'property_account_payable_id': payable.id,
+            })
+            bank = scoped['account.journal'].with_company(company).create({
+                'name': 'Scope bank ' + suffix, 'code': 'ISC', 'type': 'bank',
+                'company_id': company.id, 'default_account_id': cash.id,
+            })
+            purchase = scoped['account.journal'].with_company(company).create({
+                'name': 'Scope purchase ' + suffix, 'code': 'ISP', 'type': 'purchase',
+                'company_id': company.id,
+            })
+            method = bank.outbound_payment_method_line_ids.filtered(
+                lambda row: row.payment_method_id.code == 'manual',
+            )[:1]
+            self.assertTrue(method)
+            method.payment_account_id = cash
+            bill = scoped['account.move'].with_company(company).create({
+                'move_type': 'in_invoice', 'partner_id': partner.id,
+                'journal_id': purchase.id, 'invoice_date': '2046-06-10',
+                'invoice_line_ids': [Command.create({
+                    'name': 'Scope invoice', 'quantity': 1, 'price_unit': amount,
+                    'account_id': expense.id, 'tax_ids': [Command.clear()],
+                })],
+            })
+            bill.action_post()
+            payment = scoped['account.payment.register'].with_company(company).with_context(
+                active_model='account.move', active_ids=bill.ids,
+            ).create({
+                'journal_id': bank.id, 'payment_method_line_id': method.id,
+                'amount': amount, 'payment_date': '2046-06-12',
+                'installments_mode': 'full', 'payment_difference_handling': 'open',
+            })._create_payments()
+            liquidity = payment.move_id.line_ids.filtered(lambda line: line.account_id == cash)
+            self.assertEqual(len(liquidity), 1)
+            return payment, liquidity
+
+        first, first_line = payment_for(self.company, 1707.75, 'A')
+        second, second_line = payment_for(other, 18.99, 'B')
+        self.assertNotEqual(first.move_id.id, second.move_id.id)
+        self.assertEqual(first.move_id.name, second.move_id.name)
+        for company, selected_line, expected in (
+            (self.company, first_line, Decimal('1707.75')),
+            (other, second_line, Decimal('18.99')),
+        ):
+            ordered = [company.id] + [identity for identity in companies if identity != company.id]
+            selected = self.report.with_context(allowed_company_ids=ordered).with_company(company)
+            multi = selected._owner_cash(company, '2046-06-01', '2046-06-30', [])
+            single = selected.with_context(allowed_company_ids=[company.id])._owner_cash(
+                company, '2046-06-01', '2046-06-30', [],
+            )
+            self.assertEqual(multi, single)
+            self.assertTrue(multi['coverage_complete'], multi['excluded'])
+            self.assertEqual(multi['liquidity_totals'], {selected_line.id: expected})
+            self.assertEqual({event['company_id'] for event in multi['events']}, {company.id})
+            self.assertEqual({event['payment_line_id'] for event in multi['events']},
+                             {selected_line.id})
+
     def test_split_writeoff_witness_reconciles_snapshot_details_and_export(self):
         _bill, _payment, _adjustment, liquidity, _payable = self._split_payment()
         self.assertFalse(self.billing.get_owner_snapshot(self.filters)['complete'])
@@ -290,6 +408,20 @@ class TestIsolatedOwnerCoverage(TransactionCase):
         except AccessError:
             return
         self.assertFalse(result['coverage_complete'])
+
+    def test_reversal_pair_proof_requires_a_posted_whole_reversal(self):
+        payment = self._ordinary_payment(1707.75)
+        self.assertFalse(self.report._dashboard_reversal_pair(payment, self.company))
+        reversal = payment.move_id._reverse_moves([{'date': '2046-06-13'}])
+        if reversal.state == 'draft':
+            reversal._post(soft=False)
+        proof = self.report._dashboard_reversal_pair(payment, self.company)
+        self.assertTrue(proof)
+        self.assertEqual(proof['move'], payment.move_id)
+        self.assertEqual(proof['reversal'], reversal)
+        self.assertEqual(proof['amount'], Decimal('1707.75'))
+        self.assertEqual(self.report._decimal(proof['outflow'].balance), Decimal('-1707.75'))
+        self.assertEqual(self.report._decimal(proof['refund'].balance), Decimal('1707.75'))
 
     def test_inconsistent_settlement_identity_is_never_accepted(self):
         _bill, _payment, adjustment, _liquidity, _payable = self._split_payment()

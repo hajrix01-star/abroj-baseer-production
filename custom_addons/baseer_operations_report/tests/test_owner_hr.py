@@ -319,6 +319,7 @@ class TestOwnerHrCash(TransactionCase):
         self.assertEqual(result, {
             'events': [], 'claimed_payment_ids': set(), 'claimed_statement_ids': set(),
             'claimed_liquidity_ids': set(), 'excluded': {},
+            'excluded_liquidity_ids': set(),
         })
         for table in ('baseer_hr_loan', 'account_bank_statement_line', 'account_payment'):
             with self.subTest(table=table):
@@ -399,7 +400,8 @@ class TestOwnerHrCash(TransactionCase):
         result = self._read()
         self.assertEqual(result, {'events': [], 'claimed_payment_ids': set(),
                                   'claimed_statement_ids': set(),
-                                  'claimed_liquidity_ids': set(), 'excluded': {}})
+                                  'claimed_liquidity_ids': set(), 'excluded': {},
+                                  'excluded_liquidity_ids': set()})
 
     def test_generic_direct_payment_keeps_account_acl_before_no_payslip_skip(self):
         payment = self.env['account.payment'].create({
@@ -564,6 +566,7 @@ class TestOwnerHrCash(TransactionCase):
             'events': [], 'claimed_payment_ids': set(),
             'claimed_statement_ids': set(),
             'claimed_liquidity_ids': set(), 'excluded': {},
+            'excluded_liquidity_ids': set(),
         })
         integrated = secured._owner_cash(self.company, '2026-06-01', '2026-07-31', self.bank.ids)
         self.assertTrue(integrated['coverage_complete'], integrated['excluded'])

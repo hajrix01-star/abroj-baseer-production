@@ -48,6 +48,7 @@ INFORMATIONAL_EXCLUSIONS = frozenset({
     'pos_invoice_reversal_not_readded', 'proven_representative_advance',
     'empty_zero_native_pos_orders',
     'native_pos_tax_rounding',
+    'proven_noncash_advance_reclass',
 })
 
 
@@ -991,6 +992,53 @@ class BaseerOperationsReport(models.AbstractModel):
             recognized.add(other.id)
         return recognized
 
+    def _is_noncash_advance_reclass(self, company, liquidity):
+        """A loan opening reclass washes through a cash-typed clearing account."""
+        move = liquidity.move_id
+        lines = move.line_ids
+        other = lines - liquidity
+        amount = -self._decimal(liquidity.balance)
+        loan = (company['baseer_loan_account_id']
+                if 'baseer_loan_account_id' in company._fields else self.env['account.account'])
+        if loan:
+            loan.check_access('read')
+        if (len(lines) != 2 or len(other) != 1 or amount <= 0
+                or liquidity.company_id != company or move.company_id != company
+                or liquidity.account_id.account_type != 'asset_cash'
+                or self._decimal(other.balance) != amount):
+            return False
+        if loan:
+            if other.account_id != loan:
+                return False
+        elif (other.account_id.account_type != 'asset_receivable'
+              or not other.account_id.reconcile):
+            return False
+        offsets = self.env['account.move.line'].search([
+            ('company_id', '=', company.id), ('parent_state', '=', 'posted'),
+            ('date', '=', liquidity.date), ('account_id', '=', liquidity.account_id.id),
+            ('id', '!=', liquidity.id), ('move_id', '!=', move.id),
+        ])
+        offsets.check_access('read')
+        offsets.mapped('move_id').check_access('read')
+        offsets.mapped('account_id').check_access('read')
+        for offset in offsets:
+            if self._decimal(offset.balance) != amount:
+                continue
+            offset_lines = offset.move_id.line_ids
+            self._assert_visible('account_move_line', 'move_id=%s', [offset.move_id.id], offset_lines)
+            offset_lines.mapped('account_id').check_access('read')
+            counterpart = offset_lines - offset
+            if (len(offset_lines) != 2 or len(counterpart) != 1
+                    or offset.move_id.company_id != company
+                    or counterpart.account_id != other.account_id
+                    or self._decimal(counterpart.balance) != -amount):
+                continue
+            if (other.partner_id and counterpart.partner_id
+                    and other.partner_id != counterpart.partner_id):
+                continue
+            return True
+        return False
+
     @api.model
     def _liquidity_outflow_exclusions(self, company, start, end, journal_ids,
                                       events_by_liquidity):
@@ -1063,6 +1111,8 @@ class BaseerOperationsReport(models.AbstractModel):
                     and other.company_id == company
                     and self._decimal(other.balance) == -self._decimal(line.balance)):
                 excluded['proven_internal_transfer'] += 1
+            elif self._is_noncash_advance_reclass(company, line):
+                excluded['proven_noncash_advance_reclass'] += 1
             else:
                 excluded['unproven_liquidity_outflow'] += 1
         return excluded
@@ -1814,7 +1864,8 @@ class BaseerOperationsReport(models.AbstractModel):
             prefetch_bills=prefetch_bills,
         )
         if not (excluded.get('unsupported_native_payment')
-                or excluded.get('unassigned_native_payment')):
+                or excluded.get('unassigned_native_payment')
+                or excluded.get('unsupported_native_bill')):
             return
         domain = [
             ('company_id', '=', company.id), ('payment_type', '=', 'outbound'),
@@ -1865,9 +1916,13 @@ class BaseerOperationsReport(models.AbstractModel):
                                      records, read_facts=read_facts)
 
         for payment in candidates:
-            proved = self._dashboard_prove_split_payment(
+            proved = self._dashboard_prove_direct_bills(
                 payment, company, journal_ids, visible, read_facts,
             )
+            if not proved:
+                proved = self._dashboard_prove_split_payment(
+                    payment, company, journal_ids, visible, read_facts,
+                )
             if not proved:
                 continue
             exclusion, events = proved
@@ -1878,6 +1933,97 @@ class BaseerOperationsReport(models.AbstractModel):
             self._record_many(sections, events, read_facts=read_facts)
             excluded[exclusion] -= 1
             excluded['unconfirmed_payment_link'] += 1
+
+    def _dashboard_prove_direct_bills(self, payment, company, journal_ids, visible, read_facts):
+        """Recover direct payments only when every bill allocation is witnessed."""
+        move, journal, currency = payment.move_id, payment.journal_id, company.currency_id
+        partner, method, account = payment.partner_id, payment.payment_method_line_id, journal.default_account_id
+        for records in (payment, move, journal, currency, partner, method, account):
+            self._owner_check_read(records, read_facts)
+        lines = move.line_ids
+        visible('account_move_line', 'move_id', move.id, lines)
+        visible('account_move', 'reversed_entry_id', move.id, move.reversal_move_ids)
+        self._owner_check_read(lines.mapped('account_id'), read_facts)
+        self._owner_check_read(lines.mapped('partner_id'), read_facts)
+        if (payment.company_id != company or move.company_id != company
+                or move.origin_payment_id != payment or payment.payment_type != 'outbound'
+                or payment.partner_type != 'supplier' or payment.state not in ('in_process', 'paid')
+                or payment.currency_id != currency or move.currency_id != currency
+                or journal.company_id != company or journal.type not in ('bank', 'cash')
+                or (journal.currency_id and journal.currency_id != currency)
+                or (journal_ids and journal.id not in journal_ids) or move.journal_id != journal
+                or move.state != 'posted' or move.statement_line_id or move.reversed_entry_id
+                or move.reversal_move_ids or not partner or not method or method.journal_id != journal
+                or method.payment_account_id != account or payment.outstanding_account_id != account
+                or account.account_type != 'asset_cash'
+                or any(line.company_id != company or line.journal_id != journal
+                       or line.currency_id != currency for line in lines)):
+            return None
+        liquidity = lines.filtered(lambda line: line.account_id == account)
+        payable = lines.filtered(lambda line: line.account_id.account_type == 'liability_payable')
+        amount = self._decimal(payment.amount)
+        if (len(lines) != 2 or len(liquidity) != 1 or len(payable) != 1 or amount <= 0
+                or self._decimal(liquidity.balance) != -amount
+                or self._decimal(payable.balance) != amount or payable.partner_id != partner):
+            return None
+        partials = payable.matched_credit_ids
+        visible('account_partial_reconcile', 'debit_move_id', payable.id, partials)
+        self._owner_check_read(partials.mapped('credit_move_id'), read_facts)
+        if (not partials or sum((self._decimal(p.amount) for p in partials), Decimal(0)) != amount
+                or any(p.debit_move_id != payable or p.company_id != company
+                       or self._decimal(p.amount) <= 0 for p in partials)):
+            return None
+        bills = partials.mapped('credit_move_id.move_id')
+        origin, reconciled = payment.invoice_ids, payment.reconciled_bill_ids
+        self._owner_check_read(origin, read_facts)
+        self._owner_check_read(reconciled, read_facts)
+        if reconciled != bills or (origin and origin != bills) or len(bills) != len(partials):
+            return None
+        sources = []
+        for partial in partials:
+            bill_line, bill = partial.credit_move_id, partial.credit_move_id.move_id
+            self._owner_check_read(bill, read_facts)
+            self._owner_check_read(bill.partner_id, read_facts)
+            self._owner_check_read(bill_line.partner_id, read_facts)
+            bill_lines = bill.line_ids
+            visible('account_move_line', 'move_id', bill.id, bill_lines)
+            visible('account_move', 'reversed_entry_id', bill.id, bill.reversal_move_ids)
+            visible('account_partial_reconcile', 'credit_move_id', bill_line.id, bill_line.matched_debit_ids)
+            self._owner_check_read(bill_lines.mapped('account_id'), read_facts)
+            if (bill.move_type != 'in_invoice' or bill.state != 'posted' or bill.company_id != company
+                    or bill.currency_id != currency or bill.partner_id != partner or not bill.invoice_date
+                    or bill.invoice_date > move.date or bill.reversed_entry_id or bill.reversal_move_ids
+                    or bill_line.account_id != payable.account_id or bill_line.partner_id != partner
+                    or bill_line.currency_id != currency or partial not in bill_line.matched_debit_ids
+                    or any(line.company_id != company or line.currency_id != currency for line in bill_lines)
+                    or len(bill_lines.filtered(lambda line: line.account_id.account_type == 'liability_payable')) != 1):
+                return None
+            for tax_line in bill_lines.filtered('tax_line_id'):
+                tax, repartition = tax_line.tax_line_id, tax_line.tax_repartition_line_id
+                self._owner_check_read(tax, read_facts)
+                self._owner_check_read(repartition, read_facts)
+                if not repartition or repartition.tax_id != tax or repartition not in tax.invoice_repartition_line_ids:
+                    self._deny_incomplete_source()
+            bill_sections, bill_excluded, entries = {key: {} for key in SECTION_KEYS}, Counter(), []
+            self._invoice_amounts(bill, company, bill_sections, bill_excluded, entries, read_facts=read_facts)
+            total, paid = self._decimal(bill.amount_total), self._decimal(partial.amount)
+            if (not entries or any(entry[1] not in EXPENSE_KEYS for entry in entries)
+                    or any(bill_excluded.values()) or sum((entry[3] for entry in entries), Decimal(0)) != total
+                    or paid > total):
+                return None
+            # A partial multi-line bill has no independently witnessed line allocation.
+            if paid != total and len(entries) != 1:
+                return None
+            sources.extend((line_id, section, acc, gross if paid == total else paid)
+                           for line_id, section, acc, gross in entries)
+        exclusion = 'unassigned_native_payment' if len(partials) != 1 else 'unsupported_native_bill'
+        events = [(section, acc, value, 'native_vendor_payment_unconfirmed',
+                   {'source_model': 'account.payment', 'source_id': payment.id,
+                    'line_model': 'account.move.line', 'line_id': line_id,
+                    'payment_move_id': move.id, 'payment_line_id': liquidity.id,
+                    'date': fields.Date.to_string(move.date), 'link_status': 'unconfirmed'})
+                  for line_id, section, acc, value in sources]
+        return exclusion, events
 
     def _dashboard_prove_split_payment(self, payment, company, journal_ids,
                                        visible, read_facts):

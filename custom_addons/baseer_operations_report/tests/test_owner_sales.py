@@ -91,6 +91,34 @@ class TestOperationsOwnerSales(TransactionCase):
         self.assertTrue(all(not row['ledger_confirmed'] for row in events))
         self.assertEqual(sum((row['amount'] for row in events), Decimal(0)), Decimal(0))
 
+    def test_daily_entry_and_receivable_settlement(self):
+        journal = self._journal('general', 'ODS')
+        cash = self._account('953105', 'asset_cash')
+        def entry(ref, rows):
+            move = self.env['account.move'].with_company(self.company).create({
+                'move_type': 'entry', 'journal_id': journal.id, 'date': self.day, 'ref': ref,
+                'line_ids': [Command.create({'name': ref, 'account_id': account.id,
+                                             'debit': debit, 'credit': credit})
+                             for account, debit, credit in rows],
+            })
+            move.action_post()
+            return move
+        sale = entry('Daily sales', [(cash, 46, 0), (self.receivable, 69, 0),
+                                     (self.income, 0, 100), (self.tax_account, 0, 15)])
+        settlement = entry('Settlement', [(cash, 69, 0), (self.receivable, 0, 69)])
+        order = self._sale()
+        events = self._read()
+        self.assertEqual({(row['source_model'], row['source_id']) for row in events},
+                         {('account.move', sale.id), ('pos.order', order.id)})
+        daily = next(row for row in events if row['source_id'] == sale.id
+                     and row['source_model'] == 'account.move')
+        self.assertEqual(daily['amount'], Decimal('115'))
+        self.assertEqual(sum((row[2] for row in daily['channels']), Decimal(0)), Decimal('115'))
+        self.assertNotIn('payment_line_id', daily)
+        self.assertFalse(any(row['source_id'] == settlement.id and row['source_model'] == 'account.move'
+                             for row in events))
+        self.assertFalse(any(row['source_model'] == 'account.move' for row in self._read(journal_ids=[self.sale_journal.id])))
+
     def test_empty_native_order_has_no_sale_event(self):
         self._empty_native_pos_order()
         self.assertEqual(self._read(), [])

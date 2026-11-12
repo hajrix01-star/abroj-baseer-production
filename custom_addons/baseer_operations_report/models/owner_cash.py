@@ -102,6 +102,8 @@ class OperationsOwnerCash(models.AbstractModel):
                 classification = 'payroll'
                 source_model, source_id = 'account.payment', payment.id
             else:
+                if self._is_noncash_advance_reclass(company, liquidity):
+                    continue
                 if loan and other.account_id == loan:
                     classification = 'employee_advance'
                 elif other.account_id.account_type == 'liability_current':

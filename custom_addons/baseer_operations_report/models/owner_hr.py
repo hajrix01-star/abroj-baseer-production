@@ -208,6 +208,8 @@ class OperationsOwnerHr(models.AbstractModel):
         if len(loans) != 1 or declared != loans:
             self._deny_incomplete_source()
         loan = loans
+        if self._is_noncash_advance_reclass(company, liquidity):
+            return None, False
         contact = self._owner_hr_contact(loan, company, read_facts)
         self._owner_check_read(loan.journal_id, read_facts)
         self._owner_check_read(loan.currency_id, read_facts)

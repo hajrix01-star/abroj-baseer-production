@@ -62,6 +62,103 @@ class TestOwnerCash(TransactionCase):
             'parent_id': self.category_root.id,
         })
 
+    def _receivable_payroll_fixture(self, clearing='salary'):
+        if 'baseer_salary_payable_id' not in self.company._fields:
+            self.skipTest('Salary payable configuration is unavailable')
+        self.company.baseer_salary_payable_id = self.payable
+        parking = self.accounts.create({
+            'code': '959104', 'name': 'Payroll parking', 'account_type': 'asset_current',
+            'reconcile': False, 'company_ids': [Command.set(self.company.ids)],
+        })
+        wallet = self.accounts.create({
+            'code': '959105', 'name': 'Payroll wallet', 'account_type': 'asset_cash',
+            'company_ids': [Command.set(self.company.ids)],
+        })
+        journal = self.env['account.journal'].with_company(self.company).create({
+            'name': 'Payroll manual entries', 'code': 'OPM', 'type': 'general',
+            'company_id': self.company.id,
+        })
+        def post(day, entries):
+            move = self.env['account.move'].with_company(self.company).create({
+                'journal_id': journal.id, 'date': day, 'move_type': 'entry',
+                'line_ids': [Command.create({'name': 'Payroll proof', 'account_id': account.id,
+                    'debit': debit, 'credit': credit, 'partner_id': partner.id if partner else False})
+                    for account, debit, credit, partner in entries],
+            })
+            move.action_post()
+            return move
+        funding = post('2026-06-18', [(parking, 100, 0, None),
+            (self.bank.default_account_id, 0, 60, None), (wallet, 0, 40, None)])
+        follow = None
+        if clearing:
+            target = self.expense if clearing == 'expense' else self.payable
+            amount = 90 if clearing == 'mismatch' else 100
+            partner2 = self.env['res.partner'].create({'name': 'Second payroll employee'})
+            entries = [(parking, 0, amount, None), (target, 30, 0, self.partner),
+                       (target, amount - 30, 0, partner2)]
+            if clearing == 'cash':
+                entries += [(wallet, 1, 0, None), (self.expense, 0, 1, None)]
+            follow = post('2026-07-01', entries)
+        return funding, follow, journal
+
+    def test_receivable_funding_payroll_and_snapshot(self):
+        funding, follow, journal = self._receivable_payroll_fixture()
+        cash = self.report._owner_cash(self.company, '2026-06-01', '2026-06-30', [])
+        events = [event for event in cash['events'] if event['source_id'] == funding.id
+                  and event['source_model'] == 'account.move']
+        self.assertEqual(len(events), 2)
+        self.assertEqual(sum((row['amount'] for row in events), Decimal(0)), Decimal('100'))
+        self.assertTrue(all(row['classification'] == 'payroll' for row in events))
+        self.assertFalse(any(row['source_model'] == 'account.move' and row['source_id'] == follow.id
+                             for row in cash['events']))
+        self.assertTrue(cash['coverage_complete'])
+        self.assertFalse(cash['excluded'].get('unproven_liquidity_outflow'))
+        snapshot = self.report.get_owner_snapshot({'company_id': self.company.id,
+            'date_from': '2026-06-01', 'date_to': '2026-06-30', 'journal_ids': []})
+        period = snapshot['periods'][0]
+        self.assertEqual(Decimal(next(row['amount'] for row in period['totals']
+                                      if row['key'] == 'cash_total').replace(',', '')), Decimal('100'))
+        self.assertEqual(sum((Decimal(row['amount'].replace(',', '')) for row in period['outflows']),
+                             Decimal(0)), Decimal('100'))
+        self.assertEqual(Decimal(next(row['amount'] for row in period['outflows']
+                                      if row['key'] == 'payroll').replace(',', '')), Decimal('100'))
+        self.assertFalse(self.report._owner_cash(self.company, '2026-06-01', '2026-06-30',
+                                                  [self.bank.id])['events'])
+
+    def test_receivable_funding_without_clearing_is_unproven(self):
+        funding, _, _ = self._receivable_payroll_fixture(False)
+        cash = self.report._owner_cash(self.company, '2026-06-01', '2026-06-30', [])
+        self.assertFalse(any(row['source_model'] == 'account.move' and row['source_id'] == funding.id
+                             for row in cash['events']))
+        self.assertFalse(cash['coverage_complete'])
+        self.assertTrue(cash['excluded'].get('unproven_liquidity_outflow'))
+
+    def test_receivable_funding_rejects_ambiguous_funding(self):
+        funding, _, _ = self._receivable_payroll_fixture()
+        duplicate = funding.copy({'date': '2026-06-19'})
+        duplicate.action_post()
+        cash = self.report._owner_cash(self.company, '2026-06-01', '2026-06-30', [])
+        self.assertFalse(any(row['source_model'] == 'account.move'
+                             and row['source_id'] in (funding.id, duplicate.id)
+                             for row in cash['events']))
+        self.assertTrue(cash['excluded'].get('unproven_liquidity_outflow'))
+
+    def _assert_invalid_receivable_clearing(self, mode):
+        funding, _, _ = self._receivable_payroll_fixture(mode)
+        cash = self.report._owner_cash(self.company, '2026-06-01', '2026-06-30', [])
+        self.assertFalse(any(row['source_model'] == 'account.move' and row['source_id'] == funding.id
+                             for row in cash['events']))
+        self.assertTrue(cash['excluded'].get('unproven_liquidity_outflow'))
+
+    def test_receivable_funding_rejects_cash_clearing(self):
+        self._assert_invalid_receivable_clearing('cash')
+
+    def test_receivable_funding_rejects_expense_clearing(self):
+        self._assert_invalid_receivable_clearing('expense')
+
+    def test_receivable_funding_rejects_mismatched_clearing(self):
+        self._assert_invalid_receivable_clearing('mismatch')
+
     def _statement(self, amount='40.00', counterpart=None, day='2026-06-18'):
         statement = self.env['account.bank.statement.line'].with_company(
             self.company,

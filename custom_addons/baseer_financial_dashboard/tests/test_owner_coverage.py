@@ -293,9 +293,9 @@ class TestIsolatedOwnerCoverage(TransactionCase):
         second, second_line = payment_for(other, 18.99, 'B')
         self.assertNotEqual(first.move_id.id, second.move_id.id)
         self.assertEqual(first.move_id.name, second.move_id.name)
-        for company, selected_line, expected in (
-            (self.company, first_line, Decimal('1707.75')),
-            (other, second_line, Decimal('18.99')),
+        for company, payment, selected_line, expected in (
+            (self.company, first, first_line, Decimal('1707.75')),
+            (other, second, second_line, Decimal('18.99')),
         ):
             ordered = [company.id] + [identity for identity in companies if identity != company.id]
             selected = self.report.with_context(allowed_company_ids=ordered).with_company(company)
@@ -309,6 +309,36 @@ class TestIsolatedOwnerCoverage(TransactionCase):
             self.assertEqual({event['company_id'] for event in multi['events']}, {company.id})
             self.assertEqual({event['payment_line_id'] for event in multi['events']},
                              {selected_line.id})
+            for event in multi['events']:
+                witness = selected.env['account.move.line'].browse(event['payment_line_id'])
+                allocation = selected.env['account.move.line'].browse(event['line_id'])
+                self.assertEqual(witness.company_id, company)
+                self.assertEqual(witness.move_id.company_id, company)
+                self.assertEqual(allocation.company_id, company)
+                self.assertEqual(event['source_model'], 'account.payment')
+                self.assertEqual(event['source_id'], payment.id)
+            filters = {**self.filters, 'company_id': company.id}
+            snapshot = selected.get_owner_snapshot(filters)
+            self.assertTrue(snapshot['complete'])
+            self.assertEqual(snapshot['company_id'], company.id)
+            period = snapshot['periods'][0]
+            total = next(row for row in period['totals'] if row['key'] == 'cash_total')
+            self.assertEqual(Decimal(total['amount'].replace(',', '')), expected)
+            detail = selected.get_owner_details(
+                filters, 'total:cash_total', period['key'], period['revision'],
+            )
+            self.assertFalse(detail['changed'])
+            self.assertEqual(detail['company_id'], company.id)
+            self.assertEqual(Decimal(detail['amount'].replace(',', '')), expected)
+            self.assertEqual(len(detail['events']), 1)
+            action = selected.action_owner_source(
+                filters, 'total:cash_total', period['key'], period['revision'],
+                detail['events'][0]['event_key'],
+            )
+            self.assertEqual((action['res_model'], action['res_id']), ('account.payment', payment.id))
+            self.assertEqual(selected.env[action['res_model']].browse(action['res_id']).company_id,
+                             company)
+            self.assertFalse(action['context']['edit'])
 
     def test_split_writeoff_witness_reconciles_snapshot_details_and_export(self):
         _bill, _payment, _adjustment, liquidity, _payable = self._split_payment()

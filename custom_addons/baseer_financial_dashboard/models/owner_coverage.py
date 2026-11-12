@@ -16,6 +16,8 @@ from odoo.addons.baseer_operations_report.models.operations import (
 )
 from .signed_owner_summary import build_signed_owner_summary
 
+_MAX_OUTSIDE_PERIOD_REPROOFS = 8
+
 
 class FinancialDashboardOperations(models.AbstractModel):
     _name = 'baseer.financial.dashboard.operations'
@@ -185,6 +187,7 @@ class FinancialDashboardOperations(models.AbstractModel):
         self._assert_visible('account_move', sql, params, reversals)
         events, witnesses = [], {}
         original_cache = {}
+        outside_period_reproofs = 0
         for reversal in reversals:
             origin = reversal.reversed_entry_id
             self._owner_check_read(origin)
@@ -206,6 +209,9 @@ class FinancialDashboardOperations(models.AbstractModel):
                         and (not journal_ids or key[1] in journal_ids)):
                     original_cache[key] = cash
                 else:
+                    outside_period_reproofs += 1
+                    if outside_period_reproofs > _MAX_OUTSIDE_PERIOD_REPROOFS:
+                        self._deny_incomplete_source()
                     original_cache[key] = self._owner_cash(company, key[0], key[0], [key[1]])
             source = original_cache[key]
             if not source['coverage_complete']:

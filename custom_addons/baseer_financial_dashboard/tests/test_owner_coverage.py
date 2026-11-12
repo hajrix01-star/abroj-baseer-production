@@ -140,13 +140,13 @@ class TestIsolatedOwnerCoverage(TransactionCase):
             self.company, '2046-06-01', '2046-06-30', [],
         )
 
-    def _ordinary_payment(self, amount):
+    def _ordinary_payment(self, amount, payment_date='2046-06-12'):
         bill = self._bill(amount)
         return self.env['account.payment.register'].with_context(
             active_model='account.move', active_ids=bill.ids,
         ).create({
             'journal_id': self.bank.id, 'payment_method_line_id': self.method.id,
-            'amount': amount, 'payment_date': '2046-06-12',
+            'amount': amount, 'payment_date': payment_date,
             'installments_mode': 'full', 'payment_difference_handling': 'open',
         })._create_payments()
 
@@ -448,8 +448,9 @@ class TestIsolatedOwnerCoverage(TransactionCase):
         self.assertEqual(self.report._decimal(proof['outflow'].balance), Decimal('-1707.75'))
         self.assertEqual(self.report._decimal(proof['refund'].balance), Decimal('1707.75'))
 
-    def _posted_payment_reversal(self, reversal_date='2046-06-13', reversal_journal=None):
-        payment = self._ordinary_payment(1707.75)
+    def _posted_payment_reversal(self, reversal_date='2046-06-13', reversal_journal=None,
+                                 payment_date='2046-06-12'):
+        payment = self._ordinary_payment(1707.75, payment_date=payment_date)
         values = {'date': reversal_date}
         if reversal_journal:
             values['journal_id'] = reversal_journal.id
@@ -500,6 +501,79 @@ class TestIsolatedOwnerCoverage(TransactionCase):
         )
         july = {**self.filters, 'date_from': '2046-07-01', 'date_to': '2046-07-31'}
         self._assert_reversal_report(july, Decimal('-1707.75'), [Decimal('-1707.75')])
+
+    def test_reversal_source_and_xlsx_match_negative_detail_total(self):
+        _payment, reversal = self._posted_payment_reversal('2046-07-02')
+        filters = {**self.filters, 'date_from': '2046-07-01', 'date_to': '2046-07-31'}
+        snapshot = self.report.get_owner_snapshot(filters)
+        self.assertTrue(snapshot['complete'])
+        period = snapshot['periods'][0]
+        total = next(row for row in period['totals'] if row['key'] == 'cash_total')
+        detail = self.report.get_owner_details(
+            filters, 'total:cash_total', period['key'], period['revision'],
+        )
+        self.assertFalse(detail['changed'])
+        self.assertEqual(len(detail['events']), 1)
+        detail_amount = Decimal(detail['events'][0]['amount'].replace(',', ''))
+        self.assertEqual(detail_amount, Decimal('-1707.75'))
+        self.assertEqual(Decimal(total['amount'].replace(',', '')), detail_amount)
+        action = self.report.action_owner_source(
+            filters, 'total:cash_total', period['key'], period['revision'],
+            detail['events'][0]['event_key'],
+        )
+        self.assertEqual((action['res_model'], action['res_id']), ('account.move', reversal.id))
+        self.assertFalse(action['context']['edit'])
+        revisions = [{'key': period['key'], 'revision': period['revision']}]
+        exporter = self.env['baseer.financial.dashboard.export'].with_context(
+            _financial_dashboard_export_revisions=revisions,
+        )
+        payload, mimetype, _name = exporter._export('financial_dashboard_operations', filters, 'xlsx')
+        self.assertIn('spreadsheetml.sheet', mimetype)
+        sheet = load_workbook(BytesIO(payload), data_only=True).active
+        matching_rows = [row for row in sheet.iter_rows()
+                         if any(cell.value == total['label'] for cell in row)]
+        self.assertEqual(len(matching_rows), 1)
+        numeric_values = [Decimal(str(cell.value)) for cell in matching_rows[0]
+                          if isinstance(cell.value, (int, float)) and not isinstance(cell.value, bool)]
+        self.assertIn(detail_amount, numeric_values)
+
+    def test_outside_period_reproof_limit_accepts_n_and_rejects_n_plus_one(self):
+        july = {**self.filters, 'date_from': '2046-07-01', 'date_to': '2046-07-31'}
+        self._posted_payment_reversal('2046-07-02', payment_date='2046-06-12')
+        # Use N=1 to cover the exact boundary with two genuinely distinct
+        # original dates, rather than manufacturing eight more payments.
+        with patch.object(owner_coverage, '_MAX_OUTSIDE_PERIOD_REPROOFS', 1):
+            self._assert_reversal_report(july, Decimal('-1707.75'), [Decimal('-1707.75')])
+            self._posted_payment_reversal('2046-07-02', payment_date='2046-06-13')
+            with self.assertRaises(AccessError):
+                self.report.get_owner_snapshot(july)
+
+    def test_hidden_original_move_makes_reversal_period_fail_closed(self):
+        payment, _reversal = self._posted_payment_reversal('2046-07-02')
+        groups = [self.env.ref('base.group_user').id,
+                  self.env.ref('account.group_account_user').id,
+                  self.env.ref('point_of_sale.group_pos_user').id]
+        if 'baseer.procurement.representative.advance' in self.env:
+            groups.append(self.env.ref('baseer_procurement_requests.group_procurement_accountant').id)
+        reader = self.env['res.users'].create({
+            'name': 'Restricted reversal accountant', 'login': 'restricted-reversal-owner',
+            'group_ids': [Command.set(groups)], 'company_id': self.company.id,
+            'company_ids': [Command.set(self.company.ids)],
+        })
+        filters = {**self.filters, 'date_from': '2046-07-01', 'date_to': '2046-07-31'}
+        secured = self.report.with_user(reader).with_context(allowed_company_ids=self.company.ids)
+        self.assertTrue(secured.get_owner_snapshot(filters)['complete'])
+        rule = self.env['ir.rule'].create({
+            'name': 'Hide original payment move from owner reversal',
+            'model_id': self.env['ir.model']._get('account.move').id,
+            'domain_force': f"[('id', '!=', {payment.move_id.id})]",
+        })
+        try:
+            rule.flush_recordset()
+            with self.assertRaises(AccessError):
+                secured.get_owner_snapshot(filters)
+        finally:
+            rule.unlink()
 
     def test_reversal_journal_filter_follows_each_actual_move(self):
         reverse_bank = self.env['account.journal'].with_company(self.company).create({

@@ -48,8 +48,9 @@ class FinancialDashboardReversalProof(models.AbstractModel):
         self._owner_check_read(descendants, read_facts)
         journal, reverse_journal = move.journal_id, reversal.journal_id
         partner, currency = payment.partner_id, company.currency_id
+        method, outstanding = payment.payment_method_line_id, payment.outstanding_account_id
         lines, reverse_lines = move.line_ids, reversal.line_ids
-        for record in (company, currency, journal, reverse_journal, partner,
+        for record in (company, currency, journal, reverse_journal, partner, method, outstanding,
                        lines, reverse_lines, lines.account_id, reverse_lines.account_id,
                        lines.partner_id, reverse_lines.partner_id):
             self._owner_check_read(record, read_facts)
@@ -65,6 +66,7 @@ class FinancialDashboardReversalProof(models.AbstractModel):
                 or move.statement_line_id or reversal.statement_line_id
                 or payment.payment_type != 'outbound' or payment.partner_type != 'supplier'
                 or payment.state not in ('in_process', 'paid')
+                or payment.journal_id != journal or not method or method.journal_id != journal
                 or not partner or payment.currency_id != currency
                 or move.currency_id != currency or reversal.currency_id != currency
                 or journal.company_id != company or reverse_journal.company_id != company
@@ -88,6 +90,7 @@ class FinancialDashboardReversalProof(models.AbstractModel):
         if (amount <= 0 or payable.partner_id != partner
                 or reverse_payable.partner_id != partner
                 or cash.account_id != journal.default_account_id
+                or outstanding != cash.account_id or method.payment_account_id != cash.account_id
                 or reverse_cash.account_id != reverse_journal.default_account_id
                 or cash.account_id != reverse_cash.account_id
                 or payable.account_id != reverse_payable.account_id

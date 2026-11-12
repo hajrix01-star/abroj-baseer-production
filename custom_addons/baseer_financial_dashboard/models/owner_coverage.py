@@ -14,6 +14,7 @@ from odoo.exceptions import AccessError
 from odoo.addons.baseer_operations_report.models.operations import (
     EXPENSE_KEYS, NATIVE_PAYMENT_CENSUS_BATCH_SIZE, SECTION_KEYS,
 )
+from .signed_owner_summary import build_signed_owner_summary
 
 
 class FinancialDashboardOperations(models.AbstractModel):
@@ -112,7 +113,28 @@ class FinancialDashboardOperations(models.AbstractModel):
                 payment, company, journal_ids, visible, read_facts,
             )
             if not proved:
-                continue
+                # The original collector rejects reversed native payments.
+                # Only reinstate that exact rejection once the complete pair
+                # is proved, and leave it unclassified rather than assigning
+                # the erroneous payment to a bill or expense account.
+                if journal_ids and payment.move_id.journal_id.id not in journal_ids:
+                    continue
+                pair = self._dashboard_reversal_pair(payment, company, read_facts)
+                if not pair:
+                    continue
+                proof = self._dashboard_pair_revision(pair)
+                event = {
+                    'source_model': 'account.payment', 'source_id': payment.id,
+                    'line_model': 'account.move.line', 'line_id': pair['payable'].id,
+                    'payment_move_id': pair['move'].id,
+                    'payment_line_id': pair['outflow'].id,
+                    'date': fields.Date.to_string(pair['move'].date),
+                    'link_status': 'unconfirmed', 'dashboard_payment_proof': proof,
+                }
+                proved = ('unsupported_native_payment', [(
+                    'expense', pair['payable'].account_id, pair['amount'],
+                    'native_vendor_payment_unconfirmed', event,
+                )])
             exclusion, events = proved
             if excluded.get(exclusion, 0) <= 0:
                 # An accepted proof must correspond to an actual rejection
@@ -121,6 +143,154 @@ class FinancialDashboardOperations(models.AbstractModel):
             self._record_many(sections, events, read_facts=read_facts)
             excluded[exclusion] -= 1
             excluded['unconfirmed_payment_link'] += 1
+
+    def _dashboard_pair_revision(self, pair):
+        """Return only serializable accounting evidence used by both dates."""
+        return {
+            'payment': pair['payment'].id,
+            'payment_state': pair['payment'].state,
+            'amount': str(pair['amount']),
+            'moves': [(move.id, move.company_id.id, move.currency_id.id,
+                       move.journal_id.id, move.state, fields.Date.to_string(move.date),
+                       move.reversed_entry_id.id, sorted(move.reversal_move_ids.ids))
+                      for move in (pair['move'] | pair['reversal']).sorted('id')],
+            'lines': [(line.id, line.move_id.id, line.account_id.id, line.partner_id.id,
+                       line.currency_id.id, line.journal_id.id,
+                       str(self._decimal(line.balance)), str(self._decimal(line.amount_currency)))
+                      for line in (pair['move'].line_ids | pair['reversal'].line_ids).sorted('id')],
+        }
+
+    def _dashboard_period_refunds(self, company, start, end, journal_ids, cash):
+        """Prove visible vendor reversals and their original cash ownership.
+
+        The broad reversal census intentionally includes non-vendor reversals;
+        SQL only checks record visibility, never supplies financial amounts.
+        """
+        Move = self.env['account.move']
+        self._require_read(('account.move', 'account.move.line', 'account.payment'))
+        Move.flush_model(['company_id', 'state', 'date', 'journal_id', 'reversed_entry_id'])
+        self.env['account.payment'].flush_model(['move_id'])
+        domain = [('company_id', '=', company.id), ('state', '=', 'posted'),
+                  ('date', '>=', start), ('date', '<=', end), ('reversed_entry_id', '!=', False)]
+        sql = ('company_id=%s AND state=%s AND date >= %s AND date <= %s '
+               'AND reversed_entry_id IS NOT NULL')
+        params = [company.id, 'posted', start, end]
+        if journal_ids:
+            domain.append(('journal_id', 'in', journal_ids))
+            sql += ' AND journal_id = ANY(%s)'
+            params.append(journal_ids)
+        reversals = Move.search(domain, order='id', limit=NATIVE_PAYMENT_CENSUS_BATCH_SIZE + 1)
+        if len(reversals) > NATIVE_PAYMENT_CENSUS_BATCH_SIZE:
+            self._deny_incomplete_source()
+        self._assert_visible('account_move', sql, params, reversals)
+        events, witnesses = [], {}
+        original_cache = {}
+        for reversal in reversals:
+            origin = reversal.reversed_entry_id
+            self._owner_check_read(origin)
+            payment = origin.origin_payment_id
+            # A hidden payment must not make a vendor reversal look unrelated.
+            self._assert_visible('account_payment', 'move_id=%s', [origin.id], payment)
+            if not payment:
+                continue
+            if payment.company_id != company:
+                self._deny_incomplete_source()
+            if payment.payment_type != 'outbound' or payment.partner_type != 'supplier':
+                continue
+            pair = self._dashboard_reversal_pair(payment, company)
+            if not pair or pair['reversal'] != reversal:
+                self._deny_incomplete_source()
+            key = (pair['move'].date, pair['move'].journal_id.id)
+            if key not in original_cache:
+                if (start <= key[0] <= end
+                        and (not journal_ids or key[1] in journal_ids)):
+                    original_cache[key] = cash
+                else:
+                    original_cache[key] = self._owner_cash(company, key[0], key[0], [key[1]])
+            source = original_cache[key]
+            if not source['coverage_complete']:
+                self._deny_incomplete_source()
+            matches = [event for event in source['events']
+                       if event.get('payment_line_id') == pair['outflow'].id]
+            if (len(matches) != 1 or matches[0].get('source_model') != 'account.payment'
+                    or matches[0].get('source_id') != payment.id
+                    or matches[0].get('classification') != 'unconfirmed_bill_classification'
+                    or matches[0].get('amount') != pair['amount']
+                    or source['liquidity_totals'].get(pair['outflow'].id) != pair['amount']):
+                self._deny_incomplete_source()
+            witness = pair['refund']
+            if witness.id in witnesses or witness.id in cash['liquidity_totals']:
+                self._deny_incomplete_source()
+            amount = -pair['amount']
+            witnesses[witness.id] = amount
+            events.append({
+                'company_id': company.id, 'direction': 'outgoing',
+                'source_model': 'account.move', 'source_id': reversal.id,
+                'line_model': 'account.move.line', 'line_id': witness.id,
+                'payment_move_id': reversal.id, 'payment_line_id': witness.id,
+                'date': fields.Date.to_string(reversal.date), 'amount': amount,
+                'classification': 'unconfirmed_bill_classification',
+                'original_classification': 'unconfirmed_bill_classification',
+                'original_payment_line_id': pair['outflow'].id,
+                'original_move_id': pair['move'].id, 'reversal_move_id': reversal.id,
+                'original_amount': pair['amount'],
+                'dashboard_payment_proof': self._dashboard_pair_revision(pair),
+            })
+        return events, witnesses
+
+    def _owner_period_data(self, company, start, end, journal_ids):
+        """Use the private signed reducer only after all source proofs pass."""
+        sales = self._owner_sales(company, start, end, journal_ids)
+        cash = self._owner_cash(company, start, end, journal_ids)
+        if not cash['coverage_complete']:
+            return {'coverage_complete': False}
+        refunds, refund_witnesses = self._dashboard_period_refunds(
+            company, start, end, journal_ids, cash)
+        summary = build_signed_owner_summary(
+            sales + cash['events'], cash['liquidity_totals'], refunds,
+            refund_witnesses, company_id=company.id)
+        # The ordinary detail contract sums cash events, including negative
+        # refund rows, but all positive-witness checks happened above.
+        cash = {**cash, 'events': cash['events'] + refunds}
+        display = self._owner_display(summary, company)
+        return {
+            'coverage_complete': True, 'sales': sales, 'cash': cash,
+            'summary': summary, 'display': display,
+            'revision': self._owner_period_revision(company, start, end, journal_ids,
+                                                     sales, cash, display),
+        }
+
+    def _owner_display(self, summary, company):
+        display = super()._owner_display(summary, company)
+        arabic = (self.env.context.get('lang') or self.env.user.lang or '').startswith('ar')
+        for row in display['totals']:
+            if row['key'] == 'cash_total':
+                row['label'] = 'صافي المدفوعات بعد الردود' if arabic else 'Net payments after refunds'
+            elif row['key'] == 'difference':
+                row['label'] = 'الفرق بين المبيعات وصافي المدفوعات' if arabic else 'Sales less net payments'
+        return display
+
+    @api.model
+    def get_owner_snapshot(self, filters):
+        result = super().get_owner_snapshot(filters)
+        arabic = (self.env.context.get('lang') or self.env.user.lang or '').startswith('ar')
+        result['basis'] = (
+            'المبيعات المسجلة تشمل غير المحصل. المدفوعات صافية بعد الردود، والفرق ليس صافي الربح المحاسبي.'
+            if arabic else
+            'Recorded sales include uncollected sales. Payments are net of refunds; the difference is not accounting profit.'
+        )
+        return result
+
+    def _owner_source_labels(self, rows, company):
+        labels = super()._owner_source_labels(rows, company)
+        arabic = (self.env.context.get('lang') or self.env.user.lang or '').startswith('ar')
+        for row in rows:
+            event = row['event']
+            if event.get('reversal_move_id'):
+                record = self.env['account.move'].browse(event['source_id'])
+                labels[('account.move', record.id)] = '%s · %s' % (
+                    'عكس دفعة' if arabic else 'Payment reversal', record.display_name)
+        return labels
 
     def _dashboard_prove_split_payment(self, payment, company, journal_ids,
                                        visible, read_facts):

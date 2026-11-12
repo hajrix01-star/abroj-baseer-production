@@ -331,6 +331,38 @@ class TestOwnerCash(TransactionCase):
         self.assertTrue(all(row['classification'] == 'unconfirmed_bill_classification' for row in events))
         self.assertTrue(result['coverage_complete'])
 
+    def test_fully_paid_bill_with_prepaid_line_is_unconfirmed_cash(self):
+        prepaid = self.accounts.create({
+            'code': '959192', 'name': 'Owner cash prepaid',
+            'account_type': 'asset_prepayments',
+            'company_ids': [Command.set(self.company.ids)],
+        })
+        bill = self.env['account.move'].with_company(self.company).create({
+            'move_type': 'in_invoice', 'partner_id': self.partner.id,
+            'journal_id': self.purchase.id, 'invoice_date': '2026-06-18',
+            'invoice_line_ids': [
+                Command.create({'name': 'Expired rent', 'quantity': 1, 'price_unit': 20,
+                                'account_id': self.expense.id, 'tax_ids': [Command.clear()]}),
+                Command.create({'name': 'Prepaid rent', 'quantity': 1, 'price_unit': 30,
+                                'account_id': prepaid.id, 'tax_ids': [Command.clear()]}),
+            ],
+        })
+        bill.action_post()
+        self.method.payment_account_id = self.bank.default_account_id
+        payment = self.env['account.payment.register'].with_context(
+            active_model='account.move', active_ids=bill.ids,
+        ).create({
+            'journal_id': self.bank.id, 'payment_method_line_id': self.method.id,
+            'amount': 50, 'payment_date': '2026-06-20', 'installments_mode': 'full',
+            'payment_difference_handling': 'open',
+        })._create_payments()
+        result = self.report._owner_cash(self.company, '2026-06-01', '2026-06-30', [])
+        events = [row for row in result['events'] if row['source_id'] == payment.id
+                  and row['source_model'] == 'account.payment']
+        self.assertEqual(sum((row['amount'] for row in events), Decimal(0)), Decimal('50'))
+        self.assertTrue(all(row['classification'] == 'unconfirmed_bill_classification' for row in events))
+        self.assertTrue(result['coverage_complete'])
+
     def test_cash_journal_multiline_bill_is_counted(self):
         cash = self.env['account.journal'].with_company(self.company).create({
             'name': 'Owner cash till', 'code': 'OCT', 'type': 'cash',

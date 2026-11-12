@@ -55,12 +55,21 @@ export class BrowserPrintDialog extends Component {
             if (this.compatibleLoading) {
                 return;
             }
-            browser.clearTimeout(this.loadTimer);
-            const app = this.frame.el.contentWindow.PDFViewerApplication;
-            if (!app) {
-                this.state.warning = this.labels.help;
+            let app;
+            try {
+                // A pending load from the native PDF frame may fire after switching to PDF.js.
+                // Its browser-owned frame is cross-origin until the PDF.js viewer has loaded.
+                app = this.frame.el?.contentWindow?.PDFViewerApplication;
+            } catch (error) {
+                if (error?.name !== "SecurityError") {
+                    throw error;
+                }
                 return;
             }
+            if (!app) {
+                return;
+            }
+            browser.clearTimeout(this.loadTimer);
             this.compatibleLoading = true;
             try {
                 await app.initializedPromise;

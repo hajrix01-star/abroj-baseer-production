@@ -152,6 +152,119 @@ class TestDashboardSalesNotes(TransactionCase):
             )
             self.note.invalidate_recordset(['tax_ids'])
 
+    def test_tax_metadata_on_note_is_not_ignored(self):
+        tax = self.env['account.tax'].create({
+            'name': 'Display repartition tax', 'amount': 0, 'type_tax_use': 'sale',
+            'company_id': self.company.id,
+        })
+        repartition = tax.invoice_repartition_line_ids.filtered(
+            lambda row: row.repartition_type == 'tax')[:1]
+        self.assertTrue(repartition)
+        # These test-only malformed values cannot arise from the normal note
+        # editor. Update one field at a time and restore it within the test.
+        for field, value in (('tax_repartition_line_id', repartition.id),
+                             ('tax_base_amount', 0.01)):
+            self.note.flush_recordset([field])
+            previous = self.note[field]
+            previous = previous.id if hasattr(previous, 'id') else previous
+            try:
+                self.env.cr.execute('UPDATE account_move_line SET %s=%%s WHERE id=%%s' % field,
+                                    [value, self.note.id])
+                self.note.invalidate_recordset([field])
+                with self.assertRaises(AccessError):
+                    self.report._owner_sales_invoices(self.invoice, self.company)
+            finally:
+                self.env.cr.execute('UPDATE account_move_line SET %s=%%s WHERE id=%%s' % field,
+                                    [previous or None if field == 'tax_repartition_line_id' else previous,
+                                     self.note.id])
+                self.note.invalidate_recordset([field])
+
+    def test_rule_hidden_tax_tag_is_not_treated_as_absent(self):
+        tag = self.env['account.account.tag'].create({
+            'name': 'Hidden display note tag', 'applicability': 'taxes',
+            'country_id': self.company.country_id.id,
+        })
+        self.env.cr.execute(
+            'INSERT INTO account_account_tag_account_move_line_rel '
+            '(account_move_line_id, account_account_tag_id) VALUES (%s, %s)',
+            [self.note.id, tag.id],
+        )
+        self.note.invalidate_recordset(['tax_tag_ids'])
+        reader = self.env['res.users'].create({
+            'name': 'Hidden tag accountant', 'login': 'hidden-display-tag-accountant',
+            'group_ids': [Command.set([self.env.ref('base.group_user').id,
+                                       self.env.ref('account.group_account_user').id])],
+            'company_id': self.company.id, 'company_ids': [Command.set(self.company.ids)],
+        })
+        rule = self.env['ir.rule'].create({
+            'name': 'Display test hide tag',
+            'model_id': self.env['ir.model']._get('account.account.tag').id,
+            'domain_force': "[('id', '!=', %d)]" % tag.id,
+        })
+        try:
+            rule.flush_recordset()
+            with self.assertRaises(AccessError):
+                self.report.with_user(reader)._owner_sales_invoices(
+                    self.invoice.with_user(reader), self.company.with_user(reader))
+        finally:
+            rule.unlink()
+            self.env.cr.execute(
+                'DELETE FROM account_account_tag_account_move_line_rel '
+                'WHERE account_move_line_id=%s AND account_account_tag_id=%s',
+                [self.note.id, tag.id],
+            )
+            self.note.invalidate_recordset(['tax_tag_ids'])
+
+    def test_rule_hidden_partial_on_note_fails_closed(self):
+        invoice_line = self.invoice.line_ids.filtered(
+            lambda line: line.account_id.account_type == 'asset_receivable')
+        self.assertEqual(len(invoice_line), 1)
+        product_line = self.invoice.invoice_line_ids.filtered(
+            lambda line: line.display_type == 'product')[:1]
+        self.assertTrue(product_line)
+        refund = self.env['account.move'].with_company(self.company).create({
+            'move_type': 'out_refund', 'partner_id': self.invoice.partner_id.id,
+            'journal_id': self.invoice.journal_id.id, 'invoice_date': '2046-08-11',
+            'invoice_line_ids': [Command.create({
+                'name': 'Reconciliation test', 'quantity': 1, 'price_unit': 100,
+                'account_id': product_line.account_id.id, 'tax_ids': [Command.clear()],
+            })],
+        })
+        refund.action_post()
+        refund_line = refund.line_ids.filtered(
+            lambda line: line.account_id.account_type == 'asset_receivable')
+        (invoice_line | refund_line).reconcile()
+        partial = invoice_line.matched_credit_ids
+        self.assertEqual(len(partial), 1)
+        reader = self.env['res.users'].create({
+            'name': 'Hidden partial accountant', 'login': 'hidden-display-partial-accountant',
+            'group_ids': [Command.set([self.env.ref('base.group_user').id,
+                                       self.env.ref('account.group_account_user').id])],
+            'company_id': self.company.id, 'company_ids': [Command.set(self.company.ids)],
+        })
+        rule = self.env['ir.rule'].create({
+            'name': 'Display test hide partial',
+            'model_id': self.env['ir.model']._get('account.partial.reconcile').id,
+            'domain_force': "[('id', '!=', %d)]" % partial.id,
+        })
+        partial.flush_recordset(['debit_move_id'])
+        original_debit = partial.debit_move_id.id
+        try:
+            self.env.cr.execute('UPDATE account_partial_reconcile SET debit_move_id=%s WHERE id=%s',
+                                [self.note.id, partial.id])
+            partial.invalidate_recordset(['debit_move_id'])
+            self.note.invalidate_recordset(['matched_debit_ids', 'matched_credit_ids'])
+            rule.flush_recordset()
+            with self.assertRaises(AccessError):
+                self.report.with_user(reader)._owner_sales_invoices(
+                    self.invoice.with_user(reader), self.company.with_user(reader))
+        finally:
+            rule.unlink()
+            self.env.cr.execute('UPDATE account_partial_reconcile SET debit_move_id=%s WHERE id=%s',
+                                [original_debit, partial.id])
+            partial.invalidate_recordset(['debit_move_id'])
+            self.note.invalidate_recordset(['matched_debit_ids', 'matched_credit_ids'])
+
     def test_hidden_note_still_fails_complete_source_census(self):
         reader = self.env['res.users'].create({
             'name': 'Display test accountant', 'login': 'display-note-accountant',

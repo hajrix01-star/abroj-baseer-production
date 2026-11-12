@@ -18,7 +18,7 @@ class FinancialDashboardSalesDisplay(models.AbstractModel):
         candidates = children.filtered(lambda line: line.display_type == 'line_note' and not line.account_id)
         if not candidates:
             return self.env['account.move.line']
-        self._require_read(('account.partial.reconcile', 'account.tax'))
+        self._require_read(('account.partial.reconcile', 'account.tax', 'account.account.tag'))
         partial_model = self.env['account.partial.reconcile']
         partial_model.flush_model(['debit_move_id', 'credit_move_id'])
         partials = partial_model.search(['|', ('debit_move_id', 'in', candidates.ids),
@@ -43,15 +43,31 @@ class FinancialDashboardSalesDisplay(models.AbstractModel):
         candidates.tax_ids.check_access('read')
         taxed_ids = {line_id for line_id, _tax_id in tax_edges}
 
+        # Tax tags have a separate M2M relation; their full membership must
+        # also be visible before a line can be treated as nonfinancial.
+        candidates.flush_recordset(['tax_tag_ids'])
+        self.env.cr.execute(
+            'SELECT account_move_line_id, account_account_tag_id '
+            'FROM account_account_tag_account_move_line_rel WHERE account_move_line_id = ANY(%s)',
+            [candidates.ids],
+        )
+        tag_edges = set(self.env.cr.fetchall())
+        visible_tags = {(line.id, tag.id) for line in candidates for tag in line.tax_tag_ids}
+        if tag_edges != visible_tags:
+            self._deny_incomplete_source()
+        candidates.tax_tag_ids.check_access('read')
+        tagged_ids = {line_id for line_id, _tag_id in tag_edges}
+
         ignored = self.env['account.move.line']
         for line in candidates:
             move, company = line.move_id, line.move_id.company_id
             if (line.company_id != company or line.journal_id != move.journal_id
                     or line.currency_id != company.currency_id or line.tax_line_id
+                    or line.tax_repartition_line_id or line.id in tagged_ids
                     or line.id in taxed_ids or line.id in reconciled_ids):
                 continue
             if all(self._owner_sales_money(value, company.currency_id) == 0 for value in (
-                    line.debit, line.credit, line.balance, line.amount_currency)):
+                    line.debit, line.credit, line.balance, line.amount_currency, line.tax_base_amount)):
                 ignored |= line
         return ignored
 

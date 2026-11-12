@@ -254,7 +254,9 @@ class TestOperationsBrowser(HttpCase):
             const nextMonth = await waitFor(() => [...document.querySelectorAll('.o_baseer_pl_period_menu .o_baseer_pl_menu_row')].find(
                 (row) => /Month|شهر/.test(row.textContent)), 'return month navigation');
             nextMonth.querySelectorAll('.o_baseer_pl_row_navigation button')[1].click();
-            await waitFor(() => host.querySelector('.o_baseer_go_report .o_baseer_owner_difference'), 'proven month restored');
+            await waitFor(() => periodButton().textContent === currentMonth
+                && host.querySelector('.o_baseer_go_report .o_baseer_owner_difference')
+                && !host.querySelector('.o_baseer_go_incomplete'), 'proven month restored');
             if (periodButton().textContent !== currentMonth) { throw new Error('Month anchor was not restored'); }
 
             const journals = host.querySelector('.o_baseer_pl_journals');

@@ -189,21 +189,27 @@ class BaseerPrintJob(models.Model):
             'reference': order.pos_reference or order.name if order else _('Printer test'),
             'created_at': fields.Datetime.to_string(fields.Datetime.now()),
         }
-        if order:
-            if ticket_type == 'preparation' and order.preset_id:
-                order_payload['order_type'] = order.preset_id.name
-            if ticket_type == 'preparation' and order.tracking_number:
+        if order and ticket_type == 'preparation':
+            try:
+                version = tuple(int(part) for part in (printer.agent_id.agent_version or '').split('.')[:3])
+            except ValueError:
+                version = ()
+            if order.tracking_number:
                 # Keep the native customer-facing number distinct from the POS
                 # reference in both operating modes. The queued JSON freezes it
                 # for the original print and any later reprint.
                 order_payload['tracking_number'] = str(order.tracking_number)
-                try:
-                    version = tuple(int(part) for part in (printer.agent_id.agent_version or '').split('.')[:3])
-                except ValueError:
-                    version = ()
                 if version < (1, 5, 16):
                     # Older agents display only the reference, not tracking_number.
                     order_payload['reference'] = f"{order.tracking_number}\n{order_payload['reference']}"
+            if order.preset_id:
+                order_type = ' '.join(order.preset_id.name.split())
+                if version >= (1, 5, 21):
+                    order_payload['order_type'] = order_type
+                else:
+                    # Existing agents already render multiline kitchen references.
+                    order_payload['reference'] = f"{order_payload['reference']}\nنوع الطلب: {order_type}"
+        if order:
             cashier = (
                 order.employee_id
                 if 'employee_id' in order._fields and order.employee_id

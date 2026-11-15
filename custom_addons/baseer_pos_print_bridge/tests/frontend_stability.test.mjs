@@ -56,6 +56,52 @@ test('paid-order print button queues the archived receipt without rendering a ne
     assert.match(requestUuid, /^[\da-f-]{36}$/);
 });
 
+test('prepayment bill sends the open order to the session queue without syncing or changing it', async () => {
+    const bridge = runtime('preparation_bridge.js', {
+        printReceipt() { return 'native'; },
+    });
+    const pos = new bridge.PosStore();
+    const calls = [];
+    const canvas = {};
+    const order = { uuid: 'local-draft', state: 'draft', nb_print: 0, getOrderlines: () => [{}] };
+    bridge.DraftBill = class {};
+    bridge.usesBaseerDraftBill = (config) => config.baseer_direct_print_enabled;
+    bridge.encodeReceiptJpeg = (image) => {
+        assert.equal(image, canvas);
+        return 'raster';
+    };
+    pos.config = { baseer_direct_print_enabled: true };
+    pos.session = { id: 23 };
+    pos.notification = { add() {} };
+    pos.printer = { renderer: {
+        async toCanvas(component, props) {
+            assert.equal(component, bridge.DraftBill);
+            assert.equal(props.order, order);
+            return canvas;
+        },
+    } };
+    pos.data = { async call(...args) {
+        calls.push(args);
+        return { state: 'pending' };
+    } };
+    const options = { order, printBillActionTriggered: true };
+    assert.equal((await pos.printReceipt(options)).queued, true);
+    const [[model, method, [[sessionId], orderUuid, requestUuid, image]]] = calls;
+    assert.equal(model, 'pos.session');
+    assert.equal(method, 'baseer_enqueue_draft_bill');
+    assert.equal(sessionId, 23);
+    assert.equal(orderUuid, order.uuid);
+    assert.match(requestUuid, /^[\da-f-]{36}$/);
+    assert.equal(image, 'raster');
+    assert.equal(order.nb_print, 0);
+
+    order.state = 'paid';
+    assert.equal((await pos.printReceipt(options)).successful, false);
+    assert.equal(calls.length, 1);
+    pos.config.baseer_direct_print_enabled = false;
+    assert.equal(await pos.printReceipt(options), 'native');
+});
+
 const lineRuntime = runtime('line_actions.js');
 const displayRuntime = runtime('line_actions.js', { orderline: {
     get lineScreenValues() {

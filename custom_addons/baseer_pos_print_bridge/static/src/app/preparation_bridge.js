@@ -13,6 +13,7 @@ import { TextInputPopup } from "@point_of_sale/app/components/popups/text_input_
 import { ask, makeAwaitable } from "@point_of_sale/app/utils/make_awaitable_dialog";
 import { buildBaseerPreparationAction, captureBaseerCancellationRoute, navigateBaseerAfterCancellation } from "./line_actions";
 import { encodeReceiptJpeg } from "./receipt_image";
+import { DraftBill, usesBaseerDraftBill } from "./draft_bill";
 
 const BASEER_CANCELLATION_REASONS = [
     ["customer_cancelled", _t("Customer cancelled")],
@@ -1087,11 +1088,51 @@ patch(PosStore.prototype, {
         return nativeResult;
     },
 
+    async baseerPrintDraftBill(order) {
+        if (order?.state !== "draft" || !order.getOrderlines().length) {
+            this.notification.add(_t("Select an open order with items to print its bill."), { type: "warning" });
+            return { successful: false };
+        }
+        try {
+            const canvas = await this.printer.renderer.toCanvas(
+                DraftBill, { order }, { addClass: "pos-receipt-print p-3", pixelRatio: 2.2 }
+            );
+            if (order.state !== "draft") {
+                return { successful: false };
+            }
+            const result = await this.data.call("pos.session", "baseer_enqueue_draft_bill", [
+                [this.session.id], order.uuid, crypto.randomUUID(), encodeReceiptJpeg(canvas),
+            ]);
+            if (result.state === "failed" || result.state === "cancelled") {
+                this.notification.add(
+                    _t("Check the previous bill print job before printing again."), { type: "warning" }
+                );
+                return { successful: false };
+            }
+            this.notification.add(
+                result.state === "done"
+                    ? _t("Windows accepted the unpaid order bill.")
+                    : result.already_queued
+                    ? _t("This order bill already has a print job in progress.")
+                    : _t("The unpaid order bill was sent to the print queue."),
+                { type: result.already_queued ? "info" : "success" }
+            );
+            return { successful: true, queued: result.state !== "done" };
+        } catch (error) {
+            this.notification.add(
+                error?.data?.message || _t("Could not confirm that the order bill was queued. Check the printer before trying again."),
+                { type: "warning" }
+            );
+            return { successful: false, error };
+        }
+    },
+
     async printReceipt(options = {}) {
         const order = options.order || this.getOrder();
-        // Restaurant Print Bill is a draft preview, not a paid fiscal receipt.
-        // Keep Odoo's own draft-bill route and never enqueue it as a final job.
         if (options.printBillActionTriggered) {
+            if (usesBaseerDraftBill(this.config)) {
+                return this.baseerPrintDraftBill(order);
+            }
             return super.printReceipt(...arguments);
         }
         if (this.config.baseer_direct_print_enabled && this.config.baseer_native_receipt_enabled) {

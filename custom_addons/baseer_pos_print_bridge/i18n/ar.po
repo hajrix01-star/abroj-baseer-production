@@ -2692,3 +2692,99 @@ msgstr "الإيصال الأصلي ما زال في قائمة انتظار ا�
 #: code:addons/baseer_pos_print_bridge/models/job.py:0
 msgid "Invalid receipt reprint request."
 msgstr "طلب إعادة طباعة الإيصال غير صالح."
+
+#. module: baseer_pos_print_bridge
+#: model.fields.selection, name:baseer_pos_print_bridge.selection__baseer_print_job__ticket_type__draft_bill
+msgid "Unpaid order bill"
+msgstr "حساب طلب غير مدفوع"
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/static/src/app/draft_bill.xml:0
+msgid "Order bill"
+msgstr "حساب الطلب"
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/static/src/app/draft_bill.xml:0
+msgid "Unpaid"
+msgstr "غير مدفوع"
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/static/src/app/draft_bill.xml:0
+msgid "Order number"
+msgstr "رقم الطلب"
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/static/src/app/draft_bill.xml:0
+msgid "Bill total"
+msgstr "إجمالي الحساب"
+
+#. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/preparation_bridge.js:0
+msgid "Select an open order with items to print its bill."
+msgstr "اختر طلبًا مفتوحًا يحتوي على أصناف لطباعة حسابه."
+
+#. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/preparation_bridge.js:0
+msgid "This order bill already has a print job in progress."
+msgstr "حساب هذا الطلب في انتظار الطباعة بالفعل."
+
+#. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/preparation_bridge.js:0
+msgid "The unpaid order bill was sent to the print queue."
+msgstr "أُرسل حساب الطلب غير المدفوع إلى قائمة انتظار الطباعة."
+
+#. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/preparation_bridge.js:0
+msgid "Windows accepted the unpaid order bill."
+msgstr "قبل ويندوز مهمة طباعة حساب الطلب غير المدفوع."
+
+#. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/preparation_bridge.js:0
+msgid "Check the previous bill print job before printing again."
+msgstr "راجع مهمة طباعة الحساب السابقة قبل إعادة المحاولة."
+
+#. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/preparation_bridge.js:0
+msgid "Could not confirm that the order bill was queued. Check the printer before trying again."
+msgstr "تعذّر تأكيد إرسال حساب الطلب. تحقّق من الطابعة قبل إعادة المحاولة."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/pos_session.py:0
+msgid "A Point of Sale user is required to print an order bill."
+msgstr "طباعة حساب الطلب متاحة لمستخدمي نقطة البيع."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/pos_session.py:0
+msgid "Direct order bill printing requires the open restaurant session."
+msgstr "تتطلب طباعة الحساب المباشرة جلسة مطعم مفتوحة."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/pos_session.py:0
+msgid "Invalid order bill print request."
+msgstr "طلب طباعة حساب الطلب غير صالح."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/pos_session.py:0
+msgid "This order is no longer open in the current session."
+msgstr "هذا الطلب لم يعد مفتوحًا في الجلسة الحالية."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/pos_session.py:0
+msgid "The configured print agent does not support order bill printing."
+msgstr "وكيل الطباعة المحدد لا يدعم طباعة حساب الطلب."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/job.py:0
+msgid "The unpaid bill expired or its order is no longer open."
+msgstr "انتهت مهلة طباعة الحساب غير المدفوع أو أُغلق الطلب."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/job.py:0
+msgid "Print an updated bill from the open order in Point of Sale."
+msgstr "اطبع حسابًا محدّثًا من الطلب المفتوح في نقطة البيع."

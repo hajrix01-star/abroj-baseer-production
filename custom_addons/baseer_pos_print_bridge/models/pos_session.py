@@ -4,7 +4,7 @@ import hmac
 import json
 import logging
 import time
-from uuid import uuid4
+from uuid import UUID, uuid4
 from urllib.parse import urlencode
 
 from odoo import _, fields, models
@@ -21,6 +21,40 @@ class PosSession(models.Model):
     baseer_print_session_close_report = fields.Boolean(
         related='config_id.baseer_print_session_close_report', readonly=True,
     )
+
+    def baseer_enqueue_draft_bill(self, order_uuid, request_uuid, jpeg_base64):
+        self.ensure_one()
+        if not self.env.user.has_group('point_of_sale.group_pos_user'):
+            raise AccessError(_('A Point of Sale user is required to print an order bill.'))
+        self.check_access('read')
+        config = self.config_id
+        config.check_access('read')
+        if self.company_id not in self.env.companies:
+            raise AccessError(_('You do not have access to this session company.'))
+        if (self.state != 'opened' or config.current_session_id != self
+                or not config.module_pos_restaurant or not config.baseer_direct_print_enabled):
+            raise ValidationError(_('Direct order bill printing requires the open restaurant session.'))
+        try:
+            if not all(isinstance(value, str) and len(value) == 36 for value in (order_uuid, request_uuid)):
+                raise ValueError('invalid identifier length')
+            order_uuid, request_uuid = str(UUID(order_uuid)), str(UUID(request_uuid))
+        except ValueError:
+            raise ValidationError(_('Invalid order bill print request.')) from None
+
+        Job = self.env['baseer.print.job']
+        # A browser-only draft has a UUID but may not have a database row yet.
+        order = Job._draft_bill_order(order_uuid)
+        if order:
+            if order.session_id != self or order.state != 'draft':
+                raise ValidationError(_('This order is no longer open in the current session.'))
+            order.with_user(self.env.user).check_access('read')
+        printer = config.sudo().baseer_receipt_printer_id
+        if (not printer or not printer.active or printer.paper_width != '80'
+                or not printer._allows_company(self.company_id)):
+            raise ValidationError(_('The 80 mm receipt printer is not available for this company.'))
+        if not Job._agent_supports_native_receipts(printer.agent_id):
+            raise ValidationError(_('The configured print agent does not support order bill printing.'))
+        return Job._enqueue_draft_bill(self, order, order_uuid, request_uuid, printer, jpeg_base64)
 
     def _baseer_assert_current_report_access(self):
         """Authorize viewing the current session independently of printing hardware."""

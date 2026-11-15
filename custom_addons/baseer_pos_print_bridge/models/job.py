@@ -21,6 +21,8 @@ BACKOFF_SECONDS = (15, 60, 300)
 _logger = logging.getLogger(__name__)
 NATIVE_RECEIPT_MAX_BYTES = 256 * 1024
 NATIVE_RECEIPT_MAX_PIXELS = 5_000_000
+RASTER_JOB_TYPES = ('receipt', 'session_report', 'draft_bill')
+DRAFT_BILL_LIFETIME = timedelta(minutes=2)
 
 
 class BaseerPrintJob(models.Model):
@@ -47,10 +49,12 @@ class BaseerPrintJob(models.Model):
     )
     ticket_type = fields.Selection([
         ('receipt', 'Receipt'), ('preparation', 'Preparation'),
+        ('draft_bill', 'Unpaid order bill'),
         ('session_close', 'Session closing report'), ('session_report', 'Current session report'), ('test', 'Test'),
     ],
                                    required=True, index=True)
     payload = fields.Json(required=True, readonly=True)
+    draft_order_uuid = fields.Char(readonly=True, copy=False)
     receipt_image = fields.Binary(attachment=True, readonly=True, groups='base.group_system')
     receipt_image_sha256 = fields.Char(readonly=True, index=True)
     receipt_image_purged_at = fields.Datetime(readonly=True)
@@ -107,6 +111,9 @@ class BaseerPrintJob(models.Model):
                          'ON baseer_print_job (pos_config_id, create_date DESC)')
         self._cr.execute('CREATE INDEX IF NOT EXISTS baseer_print_job_session_created_idx '
                          'ON baseer_print_job (source_session_id, create_date DESC)')
+        self._cr.execute('CREATE UNIQUE INDEX IF NOT EXISTS baseer_print_job_active_draft_idx '
+                         'ON baseer_print_job (source_session_id, draft_order_uuid) '
+                         "WHERE ticket_type = 'draft_bill' AND state IN ('pending', 'leased')")
 
     @api.constrains(
         'company_id', 'pos_config_id', 'agent_id', 'printer_id', 'route_id',
@@ -382,6 +389,82 @@ class BaseerPrintJob(models.Model):
             'paper_width': printer.paper_width,
             'copies': copies,
         }
+
+    @api.model
+    def _draft_bill_order(self, order_uuid):
+        return self.env['pos.order'].sudo().search([('uuid', '=', order_uuid)], limit=1)
+
+    @api.model
+    def _enqueue_draft_bill(self, session, order, order_uuid, request_uuid, printer, jpeg_base64):
+        jobs = self.sudo()
+        key = self._canonical_key('draft-bill-v1', session.id, order_uuid, request_uuid)
+        existing = jobs.search([('idempotency_key', '=', key)], limit=1)
+        if existing:
+            return {'job_id': existing.id, 'state': existing.state, 'already_queued': True}
+        active = jobs.search([
+            ('source_session_id', '=', session.id), ('draft_order_uuid', '=', order_uuid),
+            ('ticket_type', '=', 'draft_bill'), ('state', 'in', ('pending', 'leased')),
+        ], limit=1)
+        if active:
+            if active.state == 'pending' and active.create_date <= fields.Datetime.now() - DRAFT_BILL_LIFETIME:
+                # Recheck the state under the row lock before clearing a draft
+                # that the agent may have leased since the search.
+                self.env.cr.execute(
+                    'SELECT state FROM baseer_print_job WHERE id = %s FOR UPDATE', [active.id],
+                )
+                if self.env.cr.fetchone()[0] == 'pending':
+                    active._cancel_stale_draft_bill()
+                else:
+                    return {'job_id': active.id, 'already_queued': True}
+            else:
+                return {'job_id': active.id, 'state': active.state, 'already_queued': True}
+
+        raw, width, height, digest = self._validated_native_receipt_image(jpeg_base64)
+        payload = {
+            'schema': 4, 'ticket_type': 'receipt', 'document_kind': 'draft_bill',
+            'printer': self._receipt_printer_payload(printer, 1),
+            'receipt_image': {'sha256': digest, 'width': width, 'height': height, 'format': 'jpeg'},
+            'order_was_synced': bool(order),
+        }
+        try:
+            with self.env.cr.savepoint():
+                job = jobs.with_context(image_no_postprocess=True).create({
+                    'company_id': session.company_id.id, 'pos_config_id': session.config_id.id,
+                    'agent_id': printer.agent_id.id, 'printer_id': printer.id,
+                    'source_session_id': session.id, 'source_order_id': order.id,
+                    'ticket_type': 'draft_bill', 'draft_order_uuid': order_uuid,
+                    'payload': payload, 'receipt_image': base64.b64encode(raw),
+                    'receipt_image_sha256': digest, 'idempotency_key': key,
+                })
+        except IntegrityError as error:
+            if error.diag.constraint_name not in (
+                'baseer_print_job_active_draft_idx', 'baseer_print_job_idempotency_unique',
+            ):
+                raise
+            # A competing transaction may still be invisible to this snapshot.
+            return {'already_queued': True}
+        return {'job_id': job.id, 'state': job.state, 'already_queued': False}
+
+    def _is_current_draft_bill(self):
+        self.ensure_one()
+        session = self.source_session_id
+        config = session.config_id
+        if (self.create_date <= fields.Datetime.now() - DRAFT_BILL_LIFETIME
+                or session.state != 'opened' or config.current_session_id != session
+                or not config.baseer_direct_print_enabled or config.baseer_receipt_printer_id != self.printer_id
+                or not self.printer_id.active or not self.printer_id._allows_company(self.company_id)):
+            return False
+        order = self._draft_bill_order(self.draft_order_uuid)
+        if not order:
+            return not self.payload.get('order_was_synced')
+        return order.session_id == session and order.state == 'draft'
+
+    def _cancel_stale_draft_bill(self):
+        self.write({
+            'state': 'cancelled', 'completed_at': fields.Datetime.now(), 'error_code': 'stale_draft_bill',
+            'error_detail': _('The unpaid bill expired or its order is no longer open.'),
+            'receipt_image': False, 'receipt_image_purged_at': fields.Datetime.now(),
+        })
 
     @api.model
     def _enqueue_native_receipt(self, order, jpeg_base64):
@@ -751,18 +834,21 @@ class BaseerPrintJob(models.Model):
         # Odoo 19 may defer ORM writes until flush. The claim query is raw SQL,
         # so make freshly created/rescheduled jobs visible before SKIP LOCKED.
         self.flush_model(['agent_id', 'state', 'available_at'])
-        native_filter = '' if self._agent_supports_native_receipts(agent) else (
-            "AND NOT (ticket_type IN ('receipt', 'session_report') AND payload->>'schema' = '4')"
-        )
-        self.env.cr.execute(f'''SELECT id FROM baseer_print_job WHERE agent_id = %s AND state = 'pending'
-            AND available_at <= NOW() {native_filter}
-            ORDER BY available_at, id FOR UPDATE SKIP LOCKED LIMIT 1''', [agent.id])
+        supports_raster = self._agent_supports_native_receipts(agent)
+        self.env.cr.execute('''SELECT id FROM baseer_print_job WHERE agent_id = %s AND state = 'pending'
+            AND available_at <= NOW()
+            AND (%s OR NOT (ticket_type IN %s AND payload->>'schema' = '4'))
+            ORDER BY available_at, id FOR UPDATE SKIP LOCKED LIMIT 1''',
+                            [agent.id, supports_raster, RASTER_JOB_TYPES])
         row = self.env.cr.fetchone()
         if not row:
             return False
         job = self.sudo().browse(row[0]).exists()
         payload = dict(job.payload)
-        if job.ticket_type in ('receipt', 'session_report') and payload.get('schema') == 4:
+        if job.ticket_type == 'draft_bill' and not job._is_current_draft_bill():
+            job._cancel_stale_draft_bill()
+            return False
+        if job.ticket_type in RASTER_JOB_TYPES and payload.get('schema') == 4:
             image_b64 = job.receipt_image
             try:
                 raw = base64.b64decode(image_b64 or b'', validate=True)
@@ -785,14 +871,16 @@ class BaseerPrintJob(models.Model):
     def _purge_accepted_native_receipt_images(self):
         cutoff = fields.Datetime.now() - timedelta(hours=24)
         jobs = self.sudo().search([
-            ('ticket_type', 'in', ('receipt', 'session_report')), ('receipt_image_sha256', '!=', False),
-            ('receipt_image_purged_at', '=', False), ('state', '=', 'done'),
+            ('ticket_type', 'in', RASTER_JOB_TYPES), ('receipt_image_sha256', '!=', False),
+            ('receipt_image_purged_at', '=', False),
+            '|', ('state', '=', 'done'),
+            '&', ('ticket_type', '=', 'draft_bill'), ('state', 'in', ('failed', 'cancelled')),
             ('completed_at', '<', cutoff),
         ], limit=100)
         for job in jobs:
             job.write({'receipt_image': False, 'receipt_image_purged_at': fields.Datetime.now()})
         backlog = self.sudo().search_count([
-            ('ticket_type', 'in', ('receipt', 'session_report')), ('receipt_image_sha256', '!=', False),
+            ('ticket_type', 'in', RASTER_JOB_TYPES), ('receipt_image_sha256', '!=', False),
             ('state', 'in', ('pending', 'leased')), ('create_date', '<', cutoff),
         ])
         if backlog:
@@ -843,6 +931,8 @@ class BaseerPrintJob(models.Model):
         for job in self:
             if not self.env.user.has_group('point_of_sale.group_pos_manager'):
                 raise AccessError(_('Only a Point of Sale manager can reprint a job.'))
+            if job.ticket_type == 'draft_bill':
+                raise ValidationError(_('Print an updated bill from the open order in Point of Sale.'))
             if job.state not in ('done', 'failed', 'cancelled'):
                 raise ValidationError(_('Only a completed, failed, or cancelled job can be reprinted.'))
             if job.ticket_type in ('receipt', 'session_report') and job.payload.get('schema') == 4 and not job.receipt_image:

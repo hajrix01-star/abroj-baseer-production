@@ -681,6 +681,67 @@ class TestBaseerPrintBridgeHybrid(TransactionCase):
         order.write({'state': state, 'user_id': cashier.id, 'amount_paid': order.amount_total})
         return cashier, order
 
+    def test_unpaid_bill_uses_cashier_queue_and_keeps_draft_editable(self):
+        self.config.module_pos_restaurant = True
+        self._enable()
+        order = self._order()
+        cashier = self._native_receipt_cashier()
+        order.user_id = cashier
+        order.session_id.write({'state': 'opened', 'user_id': cashier.id})
+        session = order.session_id.with_user(cashier)
+        image = self._native_receipt_sample()
+        first = session.baseer_enqueue_draft_bill(order.uuid, str(uuid4()), image)
+        self.assertEqual(session.baseer_enqueue_draft_bill(order.uuid, str(uuid4()), image)['job_id'], first['job_id'])
+        Job = self.env['baseer.print.job']
+        job = Job.browse(first['job_id'])
+        self.assertEqual(job.ticket_type, 'draft_bill')
+        self.assertEqual(job.printer_id, self.receipt)
+        self.assertEqual(job.payload['printer']['copies'], 1)
+        job.available_at = fields.Datetime.now() - timedelta(minutes=5)
+        claim = Job._claim_for_agent(self.agent)
+        self.assertEqual(claim['id'], job.id)
+        self.assertEqual(claim['payload']['ticket_type'], 'receipt')
+        self.assertEqual(claim['payload']['document_kind'], 'draft_bill')
+        self.assertEqual(claim['payload']['receipt_image']['base64'], image)
+        job._complete_for_agent(self.agent, claim['lease_token'])
+        self.assertEqual(order.state, 'draft')
+        self.assertFalse(order.nb_print)
+        self.assertFalse(order.payment_ids)
+        self.assertFalse(Job.search([('source_order_id', '=', order.id), ('ticket_type', '=', 'preparation')]))
+
+        updated = session.baseer_enqueue_draft_bill(order.uuid, str(uuid4()), self._native_receipt_sample('black'))
+        self.assertNotEqual(updated['job_id'], job.id)
+        updated_job = Job.browse(updated['job_id'])
+        updated_job.available_at = fields.Datetime.now() - timedelta(minutes=5)
+        order.state = 'paid'
+        self.assertFalse(Job._claim_for_agent(self.agent))
+        self.assertEqual(updated_job.state, 'cancelled')
+        with self.assertRaises(ValidationError):
+            session.baseer_enqueue_draft_bill(order.uuid, str(uuid4()), image)
+
+    def test_local_unpaid_bill_expires_without_creating_an_order(self):
+        self.config.module_pos_restaurant = True
+        self._enable()
+        self.config.open_ui()
+        session = self.config.current_session_id
+        session.state = 'opened'
+        order_uuid = str(uuid4())
+        result = session.baseer_enqueue_draft_bill(order_uuid, str(uuid4()), self._native_receipt_sample())
+        Job = self.env['baseer.print.job']
+        job = Job.browse(result['job_id'])
+        self.assertFalse(job.source_order_id)
+        job.available_at = fields.Datetime.now() - timedelta(minutes=5)
+        job.flush_recordset()
+        self.env.cr.execute(
+            'UPDATE baseer_print_job SET create_date = %s WHERE id = %s',
+            [fields.Datetime.now() - timedelta(minutes=3), job.id],
+        )
+        job.invalidate_recordset(['create_date'])
+        self.assertFalse(Job._claim_for_agent(self.agent))
+        self.assertEqual(job.error_code, 'stale_draft_bill')
+        self.assertFalse(job.receipt_image)
+        self.assertFalse(Job._draft_bill_order(order_uuid))
+
     def test_native_cashier_receipt_without_hardware_access_is_idempotent(self):
         cashier, order = self._cashier_native_receipt_order()
         self.assertFalse(cashier.has_group('base.group_system'))

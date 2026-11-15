@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="baseer_pos_print_bridge.DraftBill">
+        <t t-set="order" t-value="props.order"/>
+        <div class="pos-receipt p-2">
+            <div class="text-center mb-3">
+                <div t-esc="order.company.name" class="text-break"/>
+                <div class="fw-bold">Order bill</div>
+                <div class="fw-bold">Unpaid</div>
+                <div t-if="order.tracking_number">
+                    <span>Order number</span>
+                    <bdi t-esc="order.tracking_number"/>
+                </div>
+            </div>
+            <div t-foreach="order.getOrderlines()" t-as="line" t-key="line.uuid"
+                 class="d-flex gap-2 justify-content-between mb-1">
+                <div class="text-break">
+                    <bdi t-esc="line.getQuantity()"/> × <t t-esc="line.getFullProductName()"/>
+                </div>
+                <bdi class="text-nowrap" t-esc="formatAmount(line.priceIncl)"/>
+            </div>
+            <div class="d-flex gap-2 justify-content-between border-top pt-2 mt-2 fw-bold">
+                <span>Bill total</span>
+                <bdi class="text-nowrap" t-esc="formatAmount(order.priceIncl)"/>
+            </div>
+        </div>
+    </t>
+</templates>

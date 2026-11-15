@@ -37,6 +37,8 @@ sealed class KitchenTicketRenderer
             // Legacy jobs carry only the reference; never infer a tracking number from it.
             Add(orderReference, 17, true, true);
         }
+        var orderType = Get(order, "order_type").Trim();
+        if (orderType.Length > 0) Add($"نوع الطلب: {orderType}", 13, true, true);
         var time = Get(order, "created_at");
         if (DateTime.TryParse(time, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var dt))
             time = dt.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
@@ -205,6 +207,18 @@ static class KitchenTicketPreview
         var legacyRows = new KitchenTicketRenderer(legacyTicket).PreviewRows();
         if (!legacyRows.Contains(("LEGACY/000018", 17f)) || legacyRows.Any(row => row.Text == "رقم الطلب"))
             throw new InvalidOperationException("Legacy kitchen reference fallback changed.");
+        foreach (var orderType in new[] { "محلي", "توصيل", "هنقرستيشن", "جاهز", "" })
+        {
+            var ticket = JsonSerializer.SerializeToElement(new {
+                order = new { reference = "ORD/007", tracking_number = 42, order_type = orderType },
+                lines = Array.Empty<object>(),
+            });
+            var typeRows = new KitchenTicketRenderer(ticket).PreviewRows()
+                .Where(row => row.Text.StartsWith("نوع الطلب:", StringComparison.Ordinal)).ToArray();
+            if (orderType.Length == 0 ? typeRows.Length != 0 :
+                typeRows.Length != 1 || typeRows[0] != ($"نوع الطلب: {orderType}", 13f))
+                throw new InvalidOperationException("The kitchen order type was rendered incorrectly.");
+        }
         var wholeCancellation = JsonSerializer.SerializeToElement(new {
             order = new { reference = "ORD/007", tracking_number = 42 },
             cancellation = new { reason_label = "خطأ" },
@@ -251,7 +265,10 @@ static class KitchenTicketPreview
 
             var original = document.RootElement;
             var fresh = JsonSerializer.SerializeToElement(new {
-                order = original.GetProperty("order"),
+                order = new {
+                    reference = "SHAMI/000018", tracking_number = "035", order_type = "هنقرستيشن",
+                    created_at = "2026-11-07 11:35:00", requested_by = "أحمد",
+                },
                 lines = original.GetProperty("lines").EnumerateArray().Take(2).ToArray(),
             });
             var freshRenderer = new KitchenTicketRenderer(fresh);

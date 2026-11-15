@@ -1631,6 +1631,31 @@ class TestBaseerPrintBridgeHybrid(TransactionCase):
         self.assertTrue(all(j.payload['lines'][0]['action'] == 'cancel' for j in cancel_jobs))
         self.assertFalse(State.sudo().search([('order_id', '=', order.id)]))
 
+    def test_kitchen_order_type_compatibility(self):
+        order = self._order(1)
+        order.write({
+            'tracking_number': '1011',
+            'pos_reference': 'POS/QA/000011',
+            'preset_id': self.env['pos.preset'].create({'name': 'هنقرستيشن'}).id,
+        })
+        Job = self.env['baseer.print.job']
+        for version, reference, order_type in (
+            ('1.5.12', '1011\nPOS/QA/000011', None),
+            ('', '1011\nPOS/QA/000011', None),
+            ('1.5.15', '1011\nPOS/QA/000011\nنوع الطلب: هنقرستيشن', None),
+            ('1.5.18', 'POS/QA/000011\nنوع الطلب: هنقرستيشن', None),
+            ('1.5.21', 'POS/QA/000011', 'هنقرستيشن'),
+        ):
+            with self.subTest(version=version):
+                self.agent.with_context(baseer_print_internal=True).write({'agent_version': version})
+                payload = Job._job_payload('preparation', order, self.kitchen_a)['order']
+                self.assertEqual(payload['tracking_number'], '1011')
+                self.assertEqual(payload['reference'], reference)
+                self.assertEqual(payload.get('order_type'), order_type)
+        receipt = Job._job_payload('receipt', order, self.kitchen_a)['order']
+        self.assertEqual(receipt['reference'], 'POS/QA/000011')
+        self.assertNotIn('order_type', receipt)
+
     def test_kitchen_tracking_number_in_both_modes_and_every_change(self):
         self.agent.with_context(baseer_print_internal=True).write({'agent_version': '1.5.16'})
         State = self.env['baseer.print.preparation.state']

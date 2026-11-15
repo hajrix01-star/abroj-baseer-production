@@ -30,6 +30,9 @@
     <field name="model">abroj.contracting.voucher</field>
     <field name="inherit_id" ref="abroj_contracting.voucher_list"/>
     <field name="arch" type="xml">
+      <xpath expr="//field[@name='project_id']" position="after">
+        <field name="abroj_budget_line_id"/>
+      </xpath>
       <xpath expr="//field[@name='abroj_stage']" position="after">
         <field name="payment_purpose" optional="show"/>
         <field name="workflow_status" optional="show" widget="badge"/>
@@ -41,6 +44,9 @@
     <field name="model">project.project</field>
     <field name="inherit_id" ref="abroj_contracting.project_form"/>
     <field name="arch" type="xml">
+      <xpath expr="//field[@name='voucher_ids']/list/field[@name='kind']" position="after">
+        <field name="abroj_budget_line_id"/>
+      </xpath>
       <xpath expr="//field[@name='voucher_ids']/list/field[@name='abroj_stage']" position="after">
         <field name="payment_purpose" optional="show"/>
         <field name="workflow_status" optional="show" widget="badge"/>

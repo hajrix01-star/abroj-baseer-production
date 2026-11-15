@@ -37,6 +37,18 @@ class AbrojProjectDashboardCase(TransactionCase):
 
     def test_contracting_project_notebook(self):
         arch = self.env.ref('abroj_contracting.project_form')._get_combined_arch()
+        voucher_arch = self.env.ref('abroj_contracting.voucher_list')._get_combined_arch()
+        for voucher_list, preceding_field in (
+            (voucher_arch, 'project_id'),
+            (arch.xpath("//field[@name='voucher_ids']/list")[0], 'kind'),
+        ):
+            budget_fields = voucher_list.xpath("./field[@name='abroj_budget_line_id']")
+            self.assertEqual(len(budget_fields), 1)
+            budget_field = budget_fields[0]
+            self.assertIsNone(budget_field.get('column_invisible'))
+            self.assertNotEqual(budget_field.get('optional'), 'hide')
+            self.assertIsNone(budget_field.get('invisible'))
+            self.assertEqual(budget_field.getprevious().get('name'), preceding_field)
         pages = arch.xpath('//notebook/page')
         self.assertEqual([page.get('string') for page in pages], [
             'المراحل', 'العقود والاتفاقيات', 'السندات',

@@ -15,7 +15,9 @@ export class DraftBill extends OrderReceipt {
                 if (field === "generateQrcode") {
                     return () => false;
                 }
-                if (field === "showChange") {
+                // The draft banner replaces the Saudi warning on this paper.
+                // The original order and final receipt keep their own flag.
+                if (field === "showChange" || field === "notLegal") {
                     return false;
                 }
                 const value = Reflect.get(order, field);

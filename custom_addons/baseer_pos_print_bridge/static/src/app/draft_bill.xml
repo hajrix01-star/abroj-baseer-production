@@ -5,8 +5,11 @@
         <xpath expr="//ReceiptHeader" position="before">
             <div t-if="this.isBaseerDraftBill" class="baseer-unpaid-bill-label text-center fw-bold mb-2"
                  style="border: 2px solid #000; font-size: 18px; line-height: 1.4; padding: 3px 0;">
-                Unpaid
+                Order bill — Unpaid
             </div>
+        </xpath>
+        <xpath expr="//div[hasclass('restaurant-pro-forma-receipt')]" position="attributes">
+            <attribute name="t-if">!order.finalized and !this.isBaseerDraftBill</attribute>
         </xpath>
     </t>
 </templates>

@@ -697,6 +697,7 @@ class TestBaseerPrintBridgeHybrid(TransactionCase):
         self.assertEqual(job.ticket_type, 'draft_bill')
         self.assertEqual(job.printer_id, self.receipt)
         self.assertEqual(job.payload['printer']['copies'], 1)
+        job.available_at = fields.Datetime.now() - timedelta(minutes=5)
         claim = Job._claim_for_agent(self.agent)
         self.assertEqual(claim['id'], job.id)
         self.assertEqual(claim['payload']['ticket_type'], 'receipt')
@@ -710,9 +711,11 @@ class TestBaseerPrintBridgeHybrid(TransactionCase):
 
         updated = session.baseer_enqueue_draft_bill(order.uuid, str(uuid4()), self._native_receipt_sample('black'))
         self.assertNotEqual(updated['job_id'], job.id)
+        updated_job = Job.browse(updated['job_id'])
+        updated_job.available_at = fields.Datetime.now() - timedelta(minutes=5)
         order.state = 'paid'
         self.assertFalse(Job._claim_for_agent(self.agent))
-        self.assertEqual(Job.browse(updated['job_id']).state, 'cancelled')
+        self.assertEqual(updated_job.state, 'cancelled')
         with self.assertRaises(ValidationError):
             session.baseer_enqueue_draft_bill(order.uuid, str(uuid4()), image)
 
@@ -727,6 +730,7 @@ class TestBaseerPrintBridgeHybrid(TransactionCase):
         Job = self.env['baseer.print.job']
         job = Job.browse(result['job_id'])
         self.assertFalse(job.source_order_id)
+        job.available_at = fields.Datetime.now() - timedelta(minutes=5)
         job.create_date = fields.Datetime.now() - timedelta(minutes=3)
         self.assertFalse(Job._claim_for_agent(self.agent))
         self.assertEqual(job.error_code, 'stale_draft_bill')

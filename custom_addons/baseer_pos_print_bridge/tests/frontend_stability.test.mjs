@@ -115,6 +115,7 @@ test('prepayment bill inherits the live receipt template and suppresses fiscal Q
     const DraftBill = vm.runInContext('DraftBill', bridge);
     const order = {
         config: { baseer_receipt_layout_mode: 'native' }, showChange: true,
+        get notLegal() { return true; },
         generateQrcode() { return 'fiscal-Qr'; },
         getCashierName() { return this === order ? 'Cashier' : undefined; },
     };
@@ -129,15 +130,20 @@ test('prepayment bill inherits the live receipt template and suppresses fiscal Q
     assert.equal(bill.order.getCashierName(), 'Cashier');
     assert.equal(bill.order.generateQrcode(), false);
     assert.equal(bill.order.showChange, false);
+    assert.equal(bill.order.notLegal, false);
     assert.equal(bill.qrCode, false);
     assert.equal(bill.paymentLines.length, 0);
     assert.equal(order.generateQrcode(), 'fiscal-Qr');
     assert.equal(order.showChange, true);
+    const finalReceipt = new OrderReceipt();
+    finalReceipt.props = { order };
+    assert.equal(finalReceipt.order.notLegal, true);
     assert.equal(bill.isBaseerDraftBill, true);
-    assert.equal(new OrderReceipt().isBaseerDraftBill, undefined);
+    assert.equal(finalReceipt.isBaseerDraftBill, undefined);
     const template = readFileSync(new URL('../static/src/app/draft_bill.xml', import.meta.url), 'utf8');
     assert.match(template, /t-inherit="point_of_sale\.OrderReceipt"/);
-    assert.match(template, /t-if="this\.isBaseerDraftBill"[^>]*>\s*Unpaid\s*</);
+    assert.match(template, /t-if="this\.isBaseerDraftBill"[^>]*>\s*Order bill — Unpaid\s*</);
+    assert.match(template, /restaurant-pro-forma-receipt[^\n]*\n\s*<attribute name="t-if">!order\.finalized and !this\.isBaseerDraftBill<\/attribute>/);
 });
 
 const lineRuntime = runtime('line_actions.js');

@@ -731,7 +731,12 @@ class TestBaseerPrintBridgeHybrid(TransactionCase):
         job = Job.browse(result['job_id'])
         self.assertFalse(job.source_order_id)
         job.available_at = fields.Datetime.now() - timedelta(minutes=5)
-        job.create_date = fields.Datetime.now() - timedelta(minutes=3)
+        job.flush_recordset()
+        self.env.cr.execute(
+            'UPDATE baseer_print_job SET create_date = %s WHERE id = %s',
+            [fields.Datetime.now() - timedelta(minutes=3), job.id],
+        )
+        job.invalidate_recordset(['create_date'])
         self.assertFalse(Job._claim_for_agent(self.agent))
         self.assertEqual(job.error_code, 'stale_draft_bill')
         self.assertFalse(job.receipt_image)

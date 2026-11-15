@@ -1640,6 +1640,8 @@ class TestBaseerPrintBridgeHybrid(TransactionCase):
         })
         Job = self.env['baseer.print.job']
         for version, reference, order_type in (
+            ('1.5.12', '1011\nPOS/QA/000011', None),
+            ('', '1011\nPOS/QA/000011', None),
             ('1.5.15', '1011\nPOS/QA/000011\nنوع الطلب: هنقرستيشن', None),
             ('1.5.18', 'POS/QA/000011\nنوع الطلب: هنقرستيشن', None),
             ('1.5.21', 'POS/QA/000011', 'هنقرستيشن'),

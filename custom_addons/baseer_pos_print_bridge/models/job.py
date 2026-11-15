@@ -206,9 +206,11 @@ class BaseerPrintJob(models.Model):
                 order_type = ' '.join(order.preset_id.name.split())
                 if version >= (1, 5, 21):
                     order_payload['order_type'] = order_type
-                else:
-                    # Existing agents already render multiline kitchen references.
-                    order_payload['reference'] = f"{order_payload['reference']}\nنوع الطلب: {order_type}"
+                elif version >= (1, 5, 15):
+                    # These agents render multiline kitchen references. Bound the
+                    # label to keep their continuation headers printable.
+                    legacy_order_type = order_type[:80] + '…' if len(order_type) > 80 else order_type
+                    order_payload['reference'] = f"{order_payload['reference']}\nنوع الطلب: {legacy_order_type}"
         if order:
             cashier = (
                 order.employee_id

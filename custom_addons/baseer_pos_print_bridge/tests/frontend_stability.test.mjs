@@ -12,8 +12,9 @@ function runtime(file, native = {}) {
     Object.defineProperties(Orderline.prototype, Object.getOwnPropertyDescriptors(native.orderline || {}));
     const sandbox = {
         PosStore, PosOrder: class {}, PosOrderline: class {}, TicketScreen: class {}, Orderline, OrderSummary: class {},
+        ControlButtons: class {},
         SelectionPopup: class {}, TextInputPopup: class {}, ConfirmationDialog: class {},
-        AlertDialog: class {}, NumberPopup: class {}, OrderReceipt: class {}, crypto: webcrypto,
+        AlertDialog: class {}, NumberPopup: class {}, OrderReceipt: native.OrderReceipt || class {}, crypto: webcrypto,
         makeAwaitable: native.makeAwaitable || (async () => null),
         ask: native.ask || (async () => true),
         SERIALIZED_UI_STATE_PROP: 'JSONuiState', setTimeout, clearTimeout,
@@ -26,7 +27,7 @@ function runtime(file, native = {}) {
     };
     vm.createContext(sandbox);
     const source = readFileSync(new URL(`../static/src/app/${file}`, import.meta.url), 'utf8')
-        .replace(/^import .*;\r?\n/gm, '').replace(/export function /g, 'function ');
+        .replace(/^import .*;\r?\n/gm, '').replace(/export (function|class) /g, '$1 ');
     vm.runInContext(source, sandbox);
     return sandbox;
 }
@@ -100,6 +101,43 @@ test('prepayment bill sends the open order to the session queue without syncing 
     assert.equal(calls.length, 1);
     pos.config.baseer_direct_print_enabled = false;
     assert.equal(await pos.printReceipt(options), 'native');
+});
+
+test('prepayment bill inherits the live receipt template and suppresses fiscal QR and payment artifacts', () => {
+    class OrderReceipt {
+        static template = 'point_of_sale.OrderReceipt';
+        setup() {}
+        get order() {
+            return this.props.order;
+        }
+    }
+    const bridge = runtime('draft_bill.js', { OrderReceipt });
+    const DraftBill = vm.runInContext('DraftBill', bridge);
+    const order = {
+        config: { baseer_receipt_layout_mode: 'native' }, showChange: true,
+        generateQrcode() { return 'fiscal-Qr'; },
+        getCashierName() { return this === order ? 'Cashier' : undefined; },
+    };
+    const bill = new DraftBill();
+    bill.props = { order };
+    bill.setup();
+    assert.equal(DraftBill.template, OrderReceipt.template);
+    for (const mode of ['native', 'baseer_80', 'baseer_80_customer']) {
+        order.config.baseer_receipt_layout_mode = mode;
+        assert.equal(bill.order.config.baseer_receipt_layout_mode, mode);
+    }
+    assert.equal(bill.order.getCashierName(), 'Cashier');
+    assert.equal(bill.order.generateQrcode(), false);
+    assert.equal(bill.order.showChange, false);
+    assert.equal(bill.qrCode, false);
+    assert.equal(bill.paymentLines.length, 0);
+    assert.equal(order.generateQrcode(), 'fiscal-Qr');
+    assert.equal(order.showChange, true);
+    assert.equal(bill.isBaseerDraftBill, true);
+    assert.equal(new OrderReceipt().isBaseerDraftBill, undefined);
+    const template = readFileSync(new URL('../static/src/app/draft_bill.xml', import.meta.url), 'utf8');
+    assert.match(template, /t-inherit="point_of_sale\.OrderReceipt"/);
+    assert.match(template, /t-if="this\.isBaseerDraftBill"[^>]*>\s*Unpaid\s*</);
 });
 
 const lineRuntime = runtime('line_actions.js');

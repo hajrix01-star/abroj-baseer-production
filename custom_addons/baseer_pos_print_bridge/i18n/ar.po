@@ -2700,23 +2700,8 @@ msgstr "حساب طلب غير مدفوع"
 
 #. module: baseer_pos_print_bridge
 #: code:addons/baseer_pos_print_bridge/static/src/app/draft_bill.xml:0
-msgid "Order bill"
-msgstr "حساب الطلب"
-
-#. module: baseer_pos_print_bridge
-#: code:addons/baseer_pos_print_bridge/static/src/app/draft_bill.xml:0
 msgid "Unpaid"
 msgstr "غير مدفوع"
-
-#. module: baseer_pos_print_bridge
-#: code:addons/baseer_pos_print_bridge/static/src/app/draft_bill.xml:0
-msgid "Order number"
-msgstr "رقم الطلب"
-
-#. module: baseer_pos_print_bridge
-#: code:addons/baseer_pos_print_bridge/static/src/app/draft_bill.xml:0
-msgid "Bill total"
-msgstr "إجمالي الحساب"
 
 #. module: baseer_pos_print_bridge
 #. odoo-javascript

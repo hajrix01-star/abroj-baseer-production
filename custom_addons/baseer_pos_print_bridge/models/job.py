@@ -190,6 +190,8 @@ class BaseerPrintJob(models.Model):
             'created_at': fields.Datetime.to_string(fields.Datetime.now()),
         }
         if order:
+            if ticket_type == 'preparation' and order.preset_id:
+                order_payload['order_type'] = order.preset_id.name
             if ticket_type == 'preparation' and order.tracking_number:
                 # Keep the native customer-facing number distinct from the POS
                 # reference in both operating modes. The queued JSON freezes it

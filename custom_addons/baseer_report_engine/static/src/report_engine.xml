@@ -3,144 +3,81 @@
     <t t-name="baseer_report_engine.Report">
         <main class="o_baseer_report_engine" t-att-dir="rtl ? 'rtl' : 'ltr'">
             <header class="o_bre_toolbar">
-                <h1 t-esc="state.reportName"/>
+                <div class="o_bre_actions">
+                    <button class="btn btn-primary" t-att-disabled="!state.payload || state.exporting" t-on-click="exportPdf" t-esc="state.labels.pdf"/>
+                    <button class="btn btn-secondary o_bre_xlsx" t-att-disabled="!state.payload || state.exporting" t-on-click="exportXlsx" t-esc="state.labels.xlsx"/>
+                    <Dropdown menuClass="'o_bre_dropdown o_bre_mobile_menu'"><button class="btn btn-secondary o_bre_overflow">⋮</button><t t-set-slot="content"><DropdownItem onSelected="() => this.exportXlsx()"><t t-esc="state.labels.xlsx"/></DropdownItem></t></Dropdown>
+                </div>
+                <h1 t-att-title="state.payload?.notes?.join(' ')" t-esc="state.reportName"/>
+                <Dropdown menuClass="'o_bre_dropdown'"><button class="o_bre_gear" t-att-aria-label="state.labels.options"><i class="fa fa-cog"/></button><t t-set-slot="content">
+                    <DropdownItem onSelected="() => this.unfoldAll()"><t t-esc="state.labels.unfold_all"/></DropdownItem>
+                    <DropdownItem onSelected="() => this.foldAll()"><t t-esc="state.labels.fold_all"/></DropdownItem>
+                    <DropdownItem onSelected="() => this.onToggle('hide_zero', {target: {checked: !state.options.hide_zero}})"><span class="o_bre_checkmark" t-esc="state.options.hide_zero ? '✓' : ''"/><t t-esc="state.labels.hide_lines_zero"/></DropdownItem>
+                </t></Dropdown>
                 <div class="o_bre_filters">
-                    <label>
-                        <span t-esc="state.labels.period"/>
-                        <select t-on-change="onPreset">
-                            <option t-foreach="state.presets" t-as="preset" t-key="preset.key"
-                                t-att-value="preset.key" t-att-selected="state.options.preset === preset.key"
-                                t-esc="preset.label"/>
-                        </select>
-                    </label>
-                    <label t-if="state.dateMode === 'as_of'">
-                        <span t-esc="state.labels.as_of"/>
-                        <input type="date" name="as_of" t-att-value="state.options.as_of || ''" t-on-change="onDate"/>
-                    </label>
-                    <t t-else="">
-                        <label>
-                            <span t-esc="state.labels.from"/>
-                            <input type="date" name="date_from" t-att-value="state.options.date_from || ''" t-on-change="onDate"/>
-                        </label>
-                        <label>
-                            <span t-esc="state.labels.to"/>
-                            <input type="date" name="date_to" t-att-value="state.options.date_to || ''" t-on-change="onDate"/>
-                        </label>
-                    </t>
-                    <label>
-                        <span t-esc="state.labels.comparison"/>
-                        <input type="number" min="0" max="12" t-att-value="state.options.comparison || 0" t-on-change="onComparison"/>
-                    </label>
-                    <label>
-                        <span t-esc="state.labels.comparison_unit"/>
-                        <select t-on-change="onUnit" t-att-disabled="state.options.preset !== 'custom'">
-                            <option t-foreach="state.units" t-as="unit" t-key="unit.key"
-                                t-att-value="unit.key" t-att-selected="state.options.comparison_unit === unit.key"
-                                t-esc="unit.label"/>
-                        </select>
-                    </label>
-                    <label class="o_bre_check">
-                        <input type="checkbox" t-att-checked="state.options.posted_only" t-on-change="(event) => this.onToggle('posted_only', event)"/>
-                        <span t-esc="state.labels.posted_only"/>
-                    </label>
-                    <label class="o_bre_check">
-                        <input type="checkbox" t-att-checked="state.options.hide_zero" t-on-change="(event) => this.onToggle('hide_zero', event)"/>
-                        <span t-esc="state.labels.hide_zero"/>
-                    </label>
-                    <details class="o_bre_picker">
-                        <summary t-esc="state.options.journal_ids &amp;&amp; state.options.journal_ids.length ? state.labels.journals : state.labels.all_journals"/>
-                        <div>
-                            <label t-foreach="state.journals" t-as="journal" t-key="journal.id">
-                                <input type="checkbox" t-att-value="journal.id"
-                                    t-att-checked="state.options.journal_ids &amp;&amp; state.options.journal_ids.includes(journal.id)"
-                                    t-on-change="onJournal"/>
-                                <span t-esc="journal.name"/>
-                            </label>
-                        </div>
-                    </details>
-                    <details t-if="state.analyticEnabled" class="o_bre_picker">
-                        <summary t-esc="state.options.analytic_account_ids &amp;&amp; state.options.analytic_account_ids.length ? state.labels.analytics : state.labels.all_analytics"/>
-                        <div>
-                            <label t-foreach="state.analyticAccounts" t-as="analytic" t-key="analytic.id">
-                                <input type="checkbox" t-att-value="analytic.id"
-                                    t-att-checked="state.options.analytic_account_ids &amp;&amp; state.options.analytic_account_ids.includes(analytic.id)"
-                                    t-on-change="onAnalytic"/>
-                                <span t-esc="analytic.name"/>
-                            </label>
-                        </div>
-                    </details>
-                    <button type="button" class="btn btn-primary" t-att-disabled="state.loading" t-on-click="() => this.loadReport()" t-esc="state.labels.apply"/>
-                    <button type="button" class="btn btn-secondary" t-att-disabled="state.loading || state.exporting || !state.payload" t-on-click="() => this.loadReport(-1)" t-esc="state.labels.previous"/>
-                    <button type="button" class="btn btn-secondary" t-att-disabled="state.loading || state.exporting || !state.payload" t-on-click="() => this.loadReport(1)" t-esc="state.labels.next"/>
-                    <button type="button" class="btn btn-secondary" t-att-disabled="!state.payload || state.loading || state.exporting" t-on-click="exportPdf" t-esc="state.labels.pdf"/>
-                    <button type="button" class="btn btn-secondary" t-att-disabled="!state.payload || state.loading || state.exporting" t-on-click="exportXlsx" t-esc="state.labels.xlsx"/>
+                    <Dropdown menuClass="'o_bre_dropdown o_bre_date_menu'">
+                        <button class="btn btn-secondary"><i class="fa fa-calendar me-1"/><bdi t-esc="periodLabel"/></button>
+                        <t t-set-slot="content">
+                            <div t-foreach="dateRows" t-as="row" t-key="row.key" class="o_bre_date_row">
+                                <button class="o_bre_date_label" t-on-click="() => this.chooseDate(row.key)"><span class="o_bre_checkmark" t-esc="state.options.preset === row.key ? '✓' : ''"/><t t-esc="row.label"/></button>
+                                <t t-if="row.key !== 'today'"><button class="o_bre_step" t-on-click="() => this.chooseDate(row.key, -1)">‹</button><span class="o_bre_period" t-esc="dateRowPeriod(row.key)"/><button class="o_bre_step" t-on-click="() => this.chooseDate(row.key, 1)">›</button></t>
+                            </div>
+                            <details class="o_bre_custom"><summary t-esc="state.dateMode === 'as_of' ? state.labels.specific_date : state.labels.custom_dates"/>
+                                <input t-if="state.dateMode === 'as_of'" class="form-control" type="date" name="as_of" t-att-value="state.options.as_of || ''" t-on-change="onDate"/>
+                                <t t-else=""><label><span t-esc="state.labels.from"/><input class="form-control" type="date" name="date_from" t-att-value="state.options.date_from || ''" t-on-change="onDate"/></label><label><span t-esc="state.labels.to"/><input class="form-control" type="date" name="date_to" t-att-value="state.options.date_to || ''" t-on-change="onDate"/></label><button class="btn btn-primary" t-on-click="() => this.loadReport()" t-esc="state.labels.apply"/></t>
+                            </details>
+                        </t>
+                    </Dropdown>
+                    <Dropdown menuClass="'o_bre_dropdown'"><button class="btn btn-secondary"><i class="fa fa-percent me-1"/><t t-esc="!state.options.comparison ? state.labels.comparison : state.options.comparison_mode === 'year' ? state.labels.same_last_year : state.labels.previous"/></button><t t-set-slot="content">
+                        <DropdownItem onSelected="() => this.setComparison('none')"><span class="o_bre_checkmark" t-esc="!state.options.comparison ? '✓' : ''"/><t t-esc="state.labels.no_comparison"/></DropdownItem>
+                        <DropdownItem onSelected="() => this.setComparison('previous')"><span class="o_bre_checkmark" t-esc="state.options.comparison &amp;&amp; state.options.comparison_mode === 'previous' ? '✓' : ''"/><t t-esc="state.labels.previous"/></DropdownItem>
+                        <DropdownItem onSelected="() => this.setComparison('year')"><span class="o_bre_checkmark" t-esc="state.options.comparison &amp;&amp; state.options.comparison_mode === 'year' ? '✓' : ''"/><t t-esc="state.labels.same_last_year"/></DropdownItem>
+                        <label t-if="state.options.comparison &amp;&amp; state.options.comparison_mode === 'previous'" class="p-2"><span t-esc="state.labels.number_periods"/><input class="form-control" type="number" min="1" max="12" t-att-value="state.options.comparison" t-on-change="onComparison"/></label>
+                    </t></Dropdown>
+                    <Dropdown menuClass="'o_bre_dropdown'"><button class="btn btn-secondary"><i class="fa fa-book me-1"/><t t-esc="state.options.journal_ids?.length ? state.options.journal_ids.length + ' ' + state.labels.journal_count : state.labels.all_journals"/></button><t t-set-slot="content"><div class="o_bre_choices"><label t-foreach="state.journals" t-as="journal" t-key="journal.id"><input type="checkbox" t-att-value="journal.id" t-att-checked="state.options.journal_ids?.includes(journal.id)" t-on-change="onJournal"/> <t t-esc="journal.name"/> <small t-esc="journal.type"/></label></div></t></Dropdown>
+                    <Dropdown t-if="state.analyticEnabled" menuClass="'o_bre_dropdown'"><button class="btn btn-secondary"><i class="fa fa-cubes me-1"/><t t-esc="state.labels.analytic"/></button><t t-set-slot="content"><div class="o_bre_choices"><label t-foreach="state.analyticAccounts" t-as="analytic" t-key="analytic.id"><input type="checkbox" t-att-value="analytic.id" t-att-checked="state.options.analytic_account_ids?.includes(analytic.id)" t-on-change="onAnalytic"/> <t t-esc="analytic.name"/></label></div></t></Dropdown>
+                    <Dropdown menuClass="'o_bre_dropdown'"><button class="btn btn-secondary"><i class="fa fa-sliders me-1"/><t t-esc="state.options.posted_only ? state.labels.posted_entries : state.labels.posted_draft_entries"/></button><t t-set-slot="content"><div class="o_bre_choices"><label><input type="checkbox" checked="checked" disabled="disabled"/> <t t-esc="state.labels.posted_entries"/></label><label><input type="checkbox" t-att-checked="!state.options.posted_only" t-on-change="(event) => this.onToggle('posted_only', {target: {checked: !event.target.checked}})"/> <t t-esc="state.labels.draft_entries"/></label></div></t></Dropdown>
+                    <Dropdown menuClass="'o_bre_dropdown'"><button class="btn btn-secondary"><t t-esc="state.labels.in_currency"/> <t t-esc="state.payload?.currency.symbol"/></button><t t-set-slot="content"><div class="p-2"><div t-foreach="state.payload?.companies || []" t-as="company" t-key="company.id"><t t-esc="company.name"/> — <t t-esc="company.currency"/></div></div></t></Dropdown>
                 </div>
             </header>
-            <p t-if="state.payload" class="o_bre_companies">
-                <span t-esc="state.labels.companies"/>:
-                <t t-foreach="state.payload.companies" t-as="company" t-key="company.id">
-                    <span t-esc="company.name"/><t t-if="!company_last"> · </t>
-                </t>
-                <span class="o_bre_currency" t-esc="state.payload.currency.code"/>
-            </p>
-            <div t-if="state.payload" class="o_bre_notes">
-                <p t-foreach="state.payload.notes" t-as="note" t-key="note_index" t-esc="note"/>
-            </div>
+            <div t-if="state.payload?.has_draft_entries" class="alert alert-info text-center o_bre_draft_banner"><t t-esc="state.labels.banner_before"/> <a href="#" t-on-click.prevent="openDraftEntries" t-esc="state.labels.banner_link"/> <t t-esc="state.labels.banner_after"/></div>
             <div t-if="state.error" class="alert alert-danger" role="alert" t-esc="state.error"/>
             <div t-if="state.loading" class="o_bre_status" role="status" t-esc="state.labels.loading"/>
-            <section t-if="state.payload" class="o_bre_paper" t-att-aria-label="state.reportName">
-                <div class="o_bre_scroll">
+            <section t-if="state.payload" class="o_bre_paper" t-att-aria-label="state.reportName" t-att-style="'--bre-columns:' + state.payload.columns.length">
+                <div class="o_bre_scroll"><div class="o_bre_paper_inner">
                     <table class="o_bre_table">
+                        <colgroup><col class="o_bre_label_col"/><col t-foreach="state.payload.columns" t-as="column" t-key="column.key" class="o_bre_value_col"/></colgroup>
                         <thead>
-                            <tr>
-                                <th t-esc="state.reportName"/>
-                                <th t-foreach="state.payload.columns" t-as="column" t-key="column.key" class="is-number" t-esc="column.label"/>
-                            </tr>
+                            <tr class="o_bre_period_header"><th/><th t-foreach="state.payload.columns" t-as="column" t-key="column.key"><bdi t-esc="columnLabel(column)"/></th></tr>
+                            <tr class="o_bre_balance_header"><th/><th t-foreach="state.payload.columns" t-as="column" t-key="column.key" t-esc="state.labels.balance"/></tr>
+                            <tr t-if="state.dateMode === 'as_of'" class="o_bre_spacer"><th t-att-colspan="1 + state.payload.columns.length"/></tr>
                         </thead>
                         <tbody>
                             <t t-foreach="lines" t-as="line" t-key="line.code">
-                                <tr t-att-class="'o_bre_' + line.display">
+                                <tr t-if="(line.display === 'section' &amp;&amp; line.level === 0 &amp;&amp; line_index > 0) || (state.dateMode === 'range' &amp;&amp; line.display === 'total')" class="o_bre_spacer"><td t-att-colspan="1 + state.payload.columns.length"/></tr>
+                                <tr t-att-class="rowClass(line)">
                                     <th t-att-style="'--bre-level:' + line.level">
-                                        <button t-if="line.foldable" type="button" class="o_bre_fold"
-                                            t-att-aria-expanded="!state.folded[line.code] ? 'true' : 'false'"
-                                            t-att-aria-label="state.folded[line.code] ? state.labels.unfold : state.labels.fold"
-                                            t-on-click="() => this.toggleLine(line)">
-                                            <i t-att-class="state.folded[line.code] ? 'fa fa-caret-right o_bre_caret' : 'fa fa-caret-down'" aria-hidden="true"/>
-                                            <span t-esc="line.name"/>
-                                        </button>
-                                        <span t-else="" class="o_bre_static" t-esc="line.name"/>
+                                        <button t-if="line.foldable &amp;&amp; line.has_accounts" type="button" class="o_bre_fold" t-att-aria-expanded="!state.folded[line.code] ? 'true' : 'false'" t-on-click="() => this.toggleLine(line)">
+                                            <i t-att-class="state.folded[line.code] ? 'fa fa-caret-right o_bre_caret' : 'fa fa-caret-down o_bre_caret'" aria-hidden="true"/><span t-esc="line.name"/>
+                                        </button><span t-else="" class="o_bre_static" t-esc="line.name"/>
                                     </th>
                                     <td t-foreach="line.amounts" t-as="amount" t-key="amount.key" t-att-class="'is-number ' + amountClass(amount)">
-                                        <button t-if="amount.drill" type="button" class="o_bre_amount"
-                                            t-att-aria-label="state.labels.drill + ' ' + line.name"
-                                            t-on-click="() => this.openAmount(line, amount)" t-esc="amount.display"/>
-                                        <span t-else="" t-esc="amount.display"/>
+                                        <Dropdown t-if="!line.hide_amounts &amp;&amp; !(line.has_accounts &amp;&amp; !state.folded[line.code]) &amp;&amp; amount.drill" menuClass="'o_bre_dropdown o_bre_amount_menu'"><button class="o_bre_amount" t-esc="formatAmount(amount)"/><t t-set-slot="content"><DropdownItem onSelected="() => this.openAmount(line, amount)"><t t-esc="state.labels.journal_items"/></DropdownItem><t t-if="line.has_accounts"><DropdownItem onSelected="() => this.toggleLine(line)"><t t-esc="state.folded[line.code] ? state.labels.unfold_line : state.labels.fold_line"/></DropdownItem></t></t></Dropdown>
+                                        <span t-elif="!line.hide_amounts &amp;&amp; !(line.has_accounts &amp;&amp; !state.folded[line.code])" t-esc="formatAmount(amount)"/>
+                                        <Dropdown t-if="amount_index === line.amounts.length - 1 &amp;&amp; line.amounts[0].drill &amp;&amp; !line.hide_amounts" menuClass="'o_bre_dropdown o_bre_amount_menu'"><button class="o_bre_row_handle" t-att-aria-label="state.labels.options">⋮</button><t t-set-slot="content"><DropdownItem onSelected="() => this.openAmount(line, line.amounts[0])"><t t-esc="state.labels.journal_items"/></DropdownItem><DropdownItem t-if="line.has_accounts" onSelected="() => this.toggleLine(line)"><t t-esc="state.folded[line.code] ? state.labels.unfold_line : state.labels.fold_line"/></DropdownItem></t></Dropdown>
                                     </td>
                                 </tr>
-                                <tr t-if="line.has_accounts &amp;&amp; !state.folded[line.code] &amp;&amp; state.accounts[line.code] &amp;&amp; state.accounts[line.code].loading">
-                                    <td t-att-colspan="1 + state.payload.columns.length" t-esc="state.labels.loading"/>
+                                <tr t-if="line.has_accounts &amp;&amp; !state.folded[line.code] &amp;&amp; state.accounts[line.code]?.loading"><td t-att-colspan="1 + state.payload.columns.length" t-esc="state.labels.loading"/></tr>
+                                <tr t-foreach="accountRows(line)" t-as="account" t-key="account.id + '-' + account.company_id" class="o_bre_account">
+                                    <th t-att-style="'--bre-level:' + line.level"><span t-esc="account.code"/> <span t-esc="account.name"/></th>
+                                    <td t-foreach="account.amounts" t-as="amount" t-key="amount.key" t-att-class="'is-number ' + amountClass(amount)"><Dropdown t-if="amount.drill" menuClass="'o_bre_dropdown o_bre_amount_menu'"><button class="o_bre_amount" t-esc="formatAmount(amount)"/><t t-set-slot="content"><DropdownItem onSelected="() => this.openAmount(line, amount, account.id, account.company_id)"><t t-esc="state.labels.journal_items"/></DropdownItem></t></Dropdown><span t-else="" t-esc="formatAmount(amount)"/><Dropdown t-if="amount_index === account.amounts.length - 1 &amp;&amp; account.amounts[0].drill" menuClass="'o_bre_dropdown o_bre_amount_menu'"><button class="o_bre_row_handle" t-att-aria-label="state.labels.options">⋮</button><t t-set-slot="content"><DropdownItem onSelected="() => this.openAmount(line, account.amounts[0], account.id, account.company_id)"><t t-esc="state.labels.journal_items"/></DropdownItem></t></Dropdown></td>
                                 </tr>
-                                <tr t-if="line.has_accounts &amp;&amp; !state.folded[line.code] &amp;&amp; state.accounts[line.code] &amp;&amp; !state.accounts[line.code].loading &amp;&amp; !accountRows(line).length">
-                                    <td t-att-colspan="1 + state.payload.columns.length" t-esc="state.labels.accounts_empty"/>
-                                </tr>
-                                <tr t-foreach="accountRows(line)" t-as="account" t-key="account.id" class="o_bre_account">
-                                    <th t-att-style="'--bre-level:' + (line.level + 1)">
-                                        <span t-esc="account.code"/> <span t-esc="account.name"/>
-                                    </th>
-                                    <td t-foreach="account.amounts" t-as="amount" t-key="amount.key" t-att-class="'is-number ' + amountClass(amount)">
-                                        <button t-if="amount.drill" type="button" class="o_bre_amount"
-                                            t-att-aria-label="state.labels.drill + ' ' + account.code"
-                                            t-on-click="() => this.openAmount(line, amount, account.id)" t-esc="amount.display"/>
-                                        <span t-else="" t-esc="amount.display"/>
-                                    </td>
-                                </tr>
+                                <tr t-if="line.has_accounts &amp;&amp; !state.folded[line.code] &amp;&amp; state.accounts[line.code] &amp;&amp; !state.accounts[line.code].loading" class="o_bre_leaf_total"><th t-att-style="'--bre-level:' + line.level" t-esc="state.labels.total_format.replace('%s', line.name)"/><td t-foreach="line.amounts" t-as="amount" t-key="amount.key" t-att-class="'is-number ' + amountClass(amount)" t-esc="formatAmount(amount)"/></tr>
                             </t>
-                            <tr t-if="state.payload &amp;&amp; !lines.length">
-                                <td t-att-colspan="1 + state.payload.columns.length" t-esc="state.labels.empty"/>
-                            </tr>
+                            <tr t-if="!lines.length"><td t-att-colspan="1 + state.payload.columns.length" t-esc="state.labels.empty"/></tr>
                         </tbody>
                     </table>
-                </div>
+                </div></div>
             </section>
         </main>
     </t>

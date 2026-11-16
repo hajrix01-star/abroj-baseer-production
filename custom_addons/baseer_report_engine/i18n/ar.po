@@ -38,7 +38,7 @@ msgstr "البنك والنقد"
 
 #. module: baseer_report_engine
 #: model:baseer.report.line,name:baseer_report_engine.line_bs_rec
-msgid "Receivables"
+msgid "Accounts Receivable"
 msgstr "الذمم المدينة"
 
 #. module: baseer_report_engine
@@ -78,7 +78,7 @@ msgstr "الخصوم المتداولة الأخرى"
 
 #. module: baseer_report_engine
 #: model:baseer.report.line,name:baseer_report_engine.line_bs_pay
-msgid "Payables"
+msgid "Accounts Payable"
 msgstr "الذمم الدائنة"
 
 #. module: baseer_report_engine
@@ -123,420 +123,794 @@ msgstr "الأرباح المحتجزة"
 
 #. module: baseer_report_engine
 #: model:baseer.report.line,name:baseer_report_engine.line_bs_le
-msgid "Liabilities and Equity"
+msgid "Liabilities & Equity"
 msgstr "الخصوم وحقوق الملكية"
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "Apply"
 msgstr "عرض"
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "PDF"
 msgstr "PDF"
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "XLSX"
 msgstr "XLSX"
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "Period"
 msgstr "الفترة"
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "As of"
 msgstr "كما في"
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "From"
 msgstr "من"
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "To"
 msgstr "إلى"
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "Comparison"
 msgstr "المقارنة"
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "Comparison period"
 msgstr "فترة المقارنة"
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "Posted entries only"
 msgstr "القيود المرحلة فقط"
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "Hide zero lines"
 msgstr "إخفاء الأسطر الصفرية"
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "Journals"
 msgstr "الدفاتر"
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "All journals"
 msgstr "جميع الدفاتر"
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "Analytic accounts"
 msgstr "الحسابات التحليلية"
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "All analytic accounts"
 msgstr "جميع الحسابات التحليلية"
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "Loading the report…"
 msgstr "جارٍ تحميل التقرير…"
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "The report could not be loaded. Check the dates and your access, then try again."
 msgstr "تعذر تحميل التقرير. تحقق من التواريخ والصلاحيات ثم أعد المحاولة."
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "No lines to display."
 msgstr "لا توجد أسطر للعرض."
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "No accounts on this line."
 msgstr "لا توجد حسابات في هذا السطر."
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "Previous period"
 msgstr "الفترة السابقة"
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "Next period"
 msgstr "الفترة التالية"
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "Show details"
 msgstr "عرض التفاصيل"
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "Hide details"
 msgstr "إخفاء التفاصيل"
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "View journal items"
 msgstr "عرض القيود"
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "Companies"
 msgstr "الشركات"
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "This month"
 msgstr "هذا الشهر"
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "This quarter"
 msgstr "هذا الربع"
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "This year"
 msgstr "هذه السنة"
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "Last month"
 msgstr "الشهر السابق"
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "Last quarter"
 msgstr "الربع السابق"
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "Last year"
 msgstr "السنة السابقة"
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "Custom"
 msgstr "مخصص"
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "Month"
 msgstr "شهر"
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "Quarter"
 msgstr "ربع سنة"
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "Year"
 msgstr "سنة"
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "Journal Items"
 msgstr "القيود اليومية"
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "Posted entries only."
 msgstr "القيود المرحلة فقط."
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "Posted and draft entries."
 msgstr "القيود المرحلة والمسودات."
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "Balances are cumulative from the beginning of the books through the selected date."
 msgstr "الأرصدة تراكمية من بداية الدفاتر حتى التاريخ المحدد."
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "Amounts cover the selected dates."
 msgstr "المبالغ تغطي التواريخ المحددة."
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "Selected journals only."
 msgstr "الدفاتر المحددة فقط."
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "Amounts are weighted by the selected analytic distribution."
 msgstr "المبالغ موزونة حسب التوزيع التحليلي المحدد."
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "Companies follow the ones active in this session."
 msgstr "الشركات هي الشركات النشطة في هذه الجلسة."
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "As of %s"
 msgstr "كما في %s"
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "Variation"
 msgstr "الفرق"
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "Line"
 msgstr "البند"
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "You need accounting access to open this report."
 msgstr "تحتاج صلاحية المحاسبة لفتح هذا التقرير."
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "Choose a report line that lists accounts."
 msgstr "اختر سطر تقرير يعرض الحسابات."
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "Choose a line from this report."
 msgstr "اختر سطرًا من هذا التقرير."
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "Open a period column to see journal items."
 msgstr "افتح عمود فترة لعرض القيود."
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "Choose an account from this line."
 msgstr "اختر حسابًا من هذا السطر."
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "This amount has no journal items to open."
 msgstr "لا توجد قيود لفتحها لهذا المبلغ."
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "The report options are not valid."
 msgstr "خيارات التقرير غير صالحة."
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "Choose a valid period."
 msgstr "اختر فترة صالحة."
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "Comparison accepts 0 to 12 previous periods."
 msgstr "تقبل المقارنة من 0 إلى 12 فترة سابقة."
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "Choose a month, quarter or year comparison."
 msgstr "اختر مقارنة بالشهر أو الربع أو السنة."
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "The start date must be on or before the end date."
 msgstr "يجب أن يكون تاريخ البداية في يوم تاريخ النهاية أو قبله."
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "The date scope %s is not supported."
 msgstr "نطاق التاريخ %s غير مدعوم."
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "The formula for %s refers to itself."
 msgstr "معادلة %s تشير إلى نفسها."
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "The formula refers to an unknown line %s."
 msgstr "تشير المعادلة إلى سطر غير معروف %s."
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "The formula divides by zero."
 msgstr "تقسم المعادلة على صفر."
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "The formula is not valid."
 msgstr "المعادلة غير صالحة."
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "Choose a report."
 msgstr "اختر تقريرًا."
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "This report is not available."
 msgstr "هذا التقرير غير متاح."
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "The selected %s are not valid."
 msgstr "%s المحددة غير صالحة."
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "Select at most 200 %s."
 msgstr "اختر %s بما لا يزيد على 200."
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "Select journals from the active companies."
 msgstr "اختر دفاتر من الشركات النشطة."
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "Select analytic accounts from the active companies."
 msgstr "اختر حسابات تحليلية من الشركات النشطة."
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "Enter a valid date for %s."
 msgstr "أدخل تاريخًا صالحًا لـ %s."
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "the as-of date"
 msgstr "تاريخ كما في"
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "the start date"
 msgstr "تاريخ البداية"
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "the end date"
 msgstr "تاريخ النهاية"
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "the date"
 msgstr "التاريخ"
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "journals"
 msgstr "الدفاتر"
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "analytic accounts"
 msgstr "الحسابات التحليلية"
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "Select a report to print."
 msgstr "اختر تقريرًا للطباعة."
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "A line and its parent must belong to the same report."
 msgstr "يجب أن ينتمي السطر وأصله إلى التقرير نفسه."
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "Report lines cannot contain a cycle."
 msgstr "لا يمكن أن تحتوي أسطر التقرير على حلقة."
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "The move line domain must be a literal list."
 msgstr "يجب أن يكون نطاق بند اليومية قائمة حرفية."
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "A formula line has one formula and no other expressions."
 msgstr "سطر المعادلة يحتوي على معادلة واحدة دون تعبيرات أخرى."
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "An account-type expression needs at least one type."
 msgstr "تعبير نوع الحساب يحتاج إلى نوع واحد على الأقل."
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "A code-prefix expression needs at least one prefix."
 msgstr "تعبير بادئة الرمز يحتاج إلى بادئة واحدة على الأقل."
 
 #. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "A formula expression needs a formula."
 msgstr "تعبير المعادلة يحتاج إلى معادلة."
+
+#. module: baseer_report_engine
+#: model:ir.actions.client,name:baseer_report_engine.action_profit_and_loss
+#: model:ir.ui.menu,name:baseer_report_engine.menu_profit_and_loss
+msgid "Profit and Loss (New)"
+msgstr "قائمة الدخل (جديد)"
+
+#. module: baseer_report_engine
+#: model:baseer.report.definition,name:baseer_report_engine.report_profit_and_loss
+msgid "Profit and Loss"
+msgstr "قائمة الدخل"
+
+#. module: baseer_report_engine
+#: model:baseer.report.line,name:baseer_report_engine.line_pl_rev
+#: model:baseer.report.line,name:baseer_report_engine.line_pl_opinc
+msgid "Revenue"
+msgstr "الإيرادات"
+
+#. module: baseer_report_engine
+#: model:baseer.report.line,name:baseer_report_engine.line_pl_cor
+msgid "Cost of Revenue"
+msgstr "تكلفة الإيرادات"
+
+#. module: baseer_report_engine
+#: model:baseer.report.line,name:baseer_report_engine.line_pl_gross
+msgid "Gross Profit"
+msgstr "مجمل الربح"
+
+#. module: baseer_report_engine
+#: model:baseer.report.line,name:baseer_report_engine.line_pl_opex
+msgid "Operating Expenses"
+msgstr "المصروفات التشغيلية"
+
+#. module: baseer_report_engine
+#: model:baseer.report.line,name:baseer_report_engine.line_pl_operating
+msgid "Operating Income"
+msgstr "الدخل التشغيلي"
+
+#. module: baseer_report_engine
+#: model:baseer.report.line,name:baseer_report_engine.line_pl_othinc
+msgid "Other Income"
+msgstr "إيرادات أخرى"
+
+#. module: baseer_report_engine
+#: model:baseer.report.line,name:baseer_report_engine.line_pl_othexp
+#: model:baseer.report.line,name:baseer_report_engine.line_pl_othexp_gen
+msgid "Other Expenses"
+msgstr "مصروفات أخرى"
+
+#. module: baseer_report_engine
+#: model:baseer.report.line,name:baseer_report_engine.line_pl_depr
+msgid "Depreciation"
+msgstr "الإهلاك"
+
+#. module: baseer_report_engine
+#: model:baseer.report.line,name:baseer_report_engine.line_pl_net
+msgid "Net Profit"
+msgstr "صافي الربح"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "From %s to %s"
+msgstr "من %s إلى %s"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "No comparison"
+msgstr "بدون مقارنة"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Same period last year"
+msgstr "نفس الفترة من السنة السابقة"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Number of periods"
+msgstr "عدد الفترات"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Draft entries"
+msgstr "القيود المسودة"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Options"
+msgstr "الخيارات"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Unfold all"
+msgstr "توسيع الكل"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Fold all"
+msgstr "طي الكل"
+
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Journal Items – %s"
+msgstr "عناصر اليومية – %s"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Total %s"
+msgstr "إجمالي %s"
+
+#. module: baseer_report_engine
+#: model:ir.model.fields,field_description:baseer_report_engine.field_baseer_report_line__show_total
+msgid "Show Total"
+msgstr "إظهار الإجمالي"
+
+#. module: baseer_report_engine
+#: model:baseer.report.line,name:baseer_report_engine.line_pl_rev
+msgid "Income"
+msgstr "الدخل"
+
+#. module: baseer_report_engine
+#: model:baseer.report.line,name:baseer_report_engine.line_pl_opex
+msgid "Expenses"
+msgstr "المصروفات"
+
+#. module: baseer_report_engine
+#: model:baseer.report.line,name:baseer_report_engine.line_pl_net_other
+msgid "Net Other Income"
+msgstr "صافي الدخل الآخر"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Unposted Journal Entries"
+msgstr "قيود اليومية غير المرحلة"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Today"
+msgstr "اليوم"
+
+#. module: baseer_report_engine
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine/models/engine.py:0
+#: code:addons/baseer_report_engine/static/src/report_engine.js:0
+msgid "End of Month"
+msgstr "نهاية الشهر"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "End of Quarter"
+msgstr "نهاية الربع"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "End of Year"
+msgstr "نهاية السنة"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Specific Date"
+msgstr "تاريخ محدد"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Custom Dates"
+msgstr "تواريخ مخصصة"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Posted Entries"
+msgstr "القيود المرحلة"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Posted & Draft Entries"
+msgstr "القيود المرحلة والمسودة"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Analytic"
+msgstr "التحليلي"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "In"
+msgstr "بـ"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "There are"
+msgstr "توجد"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "unposted Journal Entries"
+msgstr "قيود يومية غير مرحلة"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "prior or included in this period."
+msgstr "قبل هذه الفترة أو ضمنها."
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Hide lines at 0"
+msgstr "إخفاء السطور الصفرية"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "No Comparison"
+msgstr "بلا مقارنة"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Same Period Last Year"
+msgstr "الفترة نفسها من السنة الماضية"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Draft Entries"
+msgstr "قيود مسودة"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Unfold All"
+msgstr "توسيع الكل"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Fold All"
+msgstr "طي الكل"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "All Journals"
+msgstr "كل دفاتر اليومية"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Previous Period"
+msgstr "الفترة السابقة"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Balance"
+msgstr "الرصيد"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Unfold"
+msgstr "توسيع"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Fold"
+msgstr "طي"

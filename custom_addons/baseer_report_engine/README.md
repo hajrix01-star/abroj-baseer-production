@@ -2,7 +2,7 @@
 
 Odoo 19 Community addon. It stores financial report definitions as data and computes them from `account.move.line` for the companies active in the session.
 
-Install `baseer_report_engine`. Open **Invoicing → Accounting → New Version → Balance Sheet (New)**. The first definition is the statement of financial position. Profit and loss, trial balance and general ledger can be added later as further definitions.
+Install `baseer_report_engine`. Open **Invoicing → Accounting → New Version → Balance Sheet (New)**. The module includes Balance Sheet and Profit and Loss (New). Profit and Loss covers the selected period, including six income and expense account types. Trial balance and general ledger can be added as further definitions.
 
 The engine depends only on `account`, `analytic` and `web`. It does not depend on Odoo Enterprise accounting reports, OCA, or ERP Heritage.
 

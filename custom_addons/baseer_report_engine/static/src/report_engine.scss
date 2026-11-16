@@ -198,3 +198,152 @@
         }
     }
 }
+
+.o_bre_dropdown {
+    max-height: 70vh;
+    max-width: 90vw;
+    overflow: auto;
+    .o_bre_choices label { display: block; padding: .3rem; white-space: normal; }
+    .o_bre_custom label { display: block; margin-top: .4rem; }
+}
+
+.o_baseer_report_engine {
+    .o_bre_toolbar { display: block; }
+    .o_bre_actions { display: flex; gap: .4rem; margin: .6rem 0; }
+    .o_bre_filters { align-items: center; gap: .35rem; }
+    .o_bre_paper { box-shadow: 0 2px 12px rgba(0, 0, 0, .09); }
+    .o_bre_table {
+        min-width: 650px;
+        thead th { position: sticky; top: 0; z-index: 2; }
+        th:first-child { min-width: 20rem; }
+        tbody tr:hover th, tbody tr:hover td { background-color: #f3f5f7; }
+        .o_bre_section th, .o_bre_section td { background: #fff; border-top: 1px solid #aeb7c1; font-weight: 600; }
+    }
+    .o_bre_account th { padding-inline-start: calc(.6rem + var(--bre-level, 0) * 1.1rem); }
+    .o_bre_account th span { padding: 0; }
+    .o_bre_status { position: sticky; top: 0; z-index: 4; background: rgba(255, 255, 255, .9); padding: .4rem; }
+    @media (max-width: 767px) {
+        .o_bre_table th:first-child { position: sticky; inset-inline-start: 0; z-index: 1; background: white; }
+        .o_bre_table thead th:first-child { z-index: 3; background: #f8fafb; }
+    }
+}
+
+.o_baseer_report_engine {
+    .o_bre_toolbar { display: flex; align-items: center; gap: .5rem; }
+    .o_bre_actions { margin: 0; }
+    .o_bre_toolbar h1 { font-size: 1rem; font-weight: 500; margin-inline-end: .5rem; }
+    .o_bre_paper { max-width: 960px; padding: 1.5rem; }
+    .o_bre_table .o_bre_section th, .o_bre_table .o_bre_section td { background: #d9dadd; border-top: 0; }
+    .o_bre_amount { text-decoration: none; cursor: pointer; }
+    .o_bre_companies, .o_bre_notes { max-width: 960px; font-size: .75rem; }
+}
+
+.o_baseer_report_engine {
+    .o_bre_toolbar { min-height: 58px; padding: 8px 16px 16px; gap: 4px; align-items: center; border-color: #d8dadd; }
+    .o_bre_actions { gap: 4px; }
+    .o_bre_toolbar h1 { font-size: 17px; font-weight: 400; margin: 0 4px 0 0; white-space: nowrap; }
+    .o_bre_toolbar .btn { height: 33px; padding: 5px 10px; font-size: 14px; font-weight: 600; border-radius: 4px; white-space: nowrap; }
+    .o_bre_toolbar .btn-secondary { background: #e7e9ed; border-color: #e7e9ed; color: #111827; }
+    .o_bre_toolbar .show > .btn-secondary, .o_bre_toolbar .btn-secondary[aria-expanded="true"] { border-color: #008c95; }
+    .o_bre_gear { background: none; border: 0; color: #111827; height: 25px; width: 25px; padding: 0; }
+    .o_bre_filters { gap: 4px; margin-inline-start: 16px; }
+    .o_bre_overflow { display: none; }
+    .o_bre_draft_banner { margin: 0; max-width: 100%; width: 100%; min-height: 53px; padding: 16px; border: 0; border-radius: 0; background: #d1ecf1; color: #09414a; font-size: 14px; }
+    .o_bre_draft_banner a { color: inherit; font-weight: 600; text-decoration: none; }
+    @media (max-width: 767px) {
+        .o_bre_toolbar { display: flex; flex-wrap: wrap; padding: 8px 16px 16px; gap: 8px 4px; }
+        .o_bre_toolbar h1 { order: -2; width: 100%; margin-bottom: 8px; }
+        .o_bre_actions { order: -1; }
+        .o_bre_xlsx { display: none; }
+        .o_bre_overflow { display: block; }
+        .o_bre_filters { width: 100%; margin: 0; gap: 8px; }
+    }
+    &[dir="rtl"] .o_bre_step { transform: scaleX(-1); }
+}
+.o_bre_dropdown {
+    min-width: 220px; color: #111827; font-size: 14px;
+    .o_bre_choices { padding: 8px; }
+    .o_bre_choices small { color: #8a9099; }
+    .o_bre_checkmark { display: inline-block; width: 16px; color: #008c95; font-weight: bold; }
+    .o_bre_date_row { display: flex; align-items: center; min-height: 30px; padding: 0 8px; }
+    .o_bre_date_label, .o_bre_step { background: none; border: 0; color: inherit; padding: 2px; }
+    .o_bre_date_label { text-align: start; width: 115px; white-space: nowrap; }
+    .o_bre_step { color: #cfd3d6; font-size: 19px; }
+    .o_bre_period { flex: 1; text-align: center; white-space: nowrap; }
+    .o_bre_custom { border-top: 1px solid #d8dadd; margin-top: 6px; padding: 10px 20px; }
+    .o_bre_custom input { margin-top: 5px; }
+}
+.o_bre_date_menu { min-width: 380px; }
+
+.o_baseer_report_engine .o_bre_toolbar, .o_baseer_report_engine .o_bre_draft_banner { flex-shrink: 0; }
+.o_bre_dropdown .o_bre_custom summary { cursor: pointer; list-style: none; }
+.o_bre_dropdown .o_bre_custom summary::-webkit-details-marker { display: none; }
+.o_baseer_report_engine .o_bre_filters .btn i { margin-inline-start: 0 !important; margin-inline-end: 4px !important; }
+
+// Report paper and financial statement rows.
+.o_baseer_report_engine {
+    background: #f9fafb;
+    padding-bottom: 40px;
+    .o_bre_paper {
+        flex: 0 0 auto;
+        width: calc(800px + (var(--bre-columns) - 1) * 243px);
+        max-width: 100%;
+        margin: 24px auto 0;
+        padding: 0;
+        border: 1px solid #d8dadd;
+        border-radius: 4px;
+        box-shadow: none;
+        background: white;
+    }
+    .o_bre_scroll { overflow-x: auto; }
+    .o_bre_paper_inner { padding: 24px; min-width: calc(798px + (var(--bre-columns) - 1) * 243px); }
+    .o_bre_table {
+        width: 100%; min-width: 0; table-layout: fixed; border-collapse: collapse;
+        font-size: 12.8px; color: #374151;
+        .o_bre_label_col { width: 507px; }
+        .o_bre_value_col { width: 243px; }
+        th, td { height: 28px; padding: 4px 12px; border: 0; border-bottom: 1px solid #e7e9ed; vertical-align: middle; text-align: start; line-height: 19px; }
+        th:first-child { min-width: 0; }
+        thead th { position: static; background: transparent; color: #111827; font-weight: 500; }
+        .o_bre_period_header th:not(:first-child) { border: 1px solid #d8dadd; text-align: center; }
+        .o_bre_balance_header th { text-align: end; }
+        .o_bre_spacer th, .o_bre_spacer td { height: 21px; padding: 0; border: 0; background: white !important; }
+        tbody th { position: relative; font-weight: 400; padding-inline-start: calc(32px + var(--bre-level, 0) * 16px); }
+        .is-number { direction: ltr; text-align: right; font-variant-numeric: tabular-nums; }
+        .is-zero { color: #d8dadd; }
+        .is-negative { color: #d44c59; }
+        .o_bre_section th, .o_bre_section td { background: transparent; border-top: 0; border-bottom: 1px solid #d8dadd; font-weight: 700; }
+        .o_bre_section.o_bre_level_0 th, .o_bre_section.o_bre_level_0 td, .o_bre_band th, .o_bre_band td { background: #d8dadd; border: 0; font-weight: 700; }
+        .o_bre_total th, .o_bre_total td { border-top: 0; font-weight: 700; }
+        .o_bre_total.o_bre_level_0 { color: #111827; }
+        .o_bre_open th, .o_bre_leaf_total th, .o_bre_leaf_total td { font-weight: 700; }
+        .o_bre_leaf_total th, .o_bre_leaf_total td { background: #f2f2f2; }
+        .o_bre_account th { padding-inline-start: calc(38px + var(--bre-level, 0) * 16px); font-weight: 400; }
+        .o_bre_account th span { padding: 0; }
+        tbody tr:not(.o_bre_spacer):not(.o_bre_band):not(.o_bre_level_0.o_bre_section):not(.o_bre_leaf_total):hover th,
+        tbody tr:not(.o_bre_spacer):not(.o_bre_band):not(.o_bre_level_0.o_bre_section):not(.o_bre_leaf_total):hover td { background: #f3f4f6; }
+        .o_bre_handle { visibility: hidden; color: #adb5bd; }
+        tr:hover .o_bre_handle { visibility: visible; }
+    }
+    .o_bre_fold, .o_bre_static { padding: 0; }
+    .o_bre_caret { position: absolute; inset-inline-start: 18px; top: 9px; color: #adb5bd; font-size: 10px; }
+    .o_bre_amount { text-decoration: none; }
+    &[dir="rtl"] .o_bre_table .is-number { text-align: left; }
+    @media (max-width: 767px) {
+        .o_bre_paper { width: 100%; border-radius: 0; }
+        .o_bre_table tbody th:first-child { position: sticky; inset-inline-start: 0; z-index: 1; background: white; }
+        .o_bre_table .o_bre_section.o_bre_level_0 th:first-child, .o_bre_table .o_bre_band th:first-child { background: #d8dadd; }
+        .o_bre_table .o_bre_leaf_total th:first-child { background: #f2f2f2; }
+    }
+}
+.o_bre_amount_menu { min-width: 140px; }
+.o_baseer_report_engine .o_bre_table {
+    thead th { border: 0; }
+    tbody th { padding-inline-start: calc(28px + var(--bre-level, 0) * 16px); }
+    .o_bre_level_0 th { padding-inline-start: 32px; }
+    .o_bre_account th { padding-inline-start: calc(34px + var(--bre-level, 0) * 16px); }
+    @media (max-width: 767px) { thead th:first-child { background: white; } }
+}
+ .o_baseer_report_engine .o_bre_table tbody td:last-child { position: relative; padding-inline-end: 24px; }
+.o_baseer_report_engine .o_bre_row_handle { position: absolute; inset-inline-end: 3px; top: 3px; width: 18px; border: 0; background: transparent; color: #adb5bd; visibility: hidden; padding: 0; }
+.o_baseer_report_engine tr:hover .o_bre_row_handle, .o_baseer_report_engine .o_bre_row_handle:focus { visibility: visible; }

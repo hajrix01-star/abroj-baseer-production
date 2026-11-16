@@ -35,7 +35,8 @@
                     .bre-pdf tr { page-break-inside: avoid; }
                     .bre-pdf .num { direction: ltr; unicode-bidi: isolate; text-align: right; white-space: nowrap; }
                     .bre-pdf .negative { color: #c72634; }
-                    .bre-pdf .section th, .bre-pdf .section td { background: #e4e8eb; font-weight: 700; }
+                    .bre-pdf .section th, .bre-pdf .section td { font-weight: 700; }
+                    .bre-pdf .band th, .bre-pdf .band td { background: #d8dadd; font-weight: 700; }
                     .bre-pdf .total th, .bre-pdf .total td { border-top: 1px solid #b7c0c8; font-weight: 700; }
                     .bre-pdf .account td { color: #3c4c5e; }
                 </style>
@@ -44,9 +45,8 @@
                     <div t-esc="' · '.join(company['name'] for company in payload['companies'])"/>
                     <div>
                         <span t-esc="payload['currency']['code']"/>
-                        <t t-if="payload['columns']"> · <span t-esc="payload['columns'][0]['label']"/></t>
+                        <t t-if="payload['columns']"> · <bdi t-esc="payload['columns'][0]['label']"/></t>
                     </div>
-                    <div t-esc="payload['generated_at']"/>
                 </div>
                 <div class="note">
                     <div t-foreach="payload['notes']" t-as="note" t-esc="note"/>
@@ -55,17 +55,17 @@
                     <thead>
                         <tr>
                             <th t-esc="payload['report']['name']"/>
-                            <th t-foreach="payload['columns']" t-as="column" class="num" t-esc="column['label']"/>
+                            <th t-foreach="payload['columns']" t-as="column" class="num"><bdi t-esc="column['label']"/></th>
                         </tr>
                     </thead>
                     <tbody>
                         <t t-foreach="payload['lines']" t-as="line">
-                            <tr t-att-class="line['display']">
+                            <tr t-att-class="line['display'] + (' band' if (line['level'] == 0 and line['display'] == 'section') or (payload['report']['date_mode'] == 'range' and line['display'] == 'total') else '')">
                                 <th>
                                     <span t-if="arabic" t-attf-style="padding-right: #{8 + line['level'] * 14}px" t-esc="line['name']"/>
                                     <span t-else="" t-attf-style="padding-left: #{8 + line['level'] * 14}px" t-esc="line['name']"/>
                                 </th>
-                                <td t-foreach="line['amounts']" t-as="amount" t-att-class="'num negative' if amount['negative'] else 'num'" t-esc="amount['display']"/>
+                                <td t-foreach="line['amounts']" t-as="amount" t-att-class="'num negative' if amount['negative'] else 'num'" t-esc="amount['display'] if not line.get('hide_amounts') else ''"/>
                             </tr>
                             <tr t-foreach="line['accounts']" t-as="account" class="account">
                                 <td>

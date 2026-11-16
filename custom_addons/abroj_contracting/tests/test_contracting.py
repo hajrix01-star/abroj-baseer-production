@@ -39,6 +39,15 @@ class AbrojContractingCase(TransactionCase):
         draft.action_cancel()
         self.assertEqual(draft.abroj_stage, 'cancelled')
 
+    def test_cancelled_voucher_excluded_from_balances_and_summary(self):
+        voucher = self.voucher()
+        voucher.action_issue()
+        self.assertEqual((self.project.total_paid, self.sub.paid), (1000, 1000))
+        voucher.action_cancel()
+        self.assertEqual((self.project.total_paid, self.sub.paid), (0, 0))
+        summary = self.env['abroj.contracting.voucher'].abroj_voucher_summary([('id', '=', voucher.id)])
+        self.assertEqual(summary, {'received': 0, 'paid': 0, 'balance': 0})
+
     def test_balances_and_profit(self):
         self.voucher().action_issue()
         self.voucher(kind='receipt', amount=200).action_issue()

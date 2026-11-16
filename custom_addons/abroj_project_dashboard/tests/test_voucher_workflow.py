@@ -530,6 +530,93 @@ class AbrojVoucherWorkflowCase(TransactionCase):
         self.assertFalse(credit.abroj_recognition_voucher_id)
         self.assertEqual(self.actual(), 0)
 
+    def _cancel_payment_fixture(self, purpose='advance'):
+        voucher = self.voucher(purpose=purpose)
+        self.review(voucher).action_apply()
+        return voucher
+
+    def _reverse_cancel_payment(self, voucher, post=True, reconcile=True):
+        move = voucher.payment_id.move_id
+        reversal = move._reverse_moves([{'date': self.today, 'ref': 'Cancel voucher payment'}], cancel=False)
+        if post:
+            reversal.action_post()
+        if reconcile:
+            move.line_ids.filtered(lambda item: item.account_id.reconcile).remove_move_reconcile()
+            for line in move.line_ids.filtered(lambda item: item.account_id.reconcile):
+                (line | reversal.line_ids.filtered(lambda item: item.account_id == line.account_id)).reconcile()
+        return reversal
+
+    def test_cancel_reversed_payment_preserves_accounting_and_totals(self):
+        voucher = self._cancel_payment_fixture()
+        payment, move = voucher.payment_id, voucher.payment_id.move_id
+        reversal = self._reverse_cancel_payment(voucher)
+        signature = (self.signature(payment), payment.state, move.state, reversal.state,
+                     tuple((line.id, line.balance, line.amount_residual, line.full_reconcile_id.id)
+                           for line in (move.line_ids | reversal.line_ids).sorted('id')))
+        voucher.action_cancel()
+        self.assertEqual(voucher.state, 'cancelled')
+        self.assertEqual(voucher.payment_id, payment)
+        self.assertEqual(signature, (self.signature(payment), payment.state, move.state, reversal.state,
+                     tuple((line.id, line.balance, line.amount_residual, line.full_reconcile_id.id)
+                           for line in (move.line_ids | reversal.line_ids).sorted('id'))))
+        log = voucher.cancel_log_ids
+        self.assertEqual((len(log), log.payment_id, log.payment_move_id, log.reversal_move_id, log.reversal_name),
+                         (1, payment, move, reversal, reversal.name))
+        self.assertEqual(self.project.total_paid, 0)
+        self.assertEqual(self.project._abroj_data()['paid'], 0)
+        self.assertEqual(self.env['abroj.contracting.voucher'].abroj_voucher_summary([('id', '=', voucher.id)])['paid'], 0)
+
+    def test_cancel_payment_requires_posted_reconciled_reversal(self):
+        voucher = self._cancel_payment_fixture()
+        with self.assertRaises(UserError), self.cr.savepoint():
+            voucher.action_cancel()
+        reversal = self._reverse_cancel_payment(voucher, post=False, reconcile=False)
+        with self.assertRaises(UserError), self.cr.savepoint():
+            voucher.action_cancel()
+        reversal.action_post()
+        with self.assertRaises(UserError), self.cr.savepoint():
+            voucher.action_cancel()
+        self.assertEqual(voucher.state, 'issued')
+
+    def test_cancel_reversed_payment_requires_accountant(self):
+        voucher = self._cancel_payment_fixture()
+        self._reverse_cancel_payment(voucher)
+        with self.assertRaises(AccessError), self.cr.savepoint():
+            voucher.with_user(self.reader).action_cancel()
+        self.assertEqual(voucher.state, 'issued')
+
+    def test_cancel_requires_recognition_reversal(self):
+        voucher = self._cancel_payment_fixture(purpose='direct')
+        self._reverse_cancel_payment(voucher)
+        with self.assertRaises(UserError), self.cr.savepoint():
+            voucher.action_cancel()
+        recognition = voucher.recognition_move_id
+        credit = recognition._reverse_moves([{'date': self.today, 'invoice_date': self.today}], cancel=False)
+        credit.action_post()
+        self.assertEqual(self.budget.actual, 0)
+        voucher.action_cancel()
+        self.assertEqual(voucher.state, 'cancelled')
+        self.assertEqual(self.budget.actual, 0)
+
+    def test_cancel_settlement_keeps_existing_bill_posted(self):
+        bill = self.bill()
+        voucher = self.voucher(purpose='settlement')
+        self.review(voucher, invoice_id=bill.id).action_apply()
+        self.assertEqual(voucher.recognition_move_id, bill)
+        self.assertFalse(bill.abroj_recognition_voucher_id)
+        self._reverse_cancel_payment(voucher)
+        signature = (bill.state, bill.amount_total, bill.amount_residual,
+                     tuple((line.id, line.account_id.id, line.debit, line.credit, line.amount_residual)
+                           for line in bill.line_ids.sorted('id')))
+        voucher.action_cancel()
+        self.assertEqual(voucher.state, 'cancelled')
+        self.assertEqual(voucher.recognition_move_id, bill)
+        self.assertEqual(bill.state, 'posted')
+        self.assertFalse(bill.reversal_move_ids)
+        self.assertEqual(signature, (bill.state, bill.amount_total, bill.amount_residual,
+                         tuple((line.id, line.account_id.id, line.debit, line.credit, line.amount_residual)
+                               for line in bill.line_ids.sorted('id'))))
+
     def test_detailed_budget_approval_requires_project_manager(self):
         self.budget.budget = 170780
         viewer = self.env['res.users'].with_context(no_reset_password=True).create({

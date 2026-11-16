@@ -35,3 +35,6 @@ access_voucher_method_log_invoice,Voucher method log,model_abroj_contracting_vou
 access_voucher_method_log_manager,Voucher method log manager,model_abroj_contracting_voucher_method_log,account.group_account_manager,1,0,0,0
 access_voucher_change_method_invoice,Voucher change method,model_abroj_contracting_voucher_change_method,account.group_account_invoice,1,1,1,1
 access_voucher_change_method_manager,Voucher change method manager,model_abroj_contracting_voucher_change_method,account.group_account_manager,1,1,1,1
+
+access_voucher_cancel_log_invoice,Voucher cancel log,model_abroj_contracting_voucher_cancel_log,account.group_account_invoice,1,0,0,0
+access_voucher_cancel_log_manager,Voucher cancel log manager,model_abroj_contracting_voucher_cancel_log,account.group_account_manager,1,0,0,0

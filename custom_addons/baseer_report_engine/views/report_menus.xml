@@ -25,4 +25,12 @@
     <menuitem id="menu_profit_and_loss" name="Profit and Loss (New)"
         parent="menu_new_version" action="action_profit_and_loss" sequence="20"
         groups="account.group_account_readonly,account.group_account_user,account.group_account_manager"/>
+    <record id="action_trial_balance" model="ir.actions.client">
+        <field name="name">Trial Balance (New)</field>
+        <field name="tag">baseer_report_engine</field>
+        <field name="context">{'report_code': 'trial_balance'}</field>
+    </record>
+    <menuitem id="menu_trial_balance" name="Trial Balance (New)"
+        parent="menu_new_version" action="action_trial_balance" sequence="30"
+        groups="account.group_account_readonly,account.group_account_user,account.group_account_manager"/>
 </odoo>

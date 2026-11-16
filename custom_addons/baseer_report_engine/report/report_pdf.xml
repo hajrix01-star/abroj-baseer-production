@@ -38,6 +38,9 @@
                     .bre-pdf .section th, .bre-pdf .section td { font-weight: 700; }
                     .bre-pdf .band th, .bre-pdf .band td { background: #d8dadd; font-weight: 700; }
                     .bre-pdf .total th, .bre-pdf .total td { border-top: 1px solid #b7c0c8; font-weight: 700; }
+                    .bre-pdf .grid .shaded { background: #f9fafb; }
+                    .bre-pdf .grid .groups th:not(:first-child) { border: 1px solid #d8dadd; text-align: center; }
+                    .bre-pdf .grid .total th, .bre-pdf .grid .total td { border-top: 0; }
                     .bre-pdf .account td { color: #3c4c5e; }
                 </style>
                 <h1 t-esc="payload['report']['name']"/>
@@ -51,29 +54,35 @@
                 <div class="note">
                     <div t-foreach="payload['notes']" t-as="note" t-esc="note"/>
                 </div>
-                <table>
+                <table t-att-class="'grid' if payload.get('column_groups') else ''">
                     <thead>
+                        <tr t-if="payload.get('column_groups')" class="groups">
+                            <th/>
+                            <th t-foreach="payload['column_groups']" t-as="group" t-att-colspan="group['colspan']" class="num" t-esc="group['label']"/>
+                        </tr>
                         <tr>
-                            <th t-esc="payload['report']['name']"/>
-                            <th t-foreach="payload['columns']" t-as="column" class="num"><bdi t-esc="column['label']"/></th>
+                            <th t-esc="'' if payload.get('column_groups') else payload['report']['name']"/>
+                            <th t-foreach="payload['columns']" t-as="column" t-att-class="'num shaded' if payload.get('column_groups') and (column['figure'] == 'debit' or column['kind'] == 'end') else 'num'"><bdi t-esc="column['label']"/></th>
                         </tr>
                     </thead>
                     <tbody>
                         <t t-foreach="payload['lines']" t-as="line">
-                            <tr t-att-class="line['display'] + (' band' if (line['level'] == 0 and line['display'] == 'section') or (payload['report']['date_mode'] == 'range' and line['display'] == 'total') else '')">
+                            <tr t-att-class="line['display'] + (' band' if (line['level'] == 0 and line['display'] == 'section') or (not payload.get('column_groups') and payload['report']['date_mode'] == 'range' and line['display'] == 'total') else '')">
                                 <th>
-                                    <span t-if="arabic" t-attf-style="padding-right: #{8 + line['level'] * 14}px" t-esc="line['name']"/>
-                                    <span t-else="" t-attf-style="padding-left: #{8 + line['level'] * 14}px" t-esc="line['name']"/>
+                                    <span t-attf-style="#{'padding-right' if arabic else 'padding-left'}: #{8 + line['level'] * 14}px">
+                                        <t t-if="payload.get('column_groups') and line['display'] != 'total'"><bdi t-if="line['account_code']" t-esc="line['account_code']"/> <bdi t-esc="line['account_name']"/></t>
+                                        <t t-else="" t-esc="line['name']"/>
+                                    </span>
                                 </th>
-                                <td t-foreach="line['amounts']" t-as="amount" t-att-class="'num negative' if amount['negative'] else 'num'" t-esc="amount['display'] if not line.get('hide_amounts') else ''"/>
+                                <td t-foreach="line['amounts']" t-as="amount" t-att-class="'num' + (' negative' if amount['negative'] else '') + (' shaded' if payload.get('column_groups') and (payload['columns'][amount_index]['figure'] == 'debit' or payload['columns'][amount_index]['kind'] == 'end') else '')" t-esc="amount['display'] if not line.get('hide_amounts') else ''"/>
                             </tr>
                             <tr t-foreach="line['accounts']" t-as="account" class="account">
                                 <td>
                                     <span t-if="arabic" t-attf-style="padding-right: #{22 + line['level'] * 14}px">
-                                        <span t-esc="account['code']"/> <span t-esc="account['name']"/>
+                                        <bdi t-esc="account['code']"/> <bdi t-esc="account['name']"/>
                                     </span>
                                     <span t-else="" t-attf-style="padding-left: #{22 + line['level'] * 14}px">
-                                        <span t-esc="account['code']"/> <span t-esc="account['name']"/>
+                                        <bdi t-esc="account['code']"/> <bdi t-esc="account['name']"/>
                                     </span>
                                 </td>
                                 <td t-foreach="account['amounts']" t-as="amount" t-att-class="'num negative' if amount['negative'] else 'num'" t-esc="amount['display']"/>

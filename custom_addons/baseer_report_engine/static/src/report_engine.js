@@ -36,11 +36,12 @@ export class BaseerReportEngine extends Component {
             payload: null,
             folded: {},
             accounts: {},
+            search: "",
         });
         this.restoredState = this.props.state?.baseerReport;
         useSetupAction({ getLocalState: () => ({ baseerReport: {
             options: this.plainOptions(), folded: { ...this.state.folded },
-            accounts: JSON.parse(JSON.stringify(this.state.accounts)),
+            accounts: JSON.parse(JSON.stringify(this.state.accounts)), search: this.state.search,
         } }) });
         this.requestToken = 0;
         useBus(userBus, "ACTIVE_COMPANIES_CHANGED", () => this.reload());
@@ -51,8 +52,11 @@ export class BaseerReportEngine extends Component {
         return (user.lang || "").startsWith("ar");
     }
 
+    get isGrid() { return this.state.payload?.report.report_kind === "account_grid"; }
+
     get lines() {
-        return (this.state.payload?.lines || []).filter((line) => !this.isHidden(line));
+        const search = this.state.search.trim().toLocaleLowerCase();
+        return (this.state.payload?.lines || []).filter((line) => !this.isHidden(line) && (!this.isGrid || !search || line.display === "total" || line.name.toLocaleLowerCase().includes(search)));
     }
 
     get byCode() {
@@ -115,6 +119,7 @@ export class BaseerReportEngine extends Component {
             this.state.reportName = bootstrap.report.name;
             this.state.dateMode = bootstrap.report.date_mode;
             this.state.options = this.restoredState?.options || bootstrap.defaults;
+            this.state.search = this.restoredState?.search || "";
             await this.loadReport();
             if (this.restoredState) {
                 this.state.folded = this.restoredState.folded || {};
@@ -249,7 +254,7 @@ export class BaseerReportEngine extends Component {
         }
         const action = await this.orm.call(
             "baseer.report.engine", "get_move_line_action",
-            [this.reportCode, this.plainOptions(), line.source_code || line.code, amount.key, accountId || false, companyId || false],
+            [this.reportCode, this.plainOptions(), line.source_code || line.code, amount.key, accountId ?? false, companyId ?? false],
         );
         await this.actionService.doAction(action);
     }
@@ -295,6 +300,20 @@ export class BaseerReportEngine extends Component {
     get periodLabel() {
         const column = this.state.payload?.columns[0];
         if (!column) return this.state.labels.period;
+        if (this.isGrid) {
+            const date = new Date(`${this.state.options.date_to}T12:00:00`);
+            const locale = (user.lang || "en_US").replace("_", "-");
+            const start = new Date(`${this.state.options.date_from}T12:00:00`);
+            if (this.state.options.preset === "custom") {
+                const format = new Intl.DateTimeFormat(locale);
+                return `${format.format(start)} – ${format.format(date)}`;
+            }
+            if (this.state.options.preset === "this_year") return String(date.getFullYear());
+            if (this.state.options.preset === "this_quarter") {
+                return `${new Intl.DateTimeFormat(locale, { month: "short" }).format(start)} – ${new Intl.DateTimeFormat(locale, { month: "short", year: "numeric" }).format(date)}`;
+            }
+            return new Intl.DateTimeFormat(locale, { month: "short", year: "numeric" }).format(date);
+        }
         if (this.state.dateMode === "as_of") {
             const locale = (user.lang || "en_US").replace("_", "-");
             return this.rtl ? `${this.state.labels.as_of} ${column.date_to.split("-").reverse().join("/")}` : `${this.state.labels.as_of} ${new Intl.DateTimeFormat(locale).format(new Date(`${column.date_to}T12:00:00`))}`;

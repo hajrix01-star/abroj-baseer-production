@@ -914,3 +914,92 @@ msgstr "توسيع"
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "Fold"
 msgstr "طي"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/grid.py:0
+msgid "Initial Balance"
+msgstr "الرصيد الافتتاحي"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/grid.py:0
+msgid "End Balance"
+msgstr "الرصيد الختامي"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/grid.py:0
+msgid "Debit"
+msgstr "مدين"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/grid.py:0
+msgid "Credit"
+msgstr "دائن"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/grid.py:0
+msgid "Total"
+msgstr "الإجمالي"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/grid.py:0
+msgid "Search..."
+msgstr "بحث..."
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/grid.py:0
+msgid "General Ledger"
+msgstr "دفتر الأستاذ العام"
+
+#. module: baseer_report_engine
+#: model:baseer.report.definition,name:baseer_report_engine.report_trial_balance
+msgid "Trial Balance"
+msgstr "ميزان المراجعة"
+
+#. module: baseer_report_engine
+#: model:ir.ui.menu,name:baseer_report_engine.menu_trial_balance
+#: model:ir.actions.client,name:baseer_report_engine.action_trial_balance
+msgid "Trial Balance (New)"
+msgstr "ميزان المراجعة (جديد)"
+
+#. module: baseer_report_engine
+#: selection:baseer.report.definition,report_kind:0
+msgid "Statement"
+msgstr "قائمة"
+
+#. module: baseer_report_engine
+#: selection:baseer.report.definition,report_kind:0
+msgid "Account grid"
+msgstr "جدول الحسابات"
+
+#. module: baseer_report_engine
+#: model:ir.model.fields,field_description:baseer_report_engine.field_baseer_report_definition__report_kind
+msgid "Report Kind"
+msgstr "نوع التقرير"
+
+#. module: baseer_report_engine
+#: model:ir.model.fields,field_description:baseer_report_engine.field_baseer_report_definition__grid_groupby
+msgid "Grid Groupby"
+msgstr "تجميع الجدول"
+
+#. module: baseer_report_engine
+#: model:ir.model.fields,field_description:baseer_report_engine.field_baseer_report_definition__grid_columns
+msgid "Grid Columns"
+msgstr "أعمدة الجدول"
+
+#. module: baseer_report_engine
+#: model:ir.model.fields,field_description:baseer_report_engine.field_baseer_report_definition__default_preset
+msgid "Default Preset"
+msgstr "الفترة الافتراضية"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/grid.py:0
+msgid "Undistributed Profits/Losses"
+msgstr "الأرباح/الخسائر غير الموزعة"

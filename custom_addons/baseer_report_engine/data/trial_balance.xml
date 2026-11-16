@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="report_trial_balance" model="baseer.report.definition">
+        <field name="name">Trial Balance</field>
+        <field name="code">trial_balance</field>
+        <field name="date_mode">range</field>
+        <field name="report_kind">account_grid</field>
+        <field name="grid_groupby">account_id,company_id</field>
+        <field name="grid_columns">initial,period_debit,period_credit,end</field>
+        <field name="default_preset">this_month</field>
+    </record>
+</odoo>

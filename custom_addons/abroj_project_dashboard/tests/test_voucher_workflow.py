@@ -574,6 +574,34 @@ class AbrojVoucherWorkflowCase(TransactionCase):
         with self.assertRaises(UserError), self.cr.savepoint():
             voucher.action_cancel()
         reversal.action_post()
+        payment_lines = voucher.payment_id.move_id.line_ids.filtered(lambda line: line.account_id.reconcile)
+        payment_lines.remove_move_reconcile()
+        with self.assertRaises(UserError), self.cr.savepoint():
+            voucher.action_cancel()
+
+        payment_line = payment_lines[0]
+        amount = abs(payment_line.balance) / 2
+        partial_move = self.env['account.move'].create({
+            'move_type': 'entry', 'journal_id': self.cash.id, 'date': self.today,
+            'line_ids': [
+                Command.create({
+                    'account_id': payment_line.account_id.id, 'partner_id': payment_line.partner_id.id,
+                    'debit': amount if payment_line.balance < 0 else 0,
+                    'credit': amount if payment_line.balance > 0 else 0,
+                }),
+                Command.create({
+                    'account_id': self.accounts['asset_cash'].id,
+                    'debit': amount if payment_line.balance > 0 else 0,
+                    'credit': amount if payment_line.balance < 0 else 0,
+                }),
+            ],
+        })
+        partial_move.action_post()
+        (payment_line | partial_move.line_ids.filtered(
+            lambda line: line.account_id == payment_line.account_id
+        )).reconcile()
+        self.assertTrue(payment_line.matched_debit_ids or payment_line.matched_credit_ids)
+        self.assertFalse(payment_line.full_reconcile_id)
         with self.assertRaises(UserError), self.cr.savepoint():
             voucher.action_cancel()
         self.assertEqual(voucher.state, 'issued')

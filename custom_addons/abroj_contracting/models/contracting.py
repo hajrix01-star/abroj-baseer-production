@@ -340,16 +340,68 @@ class Voucher(models.Model):
             'view_mode': 'form', 'target': 'current',
         }
 
+    cancel_log_ids = fields.One2many('abroj.contracting.voucher.cancel.log', 'voucher_id',
+                                     string='سجل إلغاء السند', readonly=True,
+                                     groups='account.group_account_invoice,account.group_account_manager')
+
+    def _abroj_check_cancel_reversed_payment(self):
+        """Extension point for additional linked-document checks."""
+        self.ensure_one()
+
+    def _abroj_payment_reversal(self):
+        self.ensure_one()
+        move = self.payment_id.sudo().move_id
+        move.invalidate_recordset(['state', 'line_ids', 'reversal_move_ids'])
+        if not move or move.state != 'posted':
+            return self.env['account.move']
+        lines = move.line_ids
+        lines.invalidate_recordset(['full_reconcile_id', 'amount_residual', 'balance', 'account_id'])
+        reconcilable = lines.filtered(lambda line: line.account_id.reconcile)
+        currency = move.company_id.currency_id
+        if not reconcilable or any(not line.full_reconcile_id or not currency.is_zero(line.amount_residual)
+                                   for line in reconcilable):
+            return self.env['account.move']
+        move.reversal_move_ids.invalidate_recordset(['state', 'line_ids'])
+        for reversal in move.reversal_move_ids.filtered(lambda m: m.state == 'posted'):
+            if any(not (line.full_reconcile_id.reconciled_line_ids & reversal.line_ids)
+                   for line in reconcilable):
+                continue
+            # Match individual lines without reusing a reversal line.
+            remaining = reversal.line_ids
+            for line in lines - reconcilable:
+                match = remaining.filtered(lambda item: item.account_id == line.account_id
+                                           and currency.is_zero(item.balance + line.balance))[:1]
+                if not match:
+                    break
+                remaining -= match
+            else:
+                return reversal
+        return self.env['account.move']
+
     def action_cancel(self):
+        from .accounting_issue import require_accountant
         check_agent(self.env)
+        self.check_access('write')
         for r in self:
             self.env.cr.execute('SELECT id FROM abroj_contracting_voucher WHERE id = %s FOR NO KEY UPDATE', [r.id])
             r.invalidate_recordset(['state', 'payment_id'])
             if r.state not in ('draft', 'issued'):
                 raise UserError('السند ملغى مسبقاً.')
+            reversal = self.env['account.move']
             if r.payment_id:
-                raise UserError('عالج الدفعة المحاسبية أولاً؛ لا يمكن إلغاء سند مرتبط بدفعة.')
+                require_accountant(self.env)
+                if r.state == 'issued':
+                    reversal = r._abroj_payment_reversal()
+                if not reversal:
+                    raise UserError('عالج الدفعة المحاسبية أولاً؛ يلزم قيد عكسي مرحّل وتسوية كاملة لإلغاء السند.')
+            r._abroj_check_cancel_reversed_payment()
             super(FrozenDocument, r).write({'state': 'cancelled'})
+            if reversal:
+                self.env['abroj.contracting.voucher.cancel.log'].sudo().create({
+                    'voucher_id': r.id, 'user_id': self.env.uid, 'cancelled_at': fields.Datetime.now(),
+                    'payment_id': r.payment_id.id, 'payment_move_id': r.payment_id.sudo().move_id.id,
+                    'reversal_move_id': reversal.id, 'reversal_name': reversal.name,
+                })
         return True
 
 
@@ -399,3 +451,18 @@ class Cost(models.Model):
     invoice_number = fields.Char('رقم الفاتورة', help='حدد رقم الفاتورة لهذا السجل وفق مستند المشروع الأصلي.')
     attachment = fields.Binary('المرفق', attachment=True, help='حدد المرفق لهذا السجل وفق مستند المشروع الأصلي.')
     state = fields.Selection([('draft', 'مسودة'), ('confirmed', 'مؤكد')], string='الحالة', default='draft', readonly=True, copy=False, help='المسودة قابلة للتعديل؛ الاعتماد يقفل المستند ويحدث الإجماليات.')
+
+
+class VoucherCancelLog(models.Model):
+    _name = 'abroj.contracting.voucher.cancel.log'
+    _description = 'سجل إلغاء سند بدفعة معكوسة'
+    _order = 'cancelled_at desc, id desc'
+
+    voucher_id = fields.Many2one('abroj.contracting.voucher', required=True, ondelete='cascade', index=True, readonly=True)
+    company_id = fields.Many2one(related='voucher_id.company_id', store=True, readonly=True)
+    user_id = fields.Many2one('res.users', required=True, readonly=True)
+    cancelled_at = fields.Datetime(required=True, readonly=True)
+    payment_id = fields.Many2one('account.payment', required=True, readonly=True, ondelete='restrict')
+    payment_move_id = fields.Many2one('account.move', required=True, readonly=True, ondelete='restrict')
+    reversal_move_id = fields.Many2one('account.move', required=True, readonly=True, ondelete='restrict')
+    reversal_name = fields.Char(required=True, readonly=True)

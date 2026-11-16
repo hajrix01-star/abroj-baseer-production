@@ -44,6 +44,16 @@ class Voucher(models.Model):
     workflow_status = fields.Selection([('pending', 'Needs purpose review'), ('reviewed', 'Reviewed')],
         string='Purpose review', compute='_compute_workflow_status')
 
+    def _abroj_check_cancel_reversed_payment(self):
+        super()._abroj_check_cancel_reversed_payment()
+        self.sudo().invalidate_recordset(['recognition_move_id'])
+        move = self.sudo().recognition_move_id
+        if move:
+            move.invalidate_recordset(['abroj_recognition_voucher_id', 'state', 'reversal_move_ids'])
+        if move and move.abroj_recognition_voucher_id == self:
+            if move.state == 'posted' and not move.reversal_move_ids.filtered(lambda r: r.state == 'posted'):
+                raise UserError(_('Reverse the posted recognition document before cancelling the voucher.'))
+
     @api.depends('workflow_reviewed')
     def _compute_workflow_status(self):
         for voucher in self:

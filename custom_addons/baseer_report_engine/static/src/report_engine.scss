@@ -241,7 +241,7 @@
 .o_baseer_report_engine {
     .o_bre_toolbar { min-height: 58px; padding: 8px 16px 16px; gap: 4px; align-items: center; border-color: #d8dadd; }
     .o_bre_actions { gap: 4px; }
-    .o_bre_toolbar h1 { font-size: 16.8px; line-height: 1.5; font-weight: 400; color: #111827; margin: 0 4px 0 0; white-space: nowrap; }
+    .o_bre_toolbar h1 { font-family: inherit; font-size: 16.8px; line-height: 1.5; font-weight: 400; color: #111827; margin: 0 4px 0 0; white-space: nowrap; }
     .o_bre_toolbar .btn { height: 33px; padding: 5px 10px; font-size: 14px; line-height: 21px; font-weight: 500; border-radius: 4px; white-space: nowrap; }
     .o_bre_toolbar .btn-secondary { background: #e7e9ed; border-color: #e7e9ed; color: #111827; }
     .o_bre_toolbar .show > .btn-secondary, .o_bre_toolbar .btn-secondary[aria-expanded="true"] { border-color: #008c95; }

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <record id="view_register_list" model="ir.ui.view">
+        <field name="priority">100</field>
         <field name="name">account.move.financial.register.list</field>
         <field name="model">account.move</field>
         <field name="arch" type="xml">
@@ -28,6 +29,7 @@
         </field>
     </record>
     <record id="view_register_kanban" model="ir.ui.view">
+        <field name="priority">100</field>
         <field name="name">account.move.financial.register.kanban</field>
         <field name="model">account.move</field>
         <field name="arch" type="xml">
@@ -56,6 +58,7 @@
         </field>
     </record>
     <record id="view_register_search" model="ir.ui.view">
+        <field name="priority">100</field>
         <field name="name">account.move.financial.register.search</field>
         <field name="model">account.move</field>
         <field name="arch" type="xml">
@@ -95,6 +98,7 @@
     </record>
     <menuitem id="menu_financial_register" name="Financial operations" parent="account.menu_finance" action="action_financial_register" sequence="4" groups="account.group_account_invoice,account.group_account_readonly"/>
     <record id="view_cash_register_list" model="ir.ui.view">
+        <field name="priority">100</field>
         <field name="name">account.move.cash.register.list</field>
         <field name="model">account.move</field>
         <field name="inherit_id" ref="view_register_list"/>
@@ -111,6 +115,7 @@
         </field>
     </record>
     <record id="view_cash_register_kanban" model="ir.ui.view">
+        <field name="priority">100</field>
         <field name="name">account.move.cash.register.kanban</field>
         <field name="model">account.move</field>
         <field name="inherit_id" ref="view_register_kanban"/>
@@ -129,6 +134,7 @@
         </field>
     </record>
     <record id="view_cash_register_search" model="ir.ui.view">
+        <field name="priority">100</field>
         <field name="name">account.move.cash.register.search</field>
         <field name="model">account.move</field>
         <field name="arch" type="xml">

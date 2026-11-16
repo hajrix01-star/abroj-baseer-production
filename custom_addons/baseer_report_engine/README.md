@@ -13,3 +13,7 @@ The grid aggregates journal items by account and company for each date scope. An
 Grid definitions declare grouping fields in `grid_groupby` and column tokens in `grid_columns`; `_grid_balances` accepts a tuple of grouping fields, and `_grid_layout` expands the column tokens. Future grids can supply their own row and drill policies. When no unaffected earnings account exists, prior P&L is carried to a synthetic undistributed profits/losses row.
 
 Grid drill-down lists raw journal items, like statements: analytic weighting and currency conversion affect displayed amounts, not the raw journal item values.
+
+## Design notes
+
+The report toolbar uses the instance theme's primary button colour, keeping it consistent with the rest of the app.

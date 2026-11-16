@@ -72,9 +72,9 @@
             <attribute name="t-attf-class">pos-receipt-customer mt-2 #{['baseer_80', 'baseer_80_customer'].includes(order.config.baseer_receipt_layout_mode) ? 'baseer-receipt-customer' : ''}</attribute>
         </xpath>
         <xpath expr="//div[hasclass('pos-receipt-customer')]" position="after">
-            <t t-set="baseerCustomerPhone" t-value="order.partner_id ? (order.config.baseer_receipt_layout_mode === 'baseer_80_customer' ? (order.partner_id.mobile || order.partner_id.phone) : order.partner_id.phone) : false"/>
-            <div t-if="['baseer_80', 'baseer_80_customer'].includes(order.config.baseer_receipt_layout_mode) and baseerCustomerPhone"
-                 class="baseer-receipt-customer-mobile text-center">
+            <t t-set="receiptLayout" t-value="order.config.baseer_receipt_layout_mode"/>
+            <t t-set="baseerCustomerPhone" t-value="order.partner_id ? (receiptLayout === 'baseer_80' ? order.partner_id.phone : (order.partner_id.mobile || order.partner_id.phone)) : false"/>
+            <div t-if="baseerCustomerPhone" class="baseer-receipt-customer-mobile text-center">
                 <span class="baseer-receipt-customer-mobile-label">الجوال / Mobile</span>
                 <span class="baseer-receipt-customer-mobile-number" dir="ltr"
                       t-esc="baseerCustomerPhone"/>

@@ -12,3 +12,5 @@ from . import project_analytic
 from . import contract_numbering
 
 from . import accounting_issue
+
+from . import voucher_method

@@ -83,6 +83,19 @@ class Voucher(models.Model):
     def _onchange_contract_party(self):
         return super(Voucher, self.filtered(lambda v: v.payment_purpose != 'supplier_refund'))._onchange_contract_party()
 
+    def _abroj_check_change_payment_method(self, method, journal):
+        super()._abroj_check_change_payment_method(method, journal)
+        self.sudo().invalidate_recordset(['recognition_move_id'])
+        move = self.sudo().recognition_move_id
+        if move:
+            accounts = move.line_ids.account_id
+            journals = self.env['account.journal'].sudo().with_context(active_test=False).search([
+                ('type', 'in', ('bank', 'cash')),
+            ])
+            liquidity = journals.mapped('default_account_id') | journals.mapped('inbound_payment_method_line_ids.payment_account_id') | journals.mapped('outbound_payment_method_line_ids.payment_account_id')
+            if accounts.filtered(lambda account: account.account_type == 'asset_cash') or accounts & liquidity:
+                raise UserError('لا يمكن تغيير طريقة الدفع لوجود حساب سيولة في مستند الإثبات.')
+
     def action_accounting_approve(self):
         require_accountant(self.env)
         return self.action_open_voucher_review()

@@ -377,3 +377,42 @@
         .o_bre_grid_table tbody th:first-child, .o_bre_grid_table .o_bre_band th:first-child { background: white; }
     }
 }
+
+.o_baseer_report_engine {
+    .o_bre_ledger { width: 876px; }
+    .o_bre_ledger .o_bre_paper_inner { min-width: 874px; }
+    .o_bre_ledger_table {
+        table-layout: auto;
+        .o_bre_ledger_label { width: 338px; min-width: 338px; }
+        .o_bre_ledger_date { min-width: 50px; }
+        .o_bre_ledger_partner { min-width: 67px; }
+        .o_bre_ledger_currency { min-width: 75px; }
+        .o_bre_ledger_debit, .o_bre_ledger_credit { min-width: 100px; }
+        .o_bre_ledger_balance { min-width: 94px; }
+        .o_bre_period_header th:nth-child(2) { border: 1px solid #d8dadd; text-align: center; }
+        .o_bre_balance_header th { color: #111827; font-weight: 500; text-align: end; }
+        .o_bre_balance_header th:nth-child(2), .o_bre_balance_header th:nth-child(3) { text-align: center; }
+        tbody th { padding-inline-start: 16px; }
+        .o_bre_fold { font-weight: inherit; }
+        .o_bre_ledger_caret { display: inline-block; width: 12px; color: #d8dadd; }
+        .o_bre_open th, .o_bre_open td { background: #f3f4f6; font-weight: 700; }
+        .o_bre_ledger_item th, .o_bre_ledger_initial th, .o_bre_ledger_total th, .o_bre_ledger_more th { padding-inline-start: 40px; }
+        .o_bre_ledger_total th, .o_bre_ledger_total td { font-weight: 700; }
+        .o_bre_ledger_chip { visibility: hidden; border: 1px solid #008c95; border-radius: 4px; background: white; color: #008c95; font-size: 11px; margin-inline-start: 6px; padding: 1px 4px; }
+        tr:hover .o_bre_ledger_chip, .o_bre_ledger_chip:focus { visibility: visible; }
+        .o_bre_ledger_more .btn { padding: 0; color: #008c95; font-size: inherit; }
+        .o_bre_ledger_item td:nth-child(2), .o_bre_ledger_item td:nth-child(3) { white-space: nowrap; }
+    }
+    @media (max-width: 767px) {
+        .o_bre_ledger { width: 100%; }
+        .o_bre_ledger_table .o_bre_open th:first-child { background: #f3f4f6; }
+    }
+}
+.o_baseer_report_engine {
+    .o_bre_ledger { width: max-content; max-width: 100%; }
+    .o_bre_ledger .o_bre_paper_inner { width: max-content; min-width: 874px; }
+    .o_bre_ledger_table { width: auto; min-width: 824px; }
+    .o_bre_ledger_table tbody th { position: relative; }
+    .o_bre_ledger_table .o_bre_ledger_chip { position: absolute; }
+    @media (max-width: 767px) { .o_bre_ledger { width: 100%; } }
+}

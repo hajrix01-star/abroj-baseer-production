@@ -63,7 +63,7 @@ class BaseerLedgerEngine(models.AbstractModel):
                 totals[k] += values[k]
             row.update(foldable=True, has_accounts=True, amounts=self._ledger_amounts(values, True))
             rows.append(row)
-        rows.append({'code': 'total', 'name': _('Total'), 'level': 0, 'display': 'total',
+        rows.append({'code': 'total', 'name': _('Total General Ledger'), 'level': 0, 'display': 'total',
                      'foldable': False, 'has_accounts': False, 'amounts': self._ledger_amounts(totals)})
         grid['lines'] = rows
         grid['columns'] = self._ledger_columns(options)
@@ -89,6 +89,14 @@ class BaseerLedgerEngine(models.AbstractModel):
         if type(size) is not int or size < 1 or (limit is not None and (type(limit) is not int or limit < 1)):
             raise ValidationError(_('The report options are not valid.'))
         return min(size, limit) if limit is not None else size
+
+    @api.model
+    def _ledger_convert(self, amount, company, on_date):
+        source, target = company.currency_id, self.env.company.currency_id
+        if not source or source == target:
+            return amount
+        rate = source._get_conversion_rate(source, target, company, on_date)
+        return amount * Decimal(str(rate))
 
     @api.model
     def _ledger_pages(self, options, accounts, opening, offset, limit):
@@ -130,11 +138,12 @@ class BaseerLedgerEngine(models.AbstractModel):
             items = grouped[key]
             if offset and key[0]:
                 previous = model.search(domain + [('account_id', '=', key[0]), ('company_id', '=', key[1])], order='date, move_name, id', limit=offset)
-                sums = self._aggregate([('id', 'in', previous.ids)], last, options['analytic_account_ids'])
-                running += sums.get(key, _zeros())['balance']
+                for prior_line in previous:
+                    share = _analytic_share(prior_line.analytic_distribution, set(options['analytic_account_ids'])) if options['analytic_account_ids'] else Decimal(1)
+                    running += self._ledger_convert(Decimal(str(prior_line.balance or 0)) * share, prior_line.company_id, last)
             for line in items:
                 share = _analytic_share(line.analytic_distribution, set(options['analytic_account_ids'])) if options['analytic_account_ids'] else Decimal(1)
-                values = {figure: self._convert(Decimal(str(line[figure] or 0)) * share, line.company_id, last)
+                values = {figure: self._ledger_convert(Decimal(str(line[figure] or 0)) * share, line.company_id, last)
                           for figure in ('debit', 'credit', 'balance')}
                 running += values['balance']
                 values['balance'] = running

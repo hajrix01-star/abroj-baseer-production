@@ -1045,3 +1045,9 @@ msgstr "العملة"
 #: selection:baseer.report.definition,report_kind:0
 msgid "Ledger"
 msgstr "دفتر الأستاذ"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/ledger.py:0
+msgid "Total General Ledger"
+msgstr "إجمالي دفتر الأستاذ العام"

@@ -145,3 +145,48 @@ class TestGeneralLedger(EngineCase):
             self.assertIn(b'yyyy-mm-dd', archive.read('xl/styles.xml'))
         self.assertTrue(call_kw(engine, 'get_bootstrap', ['general_ledger'], {'context': engine.env.context}))
         self.assertEqual(call_kw(engine, 'get_draft_entries_action', ['general_ledger', options], {'context': engine.env.context})['res_model'], 'account.move')
+
+    def test_foreign_company_page_boundary(self):
+        from odoo import Command
+        target = self._company('Ledger reporting currency')
+        foreign = self._company('Ledger foreign currency')
+        eur = self.env.ref('base.EUR')
+        eur.active = True
+        foreign.currency_id = eur
+        self.env['res.currency.rate'].create({'currency_id': eur.id, 'name': '2041-01-01', 'rate': 3.0, 'company_id': foreign.id})
+        journal = self._journal(foreign, 'GLC')
+        cash = self._account(foreign, '1000', 'asset_cash')
+        income = self._account(foreign, '4000', 'income')
+        for day in range(1, 6):
+            self._entry(foreign, journal, '2041-04-%02d' % day, cash, income, 0.01)
+        engine = self.env['baseer.report.engine'].with_company(target).with_context(allowed_company_ids=[target.id, foreign.id])
+        options = self._options(date_from='2041-04-01', date_to='2041-04-30')
+        paged = engine.with_context(baseer_gl_page_size=2)
+        pages = [paged.get_ledger_lines('general_ledger', options, cash.id, foreign.id, offset) for offset in (0, 2, 4)]
+        whole = engine.with_context(baseer_gl_page_size=100).get_ledger_lines('general_ledger', options, cash.id, foreign.id)
+        self.assertEqual(sum((page['rows'] for page in pages), []), whole['rows'])
+
+    def test_query_count_scales_with_accounts(self):
+        company = self._company('Ledger query scaling')
+        engine = self._engine(company)
+        journal = self._journal(company, 'GLQ')
+        cash = self._account(company, '1000', 'asset_cash')
+        options = self._options(date_from='2041-04-01', date_to='2041-04-30')
+        def add_accounts(start, stop):
+            for index in range(start, stop):
+                account = self._account(company, str(5000 + index), 'expense')
+                self._entry(company, journal, '2041-04-01', account, cash, 1)
+        def counts():
+            result = []
+            for opts in (options, dict(options, unfold_all=True)):
+                engine.get_report('general_ledger', opts)
+                start = self.cr.sql_log_count
+                engine.get_report('general_ledger', opts)
+                result.append(self.cr.sql_log_count - start)
+            return result
+        add_accounts(0, 4)
+        small = counts()
+        add_accounts(4, 12)
+        large = counts()
+        for before, after in zip(small, large):
+            self.assertLessEqual(after, before + 5, (small, large))

@@ -781,6 +781,7 @@ class BaseerReportEngine(models.AbstractModel):
             'search': _('Search...'),
             'general_ledger': _('General Ledger'),
             'journal_items': _('Journal Items'),
+            'view_journal_entry': _('View Journal Entry'),
             'load_more': _('Load more...'),
             'unfold_line': _('Unfold'),
             'fold_line': _('Fold'),

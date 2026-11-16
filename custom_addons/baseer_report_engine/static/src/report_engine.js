@@ -126,9 +126,24 @@ export class BaseerReportEngine extends Component {
             await this.loadReport();
             if (this.restoredState) {
                 this.state.folded = this.restoredState.folded || {};
-                this.state.accounts = this.restoredState.accounts || {};
+                const saved = this.restoredState.accounts || {};
+                if (this.isLedger) {
+                    for (const line of this.state.payload.lines) {
+                        const count = (saved[line.code]?.rows || []).filter((row) => row.type === "item").length;
+                        while (this.state.accounts[line.code]?.has_more &&
+                               this.state.accounts[line.code].rows.filter((row) => row.type === "item").length < count) {
+                            const previousOffset = this.state.accounts[line.code].next_offset;
+                            await this.loadLedger(line, previousOffset);
+                            if (this.state.accounts[line.code]?.next_offset === previousOffset) break;
+                        }
+                    }
+                } else {
+                    this.state.accounts = saved;
+                }
                 this.restoredState = null;
             }
+            const target = this.props.action?.context?.baseer_options?.unfolded_accounts?.[0];
+            if (target) setTimeout(() => document.querySelector(`[data-ledger-account="${target[0]}-${target[1]}"]`)?.scrollIntoView({block: "center"}), 100);
         } catch (error) {
             this.state.loading = false;
             this.state.error = error?.data?.message || this.state.labels.error || "Error";
@@ -464,7 +479,10 @@ export class BaseerReportEngine extends Component {
         if (amount.value === null) return "—";
         const percent = amount.key === "variation_percent";
         const digits = percent ? 2 : this.state.payload.currency.decimals;
-        return formatFloat(Number(amount.value), { digits: [16, digits] }) + (percent ? "%" : "");
+        const value = formatFloat(Number(amount.value), { digits: [16, digits] }) + (percent ? "%" : "");
+        if (!this.isLedger || percent) return value;
+        const currency = this.state.payload.currency;
+        return currency.position === "after" ? `${value} ${currency.symbol}` : `${currency.symbol} ${value}`;
     }
 
     amountClass(amount) {

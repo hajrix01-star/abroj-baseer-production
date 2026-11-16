@@ -158,7 +158,7 @@ class BaseerGridEngine(models.AbstractModel):
         # Reuse the statement envelope without invoking its computation.
         return {'report': {'code': report.code, 'name': report.name, 'date_mode': report.date_mode, 'report_kind': report.report_kind},
                 'companies': [{'id': c.id, 'name': c.display_name, 'currency': c.currency_id.name} for c in self.env.companies],
-                'currency': {'id': currency.id, 'code': currency.name or '', 'symbol': currency.symbol or '', 'decimals': currency.decimal_places},
+                'currency': {'id': currency.id, 'code': currency.name or '', 'symbol': currency.symbol or '', 'position': currency.position, 'decimals': currency.decimal_places},
                 'options': {k: v for k, v in options.items() if k != 'columns'},
                 'columns': columns, 'column_groups': groups, 'lines': rows, 'notes': self._notes(report, options),
                 'generated_at': fields.Datetime.context_timestamp(self, fields.Datetime.now()).strftime('%Y-%m-%d %H:%M')}

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="baseer_pos_print_bridge.RestaurantCourseButton"
+       t-inherit="point_of_sale.ControlButtons" t-inherit-mode="extension">
+        <xpath expr="//button[hasclass('course-btn')]" position="attributes">
+            <attribute name="t-if" add="!pos.config.baseer_hide_course_button" separator=" and "/>
+        </xpath>
+    </t>
+</templates>

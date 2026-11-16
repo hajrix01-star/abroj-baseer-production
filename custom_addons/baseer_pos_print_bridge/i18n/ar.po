@@ -2705,6 +2705,21 @@ msgid "Order bill — Unpaid"
 msgstr "حساب الطلب — غير مدفوع"
 
 #. module: baseer_pos_print_bridge
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_pos_config__baseer_hide_course_button
+msgid "Hide Course button"
+msgstr "إخفاء زر دورة"
+
+#. module: baseer_pos_print_bridge
+#: model:ir.model.fields,help:baseer_pos_print_bridge.field_pos_config__baseer_hide_course_button
+msgid "Hide the Course button on the restaurant register."
+msgstr "إخفاء زر دورة من شاشة تسجيل الطلبات في المطعم."
+
+#. module: baseer_pos_print_bridge
+#: model_terms:ir.ui.view,arch_db:baseer_pos_print_bridge.view_pos_config_form_direct_print
+msgid "Restaurant register"
+msgstr "شاشة تسجيل المطعم"
+
+#. module: baseer_pos_print_bridge
 #. odoo-javascript
 #: code:addons/baseer_pos_print_bridge/static/src/app/preparation_bridge.js:0
 msgid "Select an open order with items to print its bill."

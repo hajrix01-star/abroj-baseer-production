@@ -33,6 +33,11 @@
         <field name="model">pos.config</field>
         <field name="inherit_id" ref="point_of_sale.pos_config_view_form"/>
         <field name="arch" type="xml">
+            <xpath expr="//page[@name='configuration']" position="inside">
+                <group string="Restaurant register" invisible="not module_pos_restaurant">
+                    <field name="baseer_hide_course_button"/>
+                </group>
+            </xpath>
             <xpath expr="//page[@name='configuration']" position="after">
                 <page string="Baseer printing" name="baseer_printing" groups="base.group_system">
                     <field name="baseer_effective_print_agent_id" invisible="1"/>

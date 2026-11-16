@@ -18,6 +18,10 @@ class PosConfig(models.Model):
         compute='_compute_baseer_effective_print_agent', string='Printing device status', readonly=True,
     )
     baseer_direct_print_enabled = fields.Boolean(string='Use Baseer direct printing')
+    baseer_hide_course_button = fields.Boolean(
+        string='Hide Course button',
+        help='Hide the Course button on the restaurant register.',
+    )
     baseer_receipt_printer_id = fields.Many2one(
         'baseer.print.printer', string='Receipt Windows printer', ondelete='restrict')
     baseer_receipt_copies = fields.Integer(string='Receipt copies', default=1)
@@ -85,6 +89,7 @@ class PosConfig(models.Model):
         ]
         return list(dict.fromkeys(native_fields + [
             'baseer_direct_print_enabled',
+            'baseer_hide_course_button',
             'baseer_native_receipt_enabled',
         ]))
 

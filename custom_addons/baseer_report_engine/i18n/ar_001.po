@@ -1,0 +1,542 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 19.0\n"
+"Language: ar_001\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. module: baseer_report_engine
+#: model:ir.ui.menu,name:baseer_report_engine.menu_new_version
+msgid "New Version"
+msgstr "النسخة الجديدة"
+
+#. module: baseer_report_engine
+#: model:ir.actions.client,name:baseer_report_engine.action_balance_sheet
+#: model:ir.ui.menu,name:baseer_report_engine.menu_balance_sheet
+msgid "Balance Sheet (New)"
+msgstr "الميزانية العمومية (جديد)"
+
+#. module: baseer_report_engine
+#: model:baseer.report.definition,name:baseer_report_engine.report_balance_sheet
+msgid "Balance Sheet"
+msgstr "الميزانية العمومية"
+
+#. module: baseer_report_engine
+#: model:baseer.report.line,name:baseer_report_engine.line_bs_assets
+msgid "Assets"
+msgstr "الأصول"
+
+#. module: baseer_report_engine
+#: model:baseer.report.line,name:baseer_report_engine.line_bs_ca
+msgid "Current Assets"
+msgstr "الأصول المتداولة"
+
+#. module: baseer_report_engine
+#: model:baseer.report.line,name:baseer_report_engine.line_bs_cash
+msgid "Bank and Cash"
+msgstr "البنك والنقد"
+
+#. module: baseer_report_engine
+#: model:baseer.report.line,name:baseer_report_engine.line_bs_rec
+msgid "Receivables"
+msgstr "الذمم المدينة"
+
+#. module: baseer_report_engine
+#: model:baseer.report.line,name:baseer_report_engine.line_bs_cur
+msgid "Other Current Assets"
+msgstr "الأصول المتداولة الأخرى"
+
+#. module: baseer_report_engine
+#: model:baseer.report.line,name:baseer_report_engine.line_bs_pre
+msgid "Prepayments"
+msgstr "المصروفات المدفوعة مقدماً"
+
+#. module: baseer_report_engine
+#: model:baseer.report.line,name:baseer_report_engine.line_bs_fa
+msgid "Fixed Assets"
+msgstr "الأصول الثابتة"
+
+#. module: baseer_report_engine
+#: model:baseer.report.line,name:baseer_report_engine.line_bs_nca
+msgid "Non-current Assets"
+msgstr "الأصول غير المتداولة"
+
+#. module: baseer_report_engine
+#: model:baseer.report.line,name:baseer_report_engine.line_bs_liab
+msgid "Liabilities"
+msgstr "الخصوم"
+
+#. module: baseer_report_engine
+#: model:baseer.report.line,name:baseer_report_engine.line_bs_cl
+msgid "Current Liabilities"
+msgstr "الخصوم المتداولة"
+
+#. module: baseer_report_engine
+#: model:baseer.report.line,name:baseer_report_engine.line_bs_ocl
+msgid "Other Current Liabilities"
+msgstr "الخصوم المتداولة الأخرى"
+
+#. module: baseer_report_engine
+#: model:baseer.report.line,name:baseer_report_engine.line_bs_pay
+msgid "Payables"
+msgstr "الذمم الدائنة"
+
+#. module: baseer_report_engine
+#: model:baseer.report.line,name:baseer_report_engine.line_bs_ncl
+msgid "Non-current Liabilities"
+msgstr "الخصوم غير المتداولة"
+
+#. module: baseer_report_engine
+#: model:baseer.report.line,name:baseer_report_engine.line_bs_equity
+msgid "Equity"
+msgstr "حقوق الملكية"
+
+#. module: baseer_report_engine
+#: model:baseer.report.line,name:baseer_report_engine.line_bs_una
+msgid "Unallocated Earnings"
+msgstr "الأرباح غير الموزعة"
+
+#. module: baseer_report_engine
+#: model:baseer.report.line,name:baseer_report_engine.line_bs_cy_una
+msgid "Current Year Unallocated Earnings"
+msgstr "الأرباح غير الموزعة للسنة الحالية"
+
+#. module: baseer_report_engine
+#: model:baseer.report.line,name:baseer_report_engine.line_bs_cy_earn
+msgid "Current Year Earnings"
+msgstr "أرباح السنة الحالية"
+
+#. module: baseer_report_engine
+#: model:baseer.report.line,name:baseer_report_engine.line_bs_cy_alloc
+msgid "Current Year Allocated Earnings"
+msgstr "أرباح السنة الحالية المخصصة"
+
+#. module: baseer_report_engine
+#: model:baseer.report.line,name:baseer_report_engine.line_bs_py_una
+msgid "Previous Years Unallocated Earnings"
+msgstr "أرباح السنوات السابقة"
+
+#. module: baseer_report_engine
+#: model:baseer.report.line,name:baseer_report_engine.line_bs_re
+msgid "Retained Earnings"
+msgstr "الأرباح المحتجزة"
+
+#. module: baseer_report_engine
+#: model:baseer.report.line,name:baseer_report_engine.line_bs_le
+msgid "Liabilities and Equity"
+msgstr "الخصوم وحقوق الملكية"
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Apply"
+msgstr "عرض"
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "PDF"
+msgstr "PDF"
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "XLSX"
+msgstr "XLSX"
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Period"
+msgstr "الفترة"
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "As of"
+msgstr "كما في"
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "From"
+msgstr "من"
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "To"
+msgstr "إلى"
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Comparison"
+msgstr "المقارنة"
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Comparison period"
+msgstr "فترة المقارنة"
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Posted entries only"
+msgstr "القيود المرحلة فقط"
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Hide zero lines"
+msgstr "إخفاء الأسطر الصفرية"
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Journals"
+msgstr "الدفاتر"
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "All journals"
+msgstr "جميع الدفاتر"
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Analytic accounts"
+msgstr "الحسابات التحليلية"
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "All analytic accounts"
+msgstr "جميع الحسابات التحليلية"
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Loading the report…"
+msgstr "جارٍ تحميل التقرير…"
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "The report could not be loaded. Check the dates and your access, then try again."
+msgstr "تعذر تحميل التقرير. تحقق من التواريخ والصلاحيات ثم أعد المحاولة."
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "No lines to display."
+msgstr "لا توجد أسطر للعرض."
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "No accounts on this line."
+msgstr "لا توجد حسابات في هذا السطر."
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Previous period"
+msgstr "الفترة السابقة"
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Next period"
+msgstr "الفترة التالية"
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Show details"
+msgstr "عرض التفاصيل"
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Hide details"
+msgstr "إخفاء التفاصيل"
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "View journal items"
+msgstr "عرض القيود"
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Companies"
+msgstr "الشركات"
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "This month"
+msgstr "هذا الشهر"
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "This quarter"
+msgstr "هذا الربع"
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "This year"
+msgstr "هذه السنة"
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Last month"
+msgstr "الشهر السابق"
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Last quarter"
+msgstr "الربع السابق"
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Last year"
+msgstr "السنة السابقة"
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Custom"
+msgstr "مخصص"
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Month"
+msgstr "شهر"
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Quarter"
+msgstr "ربع سنة"
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Year"
+msgstr "سنة"
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Journal Items"
+msgstr "القيود اليومية"
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Posted entries only."
+msgstr "القيود المرحلة فقط."
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Posted and draft entries."
+msgstr "القيود المرحلة والمسودات."
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Balances are cumulative from the beginning of the books through the selected date."
+msgstr "الأرصدة تراكمية من بداية الدفاتر حتى التاريخ المحدد."
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Amounts cover the selected dates."
+msgstr "المبالغ تغطي التواريخ المحددة."
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Selected journals only."
+msgstr "الدفاتر المحددة فقط."
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Amounts are weighted by the selected analytic distribution."
+msgstr "المبالغ موزونة حسب التوزيع التحليلي المحدد."
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Companies follow the ones active in this session."
+msgstr "الشركات هي الشركات النشطة في هذه الجلسة."
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "As of %s"
+msgstr "كما في %s"
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Variation"
+msgstr "الفرق"
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Line"
+msgstr "البند"
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "You need accounting access to open this report."
+msgstr "تحتاج صلاحية المحاسبة لفتح هذا التقرير."
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Choose a report line that lists accounts."
+msgstr "اختر سطر تقرير يعرض الحسابات."
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Choose a line from this report."
+msgstr "اختر سطرًا من هذا التقرير."
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Open a period column to see journal items."
+msgstr "افتح عمود فترة لعرض القيود."
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Choose an account from this line."
+msgstr "اختر حسابًا من هذا السطر."
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "This amount has no journal items to open."
+msgstr "لا توجد قيود لفتحها لهذا المبلغ."
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "The report options are not valid."
+msgstr "خيارات التقرير غير صالحة."
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Choose a valid period."
+msgstr "اختر فترة صالحة."
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Comparison accepts 0 to 12 previous periods."
+msgstr "تقبل المقارنة من 0 إلى 12 فترة سابقة."
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Choose a month, quarter or year comparison."
+msgstr "اختر مقارنة بالشهر أو الربع أو السنة."
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "The start date must be on or before the end date."
+msgstr "يجب أن يكون تاريخ البداية في يوم تاريخ النهاية أو قبله."
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "The date scope %s is not supported."
+msgstr "نطاق التاريخ %s غير مدعوم."
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "The formula for %s refers to itself."
+msgstr "معادلة %s تشير إلى نفسها."
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "The formula refers to an unknown line %s."
+msgstr "تشير المعادلة إلى سطر غير معروف %s."
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "The formula divides by zero."
+msgstr "تقسم المعادلة على صفر."
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "The formula is not valid."
+msgstr "المعادلة غير صالحة."
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Choose a report."
+msgstr "اختر تقريرًا."
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "This report is not available."
+msgstr "هذا التقرير غير متاح."
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "The selected %s are not valid."
+msgstr "%s المحددة غير صالحة."
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Select at most 200 %s."
+msgstr "اختر %s بما لا يزيد على 200."
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Select journals from the active companies."
+msgstr "اختر دفاتر من الشركات النشطة."
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Select analytic accounts from the active companies."
+msgstr "اختر حسابات تحليلية من الشركات النشطة."
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Enter a valid date for %s."
+msgstr "أدخل تاريخًا صالحًا لـ %s."
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "the as-of date"
+msgstr "تاريخ كما في"
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "the start date"
+msgstr "تاريخ البداية"
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "the end date"
+msgstr "تاريخ النهاية"
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "the date"
+msgstr "التاريخ"
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "journals"
+msgstr "الدفاتر"
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "analytic accounts"
+msgstr "الحسابات التحليلية"
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Select a report to print."
+msgstr "اختر تقريرًا للطباعة."
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "A line and its parent must belong to the same report."
+msgstr "يجب أن ينتمي السطر وأصله إلى التقرير نفسه."
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Report lines cannot contain a cycle."
+msgstr "لا يمكن أن تحتوي أسطر التقرير على حلقة."
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "The move line domain must be a literal list."
+msgstr "يجب أن يكون نطاق بند اليومية قائمة حرفية."
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "A formula line has one formula and no other expressions."
+msgstr "سطر المعادلة يحتوي على معادلة واحدة دون تعبيرات أخرى."
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "An account-type expression needs at least one type."
+msgstr "تعبير نوع الحساب يحتاج إلى نوع واحد على الأقل."
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "A code-prefix expression needs at least one prefix."
+msgstr "تعبير بادئة الرمز يحتاج إلى بادئة واحدة على الأقل."
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "A formula expression needs a formula."
+msgstr "تعبير المعادلة يحتاج إلى معادلة."

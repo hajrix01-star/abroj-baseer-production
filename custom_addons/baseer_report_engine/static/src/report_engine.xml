@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="baseer_report_engine.Report">
+        <main class="o_baseer_report_engine" t-att-dir="rtl ? 'rtl' : 'ltr'">
+            <header class="o_bre_toolbar">
+                <h1 t-esc="state.reportName"/>
+                <div class="o_bre_filters">
+                    <label>
+                        <span t-esc="state.labels.period"/>
+                        <select t-on-change="onPreset">
+                            <option t-foreach="state.presets" t-as="preset" t-key="preset.key"
+                                t-att-value="preset.key" t-att-selected="state.options.preset === preset.key"
+                                t-esc="preset.label"/>
+                        </select>
+                    </label>
+                    <label t-if="state.dateMode === 'as_of'">
+                        <span t-esc="state.labels.as_of"/>
+                        <input type="date" name="as_of" t-att-value="state.options.as_of || ''" t-on-change="onDate"/>
+                    </label>
+                    <t t-else="">
+                        <label>
+                            <span t-esc="state.labels.from"/>
+                            <input type="date" name="date_from" t-att-value="state.options.date_from || ''" t-on-change="onDate"/>
+                        </label>
+                        <label>
+                            <span t-esc="state.labels.to"/>
+                            <input type="date" name="date_to" t-att-value="state.options.date_to || ''" t-on-change="onDate"/>
+                        </label>
+                    </t>
+                    <label>
+                        <span t-esc="state.labels.comparison"/>
+                        <input type="number" min="0" max="12" t-att-value="state.options.comparison || 0" t-on-change="onComparison"/>
+                    </label>
+                    <label>
+                        <span t-esc="state.labels.comparison_unit"/>
+                        <select t-on-change="onUnit" t-att-disabled="state.options.preset !== 'custom'">
+                            <option t-foreach="state.units" t-as="unit" t-key="unit.key"
+                                t-att-value="unit.key" t-att-selected="state.options.comparison_unit === unit.key"
+                                t-esc="unit.label"/>
+                        </select>
+                    </label>
+                    <label class="o_bre_check">
+                        <input type="checkbox" t-att-checked="state.options.posted_only" t-on-change="(event) => this.onToggle('posted_only', event)"/>
+                        <span t-esc="state.labels.posted_only"/>
+                    </label>
+                    <label class="o_bre_check">
+                        <input type="checkbox" t-att-checked="state.options.hide_zero" t-on-change="(event) => this.onToggle('hide_zero', event)"/>
+                        <span t-esc="state.labels.hide_zero"/>
+                    </label>
+                    <details class="o_bre_picker">
+                        <summary t-esc="state.options.journal_ids &amp;&amp; state.options.journal_ids.length ? state.labels.journals : state.labels.all_journals"/>
+                        <div>
+                            <label t-foreach="state.journals" t-as="journal" t-key="journal.id">
+                                <input type="checkbox" t-att-value="journal.id"
+                                    t-att-checked="state.options.journal_ids &amp;&amp; state.options.journal_ids.includes(journal.id)"
+                                    t-on-change="onJournal"/>
+                                <span t-esc="journal.name"/>
+                            </label>
+                        </div>
+                    </details>
+                    <details t-if="state.analyticEnabled" class="o_bre_picker">
+                        <summary t-esc="state.options.analytic_account_ids &amp;&amp; state.options.analytic_account_ids.length ? state.labels.analytics : state.labels.all_analytics"/>
+                        <div>
+                            <label t-foreach="state.analyticAccounts" t-as="analytic" t-key="analytic.id">
+                                <input type="checkbox" t-att-value="analytic.id"
+                                    t-att-checked="state.options.analytic_account_ids &amp;&amp; state.options.analytic_account_ids.includes(analytic.id)"
+                                    t-on-change="onAnalytic"/>
+                                <span t-esc="analytic.name"/>
+                            </label>
+                        </div>
+                    </details>
+                    <button type="button" class="btn btn-primary" t-att-disabled="state.loading" t-on-click="() => this.loadReport()" t-esc="state.labels.apply"/>
+                    <button type="button" class="btn btn-secondary" t-att-disabled="state.loading || state.exporting || !state.payload" t-on-click="() => this.loadReport(-1)" t-esc="state.labels.previous"/>
+                    <button type="button" class="btn btn-secondary" t-att-disabled="state.loading || state.exporting || !state.payload" t-on-click="() => this.loadReport(1)" t-esc="state.labels.next"/>
+                    <button type="button" class="btn btn-secondary" t-att-disabled="!state.payload || state.loading || state.exporting" t-on-click="exportPdf" t-esc="state.labels.pdf"/>
+                    <button type="button" class="btn btn-secondary" t-att-disabled="!state.payload || state.loading || state.exporting" t-on-click="exportXlsx" t-esc="state.labels.xlsx"/>
+                </div>
+            </header>
+            <p t-if="state.payload" class="o_bre_companies">
+                <span t-esc="state.labels.companies"/>:
+                <t t-foreach="state.payload.companies" t-as="company" t-key="company.id">
+                    <span t-esc="company.name"/><t t-if="!company_last"> · </t>
+                </t>
+                <span class="o_bre_currency" t-esc="state.payload.currency.code"/>
+            </p>
+            <div t-if="state.payload" class="o_bre_notes">
+                <p t-foreach="state.payload.notes" t-as="note" t-key="note_index" t-esc="note"/>
+            </div>
+            <div t-if="state.error" class="alert alert-danger" role="alert" t-esc="state.error"/>
+            <div t-if="state.loading" class="o_bre_status" role="status" t-esc="state.labels.loading"/>
+            <section t-if="state.payload" class="o_bre_paper" t-att-aria-label="state.reportName">
+                <div class="o_bre_scroll">
+                    <table class="o_bre_table">
+                        <thead>
+                            <tr>
+                                <th t-esc="state.reportName"/>
+                                <th t-foreach="state.payload.columns" t-as="column" t-key="column.key" class="is-number" t-esc="column.label"/>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-foreach="lines" t-as="line" t-key="line.code">
+                                <tr t-att-class="'o_bre_' + line.display">
+                                    <th t-att-style="'--bre-level:' + line.level">
+                                        <button t-if="line.foldable" type="button" class="o_bre_fold"
+                                            t-att-aria-expanded="!state.folded[line.code] ? 'true' : 'false'"
+                                            t-att-aria-label="state.folded[line.code] ? state.labels.unfold : state.labels.fold"
+                                            t-on-click="() => this.toggleLine(line)">
+                                            <i t-att-class="state.folded[line.code] ? 'fa fa-caret-right o_bre_caret' : 'fa fa-caret-down'" aria-hidden="true"/>
+                                            <span t-esc="line.name"/>
+                                        </button>
+                                        <span t-else="" class="o_bre_static" t-esc="line.name"/>
+                                    </th>
+                                    <td t-foreach="line.amounts" t-as="amount" t-key="amount.key" t-att-class="'is-number ' + amountClass(amount)">
+                                        <button t-if="amount.drill" type="button" class="o_bre_amount"
+                                            t-att-aria-label="state.labels.drill + ' ' + line.name"
+                                            t-on-click="() => this.openAmount(line, amount)" t-esc="amount.display"/>
+                                        <span t-else="" t-esc="amount.display"/>
+                                    </td>
+                                </tr>
+                                <tr t-if="line.has_accounts &amp;&amp; !state.folded[line.code] &amp;&amp; state.accounts[line.code] &amp;&amp; state.accounts[line.code].loading">
+                                    <td t-att-colspan="1 + state.payload.columns.length" t-esc="state.labels.loading"/>
+                                </tr>
+                                <tr t-if="line.has_accounts &amp;&amp; !state.folded[line.code] &amp;&amp; state.accounts[line.code] &amp;&amp; !state.accounts[line.code].loading &amp;&amp; !accountRows(line).length">
+                                    <td t-att-colspan="1 + state.payload.columns.length" t-esc="state.labels.accounts_empty"/>
+                                </tr>
+                                <tr t-foreach="accountRows(line)" t-as="account" t-key="account.id" class="o_bre_account">
+                                    <th t-att-style="'--bre-level:' + (line.level + 1)">
+                                        <span t-esc="account.code"/> <span t-esc="account.name"/>
+                                    </th>
+                                    <td t-foreach="account.amounts" t-as="amount" t-key="amount.key" t-att-class="'is-number ' + amountClass(amount)">
+                                        <button t-if="amount.drill" type="button" class="o_bre_amount"
+                                            t-att-aria-label="state.labels.drill + ' ' + account.code"
+                                            t-on-click="() => this.openAmount(line, amount, account.id)" t-esc="amount.display"/>
+                                        <span t-else="" t-esc="amount.display"/>
+                                    </td>
+                                </tr>
+                            </t>
+                            <tr t-if="state.payload &amp;&amp; !lines.length">
+                                <td t-att-colspan="1 + state.payload.columns.length" t-esc="state.labels.empty"/>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </t>
+</templates>

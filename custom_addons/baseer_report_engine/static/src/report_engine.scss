@@ -1,0 +1,200 @@
+.o_baseer_report_engine {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: auto;
+    background: #f4f6f8;
+    color: #243246;
+
+    .o_bre_toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        align-items: flex-end;
+        padding: 0.75rem 1rem;
+        background: #fff;
+        border-bottom: 1px solid #d7dee5;
+
+        h1 {
+            margin: 0;
+            font-size: 1.25rem;
+        }
+    }
+
+    .o_bre_filters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.6rem 0.8rem;
+        align-items: flex-end;
+
+        label {
+            display: flex;
+            flex-direction: column;
+            gap: 0.15rem;
+            font-size: 0.75rem;
+            color: #5c6b7a;
+        }
+
+        input, select {
+            font-size: 0.85rem;
+            color: #243246;
+        }
+    }
+
+    .o_bre_check {
+        flex-direction: row;
+        align-items: center;
+        padding-bottom: 0.35rem;
+    }
+
+    .o_bre_picker {
+        font-size: 0.85rem;
+
+        summary {
+            cursor: pointer;
+            padding: 0.35rem 0;
+        }
+
+        div {
+            position: absolute;
+            z-index: 2;
+            max-height: 16rem;
+            overflow: auto;
+            background: #fff;
+            border: 1px solid #d7dee5;
+            padding: 0.4rem 0.6rem;
+        }
+
+        label {
+            flex-direction: row;
+            align-items: center;
+            gap: 0.4rem;
+            color: #243246;
+        }
+    }
+
+    .o_bre_companies, .o_bre_notes {
+        margin: 0.6rem auto 0;
+        width: 100%;
+        max-width: 1100px;
+        padding: 0 1rem;
+        color: #5c6b7a;
+        font-size: 0.85rem;
+    }
+
+    .o_bre_currency {
+        margin-inline-start: 0.6rem;
+        font-weight: 700;
+        color: #243246;
+    }
+
+    .o_bre_notes p {
+        margin: 0;
+    }
+
+    .o_bre_status, .alert {
+        margin: 0.6rem auto;
+        width: 100%;
+        max-width: 1100px;
+    }
+
+    .o_bre_paper {
+        margin: 0.6rem auto 1.5rem;
+        width: 100%;
+        max-width: 1100px;
+        background: #fff;
+        border: 1px solid #e1e6ea;
+        box-shadow: 0 1px 2px rgba(36, 50, 70, 0.04);
+    }
+
+    .o_bre_scroll {
+        overflow-x: auto;
+    }
+
+    .o_bre_table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.86rem;
+
+        th, td {
+            padding: 0.4rem 0.6rem;
+            border-bottom: 1px solid #e6ebef;
+            text-align: start;
+            vertical-align: middle;
+        }
+
+        thead th {
+            font-weight: 600;
+            color: #5c6b7a;
+            background: #f8fafb;
+        }
+
+        .is-number {
+            direction: ltr;
+            unicode-bidi: isolate;
+            text-align: end;
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+        }
+
+        .is-zero {
+            color: #b0bac3;
+        }
+
+        .is-negative {
+            color: #c72634;
+        }
+
+        .o_bre_section th, .o_bre_section td {
+            background: #e8edf1;
+            font-weight: 700;
+        }
+
+        .o_bre_total th, .o_bre_total td {
+            border-top: 2px solid #c5ced6;
+            font-weight: 700;
+        }
+
+        .o_bre_account th {
+            font-weight: 400;
+            color: #3c4c5e;
+        }
+    }
+
+    .o_bre_fold, .o_bre_static {
+        padding-inline-start: calc(var(--bre-level, 0) * 1.1rem);
+        background: transparent;
+        border: 0;
+        color: inherit;
+        font: inherit;
+        text-align: start;
+    }
+
+    .o_bre_account th span {
+        padding-inline-start: calc(var(--bre-level, 0) * 1.1rem);
+    }
+
+    .o_bre_amount {
+        background: transparent;
+        border: 0;
+        padding: 0;
+        color: inherit;
+        font: inherit;
+        text-decoration: underline;
+        text-underline-offset: 2px;
+    }
+
+    &[dir="rtl"] .o_bre_caret.fa-caret-right {
+        transform: scaleX(-1);
+    }
+
+    @media (max-width: 720px) {
+        .o_bre_toolbar {
+            align-items: stretch;
+        }
+
+        .o_bre_paper, .o_bre_companies, .o_bre_notes, .o_bre_status, .alert {
+            width: 100%;
+        }
+    }
+}

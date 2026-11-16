@@ -1,0 +1,222 @@
+"""Balance sheet structure, signs, fiscal year, menu and exports."""
+
+import base64
+import io
+import logging
+import zipfile
+
+from odoo.exceptions import ValidationError
+from odoo.tests.common import tagged
+
+from odoo.addons.baseer_report_engine.tests.common import EngineCase
+
+_logger = logging.getLogger(__name__)
+
+
+@tagged('post_install', '-at_install')
+class TestBalanceSheet(EngineCase):
+    def _books(self):
+        company = self._company('Engine balance sheet')
+        engine = self._engine(company)
+        journal = self._journal(company, 'BRB')
+        kinds = {
+            'cash': ('981001', 'asset_cash'),
+            'receivable': ('981002', 'asset_receivable'),
+            'current': ('981003', 'asset_current'),
+            'prepayment': ('981004', 'asset_prepayments'),
+            'fixed': ('981005', 'asset_fixed'),
+            'noncurrent_asset': ('981006', 'asset_non_current'),
+            'payable': ('981007', 'liability_payable'),
+            'current_liability': ('981008', 'liability_current'),
+            'card': ('981009', 'liability_credit_card'),
+            'noncurrent_liability': ('981010', 'liability_non_current'),
+            'equity': ('981011', 'equity'),
+            'unaffected': ('981012', 'equity_unaffected'),
+            'income': ('981013', 'income'),
+            'expense': ('981014', 'expense'),
+            'off_a': ('981015', 'off_balance'),
+            'off_b': ('981016', 'off_balance'),
+        }
+        accounts = {
+            key: self._account(company, code, kind) for key, (code, kind) in kinds.items()
+        }
+
+        def entry(day, debit, credit, amount, posted=True):
+            self._entry(
+                company, journal, day, accounts[debit], accounts[credit], amount, posted=posted,
+            )
+
+        entry('2040-06-01', 'cash', 'income', 100)
+        entry('2040-12-31', 'unaffected', 'equity', 40)
+        entry('2041-03-01', 'cash', 'income', 25)
+        entry('2041-03-15', 'expense', 'cash', 10)
+        entry('2041-04-01', 'unaffected', 'equity', 5)
+        entry('2041-05-01', 'cash', 'payable', 30)
+        entry('2041-05-02', 'receivable', 'income', 12)
+        entry('2041-05-03', 'fixed', 'cash', 70)
+        entry('2041-05-04', 'prepayment', 'cash', 8)
+        entry('2041-05-05', 'current', 'cash', 9)
+        entry('2041-05-06', 'noncurrent_asset', 'cash', 15)
+        entry('2041-05-07', 'cash', 'current_liability', 20)
+        entry('2041-05-08', 'cash', 'noncurrent_liability', 11)
+        entry('2041-05-09', 'cash', 'card', 6)
+        entry('2041-05-10', 'cash', 'income', 999, posted=False)
+        entry('2041-05-11', 'off_a', 'off_b', 17)
+        return engine, accounts
+
+    def test_statement_balances_and_signs(self):
+        engine, accounts = self._books()
+        payload = engine.get_report('balance_sheet', self._options())
+        _logger.info('Balance sheet as of %s', payload['options']['as_of'])
+        for line in payload['lines']:
+            _logger.info(
+                '%s%s %s',
+                '  ' * line['level'],
+                line['code'],
+                line['amounts'][0]['value'],
+            )
+        expected = {
+            'CASH': '80.00', 'REC': '12.00', 'CUR': '9.00', 'PRE': '8.00',
+            'CA': '109.00', 'FA': '70.00', 'NCA': '15.00', 'ASSETS': '194.00',
+            'OCL': '26.00', 'PAY': '30.00', 'CL': '56.00', 'NCL': '11.00', 'LIAB': '67.00',
+            'CY_EARN': '27.00', 'CY_ALLOC': '-5.00', 'CY_UNA': '22.00',
+            'PY_UNA': '60.00', 'UNA': '82.00', 'RE': '45.00', 'EQUITY': '127.00',
+            'LE': '194.00',
+        }
+        for code, amount in expected.items():
+            self.assertEqual(self._value(payload, code), amount, code)
+        self.assertEqual(self._value(payload, 'ASSETS'), self._value(payload, 'LE'))
+        alloc = next(line for line in payload['lines'] if line['code'] == 'CY_ALLOC')
+        cell = next(amount for amount in alloc['amounts'] if amount['key'] == 'c0')
+        self.assertTrue(cell['negative'])
+        self.assertTrue(cell['display'].startswith('−'))
+        unfolded = engine.get_line_accounts('balance_sheet', self._options(), 'CASH')
+        self.assertEqual(unfolded['accounts'][0]['id'], accounts['cash'].id)
+        self.assertEqual(unfolded['accounts'][0]['amounts'][0]['value'], '80.00')
+        cash_action = engine.get_move_line_action(
+            'balance_sheet', self._options(), 'CASH', 'c0', accounts['cash'].id,
+        )
+        self.assertEqual(cash_action['res_model'], 'account.move.line')
+        self.assertIn(('account_id', '=', accounts['cash'].id), cash_action['domain'])
+        self.assertIn(('date', '<=', '2041-06-30'), cash_action['domain'])
+        self.assertIn(('parent_state', 'in', ['posted']), cash_action['domain'])
+        self.assertFalse(any(
+            isinstance(term, tuple) and term[0] == 'date' and term[1] == '>='
+            for term in cash_action['domain']
+        ))
+        current = engine.get_move_line_action('balance_sheet', self._options(), 'CY_EARN', 'c0')
+        self.assertIn(('date', '>=', '2041-01-01'), current['domain'])
+        self.assertIn(('date', '<=', '2041-06-30'), current['domain'])
+        previous = engine.get_move_line_action('balance_sheet', self._options(), 'PY_UNA', 'c0')
+        self.assertIn(('date', '<', '2041-01-01'), previous['domain'])
+        compared = engine.get_report('balance_sheet', self._options(comparison=1))
+        self.assertEqual(len(compared['columns']), 4)
+        with self.assertRaises(ValidationError):
+            engine.get_move_line_action(
+                'balance_sheet', self._options(comparison=1), 'ASSETS', 'variation',
+            )
+
+    def test_march_fiscal_year_splits_earnings(self):
+        company = self._company('Engine march books', month='3')
+        engine = self._engine(company)
+        journal = self._journal(company, 'BRM')
+        cash = self._account(company, '981001', 'asset_cash')
+        income = self._account(company, '981013', 'income')
+        self._entry(company, journal, '2041-03-31', cash, income, 40)
+        self._entry(company, journal, '2041-04-01', cash, income, 50)
+        closing = engine.get_report('balance_sheet', self._options(as_of='2041-03-31'))
+        self.assertEqual(closing['columns'][0]['fiscal_start'], '2040-04-01')
+        self.assertEqual(self._value(closing, 'ASSETS'), '40.00')
+        self.assertEqual(self._value(closing, 'CY_EARN'), '40.00')
+        self.assertEqual(self._value(closing, 'PY_UNA'), '0.00')
+        opened = engine.get_report('balance_sheet', self._options(as_of='2041-04-01'))
+        self.assertEqual(opened['columns'][0]['fiscal_start'], '2041-04-01')
+        self.assertEqual(self._value(opened, 'ASSETS'), '90.00')
+        self.assertEqual(self._value(opened, 'CY_EARN'), '50.00')
+        self.assertEqual(self._value(opened, 'PY_UNA'), '40.00')
+        self.assertEqual(self._value(opened, 'ASSETS'), self._value(opened, 'LE'))
+
+    def test_every_profit_and_loss_type_rolls_into_current_earnings(self):
+        company = self._company('Engine earnings types')
+        engine = self._engine(company)
+        journal = self._journal(company, 'BRT')
+        cash = self._account(company, '981001', 'asset_cash')
+        for index, kind in enumerate(('income', 'income_other'), start=1):
+            account = self._account(company, f'98110{index}', kind)
+            self._entry(company, journal, '2041-02-01', cash, account, 10)
+        for index, kind in enumerate(
+            ('expense', 'expense_other', 'expense_depreciation', 'expense_direct_cost'), start=1,
+        ):
+            account = self._account(company, f'98120{index}', kind)
+            self._entry(company, journal, '2041-02-02', account, cash, 3)
+        payload = engine.get_report('balance_sheet', self._options())
+        self.assertEqual(self._value(payload, 'CY_EARN'), '8.00')
+        self.assertEqual(self._value(payload, 'ASSETS'), '8.00')
+        self.assertEqual(self._value(payload, 'LE'), '8.00')
+
+    def test_menu_translations_and_exports(self):
+        menu = self.env.ref('baseer_report_engine.menu_new_version')
+        child = self.env.ref('baseer_report_engine.menu_balance_sheet')
+        action = self.env.ref('baseer_report_engine.action_balance_sheet')
+        self.assertEqual(menu.parent_id, self.env.ref('account.menu_finance_entries'))
+        self.assertEqual(menu.sequence, 100)
+        self.assertEqual(menu.name, 'New Version')
+        self.assertEqual(child.parent_id, menu)
+        self.assertEqual(child.name, 'Balance Sheet (New)')
+        self.assertEqual(action.tag, 'baseer_report_engine')
+        self.assertIn('balance_sheet', action.context)
+        self.assertIn(self.env.ref('account.group_account_readonly'), menu.group_ids)
+        self.assertEqual(self.env.ref('baseer_report_engine.line_bs_assets').name, 'Assets')
+        self.env['res.lang']._activate_lang('ar_001')
+        self.env['ir.module.module']._load_module_terms(
+            ['baseer_report_engine'], ['ar_001'], overwrite=True,
+        )
+        self.assertEqual(menu.with_context(lang='ar_001').name, 'النسخة الجديدة')
+        self.assertEqual(child.with_context(lang='ar_001').name, 'الميزانية العمومية (جديد)')
+        self.assertEqual(
+            self.env.ref('baseer_report_engine.line_bs_assets').with_context(lang='ar_001').name,
+            'الأصول',
+        )
+        self.assertEqual(
+            self.env.ref('baseer_report_engine.line_bs_le').with_context(lang='ar_001').name,
+            'الخصوم وحقوق الملكية',
+        )
+        self.assertEqual(
+            self.env.ref('baseer_report_engine.line_bs_cash').with_context(lang='ar_001').name,
+            'البنك والنقد',
+        )
+        self.assertEqual(
+            self.env.ref('baseer_report_engine.report_balance_sheet').with_context(lang='ar_001').name,
+            'الميزانية العمومية',
+        )
+        engine, _accounts = self._books()
+        company = engine.env.company
+        options = self._options()
+        exported = engine.export_xlsx('balance_sheet', options)
+        workbook = base64.b64decode(exported['content'])
+        self.assertTrue(workbook.startswith(b'PK'))
+        self.assertEqual(exported['filename'], 'balance-sheet.xlsx')
+        with zipfile.ZipFile(io.BytesIO(workbook)) as book:
+            sheet = book.read('xl/worksheets/sheet1.xml')
+        self.assertIn(b'194', sheet)
+        report_ids = self.env.ref('baseer_report_engine.report_balance_sheet').ids
+        arabic_report = self.env['ir.actions.report'].with_company(company).with_context(
+            lang='ar_001', allowed_company_ids=[company.id],
+        )
+        html, output = arabic_report._render_qweb_html(
+            'baseer_report_engine.report_pdf', docids=report_ids,
+            data={'report_code': 'balance_sheet', 'options': options},
+        )
+        self.assertEqual(output, 'html')
+        self.assertIn('الأصول'.encode(), html)
+        self.assertIn(b'194.00', html)
+        self.assertIn(b'class="page"', html)
+        english, _output = self.env['ir.actions.report'].with_company(company).with_context(
+            allowed_company_ids=[company.id], lang='en_US',
+        )._render_qweb_html(
+            'baseer_report_engine.report_pdf', docids=report_ids,
+            data={'report_code': 'balance_sheet', 'options': options},
+        )
+        self.assertIn(b'Balance Sheet', english)
+        self.assertIn(b'Bank and Cash', english)
+        self.assertIn(b'194.00', english)

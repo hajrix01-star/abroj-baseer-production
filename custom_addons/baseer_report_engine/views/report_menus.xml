@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- New menu group. Do not reuse the xmlid-less production menu of the same label. -->
+    <record id="action_balance_sheet" model="ir.actions.client">
+        <field name="name">Balance Sheet (New)</field>
+        <field name="tag">baseer_report_engine</field>
+        <field name="context">{'report_code': 'balance_sheet'}</field>
+    </record>
+    <menuitem id="menu_new_version"
+        name="New Version"
+        parent="account.menu_finance_entries"
+        sequence="100"
+        groups="account.group_account_readonly,account.group_account_user,account.group_account_manager"/>
+    <menuitem id="menu_balance_sheet"
+        name="Balance Sheet (New)"
+        parent="menu_new_version"
+        action="action_balance_sheet"
+        sequence="10"
+        groups="account.group_account_readonly,account.group_account_user,account.group_account_manager"/>
+</odoo>

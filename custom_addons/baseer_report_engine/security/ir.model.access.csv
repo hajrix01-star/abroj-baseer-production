@@ -1,0 +1,10 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_baseer_report_definition_readonly,report.definition.readonly,model_baseer_report_definition,account.group_account_readonly,1,0,0,0
+access_baseer_report_definition_user,report.definition.user,model_baseer_report_definition,account.group_account_user,1,0,0,0
+access_baseer_report_definition_manager,report.definition.manager,model_baseer_report_definition,account.group_account_manager,1,1,1,1
+access_baseer_report_line_readonly,report.line.readonly,model_baseer_report_line,account.group_account_readonly,1,0,0,0
+access_baseer_report_line_user,report.line.user,model_baseer_report_line,account.group_account_user,1,0,0,0
+access_baseer_report_line_manager,report.line.manager,model_baseer_report_line,account.group_account_manager,1,1,1,1
+access_baseer_report_expression_readonly,report.expression.readonly,model_baseer_report_expression,account.group_account_readonly,1,0,0,0
+access_baseer_report_expression_user,report.expression.user,model_baseer_report_expression,account.group_account_user,1,0,0,0
+access_baseer_report_expression_manager,report.expression.manager,model_baseer_report_expression,account.group_account_manager,1,1,1,1

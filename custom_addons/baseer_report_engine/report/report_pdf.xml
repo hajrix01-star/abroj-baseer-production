@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="paperformat_report_engine" model="report.paperformat">
+        <field name="name">Baseer Report Engine A4 Landscape</field>
+        <field name="default" eval="False"/>
+        <field name="format">A4</field>
+        <field name="orientation">Landscape</field>
+        <field name="margin_top">12</field>
+        <field name="margin_bottom">14</field>
+        <field name="margin_left">10</field>
+        <field name="margin_right">10</field>
+        <field name="header_line" eval="False"/>
+        <field name="header_spacing">0</field>
+    </record>
+    <record id="action_report_pdf" model="ir.actions.report">
+        <field name="name">Baseer Report</field>
+        <field name="model">baseer.report.definition</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">baseer_report_engine.report_pdf</field>
+        <field name="report_file">baseer_report_engine.report_pdf</field>
+        <field name="paperformat_id" ref="paperformat_report_engine"/>
+    </record>
+    <template id="report_pdf">
+        <t t-set="o" t-value="company"/>
+        <t t-call="web.basic_layout">
+            <div class="page bre-pdf" t-att-dir="'rtl' if arabic else 'ltr'">
+                <style>
+                    .bre-pdf { font-family: DejaVu Sans, Arial, sans-serif; color: #243246; font-size: 10px; }
+                    .bre-pdf h1 { font-size: 16px; margin: 0 0 4px; }
+                    .bre-pdf .meta { color: #5d6b7a; margin-bottom: 8px; }
+                    .bre-pdf .note { background: #e7f2f4; padding: 4px 6px; margin: 0 0 8px; }
+                    .bre-pdf table { width: 100%; border-collapse: collapse; }
+                    .bre-pdf th, .bre-pdf td { padding: 3px 5px; border-bottom: 1px solid #e1e6ea; vertical-align: top; }
+                    .bre-pdf thead { display: table-header-group; }
+                    .bre-pdf tr { page-break-inside: avoid; }
+                    .bre-pdf .num { direction: ltr; unicode-bidi: isolate; text-align: right; white-space: nowrap; }
+                    .bre-pdf .negative { color: #c72634; }
+                    .bre-pdf .section th, .bre-pdf .section td { background: #e4e8eb; font-weight: 700; }
+                    .bre-pdf .total th, .bre-pdf .total td { border-top: 1px solid #b7c0c8; font-weight: 700; }
+                    .bre-pdf .account td { color: #3c4c5e; }
+                </style>
+                <h1 t-esc="payload['report']['name']"/>
+                <div class="meta">
+                    <div t-esc="' · '.join(company['name'] for company in payload['companies'])"/>
+                    <div>
+                        <span t-esc="payload['currency']['code']"/>
+                        <t t-if="payload['columns']"> · <span t-esc="payload['columns'][0]['label']"/></t>
+                    </div>
+                    <div t-esc="payload['generated_at']"/>
+                </div>
+                <div class="note">
+                    <div t-foreach="payload['notes']" t-as="note" t-esc="note"/>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th t-esc="payload['report']['name']"/>
+                            <th t-foreach="payload['columns']" t-as="column" class="num" t-esc="column['label']"/>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <t t-foreach="payload['lines']" t-as="line">
+                            <tr t-att-class="line['display']">
+                                <th>
+                                    <span t-if="arabic" t-attf-style="padding-right: #{8 + line['level'] * 14}px" t-esc="line['name']"/>
+                                    <span t-else="" t-attf-style="padding-left: #{8 + line['level'] * 14}px" t-esc="line['name']"/>
+                                </th>
+                                <td t-foreach="line['amounts']" t-as="amount" t-att-class="'num negative' if amount['negative'] else 'num'" t-esc="amount['display']"/>
+                            </tr>
+                            <tr t-foreach="line['accounts']" t-as="account" class="account">
+                                <td>
+                                    <span t-if="arabic" t-attf-style="padding-right: #{22 + line['level'] * 14}px">
+                                        <span t-esc="account['code']"/> <span t-esc="account['name']"/>
+                                    </span>
+                                    <span t-else="" t-attf-style="padding-left: #{22 + line['level'] * 14}px">
+                                        <span t-esc="account['code']"/> <span t-esc="account['name']"/>
+                                    </span>
+                                </td>
+                                <td t-foreach="account['amounts']" t-as="amount" t-att-class="'num negative' if amount['negative'] else 'num'" t-esc="amount['display']"/>
+                            </tr>
+                        </t>
+                    </tbody>
+                </table>
+            </div>
+            <div class="footer" style="font-family: DejaVu Sans, Arial, sans-serif; font-size: 8px; color: #657487; border-top: 1px solid #d9dfe4; padding-top: 4px;">
+                <span t-esc="company.name"/>
+                <span style="float: right;"><span class="page"/> / <span class="topage"/></span>
+            </div>
+        </t>
+    </template>
+</odoo>

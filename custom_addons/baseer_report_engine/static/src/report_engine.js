@@ -379,6 +379,7 @@ export class BaseerReportEngine extends Component {
 
     rowClass(line) {
         return `o_bre_${line.display} o_bre_level_${line.level}` +
+            (line.foldable ? " o_bre_foldable" : "") +
             (line.has_accounts && !this.state.folded[line.code] ? " o_bre_open" : "") +
             (this.state.dateMode === "range" && line.display === "total" ? " o_bre_band" : "");
     }

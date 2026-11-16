@@ -4,7 +4,7 @@
     height: 100%;
     overflow: auto;
     background: #f4f6f8;
-    color: #243246;
+    color: #111827;
 
     .o_bre_toolbar {
         display: flex;
@@ -241,11 +241,11 @@
 .o_baseer_report_engine {
     .o_bre_toolbar { min-height: 58px; padding: 8px 16px 16px; gap: 4px; align-items: center; border-color: #d8dadd; }
     .o_bre_actions { gap: 4px; }
-    .o_bre_toolbar h1 { font-size: 17px; font-weight: 400; margin: 0 4px 0 0; white-space: nowrap; }
-    .o_bre_toolbar .btn { height: 33px; padding: 5px 10px; font-size: 14px; font-weight: 600; border-radius: 4px; white-space: nowrap; }
+    .o_bre_toolbar h1 { font-family: inherit; font-size: 16.8px; line-height: 1.5; font-weight: 400; color: #111827; margin: 0 4px 0 0; white-space: nowrap; }
+    .o_bre_toolbar .btn { height: 33px; padding: 5px 10px; font-size: 14px; line-height: 21px; font-weight: 500; border-radius: 4px; white-space: nowrap; }
     .o_bre_toolbar .btn-secondary { background: #e7e9ed; border-color: #e7e9ed; color: #111827; }
     .o_bre_toolbar .show > .btn-secondary, .o_bre_toolbar .btn-secondary[aria-expanded="true"] { border-color: #008c95; }
-    .o_bre_gear { background: none; border: 0; color: #111827; height: 25px; width: 25px; padding: 0; }
+    .o_bre_gear { background: none; border: 0; color: #111827; height: 33px; padding: 5px 10px; font-size: 14px; line-height: 21px; font-weight: 500; }
     .o_bre_filters { gap: 4px; margin-inline-start: 16px; }
     .o_bre_overflow { display: none; }
     .o_bre_draft_banner { margin: 0; max-width: 100%; width: 100%; min-height: 53px; padding: 16px; border: 0; border-radius: 0; background: #d1ecf1; color: #09414a; font-size: 14px; }
@@ -302,7 +302,7 @@
         font-size: 12.8px; color: #374151;
         .o_bre_label_col { width: 507px; }
         .o_bre_value_col { width: 243px; }
-        th, td { height: 28px; padding: 4px 12px; border: 0; border-bottom: 1px solid #e7e9ed; vertical-align: middle; text-align: start; line-height: 19px; }
+        th, td { height: 28px; padding: 4px 12px; border: 0; border-bottom: 1px solid #e7e9ed; vertical-align: middle; text-align: start; line-height: 1.5; }
         th:first-child { min-width: 0; }
         thead th { position: static; background: transparent; color: #111827; font-weight: 500; }
         .o_bre_period_header th:not(:first-child) { border: 1px solid #d8dadd; text-align: center; }
@@ -311,11 +311,13 @@
         tbody th { position: relative; font-weight: 400; padding-inline-start: calc(32px + var(--bre-level, 0) * 16px); }
         .is-number { direction: ltr; text-align: right; font-variant-numeric: tabular-nums; }
         .is-zero { color: #d8dadd; }
-        .is-negative { color: #d44c59; }
+        td.is-negative { color: #d23f3a; }
         .o_bre_section th, .o_bre_section td { background: transparent; border-top: 0; border-bottom: 1px solid #d8dadd; font-weight: 700; }
         .o_bre_section.o_bre_level_0 th, .o_bre_section.o_bre_level_0 td, .o_bre_band th, .o_bre_band td { background: #d8dadd; border: 0; font-weight: 700; }
         .o_bre_total th, .o_bre_total td { border-top: 0; font-weight: 700; }
-        .o_bre_total.o_bre_level_0 { color: #111827; }
+        .o_bre_line.o_bre_level_0, .o_bre_line.o_bre_level_1.o_bre_foldable { color: #111827; font-weight: 700; }
+        .o_bre_line.o_bre_level_0 th, .o_bre_line.o_bre_level_1.o_bre_foldable th { font-weight: 700; }
+        .o_bre_band { color: #374151; }
         .o_bre_open th, .o_bre_leaf_total th, .o_bre_leaf_total td { font-weight: 700; }
         .o_bre_leaf_total th, .o_bre_leaf_total td { background: #f2f2f2; }
         .o_bre_account th { padding-inline-start: calc(38px + var(--bre-level, 0) * 16px); font-weight: 400; }
@@ -351,7 +353,7 @@
 .o_baseer_report_engine {
     .o_bre_search { position: relative; display: flex; align-items: center; height: 33px; width: 222px; border: 1px solid #d8dadd; border-radius: 4px; background: white; }
     .o_bre_search i { margin-inline-start: 10px; color: #111827; }
-    .o_bre_search input { width: 100%; min-width: 0; border: 0; outline: 0; background: transparent; padding: 4px 8px; }
+    .o_bre_search input { width: 100%; min-width: 0; height: 33px; border: 0; outline: 0; background: transparent; padding: 4px 8px; font-size: 14px; line-height: 21px; }
     .o_bre_grid { width: calc(800px + (var(--bre-columns) - 4) * 40px); }
     .o_bre_grid .o_bre_paper_inner { min-width: calc(798px + (var(--bre-columns) - 4) * 40px); }
     .o_bre_grid_table {
@@ -362,11 +364,13 @@
         .o_bre_shaded { background: #f9fafb; }
         .o_bre_period_header th { white-space: nowrap; }
         tbody th, .o_bre_level_0 th { padding-inline-start: 35px; font-weight: 400; }
+        .o_bre_line.o_bre_level_0, .o_bre_line.o_bre_level_0 th { color: #374151; font-weight: 400; }
         .o_bre_total th { padding-inline-start: 32px; }
-        .o_bre_total th, .o_bre_total td { font-weight: 700; background: transparent; border-bottom: 1px solid #e7e9ed; }
+        .o_bre_total th, .o_bre_total td { color: #111827; font-weight: 700; background: transparent; border-bottom: 1px solid #e7e9ed; }
+        .o_bre_total td.is-zero { color: #d8dadd; }
+        .o_bre_total td.is-negative { color: #d23f3a; }
         .o_bre_total td.o_bre_shaded { background: #f9fafb; }
         .o_bre_period_header th { white-space: nowrap; }
-        .is-negative { color: #ff2626; }
         tbody td:last-child { padding-inline-end: 12px; }
         tr:has(.dropdown.show) th, tr:has(.dropdown.show) td { background: #e9eaec !important; color: #008c95; }
     }

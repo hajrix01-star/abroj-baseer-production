@@ -17,3 +17,7 @@ Grid drill-down lists raw journal items, like statements: analytic weighting and
 The ledger uses the shared grid aggregation and fiscal carry-forward helpers. Its ledger report kind and `grid_groupby` definition provide an extension point for future grouping layouts such as a partner ledger; the current ledger implementation supports account and company grouping. The account Total row is returned on the last page.
 
 Ledger unfolding ranks journal items per account and company after applying access rules; only the requested page is loaded. Exports include all items for unfolded accounts. A future partner ledger can reuse the grid aggregation and ledger page presentation with a partner-specific grouping, opening balance and drill policy.
+
+## Design notes
+
+The report toolbar uses the instance theme's primary button colour, keeping it consistent with the rest of the app.

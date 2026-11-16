@@ -43,15 +43,18 @@ class BaseerReportEngine(models.AbstractModel):
             'analytic_accounts': self._analytic_options(),
             'analytic_enabled': self.env['account.analytic.account'].has_access('read'),
             'labels': self._labels(),
-            'defaults': dict(self._default_options(), preset=report.default_preset or ('today' if report.date_mode == 'as_of' else 'this_year'), comparison_unit='month' if report.date_mode == 'as_of' or report.report_kind == 'account_grid' else 'year'),
+            'defaults': dict(self._default_options(), preset=report.default_preset or ('today' if report.date_mode == 'as_of' else 'this_year'), comparison_unit='month' if report.date_mode == 'as_of' or report.report_kind in ('account_grid', 'ledger') else 'year'),
         }
 
     @api.model
     def get_report(self, report_code, options=None, with_accounts=False):
         self._check_report_access()
         report = self._definition(report_code)
+        if options is None:
+            options = self.env.context.get('baseer_options') or {}
         normalized = self._normalize_options(report, options or {})
         payload = (self._build_grid(report, normalized) if report.report_kind == 'account_grid'
+                   else self._build_ledger(report, normalized, options or {}) if report.report_kind == 'ledger'
                    else self._build(report, normalized, with_accounts=with_accounts))
         payload['has_draft_entries'] = bool(normalized['posted_only'] and self.env['account.move.line'].search_count(self._draft_domain(normalized), limit=1))
         return payload
@@ -104,7 +107,9 @@ class BaseerReportEngine(models.AbstractModel):
         self._check_report_access()
         report = self._definition(report_code)
         normalized = self._normalize_options(report, options or {})
-        if report.report_kind == 'account_grid':
+        if report.report_kind in ('account_grid', 'ledger'):
+            if report.report_kind == 'ledger':
+                column_key = 'end'
             return self._grid_move_line_action(report, normalized, line_code, column_key, account_id, company_id)
         line = report.line_ids.filtered(lambda item: item.code == line_code)[:1]
         if not line:
@@ -776,6 +781,7 @@ class BaseerReportEngine(models.AbstractModel):
             'search': _('Search...'),
             'general_ledger': _('General Ledger'),
             'journal_items': _('Journal Items'),
+            'load_more': _('Load more...'),
             'unfold_line': _('Unfold'),
             'fold_line': _('Fold'),
             'total_format': _('Total %s'),

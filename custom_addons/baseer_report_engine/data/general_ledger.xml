@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="report_general_ledger" model="baseer.report.definition">
+        <field name="name">General Ledger</field>
+        <field name="code">general_ledger</field>
+        <field name="date_mode">range</field>
+        <field name="report_kind">ledger</field>
+        <field name="grid_groupby">account_id,company_id</field>
+        <field name="default_preset">this_month</field>
+    </record>
+</odoo>

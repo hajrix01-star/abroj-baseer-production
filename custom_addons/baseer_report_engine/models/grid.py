@@ -79,6 +79,21 @@ class BaseerGridEngine(models.AbstractModel):
         ], limit=1) for company in self.env.companies}
 
     @api.model
+    def _grid_carry_forward(self, balances, prior, earnings):
+        """Move prior fiscal years' P&L balances to each company's earnings row.
+
+        Keep the source aggregates untouched so another report layout can reuse
+        them for period movements as well as opening and closing balances.
+        """
+        adjusted = {key: dict(value) for key, value in balances.items()}
+        for (account_id, company_id), values in prior.items():
+            adjusted[(account_id, company_id)]['balance'] -= values['balance']
+            account = earnings[company_id]
+            key = (account.id if account else 0, company_id)
+            adjusted.setdefault(key, _zeros())['balance'] += values['balance']
+        return adjusted
+
+    @api.model
     def _build_grid(self, report, options):
         periods = options['columns']
         first, last = periods[0]['_start'], periods[-1]['_end']
@@ -96,14 +111,10 @@ class BaseerGridEngine(models.AbstractModel):
             raise ValidationError(_('The report options are not valid.'))
         sums = self._grid_balances(options, groupby, scopes)
         earnings = self._grid_earnings_accounts()
-        adjusted = {}
-        for scope, prior in (('initial', 'prior'), ('end', 'prior_end')):
-            adjusted[scope] = {key: dict(value) for key, value in sums[scope].items()}
-            for (account_id, company_id), values in sums[prior].items():
-                adjusted[scope][(account_id, company_id)]['balance'] -= values['balance']
-                account = earnings[company_id]
-                key = (account.id if account else 0, company_id)
-                adjusted[scope].setdefault(key, _zeros())['balance'] += values['balance']
+        adjusted = {
+            scope: self._grid_carry_forward(sums[scope], sums[prior], earnings)
+            for scope, prior in (('initial', 'prior'), ('end', 'prior_end'))
+        }
         keys = set(adjusted['end']) | set(adjusted['initial'])
         accounts = self.env['account.account'].with_context(active_test=False).browse(list({key[0] for key in keys if key[0]})).exists()
         by_id = {a.id: a for a in accounts}

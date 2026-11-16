@@ -953,7 +953,7 @@ msgstr "بحث..."
 
 #. module: baseer_report_engine
 #. odoo-python
-#: code:addons/baseer_report_engine/models/grid.py:0
+#: code:addons/baseer_report_engine/models/engine.py:0
 #: model:baseer.report.definition,name:baseer_report_engine.report_general_ledger
 msgid "General Ledger"
 msgstr "دفتر الأستاذ العام"

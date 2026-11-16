@@ -240,7 +240,18 @@ export class BaseerReportEngine extends Component {
 
     async toggleLedger(line) {
         this.state.folded[line.code] = !this.state.folded[line.code];
-        if (!this.state.folded[line.code] && !this.state.accounts[line.code]) await this.loadLedger(line, 0);
+        const pair = [line.account_id, line.company_id];
+        if (this.state.options.unfold_all) {
+            this.state.options.unfold_all = false;
+            this.state.options.unfolded_accounts = this.state.payload.lines
+                .filter((row) => row.foldable && !this.state.folded[row.code])
+                .map((row) => [row.account_id, row.company_id]);
+        }
+        this.state.options.unfolded_accounts = (this.state.options.unfolded_accounts || []).filter(([a, c]) => a !== pair[0] || c !== pair[1]);
+        if (!this.state.folded[line.code]) {
+            this.state.options.unfolded_accounts.push(pair);
+            if (!this.state.accounts[line.code]) await this.loadLedger(line, 0);
+        }
     }
 
     async loadLedger(line, offset) {
@@ -250,6 +261,12 @@ export class BaseerReportEngine extends Component {
             const old = offset ? this.state.accounts[line.code]?.rows || [] : [];
             this.state.accounts[line.code] = { ...page, rows: [...old, ...page.rows] };
         } catch (error) { this.state.error = error?.data?.message || this.state.labels.error || "Error"; }
+    }
+
+    async openGeneralLedger(line) {
+        const action = await this.orm.call("baseer.report.engine", "get_general_ledger_action",
+            [this.reportCode, this.plainOptions(), line.account_id, line.company_id]);
+        await this.actionService.doAction(action);
     }
 
     async openMove(id) {

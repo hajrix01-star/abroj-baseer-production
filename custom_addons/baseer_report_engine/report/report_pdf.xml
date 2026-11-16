@@ -74,9 +74,14 @@
                                         <t t-else="" t-esc="line['name']"/>
                                     </span>
                                 </th>
-                                <td t-foreach="line['amounts']" t-as="amount" t-att-class="'num' + (' negative' if amount['negative'] else '') + (' shaded' if payload.get('column_groups') and (payload['columns'][amount_index]['figure'] == 'debit' or payload['columns'][amount_index]['kind'] == 'end') else '')" t-esc="amount['display'] if not line.get('hide_amounts') else ''"/>
+                                <t t-if="payload['report'].get('report_kind') == 'ledger'"><td/><td/><td/></t>
+                                <td t-foreach="line['amounts']" t-as="amount" t-att-class="'num' + (' negative' if amount['negative'] else '') + (' shaded' if payload.get('column_groups') and (payload['columns'][amount_index + (3 if payload['report'].get('report_kind') == 'ledger' else 0)]['figure'] == 'debit' or payload['columns'][amount_index + (3 if payload['report'].get('report_kind') == 'ledger' else 0)]['kind'] == 'end') else '')" t-esc="amount['display'] if not line.get('hide_amounts') else ''"/>
                             </tr>
-                            <tr t-foreach="line['accounts']" t-as="account" class="account">
+                            <tr t-foreach="line.get('ledger', {}).get('rows', [])" t-as="item" t-att-class="'total' if item['type'] == 'total' else 'account'">
+                                <td t-esc="item['name']"/><td t-esc="item.get('date', '')"/><td t-esc="item.get('partner', '')"/><td t-esc="item.get('currency', '')"/>
+                                <td t-foreach="item['amounts']" t-as="amount" class="num" t-esc="amount['display']"/>
+                            </tr>
+                            <tr t-foreach="line.get('accounts', [])" t-as="account" class="account">
                                 <td>
                                     <span t-if="arabic" t-attf-style="padding-right: #{22 + line['level'] * 14}px">
                                         <bdi t-esc="account['code']"/> <bdi t-esc="account['name']"/>

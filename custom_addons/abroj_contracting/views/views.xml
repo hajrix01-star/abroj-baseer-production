@@ -120,6 +120,7 @@
           <field name="abroj_can_accounting_approve" invisible="1"/>
           <button name="action_issue" type="object" string="إصدار" class="btn-primary" invisible="state != 'draft'" help="عرض السجل أو اعتماد العملية حسب حالتها؛ راجع البيانات والمرفقات قبل التنفيذ."/>
           <button name="action_open_accounting_issue" type="object" string="Issue accounting entry" groups="account.group_account_manager,account.group_account_invoice" invisible="not abroj_can_accounting_approve" help="إنشاء دفعة محاسبية مرتبطة بحساب المشروع التحليلي؛ يجب أن يعتمد السند محاسب غير مصدره، ولا يسمح لوكيل الاستخراج بالاعتماد."/>
+          <button name="action_open_change_method" type="object" string="تغيير طريقة الدفع" groups="account.group_account_manager,account.group_account_invoice" invisible="state != 'issued' or payment_id"/>
           <button name="action_cancel" type="object" string="إلغاء" invisible="state == 'cancelled'" help="عرض السجل أو اعتماد العملية حسب حالتها؛ راجع البيانات والمرفقات قبل التنفيذ."/>
           <field name="state" widget="statusbar"/>
         </header>
@@ -148,6 +149,13 @@
             <field name="issued_by"/>
             <field name="state"/>
           </group>
+          <notebook groups="account.group_account_manager,account.group_account_invoice">
+            <page string="سجل تغيير طريقة الدفع">
+              <field name="method_log_ids" readonly="1"><list create="0" edit="0" delete="0">
+                <field name="changed_at"/><field name="user_id"/><field name="old_method"/><field name="new_method"/><field name="old_journal_id"/><field name="new_journal_id"/>
+              </list></field>
+            </page>
+          </notebook>
         </sheet>
       </form>
     </field>

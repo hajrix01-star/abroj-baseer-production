@@ -72,6 +72,11 @@ class AbrojVoucherWorkflowCase(TransactionCase):
             'group_ids': [Command.set(groups + [cls.env.ref('account.group_account_invoice').id,
                                                cls.env.ref('abroj_contracting.group_extraction_agent').id])],
         })
+        cls.accountant = cls.env['res.users'].with_context(no_reset_password=True).create({
+            'name': 'Voucher workflow accountant', 'login': 'voucher_workflow_accountant',
+            'company_id': cls.company.id, 'company_ids': [Command.set(cls.company.ids)],
+            'group_ids': [Command.set(groups + [cls.env.ref('account.group_account_invoice').id])],
+        })
 
     def test_direct_review_defaults_from_budget(self):
         self.budget.account_id = self.accounts['expense']
@@ -814,3 +819,35 @@ class AbrojVoucherWorkflowCase(TransactionCase):
         self.assertEqual((self.actual(), self.budget.actual), (100, 100))
         self.assertEqual(self.project.total_costs, baseline + 100)
         self.assertEqual(self.env['account.payment'].search_count([]), payments)
+
+    def test_change_method_refuses_recognition_liquidity(self):
+        voucher = self.voucher().with_user(self.accountant)
+        self.assertEqual(voucher.state, 'issued')
+        self.assertFalse(voucher.payment_id)
+        move = self.env['account.move'].create({'journal_id': self.purchase.id, 'line_ids': [
+            Command.create({'name': 'Liquidity', 'account_id': self.accounts['asset_cash'].id, 'debit': 10}),
+            Command.create({'name': 'Expense', 'account_id': self.accounts['expense'].id, 'credit': 10}),
+        ]})
+        super(FrozenDocument, voucher).write({'recognition_move_id': move.id})
+        with self.assertRaises(UserError):
+            voucher._abroj_change_payment_method('bank', self.env['account.journal'])
+        self.assertEqual(voucher.recognition_move_id, move)
+        self.assertEqual(voucher.method, 'cash')
+        # A journal default account is liquidity even if its account type is not asset_cash.
+        self.cash.default_account_id = self.accounts['asset_current']
+        move.line_ids.filtered(lambda line: line.account_id == self.accounts['asset_cash']).account_id = self.accounts['asset_current']
+        with self.assertRaises(UserError):
+            voucher._abroj_change_payment_method('bank', self.env['account.journal'])
+
+    def test_change_method_allows_recognition_without_liquidity(self):
+        voucher = self.voucher().with_user(self.accountant)
+        move = self.env['account.move'].create({'journal_id': self.purchase.id, 'line_ids': [
+            Command.create({'name': 'Expense', 'account_id': self.accounts['expense'].id, 'debit': 10}),
+            Command.create({'name': 'Payable', 'account_id': self.accounts['liability_payable'].id, 'credit': 10, 'partner_id': self.partner.id}),
+        ]})
+        super(FrozenDocument, voucher).write({'recognition_move_id': move.id})
+        before = [(line.id, line.account_id.id, line.debit, line.credit) for line in move.line_ids]
+        voucher._abroj_change_payment_method('bank', self.env['account.journal'])
+        self.assertEqual(voucher.recognition_move_id, move)
+        self.assertEqual(voucher.method, 'bank')
+        self.assertEqual(before, [(line.id, line.account_id.id, line.debit, line.credit) for line in move.line_ids])

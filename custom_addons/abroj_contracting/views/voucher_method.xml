@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <record id="voucher_change_method_form" model="ir.ui.view">
+    <field name="name">abroj.contracting.voucher.change.method.form</field>
+    <field name="model">abroj.contracting.voucher.change.method</field>
+    <field name="arch" type="xml">
+      <form string="تغيير طريقة الدفع">
+        <group>
+          <field name="voucher_id"/>
+          <field name="company_id" invisible="1"/>
+          <field name="method"/>
+          <field name="journal_id" domain="[('company_id', '=', company_id), ('active', '=', True), ('type', '=', 'cash' if method == 'cash' else 'bank')]"/>
+        </group>
+        <footer>
+          <button name="action_apply" type="object" string="تطبيق" class="btn-primary"/>
+          <button string="إلغاء" special="cancel"/>
+        </footer>
+      </form>
+    </field>
+  </record>
+</odoo>

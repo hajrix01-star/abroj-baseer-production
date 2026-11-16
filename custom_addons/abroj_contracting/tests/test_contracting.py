@@ -879,3 +879,94 @@ class AbrojContractingCase(TransactionCase):
         for voucher in (payment, receipt):
             rendered, _ = report._render_qweb_html('abroj_contracting.voucher', voucher.ids)
             self.assertIn(project.name, rendered.decode())
+
+    def test_change_method_and_audit(self):
+        bank = self.env['account.journal'].create({'name': 'Method bank', 'code': 'MTHB', 'type': 'bank', 'company_id': self.env.company.id})
+        cash = self.env['account.journal'].create({'name': 'Method cash', 'code': 'MTHC', 'type': 'cash', 'company_id': self.env.company.id})
+        voucher = self.voucher(journal_id=cash.id)
+        voucher.action_issue()
+        accountant = self.accountant()
+        action = voucher.with_user(accountant).action_open_change_method()
+        wizard = self.env[action['res_model']].with_user(accountant).with_context(action['context']).create({})
+        self.assertEqual((wizard.method, wizard.journal_id), ('cash', cash))
+        wizard.write({'method': 'bank', 'journal_id': bank.id})
+        wizard.action_apply()
+        log = voucher.method_log_ids
+        self.assertEqual((voucher.method, voucher.journal_id), ('bank', bank))
+        self.assertEqual((log.old_method, log.new_method, log.old_journal_id, log.new_journal_id, log.user_id),
+                         ('cash', 'bank', cash, bank, accountant))
+        voucher.with_user(accountant)._abroj_change_payment_method('cash', self.env['account.journal'])
+        log = voucher.method_log_ids.sorted('id')[-1]
+        self.assertEqual((voucher.method, voucher.journal_id.id), ('cash', False))
+        self.assertEqual((log.old_method, log.new_method, log.old_journal_id, log.new_journal_id.id, log.user_id),
+                         ('bank', 'cash', bank, False, accountant))
+        with self.assertRaises(AccessError):
+            log.with_user(accountant).write({'new_method': 'other'})
+
+    def test_change_method_state_and_freeze(self):
+        from odoo.addons.abroj_contracting.models.contracting import FrozenDocument
+        empty = self.env['account.journal']
+        accountant = self.accountant()
+        draft = self.voucher().with_user(accountant)
+        with self.assertRaises(UserError):
+            draft._abroj_change_payment_method('bank', empty)
+        draft.action_cancel()
+        with self.assertRaises(UserError):
+            draft._abroj_change_payment_method('bank', empty)
+        voucher = self.voucher().with_user(accountant)
+        voucher.action_issue()
+        with self.assertRaises(UserError):
+            voucher._abroj_change_payment_method('cash', empty)
+        for values in ({'method': 'bank'}, {'journal_id': False}, {'memo': 'locked'}):
+            with self.assertRaises(UserError):
+                voucher.write(values)
+        journal = self.env['account.journal'].create({'name': 'Payment cash', 'code': 'MTHP', 'type': 'cash', 'company_id': self.env.company.id})
+        payment = self.env['account.payment'].create({'payment_type': 'outbound', 'partner_type': 'supplier',
+            'amount': 10, 'journal_id': journal.id, 'company_id': self.env.company.id})
+        super(FrozenDocument, voucher).write({'payment_id': payment.id})
+        with self.assertRaises(UserError):
+            voucher._abroj_change_payment_method('bank', empty)
+
+    def test_change_method_journal_validation(self):
+        cash = self.env['account.journal'].create({'name': 'Validate cash', 'code': 'MTHV', 'type': 'cash', 'company_id': self.env.company.id})
+        company = self.env['res.company'].create({'name': 'Other method company'})
+        foreign = self.env['account.journal'].with_company(company).create({'name': 'Foreign bank', 'code': 'MTHF', 'type': 'bank', 'company_id': company.id})
+        voucher = self.voucher().with_user(self.accountant())
+        voucher.action_issue()
+        for method, journal in [('bank', cash), ('other', cash), ('bank', foreign)]:
+            with self.assertRaises(ValidationError):
+                voucher._abroj_change_payment_method(method, journal)
+        cash.active = False
+        with self.assertRaises(ValidationError):
+            voucher._abroj_change_payment_method('cash', cash)
+        self.assertEqual(voucher.method, 'cash')
+        self.assertFalse(voucher.method_log_ids)
+
+    def test_change_method_onchange_clears_incompatible_journal(self):
+        cash = self.env['account.journal'].create({'name': 'Onchange cash', 'code': 'MTOC', 'type': 'cash'})
+        bank = self.env['account.journal'].create({'name': 'Onchange bank', 'code': 'MTOB', 'type': 'bank'})
+        wizard = self.env['abroj.contracting.voucher.change.method'].new({'method': 'cash', 'journal_id': cash.id})
+        wizard.method = 'bank'
+        wizard._onchange_method()
+        self.assertFalse(wizard.journal_id)
+        wizard.journal_id = bank
+        wizard.method = 'other'
+        wizard._onchange_method()
+        self.assertEqual(wizard.journal_id, bank)
+        wizard.method = 'cash'
+        wizard._onchange_method()
+        self.assertFalse(wizard.journal_id)
+        wizard.journal_id = cash
+        wizard._onchange_method()
+        self.assertEqual(wizard.journal_id, cash)
+
+    def test_change_method_permission_checks(self):
+        voucher = self.voucher()
+        voucher.action_issue()
+        user = self.accountant('base.group_user')
+        self.agent.group_ids = [Command.link(self.env.ref('account.group_account_manager').id)]
+        for actor in (user, self.agent):
+            with self.assertRaises(AccessError):
+                voucher.with_user(actor).action_open_change_method()
+            with self.assertRaises(AccessError):
+                voucher.with_user(actor)._abroj_change_payment_method('bank', self.env['account.journal'])

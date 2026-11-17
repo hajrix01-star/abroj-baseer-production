@@ -10,78 +10,48 @@ class TobaccoReportCase(EngineCase):
         cls.company = cls.env['res.company'].create({'name': 'Tobacco test', 'currency_id': cls.env.ref('base.SAR').id})
         cls.env.user.write({'company_ids': [(4, cls.company.id)]})
 
-    def test_opening_and_manual_reconciliation(self):
-        import base64
-        import io
-        import zipfile
-        from odoo.service.model import call_kw
-
+    def test_register_and_reusable_reconciliation(self):
+        import base64, io, zipfile
         company = self.company
         fee = self._account(company, '201021', 'liability_current')
         other = self._account(company, '101099', 'asset_current')
         journal = self._journal(company, 'TST')
         self._entry(company, journal, '2040-12-31', other, fee, 30)
-        move = self._entry(company, journal, '2041-02-01', other, fee, 20)
-        payload = self._engine(company).get_report('tobacco_service_fee', self._options())
+        move = self._entry(company, journal, '2041-02-01', fee, other, 20)
+        engine = self._engine(company)
+        options = self._options()
+        normalized = engine._normalize_options(engine._definition('tobacco_service_fee'), options)
+        self.assertNotIn('show_cumulative', normalized)
+        recon = engine._tobacco_reconciliation(normalized)[0]
+        self.assertEqual((recon['opening'], recon['movement'], recon['difference']), (30, -20, 20))
+        self.assertIn(move.id, recon['manual_move_ids'])
+        self.assertEqual(recon['unexplained'], 0)
+        payload = engine._export_payload('tobacco_service_fee', options)
         section = payload['tobacco_sections'][0]
-        self.assertEqual(section['opening'], 30)
-        self.assertEqual(section['movement'], 20)
-        self.assertEqual(section['difference'], -20)
-        self.assertIn(move.id, section['manual_move_ids'])
-        self.assertEqual(next(c['amount'] for c in section['causes'] if c['key'] == 'manual'), -20)
-        self.assertEqual(section['unexplained'], 0)
-        self.assertEqual(payload['report']['report_kind'], 'tobacco')
-        self.assertTrue(self._engine(company).export_xlsx('tobacco_service_fee', self._options())['content'])
-        self.assertTrue(self._engine(company).export_pdf('tobacco_service_fee', self._options()))
-        for lang in ('en_US', 'ar_001'):
-            self.env['res.lang']._activate_lang(lang)
-            self.env['ir.module.module']._load_module_terms(['baseer_report_engine_tobacco'], [lang], overwrite=True)
-            localized = self._engine(company).with_context(lang=lang)
-            payload = localized._export_payload('tobacco_service_fee', self._options())
-            rows = payload['tobacco_sections'][0]['export_rows']
-            self.assertIn(-20, [values[1] for values, kind in rows if len(values) == 2 and isinstance(values[1], (int, float))])
-            manual_label = 'Manual journal entries' if lang == 'en_US' else 'قيود اليومية اليدوية'
-            self.assertEqual(next(values[1] for values, kind in rows if values[0] == manual_label), -20)
-            unexplained_label = 'Unexplained' if lang == 'en_US' else 'غير مفسر'
-            self.assertEqual(next(values[1] for values, kind in rows if values[0] == unexplained_label), 0)
-            xlsx = localized.export_xlsx('tobacco_service_fee', self._options())['content']
-            with zipfile.ZipFile(io.BytesIO(base64.b64decode(xlsx))) as archive:
-                strings = archive.read('xl/sharedStrings.xml').decode()
-                self.assertIn(manual_label, strings)
-                self.assertIn(unexplained_label, strings)
-                self.assertIn('Difference' if lang == 'en_US' else 'الفرق', strings)
-                self.assertIn('Total for period' if lang == 'en_US' else 'إجمالي الفترة', strings)
-            html, _ = self.env['ir.actions.report'].with_company(company).with_context(lang=lang, allowed_company_ids=[company.id])._render_qweb_html(
-                'baseer_report_engine.report_pdf', docids=localized._definition('tobacco_service_fee').ids, data={'report_code': 'tobacco_service_fee', 'options': self._options()})
-            self.assertIn(('Difference' if lang == 'en_US' else 'الفرق').encode(), html)
-            self.assertIn(manual_label.encode(), html)
-            self.assertIn(unexplained_label.encode(), html)
-            self.assertIn(b'-20.00', html)
-        action = self._engine(company).get_tobacco_source_action(self._options(), 'account.move', move.id)
-        self.assertEqual((action['res_model'], action['res_id'], action['view_mode']), ('account.move', move.id, 'form'))
-        ledger = self._engine(company).get_tobacco_ledger_action(self._options(), fee.id, company.id)
-        self.assertEqual(ledger['context']['report_code'], 'general_ledger')
-        self.assertEqual(ledger['context']['baseer_options']['unfolded_accounts'], [[fee.id, company.id]])
-        engine = self._engine(company)
-        call = lambda method, args: call_kw(engine, method, args, {'context': engine.env.context})
-        self.assertEqual(call('get_report', ['tobacco_service_fee', self._options()])['tobacco_sections'][0]['difference'], -20)
-        self.assertEqual(call('get_tobacco_source_action', [self._options(), 'account.move', move.id])['res_id'], move.id)
-        self.assertEqual(call('get_tobacco_ledger_action', [self._options(), fee.id, company.id])['context']['report_code'], 'general_ledger')
-        self.assertTrue(call('export_xlsx', ['tobacco_service_fee', self._options()])['content'])
-        self.assertTrue(call('export_pdf', ['tobacco_service_fee', self._options()])['type'])
+        self.assertEqual(section['rows'], [])
+        self.assertEqual((section['debit'], section['credit'], section['net']), (0, 0, 0))
+        for key in ('opening', 'closing', 'cumulative', 'movement'):
+            self.assertNotIn(key, section)
+        with zipfile.ZipFile(io.BytesIO(base64.b64decode(engine.export_xlsx('tobacco_service_fee', options)['content']))) as archive:
+            strings = archive.read('xl/sharedStrings.xml').decode()
+            for forbidden in ('Cumulative', 'Show cumulative balance', 'إظهار الرصيد التراكمي', 'Reconciliation', 'Manual journal entries', 'سداد'):
+                self.assertNotIn(forbidden, strings)
+        html, _ = self.env['ir.actions.report'].with_company(company).with_context(allowed_company_ids=[company.id])._render_qweb_html(
+            'baseer_report_engine.report_pdf', docids=engine._definition('tobacco_service_fee').ids,
+            data={'report_code': 'tobacco_service_fee', 'options': options})
+        for forbidden in ('Cumulative', 'Show cumulative balance', 'إظهار الرصيد التراكمي', 'Reconciliation', 'Manual journal entries', 'سداد'):
+            self.assertNotIn(forbidden.encode(), html)
 
-    def test_draft_accounting_option(self):
-        company = self.company
-        fee = self._account(company, '201021', 'liability_current')
-        other = self._account(company, '101099', 'asset_current')
-        journal = self._journal(company, 'TST')
-        move = self._entry(company, journal, '2041-02-01', other, fee, 20, posted=False)
-        engine = self._engine(company)
-        posted = engine.get_report('tobacco_service_fee', self._options())['tobacco_sections'][0]
-        included = engine.get_report('tobacco_service_fee', self._options(posted_only=False))['tobacco_sections'][0]
-        self.assertEqual(posted['movement'], 0)
-        self.assertEqual(included['difference'], -20)
-        self.assertIn(move.id, included['manual_move_ids'])
+    def test_month_bounds(self):
+        from freezegun import freeze_time
+        engine = self._engine(self.company)
+        report = engine._definition('tobacco_service_fee')
+        with freeze_time('2026-11-17 12:00:00'):
+            opts = engine._normalize_options(report, {})
+        self.assertEqual((opts['date_from'], opts['date_to']), ('2026-11-01', '2026-11-30'))
+        for anchor, end in [('2027-02-15', '2027-02-28'), ('2028-02-15', '2028-02-29'), ('2026-12-15', '2026-12-31')]:
+            opts = engine._normalize_options(report, {'preset': 'this_month', 'anchor_date': anchor})
+            self.assertEqual((opts['date_from'], opts['date_to']), (anchor[:7] + '-01', end))
 
     def test_menu_translation(self):
         self.env['res.lang']._activate_lang('ar_001')
@@ -122,6 +92,45 @@ class TobaccoReportCase(EngineCase):
 
 
 class TobaccoPosCase(EngineCase):
+    def test_refunds_are_fees_and_settlements_are_excluded(self):
+        from uuid import uuid4
+        from odoo import Command
+
+        company = self.env.company
+        company.write({'currency_id': self.env.ref('base.SAR').id, 'country_id': self.env.ref('base.sa').id})
+        self.env['account.chart.template'].try_loading('generic_coa', company=company, install_demo=False)
+        company.currency_id = self.env.ref('base.SAR')
+        account = self._account(company, '201021', 'liability_current')
+        other = self._account(company, '101099', 'asset_current')
+        group = self.env['account.tax.group'].create({'name': 'Tobacco service fee', 'company_id': company.id, 'country_id': company.account_fiscal_country_id.id})
+        tax = self.env['account.tax'].create({'name': 'Tobacco service fee', 'type_tax_use': 'sale',
+            'tax_group_id': group.id, 'country_id': company.account_fiscal_country_id.id,
+            'amount_type': 'fixed', 'amount': 100, 'company_id': company.id})
+        (tax.invoice_repartition_line_ids | tax.refund_repartition_line_ids).filtered(lambda rep: rep.repartition_type == 'tax').account_id = account
+        product = self.env['product.product'].create({'name': 'Fee product', 'available_in_pos': True, 'taxes_id': [Command.set(tax.ids)]})
+        config = self.env['pos.config'].create({'name': 'Refund test', 'company_id': company.id})
+        config.open_ui()
+        session = config.current_session_id
+        session.state = 'opened'
+        for qty in (1, 0.5, -1):
+            order = self.env['pos.order'].create({'company_id': company.id, 'session_id': session.id,
+                'source': 'pos', 'amount_tax': 0, 'amount_total': 0, 'amount_paid': 0, 'amount_return': 0,
+                'lines': [Command.create({'uuid': str(uuid4()), 'product_id': product.id,
+                    'tax_ids': [Command.set(tax.ids)], 'qty': qty, 'price_unit': 100,
+                    'price_subtotal': 100 * qty, 'price_subtotal_incl': 200 * qty, 'full_product_name': product.name})]})
+            order._compute_prices()
+            order.write({'date_order': '2041-02-04 12:00:00', 'state': 'paid'})
+        settlement = self._entry(company, self._journal(company, 'SET'), '2041-02-04', account, other, 75)
+        engine = self._engine(company)
+        options = self._options(date_from='2041-02-04', date_to='2041-02-04')
+        section = engine.get_report('tobacco_service_fee', options)['tobacco_sections'][0]
+        self.assertEqual((section['debit'], section['credit'], section['net']), (100, 150, 50))
+        self.assertEqual(section['net'], section['credit'] - section['debit'])
+        self.assertEqual(sorted((row['type'], row['net']) for row in section['rows']), [('Refund', -100), ('Sale', 50), ('Sale', 100)])
+        self.assertNotIn(('account.move', settlement.id), [(row['model'], row['id']) for row in section['rows']])
+        items = engine.get_tobacco_day(options, company.id, account.id, '2041-02-04')['items']
+        self.assertEqual(sorted((item['debit'], item['credit'], item['net']) for item in items), [(0, 50, 50), (0, 100, 100), (100, 0, -100)])
+
     def test_custom_formula_branches(self):
         # The formula tax is supplied by the optional account_tax_python addon;
         # the register deliberately does not depend on it.
@@ -169,7 +178,7 @@ class TobaccoPosCase(EngineCase):
         self.assertTrue(first['has_more'])
         self.assertFalse(second['has_more'])
         self.assertEqual(len(first['items']) + len(second['items']), 3)
-        self.assertEqual(second['items'][-1]['cumulative'], 50)
+        self.assertNotIn('cumulative', second['items'][-1])
 
     def test_native_pos_fee_and_riyadh_boundary(self):
         from uuid import uuid4
@@ -204,8 +213,9 @@ class TobaccoPosCase(EngineCase):
         section = self._engine(company).get_report('tobacco_service_fee', options)['tobacco_sections'][0]
         self.assertEqual(len(section['rows']), 1)
         self.assertEqual(section['net'], 25)
-        self.assertEqual(section['difference'], 25)
-        self.assertIn(session.id, section['open_sessions'])
+        recon = self._engine(company)._tobacco_reconciliation(self._engine(company)._normalize_options(self._engine(company)._definition('tobacco_service_fee'), options))[0]
+        self.assertEqual(recon['difference'], 25)
+        self.assertIn(session.id, recon['open_sessions'])
         action = self._engine(company).get_tobacco_source_action(options, 'pos.session', session.id)
         self.assertEqual((action['res_model'], action['res_id'], action['view_mode']), ('pos.session', session.id, 'form'))
         import base64, io, zipfile
@@ -250,7 +260,6 @@ class TobaccoPosCase(EngineCase):
             self._options(date_from='2041-02-02', date_to='2041-02-02'))['tobacco_sections'][0]
         self.assertEqual({row['type'] for row in invoice_section['rows']}, {'Invoice', 'Credit Note'})
         self.assertEqual(sorted(row['net'] for row in invoice_section['rows']), [-25, 25])
-        self.assertEqual(invoice_section['difference'], 0)
 
         # A batch of twenty orders should not cause a query per source line.
         def add_order():
@@ -304,13 +313,13 @@ class TobaccoClosedSessionCase(CommonPosTest, EngineCase):
             order, _refund = self.create_backend_pos_order({'line_data': [{'product_id': product.id}],
                 'payment_data': [{'payment_method_id': self.bank_payment_method.id}]})
             session = order.session_id
-            section = engine.get_report('tobacco_service_fee', options)['tobacco_sections'][0]
+            section = engine._tobacco_reconciliation(engine._normalize_options(engine._definition('tobacco_service_fee'), options))[0]
             self.assertEqual(section['difference'], 25)
             self.assertIn(session.id, section['open_sessions'])
             session.action_pos_session_closing_control()
             self.assertEqual(session.state, 'closed')
             self.assertEqual(session.move_id.state, 'posted')
-            section = engine.get_report('tobacco_service_fee', options)['tobacco_sections'][0]
+            section = engine._tobacco_reconciliation(engine._normalize_options(engine._definition('tobacco_service_fee'), options))[0]
             self.assertEqual(section['net'], 25)
             self.assertEqual(section['movement'], 25)
             self.assertEqual(section['difference'], 0)
@@ -318,18 +327,19 @@ class TobaccoClosedSessionCase(CommonPosTest, EngineCase):
             session.move_id.button_draft()
             session.move_id.date = '2041-02-05'
             session.move_id.action_post()
-            section = engine.get_report('tobacco_service_fee', options)['tobacco_sections'][0]
+            section = engine._tobacco_reconciliation(engine._normalize_options(engine._definition('tobacco_service_fee'), options))[0]
             causes = {cause['key']: cause for cause in section['causes']}
             self.assertEqual(causes['outside_sessions']['amount'], 25)
             self.assertIn(session.id, causes['outside_sessions']['ids'])
             self.assertEqual(section['unexplained'], 0)
-            inverse = engine.get_report('tobacco_service_fee', self._options(
-                date_from='2041-02-05', date_to='2041-02-05'))['tobacco_sections'][0]
+            inverse_options = self._options(date_from='2041-02-05', date_to='2041-02-05')
+            inverse = engine._tobacco_reconciliation(engine._normalize_options(engine._definition('tobacco_service_fee'), inverse_options))[0]
+            self.assertFalse(engine.get_report('tobacco_service_fee', inverse_options)['tobacco_sections'][0]['rows'])
             self.assertEqual(next(c['amount'] for c in inverse['causes'] if c['key'] == 'outside_sessions'), -25)
             self.assertEqual(inverse['unexplained'], 0)
             session.move_id.button_draft()
             session.move_id.button_cancel()
-            section = engine.get_report('tobacco_service_fee', options)['tobacco_sections'][0]
+            section = engine._tobacco_reconciliation(engine._normalize_options(engine._definition('tobacco_service_fee'), options))[0]
             causes = {cause['key']: cause for cause in section['causes']}
             self.assertEqual(causes['cancelled_sessions']['amount'], 25)
             self.assertIn(session.id, causes['cancelled_sessions']['ids'])

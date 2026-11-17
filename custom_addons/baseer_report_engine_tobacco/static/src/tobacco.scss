@@ -25,19 +25,29 @@
     .o_baseer_report_engine {
         .o_bre_grid_table.o_bre_tobacco_table {
             width: 100%;
-            min-width: 1000px;
-            thead th { white-space: nowrap; overflow-wrap: normal; }
-            th:first-child, td:first-child {
-                position: static;
-                max-width: 160px;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-            }
+            min-width: 0;
+            .tob-date { width: 38%; }
+            .tob-document { width: 32%; }
+            .tob-net { width: 30%; }
+            .tob-product, .tob-type, .tob-debit, .tob-credit,
+            .tob-product-cell, .tob-type-cell, .tob-debit-cell, .tob-credit-cell { display: none; }
+            th:first-child, td:first-child { position: static; max-width: none; overflow: visible; white-space: normal; }
+            thead th { white-space: normal; }
+            th, td { padding: 0.35rem; }
         }
         .o_bre_grid_table.o_bre_tobacco_exceptions {
             min-width: 650px;
             thead th { white-space: nowrap; }
         }
     }
+}
+
+.o_baseer_report_engine:has(.o_bre_tobacco_month, .o_bre_tobacco_table) {
+    max-width: 100%; min-width: 0;
+    .o_bre_paper, .o_bre_paper_inner, .o_bre_scroll { max-width: 100%; min-width: 0; }
+    .o_bre_scroll { overflow-x: auto; }
+    h4 { max-width: 100%; overflow-wrap: anywhere; }
+    .o_bre_toolbar h1 { min-width: 0; max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
+    .o_bre_toolbar, .o_bre_filters { min-width: 0; max-width: 100%; }
+    .o_bre_tobacco_month { width: auto; max-width: 100%; }
 }

@@ -24,16 +24,13 @@ class BaseerReportExport(models.AbstractModel):
         if type(unfold_all) is not bool or not isinstance(unfolded, list) or any(type(i) is not int or i < 0 for i in unfolded):
             raise ValidationError(_('The report options are not valid.'))
         normalized = engine._normalize_options(engine._definition(report_code), options)
-        aged = payload['report']['report_kind'] == 'aged'
         keys = [line['partner_id'] for line in payload['lines'] if line.get('foldable')
                 and (unfold_all or line['partner_id'] in unfolded)]
-        pages = {} if aged else engine.get_partner_items_batch(report_code, options, keys)
+        pages = engine.get_partner_items_batch(report_code, options, keys)
         for line in payload['lines']:
             if not line.get('foldable') or line['partner_id'] not in keys:
                 continue
-            if aged:
-                line['ledger'] = engine._aged_page(normalized, line['partner_id'], 0, None)
-            elif line['partner_id'] in pages:
+            if line['partner_id'] in pages:
                 page = pages[line['partner_id']]
                 line['ledger'] = {'rows': ([page['initial']] if page['initial'] else []) + page['items'],
                                   'has_more': page['has_more'], 'next_offset': page['next_offset']}

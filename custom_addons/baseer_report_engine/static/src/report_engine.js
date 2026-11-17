@@ -211,10 +211,7 @@ export class BaseerReportEngine extends Component {
             this.state.folded = folded;
             this.state.accounts = {};
             if (this.isAged && this.state.options.unfold_all) {
-                for (const line of payload.lines.filter(line => line.foldable)) {
-                    this.state.folded[line.code] = false;
-                    await this.loadLedger(line, 0);
-                }
+                await this.unfoldAll();
             }
             if (this.isLedger) {
                 for (const line of payload.lines) {

@@ -256,3 +256,67 @@ class TestAged(EngineCase):
         page = engine.get_ledger_lines('aged_receivable', options, partner.id)
         self.assertTrue(page['has_more'])
         self.assertEqual(engine.get_ledger_lines('aged_receivable', options, partner.id, offset=1)['rows'][0]['id'], payment_line.id)
+
+    def test_grouped_and_batch_match_per_line_with_future_attribution(self):
+        from collections import defaultdict
+        from decimal import Decimal
+
+        partners = self.env['res.partner'].create([{'name': 'Aged batch A'}, {'name': 'Aged batch B'}])
+        self.receivable.reconcile = True
+        invoice = self._entry(self.company, self.journal, '2041-01-01', self.receivable, self.other, 100, posted=False)
+        invoice.invoice_date = '2041-02-01'
+        invoice.action_post()
+        before = self._entry(self.company, self.journal, '2041-03-01', self.other, self.receivable, 30)
+        later = self._entry(self.company, self.journal, '2041-07-01', self.other, self.receivable, 20)
+        direct = invoice.line_ids.filtered(lambda line: line.account_id == self.receivable)
+        (direct | before.line_ids.filtered(lambda line: line.account_id == self.receivable) |
+         later.line_ids.filtered(lambda line: line.account_id == self.receivable)).partner_id = partners[0]
+        (direct | before.line_ids | later.line_ids).filtered(lambda line: line.account_id == self.receivable).reconcile()
+        payment = self._entry(self.company, self.journal, '2041-05-01', self.other, self.receivable, 25)
+        future = self._entry(self.company, self.journal, '2041-07-02', self.receivable, self.other, 15)
+        payment_line = payment.line_ids.filtered(lambda line: line.account_id == self.receivable)
+        future_line = future.line_ids.filtered(lambda line: line.account_id == self.receivable)
+        future_line.partner_id = partners[1]
+        (payment_line | future_line).reconcile()
+        direct.date_maturity = '2041-06-15'
+        engine = self.engine.with_context(baseer_gl_page_size=1)
+        for basis in ('due_date', 'invoice_date'):
+            for filters in ({}, {'partner_ids': partners.ids}):
+                options = self._options(aging_basis=basis, **filters)
+                report = engine._definition('aged_receivable')
+                normalized = engine._normalize_options(report, options)
+                expected = defaultdict(lambda: [Decimal(0)] * 7)
+                for pid, _line, bucket, value in engine._aged_entries(normalized):
+                    expected[pid][bucket] += value
+                    expected[pid][6] += value
+                self.assertEqual(dict(engine._aged_grouped(normalized)), dict(expected))
+                batch = engine.get_partner_items_batch('aged_receivable', options)
+                self.assertEqual(set(batch), set(expected))
+                for pid, page in batch.items():
+                    single = engine.get_ledger_lines('aged_receivable', options, pid)
+                    self.assertEqual(page['items'], single['rows'])
+                    self.assertEqual(page['has_more'], single['has_more'])
+                    self.assertEqual(page['next_offset'], single['next_offset'])
+                payload = engine._export_payload('aged_receivable', dict(options, unfold_all=True))
+                for row in (row for row in payload['lines'] if row.get('foldable')):
+                    single = engine.with_context(baseer_gl_export=True)._aged_page(normalized, row['partner_id'], 0, None)
+                    self.assertEqual(row['ledger'], single)
+
+    def test_aged_batch_query_count_does_not_grow_with_partners(self):
+        engine = self.engine.with_context(baseer_gl_page_size=1)
+        options = self._options()
+        def add(index):
+            partner = self.env['res.partner'].create({'name': 'Batch query %s' % index})
+            move = self._entry(self.company, self.journal, '2041-04-01', self.receivable, self.other, 1)
+            move.line_ids.filtered(lambda line: line.account_id == self.receivable).partner_id = partner
+        def count():
+            engine.get_partner_items_batch('aged_receivable', options)
+            start = self.cr.sql_log_count
+            engine.get_partner_items_batch('aged_receivable', options)
+            return self.cr.sql_log_count - start
+        add(0)
+        small = count()
+        for index in range(1, 12):
+            add(index)
+        large = count()
+        self.assertLessEqual(large, small + 2, (small, large))

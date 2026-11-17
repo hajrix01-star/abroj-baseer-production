@@ -40,6 +40,26 @@ class BaseerLedgerEngine(models.AbstractModel):
         return opening, sums['period']
 
     @api.model
+    def _ledger_partner_data(self, options, partner_domain):
+        """Aggregate partner activity after converting each company's amounts.
+
+        Receivable and payable accounts do not use the profit-and-loss
+        fiscal-year carry-forward adjustment.
+        """
+        first, last = options['columns'][0]['_start'], options['columns'][0]['_end']
+        scopes = [('initial', [('date', '<', first)], last),
+                  ('period', [('date', '>=', first), ('date', '<=', last)], last)]
+        grouped = self._grid_balances(options, ('partner_id', 'company_id'), scopes, partner_domain)
+        result = {}
+        for scope, companies in grouped.items():
+            partners = result[scope] = {}
+            for (partner_id, _company_id), values in companies.items():
+                bucket = partners.setdefault(partner_id or 0, _zeros())
+                for figure in ('debit', 'credit', 'balance'):
+                    bucket[figure] += values[figure]
+        return result['initial'], result['period']
+
+    @api.model
     def _ledger_amounts(self, values, drill=False):
         currency = self.env.company.currency_id
         return [self._serialize_amount({'key': key, 'kind': 'ledger'}, values.get(key, 0), currency, drill)

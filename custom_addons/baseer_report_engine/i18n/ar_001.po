@@ -1032,6 +1032,8 @@ msgstr "التاريخ"
 #. module: baseer_report_engine
 #. odoo-python
 #: code:addons/baseer_report_engine/models/ledger.py:0
+#. odoo-javascript
+#: code:addons/baseer_report_engine/static/src/report_engine.js:0
 msgid "Partner"
 msgstr "الشريك"
 
@@ -1139,23 +1141,31 @@ msgstr "الشركاء التجاريون"
 #. module: baseer_report_engine
 #. odoo-python
 #: code:addons/baseer_report_engine/models/ledger.py:0
+#. odoo-javascript
+#: code:addons/baseer_report_engine/static/src/report_engine.js:0
 msgid "Account:"
 msgstr "الحساب:"
 
 #. module: baseer_report_engine
 #. odoo-python
 #: code:addons/baseer_report_engine/models/ledger.py:0
+#. odoo-javascript
+#: code:addons/baseer_report_engine/static/src/report_engine.js:0
 msgid "Partners"
 msgstr "الشركاء"
 
 #. module: baseer_report_engine
 #. odoo-python
 #: code:addons/baseer_report_engine/models/ledger.py:0
+#. odoo-javascript
+#: code:addons/baseer_report_engine/static/src/report_engine.js:0
 msgid "Partner Categories"
 msgstr "فئات الشركاء"
 
 #. module: baseer_report_engine
 #. odoo-python
 #: code:addons/baseer_report_engine/models/ledger.py:0
+#. odoo-javascript
+#: code:addons/baseer_report_engine/static/src/report_engine.js:0
 msgid "Unreconciled Entries"
 msgstr "القيود غير المسواة"

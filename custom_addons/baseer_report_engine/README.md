@@ -16,7 +16,7 @@ Grid drill-down lists raw journal items, like statements: analytic weighting and
 
 The General Ledger uses the shared grid aggregation and fiscal carry-forward helpers, grouping by account and company. The Partner Ledger backend groups receivable and payable activity by partner across active companies, without a fiscal-year reset; its selected account types, partner and category filters also apply to opening balances and drills. Both return a Total row on the last page.
 
-General Ledger unfolding ranks journal items per account and company after applying access rules. Partner item pages rank the selected partner’s lines after access rules and calculate the carried balance from earlier items. Partner Ledger presentation and exports still need integration with the client.
+General Ledger unfolding ranks journal items per account and company after applying access rules. Partner item pages rank the selected partner’s lines after access rules and calculate the carried balance from earlier items. The client reuses the ledger paging, drill and breadcrumb state, with partner and category selectors and partner-specific columns.
 
 ## Design notes
 

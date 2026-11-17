@@ -427,3 +427,18 @@
     .o_bre_ledger_table .o_bre_ledger_chip { position: absolute; }
     @media (max-width: 767px) { .o_bre_ledger { width: 100%; } }
 }
+
+.o_baseer_report_engine {
+    .o_bre_partner_ledger .o_bre_paper_inner { min-width: 1160px; }
+    .o_bre_partner_table {
+        min-width: 1110px;
+        .o_bre_partner_label { width: 304px; min-width: 304px; }
+        th, td { white-space: nowrap; }
+        .o_bre_balance_header th { text-align: center; }
+        .o_bre_balance_header th:nth-last-child(-n+4) { text-align: end; }
+        .o_bre_overdue { color: #d23f3a; }
+        .o_bre_partner_chips { position: absolute; inset-inline-end: 4px; top: 3px; display: flex; }
+        .o_bre_partner_chips .o_bre_ledger_chip { position: static; }
+    }
+    .o_bre_partner_filters { min-width: 300px; }
+}

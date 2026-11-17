@@ -1,0 +1,244 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<templates xml:space="preserve">
+    <t t-name="baseer_report_engine_dashboard.Dashboard">
+        <div class="o_bre_dashboard h-100 overflow-auto">
+            <div class="o_control_panel o_bre_toolbar">
+                <h1 class="o_breadcrumb">Accounting Dashboard (New)</h1>
+                <div class="o_bre_controls">
+                    <button
+                        class="btn"
+                        t-att-class="state.favorites ? 'o_bre_facet_active' : ''"
+                        t-on-click="toggleFavorites">Favorites</button>
+                    <input
+                        class="form-control"
+                        type="search"
+                        placeholder="Search journals"
+                        t-att-value="state.search"
+                        t-on-input="search"/>
+                    <button class="btn btn-light" t-on-click="load" aria-label="Refresh" title="Refresh">
+                        <i class="fa fa-refresh"/>
+                    </button>
+                </div>
+            </div>
+            <div class="alert alert-danger" t-if="state.error" t-esc="state.error"/>
+            <div t-if="state.loading">Loading...</div>
+            <div t-elif="!state.journals.length">No journals found.</div>
+            <div class="o_bre_cards" t-else="">
+                <article class="o_bre_card" t-foreach="state.journals" t-as="card" t-key="card.id">
+                    <div class="o_bre_card_header">
+                        <div>
+                            <a
+                                href="#"
+                                class="o_bre_title" t-on-click.prevent="() =&gt; this.call(card, 'open_action')"
+                                t-esc="card.name"/>
+                            <span class="small fw-bold" t-if="card.show_company"> - <t t-esc="card.company_name"/>
+                            </span>
+                        </div>
+                        <div class="o_bre_menu_wrap">
+                            <button
+                                class="btn o_bre_menu_button"
+                                aria-label="Menu"
+                                t-on-click="() =&gt; state.menu = state.menu === card.id ? null : card.id">⋮</button>
+                            <div class="o_bre_menu" t-if="state.menu === card.id">
+                                <strong>View</strong>
+                                <t t-if="['sale', 'purchase'].includes(card.type)">
+                                    <a
+                                        href="#" t-on-click.prevent="() =&gt; this.call(card, 'open_action', {action_name: card.type === 'sale' ? 'action_move_out_invoice_type' : 'action_move_in_invoice_type'})">
+                                        <t t-if="card.type === 'sale'">Invoices</t>
+                                        <t t-else="">Bills</t>
+                                    </a>
+                                    <a
+                                        href="#" t-on-click.prevent="() =&gt; this.call(card, 'open_action', {action_name: card.type === 'sale' ? 'action_move_out_refund_type_non_legacy' : 'action_move_in_refund_type'})">
+                                        <t t-if="card.type === 'sale'">Credit Notes</t>
+                                        <t t-else="">Refund</t>
+                                    </a>
+                                    <strong>New</strong>
+                                    <a href="#" t-on-click.prevent="() =&gt; this.call(card, 'action_create_new')">
+                                        <t t-if="card.type === 'sale'">Invoice</t>
+                                        <t t-else="">Bill</t>
+                                    </a>
+                                    <a
+                                        href="#" t-on-click.prevent="() =&gt; this.call(card, 'action_create_new', {refund: true})">
+                                        <t t-if="card.type === 'sale'">Credit Note</t>
+                                        <t t-else="">Refund</t>
+                                    </a>
+                                    <strong>Reporting</strong>
+                                    <a href="#" t-on-click.prevent="() =&gt; this.openAnalysis(card)">
+                                        <t t-if="card.type === 'sale'">Invoices Analysis</t>
+                                        <t t-else="">Bills Analysis</t>
+                                    </a>
+                                </t>
+                                <t t-if="['bank', 'cash', 'credit'].includes(card.type)">
+                                    <a
+                                        href="#" t-on-click.prevent="() =&gt; this.call(card, 'open_action_with_context', {action_name: card.type === 'bank' ? 'action_bank_statement_tree' : card.type === 'credit' ? 'action_credit_statement_tree' : 'action_view_bank_statement_tree', search_default_journal: true})">
+                                        <t t-if="card.type === 'cash'">Cash Registers</t>
+                                        <t t-else="">Statements</t>
+                                    </a>
+                                    <a
+                                        href="#" t-on-click.prevent="() =&gt; this.call(card, 'open_payments_action')">Payments</a>
+                                </t>
+                                <a
+                                    t-if="state.is_manager"
+                                    href="#" t-on-click.prevent="() =&gt; this.configure(card)">Configuration</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div
+                        class="text-muted"
+                        t-if="card.is_empty and card.type === 'sale'">Get Paid online. Send electronic invoices.</div>
+                    <div
+                        class="text-muted"
+                        t-if="card.is_empty and card.type === 'purchase'">Let artificial intelligence scan your bill. Pay easily.</div>
+                    <div
+                        class="text-muted"
+                        t-if="card.is_empty and card.type === 'bank'">Connect your bank. Match invoices automatically.</div>
+                    <div class="o_bre_body">
+                        <div class="o_bre_primary">
+                            <button
+                                t-if="(['sale', 'purchase'].includes(card.type) or (card.type === 'general' and state.is_user))"
+                                class="btn btn-primary"
+                                t-on-click="() =&gt; this.call(card, 'action_create_new')">New</button>
+                            <button
+                                t-if="['bank', 'cash', 'credit'].includes(card.type)"
+                                class="btn btn-primary"
+                                t-on-click="() =&gt; this.call(card, 'open_action')">Transactions</button>
+                        </div>
+                        <div class="o_bre_figures">
+                            <t t-if="['sale', 'purchase'].includes(card.type) and !card.is_empty">
+                                <div class="o_bre_row" t-if="card.dashboard.number_draft">
+                                    <a
+                                        href="#" t-on-click.prevent="() =&gt; this.call(card, 'open_action', {search_default_draft: '1'})">
+                                        <t t-esc="card.dashboard.number_draft"/> To Validate</a>
+                                    <bdi dir="ltr" t-esc="card.dashboard.sum_draft"/>
+                                </div>
+                                <div class="o_bre_row" t-if="card.dashboard.number_waiting">
+                                    <a
+                                        href="#" t-on-click.prevent="() =&gt; this.call(card, 'open_action', {search_default_open: '1', search_default_posted: '1', journal_type: card.type})">
+                                        <t t-esc="card.dashboard.number_waiting"/><t t-esc="' '"/>
+                                        <t t-if="card.type === 'sale'">Unpaid</t>
+                                        <t t-else="">To Pay</t>
+                                    </a>
+                                    <bdi dir="ltr" t-esc="card.dashboard.sum_waiting"/>
+                                </div>
+                                <div class="o_bre_row" t-if="card.dashboard.number_late">
+                                    <a
+                                        href="#" t-on-click.prevent="() =&gt; this.call(card, 'open_action', {search_default_late: '1', search_default_posted: '1', journal_type: card.type})">
+                                        <t t-esc="card.dashboard.number_late"/> Late</a>
+                                    <bdi dir="ltr" t-esc="card.dashboard.sum_late"/>
+                                </div>
+                            </t>
+                            <t t-if="['bank', 'cash', 'credit'].includes(card.type)">
+                                <div class="o_bre_row" t-if="card.dashboard.nb_lines_bank_account_balance">
+                                    <span>Balance</span>
+                                    <bdi dir="ltr" t-esc="card.dashboard.account_balance"/>
+                                </div>
+                                <div
+                                    class="o_bre_row"
+                                    t-if="card.dashboard.has_at_least_one_statement and card.dashboard.account_balance !== card.dashboard.last_balance and card.dashboard.last_statement_visible">
+                                    <a href="#" t-on-click.prevent="() =&gt; this.statement(card)">Last Statement</a>
+                                    <bdi dir="ltr" t-esc="card.dashboard.last_balance"/>
+                                </div>
+                                <div class="o_bre_row" t-if="card.dashboard.nb_lines_outstanding_pay_account_balance">
+                                    <a href="#" t-on-click.prevent="() =&gt; this.payments(card)">Payments</a>
+                                    <bdi dir="ltr" t-esc="card.dashboard.outstanding_pay_account_balance"/>
+                                </div>
+                                <div class="o_bre_row" t-if="card.dashboard.nb_misc_operations">
+                                    <a
+                                        href="#" t-on-click.prevent="() =&gt; this.call(card, 'open_bank_difference_action')"
+                                        t-att-class="card.dashboard.misc_class">Misc. Operations</a>
+                                    <bdi dir="ltr" t-esc="card.dashboard.misc_operations_balance"/>
+                                </div>
+                                <a
+                                    t-if="card.dashboard.has_invalid_statements"
+                                    href="#"
+                                    class="text-danger" t-on-click.prevent="() =&gt; this.call(card, 'open_invalid_statements_action')">Invalid Statement(s)</a>
+                                <a
+                                    t-if="card.type === 'bank' and card.dashboard.num_checks_to_print"
+                                    href="#" t-on-click.prevent="() =&gt; this.call(card, 'action_checks_to_print')">
+                                    <t t-esc="card.dashboard.num_checks_to_print"/> Checks to print</a>
+                            </t>
+                            <a
+                                t-if="card.type === 'general' and state.is_user and card.dashboard.number_draft"
+                                href="#" t-on-click.prevent="() =&gt; this.call(card, 'open_action', {search_default_no_auto_post: 1, search_default_posted: 0, search_default_unposted: 1})">
+                                <t t-esc="card.dashboard.number_draft"/> To Validate</a>
+                            <a
+                                t-if="card.dashboard.has_unhashed_entries"
+                                href="#" t-on-click.prevent="() =&gt; this.call(card, 'show_unhashed_entries')">Unhashed entries</a>
+                            <a
+                                t-if="card.dashboard.has_sequence_holes"
+                                href="#" t-on-click.prevent="() =&gt; this.call(card, 'show_sequence_holes')">Irregular Sequences</a>
+                        </div>
+                    </div>
+                    <t t-set="chart" t-value="this.graph(card)"/>
+                    <div
+                        class="o_bre_graph"
+                        dir="ltr"
+                        t-if="chart and !(card.type === 'purchase' and card.is_empty) and !(['bank', 'credit'].includes(card.type) and card.is_empty and ['undefined', 'online_sync'].includes(card.dashboard.bank_statements_source))"
+                        t-att-class="chart.sample ? 'o_sample_data' : ''">
+                        <svg
+                            t-att-viewBox="['sale', 'purchase'].includes(card.type) ? '0 0 300 150' : '-3 0 306 110'"
+                            t-att-class="['sale', 'purchase'].includes(card.type) ? 'o_bre_bar_chart' : ''"
+                            width="100%"
+                            role="img">
+                            <t t-if="['sale', 'purchase'].includes(card.type)">
+                                <t t-foreach="chart.bars" t-as="bar" t-key="bar_index">
+                                    <rect
+                                        t-att-x="bar.x"
+                                        t-att-y="bar.y"
+                                        t-att-width="bar.width"
+                                        t-att-height="bar.height"
+                                        t-att-fill="chart.sample ? '#e7e7e7' : (bar.type === 'future' ? '#a6dbd5' : '#d8cbd5')"
+                                        t-att-stroke="chart.sample ? '#d5d5d5' : (bar.type === 'future' ? '#8cc5bf' : '#c5b4c1')"
+                                        stroke-width="0.5"/>
+                                    <text
+                                        t-att-transform="`translate(${bar.x + bar.width / 2}, 95) rotate(-30)`"
+                                        text-anchor="end"
+                                        t-esc="bar.label"/>
+                                </t>
+                            </t>
+                            <t t-else="">
+                                <polygon
+                                    t-att-points="'0,85 '+chart.points+' 300,85'"
+                                    t-att-fill="chart.sample ? '#e7e7e7' : '#714b67'"
+                                    fill-opacity="0.15"/>
+                                <polyline
+                                    t-att-points="chart.points"
+                                    fill="none"
+                                    t-att-stroke="chart.sample ? '#e7e7e7' : '#714b67'"
+                                    stroke-width="2"/>
+                                <circle
+                                    t-att-cx="chart.first.x"
+                                    t-att-cy="chart.first.y"
+                                    r="2"
+                                    t-att-fill="chart.sample ? '#e7e7e7' : '#714b67'"/>
+                                <circle
+                                    t-att-cx="chart.last.x"
+                                    t-att-cy="chart.last.y"
+                                    r="2"
+                                    t-att-fill="chart.sample ? '#e7e7e7' : '#714b67'"/>
+                                <text x="0" y="100" t-esc="card.graph[0].values[0].x"/>
+                                <text
+                                    x="300"
+                                    y="100"
+                                    text-anchor="end"
+                                    t-esc="card.graph[0].values[card.graph[0].values.length - 1].x"/>
+                            </t>
+                        </svg>
+                    </div>
+                </article>
+            </div>
+            <section class="o_bre_reporting">
+                <h2>Reporting</h2>
+                <div class="o_bre_report_links">
+                    <button
+                        t-foreach="state.reports"
+                        t-as="report"
+                        t-key="report.xmlid"
+                        class="btn btn-light"
+                        t-on-click="() =&gt; this.action.doAction(report.xmlid)"
+                        t-esc="report.label"/>
+                </div>
+            </section>
+        </div>
+    </t>
+</templates>

@@ -1,0 +1,453 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: ar_001\n"
+
+#. module: baseer_report_engine_dashboard
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_dashboard/models/dashboard.py:0
+#: code:addons/baseer_report_engine_dashboard/static/src/dashboard.xml:0
+msgid "Get Paid online. Send electronic invoices."
+msgstr "تلقّ مدفوعاتك أونلاين وتمكن من إرسال الفواتير الإلكترونية."
+
+#. module: baseer_report_engine_dashboard
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_dashboard/models/dashboard.py:0
+#: code:addons/baseer_report_engine_dashboard/static/src/dashboard.xml:0
+msgid "Let artificial intelligence scan your bill. Pay easily."
+msgstr "دع الذكاء الاصطناعي يتولى أمر مسح الفواتير الخاصة بك. قم بالدفع بكل سهولة."
+
+#. module: baseer_report_engine_dashboard
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_dashboard/models/dashboard.py:0
+#: code:addons/baseer_report_engine_dashboard/static/src/dashboard.xml:0
+msgid "Connect your bank. Match invoices automatically."
+msgstr "قم بتوصيل بنكك ومطابقة الفواتير تلقائياً."
+
+#. module: baseer_report_engine_dashboard
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_dashboard/models/dashboard.py:0
+#: code:addons/baseer_report_engine_dashboard/static/src/dashboard.xml:0
+msgid "View"
+msgstr "عرض"
+
+#. module: baseer_report_engine_dashboard
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_dashboard/models/dashboard.py:0
+#: code:addons/baseer_report_engine_dashboard/static/src/dashboard.xml:0
+msgid "Statements"
+msgstr "كشوفات الحسابات"
+
+#. module: baseer_report_engine_dashboard
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_dashboard/models/dashboard.py:0
+#: code:addons/baseer_report_engine_dashboard/static/src/dashboard.xml:0
+msgid "Cash Registers"
+msgstr "آلات تسجيل النقد"
+
+#. module: baseer_report_engine_dashboard
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_dashboard/models/dashboard.py:0
+#: code:addons/baseer_report_engine_dashboard/static/src/dashboard.xml:0
+msgid "Payments"
+msgstr "الدفعات"
+
+#. module: baseer_report_engine_dashboard
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_dashboard/models/dashboard.py:0
+#: code:addons/baseer_report_engine_dashboard/static/src/dashboard.xml:0
+msgid "Invoices"
+msgstr "فواتير العملاء"
+
+#. module: baseer_report_engine_dashboard
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_dashboard/models/dashboard.py:0
+#: code:addons/baseer_report_engine_dashboard/static/src/dashboard.xml:0
+msgid "Bills"
+msgstr "الفواتير"
+
+#. module: baseer_report_engine_dashboard
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_dashboard/models/dashboard.py:0
+#: code:addons/baseer_report_engine_dashboard/static/src/dashboard.xml:0
+msgid "Credit Notes"
+msgstr "إشعارات دائنة"
+
+#. module: baseer_report_engine_dashboard
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_dashboard/models/dashboard.py:0
+#: code:addons/baseer_report_engine_dashboard/static/src/dashboard.xml:0
+msgid "Refund"
+msgstr "استرداد الأموال"
+
+#. module: baseer_report_engine_dashboard
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_dashboard/models/dashboard.py:0
+#: code:addons/baseer_report_engine_dashboard/static/src/dashboard.xml:0
+msgid "New"
+msgstr "جديد"
+
+#. module: baseer_report_engine_dashboard
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_dashboard/models/dashboard.py:0
+#: code:addons/baseer_report_engine_dashboard/static/src/dashboard.xml:0
+msgid "Invoice"
+msgstr "الفاتورة"
+
+#. module: baseer_report_engine_dashboard
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_dashboard/models/dashboard.py:0
+#: code:addons/baseer_report_engine_dashboard/static/src/dashboard.xml:0
+msgid "Bill"
+msgstr "فاتورة"
+
+#. module: baseer_report_engine_dashboard
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_dashboard/models/dashboard.py:0
+#: code:addons/baseer_report_engine_dashboard/static/src/dashboard.xml:0
+msgid "Credit Note"
+msgstr "إشعار دائن"
+
+#. module: baseer_report_engine_dashboard
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_dashboard/models/dashboard.py:0
+#: code:addons/baseer_report_engine_dashboard/static/src/dashboard.xml:0
+msgid "Reporting"
+msgstr "إعداد التقارير"
+
+#. module: baseer_report_engine_dashboard
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_dashboard/models/dashboard.py:0
+#: code:addons/baseer_report_engine_dashboard/static/src/dashboard.xml:0
+msgid "Configuration"
+msgstr "التهيئة"
+
+#. module: baseer_report_engine_dashboard
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_dashboard/models/dashboard.py:0
+#: code:addons/baseer_report_engine_dashboard/static/src/dashboard.xml:0
+msgid "Unhashed entries"
+msgstr "القيود غير المشفرة"
+
+#. module: baseer_report_engine_dashboard
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_dashboard/models/dashboard.py:0
+#: code:addons/baseer_report_engine_dashboard/static/src/dashboard.xml:0
+msgid "Irregular Sequences"
+msgstr "التسلسلات غير المنتظمة"
+
+#. module: baseer_report_engine_dashboard
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_dashboard/models/dashboard.py:0
+#: code:addons/baseer_report_engine_dashboard/static/src/dashboard.xml:0
+msgid "Transactions"
+msgstr "المعاملات"
+
+#. module: baseer_report_engine_dashboard
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_dashboard/models/dashboard.py:0
+#: code:addons/baseer_report_engine_dashboard/static/src/dashboard.xml:0
+msgid "Balance"
+msgstr "الرصيد"
+
+#. module: baseer_report_engine_dashboard
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_dashboard/models/dashboard.py:0
+#: code:addons/baseer_report_engine_dashboard/static/src/dashboard.xml:0
+msgid "Last Statement"
+msgstr "آخر كشف حساب"
+
+#. module: baseer_report_engine_dashboard
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_dashboard/models/dashboard.py:0
+#: code:addons/baseer_report_engine_dashboard/static/src/dashboard.xml:0
+msgid "Invalid Statement(s)"
+msgstr "كشوفات غير صالحة"
+
+#. module: baseer_report_engine_dashboard
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_dashboard/models/dashboard.py:0
+#: code:addons/baseer_report_engine_dashboard/static/src/dashboard.xml:0
+msgid "Check to print"
+msgstr "شيك بانتظار الطباعة"
+
+#. module: baseer_report_engine_dashboard
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_dashboard/models/dashboard.py:0
+#: code:addons/baseer_report_engine_dashboard/static/src/dashboard.xml:0
+msgid "Checks to print"
+msgstr "شيكات بانتظار الطباعة"
+
+#. module: baseer_report_engine_dashboard
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_dashboard/models/dashboard.py:0
+#: code:addons/baseer_report_engine_dashboard/static/src/dashboard.xml:0
+msgid "To Validate"
+msgstr "بانتظار التصديق"
+
+#. module: baseer_report_engine_dashboard
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_dashboard/models/dashboard.py:0
+#: code:addons/baseer_report_engine_dashboard/static/src/dashboard.xml:0
+msgid "Unpaid"
+msgstr "غير مدفوعة"
+
+#. module: baseer_report_engine_dashboard
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_dashboard/models/dashboard.py:0
+#: code:addons/baseer_report_engine_dashboard/static/src/dashboard.xml:0
+msgid "To Pay"
+msgstr "بانتظار الدفع"
+
+#. module: baseer_report_engine_dashboard
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_dashboard/models/dashboard.py:0
+#: code:addons/baseer_report_engine_dashboard/static/src/dashboard.xml:0
+msgid "Late"
+msgstr "متأخر"
+
+#. module: baseer_report_engine_dashboard
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_dashboard/models/dashboard.py:0
+#: code:addons/baseer_report_engine_dashboard/static/src/dashboard.xml:0
+msgid "Upload Invoices"
+msgstr "رفع الفواتير"
+
+#. module: baseer_report_engine_dashboard
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_dashboard/models/dashboard.py:0
+#: code:addons/baseer_report_engine_dashboard/static/src/dashboard.xml:0
+msgid "Latest Statement"
+msgstr "آخر كشف حساب"
+
+#. module: baseer_report_engine_dashboard
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_dashboard/models/dashboard.py:0
+#: code:addons/baseer_report_engine_dashboard/static/src/dashboard.xml:0
+msgid "Invoices to Validate"
+msgstr "الفواتير المُراد تصديقها"
+
+#. module: baseer_report_engine_dashboard
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_dashboard/models/dashboard.py:0
+#: code:addons/baseer_report_engine_dashboard/static/src/dashboard.xml:0
+msgid "Bills to Validate"
+msgstr "الفواتير بانتظار التصديق"
+
+#. module: baseer_report_engine_dashboard
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_dashboard/models/dashboard.py:0
+#: code:addons/baseer_report_engine_dashboard/static/src/dashboard.xml:0
+msgid "Bills to Pay"
+msgstr "الفواتير بانتظار السداد"
+
+#. module: baseer_report_engine_dashboard
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_dashboard/models/dashboard.py:0
+#: code:addons/baseer_report_engine_dashboard/static/src/dashboard.xml:0
+msgid "Invoices late"
+msgstr "الفواتير المتأخرة"
+
+#. module: baseer_report_engine_dashboard
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_dashboard/models/dashboard.py:0
+#: code:addons/baseer_report_engine_dashboard/static/src/dashboard.xml:0
+msgid "Bills Late"
+msgstr "فواتير المورّدين المتأخرة"
+
+#. module: baseer_report_engine_dashboard
+#. odoo-javascript
+#: code:addons/baseer_report_engine_dashboard/static/src/dashboard.xml:0
+#: model:ir.actions.client,name:baseer_report_engine_dashboard.action_dashboard
+#: model:ir.ui.menu,name:baseer_report_engine_dashboard.menu_dashboard
+msgid "Accounting Dashboard (New)"
+msgstr "لوحة المحاسبة (جديد)"
+
+#. module: baseer_report_engine_dashboard
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_dashboard/models/dashboard.py:0
+#: code:addons/baseer_report_engine_dashboard/static/src/dashboard.xml:0
+msgid "Favorites"
+msgstr "المفضلة"
+
+#. module: baseer_report_engine_dashboard
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_dashboard/models/dashboard.py:0
+#: code:addons/baseer_report_engine_dashboard/static/src/dashboard.xml:0
+msgid "Search journals"
+msgstr "البحث في دفاتر اليومية"
+
+#. module: baseer_report_engine_dashboard
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_dashboard/models/dashboard.py:0
+#: code:addons/baseer_report_engine_dashboard/static/src/dashboard.xml:0
+msgid "Refresh"
+msgstr "تحديث"
+
+#. module: baseer_report_engine_dashboard
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_dashboard/models/dashboard.py:0
+#: code:addons/baseer_report_engine_dashboard/static/src/dashboard.xml:0
+msgid "Loading..."
+msgstr "جارٍ التحميل..."
+
+#. module: baseer_report_engine_dashboard
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_dashboard/models/dashboard.py:0
+#: code:addons/baseer_report_engine_dashboard/static/src/dashboard.xml:0
+msgid "No journals found."
+msgstr "لم يتم العثور على دفاتر يومية."
+
+#. module: baseer_report_engine_dashboard
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_dashboard/models/dashboard.py:0
+#: code:addons/baseer_report_engine_dashboard/static/src/dashboard.xml:0
+msgid "Balance Sheet"
+msgstr "الميزانية العمومية"
+
+#. module: baseer_report_engine_dashboard
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_dashboard/models/dashboard.py:0
+#: code:addons/baseer_report_engine_dashboard/static/src/dashboard.xml:0
+msgid "Profit and Loss"
+msgstr "الربح والخسارة"
+
+#. module: baseer_report_engine_dashboard
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_dashboard/models/dashboard.py:0
+#: code:addons/baseer_report_engine_dashboard/static/src/dashboard.xml:0
+msgid "Trial Balance"
+msgstr "ميزان المراجعة"
+
+#. module: baseer_report_engine_dashboard
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_dashboard/models/dashboard.py:0
+#: code:addons/baseer_report_engine_dashboard/static/src/dashboard.xml:0
+msgid "General Ledger"
+msgstr "دفتر الأستاذ العام"
+
+#. module: baseer_report_engine_dashboard
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_dashboard/models/dashboard.py:0
+#: code:addons/baseer_report_engine_dashboard/static/src/dashboard.xml:0
+msgid "Partner Ledger"
+msgstr "دفتر الأستاذ العام للشركاء"
+
+#. module: baseer_report_engine_dashboard
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_dashboard/models/dashboard.py:0
+#: code:addons/baseer_report_engine_dashboard/static/src/dashboard.xml:0
+msgid "Aged Receivable"
+msgstr "المتأخر المدين"
+
+#. module: baseer_report_engine_dashboard
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_dashboard/models/dashboard.py:0
+#: code:addons/baseer_report_engine_dashboard/static/src/dashboard.xml:0
+msgid "Aged Payable"
+msgstr "حسابات دائنة مستحقة متأخرة"
+
+#. module: baseer_report_engine_dashboard
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_dashboard/models/dashboard.py:0
+#: code:addons/baseer_report_engine_dashboard/static/src/dashboard.xml:0
+msgid "Cash Flow Statement"
+msgstr "كشف التدفقات النقدية"
+
+#. module: baseer_report_engine_dashboard
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_dashboard/models/dashboard.py:0
+#: code:addons/baseer_report_engine_dashboard/static/src/dashboard.xml:0
+msgid "Tax Report"
+msgstr "التقرير الضريبي"
+
+#. module: baseer_report_engine_dashboard
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_dashboard/models/dashboard.py:0
+#: code:addons/baseer_report_engine_dashboard/static/src/dashboard.xml:0
+msgid "Tobacco Service Fee"
+msgstr "رسوم خدمة التبغ"
+
+#. module: baseer_report_engine_dashboard
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_dashboard/models/dashboard.py:0
+#: code:addons/baseer_report_engine_dashboard/static/src/dashboard.xml:0
+msgid "Misc. Operations"
+msgstr "العمليات المنوعة"
+
+#. module: baseer_report_engine_dashboard
+#: code:addons/baseer_report_engine_dashboard/static/src/dashboard.xml:0
+msgid "Invoices Analysis"
+msgstr "تحليل الفواتير"
+
+#. module: baseer_report_engine_dashboard
+#: code:addons/baseer_report_engine_dashboard/static/src/dashboard.xml:0
+msgid "Bills Analysis"
+msgstr "تحليل الفواتير"
+
+#. module: baseer_report_engine_dashboard
+#: code:addons/baseer_report_engine_dashboard/static/src/dashboard.xml:0
+msgid "Menu"
+msgstr "القائمة"
+
+#. module: baseer_report_engine_dashboard
+#: code:addons/baseer_report_engine_dashboard/static/src/dashboard.js:0
+msgid "Unable to load dashboard"
+msgstr "تعذر تحميل لوحة المحاسبة"
+
+#. module: baseer_report_engine_dashboard
+#: code:addons/baseer_report_engine_dashboard/static/src/dashboard.js:0
+msgid "Unable to open action"
+msgstr "تعذر فتح الإجراء"

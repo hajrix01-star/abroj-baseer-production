@@ -39,7 +39,7 @@ jobs:
           set -Eeuo pipefail
           MODULES=baseer_report_engine; TAGS=/baseer_report_engine
           if [ -d custom_addons/baseer_report_engine_tobacco ]; then
-            MODULES="$MODULES,baseer_report_engine_tobacco"; TAGS="$TAGS,/baseer_report_engine_tobacco"
+            MODULES="$MODULES,account_tax_python,baseer_report_engine_tobacco"; TAGS="$TAGS,/baseer_report_engine_tobacco"
           fi
           docker run --rm --network host \
             -e HOST=127.0.0.1 -e USER=odoo -e PASSWORD=odoo \

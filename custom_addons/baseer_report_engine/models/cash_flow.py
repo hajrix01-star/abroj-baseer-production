@@ -3,9 +3,7 @@
 Liquidity comprises cash-type accounts and bank/cash journal default and payment
 method accounts, excluding suspense and configured excluded accounts. Set
 baseer_report_engine.cash_flow_excluded_accounts to comma/space separated codes
-or IDs. Company 2 (Al Moallem Al Shami) should set this to 105002 (transit,
-default account of the cash journal «وسيط نقل السلف التاريخية») without
-changing the account. The journal filter applies to the liquidity
+or IDs. The journal filter applies to the liquidity
 journal items. Each move's net cash effect is allocated by absolute counterpart
 balance; reconciled receivable/payable portions are allocated by absolute
 invoice line balance (including taxes), with the remainder treated as advances. Only
@@ -266,6 +264,24 @@ class BaseerCashFlow(models.AbstractModel):
             payload['cash_notices'].append({'text': _('Unknown opening entry tokens: %s') % ', '.join(unknown)})
         column = next((c for c in options['columns'] if c['kind'] == 'period'), None)
         if column:
+            if excluded:
+                totals = self._aggregate(
+                    self._base_domain(options) + [('account_id', 'in', excluded.ids),
+                                                  ('date', '<=', column['_end'])],
+                    column['_end'], options['analytic_account_ids'])
+                currency = self.env.company.currency_id
+                entries = []
+                for (account_id, company_id), figures in totals.items():
+                    balance = _quantize(figures['balance'], currency)
+                    if balance:
+                        account = excluded.browse(account_id).with_company(self.env['res.company'].browse(company_id))
+                        entries.append((account.code or '', account.name, company_id, balance))
+                if entries:
+                    items = ['%s %s: %.*f' % (code, name, currency.decimal_places, balance)
+                             for code, name, company_id, balance in sorted(entries)]
+                    text = _('Clearing accounts not reconciled, excluded from cash:') + ' ' + '; '.join(items)
+                    payload['cash_notices'].append({'text': text})
+                    payload['notes'].append(text)
             codes = [s for s in re.split(r'[,\s]+', self.env['ir.config_parameter'].sudo().get_param(
                 'baseer_report_engine.cash_flow_transfer_accounts', '').strip()) if s]
             for company in self.env.companies:

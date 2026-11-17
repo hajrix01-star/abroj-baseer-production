@@ -1362,6 +1362,13 @@ msgid "The liquidity transfer account %(account)s has a non-zero balance of %(am
 msgstr "حساب تحويل السيولة %(account)s رصيده غير صفري بمبلغ %(amount)s لهذه الفترة: بعض التحويلات غير مكتملة."
 
 #. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/cash_flow.py:0
+msgid "Clearing accounts not reconciled, excluded from cash:"
+msgstr "حسابات وسيطة غير مسواة، مستبعدة من النقد:"
+
+#. module: baseer_report_engine
+#. odoo-python
 #: code:addons/baseer_report_engine/models/cash_flow.py:0
 #, python-format
 msgid "Excluded from cash: %s"

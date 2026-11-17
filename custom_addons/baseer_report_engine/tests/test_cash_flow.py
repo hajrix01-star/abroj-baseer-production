@@ -1,3 +1,6 @@
+import base64
+import io
+import zipfile
 from decimal import Decimal
 
 from .common import EngineCase
@@ -104,6 +107,40 @@ class TestCashFlow(EngineCase):
             self.assertIn('Excluded from cash: 105002', engine._export_payload('cash_flow', options)['notes'])
         params.set_param('baseer_report_engine.cash_flow_excluded_accounts', '')
         self.assertEqual(Decimal(self._value(engine.get_report('cash_flow', options), 'closing')), 37)
+
+    def test_excluded_closing_notice_exports_and_options(self):
+        company = self._company('Clearing notice')
+        engine = self._engine(company)
+        excluded = self._account(company, '105005', 'asset_cash')
+        zero = self._account(company, '105006', 'asset_cash')
+        income = self._account(company, '40505', 'income')
+        journal = self._journal(company, 'CN05')
+        self._entry(company, journal, '2040-12-31', excluded, income, 12)
+        self._entry(company, journal, '2041-02-01', zero, income, 4)
+        self._entry(company, journal, '2041-03-01', income, zero, 4)
+        self._entry(company, journal, '2041-04-01', excluded, income, 3, posted=False)
+        params = self.env['ir.config_parameter'].sudo()
+        params.set_param('baseer_report_engine.cash_flow_excluded_accounts', '105005,105006')
+        options = self._options()
+        prefix = 'Clearing accounts not reconciled, excluded from cash:'
+        report = engine.get_report('cash_flow', options)
+        notice = next(n['text'] for n in report['cash_notices'] if n['text'].startswith(prefix))
+        self.assertIn('105005 asset_cash 105005: 12.00', notice)
+        self.assertNotIn('105006', notice)
+        self.assertIn(notice, report['notes'])
+        draft = engine.get_report('cash_flow', dict(options, posted_only=False))
+        self.assertTrue(any('105005: 15.00' in n['text'] for n in draft['cash_notices']))
+        xlsx = base64.b64decode(engine.export_xlsx('cash_flow', options)['content'])
+        with zipfile.ZipFile(io.BytesIO(xlsx)) as workbook:
+            self.assertIn(notice, workbook.read('xl/sharedStrings.xml').decode())
+        html, _ = self.env['ir.actions.report'].with_company(company).with_context(allowed_company_ids=[company.id])._render_qweb_html(
+            'baseer_report_engine.report_pdf', docids=engine._definition('cash_flow').ids,
+            data={'report_code': 'cash_flow', 'options': options})
+        self.assertIn(notice, html.decode())
+        self._entry(company, journal, '2041-05-01', income, excluded, 12)
+        self.assertFalse(any(n['text'].startswith(prefix) for n in engine.get_report('cash_flow', options)['cash_notices']))
+        params.set_param('baseer_report_engine.cash_flow_excluded_accounts', '')
+        self.assertFalse(any(n['text'].startswith(prefix) for n in engine.get_report('cash_flow', dict(options, posted_only=False))['cash_notices']))
 
     def test_cash_identity_and_unfold(self):
         company = self._company('Cash flow company')

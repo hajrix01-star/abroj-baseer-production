@@ -22,8 +22,10 @@ General Ledger unfolding ranks journal items per account and company after apply
 
 Cash Flow excludes accounts specified by code or ID in the comma/space separated
 system parameter `baseer_report_engine.cash_flow_excluded_accounts`. Company 2
-(Al Moallem Al Shami) should set this to 105002 (transit, default account of the
-cash journal «وسيط نقل السلف التاريخية») without changing the account.
+(Al Moallem Al Shami) should set this to `105002,101003,101004` on production
+only with Mohammad's approval. Account 105002 is the transit default account of
+the cash journal «وسيط نقل السلف التاريخية»; 101003 and 101004 are outstanding
+receipts and payments, excluded per the general accountant.
 
 The report toolbar uses the instance theme's primary button colour, keeping it consistent with the rest of the app.
 

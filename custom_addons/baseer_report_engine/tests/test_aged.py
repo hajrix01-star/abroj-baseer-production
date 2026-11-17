@@ -160,7 +160,7 @@ class TestAged(EngineCase):
     def test_menu_names_arabic(self):
         self.env['res.lang']._activate_lang('ar_001')
         self.env['ir.module.module']._load_module_terms(['baseer_report_engine'], ['ar_001'], overwrite=True)
-        for kind, name in [('receivable', 'أعمار الديون المدينة (جديد)'), ('payable', 'أعمار الديون الدائنة (جديد)')]:
+        for kind, name in [('receivable', 'المتأخر المدين (جديد)'), ('payable', 'حسابات دائنة مستحقة متأخرة (جديد)')]:
             self.assertEqual(self.env.ref('baseer_report_engine.menu_aged_' + kind).with_context(lang='ar_001').name, name)
 
     def test_company_conversion_and_query_count(self):

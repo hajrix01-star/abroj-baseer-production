@@ -56,23 +56,31 @@ class TestProfitAndLoss(EngineCase):
         menu = self.env.ref('baseer_report_engine.menu_profit_and_loss')
         self.assertEqual(menu.parent_id, self.env.ref('baseer_report_engine.menu_new_version'))
         self.assertEqual(menu.sequence, 20)
-        action = self.env.ref('baseer_report_engine.action_profit_and_loss')
-        definition = self.env.ref('baseer_report_engine.report_profit_and_loss')
-        for lang, name, menu_name in [
-            ('en_US', 'Profit and Loss', 'Profit and Loss (New)'),
-            ('ar_001', 'الربح والخسارة', 'الربح والخسارة (جديد)'),
+        for code, english, arabic in [
+            ('profit_and_loss', 'Profit and Loss', 'الربح والخسارة'),
+            ('aged_receivable', 'Aged Receivable', 'المتأخر المدين'),
+            ('aged_payable', 'Aged Payable', 'حسابات دائنة مستحقة متأخرة'),
+            ('cash_flow', 'Cash Flow Statement', 'كشف التدفقات النقدية'),
         ]:
-            self.assertEqual(definition.with_context(lang=lang).name, name)
-            self.assertEqual(action.with_context(lang=lang).name, menu_name)
-            self.assertEqual(menu.with_context(lang=lang).name, menu_name)
+            definition = self.env.ref('baseer_report_engine.report_' + code)
+            for lang, name, suffix in [('en_US', english, ' (New)'), ('ar_001', arabic, ' (جديد)')]:
+                self.assertEqual(definition.with_context(lang=lang).name, name)
+                for prefix in ('action_', 'menu_'):
+                    self.assertEqual(self.env.ref('baseer_report_engine.' + prefix + code).with_context(lang=lang).name, name + suffix)
+            if code != 'profit_and_loss':
+                html, output = self.env['ir.actions.report'].with_company(self.company).with_context(lang='ar_001', allowed_company_ids=[self.company.id])._render_qweb_html(
+                    'baseer_report_engine.report_pdf', docids=definition.ids, data={'report_code': code, 'options': self._options()})
+                self.assertEqual(output, 'html')
+                self.assertIn(arabic.encode(), html)
+                result = self.engine.with_context(lang='ar_001').export_xlsx(code, self._options())
+                workbook = load_workbook(io.BytesIO(base64.b64decode(result['content'])))
+                self.assertEqual(workbook.active.title, arabic)
+                self.assertIn(arabic, workbook.active['A1'].value)
         for xmlid, english, arabic in [
             ('report_balance_sheet', 'Balance Sheet', 'الميزانية العمومية'),
             ('report_trial_balance', 'Trial Balance', 'ميزان المراجعة'),
             ('report_general_ledger', 'General Ledger', 'دفتر الأستاذ العام'),
             ('report_partner_ledger', 'Partner Ledger', 'دفتر الأستاذ العام للشركاء'),
-            ('report_aged_receivable', 'Aged Receivable', 'أعمار الديون المدينة'),
-            ('report_aged_payable', 'Aged Payable', 'أعمار الديون الدائنة'),
-            ('report_cash_flow', 'Cash Flow Statement', 'قائمة التدفقات النقدية'),
         ]:
             other = self.env.ref('baseer_report_engine.' + xmlid)
             self.assertEqual(other.with_context(lang='en_US').name, english)

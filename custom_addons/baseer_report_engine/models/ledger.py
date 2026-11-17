@@ -13,6 +13,7 @@ class BaseerLedgerEngine(models.AbstractModel):
     _inherit = 'baseer.report.engine'
 
     _gl_page_size = 80
+    _gl_unfold_all_page_size = 20
 
     @api.model
     def _ledger_columns(self, options):
@@ -77,7 +78,10 @@ class BaseerLedgerEngine(models.AbstractModel):
             raise ValidationError(_('The report options are not valid.'))
         selected = [row for row in rows[:-1] if unfold_all or [row['account_id'], row['company_id']] in unfolded]
         if selected:
-            pages = self._ledger_pages(options, selected, opening, 0, None if self.env.context.get('baseer_gl_export') else self._ledger_limit(None))
+            limit = None if self.env.context.get('baseer_gl_export') else self._ledger_limit(None)
+            if unfold_all and limit is not None:
+                limit = min(limit, self._gl_unfold_all_page_size)
+            pages = self._ledger_pages(options, selected, opening, 0, limit)
             for row in selected:
                 row['ledger'] = pages[(row['account_id'], row['company_id'])]
         grid['options'].update(unfold_all=unfold_all, unfolded_accounts=unfolded)
@@ -107,13 +111,28 @@ class BaseerLedgerEngine(models.AbstractModel):
                  ('company_id', 'in', list({key[1] for key in keys}))]
         model = self.env['account.move.line']
         # _search applies record rules before ranking lines within each account.
-        model.flush_model(['date', 'move_name', 'account_id', 'company_id'])
+        model.flush_model(['date', 'move_name', 'account_id', 'company_id', 'balance', 'analytic_distribution'])
         query = model._search(domain)
         ranked = query.select(SQL('account_move_line.id'), SQL('account_move_line.account_id'),
             SQL('account_move_line.company_id'), SQL('ROW_NUMBER() OVER (PARTITION BY account_move_line.account_id, account_move_line.company_id ORDER BY account_move_line.date, account_move_line.move_name, account_move_line.id) AS rn'),
             SQL('COUNT(*) OVER (PARTITION BY account_move_line.account_id, account_move_line.company_id) AS total'))
         upper = offset + limit if limit is not None else 2147483647
         result_rows = self.env.execute_query(SQL('SELECT id, account_id, company_id, total FROM (%s) AS ranked WHERE rn > %s AND rn <= %s ORDER BY rn', ranked, offset, upper))
+        previous_balances = {}
+        if offset:
+            share = SQL('1')
+            if options['analytic_account_ids']:
+                share = SQL("""COALESCE((SELECT LEAST(100, GREATEST(0, SUM(value::numeric))) / 100
+                    FROM jsonb_each_text(account_move_line.analytic_distribution)
+                    WHERE CASE WHEN key ~ '^\\s*[+-]?[0-9]+\\s*$' THEN key::numeric = ANY(%s) ELSE FALSE END
+                      AND value ~ '^\\s*[+-]?([0-9]+(\\.[0-9]*)?|\\.[0-9]+)([eE][+-]?[0-9]+)?\\s*$'), 0)""",
+                    options['analytic_account_ids'])
+            previous = query.select(SQL('account_move_line.account_id'), SQL('account_move_line.company_id'),
+                SQL('account_move_line.balance * (%s) AS weighted_balance', share),
+                SQL('ROW_NUMBER() OVER (PARTITION BY account_move_line.account_id, account_move_line.company_id ORDER BY account_move_line.date, account_move_line.move_name, account_move_line.id) AS rn'))
+            previous_balances = {(account_id, company_id): self._ledger_convert(Decimal(str(balance or 0)), self.env['res.company'].browse(company_id), last)
+                for account_id, company_id, balance in self.env.execute_query(SQL(
+                    'SELECT account_id, company_id, SUM(weighted_balance) FROM (%s) AS ranked WHERE rn <= %s GROUP BY account_id, company_id', previous, offset))}
         ids, counts = [], {}
         for line_id, account_id, company_id, count in result_rows:
             ids.append(line_id)
@@ -128,19 +147,15 @@ class BaseerLedgerEngine(models.AbstractModel):
             if key in grouped:
                 grouped[key].append(line)
         result = {}
+        formatted_dates = {}
         for account in accounts:
             key = (account['account_id'], account['company_id'])
             initial = opening.get(key, _zeros())
-            running = initial['balance']
+            running = initial['balance'] + previous_balances.get(key, Decimal(0))
             rows = []
             if offset == 0 and (initial['debit'] or initial['credit']):
                 rows.append({'type': 'initial', 'name': _('Initial Balance'), 'amounts': self._ledger_amounts(initial)})
             items = grouped[key]
-            if offset and key[0]:
-                previous = model.search(domain + [('account_id', '=', key[0]), ('company_id', '=', key[1])], order='date, move_name, id', limit=offset)
-                for prior_line in previous:
-                    share = _analytic_share(prior_line.analytic_distribution, set(options['analytic_account_ids'])) if options['analytic_account_ids'] else Decimal(1)
-                    running += self._ledger_convert(Decimal(str(prior_line.balance or 0)) * share, prior_line.company_id, last)
             for line in items:
                 share = _analytic_share(line.analytic_distribution, set(options['analytic_account_ids'])) if options['analytic_account_ids'] else Decimal(1)
                 values = {figure: self._ledger_convert(Decimal(str(line[figure] or 0)) * share, line.company_id, last)
@@ -150,7 +165,10 @@ class BaseerLedgerEngine(models.AbstractModel):
                 name = line.move_name or line.move_id.name or ''
                 if line.name and line.name != name:
                     name += ' ' + line.name
-                rows.append({'type': 'item', 'id': line.id, 'name': name, 'date': format_date(self.env, line.date), 'date_raw': fields.Date.to_string(line.date),
+                if line.date not in formatted_dates:
+                    formatted_dates[line.date] = (format_date(self.env, line.date), fields.Date.to_string(line.date))
+                date, date_raw = formatted_dates[line.date]
+                rows.append({'type': 'item', 'id': line.id, 'name': name, 'date': date, 'date_raw': date_raw,
                              'partner': line.partner_id.display_name or '',
                              'currency': format_amount(self.env, line.amount_currency * float(share), line.currency_id) if line.currency_id and line.currency_id != line.company_id.currency_id else '',
                              'amounts': self._ledger_amounts(values)})

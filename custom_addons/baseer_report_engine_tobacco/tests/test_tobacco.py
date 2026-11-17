@@ -28,6 +28,8 @@ class TobaccoReportCase(EngineCase):
         self.assertEqual(section['movement'], 20)
         self.assertEqual(section['difference'], -20)
         self.assertIn(move.id, section['manual_move_ids'])
+        self.assertEqual(next(c['amount'] for c in section['causes'] if c['key'] == 'manual'), -20)
+        self.assertEqual(section['unexplained'], 0)
         self.assertEqual(payload['report']['report_kind'], 'tobacco')
         self.assertTrue(self._engine(company).export_xlsx('tobacco_service_fee', self._options())['content'])
         self.assertTrue(self._engine(company).export_pdf('tobacco_service_fee', self._options()))
@@ -38,14 +40,22 @@ class TobaccoReportCase(EngineCase):
             payload = localized._export_payload('tobacco_service_fee', self._options())
             rows = payload['tobacco_sections'][0]['export_rows']
             self.assertIn(-20, [values[1] for values, kind in rows if len(values) == 2 and isinstance(values[1], (int, float))])
+            manual_label = 'Manual journal entries' if lang == 'en_US' else 'قيود اليومية اليدوية'
+            self.assertEqual(next(values[1] for values, kind in rows if values[0] == manual_label), -20)
+            unexplained_label = 'Unexplained' if lang == 'en_US' else 'غير مفسر'
+            self.assertEqual(next(values[1] for values, kind in rows if values[0] == unexplained_label), 0)
             xlsx = localized.export_xlsx('tobacco_service_fee', self._options())['content']
             with zipfile.ZipFile(io.BytesIO(base64.b64decode(xlsx))) as archive:
                 strings = archive.read('xl/sharedStrings.xml').decode()
+                self.assertIn(manual_label, strings)
+                self.assertIn(unexplained_label, strings)
                 self.assertIn('Difference' if lang == 'en_US' else 'الفرق', strings)
                 self.assertIn('Total for period' if lang == 'en_US' else 'إجمالي الفترة', strings)
             html, _ = self.env['ir.actions.report'].with_company(company).with_context(lang=lang, allowed_company_ids=[company.id])._render_qweb_html(
                 'baseer_report_engine.report_pdf', docids=localized._definition('tobacco_service_fee').ids, data={'report_code': 'tobacco_service_fee', 'options': self._options()})
             self.assertIn(('Difference' if lang == 'en_US' else 'الفرق').encode(), html)
+            self.assertIn(manual_label.encode(), html)
+            self.assertIn(unexplained_label.encode(), html)
             self.assertIn(b'-20.00', html)
         action = self._engine(company).get_tobacco_source_action(self._options(), 'account.move', move.id)
         self.assertEqual((action['res_model'], action['res_id'], action['view_mode']), ('account.move', move.id, 'form'))
@@ -304,3 +314,24 @@ class TobaccoClosedSessionCase(CommonPosTest, EngineCase):
             self.assertEqual(section['net'], 25)
             self.assertEqual(section['movement'], 25)
             self.assertEqual(section['difference'], 0)
+            self.assertEqual(section['unexplained'], 0)
+            session.move_id.button_draft()
+            session.move_id.date = '2041-02-05'
+            session.move_id.action_post()
+            section = engine.get_report('tobacco_service_fee', options)['tobacco_sections'][0]
+            causes = {cause['key']: cause for cause in section['causes']}
+            self.assertEqual(causes['outside_sessions']['amount'], 25)
+            self.assertIn(session.id, causes['outside_sessions']['ids'])
+            self.assertEqual(section['unexplained'], 0)
+            inverse = engine.get_report('tobacco_service_fee', self._options(
+                date_from='2041-02-05', date_to='2041-02-05'))['tobacco_sections'][0]
+            self.assertEqual(next(c['amount'] for c in inverse['causes'] if c['key'] == 'outside_sessions'), -25)
+            self.assertEqual(inverse['unexplained'], 0)
+            session.move_id.button_draft()
+            session.move_id.button_cancel()
+            section = engine.get_report('tobacco_service_fee', options)['tobacco_sections'][0]
+            causes = {cause['key']: cause for cause in section['causes']}
+            self.assertEqual(causes['cancelled_sessions']['amount'], 25)
+            self.assertIn(session.id, causes['cancelled_sessions']['ids'])
+            self.assertEqual(section['unexplained'], 0)
+            self.assertEqual(engine.get_tobacco_source_action(options, 'pos.session', session.id)['res_id'], session.id)

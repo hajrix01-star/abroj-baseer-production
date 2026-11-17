@@ -25,9 +25,11 @@ class TobaccoExport(models.AbstractModel):
             ([self.env._('Register net for period'), section['net']], 'total'),
             ([self.env._('Fee account movement in the trial balance'), section['movement']], 'total'),
             ([self.env._('Difference'), section['difference']], 'total'),
-            ([self.env._('Open sessions'), ', '.join(map(str, section['open_sessions']))], 'item'),
-            ([self.env._('Manual journal entries'), ', '.join(map(str, section['manual_move_ids']))], 'item'),
-            ([self.env._('Order total mismatches'), len(section['exceptions'])], 'count'),
+            *[([label, cause['amount'], ', '.join(map(str, cause['ids']))], 'item')
+              for label, cause in zip((self.env._('Open sessions'), self.env._('Session entry cancelled'),
+                  self.env._('Session entry outside the period'), self.env._('Manual journal entries'),
+                  self.env._('Order total mismatches')), section['causes'])],
+            ([self.env._('Unexplained'), section['unexplained']], 'total'),
         ])
         if section['exceptions']:
             rows.append(([self.env._('Document'), self.env._('Recomputed total'), self.env._('Saved total')], 'section'))

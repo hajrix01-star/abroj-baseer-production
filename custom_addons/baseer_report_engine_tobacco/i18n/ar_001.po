@@ -271,3 +271,27 @@ msgstr "خيارات التقرير غير صالحة."
 #: model_terms:ir.ui.view,arch_db:baseer_report_engine_tobacco.report_pdf_tobacco
 msgid "Net for period"
 msgstr "صافي الفترة"
+
+#. module: baseer_report_engine_tobacco
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_tobacco/models/export.py:0
+#: code:addons/baseer_report_engine_tobacco/static/src/tobacco.js:0
+msgid "Session entry cancelled"
+msgstr "قيد الجلسة ملغى"
+
+#. module: baseer_report_engine_tobacco
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_tobacco/models/export.py:0
+#: code:addons/baseer_report_engine_tobacco/static/src/tobacco.js:0
+msgid "Session entry outside the period"
+msgstr "قيد الجلسة خارج الفترة"
+
+#. module: baseer_report_engine_tobacco
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_tobacco/models/export.py:0
+#: code:addons/baseer_report_engine_tobacco/static/src/tobacco.js:0
+msgid "Unexplained"
+msgstr "غير مفسر"

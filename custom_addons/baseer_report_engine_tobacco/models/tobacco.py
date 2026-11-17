@@ -85,6 +85,19 @@ class TobaccoEngine(models.AbstractModel):
             lines = self.env['account.move.line'].search(domain + [('date', '<=', end)])
             orders = self.env['pos.order'].search([('company_id', '=', company.id), ('source', '=', 'pos'),
                 ('state', 'in', ('paid', 'done')), ('date_order', '>=', utc_start), ('date_order', '<', utc_end)], order='date_order,id')
+            period_sessions = self.env['pos.session'].search([
+                ('company_id', '=', company.id), ('move_id.date', '>=', start),
+                ('move_id.date', '<=', end), ('move_id.state', 'in',
+                    ['posted'] if options['posted_only'] else ['posted', 'draft'])])
+            outside_orders = self.env['pos.order'].search([
+                ('session_id', 'in', period_sessions.ids), ('source', '=', 'pos'),
+                ('state', 'in', ('paid', 'done')), '|',
+                ('date_order', '<', utc_start), ('date_order', '>=', utc_end)])
+            inverse = defaultdict(lambda: defaultdict(float))
+            for order in outside_orders:
+                fees, _calculated = self._tobacco_order_fees(order, set(accounts.ids))
+                for (account_id, _line_id), fee in fees.items():
+                    inverse[account_id][order.session_id.id] -= fee
             rows = defaultdict(list)
             exceptions = defaultdict(list)
             for order in orders:
@@ -114,11 +127,38 @@ class TobaccoEngine(models.AbstractModel):
                 movement = sum(period.mapped('credit')) - sum(period.mapped('debit'))
                 net = sum(r['net'] for r in ordered)
                 manual = period.filtered(lambda l: l.move_id.move_type == 'entry' and not l.move_id.pos_session_ids)
+                cause_sessions = {'open_sessions': defaultdict(float),
+                                  'cancelled_sessions': defaultdict(float),
+                                  'outside_sessions': defaultdict(float)}
+                session_by_id = {session.id: session for session in orders.session_id}
+                for row in ordered:
+                    session = session_by_id.get(row.get('session_id'))
+                    if not session:
+                        continue
+                    move = session.move_id
+                    if session.state != 'closed':
+                        cause_sessions['open_sessions'][session.id] += row['net']
+                    elif not move or move.state == 'cancel':
+                        cause_sessions['cancelled_sessions'][session.id] += row['net']
+                    elif not start <= move.date <= end:
+                        cause_sessions['outside_sessions'][session.id] += row['net']
+                for session_id, amount in inverse[account.id].items():
+                    cause_sessions['outside_sessions'][session_id] += amount
+                manual_amount = -sum(manual.mapped('credit')) + sum(manual.mapped('debit'))
+                causes = [
+                    {'key': key, 'amount': sum(items.values()), 'ids': sorted(items), 'model': 'pos.session'}
+                    for key, items in cause_sessions.items()]
+                causes.append({'key': 'manual', 'amount': manual_amount, 'ids': manual.move_id.ids, 'model': 'account.move'})
+                # A total mismatch is diagnostic and does not establish a fee difference.
+                causes.append({'key': 'exceptions', 'amount': 0.0,
+                               'ids': [e['id'] for e in exceptions[account.id]], 'model': 'pos.order'})
+                difference = net - movement
+                unexplained = company.currency_id.round(difference - sum(c['amount'] for c in causes))
                 sections.append({'company_id': company.id, 'company': company.name, 'account_id': account.id,
                     'account': account.with_company(company).display_name, 'opening': opening, 'rows': ordered,
                     'debit': sum(max(-r['net'], 0) for r in ordered), 'credit': sum(max(r['net'], 0) for r in ordered),
-                    'net': net, 'closing': opening + net, 'movement': movement, 'difference': net - movement,
-                    'open_sessions': sorted({r['session_id'] for r in ordered if r.get('session_state') != 'closed' and r.get('session_id')}),
+                    'net': net, 'closing': opening + net, 'movement': movement, 'difference': difference, 'causes': causes, 'unexplained': unexplained,
+                    'open_sessions': sorted(cause_sessions['open_sessions']),
                     'manual_move_ids': manual.move_id.ids, 'exceptions': exceptions[account.id]})
         return sections
 
@@ -205,10 +245,8 @@ class TobaccoEngine(models.AbstractModel):
         normalized = self._normalize_options(self._definition('tobacco_service_fee'), options or {})
         sections = self._tobacco_collect(normalized)
         visible = any((r['model'], r['id']) == (model, record_id) for s in sections for r in s['rows'])
-        if model == 'pos.session':
-            visible = any(record_id in s['open_sessions'] for s in sections)
-        if model == 'account.move':
-            visible = visible or any(record_id in s['manual_move_ids'] for s in sections)
+        visible = visible or any(c['model'] == model and record_id in c['ids']
+                                 for s in sections for c in s['causes'])
         if not visible:
             raise ValidationError(_('Choose a source from this report.'))
         record = self.env[model].browse(record_id).exists()

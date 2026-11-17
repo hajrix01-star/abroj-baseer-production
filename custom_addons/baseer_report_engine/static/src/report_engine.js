@@ -539,10 +539,19 @@ export class BaseerReportEngine extends Component {
     async unfoldAll() {
         if (this.isPartnerLedger) {
             this.state.options.unfold_all = true;
-            for (const line of this.state.payload.lines.filter(line => line.foldable)) {
-                this.state.folded[line.code] = false;
-                if (!this.state.accounts[line.code]) await this.loadLedger(line, 0);
-            }
+            const token = this.requestToken;
+            try {
+                const pages = await this.orm.call("baseer.report.engine", "get_partner_items_batch",
+                    [this.reportCode, this.plainOptions()]);
+                if (token !== this.requestToken || !this.state.options.unfold_all) return;
+                for (const line of this.state.payload.lines.filter(line => line.foldable)) {
+                    this.state.folded[line.code] = false;
+                    const page = pages[line.partner_id];
+                    if (page && !this.state.accounts[line.code]) {
+                        this.state.accounts[line.code] = { ...page, rows: [...(page.initial ? [page.initial] : []), ...page.items] };
+                    }
+                }
+            } catch (error) { this.state.error = error?.data?.message || this.state.labels.error || "Error"; }
             return;
         }
         if (this.isLedger) { this.state.options.unfold_all = true; await this.loadReport(); return; }
@@ -562,6 +571,7 @@ export class BaseerReportEngine extends Component {
     }
 
     foldAll() {
+        if (this.isPartnerLedger) this.state.options.unfold_all = false;
         if (this.isLedger) { this.state.options.unfold_all = false; this.state.options.unfolded_accounts = []; }
         this.state.folded = Object.fromEntries((this.state.payload?.lines || []).filter((line) => line.foldable && line.has_accounts).map((line) => [line.code, true]));
     }

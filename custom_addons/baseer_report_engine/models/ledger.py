@@ -20,6 +20,7 @@ class BaseerLedgerEngine(models.AbstractModel):
     _inherit = 'baseer.report.engine'
 
     _gl_page_size = 80
+    _gl_unfold_all_page_size = 20
 
     @api.model
     def _ledger_columns(self, options):
@@ -195,7 +196,10 @@ class BaseerLedgerEngine(models.AbstractModel):
             raise ValidationError(_('The report options are not valid.'))
         selected = [row for row in rows[:-1] if unfold_all or [row['account_id'], row['company_id']] in unfolded]
         if selected:
-            pages = self._ledger_pages(options, selected, opening, 0, None if self.env.context.get('baseer_gl_export') else self._ledger_limit(None))
+            limit = None if self.env.context.get('baseer_gl_export') else self._ledger_limit(None)
+            if unfold_all and limit is not None:
+                limit = min(limit, self._gl_unfold_all_page_size)
+            pages = self._ledger_pages(options, selected, opening, 0, limit)
             for row in selected:
                 row['ledger'] = pages[(row['account_id'], row['company_id'])]
         grid['options'].update(unfold_all=unfold_all, unfolded_accounts=unfolded)
@@ -225,13 +229,28 @@ class BaseerLedgerEngine(models.AbstractModel):
                  ('company_id', 'in', list({key[1] for key in keys}))]
         model = self.env['account.move.line']
         # _search applies record rules before ranking lines within each account.
-        model.flush_model(['date', 'move_name', 'account_id', 'company_id'])
+        model.flush_model(['date', 'move_name', 'account_id', 'company_id', 'balance', 'analytic_distribution'])
         query = model._search(domain)
         ranked = query.select(SQL('account_move_line.id'), SQL('account_move_line.account_id'),
             SQL('account_move_line.company_id'), SQL('ROW_NUMBER() OVER (PARTITION BY account_move_line.account_id, account_move_line.company_id ORDER BY account_move_line.date, account_move_line.move_name, account_move_line.id) AS rn'),
             SQL('COUNT(*) OVER (PARTITION BY account_move_line.account_id, account_move_line.company_id) AS total'))
         upper = offset + limit if limit is not None else 2147483647
         result_rows = self.env.execute_query(SQL('SELECT id, account_id, company_id, total FROM (%s) AS ranked WHERE rn > %s AND rn <= %s ORDER BY rn', ranked, offset, upper))
+        previous_balances = {}
+        if offset:
+            share = SQL('1')
+            if options['analytic_account_ids']:
+                share = SQL("""COALESCE((SELECT LEAST(100, GREATEST(0, SUM(value::numeric))) / 100
+                    FROM jsonb_each_text(account_move_line.analytic_distribution)
+                    WHERE CASE WHEN key ~ '^\\s*[+-]?[0-9]+\\s*$' THEN key::numeric = ANY(%s) ELSE FALSE END
+                      AND value ~ '^\\s*[+-]?([0-9]+(\\.[0-9]*)?|\\.[0-9]+)([eE][+-]?[0-9]+)?\\s*$'), 0)""",
+                    options['analytic_account_ids'])
+            previous = query.select(SQL('account_move_line.account_id'), SQL('account_move_line.company_id'),
+                SQL('account_move_line.balance * (%s) AS weighted_balance', share),
+                SQL('ROW_NUMBER() OVER (PARTITION BY account_move_line.account_id, account_move_line.company_id ORDER BY account_move_line.date, account_move_line.move_name, account_move_line.id) AS rn'))
+            previous_balances = {(account_id, company_id): self._ledger_convert(Decimal(str(balance or 0)), self.env['res.company'].browse(company_id), last)
+                for account_id, company_id, balance in self.env.execute_query(SQL(
+                    'SELECT account_id, company_id, SUM(weighted_balance) FROM (%s) AS ranked WHERE rn <= %s GROUP BY account_id, company_id', previous, offset))}
         ids, counts = [], {}
         for line_id, account_id, company_id, count in result_rows:
             ids.append(line_id)
@@ -246,19 +265,15 @@ class BaseerLedgerEngine(models.AbstractModel):
             if key in grouped:
                 grouped[key].append(line)
         result = {}
+        formatted_dates = {}
         for account in accounts:
             key = (account['account_id'], account['company_id'])
             initial = opening.get(key, _zeros())
-            running = initial['balance']
+            running = initial['balance'] + previous_balances.get(key, Decimal(0))
             rows = []
             if offset == 0 and (initial['debit'] or initial['credit']):
                 rows.append({'type': 'initial', 'name': _('Initial Balance'), 'amounts': self._ledger_amounts(initial)})
             items = grouped[key]
-            if offset and key[0]:
-                previous = model.search(domain + [('account_id', '=', key[0]), ('company_id', '=', key[1])], order='date, move_name, id', limit=offset)
-                for prior_line in previous:
-                    share = _analytic_share(prior_line.analytic_distribution, set(options['analytic_account_ids'])) if options['analytic_account_ids'] else Decimal(1)
-                    running += self._ledger_convert(Decimal(str(prior_line.balance or 0)) * share, prior_line.company_id, last)
             for line in items:
                 share = _analytic_share(line.analytic_distribution, set(options['analytic_account_ids'])) if options['analytic_account_ids'] else Decimal(1)
                 values = {figure: self._ledger_convert(Decimal(str(line[figure] or 0)) * share, line.company_id, last)
@@ -266,7 +281,10 @@ class BaseerLedgerEngine(models.AbstractModel):
                 running += values['balance']
                 values['balance'] = running
                 _move, _detail, name = _item_labels(line.move_name or line.move_id.name, line.name)
-                rows.append({'type': 'item', 'id': line.id, 'name': name, 'date': format_date(self.env, line.date), 'date_raw': fields.Date.to_string(line.date),
+                if line.date not in formatted_dates:
+                    formatted_dates[line.date] = (format_date(self.env, line.date), fields.Date.to_string(line.date))
+                date, date_raw = formatted_dates[line.date]
+                rows.append({'type': 'item', 'id': line.id, 'name': name, 'date': date, 'date_raw': date_raw,
                              'partner': line.partner_id.display_name or '',
                              'currency': format_amount(self.env, line.amount_currency * float(share), line.currency_id) if line.currency_id and line.currency_id != line.company_id.currency_id else '',
                              'amounts': self._ledger_amounts(values)})
@@ -288,11 +306,17 @@ class BaseerLedgerEngine(models.AbstractModel):
         if report.report_kind == 'partner_ledger':
             partner_id = account_id if account_id is not False else 0
             self._partner_move_line_action(normalized, 'partner_%s' % partner_id, partner_id)
-            payload = self._build_partner_ledger(report, normalized, {})
-            row = next ( (r for r in payload['lines'][:-1] if r['partner_id'] == partner_id), None)
-            if not row:
+            if partner_id and normalized['partner_ids'] and partner_id not in normalized['partner_ids']:
                 raise AccessError(_('Choose an account from this line.'))
-            opening, _period = self._ledger_partner_data(normalized, self._partner_domain(normalized))
+            domain = self._partner_domain(normalized) + [('partner_id', '=', partner_id or False)]
+            opening, period = self._ledger_partner_data(normalized, domain)
+            if partner_id not in opening and partner_id not in period:
+                raise AccessError(_('Choose an account from this line.'))
+            initial, movement = opening.get(partner_id, _zeros()), period.get(partner_id, _zeros())
+            values = {key: initial[key] + movement[key] for key in initial}
+            partner = self.env['res.partner'].browse(partner_id)
+            row = {'partner_id': partner_id, 'name': partner.display_name if partner_id else _('Unknown Partner'),
+                   'amounts': self._ledger_amounts(values, True)}
             return self._partner_page(normalized, row, opening, offset, self._ledger_limit(limit))
         # This validates account membership and access, including synthetic earnings.
         self._grid_move_line_action(report, normalized, 'account_%s_%s' % (account_id, company_id), 'end', account_id, company_id)
@@ -436,7 +460,14 @@ class BaseerLedgerEngine(models.AbstractModel):
                                               ranked, offset, offset + limit if limit is not None else 9223372036854775807))
         lines = model.search([('id', 'in', [item[0] for item in selected])], order='date, move_name, id')
         previous = model.search(domain, order='date, move_name, id', limit=offset) if offset else model.browse()
-        initial = opening.get(row['partner_id'], _zeros())
+        return self._render_partner_page(options, row, opening, offset, limit, allocations, lines, previous,
+                                         selected[0][1] if selected else 0)
+
+    @api.model
+    def _render_partner_page(self, options, row, opening, offset, limit, allocations, lines, previous, count):
+        last = options['columns'][0]['_end']
+        partner_id = row['partner_id']
+        initial = opening.get(partner_id, _zeros())
         running = initial['balance']
         result = []
         if not offset and (initial['debit'] or initial['credit']):
@@ -464,10 +495,93 @@ class BaseerLedgerEngine(models.AbstractModel):
                            'matching': line.matching_number or '',
                            'amount_currency': format_amount(self.env, line.amount_currency * float(share), line.currency_id) if line.currency_id and line.currency_id != line.company_id.currency_id else '',
                            'amounts': self._ledger_amounts(values)})
-        has_more = bool(limit is not None and selected and selected[0][1] > offset + limit)
+        has_more = bool(limit is not None and count > offset + limit)
         if not has_more:
             result.append({'type': 'total', 'name': _('Total %s') % row['name'], 'amounts': row['amounts']})
         return {'rows': result, 'has_more': has_more, 'next_offset': offset + limit if has_more else False}
+
+    @api.model
+    def get_partner_items_batch(self, report_code, options, partner_keys=None, limit=None):
+        self._check_report_access()
+        report = self._definition(report_code)
+        if report.report_kind != 'partner_ledger':
+            raise ValidationError(_('The report options are not valid.'))
+        normalized = self._normalize_options(report, options or {})
+        if partner_keys is not None and (not isinstance(partner_keys, list) or
+                any(type(key) is not int or key < 0 for key in partner_keys)):
+            raise ValidationError(_('The report options are not valid.'))
+        page_limit = None if self.env.context.get('baseer_gl_export') else self._ledger_limit(limit)
+        return self._partner_items_batch(normalized, partner_keys, page_limit)
+
+    @api.model
+    def _partner_items_batch(self, options, partner_keys, limit):
+        opening, period = self._ledger_partner_data(options, self._partner_domain(options))
+        available = set(opening) | set(period)
+        keys = available if partner_keys is None else set(partner_keys)
+        if not keys <= available:
+            raise AccessError(_('Choose an account from this line.'))
+        if not keys:
+            return {}
+        partners = self.env['res.partner'].browse([key for key in keys if key]).exists()
+        partners.check_access('read')
+        names = {partner.id: partner.display_name for partner in partners}
+        allocations = self._partner_allocations(options)
+        selected = self._selected_attribution_partners(options, allocations)
+        model = self.env['account.move.line']
+        first, last = options['columns'][0]['_start'], options['columns'][0]['_end']
+        date_domain = [('date', '>=', first), ('date', '<=', last)]
+        direct = model._search(self._base_domain(options) + self._partner_domain(options) + date_domain).select(
+            SQL('account_move_line.id'), SQL('COALESCE(account_move_line.partner_id, 0) AS partner_key'),
+            SQL('account_move_line.date'), SQL('account_move_line.move_name'))
+        unfiltered = dict(options, partner_ids=[], partner_category_ids=[])
+        source = model._search(self._base_domain(options) + self._partner_domain(unfiltered) + date_domain +
+                               [('partner_id', '=', False)]).select(
+            SQL('account_move_line.id'), SQL('account_move_line.date'), SQL('account_move_line.move_name'))
+        allocated = [(line_id, key) for line_id, amounts in allocations.items() for key in amounts
+                     if key in selected and key in keys]
+        fully = []
+        if 0 in keys and not options['partner_ids'] and not options['partner_category_ids']:
+            for line in model.browse(list(allocations)):
+                if line.company_currency_id.is_zero(abs(line.balance) - float(sum(allocations[line.id].values()))):
+                    fully.append(line.id)
+        values = SQL(', ').join(SQL('(%s, %s)', line_id, key) for line_id, key in allocated) if allocated else SQL('(NULL::integer, NULL::integer)')
+        ranked = self.env.execute_query(SQL("""
+            WITH entries AS (
+                SELECT id, partner_key, date, move_name FROM (%s) direct
+                 WHERE partner_key = ANY(%s) AND NOT (partner_key = 0 AND id = ANY(%s))
+                UNION ALL
+                SELECT source.id, allocation.partner_key, source.date, source.move_name
+                  FROM (%s) source JOIN (VALUES %s) allocation(id, partner_key) ON allocation.id = source.id
+            ), ranked AS (
+                SELECT id, partner_key,
+                       ROW_NUMBER() OVER (PARTITION BY partner_key ORDER BY date, move_name, id) AS rn,
+                       COUNT(*) OVER (PARTITION BY partner_key) AS total
+                  FROM entries
+            )
+            SELECT id, partner_key, total FROM ranked WHERE rn <= %s ORDER BY partner_key, rn
+        """, direct, list(keys), fully, source, values, limit if limit is not None else 9223372036854775807))
+        all_lines = model.browse([item[0] for item in ranked])
+        all_lines.fetch(['analytic_distribution', 'move_id', 'journal_id', 'account_id', 'company_id',
+                         'move_name', 'name', 'date_maturity', 'amount_residual', 'matching_number',
+                         'debit', 'credit', 'balance', 'amount_currency', 'currency_id', 'partner_id'])
+        all_lines.mapped('move_id').fetch(['name', 'invoice_date'])
+        grouped, counts = {key: [] for key in keys}, {}
+        for line_id, key, count in ranked:
+            grouped[key].append(line_id)
+            counts[key] = count
+        result = {}
+        for key in keys:
+            initial, movement = opening.get(key, _zeros()), period.get(key, _zeros())
+            totals = {figure: initial[figure] + movement[figure] for figure in initial}
+            row = {'partner_id': key, 'name': names.get(key) or _('Unknown Partner'),
+                   'amounts': self._ledger_amounts(totals, True)}
+            lines = model.browse(grouped[key]).with_prefetch(all_lines._prefetch_ids)
+            page = self._render_partner_page(options, row, opening, 0, limit, allocations, lines,
+                                             model.browse(), counts.get(key, 0))
+            initial_row = page['rows'][0] if page['rows'] and page['rows'][0]['type'] == 'initial' else False
+            result[key] = {'initial': initial_row, 'items': page['rows'][1:] if initial_row else page['rows'],
+                           'has_more': page['has_more'], 'next_offset': page['next_offset']}
+        return result
 
     @api.model
     def get_move_action(self, move_line_id):

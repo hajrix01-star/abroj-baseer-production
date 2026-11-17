@@ -41,3 +41,22 @@
         }
     }
 }
+
+.o_baseer_report_engine:has(.o_bre_tobacco_month, .o_bre_tobacco_table) {
+    max-width: 100%; min-width: 0;
+    .o_bre_paper, .o_bre_paper_inner, .o_bre_scroll { max-width: 100%; min-width: 0; }
+    .o_bre_scroll { overflow-x: auto; }
+    h4 { max-width: 100%; overflow-wrap: anywhere; }
+    .o_bre_toolbar h1 { min-width: 0; max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
+    .o_bre_toolbar, .o_bre_filters { min-width: 0; max-width: 100%; }
+    .tob-mobile-balance { display: none; }
+    .o_bre_tobacco_month { width: auto; max-width: 100%; }
+}
+@media (max-width: 767px) {
+    .o_baseer_report_engine:has(.o_bre_tobacco_month, .o_bre_tobacco_table) .tob-mobile-balance { display: block; }
+}
+
+@media (max-width: 767px) {
+    .o_baseer_report_engine:has(.o_bre_tobacco_month, .o_bre_tobacco_table) .o_bre_tobacco_table .o_bre_section th:first-child,
+    .o_baseer_report_engine:has(.o_bre_tobacco_month, .o_bre_tobacco_table) .o_bre_tobacco_table .o_bre_total th:first-child { white-space: normal; overflow: visible; }
+}

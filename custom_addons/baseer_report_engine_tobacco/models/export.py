@@ -10,32 +10,21 @@ class TobaccoExport(models.AbstractModel):
     _inherit = 'baseer.report.engine'
 
     @api.model
-    def _tobacco_export_rows(self, section, show_products):
-        rows = [([self.env._('Cumulative at start'), '', '', '', '', '', '', section['opening']], 'total')]
+    def _tobacco_export_rows(self, section, show_products, show_cumulative=False):
+        rows = [([self.env._('Cumulative at start'), '', '', '', '', '', '', section['opening']], 'total')] if show_cumulative else []
         balance = section['opening']
         for day in section['days']:
             rows.append(([day['date'], '', '', '', day['debit'], day['credit'], day['net'], day['cumulative']], 'day'))
             for item in (r for r in section['rows'] if r['date'][:10] == day['date']):
                 balance += item['net']
                 rows.append(([item['date'], item['name'], '%s × %s' % (item['product'], format(Decimal(str(item['quantity'])).normalize(), 'f')) if item['product'] else '', item['type'], max(-item['net'], 0), max(item['net'], 0), item['net'], balance], 'item'))
-        rows.extend([
-            ([self.env._('Total for period'), '', '', '', section['debit'], section['credit'], section['net'], ''], 'total'),
-            ([self.env._('Cumulative at end'), '', '', '', '', '', '', section['closing']], 'total'),
-            ([self.env._('Reconciliation')], 'section'),
-            ([self.env._('Register net for period'), section['net']], 'total'),
-            ([self.env._('Fee account movement in the trial balance'), section['movement']], 'total'),
-            ([self.env._('Difference'), section['difference']], 'total'),
-            *[([label, cause['amount'], ', '.join(map(str, cause['ids']))], 'item')
-              for label, cause in zip((self.env._('Open sessions'), self.env._('Session entry cancelled'),
-                  self.env._('Session entry outside the period'), self.env._('Manual journal entries'),
-                  self.env._('Order total mismatches')), section['causes'])],
-            ([self.env._('Unexplained'), section['unexplained']], 'total'),
-        ])
-        if section['exceptions']:
-            rows.append(([self.env._('Document'), self.env._('Recomputed total'), self.env._('Saved total')], 'section'))
-            rows.extend(([e['name'], e['computed'], e['saved']], 'item') for e in section['exceptions'])
+        rows.append(([self.env._('Total for period'), '', '', '', section['debit'], section['credit'], section['net'], ''], 'total'))
+        if show_cumulative:
+            rows.append(([self.env._('Cumulative at end'), '', '', '', '', '', '', section['closing']], 'total'))
+        else:
+            rows = [(values[:-1], kind) for values, kind in rows]
         if not show_products:
-            rows = [(values[:2] + values[3:] if len(values) == 8 else values, kind)
+            rows = [(values[:2] + values[3:], kind)
                     for values, kind in rows]
         return rows
 
@@ -44,7 +33,8 @@ class TobaccoExport(models.AbstractModel):
         payload = super()._export_payload(report_code, options)
         if report_code == 'tobacco_service_fee':
             for section in payload['tobacco_sections']:
-                section['export_rows'] = self._tobacco_export_rows(section, bool((options or {}).get('show_products')))
+                section['export_rows'] = self._tobacco_export_rows(section, bool((options or {}).get('show_products')), bool((options or {}).get('show_cumulative')))
+            payload['tobacco_show_cumulative'] = bool((options or {}).get('show_cumulative'))
             payload['tobacco_show_products'] = bool((options or {}).get('show_products'))
         return payload
 
@@ -70,12 +60,14 @@ class TobaccoExport(models.AbstractModel):
         for section in payload['tobacco_sections']:
             sheet.write(row, 0, '%s — %s' % (section['company'], section['account']), bold)
             row += 1
-            summary = [(self.env._('Cumulative at start'), section['opening']), (self.env._('Debit'), section['debit']), (self.env._('Credit'), section['credit']), (self.env._('Net for period'), section['net'])]
+            summary = ([(self.env._('Cumulative at start'), section['opening'])] if payload['tobacco_show_cumulative'] else []) + [(self.env._('Debit'), section['debit']), (self.env._('Credit'), section['credit']), (self.env._('Net for period'), section['net'])]
             for col, (label, value) in enumerate(summary):
                 sheet.write(row, col, label, bold)
                 sheet.write_number(row + 1, col, value, money)
             row += 3
             labels = [self.env._('Date and Time'), self.env._('Document'), self.env._('Type'), self.env._('Debit'), self.env._('Credit'), self.env._('Net'), self.env._('Cumulative')]
+            if not payload['tobacco_show_cumulative']:
+                labels.pop()
             if payload['tobacco_show_products']:
                 labels.insert(2, self.env._('Product and Quantity'))
             for col, label in enumerate(labels):

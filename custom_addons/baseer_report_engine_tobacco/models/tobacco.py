@@ -20,6 +20,14 @@ class TobaccoEngine(models.AbstractModel):
     _inherit = 'baseer.report.engine'
 
     @api.model
+    def _normalize_options(self, report, raw):
+        options = super()._normalize_options(report, raw)
+        if report.code == 'tobacco_service_fee':
+            options['show_cumulative'] = bool((raw or {}).get('show_cumulative', False))
+            options['show_products'] = bool((raw or {}).get('show_products', False))
+        return options
+
+    @api.model
     def _tobacco_accounts(self, company):
         Tax = self.env['account.tax'].with_company(company).with_context(active_test=False)
         candidates = Tax.search([('company_id', '=', company.id), ('type_tax_use', '=', 'sale')])
@@ -68,7 +76,8 @@ class TobaccoEngine(models.AbstractModel):
         return fees, factor * summary['total_amount_currency']
 
     @api.model
-    def _tobacco_collect(self, options):
+    def _tobacco_reconciliation(self, options):
+        # Retained for a possible future accountant report.
         start = fields.Date.to_date(options['date_from'])
         end = fields.Date.to_date(options['date_to'])
         utc_start = datetime.combine(start, time.min, tzinfo=RIYADH).astimezone(timezone.utc).replace(tzinfo=None)
@@ -163,6 +172,53 @@ class TobaccoEngine(models.AbstractModel):
         return sections
 
     @api.model
+    def _tobacco_collect(self, options):
+        start = fields.Date.to_date(options['date_from'])
+        end = fields.Date.to_date(options['date_to'])
+        utc_start = datetime.combine(start, time.min, tzinfo=RIYADH).astimezone(timezone.utc).replace(tzinfo=None)
+        utc_end = datetime.combine(end + timedelta(days=1), time.min, tzinfo=RIYADH).astimezone(timezone.utc).replace(tzinfo=None)
+        sections = []
+        for company in self.env.companies:
+            if company.currency_id.name != 'SAR' or company.currency_id.decimal_places != 2:
+                raise ValidationError(_('This register requires a company currency of SAR with two decimal places.'))
+            accounts = self._tobacco_accounts(company)
+            if not accounts:
+                continue
+            domain = [('company_id', '=', company.id), ('account_id', 'in', accounts.ids),
+                      ('parent_state', 'in', ['posted'] if options['posted_only'] else ['posted', 'draft'])]
+            lines = self.env['account.move.line'].search(domain + [('date', '<=', end)])
+            orders = self.env['pos.order'].search([('company_id', '=', company.id), ('source', '=', 'pos'),
+                ('state', 'in', ('paid', 'done')), ('date_order', '>=', utc_start), ('date_order', '<', utc_end)], order='date_order,id')
+            rows = defaultdict(list)
+            for order in orders:
+                fees, _calculated = self._tobacco_order_fees(order, set(accounts.ids))
+                for (account_id, line_id), fee in fees.items():
+                    line = self.env['pos.order.line'].browse(line_id)
+                    rows[account_id].append({'date': fields.Datetime.to_datetime(order.date_order).replace(tzinfo=timezone.utc).astimezone(RIYADH).strftime('%Y-%m-%d %H:%M'),
+                        'name': order.name, 'product': line.product_id.display_name, 'quantity': line.qty,
+                        'type': _('Refund') if fee < 0 else _('Sale'), 'net': fee,
+                        'model': 'pos.order', 'id': order.id, 'session_id': order.session_id.id,
+                        'session_state': order.session_id.state})
+            for account in accounts:
+                account_lines = lines.filtered(lambda l: l.account_id == account)
+                before = account_lines.filtered(lambda l: l.date < start)
+                period = account_lines.filtered(lambda l: start <= l.date <= end)
+                # POS invoices are already represented by their orders.
+                invoice_lines = period.filtered(lambda l: l.parent_state == 'posted' and l.move_id.move_type in ('out_invoice', 'out_refund') and l.tax_line_id and not l.move_id.pos_order_ids)
+                for line in invoice_lines:
+                    rows[account.id].append({'date': str(line.date), 'name': line.move_id.name,
+                        'product': '', 'quantity': 0, 'type': _('Credit Note') if line.move_id.move_type == 'out_refund' else _('Invoice'),
+                        'net': line.credit - line.debit, 'model': 'account.move', 'id': line.move_id.id})
+                ordered = sorted(rows[account.id], key=lambda x: (x['date'], x['id']))
+                opening = sum(before.mapped('credit')) - sum(before.mapped('debit'))
+                net = sum(r['net'] for r in ordered)
+                sections.append({'company_id': company.id, 'company': company.name, 'account_id': account.id,
+                    'account': account.with_company(company).display_name, 'opening': opening, 'rows': ordered,
+                    'debit': sum(max(-r['net'], 0) for r in ordered), 'credit': sum(max(r['net'], 0) for r in ordered),
+                    'net': net, 'closing': opening + net})
+        return sections
+
+    @api.model
     def get_report(self, report_code, options=None, with_accounts=False):
         if report_code != 'tobacco_service_fee':
             return super().get_report(report_code, options, with_accounts=with_accounts)
@@ -189,7 +245,7 @@ class TobaccoEngine(models.AbstractModel):
                 cumulative += row['net']
                 current['cumulative'] = cumulative
             section['days'] = days
-        payload['has_draft_entries'] = bool(normalized['posted_only'] and self.env['account.move.line'].search_count(self._draft_domain(normalized), limit=1))
+        payload['has_draft_entries'] = False
         # Generic statement rendering and exports remain usable until the dedicated register UI is available.
         result = []
         column = normalized['columns'][0]
@@ -199,14 +255,13 @@ class TobaccoEngine(models.AbstractModel):
                     'foldable': False, 'has_accounts': False, 'accounts': [],
                     'amounts': [self._serialize_amount(column, value, self.env.company.currency_id, False)]})
             add('%s — %s' % (section['company'], section['account']), 0, 'section', 0)
-            add(_('Cumulative at start'), section['opening'])
+            if normalized['show_cumulative']:
+                add(_('Cumulative at start'), section['opening'])
             for row in section['rows']:
                 add('%s · %s · %s' % (row['date'], row['name'], row['type']), row['net'])
             add(_('Total for period'), section['net'], 'total')
-            add(_('Cumulative at end'), section['closing'], 'total')
-            add(_('Register net for period'), section['net'])
-            add(_('Fee account movement in the trial balance'), section['movement'])
-            add(_('Difference'), section['difference'], 'total')
+            if normalized['show_cumulative']:
+                add(_('Cumulative at end'), section['closing'], 'total')
         payload['lines'] = result
         return payload
 
@@ -245,8 +300,7 @@ class TobaccoEngine(models.AbstractModel):
         normalized = self._normalize_options(self._definition('tobacco_service_fee'), options or {})
         sections = self._tobacco_collect(normalized)
         visible = any((r['model'], r['id']) == (model, record_id) for s in sections for r in s['rows'])
-        visible = visible or any(c['model'] == model and record_id in c['ids']
-                                 for s in sections for c in s['causes'])
+        visible = visible or (model == 'pos.session' and any(r.get('session_id') == record_id for s in sections for r in s['rows']))
         if not visible:
             raise ValidationError(_('Choose a source from this report.'))
         record = self.env[model].browse(record_id).exists()

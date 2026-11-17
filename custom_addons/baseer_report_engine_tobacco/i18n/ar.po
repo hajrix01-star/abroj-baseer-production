@@ -87,13 +87,6 @@ msgstr "صافي السجل للفترة"
 #. odoo-python
 #. odoo-javascript
 #: code:addons/baseer_report_engine_tobacco/models/tobacco.py:0
-msgid "Fee account movement in the trial balance"
-msgstr "حركة حساب الرسوم في ميزان المراجعة"
-
-#. module: baseer_report_engine_tobacco
-#. odoo-python
-#. odoo-javascript
-#: code:addons/baseer_report_engine_tobacco/models/tobacco.py:0
 msgid "Difference"
 msgstr "الفرق"
 
@@ -215,15 +208,6 @@ msgstr "الجلسات المفتوحة"
 #: code:addons/baseer_report_engine_tobacco/static/src/tobacco.js:0
 #: code:addons/baseer_report_engine_tobacco/models/export.py:0
 #: model_terms:ir.ui.view,arch_db:baseer_report_engine_tobacco.report_pdf_tobacco
-msgid "Manual journal entries"
-msgstr "قيود اليومية اليدوية"
-
-#. module: baseer_report_engine_tobacco
-#. odoo-python
-#. odoo-javascript
-#: code:addons/baseer_report_engine_tobacco/static/src/tobacco.js:0
-#: code:addons/baseer_report_engine_tobacco/models/export.py:0
-#: model_terms:ir.ui.view,arch_db:baseer_report_engine_tobacco.report_pdf_tobacco
 msgid "Order total mismatches"
 msgstr "اختلافات إجمالي الطلبات"
 
@@ -295,3 +279,15 @@ msgstr "قيد الجلسة خارج الفترة"
 #: code:addons/baseer_report_engine_tobacco/static/src/tobacco.js:0
 msgid "Unexplained"
 msgstr "غير مفسر"
+
+
+#. module: baseer_report_engine_tobacco
+#. odoo-javascript
+msgid "Show cumulative balance"
+msgstr "إظهار الرصيد التراكمي"
+
+#. module: baseer_report_engine_tobacco
+#. odoo-javascript
+#: code:addons/baseer_report_engine_tobacco/static/src/tobacco.js:0
+msgid "Month"
+msgstr "الشهر"

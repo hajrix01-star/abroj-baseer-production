@@ -5,12 +5,21 @@ import { BaseerReportEngine } from "@baseer_report_engine/report_engine";
 
 patch(BaseerReportEngine.prototype, {
     get isTobacco() { return this.reportCode === "tobacco_service_fee"; },
-    get tobaccoLabels() { return { date: _t("Date and Time"), document: _t("Document"), product: _t("Product and Quantity"), type: _t("Type"), debit: _t("Debit"), credit: _t("Credit"), net: _t("Net"), netPeriod: _t("Net for period"), cumulative: _t("Cumulative"), opening: _t("Cumulative at start"), total: _t("Total for period"), closing: _t("Cumulative at end"), reconciliation: _t("Reconciliation"), register: _t("Register net for period"), movement: _t("Fee account movement in the trial balance"), difference: _t("Difference"), open_sessions: _t("Open sessions"), cancelled_sessions: _t("Session entry cancelled"), outside_sessions: _t("Session entry outside the period"), unexplained: _t("Unexplained"), manual: _t("Manual journal entries"), exceptions: _t("Order total mismatches"), computed: _t("Recomputed total"), saved: _t("Saved total"), show: _t("Show products") }; },
-    plainOptions(direction = 0) { return { ...super.plainOptions(direction), ...(this.isTobacco ? {show_products: !!this.state.options.show_products} : {}) }; },
+    get tobaccoLabels() { return { date: _t("Date and Time"), document: _t("Document"), product: _t("Product and Quantity"), type: _t("Type"), debit: _t("Debit"), credit: _t("Credit"), net: _t("Net"), netPeriod: _t("Net for period"), cumulative: _t("Cumulative"), opening: _t("Cumulative at start"), total: _t("Total for period"), closing: _t("Cumulative at end"), show: _t("Show products"), showCumulative: _t("Show cumulative balance"), month: _t("Month") }; },
+    plainOptions(direction = 0) { return { ...super.plainOptions(direction), ...(this.isTobacco ? {show_products: !!this.state.options.show_products, show_cumulative: !!this.state.options.show_cumulative} : {}) }; },
     async loadReport(direction = 0) {
         const show = this.state.options.show_products;
+        const cumulative = this.state.options.show_cumulative;
         await super.loadReport(direction);
-        if (this.isTobacco) this.state.options.show_products = !!show;
+        if (this.isTobacco) { this.state.options.show_products = !!show; this.state.options.show_cumulative = !!cumulative; }
+    },
+    tobaccoChooseMonth(event) {
+        const value = event.target.value;
+        if (!/^\d{4}-\d{2}$/.test(value)) return;
+        const [year, month] = value.split("-").map(Number);
+        const last = new Date(Date.UTC(year, month, 0)).getUTCDate();
+        Object.assign(this.state.options, {preset: "custom", date_from: `${value}-01`, date_to: `${value}-${String(last).padStart(2, "0")}`, anchor_date: false});
+        this.loadReport();
     },
     tobaccoKey(section, day) { return `${section.company_id}-${section.account_id}-${day.date}`; },
     tobaccoMoney(value) { return (value < 0 ? "-" : "") + this.formatAmount({value: Math.abs(value || 0), key: "net"}); },

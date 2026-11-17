@@ -7,6 +7,7 @@ on:
       - custom_addons/baseer_report_engine/**
       - custom_addons/baseer_report_engine_tobacco/**
       - custom_addons/baseer_report_engine_vat/**
+      - custom_addons/baseer_report_engine_dashboard/**
       - .github/workflows/test-baseer-report-engine.yml
   workflow_dispatch:
 
@@ -44,6 +45,9 @@ jobs:
           fi
           if [ -d custom_addons/baseer_report_engine_vat ]; then
             MODULES="$MODULES,baseer_report_engine_vat"; TAGS="$TAGS,/baseer_report_engine_vat"
+          fi
+          if [ -d custom_addons/baseer_report_engine_dashboard ]; then
+            MODULES="$MODULES,baseer_report_engine_dashboard"; TAGS="$TAGS,/baseer_report_engine_dashboard"
           fi
           docker run --rm --network host \
             -e HOST=127.0.0.1 -e USER=odoo -e PASSWORD=odoo \

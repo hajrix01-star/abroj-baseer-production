@@ -1,0 +1,10 @@
+<odoo>
+    <record id="action_tobacco" model="ir.actions.client">
+        <field name="name">Tobacco Service Fee (New)</field>
+        <field name="tag">baseer_report_engine</field>
+        <field name="context">{'report_code': 'tobacco_service_fee'}</field>
+    </record>
+    <menuitem id="menu_tobacco" name="Tobacco Service Fee (New)"
+        parent="baseer_report_engine.menu_new_version" action="action_tobacco" sequence="90"
+        groups="account.group_account_readonly,account.group_account_user,account.group_account_manager"/>
+</odoo>

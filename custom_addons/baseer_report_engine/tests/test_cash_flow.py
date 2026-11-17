@@ -234,3 +234,64 @@ class TestCashFlow(EngineCase):
         self.assertEqual(Decimal(self._value(report, 'operating_out')), Decimal(-30))
         rows = next(line['accounts'] for line in report['lines'] if line['code'] == 'operating_in')
         self.assertEqual({row['id']: Decimal(row['amounts'][0]['value']) for row in rows}, {income.id: Decimal(140), tax_account.id: Decimal(15)})
+
+    def test_advance_payments_and_liquidity_workflows(self):
+        from odoo import Command, fields
+        from datetime import date
+
+        company = self._company('Cash advance workflows')
+        engine = self._engine(company)
+        receivable = self._account(company, '11051', 'asset_receivable')
+        payable = self._account(company, '21051', 'liability_payable')
+        receivable.reconcile = payable.reconcile = True
+        income = self._account(company, '40051', 'income')
+        income.tag_ids = [Command.link(self.env.ref('account.account_tag_operating').id)]
+        partner = self.env['res.partner'].create({'name': 'Advance partner'})
+        partner.with_company(company).write({'property_account_receivable_id': receivable.id, 'property_account_payable_id': payable.id})
+        bank = self.env['account.journal'].with_company(company).create({'name': 'Advance bank', 'code': 'CA51', 'type': 'bank', 'company_id': company.id})
+        cash_journal = self.env['account.journal'].with_company(company).create({'name': 'Advance cash', 'code': 'CC51', 'type': 'cash', 'company_id': company.id})
+        outstanding = self._account(company, '12051', 'asset_current')
+        bank.inbound_payment_method_line_ids[0].payment_account_id = outstanding
+        bank.outbound_payment_method_line_ids[0].payment_account_id = bank.default_account_id
+        company.transfer_account_id = self._account(company, '10951', 'asset_current')
+
+        def payment(kind, partner_type, amount, day):
+            method = (bank.inbound_payment_method_line_ids if kind == 'inbound' else bank.outbound_payment_method_line_ids)[0]
+            result = self.env['account.payment'].with_company(company).create({
+                'company_id': company.id, 'journal_id': bank.id, 'payment_type': kind,
+                'partner_type': partner_type, 'partner_id': partner.id, 'amount': amount,
+                'date': day, 'payment_method_line_id': method.id,
+            })
+            result.action_post()
+            return result
+
+        customer = payment('inbound', 'customer', 100, '2041-03-01')
+        payment('outbound', 'supplier', 30, '2041-03-02')
+        general = self._journal(company, 'CA52')
+        self._entry(company, general, '2040-12-31', bank.default_account_id, income, 20)
+        self._entry(company, general, '2041-03-03', cash_journal.default_account_id, bank.default_account_id, 10)
+        options = self._options()
+        report = engine.get_report('cash_flow', options)
+        self.assertEqual(Decimal(self._value(report, 'advance_received')), Decimal(100))
+        self.assertEqual(Decimal(self._value(report, 'advance_paid')), Decimal(-30))
+        self.assertEqual(Decimal(self._value(report, 'net')), Decimal(70))
+        self.assertIn(outstanding.id, {row['id'] for row in engine.get_line_accounts('cash_flow', options, 'closing')['accounts']})
+        liquidity_ids = set(engine._cash_liquidity_accounts().ids)
+        for cf_code, end in [('beginning', date(2040, 12, 31)), ('closing', date(2041, 6, 30))]:
+            tb = engine.get_report('trial_balance', self._options(date_to=fields.Date.to_string(end), as_of=fields.Date.to_string(end), date_from=fields.Date.to_string(end.replace(month=1, day=1))))
+            balance = sum(Decimal(row['amounts'][-1]['value']) for row in tb['lines'] if row.get('account_id') in liquidity_ids)
+            self.assertEqual(Decimal(self._value(report, cf_code)), balance)
+
+        sales = self.env['account.journal'].with_company(company).create({'name': 'Advance sales', 'code': 'CS51', 'type': 'sale', 'company_id': company.id, 'default_account_id': income.id})
+        invoice = self.env['account.move'].with_company(company).create({
+            'move_type': 'out_invoice', 'company_id': company.id, 'journal_id': sales.id,
+            'partner_id': partner.id, 'invoice_date': '2041-07-01', 'date': '2041-07-01',
+            'invoice_line_ids': [Command.create({'name': 'Later invoice', 'account_id': income.id, 'price_unit': 100, 'tax_ids': [Command.clear()]})],
+        })
+        invoice.action_post()
+        (customer.move_id | invoice).line_ids.filtered(lambda line: line.account_id == receivable).reconcile()
+        report = engine.get_report('cash_flow', options)
+        self.assertEqual(Decimal(self._value(report, 'advance_received')), Decimal(100))
+        extended = engine.get_report('cash_flow', self._options(date_to='2041-07-31', as_of='2041-07-31'))
+        self.assertEqual(Decimal(self._value(extended, 'operating_in')), Decimal(100))
+        self.assertEqual(Decimal(self._value(extended, 'advance_received')), Decimal(0))

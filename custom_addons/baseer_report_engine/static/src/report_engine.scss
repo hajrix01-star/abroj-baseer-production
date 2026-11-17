@@ -505,10 +505,24 @@
         .o_bre_label_col { width: 610px; }
         .o_bre_value_col { width: 140px; }
         .o_bre_level_2 th { padding-inline-start: 36px; font-weight: 500; }
+        .o_bre_level_2 td { font-weight: 500; color: #374151; }
         .o_bre_level_4 th { padding-inline-start: 52px; font-weight: 400; }
         .o_bre_level_4.o_bre_open th, .o_bre_level_4.o_bre_open td { background: #f2f2f2; font-weight: 700; }
         .o_bre_level_4 .o_bre_caret { inset-inline-start: 19px; }
-        .o_bre_account th { padding-inline-start: 68px; }
+        .o_bre_level_0 .o_bre_caret { visibility: hidden; }
+        .is-number { direction: ltr; unicode-bidi: isolate; text-align: right; }
+        .is-number .o_bre_amount { direction: ltr; unicode-bidi: isolate; }
+        .o_bre_line.o_bre_level_4.o_bre_open th,
+        .o_bre_line.o_bre_level_4.o_bre_open td { background: #f2f2f2; font-weight: 700; }
+        .o_bre_account th { padding-inline-start: 43px; color: #374151; font-weight: 400; }
+        .o_bre_account_level_0 th { padding-inline-start: 23px; color: #111827; }
+        .o_bre_leaf_total th, .o_bre_leaf_total td { background: white; color: #374151; font-weight: 700; }
         .o_bre_leaf_total th { padding-inline-start: 52px; }
+        .o_bre_total_level_0 th { padding-inline-start: 23px; color: #111827; }
+        .o_bre_total_level_0 td { color: #111827; }
+        .o_bre_leaf_total td.is-negative { color: #d23f3a; }
+        .o_bre_leaf_total td.is-zero { color: #d8dadd; }
     }
 }
+
+.o_baseer_report_engine[dir="rtl"] .o_bre_cash_flow .o_bre_table .is-number { text-align: left; }

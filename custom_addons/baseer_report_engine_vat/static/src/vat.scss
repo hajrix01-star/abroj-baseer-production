@@ -1,0 +1,15 @@
+@media (max-width: 767px) {
+    .o_baseer_report_engine.o_bre_vat .o_bre_table:not(.o_bre_grid_table) {
+        .o_bre_label_col { width: auto; min-width: 160px; }
+        .o_bre_value_col { width: 85px; }
+        tbody th:first-child {
+            position: relative;
+            padding-inline-start: 18px;
+            overflow-wrap: anywhere;
+        }
+        .o_bre_caret { inset-inline-start: 4px; }
+        th:not(:first-child), td.is-number { padding-inline: 4px; }
+        td.is-number { white-space: normal; overflow-wrap: anywhere; word-break: break-word; }
+        td.is-number .o_bre_amount { max-width: 100%; overflow-wrap: anywhere; word-break: break-word; }
+    }
+}

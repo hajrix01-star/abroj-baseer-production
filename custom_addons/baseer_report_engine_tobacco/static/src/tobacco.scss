@@ -20,3 +20,24 @@
 .o_baseer_report_engine[dir="rtl"] {
     .o_bre_table .is-number, .o_bre_tobacco_amount, .o_bre_tobacco_summary .is-number { /*rtl:ignore*/ direction: ltr; unicode-bidi: isolate; }
 }
+
+@media (max-width: 767px) {
+    .o_baseer_report_engine {
+        .o_bre_grid_table.o_bre_tobacco_table {
+            width: 100%;
+            min-width: 1000px;
+            thead th { white-space: nowrap; overflow-wrap: normal; }
+            th:first-child, td:first-child {
+                position: static;
+                max-width: 160px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+        }
+        .o_bre_grid_table.o_bre_tobacco_exceptions {
+            min-width: 650px;
+            thead th { white-space: nowrap; }
+        }
+    }
+}

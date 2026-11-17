@@ -32,7 +32,7 @@ class BaseerReportEngine(models.AbstractModel):
     def get_bootstrap(self, report_code):
         self._check_report_access()
         report = self._definition(report_code)
-        return {
+        result = {
             'report': {
                 'code': report.code,
                 'name': report.name,
@@ -44,15 +44,30 @@ class BaseerReportEngine(models.AbstractModel):
             'analytic_accounts': self._analytic_options(),
             'analytic_enabled': self.env['account.analytic.account'].has_access('read'),
             'labels': self._labels(),
-            'defaults': dict(self._default_options(), preset='today' if report.date_mode == 'as_of' else 'this_year', comparison_unit='month' if report.date_mode == 'as_of' else 'year'),
+            'defaults': dict(self._default_options(), preset=report.default_preset or ('today' if report.date_mode == 'as_of' else 'this_year'), comparison_unit='month' if report.date_mode == 'as_of' or report.report_kind in ('account_grid', 'ledger') else 'year'),
         }
+        if report.report_kind in ('partner_ledger', 'aged'):
+            result['account_types'] = [{'key': key, 'label': label} for key, label in self._partner_type_labels()]
+            result['defaults'].update(account_types=['receivable', 'payable'], partner_ids=[], partner_category_ids=[], unreconciled=False)
+        if report.report_kind == 'aged':
+            result['account_types'] = [item for item in result['account_types'] if ('payable' in item['key']) == (report.code == 'aged_payable')]
+            result['defaults'].update(account_types=['payable' if report.code == 'aged_payable' else 'receivable'], aging_basis='due_date', period_length=30)
+            result['aging_labels'] = {'due_date': _('Based on Due Date'), 'invoice_date': _('Based on Invoice Date'), 'days': _('%s Days')}
+        return result
 
     @api.model
     def get_report(self, report_code, options=None, with_accounts=False):
         self._check_report_access()
         report = self._definition(report_code)
+        if options is None:
+            options = self.env.context.get('baseer_options') or {}
         normalized = self._normalize_options(report, options or {})
-        payload = self._build(report, normalized, with_accounts=with_accounts)
+        payload = (self._build_grid(report, normalized) if report.report_kind == 'account_grid'
+                   else self._build_ledger(report, normalized, options or {}) if report.report_kind == 'ledger'
+                   else self._build_partner_ledger(report, normalized, options or {}) if report.report_kind == 'partner_ledger'
+                   else self._build_aged(report, normalized) if report.report_kind == 'aged'
+                   else self._build_cash_flow(report, normalized, with_accounts) if report.report_kind == 'cash_flow'
+                   else self._build(report, normalized, with_accounts=with_accounts))
         payload['has_draft_entries'] = bool(normalized['posted_only'] and self.env['account.move.line'].search_count(self._draft_domain(normalized), limit=1))
         return payload
 
@@ -82,6 +97,8 @@ class BaseerReportEngine(models.AbstractModel):
         normalized = self._normalize_options(report, options or {})
         if not isinstance(line_codes, list) or any(not isinstance(code, str) for code in line_codes):
             raise ValidationError(_('Choose a report line that lists accounts.'))
+        if report.report_kind == 'cash_flow':
+            return self._cash_flow_accounts(report, normalized, line_codes)
         lines = {line.code: line for line in report.line_ids}
         accounts = self.env['account.account'].with_context(active_test=False).search([
             ('company_ids', 'in', self.env.companies.ids),
@@ -104,6 +121,16 @@ class BaseerReportEngine(models.AbstractModel):
         self._check_report_access()
         report = self._definition(report_code)
         normalized = self._normalize_options(report, options or {})
+        if report.report_kind == 'cash_flow':
+            return self._cash_flow_action(report, normalized, line_code, column_key, account_id, company_id)
+        if report.report_kind == 'aged':
+            return self._aged_action(normalized, line_code, column_key, account_id)
+        if report.report_kind == 'partner_ledger':
+            return self._partner_move_line_action(normalized, line_code, account_id)
+        if report.report_kind in ('account_grid', 'ledger'):
+            if report.report_kind == 'ledger':
+                column_key = 'end'
+            return self._grid_move_line_action(report, normalized, line_code, column_key, account_id, company_id)
         line = report.line_ids.filtered(lambda item: item.code == line_code)[:1]
         if not line:
             raise ValidationError(_('Choose a line from this report.'))
@@ -148,7 +175,7 @@ class BaseerReportEngine(models.AbstractModel):
     def _normalize_options(self, report, raw):
         if not isinstance(raw, dict):
             raise ValidationError(_('The report options are not valid.'))
-        preset = raw.get('preset') or 'this_month'
+        preset = raw.get('preset') or (report.default_preset if report.report_kind in ('partner_ledger', 'aged', 'cash_flow') else 'this_month') or 'this_month'
         if preset not in dict(self._preset_labels()):
             raise ValidationError(_('Choose a valid period.'))
         comparison = raw.get('comparison', 0)
@@ -193,7 +220,7 @@ class BaseerReportEngine(models.AbstractModel):
                 anchor = _shift_date(anchor, direction, unit)
             start, end, unit = self._preset_bounds(self.env.company, preset, anchor)
         columns = self._columns(report, start, end, comparison, 'year' if comparison_mode == 'year' else unit)
-        return {
+        result = {
             'preset': preset,
             'as_of': fields.Date.to_string(end) if report.date_mode == 'as_of' else False,
             'date_from': fields.Date.to_string(start),
@@ -209,6 +236,17 @@ class BaseerReportEngine(models.AbstractModel):
             'date_mode': report.date_mode,
             'columns': columns,
         }
+        if report.report_kind in ('partner_ledger', 'aged'):
+            if report.report_kind == 'aged':
+                raw = dict(raw)
+                raw.setdefault('account_types', ['payable' if report.code == 'aged_payable' else 'receivable'])
+            self._normalize_partner_options(raw, result)
+            if report.report_kind == 'aged':
+                basis, length = raw.get('aging_basis', 'due_date'), raw.get('period_length', 30)
+                if basis not in ('due_date', 'invoice_date') or type(length) is not int or length <= 0 or any(('payable' in item) != (report.code == 'aged_payable') for item in result['account_types']):
+                    raise ValidationError(_('The report options are not valid.'))
+                result.update(aging_basis=basis, period_length=length, aged_payable=report.code == 'aged_payable')
+        return result
 
     @api.model
     def _columns(self, report, start, end, comparison, unit):
@@ -219,6 +257,8 @@ class BaseerReportEngine(models.AbstractModel):
                 _shift_date(start, -offset, unit),
                 _shift_date(end, -offset, unit),
             ))
+        if report.report_kind == 'account_grid':
+            return list(reversed(columns))
         if comparison:
             columns.append({'key': 'variation', 'kind': 'variation', 'label': _('Variation')})
             columns.append({'key': 'variation_percent', 'kind': 'variation_percent', 'label': '%'})
@@ -458,30 +498,32 @@ class BaseerReportEngine(models.AbstractModel):
                 }
 
     @api.model
-    def _aggregate(self, domain, on_date, analytic_ids):
+    def _aggregate(self, domain, on_date, analytic_ids, groupby=('account_id', 'company_id')):
         totals = {}
         if analytic_ids:
             selected = set(analytic_ids)
             lines = self.env['account.move.line'].search(domain)
             for values in lines.read([
-                'account_id', 'company_id', 'debit', 'credit', 'balance', 'analytic_distribution',
+                *groupby, 'company_id', 'debit', 'credit', 'balance', 'analytic_distribution',
             ]):
                 share = _analytic_share(values.get('analytic_distribution'), selected)
-                if share == 0 or not values['account_id'] or not values['company_id']:
+                if share == 0 or not values['company_id']:
                     continue
                 company = self.env['res.company'].browse(values['company_id'][0])
-                bucket = totals.setdefault((values['account_id'][0], company.id), _zeros())
+                key = tuple(values[field][0] if values.get(field) else False for field in groupby)
+                bucket = totals.setdefault(key, _zeros())
                 for figure in ('balance', 'debit', 'credit'):
                     amount = Decimal(str(values[figure] or 0)) * share
                     bucket[figure] += self._convert(amount, company, on_date)
             return totals
         rows = self.env['account.move.line']._read_group(
-            domain, ['account_id', 'company_id'], ['balance:sum', 'debit:sum', 'credit:sum'],
+            domain, list(groupby), ['balance:sum', 'debit:sum', 'credit:sum'],
         )
-        for account, company, balance, debit, credit in rows:
-            if not account:
-                continue
-            bucket = totals.setdefault((account.id, company.id), _zeros())
+        for row in rows:
+            groups, (balance, debit, credit) = row[:-3], row[-3:]
+            company = groups[groupby.index('company_id')]
+            key = tuple(value.id if value else False for value in groups)
+            bucket = totals.setdefault(key, _zeros())
             for figure, amount in (
                 ('balance', balance), ('debit', debit), ('credit', credit),
             ):
@@ -836,8 +878,23 @@ class BaseerReportEngine(models.AbstractModel):
     @api.model
     def _labels(self):
         return {
+            'account_filter': _('Account:'),
+            'partners': _('Partners'),
+            'partner_categories': _('Partner Categories'),
+            'unreconciled_entries': _('Unreconciled Entries'),
+            'trade_partners': _('Trade Partners'),
+            'partner': _('Partner'),
             'balance': _('Balance'),
+            'initial_balance': _('Initial Balance'),
+            'end_balance': _('End Balance'),
+            'debit': _('Debit'),
+            'credit': _('Credit'),
+            'total': _('Total'),
+            'search': _('Search...'),
+            'general_ledger': _('General Ledger'),
             'journal_items': _('Journal Items'),
+            'view_journal_entry': _('View Journal Entry'),
+            'load_more': _('Load more...'),
             'unfold_line': _('Unfold'),
             'fold_line': _('Fold'),
             'total_format': _('Total %s'),

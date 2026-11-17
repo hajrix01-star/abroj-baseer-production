@@ -914,3 +914,462 @@ msgstr "توسيع"
 #: code:addons/baseer_report_engine/models/engine.py:0
 msgid "Fold"
 msgstr "طي"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/grid.py:0
+msgid "Initial Balance"
+msgstr "الرصيد الافتتاحي"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/grid.py:0
+msgid "End Balance"
+msgstr "الرصيد الختامي"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/grid.py:0
+msgid "Debit"
+msgstr "مدين"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/grid.py:0
+msgid "Credit"
+msgstr "دائن"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/grid.py:0
+msgid "Total"
+msgstr "الإجمالي"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/grid.py:0
+msgid "Search..."
+msgstr "بحث..."
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/engine.py:0
+#: model:baseer.report.definition,name:baseer_report_engine.report_general_ledger
+msgid "General Ledger"
+msgstr "دفتر الأستاذ العام"
+
+#. module: baseer_report_engine
+#: model:baseer.report.definition,name:baseer_report_engine.report_trial_balance
+msgid "Trial Balance"
+msgstr "ميزان المراجعة"
+
+#. module: baseer_report_engine
+#: model:ir.ui.menu,name:baseer_report_engine.menu_trial_balance
+#: model:ir.actions.client,name:baseer_report_engine.action_trial_balance
+msgid "Trial Balance (New)"
+msgstr "ميزان المراجعة (جديد)"
+
+#. module: baseer_report_engine
+#: selection:baseer.report.definition,report_kind:0
+msgid "Statement"
+msgstr "قائمة"
+
+#. module: baseer_report_engine
+#: selection:baseer.report.definition,report_kind:0
+msgid "Account grid"
+msgstr "جدول الحسابات"
+
+#. module: baseer_report_engine
+#: model:ir.model.fields,field_description:baseer_report_engine.field_baseer_report_definition__report_kind
+msgid "Report Kind"
+msgstr "نوع التقرير"
+
+#. module: baseer_report_engine
+#: model:ir.model.fields,field_description:baseer_report_engine.field_baseer_report_definition__grid_groupby
+msgid "Grid Groupby"
+msgstr "تجميع الجدول"
+
+#. module: baseer_report_engine
+#: model:ir.model.fields,field_description:baseer_report_engine.field_baseer_report_definition__grid_columns
+msgid "Grid Columns"
+msgstr "أعمدة الجدول"
+
+#. module: baseer_report_engine
+#: model:ir.model.fields,field_description:baseer_report_engine.field_baseer_report_definition__default_preset
+msgid "Default Preset"
+msgstr "الفترة الافتراضية"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/grid.py:0
+msgid "Undistributed Profits/Losses"
+msgstr "الأرباح/الخسائر غير الموزعة"
+
+#. module: baseer_report_engine
+#: model:ir.actions.client,name:baseer_report_engine.action_general_ledger
+#: model:ir.ui.menu,name:baseer_report_engine.menu_general_ledger
+msgid "General Ledger (New)"
+msgstr "دفتر الأستاذ العام (جديد)"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Load more..."
+msgstr "تحميل المزيد..."
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/ledger.py:0
+msgid "View Journal Entry"
+msgstr "عرض قيد اليومية"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/ledger.py:0
+msgid "Date"
+msgstr "التاريخ"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/ledger.py:0
+#. odoo-javascript
+#: code:addons/baseer_report_engine/static/src/report_engine.js:0
+msgid "Partner"
+msgstr "الشريك"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/ledger.py:0
+msgid "Currency"
+msgstr "العملة"
+
+#. module: baseer_report_engine
+#: selection:baseer.report.definition,report_kind:0
+msgid "Ledger"
+msgstr "دفتر الأستاذ"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/ledger.py:0
+msgid "Total General Ledger"
+msgstr "إجمالي دفتر الأستاذ العام"
+
+#. module: baseer_report_engine
+#: model:baseer.report.definition,name:baseer_report_engine.report_partner_ledger
+#: selection:baseer.report.definition,report_kind:0
+msgid "Partner Ledger"
+msgstr "دفتر الأستاذ العام للشركاء"
+
+#. module: baseer_report_engine
+#: model:ir.actions.client,name:baseer_report_engine.action_partner_ledger
+#: model:ir.ui.menu,name:baseer_report_engine.menu_partner_ledger
+msgid "Partner Ledger (New)"
+msgstr "دفتر الأستاذ العام للشركاء (جديد)"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/ledger.py:0
+msgid "Journal"
+msgstr "دفتر اليومية"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/ledger.py:0
+msgid "Account"
+msgstr "الحساب"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/ledger.py:0
+#: code:addons/baseer_report_engine/models/aged.py:0
+msgid "Invoice Date"
+msgstr "تاريخ الفاتورة"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/ledger.py:0
+msgid "Due Date"
+msgstr "تاريخ الاستحقاق"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/ledger.py:0
+msgid "Matching"
+msgstr "مطابقة"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/ledger.py:0
+msgid "Amount Currency"
+msgstr "المبلغ بالعملة"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/ledger.py:0
+msgid "Unknown Partner"
+msgstr "شريك غير معروف"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/ledger.py:0
+msgid "Receivable"
+msgstr "المدين"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/ledger.py:0
+msgid "Payable"
+msgstr "الدائن"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/ledger.py:0
+msgid "Non Trade Receivable"
+msgstr "حساب المدينين غير التجاري"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/ledger.py:0
+msgid "Non Trade Payable"
+msgstr "حساب الدائنين غير التجاري"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/ledger.py:0
+msgid "Trade Partners"
+msgstr "الشركاء التجاريون"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/ledger.py:0
+#. odoo-javascript
+#: code:addons/baseer_report_engine/static/src/report_engine.js:0
+msgid "Account:"
+msgstr "الحساب:"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/export.py:0
+#: code:addons/baseer_report_engine/models/ledger.py:0
+#. odoo-javascript
+#: code:addons/baseer_report_engine/static/src/report_engine.js:0
+msgid "Partners"
+msgstr "الشركاء"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/export.py:0
+#: code:addons/baseer_report_engine/models/ledger.py:0
+#. odoo-javascript
+#: code:addons/baseer_report_engine/static/src/report_engine.js:0
+msgid "Partner Categories"
+msgstr "فئات الشركاء"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/ledger.py:0
+#. odoo-javascript
+#: code:addons/baseer_report_engine/static/src/report_engine.js:0
+msgid "Unreconciled Entries"
+msgstr "القيود غير المسواة"
+
+#. module: baseer_report_engine
+#: model:baseer.report.definition,name:baseer_report_engine.report_aged_receivable
+msgid "Aged Receivable"
+msgstr "أعمار الديون المدينة"
+
+#. module: baseer_report_engine
+#: model:baseer.report.definition,name:baseer_report_engine.report_aged_payable
+msgid "Aged Payable"
+msgstr "أعمار الديون الدائنة"
+
+#. module: baseer_report_engine
+#: model:ir.actions.client,name:baseer_report_engine.action_aged_receivable
+#: model:ir.ui.menu,name:baseer_report_engine.menu_aged_receivable
+msgid "Aged Receivable (New)"
+msgstr "أعمار الديون المدينة (جديد)"
+
+#. module: baseer_report_engine
+#: model:ir.actions.client,name:baseer_report_engine.action_aged_payable
+#: model:ir.ui.menu,name:baseer_report_engine.menu_aged_payable
+msgid "Aged Payable (New)"
+msgstr "أعمار الديون الدائنة (جديد)"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/aged.py:0
+msgid "At Date"
+msgstr "بتاريخ"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/aged.py:0
+msgid "Older"
+msgstr "أقدم"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Based on Due Date"
+msgstr "حسب تاريخ الاستحقاق"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Based on Invoice Date"
+msgstr "حسب تاريخ الفاتورة"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "%s Days"
+msgstr "%s يوم"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/aged.py:0
+msgid "Total Aged Receivable"
+msgstr "إجمالي أعمار الديون المدينة"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/aged.py:0
+msgid "Total Aged Payable"
+msgstr "إجمالي أعمار الديون الدائنة"
+
+#. module: baseer_report_engine
+#: model:ir.model.fields.selection,name:baseer_report_engine.selection__baseer_report_definition__report_kind__aged
+msgid "Aged"
+msgstr "الأعمار"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/cash_flow.py:0
+msgid "Cash and cash equivalents, beginning of period"
+msgstr "النقد وما في حكمه في بداية الفترة"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/cash_flow.py:0
+msgid "Net increase in cash and cash equivalents"
+msgstr "صافي الزيادة في النقد وما في حكمه"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/cash_flow.py:0
+msgid "Cash flows from operating activities"
+msgstr "التدفقات النقدية من الأنشطة التشغيلية"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/cash_flow.py:0
+msgid "Advance Payments received from customers"
+msgstr "دفعات مقدمة مستلمة من العملاء"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/cash_flow.py:0
+msgid "Cash received from operating activities"
+msgstr "النقد المستلم من الأنشطة التشغيلية"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/cash_flow.py:0
+msgid "Advance payments made to suppliers"
+msgstr "دفعات مقدمة مدفوعة للموردين"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/cash_flow.py:0
+msgid "Cash paid for operating activities"
+msgstr "النقد المدفوع للأنشطة التشغيلية"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/cash_flow.py:0
+msgid "Cash flows from investing & extraordinary activities"
+msgstr "التدفقات النقدية من الأنشطة الاستثمارية والاستثنائية"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/cash_flow.py:0
+msgid "Cash flows from financing activities"
+msgstr "التدفقات النقدية من الأنشطة التمويلية"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/cash_flow.py:0
+msgid "Cash flows from unclassified activities"
+msgstr "التدفقات النقدية من أنشطة غير مصنفة"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/cash_flow.py:0
+msgid "Cash in"
+msgstr "النقد الداخل"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/cash_flow.py:0
+msgid "Cash out"
+msgstr "النقد الخارج"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/cash_flow.py:0
+msgid "Cash and cash equivalents, closing balance"
+msgstr "النقد وما في حكمه في نهاية الفترة"
+
+#. module: baseer_report_engine
+#: model:baseer.report.definition,name:baseer_report_engine.report_cash_flow
+msgid "Cash Flow Statement"
+msgstr "قائمة التدفقات النقدية"
+
+#. module: baseer_report_engine
+#: model:ir.actions.client,name:baseer_report_engine.action_cash_flow
+#: model:ir.ui.menu,name:baseer_report_engine.menu_cash_flow
+msgid "Cash Flow Statement (New)"
+msgstr "قائمة التدفقات النقدية (جديد)"
+
+#. module: baseer_report_engine
+#: model:ir.model.fields.selection,name:baseer_report_engine.selection__baseer_report_definition__report_kind__cash_flow
+msgid "Cash Flow"
+msgstr "التدفق النقدي"
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/cash_flow.py:0
+msgid "Exchange difference / rounding"
+msgstr "فرق صرف / تقريب"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/cash_flow.py:0
+msgid "Includes opening entries dated in the period"
+msgstr "يشمل القيود الافتتاحية المؤرخة خلال الفترة"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/cash_flow.py:0
+#, python-format
+msgid "Unknown opening entry tokens: %s"
+msgstr "معرّفات القيود الافتتاحية غير المعروفة: %s"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/cash_flow.py:0
+#, python-format
+msgid "The liquidity transfer account %(account)s has a non-zero balance of %(amount)s for this period: some transfers are incomplete."
+msgstr "حساب تحويل السيولة %(account)s رصيده غير صفري بمبلغ %(amount)s لهذه الفترة: بعض التحويلات غير مكتملة."
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/cash_flow.py:0
+msgid "Clearing accounts not reconciled, excluded from cash:"
+msgstr "حسابات وسيطة غير مسواة، مستبعدة من النقد:"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/cash_flow.py:0
+#, python-format
+msgid "Excluded from cash: %s"
+msgstr "المستبعد من النقد: %s"

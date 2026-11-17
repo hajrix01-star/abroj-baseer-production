@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="report_partner_ledger" model="baseer.report.definition">
+        <field name="name">Partner Ledger</field>
+        <field name="code">partner_ledger</field>
+        <field name="date_mode">range</field>
+        <field name="report_kind">partner_ledger</field>
+        <field name="default_preset">this_year</field>
+    </record>
+</odoo>

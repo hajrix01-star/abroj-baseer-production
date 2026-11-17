@@ -320,11 +320,11 @@ export class BaseerReportEngine extends Component {
         await this.loadReport();
     }
     removeSelection(key, id) { this.state.options[key] = this.state.options[key].filter(x => x !== id); this.loadReport(); }
-    selectAccountType(key, event) {
+    selectAccountType(key) {
         const selected = new Set(this.state.options.account_types);
-        if (event.target.checked) selected.add(key);
+        if (!selected.has(key)) selected.add(key);
         else if (selected.size > 1) selected.delete(key);
-        else { event.target.checked = true; return; }
+        else return;
         this.state.options.account_types = this.state.accountTypes.map(x => x.key).filter(x => selected.has(x));
         this.loadReport();
     }

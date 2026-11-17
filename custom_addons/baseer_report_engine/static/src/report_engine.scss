@@ -442,3 +442,26 @@
     }
     .o_bre_partner_filters { min-width: 300px; }
 }
+
+.o_bre_partner_choices {
+    .o_bre_choice_check { display: inline-block; width: 20px; color: #017e84; }
+    .o_bre_selected { font-weight: 500; }
+}
+.o_baseer_report_engine .o_bre_partner_table {
+    .o_bre_partner_col_journal { min-width: 67px; }
+    .o_bre_partner_col_account { min-width: 72px; }
+    .o_bre_partner_col_invoice_date { min-width: 95px; }
+    .o_bre_partner_col_due_date { min-width: 76px; }
+    .o_bre_partner_col_matching { min-width: 78px; }
+    .o_bre_partner_col_debit, .o_bre_partner_col_credit { min-width: 100px; }
+    .o_bre_partner_col_amount_currency { min-width: 124px; }
+    .o_bre_partner_col_balance { min-width: 98px; }
+    .o_bre_period_header th { height: 29px; }
+    .o_bre_balance_header th { height: 27px; padding-top: 3px; padding-bottom: 3px; }
+    .o_bre_balance_header th.o_bre_shaded { background: #f9fafb; }
+    .o_bre_line.o_bre_level_0, .o_bre_line.o_bre_level_0 th { color: #111827; }
+    .o_bre_ledger_total th, .o_bre_ledger_total td { color: #111827; }
+    .o_bre_ledger_total td.is-zero { color: #d8dadd; }
+    .o_bre_ledger_total td.is-negative { color: #d23f3a; }
+    .o_bre_ledger_item td:nth-child(-n+6) { text-align: start; }
+}

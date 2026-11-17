@@ -328,10 +328,13 @@ class BaseerLedgerEngine(models.AbstractModel):
             if index < offset:
                 continue
             values['balance'] = running
-            name = line.move_name or line.move_id.name or ''
-            if line.name and line.name != name:
-                name += ' ' + line.name
-            result.append({'type': 'item', 'id': line.id, 'name': name, 'journal': line.journal_id.code or '',
+            move_label = line.move_name or line.move_id.name or ''
+            detail_label = line.name if line.name and line.name != '/' and line.name not in move_label else ''
+            if move_label and move_label in detail_label:
+                detail_label = detail_label.replace(move_label, '').strip(' -')
+            name = ' '.join(part for part in (move_label, detail_label) if part)
+            result.append({'type': 'item', 'id': line.id, 'name': name, 'move_label': move_label,
+                           'detail_label': detail_label, 'journal': line.journal_id.code or '',
                            'account': line.account_id.with_company(line.company_id).code or '',
                            'invoice_date': format_date(self.env, line.move_id.invoice_date) if line.move_id.invoice_date else '',
                            'invoice_date_raw': fields.Date.to_string(line.move_id.invoice_date),

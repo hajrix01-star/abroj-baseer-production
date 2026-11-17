@@ -261,6 +261,7 @@ class TestPartnerLedgerGrouping(EngineCase):
         foreign_move = self.env['account.move'].with_company(company).create({'company_id': company.id, 'date': today, 'journal_id': journal.id, 'line_ids': [Command.create({'name': 'Foreign', 'account_id': rec.id, 'partner_id': partners[0].id, 'debit': 10, 'currency_id': eur.id, 'amount_currency': 10}), Command.create({'name': 'Counterpart', 'account_id': other.id, 'credit': 10, 'currency_id': eur.id, 'amount_currency': -10})]})
         foreign_move._post(soft=False)
         foreign_line = foreign_move.line_ids.filtered(lambda l: l.account_id == rec)
+        foreign_line.name = 'Mixed reference - ' + foreign_move.name
         options = self._options(date_from=str(past - timedelta(days=1)), date_to=str(future))
         page = engine.get_ledger_lines('partner_ledger', options, partners[0].id)
         items = {r['id']: r for r in page['rows'] if r['type'] == 'item'}
@@ -273,6 +274,9 @@ class TestPartnerLedgerGrouping(EngineCase):
         self.assertEqual(items[full.id]['matching'], full.matching_number)
         self.assertFalse(items[partial.id]['overdue'])
         self.assertTrue(items[overdue.id]['overdue'])
+        self.assertEqual(items[foreign_line.id]['name'], foreign_move.name + ' Mixed reference')
+        self.assertEqual(items[foreign_line.id]['move_label'], foreign_move.name)
+        self.assertEqual(items[foreign_line.id]['detail_label'], 'Mixed reference')
         self.assertTrue(items[foreign_line.id]['amount_currency'])
         self.assertFalse(items[full.id]['amount_currency'])
         filtered = engine.get_ledger_lines('partner_ledger', dict(options, unreconciled=True), partners[0].id)

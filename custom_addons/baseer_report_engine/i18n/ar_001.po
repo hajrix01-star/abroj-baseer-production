@@ -1051,3 +1051,111 @@ msgstr "دفتر الأستاذ"
 #: code:addons/baseer_report_engine/models/ledger.py:0
 msgid "Total General Ledger"
 msgstr "إجمالي دفتر الأستاذ العام"
+
+#. module: baseer_report_engine
+#: model:baseer.report.definition,name:baseer_report_engine.report_partner_ledger
+#: selection:baseer.report.definition,report_kind:0
+msgid "Partner Ledger"
+msgstr "دفتر الأستاذ العام للشركاء"
+
+#. module: baseer_report_engine
+#: model:ir.actions.client,name:baseer_report_engine.action_partner_ledger
+#: model:ir.ui.menu,name:baseer_report_engine.menu_partner_ledger
+msgid "Partner Ledger (New)"
+msgstr "دفتر الأستاذ العام للشركاء (جديد)"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/ledger.py:0
+msgid "Journal"
+msgstr "دفتر اليومية"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/ledger.py:0
+msgid "Account"
+msgstr "الحساب"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/ledger.py:0
+msgid "Invoice Date"
+msgstr "تاريخ الفاتورة"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/ledger.py:0
+msgid "Due Date"
+msgstr "تاريخ الاستحقاق"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/ledger.py:0
+msgid "Matching"
+msgstr "مطابقة"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/ledger.py:0
+msgid "Amount Currency"
+msgstr "المبلغ بالعملة"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/ledger.py:0
+msgid "Unknown Partner"
+msgstr "شريك غير معروف"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/ledger.py:0
+msgid "Receivable"
+msgstr "المدين"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/ledger.py:0
+msgid "Payable"
+msgstr "الدائن"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/ledger.py:0
+msgid "Non Trade Receivable"
+msgstr "حساب المدينين غير التجاري"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/ledger.py:0
+msgid "Non Trade Payable"
+msgstr "حساب الدائنين غير التجاري"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/ledger.py:0
+msgid "Trade Partners"
+msgstr "الشركاء التجاريون"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/ledger.py:0
+msgid "Account:"
+msgstr "الحساب:"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/ledger.py:0
+msgid "Partners"
+msgstr "الشركاء"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/ledger.py:0
+msgid "Partner Categories"
+msgstr "فئات الشركاء"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/ledger.py:0
+msgid "Unreconciled Entries"
+msgstr "القيود غير المسواة"

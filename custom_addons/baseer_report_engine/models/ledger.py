@@ -181,12 +181,21 @@ class BaseerLedgerEngine(models.AbstractModel):
         return result
 
     @api.model
-    def get_ledger_lines(self, report_code, options, account_id, company_id, offset=0, limit=None):
+    def get_ledger_lines(self, report_code, options, account_id, company_id=False, offset=0, limit=None):
         self._check_report_access()
         report = self._definition(report_code)
-        if report.report_kind != 'ledger' or type(offset) is not int or offset < 0:
+        if report.report_kind not in ('ledger', 'partner_ledger') or type(offset) is not int or offset < 0:
             raise ValidationError(_('The report options are not valid.'))
         normalized = self._normalize_options(report, options or {})
+        if report.report_kind == 'partner_ledger':
+            partner_id = account_id if account_id is not False else 0
+            self._partner_move_line_action(normalized, 'partner_%s' % partner_id, partner_id)
+            payload = self._build_partner_ledger(report, normalized, {})
+            row = next ( (r for r in payload['lines'][:-1] if r['partner_id'] == partner_id), None)
+            if not row:
+                raise AccessError(_('Choose an account from this line.'))
+            opening, _period = self._ledger_partner_data(normalized, self._partner_domain(normalized))
+            return self._partner_page(normalized, row, opening, offset, self._ledger_limit(limit))
         # This validates account membership and access, including synthetic earnings.
         self._grid_move_line_action(report, normalized, 'account_%s_%s' % (account_id, company_id), 'end', account_id, company_id)
         ledger_data = self._ledger_data(report, normalized)
@@ -196,6 +205,146 @@ class BaseerLedgerEngine(models.AbstractModel):
             raise AccessError(_('Choose an account from this line.'))
         opening, _period = ledger_data
         return self._ledger_pages(normalized, [row], opening, offset, self._ledger_limit(limit))[(account_id, company_id)]
+
+    @api.model
+    def _normalize_partner_options(self, raw, options):
+        names = ('receivable', 'non_trade_receivable', 'payable', 'non_trade_payable')
+        selected = raw.get('account_types', ['receivable', 'payable'])
+        if not isinstance(selected, list) or not selected or any(type(x) is not str or x not in names for x in selected):
+            raise ValidationError(_('The report options are not valid.'))
+        options['account_types'] = list(dict.fromkeys(selected))
+        for key, model_name in (('partner_ids', 'res.partner'), ('partner_category_ids', 'res.partner.category')):
+            ids = self._id_list(raw.get(key, []), key)
+            records = self.env[model_name].browse(ids)
+            records.check_access('read')
+            if len(records.exists()) != len(ids):
+                raise AccessError(_('The report options are not valid.'))
+            options[key] = ids
+        options['unreconciled'] = raw.get('unreconciled', False)
+        if type(options['unreconciled']) is not bool:
+            raise ValidationError(_('The report options are not valid.'))
+
+    @api.model
+    def _partner_domain(self, options):
+        from .definition import _or_domains
+        mapping = {'receivable': ('asset_receivable', False), 'non_trade_receivable': ('asset_receivable', True),
+                   'payable': ('liability_payable', False), 'non_trade_payable': ('liability_payable', True)}
+        domain = _or_domains([[('account_id.account_type', '=', mapping[k][0]), ('account_id.non_trade', '=', mapping[k][1])]
+                              for k in options['account_types']])
+        if options['partner_ids']:
+            domain += [('partner_id', 'in', options['partner_ids'])]
+        if options['partner_category_ids']:
+            domain += [('partner_id.category_id', 'in', options['partner_category_ids'])]
+        if options['unreconciled']:
+            domain += [('amount_residual', '!=', 0)]
+        return domain
+
+    @api.model
+    def _build_partner_ledger(self, report, options, raw):
+        domain = self._partner_domain(options)
+        opening, period = self._ledger_partner_data(options, domain)
+        ids = set(opening) | set(period)
+        partners = self.env['res.partner'].browse([x for x in ids if x]).exists()
+        names = {p.id: p.display_name for p in partners}
+        rows, totals = [], _zeros()
+        for partner_id in sorted(ids, key=lambda x: (not bool(x), names.get(x, '').casefold(), x)):
+            initial, movement = opening.get(partner_id, _zeros()), period.get(partner_id, _zeros())
+            values = {k: initial[k] + movement[k] for k in totals}
+            for k in totals:
+                totals[k] += values[k]
+            rows.append({'id': partner_id, 'partner_id': partner_id, 'code': 'partner_%s' % partner_id,
+                         'name': names.get(partner_id) or _('Unknown Partner'), 'level': 0, 'display': 'line',
+                         'foldable': True, 'has_accounts': True, 'accounts': [], 'amounts': self._ledger_amounts(values, True)})
+        rows.append({'code': 'total', 'name': _('Total'), 'level': 0, 'display': 'total', 'foldable': False,
+                     'has_accounts': False, 'accounts': [], 'amounts': self._ledger_amounts(totals)})
+        payload = self._build(report, options)
+        payload['report']['report_kind'] = report.report_kind
+        payload['lines'] = rows
+        labels = [('journal', _('Journal')), ('account', _('Account')), ('invoice_date', _('Invoice Date')),
+                  ('due_date', _('Due Date')), ('matching', _('Matching')), ('debit', _('Debit')),
+                  ('credit', _('Credit')), ('amount_currency', _('Amount Currency')), ('balance', _('Balance'))]
+        payload['columns'] = [{'key': k, 'label': v, 'kind': 'ledger', 'figure': k} for k, v in labels]
+        payload['column_groups'] = [{'label': options['columns'][0]['label'], 'colspan': 9, 'kind': 'period', 'period_key': 'c0'}]
+        payload['options']['account_filter_label'] = (_('Trade Partners') if set(options['account_types']) == {'receivable', 'payable'}
+            else ', '.join(dict(self._partner_type_labels())[k] for k in options['account_types']))
+        return payload
+
+    @api.model
+    def _partner_type_labels(self):
+        return [('receivable', _('Receivable')), ('non_trade_receivable', _('Non Trade Receivable')),
+                ('payable', _('Payable')), ('non_trade_payable', _('Non Trade Payable'))]
+
+    @api.model
+    def _partner_move_line_action(self, options, line_code, partner_id):
+        if partner_id is False:
+            partner_id = 0
+        if type(partner_id) is not int or partner_id < 0 or line_code != 'partner_%s' % partner_id:
+            raise AccessError(_('Choose an account from this line.'))
+        if partner_id:
+            partner = self.env['res.partner'].browse(partner_id).exists()
+            if not partner:
+                raise AccessError(_('Choose an account from this line.'))
+            partner.check_access('read')
+        domain = self._base_domain(options) + self._partner_domain(options) + [('partner_id', '=', partner_id or False), ('date', '<=', options['date_to'])]
+        return {'type': 'ir.actions.act_window', 'name': _('Journal Items'), 'res_model': 'account.move.line',
+                'view_mode': 'list,form', 'views': [(False, 'list'), (False, 'form')], 'target': 'current',
+                'domain': self._public_domain(domain)}
+
+    @api.model
+    def get_partner_action(self, partner_id):
+        self._check_report_access()
+        if type(partner_id) is not int or partner_id <= 0:
+            raise AccessError(_('Choose an account from this line.'))
+        partner = self.env['res.partner'].browse(partner_id).exists()
+        if not partner:
+            raise AccessError(_('Choose an account from this line.'))
+        partner.check_access('read')
+        return {'type': 'ir.actions.act_window', 'name': _('Partner'), 'res_model': 'res.partner',
+                'view_mode': 'form', 'views': [(False, 'form')], 'res_id': partner_id, 'target': 'current'}
+
+    @api.model
+    def _partner_page(self, options, row, opening, offset, limit):
+        first, last = options['columns'][0]['_start'], options['columns'][0]['_end']
+        domain = self._base_domain(options) + self._partner_domain(options) + [('partner_id', '=', row['partner_id'] or False), ('date', '>=', first), ('date', '<=', last)]
+        model = self.env['account.move.line']
+        model.flush_model(['date', 'move_name', 'partner_id'])
+        query = model._search(domain)
+        ranked = query.select(SQL('account_move_line.id'),
+            SQL('ROW_NUMBER() OVER (ORDER BY account_move_line.date, account_move_line.move_name, account_move_line.id) AS rn'),
+            SQL('COUNT(*) OVER () AS total'))
+        selected = self.env.execute_query(SQL('SELECT id, total FROM (%s) AS ranked WHERE rn > %s AND rn <= %s ORDER BY rn',
+                                              ranked, offset, offset + limit))
+        lines = model.search([('id', 'in', [item[0] for item in selected])], order='date, move_name, id')
+        previous = model.search(domain, order='date, move_name, id', limit=offset) if offset else model.browse()
+        initial = opening.get(row['partner_id'], _zeros())
+        running = initial['balance']
+        result = []
+        if not offset and (initial['debit'] or initial['credit']):
+            result.append({'type': 'initial', 'name': _('Initial Balance'), 'amounts': self._ledger_amounts(initial)})
+        for index, line in enumerate(previous | lines):
+            share = _analytic_share(line.analytic_distribution, set(options['analytic_account_ids'])) if options['analytic_account_ids'] else Decimal(1)
+            values = {k: self._ledger_convert(Decimal(str(line[k] or 0)) * share, line.company_id, last) for k in ('debit', 'credit', 'balance')}
+            running += values['balance']
+            if index < offset:
+                continue
+            values['balance'] = running
+            name = line.move_name or line.move_id.name or ''
+            if line.name and line.name != name:
+                name += ' ' + line.name
+            result.append({'type': 'item', 'id': line.id, 'name': name, 'journal': line.journal_id.code or '',
+                           'account': line.account_id.with_company(line.company_id).code or '',
+                           'invoice_date': format_date(self.env, line.move_id.invoice_date) if line.move_id.invoice_date else '',
+                           'invoice_date_raw': fields.Date.to_string(line.move_id.invoice_date),
+                           'due_date': format_date(self.env, line.date_maturity) if line.date_maturity else '',
+                           'due_date_raw': fields.Date.to_string(line.date_maturity),
+                           'overdue': bool(line.date_maturity and line.date_maturity < fields.Date.context_today(self) and line.amount_residual),
+                           'matching': line.matching_number or '',
+                           'amount_currency': format_amount(self.env, line.amount_currency * float(share), line.currency_id) if line.currency_id and line.currency_id != line.company_id.currency_id else '',
+                           'amounts': self._ledger_amounts(values)})
+        has_more = bool(selected and selected[0][1] > offset + limit)
+        if not has_more:
+            result.append({'type': 'total', 'name': _('Total %s') % row['name'], 'amounts': row['amounts']})
+        return {'rows': result, 'has_more': has_more, 'next_offset': offset + limit if has_more else False}
 
     @api.model
     def get_move_action(self, move_line_id):

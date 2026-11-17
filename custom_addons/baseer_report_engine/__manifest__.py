@@ -13,6 +13,7 @@
         'data/profit_and_loss.xml',
         'data/trial_balance.xml',
         'data/general_ledger.xml',
+        'data/partner_ledger.xml',
         'views/report_menus.xml',
         'report/report_pdf.xml',
     ],

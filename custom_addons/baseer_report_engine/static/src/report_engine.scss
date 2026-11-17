@@ -350,3 +350,35 @@
 .o_baseer_report_engine .o_bre_table.o_bre_range tbody td:last-child { padding-inline-end: 12px; }
 .o_baseer_report_engine .o_bre_row_handle { position: absolute; inset-inline-end: 3px; top: 3px; width: 18px; border: 0; background: transparent; color: #adb5bd; visibility: hidden; padding: 0; }
 .o_baseer_report_engine tr:hover .o_bre_row_handle, .o_baseer_report_engine .o_bre_row_handle:focus { visibility: visible; }
+
+.o_baseer_report_engine {
+    .o_bre_search { position: relative; display: flex; align-items: center; height: 33px; width: 222px; border: 1px solid #d8dadd; border-radius: 4px; background: white; }
+    .o_bre_search i { margin-inline-start: 10px; color: #111827; }
+    .o_bre_search input { width: 100%; min-width: 0; height: 33px; border: 0; outline: 0; background: transparent; padding: 4px 8px; font-size: 14px; line-height: 21px; }
+    .o_bre_grid { width: calc(800px + (var(--bre-columns) - 4) * 40px); }
+    .o_bre_grid .o_bre_paper_inner { min-width: calc(798px + (var(--bre-columns) - 4) * 40px); }
+    .o_bre_grid_table {
+        .o_bre_label_col { width: calc(318px - (var(--bre-columns) - 4) * 18px); }
+        .o_bre_value_col { width: auto; }
+        .o_bre_edge_col { width: 105px; }
+        tbody th { white-space: nowrap; }
+        .o_bre_shaded { background: #f9fafb; }
+        .o_bre_period_header th { white-space: nowrap; }
+        tbody th, .o_bre_level_0 th { padding-inline-start: 35px; font-weight: 400; }
+        .o_bre_line.o_bre_level_0, .o_bre_line.o_bre_level_0 th { color: #374151; font-weight: 400; }
+        .o_bre_total th { padding-inline-start: 32px; }
+        .o_bre_total th, .o_bre_total td { color: #111827; font-weight: 700; background: transparent; border-bottom: 1px solid #e7e9ed; }
+        .o_bre_total td.is-zero { color: #d8dadd; }
+        .o_bre_total td.is-negative { color: #d23f3a; }
+        .o_bre_total td.o_bre_shaded { background: #f9fafb; }
+        .o_bre_period_header th { white-space: nowrap; }
+        tbody td:last-child { padding-inline-end: 12px; }
+        tr:has(.dropdown.show) th, tr:has(.dropdown.show) td { background: #e9eaec !important; color: #008c95; }
+    }
+    .o_bre_grid_handle { border: 0; background: none; color: #d0d3d7; padding: 0 3px; line-height: 1; }
+    @media (max-width: 767px) {
+        .o_bre_grid { width: 100%; }
+        .o_bre_search { width: 222px; }
+        .o_bre_grid_table tbody th:first-child, .o_bre_grid_table .o_bre_band th:first-child { background: white; }
+    }
+}

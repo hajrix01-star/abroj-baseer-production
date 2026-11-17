@@ -43,7 +43,7 @@ class BaseerReportEngine(models.AbstractModel):
             'analytic_accounts': self._analytic_options(),
             'analytic_enabled': self.env['account.analytic.account'].has_access('read'),
             'labels': self._labels(),
-            'defaults': dict(self._default_options(), preset='today' if report.date_mode == 'as_of' else 'this_year', comparison_unit='month' if report.date_mode == 'as_of' else 'year'),
+            'defaults': dict(self._default_options(), preset=report.default_preset or ('today' if report.date_mode == 'as_of' else 'this_year'), comparison_unit='month' if report.date_mode == 'as_of' or report.report_kind == 'account_grid' else 'year'),
         }
 
     @api.model
@@ -51,7 +51,8 @@ class BaseerReportEngine(models.AbstractModel):
         self._check_report_access()
         report = self._definition(report_code)
         normalized = self._normalize_options(report, options or {})
-        payload = self._build(report, normalized, with_accounts=with_accounts)
+        payload = (self._build_grid(report, normalized) if report.report_kind == 'account_grid'
+                   else self._build(report, normalized, with_accounts=with_accounts))
         payload['has_draft_entries'] = bool(normalized['posted_only'] and self.env['account.move.line'].search_count(self._draft_domain(normalized), limit=1))
         return payload
 
@@ -103,6 +104,8 @@ class BaseerReportEngine(models.AbstractModel):
         self._check_report_access()
         report = self._definition(report_code)
         normalized = self._normalize_options(report, options or {})
+        if report.report_kind == 'account_grid':
+            return self._grid_move_line_action(report, normalized, line_code, column_key, account_id, company_id)
         line = report.line_ids.filtered(lambda item: item.code == line_code)[:1]
         if not line:
             raise ValidationError(_('Choose a line from this report.'))
@@ -218,6 +221,8 @@ class BaseerReportEngine(models.AbstractModel):
                 _shift_date(start, -offset, unit),
                 _shift_date(end, -offset, unit),
             ))
+        if report.report_kind == 'account_grid':
+            return list(reversed(columns))
         if comparison:
             columns.append({'key': 'variation', 'kind': 'variation', 'label': _('Variation')})
             columns.append({'key': 'variation_percent', 'kind': 'variation_percent', 'label': '%'})
@@ -382,30 +387,32 @@ class BaseerReportEngine(models.AbstractModel):
         return cache[key]
 
     @api.model
-    def _aggregate(self, domain, on_date, analytic_ids):
+    def _aggregate(self, domain, on_date, analytic_ids, groupby=('account_id', 'company_id')):
         totals = {}
         if analytic_ids:
             selected = set(analytic_ids)
             lines = self.env['account.move.line'].search(domain)
             for values in lines.read([
-                'account_id', 'company_id', 'debit', 'credit', 'balance', 'analytic_distribution',
+                *groupby, 'company_id', 'debit', 'credit', 'balance', 'analytic_distribution',
             ]):
                 share = _analytic_share(values.get('analytic_distribution'), selected)
-                if share == 0 or not values['account_id'] or not values['company_id']:
+                if share == 0 or not values['company_id']:
                     continue
                 company = self.env['res.company'].browse(values['company_id'][0])
-                bucket = totals.setdefault((values['account_id'][0], company.id), _zeros())
+                key = tuple(values[field][0] if values.get(field) else False for field in groupby)
+                bucket = totals.setdefault(key, _zeros())
                 for figure in ('balance', 'debit', 'credit'):
                     amount = Decimal(str(values[figure] or 0)) * share
                     bucket[figure] += self._convert(amount, company, on_date)
             return totals
         rows = self.env['account.move.line']._read_group(
-            domain, ['account_id', 'company_id'], ['balance:sum', 'debit:sum', 'credit:sum'],
+            domain, list(groupby), ['balance:sum', 'debit:sum', 'credit:sum'],
         )
-        for account, company, balance, debit, credit in rows:
-            if not account:
-                continue
-            bucket = totals.setdefault((account.id, company.id), _zeros())
+        for row in rows:
+            groups, (balance, debit, credit) = row[:-3], row[-3:]
+            company = groups[groupby.index('company_id')]
+            key = tuple(value.id if value else False for value in groups)
+            bucket = totals.setdefault(key, _zeros())
             for figure, amount in (
                 ('balance', balance), ('debit', debit), ('credit', credit),
             ):
@@ -761,6 +768,13 @@ class BaseerReportEngine(models.AbstractModel):
     def _labels(self):
         return {
             'balance': _('Balance'),
+            'initial_balance': _('Initial Balance'),
+            'end_balance': _('End Balance'),
+            'debit': _('Debit'),
+            'credit': _('Credit'),
+            'total': _('Total'),
+            'search': _('Search...'),
+            'general_ledger': _('General Ledger'),
             'journal_items': _('Journal Items'),
             'unfold_line': _('Unfold'),
             'fold_line': _('Fold'),

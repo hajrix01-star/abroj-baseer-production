@@ -29,22 +29,46 @@ class BaseerReportExport(models.AbstractModel):
         sheet.write(0, 0, payload['report']['name'], title)
         sheet.write(1, 0, ' · '.join(company['name'] for company in payload['companies']))
         sheet.write(2, 0, payload['currency']['code'])
+        grid = bool(payload.get('column_groups'))
+        grid_bold = workbook.add_format({'bold': True})
+        grid_header = workbook.add_format({'align': 'center', 'border': 1, 'border_color': '#D8DADD'})
+        grid_sub = workbook.add_format({'align': 'right'})
+        grid_sub_shaded = workbook.add_format({'align': 'right', 'bg_color': '#F9FAFB'})
+        grid_money = workbook.add_format({'num_format': '#,##0.00', 'bg_color': '#F9FAFB'})
+        grid_money_bold = workbook.add_format({'num_format': '#,##0.00', 'bold': True, 'bg_color': '#F9FAFB'})
         row = 4
-        sheet.write(row, 0, _('Line'), header)
+        if payload.get('column_groups'):
+            index = 1
+            for group in payload['column_groups']:
+                end = index + group['colspan'] - 1
+                if end > index:
+                    sheet.merge_range(row, index, row, end, group['label'], grid_header if grid else header)
+                else:
+                    sheet.write(row, index, group['label'], grid_header if grid else header)
+                index = end + 1
+            row += 1
+        sheet.write(row, 0, '' if grid else _('Line'), grid_sub if grid else header)
         for index, column in enumerate(payload['columns'], start=1):
-            sheet.write(row, index, column['label'], header)
+            sheet.write(row, index, column['label'], (grid_sub_shaded if column['figure'] == 'debit' or column['kind'] == 'end' else grid_sub) if grid else header)
         row += 1
         for line in payload['lines']:
-            if (line['level'] == 0 and line['display'] == 'section') or (payload['report']['date_mode'] == 'range' and line['display'] == 'total'):
+            if (line['level'] == 0 and line['display'] == 'section') or (not grid and payload['report']['date_mode'] == 'range' and line['display'] == 'total'):
                 label_format, amount_format = section, money_bold
             elif line['display'] in ('total', 'section'):
-                label_format, amount_format = total, money_bold
+                label_format, amount_format = (grid_bold if grid else total), money_bold
             else:
                 label_format = indents[min(line['level'], 7)]
                 amount_format = money
             sheet.write(row, 0, line['name'], label_format)
             if not line.get('hide_amounts'):
-                _write_amounts(sheet, row, line['amounts'], amount_format, label_format)
+                if grid:
+                    for index, amount in enumerate(line['amounts'], start=1):
+                        col = payload['columns'][index - 1]
+                        shaded = col['figure'] == 'debit' or col['kind'] == 'end'
+                        fmt = (grid_money_bold if line['display'] == 'total' else grid_money) if shaded else amount_format
+                        sheet.write_number(row, index, float(amount['value']), fmt)
+                else:
+                    _write_amounts(sheet, row, line['amounts'], amount_format, label_format)
             row += 1
             for account in line['accounts']:
                 detail = indents[min(line['level'] + 1, 7)]

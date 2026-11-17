@@ -19,8 +19,13 @@ while [ $# -gt 0 ]; do
 done
 [[ "$container" =~ ^[a-zA-Z0-9_.-]+$ ]] || { echo 'unsafe container' >&2; exit 2; }
 [[ "$db" =~ ^[a-zA-Z0-9_]+$ ]] || { echo 'unsafe db' >&2; exit 2; }
-docker exec -i -e ABROJ_BACKFILL_DRY="$dry" "$container" sh -lc \
-    "odoo shell --config=/etc/odoo/odoo.conf -d $db --no-http --workers=0 --max-cron-threads=0 --log-level=warn" <<'PY'
+# DB connection comes from the container's own HOST/USER/PASSWORD env (as in
+# baseer-production-deploy); it is expanded inside the container, never printed.
+# Reuse the running service's exact addons path (includes DMS when enabled).
+addons="$(docker inspect -f '{{json .Args}}' "$container" | python3 -c 'import json,sys; print(next(a.split("=",1)[1] for a in json.load(sys.stdin) if a.startswith("--addons-path=")))')"
+[[ "$addons" =~ ^[a-zA-Z0-9_/,.-]+$ ]] || { echo 'unsafe addons path' >&2; exit 2; }
+docker exec -i -e ABROJ_BACKFILL_DRY="$dry" -e ABROJ_BACKFILL_DB="$db" -e ABROJ_BACKFILL_ADDONS="$addons" "$container" sh -lc \
+    'odoo shell --config=/etc/odoo/odoo.conf --db_host="$HOST" --db_user="$USER" --db_password="$PASSWORD" --addons-path="$ABROJ_BACKFILL_ADDONS" -d "$ABROJ_BACKFILL_DB" --no-http --workers=0 --max-cron-threads=0 --log-level=warn' <<'PY'
 import json, os
 from odoo.addons.abroj_contracting.backfill import run_analytic_backfill
 mods = env['ir.module.module'].search([('name', 'in', ['abroj_contracting', 'abroj_project_dashboard']), ('state', '=', 'installed')]).mapped('name')

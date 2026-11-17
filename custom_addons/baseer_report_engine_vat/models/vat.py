@@ -70,11 +70,13 @@ class VatEngine(models.AbstractModel):
         return domain
 
     @api.model
-    def _vat_accounts(self, tags):
+    def _vat_accounts(self, tags, transition_only=False):
         vat_tags = list({tag for key, ids in tags.items() if key.endswith('.tax') for tag in ids})
         reps = self.env['account.tax.repartition.line'].search([('company_id', '=', self.env.company.id),
             ('repartition_type', '=', 'tax'), ('tag_ids', 'in', vat_tags)])
-        return (reps.account_id - self._vat_tobacco_accounts()).ids
+        transition = reps.tax_id.filtered(lambda t: t.tax_exigibility == 'on_payment').cash_basis_transition_account_id
+        accounts = transition if transition_only else reps.account_id | transition
+        return (accounts - self._vat_tobacco_accounts()).ids
 
     @api.model
     def _vat_domain(self, options):
@@ -84,8 +86,7 @@ class VatEngine(models.AbstractModel):
                   & Domain('date', '>=', options['date_from'])
                   & Domain('date', '<=', options['date_to'])
                   & Domain('parent_state', 'in', ['posted'] if options['posted_only'] else ['posted', 'draft'])
-                  & self.env['account.move.line']._get_tax_exigible_domain()
-                  & Domain('account_id', 'not in', self._vat_tobacco_accounts().ids))
+                  & self.env['account.move.line']._get_tax_exigible_domain())
         if options['journal_ids']:
             domain &= Domain('journal_id', 'in', options['journal_ids'])
         return domain
@@ -184,11 +185,13 @@ class VatEngine(models.AbstractModel):
                     if kind == section:
                         row('tax_%s_%s' % (section, tax_id), bucket['tax'].name or _('Unassigned tax'), bucket['base'], bucket['tax_amount'], drill=True)
                 row('tax_total_' + section, _('Total %s') % title, values.get(total + '.base'), values.get(total + '.tax'), display='total')
+
+        box_names = [_('1. Standard rated sales'), _('2. Private Healthcare / Private Education / First house sales to citizens'), _('3. Zero rated domestic sales'), _('4. Exports'), _('5. Exempt sales'), _('6. Total Sales'), _('7. Standard rated domestic purchases'), _('8. Imports subject to VAT paid at customs'), _('9. Imports subject to VAT accounted for through reverse charge mechanism'), _('10. Zero rated purchases'), _('11. Exempt purchases'), _('12. Total Purchases'), _('13. Total VAT due for current period'), _('14. Corrections from previous period (between +- SAR 5000)'), _('15. VAT credit carried forward from previous period'), _('16. Net VAT due (or claim)')]
         for line in lines if normalized['tax_grouping'] == 'grid' else []:
             if line.code in ('sa_1', 'sa_7', 'sa_13'):
                 name = {'sa_1': _('VAT on Sales'), 'sa_7': _('VAT on Purchases'), 'sa_13': _('Net VAT')}[line.code]
                 row('section_' + line.code, name, display='section')
-            row(line.code, line.name, values.get(line.code + '.base'), values.get(line.code + '.tax'), 'total' if line.code in ('sa_6', 'sa_12', 'sa_13', 'sa_16') else 'line', True)
+            row(line.code, box_names[int(line.code[3:]) - 1], values.get(line.code + '.base'), values.get(line.code + '.tax'), 'total' if line.code in ('sa_6', 'sa_12', 'sa_13', 'sa_16') else 'line', True)
         account_ids = self._vat_accounts(tags)
         period = self._vat_period_domain(normalized, account_ids, ['posted'] if normalized['posted_only'] else ['posted', 'draft'])
         def amount(domain):
@@ -200,9 +203,12 @@ class VatEngine(models.AbstractModel):
         row('vat_net', _('Net VAT due'), tax=net)
         row('vat_movement', _('VAT account movement'), tax=movement, drill=True)
         row('vat_difference', _('Difference'), tax=net - movement, display='total')
+        transition_ids = self._vat_accounts(tags, transition_only=True)
+        pending = self._vat_period_domain(normalized, transition_ids, ['posted'] if normalized['posted_only'] else ['posted', 'draft'])
+        pending |= period & Domain('account_id', 'not in', transition_ids) & ~self.env['account.move.line']._get_tax_exigible_domain()
         causes = [
-            ('vat_untagged', _('VAT account entries without tax tags'), period & Domain('tax_tag_ids', '=', False)),
-            ('vat_pending', _('Cash-basis pending'), period & ~self.env['account.move.line']._get_tax_exigible_domain()),
+            ('vat_untagged', _('VAT account entries without tax tags'), period & Domain('account_id', 'not in', transition_ids) & Domain('tax_tag_ids', '=', False)),
+            ('vat_pending', _('Cash-basis pending'), pending),
         ]
         if normalized['posted_only']:
             causes.append(('vat_draft', _('Draft VAT account entries'), self._vat_period_domain(normalized, account_ids, ['draft'])))
@@ -247,10 +253,12 @@ class VatEngine(models.AbstractModel):
         if line_code in ('vat_movement', 'vat_untagged', 'vat_pending', 'vat_draft') and column_key == 'tax':
             states = ['draft'] if line_code == 'vat_draft' else (['posted'] if normalized['posted_only'] else ['posted', 'draft'])
             domain = self._vat_period_domain(normalized, self._vat_accounts(tags), states)
+            transition_ids = self._vat_accounts(tags, transition_only=True)
             if line_code == 'vat_untagged':
-                domain &= Domain('tax_tag_ids', '=', False)
+                domain &= Domain('account_id', 'not in', transition_ids) & Domain('tax_tag_ids', '=', False)
             elif line_code == 'vat_pending':
-                domain &= ~self.env['account.move.line']._get_tax_exigible_domain()
+                domain = (self._vat_period_domain(normalized, transition_ids, states) |
+                          (domain & Domain('account_id', 'not in', transition_ids) & ~self.env['account.move.line']._get_tax_exigible_domain()))
             return {'type': 'ir.actions.act_window', 'name': _('VAT journal items'), 'res_model': 'account.move.line', 'view_mode': 'list,form', 'views': [(False, 'list'), (False, 'form')], 'domain': list(domain)}
         match = re.fullmatch(r'tax_(sale|purchase)_(\d+)', line_code)
         if match and column_key in ('base', 'tax'):

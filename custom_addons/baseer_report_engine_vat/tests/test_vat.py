@@ -143,6 +143,8 @@ class VatReportCase(EngineCase):
             workbook = load_workbook(io.BytesIO(base64.b64decode(localized.export_xlsx('saudi_vat', options)['content'])))
             sheet = workbook.active
             rows = list(sheet.values)
+            if lang.startswith('ar'):
+                self.assertIn('1. المبيعات الخاضعة للنسبة الأساسية', [row[0] for row in rows])
             self.assertIn(difference, [row[0] for row in rows], (lang, [row[0] for row in rows]))
             difference_row = next(row for row in rows if row[0] == difference)
             self.assertIsNotNone(difference_row[2])
@@ -153,6 +155,8 @@ class VatReportCase(EngineCase):
                 'baseer_report_engine.report_pdf', docids=localized._definition('saudi_vat').ids,
                 data={'report_code': 'saudi_vat', 'options': options})
             self.assertIn(difference, html.decode())
+            if lang.startswith('ar'):
+                self.assertIn('1. المبيعات الخاضعة للنسبة الأساسية', html.decode())
             self.assertIn('97.50', html.decode())
         if 'baseer.tax.report.wizard' in env:
             wizard = env['baseer.tax.report.wizard'].new({'company_id': company.id, 'period_type': 'quarter', 'year': 2024, 'quarter': '1', 'month': '1', 'display_mode': 'detailed'})
@@ -161,6 +165,42 @@ class VatReportCase(EngineCase):
                     value = self._value(payload, 'sa_' + row['number'], column)
                     self.assertEqual(value, None if row[column] is None else '%.2f' % row[column])
 
+        # Fee is part of the VAT base even though its account is not a VAT account.
+        tobacco = self._account(company, '201021', 'liability_current')
+        sale_tax.sequence = 10
+        fee_type = {'amount_type': 'code', 'formula': '10 * quantity'} if 'formula' in env['account.tax']._fields else {'amount_type': 'fixed', 'amount': 10}
+        fee = env['account.tax'].create({'name': 'Tobacco service fee', **fee_type, 'type_tax_use': 'sale', 'sequence': 1, 'include_base_amount': True,
+            'invoice_repartition_line_ids': [Command.clear(),
+                Command.create({'repartition_type': 'base'}),
+                Command.create({'repartition_type': 'tax', 'account_id': tobacco.id})],
+            'refund_repartition_line_ids': [Command.clear(),
+                Command.create({'repartition_type': 'base'}),
+                Command.create({'repartition_type': 'tax', 'account_id': tobacco.id})]})
+        fee_invoice = env['account.move'].create({'move_type': 'out_invoice', 'partner_id': partner.id,
+            'invoice_date': '2024-02-05', 'date': '2024-02-05', 'company_id': company.id,
+            'invoice_line_ids': [Command.create({'name': 'Tobacco sale', 'price_unit': 100,
+                'account_id': income.id, 'tax_ids': [Command.set((fee | sale_tax).ids)]})]})
+        fee_invoice.action_post()
+        fee_line = fee_invoice.line_ids.filtered(lambda l: l.tax_line_id == fee)
+        self.assertTrue(fee_line.tax_tag_ids & base_rep.tag_ids)
+        after_tobacco = self._engine(company).get_report('saudi_vat', options)
+        self.assertEqual(self._value(after_tobacco, 'sa_1', 'base'), '1060.00')
+        self.assertEqual(self._value(after_tobacco, 'sa_1', 'tax'), '159.00')
+        self.assertEqual(self._value(after_tobacco, 'vat_difference', 'tax'), '0.00')
+        grouped_fee = self._engine(company).get_report('saudi_vat', dict(options, tax_grouping='tax'))
+        self.assertEqual(self._value(grouped_fee, 'tax_total_sale', 'base'), '1360.00')
+        self.assertAlmostEqual(sum(float(next(a['value'] for a in row['amounts'] if a['key'] == 'base') or 0)
+                                   for row in grouped_fee['lines'] if row['code'].startswith('tax_sale_')), 1360)
+        action = self._engine(company).get_move_line_action('saudi_vat', options, 'sa_1', 'base')
+        self.assertIn(fee_line, env['account.move.line'].search(action['domain']))
+        if 'baseer.tax.report.wizard' in env:
+            wizard = env['baseer.tax.report.wizard'].new({'company_id': company.id, 'period_type': 'quarter', 'year': 2024, 'quarter': '1', 'month': '1', 'display_mode': 'detailed'})
+            for legacy_row in wizard._build_report()['rows']:
+                for column in ('base', 'tax'):
+                    value = legacy_row[column]
+                    self.assertEqual(self._value(after_tobacco, 'sa_' + legacy_row['number'], column),
+                                     None if value is None else '%.2f' % value)
+
         # A direct posting to a VAT account is visible as an untagged cause.
         self._entry(company, journal, '2024-02-03', clearing, tax_rep.account_id, 10)
         discrepant = self._engine(company).get_report('saudi_vat', options)
@@ -168,11 +208,50 @@ class VatReportCase(EngineCase):
         self.assertTrue(any('without tax tags: 1' in note for note in discrepant['notes']))
         self.assertEqual(self._value(discrepant, 'vat_untagged', 'tax'), '10.00')
         self.assertTrue(self._engine(company).get_move_line_action('saudi_vat', options, 'vat_untagged', 'tax')['domain'])
-        tobacco = self._account(company, '201021', 'liability_current')
         self._entry(company, journal, '2024-02-04', clearing, tobacco, 25)
         after_fee = self._engine(company).get_report('saudi_vat', options)
         for code in ('sa_16', 'vat_movement', 'vat_difference', 'vat_untagged'):
             self.assertEqual(self._value(after_fee, code, 'tax'), self._value(discrepant, code, 'tax'))
+
+    def test_cash_basis_transition(self):
+        company = self._company('Cash basis VAT')
+        company.country_id = self.env.ref('base.sa')
+        self.env['account.chart.template'].try_loading('sa', company=company, install_demo=False)
+        env = self.env(context=dict(self.env.context, allowed_company_ids=[company.id]))
+        income = env['account.account'].search([('company_ids', 'in', company.id), ('account_type', '=', 'income')], limit=1)
+        transition = self._account(company, '219998', 'liability_current')
+        transition.reconcile = True
+        company.account_cash_basis_base_account_id = income
+        tax = env['account.chart.template'].ref('sa_sales_tax_15').copy({'name': 'Cash VAT',
+            'tax_exigibility': 'on_payment', 'cash_basis_transition_account_id': transition.id})
+        partner = env['res.partner'].create({'name': 'Cash VAT customer'})
+        invoice = env['account.move'].create({'move_type': 'out_invoice', 'partner_id': partner.id,
+            'invoice_date': '2024-02-01', 'date': '2024-02-01', 'company_id': company.id,
+            'invoice_line_ids': [Command.create({'name': 'Sale', 'price_unit': 100,
+                'account_id': income.id, 'tax_ids': [Command.set(tax.ids)]})]})
+        invoice.action_post()
+        engine = self._engine(company)
+        options = self._options(date_from='2024-01-01', date_to='2024-03-31')
+        unpaid = engine.get_report('saudi_vat', options)
+        self.assertEqual(self._value(unpaid, 'sa_1', 'tax'), '0.00')
+        self.assertEqual(self._value(unpaid, 'vat_difference', 'tax'), '-15.00')
+        self.assertEqual(self._value(unpaid, 'vat_pending', 'tax'), '15.00')
+        action = engine.get_move_line_action('saudi_vat', options, 'vat_pending', 'tax')
+        self.assertIn(invoice.line_ids.filtered(lambda l: l.account_id == transition), env['account.move.line'].search(action['domain']))
+        receivable = invoice.line_ids.filtered(lambda l: l.account_id.account_type == 'asset_receivable')
+        journal = self._journal(company, 'CBP')
+        bank = self._account(company, '129997', 'asset_current')
+        payment = env['account.move'].create({'journal_id': journal.id, 'date': '2024-02-02',
+            'line_ids': [Command.create({'name': 'Bank', 'account_id': bank.id, 'debit': 115}),
+                Command.create({'name': 'Payment', 'account_id': receivable.account_id.id,
+                    'partner_id': partner.id, 'credit': 115})]})
+        payment.action_post()
+        (receivable | payment.line_ids.filtered(lambda l: l.account_id == receivable.account_id)).reconcile()
+        paid = engine.get_report('saudi_vat', options)
+        self.assertEqual(self._value(paid, 'sa_1', 'base'), '100.00')
+        self.assertEqual(self._value(paid, 'sa_1', 'tax'), '15.00')
+        self.assertEqual(self._value(paid, 'vat_pending', 'tax'), '0.00')
+        self.assertEqual(self._value(paid, 'vat_difference', 'tax'), '0.00')
 
     def test_default_last_full_period(self):
         company = self._company('VAT default period')

@@ -1340,3 +1340,23 @@ msgstr "التدفق النقدي"
 #: code:addons/baseer_report_engine/models/cash_flow.py:0
 msgid "Exchange difference / rounding"
 msgstr "فرق صرف / تقريب"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/cash_flow.py:0
+msgid "Includes opening entries dated in the period"
+msgstr "يشمل القيود الافتتاحية المؤرخة خلال الفترة"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/cash_flow.py:0
+#, python-format
+msgid "Unknown opening entry tokens: %s"
+msgstr "معرّفات القيود الافتتاحية غير المعروفة: %s"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/cash_flow.py:0
+#, python-format
+msgid "The liquidity transfer account %(account)s has a non-zero balance of %(amount)s for this period: some transfers are incomplete."
+msgstr "حساب تحويل السيولة %(account)s رصيده غير صفري بمبلغ %(amount)s لهذه الفترة: بعض التحويلات غير مكتملة."

@@ -6,12 +6,15 @@ journal items. Each move's net cash effect is allocated by absolute counterpart
 balance; reconciled receivable/payable portions are allocated by absolute
 invoice line balance (including taxes), with the remainder treated as advances. Only
 reconciliations dated on or before the period end are followed.
-Opening and closing use the same conversion dates as the account grid. A
+Beginning is TB(start - 1) plus liquidity on opening entries dated in the
+period; closing is TB(end). Opening and closing use the same conversion dates
+as the account grid. A
 rounding/exotic-move residual is assigned to unclassified cash flows so the
 statement reconciles to liquidity balances for every period.
 """
 from collections import defaultdict
 from decimal import Decimal
+import re
 
 from odoo import _, api, models
 from odoo.exceptions import AccessError, ValidationError
@@ -21,6 +24,18 @@ from .engine import _fill_variation, _quantize
 
 class BaseerCashFlow(models.AbstractModel):
     _inherit = 'baseer.report.engine'
+
+    @api.model
+    def _cash_opening_moves(self):
+        tokens = re.split(r'[,\s]+', self.env['ir.config_parameter'].sudo().get_param(
+            'baseer_report_engine.cash_flow_opening_moves', '').strip())
+        tokens = [token for token in tokens if token]
+        domain = [('company_id', 'in', self.env.companies.ids)]
+        names = self.env['account.move'].search(domain + [('name', 'in', tokens)]) if tokens else self.env['account.move']
+        ids = [int(token) for token in tokens if token.isdecimal()]
+        numbered = self.env['account.move'].search(domain + [('id', 'in', ids)]) if ids else self.env['account.move']
+        matched = set(names.mapped('name')) | {str(move.id) for move in numbered}
+        return (self.env.companies.mapped('account_opening_move_id') | names | numbered), [token for token in tokens if token not in matched]
 
     @api.model
     def _cash_flow_spec(self):
@@ -89,6 +104,12 @@ class BaseerCashFlow(models.AbstractModel):
                 details[code][key] += figures['balance']
 
         period_domain = domain + [('date', '>=', column['_start']), ('date', '<=', column['_end'])]
+        opening, _unknown = self._cash_opening_moves()
+        if opening:
+            totals = self._aggregate(period_domain + [('move_id', 'in', opening.ids)], column['_end'], options['analytic_account_ids'])
+            for key, figures in totals.items():
+                details['beginning'][key] += figures['balance']
+            period_domain += [('move_id', 'not in', opening.ids)]
         grouped = self.env['account.move.line']._read_group(period_domain, ['move_id', 'company_id'], ['balance:sum'])
         move_ids = [move.id for move, company, balance in grouped if move and balance]
         all_lines = self.env['account.move.line'].search([('move_id', 'in', move_ids)])
@@ -202,6 +223,38 @@ class BaseerCashFlow(models.AbstractModel):
                          'amounts': [self._serialize_amount(c, values.get(c['key']), self.env.company.currency_id, foldable and c['kind'] == 'period') for c in options['columns']],
                          'accounts': self._cash_flow_rows(options, code, data) if with_accounts and foldable else []})
         payload['lines'] = rows
+        payload['cash_opening_note'] = _('Includes opening entries dated in the period')
+        payload['notes'].append(payload['cash_opening_note'])
+        _opening, unknown = self._cash_opening_moves()
+        payload['cash_notices'] = []
+        if unknown and self.env.user.has_group('base.group_system'):
+            payload['cash_notices'].append({'text': _('Unknown opening entry tokens: %s') % ', '.join(unknown)})
+        column = next((c for c in options['columns'] if c['kind'] == 'period'), None)
+        if column:
+            codes = [s for s in re.split(r'[,\s]+', self.env['ir.config_parameter'].sudo().get_param(
+                'baseer_report_engine.cash_flow_transfer_accounts', '').strip()) if s]
+            for company in self.env.companies:
+                accounts = company.transfer_account_id
+                if codes:
+                    accounts |= self.env['account.account'].with_company(company).search([
+                        ('company_ids', 'in', company.id), ('code', 'in', codes)])
+                states = ['posted'] if options['posted_only'] else ['posted', 'draft']
+                for account, balance in self.env['account.move.line']._read_group([
+                    ('company_id', '=', company.id), ('account_id', 'in', accounts.ids),
+                    ('parent_state', 'in', states), ('date', '>=', column['_start']),
+                    ('date', '<=', column['_end'])], ['account_id'], ['balance:sum']):
+                    if company.currency_id.is_zero(balance):
+                        continue
+                    account = account.with_company(company)
+                    text = _('The liquidity transfer account %(account)s has a non-zero balance of %(amount)s for this period: some transfers are incomplete.') % {
+                        'account': '%s %s' % (account.code or '', account.name),
+                        'amount': '%.*f %s' % (company.currency_id.decimal_places, balance, company.currency_id.name)}
+                    action = {'type': 'ir.actions.act_window', 'name': _('Journal Items'), 'res_model': 'account.move.line',
+                              'view_mode': 'list,form', 'views': [(False, 'list'), (False, 'form')], 'target': 'current',
+                              'domain': [('company_id', '=', company.id), ('account_id', '=', account.id),
+                                         ('parent_state', 'in', states), ('date', '>=', column['date_from']), ('date', '<=', column['date_to'])]}
+                    payload['cash_notices'].append({'text': text, 'action': action})
+                    payload['notes'].append(text)
         return payload
 
     @api.model

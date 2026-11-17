@@ -47,6 +47,8 @@
                 </div>
             </header>
             <div t-if="state.payload?.has_draft_entries" class="alert alert-info text-center o_bre_draft_banner"><t t-esc="state.labels.banner_before"/> <a href="#" t-on-click.prevent="openDraftEntries" t-esc="state.labels.banner_link"/> <t t-esc="state.labels.banner_after"/></div>
+            <div t-if="isCashFlow" class="alert alert-info text-center o_bre_draft_banner" t-esc="state.payload.cash_opening_note"/>
+            <div t-foreach="state.payload?.cash_notices || []" t-as="notice" t-key="notice_index" class="alert alert-info text-center o_bre_draft_banner"><a t-if="notice.action" href="#" t-on-click.prevent="() => this.actionService.doAction(notice.action)" t-esc="notice.text"/><t t-else="" t-esc="notice.text"/></div>
             <div t-if="state.error" class="alert alert-danger" role="alert" t-esc="state.error"/>
             <div t-if="state.loading" class="o_bre_status" role="status" t-esc="state.labels.loading"/>
             <section t-if="state.payload" t-att-class="'o_bre_paper' + (isGrid ? ' o_bre_grid' : '') + (isLedger ? ' o_bre_ledger' : '') + (isPartnerLedger ? ' o_bre_partner_ledger' : '') + (isCashFlow ? ' o_bre_cash_flow' : '')" t-att-aria-label="state.reportName" t-att-style="'--bre-columns:' + state.payload.columns.length">

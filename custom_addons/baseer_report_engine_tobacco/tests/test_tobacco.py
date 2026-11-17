@@ -48,9 +48,10 @@ class TobaccoReportCase(EngineCase):
             self.assertIn(('Difference' if lang == 'en_US' else 'الفرق').encode(), html)
             self.assertIn(b'-20.00', html)
         action = self._engine(company).get_tobacco_source_action(self._options(), 'account.move', move.id)
-        self.assertEqual(action['res_id'], move.id)
+        self.assertEqual((action['res_model'], action['res_id'], action['view_mode']), ('account.move', move.id, 'form'))
         ledger = self._engine(company).get_tobacco_ledger_action(self._options(), fee.id, company.id)
         self.assertEqual(ledger['context']['report_code'], 'general_ledger')
+        self.assertEqual(ledger['context']['baseer_options']['unfolded_accounts'], [[fee.id, company.id]])
         engine = self._engine(company)
         call = lambda method, args: call_kw(engine, method, args, {'context': engine.env.context})
         self.assertEqual(call('get_report', ['tobacco_service_fee', self._options()])['tobacco_sections'][0]['difference'], -20)
@@ -195,6 +196,21 @@ class TobaccoPosCase(EngineCase):
         self.assertEqual(section['net'], 25)
         self.assertEqual(section['difference'], 25)
         self.assertIn(session.id, section['open_sessions'])
+        action = self._engine(company).get_tobacco_source_action(options, 'pos.session', session.id)
+        self.assertEqual((action['res_model'], action['res_id'], action['view_mode']), ('pos.session', session.id, 'form'))
+        import base64, io, zipfile
+        for show in (False, True):
+            export_options = dict(options, show_products=show)
+            payload = self._engine(company)._export_payload('tobacco_service_fee', export_options)
+            rows = payload['tobacco_sections'][0]['export_rows']
+            self.assertEqual(any('Test product 1.0' in values for values, kind in rows), show)
+            content = self._engine(company).export_xlsx('tobacco_service_fee', export_options)['content']
+            with zipfile.ZipFile(io.BytesIO(base64.b64decode(content))) as archive:
+                self.assertEqual('Test product 1.0' in archive.read('xl/sharedStrings.xml').decode(), show)
+            html, _ = self.env['ir.actions.report'].with_company(company).with_context(allowed_company_ids=[company.id])._render_qweb_html(
+                'baseer_report_engine.report_pdf', docids=self._engine(company)._definition('tobacco_service_fee').ids,
+                data={'report_code': 'tobacco_service_fee', 'options': export_options})
+            self.assertEqual(b'Test product 1.0' in html, show)
 
         for qty, taxes in [(-1, tax), (1, self.env['account.tax'])]:
             order = self.env['pos.order'].create({'company_id': company.id, 'session_id': session.id,

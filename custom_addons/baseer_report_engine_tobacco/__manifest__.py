@@ -8,6 +8,7 @@
     'assets': {'web.assets_backend': [
         'baseer_report_engine_tobacco/static/src/tobacco.js',
         'baseer_report_engine_tobacco/static/src/tobacco.xml',
+        'baseer_report_engine_tobacco/static/src/tobacco.scss',
     ]},
     'auto_install': False,
     'installable': True,

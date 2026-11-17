@@ -1,0 +1,15 @@
+.o_baseer_report_engine {
+    .o_bre_tobacco_table {
+        table-layout: fixed;
+        width: 100%;
+        min-width: 0;
+        .tob-date { width: 17%; }
+        .tob-document { width: 16%; }
+        .tob-product { width: 15%; }
+        .tob-type { width: 10%; }
+        .tob-amount { width: auto; }
+        th, td { min-width: 0; overflow-wrap: anywhere; }
+        .o_bre_ledger_item td { white-space: normal; }
+    }
+    .o_bre_tobacco_amount { direction: ltr; unicode-bidi: isolate; }
+}

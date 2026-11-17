@@ -9,7 +9,7 @@ class TobaccoExport(models.AbstractModel):
     _inherit = 'baseer.report.engine'
 
     @api.model
-    def _tobacco_export_rows(self, section):
+    def _tobacco_export_rows(self, section, show_products):
         rows = [([self.env._('Cumulative at start'), '', '', '', '', '', '', section['opening']], 'total')]
         balance = section['opening']
         for day in section['days']:
@@ -31,6 +31,9 @@ class TobaccoExport(models.AbstractModel):
         if section['exceptions']:
             rows.append(([self.env._('Document'), self.env._('Recomputed total'), self.env._('Saved total')], 'section'))
             rows.extend(([e['name'], e['computed'], e['saved']], 'item') for e in section['exceptions'])
+        if not show_products:
+            rows = [(values[:2] + values[3:] if len(values) == 8 else values, kind)
+                    for values, kind in rows]
         return rows
 
     @api.model
@@ -38,7 +41,8 @@ class TobaccoExport(models.AbstractModel):
         payload = super()._export_payload(report_code, options)
         if report_code == 'tobacco_service_fee':
             for section in payload['tobacco_sections']:
-                section['export_rows'] = self._tobacco_export_rows(section)
+                section['export_rows'] = self._tobacco_export_rows(section, bool((options or {}).get('show_products')))
+            payload['tobacco_show_products'] = bool((options or {}).get('show_products'))
         return payload
 
     @api.model
@@ -54,7 +58,7 @@ class TobaccoExport(models.AbstractModel):
         if (self.env.lang or '').startswith('ar'):
             sheet.right_to_left()
         bold = workbook.add_format({'bold': True, 'bg_color': '#D8DADD'})
-        money = workbook.add_format({'num_format': '#,##0.00'})
+        money = workbook.add_format({'num_format': '#,##0.00;-#,##0.00', 'reading_order': 1})
         sheet.set_column(0, 0, 28)
         sheet.set_column(1, 3, 24)
         sheet.set_column(4, 7, 18)
@@ -63,7 +67,10 @@ class TobaccoExport(models.AbstractModel):
         for section in payload['tobacco_sections']:
             sheet.write(row, 0, '%s — %s' % (section['company'], section['account']), bold)
             row += 1
-            for col, label in enumerate([self.env._('Date and Time'), self.env._('Document'), self.env._('Product and Quantity'), self.env._('Type'), self.env._('Debit'), self.env._('Credit'), self.env._('Net'), self.env._('Cumulative')]):
+            labels = [self.env._('Date and Time'), self.env._('Document'), self.env._('Type'), self.env._('Debit'), self.env._('Credit'), self.env._('Net'), self.env._('Cumulative')]
+            if payload['tobacco_show_products']:
+                labels.insert(2, self.env._('Product and Quantity'))
+            for col, label in enumerate(labels):
                 sheet.write(row, col, label, bold)
             row += 1
             for values, kind in section['export_rows']:

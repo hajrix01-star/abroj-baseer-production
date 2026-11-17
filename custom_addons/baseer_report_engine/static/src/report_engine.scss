@@ -404,7 +404,8 @@
         .o_bre_foldable > th, .o_bre_foldable > td { height: 30px; }
         tbody th, tbody td { border-top: 1px solid #e7e9ed; }
         .o_bre_ledger_item td:nth-child(4):empty { color: #d8dadd; }
-        .o_bre_open th, .o_bre_open td { background: #f3f4f6; font-weight: 700; }
+        .o_bre_open th, .o_bre_open td { background: #f1f1f1; font-weight: 700; }
+        .o_bre_open td.o_bre_shaded { background: #ebeced; }
         .o_bre_line.o_bre_level_0.o_bre_open, .o_bre_line.o_bre_level_0.o_bre_open th { color: #374151; font-weight: 700; }
         .o_bre_ledger_item th, .o_bre_ledger_initial th, .o_bre_ledger_total th, .o_bre_ledger_more th { padding-inline-start: 40px; }
         .o_bre_ledger_total th, .o_bre_ledger_total td { font-weight: 700; }
@@ -415,7 +416,7 @@
     }
     @media (max-width: 767px) {
         .o_bre_ledger { width: 100%; }
-        .o_bre_ledger_table .o_bre_open th:first-child { background: #f3f4f6; }
+        .o_bre_ledger_table .o_bre_open th:first-child { background: #f1f1f1; }
     }
 }
 .o_baseer_report_engine {

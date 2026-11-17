@@ -628,12 +628,12 @@ msgstr "تعبير المعادلة يحتاج إلى معادلة."
 #: model:ir.actions.client,name:baseer_report_engine.action_profit_and_loss
 #: model:ir.ui.menu,name:baseer_report_engine.menu_profit_and_loss
 msgid "Profit and Loss (New)"
-msgstr "قائمة الدخل (جديد)"
+msgstr "الربح والخسارة (جديد)"
 
 #. module: baseer_report_engine
 #: model:baseer.report.definition,name:baseer_report_engine.report_profit_and_loss
 msgid "Profit and Loss"
-msgstr "قائمة الدخل"
+msgstr "الربح والخسارة"
 
 #. module: baseer_report_engine
 #: model:baseer.report.line,name:baseer_report_engine.line_pl_rev

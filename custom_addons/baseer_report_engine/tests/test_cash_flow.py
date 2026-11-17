@@ -279,7 +279,7 @@ class TestCashFlow(EngineCase):
         self.assertIn('Cash flows from operating activities', html.decode())
         self.env['res.lang']._activate_lang('ar_001')
         self.env['ir.module.module']._load_module_terms(['baseer_report_engine'], ['ar_001'], overwrite=True)
-        self.assertEqual(self.env.ref('baseer_report_engine.menu_cash_flow').with_context(lang='ar_001').name, 'قائمة التدفقات النقدية (جديد)')
+        self.assertEqual(self.env.ref('baseer_report_engine.menu_cash_flow').with_context(lang='ar_001').name, 'كشف التدفقات النقدية (جديد)')
 
     def test_future_partial_stays_advance(self):
         company = self._company('Cash cutoff')

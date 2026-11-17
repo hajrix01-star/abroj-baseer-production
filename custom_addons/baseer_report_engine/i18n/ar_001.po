@@ -628,12 +628,12 @@ msgstr "تعبير المعادلة يحتاج إلى معادلة."
 #: model:ir.actions.client,name:baseer_report_engine.action_profit_and_loss
 #: model:ir.ui.menu,name:baseer_report_engine.menu_profit_and_loss
 msgid "Profit and Loss (New)"
-msgstr "قائمة الدخل (جديد)"
+msgstr "الربح والخسارة (جديد)"
 
 #. module: baseer_report_engine
 #: model:baseer.report.definition,name:baseer_report_engine.report_profit_and_loss
 msgid "Profit and Loss"
-msgstr "قائمة الدخل"
+msgstr "الربح والخسارة"
 
 #. module: baseer_report_engine
 #: model:baseer.report.line,name:baseer_report_engine.line_pl_rev
@@ -1176,24 +1176,24 @@ msgstr "القيود غير المسواة"
 #. module: baseer_report_engine
 #: model:baseer.report.definition,name:baseer_report_engine.report_aged_receivable
 msgid "Aged Receivable"
-msgstr "أعمار الديون المدينة"
+msgstr "المتأخر المدين"
 
 #. module: baseer_report_engine
 #: model:baseer.report.definition,name:baseer_report_engine.report_aged_payable
 msgid "Aged Payable"
-msgstr "أعمار الديون الدائنة"
+msgstr "حسابات دائنة مستحقة متأخرة"
 
 #. module: baseer_report_engine
 #: model:ir.actions.client,name:baseer_report_engine.action_aged_receivable
 #: model:ir.ui.menu,name:baseer_report_engine.menu_aged_receivable
 msgid "Aged Receivable (New)"
-msgstr "أعمار الديون المدينة (جديد)"
+msgstr "المتأخر المدين (جديد)"
 
 #. module: baseer_report_engine
 #: model:ir.actions.client,name:baseer_report_engine.action_aged_payable
 #: model:ir.ui.menu,name:baseer_report_engine.menu_aged_payable
 msgid "Aged Payable (New)"
-msgstr "أعمار الديون الدائنة (جديد)"
+msgstr "حسابات دائنة مستحقة متأخرة (جديد)"
 
 #. module: baseer_report_engine
 #. odoo-python
@@ -1323,13 +1323,13 @@ msgstr "النقد وما في حكمه في نهاية الفترة"
 #. module: baseer_report_engine
 #: model:baseer.report.definition,name:baseer_report_engine.report_cash_flow
 msgid "Cash Flow Statement"
-msgstr "قائمة التدفقات النقدية"
+msgstr "كشف التدفقات النقدية"
 
 #. module: baseer_report_engine
 #: model:ir.actions.client,name:baseer_report_engine.action_cash_flow
 #: model:ir.ui.menu,name:baseer_report_engine.menu_cash_flow
 msgid "Cash Flow Statement (New)"
-msgstr "قائمة التدفقات النقدية (جديد)"
+msgstr "كشف التدفقات النقدية (جديد)"
 
 #. module: baseer_report_engine
 #: model:ir.model.fields.selection,name:baseer_report_engine.selection__baseer_report_definition__report_kind__cash_flow

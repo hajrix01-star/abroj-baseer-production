@@ -3,9 +3,10 @@
 <template id="report_pdf_tobacco" inherit_id="baseer_report_engine.report_pdf">
     <xpath expr="//table[@t-att-class]" position="before">
         <t t-if="payload['report'].get('report_kind') == 'tobacco'" t-foreach="payload.get('tobacco_sections', [])" t-as="section">
-            <h3><t t-esc="section['company']"/> — <t t-esc="section['account']"/></h3>
+            <div style="font-size: 12px; font-weight: bold; margin: 12px 0 6px;"><t t-esc="section['company']"/> — <t t-esc="section['account']"/></div>
+            <table class="grid" style="margin-bottom: 8px;"><thead><tr><th>Cumulative at start</th><th>Debit</th><th>Credit</th><th>Net for period</th></tr></thead><tbody><tr><td class="num" t-esc="'{:,.2f}'.format(section['opening'])"/><td class="num" t-esc="'{:,.2f}'.format(section['debit'])"/><td class="num" t-esc="'{:,.2f}'.format(section['credit'])"/><td class="num" t-esc="'{:,.2f}'.format(section['net'])"/></tr></tbody></table>
             <table class="grid"><thead><tr><th>Date and Time</th><th>Document</th><th t-if="payload.get('tobacco_show_products')">Product and Quantity</th><th>Type</th><th>Debit</th><th>Credit</th><th>Net</th><th>Cumulative</th></tr></thead><tbody>
-                <tr t-foreach="section['export_rows']" t-as="entry" t-att-class="'total' if entry[1] in ('total', 'section') else ''"><td t-foreach="entry[0]" t-as="value" t-att-class="'num' if isinstance(value, (int, float)) else ''"><t t-if="isinstance(value, (int, float))" t-esc="'{:,.2f}'.format(value)"/><t t-else="" t-esc="value"/></td></tr>
+                <tr t-foreach="section['export_rows']" t-as="entry" t-att-class="'total' if entry[1] in ('total', 'section') else ''"><td t-foreach="entry[0]" t-as="value" t-att-class="'num' if isinstance(value, (int, float)) else ''"><t t-if="isinstance(value, (int, float))" t-esc="str(value) if entry[1] == 'count' else '{:,.2f}'.format(value)"/><t t-else="" t-esc="value"/></td></tr>
             </tbody></table>
         </t>
     </xpath>

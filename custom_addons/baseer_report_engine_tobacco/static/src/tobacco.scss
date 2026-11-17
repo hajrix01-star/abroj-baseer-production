@@ -3,13 +3,20 @@
         table-layout: fixed;
         width: 100%;
         min-width: 0;
-        .tob-date { width: 17%; }
-        .tob-document { width: 16%; }
-        .tob-product { width: 15%; }
+        .tob-date { width: 15%; }
+        .tob-document { width: 15%; }
+        .tob-product { width: 19%; }
         .tob-type { width: 10%; }
         .tob-amount { width: auto; }
         th, td { min-width: 0; overflow-wrap: anywhere; }
         .o_bre_ledger_item td { white-space: normal; }
+        .o_bre_ledger_item td.tob-product-cell { white-space: normal; overflow-wrap: anywhere; word-break: break-word; }
+        .o_bre_ledger_item td button { white-space: normal; overflow-wrap: anywhere; word-break: break-word; text-align: start; max-width: 100%; }
     }
-    .o_bre_tobacco_amount { direction: ltr; unicode-bidi: isolate; }
+    .o_bre_tobacco_summary { display: flex; flex-wrap: wrap; margin: 0.5rem 0 0.75rem; border: 1px solid #e7e9ed; background: #f9fafb; > div { flex: 1 1 140px; padding: 0.5rem 0.75rem; } span, strong { display: block; } span { color: #6b7280; font-size: 0.85em; } }
+    .o_bre_tobacco_summary .is-number, .o_bre_tobacco_amount { /*rtl:ignore*/ direction: ltr; unicode-bidi: isolate; }
+}
+
+.o_baseer_report_engine[dir="rtl"] {
+    .o_bre_table .is-number, .o_bre_tobacco_amount, .o_bre_tobacco_summary .is-number { /*rtl:ignore*/ direction: ltr; unicode-bidi: isolate; }
 }

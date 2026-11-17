@@ -1,0 +1,9 @@
+<odoo>
+    <record id="report_vat" model="baseer.report.definition">
+        <field name="name">VAT Report</field>
+        <field name="code">saudi_vat</field>
+        <field name="date_mode">range</field>
+        <field name="report_kind">vat</field>
+        <field name="default_preset">last_quarter</field>
+    </record>
+</odoo>

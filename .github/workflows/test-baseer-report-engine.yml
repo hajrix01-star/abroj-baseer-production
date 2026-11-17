@@ -6,6 +6,7 @@ on:
     paths:
       - custom_addons/baseer_report_engine/**
       - custom_addons/baseer_report_engine_tobacco/**
+      - custom_addons/baseer_report_engine_vat/**
       - .github/workflows/test-baseer-report-engine.yml
   workflow_dispatch:
 
@@ -40,6 +41,9 @@ jobs:
           MODULES=baseer_report_engine; TAGS=/baseer_report_engine
           if [ -d custom_addons/baseer_report_engine_tobacco ]; then
             MODULES="$MODULES,account_tax_python,baseer_report_engine_tobacco"; TAGS="$TAGS,/baseer_report_engine_tobacco"
+          fi
+          if [ -d custom_addons/baseer_report_engine_vat ]; then
+            MODULES="$MODULES,baseer_report_engine_vat"; TAGS="$TAGS,/baseer_report_engine_vat"
           fi
           docker run --rm --network host \
             -e HOST=127.0.0.1 -e USER=odoo -e PASSWORD=odoo \

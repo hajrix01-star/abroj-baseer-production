@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - custom_addons/baseer_report_engine/**
+      - custom_addons/baseer_report_engine_tobacco/**
       - .github/workflows/test-baseer-report-engine.yml
   workflow_dispatch:
 
@@ -36,12 +37,16 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
+          MODULES=baseer_report_engine; TAGS=/baseer_report_engine
+          if [ -d custom_addons/baseer_report_engine_tobacco ]; then
+            MODULES="$MODULES,baseer_report_engine_tobacco"; TAGS="$TAGS,/baseer_report_engine_tobacco"
+          fi
           docker run --rm --network host \
             -e HOST=127.0.0.1 -e USER=odoo -e PASSWORD=odoo \
             --mount type=bind,src="$GITHUB_WORKSPACE/custom_addons",dst=/mnt/baseer-addons,readonly \
             odoo@sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd \
             odoo --db_host=127.0.0.1 --db_port=5432 --db_user=odoo --db_password=odoo \
             --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/baseer-addons \
-            -d baseer_report_engine_ci -i baseer_report_engine --without-demo=all \
-            --test-enable --test-tags=/baseer_report_engine \
+            -d baseer_report_engine_ci -i "$MODULES" --without-demo=all \
+            --test-enable --test-tags="$TAGS" \
             --stop-after-init --max-cron-threads=0 --workers=0 --log-level=test

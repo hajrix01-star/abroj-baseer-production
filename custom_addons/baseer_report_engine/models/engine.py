@@ -31,7 +31,7 @@ class BaseerReportEngine(models.AbstractModel):
     def get_bootstrap(self, report_code):
         self._check_report_access()
         report = self._definition(report_code)
-        return {
+        result = {
             'report': {
                 'code': report.code,
                 'name': report.name,
@@ -45,6 +45,10 @@ class BaseerReportEngine(models.AbstractModel):
             'labels': self._labels(),
             'defaults': dict(self._default_options(), preset=report.default_preset or ('today' if report.date_mode == 'as_of' else 'this_year'), comparison_unit='month' if report.date_mode == 'as_of' or report.report_kind in ('account_grid', 'ledger') else 'year'),
         }
+        if report.report_kind == 'partner_ledger':
+            result['account_types'] = [{'key': key, 'label': label} for key, label in self._partner_type_labels()]
+            result['defaults'].update(account_types=['receivable', 'payable'], partner_ids=[], partner_category_ids=[], unreconciled=False)
+        return result
 
     @api.model
     def get_report(self, report_code, options=None, with_accounts=False):
@@ -55,6 +59,7 @@ class BaseerReportEngine(models.AbstractModel):
         normalized = self._normalize_options(report, options or {})
         payload = (self._build_grid(report, normalized) if report.report_kind == 'account_grid'
                    else self._build_ledger(report, normalized, options or {}) if report.report_kind == 'ledger'
+                   else self._build_partner_ledger(report, normalized, options or {}) if report.report_kind == 'partner_ledger'
                    else self._build(report, normalized, with_accounts=with_accounts))
         payload['has_draft_entries'] = bool(normalized['posted_only'] and self.env['account.move.line'].search_count(self._draft_domain(normalized), limit=1))
         return payload
@@ -107,6 +112,8 @@ class BaseerReportEngine(models.AbstractModel):
         self._check_report_access()
         report = self._definition(report_code)
         normalized = self._normalize_options(report, options or {})
+        if report.report_kind == 'partner_ledger':
+            return self._partner_move_line_action(normalized, line_code, account_id)
         if report.report_kind in ('account_grid', 'ledger'):
             if report.report_kind == 'ledger':
                 column_key = 'end'
@@ -155,7 +162,7 @@ class BaseerReportEngine(models.AbstractModel):
     def _normalize_options(self, report, raw):
         if not isinstance(raw, dict):
             raise ValidationError(_('The report options are not valid.'))
-        preset = raw.get('preset') or 'this_month'
+        preset = raw.get('preset') or (report.default_preset if report.report_kind == 'partner_ledger' else 'this_month') or 'this_month'
         if preset not in dict(self._preset_labels()):
             raise ValidationError(_('Choose a valid period.'))
         comparison = raw.get('comparison', 0)
@@ -200,7 +207,7 @@ class BaseerReportEngine(models.AbstractModel):
                 anchor = _shift_date(anchor, direction, unit)
             start, end, unit = self._preset_bounds(self.env.company, preset, anchor)
         columns = self._columns(report, start, end, comparison, 'year' if comparison_mode == 'year' else unit)
-        return {
+        result = {
             'preset': preset,
             'as_of': fields.Date.to_string(end) if report.date_mode == 'as_of' else False,
             'date_from': fields.Date.to_string(start),
@@ -216,6 +223,9 @@ class BaseerReportEngine(models.AbstractModel):
             'date_mode': report.date_mode,
             'columns': columns,
         }
+        if report.report_kind == 'partner_ledger':
+            self._normalize_partner_options(raw, result)
+        return result
 
     @api.model
     def _columns(self, report, start, end, comparison, unit):
@@ -772,6 +782,12 @@ class BaseerReportEngine(models.AbstractModel):
     @api.model
     def _labels(self):
         return {
+            'account_filter': _('Account:'),
+            'partners': _('Partners'),
+            'partner_categories': _('Partner Categories'),
+            'unreconciled_entries': _('Unreconciled Entries'),
+            'trade_partners': _('Trade Partners'),
+            'partner': _('Partner'),
             'balance': _('Balance'),
             'initial_balance': _('Initial Balance'),
             'end_balance': _('End Balance'),

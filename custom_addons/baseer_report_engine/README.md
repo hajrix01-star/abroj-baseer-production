@@ -14,10 +14,12 @@ Grid definitions declare grouping fields in `grid_groupby` and column tokens in 
 
 Grid drill-down lists raw journal items, like statements: analytic weighting and currency conversion affect displayed amounts, not the raw journal item values.
 
-The ledger uses the shared grid aggregation and fiscal carry-forward helpers. Its ledger report kind and `grid_groupby` definition provide an extension point for future grouping layouts such as a partner ledger; the current ledger implementation supports account and company grouping. The account Total row is returned on the last page.
+The General Ledger uses the shared grid aggregation and fiscal carry-forward helpers, grouping by account and company. The Partner Ledger backend groups receivable and payable activity by partner across active companies, without a fiscal-year reset; its selected account types, partner and category filters also apply to opening balances and drills. Both return a Total row on the last page. Partner Ledger XLSX and PDF exports reuse the ledger detail calculation, expand the selected partners without paging, and include the active partner and account filters.
 
-Ledger unfolding ranks journal items per account and company after applying access rules; only the requested page is loaded. Exports include all items for unfolded accounts. A future partner ledger can reuse the grid aggregation and ledger page presentation with a partner-specific grouping, opening balance and drill policy.
+General Ledger unfolding ranks journal items per account and company after applying access rules. Partner item pages rank the selected partner’s lines after access rules and calculate the carried balance from earlier items. The client reuses the ledger paging, drill and breadcrumb state, with partner and category selectors and partner-specific columns.
 
 ## Design notes
 
 The report toolbar uses the instance theme's primary button colour, keeping it consistent with the rest of the app.
+
+Partner-less receivable and payable items are allocated to the partners on their reconciliation counterparts by the partial reconciliation amounts. Any remaining amount stays with Unknown Partner. Journal Items drills show the full journal item amount, including when the ledger displays only an attributed share.

@@ -18,7 +18,7 @@ class BaseerGridEngine(models.AbstractModel):
     _inherit = 'baseer.report.engine'
 
     @api.model
-    def _grid_balances(self, options, groupby, scopes):
+    def _grid_balances(self, options, groupby, scopes, extra_domain=None):
         """Aggregate each scope under ORM record rules, using statement conversion.
 
         Analytic filters deliberately use the statement engine's per-line weighted
@@ -26,7 +26,7 @@ class BaseerGridEngine(models.AbstractModel):
         """
         if not isinstance(groupby, tuple) or 'company_id' not in groupby:
             raise ValidationError(_('The report options are not valid.'))
-        return {key: self._aggregate(self._base_domain(options) + domain, date,
+        return {key: self._aggregate(self._base_domain(options) + (extra_domain or []) + domain, date,
                                      options['analytic_account_ids'], groupby=groupby)
                 for key, domain, date in scopes}
 

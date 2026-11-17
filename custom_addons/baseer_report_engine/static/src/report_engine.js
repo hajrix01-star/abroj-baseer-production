@@ -2,6 +2,8 @@
 
 import { Component, onWillStart, useState } from "@odoo/owl";
 import { _t } from "@web/core/l10n/translation";
+import { Many2XAutocomplete } from "@web/views/fields/relational_utils";
+import { TagsList } from "@web/core/tags_list/tags_list";
 import { Dropdown } from "@web/core/dropdown/dropdown";
 import { DropdownItem } from "@web/core/dropdown/dropdown_item";
 import { formatFloat } from "@web/views/fields/formatters";
@@ -13,7 +15,7 @@ import { user, userBus } from "@web/core/user";
 export class BaseerReportEngine extends Component {
     static template = "baseer_report_engine.Report";
     static props = ["*"];
-    static components = { Dropdown, DropdownItem };
+    static components = { Dropdown, DropdownItem, Many2XAutocomplete, TagsList };
 
     setup() {
         this.orm = useService("orm");
@@ -29,6 +31,7 @@ export class BaseerReportEngine extends Component {
             units: [],
             journals: [],
             analyticAccounts: [],
+            accountTypes: [], partnerNames: {}, categoryNames: {},
             analyticEnabled: false,
             reportName: "",
             dateMode: "as_of",
@@ -48,12 +51,19 @@ export class BaseerReportEngine extends Component {
         onWillStart(() => this.reload());
     }
 
+    get accountLabel() { return _t("Account:"); }
+    get partnersLabel() { return _t("Partners"); }
+    get categoriesLabel() { return _t("Partner Categories"); }
+    get partnerLabel() { return _t("Partner"); }
+    get unreconciledLabel() { return _t("Unreconciled Entries"); }
+
     get rtl() {
         return (user.lang || "").startsWith("ar");
     }
 
-    get isLedger() { return this.state.payload?.report.report_kind === "ledger"; }
-    get isGrid() { return ["account_grid", "ledger"].includes(this.state.payload?.report.report_kind); }
+    get isPartnerLedger() { return this.reportCode === "partner_ledger"; }
+    get isLedger() { return ["ledger", "partner_ledger"].includes(this.state.payload?.report.report_kind); }
+    get isGrid() { return ["account_grid", "ledger", "partner_ledger"].includes(this.state.payload?.report.report_kind); }
 
     get lines() {
         const search = this.state.search.trim().toLocaleLowerCase();
@@ -96,6 +106,8 @@ export class BaseerReportEngine extends Component {
             analytic_account_ids: [...(options.analytic_account_ids || [])],
             unfold_all: !!options.unfold_all,
             unfolded_accounts: options.unfolded_accounts || [],
+            ...(this.isPartnerLedger ? { unfolded_partners: (this.state.payload?.lines || []).filter(line => line.foldable && !this.state.folded[line.code]).map(line => line.partner_id) } : {}),
+            ...(this.isPartnerLedger ? { account_types: options.account_types || ["receivable", "payable"], partner_ids: options.partner_ids || [], partner_category_ids: options.partner_category_ids || [], unreconciled: !!options.unreconciled } : {}),
             direction,
         };
     }
@@ -117,6 +129,7 @@ export class BaseerReportEngine extends Component {
             this.state.presets = bootstrap.presets;
             this.state.units = bootstrap.units;
             this.state.journals = bootstrap.journals;
+            this.state.accountTypes = bootstrap.account_types || [];
             this.state.analyticAccounts = bootstrap.analytic_accounts;
             this.state.analyticEnabled = bootstrap.analytic_enabled;
             this.state.reportName = bootstrap.report.name;
@@ -124,11 +137,13 @@ export class BaseerReportEngine extends Component {
             this.state.options = this.restoredState?.options || { ...bootstrap.defaults, ...(this.props.action?.context?.baseer_options || {}) };
             this.state.search = this.restoredState?.search || "";
             await this.loadReport();
+            if (this.isPartnerLedger) await this.loadSelectionNames();
             if (this.restoredState) {
                 this.state.folded = this.restoredState.folded || {};
                 const saved = this.restoredState.accounts || {};
                 if (this.isLedger) {
                     for (const line of this.state.payload.lines) {
+                        if (this.isPartnerLedger && !this.state.folded[line.code] && line.foldable) await this.loadLedger(line, 0);
                         const count = (saved[line.code]?.rows || []).filter((row) => row.type === "item").length;
                         while (this.state.accounts[line.code]?.has_more &&
                                this.state.accounts[line.code].rows.filter((row) => row.type === "item").length < count) {
@@ -203,7 +218,7 @@ export class BaseerReportEngine extends Component {
         this.state.options[event.target.name] = event.target.value;
         this.state.options.preset = "custom";
         this.state.options.anchor_date = false;
-        if (this.state.dateMode === "as_of") this.loadReport();
+        if (this.state.dateMode === "as_of" || (this.isPartnerLedger && this.state.options.date_from && this.state.options.date_to && this.state.options.date_from <= this.state.options.date_to)) this.loadReport();
     }
 
     onComparison(event) {
@@ -255,6 +270,11 @@ export class BaseerReportEngine extends Component {
 
     async toggleLedger(line) {
         this.state.folded[line.code] = !this.state.folded[line.code];
+        if (this.isPartnerLedger) {
+            if (!this.state.folded[line.code] && !this.state.accounts[line.code]) await this.loadLedger(line, 0);
+            this.state.options.unfold_all = false;
+            return;
+        }
         const pair = [line.account_id, line.company_id];
         if (this.state.options.unfold_all) {
             this.state.options.unfold_all = false;
@@ -272,10 +292,41 @@ export class BaseerReportEngine extends Component {
     async loadLedger(line, offset) {
         try {
             const page = await this.orm.call("baseer.report.engine", "get_ledger_lines",
-                [this.reportCode, this.plainOptions(), line.account_id, line.company_id, offset]);
+                [this.reportCode, this.plainOptions(), this.isPartnerLedger ? line.partner_id : line.account_id, this.isPartnerLedger ? false : line.company_id, offset]);
             const old = offset ? this.state.accounts[line.code]?.rows || [] : [];
             this.state.accounts[line.code] = { ...page, rows: [...old, ...page.rows] };
         } catch (error) { this.state.error = error?.data?.message || this.state.labels.error || "Error"; }
+    }
+
+    async openPartner(line) {
+        const action = await this.orm.call("baseer.report.engine", "get_partner_action", [line.partner_id]);
+        await this.actionService.doAction(action);
+    }
+
+    async loadSelectionNames() {
+        for (const [key, model, names] of [["partner_ids", "res.partner", "partnerNames"], ["partner_category_ids", "res.partner.category", "categoryNames"]]) {
+            const ids = this.state.options[key] || [];
+            const records = ids.length ? await this.orm.read(model, ids, ["display_name"]) : [];
+            this.state[names] = Object.fromEntries(records.map(r => [r.id, r.display_name]));
+        }
+    }
+    tags(key) {
+        const names = key === "partner_ids" ? this.state.partnerNames : this.state.categoryNames;
+        return (this.state.options[key] || []).map(id => ({ id, text: names[id] || String(id), onDelete: () => this.removeSelection(key, id) }));
+    }
+    async selectRecords(key, records) {
+        this.state.options[key] = [...new Set([...(this.state.options[key] || []), ...records.map(r => r.id)])];
+        await this.loadSelectionNames();
+        await this.loadReport();
+    }
+    removeSelection(key, id) { this.state.options[key] = this.state.options[key].filter(x => x !== id); this.loadReport(); }
+    selectAccountType(key) {
+        const selected = new Set(this.state.options.account_types);
+        if (!selected.has(key)) selected.add(key);
+        else if (selected.size > 1) selected.delete(key);
+        else return;
+        this.state.options.account_types = this.state.accountTypes.map(x => x.key).filter(x => selected.has(x));
+        this.loadReport();
     }
 
     async openGeneralLedger(line) {
@@ -404,7 +455,7 @@ export class BaseerReportEngine extends Component {
         const fmt = (date, options) => new Intl.DateTimeFormat(locale, options).format(date);
         if (key === "this_month") return fmt(anchor, {month: "long", year: "numeric"});
         const col = this.state.payload?.columns[0];
-        const fiscal = new Date(`${col?.fiscal_start || this.state.options.date_to}T12:00:00`);
+        const fiscal = new Date(`${col?.fiscal_start || (this.isPartnerLedger ? this.state.options.date_from : this.state.options.date_to)}T12:00:00`);
         if (key === "this_year") {
             const end = new Date(fiscal); end.setFullYear(end.getFullYear() + 1); end.setDate(end.getDate() - 1);
             return fiscal.getFullYear() === end.getFullYear() ? String(end.getFullYear()) : `${fiscal.getFullYear()} - ${end.getFullYear()}`;
@@ -439,6 +490,23 @@ export class BaseerReportEngine extends Component {
     }
 
     async unfoldAll() {
+        if (this.isPartnerLedger) {
+            this.state.options.unfold_all = true;
+            const token = this.requestToken;
+            try {
+                const pages = await this.orm.call("baseer.report.engine", "get_partner_items_batch",
+                    [this.reportCode, this.plainOptions()]);
+                if (token !== this.requestToken || !this.state.options.unfold_all) return;
+                for (const line of this.state.payload.lines.filter(line => line.foldable)) {
+                    this.state.folded[line.code] = false;
+                    const page = pages[line.partner_id];
+                    if (page && !this.state.accounts[line.code]) {
+                        this.state.accounts[line.code] = { ...page, rows: [...(page.initial ? [page.initial] : []), ...page.items] };
+                    }
+                }
+            } catch (error) { this.state.error = error?.data?.message || this.state.labels.error || "Error"; }
+            return;
+        }
         if (this.isLedger) { this.state.options.unfold_all = true; await this.loadReport(); return; }
         const lines = this.state.payload?.lines || [];
         this.state.folded = {};
@@ -456,6 +524,7 @@ export class BaseerReportEngine extends Component {
     }
 
     foldAll() {
+        if (this.isPartnerLedger) this.state.options.unfold_all = false;
         if (this.isLedger) { this.state.options.unfold_all = false; this.state.options.unfolded_accounts = []; }
         this.state.folded = Object.fromEntries((this.state.payload?.lines || []).filter((line) => line.foldable && line.has_accounts).map((line) => [line.code, true]));
     }
@@ -464,7 +533,7 @@ export class BaseerReportEngine extends Component {
         return `o_bre_${line.display} o_bre_level_${line.level}` +
             (line.foldable ? " o_bre_foldable" : "") +
             (line.has_accounts && !this.state.folded[line.code] ? " o_bre_open" : "") +
-            (this.state.dateMode === "range" && line.display === "total" ? " o_bre_band" : "");
+            (this.state.dateMode === "range" && line.display === "total" && !this.isPartnerLedger ? " o_bre_band" : "");
     }
 
     columnLabel(column) {

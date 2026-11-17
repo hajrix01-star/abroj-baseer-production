@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
     <t t-inherit="baseer_report_engine.Report" t-inherit-mode="extension">
+        <xpath expr="//main[hasclass('o_baseer_report_engine')]" position="attributes">
+            <attribute name="t-att-class">reportCode === 'saudi_vat' ? 'o_bre_vat' : ''</attribute>
+        </xpath>
         <xpath expr="//Dropdown[contains(@t-if, '!isLedger') and contains(@t-if, '!isCashFlow')]" position="attributes">
             <attribute name="t-if">!isLedger &amp;&amp; !isCashFlow &amp;&amp; reportCode !== 'saudi_vat'</attribute>
         </xpath>

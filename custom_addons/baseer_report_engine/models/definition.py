@@ -18,7 +18,7 @@ class BaseerReportDefinition(models.Model):
         required=True,
         default='range',
     )
-    report_kind = fields.Selection([('statement', 'Statement'), ('account_grid', 'Account grid'), ('ledger', 'Ledger'), ('partner_ledger', 'Partner Ledger')], default='statement', required=True)
+    report_kind = fields.Selection([('statement', 'Statement'), ('account_grid', 'Account grid'), ('ledger', 'Ledger'), ('partner_ledger', 'Partner Ledger'), ('aged', 'Aged')], default='statement', required=True)
     grid_groupby = fields.Char(default='account_id,company_id')
     grid_columns = fields.Char(default='initial,period_debit,period_credit,end')
     default_preset = fields.Char()

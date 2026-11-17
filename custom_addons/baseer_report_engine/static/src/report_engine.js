@@ -61,9 +61,10 @@ export class BaseerReportEngine extends Component {
         return (user.lang || "").startsWith("ar");
     }
 
-    get isPartnerLedger() { return this.reportCode === "partner_ledger"; }
-    get isLedger() { return ["ledger", "partner_ledger"].includes(this.state.payload?.report.report_kind); }
-    get isGrid() { return ["account_grid", "ledger", "partner_ledger"].includes(this.state.payload?.report.report_kind); }
+    get isAged() { return ["aged_receivable", "aged_payable"].includes(this.reportCode); }
+    get isPartnerLedger() { return this.reportCode === "partner_ledger" || this.isAged; }
+    get isLedger() { return ["ledger", "partner_ledger", "aged"].includes(this.state.payload?.report.report_kind); }
+    get isGrid() { return ["account_grid", "ledger", "partner_ledger", "aged"].includes(this.state.payload?.report.report_kind); }
 
     get lines() {
         const search = this.state.search.trim().toLocaleLowerCase();
@@ -108,6 +109,7 @@ export class BaseerReportEngine extends Component {
             unfolded_accounts: options.unfolded_accounts || [],
             ...(this.isPartnerLedger ? { unfolded_partners: (this.state.payload?.lines || []).filter(line => line.foldable && !this.state.folded[line.code]).map(line => line.partner_id) } : {}),
             ...(this.isPartnerLedger ? { account_types: options.account_types || ["receivable", "payable"], partner_ids: options.partner_ids || [], partner_category_ids: options.partner_category_ids || [], unreconciled: !!options.unreconciled } : {}),
+            ...(this.isAged ? { aging_basis: options.aging_basis || "due_date", period_length: options.period_length || 30 } : {}),
             direction,
         };
     }

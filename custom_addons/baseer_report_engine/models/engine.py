@@ -45,9 +45,13 @@ class BaseerReportEngine(models.AbstractModel):
             'labels': self._labels(),
             'defaults': dict(self._default_options(), preset=report.default_preset or ('today' if report.date_mode == 'as_of' else 'this_year'), comparison_unit='month' if report.date_mode == 'as_of' or report.report_kind in ('account_grid', 'ledger') else 'year'),
         }
-        if report.report_kind == 'partner_ledger':
+        if report.report_kind in ('partner_ledger', 'aged'):
             result['account_types'] = [{'key': key, 'label': label} for key, label in self._partner_type_labels()]
             result['defaults'].update(account_types=['receivable', 'payable'], partner_ids=[], partner_category_ids=[], unreconciled=False)
+        if report.report_kind == 'aged':
+            result['account_types'] = [item for item in result['account_types'] if ('payable' in item['key']) == (report.code == 'aged_payable')]
+            result['defaults'].update(account_types=['payable' if report.code == 'aged_payable' else 'receivable'], aging_basis='due_date', period_length=30)
+            result['aging_labels'] = {'due_date': _('Based on Due Date'), 'invoice_date': _('Based on Invoice Date'), 'days': _('%s Days')}
         return result
 
     @api.model
@@ -60,6 +64,7 @@ class BaseerReportEngine(models.AbstractModel):
         payload = (self._build_grid(report, normalized) if report.report_kind == 'account_grid'
                    else self._build_ledger(report, normalized, options or {}) if report.report_kind == 'ledger'
                    else self._build_partner_ledger(report, normalized, options or {}) if report.report_kind == 'partner_ledger'
+                   else self._build_aged(report, normalized) if report.report_kind == 'aged'
                    else self._build(report, normalized, with_accounts=with_accounts))
         payload['has_draft_entries'] = bool(normalized['posted_only'] and self.env['account.move.line'].search_count(self._draft_domain(normalized), limit=1))
         return payload
@@ -112,6 +117,8 @@ class BaseerReportEngine(models.AbstractModel):
         self._check_report_access()
         report = self._definition(report_code)
         normalized = self._normalize_options(report, options or {})
+        if report.report_kind == 'aged':
+            return self._aged_action(normalized, line_code, column_key, account_id)
         if report.report_kind == 'partner_ledger':
             return self._partner_move_line_action(normalized, line_code, account_id)
         if report.report_kind in ('account_grid', 'ledger'):
@@ -162,7 +169,7 @@ class BaseerReportEngine(models.AbstractModel):
     def _normalize_options(self, report, raw):
         if not isinstance(raw, dict):
             raise ValidationError(_('The report options are not valid.'))
-        preset = raw.get('preset') or (report.default_preset if report.report_kind == 'partner_ledger' else 'this_month') or 'this_month'
+        preset = raw.get('preset') or (report.default_preset if report.report_kind in ('partner_ledger', 'aged') else 'this_month') or 'this_month'
         if preset not in dict(self._preset_labels()):
             raise ValidationError(_('Choose a valid period.'))
         comparison = raw.get('comparison', 0)
@@ -223,8 +230,16 @@ class BaseerReportEngine(models.AbstractModel):
             'date_mode': report.date_mode,
             'columns': columns,
         }
-        if report.report_kind == 'partner_ledger':
+        if report.report_kind in ('partner_ledger', 'aged'):
+            if report.report_kind == 'aged':
+                raw = dict(raw)
+                raw.setdefault('account_types', ['payable' if report.code == 'aged_payable' else 'receivable'])
             self._normalize_partner_options(raw, result)
+            if report.report_kind == 'aged':
+                basis, length = raw.get('aging_basis', 'due_date'), raw.get('period_length', 30)
+                if basis not in ('due_date', 'invoice_date') or type(length) is not int or length <= 0 or any(('payable' in item) != (report.code == 'aged_payable') for item in result['account_types']):
+                    raise ValidationError(_('The report options are not valid.'))
+                result.update(aging_basis=basis, period_length=length, aged_payable=report.code == 'aged_payable')
         return result
 
     @api.model

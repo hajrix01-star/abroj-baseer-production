@@ -1081,6 +1081,7 @@ msgstr "الحساب"
 #. module: baseer_report_engine
 #. odoo-python
 #: code:addons/baseer_report_engine/models/ledger.py:0
+#: code:addons/baseer_report_engine/models/aged.py:0
 msgid "Invoice Date"
 msgstr "تاريخ الفاتورة"
 
@@ -1171,3 +1172,72 @@ msgstr "فئات الشركاء"
 #: code:addons/baseer_report_engine/static/src/report_engine.js:0
 msgid "Unreconciled Entries"
 msgstr "القيود غير المسواة"
+
+#. module: baseer_report_engine
+#: model:baseer.report.definition,name:baseer_report_engine.report_aged_receivable
+msgid "Aged Receivable"
+msgstr "أعمار الديون المدينة"
+
+#. module: baseer_report_engine
+#: model:baseer.report.definition,name:baseer_report_engine.report_aged_payable
+msgid "Aged Payable"
+msgstr "أعمار الديون الدائنة"
+
+#. module: baseer_report_engine
+#: model:ir.actions.client,name:baseer_report_engine.action_aged_receivable
+#: model:ir.ui.menu,name:baseer_report_engine.menu_aged_receivable
+msgid "Aged Receivable (New)"
+msgstr "أعمار الديون المدينة (جديد)"
+
+#. module: baseer_report_engine
+#: model:ir.actions.client,name:baseer_report_engine.action_aged_payable
+#: model:ir.ui.menu,name:baseer_report_engine.menu_aged_payable
+msgid "Aged Payable (New)"
+msgstr "أعمار الديون الدائنة (جديد)"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/aged.py:0
+msgid "At Date"
+msgstr "بتاريخ"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/aged.py:0
+msgid "Older"
+msgstr "أقدم"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Based on Due Date"
+msgstr "حسب تاريخ الاستحقاق"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Based on Invoice Date"
+msgstr "حسب تاريخ الفاتورة"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "%s Days"
+msgstr "%s يوم"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/aged.py:0
+msgid "Total Aged Receivable"
+msgstr "إجمالي أعمار الديون المدينة"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/aged.py:0
+msgid "Total Aged Payable"
+msgstr "إجمالي أعمار الديون الدائنة"
+
+#. module: baseer_report_engine
+#: model:ir.model.fields.selection,name:baseer_report_engine.selection__baseer_report_definition__report_kind__aged
+msgid "Aged"
+msgstr "الأعمار"

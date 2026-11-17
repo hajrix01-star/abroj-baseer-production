@@ -320,19 +320,32 @@ class TestCashFlow(EngineCase):
         income = self._account(company, '40033', 'income')
         journal = self._journal(company, 'CF33')
         options = self._options()
-        def count():
-            self.env.flush_all()
-            self.env.invalidate_all()
-            start = self.cr.sql_log_count
-            engine.get_report('cash_flow', options)
-            return self.cr.sql_log_count - start
+        codes = ['unclassified_in', 'beginning', 'closing']
+
+        def counts():
+            results = []
+            for call in (
+                lambda: engine.get_report('cash_flow', options),
+                lambda: engine.get_lines_accounts('cash_flow', options, codes),
+                lambda: engine.get_move_line_action('cash_flow', options, 'unclassified_in', 'c0'),
+            ):
+                self.env.flush_all()
+                self.env.invalidate_all()
+                start = self.cr.sql_log_count
+                call()
+                results.append(self.cr.sql_log_count - start)
+            return results
+
         for index in range(5):
             self._entry(company, journal, '2041-03-01', cash, income, 1)
-        small = count()
-        for index in range(25):
+        counts()  # Warm shared metadata caches before comparing the two sizes.
+        small = counts()
+        for index in range(45):
             self._entry(company, journal, '2041-03-01', cash, income, 1)
-        large = count()
-        self.assertLessEqual(large, small + 5, (small, large))
+        large = counts()
+        self.assertEqual(small, [20, 21, 17])
+        for before, after in zip(small, large):
+            self.assertLessEqual(abs(after - before), 2, (small, large))
 
     def test_invoice_and_bill_payment_workflows(self):
         from odoo import Command

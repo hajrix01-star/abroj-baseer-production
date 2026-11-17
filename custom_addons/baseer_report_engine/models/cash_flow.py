@@ -23,8 +23,9 @@ import re
 
 from odoo import _, api, models
 from odoo.exceptions import AccessError, ValidationError
+from odoo.tools import SQL
 
-from .engine import _fill_variation, _quantize
+from .engine import _analytic_share, _fill_variation, _quantize
 
 
 class BaseerCashFlow(models.AbstractModel):
@@ -96,127 +97,173 @@ class BaseerCashFlow(models.AbstractModel):
         return accounts - self._cash_excluded_accounts()
 
     @api.model
-    def _cash_flow_data(self, options, column):
+    def _cash_flow_data(self, options, columns):
+        self.env.flush_all()
         liquidity = self._cash_liquidity_accounts()
-        # Aggregate historical balances with the same machinery as the TB.
-        domain = self._base_domain(options) + [('account_id', 'in', liquidity.ids)]
-        amounts = defaultdict(Decimal)
-        details = defaultdict(lambda: defaultdict(Decimal))
-        moves = defaultdict(set)
-        currency = self.env.company.currency_id
-
-        def add(code, account, company, value, move=None):
-            key = (account.id, company.id)
-            details[code][key] += value
-            amounts[code] += value
-            if move:
-                moves[(code, key)].add(move.id)
-                moves[(code, None)].add(move.id)
-
-        for code, date_domain, on_date in (
-            ('beginning', [('date', '<', column['_start'])], column['_start']),
-            ('closing', [('date', '<=', column['_end'])], column['_end']),
-        ):
-            totals = self._aggregate(domain + date_domain, on_date, options['analytic_account_ids'])
-            for key, figures in totals.items():
-                details[code][key] += figures['balance']
-
-        period_domain = domain + [('date', '>=', column['_start']), ('date', '<=', column['_end'])]
+        liquidity_ids = tuple(liquidity.ids)
+        result = {c['key']: (defaultdict(Decimal), defaultdict(lambda: defaultdict(Decimal)), defaultdict(set)) for c in columns}
+        if not liquidity_ids:
+            return result
+        model = self.env['account.move.line']
+        domain = self._base_domain(options) + [('account_id', 'in', list(liquidity_ids))]
+        source = model._search(domain + [('date', '<=', max(c['_end'] for c in columns))]).select(
+            SQL('account_move_line.id'), SQL('account_move_line.move_id'), SQL('account_move_line.date'),
+            SQL('account_move_line.account_id'), SQL('account_move_line.company_id'), SQL('account_move_line.balance'),
+            SQL('account_move_line.analytic_distribution'))
         opening, _unknown = self._cash_opening_moves()
-        candidates = self.env['account.move.line']._read_group(period_domain, ['move_id'])
-        candidate_ids = [move.id for (move,) in candidates if move]
-        if candidate_ids:
-            opening |= self.env['account.move'].search([
-                ('company_id', 'in', self.env.companies.ids), ('id', 'in', candidate_ids),
-                '|', '|', '|', '|', ('name', 'ilike', 'Opening'), ('ref', 'ilike', 'Opening'),
-                ('name', 'ilike', 'افتتاح'), ('ref', 'ilike', 'افتتاح'),
-                ('line_ids.account_id.account_type', '=', 'equity_unaffected')])
-        if opening:
-            totals = self._aggregate(period_domain + [('move_id', 'in', opening.ids)], column['_end'], options['analytic_account_ids'])
-            for key, figures in totals.items():
-                details['beginning'][key] += figures['balance']
-            period_domain += [('move_id', 'not in', opening.ids)]
-        grouped = self.env['account.move.line']._read_group(period_domain, ['move_id', 'company_id'], ['balance:sum'])
-        move_ids = [move.id for move, company, balance in grouped if move and balance]
-        all_lines = self.env['account.move.line'].search([('move_id', 'in', move_ids)])
-        liquidity_ids = set(liquidity.ids)
+        # Determine flags from all period candidates, including zero-net moves.
+        period_source = model._search(domain + [('date', '>=', min(c['_start'] for c in columns)),
+                                              ('date', '<=', max(c['_end'] for c in columns))]).select(SQL('account_move_line.move_id'))
+        self.env.cr.execute(SQL("""SELECT m.id FROM account_move m WHERE m.id IN (%s) AND
+            (m.id IN %s OR m.name ILIKE '%%Opening%%' OR m.ref ILIKE '%%Opening%%'
+             OR m.name ILIKE '%%افتتاح%%' OR m.ref ILIKE '%%افتتاح%%' OR EXISTS
+             (SELECT 1 FROM account_move_line l JOIN account_account a ON a.id=l.account_id
+              WHERE l.move_id=m.id AND a.account_type='equity_unaffected'))""", period_source, tuple(opening.ids) or (0,)))
+        opening_ids = tuple(row[0] for row in self.env.cr.fetchall())
+        companies = {company.id: company for company in self.env.companies}
+        if options['analytic_account_ids']:
+            self.env.cr.execute(SQL('SELECT account_id, company_id, date, move_id, balance, analytic_distribution FROM (%s) cash', source))
+            selected = set(options['analytic_account_ids'])
+            opening_set = set(opening_ids)
+            for account_id, company_id, date, move_id, balance, distribution in self.env.cr.fetchall():
+                share = _analytic_share(distribution, selected)
+                if not share:
+                    continue
+                company = companies[company_id]
+                amount = Decimal(str(balance or 0)) * share
+                for c in columns:
+                    details = result[c['key']][1]
+                    key = (account_id, company_id)
+                    if date < c['_start']:
+                        details['beginning'][key] += self._convert(amount, company, c['_start'])
+                    if date <= c['_end']:
+                        details['closing'][key] += self._convert(amount, company, c['_end'])
+                    if c['_start'] <= date <= c['_end'] and move_id in opening_set:
+                        details['beginning'][key] += self._convert(amount, company, c['_end'])
+        else:
+            cases = []
+            for c in columns:
+                cases.extend([SQL('SUM(balance) FILTER (WHERE date < %s)', c['_start']),
+                              SQL('SUM(balance) FILTER (WHERE date <= %s)', c['_end']),
+                              SQL('SUM(balance) FILTER (WHERE date >= %s AND date <= %s AND move_id IN %s)',
+                                  c['_start'], c['_end'], opening_ids or (0,))])
+            self.env.cr.execute(SQL('SELECT account_id, company_id, %s FROM (%s) cash GROUP BY account_id, company_id', SQL(', ').join(cases), source))
+            for row in self.env.cr.fetchall():
+                account_id, company_id = row[:2]
+                company = companies[company_id]
+                for i, c in enumerate(columns):
+                    beginning, closing, opening_balance = row[2 + i * 3:5 + i * 3]
+                    details = result[c['key']][1]
+                    if beginning is not None:
+                        details['beginning'][(account_id, company_id)] += self._convert(beginning, company, c['_start'])
+                    if closing is not None:
+                        details['closing'][(account_id, company_id)] += self._convert(closing, company, c['_end'])
+                    if opening_balance is not None:
+                        details['beginning'][(account_id, company_id)] += self._convert(opening_balance, company, c['_end'])
+        self.env.cr.execute(SQL('SELECT move_id, date, company_id, SUM(balance) FROM (%s) cash WHERE move_id NOT IN %s GROUP BY move_id, date, company_id HAVING SUM(balance) <> 0 ORDER BY move_id', model._search(domain + [('date', '>=', min(c['_start'] for c in columns)), ('date', '<=', max(c['_end'] for c in columns))]).select(SQL('account_move_line.move_id'), SQL('account_move_line.date'), SQL('account_move_line.company_id'), SQL('account_move_line.balance')), opening_ids or (0,)))
+        cash_moves = self.env.cr.fetchall()
+        move_ids = tuple(row[0] for row in cash_moves)
         by_move = defaultdict(list)
         counterpart_ids = []
-        for line in all_lines:
-            if line.account_id.id not in liquidity_ids:
-                by_move[line.move_id.id].append(line)
-                if line.account_id.account_type in ('asset_receivable', 'liability_payable'):
-                    counterpart_ids.append(line.id)
-        partials = self.env['account.partial.reconcile'].search([
-            ('max_date', '<=', column['_end']), '|',
-            ('debit_move_id', 'in', counterpart_ids), ('credit_move_id', 'in', counterpart_ids),
-        ], order='id')
+        account_ids = set()
+        if move_ids:
+            self.env.cr.execute(SQL("""SELECT l.id, l.move_id, l.account_id, a.account_type, l.balance, l.company_id
+                FROM account_move_line l JOIN account_account a ON a.id=l.account_id
+                WHERE l.move_id IN %s AND l.account_id NOT IN %s ORDER BY l.id""", move_ids, liquidity_ids))
+            for line_id, move_id, account_id, account_type, balance, company_id in self.env.cr.fetchall():
+                by_move[move_id].append((line_id, account_id, account_type, Decimal(str(balance)), company_id))
+                account_ids.add(account_id)
+                if account_type in ('asset_receivable', 'liability_payable'):
+                    counterpart_ids.append(line_id)
         partials_by_line = defaultdict(list)
         other_move_ids = set()
-        counterpart_set = set(counterpart_ids)
-        for partial in partials:
-            for line, other in ((partial.debit_move_id, partial.credit_move_id),
-                                (partial.credit_move_id, partial.debit_move_id)):
-                if line.id in counterpart_set:
-                    partials_by_line[line.id].append((partial, other))
-                    other_move_ids.add(other.move_id.id)
-        invoice_lines = self.env['account.move.line'].search([('move_id', 'in', list(other_move_ids))])
+        if counterpart_ids:
+            self.env.cr.execute(SQL("""SELECT p.debit_move_id, p.credit_move_id, p.max_date, p.amount,
+                d.move_id, d.company_id, c.move_id, c.company_id FROM account_partial_reconcile p
+                JOIN account_move_line d ON d.id=p.debit_move_id JOIN account_move_line c ON c.id=p.credit_move_id
+                WHERE p.max_date <= %s AND (p.debit_move_id IN %s OR p.credit_move_id IN %s) ORDER BY p.id""",
+                max(c['_end'] for c in columns), tuple(counterpart_ids), tuple(counterpart_ids)))
+            counterpart_set = set(counterpart_ids)
+            for debit, credit, date, amount, dm, dc, cm, cc in self.env.cr.fetchall():
+                for line, other_move, other_company in ((debit, cm, cc), (credit, dm, dc)):
+                    if line in counterpart_set:
+                        partials_by_line[line].append((date, Decimal(str(amount)), other_move, other_company))
+                        other_move_ids.add(other_move)
         invoice_by_move = defaultdict(list)
-        for line in invoice_lines:
-            if line.account_id.id not in liquidity_ids and line.account_id.account_type not in ('asset_receivable', 'liability_payable'):
-                invoice_by_move[line.move_id.id].append(line)
+        if other_move_ids:
+            self.env.cr.execute(SQL("""SELECT l.move_id, l.account_id, l.balance FROM account_move_line l
+                JOIN account_account a ON a.id=l.account_id WHERE l.move_id IN %s AND l.account_id NOT IN %s
+                AND a.account_type NOT IN ('asset_receivable', 'liability_payable') ORDER BY l.id""", tuple(other_move_ids), liquidity_ids))
+            for move_id, account_id, balance in self.env.cr.fetchall():
+                invoice_by_move[move_id].append((account_id, abs(Decimal(str(balance)))))
+                account_ids.add(account_id)
         tags = {kind: self.env.ref('account.account_tag_' + kind).id for kind in ('operating', 'investing', 'financing')}
-
-        def classify(account, value, company, move):
-            kind = next((kind for kind, tag in tags.items() if tag in account.tag_ids.ids), 'unclassified')
-            add(kind + ('_in' if value >= 0 else '_out'), account, company, value, move)
-
-        for move, company, balance in grouped:
-            cash = Decimal(str(balance or 0))
-            counterparts = by_move[move.id]
-            denominator = sum((abs(Decimal(str(l.balance))) for l in counterparts), Decimal(0))
-            if not cash or not denominator:
-                continue
-            for line in counterparts:
-                share = cash * abs(Decimal(str(line.balance))) / denominator
-                converted = self._ledger_convert(share, company, column['_end'])
-                if line.account_id.account_type not in ('asset_receivable', 'liability_payable'):
-                    classify(line.account_id, converted, company, move)
+        membership = defaultdict(set)
+        if account_ids:
+            self.env.cr.execute(SQL('SELECT account_account_id, account_account_tag_id FROM account_account_account_tag WHERE account_account_id IN %s', tuple(account_ids)))
+            for account_id, tag_id in self.env.cr.fetchall():
+                membership[account_id].add(tag_id)
+        kinds = {account_id: next ( (kind for kind, tag in tags.items() if tag in membership[account_id]), 'unclassified') for account_id in account_ids}
+        rates = {}
+        for c in columns:
+            amounts, details, moves = result[c['key']]
+            def add(code, account_id, company_id, value, move_id):
+                key = (account_id, company_id)
+                details[code][key] += value
+                moves[(code, key)].add(move_id)
+                moves[(code, None)].add(move_id)
+            def classify(account_id, value, company_id, move_id):
+                add(kinds[account_id] + ('_in' if value >= 0 else '_out'), account_id, company_id, value, move_id)
+            for move_id, date, company_id, balance in cash_moves:
+                if not c['_start'] <= date <= c['_end']:
                     continue
-                available = abs(Decimal(str(line.balance)))
-                remaining = available
-                for partial, other in partials_by_line[line.id]:
-                    if other.move_id == move or other.company_id != company:
+                lines = by_move[move_id]
+                denominator = sum((abs(line[3]) for line in lines), Decimal(0))
+                if not denominator:
+                    continue
+                rate_key = (company_id, c['_end'])
+                if rate_key not in rates:
+                    rates[rate_key] = self._ledger_convert(Decimal(1), companies[company_id], c['_end'])
+                for line_id, account_id, account_type, balance_line, _company_id in lines:
+                    share = Decimal(str(balance)) * abs(balance_line) / denominator
+                    converted = (self._ledger_convert(share, companies[company_id], c['_end'])
+                                 if companies[company_id].currency_id == self.env.company.currency_id
+                                 else share * rates[rate_key])
+                    if account_type not in ('asset_receivable', 'liability_payable'):
+                        classify(account_id, converted, company_id, move_id)
                         continue
-                    paid = min(remaining, Decimal(str(partial.amount)))
-                    items = invoice_by_move[other.move_id.id]
-                    total = sum((abs(Decimal(str(l.balance))) for l in items), Decimal(0))
-                    if not paid or not total:
-                        continue
-                    for item in items:
-                        classify(item.account_id, converted * paid / available * abs(Decimal(str(item.balance))) / total, company, move)
-                    remaining -= paid
-                if remaining and available:
-                    code = 'advance_received' if line.account_id.account_type == 'asset_receivable' else 'advance_paid'
-                    add(code, line.account_id, company, converted * remaining / available, move)
-        leaf_codes = [x[0] for x in self._cash_flow_spec() if x[4] and x[0] not in ('beginning', 'closing')]
-        # Quantize totals and detail rows consistently, including cross-company conversion.
-        for code, rows in details.items():
-            for key, value in list(rows.items()):
-                rows[key] = _quantize(value, currency)
-            amounts[code] = sum(rows.values(), Decimal(0))
-        net = amounts['closing'] - amounts['beginning']
-        residual = net - sum((amounts[c] for c in leaf_codes), Decimal(0))
-        if residual:
-            code = 'unclassified_in' if residual > 0 else 'unclassified_out'
-            details[code][(0, 0)] += residual
-            amounts[code] += residual
-        amounts['net'] = net
-        return amounts, details, moves
+                    available = remaining = abs(balance_line)
+                    for partial_date, amount, other_move, other_company in partials_by_line[line_id]:
+                        if partial_date > c['_end'] or other_move == move_id or other_company != company_id:
+                            continue
+                        paid = min(remaining, amount)
+                        items = invoice_by_move[other_move]
+                        total = sum((item[1] for item in items), Decimal(0))
+                        if not paid or not total:
+                            continue
+                        for item_account, item_balance in items:
+                            classify(item_account, converted * paid / available * item_balance / total, company_id, move_id)
+                        remaining -= paid
+                    if remaining and available:
+                        add('advance_received' if account_type == 'asset_receivable' else 'advance_paid', account_id, company_id, converted * remaining / available, move_id)
+            currency = self.env.company.currency_id
+            for code, rows in details.items():
+                for key, value in list(rows.items()):
+                    rows[key] = _quantize(value, currency)
+                amounts[code] = sum(rows.values(), Decimal(0))
+            net = amounts['closing'] - amounts['beginning']
+            leaf_codes = [x[0] for x in self._cash_flow_spec() if x[4] and x[0] not in ('beginning', 'closing')]
+            residual = net - sum((amounts[code] for code in leaf_codes), Decimal(0))
+            if residual:
+                code = 'unclassified_in' if residual > 0 else 'unclassified_out'
+                details[code][(0, 0)] += residual
+                amounts[code] += residual
+            amounts['net'] = net
+        return result
 
     @api.model
     def _cash_flow_compute(self, report, options):
-        data = {c['key']: self._cash_flow_data(options, c) for c in options['columns'] if c['kind'] == 'period'}
+        data = self._cash_flow_data(options, [c for c in options['columns'] if c['kind'] == 'period'])
         return data
 
     @api.model
@@ -321,7 +368,7 @@ class BaseerCashFlow(models.AbstractModel):
         column = next((c for c in options['columns'] if c['key'] == column_key and c['kind'] == 'period'), None)
         if not column or code not in {x[0] for x in self._cash_flow_spec() if x[4]}:
             raise ValidationError(_('The report options are not valid.'))
-        _amounts, details, moves = self._cash_flow_data(options, column)
+        _amounts, details, moves = self._cash_flow_data(options, [column])[column['key']]
         key = None
         if account_id:
             key = (account_id, company_id)

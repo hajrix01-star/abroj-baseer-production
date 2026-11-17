@@ -373,6 +373,45 @@ class TestPartnerLedgerGrouping(EngineCase):
         remaining = engine.get_report('partner_ledger', dict(options, unreconciled=True))
         self.assertEqual(float(remaining['lines'][-1]['amounts'][-1]['value']), -11)
 
+    def test_batch_matches_attributed_pages(self):
+        company, engine, journal, rec, pay, nontrade, other, partners = self._fixture()
+        rec.reconcile = True
+        invoice = self._partner_entry(company, journal, '2041-03-01', rec, other, 15, partners[0])
+        payment = self._partner_entry(company, journal, '2041-04-01', other, rec, 10)
+        partial = self._partner_entry(company, journal, '2041-04-02', other, rec, 8)
+        (invoice.line_ids | payment.line_ids | partial.line_ids).filtered(lambda line: line.account_id == rec).reconcile()
+        self._partner_entry(company, journal, '2041-04-03', rec, other, 3, partners[1])
+        options = self._options(date_from='2041-04-01', date_to='2041-04-30')
+        engine = engine.with_context(baseer_gl_page_size=1)
+        for opts in (options, dict(options, partner_ids=partners[0].ids), dict(options, unreconciled=True)):
+            batch = engine.get_partner_items_batch('partner_ledger', opts)
+            keys = [row['partner_id'] for row in engine.get_report('partner_ledger', opts)['lines'] if row.get('foldable')]
+            self.assertEqual(set(batch), set(keys))
+            for key in keys:
+                page = engine.get_ledger_lines('partner_ledger', opts, key)
+                actual = batch[key]
+                self.assertEqual(([actual['initial']] if actual['initial'] else []) + actual['items'], page['rows'])
+                self.assertEqual((actual['has_more'], actual['next_offset']), (page['has_more'], page['next_offset']))
+
+    def test_batch_query_count_independent_of_partner_count(self):
+        company, engine, journal, rec, pay, nontrade, other, partners = self._fixture()
+        options = self._options()
+        def add(number):
+            for index in range(number):
+                partner = self.env['res.partner'].create({'name': 'Batch %s' % index})
+                self._partner_entry(company, journal, '2041-04-01', rec, other, 1, partner)
+        def count():
+            engine.get_partner_items_batch('partner_ledger', options)
+            self.env.invalidate_all()
+            start = self.cr.sql_log_count
+            engine.get_partner_items_batch('partner_ledger', options)
+            return self.cr.sql_log_count - start
+        add(5)
+        small = count()
+        add(45)
+        large = count()
+        self.assertLessEqual(large, small + 2, (small, large))
+
     def test_item_label_removes_move_occurrences(self):
         from ..models.ledger import _item_labels
         for move, detail, expected in [

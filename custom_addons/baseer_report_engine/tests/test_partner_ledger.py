@@ -336,3 +336,48 @@ class TestPartnerLedgerGrouping(EngineCase):
         all_payload = engine.with_context(baseer_gl_page_size=1)._export_payload('partner_ledger', dict(options, unfold_all=True))
         self.assertTrue(all(row.get('ledger') and not row['ledger']['has_more'] for row in all_payload['lines'] if row.get('foldable')))
         self.assertEqual(len([item for item in all_payload['lines'][0]['ledger']['rows'] if item['type'] == 'item']), 2)
+
+    def test_partnerless_reconciliation_attribution(self):
+        company, engine, journal, rec, pay, nontrade, other, partners = self._fixture()
+        rec.reconcile = True
+        invoice = self._partner_entry(company, journal, '2041-03-01', rec, other, 15, partners[0])
+        payment = self._partner_entry(company, journal, '2041-04-01', other, rec, 10)
+        partial_payment = self._partner_entry(company, journal, '2041-04-02', other, rec, 8)
+        untouched = self._partner_entry(company, journal, '2041-04-03', other, rec, 3)
+        invoice_line = invoice.line_ids.filtered(lambda l: l.account_id == rec)
+        payment_line = payment.line_ids.filtered(lambda l: l.account_id == rec)
+        partial_line = partial_payment.line_ids.filtered(lambda l: l.account_id == rec)
+        (invoice_line | payment_line | partial_line).reconcile()
+        options = self._options(date_from='2041-04-01', date_to='2041-04-30')
+        report = engine.get_report('partner_ledger', options)
+        rows = {r.get('partner_id'): r for r in report['lines'][:-1]}
+        self.assertEqual([float(a['value']) for a in rows[partners[0].id]['amounts']], [15, 15, 0])
+        self.assertEqual([float(a['value']) for a in rows[0]['amounts']], [0, 6, -6])
+        self.assertEqual([float(a['value']) for a in report['lines'][-1]['amounts']], [15, 21, -6])
+        trial_balance = engine.get_report('trial_balance', options)
+        tb_row = next(r for r in trial_balance['lines'] if r.get('account_id') == rec.id)
+        self.assertEqual(sum(float(r['amounts'][-1]['value']) for r in report['lines'][:-1]),
+                         float(tb_row['amounts'][-1]['value']))
+        page = engine.with_context(baseer_gl_page_size=1).get_ledger_lines('partner_ledger', options, partners[0].id)
+        self.assertEqual(page['rows'][1]['id'], payment_line.id)
+        page = engine.with_context(baseer_gl_page_size=1).get_ledger_lines('partner_ledger', options, partners[0].id, offset=1)
+        self.assertEqual(page['rows'][0]['id'], partial_line.id)
+        self.assertEqual(float(page['rows'][0]['amounts'][-1]['value']), 0)
+        action = engine.get_move_line_action('partner_ledger', options, rows[partners[0].id]['code'], 'balance', partners[0].id)
+        self.assertIn(payment_line, self.env['account.move.line'].search(action['domain']))
+        self.assertIn(partial_line, self.env['account.move.line'].search(action['domain']))
+        unknown = engine.get_ledger_lines('partner_ledger', options, 0)
+        self.assertEqual({r['id'] for r in unknown['rows'] if r['type'] == 'item'}, {partial_line.id, untouched.line_ids.filtered(lambda l: l.account_id == rec).id})
+        filtered = engine.get_report('partner_ledger', dict(options, partner_ids=partners[0].ids))
+        self.assertEqual(float(filtered['lines'][-1]['amounts'][-1]['value']), 0)
+        remaining = engine.get_report('partner_ledger', dict(options, unreconciled=True))
+        self.assertEqual(float(remaining['lines'][-1]['amounts'][-1]['value']), -11)
+
+    def test_item_label_removes_move_occurrences(self):
+        from ..models.ledger import _item_labels
+        for move, detail, expected in [
+            ('INV/2026/00045', 'SHAMI - 000003 - INV/2026/00045', 'INV/2026/00045 SHAMI - 000003'),
+            ('INV/1', 'INV/1', 'INV/1'),
+            ('BNK1/2026/00009', 'INV/2026/00008', 'BNK1/2026/00009 INV/2026/00008'),
+            ('X', '', 'X'), ('X', 'X — X / note : X', 'X note')]:
+            self.assertEqual(_item_labels(move, detail)[2], expected)

@@ -9,6 +9,13 @@ from odoo.tools import SQL
 from .engine import _analytic_share, _zeros
 
 
+def _item_labels(move_name, line_name):
+    move = move_name or ''
+    detail = (line_name or '').replace(move, '') if move else (line_name or '')
+    detail = detail.strip(' -–—/|:')
+    return move, detail, ' '.join(part for part in (move, detail) if part)
+
+
 class BaseerLedgerEngine(models.AbstractModel):
     _inherit = 'baseer.report.engine'
 
@@ -57,7 +64,98 @@ class BaseerLedgerEngine(models.AbstractModel):
                 bucket = partners.setdefault(partner_id or 0, _zeros())
                 for figure in ('debit', 'credit', 'balance'):
                     bucket[figure] += values[figure]
+        if 'account_types' in options:
+            if options['analytic_account_ids']:
+                allocations = self._partner_allocations(options)
+                selected = self._selected_attribution_partners(options, allocations)
+                attributed = []
+                for line in self.env['account.move.line'].browse(list(allocations)):
+                    scope = 'initial' if line.date < first else 'period'
+                    share = _analytic_share(line.analytic_distribution, set(options['analytic_account_ids']))
+                    for partner_id, amount in allocations[line.id].items():
+                        attributed.append((scope, partner_id, line.company_id, line.balance > 0, amount * share))
+            else:
+                attributed = self._partner_attribution_sums(options, first)
+                selected = self._selected_attribution_partners(options, {0: {row[1]: 0 for row in attributed}})
+            for scope, partner_id, company, is_debit, amount in attributed:
+                value = self._convert(amount, company, last)
+                values = {'debit': value if is_debit else Decimal(0),
+                          'credit': Decimal(0) if is_debit else value,
+                          'balance': value if is_debit else -value}
+                if not options['partner_ids'] and not options['partner_category_ids']:
+                    bucket = result[scope].setdefault(0, _zeros())
+                    for figure in bucket:
+                        bucket[figure] -= values[figure]
+                if partner_id in selected:
+                    bucket = result[scope].setdefault(partner_id, _zeros())
+                    for figure in bucket:
+                        bucket[figure] += values[figure]
+            for partners in result.values():
+                if 0 in partners and all(self.env.company.currency_id.is_zero(float(v)) for v in partners[0].values()):
+                    del partners[0]
         return result['initial'], result['period']
+
+    @api.model
+    def _partner_attribution_sums(self, options, first):
+        unfiltered = dict(options, partner_ids=[], partner_category_ids=[])
+        domain = self._base_domain(options) + self._partner_domain(unfiltered) + [
+            ('partner_id', '=', False), ('date', '<=', options['date_to'])]
+        model = self.env['account.move.line']
+        model.flush_model(['partner_id', 'date', 'balance', 'company_id'])
+        self.env['account.partial.reconcile'].flush_model(['debit_move_id', 'credit_move_id', 'amount'])
+        source = model._search(domain).select(SQL('account_move_line.id'), SQL('account_move_line.date'),
+                                               SQL('account_move_line.balance'), SQL('account_move_line.company_id'))
+        rows = self.env.execute_query(SQL("""
+            SELECT source.date < %s, other.partner_id, source.company_id,
+                   source.balance > 0, SUM(partial.amount)
+              FROM (%s) source
+              JOIN account_partial_reconcile partial
+                ON partial.debit_move_id = source.id OR partial.credit_move_id = source.id
+              JOIN account_move_line other ON other.id = CASE
+                WHEN partial.debit_move_id = source.id THEN partial.credit_move_id
+                ELSE partial.debit_move_id END
+             WHERE other.partner_id IS NOT NULL
+             GROUP BY 1, 2, 3, 4
+        """, first, source))
+        companies = self.env['res.company'].browse({row[2] for row in rows})
+        company_by_id = {company.id: company for company in companies}
+        return [('initial' if initial else 'period', partner_id, company_by_id[company_id], is_debit, Decimal(str(amount)))
+                for initial, partner_id, company_id, is_debit, amount in rows]
+
+    @api.model
+    def _partner_allocations(self, options):
+        unfiltered = dict(options, partner_ids=[], partner_category_ids=[])
+        domain = self._base_domain(options) + self._partner_domain(unfiltered) + [
+            ('partner_id', '=', False), ('date', '<=', options['date_to'])]
+        model = self.env['account.move.line']
+        model.flush_model(['partner_id', 'date', 'balance'])
+        self.env['account.partial.reconcile'].flush_model(['debit_move_id', 'credit_move_id', 'amount'])
+        source = model._search(domain).select(SQL('account_move_line.id'))
+        rows = self.env.execute_query(SQL("""
+            SELECT source.id, other.partner_id, SUM(partial.amount)
+              FROM (%s) source
+              JOIN account_partial_reconcile partial
+                ON partial.debit_move_id = source.id OR partial.credit_move_id = source.id
+              JOIN account_move_line other ON other.id = CASE
+                WHEN partial.debit_move_id = source.id THEN partial.credit_move_id
+                ELSE partial.debit_move_id END
+             WHERE other.partner_id IS NOT NULL
+             GROUP BY source.id, other.partner_id
+        """, source))
+        result = {}
+        for line_id, partner_id, amount in rows:
+            result.setdefault(line_id, {})[partner_id] = Decimal(str(amount))
+        return result
+
+    @api.model
+    def _selected_attribution_partners(self, options, allocations):
+        ids = {partner for partners in allocations.values() for partner in partners}
+        if options['partner_ids']:
+            ids &= set(options['partner_ids'])
+        if ids and options['partner_category_ids']:
+            ids = set(self.env['res.partner'].search([('id', 'in', list(ids)),
+                ('category_id', 'in', options['partner_category_ids'])]).ids)
+        return ids
 
     @api.model
     def _ledger_amounts(self, values, drill=False):
@@ -167,9 +265,7 @@ class BaseerLedgerEngine(models.AbstractModel):
                           for figure in ('debit', 'credit', 'balance')}
                 running += values['balance']
                 values['balance'] = running
-                name = line.move_name or line.move_id.name or ''
-                if line.name and line.name != name:
-                    name += ' ' + line.name
+                _move, _detail, name = _item_labels(line.move_name or line.move_id.name, line.name)
                 rows.append({'type': 'item', 'id': line.id, 'name': name, 'date': format_date(self.env, line.date), 'date_raw': fields.Date.to_string(line.date),
                              'partner': line.partner_id.display_name or '',
                              'currency': format_amount(self.env, line.amount_currency * float(share), line.currency_id) if line.currency_id and line.currency_id != line.company_id.currency_id else '',
@@ -285,7 +381,17 @@ class BaseerLedgerEngine(models.AbstractModel):
             if not partner:
                 raise AccessError(_('Choose an account from this line.'))
             partner.check_access('read')
-        domain = self._base_domain(options) + self._partner_domain(options) + [('partner_id', '=', partner_id or False), ('date', '<=', options['date_to'])]
+        allocations = self._partner_allocations(options)
+        selected = self._selected_attribution_partners(options, allocations)
+        ids = [line_id for line_id, partners in allocations.items() if partner_id in partners and partner_id in selected]
+        unfiltered = dict(options, partner_ids=[], partner_category_ids=[])
+        partner_domain = self._partner_domain(unfiltered if ids else options)
+        fully_allocated = []
+        if not partner_id:
+            for line in self.env['account.move.line'].browse(list(allocations)):
+                if line.company_currency_id.is_zero(abs(line.balance) - float(sum(allocations[line.id].values()))):
+                    fully_allocated.append(line.id)
+        domain = self._base_domain(options) + partner_domain + ['|', ('partner_id', '=', partner_id or False), ('id', 'in', ids), ('id', 'not in', fully_allocated), ('date', '<=', options['date_to'])]
         return {'type': 'ir.actions.act_window', 'name': _('Journal Items'), 'res_model': 'account.move.line',
                 'view_mode': 'list,form', 'views': [(False, 'list'), (False, 'form')], 'target': 'current',
                 'domain': self._public_domain(domain)}
@@ -305,7 +411,19 @@ class BaseerLedgerEngine(models.AbstractModel):
     @api.model
     def _partner_page(self, options, row, opening, offset, limit):
         first, last = options['columns'][0]['_start'], options['columns'][0]['_end']
-        domain = self._base_domain(options) + self._partner_domain(options) + [('partner_id', '=', row['partner_id'] or False), ('date', '>=', first), ('date', '<=', last)]
+        allocations = self._partner_allocations(options)
+        partner_id = row['partner_id']
+        selected_partners = self._selected_attribution_partners(options, allocations)
+        ids = [line_id for line_id, partners in allocations.items() if partner_id in partners and partner_id in selected_partners]
+        fully_allocated = []
+        if not partner_id:
+            for line in self.env['account.move.line'].browse(list(allocations)):
+                if line.company_currency_id.is_zero(abs(line.balance) - float(sum(allocations[line.id].values()))):
+                    fully_allocated.append(line.id)
+        unfiltered = dict(options, partner_ids=[], partner_category_ids=[])
+        domain = self._base_domain(options) + self._partner_domain(unfiltered if ids else options) + [
+            '|', ('partner_id', '=', partner_id or False), ('id', 'in', ids), ('id', 'not in', fully_allocated),
+            ('date', '>=', first), ('date', '<=', last)]
         model = self.env['account.move.line']
         model.flush_model(['date', 'move_name', 'partner_id'])
         query = model._search(domain)
@@ -323,16 +441,16 @@ class BaseerLedgerEngine(models.AbstractModel):
             result.append({'type': 'initial', 'name': _('Initial Balance'), 'amounts': self._ledger_amounts(initial)})
         for index, line in enumerate(previous | lines):
             share = _analytic_share(line.analytic_distribution, set(options['analytic_account_ids'])) if options['analytic_account_ids'] else Decimal(1)
+            if not line.partner_id and line.id in allocations:
+                amount = (allocations[line.id].get(partner_id, Decimal(0)) if partner_id else
+                          Decimal(str(abs(line.balance))) - sum(allocations[line.id].values()))
+                share *= amount / Decimal(str(abs(line.balance))) if line.balance else Decimal(0)
             values = {k: self._ledger_convert(Decimal(str(line[k] or 0)) * share, line.company_id, last) for k in ('debit', 'credit', 'balance')}
             running += values['balance']
             if index < offset:
                 continue
             values['balance'] = running
-            move_label = line.move_name or line.move_id.name or ''
-            detail_label = line.name if line.name and line.name != '/' and line.name not in move_label else ''
-            if move_label and move_label in detail_label:
-                detail_label = detail_label.replace(move_label, '').strip(' -')
-            name = ' '.join(part for part in (move_label, detail_label) if part)
+            move_label, detail_label, name = _item_labels(line.move_name or line.move_id.name, line.name)
             result.append({'type': 'item', 'id': line.id, 'name': name, 'move_label': move_label,
                            'detail_label': detail_label, 'journal': line.journal_id.code or '',
                            'account': line.account_id.with_company(line.company_id).code or '',

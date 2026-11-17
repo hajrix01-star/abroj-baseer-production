@@ -17,6 +17,17 @@ class BaseerReportExport(models.AbstractModel):
     def _export_payload(self, report_code, options):
         engine = self.with_context(baseer_gl_export=True)
         payload = engine.get_report(report_code, options, with_accounts=True)
+        if payload['report'].get('report_kind') == 'cash_flow':
+            unfolded = options.get('unfolded_lines', [])
+            unfold_all = options.get('unfold_all', False)
+            if type(unfold_all) is not bool or not isinstance(unfolded, list) or any(not isinstance(code, str) for code in unfolded):
+                raise ValidationError(_('The report options are not valid.'))
+            for line in payload['lines']:
+                line['export_unfolded'] = line.get('foldable') and (unfold_all or line['code'] in unfolded)
+                line['export_total_label'] = _('Total %s') % line['name']
+                if not line['export_unfolded']:
+                    line['accounts'] = []
+            return payload
         if payload['report'].get('report_kind') not in ('partner_ledger', 'aged'):
             return payload
         unfolded = options.get('unfolded_partners', [])
@@ -99,7 +110,7 @@ class BaseerReportExport(models.AbstractModel):
                 amount_format = money
             sheet.write(row, 0, line['name'], label_format)
             ledger = payload['report'].get('report_kind') == 'ledger'
-            if not line.get('hide_amounts') and not (aged and line['display'] == 'section'):
+            if not line.get('hide_amounts') and not line.get('export_unfolded') and not (aged and line['display'] == 'section'):
                 if grid:
                     for amount_index, amount in enumerate(line['amounts']):
                         index = ([6, 7, 9][amount_index] if partner else amount_index + (4 if ledger else 2 if aged else 1))
@@ -145,6 +156,10 @@ class BaseerReportExport(models.AbstractModel):
                 sheet.write(row, 0, f"{account['code']} {account['name']}".strip(), detail)
                 _write_amounts(sheet, row, account['amounts'], money, detail)
                 row += 1
+            if line.get('export_unfolded'):
+                sheet.write(row, 0, _('Total %s') % line['name'], total)
+                _write_amounts(sheet, row, line['amounts'], money_bold, total)
+                row += 1
         for note in payload['notes']:
             sheet.write(row, 0, note)
             row += 1
@@ -167,6 +182,8 @@ class BaseerReportExport(models.AbstractModel):
         public_options = {key: value for key, value in normalized.items() if key != 'columns'}
         if report.report_kind in ('partner_ledger', 'aged'):
             public_options.update({key: (options or {}).get(key, default) for key, default in [('unfold_all', False), ('unfolded_partners', [])]})
+        if report.report_kind == 'cash_flow':
+            public_options.update({key: (options or {}).get(key, default) for key, default in [('unfold_all', False), ('unfolded_lines', [])]})
         if report.report_kind == 'ledger':
             public_options.update({key: (options or {}).get(key, default) for key, default in [('unfold_all', False), ('unfolded_accounts', [])]})
         return self.env.ref('baseer_report_engine.action_report_pdf').report_action(

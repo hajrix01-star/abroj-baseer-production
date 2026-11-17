@@ -1335,3 +1335,8 @@ msgstr "قائمة التدفقات النقدية (جديد)"
 #: model:ir.model.fields.selection,name:baseer_report_engine.selection__baseer_report_definition__report_kind__cash_flow
 msgid "Cash Flow"
 msgstr "التدفق النقدي"
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/cash_flow.py:0
+msgid "Exchange difference / rounding"
+msgstr "فرق صرف / تقريب"

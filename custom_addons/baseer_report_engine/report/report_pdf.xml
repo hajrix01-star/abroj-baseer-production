@@ -78,7 +78,7 @@
                                 <t t-if="payload['report'].get('report_kind') == 'ledger'"><td/><td/><td/></t>
                                 <t t-if="payload['report'].get('report_kind') == 'partner_ledger'"><td/><td/><td/><td/><td/><td class="num" t-esc="line['amounts'][0]['display']"/><td class="num" t-esc="line['amounts'][1]['display']"/><td/><td class="num" t-esc="line['amounts'][2]['display']"/></t>
                                 <td t-if="payload['report'].get('report_kind') == 'aged'"/>
-                                <td t-if="payload['report'].get('report_kind') != 'partner_ledger'" t-foreach="line['amounts']" t-as="amount" t-att-class="'num' + (' negative' if amount['negative'] else '') + (' shaded' if payload.get('column_groups') and (payload['columns'][amount_index + (3 if payload['report'].get('report_kind') == 'ledger' else 0)]['figure'] == 'debit' or payload['columns'][amount_index + (3 if payload['report'].get('report_kind') == 'ledger' else 0)]['kind'] == 'end') else '')" t-esc="amount['display'] if not line.get('hide_amounts') and not (payload['report'].get('report_kind') == 'aged' and line['display'] == 'section') else ''"/>
+                                <td t-if="payload['report'].get('report_kind') != 'partner_ledger'" t-foreach="line['amounts']" t-as="amount" t-att-class="'num' + (' negative' if amount['negative'] else '') + (' shaded' if payload.get('column_groups') and (payload['columns'][amount_index + (3 if payload['report'].get('report_kind') == 'ledger' else 0)]['figure'] == 'debit' or payload['columns'][amount_index + (3 if payload['report'].get('report_kind') == 'ledger' else 0)]['kind'] == 'end') else '')" t-esc="amount['display'] if not line.get('hide_amounts') and not line.get('export_unfolded') and not (payload['report'].get('report_kind') == 'aged' and line['display'] == 'section') else ''"/>
                             </tr>
                             <tr t-if="payload['report'].get('report_kind') not in ('partner_ledger', 'aged')" t-foreach="line.get('ledger', {}).get('rows', [])" t-as="item" t-att-class="'total' if item['type'] == 'total' else 'account'">
                                 <td t-esc="item['name']"/><td t-esc="item.get('date', '')"/><td t-esc="item.get('partner', '')"/><td t-esc="item.get('currency', '')"/>
@@ -101,6 +101,7 @@
                                 </td>
                                 <td t-foreach="account['amounts']" t-as="amount" t-att-class="'num negative' if amount['negative'] else 'num'" t-esc="amount['display']"/>
                             </tr>
+                            <tr t-if="line.get('export_unfolded')" class="total"><th t-esc="line['export_total_label']"/><td t-foreach="line['amounts']" t-as="amount" class="num" t-esc="amount['display']"/></tr>
                         </t>
                     </tbody>
                 </table>

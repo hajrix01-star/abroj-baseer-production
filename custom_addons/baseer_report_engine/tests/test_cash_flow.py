@@ -142,3 +142,95 @@ class TestCashFlow(EngineCase):
         self.env['res.lang']._activate_lang('ar_001')
         self.env['ir.module.module']._load_module_terms(['baseer_report_engine'], ['ar_001'], overwrite=True)
         self.assertEqual(self.env.ref('baseer_report_engine.menu_cash_flow').with_context(lang='ar_001').name, 'قائمة التدفقات النقدية (جديد)')
+
+    def test_future_partial_stays_advance(self):
+        company = self._company('Cash cutoff')
+        engine = self._engine(company)
+        cash = self._account(company, '10031', 'asset_cash')
+        receivable = self._account(company, '11031', 'asset_receivable')
+        receivable.reconcile = True
+        revenue = self._account(company, '40031', 'income')
+        revenue.tag_ids = [(4, self.env.ref('account.account_tag_operating').id)]
+        journal = self._journal(company, 'CF31')
+        payment = self._entry(company, journal, '2041-06-01', cash, receivable, 50)
+        invoice = self._entry(company, journal, '2041-07-01', receivable, revenue, 50)
+        (payment | invoice).line_ids.filtered(lambda line: line.account_id == receivable).reconcile()
+        report = engine.get_report('cash_flow', self._options())
+        self.assertEqual(Decimal(self._value(report, 'advance_received')), Decimal(50))
+        self.assertEqual(Decimal(self._value(report, 'operating_in')), Decimal(0))
+
+    def test_residual_has_non_drillable_detail(self):
+        from unittest.mock import patch
+        company = self._company('Cash rounding')
+        engine = self._engine(company)
+        cash = self._account(company, '10032', 'asset_cash')
+        income = self._account(company, '40032', 'income')
+        journal = self._journal(company, 'CF32')
+        self._entry(company, journal, '2041-03-01', cash, income, 50)
+        with patch.object(type(engine), '_ledger_convert', return_value=Decimal('49.99')):
+            report = engine.get_report('cash_flow', self._options(), with_accounts=True)
+        line = next(row for row in report['lines'] if row['code'] == 'unclassified_in')
+        residual = next(row for row in line['accounts'] if not row['id'])
+        self.assertEqual(residual['name'], 'Exchange difference / rounding')
+        self.assertFalse(residual['amounts'][0]['drill'])
+        self.assertEqual(sum(Decimal(row['amounts'][0]['value']) for row in line['accounts']), Decimal(line['amounts'][0]['value']))
+
+    def test_query_count_does_not_grow_with_moves(self):
+        company = self._company('Cash query count')
+        engine = self._engine(company)
+        cash = self._account(company, '10033', 'asset_cash')
+        income = self._account(company, '40033', 'income')
+        journal = self._journal(company, 'CF33')
+        options = self._options()
+        def count():
+            self.env.flush_all()
+            self.env.invalidate_all()
+            start = self.cr.sql_log_count
+            engine.get_report('cash_flow', options)
+            return self.cr.sql_log_count - start
+        for index in range(5):
+            self._entry(company, journal, '2041-03-01', cash, income, 1)
+        small = count()
+        for index in range(25):
+            self._entry(company, journal, '2041-03-01', cash, income, 1)
+        large = count()
+        self.assertLessEqual(large, small + 5, (small, large))
+
+    def test_invoice_and_bill_payment_workflows(self):
+        from odoo import Command
+        company = self._company('Cash workflow')
+        company.country_id = self.env.ref('base.us')
+        engine = self._engine(company)
+        rec = self._account(company, '11041', 'asset_receivable')
+        pay = self._account(company, '21041', 'liability_payable')
+        rec.reconcile = pay.reconcile = True
+        income = self._account(company, '40041', 'income')
+        expense = self._account(company, '50041', 'expense')
+        tax_account = self._account(company, '22041', 'liability_current')
+        for account in (income, expense, tax_account):
+            account.tag_ids = [Command.link(self.env.ref('account.account_tag_operating').id)]
+        partner = self.env['res.partner'].create({'name': 'Cash workflow partner'})
+        partner.with_company(company).write({'property_account_receivable_id': rec.id, 'property_account_payable_id': pay.id})
+        company.transfer_account_id = self._account(company, '10941', 'asset_current')
+        sales = self.env['account.journal'].with_company(company).create({'name': 'Sales', 'code': 'CFS', 'type': 'sale', 'company_id': company.id, 'default_account_id': income.id})
+        purchases = self.env['account.journal'].with_company(company).create({'name': 'Purchases', 'code': 'CFP', 'type': 'purchase', 'company_id': company.id, 'default_account_id': expense.id})
+        bank = self.env['account.journal'].with_company(company).create({'name': 'Bank', 'code': 'CFB', 'type': 'bank', 'company_id': company.id})
+        (bank.inbound_payment_method_line_ids | bank.outbound_payment_method_line_ids).payment_account_id = bank.default_account_id
+        tax_group = self.env['account.tax.group'].with_company(company).create({'name': 'Cash tax', 'company_id': company.id})
+        tax = self.env['account.tax'].with_company(company).create({'name': '15 percent', 'amount': 15, 'type_tax_use': 'sale', 'company_id': company.id, 'tax_group_id': tax_group.id, 'country_id': self.env.ref('base.us').id})
+        tax.invoice_repartition_line_ids.filtered(lambda l: l.repartition_type == 'tax').account_id = tax_account
+        def invoice(kind, journal, account, price, taxes):
+            move = self.env['account.move'].with_company(company).create({'move_type': kind, 'company_id': company.id, 'journal_id': journal.id, 'partner_id': partner.id, 'invoice_date': '2041-02-01', 'date': '2041-02-01', 'invoice_line_ids': [Command.create({'name': 'Workflow', 'account_id': account.id, 'price_unit': price, 'tax_ids': [Command.set(taxes.ids)]})]})
+            move.action_post()
+            return move
+        def register(move, amount):
+            wizard = self.env['account.payment.register'].with_company(company).with_context(active_model='account.move', active_ids=move.ids)
+            wizard.create({'journal_id': bank.id, 'payment_date': '2041-03-01', 'amount': amount})._create_payments()
+        register(invoice('out_invoice', sales, income, 100, tax), 115)
+        register(invoice('out_invoice', sales, income, 100, self.env['account.tax']), 40)
+        register(invoice('in_invoice', purchases, expense, 30, self.env['account.tax']), 30)
+        report = engine.get_report('cash_flow', self._options(), with_accounts=True)
+        self.assertEqual(Decimal(self._value(report, 'operating_in')), Decimal(155))
+        self.assertEqual(Decimal(self._value(report, 'operating_out')), Decimal(-30))
+        rows = next(line['accounts'] for line in report['lines'] if line['code'] == 'operating_in')
+        self.assertEqual({row['id']: Decimal(row['amounts'][0]['value']) for row in rows}, {income.id: Decimal(140), tax_account.id: Decimal(15)})

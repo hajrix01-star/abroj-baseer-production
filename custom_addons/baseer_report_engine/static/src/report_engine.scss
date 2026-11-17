@@ -499,3 +499,16 @@
     .o_bre_line.o_bre_level_0.o_bre_open td.is-zero { color: #d8dadd; }
     .o_bre_line.o_bre_level_0.o_bre_open td.is-negative { color: #d23f3a; }
 }
+
+.o_baseer_report_engine .o_bre_cash_flow {
+    .o_bre_table {
+        .o_bre_label_col { width: 610px; }
+        .o_bre_value_col { width: 140px; }
+        .o_bre_level_2 th { padding-inline-start: 36px; font-weight: 500; }
+        .o_bre_level_4 th { padding-inline-start: 52px; font-weight: 400; }
+        .o_bre_level_4.o_bre_open th, .o_bre_level_4.o_bre_open td { background: #f2f2f2; font-weight: 700; }
+        .o_bre_level_4 .o_bre_caret { inset-inline-start: 19px; }
+        .o_bre_account th { padding-inline-start: 68px; }
+        .o_bre_leaf_total th { padding-inline-start: 52px; }
+    }
+}

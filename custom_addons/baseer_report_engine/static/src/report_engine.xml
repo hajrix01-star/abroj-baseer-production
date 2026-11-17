@@ -29,7 +29,7 @@
                             </details>
                         </t>
                     </Dropdown>
-                    <Dropdown t-if="!isLedger" menuClass="'o_bre_dropdown'"><button class="btn btn-secondary"><i class="fa fa-percent me-1"/><t t-esc="!state.options.comparison ? state.labels.comparison : (isGrid ? state.labels.comparison + ': ' : '') + (state.options.comparison_mode === 'year' ? state.labels.same_last_year : state.labels.previous)"/></button><t t-set-slot="content">
+                    <Dropdown t-if="!isLedger &amp;&amp; !isCashFlow" menuClass="'o_bre_dropdown'"><button class="btn btn-secondary"><i class="fa fa-percent me-1"/><t t-esc="!state.options.comparison ? state.labels.comparison : (isGrid ? state.labels.comparison + ': ' : '') + (state.options.comparison_mode === 'year' ? state.labels.same_last_year : state.labels.previous)"/></button><t t-set-slot="content">
                         <DropdownItem onSelected="() => this.setComparison('none')"><span class="o_bre_checkmark" t-esc="!state.options.comparison ? '✓' : ''"/><t t-esc="state.labels.no_comparison"/></DropdownItem>
                         <DropdownItem onSelected="() => this.setComparison('previous')"><span class="o_bre_checkmark" t-esc="state.options.comparison &amp;&amp; state.options.comparison_mode === 'previous' ? '✓' : ''"/><t t-esc="state.labels.previous"/></DropdownItem>
                         <DropdownItem onSelected="() => this.setComparison('year')"><span class="o_bre_checkmark" t-esc="state.options.comparison &amp;&amp; state.options.comparison_mode === 'year' ? '✓' : ''"/><t t-esc="state.labels.same_last_year"/></DropdownItem>
@@ -49,7 +49,7 @@
             <div t-if="state.payload?.has_draft_entries" class="alert alert-info text-center o_bre_draft_banner"><t t-esc="state.labels.banner_before"/> <a href="#" t-on-click.prevent="openDraftEntries" t-esc="state.labels.banner_link"/> <t t-esc="state.labels.banner_after"/></div>
             <div t-if="state.error" class="alert alert-danger" role="alert" t-esc="state.error"/>
             <div t-if="state.loading" class="o_bre_status" role="status" t-esc="state.labels.loading"/>
-            <section t-if="state.payload" t-att-class="'o_bre_paper' + (isGrid ? ' o_bre_grid' : '') + (isLedger ? ' o_bre_ledger' : '') + (isPartnerLedger ? ' o_bre_partner_ledger' : '')" t-att-aria-label="state.reportName" t-att-style="'--bre-columns:' + state.payload.columns.length">
+            <section t-if="state.payload" t-att-class="'o_bre_paper' + (isGrid ? ' o_bre_grid' : '') + (isLedger ? ' o_bre_ledger' : '') + (isPartnerLedger ? ' o_bre_partner_ledger' : '') + (isCashFlow ? ' o_bre_cash_flow' : '')" t-att-aria-label="state.reportName" t-att-style="'--bre-columns:' + state.payload.columns.length">
                 <div class="o_bre_scroll"><div class="o_bre_paper_inner">
                     <table t-if="isAged" class="o_bre_table o_bre_grid_table o_bre_ledger_table o_bre_aged_table">
                         <colgroup><col class="o_bre_aged_label"/><col t-foreach="state.payload.columns" t-as="column" t-key="column.key"/></colgroup>

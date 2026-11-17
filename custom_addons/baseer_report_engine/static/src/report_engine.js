@@ -123,7 +123,8 @@ export class BaseerReportEngine extends Component {
             hide_zero: !!options.hide_zero,
             journal_ids: [...(options.journal_ids || [])],
             analytic_account_ids: [...(options.analytic_account_ids || [])],
-            unfold_all: !!options.unfold_all,
+            unfold_all: this.isCashFlow ? (this.state.payload?.lines || []).filter(line => line.foldable).every(line => !this.state.folded[line.code]) : !!options.unfold_all,
+            ...(this.isCashFlow ? { unfolded_lines: (this.state.payload?.lines || []).filter(line => line.foldable && !this.state.folded[line.code]).map(line => line.code) } : {}),
             unfolded_accounts: options.unfolded_accounts || [],
             ...(this.isPartnerLedger ? { unfolded_partners: (this.state.payload?.lines || []).filter(line => line.foldable && !this.state.folded[line.code]).map(line => line.partner_id) } : {}),
             ...(this.isPartnerLedger ? { account_types: options.account_types || ["receivable", "payable"], partner_ids: options.partner_ids || [], partner_category_ids: options.partner_category_ids || [], unreconciled: !!options.unreconciled } : {}),
@@ -461,7 +462,7 @@ export class BaseerReportEngine extends Component {
             const locale = (user.lang || "en_US").replace("_", "-");
             return `${this.state.labels.as_of} ${new Intl.DateTimeFormat(locale).format(date)}`;
         }
-        if (this.isGrid) {
+        if (this.isGrid || this.isCashFlow) {
             const date = new Date(`${this.state.options.date_to}T12:00:00`);
             const locale = (user.lang || "en_US").replace("_", "-");
             const start = new Date(`${this.state.options.date_from}T12:00:00`);
@@ -575,6 +576,7 @@ export class BaseerReportEngine extends Component {
     }
 
     columnLabel(column) {
+        if (this.isCashFlow && column.key === "c0") return this.periodLabel;
         if (this.state.dateMode === "range" && column.kind === "period" && this.state.options.preset === "this_year") {
             const start = column.date_from?.slice(0, 4);
             const end = column.date_to?.slice(0, 4);

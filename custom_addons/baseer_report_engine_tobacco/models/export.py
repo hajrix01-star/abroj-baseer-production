@@ -92,4 +92,3 @@ class TobaccoExport(models.AbstractModel):
         workbook.close()
         return {'filename': 'tobacco_service_fee.xlsx', 'content': base64.b64encode(output.getvalue()).decode(),
                 'mimetype': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}
-

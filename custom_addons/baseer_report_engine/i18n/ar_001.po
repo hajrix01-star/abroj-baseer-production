@@ -953,7 +953,8 @@ msgstr "بحث..."
 
 #. module: baseer_report_engine
 #. odoo-python
-#: code:addons/baseer_report_engine/models/grid.py:0
+#: code:addons/baseer_report_engine/models/engine.py:0
+#: model:baseer.report.definition,name:baseer_report_engine.report_general_ledger
 msgid "General Ledger"
 msgstr "دفتر الأستاذ العام"
 
@@ -1003,3 +1004,50 @@ msgstr "الفترة الافتراضية"
 #: code:addons/baseer_report_engine/models/grid.py:0
 msgid "Undistributed Profits/Losses"
 msgstr "الأرباح/الخسائر غير الموزعة"
+
+#. module: baseer_report_engine
+#: model:ir.actions.client,name:baseer_report_engine.action_general_ledger
+#: model:ir.ui.menu,name:baseer_report_engine.menu_general_ledger
+msgid "General Ledger (New)"
+msgstr "دفتر الأستاذ العام (جديد)"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/engine.py:0
+msgid "Load more..."
+msgstr "تحميل المزيد..."
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/ledger.py:0
+msgid "View Journal Entry"
+msgstr "عرض قيد اليومية"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/ledger.py:0
+msgid "Date"
+msgstr "التاريخ"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/ledger.py:0
+msgid "Partner"
+msgstr "الشريك"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/ledger.py:0
+msgid "Currency"
+msgstr "العملة"
+
+#. module: baseer_report_engine
+#: selection:baseer.report.definition,report_kind:0
+msgid "Ledger"
+msgstr "دفتر الأستاذ"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/ledger.py:0
+msgid "Total General Ledger"
+msgstr "إجمالي دفتر الأستاذ العام"

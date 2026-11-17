@@ -2,6 +2,7 @@
 
 import base64
 import io
+from datetime import date
 
 import xlsxwriter
 
@@ -13,7 +14,7 @@ class BaseerReportExport(models.AbstractModel):
 
     @api.model
     def export_xlsx(self, report_code, options=None):
-        payload = self.get_report(report_code, options or {}, with_accounts=True)
+        payload = self.with_context(baseer_gl_export=True).get_report(report_code, options or {}, with_accounts=True)
         buffer = io.BytesIO()
         workbook = xlsxwriter.Workbook(buffer, {'in_memory': True})
         sheet = workbook.add_worksheet(_sheet_name(payload['report']['name']))
@@ -60,9 +61,10 @@ class BaseerReportExport(models.AbstractModel):
                 label_format = indents[min(line['level'], 7)]
                 amount_format = money
             sheet.write(row, 0, line['name'], label_format)
+            ledger = payload['report'].get('report_kind') == 'ledger'
             if not line.get('hide_amounts'):
                 if grid:
-                    for index, amount in enumerate(line['amounts'], start=1):
+                    for index, amount in enumerate(line['amounts'], start=4 if ledger else 1):
                         col = payload['columns'][index - 1]
                         shaded = col['figure'] == 'debit' or col['kind'] == 'end'
                         fmt = (grid_money_bold if line['display'] == 'total' else grid_money) if shaded else amount_format
@@ -70,7 +72,17 @@ class BaseerReportExport(models.AbstractModel):
                 else:
                     _write_amounts(sheet, row, line['amounts'], amount_format, label_format)
             row += 1
-            for account in line['accounts']:
+            if ledger and line.get('ledger'):
+                for item in line['ledger']['rows']:
+                    sheet.write(row, 0, item['name'], grid_bold if item['type'] == 'total' else indents[1])
+                    if item.get('date_raw'):
+                        sheet.write_datetime(row, 1, date.fromisoformat(item['date_raw']), workbook.add_format({'num_format': 'yyyy-mm-dd'}))
+                    sheet.write(row, 2, item.get('partner', ''))
+                    sheet.write(row, 3, item.get('currency', ''))
+                    for index, amount in enumerate(item['amounts'], start=4):
+                        sheet.write_number(row, index, float(amount['value']), money_bold if item['type'] == 'total' else money)
+                    row += 1
+            for account in line.get('accounts', []):
                 detail = indents[min(line['level'] + 1, 7)]
                 sheet.write(row, 0, f"{account['code']} {account['name']}".strip(), detail)
                 _write_amounts(sheet, row, account['amounts'], money, detail)
@@ -95,6 +107,8 @@ class BaseerReportExport(models.AbstractModel):
         report = self._definition(report_code)
         normalized = self._normalize_options(report, options or {})
         public_options = {key: value for key, value in normalized.items() if key != 'columns'}
+        if report.report_kind == 'ledger':
+            public_options.update({key: (options or {}).get(key, default) for key, default in [('unfold_all', False), ('unfolded_accounts', [])]})
         return self.env.ref('baseer_report_engine.action_report_pdf').report_action(
             report, data={'report_code': report.code, 'options': public_options},
         )

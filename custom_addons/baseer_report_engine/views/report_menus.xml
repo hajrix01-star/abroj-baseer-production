@@ -33,4 +33,12 @@
     <menuitem id="menu_trial_balance" name="Trial Balance (New)"
         parent="menu_new_version" action="action_trial_balance" sequence="30"
         groups="account.group_account_readonly,account.group_account_user,account.group_account_manager"/>
+    <record id="action_general_ledger" model="ir.actions.client">
+        <field name="name">General Ledger (New)</field>
+        <field name="tag">baseer_report_engine</field>
+        <field name="context">{'report_code': 'general_ledger'}</field>
+    </record>
+    <menuitem id="menu_general_ledger" name="General Ledger (New)" parent="menu_new_version"
+        action="action_general_ledger" sequence="40"
+        groups="account.group_account_readonly,account.group_account_user,account.group_account_manager"/>
 </odoo>

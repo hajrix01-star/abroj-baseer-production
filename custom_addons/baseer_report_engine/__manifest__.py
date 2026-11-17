@@ -14,6 +14,8 @@
         'data/trial_balance.xml',
         'data/general_ledger.xml',
         'data/partner_ledger.xml',
+        'data/aged_receivable.xml',
+        'data/aged_payable.xml',
         'views/report_menus.xml',
         'report/report_pdf.xml',
     ],

@@ -49,4 +49,20 @@
     <menuitem id="menu_partner_ledger" name="Partner Ledger (New)" parent="menu_new_version"
         action="action_partner_ledger" sequence="50"
         groups="account.group_account_readonly,account.group_account_user,account.group_account_manager"/>
+    <record id="action_aged_receivable" model="ir.actions.client">
+        <field name="name">Aged Receivable (New)</field>
+        <field name="tag">baseer_report_engine</field>
+        <field name="context">{'report_code': 'aged_receivable'}</field>
+    </record>
+    <menuitem id="menu_aged_receivable" name="Aged Receivable (New)" parent="menu_new_version"
+        action="action_aged_receivable" sequence="60"
+        groups="account.group_account_readonly,account.group_account_user,account.group_account_manager"/>
+    <record id="action_aged_payable" model="ir.actions.client">
+        <field name="name">Aged Payable (New)</field>
+        <field name="tag">baseer_report_engine</field>
+        <field name="context">{'report_code': 'aged_payable'}</field>
+    </record>
+    <menuitem id="menu_aged_payable" name="Aged Payable (New)" parent="menu_new_version"
+        action="action_aged_payable" sequence="70"
+        groups="account.group_account_readonly,account.group_account_user,account.group_account_manager"/>
 </odoo>

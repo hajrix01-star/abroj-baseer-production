@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="report_aged_payable" model="baseer.report.definition">
+        <field name="name">Aged Payable</field>
+        <field name="code">aged_payable</field>
+        <field name="date_mode">as_of</field>
+        <field name="report_kind">aged</field>
+        <field name="default_preset">today</field>
+    </record>
+</odoo>

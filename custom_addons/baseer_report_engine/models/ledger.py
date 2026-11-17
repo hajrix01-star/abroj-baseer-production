@@ -298,9 +298,11 @@ class BaseerLedgerEngine(models.AbstractModel):
     def get_ledger_lines(self, report_code, options, account_id, company_id=False, offset=0, limit=None):
         self._check_report_access()
         report = self._definition(report_code)
-        if report.report_kind not in ('ledger', 'partner_ledger') or type(offset) is not int or offset < 0:
+        if report.report_kind not in ('ledger', 'partner_ledger', 'aged') or type(offset) is not int or offset < 0:
             raise ValidationError(_('The report options are not valid.'))
         normalized = self._normalize_options(report, options or {})
+        if report.report_kind == 'aged':
+            return self._aged_page(normalized, account_id if account_id is not False else 0, offset, self._ledger_limit(limit))
         if report.report_kind == 'partner_ledger':
             partner_id = account_id if account_id is not False else 0
             self._partner_move_line_action(normalized, 'partner_%s' % partner_id, partner_id)
@@ -502,13 +504,15 @@ class BaseerLedgerEngine(models.AbstractModel):
     def get_partner_items_batch(self, report_code, options, partner_keys=None, limit=None):
         self._check_report_access()
         report = self._definition(report_code)
-        if report.report_kind != 'partner_ledger':
+        if report.report_kind not in ('partner_ledger', 'aged'):
             raise ValidationError(_('The report options are not valid.'))
         normalized = self._normalize_options(report, options or {})
         if partner_keys is not None and (not isinstance(partner_keys, list) or
                 any(type(key) is not int or key < 0 for key in partner_keys)):
             raise ValidationError(_('The report options are not valid.'))
         page_limit = None if self.env.context.get('baseer_gl_export') else self._ledger_limit(limit)
+        if report.report_kind == 'aged':
+            return self._aged_items_batch(normalized, partner_keys, page_limit)
         return self._partner_items_batch(normalized, partner_keys, page_limit)
 
     @api.model

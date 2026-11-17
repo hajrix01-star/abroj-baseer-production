@@ -17,7 +17,7 @@ class BaseerReportExport(models.AbstractModel):
     def _export_payload(self, report_code, options):
         engine = self.with_context(baseer_gl_export=True)
         payload = engine.get_report(report_code, options, with_accounts=True)
-        if payload['report'].get('report_kind') != 'partner_ledger':
+        if payload['report'].get('report_kind') not in ('partner_ledger', 'aged'):
             return payload
         unfolded = options.get('unfolded_partners', [])
         unfold_all = options.get('unfold_all', False)
@@ -28,7 +28,9 @@ class BaseerReportExport(models.AbstractModel):
                 and (unfold_all or line['partner_id'] in unfolded)]
         pages = engine.get_partner_items_batch(report_code, options, keys)
         for line in payload['lines']:
-            if line.get('foldable') and line['partner_id'] in pages:
+            if not line.get('foldable') or line['partner_id'] not in keys:
+                continue
+            if line['partner_id'] in pages:
                 page = pages[line['partner_id']]
                 line['ledger'] = {'rows': ([page['initial']] if page['initial'] else []) + page['items'],
                                   'has_more': page['has_more'], 'next_offset': page['next_offset']}
@@ -70,6 +72,7 @@ class BaseerReportExport(models.AbstractModel):
         grid_money = workbook.add_format({'num_format': '#,##0.00', 'bg_color': '#F9FAFB'})
         grid_money_bold = workbook.add_format({'num_format': '#,##0.00', 'bold': True, 'bg_color': '#F9FAFB'})
         partner = payload['report'].get('report_kind') == 'partner_ledger'
+        aged = payload['report'].get('report_kind') == 'aged'
         if partner:
             sheet.write(3, 0, payload['column_groups'][0]['label'])
             sheet.write(4, 0, payload['filter_line'])
@@ -98,10 +101,10 @@ class BaseerReportExport(models.AbstractModel):
                 amount_format = money
             sheet.write(row, 0, line['name'], label_format)
             ledger = payload['report'].get('report_kind') == 'ledger'
-            if not line.get('hide_amounts'):
+            if not line.get('hide_amounts') and not (aged and line['display'] == 'section'):
                 if grid:
                     for amount_index, amount in enumerate(line['amounts']):
-                        index = ([6, 7, 9][amount_index] if partner else amount_index + (4 if ledger else 1))
+                        index = ([6, 7, 9][amount_index] if partner else amount_index + (4 if ledger else 2 if aged else 1))
                         col = payload['columns'][index - 1]
                         shaded = col['figure'] == 'debit' or col['kind'] == 'end'
                         fmt = (grid_money_bold if line['display'] == 'total' else grid_money) if shaded else amount_format
@@ -118,6 +121,13 @@ class BaseerReportExport(models.AbstractModel):
                     sheet.write(row, 3, item.get('currency', ''))
                     for index, amount in enumerate(item['amounts'], start=4):
                         sheet.write_number(row, index, float(amount['value']), money_bold if item['type'] == 'total' else money)
+                    row += 1
+            if aged and line.get('ledger'):
+                for item in line['ledger']['rows']:
+                    sheet.write(row, 0, item['name'], indents[1])
+                    sheet.write(row, 1, item.get('invoice_date', ''))
+                    for index, amount in enumerate(item['amounts'], start=2):
+                        sheet.write_number(row, index, float(amount['value']), money)
                     row += 1
             if partner and line.get('ledger'):
                 date_format = workbook.add_format({'num_format': 'yyyy-mm-dd'})
@@ -157,7 +167,7 @@ class BaseerReportExport(models.AbstractModel):
         report = self._definition(report_code)
         normalized = self._normalize_options(report, options or {})
         public_options = {key: value for key, value in normalized.items() if key != 'columns'}
-        if report.report_kind == 'partner_ledger':
+        if report.report_kind in ('partner_ledger', 'aged'):
             public_options.update({key: (options or {}).get(key, default) for key, default in [('unfold_all', False), ('unfolded_partners', [])]})
         if report.report_kind == 'ledger':
             public_options.update({key: (options or {}).get(key, default) for key, default in [('unfold_all', False), ('unfolded_accounts', [])]})

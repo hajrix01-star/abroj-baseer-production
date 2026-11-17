@@ -388,9 +388,9 @@
     .o_bre_ledger .o_bre_paper_inner { min-width: 874px; }
     .o_bre_ledger_table {
         table-layout: auto;
-        .o_bre_ledger_label { width: 338px; min-width: 338px; }
-        .o_bre_ledger_date { min-width: 50px; }
-        .o_bre_ledger_partner { min-width: 67px; }
+        .o_bre_ledger_label { width: 364px; min-width: 364px; }
+        .o_bre_ledger_date { min-width: 92px; }
+        .o_bre_ledger_partner { min-width: 127px; }
         .o_bre_ledger_currency { min-width: 75px; }
         .o_bre_ledger_debit, .o_bre_ledger_credit { min-width: 100px; }
         .o_bre_ledger_balance { min-width: 94px; }
@@ -399,7 +399,11 @@
         .o_bre_balance_header th:nth-child(2), .o_bre_balance_header th:nth-child(3) { text-align: center; }
         tbody th { padding-inline-start: 16px; }
         .o_bre_fold { font-weight: inherit; }
-        .o_bre_ledger_caret { display: inline-block; width: 12px; color: inherit; }
+        .o_bre_ledger_caret { display: inline-block; width: 12px; color: #d8dadd; }
+        .o_bre_open .o_bre_ledger_caret { color: #017e84; }
+        .o_bre_foldable > th, .o_bre_foldable > td { height: 30px; }
+        tbody th, tbody td { border-top: 1px solid #e7e9ed; }
+        .o_bre_ledger_item td:nth-child(4):empty { color: #d8dadd; }
         .o_bre_open th, .o_bre_open td { background: #f3f4f6; font-weight: 700; }
         .o_bre_line.o_bre_level_0.o_bre_open, .o_bre_line.o_bre_level_0.o_bre_open th { color: #374151; font-weight: 700; }
         .o_bre_ledger_item th, .o_bre_ledger_initial th, .o_bre_ledger_total th, .o_bre_ledger_more th { padding-inline-start: 40px; }

@@ -65,4 +65,12 @@
     <menuitem id="menu_aged_payable" name="Aged Payable (New)" parent="menu_new_version"
         action="action_aged_payable" sequence="70"
         groups="account.group_account_readonly,account.group_account_user,account.group_account_manager"/>
+    <record id="action_cash_flow" model="ir.actions.client">
+        <field name="name">Cash Flow Statement (New)</field>
+        <field name="tag">baseer_report_engine</field>
+        <field name="context">{'report_code': 'cash_flow'}</field>
+    </record>
+    <menuitem id="menu_cash_flow" name="Cash Flow Statement (New)" parent="menu_new_version"
+        action="action_cash_flow" sequence="80"
+        groups="account.group_account_readonly,account.group_account_user,account.group_account_manager"/>
 </odoo>

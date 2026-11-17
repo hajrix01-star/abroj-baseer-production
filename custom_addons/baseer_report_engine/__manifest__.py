@@ -16,6 +16,7 @@
         'data/partner_ledger.xml',
         'data/aged_receivable.xml',
         'data/aged_payable.xml',
+        'data/cash_flow.xml',
         'views/report_menus.xml',
         'report/report_pdf.xml',
     ],

@@ -21,32 +21,26 @@ class TobaccoReportCase(EngineCase):
         engine = self._engine(company)
         options = self._options()
         normalized = engine._normalize_options(engine._definition('tobacco_service_fee'), options)
-        self.assertFalse(normalized['show_cumulative'])
+        self.assertNotIn('show_cumulative', normalized)
         recon = engine._tobacco_reconciliation(normalized)[0]
         self.assertEqual((recon['opening'], recon['movement'], recon['difference']), (30, -20, 20))
         self.assertIn(move.id, recon['manual_move_ids'])
         self.assertEqual(recon['unexplained'], 0)
-        for show in (False, True):
-            opts = dict(options, show_cumulative=show)
-            payload = engine._export_payload('tobacco_service_fee', opts)
-            section = payload['tobacco_sections'][0]
-            self.assertEqual(section['rows'], [])
-            self.assertEqual((section['debit'], section['credit'], section['net']), (0, 0, 0))
-            self.assertNotIn('movement', section)
-            labels = [values[0] for values, _ in section['export_rows']]
-            self.assertEqual('Cumulative at start' in labels, show)
-            self.assertEqual('Cumulative at end' in labels, show)
-            with zipfile.ZipFile(io.BytesIO(base64.b64decode(engine.export_xlsx('tobacco_service_fee', opts)['content']))) as archive:
-                strings = archive.read('xl/sharedStrings.xml').decode()
-                self.assertEqual('Cumulative at start' in strings, show)
-                for forbidden in ('Reconciliation', 'Manual journal entries', 'Fee account movement in the trial balance', 'سداد'):
-                    self.assertNotIn(forbidden, strings)
-            html, _ = self.env['ir.actions.report'].with_company(company).with_context(allowed_company_ids=[company.id])._render_qweb_html(
-                'baseer_report_engine.report_pdf', docids=engine._definition('tobacco_service_fee').ids,
-                data={'report_code': 'tobacco_service_fee', 'options': opts})
-            self.assertEqual(b'Cumulative at start' in html, show)
-            for forbidden in (b'Reconciliation', b'Manual journal entries', b'Fee account movement in the trial balance', 'سداد'.encode()):
-                self.assertNotIn(forbidden, html)
+        payload = engine._export_payload('tobacco_service_fee', options)
+        section = payload['tobacco_sections'][0]
+        self.assertEqual(section['rows'], [])
+        self.assertEqual((section['debit'], section['credit'], section['net']), (0, 0, 0))
+        for key in ('opening', 'closing', 'cumulative', 'movement'):
+            self.assertNotIn(key, section)
+        with zipfile.ZipFile(io.BytesIO(base64.b64decode(engine.export_xlsx('tobacco_service_fee', options)['content']))) as archive:
+            strings = archive.read('xl/sharedStrings.xml').decode()
+            for forbidden in ('Cumulative', 'Show cumulative balance', 'إظهار الرصيد التراكمي', 'Reconciliation', 'Manual journal entries', 'سداد'):
+                self.assertNotIn(forbidden, strings)
+        html, _ = self.env['ir.actions.report'].with_company(company).with_context(allowed_company_ids=[company.id])._render_qweb_html(
+            'baseer_report_engine.report_pdf', docids=engine._definition('tobacco_service_fee').ids,
+            data={'report_code': 'tobacco_service_fee', 'options': options})
+        for forbidden in ('Cumulative', 'Show cumulative balance', 'إظهار الرصيد التراكمي', 'Reconciliation', 'Manual journal entries', 'سداد'):
+            self.assertNotIn(forbidden.encode(), html)
 
     def test_month_bounds(self):
         from freezegun import freeze_time
@@ -98,6 +92,45 @@ class TobaccoReportCase(EngineCase):
 
 
 class TobaccoPosCase(EngineCase):
+    def test_refunds_are_fees_and_settlements_are_excluded(self):
+        from uuid import uuid4
+        from odoo import Command
+
+        company = self.env.company
+        company.write({'currency_id': self.env.ref('base.SAR').id, 'country_id': self.env.ref('base.sa').id})
+        self.env['account.chart.template'].try_loading('generic_coa', company=company, install_demo=False)
+        company.currency_id = self.env.ref('base.SAR')
+        account = self._account(company, '201021', 'liability_current')
+        other = self._account(company, '101099', 'asset_current')
+        group = self.env['account.tax.group'].create({'name': 'Tobacco service fee', 'company_id': company.id, 'country_id': company.account_fiscal_country_id.id})
+        tax = self.env['account.tax'].create({'name': 'Tobacco service fee', 'type_tax_use': 'sale',
+            'tax_group_id': group.id, 'country_id': company.account_fiscal_country_id.id,
+            'amount_type': 'fixed', 'amount': 100, 'company_id': company.id})
+        (tax.invoice_repartition_line_ids | tax.refund_repartition_line_ids).filtered(lambda rep: rep.repartition_type == 'tax').account_id = account
+        product = self.env['product.product'].create({'name': 'Fee product', 'available_in_pos': True, 'taxes_id': [Command.set(tax.ids)]})
+        config = self.env['pos.config'].create({'name': 'Refund test', 'company_id': company.id})
+        config.open_ui()
+        session = config.current_session_id
+        session.state = 'opened'
+        for qty in (1, 0.5, -1):
+            order = self.env['pos.order'].create({'company_id': company.id, 'session_id': session.id,
+                'source': 'pos', 'amount_tax': 0, 'amount_total': 0, 'amount_paid': 0, 'amount_return': 0,
+                'lines': [Command.create({'uuid': str(uuid4()), 'product_id': product.id,
+                    'tax_ids': [Command.set(tax.ids)], 'qty': qty, 'price_unit': 100,
+                    'price_subtotal': 100 * qty, 'price_subtotal_incl': 200 * qty, 'full_product_name': product.name})]})
+            order._compute_prices()
+            order.write({'date_order': '2041-02-04 12:00:00', 'state': 'paid'})
+        settlement = self._entry(company, self._journal(company, 'SET'), '2041-02-04', account, other, 75)
+        engine = self._engine(company)
+        options = self._options(date_from='2041-02-04', date_to='2041-02-04')
+        section = engine.get_report('tobacco_service_fee', options)['tobacco_sections'][0]
+        self.assertEqual((section['debit'], section['credit'], section['net']), (100, 150, 50))
+        self.assertEqual(section['net'], section['credit'] - section['debit'])
+        self.assertEqual(sorted((row['type'], row['net']) for row in section['rows']), [('Refund', -100), ('Sale', 50), ('Sale', 100)])
+        self.assertNotIn(('account.move', settlement.id), [(row['model'], row['id']) for row in section['rows']])
+        items = engine.get_tobacco_day(options, company.id, account.id, '2041-02-04')['items']
+        self.assertEqual(sorted((item['debit'], item['credit'], item['net']) for item in items), [(0, 50, 50), (0, 100, 100), (100, 0, -100)])
+
     def test_custom_formula_branches(self):
         # The formula tax is supplied by the optional account_tax_python addon;
         # the register deliberately does not depend on it.
@@ -145,7 +178,7 @@ class TobaccoPosCase(EngineCase):
         self.assertTrue(first['has_more'])
         self.assertFalse(second['has_more'])
         self.assertEqual(len(first['items']) + len(second['items']), 3)
-        self.assertEqual(second['items'][-1]['cumulative'], 50)
+        self.assertNotIn('cumulative', second['items'][-1])
 
     def test_native_pos_fee_and_riyadh_boundary(self):
         from uuid import uuid4

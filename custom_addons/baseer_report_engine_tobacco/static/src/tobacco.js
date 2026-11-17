@@ -5,13 +5,12 @@ import { BaseerReportEngine } from "@baseer_report_engine/report_engine";
 
 patch(BaseerReportEngine.prototype, {
     get isTobacco() { return this.reportCode === "tobacco_service_fee"; },
-    get tobaccoLabels() { return { date: _t("Date and Time"), document: _t("Document"), product: _t("Product and Quantity"), type: _t("Type"), debit: _t("Debit"), credit: _t("Credit"), net: _t("Net"), netPeriod: _t("Net for period"), cumulative: _t("Cumulative"), opening: _t("Cumulative at start"), total: _t("Total for period"), closing: _t("Cumulative at end"), show: _t("Show products"), showCumulative: _t("Show cumulative balance"), month: _t("Month") }; },
-    plainOptions(direction = 0) { return { ...super.plainOptions(direction), ...(this.isTobacco ? {show_products: !!this.state.options.show_products, show_cumulative: !!this.state.options.show_cumulative} : {}) }; },
+    get tobaccoLabels() { return { date: _t("Date and Time"), document: _t("Document"), product: _t("Product and Quantity"), type: _t("Type"), debit: _t("Debit"), credit: _t("Credit"), net: _t("Net"), netPeriod: _t("Net for period"), total: _t("Total for period"), show: _t("Show products"), month: _t("Month") }; },
+    plainOptions(direction = 0) { return { ...super.plainOptions(direction), ...(this.isTobacco ? {show_products: !!this.state.options.show_products} : {}) }; },
     async loadReport(direction = 0) {
         const show = this.state.options.show_products;
-        const cumulative = this.state.options.show_cumulative;
         await super.loadReport(direction);
-        if (this.isTobacco) { this.state.options.show_products = !!show; this.state.options.show_cumulative = !!cumulative; }
+        if (this.isTobacco) { this.state.options.show_products = !!show; }
     },
     tobaccoChooseMonth(event) {
         const value = event.target.value;

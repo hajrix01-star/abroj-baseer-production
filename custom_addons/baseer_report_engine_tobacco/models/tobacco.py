@@ -23,7 +23,6 @@ class TobaccoEngine(models.AbstractModel):
     def _normalize_options(self, report, raw):
         options = super()._normalize_options(report, raw)
         if report.code == 'tobacco_service_fee':
-            options['show_cumulative'] = bool((raw or {}).get('show_cumulative', False))
             options['show_products'] = bool((raw or {}).get('show_products', False))
         return options
 
@@ -186,10 +185,11 @@ class TobaccoEngine(models.AbstractModel):
                 continue
             domain = [('company_id', '=', company.id), ('account_id', 'in', accounts.ids),
                       ('parent_state', 'in', ['posted'] if options['posted_only'] else ['posted', 'draft'])]
-            lines = self.env['account.move.line'].search(domain + [('date', '<=', end)])
+            lines = self.env['account.move.line'].search(domain + [('date', '>=', start), ('date', '<=', end)])
             orders = self.env['pos.order'].search([('company_id', '=', company.id), ('source', '=', 'pos'),
                 ('state', 'in', ('paid', 'done')), ('date_order', '>=', utc_start), ('date_order', '<', utc_end)], order='date_order,id')
             rows = defaultdict(list)
+            # Refund fee lines are debits; miscellaneous settlement entries are not fee lines.
             for order in orders:
                 fees, _calculated = self._tobacco_order_fees(order, set(accounts.ids))
                 for (account_id, line_id), fee in fees.items():
@@ -201,7 +201,6 @@ class TobaccoEngine(models.AbstractModel):
                         'session_state': order.session_id.state})
             for account in accounts:
                 account_lines = lines.filtered(lambda l: l.account_id == account)
-                before = account_lines.filtered(lambda l: l.date < start)
                 period = account_lines.filtered(lambda l: start <= l.date <= end)
                 # POS invoices are already represented by their orders.
                 invoice_lines = period.filtered(lambda l: l.parent_state == 'posted' and l.move_id.move_type in ('out_invoice', 'out_refund') and l.tax_line_id and not l.move_id.pos_order_ids)
@@ -210,12 +209,11 @@ class TobaccoEngine(models.AbstractModel):
                         'product': '', 'quantity': 0, 'type': _('Credit Note') if line.move_id.move_type == 'out_refund' else _('Invoice'),
                         'net': line.credit - line.debit, 'model': 'account.move', 'id': line.move_id.id})
                 ordered = sorted(rows[account.id], key=lambda x: (x['date'], x['id']))
-                opening = sum(before.mapped('credit')) - sum(before.mapped('debit'))
                 net = sum(r['net'] for r in ordered)
                 sections.append({'company_id': company.id, 'company': company.name, 'account_id': account.id,
-                    'account': account.with_company(company).display_name, 'opening': opening, 'rows': ordered,
+                    'account': account.with_company(company).display_name, 'rows': ordered,
                     'debit': sum(max(-r['net'], 0) for r in ordered), 'credit': sum(max(r['net'], 0) for r in ordered),
-                    'net': net, 'closing': opening + net})
+                    'net': net})
         return sections
 
     @api.model
@@ -232,7 +230,6 @@ class TobaccoEngine(models.AbstractModel):
         payload['tobacco_sections'] = sections
         for section in sections:
             days = []
-            cumulative = section['opening']
             for row in section['rows']:
                 day = row['date'][:10]
                 if not days or days[-1]['date'] != day:
@@ -242,8 +239,6 @@ class TobaccoEngine(models.AbstractModel):
                 current['credit'] += max(row['net'], 0)
                 current['net'] += row['net']
                 current['count'] += 1
-                cumulative += row['net']
-                current['cumulative'] = cumulative
             section['days'] = days
         payload['has_draft_entries'] = False
         # Generic statement rendering and exports remain usable until the dedicated register UI is available.
@@ -255,13 +250,9 @@ class TobaccoEngine(models.AbstractModel):
                     'foldable': False, 'has_accounts': False, 'accounts': [],
                     'amounts': [self._serialize_amount(column, value, self.env.company.currency_id, False)]})
             add('%s — %s' % (section['company'], section['account']), 0, 'section', 0)
-            if normalized['show_cumulative']:
-                add(_('Cumulative at start'), section['opening'])
             for row in section['rows']:
                 add('%s · %s · %s' % (row['date'], row['name'], row['type']), row['net'])
             add(_('Total for period'), section['net'], 'total')
-            if normalized['show_cumulative']:
-                add(_('Cumulative at end'), section['closing'], 'total')
         payload['lines'] = result
         return payload
 
@@ -282,12 +273,10 @@ class TobaccoEngine(models.AbstractModel):
                         if s['company_id'] == company_id and s['account_id'] == account_id), None)
         if not section or not normalized['date_from'] <= day <= normalized['date_to']:
             raise ValidationError(_('The report options are not valid.'))
-        balance = section['opening']
         items = []
         for row in section['rows']:
-            balance += row['net']
             if row['date'][:10] == day:
-                items.append(dict(row, debit=max(-row['net'], 0), credit=max(row['net'], 0), cumulative=balance))
+                items.append(dict(row, debit=max(-row['net'], 0), credit=max(row['net'], 0)))
         return {'items': items[offset:offset + limit], 'has_more': offset + limit < len(items),
                 'next_offset': offset + len(items[offset:offset + limit])}
 

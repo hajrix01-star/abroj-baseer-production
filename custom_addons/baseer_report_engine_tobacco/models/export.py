@@ -10,22 +10,15 @@ class TobaccoExport(models.AbstractModel):
     _inherit = 'baseer.report.engine'
 
     @api.model
-    def _tobacco_export_rows(self, section, show_products, show_cumulative=False):
-        rows = [([self.env._('Cumulative at start'), '', '', '', '', '', '', section['opening']], 'total')] if show_cumulative else []
-        balance = section['opening']
+    def _tobacco_export_rows(self, section, show_products):
+        rows = []
         for day in section['days']:
-            rows.append(([day['date'], '', '', '', day['debit'], day['credit'], day['net'], day['cumulative']], 'day'))
+            rows.append(([day['date'], '', '', '', day['debit'], day['credit'], day['net']], 'day'))
             for item in (r for r in section['rows'] if r['date'][:10] == day['date']):
-                balance += item['net']
-                rows.append(([item['date'], item['name'], '%s × %s' % (item['product'], format(Decimal(str(item['quantity'])).normalize(), 'f')) if item['product'] else '', item['type'], max(-item['net'], 0), max(item['net'], 0), item['net'], balance], 'item'))
-        rows.append(([self.env._('Total for period'), '', '', '', section['debit'], section['credit'], section['net'], ''], 'total'))
-        if show_cumulative:
-            rows.append(([self.env._('Cumulative at end'), '', '', '', '', '', '', section['closing']], 'total'))
-        else:
-            rows = [(values[:-1], kind) for values, kind in rows]
+                rows.append(([item['date'], item['name'], '%s × %s' % (item['product'], format(Decimal(str(item['quantity'])).normalize(), 'f')) if item['product'] else '', item['type'], max(-item['net'], 0), max(item['net'], 0), item['net']], 'item'))
+        rows.append(([self.env._('Total for period'), '', '', '', section['debit'], section['credit'], section['net']], 'total'))
         if not show_products:
-            rows = [(values[:2] + values[3:], kind)
-                    for values, kind in rows]
+            rows = [(values[:2] + values[3:], kind) for values, kind in rows]
         return rows
 
     @api.model
@@ -33,8 +26,7 @@ class TobaccoExport(models.AbstractModel):
         payload = super()._export_payload(report_code, options)
         if report_code == 'tobacco_service_fee':
             for section in payload['tobacco_sections']:
-                section['export_rows'] = self._tobacco_export_rows(section, bool((options or {}).get('show_products')), bool((options or {}).get('show_cumulative')))
-            payload['tobacco_show_cumulative'] = bool((options or {}).get('show_cumulative'))
+                section['export_rows'] = self._tobacco_export_rows(section, bool((options or {}).get('show_products')))
             payload['tobacco_show_products'] = bool((options or {}).get('show_products'))
         return payload
 
@@ -60,14 +52,12 @@ class TobaccoExport(models.AbstractModel):
         for section in payload['tobacco_sections']:
             sheet.write(row, 0, '%s — %s' % (section['company'], section['account']), bold)
             row += 1
-            summary = ([(self.env._('Cumulative at start'), section['opening'])] if payload['tobacco_show_cumulative'] else []) + [(self.env._('Debit'), section['debit']), (self.env._('Credit'), section['credit']), (self.env._('Net for period'), section['net'])]
+            summary = [(self.env._('Debit'), section['debit']), (self.env._('Credit'), section['credit']), (self.env._('Net for period'), section['net'])]
             for col, (label, value) in enumerate(summary):
                 sheet.write(row, col, label, bold)
                 sheet.write_number(row + 1, col, value, money)
             row += 3
-            labels = [self.env._('Date and Time'), self.env._('Document'), self.env._('Type'), self.env._('Debit'), self.env._('Credit'), self.env._('Net'), self.env._('Cumulative')]
-            if not payload['tobacco_show_cumulative']:
-                labels.pop()
+            labels = [self.env._('Date and Time'), self.env._('Document'), self.env._('Type'), self.env._('Debit'), self.env._('Credit'), self.env._('Net')]
             if payload['tobacco_show_products']:
                 labels.insert(2, self.env._('Product and Quantity'))
             for col, label in enumerate(labels):

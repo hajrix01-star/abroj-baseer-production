@@ -1,0 +1,9 @@
+<odoo>
+    <record id="report_tobacco" model="baseer.report.definition">
+        <field name="name">Tobacco Service Fee Report</field>
+        <field name="code">tobacco_service_fee</field>
+        <field name="date_mode">range</field>
+        <field name="report_kind">tobacco</field>
+        <field name="default_preset">this_month</field>
+    </record>
+</odoo>

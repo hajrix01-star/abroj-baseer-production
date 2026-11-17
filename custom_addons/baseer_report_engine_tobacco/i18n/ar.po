@@ -1,0 +1,297 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: ar\n"
+
+#. module: baseer_report_engine_tobacco
+#: model:baseer.report.definition,name:baseer_report_engine_tobacco.report_tobacco
+msgid "Tobacco Service Fee Report"
+msgstr "تقرير رسوم خدمة التبغ"
+
+#. module: baseer_report_engine_tobacco
+#: model:ir.ui.menu,name:baseer_report_engine_tobacco.menu_tobacco
+#: model:ir.actions.client,name:baseer_report_engine_tobacco.action_tobacco
+msgid "Tobacco Service Fee (New)"
+msgstr "رسوم خدمة التبغ (جديد)"
+
+#. module: baseer_report_engine_tobacco
+#: model:ir.model.fields.selection,name:baseer_report_engine_tobacco.selection__baseer_report_definition__report_kind__tobacco
+msgid "Tobacco Service Fee"
+msgstr "رسوم خدمة التبغ"
+
+#. module: baseer_report_engine_tobacco
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_tobacco/models/tobacco.py:0
+msgid "This register requires a company currency of SAR with two decimal places."
+msgstr "يتطلب هذا السجل أن تكون عملة الشركة الريال السعودي بمنزلتين عشريتين."
+
+#. module: baseer_report_engine_tobacco
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_tobacco/models/tobacco.py:0
+msgid "Refund"
+msgstr "مرتجع"
+
+#. module: baseer_report_engine_tobacco
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_tobacco/models/tobacco.py:0
+msgid "Sale"
+msgstr "بيع"
+
+#. module: baseer_report_engine_tobacco
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_tobacco/models/tobacco.py:0
+msgid "Credit Note"
+msgstr "إشعار دائن"
+
+#. module: baseer_report_engine_tobacco
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_tobacco/models/tobacco.py:0
+msgid "Invoice"
+msgstr "فاتورة"
+
+#. module: baseer_report_engine_tobacco
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_tobacco/models/tobacco.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_report_engine_tobacco.report_pdf_tobacco
+msgid "Cumulative at start"
+msgstr "الإجمالي التراكمي في بداية الفترة"
+
+#. module: baseer_report_engine_tobacco
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_tobacco/models/tobacco.py:0
+msgid "Total for period"
+msgstr "إجمالي الفترة"
+
+#. module: baseer_report_engine_tobacco
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_tobacco/models/tobacco.py:0
+msgid "Cumulative at end"
+msgstr "الإجمالي التراكمي في نهاية الفترة"
+
+#. module: baseer_report_engine_tobacco
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_tobacco/models/tobacco.py:0
+msgid "Register net for period"
+msgstr "صافي السجل للفترة"
+
+#. module: baseer_report_engine_tobacco
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_tobacco/models/tobacco.py:0
+msgid "Fee account movement in the trial balance"
+msgstr "حركة حساب الرسوم في ميزان المراجعة"
+
+#. module: baseer_report_engine_tobacco
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_tobacco/models/tobacco.py:0
+msgid "Difference"
+msgstr "الفرق"
+
+#. module: baseer_report_engine_tobacco
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_tobacco/models/tobacco.py:0
+msgid "Choose a source from this report."
+msgstr "اختر مستنداً من هذا التقرير."
+
+#. module: baseer_report_engine_tobacco
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_tobacco/models/tobacco.py:0
+msgid "Source Document"
+msgstr "المستند المصدر"
+
+#. module: baseer_report_engine_tobacco
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_tobacco/models/tobacco.py:0
+msgid "Choose a fee account from this report."
+msgstr "اختر حساب رسوم من هذا التقرير."
+
+
+#. module: baseer_report_engine_tobacco
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_tobacco/static/src/tobacco.js:0
+#: code:addons/baseer_report_engine_tobacco/models/export.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_report_engine_tobacco.report_pdf_tobacco
+msgid "Date and Time"
+msgstr "التاريخ والوقت"
+
+#. module: baseer_report_engine_tobacco
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_tobacco/static/src/tobacco.js:0
+#: code:addons/baseer_report_engine_tobacco/models/export.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_report_engine_tobacco.report_pdf_tobacco
+msgid "Document"
+msgstr "المستند"
+
+#. module: baseer_report_engine_tobacco
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_tobacco/static/src/tobacco.js:0
+#: code:addons/baseer_report_engine_tobacco/models/export.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_report_engine_tobacco.report_pdf_tobacco
+msgid "Product and Quantity"
+msgstr "المنتج والكمية"
+
+#. module: baseer_report_engine_tobacco
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_tobacco/static/src/tobacco.js:0
+#: code:addons/baseer_report_engine_tobacco/models/export.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_report_engine_tobacco.report_pdf_tobacco
+msgid "Type"
+msgstr "النوع"
+
+#. module: baseer_report_engine_tobacco
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_tobacco/static/src/tobacco.js:0
+#: code:addons/baseer_report_engine_tobacco/models/export.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_report_engine_tobacco.report_pdf_tobacco
+msgid "Debit"
+msgstr "مدين"
+
+#. module: baseer_report_engine_tobacco
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_tobacco/static/src/tobacco.js:0
+#: code:addons/baseer_report_engine_tobacco/models/export.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_report_engine_tobacco.report_pdf_tobacco
+msgid "Credit"
+msgstr "دائن"
+
+#. module: baseer_report_engine_tobacco
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_tobacco/static/src/tobacco.js:0
+#: code:addons/baseer_report_engine_tobacco/models/export.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_report_engine_tobacco.report_pdf_tobacco
+msgid "Net"
+msgstr "الصافي"
+
+#. module: baseer_report_engine_tobacco
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_tobacco/static/src/tobacco.js:0
+#: code:addons/baseer_report_engine_tobacco/models/export.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_report_engine_tobacco.report_pdf_tobacco
+msgid "Cumulative"
+msgstr "الإجمالي التراكمي"
+
+#. module: baseer_report_engine_tobacco
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_tobacco/static/src/tobacco.js:0
+#: code:addons/baseer_report_engine_tobacco/models/export.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_report_engine_tobacco.report_pdf_tobacco
+msgid "Reconciliation"
+msgstr "المطابقة"
+
+#. module: baseer_report_engine_tobacco
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_tobacco/static/src/tobacco.js:0
+#: code:addons/baseer_report_engine_tobacco/models/export.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_report_engine_tobacco.report_pdf_tobacco
+msgid "Open sessions"
+msgstr "الجلسات المفتوحة"
+
+#. module: baseer_report_engine_tobacco
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_tobacco/static/src/tobacco.js:0
+#: code:addons/baseer_report_engine_tobacco/models/export.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_report_engine_tobacco.report_pdf_tobacco
+msgid "Manual journal entries"
+msgstr "قيود اليومية اليدوية"
+
+#. module: baseer_report_engine_tobacco
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_tobacco/static/src/tobacco.js:0
+#: code:addons/baseer_report_engine_tobacco/models/export.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_report_engine_tobacco.report_pdf_tobacco
+msgid "Order total mismatches"
+msgstr "اختلافات إجمالي الطلبات"
+
+#. module: baseer_report_engine_tobacco
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_tobacco/static/src/tobacco.js:0
+#: code:addons/baseer_report_engine_tobacco/models/export.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_report_engine_tobacco.report_pdf_tobacco
+msgid "Recomputed total"
+msgstr "الإجمالي المعاد احتسابه"
+
+#. module: baseer_report_engine_tobacco
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_tobacco/static/src/tobacco.js:0
+#: code:addons/baseer_report_engine_tobacco/models/export.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_report_engine_tobacco.report_pdf_tobacco
+msgid "Saved total"
+msgstr "الإجمالي المحفوظ"
+
+#. module: baseer_report_engine_tobacco
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_tobacco/static/src/tobacco.js:0
+#: code:addons/baseer_report_engine_tobacco/models/export.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_report_engine_tobacco.report_pdf_tobacco
+msgid "Show products"
+msgstr "إظهار المنتجات"
+
+#. module: baseer_report_engine_tobacco
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_tobacco/static/src/tobacco.js:0
+#: code:addons/baseer_report_engine_tobacco/models/export.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_report_engine_tobacco.report_pdf_tobacco
+msgid "The report options are not valid."
+msgstr "خيارات التقرير غير صالحة."
+
+#. module: baseer_report_engine_tobacco
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_tobacco/static/src/tobacco.js:0
+#: code:addons/baseer_report_engine_tobacco/models/export.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_report_engine_tobacco.report_pdf_tobacco
+msgid "Net for period"
+msgstr "صافي الفترة"
+
+#. module: baseer_report_engine_tobacco
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_tobacco/models/export.py:0
+#: code:addons/baseer_report_engine_tobacco/static/src/tobacco.js:0
+msgid "Session entry cancelled"
+msgstr "قيد الجلسة ملغى"
+
+#. module: baseer_report_engine_tobacco
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_tobacco/models/export.py:0
+#: code:addons/baseer_report_engine_tobacco/static/src/tobacco.js:0
+msgid "Session entry outside the period"
+msgstr "قيد الجلسة خارج الفترة"
+
+#. module: baseer_report_engine_tobacco
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_tobacco/models/export.py:0
+#: code:addons/baseer_report_engine_tobacco/static/src/tobacco.js:0
+msgid "Unexplained"
+msgstr "غير مفسر"

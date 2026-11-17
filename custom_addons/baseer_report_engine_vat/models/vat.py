@@ -16,16 +16,22 @@ class VatEngine(models.AbstractModel):
     _inherit = 'baseer.report.engine'
 
     @api.model
+    def _vat_default_preset(self):
+        # Community may not provide the periodicity field.
+        periodicity = getattr(self.env.company, 'account_tax_periodicity', False)
+        return 'last_month' if periodicity in ('monthly', 'month') else 'last_quarter'
+
+    @api.model
     def get_bootstrap(self, report_code):
         result = super().get_bootstrap(report_code)
         if report_code == 'saudi_vat':
-            result['defaults']['preset'] = 'last_quarter'
+            result['defaults']['preset'] = self._vat_default_preset()
         return result
 
     @api.model
     def _normalize_options(self, report, raw):
         if report.report_kind == 'vat' and isinstance(raw, dict):
-            raw = dict({'preset': 'last_quarter'}, **raw)
+            raw = dict({'preset': self._vat_default_preset()}, **raw)
             if raw.get('comparison') or raw.get('analytic_account_ids') or raw.get('group_by'):
                 raise ValidationError(_('Comparison, analytic filtering and tax grouping are not available for this report.'))
         return super()._normalize_options(report, raw)
@@ -64,6 +70,8 @@ class VatEngine(models.AbstractModel):
                         raise ValidationError(_('Missing Saudi VAT tax tag.'))
                     group = self.env['account.move.line']._read_group(domain & Domain('tax_tag_ids', 'in', tags.ids), [], ['balance:sum'])
                     amount = Decimal(str((group[0][0] if group else 0) or 0))
+                    # Odoo 19 tags have no tax_negate; the localization formula
+                    # carries the sign, including for refunds and reversals.
                     amount *= -1 if expr.formula.startswith('-') else 1
                     sources[key] = [key]
                     tags_by_key[key] = tags.ids
@@ -86,7 +94,7 @@ class VatEngine(models.AbstractModel):
         self._check_report_access()
         report = self._definition(report_code)
         raw = options if options is not None else self.env.context.get('baseer_options') or {}
-        normalized = self._normalize_options(report, dict({'preset': 'last_quarter'}, **raw))
+        normalized = self._normalize_options(report, raw)
         lines, values, sources, tags = self._vat_values(normalized)
         payload = self._build(report, normalized)
         payload['report']['report_kind'] = 'vat'

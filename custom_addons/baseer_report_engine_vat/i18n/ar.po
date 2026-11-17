@@ -16,86 +16,103 @@ msgid "VAT Report (New)"
 msgstr "تقرير ضريبة القيمة المضافة (جديد)"
 
 #. module: baseer_report_engine_vat
+#. odoo-python
 #: code:addons/baseer_report_engine_vat/models/vat.py:0
 msgid "Base"
 msgstr "المبلغ"
 
 #. module: baseer_report_engine_vat
+#. odoo-python
 #: code:addons/baseer_report_engine_vat/models/vat.py:0
 msgid "Tax"
 msgstr "الضريبة"
 
 #. module: baseer_report_engine_vat
+#. odoo-python
 #: code:addons/baseer_report_engine_vat/models/vat.py:0
 msgid "Select one Saudi company for the VAT report."
 msgstr "اختر شركة سعودية واحدة لتقرير ضريبة القيمة المضافة."
 
 #. module: baseer_report_engine_vat
+#. odoo-python
 #: code:addons/baseer_report_engine_vat/models/vat.py:0
 msgid "The Saudi VAT report must define all 16 boxes."
 msgstr "يجب أن يعرّف تقرير ضريبة القيمة المضافة السعودي جميع الخانات الست عشرة."
 
 #. module: baseer_report_engine_vat
+#. odoo-python
 #: code:addons/baseer_report_engine_vat/models/vat.py:0
 msgid "Unsupported Saudi VAT expression."
 msgstr "تعبير ضريبة القيمة المضافة السعودي غير مدعوم."
 
 #. module: baseer_report_engine_vat
+#. odoo-python
 #: code:addons/baseer_report_engine_vat/models/vat.py:0
 msgid "Missing Saudi VAT tax tag."
 msgstr "وسم ضريبة القيمة المضافة السعودي مفقود."
 
 #. module: baseer_report_engine_vat
+#. odoo-python
 #: code:addons/baseer_report_engine_vat/models/vat.py:0
 msgid "Reconciliation with VAT accounts"
 msgstr "المطابقة مع حسابات ضريبة القيمة المضافة"
 
 #. module: baseer_report_engine_vat
+#. odoo-python
 #: code:addons/baseer_report_engine_vat/models/vat.py:0
 msgid "Net VAT due"
 msgstr "صافي ضريبة القيمة المضافة المستحقة"
 
 #. module: baseer_report_engine_vat
+#. odoo-python
 #: code:addons/baseer_report_engine_vat/models/vat.py:0
 msgid "VAT account movement"
 msgstr "حركة حسابات ضريبة القيمة المضافة"
 
 #. module: baseer_report_engine_vat
+#. odoo-python
 #: code:addons/baseer_report_engine_vat/models/vat.py:0
 msgid "Difference"
 msgstr "الفرق"
 
 #. module: baseer_report_engine_vat
+#. odoo-python
 #: code:addons/baseer_report_engine_vat/models/vat.py:0
 msgid "VAT account entries without tax tags: %s"
 msgstr "قيود حسابات الضريبة دون وسوم ضريبية: %s"
 
 #. module: baseer_report_engine_vat
+#. odoo-python
 #: code:addons/baseer_report_engine_vat/models/vat.py:0
 msgid "Choose a VAT box and column."
 msgstr "اختر خانة وعمود ضريبة القيمة المضافة."
 
 #. module: baseer_report_engine_vat
+#. odoo-python
 #: code:addons/baseer_report_engine_vat/models/vat.py:0
 msgid "VAT journal items"
 msgstr "بنود قيود ضريبة القيمة المضافة"
 
 #. module: baseer_report_engine_vat
+#. odoo-python
 #: code:addons/baseer_report_engine_vat/models/vat.py:0
 msgid "Comparison, analytic filtering and tax grouping are not available for this report."
 msgstr "المقارنة والتصفية التحليلية والتجميع حسب الضريبة غير متاحة لهذا التقرير."
 
 #. module: baseer_report_engine_vat
+#. odoo-python
 #: code:addons/baseer_report_engine_vat/models/vat.py:0
 msgid "VAT on Sales"
 msgstr "ضريبة القيمة المضافة على المبيعات"
 
 #. module: baseer_report_engine_vat
+#. odoo-python
 #: code:addons/baseer_report_engine_vat/models/vat.py:0
 msgid "VAT on Purchases"
 msgstr "ضريبة القيمة المضافة على المشتريات"
 
 #. module: baseer_report_engine_vat
+#. odoo-python
 #: code:addons/baseer_report_engine_vat/models/vat.py:0
 msgid "Net VAT"
 msgstr "صافي ضريبة القيمة المضافة"

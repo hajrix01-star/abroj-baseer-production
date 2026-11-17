@@ -1,3 +1,8 @@
+import base64
+import io
+
+from openpyxl import load_workbook
+
 from odoo import Command
 from odoo.addons.baseer_report_engine.tests.common import EngineCase
 from odoo.service.model import call_kw
@@ -60,3 +65,97 @@ class VatReportCase(EngineCase):
         self.env['ir.module.module']._load_module_terms(['baseer_report_engine_vat'], ['ar_001'], overwrite=True)
         menu = self.env.ref('baseer_report_engine_vat.menu_vat')
         self.assertEqual(menu.with_context(lang='ar_001').name, 'تقرير ضريبة القيمة المضافة (جديد)')
+
+    def test_saudi_chart_invoices_and_legacy_parity(self):
+        company = self._company('Saudi chart VAT')
+        company.country_id = self.env.ref('base.sa')
+        self.env['account.chart.template'].try_loading('sa', company=company, install_demo=False)
+        env = self.env(context=dict(self.env.context, allowed_company_ids=[company.id]))
+        chart = env['account.chart.template']
+        tax = lambda name: chart.ref(name)
+        partner = env['res.partner'].create({'name': 'VAT fixture partner'})
+        income = env['account.account'].search([('company_ids', 'in', company.id), ('account_type', '=', 'income')], limit=1)
+        expense = env['account.account'].search([('company_ids', 'in', company.id), ('account_type', '=', 'expense')], limit=1)
+        def invoice(kind, entries, post=True):
+            account = income if kind.startswith('out_') else expense
+            move = env['account.move'].create({
+                'move_type': kind, 'partner_id': partner.id, 'invoice_date': '2024-02-01',
+                'date': '2024-02-01', 'company_id': company.id,
+                'invoice_line_ids': [Command.create({'name': name, 'quantity': 1,
+                    'price_unit': amount, 'account_id': account.id,
+                    'tax_ids': [Command.set(tax(tax_name).ids)]})
+                    for name, amount, tax_name in entries],
+            })
+            if post:
+                move.action_post()
+            return move
+        invoice('out_invoice', [('Sale', 1000, 'sa_sales_tax_15'), ('Zero', 200, 'sa_international_transport_passengers_tax_0'), ('Exempt', 100, 'sa_exempt_sales_tax_0')])
+        invoice('out_refund', [('Credit', 100, 'sa_sales_tax_15')])
+        invoice('in_invoice', [('Purchase', 400, 'sa_purchase_tax_15'), ('Reverse charge', 200, 'sa_rcp_tax_15')])
+        invoice('in_refund', [('Refund', 100, 'sa_purchase_tax_15')])
+        invoice('out_invoice', [('Draft', 500, 'sa_sales_tax_15')], post=False)
+        # POS-like aggregate journal entry, using the localization's real tags.
+        journal = self._journal(company, 'POSV')
+        clearing = self._account(company, '129991', 'asset_current')
+        sale_tax = tax('sa_sales_tax_15')
+        base_rep = sale_tax.invoice_repartition_line_ids.filtered(lambda r: r.repartition_type == 'base')
+        tax_rep = sale_tax.invoice_repartition_line_ids.filtered(lambda r: r.repartition_type == 'tax')
+        pos = env['account.move'].create({'journal_id': journal.id, 'date': '2024-02-02',
+            'line_ids': [Command.create({'name': 'Clearing', 'account_id': clearing.id, 'debit': 57.5}),
+                Command.create({'name': 'POS sale', 'account_id': income.id, 'credit': 50, 'tax_tag_ids': [Command.set(base_rep.tag_ids.ids)]}),
+                Command.create({'name': 'POS VAT', 'account_id': tax_rep.account_id.id, 'credit': 7.5, 'tax_tag_ids': [Command.set(tax_rep.tag_ids.ids)]})]})
+        pos.action_post()
+        options = self._options(date_from='2024-01-01', date_to='2024-03-31')
+        payload = self._engine(company).get_report('saudi_vat', options)
+        draft_payload = self._engine(company).get_report('saudi_vat', dict(options, posted_only=False))
+        self.assertEqual(self._value(draft_payload, 'sa_1', 'base'), '1450.00')
+        self.assertEqual(self._value(draft_payload, 'sa_1', 'tax'), '217.50')
+        expected = [(950, 142.5), (0, None), (200, None), (0, None), (100, None), (1250, 142.5),
+                    (300, 45), (0, 0), (200, 0), (0, None), (0, None), (500, 45),
+                    (None, 97.5), (None, 0), (None, 0), (None, 97.5)]
+        for number, pair in enumerate(expected, 1):
+            for column, amount in zip(('base', 'tax'), pair):
+                value = self._value(payload, 'sa_%s' % number, column)
+                self.assertEqual(value, None if amount is None else '%.2f' % amount, (number, column))
+        self.assertEqual(self._value(payload, 'vat_difference', 'tax'), '0.00')
+        for lang, difference in [('en_US', 'Difference'), ('ar_001', 'الفرق')]:
+            self.env['res.lang']._activate_lang(lang)
+            if lang == 'ar_001':
+                self.env['ir.module.module']._load_module_terms(['baseer_report_engine_vat'], [lang], overwrite=True)
+            localized = self._engine(company).with_context(lang=lang)
+            workbook = load_workbook(io.BytesIO(base64.b64decode(localized.export_xlsx('saudi_vat', options)['content'])))
+            sheet = workbook.active
+            rows = list(sheet.values)
+            self.assertIn(difference, [row[0] for row in rows], (lang, [row[0] for row in rows]))
+            difference_row = next(row for row in rows if row[0] == difference)
+            self.assertIsNotNone(difference_row[2])
+            self.assertTrue(any(row[2] == 97.5 for row in rows))
+            if lang.startswith('ar'):
+                self.assertTrue(sheet.sheet_view.rightToLeft)
+            html, _ = self.env['ir.actions.report'].with_company(company).with_context(lang=lang, allowed_company_ids=[company.id])._render_qweb_html(
+                'baseer_report_engine.report_pdf', docids=localized._definition('saudi_vat').ids,
+                data={'report_code': 'saudi_vat', 'options': options})
+            self.assertIn(difference, html.decode())
+            self.assertIn('97.50', html.decode())
+        if 'baseer.tax.report.wizard' in env:
+            wizard = env['baseer.tax.report.wizard'].new({'company_id': company.id, 'period_type': 'quarter', 'year': 2024, 'quarter': '1', 'month': '1', 'display_mode': 'detailed'})
+            for row in wizard._build_report()['rows']:
+                for column in ('base', 'tax'):
+                    value = self._value(payload, 'sa_' + row['number'], column)
+                    self.assertEqual(value, None if row[column] is None else '%.2f' % row[column])
+
+        # A direct posting to a VAT account is visible as an untagged cause.
+        self._entry(company, journal, '2024-02-03', clearing, tax_rep.account_id, 10)
+        discrepant = self._engine(company).get_report('saudi_vat', options)
+        self.assertEqual(self._value(discrepant, 'vat_difference', 'tax'), '-10.00')
+        self.assertTrue(any('without tax tags: 1' in note for note in discrepant['notes']))
+
+    def test_default_last_full_period(self):
+        company = self._company('VAT default period')
+        company.account_fiscal_country_id = self.env.ref('base.sa')
+        engine = self._engine(company)
+        options = engine._normalize_options(engine._definition('saudi_vat'), {'anchor_date': '2024-05-16'})
+        monthly = getattr(company, 'account_tax_periodicity', False) in ('monthly', 'month')
+        self.assertEqual(options['preset'], 'last_month' if monthly else 'last_quarter')
+        self.assertEqual((options['date_from'], options['date_to']),
+                         ('2024-04-01', '2024-04-30') if monthly else ('2024-01-01', '2024-03-31'))

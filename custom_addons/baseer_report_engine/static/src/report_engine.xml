@@ -45,7 +45,7 @@
             <div t-if="state.loading" class="o_bre_status" role="status" t-esc="state.labels.loading"/>
             <section t-if="state.payload" class="o_bre_paper" t-att-aria-label="state.reportName" t-att-style="'--bre-columns:' + state.payload.columns.length">
                 <div class="o_bre_scroll"><div class="o_bre_paper_inner">
-                    <table class="o_bre_table">
+                    <table class="o_bre_table" t-att-class="state.dateMode === 'range' ? 'o_bre_range' : ''">
                         <colgroup><col class="o_bre_label_col"/><col t-foreach="state.payload.columns" t-as="column" t-key="column.key" class="o_bre_value_col"/></colgroup>
                         <thead>
                             <tr class="o_bre_period_header"><th/><th t-foreach="state.payload.columns" t-as="column" t-key="column.key"><bdi t-esc="columnLabel(column)"/></th></tr>

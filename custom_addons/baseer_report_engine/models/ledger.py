@@ -313,7 +313,7 @@ class BaseerLedgerEngine(models.AbstractModel):
             SQL('ROW_NUMBER() OVER (ORDER BY account_move_line.date, account_move_line.move_name, account_move_line.id) AS rn'),
             SQL('COUNT(*) OVER () AS total'))
         selected = self.env.execute_query(SQL('SELECT id, total FROM (%s) AS ranked WHERE rn > %s AND rn <= %s ORDER BY rn',
-                                              ranked, offset, offset + limit))
+                                              ranked, offset, offset + limit if limit is not None else 9223372036854775807))
         lines = model.search([('id', 'in', [item[0] for item in selected])], order='date, move_name, id')
         previous = model.search(domain, order='date, move_name, id', limit=offset) if offset else model.browse()
         initial = opening.get(row['partner_id'], _zeros())
@@ -341,7 +341,7 @@ class BaseerLedgerEngine(models.AbstractModel):
                            'matching': line.matching_number or '',
                            'amount_currency': format_amount(self.env, line.amount_currency * float(share), line.currency_id) if line.currency_id and line.currency_id != line.company_id.currency_id else '',
                            'amounts': self._ledger_amounts(values)})
-        has_more = bool(selected and selected[0][1] > offset + limit)
+        has_more = bool(limit is not None and selected and selected[0][1] > offset + limit)
         if not has_more:
             result.append({'type': 'total', 'name': _('Total %s') % row['name'], 'amounts': row['amounts']})
         return {'rows': result, 'has_more': has_more, 'next_offset': offset + limit if has_more else False}

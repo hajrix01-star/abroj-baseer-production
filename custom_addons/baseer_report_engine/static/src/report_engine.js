@@ -106,6 +106,7 @@ export class BaseerReportEngine extends Component {
             analytic_account_ids: [...(options.analytic_account_ids || [])],
             unfold_all: !!options.unfold_all,
             unfolded_accounts: options.unfolded_accounts || [],
+            ...(this.isPartnerLedger ? { unfolded_partners: (this.state.payload?.lines || []).filter(line => line.foldable && !this.state.folded[line.code]).map(line => line.partner_id) } : {}),
             ...(this.isPartnerLedger ? { account_types: options.account_types || ["receivable", "payable"], partner_ids: options.partner_ids || [], partner_category_ids: options.partner_category_ids || [], unreconciled: !!options.unreconciled } : {}),
             direction,
         };

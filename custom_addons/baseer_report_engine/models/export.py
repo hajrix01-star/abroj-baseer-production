@@ -7,14 +7,42 @@ from datetime import date
 import xlsxwriter
 
 from odoo import _, api, models
+from odoo.exceptions import ValidationError
 
 
 class BaseerReportExport(models.AbstractModel):
     _inherit = 'baseer.report.engine'
 
     @api.model
+    def _export_payload(self, report_code, options):
+        engine = self.with_context(baseer_gl_export=True)
+        payload = engine.get_report(report_code, options, with_accounts=True)
+        if payload['report'].get('report_kind') != 'partner_ledger':
+            return payload
+        unfolded = options.get('unfolded_partners', [])
+        unfold_all = options.get('unfold_all', False)
+        if type(unfold_all) is not bool or not isinstance(unfolded, list) or any(type(i) is not int or i < 0 for i in unfolded):
+            raise ValidationError(_('The report options are not valid.'))
+        normalized = engine._normalize_options(engine._definition(report_code), options)
+        opening, _period = engine._ledger_partner_data(normalized, engine._partner_domain(normalized))
+        for line in payload['lines']:
+            if line.get('foldable') and (unfold_all or line['partner_id'] in unfolded):
+                line['ledger'] = engine._partner_page(normalized, line, opening, 0, None)
+        labels = engine._labels()
+        filters = [labels['account_filter'] + ' ' + payload['options']['account_filter_label']]
+        for key, model, label in (('partner_ids', 'res.partner', _('Partners')), ('partner_category_ids', 'res.partner.category', _('Partner Categories'))):
+            if normalized[key]:
+                filters.append(label + ': ' + ', '.join(engine.env[model].browse(normalized[key]).mapped('display_name')))
+        if normalized['unreconciled']:
+            filters.append(labels['unreconciled_entries'])
+        if not normalized['posted_only']:
+            filters.append(labels['draft_entries'])
+        payload['filter_line'] = ' · '.join(filters)
+        return payload
+
+    @api.model
     def export_xlsx(self, report_code, options=None):
-        payload = self.with_context(baseer_gl_export=True).get_report(report_code, options or {}, with_accounts=True)
+        payload = self._export_payload(report_code, options or {})
         buffer = io.BytesIO()
         workbook = xlsxwriter.Workbook(buffer, {'in_memory': True})
         sheet = workbook.add_worksheet(_sheet_name(payload['report']['name']))
@@ -37,7 +65,11 @@ class BaseerReportExport(models.AbstractModel):
         grid_sub_shaded = workbook.add_format({'align': 'right', 'bg_color': '#F9FAFB'})
         grid_money = workbook.add_format({'num_format': '#,##0.00', 'bg_color': '#F9FAFB'})
         grid_money_bold = workbook.add_format({'num_format': '#,##0.00', 'bold': True, 'bg_color': '#F9FAFB'})
-        row = 4
+        partner = payload['report'].get('report_kind') == 'partner_ledger'
+        if partner:
+            sheet.write(3, 0, payload['column_groups'][0]['label'])
+            sheet.write(4, 0, payload['filter_line'])
+        row = 6 if partner else 4
         if payload.get('column_groups'):
             index = 1
             for group in payload['column_groups']:
@@ -64,7 +96,8 @@ class BaseerReportExport(models.AbstractModel):
             ledger = payload['report'].get('report_kind') == 'ledger'
             if not line.get('hide_amounts'):
                 if grid:
-                    for index, amount in enumerate(line['amounts'], start=4 if ledger else 1):
+                    for amount_index, amount in enumerate(line['amounts']):
+                        index = ([6, 7, 9][amount_index] if partner else amount_index + (4 if ledger else 1))
                         col = payload['columns'][index - 1]
                         shaded = col['figure'] == 'debit' or col['kind'] == 'end'
                         fmt = (grid_money_bold if line['display'] == 'total' else grid_money) if shaded else amount_format
@@ -82,6 +115,19 @@ class BaseerReportExport(models.AbstractModel):
                     for index, amount in enumerate(item['amounts'], start=4):
                         sheet.write_number(row, index, float(amount['value']), money_bold if item['type'] == 'total' else money)
                     row += 1
+            if partner and line.get('ledger'):
+                date_format = workbook.add_format({'num_format': 'yyyy-mm-dd'})
+                overdue_format = workbook.add_format({'num_format': 'yyyy-mm-dd', 'font_color': '#d23f3a'})
+                for item in line['ledger']['rows']:
+                    sheet.write(row, 0, item['name'], grid_bold if item['type'] == 'total' else indents[1])
+                    for index, key in ((1, 'journal'), (2, 'account'), (5, 'matching'), (8, 'amount_currency')):
+                        sheet.write(row, index, item.get(key, ''))
+                    for index, key in ((3, 'invoice_date_raw'), (4, 'due_date_raw')):
+                        if item.get(key):
+                            sheet.write_datetime(row, index, date.fromisoformat(item[key]), overdue_format if index == 4 and item.get('overdue') else date_format)
+                    for index, amount in zip((6, 7, 9), item['amounts']):
+                        sheet.write_number(row, index, float(amount['value']), money_bold if item['type'] == 'total' else money)
+                    row += 1
             for account in line.get('accounts', []):
                 detail = indents[min(line['level'] + 1, 7)]
                 sheet.write(row, 0, f"{account['code']} {account['name']}".strip(), detail)
@@ -93,7 +139,7 @@ class BaseerReportExport(models.AbstractModel):
         sheet.set_column(0, 0, 52)
         if payload['columns']:
             sheet.set_column(1, len(payload['columns']), 18)
-        sheet.freeze_panes(5, 1)
+        sheet.freeze_panes(8 if partner else 5, 1)
         workbook.close()
         return {
             'filename': '%s.xlsx' % payload['report']['code'].replace('_', '-'),
@@ -107,6 +153,8 @@ class BaseerReportExport(models.AbstractModel):
         report = self._definition(report_code)
         normalized = self._normalize_options(report, options or {})
         public_options = {key: value for key, value in normalized.items() if key != 'columns'}
+        if report.report_kind == 'partner_ledger':
+            public_options.update({key: (options or {}).get(key, default) for key, default in [('unfold_all', False), ('unfolded_partners', [])]})
         if report.report_kind == 'ledger':
             public_options.update({key: (options or {}).get(key, default) for key, default in [('unfold_all', False), ('unfolded_accounts', [])]})
         return self.env.ref('baseer_report_engine.action_report_pdf').report_action(

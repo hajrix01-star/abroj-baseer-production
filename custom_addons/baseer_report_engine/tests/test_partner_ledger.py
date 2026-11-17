@@ -279,3 +279,56 @@ class TestPartnerLedgerGrouping(EngineCase):
         filtered_ids = {r['id'] for r in filtered['rows'] if r['type'] == 'item'}
         self.assertNotIn(full.id, filtered_ids)
         self.assertIn(partial.id, filtered_ids)
+
+    def test_partner_exports(self):
+        import base64
+        import io
+        from datetime import datetime
+        from openpyxl import load_workbook
+
+        company, engine, journal, rec, pay, nontrade, other, partners = self._fixture()
+        self._partner_entry(company, journal, '2041-03-01', rec, other, 10, partners[0])
+        move = self._partner_entry(company, journal, '2041-04-01', rec, other, 7, partners[0], posted=False)
+        move.invoice_date = '2041-04-01'
+        move.action_post()
+        line = move.line_ids.filtered(lambda l: l.account_id == rec)
+        line.date_maturity = '2041-04-20'
+        self._partner_entry(company, journal, '2041-04-03', rec, other, 2, partners[0])
+        self._partner_entry(company, journal, '2041-04-02', rec, other, 3, partners[1])
+        options = dict(self._options(date_from='2041-04-01', date_to='2041-04-30'), unfolded_partners=[partners[0].id], partner_ids=partners.ids, posted_only=False, unreconciled=True)
+        for lang, title in [('en_US', 'Partner Ledger'), ('ar_001', 'دفتر الأستاذ العام للشركاء')]:
+            self.env['res.lang']._activate_lang(lang)
+            self.env['ir.module.module']._load_module_terms(['baseer_report_engine'], [lang], overwrite=True)
+            localized = engine.with_context(lang=lang, baseer_gl_page_size=1)
+            payload = localized.get_report('partner_ledger', options)
+            exported = localized.export_xlsx('partner_ledger', options)
+            sheet = load_workbook(io.BytesIO(base64.b64decode(exported['content']))).active
+            values = [[cell.value for cell in row] for row in sheet]
+            flat = [str(v) for row in values for v in row if v is not None]
+            self.assertIn(title, flat)
+            self.assertIn(partners[0].name, ' '.join(flat))
+            self.assertIn(localized._labels()['draft_entries'], ' '.join(flat))
+            self.assertIn(localized._labels()['unreconciled_entries'], ' '.join(flat))
+            page = localized.get_ledger_lines('partner_ledger', options, partners[0].id)
+            for item in page['rows']:
+                self.assertIn(item['name'], flat)
+            item_row = next(row for row in values if row[0] == page['rows'][1]['name'])
+            self.assertIsInstance(item_row[3], datetime)
+            self.assertIsInstance(item_row[4], datetime)
+            self.assertEqual(item_row[9], 17)
+            partner_total = next(row for row in values if row[0] == localized._export_payload('partner_ledger', options)['lines'][0]['ledger']['rows'][-1]['name'])
+            self.assertEqual(partner_total[9], 19)
+            grand = next(row for row in values if row[0] == payload['lines'][-1]['name'])
+            self.assertEqual([grand[i] for i in (6, 7, 9)], [float(a['value']) for a in payload['lines'][-1]['amounts']])
+            self.assertEqual(bool(sheet.sheet_view.rightToLeft), lang == 'ar_001')
+            html, _ = self.env['ir.actions.report'].with_company(company).with_context(lang=lang, allowed_company_ids=[company.id])._render_qweb_html('baseer_report_engine.report_pdf', docids=localized._definition('partner_ledger').ids, data={'report_code': 'partner_ledger', 'options': options})
+            html = html.decode()
+            self.assertIn(title, html)
+            self.assertIn(payload['column_groups'][0]['label'], html)
+            self.assertIn(page['rows'][1]['name'], html)
+            self.assertIn(payload['lines'][-1]['amounts'][-1]['display'], html)
+            if lang == 'ar_001':
+                self.assertIn('dir="rtl"', html)
+        all_payload = engine.with_context(baseer_gl_page_size=1)._export_payload('partner_ledger', dict(options, unfold_all=True))
+        self.assertTrue(all(row.get('ledger') and not row['ledger']['has_more'] for row in all_payload['lines'] if row.get('foldable')))
+        self.assertEqual(len([item for item in all_payload['lines'][0]['ledger']['rows'] if item['type'] == 'item']), 2)

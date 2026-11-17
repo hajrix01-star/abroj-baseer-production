@@ -70,17 +70,103 @@ class BaseerAgedEngine(models.AbstractModel):
         return entries
 
     @api.model
+    def _aged_allocated_sql(self, options):
+        """Open allocations before partner filtering, including future attribution."""
+        date = fields.Date.to_date(options['date_to'])
+        unfiltered = dict(options, partner_ids=[], partner_category_ids=[], unreconciled=False)
+        model = self.env['account.move.line']
+        model.flush_model(['date', 'move_name', 'balance', 'partner_id', 'company_id',
+                           'date_maturity', 'move_id', 'analytic_distribution'])
+        self.env['account.move'].flush_model(['invoice_date'])
+        self.env['account.partial.reconcile'].flush_model(['debit_move_id', 'credit_move_id', 'amount', 'max_date'])
+        query = model._search(self._base_domain(options) + self._partner_domain(unfiltered) + [('date', '<=', date)])
+        candidates = query.select(SQL('account_move_line.id'), SQL('account_move_line.date'),
+            SQL('account_move_line.move_name'), SQL('account_move_line.partner_id'),
+            SQL('account_move_line.balance'), SQL('account_move_line.company_id'),
+            SQL('account_move_line.date_maturity'), SQL('account_move_line.move_id'),
+            SQL('account_move_line.analytic_distribution'))
+        return SQL("""
+            WITH candidates AS (%s), partials AS (
+                SELECT debit_move_id AS line_id, credit_move_id AS other_id, amount, max_date, id FROM account_partial_reconcile
+                UNION ALL
+                SELECT credit_move_id, debit_move_id, amount, max_date, id FROM account_partial_reconcile
+            ), settled AS (
+                SELECT p.line_id, SUM(p.amount) AS amount FROM partials p
+                JOIN candidates c ON c.id = p.line_id WHERE p.max_date <= %s GROUP BY p.line_id
+            ), open_lines AS (
+                SELECT c.*, c.balance - SIGN(c.balance) * COALESCE(s.amount, 0) AS residual, currency.rounding
+                FROM candidates c LEFT JOIN settled s ON s.line_id = c.id
+                JOIN res_company company ON company.id = c.company_id
+                JOIN res_currency currency ON currency.id = company.currency_id
+            ), future AS (
+                SELECT p.line_id, other.partner_id, SUM(p.amount) AS amount, MIN(p.id) AS first_id
+                FROM partials p JOIN open_lines c ON c.id = p.line_id
+                JOIN account_move_line other ON other.id = p.other_id
+                WHERE c.partner_id IS NULL AND p.max_date > %s AND other.partner_id IS NOT NULL
+                GROUP BY p.line_id, other.partner_id
+            ), portions AS (
+                SELECT f.*, COALESCE(SUM(f.amount) OVER (PARTITION BY f.line_id ORDER BY f.first_id, f.partner_id
+                    ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING), 0) AS prior FROM future f
+            ), allocated AS (
+                SELECT c.*, c.partner_id AS pid, c.residual AS amount FROM open_lines c
+                 WHERE c.partner_id IS NOT NULL AND ABS(c.residual) >= c.rounding / 2
+                UNION ALL
+                SELECT c.*, p.partner_id, SIGN(c.residual) * LEAST(p.amount, ABS(c.residual) - p.prior)
+                  FROM open_lines c JOIN portions p ON p.line_id = c.id
+                 WHERE ABS(c.residual) >= c.rounding / 2 AND ABS(c.residual) > p.prior
+                UNION ALL
+                SELECT c.*, 0, SIGN(c.residual) * (ABS(c.residual) - COALESCE(f.amount, 0))
+                  FROM open_lines c LEFT JOIN (SELECT line_id, SUM(amount) AS amount FROM future GROUP BY line_id) f ON f.line_id = c.id
+                 WHERE c.partner_id IS NULL AND ABS(c.residual) >= c.rounding / 2
+                   AND ABS(c.residual) > COALESCE(f.amount, 0)
+            )
+        """, candidates, date, date)
+
+    @api.model
+    def _aged_selected_keys(self, options):
+        if not options['partner_ids'] and not options['partner_category_ids']:
+            return None
+        domain = []
+        if options['partner_ids']:
+            domain.append(('id', 'in', options['partner_ids']))
+        if options['partner_category_ids']:
+            domain.append(('category_id', 'in', options['partner_category_ids']))
+        return self.env['res.partner'].search(domain).ids
+
+    @api.model
+    def _aged_grouped(self, options):
+        date = fields.Date.to_date(options['date_to'])
+        keys = self._aged_selected_keys(options)
+        basis = SQL('COALESCE(a.date_maturity, a.date)') if options['aging_basis'] == 'due_date' else SQL('COALESCE(move.invoice_date, a.date)')
+        analytic = options['analytic_account_ids']
+        share = SQL("""COALESCE((SELECT LEAST(100, GREATEST(0, SUM(value::numeric))) / 100
+                    FROM jsonb_each_text(a.analytic_distribution) j(key, value)
+                    WHERE CASE WHEN btrim(key) ~ '^[+-]?[0-9]+$' THEN btrim(key)::numeric = ANY(%s) ELSE FALSE END), 0)""", analytic) if analytic else SQL('1')
+        result = self.env.execute_query(SQL("""
+            %s, values_by_line AS (
+                SELECT a.pid, a.company_id, a.amount * (%s) AS amount,
+                       CASE WHEN %s - (%s) <= 0 THEN 0 ELSE LEAST(5, ((%s - (%s) - 1) / %s) + 1) END AS bucket
+                  FROM allocated a JOIN account_move move ON move.id = a.move_id
+                 WHERE %s
+            ) SELECT pid, company_id, bucket, SUM(amount) FROM values_by_line GROUP BY pid, company_id, bucket
+        """, self._aged_allocated_sql(options), share, date, basis, date, basis, options['period_length'],
+            SQL('a.pid = ANY(%s)', keys) if keys is not None else SQL('TRUE')))
+        grouped = defaultdict(lambda: [Decimal(0)] * 7)
+        companies = self.env['res.company'].browse(list({row[1] for row in result}))
+        for pid, company_id, bucket, amount in result:
+            value = self._ledger_convert(Decimal(str(amount)) * (-1 if options['aged_payable'] else 1), companies.browse(company_id), date)
+            grouped[pid][bucket] += value
+            grouped[pid][6] += value
+        return grouped
+
+    @api.model
     def _aged_amounts(self, values, drill=False):
         return [self._serialize_amount({'key': key, 'kind': 'ledger'}, value, self.env.company.currency_id, drill)
                 for key, value in zip(('at_date', 'period1', 'period2', 'period3', 'period4', 'older', 'total'), values)]
 
     @api.model
     def _build_aged(self, report, options):
-        entries = self._aged_entries(options)
-        grouped = defaultdict(lambda: [Decimal(0)] * 7)
-        for pid, _line, bucket, value in entries:
-            grouped[pid][bucket] += value
-            grouped[pid][6] += value
+        grouped = self._aged_grouped(options)
         partners = self.env['res.partner'].browse([pid for pid in grouped if pid]).exists()
         names = {partner.id: partner.display_name for partner in partners}
         rows = [{'code': 'header', 'name': report.name, 'level': 0, 'display': 'section', 'foldable': False, 'has_accounts': False, 'amounts': self._aged_amounts([0] * 7)}]
@@ -101,6 +187,39 @@ class BaseerAgedEngine(models.AbstractModel):
         payload['column_groups'] = [{'label': options['columns'][0]['label'], 'colspan': 8, 'kind': 'period', 'period_key': 'c0'}]
         payload['options']['account_filter_label'] = ', '.join(dict(self._partner_type_labels())[k] for k in options['account_types'])
         return payload
+
+    @api.model
+    def _aged_items_batch(self, options, partner_keys, limit):
+        available = set(self._aged_grouped(options))
+        keys = available if partner_keys is None else set(partner_keys)
+        if not keys <= available:
+            raise AccessError(_('Choose an account from this line.'))
+        if not keys:
+            return {}
+        partners = self.env['res.partner'].browse([key for key in keys if key]).exists()
+        partners.check_access('read')
+        ranked = self.env.execute_query(SQL("""
+            %s, ranked AS (
+                SELECT id, pid, ROW_NUMBER() OVER (PARTITION BY pid ORDER BY date, move_name, id) AS rn,
+                       COUNT(*) OVER (PARTITION BY pid) AS total
+                  FROM allocated WHERE pid = ANY(%s)
+            ) SELECT id, pid, total FROM ranked WHERE rn <= %s ORDER BY pid, rn
+        """, self._aged_allocated_sql(options), list(keys), limit if limit is not None else 2147483647))
+        entries = self._aged_entries(options, list({row[0] for row in ranked})) if ranked else []
+        by_key = defaultdict(dict)
+        for pid, line, bucket, value in entries:
+            move, detail, name = _item_labels(line.move_name or line.move_id.name, line.name)
+            values = [Decimal(0)] * 7
+            values[bucket] = values[6] = value
+            by_key[pid][line.id] = {'type': 'item', 'id': line.id, 'name': name, 'move_label': move,
+                'detail_label': detail, 'invoice_date': format_date(self.env, line.move_id.invoice_date) if line.move_id.invoice_date else '',
+                'amounts': self._aged_amounts(values)}
+        result = {key: {'initial': False, 'items': [], 'has_more': False, 'next_offset': False} for key in keys}
+        for line_id, key, count in ranked:
+            result[key]['items'].append(by_key[key][line_id])
+            if limit is not None and count > limit:
+                result[key].update(has_more=True, next_offset=limit)
+        return result
 
     @api.model
     def _aged_page(self, options, partner_id, offset, limit):

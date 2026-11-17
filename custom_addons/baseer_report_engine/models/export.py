@@ -35,14 +35,16 @@ class BaseerReportExport(models.AbstractModel):
         if type(unfold_all) is not bool or not isinstance(unfolded, list) or any(type(i) is not int or i < 0 for i in unfolded):
             raise ValidationError(_('The report options are not valid.'))
         normalized = engine._normalize_options(engine._definition(report_code), options)
-        aged = payload['report']['report_kind'] == 'aged'
-        opening = {}
-        if not aged:
-            opening, _period = engine._ledger_partner_data(normalized, engine._partner_domain(normalized))
+        keys = [line['partner_id'] for line in payload['lines'] if line.get('foldable')
+                and (unfold_all or line['partner_id'] in unfolded)]
+        pages = engine.get_partner_items_batch(report_code, options, keys)
         for line in payload['lines']:
-            if line.get('foldable') and (unfold_all or line['partner_id'] in unfolded):
-                line['ledger'] = (engine._aged_page(normalized, line['partner_id'], 0, None) if aged
-                                  else engine._partner_page(normalized, line, opening, 0, None))
+            if not line.get('foldable') or line['partner_id'] not in keys:
+                continue
+            if line['partner_id'] in pages:
+                page = pages[line['partner_id']]
+                line['ledger'] = {'rows': ([page['initial']] if page['initial'] else []) + page['items'],
+                                  'has_more': page['has_more'], 'next_offset': page['next_offset']}
         labels = engine._labels()
         filters = [labels['account_filter'] + ' ' + payload['options']['account_filter_label']]
         for key, model, label in (('partner_ids', 'res.partner', _('Partners')), ('partner_category_ids', 'res.partner.category', _('Partner Categories'))):

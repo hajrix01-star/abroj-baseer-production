@@ -10,6 +10,38 @@ from .common import EngineCase
 
 @tagged('post_install', '-at_install')
 class TestGeneralLedger(EngineCase):
+    def test_large_page_offsets_and_unfold_all(self):
+        from odoo import Command
+        company = self._company('Ledger large pages')
+        engine = self._engine(company)
+        journal = self._journal(company, 'GLP')
+        cash = self._account(company, '1000', 'asset_cash')
+        income = self._account(company, '4000', 'income')
+        move = self.env['account.move'].with_company(company).create({
+            'company_id': company.id, 'date': '2041-04-01', 'journal_id': journal.id,
+            'line_ids': [Command.create({'name': str(i), 'account_id': cash.id, 'debit': 1}) for i in range(2001)]
+                        + [Command.create({'name': str(i), 'account_id': income.id, 'credit': 1}) for i in range(20)]
+                        + [Command.create({'name': 'counterpart', 'account_id': income.id, 'credit': 1981})],
+        })
+        move._post(soft=False)
+        options = self._options(date_from='2041-04-01', date_to='2041-04-30')
+        for offset in (0, 20, 80, 2000):
+            page = engine.get_ledger_lines('general_ledger', options, cash.id, company.id, offset)
+            items = [row for row in page['rows'] if row['type'] == 'item']
+            self.assertEqual([float(row['amounts'][-1]['value']) for row in items],
+                             list(range(offset + 1, min(offset + 80, 2001) + 1)))
+        report = engine.get_report('general_ledger', dict(options, unfold_all=True))
+        for account in (cash, income):
+            row = next(row for row in report['lines'] if row.get('account_id') == account.id)
+            self.assertEqual(len([r for r in row['ledger']['rows'] if r['type'] == 'item']), 20)
+            self.assertEqual(row['ledger']['next_offset'], 20)
+        row = next(row for row in report['lines'] if row.get('account_id') == cash.id)
+        continuation = engine.get_ledger_lines('general_ledger', options, cash.id, company.id, row['ledger']['next_offset'])
+        self.assertEqual(float(continuation['rows'][0]['amounts'][-1]['value']), 21)
+        single = engine.get_report('general_ledger', dict(options, unfolded_accounts=[[cash.id, company.id]]))
+        row = next(row for row in single['lines'] if row.get('account_id') == cash.id)
+        self.assertEqual(len([r for r in row['ledger']['rows'] if r['type'] == 'item']), 80)
+
     def test_paging_reconciliation_and_exports(self):
         company = self._company('Ledger company')
         engine = self._engine(company)
@@ -189,4 +221,4 @@ class TestGeneralLedger(EngineCase):
         add_accounts(4, 12)
         large = counts()
         for before, after in zip(small, large):
-            self.assertLessEqual(after, before + 5, (small, large))
+            self.assertLessEqual(abs(after - before), 2, (small, large))

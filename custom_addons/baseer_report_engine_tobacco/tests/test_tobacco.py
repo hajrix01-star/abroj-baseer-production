@@ -1,4 +1,6 @@
 from odoo.addons.baseer_report_engine.tests.common import EngineCase
+from odoo.addons.point_of_sale.tests.common import CommonPosTest
+from odoo.tests import tagged
 
 
 class TobaccoReportCase(EngineCase):
@@ -9,6 +11,8 @@ class TobaccoReportCase(EngineCase):
         cls.env.user.write({'company_ids': [(4, cls.company.id)]})
 
     def test_opening_and_manual_reconciliation(self):
+        from odoo.service.model import call_kw
+
         company = self.company
         fee = self._account(company, '201021', 'liability_current')
         other = self._account(company, '101099', 'asset_current')
@@ -28,6 +32,13 @@ class TobaccoReportCase(EngineCase):
         self.assertEqual(action['res_id'], move.id)
         ledger = self._engine(company).get_tobacco_ledger_action(self._options(), fee.id, company.id)
         self.assertEqual(ledger['context']['report_code'], 'general_ledger')
+        engine = self._engine(company)
+        call = lambda method, args: call_kw(engine, method, args, {'context': engine.env.context})
+        self.assertEqual(call('get_report', ['tobacco_service_fee', self._options()])['tobacco_sections'][0]['difference'], -20)
+        self.assertEqual(call('get_tobacco_source_action', [self._options(), 'account.move', move.id])['res_id'], move.id)
+        self.assertEqual(call('get_tobacco_ledger_action', [self._options(), fee.id, company.id])['context']['report_code'], 'general_ledger')
+        self.assertTrue(call('export_xlsx', ['tobacco_service_fee', self._options()])['content'])
+        self.assertTrue(call('export_pdf', ['tobacco_service_fee', self._options()])['type'])
 
     def test_draft_accounting_option(self):
         company = self.company
@@ -81,6 +92,45 @@ class TobaccoReportCase(EngineCase):
 
 
 class TobaccoPosCase(EngineCase):
+    def test_custom_formula_branches(self):
+        # The formula tax is supplied by the optional account_tax_python addon;
+        # the register deliberately does not depend on it.
+        if 'formula' not in self.env['account.tax']._fields:
+            self.skipTest('Install account_tax_python to exercise custom formula taxes')
+        from uuid import uuid4
+        from odoo import Command
+
+        company = self.env.company
+        company.write({'currency_id': self.env.ref('base.SAR').id, 'country_id': self.env.ref('base.sa').id})
+        self.env['account.chart.template'].try_loading('generic_coa', company=company, install_demo=False)
+        company.currency_id = self.env.ref('base.SAR')
+        account = self._account(company, '201021', 'liability_current')
+        group = self.env['account.tax.group'].create({'name': 'Tobacco service fee', 'company_id': company.id, 'country_id': company.account_fiscal_country_id.id})
+        tax = self.env['account.tax'].create({'name': 'Tobacco service fee', 'type_tax_use': 'sale',
+            'tax_group_id': group.id, 'country_id': company.account_fiscal_country_id.id,
+            'amount_type': 'code', 'formula': 'max(base / 2.3, 25 * quantity)', 'company_id': company.id})
+        (tax.invoice_repartition_line_ids | tax.refund_repartition_line_ids).filtered(
+            lambda rep: rep.repartition_type == 'tax').account_id = account
+        product = self.env['product.product'].create({'name': 'Formula product', 'available_in_pos': True,
+            'taxes_id': [Command.set(tax.ids)]})
+        config = self.env['pos.config'].create({'name': 'Formula test', 'company_id': company.id})
+        config.open_ui()
+        session = config.current_session_id
+        session.state = 'opened'
+        for price, qty in [(230, 1), (10, 2), (230, -1)]:
+            order = self.env['pos.order'].create({'company_id': company.id, 'session_id': session.id,
+                'source': 'pos', 'amount_tax': 0, 'amount_total': 0, 'amount_paid': 0, 'amount_return': 0,
+                'lines': [Command.create({'uuid': str(uuid4()), 'product_id': product.id,
+                    'tax_ids': [Command.set(tax.ids)], 'qty': qty, 'price_unit': price,
+                    'price_subtotal': price * qty, 'price_subtotal_incl': price * qty,
+                    'full_product_name': product.name})]})
+            order._compute_prices()
+            order.write({'date_order': '2041-02-04 12:00:00', 'state': 'paid'})
+        section = self._engine(company).get_report('tobacco_service_fee',
+            self._options(date_from='2041-02-04', date_to='2041-02-04'))['tobacco_sections'][0]
+        self.assertEqual(sorted(row['net'] for row in section['rows']), [-100, 50, 100])
+        self.assertEqual(section['net'], 50)
+
     def test_native_pos_fee_and_riyadh_boundary(self):
         from uuid import uuid4
         from odoo import Command
@@ -172,3 +222,40 @@ class TobaccoPosCase(EngineCase):
             add_order()
         twenty = query_count()
         self.assertLessEqual(twenty, one + 30, (one, twenty))
+
+
+@tagged('post_install', '-at_install')
+class TobaccoClosedSessionCase(CommonPosTest, EngineCase):
+    def test_posted_session_reconciles(self):
+        from freezegun import freeze_time
+        from odoo import Command
+
+        company = self.env.company
+        company.currency_id = self.env.ref('base.SAR')
+        fee = self._account(company, '201021', 'liability_current')
+        group = self.env['account.tax.group'].create({'name': 'Tobacco service fee',
+            'company_id': company.id, 'country_id': company.account_fiscal_country_id.id})
+        tax = self.env['account.tax'].create({'name': 'Tobacco service fee', 'type_tax_use': 'sale',
+            'tax_group_id': group.id, 'country_id': company.account_fiscal_country_id.id,
+            'amount_type': 'fixed', 'amount': 25, 'company_id': company.id})
+        (tax.invoice_repartition_line_ids | tax.refund_repartition_line_ids).filtered(
+            lambda rep: rep.repartition_type == 'tax').account_id = fee
+        product = self.ten_dollars_with_10_incl.product_variant_id
+        product.taxes_id = [Command.set(tax.ids)]
+        options = self._options(date_from='2041-02-04', date_to='2041-02-04')
+        engine = self._engine(company)
+        with freeze_time('2041-02-04 12:00:00'):
+            self.pos_config_usd.open_ui()
+            order, _refund = self.create_backend_pos_order({'line_data': [{'product_id': product.id}],
+                'payment_data': [{'payment_method_id': self.bank_payment_method.id}]})
+            session = order.session_id
+            section = engine.get_report('tobacco_service_fee', options)['tobacco_sections'][0]
+            self.assertEqual(section['difference'], 25)
+            self.assertIn(session.id, section['open_sessions'])
+            session.action_pos_session_closing_control()
+            self.assertEqual(session.state, 'closed')
+            self.assertEqual(session.move_id.state, 'posted')
+            section = engine.get_report('tobacco_service_fee', options)['tobacco_sections'][0]
+            self.assertEqual(section['net'], 25)
+            self.assertEqual(section['movement'], 25)
+            self.assertEqual(section['difference'], 0)

@@ -398,13 +398,14 @@
         .o_bre_balance_header th:nth-child(2), .o_bre_balance_header th:nth-child(3) { text-align: center; }
         tbody th { padding-inline-start: 16px; }
         .o_bre_fold { font-weight: inherit; }
-        .o_bre_ledger_caret { display: inline-block; width: 12px; color: #d8dadd; }
+        .o_bre_ledger_caret { display: inline-block; width: 12px; color: inherit; }
         .o_bre_open th, .o_bre_open td { background: #f3f4f6; font-weight: 700; }
+        .o_bre_line.o_bre_level_0.o_bre_open, .o_bre_line.o_bre_level_0.o_bre_open th { color: #374151; font-weight: 700; }
         .o_bre_ledger_item th, .o_bre_ledger_initial th, .o_bre_ledger_total th, .o_bre_ledger_more th { padding-inline-start: 40px; }
         .o_bre_ledger_total th, .o_bre_ledger_total td { font-weight: 700; }
         .o_bre_ledger_chip { visibility: hidden; border: 1px solid #008c95; border-radius: 4px; background: white; color: #008c95; font-size: 11px; margin-inline-start: 6px; padding: 1px 4px; }
         tr:hover .o_bre_ledger_chip, .o_bre_ledger_chip:focus { visibility: visible; }
-        .o_bre_ledger_more .btn { padding: 0; color: #008c95; font-size: inherit; }
+        .o_bre_ledger_more .btn { padding: 0; color: #017e84; font-size: inherit; line-height: inherit; }
         .o_bre_ledger_item td:nth-child(2), .o_bre_ledger_item td:nth-child(3) { white-space: nowrap; }
     }
     @media (max-width: 767px) {

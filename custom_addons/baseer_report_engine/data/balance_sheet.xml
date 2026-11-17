@@ -66,7 +66,7 @@
         <field name="parent_id" ref="line_bs_ca"/>
         <field name="sequence">40</field>
         <field name="code">REC</field>
-        <field name="name">Receivables</field>
+        <field name="name">Accounts Receivable</field>
         <field name="foldable" eval="True"/>
     </record>
     <record id="expr_bs_rec" model="baseer.report.expression">
@@ -146,7 +146,18 @@
         <field name="date_scope">to_date</field>
     </record>
 
+    <record id="line_bs_le" model="baseer.report.line">
+        <field name="report_id" ref="report_balance_sheet"/>
+        <field name="sequence">90</field>
+        <field name="code">LE</field>
+        <field name="name">Liabilities &amp; Equity</field>
+        <field name="foldable" eval="False"/>
+        <field name="hideable" eval="False"/>
+        <field name="display">section</field>
+    </record>
+
     <record id="line_bs_liab" model="baseer.report.line">
+        <field name="parent_id" ref="line_bs_le"/>
         <field name="report_id" ref="report_balance_sheet"/>
         <field name="sequence">90</field>
         <field name="code">LIAB</field>
@@ -179,7 +190,7 @@
     <record id="line_bs_ocl" model="baseer.report.line">
         <field name="report_id" ref="report_balance_sheet"/>
         <field name="parent_id" ref="line_bs_cl"/>
-        <field name="sequence">110</field>
+        <field name="sequence">120</field>
         <field name="code">OCL</field>
         <field name="name">Other Current Liabilities</field>
         <field name="foldable" eval="True"/>
@@ -196,9 +207,9 @@
     <record id="line_bs_pay" model="baseer.report.line">
         <field name="report_id" ref="report_balance_sheet"/>
         <field name="parent_id" ref="line_bs_cl"/>
-        <field name="sequence">120</field>
+        <field name="sequence">110</field>
         <field name="code">PAY</field>
-        <field name="name">Payables</field>
+        <field name="name">Accounts Payable</field>
         <field name="foldable" eval="True"/>
     </record>
     <record id="expr_bs_pay" model="baseer.report.expression">
@@ -228,6 +239,7 @@
     </record>
 
     <record id="line_bs_equity" model="baseer.report.line">
+        <field name="parent_id" ref="line_bs_le"/>
         <field name="report_id" ref="report_balance_sheet"/>
         <field name="sequence">140</field>
         <field name="code">EQUITY</field>
@@ -336,7 +348,7 @@
     <record id="line_bs_re" model="baseer.report.line">
         <field name="report_id" ref="report_balance_sheet"/>
         <field name="parent_id" ref="line_bs_equity"/>
-        <field name="sequence">200</field>
+        <field name="sequence">145</field>
         <field name="code">RE</field>
         <field name="name">Retained Earnings</field>
         <field name="foldable" eval="True"/>
@@ -350,15 +362,6 @@
         <field name="date_scope">to_date</field>
     </record>
 
-    <record id="line_bs_le" model="baseer.report.line">
-        <field name="report_id" ref="report_balance_sheet"/>
-        <field name="sequence">210</field>
-        <field name="code">LE</field>
-        <field name="name">Liabilities and Equity</field>
-        <field name="foldable" eval="False"/>
-        <field name="hideable" eval="False"/>
-        <field name="display">total</field>
-    </record>
     <record id="expr_bs_le" model="baseer.report.expression">
         <field name="line_id" ref="line_bs_le"/>
         <field name="engine">formula</field>

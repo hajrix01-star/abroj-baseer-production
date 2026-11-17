@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="report_profit_and_loss" model="baseer.report.definition">
+        <field name="name">Profit and Loss</field>
+        <field name="code">profit_and_loss</field>
+        <field name="date_mode">range</field>
+    </record>
+    <record id="line_pl_rev" model="baseer.report.line">
+        <field name="report_id" ref="report_profit_and_loss"/>
+        <field name="code">REV</field>
+        <field name="name">Income</field>
+        <field name="sequence">10</field>
+        <field name="display">line</field>
+        <field name="foldable" eval="True"/>
+    </record>
+    <record id="expr_pl_opinc" model="baseer.report.expression">
+        <field name="line_id" ref="line_pl_rev"/>
+        <field name="engine">account_type</field>
+        <field name="account_types">income</field>
+        <field name="sign">-1</field>
+        <field name="date_scope">report</field>
+    </record>
+    <record id="line_pl_cor" model="baseer.report.line">
+        <field name="report_id" ref="report_profit_and_loss"/>
+        <field name="code">COR</field>
+        <field name="name">Cost of Revenue</field>
+        <field name="sequence">20</field>
+        <field name="display">line</field>
+        <field name="foldable" eval="True"/>
+    </record>
+    <record id="expr_pl_cor" model="baseer.report.expression">
+        <field name="line_id" ref="line_pl_cor"/>
+        <field name="engine">account_type</field>
+        <field name="account_types">expense_direct_cost</field>
+        <field name="sign">1</field>
+        <field name="date_scope">report</field>
+    </record>
+    <record id="line_pl_gross" model="baseer.report.line">
+        <field name="report_id" ref="report_profit_and_loss"/>
+        <field name="code">GROSS</field>
+        <field name="name">Gross Profit</field>
+        <field name="sequence">30</field>
+        <field name="display">total</field>
+    </record>
+    <record id="expr_pl_gross" model="baseer.report.expression">
+        <field name="line_id" ref="line_pl_gross"/>
+        <field name="engine">formula</field>
+        <field name="formula">REV - COR</field>
+    </record>
+    <record id="line_pl_opex" model="baseer.report.line">
+        <field name="report_id" ref="report_profit_and_loss"/>
+        <field name="code">OPEX</field>
+        <field name="name">Expenses</field>
+        <field name="sequence">40</field>
+        <field name="display">line</field>
+        <field name="foldable" eval="True"/>
+    </record>
+    <record id="expr_pl_opex" model="baseer.report.expression">
+        <field name="line_id" ref="line_pl_opex"/>
+        <field name="engine">account_type</field>
+        <field name="account_types">expense,expense_depreciation</field>
+        <field name="sign">1</field>
+        <field name="date_scope">report</field>
+    </record>
+    <record id="line_pl_operating" model="baseer.report.line">
+        <field name="report_id" ref="report_profit_and_loss"/>
+        <field name="code">OPERATING</field>
+        <field name="name">Operating Income</field>
+        <field name="sequence">50</field>
+        <field name="display">total</field>
+    </record>
+    <record id="expr_pl_operating" model="baseer.report.expression">
+        <field name="line_id" ref="line_pl_operating"/>
+        <field name="engine">formula</field>
+        <field name="formula">GROSS - OPEX</field>
+    </record>
+    <record id="line_pl_othinc" model="baseer.report.line">
+        <field name="report_id" ref="report_profit_and_loss"/>
+        <field name="code">OTHINC</field>
+        <field name="name">Other Income</field>
+        <field name="sequence">60</field>
+        <field name="display">line</field>
+        <field name="foldable" eval="True"/>
+    </record>
+    <record id="expr_pl_othinc" model="baseer.report.expression">
+        <field name="line_id" ref="line_pl_othinc"/>
+        <field name="engine">account_type</field>
+        <field name="account_types">income_other</field>
+        <field name="sign">-1</field>
+        <field name="date_scope">report</field>
+    </record>
+    <record id="line_pl_othexp" model="baseer.report.line">
+        <field name="report_id" ref="report_profit_and_loss"/>
+        <field name="code">OTHEXP</field>
+        <field name="name">Other Expenses</field>
+        <field name="sequence">70</field>
+        <field name="display">line</field>
+        <field name="foldable" eval="True"/>
+    </record>
+    <record id="expr_pl_othexp_gen" model="baseer.report.expression">
+        <field name="line_id" ref="line_pl_othexp"/>
+        <field name="engine">account_type</field>
+        <field name="account_types">expense_other</field>
+        <field name="sign">1</field>
+        <field name="date_scope">report</field>
+    </record>
+    <record id="line_pl_net_other" model="baseer.report.line">
+        <field name="report_id" ref="report_profit_and_loss"/>
+        <field name="code">NET_OTHER</field>
+        <field name="name">Net Other Income</field>
+        <field name="sequence">75</field>
+        <field name="display">total</field>
+    </record>
+    <record id="expr_pl_net_other" model="baseer.report.expression">
+        <field name="line_id" ref="line_pl_net_other"/>
+        <field name="engine">formula</field>
+        <field name="formula">OTHINC - OTHEXP</field>
+    </record>
+    <record id="line_pl_net" model="baseer.report.line">
+        <field name="report_id" ref="report_profit_and_loss"/>
+        <field name="code">NET</field>
+        <field name="name">Net Profit</field>
+        <field name="sequence">80</field>
+        <field name="display">total</field>
+        <field name="hideable" eval="False"/>
+    </record>
+    <record id="expr_pl_net" model="baseer.report.expression">
+        <field name="line_id" ref="line_pl_net"/>
+        <field name="engine">formula</field>
+        <field name="formula">OPERATING + NET_OTHER</field>
+    </record>
+    <delete model="baseer.report.line" search="[('report_id', '=', ref('report_profit_and_loss')), ('code', 'in', ['OPINC', 'OTHEXP_GEN', 'DEPR'])]"/>
+</odoo>

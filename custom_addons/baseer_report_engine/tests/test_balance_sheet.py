@@ -89,7 +89,7 @@ class TestBalanceSheet(EngineCase):
         alloc = next(line for line in payload['lines'] if line['code'] == 'CY_ALLOC')
         cell = next(amount for amount in alloc['amounts'] if amount['key'] == 'c0')
         self.assertTrue(cell['negative'])
-        self.assertTrue(cell['display'].startswith('−'))
+        self.assertTrue(cell['display'].startswith('-'))
         unfolded = engine.get_line_accounts('balance_sheet', self._options(), 'CASH')
         self.assertEqual(unfolded['accounts'][0]['id'], accounts['cash'].id)
         self.assertEqual(unfolded['accounts'][0]['amounts'][0]['value'], '80.00')
@@ -220,3 +220,63 @@ class TestBalanceSheet(EngineCase):
         self.assertIn(b'Balance Sheet', english)
         self.assertIn(b'Bank and Cash', english)
         self.assertIn(b'194.00', english)
+
+    def test_all_drillable_amounts_and_account_details(self):
+        engine, accounts = self._books()
+        company = engine.env.company
+        journal = self.env['account.journal'].search([('company_id', '=', company.id), ('code', '=', 'BRB')], limit=1)
+        for code in ('balance_sheet', 'profit_and_loss'):
+            for posted in (True, False):
+                options = self._options(posted_only=posted, journal_ids=[journal.id], comparison=1)
+                payload = engine.get_report(code, options, with_accounts=True)
+                definition = engine._definition(code)
+                details = [line for line in payload['lines'] if line['has_accounts']]
+                batched = engine.get_lines_accounts(code, options, [line['code'] for line in details])
+                for line, batch in zip(details, batched):
+                    self.assertEqual(line['accounts'], batch['accounts'])
+                    self.assertEqual(batch, engine.get_line_accounts(code, options, line['code']))
+                    for amount in line['amounts']:
+                        if amount['key'].startswith('c'):
+                            self.assertAlmostEqual(sum(float(next(a['value'] for a in row['amounts'] if a['key'] == amount['key'])) for row in batch['accounts']), float(amount['value']), places=2)
+                for line in payload['lines']:
+                    source = definition.line_ids.filtered(lambda record: record.code == (line.get('source_code') or line['code']))
+                    expressions = engine._drill_expressions(source)
+                    for amount in line['amounts']:
+                        if amount['key'].startswith('c'):
+                            self.assertEqual(amount['drill'], bool(expressions), line['code'])
+                        if not amount['drill']:
+                            continue
+                        sign = float(expressions[0].sign)
+                        action = engine.get_move_line_action(code, options, source.code, amount['key'])
+                        moves = engine.env['account.move.line'].search(action['domain'])
+                        self.assertAlmostEqual(sum(moves.mapped('balance')) * sign, float(amount['value']), places=2, msg=line['code'])
+                        if float(amount['value']):
+                            self.assertTrue(moves)
+                    for account in line['accounts']:
+                        for amount in account['amounts']:
+                            if amount['drill']:
+                                action = engine.get_move_line_action(code, options, source.code, amount['key'], account['id'], account['company_id'])
+                                moves = engine.env['account.move.line'].search(action['domain'])
+                                self.assertAlmostEqual(sum(moves.mapped('balance')) * float(expressions[0].sign), float(amount['value']), places=2)
+                                if float(amount['value']):
+                                    self.assertTrue(moves)
+
+    def test_shared_account_company_details(self):
+        first = self._company('Shared first')
+        second = self._company('Shared second')
+        cash = self._account(first, '1010', 'asset_current')
+        cash.with_context(defer_account_code_checks=True).write({'company_ids': [(4, second.id)]})
+        cash.with_company(second).code = '2020'
+        for company, amount in ((first, 10), (second, 20)):
+            journal = self._journal(company, 'SHR')
+            income = self._account(company, '4010', 'income')
+            self._entry(company, journal, '2041-04-15', cash, income, amount)
+        engine = self.env['baseer.report.engine'].with_company(first).with_context(allowed_company_ids=[first.id, second.id])
+        rows = engine.get_line_accounts('balance_sheet', self._options(), 'CUR')['accounts']
+        self.assertEqual({(r['code'], r['company_id'], r['amounts'][0]['value']) for r in rows}, {('1010', first.id, '10.00'), ('2020', second.id, '20.00')})
+        for row in rows:
+            action = engine.get_move_line_action('balance_sheet', self._options(), 'CUR', 'c0', cash.id, row['company_id'])
+            self.assertEqual(set(engine.env['account.move.line'].search(action['domain']).mapped('company_id').ids), {row['company_id']})
+        cash.with_company(second).code = '1010'
+        rows = engine.get_line_accounts('balance_sheet', self._options(), 'CUR')['accounts']
+        self.assertEqual({r['name'] for r in rows}, {cash.name + ' — Shared first', cash.name + ' — Shared second'})

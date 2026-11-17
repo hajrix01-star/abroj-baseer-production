@@ -52,6 +52,7 @@ class BaseerReportLine(models.Model):
         default='line',
         required=True,
     )
+    show_total = fields.Boolean(default=True)
     expression_ids = fields.One2many('baseer.report.expression', 'line_id')
 
     _report_code_unique = models.Constraint(
@@ -144,7 +145,7 @@ class BaseerReportExpression(models.Model):
         if self.engine == 'account_type':
             return account.account_type in set(self._account_type_list())
         if self.engine == 'code_prefix':
-            code = account.code or ''
+            code = account.with_company(account.company_ids[:1] or self.env.company).code or ''
             return any(code.startswith(prefix) for prefix in self._prefix_list())
         return False
 
@@ -187,7 +188,4 @@ def _or_domains(domains):
     domains = [list(domain) for domain in domains if domain]
     if not domains:
         return [('id', '=', 0)]
-    combined = domains[0]
-    for extra in domains[1:]:
-        combined = ['|'] + combined + extra
-    return combined
+    return list(fields.Domain.OR(domains))

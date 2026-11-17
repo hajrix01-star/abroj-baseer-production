@@ -1,5 +1,7 @@
 """Compute a declarative report from account.move.line for the active companies."""
 
+import ast
+
 from datetime import timedelta
 from decimal import Decimal
 
@@ -7,6 +9,7 @@ from dateutil.relativedelta import relativedelta
 
 from odoo import _, api, fields, models
 from odoo.exceptions import AccessError, ValidationError
+from odoo.tools.misc import format_date
 
 from .definition import _or_domains
 from .formula import FormulaError, evaluate_formula, referenced_codes
@@ -40,7 +43,7 @@ class BaseerReportEngine(models.AbstractModel):
             'analytic_accounts': self._analytic_options(),
             'analytic_enabled': self.env['account.analytic.account'].has_access('read'),
             'labels': self._labels(),
-            'defaults': self._default_options(),
+            'defaults': dict(self._default_options(), preset='today' if report.date_mode == 'as_of' else 'this_year', comparison_unit='month' if report.date_mode == 'as_of' else 'year'),
         }
 
     @api.model
@@ -48,18 +51,55 @@ class BaseerReportEngine(models.AbstractModel):
         self._check_report_access()
         report = self._definition(report_code)
         normalized = self._normalize_options(report, options or {})
-        return self._build(report, normalized, with_accounts=with_accounts)
+        payload = self._build(report, normalized, with_accounts=with_accounts)
+        payload['has_draft_entries'] = bool(normalized['posted_only'] and self.env['account.move.line'].search_count(self._draft_domain(normalized), limit=1))
+        return payload
+
+    @api.model
+    def _draft_domain(self, options):
+        return [('company_id', 'in', self.env.companies.ids),
+                ('parent_state', '=', 'draft'), ('date', '<=', options['date_to'])]
+
+    @api.model
+    def get_draft_entries_action(self, report_code, options):
+        self._check_report_access()
+        normalized = self._normalize_options(self._definition(report_code), options or {})
+        lines = self.env['account.move.line'].search(self._draft_domain(normalized))
+        return {'type': 'ir.actions.act_window', 'name': _('Unposted Journal Entries'),
+                'res_model': 'account.move', 'view_mode': 'list,form',
+                'views': [(False, 'list'), (False, 'form')], 'target': 'current',
+                'domain': [('id', 'in', lines.move_id.ids)]}
 
     @api.model
     def get_line_accounts(self, report_code, options, line_code):
-        payload = self.get_report(report_code, options, with_accounts=True)
-        line = next((item for item in payload['lines'] if item['code'] == line_code), None)
-        if line is None or not line['has_accounts']:
-            raise ValidationError(_('Choose a report line that lists accounts.'))
-        return {'line_code': line_code, 'accounts': line['accounts']}
+        return self.get_lines_accounts(report_code, options, [line_code])[0]
 
     @api.model
-    def get_move_line_action(self, report_code, options, line_code, column_key, account_id=False):
+    def get_lines_accounts(self, report_code, options, line_codes):
+        self._check_report_access()
+        report = self._definition(report_code)
+        normalized = self._normalize_options(report, options or {})
+        if not isinstance(line_codes, list) or any(not isinstance(code, str) for code in line_codes):
+            raise ValidationError(_('Choose a report line that lists accounts.'))
+        lines = {line.code: line for line in report.line_ids}
+        accounts = self.env['account.account'].with_context(active_test=False).search([
+            ('company_ids', 'in', self.env.companies.ids),
+        ])
+        columns = normalized['columns']
+        periods = [column for column in columns if column['kind'] == 'period']
+        cache = {}
+        result = []
+        for code in line_codes:
+            line = lines.get(code)
+            if not line or not any(expr.engine != 'formula' for expr in line.expression_ids):
+                raise ValidationError(_('Choose a report line that lists accounts.'))
+            result.append({'line_code': code, 'accounts': self._account_rows(
+                line, periods, columns, normalized, accounts, cache, self.env.company.currency_id,
+            )})
+        return result
+
+    @api.model
+    def get_move_line_action(self, report_code, options, line_code, column_key, account_id=False, company_id=False):
         self._check_report_access()
         report = self._definition(report_code)
         normalized = self._normalize_options(report, options or {})
@@ -77,10 +117,12 @@ class BaseerReportEngine(models.AbstractModel):
             account.check_access('read')
             if not account.exists():
                 raise AccessError(_('Choose an account from this line.'))
-        domain = self._drill_domain(report, line, column, normalized, account)
+        if company_id and (not account or type(company_id) is not int or company_id not in self.env.companies.ids):
+            raise AccessError(_('Choose an account from this line.'))
+        domain = self._drill_domain(report, line, column, normalized, account, company_id)
         return {
             'type': 'ir.actions.act_window',
-            'name': _('Journal Items'),
+            'name': _('Journal Items – %s') % line.name,
             'res_model': 'account.move.line',
             'view_mode': 'list,form',
             'views': [(False, 'list'), (False, 'form')],
@@ -94,6 +136,7 @@ class BaseerReportEngine(models.AbstractModel):
             'preset': 'this_month',
             'comparison': 0,
             'comparison_unit': 'month',
+            'comparison_mode': 'previous',
             'posted_only': True,
             'hide_zero': False,
             'journal_ids': [],
@@ -113,6 +156,9 @@ class BaseerReportEngine(models.AbstractModel):
         unit = raw.get('comparison_unit') or 'month'
         if unit not in UNITS:
             raise ValidationError(_('Choose a month, quarter or year comparison.'))
+        comparison_mode = raw.get('comparison_mode', 'previous')
+        if comparison_mode not in ('previous', 'year'):
+            raise ValidationError(_('The report options are not valid.'))
         posted_only = raw.get('posted_only', True)
         hide_zero = raw.get('hide_zero', False)
         if type(posted_only) is not bool or type(hide_zero) is not bool:
@@ -141,14 +187,11 @@ class BaseerReportEngine(models.AbstractModel):
                     end = _shift_date(end, direction, unit)
             anchor = end
         else:
-            if direction < 0:
-                start, _end, unit = self._preset_bounds(self.env.company, preset, anchor)
-                anchor = start - timedelta(days=1)
-            elif direction > 0:
-                _start, end, unit = self._preset_bounds(self.env.company, preset, anchor)
-                anchor = end + timedelta(days=1)
+            if direction:
+                _start, _end, unit = self._preset_bounds(self.env.company, preset, anchor)
+                anchor = _shift_date(anchor, direction, unit)
             start, end, unit = self._preset_bounds(self.env.company, preset, anchor)
-        columns = self._columns(report, start, end, comparison, unit)
+        columns = self._columns(report, start, end, comparison, 'year' if comparison_mode == 'year' else unit)
         return {
             'preset': preset,
             'as_of': fields.Date.to_string(end) if report.date_mode == 'as_of' else False,
@@ -157,6 +200,7 @@ class BaseerReportEngine(models.AbstractModel):
             'anchor_date': fields.Date.to_string(anchor),
             'comparison': comparison,
             'comparison_unit': unit,
+            'comparison_mode': comparison_mode,
             'posted_only': posted_only,
             'hide_zero': hide_zero,
             'journal_ids': journal_ids,
@@ -183,11 +227,11 @@ class BaseerReportEngine(models.AbstractModel):
     def _period_column(self, report, key, start, end):
         fiscal_start = self.env.company.compute_fiscalyear_dates(end)['date_from']
         if report.date_mode == 'as_of':
-            label = _('As of %s') % fields.Date.to_string(end)
+            label = _('As of %s') % format_date(self.env, end)
             date_from = False
             column_start = None
         else:
-            label = '%s – %s' % (fields.Date.to_string(start), fields.Date.to_string(end))
+            label = _('From %s to %s') % (format_date(self.env, start), format_date(self.env, end))
             date_from = fields.Date.to_string(start)
             column_start = start
         return {
@@ -204,6 +248,8 @@ class BaseerReportEngine(models.AbstractModel):
 
     @api.model
     def _preset_bounds(self, company, preset, anchor):
+        if preset == 'today':
+            return anchor, anchor, 'month'
         if preset == 'this_month':
             return (*_month_bounds(anchor), 'month')
         if preset == 'last_month':
@@ -241,7 +287,7 @@ class BaseerReportEngine(models.AbstractModel):
                 _fill_variation(amounts)
         visible = self._visible_codes(lines, values, period_columns, options, currency)
         display_lines = []
-        for line, level in self._display_order(lines):
+        for line, level, is_total in self._display_order(lines):
             if line.code not in visible:
                 continue
             has_accounts = any(expression.engine != 'formula' for expression in line.expression_ids)
@@ -250,13 +296,20 @@ class BaseerReportEngine(models.AbstractModel):
                 account_rows = self._account_rows(
                     line, period_columns, options['columns'], options, accounts, cache, currency,
                 )
-            display_lines.append(self._serialize_line(
+            row = self._serialize_line(
                 line, level, values[line.code], options['columns'], currency, has_accounts, account_rows,
-            ))
+            )
+            if is_total:
+                row.update(code='%s__total' % line.code, source_code=line.code,
+                           name=_('Total %s') % line.name, display='total',
+                           foldable=False, has_accounts=False, accounts=[])
+            elif line.child_ids and line.show_total:
+                row['hide_amounts'] = True
+            display_lines.append(row)
         return {
             'report': {'code': report.code, 'name': report.name, 'date_mode': report.date_mode},
             'companies': [
-                {'id': company.id, 'name': company.display_name} for company in self.env.companies
+                {'id': company.id, 'name': company.display_name, 'currency': company.currency_id.name} for company in self.env.companies
             ],
             'currency': {
                 'id': currency.id,
@@ -311,11 +364,11 @@ class BaseerReportEngine(models.AbstractModel):
             return sign * amount
         totals = self._scope_totals(report, column, expression.date_scope, options, cache)
         amount = Decimal('0')
-        for account in accounts:
-            if expression._matches_account(account):
-                row = totals.get(account.id)
-                if row:
-                    amount += row[expression.figure]
+        by_id = {account.id: account for account in accounts}
+        for (account_id, company_id), row in totals.items():
+            account = by_id.get(account_id)
+            if account and expression._matches_account(account.with_company(self.env['res.company'].browse(company_id))):
+                amount += row[expression.figure]
         return sign * amount
 
     @api.model
@@ -341,7 +394,7 @@ class BaseerReportEngine(models.AbstractModel):
                 if share == 0 or not values['account_id'] or not values['company_id']:
                     continue
                 company = self.env['res.company'].browse(values['company_id'][0])
-                bucket = totals.setdefault(values['account_id'][0], _zeros())
+                bucket = totals.setdefault((values['account_id'][0], company.id), _zeros())
                 for figure in ('balance', 'debit', 'credit'):
                     amount = Decimal(str(values[figure] or 0)) * share
                     bucket[figure] += self._convert(amount, company, on_date)
@@ -352,7 +405,7 @@ class BaseerReportEngine(models.AbstractModel):
         for account, company, balance, debit, credit in rows:
             if not account:
                 continue
-            bucket = totals.setdefault(account.id, _zeros())
+            bucket = totals.setdefault((account.id, company.id), _zeros())
             for figure, amount in (
                 ('balance', balance), ('debit', debit), ('credit', credit),
             ):
@@ -400,7 +453,9 @@ class BaseerReportEngine(models.AbstractModel):
     def _account_rows(self, line, period_columns, columns, options, accounts, cache, currency):
         expressions = line.expression_ids.filtered(lambda item: item.engine != 'formula')
         rows = []
-        for account in accounts.sorted(key=lambda item: (item.code or '', item.id)):
+        pairs = [(account.with_company(company), company) for account in accounts
+                 for company in self.env.companies if company in account.company_ids]
+        for account, company in sorted(pairs, key=lambda pair: (pair[0].code or '', pair[0].id, pair[1].id)):
             amounts = {}
             used = False
             for column in period_columns:
@@ -417,7 +472,7 @@ class BaseerReportEngine(models.AbstractModel):
                         )
                     else:
                         continue
-                    row = totals.get(account.id)
+                    row = totals.get((account.id, company.id))
                     if not row:
                         continue
                     total += Decimal(expression.sign) * row[expression.figure]
@@ -432,6 +487,8 @@ class BaseerReportEngine(models.AbstractModel):
             _fill_variation(amounts, columns)
             rows.append({
                 'id': account.id,
+                'company_id': company.id,
+                'company_name': company.name,
                 'code': account.code or '',
                 'name': account.name or '',
                 'amounts': [
@@ -441,13 +498,21 @@ class BaseerReportEngine(models.AbstractModel):
                     for column in columns
                 ],
             })
+        if len(self.env.companies) > 1:
+            counts = {}
+            for row in rows:
+                key = (row['code'], row['name'])
+                counts[key] = counts.get(key, 0) + 1
+            for row in rows:
+                if counts[(row['code'], row['name'])] > 1:
+                    row['name'] += ' — ' + row['company_name']
         return rows
 
     @api.model
-    def _drill_domain(self, report, line, column, options, account):
+    def _drill_domain(self, report, line, column, options, account, company_id=False):
         parts = []
         for expression in self._drill_expressions(line):
-            if account and expression.engine != 'domain' and not expression._matches_account(account):
+            if account and expression.engine != 'domain' and not expression._matches_account(account.with_company(self.env['res.company'].browse(company_id)) if company_id else account):
                 continue
             if account and expression.engine == 'domain':
                 probe = (
@@ -456,7 +521,7 @@ class BaseerReportEngine(models.AbstractModel):
                     + expression._domain_list()
                     + [('account_id', '=', account.id)]
                 )
-                if account.id not in self._aggregate(probe, column['_end'], options['analytic_account_ids']):
+                if not any(key[0] == account.id and (not company_id or key[1] == company_id) for key in self._aggregate(probe, column['_end'], options['analytic_account_ids'])):
                     continue
                 account_domain = expression._domain_list() + [('account_id', '=', account.id)]
             elif account:
@@ -467,6 +532,7 @@ class BaseerReportEngine(models.AbstractModel):
                 self._base_domain(options)
                 + self._date_domain(report, column, expression.date_scope)
                 + account_domain
+                + ([('company_id', '=', company_id)] if company_id else [])
             )
         if not parts:
             raise AccessError(_('This amount has no journal items to open.'))
@@ -474,18 +540,51 @@ class BaseerReportEngine(models.AbstractModel):
 
     @api.model
     def _drill_expressions(self, line):
-        own = line.expression_ids.filtered(lambda item: item.engine != 'formula')
-        if own:
-            return own
-        expressions = self.env['baseer.report.expression']
-        pending = list(line.child_ids)
-        while pending:
-            current = pending.pop()
-            aggregation = current.expression_ids.filtered(lambda item: item.engine != 'formula')
-            if aggregation:
-                expressions |= aggregation
+        by_code = {item.code: item for item in line.report_id.line_ids}
+        empty = self.env['baseer.report.expression']
+
+        def resolve(current, visited):
+            if current.code in visited:
+                return None
+            visited = visited | {current.code}
+            formula = current.expression_ids.filtered(lambda item: item.engine == 'formula')[:1]
+            if formula:
+                try:
+                    tree = ast.parse(formula.formula, mode='eval').body
+                except SyntaxError:
+                    return None
+
+                def names(node):
+                    if isinstance(node, ast.Name):
+                        return [node.id]
+                    if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add):
+                        left, right = names(node.left), names(node.right)
+                        return left + right if left is not None and right is not None else None
+                    return None
+
+                codes = names(tree)
+                if not codes or len(codes) != len(set(codes)):
+                    return None
+                children = [by_code.get(code) for code in codes]
+            elif current.expression_ids:
+                return current.expression_ids
             else:
-                pending.extend(current.child_ids)
+                children = list(current.child_ids)
+            result = empty
+            for child in children:
+                if not child:
+                    return None
+                expressions = resolve(child, visited)
+                if expressions is None or set(result.ids) & set(expressions.ids):
+                    return None
+                result |= expressions
+            return result
+
+        expressions = resolve(line, set())
+        if not expressions or len(set(expressions.mapped('sign'))) != 1 or any(
+            expression.figure != 'balance' for expression in expressions
+        ):
+            return empty
         return expressions
 
     @api.model
@@ -501,7 +600,8 @@ class BaseerReportEngine(models.AbstractModel):
             'has_accounts': has_accounts,
             'amounts': [
                 self._serialize_amount(
-                    column, amounts.get(column['key']), currency, drill=column['kind'] == 'period',
+                    column, amounts.get(column['key']), currency,
+                    drill=column['kind'] == 'period' and bool(self._drill_expressions(line)),
                 )
                 for column in columns
             ],
@@ -521,7 +621,7 @@ class BaseerReportEngine(models.AbstractModel):
             return {
                 'key': column['key'],
                 'value': f'{quant:.2f}',
-                'display': ('−' + text) if quant < 0 else text,
+                'display': ('-' + text) if quant < 0 else text,
                 'negative': quant < 0,
                 'zero': quant == 0,
                 'drill': False,
@@ -532,7 +632,7 @@ class BaseerReportEngine(models.AbstractModel):
         return {
             'key': column['key'],
             'value': f'{quant:.{digits}f}',
-            'display': ('−' + text) if quant < 0 else text,
+            'display': ('-' + text) if quant < 0 else text,
             'negative': quant < 0,
             'zero': quant == 0,
             'drill': drill,
@@ -585,8 +685,10 @@ class BaseerReportEngine(models.AbstractModel):
 
         def walk(parent_id, level):
             for line in children.get(parent_id, []):
-                ordered.append((line, level))
+                ordered.append((line, level, False))
                 walk(line.id, level + 1)
+                if line.child_ids and line.show_total:
+                    ordered.append((line, level, True))
 
         walk(0, 0)
         return ordered
@@ -658,7 +760,33 @@ class BaseerReportEngine(models.AbstractModel):
     @api.model
     def _labels(self):
         return {
+            'balance': _('Balance'),
+            'journal_items': _('Journal Items'),
+            'unfold_line': _('Unfold'),
+            'fold_line': _('Fold'),
+            'total_format': _('Total %s'),
+            'end_month': _('End of Month'),
+            'end_quarter': _('End of Quarter'),
+            'end_year': _('End of Year'),
+            'specific_date': _('Specific Date'),
+            'custom_dates': _('Custom Dates'),
+            'posted_entries': _('Posted Entries'),
+            'posted_draft_entries': _('Posted & Draft Entries'),
+            'analytic': _('Analytic'),
+            'in_currency': _('In'),
+            'banner_before': _('There are'),
+            'banner_link': _('unposted Journal Entries'),
+            'banner_after': _('prior or included in this period.'),
+            'hide_lines_zero': _('Hide lines at 0'),
+            'journal_count': _('Journals'),
             'apply': _('Apply'),
+            'no_comparison': _('No Comparison'),
+            'same_last_year': _('Same Period Last Year'),
+            'number_periods': _('Number of periods'),
+            'draft_entries': _('Draft Entries'),
+            'options': _('Options'),
+            'unfold_all': _('Unfold All'),
+            'fold_all': _('Fold All'),
             'pdf': _('PDF'),
             'xlsx': _('XLSX'),
             'period': _('Period'),
@@ -670,7 +798,7 @@ class BaseerReportEngine(models.AbstractModel):
             'posted_only': _('Posted entries only'),
             'hide_zero': _('Hide zero lines'),
             'journals': _('Journals'),
-            'all_journals': _('All journals'),
+            'all_journals': _('All Journals'),
             'analytics': _('Analytic accounts'),
             'all_analytics': _('All analytic accounts'),
             'loading': _('Loading the report…'),
@@ -679,7 +807,7 @@ class BaseerReportEngine(models.AbstractModel):
             ),
             'empty': _('No lines to display.'),
             'accounts_empty': _('No accounts on this line.'),
-            'previous': _('Previous period'),
+            'previous': _('Previous Period'),
             'next': _('Next period'),
             'unfold': _('Show details'),
             'fold': _('Hide details'),
@@ -690,6 +818,7 @@ class BaseerReportEngine(models.AbstractModel):
     @api.model
     def _preset_labels(self):
         return (
+            ('today', _('Today')),
             ('this_month', _('This month')),
             ('this_quarter', _('This quarter')),
             ('this_year', _('This year')),
@@ -759,7 +888,7 @@ class BaseerReportEngine(models.AbstractModel):
             ('company_id', 'in', self.env.companies.ids),
         ])
         return [
-            {'id': journal.id, 'name': journal.display_name, 'code': journal.code or ''}
+            {'id': journal.id, 'name': journal.display_name, 'code': journal.code or '', 'type': dict(journal._fields['type']._description_selection(self.env)).get(journal.type, '')}
             for journal in journals
         ]
 

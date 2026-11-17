@@ -17,4 +17,12 @@
         action="action_balance_sheet"
         sequence="10"
         groups="account.group_account_readonly,account.group_account_user,account.group_account_manager"/>
+    <record id="action_profit_and_loss" model="ir.actions.client">
+        <field name="name">Profit and Loss (New)</field>
+        <field name="tag">baseer_report_engine</field>
+        <field name="context">{'report_code': 'profit_and_loss'}</field>
+    </record>
+    <menuitem id="menu_profit_and_loss" name="Profit and Loss (New)"
+        parent="menu_new_version" action="action_profit_and_loss" sequence="20"
+        groups="account.group_account_readonly,account.group_account_user,account.group_account_manager"/>
 </odoo>

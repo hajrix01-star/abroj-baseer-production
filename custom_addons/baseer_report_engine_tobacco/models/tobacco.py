@@ -134,6 +134,21 @@ class TobaccoEngine(models.AbstractModel):
         payload = self._build(report, normalized)
         payload['report']['report_kind'] = 'tobacco'
         payload['tobacco_sections'] = sections
+        for section in sections:
+            days = []
+            cumulative = section['opening']
+            for row in section['rows']:
+                day = row['date'][:10]
+                if not days or days[-1]['date'] != day:
+                    days.append({'date': day, 'debit': 0, 'credit': 0, 'net': 0, 'count': 0})
+                current = days[-1]
+                current['debit'] += max(-row['net'], 0)
+                current['credit'] += max(row['net'], 0)
+                current['net'] += row['net']
+                current['count'] += 1
+                cumulative += row['net']
+                current['cumulative'] = cumulative
+            section['days'] = days
         payload['has_draft_entries'] = bool(normalized['posted_only'] and self.env['account.move.line'].search_count(self._draft_domain(normalized), limit=1))
         # Generic statement rendering and exports remain usable until the dedicated register UI is available.
         result = []
@@ -156,14 +171,42 @@ class TobaccoEngine(models.AbstractModel):
         return payload
 
     @api.model
+    def get_tobacco_day(self, options, company_id, account_id, day, offset=0, limit=80):
+        self._check_report_access()
+        if (type(company_id) is not int or type(account_id) is not int or
+                type(offset) is not int or offset < 0 or type(limit) is not int or not 1 <= limit <= 200):
+            raise ValidationError(_('The report options are not valid.'))
+        try:
+            parsed = fields.Date.to_date(day)
+            if not parsed or str(parsed) != day:
+                raise ValueError()
+        except (ValueError, TypeError):
+            raise ValidationError(_('The report options are not valid.'))
+        normalized = self._normalize_options(self._definition('tobacco_service_fee'), options or {})
+        section = next((s for s in self._tobacco_collect(normalized)
+                        if s['company_id'] == company_id and s['account_id'] == account_id), None)
+        if not section or not normalized['date_from'] <= day <= normalized['date_to']:
+            raise ValidationError(_('The report options are not valid.'))
+        balance = section['opening']
+        items = []
+        for row in section['rows']:
+            balance += row['net']
+            if row['date'][:10] == day:
+                items.append(dict(row, debit=max(-row['net'], 0), credit=max(row['net'], 0), cumulative=balance))
+        return {'items': items[offset:offset + limit], 'has_more': offset + limit < len(items),
+                'next_offset': offset + len(items[offset:offset + limit])}
+
+    @api.model
     def get_tobacco_source_action(self, options, model, record_id):
         """Only expose records actually present in the current report scope."""
         self._check_report_access()
-        if model not in ('pos.order', 'account.move') or type(record_id) is not int or record_id <= 0:
+        if model not in ('pos.order', 'pos.session', 'account.move') or type(record_id) is not int or record_id <= 0:
             raise ValidationError(_('Choose a source from this report.'))
         normalized = self._normalize_options(self._definition('tobacco_service_fee'), options or {})
         sections = self._tobacco_collect(normalized)
         visible = any((r['model'], r['id']) == (model, record_id) for s in sections for r in s['rows'])
+        if model == 'pos.session':
+            visible = any(record_id in s['open_sessions'] for s in sections)
         if model == 'account.move':
             visible = visible or any(record_id in s['manual_move_ids'] for s in sections)
         if not visible:

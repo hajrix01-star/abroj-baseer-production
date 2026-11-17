@@ -11,6 +11,9 @@ class TobaccoReportCase(EngineCase):
         cls.env.user.write({'company_ids': [(4, cls.company.id)]})
 
     def test_opening_and_manual_reconciliation(self):
+        import base64
+        import io
+        import zipfile
         from odoo.service.model import call_kw
 
         company = self.company
@@ -28,6 +31,22 @@ class TobaccoReportCase(EngineCase):
         self.assertEqual(payload['report']['report_kind'], 'tobacco')
         self.assertTrue(self._engine(company).export_xlsx('tobacco_service_fee', self._options())['content'])
         self.assertTrue(self._engine(company).export_pdf('tobacco_service_fee', self._options()))
+        for lang in ('en_US', 'ar_001'):
+            self.env['res.lang']._activate_lang(lang)
+            self.env['ir.module.module']._load_module_terms(['baseer_report_engine_tobacco'], [lang], overwrite=True)
+            localized = self._engine(company).with_context(lang=lang)
+            payload = localized._export_payload('tobacco_service_fee', self._options())
+            rows = payload['tobacco_sections'][0]['export_rows']
+            self.assertIn(-20, [values[1] for values, kind in rows if len(values) == 2 and isinstance(values[1], (int, float))])
+            xlsx = localized.export_xlsx('tobacco_service_fee', self._options())['content']
+            with zipfile.ZipFile(io.BytesIO(base64.b64decode(xlsx))) as archive:
+                strings = archive.read('xl/sharedStrings.xml').decode()
+                self.assertIn('Difference' if lang == 'en_US' else 'الفرق', strings)
+                self.assertIn('Total for period' if lang == 'en_US' else 'إجمالي الفترة', strings)
+            html, _ = self.env['ir.actions.report'].with_company(company).with_context(lang=lang, allowed_company_ids=[company.id])._render_qweb_html(
+                'baseer_report_engine.report_pdf', docids=localized._definition('tobacco_service_fee').ids, data={'report_code': 'tobacco_service_fee', 'options': self._options()})
+            self.assertIn(('Difference' if lang == 'en_US' else 'الفرق').encode(), html)
+            self.assertIn(b'-20.00', html)
         action = self._engine(company).get_tobacco_source_action(self._options(), 'account.move', move.id)
         self.assertEqual(action['res_id'], move.id)
         ledger = self._engine(company).get_tobacco_ledger_action(self._options(), fee.id, company.id)
@@ -130,6 +149,16 @@ class TobaccoPosCase(EngineCase):
             self._options(date_from='2041-02-04', date_to='2041-02-04'))['tobacco_sections'][0]
         self.assertEqual(sorted(row['net'] for row in section['rows']), [-100, 50, 100])
         self.assertEqual(section['net'], 50)
+        from odoo.service.model import call_kw
+        engine = self._engine(company)
+        opts = self._options(date_from='2041-02-04', date_to='2041-02-04')
+        args = [opts, company.id, account.id, '2041-02-04']
+        first = call_kw(engine, 'get_tobacco_day', args + [0, 2], {'context': engine.env.context})
+        second = call_kw(engine, 'get_tobacco_day', args + [first['next_offset'], 2], {'context': engine.env.context})
+        self.assertTrue(first['has_more'])
+        self.assertFalse(second['has_more'])
+        self.assertEqual(len(first['items']) + len(second['items']), 3)
+        self.assertEqual(second['items'][-1]['cumulative'], 50)
 
     def test_native_pos_fee_and_riyadh_boundary(self):
         from uuid import uuid4

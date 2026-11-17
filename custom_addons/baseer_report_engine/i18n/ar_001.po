@@ -1241,3 +1241,97 @@ msgstr "إجمالي أعمار الديون الدائنة"
 #: model:ir.model.fields.selection,name:baseer_report_engine.selection__baseer_report_definition__report_kind__aged
 msgid "Aged"
 msgstr "الأعمار"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/cash_flow.py:0
+msgid "Cash and cash equivalents, beginning of period"
+msgstr "النقد وما في حكمه في بداية الفترة"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/cash_flow.py:0
+msgid "Net increase in cash and cash equivalents"
+msgstr "صافي الزيادة في النقد وما في حكمه"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/cash_flow.py:0
+msgid "Cash flows from operating activities"
+msgstr "التدفقات النقدية من الأنشطة التشغيلية"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/cash_flow.py:0
+msgid "Advance Payments received from customers"
+msgstr "دفعات مقدمة مستلمة من العملاء"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/cash_flow.py:0
+msgid "Cash received from operating activities"
+msgstr "النقد المستلم من الأنشطة التشغيلية"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/cash_flow.py:0
+msgid "Advance payments made to suppliers"
+msgstr "دفعات مقدمة مدفوعة للموردين"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/cash_flow.py:0
+msgid "Cash paid for operating activities"
+msgstr "النقد المدفوع للأنشطة التشغيلية"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/cash_flow.py:0
+msgid "Cash flows from investing & extraordinary activities"
+msgstr "التدفقات النقدية من الأنشطة الاستثمارية والاستثنائية"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/cash_flow.py:0
+msgid "Cash flows from financing activities"
+msgstr "التدفقات النقدية من الأنشطة التمويلية"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/cash_flow.py:0
+msgid "Cash flows from unclassified activities"
+msgstr "التدفقات النقدية من أنشطة غير مصنفة"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/cash_flow.py:0
+msgid "Cash in"
+msgstr "النقد الداخل"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/cash_flow.py:0
+msgid "Cash out"
+msgstr "النقد الخارج"
+
+#. module: baseer_report_engine
+#. odoo-python
+#: code:addons/baseer_report_engine/models/cash_flow.py:0
+msgid "Cash and cash equivalents, closing balance"
+msgstr "النقد وما في حكمه في نهاية الفترة"
+
+#. module: baseer_report_engine
+#: model:baseer.report.definition,name:baseer_report_engine.report_cash_flow
+msgid "Cash Flow Statement"
+msgstr "قائمة التدفقات النقدية"
+
+#. module: baseer_report_engine
+#: model:ir.actions.client,name:baseer_report_engine.action_cash_flow
+#: model:ir.ui.menu,name:baseer_report_engine.menu_cash_flow
+msgid "Cash Flow Statement (New)"
+msgstr "قائمة التدفقات النقدية (جديد)"
+
+#. module: baseer_report_engine
+#: model:ir.model.fields.selection,name:baseer_report_engine.selection__baseer_report_definition__report_kind__cash_flow
+msgid "Cash Flow"
+msgstr "التدفق النقدي"

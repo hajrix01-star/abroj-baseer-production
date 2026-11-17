@@ -65,6 +65,7 @@ class BaseerReportEngine(models.AbstractModel):
                    else self._build_ledger(report, normalized, options or {}) if report.report_kind == 'ledger'
                    else self._build_partner_ledger(report, normalized, options or {}) if report.report_kind == 'partner_ledger'
                    else self._build_aged(report, normalized) if report.report_kind == 'aged'
+                   else self._build_cash_flow(report, normalized, with_accounts) if report.report_kind == 'cash_flow'
                    else self._build(report, normalized, with_accounts=with_accounts))
         payload['has_draft_entries'] = bool(normalized['posted_only'] and self.env['account.move.line'].search_count(self._draft_domain(normalized), limit=1))
         return payload
@@ -95,6 +96,8 @@ class BaseerReportEngine(models.AbstractModel):
         normalized = self._normalize_options(report, options or {})
         if not isinstance(line_codes, list) or any(not isinstance(code, str) for code in line_codes):
             raise ValidationError(_('Choose a report line that lists accounts.'))
+        if report.report_kind == 'cash_flow':
+            return self._cash_flow_accounts(report, normalized, line_codes)
         lines = {line.code: line for line in report.line_ids}
         accounts = self.env['account.account'].with_context(active_test=False).search([
             ('company_ids', 'in', self.env.companies.ids),
@@ -117,6 +120,8 @@ class BaseerReportEngine(models.AbstractModel):
         self._check_report_access()
         report = self._definition(report_code)
         normalized = self._normalize_options(report, options or {})
+        if report.report_kind == 'cash_flow':
+            return self._cash_flow_action(report, normalized, line_code, column_key, account_id, company_id)
         if report.report_kind == 'aged':
             return self._aged_action(normalized, line_code, column_key, account_id)
         if report.report_kind == 'partner_ledger':
@@ -169,7 +174,7 @@ class BaseerReportEngine(models.AbstractModel):
     def _normalize_options(self, report, raw):
         if not isinstance(raw, dict):
             raise ValidationError(_('The report options are not valid.'))
-        preset = raw.get('preset') or (report.default_preset if report.report_kind in ('partner_ledger', 'aged') else 'this_month') or 'this_month'
+        preset = raw.get('preset') or (report.default_preset if report.report_kind in ('partner_ledger', 'aged', 'cash_flow') else 'this_month') or 'this_month'
         if preset not in dict(self._preset_labels()):
             raise ValidationError(_('Choose a valid period.'))
         comparison = raw.get('comparison', 0)

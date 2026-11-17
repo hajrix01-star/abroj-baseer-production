@@ -66,6 +66,7 @@ export class BaseerReportEngine extends Component {
     get isAged() { return ["aged_receivable", "aged_payable"].includes(this.reportCode); }
     get isPartnerLedger() { return this.reportCode === "partner_ledger" || this.isAged; }
     get isLedger() { return ["ledger", "partner_ledger", "aged"].includes(this.state.payload?.report.report_kind); }
+    get isCashFlow() { return this.state.payload?.report.report_kind === "cash_flow"; }
     get isGrid() { return ["account_grid", "ledger", "partner_ledger", "aged"].includes(this.state.payload?.report.report_kind); }
 
     get lines() {

@@ -12,3 +12,5 @@ from . import test_general_ledger
 from . import test_partner_ledger
 
 from . import test_aged
+
+from . import test_cash_flow

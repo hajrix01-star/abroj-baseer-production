@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="report_cash_flow" model="baseer.report.definition">
+        <field name="name">Cash Flow Statement</field>
+        <field name="code">cash_flow</field>
+        <field name="date_mode">range</field>
+        <field name="report_kind">cash_flow</field>
+        <field name="default_preset">last_month</field>
+    </record>
+</odoo>

@@ -37,6 +37,40 @@ class TestAged(EngineCase):
         with self.assertRaises(ValidationError):
             self.engine.get_report('aged_receivable', self._options(aging_basis='bad'))
 
+    def test_boundary_matrix_for_both_bases(self):
+        asof = date(2041, 6, 30)
+        for n in (30, 15):
+            for basis in ('due_date', 'invoice_date'):
+                partner = self.env['res.partner'].create({'name': 'Matrix %s %s' % (n, basis)})
+                for days in (0, 1, n, n + 1, 4 * n, 4 * n + 1):
+                    move = self._entry(self.company, self.journal, '2041-01-01', self.receivable, self.other, 1, posted=False)
+                    move.invoice_date = asof - timedelta(days=days)
+                    move.action_post()
+                    line = move.line_ids.filtered(lambda item: item.account_id == self.receivable)
+                    line.partner_id = partner
+                    line.date_maturity = asof - timedelta(days=days)
+                report = self.engine.get_report('aged_receivable', self._options(
+                    partner_ids=[partner.id], period_length=n, aging_basis=basis))
+                self.assertEqual([float(a['value']) for a in report['lines'][-1]['amounts']],
+                                 [1, 2, 1, 0, 1, 1, 6], (n, basis))
+
+    def test_total_matches_independent_asof_residual(self):
+        self.receivable.reconcile = True
+        invoice = self._entry(self.company, self.journal, '2041-01-01', self.receivable, self.other, 100)
+        before = self._entry(self.company, self.journal, '2041-03-01', self.other, self.receivable, 30)
+        after = self._entry(self.company, self.journal, '2041-07-01', self.other, self.receivable, 20)
+        lines = (invoice | before | after).line_ids.filtered(lambda line: line.account_id == self.receivable)
+        lines.reconcile()
+        cutoff = date(2041, 6, 30)
+        lines = self.env['account.move.line'].search([('account_id', '=', self.receivable.id), ('date', '<=', cutoff)])
+        expected = 0
+        for line in lines:
+            partials = self.env['account.partial.reconcile'].search([
+                ('max_date', '<=', cutoff), '|', ('debit_move_id', '=', line.id), ('credit_move_id', '=', line.id)])
+            expected += line.balance - (1 if line.balance > 0 else -1) * sum(partials.mapped('amount'))
+        total = self.engine.get_report('aged_receivable', self._options())['lines'][-1]['amounts'][-1]['value']
+        self.assertAlmostEqual(float(total), expected, places=2)
+
     def test_reconciliation_at_asof_and_ledger_totals(self):
         partner = self.env['res.partner'].create({'name': 'Aging customer'})
         for account, report_code, sign in ((self.receivable, 'aged_receivable', 1), (self.payable, 'aged_payable', -1)):
@@ -158,6 +192,47 @@ class TestAged(EngineCase):
             move.line_ids.filtered(lambda item: item.account_id == self.receivable).partner_id = p
         large = count()
         self.assertLessEqual(large, small + 5, (small, large))
+
+    def test_aged_exports_include_aligned_unfolded_items(self):
+        import base64
+        import io
+        from openpyxl import load_workbook
+        partner = self.env['res.partner'].create({'name': 'Export aging'})
+        move = self._entry(self.company, self.journal, '2041-06-01', self.receivable, self.other, 42)
+        move.line_ids.filtered(lambda line: line.account_id == self.receivable).partner_id = partner
+        options = self._options(unfolded_partners=[partner.id])
+        payload = self.engine._export_payload('aged_receivable', options)
+        item = next(line for line in payload['lines'] if line.get('partner_id') == partner.id)['ledger']['rows'][0]
+        book = load_workbook(io.BytesIO(base64.b64decode(self.engine.export_xlsx('aged_receivable', options)['content'])))
+        rows = [[cell.value for cell in row] for row in book.active]
+        row = next(row for row in rows if row[0] == item['name'])
+        self.assertEqual(row[3], 42)
+        total = next(row for row in rows if row[0] == 'Total Aged Receivable')
+        self.assertEqual(total[8], 42)
+        html, _ = self.env['ir.actions.report'].with_company(self.company).with_context(allowed_company_ids=[self.company.id])._render_qweb_html(
+            'baseer_report_engine.report_pdf', docids=self.engine._definition('aged_receivable').ids,
+            data={'report_code': 'aged_receivable', 'options': options})
+        self.assertIn(item['name'], html.decode())
+
+    def test_page_query_count_does_not_grow_with_items_or_partners(self):
+        partner = self.env['res.partner'].create({'name': 'Page scaling'})
+        engine = self.engine.with_context(baseer_gl_page_size=1)
+        options = self._options()
+        def add(p):
+            move = self._entry(self.company, self.journal, '2041-04-01', self.receivable, self.other, 1)
+            move.line_ids.filtered(lambda line: line.account_id == self.receivable).partner_id = p
+        def count():
+            engine.get_ledger_lines('aged_receivable', options, partner.id)
+            start = self.cr.sql_log_count
+            engine.get_ledger_lines('aged_receivable', options, partner.id)
+            return self.cr.sql_log_count - start
+        add(partner)
+        small = count()
+        for index in range(12):
+            add(partner)
+            add(self.env['res.partner'].create({'name': 'Other page %s' % index}))
+        large = count()
+        self.assertLessEqual(large, small + 3, (small, large))
 
     def test_rpc_paging_and_future_attribution(self):
         from odoo.service.model import call_kw

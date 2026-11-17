@@ -5,6 +5,7 @@ from decimal import Decimal
 from odoo import _, api, fields, models
 from odoo.exceptions import AccessError, ValidationError
 from odoo.tools.misc import format_date
+from odoo.tools import SQL
 
 from .engine import _analytic_share
 from .ledger import _item_labels
@@ -14,11 +15,11 @@ class BaseerAgedEngine(models.AbstractModel):
     _inherit = 'baseer.report.engine'
 
     @api.model
-    def _aged_entries(self, options):
+    def _aged_entries(self, options, line_ids=None):
         date = fields.Date.to_date(options['date_to'])
         unfiltered = dict(options, partner_ids=[], partner_category_ids=[], unreconciled=False)
         lines = self.env['account.move.line'].search(
-            self._base_domain(options) + self._partner_domain(unfiltered) + [('date', '<=', date)],
+            self._base_domain(options) + self._partner_domain(unfiltered) + [('date', '<=', date)] + ([('id', 'in', line_ids)] if line_ids is not None else []),
             order='date, move_name, id')
         partials = self.env['account.partial.reconcile'].search([
             '|', ('debit_move_id', 'in', lines.ids), ('credit_move_id', 'in', lines.ids)]) if lines else self.env['account.partial.reconcile']
@@ -105,26 +106,77 @@ class BaseerAgedEngine(models.AbstractModel):
     def _aged_page(self, options, partner_id, offset, limit):
         if type(partner_id) is not int or partner_id < 0:
             raise AccessError(_('Choose an account from this line.'))
-        entries = [entry for entry in self._aged_entries(options) if entry[0] == partner_id]
-        if not entries:
+        date = fields.Date.to_date(options['date_to'])
+        unfiltered = dict(options, partner_ids=[], partner_category_ids=[], unreconciled=False)
+        model = self.env['account.move.line']
+        model.flush_model(['date', 'move_name', 'balance', 'partner_id', 'company_id'])
+        self.env['account.partial.reconcile'].flush_model(['debit_move_id', 'credit_move_id', 'amount', 'max_date'])
+        query = model._search(self._base_domain(options) + self._partner_domain(unfiltered) + [('date', '<=', date)])
+        candidates = query.select(SQL('account_move_line.id'), SQL('account_move_line.date'),
+                                  SQL('account_move_line.move_name'), SQL('account_move_line.partner_id'),
+                                  SQL('account_move_line.balance'), SQL('account_move_line.company_id'))
+        # Compute settlement once per line, then allocate future reconciliations of
+        # partner-less lines in partial-reconcile order, exactly as in the report.
+        ranked = SQL("""
+            WITH candidates AS (%s), partials AS (
+                SELECT debit_move_id AS line_id, credit_move_id AS other_id, amount, max_date, id FROM account_partial_reconcile
+                UNION ALL
+                SELECT credit_move_id, debit_move_id, amount, max_date, id FROM account_partial_reconcile
+            ), settled AS (
+                SELECT p.line_id, SUM(p.amount) AS amount FROM partials p
+                JOIN candidates c ON c.id = p.line_id WHERE p.max_date <= %s GROUP BY p.line_id
+            ), open_lines AS (
+                SELECT c.*, c.balance - SIGN(c.balance) * COALESCE(s.amount, 0) AS residual, currency.rounding
+                FROM candidates c LEFT JOIN settled s ON s.line_id = c.id
+                JOIN res_company company ON company.id = c.company_id
+                JOIN res_currency currency ON currency.id = company.currency_id
+            ), future AS (
+                SELECT p.line_id, other.partner_id, SUM(p.amount) AS amount, MIN(p.id) AS first_id
+                FROM partials p JOIN open_lines c ON c.id = p.line_id
+                JOIN account_move_line other ON other.id = p.other_id
+                WHERE c.partner_id IS NULL AND p.max_date > %s AND other.partner_id IS NOT NULL
+                GROUP BY p.line_id, other.partner_id
+            ), portions AS (
+                SELECT f.*, COALESCE(SUM(f.amount) OVER (PARTITION BY f.line_id ORDER BY f.first_id, f.partner_id
+                    ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING), 0) AS prior
+                FROM future f
+            ), allocated AS (
+                SELECT c.id, c.date, c.move_name, c.partner_id AS pid FROM open_lines c WHERE c.partner_id IS NOT NULL AND ABS(c.residual) >= c.rounding / 2
+                UNION ALL
+                SELECT c.id, c.date, c.move_name, p.partner_id FROM open_lines c JOIN portions p ON p.line_id = c.id
+                WHERE ABS(c.residual) >= c.rounding / 2 AND ABS(c.residual) > p.prior
+                UNION ALL
+                SELECT c.id, c.date, c.move_name, 0 FROM open_lines c
+                WHERE c.partner_id IS NULL AND ABS(c.residual) >= c.rounding / 2
+                AND ABS(c.residual) > COALESCE((SELECT SUM(f.amount) FROM future f WHERE f.line_id = c.id), 0)
+            ), numbered AS (
+                SELECT id, ROW_NUMBER() OVER (ORDER BY date, move_name, id) AS rn, COUNT(*) OVER () AS total
+                FROM allocated WHERE pid = %s
+            ) SELECT id, total FROM numbered WHERE rn > %s AND rn <= %s ORDER BY rn
+        """, candidates, date, date, partner_id, offset, offset + limit if limit is not None else 2147483647)
+        if partner_id and (options['partner_ids'] or options['partner_category_ids']):
+            domain = [('id', '=', partner_id)]
+            if options['partner_ids']:
+                domain += [('id', 'in', options['partner_ids'])]
+            if options['partner_category_ids']:
+                domain += [('category_id', 'in', options['partner_category_ids'])]
+            if not self.env['res.partner'].search_count(domain):
+                raise AccessError(_('Choose an account from this line.'))
+        if not partner_id and (options['partner_ids'] or options['partner_category_ids']):
             raise AccessError(_('Choose an account from this line.'))
+        selected = self.env.execute_query(ranked)
+        if not selected and not offset:
+            raise AccessError(_('Choose an account from this line.'))
+        entries = [entry for entry in self._aged_entries(options, [row[0] for row in selected]) if entry[0] == partner_id]
         rows = []
-        for _pid, line, bucket, value in entries[offset:offset + limit]:
+        for _pid, line, bucket, value in entries:
             move, detail, name = _item_labels(line.move_name or line.move_id.name, line.name)
             values = [Decimal(0)] * 7
             values[bucket] = values[6] = value
             rows.append({'type': 'item', 'id': line.id, 'name': name, 'move_label': move, 'detail_label': detail,
                          'invoice_date': format_date(self.env, line.move_id.invoice_date) if line.move_id.invoice_date else '',
                          'amounts': self._aged_amounts(values)})
-        more = offset + limit < len(entries)
-        if not more:
-            totals = [Decimal(0)] * 7
-            for _pid, _line, bucket, value in entries:
-                totals[bucket] += value
-                totals[6] += value
-            partner = self.env['res.partner'].browse(partner_id)
-            name = partner.display_name if partner else _('Unknown Partner')
-            rows.append({'type': 'total', 'name': _('Total %s') % name, 'amounts': self._aged_amounts(totals)})
+        more = bool(limit is not None and selected and selected[0][1] > offset + limit)
         return {'rows': rows, 'has_more': more, 'next_offset': offset + limit if more else False}
 
     @api.model

@@ -31,7 +31,7 @@ export class BaseerReportEngine extends Component {
             units: [],
             journals: [],
             analyticAccounts: [],
-            accountTypes: [], partnerNames: {}, categoryNames: {},
+            agingLabels: {}, accountTypes: [], partnerNames: {}, categoryNames: {},
             analyticEnabled: false,
             reportName: "",
             dateMode: "as_of",
@@ -132,6 +132,7 @@ export class BaseerReportEngine extends Component {
             this.state.units = bootstrap.units;
             this.state.journals = bootstrap.journals;
             this.state.accountTypes = bootstrap.account_types || [];
+            this.state.agingLabels = bootstrap.aging_labels || {};
             this.state.analyticAccounts = bootstrap.analytic_accounts;
             this.state.analyticEnabled = bootstrap.analytic_enabled;
             this.state.reportName = bootstrap.report.name;
@@ -191,6 +192,12 @@ export class BaseerReportEngine extends Component {
             }
             this.state.folded = folded;
             this.state.accounts = {};
+            if (this.isAged && this.state.options.unfold_all) {
+                for (const line of payload.lines.filter(line => line.foldable)) {
+                    this.state.folded[line.code] = false;
+                    await this.loadLedger(line, 0);
+                }
+            }
             if (this.isLedger) {
                 for (const line of payload.lines) {
                     if (line.ledger) {
@@ -221,6 +228,21 @@ export class BaseerReportEngine extends Component {
         this.state.options.preset = "custom";
         this.state.options.anchor_date = false;
         if (this.state.dateMode === "as_of" || (this.isPartnerLedger && this.state.options.date_from && this.state.options.date_to && this.state.options.date_from <= this.state.options.date_to)) this.loadReport();
+    }
+
+    setAgingBasis(basis) {
+        this.state.options.aging_basis = basis;
+        this.loadReport();
+    }
+
+    setPeriodLength(event) {
+        const value = Number(event.target.value);
+        if (Number.isSafeInteger(value) && value > 0 && value !== this.state.options.period_length) {
+            this.state.options.period_length = value;
+            this.loadReport();
+        } else {
+            event.target.value = this.state.options.period_length;
+        }
     }
 
     onComparison(event) {
@@ -415,6 +437,11 @@ export class BaseerReportEngine extends Component {
     get periodLabel() {
         const column = this.state.payload?.columns[0];
         if (!column) return this.state.labels.period;
+        if (this.isAged) {
+            const date = new Date(`${this.state.options.date_to}T12:00:00`);
+            const locale = (user.lang || "en_US").replace("_", "-");
+            return `${this.state.labels.as_of} ${new Intl.DateTimeFormat(locale).format(date)}`;
+        }
         if (this.isGrid) {
             const date = new Date(`${this.state.options.date_to}T12:00:00`);
             const locale = (user.lang || "en_US").replace("_", "-");
@@ -457,7 +484,7 @@ export class BaseerReportEngine extends Component {
         const fmt = (date, options) => new Intl.DateTimeFormat(locale, options).format(date);
         if (key === "this_month") return fmt(anchor, {month: "long", year: "numeric"});
         const col = this.state.payload?.columns[0];
-        const fiscal = new Date(`${col?.fiscal_start || (this.isPartnerLedger ? this.state.options.date_from : this.state.options.date_to)}T12:00:00`);
+        const fiscal = new Date(`${col?.fiscal_start || (this.isPartnerLedger && !this.isAged ? this.state.options.date_from : this.state.options.date_to)}T12:00:00`);
         if (key === "this_year") {
             const end = new Date(fiscal); end.setFullYear(end.getFullYear() + 1); end.setDate(end.getDate() - 1);
             return fiscal.getFullYear() === end.getFullYear() ? String(end.getFullYear()) : `${fiscal.getFullYear()} - ${end.getFullYear()}`;

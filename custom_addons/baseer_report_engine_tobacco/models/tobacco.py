@@ -21,9 +21,23 @@ class TobaccoEngine(models.AbstractModel):
 
     @api.model
     def _tobacco_accounts(self, company):
-        Tax = self.env['account.tax'].with_company(company).with_context(active_test=False, lang='en_US')
-        taxes = Tax.search([('company_id', '=', company.id), ('type_tax_use', '=', 'sale'), '|',
-                            ('name', 'ilike', 'Tobacco service fee'), ('tax_group_id.name', 'ilike', 'Tobacco service fee')])
+        Tax = self.env['account.tax'].with_company(company).with_context(active_test=False)
+        candidates = Tax.search([('company_id', '=', company.id), ('type_tax_use', '=', 'sale')])
+        # Translatable names are stored per language. Looking only through the
+        # current language misses a match saved in another translation.
+        self.env.cr.execute("""
+            SELECT t.id FROM account_tax t
+            LEFT JOIN account_tax_group g ON g.id = t.tax_group_id
+            WHERE t.id = ANY(%s) AND EXISTS (
+                SELECT 1 FROM (
+                    SELECT value FROM jsonb_each_text(COALESCE(t.name, '{}'::jsonb))
+                    UNION ALL
+                    SELECT value FROM jsonb_each_text(COALESCE(g.name, '{}'::jsonb))
+                ) AS n
+                WHERE n.value ILIKE %s OR n.value ILIKE %s
+            )
+        """, [candidates.ids, '%Tobacco service fee%', '%رسوم%التبغ%'])
+        taxes = candidates.browse([row[0] for row in self.env.cr.fetchall()])
         reps = taxes.invoice_repartition_line_ids | taxes.refund_repartition_line_ids
         accounts = reps.filtered(lambda r: r.repartition_type == 'tax').account_id
         tokens = re.split(r'[,\s]+', self.env['ir.config_parameter'].sudo().get_param(
@@ -90,7 +104,7 @@ class TobaccoEngine(models.AbstractModel):
                 before = account_lines.filtered(lambda l: l.date < start)
                 period = account_lines.filtered(lambda l: start <= l.date <= end)
                 # POS invoices are already represented by their orders.
-                invoice_lines = period.filtered(lambda l: l.move_id.move_type in ('out_invoice', 'out_refund') and l.tax_line_id and not l.move_id.pos_order_ids)
+                invoice_lines = period.filtered(lambda l: l.parent_state == 'posted' and l.move_id.move_type in ('out_invoice', 'out_refund') and l.tax_line_id and not l.move_id.pos_order_ids)
                 for line in invoice_lines:
                     rows[account.id].append({'date': str(line.date), 'name': line.move_id.name,
                         'product': '', 'quantity': 0, 'type': _('Credit Note') if line.move_id.move_type == 'out_refund' else _('Invoice'),

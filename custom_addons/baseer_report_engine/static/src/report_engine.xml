@@ -55,7 +55,7 @@
                             <td t-foreach="line.amounts" t-as="amount" t-key="amount.key" t-att-class="'is-number ' + amountClass(amount) + (state.payload.columns[amount_index].figure === 'debit' || state.payload.columns[amount_index].kind === 'end' ? ' o_bre_shaded' : '')"><Dropdown t-if="amount.drill" menuClass="'o_bre_dropdown o_bre_amount_menu'"><button class="o_bre_amount" t-esc="formatAmount(amount)"/><t t-set-slot="content"><DropdownItem onSelected="() => this.openAmount(line, amount, line.account_id, line.company_id)"><t t-esc="state.labels.journal_items"/></DropdownItem></t></Dropdown><span t-else="" t-esc="formatAmount(amount)"/></td>
                         </tr></tbody>
                     </table>
-                    <table t-else="" class="o_bre_table">
+                    <table t-else="" class="o_bre_table" t-att-class="state.dateMode === 'range' ? 'o_bre_range' : ''">
                         <colgroup><col class="o_bre_label_col"/><col t-foreach="state.payload.columns" t-as="column" t-key="column.key" class="o_bre_value_col"/></colgroup>
                         <thead>
                             <tr class="o_bre_period_header"><th/><th t-foreach="state.payload.columns" t-as="column" t-key="column.key"><bdi t-esc="columnLabel(column)"/></th></tr>

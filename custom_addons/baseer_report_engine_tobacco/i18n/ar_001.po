@@ -58,6 +58,7 @@ msgstr "فاتورة"
 #. odoo-python
 #. odoo-javascript
 #: code:addons/baseer_report_engine_tobacco/models/tobacco.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_report_engine_tobacco.report_pdf_tobacco
 msgid "Cumulative at start"
 msgstr "الإجمالي التراكمي في بداية الفترة"
 
@@ -261,3 +262,12 @@ msgstr "إظهار المنتجات"
 #: model_terms:ir.ui.view,arch_db:baseer_report_engine_tobacco.report_pdf_tobacco
 msgid "The report options are not valid."
 msgstr "خيارات التقرير غير صالحة."
+
+#. module: baseer_report_engine_tobacco
+#. odoo-python
+#. odoo-javascript
+#: code:addons/baseer_report_engine_tobacco/static/src/tobacco.js:0
+#: code:addons/baseer_report_engine_tobacco/models/export.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_report_engine_tobacco.report_pdf_tobacco
+msgid "Net for period"
+msgstr "صافي الفترة"

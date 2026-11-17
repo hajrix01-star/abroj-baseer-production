@@ -203,14 +203,14 @@ class TobaccoPosCase(EngineCase):
             export_options = dict(options, show_products=show)
             payload = self._engine(company)._export_payload('tobacco_service_fee', export_options)
             rows = payload['tobacco_sections'][0]['export_rows']
-            self.assertEqual(any('Test product 1.0' in values for values, kind in rows), show)
+            self.assertEqual(any('Test product × 1' in values for values, kind in rows), show)
             content = self._engine(company).export_xlsx('tobacco_service_fee', export_options)['content']
             with zipfile.ZipFile(io.BytesIO(base64.b64decode(content))) as archive:
-                self.assertEqual('Test product 1.0' in archive.read('xl/sharedStrings.xml').decode(), show)
+                self.assertEqual('Test product × 1' in archive.read('xl/sharedStrings.xml').decode(), show)
             html, _ = self.env['ir.actions.report'].with_company(company).with_context(allowed_company_ids=[company.id])._render_qweb_html(
                 'baseer_report_engine.report_pdf', docids=self._engine(company)._definition('tobacco_service_fee').ids,
                 data={'report_code': 'tobacco_service_fee', 'options': export_options})
-            self.assertEqual(b'Test product 1.0' in html, show)
+            self.assertEqual('Test product × 1'.encode() in html, show)
 
         for qty, taxes in [(-1, tax), (1, self.env['account.tax'])]:
             order = self.env['pos.order'].create({'company_id': company.id, 'session_id': session.id,

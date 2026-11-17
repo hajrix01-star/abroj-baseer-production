@@ -1,6 +1,7 @@
 """Tobacco register exports."""
 import base64
 import io
+from decimal import Decimal
 import xlsxwriter
 from odoo import _, api, models
 
@@ -16,7 +17,7 @@ class TobaccoExport(models.AbstractModel):
             rows.append(([day['date'], '', '', '', day['debit'], day['credit'], day['net'], day['cumulative']], 'day'))
             for item in (r for r in section['rows'] if r['date'][:10] == day['date']):
                 balance += item['net']
-                rows.append(([item['date'], item['name'], '%s %s' % (item['product'], item['quantity']) if item['product'] else '', item['type'], max(-item['net'], 0), max(item['net'], 0), item['net'], balance], 'item'))
+                rows.append(([item['date'], item['name'], '%s × %s' % (item['product'], format(Decimal(str(item['quantity'])).normalize(), 'f')) if item['product'] else '', item['type'], max(-item['net'], 0), max(item['net'], 0), item['net'], balance], 'item'))
         rows.extend([
             ([self.env._('Total for period'), '', '', '', section['debit'], section['credit'], section['net'], ''], 'total'),
             ([self.env._('Cumulative at end'), '', '', '', '', '', '', section['closing']], 'total'),
@@ -26,7 +27,7 @@ class TobaccoExport(models.AbstractModel):
             ([self.env._('Difference'), section['difference']], 'total'),
             ([self.env._('Open sessions'), ', '.join(map(str, section['open_sessions']))], 'item'),
             ([self.env._('Manual journal entries'), ', '.join(map(str, section['manual_move_ids']))], 'item'),
-            ([self.env._('Order total mismatches'), len(section['exceptions'])], 'item'),
+            ([self.env._('Order total mismatches'), len(section['exceptions'])], 'count'),
         ])
         if section['exceptions']:
             rows.append(([self.env._('Document'), self.env._('Recomputed total'), self.env._('Saved total')], 'section'))
@@ -67,6 +68,11 @@ class TobaccoExport(models.AbstractModel):
         for section in payload['tobacco_sections']:
             sheet.write(row, 0, '%s — %s' % (section['company'], section['account']), bold)
             row += 1
+            summary = [(self.env._('Cumulative at start'), section['opening']), (self.env._('Debit'), section['debit']), (self.env._('Credit'), section['credit']), (self.env._('Net for period'), section['net'])]
+            for col, (label, value) in enumerate(summary):
+                sheet.write(row, col, label, bold)
+                sheet.write_number(row + 1, col, value, money)
+            row += 3
             labels = [self.env._('Date and Time'), self.env._('Document'), self.env._('Type'), self.env._('Debit'), self.env._('Credit'), self.env._('Net'), self.env._('Cumulative')]
             if payload['tobacco_show_products']:
                 labels.insert(2, self.env._('Product and Quantity'))
@@ -76,7 +82,7 @@ class TobaccoExport(models.AbstractModel):
             for values, kind in section['export_rows']:
                 for col, value in enumerate(values):
                     if isinstance(value, (int, float)):
-                        sheet.write_number(row, col, value, money)
+                        sheet.write_number(row, col, value, None if kind == 'count' else money)
                     else:
                         sheet.write(row, col, value, bold if kind in ('total', 'section', 'day') else None)
                 row += 1

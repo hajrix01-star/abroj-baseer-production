@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-inherit="baseer_report_engine.Report" t-inherit-mode="extension">
+        <xpath expr="//div[hasclass('o_bre_filters')]" position="inside">
+            <Dropdown t-if="reportCode === 'saudi_vat'" menuClass="'o_bre_dropdown'">
+                <button class="btn btn-secondary" t-esc="vatGroupingLabel"/>
+                <t t-set-slot="content">
+                    <DropdownItem onSelected="() => this.setVatGrouping('grid')">VAT return grid</DropdownItem>
+                    <DropdownItem onSelected="() => this.setVatGrouping('tax')">Group by: Tax</DropdownItem>
+                </t>
+            </Dropdown>
+        </xpath>
+    </t>
+</templates>

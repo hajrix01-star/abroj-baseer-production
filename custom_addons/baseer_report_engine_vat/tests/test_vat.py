@@ -118,11 +118,28 @@ class VatReportCase(EngineCase):
                 value = self._value(payload, 'sa_%s' % number, column)
                 self.assertEqual(value, None if amount is None else '%.2f' % amount, (number, column))
         self.assertEqual(self._value(payload, 'vat_difference', 'tax'), '0.00')
+        grouped = self._engine(company).get_report('saudi_vat', dict(options, tax_grouping='tax'))
+        for section, box in [('sale', 'sa_6'), ('purchase', 'sa_12')]:
+            for column in ('base', 'tax'):
+                self.assertEqual(self._value(grouped, 'tax_total_' + section, column), self._value(payload, box, column))
+                total = sum(float(next(a['value'] for a in row['amounts'] if a['key'] == column) or 0)
+                            for row in grouped['lines'] if row['code'].startswith('tax_' + section + '_'))
+                self.assertAlmostEqual(total, float(self._value(payload, box, column)))
+        self.assertEqual(self._value(payload, 'vat_draft', 'tax'), '75.00')
+        self.assertTrue(self._engine(company).get_move_line_action('saudi_vat', options, 'vat_draft', 'tax')['domain'])
         for lang, difference in [('en_US', 'Difference'), ('ar_001', 'الفرق')]:
             self.env['res.lang']._activate_lang(lang)
             if lang == 'ar_001':
                 self.env['ir.module.module']._load_module_terms(['baseer_report_engine_vat'], [lang], overwrite=True)
             localized = self._engine(company).with_context(lang=lang)
+            for grouping in ('grid', 'tax'):
+                export_options = dict(options, tax_grouping=grouping)
+                exported = load_workbook(io.BytesIO(base64.b64decode(localized.export_xlsx('saudi_vat', export_options)['content'])))
+                self.assertIn(difference, [r[0] for r in exported.active.values])
+                html_group, _ = self.env['ir.actions.report'].with_company(company).with_context(lang=lang, allowed_company_ids=[company.id])._render_qweb_html(
+                    'baseer_report_engine.report_pdf', docids=localized._definition('saudi_vat').ids,
+                    data={'report_code': 'saudi_vat', 'options': export_options})
+                self.assertIn(difference, html_group.decode())
             workbook = load_workbook(io.BytesIO(base64.b64decode(localized.export_xlsx('saudi_vat', options)['content'])))
             sheet = workbook.active
             rows = list(sheet.values)
@@ -149,6 +166,13 @@ class VatReportCase(EngineCase):
         discrepant = self._engine(company).get_report('saudi_vat', options)
         self.assertEqual(self._value(discrepant, 'vat_difference', 'tax'), '-10.00')
         self.assertTrue(any('without tax tags: 1' in note for note in discrepant['notes']))
+        self.assertEqual(self._value(discrepant, 'vat_untagged', 'tax'), '10.00')
+        self.assertTrue(self._engine(company).get_move_line_action('saudi_vat', options, 'vat_untagged', 'tax')['domain'])
+        tobacco = self._account(company, '201021', 'liability_current')
+        self._entry(company, journal, '2024-02-04', clearing, tobacco, 25)
+        after_fee = self._engine(company).get_report('saudi_vat', options)
+        for code in ('sa_16', 'vat_movement', 'vat_difference', 'vat_untagged'):
+            self.assertEqual(self._value(after_fee, code, 'tax'), self._value(discrepant, code, 'tax'))
 
     def test_default_last_full_period(self):
         company = self._company('VAT default period')

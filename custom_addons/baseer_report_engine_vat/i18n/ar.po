@@ -116,3 +116,84 @@ msgstr "ضريبة القيمة المضافة على المشتريات"
 #: code:addons/baseer_report_engine_vat/models/vat.py:0
 msgid "Net VAT"
 msgstr "صافي ضريبة القيمة المضافة"
+
+#. module: baseer_report_engine_vat
+#. odoo-python
+#: code:addons/baseer_report_engine_vat/models/vat.py:0
+#. odoo-javascript
+#: code:addons/baseer_report_engine_vat/static/src/vat.js:0
+#: code:addons/baseer_report_engine_vat/static/src/vat.xml:0
+msgid "Choose a valid tax grouping."
+msgstr "اختر تجميعاً صالحاً للضرائب."
+
+#. module: baseer_report_engine_vat
+#. odoo-python
+#: code:addons/baseer_report_engine_vat/models/vat.py:0
+#. odoo-javascript
+#: code:addons/baseer_report_engine_vat/static/src/vat.js:0
+#: code:addons/baseer_report_engine_vat/static/src/vat.xml:0
+msgid "VAT account entries without tax tags"
+msgstr "قيود حسابات الضريبة دون وسوم ضريبية"
+
+#. module: baseer_report_engine_vat
+#. odoo-python
+#: code:addons/baseer_report_engine_vat/models/vat.py:0
+#. odoo-javascript
+#: code:addons/baseer_report_engine_vat/static/src/vat.js:0
+#: code:addons/baseer_report_engine_vat/static/src/vat.xml:0
+msgid "Cash-basis pending"
+msgstr "ضريبة الأساس النقدي المعلقة"
+
+#. module: baseer_report_engine_vat
+#. odoo-python
+#: code:addons/baseer_report_engine_vat/models/vat.py:0
+#. odoo-javascript
+#: code:addons/baseer_report_engine_vat/static/src/vat.js:0
+#: code:addons/baseer_report_engine_vat/static/src/vat.xml:0
+msgid "Draft VAT account entries"
+msgstr "قيود حسابات الضريبة المسودة"
+
+#. module: baseer_report_engine_vat
+#. odoo-python
+#: code:addons/baseer_report_engine_vat/models/vat.py:0
+#. odoo-javascript
+#: code:addons/baseer_report_engine_vat/static/src/vat.js:0
+#: code:addons/baseer_report_engine_vat/static/src/vat.xml:0
+msgid "Sales"
+msgstr "المبيعات"
+
+#. module: baseer_report_engine_vat
+#. odoo-python
+#: code:addons/baseer_report_engine_vat/models/vat.py:0
+#. odoo-javascript
+#: code:addons/baseer_report_engine_vat/static/src/vat.js:0
+#: code:addons/baseer_report_engine_vat/static/src/vat.xml:0
+msgid "Purchases"
+msgstr "المشتريات"
+
+#. module: baseer_report_engine_vat
+#. odoo-python
+#: code:addons/baseer_report_engine_vat/models/vat.py:0
+#. odoo-javascript
+#: code:addons/baseer_report_engine_vat/static/src/vat.js:0
+#: code:addons/baseer_report_engine_vat/static/src/vat.xml:0
+msgid "Unassigned tax"
+msgstr "ضريبة غير معينة"
+
+#. module: baseer_report_engine_vat
+#. odoo-python
+#: code:addons/baseer_report_engine_vat/models/vat.py:0
+#. odoo-javascript
+#: code:addons/baseer_report_engine_vat/static/src/vat.js:0
+#: code:addons/baseer_report_engine_vat/static/src/vat.xml:0
+msgid "Group by: Tax"
+msgstr "تجميع حسب: الضريبة"
+
+#. module: baseer_report_engine_vat
+#. odoo-python
+#: code:addons/baseer_report_engine_vat/models/vat.py:0
+#. odoo-javascript
+#: code:addons/baseer_report_engine_vat/static/src/vat.js:0
+#: code:addons/baseer_report_engine_vat/static/src/vat.xml:0
+msgid "VAT return grid"
+msgstr "جدول إقرار ضريبة القيمة المضافة"

@@ -1,0 +1,8 @@
+<odoo>
+    <record id="action_vat" model="ir.actions.client">
+        <field name="name">VAT Report (New)</field>
+        <field name="tag">baseer_report_engine</field>
+        <field name="context">{'report_code': 'saudi_vat'}</field>
+    </record>
+    <menuitem id="menu_vat" name="VAT Report (New)" parent="baseer_report_engine.menu_new_version" action="action_vat" sequence="91" groups="account.group_account_readonly,account.group_account_user,account.group_account_manager"/>
+</odoo>

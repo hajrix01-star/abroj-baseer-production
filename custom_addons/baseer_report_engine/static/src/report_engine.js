@@ -40,11 +40,13 @@ export class BaseerReportEngine extends Component {
             folded: {},
             accounts: {},
             search: "",
+            agedSort: null,
         });
         this.restoredState = this.props.state?.baseerReport;
         useSetupAction({ getLocalState: () => ({ baseerReport: {
             options: this.plainOptions(), folded: { ...this.state.folded },
             accounts: JSON.parse(JSON.stringify(this.state.accounts)), search: this.state.search,
+            agedSort: this.state.agedSort,
         } }) });
         this.requestToken = 0;
         useBus(userBus, "ACTIVE_COMPANIES_CHANGED", () => this.reload());
@@ -68,7 +70,22 @@ export class BaseerReportEngine extends Component {
 
     get lines() {
         const search = this.state.search.trim().toLocaleLowerCase();
-        return (this.state.payload?.lines || []).filter((line) => !this.isHidden(line) && (!this.isGrid || !search || line.display === "total" || line.name.toLocaleLowerCase().includes(search)));
+        const lines = (this.state.payload?.lines || []).filter((line) => !this.isHidden(line) && (!this.isGrid || !search || line.display === "total" || line.name.toLocaleLowerCase().includes(search)));
+        if (!this.isAged || !this.state.agedSort) return lines;
+        const { key, direction } = this.state.agedSort;
+        const partners = lines.filter(line => line.foldable && line.partner_id);
+        // Partner rows have no invoice date. Keep their original order for that column.
+        if (key !== "invoice_date") {
+            partners.sort((a, b) => direction * (Number(a.amounts.find(amount => amount.key === key)?.value || 0) - Number(b.amounts.find(amount => amount.key === key)?.value || 0)));
+        }
+        let index = 0;
+        return lines.map(line => line.foldable && line.partner_id ? partners[index++] : line);
+    }
+
+    sortAged(key) {
+        const current = this.state.agedSort;
+        this.state.agedSort = current?.key !== key ? { key, direction: 1 }
+            : current.direction === 1 ? { key, direction: -1 } : null;
     }
 
     get byCode() {
@@ -139,6 +156,7 @@ export class BaseerReportEngine extends Component {
             this.state.dateMode = bootstrap.report.date_mode;
             this.state.options = this.restoredState?.options || { ...bootstrap.defaults, ...(this.props.action?.context?.baseer_options || {}) };
             this.state.search = this.restoredState?.search || "";
+            this.state.agedSort = this.restoredState?.agedSort || null;
             await this.loadReport();
             if (this.isPartnerLedger) await this.loadSelectionNames();
             if (this.restoredState) {

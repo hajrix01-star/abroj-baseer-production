@@ -476,19 +476,26 @@
         .o_bre_partner_chips { position: absolute; inset-inline-end: 4px; top: 3px; display: flex; }
         .o_bre_partner_chips .o_bre_ledger_chip { position: static; }
         .o_bre_section th { color: #111827; font-weight: 700; }
-        .o_bre_line th, .o_bre_line td { color: #111827; font-weight: 400; }
+        .o_bre_line th, .o_bre_line td { color: #374151; font-weight: 400; }
         td.is-zero { color: #d8dadd; }
         td.is-negative { color: #d23f3a; }
         .o_bre_balance_header th.o_bre_shaded { background: #f9fafb; }
     }
 }
 .o_baseer_report_engine .o_bre_aged_table {
+    .o_bre_period_header th { height: 29px; }
+    .o_bre_balance_header th:nth-child(n+3) { text-align: end; }
+    .o_bre_aged_sort { position: relative; display: block; width: 100%; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; text-align: inherit; }
+    .o_bre_aged_sort_handle { position: absolute; inset-inline-start: 0; color: #d8dadd; }
+    .o_bre_balance_header th:nth-child(2) .o_bre_aged_sort_handle { inset-inline-start: -8px; }
+    .o_bre_aged_sort:hover .o_bre_aged_sort_handle, .o_bre_aged_sort:focus-visible .o_bre_aged_sort_handle { color: #6b7280; }
+    .o_bre_ledger_item td:nth-child(2) { text-align: center; }
     .o_bre_section.o_bre_level_0 th:first-child,
     .o_bre_section.o_bre_level_0 th,
     .o_bre_section.o_bre_level_0 td { background: transparent; border-bottom: 1px solid #d8dadd; }
     .o_bre_section.o_bre_level_0 td.o_bre_shaded { background: #f9fafb; }
     .o_bre_line.o_bre_level_0.o_bre_open th,
-    .o_bre_line.o_bre_level_0.o_bre_open td { font-weight: 400; color: #111827; }
+    .o_bre_line.o_bre_level_0.o_bre_open td { font-weight: 400; color: #374151; }
     .o_bre_line.o_bre_level_0.o_bre_open td.is-zero { color: #d8dadd; }
     .o_bre_line.o_bre_level_0.o_bre_open td.is-negative { color: #d23f3a; }
 }

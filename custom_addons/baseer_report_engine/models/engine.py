@@ -10,6 +10,7 @@ from dateutil.relativedelta import relativedelta
 from odoo import _, api, fields, models
 from odoo.exceptions import AccessError, ValidationError
 from odoo.tools.misc import format_date
+from odoo.tools import SQL
 
 from .definition import _or_domains
 from .formula import FormulaError, evaluate_formula, referenced_codes
@@ -374,12 +375,87 @@ class BaseerReportEngine(models.AbstractModel):
     @api.model
     def _scope_totals(self, report, column, scope, options, cache, extra_domain=None):
         key = (column['key'], scope, repr(extra_domain or []))
+        if key not in cache and report.date_mode == 'as_of' and options['comparison']:
+            self._batch_as_of_totals(options, cache, extra_domain)
         if key not in cache:
             domain = self._base_domain(options) + self._date_domain(report, column, scope)
             if extra_domain:
                 domain = domain + list(extra_domain)
             cache[key] = self._aggregate(domain, column['_end'], options['analytic_account_ids'])
         return cache[key]
+
+    @api.model
+    def _batch_as_of_totals(self, options, cache, extra_domain):
+        # Preserve record rules and convert each aggregate at its column date.
+        columns = [column for column in options['columns'] if column['kind'] == 'period']
+        scopes = ('report', 'to_date', 'from_fiscalyear', 'before_fiscalyear')
+        domain = self._base_domain(options) + [('date', '<=', max(c['_end'] for c in columns))]
+        if extra_domain:
+            domain += list(extra_domain)
+        lines = self.env['account.move.line']
+        if options['analytic_account_ids']:
+            selected = set(options['analytic_account_ids'])
+            for column in columns:
+                for scope in scopes:
+                    cache[(column['key'], scope, repr(extra_domain or []))] = {}
+            for values in lines.search(domain).read([
+                'date', 'account_id', 'company_id', 'debit', 'credit', 'balance', 'analytic_distribution',
+            ]):
+                share = _analytic_share(values.get('analytic_distribution'), selected)
+                if not share or not values['account_id'] or not values['company_id']:
+                    continue
+                company_record = self.env['res.company'].browse(values['company_id'][0])
+                pair = (values['account_id'][0], company_record.id)
+                day = values['date']
+                for column in columns:
+                    for scope in scopes:
+                        if scope in ('report', 'to_date'):
+                            matches = day <= column['_end']
+                        elif scope == 'from_fiscalyear':
+                            matches = column['_fiscal_start'] <= day <= column['_end']
+                        else:
+                            matches = day < column['_fiscal_start']
+                        if not matches:
+                            continue
+                        bucket = cache[(column['key'], scope, repr(extra_domain or []))].setdefault(pair, _zeros())
+                        for figure in ('balance', 'debit', 'credit'):
+                            amount = Decimal(str(values[figure] or 0)) * share
+                            bucket[figure] += self._convert(amount, company_record, column['_end'])
+            return
+        query = lines._search(domain)
+        account = lines._read_group_groupby(lines._table, 'account_id', query)
+        company = lines._read_group_groupby(lines._table, 'company_id', query)
+        date = lines._field_to_sql(lines._table, 'date', query)
+        aggregates = [lines._read_group_select(figure + ':sum', query)
+                      for figure in ('balance', 'debit', 'credit')]
+        terms = []
+        keys = []
+        for column in columns:
+            for scope in scopes:
+                key = (column['key'], scope, repr(extra_domain or []))
+                cache[key] = {}
+                keys.append((key, column))
+                if scope in ('report', 'to_date'):
+                    condition = SQL('%s <= %s', date, column['_end'])
+                elif scope == 'from_fiscalyear':
+                    condition = SQL('%s >= %s AND %s <= %s', date, column['_fiscal_start'], date, column['_end'])
+                else:
+                    condition = SQL('%s < %s', date, column['_fiscal_start'])
+                terms.extend(SQL('%s FILTER (WHERE %s)', aggregate, condition) for aggregate in aggregates)
+        query.groupby = SQL(', ').join([account, company])
+        for row in self.env.execute_query(query.select(account, company, *terms)):
+            account_id, company_id = row[:2]
+            if not account_id or not company_id:
+                continue
+            company_record = self.env['res.company'].browse(company_id)
+            for index, (key, column) in enumerate(keys):
+                amounts = row[2 + 3 * index:5 + 3 * index]
+                if all(amount is None for amount in amounts):
+                    continue
+                cache[key][(account_id, company_id)] = {
+                    figure: self._convert(amount, company_record, column['_end'])
+                    for figure, amount in zip(('balance', 'debit', 'credit'), amounts)
+                }
 
     @api.model
     def _aggregate(self, domain, on_date, analytic_ids):

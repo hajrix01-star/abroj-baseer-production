@@ -136,6 +136,54 @@ class TestBalanceSheet(EngineCase):
         self.assertEqual(self._value(opened, 'PY_UNA'), '40.00')
         self.assertEqual(self._value(opened, 'ASSETS'), self._value(opened, 'LE'))
 
+    def test_comparison_matches_single_dates_and_query_count(self):
+        first = self._company('Comparison first', month='3')
+        second = self._company('Comparison second')
+        euro = self.env.ref('base.EUR')
+        euro.active = True
+        second.currency_id = euro
+        self.env['res.currency.rate'].create([
+            {'currency_id': euro.id, 'company_id': second.id, 'name': '2040-01-01', 'rate': 2},
+            {'currency_id': euro.id, 'company_id': second.id, 'name': '2041-01-01', 'rate': 3},
+        ])
+        plan = self.env['account.analytic.plan'].create({'name': 'Comparison plan'})
+        analytic = self.env['account.analytic.account'].create({
+            'name': 'Comparison analytic', 'plan_id': plan.id, 'company_id': first.id,
+        })
+        for company in (first, second):
+            journal = self._journal(company, 'CMP')
+            cash = self._account(company, '1010', 'asset_cash')
+            income = self._account(company, '4010', 'income')
+            for day, amount in [('2040-03-31', 10), ('2040-12-30', 20),
+                                ('2041-03-30', 30), ('2041-04-30', 40), ('2041-06-30', 50)]:
+                self._entry(company, journal, day, cash, income, amount, analytic={str(analytic.id): 50})
+        engine = self.env['baseer.report.engine'].with_company(first).with_context(
+            allowed_company_ids=[first.id, second.id],
+        )
+        for filters in ({}, {'analytic_account_ids': [analytic.id]}):
+            options = self._options(comparison=12, **filters)
+            compared = engine.get_report('balance_sheet', options, with_accounts=True)
+            for column in compared['columns'][:13]:
+                single = engine.get_report('balance_sheet', self._options(as_of=column['date_to'], **filters), with_accounts=True)
+                for line in compared['lines']:
+                    self.assertEqual(self._value(compared, line['code'], column['key']),
+                                     self._value(single, line['code']), (filters, line['code'], column['key']))
+                    single_line = next(item for item in single['lines'] if item['code'] == line['code'])
+                    for row in line['accounts']:
+                        other = next((item for item in single_line['accounts'] if (item['id'], item['company_id']) == (row['id'], row['company_id'])), None)
+                        actual = next(amount['value'] for amount in row['amounts'] if amount['key'] == column['key'])
+                        self.assertEqual(actual, other['amounts'][0]['value'] if other else '0.00')
+
+        # Warm metadata and currency caches before comparing report query counts.
+        engine.get_report('balance_sheet', self._options())
+        start = self.env.cr.sql_log_count
+        engine.get_report('balance_sheet', self._options())
+        single_queries = self.env.cr.sql_log_count - start
+        start = self.env.cr.sql_log_count
+        engine.get_report('balance_sheet', self._options(comparison=12))
+        compared_queries = self.env.cr.sql_log_count - start
+        self.assertLessEqual(compared_queries, single_queries + 3)
+
     def test_every_profit_and_loss_type_rolls_into_current_earnings(self):
         company = self._company('Engine earnings types')
         engine = self._engine(company)

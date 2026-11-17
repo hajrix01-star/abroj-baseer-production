@@ -130,9 +130,9 @@
         }
 
         .is-number {
-            direction: ltr;
+            /*rtl:ignore*/ direction: ltr;
             unicode-bidi: isolate;
-            text-align: end;
+            /*rtl:ignore*/ text-align: end;
             font-variant-numeric: tabular-nums;
             white-space: nowrap;
         }
@@ -309,7 +309,7 @@
         .o_bre_balance_header th { text-align: end; }
         .o_bre_spacer th, .o_bre_spacer td { height: 21px; padding: 0; border: 0; background: white !important; }
         tbody th { position: relative; font-weight: 400; padding-inline-start: calc(32px + var(--bre-level, 0) * 16px); }
-        .is-number { direction: ltr; text-align: right; font-variant-numeric: tabular-nums; }
+        .is-number { /*rtl:ignore*/ direction: ltr; /*rtl:ignore*/ text-align: right; font-variant-numeric: tabular-nums; }
         .is-zero { color: #d8dadd; }
         td.is-negative { color: #d23f3a; }
         .o_bre_section th, .o_bre_section td { background: transparent; border-top: 0; border-bottom: 1px solid #d8dadd; font-weight: 700; }
@@ -330,9 +330,9 @@
     .o_bre_fold, .o_bre_static { padding: 0; }
     .o_bre_caret { position: absolute; inset-inline-start: 18px; top: 9px; color: #adb5bd; font-size: 10px; }
     .o_bre_amount { text-decoration: none; }
-    &[dir="rtl"] .o_bre_table .is-number { text-align: left; }
+    &[dir="rtl"] .o_bre_table .is-number { /*rtl:ignore*/ text-align: left; }
     @media (max-width: 767px) {
-        .o_bre_paper { width: 100%; border-radius: 0; }
+        .o_bre_paper { width: auto; max-width: calc(100% - 16px); margin-inline: 8px; }
         .o_bre_table tbody th:first-child { position: sticky; inset-inline-start: 0; z-index: 1; background: white; }
         .o_bre_table .o_bre_section.o_bre_level_0 th:first-child, .o_bre_table .o_bre_band th:first-child { background: #d8dadd; }
         .o_bre_table .o_bre_leaf_total th:first-child { background: #f2f2f2; }
@@ -510,8 +510,8 @@
         .o_bre_level_4.o_bre_open th, .o_bre_level_4.o_bre_open td { background: #f2f2f2; font-weight: 700; }
         .o_bre_level_4 .o_bre_caret { inset-inline-start: 19px; }
         .o_bre_level_0 .o_bre_caret { visibility: hidden; }
-        .is-number { direction: ltr; unicode-bidi: isolate; text-align: right; }
-        .is-number .o_bre_amount { direction: ltr; unicode-bidi: isolate; }
+        .is-number { /*rtl:ignore*/ direction: ltr; unicode-bidi: isolate; /*rtl:ignore*/ text-align: right; }
+        .is-number .o_bre_amount { /*rtl:ignore*/ direction: ltr; unicode-bidi: isolate; }
         .o_bre_line.o_bre_level_4.o_bre_open th,
         .o_bre_line.o_bre_level_4.o_bre_open td { background: #f2f2f2; font-weight: 700; }
         .o_bre_account th { padding-inline-start: 43px; color: #374151; font-weight: 400; }
@@ -525,4 +525,36 @@
     }
 }
 
-.o_baseer_report_engine[dir="rtl"] .o_bre_cash_flow .o_bre_table .is-number { text-align: left; }
+.o_baseer_report_engine[dir="rtl"] .o_bre_cash_flow .o_bre_table .is-number { /*rtl:ignore*/ text-align: left; }
+
+// Keep wide reports inside the paper's scrollport on phones.
+@media (max-width: 767px) {
+    .o_baseer_report_engine {
+        min-width: 0;
+        max-width: 100%;
+        .o_bre_paper { min-width: 0; width: auto; max-width: calc(100% - 16px); }
+        .o_bre_scroll { min-width: 0; max-width: 100%; }
+        .o_bre_paper_inner, .o_bre_grid .o_bre_paper_inner { min-width: 0; }
+        .o_bre_table:not(.o_bre_grid_table) {
+            width: 100%;
+            .o_bre_label_col { width: auto; min-width: 0; }
+            .o_bre_value_col { width: 130px; }
+        }
+        .o_bre_cash_flow .o_bre_table .o_bre_label_col { width: auto; min-width: 0; }
+        .o_bre_cash_flow .o_bre_table .o_bre_value_col { width: 130px; }
+        .o_bre_grid_table:not(.o_bre_tobacco_table) { min-width: 650px; }
+        .o_bre_grid_table .o_bre_label_col { width: 160px; }
+        // Ledger columns can be wider than a phone; let them scroll without a covering sticky pane.
+        .o_bre_grid_table thead th:first-child, .o_bre_grid_table tbody th:first-child { position: static; }
+        .o_bre_ledger_table .o_bre_ledger_label,
+        .o_bre_partner_table .o_bre_partner_label,
+        .o_bre_aged_table .o_bre_aged_label { width: 160px; min-width: 160px; }
+        .o_bre_grid_table th:first-child, .o_bre_grid_table td:first-child,
+        .o_bre_grid_table .o_bre_label_col, .o_bre_ledger_table .o_bre_ledger_label,
+        .o_bre_partner_table .o_bre_partner_label, .o_bre_aged_table .o_bre_aged_label {
+            max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+        .o_bre_grid_table.o_bre_tobacco_table { min-width: 1000px; }
+        .o_bre_grid_table.o_bre_tobacco_table thead th { white-space: nowrap; }
+    }
+}

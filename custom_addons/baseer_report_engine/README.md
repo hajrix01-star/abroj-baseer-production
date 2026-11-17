@@ -20,6 +20,11 @@ General Ledger unfolding ranks journal items per account and company after apply
 
 ## Design notes
 
+Cash Flow excludes accounts specified by code or ID in the comma/space separated
+system parameter `baseer_report_engine.cash_flow_excluded_accounts`. Company 2
+(Al Moallem Al Shami) should set this to 105002 (transit, default account of the
+cash journal «وسيط نقل السلف التاريخية») without changing the account.
+
 The report toolbar uses the instance theme's primary button colour, keeping it consistent with the rest of the app.
 
 Partner-less receivable and payable items are allocated to the partners on their reconciliation counterparts by the partial reconciliation amounts. Any remaining amount stays with Unknown Partner. Journal Items drills show the full journal item amount, including when the ledger displays only an attributed share.

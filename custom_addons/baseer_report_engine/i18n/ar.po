@@ -1360,3 +1360,9 @@ msgstr "معرّفات القيود الافتتاحية غير المعروفة
 #, python-format
 msgid "The liquidity transfer account %(account)s has a non-zero balance of %(amount)s for this period: some transfers are incomplete."
 msgstr "حساب تحويل السيولة %(account)s رصيده غير صفري بمبلغ %(amount)s لهذه الفترة: بعض التحويلات غير مكتملة."
+
+#. module: baseer_report_engine
+#: code:addons/baseer_report_engine/models/cash_flow.py:0
+#, python-format
+msgid "Excluded from cash: %s"
+msgstr "المستبعد من النقد: %s"

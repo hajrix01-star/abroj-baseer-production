@@ -1,13 +1,20 @@
 """Direct cash flow from liquidity movements and their reconciled counterparts.
 
-Liquidity comprises cash-type accounts and bank/cash payment method accounts,
-excluding suspense accounts. The journal filter applies to the liquidity
+Liquidity comprises cash-type accounts and bank/cash journal default and payment
+method accounts, excluding suspense and configured excluded accounts. Set
+baseer_report_engine.cash_flow_excluded_accounts to comma/space separated codes
+or IDs. Company 2 (Al Moallem Al Shami) should set this to 105002 (transit,
+default account of the cash journal «وسيط نقل السلف التاريخية») without
+changing the account. The journal filter applies to the liquidity
 journal items. Each move's net cash effect is allocated by absolute counterpart
 balance; reconciled receivable/payable portions are allocated by absolute
 invoice line balance (including taxes), with the remainder treated as advances. Only
 reconciliations dated on or before the period end are followed.
 Beginning is TB(start - 1) plus liquidity on opening entries dated in the
-period; closing is TB(end). Opening and closing use the same conversion dates
+period; opening moves include company and configured moves, moves named or
+referenced with Opening or افتتاح, and moves with both liquidity and an
+equity_unaffected line. Detection is bulk and restricted to selected companies.
+Closing is TB(end). Opening and closing use the same conversion dates
 as the account grid. A
 rounding/exotic-move residual is assigned to unclassified cash flows so the
 statement reconciles to liquidity balances for every period.
@@ -57,11 +64,24 @@ class BaseerCashFlow(models.AbstractModel):
         ]
 
     @api.model
+    def _cash_excluded_accounts(self):
+        tokens = [s for s in re.split(r'[,\s]+', self.env['ir.config_parameter'].sudo().get_param(
+            'baseer_report_engine.cash_flow_excluded_accounts', '').strip()) if s]
+        accounts = self.env['account.account'].with_context(active_test=False)
+        ids = [int(s) for s in tokens if s.isdecimal()]
+        result = accounts.browse()
+        for company in self.env.companies:
+            result |= accounts.with_company(company).search([
+                ('company_ids', 'in', company.id), '|', ('code', 'in', tokens), ('id', 'in', ids)])
+        return result
+
+    @api.model
     def _cash_liquidity_accounts(self):
         accounts = self.env['account.account'].with_context(active_test=False).search([
             ('company_ids', 'in', self.env.companies.ids), ('account_type', '=', 'asset_cash')])
         journals = self.env['account.journal'].search([('company_id', 'in', self.env.companies.ids), ('type', 'in', ('bank', 'cash'))])
         for journal in journals:
+            accounts |= journal.default_account_id - journal.suspense_account_id
             methods = journal.inbound_payment_method_line_ids | journal.outbound_payment_method_line_ids
             accounts |= methods.mapped('payment_account_id') - journal.suspense_account_id
             # Odoo falls back to chart-default outstanding accounts when a
@@ -75,7 +95,7 @@ class BaseerCashFlow(models.AbstractModel):
                     default = chart.ref(ref, raise_if_not_found=False)
                     if default and default != journal.suspense_account_id:
                         accounts |= default
-        return accounts
+        return accounts - self._cash_excluded_accounts()
 
     @api.model
     def _cash_flow_data(self, options, column):
@@ -105,6 +125,14 @@ class BaseerCashFlow(models.AbstractModel):
 
         period_domain = domain + [('date', '>=', column['_start']), ('date', '<=', column['_end'])]
         opening, _unknown = self._cash_opening_moves()
+        candidates = self.env['account.move.line']._read_group(period_domain, ['move_id'])
+        candidate_ids = [move.id for (move,) in candidates if move]
+        if candidate_ids:
+            opening |= self.env['account.move'].search([
+                ('company_id', 'in', self.env.companies.ids), ('id', 'in', candidate_ids),
+                '|', '|', '|', '|', ('name', 'ilike', 'Opening'), ('ref', 'ilike', 'Opening'),
+                ('name', 'ilike', 'افتتاح'), ('ref', 'ilike', 'افتتاح'),
+                ('line_ids.account_id.account_type', '=', 'equity_unaffected')])
         if opening:
             totals = self._aggregate(period_domain + [('move_id', 'in', opening.ids)], column['_end'], options['analytic_account_ids'])
             for key, figures in totals.items():
@@ -227,6 +255,13 @@ class BaseerCashFlow(models.AbstractModel):
         payload['notes'].append(payload['cash_opening_note'])
         _opening, unknown = self._cash_opening_moves()
         payload['cash_notices'] = []
+        excluded = self._cash_excluded_accounts()
+        if excluded:
+            codes = sorted({account.with_company(company).code for company in self.env.companies
+                            for account in excluded if company in account.company_ids and account.with_company(company).code})
+            text = _('Excluded from cash: %s') % ', '.join(codes)
+            payload['cash_notices'].append({'text': text})
+            payload['notes'].append(text)
         if unknown and self.env.user.has_group('base.group_system'):
             payload['cash_notices'].append({'text': _('Unknown opening entry tokens: %s') % ', '.join(unknown)})
         column = next((c for c in options['columns'] if c['kind'] == 'period'), None)

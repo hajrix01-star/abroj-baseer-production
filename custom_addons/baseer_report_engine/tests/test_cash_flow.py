@@ -4,6 +4,107 @@ from .common import EngineCase
 
 
 class TestCashFlow(EngineCase):
+    def _opening_fixture(self):
+        company = self._company('Opening rule')
+        cash = self._account(company, '10480', 'asset_cash')
+        income = self._account(company, '40480', 'income')
+        journal = self._journal(company, 'CR80')
+        move = self._entry(company, journal, '2041-02-01', cash, income, 13)
+        return company, self._engine(company), move
+
+    def test_opening_company_move(self):
+        company, engine, move = self._opening_fixture()
+        company.account_opening_move_id = move
+        self.assertEqual(Decimal(self._value(engine.get_report('cash_flow', self._options()), 'beginning')), 13)
+
+    def test_opening_parameter_name(self):
+        _company, engine, move = self._opening_fixture()
+        self.env['ir.config_parameter'].sudo().set_param('baseer_report_engine.cash_flow_opening_moves', move.name)
+        self.assertEqual(Decimal(self._value(engine.get_report('cash_flow', self._options()), 'beginning')), 13)
+
+    def test_opening_parameter_id(self):
+        _company, engine, move = self._opening_fixture()
+        self.env['ir.config_parameter'].sudo().set_param('baseer_report_engine.cash_flow_opening_moves', str(move.id))
+        self.assertEqual(Decimal(self._value(engine.get_report('cash_flow', self._options()), 'beginning')), 13)
+
+    def test_unknown_opening_token_notice(self):
+        _company, engine, _move = self._opening_fixture()
+        self.env['ir.config_parameter'].sudo().set_param('baseer_report_engine.cash_flow_opening_moves', 'missing-token')
+        self.assertTrue(any('missing-token' in n['text'] for n in engine.get_report('cash_flow', self._options())['cash_notices']))
+
+    def test_opening_before_period_counted_once(self):
+        company, engine, move = self._opening_fixture()
+        company.account_opening_move_id = move
+        report = engine.get_report('cash_flow', self._options(date_from='2041-03-01'))
+        self.assertEqual(Decimal(self._value(report, 'beginning')), 13)
+        self.assertEqual(Decimal(self._value(report, 'net')), 0)
+
+    def test_transfer_warning_balance_and_domain(self):
+        company, engine, move = self._opening_fixture()
+        transfer = self._account(company, '10980', 'asset_current')
+        company.transfer_account_id = transfer
+        journal = move.journal_id
+        income = move.line_ids.filtered(lambda line: line.account_id.account_type == 'income').account_id
+        one_sided = self._entry(company, journal, '2041-03-01', transfer, income, 17)
+        report = engine.get_report('cash_flow', self._options())
+        notice = next(n for n in report['cash_notices'] if n.get('action'))
+        self.assertEqual(self.env['account.move.line'].search(notice['action']['domain']), one_sided.line_ids.filtered(lambda line: line.account_id == transfer))
+        self._entry(company, journal, '2041-04-01', income, transfer, 17)
+        self.assertFalse(any(n.get('action') for n in engine.get_report('cash_flow', self._options())['cash_notices']))
+
+    def test_automatic_opening_rules(self):
+        company = self._company('Automatic cash openings')
+        engine = self._engine(company)
+        cash = self._account(company, '10381', 'asset_cash')
+        equity = self._account(company, '999999', 'equity_unaffected')
+        income = self._account(company, '40381', 'income')
+        journal = self._journal(company, 'CO81')
+        self._entry(company, journal, '2041-01-01', cash, equity, 10)
+        named = self._entry(company, journal, '2041-02-01', cash, income, 20)
+        named.ref = 'Opening reset 31/10/2026'
+        arabic = self._entry(company, journal, '2041-02-02', cash, income, 5)
+        arabic.ref = 'رصيد افتتاح الفترة'
+        self._entry(company, journal, '2041-03-01', cash, income, 7)
+        report = engine.get_report('cash_flow', self._options())
+        self.assertEqual(Decimal(self._value(report, 'beginning')), 35)
+        self.assertEqual(Decimal(self._value(report, 'unclassified_in')), 7)
+        self.assertEqual(Decimal(self._value(report, 'net')), 7)
+        tb = engine.get_report('trial_balance', self._options())
+        self.assertEqual(Decimal(self._value(report, 'closing')), Decimal(next(r for r in tb['lines'] if r.get('account_id') == cash.id)['amounts'][-1]['value']))
+
+    def test_excluded_cash_and_journal_default(self):
+        company = self._company('Cash exclusions')
+        engine = self._engine(company)
+        cash = self._account(company, '10382', 'asset_cash')
+        excluded = self._account(company, '105002', 'asset_cash')
+        default = self._account(company, '108990', 'asset_current')
+        income = self._account(company, '40382', 'income')
+        journal = self._journal(company, 'CO82')
+        self.env['account.journal'].with_company(company).create({
+            'name': 'Cash default', 'code': 'CD82', 'type': 'cash',
+            'company_id': company.id, 'default_account_id': default.id})
+        self._entry(company, journal, '2040-12-31', excluded, income, 10)
+        self._entry(company, journal, '2041-01-01', excluded, income, 20)
+        self._entry(company, journal, '2041-02-01', excluded, cash, 5)
+        self._entry(company, journal, '2041-03-01', default, income, 7)
+        params = self.env['ir.config_parameter'].sudo()
+        options = self._options()
+        original = engine.get_report('cash_flow', options)
+        self.assertEqual(Decimal(self._value(original, 'closing')), 37)
+        self.assertIn(default.id, engine._cash_liquidity_accounts().ids)
+        for token in (excluded.code, str(excluded.id)):
+            params.set_param('baseer_report_engine.cash_flow_excluded_accounts', token)
+            report = engine.get_report('cash_flow', options, with_accounts=True)
+            self.assertEqual(Decimal(self._value(report, 'beginning')), 0)
+            self.assertEqual(Decimal(self._value(report, 'closing')), 2)
+            self.assertEqual(Decimal(self._value(report, 'unclassified_out')), -5)
+            self.assertIn(excluded.id, {r['id'] for r in next(l for l in report['lines'] if l['code'] == 'unclassified_out')['accounts']})
+            self.assertIn('Excluded from cash: 105002', report['notes'])
+            self.assertTrue(any('Excluded from cash: 105002' in n['text'] for n in report['cash_notices']))
+            self.assertIn('Excluded from cash: 105002', engine._export_payload('cash_flow', options)['notes'])
+        params.set_param('baseer_report_engine.cash_flow_excluded_accounts', '')
+        self.assertEqual(Decimal(self._value(engine.get_report('cash_flow', options), 'closing')), 37)
+
     def test_cash_identity_and_unfold(self):
         company = self._company('Cash flow company')
         engine = self._engine(company)

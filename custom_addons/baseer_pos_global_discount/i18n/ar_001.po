@@ -403,6 +403,7 @@ msgstr "توزيع خصم المرتجع"
 #. odoo-javascript
 #: code:addons/baseer_pos_global_discount/static/src/app/global_discount.xml:0
 #: model:ir.model.fields,field_description:baseer_pos_global_discount.field_pos_config__baseer_global_discount_max_percent
+#: model:ir.model.fields,field_description:baseer_pos_global_discount.field_res_config_settings__pos_baseer_global_discount_max_percent
 msgid "Maximum invoice discount (%)"
 msgstr "الحد الأقصى لخصم الفاتورة (%)"
 
@@ -410,6 +411,7 @@ msgstr "الحد الأقصى لخصم الفاتورة (%)"
 #. odoo-javascript
 #: code:addons/baseer_pos_global_discount/static/src/app/global_discount.xml:0
 #: model:ir.model.fields,field_description:baseer_pos_global_discount.field_pos_config__baseer_global_discount_max_amount
+#: model:ir.model.fields,field_description:baseer_pos_global_discount.field_res_config_settings__pos_baseer_global_discount_max_amount
 msgid "Maximum invoice discount amount"
 msgstr "الحد الأقصى لمبلغ خصم الفاتورة"
 
@@ -529,3 +531,27 @@ msgstr "استخدم إجراء خصم الفاتورة بدل إضافة صنف
 #: code:addons/baseer_pos_global_discount/models/pos_order.py:0
 msgid "A cancelled prepared refund cannot be reopened. Create a new refund from the original sale."
 msgstr "لا يمكن إعادة فتح المرتجع الملغى بعد تجهيز خصمه. أنشئ مرتجعًا جديدًا من فاتورة البيع الأصلية."
+
+#. module: baseer_pos_global_discount
+#. odoo-python
+#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
+msgid "Enter a positive discount."
+msgstr "أدخل قيمة خصم أكبر من 0."
+
+#. module: baseer_pos_global_discount
+#: model_terms:ir.ui.view,arch_db:baseer_pos_global_discount.res_config_settings_global_discount
+#: code:addons/baseer_pos_global_discount/models/res_config_settings.py:0
+msgid "This point of sale does not belong to an allowed company."
+msgstr "نقطة البيع هذه لا تخص شركة مسموحًا لك بالوصول إليها."
+
+#. module: baseer_pos_global_discount
+#: model_terms:ir.ui.view,arch_db:baseer_pos_global_discount.res_config_settings_global_discount
+#: code:addons/baseer_pos_global_discount/models/res_config_settings.py:0
+msgid "Discount Product"
+msgstr "صنف الخصم"
+
+#. module: baseer_pos_global_discount
+#: model_terms:ir.ui.view,arch_db:baseer_pos_global_discount.res_config_settings_global_discount
+#: code:addons/baseer_pos_global_discount/models/res_config_settings.py:0
+msgid "Cashiers can choose a percentage or fixed amount. A fixed amount includes VAT. Zero amount limit means no additional amount cap."
+msgstr "يمكن للكاشير اختيار مبلغ ثابت أو نسبة. المبلغ الثابت شامل الضريبة، وحد المبلغ 0 يعني عدم وضع سقف إضافي للمبلغ."

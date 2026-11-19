@@ -4,6 +4,7 @@ import { _t } from "@web/core/l10n/translation";
 import { session } from "@web/session";
 import { Dialog } from "@web/core/dialog/dialog";
 import { AlertDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
+import { useAutofocus } from "@web/core/utils/hooks";
 import { makeAwaitable } from "@point_of_sale/app/utils/make_awaitable_dialog";
 import { ControlButtons } from "@point_of_sale/app/screens/product_screen/control_buttons/control_buttons";
 import { PosStore } from "@point_of_sale/app/services/pos_store";
@@ -29,13 +30,22 @@ export class BaseerGlobalDiscountDialog extends Component {
     static template = "baseer_pos_global_discount.Dialog";
     static components = { Dialog };
     static props = { close: Function, getPayload: Function, locked: Boolean, refund: Boolean };
-    setup() { this.state = useState({ kind: "percent", value: "", reason: "" }); }
+    setup() {
+        this.state = useState({ kind: "fixed", value: "" });
+        useAutofocus({ mobile: true });
+    }
     confirm() {
-        this.props.getPayload({ kind: this.state.kind, value: this.state.value, reason: this.state.reason });
+        this.props.getPayload({ kind: this.state.kind, value: this.state.value });
         this.props.close();
     }
+    onValueKeydown(event) {
+        if (event.key === "Enter" && !event.repeat) {
+            event.preventDefault();
+            this.confirm();
+        }
+    }
     remove() {
-        this.props.getPayload({ kind: "remove", value: "0", reason: this.state.reason });
+        this.props.getPayload({ kind: "remove", value: "0" });
         this.props.close();
     }
 }
@@ -110,7 +120,8 @@ patch(ControlButtons.prototype, {
         if (request) await this.pos.baseerSubmitDiscount(order, request);
     },
     async clickDiscount() {
-        if (this.pos.config.baseer_global_discount_enabled) return this.clickBaseerGlobalDiscount();
+        const order = this.pos.getOrder();
+        if (this.pos.config.baseer_global_discount_enabled || isDiscountFrozen(order)) return this.clickBaseerGlobalDiscount();
         return super.clickDiscount(...arguments);
     },
     async clickFiscalPosition() {

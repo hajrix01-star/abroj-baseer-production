@@ -6,14 +6,15 @@ patch is required. This source is a QA candidate, not a ZATCA certification.
 
 ## Operation
 
-1. A POS manager opens the POS configuration and selects **Set up invoice
-   discount**. The action creates one company-local service product. Set the
-   maximum percentage and optionally a maximum amount; amount limit `0` means
-   the percentage limit and basket total still apply. The feature starts off.
-2. Synchronize the unpaid basket, then choose **Actions → Invoice discount**.
-   Choose percentage or fixed amount and enter a reason. A fixed amount is the
+1. A POS manager uses the existing **Global Discounts** card in native POS
+   settings. Set the maximum percentage and optionally a maximum amount; amount
+   limit `0` means the percentage limit and basket total still apply. Enabling
+   the feature prepares a company-local discount product automatically.
+2. Choose the original **Actions → Discount** button. The dialog opens with a
+   fixed amount selected and its input focused. Enter the amount and apply, or
+   switch to a percentage. No reason is requested. A fixed amount is the
    reduction in the customer's total **including VAT**. The server returns the
-   complete calculated order.
+   complete calculated order; user, time and command are audited automatically.
 3. Remove the discount before changing the basket, customer, preset, pricelist
    or taxes. Repeat commands are idempotent. A lost reply blocks payment until
    the exact command is reconciled; do not clear browser storage to bypass it.

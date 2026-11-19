@@ -15,7 +15,7 @@ Use existing cache-resilience addon and native patch/assets APIs, no dependency.
 Acceptance: loaded/synced numbers reserved; device/config isolation; recovery
 preserves every device counter and UUID; normal reload, payment and sync unchanged.
 Actual observed concurrent namespace count: two SHAMI device identities. No load
-test or new database needed for this client-only delta. Focused algorithm tests,
+test needed for this client-only delta. Focused algorithm tests,
 QA asset compilation/runtime tests, independent review and rollback evidence.
 
 2026-11-20 read-only runtime probe: both production and QA use
@@ -36,3 +36,39 @@ recovery of unsynced orders after the user invokes destructive native reset.
 
 Rollback: previous cache-resilience module source + asset rebuild through approved
 QA release. No data migration. Deployment/acceptance results appended below.
+
+## QA acceptance — 2026-11-20 (Riyadh)
+
+Official commit dates and base=19.0 confirmed independently. Source review GO
+for QA only; original critical reset still deletes unsynced IndexedDB and must
+not be represented as an unsynced-order recovery feature. Recompare the vendored
+reset asset when the core Docker image changes.
+
+An initial external Maven dependency failure blocked the required mobile CI
+check and hence shared-QA promotion. To continue authorized QA safely, created
+ONE owned internal QA network/database on the QA host, without ports or mounted
+production/shared-QA data. Same pinned image, PostgreSQL 256MiB and Odoo 1280MiB,
+0.25/0.65CPU. No capacity claim. The dependency failure resolved on the next
+source revision's CI; no protection bypass or unrelated mobile change.
+
+Candidate application/tests dba65fc18: baseline duplicate reproduced on actual
+production DeviceIdentifierSequence/native allocation snapshots; 27 Node tests
+PASS. First Odoo assertion incorrectly omitted the leading slash on asset paths;
+fixed the TEST, reused the same isolated DB, and 4 Odoo tests PASS with 0 failures
+and 0 errors. Actual pinned Odoo compiled 668 JS assets (3,565,997 bytes), original
+reset removed, replacement exactly once, correct named alias. Executed the
+Odoo-transpiled modules under a module-loader harness: restored-number allocation,
+offline-local allocation, post-sync reservation and critical-reset preservation
+PASS. ORM acceptance work rolled back. Owned PostgreSQL stopped after tests.
+
+Evidence: output/pos-official-numbering-fixes-20261120/{SUMMARY.json,
+ACCEPTANCE.json,odoo-tests-r2.log,compiled-modules.log,NODE-TESTS.log}.
+Bundle SHA256:431e572aea7e4f9cc7267642bb4c3d28b01debb6b63dc4b48f298223bc0b5965.
+This is actual QA-host Odoo and compiled-JS execution, not a physical cashier,
+paper-print or real payment acceptance claim. Number format, accounting and
+historical records unchanged by this patch. Production promotion NOT authorized.
+
+Read-only before/after identity comparison found another production release
+during this task (41d78dda to 08f6b861); same core image and numbering sources.
+No production deployment or data write was issued by this task. Shared QA was
+unchanged during the isolated test. PR: hajrix01-star/abroj-baseer-production#935.

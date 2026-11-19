@@ -1,0 +1,26 @@
+<odoo>
+  <record id="accounting_overview" model="spreadsheet.dashboard">
+    <field name="name">Accounting overview</field>
+    <field name="spreadsheet_binary_data" type="base64" file="baseer_spreadsheet_dashboards_plus/data/files/accounting.json"/>
+    <field name="main_data_model_ids" eval="[(4, ref('account.model_account_move_line'))]"/>
+    <field name="dashboard_group_id" ref="spreadsheet_dashboard.spreadsheet_dashboard_group_finance"/>
+    <field name="group_ids" eval="[Command.link(ref('account.group_account_readonly'))]"/>
+    <field name="sequence">25</field><field name="is_published">True</field>
+  </record>
+  <record id="purchase_vendor_analysis" model="spreadsheet.dashboard">
+    <field name="name">Purchase &amp; vendor analysis</field>
+    <field name="spreadsheet_binary_data" type="base64" file="baseer_spreadsheet_dashboards_plus/data/files/purchase.json"/>
+    <field name="main_data_model_ids" eval="[(4, ref('purchase.model_purchase_order'))]"/>
+    <field name="dashboard_group_id" ref="spreadsheet_dashboard.spreadsheet_dashboard_group_logistics"/>
+    <field name="group_ids" eval="[Command.link(ref('purchase.group_purchase_user'))]"/>
+    <field name="sequence">120</field><field name="is_published">True</field>
+  </record>
+  <record id="warehouse_daily_operations" model="spreadsheet.dashboard">
+    <field name="name">Warehouse daily operations</field>
+    <field name="spreadsheet_binary_data" type="base64" file="baseer_spreadsheet_dashboards_plus/data/files/warehouse.json"/>
+    <field name="main_data_model_ids" eval="[(4, ref('stock.model_stock_picking'))]"/>
+    <field name="dashboard_group_id" ref="spreadsheet_dashboard.spreadsheet_dashboard_group_logistics"/>
+    <field name="group_ids" eval="[Command.link(ref('stock.group_stock_user'))]"/>
+    <field name="sequence">130</field><field name="is_published">True</field>
+  </record>
+</odoo>

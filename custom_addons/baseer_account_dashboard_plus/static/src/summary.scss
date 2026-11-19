@@ -1,0 +1,18 @@
+.baseer-summary {
+  min-width: 0; padding: .75rem;
+  .baseer-summary-title { border: 0; background: transparent; font-weight: 600; padding: .3rem 0 .65rem; }
+  .baseer-summary-grid { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: .5rem; }
+  .baseer-tile { text-align: start; display: flex; flex-direction: column; gap: .25rem; background: white; border: 1px solid #dedede; border-radius: .35rem; padding: .65rem; min-width: 0; overflow-wrap: anywhere; }
+  .baseer-subbutton { text-align: start; border: 0; background: transparent; padding: 0; }
+  .baseer-subbutton strong { display: block; }
+  .baseer-summary-links { display: flex; flex-wrap: nowrap; max-width: 100%; overflow-x: auto; }
+  .baseer-summary-links button { white-space: nowrap; }
+  bdi { display: inline-block; }
+  @media (max-width: 1200px) { .baseer-summary-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+  @media (max-width: 767px) {
+    .baseer-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .35rem; }
+    .baseer-tile { padding: .45rem; font-size: 12px; }
+    .baseer-tile strong { font-size: 15px; }
+  }
+}
+.o_account_kanban #dashboard_bank_cash_right .badge { margin-inline-start: .25rem; }

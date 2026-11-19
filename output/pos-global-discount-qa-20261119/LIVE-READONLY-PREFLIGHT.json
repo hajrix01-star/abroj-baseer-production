@@ -1,0 +1,388 @@
+{
+  "live_current": "/srv/abroj-baseer-production/releases/ed0e39a37f76-run-44521587590-20261119T121141Z",
+  "live_commit": "ed0e39a37f7669db02c8e3a07ddd6c98300e2ba6",
+  "live_runtime": {
+    "id": "4767c67ba39d825d4a45d263fb7a1dd49db86536d85d5da5dafe294dec310f69",
+    "started_at": "2026-11-19T12:12:56.310196943Z",
+    "running": true,
+    "restart_count": 0,
+    "image": "sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd"
+  },
+  "manifests": {
+    "baseer_pos_global_discount": {
+      "present": false
+    },
+    "baseer_pos_product_substitution": {
+      "present": true,
+      "version": "19.0.2.0.5",
+      "depends": [
+        "point_of_sale",
+        "baseer_pos_print_bridge"
+      ]
+    },
+    "baseer_pos_print_bridge": {
+      "present": true,
+      "version": "19.0.7.8.54",
+      "depends": [
+        "point_of_sale",
+        "pos_restaurant"
+      ]
+    }
+  },
+  "modules": [
+    {
+      "name": "pos_restaurant",
+      "state": "installed",
+      "version": "19.0.1.0",
+      "dependencies": [
+        {
+          "name": "point_of_sale",
+          "state": "installed"
+        }
+      ]
+    },
+    {
+      "name": "point_of_sale",
+      "state": "installed",
+      "version": "19.0.1.0.2",
+      "dependencies": [
+        {
+          "name": "resource",
+          "state": "installed"
+        },
+        {
+          "name": "stock_account",
+          "state": "installed"
+        },
+        {
+          "name": "barcodes",
+          "state": "installed"
+        },
+        {
+          "name": "html_editor",
+          "state": "installed"
+        },
+        {
+          "name": "digest",
+          "state": "installed"
+        },
+        {
+          "name": "phone_validation",
+          "state": "installed"
+        },
+        {
+          "name": "partner_autocomplete",
+          "state": "installed"
+        },
+        {
+          "name": "iot_base",
+          "state": "installed"
+        },
+        {
+          "name": "google_address_autocomplete",
+          "state": "installed"
+        }
+      ]
+    },
+    {
+      "name": "pos_discount",
+      "state": "installed",
+      "version": "19.0.1.0",
+      "dependencies": [
+        {
+          "name": "point_of_sale",
+          "state": "installed"
+        }
+      ]
+    },
+    {
+      "name": "baseer_pos_print_bridge",
+      "state": "installed",
+      "version": "19.0.7.8.54",
+      "dependencies": [
+        {
+          "name": "pos_restaurant",
+          "state": "installed"
+        },
+        {
+          "name": "point_of_sale",
+          "state": "installed"
+        }
+      ]
+    },
+    {
+      "name": "baseer_pos_product_substitution",
+      "state": "installed",
+      "version": "19.0.2.0.5",
+      "dependencies": [
+        {
+          "name": "baseer_pos_print_bridge",
+          "state": "installed"
+        },
+        {
+          "name": "point_of_sale",
+          "state": "installed"
+        }
+      ]
+    },
+    {
+      "name": "l10n_sa_edi",
+      "state": "installed",
+      "version": "19.0.0.3",
+      "dependencies": [
+        {
+          "name": "account_edi",
+          "state": "installed"
+        },
+        {
+          "name": "account_edi_ubl_cii",
+          "state": "installed"
+        },
+        {
+          "name": "l10n_sa",
+          "state": "installed"
+        },
+        {
+          "name": "base_vat",
+          "state": "installed"
+        },
+        {
+          "name": "certificate",
+          "state": "installed"
+        }
+      ]
+    },
+    {
+      "name": "l10n_sa_edi_pos",
+      "state": "installed",
+      "version": "19.0.0.2",
+      "dependencies": [
+        {
+          "name": "l10n_sa_pos",
+          "state": "installed"
+        },
+        {
+          "name": "l10n_sa_edi",
+          "state": "installed"
+        }
+      ]
+    }
+  ],
+  "configs": [
+    {
+      "config_id": 17,
+      "company_id": 53,
+      "native_discount_enabled": false,
+      "native_discount_product_id": false,
+      "product_company_id": false,
+      "product_type": false,
+      "product_cost": null,
+      "explicit_income_account_id": false,
+      "category_income_account_id": false,
+      "resolved_income_account": null,
+      "journal_fallback_account_id": false,
+      "cash_rounding": false,
+      "only_round_cash_method": false,
+      "open_session_states": [],
+      "owned_discount_enabled": null
+    },
+    {
+      "config_id": 18,
+      "company_id": 54,
+      "native_discount_enabled": false,
+      "native_discount_product_id": false,
+      "product_company_id": false,
+      "product_type": false,
+      "product_cost": null,
+      "explicit_income_account_id": false,
+      "category_income_account_id": false,
+      "resolved_income_account": null,
+      "journal_fallback_account_id": false,
+      "cash_rounding": false,
+      "only_round_cash_method": false,
+      "open_session_states": [],
+      "owned_discount_enabled": null
+    },
+    {
+      "config_id": 20,
+      "company_id": 1,
+      "native_discount_enabled": true,
+      "native_discount_product_id": 5253,
+      "product_company_id": false,
+      "product_type": "consu",
+      "product_cost": 0.0,
+      "explicit_income_account_id": false,
+      "category_income_account_id": 208,
+      "resolved_income_account": {
+        "id": 208,
+        "code": "500001",
+        "type": "income",
+        "active": true,
+        "company_ids": [
+          1
+        ]
+      },
+      "journal_fallback_account_id": false,
+      "cash_rounding": false,
+      "only_round_cash_method": false,
+      "open_session_states": [
+        {
+          "session_id": 1788,
+          "state": "opened"
+        }
+      ],
+      "owned_discount_enabled": null
+    },
+    {
+      "config_id": 21,
+      "company_id": 55,
+      "native_discount_enabled": false,
+      "native_discount_product_id": false,
+      "product_company_id": false,
+      "product_type": false,
+      "product_cost": null,
+      "explicit_income_account_id": false,
+      "category_income_account_id": false,
+      "resolved_income_account": null,
+      "journal_fallback_account_id": false,
+      "cash_rounding": false,
+      "only_round_cash_method": false,
+      "open_session_states": [],
+      "owned_discount_enabled": null
+    },
+    {
+      "config_id": 22,
+      "company_id": 55,
+      "native_discount_enabled": false,
+      "native_discount_product_id": false,
+      "product_company_id": false,
+      "product_type": false,
+      "product_cost": null,
+      "explicit_income_account_id": false,
+      "category_income_account_id": false,
+      "resolved_income_account": null,
+      "journal_fallback_account_id": false,
+      "cash_rounding": false,
+      "only_round_cash_method": false,
+      "open_session_states": [
+        {
+          "session_id": 1428,
+          "state": "opened"
+        }
+      ],
+      "owned_discount_enabled": null
+    },
+    {
+      "config_id": 25,
+      "company_id": 3,
+      "native_discount_enabled": false,
+      "native_discount_product_id": false,
+      "product_company_id": false,
+      "product_type": false,
+      "product_cost": null,
+      "explicit_income_account_id": false,
+      "category_income_account_id": false,
+      "resolved_income_account": null,
+      "journal_fallback_account_id": false,
+      "cash_rounding": false,
+      "only_round_cash_method": false,
+      "open_session_states": [
+        {
+          "session_id": 1784,
+          "state": "opened"
+        }
+      ],
+      "owned_discount_enabled": null
+    },
+    {
+      "config_id": 26,
+      "company_id": 56,
+      "native_discount_enabled": false,
+      "native_discount_product_id": false,
+      "product_company_id": false,
+      "product_type": false,
+      "product_cost": null,
+      "explicit_income_account_id": false,
+      "category_income_account_id": false,
+      "resolved_income_account": null,
+      "journal_fallback_account_id": false,
+      "cash_rounding": false,
+      "only_round_cash_method": false,
+      "open_session_states": [],
+      "owned_discount_enabled": null
+    },
+    {
+      "config_id": 27,
+      "company_id": 2,
+      "native_discount_enabled": true,
+      "native_discount_product_id": 5253,
+      "product_company_id": false,
+      "product_type": "consu",
+      "product_cost": 0.0,
+      "explicit_income_account_id": false,
+      "category_income_account_id": 386,
+      "resolved_income_account": {
+        "id": 386,
+        "code": "500001",
+        "type": "income",
+        "active": true,
+        "company_ids": [
+          2
+        ]
+      },
+      "journal_fallback_account_id": false,
+      "cash_rounding": false,
+      "only_round_cash_method": false,
+      "open_session_states": [
+        {
+          "session_id": 1787,
+          "state": "opened"
+        }
+      ],
+      "owned_discount_enabled": null
+    },
+    {
+      "config_id": 28,
+      "company_id": 57,
+      "native_discount_enabled": false,
+      "native_discount_product_id": false,
+      "product_company_id": false,
+      "product_type": false,
+      "product_cost": null,
+      "explicit_income_account_id": false,
+      "category_income_account_id": false,
+      "resolved_income_account": null,
+      "journal_fallback_account_id": false,
+      "cash_rounding": false,
+      "only_round_cash_method": false,
+      "open_session_states": [],
+      "owned_discount_enabled": null
+    }
+  ],
+  "READ_ONLY_ROLLBACK": true,
+  "native_discount_draft_transition": {
+    "configs": [
+      {
+        "config_id": 20,
+        "company_id": 1,
+        "draft_orders": 12,
+        "drafts_with_native_discount_product": 0,
+        "native_discount_lines": 0,
+        "negative_unit_price_discount_lines": 0,
+        "negative_qty_discount_lines": 0,
+        "negative_value_discount_lines": 0
+      },
+      {
+        "config_id": 27,
+        "company_id": 2,
+        "draft_orders": 9,
+        "drafts_with_native_discount_product": 0,
+        "native_discount_lines": 0,
+        "negative_unit_price_discount_lines": 0,
+        "negative_qty_discount_lines": 0,
+        "negative_value_discount_lines": 0
+      }
+    ],
+    "READ_ONLY_ROLLBACK": true
+  }
+}

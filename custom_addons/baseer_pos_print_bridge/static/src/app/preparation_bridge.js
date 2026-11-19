@@ -35,7 +35,7 @@ function assertMergeNotPending(order) {
 
 patch(TicketScreen.prototype, {
     async print(order) {
-        if (this.pos.config.baseer_direct_print_enabled && this.pos.config.baseer_native_receipt_enabled) {
+        if (this.pos.config.baseer_direct_print_enabled) {
             return this.pos.printReceipt({ order, baseerReprint: true });
         }
         return super.print(...arguments);
@@ -1135,7 +1135,7 @@ patch(PosStore.prototype, {
             }
             return super.printReceipt(...arguments);
         }
-        if (this.config.baseer_direct_print_enabled && this.config.baseer_native_receipt_enabled) {
+        if (this.config.baseer_direct_print_enabled) {
             if (!order?.isSynced || !order?.id || !["paid", "done"].includes(order.state)) {
                 this.notification.add(
                     _t("The order is not finalized. Complete payment and synchronization before printing its final receipt."),
@@ -1213,29 +1213,6 @@ patch(PosStore.prototype, {
                         : _t("Payment remains saved, but customer receipt printing failed. Retry from the receipt screen or ask a manager to inspect print jobs."),
                     { type: "danger" }
                 );
-                return { successful: false, error };
-            }
-        }
-        if (this.config.baseer_direct_print_enabled && order?.isSynced) {
-            if (!["paid", "done"].includes(order.state)) {
-                this.notification.add(_t("The order is not finalized. Complete payment and synchronization before printing its final receipt."), { type: "warning" });
-                return { successful: false };
-            }
-            // Odoo has already enqueued the receipt after native payment. Avoid a
-            // second browser/IoT copy only when direct printing is explicitly on.
-            try {
-                const status = await this.data.call("pos.order", "baseer_customer_receipt_status", [[order.id]]);
-                if (!status?.job_id || !["pending", "leased", "done"].includes(status.state)) {
-                    this.notification.add(
-                        _t("Payment remains saved. Customer receipt was not printed: %s",
-                            status?.error || _t("Ask a manager to inspect Print Jobs.")),
-                        { type: "danger" }
-                    );
-                    return { successful: false };
-                }
-                return { successful: true, queued: status.state !== "done" };
-            } catch (error) {
-                this.notification.add(_t("Payment remains saved. Receipt status could not be checked."), { type: "warning" });
                 return { successful: false, error };
             }
         }

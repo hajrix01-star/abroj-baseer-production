@@ -1,0 +1,44 @@
+{
+  "official_wrapper_sha256": "eb48d8b33cbba1957b2e09717d021d6ff6046b802e79fc5a8b180165ad9ff0c8",
+  "installed_wrapper_sha256": "eb48d8b33cbba1957b2e09717d021d6ff6046b802e79fc5a8b180165ad9ff0c8",
+  "wrapper_matches_official": true,
+  "dependencies": {
+    "baseer_pos_print_bridge": {
+      "different_paths": [],
+      "git_tree_match": true,
+      "actual_files": 77,
+      "expected_files": 77
+    },
+    "baseer_pos_product_substitution": {
+      "different_paths": [
+        "__manifest__.py"
+      ],
+      "git_tree_match": false,
+      "actual_files": 22,
+      "expected_files": 24,
+      "missing_from_live_paths": [
+        "static/src/app/auto_payment_refresh.js",
+        "tests/auto_payment_refresh.test.mjs"
+      ]
+    }
+  },
+  "compatibility_findings": [
+    "All shared operational substitution files match merged Git source byte-for-byte; manifest differs and only auto_payment_refresh.js plus its test are absent from live.",
+    "Required backend lock/revision/result/snapshot and frontend reconcile/pending-action APIs are identical. Reconcile deletes stale IndexedDB records, drains native relation commands, loads canonical state and persists acknowledgement.",
+    "Additional payment-screen automatic bank amount refresh is independent of global discount APIs; no dependency update or additional compatibility test required."
+  ],
+  "minimal_policy": {
+    "default_enabled": false,
+    "mode": "install",
+    "third_party_modules": [],
+    "modules": [
+      "baseer_pos_global_discount"
+    ],
+    "activation_requires_company_service_product": true,
+    "activation_candidate_config_accounts": {
+      "20": 208,
+      "27": 386
+    }
+  },
+  "wrapper_scope": "Copies current production release and overlays approved module paths only; uninstalled approved module uses -i, installed dependencies stay untouched; existing protected snapshot/backup guards apply. No GD-specific migration or no-op flag required."
+}

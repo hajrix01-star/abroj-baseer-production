@@ -22,7 +22,7 @@ BACKOFF_SECONDS = (15, 60, 300)
 _logger = logging.getLogger(__name__)
 NATIVE_RECEIPT_MAX_BYTES = 256 * 1024
 NATIVE_RECEIPT_MAX_PIXELS = 5_000_000
-RASTER_JOB_TYPES = ('receipt', 'session_report', 'draft_bill')
+RASTER_JOB_TYPES = ('receipt', 'session_report', 'draft_bill', 'preparation')
 DRAFT_BILL_LIFETIME = timedelta(minutes=2)
 
 
@@ -198,27 +198,14 @@ class BaseerPrintJob(models.Model):
             'created_at': fields.Datetime.to_string(fields.Datetime.now()),
         }
         if order and ticket_type == 'preparation':
-            try:
-                version = tuple(int(part) for part in (printer.agent_id.agent_version or '').split('.')[:3])
-            except ValueError:
-                version = ()
             if order.tracking_number:
                 # Keep the native customer-facing number distinct from the POS
                 # reference in both operating modes. The queued JSON freezes it
                 # for the original print and any later reprint.
                 order_payload['tracking_number'] = str(order.tracking_number)
-                if version < (1, 5, 16):
-                    # Older agents display only the reference, not tracking_number.
-                    order_payload['reference'] = f"{order.tracking_number}\n{order_payload['reference']}"
             if order.preset_id:
                 order_type = ' '.join(order.preset_id.name.split())
-                if version >= (1, 5, 21):
-                    order_payload['order_type'] = order_type
-                elif version >= (1, 5, 15):
-                    # These agents render multiline kitchen references. Bound the
-                    # label to keep their continuation headers printable.
-                    legacy_order_type = order_type[:80] + '…' if len(order_type) > 80 else order_type
-                    order_payload['reference'] = f"{order_payload['reference']}\nنوع الطلب: {legacy_order_type}"
+                order_payload['order_type'] = order_type
         if order:
             cashier = (
                 order.employee_id
@@ -246,55 +233,8 @@ class BaseerPrintJob(models.Model):
 
     @api.model
     def _enqueue_receipt(self, order):
-        config = order.config_id
-        if not config.baseer_direct_print_enabled or order.state != 'paid' or order.is_refund:
-            return self.browse()
-        printer = config.baseer_receipt_printer_id
-        if not printer or not printer.active or not printer._allows_company(order.company_id):
-            return self.browse()
-        # A receipt is an immutable snapshot of the paid POS order, not a kitchen change.
-        # Monetary strings are prepared by Odoo in the POS currency; the agent never totals them.
-        paid_order = order.sudo().with_company(order.company_id)
-        currency = paid_order.currency_id
-        digits = currency.decimal_places
-
-        def money(amount):
-            return f'{currency.round(amount):.{digits}f}'
-
-        lines = [{
-            'name': line.full_product_name or line.product_id.display_name,
-            'quantity': line.qty,
-            'unit_price': money(line.price_unit),
-            'discount': line.discount,
-            'price': money(line.price_subtotal_incl),
-        } for line in paid_order.lines]
-        line_subtotal = sum(paid_order.lines.mapped('price_subtotal'))
-        adjustment = currency.round(paid_order.amount_total - paid_order.amount_tax - line_subtotal)
-        payload = self._job_payload('receipt', paid_order, printer, lines, config.baseer_receipt_copies)
-        payload['schema'] = 3
-        payload['order']['created_at'] = fields.Datetime.to_string(paid_order.date_order)
-        payload['receipt'] = {
-            'company': paid_order.company_id.name,
-            'company_vat': paid_order.company_id.vat or '',
-            'point_of_sale': config.name,
-            'currency': currency.symbol or currency.name,
-            'subtotal': money(line_subtotal),
-            'tax': money(paid_order.amount_tax),
-            'adjustment': money(adjustment),
-            'has_adjustment': bool(adjustment),
-            'total': money(paid_order.amount_total),
-            'paid': money(sum(paid_order.payment_ids.filtered(lambda payment: not payment.is_change).mapped('amount'))),
-            'change': money(paid_order.amount_return),
-            'payments': [{
-                'method': payment.payment_method_id.display_name,
-                'amount': money(payment.amount),
-            } for payment in paid_order.payment_ids if not payment.is_change],
-        }
-        return self._create_once({'company_id': order.company_id.id, 'pos_config_id': config.id,
-                                  'agent_id': printer.agent_id.id, 'printer_id': printer.id,
-                                  'source_order_id': order.id, 'ticket_type': 'receipt',
-                                  'payload': payload,
-                                  'idempotency_key': self._canonical_key('receipt', order.uuid)})
+        # Retain a fail-closed compatibility entry point, never a second layout.
+        raise ValidationError(_('Customer receipts must use the original Odoo receipt image.'))
 
     @api.model
     def _validated_native_receipt_image(self, jpeg_base64):
@@ -320,7 +260,7 @@ class BaseerPrintJob(models.Model):
     def _native_receipt_printer(self, order):
         order.ensure_one()
         config = order.config_id
-        if (not config.baseer_direct_print_enabled or not config.baseer_native_receipt_enabled
+        if (not config.baseer_direct_print_enabled
                 or order.state not in ('paid', 'done')
                 or order.company_id not in self.env.companies
                 or order.session_id.config_id != config):
@@ -840,18 +780,25 @@ class BaseerPrintJob(models.Model):
         supports_raster = self._agent_supports_native_receipts(agent)
         self.env.cr.execute('''SELECT id FROM baseer_print_job WHERE agent_id = %s AND state = 'pending'
             AND available_at <= NOW()
-            AND (%s OR NOT (ticket_type IN %s AND payload->>'schema' = '4'))
+            AND (%s OR NOT (ticket_type = 'preparation' OR (ticket_type IN %s AND payload->>'schema' = '4')))
             ORDER BY available_at, id FOR UPDATE SKIP LOCKED LIMIT 1''',
                             [agent.id, supports_raster, RASTER_JOB_TYPES])
         row = self.env.cr.fetchone()
         if not row:
             return False
         job = self.sudo().browse(row[0]).exists()
+        if job.ticket_type == 'receipt' and job.payload.get('schema') != 4:
+            job.write({'state': 'failed', 'completed_at': fields.Datetime.now(),
+                       'error_code': 'legacy_receipt',
+                       'error_detail': _('Customer receipts must use the original Odoo receipt image.')})
+            return False
+        if job.ticket_type == 'preparation' and not job._ensure_kitchen_image():
+            return False
         payload = dict(job.payload)
         if job.ticket_type == 'draft_bill' and not job._is_current_draft_bill():
             job._cancel_stale_draft_bill()
             return False
-        if job.ticket_type in RASTER_JOB_TYPES and payload.get('schema') == 4:
+        if job.ticket_type in RASTER_JOB_TYPES and (payload.get('schema') == 4 or job.ticket_type == 'preparation'):
             image_b64 = job.receipt_image
             try:
                 raw = base64.b64decode(image_b64 or b'', validate=True)
@@ -864,6 +811,11 @@ class BaseerPrintJob(models.Model):
                            'error_code': 'invalid_receipt', 'error_detail': _('The stored receipt image is missing or invalid.')})
                 return False
             payload['receipt_image'] = {**payload['receipt_image'], 'base64': base64.b64encode(raw).decode('ascii')}
+            # Existing image protocol, also used by draft bills/session reports.
+            # DB type/events retain their meaning; Windows receives pixels only.
+            payload = {'schema': 4, 'ticket_type': 'receipt',
+                       'document_kind': payload.get('document_kind') or job.ticket_type,
+                       'printer': payload['printer'], 'receipt_image': payload['receipt_image']}
         token, now = new_secret(24), fields.Datetime.now()
         job.write({'state': 'leased', 'lease_token': token, 'lease_expires_at': now + timedelta(minutes=2),
                    'sent_at': now, 'attempt_count': job.attempt_count + 1})
@@ -876,11 +828,19 @@ class BaseerPrintJob(models.Model):
         jobs = self.sudo().search([
             ('ticket_type', 'in', RASTER_JOB_TYPES), ('receipt_image_sha256', '!=', False),
             ('receipt_image_purged_at', '=', False),
+            ('ticket_type', '!=', 'preparation'),
             '|', ('state', '=', 'done'),
             '&', ('ticket_type', '=', 'draft_bill'), ('state', 'in', ('failed', 'cancelled')),
             ('completed_at', '<', cutoff),
         ], limit=100)
         for job in jobs:
+            job.write({'receipt_image': False, 'receipt_image_purged_at': fields.Datetime.now()})
+        kitchen_jobs = self.sudo().search([
+            ('ticket_type', '=', 'preparation'), ('receipt_image_sha256', '!=', False),
+            ('receipt_image_purged_at', '=', False), ('state', '=', 'done'),
+            ('completed_at', '<', fields.Datetime.now() - timedelta(days=30)),
+        ], limit=100)
+        for job in kitchen_jobs:
             job.write({'receipt_image': False, 'receipt_image_purged_at': fields.Datetime.now()})
         backlog = self.sudo().search_count([
             ('ticket_type', 'in', RASTER_JOB_TYPES), ('receipt_image_sha256', '!=', False),
@@ -888,7 +848,7 @@ class BaseerPrintJob(models.Model):
         ])
         if backlog:
             _logger.warning('Baseer native receipt backlog older than 24h: %s jobs', backlog)
-        return len(jobs)
+        return len(jobs) + len(kitchen_jobs)
 
     def _validate_lease(self, agent, lease_token):
         self.ensure_one()
@@ -932,12 +892,16 @@ class BaseerPrintJob(models.Model):
 
     def action_reprint(self):
         for job in self:
+            if job.ticket_type == 'receipt' and job.payload.get('schema') != 4:
+                raise ValidationError(_('Customer receipts must use the original Odoo receipt image.'))
             if not self.env.user.has_group('point_of_sale.group_pos_manager'):
                 raise AccessError(_('Only a Point of Sale manager can reprint a job.'))
             if job.ticket_type == 'draft_bill':
                 raise ValidationError(_('Print an updated bill from the open order in Point of Sale.'))
             if job.state not in ('done', 'failed', 'cancelled'):
                 raise ValidationError(_('Only a completed, failed, or cancelled job can be reprinted.'))
+            if job.ticket_type == 'preparation' and job.receipt_image_sha256 and not job.receipt_image:
+                raise ValidationError(_('The original kitchen image has expired. It cannot be recreated for reprinting.'))
             if job.ticket_type in ('receipt', 'session_report') and job.payload.get('schema') == 4 and not job.receipt_image:
                 if job.ticket_type == 'session_report':
                     raise ValidationError(_(
@@ -957,8 +921,9 @@ class BaseerPrintJob(models.Model):
                                'preparation_event_id': job.preparation_event_id.id,
                                'preparation_event_ids': [(6, 0, job.preparation_event_ids.ids)],
                                'ticket_type': job.ticket_type, 'payload': job.payload,
-                               'receipt_image': job.receipt_image if job.ticket_type in ('receipt', 'session_report') else False,
+                               'receipt_image': job.receipt_image if job.ticket_type in RASTER_JOB_TYPES else False,
                                'receipt_image_sha256': job.receipt_image_sha256,
+                               'print_html': job.print_html if job.ticket_type == 'preparation' else False,
                                'idempotency_key': self._canonical_key('manual-reprint', job.id, sequence),
                                'reprint_of_id': job.id, 'reprint_sequence': sequence})
         return True

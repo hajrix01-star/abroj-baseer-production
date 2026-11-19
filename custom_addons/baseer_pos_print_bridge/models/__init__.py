@@ -9,6 +9,7 @@ from . import printer
 from . import print_setup_wizard
 from . import route
 from . import job
+from . import kitchen_document
 from . import preparation
 from . import pos_config
 from . import pos_order

@@ -64,7 +64,7 @@
                         </group>
                         <group string="Copies and receipt layout" invisible="not baseer_direct_print_enabled">
                             <field name="baseer_receipt_copies" string="Receipt copies"/>
-                            <field name="baseer_native_receipt_enabled" string="Print the customer receipt"/>
+                            <field name="baseer_native_receipt_enabled" invisible="1"/>
                             <field name="baseer_print_session_close_report" string="Print the session closing report"/>
                         </group>
                     </group>

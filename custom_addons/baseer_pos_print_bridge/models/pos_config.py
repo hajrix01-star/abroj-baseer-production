@@ -27,7 +27,8 @@ class PosConfig(models.Model):
     baseer_receipt_copies = fields.Integer(string='Receipt copies', default=1)
     baseer_native_receipt_enabled = fields.Boolean(
         string='Print the original Odoo customer receipt',
-        help='Use the original Odoo POS receipt image for customer printing. Kitchen tickets are unchanged.',
+        default=True,
+        help='Compatibility field. Direct printing always uses the original Odoo receipt image.',
     )
     baseer_print_session_close_report = fields.Boolean(
         string='Print session closing report',
@@ -214,7 +215,7 @@ class PosConfig(models.Model):
             primary_agent = config.company_id.baseer_primary_print_agent_id
             if primary_agent and config.baseer_receipt_printer_id.agent_id != primary_agent:
                 raise ValidationError(_('Choose a receipt printer discovered by this company’s primary Windows print computer.'))
-            if config.baseer_native_receipt_enabled:
+            if config.baseer_direct_print_enabled:
                 if config.baseer_receipt_printer_id.paper_width != '80':
                     raise ValidationError(_('The original Odoo receipt requires an 80 mm receipt printer.'))
                 if not self.env['baseer.print.job']._agent_supports_native_receipts(
@@ -322,7 +323,9 @@ class PosConfig(models.Model):
             record = by_id.get(value.get('id'))
             if record:
                 value['baseer_direct_print_enabled'] = record.baseer_direct_print_enabled
-                value['baseer_native_receipt_enabled'] = record.baseer_native_receipt_enabled
+                value['baseer_native_receipt_enabled'] = (
+                    True if record.baseer_direct_print_enabled else record.baseer_native_receipt_enabled
+                )
                 # The POS receives display-only binding metadata. The browser never
                 # receives a printer address or decides the final printer route.
                 value['baseer_preparation_bindings'] = record._baseer_preparation_bindings_payload()

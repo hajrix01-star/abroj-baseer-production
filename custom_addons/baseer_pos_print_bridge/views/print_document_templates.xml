@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Presentation only: quantities and actions come from the immutable Odoo job snapshot. -->
+    <template id="kitchen_document" name="Odoo thermal kitchen document">
+        <html lang="ar" dir="rtl">
+            <head>
+                <meta charset="utf-8"/>
+                <style type="text/css">
+                    * { box-sizing: border-box; }
+                    html, body { margin: 0; padding: 0; background: #fff; color: #000; }
+                    body { font-family: 'DejaVu Sans', 'Noto Sans Arabic', Arial, sans-serif;
+                           font-size: 26px; line-height: 1.45; }
+                    .document { padding: 12px 14px; overflow-wrap: break-word; word-wrap: break-word; }
+                    .center { text-align: center; }
+                    .title { margin: 0 0 8px; font-size: 38px; font-weight: bold; }
+                    .tracking { margin: 2px 0 8px; font-size: 56px; font-weight: bold; line-height: 1.25; }
+                    .reference { font-size: 24px; white-space: pre-wrap; }
+                    .order-type { margin: 8px 0; font-size: 34px; font-weight: bold; }
+                    .metadata { margin: 5px 0; }
+                    .label { font-weight: bold; }
+                    .text { white-space: pre-wrap; }
+                    .rule { border: 0; border-top: 2px solid #000; height: 0; margin: 12px 0; }
+                    .item { margin: 0; }
+                    .action { font-size: 26px; font-weight: bold; }
+                    .quantity { font-size: 36px; font-weight: bold; margin: 3px 0; }
+                    .product { font-size: 34px; font-weight: bold; white-space: pre-wrap; }
+                    .note { margin: 7px 0; }
+                    .note > span[dir] { white-space: pre-wrap; }
+                    .ending { margin-top: 14px; font-weight: bold; }
+                </style>
+            </head>
+            <body t-att-style="'width: %spx;' % document['paper_pixels']">
+                <t t-set="order" t-value="document.get('order', {})"/>
+                <t t-set="cancellation" t-value="document.get('cancellation') or {}"/>
+                <div class="document">
+                    <div class="center">
+                        <div class="title" dir="auto" t-out="document.get('title', '')"/>
+                        <t t-if="order.get('tracking_number')">
+                            <div>رقم الطلب / Order number</div>
+                            <div class="tracking" dir="auto" t-out="order['tracking_number']"/>
+                        </t>
+                        <div class="reference" dir="auto" t-out="order.get('reference', '')"/>
+                        <div t-if="order.get('order_type')" class="order-type">
+                            <span>نوع الطلب / Order type: </span><span dir="auto" t-out="order['order_type']"/>
+                        </div>
+                        <div t-if="order.get('created_at')" class="metadata">
+                            <span>الوقت / Time: </span><span dir="ltr" t-out="order['created_at']"/>
+                        </div>
+                    </div>
+                    <div t-if="order.get('requested_by')" class="metadata">
+                        <span class="label">الكاشير / Cashier: </span><span dir="auto" class="text" t-out="order['requested_by']"/>
+                    </div>
+                    <div t-if="order.get('table')" class="metadata">
+                        <span class="label">الطاولة / Table: </span><span dir="auto" class="text" t-out="order['table']"/>
+                    </div>
+                    <div t-if="cancellation.get('reason_label')" class="note">
+                        <span class="label">سبب الإلغاء / Cancellation reason: </span><span dir="auto" t-out="cancellation['reason_label']"/>
+                    </div>
+                    <div t-if="cancellation.get('reason_note')" class="note">
+                        <span class="label">تفاصيل السبب / Reason details: </span><span dir="auto" t-out="cancellation['reason_note']"/>
+                    </div>
+                    <div t-if="cancellation.get('requested_by')" class="metadata">
+                        <span class="label">طلب الإلغاء / Cancelled by: </span><span dir="auto" t-out="cancellation['requested_by']"/>
+                    </div>
+                    <hr class="rule"/>
+                    <div t-foreach="document.get('lines', [])" t-as="line" class="item">
+                        <div class="action" dir="auto" t-out="line.get('action_label', '')"/>
+                        <div class="quantity">
+                            <span>الكمية / Qty: </span><span dir="ltr" t-out="line.get('quantity_label', '')"/>
+                        </div>
+                        <div class="product" dir="auto" t-out="line.get('name', '')"/>
+                        <div t-if="line.get('quantity_total_label')" class="metadata" dir="auto" t-out="line['quantity_total_label']"/>
+                        <div t-if="line.get('reason_label')" class="note">
+                            <span class="label">السبب / Reason: </span><span dir="auto" t-out="line['reason_label']"/>
+                        </div>
+                        <div t-if="line.get('reason_note')" class="note">
+                            <span class="label">تفاصيل السبب / Reason details: </span><span dir="auto" t-out="line['reason_note']"/>
+                        </div>
+                        <div t-if="line.get('note')" class="note">
+                            <span class="label">ملاحظة / Note: </span><span dir="auto" t-out="line['note']"/>
+                        </div>
+                        <div t-if="line.get('customer_note')" class="note">
+                            <span class="label">ملاحظة العميل / Customer note: </span><span dir="auto" t-out="line['customer_note']"/>
+                        </div>
+                        <hr class="rule"/>
+                    </div>
+                    <div class="ending center">نهاية الطلب / End of order</div>
+                </div>
+            </body>
+        </html>
+    </template>
+</odoo>

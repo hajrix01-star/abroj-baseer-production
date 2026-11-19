@@ -65,6 +65,29 @@ class TestNoorixHeat(NoorixEvidenceFixtures, AccountTestInvoicingCommon):
         self.assertIsNone(day['customers_value'])
         self.assertIsNone(day['ratio_value'])
 
+    def test_posted_odoo_entries_without_metadata_have_sales_and_unknown_customers(self):
+        Evidence = self.env['baseer.noorix.sales.evidence']
+        moves = []
+        for day, gross in ((1, '8113'), (2, '8167'), (3, '8733'), (4, '8293'), (5, '11498')):
+            moves.append(self._noorix_entry(f'heat-ledger-{day}', f'2026-11-{day:02}', gross, agent_prefix=True))
+        count = Evidence.search_count([])
+        digests = [Evidence._ledger_digest(move) for move in moves]
+        days = [day for week in self._read(True)['weeks'] for day in week if day and day['has_sales']]
+        self.assertEqual(len(days), 5)
+        self.assertEqual(sum(Decimal(day['sales_value']) for day in days), Decimal('44804.00'))
+        for day, move in zip(days, moves):
+            self.assertIsNone(day['customers_value'])
+            self.assertEqual(day['customers_display'], '—')
+            self.assertEqual(day['shift_breakdown'][0]['customers_display'], '—')
+            self.assertEqual(day['source_action']['domain'][0][2], [move.id])
+            result = self.dashboard.get_baseer_sales_metrics(
+                {'preset': 'custom', 'date_from': day['date'], 'date_to': day['date']}, include_noorix=True)
+            self.assertEqual(result['cards']['sales']['value'], day['sales_value'])
+            self.assertFalse(result['cards']['customers']['available'])
+        self.assertEqual(Evidence.search_count([]), count)
+        self.assertEqual([Evidence._ledger_digest(move) for move in moves], digests)
+
+
     def test_reversal_day_has_money_but_no_invented_day_completion(self):
         source = 'heat-reversal'
         move = self._noorix_entry(source)

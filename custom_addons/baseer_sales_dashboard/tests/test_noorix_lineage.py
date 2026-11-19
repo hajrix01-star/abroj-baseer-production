@@ -111,3 +111,46 @@ class TestNoorixLineage(NoorixEvidenceFixtures, AccountTestInvoicingCommon):
         self.assertEqual(on['cards']['sales']['value'], '115.00')
         source = next(row for row in on['source_breakdown'] if row['key'] == 'noorix')
         self.assertEqual(source['source_action']['context']['allowed_company_ids'], self.env.company.ids)
+
+    def test_hidden_evidence_cannot_be_bypassed_by_ledger_fallback(self):
+        move, evidence = self._original()
+        reader = self._reader()
+        self.env['ir.rule'].with_user(self.env.ref('base.user_admin')).create({
+            'name': 'Noorix ledger: hide one evidence snapshot',
+            'model_id': self.env['ir.model']._get_id('baseer.noorix.sales.evidence'),
+            'domain_force': repr([('id', '!=', evidence.id)]),
+            'perm_read': True, 'perm_write': False,
+            'perm_create': False, 'perm_unlink': False,
+        })
+        context = {'allowed_company_ids': self.env.company.ids, 'tz': 'Asia/Riyadh'}
+        Move = self.env['account.move'].with_user(reader).with_context(context)
+        Move.browse(move.id).check_access('read')
+        dashboard = self.dashboard.with_user(reader).with_context(context)
+        with self.assertRaises(AccessError):
+            self._metrics(dashboard, True)
+        self.assertEqual(self._metrics(dashboard, False)['cards']['sales']['value'], '0.00')
+
+    def test_ledger_fallback_keeps_non_admin_company_and_hidden_reversal_boundaries(self):
+        move = self._noorix_entry('ledger-company-root')
+        reader = self._reader()
+        context = {'allowed_company_ids': self.env.company.ids, 'tz': 'Asia/Riyadh'}
+        dashboard = self.dashboard.with_user(reader).with_context(context)
+        self.assertFalse(dashboard.env.su)
+        self.assertEqual(self._metrics(dashboard, True)['cards']['sales']['value'], '115.00')
+        other = self.env['res.company'].create({
+            'name': 'Synthetic Noorix ledger inaccessible company',
+            'currency_id': self.env.company.currency_id.id,
+        })
+        with self.assertRaises(AccessError):
+            dashboard._noorix_events(other)
+        reversal = move._reverse_moves([{'date': '2026-11-03'}], cancel=False)
+        reversal.action_post()
+        self.env['ir.rule'].with_user(self.env.ref('base.user_admin')).create({
+            'name': 'Noorix ledger: hide one posted reversal',
+            'model_id': self.env['ir.model']._get_id('account.move'),
+            'domain_force': repr([('id', '!=', reversal.id)]),
+            'perm_read': True, 'perm_write': False,
+            'perm_create': False, 'perm_unlink': False,
+        })
+        with self.assertRaises(AccessError):
+            self._metrics(dashboard, True)

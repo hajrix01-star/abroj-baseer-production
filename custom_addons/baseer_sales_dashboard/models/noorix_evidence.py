@@ -218,7 +218,12 @@ class NoorixSalesEvidence(models.Model):
             return {}
         for record in self:
             active_company(record, record.company_id)
-        moves = self.move_id
+        candidates = self._ledger_tax_candidates(self.move_id)
+        return {record.id: record._validate_ledger(candidates) for record in self}
+
+    @api.model
+    def _ledger_tax_candidates(self, moves):
+        """Shared secured lookup for stored evidence and Odoo-only entries."""
         moves.check_access('read')
         lines = moves.line_ids
         lines.check_access('read')
@@ -234,7 +239,34 @@ class NoorixSalesEvidence(models.Model):
                 ('account_id', 'in', fallback_accounts.ids),
             ])
             candidates.tax_id.check_access('read')
-        return {record.id: record._validate_ledger(candidates) for record in self}
+        return candidates
+
+    @api.model
+    def _ledger_source_identity(self, move, company):
+        move.ensure_one()
+        active_company(self, company)
+        move.check_access('read')
+        if (move.company_id != company or move.state != 'posted' or move.move_type != 'entry'
+                or move.currency_id != company.currency_id or company.currency_id.name != 'SAR'
+                or move.reversed_entry_id):
+            raise ValidationError(_('Noorix reporting evidence no longer matches its original posted SAR entry.'))
+        ref = move.ref or ''
+        match = re.fullmatch(
+            r'(?:AGENT:[ \t]+[^|\r\n]+\|[ \t]*)?'
+            r'NOORIX-SALES[ \t]+([A-Z][A-Z0-9_-]*)[ \t]+(\d{4}-\d{2}-\d{2})[^\r\n]*', ref)
+        source_ids = re.findall(r'(?<!\S)src:([A-Za-z0-9_-]+)(?=\s|$)', ref)
+        if not match or match[2] != move.date.isoformat() or len(source_ids) != 1:
+            raise ValidationError(_('The Noorix entry reference does not identify this exact source company, date and source ID.'))
+        self._ledger_check_native_links(move)
+        return company.id, match[1], source_ids[0]
+
+    @api.model
+    def _ledger_check_native_links(self, move):
+        move.check_access('read')
+        if any(move[name] for name in (
+                'baseer_pos_summary_id', 'pos_session_ids', 'pos_order_ids',
+                'reversed_pos_order_id', 'origin_payment_id', 'statement_line_id')):
+            raise ValidationError(_('The Noorix entry already belongs to a POS, invoice, payment or summary source.'))
 
     def _validate_ledger(self, candidates):
         self.ensure_one()
@@ -243,25 +275,26 @@ class NoorixSalesEvidence(models.Model):
                 or move.date != self.business_date or move.currency_id != self.currency_id
                 or self.currency_id.name != 'SAR' or move.reversed_entry_id):
             raise ValidationError(_('Noorix reporting evidence no longer matches its original posted SAR entry.'))
-        ref = move.ref or ''
-        match = re.fullmatch(
-            r'(?:AGENT:[ \t]+[^|\r\n]+\|[ \t]*)?'
-            r'NOORIX-SALES[ \t]+([A-Z][A-Z0-9_-]*)[ \t]+(\d{4}-\d{2}-\d{2})[^\r\n]*', ref)
-        source_ids = re.findall(r'(?<!\S)src:([A-Za-z0-9_-]+)(?=\s|$)', ref)
-        if (not match or match[1] != self.source_company_key or match[2] != self.business_date.isoformat()
-                or source_ids != [self.source_id]):
+        identity = self._ledger_source_identity(move, self.company_id)
+        if identity != (self.company_id.id, self.source_company_key, self.source_id):
             raise ValidationError(_('The Noorix entry reference does not identify this exact source company, date and source ID.'))
-        if any(move[name] for name in (
-                'baseer_pos_summary_id', 'pos_session_ids', 'pos_order_ids',
-                'reversed_pos_order_id', 'origin_payment_id', 'statement_line_id')):
-            raise ValidationError(_('The Noorix entry already belongs to a POS, invoice, payment or summary source.'))
         if self.ledger_digest != self._ledger_digest(move):
             raise ValidationError(_('The Noorix source entry changed after evidence extraction. Reconcile its reporting evidence explicitly.'))
+        gross = self._ledger_sales_amount(move, self.company_id, candidates)
+        if gross != _amount(self.source_gross):
+            raise ValidationError(_('Noorix revenue, VAT and debit funding do not reconcile to the source snapshot.'))
+        return gross
+
+    @api.model
+    def _ledger_sales_amount(self, move, company, candidates):
+        """Read the posted revenue and VAT; never infer VAT or invent metadata."""
+        self._ledger_source_identity(move, company)
+        move.line_ids.check_access('read')
         net, vat, funding = ZERO, ZERO, ZERO
         has_income = has_tax = False
         for line in move.line_ids:
-            if (line.company_id != self.company_id or self.company_id not in line.account_id.company_ids
-                    or line.currency_id != self.currency_id):
+            if (line.company_id != company or company not in line.account_id.company_ids
+                    or line.currency_id != company.currency_id):
                 raise ValidationError(_('Noorix source lines have inconsistent company or currency evidence.'))
             balance = Decimal(str(line.balance))
             if not balance.is_finite() or balance != balance.quantize(CENT):
@@ -272,7 +305,7 @@ class NoorixSalesEvidence(models.Model):
                                 and repartition.repartition_type == 'tax'
                                 and repartition.document_type == 'invoice'
                                 and repartition.account_id == line.account_id
-                                and tax.company_id == self.company_id and tax.type_tax_use == 'sale')
+                                and tax.company_id == company and tax.type_tax_use == 'sale')
             tagged_tax = bool(not tax and line.tax_tag_ids and any(
                 candidate.account_id == line.account_id and set(candidate.tag_ids.ids) == set(line.tax_tag_ids.ids)
                 for candidate in candidates))
@@ -293,6 +326,6 @@ class NoorixSalesEvidence(models.Model):
                     raise ValidationError(_('The Noorix entry contains an unsupported non-sales or mixed component.'))
                 funding += balance
         gross = net + vat
-        if not has_income or not has_tax or funding != gross or gross != _amount(self.source_gross):
+        if not has_income or not has_tax or funding != gross:
             raise ValidationError(_('Noorix revenue, VAT and debit funding do not reconcile to the source snapshot.'))
         return gross.quantize(CENT)

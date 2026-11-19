@@ -111,13 +111,12 @@ class SalesHeatCalendarDashboard(models.Model):
             })
         if self._noorix_enabled():
             for row in self._noorix_events(company, first, last):
-                item = row['evidence']
                 by_day.setdefault(row['day'], []).append({
                     'period': {'all': _('Full day'), 'morning': _('Morning'),
                                'evening': _('Evening')}[row['scope']],
                     'configuration': _('Noorix sales entries'),
                     'sales_display': _money_display(row['amount']),
-                    'customers_display': (_integer_display(item.customer_count)
+                    'customers_display': (_integer_display(row['customer_count'])
                                           if row['original'] else '—'),
                 })
         return by_day

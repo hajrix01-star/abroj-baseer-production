@@ -7,6 +7,11 @@ msgstr ""
 "Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5;\n"
 
 #. module: baseer_sales_dashboard
+#: code:addons/baseer_sales_dashboard/models/noorix_reporting.py:0
+msgid "A Noorix source has inaccessible reporting evidence; combined sales cannot be calculated."
+msgstr "لا تملك صلاحية قراءة بيانات توثيق أحد قيود المبيعات المنقولة؛ تعذر جمع المبيعات."
+
+#. module: baseer_sales_dashboard
 #. odoo-javascript
 #: code:addons/baseer_sales_dashboard/static/src/executive_center.js:0
 #: model:ir.actions.client,name:baseer_sales_dashboard.action_executive_home

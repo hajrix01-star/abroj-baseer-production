@@ -1,0 +1,19 @@
+<odoo>
+    <record id="pos_config_global_discount" model="ir.ui.view">
+        <field name="name">pos.config.baseer.global.discount</field>
+        <field name="model">pos.config</field>
+        <field name="inherit_id" ref="point_of_sale.pos_config_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='configuration']" position="inside">
+                <group string="Invoice discount" groups="point_of_sale.group_pos_manager">
+                    <button name="action_baseer_setup_global_discount" type="object" string="Set up invoice discount" class="btn-secondary" invisible="baseer_global_discount_product_id"/>
+                    <field name="baseer_global_discount_enabled"/>
+                    <field name="baseer_global_discount_product_id" domain="[('company_id','=',company_id),('type','=','service')]" options="{'no_create': True}"/>
+                    <field name="baseer_global_discount_max_percent"/>
+                    <field name="baseer_global_discount_max_amount"/>
+                    <label string="A fixed discount reduces the total including VAT. Zero amount limit means no additional amount cap. Unsupported protected items and special taxes are rejected." for="baseer_global_discount_enabled"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+</odoo>

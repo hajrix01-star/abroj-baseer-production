@@ -35,7 +35,7 @@ function assertMergeNotPending(order) {
 
 patch(TicketScreen.prototype, {
     async print(order) {
-        if (this.pos.config.baseer_direct_print_enabled && this.pos.config.baseer_native_receipt_enabled) {
+        if (this.pos.config.baseer_direct_print_enabled) {
             return this.pos.printReceipt({ order, baseerReprint: true });
         }
         return super.print(...arguments);
@@ -1135,7 +1135,7 @@ patch(PosStore.prototype, {
             }
             return super.printReceipt(...arguments);
         }
-        if (this.config.baseer_direct_print_enabled && this.config.baseer_native_receipt_enabled) {
+        if (this.config.baseer_direct_print_enabled) {
             if (!order?.isSynced || !order?.id || !["paid", "done"].includes(order.state)) {
                 this.notification.add(
                     _t("The order is not finalized. Complete payment and synchronization before printing its final receipt."),

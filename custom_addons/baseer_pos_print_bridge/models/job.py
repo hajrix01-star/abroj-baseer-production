@@ -233,55 +233,8 @@ class BaseerPrintJob(models.Model):
 
     @api.model
     def _enqueue_receipt(self, order):
-        config = order.config_id
-        if not config.baseer_direct_print_enabled or order.state != 'paid' or order.is_refund:
-            return self.browse()
-        printer = config.baseer_receipt_printer_id
-        if not printer or not printer.active or not printer._allows_company(order.company_id):
-            return self.browse()
-        # A receipt is an immutable snapshot of the paid POS order, not a kitchen change.
-        # Monetary strings are prepared by Odoo in the POS currency; the agent never totals them.
-        paid_order = order.sudo().with_company(order.company_id)
-        currency = paid_order.currency_id
-        digits = currency.decimal_places
-
-        def money(amount):
-            return f'{currency.round(amount):.{digits}f}'
-
-        lines = [{
-            'name': line.full_product_name or line.product_id.display_name,
-            'quantity': line.qty,
-            'unit_price': money(line.price_unit),
-            'discount': line.discount,
-            'price': money(line.price_subtotal_incl),
-        } for line in paid_order.lines]
-        line_subtotal = sum(paid_order.lines.mapped('price_subtotal'))
-        adjustment = currency.round(paid_order.amount_total - paid_order.amount_tax - line_subtotal)
-        payload = self._job_payload('receipt', paid_order, printer, lines, config.baseer_receipt_copies)
-        payload['schema'] = 3
-        payload['order']['created_at'] = fields.Datetime.to_string(paid_order.date_order)
-        payload['receipt'] = {
-            'company': paid_order.company_id.name,
-            'company_vat': paid_order.company_id.vat or '',
-            'point_of_sale': config.name,
-            'currency': currency.symbol or currency.name,
-            'subtotal': money(line_subtotal),
-            'tax': money(paid_order.amount_tax),
-            'adjustment': money(adjustment),
-            'has_adjustment': bool(adjustment),
-            'total': money(paid_order.amount_total),
-            'paid': money(sum(paid_order.payment_ids.filtered(lambda payment: not payment.is_change).mapped('amount'))),
-            'change': money(paid_order.amount_return),
-            'payments': [{
-                'method': payment.payment_method_id.display_name,
-                'amount': money(payment.amount),
-            } for payment in paid_order.payment_ids if not payment.is_change],
-        }
-        return self._create_once({'company_id': order.company_id.id, 'pos_config_id': config.id,
-                                  'agent_id': printer.agent_id.id, 'printer_id': printer.id,
-                                  'source_order_id': order.id, 'ticket_type': 'receipt',
-                                  'payload': payload,
-                                  'idempotency_key': self._canonical_key('receipt', order.uuid)})
+        # Retain a fail-closed compatibility entry point, never a second layout.
+        raise ValidationError(_('Customer receipts must use the original Odoo receipt image.'))
 
     @api.model
     def _validated_native_receipt_image(self, jpeg_base64):
@@ -307,7 +260,7 @@ class BaseerPrintJob(models.Model):
     def _native_receipt_printer(self, order):
         order.ensure_one()
         config = order.config_id
-        if (not config.baseer_direct_print_enabled or not config.baseer_native_receipt_enabled
+        if (not config.baseer_direct_print_enabled
                 or order.state not in ('paid', 'done')
                 or order.company_id not in self.env.companies
                 or order.session_id.config_id != config):
@@ -834,6 +787,11 @@ class BaseerPrintJob(models.Model):
         if not row:
             return False
         job = self.sudo().browse(row[0]).exists()
+        if job.ticket_type == 'receipt' and job.payload.get('schema') != 4:
+            job.write({'state': 'failed', 'completed_at': fields.Datetime.now(),
+                       'error_code': 'legacy_receipt',
+                       'error_detail': _('Customer receipts must use the original Odoo receipt image.')})
+            return False
         if job.ticket_type == 'preparation' and not job._ensure_kitchen_image():
             return False
         payload = dict(job.payload)
@@ -853,11 +811,11 @@ class BaseerPrintJob(models.Model):
                            'error_code': 'invalid_receipt', 'error_detail': _('The stored receipt image is missing or invalid.')})
                 return False
             payload['receipt_image'] = {**payload['receipt_image'], 'base64': base64.b64encode(raw).decode('ascii')}
-            if job.ticket_type == 'preparation':
-                # Existing image protocol, also used by draft bills/session reports.
-                # DB type/events remain preparation; Windows receives pixels only.
-                payload = {'schema': 4, 'ticket_type': 'receipt', 'document_kind': 'preparation',
-                           'printer': payload['printer'], 'receipt_image': payload['receipt_image']}
+            # Existing image protocol, also used by draft bills/session reports.
+            # DB type/events retain their meaning; Windows receives pixels only.
+            payload = {'schema': 4, 'ticket_type': 'receipt',
+                       'document_kind': payload.get('document_kind') or job.ticket_type,
+                       'printer': payload['printer'], 'receipt_image': payload['receipt_image']}
         token, now = new_secret(24), fields.Datetime.now()
         job.write({'state': 'leased', 'lease_token': token, 'lease_expires_at': now + timedelta(minutes=2),
                    'sent_at': now, 'attempt_count': job.attempt_count + 1})
@@ -934,6 +892,8 @@ class BaseerPrintJob(models.Model):
 
     def action_reprint(self):
         for job in self:
+            if job.ticket_type == 'receipt' and job.payload.get('schema') != 4:
+                raise ValidationError(_('Customer receipts must use the original Odoo receipt image.'))
             if not self.env.user.has_group('point_of_sale.group_pos_manager'):
                 raise AccessError(_('Only a Point of Sale manager can reprint a job.'))
             if job.ticket_type == 'draft_bill':

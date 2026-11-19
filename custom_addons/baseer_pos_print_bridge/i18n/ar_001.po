@@ -2808,3 +2808,8 @@ msgstr "تعذر تجهيز ورقة المطبخ في أودو. راجع الم
 #: code:addons/baseer_pos_print_bridge/models/job.py:0
 msgid "The original kitchen image has expired. It cannot be recreated for reprinting."
 msgstr "انتهت مدة حفظ صورة ورقة المطبخ الأصلية، ولا يمكن تجهيز صورة بديلة لإعادة طباعتها."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/job.py:0
+msgid "Customer receipts must use the original Odoo receipt image."
+msgstr "يجب طباعة إيصال العميل من صورة إيصال أودو الأصلي."

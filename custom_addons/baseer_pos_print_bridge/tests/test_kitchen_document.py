@@ -55,6 +55,9 @@ class TestOdooKitchenDocument(TransactionCase):
             'printer_id': self.printer.id, 'ticket_type': 'preparation',
             'payload': payload if payload is not None else self._payload(),
             'idempotency_key': key or str(uuid4()),
+            # PostgreSQL NOW() is fixed at transaction start, while Python's
+            # clock advances during a test: make the fixture unambiguously due.
+            'available_at': fields.Datetime.now() - timedelta(days=1),
         })
 
     @staticmethod
@@ -155,6 +158,28 @@ class TestOdooKitchenDocument(TransactionCase):
         self.assertEqual(job.state, 'pending')
         self.assertEqual(job.attempt_count, 0)
 
+    def test_historical_text_receipt_cannot_reactivate_agent_side_template(self):
+        # Existing DB rows can survive an upgrade. Even a complete old financial
+        # snapshot must never be leased to the Windows receipt text renderer.
+        payload = self._payload()
+        payload.update({'schema': 3, 'ticket_type': 'receipt',
+                        'receipt': {'currency': 'SAR', 'total': '11.50'}})
+        job = self.Job.sudo().create({
+            'company_id': self.company.id, 'agent_id': self.agent.id,
+            'printer_id': self.printer.id, 'ticket_type': 'receipt',
+            'payload': payload, 'idempotency_key': str(uuid4()),
+            'available_at': fields.Datetime.now() - timedelta(days=1),
+        })
+        self.assertFalse(self.Job._claim_for_agent(self.agent))
+        self.assertEqual(job.state, 'failed')
+        self.assertFalse(job.lease_token)
+        self.assertEqual(job.attempt_count, 0)
+        self.assertEqual(job.error_code, 'legacy_receipt')
+        self.assertEqual(job.payload, payload)
+        with self.assertRaises(ValidationError):
+            job.action_reprint()
+        self.assertFalse(self.Job.search([('reprint_of_id', '=', job.id)]))
+
     def test_transport_retry_reuses_original_raster_without_rendering_again(self):
         job = self._job()
         with patch.object(type(self.Job), '_render_kitchen_jpeg', return_value=self._jpeg()):
@@ -162,7 +187,7 @@ class TestOdooKitchenDocument(TransactionCase):
         original_hash = job.receipt_image_sha256
         job._fail_for_agent(self.agent, first['lease_token'], 'transport_error', retryable=True)
         self.assertEqual(job.state, 'pending')
-        job.write({'available_at': fields.Datetime.now() - timedelta(seconds=1)})
+        job.write({'available_at': fields.Datetime.now() - timedelta(days=1)})
         with patch.object(type(self.Job), '_render_kitchen_jpeg') as render:
             second = self.Job._claim_for_agent(self.agent)
             render.assert_not_called()
@@ -212,6 +237,7 @@ class TestOdooKitchenDocument(TransactionCase):
         self.assertNotIn('CHANGED TEMPLATE MUST NOT REPRINT', reprint.print_html)
         self.assertEqual(reprint.receipt_image, job.receipt_image)
         self.assertEqual(reprint.receipt_image_sha256, job.receipt_image_sha256)
+        reprint.available_at = fields.Datetime.now() - timedelta(days=1)
         with patch.object(type(self.Job), '_render_kitchen_jpeg') as render:
             claim = self.Job._claim_for_agent(self.agent)
             render.assert_not_called()

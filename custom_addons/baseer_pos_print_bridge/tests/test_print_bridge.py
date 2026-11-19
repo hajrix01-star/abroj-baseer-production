@@ -3,7 +3,6 @@ import copy
 import io
 from urllib.parse import parse_qs, urlparse
 from datetime import timedelta
-from decimal import Decimal
 from uuid import uuid4
 from unittest.mock import patch
 from PIL import Image
@@ -497,16 +496,21 @@ class TestBaseerPrintBridgeHybrid(TransactionCase):
             'category_name': category.display_name,
         }])
 
-    def test_legacy_receipt_failure_does_not_rollback_native_payment(self):
+    def test_payment_never_invokes_legacy_receipt_generator(self):
         self._enable()
+        # Historical false values may remain in the DB, but cannot opt out of
+        # the original Odoo receipt image or re-enable agent-side templates.
+        self.config.baseer_native_receipt_enabled = False
         order = self._order()
         order.amount_paid = order.amount_total
         Job = type(self.env['baseer.print.job'])
-        with self.assertLogs('odoo.addons.baseer_pos_print_bridge.models.pos_order', level='ERROR'):
-            with patch.object(Job, '_enqueue_receipt', side_effect=ValidationError('Printer unavailable')):
-                order.action_pos_order_paid()
+        with patch.object(Job, '_enqueue_receipt', side_effect=AssertionError('Legacy generator called')) as legacy:
+            order.action_pos_order_paid()
+            legacy.assert_not_called()
         self.assertEqual(order.state, 'paid')
-        self.assertEqual(order.baseer_customer_receipt_status()['error'], 'Printer unavailable')
+        self.assertFalse(self.env['baseer.print.job'].search([
+            ('source_order_id', '=', order.id), ('ticket_type', '=', 'receipt'),
+        ]))
 
     def test_native_receipt_accepts_native_paid_posted_and_refund_orders(self):
         self._enable()
@@ -574,17 +578,22 @@ class TestBaseerPrintBridgeHybrid(TransactionCase):
 
     def test_receipt_is_config_owned_not_a_route(self):
         self._enable()
+        self.company.country_id = self.env.ref('base.us')
         order = self._order(); order.write({'state': 'paid'})
-        job = self.env['baseer.print.job']._enqueue_receipt(order)
+        result = order.baseer_enqueue_native_receipt(self._native_receipt_sample())
+        job = self.env['baseer.print.job'].browse(result['job_id'])
         self.assertEqual(job.printer_id, self.receipt)
         self.assertEqual(job.pos_config_id, self.config)
         self.assertEqual(job.payload['printer']['copies'], 2)
-        self.assertEqual(job.payload['schema'], 3)
-        self.assertEqual(job.payload['receipt']['total'], '10.00')
+        self.assertEqual(job.payload['schema'], 4)
+        self.assertTrue(job.receipt_image_sha256)
+        self.assertNotIn('receipt', job.payload)
         self.assertFalse(job.route_id)
 
-    def test_customer_receipt_snapshots_discount_tax_payment_and_change(self):
+    def test_customer_receipt_image_never_recomputes_discount_tax_payment_or_change(self):
         self._enable()
+        self.company.country_id = self.env.ref('base.us')
+        self.config.baseer_native_receipt_enabled = False
         order = self._order(2)
         order.lines.write({
             'discount': 25,
@@ -605,52 +614,40 @@ class TestBaseerPrintBridgeHybrid(TransactionCase):
             'amount': -2.75, 'is_change': True,
         })
         Job = self.env['baseer.print.job']
-        job = Job._enqueue_receipt(order)
-        self.assertEqual(job, Job._enqueue_receipt(order))
+        image = self._native_receipt_sample()
+        first = order.baseer_enqueue_native_receipt(image)
+        self.assertEqual(first, order.baseer_enqueue_native_receipt(image))
+        job = Job.browse(first['job_id'])
         self.assertEqual(job.ticket_type, 'receipt')
-        self.assertEqual(job.payload['lines'][0]['quantity'], 2)
-        self.assertEqual(job.payload['lines'][0]['discount'], 25)
-        self.assertEqual(job.payload['lines'][0]['price'], '17.25')
-        self.assertEqual(job.payload['receipt']['currency'], order.currency_id.symbol)
-        self.assertEqual(job.payload['receipt']['subtotal'], '15.00')
-        self.assertEqual(job.payload['receipt']['tax'], '2.25')
-        self.assertFalse(job.payload['receipt']['has_adjustment'])
-        self.assertEqual(job.payload['receipt']['total'], '17.25')
-        self.assertEqual(job.payload['receipt']['paid'], '20.00')
-        self.assertEqual(job.payload['receipt']['change'], '2.75')
-        self.assertEqual(job.payload['receipt']['payments'], [{
-            'method': method.display_name, 'amount': '20.00',
-        }])
-        receipt = job.payload['receipt']
-        self.assertEqual(
-            Decimal(receipt['subtotal']) + Decimal(receipt['tax']) + Decimal(receipt['adjustment']),
-            Decimal(receipt['total']),
-        )
+        self.assertEqual(job.payload['schema'], 4)
+        self.assertEqual(job.receipt_image, image.encode())
+        self.assertNotIn('receipt', job.payload)
+        self.assertFalse(job.payload.get('lines'))
+        self.assertEqual(order.lines.discount, 25)
+        self.assertEqual(order.lines.price_subtotal, 15)
+        self.assertEqual(order.lines.price_subtotal_incl, 17.25)
+        self.assertEqual((order.amount_total, order.amount_tax, order.amount_paid, order.amount_return),
+                         (17.25, 2.25, 20, 2.75))
+        self.assertEqual(sorted(order.payment_ids.mapped('amount')), [-2.75, 20])
+        with self.assertRaises(ValidationError):
+            Job._enqueue_receipt(order)
 
-        lower_order = self._order(2)
-        lower_order.write({'state': 'paid', 'amount_tax': 3, 'amount_total': 22.95})
-        lower_receipt = self.env['baseer.print.job']._enqueue_receipt(lower_order).payload['receipt']
-        self.assertEqual(lower_receipt['adjustment'], '-0.05')
-        self.assertEqual(
-            Decimal(lower_receipt['subtotal']) + Decimal(lower_receipt['tax'])
-            + Decimal(lower_receipt['adjustment']),
-            Decimal(lower_receipt['total']),
-        )
-
-    def test_customer_receipt_exposes_order_rounding_adjustment(self):
+    def test_original_receipt_keeps_rounding_inside_odoo_for_both_directions(self):
         self._enable()
-        order = self._order(2)
-        order.write({'state': 'paid', 'amount_tax': 3, 'amount_total': 23.05})
-        job = self.env['baseer.print.job']._enqueue_receipt(order)
-        self.assertEqual(job.payload['receipt']['subtotal'], '20.00')
-        self.assertEqual(job.payload['receipt']['tax'], '3.00')
-        self.assertEqual(job.payload['receipt']['adjustment'], '0.05')
-        self.assertTrue(job.payload['receipt']['has_adjustment'])
-        receipt = job.payload['receipt']
-        self.assertEqual(
-            Decimal(receipt['subtotal']) + Decimal(receipt['tax']) + Decimal(receipt['adjustment']),
-            Decimal(receipt['total']),
-        )
+        self.company.country_id = self.env.ref('base.us')
+        for total in (23.05, 22.95):
+            with self.subTest(total=total):
+                order = self._order(2)
+                order.write({'state': 'paid', 'amount_tax': 3, 'amount_total': total})
+                result = order.baseer_enqueue_native_receipt(self._native_receipt_sample())
+                job = self.env['baseer.print.job'].browse(result['job_id'])
+                self.assertEqual(job.payload['schema'], 4)
+                self.assertNotIn('receipt', job.payload)
+                self.assertEqual(order.amount_total, total)
+                self.assertEqual(order.amount_tax, 3)
+                self.assertEqual(order.lines.price_subtotal, 20)
+                with self.assertRaises(ValidationError):
+                    self.env['baseer.print.job']._enqueue_receipt(order)
 
     def _native_receipt_sample(self, color='white', size=(300, 400)):
         output = io.BytesIO()
@@ -703,6 +700,8 @@ class TestBaseerPrintBridgeHybrid(TransactionCase):
         self.assertEqual(claim['payload']['ticket_type'], 'receipt')
         self.assertEqual(claim['payload']['document_kind'], 'draft_bill')
         self.assertEqual(claim['payload']['receipt_image']['base64'], image)
+        self.assertNotIn('order', claim['payload'])
+        self.assertNotIn('lines', claim['payload'])
         job._complete_for_agent(self.agent, claim['lease_token'])
         self.assertEqual(order.state, 'draft')
         self.assertFalse(order.nb_print)

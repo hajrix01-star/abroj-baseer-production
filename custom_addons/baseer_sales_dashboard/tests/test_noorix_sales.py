@@ -91,6 +91,41 @@ class TestNoorixSales(NoorixEvidenceFixtures, AccountTestInvoicingCommon):
             self._metrics(True)
         self.assertEqual(self._metrics()['cards']['sales']['value'], '0.00')
 
+    def test_legacy_entry_without_source_tag_uses_typed_odoo_identity_and_own_reversal_date(self):
+        move = self._noorix_entry('legacy-without-src')
+        move.ref = 'NOORIX-SALES SHAMI 2026-11-01'
+        identity = self.Evidence._ledger_source_identity(move, self.env.company)
+        self.assertEqual(identity, (self.env.company.id, 'SHAMI', ('odoo_move', move.id)))
+        digest = self.Evidence._ledger_digest(move)
+        evidence_count = self.Evidence.search_count([])
+        for _read in range(2):
+            result = self._metrics(True)
+            self.assertEqual(result['cards']['sales']['value'], '115.00')
+            self.assertFalse(result['cards']['customers']['available'])
+        self.assertEqual(self.Evidence.search_count([]), evidence_count)
+        self.assertEqual(self.Evidence._ledger_digest(move), digest)
+        explicit = self._noorix_entry(f'odoo_move_{move.id}', '2026-11-02')
+        explicit_identity = self.Evidence._ledger_source_identity(explicit, self.env.company)
+        self.assertIsInstance(explicit_identity[2], str)
+        self.assertNotEqual(identity, explicit_identity)
+        self.assertEqual(self._metrics(True)['cards']['sales']['value'], '230.00')
+        reversal = move._reverse_moves([{'date': '2026-11-03'}], cancel=False)
+        reversal.action_post()
+        self.assertEqual(self._metrics(True)['cards']['sales']['value'], '115.00')
+        result = self._metrics(True, '2026-11-03', '2026-11-03')
+        self.assertEqual(result['cards']['sales']['value'], '-115.00')
+        self.assertFalse(result['cards']['customers']['available'])
+
+    def test_present_invalid_or_duplicate_source_tag_never_uses_legacy_fallback(self):
+        move = self._noorix_entry('invalid-source-tag')
+        prefix = 'NOORIX-SALES SHAMI 2026-11-01 | '
+        for suffix in ('src', 'src:', 'src:invalid!', 'src :value', 'SRC:value',
+                       'src:first src:second', 'src:first src:', 'src:first |src:second'):
+            with self.subTest(suffix=suffix):
+                move.ref = prefix + suffix
+                with self.assertRaises(ValidationError):
+                    self._metrics(True)
+
     def test_full_reversal_has_own_date_and_never_repeats_customers(self):
         move, _evidence = self._import_day()
         reversal = move._reverse_moves([{'date': '2026-11-03'}], cancel=False)

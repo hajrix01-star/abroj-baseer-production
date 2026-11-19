@@ -6,6 +6,8 @@ from psycopg2 import IntegrityError
 from odoo import _, api, fields, models
 from odoo.exceptions import AccessError, ValidationError
 
+from .note import normalize_detail_notes, plain_note
+
 
 class BaseerPrintPreparationState(models.Model):
     _name = 'baseer.print.preparation.state'
@@ -48,7 +50,7 @@ class BaseerPrintPreparationState(models.Model):
     def _line_details(self, line):
         return {'line_uuid': line.uuid, 'product_id': line.product_id.id,
                 'name': line.full_product_name or line.product_id.display_name, 'quantity': self._kitchen_quantity(line),
-                'note': line.note or '', 'customer_note': line.customer_note or ''}
+                'note': plain_note(line.note), 'customer_note': plain_note(line.customer_note)}
 
     @api.model
     def _same_logical_line(self, state, details):
@@ -61,14 +63,15 @@ class BaseerPrintPreparationState(models.Model):
         ambiguous duplicate-product lines deliberately remain unmatched instead
         of guessing and potentially cancelling the wrong food item.
         """
-        previous = state.details
+        previous = normalize_detail_notes(state.details)
+        details = normalize_detail_notes(details)
         return all(previous.get(key) == details.get(key)
                    for key in ('product_id', 'name', 'note', 'customer_note'))
 
     @api.model
     def _details_changed(self, state, details):
-        previous = dict(state.details)
-        current = dict(details)
+        previous = normalize_detail_notes(state.details)
+        current = normalize_detail_notes(details)
         # UUID is transport identity, not a kitchen change.  Quantity remains
         # compared separately so the update delta is always exact.
         previous.pop('line_uuid', None)
@@ -208,8 +211,8 @@ class BaseerPrintPreparationState(models.Model):
                 'uuid': details.get('line_uuid') or (line.uuid if line else old.line_uuid),
                 'product_id': details.get('product_id') or (line.product_id.id if line else old.product_id.id),
                 'name': details.get('name') or (line.product_id.display_name if line else old.product_id.display_name),
-                'note': details.get('note', ''),
-                'customer_note': details.get('customer_note', ''),
+                'note': plain_note(details.get('note')),
+                'customer_note': plain_note(details.get('customer_note')),
             },
             'change': {
                 'action': action,

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="baseer_pos_global_discount.NativeDiscountButton" t-inherit="point_of_sale.ControlButtons" t-inherit-mode="extension">
+        <xpath expr="//button[hasclass('js_discount')]" position="attributes">
+            <attribute name="t-if">pos.cashier._role !== 'minimal' and (pos.config.baseer_global_discount_enabled or currentOrder?.baseer_global_discount_locked or (pos.config.module_pos_discount and pos.config.discount_product_id))</attribute>
+        </xpath>
+    </t>
+    <t t-name="baseer_pos_global_discount.Dialog">
+        <Dialog title.translate="Invoice discount" size="'md'">
+            <div class="baseer-discount-dialog">
+                <div t-if="props.refund" class="alert alert-info mb-0">Refunds use the original invoice discount automatically.</div>
+                <t t-else="">
+                    <p class="text-muted">The fixed amount reduces the amount payable, including VAT. Remove the discount before changing the basket.</p>
+                    <div class="d-flex gap-2 mb-3" role="group" aria-label="Discount type">
+                        <button class="btn flex-fill" t-att-class="state.kind === 'percent' ? 'btn-primary' : 'btn-outline-primary'" t-att-aria-pressed="state.kind === 'percent'" t-on-click="() => state.kind = 'percent'">Percentage (%)</button>
+                        <button class="btn flex-fill" t-att-class="state.kind === 'fixed' ? 'btn-primary' : 'btn-outline-primary'" t-att-aria-pressed="state.kind === 'fixed'" t-on-click="() => state.kind = 'fixed'">Fixed amount</button>
+                    </div>
+                    <label for="baseer-discount-value" class="form-label">Discount value</label>
+                    <input id="baseer-discount-value" t-ref="autofocus" class="form-control form-control-lg mb-3" type="text" inputmode="decimal" dir="ltr" maxlength="32" autocomplete="off" t-model="state.value" t-on-keydown="onValueKeydown" placeholder="0.00"/>
+                </t>
+            </div>
+            <t t-set-slot="footer">
+                <button t-if="!props.refund" class="btn btn-primary btn-lg" t-on-click="confirm">Apply discount</button>
+                <button t-if="props.locked and !props.refund" class="btn btn-outline-danger btn-lg" t-on-click="remove">Remove discount</button>
+                <button class="btn btn-secondary btn-lg" t-on-click="props.close">Close</button>
+            </t>
+        </Dialog>
+    </t>
+</templates>

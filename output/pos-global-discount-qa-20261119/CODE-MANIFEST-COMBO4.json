@@ -1,0 +1,109 @@
+{
+  "run": "combo4",
+  "full_archive_sha256": "e6fef4ce2f935155a8a9d20d630e1b2079ba8b6a2c1306fd3b5ebbb3083fc8c9",
+  "code_sha256_excluding_tests_i18n": "2022849bf3a7b176c04ae8333094f66f5248aa17e0e1fe32797e638fe6661d5a",
+  "code_file_count": 17,
+  "all_addon_file_count": 25,
+  "files": [
+    {
+      "path": "__init__.py",
+      "sha256": "e7f646db385de3561532169583a9437aa771a7d75ff1843251d0c618925ecd55"
+    },
+    {
+      "path": "__manifest__.py",
+      "sha256": "37e659727fdf717f1bc5bc819491b2a8c56b47bc866cebead3e5b0da1dfa6a81"
+    },
+    {
+      "path": "i18n/ar_001.po",
+      "sha256": "9e2705bee09403f879a37a12808f44c241c1ad16bfc1347adf0b428f7e2a15d1"
+    },
+    {
+      "path": "i18n/ar.po",
+      "sha256": "d3f19de4fedd10391498724a80a2c2679f50130b3148b99d902b134b4c26c2c8"
+    },
+    {
+      "path": "models/__init__.py",
+      "sha256": "6391e977c5870e3136110699cb9e8dbac6616c614ef075611b746a05ef3ba700"
+    },
+    {
+      "path": "models/discount_accounting.py",
+      "sha256": "4835a78bbe27a020421027d8ec05b767dcfdb2bff066c76303a1ee9641c64240"
+    },
+    {
+      "path": "models/discount_reporting.py",
+      "sha256": "b44d853452c05089491941b824119ea1a50abaf9a099ac048eedbd5fddbd02fe"
+    },
+    {
+      "path": "models/discount_session_report.py",
+      "sha256": "28deb57d53cfd01e7acfd08b0d1785a39198b6881f6b3c02d04282f7cd95019a"
+    },
+    {
+      "path": "models/pos_config.py",
+      "sha256": "41e647c2bddac6504559d62bb2ff45b856f02a1719b0bbe77b33f21b8f924df3"
+    },
+    {
+      "path": "models/pos_order.py",
+      "sha256": "55327b9a65b8f709254292ba761fcf30f54d34ccc71cb2f402671acd16c5c15b"
+    },
+    {
+      "path": "models/res_config_settings.py",
+      "sha256": "ca31e5c52b961d59b693b8e8e6630ed5e859c375f665d777e63a2a22c34e1885"
+    },
+    {
+      "path": "README.md",
+      "sha256": "71ac6805bdf2c4ca0c9b00349e7ed9d146c2b7f02dbbf10fd2e3a3182e61c5f5"
+    },
+    {
+      "path": "security/discount_security.xml",
+      "sha256": "d651b21fdfde0973230d5a4a48e045c7deba61ec041d4b3d30460ac2fc12bf2d"
+    },
+    {
+      "path": "security/ir.model.access.csv",
+      "sha256": "db70357642b590d87abbd7bb8236e5f2230dec62a3ca50db7ab7e8de9e5b80b2"
+    },
+    {
+      "path": "static/src/app/discount_flow.js",
+      "sha256": "041c29a07f5b79338b9659b5cd637792d79fbf246e603c615f440036d3870ac8"
+    },
+    {
+      "path": "static/src/app/global_discount.js",
+      "sha256": "3968f728f49cf51afa558545ae55efe08f098cd9a846db2a32e5551676421b39"
+    },
+    {
+      "path": "static/src/app/global_discount.scss",
+      "sha256": "c877fa9af311772f025ff7fb839a54f892229e664ed94f7f0919e2ad7613310c"
+    },
+    {
+      "path": "static/src/app/global_discount.xml",
+      "sha256": "f1613cce6221c6aaf043d984590b69b6a9977a94bac26cf9158ab1f876b9e2af"
+    },
+    {
+      "path": "tests/__init__.py",
+      "sha256": "4074f837dddbd6633b566ab2d55d14d4eef7c3fcddd9c99636d08ac0ebbcbac6"
+    },
+    {
+      "path": "tests/discount_flow.test.mjs",
+      "sha256": "cb091120b6b15c252a3ec79e66bd33a941d12461b3f2417abbe94b078b1a7719"
+    },
+    {
+      "path": "tests/discount_ui_guards.test.mjs",
+      "sha256": "58324430d1bd843619b1a236e6414315a5d9ef6e700fb3bce07cedeef146fed7"
+    },
+    {
+      "path": "tests/test_global_discount.py",
+      "sha256": "fa06ace00bfdb743f985555475d1253cd279c2d296552a5b2cc49319ab32208d"
+    },
+    {
+      "path": "tests/test_reporting.py",
+      "sha256": "036dc2121ab87a9f35b173342d47c4de77b96d617534715b35e9cf2d21a1541d"
+    },
+    {
+      "path": "tests/test_settings.py",
+      "sha256": "d3b70f17764d42957ec972e66771aa020849f9c06145d41cbc96b663f40433f8"
+    },
+    {
+      "path": "views/pos_config_views.xml",
+      "sha256": "f3224735c181e37a27661c265d4c7f2a201c6e2f0bb695c7943a238a3f6af555"
+    }
+  ]
+}

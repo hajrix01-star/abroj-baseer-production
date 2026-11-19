@@ -1,0 +1,48 @@
+<odoo>
+    <!-- Retain this XML ID so upgrading removes the former separate section. -->
+    <record id="pos_config_global_discount" model="ir.ui.view">
+        <field name="name">pos.config.baseer.global.discount</field>
+        <field name="model">pos.config</field>
+        <field name="inherit_id" ref="point_of_sale.pos_config_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='configuration']" position="inside"/>
+        </field>
+    </record>
+
+    <record id="res_config_settings_global_discount" model="ir.ui.view">
+        <field name="name">res.config.settings.baseer.global.discount</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="pos_discount.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='pos_discount_product_id']/parent::div" position="attributes">
+                <attribute name="invisible">pos_baseer_global_discount_enabled</attribute>
+            </xpath>
+            <xpath expr="//field[@name='pos_discount_pc']/parent::div" position="attributes">
+                <attribute name="invisible">pos_baseer_global_discount_enabled</attribute>
+            </xpath>
+            <xpath expr="//setting[@id='pos_global_discount']/div[hasclass('content-group')]" position="inside">
+                <field name="pos_baseer_global_discount_enabled" invisible="1"/>
+                <div groups="point_of_sale.group_pos_manager">
+                    <field name="baseer_global_discount_currency_id" invisible="1"/>
+                    <div class="row" invisible="not pos_baseer_global_discount_enabled">
+                        <label for="pos_baseer_global_discount_product_id" string="Discount Product" class="col-lg-3 o_light_label"/>
+                        <field name="pos_baseer_global_discount_product_id" readonly="1" options="{'no_create': True, 'no_open': True}"/>
+                    </div>
+                    <div class="row mt16">
+                        <label for="pos_baseer_global_discount_account_id" class="col-lg-3 o_light_label"/>
+                        <field name="pos_baseer_global_discount_account_id" options="{'no_create': True}"/>
+                    </div>
+                    <div class="row mt16">
+                        <label for="pos_baseer_global_discount_max_percent" class="col-lg-3 o_light_label"/>
+                        <field name="pos_baseer_global_discount_max_percent"/>
+                    </div>
+                    <div class="row">
+                        <label for="pos_baseer_global_discount_max_amount" class="col-lg-3 o_light_label"/>
+                        <field name="pos_baseer_global_discount_max_amount"/>
+                    </div>
+                    <div class="text-muted mt8">Cashiers can choose a percentage or fixed amount. A fixed amount includes VAT. Zero amount limit means no additional amount cap.</div>
+                </div>
+            </xpath>
+        </field>
+    </record>
+</odoo>

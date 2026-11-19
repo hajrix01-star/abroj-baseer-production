@@ -6,18 +6,25 @@
     h1 { font-size: 1.6rem; margin: 0 0 6px; }
     h2 { font-size: 1.1rem; margin: 0 0 16px; }
     .card { border-color: var(--border-color, #dee2e6); border-radius: 8px; }
-    .o_baseer_report_filters { padding: 20px; margin-bottom: 16px; }
-    .o_baseer_filter_grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; }
+    // The shared report shell also styles this class as a centered flex toolbar.
+    // This form owns a full-width grid, so keep its children stretched explicitly.
+    .o_baseer_report_filters { padding: 20px; margin-bottom: 16px; flex-direction: column; align-items: stretch; flex-wrap: nowrap; gap: 0; }
+    .o_baseer_filter_grid { display: grid; width: 100%; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; }
+    .o_baseer_filter_grid > * { min-width: 0; margin: 0; }
+    .o_baseer_filter_grid .form-control, .o_baseer_filter_grid .form-select { width: 100%; }
     .o_baseer_filter_grid label > span, .o_baseer_filter_field > label { display: block; margin-bottom: 6px; font-weight: 500; }
     input:not([type="checkbox"]), select, .o_datetime_input { min-height: 40px; }
-    .o_baseer_filter_actions { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; margin-top: 18px; }
-    .o_baseer_filter_actions button { margin-inline-start: auto; }
-    .o_baseer_report_range { text-align: end; font-variant-numeric: tabular-nums; font-size: .85rem; margin: 12px 0; }
-    .o_baseer_report_kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; margin-bottom: 16px; }
-    .o_baseer_kpi { display: flex; flex-direction: column; padding: 18px; gap: 8px; }
+    .o_baseer_filter_actions { display: flex; width: 100%; flex-wrap: wrap; align-items: center; gap: 12px 20px; margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border-color, #dee2e6); }
+    .o_baseer_filter_actions .form-check { display: flex; align-items: center; gap: 8px; padding: 0; }
+    .o_baseer_filter_actions .form-check-input { float: none; flex-shrink: 0; margin: 0; }
+    .o_baseer_filter_actions small { flex: 1 1 280px; line-height: 1.6; }
+    .o_baseer_filter_actions button { margin-inline-start: auto; min-height: 40px; padding-inline: 24px; white-space: nowrap; }
+    .o_baseer_report_range { direction: ltr; unicode-bidi: isolate; text-align: end; font-variant-numeric: tabular-nums; font-size: .85rem; margin: 12px 0; }
+    .o_baseer_report_kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; margin-bottom: 16px; }
+    .o_baseer_kpi { display: flex; flex-direction: column; min-width: 0; overflow-wrap: anywhere; padding: 18px; gap: 8px; }
     .o_baseer_kpi strong { font-size: 1.85rem; font-weight: 600; font-variant-numeric: tabular-nums; text-align: start; }
     .o_baseer_kpi small { font-size: .78rem; line-height: 1.5; }
-    .o_baseer_report_coverage { font-size: .85rem; line-height: 1.65; }
+    .o_baseer_report_coverage { font-size: .85rem; line-height: 1.8; padding: 12px 16px; border-inline-start: 3px solid var(--border-color, #dee2e6); }
     .o_baseer_report_charts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-bottom: 16px; }
     .o_baseer_chart { padding: 20px; min-width: 0; }
     .o_baseer_chart_row { margin-bottom: 16px; }
@@ -68,14 +75,16 @@
     @media (max-width: 600px) {
         padding: 12px;
         h1 { font-size: 1.25rem; }
-        .o_baseer_report_header { align-items: flex-start; }
+        .o_baseer_report_header { align-items: flex-start; flex-wrap: wrap; }
         .o_baseer_report_filters, .o_baseer_chart, .o_baseer_report_details { padding: 14px; }
         .o_baseer_filter_grid { grid-template-columns: minmax(0, 1fr); gap: 12px; }
         .o_baseer_report_charts { grid-template-columns: minmax(0, 1fr); }
         .o_baseer_report_kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
         .o_baseer_kpi { padding: 12px; }
         .o_baseer_kpi strong { font-size: 1.5rem; }
-        .o_baseer_filter_actions button { width: 100%; }
+        .o_baseer_filter_actions { gap: 12px; }
+        .o_baseer_filter_actions small { flex-basis: 100%; }
+        .o_baseer_filter_actions button { width: 100%; margin-inline-start: 0; }
         .o_baseer_details_heading { flex-wrap: wrap; }
         .o_baseer_detail_fields { grid-template-columns: minmax(0, 1fr); }
         .o_baseer_session_toggle, .o_baseer_session_body { padding: 12px; }

@@ -24,7 +24,8 @@
                     .action { font-size: 26px; font-weight: bold; }
                     .quantity { font-size: 36px; font-weight: bold; margin: 3px 0; }
                     .product { font-size: 34px; font-weight: bold; white-space: pre-wrap; }
-                    .note { margin: 7px 0; white-space: pre-wrap; }
+                    .note { margin: 7px 0; }
+                    .note > span[dir] { white-space: pre-wrap; }
                     .ending { margin-top: 14px; font-weight: bold; }
                 </style>
             </head>

@@ -309,6 +309,27 @@ class TestOdooKitchenDocument(TransactionCase):
         self.assertTrue(kwargs['check'])
         self.assertEqual(kwargs['input'], job.print_html.encode())
 
+    def test_long_raster_compression_preserves_pixels_and_wire_budget(self):
+        job = self._job(self._payload('58'))
+        source = Image.effect_noise((384, 1300), 20).convert('RGB')
+        output = io.BytesIO()
+        source.save(output, format='JPEG', quality=100, subsampling=0)
+        raw = output.getvalue()
+        self.assertGreater(len(raw), 256 * 1024)
+
+        def convert(command, **kwargs):
+            kwargs['stdout'].write(raw)
+            return subprocess.CompletedProcess(command, 0)
+
+        with patch('odoo.addons.baseer_pos_print_bridge.models.kitchen_document.find_in_path',
+                   return_value='/usr/bin/wkhtmltoimage'), patch(
+                       'odoo.addons.baseer_pos_print_bridge.models.kitchen_document.subprocess.run',
+                       side_effect=convert):
+            compressed, width, height, digest = job._render_kitchen_jpeg()
+        self.assertEqual((width, height), (384, 1300))
+        self.assertLessEqual(len(compressed), 256 * 1024)
+        self.assertEqual(hashlib.sha256(compressed).hexdigest(), digest)
+
     def test_missing_converter_and_timeout_do_not_produce_image(self):
         job = self._job()
         with patch('odoo.addons.baseer_pos_print_bridge.models.kitchen_document.find_in_path',

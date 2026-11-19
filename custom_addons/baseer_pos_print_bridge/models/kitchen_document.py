@@ -1,21 +1,27 @@
 """Odoo owns kitchen presentation; Windows receives the existing raster envelope."""
 import base64
 import copy
+import io
+import logging
 import subprocess
 import tempfile
 from decimal import Decimal, InvalidOperation
+
+from PIL import Image, UnidentifiedImageError
 
 from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
 from odoo.tools import find_in_path
 
-from .job import NATIVE_RECEIPT_MAX_BYTES
+from .job import NATIVE_RECEIPT_MAX_BYTES, NATIVE_RECEIPT_MAX_PIXELS
 from .note import normalize_detail_notes
 
 MAX_HTML_BYTES = 128 * 1024
 MAX_SOURCE_CHARACTERS = 30_000
 MAX_SOURCE_LINES = 200
 RENDER_TIMEOUT_SECONDS = 20
+MAX_RENDER_BYTES = 4 * 1024 * 1024
+_logger = logging.getLogger(__name__)
 
 
 class BaseerKitchenDocument(models.Model):
@@ -116,8 +122,9 @@ class BaseerKitchenDocument(models.Model):
                 if not html or len(html.encode()) > MAX_HTML_BYTES:
                     raise ValidationError(_('The kitchen document is too large to render safely.'))
                 self.sudo().write({'print_html': html})
-        except Exception:
+        except Exception as error:
             # A presentation failure must not roll back saved kitchen intent.
+            _logger.warning('Kitchen document %s snapshot failed (%s)', self.id, type(error).__name__)
             self._kitchen_render_failed()
             return False
         return True
@@ -142,8 +149,34 @@ class BaseerKitchenDocument(models.Model):
             subprocess.run(command, input=self.print_html.encode(), stdout=output,
                            stderr=subprocess.DEVNULL, timeout=RENDER_TIMEOUT_SECONDS, check=True)
             output.seek(0)
-            raw = output.read(NATIVE_RECEIPT_MAX_BYTES + 1)
-        return self._validated_native_receipt_image(base64.b64encode(raw).decode())
+            raw = output.read(MAX_RENDER_BYTES + 1)
+        if len(raw) > MAX_RENDER_BYTES:
+            raise ValidationError(_('The kitchen document is too large to render safely.'))
+        if len(raw) <= NATIVE_RECEIPT_MAX_BYTES:
+            return self._validated_native_receipt_image(base64.b64encode(raw).decode())
+        # Long bilingual tickets can fit the pixel guard but exceed the wire
+        # budget at Qt's default JPEG settings. Preserve every pixel and row;
+        # kitchen artwork is monochrome, so grayscale compression loses no color.
+        try:
+            with Image.open(io.BytesIO(raw)) as picture:
+                if (picture.format != 'JPEG' or picture.width != width
+                        or not 1 <= picture.height <= 12000
+                        or picture.width * picture.height > NATIVE_RECEIPT_MAX_PIXELS):
+                    raise ValidationError(_('The kitchen document is too large to render safely.'))
+                grayscale = picture.convert('L')
+                try:
+                    for quality in (90, 85, 80):
+                        encoded = io.BytesIO()
+                        grayscale.save(encoded, format='JPEG', quality=quality, optimize=True)
+                        if encoded.tell() <= NATIVE_RECEIPT_MAX_BYTES:
+                            return self._validated_native_receipt_image(
+                                base64.b64encode(encoded.getvalue()).decode(),
+                            )
+                finally:
+                    grayscale.close()
+        except (UnidentifiedImageError, OSError, Image.DecompressionBombError):
+            raise ValidationError(_('The frozen kitchen document is missing or too large.')) from None
+        raise ValidationError(_('The kitchen document is too large to render safely.'))
 
     def _ensure_kitchen_image(self):
         self.ensure_one()
@@ -154,7 +187,8 @@ class BaseerKitchenDocument(models.Model):
             return False
         try:
             raw, width, height, digest = self._render_kitchen_jpeg()
-        except (OSError, subprocess.SubprocessError, ValidationError):
+        except (OSError, subprocess.SubprocessError, ValidationError) as error:
+            _logger.warning('Kitchen document %s raster failed (%s)', self.id, type(error).__name__)
             self._kitchen_render_failed()
             return False
         payload = dict(self.payload, receipt_image={

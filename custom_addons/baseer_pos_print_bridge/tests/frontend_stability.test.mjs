@@ -57,6 +57,70 @@ test('paid-order print button queues the archived receipt without rendering a ne
     assert.match(requestUuid, /^[\da-f-]{36}$/);
 });
 
+test('historical native-receipt false flag still captures the original Odoo receipt', async () => {
+    const bridge = runtime('preparation_bridge.js', {
+        printReceipt() { throw new Error('Direct printing must not use the native printer fallback'); },
+    });
+    const pos = new bridge.PosStore();
+    const company = { id: 5, country_id: { id: 1, code: 'SA' } };
+    const order = { id: 17, isSynced: true, state: 'paid', company_id: company,
+        company, nb_print: 0, _dirty: false, isDirty: () => false };
+    const calls = [];
+    const canvas = {};
+    bridge.encodeReceiptJpeg = (rendered) => {
+        assert.equal(rendered, canvas);
+        return 'original-odoo-image';
+    };
+    pos.config = { baseer_direct_print_enabled: true, baseer_native_receipt_enabled: false };
+    pos.notification = { add() {} };
+    pos.data = {
+        async read(model, ids) {
+            calls.push(['read', model, ids]);
+            return [];
+        },
+        async call(model, method, args) {
+            calls.push(['call', model, method, args]);
+            return { job_id: 42, state: 'pending' };
+        },
+    };
+    pos.printer = { renderer: {
+        async toCanvas(component, props, settings) {
+            assert.equal(component, bridge.OrderReceipt);
+            assert.equal(props.order, order);
+            assert.equal(props.basic_receipt, false);
+            assert.equal(settings.pixelRatio, 2.2);
+            calls.push(['render']);
+            return canvas;
+        },
+    } };
+    const result = await pos.printReceipt({ order });
+    assert.equal(result.successful, true);
+    assert.equal(result.queued, true);
+    assert.equal(order.nb_print, 1);
+    assert.equal(order._dirty, false);
+    assert.deepEqual(calls.map(([kind]) => kind), ['read', 'render', 'call']);
+    const [, model, method, args] = calls[2];
+    assert.equal(model, 'pos.order');
+    assert.equal(method, 'baseer_enqueue_native_receipt');
+    assert.deepEqual(Array.from(args[0]), [17]);
+    assert.equal(args[1], 'original-odoo-image');
+});
+
+test('paid-order print button ignores historical native-receipt false flag', async () => {
+    const { PosStore, TicketScreen } = runtime('preparation_bridge.js');
+    const screen = new TicketScreen();
+    const pos = new PosStore();
+    const order = { id: 23, isSynced: true, state: 'paid' };
+    screen.pos = pos;
+    pos.config = { baseer_direct_print_enabled: true, baseer_native_receipt_enabled: false };
+    pos.printReceipt = async (options) => {
+        assert.equal(options.order, order);
+        assert.equal(options.baseerReprint, true);
+        return { successful: true, queued: true };
+    };
+    assert.equal((await screen.print(order)).queued, true);
+});
+
 test('prepayment bill sends the open order to the session queue without syncing or changing it', async () => {
     const bridge = runtime('preparation_bridge.js', {
         printReceipt() { return 'native'; },

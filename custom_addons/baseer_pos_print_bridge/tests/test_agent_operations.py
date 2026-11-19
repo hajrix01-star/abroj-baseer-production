@@ -21,6 +21,7 @@ class TestBaseerAgentOperations(TransactionCase):
             'device_uid': 'agent-operations-windows-0001',
             'allowed_company_ids': [Command.set([cls.company.id])],
         })
+        cls.agent.with_context(baseer_print_internal=True).write({'agent_version': '1.4.6'})
         cls.printer = cls.env['baseer.print.printer'].with_context(baseer_print_discovery=True).create({
             'name': 'Agent operations printer',
             'agent_id': cls.agent.id,

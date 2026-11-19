@@ -34,7 +34,7 @@ class PosConfig(models.Model):
         for config in self:
             if config.baseer_receipt_layout_mode not in ('baseer_80', 'baseer_80_customer'):
                 continue
-            if not config.baseer_direct_print_enabled or not config.baseer_native_receipt_enabled:
+            if not config.baseer_direct_print_enabled:
                 raise ValidationError(_(
                     'Enable Baseer direct printing and the original Odoo customer receipt before using the professional layout.'
                 ))

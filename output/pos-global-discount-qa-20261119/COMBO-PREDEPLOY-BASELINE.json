@@ -1,0 +1,41 @@
+{
+  "module_state": "installed",
+  "module_version": "19.0.1.0.1",
+  "config_id": 39,
+  "company_id": 2,
+  "enabled": true,
+  "owned_discount_product_id": 5282,
+  "resolved_income_account_id": 386,
+  "resolved_income_account_code": "500001",
+  "resolved_income_account_type": "income",
+  "income_account_company_ids": [
+    2
+  ],
+  "owned_discount_service_cost_zero": true,
+  "managed_draft_count": 1,
+  "managed_drafts": [
+    {
+      "id": 2712,
+      "state": "draft",
+      "line_count": 2,
+      "digest_sha256": "865029aa0c56f2502abd8b73efff150c8c4aa0a34559d281e27f0065da1e4a2b"
+    }
+  ],
+  "READ_ONLY_ROLLBACK": true,
+  "qa_current": "/srv/baseer-qa/releases/99d5ee20f4de-run-44554268561-20261119T152440Z",
+  "qa_source_commit": "99d5ee20f4de78cccc210f34b1494bf69d6f4096",
+  "live_current": "/srv/abroj-baseer-production/releases/ed0e39a37f76-run-44521587590-20261119T121141Z",
+  "live_source_commit": "ed0e39a37f7669db02c8e3a07ddd6c98300e2ba6",
+  "qa_runtime": {
+    "id": "ef883a26e3c57324161a1a57ea8f042227af52dc257428657f04a497a0c1fc6f",
+    "started_at": "2026-11-19T15:25:32.019166618Z",
+    "running": true,
+    "restart_count": 0
+  },
+  "live_runtime": {
+    "id": "4767c67ba39d825d4a45d263fb7a1dd49db86536d85d5da5dafe294dec310f69",
+    "started_at": "2026-11-19T12:12:56.310196943Z",
+    "running": true,
+    "restart_count": 0
+  }
+}

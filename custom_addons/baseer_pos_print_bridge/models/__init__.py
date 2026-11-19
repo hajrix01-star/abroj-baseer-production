@@ -16,3 +16,4 @@ from . import pos_order
 from . import pos_session
 from . import ir_http
 from . import table_availability
+from . import res_config_settings

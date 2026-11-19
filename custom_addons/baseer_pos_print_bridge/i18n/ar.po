@@ -2762,8 +2762,8 @@ msgstr "طباعة حساب الطلب متاحة لمستخدمي نقطة ال
 
 #. module: baseer_pos_print_bridge
 #: code:addons/baseer_pos_print_bridge/models/pos_session.py:0
-msgid "Direct order bill printing requires the open restaurant session."
-msgstr "تتطلب طباعة الحساب المباشرة جلسة مطعم مفتوحة."
+msgid "Direct order bill printing requires an open session with bill printing enabled."
+msgstr "تتطلب طباعة الحساب المباشرة جلسة مفتوحة مع تفعيل طباعة الحساب."
 
 #. module: baseer_pos_print_bridge
 #: code:addons/baseer_pos_print_bridge/models/pos_session.py:0

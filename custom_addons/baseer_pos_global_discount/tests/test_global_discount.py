@@ -29,7 +29,9 @@ class TestGlobalDiscount(TransactionCase):
             'list_price': 100, 'property_account_income_id': self.account.id,
             'taxes_id': [Command.set(self.tax.ids)],
         })
-        self.config = self.env['pos.config'].create({'name': 'GD QA register'})
+        self.config = self.env['pos.config'].create({
+            'name': 'GD QA register', 'baseer_global_discount_account_id': self.account.id,
+        })
         self.config.action_baseer_setup_global_discount()
         self.config.baseer_global_discount_product_id.property_account_income_id = self.account
         self.config.open_ui()
@@ -73,6 +75,195 @@ class TestGlobalDiscount(TransactionCase):
     def _prepare(self, refund):
         return refund.baseer_prepare_global_discount_refund(str(uuid4()), refund._baseer_revision())
 
+    def _combo_order(self, *, parent_qty=1, ordinary=False, child_b_tax=None):
+        """Real native choices: first component has quantity 2 per combo."""
+        order = self._order(price=50)
+        if not ordinary:
+            order.lines.unlink()
+        first_product = self.env['product.product'].create({
+            'name': 'GD combo first component', 'type': 'service', 'available_in_pos': True,
+            'list_price': 30, 'standard_price': 0,
+            'property_account_income_id': self.product.property_account_income_id.id,
+            'taxes_id': [Command.set(self.tax.ids)],
+        })
+        second_product = self.env['product.product'].create({
+            'name': 'GD combo second component', 'type': 'service', 'available_in_pos': True,
+            'list_price': 40, 'standard_price': 0,
+            'property_account_income_id': self.product.property_account_income_id.id,
+            'taxes_id': [Command.set((child_b_tax if child_b_tax is not None else self.tax).ids)],
+        })
+        first_choice, second_choice = self.env['product.combo'].create([
+            {'name': 'GD first choice', 'company_id': order.company_id.id, 'qty_max': 2, 'qty_free': 2,
+             'combo_item_ids': [Command.create({'product_id': first_product.id})]},
+            {'name': 'GD second choice', 'company_id': order.company_id.id,
+             'combo_item_ids': [Command.create({'product_id': second_product.id})]},
+        ])
+        parent_product = self.env['product.product'].create({
+            'name': 'GD native combo', 'type': 'combo', 'available_in_pos': True, 'list_price': 100,
+            'company_id': order.company_id.id,
+            'combo_ids': [Command.set((first_choice | second_choice).ids)],
+            'property_account_income_id': self.product.property_account_income_id.id,
+            'taxes_id': [Command.clear()],
+        })
+        parent = self.env['pos.order.line'].create({
+            'order_id': order.id, 'product_id': parent_product.id, 'qty': parent_qty, 'price_unit': 0,
+            'discount': 0, 'price_subtotal': 0, 'price_subtotal_incl': 0, 'tax_ids': [Command.clear()],
+            'combo_line_ids': [Command.create({
+                'order_id': order.id, 'product_id': product.id, 'combo_item_id': choice.combo_item_ids.id,
+                'qty': ratio * parent_qty, 'price_unit': price, 'discount': 0,
+                'price_subtotal': 0, 'price_subtotal_incl': 0,
+                'tax_ids': [Command.set(product.taxes_id.ids)],
+            }) for product, choice, ratio, price in (
+                (first_product, first_choice, 2, 30), (second_product, second_choice, 1, 40),
+            )],
+        })
+        order._compute_prices()
+        return order, parent
+
+    def _combo_refund(self, order, parent, qty, *, ordinary=False):
+        refund = self._refund(order, qty, parent)
+        refund_parent = refund.lines.ensure_one()
+        for source in parent.combo_line_ids:
+            self.env['pos.order.line'].create({
+                'order_id': refund.id, 'product_id': source.product_id.id,
+                'qty': -(source.qty / parent.qty) * qty, 'price_unit': source.price_unit,
+                'discount': source.discount, 'tax_ids': [Command.set(source.tax_ids.ids)],
+                'price_subtotal': 0, 'price_subtotal_incl': 0,
+                'refunded_orderline_id': source.id, 'combo_parent_id': refund_parent.id,
+                # Native TicketScreen deliberately does not copy combo_item_id.
+            })
+        if ordinary:
+            for source in order.lines.filtered(lambda line: not line.baseer_global_discount_line
+                                                and not line.combo_parent_id and line != parent):
+                self.env['pos.order.line'].create({
+                    'order_id': refund.id, 'product_id': source.product_id.id,
+                    'qty': -(source.qty / parent.qty) * qty, 'price_unit': source.price_unit,
+                    'discount': source.discount, 'tax_ids': [Command.set(source.tax_ids.ids)],
+                    'price_subtotal': 0, 'price_subtotal_incl': 0, 'refunded_orderline_id': source.id,
+                })
+        refund._compute_prices()
+        return refund
+
+    def test_native_combo_and_ordinary_fixed_one_basket_discount(self):
+        order, parent = self._combo_order(ordinary=True)
+        original_values = [(line.id, line.price_unit, line.discount) for line in order.lines]
+        self.assertAlmostEqual(order.amount_total, 172.50, places=2)
+        self._apply(order, '20', 'fixed')
+        self.assertAlmostEqual(order.amount_total, 152.50, places=2)
+        self.assertAlmostEqual(order.amount_tax, 19.89, places=2)
+        sources = order.lines.filtered(lambda line: not line.baseer_global_discount_line)
+        self.assertEqual(original_values, [(line.id, line.price_unit, line.discount) for line in sources])
+        self.assertNotIn(parent, order.lines.filtered('baseer_global_discount_line').baseer_global_discount_source_id)
+
+    def test_native_combo_and_ordinary_percentage_discount(self):
+        order, _parent = self._combo_order(ordinary=True)
+        self._apply(order, '10', 'percent')
+        self.assertAlmostEqual(order.amount_total, 155.25, places=2)
+        self.assertAlmostEqual(order.amount_tax, 20.25, places=2)
+
+    def test_native_combo_mixed_tax_basket(self):
+        order, _parent = self._combo_order(ordinary=True, child_b_tax=self.zero)
+        self.assertAlmostEqual(order.amount_total, 166.50, places=2)
+        self._apply(order, '20', 'fixed')
+        self.assertAlmostEqual(order.amount_total, 146.50, places=2)
+        self.assertAlmostEqual(order.amount_tax, 14.52, places=2)
+        self.assertEqual(set(order.lines.filtered('baseer_global_discount_line').tax_ids.ids), set((self.tax | self.zero).ids))
+
+    def test_native_combo_full_refund_infers_original_items(self):
+        order, parent = self._combo_order(ordinary=True)
+        self._apply(order, '20', 'fixed')
+        self._paid(order)
+        refund = self._combo_refund(order, parent, 1, ordinary=True)
+        children = refund.lines.filtered('combo_parent_id')
+        self.assertFalse(children.combo_item_id)
+        self._prepare(refund)
+        self.assertAlmostEqual(refund.amount_total, -order.amount_total, places=2)
+        self.assertAlmostEqual(refund.amount_tax, -order.amount_tax, places=2)
+        for child in children:
+            self.assertEqual(child.combo_item_id, child.refunded_orderline_id.combo_item_id)
+        sections = [item[2] for item in refund._prepare_invoice_lines('out_refund') if item[2].get('display_type') == 'line_section']
+        self.assertEqual(len(sections), 1)
+        with self.assertRaises(ValidationError):
+            children[:1].write({'combo_item_id': False})
+
+    def test_native_combo_successive_partial_refunds_use_historical_group(self):
+        order, parent = self._combo_order(parent_qty=3)
+        self._apply(order, '0.97', 'fixed')
+        self._paid(order)
+        # Removing a choice from the current catalog must not redefine the sale.
+        parent.product_id.combo_ids = parent.product_id.combo_ids[:1]
+        refunds = self.env['pos.order']
+        for _index in range(3):
+            refund = self._combo_refund(order, parent, 1)
+            self._prepare(refund)
+            self._paid(refund)
+            refunds |= refund
+        self.assertAlmostEqual(sum(refunds.mapped('amount_total')), -order.amount_total, places=2)
+        self.assertAlmostEqual(sum(refunds.mapped('amount_tax')), -order.amount_tax, places=2)
+        self.assertAlmostEqual(sum(refunds.mapped('baseer_global_discount_gross')), .97, places=2)
+
+    def test_native_combo_malformed_sale_topology_rejected(self):
+        for mutation in ('price', 'discount', 'subtotal', 'orphan', 'membership', 'cross_order', 'cycle', 'fixed_tax'):
+            with self.subTest(mutation=mutation), self.assertRaises(ValidationError), self.cr.savepoint():
+                order, parent = self._combo_order()
+                first, second = parent.combo_line_ids
+                if mutation == 'price':
+                    parent.price_unit = 1
+                elif mutation == 'discount':
+                    parent.discount = 1
+                elif mutation == 'subtotal':
+                    parent.price_subtotal_incl = 1
+                elif mutation == 'orphan':
+                    first.combo_parent_id = False
+                elif mutation == 'membership':
+                    first.combo_item_id = second.combo_item_id
+                elif mutation == 'cross_order':
+                    first.order_id = self._order().id
+                elif mutation == 'cycle':
+                    parent.combo_parent_id = first
+                else:
+                    parent.tax_ids = self.env['account.tax'].create({
+                        'name': 'GD combo fixed zero', 'amount_type': 'fixed', 'amount': 0,
+                        'type_tax_use': 'sale', 'company_id': self.env.company.id,
+                    })
+                self._apply(order)
+
+    def test_native_combo_sale_choice_quantity_bounds_and_required_choices(self):
+        for mutation in ('below_minimum', 'above_maximum', 'missing_required_choice'):
+            with self.subTest(mutation=mutation), self.assertRaises(ValidationError), self.cr.savepoint():
+                order, parent = self._combo_order(parent_qty=2)
+                first, second = parent.combo_line_ids
+                if mutation == 'below_minimum':
+                    first.qty = 2  # First choice requires 2 units per parent: 4 sold.
+                elif mutation == 'above_maximum':
+                    first.qty = 6
+                else:
+                    second.unlink()
+                self._apply(order)
+
+    def test_native_combo_refund_requires_complete_group_and_original_ratios(self):
+        order, parent = self._combo_order(parent_qty=2)
+        self._apply(order, '20', 'fixed')
+        self._paid(order)
+        for mutation in ('missing_parent', 'missing_child', 'ratio', 'membership', 'cross_order', 'cycle'):
+            with self.subTest(mutation=mutation), self.assertRaises(ValidationError), self.cr.savepoint():
+                refund = self._combo_refund(order, parent, 1)
+                refund_parent = refund.lines.filtered(lambda line: line.product_id.type == 'combo')
+                first, second = refund_parent.combo_line_ids
+                if mutation == 'missing_parent':
+                    refund_parent.unlink()
+                elif mutation == 'missing_child':
+                    first.unlink()
+                elif mutation == 'ratio':
+                    first.qty = -1
+                elif mutation == 'membership':
+                    first.combo_item_id = second.refunded_orderline_id.combo_item_id
+                elif mutation == 'cross_order':
+                    first.order_id = self._order().id
+                else:
+                    refund_parent.combo_parent_id = first
+                self._prepare(refund)
+
     def test_percent_tax_excluded(self):
         order = self._order()
         self._apply(order)
@@ -81,6 +272,45 @@ class TestGlobalDiscount(TransactionCase):
         self.assertAlmostEqual(order.baseer_global_discount_gross, 11.50, places=2)
         self.assertTrue(order.baseer_global_discount_locked)
         self.assertTrue(order.lines.filtered('baseer_global_discount_line').extra_tax_data)
+
+    def test_account_is_pinned_and_drift_blocks_sale_but_removal_recovers(self):
+        order = self._order()
+        self._apply(order, '20', 'fixed')
+        self.assertEqual(self.config.baseer_global_discount_account_id, self.account)
+        self.assertEqual(self.config.baseer_global_discount_product_id.property_account_income_id, self.account)
+        changed = self.account.copy({'code': 'GDQA002'})
+        self.config.baseer_global_discount_product_id.property_account_income_id = changed
+        with self.assertRaises(ValidationError):
+            order._gd_assert_snapshot()
+        self._apply(order, '0', 'remove')
+        self.assertFalse(order.baseer_global_discount_locked)
+        self.assertAlmostEqual(order.amount_total, 115, places=2)
+
+    def test_account_history_change_blocks_refund_and_legacy_snapshot_remains_readable(self):
+        order = self._order()
+        self._apply(order)
+        self._paid(order)
+        old = dict(order.baseer_global_discount_snapshot)
+        old['tax_configuration'] = [entry for entry in old['tax_configuration'] if '_gd_accounts' not in entry]
+        order._gd_internal().write({'baseer_global_discount_snapshot': old})
+        order._gd_assert_snapshot()
+        # No history is invented for the old snapshot, but current policy still
+        # requires the selected account to agree with the service product.
+        product = self.config.baseer_global_discount_product_id
+        product.property_account_income_id = self.account.copy({'code': 'GDQA003'})
+        with self.assertRaises(ValidationError):
+            self._prepare(self._refund(order, 1))
+
+    def test_fiscal_mapping_of_discount_to_expense_is_rejected(self):
+        expense = self.account.copy({'code': 'GDQA004', 'account_type': 'expense'})
+        position = self.env['account.fiscal.position'].create({
+            'name': 'GD invalid income mapping',
+            'account_ids': [Command.create({'account_src_id': self.account.id, 'account_dest_id': expense.id})],
+        })
+        order = self._order()
+        order.fiscal_position_id = position
+        with self.assertRaises(ValidationError):
+            self._apply(order)
 
     def test_loader_retains_native_bootstrap_fields(self):
         [payload] = self.config._load_pos_data_read(self.config, self.config)

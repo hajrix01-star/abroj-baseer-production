@@ -159,6 +159,22 @@ patch(PosOrder.prototype, {
 });
 
 patch(PosOrderline.prototype, {
+    update(values, options = {}) {
+        const source = this.refunded_orderline_id;
+        if (source?.order_id?.baseer_global_discount_locked && source.combo_line_ids?.length
+                && this.order_id?.is_refund && values.combo_line_ids) {
+            // Native refund reconstruction includes every historical return
+            // child. Link only this return's children before inverse relations
+            // can move a previously posted/frozen line to another parent.
+            values = { ...values, combo_line_ids: values.combo_line_ids.map((command) =>
+                command[0] === "link" ? ["link", ...command.slice(1).filter((child) =>
+                    child.order_id === this.order_id
+                    && child.refunded_orderline_id?.combo_parent_id === source
+                )] : command
+            ) };
+        }
+        return super.update(values, options);
+    },
     setQuantity(quantity) {
         if (isDiscountFrozen(this.order_id) && quantity !== this.qty) return false;
         return super.setQuantity(...arguments);

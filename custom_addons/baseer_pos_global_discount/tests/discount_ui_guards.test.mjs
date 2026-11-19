@@ -23,7 +23,10 @@ class Component {} class Dialog {} class AlertDialog {};
 class ControlButtons { clickFiscalPosition() { this.nativeCalled = true; } }
 class PosStore { applyDiscount() { this.nativeCalled = true; } }
 class PosOrder { removeOrderline() { this.nativeCalled = true; } }
-class PosOrderline { setQuantity() { this.nativeCalled = true; } }
+class PosOrderline {
+    setQuantity() { this.nativeCalled = true; }
+    update(values) { this.updated = values; return values; }
+}
 class OrderSummary { updateSelectedOrderline() { this.nativeCalled = true; } }
 class TicketScreen {
     _getRefundableDetails() { return this.details; }
@@ -46,6 +49,28 @@ test("quantity and removal are frozen during an unknown discount response", () =
     assert.equal(line.nativeCalled, undefined);
     assert.equal(extensions.get("PosOrder").removeOrderline.call(draft, {}), false);
     assert.equal(draft.nativeCalled, undefined);
+});
+
+test("native repeated combo returns link only current return children", () => {
+    const sale = { baseer_global_discount_locked: true };
+    const source = { order_id: sale, combo_line_ids: [{}] };
+    const current = { is_refund: true };
+    const historical = { is_refund: true };
+    const childSource = { combo_parent_id: source };
+    const child = { order_id: current, refunded_orderline_id: childSource };
+    const oldChild = { order_id: historical, refunded_orderline_id: childSource };
+    const foreignChild = { order_id: current, refunded_orderline_id: { combo_parent_id: {} } };
+    const parent = { order_id: current, refunded_orderline_id: source };
+    extensions.get("PosOrderline").update.call(parent, {
+        combo_line_ids: [["link", oldChild, child, foreignChild]], qty: -1,
+    });
+    assert.deepEqual(parent.updated.combo_line_ids, [["link", child]]);
+    assert.equal(parent.updated.qty, -1);
+    assert.equal(oldChild.order_id, historical);
+    const native = { order_id: current, refunded_orderline_id: { ...source, order_id: {} } };
+    const values = { combo_line_ids: [["link", child, oldChild]] };
+    extensions.get("PosOrderline").update.call(native, values);
+    assert.equal(native.updated, values, "unmanaged historical orders retain native behavior");
 });
 test("fiscal position action is blocked before native direct tax assignment", async () => {
     const calls = [];

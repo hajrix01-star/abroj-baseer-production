@@ -115,11 +115,6 @@ msgstr "تغيّر الطلب على جهاز آخر. حدّثه قبل إعاد
 msgid "Add between 1 and 200 products before applying an invoice discount."
 msgstr "أضف من 1 إلى 200 صنف قبل تطبيق خصم الفاتورة."
 
-#. module: baseer_pos_global_discount
-#. odoo-python
-#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
-msgid "This basket contains protected items, tips, combinations or unsupported taxes. Invoice discount cannot be applied."
-msgstr "تحتوي السلة أصنافًا محمية أو إكراميات أو عروضًا مركبة أو ضرائب غير مدعومة؛ لا يمكن تطبيق خصم الفاتورة."
 
 #. module: baseer_pos_global_discount
 #. odoo-python
@@ -484,11 +479,6 @@ msgstr "قيمة الخصم"
 msgid "Reason"
 msgstr "السبب"
 
-#. module: baseer_pos_global_discount
-#. odoo-javascript
-#: code:addons/baseer_pos_global_discount/static/src/app/global_discount.xml:0
-msgid "Protected items, tips, combos and tobacco or other special taxes are not supported. Every item needs an explicit tax category, including zero-rated or exempt items."
-msgstr "لا يشمل الدعم الأصناف المحمية والإكراميات والعروض المركبة ورسوم التبغ والضرائب الخاصة. يلزم تصنيف ضريبي صريح لكل صنف، بما فيه الصفري أو المعفى."
 
 #. module: baseer_pos_global_discount
 #. odoo-javascript
@@ -555,3 +545,114 @@ msgstr "صنف الخصم"
 #: code:addons/baseer_pos_global_discount/models/res_config_settings.py:0
 msgid "Cashiers can choose a percentage or fixed amount. A fixed amount includes VAT. Zero amount limit means no additional amount cap."
 msgstr "يمكن للكاشير اختيار مبلغ ثابت أو نسبة. المبلغ الثابت شامل الضريبة، وحد المبلغ 0 يعني عدم وضع سقف إضافي للمبلغ."
+
+#. module: baseer_pos_global_discount
+#. odoo-python
+#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
+msgid "This basket contains protected items, tips or unsupported taxes. Invoice discount cannot be applied."
+msgstr "تحتوي الفاتورة أصنافًا محمية أو إكراميات أو ضرائب غير مدعومة؛ لا يمكن تطبيق الخصم العام."
+
+#. module: baseer_pos_global_discount
+#. odoo-python
+#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
+msgid "A combo header must have zero price, discount and tax value."
+msgstr "يجب أن تكون قيمة عنوان العرض المركب وخصمه وضريبته صفرًا."
+
+#. module: baseer_pos_global_discount
+#. odoo-python
+#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
+msgid "A combo header must be zero-valued and contain its own order components."
+msgstr "يجب أن يكون عنوان العرض المركب بلا قيمة وأن ترتبط به مكوناته من الطلب نفسه."
+
+#. module: baseer_pos_global_discount
+#. odoo-python
+#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
+msgid "The combo components do not match their parent and original product choices."
+msgstr "مكونات العرض المركب لا تطابق العرض أو الأصناف المختارة."
+
+#. module: baseer_pos_global_discount
+#. odoo-python
+#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
+msgid "A combo component must belong to one valid header in this order."
+msgstr "يجب أن يرتبط كل مكون بعرض مركب صحيح داخل الطلب نفسه."
+
+#. module: baseer_pos_global_discount
+#. odoo-python
+#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
+msgid "Refund the combo header and all of its original components together."
+msgstr "أعد العرض المركب مع جميع مكوناته الأصلية معًا."
+
+#. module: baseer_pos_global_discount
+#. odoo-python
+#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
+msgid "Combo refund quantities must preserve the original component ratios."
+msgstr "يجب أن تحافظ كميات مرتجع العرض المركب على نسب مكوناته الأصلية."
+
+#. module: baseer_pos_global_discount
+#. odoo-python
+#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
+msgid "The refund combo structure does not match the original sale."
+msgstr "مكونات العرض المركب المرتجع لا تطابق فاتورة البيع الأصلية."
+
+#. module: baseer_pos_global_discount
+#: model:ir.model.fields,field_description:baseer_pos_global_discount.field_pos_config__baseer_global_discount_account_id
+#: model:ir.model.fields,field_description:baseer_pos_global_discount.field_res_config_settings__pos_baseer_global_discount_account_id
+msgid "Invoice discount income account"
+msgstr "حساب إيراد خصم الفاتورة"
+
+#. module: baseer_pos_global_discount
+#. odoo-python
+#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
+msgid "Set an active income account in this company for the zero-cost invoice discount service."
+msgstr "حدد حساب إيراد نشطًا في الشركة لخدمة خصم الفاتورة، ويجب أن تكون تكلفتها صفرًا."
+
+#. module: baseer_pos_global_discount
+#. odoo-python
+#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
+msgid "Choose the invoice discount income account before enabling discounts."
+msgstr "حدد حساب إيراد خصم الفاتورة قبل تفعيل الخصومات."
+
+#. module: baseer_pos_global_discount
+#. odoo-python
+#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
+msgid "The fiscal position must map the invoice discount to an active income account in this company."
+msgstr "يجب أن يربط الوضع المالي خصم الفاتورة بحساب إيراد نشط في الشركة نفسها."
+
+#. module: baseer_pos_global_discount
+#: model:ir.model.fields,field_description:baseer_pos_global_discount.field_report_pos_order__total_discount
+msgid "Line discounts (unit-price basis)"
+msgstr "خصومات الأصناف (حسب سعر الوحدة)"
+
+#. module: baseer_pos_global_discount
+#: model:ir.model.fields,field_description:baseer_pos_global_discount.field_report_pos_order__baseer_invoice_discount
+msgid "Invoice discount (excl. VAT)"
+msgstr "خصم الفاتورة قبل الضريبة"
+
+#. module: baseer_pos_global_discount
+#: model:ir.model.fields,field_description:baseer_pos_global_discount.field_pos_order_line__baseer_global_discount_allocation_ids
+msgid "Invoice discount allocations"
+msgstr "توزيع خصم الفاتورة"
+
+#. module: baseer_pos_global_discount
+#. odoo-python
+#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
+msgid "Invoice discount allocations are read-only."
+msgstr "توزيع خصم الفاتورة للقراءة فقط."
+
+#. module: baseer_pos_global_discount
+#. odoo-python
+#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
+msgid "The native POS report query changed. Review the invoice discount report integration before upgrading."
+msgstr "تغير استعلام تقرير نقاط البيع الأصلي. يلزم مراجعة دمج خصم الفاتورة قبل الترقية."
+
+#. module: baseer_pos_global_discount
+#. odoo-python
+#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
+msgid "Combo quantities must be finite and respect the original choice limits."
+msgstr "يجب أن تكون كميات العرض المركب صحيحة وضمن حدود الاختيارات الأصلية."
+
+#. module: baseer_pos_global_discount
+#. odoo-python
+#: code:addons/baseer_pos_global_discount/models/pos_order.py:0
+msgid "The combo must include every required choice within its minimum and maximum quantities."
+msgstr "أكمل اختيارات العرض المركب المطلوبة ضمن الحد الأدنى والأقصى للكميات."

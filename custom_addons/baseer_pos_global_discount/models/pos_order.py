@@ -203,20 +203,96 @@ class PosOrder(models.Model):
         lines = self.lines.filtered(lambda line: not line.baseer_global_discount_line)
         if not lines or len(lines) > 200:
             raise ValidationError(_('Add between 1 and 200 products before applying an invoice discount.'))
+        headers = self._gd_combo_headers(lines)
         locked = self._baseer_substitution_locked_snapshots(self)
         for line in lines:
             taxes = line.tax_ids_after_fiscal_position._flatten_taxes_and_sort_them()[0]
-            if not taxes:
+            if not taxes and line not in headers:
                 raise ValidationError(_('Every product needs an explicit tax category, including zero-rated or exempt products, before an invoice discount.'))
             if (line.qty <= 0 or line.refunded_orderline_id or line.price_unit < 0
-                    or line.product_id == self.config_id.tip_product_id or line.product_id.type == 'combo'
-                    or line.combo_parent_id or line.combo_line_ids or line.combo_item_id
+                    or line.product_id == self.config_id.tip_product_id
                     or line.uuid in locked or line.product_id.baseer_substitution_enabled
                     or any(tax.amount_type != 'percent' for tax in taxes)):
-                raise ValidationError(_('This basket contains protected items, tips, combinations or unsupported taxes. Invoice discount cannot be applied.'))
+                raise ValidationError(_('This basket contains protected items, tips or unsupported taxes. Invoice discount cannot be applied.'))
             if line.extra_tax_data:
                 raise ValidationError(_('This basket already contains special price or tax allocations.'))
-        return lines
+        for base_line in self._gd_tax_base_lines(headers):
+            details = base_line['tax_details']
+            if any(details[key] for key in ('total_excluded_currency', 'total_included_currency',
+                                            'delta_total_excluded_currency')):
+                raise ValidationError(_('A combo header must have zero price, discount and tax value.'))
+        return lines - headers
+
+    def _gd_combo_headers(self, lines):
+        """Validate native sale topology; only priced children enter allocation."""
+        headers = lines.filtered(lambda line: line.product_id.type == 'combo')
+        for parent in headers:
+            children = parent.combo_line_ids
+            if (not Decimal(str(parent.qty)).is_finite() or parent.qty <= 0
+                    or parent.combo_parent_id or parent.combo_item_id or not children
+                    or parent.price_unit != 0 or parent.discount != 0
+                    or parent.price_subtotal != 0 or parent.price_subtotal_incl != 0
+                    or any(child.order_id != self or child not in lines for child in children)):
+                raise ValidationError(_('A combo header must be zero-valued and contain its own order components.'))
+        for line in lines - headers:
+            if line.combo_parent_id:
+                parent, item = line.combo_parent_id, line.combo_item_id
+                if (parent not in headers or parent.order_id != self or line.combo_line_ids
+                        or not item or item.product_id != line.product_id
+                        or item.combo_id not in parent.product_id.combo_ids
+                        or (item.company_id and item.company_id != self.company_id)):
+                    raise ValidationError(_('The combo components do not match their parent and original product choices.'))
+            elif line.combo_item_id or line.combo_line_ids:
+                raise ValidationError(_('A combo component must belong to one valid header in this order.'))
+        for parent in headers:
+            for choice in parent.product_id.combo_ids:
+                quantities = [Decimal(str(child.qty)) for child in parent.combo_line_ids
+                              if child.combo_item_id.combo_id == choice]
+                if any(not quantity.is_finite() for quantity in quantities):
+                    raise ValidationError(_('Combo quantities must be finite and respect the original choice limits.'))
+                selected = sum(quantities, Decimal('0')) / Decimal(str(parent.qty))
+                tolerance = Decimal('0.000000001')
+                if selected < Decimal(choice.qty_free) - tolerance or selected > Decimal(choice.qty_max) + tolerance:
+                    raise ValidationError(_('The combo must include every required choice within its minimum and maximum quantities.'))
+        return headers
+
+    def _gd_combo_refund_headers(self, originals):
+        """Refund a recorded group, never reinterpret today's combo definition."""
+        by_source = {line.refunded_orderline_id.id: line for line in self.lines}
+        headers = self.env['pos.order.line']
+        for refund_line in self.lines:
+            source = refund_line.refunded_orderline_id
+            if source.combo_line_ids or source.product_id.type == 'combo':
+                original_children = source.combo_line_ids
+                children = self.env['pos.order.line'].browse([
+                    by_source[child.id].id for child in original_children if child.id in by_source
+                ])
+                if (source.combo_parent_id or not original_children or refund_line.combo_parent_id
+                        or refund_line.combo_item_id or refund_line.price_unit != 0 or refund_line.discount != 0
+                        or len(children) != len(original_children)
+                        or set(refund_line.combo_line_ids.ids) != set(children.ids)
+                        or any(child.order_id != originals for child in original_children)):
+                    raise ValidationError(_('Refund the combo header and all of its original components together.'))
+                headers |= refund_line
+            elif source.combo_parent_id:
+                parent = by_source.get(source.combo_parent_id.id)
+                if (not parent or parent.order_id != self or refund_line.combo_parent_id != parent
+                        or refund_line.combo_line_ids or not source.combo_item_id
+                        or (refund_line.combo_item_id and refund_line.combo_item_id != source.combo_item_id)):
+                    raise ValidationError(_('Refund the combo header and all of its original components together.'))
+                expected = Decimal(str(parent.qty)) * Decimal(str(source.qty))
+                actual = Decimal(str(refund_line.qty)) * Decimal(str(source.combo_parent_id.qty))
+                if abs(expected - actual) > Decimal('0.000000001'):
+                    raise ValidationError(_('Combo refund quantities must preserve the original component ratios.'))
+                # Native TicketScreen omits combo_item_id on refunds. Its
+                # immutable sale source, not the current product choices, owns it.
+                if not refund_line.combo_item_id:
+                    refund_line.with_context(_baseer_global_discount_token=_TOKEN).write({
+                        'combo_item_id': source.combo_item_id.id,
+                    })
+            elif refund_line.combo_parent_id or refund_line.combo_line_ids or refund_line.combo_item_id:
+                raise ValidationError(_('The refund combo structure does not match the original sale.'))
+        return headers
 
     def _gd_tax_base_lines(self, lines):
         values = lines._prepare_tax_base_line_values()
@@ -227,12 +303,14 @@ class PosOrder(models.Model):
     def _gd_recompute(self):
         order = self._gd_internal()
         base_lines = order._gd_tax_base_lines(order.lines)
-        factor = -1 if order.is_refund else 1
         for base_line in base_lines:
             details = base_line['tax_details']
+            # Native base-line preparation already normalizes refund quantity.
+            # Store that native orientation; order/ledger consumers restore its
+            # sign themselves. A second reversal breaks margins and proofs.
             base_line['record'].with_context(_baseer_global_discount_token=_TOKEN).write({
-                'price_subtotal': factor * (details['total_excluded_currency'] + details['delta_total_excluded_currency']),
-                'price_subtotal_incl': factor * (details['total_excluded_currency'] + details['delta_total_excluded_currency']
+                'price_subtotal': details['total_excluded_currency'] + details['delta_total_excluded_currency'],
+                'price_subtotal_incl': (details['total_excluded_currency'] + details['delta_total_excluded_currency']
                                               + sum(tax['tax_amount_currency'] for tax in details['taxes_data'])),
             })
         order._compute_prices()
@@ -382,6 +460,7 @@ class PosOrder(models.Model):
             raise ValidationError(_('Refund products only; discount lines cannot be refunded separately.'))
         if len(self.lines.refunded_orderline_id) != len(self.lines):
             raise ValidationError(_('Refund each original product on one line only.'))
+        headers = self._gd_combo_refund_headers(originals)
         internal = self._gd_internal()
         internal.write({'is_refund': True})
         allocation_gross = Decimal('0')
@@ -396,6 +475,10 @@ class PosOrder(models.Model):
             if any(line.order_id.state == 'draft' for line in others):
                 raise ValidationError(_('Finish or cancel the other draft refund of this product first.'))
             quantity, source_quantity = -Decimal(str(refund_line.qty)), Decimal(str(source.qty))
+            if refund_line in headers:
+                if quantity + sum(-Decimal(str(line.qty)) for line in others) > source_quantity:
+                    raise ValidationError(_('The refund exceeds the remaining sold quantity.'))
+                continue
             sale_allocation = internal._gd_allocate_history(source, quantity, source_quantity, others, order_base_cache)
             refund_line.with_context(_baseer_global_discount_token=_TOKEN).write({
                 'extra_tax_data': self.env['account.tax']._export_base_line_extra_tax_data(sale_allocation),

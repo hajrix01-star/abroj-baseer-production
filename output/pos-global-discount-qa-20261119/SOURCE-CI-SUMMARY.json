@@ -1,0 +1,31 @@
+{
+  "source_ci_run": 44562602763,
+  "source_ci_job": 135695656182,
+  "source_ci_head": "0322839dac92ec3ecef638cd3abaabb3d81fa045",
+  "source_merge_commit": "4945cf048c1e71cce76df80d75812284fe0085b8",
+  "status": "success",
+  "odoo_post_tests": 258,
+  "failed": 0,
+  "errors": 0,
+  "duration_seconds": 92.68,
+  "queries": 129936,
+  "owned_addon_stats": {
+    "executions_including_fixture_stats": 55,
+    "seconds": 20.62
+  },
+  "native_acceptance_stats": {
+    "executions_including_fixture_stats": 9,
+    "seconds": 15.9
+  },
+  "native_fiscal_documents": 17,
+  "external_requests": 0,
+  "sdk_validated": false,
+  "authority_accepted": false,
+  "addon_git_tree_tested": "30d7ca7258a8bf6d244b93de424ebb18e62f2db1",
+  "addon_git_tree_merged": "30d7ca7258a8bf6d244b93de424ebb18e62f2db1",
+  "addon_tree_identical": true,
+  "acceptance_git_tree_tested": "a9bfe085c7d99cd22f0e7209688a3b0894fe0bcc",
+  "acceptance_git_tree_merged": "a9bfe085c7d99cd22f0e7209688a3b0894fe0bcc",
+  "acceptance_tree_identical": true,
+  "evidence_url": "https://github.com/hajrix01-star/abroj-baseer-production/actions/runs/44562602763/job/135695656182"
+}

@@ -1,0 +1,42 @@
+{
+  "scope": "QA only, installed browser and read-only report acceptance",
+  "source": "4945cf048c1e71cce76df80d75812284fe0085b8",
+  "version": "19.0.1.0.2",
+  "qa_deploy_run": 44564303023,
+  "pos_config_id": 39,
+  "company_id": 2,
+  "income_account_code": "500001",
+  "native_discount_button": true,
+  "native_settings_card": true,
+  "default_fixed_visually_verified": true,
+  "percentage_available": true,
+  "mandatory_reason": false,
+  "lower_explanatory_paragraph_removed": true,
+  "qa_combo_template_id": 5235,
+  "combo_component_ratio": "2:1",
+  "owned_order_id": 2711,
+  "original_gross": "230.00",
+  "fixed_20": {
+    "vat": "27.39",
+    "gross": "210.00"
+  },
+  "percentage_10": {
+    "vat": "27.00",
+    "gross": "207.00"
+  },
+  "report_at_percent": {
+    "invoice_discount_excluding_vat": "20.00",
+    "margin": "180.00",
+    "merchandise_quantity": "13",
+    "gross": "207.00",
+    "merchandise_lines": 3,
+    "net": "180.00"
+  },
+  "final_owned_order_state": "draft, discount removed, gross230/VAT30, no payment or kitchen send",
+  "protected_user_order_id": 2712,
+  "protected_user_order_unchanged": true,
+  "viewport_check": "Current desktop accepted. Phone override returned1920px and was reset; no new375px acceptance claimed. Prior unchanged layout phone evidence remains separate.",
+  "sdk_validation": false,
+  "authority_acceptance": false,
+  "live_unchanged": true
+}

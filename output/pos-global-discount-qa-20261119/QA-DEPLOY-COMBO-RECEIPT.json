@@ -1,0 +1,136 @@
+{
+  "qa_current": "/srv/baseer-qa/releases/4945cf048c1e-run-44564303023-20261119T161814Z",
+  "qa_source_commit": "4945cf048c1e71cce76df80d75812284fe0085b8",
+  "live_current": "/srv/abroj-baseer-production/releases/ed0e39a37f76-run-44521587590-20261119T121141Z",
+  "live_source_commit": "ed0e39a37f7669db02c8e3a07ddd6c98300e2ba6",
+  "qa_runtime": {
+    "id": "ef883a26e3c57324161a1a57ea8f042227af52dc257428657f04a497a0c1fc6f",
+    "started_at": "2026-11-19T16:19:05.423011612Z",
+    "running": true,
+    "restart_count": 0
+  },
+  "live_runtime": {
+    "id": "4767c67ba39d825d4a45d263fb7a1dd49db86536d85d5da5dafe294dec310f69",
+    "started_at": "2026-11-19T12:12:56.310196943Z",
+    "running": true,
+    "restart_count": 0
+  },
+  "code_files": [
+    {
+      "path": "README.md",
+      "sha256": "71ac6805bdf2c4ca0c9b00349e7ed9d146c2b7f02dbbf10fd2e3a3182e61c5f5"
+    },
+    {
+      "path": "__init__.py",
+      "sha256": "5fd10918e1361ad65b4b41bcd8fb525e659267f47c8c4334ae52530e58908e9e"
+    },
+    {
+      "path": "__manifest__.py",
+      "sha256": "37e659727fdf717f1bc5bc819491b2a8c56b47bc866cebead3e5b0da1dfa6a81"
+    },
+    {
+      "path": "models/__init__.py",
+      "sha256": "aaf6d7173190106ad140d821a02e18cd848f20de1141fc2c3ec32f0c1740dd3e"
+    },
+    {
+      "path": "models/discount_accounting.py",
+      "sha256": "4835a78bbe27a020421027d8ec05b767dcfdb2bff066c76303a1ee9641c64240"
+    },
+    {
+      "path": "models/discount_reporting.py",
+      "sha256": "b44d853452c05089491941b824119ea1a50abaf9a099ac048eedbd5fddbd02fe"
+    },
+    {
+      "path": "models/discount_session_report.py",
+      "sha256": "28deb57d53cfd01e7acfd08b0d1785a39198b6881f6b3c02d04282f7cd95019a"
+    },
+    {
+      "path": "models/pos_config.py",
+      "sha256": "41e647c2bddac6504559d62bb2ff45b856f02a1719b0bbe77b33f21b8f924df3"
+    },
+    {
+      "path": "models/pos_order.py",
+      "sha256": "55327b9a65b8f709254292ba761fcf30f54d34ccc71cb2f402671acd16c5c15b"
+    },
+    {
+      "path": "models/res_config_settings.py",
+      "sha256": "ca31e5c52b961d59b693b8e8e6630ed5e859c375f665d777e63a2a22c34e1885"
+    },
+    {
+      "path": "security/discount_security.xml",
+      "sha256": "2262226847ff3be324d28c7cda538f232406a708e74dba71a75c56c5586f8340"
+    },
+    {
+      "path": "security/ir.model.access.csv",
+      "sha256": "e30a46e1f3260eaa59d12009284655fcfd85e9d8ebeca0c286e7249b33034134"
+    },
+    {
+      "path": "static/src/app/discount_flow.js",
+      "sha256": "041c29a07f5b79338b9659b5cd637792d79fbf246e603c615f440036d3870ac8"
+    },
+    {
+      "path": "static/src/app/global_discount.js",
+      "sha256": "3968f728f49cf51afa558545ae55efe08f098cd9a846db2a32e5551676421b39"
+    },
+    {
+      "path": "static/src/app/global_discount.scss",
+      "sha256": "c877fa9af311772f025ff7fb839a54f892229e664ed94f7f0919e2ad7613310c"
+    },
+    {
+      "path": "static/src/app/global_discount.xml",
+      "sha256": "f1613cce6221c6aaf043d984590b69b6a9977a94bac26cf9158ab1f876b9e2af"
+    },
+    {
+      "path": "views/pos_config_views.xml",
+      "sha256": "e22904554d8a83c7e20576a70e7efce2e56ce1eb312b64539cf2ba2f39ec6f90"
+    }
+  ],
+  "module_state": "installed",
+  "module_version": "19.0.1.0.2",
+  "config_id": 39,
+  "company_id": 2,
+  "enabled": true,
+  "owned_discount_product_id": 5282,
+  "configured_account_id": 386,
+  "enabled_config_count": 1,
+  "draft": {
+    "id": 2712,
+    "state": "draft",
+    "line_count": 2,
+    "digest_sha256": "865029aa0c56f2502abd8b73efff150c8c4aa0a34559d281e27f0065da1e4a2b"
+  },
+  "READ_ONLY_ROLLBACK": true,
+  "protected_result": {
+    "QA_DEPLOY": "GO",
+    "RELEASE_ID": "baseer-2026-11-19-pos-discount-combos",
+    "RELEASE": "/srv/baseer-qa/releases/4945cf048c1e-run-44564303023-20261119T161814Z",
+    "BACKUP": "/srv/baseer-qa/backups/pre-4945cf048c1e-44564303023-20261119T161814Z",
+    "COMMIT": "4945cf048c1e71cce76df80d75812284fe0085b8",
+    "MODULES": "baseer_pos_global_discount",
+    "THIRD_PARTY_MODULES": ""
+  },
+  "recovery_sha256": [
+    "cd55fb6258f6e1fc660cdacf12e55a1aca1582b59c535e905332866719beb58a  /srv/baseer-qa/backups/pre-4945cf048c1e-44564303023-20261119T161814Z/database.dump",
+    "5bec95230682368756c44f948b8361c2348a92a83d56cf50df7442868de84f4d  /srv/baseer-qa/backups/pre-4945cf048c1e-44564303023-20261119T161814Z/filestore.tar"
+  ],
+  "expected_core_sha256": "2022849bf3a7b176c04ae8333094f66f5248aa17e0e1fe32797e638fe6661d5a",
+  "draft_digest_unchanged": true,
+  "core_git_source_match": true,
+  "core_git_source_mismatches": [],
+  "raw_windows_archive_note": "Five files use CRLF in Windows archive; authoritative Git-normalized source comparison is separate.",
+  "raw_windows_archive_byte_match": false,
+  "draft_digest_method": "SHA256 compact sorted JSON {order: read(load=False)[0], lines: sorted-id read(load=False)}",
+  "account_ui_save_readonly_verified": {
+    "product_cost_zero": true,
+    "other_enabled_config_ids": [],
+    "product_id": 5282,
+    "product_explicit_income_account_id": 386,
+    "account_code": "500001",
+    "account_type": "income",
+    "config_id": 39,
+    "account_id": 386
+  },
+  "workflow_run_id": 44564303023,
+  "sdk_validated": false,
+  "authority_accepted": false
+}

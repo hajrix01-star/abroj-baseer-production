@@ -21,7 +21,7 @@ class TestPosCacheWorker(HttpCase):
             compiled = transpile_javascript('/' + path, source.read())
         self.assertIn('@point_of_sale/app/components/loader/critical_pos_error/reset_local_data', compiled)
         self.assertIn('__exports.resetLocalData', compiled)
-        self.assertIn('@baseer_pos_cache_resilience/src/receipt_storage', compiled)
+        self.assertIn('@baseer_pos_cache_resilience/receipt_storage', compiled)
 
     def test_worker_route_retains_native_authentication(self):
         self.authenticate(None, None)

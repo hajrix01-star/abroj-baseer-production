@@ -7,7 +7,7 @@ from odoo.tools.js_transpiler import transpile_javascript
 class TestPosCacheWorker(HttpCase):
     def test_receipt_recovery_asset_replaces_native_definition(self):
         assets = self.env['ir.asset']
-        paths = [item[0] for item in assets._get_asset_paths(
+        paths = [item[0].lstrip('/') for item in assets._get_asset_paths(
             'point_of_sale._assets_pos', assets._get_asset_params())]
         self.assertIn('baseer_pos_cache_resilience/static/src/reset_local_data.js', paths)
         self.assertIn('baseer_pos_cache_resilience/static/src/receipt_storage.js', paths)

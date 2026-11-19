@@ -1070,3 +1070,18 @@ LOCAL regression fix owned by `baseer_pos_tobacco_report` 19.0.1.5.4 over
 the unified exporter. Owner amendment fixes portrait A4 only for tobacco in
 `baseer_reports_menu`19.0.1.1.1; XLSX, other providers and financial data remain.
 [Scope and release evidence](../../build-governance/TOBACCO-PDF-FILENAME-20261105.md).
+
+## POS-CANCELLATION-LAYOUT-20261119 — filter grid and report spacing (PR candidate)
+
+LOCAL CSS-only delta owned by `baseer_pos_cancellation_report`, based on
+`65bc07c765af65260e61c4955a84b437403af5eb`. Live DOM inspection confirmed the shared
+`baseer_reports_menu` rule `.o_baseer_report_filters { align-items: center }`
+shrinks this card's grid to 180px inside a 1857px form (height 663px).
+The report now explicitly stretches its grid and action row; it also aligns the
+review checkbox, separates actions, widens KPI cards and preserves narrow-screen
+wrapping. Only report.scss changes runtime behavior; JS, queries, financial
+values, access control and other reports are unchanged. Validation: existing
+Node request suite PASS (14 cases), diff whitespace check PASS. Browser preview
+of modified desktop/mobile layouts remains unverified: local file opening was
+blocked by browser policy, and the subsequent preview-server request was rejected
+by automatic approval review. No production deployment or release GO is recorded.

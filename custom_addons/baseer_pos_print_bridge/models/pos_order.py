@@ -6,6 +6,8 @@ import math
 from odoo import _, api, fields, models
 from odoo.exceptions import AccessError, UserError, ValidationError
 
+from .note import plain_note
+
 _logger = logging.getLogger(__name__)
 
 
@@ -335,7 +337,7 @@ class PosOrder(models.Model):
         parent = line.combo_parent_id
         return (
             line.product_id.id, line.product_uom_id.id, line.full_product_name or '',
-            line.note or '', line.customer_note or '', line.price_unit, line.discount,
+            plain_note(line.note), plain_note(line.customer_note), line.price_unit, line.discount,
             tuple(sorted(line.tax_ids.ids)), tuple(sorted(line.attribute_value_ids.ids)),
             tuple(sorted((value.custom_product_template_attribute_value_id.id, value.custom_value or '')
                          for value in line.custom_attribute_value_ids)),

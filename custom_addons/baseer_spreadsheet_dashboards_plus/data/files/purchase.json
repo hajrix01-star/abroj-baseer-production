@@ -1,0 +1,901 @@
+{
+  "version": "18.5.10",
+  "sheets": [
+    {
+      "id": "dashboard",
+      "name": "Dashboard",
+      "colNumber": 8,
+      "rowNumber": 100,
+      "rows": {},
+      "cols": {
+        "0": {
+          "size": 140
+        },
+        "1": {
+          "size": 140
+        },
+        "2": {
+          "size": 140
+        },
+        "3": {
+          "size": 140
+        },
+        "4": {
+          "size": 140
+        },
+        "5": {
+          "size": 140
+        },
+        "6": {
+          "size": 140
+        },
+        "7": {
+          "size": 140
+        }
+      },
+      "merges": [],
+      "cells": {
+        "A1": "=_t(\"Purchase & vendor analysis\")",
+        "A20": "=_t(\"Top 10 vendors\")",
+        "A21": "=_t(\"Vendor\")",
+        "B21": "=_t(\"Untaxed total\")",
+        "C21": "=_t(\"Orders\")",
+        "D21": "=_t(\"On-time %\")",
+        "A22": "=IFERROR(PIVOT.HEADER(2,\"#partner_id\",1),\"\")",
+        "B22": "=IFERROR(PIVOT.VALUE(2,\"untaxed_total\",\"#partner_id\",1),\"\")",
+        "C22": "=IFERROR(PIVOT.VALUE(2,\"order_id:count_distinct\",\"#partner_id\",1),\"\")",
+        "D22": "=IF(A22=\"\",\"\",IFERROR(VLOOKUP(A22,Data!J1:K100,2,FALSE)/100,\"\"))",
+        "A23": "=IFERROR(PIVOT.HEADER(2,\"#partner_id\",2),\"\")",
+        "B23": "=IFERROR(PIVOT.VALUE(2,\"untaxed_total\",\"#partner_id\",2),\"\")",
+        "C23": "=IFERROR(PIVOT.VALUE(2,\"order_id:count_distinct\",\"#partner_id\",2),\"\")",
+        "D23": "=IF(A23=\"\",\"\",IFERROR(VLOOKUP(A23,Data!J1:K100,2,FALSE)/100,\"\"))",
+        "A24": "=IFERROR(PIVOT.HEADER(2,\"#partner_id\",3),\"\")",
+        "B24": "=IFERROR(PIVOT.VALUE(2,\"untaxed_total\",\"#partner_id\",3),\"\")",
+        "C24": "=IFERROR(PIVOT.VALUE(2,\"order_id:count_distinct\",\"#partner_id\",3),\"\")",
+        "D24": "=IF(A24=\"\",\"\",IFERROR(VLOOKUP(A24,Data!J1:K100,2,FALSE)/100,\"\"))",
+        "A25": "=IFERROR(PIVOT.HEADER(2,\"#partner_id\",4),\"\")",
+        "B25": "=IFERROR(PIVOT.VALUE(2,\"untaxed_total\",\"#partner_id\",4),\"\")",
+        "C25": "=IFERROR(PIVOT.VALUE(2,\"order_id:count_distinct\",\"#partner_id\",4),\"\")",
+        "D25": "=IF(A25=\"\",\"\",IFERROR(VLOOKUP(A25,Data!J1:K100,2,FALSE)/100,\"\"))",
+        "A26": "=IFERROR(PIVOT.HEADER(2,\"#partner_id\",5),\"\")",
+        "B26": "=IFERROR(PIVOT.VALUE(2,\"untaxed_total\",\"#partner_id\",5),\"\")",
+        "C26": "=IFERROR(PIVOT.VALUE(2,\"order_id:count_distinct\",\"#partner_id\",5),\"\")",
+        "D26": "=IF(A26=\"\",\"\",IFERROR(VLOOKUP(A26,Data!J1:K100,2,FALSE)/100,\"\"))",
+        "A27": "=IFERROR(PIVOT.HEADER(2,\"#partner_id\",6),\"\")",
+        "B27": "=IFERROR(PIVOT.VALUE(2,\"untaxed_total\",\"#partner_id\",6),\"\")",
+        "C27": "=IFERROR(PIVOT.VALUE(2,\"order_id:count_distinct\",\"#partner_id\",6),\"\")",
+        "D27": "=IF(A27=\"\",\"\",IFERROR(VLOOKUP(A27,Data!J1:K100,2,FALSE)/100,\"\"))",
+        "A28": "=IFERROR(PIVOT.HEADER(2,\"#partner_id\",7),\"\")",
+        "B28": "=IFERROR(PIVOT.VALUE(2,\"untaxed_total\",\"#partner_id\",7),\"\")",
+        "C28": "=IFERROR(PIVOT.VALUE(2,\"order_id:count_distinct\",\"#partner_id\",7),\"\")",
+        "D28": "=IF(A28=\"\",\"\",IFERROR(VLOOKUP(A28,Data!J1:K100,2,FALSE)/100,\"\"))",
+        "A29": "=IFERROR(PIVOT.HEADER(2,\"#partner_id\",8),\"\")",
+        "B29": "=IFERROR(PIVOT.VALUE(2,\"untaxed_total\",\"#partner_id\",8),\"\")",
+        "C29": "=IFERROR(PIVOT.VALUE(2,\"order_id:count_distinct\",\"#partner_id\",8),\"\")",
+        "D29": "=IF(A29=\"\",\"\",IFERROR(VLOOKUP(A29,Data!J1:K100,2,FALSE)/100,\"\"))",
+        "A30": "=IFERROR(PIVOT.HEADER(2,\"#partner_id\",9),\"\")",
+        "B30": "=IFERROR(PIVOT.VALUE(2,\"untaxed_total\",\"#partner_id\",9),\"\")",
+        "C30": "=IFERROR(PIVOT.VALUE(2,\"order_id:count_distinct\",\"#partner_id\",9),\"\")",
+        "D30": "=IF(A30=\"\",\"\",IFERROR(VLOOKUP(A30,Data!J1:K100,2,FALSE)/100,\"\"))",
+        "A31": "=IFERROR(PIVOT.HEADER(2,\"#partner_id\",10),\"\")",
+        "B31": "=IFERROR(PIVOT.VALUE(2,\"untaxed_total\",\"#partner_id\",10),\"\")",
+        "C31": "=IFERROR(PIVOT.VALUE(2,\"order_id:count_distinct\",\"#partner_id\",10),\"\")",
+        "D31": "=IF(A31=\"\",\"\",IFERROR(VLOOKUP(A31,Data!J1:K100,2,FALSE)/100,\"\"))",
+        "A35": "=_t(\"Late purchase orders\")",
+        "A36": "=ODOO.LIST.HEADER(1, \"name\")",
+        "A37": "=ODOO.LIST(1,1,\"name\")",
+        "A38": "=ODOO.LIST(1,2,\"name\")",
+        "A39": "=ODOO.LIST(1,3,\"name\")",
+        "A40": "=ODOO.LIST(1,4,\"name\")",
+        "A41": "=ODOO.LIST(1,5,\"name\")",
+        "A42": "=ODOO.LIST(1,6,\"name\")",
+        "A43": "=ODOO.LIST(1,7,\"name\")",
+        "A44": "=ODOO.LIST(1,8,\"name\")",
+        "A45": "=ODOO.LIST(1,9,\"name\")",
+        "A46": "=ODOO.LIST(1,10,\"name\")",
+        "B36": "=ODOO.LIST.HEADER(1, \"partner_id\")",
+        "B37": "=ODOO.LIST(1,1,\"partner_id\")",
+        "B38": "=ODOO.LIST(1,2,\"partner_id\")",
+        "B39": "=ODOO.LIST(1,3,\"partner_id\")",
+        "B40": "=ODOO.LIST(1,4,\"partner_id\")",
+        "B41": "=ODOO.LIST(1,5,\"partner_id\")",
+        "B42": "=ODOO.LIST(1,6,\"partner_id\")",
+        "B43": "=ODOO.LIST(1,7,\"partner_id\")",
+        "B44": "=ODOO.LIST(1,8,\"partner_id\")",
+        "B45": "=ODOO.LIST(1,9,\"partner_id\")",
+        "B46": "=ODOO.LIST(1,10,\"partner_id\")",
+        "C36": "=ODOO.LIST.HEADER(1, \"date_planned\")",
+        "C37": "=ODOO.LIST(1,1,\"date_planned\")",
+        "C38": "=ODOO.LIST(1,2,\"date_planned\")",
+        "C39": "=ODOO.LIST(1,3,\"date_planned\")",
+        "C40": "=ODOO.LIST(1,4,\"date_planned\")",
+        "C41": "=ODOO.LIST(1,5,\"date_planned\")",
+        "C42": "=ODOO.LIST(1,6,\"date_planned\")",
+        "C43": "=ODOO.LIST(1,7,\"date_planned\")",
+        "C44": "=ODOO.LIST(1,8,\"date_planned\")",
+        "C45": "=ODOO.LIST(1,9,\"date_planned\")",
+        "C46": "=ODOO.LIST(1,10,\"date_planned\")",
+        "D36": "=ODOO.LIST.HEADER(1, \"receipt_status\")",
+        "D37": "=ODOO.LIST(1,1,\"receipt_status\")",
+        "D38": "=ODOO.LIST(1,2,\"receipt_status\")",
+        "D39": "=ODOO.LIST(1,3,\"receipt_status\")",
+        "D40": "=ODOO.LIST(1,4,\"receipt_status\")",
+        "D41": "=ODOO.LIST(1,5,\"receipt_status\")",
+        "D42": "=ODOO.LIST(1,6,\"receipt_status\")",
+        "D43": "=ODOO.LIST(1,7,\"receipt_status\")",
+        "D44": "=ODOO.LIST(1,8,\"receipt_status\")",
+        "D45": "=ODOO.LIST(1,9,\"receipt_status\")",
+        "D46": "=ODOO.LIST(1,10,\"receipt_status\")"
+      },
+      "styles": {
+        "A1": 1,
+        "A20": 4,
+        "A21": 5,
+        "B21": 5,
+        "C21": 5,
+        "D21": 5,
+        "A35": 4,
+        "A36": 5,
+        "B36": 5,
+        "C36": 5,
+        "D36": 5
+      },
+      "formats": {
+        "B22": 1,
+        "D22": 2,
+        "B23": 1,
+        "D23": 2,
+        "B24": 1,
+        "D24": 2,
+        "B25": 1,
+        "D25": 2,
+        "B26": 1,
+        "D26": 2,
+        "B27": 1,
+        "D27": 2,
+        "B28": 1,
+        "D28": 2,
+        "B29": 1,
+        "D29": 2,
+        "B30": 1,
+        "D30": 2,
+        "B31": 1,
+        "D31": 2
+      },
+      "borders": {
+        "A20": 1,
+        "A35": 1
+      },
+      "conditionalFormats": [],
+      "dataValidationRules": [],
+      "figures": [
+        {
+          "id": "score-0",
+          "tag": "chart",
+          "width": 185,
+          "height": 95,
+          "col": 0,
+          "row": 0,
+          "offset": {
+            "x": 0,
+            "y": 35
+          },
+          "data": {
+            "type": "scorecard",
+            "title": {
+              "text": "Purchased value",
+              "bold": true
+            },
+            "background": "#f1f8f8",
+            "keyValue": "Data!B1",
+            "baselineMode": "text",
+            "humanize": true,
+            "chartId": "score-0"
+          }
+        },
+        {
+          "id": "score-1",
+          "tag": "chart",
+          "width": 185,
+          "height": 95,
+          "col": 0,
+          "row": 0,
+          "offset": {
+            "x": 190,
+            "y": 35
+          },
+          "data": {
+            "type": "scorecard",
+            "title": {
+              "text": "Orders",
+              "bold": true
+            },
+            "background": "#f1f8f8",
+            "keyValue": "Data!B2",
+            "baselineMode": "text",
+            "humanize": true,
+            "chartId": "score-1"
+          }
+        },
+        {
+          "id": "score-2",
+          "tag": "chart",
+          "width": 185,
+          "height": 95,
+          "col": 0,
+          "row": 0,
+          "offset": {
+            "x": 380,
+            "y": 35
+          },
+          "data": {
+            "type": "scorecard",
+            "title": {
+              "text": "Average order",
+              "bold": true
+            },
+            "background": "#f1f8f8",
+            "keyValue": "Data!B3",
+            "baselineMode": "text",
+            "humanize": true,
+            "chartId": "score-2"
+          }
+        },
+        {
+          "id": "score-3",
+          "tag": "chart",
+          "width": 185,
+          "height": 95,
+          "col": 0,
+          "row": 0,
+          "offset": {
+            "x": 570,
+            "y": 35
+          },
+          "data": {
+            "type": "scorecard",
+            "title": {
+              "text": "Days to receive",
+              "bold": true
+            },
+            "background": "#f1f8f8",
+            "keyValue": "Data!B4",
+            "baselineMode": "text",
+            "humanize": true,
+            "chartId": "score-3"
+          }
+        },
+        {
+          "id": "score-4",
+          "tag": "chart",
+          "width": 185,
+          "height": 95,
+          "col": 0,
+          "row": 0,
+          "offset": {
+            "x": 760,
+            "y": 35
+          },
+          "data": {
+            "type": "scorecard",
+            "title": {
+              "text": "Days to confirm",
+              "bold": true
+            },
+            "background": "#f1f8f8",
+            "keyValue": "Data!B5",
+            "baselineMode": "text",
+            "humanize": true,
+            "chartId": "score-4"
+          }
+        },
+        {
+          "id": "score-5",
+          "tag": "chart",
+          "width": 185,
+          "height": 95,
+          "col": 0,
+          "row": 0,
+          "offset": {
+            "x": 950,
+            "y": 35
+          },
+          "data": {
+            "type": "scorecard",
+            "title": {
+              "text": "On-time %",
+              "bold": true
+            },
+            "background": "#f1f8f8",
+            "keyValue": "Data!B6",
+            "baselineMode": "text",
+            "humanize": true,
+            "chartId": "score-5"
+          }
+        },
+        {
+          "id": "purchase-month",
+          "tag": "chart",
+          "width": 305,
+          "height": 230,
+          "col": 0,
+          "row": 0,
+          "offset": {
+            "x": 0,
+            "y": 145
+          },
+          "data": {
+            "title": {
+              "text": "Monthly purchases"
+            },
+            "background": "#ffffff",
+            "legendPosition": "none",
+            "metaData": {
+              "groupBy": [
+                "date_order:month"
+              ],
+              "measure": "untaxed_total",
+              "order": null,
+              "resModel": "purchase.report",
+              "mode": "line",
+              "cumulatedStart": false
+            },
+            "searchParams": {
+              "comparison": null,
+              "context": {},
+              "domain": [
+                [
+                  "state",
+                  "=",
+                  "purchase"
+                ]
+              ],
+              "groupBy": [
+                "date_order:month"
+              ],
+              "orderBy": []
+            },
+            "type": "odoo_line",
+            "dataSets": [],
+            "chartId": "purchase-month",
+            "fieldMatching": {
+              "baseer-period": {
+                "chain": "date_order",
+                "type": "datetime",
+                "offset": 0
+              }
+            },
+            "verticalAxisPosition": "left",
+            "stacked": false
+          }
+        },
+        {
+          "id": "purchase-vendor",
+          "tag": "chart",
+          "width": 305,
+          "height": 230,
+          "col": 0,
+          "row": 0,
+          "offset": {
+            "x": 310,
+            "y": 145
+          },
+          "data": {
+            "title": {
+              "text": "Top vendors"
+            },
+            "background": "#ffffff",
+            "legendPosition": "none",
+            "metaData": {
+              "groupBy": [
+                "partner_id"
+              ],
+              "measure": "untaxed_total",
+              "order": null,
+              "resModel": "purchase.report",
+              "mode": "bar",
+              "cumulatedStart": false
+            },
+            "searchParams": {
+              "comparison": null,
+              "context": {},
+              "domain": [
+                [
+                  "state",
+                  "=",
+                  "purchase"
+                ]
+              ],
+              "groupBy": [
+                "partner_id"
+              ],
+              "orderBy": []
+            },
+            "type": "odoo_bar",
+            "dataSets": [],
+            "chartId": "purchase-vendor",
+            "fieldMatching": {
+              "baseer-period": {
+                "chain": "date_order",
+                "type": "datetime",
+                "offset": 0
+              }
+            },
+            "verticalAxisPosition": "left",
+            "stacked": false
+          }
+        },
+        {
+          "id": "purchase-category",
+          "tag": "chart",
+          "width": 305,
+          "height": 230,
+          "col": 0,
+          "row": 0,
+          "offset": {
+            "x": 620,
+            "y": 145
+          },
+          "data": {
+            "title": {
+              "text": "Categories"
+            },
+            "background": "#ffffff",
+            "legendPosition": "top",
+            "metaData": {
+              "groupBy": [
+                "category_id"
+              ],
+              "measure": "untaxed_total",
+              "order": null,
+              "resModel": "purchase.report",
+              "mode": "pie",
+              "cumulatedStart": false
+            },
+            "searchParams": {
+              "comparison": null,
+              "context": {},
+              "domain": [
+                [
+                  "state",
+                  "=",
+                  "purchase"
+                ]
+              ],
+              "groupBy": [
+                "category_id"
+              ],
+              "orderBy": []
+            },
+            "type": "odoo_pie",
+            "dataSets": [],
+            "chartId": "purchase-category",
+            "fieldMatching": {
+              "baseer-period": {
+                "chain": "date_order",
+                "type": "datetime",
+                "offset": 0
+              }
+            }
+          }
+        }
+      ],
+      "tables": [],
+      "areGridLinesVisible": false,
+      "isVisible": true,
+      "headerGroups": {
+        "ROW": [],
+        "COL": []
+      },
+      "comments": {}
+    },
+    {
+      "id": "data",
+      "name": "Data",
+      "colNumber": 12,
+      "rowNumber": 100,
+      "rows": {},
+      "cols": {
+        "0": {
+          "size": 140
+        },
+        "1": {
+          "size": 140
+        },
+        "2": {
+          "size": 140
+        },
+        "3": {
+          "size": 140
+        },
+        "4": {
+          "size": 140
+        },
+        "5": {
+          "size": 140
+        },
+        "6": {
+          "size": 140
+        },
+        "7": {
+          "size": 140
+        }
+      },
+      "merges": [],
+      "cells": {
+        "J1": "=PIVOT(6,100,FALSE,FALSE)",
+        "B1": "=PIVOT.VALUE(1,\"untaxed_total\")",
+        "B2": "=PIVOT.VALUE(7,\"__count\")",
+        "B3": "=IFERROR(B1/B2,0)",
+        "B4": "=PIVOT.VALUE(1,\"delay_pass\")",
+        "B5": "=PIVOT.VALUE(1,\"delay\")",
+        "B6": "=PIVOT.VALUE(5,\"on_time_rate\")"
+      },
+      "styles": {},
+      "formats": {},
+      "borders": {},
+      "conditionalFormats": [],
+      "dataValidationRules": [],
+      "figures": [],
+      "tables": [],
+      "areGridLinesVisible": false,
+      "isVisible": true,
+      "headerGroups": {
+        "ROW": [],
+        "COL": []
+      },
+      "comments": {}
+    }
+  ],
+  "styles": {
+    "1": {
+      "bold": true,
+      "fontSize": 16,
+      "textColor": "#01666b"
+    },
+    "2": {
+      "bold": true,
+      "fillColor": "#e6f2f3"
+    },
+    "3": {
+      "fontSize": 11
+    },
+    "4": {
+      "bold": true,
+      "fontSize": 14,
+      "textColor": "#01666b"
+    },
+    "5": {
+      "bold": true,
+      "fontSize": 10,
+      "fillColor": "#e6f2f3",
+      "textColor": "#345"
+    }
+  },
+  "formats": {
+    "1": "#,##0.00",
+    "2": "0.0%"
+  },
+  "borders": {
+    "1": {
+      "bottom": {
+        "style": "thin",
+        "color": "#9fc5c5"
+      }
+    }
+  },
+  "revisionId": "baseer",
+  "uniqueFigureIds": true,
+  "settings": {
+    "locale": {
+      "name": "English (US)",
+      "code": "en_US",
+      "thousandsSeparator": ",",
+      "decimalSeparator": ".",
+      "dateFormat": "mm/dd/yyyy",
+      "timeFormat": "hh:mm:ss",
+      "formulaArgSeparator": ",",
+      "weekStart": 7
+    }
+  },
+  "pivots": {
+    "1": {
+      "type": "ODOO",
+      "id": "1",
+      "formulaId": "1",
+      "model": "purchase.report",
+      "name": "Purchased value",
+      "domain": [
+        [
+          "state",
+          "=",
+          "purchase"
+        ]
+      ],
+      "context": {},
+      "fieldMatching": {
+        "baseer-period": {
+          "chain": "date_order",
+          "type": "datetime",
+          "offset": 0
+        }
+      },
+      "measures": [
+        {
+          "id": "untaxed_total",
+          "fieldName": "untaxed_total"
+        },
+        {
+          "id": "qty_ordered",
+          "fieldName": "qty_ordered"
+        },
+        {
+          "id": "qty_received",
+          "fieldName": "qty_received"
+        },
+        {
+          "id": "qty_billed",
+          "fieldName": "qty_billed"
+        },
+        {
+          "id": "delay",
+          "fieldName": "delay"
+        },
+        {
+          "id": "delay_pass",
+          "fieldName": "delay_pass"
+        }
+      ],
+      "rows": [],
+      "columns": []
+    },
+    "2": {
+      "type": "ODOO",
+      "id": "2",
+      "formulaId": "2",
+      "model": "purchase.report",
+      "name": "Top vendors",
+      "domain": [
+        [
+          "state",
+          "=",
+          "purchase"
+        ]
+      ],
+      "context": {},
+      "fieldMatching": {
+        "baseer-period": {
+          "chain": "date_order",
+          "type": "datetime",
+          "offset": 0
+        }
+      },
+      "measures": [
+        {
+          "id": "untaxed_total",
+          "fieldName": "untaxed_total"
+        },
+        {
+          "id": "order_id:count_distinct",
+          "fieldName": "order_id",
+          "aggregator": "count_distinct"
+        }
+      ],
+      "rows": [
+        {
+          "fieldName": "partner_id"
+        }
+      ],
+      "columns": [],
+      "sortedColumn": {
+        "measure": "untaxed_total",
+        "order": "desc",
+        "domain": []
+      }
+    },
+    "3": {
+      "type": "ODOO",
+      "id": "3",
+      "formulaId": "3",
+      "model": "purchase.report",
+      "name": "Categories",
+      "domain": [
+        [
+          "state",
+          "=",
+          "purchase"
+        ]
+      ],
+      "context": {},
+      "fieldMatching": {
+        "baseer-period": {
+          "chain": "date_order",
+          "type": "datetime",
+          "offset": 0
+        }
+      },
+      "measures": [
+        {
+          "id": "untaxed_total",
+          "fieldName": "untaxed_total"
+        }
+      ],
+      "rows": [
+        {
+          "fieldName": "category_id"
+        }
+      ],
+      "columns": []
+    },
+    "4": {
+      "type": "ODOO",
+      "id": "4",
+      "formulaId": "4",
+      "model": "purchase.report",
+      "name": "Monthly purchases",
+      "domain": [
+        [
+          "state",
+          "=",
+          "purchase"
+        ]
+      ],
+      "context": {},
+      "fieldMatching": {
+        "baseer-period": {
+          "chain": "date_order",
+          "type": "datetime",
+          "offset": 0
+        }
+      },
+      "measures": [
+        {
+          "id": "untaxed_total",
+          "fieldName": "untaxed_total"
+        }
+      ],
+      "rows": [
+        {
+          "fieldName": "date_order",
+          "granularity": "month"
+        }
+      ],
+      "columns": []
+    },
+    "5": {
+      "type": "ODOO",
+      "id": "5",
+      "formulaId": "5",
+      "model": "vendor.delay.report",
+      "name": "On-time delivery",
+      "domain": [],
+      "context": {},
+      "fieldMatching": {
+        "baseer-period": {
+          "chain": "date",
+          "type": "datetime",
+          "offset": 0
+        }
+      },
+      "measures": [
+        {
+          "id": "on_time_rate",
+          "fieldName": "on_time_rate"
+        }
+      ],
+      "rows": [],
+      "columns": []
+    },
+    "6": {
+      "type": "ODOO",
+      "id": "6",
+      "formulaId": "6",
+      "model": "vendor.delay.report",
+      "name": "Vendor on-time delivery",
+      "domain": [],
+      "context": {},
+      "fieldMatching": {
+        "baseer-period": {
+          "chain": "date",
+          "type": "datetime",
+          "offset": 0
+        }
+      },
+      "measures": [
+        {
+          "id": "on_time_rate",
+          "fieldName": "on_time_rate"
+        }
+      ],
+      "rows": [
+        {
+          "fieldName": "partner_id"
+        }
+      ],
+      "columns": []
+    },
+    "7": {
+      "type": "ODOO",
+      "id": "7",
+      "formulaId": "7",
+      "model": "purchase.order",
+      "name": "Orders",
+      "domain": [
+        [
+          "state",
+          "=",
+          "purchase"
+        ]
+      ],
+      "context": {},
+      "fieldMatching": {
+        "baseer-period": {
+          "chain": "date_order",
+          "type": "datetime",
+          "offset": 0
+        }
+      },
+      "measures": [
+        {
+          "id": "__count",
+          "fieldName": "__count"
+        }
+      ],
+      "rows": [],
+      "columns": []
+    }
+  },
+  "pivotNextId": 8,
+  "customTableStyles": {},
+  "globalFilters": [
+    {
+      "id": "baseer-period",
+      "type": "date",
+      "label": "Period",
+      "defaultValue": "this_year"
+    }
+  ],
+  "lists": {
+    "1": {
+      "id": "1",
+      "model": "purchase.order",
+      "name": "Pending purchase orders",
+      "columns": [
+        "name",
+        "partner_id",
+        "date_planned",
+        "receipt_status"
+      ],
+      "domain": [
+        [
+          "state",
+          "=",
+          "purchase"
+        ],
+        [
+          "receipt_status",
+          "in",
+          [
+            "pending",
+            "partial"
+          ]
+        ],
+        [
+          "date_planned",
+          "<",
+          "today"
+        ]
+      ],
+      "context": {},
+      "orderBy": [
+        {
+          "name": "date_planned",
+          "asc": true
+        }
+      ],
+      "fieldMatching": {}
+    }
+  },
+  "listNextId": 2,
+  "chartOdooMenusReferences": {}
+}

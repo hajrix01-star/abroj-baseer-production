@@ -1,0 +1,1248 @@
+{
+  "version": "18.5.10",
+  "sheets": [
+    {
+      "id": "dashboard",
+      "name": "Dashboard",
+      "colNumber": 8,
+      "rowNumber": 100,
+      "rows": {
+        "0": {
+          "size": 23
+        },
+        "1": {
+          "size": 23
+        },
+        "2": {
+          "size": 23
+        },
+        "3": {
+          "size": 23
+        },
+        "4": {
+          "size": 23
+        },
+        "5": {
+          "size": 23
+        },
+        "6": {
+          "size": 23
+        },
+        "7": {
+          "size": 23
+        },
+        "8": {
+          "size": 23
+        },
+        "9": {
+          "size": 23
+        },
+        "10": {
+          "size": 23
+        },
+        "11": {
+          "size": 23
+        },
+        "12": {
+          "size": 23
+        },
+        "13": {
+          "size": 23
+        },
+        "14": {
+          "size": 23
+        },
+        "15": {
+          "size": 23
+        },
+        "16": {
+          "size": 23
+        },
+        "17": {
+          "size": 23
+        },
+        "18": {
+          "size": 23
+        },
+        "19": {
+          "size": 23
+        },
+        "20": {
+          "size": 23
+        },
+        "21": {
+          "size": 23
+        },
+        "22": {
+          "size": 23
+        },
+        "23": {
+          "size": 23
+        },
+        "24": {
+          "size": 23
+        },
+        "25": {
+          "size": 23
+        },
+        "26": {
+          "size": 23
+        },
+        "27": {
+          "size": 23
+        },
+        "28": {
+          "size": 23
+        },
+        "29": {
+          "size": 23
+        },
+        "30": {
+          "size": 23
+        },
+        "31": {
+          "size": 23
+        },
+        "32": {
+          "size": 23
+        },
+        "33": {
+          "size": 23
+        },
+        "34": {
+          "size": 23
+        },
+        "35": {
+          "size": 23
+        },
+        "36": {
+          "size": 23
+        },
+        "37": {
+          "size": 23
+        },
+        "38": {
+          "size": 23
+        },
+        "39": {
+          "size": 23
+        },
+        "40": {
+          "size": 23
+        },
+        "41": {
+          "size": 23
+        },
+        "42": {
+          "size": 23
+        },
+        "43": {
+          "size": 23
+        },
+        "44": {
+          "size": 23
+        },
+        "45": {
+          "size": 23
+        },
+        "46": {
+          "size": 23
+        },
+        "47": {
+          "size": 23
+        },
+        "48": {
+          "size": 23
+        },
+        "49": {
+          "size": 23
+        },
+        "50": {
+          "size": 23
+        },
+        "51": {
+          "size": 23
+        },
+        "52": {
+          "size": 23
+        },
+        "53": {
+          "size": 23
+        },
+        "54": {
+          "size": 23
+        },
+        "55": {
+          "size": 23
+        },
+        "56": {
+          "size": 23
+        },
+        "57": {
+          "size": 23
+        },
+        "58": {
+          "size": 23
+        },
+        "59": {
+          "size": 23
+        },
+        "60": {
+          "size": 23
+        },
+        "61": {
+          "size": 23
+        },
+        "62": {
+          "size": 23
+        },
+        "63": {
+          "size": 23
+        },
+        "64": {
+          "size": 23
+        },
+        "65": {
+          "size": 23
+        },
+        "66": {
+          "size": 23
+        },
+        "67": {
+          "size": 23
+        },
+        "68": {
+          "size": 23
+        },
+        "69": {
+          "size": 23
+        },
+        "70": {
+          "size": 23
+        },
+        "71": {
+          "size": 23
+        },
+        "72": {
+          "size": 23
+        },
+        "73": {
+          "size": 23
+        },
+        "74": {
+          "size": 23
+        },
+        "75": {
+          "size": 23
+        },
+        "76": {
+          "size": 23
+        },
+        "77": {
+          "size": 23
+        },
+        "78": {
+          "size": 23
+        },
+        "79": {
+          "size": 23
+        },
+        "80": {
+          "size": 23
+        },
+        "81": {
+          "size": 23
+        },
+        "82": {
+          "size": 23
+        },
+        "83": {
+          "size": 23
+        },
+        "84": {
+          "size": 23
+        },
+        "85": {
+          "size": 23
+        },
+        "86": {
+          "size": 23
+        },
+        "87": {
+          "size": 23
+        },
+        "88": {
+          "size": 23
+        },
+        "89": {
+          "size": 23
+        },
+        "90": {
+          "size": 23
+        },
+        "91": {
+          "size": 23
+        },
+        "92": {
+          "size": 23
+        },
+        "93": {
+          "size": 23
+        },
+        "94": {
+          "size": 23
+        },
+        "95": {
+          "size": 23
+        },
+        "96": {
+          "size": 23
+        },
+        "97": {
+          "size": 23
+        },
+        "98": {
+          "size": 23
+        },
+        "99": {
+          "size": 23
+        }
+      },
+      "cols": {
+        "0": {
+          "size": 220
+        },
+        "1": {
+          "size": 105
+        },
+        "2": {
+          "size": 105
+        },
+        "3": {
+          "size": 105
+        },
+        "4": {
+          "size": 220
+        },
+        "5": {
+          "size": 105
+        },
+        "6": {
+          "size": 105
+        },
+        "7": {
+          "size": 105
+        }
+      },
+      "merges": [],
+      "cells": {
+        "A1": "=_t(\"Accounting overview\")",
+        "A15": "=_t(\"Cash\")",
+        "B16": "=_t(\"Current year\")",
+        "C16": "=_t(\"Previous year\")",
+        "D16": "=_t(\"Variation\")",
+        "A17": "=_t(\"Cash received\")",
+        "B17": "=ODOO.DEBIT(ODOO.ACCOUNT.GROUP(\"asset_cash\"),Data!B1)-ODOO.DEBIT(ODOO.ACCOUNT.GROUP(\"asset_cash\"),Data!B1,-1)",
+        "C17": "=ODOO.DEBIT(ODOO.ACCOUNT.GROUP(\"asset_cash\"),Data!B1,-1)-ODOO.DEBIT(ODOO.ACCOUNT.GROUP(\"asset_cash\"),Data!B1,-2)",
+        "D17": "=IFERROR((B17-C17)/ABS(C17),0)",
+        "A18": "=_t(\"Cash spent\")",
+        "B18": "=ODOO.CREDIT(ODOO.ACCOUNT.GROUP(\"asset_cash\"),Data!B1)-ODOO.CREDIT(ODOO.ACCOUNT.GROUP(\"asset_cash\"),Data!B1,-1)",
+        "C18": "=ODOO.CREDIT(ODOO.ACCOUNT.GROUP(\"asset_cash\"),Data!B1,-1)-ODOO.CREDIT(ODOO.ACCOUNT.GROUP(\"asset_cash\"),Data!B1,-2)",
+        "D18": "=IFERROR((B18-C18)/ABS(C18),0)",
+        "A19": "=_t(\"Cash surplus\")",
+        "B19": "=B17-B18",
+        "C19": "=C17-C18",
+        "D19": "=IFERROR((B19-C19)/ABS(C19),0)",
+        "A20": "=_t(\"Closing bank balance\")",
+        "B20": "=Data!B6",
+        "C20": "=Data!C6",
+        "D20": "=IFERROR((B20-C20)/ABS(C20),0)",
+        "E15": "=_t(\"Profitability\")",
+        "F16": "=_t(\"Current year\")",
+        "G16": "=_t(\"Previous year\")",
+        "H16": "=_t(\"Variation\")",
+        "E17": "=_t(\"Income\")",
+        "F17": "=-Data!B2",
+        "G17": "=-Data!C2",
+        "H17": "=IFERROR((F17-G17)/ABS(G17),0)",
+        "E18": "=_t(\"Cost of revenue\")",
+        "F18": "=Data!B13",
+        "G18": "=Data!C13",
+        "H18": "=IFERROR((F18-G18)/ABS(G18),0)",
+        "E19": "=_t(\"Gross profit\")",
+        "F19": "=F17-F18",
+        "G19": "=G17-G18",
+        "H19": "=IFERROR((F19-G19)/ABS(G19),0)",
+        "E20": "=_t(\"Expenses\")",
+        "F20": "=Data!B3",
+        "G20": "=Data!C3",
+        "H20": "=IFERROR((F20-G20)/ABS(G20),0)",
+        "E21": "=_t(\"Net profit\")",
+        "F21": "=F19-F20",
+        "G21": "=G19-G20",
+        "H21": "=IFERROR((F21-G21)/ABS(G21),0)",
+        "A23": "=_t(\"Performance\")",
+        "B24": "=_t(\"Current year\")",
+        "C24": "=_t(\"Previous year\")",
+        "D24": "=_t(\"Variation\")",
+        "A25": "=_t(\"Gross margin\")",
+        "B25": "=IFERROR((F17-F18)/F17,0)",
+        "C25": "=IFERROR((-Data!C2-Data!C13)/-Data!C2,0)",
+        "D25": "=IFERROR((B25-C25)/ABS(C25),0)",
+        "A26": "=_t(\"Net margin\")",
+        "B26": "=IFERROR(F21/F17,0)",
+        "C26": "=IFERROR((-Data!C2-Data!C3-Data!C13)/-Data!C2,0)",
+        "D26": "=IFERROR((B26-C26)/ABS(C26),0)",
+        "A27": "=_t(\"Return on assets\")",
+        "B27": "=Data!B27/100",
+        "C27": "=IFERROR((-Data!C2-Data!C3-Data!C13)/(Data!C6+Data!C7+Data!C8+Data!C9),0)",
+        "D27": "=IFERROR((B27-C27)/ABS(C27),0)",
+        "A28": "=_t(\"Financial independence\")",
+        "B28": "=Data!B26/100",
+        "C28": "=IFERROR(-Data!C12/(Data!C6+Data!C7+Data!C8+Data!C9),0)",
+        "D28": "=IFERROR((B28-C28)/ABS(C28),0)",
+        "E23": "=_t(\"Balance sheet\")",
+        "F24": "=_t(\"Current year\")",
+        "G24": "=_t(\"Previous year\")",
+        "H24": "=_t(\"Variation\")",
+        "E25": "=_t(\"Assets\")",
+        "F25": "=Data!B6+Data!B7+Data!B8+Data!B9",
+        "G25": "=Data!C6+Data!C7+Data!C8+Data!C9",
+        "H25": "=IFERROR((F25-G25)/ABS(G25),0)",
+        "E26": "=_t(\"Liabilities\")",
+        "F26": "=-Data!B10-Data!B11",
+        "G26": "=-Data!C10-Data!C11",
+        "H26": "=IFERROR((F26-G26)/ABS(G26),0)",
+        "E27": "=_t(\"Equity\")",
+        "F27": "=-Data!B12",
+        "G27": "=-Data!C12",
+        "H27": "=IFERROR((F27-G27)/ABS(G27),0)",
+        "A29": "=_t(\"Ratios\")",
+        "A35": "=_t(\"Gross margin shows the share left after direct costs.\")",
+        "A36": "=_t(\"Net margin shows the share retained after expenses.\")",
+        "A37": "=_t(\"Current ratio compares current assets with short-term liabilities.\")",
+        "A38": "=_t(\"Quick ratio compares cash and receivables with short-term liabilities.\")",
+        "A39": "=_t(\"Debt to equity compares liabilities with owners’ equity.\")",
+        "A40": "=_t(\"Receivable days estimate collection time.\")",
+        "A41": "=_t(\"Payable days estimate payment time.\")"
+      },
+      "styles": {
+        "A1": 1,
+        "A15": 4,
+        "A16": 5,
+        "B16": 5,
+        "C16": 5,
+        "D16": 5,
+        "E15": 4,
+        "E16": 5,
+        "F16": 5,
+        "G16": 5,
+        "H16": 5,
+        "A23": 4,
+        "A24": 5,
+        "B24": 5,
+        "C24": 5,
+        "D24": 5,
+        "E23": 4,
+        "E24": 5,
+        "F24": 5,
+        "G24": 5,
+        "H24": 5,
+        "A29": 4
+      },
+      "formats": {
+        "B17": 1,
+        "C17": 1,
+        "D17": 2,
+        "B18": 1,
+        "C18": 1,
+        "D18": 2,
+        "B19": 1,
+        "C19": 1,
+        "D19": 2,
+        "B20": 1,
+        "C20": 1,
+        "D20": 2,
+        "F17": 1,
+        "G17": 1,
+        "H17": 2,
+        "F18": 1,
+        "G18": 1,
+        "H18": 2,
+        "F19": 1,
+        "G19": 1,
+        "H19": 2,
+        "F20": 1,
+        "G20": 1,
+        "H20": 2,
+        "F21": 1,
+        "G21": 1,
+        "H21": 2,
+        "B25": 2,
+        "C25": 2,
+        "D25": 2,
+        "B26": 2,
+        "C26": 2,
+        "D26": 2,
+        "B27": 2,
+        "C27": 2,
+        "D27": 2,
+        "B28": 2,
+        "C28": 2,
+        "D28": 2,
+        "F25": 1,
+        "G25": 1,
+        "H25": 2,
+        "F26": 1,
+        "G26": 1,
+        "H26": 2,
+        "F27": 1,
+        "G27": 1,
+        "H27": 2
+      },
+      "borders": {
+        "A15": 1,
+        "E15": 1,
+        "A23": 1,
+        "E23": 1,
+        "A29": 1
+      },
+      "conditionalFormats": [
+        {
+          "id": "positive-variation",
+          "ranges": [
+            "D17:D20",
+            "H17:H21",
+            "D25:D28",
+            "H25:H27"
+          ],
+          "rule": {
+            "type": "CellIsRule",
+            "operator": "isGreaterThan",
+            "values": [
+              "0"
+            ],
+            "style": {
+              "textColor": "#188047"
+            }
+          }
+        },
+        {
+          "id": "negative-variation",
+          "ranges": [
+            "D17:D20",
+            "H17:H21",
+            "D25:D28",
+            "H25:H27"
+          ],
+          "rule": {
+            "type": "CellIsRule",
+            "operator": "isLessThan",
+            "values": [
+              "0"
+            ],
+            "style": {
+              "textColor": "#b42318"
+            }
+          }
+        }
+      ],
+      "dataValidationRules": [],
+      "figures": [
+        {
+          "id": "score-0",
+          "tag": "chart",
+          "width": 198,
+          "height": 90,
+          "col": 0,
+          "row": 0,
+          "offset": {
+            "x": 0,
+            "y": 32
+          },
+          "data": {
+            "type": "scorecard",
+            "title": {
+              "text": "Income",
+              "bold": true
+            },
+            "background": "#f1f8f8",
+            "keyValue": "Data!H1",
+            "baselineMode": "percentage",
+            "humanize": true,
+            "chartId": "score-0",
+            "baseline": "Data!H11",
+            "baselineDescr": {
+              "text": "previous year"
+            }
+          }
+        },
+        {
+          "id": "score-1",
+          "tag": "chart",
+          "width": 198,
+          "height": 90,
+          "col": 0,
+          "row": 0,
+          "offset": {
+            "x": 204,
+            "y": 32
+          },
+          "data": {
+            "type": "scorecard",
+            "title": {
+              "text": "Expenses",
+              "bold": true
+            },
+            "background": "#f1f8f8",
+            "keyValue": "Data!H2",
+            "baselineMode": "percentage",
+            "humanize": true,
+            "chartId": "score-1",
+            "baseline": "Data!H12",
+            "baselineDescr": {
+              "text": "previous year"
+            }
+          }
+        },
+        {
+          "id": "score-2",
+          "tag": "chart",
+          "width": 198,
+          "height": 90,
+          "col": 0,
+          "row": 0,
+          "offset": {
+            "x": 408,
+            "y": 32
+          },
+          "data": {
+            "type": "scorecard",
+            "title": {
+              "text": "Receivables",
+              "bold": true
+            },
+            "background": "#f1f8f8",
+            "keyValue": "Data!H3",
+            "baselineMode": "percentage",
+            "humanize": true,
+            "chartId": "score-2",
+            "baseline": "Data!H13",
+            "baselineDescr": {
+              "text": "previous year"
+            }
+          }
+        },
+        {
+          "id": "score-3",
+          "tag": "chart",
+          "width": 198,
+          "height": 90,
+          "col": 0,
+          "row": 0,
+          "offset": {
+            "x": 612,
+            "y": 32
+          },
+          "data": {
+            "type": "scorecard",
+            "title": {
+              "text": "Payables",
+              "bold": true
+            },
+            "background": "#f1f8f8",
+            "keyValue": "Data!H4",
+            "baselineMode": "percentage",
+            "humanize": true,
+            "chartId": "score-3",
+            "baseline": "Data!H14",
+            "baselineDescr": {
+              "text": "previous year"
+            }
+          }
+        },
+        {
+          "id": "score-4",
+          "tag": "chart",
+          "width": 198,
+          "height": 90,
+          "col": 0,
+          "row": 0,
+          "offset": {
+            "x": 816,
+            "y": 32
+          },
+          "data": {
+            "type": "scorecard",
+            "title": {
+              "text": "Bank & cash",
+              "bold": true
+            },
+            "background": "#f1f8f8",
+            "keyValue": "Data!H5",
+            "baselineMode": "percentage",
+            "humanize": true,
+            "chartId": "score-4",
+            "baseline": "Data!H15",
+            "baselineDescr": {
+              "text": "previous year"
+            }
+          }
+        },
+        {
+          "id": "income-expense-chart",
+          "tag": "chart",
+          "width": 1020,
+          "height": 185,
+          "col": 0,
+          "row": 0,
+          "offset": {
+            "x": 0,
+            "y": 135
+          },
+          "data": {
+            "type": "line",
+            "dataSetsHaveTitle": true,
+            "dataSets": [
+              {
+                "dataRange": "Data!D30:D42",
+                "yAxisId": "y"
+              },
+              {
+                "dataRange": "Data!E30:E42",
+                "yAxisId": "y"
+              }
+            ],
+            "legendPosition": "top",
+            "labelRange": "Data!C31:C42",
+            "title": {
+              "text": "Income and expenses by month"
+            },
+            "labelsAsText": true,
+            "stacked": false,
+            "aggregated": false,
+            "cumulative": false,
+            "fillArea": false
+          }
+        },
+        {
+          "id": "gauge-0",
+          "tag": "chart",
+          "width": 145,
+          "height": 105,
+          "col": 0,
+          "row": 0,
+          "offset": {
+            "x": 0,
+            "y": 680
+          },
+          "data": {
+            "type": "gauge",
+            "title": {
+              "text": "Gross margin"
+            },
+            "background": "#ffffff",
+            "dataRange": "Data!B20",
+            "sectionRule": {
+              "colors": {
+                "lowerColor": "#dc6965",
+                "middleColor": "#f6c46b",
+                "upperColor": "#00a04a"
+              },
+              "rangeMin": "0",
+              "rangeMax": "=MAX(100,Data!B20*1.25)",
+              "lowerInflectionPoint": {
+                "type": "percentage",
+                "value": "15",
+                "operator": "<="
+              },
+              "upperInflectionPoint": {
+                "type": "percentage",
+                "value": "40",
+                "operator": "<="
+              }
+            },
+            "chartId": "gauge-0"
+          }
+        },
+        {
+          "id": "gauge-1",
+          "tag": "chart",
+          "width": 145,
+          "height": 105,
+          "col": 0,
+          "row": 0,
+          "offset": {
+            "x": 150,
+            "y": 680
+          },
+          "data": {
+            "type": "gauge",
+            "title": {
+              "text": "Net margin"
+            },
+            "background": "#ffffff",
+            "dataRange": "Data!B21",
+            "sectionRule": {
+              "colors": {
+                "lowerColor": "#dc6965",
+                "middleColor": "#f6c46b",
+                "upperColor": "#00a04a"
+              },
+              "rangeMin": "0",
+              "rangeMax": "=MAX(100,Data!B21*1.25)",
+              "lowerInflectionPoint": {
+                "type": "percentage",
+                "value": "15",
+                "operator": "<="
+              },
+              "upperInflectionPoint": {
+                "type": "percentage",
+                "value": "40",
+                "operator": "<="
+              }
+            },
+            "chartId": "gauge-1"
+          }
+        },
+        {
+          "id": "gauge-2",
+          "tag": "chart",
+          "width": 145,
+          "height": 105,
+          "col": 0,
+          "row": 0,
+          "offset": {
+            "x": 300,
+            "y": 680
+          },
+          "data": {
+            "type": "gauge",
+            "title": {
+              "text": "Current ratio"
+            },
+            "background": "#ffffff",
+            "dataRange": "Data!B22",
+            "sectionRule": {
+              "colors": {
+                "lowerColor": "#dc6965",
+                "middleColor": "#f6c46b",
+                "upperColor": "#00a04a"
+              },
+              "rangeMin": "0",
+              "rangeMax": "=MAX(3,Data!B22*1.25)",
+              "lowerInflectionPoint": {
+                "type": "percentage",
+                "value": "15",
+                "operator": "<="
+              },
+              "upperInflectionPoint": {
+                "type": "percentage",
+                "value": "40",
+                "operator": "<="
+              }
+            },
+            "chartId": "gauge-2"
+          }
+        },
+        {
+          "id": "gauge-4",
+          "tag": "chart",
+          "width": 145,
+          "height": 105,
+          "col": 0,
+          "row": 0,
+          "offset": {
+            "x": 450,
+            "y": 680
+          },
+          "data": {
+            "type": "gauge",
+            "title": {
+              "text": "Quick ratio"
+            },
+            "background": "#ffffff",
+            "dataRange": "Data!B24",
+            "sectionRule": {
+              "colors": {
+                "lowerColor": "#dc6965",
+                "middleColor": "#f6c46b",
+                "upperColor": "#00a04a"
+              },
+              "rangeMin": "0",
+              "rangeMax": "=MAX(3,Data!B24*1.25)",
+              "lowerInflectionPoint": {
+                "type": "percentage",
+                "value": "15",
+                "operator": "<="
+              },
+              "upperInflectionPoint": {
+                "type": "percentage",
+                "value": "40",
+                "operator": "<="
+              }
+            },
+            "chartId": "gauge-4"
+          }
+        },
+        {
+          "id": "gauge-3",
+          "tag": "chart",
+          "width": 145,
+          "height": 105,
+          "col": 0,
+          "row": 0,
+          "offset": {
+            "x": 600,
+            "y": 680
+          },
+          "data": {
+            "type": "gauge",
+            "title": {
+              "text": "Debt / equity"
+            },
+            "background": "#ffffff",
+            "dataRange": "Data!B23",
+            "sectionRule": {
+              "colors": {
+                "lowerColor": "#dc6965",
+                "middleColor": "#f6c46b",
+                "upperColor": "#00a04a"
+              },
+              "rangeMin": "0",
+              "rangeMax": "=MAX(3,Data!B23*1.25)",
+              "lowerInflectionPoint": {
+                "type": "percentage",
+                "value": "15",
+                "operator": "<="
+              },
+              "upperInflectionPoint": {
+                "type": "percentage",
+                "value": "40",
+                "operator": "<="
+              }
+            },
+            "chartId": "gauge-3"
+          }
+        },
+        {
+          "id": "gauge-8",
+          "tag": "chart",
+          "width": 145,
+          "height": 105,
+          "col": 0,
+          "row": 0,
+          "offset": {
+            "x": 750,
+            "y": 680
+          },
+          "data": {
+            "type": "gauge",
+            "title": {
+              "text": "Receivable days"
+            },
+            "background": "#ffffff",
+            "dataRange": "Data!B28",
+            "sectionRule": {
+              "colors": {
+                "lowerColor": "#dc6965",
+                "middleColor": "#f6c46b",
+                "upperColor": "#00a04a"
+              },
+              "rangeMin": "0",
+              "rangeMax": "=MAX(100,Data!B28*1.25)",
+              "lowerInflectionPoint": {
+                "type": "percentage",
+                "value": "15",
+                "operator": "<="
+              },
+              "upperInflectionPoint": {
+                "type": "percentage",
+                "value": "40",
+                "operator": "<="
+              }
+            },
+            "chartId": "gauge-8"
+          }
+        },
+        {
+          "id": "gauge-9",
+          "tag": "chart",
+          "width": 145,
+          "height": 105,
+          "col": 0,
+          "row": 0,
+          "offset": {
+            "x": 900,
+            "y": 680
+          },
+          "data": {
+            "type": "gauge",
+            "title": {
+              "text": "Payable days"
+            },
+            "background": "#ffffff",
+            "dataRange": "Data!B29",
+            "sectionRule": {
+              "colors": {
+                "lowerColor": "#dc6965",
+                "middleColor": "#f6c46b",
+                "upperColor": "#00a04a"
+              },
+              "rangeMin": "0",
+              "rangeMax": "=MAX(100,Data!B29*1.25)",
+              "lowerInflectionPoint": {
+                "type": "percentage",
+                "value": "15",
+                "operator": "<="
+              },
+              "upperInflectionPoint": {
+                "type": "percentage",
+                "value": "40",
+                "operator": "<="
+              }
+            },
+            "chartId": "gauge-9"
+          }
+        }
+      ],
+      "tables": [],
+      "areGridLinesVisible": false,
+      "isVisible": true,
+      "headerGroups": {
+        "ROW": [],
+        "COL": []
+      },
+      "comments": {}
+    },
+    {
+      "id": "data",
+      "name": "Data",
+      "colNumber": 8,
+      "rowNumber": 100,
+      "rows": {},
+      "cols": {
+        "0": {
+          "size": 140
+        },
+        "1": {
+          "size": 140
+        },
+        "2": {
+          "size": 140
+        },
+        "3": {
+          "size": 140
+        },
+        "4": {
+          "size": 140
+        },
+        "5": {
+          "size": 140
+        },
+        "6": {
+          "size": 140
+        },
+        "7": {
+          "size": 140
+        }
+      },
+      "merges": [],
+      "cells": {
+        "F1": "=ODOO.FILTER.VALUE(\"Period\")",
+        "B1": "=YEAR(F1)",
+        "A2": "income",
+        "B2": "=ODOO.BALANCE(ODOO.ACCOUNT.GROUP(\"income\"),$B$1)",
+        "C2": "=ODOO.BALANCE(ODOO.ACCOUNT.GROUP(\"income\"),$B$1,-1)",
+        "A3": "expense",
+        "B3": "=ODOO.BALANCE(ODOO.ACCOUNT.GROUP(\"expense\"),$B$1)",
+        "C3": "=ODOO.BALANCE(ODOO.ACCOUNT.GROUP(\"expense\"),$B$1,-1)",
+        "A4": "asset_receivable",
+        "B4": "=ODOO.BALANCE(ODOO.ACCOUNT.GROUP(\"asset_receivable\"),$B$1)",
+        "C4": "=ODOO.BALANCE(ODOO.ACCOUNT.GROUP(\"asset_receivable\"),$B$1,-1)",
+        "A5": "liability_payable",
+        "B5": "=ODOO.BALANCE(ODOO.ACCOUNT.GROUP(\"liability_payable\"),$B$1)",
+        "C5": "=ODOO.BALANCE(ODOO.ACCOUNT.GROUP(\"liability_payable\"),$B$1,-1)",
+        "A6": "asset_cash",
+        "B6": "=ODOO.BALANCE(ODOO.ACCOUNT.GROUP(\"asset_cash\"),$B$1)",
+        "C6": "=ODOO.BALANCE(ODOO.ACCOUNT.GROUP(\"asset_cash\"),$B$1,-1)",
+        "A7": "asset_current",
+        "B7": "=ODOO.BALANCE(ODOO.ACCOUNT.GROUP(\"asset_current\"),$B$1)",
+        "C7": "=ODOO.BALANCE(ODOO.ACCOUNT.GROUP(\"asset_current\"),$B$1,-1)",
+        "A8": "asset_non_current",
+        "B8": "=ODOO.BALANCE(ODOO.ACCOUNT.GROUP(\"asset_non_current\"),$B$1)",
+        "C8": "=ODOO.BALANCE(ODOO.ACCOUNT.GROUP(\"asset_non_current\"),$B$1,-1)",
+        "A9": "asset_fixed",
+        "B9": "=ODOO.BALANCE(ODOO.ACCOUNT.GROUP(\"asset_fixed\"),$B$1)",
+        "C9": "=ODOO.BALANCE(ODOO.ACCOUNT.GROUP(\"asset_fixed\"),$B$1,-1)",
+        "A10": "liability_current",
+        "B10": "=ODOO.BALANCE(ODOO.ACCOUNT.GROUP(\"liability_current\"),$B$1)",
+        "C10": "=ODOO.BALANCE(ODOO.ACCOUNT.GROUP(\"liability_current\"),$B$1,-1)",
+        "A11": "liability_non_current",
+        "B11": "=ODOO.BALANCE(ODOO.ACCOUNT.GROUP(\"liability_non_current\"),$B$1)",
+        "C11": "=ODOO.BALANCE(ODOO.ACCOUNT.GROUP(\"liability_non_current\"),$B$1,-1)",
+        "A12": "equity",
+        "B12": "=ODOO.BALANCE(ODOO.ACCOUNT.GROUP(\"equity\"),$B$1)",
+        "C12": "=ODOO.BALANCE(ODOO.ACCOUNT.GROUP(\"equity\"),$B$1,-1)",
+        "A13": "expense_direct_cost",
+        "B13": "=ODOO.BALANCE(ODOO.ACCOUNT.GROUP(\"expense_direct_cost\"),$B$1)",
+        "C13": "=ODOO.BALANCE(ODOO.ACCOUNT.GROUP(\"expense_direct_cost\"),$B$1,-1)",
+        "H1": "=-ODOO.BALANCE(ODOO.ACCOUNT.GROUP(\"income\"),G2)",
+        "H11": "=-ODOO.BALANCE(ODOO.ACCOUNT.GROUP(\"income\"),G2,-1)",
+        "H2": "=ODOO.BALANCE(ODOO.ACCOUNT.GROUP(\"expense\"),G2)",
+        "H12": "=ODOO.BALANCE(ODOO.ACCOUNT.GROUP(\"expense\"),G2,-1)",
+        "H3": "=ODOO.RESIDUAL(ODOO.ACCOUNT.GROUP(\"asset_receivable\"),B1)",
+        "H13": "=ODOO.RESIDUAL(ODOO.ACCOUNT.GROUP(\"asset_receivable\"),B1,-1)",
+        "H4": "=-ODOO.RESIDUAL(ODOO.ACCOUNT.GROUP(\"liability_payable\"),B1)",
+        "H14": "=-ODOO.RESIDUAL(ODOO.ACCOUNT.GROUP(\"liability_payable\"),B1,-1)",
+        "H5": "=B6",
+        "H15": "=C6",
+        "G2": "=IF(AND(YEAR(F1)=YEAR(G1),MONTH(F1)=MONTH(G1)),MONTH(F1)&\"/\"&YEAR(F1),IF(AND(MOD(MONTH(F1)-1,3)=0,MONTH(G1)-MONTH(F1)=2),\"Q\"&ROUNDUP(MONTH(F1)/3,0)&\"/\"&YEAR(F1),YEAR(F1)))",
+        "B20": "=Dashboard!B25*100",
+        "B21": "=Dashboard!B26*100",
+        "B22": "=IFERROR((Dashboard!F25-Data!B8-Data!B9)/ABS(Data!B10),0)",
+        "B23": "=IFERROR(Dashboard!F26/Dashboard!F27,0)",
+        "B24": "=IFERROR((Data!B6+Data!B4)/ABS(Data!B10),0)",
+        "B25": "=IFERROR((-B2-B3-B13)/-B2*100,0)",
+        "B26": "=IFERROR(-B12/(B6+B7+B8+B9)*100,0)",
+        "B27": "=IFERROR((-B2-B3-B13)/(B6+B7+B8+B9)*100,0)",
+        "B28": "=IFERROR(Data!H3/Dashboard!F17*365,0)",
+        "B29": "=IFERROR(Data!H4/(Dashboard!F18+Dashboard!F20)*365,0)",
+        "B30": "=IFERROR((B6-C6)/-B10*100,0)",
+        "B31": "=B6+B7+B4+B10",
+        "C30": "=_t(\"Month\")",
+        "D30": "=_t(\"Income\")",
+        "E30": "=_t(\"Expense\")",
+        "C31": "=DATE($B$1,1,1)",
+        "D31": "=-ODOO.BALANCE(ODOO.ACCOUNT.GROUP(\"income\"),\"1/\"&$B$1)",
+        "E31": "=ODOO.BALANCE(ODOO.ACCOUNT.GROUP(\"expense\"),\"1/\"&$B$1)",
+        "C32": "=DATE($B$1,2,1)",
+        "D32": "=-ODOO.BALANCE(ODOO.ACCOUNT.GROUP(\"income\"),\"2/\"&$B$1)",
+        "E32": "=ODOO.BALANCE(ODOO.ACCOUNT.GROUP(\"expense\"),\"2/\"&$B$1)",
+        "C33": "=DATE($B$1,3,1)",
+        "D33": "=-ODOO.BALANCE(ODOO.ACCOUNT.GROUP(\"income\"),\"3/\"&$B$1)",
+        "E33": "=ODOO.BALANCE(ODOO.ACCOUNT.GROUP(\"expense\"),\"3/\"&$B$1)",
+        "C34": "=DATE($B$1,4,1)",
+        "D34": "=-ODOO.BALANCE(ODOO.ACCOUNT.GROUP(\"income\"),\"4/\"&$B$1)",
+        "E34": "=ODOO.BALANCE(ODOO.ACCOUNT.GROUP(\"expense\"),\"4/\"&$B$1)",
+        "C35": "=DATE($B$1,5,1)",
+        "D35": "=-ODOO.BALANCE(ODOO.ACCOUNT.GROUP(\"income\"),\"5/\"&$B$1)",
+        "E35": "=ODOO.BALANCE(ODOO.ACCOUNT.GROUP(\"expense\"),\"5/\"&$B$1)",
+        "C36": "=DATE($B$1,6,1)",
+        "D36": "=-ODOO.BALANCE(ODOO.ACCOUNT.GROUP(\"income\"),\"6/\"&$B$1)",
+        "E36": "=ODOO.BALANCE(ODOO.ACCOUNT.GROUP(\"expense\"),\"6/\"&$B$1)",
+        "C37": "=DATE($B$1,7,1)",
+        "D37": "=-ODOO.BALANCE(ODOO.ACCOUNT.GROUP(\"income\"),\"7/\"&$B$1)",
+        "E37": "=ODOO.BALANCE(ODOO.ACCOUNT.GROUP(\"expense\"),\"7/\"&$B$1)",
+        "C38": "=DATE($B$1,8,1)",
+        "D38": "=-ODOO.BALANCE(ODOO.ACCOUNT.GROUP(\"income\"),\"8/\"&$B$1)",
+        "E38": "=ODOO.BALANCE(ODOO.ACCOUNT.GROUP(\"expense\"),\"8/\"&$B$1)",
+        "C39": "=DATE($B$1,9,1)",
+        "D39": "=-ODOO.BALANCE(ODOO.ACCOUNT.GROUP(\"income\"),\"9/\"&$B$1)",
+        "E39": "=ODOO.BALANCE(ODOO.ACCOUNT.GROUP(\"expense\"),\"9/\"&$B$1)",
+        "C40": "=DATE($B$1,10,1)",
+        "D40": "=-ODOO.BALANCE(ODOO.ACCOUNT.GROUP(\"income\"),\"10/\"&$B$1)",
+        "E40": "=ODOO.BALANCE(ODOO.ACCOUNT.GROUP(\"expense\"),\"10/\"&$B$1)",
+        "C41": "=DATE($B$1,11,1)",
+        "D41": "=-ODOO.BALANCE(ODOO.ACCOUNT.GROUP(\"income\"),\"11/\"&$B$1)",
+        "E41": "=ODOO.BALANCE(ODOO.ACCOUNT.GROUP(\"expense\"),\"11/\"&$B$1)",
+        "C42": "=DATE($B$1,12,1)",
+        "D42": "=-ODOO.BALANCE(ODOO.ACCOUNT.GROUP(\"income\"),\"12/\"&$B$1)",
+        "E42": "=ODOO.BALANCE(ODOO.ACCOUNT.GROUP(\"expense\"),\"12/\"&$B$1)"
+      },
+      "styles": {},
+      "formats": {
+        "B20": 3,
+        "B21": 3,
+        "B22": 3,
+        "B23": 3,
+        "B24": 3,
+        "B25": 3,
+        "B26": 3,
+        "B27": 3,
+        "B28": 3,
+        "B29": 3,
+        "B30": 3,
+        "B31": 3
+      },
+      "borders": {},
+      "conditionalFormats": [],
+      "dataValidationRules": [],
+      "figures": [],
+      "tables": [],
+      "areGridLinesVisible": false,
+      "isVisible": true,
+      "headerGroups": {
+        "ROW": [],
+        "COL": []
+      },
+      "comments": {}
+    }
+  ],
+  "styles": {
+    "1": {
+      "bold": true,
+      "fontSize": 16,
+      "textColor": "#01666b"
+    },
+    "2": {
+      "bold": true,
+      "fillColor": "#e6f2f3"
+    },
+    "3": {
+      "fontSize": 11
+    },
+    "4": {
+      "bold": true,
+      "fontSize": 14,
+      "textColor": "#01666b"
+    },
+    "5": {
+      "bold": true,
+      "fontSize": 10,
+      "fillColor": "#e6f2f3",
+      "textColor": "#345"
+    }
+  },
+  "formats": {
+    "1": "#,##0.00",
+    "2": "0.0%",
+    "3": "#,##0.0"
+  },
+  "borders": {
+    "1": {
+      "bottom": {
+        "style": "thin",
+        "color": "#9fc5c5"
+      }
+    }
+  },
+  "revisionId": "baseer",
+  "uniqueFigureIds": true,
+  "settings": {
+    "locale": {
+      "name": "English (US)",
+      "code": "en_US",
+      "thousandsSeparator": ",",
+      "decimalSeparator": ".",
+      "dateFormat": "mm/dd/yyyy",
+      "timeFormat": "hh:mm:ss",
+      "formulaArgSeparator": ",",
+      "weekStart": 7
+    }
+  },
+  "pivots": {},
+  "pivotNextId": 1,
+  "customTableStyles": {},
+  "globalFilters": [
+    {
+      "id": "baseer-period",
+      "type": "date",
+      "label": "Period",
+      "defaultValue": "this_year"
+    }
+  ],
+  "lists": {},
+  "listNextId": 1,
+  "chartOdooMenusReferences": {}
+}

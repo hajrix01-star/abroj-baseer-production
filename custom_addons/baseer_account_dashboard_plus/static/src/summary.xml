@@ -1,0 +1,25 @@
+<templates xml:space="preserve">
+  <t t-inherit="account.DashboardKanbanRenderer" t-inherit-mode="extension">
+    <xpath expr="//div[@t-ref='root']/t[1]" position="before">
+      <section t-if="baseer.data" class="baseer-summary w-100">
+        <button class="baseer-summary-title" t-on-click="baseerToggle" t-att-aria-expanded="baseer.open ? 'true' : 'false'"><i t-att-class="baseer.open ? 'fa fa-chevron-down' : 'fa fa-chevron-right'"/> Baseer summary</button>
+        <div t-if="baseer.open">
+          <div class="baseer-summary-grid">
+            <button t-foreach="baseerTiles" t-as="tile" t-key="tile[0]" class="baseer-tile" t-on-click="() => this.baseerOpen(tile[0])">
+              <span class="text-muted" t-esc="tile[1]"/>
+              <strong t-foreach="baseerTotals" t-as="total" t-key="total.currency_id"><bdi dir="ltr" t-esc="baseerMoney(total[tile[0]], total.currency_id)"/></strong>
+              <t t-if="tile[0] === 'delivery'" t-foreach="baseerTotals" t-as="total" t-key="total.currency_id"><small t-foreach="Object.entries(total.apps)" t-as="app" t-key="app[0]"><t t-esc="app[0]"/>: <bdi dir="ltr" t-esc="baseerMoney(app[1], total.currency_id)"/></small></t>
+            </button>
+            <button class="baseer-tile" t-on-click="() => this.baseerOpen('draft')"><span class="text-muted">Agent drafts</span><strong t-esc="baseer.data.draft_count"/><small t-foreach="baseerTotals" t-as="total" t-key="total.currency_id"><bdi dir="ltr" t-esc="baseerMoney(total.draft_amount, total.currency_id)"/></small></button>
+            <div class="baseer-tile baseer-obligations"><span class="text-muted">Monthly obligations</span><button class="baseer-subbutton" t-on-click="() => this.baseerOpen('vat')">VAT this month <strong t-foreach="baseerTotals" t-as="total" t-key="total.currency_id"><bdi dir="ltr" t-esc="baseerMoney(total.vat, total.currency_id)"/></strong></button><button t-foreach="baseer.data.reports.filter(r => ['vat', 'tobacco'].includes(r.key))" t-as="report" t-key="report.key" class="baseer-subbutton text-primary" t-on-click="() => this.baseerReport(report.key)" t-esc="report.name"/></div>
+          </div>
+          <div t-if="baseer.data.companies.length > 1" class="mt-2">
+            <button class="btn btn-link btn-sm" t-on-click="() => baseer.companiesOpen = !baseer.companiesOpen">Companies</button>
+            <div t-if="baseer.companiesOpen" class="table-responsive"><table class="table table-sm"><thead><tr><th>Company</th><th>Bank</th><th>Cash</th><th>Receivables</th><th>Payables</th><th>VAT</th></tr></thead><tbody><tr t-foreach="baseer.data.companies" t-as="company" t-key="company.id"><td t-esc="company.name"/><td t-foreach="['bank', 'cash', 'receivable', 'payable', 'vat']" t-as="key" t-key="key"><bdi dir="ltr" t-esc="baseerMoney(company[key], company.currency_id)"/></td></tr></tbody></table></div>
+          </div>
+          <div class="baseer-summary-links"><button t-foreach="baseer.data.reports" t-as="report" t-key="report.key" class="btn btn-link btn-sm" t-on-click="() => this.baseerReport(report.key)" t-esc="report.name"/></div>
+        </div>
+      </section>
+    </xpath>
+  </t>
+</templates>

@@ -1,0 +1,288 @@
+msgid ""
+msgstr "Content-Type: text/plain; charset=UTF-8\nLanguage: ar_001\n"
+
+#. module: baseer_account_dashboard_plus
+#. odoo-javascript
+#. odoo-python
+#: model_terms:ir.ui.view,arch_db:baseer_account_dashboard_plus.journal_dashboard_plus
+#: code:addons/baseer_account_dashboard_plus/static/src/summary.xml:0
+msgid "Ledger balance"
+msgstr "الرصيد الدفتري"
+
+#. module: baseer_account_dashboard_plus
+#. odoo-javascript
+#. odoo-python
+#: model_terms:ir.ui.view,arch_db:baseer_account_dashboard_plus.journal_dashboard_plus
+#: code:addons/baseer_account_dashboard_plus/static/src/summary.xml:0
+msgid "Due from delivery app"
+msgstr "مستحق من التطبيق"
+
+#. module: baseer_account_dashboard_plus
+#. odoo-javascript
+#. odoo-python
+#: model_terms:ir.ui.view,arch_db:baseer_account_dashboard_plus.journal_dashboard_plus
+#: code:addons/baseer_account_dashboard_plus/static/src/summary.xml:0
+msgid "Delivery app"
+msgstr "تطبيق توصيل"
+
+#. module: baseer_account_dashboard_plus
+#. odoo-javascript
+#. odoo-python
+#: model_terms:ir.ui.view,arch_db:baseer_account_dashboard_plus.journal_dashboard_plus
+#: code:addons/baseer_account_dashboard_plus/static/src/summary.xml:0
+msgid "Custody"
+msgstr "عهدة"
+
+#. module: baseer_account_dashboard_plus
+#. odoo-javascript
+#. odoo-python
+#: model_terms:ir.ui.view,arch_db:baseer_account_dashboard_plus.journal_dashboard_plus
+#: code:addons/baseer_account_dashboard_plus/static/src/summary.xml:0
+msgid "Bank ledger"
+msgstr "الرصيد الدفتري للبنوك"
+
+#. module: baseer_account_dashboard_plus
+#. odoo-javascript
+#. odoo-python
+#: model_terms:ir.ui.view,arch_db:baseer_account_dashboard_plus.journal_dashboard_plus
+#: code:addons/baseer_account_dashboard_plus/static/src/summary.xml:0
+msgid "Cash ledger"
+msgstr "الرصيد الدفتري للنقد"
+
+#. module: baseer_account_dashboard_plus
+#. odoo-javascript
+#. odoo-python
+#: model_terms:ir.ui.view,arch_db:baseer_account_dashboard_plus.journal_dashboard_plus
+#: code:addons/baseer_account_dashboard_plus/static/src/summary.xml:0
+msgid "Delivery apps"
+msgstr "تطبيقات التوصيل"
+
+#. module: baseer_account_dashboard_plus
+#. odoo-javascript
+#. odoo-python
+#: model_terms:ir.ui.view,arch_db:baseer_account_dashboard_plus.journal_dashboard_plus
+#: code:addons/baseer_account_dashboard_plus/static/src/summary.xml:0
+msgid "Receivables"
+msgstr "الذمم المدينة"
+
+#. module: baseer_account_dashboard_plus
+#. odoo-javascript
+#. odoo-python
+#: model_terms:ir.ui.view,arch_db:baseer_account_dashboard_plus.journal_dashboard_plus
+#: code:addons/baseer_account_dashboard_plus/static/src/summary.xml:0
+msgid "Payables"
+msgstr "الذمم الدائنة"
+
+#. module: baseer_account_dashboard_plus
+#. odoo-javascript
+#. odoo-python
+#: model_terms:ir.ui.view,arch_db:baseer_account_dashboard_plus.journal_dashboard_plus
+#: code:addons/baseer_account_dashboard_plus/static/src/summary.xml:0
+msgid "Agent drafts"
+msgstr "مسودات الوكلاء"
+
+#. module: baseer_account_dashboard_plus
+#. odoo-javascript
+#. odoo-python
+#: model_terms:ir.ui.view,arch_db:baseer_account_dashboard_plus.journal_dashboard_plus
+#: code:addons/baseer_account_dashboard_plus/static/src/summary.xml:0
+msgid "Posted journal account balance; the card balance reflects bank statements and matched payments."
+msgstr "رصيد حساب اليومية المرحّل؛ يعكس رصيد البطاقة كشوف البنك والمدفوعات المطابقة."
+
+#. module: baseer_account_dashboard_plus
+#. odoo-javascript
+#. odoo-python
+#: model_terms:ir.ui.view,arch_db:baseer_account_dashboard_plus.journal_dashboard_plus
+#: code:addons/baseer_account_dashboard_plus/static/src/summary.xml:0
+msgid "Monthly VAT"
+msgstr "ضريبة القيمة المضافة الشهرية"
+
+#. module: baseer_account_dashboard_plus
+#. odoo-javascript
+#. odoo-python
+#: model_terms:ir.ui.view,arch_db:baseer_account_dashboard_plus.journal_dashboard_plus
+#: code:addons/baseer_account_dashboard_plus/static/src/summary.xml:0
+#: code:addons/baseer_account_dashboard_plus/static/src/summary.js:0
+#: code:addons/baseer_account_dashboard_plus/models/journal.py:0
+msgid "Baseer summary"
+msgstr "ملخص بصير"
+
+#. module: baseer_account_dashboard_plus
+#. odoo-javascript
+#. odoo-python
+#: model_terms:ir.ui.view,arch_db:baseer_account_dashboard_plus.journal_dashboard_plus
+#: code:addons/baseer_account_dashboard_plus/static/src/summary.xml:0
+#: code:addons/baseer_account_dashboard_plus/static/src/summary.js:0
+#: code:addons/baseer_account_dashboard_plus/models/journal.py:0
+msgid "Monthly obligations"
+msgstr "الالتزامات الشهرية"
+
+#. module: baseer_account_dashboard_plus
+#. odoo-javascript
+#. odoo-python
+#: model_terms:ir.ui.view,arch_db:baseer_account_dashboard_plus.journal_dashboard_plus
+#: code:addons/baseer_account_dashboard_plus/static/src/summary.xml:0
+#: code:addons/baseer_account_dashboard_plus/static/src/summary.js:0
+#: code:addons/baseer_account_dashboard_plus/models/journal.py:0
+msgid "VAT this month"
+msgstr "ضريبة القيمة المضافة لهذا الشهر"
+
+#. module: baseer_account_dashboard_plus
+#. odoo-javascript
+#. odoo-python
+#: model_terms:ir.ui.view,arch_db:baseer_account_dashboard_plus.journal_dashboard_plus
+#: code:addons/baseer_account_dashboard_plus/static/src/summary.xml:0
+#: code:addons/baseer_account_dashboard_plus/static/src/summary.js:0
+#: code:addons/baseer_account_dashboard_plus/models/journal.py:0
+msgid "Companies"
+msgstr "الشركات"
+
+#. module: baseer_account_dashboard_plus
+#. odoo-javascript
+#. odoo-python
+#: model_terms:ir.ui.view,arch_db:baseer_account_dashboard_plus.journal_dashboard_plus
+#: code:addons/baseer_account_dashboard_plus/static/src/summary.xml:0
+#: code:addons/baseer_account_dashboard_plus/static/src/summary.js:0
+#: code:addons/baseer_account_dashboard_plus/models/journal.py:0
+msgid "Company"
+msgstr "الشركة"
+
+#. module: baseer_account_dashboard_plus
+#. odoo-javascript
+#. odoo-python
+#: model_terms:ir.ui.view,arch_db:baseer_account_dashboard_plus.journal_dashboard_plus
+#: code:addons/baseer_account_dashboard_plus/static/src/summary.xml:0
+#: code:addons/baseer_account_dashboard_plus/static/src/summary.js:0
+#: code:addons/baseer_account_dashboard_plus/models/journal.py:0
+msgid "Bank"
+msgstr "البنك"
+
+#. module: baseer_account_dashboard_plus
+#. odoo-javascript
+#. odoo-python
+#: model_terms:ir.ui.view,arch_db:baseer_account_dashboard_plus.journal_dashboard_plus
+#: code:addons/baseer_account_dashboard_plus/static/src/summary.xml:0
+#: code:addons/baseer_account_dashboard_plus/static/src/summary.js:0
+#: code:addons/baseer_account_dashboard_plus/models/journal.py:0
+msgid "Cash"
+msgstr "النقد"
+
+#. module: baseer_account_dashboard_plus
+#. odoo-javascript
+#. odoo-python
+#: model_terms:ir.ui.view,arch_db:baseer_account_dashboard_plus.journal_dashboard_plus
+#: code:addons/baseer_account_dashboard_plus/static/src/summary.xml:0
+#: code:addons/baseer_account_dashboard_plus/static/src/summary.js:0
+#: code:addons/baseer_account_dashboard_plus/models/journal.py:0
+msgid "VAT"
+msgstr "ضريبة القيمة المضافة"
+
+#. module: baseer_account_dashboard_plus
+#. odoo-javascript
+#. odoo-python
+#: model_terms:ir.ui.view,arch_db:baseer_account_dashboard_plus.journal_dashboard_plus
+#: code:addons/baseer_account_dashboard_plus/static/src/summary.xml:0
+#: code:addons/baseer_account_dashboard_plus/static/src/summary.js:0
+#: code:addons/baseer_account_dashboard_plus/models/journal.py:0
+msgid "Reporting"
+msgstr "التقارير"
+
+#. module: baseer_account_dashboard_plus
+#. odoo-javascript
+#. odoo-python
+#: model_terms:ir.ui.view,arch_db:baseer_account_dashboard_plus.journal_dashboard_plus
+#: code:addons/baseer_account_dashboard_plus/static/src/summary.xml:0
+#: code:addons/baseer_account_dashboard_plus/static/src/summary.js:0
+#: code:addons/baseer_account_dashboard_plus/models/journal.py:0
+msgid "General Ledger"
+msgstr "دفتر الأستاذ العام"
+
+#. module: baseer_account_dashboard_plus
+#. odoo-javascript
+#. odoo-python
+#: model_terms:ir.ui.view,arch_db:baseer_account_dashboard_plus.journal_dashboard_plus
+#: code:addons/baseer_account_dashboard_plus/static/src/summary.xml:0
+#: code:addons/baseer_account_dashboard_plus/static/src/summary.js:0
+#: code:addons/baseer_account_dashboard_plus/models/journal.py:0
+msgid "Aged Receivable"
+msgstr "أعمار الذمم المدينة"
+
+#. module: baseer_account_dashboard_plus
+#. odoo-javascript
+#. odoo-python
+#: model_terms:ir.ui.view,arch_db:baseer_account_dashboard_plus.journal_dashboard_plus
+#: code:addons/baseer_account_dashboard_plus/static/src/summary.xml:0
+#: code:addons/baseer_account_dashboard_plus/static/src/summary.js:0
+#: code:addons/baseer_account_dashboard_plus/models/journal.py:0
+msgid "Aged Payable"
+msgstr "أعمار الذمم الدائنة"
+
+#. module: baseer_account_dashboard_plus
+#. odoo-javascript
+#. odoo-python
+#: model_terms:ir.ui.view,arch_db:baseer_account_dashboard_plus.journal_dashboard_plus
+#: code:addons/baseer_account_dashboard_plus/static/src/summary.xml:0
+#: code:addons/baseer_account_dashboard_plus/static/src/summary.js:0
+#: code:addons/baseer_account_dashboard_plus/models/journal.py:0
+msgid "Profit and Loss"
+msgstr "الأرباح والخسائر"
+
+#. module: baseer_account_dashboard_plus
+#. odoo-javascript
+#. odoo-python
+#: model_terms:ir.ui.view,arch_db:baseer_account_dashboard_plus.journal_dashboard_plus
+#: code:addons/baseer_account_dashboard_plus/static/src/summary.xml:0
+#: code:addons/baseer_account_dashboard_plus/static/src/summary.js:0
+#: code:addons/baseer_account_dashboard_plus/models/journal.py:0
+msgid "Balance Sheet"
+msgstr "الميزانية العمومية"
+
+#. module: baseer_account_dashboard_plus
+#. odoo-javascript
+#. odoo-python
+#: model_terms:ir.ui.view,arch_db:baseer_account_dashboard_plus.journal_dashboard_plus
+#: code:addons/baseer_account_dashboard_plus/static/src/summary.xml:0
+#: code:addons/baseer_account_dashboard_plus/static/src/summary.js:0
+#: code:addons/baseer_account_dashboard_plus/models/journal.py:0
+msgid "Trial Balance"
+msgstr "ميزان المراجعة"
+
+#. module: baseer_account_dashboard_plus
+#. odoo-javascript
+#. odoo-python
+#: model_terms:ir.ui.view,arch_db:baseer_account_dashboard_plus.journal_dashboard_plus
+#: code:addons/baseer_account_dashboard_plus/static/src/summary.xml:0
+#: code:addons/baseer_account_dashboard_plus/static/src/summary.js:0
+#: code:addons/baseer_account_dashboard_plus/models/journal.py:0
+msgid "Cash Flow"
+msgstr "التدفقات النقدية"
+
+#. module: baseer_account_dashboard_plus
+#. odoo-javascript
+#. odoo-python
+#: model_terms:ir.ui.view,arch_db:baseer_account_dashboard_plus.journal_dashboard_plus
+#: code:addons/baseer_account_dashboard_plus/static/src/summary.xml:0
+#: code:addons/baseer_account_dashboard_plus/static/src/summary.js:0
+#: code:addons/baseer_account_dashboard_plus/models/journal.py:0
+msgid "VAT Report"
+msgstr "تقرير ضريبة القيمة المضافة"
+
+#. module: baseer_account_dashboard_plus
+#. odoo-javascript
+#. odoo-python
+#: model_terms:ir.ui.view,arch_db:baseer_account_dashboard_plus.journal_dashboard_plus
+#: code:addons/baseer_account_dashboard_plus/static/src/summary.xml:0
+#: code:addons/baseer_account_dashboard_plus/static/src/summary.js:0
+#: code:addons/baseer_account_dashboard_plus/models/journal.py:0
+msgid "Tobacco monthly report"
+msgstr "تقرير التبغ الشهري"
+
+#. module: baseer_account_dashboard_plus
+#. odoo-javascript
+#. odoo-python
+#: model_terms:ir.ui.view,arch_db:baseer_account_dashboard_plus.journal_dashboard_plus
+#: code:addons/baseer_account_dashboard_plus/static/src/summary.xml:0
+#: code:addons/baseer_account_dashboard_plus/static/src/summary.js:0
+#: code:addons/baseer_account_dashboard_plus/models/journal.py:0
+msgid "Journal Items"
+msgstr "بنود اليومية"

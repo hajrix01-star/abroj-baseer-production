@@ -1,7 +1,7 @@
 {
     'name': 'Baseer POS Direct Print Bridge',
     'summary': 'Receipt and kitchen printing through the print agent',
-    'version': '19.0.7.8.54',
+    'version': '19.0.7.8.55',
     'category': 'Baseer/POS',
     'author': 'Baseer',
     'license': 'LGPL-3',
@@ -10,6 +10,7 @@
         'security/print_security.xml',
         'security/ir.model.access.csv',
         'views/print_views.xml',
+        'views/print_document_templates.xml',
         'data/receipt_cleanup_cron.xml',
         'data/print_agent_github_release.xml',
     ],

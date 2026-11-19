@@ -41,6 +41,27 @@ function identity() {
     api.setNoorixSelection(api.noorixScope(41, 7), false);
 }
 
+test("heat calendar explains expected business errors without exposing internal failures", async () => {
+    identity();
+    for (const name of ["odoo.exceptions.ValidationError", "odoo.exceptions.UserError", "odoo.exceptions.AccessError"]) {
+        const message = "بعض قيود نوركس بلا دليل مصدر موثّق.";
+        const component = report(Heat, async () => { throw { message: "Odoo Server Error", data: { name, message } }; });
+        await component.load();
+        assert.equal(component.state.error, message);
+        assert.equal(component.state.payload, null);
+        assert.equal(component.state.loading, false);
+    }
+    for (const error of [
+        { message: "Odoo Server Error", data: { name: "builtins.ValueError", message: "private internal detail" } },
+        new Error("private transport detail"),
+        { data: { name: "odoo.exceptions.ValidationError", message: { unexpected: true } } },
+    ]) {
+        const component = report(Heat, async () => { throw error; });
+        await component.load();
+        assert.equal(component.state.error, "The heat calendar could not be loaded.");
+    }
+});
+
 test("preference starts false and synchronizes only the same user/company", () => {
     const scope = api.noorixScope(91, 2);
     assert.equal(api.getNoorixSelection(scope), false);

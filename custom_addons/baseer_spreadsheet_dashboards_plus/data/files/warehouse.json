@@ -1,0 +1,656 @@
+{
+  "version": "18.5.10",
+  "sheets": [
+    {
+      "id": "dashboard",
+      "name": "Dashboard",
+      "colNumber": 8,
+      "rowNumber": 100,
+      "rows": {},
+      "cols": {
+        "0": {
+          "size": 140
+        },
+        "1": {
+          "size": 140
+        },
+        "2": {
+          "size": 140
+        },
+        "3": {
+          "size": 140
+        },
+        "4": {
+          "size": 140
+        },
+        "5": {
+          "size": 140
+        },
+        "6": {
+          "size": 140
+        },
+        "7": {
+          "size": 140
+        }
+      },
+      "merges": [],
+      "cells": {
+        "A1": "=_t(\"Warehouse daily operations\")",
+        "A20": "=_t(\"Operations by type and status\")",
+        "A21": "=_t(\"Picking type\")",
+        "B21": "=_t(\"Ready\")",
+        "C21": "=_t(\"Waiting\")",
+        "D21": "=_t(\"Done\")",
+        "E21": "=_t(\"Cancelled\")",
+        "A22": "=IFERROR(PIVOT.HEADER(1,\"#picking_type_id\",1),\"\")",
+        "B22": "=IF(A22=\"\",\"\",IFERROR(PIVOT.VALUE(1,\"__count\",\"#picking_type_id\",1,\"state\",\"assigned\"),0))",
+        "C22": "=IF(A22=\"\",\"\",IFERROR(PIVOT.VALUE(1,\"__count\",\"#picking_type_id\",1,\"state\",\"confirmed\"),0)+IFERROR(PIVOT.VALUE(1,\"__count\",\"#picking_type_id\",1,\"state\",\"waiting\"),0))",
+        "D22": "=IF(A22=\"\",\"\",IFERROR(PIVOT.VALUE(1,\"__count\",\"#picking_type_id\",1,\"state\",\"done\"),0))",
+        "E22": "=IF(A22=\"\",\"\",IFERROR(PIVOT.VALUE(1,\"__count\",\"#picking_type_id\",1,\"state\",\"cancel\"),0))",
+        "A23": "=IFERROR(PIVOT.HEADER(1,\"#picking_type_id\",2),\"\")",
+        "B23": "=IF(A23=\"\",\"\",IFERROR(PIVOT.VALUE(1,\"__count\",\"#picking_type_id\",2,\"state\",\"assigned\"),0))",
+        "C23": "=IF(A23=\"\",\"\",IFERROR(PIVOT.VALUE(1,\"__count\",\"#picking_type_id\",2,\"state\",\"confirmed\"),0)+IFERROR(PIVOT.VALUE(1,\"__count\",\"#picking_type_id\",2,\"state\",\"waiting\"),0))",
+        "D23": "=IF(A23=\"\",\"\",IFERROR(PIVOT.VALUE(1,\"__count\",\"#picking_type_id\",2,\"state\",\"done\"),0))",
+        "E23": "=IF(A23=\"\",\"\",IFERROR(PIVOT.VALUE(1,\"__count\",\"#picking_type_id\",2,\"state\",\"cancel\"),0))",
+        "A24": "=IFERROR(PIVOT.HEADER(1,\"#picking_type_id\",3),\"\")",
+        "B24": "=IF(A24=\"\",\"\",IFERROR(PIVOT.VALUE(1,\"__count\",\"#picking_type_id\",3,\"state\",\"assigned\"),0))",
+        "C24": "=IF(A24=\"\",\"\",IFERROR(PIVOT.VALUE(1,\"__count\",\"#picking_type_id\",3,\"state\",\"confirmed\"),0)+IFERROR(PIVOT.VALUE(1,\"__count\",\"#picking_type_id\",3,\"state\",\"waiting\"),0))",
+        "D24": "=IF(A24=\"\",\"\",IFERROR(PIVOT.VALUE(1,\"__count\",\"#picking_type_id\",3,\"state\",\"done\"),0))",
+        "E24": "=IF(A24=\"\",\"\",IFERROR(PIVOT.VALUE(1,\"__count\",\"#picking_type_id\",3,\"state\",\"cancel\"),0))",
+        "A25": "=IFERROR(PIVOT.HEADER(1,\"#picking_type_id\",4),\"\")",
+        "B25": "=IF(A25=\"\",\"\",IFERROR(PIVOT.VALUE(1,\"__count\",\"#picking_type_id\",4,\"state\",\"assigned\"),0))",
+        "C25": "=IF(A25=\"\",\"\",IFERROR(PIVOT.VALUE(1,\"__count\",\"#picking_type_id\",4,\"state\",\"confirmed\"),0)+IFERROR(PIVOT.VALUE(1,\"__count\",\"#picking_type_id\",4,\"state\",\"waiting\"),0))",
+        "D25": "=IF(A25=\"\",\"\",IFERROR(PIVOT.VALUE(1,\"__count\",\"#picking_type_id\",4,\"state\",\"done\"),0))",
+        "E25": "=IF(A25=\"\",\"\",IFERROR(PIVOT.VALUE(1,\"__count\",\"#picking_type_id\",4,\"state\",\"cancel\"),0))",
+        "A26": "=IFERROR(PIVOT.HEADER(1,\"#picking_type_id\",5),\"\")",
+        "B26": "=IF(A26=\"\",\"\",IFERROR(PIVOT.VALUE(1,\"__count\",\"#picking_type_id\",5,\"state\",\"assigned\"),0))",
+        "C26": "=IF(A26=\"\",\"\",IFERROR(PIVOT.VALUE(1,\"__count\",\"#picking_type_id\",5,\"state\",\"confirmed\"),0)+IFERROR(PIVOT.VALUE(1,\"__count\",\"#picking_type_id\",5,\"state\",\"waiting\"),0))",
+        "D26": "=IF(A26=\"\",\"\",IFERROR(PIVOT.VALUE(1,\"__count\",\"#picking_type_id\",5,\"state\",\"done\"),0))",
+        "E26": "=IF(A26=\"\",\"\",IFERROR(PIVOT.VALUE(1,\"__count\",\"#picking_type_id\",5,\"state\",\"cancel\"),0))",
+        "A27": "=IFERROR(PIVOT.HEADER(1,\"#picking_type_id\",6),\"\")",
+        "B27": "=IF(A27=\"\",\"\",IFERROR(PIVOT.VALUE(1,\"__count\",\"#picking_type_id\",6,\"state\",\"assigned\"),0))",
+        "C27": "=IF(A27=\"\",\"\",IFERROR(PIVOT.VALUE(1,\"__count\",\"#picking_type_id\",6,\"state\",\"confirmed\"),0)+IFERROR(PIVOT.VALUE(1,\"__count\",\"#picking_type_id\",6,\"state\",\"waiting\"),0))",
+        "D27": "=IF(A27=\"\",\"\",IFERROR(PIVOT.VALUE(1,\"__count\",\"#picking_type_id\",6,\"state\",\"done\"),0))",
+        "E27": "=IF(A27=\"\",\"\",IFERROR(PIVOT.VALUE(1,\"__count\",\"#picking_type_id\",6,\"state\",\"cancel\"),0))",
+        "A28": "=IFERROR(PIVOT.HEADER(1,\"#picking_type_id\",7),\"\")",
+        "B28": "=IF(A28=\"\",\"\",IFERROR(PIVOT.VALUE(1,\"__count\",\"#picking_type_id\",7,\"state\",\"assigned\"),0))",
+        "C28": "=IF(A28=\"\",\"\",IFERROR(PIVOT.VALUE(1,\"__count\",\"#picking_type_id\",7,\"state\",\"confirmed\"),0)+IFERROR(PIVOT.VALUE(1,\"__count\",\"#picking_type_id\",7,\"state\",\"waiting\"),0))",
+        "D28": "=IF(A28=\"\",\"\",IFERROR(PIVOT.VALUE(1,\"__count\",\"#picking_type_id\",7,\"state\",\"done\"),0))",
+        "E28": "=IF(A28=\"\",\"\",IFERROR(PIVOT.VALUE(1,\"__count\",\"#picking_type_id\",7,\"state\",\"cancel\"),0))",
+        "A29": "=IFERROR(PIVOT.HEADER(1,\"#picking_type_id\",8),\"\")",
+        "B29": "=IF(A29=\"\",\"\",IFERROR(PIVOT.VALUE(1,\"__count\",\"#picking_type_id\",8,\"state\",\"assigned\"),0))",
+        "C29": "=IF(A29=\"\",\"\",IFERROR(PIVOT.VALUE(1,\"__count\",\"#picking_type_id\",8,\"state\",\"confirmed\"),0)+IFERROR(PIVOT.VALUE(1,\"__count\",\"#picking_type_id\",8,\"state\",\"waiting\"),0))",
+        "D29": "=IF(A29=\"\",\"\",IFERROR(PIVOT.VALUE(1,\"__count\",\"#picking_type_id\",8,\"state\",\"done\"),0))",
+        "E29": "=IF(A29=\"\",\"\",IFERROR(PIVOT.VALUE(1,\"__count\",\"#picking_type_id\",8,\"state\",\"cancel\"),0))",
+        "A30": "=IFERROR(PIVOT.HEADER(1,\"#picking_type_id\",9),\"\")",
+        "B30": "=IF(A30=\"\",\"\",IFERROR(PIVOT.VALUE(1,\"__count\",\"#picking_type_id\",9,\"state\",\"assigned\"),0))",
+        "C30": "=IF(A30=\"\",\"\",IFERROR(PIVOT.VALUE(1,\"__count\",\"#picking_type_id\",9,\"state\",\"confirmed\"),0)+IFERROR(PIVOT.VALUE(1,\"__count\",\"#picking_type_id\",9,\"state\",\"waiting\"),0))",
+        "D30": "=IF(A30=\"\",\"\",IFERROR(PIVOT.VALUE(1,\"__count\",\"#picking_type_id\",9,\"state\",\"done\"),0))",
+        "E30": "=IF(A30=\"\",\"\",IFERROR(PIVOT.VALUE(1,\"__count\",\"#picking_type_id\",9,\"state\",\"cancel\"),0))",
+        "A31": "=IFERROR(PIVOT.HEADER(1,\"#picking_type_id\",10),\"\")",
+        "B31": "=IF(A31=\"\",\"\",IFERROR(PIVOT.VALUE(1,\"__count\",\"#picking_type_id\",10,\"state\",\"assigned\"),0))",
+        "C31": "=IF(A31=\"\",\"\",IFERROR(PIVOT.VALUE(1,\"__count\",\"#picking_type_id\",10,\"state\",\"confirmed\"),0)+IFERROR(PIVOT.VALUE(1,\"__count\",\"#picking_type_id\",10,\"state\",\"waiting\"),0))",
+        "D31": "=IF(A31=\"\",\"\",IFERROR(PIVOT.VALUE(1,\"__count\",\"#picking_type_id\",10,\"state\",\"done\"),0))",
+        "E31": "=IF(A31=\"\",\"\",IFERROR(PIVOT.VALUE(1,\"__count\",\"#picking_type_id\",10,\"state\",\"cancel\"),0))",
+        "A45": "=_t(\"Late pickings\")",
+        "A46": "=ODOO.LIST.HEADER(1, \"name\")",
+        "A47": "=ODOO.LIST(1,1,\"name\")",
+        "A48": "=ODOO.LIST(1,2,\"name\")",
+        "A49": "=ODOO.LIST(1,3,\"name\")",
+        "A50": "=ODOO.LIST(1,4,\"name\")",
+        "A51": "=ODOO.LIST(1,5,\"name\")",
+        "A52": "=ODOO.LIST(1,6,\"name\")",
+        "A53": "=ODOO.LIST(1,7,\"name\")",
+        "A54": "=ODOO.LIST(1,8,\"name\")",
+        "A55": "=ODOO.LIST(1,9,\"name\")",
+        "A56": "=ODOO.LIST(1,10,\"name\")",
+        "B46": "=ODOO.LIST.HEADER(1, \"partner_id\")",
+        "B47": "=ODOO.LIST(1,1,\"partner_id\")",
+        "B48": "=ODOO.LIST(1,2,\"partner_id\")",
+        "B49": "=ODOO.LIST(1,3,\"partner_id\")",
+        "B50": "=ODOO.LIST(1,4,\"partner_id\")",
+        "B51": "=ODOO.LIST(1,5,\"partner_id\")",
+        "B52": "=ODOO.LIST(1,6,\"partner_id\")",
+        "B53": "=ODOO.LIST(1,7,\"partner_id\")",
+        "B54": "=ODOO.LIST(1,8,\"partner_id\")",
+        "B55": "=ODOO.LIST(1,9,\"partner_id\")",
+        "B56": "=ODOO.LIST(1,10,\"partner_id\")",
+        "C46": "=ODOO.LIST.HEADER(1, \"picking_type_id\")",
+        "C47": "=ODOO.LIST(1,1,\"picking_type_id\")",
+        "C48": "=ODOO.LIST(1,2,\"picking_type_id\")",
+        "C49": "=ODOO.LIST(1,3,\"picking_type_id\")",
+        "C50": "=ODOO.LIST(1,4,\"picking_type_id\")",
+        "C51": "=ODOO.LIST(1,5,\"picking_type_id\")",
+        "C52": "=ODOO.LIST(1,6,\"picking_type_id\")",
+        "C53": "=ODOO.LIST(1,7,\"picking_type_id\")",
+        "C54": "=ODOO.LIST(1,8,\"picking_type_id\")",
+        "C55": "=ODOO.LIST(1,9,\"picking_type_id\")",
+        "C56": "=ODOO.LIST(1,10,\"picking_type_id\")",
+        "D46": "=ODOO.LIST.HEADER(1, \"scheduled_date\")",
+        "D47": "=ODOO.LIST(1,1,\"scheduled_date\")",
+        "D48": "=ODOO.LIST(1,2,\"scheduled_date\")",
+        "D49": "=ODOO.LIST(1,3,\"scheduled_date\")",
+        "D50": "=ODOO.LIST(1,4,\"scheduled_date\")",
+        "D51": "=ODOO.LIST(1,5,\"scheduled_date\")",
+        "D52": "=ODOO.LIST(1,6,\"scheduled_date\")",
+        "D53": "=ODOO.LIST(1,7,\"scheduled_date\")",
+        "D54": "=ODOO.LIST(1,8,\"scheduled_date\")",
+        "D55": "=ODOO.LIST(1,9,\"scheduled_date\")",
+        "D56": "=ODOO.LIST(1,10,\"scheduled_date\")",
+        "E46": "=ODOO.LIST.HEADER(1, \"state\")",
+        "E47": "=ODOO.LIST(1,1,\"state\")",
+        "E48": "=ODOO.LIST(1,2,\"state\")",
+        "E49": "=ODOO.LIST(1,3,\"state\")",
+        "E50": "=ODOO.LIST(1,4,\"state\")",
+        "E51": "=ODOO.LIST(1,5,\"state\")",
+        "E52": "=ODOO.LIST(1,6,\"state\")",
+        "E53": "=ODOO.LIST(1,7,\"state\")",
+        "E54": "=ODOO.LIST(1,8,\"state\")",
+        "E55": "=ODOO.LIST(1,9,\"state\")",
+        "E56": "=ODOO.LIST(1,10,\"state\")"
+      },
+      "styles": {
+        "A1": 1,
+        "A20": 4,
+        "A21": 5,
+        "B21": 5,
+        "C21": 5,
+        "D21": 5,
+        "E21": 5,
+        "A45": 4,
+        "A46": 5,
+        "B46": 5,
+        "C46": 5,
+        "D46": 5,
+        "E46": 5
+      },
+      "formats": {},
+      "borders": {
+        "A20": 1,
+        "A45": 1
+      },
+      "conditionalFormats": [],
+      "dataValidationRules": [],
+      "figures": [
+        {
+          "id": "score-0",
+          "tag": "chart",
+          "width": 185,
+          "height": 95,
+          "col": 0,
+          "row": 0,
+          "offset": {
+            "x": 0,
+            "y": 35
+          },
+          "data": {
+            "type": "scorecard",
+            "title": {
+              "text": "Late receipts",
+              "bold": true
+            },
+            "background": "#f1f8f8",
+            "keyValue": "Data!B1",
+            "baselineMode": "text",
+            "humanize": true,
+            "chartId": "score-0"
+          }
+        },
+        {
+          "id": "score-1",
+          "tag": "chart",
+          "width": 185,
+          "height": 95,
+          "col": 0,
+          "row": 0,
+          "offset": {
+            "x": 190,
+            "y": 35
+          },
+          "data": {
+            "type": "scorecard",
+            "title": {
+              "text": "Late deliveries",
+              "bold": true
+            },
+            "background": "#f1f8f8",
+            "keyValue": "Data!B2",
+            "baselineMode": "text",
+            "humanize": true,
+            "chartId": "score-1"
+          }
+        },
+        {
+          "id": "score-2",
+          "tag": "chart",
+          "width": 185,
+          "height": 95,
+          "col": 0,
+          "row": 0,
+          "offset": {
+            "x": 380,
+            "y": 35
+          },
+          "data": {
+            "type": "scorecard",
+            "title": {
+              "text": "Late internal",
+              "bold": true
+            },
+            "background": "#f1f8f8",
+            "keyValue": "Data!B3",
+            "baselineMode": "text",
+            "humanize": true,
+            "chartId": "score-2"
+          }
+        },
+        {
+          "id": "warehouse-type",
+          "tag": "chart",
+          "width": 305,
+          "height": 230,
+          "col": 0,
+          "row": 0,
+          "offset": {
+            "x": 0,
+            "y": 145
+          },
+          "data": {
+            "title": {
+              "text": "By operation type"
+            },
+            "background": "#ffffff",
+            "legendPosition": "none",
+            "metaData": {
+              "groupBy": [
+                "picking_type_id"
+              ],
+              "measure": "__count",
+              "order": null,
+              "resModel": "stock.picking",
+              "mode": "bar",
+              "cumulatedStart": false
+            },
+            "searchParams": {
+              "comparison": null,
+              "context": {},
+              "domain": [],
+              "groupBy": [
+                "picking_type_id"
+              ],
+              "orderBy": []
+            },
+            "type": "odoo_bar",
+            "dataSets": [],
+            "chartId": "warehouse-type",
+            "fieldMatching": {
+              "baseer-period": {
+                "chain": "scheduled_date",
+                "type": "datetime",
+                "offset": 0
+              }
+            },
+            "verticalAxisPosition": "left",
+            "stacked": false
+          }
+        },
+        {
+          "id": "warehouse-state",
+          "tag": "chart",
+          "width": 305,
+          "height": 230,
+          "col": 0,
+          "row": 0,
+          "offset": {
+            "x": 310,
+            "y": 145
+          },
+          "data": {
+            "title": {
+              "text": "By status"
+            },
+            "background": "#ffffff",
+            "legendPosition": "none",
+            "metaData": {
+              "groupBy": [
+                "state"
+              ],
+              "measure": "__count",
+              "order": null,
+              "resModel": "stock.picking",
+              "mode": "bar",
+              "cumulatedStart": false
+            },
+            "searchParams": {
+              "comparison": null,
+              "context": {},
+              "domain": [],
+              "groupBy": [
+                "state"
+              ],
+              "orderBy": []
+            },
+            "type": "odoo_bar",
+            "dataSets": [],
+            "chartId": "warehouse-state",
+            "fieldMatching": {
+              "baseer-period": {
+                "chain": "scheduled_date",
+                "type": "datetime",
+                "offset": 0
+              }
+            },
+            "verticalAxisPosition": "left",
+            "stacked": false
+          }
+        }
+      ],
+      "tables": [],
+      "areGridLinesVisible": false,
+      "isVisible": true,
+      "headerGroups": {
+        "ROW": [],
+        "COL": []
+      },
+      "comments": {}
+    },
+    {
+      "id": "data",
+      "name": "Data",
+      "colNumber": 8,
+      "rowNumber": 100,
+      "rows": {},
+      "cols": {
+        "0": {
+          "size": 140
+        },
+        "1": {
+          "size": 140
+        },
+        "2": {
+          "size": 140
+        },
+        "3": {
+          "size": 140
+        },
+        "4": {
+          "size": 140
+        },
+        "5": {
+          "size": 140
+        },
+        "6": {
+          "size": 140
+        },
+        "7": {
+          "size": 140
+        }
+      },
+      "merges": [],
+      "cells": {
+        "B1": "=PIVOT.VALUE(2,\"__count\")",
+        "B2": "=PIVOT.VALUE(3,\"__count\")",
+        "B3": "=PIVOT.VALUE(4,\"__count\")"
+      },
+      "styles": {},
+      "formats": {},
+      "borders": {},
+      "conditionalFormats": [],
+      "dataValidationRules": [],
+      "figures": [],
+      "tables": [],
+      "areGridLinesVisible": false,
+      "isVisible": true,
+      "headerGroups": {
+        "ROW": [],
+        "COL": []
+      },
+      "comments": {}
+    }
+  ],
+  "styles": {
+    "1": {
+      "bold": true,
+      "fontSize": 16,
+      "textColor": "#01666b"
+    },
+    "2": {
+      "bold": true,
+      "fillColor": "#e6f2f3"
+    },
+    "3": {
+      "fontSize": 11
+    },
+    "4": {
+      "bold": true,
+      "fontSize": 14,
+      "textColor": "#01666b"
+    },
+    "5": {
+      "bold": true,
+      "fontSize": 10,
+      "fillColor": "#e6f2f3",
+      "textColor": "#345"
+    }
+  },
+  "formats": {
+    "1": "#,##0.00",
+    "2": "0.0%"
+  },
+  "borders": {
+    "1": {
+      "bottom": {
+        "style": "thin",
+        "color": "#9fc5c5"
+      }
+    }
+  },
+  "revisionId": "baseer",
+  "uniqueFigureIds": true,
+  "settings": {
+    "locale": {
+      "name": "English (US)",
+      "code": "en_US",
+      "thousandsSeparator": ",",
+      "decimalSeparator": ".",
+      "dateFormat": "mm/dd/yyyy",
+      "timeFormat": "hh:mm:ss",
+      "formulaArgSeparator": ",",
+      "weekStart": 7
+    }
+  },
+  "pivots": {
+    "1": {
+      "type": "ODOO",
+      "id": "1",
+      "formulaId": "1",
+      "model": "stock.picking",
+      "name": "Picking type and status",
+      "domain": [],
+      "context": {},
+      "fieldMatching": {
+        "baseer-period": {
+          "chain": "scheduled_date",
+          "type": "datetime",
+          "offset": 0
+        }
+      },
+      "measures": [
+        {
+          "id": "__count",
+          "fieldName": "__count"
+        }
+      ],
+      "rows": [
+        {
+          "fieldName": "picking_type_id"
+        }
+      ],
+      "columns": [
+        {
+          "fieldName": "state"
+        }
+      ]
+    },
+    "2": {
+      "type": "ODOO",
+      "id": "2",
+      "formulaId": "2",
+      "model": "stock.picking",
+      "name": "Late receipts",
+      "domain": [
+        [
+          "picking_type_code",
+          "=",
+          "incoming"
+        ],
+        [
+          "state",
+          "not in",
+          [
+            "done",
+            "cancel"
+          ]
+        ],
+        [
+          "scheduled_date",
+          "<",
+          "today"
+        ]
+      ],
+      "context": {},
+      "fieldMatching": {},
+      "measures": [
+        {
+          "id": "__count",
+          "fieldName": "__count"
+        }
+      ],
+      "rows": [],
+      "columns": []
+    },
+    "3": {
+      "type": "ODOO",
+      "id": "3",
+      "formulaId": "3",
+      "model": "stock.picking",
+      "name": "Late deliveries",
+      "domain": [
+        [
+          "picking_type_code",
+          "=",
+          "outgoing"
+        ],
+        [
+          "state",
+          "not in",
+          [
+            "done",
+            "cancel"
+          ]
+        ],
+        [
+          "scheduled_date",
+          "<",
+          "today"
+        ]
+      ],
+      "context": {},
+      "fieldMatching": {},
+      "measures": [
+        {
+          "id": "__count",
+          "fieldName": "__count"
+        }
+      ],
+      "rows": [],
+      "columns": []
+    },
+    "4": {
+      "type": "ODOO",
+      "id": "4",
+      "formulaId": "4",
+      "model": "stock.picking",
+      "name": "Late internal",
+      "domain": [
+        [
+          "picking_type_code",
+          "=",
+          "internal"
+        ],
+        [
+          "state",
+          "not in",
+          [
+            "done",
+            "cancel"
+          ]
+        ],
+        [
+          "scheduled_date",
+          "<",
+          "today"
+        ]
+      ],
+      "context": {},
+      "fieldMatching": {},
+      "measures": [
+        {
+          "id": "__count",
+          "fieldName": "__count"
+        }
+      ],
+      "rows": [],
+      "columns": []
+    }
+  },
+  "pivotNextId": 5,
+  "customTableStyles": {},
+  "globalFilters": [
+    {
+      "id": "baseer-period",
+      "type": "date",
+      "label": "Period",
+      "defaultValue": "this_year"
+    }
+  ],
+  "lists": {
+    "1": {
+      "id": "1",
+      "model": "stock.picking",
+      "name": "Late pickings",
+      "columns": [
+        "name",
+        "partner_id",
+        "picking_type_id",
+        "scheduled_date",
+        "state"
+      ],
+      "domain": [
+        [
+          "state",
+          "not in",
+          [
+            "done",
+            "cancel"
+          ]
+        ],
+        [
+          "scheduled_date",
+          "<",
+          "today"
+        ]
+      ],
+      "context": {},
+      "orderBy": [
+        {
+          "name": "scheduled_date",
+          "asc": true
+        }
+      ],
+      "fieldMatching": {}
+    }
+  },
+  "listNextId": 2,
+  "chartOdooMenusReferences": {}
+}

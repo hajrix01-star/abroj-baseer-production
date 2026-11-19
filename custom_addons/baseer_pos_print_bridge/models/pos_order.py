@@ -695,22 +695,8 @@ class PosOrder(models.Model):
     def action_pos_order_paid(self):
         self._baseer_assert_payment_source_integrity()
         result = super().action_pos_order_paid()
-        for order in self:
-            if (order.config_id.baseer_direct_print_enabled
-                    and not order.config_id.baseer_native_receipt_enabled):
-                # A printer failure must never roll back native payment.
-                try:
-                    with self.env.cr.savepoint():
-                        job = self.env['baseer.print.job']._enqueue_receipt(order)
-                        if not job:
-                            raise ValidationError(_('The customer receipt printer is not ready.'))
-                        order.baseer_receipt_enqueue_error = False
-                except Exception as error:
-                    _logger.exception('Customer receipt enqueue failed for POS order %s', order.id)
-                    order.baseer_receipt_enqueue_error = (
-                        str(error) if isinstance(error, UserError)
-                        else _('The receipt service failed. Ask a manager to inspect the server log.')
-                    )
+        # The POS captures the original OrderReceipt after native payment.
+        # A historical flag must never select a Windows-owned receipt layout.
         return result
 
     def baseer_customer_receipt_status(self):

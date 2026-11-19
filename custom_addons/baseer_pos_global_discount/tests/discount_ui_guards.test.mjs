@@ -54,8 +54,8 @@ test("fiscal position action is blocked before native direct tax assignment", as
     assert.equal(calls.length, 1);
 });
 test("owned discounts never trigger native automatic percentage reapplication", async () => {
-    for (const scenario of ["enabled", "locked", "refund"]) {
-        const pos = { config: { baseer_global_discount_enabled: scenario === "enabled" } };
+    for (const scenario of ["locked", "refund"]) {
+        const pos = { config: { baseer_global_discount_enabled: true } };
         const draft = { baseer_global_discount_locked: scenario === "locked", needsRefund: scenario === "refund" };
         await extensions.get("PosStore").applyDiscount.call(pos, 10, draft);
         assert.equal(pos.nativeCalled, undefined, scenario);
@@ -63,6 +63,18 @@ test("owned discounts never trigger native automatic percentage reapplication", 
     const normal = { config: {} };
     await extensions.get("PosStore").applyDiscount.call(normal, 10, {});
     assert.equal(normal.nativeCalled, true);
+});
+test("enabling the new feature preserves native historical discount refunds", async () => {
+    const pos = { config: { baseer_global_discount_enabled: true } };
+    const historicalRefund = { baseer_global_discount_locked: false, needsRefund: false };
+    await extensions.get("PosStore").applyDiscount.call(pos, 10, historicalRefund);
+    assert.equal(pos.nativeCalled, true);
+});
+test("native percentage reapplication waits for a managed command with an unknown result", async () => {
+    const pending = order(true);
+    const pos = { config: { baseer_global_discount_enabled: true } };
+    await extensions.get("PosStore").applyDiscount.call(pos, 10, pending);
+    assert.equal(pos.nativeCalled, undefined);
 });
 test("refund picker excludes standalone allowances and explains manual selection", () => {
     const allowance = { id: 2, baseer_global_discount_line: true };

@@ -17,9 +17,9 @@ import { discountStorageKey, pendingDiscount, needsDiscountRefund, executeDiscou
 const frozenMessage = () => _t("Remove the invoice discount before changing items, prices or customer details.");
 const pendingMessage = () => _t("The discount needs verification. Reconnect and check its result before payment.");
 function isDiscountFrozen(order) {
-    return Boolean(order && (order.baseer_global_discount_locked || localStorage.getItem(
+    return Boolean(order && (order.baseer_global_discount_locked || (order.config_id && localStorage.getItem(
         discountStorageKey(session.db || "", order.config_id.id, order.uuid)
-    )));
+    ))));
 }
 function explainFrozen(pos) {
     pos.dialog.add(AlertDialog, { title: _t("Invoice discount"), body: frozenMessage() });
@@ -74,7 +74,9 @@ patch(PosStore.prototype, {
         }
     },
     async applyDiscount(percent, order = this.getOrder()) {
-        if (this.config.baseer_global_discount_enabled || order?.baseer_global_discount_locked || needsDiscountRefund(order)) return;
+        // Historical native discounts keep their own native refund behavior,
+        // even after the shop enables this new command for subsequent sales.
+        if (isDiscountFrozen(order) || needsDiscountRefund(order)) return;
         return super.applyDiscount(...arguments);
     },
     async addLineToOrder(vals, order, ...args) {

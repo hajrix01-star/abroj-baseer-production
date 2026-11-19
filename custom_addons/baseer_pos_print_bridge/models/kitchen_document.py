@@ -7,7 +7,7 @@ import subprocess
 import tempfile
 from decimal import Decimal, InvalidOperation
 
-from PIL import Image, UnidentifiedImageError
+from PIL import Image, ImageChops, UnidentifiedImageError
 
 from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
@@ -52,13 +52,15 @@ class BaseerKitchenDocument(models.Model):
             except (InvalidOperation, ValueError, TypeError):
                 raise ValidationError(_('The kitchen quantity is invalid.')) from None
             if (not value.is_finite() or abs(value) > Decimal('1000000000')
-                    or value.as_tuple().exponent < -6):
+                    or not -100 <= value.as_tuple().exponent <= 100):
                 raise ValidationError(_('The kitchen quantity is invalid.'))
             return value
 
         def formatted(value):
             # Display the authoritative snapshot without recalculating intent.
-            return format(value, 'f').rstrip('0').rstrip('.') if value != value.to_integral() else format(value, '.0f')
+            # Match the former kitchen renderer's 0.### display, including
+            # harmless native float deltas such as 1.3 - 1.2. Never alter the event.
+            return format(value, '.3f').rstrip('0').rstrip('.') or '0'
 
         actions = []
         for index, source in enumerate(lines):
@@ -169,6 +171,28 @@ class BaseerKitchenDocument(models.Model):
                         encoded = io.BytesIO()
                         grayscale.save(encoded, format='JPEG', quality=quality, optimize=True)
                         if encoded.tell() <= NATIVE_RECEIPT_MAX_BYTES:
+                            return self._validated_native_receipt_image(
+                                base64.b64encode(encoded.getvalue()).decode(),
+                            )
+                    # Thermal output is binary. For dense long text, encode the
+                    # same 170-threshold used by the installed Windows renderer.
+                    # Accept only candidates retaining EVERY original ink pixel
+                    # and adding at most 2% ink; no resizing or discarded rows.
+                    with grayscale.point(lambda tone: 0 if tone < 170 else 255) as binary:
+                        ink = binary.histogram()[0]
+                        for quality in (65, 50, 40, 30, 25, 20):
+                            encoded = io.BytesIO()
+                            binary.save(encoded, format='JPEG', quality=quality, optimize=True)
+                            if encoded.tell() > NATIVE_RECEIPT_MAX_BYTES:
+                                continue
+                            with Image.open(io.BytesIO(encoded.getvalue())) as candidate:
+                                with candidate.point(lambda tone: 0 if tone < 170 else 255) as restored:
+                                    with ImageChops.subtract(restored, binary) as lost:
+                                        if lost.getbbox():
+                                            continue
+                                    with ImageChops.subtract(binary, restored) as added:
+                                        if added.histogram()[255] * 100 > max(ink, 1) * 2:
+                                            continue
                             return self._validated_native_receipt_image(
                                 base64.b64encode(encoded.getvalue()).decode(),
                             )

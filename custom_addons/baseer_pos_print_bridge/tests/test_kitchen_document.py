@@ -126,6 +126,16 @@ class TestOdooKitchenDocument(TransactionCase):
         self.assertEqual(values['order']['created_at'], '2026-11-19 13:00:00')
         self.assertEqual(job.payload['order']['created_at'], '2026-11-19 10:00:00')
 
+    def test_native_float_delta_keeps_the_existing_kitchen_display_precision(self):
+        payload = self._payload()
+        delta = 1.3 - 1.2
+        payload['lines'][0].update({'action': 'add', 'quantity': 1.3,
+                                    'previous_quantity': 1.2, 'delta_quantity': delta})
+        job = self._job(payload)
+        self.assertEqual(job.state, 'pending')
+        self.assertEqual(job._kitchen_document_values()['lines'][0]['quantity_label'], '+0.1')
+        self.assertEqual(job.payload['lines'][0]['delta_quantity'], delta)
+
     def test_claim_only_sends_validated_raster_envelope(self):
         job = self._job()
         raster = self._jpeg()
@@ -273,6 +283,7 @@ class TestOdooKitchenDocument(TransactionCase):
     def test_invalid_or_oversized_source_fails_visibly_without_truncation(self):
         for changes in [
             {'lines': [{'name': 'Bad quantity', 'quantity': 'NaN'}]},
+            {'lines': [{'name': 'Unbounded exponent', 'quantity': '1e-1000000000'}]},
             {'lines': [{'name': 'Too many', 'quantity': '1'}] * 201},
             {'lines': [{'name': 'X' * 31_000, 'quantity': '1'}]},
         ]:

@@ -29,6 +29,10 @@
                         <field name="pos_baseer_global_discount_product_id" readonly="1" options="{'no_create': True, 'no_open': True}"/>
                     </div>
                     <div class="row mt16">
+                        <label for="pos_baseer_global_discount_account_id" class="col-lg-3 o_light_label"/>
+                        <field name="pos_baseer_global_discount_account_id" options="{'no_create': True}"/>
+                    </div>
+                    <div class="row mt16">
                         <label for="pos_baseer_global_discount_max_percent" class="col-lg-3 o_light_label"/>
                         <field name="pos_baseer_global_discount_max_percent"/>
                     </div>

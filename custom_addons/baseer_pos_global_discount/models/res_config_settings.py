@@ -15,6 +15,9 @@ class ResConfigSettings(models.TransientModel):
     baseer_global_discount_currency_id = fields.Many2one(related='pos_config_id.currency_id')
     pos_baseer_global_discount_enabled = fields.Boolean(related='pos_config_id.baseer_global_discount_enabled')
     pos_baseer_global_discount_product_id = fields.Many2one(related='pos_config_id.baseer_global_discount_product_id')
+    pos_baseer_global_discount_account_id = fields.Many2one(
+        related='pos_config_id.baseer_global_discount_account_id', readonly=False,
+    )
 
     @api.model
     def _gd_check_settings_actor(self):
@@ -54,6 +57,7 @@ class ResConfigSettings(models.TransientModel):
         choices = [values.get('pos_module_pos_discount')
                    if values.get('pos_config_id') and 'pos_module_pos_discount' in values else None
                    for values in values_list]
+        accounts = ['pos_baseer_global_discount_account_id' in values for values in values_list]
         if any(value is not None for value in choices):
             self._gd_check_settings_actor()
         for values in values_list:
@@ -61,9 +65,11 @@ class ResConfigSettings(models.TransientModel):
                 self._gd_preserve_native_product_on_disable(
                     values, self.env['pos.config'].browse(values['pos_config_id']))
         result = super().create(values_list)
-        for settings, enabled in zip(result, choices):
+        for settings, enabled, account_changed in zip(result, choices, accounts):
             if enabled is not None:
                 settings._gd_apply_native_discount_choice(bool(enabled))
+            elif account_changed and settings.pos_config_id.baseer_global_discount_enabled:
+                settings._gd_apply_native_discount_choice(True)
         return result
 
     def write(self, values):
@@ -81,4 +87,6 @@ class ResConfigSettings(models.TransientModel):
             result = super().write(values)
         if explicit:
             self._gd_apply_native_discount_choice(bool(values['pos_module_pos_discount']))
+        elif 'pos_baseer_global_discount_account_id' in values:
+            self.filtered(lambda item: item.pos_config_id.baseer_global_discount_enabled)._gd_apply_native_discount_choice(True)
         return result

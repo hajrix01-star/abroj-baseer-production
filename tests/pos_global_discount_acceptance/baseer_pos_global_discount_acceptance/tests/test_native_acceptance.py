@@ -23,6 +23,8 @@ class TestNativeDiscountAcceptance(TestSaEdiCommon):
     _apply = gd_tests.TestGlobalDiscount._apply
     _refund = gd_tests.TestGlobalDiscount._refund
     _prepare = gd_tests.TestGlobalDiscount._prepare
+    _combo_order = gd_tests.TestGlobalDiscount._combo_order
+    _combo_refund = gd_tests.TestGlobalDiscount._combo_refund
 
     def setUp(self):
         super().setUp()
@@ -47,6 +49,7 @@ class TestNativeDiscountAcceptance(TestSaEdiCommon):
             'name': 'Synthetic isolated discount register',
             'invoice_journal_id': self.customer_invoice_journal.id,
             'baseer_zatca_phase2_enabled': True,
+            'baseer_global_discount_account_id': self.company_data['default_account_revenue'].id,
         })
         self.config.action_baseer_setup_global_discount()
         self.config.baseer_global_discount_product_id.property_account_income_id = self.company_data['default_account_revenue']
@@ -76,6 +79,16 @@ class TestNativeDiscountAcceptance(TestSaEdiCommon):
         self.assertAlmostEqual(sum(move.line_ids.mapped('balance')), 0, places=2)
         self.assertAlmostEqual(move.amount_total, abs(order.amount_total), places=2)
         self.assertAlmostEqual(move.amount_tax, abs(order.amount_tax), places=2)
+        sign = -1 if order.is_refund else 1
+        # This is the native POS cash-report orientation, not just a balanced
+        # move: the original POS lines must prove the same net and gross.
+        self.assertAlmostEqual(sign * sum(order.lines.mapped('price_subtotal')),
+                               order.amount_total - order.amount_tax, places=2)
+        self.assertAlmostEqual(sign * sum(order.lines.mapped('price_subtotal_incl')),
+                               order.amount_total, places=2)
+        income = move.line_ids.filtered(lambda line: line.account_id.account_type in ('income', 'income_other'))
+        self.assertAlmostEqual(-sum(income.mapped('balance')),
+                               order.amount_total - order.amount_tax, places=2)
         self.assertTrue(move.edi_document_ids.filtered(lambda d: d.edi_format_id.code == 'sa_zatca'))
         self.network_mock.assert_not_called()
         return move
@@ -187,3 +200,55 @@ class TestNativeDiscountAcceptance(TestSaEdiCommon):
         root = self._xml(sale, move)
         self.assertAlmostEqual(move.amount_total, 195, places=2)
         self.assertEqual(set(root.xpath("/*/*[local-name()='AllowanceCharge']/*[local-name()='TaxCategory']/*[local-name()='Percent']/text()")), {'15.0', '0.0'})
+
+    def test_native_combo_fixed_invoice_and_full_group_credit(self):
+        sale, parent = self._combo_order(ordinary=True)
+        sale.write({'partner_id': self.partner_sa_simplified.id, 'to_invoice': True})
+        self._apply(sale, '20', 'fixed')
+        move = self._pay_actual(sale)
+        self.assertAlmostEqual(move.amount_total, 152.50, places=2)
+        self.assertAlmostEqual(move.amount_tax, 19.89, places=2)
+        self.assertEqual(len(move.invoice_line_ids.filtered(lambda line: line.display_type == 'line_section')), 1)
+        self._xml(sale, move)
+        refund = self._combo_refund(sale, parent, 1, ordinary=True)
+        refund.write({'partner_id': sale.partner_id.id, 'to_invoice': True})
+        self._prepare(refund)
+        credit = self._pay_actual(refund)
+        self._xml(refund, credit)
+        self.assertAlmostEqual(refund.amount_total, -sale.amount_total, places=2)
+        self.assertAlmostEqual(refund.amount_tax, -sale.amount_tax, places=2)
+
+    def test_native_combo_percentage_mixed_tax_invoice_and_credit(self):
+        zero = self.tax.copy({'name': 'Synthetic combo explicit zero', 'amount': 0,
+                              'l10n_sa_exemption_reason_code': 'VATEX-SA-32'})
+        sale, parent = self._combo_order(ordinary=True, child_b_tax=zero)
+        sale.write({'partner_id': self.partner_sa_simplified.id, 'to_invoice': True})
+        self._apply(sale, '10', 'percent')
+        move = self._pay_actual(sale)
+        self.assertAlmostEqual(move.amount_total, 149.85, places=2)
+        self.assertAlmostEqual(move.amount_tax, 14.85, places=2)
+        root = self._xml(sale, move)
+        self.assertEqual(set(root.xpath("/*/*[local-name()='AllowanceCharge']/*[local-name()='TaxCategory']/*[local-name()='Percent']/text()")), {'15.0', '0.0'})
+        refund = self._combo_refund(sale, parent, 1, ordinary=True)
+        refund.write({'partner_id': sale.partner_id.id, 'to_invoice': True})
+        self._prepare(refund)
+        self._xml(refund, self._pay_actual(refund))
+        self.assertAlmostEqual(refund.amount_total, -149.85, places=2)
+
+    def test_native_combo_repeated_partial_group_credits_reconcile(self):
+        sale, parent = self._combo_order(parent_qty=3)
+        sale.write({'partner_id': self.partner_sa_simplified.id, 'to_invoice': True})
+        self._apply(sale, '0.97', 'fixed')
+        self._xml(sale, self._pay_actual(sale))
+        # Return the sold group even after a catalog choice is retired.
+        parent.product_id.combo_ids = parent.product_id.combo_ids[:1]
+        refunds = self.env['pos.order']
+        for _index in range(3):
+            refund = self._combo_refund(sale, parent, 1)
+            refund.write({'partner_id': sale.partner_id.id, 'to_invoice': True})
+            self._prepare(refund)
+            self._xml(refund, self._pay_actual(refund))
+            refunds |= refund
+        self.assertAlmostEqual(sum(refunds.mapped('amount_total')), -sale.amount_total, places=2)
+        self.assertAlmostEqual(sum(refunds.mapped('amount_tax')), -sale.amount_tax, places=2)
+        self.assertAlmostEqual(sum(refunds.mapped('baseer_global_discount_gross')), .97, places=2)

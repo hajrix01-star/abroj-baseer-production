@@ -75,6 +75,7 @@ class NoorixSalesReporting(models.Model):
         ledger_roots = Move.search(unlinked, order='date,id', limit=max(budget - len(evidence), 0) + 1)
         roots = evidence.mapped('move_id') | ledger_roots
         roots.check_access('read')
+        Evidence._ledger_check_complete_lines(roots)
         if ledger_roots:
             # Fixed existence diagnostic only on already readable roots. A
             # hidden snapshot must not silently become an evidence-free entry.
@@ -145,6 +146,7 @@ class NoorixSalesReporting(models.Model):
             if last:
                 child_domain.append(('date', '<=', last))
             children = Move.search(child_domain, limit=max(remaining, 0) + 1)
+            Evidence._ledger_check_complete_lines(children)
             remaining -= len(children)
             child_lines = self.env['account.move.line'].search_count(
                 [('move_id', 'in', children.ids), ('company_id', '=', company.id)],

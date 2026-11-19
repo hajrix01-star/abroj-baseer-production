@@ -6,6 +6,7 @@ from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 
 from odoo import _, api, fields, models
+from odoo.fields import Domain
 from odoo.exceptions import AccessError, ValidationError
 from odoo.addons.baseer_pos_summary.models.common import active_company
 
@@ -224,7 +225,7 @@ class NoorixSalesEvidence(models.Model):
     @api.model
     def _ledger_tax_candidates(self, moves):
         """Shared secured lookup for stored evidence and Odoo-only entries."""
-        moves.check_access('read')
+        self._ledger_check_complete_lines(moves)
         lines = moves.line_ids
         lines.check_access('read')
         lines.account_id.check_access('read')
@@ -240,6 +241,22 @@ class NoorixSalesEvidence(models.Model):
             ])
             candidates.tax_id.check_access('read')
         return candidates
+
+    @api.model
+    def _ledger_check_complete_lines(self, moves):
+        """Refuse partial readable slices without reading hidden line data."""
+        moves.check_access('read')
+        if not moves:
+            return
+        Line = self.env['account.move.line']
+        Line.check_access('read')
+        visible = Line._search([('move_id', 'in', moves.ids)])
+        # The outer records are already readable. any! is existence-only:
+        # hidden journal-item IDs, balances and descriptions are never fetched.
+        probe = Domain('id', 'in', moves.ids) & Domain(
+            'line_ids', 'any!', Domain([('id', 'not in', visible)]))
+        if self.env['account.move'].search_count(probe, limit=1):
+            raise AccessError(_('A Noorix source has inaccessible journal items; combined sales cannot be calculated.'))
 
     @api.model
     def _ledger_source_identity(self, move, company):
@@ -263,8 +280,16 @@ class NoorixSalesEvidence(models.Model):
     @api.model
     def _ledger_check_native_links(self, move):
         move.check_access('read')
+        # Inverse relations can silently omit native records hidden by rules.
+        # Only test existence on the already readable source, never fetch the
+        # hidden POS order or session and never trust a filtered empty set.
+        native_inverse = Domain('id', 'in', move.ids) & (
+            Domain('pos_order_ids', 'any!', Domain([]))
+            | Domain('pos_session_ids', 'any!', Domain([])))
+        if self.env['account.move'].search_count(native_inverse, limit=1):
+            raise ValidationError(_('The Noorix entry already belongs to a POS, invoice, payment or summary source.'))
         if any(move[name] for name in (
-                'baseer_pos_summary_id', 'pos_session_ids', 'pos_order_ids',
+                'baseer_pos_summary_id',
                 'reversed_pos_order_id', 'origin_payment_id', 'statement_line_id')):
             raise ValidationError(_('The Noorix entry already belongs to a POS, invoice, payment or summary source.'))
 

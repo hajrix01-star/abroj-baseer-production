@@ -126,10 +126,10 @@ class PosOrder(models.Model):
                 and self.user_id != self.env.user):
             raise AccessError(_('You are not a cashier for this point of sale.'))
 
-    def _gd_unpaid(self):
+    def _gd_unpaid(self, allow_disabled=False):
         if (self.state != 'draft' or self.session_id.state != 'opened' or self.account_move or self.session_move_id
                 or self.payment_ids or not self.currency_id.is_zero(self.amount_paid)
-                or not self.config_id.baseer_global_discount_enabled):
+                or (not allow_disabled and not self.config_id.baseer_global_discount_enabled)):
             raise AccessError(_('An invoice discount requires an unpaid draft in an open, enabled point of sale.'))
         if self.currency_id.rounding != 0.01 or self.currency_id != self.company_id.currency_id:
             raise ValidationError(_('Invoice discounts currently require the company currency with two decimal places.'))
@@ -187,7 +187,7 @@ class PosOrder(models.Model):
             if event.order_id != self or event.fingerprint != fingerprint:
                 raise AccessError(_('This discount command belongs to a different operation.'))
             return True, fingerprint
-        self._gd_unpaid()
+        self._gd_unpaid(allow_disabled=payload.get('kind') == 'remove')
         if not expected_revision or expected_revision != self._baseer_revision():
             raise ValidationError(_('The order changed on another device. Refresh it before trying again.'))
         return False, fingerprint
@@ -256,8 +256,8 @@ class PosOrder(models.Model):
         if kind not in ('percent', 'fixed', 'remove') or not isinstance(reason, str) or len(reason.strip()) > 250:
             raise ValidationError(_('Choose a discount type and enter a short reason.'))
         parsed = _number(value)
-        if kind != 'remove' and (parsed <= 0 or not reason.strip()):
-            raise ValidationError(_('Enter a positive discount and its reason.'))
+        if kind != 'remove' and parsed <= 0:
+            raise ValidationError(_('Enter a positive discount.'))
         payload = {'kind': kind, 'value': str(parsed), 'reason': reason.strip()}
         retry, fingerprint = self._gd_begin(action_uuid, expected_revision, payload)
         if retry:

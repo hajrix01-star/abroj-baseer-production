@@ -58,7 +58,14 @@ class PosConfig(models.Model):
                 'company_id': self.company_id.id, 'taxes_id': [(5, 0, 0)],
             })
             self.baseer_global_discount_product_id = product
-        self.baseer_global_discount_enabled = True
+        values = {'baseer_global_discount_enabled': True, 'module_pos_discount': True}
+        if not self.discount_product_id:
+            native_product = self.env.ref('pos_discount.product_product_consumable', raise_if_not_found=False)
+            values['discount_product_id'] = (
+                native_product.id if native_product and (not native_product.company_id or native_product.company_id == self.company_id)
+                else self.baseer_global_discount_product_id.id
+            )
+        self.write(values)
         return True
 
     def _get_special_products(self):

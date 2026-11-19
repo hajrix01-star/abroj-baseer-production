@@ -18,6 +18,7 @@ const discountStorageKey = (db, config, uuid) => [db, config, uuid].join(':');
 const pendingDiscount = (pos, order) => localStorage.getItem(pos.baseerDiscountKey(order));
 const needsDiscountRefund = (order) => order.needsRefund;
 const useState = (value) => value;
+const useAutofocus = () => {};
 class Component {} class Dialog {} class AlertDialog {};
 class ControlButtons { clickFiscalPosition() { this.nativeCalled = true; } }
 class PosStore { applyDiscount() { this.nativeCalled = true; } }
@@ -30,8 +31,8 @@ class TicketScreen {
 }
 class PaymentScreen { validateOrder() { this.nativeCalled = true; } }
 `;
-const load = new Function(`${mocks}\n${source}\nreturn extensions;`);
-const extensions = load();
+const load = new Function(`${mocks}\n${source}\nreturn { extensions, BaseerGlobalDiscountDialog };`);
+const { extensions, BaseerGlobalDiscountDialog } = load();
 const storageKey = "qa:2:order";
 function order(pending = false) {
     memory.clear();
@@ -103,4 +104,20 @@ test("payment waits for confirmation and original-discount refund preparation", 
         assert.equal(screen.nativeCalled, undefined, scenario);
         assert.equal(screen.explained, true, scenario);
     }
+});
+test("discount opens as a fixed amount and submits without a reason prompt", () => {
+    const dialog = new BaseerGlobalDiscountDialog();
+    dialog.setup();
+    assert.equal(dialog.state.kind, "fixed");
+    let payload;
+    let closed = false;
+    dialog.props = { getPayload: (value) => { payload = value; }, close: () => { closed = true; } };
+    dialog.state.value = "20";
+    dialog.confirm();
+    assert.deepEqual(payload, { kind: "fixed", value: "20" });
+    assert.equal(closed, true);
+    const xml = readFileSync(new URL("../static/src/app/global_discount.xml", import.meta.url), "utf8");
+    assert.equal(xml.includes("baseer-discount-reason"), false);
+    assert.equal(xml.includes("baseer-global-discount"), false, "reuse the original native button instead of adding a second one");
+    assert.ok(xml.includes("hasclass('js_discount')"));
 });

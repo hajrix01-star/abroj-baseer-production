@@ -1,0 +1,39 @@
+{
+  "QA_DEPLOY": "GO",
+  "RELEASE_ID": "baseer-2026-11-19-pos-global-discount",
+  "RELEASE": "/srv/baseer-qa/releases/a11acfc6144a-run-44548199216-20261119T145230Z",
+  "BACKUP": "/srv/baseer-qa/backups/pre-a11acfc6144a-44548199216-20261119T145230Z",
+  "COMMIT": "a11acfc6144a574a0f3175191a7ea380fa0f513b",
+  "MODULES": "baseer_pos_global_discount",
+  "THIRD_PARTY_MODULES": "",
+  "readonly_module_and_defaults": [
+    "BEGIN",
+    "baseer_pos_global_discount|installed|19.0.1.0.0",
+    "20|0|20|0",
+    "ROLLBACK"
+  ],
+  "recovery_sha256_manifest": [
+    "1f2c30cb643fb351a15531de0270e7b69f4e50aff84204c4daede51e1afc25b0  /srv/baseer-qa/backups/pre-a11acfc6144a-44548199216-20261119T145230Z/database.dump",
+    "1a61833233cf9693f2d62dc87916c9774d18a23c4a45ecd32b9c8b7263fe5d4a  /srv/baseer-qa/backups/pre-a11acfc6144a-44548199216-20261119T145230Z/filestore.tar"
+  ],
+  "qa_current": "/srv/baseer-qa/releases/a11acfc6144a-run-44548199216-20261119T145230Z",
+  "qa_source_commit": "a11acfc6144a574a0f3175191a7ea380fa0f513b",
+  "live_current": "/srv/abroj-baseer-production/releases/ed0e39a37f76-run-44521587590-20261119T121141Z",
+  "live_source_commit": "ed0e39a37f7669db02c8e3a07ddd6c98300e2ba6",
+  "qa_runtime": {
+    "id": "ef883a26e3c57324161a1a57ea8f042227af52dc257428657f04a497a0c1fc6f",
+    "started_at": "2026-11-19T14:53:27.035923579Z",
+    "running": true,
+    "restart_count": 0
+  },
+  "live_runtime": {
+    "id": "4767c67ba39d825d4a45d263fb7a1dd49db86536d85d5da5dafe294dec310f69",
+    "started_at": "2026-11-19T12:12:56.310196943Z",
+    "running": true,
+    "restart_count": 0
+  },
+  "live_unchanged_from_monitor_baseline": true,
+  "qa_login_http": "200",
+  "live_login_http": "200",
+  "postdeploy_check": "READ ONLY / ROLLBACK; no QA data writes or manual deployment"
+}

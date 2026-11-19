@@ -99,6 +99,25 @@ class TestGlobalDiscount(TransactionCase):
         self.assertAlmostEqual(order.amount_tax, 12.39, places=2)
         self.assertAlmostEqual(order.baseer_global_discount_gross, 20, places=2)
 
+    def test_reason_is_optional_and_audit_is_automatic(self):
+        order = self._order()
+        command = str(uuid4())
+        order.baseer_apply_global_discount('fixed', '20', '', command, order._baseer_revision())
+        self.assertAlmostEqual(order.amount_total, 95, places=2)
+        event = self.env['baseer.pos.global.discount.event'].search([('action_uuid', '=', command)])
+        self.assertEqual(event.create_uid, self.env.user)
+        self.assertTrue(event.create_date)
+        self.assertEqual(event.payload['value'], '20')
+        self.assertEqual(event.payload['reason'], '')
+
+    def test_existing_discount_can_be_removed_after_settings_are_disabled(self):
+        order = self._order()
+        self._apply(order, '20', 'fixed')
+        self.config.baseer_global_discount_enabled = False
+        order.baseer_apply_global_discount('remove', '0', '', str(uuid4()), order._baseer_revision())
+        self.assertFalse(order.baseer_global_discount_locked)
+        self.assertAlmostEqual(order.amount_total, 115, places=2)
+
     def test_tax_included(self):
         self.tax.price_include_override = 'tax_included'
         order = self._order(price=115)

@@ -8,6 +8,8 @@ on:
       - custom_addons/baseer_report_engine_tobacco/**
       - custom_addons/baseer_report_engine_vat/**
       - custom_addons/baseer_report_engine_dashboard/**
+      - custom_addons/baseer_account_dashboard_plus/**
+      - custom_addons/baseer_spreadsheet_dashboards_plus/**
       - .github/workflows/test-baseer-report-engine.yml
   workflow_dispatch:
 
@@ -48,6 +50,12 @@ jobs:
           fi
           if [ -d custom_addons/baseer_report_engine_dashboard ]; then
             MODULES="$MODULES,baseer_report_engine_dashboard"; TAGS="$TAGS,/baseer_report_engine_dashboard"
+          fi
+          if [ -d custom_addons/baseer_account_dashboard_plus ]; then
+            MODULES="$MODULES,baseer_account_dashboard_plus"; TAGS="$TAGS,/baseer_account_dashboard_plus"
+          fi
+          if [ -d custom_addons/baseer_spreadsheet_dashboards_plus ]; then
+            MODULES="$MODULES,purchase_stock,stock_account,spreadsheet_dashboard,spreadsheet_account,baseer_spreadsheet_dashboards_plus"; TAGS="$TAGS,/baseer_spreadsheet_dashboards_plus"
           fi
           docker run --rm --network host \
             -e HOST=127.0.0.1 -e USER=odoo -e PASSWORD=odoo \

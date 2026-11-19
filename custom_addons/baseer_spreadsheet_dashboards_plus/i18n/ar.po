@@ -1,0 +1,621 @@
+msgid ""
+msgstr "Content-Type: text/plain; charset=UTF-8\nLanguage: ar\n"
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/purchase.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+#: model:spreadsheet.dashboard,name:baseer_spreadsheet_dashboards_plus.accounting_overview
+msgid "Accounting overview"
+msgstr "نظرة محاسبية"
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/purchase.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+#: model:spreadsheet.dashboard,name:baseer_spreadsheet_dashboards_plus.purchase_vendor_analysis
+msgid "Purchase & vendor analysis"
+msgstr "تحليل المشتريات والموردين"
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/purchase.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+#: model:spreadsheet.dashboard,name:baseer_spreadsheet_dashboards_plus.warehouse_daily_operations
+msgid "Warehouse daily operations"
+msgstr "العمليات اليومية للمستودع"
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/purchase.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+msgid "Assets"
+msgstr "الأصول"
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/purchase.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+msgid "Balance sheet"
+msgstr "الميزانية العمومية"
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/purchase.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+msgid "Cash"
+msgstr "النقد"
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/purchase.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+msgid "Cash received"
+msgstr "النقد المستلم"
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/purchase.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+msgid "Cash spent"
+msgstr "النقد المدفوع"
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/purchase.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+msgid "Cash surplus"
+msgstr "الفائض النقدي"
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/purchase.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+msgid "Closing bank balance"
+msgstr "رصيد البنك الختامي"
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/purchase.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+msgid "Cost of revenue"
+msgstr "تكلفة الإيرادات"
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/purchase.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+msgid "Current year"
+msgstr "السنة الحالية"
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/purchase.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+msgid "Previous year"
+msgstr "السنة السابقة"
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/purchase.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+msgid "Variation"
+msgstr "التغير"
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/purchase.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+msgid "Equity"
+msgstr "حقوق الملكية"
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/purchase.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+msgid "Expenses"
+msgstr "المصروفات"
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/purchase.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+msgid "Financial independence"
+msgstr "الاستقلال المالي"
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/purchase.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+msgid "Gross margin"
+msgstr "هامش الربح الإجمالي"
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/purchase.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+msgid "Gross profit"
+msgstr "الربح الإجمالي"
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/purchase.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+msgid "Income"
+msgstr "الإيرادات"
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/purchase.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+msgid "Liabilities"
+msgstr "الالتزامات"
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/purchase.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+msgid "Net margin"
+msgstr "هامش صافي الربح"
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/purchase.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+msgid "Net profit"
+msgstr "صافي الربح"
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/purchase.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+msgid "Performance"
+msgstr "الأداء"
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/purchase.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+msgid "Profitability"
+msgstr "الربحية"
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/purchase.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+msgid "Ratios"
+msgstr "النسب"
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/purchase.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+msgid "Return on assets"
+msgstr "العائد على الأصول"
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/purchase.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+msgid "Receivables"
+msgstr "الذمم المدينة"
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/purchase.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+msgid "Payables"
+msgstr "الذمم الدائنة"
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/purchase.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+msgid "Bank & cash"
+msgstr "البنوك والنقد"
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/purchase.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+msgid "Income and expenses by month"
+msgstr "الإيرادات والمصروفات شهرياً"
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/purchase.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+msgid "Current ratio"
+msgstr "نسبة التداول"
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/purchase.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+msgid "Quick ratio"
+msgstr "النسبة السريعة"
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/purchase.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+msgid "Debt / equity"
+msgstr "الدين إلى حقوق الملكية"
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/purchase.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+msgid "Receivable days"
+msgstr "أيام التحصيل"
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/purchase.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+msgid "Payable days"
+msgstr "أيام السداد"
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/purchase.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+msgid "Margins show income retained after costs."
+msgstr "توضح الهوامش الإيرادات المتبقية بعد التكاليف."
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/purchase.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+msgid "Liquidity ratios compare liquid assets with short-term liabilities."
+msgstr "تقارن نسب السيولة الأصول السائلة بالالتزامات قصيرة الأجل."
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/purchase.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+msgid "Debtor and payable days describe collection and payment timing."
+msgstr "توضح أيام المدينين والدائنين توقيت التحصيل والسداد."
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/purchase.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+msgid "Period"
+msgstr "الفترة"
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/purchase.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+msgid "Month"
+msgstr "الشهر"
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/purchase.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+msgid "previous year"
+msgstr "السنة السابقة"
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/purchase.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+msgid "Late pickings"
+msgstr "التحويلات المتأخرة"
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/purchase.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+msgid "Operations by type and status"
+msgstr "العمليات حسب النوع والحالة"
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/purchase.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+msgid "Late receipts"
+msgstr "الاستلامات المتأخرة"
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/purchase.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+msgid "Late deliveries"
+msgstr "التسليمات المتأخرة"
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/purchase.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+msgid "Late internal"
+msgstr "التحويلات الداخلية المتأخرة"
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/purchase.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+msgid "By operation type"
+msgstr "حسب نوع العملية"
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/purchase.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+msgid "By status"
+msgstr "حسب الحالة"
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/purchase.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+msgid "Picking type and status"
+msgstr "نوع العملية والحالة"
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/purchase.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+msgid "Late purchase orders"
+msgstr "أوامر الشراء المتأخرة"
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/purchase.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+msgid "On-time %"
+msgstr "نسبة الالتزام بالموعد"
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/purchase.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+msgid "Orders"
+msgstr "الطلبات"
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/purchase.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+msgid "Top 10 vendors"
+msgstr "أكبر 10 موردين"
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/purchase.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+msgid "Untaxed total"
+msgstr "الإجمالي قبل الضريبة"
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/purchase.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+msgid "Vendor"
+msgstr "المورد"
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/purchase.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+msgid "Purchased value"
+msgstr "قيمة المشتريات"
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/purchase.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+msgid "Average order"
+msgstr "متوسط الطلب"
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/purchase.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+msgid "Days to receive"
+msgstr "أيام الاستلام"
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/purchase.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+msgid "Days to confirm"
+msgstr "أيام التأكيد"
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/purchase.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+msgid "Monthly purchases"
+msgstr "المشتريات الشهرية"
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/purchase.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+msgid "Top vendors"
+msgstr "أهم الموردين"
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/purchase.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+msgid "Categories"
+msgstr "الفئات"
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/purchase.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+msgid "On-time delivery"
+msgstr "التسليم في الموعد"
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/purchase.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+msgid "Vendor on-time delivery"
+msgstr "التزام المورد بالموعد"
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/purchase.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+msgid "Pending purchase orders"
+msgstr "أوامر الشراء المعلقة"
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/purchase.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+msgid "Gross Margin"
+msgstr "هامش الربح الإجمالي"
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/purchase.json:0
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+msgid "Expense"
+msgstr "المصروفات"
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+msgid "Gross margin shows the share left after direct costs."
+msgstr "يوضح الهامش الإجمالي المتبقي بعد التكاليف المباشرة."
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+msgid "Net margin shows the share retained after expenses."
+msgstr "يوضح الهامش الصافي المتبقي بعد المصروفات."
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+msgid "Current ratio compares current assets with short-term liabilities."
+msgstr "تقارن نسبة التداول الأصول المتداولة بالالتزامات قصيرة الأجل."
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+msgid "Quick ratio compares cash and receivables with short-term liabilities."
+msgstr "تقارن النسبة السريعة النقد والذمم المدينة بالالتزامات قصيرة الأجل."
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+msgid "Debt to equity compares liabilities with owners’ equity."
+msgstr "تقارن نسبة الدين الالتزامات بحقوق الملكية."
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+msgid "Receivable days estimate collection time."
+msgstr "تقدر أيام الذمم المدينة مدة التحصيل."
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/accounting.json:0
+msgid "Payable days estimate payment time."
+msgstr "تقدر أيام الذمم الدائنة مدة السداد."
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+msgid "Picking type"
+msgstr "نوع العملية"
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+msgid "Ready"
+msgstr "جاهز"
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+msgid "Waiting"
+msgstr "قيد الانتظار"
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+msgid "Done"
+msgstr "تم"
+
+#. module: baseer_spreadsheet_dashboards_plus
+#. odoo-javascript
+#: code:addons/baseer_spreadsheet_dashboards_plus/data/files/warehouse.json:0
+msgid "Cancelled"
+msgstr "ملغى"

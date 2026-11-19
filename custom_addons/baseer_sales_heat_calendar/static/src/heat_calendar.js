@@ -483,7 +483,9 @@ export class BaseerHeatCalendar extends Component {
             this.state.month = payload.month;
         } catch (error) {
             if (this.disposed || generation !== this.requestGeneration) { return; }
-            this.state.error = error?.message || _t("The heat calendar could not be loaded.");
+            const businessError = ["odoo.exceptions.UserError", "odoo.exceptions.ValidationError", "odoo.exceptions.AccessError"].includes(error?.data?.name);
+            this.state.error = (businessError && typeof error.data.message === "string" && error.data.message)
+                || _t("The heat calendar could not be loaded.");
         } finally {
             if (!this.disposed && generation === this.requestGeneration) {
                 this.state.loading = false;

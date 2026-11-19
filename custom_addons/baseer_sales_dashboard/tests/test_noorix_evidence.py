@@ -117,6 +117,28 @@ class TestNoorixEvidence(NoorixEvidenceFixtures, AccountTestInvoicingCommon):
         ident = self.Evidence.import_evidence([self._noorix_row(move)])[0]
         self.assertEqual(self.Evidence.browse(ident)._validated_amount(), Decimal('115.00'))
 
+    def test_legacy_ledger_identity_does_not_replace_the_required_evidence_source_tag(self):
+        move = self._noorix_entry()
+        row = self._noorix_row(move)
+        tagged_ref = move.ref
+        move.ref = 'NOORIX-SALES SHAMI 2026-11-01'
+        with self.assertRaises(ValidationError):
+            self.Evidence.import_evidence([row])
+        self.assertFalse(self.Evidence.search([('move_id', '=', move.id)]))
+        move.ref = tagged_ref
+        evidence = self.Evidence.browse(self.Evidence.import_evidence([row]))
+        move.ref = 'NOORIX-SALES SHAMI 2026-11-01'
+        with self.assertRaises(ValidationError):
+            evidence._validated_amount()
+
+    def test_source_tag_parser_does_not_treat_identity_values_as_extra_markers(self):
+        move = self._noorix_entry(source_id='legacy-src')
+        move.ref = move.ref.replace('NOORIX-SALES SHAMI ', 'NOORIX-SALES SHAMISRC ')
+        row = self._noorix_row(move, source_id='legacy-src')
+        row['source_company_key'] = 'SHAMISRC'
+        evidence = self.Evidence.browse(self.Evidence.import_evidence([row]))
+        self.assertEqual(evidence._validated_amount(), Decimal('115.00'))
+
     def test_official_tax_line_and_configured_tagged_tax_are_supported(self):
         moves = [self._noorix_entry(source_id=f'tax-{kind}', tax_evidence=kind)
                  for kind in ('official', 'tags')]

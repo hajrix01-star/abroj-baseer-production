@@ -270,12 +270,21 @@ class NoorixSalesEvidence(models.Model):
         ref = move.ref or ''
         match = re.fullmatch(
             r'(?:AGENT:[ \t]+[^|\r\n]+\|[ \t]*)?'
-            r'NOORIX-SALES[ \t]+([A-Z][A-Z0-9_-]*)[ \t]+(\d{4}-\d{2}-\d{2})[^\r\n]*', ref)
-        source_ids = re.findall(r'(?<!\S)src:([A-Za-z0-9_-]+)(?=\s|$)', ref)
-        if not match or match[2] != move.date.isoformat() or len(source_ids) != 1:
+            r'NOORIX-SALES[ \t]+([A-Z][A-Z0-9_-]*)[ \t]+(\d{4}-\d{2}-\d{2})([^\r\n]*)', ref)
+        source_tail = match[3] if match else ref
+        source_pattern = r'(?<!\S)src:([A-Za-z0-9_-]+)(?=\s|$)'
+        source_ids = re.findall(source_pattern, source_tail)
+        invalid_source_marker = re.search(
+            r'(?<![A-Za-z0-9_-])src\b', re.sub(source_pattern, '', source_tail), flags=re.IGNORECASE)
+        if (not match or match[2] != move.date.isoformat()
+                or len(source_ids) > 1 or invalid_source_marker):
             raise ValidationError(_('The Noorix entry reference does not identify this exact source company, date and source ID.'))
         self._ledger_check_native_links(move)
-        return company.id, match[1], source_ids[0]
+        # Older imports have no source tag. Their own posted Odoo identity is
+        # sufficient for ledger-only reads, but never for a stored snapshot.
+        # The typed namespace cannot collide with an explicit source string.
+        source_identity = source_ids[0] if source_ids else ('odoo_move', move.id)
+        return company.id, match[1], source_identity
 
     @api.model
     def _ledger_check_native_links(self, move):

@@ -1,10 +1,10 @@
-"""Optional, secured Noorix evidence adapter. Never posts or changes a sale."""
+"""Optional, secured imported-sales reader. Never posts or changes a sale."""
 
 from collections import defaultdict
 from odoo import _, fields, models
 from odoo.fields import Domain
 from odoo.exceptions import AccessError, ValidationError
-from odoo.addons.baseer_pos_summary.models.common import ZERO, money
+from odoo.addons.baseer_pos_summary.models.common import ZERO, active_company, money
 from odoo.addons.baseer_pos_summary.models.operations import covered_slots
 
 from .dashboard import MAX_SOURCE_ROWS
@@ -51,10 +51,12 @@ class NoorixSalesReporting(models.Model):
     def _noorix_events(self, company, first=None, last=None, budget=MAX_SOURCE_ROWS):
         """Resolve original entries and exact native reversal chains in batches.
 
-        Evidence supplies identity and guests, not money. Period membership of
-        an original is its verified business day; a reversal uses its own date.
+        Posted Odoo entries supply money and their explicit source identity.
+        Existing evidence additionally supplies verified guests and scope.
+        An original uses its recorded business day; a reversal its own date.
         Ancestors outside the selected period remain validated for provenance.
         """
+        active_company(self, company)
         Evidence = self.env['baseer.noorix.sales.evidence']
         Evidence.check_access('read')
         domain = [('company_id', '=', company.id)]
@@ -63,8 +65,27 @@ class NoorixSalesReporting(models.Model):
         if Evidence.search_count(domain, limit=max(budget, 0) + 1) > budget:
             raise ValidationError(_('Too many Noorix source records. Choose a shorter reporting scope.'))
         evidence = Evidence.search(domain, order='business_date,id')
-        roots = evidence.mapped('move_id')
+        Move = self.env['account.move']
+        unlinked = [('company_id', '=', company.id), ('state', '=', 'posted'),
+                    ('move_type', '=', 'entry'), ('reversed_entry_id', '=', False),
+                    ('ref', 'ilike', 'NOORIX-SALES'), ('id', 'not in', evidence.move_id.ids)]
+        if last:
+            unlinked.append(('date', '<=', last))
+        # Old origins must remain available for reversals in this period.
+        ledger_roots = Move.search(unlinked, order='date,id', limit=max(budget - len(evidence), 0) + 1)
+        roots = evidence.mapped('move_id') | ledger_roots
         roots.check_access('read')
+        Evidence._ledger_check_complete_lines(roots)
+        if ledger_roots:
+            # Fixed existence diagnostic only on already readable roots. A
+            # hidden snapshot must not silently become an evidence-free entry.
+            self.env.cr.execute(
+                'SELECT 1 FROM baseer_noorix_sales_evidence '
+                'WHERE move_id = ANY(%s) AND NOT (id = ANY(%s)) LIMIT 1',
+                (ledger_roots.ids, evidence.ids),
+            )
+            if self.env.cr.fetchone():
+                raise AccessError(_('A Noorix source has inaccessible reporting evidence; combined sales cannot be calculated.'))
         # Budget ancestors as well as returned events, before loading lines.
         remaining = budget - len(evidence) - len(roots)
         line_count = self.env['account.move.line'].search_count(
@@ -74,40 +95,40 @@ class NoorixSalesReporting(models.Model):
         if remaining < 0:
             raise ValidationError(_('Too many Noorix source lines. No records have been omitted.'))
         roots.mapped('line_ids').check_access('read')
-        unlinked = [('company_id', '=', company.id), ('state', '=', 'posted'),
-                    ('move_type', '=', 'entry'), ('reversed_entry_id', '=', False),
-                    ('ref', 'ilike', 'NOORIX-SALES'), ('id', 'not in', roots.ids)]
-        if first:
-            unlinked.append(('date', '>=', first))
-        if last:
-            unlinked.append(('date', '<=', last))
-        if self.env['account.move'].search_count(unlinked, limit=1):
-            raise ValidationError(_(
-                'Noorix entries are missing verified source evidence. Import their customer and source metadata before combining sales.'
-            ))
         remaining -= self._noorix_check_unmapped_reversals(company, first, last, set(roots.ids), remaining)
         rows = []
         seen = set()
+        seen_moves = set()
         frontier = {}
         source_slots = defaultdict(set)
         amounts = evidence._validated_amounts()
+        candidates = Evidence._ledger_tax_candidates(ledger_roots)
+        originals = []
         for item in evidence:
             amount = amounts[item.id]
-            identity = (item.source_tenant, item.source_company_key, item.source_id)
-            if identity in seen:
+            originals.append((item.move_id, item, amount, item.period_scope, item.customer_count,
+                              (company.id, item.source_company_key, item.source_id)))
+        for move in ledger_roots:
+            identity = Evidence._ledger_source_identity(move, company)
+            amount = Evidence._ledger_sales_amount(move, company, candidates)
+            originals.append((move, False, amount, 'all', None, identity))
+        for move, item, amount, scope, customer_count, identity in originals:
+            if identity in seen or move.id in seen_moves:
                 raise ValidationError(_('A Noorix source identity is represented more than once.'))
             seen.add(identity)
-            slots = covered_slots(item.period_scope)
-            if source_slots[item.business_date] & slots:
+            seen_moves.add(move.id)
+            slots = covered_slots(scope)
+            if item and source_slots[move.date] & slots:
                 raise ValidationError(_('Noorix summaries overlap on the same business day. Review their source identities.'))
-            source_slots[item.business_date].update(slots)
-            row = {'evidence': item, 'move': item.move_id, 'day': item.business_date,
-                   'amount': amount, 'original': True, 'scope': item.period_scope}
-            frontier[item.move_id.id] = row
+            if item:
+                source_slots[move.date].update(slots)
+            row = {'evidence': item, 'move': move, 'day': move.date,
+                   'amount': amount, 'original': True, 'scope': scope,
+                   'customer_count': customer_count, 'ledger_only': not bool(item)}
+            frontier[move.id] = row
             if (not first or row['day'] >= first) and (not last or row['day'] <= last):
                 rows.append(row)
         visited = set(frontier)
-        Move = self.env['account.move']
         while frontier:
             visible = [('company_id', '=', company.id), ('state', '=', 'posted')]
             if last:
@@ -125,6 +146,7 @@ class NoorixSalesReporting(models.Model):
             if last:
                 child_domain.append(('date', '<=', last))
             children = Move.search(child_domain, limit=max(remaining, 0) + 1)
+            Evidence._ledger_check_complete_lines(children)
             remaining -= len(children)
             child_lines = self.env['account.move.line'].search_count(
                 [('move_id', 'in', children.ids), ('company_id', '=', company.id)],
@@ -137,6 +159,7 @@ class NoorixSalesReporting(models.Model):
             next_frontier = {}
             parent_seen = set()
             for child in children:
+                Evidence._ledger_check_native_links(child)
                 parent = frontier[child.reversed_entry_id.id]
                 if child.id in visited or child.reversed_entry_id.id in parent_seen:
                     raise ValidationError(_('A Noorix source has an ambiguous reversal chain.'))
@@ -157,7 +180,8 @@ class NoorixSalesReporting(models.Model):
                 if signature(child) != signature(parent['move'], -1):
                     raise ValidationError(_('A Noorix reversal is partial or inconsistent. Review the original evidence.'))
                 row = {'evidence': parent['evidence'], 'move': child, 'day': child.date,
-                       'amount': -parent['amount'], 'original': False, 'scope': parent['scope']}
+                       'amount': -parent['amount'], 'original': False, 'scope': parent['scope'],
+                       'customer_count': None, 'ledger_only': parent['ledger_only']}
                 next_frontier[child.id] = row
                 visited.add(child.id)
                 if not first or row['day'] >= first:
@@ -226,13 +250,20 @@ class NoorixSalesReporting(models.Model):
             fields.Datetime.context_timestamp(self.with_context(tz='Asia/Riyadh'), order.session_id.start_at).date()
             for order in period['orders']
         } | {invoice.invoice_date for invoice in period['invoices']}
+        native_moves = (period['invoices'] | period['summaries'].mapped('move_id')
+                        | period['orders'].mapped('account_move')
+                        | period['orders'].mapped('session_id.move_id'))
+        native_moves.check_access('read')
+        native_move_ids = set(native_moves.ids)
         for row in period['noorix_rows']:
-            day, amount, item = row['day'], row['amount'], row['evidence']
-            if summary_slots[day] & covered_slots(row['scope']):
+            day, amount = row['day'], row['amount']
+            if row['move'].id in native_move_ids:
+                raise ValidationError(_('The Noorix entry already belongs to a POS, invoice, payment or summary source.'))
+            if not row['ledger_only'] and summary_slots[day] & covered_slots(row['scope']):
                 raise ValidationError(_(
                     'Noorix evidence overlaps an approved summary. Resolve the source ownership before combining sales.'
                 ))
-            if day in native_days:
+            if not row['ledger_only'] and day in native_days:
                 raise ValidationError(_(
                     'Noorix sales overlap native sales without verified source ownership. Reconcile their identities before combining sales.'
                 ))
@@ -252,10 +283,10 @@ class NoorixSalesReporting(models.Model):
                 guests = period['guests']
                 guests['sale_days'].add(day)
                 day_guests = guests['by_day'][day]
-                if item.customer_count > 0:
-                    guests['known_count'] += item.customer_count
+                if row['customer_count'] is not None and row['customer_count'] > 0:
+                    guests['known_count'] += row['customer_count']
                     guests['known_rows'] += 1
-                    day_guests['known_count'] += item.customer_count
+                    day_guests['known_count'] += row['customer_count']
                     day_guests['known_rows'] += 1
                 else:
                     guests['missing_rows'] += 1

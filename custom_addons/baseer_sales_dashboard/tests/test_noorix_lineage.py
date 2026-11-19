@@ -4,7 +4,7 @@ from unittest.mock import patch
 from odoo import Command
 from odoo.fields import Domain
 from odoo.addons.account.tests.common import AccountTestInvoicingCommon
-from odoo.exceptions import AccessError
+from odoo.exceptions import AccessError, ValidationError
 from odoo.tests.common import new_test_user, tagged
 
 from .test_noorix_evidence import NoorixEvidenceFixtures
@@ -111,3 +111,144 @@ class TestNoorixLineage(NoorixEvidenceFixtures, AccountTestInvoicingCommon):
         self.assertEqual(on['cards']['sales']['value'], '115.00')
         source = next(row for row in on['source_breakdown'] if row['key'] == 'noorix')
         self.assertEqual(source['source_action']['context']['allowed_company_ids'], self.env.company.ids)
+
+    def test_hidden_evidence_cannot_be_bypassed_by_ledger_fallback(self):
+        move, evidence = self._original()
+        reader = self._reader()
+        self.env['ir.rule'].with_user(self.env.ref('base.user_admin')).create({
+            'name': 'Noorix ledger: hide one evidence snapshot',
+            'model_id': self.env['ir.model']._get_id('baseer.noorix.sales.evidence'),
+            'domain_force': repr([('id', '!=', evidence.id)]),
+            'perm_read': True, 'perm_write': False,
+            'perm_create': False, 'perm_unlink': False,
+        })
+        context = {'allowed_company_ids': self.env.company.ids, 'tz': 'Asia/Riyadh'}
+        Move = self.env['account.move'].with_user(reader).with_context(context)
+        Move.browse(move.id).check_access('read')
+        dashboard = self.dashboard.with_user(reader).with_context(context)
+        with self.assertRaises(AccessError):
+            self._metrics(dashboard, True)
+        self.assertEqual(self._metrics(dashboard, False)['cards']['sales']['value'], '0.00')
+
+    def test_ledger_fallback_keeps_non_admin_company_and_hidden_reversal_boundaries(self):
+        move = self._noorix_entry('ledger-company-root')
+        reader = self._reader()
+        context = {'allowed_company_ids': self.env.company.ids, 'tz': 'Asia/Riyadh'}
+        dashboard = self.dashboard.with_user(reader).with_context(context)
+        self.assertFalse(dashboard.env.su)
+        self.assertEqual(self._metrics(dashboard, True)['cards']['sales']['value'], '115.00')
+        other = self.env['res.company'].create({
+            'name': 'Synthetic Noorix ledger inaccessible company',
+            'currency_id': self.env.company.currency_id.id,
+        })
+        with self.assertRaises(AccessError):
+            dashboard._noorix_events(other)
+        reversal = move._reverse_moves([{'date': '2026-11-03'}], cancel=False)
+        reversal.action_post()
+        self.env['ir.rule'].with_user(self.env.ref('base.user_admin')).create({
+            'name': 'Noorix ledger: hide one posted reversal',
+            'model_id': self.env['ir.model']._get_id('account.move'),
+            'domain_force': repr([('id', '!=', reversal.id)]),
+            'perm_read': True, 'perm_write': False,
+            'perm_create': False, 'perm_unlink': False,
+        })
+        with self.assertRaises(AccessError):
+            self._metrics(dashboard, True)
+
+    def _two_balanced_slices(self):
+        move = self._noorix_entry('ledger-balanced-slices')
+        move.button_draft()
+        move.write({'line_ids': [
+            Command.create({'name': 'Hidden balanced slice',
+                            'account_id': self.company_data['default_journal_bank'].default_account_id.id,
+                            'debit': 115}),
+            Command.create({'name': 'Hidden balanced slice',
+                            'account_id': self.company_data['default_account_revenue'].id, 'credit': 100}),
+            Command.create({'name': 'Hidden balanced slice',
+                            'account_id': self.noorix_tax_account.id, 'credit': 15,
+                            'tax_tag_ids': [Command.set(self.noorix_tax_tag.ids)]}),
+        ]})
+        move.action_post()
+        return move
+
+    def _hide_items(self, lines):
+        self.env['ir.rule'].with_user(self.env.ref('base.user_admin')).create({
+            'name': 'Noorix ledger: hide a complete balanced journal-item slice',
+            'model_id': self.env['ir.model']._get_id('account.move.line'),
+            'domain_force': repr([('id', 'not in', lines.ids)]),
+            'perm_read': True, 'perm_write': False,
+            'perm_create': False, 'perm_unlink': False,
+        })
+
+    def test_balanced_hidden_original_items_refuse_instead_of_reporting_partial_money(self):
+        move = self._two_balanced_slices()
+        self.assertEqual(self._metrics(self.dashboard, True)['cards']['sales']['value'], '230.00')
+        reader = self._reader()
+        self._hide_items(move.line_ids.filtered(lambda line: line.name == 'Hidden balanced slice'))
+        context = {'allowed_company_ids': self.env.company.ids, 'tz': 'Asia/Riyadh'}
+        Move = self.env['account.move'].with_user(reader).with_context(context)
+        Line = self.env['account.move.line'].with_user(reader).with_context(context)
+        source = Move.browse(move.id)
+        source.invalidate_recordset(['line_ids'])
+        self.assertEqual(len(source.line_ids), 3)
+        # Existence-only denial must not fetch any protected journal-item data.
+        Evidence = self.Evidence.with_user(reader).with_context(context)
+        with patch.object(type(Line), 'read', side_effect=AssertionError('Do not read hidden journal items')):
+            with self.assertRaises(AccessError):
+                Evidence._ledger_check_complete_lines(source)
+        dashboard = self.dashboard.with_user(reader).with_context(context)
+        with self.assertRaises(AccessError):
+            self._metrics(dashboard, True)
+        self.assertEqual(self._metrics(dashboard, False)['cards']['sales']['value'], '0.00')
+
+    def test_balanced_hidden_reversal_items_refuse_before_signature_or_budget(self):
+        move = self._two_balanced_slices()
+        reversal = move._reverse_moves([{'date': '2026-11-03'}], cancel=False)
+        reversal.action_post()
+        self.assertEqual(self._metrics(self.dashboard, True)['cards']['sales']['value'], '0.00')
+        reader = self._reader()
+        self._hide_items(reversal.line_ids.filtered(lambda line: line.name == 'Hidden balanced slice'))
+        context = {'allowed_company_ids': self.env.company.ids, 'tz': 'Asia/Riyadh'}
+        source = self.env['account.move'].with_user(reader).with_context(context).browse(reversal.id)
+        source.invalidate_recordset(['line_ids'])
+        self.assertEqual(len(source.line_ids), 3)
+        dashboard = self.dashboard.with_user(reader).with_context(context)
+        with self.assertRaises(AccessError):
+            self._metrics(dashboard, True)
+
+    def _hidden_native_link(self, kind):
+        move = self._noorix_entry(f'ledger-hidden-{kind}')
+        config = self.env['pos.config'].create({
+            'name': 'Synthetic hidden native link', 'company_id': self.env.company.id,
+            'journal_id': self.company_data['default_journal_sale'].id,
+            'invoice_journal_id': self.company_data['default_journal_sale'].id,
+        })
+        session = self.env['pos.session'].create({
+            'config_id': config.id, 'state': 'closed', 'start_at': '2026-11-01 12:00:00',
+            **({'move_id': move.id} if kind == 'session' else {}),
+        })
+        linked = session if kind == 'session' else self.env['pos.order'].create({
+            'session_id': session.id, 'account_move': move.id, 'amount_tax': 0,
+            'amount_total': 0, 'amount_paid': 0, 'amount_return': 0,
+        })
+        reader = self._reader()
+        self.env['ir.rule'].with_user(self.env.ref('base.user_admin')).create({
+            'name': f'Noorix ledger: hide linked native {kind}',
+            'model_id': self.env['ir.model']._get_id(linked._name),
+            'domain_force': repr([('id', '!=', linked.id)]),
+            'perm_read': True, 'perm_write': False,
+            'perm_create': False, 'perm_unlink': False,
+        })
+        context = {'allowed_company_ids': self.env.company.ids, 'tz': 'Asia/Riyadh'}
+        source = move.with_user(reader).with_context(context)
+        field = 'pos_session_ids' if kind == 'session' else 'pos_order_ids'
+        source.invalidate_recordset([field])
+        self.assertFalse(source[field])
+        with self.assertRaises(ValidationError):
+            self._metrics(self.dashboard.with_user(reader).with_context(context), True)
+
+    def test_hidden_native_session_is_not_an_independent_ledger_source(self):
+        self._hidden_native_link('session')
+
+    def test_hidden_native_order_is_not_an_independent_ledger_source(self):
+        self._hidden_native_link('order')

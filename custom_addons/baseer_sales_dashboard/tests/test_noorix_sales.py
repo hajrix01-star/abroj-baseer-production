@@ -73,12 +73,19 @@ class TestNoorixSales(NoorixEvidenceFixtures, AccountTestInvoicingCommon):
             result = self._metrics(False, dashboard=self.dashboard.with_context(baseer_include_noorix=True))
             self.assertEqual(result['cards']['sales']['value'], '0.00')
 
-    def test_missing_metadata_and_drift_fail_closed(self):
+    def test_missing_metadata_uses_posted_money_but_stored_evidence_drift_still_fails(self):
         move = self._noorix_entry('unmapped')
-        with self.assertRaises(ValidationError):
-            self._metrics(True)
+        digest = self.Evidence._ledger_digest(move)
+        count = self.Evidence.search_count([])
+        result = self._metrics(True)
+        self.assertEqual(result['cards']['sales']['value'], '115.00')
+        self.assertFalse(result['cards']['customers']['available'])
+        self.assertFalse(result['customer_coverage']['complete'])
+        self.assertEqual(self.Evidence.search_count([]), count)
+        self.assertEqual(self.Evidence._ledger_digest(move), digest)
         self.Evidence.import_evidence([self._noorix_row(move, 'unmapped')])
         self.assertEqual(self._metrics(True)['cards']['sales']['value'], '115.00')
+        self.assertEqual(self._metrics(True)['cards']['customers']['value'], 3)
         move.ref += ' edited'
         with self.assertRaises(ValidationError):
             self._metrics(True)
@@ -96,18 +103,77 @@ class TestNoorixSales(NoorixEvidenceFixtures, AccountTestInvoicingCommon):
         self.assertEqual(self._metrics(True, '2026-11-03', '2026-11-03')['cards']['sales']['value'], '-115.00')
         self.assertEqual(self._metrics(True, '2026-11-01', '2026-11-01')['cards']['sales']['value'], '115.00')
 
-    def test_unmapped_original_before_period_cannot_hide_its_reversal(self):
+    def test_original_without_metadata_before_period_resolves_its_reversal(self):
         move = self._noorix_entry('unmapped-ancestor')
         reversal = move._reverse_moves([{'date': '2026-11-03'}], cancel=False)
         reversal.action_post()
-        with self.assertRaises(ValidationError):
-            self._metrics(True, '2026-11-03', '2026-11-03')
+        result = self._metrics(True, '2026-11-03', '2026-11-03')
+        self.assertEqual(result['cards']['sales']['value'], '-115.00')
+        self.assertFalse(result['cards']['customers']['available'])
         self.assertEqual(self._metrics(False, '2026-11-03', '2026-11-03')['cards']['sales']['value'], '0.00')
+
+    def test_ledger_identity_cannot_duplicate_evidence_on_another_day(self):
+        self._import_day()
+        self._noorix_entry('synthetic-day-1', '2026-11-02')
+        with self.assertRaises(ValidationError):
+            self._metrics(True)
+
+    def test_missing_metadata_does_not_relax_money_identity_or_read_budget(self):
+        move = self._noorix_entry('ledger-only-invalid')
+        dashboard = self.dashboard.with_context(baseer_include_noorix=True)
+        with self.assertRaises(ValidationError):
+            dashboard._noorix_events(self.env.company, budget=1)
+        original_ref = move.ref
+        move.ref = original_ref.replace('2026-11-01', '2026-11-02')
+        with self.assertRaises(ValidationError):
+            self._metrics(True)
+        move.ref = original_ref
+        move.line_ids.filtered(lambda line: line.tax_tag_ids).tax_tag_ids = [Command.clear()]
+        with self.assertRaises(ValidationError):
+            self._metrics(True)
+
+    def test_ledger_only_read_is_local_readonly_and_preserves_off(self):
+        move = self._noorix_entry('ledger-only-readonly')
+        models = ('account.move', 'account.move.line', 'baseer.noorix.sales.evidence')
+        counts = {name: self.env[name].search_count([]) for name in models}
+        digest = self.Evidence._ledger_digest(move)
+        off = self._metrics(False)
+        with patch('requests.sessions.Session.request', side_effect=AssertionError('No Noorix connection from a report')):
+            for _read in range(2):
+                self.assertEqual(self._metrics(True)['cards']['sales']['value'], '115.00')
+        self.assertEqual(self._metrics(False), off)
+        self.assertEqual({name: self.env[name].search_count([]) for name in models}, counts)
+        self.assertEqual(self.Evidence._ledger_digest(move), digest)
 
     def test_same_day_source_collision_is_not_silently_summed(self):
         self._import_day()
         move = self._noorix_entry('second-source', '2026-11-01', '115.00')
         self.Evidence.import_evidence([self._noorix_row(move, 'second-source')])
+        with self.assertRaises(ValidationError):
+            self._metrics(True)
+
+    def test_distinct_posted_ledger_sources_on_the_same_day_count_once_each(self):
+        self._noorix_entry('ledger-first')
+        self._noorix_entry('ledger-second', gross='230.00')
+        for _read in range(2):
+            result = self._metrics(True)
+            self.assertEqual(result['cards']['sales']['value'], '345.00')
+            self.assertFalse(result['cards']['customers']['available'])
+
+    def test_ledger_original_and_reversal_with_native_payment_links_are_rejected(self):
+        move = self._noorix_entry('ledger-linked')
+        payment = self.env['account.payment'].create({
+            'amount': 1, 'payment_type': 'inbound', 'partner_type': 'customer',
+            'partner_id': self.partner_a.id, 'journal_id': self.company_data['default_journal_bank'].id,
+            'date': '2026-11-01',
+        })
+        move.origin_payment_id = payment
+        with self.assertRaises(ValidationError):
+            self._metrics(True)
+        move.origin_payment_id = False
+        reversal = move._reverse_moves([{'date': '2026-11-03'}], cancel=False)
+        reversal.action_post()
+        reversal.origin_payment_id = payment
         with self.assertRaises(ValidationError):
             self._metrics(True)
 
@@ -128,6 +194,21 @@ class TestNoorixSales(NoorixEvidenceFixtures, AccountTestInvoicingCommon):
         invoice.action_post()
         heat = self.env.ref('baseer_sales_heat_calendar.dashboard_sales_heat_calendar', raise_if_not_found=False)
         heat_off = heat.get_baseer_heat_calendar('2026-11') if heat else None
+        # Distinct posted documents sharing a date are not the same sale.
+        self.assertEqual(self._metrics(True)['cards']['sales']['value'], '116.00')
+        if heat:
+            day = next(day for week in heat.get_baseer_heat_calendar('2026-11', include_noorix=True)['weeks']
+                       for day in week if day and day['day'] == 1)
+            self.assertEqual(day['sales_value'], '116.00')
+            self.assertIsNone(day['customers_value'])
+        # Defense in depth: a move already consumed by the native reader must
+        # never be accepted again, even if a future adapter mislabels it.
+        duplicate = {'move': invoice, 'evidence': False, 'ledger_only': True,
+                     'day': invoice.invoice_date, 'amount': Decimal('1.00'),
+                     'original': True, 'scope': 'all', 'customer_count': None}
+        with patch.object(type(self.dashboard), '_noorix_events', return_value=[duplicate]):
+            with self.assertRaises(ValidationError):
+                self._metrics(True)
         for scope in ('all', 'morning', 'evening'):
             with self.subTest(scope=scope):
                 evidence = self.Evidence.browse(self.Evidence.import_evidence([dict(row, period_scope=scope)]))

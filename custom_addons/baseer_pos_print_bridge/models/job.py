@@ -15,6 +15,7 @@ from odoo import _, api, fields, models
 from odoo.exceptions import AccessError, ValidationError
 
 from .common import constant_time_equal, new_secret
+from .note import normalize_detail_notes
 
 RETRYABLE_ERRORS = {'spooler_unavailable', 'printer_offline', 'transport_error'}
 BACKOFF_SECONDS = (15, 60, 300)
@@ -228,6 +229,8 @@ class BaseerPrintJob(models.Model):
                 order_payload['requested_by'] = cashier.display_name
         if order and 'table_id' in order._fields and order.table_id:
             order_payload['table'] = order.table_id.display_name
+        if ticket_type == 'preparation':
+            lines = [normalize_detail_notes(line) for line in (lines or [])]
         payload = {'schema': 2, 'ticket_type': ticket_type,
                    'printer': {'machine_identifier': printer.machine_identifier, 'paper_width': printer.paper_width,
                                'copies': copies}, 'order': order_payload, 'lines': lines or []}

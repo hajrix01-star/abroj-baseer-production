@@ -1,0 +1,166 @@
+"""Odoo owns kitchen presentation; Windows receives the existing raster envelope."""
+import base64
+import copy
+import subprocess
+import tempfile
+from decimal import Decimal, InvalidOperation
+
+from odoo import _, api, fields, models
+from odoo.exceptions import ValidationError
+from odoo.tools import find_in_path
+
+from .job import NATIVE_RECEIPT_MAX_BYTES
+from .note import normalize_detail_notes
+
+MAX_HTML_BYTES = 128 * 1024
+MAX_SOURCE_CHARACTERS = 30_000
+MAX_SOURCE_LINES = 200
+RENDER_TIMEOUT_SECONDS = 20
+
+
+class BaseerKitchenDocument(models.Model):
+    _inherit = 'baseer.print.job'
+
+    print_html = fields.Text(readonly=True, copy=False, groups='base.group_system')
+
+    @api.model
+    def _create_once(self, vals):
+        job = super()._create_once(vals)
+        if job.ticket_type == 'preparation' and not job.print_html and not job.receipt_image_sha256:
+            job._freeze_kitchen_document()
+        return job
+
+    def _kitchen_document_values(self):
+        self.ensure_one()
+        payload = copy.deepcopy(self.payload)
+        lines = payload.get('lines', [])
+        if not isinstance(lines, list) or len(lines) > MAX_SOURCE_LINES:
+            raise ValidationError(_('The kitchen document has too many lines.'))
+        # Bound input before asking Qt to lay out an automatically sized document.
+        if len(str(payload)) > MAX_SOURCE_CHARACTERS:
+            raise ValidationError(_('The kitchen document is too large to render safely.'))
+
+        def number(line, key):
+            try:
+                value = Decimal(str(line.get(key, 0)))
+            except (InvalidOperation, ValueError, TypeError):
+                raise ValidationError(_('The kitchen quantity is invalid.')) from None
+            if (not value.is_finite() or abs(value) > Decimal('1000000000')
+                    or value.as_tuple().exponent < -6):
+                raise ValidationError(_('The kitchen quantity is invalid.'))
+            return value
+
+        def formatted(value):
+            # Display the authoritative snapshot without recalculating intent.
+            return format(value, 'f').rstrip('0').rstrip('.') if value != value.to_integral() else format(value, '.0f')
+
+        actions = []
+        for index, source in enumerate(lines):
+            line = normalize_detail_notes(source)
+            action = str(line.get('action', 'new')).lower()
+            quantity = number(line, 'quantity')
+            delta = number(line, 'delta_quantity')
+            previous = number(line, 'previous_quantity')
+            if action == 'update':
+                action = 'reduce' if delta < 0 else 'add' if delta > 0 else 'update'
+            if action not in ('new', 'add', 'reduce', 'cancel', 'update'):
+                action = 'new'
+            actions.append(action)
+            qty = {
+                'new': '+' + formatted(quantity),
+                'add': '+' + formatted(abs(delta)),
+                'reduce': '-' + formatted(abs(delta)),
+                'cancel': '×' + formatted(previous if previous else abs(delta)),
+            }.get(action, formatted(quantity))
+            labels = {'new': 'جديد / NEW', 'add': 'إضافة / ADD',
+                      'reduce': 'تخفيض / REDUCE', 'cancel': 'إلغاء / CANCEL',
+                      'update': 'تعديل / UPDATE'}
+            line.update({
+                'quantity_label': qty,
+                'action_label': labels[action],
+                'quantity_total_label': (
+                    ('الإجمالي / Total: ' if action == 'add' else 'المتبقي / Remaining: ')
+                    + formatted(quantity) if action in ('add', 'reduce') else ''
+                ),
+            })
+            lines[index] = line
+        cancelled = bool(payload.get('cancellation')) or bool(actions) and all(a == 'cancel' for a in actions)
+        changed = any(a in ('add', 'reduce', 'cancel', 'update') for a in actions)
+        title = 'إلغاء الطلب / CANCEL' if cancelled else (
+            'تغييرات المطبخ / KITCHEN CHANGES' if changed else 'طلب مطبخ جديد / NEW KITCHEN ORDER'
+        )
+        order = payload.get('order', {})
+        if order.get('created_at'):
+            # Company timezone, frozen once. Never use the claiming agent's clock.
+            company = self.company_id
+            tz = company.partner_id.tz or 'Asia/Riyadh'
+            order['created_at'] = fields.Datetime.context_timestamp(
+                self.with_context(tz=tz), fields.Datetime.to_datetime(order['created_at']),
+            ).strftime('%Y-%m-%d %H:%M:%S')
+        return {
+            'title': title, 'order': order, 'lines': lines,
+            'cancellation': payload.get('cancellation') or {},
+            'paper_pixels': 384 if str(payload.get('printer', {}).get('paper_width')) == '58' else 576,
+        }
+
+    def _freeze_kitchen_document(self):
+        self.ensure_one()
+        if self.print_html:
+            return True
+        try:
+            with self.env.cr.savepoint():
+                document = self._kitchen_document_values()
+                html = str(self.env['ir.qweb']._render(
+                    'baseer_pos_print_bridge.kitchen_document', {'document': document},
+                ))
+                if not html or len(html.encode()) > MAX_HTML_BYTES:
+                    raise ValidationError(_('The kitchen document is too large to render safely.'))
+                self.sudo().write({'print_html': html})
+        except Exception:
+            # A presentation failure must not roll back saved kitchen intent.
+            self._kitchen_render_failed()
+            return False
+        return True
+
+    def _kitchen_render_failed(self):
+        self.sudo().write({
+            'state': 'failed', 'completed_at': fields.Datetime.now(),
+            'error_code': 'document_render_failed',
+            'error_detail': _('Odoo could not prepare the kitchen image. Review the document and renderer before reprinting.'),
+        })
+
+    def _render_kitchen_jpeg(self):
+        self.ensure_one()
+        if not self.print_html or len(self.print_html.encode()) > MAX_HTML_BYTES:
+            raise ValidationError(_('The frozen kitchen document is missing or too large.'))
+        width = 384 if str(self.payload.get('printer', {}).get('paper_width')) == '58' else 576
+        command = [find_in_path('wkhtmltoimage'), '--disable-local-file-access', '--disable-javascript',
+                   '--quiet', '--width', str(width), '--disable-smart-width', '--height', '0',
+                   '--format', 'jpg', '--quality', '90', '-', '-']
+        # File-backed output avoids buffering an unbounded raster in the Odoo worker.
+        with tempfile.TemporaryFile() as output:
+            subprocess.run(command, input=self.print_html.encode(), stdout=output,
+                           stderr=subprocess.DEVNULL, timeout=RENDER_TIMEOUT_SECONDS, check=True)
+            output.seek(0)
+            raw = output.read(NATIVE_RECEIPT_MAX_BYTES + 1)
+        return self._validated_native_receipt_image(base64.b64encode(raw).decode())
+
+    def _ensure_kitchen_image(self):
+        self.ensure_one()
+        if self.receipt_image_sha256:
+            # Never recreate a lost/purged original with a new raster or template.
+            return True
+        if not self._freeze_kitchen_document():
+            return False
+        try:
+            raw, width, height, digest = self._render_kitchen_jpeg()
+        except (OSError, subprocess.SubprocessError, ValidationError):
+            self._kitchen_render_failed()
+            return False
+        payload = dict(self.payload, receipt_image={
+            'sha256': digest, 'width': width, 'height': height, 'format': 'jpeg',
+        })
+        self.sudo().with_context(image_no_postprocess=True).write({
+            'receipt_image': base64.b64encode(raw), 'receipt_image_sha256': digest, 'payload': payload,
+        })
+        return True

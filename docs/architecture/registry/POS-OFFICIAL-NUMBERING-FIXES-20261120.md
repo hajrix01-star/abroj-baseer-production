@@ -72,3 +72,13 @@ Read-only before/after identity comparison found another production release
 during this task (41d78dda to 08f6b861); same core image and numbering sources.
 No production deployment or data write was issued by this task. Shared QA was
 unchanged during the isolated test. PR: hajrix01-star/abroj-baseer-production#935.
+
+## Owner-approved promotion — 2026-11-20
+
+Owner explicitly selected: "انشر على الإنتاج بعد نجاح QA". Source PR935 passed
+all checks, including 277 Odoo POS integration tests with zero failures/errors,
+and merged as bcf84e8bc8f118aeef1fef24551e892eaff7b252. Scoped QA/production
+policies upgrade ONLY baseer_pos_cache_resilience to19.0.1.0.2. The production
+workflow must not be dispatched before shared-QA acceptance and independent
+scoped delivery GO. Existing protected workflows, paired backups, rollback,
+immutable source and Docker image remain the operational boundaries.

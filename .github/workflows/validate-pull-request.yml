@@ -77,3 +77,6 @@ jobs:
                   etree.parse(path)
           print(f"validated {len(paths)} changed paths")
           PY
+
+      - name: Verify POS receipt reservation and offline cache regressions
+        run: node --test custom_addons/baseer_pos_cache_resilience/static/tests/*.test.mjs

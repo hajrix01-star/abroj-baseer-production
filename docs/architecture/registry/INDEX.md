@@ -1,5 +1,13 @@
 # سجل معمارية بصير أودو
 
+## POS-NUM1 — official receipt reservation fixes (2026-11-20; QA candidate)
+
+Pinned Odoo 19.0-20260817 stays unchanged. Cache-resilience addon ports official
+19.0 retained-number reservation and selective device-counter preservation in
+the existing critical reset path. No new numbering policy, historical data,
+payment, company, print transport or production change.
+[Scope, source identity and acceptance](POS-OFFICIAL-NUMBERING-FIXES-20261120.md).
+
 ## NX-ODOO-ONLY — قراءة المبيعات المنقولة من أودو (2026-11-19؛ قيد التحقق)
 
 بتوجيه المالك للتخلي عن نوركس، أصبحت القيود المرحلة المستقلة الموسومةNOORIX-SALES

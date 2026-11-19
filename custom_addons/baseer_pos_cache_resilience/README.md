@@ -1,8 +1,29 @@
-# POS cache resilience
+# POS cache resilience and official receipt fixes
+
+Version 19.0.1.0.2 ports Odoo 19.0 fd7af53e (2026-10-02) and 1fe5b09b
+(2026-11-17) to the pinned 19.0-20260817 runtime. Existing numbering format,
+UUID identity, payments and the Docker image remain unchanged. Retained/synced
+receipt numbers are removed from the device reuse stack before allocation and
+after sync. Genuine released numbers remain reusable, matching upstream.
+
+The native critical-error recovery asset is replaced, retaining its original
+named-module alias and cleanup flow. Only localStorage cleanup changes: preserve
+device_uuid and every *-unique_device_identifier key without snapshot/restore.
+Normal reloadData in the pinned image does not clear localStorage and is untouched.
+Native critical recovery STILL deletes IndexedDB/session/cache state; do not use
+it to recover unsynchronized sales. Existing duplicates are not renumbered.
+
+Focused tests:
+
+```
+node --test custom_addons/baseer_pos_cache_resilience/static/tests/*.test.mjs
+```
+
+## Existing service-worker scope
 
 Replaces only the body of Odoo's authenticated `/pos/service-worker.js` endpoint.
 Keeps its `/pos` scope, existing `odoo-pos-cache`, and normal service-worker
-activation. Does not change orders, IndexedDB, local/session storage, cookies,
+activation. The service-worker component does not change orders, IndexedDB, local/session storage, cookies,
 print agents, other caches, or the installed worker registration.
 
 New writes are limited to same-origin POS boot documents and static assets.

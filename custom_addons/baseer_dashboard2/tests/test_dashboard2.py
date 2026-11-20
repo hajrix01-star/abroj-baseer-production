@@ -64,6 +64,7 @@ class TestDashboard2(TransactionCase):
         from xml.etree import ElementTree
         path = Path(__file__).resolve().parents[1] / 'data/channel_data.xml'
         self.assertFalse(ElementTree.parse(path).findall(".//field[@name='commission_rate']"))
+        self.assertFalse((path.parents[1] / 'migrations/19.0.1.4.0/post-migration.py').exists())
 
     def test_recorded_commissions_use_posted_configured_accounts(self):
         company = self.env.company
@@ -450,6 +451,17 @@ class TestDashboard2(TransactionCase):
         self.assertIsNone(before[0]['customers']['value'])
         self.assertEqual(sum(row['orders'] for row in before[3].values()), 0)
         self.assertEqual(after[0]['customers']['value'], 1)
+        settings.pos_cutover_date = '2026-11-19'
+        for day in (date(2026, 11, 19), date(2026, 11, 20)):
+            order(new_session(config), day, 80)
+        november = service._sales_summary([company.id], date(2026, 11, 1), date(2026, 11, 30))[0]
+        self.assertEqual(november['customers']['value'], 2)
+        self.assertEqual(november['customers']['avg_ticket'], 80)
+        self.assertEqual(november['customers']['cutover_date'], '2026-11-19')
+        october = service._sales_summary([company.id], date(2026, 10, 1), date(2026, 10, 31))[0]
+        self.assertIsNone(october['customers']['value'])
+        self.assertFalse(october['customers']['cutover_date'])
+        self.assertFalse(service._sales_summary([company.id], date(2026, 11, 20), date(2026, 11, 30))[0]['customers']['cutover_date'])
         settings.pos_cutover_date = False
         # A cancelled session closing cannot add its orders to Noorix.
         cancelled_day = date(2026, 10, 1)
@@ -703,6 +715,8 @@ class TestDashboard2(TransactionCase):
 
     def test_seed_cutover_only_when_empty(self):
         from datetime import date
+        from ..models.configuration import DOCUMENTED_DEFAULTS
+        self.assertEqual(DOCUMENTED_DEFAULTS[2]['pos_cutover_date'], '2026-11-19')
         settings_model = self.env['baseer.dashboard2.settings']
         company = self.env['res.company'].browse(1).exists()
         self.assertTrue(company)

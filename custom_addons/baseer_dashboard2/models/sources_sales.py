@@ -265,10 +265,12 @@ class DashboardSales(models.AbstractModel):
         apps = sum(v for k, v in totals.items() if k in app_keys)
         settings = self.env['baseer.dashboard2.settings'].with_context(allowed_company_ids=ids).search([('company_id', 'in', ids)])
         starts = {s.company_id.id: s.app_balance_start_date for s in settings}
+        cutover = settings.pos_cutover_date if len(ids) == 1 and len(settings) == 1 else False
         return {'available': True, 'warnings': [{'date': str(day), 'company_id': cid, 'label': 'يوم بمصدرين مرحّلين: نوركس + جلسة نقاط بيع — تم الجمع' if data['source_mode'] == 'auto' else 'يوم بمصدرين مرحّلين: نوركس + جلسة نقاط بيع — طُبّق استثناء المصدر'} for (cid, day), data in sorted(days.items()) if data.get('both_sources') and (not starts.get(cid) or day >= starts[cid])] + self._cancelled_session_warnings(ids, start, end, {key for key, day in days.items() if day['has_summary']}), 'gross': round(gross, 2), 'source_counts': {'pos': len(pos_days), 'summary': len(summary_days)},
                 'channel_names': {c['key']: c['name'] for c in channels}, 'channels': {k: round(v, 2) for k, v in totals.items()},
                 'apps': round(apps, 2), 'apps_pct': round(apps / gross * 100, 2) if gross else None,
                 'apps_unreceived': unreceived,
                 'customers': {'available': bool(customer_days), 'reason': False if customer_days else 'no_pos_days',
+                              'cutover_date': fields.Date.to_string(cutover) if cutover and start <= cutover <= end else False,
                               'partial': bool(customer_days and len(customer_days) < len(days)), 'covered_days': len(customer_days),
                               'value': orders if customer_days else None, 'avg_ticket': round(pos_gross / orders, 2) if orders else None}}, days, channels, hours

@@ -1,7 +1,7 @@
 import { after, expect, getFixture, globals, test, withFetch, click, press } from '@odoo/hoot';
 import { animationFrame } from '@odoo/hoot-mock';
 import { App, Component } from '@odoo/owl';
-import { hourLabel, hasDisplayValues, multiplePoints, formatNumber, formatTable, formatTablePct, formatPercent, formatPoints, ratioDifference, formatTargetPercent, chartX, miniX, timelineYear, InfoPopup, LineChart, niceStep, KpiCard, Sparkline, Badge, Gauge } from '../src/js/main';
+import { hourLabel, hasDisplayValues, multiplePoints, formatNumber, formatTable, formatTablePct, formatPercent, formatPoints, ratioDifference, formatTargetPercent, chartX, miniX, timelineYear, customerCutoverLabel, InfoPopup, LineChart, niceStep, KpiCard, Sparkline, Badge, Gauge } from '../src/js/main';
 
 test('P&L renders without in/out months', async () => {
     class Pnl extends Component {
@@ -408,7 +408,7 @@ test('customer chart aligns every month with its plotted point and formats order
     class CustomerChart extends Component {
         static template = 'test.CustomerChart';
         static components = { Sparkline };
-        trend = Array.from({ length: 6 }, (_, i) => ({ has_data: true, data: { customers: { value: i === 5 ? 1471 : 100 * (i + 1), avg_ticket: 80 } } }));
+        trend = Array.from({ length: 6 }, (_, i) => ({ has_data: true, data: { customers: { value: i === 0 ? null : i === 5 ? 1471 : 100 * (i + 1), avg_ticket: i === 0 ? null : 80 } } }));
         trendLabels = ['مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر'];
         miniX = miniX;
     }
@@ -420,6 +420,8 @@ test('customer chart aligns every month with its plotted point and formats order
     labels.forEach((label, i) => expect(parseFloat(label.style.left)).toBe(Sparkline.prototype.miniPoint(values, i).x));
     expect(parseFloat(labels[5].style.left)).toBeLessThan(parseFloat(labels[0].style.left));
     expect(getFixture().querySelector('.spark-label.navy').textContent).toBe('1.5K');
+    expect(getFixture().querySelectorAll('.spark-dot.navy').length).toBe(2);
+    expect(getFixture().querySelector('path[stroke="var(--bd2-c1)"]').getAttribute('d')).toInclude(`M${miniX(1, 6)},`);
 });
 
 test('partial overview marks ratios and neutralizes company comparisons', async () => {
@@ -436,17 +438,18 @@ test('partial overview marks ratios and neutralizes company comparisons', async 
         static template = 'test.PartialOverview'; static components = { Sparkline, Track };
         state = { period: { mode: 'month', month: '2026-11' }, company: '1', data: {
             purchases: { available: true, value: 10, pct: 1.6, trend: [] },
-            sales: { apps: 20, apps_pct: 2, customers: { available: true, value: 100, avg_ticket: 80 }, trend: [] },
+            sales: { apps: 20, apps_pct: 2, customers: { available: true, value: 100, avg_ticket: 80, cutover_date: '2026-11-19' }, trend: [] },
             bridge: [{ key: 'net_profit', amount: 95, pct: 95.5 }],
             companies_compare: ['1', '2'].map(key => ({ key, name: key, sales_net: 100, food_pct: 1.6, salaries_pct: 0.4, net_margin_pct: -5, targets: { food_pct: { status: 'ok' }, salaries_pct: { status: 'bad' } } }))
         } };
-        trend = [{ partial }]; monthName = v => v; fmt = formatNumber; pct = formatPercent; tableFmt = formatTable; tablePct = formatTablePct;
+        trend = [{ partial }]; monthName = v => v; fmt = formatNumber; pct = formatPercent; tableFmt = formatTable; tablePct = formatTablePct; customerCutoverLabel = customerCutoverLabel;
         iconPath() { return ''; } name(v) { return v; } bridgeStyle() { return ''; }
     }
     const app = new App(PartialOverview, { templates, test: true });
     after(() => app.destroy());
     const fixture = getFixture();
     await app.mount(fixture);
+    expect(fixture.querySelectorAll('.mini')[2].textContent).toInclude('من 19/11');
     expect([...fixture.querySelectorAll('.mini-pill')].every(el => el.textContent.includes('(جزئي)'))).toBe(true);
     expect(fixture.querySelector('.bridge-row span').textContent).toInclude('(جزئي)');
     expect(fixture.querySelectorAll('.compare-pill.neutral').length).toBe(6);
@@ -471,10 +474,21 @@ test('commission card uses recorded amount and salary badges explain suppression
     expect(card.querySelector('Money').getAttribute('value')).toBe('state.data.commissions.amount');
     expect(revenue.textContent.includes('عمولة X%')).toBe(false);
     expect(revenue.innerHTML.includes('commission_rate')).toBe(false);
+    expect(revenue.querySelectorAll('KpiCard[headingSubtitle*="customerCutoverLabel"]').length).toBe(2);
     expect(doc.querySelector('[t-name="baseer_dashboard2.Badge"] [t-if="props.warning"]').getAttribute('title')).toInclude('رواتب الشهر السابق');
     const overview = doc.querySelector('[t-name="baseer_dashboard2.BreakEven"]');
     expect(overview.querySelector('.break-progress').getAttribute('t-if')).toBe('state.data.breakeven?.available');
     expect(overview.querySelector('.break-legend').getAttribute('t-if')).toBe('state.data.breakeven?.available');
+});
+
+test('customer cutover labels show the configured date', async () => {
+    expect(customerCutoverLabel('2026-10-03')).toBe('من 3/10');
+    expect(customerCutoverLabel(false)).toBe(null);
+    const response = await withFetch(globals.fetch, () => fetch('/baseer_dashboard2/static/src/xml/main.xml'));
+    const app = new App(KpiCard, { templates: await response.text(), props: { title: 'الطلبات', value: 2, unit: 'orders', headingSubtitle: customerCutoverLabel('2026-11-19') }, test: true });
+    after(() => app.destroy());
+    await app.mount(getFixture());
+    expect(getFixture().querySelector('.kpi-subtitle').textContent).toBe('من 19/11');
 });
 
 

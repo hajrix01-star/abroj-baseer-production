@@ -109,17 +109,15 @@ class LineChart extends Component {
     return 205 - ((Number(v) || 0) / this.max) * 165;
   }
   area(values) {
-    const points = values
-      .map((value, i) =>
-        value == null ? null : [chartX(i, values.length), this.y(value)],
-      )
-      .filter(Boolean);
-    if (!points.length) return "";
-    return (
-      `M${points[0][0]},205 ` +
-      points.map(([x, y]) => `L${x},${y}`).join(" ") +
-      ` L${points.at(-1)[0]},205 Z`
-    );
+    let segments = [];
+    let points = [];
+    const flush = () => {
+      if (points.length) segments.push(`M${points[0][0]},205 ` + points.map(([x, y]) => `L${x},${y}`).join(" ") + ` L${points.at(-1)[0]},205 Z`);
+      points = [];
+    };
+    values.forEach((value, i) => value == null ? flush() : points.push([chartX(i, values.length), this.y(value)]));
+    flush();
+    return segments.join(" ");
   }
   compact(value) {
     return Math.abs(value) >= 1000
@@ -264,7 +262,7 @@ class Dashboard2 extends Component {
         this.state.company = m.default_company_key;
       this.state.period ||= {
         mode: "month",
-        month: m.months_available[0] || m.today.slice(0, 7),
+        month: m.default_month,
         date_from: m.today,
         date_to: m.today,
       };
@@ -296,7 +294,7 @@ class Dashboard2 extends Component {
               company_key: this.state.company,
               period: this.state.period,
               timeline_mode: this.state.timeline,
-              heatmap_month: this.state.period.month,
+              heatmap_month: this.state.period.mode === "month" ? this.state.period.month : this.state.period.date_to.slice(0, 7),
             },
           ],
         );

@@ -30,6 +30,10 @@ class TestDashboard2(TransactionCase):
         self.env['ir.config_parameter'].set_param('baseer_dashboard2.company_map', '%s:Test' % company.id)
         meta = service.get_meta()
         self.assertEqual(meta['default_company_key'], str(company.id))
+        from datetime import timedelta
+        from odoo import fields
+        previous = (fields.Date.context_today(service).replace(day=1) - timedelta(days=1)).strftime('%Y-%m')
+        self.assertEqual(meta['default_month'], next((m for m in meta['months_available'] if m <= previous), previous))
         result = service.get_section('overview', {'company_key': str(company.id), 'period': {'mode': 'month', 'month': '2026-10'}})
         self.assertTrue(result['available'])
         self.assertEqual(len(result['trend']), 6)
@@ -70,6 +74,12 @@ class TestDashboard2(TransactionCase):
         self.assertEqual(sales['source_counts']['summary'], 3)
         self.assertEqual(service._sales_vat([company.id], date(2026, 10, 1), date(2026, 10, 31))['value'], 15)
         self.assertFalse(sales['customers']['available'])
+        self.env['ir.config_parameter'].set_param('baseer_dashboard2.company_map', '%s:Test' % company.id)
+        pnl = service.get_section('pnl', {'company_key': str(company.id), 'period': {'mode': 'month', 'month': '2026-10'}})
+        revenue_row = next(row for row in pnl['rows'] if row['key'] == 'revenue')
+        self.assertAlmostEqual(sum(child['months'][-1] for child in revenue_row['children']), revenue_row['months'][-1], places=2)
+        self.assertIsNone(revenue_row['months'][-2])
+        self.assertIsNone(service._timeline([company.id], date(2026, 10, 31), 'monthly')['months'][8]['value'])
 
     def test_all_sections_smoke(self):
         company = self.env.company

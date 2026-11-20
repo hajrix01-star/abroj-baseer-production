@@ -2,7 +2,7 @@ import calendar
 from collections import defaultdict
 from datetime import date, timedelta
 
-from odoo import api, models, _
+from odoo import api, fields, models, _
 from odoo.exceptions import UserError
 
 from .service import SOURCES
@@ -33,14 +33,20 @@ class DashboardSections(models.AbstractModel):
         value = sum(abs(amount or 0) * (1 if kind == 'in_invoice' else -1) for kind, amount in rows)
         return {'available': True, 'value': round(value, 2), 'pct': percent(value, sales)}
 
+    def _posted_months(self, ids):
+        rows = self.env['account.move.line'].with_context(allowed_company_ids=ids)._read_group(
+            [('company_id', 'in', ids), ('parent_state', '=', 'posted')], ['date:month'], [])
+        return {fields.Date.to_date(row[0]).strftime('%Y-%m') for row in rows if row[0]}
+
     def _timeline(self, ids, end, mode):
         if mode not in ('monthly', 'yearly'):
             raise UserError(_('Invalid timeline mode.'))
         line_model = self.env['account.move.line'].with_context(allowed_company_ids=ids)
         bounds = line_model._read_group([('company_id', 'in', ids), ('parent_state', '=', 'posted')], [], ['date:min', 'date:max'])
         first_data, last = bounds[0] if bounds else (None, None)
+        posted_months = self._posted_months(ids)
         def covered(first, finish):
-            return bool(first_data and last and first <= last and finish >= first_data)
+            return any(first.strftime('%Y-%m') <= month <= finish.strftime('%Y-%m') for month in posted_months)
         cutoff = min(end, last) if last else None
         start_year = date(end.year, 1, 1)
         previous_end = cutoff.replace(year=cutoff.year - 1, day=min(cutoff.day, calendar.monthrange(cutoff.year - 1, cutoff.month)[1])) if cutoff else None
@@ -90,8 +96,9 @@ class DashboardSections(models.AbstractModel):
         bounds = self.env['account.move.line'].with_context(allowed_company_ids=ids)._read_group(
             [('company_id', 'in', ids), ('parent_state', '=', 'posted')], [], ['date:min', 'date:max'])
         first_data, last_data = bounds[0] if bounds else (None, None)
+        posted_months = self._posted_months(ids)
         def covered(first, last):
-            return bool(first_data and last_data and first <= last_data and last >= first_data)
+            return any(first.strftime('%Y-%m') <= month <= last.strftime('%Y-%m') for month in posted_months)
         trend = []
         for offset in range(-5, 1):
             first, last = month_bounds(end, offset)
@@ -125,9 +132,9 @@ class DashboardSections(models.AbstractModel):
             sales_trend = []
             for month in trend:
                 month_start, month_end = month_bounds(date.fromisoformat(month['month'] + '-01'))
-                result['purchases']['trend'].append({'month': month['month'], **self._purchases(ids, month_start, month_end, month['data']['sales_net'])})
+                result['purchases']['trend'].append({'month': month['month'], 'has_data': month['has_data'], **self._purchases(ids, month_start, month_end, month['data']['sales_net'])})
                 monthly_sales, _, _, _ = self._sales_summary(ids, month_start, month_end)
-                sales_trend.append({'month': month['month'], **monthly_sales})
+                sales_trend.append({'month': month['month'], 'has_data': month['has_data'], **monthly_sales})
             sales, days, channels, hours = self._sales_summary(ids, start, end)
             prior_sales, _, _, _ = self._sales_summary(ids, previous_start, previous_end)
             result['sales'] = sales
@@ -156,21 +163,42 @@ class DashboardSections(models.AbstractModel):
             result['ring'] = {'available': bool(current['sales_net']), 'value': percent(total, current['sales_net']), 'reason': False if current['sales_net'] else 'zero_sales'}
         if section == 'pnl':
             rows = []
+            arabic_lang = 'ar_001' if self.env['res.lang']._get_data(code='ar_001').code else self.env.lang
+            category_names = {c.code: c.name for c in self.env['baseer.dashboard2.category'].with_context(allowed_company_ids=ids, lang=arabic_lang).search([])}
+            monthly_channels = []
+            for month in trend:
+                first, last = month_bounds(date.fromisoformat(month['month'] + '-01'))
+                summary, _, channels, _ = self._sales_summary(ids, first, last)
+                monthly_channels.append((summary, channels))
             for key in ('revenue', 'food_cost', 'gross_profit', 'salaries', 'rent', 'utilities', 'marketing', 'commissions', 'other_opex', 'depreciation', 'operating_profit', 'other_income', 'zakat_tax', 'net_profit'):
                 factor = -1 if key in expense_keys else 1
-                values = [factor * m['data'].get(key, m['data']['categories'].get(key, 0)) for m in trend]
+                values = [factor * m['data'].get(key, m['data']['categories'].get(key, 0)) if m['has_data'] else None for m in trend]
                 children = {}
                 for i, month in enumerate(trend):
+                    if key == 'revenue':
+                        summary, channels = monthly_channels[i]
+                        gross = summary['channels']
+                        net = month['data']['sales_net']
+                        if month['has_data'] and net:
+                            names = {c['key']: c['name'] for c in channels}
+                            names.update({'other': 'أخرى', 'unclassified': 'غير مصنف'})
+                            shares = {k: round(net * v / sum(gross.values()), 2) for k, v in gross.items()} if sum(gross.values()) else {'unclassified': net}
+                            largest = max(shares, key=lambda k: abs(gross.get(k, 0)))
+                            shares[largest] = round(shares[largest] + net - sum(shares.values()), 2)
+                            for channel, amount in shares.items():
+                                row = children.setdefault(channel, {'code': '', 'name': names.get(channel, channel), 'months': [0 if m['has_data'] else None for m in trend]})
+                                row['months'][i] = amount
+                        continue
                     for account in month['data']['accounts']:
                         if account['category'] == key:
                             ident = (account['company_id'], account['account_id'])
-                            row = children.setdefault(ident, {'code': account['code'], 'name': account['name'], 'months': [0] * 6})
+                            row = children.setdefault(ident, {'code': account['code'], 'name': account['name'], 'months': [0 if m['has_data'] else None for m in trend]})
                             row['months'][i] += factor * account['amount']
                 for child in children.values():
-                    child['total'] = round(sum(child['months']), 2)
+                    child['total'] = round(sum(v for v in child['months'] if v is not None), 2)
                     child['pct'] = percent(child['total'], sum(m['data']['sales_net'] for m in trend))
-                total = sum(values)
-                rows.append({'key': key, 'months': values, 'total': round(total, 2), 'pct': percent(total, sum(m['data']['sales_net'] for m in trend)), 'children': list(children.values())})
+                total = sum(v for v in values if v is not None)
+                rows.append({'key': key, 'name': category_names.get(key), 'months': values, 'total': round(total, 2), 'pct': percent(total, sum(m['data']['sales_net'] for m in trend)), 'children': list(children.values())})
             result['rows'] = rows
         return result
 
@@ -180,12 +208,13 @@ class DashboardSections(models.AbstractModel):
         bounds = self.env['account.move.line'].with_context(allowed_company_ids=ids)._read_group(
             [('company_id', 'in', ids), ('parent_state', '=', 'posted')], [], ['date:min', 'date:max'])
         first_data, last_data = bounds[0] if bounds else (None, None)
+        posted_months = self._posted_months(ids)
         monthly = []
         for offset in range(-5, 1):
             first, last = month_bounds(end, offset)
             summary, _, _, _ = self._sales_summary(ids, first, last)
             monthly.append({'month': first.strftime('%Y-%m'), 'data': summary,
-                            'has_data': bool(first_data and last_data and first <= last_data and last >= first_data),
+                            'has_data': first.strftime('%Y-%m') in posted_months,
                             'partial': bool(last_data and first <= last_data < last)})
         known = {c['key']: c for c in channels}
         known['other'] = {'key': 'other', 'name': 'أخرى', 'kind': 'hall', 'color_token': False, 'commission_rate': 0}

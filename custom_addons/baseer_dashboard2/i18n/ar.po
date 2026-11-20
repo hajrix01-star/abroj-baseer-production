@@ -561,3 +561,12 @@ msgstr "نقداً/كاش"
 #: model:baseer.dashboard2.channel,name:baseer_dashboard2.channel_hunger
 msgid "هنقرستيشن"
 msgstr "هنقرستيشن"
+
+msgid "ضمن المستهدف"
+msgstr "ضمن المستهدف"
+
+msgid "خارج المستهدف"
+msgstr "خارج المستهدف"
+
+msgid "غير مصنف"
+msgstr "غير مصنف"

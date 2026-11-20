@@ -117,7 +117,7 @@
     </t>
     <t t-name="baseer_dashboard2.Overview">
         <div class="grid three">
-            <div class="card mini" t-foreach="[['المشتريات ونسبتها',state.data.purchases?.value,state.data.purchases?.pct,state.data.purchases?.trend?.map(x=&gt;x.pct),state.data.purchases?.trend?.map(x=&gt;x.value)],['تطبيقات التوصيل ونسبتها',state.data.sales?.apps,state.data.sales?.apps_pct,state.data.sales?.trend?.map(x=&gt;x.apps_pct),state.data.sales?.trend?.map(x=&gt;x.apps)],['عدد العملاء ومتوسط الفاتورة',state.data.sales?.customers?.value,state.data.sales?.customers?.avg_ticket,state.data.sales?.trend?.map(x=&gt;x.customers.avg_ticket),state.data.sales?.trend?.map(x=&gt;x.customers.value)]]" t-as="item" t-key="item[0]">
+            <div class="card mini" t-foreach="[['المشتريات ونسبتها',state.data.purchases?.value,state.data.purchases?.pct,state.data.purchases?.trend?.map(x=&gt;x.has_data ? x.pct : null),state.data.purchases?.trend?.map(x=&gt;x.has_data ? x.value : null)],['تطبيقات التوصيل ونسبتها',state.data.sales?.apps,state.data.sales?.apps_pct,state.data.sales?.trend?.map(x=&gt;x.has_data ? x.apps_pct : null),state.data.sales?.trend?.map(x=&gt;x.has_data ? x.apps : null)],['عدد العملاء ومتوسط الفاتورة',state.data.sales?.customers?.value,state.data.sales?.customers?.avg_ticket,state.data.sales?.trend?.map(x=&gt;x.has_data ? x.customers.avg_ticket : null),state.data.sales?.trend?.map(x=&gt;x.has_data ? x.customers.value : null)]]" t-as="item" t-key="item[0]">
                 <h3 t-esc="item[0]"/>
                 <strong t-esc="fmt(item[1])"/>
                 <div class="muted" t-esc="item[2] == null ? 'غير متوفر' : fmt(item[2])"/>
@@ -347,21 +347,22 @@
                 <h3 t-esc="name(key)"/>
                 <div class="muted">من المبيعات</div>
                 <strong t-esc="pct(current.ratios?.[key])"/>
+                <span t-if="current.ratios?.[key] != null and state.data.targets[key]" t-att-class="'bd2-badge '+(state.data.targets[key].status === 'ok' ? 'good' : 'bad')" t-esc="state.data.targets[key].status === 'ok' ? 'ضمن المستهدف' : 'خارج المستهدف'"/>
                 <div class="muted">المستهدف <t t-esc="pct(state.data.targets[key]?.value)"/>
                     <input t-if="state.meta.can_edit and state.data.targets[key]" class="target-input" type="number" min="0" max="100" t-att-value="state.data.targets[key].value" t-on-change="(e)=&gt;this.saveTarget(key,e)"/>
                 </div>
                 <Gauge value="current.ratios?.[key]" previous="state.data.previous.ratios?.[key]" target="state.data.targets[key]?.value" max="100"/>
-                <Sparkline values="trend.map(x=&gt;x.data.ratios[key])"/>
+                <Sparkline values="trend.map(x=&gt;x.has_data ? x.data.ratios[key] : null)"/>
             </div>
         </div>
         <div class="grid two">
             <div class="card">
                 <h3>اتجاه نسب التكلفة</h3>
-                <LineChart series="[{values:trend.map(x=&gt;x.data.ratios.food_pct)},{values:trend.map(x=&gt;x.data.ratios.salaries_pct),gold:true}]" labels="trendLabels"/>
+                <LineChart series="[{values:trend.map(x=&gt;x.has_data ? x.data.ratios.food_pct : null)},{values:trend.map(x=&gt;x.has_data ? x.data.ratios.salaries_pct : null),gold:true}]" labels="trendLabels"/>
             </div>
             <div class="card">
                 <h3>مجمل الهامش وصافي الهامش</h3>
-                <LineChart series="[{values:trend.map(x=&gt;x.data.sales_net ? x.data.gross_profit/x.data.sales_net*100 : null)},{values:trend.map(x=&gt;x.data.ratios.net_margin_pct),gold:true}]" labels="trendLabels"/>
+                <LineChart series="[{values:trend.map(x=&gt;x.data.sales_net ? x.data.gross_profit/x.data.sales_net*100 : null)},{values:trend.map(x=&gt;x.has_data ? x.data.ratios.net_margin_pct : null),gold:true}]" labels="trendLabels"/>
             </div>
         </div>
         <div class="grid two-wide">
@@ -417,7 +418,7 @@
                     <t t-foreach="state.data.rows" t-as="row" t-key="row.key">
                         <tr t-att-class="row.key==='net_profit'?'net': ['gross_profit','operating_profit'].includes(row.key)?'highlight':'group'" t-on-click="()=&gt;this.toggleRow(row.key)">
                             <th>
-                                <t t-esc="name(row.key)"/>
+                                <t t-esc="row.name || name(row.key)"/>
                                 <span t-if="row.children.length">▾</span>
                             </th>
                             <td>
@@ -430,7 +431,7 @@
                         <tr t-if="!state.closed[row.key]" t-foreach="row.children" t-as="child" t-key="child_index" class="account">
                             <td>
                                 <span class="muted" t-esc="child.code"/>
-                                <t t-esc="child.name"/>
+                                <t t-esc="child.code ? ' '+child.name : child.name"/>
                             </td>
                             <td>
                                 <Sparkline values="child.months"/>

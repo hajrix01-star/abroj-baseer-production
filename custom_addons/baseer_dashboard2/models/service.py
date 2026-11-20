@@ -88,7 +88,10 @@ class DashboardService(models.AbstractModel):
             rows = lines._read_group(domain, ['date:month'], ['date:max'], order='date:month DESC', limit=36)
             months = [fields.Date.to_string(row[0])[:7] for row in rows if row[0]]
             last = max((row[1] for row in rows if row[1]), default=False)
-        return {'companies': options, 'default_company_key': str(self.env.company.id if self.env.company.id in ids else ids[0]) if ids else False,
+        today = fields.Date.context_today(self)
+        previous_month = (today.replace(day=1) - timedelta(days=1)).strftime('%Y-%m')
+        default_month = next((month for month in months if month <= previous_month), previous_month)
+        return {'default_month': default_month, 'companies': options, 'default_company_key': str(self.env.company.id if self.env.company.id in ids else ids[0]) if ids else False,
                 'months_available': months, 'today': fields.Date.to_string(fields.Date.context_today(self)),
                 'last_data_date': fields.Date.to_string(last) if last else False,
                 'can_edit': self.env.user.has_group('account.group_account_manager'), 'tz': self.env.user.tz or 'Asia/Riyadh',
@@ -125,13 +128,14 @@ class DashboardService(models.AbstractModel):
         rows = lines._read_group([('company_id', 'in', ids), ('parent_state', '=', 'posted'), ('date', '>=', start), ('date', '<=', end)], ['company_id', 'account_id'], ['debit:sum', 'credit:sum'])
         totals = {cat.code: 0.0 for cat in categories}
         accounts = []
+        arabic_lang = 'ar_001' if self.env['res.lang']._get_data(code='ar_001').code else self.env.lang
         for company, account, debit, credit in rows:
             account = account.with_company(company)
             key = self._category(account, categories)
             if key:
                 amount = (credit - debit) if key in ('revenue', 'other_income') else (debit - credit)
                 totals[key] = totals.get(key, 0.0) + amount
-                accounts.append({'company_id': company.id, 'account_id': account.id, 'code': account.code, 'name': account.name, 'category': key, 'amount': round(amount, 2)})
+                accounts.append({'company_id': company.id, 'account_id': account.id, 'code': account.code, 'name': account.with_context(lang=arabic_lang).name or account.name, 'category': key, 'amount': round(amount, 2)})
         sales = totals.get('revenue', 0.0)
         gross = sales - totals.get('food_cost', 0.0)
         operating = gross - sum(totals.get(k, 0.0) for k in ('salaries', 'rent', 'utilities', 'marketing', 'commissions', 'other_opex', 'depreciation'))

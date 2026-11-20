@@ -340,6 +340,9 @@ small {
 .bd2-track i.gold {
   background: var(--bd2-gold);
 }
+.bridge-row.subtotal .bd2-track i {
+  background: var(--bd2-c1);
+}
 .bridge-row,
 .rank-row {
   display: grid;

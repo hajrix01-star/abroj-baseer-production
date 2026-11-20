@@ -6,8 +6,18 @@ import { useService } from "@web/core/utils/hooks";
 export const formatNumber = (n) =>
   n === null || n === undefined || n === false || !Number.isFinite(Number(n))
     ? "—"
-    : new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(n);
-export const formatTable = (n) => n == null || n === false || !Number.isFinite(Number(n)) || Number(n) === 0 ? "—" : Number(n) < 0 ? `(${formatNumber(-n)})` : formatNumber(n);
+    : new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(Number(n) === 0 || Math.abs(Number(n)) < 0.5 ? 0 : n);
+export const formatTable = (n, minus = false) => {
+  if (n == null || n === false || !Number.isFinite(Number(n))) return "—";
+  const magnitude = formatNumber(Math.abs(Number(n)));
+  if (magnitude === "0") return "—";
+  return Number(n) < 0 ? (minus ? `-${magnitude}` : `(${magnitude})`) : magnitude;
+};
+export const formatTablePct = (n) => {
+  if (n == null || n === false || !Number.isFinite(Number(n))) return "—";
+  const magnitude = Math.abs(Number(n)).toFixed(1);
+  return magnitude === "0.0" ? "—" : `${Number(n) < 0 ? "-" : ""}${magnitude}%`;
+};
 export const chartX = (i, n, width = 700) =>
   width - 48 - (width - 70) * (n <= 1 ? 0.5 : i / (n - 1));
 const months = [
@@ -362,9 +372,7 @@ class Dashboard2 extends Component {
   name(key) {
     return this.state.data?.channel_names?.[key] || labels[key] || key;
   }
-  tablePct(v) {
-    return v == null || Number(v) === 0 ? "—" : this.pct(v);
-  }
+  tablePct = formatTablePct;
   pct(v) {
     return v === null || v === undefined ? "—" : `${Number(v).toFixed(1)}%`;
   }

@@ -120,7 +120,7 @@
             <div class="card mini" t-foreach="[['المشتريات ونسبتها',state.data.purchases?.value,state.data.purchases?.pct,state.data.purchases?.trend?.map(x=&gt;x.has_data ? x.pct : null),state.data.purchases?.trend?.map(x=&gt;x.has_data ? x.value : null)],['تطبيقات التوصيل ونسبتها',state.data.sales?.apps,state.data.sales?.apps_pct,state.data.sales?.trend?.map(x=&gt;x.has_data ? x.apps_pct : null),state.data.sales?.trend?.map(x=&gt;x.has_data ? x.apps : null)],['عدد العملاء ومتوسط الفاتورة',state.data.sales?.customers?.value,state.data.sales?.customers?.avg_ticket,state.data.sales?.trend?.map(x=&gt;x.has_data ? x.customers.avg_ticket : null),state.data.sales?.trend?.map(x=&gt;x.has_data ? x.customers.value : null)]]" t-as="item" t-key="item[0]">
                 <h3 t-esc="item[0]"/>
                 <strong t-esc="fmt(item[1])"/>
-                <div class="muted" t-esc="item[2] == null ? 'غير متوفر' : (item_index &lt; 2 ? pct(item[2]) : fmt(item[2]))"/>
+                <div class="muted" t-esc="item[2] == null ? 'غير متوفر' : (item_index &lt; 2 ? pct(item[2])+' من المبيعات' : fmt(item[2]))"/>
                 <Sparkline values="item[3]" gold="true"/><Sparkline values="item[4]"/><div class="mini-labels"><span t-foreach="trendLabels" t-as="label" t-key="label_index" t-esc="label"/></div>
             </div>
         </div>
@@ -138,11 +138,11 @@
         <div class="card">
             <h3>من المبيعات إلى صافي الربح</h3>
             <div class="muted">كل سطر يبيّن المبلغ ونسبته من المبيعات</div>
-            <div t-att-class="'bridge-row '+(row.key==='net_profit'?'net-profit':'')" t-foreach="state.data.bridge" t-as="row" t-key="row.key">
+            <div t-att-class="'bridge-row '+(row.key==='net_profit'?'net-profit':(['sales_net','gross_profit','operating_profit'].includes(row.key)?'subtotal':''))" t-foreach="state.data.bridge" t-as="row" t-key="row.key">
                 <b t-esc="name(row.key)"/>
                 <Track value="row.amount" max="current.sales_net" gold="row.key==='net_profit'"/>
-                <strong t-esc="fmt(row.amount)"/>
-                <span class="muted" t-esc="pct(row.pct)"/>
+                <strong dir="ltr" t-esc="tableFmt(row.amount, true)"/>
+                <span class="muted" dir="ltr" t-esc="tablePct(row.pct)"/>
             </div>
         </div>
         <t t-call="baseer_dashboard2.Compare"/>

@@ -1,5 +1,5 @@
 import { expect, test } from '@odoo/hoot';
-import { formatNumber, formatTable, chartX } from '../src/js/main';
+import { formatNumber, formatTable, formatTablePct, chartX } from '../src/js/main';
 
 test('numbers use Western digits without abbreviating calendar values', () => {
     expect(formatNumber(26827)).toBe('26,827');
@@ -16,4 +16,11 @@ test('table values use accounting notation', () => {
     expect(formatTable(undefined)).toBe('—');
     expect(formatTable(NaN)).toBe('—');
     expect(formatNumber(NaN)).toBe('—');
+    expect(formatNumber(-0.1)).toBe('0');
+    expect(formatTable(-0)).toBe('—');
+    expect(formatTable(-0.1)).toBe('—');
+    expect(formatTable(-1234, true)).toBe('-1,234');
+    expect(formatTablePct(-0)).toBe('—');
+    expect(formatTablePct(-0.01)).toBe('—');
+    expect(formatTablePct(-12.3)).toBe('-12.3%');
 });

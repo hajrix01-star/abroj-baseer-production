@@ -13,7 +13,7 @@
         <span t-else="" class="muted">—<span t-if="props.warning" title="رواتب الشهر السابق أقل من 70% من متوسط الأشهر الثلاثة السابقة؛ قد تكون غير مكتملة"> ⚠</span></span>
     </t>
     <t t-name="baseer_dashboard2.Sparkline">
-        <div class="spark-wrap"><svg class="bd2-spark" viewBox="0 0 100 32" t-att-preserveAspectRatio="props.stretch ? 'none' : 'xMidYMid meet'" aria-hidden="true">
+        <div t-att-class="props.mini and props.stretch ? 'spark-wrap spark-stretch' : 'spark-wrap'"><svg class="bd2-spark" viewBox="0 0 100 32" t-att-preserveAspectRatio="props.stretch ? 'none' : 'xMidYMid meet'" aria-hidden="true">
             <t t-if="props.mini">
                 <path t-att-d="miniPath(props.values, false, true)" fill="var(--bd2-c1)" fill-opacity="0.09"/>
                 <path t-att-d="miniPath(props.values)" fill="none" stroke="var(--bd2-c1)" stroke-width="2" vector-effect="non-scaling-stroke"/>
@@ -78,8 +78,8 @@
     <t t-name="baseer_dashboard2.Gauge">
         <div class="bd2-gauge">
             <i t-att-style="'width:'+pos(props.value)+'%'"/>
-            <b t-if="props.target != null" t-att-style="'right:'+pos(props.target)+'%'"><span class="gauge-target">المستهدف <bdi dir="ltr" t-esc="targetLabel()"/></span></b>
-            <em t-if="props.previous != null" t-att-style="'right:clamp(5px, '+pos(props.previous)+'%, calc(100% - 5px))'"/>
+            <b t-if="props.target != null" t-att-style="'right:clamp(0px, calc('+pos(props.target)+'% - 1.5px), calc(100% - 3px))'"><span class="gauge-target">المستهدف <bdi dir="ltr" t-esc="targetLabel()"/></span></b>
+            <em t-if="props.previous != null" t-att-style="'right:clamp(0px, calc('+pos(props.previous)+'% - 5px), calc(100% - 10px))'"/>
         </div>
     </t>
     <t t-name="baseer_dashboard2.KpiCard">
@@ -360,7 +360,7 @@
             <div class="card ratio" t-foreach="['food_pct','salaries_pct','prime_pct','net_margin_pct']" t-as="key" t-key="key">
                 <div class="ratio-heading"><div><h3 t-esc="name(key)"/><div class="muted" t-esc="({food_pct:'تكلفة الأكل ÷ المبيعات',salaries_pct:'الرواتب ÷ المبيعات',prime_pct:'(الأكل + الرواتب) ÷ المبيعات',net_margin_pct:'صافي الربح ÷ المبيعات'})[key]"/></div><span t-if="current.ratios?.[key] != null and state.data.targets[key]" t-att-class="'bd2-badge '+(state.data.targets[key].status === 'ok' ? 'good' : 'bad')" t-esc="state.data.targets[key].status === 'ok' ? 'ضمن المستهدف' : 'خارج المستهدف'"/></div>
                 <div class="ratio-value"><strong t-att-class="key === 'net_margin_pct' and current.ratios?.[key] &lt; 0 ? 'negative' : ''"><bdi dir="ltr" t-esc="pct(current.ratios?.[key])"/></strong><Badge value="key === 'salaries_pct' and state.data.previous_salaries_warning ? null : ratioDifference(current.ratios?.[key], state.data.previous.ratios?.[key])" points="true" goodWhen="key === 'net_margin_pct' ? 'up' : 'down'" warning="key === 'salaries_pct' and state.data.previous_salaries_warning"/></div>
-                <Gauge value="current.ratios?.[key]" previous="state.data.previous.ratios?.[key]" target="state.data.targets[key]?.value" operator="state.data.targets[key]?.operator" max="({food_pct:50,salaries_pct:40,prime_pct:80,net_margin_pct:30})[key]"/><div class="gauge-scale"><span>0%</span><span t-esc="({food_pct:50,salaries_pct:40,prime_pct:80,net_margin_pct:30})[key]+'%'"/></div>
+                <Gauge value="current.ratios?.[key]" previous="state.data.previous.ratios?.[key]" target="state.data.targets[key]?.value" operator="state.data.targets[key]?.operator" max="({food_pct:50,salaries_pct:40,prime_pct:80,net_margin_pct:30})[key]"/><div class="gauge-scale"><span t-esc="({food_pct:50,salaries_pct:40,prime_pct:80,net_margin_pct:30})[key]+'%'"/><span>0%</span></div>
                 <div class="ratio-foot"><span class="muted">آخر 6 أشهر</span><Sparkline values="trend.map(x=&gt;x.has_data ? x.data.ratios[key] : null)" partial="trend.map(x=&gt;x.partial)" navy="true"/></div>
             </div>
         </div>

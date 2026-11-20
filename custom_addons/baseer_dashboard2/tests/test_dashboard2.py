@@ -30,6 +30,15 @@ class TestDashboard2(TransactionCase):
         self.assertEqual(len(spark.xpath(".//span[contains(@t-att-class, 'spark-dot')]")), 2)
         gauge = root.xpath("//t[@t-name='baseer_dashboard2.Gauge']")[0]
         self.assertIn('pos(props.previous)', gauge.xpath('.//em')[0].get('t-att-style'))
+        self.assertIn('calc(100% - 10px)', gauge.xpath('.//em')[0].get('t-att-style'))
+        self.assertIn('calc(100% - 3px)', gauge.xpath('./div/b')[0].get('t-att-style'))
+        scale = root.xpath("//t[@t-name='baseer_dashboard2.Ratios']//div[@class='gauge-scale']/span")
+        self.assertIn('[key]', scale[0].get('t-esc'))
+        self.assertEqual(scale[1].text, '0%')
+        self.assertEqual(spark.xpath('.//svg')[0].get('viewBox'), '0 0 100 32')
+        self.assertIn('spark-stretch', spark.xpath('./div')[0].get('t-att-class'))
+        scss = (Path(__file__).resolve().parents[1] / 'static/src/scss/main.scss').read_text()
+        self.assertIn('.spark-stretch > .bd2-spark { display: block; width: 100%; margin: 0; padding: 0; border: 0;', scss)
         chart = root.xpath("//t[@t-name='baseer_dashboard2.LineChart']")[0]
         self.assertIn('labelY(s,v)', chart.xpath('.//text[@t-att-y]')[-1].get('t-att-y'))
 

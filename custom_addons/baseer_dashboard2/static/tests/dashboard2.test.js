@@ -33,6 +33,8 @@ test('ratios render a numeric gauge target', async () => {
     after(() => app.destroy());
     await app.mount(getFixture());
     expect(getFixture().querySelector('.gauge-target').textContent).toInclude('≤32.3%');
+    const scale = getFixture().querySelector('.gauge-scale');
+    expect([...scale.children].map(el => el.textContent)).toEqual(['50%', '0%']);
 });
 
 test('numbers use Western digits without abbreviating calendar values', () => {
@@ -407,6 +409,35 @@ test('revenue apps chart aligns ten month labels and points, preserving gaps', a
     expect(svg.querySelectorAll('path')[2].getAttribute('d').split('M').length).toBe(3);
 });
 
+test('stretched sparkline endpoint centers align with SVG paths', async () => {
+    const response = await withFetch(globals.fetch, () => fetch('/baseer_dashboard2/static/src/xml/main.xml'));
+    const app = new App(Sparkline, { templates: await response.text(), props: { mini: true, stretch: true, values: [10, 20, 30], previous: [30, 10, 20] }, test: true });
+    after(() => app.destroy());
+    const cssResponse = await withFetch(globals.fetch, () => fetch('/baseer_dashboard2/static/src/scss/main.scss'));
+    const style = document.createElement('style');
+    style.textContent = await cssResponse.text();
+    document.head.append(style);
+    after(() => style.remove());
+    const host = document.createElement('div');
+    host.className = 'o_bd2';
+    host.style.cssText = 'width:700px;height:auto';
+    host.innerHTML = '<div class="revenue-combo apps-combo"></div>';
+    getFixture().append(host);
+    await app.mount(host.firstElementChild);
+    const wrap = host.querySelector('.spark-wrap');
+    const svg = wrap.querySelector('svg');
+    for (const [pathIndex, series] of [[1, 'navy'], [2, 'gold']]) {
+        const path = svg.querySelectorAll('path')[pathIndex];
+        const points = [...path.getAttribute('d').matchAll(/[ML]([\d.]+),([\d.]+)/g)];
+        const dots = wrap.querySelectorAll(`.spark-dot.${series}`);
+        for (const [dot, point] of [[dots[0], points[0]], [dots[1], points.at(-1)]]) {
+            const projected = new DOMPoint(Number(point[1]), Number(point[2])).matrixTransform(path.getScreenCTM());
+            const rect = dot.getBoundingClientRect();
+            expect(Math.abs(rect.left + rect.width / 2 - projected.x) < 0.5).toBe(true);
+        }
+    }
+});
+
 test('customer chart aligns every month with its plotted point and formats orders', async () => {
     const response = await withFetch(globals.fetch, () => fetch('/baseer_dashboard2/static/src/xml/main.xml'));
     const source = await response.text();
@@ -616,8 +647,21 @@ test('previous gauge marker stays inside both ends of the track', async () => {
     await app.mount(getFixture());
     const gauge = getFixture().querySelector('.bd2-gauge');
     expect(gauge.querySelector('i').style.width).toBe('93.2%');
-    expect(gauge.querySelector('b').style.right).toBe('50%');
-    expect(gauge.querySelector('em').getAttribute('style')).toInclude('100%');
+    expect(gauge.querySelector('b').getAttribute('style')).toInclude('clamp(0px, calc(50% - 1.5px), calc(100% - 3px))');
+    expect(gauge.querySelector('em').getAttribute('style')).toInclude('clamp(0px, calc(100% - 5px), calc(100% - 10px))');
+    gauge.style.cssText = 'position:relative;width:200px;height:12px';
+    for (const [marker, width] of [[gauge.querySelector('b'), 3], [gauge.querySelector('em'), 10]]) {
+        marker.style.position = 'absolute';
+        marker.style.boxSizing = 'border-box';
+        marker.style.width = `${width}px`;
+        const track = gauge.getBoundingClientRect();
+        for (const pct of [0, 50, 100]) {
+            marker.style.right = `clamp(0px, calc(${pct}% - ${width / 2}px), calc(100% - ${width}px))`;
+            const rect = marker.getBoundingClientRect();
+            expect(rect.left >= track.left && rect.right <= track.right).toBe(true);
+            if (pct === 50) expect(Math.abs((rect.left + rect.right) / 2 - (track.left + track.right) / 2) < 0.5).toBe(true);
+        }
+    }
     expect(Gauge.prototype.pos.call({ props: { max: 50 } }, -1)).toBe(0);
     expect(Gauge.prototype.pos.call({ props: { max: 50 } }, 25)).toBe(50);
 });

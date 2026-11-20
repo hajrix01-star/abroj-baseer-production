@@ -463,7 +463,6 @@ td {
   border: 2px solid var(--bd2-faint);
   background: var(--bd2-card);
   border-radius: 50%;
-  transform: translateX(50%);
 }
 .target-input {
   width: 52px;
@@ -771,6 +770,8 @@ td {
 .o_bd2 .year-weekdays { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px; color: var(--bd2-muted); font-size: 9px; text-align: center; margin-top: 6px; }
 
 .o_bd2 .spark-wrap { position: relative; }
+.o_bd2 .spark-stretch { padding: 0; border: 0; }
+.o_bd2 .revenue-combo .spark-stretch > .bd2-spark { display: block; width: 100%; margin: 0; padding: 0; border: 0; }
 .o_bd2 .spark-label { position: absolute; transform: translate(-50%, -100%); font-size: 11px; font-weight: 700; white-space: nowrap; }
 .o_bd2 .spark-label.navy { color: var(--bd2-c1); }
 .o_bd2 .spark-label.gold { color: var(--bd2-gold-text); }

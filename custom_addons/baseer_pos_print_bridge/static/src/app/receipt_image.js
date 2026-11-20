@@ -1,6 +1,37 @@
 /** @odoo-module */
 
 import { _t } from "@web/core/l10n/translation";
+import { toCanvas } from "@point_of_sale/app/utils/html-to-image";
+import { waitImages } from "@point_of_sale/utils";
+
+function sanitizeReceiptText(node) {
+    if (node.nodeType === Node.TEXT_NODE) {
+        node.textContent = node.textContent.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, "");
+        return;
+    }
+    for (const child of node.childNodes) sanitizeReceiptText(child);
+}
+
+// Use Odoo's own mounted receipt and image renderer, but request the output
+// width before drawing text. renderer.toCanvas fixes pixelRatio at 1.
+export async function renderReceiptCanvas(renderer, component, props) {
+    const el = await renderer.toHtml(component, props);
+    el.classList.add("pos-receipt-print", "p-3");
+    sanitizeReceiptText(el);
+    return renderer.whenMounted({
+        el,
+        callback: async (node) => {
+            await waitImages(node);
+            const width = Math.ceil(node.clientWidth);
+            const height = Math.ceil(node.clientHeight);
+            if (!width || !height) throw new Error(_t("The receipt could not be rendered. Reload the receipt and retry."));
+            return toCanvas(node, {
+                backgroundColor: "#ffffff", width, height,
+                pixelRatio: 576 / width, includeQueryParams: true,
+            });
+        },
+    });
+}
 
 // Safari's JPEG encoder may add EXIF to a canvas image. The server rejects
 // EXIF metadata; remove only those APP1 segments without touching image data.

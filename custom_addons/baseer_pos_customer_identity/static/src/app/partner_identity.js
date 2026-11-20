@@ -53,6 +53,11 @@ patch(PartnerList.prototype, {
 });
 
 patch(PosStore.prototype, {
+    getDefaultSearchDetails() {
+        // Opening Orders must not silently filter by the current order's customer.
+        return { ...super.getDefaultSearchDetails(), searchTerm: "" };
+    },
+
     async editPartner(partner) {
         this.baseerCustomerEditCapability = await this.data.silentCall(
             "pos.config",

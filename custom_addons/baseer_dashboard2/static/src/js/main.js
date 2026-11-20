@@ -426,7 +426,7 @@ class Dashboard2 extends Component {
       ? day.customers
       : this.state.metric === "ticket"
         ? day.customers
-          ? day.gross / day.customers
+          ? day.pos_gross / day.customers
           : null
         : day.gross;
   }

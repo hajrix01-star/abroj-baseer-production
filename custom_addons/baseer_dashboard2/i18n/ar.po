@@ -604,3 +604,7 @@ msgstr "حسابات السيولة"
 #. module: baseer_dashboard2
 msgid "Liquidity"
 msgstr "مصادر السيولة"
+
+#. module: baseer_dashboard2
+msgid "Before this date sales use summaries; qualifying real POS orders still provide customer and hourly metrics."
+msgstr "قبل هذا التاريخ تُحسب المبيعات من الملخصات؛ وتظل طلبات نقاط البيع الحقيقية المؤهلة مصدراً لعدد العملاء والتوزيع بالساعة."

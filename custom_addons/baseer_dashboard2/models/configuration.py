@@ -6,7 +6,7 @@ _logger = logging.getLogger(__name__)
 
 # Live reference identifiers; all are validated before use.
 DOCUMENTED_DEFAULTS = {
-    1: {'custody': (460, 3426), 'excluded': (459, 407, 408, 409, 405, 406, 458)},
+    1: {'custody': (460, 3426), 'excluded': (459, 407, 408, 409, 405, 406, 458), 'pos_cutover_date': '2026-10-03'},
     2: {'custody': (461, 3427), 'excluded': (459, 405, 406, 458)},
     3: {'custody': None, 'excluded': (405, 406, 458)},
 }
@@ -93,7 +93,7 @@ class DashboardSettings(models.Model):
     custody_journal_ids = fields.Many2many('account.journal', 'bd2_settings_custody_journal_rel', 'settings_id', 'journal_id', check_company=True)
     show_vat_paid_line = fields.Boolean(default=True)
     pos_cutover_note = fields.Text()
-    pos_cutover_date = fields.Date()
+    pos_cutover_date = fields.Date(help='Before this date sales use summaries; qualifying real POS orders still provide customer and hourly metrics.')
     summary_pos_config_ids = fields.Many2many('pos.config', 'bd2_summary_pos_rel', 'settings_id', 'config_id', check_company=True)
     liquidity_account_ids = fields.Many2many('account.account', 'bd2_liquidity_account_rel', 'settings_id', 'account_id', check_company=True)
     liquidity_ids = fields.One2many('baseer.dashboard2.liquidity', 'settings_id')
@@ -129,6 +129,8 @@ class DashboardSettings(models.Model):
             custody = journal(*defaults['custody']) if defaults['custody'] else self.env['account.journal']
             # Empty fields may be filled; existing values are never overwritten by installation.
             vals = {}
+            if not settings.pos_cutover_date and defaults.get('pos_cutover_date'):
+                vals['pos_cutover_date'] = defaults['pos_cutover_date']
             if force or not settings.excluded_journal_ids:
                 vals['excluded_journal_ids'] = [(6, 0, excluded.ids)]
             if force or not settings.custody_journal_ids:

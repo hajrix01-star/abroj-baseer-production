@@ -465,7 +465,7 @@
                             <td>
                                 <Sparkline values="state.data.months.map(m=&gt;group[0]==='incoming'?(m.incoming.available ? m.incoming.gross : null):(m.outgoing.available ? m.outgoing.total : null))"/>
                             </td>
-                            <td t-foreach="state.data.months" t-as="m" t-key="m.month" t-esc="group[0]==='incoming'?tableFmt(m.incoming.available ? m.incoming.gross : null)+(m.incoming.accounting_fallback?' · من الإيراد المحاسبي':''):(!m.outgoing.available?'غير مُعد':tableFmt(-m.outgoing.total))"/>
+                            <td t-foreach="state.data.months" t-as="m" t-key="m.month" t-esc="group[0]==='incoming'?tableFmt(m.incoming.available ? m.incoming.gross : null):(!m.outgoing.available?'غير مُعد':tableFmt(-m.outgoing.total))"/>
                             <td t-esc="group[0]==='incoming'?tableFmt(state.data.total[group[0]]):(state.data.months.some(m=&gt;!m.outgoing.available)?'غير مُعد':tableFmt(-state.data.total[group[0]]))"/>
                         </tr>
                         <tr t-foreach="Object.keys(state.data.total[group[2]])" t-as="key" t-key="key" t-if="key !== 'vat_paid' || state.data.months.some(m=&gt;m.outgoing.show_vat_paid_line)">

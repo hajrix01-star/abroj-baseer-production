@@ -48,6 +48,7 @@ class TestDashboard2(TransactionCase):
     def test_accounting_and_noorix(self):
         from datetime import date
         company = self.env.company
+        self.env['baseer.dashboard2.settings'].search([('company_id', '=', company.id)]).pos_cutover_date = '2026-11-01'
         account_model = self.env['account.account'].with_company(company)
         def account(code, account_type):
             return account_model.create({'code': code, 'name': code, 'account_type': account_type, 'company_ids': [(6, 0, [company.id])]})
@@ -157,6 +158,7 @@ class TestDashboard2(TransactionCase):
         company = self.env.company
         method = self.env['pos.payment.method'].create({'name': 'cash', 'company_id': company.id})
         settings = self.env['baseer.dashboard2.settings'].search([('company_id', '=', company.id)], limit=1) or self.env['baseer.dashboard2.settings'].create({'company_id': company.id})
+        settings.pos_cutover_date = False
         mapping = self.env['baseer.dashboard2.channel.map'].create({'settings_id': settings.id, 'company_id': company.id, 'source': 'pos_method', 'pos_payment_method_id': method.id, 'channel_id': self.env.ref('baseer_dashboard2.channel_card').id, 'kind': 'hall'})
         sale_journal = self.env['account.journal'].create({'name': 'POS sales', 'code': 'D2POS', 'type': 'sale', 'company_id': company.id})
         config = self.env['pos.config'].create({'name': 'Dashboard POS', 'company_id': company.id, 'journal_id': sale_journal.id, 'payment_method_ids': [(6, 0, [method.id])]})
@@ -186,9 +188,17 @@ class TestDashboard2(TransactionCase):
         self.assertEqual(summary['gross'], 116)
         self.assertEqual(len(summary['warnings']), 1)
         settings.pos_cutover_date = '2026-10-02'
-        summary, _, _, _ = self.env['baseer.dashboard2.service']._sales_summary([company.id], date(2026, 10, 1), date(2026, 10, 1))
+        summary, days, _, hours = self.env['baseer.dashboard2.service']._sales_summary([company.id], date(2026, 10, 1), date(2026, 10, 1))
         self.assertEqual(summary['gross'], 300)
-        self.assertEqual(len(summary['warnings']), 1)
+        self.assertFalse(summary['warnings'])
+        self.assertEqual(summary['customers']['value'], 1)
+        self.assertEqual(summary['customers']['avg_ticket'], 115)
+        self.assertEqual(sum(h['orders'] for h in hours.values()), 1)
+        heatmap = self.env['baseer.dashboard2.service']._heatmap([company.id], '2026-10')
+        self.assertEqual(heatmap['days'][0]['gross'], 300)
+        self.assertEqual(heatmap['days'][0]['pos_gross'], 115)
+        self.assertEqual(heatmap['days'][0]['customers'], 1)
+        self.assertEqual(self.env['baseer.dashboard2.service']._inout([company.id], date(2026, 10, 1))['months'][-1]['incoming']['gross'], 300)
         settings.pos_cutover_date = '2026-10-01'
         second = self.env['account.move'].create({'journal_id': misc.id, 'date': '2026-10-02', 'line_ids': [
             (0, 0, {'name': 'cash', 'account_id': cash.id, 'debit': 300, 'credit': 0}),
@@ -216,7 +226,7 @@ class TestDashboard2(TransactionCase):
         settings.pos_cutover_date = '2026-10-01'
         summary, _, _, _ = self.env['baseer.dashboard2.service']._sales_summary([company.id], date(2026, 10, 2), date(2026, 10, 2))
         self.assertEqual(summary['gross'], 1)
-        self.assertFalse(summary['warnings'])
+        self.assertEqual(len(summary['warnings']), 1)
         heatmap = self.env['baseer.dashboard2.service']._heatmap([company.id], '2026-10')
         self.assertEqual(heatmap['daily_average']['current'], 58.5)
         self.assertIsNone(heatmap['days'][2]['gross'])
@@ -325,6 +335,19 @@ class TestDashboard2(TransactionCase):
             self.env['baseer.dashboard2.settings']._seed_documented_defaults()
         self.assertFalse(settings.custody_journal_ids)
 
+    def test_seed_cutover_only_when_empty(self):
+        from datetime import date
+        settings_model = self.env['baseer.dashboard2.settings']
+        company = self.env['res.company'].browse(1).exists()
+        self.assertTrue(company)
+        settings = settings_model.search([('company_id', '=', company.id)], limit=1)
+        settings.pos_cutover_date = False
+        settings_model._seed_documented_defaults(company_ids=[company.id])
+        self.assertEqual(settings.pos_cutover_date, date(2026, 10, 3))
+        settings.pos_cutover_date = '2026-11-01'
+        settings_model._seed_documented_defaults(force=True, company_ids=[company.id])
+        self.assertEqual(settings.pos_cutover_date, date(2026, 11, 1))
+
     def test_all_companies_sum(self):
         from datetime import date
         company = self.env.company
@@ -373,7 +396,7 @@ class TestDashboardThemeLiterals(TransactionCase):
         revenue = account('D2REVENUE', 'income')
         journal = self.env['account.journal'].create({'name': 'Test misc', 'code': 'D2ZZ', 'type': 'general', 'company_id': company.id})
         settings = self.env['baseer.dashboard2.settings'].search([('company_id', '=', company.id)], limit=1) or self.env['baseer.dashboard2.settings'].create({'company_id': company.id})
-        settings.write({'liquidity_account_ids': [(4, bank.id)], 'liquidity_ids': [(0, 0, {'account_id': bank.id, 'kind': 'bank', 'label': 'حساب الأهلي — كيتا'})]})
+        settings.write({'pos_cutover_date': '2026-11-01', 'liquidity_account_ids': [(4, bank.id)], 'liquidity_ids': [(0, 0, {'account_id': bank.id, 'kind': 'bank', 'label': 'حساب الأهلي — كيتا'})]})
         self.env['baseer.dashboard2.channel.map'].create({'settings_id': settings.id, 'company_id': company.id, 'source': 'account', 'account_id': bank.id, 'channel_id': self.env.ref('baseer_dashboard2.channel_keeta').id, 'kind': 'app'})
         def entry(debit, credit, amount, day='2026-10-03'):
             move = self.env['account.move'].create({'journal_id': journal.id, 'date': day, 'line_ids': [
@@ -421,6 +444,13 @@ class TestDashboardThemeLiterals(TransactionCase):
         params = {'company_key': str(company.id), 'period': {'mode': 'month', 'month': '2026-10'}}
         for section in ('overview', 'expenses', 'pnl'):
             self.assertTrue(service.get_section(section, params)['salaries_warning'])
+        no_salary = self.env['account.move'].create({'journal_id': journal.id, 'date': '2026-11-01', 'line_ids': [
+            (0, 0, {'name': 'Expense', 'account_id': self.env['account.account'].create({'code': 'D2OTHER', 'name': 'Other', 'account_type': 'expense', 'company_ids': [(6, 0, [company.id])]}).id, 'debit': 10}),
+            (0, 0, {'name': 'Cash', 'account_id': cash.id, 'credit': 10})]})
+        no_salary.action_post()
+        params_zero = {'company_key': str(company.id), 'period': {'mode': 'month', 'month': '2026-11'}}
+        for section in ('overview', 'expenses', 'pnl'):
+            self.assertTrue(service.get_section(section, params_zero)['salaries_warning'])
         overview = service.get_section('overview', params)
         self.assertEqual(overview['companies_compare'][0]['name'], 'Configured label')
         self.assertEqual(next(a for a in overview['current']['accounts'] if a['account_id'] == salary.id)['name'], 'رواتب')

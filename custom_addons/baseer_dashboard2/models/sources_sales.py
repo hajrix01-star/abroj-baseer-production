@@ -18,7 +18,7 @@ class DashboardSales(models.AbstractModel):
         return {'key': 'other', 'kind': 'hall', 'name': 'أخرى', 'color_token': False, 'commission_rate': 0}
 
     def _sales_days(self, ids, start, end):
-        """Select POS per company/day; use posted sales summaries when that day has no POS."""
+        """Select revenue by cutover; retain qualifying real POS orders for metrics."""
         context = dict(allowed_company_ids=ids, tz=self.env.user.tz or 'Asia/Riyadh')
         tz = pytz.timezone(context['tz'])
         utc_start = tz.localize(datetime.combine(start, time.min)).astimezone(pytz.UTC).replace(tzinfo=None)
@@ -136,11 +136,16 @@ class DashboardSales(models.AbstractModel):
         for key in set(summary_days) | set(pos_days):
             use_pos = key[0] in cutovers and key[1] >= cutovers[key[0]]
             selected = pos_days.get(key) if use_pos else summary_days.get(key)
+            if not selected and (use_pos and key in summary_days or not use_pos and key in real_days):
+                selected = {'source': 'pos' if use_pos else 'summary', 'channels': defaultdict(float),
+                            'customers': None, 'pos_gross': 0.0, 'sales_missing': True}
             if selected:
-                selected['both_sources'] = key in real_days and key in summary_days
+                selected['both_sources'] = use_pos and key in summary_days
+                selected['customers'] = pos_days[key]['customers'] if key in real_days else None
+                selected['pos_gross'] = pos_days[key]['pos_gross'] if key in real_days else 0.0
                 days[key] = selected
         for key, weekday, hour, sign, amount in order_hours:
-            if key in days and days[key]['source'] == 'pos':
+            if key in days:
                 hours[(weekday, hour)]['orders'] += sign
                 hours[(weekday, hour)]['gross'] += amount
         reset_ids = self._reset_move_ids(ids, end)
@@ -164,17 +169,18 @@ class DashboardSales(models.AbstractModel):
                 totals[key] += amount
         pos_days = [v for v in days.values() if v['source'] == 'pos']
         summary_days = [v for v in days.values() if v['source'] == 'summary']
-        orders = sum(v['customers'] for v in pos_days)
-        pos_gross = sum(v['pos_gross'] for v in pos_days)
+        customer_days = [v for v in days.values() if v['customers'] is not None]
+        orders = sum(v['customers'] for v in customer_days)
+        pos_gross = sum(v['pos_gross'] for v in customer_days)
         gross = sum(totals.values())
         app_keys = {c['key'] for c in channels if c['kind'] == 'app'}
         apps = sum(v for k, v in totals.items() if k in app_keys)
         reset_end = self._reset_move_ids(ids, end, end)
         reset_label = 'غير متوفر — إعادة ضبط أرصدة %s' % end.strftime('%d/%m')
-        return {'available': True, 'warnings': [{'date': str(day), 'company_id': cid, 'label': 'يوم فيه نقاط بيع وملخص نوركس معاً — راجع'} for (cid, day), data in sorted(days.items()) if data.get('both_sources')], 'gross': round(gross, 2), 'source_counts': {'pos': len(pos_days), 'summary': len(summary_days)},
+        return {'available': True, 'warnings': [{'date': str(day), 'company_id': cid, 'label': 'ملخص مبيعات بعد تاريخ التحول إلى نقاط البيع — راجع احتمال تكرار القيد'} for (cid, day), data in sorted(days.items()) if data.get('both_sources')], 'gross': round(gross, 2), 'source_counts': {'pos': len(pos_days), 'summary': len(summary_days)},
                 'channel_names': {c['key']: c['name'] for c in channels}, 'channels': {k: round(v, 2) for k, v in totals.items()},
                 'apps': round(apps, 2), 'apps_pct': round(apps / gross * 100, 2) if gross else None,
                 'apps_unreceived': {'available': not bool(reset_end), 'value': None if reset_end else unreceived, 'label': reset_label if reset_end else 'حتى نهاية الفترة'},
-                'customers': {'available': bool(pos_days), 'reason': False if pos_days else 'no_pos_days',
-                              'partial': bool(pos_days and summary_days), 'covered_days': len(pos_days),
-                              'value': orders if pos_days else None, 'avg_ticket': round(pos_gross / orders, 2) if orders else None}}, days, channels, hours
+                'customers': {'available': bool(customer_days), 'reason': False if customer_days else 'no_pos_days',
+                              'partial': bool(customer_days and len(customer_days) < len(days)), 'covered_days': len(customer_days),
+                              'value': orders if customer_days else None, 'avg_ticket': round(pos_gross / orders, 2) if orders else None}}, days, channels, hours

@@ -262,18 +262,7 @@ class DashboardSections(models.AbstractModel):
             sales, _, _, _ = self._sales_summary(ids, start, last)
             out = self._cash_out(ids, start, last)
             vat = self._sales_vat(ids, start, last)
-            if not sales['channels']:
-                lines = self.env['account.move.line'].with_context(allowed_company_ids=ids).search([
-                    ('company_id', 'in', ids), ('parent_state', '=', 'posted'), ('date', '>=', start), ('date', '<=', last), ('move_id', 'not in', self._reset_move_ids(ids, last, start))])
-                categories = self.env['baseer.dashboard2.category'].with_context(allowed_company_ids=ids).search([])
-                revenue = lines.filtered(lambda line: self._category(line.account_id.with_company(line.company_id), categories) == 'revenue')
-                moves = revenue.mapped('move_id')
-                tax = moves.mapped('line_ids').filtered(lambda line: line.tax_line_id and line.company_id.id in ids)
-                if revenue:
-                    vat = {'available': True, 'value': round(sum(tax.mapped('credit')) - sum(tax.mapped('debit')), 2)}
-                    sales['gross'] = round(sum(revenue.mapped('credit')) - sum(revenue.mapped('debit')) + vat['value'], 2)
-                    sales['accounting_fallback'] = True
-            sales['available'] = bool(sales['channels'] or sales.get('accounting_fallback'))
+            sales['available'] = bool(sales['channels'])
             months.append({'month': start.strftime('%Y-%m'), 'incoming': sales, 'outgoing': out,
                            'unpaid_bills': self._unpaid_bills(ids, last), 'sales_vat': vat, 'net': round(sales['gross'] - out['total'], 2)})
         channel_totals, item_totals, source_totals = defaultdict(float), defaultdict(float), defaultdict(float)
@@ -314,11 +303,12 @@ class DashboardSections(models.AbstractModel):
             event['date_to'] = str(event['date_to'])
         def day_values(day, source):
             rows = [v for (_, d), v in source.items() if d == day]
-            pos = [r for r in rows if r['source'] == 'pos']
-            noorix = [r for r in rows if r['source'] == 'summary']
-            return {'date': str(day), 'events': [event for event in events if event['date_from'] <= str(day) <= event['date_to']], 'gross': round(sum(sum(r['channels'].values()) for r in rows), 2) if rows else None,
-                    'customers': sum(r['customers'] for r in pos) if pos and not noorix else None,
-                    'partial': bool(pos and noorix)}
+            covered_rows = [r for r in rows if r['customers'] is not None]
+            sales_rows = [r for r in rows if not r.get('sales_missing')]
+            return {'date': str(day), 'events': [event for event in events if event['date_from'] <= str(day) <= event['date_to']], 'gross': round(sum(sum(r['channels'].values()) for r in sales_rows), 2) if sales_rows else None,
+                    'customers': sum(r['customers'] for r in covered_rows) if covered_rows else None,
+                    'pos_gross': sum(r['pos_gross'] for r in covered_rows) if covered_rows else None,
+                    'partial': bool(covered_rows and len(covered_rows) < len(rows))}
         def dates(start, end):
             return [start + timedelta(days=i) for i in range((end - start).days + 1)]
         days = []

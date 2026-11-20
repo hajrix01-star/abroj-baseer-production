@@ -6,6 +6,15 @@ from odoo.tests import TransactionCase, tagged
 
 @tagged('post_install', '-at_install')
 class TestDashboard2(TransactionCase):
+    def test_arabic_translation_files_are_readable(self):
+        from pathlib import Path
+        from odoo.tools.translate import PoFileReader
+
+        i18n = Path(__file__).resolve().parents[1] / 'i18n'
+        for name in ('ar.po', 'ar_001.po'):
+            with self.subTest(name=name):
+                list(PoFileReader(str(i18n / name)))
+
     def test_partial_fixed_costs_require_three_month_baseline(self):
         from ..models.sections import incomplete_fixed_costs
         self.assertTrue(incomplete_fixed_costs(True, 49, [100, 100, 100]))

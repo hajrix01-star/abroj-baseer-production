@@ -151,7 +151,8 @@ class DashboardSales(models.AbstractModel):
             source = 'mixed' if use_summary and use_pos else 'summary' if use_summary else 'pos' if use_pos else False
             day = {'source': source, 'channels': defaultdict(float), 'customers': None,
                    'pos_gross': 0.0, 'sales_vat': 0.0, 'sales_missing': not bool(source),
-                   'both_sources': has_summary and key in posted_real_days, 'source_mode': mode}
+                   'both_sources': has_summary and key in posted_real_days, 'source_mode': mode,
+                   'has_summary': has_summary}
             if use_summary:
                 day['channels'].update(summary_days[key]['channels'])
                 day['sales_vat'] = summary_days[key]['sales_vat']
@@ -195,7 +196,7 @@ class DashboardSales(models.AbstractModel):
                                     for key, value in breakdown.items()]}
         return days, channels, unreceived, hours
 
-    def _cancelled_session_warnings(self, ids, start, end):
+    def _cancelled_session_warnings(self, ids, start, end, summary_days=None):
         ctx = dict(allowed_company_ids=ids, active_test=False)
         sessions = self.env['pos.session'].with_context(**ctx).search([
             ('company_id', 'in', ids), ('move_id.state', '=', 'cancel'),
@@ -204,13 +205,28 @@ class DashboardSales(models.AbstractModel):
         summary_ids = set(settings.mapped('summary_pos_config_ids').ids)
         sessions = sessions.filtered(lambda session: session.config_id.id not in summary_ids and not any(
             word in (session.config_id.name or '').casefold() for word in ('ملخص المبيعات', 'sales summaries', 'ملخصات')))
+        if not sessions:
+            return []
+        if summary_days is None:
+            days = self._sales_days(ids, start, end)[0]
+            summary_days = {key for key, day in days.items() if day['has_summary']}
+        thresholds = {s.company_id.id: s.min_order_amount for s in settings}
+        session_thresholds = {session.id: thresholds.get(session.company_id.id, 1.5) for session in sessions}
+        real_session_ids = set()
+        order_groups = self.env['pos.order'].with_context(**ctx)._read_group(
+            [('session_id', 'in', sessions.ids)], ['session_id'], ['amount_total:min', 'amount_total:max'])
+        for session, minimum, maximum in order_groups:
+            if max(abs(minimum), abs(maximum)) > session_thresholds[session.id]:
+                real_session_ids.add(session.id)
         refs = {ref for session in sessions for ref in (session.name, session.move_id.ref) if ref}
         posted = self.env['account.move'].with_context(**ctx).search([
             ('company_id', 'in', ids), ('state', '=', 'posted'), ('ref', 'in', list(refs))]) if refs else self.env['account.move']
         replacements = {(m.company_id.id, m.ref) for m in posted}
         return [{'date': str(session.move_id.date), 'company_id': session.company_id.id,
                  'label': 'جلسة إقفال ملغاة لم تُعد: %s' % session.name.rsplit('/', 1)[-1], 'session_id': session.id}
-                for session in sessions if not any((session.company_id.id, ref) in replacements
+                for session in sessions if session.id in real_session_ids
+                and (session.company_id.id, session.move_id.date) not in summary_days
+                and not any((session.company_id.id, ref) in replacements
                     for ref in (session.name, session.move_id.ref) if ref)]
 
     def _sales_summary(self, ids, start, end):
@@ -227,7 +243,7 @@ class DashboardSales(models.AbstractModel):
         gross = sum(totals.values())
         app_keys = {c['key'] for c in channels if c['kind'] == 'app'}
         apps = sum(v for k, v in totals.items() if k in app_keys)
-        return {'available': True, 'warnings': [{'date': str(day), 'company_id': cid, 'label': 'يوم بمصدرين مرحّلين: نوركس + جلسة نقاط بيع — تم الجمع' if data['source_mode'] == 'auto' else 'يوم بمصدرين مرحّلين: نوركس + جلسة نقاط بيع — طُبّق استثناء المصدر'} for (cid, day), data in sorted(days.items()) if data.get('both_sources')] + self._cancelled_session_warnings(ids, start, end), 'gross': round(gross, 2), 'source_counts': {'pos': len(pos_days), 'summary': len(summary_days)},
+        return {'available': True, 'warnings': [{'date': str(day), 'company_id': cid, 'label': 'يوم بمصدرين مرحّلين: نوركس + جلسة نقاط بيع — تم الجمع' if data['source_mode'] == 'auto' else 'يوم بمصدرين مرحّلين: نوركس + جلسة نقاط بيع — طُبّق استثناء المصدر'} for (cid, day), data in sorted(days.items()) if data.get('both_sources')] + self._cancelled_session_warnings(ids, start, end, {key for key, day in days.items() if day['has_summary']}), 'gross': round(gross, 2), 'source_counts': {'pos': len(pos_days), 'summary': len(summary_days)},
                 'channel_names': {c['key']: c['name'] for c in channels}, 'channels': {k: round(v, 2) for k, v in totals.items()},
                 'apps': round(apps, 2), 'apps_pct': round(apps / gross * 100, 2) if gross else None,
                 'apps_unreceived': unreceived,

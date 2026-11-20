@@ -201,17 +201,39 @@ class TestDashboard2(TransactionCase):
         # A cancelled session closing cannot add its orders to Noorix.
         cancelled_day = date(2026, 10, 1)
         cancelled = new_session(config)
-        cancelled.name = 'TEST/01439'
+        cancelled.name = 'TEST/01438'
         cancelled_move = entry(cancelled_day, 115)
         cancelled_move.button_draft()
         cancelled_move.button_cancel()
         cancelled.move_id = cancelled_move
         order(cancelled, cancelled_day, 115)
         self.assertEqual(result(cancelled_day)[0]['gross'], 300)
-        self.assertIn('جلسة إقفال ملغاة لم تُعد', result(cancelled_day)[0]['warnings'][0]['label'])
-        replacement = entry(cancelled_day, 2)
-        replacement.ref = cancelled.name
         self.assertFalse(result(cancelled_day)[0]['warnings'])
+        # An override does not remove the underlying summary replacement.
+        override = self.env['baseer.dashboard2.source.override'].create({
+            'settings_id': settings.id, 'date_from': cancelled_day, 'date_to': cancelled_day, 'source': 'pos'})
+        self.assertFalse(result(cancelled_day)[0]['warnings'])
+        override.unlink()
+        missing_day = date(2026, 10, 5)
+        missing = new_session(config)
+        missing.name = 'TEST/01439'
+        missing_move = entry(missing_day, 115)
+        missing_move.button_draft()
+        missing_move.button_cancel()
+        missing.move_id = missing_move
+        order(missing, missing_day, 115)
+        self.assertEqual(result(missing_day)[0]['warnings'][0]['label'], 'جلسة إقفال ملغاة لم تُعد: 01439')
+        replacement = entry(missing_day, 2)
+        replacement.ref = missing.name
+        self.assertFalse(result(missing_day)[0]['warnings'])
+        tiny_day = date(2026, 10, 6)
+        tiny = new_session(config)
+        tiny_move = entry(tiny_day, 1)
+        tiny_move.button_draft()
+        tiny_move.button_cancel()
+        tiny.move_id = tiny_move
+        order(tiny, tiny_day, 1)
+        self.assertFalse(result(tiny_day)[0]['warnings'])
         test_day = date(2026, 10, 4)
         entry(test_day)
         test_session = new_session(config)

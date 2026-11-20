@@ -1,6 +1,7 @@
 /** @odoo-module **/
 
 import { PosOrder } from "@point_of_sale/app/models/pos_order";
+import { OrderTabs } from "@point_of_sale/app/components/order_tabs/order_tabs";
 import { PosStore } from "@point_of_sale/app/services/pos_store";
 import { ReceiptHeader } from "@point_of_sale/app/screens/receipt_screen/receipt/receipt_header/receipt_header";
 import { TicketScreen } from "@point_of_sale/app/screens/ticket_screen/ticket_screen";
@@ -19,12 +20,23 @@ function awaitsTicket(order) {
 patch(PosOrder.prototype, {
     getName() {
         if (!this.table_id && this.baseer_ticket_number) {
-            return String(this.baseer_ticket_number);
+            return String(this.baseer_ticket_number) + (this.isRefund ? _t(" (Refund)") : "");
         }
         if (!this.table_id && awaitsTicket(this)) {
             return _t("Awaiting number");
         }
         return super.getName(...arguments);
+    },
+});
+
+patch(OrderTabs.prototype, {
+    get sortedTicketTabs() {
+        const nativeOrder = this.props.orders.toSorted((a, b) => a.getName().localeCompare(b.getName()));
+        const isNumberedTab = (order) => order.baseer_ticket_number && !order.table_id;
+        const byNumber = nativeOrder.filter(isNumberedTab).sort((a, b) => a.baseer_ticket_number - b.baseer_ticket_number);
+        let next = 0;
+        // Only reorder numbered slots. Named tables and legacy tabs keep their positions.
+        return nativeOrder.map((order) => isNumberedTab(order) ? byNumber[next++] : order);
     },
 });
 
@@ -89,8 +101,9 @@ patch(PosStore.prototype, {
         return super.printReceipt(...arguments);
     },
 
-    async sendOrderInPreparation(order) {
-        if (!this.config.baseer_direct_print_enabled && !await this.baseerEnsureTicketForPrint(order)) {
+    async sendOrderInPreparation(order, opts = {}) {
+        if (!this.config.baseer_direct_print_enabled && this.config.printerCategories.size && !opts.byPassPrint
+            && !await this.baseerEnsureTicketForPrint(order)) {
             return false;
         }
         return super.sendOrderInPreparation(...arguments);

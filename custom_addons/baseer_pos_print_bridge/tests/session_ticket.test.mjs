@@ -8,6 +8,7 @@ function fixture() {
         getName() { return this.table_id ? 'T 7' : this.tracking_number; }
     }
     class ReceiptHeader { get order() { return this.props.order; } }
+    class OrderTabs {}
     class TicketScreen {
         _getSearchFields() { return { REFERENCE: { repr: (order) => order.getName() } }; }
         _computeSyncedOrdersDomain() {
@@ -27,7 +28,7 @@ function fixture() {
     }
     const source = readFileSync(new URL('../static/src/app/session_ticket.js', import.meta.url), 'utf8');
     vm.runInNewContext(source.replace(/^import .*;\r?\n/gm, ''), {
-        PosOrder, ReceiptHeader, TicketScreen, PosStore, _t: (text) => text,
+        PosOrder, OrderTabs, ReceiptHeader, TicketScreen, PosStore, _t: (text) => text,
         patch(target, extension) {
             const previous = Object.create(Object.getPrototypeOf(target), Object.getOwnPropertyDescriptors(target));
             Object.setPrototypeOf(extension, previous);
@@ -41,11 +42,18 @@ function fixture() {
     });
     const header = Object.assign(new ReceiptHeader(), { props: { order } });
     const store = Object.assign(new PosStore(), {
-        syncs: 0, data: { network: { offline: false } }, config: {}, notification: { add() {} },
+        syncs: 0, data: { network: { offline: false } }, config: { printerCategories: new Set([1]) }, notification: { add() {} },
     });
     const screen = Object.assign(new TicketScreen(), { state: { search: { fieldName: 'REFERENCE', searchTerm: '27-1' } } });
-    return { order, header, store, screen };
+    return { order, header, store, screen, tabs: new OrderTabs() };
 }
+
+test('cashier tabs use numeric order without moving named or historical slots', () => {
+    const { tabs } = fixture();
+    const tab = (name, number, table) => ({ getName: () => name, baseer_ticket_number: number, table_id: table });
+    tabs.props = { orders: [tab('2', 2), tab('10', 10), tab('15', 0), tab('1', 1), tab('T 7', 3, {})] };
+    assert.deepEqual(tabs.sortedTicketTabs.map((order) => order.getName()), ['1', '2', '15', '10', 'T 7']);
+});
 
 test('same ticket on early/paid receipts and kitchen, short tab and native tax QR', async () => {
     const { order, header, store } = fixture();
@@ -66,6 +74,9 @@ test('same ticket on early/paid receipts and kitchen, short tab and native tax Q
     }
     order.table_id = { id: 7 };
     assert.equal(order.getName(), 'T 7');
+    order.table_id = null;
+    order.isRefund = true;
+    assert.equal(order.getName(), '1 (Refund)');
 });
 
 test('offline unsaved order keeps pending state; reconnect before printing allocates once', async () => {
@@ -75,6 +86,10 @@ test('offline unsaved order keeps pending state; reconnect before printing alloc
     assert.equal(store.syncs, 0);
     assert.equal(store.pending[0], 'order');
     assert.equal((await store.printReceipt({ order })).successful, false);
+    assert.equal(await store.sendOrderInPreparation(order, { byPassPrint: true }), 'native kitchen');
+    store.config.printerCategories.clear();
+    assert.equal(await store.sendOrderInPreparation(order), 'native kitchen');
+    store.config.printerCategories.add(1);
     assert.equal(await store.sendOrderInPreparation(order), false);
     store.data.network.offline = false;
     assert.equal(await store.sendOrderInPreparation(order), 'native kitchen');

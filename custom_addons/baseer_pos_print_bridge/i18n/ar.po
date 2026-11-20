@@ -2909,6 +2909,12 @@ msgstr "بانتظار الرقم"
 #. module: baseer_pos_print_bridge
 #. odoo-javascript
 #: code:addons/baseer_pos_print_bridge/static/src/app/session_ticket.js:0
+msgid " (Refund)"
+msgstr " (استرجاع)"
+
+#. module: baseer_pos_print_bridge
+#. odoo-javascript
+#: code:addons/baseer_pos_print_bridge/static/src/app/session_ticket.js:0
 msgid "Sync the order before printing its number."
 msgstr "زامن الطلب قبل طباعة رقمه."
 

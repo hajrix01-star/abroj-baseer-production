@@ -563,47 +563,38 @@ msgid "هنقرستيشن"
 msgstr "هنقرستيشن"
 
 #. module: baseer_dashboard2
-#. 
 msgid "ضمن المستهدف"
 msgstr "ضمن المستهدف"
 
 #. module: baseer_dashboard2
-#. 
 msgid "خارج المستهدف"
 msgstr "خارج المستهدف"
 
 #. module: baseer_dashboard2
-#. 
 msgid "غير مصنف"
 msgstr "غير مصنف"
 
 #. module: baseer_dashboard2
-#. 
 msgid "non_operating"
 msgstr "غير تشغيلي"
 
 #. module: baseer_dashboard2
-#. 
 msgid "transfer"
 msgstr "تحويل بنكي"
 
 #. module: baseer_dashboard2
-#. 
 msgid "credit"
 msgstr "آجل"
 
 #. module: baseer_dashboard2
-#. 
 msgid "POS payment method"
 msgstr "طريقة دفع نقطة البيع"
 
 #. module: baseer_dashboard2
-#. 
 msgid "Dashboard channel mapping"
 msgstr "ربط قنوات لوحة المعلومات"
 
 #. module: baseer_dashboard2
-#. 
 msgid "Dashboard event"
 msgstr "مناسبة لوحة المعلومات"
 
@@ -631,30 +622,50 @@ msgstr ""
 "قبل هذا التاريخ تُحسب المبيعات من الملخصات؛ وتظل طلبات نقاط البيع الحقيقية "
 "المؤهلة مصدراً لعدد العملاء والتوزيع بالساعة."
 
+#. module: baseer_dashboard2
 #. Sales source override settings
 msgid "Dashboard sales source override"
 msgstr "استثناء مصدر المبيعات"
 
+#. module: baseer_dashboard2
+#. 
 msgid "Automatic merge"
 msgstr "دمج تلقائي"
 
+#. module: baseer_dashboard2
+#. 
 msgid "Summary"
 msgstr "الملخص"
 
+#. module: baseer_dashboard2
+#. 
 msgid "POS"
 msgstr "نقاط البيع"
 
+#. module: baseer_dashboard2
+#. 
 msgid "Sales source override periods cannot overlap for the same company."
 msgstr "لا يمكن تداخل فترات استثناء مصدر المبيعات للشركة نفسها."
 
+#. module: baseer_dashboard2
+#. 
 msgid "Source"
 msgstr "المصدر"
 
+#. module: baseer_dashboard2
+#. 
 msgid "Source Override"
 msgstr "استثناء المصدر"
 
+#. module: baseer_dashboard2
+#. 
 msgid "Source Override Ids"
 msgstr "استثناءات مصدر المبيعات"
 
-msgid "Legacy reference date; posted entries determine sales unless a source override applies."
-msgstr "تاريخ مرجعي سابق؛ تحدد القيود المرحّلة المبيعات ما لم يُطبّق استثناء للمصدر."
+#. module: baseer_dashboard2
+#. 
+msgid ""
+"Legacy reference date; posted entries determine sales unless a source "
+"override applies."
+msgstr ""
+"تاريخ مرجعي سابق؛ تحدد القيود المرحّلة المبيعات ما لم يُطبّق استثناء للمصدر."

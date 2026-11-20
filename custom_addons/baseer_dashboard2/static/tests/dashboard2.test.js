@@ -214,3 +214,25 @@ test('mini labels round amounts and retain one decimal for percentages', () => {
     expect(short(125395)).toBe('125K');
     expect(short(46.55, true)).toBe('46.6');
 });
+
+test('food progress follows its target and clamps to the track', async () => {
+    const response = await withFetch(globals.fetch, () => fetch('/baseer_dashboard2/static/src/xml/main.xml'));
+    class Host extends Component {
+        static template = '<KpiCard title="\'الأكل\'" foodProgress="150"/>';
+        static components = { KpiCard };
+    }
+    const app = new App(Host, { templates: await response.text(), test: true });
+    after(() => app.destroy());
+    await app.mount(getFixture());
+    expect(getFixture().querySelector('.food-progress i').style.width).toBe('100%');
+});
+
+test('accounting explanations and gross sales basis are visible in templates', async () => {
+    const response = await withFetch(globals.fetch, () => fetch('/baseer_dashboard2/static/src/xml/main.xml'));
+    const doc = new DOMParser().parseFromString(await response.text(), 'text/xml');
+    const pnl = doc.querySelector('[t-name="baseer_dashboard2.Pnl"]');
+    expect(pnl.querySelector('.inout-note').textContent).toInclude('مبيعات تطبيقات لم تُستلم بعد');
+    expect(pnl.textContent).toInclude('تقريب نوركس');
+    expect(doc.querySelector('.heatmap-basis').textContent).toInclude('شاملة الضريبة');
+    expect(doc.querySelector('[t-name="baseer_dashboard2.Overview"]').outerHTML).toInclude('غير منتظمة بين الفترات');
+});

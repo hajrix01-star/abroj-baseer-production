@@ -83,7 +83,8 @@
         </div>
     </t>
     <t t-name="baseer_dashboard2.KpiCard">
-        <div t-att-class="'card kpi '+(props.hero?'hero':'')">
+        <div t-att-class="'card kpi '+(props.hero?'hero ':'')+(props.foodProgress != null ? 'food-kpi' : '')">
+            <div t-if="props.foodProgress != null" class="food-progress"><i t-att-style="'width:'+Math.min(100, Math.max(0, props.foodProgress))+'%'"/></div>
             <Sparkline values="props.trend" gold="props.hero"/>
             <span class="card-icon"><svg viewBox="0 0 24 24"><path t-att-d="iconPath(props.icon)"/></svg></span>
             <div class="muted" t-esc="props.title"/><small t-if="props.subtitle" class="muted" t-esc="props.subtitle"/>
@@ -101,7 +102,7 @@
             <div class="card-head">
                 <div>
                     <h3>المسار الزمني للمبيعات</h3>
-                    <div class="muted">شهرياً — مقارنة بالعام السابق</div>
+                    <div class="muted"><t t-esc="state.timeline==='monthly' ? 'شهرياً' : 'سنوياً'"/> — <t t-esc="state.data.period.date_to.slice(0,4)"/> مقابل <t t-esc="Number(state.data.period.date_to.slice(0,4))-1"/> (الخط المتقطع)</div>
                 </div>
                 <div class="seg">
                     <button t-att-class="state.timeline==='monthly'?'on':''" t-on-click="()=&gt;this.choose('timeline','monthly')">شهري</button>
@@ -128,7 +129,7 @@
                 </div>
                 <div>
                     <small>أفضل شهر</small>
-                    <b t-esc="state.data.timeline?.stats.best_month ? months[state.data.timeline.stats.best_month.month-1]+' · '+fmt(state.data.timeline.stats.best_month.value) : '—'"/>
+                    <b t-esc="state.data.timeline?.stats.best_month ? months[state.data.timeline.stats.best_month.month-1]+' · '+fmt(state.data.timeline.stats.best_month.value)+' ر.س' : '—'"/>
                 </div>
             </div>
             <LineChart series="timelineSeries" labels="timelineLabels"/>
@@ -142,7 +143,7 @@
             </div>
         </div>
         <div class="grid five">
-            <KpiCard t-foreach="Object.entries(state.data.kpis || {})" t-as="entry" t-key="entry[0]" title="name(entry[0])" icon="entry[0]" value="entry[1].value" change="entry[1].change_pct" trend="entry[1].trend" previousTrend="entry[1].previous_trend" partial="trend.map(x=&gt;x.partial)" hero="entry[0]==='net_profit'" goodWhen="entry[1].good_when"/>
+            <KpiCard t-foreach="Object.entries(state.data.kpis || {})" t-as="entry" t-key="entry[0]" title="name(entry[0])" icon="entry[0]" value="entry[1].value" change="entry[1].change_pct" trend="entry[1].trend" previousTrend="entry[1].previous_trend" partial="trend.map(x=&gt;x.partial)" hero="entry[0]==='net_profit'" goodWhen="entry[1].good_when" foodProgress="entry[0]==='food_cost' and state.data.targets.food_pct?.value ? current.ratios.food_pct / state.data.targets.food_pct.value * 100 : null"/>
         </div>
         <div t-if="state.data.salaries_warning" class="chip">الرواتب أقل بوضوح من متوسط آخر 3 أشهر — قد تكون غير مكتملة</div><div t-if="state.data.breakeven?.reason==='incomplete_costs'" class="chip">تكاليف الشهر لم تكتمل؛ قد تكون بيانات الأكل والمشتريات غير مكتملة أيضاً</div>
         <div class="grid two-wide">
@@ -156,12 +157,12 @@
         </div>
         <div class="card">
             <h3>من المبيعات إلى صافي الربح — <t t-esc="monthName(state.period.month)"/></h3>
-            <div class="muted">كل سطر يبيّن المبلغ ونسبته من المبيعات</div>
+            <div class="muted">المبالغ ونسبتها من المبيعات دون الضريبة</div><div class="bridge-legend"><span>■ مجموع</span><span>■ خصم</span><span>■ صافي الربح</span></div>
             <div t-att-class="'bridge-row '+(row.key==='net_profit'?'net-profit':(['sales_net','gross_profit','operating_profit'].includes(row.key)?'subtotal':''))" t-foreach="state.data.bridge" t-as="row" t-key="row.key">
-                <b t-att-title="row.key==='zakat_tax' ? 'الزكاة سنوية كاملة سُجلت في هذا الشهر' : false" t-esc="name(row.key)"/>
+                <b t-att-title="row.key==='zakat_tax' ? 'قيود الزكاة سنوية أو غير منتظمة بين الفترات' : false" t-esc="name(row.key)"/>
                 <div class="bd2-track"><i t-att-style="bridgeStyle(row, row_index)"/></div>
                 <strong dir="ltr" t-esc="tableFmt(row.amount || 0, true)"/>
-                <span class="muted" dir="ltr" t-esc="tablePct(row.pct)"/>
+                <span class="muted" dir="ltr" t-esc="tablePct(row.pct == null ? null : Math.abs(row.pct))"/>
             </div>
         </div>
         <div t-foreach="state.data.sales.warnings" t-as="warning" t-key="warning.company_id+warning.date+warning.label" class="chip"><t t-esc="warning.date"/> · <t t-esc="warning.label"/></div>
@@ -421,6 +422,7 @@
                 <b t-esc="state.data.months.at(-1)?.incoming.apps_unreceived.available ? fmt(state.data.months.at(-1).incoming.apps_unreceived.value) : state.data.months.at(-1)?.incoming.apps_unreceived.label"/>
             </div>
         </div>
+        <div t-if="state.view==='inout' and state.data.months?.length" class="inout-note muted"><t t-if="state.data.months.at(-1).incoming.apps_unreceived.available">منها <t t-esc="fmt(state.data.months.at(-1).incoming.apps_unreceived.value)"/> مبيعات تطبيقات لم تُستلم بعد</t><t t-else="">الداخل يشمل مبيعات تطبيقات قد لا تكون استُلمت بعد</t></div>
         <t t-if="state.view==='inout' and state.data.months">
             <t t-if="state.data.months?.at(-1)?.incoming.apps_unreceived.available">
                 <div t-foreach="state.data.months?.at(-1)?.incoming.apps_unreceived.breakdown || []" t-as="app" t-key="app.key" class="chip">
@@ -527,7 +529,7 @@
                           </t>
                         </t>
                         <tr class="account" t-if="group[2]==='channels'">
-                            <td>منها ضريبة القيمة المضافة</td>
+                            <td>منها ضريبة القيمة المضافة<small class="block muted">قد يختلف المبلغ عن ضريبة دفتر المبيعات بسبب تقريب نوركس؛ فرق أكتوبر للشامي 6.48 ر.س</small></td>
                             <td/>
                             <td t-foreach="state.data.months" t-as="m" t-key="m.month" t-esc="tableFmt(m.sales_vat.value)"/>
                             <td t-esc="tableFmt(state.data.total.sales_vat)"/>
@@ -552,7 +554,7 @@
         </div>
     </t>
     <t t-name="baseer_dashboard2.Heatmap">
-        <div class="stats card">
+        <div class="muted heatmap-basis">مؤشرات المبيعات شاملة الضريبة</div><div class="stats card">
             <div>
                 <small>معدل المبيعات اليومي — <t t-esc="monthName(state.period.month).split(' ')[0]"/></small>
                 <b t-esc="fmt(state.data.daily_average.current)"/>
@@ -566,7 +568,7 @@
                 <b t-esc="state.data.days.some(d=&gt;d.customers!==null) ? fmt(state.data.days.reduce((a,d)=&gt;a+(d.customers||0),0)) : 'غير متوفر'"/>
             </div>
             <div>
-                <small>إجمالي المبيعات — <t t-esc="monthName(state.period.month).split(' ')[0]"/> · شامل الضريبة</small>
+                <small>إجمالي المبيعات — <t t-esc="monthName(state.period.month).split(' ')[0]"/></small>
                 <b t-esc="fmt(state.data.days.some(d=&gt;d.gross!==null) ? state.data.days.reduce((a,d)=&gt;a+(d.gross||0),0) : null)"/>
             </div>
             <div>
@@ -777,7 +779,7 @@
                 <div t-elif="state.data?.available === false" class="card">غير متوفر <div class="muted" t-esc="state.data.reason"/>
                 </div>
                 <t t-else="">
-                    <t t-if="state.page==='overview'" t-call="baseer_dashboard2.Timeline"/>
+                    <div t-if="state.page==='overview'" class="section-divider">المسار الزمني</div><t t-if="state.page==='overview'" t-call="baseer_dashboard2.Timeline"/><div t-if="state.page==='overview'" class="section-divider">ملخص <t t-esc="monthName(state.period.month)"/></div>
                     <t t-if="state.page==='overview'" t-call="baseer_dashboard2.Overview"/>
                     <t t-if="state.page==='revenue'" t-call="baseer_dashboard2.Revenue"/>
                     <t t-if="state.page==='expenses'" t-call="baseer_dashboard2.Expenses"/>

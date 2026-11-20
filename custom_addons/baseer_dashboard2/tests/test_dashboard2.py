@@ -727,3 +727,9 @@ class TestDashboardThemeLiterals(TransactionCase):
                 if literal.search(line) or any(named.search(m.group(1)) for m in colour_value.finditer(line)):
                     offenders.append(f'{path.relative_to(root)}:{number}: {line.strip()}')
         self.assertFalse(offenders, '\n'.join(offenders))
+
+
+class TestGlossaryBasis(TransactionCase):
+    def test_apps_ratio_is_gross(self):
+        from ..models.service import SOURCES
+        self.assertIn('عدا نسبة التطبيقات: شاملة الضريبة', SOURCES['ratios'])

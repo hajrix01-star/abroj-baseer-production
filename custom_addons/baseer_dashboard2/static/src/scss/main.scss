@@ -794,3 +794,17 @@ td {
 
 .o_bd2 .year-current { outline: 2px solid var(--bd2-gold); border-radius: 8px; }
 .o_bd2 .weekday-best { color: var(--bd2-gold-text); }
+
+.o_bd2 .timeline { border-top: 1px solid var(--bd2-border); }
+.o_bd2 .timeline .card-head h3 { font-size: 16px; border-inline-start: 3px solid var(--bd2-gold); padding-inline-start: 10px; }
+.o_bd2 .timeline .bd2-chart { margin-top: 0; }
+.o_bd2 .section-divider { display: flex; align-items: center; gap: 12px; color: var(--bd2-muted); margin: 12px 0; font-weight: 700; }
+.o_bd2 .section-divider::after { content: ''; flex: 1; border-top: 1px solid var(--bd2-border); }
+.o_bd2 .kpi.hero { overflow: hidden; background-image: radial-gradient(circle at bottom left, var(--bd2-gold-glow), var(--bd2-transparent) 55%); }
+.o_bd2 .food-kpi { overflow: hidden; }
+.o_bd2 .food-progress { position: absolute; inset-inline: 0; bottom: 0; height: 3px; background: var(--bd2-grid); }
+.o_bd2 .food-progress i { display: block; height: 100%; background: var(--bd2-gold); }
+.o_bd2 .bridge-legend { display: flex; gap: 16px; color: var(--bd2-c1); margin: 8px 0; }
+.o_bd2 .bridge-legend span:nth-child(2) { color: var(--bd2-c6); }
+.o_bd2 .bridge-legend span:nth-child(3) { color: var(--bd2-gold); }
+.o_bd2 .inout-note, .o_bd2 .heatmap-basis { margin: 0 0 12px; }

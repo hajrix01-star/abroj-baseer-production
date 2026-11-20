@@ -228,6 +228,7 @@ export class KpiCard extends Component {
     partial: { optional: true },
     hero: { optional: true },
     goodWhen: { optional: true },
+    foodProgress: { optional: true },
   };
 }
 

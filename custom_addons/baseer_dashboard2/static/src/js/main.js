@@ -89,69 +89,50 @@ const getStored = (key, fallback) => {
   }
 };
 
-class Sparkline extends Component {
+export const niceStep = (range, count = 4) => {
+  const raw = Math.max(range, 1e-12) / count;
+  const power = 10 ** Math.floor(Math.log10(raw));
+  return ([1, 2, 2.5, 5, 10].find((n) => n * power >= raw) || 10) * power;
+};
+export const hasPoints = (values) => (values || []).some((v) => v != null && Number.isFinite(Number(v)));
+export class Sparkline extends Component {
   static template = "baseer_dashboard2.Sparkline";
-  static props = { values: { optional: true }, gold: { optional: true } };
-  get path() {
-    const a = this.props.values || [];
-    const present = a.filter((v) => v != null).map(Number);
-    const min = Math.min(...present, 0);
-    const max = Math.max(...present, 1);
-    return a
-      .map((v, i) =>
-        v == null
-          ? ""
-          : `${i && a[i - 1] != null ? "L" : "M"}${95 - (a.length <= 1 ? 45 : (90 * i) / (a.length - 1))},${28 - ((Number(v) - min) / (max - min)) * 24}`,
-      )
-      .join(" ");
+  static props = { values: { optional: true }, previous: { optional: true }, gold: { optional: true }, secondaryGold: { optional: true } };
+  path(a) {
+    a = a || [];
+    const scaleValues = this.props.secondaryGold ? a : [...(this.props.values || []), ...(this.props.previous || [])];
+    const present = scaleValues.filter((v) => v != null).map(Number);
+    const min = Math.min(...present, 0), max = Math.max(...present, 1);
+    return a.map((v, i) => v == null ? "" : `${i && a[i - 1] != null ? "L" : "M"}${95 - (a.length <= 1 ? 45 : 90 * i / (a.length - 1))},${28 - (Number(v) - min) / (max - min) * 24}`).join(" ");
   }
 }
-class LineChart extends Component {
+export class LineChart extends Component {
   static template = "baseer_dashboard2.LineChart";
   static props = { series: Array, labels: { optional: true } };
   chartX = chartX;
-  get max() {
-    return Math.max(
-      1,
-      ...this.props.series.flatMap((s) =>
-        s.values.filter((v) => v !== null && v !== undefined).map(Number),
-      ),
-    );
+  get renderedSeries() { return this.props.series.filter((s) => hasPoints(s.values)); }
+  get scale() {
+    const values = this.renderedSeries.flatMap((s) => s.values.filter((v) => v != null).map(Number));
+    const low = Math.min(0, ...values), high = Math.max(0, ...values);
+    const step = niceStep(high - low);
+    return { min: Math.floor(low / step) * step, max: Math.max(step, Math.ceil(high / step) * step), step };
   }
-  y(v) {
-    return 205 - ((Number(v) || 0) / this.max) * 165;
+  get ticks() {
+    const { min, max, step } = this.scale;
+    return Array.from({ length: Math.round((max - min) / step) + 1 }, (_, i) => min + i * step);
   }
+  y(v) { const {min, max} = this.scale; return 205 - (Number(v) - min) / (max - min) * 165; }
   area(values) {
-    let segments = [];
-    let points = [];
-    const flush = () => {
-      if (points.length) segments.push(`M${points[0][0]},205 ` + points.map(([x, y]) => `L${x},${y}`).join(" ") + ` L${points.at(-1)[0]},205 Z`);
-      points = [];
-    };
-    values.forEach((value, i) => value == null ? flush() : points.push([chartX(i, values.length), this.y(value)]));
-    flush();
-    return segments.join(" ");
+    const baseline = this.y(0); let segments = [], points = [];
+    const flush = () => { if (points.length) segments.push(`M${points[0][0]},${baseline} ` + points.map(([x,y]) => `L${x},${y}`).join(" ") + ` L${points.at(-1)[0]},${baseline} Z`); points = []; };
+    values.forEach((value, i) => value == null ? flush() : points.push([chartX(i, values.length), this.y(value)])); flush(); return segments.join(" ");
   }
-  compact(value) {
-    return Math.abs(value) >= 1000
-      ? `${Math.round(value / 1000)}K`
-      : formatNumber(value);
-  }
+  compact(value) { return Math.abs(value) >= 1000000 ? `${+(value / 1000000).toFixed(1)}M` : Math.abs(value) >= 1000 ? `${+(value / 1000).toFixed(1)}K` : formatNumber(value); }
   partialPath(values, partial) {
     const i = partial?.findIndex(Boolean) ?? -1;
-    return i > 0 && values[i] != null && values[i - 1] != null
-      ? `M${chartX(i - 1, values.length)},${this.y(values[i - 1])} L${chartX(i, values.length)},${this.y(values[i])}`
-      : "";
+    return i > 0 && values[i] != null && values[i - 1] != null ? `M${chartX(i - 1, values.length)},${this.y(values[i - 1])} L${chartX(i, values.length)},${this.y(values[i])}` : "";
   }
-  path(values) {
-    return values
-      .map((v, i) =>
-        v === null || v === undefined
-          ? ""
-          : `${i && values[i - 1] != null ? "L" : "M"}${chartX(i, values.length)},${this.y(v)}`,
-      )
-      .join(" ");
-  }
+  path(values) { return values.map((v, i) => v == null ? "" : `${i && values[i - 1] != null ? "L" : "M"}${chartX(i, values.length)},${this.y(v)}`).join(" "); }
 }
 class Money extends Component {
   static template = "baseer_dashboard2.Money";
@@ -208,7 +189,7 @@ class Gauge extends Component {
     );
   }
 }
-class KpiCard extends Component {
+export class KpiCard extends Component {
   static template = "baseer_dashboard2.KpiCard";
   static components = { Money, Badge, Sparkline };
   static props = {
@@ -216,6 +197,7 @@ class KpiCard extends Component {
     value: { optional: true },
     change: { optional: true },
     trend: { optional: true },
+    previousTrend: { optional: true },
     hero: { optional: true },
     goodWhen: { optional: true },
   };
@@ -421,7 +403,10 @@ class Dashboard2 extends Component {
   get timeline() {
     const t = this.state.data?.timeline;
     if (!t) return [];
-    return t.mode === "yearly" ? t.years : t.months;
+    const rows = t.mode === "yearly" ? t.years : t.months;
+    const first = rows.findIndex((x) => x.value != null || x.previous != null);
+    const last = rows.findLastIndex((x) => x.value != null || x.previous != null);
+    return first < 0 ? [] : rows.slice(first, last + 1);
   }
   get timelineLabels() {
     return this.timeline.map((x) => x.year || months[x.month - 1]);
@@ -433,8 +418,9 @@ class Dashboard2 extends Component {
         partial: this.timeline.map((x) => x.partial),
         gold: true,
         area: true,
+        name: String(this.state.data?.period?.date_to?.slice(0, 4) || ""),
       },
-      { values: this.timeline.map((x) => x.previous), dashed: true },
+      { values: this.timeline.map((x) => x.previous), dashed: true, name: String(Number(this.state.data?.period?.date_to?.slice(0, 4)) - 1) },
     ];
   }
   get hasCustomers() {

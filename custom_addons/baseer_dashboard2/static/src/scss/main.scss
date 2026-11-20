@@ -709,7 +709,15 @@ td {
 .o_bd2 .year-occasion { position: absolute; inset-inline-end: 0; bottom: 0; padding: 0 2px; font-size: 8px; }
 .o_bd2 .info-popup { position: relative; display: inline-block; }
 .o_bd2 .info-button { border: 1px solid var(--bd2-border); border-radius: 50%; background: var(--bd2-card); color: var(--bd2-muted); width: 24px; height: 24px; }
-.o_bd2 .info-panel { position: absolute; z-index: 20; inset-inline-start: 0; top: calc(100% + 6px); width: min(280px, 70vw); padding: 12px; border: 1px solid var(--bd2-border); border-radius: 8px; background: var(--bd2-card); color: var(--bd2-text); box-shadow: 0 4px 16px var(--bd2-shadow); font-size: 13px; font-weight: 400; }
+.o_bd2 .info-panel { position: absolute; z-index: 20; inset-inline-start: 0; top: calc(100% + 6px); width: 280px; max-width: 70vw; padding: 12px; border: 1px solid var(--bd2-border); border-radius: 8px; background: var(--bd2-card); color: var(--bd2-text); box-shadow: 0 4px 16px var(--bd2-shadow); font-size: 13px; font-weight: 400; }
 .o_bd2 .info-panel strong, .o_bd2 .info-panel span { display: block; }
 .o_bd2 .inout-scroll { direction: ltr; }
 .o_bd2 .inout-scroll > * { direction: rtl; }
+
+.o_bd2 .chart-legend { display: flex; gap: 16px; justify-content: flex-end; color: var(--bd2-muted); font-size: 11px; }
+.o_bd2 .chart-legend i { display: inline-block; width: 16px; margin-inline-end: 4px; vertical-align: middle; border-top: 2px solid var(--bd2-c1); }
+.o_bd2 .chart-legend i.gold { border-color: var(--bd2-gold); }
+.o_bd2 .chart-legend i.dashed { border-color: var(--bd2-faint); border-top-style: dashed; }
+.o_bd2 .safety-chips { display: flex; gap: 5px; flex-wrap: wrap; justify-content: center; }
+.o_bd2 .safety-chips span { padding: 2px 7px; border-radius: 12px; color: var(--bd2-muted); background: var(--bd2-bg); font-size: 10px; }
+.o_bd2 .safety-chips span.current { color: var(--bd2-ink); background: var(--bd2-gold-soft); }

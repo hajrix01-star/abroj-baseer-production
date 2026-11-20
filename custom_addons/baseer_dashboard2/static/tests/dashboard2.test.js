@@ -1,7 +1,7 @@
 import { after, expect, getFixture, globals, test, withFetch, click, press } from '@odoo/hoot';
 import { animationFrame } from '@odoo/hoot-mock';
 import { App, Component } from '@odoo/owl';
-import { formatNumber, formatTable, formatTablePct, chartX, InfoPopup } from '../src/js/main';
+import { formatNumber, formatTable, formatTablePct, chartX, InfoPopup, LineChart, niceStep, KpiCard } from '../src/js/main';
 
 test('P&L renders without in/out months', async () => {
     class Pnl extends Component {
@@ -86,4 +86,33 @@ test('glossary explanation opens and closes on outside click and Escape', async 
     await click(getFixture());
     await animationFrame();
     expect(getFixture().querySelector('.info-panel')).toBe(null);
+});
+
+test('chart scales use rounded steps and null values break paths', async () => {
+    expect(niceStep(300000)).toBe(100000);
+    expect(niceStep(100000)).toBe(25000);
+    const chart = { y: (v) => v };
+    expect((LineChart.prototype.path.call(chart, [100, null, 200]).match(/M/g) || []).length).toBe(2);
+});
+
+test('chart legend excludes series with no points', async () => {
+    const response = await withFetch(globals.fetch, () => fetch('/baseer_dashboard2/static/src/xml/main.xml'));
+    const app = new App(LineChart, { templates: await response.text(), props: { series: [
+        { name: '2026', values: [1, null, 2], gold: true },
+        { name: '2025', values: [null, null, null], dashed: true },
+    ] }, test: true });
+    after(() => app.destroy());
+    await app.mount(getFixture());
+    expect(getFixture().querySelectorAll('.chart-legend span').length).toBe(1);
+    expect(getFixture().querySelector('.chart-legend').textContent).toInclude('2026');
+});
+
+
+test('KPI sparkline renders two series and change badge', async () => {
+    const response = await withFetch(globals.fetch, () => fetch('/baseer_dashboard2/static/src/xml/main.xml'));
+    const app = new App(KpiCard, { templates: await response.text(), props: { title: 'Sales', value: 100, change: 10, trend: [50, null, 100], previousTrend: [null, 50, null] }, test: true });
+    after(() => app.destroy());
+    await app.mount(getFixture());
+    expect(getFixture().querySelectorAll('.bd2-spark path').length).toBe(2);
+    expect(getFixture().querySelector('.bd2-badge').textContent).toInclude('10.0%');
 });

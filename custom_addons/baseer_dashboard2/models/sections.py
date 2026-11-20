@@ -61,7 +61,7 @@ class DashboardSections(models.AbstractModel):
         for m in range(1, 13):
             first, last_month = month_bounds(date(end.year, m, 1))
             prior_first, prior_last = month_bounds(date(end.year - 1, m, 1))
-            months.append({'month': m, 'value': self._accounting(ids, first, min(last_month, last))['sales_net'] if covered(first, last_month) else None,
+            months.append({'month': m, 'value': self._accounting(ids, first, min(last_month, last))['sales_net'] if first <= end and covered(first, last_month) else None,
                            'partial': bool(last and first <= last < last_month),
                            'previous': self._accounting(ids, prior_first, min(prior_last, last))['sales_net'] if covered(prior_first, prior_last) else None})
         years = []
@@ -126,7 +126,8 @@ class DashboardSections(models.AbstractModel):
             for key in ('sales_net', 'food_cost', 'salaries', 'expenses_total', 'net_profit'):
                 now, before = value(current, key) if covered(start, end) else None, value(previous, key) if covered(previous_start, previous_end) else None
                 result['kpis'][key] = {'available': True, 'value': now, 'previous': before, 'change_pct': change(now, before),
-                                       'trend': [value(m['data'], key) if m['has_data'] else None for m in trend], 'good_when': 'down' if key in expense_keys or key == 'expenses_total' else 'up'}
+                                       'trend': [value(m['data'], key) if m['has_data'] else None for m in trend],
+                                       'previous_trend': [None] + [value(m['data'], key) if m['has_data'] else None for m in trend[:-1]], 'good_when': 'down' if key in expense_keys or key == 'expenses_total' else 'up'}
             bridge = [('sales_net', current['sales_net']), ('food_cost', -current['categories'].get('food_cost', 0)), ('gross_profit', current['gross_profit']),
                       ('salaries', -current['categories'].get('salaries', 0)), ('rent', -current['categories'].get('rent', 0))]
             bridge += [(k, -current['categories'].get(k, 0)) for k in ('utilities', 'marketing', 'commissions', 'other_opex', 'depreciation') if current['categories'].get(k)]
@@ -137,6 +138,7 @@ class DashboardSections(models.AbstractModel):
             if not covered(start, end):
                 result['purchases']['value'] = None
             result['purchases']['previous'] = self._purchases(ids, previous_start, previous_end, previous['sales_net'])
+            result['purchases']['change_pct'] = change(result['purchases']['value'], result['purchases']['previous']['value'])
             result['purchases']['trend'] = []
             sales_trend = []
             for month in trend:
@@ -150,6 +152,8 @@ class DashboardSections(models.AbstractModel):
             if not days:
                 result['sales']['apps'] = None
             result['sales']['previous'] = prior_sales
+            result['sales']['apps_change_pct'] = change(result['sales']['apps'], prior_sales['apps'])
+            result['sales']['customers_change_pct'] = change(sales['customers']['value'], prior_sales['customers']['value'])
             result['sales']['trend'] = sales_trend
             result['timeline'] = self._timeline(ids, end, params.get('timeline_mode', 'monthly'))
         if section in ('overview', 'ratios'):

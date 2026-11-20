@@ -6,6 +6,13 @@ from odoo.tests import TransactionCase, tagged
 
 @tagged('post_install', '-at_install')
 class TestDashboard2(TransactionCase):
+    def test_dashboard_scss_compiles_with_odoo_libsass(self):
+        import sass
+        from pathlib import Path
+        root = Path(__file__).resolve().parents[1] / 'static' / 'src' / 'scss'
+        css = sass.compile(string='\n'.join((root / name).read_text() for name in ('theme.scss', 'main.scss')))
+        self.assertIn('max-width: 70vw', css)
+
     def test_event_date_constraint(self):
         with self.assertRaises(ValidationError), self.cr.savepoint():
             self.env['baseer.dashboard2.event'].create({'name': 'Event', 'date_from': '2026-03-02', 'date_to': '2026-03-01'})
@@ -45,6 +52,10 @@ class TestDashboard2(TransactionCase):
         result = service.get_section('overview', {'company_key': str(company.id), 'period': {'mode': 'month', 'month': '2026-10'}})
         self.assertTrue(result['available'])
         self.assertEqual(len(result['trend']), 6)
+        for kpi in result['kpis'].values():
+            self.assertEqual(len(kpi['trend']), 6)
+            self.assertEqual(len(kpi['previous_trend']), 6)
+        self.assertTrue(all(item['customers']['value'] is None for item in result['sales']['trend'] if not item['has_data']))
         self.assertEqual(result['current']['sales_net'], 0)
 
     def test_accounting_and_noorix(self):

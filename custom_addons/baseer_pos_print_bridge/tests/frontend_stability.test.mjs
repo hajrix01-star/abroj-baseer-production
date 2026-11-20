@@ -13,6 +13,7 @@ function runtime(file, native = {}) {
     const sandbox = {
         PosStore, PosOrder: class {}, PosOrderline: class {}, TicketScreen: class {}, Orderline, OrderSummary: class {},
         ControlButtons: class {},
+        renderReceiptCanvas: (renderer, component, props) => renderer.toCanvas(component, props, { pixelRatio: 2.2 }),
         SelectionPopup: class {}, TextInputPopup: class {}, ConfirmationDialog: class {},
         AlertDialog: class {}, NumberPopup: class {}, OrderReceipt: native.OrderReceipt || class {}, crypto: webcrypto,
         makeAwaitable: native.makeAwaitable || (async () => null),

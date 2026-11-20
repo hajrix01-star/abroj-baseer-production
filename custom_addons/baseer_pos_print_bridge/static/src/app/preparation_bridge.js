@@ -12,7 +12,7 @@ import { SelectionPopup } from "@point_of_sale/app/components/popups/selection_p
 import { TextInputPopup } from "@point_of_sale/app/components/popups/text_input_popup/text_input_popup";
 import { ask, makeAwaitable } from "@point_of_sale/app/utils/make_awaitable_dialog";
 import { buildBaseerPreparationAction, captureBaseerCancellationRoute, navigateBaseerAfterCancellation } from "./line_actions";
-import { encodeReceiptJpeg } from "./receipt_image";
+import { encodeReceiptJpeg, renderReceiptCanvas } from "./receipt_image";
 import { DraftBill, usesBaseerDraftBill } from "./draft_bill";
 
 const BASEER_CANCELLATION_REASONS = [
@@ -1106,9 +1106,7 @@ patch(PosStore.prototype, {
             return { successful: false };
         }
         try {
-            const canvas = await this.printer.renderer.toCanvas(
-                DraftBill, { order }, { addClass: "pos-receipt-print p-3", pixelRatio: 2.2 }
-            );
+            const canvas = await renderReceiptCanvas(this.printer.renderer, DraftBill, { order });
             if (order.state !== "draft") {
                 return { successful: false };
             }
@@ -1195,10 +1193,8 @@ patch(PosStore.prototype, {
                 // its safe print area.  The receipt DOM itself is ~252 CSS px;
                 // 2.2 produces a near one-to-one bitmap for the print head.
                 // Avoid sending a 302 px image which Windows must enlarge.
-                const renderedCanvas = await this.printer.renderer.toCanvas(
-                    OrderReceipt,
-                    { order, basic_receipt: false },
-                    { addClass: "pos-receipt-print p-3", pixelRatio: 2.2 }
+                const renderedCanvas = await renderReceiptCanvas(
+                    this.printer.renderer, OrderReceipt, { order, basic_receipt: false }
                 );
                 const image = encodeReceiptJpeg(renderedCanvas);
                 const result = await this.data.call(

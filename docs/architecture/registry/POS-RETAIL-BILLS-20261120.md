@@ -122,3 +122,42 @@ neutralized clone; probe mutations used rollback.
 Required repair scope stays small: preserve native splitting/receipt/UI/Agent;
 repair the missing ownership transfer/uncertain-send guard and pending-draft
 freshness contract. Do not introduce a second splitter, printer router or renderer.
+
+## Authorized repair contract
+
+User explicitly authorized all three repairs and isolated reacceptance. Alpha bug
+resolution owns the bounded repair; architecture uses the existing map. G0 scope:
+three proven cases only, native splitter/templates/Agent and positions retained.
+G1: same neutralized clone, one cashier, no new load/environment. G2 (independently
+reviewed): native split wrappers collect its own UUID mapping, one atomic native
+sync for the pair, locked per-printer state conservation, one immutable addon JSON
+receipt on the child for exact replay after a lost response; no new financial
+calculation. Existing canonical/IndexedDB recovery handles definitive rejection.
+Protected substitutions and all-selected Split Order fail safely before mutation;
+native Payment for the whole order remains unchanged. Draft freshness uses existing
+job payload JSON, not new schema. G3: existing Odoo/OWL/Python, no dependencies.
+Independent release review and targeted regression/UI acceptance remain required.
+
+## Repair candidate 19.0.7.8.57 — QA acceptance
+
+The three authorized repairs retain Odoo native splitting, calculations,
+templates, button positions and the unchanged Agent. Atomic native pair sync
+and existing canonical recovery protect both halves; kitchen state transfers
+per printer without extra NEW tickets. Draft payloads bind to order content.
+
+Isolated Odoo: 21 targeted methods passed, zero failures/errors (13 split,
+8 draft freshness). Frontend: 13 split checks passed, including definitive
+rejection/restoration without opening full-order payment. Existing 98 scoped
+JS checks passed before the final narrow payment guard; CI includes new tests.
+
+Actual UI: source2914 sent2, split produced1/1, child2915 cancellation created
+CANCEL1/job4219; source paid1.15 with final receipt4221. Old early image4218
+invalidated; updated unpaid image4220 was1.15 and became ineligible after
+payment. No duplicate NEW kitchen ticket. Initial desktop/narrow position
+checks remain applicable: repair changes no XML/CSS. Root evidence:
+output/retail-bills-repair-20261120.
+
+Independent final review: GO for this source to QA via green PR and protected
+release. Official QA deployment and physical PS7 paper remain pending.
+Windows spool acceptance is not paper confirmation. The source observation
+about partial spool failures remains outside the three authorized repairs.

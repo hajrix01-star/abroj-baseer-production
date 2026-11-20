@@ -25,6 +25,9 @@ const BASEER_CANCELLATION_REASONS = [
 ];
 
 function assertMergeNotPending(order) {
+    if (order?.uiState?.baseerBillSplitPending && !order._baseerSplitMutation) {
+        throw new Error(_t("Confirm the pending kitchen change before payment."));
+    }
     if (order?._baseerSavingForMerge) {
         throw new Error(_t("This order is being saved for the merge."));
     }
@@ -113,6 +116,10 @@ patch(PosStore.prototype, {
     async _baseerConfirmKitchenBeforePayment() {
         let order = this.getOrder();
         if (!order) return false;
+        if (order.uiState.baseerBillSplitPending) {
+            this.notification.add(_t("Confirm the pending kitchen change before payment."), { type: "warning" });
+            return false;
+        }
         if (this._baseerKitchenSends?.has(order.uuid)) {
             this.notification.add(_t("Sending to kitchen. Please wait."), { type: "info" });
             return false;
@@ -352,10 +359,11 @@ patch(PosStore.prototype, {
             for (const [model, records] of Object.entries(snapshot)) {
                 rows[model] = records.map((record) => this.models[model].get(record.id).serializeForIndexedDB());
             }
-            const serializedOrder = rows["pos.order"][0];
-            const state = JSON.parse(serializedOrder[SERIALIZED_UI_STATE_PROP]);
-            for (const field of fields) delete state[field];
-            serializedOrder[SERIALIZED_UI_STATE_PROP] = JSON.stringify(state);
+            for (const serializedOrder of rows["pos.order"]) {
+                const state = JSON.parse(serializedOrder[SERIALIZED_UI_STATE_PROP]);
+                for (const field of fields) delete state[field];
+                serializedOrder[SERIALIZED_UI_STATE_PROP] = JSON.stringify(state);
+            }
             const stores = [...new Set([...Object.keys(rows).filter((model) => rows[model].length),
                 ...staleKeys.map(([model]) => model)])];
             // Native IndexedDB.create resolves on request success and converts
@@ -622,7 +630,7 @@ patch(PosStore.prototype, {
         if (!this.config.baseer_direct_print_enabled || !order) {
             return;
         }
-        if (this.baseerHasPendingProtectedAction?.(order)) {
+        if (order.uiState.baseerBillSplitPending || this.baseerHasPendingProtectedAction?.(order)) {
             this.notification.add(_t("Resolve the pending item change before sending to the kitchen."), { type: "warning" });
             return false;
         }
@@ -719,6 +727,10 @@ patch(PosStore.prototype, {
     },
 
     async beforeDeleteOrder(order) {
+        if (order?.uiState?.baseerBillSplitPending) {
+            this.notification.add(_t("Confirm the pending kitchen change before payment."), { type: "warning" });
+            return false;
+        }
         if (order?.uiState?.baseerPreparationOutcomeUnknown || this._baseerPreparationResolutions?.has(order?.uuid)) {
             if (!(await this.baseerResolvePreparationOutcome(order))) return false;
             order = this.models?.["pos.order"]?.getBy("uuid", order.uuid) || order;
@@ -1129,6 +1141,10 @@ patch(PosStore.prototype, {
 
     async printReceipt(options = {}) {
         const order = options.order || this.getOrder();
+        if (order?.uiState?.baseerBillSplitPending) {
+            this.notification.add(_t("Confirm the pending kitchen change before payment."), { type: "warning" });
+            return { successful: false };
+        }
         if (options.printBillActionTriggered) {
             if (usesBaseerDraftBill(this.config)) {
                 return this.baseerPrintDraftBill(order);

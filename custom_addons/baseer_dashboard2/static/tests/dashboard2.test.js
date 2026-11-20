@@ -69,7 +69,7 @@ test('in/out unavailable unreceived values use dashes with tooltips', async () =
         static template = 'baseer_dashboard2.Pnl';
         static components = { Sparkline };
         state = { view: 'inout', data: { months: [month('2026-10', unavailable), month('2026-11', available)], total: { incoming: 200, outgoing: 0, channels: {}, items: {}, sources: {}, apps_unreceived: available, sales_vat: 0, unpaid_bills: { value: 0 }, net: 200 } } };
-        fmt = formatNumber; tableFmt = formatTable; monthName = (v) => v; name = (v) => v;
+        fmt = formatNumber; tableFmt = formatTable; hasDisplayValues = hasDisplayValues; monthName = (v) => v; name = (v) => v;
         exportCsv() {}
     }
     const response = await withFetch(globals.fetch, () => fetch('/baseer_dashboard2/static/src/xml/main.xml'));

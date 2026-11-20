@@ -176,6 +176,10 @@ test('prepayment bill inherits the live receipt template and suppresses fiscal Q
         }
     }
     const bridge = runtime('draft_bill.js', { OrderReceipt });
+    assert.equal(bridge.usesBaseerDraftBill({ module_pos_restaurant: false, iface_printbill: true, baseer_direct_print_enabled: true }), true);
+    assert.equal(bridge.usesBaseerDraftBill({ module_pos_restaurant: false, iface_printbill: false, baseer_direct_print_enabled: true }), false);
+    assert.equal(bridge.usesBaseerDraftBill({ module_pos_restaurant: true, iface_printbill: false, baseer_direct_print_enabled: true }), true);
+    assert.equal(bridge.usesBaseerDraftBill({ module_pos_restaurant: false, iface_printbill: true, baseer_direct_print_enabled: false }), false);
     const DraftBill = vm.runInContext('DraftBill', bridge);
     const order = {
         config: { baseer_receipt_layout_mode: 'native' }, showChange: true,

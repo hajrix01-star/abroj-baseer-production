@@ -338,36 +338,61 @@ class BaseerPrintJob(models.Model):
         return self.env['pos.order'].sudo().search([('uuid', '=', order_uuid)], limit=1)
 
     @api.model
+    def _draft_bill_revision(self, order):
+        if not order:
+            return False
+        # Bind only an unpaid paper snapshot to its server content. Timestamps
+        # alone cannot distinguish several line changes in one transaction.
+        return self._canonical_key(
+            'draft-bill-content-v1', order.session_id.id, order.partner_id.id,
+            order.pricelist_id.id, order.fiscal_position_id.id, order.table_id.id,
+            order.user_id.id, fields.Datetime.to_string(order.date_order),
+            order.name, order.pos_reference, order.tracking_number,
+            order.general_customer_note, order.internal_note,
+            order.amount_total, order.amount_tax,
+            [(line.uuid, line.product_id.id, line.qty, line.price_unit,
+              line.discount, line.price_subtotal, line.price_subtotal_incl,
+              sorted(line.tax_ids.ids), line.full_product_name, line.note,
+              line.customer_note, sorted(line.attribute_value_ids.ids),
+              [(value.custom_product_template_attribute_value_id.id, value.custom_value)
+               for value in line.custom_attribute_value_ids.sorted('id')])
+             for line in order.lines.sorted('id')],
+        )
+
+    @api.model
     def _enqueue_draft_bill(self, session, order, order_uuid, request_uuid, printer, jpeg_base64):
         jobs = self.sudo()
         key = self._canonical_key('draft-bill-v1', session.id, order_uuid, request_uuid)
         existing = jobs.search([('idempotency_key', '=', key)], limit=1)
         if existing:
             return {'job_id': existing.id, 'state': existing.state, 'already_queued': True}
+        raw, width, height, digest = self._validated_native_receipt_image(jpeg_base64)
         active = jobs.search([
             ('source_session_id', '=', session.id), ('draft_order_uuid', '=', order_uuid),
             ('ticket_type', '=', 'draft_bill'), ('state', 'in', ('pending', 'leased')),
         ], limit=1)
         if active:
-            if active.state == 'pending' and active.create_date <= fields.Datetime.now() - DRAFT_BILL_LIFETIME:
-                # Recheck the state under the row lock before clearing a draft
-                # that the agent may have leased since the search.
-                self.env.cr.execute(
-                    'SELECT state FROM baseer_print_job WHERE id = %s FOR UPDATE', [active.id],
-                )
-                if self.env.cr.fetchone()[0] == 'pending':
-                    active._cancel_stale_draft_bill()
-                else:
-                    return {'job_id': active.id, 'already_queued': True}
-            else:
+            # Claim and replacement serialize on the same existing job row.
+            self.env.cr.execute(
+                'SELECT state FROM baseer_print_job WHERE id = %s FOR UPDATE', [active.id],
+            )
+            active.invalidate_recordset(['state', 'payload', 'receipt_image_sha256', 'create_date'])
+            current = active._is_current_draft_bill() and active.receipt_image_sha256 == digest
+            if active.state in ('pending', 'leased') and current:
                 return {'job_id': active.id, 'state': active.state, 'already_queued': True}
+            if active.state == 'leased':
+                # Windows may already be printing it. Do not replace a leased
+                # image or claim that the newly requested content was queued.
+                raise ValidationError(_('The original receipt is still in the print queue.'))
+            if active.state == 'pending':
+                active._cancel_stale_draft_bill()
 
-        raw, width, height, digest = self._validated_native_receipt_image(jpeg_base64)
         payload = {
             'schema': 4, 'ticket_type': 'receipt', 'document_kind': 'draft_bill',
             'printer': self._receipt_printer_payload(printer, 1),
             'receipt_image': {'sha256': digest, 'width': width, 'height': height, 'format': 'jpeg'},
             'order_was_synced': bool(order),
+            'order_revision': self._draft_bill_revision(order),
         }
         try:
             with self.env.cr.savepoint():
@@ -384,6 +409,10 @@ class BaseerPrintJob(models.Model):
                 'baseer_print_job_active_draft_idx', 'baseer_print_job_idempotency_unique',
             ):
                 raise
+            if error.diag.constraint_name == 'baseer_print_job_active_draft_idx':
+                # A different request won this snapshot's queue race. Its
+                # pixels may differ, so do not report this image as accepted.
+                raise ValidationError(_('The original receipt is still in the print queue.')) from error
             # A competing transaction may still be invisible to this snapshot.
             return {'already_queued': True}
         return {'job_id': job.id, 'state': job.state, 'already_queued': False}
@@ -400,7 +429,9 @@ class BaseerPrintJob(models.Model):
         order = self._draft_bill_order(self.draft_order_uuid)
         if not order:
             return not self.payload.get('order_was_synced')
-        return order.session_id == session and order.state == 'draft'
+        return (order.session_id == session and order.state == 'draft'
+                and bool(self.payload.get('order_revision'))
+                and self.payload['order_revision'] == self._draft_bill_revision(order))
 
     def _cancel_stale_draft_bill(self):
         self.write({

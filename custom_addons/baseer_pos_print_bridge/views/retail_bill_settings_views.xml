@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_retail_bill_settings" model="ir.ui.view">
+        <field name="name">res.config.settings.baseer.retail.bills</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="pos_restaurant.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//setting[@id='iface_printbill']" position="attributes">
+                <attribute name="invisible">is_kiosk_mode</attribute>
+            </xpath>
+            <xpath expr="//setting[@id='iface_splitbill']" position="attributes">
+                <attribute name="invisible">is_kiosk_mode</attribute>
+            </xpath>
+        </field>
+    </record>
+</odoo>

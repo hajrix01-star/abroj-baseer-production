@@ -1,7 +1,7 @@
 {
     'name': 'Baseer POS Direct Print Bridge',
     'summary': 'Receipt and kitchen printing through the print agent',
-    'version': '19.0.7.8.55',
+    'version': '19.0.7.8.57',
     'category': 'Baseer/POS',
     'author': 'Baseer',
     'license': 'LGPL-3',
@@ -10,12 +10,15 @@
         'security/print_security.xml',
         'security/ir.model.access.csv',
         'views/print_views.xml',
+        'views/retail_bill_settings_views.xml',
         'views/print_document_templates.xml',
         'data/receipt_cleanup_cron.xml',
         'data/print_agent_github_release.xml',
     ],
     'assets': {
         'point_of_sale._assets_pos': [
+            'baseer_pos_print_bridge/static/src/app/retail_bill_controls.xml',
+            'baseer_pos_print_bridge/static/src/app/retail_bill_controls.js',
             'baseer_pos_print_bridge/static/src/app/pos_exit.js',
             'baseer_pos_print_bridge/static/src/app/required_guest_count.js',
             'baseer_pos_print_bridge/static/src/app/receipt_image.js',
@@ -23,6 +26,7 @@
             'baseer_pos_print_bridge/static/src/app/draft_bill.xml',
             'baseer_pos_print_bridge/static/src/app/restaurant_course_button.xml',
             'baseer_pos_print_bridge/static/src/app/preparation_bridge.js',
+            'baseer_pos_print_bridge/static/src/app/native_split.js',
             'baseer_pos_print_bridge/static/src/app/restaurant_cancellation.js',
             'baseer_pos_print_bridge/static/src/app/kitchen_send_button.js',
             'baseer_pos_print_bridge/static/src/app/kitchen_send_button.xml',

@@ -44,7 +44,7 @@ export class DraftBill extends OrderReceipt {
 }
 
 export function usesBaseerDraftBill(config) {
-    return config.module_pos_restaurant && config.baseer_direct_print_enabled;
+    return (config.module_pos_restaurant || config.iface_printbill) && config.baseer_direct_print_enabled;
 }
 
 patch(ControlButtons.prototype, {

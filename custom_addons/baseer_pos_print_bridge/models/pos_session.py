@@ -32,8 +32,9 @@ class PosSession(models.Model):
         if self.company_id not in self.env.companies:
             raise AccessError(_('You do not have access to this session company.'))
         if (self.state != 'opened' or config.current_session_id != self
-                or not config.module_pos_restaurant or not config.baseer_direct_print_enabled):
-            raise ValidationError(_('Direct order bill printing requires the open restaurant session.'))
+                or not (config.module_pos_restaurant or config.iface_printbill)
+                or not config.baseer_direct_print_enabled):
+            raise ValidationError(_('Direct order bill printing requires an open session with bill printing enabled.'))
         try:
             if not all(isinstance(value, str) and len(value) == 36 for value in (order_uuid, request_uuid)):
                 raise ValueError('invalid identifier length')

@@ -5,3 +5,5 @@ from . import test_payment_integrity
 from . import test_merge_sync
 from . import test_note
 from . import test_kitchen_document
+from . import test_native_split
+from . import test_draft_bill_freshness

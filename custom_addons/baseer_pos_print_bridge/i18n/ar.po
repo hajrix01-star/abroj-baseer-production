@@ -2762,8 +2762,8 @@ msgstr "طباعة حساب الطلب متاحة لمستخدمي نقطة ال
 
 #. module: baseer_pos_print_bridge
 #: code:addons/baseer_pos_print_bridge/models/pos_session.py:0
-msgid "Direct order bill printing requires the open restaurant session."
-msgstr "تتطلب طباعة الحساب المباشرة جلسة مطعم مفتوحة."
+msgid "Direct order bill printing requires an open session with bill printing enabled."
+msgstr "تتطلب طباعة الحساب المباشرة جلسة مفتوحة مع تفعيل طباعة الحساب."
 
 #. module: baseer_pos_print_bridge
 #: code:addons/baseer_pos_print_bridge/models/pos_session.py:0
@@ -2804,3 +2804,98 @@ msgstr "انتهت مدة حفظ صورة ورقة المطبخ الأصلية،
 #: code:addons/baseer_pos_print_bridge/models/job.py:0
 msgid "Customer receipts must use the original Odoo receipt image."
 msgstr "يجب طباعة إيصال العميل من صورة إيصال أودو الأصلي."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/native_split.py:0
+msgid "Bill split receipts can only be recorded by the native split workflow."
+msgstr "لا يمكن تسجيل عملية تقسيم الفاتورة إلا عبر مسار التقسيم المعتمد."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/native_split.py:0
+msgid "Only a Point of Sale user can split an order."
+msgstr "تقسيم الطلب متاح لمستخدم نقطة البيع فقط."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/native_split.py:0
+msgid "The split order does not belong to an allowed company."
+msgstr "لا تملك صلاحية الوصول إلى شركة هذا الطلب."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/native_split.py:0
+msgid "Bill splitting requires the current open session with splitting enabled."
+msgstr "يتطلب تقسيم الفاتورة جلسة مفتوحة وتفعيل خيار تقسيم الفاتورة."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/native_split.py:0
+msgid "Refund items cannot be split by this workflow."
+msgstr "لا يمكن تقسيم أصناف المرتجع عبر هذا المسار."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/native_split.py:0
+msgid "Complete protected item changes before splitting this order."
+msgstr "لا يمكن تقسيم طلب يحتوي على أصناف ذات تعديل محمي."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/native_split.py:0
+msgid "The saved kitchen state does not match this order. Reload it before splitting."
+msgstr "حالة المطبخ المحفوظة لا تطابق الطلب. أعد تحميل الطلب قبل تقسيمه."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/native_split.py:0
+msgid "The native bill split request is invalid."
+msgstr "طلب تقسيم الفاتورة غير صالح."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/native_split.py:0
+msgid "The native bill split line map is invalid."
+msgstr "بيانات الأصناف المطلوب تقسيمها غير صالحة."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/native_split.py:0
+msgid "The original bill split order was not found."
+msgstr "لم يُعثر على الطلب الأصلي المطلوب تقسيمه."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/native_split.py:0
+msgid "This bill split has already been processed with different order data."
+msgstr "سُجّلت عملية التقسيم هذه ببيانات مختلفة. أعد تحميل الطلب."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/native_split.py:0
+msgid "The order changed. Reload it before splitting again."
+msgstr "تغيّر الطلب. أعد تحميله قبل محاولة التقسيم مجددًا."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/native_split.py:0
+msgid "Both split orders must be unpaid drafts in the same Point of Sale session."
+msgstr "يجب أن يكون الطلبان غير مدفوعين وفي جلسة نقطة البيع نفسها."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/native_split.py:0
+msgid "Pay the whole order instead of splitting every item into a new order."
+msgstr "لدفع الطلب كاملًا، استخدم زر الدفع دون تقسيم جميع الأصناف."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/native_split.py:0
+msgid "The native bill split did not create its destination order."
+msgstr "لم يكتمل إنشاء الجزء المفصول من الطلب."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/native_split.py:0
+msgid "The split orders do not preserve the original items."
+msgstr "أصناف الطلبين بعد التقسيم لا تطابق أصناف الطلب الأصلي."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/native_split.py:0
+msgid "The split kitchen item does not match the original kitchen item."
+msgstr "صنف المطبخ المفصول لا يطابق الصنف الأصلي."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/native_split.py:0
+msgid "The split kitchen item quantity is invalid."
+msgstr "كمية صنف المطبخ المفصول غير صالحة."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/static/src/app/native_split.js:0
+msgid "To pay the whole order, use Payment without splitting it."
+msgstr "لدفع الطلب كاملًا، استخدم زر الدفع دون تقسيمه."

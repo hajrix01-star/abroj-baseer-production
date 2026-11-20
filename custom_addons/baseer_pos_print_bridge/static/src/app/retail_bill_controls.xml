@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="baseer_pos_print_bridge.RetailBillControls"
+       t-inherit="point_of_sale.ControlButtons" t-inherit-mode="extension">
+        <!-- Unwrap only the native bill buttons; keep their rendered order,
+             handlers and disabled conditions. Restaurant tools stay guarded. -->
+        <xpath expr="//t[@t-if='pos.config.module_pos_restaurant'][button[@t-on-click='clickPrintBill']]" position="before">
+            <xpath expr="//button[@t-on-click='clickPrintBill']" position="move"/>
+        </xpath>
+        <xpath expr="//t[@t-if='pos.config.module_pos_restaurant'][button[@t-on-click='openSplitPage']]" position="before">
+            <xpath expr="//button[@t-on-click='openSplitPage']" position="move"/>
+        </xpath>
+    </t>
+    <t t-name="baseer_pos_print_bridge.RetailSplitBillScreen"
+       t-inherit="pos_restaurant.SplitBillScreen" t-inherit-mode="extension">
+        <xpath expr="//button[hasclass('transfer-split-order')]" position="attributes">
+            <attribute name="t-if">pos.config.module_pos_restaurant</attribute>
+        </xpath>
+    </t>
+</templates>

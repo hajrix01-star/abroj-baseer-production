@@ -716,7 +716,7 @@
                     <span class="chip" t-esc="state.period?.mode==='month' ? monthName(state.period.month) : dateName(state.period?.date_from)+' – '+dateName(state.period?.date_to)"/>
                     <span t-if="state.period?.mode==='month' and state.period.month===state.meta?.today.slice(0,7)" class="chip">جزئي</span>
                     <span class="chip">الاتجاه: آخر 6 أشهر</span>
-                    <span t-if="state.data?.sales?.source_counts" class="chip" t-esc="state.data.sales.source_counts.summary ? 'المصدر: ملخصات يومية' : 'المصدر: نقاط البيع'"/>
+                    <span t-if="state.data?.sales?.source_counts" class="chip" t-esc="state.data.sales.source_counts.summary &amp;&amp; state.data.sales.source_counts.pos ? 'المصدر: ملخصات ونقاط البيع' : state.data.sales.source_counts.summary ? 'المصدر: ملخصات يومية' : 'المصدر: نقاط البيع'"/>
                 </div>
                 <div t-if="state.loading" class="card loading">جارٍ تحميل البيانات…</div>
                 <div t-elif="state.error" class="card error" t-esc="state.error"/>

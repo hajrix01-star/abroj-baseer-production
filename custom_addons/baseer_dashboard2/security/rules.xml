@@ -4,4 +4,5 @@
     <record id="settings_company_rule" model="ir.rule"><field name="name">Dashboard settings by company</field><field name="model_id" ref="model_baseer_dashboard2_settings"/><field name="domain_force">[('company_id', 'in', company_ids)]</field></record>
     <record id="channel_map_company_rule" model="ir.rule"><field name="name">Dashboard channel maps by company</field><field name="model_id" ref="model_baseer_dashboard2_channel_map"/><field name="domain_force">[('company_id', 'in', company_ids)]</field></record>
     <record id="liquidity_company_rule" model="ir.rule"><field name="name">Dashboard liquidity by company</field><field name="model_id" ref="model_baseer_dashboard2_liquidity"/><field name="domain_force">[('company_id', 'in', company_ids)]</field></record>
+    <record id="source_override_company_rule" model="ir.rule"><field name="name">Dashboard source overrides by company</field><field name="model_id" ref="model_baseer_dashboard2_source_override"/><field name="domain_force">[('company_id', 'in', company_ids)]</field></record>
 </odoo>

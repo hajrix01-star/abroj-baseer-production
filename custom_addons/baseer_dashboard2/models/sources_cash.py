@@ -97,10 +97,10 @@ class DashboardCash(models.AbstractModel):
             ('account_id.account_type', '=', 'liability_current'), ('tax_line_id', '!=', False), ('move_id', 'not in', self._reset_move_ids(ids, end, start)),
             '|', '|', ('move_id.ref', 'ilike', 'NOORIX-SALES'), ('move_id.reversed_entry_id.ref', 'ilike', 'NOORIX-SALES'), ('move_id', 'in', list(pos_moves))],
             ['company_id', 'date:day', 'move_id'], ['credit:sum', 'debit:sum'])
-        amount = sum(day.get('sales_vat', 0) for day in sales_days.values() if day['source'] == 'summary')
+        amount = sum(day.get('sales_vat', 0) for day in sales_days.values() if day['source'] in ('summary', 'mixed'))
         for company, day, move, credit, debit in rows:
             source = sales_days.get((company.id, day), {}).get('source')
-            if (source == 'pos' and move.id in pos_moves):
+            if (source in ('pos', 'mixed') and move.id in session_move_ids):
                 amount += (credit or 0) - (debit or 0)
         return {'available': True, 'value': round(amount, 2)}
 

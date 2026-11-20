@@ -93,7 +93,7 @@ class DashboardSettings(models.Model):
     custody_journal_ids = fields.Many2many('account.journal', 'bd2_settings_custody_journal_rel', 'settings_id', 'journal_id', check_company=True)
     show_vat_paid_line = fields.Boolean(default=True)
     pos_cutover_note = fields.Text()
-    pos_cutover_date = fields.Date(help='Before this date sales use summaries; qualifying real POS orders still provide customer and hourly metrics.')
+    pos_cutover_date = fields.Date(help='Legacy reference date; posted entries determine sales unless a source override applies.')
     summary_pos_config_ids = fields.Many2many('pos.config', 'bd2_summary_pos_rel', 'settings_id', 'config_id', check_company=True)
     liquidity_account_ids = fields.Many2many('account.account', 'bd2_liquidity_account_rel', 'settings_id', 'account_id', check_company=True)
     liquidity_ids = fields.One2many('baseer.dashboard2.liquidity', 'settings_id')
@@ -101,6 +101,7 @@ class DashboardSettings(models.Model):
     excluded_journal_ids = fields.Many2many('account.journal', 'bd2_settings_excluded_journal_rel', 'settings_id', 'journal_id', check_company=True)
     min_order_amount = fields.Float(default=1.5)
     channel_map_ids = fields.One2many('baseer.dashboard2.channel.map', 'settings_id')
+    source_override_ids = fields.One2many('baseer.dashboard2.source.override', 'settings_id')
 
     def action_seed_documented_defaults(self):
         self._seed_documented_defaults(force=True, company_ids=self.mapped('company_id').ids)
@@ -208,3 +209,27 @@ class DashboardLiquidity(models.Model):
     account_id = fields.Many2one('account.account', required=True, check_company=True)
     kind = fields.Selection([('bank', 'Bank'), ('cash', 'Cash'), ('custody', 'Custody'), ('app', 'App account')], required=True)
     label = fields.Char()
+
+
+class DashboardSourceOverride(models.Model):
+    _name = 'baseer.dashboard2.source.override'
+    _description = 'Dashboard sales source override'
+    _check_company_auto = True
+    _order = 'date_from, id'
+
+    settings_id = fields.Many2one('baseer.dashboard2.settings', required=True, ondelete='cascade', check_company=True)
+    company_id = fields.Many2one(related='settings_id.company_id', store=True, index=True)
+    date_from = fields.Date(required=True)
+    date_to = fields.Date(required=True)
+    source = fields.Selection([('auto', 'Automatic merge'), ('summary', 'Summary'), ('pos', 'POS')], required=True, default='auto')
+    note = fields.Text()
+
+    @api.constrains('date_from', 'date_to', 'company_id')
+    def _check_period(self):
+        for record in self:
+            if record.date_from and record.date_to and record.date_to < record.date_from:
+                raise ValidationError(_('The end date must not precede the start date.'))
+            if record.date_from and record.date_to and self.search_count([
+                ('id', '!=', record.id), ('company_id', '=', record.company_id.id),
+                ('date_from', '<=', record.date_to), ('date_to', '>=', record.date_from)]):
+                raise ValidationError(_('Sales source override periods cannot overlap for the same company.'))

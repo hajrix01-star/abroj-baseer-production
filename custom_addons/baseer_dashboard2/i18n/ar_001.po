@@ -630,3 +630,31 @@ msgid ""
 msgstr ""
 "قبل هذا التاريخ تُحسب المبيعات من الملخصات؛ وتظل طلبات نقاط البيع الحقيقية "
 "المؤهلة مصدراً لعدد العملاء والتوزيع بالساعة."
+
+#. Sales source override settings
+msgid "Dashboard sales source override"
+msgstr "استثناء مصدر المبيعات"
+
+msgid "Automatic merge"
+msgstr "دمج تلقائي"
+
+msgid "Summary"
+msgstr "الملخص"
+
+msgid "POS"
+msgstr "نقاط البيع"
+
+msgid "Sales source override periods cannot overlap for the same company."
+msgstr "لا يمكن تداخل فترات استثناء مصدر المبيعات للشركة نفسها."
+
+msgid "Source"
+msgstr "المصدر"
+
+msgid "Source Override"
+msgstr "استثناء المصدر"
+
+msgid "Source Override Ids"
+msgstr "استثناءات مصدر المبيعات"
+
+msgid "Legacy reference date; posted entries determine sales unless a source override applies."
+msgstr "تاريخ مرجعي سابق؛ تحدد القيود المرحّلة المبيعات ما لم يُطبّق استثناء للمصدر."

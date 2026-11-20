@@ -154,82 +154,96 @@ class TestDashboard2(TransactionCase):
 
 
     def test_pos_sales(self):
-        from datetime import date
+        from datetime import date, timedelta
         company = self.env.company
+        settings = self.env['baseer.dashboard2.settings'].search([('company_id', '=', company.id)], limit=1)
         method = self.env['pos.payment.method'].create({'name': 'cash', 'company_id': company.id})
-        settings = self.env['baseer.dashboard2.settings'].search([('company_id', '=', company.id)], limit=1) or self.env['baseer.dashboard2.settings'].create({'company_id': company.id})
-        settings.pos_cutover_date = False
-        mapping = self.env['baseer.dashboard2.channel.map'].create({'settings_id': settings.id, 'company_id': company.id, 'source': 'pos_method', 'pos_payment_method_id': method.id, 'channel_id': self.env.ref('baseer_dashboard2.channel_card').id, 'kind': 'hall'})
-        sale_journal = self.env['account.journal'].create({'name': 'POS sales', 'code': 'D2POS', 'type': 'sale', 'company_id': company.id})
-        config = self.env['pos.config'].create({'name': 'Dashboard POS', 'company_id': company.id, 'journal_id': sale_journal.id, 'payment_method_ids': [(6, 0, [method.id])]})
-        session = self.env['pos.session'].create({'config_id': config.id})
-        order = self.env['pos.order'].create({'company_id': company.id, 'session_id': session.id, 'date_order': '2026-10-01 10:00:00', 'state': 'paid',
-                                              'amount_tax': 0, 'amount_total': 115, 'amount_paid': 115, 'amount_return': 0})
-        self.env['pos.payment'].create({'pos_order_id': order.id, 'payment_method_id': method.id, 'amount': 115})
-        small = self.env['pos.order'].create({'company_id': company.id, 'session_id': session.id, 'date_order': '2026-10-01 10:00:00', 'state': 'paid', 'amount_tax': 0, 'amount_total': 1, 'amount_paid': 1, 'amount_return': 0})
-        self.env['pos.payment'].create({'pos_order_id': small.id, 'payment_method_id': method.id, 'amount': 1})
-        summary, days, _, hours = self.env['baseer.dashboard2.service']._sales_summary([company.id], date(2026, 10, 1), date(2026, 10, 31))
-        self.assertEqual(summary['gross'], 116)
-        self.assertEqual(summary['channels']['card'], 116)
-        self.assertEqual(summary['customers']['avg_ticket'], 115)
-        self.assertEqual(sum(h['orders'] for h in hours.values()), 1)
-        self.assertEqual(summary['customers']['value'], 1)
-        self.assertTrue(hours)
-        account_model = self.env['account.account'].with_company(company)
-        cash = account_model.create({'code': 'D2NC', 'name': 'Cash', 'account_type': 'asset_cash', 'company_ids': [(6, 0, [company.id])]})
-        revenue = account_model.create({'code': 'D2NR', 'name': 'Sales', 'account_type': 'income', 'company_ids': [(6, 0, [company.id])]})
+        journal = self.env['account.journal'].create({'name': 'POS sales', 'code': 'D2POS', 'type': 'sale', 'company_id': company.id})
         misc = self.env['account.journal'].create({'name': 'Noorix', 'code': 'D2NOO', 'type': 'general', 'company_id': company.id})
-        move = self.env['account.move'].create({'journal_id': misc.id, 'date': '2026-10-01', 'ref': 'NOORIX-SALES', 'line_ids': [
-            (0, 0, {'name': 'cash', 'account_id': cash.id, 'debit': 300, 'credit': 0}),
-            (0, 0, {'name': 'sale', 'account_id': revenue.id, 'debit': 0, 'credit': 300})]})
-        move.action_post()
-        session.move_id = move
-        summary, _, _, _ = self.env['baseer.dashboard2.service']._sales_summary([company.id], date(2026, 10, 1), date(2026, 10, 31))
-        self.assertEqual(summary['gross'], 116)
-        self.assertEqual(len(summary['warnings']), 1)
-        settings.pos_cutover_date = '2026-10-02'
-        summary, days, _, hours = self.env['baseer.dashboard2.service']._sales_summary([company.id], date(2026, 10, 1), date(2026, 10, 1))
-        self.assertEqual(summary['gross'], 300)
-        self.assertFalse(summary['warnings'])
-        self.assertEqual(summary['customers']['value'], 1)
-        self.assertEqual(summary['customers']['avg_ticket'], 115)
-        self.assertEqual(sum(h['orders'] for h in hours.values()), 1)
-        heatmap = self.env['baseer.dashboard2.service']._heatmap([company.id], '2026-10')
-        self.assertEqual(heatmap['days'][0]['gross'], 300)
-        self.assertEqual(heatmap['days'][0]['pos_gross'], 115)
-        self.assertEqual(heatmap['days'][0]['customers'], 1)
-        self.assertEqual(self.env['baseer.dashboard2.service']._inout([company.id], date(2026, 10, 1))['months'][-1]['incoming']['gross'], 300)
-        settings.pos_cutover_date = '2026-10-01'
-        second = self.env['account.move'].create({'journal_id': misc.id, 'date': '2026-10-02', 'line_ids': [
-            (0, 0, {'name': 'cash', 'account_id': cash.id, 'debit': 300, 'credit': 0}),
-            (0, 0, {'name': 'sale', 'account_id': revenue.id, 'debit': 0, 'credit': 300})]})
-        second.action_post()
-        session.move_id = second
-        combine = self.env['account.move'].create({'journal_id': misc.id, 'date': '2026-10-02', 'ref': 'Combine POS payments', 'line_ids': [
-            (0, 0, {'name': 'cash', 'account_id': cash.id, 'debit': 300, 'credit': 0}),
-            (0, 0, {'name': 'clearing', 'account_id': self.env['account.account'].create({'code': 'D2CLR', 'name': 'Clearing', 'account_type': 'asset_current', 'company_ids': [(6, 0, [company.id])]}).id, 'debit': 0, 'credit': 300})]})
-        combine.action_post()
-        summary, _, _, _ = self.env['baseer.dashboard2.service']._sales_summary([company.id], date(2026, 10, 1), date(2026, 10, 31))
-        self.assertEqual(summary['gross'], 116)
-        summary_config = self.env['pos.config'].create({'name': 'ملخصات', 'company_id': company.id, 'journal_id': sale_journal.id, 'payment_method_ids': [(6, 0, [method.id])]})
-        summary_session = self.env['pos.session'].create({'config_id': summary_config.id})
-        self.env['pos.order'].create({'company_id': company.id, 'session_id': summary_session.id, 'date_order': '2026-09-29 10:00:00', 'state': 'paid', 'amount_tax': 0, 'amount_total': 500, 'amount_paid': 500, 'amount_return': 0})
-        session.move_id = False
-        summary_session.move_id = second
-        tiny = self.env['pos.order'].create({'company_id': company.id, 'session_id': session.id, 'date_order': '2026-10-02 10:00:00', 'state': 'paid', 'amount_tax': 0, 'amount_total': 1, 'amount_paid': 1, 'amount_return': 0})
-        self.env['pos.payment'].create({'pos_order_id': tiny.id, 'payment_method_id': method.id, 'amount': 1})
-        settings.pos_cutover_date = '2026-10-03'
-        summary, _, _, hours = self.env['baseer.dashboard2.service']._sales_summary([company.id], date(2026, 10, 2), date(2026, 10, 2))
-        self.assertEqual(summary['gross'], 300)
+        config = self.env['pos.config'].create({'name': 'Dashboard POS', 'company_id': company.id, 'journal_id': journal.id, 'payment_method_ids': [(6, 0, [method.id])]})
+        summary_config = self.env['pos.config'].create({'name': 'ملخصات', 'company_id': company.id, 'journal_id': journal.id, 'payment_method_ids': [(6, 0, [method.id])]})
+        account = self.env['account.account'].with_company(company)
+        cash = account.create({'code': 'D2NC', 'name': 'Cash', 'account_type': 'asset_cash', 'company_ids': [(6, 0, [company.id])]})
+        revenue = account.create({'code': 'D2NR', 'name': 'Sales', 'account_type': 'income', 'company_ids': [(6, 0, [company.id])]})
+        def entry(day, amount=300, label='cash'):
+            move = self.env['account.move'].create({'journal_id': misc.id, 'date': day, 'line_ids': [
+                (0, 0, {'name': label, 'account_id': cash.id, 'debit': amount, 'credit': 0}),
+                (0, 0, {'name': 'sale', 'account_id': revenue.id, 'debit': 0, 'credit': amount})]})
+            move.action_post()
+            return move
+        def order(session, day, amount):
+            rec = self.env['pos.order'].create({'company_id': company.id, 'session_id': session.id, 'date_order': str(day) + ' 10:00:00', 'state': 'paid', 'amount_tax': 0, 'amount_total': amount, 'amount_paid': amount, 'amount_return': 0})
+            self.env['pos.payment'].create({'pos_order_id': rec.id, 'payment_method_id': method.id, 'amount': amount})
+        def new_session(config):
+            self.env['pos.session'].search([('config_id', '=', config.id), ('state', '!=', 'closed')]).write({'state': 'closed'})
+            return self.env['pos.session'].create({'config_id': config.id})
+        service = self.env['baseer.dashboard2.service']
+        def result(day):
+            return service._sales_summary([company.id], day, day)
+        # Repeated Noorix days retain their full amount despite real and tiny orders.
+        for start, count in [(date(2026, 10, 25), 1), (date(2026, 11, 1), 16), (date(2026, 9, 24), 9)]:
+            for offset in range(count):
+                day = start + timedelta(days=offset)
+                entry(day)
+                session = new_session(config)
+                order(session, day, 1)
+                order(session, day, 115)
+                summary, days, _, hours = result(day)
+                self.assertEqual(summary['gross'], 300)
+                self.assertEqual(days[(company.id, day)]['source'], 'summary')
+                self.assertEqual(summary['customers']['value'], 1)
+                self.assertEqual(sum(row['orders'] for row in hours.values()), 1)
+                self.assertFalse(summary['warnings'])
+        # A cancelled session closing cannot add its orders to Noorix.
+        cancelled_day = date(2026, 10, 1)
+        cancelled = new_session(config)
+        cancelled_move = entry(cancelled_day, 115)
+        cancelled_move.button_draft()
+        cancelled_move.button_cancel()
+        cancelled.move_id = cancelled_move
+        order(cancelled, cancelled_day, 115)
+        self.assertEqual(result(cancelled_day)[0]['gross'], 300)
+        self.assertFalse(result(cancelled_day)[0]['warnings'])
+        day = date(2026, 10, 3)
+        session = new_session(config)
+        session.move_id = entry(day, 115)
+        order(session, day, 115)
+        order(session, day, 1)
+        self.assertEqual(result(day)[0]['gross'], 115)
+        self.assertEqual(result(day)[1][(company.id, day)]['source'], 'pos')
+        for day in (date(2026, 10, 25), date(2026, 10, 31)):
+            if day.day == 31:
+                entry(day)
+            session = new_session(config)
+            session.move_id = entry(day, 115)
+            order(session, day, 115)
+            summary, days, _, _ = result(day)
+            self.assertEqual(summary['gross'], 415)
+            self.assertEqual(days[(company.id, day)]['source'], 'mixed')
+            self.assertEqual(len(summary['warnings']), 1)
+            self.assertEqual(service._heatmap([company.id], '2026-10')['days'][day.day - 1]['source'], 'mixed')
+        override = self.env['baseer.dashboard2.source.override'].create({'settings_id': settings.id, 'date_from': '2026-10-25', 'date_to': '2026-10-25', 'source': 'summary'})
+        self.assertEqual(result(date(2026, 10, 25))[0]['gross'], 300)
+        override.source = 'pos'
+        self.assertEqual(result(date(2026, 10, 25))[0]['gross'], 115)
+        override.source = 'auto'
+        self.assertEqual(result(date(2026, 10, 25))[0]['gross'], 415)
+        with self.assertRaises(ValidationError), self.cr.savepoint():
+            self.env['baseer.dashboard2.source.override'].create({'settings_id': settings.id, 'date_from': '2026-10-25', 'date_to': '2026-10-26', 'source': 'pos'})
+        day = date(2026, 9, 15)
+        session = new_session(summary_config)
+        session.move_id = entry(day, 500, 'keeta')
+        order(session, day, 500)
+        summary, _, _, _ = result(day)
+        self.assertEqual(summary['gross'], 500)
+        self.assertEqual(summary['apps'], 500)
         self.assertFalse(summary['customers']['available'])
-        self.assertFalse(hours)
-        settings.pos_cutover_date = '2026-10-01'
-        summary, _, _, _ = self.env['baseer.dashboard2.service']._sales_summary([company.id], date(2026, 10, 2), date(2026, 10, 2))
-        self.assertEqual(summary['gross'], 1)
-        self.assertEqual(len(summary['warnings']), 1)
-        heatmap = self.env['baseer.dashboard2.service']._heatmap([company.id], '2026-10')
-        self.assertEqual(heatmap['daily_average']['current'], 58.5)
-        self.assertIsNone(heatmap['days'][2]['gross'])
+        clearing = account.create({'code': 'D2CLR', 'name': 'Clearing', 'account_type': 'asset_current', 'company_ids': [(6, 0, [company.id])]})
+        receipt = self.env['account.move'].create({'journal_id': misc.id, 'date': day, 'ref': 'Combine POS payments', 'line_ids': [
+            (0, 0, {'name': 'cash', 'account_id': cash.id, 'debit': 500, 'credit': 0}),
+            (0, 0, {'name': 'clearing', 'account_id': clearing.id, 'debit': 0, 'credit': 500})]})
+        receipt.action_post()
+        self.assertEqual(result(day)[0]['gross'], 500)
 
     def test_official_events_loaded(self):
         event = self.env.ref('baseer_dashboard2.event_ramadan_1447')

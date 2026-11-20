@@ -305,7 +305,9 @@ class DashboardSections(models.AbstractModel):
             rows = [v for (_, d), v in source.items() if d == day]
             covered_rows = [r for r in rows if r['customers'] is not None]
             sales_rows = [r for r in rows if not r.get('sales_missing')]
-            return {'date': str(day), 'events': [event for event in events if event['date_from'] <= str(day) <= event['date_to']], 'gross': round(sum(sum(r['channels'].values()) for r in sales_rows), 2) if sales_rows else None,
+            sources = {r['source'] for r in sales_rows}
+            source_label = 'mixed' if 'mixed' in sources or {'summary', 'pos'} <= sources else next(iter(sources), False)
+            return {'source': source_label, 'date': str(day), 'events': [event for event in events if event['date_from'] <= str(day) <= event['date_to']], 'gross': round(sum(sum(r['channels'].values()) for r in sales_rows), 2) if sales_rows else None,
                     'customers': sum(r['customers'] for r in covered_rows) if covered_rows else None,
                     'pos_gross': sum(r['pos_gross'] for r in covered_rows) if covered_rows else None,
                     'partial': bool(covered_rows and len(covered_rows) < len(rows))}
@@ -334,7 +336,7 @@ class DashboardSections(models.AbstractModel):
         matrix = [{'weekday': wd, 'hour': hour, 'orders': hours[(wd, hour)]['orders'] if (wd, hour) in hours else None, 'gross': round(hours[(wd, hour)]['gross'], 2) if (wd, hour) in hours else None} for wd in range(7) for hour in range(24)]
         return {'available': True, 'days': days, 'events': events, 'weekday_month': averages(first, last),
                 'weekday_ytd': averages(year_start, last), 'year_calendar': year_calendar,
-                'daily_average': {'current': round(current_summary['gross'] / len([d for d in days if d['gross'] is not None]), 2) if any(d['gross'] is not None for d in days) else None, 'previous': round(previous['gross'] / len({d for _, d in prev_days}), 2) if prev_days else None},
+                'daily_average': {'current': round(current_summary['gross'] / len([d for d in days if d['gross'] is not None]), 2) if any(d['gross'] is not None for d in days) else None, 'previous': round(previous['gross'] / len({d for (_, d), row in prev_days.items() if not row.get('sales_missing')}), 2) if any(not row.get('sales_missing') for row in prev_days.values()) else None},
                 'best_day': max((d for d in days if d['gross'] is not None), key=lambda d: d['gross'], default=None),
                 'worst_day': min((d for d in days if d['gross'] is not None), key=lambda d: d['gross'], default=None),
                 'hours': {'available': bool(hours), 'reason': False if hours else 'no_pos_days', 'matrix': matrix}}

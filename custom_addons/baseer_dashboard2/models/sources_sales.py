@@ -41,15 +41,6 @@ class DashboardSales(models.AbstractModel):
         configs = self.env['pos.config'].with_context(**dict(context, active_test=False)).search([('company_id', 'in', ids)])
         summary_ids = set(settings.mapped('summary_pos_config_ids').ids)
         summary_ids.update(c.id for c in configs if any(word in (c.name or '').casefold() for word in ('ملخص المبيعات', 'sales summaries', 'ملخصات')))
-        cutovers = {s.company_id.id: s.pos_cutover_date for s in settings if s.pos_cutover_date}
-        for cid in ids:
-            if cid not in cutovers:
-                candidates = self.env['pos.order'].with_context(**context).search([
-                    ('company_id', '=', cid), ('state', 'in', ('paid', 'done', 'invoiced')),
-                    ('config_id', 'not in', list(summary_ids)), '|', ('amount_total', '>', thresholds.get(cid, 1.5)),
-                    ('amount_total', '<', -thresholds.get(cid, 1.5))], order='date_order asc', limit=1)
-                if candidates:
-                    cutovers[cid] = fields.Datetime.to_datetime(candidates.date_order).replace(tzinfo=pytz.UTC).astimezone(tz).date()
         orders = self.env['pos.order'].with_context(**context).search_read([
             ('company_id', 'in', ids), ('state', 'in', ('paid', 'done', 'invoiced')),
             ('date_order', '>=', utc_start), ('date_order', '<', utc_end)],
@@ -60,7 +51,6 @@ class DashboardSales(models.AbstractModel):
         pos_days = {}
         real_days = set()
         order_hours = []
-        order_days = {}
         hours = defaultdict(lambda: {'orders': 0, 'gross': 0.0})
         for order in orders:
             local = fields.Datetime.to_datetime(order['date_order']).replace(tzinfo=pytz.UTC).astimezone(tz)
@@ -74,13 +64,6 @@ class DashboardSales(models.AbstractModel):
                 day['pos_gross'] += order['amount_total']
                 real_days.add(key)
                 order_hours.append((key, local.weekday(), local.hour, sign, order['amount_total']))
-            order_days[order['id']] = key
-        if order_days:
-            payment = self.env['pos.payment'].with_context(**context)
-            groups = payment._read_group([('pos_order_id', 'in', list(order_days)), ('company_id', 'in', ids)], ['pos_order_id', 'payment_method_id'], ['amount:sum'])
-            for order, method, amount in groups:
-                channel = mapped.get((order_days[order.id][0], 'pos_method', method.id)) or self._channel_for(method.name, channels, 'pos_method_keywords')
-                pos_days[order_days[order.id]]['channels'][channel['key']] += amount
         moves = self.env['account.move'].with_context(**context)
         move_rows = moves.search_read([
             ('company_id', 'in', ids), ('state', '=', 'posted'), ('move_type', '=', 'entry'),
@@ -91,7 +74,29 @@ class DashboardSales(models.AbstractModel):
         move_map = {m['id']: m for m in move_rows}
         receivable_ids = defaultdict(set)
         sessions = self.env['pos.session'].with_context(**context).search([('company_id', 'in', ids), ('move_id', 'in', list(move_map))]) if move_map else self.env['pos.session']
-        real_session_moves = {session.move_id.id for session in sessions if session.config_id.id not in summary_ids}
+        real_sessions = sessions.filtered(lambda session: session.config_id.id not in summary_ids)
+        real_session_moves = set(real_sessions.mapped('move_id').ids)
+        real_order_moves = set(self.env['pos.order'].with_context(**context).search([
+            ('company_id', 'in', ids), ('account_move', 'in', list(move_map)),
+            ('config_id', 'not in', list(summary_ids))]).mapped('account_move').ids) if move_map else set()
+        session_keys = {session.id: (session.company_id.id, session.move_id.date) for session in real_sessions}
+        posted_days = set(session_keys.values())
+        posted_orders = self.env['pos.order'].with_context(**context).search_read([
+            ('session_id', 'in', list(session_keys)), ('state', 'in', ('paid', 'done', 'invoiced'))],
+            ['company_id', 'session_id', 'amount_total'], limit=200001) if session_keys else []
+        if len(posted_orders) > 200000:
+            raise UserError(_('The selected period contains more than 200,000 POS orders.'))
+        order_days = {order['id']: session_keys[order['session_id'][0]] for order in posted_orders
+                      if abs(order['amount_total']) > thresholds.get(order['company_id'][0], 1.5)}
+        posted_channels = defaultdict(lambda: defaultdict(float))
+        if order_days:
+            groups = self.env['pos.payment'].with_context(**context)._read_group(
+                [('pos_order_id', 'in', list(order_days)), ('company_id', 'in', ids)],
+                ['pos_order_id', 'payment_method_id'], ['amount:sum'])
+            for order, method, amount in groups:
+                key = order_days[order.id]
+                channel = mapped.get((key[0], 'pos_method', method.id)) or self._channel_for(method.name, channels, 'pos_method_keywords')
+                posted_channels[key][channel['key']] += amount
         if move_map:
             line_rows = self.env['account.move.line'].with_context(**context).search_read(
                 [('company_id', 'in', ids), ('move_id', 'in', list(move_map))],
@@ -107,7 +112,7 @@ class DashboardSales(models.AbstractModel):
                 by_move[line['move_id'][0]].append(line)
             for move_id, lines in by_move.items():
                 move = move_map[move_id]
-                if move_id in real_session_moves and 'NOORIX-SALES' not in (move['ref'] or '').upper():
+                if move_id in real_session_moves or move_id in real_order_moves:
                     continue
                 company = self.env['res.company'].browse(move['company_id'][0])
                 kinds = {line['account_id'][0]: self._category(
@@ -133,21 +138,32 @@ class DashboardSales(models.AbstractModel):
                         day['sales_vat'] -= amount
         summary_days = days
         days = {}
-        for key in set(summary_days) | set(pos_days):
-            use_pos = key[0] in cutovers and key[1] >= cutovers[key[0]]
-            selected = pos_days.get(key) if use_pos else summary_days.get(key)
-            if not selected and (use_pos and key in summary_days or not use_pos and key in real_days):
-                selected = {'source': 'pos' if use_pos else 'summary', 'channels': defaultdict(float),
-                            'customers': None, 'pos_gross': 0.0, 'sales_missing': True}
-            if selected:
-                selected['both_sources'] = use_pos and key in summary_days
-                selected['customers'] = pos_days[key]['customers'] if key in real_days else None
-                selected['pos_gross'] = pos_days[key]['pos_gross'] if key in real_days else 0.0
-                days[key] = selected
+        overrides = self.env['baseer.dashboard2.source.override'].with_context(**context).search([
+            ('company_id', 'in', ids), ('date_from', '<=', end), ('date_to', '>=', start)])
+        for key in set(summary_days) | posted_days | set(pos_days):
+            override = overrides.filtered(lambda row: row.company_id.id == key[0] and row.date_from <= key[1] <= row.date_to)
+            mode = override.source if override else 'auto'
+            has_summary = key in summary_days
+            has_pos = key in posted_days
+            use_summary = has_summary and mode != 'pos'
+            use_pos = has_pos and mode != 'summary'
+            source = 'mixed' if use_summary and use_pos else 'summary' if use_summary else 'pos' if use_pos else False
+            day = {'source': source, 'channels': defaultdict(float), 'customers': None,
+                   'pos_gross': 0.0, 'sales_vat': 0.0, 'sales_missing': not bool(source),
+                   'both_sources': has_summary and has_pos, 'source_mode': mode}
+            if use_summary:
+                day['channels'].update(summary_days[key]['channels'])
+                day['sales_vat'] = summary_days[key]['sales_vat']
+            if use_pos:
+                for channel, amount in posted_channels[key].items():
+                    day['channels'][channel] += amount
+            if key in real_days:
+                day['customers'] = pos_days[key]['customers']
+                day['pos_gross'] = pos_days[key]['pos_gross']
+            days[key] = day
         for key, weekday, hour, sign, amount in order_hours:
-            if key in days:
-                hours[(weekday, hour)]['orders'] += sign
-                hours[(weekday, hour)]['gross'] += amount
+            hours[(weekday, hour)]['orders'] += sign
+            hours[(weekday, hour)]['gross'] += amount
         reset_ids = self._reset_move_ids(ids, end)
         unreceived = 0.0
         for cid in ids:
@@ -167,8 +183,8 @@ class DashboardSales(models.AbstractModel):
         for day in days.values():
             for key, amount in day['channels'].items():
                 totals[key] += amount
-        pos_days = [v for v in days.values() if v['source'] == 'pos']
-        summary_days = [v for v in days.values() if v['source'] == 'summary']
+        pos_days = [v for v in days.values() if v['source'] in ('pos', 'mixed')]
+        summary_days = [v for v in days.values() if v['source'] in ('summary', 'mixed')]
         customer_days = [v for v in days.values() if v['customers'] is not None]
         orders = sum(v['customers'] for v in customer_days)
         pos_gross = sum(v['pos_gross'] for v in customer_days)
@@ -177,7 +193,7 @@ class DashboardSales(models.AbstractModel):
         apps = sum(v for k, v in totals.items() if k in app_keys)
         reset_end = self._reset_move_ids(ids, end, end)
         reset_label = 'غير متوفر — إعادة ضبط أرصدة %s' % end.strftime('%d/%m')
-        return {'available': True, 'warnings': [{'date': str(day), 'company_id': cid, 'label': 'ملخص مبيعات بعد تاريخ التحول إلى نقاط البيع — راجع احتمال تكرار القيد'} for (cid, day), data in sorted(days.items()) if data.get('both_sources')], 'gross': round(gross, 2), 'source_counts': {'pos': len(pos_days), 'summary': len(summary_days)},
+        return {'available': True, 'warnings': [{'date': str(day), 'company_id': cid, 'label': 'يوم بمصدرين مرحّلين: نوركس + جلسة نقاط بيع — تم الجمع' if data['source_mode'] == 'auto' else 'يوم بمصدرين مرحّلين: نوركس + جلسة نقاط بيع — طُبّق استثناء المصدر'} for (cid, day), data in sorted(days.items()) if data.get('both_sources')], 'gross': round(gross, 2), 'source_counts': {'pos': len(pos_days), 'summary': len(summary_days)},
                 'channel_names': {c['key']: c['name'] for c in channels}, 'channels': {k: round(v, 2) for k, v in totals.items()},
                 'apps': round(apps, 2), 'apps_pct': round(apps / gross * 100, 2) if gross else None,
                 'apps_unreceived': {'available': not bool(reset_end), 'value': None if reset_end else unreceived, 'label': reset_label if reset_end else 'حتى نهاية الفترة'},

@@ -500,21 +500,21 @@
                             <td t-foreach="state.data.months" t-as="m" t-key="m.month" t-esc="tableFmt(m[group[0]][group[2]][key] == null ? null : group[0]==='incoming' ? m[group[0]][group[2]][key] : -m[group[0]][group[2]][key])"/>
                             <td t-esc="tableFmt(group[0]==='incoming'?state.data.total[group[2]][key]:-state.data.total[group[2]][key])"/>
                         </tr></t>
-                        <tr class="account" t-if="group[2]==='channels'">
-                            <td>منها تطبيقات لم تُستلم بعد</td>
+                        <tr class="account unreceived-row" t-if="group[2]==='channels'">
+                            <td>منها تطبيقات لم تُستلم بعد<small class="unreceived-reason" t-if="state.data.months.some(m=&gt;!m.incoming.apps_unreceived.available) or !state.data.total.apps_unreceived.available" t-esc="state.data.months.find(m=&gt;!m.incoming.apps_unreceived.available)?.incoming.apps_unreceived.label || state.data.total.apps_unreceived.label"/></td>
                             <td/>
-                            <td t-foreach="state.data.months" t-as="m" t-key="m.month" t-esc="m.incoming.apps_unreceived.available ? tableFmt(m.incoming.apps_unreceived.value) : m.incoming.apps_unreceived.label"/>
-                            <td t-esc="state.data.total.apps_unreceived.available ? tableFmt(state.data.total.apps_unreceived.value) : state.data.total.apps_unreceived.label"/>
+                            <td t-foreach="state.data.months" t-as="m" t-key="m.month" t-att-title="!m.incoming.apps_unreceived.available ? m.incoming.apps_unreceived.label : false" t-esc="m.incoming.apps_unreceived.available ? tableFmt(m.incoming.apps_unreceived.value) : '—'"/>
+                            <td t-att-title="!state.data.total.apps_unreceived.available ? state.data.total.apps_unreceived.label : false" t-esc="state.data.total.apps_unreceived.available ? tableFmt(state.data.total.apps_unreceived.value) : '—'"/>
                         </tr>
                         <t t-if="group[2]==='channels'">
                           <t t-foreach="state.data.total.apps_unreceived.breakdown" t-as="app" t-key="app.key">
-                            <tr class="account">
+                            <tr class="account unreceived-app-row">
                                 <td t-esc="app.name"/><td/>
-                                <td t-foreach="state.data.months" t-as="m" t-key="m.month">
+                                <td t-foreach="state.data.months" t-as="m" t-key="m.month" t-att-title="!m.incoming.apps_unreceived.available ? m.incoming.apps_unreceived.label : false">
                                     <t t-set="part" t-value="m.incoming.apps_unreceived.breakdown.find(x=&gt;x.key===app.key)"/>
-                                    <t t-esc="m.incoming.apps_unreceived.available ? tableFmt(part?.value) : m.incoming.apps_unreceived.label"/>
+                                    <t t-esc="m.incoming.apps_unreceived.available ? tableFmt(part?.value) : '—'"/>
                                 </td>
-                                <td><t t-esc="state.data.total.apps_unreceived.available ? tableFmt(app.value) : state.data.total.apps_unreceived.label"/>
+                                <td t-att-title="!state.data.total.apps_unreceived.available ? state.data.total.apps_unreceived.label : false"><t t-esc="state.data.total.apps_unreceived.available ? tableFmt(app.value) : '—'"/>
                                 </td>
                             </tr>
                           </t>

@@ -703,7 +703,8 @@ td {
 
 .o_bd2 .inout-table { table-layout: fixed; width: 100%; min-width: 800px; }
 .o_bd2 .inout-table th:first-child, .o_bd2 .inout-table td:first-child { width: 22%; white-space: normal; }
-.o_bd2 .inout-table th, .o_bd2 .inout-table td { overflow-wrap: anywhere; }
+.o_bd2 .inout-table th, .o_bd2 .inout-table td { white-space: normal; overflow-wrap: anywhere; word-break: break-word; }
+.o_bd2 .unreceived-reason { display: block; color: var(--bd2-muted); font-size: 10px; font-weight: 400; }
 .o_bd2 .occasion-badge { display: block; max-width: 100%; padding: 1px 5px; margin: auto auto 0; color: var(--bd2-ink); background: var(--bd2-card); border: 1px dashed var(--bd2-ink); border-radius: 12px; font-size: 10px; font-style: normal; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .o_bd2 .year-days i { position: relative; }
 .o_bd2 .year-occasion { position: absolute; inset-inline-end: 0; bottom: 0; padding: 0 2px; font-size: 8px; }

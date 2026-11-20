@@ -1,7 +1,7 @@
 import { after, expect, getFixture, globals, test, withFetch, click, press } from '@odoo/hoot';
 import { animationFrame } from '@odoo/hoot-mock';
 import { App, Component } from '@odoo/owl';
-import { formatNumber, formatTable, formatTablePct, chartX, InfoPopup, LineChart, niceStep, KpiCard } from '../src/js/main';
+import { formatNumber, formatTable, formatTablePct, chartX, InfoPopup, LineChart, niceStep, KpiCard, Sparkline } from '../src/js/main';
 
 test('P&L renders without in/out months', async () => {
     class Pnl extends Component {
@@ -58,6 +58,48 @@ test('in/out numeric cells never contain the VAT basis label', async () => {
     for (const cell of table.querySelectorAll('td')) {
         expect(cell.outerHTML.includes('شامل الضريبة')).toBe(false);
     }
+});
+
+test('in/out unavailable unreceived values use dashes with tooltips', async () => {
+    const label = 'غير متوفر — قيد المراجعة';
+    const unavailable = { available: false, label, breakdown: [] };
+    const available = { available: true, value: 50, breakdown: [{ key: 'app', name: 'تطبيق', value: 50 }] };
+    const month = (name, apps) => ({ month: name, incoming: { available: true, gross: 100, channels: {}, warnings: [], apps_unreceived: apps }, outgoing: { available: true, total: 0, items: {}, sources: {} }, sales_vat: { value: 0 }, unpaid_bills: { value: 0 }, net: 100 });
+    class Pnl extends Component {
+        static template = 'baseer_dashboard2.Pnl';
+        static components = { Sparkline };
+        state = { view: 'inout', data: { months: [month('2026-10', unavailable), month('2026-11', available)], total: { incoming: 200, outgoing: 0, channels: {}, items: {}, sources: {}, apps_unreceived: available, sales_vat: 0, unpaid_bills: { value: 0 }, net: 200 } } };
+        fmt = formatNumber; tableFmt = formatTable; monthName = (v) => v; name = (v) => v;
+        exportCsv() {}
+    }
+    const response = await withFetch(globals.fetch, () => fetch('/baseer_dashboard2/static/src/xml/main.xml'));
+    const templates = await response.text();
+    const app = new App(Pnl, { templates, test: true });
+    await app.mount(getFixture());
+    const rows = getFixture().querySelectorAll('.unreceived-row, .unreceived-app-row');
+    expect(rows.length).toBe(2);
+    for (const row of rows) {
+        const cell = row.children[2];
+        expect(cell.textContent.trim()).toBe('—');
+        expect(cell.title).toBe(label);
+        for (const value of Array.from(row.children).slice(2)) {
+            expect(value.textContent.includes(label)).toBe(false);
+        }
+    }
+    expect(rows[0].querySelector('.unreceived-reason').textContent).toBe(label);
+    // An unavailable total uses the same presentation, even with app rows present.
+    app.destroy();
+    class UnavailableTotal extends Pnl {
+        state = { view: 'inout', data: { months: [month('2026-10', unavailable)], total: { incoming: 100, outgoing: 0, channels: {}, items: {}, sources: {}, apps_unreceived: { ...available, available: false, label }, sales_vat: 0, unpaid_bills: { value: 0 }, net: 100 } } };
+    }
+    const secondApp = new App(UnavailableTotal, { templates, test: true });
+    after(() => secondApp.destroy());
+    await secondApp.mount(getFixture());
+    for (const row of getFixture().querySelectorAll('.unreceived-row, .unreceived-app-row')) {
+        expect(row.lastElementChild.textContent.trim()).toBe('—');
+        expect(row.lastElementChild.title).toBe(label);
+    }
+    expect(getFixture().querySelector('.stats').textContent).toInclude(label);
 });
 
 test('heatmap renders occasion badges for an event day', async () => {

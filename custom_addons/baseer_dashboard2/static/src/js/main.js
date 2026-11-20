@@ -97,7 +97,7 @@ export const niceStep = (range, count = 4) => {
 export const hasPoints = (values) => (values || []).some((v) => v != null && Number.isFinite(Number(v)));
 export class Sparkline extends Component {
   static template = "baseer_dashboard2.Sparkline";
-  static props = { values: { optional: true }, previous: { optional: true }, gold: { optional: true }, secondaryGold: { optional: true }, mini: { optional: true }, ratioPercent: { optional: true }, partial: { optional: true } };
+  static props = { values: { optional: true }, previous: { optional: true }, gold: { optional: true }, secondaryGold: { optional: true }, mini: { optional: true }, stretch: { optional: true }, ratioPercent: { optional: true }, partial: { optional: true } };
   miniPoint(a, i, ratio = false) {
     const values = (a || []).filter(v => v != null).map(Number);
     if (!values.length || a[i] == null) return null;

@@ -12,7 +12,7 @@
         <span t-else="" class="muted">—</span>
     </t>
     <t t-name="baseer_dashboard2.Sparkline">
-        <svg class="bd2-spark" viewBox="0 0 100 32" aria-hidden="true">
+        <svg class="bd2-spark" viewBox="0 0 100 32" t-att-preserveAspectRatio="props.stretch ? 'none' : 'xMidYMid meet'" aria-hidden="true">
             <t t-if="props.mini">
                 <path t-att-d="miniPath(props.values, false, true)" fill="var(--bd2-c1)" fill-opacity="0.09"/>
                 <path t-att-d="miniPath(props.values)" fill="none" stroke="var(--bd2-c1)" stroke-width="0.6"/>
@@ -251,7 +251,7 @@
                                 <Badge value="row.change_pct"/>
                             </td>
                             <td>
-                                <Sparkline values="row.trend" partial="trend.map(x=&gt;x.partial)"/>
+                                <Sparkline values="row.trend" partial="trend.map(x=&gt;x.partial)" gold="row_index===0"/>
                             </td>
                         </tr>
                         <tr class="highlight">
@@ -266,7 +266,8 @@
             </div>
             <div class="card">
                 <h3>التطبيقات ونسبتها من المبيعات — شامل الضريبة</h3>
-                <LineChart series="[{values:trend.map(x=&gt;x.has_data === false ? null : x.data.apps),gold:true,pointLabels:true,vat:true},{values:trend.map(x=&gt;x.has_data === false ? null : x.data.gross)}]" labels="trendLabels"/>
+                <div class="muted">النسبة (أعلى، ذهبي) والمبلغ شامل الضريبة (أسفل، كحلي)</div>
+                <div class="revenue-combo apps-combo"><Sparkline values="trend.map(x=&gt;x.has_data ? x.data.apps : null)" previous="trend.map(x=&gt;x.has_data ? x.data.apps_pct : null)" mini="true" ratioPercent="true" stretch="true"/><div class="mini-labels"><span t-foreach="trendLabels" t-as="label" t-key="label_index" t-esc="label"/></div><div class="mini-legend"><span><i/>مبيعات التطبيقات شامل الضريبة</span><span><i class="gold"/>النسبة</span></div></div>
             </div>
         </div>
         <div class="grid two">
@@ -295,7 +296,7 @@
             <div class="card">
                 <h3>عدد العملاء ومتوسط الفاتورة</h3>
                 <div t-if="!current.customers?.available" class="muted">غير متوفر — يتوفر من بيانات نقاط البيع فقط</div>
-                <LineChart t-else="" series="[{values:trend.map(x=&gt;x.has_data ? x.data.customers?.value : null)}]" labels="trendLabels"/>
+                <div t-else="" class="revenue-combo customer-combo"><div class="muted">متوسط الفاتورة (أعلى، ذهبي) وعدد الطلبات (أسفل، كحلي)</div><Sparkline values="trend.map(x=&gt;x.has_data ? x.data.customers?.value : null)" previous="trend.map(x=&gt;x.has_data ? x.data.customers?.avg_ticket : null)" mini="true" stretch="true"/><div class="mini-labels"><span t-foreach="trendLabels" t-as="label" t-key="label_index" t-esc="label"/></div><div class="mini-legend"><span><i/>عدد الطلبات</span><span><i class="gold"/>متوسط الفاتورة</span></div></div>
             </div>
         </div>
     </t>
@@ -311,7 +312,7 @@
             <div class="card">
                 <h3>المصاريف مقابل المبيعات</h3>
                 <div class="muted">آخر 6 أشهر</div>
-                <LineChart series="[{values:series('sales_net')},{values:trend.map(x=&gt;x.has_data === false ? null : totalExpense(x.data)),gold:true}]" labels="trendLabels"/>
+                <LineChart series="[{values:series('sales_net'),name:'المبيعات'},{values:trend.map(x=&gt;x.has_data === false ? null : totalExpense(x.data)),gold:true,name:'إجمالي المصاريف'}]" labels="trendLabels"/><div class="safety-chips"><span t-foreach="trend" t-as="m" t-key="m.month" t-att-class="m_last ? 'current' : ''"><t t-esc="monthName(m.month)"/> · <t t-esc="m.has_data and m.data.sales_net ? pct(totalExpense(m.data)/m.data.sales_net*100) : '—'"/></span></div>
             </div>
             <div class="card">
                 <h3>توزيع المصاريف</h3>
@@ -347,7 +348,7 @@
                     <tr t-foreach="expenses" t-as="row" t-key="row.key">
                         <th t-esc="name(row.key)"/>
                         <td>
-                            <Sparkline values="row.trend" partial="trend.map(x=&gt;x.partial)"/>
+                            <Sparkline values="row.trend" partial="trend.map(x=&gt;x.partial)" gold="row_index===0"/>
                         </td>
                         <td t-foreach="row.trend" t-as="v" t-key="v_index" t-esc="tableFmt(v)"/>
                         <td>

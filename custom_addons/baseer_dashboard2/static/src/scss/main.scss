@@ -747,3 +747,7 @@ td {
 .o_bd2 .compare-sales .bd2-track i { background: var(--bd2-c5); }
 .o_bd2 tr.highlight .compare-sales .bd2-track i { background: var(--bd2-gold); }
 .o_bd2 .compare-pill { display: inline-block; border-radius: 12px; padding: 2px 7px; background: var(--bd2-positive-soft); color: var(--bd2-positive); }
+
+.o_bd2 .revenue-combo .bd2-spark { width: 100%; height: 200px; margin-top: 20px; overflow: visible; }
+.o_bd2 .apps-combo .bd2-spark { height: 310px; }
+.o_bd2 .revenue-combo .mini-labels { direction: ltr; }

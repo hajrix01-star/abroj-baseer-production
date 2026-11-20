@@ -453,7 +453,7 @@ td {
   top: -2px;
   width: 3px;
   height: calc(100% + 4px);
-  background: var(--bd2-ink);
+  background: var(--bd2-muted);
 }
 .bd2-gauge em {
   position: absolute;
@@ -803,9 +803,12 @@ td {
 .o_bd2 .section-divider { display: flex; align-items: center; gap: 12px; color: var(--bd2-muted); margin: 12px 0; font-weight: 700; }
 .o_bd2 .section-divider::after { content: ''; flex: 1; border-top: 1px solid var(--bd2-border); }
 .o_bd2 .kpi.hero { overflow: hidden; background-image: radial-gradient(circle at bottom left, var(--bd2-gold-glow), var(--bd2-transparent) 55%); }
-.o_bd2 .food-kpi { overflow: hidden; }
-.o_bd2 .food-progress { position: absolute; inset-inline: 0; bottom: 0; height: 3px; background: var(--bd2-grid); }
-.o_bd2 .food-progress i { display: block; height: 100%; background: var(--bd2-gold); }
+.o_bd2 .food-kpi { overflow: hidden; padding-bottom: 24px; }
+.o_bd2 .food-progress { position: absolute; inset-inline: 16px; bottom: 12px; height: 4px; border-radius: 4px; background: var(--bd2-grid); }
+.o_bd2 .food-progress i { display: block; height: 100%; border-radius: inherit; background: var(--bd2-gold); }
+.o_bd2 .food-target { position: absolute; right: 50%; top: -2px; width: 2px; height: 8px; background: var(--bd2-muted); }
+.o_bd2 .break .bd2-money { white-space: nowrap; }
+.o_bd2 .break .bd2-money small { display: inline; }
 .o_bd2 .bridge-legend { display: flex; gap: 16px; color: var(--bd2-c1); margin: 8px 0; }
 .o_bd2 .bridge-legend span:nth-child(2) { color: var(--bd2-c6); }
 .o_bd2 .bridge-legend span:nth-child(3) { color: var(--bd2-gold); }

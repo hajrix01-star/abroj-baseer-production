@@ -675,3 +675,8 @@ msgstr "الشهر لم يكتمل"
 #. module: baseer_dashboard2
 msgid "عدد الطلبات · الفترة"
 msgstr "عدد الطلبات · الفترة"
+
+#. module: baseer_dashboard2
+#: model_terms:ir.ui.view,arch_db:baseer_dashboard2.assets_backend
+msgid "نقطة"
+msgstr "نقطة"

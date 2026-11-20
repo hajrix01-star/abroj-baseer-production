@@ -21,7 +21,6 @@
         <field name="name">كيتا</field>
         <field name="sequence">30</field>
         <field name="key">keeta</field>
-        <field name="commission_rate">18</field>
         <field name="kind">app</field>
         <field name="line_keywords">keeta,كيتا</field>
         <field name="pos_method_keywords">keeta,كيتا</field>
@@ -31,7 +30,6 @@
         <field name="name">هنقرستيشن</field>
         <field name="sequence">40</field>
         <field name="key">hunger</field>
-        <field name="commission_rate">22</field>
         <field name="kind">app</field>
         <field name="line_keywords">hunger,هنقر,هنجر</field>
         <field name="pos_method_keywords">hunger,هنقر,هنجر</field>
@@ -41,7 +39,6 @@
         <field name="name">جاهز</field>
         <field name="sequence">50</field>
         <field name="key">jahez</field>
-        <field name="commission_rate">20</field>
         <field name="kind">app</field>
         <field name="line_keywords">jahez,جاهز</field>
         <field name="pos_method_keywords">jahez,جاهز</field>

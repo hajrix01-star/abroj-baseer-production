@@ -9,7 +9,7 @@
         <span t-if="props.partial" class="muted" title="الشهر لم يكتمل">—</span>
         <span t-elif="props.value !== null and props.value !== undefined" t-att-class="'bd2-badge '+(good?'good':'bad')">
             <t t-esc="props.value &gt;= 0 ? '▲' : '▼'"/>
-            <bdi dir="ltr" t-esc="formatPercent(props.value)"/></span>
+            <bdi dir="ltr" t-esc="props.points ? formatPoints(props.value) : formatPercent(props.value)"/><t t-if="props.points"> نقطة</t></span>
         <span t-else="" class="muted">—<span t-if="props.warning" title="رواتب الشهر السابق أقل من 70% من متوسط الأشهر الثلاثة السابقة؛ قد تكون غير مكتملة"> ⚠</span></span>
     </t>
     <t t-name="baseer_dashboard2.Sparkline">
@@ -85,7 +85,7 @@
     </t>
     <t t-name="baseer_dashboard2.KpiCard">
         <div t-att-class="'card kpi '+(props.hero?'hero ':'')+(props.foodProgress != null ? 'food-kpi' : '')">
-            <div t-if="props.foodProgress != null" class="food-progress"><i t-att-style="'width:'+Math.min(100, Math.max(0, props.foodProgress))+'%'"/></div>
+            <div t-if="props.foodProgress != null" class="food-progress"><i t-att-style="'width:'+Math.min(100, Math.max(0, props.foodProgress / 2))+'%'"/><b class="food-target"/></div>
             <Sparkline values="props.trend" gold="props.hero"/>
             <div class="kpi-heading"><span class="card-icon"><svg viewBox="0 0 24 24"><path t-att-d="iconPath(props.icon)"/></svg></span><span class="muted" t-esc="props.title"/></div><small t-if="props.headingSubtitle" class="muted kpi-subtitle" t-esc="props.headingSubtitle"/><small t-if="props.subtitle" class="muted" t-esc="props.subtitle"/>
             <div class="kpi-value">
@@ -125,7 +125,7 @@
                 </div>
                 <div>
                     <small>النمو عن العام السابق</small>
-                    <b class="positive" dir="ltr" t-esc="state.data.timeline?.stats.previous_ytd == null ? 'غير متوفر' : pct(state.data.timeline?.stats.growth_pct)"/>
+                    <b t-att-class="state.data.timeline?.stats.previous_ytd == null ? 'muted' : 'positive'" dir="ltr" t-esc="state.data.timeline?.stats.previous_ytd == null ? 'غير متوفر' : pct(state.data.timeline?.stats.growth_pct)"/>
                 </div>
                 <div>
                     <small>أفضل شهر</small>
@@ -358,7 +358,7 @@
         <div class="grid four">
             <div class="card ratio" t-foreach="['food_pct','salaries_pct','prime_pct','net_margin_pct']" t-as="key" t-key="key">
                 <div class="ratio-heading"><div><h3 t-esc="name(key)"/><div class="muted" t-esc="({food_pct:'تكلفة الأكل ÷ المبيعات',salaries_pct:'الرواتب ÷ المبيعات',prime_pct:'(الأكل + الرواتب) ÷ المبيعات',net_margin_pct:'صافي الربح ÷ المبيعات'})[key]"/></div><span t-if="current.ratios?.[key] != null and state.data.targets[key]" t-att-class="'bd2-badge '+(state.data.targets[key].status === 'ok' ? 'good' : 'bad')" t-esc="state.data.targets[key].status === 'ok' ? 'ضمن المستهدف' : 'خارج المستهدف'"/></div>
-                <div class="ratio-value"><strong t-att-class="key === 'net_margin_pct' and current.ratios?.[key] &lt; 0 ? 'negative' : ''"><bdi dir="ltr" t-esc="pct(current.ratios?.[key])"/></strong><Badge value="key === 'salaries_pct' and state.data.previous_salaries_warning ? null : changeValue(current.ratios?.[key], state.data.previous.ratios?.[key])" goodWhen="key === 'net_margin_pct' ? 'up' : 'down'" warning="key === 'salaries_pct' and state.data.previous_salaries_warning"/></div>
+                <div class="ratio-value"><strong t-att-class="key === 'net_margin_pct' and current.ratios?.[key] &lt; 0 ? 'negative' : ''"><bdi dir="ltr" t-esc="pct(current.ratios?.[key])"/></strong><Badge value="key === 'salaries_pct' and state.data.previous_salaries_warning ? null : ratioDifference(current.ratios?.[key], state.data.previous.ratios?.[key])" points="true" goodWhen="key === 'net_margin_pct' ? 'up' : 'down'" warning="key === 'salaries_pct' and state.data.previous_salaries_warning"/></div>
                 <Gauge value="current.ratios?.[key]" previous="state.data.previous.ratios?.[key]" target="state.data.targets[key]?.value" operator="state.data.targets[key]?.operator" max="({food_pct:50,salaries_pct:40,prime_pct:80,net_margin_pct:30})[key]"/><div class="gauge-scale"><span t-esc="({food_pct:50,salaries_pct:40,prime_pct:80,net_margin_pct:30})[key]+'%'"/><span>0%</span></div>
                 <div class="ratio-foot"><span class="muted">آخر 6 أشهر</span><Sparkline values="trend.map(x=&gt;x.has_data ? x.data.ratios[key] : null)" partial="trend.map(x=&gt;x.partial)" navy="true"/></div>
             </div>
@@ -366,7 +366,7 @@
         <div class="grid two">
             <div class="card">
                 <h3>اتجاه نسب التكلفة</h3>
-                <div class="muted">الخطوط المتقطعة = المستهدف (الأكل <bdi dir="ltr" t-esc="pct(state.data.targets.food_pct?.value)"/> · الرواتب <bdi dir="ltr" t-esc="pct(state.data.targets.salaries_pct?.value)"/>)</div><LineChart series="[{name:'تكلفة الأكل',values:trend.map(x=&gt;x.has_data ? x.data.ratios.food_pct : null)},{name:'الرواتب',values:trend.map(x=&gt;x.has_data ? x.data.ratios.salaries_pct : null),gold:true},...(state.data.targets.food_pct?.value != null ? [{name:'مستهدف الأكل',hideLegend:true,values:trend.map(()=&gt;state.data.targets.food_pct.value),dashed:true}] : []),...(state.data.targets.salaries_pct?.value != null ? [{name:'مستهدف الرواتب',hideLegend:true,values:trend.map(()=&gt;state.data.targets.salaries_pct.value),dashed:true}] : [])]" labels="trendLabels" percent="true"/>
+                <div class="muted">الخطوط المتقطعة = المستهدف (الأكل <bdi dir="ltr" t-esc="targetPercent(state.data.targets.food_pct?.value)"/> · الرواتب <bdi dir="ltr" t-esc="targetPercent(state.data.targets.salaries_pct?.value)"/>)</div><LineChart series="[{name:'تكلفة الأكل',values:trend.map(x=&gt;x.has_data ? x.data.ratios.food_pct : null)},{name:'الرواتب',values:trend.map(x=&gt;x.has_data ? x.data.ratios.salaries_pct : null),gold:true},...(state.data.targets.food_pct?.value != null ? [{name:'مستهدف الأكل',hideLegend:true,values:trend.map(()=&gt;state.data.targets.food_pct.value),dashed:true}] : []),...(state.data.targets.salaries_pct?.value != null ? [{name:'مستهدف الرواتب',hideLegend:true,values:trend.map(()=&gt;state.data.targets.salaries_pct.value),dashed:true}] : [])]" labels="trendLabels" percent="true"/>
             </div>
             <div class="card">
                 <h3>مجمل الهامش وصافي الهامش</h3>

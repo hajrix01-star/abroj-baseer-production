@@ -1,7 +1,7 @@
 import { after, expect, getFixture, globals, test, withFetch, click, press } from '@odoo/hoot';
 import { animationFrame } from '@odoo/hoot-mock';
 import { App, Component } from '@odoo/owl';
-import { hourLabel, hasDisplayValues, multiplePoints, formatNumber, formatTable, formatTablePct, formatPercent, chartX, miniX, timelineYear, InfoPopup, LineChart, niceStep, KpiCard, Sparkline, Badge, Gauge } from '../src/js/main';
+import { hourLabel, hasDisplayValues, multiplePoints, formatNumber, formatTable, formatTablePct, formatPercent, formatPoints, ratioDifference, formatTargetPercent, chartX, miniX, timelineYear, InfoPopup, LineChart, niceStep, KpiCard, Sparkline, Badge, Gauge } from '../src/js/main';
 
 test('P&L renders without in/out months', async () => {
     class Pnl extends Component {
@@ -25,7 +25,7 @@ test('ratios render a numeric gauge target', async () => {
         state = { period: { month: '2026-10' }, data: { targets: { food_pct: { value: 32.25, operator: 'le', status: 'ok' } }, previous: { ratios: {} } } };
         current = { ratios: { food_pct: 30 } };
         trend = []; trendLabels = [];
-        name = (v) => v; monthName = (v) => v; pct = formatPercent; fmt = formatNumber;
+        name = (v) => v; monthName = (v) => v; pct = formatPercent; fmt = formatNumber; ratioDifference = ratioDifference; targetPercent = formatTargetPercent;
         changeValue() { return null; }
     }
     const response = await withFetch(globals.fetch, () => fetch('/baseer_dashboard2/static/src/xml/main.xml'));
@@ -261,7 +261,8 @@ test('food progress follows its target and clamps to the track', async () => {
     const app = new App(KpiCard, { templates: await response.text(), props: { title: 'الأكل', foodProgress: 150 }, test: true });
     after(() => app.destroy());
     await app.mount(getFixture());
-    expect(getFixture().querySelector('.food-progress i').style.width).toBe('100%');
+    expect(getFixture().querySelector('.food-progress i').style.width).toBe('75%');
+    expect(getFixture().querySelector('.food-target')).not.toBe(null);
 });
 
 test('accounting explanations and gross sales basis are visible in templates', async () => {
@@ -436,4 +437,26 @@ test('review layouts show period totals and separate KPI details', async () => {
     const kpi = doc.querySelector('[t-name="baseer_dashboard2.KpiCard"]');
     expect(kpi.querySelector('.kpi-subtitle')).not.toBe(null);
     expect(kpi.querySelector('.kpi-share').previousElementSibling.textContent).toInclude('عن الشهر السابق');
+});
+
+
+test('ratio changes are percentage points and targets omit unnecessary decimals', async () => {
+    expect(ratioDifference(0, 8.5)).toBe(-8.5);
+    expect(ratioDifference(null, 8.5)).toBe(null);
+    expect(formatPoints(-8.5)).toBe('−8.5');
+    expect(formatTargetPercent(33)).toBe('33%');
+    expect(formatTargetPercent(25.5)).toBe('25.5%');
+    const response = await withFetch(globals.fetch, () => fetch('/baseer_dashboard2/static/src/xml/main.xml'));
+    const app = new App(Badge, { templates: await response.text(), props: { value: -8.5, points: true }, test: true });
+    after(() => app.destroy());
+    await app.mount(getFixture());
+    expect(getFixture().textContent).toInclude('−8.5 نقطة');
+});
+
+test('small display details and commission data are wired correctly', async () => {
+    const response = await withFetch(globals.fetch, () => fetch('/baseer_dashboard2/static/src/xml/main.xml'));
+    const doc = new DOMParser().parseFromString(await response.text(), 'text/xml');
+    expect(doc.querySelector('[t-name="baseer_dashboard2.Timeline"] b[t-att-class]').getAttribute('t-att-class')).toInclude('muted');
+    expect(doc.querySelector('[t-name="baseer_dashboard2.Ratios"]').outerHTML).toInclude('targetPercent(');
+    expect(doc.querySelector('[t-name="baseer_dashboard2.BreakEven"] Money').getAttribute('value')).toBe('state.data.breakeven.value');
 });

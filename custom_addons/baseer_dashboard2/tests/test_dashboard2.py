@@ -40,11 +40,30 @@ class TestDashboard2(TransactionCase):
         self.assertEqual(change(150, 100), 50)
 
     def test_default_app_commissions_are_editable(self):
-        for key, rate in (("keeta", 18), ("hunger", 22), ("jahez", 20)):
+        for key in ("keeta", "hunger", "jahez"):
             channel = self.env.ref("baseer_dashboard2.channel_" + key)
-            self.assertEqual(channel.commission_rate, rate)
-            channel.commission_rate = rate + 1
-            self.assertEqual(channel.commission_rate, rate + 1)
+            self.assertEqual(channel.commission_rate, 0)
+            channel.commission_rate = 17
+            self.assertEqual(channel.commission_rate, 17)
+
+    def test_card_templates_connect_ratio_and_display_values(self):
+        from pathlib import Path
+        from lxml import etree
+        path = Path(__file__).resolve().parents[1] / 'static/src/xml/main.xml'
+        root = etree.parse(str(path))
+        self.assertTrue(root.xpath("//*[@class='food-progress']/b[@class='food-target']"))
+        ratio = root.xpath("//t[@t-name='baseer_dashboard2.Ratios']")[0]
+        self.assertIn('ratioDifference', ratio.xpath('.//Badge[@points]')[0].get('value'))
+        self.assertIn('targetPercent', etree.tostring(ratio, encoding='unicode'))
+        timeline = root.xpath("//t[@t-name='baseer_dashboard2.Timeline']")[0]
+        self.assertTrue(timeline.xpath(".//b[contains(@t-att-class, 'muted')]"))
+        self.assertTrue(root.xpath("//t[@t-name='baseer_dashboard2.BreakEven']//Money"))
+
+    def test_channel_seed_data_does_not_set_commission_rates(self):
+        from pathlib import Path
+        from xml.etree import ElementTree
+        path = Path(__file__).resolve().parents[1] / 'data/channel_data.xml'
+        self.assertFalse(ElementTree.parse(path).findall(".//field[@name='commission_rate']"))
 
     def test_recorded_commissions_use_posted_configured_accounts(self):
         company = self.env.company

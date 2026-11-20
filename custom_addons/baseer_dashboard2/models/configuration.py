@@ -43,7 +43,7 @@ class DashboardChannel(models.Model):
     color_token = fields.Char()
     line_keywords = fields.Char()
     pos_method_keywords = fields.Char()
-    commission_rate = fields.Float(default=0)
+    commission_rate = fields.Float()
     active = fields.Boolean(default=True)
 
 

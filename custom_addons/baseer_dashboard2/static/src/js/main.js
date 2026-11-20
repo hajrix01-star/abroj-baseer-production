@@ -20,6 +20,9 @@ export const formatTablePct = (n) => {
   return magnitude === "0.0" ? "—" : `${Number(n) < 0 ? "−" : ""}${magnitude}%`;
 };
 export const formatPercent = (n) => n == null || n === false || !Number.isFinite(Number(n)) ? "—" : `${Number(n) < 0 ? "−" : ""}${roundedPercentMagnitude(n)}%`;
+export const formatPoints = (n) => n == null || n === false || !Number.isFinite(Number(n)) ? "—" : `${Number(n) < 0 ? "−" : ""}${roundedPercentMagnitude(n)}`;
+export const ratioDifference = (value, previous) => value == null || previous == null ? null : value - previous;
+export const formatTargetPercent = (n) => n == null ? "—" : `${Number(n).toLocaleString("en-US", { maximumFractionDigits: 1 })}%`;
 export const timelineYear = (period) => (period?.mode === "month" ? period.month : period?.date_to)?.slice(0, 4) || "";
 export const chartX = (i, n, width = 700) =>
   width - 48 - (width - 70) * (n <= 1 ? 0.5 : i / (n - 1));
@@ -180,8 +183,9 @@ class Money extends Component {
 }
 export class Badge extends Component {
   formatPercent = formatPercent;
+  formatPoints = formatPoints;
   static template = "baseer_dashboard2.Badge";
-  static props = { value: { optional: true }, goodWhen: { optional: true }, warning: { optional: true }, partial: { optional: true } };
+  static props = { value: { optional: true }, goodWhen: { optional: true }, warning: { optional: true }, partial: { optional: true }, points: { optional: true } };
   get good() {
     return this.props.goodWhen === "down"
       ? this.props.value <= 0
@@ -440,6 +444,8 @@ class Dashboard2 extends Component {
     return this.state.data?.channel_names?.[key] || labels[key] || key;
   }
   tablePct = formatTablePct;
+  ratioDifference = ratioDifference;
+  targetPercent = formatTargetPercent;
   pct(v) {
     return formatPercent(v);
   }

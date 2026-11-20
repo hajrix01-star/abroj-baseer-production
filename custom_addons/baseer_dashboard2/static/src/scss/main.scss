@@ -83,7 +83,7 @@
 .bd2-sidebar nav button {
   width: 100%;
   border: 0;
-  background: transparent;
+  background: var(--bd2-transparent);
   color: var(--bd2-sidebar-text);
   text-align: right;
   padding: 12px 16px;
@@ -150,7 +150,7 @@ small {
 .seg select,
 .seg input {
   border: 0;
-  background: transparent;
+  background: var(--bd2-transparent);
   padding: 8px 12px;
   border-radius: 9px;
   outline: none;
@@ -721,3 +721,29 @@ td {
 .o_bd2 .safety-chips { display: flex; gap: 5px; flex-wrap: wrap; justify-content: center; }
 .o_bd2 .safety-chips span { padding: 2px 7px; border-radius: 12px; color: var(--bd2-muted); background: var(--bd2-bg); font-size: 10px; }
 .o_bd2 .safety-chips span.current { color: var(--bd2-ink); background: var(--bd2-gold-soft); }
+
+/* Overview chart composition */
+.o_bd2 .timeline { position: relative; }
+.o_bd2 .timeline .chart-legend { position: absolute; top: 28px; inset-inline-end: 145px; }
+.o_bd2 .mini { min-height: 245px; }
+.o_bd2 .mini-head { display: flex; justify-content: space-between; align-items: flex-start; }
+.o_bd2 .mini-icon { display: inline-grid; place-items: center; width: 32px; height: 32px; border-radius: 9px; background: var(--bd2-surface); color: var(--bd2-ink); margin-inline-end: 8px; }
+.o_bd2 .mini-head > div:first-child { display: flex; align-items: center; }
+.o_bd2 .mini-value { text-align: left; display: flex; flex-direction: column; align-items: flex-start; }
+.o_bd2 .mini > .bd2-badge { align-self: flex-start; }
+.o_bd2 .mini-pill { display: inline-block; background: var(--bd2-gold-soft); color: var(--bd2-gold-text); border-radius: 12px; padding: 2px 8px; font-size: 10px; }
+.o_bd2 .mini .bd2-spark { height: 100px; margin-top: 14px; overflow: visible; }
+.o_bd2 .mini-legend { display: flex; gap: 14px; color: var(--bd2-muted); font-size: 10px; margin-top: 7px; }
+.o_bd2 .mini-legend i { display: inline-block; width: 14px; border-top: 2px solid var(--bd2-c1); margin-inline-end: 4px; }
+.o_bd2 .mini-legend i.gold { border-color: var(--bd2-gold); }
+.o_bd2 .bridge-row .bd2-track { direction: ltr; position: relative; background: var(--bd2-surface); }
+.o_bd2 .bridge-row .bd2-track i { position: absolute; background: var(--bd2-c6); }
+.o_bd2 .bridge-row.subtotal .bd2-track i { background: var(--bd2-c1); }
+.o_bd2 .bridge-row.net-profit .bd2-track i { background: var(--bd2-gold); }
+.o_bd2 .bridge-row.subtotal { background: var(--bd2-surface); }
+.o_bd2 .bridge-row.net-profit { background: var(--bd2-gold-soft); }
+.o_bd2 .compare-sales { display: flex; align-items: center; gap: 10px; }
+.o_bd2 .compare-sales .bd2-track { flex: 1; }
+.o_bd2 .compare-sales .bd2-track i { background: var(--bd2-c5); }
+.o_bd2 tr.highlight .compare-sales .bd2-track i { background: var(--bd2-gold); }
+.o_bd2 .compare-pill { display: inline-block; border-radius: 12px; padding: 2px 7px; background: var(--bd2-positive-soft); color: var(--bd2-positive); }

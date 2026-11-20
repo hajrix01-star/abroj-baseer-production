@@ -13,10 +13,19 @@
     </t>
     <t t-name="baseer_dashboard2.Sparkline">
         <svg class="bd2-spark" viewBox="0 0 100 32" aria-hidden="true">
+            <t t-if="props.mini">
+                <path t-att-d="miniPath(props.values, false, true)" fill="var(--bd2-c1)" fill-opacity="0.09"/>
+                <path t-att-d="miniPath(props.values)" fill="none" stroke="var(--bd2-c1)" stroke-width="0.6"/>
+                <path t-att-d="miniPath(props.previous, true)" fill="none" stroke="var(--bd2-gold)" stroke-width="0.6"/>
+                <t t-foreach="endpoints(props.values)" t-as="i" t-key="i"><circle t-att-cx="miniPoint(props.values,i).x" t-att-cy="miniPoint(props.values,i).y" r="0.9" fill="var(--bd2-c1)"/><text t-att-x="miniPoint(props.values,i).x" t-att-y="miniPoint(props.values,i).y-2" text-anchor="middle" fill="var(--bd2-c1)" font-size="2.4" t-esc="short(props.values[i])"/></t>
+                <t t-foreach="endpoints(props.previous)" t-as="i" t-key="i"><circle t-att-cx="miniPoint(props.previous,i,true).x" t-att-cy="miniPoint(props.previous,i,true).y" r="0.9" fill="var(--bd2-gold)"/><text t-att-x="miniPoint(props.previous,i,true).x" t-att-y="miniPoint(props.previous,i,true).y-2" text-anchor="middle" fill="var(--bd2-gold-text)" font-size="2.4" t-esc="short(props.previous[i]) + (props.ratioPercent ? '%' : '')"/></t>
+            </t>
+            <t t-else="">
             <path t-att-d="path(props.values)" fill="none" t-att-stroke="props.gold ? 'var(--bd2-gold)' : 'var(--bd2-c5)'" stroke-width="2"/>
             <path t-if="props.partial" t-att-d="path(props.values, true)" fill="none" t-att-stroke="props.gold ? 'var(--bd2-gold)' : 'var(--bd2-c5)'" stroke-width="2" stroke-dasharray="3 2"/>
             <text t-if="props.partial?.includes(true)" x="5" y="8" fill="var(--bd2-muted)" font-size="6">جزئي</text>
             <path t-if="props.previous" t-att-d="path(props.previous)" fill="none" t-att-stroke="props.secondaryGold ? 'var(--bd2-gold)' : 'var(--bd2-faint)'" stroke-width="1.5" t-att-stroke-dasharray="props.secondaryGold ? '' : '4 3'"/>
+            </t>
         </svg>
     </t>
     <t t-name="baseer_dashboard2.LineChart">
@@ -40,7 +49,7 @@
                 <path t-if="s.partial" t-att-d="partialPath(s.values, s.partial)" fill="none" t-att-stroke="s.gold ? 'var(--bd2-gold)' : 'var(--bd2-c1)'" stroke-width="2.3" stroke-dasharray="5 4"/>
                 <t t-if="!s.dashed"><t t-foreach="s.values" t-as="v" t-key="v_index">
                     <text t-if="s.partial?.[v_index] and v != null and !s.dashed" t-att-x="chartX(v_index,s.values.length)" t-att-y="y(v)+16" text-anchor="middle" fill="var(--bd2-muted)" font-size="9">جزئي</text>
-                    <circle t-if="v !== null and v !== undefined" t-att-cx="chartX(v_index,s.values.length)" t-att-cy="y(v)" t-att-r="s.area and isPeak(v, s.values) ? 5 : 3" fill="var(--bd2-card)" t-att-stroke="s.gold ? 'var(--bd2-gold)' : 'var(--bd2-c1)'" stroke-width="2"/>
+                    <circle t-if="v !== null and v !== undefined" t-att-cx="chartX(v_index,s.values.length)" t-att-cy="y(v)" t-att-r="s.area and isPeak(v, s.values) ? 5 : 3" t-att-fill="s.area and isPeak(v, s.values) ? 'var(--bd2-gold)' : 'var(--bd2-card)'" t-att-stroke="s.gold ? 'var(--bd2-gold)' : 'var(--bd2-c1)'" stroke-width="2"/>
                     <text t-if="(s.area or s.pointLabels) and v !== null and v !== undefined" t-att-x="chartX(v_index,s.values.length)" t-att-y="y(v)-8" text-anchor="middle" fill="var(--bd2-ink)" font-size="9" font-weight="700" t-esc="compact(v) + (s.vat ? ' شامل الضريبة' : '')"/>
                 </t></t>
             </t>
@@ -125,10 +134,8 @@
     <t t-name="baseer_dashboard2.Overview">
         <div class="grid three">
             <div class="card mini" t-foreach="[['المشتريات ونسبتها',state.data.purchases?.value,state.data.purchases?.pct,state.data.purchases?.trend?.map(x=&gt;x.has_data ? x.pct : null),state.data.purchases?.trend?.map(x=&gt;x.has_data ? x.value : null),state.data.purchases?.change_pct],['تطبيقات التوصيل ونسبتها',state.data.sales?.apps,state.data.sales?.apps_pct,state.data.sales?.trend?.map(x=&gt;x.has_data ? x.apps_pct : null),state.data.sales?.trend?.map(x=&gt;x.has_data ? x.apps : null),state.data.sales?.apps_change_pct],['عدد العملاء ومتوسط الفاتورة',state.data.sales?.customers?.value,state.data.sales?.customers?.avg_ticket,state.data.sales?.trend?.map(x=&gt;x.has_data ? x.customers.avg_ticket : null),state.data.sales?.trend?.map(x=&gt;x.has_data ? x.customers.value : null),state.data.sales?.customers_change_pct]]" t-as="item" t-key="item[0]">
-                <h3 t-esc="item[0]"/>
-                <strong t-esc="item_index === 0 and !state.data.purchases?.available ? 'غير متوفر — حدّد حسابات المشتريات' : (item_index === 0 and item[1] != null ? Number(item[1]).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : fmt(item[1]))"/><span t-if="item_index === 1" class="muted"> شامل الضريبة</span>
-                <div class="muted" t-esc="item[2] == null ? 'غير متوفر' : (item_index &lt; 2 ? Number(item[2]).toFixed(2)+'% من المبيعات'+(item_index === 1 ? ' شامل الضريبة' : ' دون الضريبة') : fmt(item[2]))"/>
-                <Badge value="item[5]"/><Sparkline values="item[4]" previous="item[3]" secondaryGold="true" partial="trend.map(x=&gt;x.partial)"/><div class="mini-labels"><span t-foreach="trendLabels" t-as="label" t-key="label_index" t-esc="label"/></div>
+                <div class="mini-head"><div><span class="mini-icon" t-esc="['🛒','↗','♙'][item_index]"/><h3 t-esc="item[0]"/></div><div class="mini-value"><strong t-esc="item_index === 0 and !state.data.purchases?.available ? 'غير متوفر' : fmt(item[1])"/><div class="mini-pill" t-esc="item[2] == null ? 'غير متوفر' : (item_index &lt; 2 ? Number(item[2]).toFixed(2)+'% من المبيعات' : fmt(item[2])+' متوسط الفاتورة')"/></div></div>
+                <Badge value="item[5]"/><Sparkline values="item[4]" previous="item[3]" mini="true" ratioPercent="item_index &lt; 2"/><div class="mini-labels"><span t-foreach="trendLabels" t-as="label" t-key="label_index" t-esc="label"/></div><div class="mini-legend"><span><i/>المبلغ</span><span><i class="gold"/><t t-esc="item_index === 2 ? 'متوسط الفاتورة' : 'النسبة'"/></span></div>
             </div>
         </div>
         <div class="grid five">
@@ -149,7 +156,7 @@
             <div class="muted">كل سطر يبيّن المبلغ ونسبته من المبيعات</div>
             <div t-att-class="'bridge-row '+(row.key==='net_profit'?'net-profit':(['sales_net','gross_profit','operating_profit'].includes(row.key)?'subtotal':''))" t-foreach="state.data.bridge" t-as="row" t-key="row.key">
                 <b t-esc="name(row.key)"/>
-                <Track value="row.amount" max="current.sales_net" gold="row.key==='net_profit'"/>
+                <div class="bd2-track"><i t-att-style="bridgeStyle(row, row_index)"/></div>
                 <strong dir="ltr" t-esc="tableFmt(row.amount || 0, true)"/>
                 <span class="muted" dir="ltr" t-esc="tablePct(row.pct)"/>
             </div>
@@ -195,10 +202,10 @@
                 <tbody>
                     <tr t-foreach="state.data.companies_compare" t-as="co" t-key="co.key" t-att-class="co.key===state.company?'highlight':''">
                         <th t-esc="co.label"/>
-                        <td t-esc="tableFmt(co.sales_net)"/>
-                        <td t-esc="tablePct(co.food_pct)"/>
-                        <td t-esc="tablePct(co.salaries_pct)"/>
-                        <td t-esc="tablePct(co.net_margin_pct)"/>
+                        <td><div class="compare-sales"><span t-esc="tableFmt(co.sales_net)"/><Track value="co.sales_net" max="Math.max(...state.data.companies_compare.map(c=&gt;Math.abs(c.sales_net || 0)))"/></div></td>
+                        <td><span class="compare-pill" t-esc="tablePct(co.food_pct)"/></td>
+                        <td><span class="compare-pill" t-esc="tablePct(co.salaries_pct)"/></td>
+                        <td><span class="compare-pill" t-esc="tablePct(co.net_margin_pct)"/></td>
                     </tr>
                 </tbody>
             </table>

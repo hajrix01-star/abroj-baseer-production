@@ -644,3 +644,35 @@ class TestDashboardThemeLiterals(TransactionCase):
         overview = service.get_section('overview', params)
         self.assertEqual(overview['companies_compare'][0]['name'], 'Configured label')
         self.assertEqual(next(a for a in overview['current']['accounts'] if a['account_id'] == salary.id)['name'], 'رواتب')
+
+    def test_static_colours_are_theme_variables(self):
+        """Keep literal colours in the light/dark theme, including SVG and JS."""
+        import re
+        from pathlib import Path
+
+        root = Path(__file__).resolve().parents[1] / 'static' / 'src'
+        names = ('aliceblue antiquewhite aqua aquamarine azure beige bisque black blanchedalmond blue blueviolet brown burlywood '
+                 'cadetblue chartreuse chocolate coral cornflowerblue cornsilk crimson cyan darkblue darkcyan darkgoldenrod '
+                 'darkgray darkgreen darkgrey darkkhaki darkmagenta darkolivegreen darkorange darkorchid darkred darksalmon '
+                 'darkseagreen darkslateblue darkslategray darkslategrey darkturquoise darkviolet deeppink deepskyblue '
+                 'dimgray dimgrey dodgerblue firebrick floralwhite forestgreen fuchsia gainsboro ghostwhite gold goldenrod '
+                 'gray green greenyellow grey honeydew hotpink indianred indigo ivory khaki lavender lavenderblush '
+                 'lawngreen lemonchiffon lightblue lightcoral lightcyan lightgoldenrodyellow lightgray lightgreen lightgrey '
+                 'lightpink lightsalmon lightseagreen lightskyblue lightslategray lightslategrey lightsteelblue lightyellow '
+                 'lime limegreen linen magenta maroon mediumaquamarine mediumblue mediumorchid mediumpurple mediumseagreen '
+                 'mediumslateblue mediumspringgreen mediumturquoise mediumvioletred midnightblue mintcream mistyrose moccasin '
+                 'navajowhite navy oldlace olive olivedrab orange orangered orchid palegoldenrod palegreen paleturquoise '
+                 'palevioletred papayawhip peachpuff peru pink plum powderblue purple rebeccapurple red rosybrown royalblue '
+                 'saddlebrown salmon sandybrown seagreen seashell sienna silver skyblue slateblue slategray slategrey snow '
+                 'springgreen steelblue tan teal thistle tomato transparent turquoise violet wheat white whitesmoke yellow yellowgreen')
+        literal = re.compile(r'(?i)(?<![\w-])#[0-9a-f]{3}(?:[0-9a-f]{3}(?:[0-9a-f]{2})?)?(?![\w-])|\b(?:rgba?|hsla?)\s*\(')
+        named = re.compile(r'(?i)(?<![\w.-])(?:' + '|'.join(names.split()) + r')(?![\w-])')
+        colour_value = re.compile(r'(?i)\b(?:color|background(?:-color)?|fill|stroke|border(?:-\w+)?|outline|box-shadow|text-shadow)\s*[:=]\s*([^;}>]+)')
+        offenders = []
+        for path in root.rglob('*'):
+            if path.suffix not in ('.scss', '.js', '.xml') or path.name == 'theme.scss':
+                continue
+            for number, line in enumerate(path.read_text(encoding='utf-8').splitlines(), 1):
+                if literal.search(line) or any(named.search(m.group(1)) for m in colour_value.finditer(line)):
+                    offenders.append(f'{path.relative_to(root)}:{number}: {line.strip()}')
+        self.assertFalse(offenders, '\n'.join(offenders))

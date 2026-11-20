@@ -97,7 +97,20 @@ export const niceStep = (range, count = 4) => {
 export const hasPoints = (values) => (values || []).some((v) => v != null && Number.isFinite(Number(v)));
 export class Sparkline extends Component {
   static template = "baseer_dashboard2.Sparkline";
-  static props = { values: { optional: true }, previous: { optional: true }, gold: { optional: true }, secondaryGold: { optional: true }, partial: { optional: true } };
+  static props = { values: { optional: true }, previous: { optional: true }, gold: { optional: true }, secondaryGold: { optional: true }, mini: { optional: true }, ratioPercent: { optional: true }, partial: { optional: true } };
+  miniPoint(a, i, ratio = false) {
+    const values = (a || []).filter(v => v != null).map(Number);
+    if (!values.length || a[i] == null) return null;
+    const lo = Math.min(...values), hi = Math.max(...values);
+    return { x: 95 - (a.length <= 1 ? 45 : 90 * i / (a.length - 1)), y: (ratio ? 11 : 27) - (Number(a[i]) - lo) / (hi - lo || 1) * 7 };
+  }
+  miniPath(a, ratio = false, area = false) {
+    let segments = [], points = [];
+    const flush = () => { if (points.length) { const first = points[0], last = points[points.length - 1]; segments.push((area ? `M${first.x},31 L` : 'M') + points.map(p => `${p.x},${p.y}`).join(' L') + (area ? ` L${last.x},31 Z` : '')); } points = []; };
+    (a || []).forEach((v, i) => { const p = this.miniPoint(a, i, ratio); if (p) points.push(p); else flush(); }); flush(); return segments.join(' ');
+  }
+  endpoints(a) { const indices = (a || []).map((v, i) => v == null ? -1 : i).filter(i => i >= 0); return indices.length > 1 ? [indices[0], indices[indices.length - 1]] : indices; }
+  short(v) { return Math.abs(v) >= 1000 ? `${+(v / 1000).toFixed(1)}K` : `${Math.round(v)}`; }
   path(a, partialOnly = false) {
     a = a || [];
     const scaleValues = this.props.secondaryGold ? a : [...(this.props.values || []), ...(this.props.previous || [])];
@@ -407,6 +420,18 @@ class Dashboard2 extends Component {
     if (!t) return [];
     const rows = t.mode === "yearly" ? t.years : t.months;
     return rows;
+  }
+  bridgeStyle(row, index) {
+    const rows = this.state.data?.bridge || [];
+    const total = Math.abs(this.current.sales_net) || 1;
+    let running = 0;
+    for (let i = 0; i < index; i++) {
+      const r = rows[i];
+      running = ['sales_net', 'gross_profit', 'operating_profit', 'net_profit'].includes(r.key) ? r.amount : running + r.amount;
+    }
+    const subtotal = ['sales_net', 'gross_profit', 'operating_profit', 'net_profit'].includes(row.key);
+    const start = subtotal ? 0 : Math.min(running, running + row.amount);
+    return `right:${Math.max(0, Math.min(100, start / total * 100))}%;width:${Math.max(0, Math.min(100, Math.abs(row.amount) / total * 100))}%`;
   }
   get timelineLabels() {
     return this.timeline.map((x) => x.year || months[x.month - 1]);

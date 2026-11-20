@@ -373,9 +373,9 @@ test('revenue apps chart aligns ten month labels and points, preserving gaps', a
     const labels = [...getFixture().querySelectorAll('.mini-labels span')];
     const svg = getFixture().querySelector('svg');
     const latest = getFixture().querySelector('.spark-dot.gold.filled');
-    expect(labels.length).toBe(10);
-    expect(labels.map(label => parseFloat(label.style.left))).toEqual(Array.from({ length: 10 }, (_, i) => miniX(i, 10)));
-    expect(parseFloat(latest.style.left)).toBe(miniX(9, labels.length));
+    expect(labels.length).toBe(5);
+    expect(labels.map(label => parseFloat(label.style.left))).toEqual(Array.from({ length: 5 }, (_, i) => miniX(i * 2 + 1, 10)));
+    expect(parseFloat(latest.style.left)).toBe(miniX(9, 10));
     expect(parseFloat(latest.style.left)).toBeLessThan(parseFloat(labels[0].style.left));
     expect(getFixture().querySelector('.spark-label.gold').textContent).toBe('34.9%');
     expect(svg.getAttribute('preserveAspectRatio')).toBe('none');
@@ -421,4 +421,19 @@ test('expense distribution displays the aggregated other row', async () => {
     const row = doc.querySelector('[t-name="baseer_dashboard2.Expenses"] .rank-row');
     expect(row.getAttribute('t-foreach')).toBe('expenses.filter(r=>r.amount)');
     expect(row.querySelector('b').getAttribute('t-esc')).toBe('name(row.key)');
+});
+
+
+test('review layouts show period totals and separate KPI details', async () => {
+    const response = await withFetch(globals.fetch, () => fetch('/baseer_dashboard2/static/src/xml/main.xml'));
+    const doc = new DOMParser().parseFromString(await response.text(), 'text/xml');
+    const heat = doc.querySelector('.hours-table');
+    expect(heat.textContent).toInclude('المتوسط');
+    expect(heat.closest('.card').textContent).toInclude('عدد الطلبات · الفترة');
+    const compare = doc.querySelector('[t-name="baseer_dashboard2.Compare"]');
+    expect(compare.innerHTML).toInclude("co.net_margin_pct &lt; 0 ? 'bad'");
+    expect(compare.innerHTML).toInclude('co.targets?.food_pct?.status');
+    const kpi = doc.querySelector('[t-name="baseer_dashboard2.KpiCard"]');
+    expect(kpi.querySelector('.kpi-subtitle')).not.toBe(null);
+    expect(kpi.querySelector('.kpi-share').previousElementSibling.textContent).toInclude('عن الشهر السابق');
 });

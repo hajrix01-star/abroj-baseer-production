@@ -671,3 +671,7 @@ msgstr "بداية احتساب أرصدة التطبيقات"
 #: model_terms:ir.ui.view,arch_db:baseer_dashboard2
 msgid "الشهر لم يكتمل"
 msgstr "الشهر لم يكتمل"
+
+#. module: baseer_dashboard2
+msgid "عدد الطلبات · الفترة"
+msgstr "عدد الطلبات · الفترة"

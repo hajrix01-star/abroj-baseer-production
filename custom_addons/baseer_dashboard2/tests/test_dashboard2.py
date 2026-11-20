@@ -252,6 +252,13 @@ class TestDashboard2(TransactionCase):
         for section in ('overview', 'revenue', 'expenses', 'ratios', 'pnl', 'inout', 'heatmap'):
             self.assertTrue(service.get_section(section, params)['available'], section)
         self.assertEqual(service.get_section('overview', params)['breakeven'], service.get_section('ratios', params)['breakeven'])
+        revenue = service.get_section('revenue', params)
+        self.assertEqual(len(revenue['apps_trend']), 10)
+        self.assertIn('gross', revenue['current'])
+        self.assertIn('apps_pct', revenue['current'])
+        heatmap = service.get_section('heatmap', params)
+        self.assertEqual(len(heatmap['hours']['matrix']), 7 * 24)
+        self.assertTrue(all('orders' in cell for cell in heatmap['hours']['matrix']))
 
     def test_scope_and_targets(self):
         from odoo.tests.common import new_test_user
@@ -271,6 +278,8 @@ class TestDashboard2(TransactionCase):
         with self.assertRaises(AccessError):
             service.with_user(reader).save_target(str(company.id), 'food_pct', 29)
         self.assertTrue(service.with_user(manager).save_target(str(company.id), 'food_pct', 29))
+        targets = service._targets([company.id], {'ratios': {'food_pct': 111.2}})
+        self.assertEqual(targets['food_pct']['status'], 'bad')
         self.assertEqual(service.with_user(manager)._scope('all'), [company.id, other.id])
 
     def test_cash_custody_and_transfer(self):

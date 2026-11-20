@@ -29,7 +29,7 @@
             <path t-if="props.previous" t-att-d="path(props.previous)" fill="none" t-att-stroke="props.secondaryGold ? 'var(--bd2-gold)' : 'var(--bd2-faint)'" stroke-width="1.5" t-att-stroke-dasharray="props.secondaryGold ? '' : '4 3'"/>
             </t>
         </svg>
-        <t t-if="props.mini and props.stretch"><t t-foreach="endpoints(props.values)" t-as="i" t-key="i"><span class="spark-dot navy" t-att-class="i === endpoints(props.values).at(-1) ? 'spark-dot navy filled' : 'spark-dot navy'" t-att-style="'left:'+miniPoint(props.values,i).x+'%;top:'+(miniPoint(props.values,i).y/32*100)+'%'"/><span t-if="i === endpoints(props.values).at(-1)" class="spark-label navy" t-att-style="'left:'+miniPoint(props.values,i).x+'%;top:'+(miniPoint(props.values,i).y/32*100-10)+'%'" t-esc="short(props.values[i], false, props.amountDecimal)"/></t><t t-foreach="endpoints(props.previous)" t-as="i" t-key="i"><span class="spark-dot gold" t-att-class="i === endpoints(props.previous).at(-1) ? 'spark-dot gold filled' : 'spark-dot gold'" t-att-style="'left:'+miniPoint(props.previous,i,true).x+'%;top:'+(miniPoint(props.previous,i,true).y/32*100)+'%'"/><span t-if="i === endpoints(props.previous).at(-1)" class="spark-label gold" t-att-style="'left:'+miniPoint(props.previous,i,true).x+'%;top:'+(miniPoint(props.previous,i,true).y/32*100-10)+'%'" t-esc="short(props.previous[i], props.ratioPercent) + (props.ratioPercent ? '%' : '')"/></t></t></div>
+        <t t-if="props.mini and props.stretch"><t t-foreach="endpoints(props.values)" t-as="i" t-key="i"><span class="spark-dot navy" t-att-class="i === endpoints(props.values).at(-1) ? 'spark-dot navy filled' : 'spark-dot navy'" t-att-style="'left:'+miniPoint(props.values,i).x+'%;top:'+(miniPoint(props.values,i).y/32*100)+'%'"/><span t-if="i === endpoints(props.values).at(-1)" class="spark-label navy" t-att-style="'left:'+miniPoint(props.values,i).x+'%;top:'+(miniPoint(props.values,i).y/32*100)+'%'" t-esc="short(props.values[i], false, props.amountDecimal)"/></t><t t-foreach="endpoints(props.previous)" t-as="i" t-key="i"><span class="spark-dot gold" t-att-class="i === endpoints(props.previous).at(-1) ? 'spark-dot gold filled' : 'spark-dot gold'" t-att-style="'left:'+miniPoint(props.previous,i,true).x+'%;top:'+(miniPoint(props.previous,i,true).y/32*100)+'%'"/><span t-if="i === endpoints(props.previous).at(-1)" class="spark-label gold" t-att-style="'left:'+miniPoint(props.previous,i,true).x+'%;top:'+(miniPoint(props.previous,i,true).y/32*100)+'%'" t-esc="short(props.previous[i], props.ratioPercent) + (props.ratioPercent ? '%' : '')"/></t></t></div>
     </t>
     <t t-name="baseer_dashboard2.LineChart">
         <div>
@@ -87,14 +87,14 @@
         <div t-att-class="'card kpi '+(props.hero?'hero ':'')+(props.foodProgress != null ? 'food-kpi' : '')">
             <div t-if="props.foodProgress != null" class="food-progress"><i t-att-style="'width:'+Math.min(100, Math.max(0, props.foodProgress))+'%'"/></div>
             <Sparkline values="props.trend" gold="props.hero"/>
-            <div class="kpi-heading"><span class="card-icon"><svg viewBox="0 0 24 24"><path t-att-d="iconPath(props.icon)"/></svg></span><span class="muted" t-esc="props.title"/></div><small t-if="props.subtitle" class="muted" t-esc="props.subtitle"/><small t-if="props.subtitlePercent != null" class="muted">= <bdi dir="ltr" t-esc="formatPercent(props.subtitlePercent)"/> من المبيعات</small>
+            <div class="kpi-heading"><span class="card-icon"><svg viewBox="0 0 24 24"><path t-att-d="iconPath(props.icon)"/></svg></span><span class="muted" t-esc="props.title"/></div><small t-if="props.headingSubtitle" class="muted kpi-subtitle" t-esc="props.headingSubtitle"/><small t-if="props.subtitle" class="muted" t-esc="props.subtitle"/>
             <div class="kpi-value">
                 <span t-if="props.unit === 'orders'"><t t-esc="formatNumber(props.value)"/> <small>طلب</small></span><Money t-else="" value="props.value"/>
             </div>
             <div>
                 <Badge value="props.change" goodWhen="props.goodWhen" warning="props.warning" partial="props.partialMonth"/>
                 <span class="muted">عن الشهر السابق</span>
-            </div>
+            </div><small t-if="props.subtitlePercent != null" class="muted kpi-share">= <bdi dir="ltr" t-esc="formatPercent(props.subtitlePercent)"/> من المبيعات</small>
         </div>
     </t>
     <t t-name="baseer_dashboard2.Timeline">
@@ -218,8 +218,8 @@
     </t>
     <t t-name="baseer_dashboard2.Revenue">
         <div class="grid four">
-            <KpiCard partialMonth="trend.at(-1)?.partial" title="'إجمالي المبيعات — شامل الضريبة'" icon="'sales_net'" value="current.gross" change="changeValue(current.gross, state.data.previous.gross)" trend="trend.map(x=&gt;x.has_data ? x.data.gross : null)" hero="true"/>
-            <KpiCard partialMonth="trend.at(-1)?.partial" title="'مبيعات التطبيقات — شامل الضريبة'" icon="'apps'" value="current.apps" change="changeValue(current.apps, state.data.previous.apps)" trend="trend.map(x=&gt;x.has_data ? x.data.apps : null)" subtitle="current.apps_pct == null ? 'غير متوفر' : null" subtitlePercent="current.apps_pct"/>
+            <KpiCard partialMonth="trend.at(-1)?.partial" title="'إجمالي المبيعات'" headingSubtitle="'شامل الضريبة'" icon="'sales_net'" value="current.gross" change="changeValue(current.gross, state.data.previous.gross)" trend="trend.map(x=&gt;x.has_data ? x.data.gross : null)" hero="true"/>
+            <KpiCard partialMonth="trend.at(-1)?.partial" title="'مبيعات التطبيقات'" headingSubtitle="'شامل الضريبة'" icon="'apps'" value="current.apps" change="changeValue(current.apps, state.data.previous.apps)" trend="trend.map(x=&gt;x.has_data ? x.data.apps : null)" subtitle="current.apps_pct == null ? 'غير متوفر' : null" subtitlePercent="current.apps_pct"/>
             <KpiCard partialMonth="trend.at(-1)?.partial" title="'عدد العملاء (الطلبات)'" icon="'customers'" unit="'orders'" value="current.customers?.value" change="changeValue(current.customers?.value, state.data.previous.customers?.value)" trend="trend.map(x=&gt;x.has_data ? x.data.customers?.value : null)"/>
             <KpiCard partialMonth="trend.at(-1)?.partial" title="'متوسط الفاتورة'" icon="'ticket'" value="current.customers?.avg_ticket" change="changeValue(current.customers?.avg_ticket, state.data.previous.customers?.avg_ticket)" trend="trend.map(x=&gt;x.has_data ? x.data.customers?.avg_ticket : null)"/>
         </div>
@@ -272,7 +272,7 @@
             <div class="card">
                 <h3>التطبيقات ونسبتها من المبيعات</h3>
                 <div class="muted">النسبة (أعلى، ذهبي) والمبلغ شامل الضريبة (أسفل، كحلي)</div>
-                <div class="revenue-combo apps-combo"><t t-set="appsTrend" t-value="state.data.apps_trend || trend"/><Sparkline values="appsTrend.map(x=&gt;x.has_data ? x.data.apps : null)" previous="appsTrend.map(x=&gt;x.has_data ? x.data.apps_pct : null)" mini="true" ratioPercent="true" stretch="true"/><div class="mini-labels"><span t-foreach="appsTrend" t-as="month" t-key="month.month" t-att-style="'left:'+miniX(month_index, appsTrend.length)+'%'" t-esc="monthName(month.month).split(' ')[0]+(month.partial ? ' (جزئي)' : '')"/></div><div class="mini-legend"><span><i/>مبيعات التطبيقات شامل الضريبة</span><span><i class="gold"/>النسبة</span></div></div>
+                <div class="revenue-combo apps-combo"><t t-set="appsTrend" t-value="state.data.apps_trend || trend"/><Sparkline values="appsTrend.map(x=&gt;x.has_data ? x.data.apps : null)" previous="appsTrend.map(x=&gt;x.has_data ? x.data.apps_pct : null)" mini="true" ratioPercent="true" stretch="true"/><div class="mini-labels"><span t-foreach="appsTrend" t-as="month" t-key="month.month" t-if="appsTrend.length &lt;= 6 or month_index % 2 === (appsTrend.length - 1) % 2" t-att-style="'left:'+miniX(month_index, appsTrend.length)+'%'" t-esc="monthName(month.month).split(' ')[0]+(month.partial ? ' (جزئي)' : '')"/></div><div class="mini-legend"><span><i/>مبيعات التطبيقات شامل الضريبة</span><span><i class="gold"/>النسبة</span></div></div>
             </div>
         </div>
         <div class="grid two">
@@ -669,13 +669,13 @@
                 </table>
             </div>
             <div class="card">
-                <h3>أوقات الذروة — اليوم × الساعة</h3>
+                <h3>أوقات الذروة — اليوم × الساعة</h3><div class="muted">عدد الطلبات · الفترة</div>
                 <div t-if="!state.data.hours.available" class="customer-empty">غير متوفر — يتوفر من بيانات نقاط البيع فقط</div>
                 <div t-else="" class="hours-scroll"><table class="hours-table">
                     <thead><tr><th>اليوم</th><th t-foreach="peakHours" t-as="hour" t-key="hour" t-esc="hourLabel(hour)"/><th>المتوسط</th></tr></thead>
                     <tbody><tr t-foreach="weekdays" t-as="weekday" t-key="weekday_index"><th t-esc="weekday"/><td t-foreach="peakHours" t-as="hour" t-key="hour" t-att-class="'hour-level-'+peakLevel(peakValue((weekday_index+5)%7, hour))" t-esc="peakValue((weekday_index+5)%7, hour) || '—'"/><td t-esc="peakAverage(peakHours.map(h=&gt;peakValue((weekday_index+5)%7,h)))"/></tr>
                     <tr><th>المتوسط</th><td t-foreach="peakHours" t-as="hour" t-key="hour" t-esc="peakAverage(weekdays.map((_,i)=&gt;peakValue((i+5)%7,hour)))"/><td t-esc="peakAverage(weekdays.flatMap((_,i)=&gt;peakHours.map(h=&gt;peakValue((i+5)%7,h))))"/></tr></tbody>
-                </table><small class="muted">المتوسط لكل خلية خلال الفترة المحددة</small></div>
+                </table></div>
             </div>
         </div>
     </t>

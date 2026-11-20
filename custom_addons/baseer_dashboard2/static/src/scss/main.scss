@@ -778,7 +778,7 @@ td {
 .o_bd2 .kpi .spark-wrap .bd2-spark { width: 100%; height: 30px; }
 .o_bd2 .safety-chips { flex-wrap: nowrap; align-items: center; white-space: nowrap; }
 .o_bd2 .compare-pill.near { color: var(--bd2-warn); background: var(--bd2-gold-soft); }
-.o_bd2 .compare-pill.bad { color: var(--bd2-neg); background: var(--bd2-gold-soft); }
+.o_bd2 .compare-pill.bad { color: var(--bd2-neg); background: var(--bd2-negative-soft); }
 .o_bd2 .bd2-ring b { display: flex; flex-direction: column; justify-content: center; align-items: center; }
 .o_bd2 .bd2-ring b small { font-size: 10px; font-weight: 400; }
 .o_bd2 .rank-row { grid-template-columns: minmax(100px, 1fr) minmax(100px, 40%) 90px 50px; }
@@ -844,3 +844,12 @@ td {
 .o_bd2 .expense-sales-chart { display: flex; flex-direction: column; }
 .o_bd2 .expense-sales-chart > div:has(> .bd2-chart) { flex: 1; display: flex; flex-direction: column; }
 .o_bd2 .expense-sales-chart .bd2-chart { flex: 1; }
+
+.o_bd2 tr.highlight .compare-pill { position: relative; }
+.o_bd2 .apps-combo .spark-wrap { direction: ltr; }
+.o_bd2 .apps-combo .spark-label { transform: translate(8px, -50%); }
+.o_bd2 .kpi-subtitle, .o_bd2 .kpi-share { display: block; }
+.o_bd2 .kpi > div:not(.spark-wrap):not(.kpi-heading):not(.kpi-value):not(.food-progress) { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; }
+.o_bd2 .hours-table th:last-child { width: 58px; }
+.o_bd2 .hours-table { font-size: 10px; }
+.o_bd2 .hours-table th, .o_bd2 .hours-table td { padding-inline: 1px; }

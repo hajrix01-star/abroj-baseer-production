@@ -244,6 +244,7 @@ export class KpiCard extends Component {
   static components = { Money, Badge, Sparkline };
   static props = {
     title: String,
+    headingSubtitle: { optional: true },
     subtitle: { optional: true },
     subtitlePercent: { optional: true },
     unit: { optional: true },

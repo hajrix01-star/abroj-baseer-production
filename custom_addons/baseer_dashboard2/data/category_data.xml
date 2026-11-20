@@ -34,7 +34,7 @@
         <field name="color_token">--bd2-c-navy</field>
     </record>
     <record id="category_utilities" model="baseer.dashboard2.category">
-        <field name="name">كهرباء وخدمات</field>
+        <field name="name">الكهرباء والماء</field>
         <field name="sequence">60</field>
         <field name="code">utilities</field>
         <field name="account_code_prefixes">400018,400019,400020,400021,400022,400023</field>

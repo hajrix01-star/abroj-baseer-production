@@ -438,7 +438,7 @@ msgstr "نسبة الرواتب"
 #. module: baseer_dashboard2
 #: model:ir.model.fields.selection,name:baseer_dashboard2.selection__baseer_dashboard2_category__code__utilities
 msgid "utilities"
-msgstr "كهرباء وخدمات"
+msgstr "الكهرباء والماء"
 
 #. module: baseer_dashboard2
 #: model:ir.model.fields.selection,name:baseer_dashboard2.selection__baseer_dashboard2_category__code__zakat_tax
@@ -529,8 +529,8 @@ msgstr "عرض/حملة"
 
 #. module: baseer_dashboard2
 #: model:baseer.dashboard2.category,name:baseer_dashboard2.category_utilities
-msgid "كهرباء وخدمات"
-msgstr "كهرباء وخدمات"
+msgid "الكهرباء والماء"
+msgstr "الكهرباء والماء"
 
 #. module: baseer_dashboard2
 #: model:baseer.dashboard2.channel,name:baseer_dashboard2.channel_keeta

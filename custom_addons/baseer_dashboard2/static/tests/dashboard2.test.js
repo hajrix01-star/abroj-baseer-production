@@ -269,3 +269,17 @@ test('latest chart points are filled and labelled', async () => {
     expect(Number(latest.getAttribute('cx'))).toBe(chartX(2, 3));
     expect(getFixture().querySelector('svg').textContent).toInclude('30');
 });
+
+test('commission card uses recorded amount and salary badges explain suppression', async () => {
+    const response = await withFetch(globals.fetch, () => fetch('/baseer_dashboard2/static/src/xml/main.xml'));
+    const doc = new DOMParser().parseFromString(await response.text(), 'text/xml');
+    const revenue = doc.querySelector('[t-name="baseer_dashboard2.Revenue"]');
+    const card = revenue.querySelector('[t-if="state.data.commissions.available"]');
+    expect(card.querySelector('Money').getAttribute('value')).toBe('state.data.commissions.amount');
+    expect(revenue.textContent.includes('عمولة X%')).toBe(false);
+    expect(revenue.innerHTML.includes('commission_rate')).toBe(false);
+    expect(doc.querySelector('[t-name="baseer_dashboard2.Badge"] [t-if="props.warning"]').getAttribute('title')).toInclude('رواتب الشهر السابق');
+    const overview = doc.querySelector('[t-name="baseer_dashboard2.BreakEven"]');
+    expect(overview.querySelector('.break-progress').getAttribute('t-if')).toBe('state.data.breakeven?.available');
+    expect(overview.querySelector('.break-legend').getAttribute('t-if')).toBe('state.data.breakeven?.available');
+});

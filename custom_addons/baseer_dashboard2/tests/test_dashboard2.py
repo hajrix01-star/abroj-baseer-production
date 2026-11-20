@@ -26,10 +26,10 @@ class TestDashboard2(TransactionCase):
         self.assertFalse(low_salaries(70, [100, 100, 100]))
         self.assertFalse(low_salaries(1, [100, 100]))
 
-    def test_change_rejects_tiny_base(self):
+    def test_change_keeps_large_percentages(self):
         from ..models.sections import change
-        self.assertIsNone(change(11050, 100))
-        self.assertIsNone(change(655, 100))
+        self.assertEqual(change(11050, 100), 10950)
+        self.assertEqual(change(655, 100), 555)
         self.assertEqual(change(150, 100), 50)
 
     def test_default_app_commissions_are_editable(self):
@@ -38,6 +38,26 @@ class TestDashboard2(TransactionCase):
             self.assertEqual(channel.commission_rate, rate)
             channel.commission_rate = rate + 1
             self.assertEqual(channel.commission_rate, rate + 1)
+
+    def test_recorded_commissions_use_posted_configured_accounts(self):
+        company = self.env.company
+        accounts = self.env['account.account'].with_company(company)
+        fee = accounts.create({'code': '400011', 'name': 'App commission', 'account_type': 'expense', 'company_ids': [(6, 0, [company.id])]})
+        other = accounts.create({'code': 'D2FEE', 'name': 'Other fee', 'account_type': 'expense', 'company_ids': [(6, 0, [company.id])]})
+        cash = accounts.create({'code': 'D2CASH', 'name': 'Cash', 'account_type': 'asset_cash', 'company_ids': [(6, 0, [company.id])]})
+        journal = self.env['account.journal'].create({'name': 'Fees', 'code': 'D2FEE', 'type': 'general', 'company_id': company.id})
+        service = self.env['baseer.dashboard2.service']
+        start, end = date(2026, 10, 1), date(2026, 10, 31)
+        settings = self.env['baseer.dashboard2.settings'].search([('company_id', '=', company.id)], limit=1)
+        self.assertEqual(service._recorded_app_commissions([company.id], start, end), 0)
+        move = self.env['account.move'].create({'journal_id': journal.id, 'date': start, 'line_ids': [
+            (0, 0, {'name': 'Fee', 'account_id': fee.id, 'debit': 125}),
+            (0, 0, {'name': 'Cash', 'account_id': cash.id, 'credit': 125})]})
+        self.assertEqual(service._recorded_app_commissions([company.id], start, end), 0)
+        move.action_post()
+        self.assertEqual(service._recorded_app_commissions([company.id], start, end), 125)
+        settings.app_commission_account_ids = other
+        self.assertEqual(service._recorded_app_commissions([company.id], start, end), 0)
 
     def test_apps_include_tax_in_summary(self):
         from unittest.mock import patch
@@ -197,7 +217,8 @@ class TestDashboard2(TransactionCase):
         expense = service.get_section('expenses', params)
         overview = service.get_section('overview', params)
         self.assertNotIn('zakat_tax', [row['key'] for row in expense['ranked']])
-        self.assertEqual(sum(row['amount'] for row in expense['ranked']), 550)
+        self.assertEqual(sum(row['amount'] for row in expense['ranked']), 500)
+        self.assertNotIn('non_operating', [row['key'] for row in expense['ranked']])
         self.assertEqual(overview['kpis']['expenses_total']['value'], 650)
         self.assertEqual(next(row['amount'] for row in overview['bridge'] if row['key'] == 'zakat_tax'), -100)
 
@@ -490,8 +511,13 @@ class TestDashboard2(TransactionCase):
         journal = self.env['account.journal'].create({'name': 'Purchase', 'code': 'D2PUR', 'type': 'purchase', 'company_id': company.id})
         bill = self.env['account.move'].create({'move_type': 'in_invoice', 'journal_id': journal.id, 'partner_id': partner.id, 'invoice_date': '2026-10-03',
             'invoice_line_ids': [(0, 0, {'name': 'Purchase', 'account_id': expense.id, 'quantity': 1, 'price_unit': 100})]})
-        bill.action_post()
         service = self.env['baseer.dashboard2.service']
+        settings = self.env['baseer.dashboard2.settings'].search([('company_id', '=', company.id)], limit=1)
+        settings.food_purchase_account_ids = expense
+        self.assertFalse(service._purchases([company.id], date(2026, 10, 1), date(2026, 10, 31), 1000)['has_bills'])
+        bill.action_post()
+        self.assertTrue(service._purchases([company.id], date(2026, 10, 1), date(2026, 10, 31), 1000)['has_bills'])
+        self.assertFalse(service._purchases([company.id], date(2026, 9, 1), date(2026, 9, 30), 1000)['has_bills'])
         self.assertEqual(abs(service._unpaid_bills([company.id], date(2026, 10, 31))['value']), 100)
         payment_journal = self.env['account.journal'].create({'name': 'Bill settlement', 'code': 'D2SET', 'type': 'general', 'company_id': company.id})
         payment = self.env['account.move'].create({'journal_id': payment_journal.id, 'date': '2026-11-10', 'line_ids': [

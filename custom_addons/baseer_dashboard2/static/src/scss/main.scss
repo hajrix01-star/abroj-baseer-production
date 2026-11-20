@@ -817,9 +817,15 @@ td {
 .o_bd2 .spark-dot.gold.filled { background: var(--bd2-gold); }
 
 .o_bd2 .hours-scroll { overflow-x: auto; }
-.o_bd2 .hours-table { min-width: 900px; table-layout: fixed; }
+.o_bd2 .hours-table { width: 100%; min-width: 0; table-layout: fixed; font-size: 11px; }
 .o_bd2 .hours-table th, .o_bd2 .hours-table td { text-align: center; padding: 5px 2px; }
-.o_bd2 .hours-table th:first-child { width: 70px; }
+.o_bd2 .hours-table th:first-child { width: 62px; }
+.o_bd2 .hours-table .hour-level-1 { background: var(--bd2-heat1); }
+.o_bd2 .hours-table .hour-level-2 { background: var(--bd2-heat2); }
+.o_bd2 .hours-table .hour-level-3 { background: var(--bd2-heat3); }
+.o_bd2 .hours-table .hour-level-4 { background: var(--bd2-heat4); }
+.o_bd2 .hours-table .hour-level-5 { background: var(--bd2-heat5); }
+
 
 .o_bd2 .kpi-heading { display: flex; align-items: center; gap: 8px; padding-inline-end: 78px; }
 .o_bd2 .negative { color: var(--bd2-neg); }

@@ -100,6 +100,7 @@ class DashboardSettings(models.Model):
     app_balance_start_date = fields.Date(help='Exclude app balance movements before this date; earlier balances are under review.')
     summary_pos_config_ids = fields.Many2many('pos.config', 'bd2_summary_pos_rel', 'settings_id', 'config_id', check_company=True)
     liquidity_account_ids = fields.Many2many('account.account', 'bd2_liquidity_account_rel', 'settings_id', 'account_id', check_company=True)
+    app_commission_account_ids = fields.Many2many('account.account', 'bd2_app_commission_account_rel', 'settings_id', 'account_id', string='حسابات عمولات التطبيقات', check_company=True, help='إذا تُركت فارغة يُستخدم الحساب 400011.')
     food_purchase_account_ids = fields.Many2many('account.account', 'bd2_food_purchase_account_rel', 'settings_id', 'account_id', string='حسابات مشتريات الطعام', check_company=True)
     liquidity_ids = fields.One2many('baseer.dashboard2.liquidity', 'settings_id')
 

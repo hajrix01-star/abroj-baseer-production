@@ -24,9 +24,7 @@ def percent(value, base):
 
 
 def change(value, previous):
-    # A base less than one sixth of the current magnitude produces an
-    # uninformative change above 500%; treat it as too small to compare.
-    return round((value - previous) / abs(previous) * 100, 2) if value is not None and previous and abs(value) <= 6 * abs(previous) else None
+    return round((value - previous) / abs(previous) * 100, 2) if value is not None and previous else None
 
 
 def low_salaries(current, history):
@@ -55,7 +53,28 @@ class DashboardSections(models.AbstractModel):
                 ('account_id', 'in', setting.food_purchase_account_ids.ids),
                 ('move_id', 'not in', excluded), ('move_id.ref', '!=', 'Opening Entry')], [], ['balance:sum'])
             value += (rows[0][0] or 0) if rows else 0
-        return {'available': True, 'value': round(value, 2), 'pct': percent(value, sales)}
+        bill_exists = self.env['account.move.line'].with_context(allowed_company_ids=ids).search_count([
+            ('company_id', 'in', ids), ('parent_state', '=', 'posted'),
+            ('date', '>=', start), ('date', '<=', end), ('move_id.move_type', 'in', ('in_invoice', 'in_refund')),
+            ('account_id', 'in', settings.mapped('food_purchase_account_ids').ids)], limit=1)
+        return {'available': True, 'value': round(value, 2), 'pct': percent(value, sales), 'has_bills': bool(bill_exists)}
+
+    def _recorded_app_commissions(self, ids, start, end):
+        total = 0.0
+        settings_model = self.env['baseer.dashboard2.settings'].with_context(allowed_company_ids=ids)
+        for company in self.env['res.company'].browse(ids):
+            setting = settings_model.search([('company_id', '=', company.id)], limit=1)
+            accounts = setting.app_commission_account_ids
+            if not accounts:
+                accounts = self.env['account.account'].with_company(company).search([
+                    ('company_ids', 'in', company.id), ('code', '=', '400011')])
+            excluded = self._reset_move_ids([company.id], end, start) + company.account_opening_move_id.ids
+            rows = self.env['account.move.line'].with_company(company)._read_group([
+                ('company_id', '=', company.id), ('parent_state', '=', 'posted'),
+                ('date', '>=', start), ('date', '<=', end), ('account_id', 'in', accounts.ids),
+                ('move_id', 'not in', excluded), ('move_id.ref', '!=', 'Opening Entry')], [], ['balance:sum'])
+            total += (rows[0][0] or 0) if rows else 0
+        return round(total, 2)
 
     def _posted_months(self, ids, revenue_only=False):
         lines = self.env['account.move.line'].with_context(allowed_company_ids=ids).search([
@@ -159,7 +178,7 @@ class DashboardSections(models.AbstractModel):
             bridge = [('sales_net', current['sales_net']), ('food_cost', -current['categories'].get('food_cost', 0)), ('gross_profit', current['gross_profit']),
                       ('salaries', -current['categories'].get('salaries', 0)), ('rent', -current['categories'].get('rent', 0))]
             bridge += [(k, -current['categories'].get(k, 0)) for k in ('utilities', 'marketing', 'commissions', 'other_opex', 'depreciation') if current['categories'].get(k)]
-            bridge += [('operating_profit', current['operating_profit']), ('other_income', current['categories'].get('other_income', 0)), ('non_operating', -current['categories'].get('non_operating', 0)), ('zakat_tax', -current['categories'].get('zakat_tax', 0)), ('net_profit', current['net_profit'])]
+            bridge += [('operating_profit', current['operating_profit']), ('other_income', current['categories'].get('other_income', 0)), ('zakat_tax', -current['categories'].get('zakat_tax', 0)), ('net_profit', current['net_profit'])]
             result['bridge'] = [{'key': key, 'amount': amount, 'pct': percent(amount, current['sales_net'])} for key, amount in bridge if amount or key in ('sales_net', 'gross_profit', 'operating_profit', 'net_profit')]
             result['breakeven_series'] = [{'month': m['month'], 'partial': m['partial'], 'sales_net': m['data']['sales_net'] if m['has_data'] else None, 'net_profit': m['data']['net_profit'] if m['has_data'] else None, 'breakeven': m['data']['breakeven'] if m['has_data'] else None, 'margin_pct': m['data']['ratios']['net_margin_pct'] if m['has_data'] else None} for m in trend]
             result['purchases'] = self._purchases(ids, start, end, current['sales_net'])
@@ -176,7 +195,10 @@ class DashboardSections(models.AbstractModel):
             for month in mini_months:
                 month_start, month_end = month_bounds(date.fromisoformat(month['month'] + '-01'))
                 month_end = min(month_end, end)
-                result['purchases']['trend'].append({'month': month['month'], 'has_data': month['has_data'], **self._purchases(ids, month_start, month_end, month['data']['sales_net'])})
+                purchase = self._purchases(ids, month_start, month_end, month['data']['sales_net'])
+                result['purchases']['trend'].append({'month': month['month'], **purchase, 'has_data': bool(purchase.get('has_bills')),
+                                                    'value': purchase['value'] if purchase.get('has_bills') else None,
+                                                    'pct': purchase['pct'] if purchase.get('has_bills') else None})
                 monthly_sales, _, _, _ = self._sales_summary(ids, month_start, month_end)
                 sales_trend.append({'month': month['month'], 'has_data': bool(monthly_sales['source_counts']['pos'] or monthly_sales['source_counts']['summary']), **monthly_sales})
             sales, days, channels, hours = self._sales_summary(ids, start, end)
@@ -213,14 +235,14 @@ class DashboardSections(models.AbstractModel):
         if section == 'expenses':
             rows = []
             for key in expense_keys:
-                if key == 'zakat_tax':
+                if key in ('zakat_tax', 'non_operating'):
                     continue
                 amount = current['categories'].get(key, 0)
                 rows.append({'key': key, 'amount': amount, 'previous': previous['categories'].get(key, 0),
                              'trend': [m['data']['categories'].get(key, 0) if m['has_data'] else None for m in trend], 'pct': percent(amount, current['sales_net']),
                              'accounts': sorted([a for a in current['accounts'] if a['category'] == key], key=lambda x: x['amount'], reverse=True)})
             result['ranked'] = sorted((r for r in rows if r['amount'] or any(r['trend'])), key=lambda x: x['amount'], reverse=True)
-            total = sum(r['amount'] for r in rows)
+            total = sum(current['categories'].get(k, 0) for k in expense_keys if k != 'zakat_tax')
             result['ring'] = {'available': bool(current['sales_net']), 'value': percent(total, current['sales_net']), 'reason': False if current['sales_net'] else 'zero_sales'}
         if section == 'pnl':
             rows = []
@@ -288,15 +310,9 @@ class DashboardSections(models.AbstractModel):
             amount = current['channels'].get(key, 0)
             before = previous['channels'].get(key, 0)
             rows.append({'key': key, 'name': channel['name'], 'kind': channel['kind'], 'color_token': channel['color_token'],
-                         'amount': amount, 'commission_rate': channel['commission_rate'], 'share_pct': percent(amount, current['gross']), 'change_pct': change(amount, before),
+                         'amount': amount, 'share_pct': percent(amount, current['gross']), 'change_pct': change(amount, before),
                          'trend': [m['data']['channels'].get(key, 0) if m['has_data'] else None for m in monthly]})
-        commissions = []
-        for row in rows:
-            channel = known[row['key']]
-            rate = channel['commission_rate']
-            if row['kind'] == 'app' and rate > 0:
-                fee = round(row['amount'] * rate / 100, 2)
-                commissions.append({'key': row['key'], 'name': row['name'], 'rate': rate, 'gross': row['amount'], 'commission': fee, 'net': round(row['amount'] - fee, 2)})
+        commission_amount = self._recorded_app_commissions(ids, start, end)
         split = {'hall': round(current['gross'] - current['apps'], 2), 'apps': current['apps']}
         if not days:
             current = dict(current, gross=None, apps=None)
@@ -304,7 +320,7 @@ class DashboardSections(models.AbstractModel):
         return {'available': True, 'current': current, 'previous': previous, 'trend': monthly, 'apps_trend': apps_trend,
                 'ranked': sorted((row for row in rows if row['amount'] or any(row['trend'])), key=lambda row: row['amount'], reverse=True),
                 'split': split,
-                'commissions': {'available': bool(commissions), 'reason': False if commissions else 'no_commission_rates', 'rows': commissions},
+                'commissions': {'available': bool(commission_amount), 'amount': commission_amount},
                 'timeline': self._timeline(ids, end, params.get('timeline_mode', 'monthly'))}
 
     def _inout(self, ids, end):

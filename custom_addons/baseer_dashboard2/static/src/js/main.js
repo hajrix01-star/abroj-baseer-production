@@ -55,7 +55,7 @@ const labels = {
   gross_profit: "مجمل الربح",
   operating_profit: "الربح التشغيلي",
   rent: "الإيجار",
-  utilities: "الكهرباء والخدمات",
+  utilities: "الكهرباء والماء",
   marketing: "التسويق",
   commissions: "العمولات",
   other_opex: "مصاريف تشغيلية أخرى",
@@ -167,7 +167,7 @@ class Money extends Component {
 class Badge extends Component {
   formatPercent = formatPercent;
   static template = "baseer_dashboard2.Badge";
-  static props = { value: { optional: true }, goodWhen: { optional: true } };
+  static props = { value: { optional: true }, goodWhen: { optional: true }, warning: { optional: true } };
   get good() {
     return this.props.goodWhen === "down"
       ? this.props.value <= 0
@@ -236,6 +236,7 @@ export class KpiCard extends Component {
     hero: { optional: true },
     goodWhen: { optional: true },
     foodProgress: { optional: true },
+    warning: { optional: true },
   };
 }
 
@@ -509,8 +510,21 @@ class Dashboard2 extends Component {
   get expenses() {
     return this.state.data?.ranked || [];
   }
+  get peakHours() {
+    const active = new Set(Array.from({ length: 16 }, (_, i) => (11 + i) % 24));
+    for (const cell of this.state.data.hours.matrix) if (cell.orders) active.add(cell.hour);
+    return Array.from({ length: 24 }, (_, i) => (11 + i) % 24).filter((hour) => active.has(hour));
+  }
+  peakValue(day, hour) {
+    return this.state.data.hours.matrix.find((cell) => cell.weekday === day && cell.hour === hour)?.orders || 0;
+  }
+  peakLevel(value) {
+    const max = Math.max(1, ...this.state.data.hours.matrix.map((cell) => cell.orders || 0));
+    return value ? Math.max(1, Math.ceil(value / max * 5)) : 0;
+  }
+  peakAverage(values) { return (values.reduce((sum, value) => sum + value, 0) / values.length).toFixed(1); }
   operatingExpense = (d) => this.totalExpense(d) - (d?.categories?.zakat_tax || 0);
-  changeValue(value, previous) { return previous && value != null && Math.abs(value) <= 6 * Math.abs(previous) ? (value - previous) / Math.abs(previous) * 100 : null; }
+  changeValue(value, previous) { return previous && value != null ? (value - previous) / Math.abs(previous) * 100 : null; }
   iconPath = iconPath;
   totalExpense(d) {
     return Object.entries(d?.categories || {})

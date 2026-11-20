@@ -161,3 +161,36 @@ Independent final review: GO for this source to QA via green PR and protected
 release. Official QA deployment and physical PS7 paper remain pending.
 Windows spool acceptance is not paper confirmation. The source observation
 about partial spool failures remains outside the three authorized repairs.
+
+## QA deployment and physical acceptance — 2026-11-20
+
+Reviewed source39e499984455d29bea67f3e18716b0e92ebad3c2 (#937) passed all
+checks, including 298 native Odoo tests with zero failures/errors. QA policy
+#938 and protected Actions44650072835 deployed Bridge19.0.7.8.57. Server
+receipt QA_POLLER=GO; current release39e499984455-run-44650072835-20261120T010003Z,
+module installed and /web/login HTTP200. Live unchanged.
+
+PS7/PSS7-80mm, IP192.168.100.114: selected native jobs4217NEW2,
+4219CANCEL1 and4221paid1.15 were claimed and printed with the original Agent
+renderer, then acknowledged through native lease completion. Owner confirmed
+all three papers. New native early bill4225 (unpaid1.15) was separately printed;
+owner confirmed complete/appropriate. No background clone queue draining.
+
+### Physical kitchen DPI regression and bounded repair
+
+Owner's paper photo exposed enlarged and clipped kitchen raster. Source JPEG
+is complete576x612 at75DPI, while receipt/early images are96DPI. Agent's
+DrawImageUnscaled copied kitchen pixels into a new96DPI bitmap at physical
+size (96/75=1.28), clipping right/bottom before printer drawing. Independent
+PreviewPrintController reproduction matches the photo; intermediate bitmap
+already contains the defect. Identical driver/page metrics exclude a paper-size
+change. Explicit pixel source/destination rectangles repair this one conversion.
+No font, CSS, template, receipt layout, calculations or printer settings changed.
+
+Agent candidate1.5.21: clean build; qa/Test-RasterPixelScale.ps1 fails against
+old DLL at75DPI and passes every pixel at75/96/203DPI against fixed DLL.
+Same immutable kitchen4217/4219 JPEGs reprinted as comparison samples with
+fixed DLL, without queue/financial mutations. Owner confirmed appropriate size,
+full product names and End of order, with no clipping. Diagnostic artifacts in
+root output/retail-bills-repair-20261120/agent-harness/preview-diagnostic.
+QA Agent binary/catalog publication is the remaining delivery step.

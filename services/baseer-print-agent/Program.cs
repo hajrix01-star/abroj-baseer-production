@@ -621,7 +621,9 @@ static class ThermalPrinter
         using (var graphics = Graphics.FromImage(bitmap))
         {
             graphics.Clear(Color.White);
-            graphics.DrawImageUnscaled(source, 0, 0);
+            // Match pixels, not physical DPI: Qt kitchen JPEGs use 75 DPI.
+            graphics.DrawImage(source, new Rectangle(0, 0, bitmap.Width, bitmap.Height),
+                0, 0, source.Width, source.Height, GraphicsUnit.Pixel);
         }
 
         var bounds = new Rectangle(0, 0, bitmap.Width, bitmap.Height);

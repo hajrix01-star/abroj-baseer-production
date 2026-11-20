@@ -7,6 +7,7 @@ export const formatNumber = (n) =>
   n === null || n === undefined || n === false
     ? "—"
     : new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(n);
+export const formatTable = (n) => n == null || n === false || Number(n) === 0 ? "—" : Number(n) < 0 ? `(${formatNumber(-n)})` : formatNumber(n);
 export const chartX = (i, n, width = 700) =>
   width - 48 - (width - 70) * (n <= 1 ? 0.5 : i / (n - 1));
 const months = [
@@ -56,7 +57,8 @@ const labels = {
   net_margin_pct: "صافي هامش الربح",
   purchases: "المشتريات",
   bank: "بنك",
-  cash: "نقد",
+  cash: "نقد", card: "شبكة", keeta: "كيتا", hunger: "هنقرستيشن", jahez: "جاهز", transfer: "تحويل بنكي", credit: "آجل", other: "أخرى", unclassified: "غير مصنف", vat_paid: "ضريبة القيمة المضافة المدفوعة",
+  expenses: "المصاريف", profit: "الأرباح", ratios: "النسب", breakeven: "نقطة التعادل", gross_sales_by_channel: "المبيعات حسب القناة", apps: "التطبيقات", apps_unreceived: "التطبيقات غير المستلمة", customers: "العملاء", hours: "أوقات الذروة", inout: "الداخل والخارج", unpaid_bills: "الفواتير غير المسددة", timeline: "المسار الزمني", heatmap: "التقويم الحراري", sales_vat: "ضريبة المبيعات",
 };
 const pages = [
   ["overview", "نظرة عامة", "ملخص الأداء المالي للفترة المحددة", "▦"],
@@ -350,8 +352,17 @@ class Dashboard2 extends Component {
     return weekdays;
   }
   fmt = formatNumber;
+  tableFmt = formatTable;
+  dateName(d) {
+    if (!d) return "—";
+    const [, month, day] = d.split("-");
+    return `${Number(day)} ${months[Number(month) - 1]}`;
+  }
   name(key) {
     return this.state.data?.channel_names?.[key] || labels[key] || key;
+  }
+  tablePct(v) {
+    return v == null || Number(v) === 0 ? "—" : this.pct(v);
   }
   pct(v) {
     return v === null || v === undefined ? "—" : `${Number(v).toFixed(1)}%`;
@@ -417,7 +428,8 @@ class Dashboard2 extends Component {
     return [...Array((day + 1) % 7).fill(null), ...d];
   }
   level(day) {
-    const a = (this.state.data?.days || []).map((d) => d.gross);
+    if (day.gross == null) return 0;
+    const a = (this.state.data?.days || []).map((d) => d.gross ?? 0);
     const max = Math.max(1, ...a);
     return Math.max(1, Math.min(5, Math.ceil((day.gross / max) * 5)));
   }

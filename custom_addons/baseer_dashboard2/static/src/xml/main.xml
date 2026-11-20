@@ -54,7 +54,7 @@
                 <circle cx="50" cy="50" r="42" fill="none" stroke="var(--bd2-grid)" stroke-width="10"/>
                 <circle cx="50" cy="50" r="42" fill="none" stroke="var(--bd2-gold)" stroke-width="10" stroke-linecap="round" stroke-dasharray="264" t-att-stroke-dashoffset="offset" transform="rotate(-90 50 50)"/>
             </svg>
-            <b t-esc="(props.value || 0).toFixed(1)+'%'"/>
+            <b t-esc="props.value == null ? '—' : props.value.toFixed(1)+'%'"/>
         </div>
     </t>
     <t t-name="baseer_dashboard2.Gauge">
@@ -120,7 +120,7 @@
             <div class="card mini" t-foreach="[['المشتريات ونسبتها',state.data.purchases?.value,state.data.purchases?.pct,state.data.purchases?.trend?.map(x=&gt;x.has_data ? x.pct : null),state.data.purchases?.trend?.map(x=&gt;x.has_data ? x.value : null)],['تطبيقات التوصيل ونسبتها',state.data.sales?.apps,state.data.sales?.apps_pct,state.data.sales?.trend?.map(x=&gt;x.has_data ? x.apps_pct : null),state.data.sales?.trend?.map(x=&gt;x.has_data ? x.apps : null)],['عدد العملاء ومتوسط الفاتورة',state.data.sales?.customers?.value,state.data.sales?.customers?.avg_ticket,state.data.sales?.trend?.map(x=&gt;x.has_data ? x.customers.avg_ticket : null),state.data.sales?.trend?.map(x=&gt;x.has_data ? x.customers.value : null)]]" t-as="item" t-key="item[0]">
                 <h3 t-esc="item[0]"/>
                 <strong t-esc="fmt(item[1])"/>
-                <div class="muted" t-esc="item[2] == null ? 'غير متوفر' : fmt(item[2])"/>
+                <div class="muted" t-esc="item[2] == null ? 'غير متوفر' : (item_index &lt; 2 ? pct(item[2]) : fmt(item[2]))"/>
                 <Sparkline values="item[3]" gold="true"/><Sparkline values="item[4]"/><div class="mini-labels"><span t-foreach="trendLabels" t-as="label" t-key="label_index" t-esc="label"/></div>
             </div>
         </div>
@@ -138,7 +138,7 @@
         <div class="card">
             <h3>من المبيعات إلى صافي الربح</h3>
             <div class="muted">كل سطر يبيّن المبلغ ونسبته من المبيعات</div>
-            <div class="bridge-row" t-foreach="state.data.bridge" t-as="row" t-key="row.key">
+            <div t-att-class="'bridge-row '+(row.key==='net_profit'?'net-profit':'')" t-foreach="state.data.bridge" t-as="row" t-key="row.key">
                 <b t-esc="name(row.key)"/>
                 <Track value="row.amount" max="current.sales_net" gold="row.key==='net_profit'"/>
                 <strong t-esc="fmt(row.amount)"/>
@@ -185,10 +185,10 @@
                 <tbody>
                     <tr t-foreach="state.data.companies_compare" t-as="co" t-key="co.key" t-att-class="co.key===state.company?'highlight':''">
                         <th t-esc="co.name"/>
-                        <td t-esc="fmt(co.sales_net)"/>
-                        <td t-esc="pct(co.food_pct)"/>
-                        <td t-esc="pct(co.salaries_pct)"/>
-                        <td t-esc="pct(co.net_margin_pct)"/>
+                        <td t-esc="tableFmt(co.sales_net)"/>
+                        <td t-esc="tablePct(co.food_pct)"/>
+                        <td t-esc="tablePct(co.salaries_pct)"/>
+                        <td t-esc="tablePct(co.net_margin_pct)"/>
                     </tr>
                 </tbody>
             </table>
@@ -228,8 +228,8 @@
                             <td>
                                 <Track value="row.amount" max="state.data.ranked[0]?.amount" gold="row_index===0"/>
                             </td>
-                            <td t-esc="fmt(row.amount)"/>
-                            <td t-esc="pct(row.share_pct)"/>
+                            <td t-esc="tableFmt(row.amount)"/>
+                            <td t-esc="tablePct(row.share_pct)"/>
                             <td>
                                 <Badge value="row.change_pct"/>
                             </td>
@@ -239,8 +239,8 @@
                         </tr>
                         <tr class="highlight">
                             <th colspan="3">المجموع</th>
-                            <th t-esc="fmt(current.gross)"/>
-                            <td>100%</td>
+                            <th t-esc="tableFmt(current.gross)"/>
+                            <td t-esc="current.gross == null ? '—' : '100%'"/>
                             <td colspan="2">الصالة <t t-esc="fmt(state.data.split.hall)"/> · التطبيقات <t t-esc="fmt(state.data.split.apps)"/>
                             </td>
                         </tr>
@@ -268,9 +268,9 @@
                     <tbody>
                         <tr t-foreach="state.data.commissions.rows" t-as="r" t-key="r.key">
                             <th t-esc="r.name"/>
-                            <td t-esc="fmt(r.gross)"/>
-                            <td t-esc="fmt(r.commission)"/>
-                            <td t-esc="fmt(r.net)"/>
+                            <td t-esc="tableFmt(r.gross)"/>
+                            <td t-esc="tableFmt(r.commission)"/>
+                            <td t-esc="tableFmt(r.net)"/>
                         </tr>
                     </tbody>
                 </table>
@@ -278,16 +278,16 @@
             <div class="card">
                 <h3>عدد العملاء ومتوسط الفاتورة</h3>
                 <div t-if="!current.customers?.available" class="muted">غير متوفر — يتوفر من بيانات نقاط البيع فقط</div>
-                <LineChart t-else="" series="[{values:trend.map(x=&gt;x.data.customers?.value)}]" labels="trendLabels"/>
+                <LineChart t-else="" series="[{values:trend.map(x=&gt;x.has_data ? x.data.customers?.value : null)}]" labels="trendLabels"/>
             </div>
         </div>
     </t>
     <t t-name="baseer_dashboard2.Expenses">
         <div class="grid four">
-            <KpiCard title="'إجمالي المصاريف'" value="totalExpense(current)" hero="true"/>
-            <KpiCard title="'تكلفة الأكل'" value="current.categories?.food_cost"/>
-            <KpiCard title="'الرواتب'" value="current.categories?.salaries"/>
-            <KpiCard title="'الإيجار والكهرباء'" value="(current.categories?.rent || 0)+(current.categories?.utilities || 0)"/>
+            <KpiCard title="'إجمالي المصاريف'" value="state.data.has_data ? totalExpense(current) : null" hero="true"/>
+            <KpiCard title="'تكلفة الأكل'" value="state.data.has_data ? current.categories?.food_cost : null"/>
+            <KpiCard title="'الرواتب'" value="state.data.has_data ? current.categories?.salaries : null"/>
+            <KpiCard title="'الإيجار والكهرباء'" value="state.data.has_data ? (current.categories?.rent || 0)+(current.categories?.utilities || 0) : null"/>
         </div>
         <div class="grid two-wide">
             <div class="card">
@@ -301,7 +301,7 @@
                     <Ring value="state.data.ring.value"/>
                     <div>
                         <div class="muted">إجمالي المصاريف</div>
-                        <b t-esc="fmt(totalExpense(current))"/>
+                        <b t-esc="fmt(state.data.has_data ? totalExpense(current) : null)"/>
                     </div>
                 </div>
                 <div t-if="!state.data.ring.available" class="muted">غير متوفر — لا توجد مبيعات</div>
@@ -331,11 +331,11 @@
                         <td>
                             <Sparkline values="row.trend"/>
                         </td>
-                        <td t-foreach="row.trend" t-as="v" t-key="v_index" t-esc="fmt(v)"/>
+                        <td t-foreach="row.trend" t-as="v" t-key="v_index" t-esc="tableFmt(v)"/>
                         <td>
                             <Badge value="row.previous ? (row.amount-row.previous)/Math.abs(row.previous)*100 : null" goodWhen="'down'"/>
                         </td>
-                        <td t-esc="pct(row.pct)"/>
+                        <td t-esc="tablePct(row.pct)"/>
                     </tr>
                 </tbody>
             </table>
@@ -381,26 +381,26 @@
         <div t-if="state.view==='inout'" class="stats card">
             <div>
                 <small>الداخل</small>
-                <b t-esc="fmt(state.data.months.at(-1)?.incoming.gross)"/>
+                <b t-esc="fmt(state.data.months.at(-1)?.incoming.available ? state.data.months.at(-1).incoming.gross : null)"/>
             </div>
             <div>
                 <small>الخارج الفعلي</small>
-                <b t-esc="fmt(state.data.months.at(-1)?.outgoing.total)"/>
+                <b t-esc="fmt(state.data.months.at(-1)?.outgoing.available ? state.data.months.at(-1).outgoing.total : null)"/>
             </div>
             <div>
                 <small>الصافي</small>
-                <b t-esc="fmt(state.data.months.at(-1)?.net)"/>
+                <b t-esc="fmt(state.data.months.at(-1)?.incoming.available and state.data.months.at(-1)?.outgoing.available ? state.data.months.at(-1).net : null)"/>
             </div>
             <div>
                 <small>تطبيقات لم تُستلم بعد</small>
-                <b t-esc="fmt(state.data.months.at(-1)?.incoming.apps_unreceived.value)"/>
+                <b t-esc="fmt(state.data.months.at(-1)?.incoming.available ? state.data.months.at(-1).incoming.apps_unreceived.value : null)"/>
             </div>
         </div>
         <div class="card table-wrap">
             <div class="card-head">
                 <div>
                     <h3 t-esc="state.view==='pnl'?'قائمة الدخل (الربح والخسارة)':'الداخل والخارج'"/>
-                    <div class="muted">المبالغ بالريال، الأقواس = خصم</div>
+                    <div class="muted" t-esc="state.view==='inout' ? 'الداخل = المبيعات شاملة الضريبة · الخارج = المدفوع فعلياً من البنك والنقد والعهدة' : 'المبالغ بالريال، الأقواس = خصم'"/>
                 </div>
                 <button class="icon-button" t-on-click="exportCsv" title="تنزيل CSV">↓</button>
             </div>
@@ -418,15 +418,15 @@
                     <t t-foreach="state.data.rows" t-as="row" t-key="row.key">
                         <tr t-att-class="row.key==='net_profit'?'net': ['gross_profit','operating_profit'].includes(row.key)?'highlight':'group'" t-on-click="()=&gt;this.toggleRow(row.key)">
                             <th>
-                                <t t-esc="row.name || name(row.key)"/>
                                 <span t-if="row.children.length">▾</span>
+                                <t t-esc="row.name || name(row.key)"/>
                             </th>
                             <td>
                                 <Sparkline values="row.months"/>
                             </td>
-                            <td t-foreach="row.months" t-as="v" t-key="v_index" t-esc="v &lt; 0 ? '('+fmt(-v)+')' : fmt(v)"/>
-                            <td t-esc="row.total &lt; 0 ? '('+fmt(-row.total)+')' : fmt(row.total)"/>
-                            <td t-esc="pct(row.pct)"/>
+                            <td t-foreach="row.months" t-as="v" t-key="v_index" t-esc="tableFmt(v)"/>
+                            <td t-esc="tableFmt(row.total)"/>
+                            <td t-esc="tablePct(row.pct)"/>
                         </tr>
                         <tr t-if="!state.closed[row.key]" t-foreach="row.children" t-as="child" t-key="child_index" class="account">
                             <td>
@@ -436,9 +436,9 @@
                             <td>
                                 <Sparkline values="child.months"/>
                             </td>
-                            <td t-foreach="child.months" t-as="v" t-key="v_index" t-esc="v &lt; 0 ? '('+fmt(-v)+')' : fmt(v)"/>
-                            <td t-esc="fmt(child.total)"/>
-                            <td t-esc="pct(child.pct)"/>
+                            <td t-foreach="child.months" t-as="v" t-key="v_index" t-esc="tableFmt(v)"/>
+                            <td t-esc="tableFmt(child.total)"/>
+                            <td t-esc="tablePct(child.pct)"/>
                         </tr>
                     </t>
                 </tbody>
@@ -459,36 +459,36 @@
                             <th>
                                 <t t-esc="group[1]"/> ▾</th>
                             <td>
-                                <Sparkline values="state.data.months.map(m=&gt;group[0]==='incoming'?m.incoming.gross:m.outgoing.total)"/>
+                                <Sparkline values="state.data.months.map(m=&gt;group[0]==='incoming'?(m.incoming.available ? m.incoming.gross : null):(m.outgoing.available ? m.outgoing.total : null))"/>
                             </td>
-                            <td t-foreach="state.data.months" t-as="m" t-key="m.month" t-esc="group[0]==='incoming'?fmt(m.incoming.gross):(!m.outgoing.available?'غير مُعد':'('+fmt(m.outgoing.total)+')')"/>
-                            <td t-esc="group[0]==='incoming'?fmt(state.data.total[group[0]]):(state.data.months.some(m=&gt;!m.outgoing.available)?'غير مُعد':'('+fmt(state.data.total[group[0]])+')')"/>
+                            <td t-foreach="state.data.months" t-as="m" t-key="m.month" t-esc="group[0]==='incoming'?tableFmt(m.incoming.available ? m.incoming.gross : null)+(m.incoming.accounting_fallback?' · من الإيراد المحاسبي':''):(!m.outgoing.available?'غير مُعد':tableFmt(-m.outgoing.total))"/>
+                            <td t-esc="group[0]==='incoming'?tableFmt(state.data.total[group[0]]):(state.data.months.some(m=&gt;!m.outgoing.available)?'غير مُعد':tableFmt(-state.data.total[group[0]]))"/>
                         </tr>
                         <tr t-foreach="Object.keys(state.data.total[group[2]])" t-as="key" t-key="key" t-if="key !== 'vat_paid' || state.data.months.some(m=&gt;m.outgoing.show_vat_paid_line)">
                             <td t-esc="name(key)"/>
                             <td>
-                                <Sparkline values="state.data.months.map(m=&gt;m[group[0]][group[2]][key] || 0)"/>
+                                <Sparkline values="state.data.months.map(m=&gt;m[group[0]][group[2]][key] ?? null)"/>
                             </td>
-                            <td t-foreach="state.data.months" t-as="m" t-key="m.month" t-esc="group[0]==='incoming'?fmt(m[group[0]][group[2]][key] || 0):'('+fmt(m[group[0]][group[2]][key] || 0)+')'"/>
-                            <td t-esc="group[0]==='incoming'?fmt(state.data.total[group[2]][key]):'('+fmt(state.data.total[group[2]][key])+')'"/>
+                            <td t-foreach="state.data.months" t-as="m" t-key="m.month" t-esc="tableFmt(group[0]==='incoming'?m[group[0]][group[2]][key]:-m[group[0]][group[2]][key])"/>
+                            <td t-esc="tableFmt(group[0]==='incoming'?state.data.total[group[2]][key]:-state.data.total[group[2]][key])"/>
                         </tr>
                         <tr class="account" t-if="group[2]==='channels'">
                             <td>منها تطبيقات لم تُستلم بعد</td>
                             <td/>
-                            <td t-foreach="state.data.months" t-as="m" t-key="m.month" t-esc="fmt(m.incoming.apps_unreceived.value)"/>
-                            <td t-esc="fmt(state.data.total.apps_unreceived.value)"/>
+                            <td t-foreach="state.data.months" t-as="m" t-key="m.month" t-esc="tableFmt(m.incoming.apps_unreceived.value)"/>
+                            <td t-esc="tableFmt(state.data.total.apps_unreceived.value)"/>
                         </tr>
                         <tr class="account" t-if="group[2]==='channels'">
                             <td>منها ضريبة القيمة المضافة</td>
                             <td/>
-                            <td t-foreach="state.data.months" t-as="m" t-key="m.month" t-esc="fmt(m.sales_vat.value)"/>
-                            <td t-esc="fmt(state.data.total.sales_vat)"/>
+                            <td t-foreach="state.data.months" t-as="m" t-key="m.month" t-esc="tableFmt(m.sales_vat.value)"/>
+                            <td t-esc="tableFmt(state.data.total.sales_vat)"/>
                         </tr>
                         <tr class="account" t-if="group[2]==='items'">
                             <td>فواتير غير مسددة — نهاية الفترة</td>
                             <td/>
-                            <td t-foreach="state.data.months" t-as="m" t-key="m.month" t-esc="fmt(m.unpaid_bills.value)"/>
-                            <td t-esc="fmt(state.data.total.unpaid_bills.value)"/>
+                            <td t-foreach="state.data.months" t-as="m" t-key="m.month" t-esc="tableFmt(m.unpaid_bills.value)"/>
+                            <td t-esc="tableFmt(state.data.total.unpaid_bills.value)"/>
                         </tr>
                     </t>
                     <tr class="net">
@@ -496,8 +496,8 @@
                         <td>
                             <Sparkline values="state.data.months.map(m=&gt;m.net)" gold="true"/>
                         </td>
-                        <td t-foreach="state.data.months" t-as="m" t-key="m.month" t-esc="fmt(m.net)"/>
-                        <td t-esc="fmt(state.data.total.net)"/>
+                        <td t-foreach="state.data.months" t-as="m" t-key="m.month" t-esc="tableFmt(m.net)"/>
+                        <td t-esc="tableFmt(state.data.total.net)"/>
                     </tr>
                 </tbody>
             </table>
@@ -519,11 +519,11 @@
             </div>
             <div>
                 <small>إجمالي المبيعات</small>
-                <b t-esc="fmt(state.data.days.reduce((a,d)=&gt;a+d.gross,0))"/>
+                <b t-esc="fmt(state.data.days.some(d=&gt;d.gross!==null) ? state.data.days.reduce((a,d)=&gt;a+(d.gross||0),0) : null)"/>
             </div>
             <div>
                 <small>أفضل يوم</small>
-                <b t-esc="state.data.best_day?.date || '—'"/>
+                <b t-esc="dateName(state.data.best_day?.date)"/>
             </div>
         </div>
         <div class="card">
@@ -592,9 +592,9 @@
                 <div t-foreach="state.data.year_calendar" t-as="m" t-key="m.month">
                     <b t-esc="monthName(m.month)"/>
                     <div class="year-days">
-                        <i t-foreach="m.days" t-as="d" t-key="d.date" t-att-class="'level-'+level(d)" t-att-title="d.date+' · '+fmt(d.gross)">
+                        <i t-foreach="m.days" t-as="d" t-key="d.date" t-att-class="'level-'+level(d)" t-att-title="dateName(d.date)+' · '+fmt(d.gross)">
                             <span t-esc="Number(d.date.slice(-2))"/>
-                            <b t-esc="d.gross ? fmt(d.gross) : '—'"/>
+                            <b t-esc="fmt(d.gross)"/>
                         </i>
                     </div>
                 </div>
@@ -617,8 +617,8 @@
                     <tbody>
                         <tr t-foreach="state.data.events" t-as="e" t-key="e.id">
                             <td t-esc="e.name"/>
-                            <td t-esc="e.date_from"/>
-                            <td t-esc="e.date_to"/>
+                            <td t-esc="dateName(e.date_from)"/>
+                            <td t-esc="dateName(e.date_to)"/>
                         </tr>
                     </tbody>
                 </table>
@@ -627,7 +627,7 @@
                 <h3>أوقات الذروة — اليوم × الساعة</h3>
                 <div t-if="!state.data.hours.available" class="muted">غير متوفر — يتوفر من بيانات نقاط البيع فقط</div>
                 <div t-else="" class="hours">
-                    <span t-foreach="state.data.hours.matrix" t-as="h" t-key="h_index" t-att-title="h.weekday+' / '+h.hour" t-esc="h.orders"/>
+                    <span t-foreach="state.data.hours.matrix" t-as="h" t-key="h_index" t-att-title="h.weekday+' / '+h.hour" t-esc="fmt(h.orders)"/>
                 </div>
             </div>
         </div>
@@ -695,6 +695,7 @@
                             <button t-att-class="state.period?.mode==='range'?'on':''" t-on-click="()=&gt;this.periodChange('mode','range')">من – إلى</button>
                             <select t-if="state.period?.mode==='month'" t-att-value="state.period.month" t-on-change="(e)=&gt;this.periodChange('month',e.target.value)">
                                 <option t-foreach="state.meta?.months_available || []" t-as="m" t-key="m" t-att-value="m" t-att-selected="m===state.period.month" t-esc="monthName(m)"/>
+                                <option t-if="state.meta?.today and !state.meta.months_available.includes(state.meta.today.slice(0,7))" t-att-value="state.meta.today.slice(0,7)" t-esc="monthName(state.meta.today.slice(0,7))"/>
                                 <option t-if="!state.meta?.months_available.length" t-att-value="state.period.month" t-esc="monthName(state.period.month)"/>
                             </select>
                             <t t-else="">
@@ -708,7 +709,8 @@
                 <div class="context">
                     <span>عرض:</span>
                     <span class="chip" t-esc="companyName"/>
-                    <span class="chip" t-esc="state.period?.mode==='month' ? monthName(state.period.month) : state.period?.date_from+' — '+state.period?.date_to"/>
+                    <span class="chip" t-esc="state.period?.mode==='month' ? monthName(state.period.month) : dateName(state.period?.date_from)+' – '+dateName(state.period?.date_to)"/>
+                    <span t-if="state.period?.mode==='month' and state.period.month===state.meta?.today.slice(0,7)" class="chip">جزئي</span>
                     <span class="chip">الاتجاه: آخر 6 أشهر</span>
                     <span t-if="state.data?.sales?.source_counts" class="chip" t-esc="state.data.sales.source_counts.summary ? 'المصدر: ملخصات يومية' : 'المصدر: نقاط البيع'"/>
                 </div>

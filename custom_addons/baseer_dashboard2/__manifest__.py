@@ -7,7 +7,7 @@
     'depends': ['web', 'account', 'point_of_sale'],
     'data': [
         'security/ir.model.access.csv', 'security/rules.xml',
-        'data/config_data.xml', 'data/category_data.xml', 'data/channel_data.xml',
+        'data/config_data.xml', 'data/category_data.xml', 'data/channel_data.xml', 'data/event_data.xml',
         'views/dashboard_views.xml',
     ],
     'assets': {'web.assets_backend': [

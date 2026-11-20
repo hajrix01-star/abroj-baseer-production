@@ -6,21 +6,21 @@ from odoo.exceptions import AccessError, UserError
 
 FORBIDDEN_COMPANY_IDS = {54, 56}
 SOURCES = {
-    'sales_net': 'المبيعات دون الضريبة: رصيد الدائن مطروحاً منه المدين للحسابات المصنفة مبيعات؛ account.move.line المرحّلة حسب التاريخ والشركة.',
-    'expenses': 'المصاريف: المدين مطروحاً منه الدائن حسب تصنيف الحساب؛ account.move.line المرحّلة.',
+    'sales_net': 'المبيعات دون الضريبة: رصيد الدائن مطروحاً منه المدين للحسابات المصنفة مبيعات؛ القيود المحاسبية المرحّلة حسب التاريخ والشركة.',
+    'expenses': 'المصاريف: المدين مطروحاً منه الدائن حسب تصنيف الحساب؛ القيود المحاسبية المرحّلة.',
     'profit': 'مجمل الربح = المبيعات − تكلفة الأكل؛ التشغيلي يطرح المصاريف التشغيلية؛ الصافي يضيف الإيرادات الأخرى ويطرح غير التشغيلي والزكاة والضريبة.',
     'ratios': 'النسب تقسم تكلفة الأكل والرواتب ومجموعهما وصافي الربح على المبيعات دون الضريبة.',
     'breakeven': 'التعادل = التكاليف الثابتة ÷ (١ − نسبة التكاليف المتغيرة)؛ الثابتة الرواتب والإيجار والخدمات والإهلاك.',
-    'purchases': 'المشتريات: فواتير الموردين المرحّلة ناقص المرتجعات حسب تاريخ الفاتورة؛ account.move.',
-    'gross_sales_by_channel': 'المبيعات شاملة الضريبة حسب اليوم والقناة من pos.payment أو الملخصات اليومية المرحّلة؛ لا يجمع المصدران لليوم نفسه.',
+    'purchases': 'المشتريات: فواتير الموردين المرحّلة ناقص المرتجعات حسب تاريخ الفاتورة؛ الفواتير والقيود.',
+    'gross_sales_by_channel': 'المبيعات شاملة الضريبة حسب اليوم والقناة من مدفوعات نقاط البيع أو الملخصات اليومية المرحّلة؛ لا يجمع المصدران لليوم نفسه.',
     'apps': 'التطبيقات: مجموع المبيعات الإجمالية للقنوات المصنفة تطبيقات.',
     'apps_unreceived': 'التطبيقات غير المستلمة: الأقل من مبيعات التطبيقات الإجمالية ورصيد حساباتها المعرّفة حتى نهاية الفترة (المدين ناقص الدائن).',
-    'customers': 'عدد العملاء هو صافي عدد طلبات pos.order المدفوعة أو المكتملة أو المفوترة؛ تستبعد الطلبات التي لا تتجاوز قيمتها المطلقة الحد المحدد للشركة من العملاء ومتوسط الفاتورة والساعات، وتبقى ضمن المبيعات؛ غير متاح لأيام الملخصات اليومية.',
-    'hours': 'الساعات: عدد الطلبات وإجماليها حسب اليوم والساعة المحلية؛ pos.order.',
-    'inout': 'الداخل مبيعات القنوات شاملة الضريبة؛ الخارج أرصدة السيولة الدائنة المدفوعة فعلياً دون التحويلات الداخلية؛ account.move.line.',
-    'unpaid_bills': 'فواتير الموردين المرحّلة حتى نهاية الفترة ناقص التسويات التي لا يتجاوز max_date لها نهاية الفترة؛ لا تدخل في الخارج.',
-    'timeline': 'المسار الزمني: المبيعات دون الضريبة حسب الشهر أو السنة؛ account.move.line المرحّلة.',
-    'heatmap': 'التقويم: المبيعات اليومية والعملاء والمناسبات بحسب الشركة والتاريخ؛ pos.order وaccount.move وbaseer.dashboard2.event.',
+    'customers': 'عدد العملاء هو صافي عدد طلبات نقاط البيع المدفوعة أو المكتملة أو المفوترة؛ تستبعد الطلبات التي لا تتجاوز قيمتها المطلقة الحد المحدد للشركة من العملاء ومتوسط الفاتورة والساعات، وتبقى ضمن المبيعات؛ غير متاح لأيام الملخصات اليومية.',
+    'hours': 'الساعات: عدد الطلبات وإجماليها حسب اليوم والساعة المحلية؛ نقاط البيع.',
+    'inout': 'الداخل مبيعات القنوات شاملة الضريبة؛ الخارج أرصدة السيولة الدائنة المدفوعة فعلياً دون التحويلات الداخلية؛ القيود المحاسبية.',
+    'unpaid_bills': 'فواتير الموردين المرحّلة حتى نهاية الفترة ناقص التسويات التي لا يتجاوز تاريخ التسوية لها نهاية الفترة؛ لا تدخل في الخارج.',
+    'timeline': 'المسار الزمني: المبيعات دون الضريبة حسب الشهر أو السنة؛ القيود المحاسبية المرحّلة.',
+    'heatmap': 'التقويم: المبيعات اليومية والعملاء والمناسبات بحسب الشركة والتاريخ؛ نقاط البيع والفواتير والقيود والمناسبات المسجلة.',
 }
 
 # Category sources share the same posted-entry domain and debit/credit basis.
@@ -30,13 +30,13 @@ for _key, _label in {
     'other_opex': 'المصاريف التشغيلية الأخرى', 'depreciation': 'الإهلاك',
     'non_operating': 'غير تشغيلي', 'zakat_tax': 'الزكاة والضريبة',
 }.items():
-    SOURCES[_key] = '%s: المدين ناقص الدائن؛ account.move.line المرحّلة للحسابات المصنفة ضمن الفئة في الفترة والشركات المحددة.' % _label
+    SOURCES[_key] = '%s: المدين ناقص الدائن؛ القيود المحاسبية المرحّلة للحسابات المصنفة ضمن الفئة في الفترة والشركات المحددة.' % _label
 SOURCES.update({
-    'other_income': 'الإيرادات الأخرى: الدائن ناقص المدين؛ account.move.line المرحّلة على حسابات الإيرادات الأخرى.',
-    'gross_profit': 'مجمل الربح: المبيعات دون الضريبة ناقص تكلفة الأكل؛ account.move.line المرحّلة.',
-    'operating_profit': 'الربح التشغيلي: مجمل الربح ناقص المصاريف التشغيلية والإهلاك؛ account.move.line المرحّلة.',
-    'net_profit': 'صافي الربح: الربح التشغيلي زائد الإيرادات الأخرى ناقص غير التشغيلي والزكاة والضريبة؛ account.move.line المرحّلة.',
-    'sales_vat': 'ضريبة المبيعات: صافي دائن حسابات ضريبة المبيعات على الملخصات اليومية أو نقاط البيع المرحّلة في الفترة؛ account.move.line.',
+    'other_income': 'الإيرادات الأخرى: الدائن ناقص المدين؛ القيود المحاسبية المرحّلة على حسابات الإيرادات الأخرى.',
+    'gross_profit': 'مجمل الربح: المبيعات دون الضريبة ناقص تكلفة الأكل؛ القيود المحاسبية المرحّلة.',
+    'operating_profit': 'الربح التشغيلي: مجمل الربح ناقص المصاريف التشغيلية والإهلاك؛ القيود المحاسبية المرحّلة.',
+    'net_profit': 'صافي الربح: الربح التشغيلي زائد الإيرادات الأخرى ناقص غير التشغيلي والزكاة والضريبة؛ القيود المحاسبية المرحّلة.',
+    'sales_vat': 'ضريبة المبيعات: صافي دائن حسابات ضريبة المبيعات على الملخصات اليومية أو نقاط البيع المرحّلة في الفترة؛ القيود المحاسبية.',
 })
 
 
@@ -90,7 +90,7 @@ class DashboardService(models.AbstractModel):
             last = max((row[1] for row in rows if row[1]), default=False)
         today = fields.Date.context_today(self)
         previous_month = (today.replace(day=1) - timedelta(days=1)).strftime('%Y-%m')
-        default_month = next((month for month in months if month <= previous_month), previous_month)
+        default_month = previous_month
         return {'default_month': default_month, 'companies': options, 'default_company_key': str(self.env.company.id if self.env.company.id in ids else ids[0]) if ids else False,
                 'months_available': months, 'today': fields.Date.to_string(fields.Date.context_today(self)),
                 'last_data_date': fields.Date.to_string(last) if last else False,
@@ -135,7 +135,11 @@ class DashboardService(models.AbstractModel):
             if key:
                 amount = (credit - debit) if key in ('revenue', 'other_income') else (debit - credit)
                 totals[key] = totals.get(key, 0.0) + amount
-                accounts.append({'company_id': company.id, 'account_id': account.id, 'code': account.code, 'name': account.with_context(lang=arabic_lang).name or account.name, 'category': key, 'amount': round(amount, 2)})
+                account_name = account.with_context(lang=arabic_lang).name or account.name or ''
+                if '|' in account_name:
+                    parts = [part.strip() for part in account_name.split('|')]
+                    account_name = next ( (part for part in parts if any('\u0600' <= c <= '\u06ff' for c in part)), parts[0])
+                accounts.append({'company_id': company.id, 'account_id': account.id, 'code': account.code, 'name': account_name, 'category': key, 'amount': round(amount, 2)})
         sales = totals.get('revenue', 0.0)
         gross = sales - totals.get('food_cost', 0.0)
         operating = gross - sum(totals.get(k, 0.0) for k in ('salaries', 'rent', 'utilities', 'marketing', 'commissions', 'other_opex', 'depreciation'))

@@ -106,7 +106,7 @@ class DashboardSections(models.AbstractModel):
                           'has_data': covered(first, last), 'partial': bool(last_data and first <= last_data < last)})
         targets = self._targets(ids, current)
         result = {'available': True, 'period': {'date_from': str(start), 'date_to': str(end)},
-                  'current': current, 'previous': previous, 'trend': trend, 'targets': targets}
+                  'current': current, 'previous': previous, 'trend': trend, 'targets': targets, 'has_data': covered(start, end)}
         if section in ('overview', 'ratios'):
             result['companies_compare'] = self._compare(companies, start, end)
         expense_keys = ('food_cost', 'salaries', 'rent', 'utilities', 'marketing', 'commissions', 'other_opex', 'depreciation', 'non_operating', 'zakat_tax')
@@ -117,7 +117,7 @@ class DashboardSections(models.AbstractModel):
                 return data.get(key, data['categories'].get(key, 0))
             result['kpis'] = {}
             for key in ('sales_net', 'food_cost', 'salaries', 'expenses_total', 'net_profit'):
-                now, before = value(current, key), value(previous, key) if covered(previous_start, previous_end) else None
+                now, before = value(current, key) if covered(start, end) else None, value(previous, key) if covered(previous_start, previous_end) else None
                 result['kpis'][key] = {'available': True, 'value': now, 'previous': before, 'change_pct': change(now, before),
                                        'trend': [value(m['data'], key) if m['has_data'] else None for m in trend], 'good_when': 'down' if key in expense_keys or key == 'expenses_total' else 'up'}
             bridge = [('sales_net', current['sales_net']), ('food_cost', -current['categories'].get('food_cost', 0)), ('gross_profit', current['gross_profit']),
@@ -127,6 +127,8 @@ class DashboardSections(models.AbstractModel):
             result['bridge'] = [{'key': key, 'amount': amount, 'pct': percent(amount, current['sales_net'])} for key, amount in bridge]
             result['breakeven_series'] = [{'month': m['month'], 'sales_net': m['data']['sales_net'] if m['has_data'] else None, 'net_profit': m['data']['net_profit'] if m['has_data'] else None, 'breakeven': m['data']['breakeven'] if m['has_data'] else None, 'margin_pct': m['data']['ratios']['net_margin_pct'] if m['has_data'] else None} for m in trend]
             result['purchases'] = self._purchases(ids, start, end, current['sales_net'])
+            if not covered(start, end):
+                result['purchases']['value'] = None
             result['purchases']['previous'] = self._purchases(ids, previous_start, previous_end, previous['sales_net'])
             result['purchases']['trend'] = []
             sales_trend = []
@@ -134,10 +136,12 @@ class DashboardSections(models.AbstractModel):
                 month_start, month_end = month_bounds(date.fromisoformat(month['month'] + '-01'))
                 result['purchases']['trend'].append({'month': month['month'], 'has_data': month['has_data'], **self._purchases(ids, month_start, month_end, month['data']['sales_net'])})
                 monthly_sales, _, _, _ = self._sales_summary(ids, month_start, month_end)
-                sales_trend.append({'month': month['month'], 'has_data': month['has_data'], **monthly_sales})
+                sales_trend.append({'month': month['month'], 'has_data': bool(monthly_sales['source_counts']['pos'] or monthly_sales['source_counts']['summary']), **monthly_sales})
             sales, days, channels, hours = self._sales_summary(ids, start, end)
             prior_sales, _, _, _ = self._sales_summary(ids, previous_start, previous_end)
-            result['sales'] = sales
+            result['sales'] = dict(sales)
+            if not days:
+                result['sales']['apps'] = None
             result['sales']['previous'] = prior_sales
             result['sales']['trend'] = sales_trend
             result['timeline'] = self._timeline(ids, end, params.get('timeline_mode', 'monthly'))
@@ -214,7 +218,7 @@ class DashboardSections(models.AbstractModel):
             first, last = month_bounds(end, offset)
             summary, _, _, _ = self._sales_summary(ids, first, last)
             monthly.append({'month': first.strftime('%Y-%m'), 'data': summary,
-                            'has_data': first.strftime('%Y-%m') in posted_months,
+                            'has_data': bool(summary['source_counts']['pos'] or summary['source_counts']['summary']),
                             'partial': bool(last_data and first <= last_data < last)})
         known = {c['key']: c for c in channels}
         known['other'] = {'key': 'other', 'name': 'أخرى', 'kind': 'hall', 'color_token': False, 'commission_rate': 0}
@@ -233,9 +237,13 @@ class DashboardSections(models.AbstractModel):
             if row['kind'] == 'app' and rate > 0:
                 fee = round(row['amount'] * rate / 100, 2)
                 commissions.append({'key': row['key'], 'name': row['name'], 'rate': rate, 'gross': row['amount'], 'commission': fee, 'net': round(row['amount'] - fee, 2)})
+        split = {'hall': round(current['gross'] - current['apps'], 2), 'apps': current['apps']}
+        if not days:
+            current = dict(current, gross=None, apps=None)
+            split = {'hall': None, 'apps': None}
         return {'available': True, 'current': current, 'previous': previous, 'trend': monthly,
                 'ranked': sorted(rows, key=lambda row: row['amount'], reverse=True),
-                'split': {'hall': round(current['gross'] - current['apps'], 2), 'apps': current['apps']},
+                'split': split,
                 'commissions': {'available': bool(commissions), 'reason': False if commissions else 'no_commission_rates', 'rows': commissions},
                 'timeline': self._timeline(ids, end, params.get('timeline_mode', 'monthly'))}
 
@@ -246,8 +254,21 @@ class DashboardSections(models.AbstractModel):
             last = min(last, end)
             sales, _, _, _ = self._sales_summary(ids, start, last)
             out = self._cash_out(ids, start, last)
+            vat = self._sales_vat(ids, start, last)
+            if not sales['channels']:
+                lines = self.env['account.move.line'].with_context(allowed_company_ids=ids).search([
+                    ('company_id', 'in', ids), ('parent_state', '=', 'posted'), ('date', '>=', start), ('date', '<=', last)])
+                categories = self.env['baseer.dashboard2.category'].with_context(allowed_company_ids=ids).search([])
+                revenue = lines.filtered(lambda line: self._category(line.account_id.with_company(line.company_id), categories) == 'revenue')
+                moves = revenue.mapped('move_id')
+                tax = moves.mapped('line_ids').filtered(lambda line: line.tax_line_id and line.company_id.id in ids)
+                if revenue:
+                    vat = {'available': True, 'value': round(sum(tax.mapped('credit')) - sum(tax.mapped('debit')), 2)}
+                    sales['gross'] = round(sum(revenue.mapped('credit')) - sum(revenue.mapped('debit')) + vat['value'], 2)
+                    sales['accounting_fallback'] = True
+            sales['available'] = bool(sales['channels'] or sales.get('accounting_fallback'))
             months.append({'month': start.strftime('%Y-%m'), 'incoming': sales, 'outgoing': out,
-                           'unpaid_bills': self._unpaid_bills(ids, last), 'sales_vat': self._sales_vat(ids, start, last), 'net': round(sales['gross'] - out['total'], 2)})
+                           'unpaid_bills': self._unpaid_bills(ids, last), 'sales_vat': vat, 'net': round(sales['gross'] - out['total'], 2)})
         channel_totals, item_totals, source_totals = defaultdict(float), defaultdict(float), defaultdict(float)
         for month in months:
             for key, amount in month['incoming']['channels'].items():
@@ -284,7 +305,7 @@ class DashboardSections(models.AbstractModel):
             rows = [v for (_, d), v in source.items() if d == day]
             pos = [r for r in rows if r['source'] == 'pos']
             noorix = [r for r in rows if r['source'] == 'summary']
-            return {'date': str(day), 'gross': round(sum(sum(r['channels'].values()) for r in rows), 2),
+            return {'date': str(day), 'gross': round(sum(sum(r['channels'].values()) for r in rows), 2) if rows else None,
                     'customers': sum(r['customers'] for r in pos) if pos and not noorix else None,
                     'partial': bool(pos and noorix)}
         def dates(start, end):
@@ -298,7 +319,7 @@ class DashboardSections(models.AbstractModel):
             result = []
             values = [day_values(d, year_days) for d in dates(start, finish)]
             for weekday in range(7):
-                selected = [row for row in values if date.fromisoformat(row['date']).weekday() == weekday]
+                selected = [row for row in values if date.fromisoformat(row['date']).weekday() == weekday and row['gross'] is not None]
                 available = [row['customers'] for row in selected if row['customers'] is not None]
                 result.append({'weekday': weekday, 'gross': round(sum(row['gross'] for row in selected) / len(selected), 2) if selected else None,
                                'customers': round(sum(available) / len(available), 2) if available else None,
@@ -309,12 +330,12 @@ class DashboardSections(models.AbstractModel):
             mfirst, mlast = month_bounds(date(first.year, m, 1))
             year_calendar.append({'month': mfirst.strftime('%Y-%m'), 'days': [day_values(d, year_days) for d in dates(mfirst, mlast)]})
         current_summary, _, _, hours = self._sales_summary(ids, first, last)
-        matrix = [{'weekday': wd, 'hour': hour, 'orders': hours[(wd, hour)]['orders'], 'gross': round(hours[(wd, hour)]['gross'], 2)} for wd in range(7) for hour in range(24)]
+        matrix = [{'weekday': wd, 'hour': hour, 'orders': hours[(wd, hour)]['orders'] if (wd, hour) in hours else None, 'gross': round(hours[(wd, hour)]['gross'], 2) if (wd, hour) in hours else None} for wd in range(7) for hour in range(24)]
         return {'available': True, 'days': days, 'events': events, 'weekday_month': averages(first, last),
                 'weekday_ytd': averages(year_start, last), 'year_calendar': year_calendar,
-                'daily_average': {'current': round(current_summary['gross'] / len(days), 2), 'previous': round(previous['gross'] / ((prev_last - prev_first).days + 1), 2)},
-                'best_day': max(days, key=lambda d: d['gross']) if days else None,
-                'worst_day': min(days, key=lambda d: d['gross']) if days else None,
+                'daily_average': {'current': round(current_summary['gross'] / len([d for d in days if d['gross'] is not None]), 2) if any(d['gross'] is not None for d in days) else None, 'previous': round(previous['gross'] / len({d for _, d in prev_days}), 2) if prev_days else None},
+                'best_day': max((d for d in days if d['gross'] is not None), key=lambda d: d['gross'], default=None),
+                'worst_day': min((d for d in days if d['gross'] is not None), key=lambda d: d['gross'], default=None),
                 'hours': {'available': bool(hours), 'reason': False if hours else 'no_pos_days', 'matrix': matrix}}
 
     @api.model

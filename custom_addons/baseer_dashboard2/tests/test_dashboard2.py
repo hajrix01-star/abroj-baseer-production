@@ -39,7 +39,7 @@ class TestDashboard2(TransactionCase):
         from datetime import timedelta
         from odoo import fields
         previous = (fields.Date.context_today(service).replace(day=1) - timedelta(days=1)).strftime('%Y-%m')
-        self.assertEqual(meta['default_month'], next((m for m in meta['months_available'] if m <= previous), previous))
+        self.assertEqual(meta['default_month'], previous)
         result = service.get_section('overview', {'company_key': str(company.id), 'period': {'mode': 'month', 'month': '2026-10'}})
         self.assertTrue(result['available'])
         self.assertEqual(len(result['trend']), 6)
@@ -178,8 +178,30 @@ class TestDashboard2(TransactionCase):
             (0, 0, {'name': 'cash', 'account_id': cash.id, 'debit': 300, 'credit': 0}),
             (0, 0, {'name': 'sale', 'account_id': revenue.id, 'debit': 0, 'credit': 300})]})
         move.action_post()
+        session.move_id = move
         summary, _, _, _ = self.env['baseer.dashboard2.service']._sales_summary([company.id], date(2026, 10, 1), date(2026, 10, 31))
         self.assertEqual(summary['gross'], 116)
+        second = self.env['account.move'].create({'journal_id': misc.id, 'date': '2026-10-02', 'line_ids': [
+            (0, 0, {'name': 'cash', 'account_id': cash.id, 'debit': 300, 'credit': 0}),
+            (0, 0, {'name': 'sale', 'account_id': revenue.id, 'debit': 0, 'credit': 300})]})
+        second.action_post()
+        session.move_id = second
+        combine = self.env['account.move'].create({'journal_id': misc.id, 'date': '2026-10-02', 'ref': 'Combine POS payments', 'line_ids': [
+            (0, 0, {'name': 'cash', 'account_id': cash.id, 'debit': 300, 'credit': 0}),
+            (0, 0, {'name': 'clearing', 'account_id': self.env['account.account'].create({'code': 'D2CLR', 'name': 'Clearing', 'account_type': 'asset_current', 'company_ids': [(6, 0, [company.id])]}).id, 'debit': 0, 'credit': 300})]})
+        combine.action_post()
+        summary, _, _, _ = self.env['baseer.dashboard2.service']._sales_summary([company.id], date(2026, 10, 1), date(2026, 10, 31))
+        self.assertEqual(summary['gross'], 416)
+        heatmap = self.env['baseer.dashboard2.service']._heatmap([company.id], '2026-10')
+        self.assertEqual(heatmap['daily_average']['current'], 208)
+        self.assertIsNone(heatmap['days'][2]['gross'])
+
+    def test_official_events_loaded(self):
+        event = self.env.ref('baseer_dashboard2.event_ramadan_1447')
+        self.assertEqual(str(event.date_from), '2026-02-18')
+        self.assertEqual(str(event.date_to), '2026-03-19')
+        self.assertFalse(event.company_ids)
+        self.assertIn('المصدر:', event.note)
 
     def test_outstanding_reconciliation(self):
         from datetime import date

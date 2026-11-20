@@ -1,5 +1,6 @@
 // To add a theme, copy this block and give data-bd2-theme a new name.
 .o_bd2[data-bd2-theme="navy-gold"] {
+  --bd2-selected-text: #fff;
   --bd2-bg: #f5f3ee;
   --bd2-card: #fff;
   --bd2-surface: #faf8f3;
@@ -44,6 +45,7 @@
   --bd2-net-profit: var(--bd2-gold);
 }
 .o_bd2[data-bd2-theme="navy-gold"][data-bd2-mode="dark"] {
+  --bd2-selected-text: #fff;
   --bd2-bg: #0f1322;
   --bd2-card: #181d30;
   --bd2-surface: #1e253d;

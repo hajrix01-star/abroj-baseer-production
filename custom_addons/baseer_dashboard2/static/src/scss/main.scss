@@ -61,7 +61,7 @@
   gap: 12px;
   border-bottom: 1px solid var(--bd2-border);
   padding-bottom: 26px;
-  color: var(--bd2-card);
+  color: var(--bd2-selected-text);
 }
 .brand strong {
   font-size: 16px;
@@ -157,7 +157,7 @@ small {
 .seg button.on,
 .month-chips .on {
   background: var(--bd2-sidebar);
-  color: var(--bd2-card);
+  color: var(--bd2-selected-text);
 }
 .seg button:disabled {
   opacity: 0.45;
@@ -285,7 +285,7 @@ small {
 }
 .hero {
   background: var(--bd2-sidebar-hover);
-  color: var(--bd2-card);
+  color: var(--bd2-selected-text);
 }
 .hero .muted {
   color: var(--bd2-sidebar-text);
@@ -387,7 +387,7 @@ td {
 }
 .net {
   background: var(--bd2-sidebar);
-  color: var(--bd2-card);
+  color: var(--bd2-selected-text);
   font-weight: 700;
 }
 .account {
@@ -441,9 +441,9 @@ td {
 }
 .bd2-gauge b {
   position: absolute;
-  top: -5px;
+  top: 0;
   width: 3px;
-  height: 22px;
+  height: 100%;
   background: var(--bd2-ink);
 }
 .bd2-gauge em {
@@ -514,6 +514,7 @@ td {
   background: var(--bd2-card);
   border-radius: 12px;
 }
+.level-0 { background: var(--bd2-surface); color: var(--bd2-muted); }
 .level-1 {
   background: var(--bd2-heat1);
 }
@@ -676,3 +677,6 @@ td {
   width: auto;
   height: auto;
 }
+
+.o_bd2 .bridge-row b, .o_bd2 .bridge-row strong { color: var(--bd2-c1); }
+.o_bd2 .bridge-row.net-profit b, .o_bd2 .bridge-row.net-profit strong { color: var(--bd2-gold); }

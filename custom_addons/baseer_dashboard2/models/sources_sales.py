@@ -23,10 +23,14 @@ class DashboardSales(models.AbstractModel):
         tz = pytz.timezone(context['tz'])
         utc_start = tz.localize(datetime.combine(start, time.min)).astimezone(pytz.UTC).replace(tzinfo=None)
         utc_end = tz.localize(datetime.combine(end + timedelta(days=1), time.min)).astimezone(pytz.UTC).replace(tzinfo=None)
-        channels = self.env['baseer.dashboard2.channel'].with_context(**context).search_read([], ['name', 'key', 'kind', 'color_token', 'line_keywords', 'pos_method_keywords', 'commission_rate'], order='sequence,id')
+        arabic_lang = 'ar_001' if self.env['res.lang']._get_data(code='ar_001').code else self.env.lang
+        channels = self.env['baseer.dashboard2.channel'].with_context(**dict(context, lang=arabic_lang)).search_read([], ['name', 'key', 'kind', 'color_token', 'line_keywords', 'pos_method_keywords', 'commission_rate'], order='sequence,id')
         defaults = {'cash': 'cash,نقد,نقدي,كاش', 'card': 'bank,card,mada,مدى,شبكة,بنك',
                     'keeta': 'keeta,كيتا', 'hunger': 'hunger,هنقر,هنجر', 'jahez': 'jahez,جاهز'}
         for channel in channels:
+            if '|' in channel['name']:
+                parts = [part.strip() for part in channel['name'].split('|')]
+                channel['name'] = next((part for part in parts if any('\u0600' <= c <= '\u06ff' for c in part)), parts[0])
             for field in ('line_keywords', 'pos_method_keywords'):
                 channel[field] = (channel[field] or '') + ',' + defaults.get(channel['key'], '')
         maps = self.env['baseer.dashboard2.channel.map'].with_context(**context).search([('company_id', 'in', ids)])
@@ -70,15 +74,9 @@ class DashboardSales(models.AbstractModel):
         move_map = {m['id']: m for m in move_rows}
         receivable_ids = defaultdict(set)
         if move_map:
-            sessions = self.env['pos.session'].with_context(**context).search_read(
-                [('move_id', 'in', list(move_map))], ['move_id'])
-            pos_orders = self.env['pos.order'].with_context(**context).search_read(
-                [('account_move', 'in', list(move_map))], ['account_move'])
-            excluded = {row['move_id'][0] for row in sessions if row['move_id']}
-            excluded.update(row['account_move'][0] for row in pos_orders if row['account_move'])
             line_rows = self.env['account.move.line'].with_context(**context).search_read(
                 [('company_id', 'in', ids), ('move_id', 'in', list(move_map))],
-                ['move_id', 'name', 'account_id', 'debit', 'credit'], limit=200001)
+                ['move_id', 'name', 'account_id', 'debit', 'credit', 'tax_line_id'], limit=200001)
             if len(line_rows) > 200000:
                 raise UserError(_('The selected period contains more than 200,000 entry lines.'))
             categories = self.env['baseer.dashboard2.category'].with_context(**context).search([])
@@ -89,8 +87,6 @@ class DashboardSales(models.AbstractModel):
             for line in line_rows:
                 by_move[line['move_id'][0]].append(line)
             for move_id, lines in by_move.items():
-                if move_id in excluded:
-                    continue
                 move = move_map[move_id]
                 company = self.env['res.company'].browse(move['company_id'][0])
                 kinds = {line['account_id'][0]: self._category(
@@ -112,7 +108,7 @@ class DashboardSales(models.AbstractModel):
                         day['channels'][channel['key']] += amount
                         if channel['kind'] == 'app':
                             receivable_ids[key[0]].add(line['account_id'][0])
-                    elif (reverse and line['debit'] > 0) or (not reverse and line['credit'] > 0):
+                    elif (line['tax_line_id'] or by_account[line['account_id'][0]].account_type == 'liability_current') and ((reverse and line['debit'] > 0) or (not reverse and line['credit'] > 0)):
                         day['sales_vat'] -= amount
         unreceived = 0.0
         for cid in ids:

@@ -1,8 +1,16 @@
 import calendar
 from datetime import date, timedelta
+from decimal import Decimal, ROUND_HALF_UP
 
 from odoo import api, fields, models, _
 from odoo.exceptions import AccessError, UserError
+
+def food_ratio(value, sales):
+    """Round the exact monetary ratio once, away from zero at half tenths."""
+    if not sales:
+        return None
+    return float((Decimal(str(round(value, 2))) * 100 / Decimal(str(round(sales, 2)))).quantize(Decimal('0.1'), rounding=ROUND_HALF_UP))
+
 
 FORBIDDEN_COMPANY_IDS = {54, 56}
 SOURCES = {
@@ -165,7 +173,7 @@ class DashboardService(models.AbstractModel):
                 'breakeven': round(breakeven, 2) if breakeven is not None else None,
                 'safety_margin': round(sales - breakeven, 2) if breakeven is not None else None,
                 'fixed_costs': round(fixed, 2), 'variable_ratio_pct': round(variable / sales * 100, 2) if sales else None,
-                'ratios': {k: round(v / sales * 100, 2) if sales else None for k, v in {
+                'ratios': {k: (food_ratio(v, sales) if k == 'food_pct' else round(v / sales * 100, 2) if sales else None) for k, v in {
                     'food_pct': totals.get('food_cost', 0), 'salaries_pct': totals.get('salaries', 0),
                     'prime_pct': totals.get('food_cost', 0) + totals.get('salaries', 0), 'net_margin_pct': net}.items()}}
 

@@ -13,6 +13,13 @@ class TestDashboard2(TransactionCase):
         self.assertFalse(incomplete_fixed_costs(False, 1, [100, 100, 100]))
         self.assertFalse(incomplete_fixed_costs(True, 1, [100, 100]))
 
+    def test_food_ratio_rounds_exact_ratio_half_away_from_zero(self):
+        from ..models.service import food_ratio
+        self.assertEqual(food_ratio(125395.09, 269361.27), 46.6)
+        self.assertEqual(food_ratio(4655, 10000), 46.6)
+        self.assertEqual(food_ratio(-4655, 10000), -46.6)
+        self.assertIsNone(food_ratio(1, 0))
+
     def test_mini_trend_covers_selected_year_to_month(self):
         from ..models.sections import year_to_date_months
         months = year_to_date_months(date(2026, 10, 15))
@@ -217,10 +224,25 @@ class TestDashboard2(TransactionCase):
         expense = service.get_section('expenses', params)
         overview = service.get_section('overview', params)
         self.assertNotIn('zakat_tax', [row['key'] for row in expense['ranked']])
-        self.assertEqual(sum(row['amount'] for row in expense['ranked']), 500)
+        self.assertEqual(sum(row['amount'] for row in expense['ranked']), 550)
+        self.assertEqual(next(row['amount'] for row in expense['ranked'] if row['key'] == 'other_opex'), 50)
+        self.assertEqual(next(row['amount'] for row in overview['bridge'] if row['key'] == 'other_non_operating'), -50)
         self.assertNotIn('non_operating', [row['key'] for row in expense['ranked']])
         self.assertEqual(overview['kpis']['expenses_total']['value'], 650)
         self.assertEqual(next(row['amount'] for row in overview['bridge'] if row['key'] == 'zakat_tax'), -100)
+        entry('negative non-operating', '2026-10-06', [(nonop, 'credit', 0, 52.18), (cash, 'cash', 52.18, 0)])
+        expense = service.get_section('expenses', params)
+        overview = service.get_section('overview', params)
+        self.assertAlmostEqual(next(row['amount'] for row in expense['ranked'] if row['key'] == 'other_opex'), -2.18)
+        self.assertAlmostEqual(sum(row['amount'] for row in expense['ranked']), 497.82)
+        self.assertAlmostEqual(next(row['amount'] for row in overview['bridge'] if row['key'] == 'other_non_operating'), 2.18)
+        from unittest.mock import patch
+        with patch('odoo.addons.baseer_dashboard2.models.sections.incomplete_fixed_costs', return_value=True):
+            partial = service.get_section('overview', params)
+        self.assertEqual(partial['breakeven']['reason'], 'incomplete_costs')
+        self.assertIsNone(partial['breakeven']['value'])
+        self.assertIsNone(partial['breakeven']['day'])
+        self.assertIsNone(partial['breakeven_series'][-1]['breakeven'])
 
     def test_all_sections_smoke(self):
         company = self.env.company

@@ -5,7 +5,7 @@ from datetime import date, timedelta
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError
 
-from .service import SOURCES
+from .service import SOURCES, food_ratio
 
 
 def month_bounds(day, offset=0):
@@ -57,7 +57,7 @@ class DashboardSections(models.AbstractModel):
             ('company_id', 'in', ids), ('parent_state', '=', 'posted'),
             ('date', '>=', start), ('date', '<=', end), ('move_id.move_type', 'in', ('in_invoice', 'in_refund')),
             ('account_id', 'in', settings.mapped('food_purchase_account_ids').ids)], limit=1)
-        return {'available': True, 'value': round(value, 2), 'pct': percent(value, sales), 'has_bills': bool(bill_exists)}
+        return {'available': True, 'value': round(value, 2), 'pct': food_ratio(value, sales), 'has_bills': bool(bill_exists)}
 
     def _recorded_app_commissions(self, ids, start, end):
         total = 0.0
@@ -93,7 +93,7 @@ class DashboardSections(models.AbstractModel):
         posted_months = self._posted_months(ids, revenue_only=True)
         def covered(first, finish):
             return any(first.strftime('%Y-%m') <= month <= finish.strftime('%Y-%m') for month in posted_months)
-        cutoff = min(end, last) if last else None
+        cutoff = min(end, last, fields.Date.context_today(self)) if last else None
         start_year = date(end.year, 1, 1)
         previous_end = cutoff.replace(year=cutoff.year - 1, day=min(cutoff.day, calendar.monthrange(cutoff.year - 1, cutoff.month)[1])) if cutoff else None
         ytd = self._accounting(ids, start_year, cutoff)['sales_net'] if cutoff and cutoff >= start_year else 0
@@ -151,7 +151,7 @@ class DashboardSections(models.AbstractModel):
         for offset in range(-5, 1):
             first, last = month_bounds(end, offset)
             trend.append({'month': first.strftime('%Y-%m'), 'data': self._accounting(ids, first, min(last, end)),
-                          'has_data': covered(first, min(last, end)), 'partial': bool(first <= min(end, last_data or end) < last)})
+                          'has_data': covered(first, min(last, end)), 'partial': bool(first <= min(end, fields.Date.context_today(self), last_data or end) < last)})
         targets = self._targets(ids, current)
         result = {'available': True, 'period': {'date_from': str(start), 'date_to': str(end)},
                   'current': current, 'previous': previous, 'trend': trend, 'targets': targets, 'has_data': covered(start, end)}
@@ -178,7 +178,7 @@ class DashboardSections(models.AbstractModel):
             bridge = [('sales_net', current['sales_net']), ('food_cost', -current['categories'].get('food_cost', 0)), ('gross_profit', current['gross_profit']),
                       ('salaries', -current['categories'].get('salaries', 0)), ('rent', -current['categories'].get('rent', 0))]
             bridge += [(k, -current['categories'].get(k, 0)) for k in ('utilities', 'marketing', 'commissions', 'other_opex', 'depreciation') if current['categories'].get(k)]
-            bridge += [('operating_profit', current['operating_profit']), ('other_income', current['categories'].get('other_income', 0)), ('zakat_tax', -current['categories'].get('zakat_tax', 0)), ('net_profit', current['net_profit'])]
+            bridge += [('operating_profit', current['operating_profit']), ('other_non_operating', -current['categories'].get('non_operating', 0)), ('other_income', current['categories'].get('other_income', 0)), ('zakat_tax', -current['categories'].get('zakat_tax', 0)), ('net_profit', current['net_profit'])]
             result['bridge'] = [{'key': key, 'amount': amount, 'pct': percent(amount, current['sales_net'])} for key, amount in bridge if amount or key in ('sales_net', 'gross_profit', 'operating_profit', 'net_profit')]
             result['breakeven_series'] = [{'month': m['month'], 'partial': m['partial'], 'sales_net': m['data']['sales_net'] if m['has_data'] else None, 'net_profit': m['data']['net_profit'] if m['has_data'] else None, 'breakeven': m['data']['breakeven'] if m['has_data'] else None, 'margin_pct': m['data']['ratios']['net_margin_pct'] if m['has_data'] else None} for m in trend]
             result['purchases'] = self._purchases(ids, start, end, current['sales_net'])
@@ -191,12 +191,13 @@ class DashboardSections(models.AbstractModel):
             mini_months = []
             for first, last in year_to_date_months(end):
                 mini_months.append({'month': first.strftime('%Y-%m'), 'has_data': covered(first, min(last, end)),
-                                    'data': self._accounting(ids, first, min(last, end))})
+                                    'data': self._accounting(ids, first, min(last, end)),
+                                    'partial': bool(first <= min(end, fields.Date.context_today(self), last_data or end) < last)})
             for month in mini_months:
                 month_start, month_end = month_bounds(date.fromisoformat(month['month'] + '-01'))
                 month_end = min(month_end, end)
                 purchase = self._purchases(ids, month_start, month_end, month['data']['sales_net'])
-                result['purchases']['trend'].append({'month': month['month'], **purchase, 'has_data': bool(purchase.get('has_bills')),
+                result['purchases']['trend'].append({'month': month['month'], 'partial': month['partial'], **purchase, 'has_data': bool(purchase.get('has_bills')),
                                                     'value': purchase['value'] if purchase.get('has_bills') else None,
                                                     'pct': purchase['pct'] if purchase.get('has_bills') else None})
                 monthly_sales, _, _, _ = self._sales_summary(ids, month_start, month_end)
@@ -223,24 +224,28 @@ class DashboardSections(models.AbstractModel):
             result['breakeven'] = {'available': current['breakeven'] is not None and not incomplete, 'value': None if incomplete else current['breakeven'], 'safety_margin': None if incomplete else current['safety_margin'], 'day': None}
             if incomplete:
                 result['breakeven']['reason'] = 'incomplete_costs'
-            if current['breakeven'] is None:
+            if current['breakeven'] is None and not incomplete:
                 result['breakeven']['reason'] = 'invalid_contribution_margin'
-            elif not incomplete and sales['gross']:
+            elif current['breakeven'] is not None and not incomplete and sales['gross']:
                 cumulative = 0
                 for day in sorted({d for _, d in days}):
                     cumulative += sum(sum(data['channels'].values()) for (_, d), data in days.items() if d == day)
                     if cumulative * current['sales_net'] / sales['gross'] >= current['breakeven']:
                         result['breakeven']['day'] = day.day
                         break
+            if section == 'overview' and incomplete:
+                result['breakeven_series'][-1]['breakeven'] = None
         if section == 'expenses':
             rows = []
             for key in expense_keys:
                 if key in ('zakat_tax', 'non_operating'):
                     continue
-                amount = current['categories'].get(key, 0)
-                rows.append({'key': key, 'amount': amount, 'previous': previous['categories'].get(key, 0),
-                             'trend': [m['data']['categories'].get(key, 0) if m['has_data'] else None for m in trend], 'pct': percent(amount, current['sales_net']),
-                             'accounts': sorted([a for a in current['accounts'] if a['category'] == key], key=lambda x: x['amount'], reverse=True)})
+                def displayed_amount(data):
+                    return data['categories'].get(key, 0) + (data['categories'].get('non_operating', 0) if key == 'other_opex' else 0)
+                amount = displayed_amount(current)
+                rows.append({'key': key, 'amount': amount, 'previous': displayed_amount(previous),
+                             'trend': [displayed_amount(m['data']) if m['has_data'] else None for m in trend], 'pct': percent(amount, current['sales_net']),
+                             'accounts': sorted([a for a in current['accounts'] if a['category'] == key or (key == 'other_opex' and a['category'] == 'non_operating')], key=lambda x: x['amount'], reverse=True)})
             result['ranked'] = sorted((r for r in rows if r['amount'] or any(r['trend'])), key=lambda x: x['amount'], reverse=True)
             total = sum(current['categories'].get(k, 0) for k in expense_keys if k != 'zakat_tax')
             result['ring'] = {'available': bool(current['sales_net']), 'value': percent(total, current['sales_net']), 'reason': False if current['sales_net'] else 'zero_sales'}
@@ -298,7 +303,7 @@ class DashboardSections(models.AbstractModel):
             summary, _, _, _ = self._sales_summary(ids, first, min(last, end))
             monthly.append({'month': first.strftime('%Y-%m'), 'data': summary,
                             'has_data': bool(summary['source_counts']['pos'] or summary['source_counts']['summary']),
-                            'partial': bool(first <= min(end, last_data or end) < last)})
+                            'partial': bool(first <= min(end, fields.Date.context_today(self), last_data or end) < last)})
         apps_trend = monthly
         monthly = monthly[-6:]
         known = {c['key']: c for c in channels}

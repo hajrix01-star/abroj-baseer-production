@@ -395,3 +395,30 @@ test('commission card uses recorded amount and salary badges explain suppression
     expect(overview.querySelector('.break-progress').getAttribute('t-if')).toBe('state.data.breakeven?.available');
     expect(overview.querySelector('.break-legend').getAttribute('t-if')).toBe('state.data.breakeven?.available');
 });
+
+
+test('partial KPI badge hides the comparison with an explanation', async () => {
+    const response = await withFetch(globals.fetch, () => fetch('/baseer_dashboard2/static/src/xml/main.xml'));
+    const templates = await response.text();
+    const app = new App(Badge, { templates, props: { value: 142.6, partial: true }, test: true });
+    after(() => app.destroy());
+    await app.mount(getFixture());
+    expect(getFixture().textContent.trim()).toBe('—');
+    expect(getFixture().querySelector('[title]').title).toBe('الشهر لم يكتمل');
+    const doc = new DOMParser().parseFromString(templates, 'text/xml');
+    expect(doc.querySelector('[t-name="baseer_dashboard2.Overview"] .safety-chips').outerHTML).toInclude('(جزئي)');
+});
+
+test('food percentage uses the same formatting in mini charts and cards', () => {
+    expect(formatPercent(46.6)).toBe('46.6%');
+    expect(Sparkline.prototype.short(46.6, true) + '%').toBe(formatPercent(46.6));
+    expect(formatTablePct(46.6)).toBe(formatPercent(46.6));
+});
+
+test('expense distribution displays the aggregated other row', async () => {
+    const response = await withFetch(globals.fetch, () => fetch('/baseer_dashboard2/static/src/xml/main.xml'));
+    const doc = new DOMParser().parseFromString(await response.text(), 'text/xml');
+    const row = doc.querySelector('[t-name="baseer_dashboard2.Expenses"] .rank-row');
+    expect(row.getAttribute('t-foreach')).toBe('expenses.filter(r=>r.amount)');
+    expect(row.querySelector('b').getAttribute('t-esc')).toBe('name(row.key)');
+});

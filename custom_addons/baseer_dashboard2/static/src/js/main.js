@@ -13,12 +13,13 @@ export const formatTable = (n, minus = false) => {
   if (magnitude === "0") return "—";
   return Number(n) < 0 ? (minus ? `-${magnitude}` : `(${magnitude})`) : magnitude;
 };
+const roundedPercentMagnitude = (n) => (Math.round((Math.abs(Number(n)) + Number.EPSILON * Math.abs(Number(n))) * 10) / 10).toFixed(1);
 export const formatTablePct = (n) => {
   if (n == null || n === false || !Number.isFinite(Number(n))) return "—";
-  const magnitude = Math.abs(Number(n)).toFixed(1);
+  const magnitude = roundedPercentMagnitude(n);
   return magnitude === "0.0" ? "—" : `${Number(n) < 0 ? "−" : ""}${magnitude}%`;
 };
-export const formatPercent = (n) => n == null || n === false || !Number.isFinite(Number(n)) ? "—" : `${Number(n) < 0 ? "−" : ""}${Math.abs(Number(n)).toFixed(1)}%`;
+export const formatPercent = (n) => n == null || n === false || !Number.isFinite(Number(n)) ? "—" : `${Number(n) < 0 ? "−" : ""}${roundedPercentMagnitude(n)}%`;
 export const timelineYear = (period) => (period?.mode === "month" ? period.month : period?.date_to)?.slice(0, 4) || "";
 export const chartX = (i, n, width = 700) =>
   width - 48 - (width - 70) * (n <= 1 ? 0.5 : i / (n - 1));
@@ -59,7 +60,8 @@ const labels = {
   utilities: "الكهرباء والماء",
   marketing: "التسويق",
   commissions: "العمولات",
-  other_opex: "مصاريف تشغيلية أخرى",
+  other_opex: "مصاريف أخرى",
+  other_non_operating: "مصاريف أخرى",
   depreciation: "الإهلاك",
   non_operating: "غير تشغيلي",
   zakat_tax: "الزكاة والضريبة",
@@ -116,7 +118,7 @@ export class Sparkline extends Component {
     (a || []).forEach((v, i) => { const p = this.miniPoint(a, i, ratio); if (p) points.push(p); else flush(); }); flush(); return segments.join(' ');
   }
   endpoints(a) { const indices = (a || []).map((v, i) => v == null ? -1 : i).filter(i => i >= 0); return indices.length > 1 ? [indices[0], indices[indices.length - 1]] : indices; }
-  short(v, ratio = false, decimal = false) { return ratio ? (Number(v) < 0 ? "−" : "") + (Math.round((Math.abs(Number(v)) + Number.EPSILON * 100) * 10) / 10).toFixed(1) : Math.abs(v) >= 1000 ? `${decimal ? (v / 1000).toFixed(1) : Math.round(v / 1000)}K` : `${Math.round(v)}`; }
+  short(v, ratio = false, decimal = false) { return ratio ? formatPercent(v).slice(0, -1) : Math.abs(v) >= 1000 ? `${decimal ? (v / 1000).toFixed(1) : Math.round(v / 1000)}K` : `${Math.round(v)}`; }
   endpoint(a) {
     const i = (a || []).findLastIndex(v => v != null);
     if (i < 0) return null;
@@ -179,7 +181,7 @@ class Money extends Component {
 export class Badge extends Component {
   formatPercent = formatPercent;
   static template = "baseer_dashboard2.Badge";
-  static props = { value: { optional: true }, goodWhen: { optional: true }, warning: { optional: true } };
+  static props = { value: { optional: true }, goodWhen: { optional: true }, warning: { optional: true }, partial: { optional: true } };
   get good() {
     return this.props.goodWhen === "down"
       ? this.props.value <= 0
@@ -255,6 +257,7 @@ export class KpiCard extends Component {
     goodWhen: { optional: true },
     foodProgress: { optional: true },
     warning: { optional: true },
+    partialMonth: { optional: true },
   };
 }
 
@@ -451,7 +454,7 @@ class Dashboard2 extends Component {
     return this.state.data?.trend || [];
   }
   get trendLabels() {
-    return this.trend.map((x) => this.monthName(x.month).split(" ")[0]);
+    return this.trend.map((x) => this.monthName(x.month).split(" ")[0] + (x.partial ? " (جزئي)" : ""));
   }
   series(key, category = false) {
     return this.trend.map((x) =>
@@ -481,7 +484,7 @@ class Dashboard2 extends Component {
     return `right:${Math.max(0, Math.min(100, start / total * 100))}%;width:${Math.max(0, Math.min(100, Math.abs(row.amount) / total * 100))}%`;
   }
   get timelineLabels() {
-    return this.timeline.map((x) => x.year || months[x.month - 1]);
+    return this.timeline.map((x) => (x.year || months[x.month - 1]) + (x.partial ? " (جزئي)" : ""));
   }
   get timelineSeries() {
     return [

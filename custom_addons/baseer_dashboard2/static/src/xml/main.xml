@@ -6,7 +6,8 @@
         </span>
     </t>
     <t t-name="baseer_dashboard2.Badge">
-        <span t-if="props.value !== null and props.value !== undefined" t-att-class="'bd2-badge '+(good?'good':'bad')">
+        <span t-if="props.partial" class="muted" title="الشهر لم يكتمل">—</span>
+        <span t-elif="props.value !== null and props.value !== undefined" t-att-class="'bd2-badge '+(good?'good':'bad')">
             <t t-esc="props.value &gt;= 0 ? '▲' : '▼'"/>
             <bdi dir="ltr" t-esc="formatPercent(props.value)"/></span>
         <span t-else="" class="muted">—<span t-if="props.warning" title="رواتب الشهر السابق أقل من 70% من متوسط الأشهر الثلاثة السابقة؛ قد تكون غير مكتملة"> ⚠</span></span>
@@ -91,7 +92,7 @@
                 <span t-if="props.unit === 'orders'"><t t-esc="formatNumber(props.value)"/> <small>طلب</small></span><Money t-else="" value="props.value"/>
             </div>
             <div>
-                <Badge value="props.change" goodWhen="props.goodWhen" warning="props.warning"/>
+                <Badge value="props.change" goodWhen="props.goodWhen" warning="props.warning" partial="props.partialMonth"/>
                 <span class="muted">عن الشهر السابق</span>
             </div>
         </div>
@@ -138,11 +139,11 @@
         <div class="grid three">
             <div class="card mini" t-foreach="[['المشتريات',state.data.purchases?.value,state.data.purchases?.pct,state.data.purchases?.trend?.map(x=&gt;x.has_data ? x.pct : null),state.data.purchases?.trend?.map(x=&gt;x.has_data ? x.value : null),state.data.purchases?.change_pct],['تطبيقات التوصيل',state.data.sales?.apps,state.data.sales?.apps_pct,state.data.sales?.trend?.map(x=&gt;x.has_data ? x.apps_pct : null),state.data.sales?.trend?.map(x=&gt;x.has_data ? x.apps : null),state.data.sales?.apps_change_pct],['عدد العملاء (الطلبات)',state.data.sales?.customers?.value,state.data.sales?.customers?.avg_ticket,state.data.sales?.trend?.map(x=&gt;x.has_data ? x.customers.avg_ticket : null),state.data.sales?.trend?.map(x=&gt;x.has_data ? x.customers.value : null),state.data.sales?.customers_change_pct]]" t-as="item" t-key="item[0]">
                 <div class="mini-head"><div><div class="mini-title"><span class="card-icon"><svg viewBox="0 0 24 24"><path t-att-d="iconPath(['purchases','apps','customers'][item_index])"/></svg></span><h3 t-esc="item[0]"/></div><small t-if="item_index!==1" class="block muted" t-esc="monthName(state.period.month)"/><small t-if="item_index===1" class="block muted">كيتا + هنقر + جاهز · شامل الضريبة</small></div><div t-if="item_index !== 2 or state.data.sales?.customers?.available" class="mini-value"><strong t-esc="item_index === 0 and !state.data.purchases?.available ? 'غير متوفر' : fmt(item[1])"/><div class="mini-pill"><t t-if="item[2] == null">غير متوفر</t><t t-elif="item_index &lt; 2"><bdi dir="ltr" t-esc="pct(item[2])"/> من المبيعات<t t-if="item_index === 1"> · شامل الضريبة</t></t><t t-else="" t-esc="fmt(item[2])+' متوسط الفاتورة'"/></div></div></div>
-                <t t-if="item_index !== 2 or state.data.sales?.customers?.available"><Sparkline values="item[4]" previous="item[3]" mini="true" ratioPercent="item_index &lt; 2" amountDecimal="item_index === 2"/><div class="mini-labels"><span t-foreach="state.data.purchases.trend.map(x=&gt;monthName(x.month).split(' ')[0])" t-as="label" t-key="label_index" t-esc="label"/></div><div class="mini-legend"><span><i/><t t-esc="item_index === 2 ? 'عدد الطلبات' : 'المبلغ'"/></span><span><i class="gold"/><t t-esc="item_index === 2 ? 'متوسط الفاتورة' : 'النسبة'"/></span></div></t><div t-else="" class="customer-empty">غير متوفر — يتوفر من بيانات نقاط البيع فقط</div>
+                <t t-if="item_index !== 2 or state.data.sales?.customers?.available"><Sparkline values="item[4]" previous="item[3]" mini="true" ratioPercent="item_index &lt; 2" amountDecimal="item_index === 2"/><div class="mini-labels"><span t-foreach="state.data.purchases.trend.map(x=&gt;monthName(x.month).split(' ')[0]+(x.partial ? ' (جزئي)' : ''))" t-as="label" t-key="label_index" t-esc="label"/></div><div class="mini-legend"><span><i/><t t-esc="item_index === 2 ? 'عدد الطلبات' : 'المبلغ'"/></span><span><i class="gold"/><t t-esc="item_index === 2 ? 'متوسط الفاتورة' : 'النسبة'"/></span></div></t><div t-else="" class="customer-empty">غير متوفر — يتوفر من بيانات نقاط البيع فقط</div>
             </div>
         </div>
         <div class="grid five">
-            <KpiCard t-foreach="objectEntries(state.data.kpis || {})" t-as="entry" t-key="entry[0]" title="name(entry[0])" warning="entry[0]==='salaries' and state.data.previous_salaries_warning" icon="entry[0]" value="entry[1].value" change="entry[1].change_pct" trend="entry[1].trend" previousTrend="entry[1].previous_trend" partial="trend.map(x=&gt;x.partial)" hero="entry[0]==='net_profit'" goodWhen="entry[1].good_when" foodProgress="entry[0]==='food_cost' and current.ratios.food_pct != null and state.data.targets.food_pct?.value ? current.ratios.food_pct / state.data.targets.food_pct.value * 100 : null"/>
+            <KpiCard partialMonth="trend.at(-1)?.partial" t-foreach="objectEntries(state.data.kpis || {})" t-as="entry" t-key="entry[0]" title="name(entry[0])" warning="entry[0]==='salaries' and state.data.previous_salaries_warning" icon="entry[0]" value="entry[1].value" change="entry[1].change_pct" trend="entry[1].trend" previousTrend="entry[1].previous_trend" partial="trend.map(x=&gt;x.partial)" hero="entry[0]==='net_profit'" goodWhen="entry[1].good_when" foodProgress="entry[0]==='food_cost' and current.ratios.food_pct != null and state.data.targets.food_pct?.value ? current.ratios.food_pct / state.data.targets.food_pct.value * 100 : null"/>
         </div>
         <div t-if="state.data.salaries_warning" class="chip">الرواتب أقل بوضوح من متوسط آخر 3 أشهر — قد تكون غير مكتملة</div><div t-if="state.data.breakeven?.reason==='incomplete_costs'" class="chip">تكاليف الشهر لم تكتمل؛ قد تكون بيانات الأكل والمشتريات غير مكتملة أيضاً</div>
         <div class="grid two-wide">
@@ -150,7 +151,7 @@
                 <h3>المبيعات وصافي الربح مقابل نقطة التعادل</h3>
                 <div class="muted">المسافة بين خط المبيعات والخط المتقطع = هامش الأمان</div>
                 <LineChart series="[{values:state.data.breakeven_series.map(x=&gt;x.sales_net),firstLabel:true,partial:state.data.breakeven_series.map(x=&gt;x.partial),name:'المبيعات'}, {values:state.data.breakeven_series.map(x=&gt;x.net_profit),partial:state.data.breakeven_series.map(x=&gt;x.partial),gold:true,area:true,firstLabel:true,name:'صافي الربح'},{values:state.data.breakeven_series.map(x=&gt;x.breakeven),dashed:true,endpoint:true,name:'نقطة التعادل'}]" labels="trendLabels" fiveTicks="true"/>
-                <div class="safety-chips"><strong>هامش صافي الربح:</strong><span t-foreach="state.data.breakeven_series" t-as="m" t-key="m.month" t-att-class="m_last ? 'current' : ''"><t t-esc="monthName(m.month).split(' ')[0]"/> <bdi dir="ltr" t-att-class="m.margin_pct &lt; 0 ? 'negative' : ''" t-esc="pct(m.margin_pct)"/></span></div>
+                <div class="safety-chips"><strong>هامش صافي الربح:</strong><span t-foreach="state.data.breakeven_series" t-as="m" t-key="m.month" t-att-class="m_last ? 'current' : ''"><t t-esc="monthName(m.month).split(' ')[0]+(m.partial ? ' (جزئي)' : '')"/> <bdi dir="ltr" t-att-class="m.margin_pct &lt; 0 ? 'negative' : ''" t-esc="pct(m.margin_pct)"/></span></div>
             </div>
             <t t-call="baseer_dashboard2.BreakEven"/>
         </div>
@@ -217,10 +218,10 @@
     </t>
     <t t-name="baseer_dashboard2.Revenue">
         <div class="grid four">
-            <KpiCard title="'إجمالي المبيعات — شامل الضريبة'" icon="'sales_net'" value="current.gross" change="changeValue(current.gross, state.data.previous.gross)" trend="trend.map(x=&gt;x.has_data ? x.data.gross : null)" hero="true"/>
-            <KpiCard title="'مبيعات التطبيقات — شامل الضريبة'" icon="'apps'" value="current.apps" change="changeValue(current.apps, state.data.previous.apps)" trend="trend.map(x=&gt;x.has_data ? x.data.apps : null)" subtitle="current.apps_pct == null ? 'غير متوفر' : null" subtitlePercent="current.apps_pct"/>
-            <KpiCard title="'عدد العملاء (الطلبات)'" icon="'customers'" unit="'orders'" value="current.customers?.value" change="changeValue(current.customers?.value, state.data.previous.customers?.value)" trend="trend.map(x=&gt;x.has_data ? x.data.customers?.value : null)"/>
-            <KpiCard title="'متوسط الفاتورة'" icon="'ticket'" value="current.customers?.avg_ticket" change="changeValue(current.customers?.avg_ticket, state.data.previous.customers?.avg_ticket)" trend="trend.map(x=&gt;x.has_data ? x.data.customers?.avg_ticket : null)"/>
+            <KpiCard partialMonth="trend.at(-1)?.partial" title="'إجمالي المبيعات — شامل الضريبة'" icon="'sales_net'" value="current.gross" change="changeValue(current.gross, state.data.previous.gross)" trend="trend.map(x=&gt;x.has_data ? x.data.gross : null)" hero="true"/>
+            <KpiCard partialMonth="trend.at(-1)?.partial" title="'مبيعات التطبيقات — شامل الضريبة'" icon="'apps'" value="current.apps" change="changeValue(current.apps, state.data.previous.apps)" trend="trend.map(x=&gt;x.has_data ? x.data.apps : null)" subtitle="current.apps_pct == null ? 'غير متوفر' : null" subtitlePercent="current.apps_pct"/>
+            <KpiCard partialMonth="trend.at(-1)?.partial" title="'عدد العملاء (الطلبات)'" icon="'customers'" unit="'orders'" value="current.customers?.value" change="changeValue(current.customers?.value, state.data.previous.customers?.value)" trend="trend.map(x=&gt;x.has_data ? x.data.customers?.value : null)"/>
+            <KpiCard partialMonth="trend.at(-1)?.partial" title="'متوسط الفاتورة'" icon="'ticket'" value="current.customers?.avg_ticket" change="changeValue(current.customers?.avg_ticket, state.data.previous.customers?.avg_ticket)" trend="trend.map(x=&gt;x.has_data ? x.data.customers?.avg_ticket : null)"/>
         </div>
         <t t-call="baseer_dashboard2.Timeline"/>
         <div class="grid two-wide">
@@ -271,7 +272,7 @@
             <div class="card">
                 <h3>التطبيقات ونسبتها من المبيعات</h3>
                 <div class="muted">النسبة (أعلى، ذهبي) والمبلغ شامل الضريبة (أسفل، كحلي)</div>
-                <div class="revenue-combo apps-combo"><t t-set="appsTrend" t-value="state.data.apps_trend || trend"/><Sparkline values="appsTrend.map(x=&gt;x.has_data ? x.data.apps : null)" previous="appsTrend.map(x=&gt;x.has_data ? x.data.apps_pct : null)" mini="true" ratioPercent="true" stretch="true"/><div class="mini-labels"><span t-foreach="appsTrend" t-as="month" t-key="month.month" t-att-style="'left:'+miniX(month_index, appsTrend.length)+'%'" t-esc="monthName(month.month).split(' ')[0]"/></div><div class="mini-legend"><span><i/>مبيعات التطبيقات شامل الضريبة</span><span><i class="gold"/>النسبة</span></div></div>
+                <div class="revenue-combo apps-combo"><t t-set="appsTrend" t-value="state.data.apps_trend || trend"/><Sparkline values="appsTrend.map(x=&gt;x.has_data ? x.data.apps : null)" previous="appsTrend.map(x=&gt;x.has_data ? x.data.apps_pct : null)" mini="true" ratioPercent="true" stretch="true"/><div class="mini-labels"><span t-foreach="appsTrend" t-as="month" t-key="month.month" t-att-style="'left:'+miniX(month_index, appsTrend.length)+'%'" t-esc="monthName(month.month).split(' ')[0]+(month.partial ? ' (جزئي)' : '')"/></div><div class="mini-legend"><span><i/>مبيعات التطبيقات شامل الضريبة</span><span><i class="gold"/>النسبة</span></div></div>
             </div>
         </div>
         <div class="grid two">
@@ -290,16 +291,16 @@
     <t t-name="baseer_dashboard2.Expenses">
         <div t-if="state.data.salaries_warning" class="chip">الرواتب أقل بوضوح من متوسط آخر 3 أشهر — قد تكون غير مكتملة</div><div t-if="state.data.breakeven?.reason==='incomplete_costs'" class="chip">تكاليف الشهر لم تكتمل؛ قد تكون بيانات الأكل والمشتريات غير مكتملة أيضاً</div>
         <div class="grid four">
-            <KpiCard title="'إجمالي المصاريف'" icon="'expenses_total'" value="state.data.has_data ? totalExpense(current) : null" change="changeValue(totalExpense(current), totalExpense(state.data.previous))" trend="trend.map(x=&gt;x.has_data ? totalExpense(x.data) : null)" goodWhen="'down'" hero="true"/>
-            <KpiCard title="'تكلفة الأكل'" icon="'food_cost'" value="state.data.has_data ? current.categories?.food_cost : null" change="changeValue(current.categories?.food_cost, state.data.previous.categories?.food_cost)" trend="trend.map(x=&gt;x.has_data ? x.data.categories?.food_cost : null)" goodWhen="'down'"/>
-            <KpiCard title="'الرواتب'" warning="state.data.previous_salaries_warning" icon="'salaries'" value="state.data.has_data ? current.categories?.salaries : null" change="state.data.previous_salaries_warning ? null : changeValue(current.categories?.salaries, state.data.previous.categories?.salaries)" trend="trend.map(x=&gt;x.has_data ? x.data.categories?.salaries : null)" goodWhen="'down'"/>
-            <KpiCard title="'الإيجار والكهرباء'" icon="'rent'" value="state.data.has_data ? ((current.categories?.rent || 0)+(current.categories?.utilities || 0)) : null" change="changeValue(((current.categories?.rent || 0)+(current.categories?.utilities || 0)), ((state.data.previous.categories?.rent || 0)+(state.data.previous.categories?.utilities || 0)))" trend="trend.map(x=&gt;x.has_data ? ((x.data.categories?.rent || 0)+(x.data.categories?.utilities || 0)) : null)" goodWhen="'down'"/>
+            <KpiCard partialMonth="trend.at(-1)?.partial" title="'إجمالي المصاريف'" icon="'expenses_total'" value="state.data.has_data ? totalExpense(current) : null" change="changeValue(totalExpense(current), totalExpense(state.data.previous))" trend="trend.map(x=&gt;x.has_data ? totalExpense(x.data) : null)" goodWhen="'down'" hero="true"/>
+            <KpiCard partialMonth="trend.at(-1)?.partial" title="'تكلفة الأكل'" icon="'food_cost'" value="state.data.has_data ? current.categories?.food_cost : null" change="changeValue(current.categories?.food_cost, state.data.previous.categories?.food_cost)" trend="trend.map(x=&gt;x.has_data ? x.data.categories?.food_cost : null)" goodWhen="'down'"/>
+            <KpiCard partialMonth="trend.at(-1)?.partial" title="'الرواتب'" warning="state.data.previous_salaries_warning" icon="'salaries'" value="state.data.has_data ? current.categories?.salaries : null" change="state.data.previous_salaries_warning ? null : changeValue(current.categories?.salaries, state.data.previous.categories?.salaries)" trend="trend.map(x=&gt;x.has_data ? x.data.categories?.salaries : null)" goodWhen="'down'"/>
+            <KpiCard partialMonth="trend.at(-1)?.partial" title="'الإيجار والكهرباء'" icon="'rent'" value="state.data.has_data ? ((current.categories?.rent || 0)+(current.categories?.utilities || 0)) : null" change="changeValue(((current.categories?.rent || 0)+(current.categories?.utilities || 0)), ((state.data.previous.categories?.rent || 0)+(state.data.previous.categories?.utilities || 0)))" trend="trend.map(x=&gt;x.has_data ? ((x.data.categories?.rent || 0)+(x.data.categories?.utilities || 0)) : null)" goodWhen="'down'"/>
         </div>
         <div class="grid two-wide">
             <div class="card expense-sales-chart">
                 <h3>المصاريف مقابل المبيعات</h3>
                 <div class="muted">آخر 6 أشهر — الفرق بين الخطين هو الربح قبل الزكاة</div>
-                <LineChart series="[{values:series('sales_net'),firstLabel:true,name:'المبيعات'},{values:trend.map(x=&gt;x.has_data === false ? null : operatingExpense(x.data)),gold:true,area:true,firstLabel:true,name:'المصاريف قبل الزكاة'}]" labels="trendLabels"/><div class="safety-chips"><strong>المصاريف ÷ المبيعات:</strong><span t-foreach="trend" t-as="m" t-key="m.month" t-att-class="m_last ? 'current' : ''"><t t-esc="monthName(m.month).split(' ')[0]"/> <bdi dir="ltr" t-esc="m.has_data and m.data.sales_net ? pct(operatingExpense(m.data)/m.data.sales_net*100) : '—'"/></span></div>
+                <LineChart series="[{values:series('sales_net'),firstLabel:true,name:'المبيعات'},{values:trend.map(x=&gt;x.has_data === false ? null : operatingExpense(x.data)),gold:true,area:true,firstLabel:true,name:'المصاريف قبل الزكاة'}]" labels="trendLabels"/><div class="safety-chips"><strong>المصاريف ÷ المبيعات:</strong><span t-foreach="trend" t-as="m" t-key="m.month" t-att-class="m_last ? 'current' : ''"><t t-esc="monthName(m.month).split(' ')[0]+(m.partial ? ' (جزئي)' : '')"/> <bdi dir="ltr" t-esc="m.has_data and m.data.sales_net ? pct(operatingExpense(m.data)/m.data.sales_net*100) : '—'"/></span></div>
             </div>
             <div class="card">
                 <h3>توزيع المصاريف — <t t-esc="monthName(state.period.month).split(' ')[0]"/></h3><div class="muted">مرتبة من الأكبر · المبلغ ونسبته من المبيعات</div>
@@ -326,7 +327,7 @@
                     <tr>
                         <th>البند</th>
                         <th>الاتجاه</th>
-                        <th t-foreach="trend" t-as="m" t-key="m.month" t-esc="monthName(m.month).split(' ')[0]"/>
+                        <th t-foreach="trend" t-as="m" t-key="m.month" t-esc="monthName(m.month).split(' ')[0]+(m.partial ? ' (جزئي)' : '')"/>
                         <th>التغير</th>
                         <th>٪ من المبيعات</th>
                     </tr>
@@ -427,7 +428,7 @@
                     <tr>
                         <th>البند</th>
                         <th>الاتجاه</th>
-                        <th t-foreach="trend" t-as="m" t-key="m.month" t-esc="monthName(m.month).split(' ')[0]"/>
+                        <th t-foreach="trend" t-as="m" t-key="m.month" t-esc="monthName(m.month).split(' ')[0]+(m.partial ? ' (جزئي)' : '')"/>
                         <th class="highlight">المجموع</th>
                         <th>٪ من المبيعات</th>
                     </tr>
@@ -466,7 +467,7 @@
                     <tr>
                         <th>البند</th>
                         <th>الاتجاه</th>
-                        <th t-foreach="state.data.months" t-as="m" t-key="m.month" t-esc="monthName(m.month).split(' ')[0]"/>
+                        <th t-foreach="state.data.months" t-as="m" t-key="m.month" t-esc="monthName(m.month).split(' ')[0]+(m.partial ? ' (جزئي)' : '')"/>
                         <th class="highlight">المجموع</th>
                         <th>٪ من الداخل</th>
                     </tr>
@@ -630,7 +631,7 @@
             <h3>نظرة على السنة</h3>
             <div class="year-grid">
                 <div t-foreach="state.data.year_calendar" t-as="m" t-key="m.month" t-att-class="m.month === state.period.month ? 'year-current' : ''">
-                    <b t-esc="monthName(m.month).split(' ')[0]"/>
+                    <b t-esc="monthName(m.month).split(' ')[0]+(m.partial ? ' (جزئي)' : '')"/>
                     <small class="block muted">معدل يومي <t t-esc="fmt(m.days.some(d=&gt;d.gross != null) ? m.days.reduce((a,d)=&gt;a+(d.gross || 0),0)/m.days.filter(d=&gt;d.gross != null).length : null)"/> · عملاء <t t-esc="fmt(m.days.some(d=&gt;d.customers != null) ? m.days.reduce((a,d)=&gt;a+(d.customers || 0),0)/m.days.filter(d=&gt;d.customers != null).length : null)"/>/يوم</small>
                     <div class="year-weekdays"><span t-foreach="weekdays" t-as="wd" t-key="wd_index" t-esc="wd"/></div>
                     <div class="year-days">

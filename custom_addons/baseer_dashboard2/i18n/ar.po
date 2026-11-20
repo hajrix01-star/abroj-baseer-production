@@ -666,3 +666,8 @@ msgstr ""
 #: model:ir.model.fields,field_description:baseer_dashboard2.field_baseer_dashboard2_settings__app_balance_start_date
 msgid "App Balance Start Date"
 msgstr "بداية احتساب أرصدة التطبيقات"
+
+#. module: baseer_dashboard2
+#: model_terms:ir.ui.view,arch_db:baseer_dashboard2
+msgid "الشهر لم يكتمل"
+msgstr "الشهر لم يكتمل"

@@ -77,7 +77,9 @@ class DashboardSections(models.AbstractModel):
         if mode == 'yearly':
             for year in range(end.year - 4, end.year + 1):
                 first, last_year = date(year, 1, 1), date(year, 12, 31)
-                years.append({'year': year, 'value': self._accounting(ids, first, min(last_year, cutoff))['sales_net'] if cutoff and first <= cutoff and covered(first, min(last_year, cutoff)) else None, 'partial': bool(cutoff and year == cutoff.year and cutoff < last_year)})
+                prior_first, prior_last = date(year - 1, 1, 1), date(year - 1, 12, 31)
+                prior_cutoff = min(prior_last, previous_end) if previous_end else None
+                years.append({'year': year, 'value': self._accounting(ids, first, min(last_year, cutoff))['sales_net'] if cutoff and first <= cutoff and covered(first, min(last_year, cutoff)) else None, 'previous': self._accounting(ids, prior_first, prior_cutoff)['sales_net'] if prior_cutoff and prior_first <= prior_cutoff and covered(prior_first, prior_cutoff) else None, 'partial': bool(cutoff and year == cutoff.year and cutoff < last_year)})
         eligible = [m for m in months if m['value'] is not None]
         return {'available': True, 'mode': mode, 'months': months, 'years': years,
                 'stats': {'end_date': str(cutoff) if cutoff else None, 'previous_end_date': str(previous_end) if previous_end else None, 'ytd': ytd, 'previous_ytd': pytd, 'growth_pct': change(ytd, pytd), 'best_month': max(eligible, key=lambda x: x['value']) if eligible else None}}

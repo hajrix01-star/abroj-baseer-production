@@ -6,6 +6,22 @@ from odoo.tests import TransactionCase, tagged
 
 @tagged('post_install', '-at_install')
 class TestDashboard2(TransactionCase):
+    def test_apps_include_tax_in_summary(self):
+        from unittest.mock import patch
+        service = self.env['baseer.dashboard2.service']
+        day = date(2026, 10, 31)
+        channels = [{'key': key, 'kind': 'app' if key in ('hunger', 'keeta', 'jahez') else 'hall', 'name': key}
+                    for key in ('hunger', 'keeta', 'jahez', 'card', 'cash')]
+        days = {(self.env.company.id, day): {'channels': {'hunger': 54235, 'keeta': 45868, 'jahez': 8085, 'card': 177153, 'cash': 24417},
+                 'source': 'summary', 'source_mode': 'auto', 'has_summary': True, 'customers': None}}
+        with patch.object(type(service), '_sales_days', return_value=(days, channels, {}, {})), \
+             patch.object(type(service), '_cancelled_session_warnings', return_value=[]):
+            summary = service._sales_summary([self.env.company.id], day.replace(day=1), day)[0]
+        self.assertEqual(summary['gross'], 309758)
+        self.assertEqual(summary['apps'], 108188)
+        self.assertEqual(summary['apps_pct'], 34.93)
+        self.assertEqual([summary['channels'][key] for key in ('hunger', 'keeta', 'jahez')], [54235, 45868, 8085])
+
     def test_dashboard_scss_compiles_with_odoo_libsass(self):
         import sass
         from pathlib import Path
@@ -112,6 +128,9 @@ class TestDashboard2(TransactionCase):
         sales, _, _, _ = service._sales_summary([company.id], date(2026, 10, 1), date(2026, 10, 31))
         self.assertEqual(sales['channels']['cash'], 540)
         self.assertEqual(sales['channels']['keeta'], 360)
+        # Summary channel amounts, including applications, retain their VAT-inclusive basis.
+        self.assertEqual(sales['apps'], 360)
+        self.assertAlmostEqual(sales['apps_pct'], 360 / 1015 * 100, places=2)
         self.assertEqual(sales['channels']['card'], 115)
         self.assertEqual(sales['source_counts']['summary'], 3)
         self.assertEqual(service._sales_vat([company.id], date(2026, 10, 1), date(2026, 10, 31))['value'], 15)
@@ -122,6 +141,9 @@ class TestDashboard2(TransactionCase):
         self.assertAlmostEqual(sum(child['months'][-1] for child in revenue_row['children']), revenue_row['months'][-1], places=2)
         self.assertIsNone(revenue_row['months'][-2])
         self.assertIsNone(service._timeline([company.id], date(2026, 10, 31), 'monthly')['months'][8]['value'])
+        yearly = service._timeline([company.id], date(2026, 10, 31), 'yearly')['years']
+        self.assertEqual(yearly[-1]['value'], 1000)
+        self.assertIsNone(yearly[-1]['previous'])
 
     def test_all_sections_smoke(self):
         company = self.env.company

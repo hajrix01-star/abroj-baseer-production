@@ -107,6 +107,24 @@ test('chart legend excludes series with no points', async () => {
     expect(getFixture().querySelector('.chart-legend').textContent).toInclude('2026');
 });
 
+test('timeline keeps twelve labels, integer K values and emphasizes its peak', async () => {
+    const response = await withFetch(globals.fetch, () => fetch('/baseer_dashboard2/static/src/xml/main.xml'));
+    const values = [null, 269400, null, 508000, ...Array(8).fill(null)];
+    const app = new App(LineChart, { templates: await response.text(), props: {
+        labels: Array.from({ length: 12 }, (_, i) => String(i + 1)),
+        series: [{ name: '2026', values, gold: true, area: true }, { name: '2025', values: Array(12).fill(null), dashed: true }],
+    }, test: true });
+    after(() => app.destroy());
+    await app.mount(getFixture());
+    const svg = getFixture().querySelector('svg');
+    expect(svg.textContent).toInclude('269K');
+    expect(svg.textContent).toInclude('508K');
+    expect(svg.querySelectorAll('circle').length).toBe(2);
+    expect(svg.querySelectorAll('circle[r="5"]').length).toBe(1);
+    expect(getFixture().querySelectorAll('.chart-legend span').length).toBe(1);
+    expect(svg.textContent).toInclude('12');
+});
+
 
 test('KPI sparkline renders two series and change badge', async () => {
     const response = await withFetch(globals.fetch, () => fetch('/baseer_dashboard2/static/src/xml/main.xml'));

@@ -40,8 +40,8 @@
                 <path t-if="s.partial" t-att-d="partialPath(s.values, s.partial)" fill="none" t-att-stroke="s.gold ? 'var(--bd2-gold)' : 'var(--bd2-c1)'" stroke-width="2.3" stroke-dasharray="5 4"/>
                 <t t-if="!s.dashed"><t t-foreach="s.values" t-as="v" t-key="v_index">
                     <text t-if="s.partial?.[v_index] and v != null and !s.dashed" t-att-x="chartX(v_index,s.values.length)" t-att-y="y(v)+16" text-anchor="middle" fill="var(--bd2-muted)" font-size="9">جزئي</text>
-                    <circle t-if="v !== null and v !== undefined" t-att-cx="chartX(v_index,s.values.length)" t-att-cy="y(v)" r="3" fill="var(--bd2-card)" t-att-stroke="s.gold ? 'var(--bd2-gold)' : 'var(--bd2-c1)'" stroke-width="2"/>
-                    <text t-if="(s.area or s.pointLabels) and v !== null and v !== undefined" t-att-x="chartX(v_index,s.values.length)" t-att-y="y(v)-8" text-anchor="middle" fill="var(--bd2-ink)" font-size="9" font-weight="700" t-esc="compact(v)"/>
+                    <circle t-if="v !== null and v !== undefined" t-att-cx="chartX(v_index,s.values.length)" t-att-cy="y(v)" t-att-r="s.area and isPeak(v, s.values) ? 5 : 3" fill="var(--bd2-card)" t-att-stroke="s.gold ? 'var(--bd2-gold)' : 'var(--bd2-c1)'" stroke-width="2"/>
+                    <text t-if="(s.area or s.pointLabels) and v !== null and v !== undefined" t-att-x="chartX(v_index,s.values.length)" t-att-y="y(v)-8" text-anchor="middle" fill="var(--bd2-ink)" font-size="9" font-weight="700" t-esc="compact(v) + (s.vat ? ' شامل الضريبة' : '')"/>
                 </t></t>
             </t>
             <t t-foreach="props.labels || []" t-as="label" t-key="label_index">
@@ -238,7 +238,7 @@
                             <td>
                                 <Track value="row.amount" max="state.data.ranked[0]?.amount" gold="row_index===0"/>
                             </td>
-                            <td t-esc="tableFmt(row.amount)"/>
+                            <td><t t-esc="tableFmt(row.amount)"/><small t-if="row.kind==='app'" class="muted"> شامل الضريبة</small></td>
                             <td t-esc="tablePct(row.share_pct)"/>
                             <td>
                                 <Badge value="row.change_pct"/>
@@ -251,7 +251,7 @@
                             <th colspan="3">المجموع</th>
                             <th t-esc="tableFmt(current.gross)"/>
                             <td t-esc="current.gross == null ? '—' : '100%'"/>
-                            <td colspan="2">الصالة <t t-esc="fmt(state.data.split.hall)"/> · التطبيقات <t t-esc="fmt(state.data.split.apps)"/>
+                            <td colspan="2">الصالة <t t-esc="fmt(state.data.split.hall)"/> · التطبيقات <t t-esc="fmt(state.data.split.apps)"/> شامل الضريبة
                             </td>
                         </tr>
                     </tbody>
@@ -259,7 +259,7 @@
             </div>
             <div class="card">
                 <h3>التطبيقات ونسبتها من المبيعات — شامل الضريبة</h3>
-                <LineChart series="[{values:trend.map(x=&gt;x.has_data === false ? null : x.data.apps),gold:true},{values:trend.map(x=&gt;x.has_data === false ? null : x.data.gross)}]" labels="trendLabels"/>
+                <LineChart series="[{values:trend.map(x=&gt;x.has_data === false ? null : x.data.apps),gold:true,pointLabels:true,vat:true},{values:trend.map(x=&gt;x.has_data === false ? null : x.data.gross)}]" labels="trendLabels"/>
             </div>
         </div>
         <div class="grid two">
@@ -278,7 +278,7 @@
                     <tbody>
                         <tr t-foreach="state.data.commissions.rows" t-as="r" t-key="r.key">
                             <th t-esc="r.name"/>
-                            <td t-esc="tableFmt(r.gross)"/>
+                            <td><t t-esc="tableFmt(r.gross)"/> <small class="muted">شامل الضريبة</small></td>
                             <td t-esc="tableFmt(r.commission)"/>
                             <td t-esc="tableFmt(r.net)"/>
                         </tr>
@@ -490,8 +490,8 @@
                             <td>
                                 <Sparkline values="state.data.months.map(m=&gt;m[group[0]][group[2]][key] ?? null)" partial="state.data.months.map(m=&gt;m.partial)"/>
                             </td>
-                            <td t-foreach="state.data.months" t-as="m" t-key="m.month" t-esc="tableFmt(m[group[0]][group[2]][key] == null ? null : group[0]==='incoming' ? m[group[0]][group[2]][key] : -m[group[0]][group[2]][key])"/>
-                            <td t-esc="tableFmt(group[0]==='incoming'?state.data.total[group[2]][key]:-state.data.total[group[2]][key])"/>
+                            <td t-foreach="state.data.months" t-as="m" t-key="m.month"><t t-esc="tableFmt(m[group[0]][group[2]][key] == null ? null : group[0]==='incoming' ? m[group[0]][group[2]][key] : -m[group[0]][group[2]][key])"/><small t-if="group[0]==='incoming'" class="muted"> شامل الضريبة</small></td>
+                            <td><t t-esc="tableFmt(group[0]==='incoming'?state.data.total[group[2]][key]:-state.data.total[group[2]][key])"/><small t-if="group[0]==='incoming'" class="muted"> شامل الضريبة</small></td>
                         </tr></t>
                         <tr class="account" t-if="group[2]==='channels'">
                             <td>منها تطبيقات لم تُستلم بعد</td>

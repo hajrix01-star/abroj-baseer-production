@@ -127,7 +127,8 @@ export class LineChart extends Component {
     const flush = () => { if (points.length) segments.push(`M${points[0][0]},${baseline} ` + points.map(([x,y]) => `L${x},${y}`).join(" ") + ` L${points.at(-1)[0]},${baseline} Z`); points = []; };
     values.forEach((value, i) => value == null ? flush() : points.push([chartX(i, values.length), this.y(value)])); flush(); return segments.join(" ");
   }
-  compact(value) { return Math.abs(value) >= 1000000 ? `${+(value / 1000000).toFixed(1)}M` : Math.abs(value) >= 1000 ? `${+(value / 1000).toFixed(1)}K` : formatNumber(value); }
+  compact(value) { return Math.abs(value) >= 1000000 ? `${+(value / 1000000).toFixed(1)}M` : Math.abs(value) >= 1000 ? `${Math.round(value / 1000)}K` : formatNumber(value); }
+  isPeak(value, values) { return value != null && Number(value) === Math.max(...values.filter((v) => v != null).map(Number)); }
   partialPath(values, partial) {
     const i = partial?.findIndex(Boolean) ?? -1;
     return i > 0 && values[i] != null && values[i - 1] != null ? `M${chartX(i - 1, values.length)},${this.y(values[i - 1])} L${chartX(i, values.length)},${this.y(values[i])}` : "";
@@ -405,9 +406,7 @@ class Dashboard2 extends Component {
     const t = this.state.data?.timeline;
     if (!t) return [];
     const rows = t.mode === "yearly" ? t.years : t.months;
-    const first = rows.findIndex((x) => x.value != null || x.previous != null);
-    const last = rows.findLastIndex((x) => x.value != null || x.previous != null);
-    return first < 0 ? [] : rows.slice(first, last + 1);
+    return rows;
   }
   get timelineLabels() {
     return this.timeline.map((x) => x.year || months[x.month - 1]);

@@ -21,8 +21,9 @@
                 <t t-foreach="endpoints(props.previous)" t-as="i" t-key="i"><circle t-att-cx="miniPoint(props.previous,i,true).x" t-att-cy="miniPoint(props.previous,i,true).y" r="0.9" fill="var(--bd2-gold)"/><text t-att-x="miniPoint(props.previous,i,true).x" t-att-y="miniPoint(props.previous,i,true).y-2" text-anchor="middle" fill="var(--bd2-gold-text)" font-size="2.4" t-esc="short(props.previous[i]) + (props.ratioPercent ? '%' : '')"/></t>
             </t>
             <t t-else="">
-            <path t-att-d="path(props.values)" fill="none" t-att-stroke="props.gold ? 'var(--bd2-gold)' : 'var(--bd2-c5)'" stroke-width="2"/>
-            <path t-if="props.partial" t-att-d="path(props.values, true)" fill="none" t-att-stroke="props.gold ? 'var(--bd2-gold)' : 'var(--bd2-c5)'" stroke-width="2" stroke-dasharray="3 2"/>
+            <path t-att-d="path(props.values)" fill="none" t-att-stroke="props.gold ? 'var(--bd2-gold)' : props.navy ? 'var(--bd2-c1)' : 'var(--bd2-c5)'" stroke-width="2"/>
+            <circle t-if="endpoint(props.values)" t-att-cx="endpoint(props.values).x" t-att-cy="endpoint(props.values).y" r="3" t-att-fill="props.gold ? 'var(--bd2-gold)' : props.navy ? 'var(--bd2-c1)' : 'var(--bd2-c5)'"/>
+            <path t-if="props.partial" t-att-d="path(props.values, true)" fill="none" t-att-stroke="props.gold ? 'var(--bd2-gold)' : props.navy ? 'var(--bd2-c1)' : 'var(--bd2-c5)'" stroke-width="2" stroke-dasharray="3 2"/>
             <text t-if="props.partial?.includes(true)" x="5" y="8" fill="var(--bd2-muted)" font-size="6">جزئي</text>
             <path t-if="props.previous" t-att-d="path(props.previous)" fill="none" t-att-stroke="props.secondaryGold ? 'var(--bd2-gold)' : 'var(--bd2-faint)'" stroke-width="1.5" t-att-stroke-dasharray="props.secondaryGold ? '' : '4 3'"/>
             </t>
@@ -50,7 +51,7 @@
                 <t t-if="!s.dashed"><t t-foreach="s.values" t-as="v" t-key="v_index">
                     <text t-if="s.partial?.[v_index] and v != null and !s.dashed" t-att-x="chartX(v_index,s.values.length)" t-att-y="y(v)+16" text-anchor="middle" fill="var(--bd2-muted)" font-size="9">جزئي</text>
                     <circle t-if="v !== null and v !== undefined" t-att-cx="chartX(v_index,s.values.length)" t-att-cy="y(v)" t-att-r="s.area and isPeak(v, s.values) ? 5 : 3" t-att-fill="s.area and isPeak(v, s.values) ? 'var(--bd2-gold)' : 'var(--bd2-card)'" t-att-stroke="s.gold ? 'var(--bd2-gold)' : 'var(--bd2-c1)'" stroke-width="2"/>
-                    <text t-if="(s.area or s.pointLabels) and v !== null and v !== undefined" t-att-x="chartX(v_index,s.values.length)" t-att-y="y(v)-8" text-anchor="middle" fill="var(--bd2-ink)" font-size="9" font-weight="700" t-esc="compact(v) + (s.vat ? ' شامل الضريبة' : '')"/>
+                    <text t-if="(s.area or s.pointLabels or (props.percent and v_index === s.values.findLastIndex(x=&gt;x != null))) and v !== null and v !== undefined" t-att-x="chartX(v_index,s.values.length)" t-att-y="y(v)-8" text-anchor="middle" fill="var(--bd2-ink)" font-size="9" font-weight="700" t-esc="compact(v) + (s.vat ? ' شامل الضريبة' : '')"/>
                 </t></t>
             </t>
             <t t-foreach="props.labels || []" t-as="label" t-key="label_index">
@@ -363,25 +364,23 @@
     <t t-name="baseer_dashboard2.Ratios">
         <div class="grid four">
             <div class="card ratio" t-foreach="['food_pct','salaries_pct','prime_pct','net_margin_pct']" t-as="key" t-key="key">
-                <h3 t-esc="name(key)"/>
-                <div class="muted">من المبيعات</div>
-                <strong t-esc="pct(current.ratios?.[key])"/>
-                <span t-if="current.ratios?.[key] != null and state.data.targets[key]" t-att-class="'bd2-badge '+(state.data.targets[key].status === 'ok' ? 'good' : 'bad')" t-esc="state.data.targets[key].status === 'ok' ? 'ضمن المستهدف' : 'خارج المستهدف'"/>
+                <div class="ratio-heading"><div><h3 t-esc="name(key)"/><div class="muted" t-esc="({food_pct:'تكلفة الأكل ÷ المبيعات',salaries_pct:'الرواتب ÷ المبيعات',prime_pct:'(الأكل + الرواتب) ÷ المبيعات',net_margin_pct:'صافي الربح ÷ المبيعات'})[key]"/></div><span t-if="current.ratios?.[key] != null and state.data.targets[key]" t-att-class="'bd2-badge '+(state.data.targets[key].status === 'ok' ? 'good' : 'bad')" t-esc="state.data.targets[key].status === 'ok' ? 'ضمن المستهدف' : 'خارج المستهدف'"/></div>
+                <div class="ratio-value"><strong t-esc="pct(current.ratios?.[key])"/><Badge value="state.data.previous.ratios?.[key] ? (current.ratios[key]-state.data.previous.ratios[key])/Math.abs(state.data.previous.ratios[key])*100 : null" goodWhen="key === 'net_margin_pct' ? 'up' : 'down'"/></div>
                 <div class="muted">المستهدف <t t-esc="pct(state.data.targets[key]?.value)"/>
                     <input t-if="state.meta.can_edit and state.data.targets[key]" class="target-input" type="number" min="0" max="100" t-att-value="state.data.targets[key].value" t-on-change="(e)=&gt;this.saveTarget(key,e)"/>
                 </div>
-                <Gauge value="current.ratios?.[key]" previous="state.data.previous.ratios?.[key]" target="state.data.targets[key]?.value" max="100"/>
-                <Sparkline values="trend.map(x=&gt;x.has_data ? x.data.ratios[key] : null)" partial="trend.map(x=&gt;x.partial)"/>
+                <Gauge value="current.ratios?.[key]" previous="state.data.previous.ratios?.[key]" target="state.data.targets[key]?.value" max="({food_pct:50,salaries_pct:40,prime_pct:80,net_margin_pct:30})[key]"/><div class="gauge-scale"><span t-esc="({food_pct:50,salaries_pct:40,prime_pct:80,net_margin_pct:30})[key]+'%'"/><span>0%</span></div>
+                <div class="ratio-foot"><span class="muted">آخر 6 أشهر</span><Sparkline values="trend.map(x=&gt;x.has_data ? x.data.ratios[key] : null)" partial="trend.map(x=&gt;x.partial)" navy="true"/></div>
             </div>
         </div>
         <div class="grid two">
             <div class="card">
                 <h3>اتجاه نسب التكلفة</h3>
-                <LineChart series="[{values:trend.map(x=&gt;x.has_data ? x.data.ratios.food_pct : null)},{values:trend.map(x=&gt;x.has_data ? x.data.ratios.salaries_pct : null),gold:true}]" labels="trendLabels"/>
+                <div class="muted">الخطوط المتقطعة = المستهدف</div><LineChart series="[{name:'تكلفة الأكل',values:trend.map(x=&gt;x.has_data ? x.data.ratios.food_pct : null)},{name:'الرواتب',values:trend.map(x=&gt;x.has_data ? x.data.ratios.salaries_pct : null),gold:true},...(state.data.targets.food_pct?.value != null ? [{name:'مستهدف الأكل',values:trend.map(()=&gt;state.data.targets.food_pct.value),dashed:true}] : []),...(state.data.targets.salaries_pct?.value != null ? [{name:'مستهدف الرواتب',values:trend.map(()=&gt;state.data.targets.salaries_pct.value),dashed:true}] : [])]" labels="trendLabels" percent="true"/>
             </div>
             <div class="card">
                 <h3>مجمل الهامش وصافي الهامش</h3>
-                <LineChart series="[{values:trend.map(x=&gt;x.data.sales_net ? x.data.gross_profit/x.data.sales_net*100 : null)},{values:trend.map(x=&gt;x.has_data ? x.data.ratios.net_margin_pct : null),gold:true}]" labels="trendLabels"/>
+                <div class="muted">شهرياً — آخر 6 أشهر · المتقطع = مستهدف صافي الهامش</div><LineChart series="[{name:'مجمل الهامش',values:trend.map(x=&gt;x.data.sales_net ? x.data.gross_profit/x.data.sales_net*100 : null)},{name:'صافي الهامش',values:trend.map(x=&gt;x.has_data ? x.data.ratios.net_margin_pct : null),gold:true},...(state.data.targets.net_margin_pct?.value != null ? [{name:'المستهدف',values:trend.map(()=&gt;state.data.targets.net_margin_pct.value),dashed:true}] : [])]" labels="trendLabels" percent="true"/>
             </div>
         </div>
         <div class="grid two-wide">
@@ -451,7 +450,7 @@
                                 <t t-esc="row.name || name(row.key)"/>
                             </th>
                             <td>
-                                <Sparkline values="row.months" partial="trend.map(x=&gt;x.partial)"/>
+                                <Sparkline values="row.months" partial="trend.map(x=&gt;x.partial)" gold="row.key==='net_profit'" navy="row.key!=='net_profit'"/>
                             </td>
                             <td t-foreach="row.months" t-as="v" t-key="v_index" t-esc="tableFmt(v)"/>
                             <td t-esc="tableFmt(row.total)"/>
@@ -488,7 +487,7 @@
                             <th>
                                 <t t-esc="group[1]"/> ▾</th>
                             <td>
-                                <Sparkline values="state.data.months.map(m=&gt;group[0]==='incoming'?(m.incoming.available ? m.incoming.gross : null):(m.outgoing.available ? m.outgoing.total : null))" partial="state.data.months.map(m=&gt;m.partial)"/>
+                                <Sparkline values="state.data.months.map(m=&gt;group[0]==='incoming'?(m.incoming.available ? m.incoming.gross : null):(m.outgoing.available ? m.outgoing.total : null))" partial="state.data.months.map(m=&gt;m.partial)" navy="true"/>
                             </td>
                             <td t-foreach="state.data.months" t-as="m" t-key="m.month" t-esc="group[0]==='incoming'?tableFmt(m.incoming.available ? m.incoming.gross : null):(!m.outgoing.available?'غير مُعد':tableFmt(-m.outgoing.total))"/>
                             <td t-esc="group[0]==='incoming'?tableFmt(state.data.total[group[0]]):(state.data.months.some(m=&gt;!m.outgoing.available)?'غير مُعد':tableFmt(-state.data.total[group[0]]))"/>
@@ -633,7 +632,9 @@
             <div class="year-grid">
                 <div t-foreach="state.data.year_calendar" t-as="m" t-key="m.month">
                     <b t-esc="monthName(m.month)"/>
+                    <div class="year-weekdays"><span t-foreach="weekdays" t-as="wd" t-key="wd_index" t-esc="wd"/></div>
                     <div class="year-days">
+                        <span t-foreach="yearPadding(m)" t-as="pad" t-key="pad"/>
                         <i t-foreach="m.days" t-as="d" t-key="d.date" t-att-class="'level-'+level(d)+(d.events.length ? ' occasion' : '')" t-att-title="dateName(d.date)+' · '+fmt(d.gross)+' · '+d.events.map(e=&gt;e.name).concat((d.warnings || []).map(w=&gt;w.label)).join('، ')">
                             <span t-esc="Number(d.date.slice(-2))"/>
                             <b t-esc="fmt(d.gross)"/>

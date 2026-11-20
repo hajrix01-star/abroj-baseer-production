@@ -60,7 +60,7 @@ test('heatmap renders occasion badges for an event day', async () => {
         } };
         Number = Number; months = []; weekdays = []; calendarCells = [day]; hasCustomers = true;
         fmt = formatNumber; dateName = (v) => v; monthName = (v) => v;
-        level() { return 1; } dayValue(d) { return d.gross; }
+        level() { return 1; } dayValue(d) { return d.gross; } yearPadding() { return []; }
     }
     const response = await withFetch(globals.fetch, () => fetch('/baseer_dashboard2/static/src/xml/main.xml'));
     const app = new App(Heatmap, { templates: await response.text(), test: true });

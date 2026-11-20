@@ -97,7 +97,7 @@ export const niceStep = (range, count = 4) => {
 export const hasPoints = (values) => (values || []).some((v) => v != null && Number.isFinite(Number(v)));
 export class Sparkline extends Component {
   static template = "baseer_dashboard2.Sparkline";
-  static props = { values: { optional: true }, previous: { optional: true }, gold: { optional: true }, secondaryGold: { optional: true }, mini: { optional: true }, stretch: { optional: true }, ratioPercent: { optional: true }, partial: { optional: true } };
+  static props = { values: { optional: true }, previous: { optional: true }, gold: { optional: true }, secondaryGold: { optional: true }, navy: { optional: true }, mini: { optional: true }, stretch: { optional: true }, ratioPercent: { optional: true }, partial: { optional: true } };
   miniPoint(a, i, ratio = false) {
     const values = (a || []).filter(v => v != null).map(Number);
     if (!values.length || a[i] == null) return null;
@@ -111,17 +111,24 @@ export class Sparkline extends Component {
   }
   endpoints(a) { const indices = (a || []).map((v, i) => v == null ? -1 : i).filter(i => i >= 0); return indices.length > 1 ? [indices[0], indices[indices.length - 1]] : indices; }
   short(v) { return Math.abs(v) >= 1000 ? `${+(v / 1000).toFixed(1)}K` : `${Math.round(v)}`; }
+  endpoint(a) {
+    const i = (a || []).findLastIndex(v => v != null);
+    if (i < 0) return null;
+    const values = [...(this.props.values || []), ...(this.props.previous || [])].filter(v => v != null).map(Number);
+    const min = Math.min(...values), max = Math.max(...values);
+    return { x: 95 - (a.length <= 1 ? 45 : 90 * i / (a.length - 1)), y: 28 - (Number(a[i]) - min) / (max - min || 1) * 24 };
+  }
   path(a, partialOnly = false) {
     a = a || [];
     const scaleValues = this.props.secondaryGold ? a : [...(this.props.values || []), ...(this.props.previous || [])];
     const present = scaleValues.filter((v) => v != null).map(Number);
-    const min = Math.min(...present, 0), max = Math.max(...present, 1);
-    return a.map((v, i) => v == null || (partialOnly && !this.props.partial?.[i] && !this.props.partial?.[i + 1]) ? "" : `${i && a[i - 1] != null && (partialOnly ? this.props.partial?.[i] : !this.props.partial?.[i]) ? "L" : "M"}${95 - (a.length <= 1 ? 45 : 90 * i / (a.length - 1))},${28 - (Number(v) - min) / (max - min) * 24}`).join(" ");
+    const min = Math.min(...present), max = Math.max(...present);
+    return a.map((v, i) => v == null || (partialOnly && !this.props.partial?.[i] && !this.props.partial?.[i + 1]) ? "" : `${i && a[i - 1] != null && (partialOnly ? this.props.partial?.[i] : !this.props.partial?.[i]) ? "L" : "M"}${95 - (a.length <= 1 ? 45 : 90 * i / (a.length - 1))},${28 - (Number(v) - min) / (max - min || 1) * 24}`).join(" ");
   }
 }
 export class LineChart extends Component {
   static template = "baseer_dashboard2.LineChart";
-  static props = { series: Array, labels: { optional: true } };
+  static props = { series: Array, labels: { optional: true }, percent: { optional: true } };
   chartX = chartX;
   get renderedSeries() { return this.props.series.filter((s) => hasPoints(s.values)); }
   get scale() {
@@ -140,7 +147,7 @@ export class LineChart extends Component {
     const flush = () => { if (points.length) segments.push(`M${points[0][0]},${baseline} ` + points.map(([x,y]) => `L${x},${y}`).join(" ") + ` L${points.at(-1)[0]},${baseline} Z`); points = []; };
     values.forEach((value, i) => value == null ? flush() : points.push([chartX(i, values.length), this.y(value)])); flush(); return segments.join(" ");
   }
-  compact(value) { return Math.abs(value) >= 1000000 ? `${+(value / 1000000).toFixed(1)}M` : Math.abs(value) >= 1000 ? `${Math.round(value / 1000)}K` : formatNumber(value); }
+  compact(value) { if (this.props.percent) return `${Number(value).toFixed(1)}%`; return Math.abs(value) >= 1000000 ? `${+(value / 1000000).toFixed(1)}M` : Math.abs(value) >= 1000 ? `${Math.round(value / 1000)}K` : formatNumber(value); }
   isPeak(value, values) { return value != null && Number(value) === Math.max(...values.filter((v) => v != null).map(Number)); }
   partialPath(values, partial) {
     const i = partial?.findIndex(Boolean) ?? -1;
@@ -195,7 +202,7 @@ class Gauge extends Component {
     previous: { optional: true },
     max: { optional: true },
   };
-  // The gauge uses a fixed 0–100% scale, shared by value and target.
+  // Value, target, and previous period share the displayed gauge scale.
   pos(v) {
     return Math.max(
       0,
@@ -465,6 +472,11 @@ class Dashboard2 extends Component {
     if (!d.length) return [];
     const day = new Date(d[0].date + "T00:00:00Z").getUTCDay();
     return [...Array((day + 1) % 7).fill(null), ...d];
+  }
+  yearPadding(month) {
+    if (!month.days.length) return [];
+    const day = new Date(month.days[0].date + "T00:00:00Z").getUTCDay();
+    return Array.from({ length: (day + 1) % 7 }, (_, i) => i);
   }
   level(day) {
     if (day.gross == null) return 0;

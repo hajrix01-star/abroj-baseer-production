@@ -1,7 +1,7 @@
 import { after, expect, getFixture, globals, test, withFetch, click, press } from '@odoo/hoot';
 import { animationFrame } from '@odoo/hoot-mock';
 import { App, Component } from '@odoo/owl';
-import { hourLabel, hasDisplayValues, multiplePoints, formatNumber, formatTable, formatTablePct, formatPercent, chartX, timelineYear, InfoPopup, LineChart, niceStep, KpiCard, Sparkline, Badge } from '../src/js/main';
+import { hourLabel, hasDisplayValues, multiplePoints, formatNumber, formatTable, formatTablePct, formatPercent, chartX, miniX, timelineYear, InfoPopup, LineChart, niceStep, KpiCard, Sparkline, Badge, Gauge } from '../src/js/main';
 
 test('P&L renders without in/out months', async () => {
     class Pnl extends Component {
@@ -16,6 +16,23 @@ test('P&L renders without in/out months', async () => {
     after(() => app.destroy());
     await app.mount(getFixture());
     expect(getFixture().querySelector('.export-table')).not.toBe(null);
+});
+
+test('ratios render a numeric gauge target', async () => {
+    class Ratios extends Component {
+        static template = 'baseer_dashboard2.Ratios';
+        static components = { Badge, Gauge, Sparkline, LineChart };
+        state = { period: { month: '2026-10' }, data: { targets: { food_pct: { value: 32.25, operator: 'le', status: 'ok' } }, previous: { ratios: {} } } };
+        current = { ratios: { food_pct: 30 } };
+        trend = []; trendLabels = [];
+        name = (v) => v; monthName = (v) => v; pct = formatPercent; fmt = formatNumber;
+        changeValue() { return null; }
+    }
+    const response = await withFetch(globals.fetch, () => fetch('/baseer_dashboard2/static/src/xml/main.xml'));
+    const app = new App(Ratios, { templates: await response.text(), test: true });
+    after(() => app.destroy());
+    await app.mount(getFixture());
+    expect(getFixture().querySelector('.gauge-target').textContent).toInclude('≤32.3%');
 });
 
 test('numbers use Western digits without abbreviating calendar values', () => {
@@ -70,7 +87,7 @@ test('in/out unavailable unreceived values use dashes with tooltips', async () =
         static template = 'baseer_dashboard2.Pnl';
         static components = { Sparkline };
         state = { view: 'inout', data: { months: [month('2026-10', unavailable), month('2026-11', available)], total: { incoming: 200, outgoing: 0, channels: {}, items: {}, sources: {}, apps_unreceived: available, sales_vat: 0, unpaid_bills: { value: 0 }, net: 200 } } };
-        fmt = formatNumber; tableFmt = formatTable; tablePct = formatTablePct; hasDisplayValues = hasDisplayValues; multiplePoints = multiplePoints; monthName = (v) => v; name = (v) => v;
+        objectKeys = Object.keys; fmt = formatNumber; tableFmt = formatTable; tablePct = formatTablePct; hasDisplayValues = hasDisplayValues; multiplePoints = multiplePoints; monthName = (v) => v; name = (v) => v;
         exportCsv() {}
     }
     const response = await withFetch(globals.fetch, () => fetch('/baseer_dashboard2/static/src/xml/main.xml'));
@@ -122,7 +139,7 @@ test('heatmap renders occasion badges for an event day', async () => {
             daily_average: {}, days: [day], best_day: day, weekday_month: [], weekday_ytd: [],
             year_calendar: [{ month: '2026-10', days: [day] }], events: [], hours: { available: false },
         } };
-        Number = Number; months = []; weekdays = []; calendarCells = [day]; hasCustomers = true;
+        number = Number; weekdayName = () => ""; months = []; weekdays = []; calendarCells = [day]; hasCustomers = true;
         fmt = formatNumber; dateName = (v) => v; monthName = (v) => v;
         changeValue() { return null; }
         level() { return 1; } dayValue(d) { return d.gross; } yearPadding() { return []; }
@@ -336,6 +353,33 @@ test('latest chart points are filled and labelled', async () => {
     const latest = getFixture().querySelector('circle[r="5"]');
     expect(Number(latest.getAttribute('cx'))).toBe(chartX(2, 3));
     expect(getFixture().querySelector('svg').textContent).toInclude('30');
+});
+
+test('revenue apps chart aligns ten month labels and points, preserving gaps', async () => {
+    const response = await withFetch(globals.fetch, () => fetch('/baseer_dashboard2/static/src/xml/main.xml'));
+    const source = await response.text();
+    const doc = new DOMParser().parseFromString(source, 'text/xml');
+    const card = doc.querySelector('[t-name="baseer_dashboard2.Revenue"] .apps-combo');
+    const templates = source.replace('</templates>', `<t t-name="test.AppsChart">${new XMLSerializer().serializeToString(card)}</t></templates>`);
+    class AppsChart extends Component {
+        static template = 'test.AppsChart';
+        static components = { Sparkline };
+        state = { data: { apps_trend: Array.from({ length: 10 }, (_, i) => ({ month: `2026-${String(i + 1).padStart(2, '0')}`, has_data: i !== 4, data: { apps: i === 9 ? 108000 : 1000 * (i + 1), apps_pct: i === 9 ? 34.9 : i + 1 } })) } };
+        trend = []; miniX = miniX; monthName = (month) => month;
+    }
+    const app = new App(AppsChart, { templates, test: true });
+    after(() => app.destroy());
+    await app.mount(getFixture());
+    const labels = [...getFixture().querySelectorAll('.mini-labels span')];
+    const svg = getFixture().querySelector('svg');
+    const latest = getFixture().querySelector('.spark-dot.gold.filled');
+    expect(labels.length).toBe(10);
+    expect(labels.map(label => parseFloat(label.style.left))).toEqual(Array.from({ length: 10 }, (_, i) => miniX(i, 10)));
+    expect(parseFloat(latest.style.left)).toBe(miniX(9, labels.length));
+    expect(parseFloat(latest.style.left)).toBeLessThan(parseFloat(labels[0].style.left));
+    expect(getFixture().querySelector('.spark-label.gold').textContent).toBe('34.9%');
+    expect(svg.getAttribute('preserveAspectRatio')).toBe('none');
+    expect(svg.querySelectorAll('path')[2].getAttribute('d').split('M').length).toBe(3);
 });
 
 test('commission card uses recorded amount and salary badges explain suppression', async () => {

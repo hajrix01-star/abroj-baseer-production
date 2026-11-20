@@ -22,6 +22,7 @@ export const formatPercent = (n) => n == null || n === false || !Number.isFinite
 export const timelineYear = (period) => (period?.mode === "month" ? period.month : period?.date_to)?.slice(0, 4) || "";
 export const chartX = (i, n, width = 700) =>
   width - 48 - (width - 70) * (n <= 1 ? 0.5 : i / (n - 1));
+export const miniX = (i, n) => 95 - (n <= 1 ? 45 : 90 * i / (n - 1));
 const months = [
   "يناير",
   "فبراير",
@@ -107,7 +108,7 @@ export class Sparkline extends Component {
     const values = (a || []).filter(v => v != null).map(Number);
     if (!values.length || a[i] == null) return null;
     const lo = Math.min(...values), hi = Math.max(...values);
-    return { x: 95 - (a.length <= 1 ? 45 : 90 * i / (a.length - 1)), y: (ratio ? 11 : 27) - (Number(a[i]) - lo) / (hi - lo || 1) * 7 };
+    return { x: miniX(i, a.length), y: (ratio ? 11 : 27) - (Number(a[i]) - lo) / (hi - lo || 1) * 7 };
   }
   miniPath(a, ratio = false, area = false) {
     let segments = [], points = [];
@@ -210,7 +211,7 @@ class Ring extends Component {
     return 264 * (1 - Math.max(0, Math.min(100, this.props.value || 0)) / 100);
   }
 }
-class Gauge extends Component {
+export class Gauge extends Component {
   static template = "baseer_dashboard2.Gauge";
   static props = {
     value: { optional: true },
@@ -219,6 +220,9 @@ class Gauge extends Component {
     max: { optional: true },
     operator: { optional: true },
   };
+  targetLabel() {
+    return `${this.props.operator === "le" ? "≤" : "≥"}${Number(this.props.target).toLocaleString("en-US", { maximumFractionDigits: 1 })}%`;
+  }
   // Value, target, and previous period share the displayed gauge scale.
   pos(v) {
     return Math.max(
@@ -287,9 +291,8 @@ class Dashboard2 extends Component {
   };
   setup() {
     this.hasDisplayValues = hasDisplayValues;
+    this.miniX = miniX;
     this.hourLabel = hourLabel;
-    this.Number = Number;
-    this.String = String;
     for (const name of [
       "series",
       "totalExpense",
@@ -416,6 +419,12 @@ class Dashboard2 extends Component {
   get weekdays() {
     return weekdays;
   }
+  number(value) { return Number(value); }
+  objectEntries(value) { return Object.entries(value); }
+  objectKeys(value) { return Object.keys(value); }
+  previousYear() { return Number(timelineYear(this.state.period)) - 1; }
+  weekdayName(date) { return weekdays[(new Date(date + "T12:00:00").getDay() + 1) % 7]; }
+  selectMonth(index) { this.periodChange("month", this.state.period.month.slice(0, 4) + "-" + String(index + 1).padStart(2, "0")); }
   fmt = formatNumber;
   tableFmt = formatTable;
   dateName(d) {

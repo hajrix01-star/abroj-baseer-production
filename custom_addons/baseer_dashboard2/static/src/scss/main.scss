@@ -830,6 +830,8 @@ td {
 .o_bd2 .kpi-heading { display: flex; align-items: center; gap: 8px; padding-inline-end: 78px; }
 .o_bd2 .negative { color: var(--bd2-neg); }
 .o_bd2 .apps-combo { padding-inline: 24px; }
+.o_bd2 .apps-combo .mini-labels { position: relative; display: block; height: 14px; }
+.o_bd2 .apps-combo .mini-labels span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
 .o_bd2 [dir="ltr"] { unicode-bidi: isolate; }
 .o_bd2 .mini-head > div:first-child { display: block; }
 .o_bd2 .mini-title { display: flex; align-items: center; gap: 8px; }

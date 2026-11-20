@@ -162,6 +162,7 @@ class TestDashboard2(TransactionCase):
         from datetime import date, timedelta
         company = self.env.company
         settings = self.env['baseer.dashboard2.settings'].search([('company_id', '=', company.id)], limit=1)
+        settings.app_balance_start_date = '2026-10-01'
         method = self.env['pos.payment.method'].create({'name': 'cash', 'company_id': company.id})
         journal = self.env['account.journal'].create({'name': 'POS sales', 'code': 'D2POS', 'type': 'sale', 'company_id': company.id})
         misc = self.env['account.journal'].create({'name': 'Noorix', 'code': 'D2NOO', 'type': 'general', 'company_id': company.id})
@@ -263,6 +264,20 @@ class TestDashboard2(TransactionCase):
             self.assertEqual(days[(company.id, day)]['source'], 'mixed')
             self.assertEqual(len(summary['warnings']), 1)
             self.assertEqual(service._heatmap([company.id], '2026-10')['days'][day.day - 1]['source'], 'mixed')
+        # The review cutoff suppresses both warning types but preserves sales.
+        settings.app_balance_start_date = '2026-11-01'
+        self.assertFalse(result(date(2026, 10, 25))[0]['warnings'])
+        self.assertFalse(service._cancelled_session_warnings([company.id], date(2026, 10, 5), date(2026, 10, 6)))
+        november = date(2026, 11, 20)
+        late = new_session(config)
+        late.name = 'TEST/01440'
+        late_move = entry(november, 90)
+        late_move.button_draft()
+        late_move.button_cancel()
+        late.move_id = late_move
+        order(late, november, 90)
+        self.assertEqual(result(november)[0]['warnings'][0]['label'], 'جلسة إقفال ملغاة لم تُعد: 01440 — مفقود 90 (1 طلب)')
+        settings.app_balance_start_date = '2026-10-01'
         override = self.env['baseer.dashboard2.source.override'].create({'settings_id': settings.id, 'date_from': '2026-10-25', 'date_to': '2026-10-25', 'source': 'summary'})
         self.assertEqual(result(date(2026, 10, 25))[0]['gross'], 300)
         override.source = 'pos'
@@ -348,6 +363,7 @@ class TestDashboard2(TransactionCase):
         from datetime import date
         company = self.env.company
         settings = self.env['baseer.dashboard2.settings'].search([('company_id', '=', company.id)], limit=1) or self.env['baseer.dashboard2.settings'].create({'company_id': company.id})
+        settings.app_balance_start_date = '2026-10-01'
         model = self.env['account.account'].with_company(company)
         def account(code, kind):
             return model.create({'code': code, 'name': code, 'account_type': kind, 'company_ids': [(6, 0, [company.id])]})
@@ -381,7 +397,13 @@ class TestDashboard2(TransactionCase):
         self.assertEqual(result['apps_unreceived']['value'], 70)
         app = next(x for x in result['apps_unreceived']['breakdown'] if x['key'] == 'keeta')
         self.assertEqual(app['cumulative'], 80)
-        self.assertFalse(service._sales_summary([company.id], date(2026, 9, 1), date(2026, 9, 30))[0]['apps_unreceived']['available'])
+        settings.app_balance_start_date = '2026-11-01'
+        unavailable = service._sales_summary([company.id], date(2026, 10, 1), date(2026, 10, 31))[0]['apps_unreceived']
+        self.assertFalse(unavailable['available'])
+        self.assertIsNone(unavailable['value'])
+        self.assertEqual(unavailable['breakdown'], [])
+        straddling = service._sales_summary([company.id], date(2026, 10, 1), date(2026, 11, 30))[0]['apps_unreceived']
+        self.assertEqual(straddling['value'], 0)
 
     def test_seed_checks_and_preserves_settings(self):
         from unittest.mock import patch
@@ -402,6 +424,26 @@ class TestDashboard2(TransactionCase):
         with patch('odoo.addons.baseer_dashboard2.models.configuration.DOCUMENTED_DEFAULTS', {company.id: {'custody': (journal.id, 99999999), 'excluded': ()}}):
             self.env['baseer.dashboard2.settings']._seed_documented_defaults()
         self.assertFalse(settings.custody_journal_ids)
+
+    def test_app_balance_default_and_upgrade(self):
+        from datetime import date
+        from importlib.util import spec_from_file_location, module_from_spec
+        from pathlib import Path
+        model = self.env['baseer.dashboard2.settings']
+        company = self.env['res.company'].browse(1)
+        settings = model.search([('company_id', '=', company.id)], limit=1)
+        settings.app_balance_start_date = False
+        model._seed_documented_defaults(company_ids=[company.id])
+        self.assertEqual(settings.app_balance_start_date, date(2026, 11, 1))
+        path = Path(__file__).resolve().parents[1] / 'migrations/19.0.1.2.0/post-migration.py'
+        spec = spec_from_file_location('dashboard2_migration_120', path)
+        migration = module_from_spec(spec)
+        spec.loader.exec_module(migration)
+        for old, expected in [('2026-10-01', date(2026, 11, 1)), (False, date(2026, 11, 1)), ('2026-09-15', date(2026, 9, 15))]:
+            settings.app_balance_start_date = old
+            migration.migrate(self.env.cr, '19.0.1.1.0')
+            settings.invalidate_recordset(['app_balance_start_date'])
+            self.assertEqual(settings.app_balance_start_date, expected)
 
     def test_seed_cutover_only_when_empty(self):
         from datetime import date
@@ -489,10 +531,10 @@ class TestDashboardThemeLiterals(TransactionCase):
         self.assertEqual(out['items']['rent'], 80)
         self.assertEqual(out['sources']['حساب الأهلي — كيتا'], 240)
         before, _, _, _ = service._sales_summary([company.id], date(2026, 10, 1), date(2026, 10, 30))
-        self.assertEqual(before['apps_unreceived']['value'], 0)
+        self.assertFalse(before['apps_unreceived']['available'])
         summary, _, _, _ = service._sales_summary([company.id], date(2026, 10, 1), date(2026, 10, 31))
-        self.assertTrue(summary['apps_unreceived']['available'])
-        self.assertEqual(summary['apps_unreceived']['value'], 0)
+        self.assertFalse(summary['apps_unreceived']['available'])
+        self.assertEqual(summary['apps_unreceived']['breakdown'], [])
         after, _, _, _ = service._sales_summary([company.id], date(2026, 10, 1), date(2026, 11, 1))
         self.assertEqual(after['apps_unreceived']['value'], 0)
 

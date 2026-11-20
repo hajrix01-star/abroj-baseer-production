@@ -201,13 +201,14 @@ class DashboardSales(models.AbstractModel):
                       'label': 'حتى نهاية الفترة' if available else 'غير متوفر — قيد المراجعة',
                       'breakdown': [{'key': key, 'name': next((c['name'] for c in channels if c['key'] == key), key),
                                      'value': round(value['value'], 2), 'cumulative': round(value['cumulative'], 2)}
-                                    for key, value in breakdown.items()]}
+                                    for key, value in breakdown.items()] if available else []}
         return days, channels, unreceived, hours
 
     def _cancelled_session_warnings(self, ids, start, end, summary_days=None):
         ctx = dict(allowed_company_ids=ids, active_test=False)
         settings = self.env['baseer.dashboard2.settings'].with_context(**ctx).search([('company_id', 'in', ids)])
         thresholds = {s.company_id.id: s.min_order_amount for s in settings}
+        starts = {s.company_id.id: s.app_balance_start_date for s in settings}
         summary_ids = set(settings.mapped('summary_pos_config_ids').ids)
         # A wide UTC window accommodates every company timezone; filter local dates below.
         orders = self.env['pos.order'].with_context(**ctx).search_read([
@@ -236,7 +237,7 @@ class DashboardSales(models.AbstractModel):
                 continue
             tz = pytz.timezone(session.company_id.partner_id.tz or self.env.user.tz or 'Asia/Riyadh')
             day = fields.Datetime.to_datetime(order['date_order']).replace(tzinfo=pytz.UTC).astimezone(tz).date()
-            if not start <= day <= end or (cid, day) in summary_days or any(
+            if not start <= day <= end or (starts.get(cid) and day < starts[cid]) or (cid, day) in summary_days or any(
                 (cid, ref) in replacements for ref in (session.name, session.move_id.ref) if ref):
                 continue
             grouped[(session.id, day)][0] += order['amount_total']
@@ -260,7 +261,9 @@ class DashboardSales(models.AbstractModel):
         gross = sum(totals.values())
         app_keys = {c['key'] for c in channels if c['kind'] == 'app'}
         apps = sum(v for k, v in totals.items() if k in app_keys)
-        return {'available': True, 'warnings': [{'date': str(day), 'company_id': cid, 'label': 'يوم بمصدرين مرحّلين: نوركس + جلسة نقاط بيع — تم الجمع' if data['source_mode'] == 'auto' else 'يوم بمصدرين مرحّلين: نوركس + جلسة نقاط بيع — طُبّق استثناء المصدر'} for (cid, day), data in sorted(days.items()) if data.get('both_sources')] + self._cancelled_session_warnings(ids, start, end, {key for key, day in days.items() if day['has_summary']}), 'gross': round(gross, 2), 'source_counts': {'pos': len(pos_days), 'summary': len(summary_days)},
+        settings = self.env['baseer.dashboard2.settings'].with_context(allowed_company_ids=ids).search([('company_id', 'in', ids)])
+        starts = {s.company_id.id: s.app_balance_start_date for s in settings}
+        return {'available': True, 'warnings': [{'date': str(day), 'company_id': cid, 'label': 'يوم بمصدرين مرحّلين: نوركس + جلسة نقاط بيع — تم الجمع' if data['source_mode'] == 'auto' else 'يوم بمصدرين مرحّلين: نوركس + جلسة نقاط بيع — طُبّق استثناء المصدر'} for (cid, day), data in sorted(days.items()) if data.get('both_sources') and (not starts.get(cid) or day >= starts[cid])] + self._cancelled_session_warnings(ids, start, end, {key for key, day in days.items() if day['has_summary']}), 'gross': round(gross, 2), 'source_counts': {'pos': len(pos_days), 'summary': len(summary_days)},
                 'channel_names': {c['key']: c['name'] for c in channels}, 'channels': {k: round(v, 2) for k, v in totals.items()},
                 'apps': round(apps, 2), 'apps_pct': round(apps / gross * 100, 2) if gross else None,
                 'apps_unreceived': unreceived,

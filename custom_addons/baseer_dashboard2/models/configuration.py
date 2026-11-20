@@ -4,6 +4,8 @@ from odoo import api, fields, models, _
 
 _logger = logging.getLogger(__name__)
 
+APP_BALANCE_START_DATE = '2026-11-01'
+
 # Live reference identifiers; all are validated before use.
 DOCUMENTED_DEFAULTS = {
     1: {'custody': (460, 3426), 'excluded': (459, 407, 408, 409, 405, 406, 458), 'pos_cutover_date': '2026-10-03'},
@@ -132,7 +134,7 @@ class DashboardSettings(models.Model):
             # Empty fields may be filled; existing values are never overwritten by installation.
             vals = {}
             if not settings.app_balance_start_date:
-                vals['app_balance_start_date'] = '2026-10-01'
+                vals['app_balance_start_date'] = APP_BALANCE_START_DATE
             if not settings.pos_cutover_date and defaults.get('pos_cutover_date'):
                 vals['pos_cutover_date'] = defaults['pos_cutover_date']
             if force or not settings.excluded_journal_ids:

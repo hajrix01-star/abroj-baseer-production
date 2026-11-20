@@ -6,6 +6,19 @@ from odoo.tests import TransactionCase, tagged
 
 @tagged('post_install', '-at_install')
 class TestDashboard2(TransactionCase):
+    def test_partial_fixed_costs_require_three_month_baseline(self):
+        from ..models.sections import incomplete_fixed_costs
+        self.assertTrue(incomplete_fixed_costs(True, 49, [100, 100, 100]))
+        self.assertFalse(incomplete_fixed_costs(True, 50, [100, 100, 100]))
+        self.assertFalse(incomplete_fixed_costs(False, 1, [100, 100, 100]))
+        self.assertFalse(incomplete_fixed_costs(True, 1, [100, 100]))
+
+    def test_change_rejects_tiny_base(self):
+        from ..models.sections import change
+        self.assertIsNone(change(11050, 100))
+        self.assertIsNone(change(655, 100))
+        self.assertEqual(change(150, 100), 50)
+
     def test_apps_include_tax_in_summary(self):
         from unittest.mock import patch
         service = self.env['baseer.dashboard2.service']
@@ -144,6 +157,15 @@ class TestDashboard2(TransactionCase):
         yearly = service._timeline([company.id], date(2026, 10, 31), 'yearly')['years']
         self.assertEqual(yearly[-1]['value'], 1000)
         self.assertIsNone(yearly[-1]['previous'])
+        zakat = account('400072', 'expense')
+        entry('annual zakat', '2026-10-05', [(zakat, 'Zakat', 100, 0), (cash, 'Paid', 0, 100)])
+        params = {'company_key': str(company.id), 'period': {'mode': 'month', 'month': '2026-10'}}
+        expense = service.get_section('expenses', params)
+        overview = service.get_section('overview', params)
+        self.assertNotIn('zakat_tax', [row['key'] for row in expense['ranked']])
+        self.assertEqual(sum(row['amount'] for row in expense['ranked']), 550)
+        self.assertEqual(overview['kpis']['expenses_total']['value'], 650)
+        self.assertEqual(next(row['amount'] for row in overview['bridge'] if row['key'] == 'zakat_tax'), -100)
 
     def test_all_sections_smoke(self):
         company = self.env.company
@@ -242,6 +264,7 @@ class TestDashboard2(TransactionCase):
         company = self.env.company
         settings = self.env['baseer.dashboard2.settings'].search([('company_id', '=', company.id)], limit=1)
         settings.app_balance_start_date = '2026-10-01'
+        settings.pos_cutover_date = False
         method = self.env['pos.payment.method'].create({'name': 'cash', 'company_id': company.id})
         journal = self.env['account.journal'].create({'name': 'POS sales', 'code': 'D2POS', 'type': 'sale', 'company_id': company.id})
         misc = self.env['account.journal'].create({'name': 'Noorix', 'code': 'D2NOO', 'type': 'general', 'company_id': company.id})
@@ -279,6 +302,14 @@ class TestDashboard2(TransactionCase):
                 self.assertEqual(summary['customers']['value'], 1)
                 self.assertEqual(sum(row['orders'] for row in hours.values()), 1)
                 self.assertFalse(summary['warnings'])
+        # The configured cutover excludes earlier real orders from counts and hours.
+        settings.pos_cutover_date = '2026-10-03'
+        before = result(date(2026, 9, 24))
+        after = result(date(2026, 10, 25))
+        self.assertIsNone(before[0]['customers']['value'])
+        self.assertEqual(sum(row['orders'] for row in before[3].values()), 0)
+        self.assertEqual(after[0]['customers']['value'], 1)
+        settings.pos_cutover_date = False
         # A cancelled session closing cannot add its orders to Noorix.
         cancelled_day = date(2026, 10, 1)
         cancelled = new_session(config)
@@ -642,7 +673,7 @@ class TestDashboardThemeLiterals(TransactionCase):
             self.assertTrue(service.get_section(section, params_zero)['salaries_warning'])
         self.assertIsNone(service._timeline([company.id], date(2026, 10, 31), 'monthly')['months'][6]['value'])
         overview = service.get_section('overview', params)
-        self.assertEqual(overview['companies_compare'][0]['name'], 'Configured label')
+        self.assertEqual(overview['companies_compare'][0]['name'], company.name)
         self.assertEqual(next(a for a in overview['current']['accounts'] if a['account_id'] == salary.id)['name'], 'رواتب')
 
     def test_static_colours_are_theme_variables(self):

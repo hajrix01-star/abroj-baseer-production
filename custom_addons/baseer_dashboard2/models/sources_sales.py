@@ -40,6 +40,7 @@ class DashboardSales(models.AbstractModel):
         mapped = {(m.company_id.id, m.source, (m.pos_payment_method_id if m.source == 'pos_method' else m.account_id if m.source == 'account' else m.journal_id).id): channel_by_id[m.channel_id.id] for m in maps if m.channel_id.id in channel_by_id}
         settings = self.env['baseer.dashboard2.settings'].with_context(**context).search([('company_id', 'in', ids)])
         thresholds = {s.company_id.id: s.min_order_amount for s in settings}
+        cutovers = {s.company_id.id: s.pos_cutover_date for s in settings if s.pos_cutover_date}
         configs = self.env['pos.config'].with_context(**dict(context, active_test=False)).search([('company_id', 'in', ids)])
         summary_ids = set(settings.mapped('summary_pos_config_ids').ids)
         summary_ids.update(c.id for c in configs if any(word in (c.name or '').casefold() for word in ('ملخص المبيعات', 'sales summaries', 'ملخصات')))
@@ -61,7 +62,7 @@ class DashboardSales(models.AbstractModel):
                 continue
             day = pos_days.setdefault(key, {'source': 'pos', 'channels': defaultdict(float), 'customers': 0, 'pos_gross': 0.0})
             sign = 1 if order['amount_total'] > 0 else -1 if order['amount_total'] < 0 else 0
-            if abs(order['amount_total']) > thresholds.get(key[0], 1.5):
+            if (not cutovers.get(key[0]) or key[1] >= cutovers[key[0]]) and abs(order['amount_total']) > thresholds.get(key[0], 1.5):
                 day['customers'] += sign
                 day['pos_gross'] += order['amount_total']
                 real_days.add(key)
@@ -198,7 +199,7 @@ class DashboardSales(models.AbstractModel):
                 breakdown[key]['cumulative'] += max(cumulative[(cid, key)], 0)
         available = all(not starts.get(cid) or end >= starts[cid] for cid in ids)
         unreceived = {'available': available, 'value': round(sum(v['value'] for v in breakdown.values()), 2) if available else None,
-                      'label': 'حتى نهاية الفترة' if available else 'غير متوفر — قيد المراجعة',
+                      'label': 'حتى نهاية الفترة' if available else 'غير متوفر',
                       'breakdown': [{'key': key, 'name': next((c['name'] for c in channels if c['key'] == key), key),
                                      'value': round(value['value'], 2), 'cumulative': round(value['cumulative'], 2)}
                                     for key, value in breakdown.items()] if available else []}
@@ -208,6 +209,7 @@ class DashboardSales(models.AbstractModel):
         ctx = dict(allowed_company_ids=ids, active_test=False)
         settings = self.env['baseer.dashboard2.settings'].with_context(**ctx).search([('company_id', 'in', ids)])
         thresholds = {s.company_id.id: s.min_order_amount for s in settings}
+        cutovers = {s.company_id.id: s.pos_cutover_date for s in settings if s.pos_cutover_date}
         starts = {s.company_id.id: s.app_balance_start_date for s in settings}
         summary_ids = set(settings.mapped('summary_pos_config_ids').ids)
         # A wide UTC window accommodates every company timezone; filter local dates below.

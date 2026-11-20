@@ -20,7 +20,14 @@ def percent(value, base):
 
 
 def change(value, previous):
-    return round((value - previous) / abs(previous) * 100, 2) if value is not None and previous else None
+    # A base less than one sixth of the current magnitude produces an
+    # uninformative change above 500%; treat it as too small to compare.
+    return round((value - previous) / abs(previous) * 100, 2) if value is not None and previous and abs(value) <= 6 * abs(previous) else None
+
+
+def incomplete_fixed_costs(partial, current, history):
+    """A partial month needs at least half the mean fixed costs of three months."""
+    return bool(partial and len(history) == 3 and sum(history) > 0 and current < sum(history) / 6)
 
 
 class DashboardSections(models.AbstractModel):
@@ -88,7 +95,7 @@ class DashboardSections(models.AbstractModel):
         result = []
         for cid, label, name in companies:
             data = self._accounting([cid], start, end)
-            result.append({'key': str(cid), 'label': label, 'name': label, 'sales_net': data['sales_net'], **data['ratios']})
+            result.append({'key': str(cid), 'label': label, 'name': name, 'sales_net': data['sales_net'], 'targets': self._targets([cid], data), **data['ratios']})
         return result
 
     def _targets(self, ids, current):
@@ -101,7 +108,7 @@ class DashboardSections(models.AbstractModel):
             if target:
                 good = value is not None and (value <= target.value if target.operator == 'le' else value >= target.value)
                 targets[key] = {'value': target.value, 'operator': target.operator,
-                                'status': ('ok' if good else 'near' if value is not None and abs(value - target.value) <= 2 else 'bad') if value is not None else None}
+                                'status': ('ok' if good else 'near' if value is not None and abs(value - target.value) <= 3 else 'bad') if value is not None else None}
         return targets
 
     def _accounting_sections(self, ids, section, start, end, previous_start, previous_end, companies, params):
@@ -143,7 +150,7 @@ class DashboardSections(models.AbstractModel):
                       ('salaries', -current['categories'].get('salaries', 0)), ('rent', -current['categories'].get('rent', 0))]
             bridge += [(k, -current['categories'].get(k, 0)) for k in ('utilities', 'marketing', 'commissions', 'other_opex', 'depreciation') if current['categories'].get(k)]
             bridge += [('operating_profit', current['operating_profit']), ('other_income', current['categories'].get('other_income', 0)), ('non_operating', -current['categories'].get('non_operating', 0)), ('zakat_tax', -current['categories'].get('zakat_tax', 0)), ('net_profit', current['net_profit'])]
-            result['bridge'] = [{'key': key, 'amount': amount, 'pct': percent(amount, current['sales_net'])} for key, amount in bridge]
+            result['bridge'] = [{'key': key, 'amount': amount, 'pct': percent(amount, current['sales_net'])} for key, amount in bridge if amount or key in ('sales_net', 'gross_profit', 'operating_profit', 'net_profit')]
             result['breakeven_series'] = [{'month': m['month'], 'partial': m['partial'], 'sales_net': m['data']['sales_net'] if m['has_data'] else None, 'net_profit': m['data']['net_profit'] if m['has_data'] else None, 'breakeven': m['data']['breakeven'] if m['has_data'] else None, 'margin_pct': m['data']['ratios']['net_margin_pct'] if m['has_data'] else None} for m in trend]
             result['purchases'] = self._purchases(ids, start, end, current['sales_net'])
             if not covered(start, end):
@@ -171,10 +178,18 @@ class DashboardSections(models.AbstractModel):
         if section in ('overview', 'ratios'):
             if section == 'ratios':
                 sales, days, _, _ = self._sales_summary(ids, start, end)
-            result['breakeven'] = {'available': current['breakeven'] is not None, 'value': current['breakeven'], 'safety_margin': current['safety_margin'], 'day': None}
+            # Partial months with less than half of the trailing three months' fixed costs
+            # are not sufficiently complete for a meaningful break-even estimate.
+            fixed_keys = ('salaries', 'rent', 'utilities', 'depreciation')
+            fixed_now = sum(current['categories'].get(k, 0) for k in fixed_keys)
+            fixed_history = [sum(self._accounting(ids, *month_bounds(date.fromisoformat(m + '-01')))['categories'].get(k, 0) for k in fixed_keys) for m in prior_months]
+            incomplete = incomplete_fixed_costs(min(end, fields.Date.context_today(self), last_data or end) < month_bounds(end)[1], fixed_now, fixed_history)
+            result['breakeven'] = {'available': current['breakeven'] is not None and not incomplete, 'value': None if incomplete else current['breakeven'], 'safety_margin': None if incomplete else current['safety_margin'], 'day': None}
+            if incomplete:
+                result['breakeven']['reason'] = 'incomplete_costs'
             if current['breakeven'] is None:
                 result['breakeven']['reason'] = 'invalid_contribution_margin'
-            elif sales['gross']:
+            elif not incomplete and sales['gross']:
                 cumulative = 0
                 for day in sorted({d for _, d in days}):
                     cumulative += sum(sum(data['channels'].values()) for (_, d), data in days.items() if d == day)
@@ -184,11 +199,13 @@ class DashboardSections(models.AbstractModel):
         if section == 'expenses':
             rows = []
             for key in expense_keys:
+                if key == 'zakat_tax':
+                    continue
                 amount = current['categories'].get(key, 0)
                 rows.append({'key': key, 'amount': amount, 'previous': previous['categories'].get(key, 0),
                              'trend': [m['data']['categories'].get(key, 0) if m['has_data'] else None for m in trend], 'pct': percent(amount, current['sales_net']),
                              'accounts': sorted([a for a in current['accounts'] if a['category'] == key], key=lambda x: x['amount'], reverse=True)})
-            result['ranked'] = sorted(rows, key=lambda x: x['amount'], reverse=True)
+            result['ranked'] = sorted((r for r in rows if r['amount'] or any(r['trend'])), key=lambda x: x['amount'], reverse=True)
             total = sum(r['amount'] for r in rows)
             result['ring'] = {'available': bool(current['sales_net']), 'value': percent(total, current['sales_net']), 'reason': False if current['sales_net'] else 'zero_sales'}
         if section == 'pnl':
@@ -269,7 +286,7 @@ class DashboardSections(models.AbstractModel):
             current = dict(current, gross=None, apps=None)
             split = {'hall': None, 'apps': None}
         return {'available': True, 'current': current, 'previous': previous, 'trend': monthly,
-                'ranked': sorted(rows, key=lambda row: row['amount'], reverse=True),
+                'ranked': sorted((row for row in rows if row['amount'] or any(row['trend'])), key=lambda row: row['amount'], reverse=True),
                 'split': split,
                 'commissions': {'available': bool(commissions), 'reason': False if commissions else 'no_commission_rates', 'rows': commissions},
                 'timeline': self._timeline(ids, end, params.get('timeline_mode', 'monthly'))}

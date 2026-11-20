@@ -210,11 +210,17 @@ class Gauge extends Component {
     );
   }
 }
+export const iconPath = (key) => ({
+  sales_net: 'M3 4h2l2 11h10l3-8H6 M9 20h.01 M17 20h.01', food_cost: 'M4 3v7a3 3 0 0 0 6 0V3 M7 3v18 M16 3v18 M16 3c3 2 4 6 4 9h-4', salaries: 'M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2 M10 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8 M17 11a4 4 0 0 0 0-8 M20 21v-2a4 4 0 0 0-3-4', expenses_total: 'M3 6h18v14H3z M3 10h18 M16 15h2', net_profit: 'M8 3h8v5a4 4 0 0 1-8 0z M8 5H4v2a4 4 0 0 0 4 4 M16 5h4v2a4 4 0 0 1-4 4 M12 12v6 M8 21h8 M9 18h6', apps: 'M4 20 20 4 M10 4h10v10', customers: 'M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2 M10 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8', ticket: 'M5 3h14v18l-3-2-4 2-4-2-3 2z M8 8h8 M8 12h8', rent: 'M3 6h18v14H3z M3 10h18 M16 15h2', purchases: 'M3 4h2l2 11h10l3-8H6 M9 20h.01 M17 20h.01'
+}[key] || 'M3 6h18v14H3z M3 10h18');
 export class KpiCard extends Component {
   static template = "baseer_dashboard2.KpiCard";
+  iconPath = iconPath;
   static components = { Money, Badge, Sparkline };
   static props = {
     title: String,
+    subtitle: { optional: true },
+    icon: { optional: true },
     value: { optional: true },
     change: { optional: true },
     trend: { optional: true },
@@ -493,6 +499,9 @@ class Dashboard2 extends Component {
   get expenses() {
     return this.state.data?.ranked || [];
   }
+  operatingExpense = (d) => this.totalExpense(d) - (d?.categories?.zakat_tax || 0);
+  changeValue(value, previous) { return previous && value != null && Math.abs(value) <= 6 * Math.abs(previous) ? (value - previous) / Math.abs(previous) * 100 : null; }
+  iconPath = iconPath;
   totalExpense(d) {
     return Object.entries(d?.categories || {})
       .filter(([k]) => !["revenue", "other_income"].includes(k))

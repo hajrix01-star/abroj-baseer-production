@@ -61,7 +61,7 @@ test('in/out numeric cells never contain the VAT basis label', async () => {
 });
 
 test('in/out unavailable unreceived values use dashes with tooltips', async () => {
-    const label = 'غير متوفر — قيد المراجعة';
+    const label = 'غير متوفر';
     const unavailable = { available: false, label, breakdown: [] };
     const available = { available: true, value: 50, breakdown: [{ key: 'app', name: 'تطبيق', value: 50 }] };
     const month = (name, apps) => ({ month: name, incoming: { available: true, gross: 100, channels: {}, warnings: [], apps_unreceived: apps }, outgoing: { available: true, total: 0, items: {}, sources: {} }, sales_vat: { value: 0 }, unpaid_bills: { value: 0 }, net: 100 });
@@ -178,12 +178,12 @@ test('timeline keeps twelve labels, integer K values and emphasizes its peak', a
 });
 
 
-test('KPI sparkline renders two series and change badge', async () => {
+test('KPI sparkline renders one series and change badge', async () => {
     const response = await withFetch(globals.fetch, () => fetch('/baseer_dashboard2/static/src/xml/main.xml'));
     const app = new App(KpiCard, { templates: await response.text(), props: { title: 'Sales', value: 100, change: 10, trend: [50, null, 100], previousTrend: [null, 50, null] }, test: true });
     after(() => app.destroy());
     await app.mount(getFixture());
-    expect(getFixture().querySelectorAll('.bd2-spark path').length).toBe(2);
+    expect(getFixture().querySelectorAll('.bd2-spark path').length).toBe(1);
     expect(getFixture().querySelector('.bd2-badge').textContent).toInclude('10.0%');
 });
 
@@ -197,4 +197,13 @@ test('partial chart month uses a dashed segment and label', async () => {
     await app.mount(getFixture());
     expect(getFixture().querySelector('[stroke-dasharray="5 4"]')).not.toBe(null);
     expect(getFixture().textContent).toInclude('جزئي');
+});
+
+
+test('mini charts use non-scaling strokes and avoid stretched SVG labels', async () => {
+    const response = await withFetch(globals.fetch, () => fetch('/baseer_dashboard2/static/src/xml/main.xml'));
+    const doc = new DOMParser().parseFromString(await response.text(), 'text/xml');
+    const spark = doc.querySelector('[t-name="baseer_dashboard2.Sparkline"]');
+    expect(spark.querySelector('path[vector-effect="non-scaling-stroke"]').getAttribute('stroke-width')).toBe('2');
+    expect(spark.querySelector('.spark-label')).not.toBe(null);
 });

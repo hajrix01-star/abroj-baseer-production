@@ -135,9 +135,10 @@
         </section>
     </t>
     <t t-name="baseer_dashboard2.Overview">
+        <t t-set="partialMonth" t-value="state.period?.mode === 'month' and trend.at(-1)?.partial"/>
         <div class="grid three">
             <div class="card mini" t-foreach="[['المشتريات',state.data.purchases?.value,state.data.purchases?.pct,state.data.purchases?.trend?.map(x=&gt;x.has_data ? x.pct : null),state.data.purchases?.trend?.map(x=&gt;x.has_data ? x.value : null),state.data.purchases?.change_pct],['تطبيقات التوصيل',state.data.sales?.apps,state.data.sales?.apps_pct,state.data.sales?.trend?.map(x=&gt;x.has_data ? x.apps_pct : null),state.data.sales?.trend?.map(x=&gt;x.has_data ? x.apps : null),state.data.sales?.apps_change_pct],['عدد العملاء (الطلبات)',state.data.sales?.customers?.value,state.data.sales?.customers?.avg_ticket,state.data.sales?.trend?.map(x=&gt;x.has_data ? x.customers.avg_ticket : null),state.data.sales?.trend?.map(x=&gt;x.has_data ? x.customers.value : null),state.data.sales?.customers_change_pct]]" t-as="item" t-key="item[0]">
-                <div class="mini-head"><div><div class="mini-title"><span class="card-icon"><svg viewBox="0 0 24 24"><path t-att-d="iconPath(['purchases','apps','customers'][item_index])"/></svg></span><h3 t-esc="item[0]"/></div><small t-if="item_index!==1" class="block muted" t-esc="monthName(state.period.month)"/><small t-if="item_index===1" class="block muted">كيتا + هنقر + جاهز · شامل الضريبة</small></div><div t-if="item_index !== 2 or state.data.sales?.customers?.available" class="mini-value"><strong t-esc="item_index === 0 and !state.data.purchases?.available ? 'غير متوفر' : fmt(item[1])"/><div class="mini-pill"><t t-if="item[2] == null">غير متوفر</t><t t-elif="item_index &lt; 2"><bdi dir="ltr" t-esc="pct(item[2])"/> من المبيعات<t t-if="item_index === 1"> · شامل الضريبة</t></t><t t-else="" t-esc="fmt(item[2])+' متوسط الفاتورة'"/></div></div></div>
+                <div class="mini-head"><div><div class="mini-title"><span class="card-icon"><svg viewBox="0 0 24 24"><path t-att-d="iconPath(['purchases','apps','customers'][item_index])"/></svg></span><h3 t-esc="item[0]"/></div><small t-if="item_index!==1" class="block muted" t-esc="monthName(state.period.month)"/><small t-if="item_index===1" class="block muted">كيتا + هنقر + جاهز · شامل الضريبة</small></div><div t-if="item_index !== 2 or state.data.sales?.customers?.available" class="mini-value"><strong t-esc="item_index === 0 and !state.data.purchases?.available ? 'غير متوفر' : fmt(item[1])"/><div class="mini-pill"><t t-if="item[2] == null">غير متوفر</t><t t-elif="item_index &lt; 2"><bdi dir="ltr" t-esc="pct(item[2])"/> من المبيعات<t t-if="item_index === 1"> · شامل الضريبة</t></t><t t-else="" t-esc="fmt(item[2])+' متوسط الفاتورة'"/><t t-if="item[2] != null and partialMonth"> (جزئي)</t></div></div></div>
                 <t t-if="item_index !== 2 or state.data.sales?.customers?.available"><Sparkline values="item[4]" previous="item[3]" mini="true" ratioPercent="item_index &lt; 2" amountDecimal="item_index === 2"/><div class="mini-labels"><span t-foreach="state.data.purchases.trend.map(x=&gt;monthName(x.month).split(' ')[0]+(x.partial ? ' (جزئي)' : ''))" t-as="label" t-key="label_index" t-esc="label"/></div><div class="mini-legend"><span><i/><t t-esc="item_index === 2 ? 'عدد الطلبات' : 'المبلغ'"/></span><span><i class="gold"/><t t-esc="item_index === 2 ? 'متوسط الفاتورة' : 'النسبة'"/></span></div></t><div t-else="" class="customer-empty">غير متوفر — يتوفر من بيانات نقاط البيع فقط</div>
             </div>
         </div>
@@ -155,13 +156,13 @@
             <t t-call="baseer_dashboard2.BreakEven"/>
         </div>
         <div class="card">
-            <h3>من المبيعات إلى صافي الربح — <t t-esc="monthName(state.period.month)"/></h3>
+            <h3>من المبيعات إلى صافي الربح — <t t-esc="monthName(state.period.month)"/><t t-if="partialMonth"> (جزئي)</t></h3>
             <div class="muted">المبالغ ونسبتها من المبيعات دون الضريبة</div><div class="bridge-legend"><span>■ مجموع</span><span>■ خصم</span><span>■ صافي الربح</span></div>
             <div t-att-class="'bridge-row '+(row.key==='net_profit'?'net-profit':(['sales_net','gross_profit','operating_profit'].includes(row.key)?'subtotal':''))" t-foreach="state.data.bridge" t-as="row" t-key="row.key">
                 <b t-att-title="row.key==='zakat_tax' ? 'قيود الزكاة سنوية أو غير منتظمة بين الفترات' : false" t-esc="row.key==='utilities' ? 'الكهرباء والماء' : name(row.key)"/>
                 <div class="bd2-track"><i t-att-style="bridgeStyle(row, row_index)"/></div>
                 <strong dir="ltr" t-esc="tableFmt(row.amount || 0, true)"/>
-                <span class="muted" dir="ltr" t-esc="tablePct(row.pct == null ? null : Math.abs(row.pct))"/>
+                <span class="muted"><bdi dir="ltr" t-esc="tablePct(row.pct == null ? null : Math.abs(row.pct))"/><t t-if="row.pct != null and partialMonth"> (جزئي)</t></span>
             </div>
         </div>
         <div t-foreach="state.data.sales.warnings" t-as="warning" t-key="warning.company_id+warning.date+warning.label" class="chip"><t t-esc="warning.date"/> · <t t-esc="warning.label"/></div>
@@ -190,9 +191,10 @@
         </div>
     </t>
     <t t-name="baseer_dashboard2.Compare">
+        <t t-set="partialMonth" t-value="state.period?.mode === 'month' and trend.at(-1)?.partial"/>
         <div class="card" t-if="state.data.companies_compare?.length &gt; 1">
             <h3>مقارنة الشركات</h3>
-            <div class="muted"><t t-esc="monthName(state.period.month)"/> — الشركات الثلاث جنب بعض</div>
+            <div class="muted"><t t-esc="monthName(state.period.month)"/><t t-if="partialMonth"> (جزئي)</t> — الشركات الثلاث جنب بعض</div>
             <table>
                 <thead>
                     <tr>
@@ -207,9 +209,9 @@
                     <tr t-foreach="state.data.companies_compare" t-as="co" t-key="co.key" t-att-class="co.key===state.company?'highlight':''">
                         <th t-esc="co.name"/>
                         <td><div class="compare-sales"><span t-esc="tableFmt(co.sales_net)"/><Track value="co.sales_net" max="Math.max(...state.data.companies_compare.map(c=&gt;Math.abs(c.sales_net || 0)))"/></div></td>
-                        <td><span t-att-class="'compare-pill '+(co.targets?.food_pct?.status || '')" dir="ltr" t-esc="tablePct(co.food_pct)"/></td>
-                        <td><span t-att-class="'compare-pill '+(co.targets?.salaries_pct?.status || '')" dir="ltr" t-esc="tablePct(co.salaries_pct)"/></td>
-                        <td><span t-att-class="'compare-pill '+(co.net_margin_pct &lt; 0 ? 'bad' : (co.targets?.net_margin_pct?.status || ''))"><bdi dir="ltr" t-esc="tablePct(co.net_margin_pct)"/></span></td>
+                        <td><span t-att-class="'compare-pill '+(partialMonth ? 'neutral' : (co.targets?.food_pct?.status || ''))" t-att-title="partialMonth ? 'الشهر لم يكتمل' : undefined" dir="ltr" t-esc="tablePct(co.food_pct)"/></td>
+                        <td><span t-att-class="'compare-pill '+(partialMonth ? 'neutral' : (co.targets?.salaries_pct?.status || ''))" t-att-title="partialMonth ? 'الشهر لم يكتمل' : undefined" dir="ltr" t-esc="tablePct(co.salaries_pct)"/></td>
+                        <td><span t-att-class="'compare-pill '+(partialMonth ? 'neutral' : (co.net_margin_pct &lt; 0 ? 'bad' : (co.targets?.net_margin_pct?.status || '')))" t-att-title="partialMonth ? 'الشهر لم يكتمل' : undefined"><bdi dir="ltr" t-esc="tablePct(co.net_margin_pct)"/></span></td>
                     </tr>
                 </tbody>
             </table>
@@ -283,7 +285,7 @@
             <div class="card">
                 <h3>عدد العملاء ومتوسط الفاتورة</h3>
                 <div t-if="!current.customers?.available" class="customer-empty">غير متوفر — يتوفر من بيانات نقاط البيع فقط</div>
-                <div t-else="" class="revenue-combo customer-combo"><div class="muted">متوسط الفاتورة (أعلى، ذهبي) وعدد الطلبات (أسفل، كحلي)</div><Sparkline values="trend.map(x=&gt;x.has_data ? x.data.customers?.value : null)" previous="trend.map(x=&gt;x.has_data ? x.data.customers?.avg_ticket : null)" mini="true" stretch="true"/><div class="mini-labels"><span t-foreach="trendLabels" t-as="label" t-key="label_index" t-esc="label"/></div><div class="mini-legend"><span><i/>عدد الطلبات</span><span><i class="gold"/>متوسط الفاتورة</span></div></div>
+                <div t-else="" class="revenue-combo customer-combo"><div class="muted">متوسط الفاتورة (أعلى، ذهبي) وعدد الطلبات (أسفل، كحلي)</div><Sparkline values="trend.map(x=&gt;x.has_data ? x.data.customers?.value : null)" previous="trend.map(x=&gt;x.has_data ? x.data.customers?.avg_ticket : null)" mini="true" stretch="true" amountDecimal="true"/><div class="mini-labels"><span t-foreach="trendLabels" t-as="label" t-key="label_index" t-att-style="'left:'+miniX(label_index, trendLabels.length)+'%'" t-esc="label"/></div><div class="mini-legend"><span><i/>عدد الطلبات</span><span><i class="gold"/>متوسط الفاتورة</span></div></div>
             </div>
         </div>
     </t>

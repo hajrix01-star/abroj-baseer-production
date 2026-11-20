@@ -748,6 +748,7 @@ td {
 .o_bd2 .compare-sales .bd2-track i { background: var(--bd2-c5); }
 .o_bd2 tr.highlight .compare-sales .bd2-track i { background: var(--bd2-gold); }
 .o_bd2 .compare-pill { display: inline-block; border-radius: 12px; padding: 2px 7px; background: var(--bd2-positive-soft); color: var(--bd2-positive); }
+.o_bd2 .compare-pill.neutral { background: var(--bd2-grid); color: var(--bd2-muted); }
 
 .o_bd2 .revenue-combo .bd2-spark { width: 100%; height: 200px; margin-top: 20px; overflow: visible; }
 .o_bd2 .apps-combo .bd2-spark { height: 310px; }
@@ -833,8 +834,8 @@ td {
 .o_bd2 .kpi-heading { display: flex; align-items: center; gap: 8px; padding-inline-end: 78px; }
 .o_bd2 .negative { color: var(--bd2-neg); }
 .o_bd2 .apps-combo { padding-inline: 24px; }
-.o_bd2 .apps-combo .mini-labels { position: relative; display: block; height: 14px; }
-.o_bd2 .apps-combo .mini-labels span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+.o_bd2 .apps-combo .mini-labels, .o_bd2 .customer-combo .mini-labels { position: relative; display: block; height: 14px; }
+.o_bd2 .apps-combo .mini-labels span, .o_bd2 .customer-combo .mini-labels span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
 .o_bd2 [dir="ltr"] { unicode-bidi: isolate; }
 .o_bd2 .mini-head > div:first-child { display: block; }
 .o_bd2 .mini-title { display: flex; align-items: center; gap: 8px; }

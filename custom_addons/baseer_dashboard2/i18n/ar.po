@@ -17,6 +17,11 @@ msgstr ""
 "Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5;\n"
 
 #. module: baseer_dashboard2
+#: code:addons/baseer_dashboard2/static/src/xml/main.xml
+msgid "(جزئي)"
+msgstr "(جزئي)"
+
+#. module: baseer_dashboard2
 #: model:ir.model.fields,field_description:baseer_dashboard2.field_baseer_dashboard2_category__account_code_prefixes
 msgid "Account Code Prefixes"
 msgstr "بادئات رموز الحسابات"

@@ -286,6 +286,18 @@ class TestDashboard2(TransactionCase):
         self.assertIsNone(partial['breakeven_series'][-1]['breakeven'])
         self.assertEqual(partial['breakeven_series'][-1]['margin_pct'], overview['breakeven_series'][-1]['margin_pct'])
         self.assertEqual(partial['breakeven_series'][:-1], overview['breakeven_series'][:-1])
+        # Overview cards use the same month completeness flag as the bridge data.
+        with patch('odoo.addons.baseer_dashboard2.models.sections.fields.Date.context_today', return_value=date(2026, 10, 15)):
+            october = service.get_section('overview', params)
+        self.assertTrue(october['trend'][-1]['partial'])
+        self.assertTrue(october['purchases']['trend'][-1]['partial'])
+        self.assertEqual(october['breakeven_series'][-1]['partial'], october['trend'][-1]['partial'])
+        self.assertEqual(october['bridge'][-1]['pct'], october['current']['ratios']['net_margin_pct'])
+        # Customer chart values and month labels share chronological trend order.
+        revenue_trend = service.get_section('revenue', params)['trend']
+        self.assertEqual([m['month'] for m in revenue_trend], sorted(m['month'] for m in revenue_trend))
+        self.assertEqual(revenue_trend[-1]['month'], '2026-10')
+        self.assertIn('customers', revenue_trend[-1]['data'])
 
     def test_all_sections_smoke(self):
         company = self.env.company

@@ -398,6 +398,71 @@ test('revenue apps chart aligns ten month labels and points, preserving gaps', a
     expect(svg.querySelectorAll('path')[2].getAttribute('d').split('M').length).toBe(3);
 });
 
+test('customer chart aligns every month with its plotted point and formats orders', async () => {
+    const response = await withFetch(globals.fetch, () => fetch('/baseer_dashboard2/static/src/xml/main.xml'));
+    const source = await response.text();
+    const doc = new DOMParser().parseFromString(source, 'text/xml');
+    const card = doc.querySelector('[t-name="baseer_dashboard2.Revenue"] .customer-combo');
+    card.removeAttribute('t-else');
+    const templates = source.replace('</templates>', `<t t-name="test.CustomerChart">${new XMLSerializer().serializeToString(card)}</t></templates>`);
+    class CustomerChart extends Component {
+        static template = 'test.CustomerChart';
+        static components = { Sparkline };
+        trend = Array.from({ length: 6 }, (_, i) => ({ has_data: true, data: { customers: { value: i === 5 ? 1471 : 100 * (i + 1), avg_ticket: 80 } } }));
+        trendLabels = ['مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر'];
+        miniX = miniX;
+    }
+    const app = new App(CustomerChart, { templates, test: true });
+    after(() => app.destroy());
+    await app.mount(getFixture());
+    const labels = [...getFixture().querySelectorAll('.mini-labels span')];
+    const values = [100, 200, 300, 400, 500, 1471];
+    labels.forEach((label, i) => expect(parseFloat(label.style.left)).toBe(Sparkline.prototype.miniPoint(values, i).x));
+    expect(parseFloat(labels[5].style.left)).toBeLessThan(parseFloat(labels[0].style.left));
+    expect(getFixture().querySelector('.spark-label.navy').textContent).toBe('1.5K');
+});
+
+test('partial overview marks ratios and neutralizes company comparisons', async () => {
+    const response = await withFetch(globals.fetch, () => fetch('/baseer_dashboard2/static/src/xml/main.xml'));
+    const source = await response.text();
+    const doc = new DOMParser().parseFromString(source, 'text/xml');
+    const overview = doc.querySelector('[t-name="baseer_dashboard2.Overview"]');
+    const mini = overview.querySelector('.grid.three');
+    const bridge = overview.querySelector('[t-foreach="state.data.bridge"]').parentElement;
+    const templates = source.replace('</templates>', `<t t-name="test.PartialOverview"><t t-set="partialMonth" t-value="state.period.mode === 'month' and trend.at(-1)?.partial"/>${new XMLSerializer().serializeToString(mini)}${new XMLSerializer().serializeToString(bridge)}<t t-call="baseer_dashboard2.Compare"/></t><t t-name="test.Track"><div/></t></templates>`);
+    class Track extends Component { static template = 'test.Track'; static props = ['value', 'max']; }
+    let partial = true;
+    class PartialOverview extends Component {
+        static template = 'test.PartialOverview'; static components = { Sparkline, Track };
+        state = { period: { mode: 'month', month: '2026-11' }, company: '1', data: {
+            purchases: { available: true, value: 10, pct: 1.6, trend: [] },
+            sales: { apps: 20, apps_pct: 2, customers: { available: true, value: 100, avg_ticket: 80 }, trend: [] },
+            bridge: [{ key: 'net_profit', amount: 95, pct: 95.5 }],
+            companies_compare: ['1', '2'].map(key => ({ key, name: key, sales_net: 100, food_pct: 1.6, salaries_pct: 0.4, net_margin_pct: -5, targets: { food_pct: { status: 'ok' }, salaries_pct: { status: 'bad' } } }))
+        } };
+        trend = [{ partial }]; monthName = v => v; fmt = formatNumber; pct = formatPercent; tableFmt = formatTable; tablePct = formatTablePct;
+        iconPath() { return ''; } name(v) { return v; } bridgeStyle() { return ''; }
+    }
+    const app = new App(PartialOverview, { templates, test: true });
+    after(() => app.destroy());
+    const fixture = getFixture();
+    await app.mount(fixture);
+    expect([...fixture.querySelectorAll('.mini-pill')].every(el => el.textContent.includes('(جزئي)'))).toBe(true);
+    expect(fixture.querySelector('.bridge-row span').textContent).toInclude('(جزئي)');
+    expect(fixture.querySelectorAll('.compare-pill.neutral').length).toBe(6);
+    expect([...fixture.querySelectorAll('.compare-pill')].every(el => el.title === 'الشهر لم يكتمل')).toBe(true);
+    expect(fixture.textContent.match(/2026-11 \(جزئي\)/g).length).toBe(2);
+    app.destroy();
+    partial = false;
+    const completed = new App(PartialOverview, { templates, test: true });
+    after(() => completed.destroy());
+    await completed.mount(fixture);
+    expect(fixture.querySelectorAll('.compare-pill.neutral').length).toBe(0);
+    expect(fixture.querySelectorAll('.compare-pill.bad').length).toBe(4);
+    expect(fixture.querySelector('.bridge-row span').textContent.includes('(جزئي)')).toBe(false);
+    expect([...fixture.querySelectorAll('.mini-pill')].every(el => !el.textContent.includes('(جزئي)'))).toBe(true);
+});
+
 test('commission card uses recorded amount and salary badges explain suppression', async () => {
     const response = await withFetch(globals.fetch, () => fetch('/baseer_dashboard2/static/src/xml/main.xml'));
     const doc = new DOMParser().parseFromString(await response.text(), 'text/xml');

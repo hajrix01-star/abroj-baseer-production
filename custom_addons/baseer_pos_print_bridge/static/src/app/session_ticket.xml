@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="baseer_pos_print_bridge.SessionTicketReceiptHeader"
+       t-inherit="point_of_sale.ReceiptHeader" t-inherit-mode="extension">
+        <!-- Standard retail has no tracking slot. The two Baseer retail
+             layouts already supply one before the date. -->
+        <xpath expr="//div[@id='order-date']" position="before">
+            <div t-if="order.baseer_ticket_label and !order.config.displayTrackingNumber and !order.config.displayBigTrackingNumber and (order.config.module_pos_restaurant or !['baseer_80', 'baseer_80_customer'].includes(order.config.baseer_receipt_layout_mode))">
+                <span>Order number</span>
+                <bdi dir="ltr" t-esc="order.baseer_ticket_label"/>
+            </div>
+        </xpath>
+    </t>
+</templates>

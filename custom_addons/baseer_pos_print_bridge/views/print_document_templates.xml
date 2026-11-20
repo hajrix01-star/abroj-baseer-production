@@ -37,7 +37,7 @@
                         <div class="title" dir="auto" t-out="document.get('title', '')"/>
                         <t t-if="order.get('tracking_number')">
                             <div>رقم الطلب / Order number</div>
-                            <div class="tracking" dir="auto" t-out="order['tracking_number']"/>
+                            <div class="tracking" dir="ltr" t-out="order['tracking_number']"/>
                         </t>
                         <div class="reference" dir="auto" t-out="order.get('reference', '')"/>
                         <div t-if="order.get('order_type')" class="order-type">

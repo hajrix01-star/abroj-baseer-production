@@ -163,8 +163,8 @@ class DashboardService(models.AbstractModel):
                 accounts.append({'company_id': company.id, 'account_id': account.id, 'code': account.code, 'name': account_name, 'category': key, 'amount': round(amount, 2)})
         sales = totals.get('revenue', 0.0)
         gross = sales - totals.get('food_cost', 0.0)
-        operating = gross - sum(totals.get(k, 0.0) for k in ('salaries', 'rent', 'utilities', 'marketing', 'commissions', 'other_opex', 'depreciation'))
-        net = operating + totals.get('other_income', 0.0) - totals.get('non_operating', 0.0) - totals.get('zakat_tax', 0.0)
+        operating = gross - sum(totals.get(k, 0.0) for k in ('salaries', 'rent', 'utilities', 'marketing', 'commissions', 'other_opex', 'depreciation', 'non_operating'))
+        net = operating + totals.get('other_income', 0.0) - totals.get('zakat_tax', 0.0)
         fixed = sum(totals.get(k, 0.0) for k in ('salaries', 'rent', 'utilities', 'depreciation'))
         variable = sum(totals.get(k, 0.0) for k in ('food_cost', 'commissions', 'marketing', 'other_opex'))
         breakeven = fixed / (1 - variable / sales) if sales and variable / sales < 1 else None

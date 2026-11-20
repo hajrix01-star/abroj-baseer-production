@@ -177,8 +177,8 @@ class DashboardSections(models.AbstractModel):
                                        'previous_trend': [None] + [value(m['data'], key) if m['has_data'] else None for m in trend[:-1]], 'good_when': 'down' if key in expense_keys or key == 'expenses_total' else 'up'}
             bridge = [('sales_net', current['sales_net']), ('food_cost', -current['categories'].get('food_cost', 0)), ('gross_profit', current['gross_profit']),
                       ('salaries', -current['categories'].get('salaries', 0)), ('rent', -current['categories'].get('rent', 0))]
-            bridge += [(k, -current['categories'].get(k, 0)) for k in ('utilities', 'marketing', 'commissions', 'other_opex', 'depreciation') if current['categories'].get(k)]
-            bridge += [('operating_profit', current['operating_profit']), ('other_non_operating', -current['categories'].get('non_operating', 0)), ('other_income', current['categories'].get('other_income', 0)), ('zakat_tax', -current['categories'].get('zakat_tax', 0)), ('net_profit', current['net_profit'])]
+            bridge += [(k, -(current['categories'].get(k, 0) + (current['categories'].get('non_operating', 0) if k == 'other_opex' else 0))) for k in ('utilities', 'marketing', 'commissions', 'other_opex', 'depreciation')]
+            bridge += [('operating_profit', current['operating_profit']), ('other_income', current['categories'].get('other_income', 0)), ('zakat_tax', -current['categories'].get('zakat_tax', 0)), ('net_profit', current['net_profit'])]
             result['bridge'] = [{'key': key, 'amount': amount, 'pct': percent(amount, current['sales_net'])} for key, amount in bridge if amount or key in ('sales_net', 'gross_profit', 'operating_profit', 'net_profit')]
             result['breakeven_series'] = [{'month': m['month'], 'partial': m['partial'], 'sales_net': m['data']['sales_net'] if m['has_data'] else None, 'net_profit': m['data']['net_profit'] if m['has_data'] else None, 'breakeven': m['data']['breakeven'] if m['has_data'] else None, 'margin_pct': m['data']['ratios']['net_margin_pct'] if m['has_data'] else None} for m in trend]
             result['purchases'] = self._purchases(ids, start, end, current['sales_net'])
@@ -258,9 +258,11 @@ class DashboardSections(models.AbstractModel):
                 first, last = month_bounds(date.fromisoformat(month['month'] + '-01'))
                 summary, _, channels, _ = self._sales_summary(ids, first, last)
                 monthly_channels.append((summary, channels))
-            for key in ('revenue', 'food_cost', 'gross_profit', 'salaries', 'rent', 'utilities', 'marketing', 'commissions', 'other_opex', 'depreciation', 'operating_profit', 'other_income', 'non_operating', 'zakat_tax', 'net_profit'):
+            for key in ('revenue', 'food_cost', 'gross_profit', 'salaries', 'rent', 'utilities', 'marketing', 'commissions', 'other_opex', 'depreciation', 'operating_profit', 'other_income', 'zakat_tax', 'net_profit'):
                 factor = -1 if key in expense_keys else 1
                 values = [factor * m['data'].get(key, m['data']['categories'].get(key, 0)) if m['has_data'] else None for m in trend]
+                if key == 'other_opex':
+                    values = [value - m['data']['categories'].get('non_operating', 0) if value is not None else None for value, m in zip(values, trend)]
                 children = {}
                 for i, month in enumerate(trend):
                     if key == 'revenue':
@@ -278,7 +280,7 @@ class DashboardSections(models.AbstractModel):
                                 row['months'][i] = amount
                         continue
                     for account in month['data']['accounts']:
-                        if account['category'] == key:
+                        if account['category'] == key or (key == 'other_opex' and account['category'] == 'non_operating'):
                             ident = (account['company_id'], account['account_id'])
                             row = children.setdefault(ident, {'code': account['code'], 'name': account['name'], 'months': [0 if m['has_data'] else None for m in trend]})
                             row['months'][i] += factor * account['amount']
@@ -286,7 +288,7 @@ class DashboardSections(models.AbstractModel):
                     child['total'] = round(sum(v for v in child['months'] if v is not None), 2)
                     child['pct'] = percent(child['total'], sum(m['data']['sales_net'] for m in trend))
                 total = sum(v for v in values if v is not None)
-                rows.append({'key': key, 'name': category_names.get(key), 'months': values, 'total': round(total, 2), 'pct': percent(total, sum(m['data']['sales_net'] for m in trend)), 'children': list(children.values())})
+                rows.append({'key': key, 'name': False if key == 'other_opex' else category_names.get(key), 'months': values, 'total': round(total, 2), 'pct': percent(total, sum(m['data']['sales_net'] for m in trend)), 'children': list(children.values())})
             result['rows'] = rows
         return result
 

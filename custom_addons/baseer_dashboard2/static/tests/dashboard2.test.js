@@ -461,6 +461,26 @@ test('expense distribution displays the aggregated other row', async () => {
     expect(row.querySelector('b').getAttribute('t-esc')).toBe('name(row.key)');
 });
 
+test('P&L displays the merged other expense and its accounts in one row', async () => {
+    class Pnl extends Component {
+        static template = 'baseer_dashboard2.Pnl';
+        static components = { Sparkline };
+        state = { view: 'pnl', closed: {}, data: { rows: [{ key: 'other_opex', name: false, months: [-1250.18], total: -1250.18, pct: -1, children: [{ code: '400032', name: 'حساب', months: [-1250.18], total: -1250.18, pct: -1 }] }] } };
+        trend = [{ month: '2026-10' }];
+        name = () => 'مصاريف أخرى'; monthName = (v) => v; hasDisplayValues = hasDisplayValues;
+        tableFmt = formatTable; tablePct = formatTablePct;
+        toggleRow() {} exportCsv() {}
+    }
+    const response = await withFetch(globals.fetch, () => fetch('/baseer_dashboard2/static/src/xml/main.xml'));
+    const app = new App(Pnl, { templates: await response.text(), test: true });
+    after(() => app.destroy());
+    await app.mount(getFixture());
+    const table = getFixture().querySelector('.export-table');
+    expect(table.textContent.match(/مصاريف أخرى/g).length).toBe(1);
+    expect(table.textContent).toInclude('(1,250)');
+    expect(table.querySelector('.account').textContent).toInclude('400032');
+});
+
 
 test('review layouts show period totals and separate KPI details', async () => {
     const response = await withFetch(globals.fetch, () => fetch('/baseer_dashboard2/static/src/xml/main.xml'));

@@ -60,8 +60,8 @@
     <t t-name="baseer_dashboard2.Gauge">
         <div class="bd2-gauge">
             <i t-att-style="'width:'+pos(props.value)+'%'"/>
-            <b t-att-style="'right:'+pos(props.target)+'%'"/>
-            <em t-att-style="'right:'+pos(props.previous)+'%'"/>
+            <b t-if="props.target != null" t-att-style="'right:'+pos(props.target)+'%'"/>
+            <em t-if="props.previous != null" t-att-style="'right:'+pos(props.previous)+'%'"/>
         </div>
     </t>
     <t t-name="baseer_dashboard2.KpiCard">
@@ -430,7 +430,7 @@
                         </tr>
                         <tr t-if="!state.closed[row.key]" t-foreach="row.children" t-as="child" t-key="child_index" class="account">
                             <td>
-                                <span class="muted" t-esc="child.code"/>
+                                <span class="muted account-code" dir="ltr" t-esc="child.code"/>
                                 <t t-esc="child.code ? ' '+child.name : child.name"/>
                             </td>
                             <td>
@@ -469,7 +469,7 @@
                             <td>
                                 <Sparkline values="state.data.months.map(m=&gt;m[group[0]][group[2]][key] ?? null)"/>
                             </td>
-                            <td t-foreach="state.data.months" t-as="m" t-key="m.month" t-esc="tableFmt(group[0]==='incoming'?m[group[0]][group[2]][key]:-m[group[0]][group[2]][key])"/>
+                            <td t-foreach="state.data.months" t-as="m" t-key="m.month" t-esc="tableFmt(m[group[0]][group[2]][key] == null ? null : group[0]==='incoming' ? m[group[0]][group[2]][key] : -m[group[0]][group[2]][key])"/>
                             <td t-esc="tableFmt(group[0]==='incoming'?state.data.total[group[2]][key]:-state.data.total[group[2]][key])"/>
                         </tr>
                         <tr class="account" t-if="group[2]==='channels'">

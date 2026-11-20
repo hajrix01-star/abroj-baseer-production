@@ -4,10 +4,10 @@ import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 
 export const formatNumber = (n) =>
-  n === null || n === undefined || n === false
+  n === null || n === undefined || n === false || !Number.isFinite(Number(n))
     ? "—"
     : new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(n);
-export const formatTable = (n) => n == null || n === false || Number(n) === 0 ? "—" : Number(n) < 0 ? `(${formatNumber(-n)})` : formatNumber(n);
+export const formatTable = (n) => n == null || n === false || !Number.isFinite(Number(n)) || Number(n) === 0 ? "—" : Number(n) < 0 ? `(${formatNumber(-n)})` : formatNumber(n);
 export const chartX = (i, n, width = 700) =>
   width - 48 - (width - 70) * (n <= 1 ? 0.5 : i / (n - 1));
 const months = [
@@ -43,9 +43,9 @@ const labels = {
   gross_profit: "مجمل الربح",
   operating_profit: "الربح التشغيلي",
   rent: "الإيجار",
-  utilities: "الكهرباء والماء",
+  utilities: "الكهرباء والخدمات",
   marketing: "التسويق",
-  commissions: "عمولات التطبيقات",
+  commissions: "العمولات",
   other_opex: "مصاريف تشغيلية أخرى",
   depreciation: "الإهلاك",
   non_operating: "غير تشغيلي",
@@ -190,6 +190,7 @@ class Gauge extends Component {
     previous: { optional: true },
     max: { optional: true },
   };
+  // The gauge uses a fixed 0–100% scale, shared by value and target.
   pos(v) {
     return Math.max(
       0,

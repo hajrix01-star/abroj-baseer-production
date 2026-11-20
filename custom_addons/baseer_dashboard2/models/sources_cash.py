@@ -16,6 +16,9 @@ class DashboardCash(models.AbstractModel):
             ctx = dict(allowed_company_ids=[cid])
             company = self.env['res.company'].browse(cid)
             settings = self.env['baseer.dashboard2.settings'].with_context(**ctx).search([('company_id', '=', cid)], limit=1)
+            if settings:
+                for journal in settings.custody_journal_ids:
+                    sources['عهدة ' + journal.name] += 0
             vat_visibility[str(cid)] = settings.show_vat_paid_line if settings else True
             journals = settings.outflow_journal_ids - settings.excluded_journal_ids if settings else self.env['account.journal']
             wallet_maps = self.env['baseer.dashboard2.channel.map'].with_context(**ctx).search([('company_id', '=', cid), ('source', '=', 'journal'), ('kind', '=', 'app')])

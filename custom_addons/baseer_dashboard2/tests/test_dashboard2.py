@@ -132,6 +132,9 @@ class TestDashboard2(TransactionCase):
         journal = self.env['account.journal'].create({'name': 'عهدة اختبار', 'code': 'D2CUS', 'type': 'cash', 'company_id': company.id, 'default_account_id': custody.id})
         settings = self.env['baseer.dashboard2.settings'].search([('company_id', '=', company.id)], limit=1) or self.env['baseer.dashboard2.settings'].create({'company_id': company.id})
         settings.write({'outflow_journal_ids': [(6, 0, [journal.id])], 'custody_journal_ids': [(6, 0, [journal.id])]})
+        empty = self.env['baseer.dashboard2.service']._inout([company.id], date(2026, 9, 30))
+        self.assertTrue({'salaries', 'rent', 'utilities', 'purchases', 'commissions', 'marketing', 'non_operating', 'other'} <= set(empty['total']['items']))
+        self.assertTrue({'bank', 'cash', 'عهدة عهدة اختبار'} <= set(empty['total']['sources']))
         def entry(debit_account, amount):
             move = self.env['account.move'].create({'journal_id': journal.id, 'date': '2026-10-03', 'line_ids': [
                 (0, 0, {'name': 'Debit', 'account_id': debit_account.id, 'debit': amount, 'credit': 0}),

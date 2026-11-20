@@ -122,6 +122,7 @@
   gap: 18px;
 }
 .bd2-header h1 {
+  color: var(--bd2-ink);
   font-size: 23px;
   margin: 0;
   font-weight: 700;
@@ -187,6 +188,7 @@ small {
 }
 .card {
   background: var(--bd2-card);
+  color: var(--bd2-text);
   border: 1px solid var(--bd2-border);
   border-radius: 16px;
   padding: 18px 20px;
@@ -363,6 +365,7 @@ small {
   margin-bottom: 12px;
 }
 table {
+  color: var(--bd2-text);
   width: 100%;
   border-collapse: collapse;
   margin-top: 14px;
@@ -384,6 +387,7 @@ td {
 }
 .highlight {
   background: var(--bd2-gold-soft);
+  color: var(--bd2-text);
 }
 .net {
   background: var(--bd2-sidebar);
@@ -394,6 +398,7 @@ td {
   color: var(--bd2-muted);
   background: var(--bd2-surface);
 }
+.account-code { unicode-bidi: isolate; }
 .group {
   font-weight: 700;
   cursor: pointer;
@@ -431,6 +436,7 @@ td {
   background: var(--bd2-grid);
   border-radius: 9px;
   position: relative;
+  overflow: visible;
   margin: 12px 0;
 }
 .bd2-gauge i {
@@ -441,9 +447,9 @@ td {
 }
 .bd2-gauge b {
   position: absolute;
-  top: 0;
+  top: -2px;
   width: 3px;
-  height: 100%;
+  height: calc(100% + 4px);
   background: var(--bd2-ink);
 }
 .bd2-gauge em {
@@ -672,11 +678,20 @@ td {
   display: none;
 }
 
-.o_bd2 .ratio > * {
+.o_bd2 .ratio > :not(.bd2-gauge) {
   position: static;
   width: auto;
   height: auto;
 }
+
+.o_bd2 .ratio > .bd2-gauge {
+  position: relative;
+  width: auto;
+  height: 12px;
+}
+
+.o_bd2 .seg button { color: var(--bd2-text); }
+.o_bd2 .seg button.on { color: var(--bd2-selected-text); }
 
 .o_bd2 .bridge-row b, .o_bd2 .bridge-row strong { color: var(--bd2-c1); }
 .o_bd2 .bridge-row.net-profit b, .o_bd2 .bridge-row.net-profit strong { color: var(--bd2-gold); }

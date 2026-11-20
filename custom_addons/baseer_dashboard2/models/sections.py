@@ -270,6 +270,10 @@ class DashboardSections(models.AbstractModel):
             months.append({'month': start.strftime('%Y-%m'), 'incoming': sales, 'outgoing': out,
                            'unpaid_bills': self._unpaid_bills(ids, last), 'sales_vat': vat, 'net': round(sales['gross'] - out['total'], 2)})
         channel_totals, item_totals, source_totals = defaultdict(float), defaultdict(float), defaultdict(float)
+        for key in ('salaries', 'rent', 'utilities', 'purchases', 'commissions', 'marketing', 'non_operating', 'other'):
+            item_totals[key] = 0
+        for key in ('bank', 'cash'):
+            source_totals[key] = 0
         for month in months:
             for key, amount in month['incoming']['channels'].items():
                 channel_totals[key] += amount

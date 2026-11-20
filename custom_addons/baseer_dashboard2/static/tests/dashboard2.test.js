@@ -217,11 +217,7 @@ test('mini labels round amounts and retain one decimal for percentages', () => {
 
 test('food progress follows its target and clamps to the track', async () => {
     const response = await withFetch(globals.fetch, () => fetch('/baseer_dashboard2/static/src/xml/main.xml'));
-    class Host extends Component {
-        static template = '<KpiCard title="\'الأكل\'" foodProgress="150"/>';
-        static components = { KpiCard };
-    }
-    const app = new App(Host, { templates: await response.text(), test: true });
+    const app = new App(KpiCard, { templates: await response.text(), props: { title: 'الأكل', foodProgress: 150 }, test: true });
     after(() => app.destroy());
     await app.mount(getFixture());
     expect(getFixture().querySelector('.food-progress i').style.width).toBe('100%');
@@ -235,4 +231,19 @@ test('accounting explanations and gross sales basis are visible in templates', a
     expect(pnl.textContent).toInclude('تقريب نوركس');
     expect(doc.querySelector('.heatmap-basis').textContent).toInclude('شاملة الضريبة');
     expect(doc.querySelector('[t-name="baseer_dashboard2.Overview"]').outerHTML).toInclude('غير منتظمة بين الفترات');
+});
+
+test('timeline uses the selected period when revenue has no period in its data', async () => {
+    class Money extends Component { static template = 'baseer_dashboard2.Money'; static props = ['value']; format = formatNumber; }
+    class Timeline extends Component {
+        static template = 'baseer_dashboard2.Timeline';
+        static components = { Money, LineChart };
+        state = { timeline: 'monthly', period: { mode: 'month', month: '2026-10' }, data: { timeline: { stats: { ytd: 100, previous_ytd: null } } } };
+        timelineSeries = []; timelineLabels = []; months = []; fmt = formatNumber; pct = formatTablePct; dateName = (value) => value; choose() {};
+    }
+    const response = await withFetch(globals.fetch, () => fetch('/baseer_dashboard2/static/src/xml/main.xml'));
+    const app = new App(Timeline, { templates: await response.text(), test: true });
+    after(() => app.destroy());
+    await app.mount(getFixture());
+    expect(getFixture().textContent).toInclude('2026 مقابل 2025');
 });

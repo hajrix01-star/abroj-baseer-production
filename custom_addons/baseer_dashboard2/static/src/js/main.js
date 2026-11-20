@@ -128,7 +128,7 @@ export class Sparkline extends Component {
 }
 export class LineChart extends Component {
   static template = "baseer_dashboard2.LineChart";
-  static props = { series: Array, labels: { optional: true }, percent: { optional: true } };
+  static props = { series: Array, labels: { optional: true }, percent: { optional: true }, compactTop: { optional: true } };
   chartX = chartX;
   get renderedSeries() { return this.props.series.filter((s) => hasPoints(s.values)); }
   get scale() {

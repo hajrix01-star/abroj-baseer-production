@@ -1,5 +1,5 @@
 /** @odoo-module **/
-import { Component, onWillStart, useState } from "@odoo/owl";
+import { Component, onWillStart, useState, useExternalListener } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 
@@ -221,6 +221,24 @@ class KpiCard extends Component {
   };
 }
 
+export class InfoPopup extends Component {
+  static template = "baseer_dashboard2.InfoPopup";
+  static props = { title: String, explanation: String };
+  setup() {
+    this.state = useState({ open: false });
+    useExternalListener(document, "click", (event) => {
+      if (!event.target.closest(".info-popup") || !this.root?.contains(event.target)) this.state.open = false;
+    });
+    useExternalListener(document, "keydown", (event) => {
+      if (event.key === "Escape") this.state.open = false;
+    });
+  }
+  toggle(event) {
+    this.root = event.currentTarget.parentElement;
+    this.state.open = !this.state.open;
+  }
+}
+
 class Dashboard2 extends Component {
   static template = "baseer_dashboard2.Main";
   static components = {
@@ -232,6 +250,7 @@ class Dashboard2 extends Component {
     Ring,
     Gauge,
     KpiCard,
+    InfoPopup,
   };
   setup() {
     this.Number = Number;

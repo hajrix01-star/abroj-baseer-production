@@ -409,7 +409,7 @@
             <t t-foreach="state.data.months" t-as="month" t-key="month.month"><div t-foreach="month.incoming.warnings" t-as="warning" t-key="warning.company_id+warning.date+warning.label" class="chip"><t t-esc="warning.date"/> · <t t-esc="warning.label"/></div></t>
         </t>
         <div t-if="state.data.salaries_warning" class="chip">الرواتب أقل بوضوح من متوسط آخر 3 أشهر — قد تكون غير مكتملة</div>
-        <div class="card table-wrap">
+        <div t-att-class="'card table-wrap '+(state.view==='inout' ? 'inout-scroll' : '')">
             <div class="card-head">
                 <div>
                     <h3 t-esc="state.view==='pnl'?'قائمة الدخل (الربح والخسارة)':'الداخل والخارج'"/>
@@ -456,7 +456,7 @@
                     </t>
                 </tbody>
             </table>
-            <table t-else="" class="export-table">
+            <table t-else="" class="export-table inout-table">
                 <thead>
                     <tr>
                         <th>البند</th>
@@ -498,10 +498,8 @@
                                 <td t-foreach="state.data.months" t-as="m" t-key="m.month">
                                     <t t-set="part" t-value="m.incoming.apps_unreceived.breakdown.find(x=&gt;x.key===app.key)"/>
                                     <t t-esc="m.incoming.apps_unreceived.available ? tableFmt(part?.value) : m.incoming.apps_unreceived.label"/>
-                                    <small t-if="m.incoming.apps_unreceived.available and part and part.cumulative &gt; part.value"> · الرصيد التراكمي أكبر: <t t-esc="fmt(part.cumulative)"/></small>
                                 </td>
                                 <td><t t-esc="state.data.total.apps_unreceived.available ? tableFmt(app.value) : state.data.total.apps_unreceived.label"/>
-                                    <small t-if="state.data.total.apps_unreceived.available and app.cumulative &gt; app.value"> · الرصيد التراكمي أكبر: <t t-esc="fmt(app.cumulative)"/></small>
                                 </td>
                             </tr>
                           </t>
@@ -584,7 +582,7 @@
                         <strong t-esc="fmt(dayValue(day))"/>
                         <span>
                             <t t-esc="fmt(day.customers)"/> عميل</span>
-                        <em t-foreach="day.events" t-as="event" t-key="event.id" t-esc="event.name"/>
+                        <em class="occasion-badge" t-foreach="day.events" t-as="event" t-key="event.id" t-att-title="event.name" t-esc="event.name"/>
                     </div>
                 </t>
             </div>
@@ -623,6 +621,7 @@
                         <i t-foreach="m.days" t-as="d" t-key="d.date" t-att-class="'level-'+level(d)+(d.events.length ? ' occasion' : '')" t-att-title="dateName(d.date)+' · '+fmt(d.gross)+' · '+d.events.map(e=&gt;e.name).concat((d.warnings || []).map(w=&gt;w.label)).join('، ')">
                             <span t-esc="Number(d.date.slice(-2))"/>
                             <b t-esc="fmt(d.gross)"/>
+                            <em t-if="d.events.length" class="occasion-badge year-occasion" t-att-title="d.events.map(e=&gt;e.name).join('، ')">★</em>
                         </i>
                     </div>
                 </div>
@@ -660,10 +659,16 @@
             </div>
         </div>
     </t>
+    <t t-name="baseer_dashboard2.InfoPopup">
+        <span class="info-popup">
+            <button type="button" class="info-button" t-att-aria-expanded="state.open ? 'true' : 'false'" t-att-aria-label="'عن '+props.title" t-on-click.stop="toggle">؟</button>
+            <span t-if="state.open" class="info-panel" role="tooltip"><strong t-esc="props.title"/><span t-esc="props.explanation"/></span>
+        </span>
+    </t>
     <t t-name="baseer_dashboard2.Glossary">
         <div class="grid two">
             <div class="card glossary" t-foreach="Object.entries(state.data.sources)" t-as="entry" t-key="entry[0]">
-                <h3 t-esc="name(entry[0])"/>
+                <h3><t t-esc="name(entry[0])"/> <InfoPopup title="name(entry[0])" explanation="entry[1]"/></h3>
                 <p class="muted" t-esc="entry[1]"/>
             </div>
         </div>

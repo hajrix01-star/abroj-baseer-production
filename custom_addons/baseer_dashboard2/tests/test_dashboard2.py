@@ -102,6 +102,7 @@ class TestDashboard2(TransactionCase):
         service = self.env['baseer.dashboard2.service']
         for section in ('overview', 'revenue', 'expenses', 'ratios', 'pnl', 'inout', 'heatmap'):
             self.assertTrue(service.get_section(section, params)['available'], section)
+        self.assertEqual(service.get_section('overview', params)['breakeven'], service.get_section('ratios', params)['breakeven'])
 
     def test_scope_and_targets(self):
         from odoo.tests.common import new_test_user
@@ -222,7 +223,11 @@ class TestDashboard2(TransactionCase):
         missing_move.button_cancel()
         missing.move_id = missing_move
         order(missing, missing_day, 115)
-        self.assertEqual(result(missing_day)[0]['warnings'][0]['label'], 'جلسة إقفال ملغاة لم تُعد: 01439')
+        self.assertEqual(result(missing_day)[0]['warnings'][0]['label'], 'جلسة إقفال ملغاة لم تُعد: 01439 — مفقود 115 (1 طلب)')
+        order(missing, date(2026, 10, 1), 30)  # Covered on a different order day.
+        order(missing, date(2026, 10, 6), 25)
+        warnings = service._sales_summary([company.id], date(2026, 10, 1), date(2026, 10, 6))[0]['warnings']
+        self.assertEqual([(w['date'], w['label']) for w in warnings], [('2026-10-05', 'جلسة إقفال ملغاة لم تُعد: 01439 — مفقود 115 (1 طلب)'), ('2026-10-06', 'جلسة إقفال ملغاة لم تُعد: 01439 — مفقود 25 (1 طلب)')])
         replacement = entry(missing_day, 2)
         replacement.ref = missing.name
         self.assertFalse(result(missing_day)[0]['warnings'])
@@ -346,7 +351,7 @@ class TestDashboard2(TransactionCase):
         model = self.env['account.account'].with_company(company)
         def account(code, kind):
             return model.create({'code': code, 'name': code, 'account_type': kind, 'company_ids': [(6, 0, [company.id])]})
-        wallet = account('D2WAL', 'asset_current')
+        wallet = account('D2WAL', 'asset_receivable')
         revenue = account('D2MAPREV', 'income')
         cash = account('D2MAPC', 'asset_cash')
         channel = self.env.ref('baseer_dashboard2.channel_keeta')
@@ -356,15 +361,21 @@ class TestDashboard2(TransactionCase):
             move = self.env['account.move'].create({'journal_id': journal.id, 'date': day, 'line_ids': [(0, 0, {'account_id': acc.id, 'name': name, 'debit': debit, 'credit': credit}) for acc, name, debit, credit in lines]})
             move.action_post()
         entry('2026-09-01', [(wallet, 'opening', 20, 0), (cash, 'offset', 0, 20)])
-        wallet2 = account('D2WAL2', 'asset_current')
+        wallet2 = account('D2WAL2', 'asset_receivable')
         self.env['baseer.dashboard2.channel.map'].create({'settings_id': settings.id, 'company_id': company.id, 'source': 'account', 'account_id': wallet2.id, 'channel_id': self.env.ref('baseer_dashboard2.channel_hunger').id, 'kind': 'app'})
         entry('2026-10-01', [(wallet, 'cash', 100, 0), (revenue, 'sales', 0, 100)])
         entry('2026-10-02', [(wallet2, 'hunger', 30, 0), (revenue, 'sales', 0, 30)])
         entry('2026-10-03', [(cash, 'settlement', 20, 0), (wallet2, 'wallet', 0, 20)])
         entry('2026-11-01', [(cash, 'cash', 40, 0), (wallet, 'wallet', 0, 40)])
+        excluded = account('D2EXCL', 'asset_receivable')
+        nonreceivable = account('D2NONREC', 'asset_current')
+        for acc in (excluded, nonreceivable):
+            self.env['baseer.dashboard2.channel.map'].create({'settings_id': settings.id, 'company_id': company.id, 'source': 'account', 'account_id': acc.id, 'channel_id': channel.id, 'kind': 'app'})
+            entry('2026-10-04', [(acc, 'app', 50, 0), (revenue, 'sales', 0, 50)])
+        settings.write({'liquidity_account_ids': [(4, excluded.id)]})
         service = self.env['baseer.dashboard2.service']
         result = service._sales_summary([company.id], date(2026, 10, 1), date(2026, 10, 31))[0]
-        self.assertEqual(result['channels']['keeta'], 100)
+        self.assertEqual(result['channels']['keeta'], 200)
         self.assertEqual(result['apps_unreceived']['value'], 110)
         result = service._sales_summary([company.id], date(2026, 10, 1), date(2026, 11, 30))[0]
         self.assertEqual(result['apps_unreceived']['value'], 70)
@@ -478,12 +489,12 @@ class TestDashboardThemeLiterals(TransactionCase):
         self.assertEqual(out['items']['rent'], 80)
         self.assertEqual(out['sources']['حساب الأهلي — كيتا'], 240)
         before, _, _, _ = service._sales_summary([company.id], date(2026, 10, 1), date(2026, 10, 30))
-        self.assertEqual(before['apps_unreceived']['value'], 710)
+        self.assertEqual(before['apps_unreceived']['value'], 0)
         summary, _, _, _ = service._sales_summary([company.id], date(2026, 10, 1), date(2026, 10, 31))
         self.assertTrue(summary['apps_unreceived']['available'])
-        self.assertEqual(summary['apps_unreceived']['value'], 710)
+        self.assertEqual(summary['apps_unreceived']['value'], 0)
         after, _, _, _ = service._sales_summary([company.id], date(2026, 10, 1), date(2026, 11, 1))
-        self.assertEqual(after['apps_unreceived']['value'], 710)
+        self.assertEqual(after['apps_unreceived']['value'], 0)
 
     def test_salaries_warning_three_months(self):
         company = self.env.company

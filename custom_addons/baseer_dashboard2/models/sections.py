@@ -152,6 +152,9 @@ class DashboardSections(models.AbstractModel):
             result['sales']['previous'] = prior_sales
             result['sales']['trend'] = sales_trend
             result['timeline'] = self._timeline(ids, end, params.get('timeline_mode', 'monthly'))
+        if section in ('overview', 'ratios'):
+            if section == 'ratios':
+                sales, days, _, _ = self._sales_summary(ids, start, end)
             result['breakeven'] = {'available': current['breakeven'] is not None, 'value': current['breakeven'], 'safety_margin': current['safety_margin'], 'day': None}
             if current['breakeven'] is None:
                 result['breakeven']['reason'] = 'invalid_contribution_margin'

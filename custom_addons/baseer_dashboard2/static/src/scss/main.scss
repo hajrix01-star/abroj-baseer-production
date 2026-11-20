@@ -700,3 +700,16 @@ td {
 .o_bd2 .bridge-row.net-profit b, .o_bd2 .bridge-row.net-profit strong { color: var(--bd2-gold); }
 
 .o_bd2 .occasion { box-shadow: inset 0 -3px var(--bd2-gold); }
+
+.o_bd2 .inout-table { table-layout: fixed; width: 100%; min-width: 800px; }
+.o_bd2 .inout-table th:first-child, .o_bd2 .inout-table td:first-child { width: 22%; white-space: normal; }
+.o_bd2 .inout-table th, .o_bd2 .inout-table td { overflow-wrap: anywhere; }
+.o_bd2 .occasion-badge { display: block; max-width: 100%; padding: 1px 5px; margin: auto auto 0; color: var(--bd2-ink); background: var(--bd2-card); border: 1px dashed var(--bd2-ink); border-radius: 12px; font-size: 10px; font-style: normal; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.o_bd2 .year-days i { position: relative; }
+.o_bd2 .year-occasion { position: absolute; inset-inline-end: 0; bottom: 0; padding: 0 2px; font-size: 8px; }
+.o_bd2 .info-popup { position: relative; display: inline-block; }
+.o_bd2 .info-button { border: 1px solid var(--bd2-border); border-radius: 50%; background: var(--bd2-card); color: var(--bd2-muted); width: 24px; height: 24px; }
+.o_bd2 .info-panel { position: absolute; z-index: 20; inset-inline-start: 0; top: calc(100% + 6px); width: min(280px, 70vw); padding: 12px; border: 1px solid var(--bd2-border); border-radius: 8px; background: var(--bd2-card); color: var(--bd2-text); box-shadow: 0 4px 16px var(--bd2-shadow); font-size: 13px; font-weight: 400; }
+.o_bd2 .info-panel strong, .o_bd2 .info-panel span { display: block; }
+.o_bd2 .inout-scroll { direction: ltr; }
+.o_bd2 .inout-scroll > * { direction: rtl; }

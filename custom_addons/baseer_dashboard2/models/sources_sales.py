@@ -6,6 +6,8 @@ import pytz
 from odoo import fields, models, _
 from odoo.exceptions import UserError
 
+from .configuration import ACCOUNT_DEFAULTS
+
 
 class DashboardSales(models.AbstractModel):
     _inherit = 'baseer.dashboard2.service'
@@ -167,7 +169,13 @@ class DashboardSales(models.AbstractModel):
             hours[(weekday, hour)]['orders'] += sign
             hours[(weekday, hour)]['gross'] += amount
         reset_ids = self._reset_move_ids(ids, end)
-        app_maps = maps.filtered(lambda m: m.source == 'account' and m.kind == 'app')
+        liquidity_ids = set((settings.mapped('liquidity_account_ids') | settings.mapped('liquidity_ids.account_id')).ids)
+        app_maps = maps.filtered(lambda m: m.source == 'account' and m.kind == 'app'
+                                 and (m.account_id.account_type == 'asset_receivable' or
+                                      (m.account_id.with_company(m.company_id).code in ACCOUNT_DEFAULTS
+                                       and m.channel_id.key in ('hunger', 'keeta', 'jahez')
+                                       and ACCOUNT_DEFAULTS[m.account_id.with_company(m.company_id).code] == m.channel_id.key))
+                                 and m.account_id.id not in liquidity_ids)
         account_channel = {(m.company_id.id, m.account_id.id): m.channel_id.key for m in app_maps}
         starts = {s.company_id.id: s.app_balance_start_date for s in settings}
         balances = defaultdict(float)
@@ -198,11 +206,16 @@ class DashboardSales(models.AbstractModel):
 
     def _cancelled_session_warnings(self, ids, start, end, summary_days=None):
         ctx = dict(allowed_company_ids=ids, active_test=False)
-        sessions = self.env['pos.session'].with_context(**ctx).search([
-            ('company_id', 'in', ids), ('move_id.state', '=', 'cancel'),
-            ('move_id.date', '>=', start), ('move_id.date', '<=', end)])
         settings = self.env['baseer.dashboard2.settings'].with_context(**ctx).search([('company_id', 'in', ids)])
+        thresholds = {s.company_id.id: s.min_order_amount for s in settings}
         summary_ids = set(settings.mapped('summary_pos_config_ids').ids)
+        # A wide UTC window accommodates every company timezone; filter local dates below.
+        orders = self.env['pos.order'].with_context(**ctx).search_read([
+            ('company_id', 'in', ids), ('session_id.move_id.state', '=', 'cancel'),
+            ('date_order', '>=', datetime.combine(start - timedelta(days=1), time.min)),
+            ('date_order', '<', datetime.combine(end + timedelta(days=2), time.min)),
+        ], ['company_id', 'session_id', 'date_order', 'amount_total'])
+        sessions = self.env['pos.session'].with_context(**ctx).browse({o['session_id'][0] for o in orders})
         sessions = sessions.filtered(lambda session: session.config_id.id not in summary_ids and not any(
             word in (session.config_id.name or '').casefold() for word in ('ملخص المبيعات', 'sales summaries', 'ملخصات')))
         if not sessions:
@@ -210,24 +223,28 @@ class DashboardSales(models.AbstractModel):
         if summary_days is None:
             days = self._sales_days(ids, start, end)[0]
             summary_days = {key for key, day in days.items() if day['has_summary']}
-        thresholds = {s.company_id.id: s.min_order_amount for s in settings}
-        session_thresholds = {session.id: thresholds.get(session.company_id.id, 1.5) for session in sessions}
-        real_session_ids = set()
-        order_groups = self.env['pos.order'].with_context(**ctx)._read_group(
-            [('session_id', 'in', sessions.ids)], ['session_id'], ['amount_total:min', 'amount_total:max'])
-        for session, minimum, maximum in order_groups:
-            if max(abs(minimum), abs(maximum)) > session_thresholds[session.id]:
-                real_session_ids.add(session.id)
         refs = {ref for session in sessions for ref in (session.name, session.move_id.ref) if ref}
         posted = self.env['account.move'].with_context(**ctx).search([
             ('company_id', 'in', ids), ('state', '=', 'posted'), ('ref', 'in', list(refs))]) if refs else self.env['account.move']
         replacements = {(m.company_id.id, m.ref) for m in posted}
-        return [{'date': str(session.move_id.date), 'company_id': session.company_id.id,
-                 'label': 'جلسة إقفال ملغاة لم تُعد: %s' % session.name.rsplit('/', 1)[-1], 'session_id': session.id}
-                for session in sessions if session.id in real_session_ids
-                and (session.company_id.id, session.move_id.date) not in summary_days
-                and not any((session.company_id.id, ref) in replacements
-                    for ref in (session.name, session.move_id.ref) if ref)]
+        by_id = {s.id: s for s in sessions}
+        grouped = defaultdict(lambda: [0.0, 0])
+        for order in orders:
+            session = by_id.get(order['session_id'][0])
+            cid = order['company_id'][0]
+            if not session or order['amount_total'] <= thresholds.get(cid, 1.5):
+                continue
+            tz = pytz.timezone(session.company_id.partner_id.tz or self.env.user.tz or 'Asia/Riyadh')
+            day = fields.Datetime.to_datetime(order['date_order']).replace(tzinfo=pytz.UTC).astimezone(tz).date()
+            if not start <= day <= end or (cid, day) in summary_days or any(
+                (cid, ref) in replacements for ref in (session.name, session.move_id.ref) if ref):
+                continue
+            grouped[(session.id, day)][0] += order['amount_total']
+            grouped[(session.id, day)][1] += 1
+        return [{'date': str(day), 'company_id': by_id[sid].company_id.id,
+                 'label': 'جلسة إقفال ملغاة لم تُعد: %s — مفقود %s (%s طلب)' % (
+                     by_id[sid].name.rsplit('/', 1)[-1], format(amount, ',.0f'), count), 'session_id': sid}
+                for (sid, day), (amount, count) in sorted(grouped.items())]
 
     def _sales_summary(self, ids, start, end):
         days, channels, unreceived, hours = self._sales_days(ids, start, end)

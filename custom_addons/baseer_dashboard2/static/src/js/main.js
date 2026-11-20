@@ -18,6 +18,7 @@ export const formatTablePct = (n) => {
   const magnitude = Math.abs(Number(n)).toFixed(1);
   return magnitude === "0.0" ? "—" : `${Number(n) < 0 ? "-" : ""}${magnitude}%`;
 };
+export const timelineYear = (period) => (period?.mode === "month" ? period.month : period?.date_to)?.slice(0, 4) || "";
 export const chartX = (i, n, width = 700) =>
   width - 48 - (width - 70) * (n <= 1 ? 0.5 : i / (n - 1));
 const months = [
@@ -457,9 +458,9 @@ class Dashboard2 extends Component {
         partial: this.timeline.map((x) => x.partial),
         gold: true,
         area: true,
-        name: String(this.state.data?.period?.date_to?.slice(0, 4) || ""),
+        name: timelineYear(this.state.period),
       },
-      { values: this.timeline.map((x) => x.previous), dashed: true, name: String(Number(this.state.data?.period?.date_to?.slice(0, 4)) - 1) },
+      { values: this.timeline.map((x) => x.previous), dashed: true, name: String(Number(timelineYear(this.state.period)) - 1) },
     ];
   }
   get hasCustomers() {

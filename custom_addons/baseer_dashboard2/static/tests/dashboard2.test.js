@@ -1,7 +1,7 @@
 import { after, expect, getFixture, globals, test, withFetch, click, press } from '@odoo/hoot';
 import { animationFrame } from '@odoo/hoot-mock';
 import { App, Component } from '@odoo/owl';
-import { formatNumber, formatTable, formatTablePct, chartX, InfoPopup, LineChart, niceStep, KpiCard, Sparkline } from '../src/js/main';
+import { formatNumber, formatTable, formatTablePct, chartX, timelineYear, InfoPopup, LineChart, niceStep, KpiCard, Sparkline } from '../src/js/main';
 
 test('P&L renders without in/out months', async () => {
     class Pnl extends Component {
@@ -233,17 +233,7 @@ test('accounting explanations and gross sales basis are visible in templates', a
     expect(doc.querySelector('[t-name="baseer_dashboard2.Overview"]').outerHTML).toInclude('غير منتظمة بين الفترات');
 });
 
-test('timeline uses the selected period when revenue has no period in its data', async () => {
-    class Money extends Component { static template = 'baseer_dashboard2.Money'; static props = ['value']; format = formatNumber; }
-    class Timeline extends Component {
-        static template = 'baseer_dashboard2.Timeline';
-        static components = { Money, LineChart };
-        state = { timeline: 'monthly', period: { mode: 'month', month: '2026-10' }, data: { timeline: { stats: { ytd: 100, previous_ytd: null } } } };
-        timelineSeries = []; timelineLabels = []; months = []; fmt = formatNumber; pct = formatTablePct; dateName = (value) => value; choose() {};
-    }
-    const response = await withFetch(globals.fetch, () => fetch('/baseer_dashboard2/static/src/xml/main.xml'));
-    const app = new App(Timeline, { templates: await response.text(), test: true });
-    after(() => app.destroy());
-    await app.mount(getFixture());
-    expect(getFixture().textContent).toInclude('2026 مقابل 2025');
+test('timeline legend year comes from the selected period', () => {
+    expect(timelineYear({ mode: 'month', month: '2026-10' })).toBe('2026');
+    expect(timelineYear({ mode: 'range', date_to: '2025-12-31' })).toBe('2025');
 });

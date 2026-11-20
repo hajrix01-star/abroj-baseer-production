@@ -73,6 +73,17 @@ class TestDashboard2(TransactionCase):
         with self.assertRaises(AccessError):
             service._scope('56')
 
+    def test_company_comparison_display_name_setting(self):
+        company = self.env.company
+        self.env['ir.config_parameter'].set_param('baseer_dashboard2.company_map', '%s:أرز' % company.id)
+        settings = self.env['baseer.dashboard2.settings'].search([('company_id', '=', company.id)], limit=1)
+        if not settings:
+            settings = self.env['baseer.dashboard2.settings'].create({'company_id': company.id})
+        service = self.env['baseer.dashboard2.service']
+        self.assertEqual(service._companies()[0][2], 'أرز لاونج')
+        settings.display_name_override = 'اسم مخصص'
+        self.assertEqual(service._companies()[0][2], 'اسم مخصص')
+
     def test_categories(self):
         service = self.env['baseer.dashboard2.service']
         categories = self.env['baseer.dashboard2.category'].search([])

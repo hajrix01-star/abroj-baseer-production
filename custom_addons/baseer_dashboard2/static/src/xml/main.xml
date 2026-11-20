@@ -28,7 +28,7 @@
             <path t-if="props.previous" t-att-d="path(props.previous)" fill="none" t-att-stroke="props.secondaryGold ? 'var(--bd2-gold)' : 'var(--bd2-faint)'" stroke-width="1.5" t-att-stroke-dasharray="props.secondaryGold ? '' : '4 3'"/>
             </t>
         </svg>
-        <t t-if="props.mini and props.stretch"><t t-foreach="endpoints(props.values)" t-as="i" t-key="i"><span class="spark-label navy" t-att-style="'left:'+miniPoint(props.values,i).x+'%;top:'+(miniPoint(props.values,i).y/32*100-10)+'%'" t-esc="short(props.values[i])"/></t><t t-foreach="endpoints(props.previous)" t-as="i" t-key="i"><span class="spark-label gold" t-att-style="'left:'+miniPoint(props.previous,i,true).x+'%;top:'+(miniPoint(props.previous,i,true).y/32*100-10)+'%'" t-esc="short(props.previous[i], props.ratioPercent) + (props.ratioPercent ? '%' : '')"/></t></t></div>
+        <t t-if="props.mini and props.stretch"><t t-foreach="endpoints(props.values)" t-as="i" t-key="i"><span class="spark-dot navy" t-att-class="i === endpoints(props.values)[0] ? 'spark-dot navy filled' : 'spark-dot navy'" t-att-style="'left:'+miniPoint(props.values,i).x+'%;top:'+(miniPoint(props.values,i).y/32*100)+'%'"/><span t-if="i === endpoints(props.values)[0]" class="spark-label navy" t-att-style="'left:'+miniPoint(props.values,i).x+'%;top:'+(miniPoint(props.values,i).y/32*100-10)+'%'" t-esc="short(props.values[i])"/></t><t t-foreach="endpoints(props.previous)" t-as="i" t-key="i"><span class="spark-dot gold" t-att-class="i === endpoints(props.previous)[0] ? 'spark-dot gold filled' : 'spark-dot gold'" t-att-style="'left:'+miniPoint(props.previous,i,true).x+'%;top:'+(miniPoint(props.previous,i,true).y/32*100)+'%'"/><span t-if="i === endpoints(props.previous)[0]" class="spark-label gold" t-att-style="'left:'+miniPoint(props.previous,i,true).x+'%;top:'+(miniPoint(props.previous,i,true).y/32*100-10)+'%'" t-esc="short(props.previous[i], props.ratioPercent) + (props.ratioPercent ? '%' : '')"/></t></t></div>
     </t>
     <t t-name="baseer_dashboard2.LineChart">
         <div>
@@ -501,7 +501,7 @@
                             <td t-foreach="state.data.months" t-as="m" t-key="m.month" t-esc="group[0]==='incoming'?tableFmt(m.incoming.available ? m.incoming.gross : null):(!m.outgoing.available?'غير مُعد':tableFmt(-m.outgoing.total))"/>
                             <td t-esc="group[0]==='incoming'?tableFmt(state.data.total[group[0]]):(state.data.months.some(m=&gt;!m.outgoing.available)?'غير مُعد':tableFmt(-state.data.total[group[0]]))"/>
                         </tr>
-                        <t t-foreach="Object.keys(state.data.total[group[2]])" t-as="key" t-key="key"><tr>
+                        <t t-foreach="Object.keys(state.data.total[group[2]])" t-as="key" t-key="key"><tr t-if="hasDisplayValues(state.data.months.map(m=&gt;m[group[0]][group[2]][key]))">
                             <td t-esc="name(key)"/>
                             <td>
                                 <Sparkline values="state.data.months.map(m=&gt;m[group[0]][group[2]][key] ?? null)" partial="state.data.months.map(m=&gt;m.partial)"/>
@@ -534,7 +534,7 @@
                             <td t-foreach="state.data.months" t-as="m" t-key="m.month" t-esc="tableFmt(m.sales_vat.value)"/>
                             <td t-esc="tableFmt(state.data.total.sales_vat)"/>
                         </tr>
-                        <tr class="account" t-if="group[2]==='items'">
+                        <tr class="account" t-if="group[2]==='items' and hasDisplayValues(state.data.months.map(m=&gt;m.unpaid_bills.value))">
                             <td>فواتير غير مسددة — نهاية الفترة</td>
                             <td/>
                             <td t-foreach="state.data.months" t-as="m" t-key="m.month" t-esc="tableFmt(m.unpaid_bills.value)"/>
@@ -646,7 +646,7 @@
                     <div class="year-days">
                         <span t-foreach="yearPadding(m)" t-as="pad" t-key="pad"/>
                         <i t-foreach="m.days" t-as="d" t-key="d.date" t-att-class="'level-'+level(d)+(d.gross != null and d.events.length ? ' occasion' : '')" t-att-title="dateName(d.date)+' · '+fmt(d.gross)+' · '+d.events.map(e=&gt;e.name).concat((d.warnings || []).map(w=&gt;w.label)).join('، ')">
-                            <span t-esc="Number(d.date.slice(-2))"/>
+                            <span t-if="d.gross != null" t-esc="Number(d.date.slice(-2))"/>
                             <b t-if="d.gross != null" t-esc="fmt(d.gross)"/><small t-if="d.customers != null" t-esc="fmt(d.customers)"/>
                             <em t-if="d.gross != null and d.events.length" class="occasion-badge year-occasion" t-att-title="d.events.map(e=&gt;e.name).join('، ')">★</em>
                         </i>
@@ -680,9 +680,7 @@
             <div class="card">
                 <h3>أوقات الذروة — اليوم × الساعة</h3>
                 <div t-if="!state.data.hours.available" class="customer-empty">غير متوفر — يتوفر من بيانات نقاط البيع فقط</div>
-                <div t-else="" class="hours">
-                    <span t-foreach="state.data.hours.matrix" t-as="h" t-key="h_index" t-att-title="h.weekday+' / '+h.hour" t-esc="fmt(h.orders)"/>
-                </div>
+                <div t-else="" class="hours-scroll"><table class="hours-table"><thead><tr><th>اليوم</th><th t-foreach="Array.from({length:24},(_,i)=&gt;(i+12)%24)" t-as="hour" t-key="hour" t-esc="hourLabel(hour)"/></tr></thead><tbody><tr t-foreach="weekdays" t-as="weekday" t-key="weekday_index"><th t-esc="weekday"/><td t-foreach="Array.from({length:24},(_,i)=&gt;(i+12)%24)" t-as="hour" t-key="hour"><t t-set="cell" t-value="state.data.hours.matrix.find(h=&gt;h.weekday===(weekday_index+5)%7 and h.hour===hour)"/><t t-esc="cell?.orders == null ? '' : fmt(cell.orders)"/></td></tr></tbody></table></div>
             </div>
         </div>
     </t>

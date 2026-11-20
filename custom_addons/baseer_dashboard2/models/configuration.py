@@ -94,6 +94,7 @@ class DashboardSettings(models.Model):
     outflow_journal_ids = fields.Many2many('account.journal', 'bd2_settings_outflow_journal_rel', 'settings_id', 'journal_id', check_company=True)
     custody_journal_ids = fields.Many2many('account.journal', 'bd2_settings_custody_journal_rel', 'settings_id', 'journal_id', check_company=True)
     show_vat_paid_line = fields.Boolean(default=True)
+    display_name_override = fields.Char(string='اسم الشركة في المقارنة')
     pos_cutover_note = fields.Text()
     pos_cutover_date = fields.Date(help='First date included in POS order, average ticket, and hourly metrics; posted entries still determine sales.')
     app_balance_start_date = fields.Date(help='Exclude app balance movements before this date; earlier balances are under review.')

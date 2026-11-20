@@ -95,6 +95,8 @@ export const niceStep = (range, count = 4) => {
   const power = 10 ** Math.floor(Math.log10(raw));
   return ([1, 2, 2.5, 5, 10].find((n) => n * power >= raw) || 10) * power;
 };
+export const hourLabel = hour => `${hour % 12 || 12}${hour >= 12 ? 'م' : 'ص'}`;
+export const hasDisplayValues = (values) => (values || []).some(v => v != null && Number.isFinite(Number(v)) && Math.abs(Number(v)) >= 0.5);
 export const hasPoints = (values) => (values || []).some((v) => v != null && Number.isFinite(Number(v)));
 export class Sparkline extends Component {
   static template = "baseer_dashboard2.Sparkline";
@@ -265,6 +267,8 @@ class Dashboard2 extends Component {
     InfoPopup,
   };
   setup() {
+    this.hasDisplayValues = hasDisplayValues;
+    this.hourLabel = hourLabel;
     this.Number = Number;
     this.String = String;
     for (const name of [

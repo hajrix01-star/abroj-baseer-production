@@ -1,7 +1,7 @@
 import { after, expect, getFixture, globals, test, withFetch, click, press } from '@odoo/hoot';
 import { animationFrame } from '@odoo/hoot-mock';
 import { App, Component } from '@odoo/owl';
-import { formatNumber, formatTable, formatTablePct, chartX, timelineYear, InfoPopup, LineChart, niceStep, KpiCard, Sparkline } from '../src/js/main';
+import { hourLabel, hasDisplayValues, formatNumber, formatTable, formatTablePct, chartX, timelineYear, InfoPopup, LineChart, niceStep, KpiCard, Sparkline } from '../src/js/main';
 
 test('P&L renders without in/out months', async () => {
     class Pnl extends Component {
@@ -236,4 +236,17 @@ test('accounting explanations and gross sales basis are visible in templates', a
 test('timeline legend year comes from the selected period', () => {
     expect(timelineYear({ mode: 'month', month: '2026-10' })).toBe('2026');
     expect(timelineYear({ mode: 'range', date_to: '2025-12-31' })).toBe('2025');
+});
+
+
+test('displayed rows hide values which round to zero', () => {
+    expect(hasDisplayValues([null, 0, -0.4])).toBe(false);
+    expect(hasDisplayValues([0, -0.5])).toBe(true);
+});
+
+test('hour labels follow the Riyadh clock', () => {
+    expect(hourLabel(12)).toBe('12م');
+    expect(hourLabel(13)).toBe('1م');
+    expect(hourLabel(0)).toBe('12ص');
+    expect(hourLabel(1)).toBe('1ص');
 });

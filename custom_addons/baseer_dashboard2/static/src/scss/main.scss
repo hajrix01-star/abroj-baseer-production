@@ -808,3 +808,13 @@ td {
 .o_bd2 .bridge-legend span:nth-child(2) { color: var(--bd2-c6); }
 .o_bd2 .bridge-legend span:nth-child(3) { color: var(--bd2-gold); }
 .o_bd2 .inout-note, .o_bd2 .heatmap-basis { margin: 0 0 12px; }
+
+.o_bd2 .spark-dot { position: absolute; width: 8px; height: 8px; border: 2px solid var(--bd2-c1); background: var(--bd2-card); border-radius: 50%; transform: translate(-50%, -50%); }
+.o_bd2 .spark-dot.filled { background: var(--bd2-c1); }
+.o_bd2 .spark-dot.gold { border-color: var(--bd2-gold); }
+.o_bd2 .spark-dot.gold.filled { background: var(--bd2-gold); }
+
+.o_bd2 .hours-scroll { overflow-x: auto; }
+.o_bd2 .hours-table { min-width: 900px; table-layout: fixed; }
+.o_bd2 .hours-table th, .o_bd2 .hours-table td { text-align: center; padding: 5px 2px; }
+.o_bd2 .hours-table th:first-child { width: 70px; }

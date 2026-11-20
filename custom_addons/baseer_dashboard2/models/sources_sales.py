@@ -21,7 +21,7 @@ class DashboardSales(models.AbstractModel):
 
     def _sales_days(self, ids, start, end):
         """Select revenue by cutover; retain qualifying real POS orders for metrics."""
-        context = dict(allowed_company_ids=ids, tz=self.env.user.tz or 'Asia/Riyadh')
+        context = dict(allowed_company_ids=ids, tz='Asia/Riyadh')
         tz = pytz.timezone(context['tz'])
         utc_start = tz.localize(datetime.combine(start, time.min)).astimezone(pytz.UTC).replace(tzinfo=None)
         utc_end = tz.localize(datetime.combine(end + timedelta(days=1), time.min)).astimezone(pytz.UTC).replace(tzinfo=None)

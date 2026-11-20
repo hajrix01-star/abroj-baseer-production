@@ -63,7 +63,10 @@ class DashboardService(models.AbstractModel):
                 if cid in allowed and cid not in [p[0] for p in pairs]:
                     pairs.append((cid, label.strip()))
         existing = self.env['res.company'].browse([p[0] for p in pairs]).exists()
-        return [(cid, label, existing.browse(cid).name) for cid, label in pairs if cid in existing.ids]
+        settings = self.env['baseer.dashboard2.settings'].search([('company_id', 'in', existing.ids)])
+        configured = {setting.company_id.id: setting.display_name_override for setting in settings}
+        defaults = {'أرز': 'أرز لاونج', 'الشامي': 'المعلم الشامي', 'الدوحة': 'دوحة المساكن'}
+        return [(cid, label, configured.get(cid) or defaults.get(label, existing.browse(cid).name)) for cid, label in pairs if cid in existing.ids]
 
     def _scope(self, key):
         companies = self._companies()

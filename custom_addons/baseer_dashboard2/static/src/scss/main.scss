@@ -464,7 +464,6 @@ td {
   background: var(--bd2-card);
   border-radius: 50%;
   transform: translateX(50%);
-  right: clamp(5px, var(--bd2-previous-position), calc(100% - 5px));
 }
 .target-input {
   width: 52px;
@@ -858,3 +857,8 @@ td {
 .o_bd2 .hours-table th:last-child { width: 58px; }
 .o_bd2 .hours-table { font-size: 10px; }
 .o_bd2 .hours-table th, .o_bd2 .hours-table td { padding-inline: 1px; }
+
+.o_bd2 .spark-dot { position: absolute; width: 8px; height: 8px; border: 2px solid var(--bd2-c1); background: var(--bd2-card); border-radius: 50%; transform: translate(-50%, -50%); }
+.o_bd2 .spark-dot.gold { border-color: var(--bd2-gold); }
+.o_bd2 .spark-dot.navy.filled { background: var(--bd2-c1); }
+.o_bd2 .spark-dot.gold.filled { background: var(--bd2-gold); }

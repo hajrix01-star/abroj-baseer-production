@@ -31,6 +31,11 @@ def low_salaries(current, history):
     return bool(len(history) == 3 and sum(history) > 0 and current < 0.7 * sum(history) / 3)
 
 
+def hours_data_end(first, last, today, last_data):
+    """Limit the hours matrix to the available portion of the selected month."""
+    return max(first, min(last, today, last_data or last))
+
+
 def incomplete_fixed_costs(partial, current, history):
     """A partial month needs at least half the mean fixed costs of three months."""
     return bool(partial and len(history) == 3 and sum(history) > 0 and current < sum(history) / 6)
@@ -419,14 +424,19 @@ class DashboardSections(models.AbstractModel):
         for m in range(1, 13):
             mfirst, mlast = month_bounds(date(first.year, m, 1))
             year_calendar.append({'month': mfirst.strftime('%Y-%m'), 'days': [day_values(d, year_days) for d in dates(mfirst, mlast)]})
-        current_summary, _, _, hours = self._sales_summary(ids, first, last)
+        bounds = self.env['account.move.line'].with_context(allowed_company_ids=ids)._read_group(
+            [('company_id', 'in', ids), ('parent_state', '=', 'posted')], [], ['date:max'])
+        last_data = bounds[0][0] if bounds else None
+        hours_end = hours_data_end(first, last, fields.Date.context_today(self), last_data)
+        current_summary, _, _, hours = self._sales_summary(ids, first, hours_end)
         matrix = [{'weekday': wd, 'hour': hour, 'orders': hours[(wd, hour)]['orders'] if (wd, hour) in hours else None, 'gross': round(hours[(wd, hour)]['gross'], 2) if (wd, hour) in hours else None} for wd in range(7) for hour in range(24)]
         return {'available': True, 'period': {'date_from': str(first), 'date_to': str(last)}, 'days': days, 'events': events, 'weekday_month': averages(first, last),
                 'weekday_ytd': averages(year_start, last), 'year_calendar': year_calendar,
                 'daily_average': {'current': round(current_summary['gross'] / len([d for d in days if d['gross'] is not None]), 2) if any(d['gross'] is not None for d in days) else None, 'previous': round(previous['gross'] / len({d for (_, d), row in prev_days.items() if not row.get('sales_missing')}), 2) if any(not row.get('sales_missing') for row in prev_days.values()) else None},
                 'best_day': max((d for d in days if d['gross'] is not None), key=lambda d: d['gross'], default=None),
                 'worst_day': min((d for d in days if d['gross'] is not None), key=lambda d: d['gross'], default=None),
-                'hours': {'available': bool(hours), 'reason': False if hours else 'no_pos_days', 'matrix': matrix}}
+                'hours': {'available': bool(hours), 'reason': False if hours else 'no_pos_days', 'matrix': matrix,
+                          'period': {'date_from': str(first), 'date_to': str(hours_end)}, 'partial': hours_end < last}}
 
     @api.model
     def get_section(self, section, params=None):

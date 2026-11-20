@@ -127,6 +127,10 @@ export class Sparkline extends Component {
     (a || []).forEach((v, i) => { const p = this.miniPoint(a, i, ratio); if (p) points.push(p); else flush(); }); flush(); return segments.join(' ');
   }
   endpoints(a) { const indices = (a || []).map((v, i) => v == null ? -1 : i).filter(i => i >= 0); return indices.length > 1 ? [indices[0], indices[indices.length - 1]] : indices; }
+  miniDotStyle(a, i, ratio = false) {
+    const point = this.miniPoint(a, i, ratio);
+    return `left:${point.x}%;top:${point.y / 32 * 100}%`;
+  }
   miniLabelStyle(a, i, ratio = false) {
     const point = this.miniPoint(a, i, ratio), right = point.x <= 50;
     return `left:calc(${point.x}% ${right ? '+' : '-'} 10px);top:calc(${point.y / 32 * 100}% - 6px);transform:translate(${right ? '0' : '-100%'}, -100%)`;
@@ -165,17 +169,10 @@ export class LineChart extends Component {
   }
   y(v) { const {min, max} = this.scale; return 205 - (Number(v) - min) / (max - min) * 165; }
   labelY(series, value) {
-    const entries = this.renderedSeries.filter(s => s.firstLabel || s.endpoint)
-      .map(s => ({ series: s, value: s.values.findLast(v => v != null) }))
-      .filter(entry => entry.value != null)
-      .map(entry => ({ ...entry, y: Math.max(12, Math.min(200, this.y(entry.value) - 8)) }))
-      .sort((a, b) => a.y - b.y);
-    for (let i = 1; i < entries.length; i++) entries[i].y = Math.max(entries[i].y, entries[i - 1].y + 12);
-    if (entries.length && entries.at(-1).y > 200) {
-      entries.at(-1).y = 200;
-      for (let i = entries.length - 2; i >= 0; i--) entries[i].y = Math.min(entries[i].y, entries[i + 1].y - 12);
-    }
-    return entries.find(entry => entry.series === series)?.y ?? this.y(value) - 8;
+    const peers = this.renderedSeries.filter(s => (s.firstLabel || s.endpoint) && !s.dashed)
+      .map(s => s.values.findLast(v => v != null)).filter(v => v != null);
+    const below = !series.dashed && peers.length > 1 && value < Math.max(...peers);
+    return this.y(value) + (below ? 19 : -10);
   }
   area(values) {
     const baseline = this.y(0); let segments = [], points = [];

@@ -15,6 +15,24 @@ class TestDashboard2(TransactionCase):
             with self.subTest(name=name):
                 list(PoFileReader(str(i18n / name)))
 
+    def test_hours_data_range_is_limited_to_available_dates(self):
+        from ..models.sections import hours_data_end
+        first, last = date(2026, 11, 1), date(2026, 11, 30)
+        self.assertEqual(hours_data_end(first, last, date(2026, 11, 25), date(2026, 11, 20)), date(2026, 11, 20))
+        self.assertEqual(hours_data_end(first, last, date(2026, 11, 18), date(2026, 11, 20)), date(2026, 11, 18))
+        self.assertEqual(hours_data_end(first, last, date(2026, 12, 1), date(2026, 12, 1)), last)
+
+    def test_chart_components_wire_visual_positions(self):
+        from pathlib import Path
+        from lxml import etree
+        root = etree.parse(str(Path(__file__).resolve().parents[1] / 'static/src/xml/main.xml'))
+        spark = root.xpath("//t[@t-name='baseer_dashboard2.Sparkline']")[0]
+        self.assertEqual(len(spark.xpath(".//span[contains(@t-att-class, 'spark-dot')]")), 2)
+        gauge = root.xpath("//t[@t-name='baseer_dashboard2.Gauge']")[0]
+        self.assertIn('pos(props.previous)', gauge.xpath('.//em')[0].get('t-att-style'))
+        chart = root.xpath("//t[@t-name='baseer_dashboard2.LineChart']")[0]
+        self.assertIn('labelY(s,v)', chart.xpath('.//text[@t-att-y]')[-1].get('t-att-y'))
+
     def test_partial_fixed_costs_require_three_month_baseline(self):
         from ..models.sections import incomplete_fixed_costs
         self.assertTrue(incomplete_fixed_costs(True, 49, [100, 100, 100]))
@@ -336,6 +354,8 @@ class TestDashboard2(TransactionCase):
         heatmap = service.get_section('heatmap', params)
         self.assertEqual(len(heatmap['hours']['matrix']), 7 * 24)
         self.assertTrue(all('orders' in cell for cell in heatmap['hours']['matrix']))
+        self.assertIn('date_to', heatmap['hours']['period'])
+        self.assertIn('partial', heatmap['hours'])
 
     def test_scope_and_targets(self):
         from odoo.tests.common import new_test_user

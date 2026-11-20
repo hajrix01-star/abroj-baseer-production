@@ -137,7 +137,7 @@ test('heatmap renders occasion badges for an event day', async () => {
         static components = { Badge };
         state = { metric: 'gross', period: { month: '2026-10' }, meta: {}, data: {
             period: { date_from: '2026-10-01', date_to: '2026-10-31' }, daily_average: {}, days: [day], best_day: day, weekday_month: [], weekday_ytd: [],
-            year_calendar: [{ month: '2026-10', days: [day] }], events: [], hours: { available: false },
+            year_calendar: [{ month: '2026-10', days: [day] }], events: [], hours: { available: false, period: { date_from: '2026-10-01', date_to: '2026-10-31' } },
         } };
         number = Number; weekdayName = () => ""; months = []; weekdays = []; calendarCells = [day]; hasCustomers = true;
         fmt = formatNumber; dateName = (v) => v; monthName = (v) => v; periodRange = periodRange;
@@ -382,11 +382,11 @@ test('revenue apps chart aligns ten month labels and points, preserving gaps', a
     await app.mount(getFixture());
     const labels = [...getFixture().querySelectorAll('.mini-labels span')];
     const svg = getFixture().querySelector('svg');
-    const latest = svg.querySelectorAll('circle[stroke="var(--bd2-gold)"]')[1];
+    const latest = getFixture().querySelectorAll('.spark-dot.gold')[1];
     expect(labels.length).toBe(5);
     expect(labels.map(label => parseFloat(label.style.left))).toEqual(Array.from({ length: 5 }, (_, i) => miniX(i * 2 + 1, 10)));
-    expect(Number(latest.getAttribute('cx'))).toBe(miniX(9, 10));
-    expect(Number(latest.getAttribute('cx'))).toBeLessThan(parseFloat(labels[0].style.left));
+    expect(parseFloat(latest.style.left)).toBe(miniX(9, 10));
+    expect(parseFloat(latest.style.left)).toBeLessThan(parseFloat(labels[0].style.left));
     expect(getFixture().querySelector('.spark-label.gold').textContent).toBe('34.9%');
     for (const color of ['gold', 'navy']) {
         const label = getFixture().querySelector(`.spark-label.${color}`);
@@ -397,10 +397,10 @@ test('revenue apps chart aligns ten month labels and points, preserving gaps', a
     expect(Sparkline.prototype.miniLabelStyle.call({ miniPoint: () => ({ x: 95, y: 10 }) }, [1], 0)).toInclude('- 10px');
     for (const [path, color] of [[1, 'var(--bd2-c1)'], [2, 'var(--bd2-gold)']]) {
         const points = [...svg.querySelectorAll('path')[path].getAttribute('d').matchAll(/[ML]([\d.]+),([\d.]+)/g)];
-        const dots = svg.querySelectorAll(`circle[stroke="${color}"]`);
+        const dots = getFixture().querySelectorAll(`.spark-dot.${color === 'var(--bd2-c1)' ? 'navy' : 'gold'}`);
         for (const [dot, point] of [[dots[0], points[0]], [dots[1], points.at(-1)]]) {
-            expect(Number(dot.getAttribute('cx'))).toBe(Number(point[1]));
-            expect(Number(dot.getAttribute('cy'))).toBe(Number(point[2]));
+            expect(parseFloat(dot.style.left)).toBe(Number(point[1]));
+            expect(parseFloat(dot.style.top)).toBe(Number(point[2]) / 32 * 100);
         }
     }
     expect(svg.getAttribute('preserveAspectRatio')).toBe('none');
@@ -429,7 +429,7 @@ test('customer chart aligns every month with its plotted point and formats order
     labels.forEach((label, i) => expect(parseFloat(label.style.left)).toBe(Sparkline.prototype.miniPoint(values, i).x));
     expect(parseFloat(labels[5].style.left)).toBeLessThan(parseFloat(labels[0].style.left));
     expect(getFixture().querySelector('.spark-label.navy').textContent).toBe('1.5K');
-    expect(getFixture().querySelectorAll('circle[stroke="var(--bd2-c1)"]').length).toBe(2);
+    expect(getFixture().querySelectorAll('.spark-dot.navy').length).toBe(2);
     expect(getFixture().querySelector('path[stroke="var(--bd2-c1)"]').getAttribute('d')).toInclude(`M${miniX(1, 6)},`);
 });
 
@@ -577,7 +577,7 @@ test('review layouts show period totals and separate KPI details', async () => {
     const doc = new DOMParser().parseFromString(await response.text(), 'text/xml');
     const heat = doc.querySelector('.hours-table');
     expect(heat.textContent).toInclude('المتوسط');
-    expect(heat.closest('.card').querySelector('[t-esc="periodRange(state.data.period)"]')).not.toBe(null);
+    expect(heat.closest('.card').querySelector('[t-esc="periodRange(state.data.hours.period)"]')).not.toBe(null);
     const compare = doc.querySelector('[t-name="baseer_dashboard2.Compare"]');
     expect(compare.innerHTML).toInclude("co.net_margin_pct &lt; 0 ? 'bad'");
     expect(compare.innerHTML).toInclude('co.targets?.food_pct?.status');
@@ -611,14 +611,15 @@ test('small display details and commission data are wired correctly', async () =
 
 test('previous gauge marker stays inside both ends of the track', async () => {
     const response = await withFetch(globals.fetch, () => fetch('/baseer_dashboard2/static/src/xml/main.xml'));
-    const app = new App(Gauge, { templates: await response.text(), props: { previous: 100, max: 50 }, test: true });
+    const app = new App(Gauge, { templates: await response.text(), props: { value: 46.6, previous: 50.9, target: 25, max: 50 }, test: true });
     after(() => app.destroy());
     await app.mount(getFixture());
-    const marker = getFixture().querySelector('.bd2-gauge em');
-    expect(marker.style.getPropertyValue('--bd2-previous-position')).toBe('100%');
+    const gauge = getFixture().querySelector('.bd2-gauge');
+    expect(gauge.querySelector('i').style.width).toBe('93.2%');
+    expect(gauge.querySelector('b').style.right).toBe('50%');
+    expect(gauge.querySelector('em').getAttribute('style')).toInclude('100%');
     expect(Gauge.prototype.pos.call({ props: { max: 50 } }, -1)).toBe(0);
-    const css = await withFetch(globals.fetch, () => fetch('/baseer_dashboard2/static/src/scss/main.scss'));
-    expect(await css.text()).toInclude('clamp(5px, var(--bd2-previous-position), calc(100% - 5px))');
+    expect(Gauge.prototype.pos.call({ props: { max: 50 } }, 25)).toBe(50);
 });
 
 test('partial month break-even labels are separated', async () => {
@@ -626,12 +627,17 @@ test('partial month break-even labels are separated', async () => {
     const app = new App(LineChart, { templates: await response.text(), props: { fiveTicks: true, series: [
         { values: [100000, 161000], firstLabel: true, partial: [false, true] },
         { values: [50000, 154000], firstLabel: true, partial: [false, true], gold: true },
+        { values: [110000, 124000], dashed: true, endpoint: true },
     ] }, test: true });
     after(() => app.destroy());
     await app.mount(getFixture());
     const labels = [...getFixture().querySelectorAll('text[text-anchor="start"]')].filter(el => ['161K', '154K'].includes(el.textContent));
     expect(labels.length).toBe(2);
-    expect(Math.abs(Number(labels[0].getAttribute('y')) - Number(labels[1].getAttribute('y'))) >= 12).toBe(true);
+    const circles = [...getFixture().querySelectorAll('circle[r="5"]')];
+    expect(Number(labels[0].getAttribute('y'))).toBeLessThan(Number(circles[0].getAttribute('cy')) - 9);
+    expect(Number(labels[1].getAttribute('y'))).toBeGreaterThan(Number(circles[1].getAttribute('cy')) + 18);
+    const breakLabel = [...getFixture().querySelectorAll('text')].find(el => el.textContent === '124K');
+    expect(Number(breakLabel.getAttribute('y'))).toBeLessThan(Number(circles[2].getAttribute('cy')) - 9);
 });
 
 test('peak hours subtitle uses the effective selected date range', async () => {
@@ -639,5 +645,15 @@ test('peak hours subtitle uses the effective selected date range', async () => {
     expect(periodRange({ date_from: '2025-12-30', date_to: '2026-01-02' })).toBe('30/12/2025 – 2/1/2026');
     const response = await withFetch(globals.fetch, () => fetch('/baseer_dashboard2/static/src/xml/main.xml'));
     const doc = new DOMParser().parseFromString(await response.text(), 'text/xml');
-    expect(doc.querySelector('[t-esc="periodRange(state.data.period)"]')).not.toBe(null);
+    expect(doc.querySelector('[t-esc="periodRange(state.data.hours.period)"]')).not.toBe(null);
+});
+
+
+test('peak hours subtitle uses the actual partial data range', async () => {
+    const response = await withFetch(globals.fetch, () => fetch('/baseer_dashboard2/static/src/xml/main.xml'));
+    const doc = new DOMParser().parseFromString(await response.text(), 'text/xml');
+    const card = [...doc.querySelectorAll('[t-name="baseer_dashboard2.Heatmap"] .card')].find(el => el.textContent.includes('أوقات الذروة'));
+    expect(card.outerHTML).toInclude('periodRange(state.data.hours.period)');
+    expect(card.outerHTML).toInclude('state.data.hours.partial');
+    expect(periodRange({ date_from: '2026-11-01', date_to: '2026-11-20' })).toBe('1/11 – 20/11/2026');
 });

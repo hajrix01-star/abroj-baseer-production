@@ -18,8 +18,8 @@
                 <path t-att-d="miniPath(props.values, false, true)" fill="var(--bd2-c1)" fill-opacity="0.09"/>
                 <path t-att-d="miniPath(props.values)" fill="none" stroke="var(--bd2-c1)" stroke-width="2" vector-effect="non-scaling-stroke"/>
                 <path t-att-d="miniPath(props.previous, true)" fill="none" stroke="var(--bd2-gold)" stroke-width="2" vector-effect="non-scaling-stroke"/>
-                <t t-foreach="endpoints(props.values)" t-as="i" t-key="i"><circle t-att-cx="miniPoint(props.values,i).x" t-att-cy="miniPoint(props.values,i).y" r="1.3" t-att-fill="i === endpoints(props.values).at(-1) ? 'var(--bd2-c1)' : 'var(--bd2-card)'" stroke="var(--bd2-c1)" stroke-width="0.5"/><text t-if="!props.stretch and i === endpoints(props.values).at(-1)" font-weight="700" t-att-x="miniPoint(props.values,i).x" t-att-y="miniPoint(props.values,i).y-2" text-anchor="middle" fill="var(--bd2-c1)" font-size="2.4" t-esc="short(props.values[i], false, props.amountDecimal)"/></t>
-                <t t-foreach="endpoints(props.previous)" t-as="i" t-key="i"><circle t-att-cx="miniPoint(props.previous,i,true).x" t-att-cy="miniPoint(props.previous,i,true).y" r="1.3" t-att-fill="i === endpoints(props.previous).at(-1) ? 'var(--bd2-gold)' : 'var(--bd2-card)'" stroke="var(--bd2-gold)" stroke-width="0.5"/><text t-if="!props.stretch and i === endpoints(props.previous).at(-1)" font-weight="700" t-att-x="miniPoint(props.previous,i,true).x" t-att-y="miniPoint(props.previous,i,true).y-2" text-anchor="middle" fill="var(--bd2-gold-text)" font-size="2.4" t-esc="short(props.previous[i], props.ratioPercent) + (props.ratioPercent ? '%' : '')"/></t>
+                <t t-foreach="endpoints(props.values)" t-as="i" t-key="i"><circle t-if="!props.stretch" t-att-cx="miniPoint(props.values,i).x" t-att-cy="miniPoint(props.values,i).y" r="1.3" t-att-fill="i === endpoints(props.values).at(-1) ? 'var(--bd2-c1)' : 'var(--bd2-card)'" stroke="var(--bd2-c1)" stroke-width="0.5"/><text t-if="!props.stretch and i === endpoints(props.values).at(-1)" font-weight="700" t-att-x="miniPoint(props.values,i).x" t-att-y="miniPoint(props.values,i).y-2" text-anchor="middle" fill="var(--bd2-c1)" font-size="2.4" t-esc="short(props.values[i], false, props.amountDecimal)"/></t>
+                <t t-foreach="endpoints(props.previous)" t-as="i" t-key="i"><circle t-if="!props.stretch" t-att-cx="miniPoint(props.previous,i,true).x" t-att-cy="miniPoint(props.previous,i,true).y" r="1.3" t-att-fill="i === endpoints(props.previous).at(-1) ? 'var(--bd2-gold)' : 'var(--bd2-card)'" stroke="var(--bd2-gold)" stroke-width="0.5"/><text t-if="!props.stretch and i === endpoints(props.previous).at(-1)" font-weight="700" t-att-x="miniPoint(props.previous,i,true).x" t-att-y="miniPoint(props.previous,i,true).y-2" text-anchor="middle" fill="var(--bd2-gold-text)" font-size="2.4" t-esc="short(props.previous[i], props.ratioPercent) + (props.ratioPercent ? '%' : '')"/></t>
             </t>
             <t t-else="">
             <path t-att-d="path(props.values)" fill="none" t-att-stroke="props.gold ? 'var(--bd2-gold)' : props.navy ? 'var(--bd2-c1)' : 'var(--bd2-c5)'" stroke-width="2"/>
@@ -29,7 +29,7 @@
             <path t-if="props.previous" t-att-d="path(props.previous)" fill="none" t-att-stroke="props.secondaryGold ? 'var(--bd2-gold)' : 'var(--bd2-faint)'" stroke-width="1.5" t-att-stroke-dasharray="props.secondaryGold ? '' : '4 3'"/>
             </t>
         </svg>
-        <t t-if="props.mini and props.stretch"><t t-foreach="endpoints(props.values)" t-as="i" t-key="i"><span t-if="i === endpoints(props.values).at(-1)" class="spark-label navy" t-att-style="miniLabelStyle(props.values,i)" t-esc="short(props.values[i], false, props.amountDecimal)"/></t><t t-foreach="endpoints(props.previous)" t-as="i" t-key="i"><span t-if="i === endpoints(props.previous).at(-1)" class="spark-label gold" t-att-style="miniLabelStyle(props.previous,i,true)" t-esc="short(props.previous[i], props.ratioPercent) + (props.ratioPercent ? '%' : '')"/></t></t></div>
+        <t t-if="props.mini and props.stretch"><t t-foreach="endpoints(props.values)" t-as="i" t-key="i"><span t-att-class="'spark-dot navy '+(i === endpoints(props.values).at(-1) ? 'filled' : '')" t-att-style="miniDotStyle(props.values,i)"/></t><t t-foreach="endpoints(props.previous)" t-as="i" t-key="i"><span t-att-class="'spark-dot gold '+(i === endpoints(props.previous).at(-1) ? 'filled' : '')" t-att-style="miniDotStyle(props.previous,i,true)"/></t><t t-foreach="endpoints(props.values)" t-as="i" t-key="i"><span t-if="i === endpoints(props.values).at(-1)" class="spark-label navy" t-att-style="miniLabelStyle(props.values,i)" t-esc="short(props.values[i], false, props.amountDecimal)"/></t><t t-foreach="endpoints(props.previous)" t-as="i" t-key="i"><span t-if="i === endpoints(props.previous).at(-1)" class="spark-label gold" t-att-style="miniLabelStyle(props.previous,i,true)" t-esc="short(props.previous[i], props.ratioPercent) + (props.ratioPercent ? '%' : '')"/></t></t></div>
     </t>
     <t t-name="baseer_dashboard2.LineChart">
         <div>
@@ -79,7 +79,7 @@
         <div class="bd2-gauge">
             <i t-att-style="'width:'+pos(props.value)+'%'"/>
             <b t-if="props.target != null" t-att-style="'right:'+pos(props.target)+'%'"><span class="gauge-target">المستهدف <bdi dir="ltr" t-esc="targetLabel()"/></span></b>
-            <em t-if="props.previous != null" t-att-style="'--bd2-previous-position:'+pos(props.previous)+'%'"/>
+            <em t-if="props.previous != null" t-att-style="'right:clamp(5px, '+pos(props.previous)+'%, calc(100% - 5px))'"/>
         </div>
     </t>
     <t t-name="baseer_dashboard2.KpiCard">
@@ -360,7 +360,7 @@
             <div class="card ratio" t-foreach="['food_pct','salaries_pct','prime_pct','net_margin_pct']" t-as="key" t-key="key">
                 <div class="ratio-heading"><div><h3 t-esc="name(key)"/><div class="muted" t-esc="({food_pct:'تكلفة الأكل ÷ المبيعات',salaries_pct:'الرواتب ÷ المبيعات',prime_pct:'(الأكل + الرواتب) ÷ المبيعات',net_margin_pct:'صافي الربح ÷ المبيعات'})[key]"/></div><span t-if="current.ratios?.[key] != null and state.data.targets[key]" t-att-class="'bd2-badge '+(state.data.targets[key].status === 'ok' ? 'good' : 'bad')" t-esc="state.data.targets[key].status === 'ok' ? 'ضمن المستهدف' : 'خارج المستهدف'"/></div>
                 <div class="ratio-value"><strong t-att-class="key === 'net_margin_pct' and current.ratios?.[key] &lt; 0 ? 'negative' : ''"><bdi dir="ltr" t-esc="pct(current.ratios?.[key])"/></strong><Badge value="key === 'salaries_pct' and state.data.previous_salaries_warning ? null : ratioDifference(current.ratios?.[key], state.data.previous.ratios?.[key])" points="true" goodWhen="key === 'net_margin_pct' ? 'up' : 'down'" warning="key === 'salaries_pct' and state.data.previous_salaries_warning"/></div>
-                <Gauge value="current.ratios?.[key]" previous="state.data.previous.ratios?.[key]" target="state.data.targets[key]?.value" operator="state.data.targets[key]?.operator" max="({food_pct:50,salaries_pct:40,prime_pct:80,net_margin_pct:30})[key]"/><div class="gauge-scale"><span t-esc="({food_pct:50,salaries_pct:40,prime_pct:80,net_margin_pct:30})[key]+'%'"/><span>0%</span></div>
+                <Gauge value="current.ratios?.[key]" previous="state.data.previous.ratios?.[key]" target="state.data.targets[key]?.value" operator="state.data.targets[key]?.operator" max="({food_pct:50,salaries_pct:40,prime_pct:80,net_margin_pct:30})[key]"/><div class="gauge-scale"><span>0%</span><span t-esc="({food_pct:50,salaries_pct:40,prime_pct:80,net_margin_pct:30})[key]+'%'"/></div>
                 <div class="ratio-foot"><span class="muted">آخر 6 أشهر</span><Sparkline values="trend.map(x=&gt;x.has_data ? x.data.ratios[key] : null)" partial="trend.map(x=&gt;x.partial)" navy="true"/></div>
             </div>
         </div>
@@ -670,7 +670,7 @@
                 </table>
             </div>
             <div class="card">
-                <h3>أوقات الذروة — اليوم × الساعة</h3><div class="muted">عدد الطلبات · <t t-esc="periodRange(state.data.period)"/></div>
+                <h3>أوقات الذروة — اليوم × الساعة</h3><div class="muted">عدد الطلبات · <t t-esc="periodRange(state.data.hours.period)"/><t t-if="state.data.hours.partial"> (جزئي)</t></div>
                 <div t-if="!state.data.hours.available" class="customer-empty">غير متوفر — يتوفر من بيانات نقاط البيع فقط</div>
                 <div t-else="" class="hours-scroll"><table class="hours-table">
                     <thead><tr><th>اليوم</th><th t-foreach="peakHours" t-as="hour" t-key="hour" t-esc="hourLabel(hour)"/><th>المتوسط</th></tr></thead>

@@ -9,7 +9,7 @@
     <PublishSingleFile>true</PublishSingleFile>
     <SelfContained>true</SelfContained>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
-    <Version>1.5.18</Version>
+    <Version>1.5.21</Version>
   </PropertyGroup>
   <PropertyGroup Condition="'$(QaProfile)' == 'true'">
     <DefineConstants>$(DefineConstants);QA_PROFILE</DefineConstants>

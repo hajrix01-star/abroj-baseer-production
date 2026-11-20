@@ -562,30 +562,48 @@ msgstr "نقداً/كاش"
 msgid "هنقرستيشن"
 msgstr "هنقرستيشن"
 
+#. module: baseer_dashboard2
+#. 
 msgid "ضمن المستهدف"
 msgstr "ضمن المستهدف"
 
+#. module: baseer_dashboard2
+#. 
 msgid "خارج المستهدف"
 msgstr "خارج المستهدف"
 
+#. module: baseer_dashboard2
+#. 
 msgid "غير مصنف"
 msgstr "غير مصنف"
 
+#. module: baseer_dashboard2
+#. 
 msgid "non_operating"
 msgstr "غير تشغيلي"
 
+#. module: baseer_dashboard2
+#. 
 msgid "transfer"
 msgstr "تحويل بنكي"
 
+#. module: baseer_dashboard2
+#. 
 msgid "credit"
 msgstr "آجل"
 
+#. module: baseer_dashboard2
+#. 
 msgid "POS payment method"
 msgstr "طريقة دفع نقطة البيع"
 
+#. module: baseer_dashboard2
+#. 
 msgid "Dashboard channel mapping"
 msgstr "ربط قنوات لوحة المعلومات"
 
+#. module: baseer_dashboard2
+#. 
 msgid "Dashboard event"
 msgstr "مناسبة لوحة المعلومات"
 
@@ -606,5 +624,9 @@ msgid "Liquidity"
 msgstr "مصادر السيولة"
 
 #. module: baseer_dashboard2
-msgid "Before this date sales use summaries; qualifying real POS orders still provide customer and hourly metrics."
-msgstr "قبل هذا التاريخ تُحسب المبيعات من الملخصات؛ وتظل طلبات نقاط البيع الحقيقية المؤهلة مصدراً لعدد العملاء والتوزيع بالساعة."
+msgid ""
+"Before this date sales use summaries; qualifying real POS orders still "
+"provide customer and hourly metrics."
+msgstr ""
+"قبل هذا التاريخ تُحسب المبيعات من الملخصات؛ وتظل طلبات نقاط البيع الحقيقية "
+"المؤهلة مصدراً لعدد العملاء والتوزيع بالساعة."

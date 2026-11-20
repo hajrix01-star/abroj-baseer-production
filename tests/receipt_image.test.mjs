@@ -1,6 +1,6 @@
 import {readFileSync,writeFileSync} from 'node:fs';
 import assert from 'node:assert/strict';
-const source=readFileSync('custom_addons/baseer_pos_print_bridge/static/src/app/receipt_image.js','utf8').replace('import { _t } from "@web/core/l10n/translation";', 'const _t = (value) => value;');
+const source=readFileSync('custom_addons/baseer_pos_print_bridge/static/src/app/receipt_image.js','utf8').replace('import { _t } from "@web/core/l10n/translation";', 'const _t = (value) => value;').replace('import { toCanvas } from "@point_of_sale/app/utils/html-to-image";', 'const toCanvas = globalThis.receiptTestCanvas;').replace('import { waitImages } from "@point_of_sale/utils";', 'const waitImages = globalThis.receiptTestWaitImages;');
 const {encodeReceiptJpeg}=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
 const jpeg=bytes=>{const data=Buffer.alloc(bytes,42);Buffer.from([0xff,0xd8,0xff,0xda,0,2]).copy(data);return 'data:image/jpeg;base64,'+data.toString('base64');};
 function fixture(sizes){let calls=[];const canvas={getContext:()=>({fillRect(){},drawImage(){}}),toDataURL(type,q){calls.push(q);return jpeg(sizes[calls.length-1]??sizes.at(-1));}};return {canvas,calls,create:()=>canvas};}

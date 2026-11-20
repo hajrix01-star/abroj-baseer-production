@@ -158,6 +158,35 @@ class TestDashboard2(TransactionCase):
         self.assertEqual(result['total'], 200)
 
 
+    def test_cash_out_excludes_vat_and_keeps_zakat(self):
+        from datetime import date
+        company = self.env.company
+        model = self.env['account.account'].with_company(company)
+        def account(code, kind):
+            return model.create({'code': code, 'name': code, 'account_type': kind, 'company_ids': [(6, 0, [company.id])]})
+        bank = account('D2VATBANK', 'asset_cash')
+        vat = account('202003', 'liability_payable')
+        zakat = account('400072', 'expense')
+        journal = self.env['account.journal'].create({'name': 'VAT test', 'code': 'D2VAT', 'type': 'general', 'company_id': company.id})
+        move = self.env['account.move'].create({'journal_id': journal.id, 'date': '2026-10-05', 'line_ids': [
+            (0, 0, {'name': 'VAT', 'account_id': vat.id, 'debit': 100}),
+            (0, 0, {'name': 'Zakat', 'account_id': zakat.id, 'debit': 50}),
+            (0, 0, {'name': 'Bank', 'account_id': bank.id, 'credit': 150})]})
+        move.action_post()
+        service = self.env['baseer.dashboard2.service']
+        out = service._cash_out([company.id], date(2026, 10, 1), date(2026, 10, 31))
+        self.assertEqual(out['total'], 50)
+        self.assertEqual(out['items']['zakat_tax'], 50)
+        self.assertNotIn('vat_paid', out['items'])
+        self.assertAlmostEqual(sum(out['items'].values()), out['total'], places=2)
+        self.assertAlmostEqual(sum(out['sources'].values()), out['total'], places=2)
+        report = service._inout([company.id], date(2026, 10, 31))
+        self.assertEqual(report['months'][-1]['outgoing']['total'], 50)
+        self.assertEqual(report['total']['outgoing'], 50)
+        self.assertEqual(report['months'][-1]['net'], report['months'][-1]['incoming']['gross'] - 50)
+        self.assertAlmostEqual(sum(report['total']['items'].values()), report['total']['outgoing'], places=2)
+        self.assertAlmostEqual(sum(report['total']['sources'].values()), report['total']['outgoing'], places=2)
+
     def test_pos_sales(self):
         from datetime import date, timedelta
         company = self.env.company

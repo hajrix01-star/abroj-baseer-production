@@ -265,7 +265,7 @@ class DashboardSections(models.AbstractModel):
             start, last = month_bounds(end, offset)
             last = min(last, end)
             sales, _, _, _ = self._sales_summary(ids, start, last)
-            out = out_by_month.get(start.strftime('%Y-%m'), {'available': True, 'unconfigured_company_ids': [], 'total': 0, 'items': {}, 'sources': {}, 'show_vat_paid_line': True, 'vat_visibility_by_company': {}})
+            out = out_by_month.get(start.strftime('%Y-%m'), {'available': True, 'unconfigured_company_ids': [], 'total': 0, 'items': {}, 'sources': {}})
             vat = self._sales_vat(ids, start, last)
             sales['available'] = bool(sales['channels'])
             months.append({'month': start.strftime('%Y-%m'), 'incoming': sales, 'outgoing': out,

@@ -477,7 +477,7 @@
                             <td t-foreach="state.data.months" t-as="m" t-key="m.month" t-esc="group[0]==='incoming'?tableFmt(m.incoming.available ? m.incoming.gross : null):(!m.outgoing.available?'غير مُعد':tableFmt(-m.outgoing.total))"/>
                             <td t-esc="group[0]==='incoming'?tableFmt(state.data.total[group[0]]):(state.data.months.some(m=&gt;!m.outgoing.available)?'غير مُعد':tableFmt(-state.data.total[group[0]]))"/>
                         </tr>
-                        <t t-foreach="Object.keys(state.data.total[group[2]])" t-as="key" t-key="key"><tr t-if="key !== 'vat_paid' || state.data.months.some(m=&gt;m.outgoing.show_vat_paid_line)">
+                        <t t-foreach="Object.keys(state.data.total[group[2]])" t-as="key" t-key="key"><tr>
                             <td t-esc="name(key)"/>
                             <td>
                                 <Sparkline values="state.data.months.map(m=&gt;m[group[0]][group[2]][key] ?? null)"/>

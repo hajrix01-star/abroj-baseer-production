@@ -10,19 +10,21 @@ class DashboardCash(models.AbstractModel):
 
     def _cash_out(self, ids, start, end, split=False):
         buckets = defaultdict(lambda: {'items': defaultdict(float), 'sources': defaultdict(float), 'total': 0.0})
-        vat_visibility = {}
         for cid in ids:
             ctx = dict(allowed_company_ids=[cid])
             company = self.env['res.company'].browse(cid)
             settings = self.env['baseer.dashboard2.settings'].with_context(**ctx).search([('company_id', '=', cid)], limit=1)
-            vat_visibility[str(cid)] = settings.show_vat_paid_line if settings else True
             accounts = self.env['account.account'].with_context(**ctx).with_company(company).search([('company_ids', 'in', [cid]), '|', ('account_type', '=', 'asset_cash'), ('code', 'in', ('101090', '105090'))])
             if settings:
                 accounts |= settings.liquidity_account_ids | settings.liquidity_ids.mapped('account_id')
             liquidity = set(accounts.ids)
             bank_accounts = set(self.env['account.journal'].with_context(**ctx).search([('company_id', '=', cid), ('type', '=', 'bank')]).mapped('default_account_id').ids)
             categories = self.env['baseer.dashboard2.category'].with_context(**ctx).search([])
-            tax_ids = set(self.env['account.tax.repartition.line'].with_context(**ctx).search([('account_id', '!=', False), ('tax_id.company_id', '=', cid)]).mapped('account_id').ids)
+            tax_lines = self.env['account.tax.repartition.line'].with_context(**ctx).search([('account_id', '!=', False), ('tax_id.company_id', '=', cid)])
+            tax_ids = set(tax_lines.filtered(lambda r: any(term in ((r.tax_id.name or '') + ' ' + (r.tax_id.with_context(lang='en_US').name or '')).lower()
+                                                         for term in ('vat', 'value added', 'القيمة المضافة'))).mapped('account_id').ids)
+            # Saudi chart VAT control accounts, including the ZATCA settlement payable.
+            vat_codes = {'100103', '101060', '104041', '104043', '201017', '201030', '202003'}
             resets = set(self._reset_move_ids([cid], end, start))
             paid = self.env['account.move.line'].with_context(**ctx).search([('company_id', '=', cid), ('parent_state', '=', 'posted'), ('date', '>=', start), ('date', '<=', end), ('account_id', 'in', list(liquidity)), ('credit', '>', 0), ('move_id', 'not in', list(resets))], limit=200001)
             if len(paid) > 200000:
@@ -49,6 +51,8 @@ class DashboardCash(models.AbstractModel):
             def classify(line):
                 account = line.account_id.with_company(company)
                 code = account.code or ''
+                if code in vat_codes or account.id in tax_ids:
+                    return {'vat_paid': 1.0}
                 if code == '201090':
                     return {'salaries': 1.0}
                 if account.account_type == 'liability_payable' or code == '102014' or line.matched_debit_ids or line.matched_credit_ids:
@@ -60,9 +64,11 @@ class DashboardCash(models.AbstractModel):
                         category = 'salaries' if acc.code == '201090' else self._category(acc, categories) if (acc.account_type or '').startswith('expense') else False
                         if category:
                             weights['purchases' if category == 'food_cost' else category] += abs(counterpart.balance)
+                    # Supplier bills retain their gross payment, including input VAT.
+                    # A settlement with no expense lines can instead target VAT controls.
+                    if not weights and any(x.account_id.with_company(company).code in vat_codes or x.account_id.id in tax_ids for x in other.mapped('move_id').line_ids):
+                        return {'vat_paid': 1.0}
                     return weights or {'purchases' if account.account_type == 'liability_payable' else 'other': 1.0}
-                if line.tax_repartition_line_id or account.id in tax_ids:
-                    return {'vat_paid': 1.0}
                 category = self._category(account, categories)
                 return {('purchases' if category == 'food_cost' else category or 'other'): 1.0}
             for line in paid:
@@ -76,10 +82,14 @@ class DashboardCash(models.AbstractModel):
                     for key, weight in parts.items():
                         weights[key] += abs(counterpart.balance) * weight / denominator if denominator else 0
                 denominator = sum(weights.values())
+                included = line.credit * (denominator - weights.get('vat_paid', 0)) / denominator if denominator else 0
+                if not included:
+                    continue
                 bucket = buckets[line.date.strftime('%Y-%m')]
-                bucket['total'] += line.credit
+                bucket['total'] += included
                 for key, weight in weights.items():
-                    bucket['items'][key] += line.credit * weight / denominator if denominator else 0
+                    if key != 'vat_paid':
+                        bucket['items'][key] += line.credit * weight / denominator if denominator else 0
                 row = rows_by_account.get(line.account_id.id)
                 kind = row.kind if row else ('bank' if line.account_id.id in bank_accounts else 'cash')
                 label = (row.label or line.account_id.with_context(lang='ar_001').name or '').split('|')[0].strip() if row else ''
@@ -91,12 +101,17 @@ class DashboardCash(models.AbstractModel):
                     source = row.label
                 else:
                     source = {'bank': 'bank', 'cash': 'cash', 'app': 'حساب تطبيق'}[kind]
-                bucket['sources'][source] += line.credit
+                bucket['sources'][source] += included
         def finish(bucket):
-            return {'available': True, 'unconfigured_company_ids': [], 'total': round(bucket['total'], 2),
-                    'items': {k: round(v, 2) for k, v in bucket['items'].items()},
-                    'sources': {k: round(v, 2) for k, v in bucket['sources'].items()},
-                    'show_vat_paid_line': any(vat_visibility.values()), 'vat_visibility_by_company': vat_visibility}
+            total = round(bucket['total'], 2)
+            def rounded_rows(rows):
+                result = {k: round(v, 2) for k, v in rows.items()}
+                if result:
+                    key = max(result, key=lambda k: abs(result[k]))
+                    result[key] = round(result[key] + total - sum(result.values()), 2)
+                return result
+            return {'available': True, 'unconfigured_company_ids': [], 'total': total,
+                    'items': rounded_rows(bucket['items']), 'sources': rounded_rows(bucket['sources'])}
         if split:
             return {key: finish(value) for key, value in buckets.items()}
         combined = {'total': 0.0, 'items': defaultdict(float), 'sources': defaultdict(float)}

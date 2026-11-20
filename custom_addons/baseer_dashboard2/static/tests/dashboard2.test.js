@@ -1,5 +1,21 @@
-import { expect, test } from '@odoo/hoot';
+import { after, expect, getFixture, globals, test, withFetch } from '@odoo/hoot';
+import { App, Component } from '@odoo/owl';
 import { formatNumber, formatTable, formatTablePct, chartX } from '../src/js/main';
+
+test('P&L renders without in/out months', async () => {
+    class Pnl extends Component {
+        static template = 'baseer_dashboard2.Pnl';
+        state = { view: 'pnl', data: { rows: [] }, closed: {} };
+        trend = [];
+        exportCsv() {}
+    }
+    const response = await withFetch(globals.fetch, () => fetch('/baseer_dashboard2/static/src/xml/main.xml'));
+    expect(response.ok).toBe(true);
+    const app = new App(Pnl, { templates: await response.text(), test: true });
+    after(() => app.destroy());
+    await app.mount(getFixture());
+    expect(getFixture().querySelector('.export-table')).not.toBe(null);
+});
 
 test('numbers use Western digits without abbreviating calendar values', () => {
     expect(formatNumber(26827)).toBe('26,827');

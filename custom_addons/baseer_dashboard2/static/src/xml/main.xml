@@ -33,10 +33,10 @@
                 <path t-att-d="path(s.values)" fill="none" t-att-stroke="s.dashed ? 'var(--bd2-faint)' : s.gold ? 'var(--bd2-gold)' : 'var(--bd2-c1)'" stroke-width="2.3" t-att-stroke-dasharray="s.dashed ? '5 5' : ''"/>
                 <path t-if="s.partial" t-att-d="partialPath(s.values, s.partial)" fill="none" stroke="var(--bd2-card)" stroke-width="3.5"/>
                 <path t-if="s.partial" t-att-d="partialPath(s.values, s.partial)" fill="none" stroke="var(--bd2-gold)" stroke-width="2.3" stroke-dasharray="5 4"/>
-                <t t-if="!s.dashed" t-foreach="s.values" t-as="v" t-key="v_index">
+                <t t-if="!s.dashed"><t t-foreach="s.values" t-as="v" t-key="v_index">
                     <circle t-if="v !== null and v !== undefined" t-att-cx="chartX(v_index,s.values.length)" t-att-cy="y(v)" r="3" fill="var(--bd2-card)" t-att-stroke="s.gold ? 'var(--bd2-gold)' : 'var(--bd2-c1)'" stroke-width="2"/>
                     <text t-if="s.area and v !== null and v !== undefined" t-att-x="chartX(v_index,s.values.length)" t-att-y="y(v)-8" text-anchor="middle" fill="var(--bd2-ink)" font-size="9" font-weight="700" t-esc="compact(v)"/>
-                </t>
+                </t></t>
             </t>
             <t t-foreach="props.labels || []" t-as="label" t-key="label_index">
                 <text t-att-x="chartX(label_index,props.labels.length)" y="229" text-anchor="middle" fill="var(--bd2-muted)" font-size="10" t-esc="label"/>
@@ -399,11 +399,15 @@
                 <b t-esc="state.data.months.at(-1)?.incoming.apps_unreceived.available ? fmt(state.data.months.at(-1).incoming.apps_unreceived.value) : state.data.months.at(-1)?.incoming.apps_unreceived.label"/>
             </div>
         </div>
-        <div t-foreach="state.data.months.at(-1)?.incoming.apps_unreceived.breakdown || []" t-as="app" t-key="app.key" class="chip" t-if="state.data.months.at(-1)?.incoming.apps_unreceived.available">
-            <t t-esc="app.name"/>: <t t-esc="fmt(app.value)"/>
-            <small t-if="app.cumulative &gt; app.value"> · الرصيد التراكمي أكبر: <t t-esc="fmt(app.cumulative)"/></small>
-        </div>
-        <t t-foreach="state.data.months" t-as="month" t-key="month.month"><div t-foreach="month.incoming.warnings" t-as="warning" t-key="warning.company_id+warning.date+warning.label" class="chip"><t t-esc="warning.date"/> · <t t-esc="warning.label"/></div></t>
+        <t t-if="state.view==='inout' and state.data.months">
+            <t t-if="state.data.months?.at(-1)?.incoming.apps_unreceived.available">
+                <div t-foreach="state.data.months?.at(-1)?.incoming.apps_unreceived.breakdown || []" t-as="app" t-key="app.key" class="chip">
+                    <t t-esc="app.name"/>: <t t-esc="fmt(app.value)"/>
+                    <small t-if="app.cumulative &gt; app.value"> · الرصيد التراكمي أكبر: <t t-esc="fmt(app.cumulative)"/></small>
+                </div>
+            </t>
+            <t t-foreach="state.data.months" t-as="month" t-key="month.month"><div t-foreach="month.incoming.warnings" t-as="warning" t-key="warning.company_id+warning.date+warning.label" class="chip"><t t-esc="warning.date"/> · <t t-esc="warning.label"/></div></t>
+        </t>
         <div t-if="state.data.salaries_warning" class="chip">الرواتب أقل بوضوح من متوسط آخر 3 أشهر — قد تكون غير مكتملة</div>
         <div class="card table-wrap">
             <div class="card-head">
@@ -437,7 +441,7 @@
                             <td t-esc="tableFmt(row.total)"/>
                             <td t-esc="tablePct(row.pct)"/>
                         </tr>
-                        <tr t-if="!state.closed[row.key]" t-foreach="row.children" t-as="child" t-key="child_index" class="account">
+                        <t t-if="!state.closed[row.key]"><tr t-foreach="row.children" t-as="child" t-key="child_index" class="account">
                             <td>
                                 <span class="muted account-code" dir="ltr" t-esc="child.code"/>
                                 <t t-esc="child.code ? ' '+child.name : child.name"/>
@@ -448,7 +452,7 @@
                             <td t-foreach="child.months" t-as="v" t-key="v_index" t-esc="tableFmt(v)"/>
                             <td t-esc="tableFmt(child.total)"/>
                             <td t-esc="tablePct(child.pct)"/>
-                        </tr>
+                        </tr></t>
                     </t>
                 </tbody>
             </table>
@@ -473,21 +477,22 @@
                             <td t-foreach="state.data.months" t-as="m" t-key="m.month" t-esc="group[0]==='incoming'?tableFmt(m.incoming.available ? m.incoming.gross : null):(!m.outgoing.available?'غير مُعد':tableFmt(-m.outgoing.total))"/>
                             <td t-esc="group[0]==='incoming'?tableFmt(state.data.total[group[0]]):(state.data.months.some(m=&gt;!m.outgoing.available)?'غير مُعد':tableFmt(-state.data.total[group[0]]))"/>
                         </tr>
-                        <tr t-foreach="Object.keys(state.data.total[group[2]])" t-as="key" t-key="key" t-if="key !== 'vat_paid' || state.data.months.some(m=&gt;m.outgoing.show_vat_paid_line)">
+                        <t t-foreach="Object.keys(state.data.total[group[2]])" t-as="key" t-key="key"><tr t-if="key !== 'vat_paid' || state.data.months.some(m=&gt;m.outgoing.show_vat_paid_line)">
                             <td t-esc="name(key)"/>
                             <td>
                                 <Sparkline values="state.data.months.map(m=&gt;m[group[0]][group[2]][key] ?? null)"/>
                             </td>
                             <td t-foreach="state.data.months" t-as="m" t-key="m.month" t-esc="tableFmt(m[group[0]][group[2]][key] == null ? null : group[0]==='incoming' ? m[group[0]][group[2]][key] : -m[group[0]][group[2]][key])"/>
                             <td t-esc="tableFmt(group[0]==='incoming'?state.data.total[group[2]][key]:-state.data.total[group[2]][key])"/>
-                        </tr>
+                        </tr></t>
                         <tr class="account" t-if="group[2]==='channels'">
                             <td>منها تطبيقات لم تُستلم بعد</td>
                             <td/>
                             <td t-foreach="state.data.months" t-as="m" t-key="m.month" t-esc="m.incoming.apps_unreceived.available ? tableFmt(m.incoming.apps_unreceived.value) : m.incoming.apps_unreceived.label"/>
                             <td t-esc="state.data.total.apps_unreceived.available ? tableFmt(state.data.total.apps_unreceived.value) : state.data.total.apps_unreceived.label"/>
                         </tr>
-                        <t t-if="group[2]==='channels'" t-foreach="state.data.total.apps_unreceived.breakdown" t-as="app" t-key="app.key">
+                        <t t-if="group[2]==='channels'">
+                          <t t-foreach="state.data.total.apps_unreceived.breakdown" t-as="app" t-key="app.key">
                             <tr class="account">
                                 <td t-esc="app.name"/><td/>
                                 <td t-foreach="state.data.months" t-as="m" t-key="m.month">
@@ -499,6 +504,7 @@
                                     <small t-if="state.data.total.apps_unreceived.available and app.cumulative &gt; app.value"> · الرصيد التراكمي أكبر: <t t-esc="fmt(app.cumulative)"/></small>
                                 </td>
                             </tr>
+                          </t>
                         </t>
                         <tr class="account" t-if="group[2]==='channels'">
                             <td>منها ضريبة القيمة المضافة</td>

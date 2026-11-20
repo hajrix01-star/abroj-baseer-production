@@ -8,9 +8,8 @@ from odoo.exceptions import UserError
 class DashboardCash(models.AbstractModel):
     _inherit = 'baseer.dashboard2.service'
 
-    def _cash_out(self, ids, start, end):
-        items, sources = defaultdict(float), defaultdict(float)
-        total = 0.0
+    def _cash_out(self, ids, start, end, split=False):
+        buckets = defaultdict(lambda: {'items': defaultdict(float), 'sources': defaultdict(float), 'total': 0.0})
         vat_visibility = {}
         for cid in ids:
             ctx = dict(allowed_company_ids=[cid])
@@ -28,6 +27,25 @@ class DashboardCash(models.AbstractModel):
             paid = self.env['account.move.line'].with_context(**ctx).search([('company_id', '=', cid), ('parent_state', '=', 'posted'), ('date', '>=', start), ('date', '<=', end), ('account_id', 'in', list(liquidity)), ('credit', '>', 0), ('move_id', 'not in', list(resets))], limit=200001)
             if len(paid) > 200000:
                 raise UserError(_('The selected period contains more than 200,000 outflow lines.'))
+            # Prime the entire reconciliation graph in batches before classifying individual lines.
+            counterparts = paid.mapped('move_id.line_ids')
+            partials = counterparts.mapped('matched_debit_ids') | counterparts.mapped('matched_credit_ids')
+            reconciled = partials.mapped('debit_move_id') | partials.mapped('credit_move_id')
+            reconciled.mapped('move_id.line_ids.account_id')
+            counterparts.mapped('account_id')
+            rows_by_account = {row.account_id.id: row for row in settings.liquidity_ids} if settings else {}
+            def source_label(row):
+                parts = [part.strip() for part in (row.label or row.account_id.with_context(lang='ar_001').name or '').split('|')]
+                label = next((part for part in parts if any('\u0600' <= c <= '\u06ff' for c in part)), parts[0])
+                if label.startswith('L '):
+                    label = label[2:].strip()
+                return label if label.startswith('عهدة') else 'عهدة ' + label
+            for row in rows_by_account.values():
+                if row.kind == 'custody':
+                    for offset in range((end.year - start.year) * 12 + end.month - start.month + 1):
+                        month_index = start.year * 12 + start.month - 1 + offset
+                        year, month = divmod(month_index, 12)
+                        buckets['%04d-%02d' % (year, month + 1)]['sources'][source_label(row)] += 0
             def classify(line):
                 account = line.account_id.with_company(company)
                 code = account.code or ''
@@ -58,22 +76,36 @@ class DashboardCash(models.AbstractModel):
                     for key, weight in parts.items():
                         weights[key] += abs(counterpart.balance) * weight / denominator if denominator else 0
                 denominator = sum(weights.values())
-                total += line.credit
+                bucket = buckets[line.date.strftime('%Y-%m')]
+                bucket['total'] += line.credit
                 for key, weight in weights.items():
-                    items[key] += line.credit * weight / denominator if denominator else 0
-                row = settings.liquidity_ids.filtered(lambda r: r.account_id == line.account_id)[:1] if settings else False
+                    bucket['items'][key] += line.credit * weight / denominator if denominator else 0
+                row = rows_by_account.get(line.account_id.id)
                 kind = row.kind if row else ('bank' if line.account_id.id in bank_accounts else 'cash')
                 label = (row.label or line.account_id.with_context(lang='ar_001').name or '').split('|')[0].strip() if row else ''
                 if label.startswith('L '):
                     label = label[2:].strip()
                 if kind == 'custody':
-                    source = label if label.startswith('عهدة') else 'عهدة ' + label
+                    source = source_label(row)
                 elif row and row.label:
                     source = row.label
                 else:
                     source = {'bank': 'bank', 'cash': 'cash', 'app': 'حساب تطبيق'}[kind]
-                sources[source] += line.credit
-        return {'available': True, 'unconfigured_company_ids': [], 'total': round(total, 2), 'items': {k: round(v, 2) for k, v in items.items()}, 'sources': {k: round(v, 2) for k, v in sources.items()}, 'show_vat_paid_line': any(vat_visibility.values()), 'vat_visibility_by_company': vat_visibility}
+                bucket['sources'][source] += line.credit
+        def finish(bucket):
+            return {'available': True, 'unconfigured_company_ids': [], 'total': round(bucket['total'], 2),
+                    'items': {k: round(v, 2) for k, v in bucket['items'].items()},
+                    'sources': {k: round(v, 2) for k, v in bucket['sources'].items()},
+                    'show_vat_paid_line': any(vat_visibility.values()), 'vat_visibility_by_company': vat_visibility}
+        if split:
+            return {key: finish(value) for key, value in buckets.items()}
+        combined = {'total': 0.0, 'items': defaultdict(float), 'sources': defaultdict(float)}
+        for bucket in buckets.values():
+            combined['total'] += bucket['total']
+            for field in ('items', 'sources'):
+                for key, value in bucket[field].items():
+                    combined[field][key] += value
+        return finish(combined)
 
     def _sales_vat(self, ids, start, end):
         ctx = dict(allowed_company_ids=ids)

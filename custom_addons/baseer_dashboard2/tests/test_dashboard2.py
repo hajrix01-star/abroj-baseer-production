@@ -1,3 +1,5 @@
+from datetime import date
+
 from odoo.exceptions import AccessError, ValidationError
 from odoo.tests import TransactionCase, tagged
 
@@ -136,6 +138,8 @@ class TestDashboard2(TransactionCase):
         empty = self.env['baseer.dashboard2.service']._inout([company.id], date(2026, 9, 30))
         self.assertTrue({'salaries', 'rent', 'utilities', 'purchases', 'commissions', 'marketing', 'non_operating', 'other'} <= set(empty['total']['items']))
         self.assertTrue({'bank', 'cash'} <= set(empty['total']['sources']))
+        self.assertEqual(empty['total']['sources']['عهدة اختبار'], 0)
+        self.assertTrue(all(m['outgoing']['sources']['عهدة اختبار'] == 0 for m in empty['months']))
         def entry(debit_account, amount):
             move = self.env['account.move'].create({'journal_id': journal.id, 'date': '2026-10-03', 'line_ids': [
                 (0, 0, {'name': 'Debit', 'account_id': debit_account.id, 'debit': amount, 'credit': 0}),
@@ -197,13 +201,23 @@ class TestDashboard2(TransactionCase):
         # A cancelled session closing cannot add its orders to Noorix.
         cancelled_day = date(2026, 10, 1)
         cancelled = new_session(config)
+        cancelled.name = 'TEST/01439'
         cancelled_move = entry(cancelled_day, 115)
         cancelled_move.button_draft()
         cancelled_move.button_cancel()
         cancelled.move_id = cancelled_move
         order(cancelled, cancelled_day, 115)
         self.assertEqual(result(cancelled_day)[0]['gross'], 300)
+        self.assertIn('جلسة إقفال ملغاة لم تُعد', result(cancelled_day)[0]['warnings'][0]['label'])
+        replacement = entry(cancelled_day, 2)
+        replacement.ref = cancelled.name
         self.assertFalse(result(cancelled_day)[0]['warnings'])
+        test_day = date(2026, 10, 4)
+        entry(test_day)
+        test_session = new_session(config)
+        test_session.move_id = entry(test_day, 1)
+        order(test_session, test_day, 1)
+        self.assertFalse(result(test_day)[0]['warnings'])
         day = date(2026, 10, 3)
         session = new_session(config)
         session.move_id = entry(day, 115)
@@ -320,14 +334,21 @@ class TestDashboard2(TransactionCase):
             move = self.env['account.move'].create({'journal_id': journal.id, 'date': day, 'line_ids': [(0, 0, {'account_id': acc.id, 'name': name, 'debit': debit, 'credit': credit}) for acc, name, debit, credit in lines]})
             move.action_post()
         entry('2026-09-01', [(wallet, 'opening', 20, 0), (cash, 'offset', 0, 20)])
+        wallet2 = account('D2WAL2', 'asset_current')
+        self.env['baseer.dashboard2.channel.map'].create({'settings_id': settings.id, 'company_id': company.id, 'source': 'account', 'account_id': wallet2.id, 'channel_id': self.env.ref('baseer_dashboard2.channel_hunger').id, 'kind': 'app'})
         entry('2026-10-01', [(wallet, 'cash', 100, 0), (revenue, 'sales', 0, 100)])
+        entry('2026-10-02', [(wallet2, 'hunger', 30, 0), (revenue, 'sales', 0, 30)])
+        entry('2026-10-03', [(cash, 'settlement', 20, 0), (wallet2, 'wallet', 0, 20)])
         entry('2026-11-01', [(cash, 'cash', 40, 0), (wallet, 'wallet', 0, 40)])
         service = self.env['baseer.dashboard2.service']
         result = service._sales_summary([company.id], date(2026, 10, 1), date(2026, 10, 31))[0]
         self.assertEqual(result['channels']['keeta'], 100)
-        self.assertEqual(result['apps_unreceived']['value'], 100)
+        self.assertEqual(result['apps_unreceived']['value'], 110)
         result = service._sales_summary([company.id], date(2026, 10, 1), date(2026, 11, 30))[0]
-        self.assertEqual(result['apps_unreceived']['value'], 80)
+        self.assertEqual(result['apps_unreceived']['value'], 70)
+        app = next(x for x in result['apps_unreceived']['breakdown'] if x['key'] == 'keeta')
+        self.assertEqual(app['cumulative'], 80)
+        self.assertFalse(service._sales_summary([company.id], date(2026, 9, 1), date(2026, 9, 30))[0]['apps_unreceived']['available'])
 
     def test_seed_checks_and_preserves_settings(self):
         from unittest.mock import patch
@@ -437,8 +458,8 @@ class TestDashboardThemeLiterals(TransactionCase):
         before, _, _, _ = service._sales_summary([company.id], date(2026, 10, 1), date(2026, 10, 30))
         self.assertEqual(before['apps_unreceived']['value'], 710)
         summary, _, _, _ = service._sales_summary([company.id], date(2026, 10, 1), date(2026, 10, 31))
-        self.assertFalse(summary['apps_unreceived']['available'])
-        self.assertIn('31/10', summary['apps_unreceived']['label'])
+        self.assertTrue(summary['apps_unreceived']['available'])
+        self.assertEqual(summary['apps_unreceived']['value'], 710)
         after, _, _, _ = service._sales_summary([company.id], date(2026, 10, 1), date(2026, 11, 1))
         self.assertEqual(after['apps_unreceived']['value'], 710)
 
@@ -465,6 +486,7 @@ class TestDashboardThemeLiterals(TransactionCase):
         params_zero = {'company_key': str(company.id), 'period': {'mode': 'month', 'month': '2026-11'}}
         for section in ('overview', 'expenses', 'pnl'):
             self.assertTrue(service.get_section(section, params_zero)['salaries_warning'])
+        self.assertIsNone(service._timeline([company.id], date(2026, 10, 31), 'monthly')['months'][6]['value'])
         overview = service.get_section('overview', params)
         self.assertEqual(overview['companies_compare'][0]['name'], 'Configured label')
         self.assertEqual(next(a for a in overview['current']['accounts'] if a['account_id'] == salary.id)['name'], 'رواتب')

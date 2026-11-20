@@ -88,6 +88,7 @@ class DashboardSales(models.AbstractModel):
             raise UserError(_('The selected period contains more than 200,000 POS orders.'))
         order_days = {order['id']: session_keys[order['session_id'][0]] for order in posted_orders
                       if abs(order['amount_total']) > thresholds.get(order['company_id'][0], 1.5)}
+        posted_real_days = set(order_days.values())
         posted_channels = defaultdict(lambda: defaultdict(float))
         if order_days:
             groups = self.env['pos.payment'].with_context(**context)._read_group(
@@ -150,7 +151,7 @@ class DashboardSales(models.AbstractModel):
             source = 'mixed' if use_summary and use_pos else 'summary' if use_summary else 'pos' if use_pos else False
             day = {'source': source, 'channels': defaultdict(float), 'customers': None,
                    'pos_gross': 0.0, 'sales_vat': 0.0, 'sales_missing': not bool(source),
-                   'both_sources': has_summary and has_pos, 'source_mode': mode}
+                   'both_sources': has_summary and key in posted_real_days, 'source_mode': mode}
             if use_summary:
                 day['channels'].update(summary_days[key]['channels'])
                 day['sales_vat'] = summary_days[key]['sales_vat']
@@ -165,17 +166,52 @@ class DashboardSales(models.AbstractModel):
             hours[(weekday, hour)]['orders'] += sign
             hours[(weekday, hour)]['gross'] += amount
         reset_ids = self._reset_move_ids(ids, end)
-        unreceived = 0.0
+        app_maps = maps.filtered(lambda m: m.source == 'account' and m.kind == 'app')
+        account_channel = {(m.company_id.id, m.account_id.id): m.channel_id.key for m in app_maps}
+        starts = {s.company_id.id: s.app_balance_start_date for s in settings}
+        balances = defaultdict(float)
+        cumulative = defaultdict(float)
+        rows = self.env['account.move.line'].with_context(**context)._read_group([
+            ('company_id', 'in', ids), ('parent_state', '=', 'posted'), ('account_id', 'in', app_maps.mapped('account_id').ids),
+            ('date', '<=', end), ('move_id', 'not in', reset_ids)], ['company_id', 'account_id', 'date:day'], ['balance:sum'])
+        for company, account, day, amount in rows:
+            key = (company.id, account_channel.get((company.id, account.id)))
+            if key[1]:
+                cumulative[key] += amount or 0
+                if not starts.get(company.id) or day >= starts[company.id]:
+                    balances[key] += amount or 0
+        breakdown = defaultdict(lambda: {'value': 0.0, 'cumulative': 0.0})
+        app_keys = {c['key'] for c in channels if c['kind'] == 'app'}
         for cid in ids:
-            accounts = maps.filtered(lambda m: m.company_id.id == cid and m.source == 'account' and m.kind == 'app').mapped('account_id').ids
-            rows = self.env['account.move.line'].with_context(allowed_company_ids=[cid])._read_group([
-                ('company_id', '=', cid), ('parent_state', '=', 'posted'), ('account_id', 'in', accounts),
-                ('date', '<=', end), ('move_id', 'not in', reset_ids)], [], ['balance:sum'])
-            balance = rows[0][0] or 0.0 if rows else 0.0
-            app_keys = {c['key'] for c in channels if c['kind'] == 'app'}
-            gross = sum(amount for (company_id, _day), day in days.items() if company_id == cid for key, amount in day['channels'].items() if key in app_keys)
-            unreceived += min(max(balance, 0.0), max(gross, 0.0))
-        return days, channels, round(unreceived, 2), hours
+            for key in app_keys:
+                gross = sum(day['channels'].get(key, 0) for (company_id, _), day in days.items() if company_id == cid)
+                breakdown[key]['value'] += min(max(balances[(cid, key)], 0), max(gross, 0))
+                breakdown[key]['cumulative'] += max(cumulative[(cid, key)], 0)
+        available = all(not starts.get(cid) or end >= starts[cid] for cid in ids)
+        unreceived = {'available': available, 'value': round(sum(v['value'] for v in breakdown.values()), 2) if available else None,
+                      'label': 'حتى نهاية الفترة' if available else 'غير متوفر — قيد المراجعة',
+                      'breakdown': [{'key': key, 'name': next((c['name'] for c in channels if c['key'] == key), key),
+                                     'value': round(value['value'], 2), 'cumulative': round(value['cumulative'], 2)}
+                                    for key, value in breakdown.items()]}
+        return days, channels, unreceived, hours
+
+    def _cancelled_session_warnings(self, ids, start, end):
+        ctx = dict(allowed_company_ids=ids, active_test=False)
+        sessions = self.env['pos.session'].with_context(**ctx).search([
+            ('company_id', 'in', ids), ('move_id.state', '=', 'cancel'),
+            ('move_id.date', '>=', start), ('move_id.date', '<=', end)])
+        settings = self.env['baseer.dashboard2.settings'].with_context(**ctx).search([('company_id', 'in', ids)])
+        summary_ids = set(settings.mapped('summary_pos_config_ids').ids)
+        sessions = sessions.filtered(lambda session: session.config_id.id not in summary_ids and not any(
+            word in (session.config_id.name or '').casefold() for word in ('ملخص المبيعات', 'sales summaries', 'ملخصات')))
+        refs = {ref for session in sessions for ref in (session.name, session.move_id.ref) if ref}
+        posted = self.env['account.move'].with_context(**ctx).search([
+            ('company_id', 'in', ids), ('state', '=', 'posted'), ('ref', 'in', list(refs))]) if refs else self.env['account.move']
+        replacements = {(m.company_id.id, m.ref) for m in posted}
+        return [{'date': str(session.move_id.date), 'company_id': session.company_id.id,
+                 'label': 'جلسة إقفال ملغاة لم تُعد: %s' % session.name.rsplit('/', 1)[-1], 'session_id': session.id}
+                for session in sessions if not any((session.company_id.id, ref) in replacements
+                    for ref in (session.name, session.move_id.ref) if ref)]
 
     def _sales_summary(self, ids, start, end):
         days, channels, unreceived, hours = self._sales_days(ids, start, end)
@@ -191,12 +227,10 @@ class DashboardSales(models.AbstractModel):
         gross = sum(totals.values())
         app_keys = {c['key'] for c in channels if c['kind'] == 'app'}
         apps = sum(v for k, v in totals.items() if k in app_keys)
-        reset_end = self._reset_move_ids(ids, end, end)
-        reset_label = 'غير متوفر — إعادة ضبط أرصدة %s' % end.strftime('%d/%m')
-        return {'available': True, 'warnings': [{'date': str(day), 'company_id': cid, 'label': 'يوم بمصدرين مرحّلين: نوركس + جلسة نقاط بيع — تم الجمع' if data['source_mode'] == 'auto' else 'يوم بمصدرين مرحّلين: نوركس + جلسة نقاط بيع — طُبّق استثناء المصدر'} for (cid, day), data in sorted(days.items()) if data.get('both_sources')], 'gross': round(gross, 2), 'source_counts': {'pos': len(pos_days), 'summary': len(summary_days)},
+        return {'available': True, 'warnings': [{'date': str(day), 'company_id': cid, 'label': 'يوم بمصدرين مرحّلين: نوركس + جلسة نقاط بيع — تم الجمع' if data['source_mode'] == 'auto' else 'يوم بمصدرين مرحّلين: نوركس + جلسة نقاط بيع — طُبّق استثناء المصدر'} for (cid, day), data in sorted(days.items()) if data.get('both_sources')] + self._cancelled_session_warnings(ids, start, end), 'gross': round(gross, 2), 'source_counts': {'pos': len(pos_days), 'summary': len(summary_days)},
                 'channel_names': {c['key']: c['name'] for c in channels}, 'channels': {k: round(v, 2) for k, v in totals.items()},
                 'apps': round(apps, 2), 'apps_pct': round(apps / gross * 100, 2) if gross else None,
-                'apps_unreceived': {'available': not bool(reset_end), 'value': None if reset_end else unreceived, 'label': reset_label if reset_end else 'حتى نهاية الفترة'},
+                'apps_unreceived': unreceived,
                 'customers': {'available': bool(customer_days), 'reason': False if customer_days else 'no_pos_days',
                               'partial': bool(customer_days and len(customer_days) < len(days)), 'covered_days': len(customer_days),
                               'value': orders if customer_days else None, 'avg_ticket': round(pos_gross / orders, 2) if orders else None}}, days, channels, hours

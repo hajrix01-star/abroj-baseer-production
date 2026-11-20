@@ -7,7 +7,7 @@ _logger = logging.getLogger(__name__)
 # Live reference identifiers; all are validated before use.
 DOCUMENTED_DEFAULTS = {
     1: {'custody': (460, 3426), 'excluded': (459, 407, 408, 409, 405, 406, 458), 'pos_cutover_date': '2026-10-03'},
-    2: {'custody': (461, 3427), 'excluded': (459, 405, 406, 458)},
+    2: {'custody': (461, 3427), 'excluded': (459, 405, 406, 458), 'pos_cutover_date': '2026-11-19'},
     3: {'custody': None, 'excluded': (405, 406, 458)},
 }
 POS_DEFAULTS = {'cash': (112, 121, 126, 127), 'card': (113, 122, 119), 'transfer': (114, 120), 'credit': (128,), 'hunger': (115, 123), 'keeta': (116, 124), 'jahez': (117, 125)}
@@ -94,6 +94,7 @@ class DashboardSettings(models.Model):
     show_vat_paid_line = fields.Boolean(default=True)
     pos_cutover_note = fields.Text()
     pos_cutover_date = fields.Date(help='Legacy reference date; posted entries determine sales unless a source override applies.')
+    app_balance_start_date = fields.Date(help='Exclude app balance movements before this date; earlier balances are under review.')
     summary_pos_config_ids = fields.Many2many('pos.config', 'bd2_summary_pos_rel', 'settings_id', 'config_id', check_company=True)
     liquidity_account_ids = fields.Many2many('account.account', 'bd2_liquidity_account_rel', 'settings_id', 'account_id', check_company=True)
     liquidity_ids = fields.One2many('baseer.dashboard2.liquidity', 'settings_id')
@@ -130,6 +131,8 @@ class DashboardSettings(models.Model):
             custody = journal(*defaults['custody']) if defaults['custody'] else self.env['account.journal']
             # Empty fields may be filled; existing values are never overwritten by installation.
             vals = {}
+            if not settings.app_balance_start_date:
+                vals['app_balance_start_date'] = '2026-10-01'
             if not settings.pos_cutover_date and defaults.get('pos_cutover_date'):
                 vals['pos_cutover_date'] = defaults['pos_cutover_date']
             if force or not settings.excluded_journal_ids:

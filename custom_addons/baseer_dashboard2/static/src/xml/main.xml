@@ -146,7 +146,7 @@
                 <span class="muted" dir="ltr" t-esc="tablePct(row.pct)"/>
             </div>
         </div>
-        <div t-foreach="state.data.sales.warnings" t-as="warning" t-key="warning.company_id+warning.date" class="chip"><t t-esc="warning.date"/> · <t t-esc="warning.label"/></div>
+        <div t-foreach="state.data.sales.warnings" t-as="warning" t-key="warning.company_id+warning.date+warning.label" class="chip"><t t-esc="warning.date"/> · <t t-esc="warning.label"/></div>
         <t t-call="baseer_dashboard2.Compare"/>
     </t>
     <t t-name="baseer_dashboard2.BreakEven">
@@ -399,6 +399,11 @@
                 <b t-esc="state.data.months.at(-1)?.incoming.apps_unreceived.available ? fmt(state.data.months.at(-1).incoming.apps_unreceived.value) : state.data.months.at(-1)?.incoming.apps_unreceived.label"/>
             </div>
         </div>
+        <div t-foreach="state.data.months.at(-1)?.incoming.apps_unreceived.breakdown || []" t-as="app" t-key="app.key" class="chip" t-if="state.data.months.at(-1)?.incoming.apps_unreceived.available">
+            <t t-esc="app.name"/>: <t t-esc="fmt(app.value)"/>
+            <small t-if="app.cumulative &gt; app.value"> · الرصيد التراكمي أكبر: <t t-esc="fmt(app.cumulative)"/></small>
+        </div>
+        <t t-foreach="state.data.months" t-as="month" t-key="month.month"><div t-foreach="month.incoming.warnings" t-as="warning" t-key="warning.company_id+warning.date+warning.label" class="chip"><t t-esc="warning.date"/> · <t t-esc="warning.label"/></div></t>
         <div t-if="state.data.salaries_warning" class="chip">الرواتب أقل بوضوح من متوسط آخر 3 أشهر — قد تكون غير مكتملة</div>
         <div class="card table-wrap">
             <div class="card-head">
@@ -482,6 +487,19 @@
                             <td t-foreach="state.data.months" t-as="m" t-key="m.month" t-esc="m.incoming.apps_unreceived.available ? tableFmt(m.incoming.apps_unreceived.value) : m.incoming.apps_unreceived.label"/>
                             <td t-esc="state.data.total.apps_unreceived.available ? tableFmt(state.data.total.apps_unreceived.value) : state.data.total.apps_unreceived.label"/>
                         </tr>
+                        <t t-if="group[2]==='channels'" t-foreach="state.data.total.apps_unreceived.breakdown" t-as="app" t-key="app.key">
+                            <tr class="account">
+                                <td t-esc="app.name"/><td/>
+                                <td t-foreach="state.data.months" t-as="m" t-key="m.month">
+                                    <t t-set="part" t-value="m.incoming.apps_unreceived.breakdown.find(x=&gt;x.key===app.key)"/>
+                                    <t t-esc="m.incoming.apps_unreceived.available ? tableFmt(part?.value) : m.incoming.apps_unreceived.label"/>
+                                    <small t-if="m.incoming.apps_unreceived.available and part and part.cumulative &gt; part.value"> · الرصيد التراكمي أكبر: <t t-esc="fmt(part.cumulative)"/></small>
+                                </td>
+                                <td><t t-esc="state.data.total.apps_unreceived.available ? tableFmt(app.value) : state.data.total.apps_unreceived.label"/>
+                                    <small t-if="state.data.total.apps_unreceived.available and app.cumulative &gt; app.value"> · الرصيد التراكمي أكبر: <t t-esc="fmt(app.cumulative)"/></small>
+                                </td>
+                            </tr>
+                        </t>
                         <tr class="account" t-if="group[2]==='channels'">
                             <td>منها ضريبة القيمة المضافة</td>
                             <td/>
@@ -555,7 +573,7 @@
                 </div>
                 <t t-foreach="calendarCells" t-as="day" t-key="day_index">
                     <div t-if="!day"/>
-                    <div t-else="" t-att-class="'day level-'+level(day)+(day.events.length ? ' occasion' : '')" t-att-title="day.events.map(e=&gt;e.name).join('، ')">
+                    <div t-else="" t-att-class="'day level-'+level(day)+(day.events.length ? ' occasion' : '')" t-att-title="day.events.map(e=&gt;e.name).concat((day.warnings || []).map(w=&gt;w.label)).join('، ')">
                         <small t-esc="Number(day.date.slice(-2))"/>
                         <strong t-esc="fmt(dayValue(day))"/>
                         <span>
@@ -596,7 +614,7 @@
                 <div t-foreach="state.data.year_calendar" t-as="m" t-key="m.month">
                     <b t-esc="monthName(m.month)"/>
                     <div class="year-days">
-                        <i t-foreach="m.days" t-as="d" t-key="d.date" t-att-class="'level-'+level(d)+(d.events.length ? ' occasion' : '')" t-att-title="dateName(d.date)+' · '+fmt(d.gross)+' · '+d.events.map(e=&gt;e.name).join('، ')">
+                        <i t-foreach="m.days" t-as="d" t-key="d.date" t-att-class="'level-'+level(d)+(d.events.length ? ' occasion' : '')" t-att-title="dateName(d.date)+' · '+fmt(d.gross)+' · '+d.events.map(e=&gt;e.name).concat((d.warnings || []).map(w=&gt;w.label)).join('، ')">
                             <span t-esc="Number(d.date.slice(-2))"/>
                             <b t-esc="fmt(d.gross)"/>
                         </i>

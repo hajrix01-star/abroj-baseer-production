@@ -33,13 +33,13 @@ class DashboardSections(models.AbstractModel):
         value = sum(abs(amount or 0) * (1 if kind == 'in_invoice' else -1) for kind, amount in rows)
         return {'available': True, 'value': round(value, 2), 'pct': percent(value, sales)}
 
-    def _posted_months(self, ids):
+    def _posted_months(self, ids, revenue_only=False):
         lines = self.env['account.move.line'].with_context(allowed_company_ids=ids).search([
             ('company_id', 'in', ids), ('parent_state', '=', 'posted'),
             ('account_id.account_type', 'in', ('income', 'income_other', 'expense', 'expense_depreciation', 'expense_direct_cost'))])
         reset_ids = set(self._reset_move_ids(ids, fields.Date.to_date('9999-12-31')))
         opening_ids = set(self.env['res.company'].browse(ids).mapped('account_opening_move_id').ids)
-        return {line.date.strftime('%Y-%m') for line in lines if line.move_id.id not in reset_ids | opening_ids and line.move_id.ref != 'Opening Entry'}
+        return {line.date.strftime('%Y-%m') for line in lines if line.move_id.id not in reset_ids | opening_ids and line.move_id.ref != 'Opening Entry' and (not revenue_only or line.account_id.account_type in ('income', 'income_other'))}
 
     def _timeline(self, ids, end, mode):
         if mode not in ('monthly', 'yearly'):
@@ -47,7 +47,7 @@ class DashboardSections(models.AbstractModel):
         line_model = self.env['account.move.line'].with_context(allowed_company_ids=ids)
         bounds = line_model._read_group([('company_id', 'in', ids), ('parent_state', '=', 'posted')], [], ['date:min', 'date:max'])
         first_data, last = bounds[0] if bounds else (None, None)
-        posted_months = self._posted_months(ids)
+        posted_months = self._posted_months(ids, revenue_only=True)
         def covered(first, finish):
             return any(first.strftime('%Y-%m') <= month <= finish.strftime('%Y-%m') for month in posted_months)
         cutoff = min(end, last) if last else None
@@ -256,11 +256,13 @@ class DashboardSections(models.AbstractModel):
 
     def _inout(self, ids, end):
         months = []
+        first = month_bounds(end, -5)[0]
+        out_by_month = self._cash_out(ids, first, end, split=True)
         for offset in range(-5, 1):
             start, last = month_bounds(end, offset)
             last = min(last, end)
             sales, _, _, _ = self._sales_summary(ids, start, last)
-            out = self._cash_out(ids, start, last)
+            out = out_by_month.get(start.strftime('%Y-%m'), {'available': True, 'unconfigured_company_ids': [], 'total': 0, 'items': {}, 'sources': {}, 'show_vat_paid_line': True, 'vat_visibility_by_company': {}})
             vat = self._sales_vat(ids, start, last)
             sales['available'] = bool(sales['channels'])
             months.append({'month': start.strftime('%Y-%m'), 'incoming': sales, 'outgoing': out,
@@ -301,13 +303,14 @@ class DashboardSections(models.AbstractModel):
         for event in events:
             event['date_from'] = str(event['date_from'])
             event['date_to'] = str(event['date_to'])
+        warnings = year_summary['warnings']
         def day_values(day, source):
             rows = [v for (_, d), v in source.items() if d == day]
             covered_rows = [r for r in rows if r['customers'] is not None]
             sales_rows = [r for r in rows if not r.get('sales_missing')]
             sources = {r['source'] for r in sales_rows}
             source_label = 'mixed' if 'mixed' in sources or {'summary', 'pos'} <= sources else next(iter(sources), False)
-            return {'source': source_label, 'date': str(day), 'events': [event for event in events if event['date_from'] <= str(day) <= event['date_to']], 'gross': round(sum(sum(r['channels'].values()) for r in sales_rows), 2) if sales_rows else None,
+            return {'source': source_label, 'date': str(day), 'warnings': [w for w in warnings if w['date'] == str(day)], 'events': [event for event in events if event['date_from'] <= str(day) <= event['date_to']], 'gross': round(sum(sum(r['channels'].values()) for r in sales_rows), 2) if sales_rows else None,
                     'customers': sum(r['customers'] for r in covered_rows) if covered_rows else None,
                     'pos_gross': sum(r['pos_gross'] for r in covered_rows) if covered_rows else None,
                     'partial': bool(covered_rows and len(covered_rows) < len(rows))}

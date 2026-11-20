@@ -628,44 +628,41 @@ msgid "Dashboard sales source override"
 msgstr "استثناء مصدر المبيعات"
 
 #. module: baseer_dashboard2
-#. 
 msgid "Automatic merge"
 msgstr "دمج تلقائي"
 
 #. module: baseer_dashboard2
-#. 
 msgid "Summary"
 msgstr "الملخص"
 
 #. module: baseer_dashboard2
-#. 
 msgid "POS"
 msgstr "نقاط البيع"
 
 #. module: baseer_dashboard2
-#. 
 msgid "Sales source override periods cannot overlap for the same company."
 msgstr "لا يمكن تداخل فترات استثناء مصدر المبيعات للشركة نفسها."
 
 #. module: baseer_dashboard2
-#. 
 msgid "Source"
 msgstr "المصدر"
 
 #. module: baseer_dashboard2
-#. 
 msgid "Source Override"
 msgstr "استثناء المصدر"
 
 #. module: baseer_dashboard2
-#. 
 msgid "Source Override Ids"
 msgstr "استثناءات مصدر المبيعات"
 
 #. module: baseer_dashboard2
-#. 
 msgid ""
 "Legacy reference date; posted entries determine sales unless a source "
 "override applies."
 msgstr ""
 "تاريخ مرجعي سابق؛ تحدد القيود المرحّلة المبيعات ما لم يُطبّق استثناء للمصدر."
+
+#. module: baseer_dashboard2
+#: model:ir.model.fields,field_description:baseer_dashboard2.field_baseer_dashboard2_settings__app_balance_start_date
+msgid "App Balance Start Date"
+msgstr "بداية احتساب أرصدة التطبيقات"

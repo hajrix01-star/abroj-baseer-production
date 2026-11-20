@@ -16,8 +16,9 @@ export const formatTable = (n, minus = false) => {
 export const formatTablePct = (n) => {
   if (n == null || n === false || !Number.isFinite(Number(n))) return "—";
   const magnitude = Math.abs(Number(n)).toFixed(1);
-  return magnitude === "0.0" ? "—" : `${Number(n) < 0 ? "-" : ""}${magnitude}%`;
+  return magnitude === "0.0" ? "—" : `${Number(n) < 0 ? "−" : ""}${magnitude}%`;
 };
+export const formatPercent = (n) => n == null || n === false || !Number.isFinite(Number(n)) ? "—" : `${Number(n) < 0 ? "−" : ""}${Math.abs(Number(n)).toFixed(1)}%`;
 export const timelineYear = (period) => (period?.mode === "month" ? period.month : period?.date_to)?.slice(0, 4) || "";
 export const chartX = (i, n, width = 700) =>
   width - 48 - (width - 70) * (n <= 1 ? 0.5 : i / (n - 1));
@@ -113,7 +114,7 @@ export class Sparkline extends Component {
     (a || []).forEach((v, i) => { const p = this.miniPoint(a, i, ratio); if (p) points.push(p); else flush(); }); flush(); return segments.join(' ');
   }
   endpoints(a) { const indices = (a || []).map((v, i) => v == null ? -1 : i).filter(i => i >= 0); return indices.length > 1 ? [indices[0], indices[indices.length - 1]] : indices; }
-  short(v, ratio = false) { return ratio ? (Math.round((Number(v) + Number.EPSILON * 100) * 10) / 10).toFixed(1) : Math.abs(v) >= 1000 ? `${Math.round(v / 1000)}K` : `${Math.round(v)}`; }
+  short(v, ratio = false) { return ratio ? (Number(v) < 0 ? "−" : "") + (Math.round((Math.abs(Number(v)) + Number.EPSILON * 100) * 10) / 10).toFixed(1) : Math.abs(v) >= 1000 ? `${Math.round(v / 1000)}K` : `${Math.round(v)}`; }
   endpoint(a) {
     const i = (a || []).findLastIndex(v => v != null);
     if (i < 0) return null;
@@ -150,7 +151,7 @@ export class LineChart extends Component {
     const flush = () => { if (points.length) segments.push(`M${points[0][0]},${baseline} ` + points.map(([x,y]) => `L${x},${y}`).join(" ") + ` L${points.at(-1)[0]},${baseline} Z`); points = []; };
     values.forEach((value, i) => value == null ? flush() : points.push([chartX(i, values.length), this.y(value)])); flush(); return segments.join(" ");
   }
-  compact(value) { if (this.props.percent) return `${Number(value).toFixed(1)}%`; return Math.abs(value) >= 1000000 ? `${+(value / 1000000).toFixed(1)}M` : Math.abs(value) >= 1000 ? `${Math.round(value / 1000)}K` : formatNumber(value); }
+  compact(value) { if (this.props.percent) return formatPercent(value); return Math.abs(value) >= 1000000 ? `${+(value / 1000000).toFixed(1)}M` : Math.abs(value) >= 1000 ? `${Math.round(value / 1000)}K` : formatNumber(value); }
   isPeak(value, values) { return value != null && Number(value) === Math.max(...values.filter((v) => v != null).map(Number)); }
   partialPath(values, partial) {
     const i = partial?.findIndex(Boolean) ?? -1;
@@ -164,6 +165,7 @@ class Money extends Component {
   format = formatNumber;
 }
 class Badge extends Component {
+  formatPercent = formatPercent;
   static template = "baseer_dashboard2.Badge";
   static props = { value: { optional: true }, goodWhen: { optional: true } };
   get good() {
@@ -219,10 +221,12 @@ export const iconPath = (key) => ({
 export class KpiCard extends Component {
   static template = "baseer_dashboard2.KpiCard";
   iconPath = iconPath;
+  formatPercent = formatPercent;
   static components = { Money, Badge, Sparkline };
   static props = {
     title: String,
     subtitle: { optional: true },
+    subtitlePercent: { optional: true },
     icon: { optional: true },
     value: { optional: true },
     change: { optional: true },
@@ -409,7 +413,7 @@ class Dashboard2 extends Component {
   }
   tablePct = formatTablePct;
   pct(v) {
-    return v === null || v === undefined ? "—" : `${Number(v).toFixed(1)}%`;
+    return formatPercent(v);
   }
   monthName(m) {
     if (!m) return "—";

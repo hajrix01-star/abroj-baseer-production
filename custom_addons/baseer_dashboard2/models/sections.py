@@ -271,12 +271,14 @@ class DashboardSections(models.AbstractModel):
         first_data, last_data = bounds[0] if bounds else (None, None)
         posted_months = self._posted_months(ids)
         monthly = []
-        for offset in range(-5, 1):
+        for offset in range(-9, 1):
             first, last = month_bounds(end, offset)
             summary, _, _, _ = self._sales_summary(ids, first, min(last, end))
             monthly.append({'month': first.strftime('%Y-%m'), 'data': summary,
                             'has_data': bool(summary['source_counts']['pos'] or summary['source_counts']['summary']),
                             'partial': bool(first <= min(end, last_data or end) < last)})
+        apps_trend = monthly
+        monthly = monthly[-6:]
         known = {c['key']: c for c in channels}
         known['other'] = {'key': 'other', 'name': 'أخرى', 'kind': 'hall', 'color_token': False, 'commission_rate': 0}
         net_sales = self._accounting(ids, start, end)['sales_net']
@@ -299,7 +301,7 @@ class DashboardSections(models.AbstractModel):
         if not days:
             current = dict(current, gross=None, apps=None)
             split = {'hall': None, 'apps': None}
-        return {'available': True, 'current': current, 'previous': previous, 'trend': monthly,
+        return {'available': True, 'current': current, 'previous': previous, 'trend': monthly, 'apps_trend': apps_trend,
                 'ranked': sorted((row for row in rows if row['amount'] or any(row['trend'])), key=lambda row: row['amount'], reverse=True),
                 'split': split,
                 'commissions': {'available': bool(commissions), 'reason': False if commissions else 'no_commission_rates', 'rows': commissions},

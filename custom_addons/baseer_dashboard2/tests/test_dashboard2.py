@@ -117,6 +117,9 @@ class TestDashboard2(TransactionCase):
             self.assertEqual(len(kpi['previous_trend']), 6)
         self.assertTrue(all(item['customers']['value'] is None for item in result['sales']['trend'] if not item['has_data']))
         self.assertEqual(result['current']['sales_net'], 0)
+        revenue = service.get_section('revenue', {'company_key': str(company.id), 'period': {'mode': 'month', 'month': '2026-10'}})
+        self.assertEqual(len(revenue['trend']), 6)
+        self.assertEqual([m['month'] for m in revenue['apps_trend']], [f'2026-{month:02}' for month in range(1, 11)])
 
     def test_accounting_and_noorix(self):
         from datetime import date

@@ -1,7 +1,7 @@
 import { after, expect, getFixture, globals, test, withFetch, click, press } from '@odoo/hoot';
 import { animationFrame } from '@odoo/hoot-mock';
 import { App, Component } from '@odoo/owl';
-import { hourLabel, hasDisplayValues, formatNumber, formatTable, formatTablePct, chartX, timelineYear, InfoPopup, LineChart, niceStep, KpiCard, Sparkline } from '../src/js/main';
+import { hourLabel, hasDisplayValues, formatNumber, formatTable, formatTablePct, formatPercent, chartX, timelineYear, InfoPopup, LineChart, niceStep, KpiCard, Sparkline } from '../src/js/main';
 
 test('P&L renders without in/out months', async () => {
     class Pnl extends Component {
@@ -39,7 +39,8 @@ test('table values use accounting notation', () => {
     expect(formatTable(-1234, true)).toBe('-1,234');
     expect(formatTablePct(-0)).toBe('—');
     expect(formatTablePct(-0.01)).toBe('—');
-    expect(formatTablePct(-12.3)).toBe('-12.3%');
+    expect(formatTablePct(-12.3)).toBe('−12.3%');
+    expect(formatPercent(-38)).toBe('−38.0%');
 });
 
 test('in/out keeps cumulative notes in chips outside the numeric table', async () => {
@@ -249,4 +250,22 @@ test('hour labels follow the Riyadh clock', () => {
     expect(hourLabel(13)).toBe('1م');
     expect(hourLabel(0)).toBe('12ص');
     expect(hourLabel(1)).toBe('1ص');
+});
+
+
+test('latest chart points are filled and labelled', async () => {
+    const response = await withFetch(globals.fetch, () => fetch('/baseer_dashboard2/static/src/xml/main.xml'));
+    const templates = await response.text();
+    const app = new App(Sparkline, { templates, props: { values: [10, 20, 30], mini: true }, test: true });
+    await app.mount(getFixture());
+    const circles = getFixture().querySelectorAll('circle');
+    expect(circles[1].getAttribute('fill')).toBe('var(--bd2-c1)');
+    expect(getFixture().querySelector('text').textContent).toBe('30');
+    app.destroy();
+    const chart = new App(LineChart, { templates, props: { series: [{ values: [10, 20, 30], firstLabel: true }] }, test: true });
+    after(() => chart.destroy());
+    await chart.mount(getFixture());
+    const latest = getFixture().querySelector('circle[r="5"]');
+    expect(Number(latest.getAttribute('cx'))).toBe(chartX(2, 3));
+    expect(getFixture().querySelector('svg').textContent).toInclude('30');
 });

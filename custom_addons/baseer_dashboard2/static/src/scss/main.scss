@@ -751,7 +751,9 @@ td {
 
 .o_bd2 .revenue-combo .bd2-spark { width: 100%; height: 200px; margin-top: 20px; overflow: visible; }
 .o_bd2 .apps-combo .bd2-spark { height: 310px; }
-.o_bd2 .revenue-combo .mini-labels { direction: ltr; }
+.o_bd2 .revenue-combo .mini-labels { direction: rtl; }
+.o_bd2 .revenue-combo .spark-wrap { margin-top: 20px; }
+.o_bd2 .revenue-combo .spark-wrap .bd2-spark { display: block; margin-top: 0; }
 
 .o_bd2 .gauge-scale, .o_bd2 .ratio-foot { display: flex; justify-content: space-between; align-items: center; }
 .o_bd2 .gauge-scale { direction: rtl; color: var(--bd2-muted); font-size: 11px; }
@@ -772,7 +774,7 @@ td {
 .o_bd2 .spark-label.gold { color: var(--bd2-gold-text); }
 .o_bd2 .card-icon { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 8px; background: var(--bd2-gold-soft); color: var(--bd2-gold-text); }
 .o_bd2 .card-icon svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
-.o_bd2 .kpi .spark-wrap { position: absolute; inset-inline-end: 15px; bottom: 12px; width: 95px; height: 30px; }
+.o_bd2 .kpi .spark-wrap { position: absolute; inset-inline-end: 15px; top: 18px; width: 70px; height: 30px; }
 .o_bd2 .kpi .spark-wrap .bd2-spark { width: 100%; height: 30px; }
 .o_bd2 .safety-chips { flex-wrap: nowrap; align-items: center; white-space: nowrap; }
 .o_bd2 .compare-pill.near { color: var(--bd2-warn); background: var(--bd2-gold-soft); }
@@ -787,7 +789,7 @@ td {
 .o_bd2 .ring-total small { font-size: 12px; }
 .o_bd2 .break-legend { display: flex; gap: 12px; color: var(--bd2-muted); font-size: 11px; }
 .o_bd2 .break-legend span:first-child { color: var(--bd2-c1); }
-.o_bd2 .break-legend span:last-child { color: var(--bd2-gold-text); }
+
 
 .o_bd2 .customer-empty { min-height: 200px; display: grid; place-items: center; color: var(--bd2-muted); text-align: center; }
 .o_bd2 .rank-first { display: inline-grid; place-items: center; width: 25px; height: 25px; border-radius: 6px; background: var(--bd2-gold-soft); color: var(--bd2-gold-text); }
@@ -818,3 +820,8 @@ td {
 .o_bd2 .hours-table { min-width: 900px; table-layout: fixed; }
 .o_bd2 .hours-table th, .o_bd2 .hours-table td { text-align: center; padding: 5px 2px; }
 .o_bd2 .hours-table th:first-child { width: 70px; }
+
+.o_bd2 .kpi-heading { display: flex; align-items: center; gap: 8px; padding-inline-end: 78px; }
+.o_bd2 .negative { color: var(--bd2-neg); }
+.o_bd2 .apps-combo { padding-inline: 24px; }
+.o_bd2 [dir="ltr"] { unicode-bidi: isolate; }

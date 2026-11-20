@@ -17,8 +17,8 @@
                 <path t-att-d="miniPath(props.values, false, true)" fill="var(--bd2-c1)" fill-opacity="0.09"/>
                 <path t-att-d="miniPath(props.values)" fill="none" stroke="var(--bd2-c1)" stroke-width="2" vector-effect="non-scaling-stroke"/>
                 <path t-att-d="miniPath(props.previous, true)" fill="none" stroke="var(--bd2-gold)" stroke-width="2" vector-effect="non-scaling-stroke"/>
-                <t t-if="!props.stretch" t-foreach="endpoints(props.values)" t-as="i" t-key="i"><circle t-att-cx="miniPoint(props.values,i).x" t-att-cy="miniPoint(props.values,i).y" r="0.9" fill="var(--bd2-c1)"/><text t-att-x="miniPoint(props.values,i).x" t-att-y="miniPoint(props.values,i).y-2" text-anchor="middle" fill="var(--bd2-c1)" font-size="2.4" t-esc="short(props.values[i])"/></t>
-                <t t-if="!props.stretch" t-foreach="endpoints(props.previous)" t-as="i" t-key="i"><circle t-att-cx="miniPoint(props.previous,i,true).x" t-att-cy="miniPoint(props.previous,i,true).y" r="0.9" fill="var(--bd2-gold)"/><text t-att-x="miniPoint(props.previous,i,true).x" t-att-y="miniPoint(props.previous,i,true).y-2" text-anchor="middle" fill="var(--bd2-gold-text)" font-size="2.4" t-esc="short(props.previous[i], props.ratioPercent) + (props.ratioPercent ? '%' : '')"/></t>
+                <t t-if="!props.stretch" t-foreach="endpoints(props.values)" t-as="i" t-key="i"><circle t-att-cx="miniPoint(props.values,i).x" t-att-cy="miniPoint(props.values,i).y" r="1.3" t-att-fill="i === endpoints(props.values)[0] ? 'var(--bd2-c1)' : 'var(--bd2-card)'" stroke="var(--bd2-c1)" stroke-width="0.5"/><text t-if="i === endpoints(props.values)[0]" font-weight="700" t-att-x="miniPoint(props.values,i).x" t-att-y="miniPoint(props.values,i).y-2" text-anchor="middle" fill="var(--bd2-c1)" font-size="2.4" t-esc="short(props.values[i])"/></t>
+                <t t-if="!props.stretch" t-foreach="endpoints(props.previous)" t-as="i" t-key="i"><circle t-att-cx="miniPoint(props.previous,i,true).x" t-att-cy="miniPoint(props.previous,i,true).y" r="1.3" t-att-fill="i === endpoints(props.previous)[0] ? 'var(--bd2-gold)' : 'var(--bd2-card)'" stroke="var(--bd2-gold)" stroke-width="0.5"/><text t-if="i === endpoints(props.previous)[0]" font-weight="700" t-att-x="miniPoint(props.previous,i,true).x" t-att-y="miniPoint(props.previous,i,true).y-2" text-anchor="middle" fill="var(--bd2-gold-text)" font-size="2.4" t-esc="short(props.previous[i], props.ratioPercent) + (props.ratioPercent ? '%' : '')"/></t>
             </t>
             <t t-else="">
             <path t-att-d="path(props.values)" fill="none" t-att-stroke="props.gold ? 'var(--bd2-gold)' : props.navy ? 'var(--bd2-c1)' : 'var(--bd2-c5)'" stroke-width="2"/>
@@ -137,7 +137,7 @@
     <t t-name="baseer_dashboard2.Overview">
         <div class="grid three">
             <div class="card mini" t-foreach="[['المشتريات',state.data.purchases?.value,state.data.purchases?.pct,state.data.purchases?.trend?.map(x=&gt;x.has_data ? x.pct : null),state.data.purchases?.trend?.map(x=&gt;x.has_data ? x.value : null),state.data.purchases?.change_pct],['تطبيقات التوصيل',state.data.sales?.apps,state.data.sales?.apps_pct,state.data.sales?.trend?.map(x=&gt;x.has_data ? x.apps_pct : null),state.data.sales?.trend?.map(x=&gt;x.has_data ? x.apps : null),state.data.sales?.apps_change_pct],['عدد العملاء ومتوسط الفاتورة',state.data.sales?.customers?.value,state.data.sales?.customers?.avg_ticket,state.data.sales?.trend?.map(x=&gt;x.has_data ? x.customers.avg_ticket : null),state.data.sales?.trend?.map(x=&gt;x.has_data ? x.customers.value : null),state.data.sales?.customers_change_pct]]" t-as="item" t-key="item[0]">
-                <div class="mini-head"><div><span class="card-icon"><svg viewBox="0 0 24 24"><path t-att-d="iconPath(['purchases','apps','customers'][item_index])"/></svg></span><h3 t-esc="item[0]"/><small t-if="item_index===0" class="block muted" t-esc="monthName(state.period.month)"/><small t-if="item_index===1" class="block muted">كيتا + هنقر + جاهز · شامل الضريبة</small></div><div class="mini-value"><strong t-esc="item_index === 0 and !state.data.purchases?.available ? 'غير متوفر' : fmt(item[1])"/><div class="mini-pill" t-esc="item[2] == null ? 'غير متوفر' : (item_index &lt; 2 ? Number(item[2]).toFixed(1)+'% من المبيعات' + (item_index === 1 ? ' · شامل الضريبة' : '') : fmt(item[2])+' متوسط الفاتورة')"/></div></div>
+                <div class="mini-head"><div><span class="card-icon"><svg viewBox="0 0 24 24"><path t-att-d="iconPath(['purchases','apps','customers'][item_index])"/></svg></span><h3 t-esc="item[0]"/><small t-if="item_index===0" class="block muted" t-esc="monthName(state.period.month)"/><small t-if="item_index===1" class="block muted">كيتا + هنقر + جاهز · شامل الضريبة</small></div><div t-if="item_index !== 2 or state.data.sales?.customers?.available" class="mini-value"><strong t-esc="item_index === 0 and !state.data.purchases?.available ? 'غير متوفر' : fmt(item[1])"/><div class="mini-pill" t-esc="item[2] == null ? 'غير متوفر' : (item_index &lt; 2 ? (Math.round((Number(item[2])+Number.EPSILON*100)*10)/10).toFixed(1)+'% من المبيعات' + (item_index === 1 ? ' · شامل الضريبة' : '') : fmt(item[2])+' متوسط الفاتورة')"/></div></div>
                 <t t-if="item_index !== 2 or state.data.sales?.customers?.available"><Sparkline values="item[4]" previous="item[3]" mini="true" ratioPercent="item_index &lt; 2"/><div class="mini-labels"><span t-foreach="state.data.purchases.trend.map(x=&gt;monthName(x.month).split(' ')[0])" t-as="label" t-key="label_index" t-esc="label"/></div><div class="mini-legend"><span><i/><t t-esc="item_index === 2 ? 'عدد الطلبات' : 'المبلغ'"/></span><span><i class="gold"/><t t-esc="item_index === 2 ? 'متوسط الفاتورة' : 'النسبة'"/></span></div></t><div t-else="" class="customer-empty">غير متوفر — يتوفر من بيانات نقاط البيع فقط</div>
             </div>
         </div>
@@ -621,15 +621,15 @@
                 <tbody>
                     <tr>
                         <th t-esc="monthName(state.period.month).split(' ')[0]"/>
-                        <td t-foreach="weekdays" t-as="wd" t-key="wd_index">
-                            <b t-esc="fmt(state.data.weekday_month[(wd_index+5)%7]?.gross)"/>
+                        <td t-foreach="weekdays" t-as="wd" t-key="wd_index" t-att-class="state.data.weekday_month[(wd_index+5)%7]?.gross === Math.max(...state.data.weekday_month.map(x=&gt;x.gross || 0)) ? 'weekday-best' : ''">
+                            <b t-esc="fmt(state.data.weekday_month[(wd_index+5)%7]?.gross)"/><Track value="state.data.weekday_month[(wd_index+5)%7]?.gross || 0" max="Math.max(...state.data.weekday_month.map(x=&gt;x.gross || 0))" gold="true"/>
                             <small class="block">
                                 <t t-esc="fmt(state.data.weekday_month[(wd_index+5)%7]?.customers)"/> عميل</small>
                         </td>
                     </tr>
                     <tr>
                         <th>السنة <t t-esc="state.period.month.slice(0,4)"/></th>
-                        <td t-foreach="weekdays" t-as="wd" t-key="wd_index" t-esc="fmt(state.data.weekday_ytd[(wd_index+5)%7]?.gross)"/>
+                        <td t-foreach="weekdays" t-as="wd" t-key="wd_index" t-att-class="state.data.weekday_ytd[(wd_index+5)%7]?.gross === Math.max(...state.data.weekday_ytd.map(x=&gt;x.gross || 0)) ? 'weekday-best' : ''"><b t-esc="fmt(state.data.weekday_ytd[(wd_index+5)%7]?.gross)"/><Track value="state.data.weekday_ytd[(wd_index+5)%7]?.gross || 0" max="Math.max(...state.data.weekday_ytd.map(x=&gt;x.gross || 0))" gold="true"/></td>
                     </tr>
                 </tbody>
             </table>
@@ -637,7 +637,7 @@
         <div class="card">
             <h3>نظرة على السنة</h3>
             <div class="year-grid">
-                <div t-foreach="state.data.year_calendar" t-as="m" t-key="m.month">
+                <div t-foreach="state.data.year_calendar" t-as="m" t-key="m.month" t-att-class="m.month === state.period.month ? 'year-current' : ''">
                     <b t-esc="monthName(m.month).split(' ')[0]"/>
                     <small class="block muted">معدل يومي <t t-esc="fmt(m.days.some(d=&gt;d.gross != null) ? m.days.reduce((a,d)=&gt;a+(d.gross || 0),0)/m.days.filter(d=&gt;d.gross != null).length : null)"/> · عملاء <t t-esc="fmt(m.days.some(d=&gt;d.customers != null) ? m.days.reduce((a,d)=&gt;a+(d.customers || 0),0)/m.days.filter(d=&gt;d.customers != null).length : null)"/>/يوم</small>
                     <div class="year-weekdays"><span t-foreach="weekdays" t-as="wd" t-key="wd_index" t-esc="wd"/></div>

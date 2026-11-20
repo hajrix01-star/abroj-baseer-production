@@ -212,5 +212,5 @@ test('mini charts use non-scaling strokes and avoid stretched SVG labels', async
 test('mini labels round amounts and retain one decimal for percentages', () => {
     const short = Sparkline.prototype.short;
     expect(short(125395)).toBe('125K');
-    expect(short(46.55, true)).toBe('46.5');
+    expect(short(46.55, true)).toBe('46.6');
 });

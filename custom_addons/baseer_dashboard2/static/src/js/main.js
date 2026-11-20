@@ -97,13 +97,13 @@ export const niceStep = (range, count = 4) => {
 export const hasPoints = (values) => (values || []).some((v) => v != null && Number.isFinite(Number(v)));
 export class Sparkline extends Component {
   static template = "baseer_dashboard2.Sparkline";
-  static props = { values: { optional: true }, previous: { optional: true }, gold: { optional: true }, secondaryGold: { optional: true } };
-  path(a) {
+  static props = { values: { optional: true }, previous: { optional: true }, gold: { optional: true }, secondaryGold: { optional: true }, partial: { optional: true } };
+  path(a, partialOnly = false) {
     a = a || [];
     const scaleValues = this.props.secondaryGold ? a : [...(this.props.values || []), ...(this.props.previous || [])];
     const present = scaleValues.filter((v) => v != null).map(Number);
     const min = Math.min(...present, 0), max = Math.max(...present, 1);
-    return a.map((v, i) => v == null ? "" : `${i && a[i - 1] != null ? "L" : "M"}${95 - (a.length <= 1 ? 45 : 90 * i / (a.length - 1))},${28 - (Number(v) - min) / (max - min) * 24}`).join(" ");
+    return a.map((v, i) => v == null || (partialOnly && !this.props.partial?.[i] && !this.props.partial?.[i + 1]) ? "" : `${i && a[i - 1] != null && (partialOnly ? this.props.partial?.[i] : !this.props.partial?.[i]) ? "L" : "M"}${95 - (a.length <= 1 ? 45 : 90 * i / (a.length - 1))},${28 - (Number(v) - min) / (max - min) * 24}`).join(" ");
   }
 }
 export class LineChart extends Component {
@@ -132,7 +132,7 @@ export class LineChart extends Component {
     const i = partial?.findIndex(Boolean) ?? -1;
     return i > 0 && values[i] != null && values[i - 1] != null ? `M${chartX(i - 1, values.length)},${this.y(values[i - 1])} L${chartX(i, values.length)},${this.y(values[i])}` : "";
   }
-  path(values) { return values.map((v, i) => v == null ? "" : `${i && values[i - 1] != null ? "L" : "M"}${chartX(i, values.length)},${this.y(v)}`).join(" "); }
+  path(values, partial) { return values.map((v, i) => v == null ? "" : `${i && values[i - 1] != null && !partial?.[i] ? "L" : "M"}${chartX(i, values.length)},${this.y(v)}`).join(" "); }
 }
 class Money extends Component {
   static template = "baseer_dashboard2.Money";
@@ -198,6 +198,7 @@ export class KpiCard extends Component {
     change: { optional: true },
     trend: { optional: true },
     previousTrend: { optional: true },
+    partial: { optional: true },
     hero: { optional: true },
     goodWhen: { optional: true },
   };

@@ -1,6 +1,6 @@
 {
     'name': 'Baseer Dashboard 2',
-    'version': '19.0.1.2.0',
+    'version': '19.0.1.3.0',
     'author': 'Baseer',
     'license': 'LGPL-3',
     'category': 'Accounting',

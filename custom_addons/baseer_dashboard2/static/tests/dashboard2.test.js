@@ -116,3 +116,15 @@ test('KPI sparkline renders two series and change badge', async () => {
     expect(getFixture().querySelectorAll('.bd2-spark path').length).toBe(2);
     expect(getFixture().querySelector('.bd2-badge').textContent).toInclude('10.0%');
 });
+
+
+test('partial chart month uses a dashed segment and label', async () => {
+    const response = await withFetch(globals.fetch, () => fetch('/baseer_dashboard2/static/src/xml/main.xml'));
+    const app = new App(LineChart, { templates: await response.text(), props: { series: [
+        { name: 'Sales', values: [100, 200], partial: [false, true] },
+    ] }, test: true });
+    after(() => app.destroy());
+    await app.mount(getFixture());
+    expect(getFixture().querySelector('[stroke-dasharray="5 4"]')).not.toBe(null);
+    expect(getFixture().textContent).toInclude('جزئي');
+});

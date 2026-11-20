@@ -14,6 +14,8 @@
     <t t-name="baseer_dashboard2.Sparkline">
         <svg class="bd2-spark" viewBox="0 0 100 32" aria-hidden="true">
             <path t-att-d="path(props.values)" fill="none" t-att-stroke="props.gold ? 'var(--bd2-gold)' : 'var(--bd2-c5)'" stroke-width="2"/>
+            <path t-if="props.partial" t-att-d="path(props.values, true)" fill="none" t-att-stroke="props.gold ? 'var(--bd2-gold)' : 'var(--bd2-c5)'" stroke-width="2" stroke-dasharray="3 2"/>
+            <text t-if="props.partial?.includes(true)" x="5" y="8" fill="var(--bd2-muted)" font-size="6">جزئي</text>
             <path t-if="props.previous" t-att-d="path(props.previous)" fill="none" t-att-stroke="props.secondaryGold ? 'var(--bd2-gold)' : 'var(--bd2-faint)'" stroke-width="1.5" t-att-stroke-dasharray="props.secondaryGold ? '' : '4 3'"/>
         </svg>
     </t>
@@ -33,10 +35,11 @@
             </t>
             <t t-foreach="renderedSeries" t-as="s" t-key="s_index">
                 <path t-if="s.area" t-att-d="area(s.values)" fill="url(#gold-area)"/>
-                <path t-att-d="path(s.values)" fill="none" t-att-stroke="s.dashed ? 'var(--bd2-faint)' : s.gold ? 'var(--bd2-gold)' : 'var(--bd2-c1)'" stroke-width="2.3" t-att-stroke-dasharray="s.dashed ? '5 5' : ''"/>
+                <path t-att-d="path(s.values, s.partial)" fill="none" t-att-stroke="s.dashed ? 'var(--bd2-faint)' : s.gold ? 'var(--bd2-gold)' : 'var(--bd2-c1)'" stroke-width="2.3" t-att-stroke-dasharray="s.dashed ? '5 5' : ''"/>
                 <path t-if="s.partial" t-att-d="partialPath(s.values, s.partial)" fill="none" stroke="var(--bd2-card)" stroke-width="3.5"/>
-                <path t-if="s.partial" t-att-d="partialPath(s.values, s.partial)" fill="none" stroke="var(--bd2-gold)" stroke-width="2.3" stroke-dasharray="5 4"/>
+                <path t-if="s.partial" t-att-d="partialPath(s.values, s.partial)" fill="none" t-att-stroke="s.gold ? 'var(--bd2-gold)' : 'var(--bd2-c1)'" stroke-width="2.3" stroke-dasharray="5 4"/>
                 <t t-if="!s.dashed"><t t-foreach="s.values" t-as="v" t-key="v_index">
+                    <text t-if="s.partial?.[v_index] and v != null and !s.dashed" t-att-x="chartX(v_index,s.values.length)" t-att-y="y(v)+16" text-anchor="middle" fill="var(--bd2-muted)" font-size="9">جزئي</text>
                     <circle t-if="v !== null and v !== undefined" t-att-cx="chartX(v_index,s.values.length)" t-att-cy="y(v)" r="3" fill="var(--bd2-card)" t-att-stroke="s.gold ? 'var(--bd2-gold)' : 'var(--bd2-c1)'" stroke-width="2"/>
                     <text t-if="(s.area or s.pointLabels) and v !== null and v !== undefined" t-att-x="chartX(v_index,s.values.length)" t-att-y="y(v)-8" text-anchor="middle" fill="var(--bd2-ink)" font-size="9" font-weight="700" t-esc="compact(v)"/>
                 </t></t>
@@ -70,7 +73,7 @@
     </t>
     <t t-name="baseer_dashboard2.KpiCard">
         <div t-att-class="'card kpi '+(props.hero?'hero':'')">
-            <Sparkline values="props.trend" previous="props.previousTrend" gold="props.hero"/>
+            <Sparkline values="props.trend" previous="props.previousTrend" partial="props.partial" gold="props.hero"/>
             <div class="muted" t-esc="props.title"/>
             <div class="kpi-value">
                 <Money value="props.value"/>
@@ -95,13 +98,13 @@
             </div>
             <div class="stats">
                 <div>
-                    <small>مبيعات العام حتى تاريخه</small>
+                    <small>مبيعات العام حتى تاريخه <t t-if="state.data.timeline?.stats.end_date"> — حتى <t t-esc="dateName(state.data.timeline.stats.end_date)"/></t></small>
                     <b>
                         <Money value="state.data.timeline?.stats.ytd"/>
                     </b>
                 </div>
                 <div>
-                    <small>نفس الفترة من العام السابق</small>
+                    <small>نفس الفترة من العام السابق <t t-if="state.data.timeline?.stats.previous_end_date"> — حتى <t t-esc="dateName(state.data.timeline.stats.previous_end_date)"/></t></small>
                     <b>
                         <t t-if="state.data.timeline?.stats.previous_ytd == null">غير متوفر</t>
                         <Money t-else="" value="state.data.timeline?.stats.previous_ytd"/>
@@ -123,20 +126,20 @@
         <div class="grid three">
             <div class="card mini" t-foreach="[['المشتريات ونسبتها',state.data.purchases?.value,state.data.purchases?.pct,state.data.purchases?.trend?.map(x=&gt;x.has_data ? x.pct : null),state.data.purchases?.trend?.map(x=&gt;x.has_data ? x.value : null),state.data.purchases?.change_pct],['تطبيقات التوصيل ونسبتها',state.data.sales?.apps,state.data.sales?.apps_pct,state.data.sales?.trend?.map(x=&gt;x.has_data ? x.apps_pct : null),state.data.sales?.trend?.map(x=&gt;x.has_data ? x.apps : null),state.data.sales?.apps_change_pct],['عدد العملاء ومتوسط الفاتورة',state.data.sales?.customers?.value,state.data.sales?.customers?.avg_ticket,state.data.sales?.trend?.map(x=&gt;x.has_data ? x.customers.avg_ticket : null),state.data.sales?.trend?.map(x=&gt;x.has_data ? x.customers.value : null),state.data.sales?.customers_change_pct]]" t-as="item" t-key="item[0]">
                 <h3 t-esc="item[0]"/>
-                <strong t-esc="fmt(item[1])"/>
-                <div class="muted" t-esc="item[2] == null ? 'غير متوفر' : (item_index &lt; 2 ? pct(item[2])+' من المبيعات' : fmt(item[2]))"/>
-                <Badge value="item[5]"/><Sparkline values="item[4]" previous="item[3]" secondaryGold="true"/><div class="mini-labels"><span t-foreach="trendLabels" t-as="label" t-key="label_index" t-esc="label"/></div>
+                <strong t-esc="item_index === 0 and !state.data.purchases?.available ? 'غير متوفر — حدّد حسابات المشتريات' : (item_index === 0 and item[1] != null ? Number(item[1]).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : fmt(item[1]))"/><span t-if="item_index === 1" class="muted"> شامل الضريبة</span>
+                <div class="muted" t-esc="item[2] == null ? 'غير متوفر' : (item_index &lt; 2 ? Number(item[2]).toFixed(2)+'% من المبيعات'+(item_index === 1 ? ' شامل الضريبة' : ' دون الضريبة') : fmt(item[2]))"/>
+                <Badge value="item[5]"/><Sparkline values="item[4]" previous="item[3]" secondaryGold="true" partial="trend.map(x=&gt;x.partial)"/><div class="mini-labels"><span t-foreach="trendLabels" t-as="label" t-key="label_index" t-esc="label"/></div>
             </div>
         </div>
         <div class="grid five">
-            <KpiCard t-foreach="Object.entries(state.data.kpis || {})" t-as="entry" t-key="entry[0]" title="name(entry[0])" value="entry[1].value" change="entry[1].change_pct" trend="entry[1].trend" previousTrend="entry[1].previous_trend" hero="entry[0]==='net_profit'" goodWhen="entry[1].good_when"/>
+            <KpiCard t-foreach="Object.entries(state.data.kpis || {})" t-as="entry" t-key="entry[0]" title="name(entry[0])" value="entry[1].value" change="entry[1].change_pct" trend="entry[1].trend" previousTrend="entry[1].previous_trend" partial="trend.map(x=&gt;x.partial)" hero="entry[0]==='net_profit'" goodWhen="entry[1].good_when"/>
         </div>
         <div t-if="state.data.salaries_warning" class="chip">الرواتب أقل بوضوح من متوسط آخر 3 أشهر — قد تكون غير مكتملة</div>
         <div class="grid two-wide">
             <div class="card">
                 <h3>المبيعات وصافي الربح مقابل نقطة التعادل</h3>
                 <div class="muted">المسافة بين خط المبيعات والخط المتقطع = هامش الأمان</div>
-                <LineChart series="[{values:state.data.breakeven_series.map(x=&gt;x.sales_net),name:'المبيعات'}, {values:state.data.breakeven_series.map(x=&gt;x.net_profit),gold:true,pointLabels:true,name:'صافي الربح'},{values:state.data.breakeven_series.map(x=&gt;x.breakeven),dashed:true,name:'نقطة التعادل'}]" labels="trendLabels"/>
+                <LineChart series="[{values:state.data.breakeven_series.map(x=&gt;x.sales_net),partial:state.data.breakeven_series.map(x=&gt;x.partial),name:'المبيعات'}, {values:state.data.breakeven_series.map(x=&gt;x.net_profit),partial:state.data.breakeven_series.map(x=&gt;x.partial),gold:true,pointLabels:true,name:'صافي الربح'},{values:state.data.breakeven_series.map(x=&gt;x.breakeven),dashed:true,name:'نقطة التعادل'}]" labels="trendLabels"/>
                 <div class="safety-chips"><span t-foreach="state.data.breakeven_series" t-as="m" t-key="m.month" t-att-class="m_last ? 'current' : ''"><t t-esc="monthName(m.month)"/> · <t t-esc="pct(m.margin_pct)"/></span></div>
             </div>
             <t t-call="baseer_dashboard2.BreakEven"/>
@@ -203,8 +206,8 @@
     </t>
     <t t-name="baseer_dashboard2.Revenue">
         <div class="grid four">
-            <KpiCard title="'إجمالي المبيعات'" value="current.gross" hero="true"/>
-            <KpiCard title="'مبيعات التطبيقات'" value="current.apps"/>
+            <KpiCard title="'إجمالي المبيعات — شامل الضريبة'" value="current.gross" hero="true"/>
+            <KpiCard title="'مبيعات التطبيقات — شامل الضريبة'" value="current.apps"/>
             <KpiCard title="'عدد العملاء (الطلبات)'" value="current.customers?.value"/>
             <KpiCard title="'متوسط الفاتورة'" value="current.customers?.avg_ticket"/>
         </div>
@@ -212,7 +215,7 @@
         <div class="grid two-wide">
             <div class="card">
                 <h3>المبيعات حسب طريقة الدفع</h3>
-                <div class="muted">مرتبة من الأعلى · المبلغ وحصته من المبيعات والتغير</div>
+                <div class="muted">المبلغ شامل الضريبة؛ الحصة من صافي المبيعات دون الضريبة، موزّعاً بحسب حصة القناة من الإجمالي شامل الضريبة</div>
                 <table>
                     <thead>
                         <tr>
@@ -241,7 +244,7 @@
                                 <Badge value="row.change_pct"/>
                             </td>
                             <td>
-                                <Sparkline values="row.trend"/>
+                                <Sparkline values="row.trend" partial="trend.map(x=&gt;x.partial)"/>
                             </td>
                         </tr>
                         <tr class="highlight">
@@ -255,13 +258,13 @@
                 </table>
             </div>
             <div class="card">
-                <h3>التطبيقات ونسبتها من المبيعات</h3>
+                <h3>التطبيقات ونسبتها من المبيعات — شامل الضريبة</h3>
                 <LineChart series="[{values:trend.map(x=&gt;x.has_data === false ? null : x.data.apps),gold:true},{values:trend.map(x=&gt;x.has_data === false ? null : x.data.gross)}]" labels="trendLabels"/>
             </div>
         </div>
         <div class="grid two">
             <div class="card">
-                <h3>عمولات تطبيقات التوصيل</h3>
+                <h3>عمولات تطبيقات التوصيل</h3><div class="muted">المبيعات شاملة الضريبة؛ الصافي بعد العمولة</div>
                 <div t-if="!state.data.commissions.available" class="muted">غير متوفر — حدّد نسب العمولة من الإعدادات</div>
                 <table t-else="">
                     <thead>
@@ -337,7 +340,7 @@
                     <tr t-foreach="expenses" t-as="row" t-key="row.key">
                         <th t-esc="name(row.key)"/>
                         <td>
-                            <Sparkline values="row.trend"/>
+                            <Sparkline values="row.trend" partial="trend.map(x=&gt;x.partial)"/>
                         </td>
                         <td t-foreach="row.trend" t-as="v" t-key="v_index" t-esc="tableFmt(v)"/>
                         <td>
@@ -360,7 +363,7 @@
                     <input t-if="state.meta.can_edit and state.data.targets[key]" class="target-input" type="number" min="0" max="100" t-att-value="state.data.targets[key].value" t-on-change="(e)=&gt;this.saveTarget(key,e)"/>
                 </div>
                 <Gauge value="current.ratios?.[key]" previous="state.data.previous.ratios?.[key]" target="state.data.targets[key]?.value" max="100"/>
-                <Sparkline values="trend.map(x=&gt;x.has_data ? x.data.ratios[key] : null)"/>
+                <Sparkline values="trend.map(x=&gt;x.has_data ? x.data.ratios[key] : null)" partial="trend.map(x=&gt;x.partial)"/>
             </div>
         </div>
         <div class="grid two">
@@ -440,7 +443,7 @@
                                 <t t-esc="row.name || name(row.key)"/>
                             </th>
                             <td>
-                                <Sparkline values="row.months"/>
+                                <Sparkline values="row.months" partial="trend.map(x=&gt;x.partial)"/>
                             </td>
                             <td t-foreach="row.months" t-as="v" t-key="v_index" t-esc="tableFmt(v)"/>
                             <td t-esc="tableFmt(row.total)"/>
@@ -452,7 +455,7 @@
                                 <t t-esc="child.code ? ' '+child.name : child.name"/>
                             </td>
                             <td>
-                                <Sparkline values="child.months"/>
+                                <Sparkline values="child.months" partial="trend.map(x=&gt;x.partial)"/>
                             </td>
                             <td t-foreach="child.months" t-as="v" t-key="v_index" t-esc="tableFmt(v)"/>
                             <td t-esc="tableFmt(child.total)"/>
@@ -477,7 +480,7 @@
                             <th>
                                 <t t-esc="group[1]"/> ▾</th>
                             <td>
-                                <Sparkline values="state.data.months.map(m=&gt;group[0]==='incoming'?(m.incoming.available ? m.incoming.gross : null):(m.outgoing.available ? m.outgoing.total : null))"/>
+                                <Sparkline values="state.data.months.map(m=&gt;group[0]==='incoming'?(m.incoming.available ? m.incoming.gross : null):(m.outgoing.available ? m.outgoing.total : null))" partial="state.data.months.map(m=&gt;m.partial)"/>
                             </td>
                             <td t-foreach="state.data.months" t-as="m" t-key="m.month" t-esc="group[0]==='incoming'?tableFmt(m.incoming.available ? m.incoming.gross : null):(!m.outgoing.available?'غير مُعد':tableFmt(-m.outgoing.total))"/>
                             <td t-esc="group[0]==='incoming'?tableFmt(state.data.total[group[0]]):(state.data.months.some(m=&gt;!m.outgoing.available)?'غير مُعد':tableFmt(-state.data.total[group[0]]))"/>
@@ -485,7 +488,7 @@
                         <t t-foreach="Object.keys(state.data.total[group[2]])" t-as="key" t-key="key"><tr>
                             <td t-esc="name(key)"/>
                             <td>
-                                <Sparkline values="state.data.months.map(m=&gt;m[group[0]][group[2]][key] ?? null)"/>
+                                <Sparkline values="state.data.months.map(m=&gt;m[group[0]][group[2]][key] ?? null)" partial="state.data.months.map(m=&gt;m.partial)"/>
                             </td>
                             <td t-foreach="state.data.months" t-as="m" t-key="m.month" t-esc="tableFmt(m[group[0]][group[2]][key] == null ? null : group[0]==='incoming' ? m[group[0]][group[2]][key] : -m[group[0]][group[2]][key])"/>
                             <td t-esc="tableFmt(group[0]==='incoming'?state.data.total[group[2]][key]:-state.data.total[group[2]][key])"/>
@@ -525,7 +528,7 @@
                     <tr class="net">
                         <th>الصافي = الداخل − الخارج</th>
                         <td>
-                            <Sparkline values="state.data.months.map(m=&gt;m.net)" gold="true"/>
+                            <Sparkline values="state.data.months.map(m=&gt;m.net)" partial="state.data.months.map(m=&gt;m.partial)" gold="true"/>
                         </td>
                         <td t-foreach="state.data.months" t-as="m" t-key="m.month" t-esc="tableFmt(m.net)"/>
                         <td t-esc="tableFmt(state.data.total.net)"/>

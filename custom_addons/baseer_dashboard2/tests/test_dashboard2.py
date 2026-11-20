@@ -86,6 +86,23 @@ class TestDashboard2(TransactionCase):
         entry('non-operating', '2026-10-03', [(nonop, 'expense', 80, 0), (offset, 'offset', 0, 30), (cash, 'paid', 0, 50)])
         service = self.env['baseer.dashboard2.service']
         data = service._accounting([company.id], date(2026, 10, 1), date(2026, 10, 31))
+        settings = self.env['baseer.dashboard2.settings'].search([('company_id', '=', company.id)], limit=1)
+        settings.food_purchase_account_ids = False
+        self.assertFalse(service._purchases([company.id], date(2026, 10, 1), date(2026, 10, 31), 1000)['available'])
+        settings._seed_food_purchase_accounts()
+        self.assertIn(food, settings.food_purchase_account_ids)
+        purchases = service._purchases([company.id], date(2026, 10, 1), date(2026, 10, 31), 1000)
+        self.assertEqual((purchases['value'], purchases['pct']), (300, 30))
+        settings.food_purchase_account_ids = salary
+        settings._seed_food_purchase_accounts()
+        self.assertEqual(settings.food_purchase_account_ids, salary)
+        self.assertEqual(service._purchases([company.id], date(2026, 10, 1), date(2026, 10, 31), 1000)['value'], 200)
+        timeline = service._timeline([company.id], date(2026, 10, 2), 'monthly')
+        self.assertEqual(timeline['stats']['end_date'], '2026-10-02')
+        self.assertEqual(timeline['stats']['ytd'], 900)
+        self.assertEqual(timeline['months'][9]['value'], 900)
+        self.assertTrue(timeline['months'][9]['partial'])
+        self.assertEqual(service._timeline([company.id], date(2026, 10, 31), 'monthly')['stats']['end_date'], '2026-10-04')
         self.assertEqual(data['sales_net'], 1000)
         self.assertEqual(data['categories']['food_cost'], 300)
         self.assertEqual(data['categories']['salaries'], 200)

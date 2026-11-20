@@ -99,12 +99,25 @@ class DashboardSettings(models.Model):
     app_balance_start_date = fields.Date(help='Exclude app balance movements before this date; earlier balances are under review.')
     summary_pos_config_ids = fields.Many2many('pos.config', 'bd2_summary_pos_rel', 'settings_id', 'config_id', check_company=True)
     liquidity_account_ids = fields.Many2many('account.account', 'bd2_liquidity_account_rel', 'settings_id', 'account_id', check_company=True)
+    food_purchase_account_ids = fields.Many2many('account.account', 'bd2_food_purchase_account_rel', 'settings_id', 'account_id', string='حسابات مشتريات الطعام', check_company=True)
     liquidity_ids = fields.One2many('baseer.dashboard2.liquidity', 'settings_id')
 
     excluded_journal_ids = fields.Many2many('account.journal', 'bd2_settings_excluded_journal_rel', 'settings_id', 'journal_id', check_company=True)
     min_order_amount = fields.Float(default=1.5)
     channel_map_ids = fields.One2many('baseer.dashboard2.channel.map', 'settings_id')
     source_override_ids = fields.One2many('baseer.dashboard2.source.override', 'settings_id')
+
+    @api.model
+    def _seed_food_purchase_accounts(self):
+        for company in self.env['res.company'].sudo().search([]):
+            settings = self.sudo().search([('company_id', '=', company.id)], limit=1)
+            if not settings:
+                settings = self.sudo().create({'company_id': company.id})
+            if not settings.food_purchase_account_ids:
+                accounts = self.env['account.account'].sudo().with_company(company).search([
+                    ('company_ids', 'in', company.id), ('code', 'in', ['400001', '400002'])])
+                if accounts:
+                    settings.write({'food_purchase_account_ids': [(6, 0, accounts.ids)]})
 
     def action_seed_documented_defaults(self):
         self._seed_documented_defaults(force=True, company_ids=self.mapped('company_id').ids)

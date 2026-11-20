@@ -121,6 +121,10 @@ export class Sparkline extends Component {
     (a || []).forEach((v, i) => { const p = this.miniPoint(a, i, ratio); if (p) points.push(p); else flush(); }); flush(); return segments.join(' ');
   }
   endpoints(a) { const indices = (a || []).map((v, i) => v == null ? -1 : i).filter(i => i >= 0); return indices.length > 1 ? [indices[0], indices[indices.length - 1]] : indices; }
+  miniLabelStyle(a, i, ratio = false) {
+    const point = this.miniPoint(a, i, ratio), right = point.x <= 50;
+    return `left:calc(${point.x}% ${right ? '+' : '-'} 10px);top:calc(${point.y / 32 * 100}% - 6px);transform:translate(${right ? '0' : '-100%'}, -100%)`;
+  }
   short(v, ratio = false, decimal = false) { return ratio ? formatPercent(v).slice(0, -1) : Math.abs(v) >= 1000 ? `${decimal ? (v / 1000).toFixed(1) : Math.round(v / 1000)}K` : `${Math.round(v)}`; }
   endpoint(a) {
     const i = (a || []).findLastIndex(v => v != null);

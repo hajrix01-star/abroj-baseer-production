@@ -166,6 +166,8 @@ class TestDashboard2(TransactionCase):
         revenue = service.get_section('revenue', {'company_key': str(company.id), 'period': {'mode': 'month', 'month': '2026-10'}})
         self.assertEqual(len(revenue['trend']), 6)
         self.assertEqual([m['month'] for m in revenue['apps_trend']], [f'2026-{month:02}' for month in range(1, 11)])
+        self.assertFalse(revenue['apps_trend'][-1]['has_data'])
+        self.assertIsNone(revenue['current']['apps'])
 
     def test_accounting_and_noorix(self):
         from datetime import date
@@ -262,6 +264,8 @@ class TestDashboard2(TransactionCase):
         self.assertIsNone(partial['breakeven']['value'])
         self.assertIsNone(partial['breakeven']['day'])
         self.assertIsNone(partial['breakeven_series'][-1]['breakeven'])
+        self.assertEqual(partial['breakeven_series'][-1]['margin_pct'], overview['breakeven_series'][-1]['margin_pct'])
+        self.assertEqual(partial['breakeven_series'][:-1], overview['breakeven_series'][:-1])
 
     def test_all_sections_smoke(self):
         company = self.env.company

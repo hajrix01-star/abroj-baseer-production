@@ -29,7 +29,7 @@
             <path t-if="props.previous" t-att-d="path(props.previous)" fill="none" t-att-stroke="props.secondaryGold ? 'var(--bd2-gold)' : 'var(--bd2-faint)'" stroke-width="1.5" t-att-stroke-dasharray="props.secondaryGold ? '' : '4 3'"/>
             </t>
         </svg>
-        <t t-if="props.mini and props.stretch"><t t-foreach="endpoints(props.values)" t-as="i" t-key="i"><span class="spark-dot navy" t-att-class="i === endpoints(props.values).at(-1) ? 'spark-dot navy filled' : 'spark-dot navy'" t-att-style="'left:'+miniPoint(props.values,i).x+'%;top:'+(miniPoint(props.values,i).y/32*100)+'%'"/><span t-if="i === endpoints(props.values).at(-1)" class="spark-label navy" t-att-style="'left:'+miniPoint(props.values,i).x+'%;top:'+(miniPoint(props.values,i).y/32*100)+'%'" t-esc="short(props.values[i], false, props.amountDecimal)"/></t><t t-foreach="endpoints(props.previous)" t-as="i" t-key="i"><span class="spark-dot gold" t-att-class="i === endpoints(props.previous).at(-1) ? 'spark-dot gold filled' : 'spark-dot gold'" t-att-style="'left:'+miniPoint(props.previous,i,true).x+'%;top:'+(miniPoint(props.previous,i,true).y/32*100)+'%'"/><span t-if="i === endpoints(props.previous).at(-1)" class="spark-label gold" t-att-style="'left:'+miniPoint(props.previous,i,true).x+'%;top:'+(miniPoint(props.previous,i,true).y/32*100)+'%'" t-esc="short(props.previous[i], props.ratioPercent) + (props.ratioPercent ? '%' : '')"/></t></t></div>
+        <t t-if="props.mini and props.stretch"><t t-foreach="endpoints(props.values)" t-as="i" t-key="i"><span class="spark-dot navy" t-att-class="i === endpoints(props.values).at(-1) ? 'spark-dot navy filled' : 'spark-dot navy'" t-att-style="'left:'+miniPoint(props.values,i).x+'%;top:'+(miniPoint(props.values,i).y/32*100)+'%'"/><span t-if="i === endpoints(props.values).at(-1)" class="spark-label navy" t-att-style="miniLabelStyle(props.values,i)" t-esc="short(props.values[i], false, props.amountDecimal)"/></t><t t-foreach="endpoints(props.previous)" t-as="i" t-key="i"><span class="spark-dot gold" t-att-class="i === endpoints(props.previous).at(-1) ? 'spark-dot gold filled' : 'spark-dot gold'" t-att-style="'left:'+miniPoint(props.previous,i,true).x+'%;top:'+(miniPoint(props.previous,i,true).y/32*100)+'%'"/><span t-if="i === endpoints(props.previous).at(-1)" class="spark-label gold" t-att-style="miniLabelStyle(props.previous,i,true)" t-esc="short(props.previous[i], props.ratioPercent) + (props.ratioPercent ? '%' : '')"/></t></t></div>
     </t>
     <t t-name="baseer_dashboard2.LineChart">
         <div>
@@ -51,13 +51,12 @@
                 <path t-if="s.partial" t-att-d="partialPath(s.values, s.partial)" fill="none" stroke="var(--bd2-card)" stroke-width="3.5"/>
                 <path t-if="s.partial" t-att-d="partialPath(s.values, s.partial)" fill="none" t-att-stroke="s.gold ? 'var(--bd2-gold)' : 'var(--bd2-c1)'" stroke-width="2.3" stroke-dasharray="5 4"/>
                 <t t-if="!s.dashed or s.endpoint"><t t-foreach="s.values" t-as="v" t-key="v_index">
-                    <text t-if="s.partial?.[v_index] and v != null and !s.dashed" t-att-x="chartX(v_index,s.values.length)" t-att-y="y(v)+16" text-anchor="middle" fill="var(--bd2-muted)" font-size="9">جزئي</text>
                     <circle t-if="v !== null and v !== undefined and (!s.dashed or v_index === s.values.findLastIndex(x=&gt;x != null))" t-att-cx="chartX(v_index,s.values.length)" t-att-cy="y(v)" t-att-r="v_index === s.values.findLastIndex(x=&gt;x != null) ? 5 : 3" t-att-fill="v_index === s.values.findLastIndex(x=&gt;x != null) ? (s.gold ? 'var(--bd2-gold)' : 'var(--bd2-c1)') : 'var(--bd2-card)'" t-att-stroke="s.gold ? 'var(--bd2-gold)' : 'var(--bd2-c1)'" stroke-width="2"/>
                     <text t-if="((s.area and !s.firstLabel) or s.pointLabels or ((s.firstLabel or s.endpoint) and v_index === s.values.findLastIndex(x=&gt;x != null)) or (props.percent and v_index === s.values.findLastIndex(x=&gt;x != null))) and v !== null and v !== undefined" t-att-x="(s.firstLabel or s.endpoint) ? chartX(v_index,s.values.length)+8 : chartX(v_index,s.values.length)" t-att-y="(s.firstLabel or s.endpoint) ? labelY(s,v) : y(v)-8" t-att-text-anchor="(s.firstLabel or s.endpoint) ? 'start' : 'middle'" fill="var(--bd2-ink)" font-size="9" font-weight="700" t-esc="compact(v)"/>
                 </t></t>
             </t>
             <t t-foreach="props.labels || []" t-as="label" t-key="label_index">
-                <text t-att-x="chartX(label_index,props.labels.length)" y="229" text-anchor="middle" fill="var(--bd2-muted)" font-size="10" t-esc="label"/>
+                <text t-att-x="chartX(label_index,props.labels.length)" y="229" direction="ltr" t-att-text-anchor="label_index === 0 ? 'end' : label_last ? 'start' : 'middle'" fill="var(--bd2-muted)" font-size="10" t-esc="label"/>
             </t>
         </svg>
         </div>
@@ -151,7 +150,7 @@
                 <h3>المبيعات وصافي الربح مقابل نقطة التعادل</h3>
                 <div class="muted">المسافة بين خط المبيعات والخط المتقطع = هامش الأمان</div>
                 <LineChart series="[{values:state.data.breakeven_series.map(x=&gt;x.sales_net),firstLabel:true,partial:state.data.breakeven_series.map(x=&gt;x.partial),name:'المبيعات'}, {values:state.data.breakeven_series.map(x=&gt;x.net_profit),partial:state.data.breakeven_series.map(x=&gt;x.partial),gold:true,area:true,firstLabel:true,name:'صافي الربح'},{values:state.data.breakeven_series.map(x=&gt;x.breakeven),dashed:true,endpoint:true,name:'نقطة التعادل'}]" labels="trendLabels" fiveTicks="true"/>
-                <div class="safety-chips"><strong>هامش صافي الربح:</strong><span t-foreach="state.data.breakeven_series" t-as="m" t-key="m.month" t-att-class="m_last ? 'current' : ''"><t t-esc="monthName(m.month).split(' ')[0]+(m.partial ? ' (جزئي)' : '')"/> <bdi dir="ltr" t-att-class="m.margin_pct &lt; 0 ? 'negative' : ''" t-esc="pct(m.margin_pct)"/></span></div>
+                <div class="safety-chips"><strong>هامش صافي الربح:</strong><span t-foreach="state.data.breakeven_series" t-as="m" t-key="m.month" t-att-class="m_last ? 'current' : ''"><t t-esc="monthName(m.month).split(' ')[0]+(m.partial ? ' (جزئي)' : '')"/> <bdi dir="ltr" t-att-title="m_last and state.data.breakeven?.reason === 'incomplete_costs' ? 'الشهر لم يكتمل' : undefined" t-att-class="m.margin_pct &lt; 0 ? 'negative' : ''" t-esc="m_last and state.data.breakeven?.reason === 'incomplete_costs' ? '—' : pct(m.margin_pct)"/></span></div>
             </div>
             <t t-call="baseer_dashboard2.BreakEven"/>
         </div>

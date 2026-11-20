@@ -228,15 +228,23 @@ test('customer KPI displays orders rather than currency', async () => {
 });
 
 
-test('partial chart month uses a dashed segment and label', async () => {
+test('partial chart month uses a dashed segment and an unclipped axis label', async () => {
     const response = await withFetch(globals.fetch, () => fetch('/baseer_dashboard2/static/src/xml/main.xml'));
     const app = new App(LineChart, { templates: await response.text(), props: { series: [
-        { name: 'Sales', values: [100, 200], partial: [false, true] },
-    ] }, test: true });
+        { name: 'Sales', values: [100000, 161000], partial: [false, true], firstLabel: true },
+        { name: 'Profit', values: [90000, 154000], partial: [false, true], firstLabel: true },
+    ], labels: ['أكتوبر', 'نوفمبر (جزئي)'] }, test: true });
     after(() => app.destroy());
     await app.mount(getFixture());
     expect(getFixture().querySelector('[stroke-dasharray="5 4"]')).not.toBe(null);
-    expect(getFixture().textContent).toInclude('جزئي');
+    const svg = getFixture().querySelector('svg');
+    const texts = [...svg.querySelectorAll('text')];
+    const axis = texts.find(el => el.textContent === 'نوفمبر (جزئي)');
+    expect(axis.getAttribute('text-anchor')).toBe('start');
+    expect(texts.filter(el => el.textContent === 'جزئي').length).toBe(0);
+    const sales = texts.find(el => el.textContent === '161K');
+    const profit = texts.find(el => el.textContent === '154K');
+    expect(Math.abs(Number(sales.getAttribute('y')) - Number(profit.getAttribute('y')))).toBeGreaterThan(9);
 });
 
 
@@ -379,6 +387,13 @@ test('revenue apps chart aligns ten month labels and points, preserving gaps', a
     expect(parseFloat(latest.style.left)).toBe(miniX(9, 10));
     expect(parseFloat(latest.style.left)).toBeLessThan(parseFloat(labels[0].style.left));
     expect(getFixture().querySelector('.spark-label.gold').textContent).toBe('34.9%');
+    for (const color of ['gold', 'navy']) {
+        const label = getFixture().querySelector(`.spark-label.${color}`);
+        expect(label.style.left).toInclude('+ 10px');
+        expect(label.style.top).toInclude('- 6px');
+        expect(label.style.transform).toBe('translate(0px, -100%)');
+    }
+    expect(Sparkline.prototype.miniLabelStyle.call({ miniPoint: () => ({ x: 95, y: 10 }) }, [1], 0)).toInclude('- 10px');
     expect(svg.getAttribute('preserveAspectRatio')).toBe('none');
     expect(svg.querySelectorAll('path')[2].getAttribute('d').split('M').length).toBe(3);
 });
@@ -408,6 +423,28 @@ test('partial KPI badge hides the comparison with an explanation', async () => {
     expect(getFixture().querySelector('[title]').title).toBe('الشهر لم يكتمل');
     const doc = new DOMParser().parseFromString(templates, 'text/xml');
     expect(doc.querySelector('[t-name="baseer_dashboard2.Overview"] .safety-chips').outerHTML).toInclude('(جزئي)');
+});
+
+test('overview hides only the current incomplete-costs margin with an explanation', async () => {
+    const response = await withFetch(globals.fetch, () => fetch('/baseer_dashboard2/static/src/xml/main.xml'));
+    const source = await response.text();
+    const doc = new DOMParser().parseFromString(source, 'text/xml');
+    const chips = doc.querySelector('[t-name="baseer_dashboard2.Overview"] .safety-chips');
+    const templates = source.replace('</templates>', `<t t-name="test.MarginChips">${new XMLSerializer().serializeToString(chips)}</t></templates>`);
+    class MarginChips extends Component {
+        static template = 'test.MarginChips';
+        state = { data: { breakeven: { available: false, reason: 'incomplete_costs' }, breakeven_series: [
+            { month: '2026-10', margin_pct: 23.5 }, { month: '2026-11', partial: true, margin_pct: 95.5 },
+        ] } };
+        monthName = (month) => month; pct = formatPercent;
+    }
+    const app = new App(MarginChips, { templates, test: true });
+    after(() => app.destroy());
+    await app.mount(getFixture());
+    const values = getFixture().querySelectorAll('.safety-chips bdi');
+    expect(values[0].textContent).toBe('23.5%');
+    expect(values[1].textContent).toBe('—');
+    expect(values[1].title).toBe('الشهر لم يكتمل');
 });
 
 test('food percentage uses the same formatting in mini charts and cards', () => {

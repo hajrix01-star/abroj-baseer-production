@@ -50,6 +50,16 @@ test('in/out keeps cumulative notes in chips outside the numeric table', async (
     expect(pnl.textContent.includes('الرصيد التراكمي أكبر')).toBe(true);
 });
 
+test('in/out numeric cells never contain the VAT basis label', async () => {
+    const response = await withFetch(globals.fetch, () => fetch('/baseer_dashboard2/static/src/xml/main.xml'));
+    const doc = new DOMParser().parseFromString(await response.text(), 'text/xml');
+    const table = doc.querySelector('[t-name="baseer_dashboard2.Pnl"] .inout-table');
+    expect(table.querySelector('tr.group th').textContent).toInclude('شامل الضريبة');
+    for (const cell of table.querySelectorAll('td')) {
+        expect(cell.outerHTML.includes('شامل الضريبة')).toBe(false);
+    }
+});
+
 test('heatmap renders occasion badges for an event day', async () => {
     const day = { date: '2026-10-03', gross: 100, customers: 1, events: [{ id: 1, name: 'عرض' }], warnings: [] };
     class Heatmap extends Component {

@@ -50,7 +50,7 @@
         <field name="name">العمولات ورسوم البطاقات</field>
         <field name="sequence">80</field>
         <field name="code">commissions</field>
-        <field name="account_code_prefixes">400011,400058,400060,400062</field>
+        <field name="account_code_prefixes">400011,400051,400058,400060,400062</field>
         <field name="color_token">--bd2-c-red</field>
     </record>
     <record id="category_depreciation" model="baseer.dashboard2.category">
@@ -60,6 +60,7 @@
         <field name="account_code_prefixes">400063</field>
         <field name="account_type_fallback">expense_depreciation</field>
     </record>
+    <record id="category_non_operating" model="baseer.dashboard2.category"><field name="name">غير تشغيلي</field><field name="sequence">95</field><field name="code">non_operating</field><field name="account_code_prefixes">400057,400061,400035,999002,999001</field></record>
     <record id="category_zakat_tax" model="baseer.dashboard2.category">
         <field name="name">الزكاة والضريبة</field>
         <field name="sequence">100</field>
@@ -70,6 +71,7 @@
         <field name="name">مصاريف تشغيلية أخرى</field>
         <field name="sequence">110</field>
         <field name="code">other_opex</field>
+        <field name="account_code_prefixes">400032,400042,400048</field>
         <field name="account_type_fallback">expense</field>
     </record>
 </odoo>

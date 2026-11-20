@@ -453,6 +453,7 @@
                     </tr>
                 </thead>
                 <tbody>
+                    <tr t-if="state.data.months.some(m=&gt;!m.outgoing.available)"><td colspan="9">الخارج غير مُعد للشركات: <t t-esc="state.data.months[0].outgoing.unconfigured_company_ids.join(', ')"/></td></tr>
                     <t t-foreach="[['incoming','الداخل — المبيعات حسب القناة','channels'],['outgoing','الخارج الفعلي — حسب البند','items'],['outgoing','الخارج الفعلي — حسب المصدر','sources']]" t-as="group" t-key="group[2]">
                         <tr class="group">
                             <th>
@@ -460,8 +461,8 @@
                             <td>
                                 <Sparkline values="state.data.months.map(m=&gt;group[0]==='incoming'?m.incoming.gross:m.outgoing.total)"/>
                             </td>
-                            <td t-foreach="state.data.months" t-as="m" t-key="m.month" t-esc="group[0]==='incoming'?fmt(m.incoming.gross):'('+fmt(m.outgoing.total)+')'"/>
-                            <td t-esc="group[0]==='incoming'?fmt(state.data.total[group[0]]):'('+fmt(state.data.total[group[0]])+')'"/>
+                            <td t-foreach="state.data.months" t-as="m" t-key="m.month" t-esc="group[0]==='incoming'?fmt(m.incoming.gross):(!m.outgoing.available?'غير مُعد':'('+fmt(m.outgoing.total)+')')"/>
+                            <td t-esc="group[0]==='incoming'?fmt(state.data.total[group[0]]):(state.data.months.some(m=&gt;!m.outgoing.available)?'غير مُعد':'('+fmt(state.data.total[group[0]])+')')"/>
                         </tr>
                         <tr t-foreach="Object.keys(state.data.total[group[2]])" t-as="key" t-key="key" t-if="key !== 'vat_paid' || state.data.months.some(m=&gt;m.outgoing.show_vat_paid_line)">
                             <td t-esc="name(key)"/>
@@ -484,7 +485,7 @@
                             <td t-esc="fmt(state.data.total.sales_vat)"/>
                         </tr>
                         <tr class="account" t-if="group[2]==='items'">
-                            <td>فواتير غير مسددة — رصيد اليوم</td>
+                            <td>فواتير غير مسددة — نهاية الفترة</td>
                             <td/>
                             <td t-foreach="state.data.months" t-as="m" t-key="m.month" t-esc="fmt(m.unpaid_bills.value)"/>
                             <td t-esc="fmt(state.data.total.unpaid_bills.value)"/>

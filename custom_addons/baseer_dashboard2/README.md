@@ -1,0 +1,7 @@
+# Dashboard 2 accounting settings
+
+Settings are per company and editable by accounting managers. Outflows use only the configured outflow journals, less excluded journals. Custody journals must also be in the outflow list. Configure app wallet journals as excluded. An empty list is reported as unconfigured.
+
+On installation the documented defaults are seeded for company IDs 1–3. Each referenced journal must exist in the expected company; custody journals must also have the documented default account. Payment methods must belong to the relevant company, and wallet accounts must belong to Shami and have a recognizable application name. Missing or mismatched records are skipped and logged. Account-code mappings are looked up within each company. Existing mappings and nonempty journal settings are preserved. The settings button asks for confirmation and replaces journal settings for the selected company; existing channel mappings are preserved. These IDs refer to the documented live database and must be reviewed in any other database.
+
+Orders with absolute totals at or below the company minimum (default 1.5 SAR) are excluded from customer counts, average tickets and busy hours, but included in sales money. Summary days have no customer count. Unreceived applications are the lesser of mapped application account balances at period end and application gross sales in the period. Unpaid bills use posted bill payable balances less partial reconciliations whose `max_date` is at or before period end.

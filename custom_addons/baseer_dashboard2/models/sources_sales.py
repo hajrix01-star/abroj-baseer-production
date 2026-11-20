@@ -29,6 +29,11 @@ class DashboardSales(models.AbstractModel):
         for channel in channels:
             for field in ('line_keywords', 'pos_method_keywords'):
                 channel[field] = (channel[field] or '') + ',' + defaults.get(channel['key'], '')
+        maps = self.env['baseer.dashboard2.channel.map'].with_context(**context).search([('company_id', 'in', ids)])
+        channel_by_id = {c['id']: c for c in channels}
+        mapped = {(m.company_id.id, m.source, (m.pos_payment_method_id if m.source == 'pos_method' else m.account_id if m.source == 'account' else m.journal_id).id): channel_by_id[m.channel_id.id] for m in maps if m.channel_id.id in channel_by_id}
+        settings = self.env['baseer.dashboard2.settings'].with_context(**context).search([('company_id', 'in', ids)])
+        thresholds = {s.company_id.id: s.min_order_amount for s in settings}
         orders = self.env['pos.order'].with_context(**context).search_read([
             ('company_id', 'in', ids), ('state', 'in', ('paid', 'done', 'invoiced')),
             ('date_order', '>=', utc_start), ('date_order', '<', utc_end)],
@@ -43,16 +48,17 @@ class DashboardSales(models.AbstractModel):
             key = (order['company_id'][0], local.date())
             day = days.setdefault(key, {'source': 'pos', 'channels': defaultdict(float), 'customers': 0, 'pos_gross': 0.0})
             sign = 1 if order['amount_total'] > 0 else -1 if order['amount_total'] < 0 else 0
-            day['customers'] += sign
-            day['pos_gross'] += order['amount_total']
-            hours[(local.weekday(), local.hour)]['orders'] += sign
-            hours[(local.weekday(), local.hour)]['gross'] += order['amount_total']
+            if abs(order['amount_total']) > thresholds.get(key[0], 1.5):
+                day['customers'] += sign
+                day['pos_gross'] += order['amount_total']
+                hours[(local.weekday(), local.hour)]['orders'] += sign
+                hours[(local.weekday(), local.hour)]['gross'] += order['amount_total']
             order_days[order['id']] = key
         if order_days:
             payment = self.env['pos.payment'].with_context(**context)
             groups = payment._read_group([('pos_order_id', 'in', list(order_days)), ('company_id', 'in', ids)], ['pos_order_id', 'payment_method_id'], ['amount:sum'])
             for order, method, amount in groups:
-                channel = self._channel_for(method.name, channels, 'pos_method_keywords')
+                channel = mapped.get((order_days[order.id][0], 'pos_method', method.id)) or self._channel_for(method.name, channels, 'pos_method_keywords')
                 days[order_days[order.id]]['channels'][channel['key']] += amount
         moves = self.env['account.move'].with_context(**context)
         move_rows = moves.search_read([
@@ -102,22 +108,22 @@ class DashboardSales(models.AbstractModel):
                         continue
                     amount = line['debit'] - line['credit']
                     if (reverse and line['credit'] > 0) or (not reverse and line['debit'] > 0):
-                        channel = self._channel_for(line['name'], channels, 'line_keywords')
+                        channel = mapped.get((company.id, 'account', line['account_id'][0])) or self._channel_for(line['name'], channels, 'line_keywords')
                         day['channels'][channel['key']] += amount
                         if channel['kind'] == 'app':
                             receivable_ids[key[0]].add(line['account_id'][0])
                     elif (reverse and line['debit'] > 0) or (not reverse and line['credit'] > 0):
                         day['sales_vat'] -= amount
-        app_methods = self.env['pos.payment.method'].with_context(**context).search_read([('company_id', 'in', ids)], ['name', 'company_id', 'receivable_account_id'])
-        for method in app_methods:
-            if method['receivable_account_id'] and self._channel_for(method['name'], channels, 'pos_method_keywords')['kind'] == 'app':
-                receivable_ids[method['company_id'][0]].add(method['receivable_account_id'][0])
         unreceived = 0.0
-        for cid, accounts in receivable_ids.items():
+        for cid in ids:
+            accounts = maps.filtered(lambda m: m.company_id.id == cid and m.source == 'account' and m.kind == 'app').mapped('account_id').ids
             rows = self.env['account.move.line'].with_context(allowed_company_ids=[cid])._read_group([
-                ('company_id', '=', cid), ('parent_state', '=', 'posted'), ('account_id', 'in', list(accounts)),
-                ('date', '>=', start), ('date', '<=', end), ('debit', '>', 0)], [], ['amount_residual:sum'])
-            unreceived += (rows[0][0] or 0.0) if rows else 0.0
+                ('company_id', '=', cid), ('parent_state', '=', 'posted'), ('account_id', 'in', accounts),
+                ('date', '<=', end)], [], ['balance:sum'])
+            balance = rows[0][0] or 0.0 if rows else 0.0
+            app_keys = {c['key'] for c in channels if c['kind'] == 'app'}
+            gross = sum(amount for (company_id, _day), day in days.items() if company_id == cid for key, amount in day['channels'].items() if key in app_keys)
+            unreceived += min(max(balance, 0.0), max(gross, 0.0))
         return days, channels, round(unreceived, 2), hours
 
     def _sales_summary(self, ids, start, end):
@@ -136,7 +142,7 @@ class DashboardSales(models.AbstractModel):
         return {'available': True, 'gross': round(gross, 2), 'source_counts': {'pos': len(pos_days), 'summary': len(summary_days)},
                 'channel_names': {c['key']: c['name'] for c in channels}, 'channels': {k: round(v, 2) for k, v in totals.items()},
                 'apps': round(apps, 2), 'apps_pct': round(apps / gross * 100, 2) if gross else None,
-                'apps_unreceived': {'available': True, 'value': unreceived, 'label': 'حتى اليوم'},
+                'apps_unreceived': {'available': True, 'value': unreceived, 'label': 'حتى نهاية الفترة'},
                 'customers': {'available': bool(pos_days), 'reason': False if pos_days else 'no_pos_days',
                               'partial': bool(pos_days and summary_days), 'covered_days': len(pos_days),
                               'value': orders if pos_days else None, 'avg_ticket': round(pos_gross / orders, 2) if orders else None}}, days, channels, hours

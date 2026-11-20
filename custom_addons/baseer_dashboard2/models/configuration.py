@@ -1,4 +1,17 @@
+import logging
+
 from odoo import api, fields, models, _
+
+_logger = logging.getLogger(__name__)
+
+# Live reference identifiers; all are validated before use.
+DOCUMENTED_DEFAULTS = {
+    1: {'custody': (460, 3426), 'excluded': (459, 407, 408, 409, 405, 406, 458)},
+    2: {'custody': (461, 3427), 'excluded': (459, 405, 406, 458)},
+    3: {'custody': None, 'excluded': (405, 406, 458)},
+}
+POS_DEFAULTS = {'cash': (112, 121, 126, 127), 'card': (113, 122, 119), 'transfer': (114, 120), 'credit': (128,), 'hunger': (115, 123), 'keeta': (116, 124), 'jahez': (117, 125)}
+ACCOUNT_DEFAULTS = {'105090': 'cash', '101090': 'card', '102110': 'hunger', '102111': 'keeta', '102112': 'jahez'}
 from odoo.exceptions import ValidationError
 
 
@@ -8,7 +21,7 @@ class DashboardCategory(models.Model):
     _order = 'sequence, id'
 
     name = fields.Char(required=True, translate=True)
-    code = fields.Selection([(x, x) for x in ('revenue', 'other_income', 'food_cost', 'salaries', 'rent', 'utilities', 'marketing', 'commissions', 'other_opex', 'depreciation', 'zakat_tax')], required=True)
+    code = fields.Selection([(x, x) for x in ('revenue', 'other_income', 'food_cost', 'salaries', 'rent', 'utilities', 'marketing', 'commissions', 'other_opex', 'depreciation', 'non_operating', 'zakat_tax')], required=True)
     sequence = fields.Integer(default=10)
     account_code_prefixes = fields.Char()
     account_type_fallback = fields.Char()
@@ -22,7 +35,7 @@ class DashboardChannel(models.Model):
     _order = 'sequence, id'
 
     name = fields.Char(required=True, translate=True)
-    key = fields.Selection([(x, x) for x in ('cash', 'card', 'keeta', 'hunger', 'jahez', 'other_app', 'other')], required=True)
+    key = fields.Selection([(x, x) for x in ('cash', 'card', 'keeta', 'hunger', 'jahez', 'other_app', 'other', 'transfer', 'credit')], required=True)
     kind = fields.Selection([('hall', 'Hall'), ('app', 'App')], required=True)
     sequence = fields.Integer(default=10)
     color_token = fields.Char()
@@ -80,3 +93,97 @@ class DashboardSettings(models.Model):
     custody_journal_ids = fields.Many2many('account.journal', 'bd2_settings_custody_journal_rel', 'settings_id', 'journal_id', check_company=True)
     show_vat_paid_line = fields.Boolean(default=True)
     pos_cutover_note = fields.Text()
+
+    excluded_journal_ids = fields.Many2many('account.journal', 'bd2_settings_excluded_journal_rel', 'settings_id', 'journal_id', check_company=True)
+    min_order_amount = fields.Float(default=1.5)
+    channel_map_ids = fields.One2many('baseer.dashboard2.channel.map', 'settings_id')
+
+    def action_seed_documented_defaults(self):
+        self._seed_documented_defaults(force=True, company_ids=self.mapped('company_id').ids)
+        return True
+
+    @api.model
+    def _seed_documented_defaults(self, force=False, company_ids=None):
+        companies = self.env['res.company'].browse([i for i in DOCUMENTED_DEFAULTS if company_ids is None or i in company_ids]).exists()
+        channels = {c.key: c for c in self.env['baseer.dashboard2.channel'].search([])}
+        mapping = self.env['baseer.dashboard2.channel.map']
+        for company in companies:
+            env = self.with_company(company).with_context(allowed_company_ids=[company.id])
+            settings = env.search([('company_id', '=', company.id)], limit=1)
+            if not settings:
+                settings = env.create({'company_id': company.id})
+            defaults = DOCUMENTED_DEFAULTS[company.id]
+            def journal(jid, account_id=None):
+                rec = self.env['account.journal'].sudo().browse(jid).exists()
+                if not rec or rec.company_id != company or (account_id and rec.default_account_id.id != account_id):
+                    _logger.info('Dashboard defaults: skip journal %s for company %s (missing or mismatch)', jid, company.id)
+                    return self.env['account.journal']
+                return rec
+            excluded = self.env['account.journal']
+            for jid in defaults['excluded']:
+                excluded |= journal(jid)
+            custody = journal(*defaults['custody']) if defaults['custody'] else self.env['account.journal']
+            # Empty fields may be filled; existing values are never overwritten by installation.
+            vals = {}
+            if force or not settings.excluded_journal_ids:
+                vals['excluded_journal_ids'] = [(6, 0, excluded.ids)]
+            if force or not settings.custody_journal_ids:
+                vals['custody_journal_ids'] = [(6, 0, custody.ids)]
+            if force or not settings.outflow_journal_ids:
+                excluded_effective = excluded if force or not settings.excluded_journal_ids else settings.excluded_journal_ids
+                custody_effective = custody if force or not settings.custody_journal_ids else settings.custody_journal_ids
+                journals = self.env['account.journal'].sudo().search([('company_id', '=', company.id), ('type', 'in', ('bank', 'cash'))])
+                vals['outflow_journal_ids'] = [(6, 0, ((journals - excluded_effective) | custody_effective).ids)]
+            settings.write(vals)
+            def add(source, record, key):
+                field = {'pos_method': 'pos_payment_method_id', 'account': 'account_id', 'journal': 'journal_id'}[source]
+                existing = mapping.search([('company_id', '=', company.id), ('source', '=', source), (field, '=', record.id)], limit=1)
+                if not existing and key in channels:
+                    mapping.create({'settings_id': settings.id, 'company_id': company.id, 'source': source, field: record.id, 'channel_id': channels[key].id, 'kind': 'app' if channels[key].kind == 'app' else key if key in ('transfer', 'credit') else 'hall'})
+            for key, ids in POS_DEFAULTS.items():
+                for rid in ids:
+                    rec = self.env['pos.payment.method'].sudo().browse(rid).exists()
+                    if rec and rec.company_id == company:
+                        add('pos_method', rec, key)
+                    else:
+                        _logger.info('Dashboard defaults: skip payment method %s for company %s (missing or mismatch)', rid, company.id)
+            for code, key in ACCOUNT_DEFAULTS.items():
+                accounts = self.env['account.account'].sudo().with_company(company).search([('company_ids', 'in', company.id), ('code', '=', code)])
+                for account in accounts:
+                    add('account', account, key)
+            if company.id == 2:
+                for aid in (3420, 3421, 3986):
+                    account = self.env['account.account'].sudo().browse(aid).exists()
+                    if not account or company not in account.company_ids:
+                        _logger.info('Dashboard defaults: skip wallet account %s (missing or company mismatch)', aid)
+                        continue
+                    name = (account.name or '').casefold()
+                    key = next((k for k, words in {'hunger': ('hunger', 'هنقر', 'هنجر'), 'keeta': ('keeta', 'كيتا'), 'jahez': ('jahez', 'جاهز')}.items() if any(w in name for w in words)), None)
+                    if key:
+                        add('account', account, key)
+                    else:
+                        _logger.info('Dashboard defaults: skip wallet account %s (unrecognised name)', aid)
+        return True
+
+
+class DashboardChannelMap(models.Model):
+    _name = 'baseer.dashboard2.channel.map'
+    _description = 'Dashboard channel mapping'
+    _check_company_auto = True
+
+    settings_id = fields.Many2one('baseer.dashboard2.settings', required=True, ondelete='cascade', check_company=True)
+    company_id = fields.Many2one('res.company', required=True, ondelete='cascade')
+    source = fields.Selection([('pos_method', 'POS payment method'), ('account', 'Account'), ('journal', 'Journal')], required=True)
+    pos_payment_method_id = fields.Many2one('pos.payment.method', check_company=True)
+    account_id = fields.Many2one('account.account', check_company=True)
+    journal_id = fields.Many2one('account.journal', check_company=True)
+    channel_id = fields.Many2one('baseer.dashboard2.channel', required=True)
+    kind = fields.Selection([('hall', 'Hall'), ('app', 'App'), ('transfer', 'Transfer'), ('credit', 'Credit')], required=True)
+    active = fields.Boolean(default=True)
+
+    @api.constrains('source', 'pos_payment_method_id', 'account_id', 'journal_id', 'company_id', 'settings_id')
+    def _check_mapping(self):
+        for rec in self:
+            fields_by_source = {'pos_method': rec.pos_payment_method_id, 'account': rec.account_id, 'journal': rec.journal_id}
+            if not fields_by_source.get(rec.source) or sum(bool(v) for v in fields_by_source.values()) != 1 or rec.settings_id.company_id != rec.company_id:
+                raise ValidationError(_('Select the matching source and company.'))

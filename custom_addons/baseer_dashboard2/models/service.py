@@ -8,17 +8,17 @@ FORBIDDEN_COMPANY_IDS = {54, 56}
 SOURCES = {
     'sales_net': 'المبيعات دون الضريبة: رصيد الدائن مطروحاً منه المدين للحسابات المصنفة مبيعات؛ account.move.line المرحّلة حسب التاريخ والشركة.',
     'expenses': 'المصاريف: المدين مطروحاً منه الدائن حسب تصنيف الحساب؛ account.move.line المرحّلة.',
-    'profit': 'مجمل الربح = المبيعات − تكلفة الأكل؛ التشغيلي يطرح المصاريف التشغيلية؛ الصافي يضيف الإيرادات الأخرى ويطرح الزكاة والضريبة.',
+    'profit': 'مجمل الربح = المبيعات − تكلفة الأكل؛ التشغيلي يطرح المصاريف التشغيلية؛ الصافي يضيف الإيرادات الأخرى ويطرح غير التشغيلي والزكاة والضريبة.',
     'ratios': 'النسب تقسم تكلفة الأكل والرواتب ومجموعهما وصافي الربح على المبيعات دون الضريبة.',
     'breakeven': 'التعادل = التكاليف الثابتة ÷ (١ − نسبة التكاليف المتغيرة)؛ الثابتة الرواتب والإيجار والخدمات والإهلاك.',
     'purchases': 'المشتريات: فواتير الموردين المرحّلة ناقص المرتجعات حسب تاريخ الفاتورة؛ account.move.',
     'gross_sales_by_channel': 'المبيعات شاملة الضريبة حسب اليوم والقناة من pos.payment أو الملخصات اليومية المرحّلة؛ لا يجمع المصدران لليوم نفسه.',
     'apps': 'التطبيقات: مجموع المبيعات الإجمالية للقنوات المصنفة تطبيقات.',
-    'apps_unreceived': 'التطبيقات غير المستلمة حتى اليوم: المتبقي على حسابات الذمم ذات الصلة؛ account.move.line.',
-    'customers': 'عدد العملاء هو صافي عدد طلبات pos.order المدفوعة أو المكتملة أو المفوترة؛ غير متاح لأيام الملخصات اليومية.',
+    'apps_unreceived': 'التطبيقات غير المستلمة: الأقل من مبيعات التطبيقات الإجمالية ورصيد حساباتها المعرّفة حتى نهاية الفترة (المدين ناقص الدائن).',
+    'customers': 'عدد العملاء هو صافي عدد طلبات pos.order المدفوعة أو المكتملة أو المفوترة؛ تستبعد الطلبات التي لا تتجاوز قيمتها المطلقة الحد المحدد للشركة من العملاء ومتوسط الفاتورة والساعات، وتبقى ضمن المبيعات؛ غير متاح لأيام الملخصات اليومية.',
     'hours': 'الساعات: عدد الطلبات وإجماليها حسب اليوم والساعة المحلية؛ pos.order.',
     'inout': 'الداخل مبيعات القنوات شاملة الضريبة؛ الخارج أرصدة السيولة الدائنة المدفوعة فعلياً دون التحويلات الداخلية؛ account.move.line.',
-    'unpaid_bills': 'فواتير الموردين غير المسددة رصيد حتى اليوم ولا تدخل في الخارج؛ account.move.',
+    'unpaid_bills': 'فواتير الموردين المرحّلة حتى نهاية الفترة ناقص التسويات التي لا يتجاوز max_date لها نهاية الفترة؛ لا تدخل في الخارج.',
     'timeline': 'المسار الزمني: المبيعات دون الضريبة حسب الشهر أو السنة؛ account.move.line المرحّلة.',
     'heatmap': 'التقويم: المبيعات اليومية والعملاء والمناسبات بحسب الشركة والتاريخ؛ pos.order وaccount.move وbaseer.dashboard2.event.',
 }
@@ -28,14 +28,14 @@ for _key, _label in {
     'food_cost': 'تكلفة الأكل', 'salaries': 'الرواتب', 'rent': 'الإيجار',
     'utilities': 'الخدمات', 'marketing': 'التسويق', 'commissions': 'العمولات',
     'other_opex': 'المصاريف التشغيلية الأخرى', 'depreciation': 'الإهلاك',
-    'zakat_tax': 'الزكاة والضريبة',
+    'non_operating': 'غير تشغيلي', 'zakat_tax': 'الزكاة والضريبة',
 }.items():
     SOURCES[_key] = '%s: المدين ناقص الدائن؛ account.move.line المرحّلة للحسابات المصنفة ضمن الفئة في الفترة والشركات المحددة.' % _label
 SOURCES.update({
     'other_income': 'الإيرادات الأخرى: الدائن ناقص المدين؛ account.move.line المرحّلة على حسابات الإيرادات الأخرى.',
     'gross_profit': 'مجمل الربح: المبيعات دون الضريبة ناقص تكلفة الأكل؛ account.move.line المرحّلة.',
     'operating_profit': 'الربح التشغيلي: مجمل الربح ناقص المصاريف التشغيلية والإهلاك؛ account.move.line المرحّلة.',
-    'net_profit': 'صافي الربح: الربح التشغيلي زائد الإيرادات الأخرى ناقص الزكاة والضريبة؛ account.move.line المرحّلة.',
+    'net_profit': 'صافي الربح: الربح التشغيلي زائد الإيرادات الأخرى ناقص غير التشغيلي والزكاة والضريبة؛ account.move.line المرحّلة.',
     'sales_vat': 'ضريبة المبيعات: صافي دائن حسابات ضريبة المبيعات على الملخصات اليومية أو نقاط البيع المرحّلة في الفترة؛ account.move.line.',
 })
 
@@ -139,7 +139,7 @@ class DashboardService(models.AbstractModel):
         sales = totals.get('revenue', 0.0)
         gross = sales - totals.get('food_cost', 0.0)
         operating = gross - sum(totals.get(k, 0.0) for k in ('salaries', 'rent', 'utilities', 'marketing', 'commissions', 'other_opex', 'depreciation'))
-        net = operating + totals.get('other_income', 0.0) - totals.get('zakat_tax', 0.0)
+        net = operating + totals.get('other_income', 0.0) - totals.get('non_operating', 0.0) - totals.get('zakat_tax', 0.0)
         fixed = sum(totals.get(k, 0.0) for k in ('salaries', 'rent', 'utilities', 'depreciation'))
         variable = sum(totals.get(k, 0.0) for k in ('food_cost', 'commissions', 'marketing', 'other_opex'))
         breakeven = fixed / (1 - variable / sales) if sales and variable / sales < 1 else None

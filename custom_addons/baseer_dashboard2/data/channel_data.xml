@@ -44,4 +44,6 @@
         <field name="pos_method_keywords">jahez,جاهز</field>
         <field name="color_token">--bd2-c-teal</field>
     </record>
+    <record id="channel_transfer" model="baseer.dashboard2.channel"><field name="name">تحويل بنكي</field><field name="key">transfer</field><field name="kind">hall</field><field name="sequence">21</field></record>
+    <record id="channel_credit" model="baseer.dashboard2.channel"><field name="name">آجل</field><field name="key">credit</field><field name="kind">hall</field><field name="sequence">22</field></record>
 </odoo>

@@ -4,21 +4,29 @@ from odoo import models, _
 from odoo.exceptions import UserError
 
 
+
 class DashboardCash(models.AbstractModel):
     _inherit = 'baseer.dashboard2.service'
 
     def _cash_out(self, ids, start, end):
         items, sources, total = defaultdict(float), defaultdict(float), 0.0
         vat_visibility = {}
+        unconfigured = []
         for cid in ids:
             ctx = dict(allowed_company_ids=[cid])
             company = self.env['res.company'].browse(cid)
             settings = self.env['baseer.dashboard2.settings'].with_context(**ctx).search([('company_id', '=', cid)], limit=1)
             vat_visibility[str(cid)] = settings.show_vat_paid_line if settings else True
-            journals = settings.outflow_journal_ids if settings and settings.outflow_journal_ids else self.env['account.journal'].with_context(**ctx).search([('company_id', '=', cid), ('type', 'in', ['bank', 'cash'])])
+            journals = settings.outflow_journal_ids - settings.excluded_journal_ids if settings else self.env['account.journal']
+            wallet_maps = self.env['baseer.dashboard2.channel.map'].with_context(**ctx).search([('company_id', '=', cid), ('source', '=', 'journal'), ('kind', '=', 'app')])
+            journals -= wallet_maps.mapped('journal_id')
+            wallet_accounts = self.env['baseer.dashboard2.channel.map'].with_context(**ctx).search([('company_id', '=', cid), ('source', '=', 'account'), ('kind', '=', 'app')]).mapped('account_id')
+            journals -= journals.filtered(lambda journal: journal.default_account_id in wallet_accounts)
+            if not journals:
+                unconfigured.append(cid)
             liquidity = set(journals.mapped('default_account_id').ids)
             liquidity.update(self.env['account.account'].with_context(**ctx).search([('company_ids', 'in', [cid]), ('account_type', '=', 'asset_cash')]).ids)
-            custody = settings.custody_journal_ids if settings and settings.custody_journal_ids else journals.filtered(lambda j: j.type == 'cash' and ('عهدة' in j.name or (j.default_account_id and j.default_account_id.account_type != 'asset_cash')))
+            custody = settings.custody_journal_ids & journals if settings else self.env['account.journal']
             methods = self.env['account.payment.method.line'].with_context(**ctx).search([('journal_id.company_id', '=', cid)])
             outstanding = set(methods.mapped('payment_account_id').ids)
             for name in ('account_journal_payment_credit_account_id', 'account_journal_payment_debit_account_id'):
@@ -85,9 +93,9 @@ class DashboardCash(models.AbstractModel):
                 for key, weight in weighted.items():
                     items[key] += amount * weight / denominator if denominator else 0
                 journal = journals.filtered(lambda j: j.id == paid_line['journal_id'][0])
-                source = journal.name if journal in custody else 'bank' if journal.type == 'bank' else 'cash'
+                source = ('عهدة ' + journal.name) if journal in custody else 'bank' if journal.type == 'bank' else 'cash'
                 sources[source] += amount
-        return {'available': True, 'total': round(total, 2), 'items': {k: round(v, 2) for k, v in items.items()}, 'sources': {k: round(v, 2) for k, v in sources.items()}, 'show_vat_paid_line': any(vat_visibility.values()), 'vat_visibility_by_company': vat_visibility}
+        return {'available': not bool(unconfigured), 'unconfigured_company_ids': unconfigured, 'total': round(total, 2), 'items': {k: round(v, 2) for k, v in items.items()}, 'sources': {k: round(v, 2) for k, v in sources.items()}, 'show_vat_paid_line': any(vat_visibility.values()), 'vat_visibility_by_company': vat_visibility}
 
     def _sales_vat(self, ids, start, end):
         ctx = dict(allowed_company_ids=ids)
@@ -115,8 +123,18 @@ class DashboardCash(models.AbstractModel):
         return {'available': True, 'value': round(amount, 2)}
 
     def _unpaid_bills(self, ids, end):
-        rows = self.env['account.move'].with_context(allowed_company_ids=ids)._read_group([
+        ctx = dict(allowed_company_ids=ids)
+        bills = self.env['account.move'].with_context(**ctx).search([
             ('company_id', 'in', ids), ('state', '=', 'posted'), ('move_type', 'in', ['in_invoice', 'in_refund']),
-            ('invoice_date', '<=', end), ('payment_state', 'not in', ['paid', 'in_payment', 'reversed'])],
-            [], ['amount_residual_signed:sum'])
-        return {'available': True, 'value': round(rows[0][0] or 0, 2), 'label': 'فواتير غير مسددة — رصيد اليوم'}
+            ('invoice_date', '<=', end)])
+        lines = bills.line_ids.filtered(lambda line: line.account_id.account_type == 'liability_payable')
+        partials = self.env['account.partial.reconcile'].with_context(**ctx).search([
+            ('max_date', '<=', end), '|', ('debit_move_id', 'in', lines.ids), ('credit_move_id', 'in', lines.ids)])
+        remaining = sum(-line.balance for line in lines)
+        line_ids = set(lines.ids)
+        for partial in partials:
+            if partial.credit_move_id.id in line_ids:
+                remaining -= partial.amount
+            if partial.debit_move_id.id in line_ids:
+                remaining += partial.amount
+        return {'available': True, 'value': round(remaining, 2), 'label': 'فواتير غير مسددة — نهاية الفترة'}

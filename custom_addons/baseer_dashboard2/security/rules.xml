@@ -2,4 +2,5 @@
     <record id="target_company_rule" model="ir.rule"><field name="name">Dashboard targets by company</field><field name="model_id" ref="model_baseer_dashboard2_target"/><field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field></record>
     <record id="event_company_rule" model="ir.rule"><field name="name">Dashboard events by company</field><field name="model_id" ref="model_baseer_dashboard2_event"/><field name="domain_force">['|', ('company_ids', '=', False), ('company_ids', 'in', company_ids)]</field></record>
     <record id="settings_company_rule" model="ir.rule"><field name="name">Dashboard settings by company</field><field name="model_id" ref="model_baseer_dashboard2_settings"/><field name="domain_force">[('company_id', 'in', company_ids)]</field></record>
+    <record id="channel_map_company_rule" model="ir.rule"><field name="name">Dashboard channel maps by company</field><field name="model_id" ref="model_baseer_dashboard2_channel_map"/><field name="domain_force">[('company_id', 'in', company_ids)]</field></record>
 </odoo>

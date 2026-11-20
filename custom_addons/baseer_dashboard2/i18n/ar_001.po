@@ -570,3 +570,18 @@ msgstr "خارج المستهدف"
 
 msgid "غير مصنف"
 msgstr "غير مصنف"
+
+msgid "non_operating"
+msgstr "غير تشغيلي"
+
+msgid "transfer"
+msgstr "تحويل بنكي"
+
+msgid "credit"
+msgstr "آجل"
+
+msgid "POS payment method"
+msgstr "طريقة دفع نقطة البيع"
+
+msgid "Dashboard channel mapping"
+msgstr "ربط قنوات لوحة المعلومات"

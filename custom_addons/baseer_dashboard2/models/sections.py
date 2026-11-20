@@ -109,7 +109,7 @@ class DashboardSections(models.AbstractModel):
                   'current': current, 'previous': previous, 'trend': trend, 'targets': targets}
         if section in ('overview', 'ratios'):
             result['companies_compare'] = self._compare(companies, start, end)
-        expense_keys = ('food_cost', 'salaries', 'rent', 'utilities', 'marketing', 'commissions', 'other_opex', 'depreciation', 'zakat_tax')
+        expense_keys = ('food_cost', 'salaries', 'rent', 'utilities', 'marketing', 'commissions', 'other_opex', 'depreciation', 'non_operating', 'zakat_tax')
         if section == 'overview':
             def value(data, key):
                 if key == 'expenses_total':
@@ -123,7 +123,7 @@ class DashboardSections(models.AbstractModel):
             bridge = [('sales_net', current['sales_net']), ('food_cost', -current['categories'].get('food_cost', 0)), ('gross_profit', current['gross_profit']),
                       ('salaries', -current['categories'].get('salaries', 0)), ('rent', -current['categories'].get('rent', 0))]
             bridge += [(k, -current['categories'].get(k, 0)) for k in ('utilities', 'marketing', 'commissions', 'other_opex', 'depreciation') if current['categories'].get(k)]
-            bridge += [('operating_profit', current['operating_profit']), ('other_income', current['categories'].get('other_income', 0)), ('zakat_tax', -current['categories'].get('zakat_tax', 0)), ('net_profit', current['net_profit'])]
+            bridge += [('operating_profit', current['operating_profit']), ('other_income', current['categories'].get('other_income', 0)), ('non_operating', -current['categories'].get('non_operating', 0)), ('zakat_tax', -current['categories'].get('zakat_tax', 0)), ('net_profit', current['net_profit'])]
             result['bridge'] = [{'key': key, 'amount': amount, 'pct': percent(amount, current['sales_net'])} for key, amount in bridge]
             result['breakeven_series'] = [{'month': m['month'], 'sales_net': m['data']['sales_net'] if m['has_data'] else None, 'net_profit': m['data']['net_profit'] if m['has_data'] else None, 'breakeven': m['data']['breakeven'] if m['has_data'] else None, 'margin_pct': m['data']['ratios']['net_margin_pct'] if m['has_data'] else None} for m in trend]
             result['purchases'] = self._purchases(ids, start, end, current['sales_net'])
@@ -170,7 +170,7 @@ class DashboardSections(models.AbstractModel):
                 first, last = month_bounds(date.fromisoformat(month['month'] + '-01'))
                 summary, _, channels, _ = self._sales_summary(ids, first, last)
                 monthly_channels.append((summary, channels))
-            for key in ('revenue', 'food_cost', 'gross_profit', 'salaries', 'rent', 'utilities', 'marketing', 'commissions', 'other_opex', 'depreciation', 'operating_profit', 'other_income', 'zakat_tax', 'net_profit'):
+            for key in ('revenue', 'food_cost', 'gross_profit', 'salaries', 'rent', 'utilities', 'marketing', 'commissions', 'other_opex', 'depreciation', 'operating_profit', 'other_income', 'non_operating', 'zakat_tax', 'net_profit'):
                 factor = -1 if key in expense_keys else 1
                 values = [factor * m['data'].get(key, m['data']['categories'].get(key, 0)) if m['has_data'] else None for m in trend]
                 children = {}
@@ -243,6 +243,7 @@ class DashboardSections(models.AbstractModel):
         months = []
         for offset in range(-5, 1):
             start, last = month_bounds(end, offset)
+            last = min(last, end)
             sales, _, _, _ = self._sales_summary(ids, start, last)
             out = self._cash_out(ids, start, last)
             months.append({'month': start.strftime('%Y-%m'), 'incoming': sales, 'outgoing': out,
@@ -261,7 +262,7 @@ class DashboardSections(models.AbstractModel):
                 'items': {key: round(amount, 2) for key, amount in item_totals.items()},
                 'sources': {key: round(amount, 2) for key, amount in source_totals.items()},
                 'sales_vat': round(sum(m['sales_vat']['value'] for m in months), 2),
-                'unpaid_bills': months[-1]['unpaid_bills'], 'apps_unreceived': {'available': True, 'label': 'حتى اليوم', 'value': round(sum(m['incoming']['apps_unreceived']['value'] for m in months), 2)}}}
+                'unpaid_bills': months[-1]['unpaid_bills'], 'apps_unreceived': {'available': True, 'label': 'حتى نهاية الفترة', 'value': self._sales_summary(ids, month_bounds(end, -5)[0], end)[0]['apps_unreceived']['value']}}}
 
     def _heatmap(self, ids, month):
         try:

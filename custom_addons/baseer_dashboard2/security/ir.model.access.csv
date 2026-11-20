@@ -13,3 +13,5 @@ pos_order_account_read,pos order account read,point_of_sale.model_pos_order,acco
 pos_payment_account_read,pos payment account read,point_of_sale.model_pos_payment,account.group_account_readonly,1,0,0,0
 pos_method_account_read,pos method account read,point_of_sale.model_pos_payment_method,account.group_account_readonly,1,0,0,0
 pos_session_account_read,pos session account read,point_of_sale.model_pos_session,account.group_account_readonly,1,0,0,0
+channel_map_read,channel map read,model_baseer_dashboard2_channel_map,account.group_account_readonly,1,0,0,0
+channel_map_manager,channel map manager,model_baseer_dashboard2_channel_map,account.group_account_manager,1,1,1,1

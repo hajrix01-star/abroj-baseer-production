@@ -16,5 +16,6 @@
         'baseer_dashboard2/static/src/scss/theme.scss',
         'baseer_dashboard2/static/src/scss/main.scss',
     ], 'web.assets_unit_tests': ['baseer_dashboard2/static/tests/**/*']},
+    'post_init_hook': 'post_init_hook',
     'application': True,
 }

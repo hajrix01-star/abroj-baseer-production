@@ -47,6 +47,7 @@ const labels = {
   commissions: "عمولات التطبيقات",
   other_opex: "مصاريف تشغيلية أخرى",
   depreciation: "الإهلاك",
+  non_operating: "غير تشغيلي",
   zakat_tax: "الزكاة والضريبة",
   other_income: "الإيرادات الأخرى",
   food_pct: "نسبة تكلفة الأكل",

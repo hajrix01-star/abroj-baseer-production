@@ -23,6 +23,12 @@ class TestDashboard2(TransactionCase):
         account.code = '500001'
         account.account_type = 'income'
         self.assertEqual(service._category(account, categories), 'revenue')
+        account.account_type = 'income_other'
+        self.assertEqual(service._category(account, categories), 'other_income')
+        account.account_type = 'expense'
+        for code, expected in [('400051', 'commissions'), ('400057', 'non_operating'), ('400061', 'non_operating'), ('400035', 'non_operating'), ('999001', 'non_operating'), ('999002', 'non_operating'), ('400032', 'other_opex'), ('400042', 'other_opex'), ('400048', 'other_opex')]:
+            account.code = code
+            self.assertEqual(service._category(account, categories), expected)
 
     def test_meta_and_overview(self):
         service = self.env['baseer.dashboard2.service']
@@ -48,6 +54,8 @@ class TestDashboard2(TransactionCase):
         revenue = account('D250001', 'income')
         food = account('400001', 'expense_direct_cost')
         salary = account('400003', 'expense')
+        nonop = account('400057', 'expense')
+        offset = account('999001', 'expense')
         cash = account('D210001', 'asset_cash')
         app = account('D211001', 'asset_receivable')
         journal = self.env['account.journal'].create({'name': 'Dashboard Misc', 'code': 'D2MIS', 'type': 'general', 'company_id': company.id})
@@ -61,12 +69,15 @@ class TestDashboard2(TransactionCase):
         vat = account('D220001', 'liability_current')
         entry('ملخص المبيعات | Sales summaries/01049', '2026-10-04', [(cash, 'ملخص - بنك | Bank', 115, 0), (revenue, 'Sales', 0, 100), (vat, 'VAT', 0, 15)])
         entry('cost', '2026-10-03', [(food, 'Food', 300, 0), (salary, 'Salary', 200, 0), (cash, 'Paid', 0, 500)])
+        entry('non-operating', '2026-10-03', [(nonop, 'expense', 80, 0), (offset, 'offset', 0, 30), (cash, 'paid', 0, 50)])
         service = self.env['baseer.dashboard2.service']
         data = service._accounting([company.id], date(2026, 10, 1), date(2026, 10, 31))
         self.assertEqual(data['sales_net'], 1000)
         self.assertEqual(data['categories']['food_cost'], 300)
         self.assertEqual(data['categories']['salaries'], 200)
-        self.assertEqual(data['net_profit'], 500)
+        self.assertEqual(data['categories']['non_operating'], 50)
+        self.assertEqual(data['operating_profit'], 500)
+        self.assertEqual(data['net_profit'], 450)
         sales, _, _, _ = service._sales_summary([company.id], date(2026, 10, 1), date(2026, 10, 31))
         self.assertEqual(sales['channels']['cash'], 540)
         self.assertEqual(sales['channels']['keeta'], 360)
@@ -119,7 +130,8 @@ class TestDashboard2(TransactionCase):
         bank = account('D210100', 'asset_cash')
         salary = account('400003', 'expense')
         journal = self.env['account.journal'].create({'name': 'عهدة اختبار', 'code': 'D2CUS', 'type': 'cash', 'company_id': company.id, 'default_account_id': custody.id})
-        self.env['baseer.dashboard2.settings'].create({'company_id': company.id, 'outflow_journal_ids': [(6, 0, [journal.id])], 'custody_journal_ids': [(6, 0, [journal.id])]})
+        settings = self.env['baseer.dashboard2.settings'].search([('company_id', '=', company.id)], limit=1) or self.env['baseer.dashboard2.settings'].create({'company_id': company.id})
+        settings.write({'outflow_journal_ids': [(6, 0, [journal.id])], 'custody_journal_ids': [(6, 0, [journal.id])]})
         def entry(debit_account, amount):
             move = self.env['account.move'].create({'journal_id': journal.id, 'date': '2026-10-03', 'line_ids': [
                 (0, 0, {'name': 'Debit', 'account_id': debit_account.id, 'debit': amount, 'credit': 0}),
@@ -130,21 +142,32 @@ class TestDashboard2(TransactionCase):
         result = self.env['baseer.dashboard2.service']._cash_out([company.id], date(2026, 10, 1), date(2026, 10, 31))
         self.assertEqual(result['total'], 200)
         self.assertEqual(result['items']['salaries'], 200)
-        self.assertEqual(result['sources']['عهدة اختبار'], 200)
+        self.assertEqual(result['sources']['عهدة عهدة اختبار'], 200)
+        settings.write({'excluded_journal_ids': [(6, 0, [journal.id])]})
+        result = self.env['baseer.dashboard2.service']._cash_out([company.id], date(2026, 10, 1), date(2026, 10, 31))
+        self.assertFalse(result['available'])
+        self.assertEqual(result['total'], 0)
+
 
     def test_pos_sales(self):
         from datetime import date
         company = self.env.company
         method = self.env['pos.payment.method'].create({'name': 'cash', 'company_id': company.id})
+        settings = self.env['baseer.dashboard2.settings'].search([('company_id', '=', company.id)], limit=1) or self.env['baseer.dashboard2.settings'].create({'company_id': company.id})
+        mapping = self.env['baseer.dashboard2.channel.map'].create({'settings_id': settings.id, 'company_id': company.id, 'source': 'pos_method', 'pos_payment_method_id': method.id, 'channel_id': self.env.ref('baseer_dashboard2.channel_card').id, 'kind': 'hall'})
         sale_journal = self.env['account.journal'].create({'name': 'POS sales', 'code': 'D2POS', 'type': 'sale', 'company_id': company.id})
         config = self.env['pos.config'].create({'name': 'Dashboard POS', 'company_id': company.id, 'journal_id': sale_journal.id, 'payment_method_ids': [(6, 0, [method.id])]})
         session = self.env['pos.session'].create({'config_id': config.id})
         order = self.env['pos.order'].create({'company_id': company.id, 'session_id': session.id, 'date_order': '2026-10-01 10:00:00', 'state': 'paid',
                                               'amount_tax': 0, 'amount_total': 115, 'amount_paid': 115, 'amount_return': 0})
         self.env['pos.payment'].create({'pos_order_id': order.id, 'payment_method_id': method.id, 'amount': 115})
+        small = self.env['pos.order'].create({'company_id': company.id, 'session_id': session.id, 'date_order': '2026-10-01 10:00:00', 'state': 'paid', 'amount_tax': 0, 'amount_total': 1, 'amount_paid': 1, 'amount_return': 0})
+        self.env['pos.payment'].create({'pos_order_id': small.id, 'payment_method_id': method.id, 'amount': 1})
         summary, days, _, hours = self.env['baseer.dashboard2.service']._sales_summary([company.id], date(2026, 10, 1), date(2026, 10, 31))
-        self.assertEqual(summary['gross'], 115)
-        self.assertEqual(summary['channels']['cash'], 115)
+        self.assertEqual(summary['gross'], 116)
+        self.assertEqual(summary['channels']['card'], 116)
+        self.assertEqual(summary['customers']['avg_ticket'], 115)
+        self.assertEqual(sum(h['orders'] for h in hours.values()), 1)
         self.assertEqual(summary['customers']['value'], 1)
         self.assertTrue(hours)
         account_model = self.env['account.account'].with_company(company)
@@ -156,7 +179,7 @@ class TestDashboard2(TransactionCase):
             (0, 0, {'name': 'sale', 'account_id': revenue.id, 'debit': 0, 'credit': 300})]})
         move.action_post()
         summary, _, _, _ = self.env['baseer.dashboard2.service']._sales_summary([company.id], date(2026, 10, 1), date(2026, 10, 31))
-        self.assertEqual(summary['gross'], 115)
+        self.assertEqual(summary['gross'], 116)
 
     def test_outstanding_reconciliation(self):
         from datetime import date
@@ -178,6 +201,8 @@ class TestDashboard2(TransactionCase):
                 (0, 0, {'name': 'Credit', 'account_id': credit.id, 'debit': 0, 'credit': 250})]})
             move.action_post()
             return move
+        settings = self.env['baseer.dashboard2.settings'].search([('company_id', '=', company.id)], limit=1) or self.env['baseer.dashboard2.settings'].create({'company_id': company.id})
+        settings.write({'outflow_journal_ids': [(6, 0, [journal.id])]})
         payment = entry(journal, outstanding, bank)
         expense = entry(misc, salary, outstanding)
         (payment.line_ids + expense.line_ids).filtered(lambda line: line.account_id == outstanding).reconcile()
@@ -197,7 +222,61 @@ class TestDashboard2(TransactionCase):
         bill.action_post()
         service = self.env['baseer.dashboard2.service']
         self.assertEqual(abs(service._unpaid_bills([company.id], date(2026, 10, 31))['value']), 100)
+        payment_journal = self.env['account.journal'].create({'name': 'Bill settlement', 'code': 'D2SET', 'type': 'general', 'company_id': company.id})
+        payment = self.env['account.move'].create({'journal_id': payment_journal.id, 'date': '2026-11-10', 'line_ids': [
+            (0, 0, {'name': 'Payable', 'account_id': payable.id, 'partner_id': partner.id, 'debit': 100, 'credit': 0}),
+            (0, 0, {'name': 'Offset', 'account_id': expense.id, 'debit': 0, 'credit': 100})]})
+        payment.action_post()
+        (bill.line_ids + payment.line_ids).filtered(lambda line: line.account_id == payable).reconcile()
+        self.assertEqual(service._unpaid_bills([company.id], date(2026, 10, 31))['value'], 100)
+        self.assertEqual(service._unpaid_bills([company.id], date(2026, 11, 30))['value'], 0)
         self.assertEqual(service._cash_out([company.id], date(2026, 10, 1), date(2026, 10, 31))['total'], 0)
+
+    def test_channel_mapping_and_unreceived(self):
+        from datetime import date
+        company = self.env.company
+        settings = self.env['baseer.dashboard2.settings'].search([('company_id', '=', company.id)], limit=1) or self.env['baseer.dashboard2.settings'].create({'company_id': company.id})
+        model = self.env['account.account'].with_company(company)
+        def account(code, kind):
+            return model.create({'code': code, 'name': code, 'account_type': kind, 'company_ids': [(6, 0, [company.id])]})
+        wallet = account('D2WAL', 'asset_current')
+        revenue = account('D2MAPREV', 'income')
+        cash = account('D2MAPC', 'asset_cash')
+        channel = self.env.ref('baseer_dashboard2.channel_keeta')
+        self.env['baseer.dashboard2.channel.map'].create({'settings_id': settings.id, 'company_id': company.id, 'source': 'account', 'account_id': wallet.id, 'channel_id': channel.id, 'kind': 'app'})
+        journal = self.env['account.journal'].create({'name': 'Summary', 'code': 'D2MAP', 'type': 'general', 'company_id': company.id})
+        def entry(day, lines):
+            move = self.env['account.move'].create({'journal_id': journal.id, 'date': day, 'line_ids': [(0, 0, {'account_id': acc.id, 'name': name, 'debit': debit, 'credit': credit}) for acc, name, debit, credit in lines]})
+            move.action_post()
+        entry('2026-09-01', [(wallet, 'opening', 20, 0), (cash, 'offset', 0, 20)])
+        entry('2026-10-01', [(wallet, 'cash', 100, 0), (revenue, 'sales', 0, 100)])
+        entry('2026-11-01', [(cash, 'cash', 40, 0), (wallet, 'wallet', 0, 40)])
+        service = self.env['baseer.dashboard2.service']
+        result = service._sales_summary([company.id], date(2026, 10, 1), date(2026, 10, 31))[0]
+        self.assertEqual(result['channels']['keeta'], 100)
+        self.assertEqual(result['apps_unreceived']['value'], 100)
+        result = service._sales_summary([company.id], date(2026, 10, 1), date(2026, 11, 30))[0]
+        self.assertEqual(result['apps_unreceived']['value'], 80)
+
+    def test_seed_checks_and_preserves_settings(self):
+        from unittest.mock import patch
+        company = self.env.company
+        other = self.env['res.company'].create({'name': 'Other seed company'})
+        journal = self.env['account.journal'].create({'name': 'Seed bank', 'code': 'D2SED', 'type': 'bank', 'company_id': company.id})
+        settings = self.env['baseer.dashboard2.settings'].search([('company_id', '=', company.id)], limit=1) or self.env['baseer.dashboard2.settings'].create({'company_id': company.id})
+        settings.write({'outflow_journal_ids': [(6, 0, [journal.id])], 'custody_journal_ids': [(5, 0, 0)], 'excluded_journal_ids': [(5, 0, 0)]})
+        defaults = {company.id: {'custody': (journal.id, journal.default_account_id.id), 'excluded': (99999998,)}, other.id: {'custody': (journal.id, journal.default_account_id.id), 'excluded': (journal.id,)}}
+        with patch('odoo.addons.baseer_dashboard2.models.configuration.DOCUMENTED_DEFAULTS', defaults):
+            self.env['baseer.dashboard2.settings']._seed_documented_defaults()
+        self.assertEqual(settings.outflow_journal_ids, journal)
+        self.assertEqual(settings.custody_journal_ids, journal)
+        other_settings = self.env['baseer.dashboard2.settings'].search([('company_id', '=', other.id)])
+        self.assertFalse(other_settings.custody_journal_ids)
+        self.assertFalse(other_settings.excluded_journal_ids)
+        settings.custody_journal_ids = [(5, 0, 0)]
+        with patch('odoo.addons.baseer_dashboard2.models.configuration.DOCUMENTED_DEFAULTS', {company.id: {'custody': (journal.id, 99999999), 'excluded': ()}}):
+            self.env['baseer.dashboard2.settings']._seed_documented_defaults()
+        self.assertFalse(settings.custody_journal_ids)
 
     def test_all_companies_sum(self):
         from datetime import date

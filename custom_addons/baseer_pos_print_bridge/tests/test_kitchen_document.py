@@ -64,7 +64,7 @@ class TestOdooKitchenDocument(TransactionCase):
     def _jpeg(width=576, height=300):
         image = Image.new('RGB', (width, height), 'white')
         output = io.BytesIO()
-        image.save(output, format='JPEG')
+        image.save(output, format='JPEG', dpi=(96, 96))
         raw = output.getvalue()
         return raw, width, height, hashlib.sha256(raw).hexdigest()
 
@@ -232,6 +232,34 @@ class TestOdooKitchenDocument(TransactionCase):
         self.assertEqual(job.error_code, 'invalid_receipt')
         self.assertEqual(job.attempt_count, 0)
 
+    def test_kitchen_density_is_normalized_without_changing_pixels_or_reprints(self):
+        for paper, width in [('58', 384), ('80', 576)]:
+            for density in [75, 96, 203]:
+                with self.subTest(paper=paper, density=density):
+                    image = Image.new('RGB', (width, 120), 'white')
+                    image.putpixel((width - 1, 119), (0, 0, 0))
+                    buffer = io.BytesIO()
+                    image.save(buffer, format='JPEG', dpi=(density, density))
+                    original = buffer.getvalue()
+                    original_hash = hashlib.sha256(original).hexdigest()
+                    job = self._job(self._payload(paper))
+                    with patch.object(type(self.Job), '_render_kitchen_jpeg',
+                                      return_value=(original, width, 120, original_hash)):
+                        self.assertTrue(job._ensure_kitchen_image())
+                    stored = base64.b64decode(job.receipt_image)
+                    self.assertEqual(stored[:13], original[:13])
+                    self.assertEqual(stored[18:], original[18:])
+                    self.assertEqual(job.receipt_image_sha256, hashlib.sha256(stored).hexdigest())
+                    with Image.open(io.BytesIO(stored)) as actual, Image.open(io.BytesIO(original)) as before:
+                        self.assertEqual(actual.info['dpi'], (96, 96))
+                        self.assertEqual(actual.size, before.size)
+                        self.assertEqual(actual.tobytes(), before.tobytes())
+                    job.write({'state': 'done', 'completed_at': fields.Datetime.now()})
+                    self.assertTrue(job.action_reprint())
+                    reprint = self.Job.search([('reprint_of_id', '=', job.id)])
+                    self.assertEqual(reprint.receipt_image, job.receipt_image)
+                    self.assertEqual(reprint.receipt_image_sha256, job.receipt_image_sha256)
+
     def test_reprint_uses_original_html_and_raster_after_template_edit(self):
         job = self._job()
         with patch.object(type(self.Job), '_render_kitchen_jpeg', return_value=self._jpeg()):
@@ -253,6 +281,28 @@ class TestOdooKitchenDocument(TransactionCase):
             render.assert_not_called()
         self.assertEqual(claim['id'], reprint.id)
         self.assertEqual(claim['payload']['receipt_image']['sha256'], job.receipt_image_sha256)
+
+    def test_existing_75dpi_kitchen_snapshot_is_not_modified_on_reprint(self):
+        job = self._job()
+        image = Image.new('RGB', (576, 120), 'white')
+        buffer = io.BytesIO()
+        image.save(buffer, format='JPEG', dpi=(75, 75))
+        original = buffer.getvalue()
+        digest = hashlib.sha256(original).hexdigest()
+        payload = dict(job.payload, receipt_image={
+            'sha256': digest, 'width': 576, 'height': 120, 'format': 'jpeg',
+        })
+        job.with_context(image_no_postprocess=True).write({
+            'payload': payload, 'receipt_image': base64.b64encode(original),
+            'receipt_image_sha256': digest, 'state': 'done',
+            'completed_at': fields.Datetime.now(),
+        })
+        with patch.object(type(self.Job), '_render_kitchen_jpeg') as render:
+            self.assertTrue(job.action_reprint())
+            reprint = self.Job.search([('reprint_of_id', '=', job.id)])
+            self.assertEqual(base64.b64decode(reprint.receipt_image), original)
+            self.assertEqual(reprint.receipt_image_sha256, digest)
+            render.assert_not_called()
 
     def test_expired_original_cannot_be_silently_recreated_for_reprint(self):
         job = self._job()

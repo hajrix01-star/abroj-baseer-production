@@ -1,6 +1,7 @@
 """Odoo owns kitchen presentation; Windows receives the existing raster envelope."""
 import base64
 import copy
+import hashlib
 import io
 import logging
 import subprocess
@@ -22,6 +23,16 @@ MAX_SOURCE_LINES = 200
 RENDER_TIMEOUT_SECONDS = 20
 MAX_RENDER_BYTES = 4 * 1024 * 1024
 _logger = logging.getLogger(__name__)
+
+
+def _normalize_kitchen_jpeg_density(raw):
+    # Qt writes 75 DPI into JFIF while producing already-sized printer pixels.
+    # Older Windows agents otherwise scale them into their 96-DPI bitmap. Change
+    # only the JFIF density, not JPEG coefficients, dimensions, or image data.
+    if (len(raw) < 20 or raw[:4] != b'\xff\xd8\xff\xe0'
+            or raw[4:6] < b'\x00\x10' or raw[6:11] != b'JFIF\x00'):
+        raise ValidationError(_('The kitchen image has an unsupported JPEG header.'))
+    return raw[:13] + b'\x01\x00\x60\x00\x60' + raw[18:]
 
 
 class BaseerKitchenDocument(models.Model):
@@ -211,6 +222,8 @@ class BaseerKitchenDocument(models.Model):
             return False
         try:
             raw, width, height, digest = self._render_kitchen_jpeg()
+            raw = _normalize_kitchen_jpeg_density(raw)
+            digest = hashlib.sha256(raw).hexdigest()
         except (OSError, subprocess.SubprocessError, ValidationError) as error:
             _logger.warning('Kitchen document %s raster failed (%s)', self.id, type(error).__name__)
             self._kitchen_render_failed()

@@ -788,3 +788,6 @@ td {
 .o_bd2 .break-legend { display: flex; gap: 12px; color: var(--bd2-muted); font-size: 11px; }
 .o_bd2 .break-legend span:first-child { color: var(--bd2-c1); }
 .o_bd2 .break-legend span:last-child { color: var(--bd2-gold-text); }
+
+.o_bd2 .customer-empty { min-height: 200px; display: grid; place-items: center; color: var(--bd2-muted); text-align: center; }
+.o_bd2 .rank-first { display: inline-grid; place-items: center; width: 25px; height: 25px; border-radius: 6px; background: var(--bd2-gold-soft); color: var(--bd2-gold-text); }

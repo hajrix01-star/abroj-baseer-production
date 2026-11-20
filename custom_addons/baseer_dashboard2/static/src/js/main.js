@@ -110,7 +110,7 @@ export class Sparkline extends Component {
     (a || []).forEach((v, i) => { const p = this.miniPoint(a, i, ratio); if (p) points.push(p); else flush(); }); flush(); return segments.join(' ');
   }
   endpoints(a) { const indices = (a || []).map((v, i) => v == null ? -1 : i).filter(i => i >= 0); return indices.length > 1 ? [indices[0], indices[indices.length - 1]] : indices; }
-  short(v) { return Math.abs(v) >= 1000 ? `${+(v / 1000).toFixed(1)}K` : `${Math.round(v)}`; }
+  short(v, ratio = false) { return ratio ? Number(v).toFixed(1) : Math.abs(v) >= 1000 ? `${Math.round(v / 1000)}K` : `${Math.round(v)}`; }
   endpoint(a) {
     const i = (a || []).findLastIndex(v => v != null);
     if (i < 0) return null;

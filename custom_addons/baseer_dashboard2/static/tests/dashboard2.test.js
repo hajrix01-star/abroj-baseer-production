@@ -207,3 +207,10 @@ test('mini charts use non-scaling strokes and avoid stretched SVG labels', async
     expect(spark.querySelector('path[vector-effect="non-scaling-stroke"]').getAttribute('stroke-width')).toBe('2');
     expect(spark.querySelector('.spark-label')).not.toBe(null);
 });
+
+
+test('mini labels round amounts and retain one decimal for percentages', () => {
+    const short = Sparkline.prototype.short;
+    expect(short(125395)).toBe('125K');
+    expect(short(46.55, true)).toBe('46.5');
+});

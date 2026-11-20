@@ -15,6 +15,10 @@ def month_bounds(day, offset=0):
     return first, first.replace(day=calendar.monthrange(year, month + 1)[1])
 
 
+def year_to_date_months(end):
+    return [month_bounds(date(end.year, month, 1)) for month in range(1, end.month + 1)]
+
+
 def percent(value, base):
     return round(100 * value / base, 2) if base else None
 
@@ -23,6 +27,10 @@ def change(value, previous):
     # A base less than one sixth of the current magnitude produces an
     # uninformative change above 500%; treat it as too small to compare.
     return round((value - previous) / abs(previous) * 100, 2) if value is not None and previous and abs(value) <= 6 * abs(previous) else None
+
+
+def low_salaries(current, history):
+    return bool(len(history) == 3 and sum(history) > 0 and current < 0.7 * sum(history) / 3)
 
 
 def incomplete_fixed_costs(partial, current, history):
@@ -130,8 +138,10 @@ class DashboardSections(models.AbstractModel):
                   'current': current, 'previous': previous, 'trend': trend, 'targets': targets, 'has_data': covered(start, end)}
         prior_months = sorted((m for m in posted_months if m < start.strftime('%Y-%m')), reverse=True)[:3]
         prior_salaries = [self._accounting(ids, *month_bounds(date.fromisoformat(m + '-01')))['categories'].get('salaries', 0) for m in prior_months]
-        average_salaries = sum(prior_salaries) / len(prior_salaries) if prior_salaries else 0
-        result['salaries_warning'] = bool(len(prior_salaries) == 3 and covered(start, end) and average_salaries > 0 and current['categories'].get('salaries', 0) < 0.7 * average_salaries)
+        result['salaries_warning'] = covered(start, end) and low_salaries(current['categories'].get('salaries', 0), prior_salaries)
+        before_previous_months = sorted((m for m in posted_months if m < previous_start.strftime('%Y-%m')), reverse=True)[:3]
+        before_previous_salaries = [self._accounting(ids, *month_bounds(date.fromisoformat(m + '-01')))['categories'].get('salaries', 0) for m in before_previous_months]
+        result['previous_salaries_warning'] = low_salaries(previous['categories'].get('salaries', 0), before_previous_salaries)
         if section in ('overview', 'ratios'):
             result['companies_compare'] = self._compare(companies, start, end)
         expense_keys = ('food_cost', 'salaries', 'rent', 'utilities', 'marketing', 'commissions', 'other_opex', 'depreciation', 'non_operating', 'zakat_tax')
@@ -143,7 +153,7 @@ class DashboardSections(models.AbstractModel):
             result['kpis'] = {}
             for key in ('sales_net', 'food_cost', 'salaries', 'expenses_total', 'net_profit'):
                 now, before = value(current, key) if covered(start, end) else None, value(previous, key) if covered(previous_start, previous_end) else None
-                result['kpis'][key] = {'available': True, 'value': now, 'previous': before, 'change_pct': change(now, before),
+                result['kpis'][key] = {'available': True, 'value': now, 'previous': before, 'change_pct': None if key == 'salaries' and result['previous_salaries_warning'] else change(now, before),
                                        'trend': [value(m['data'], key) if m['has_data'] else None for m in trend],
                                        'previous_trend': [None] + [value(m['data'], key) if m['has_data'] else None for m in trend[:-1]], 'good_when': 'down' if key in expense_keys or key == 'expenses_total' else 'up'}
             bridge = [('sales_net', current['sales_net']), ('food_cost', -current['categories'].get('food_cost', 0)), ('gross_profit', current['gross_profit']),
@@ -159,7 +169,11 @@ class DashboardSections(models.AbstractModel):
             result['purchases']['change_pct'] = change(result['purchases']['value'], result['purchases']['previous']['value'])
             result['purchases']['trend'] = []
             sales_trend = []
-            for month in trend:
+            mini_months = []
+            for first, last in year_to_date_months(end):
+                mini_months.append({'month': first.strftime('%Y-%m'), 'has_data': covered(first, min(last, end)),
+                                    'data': self._accounting(ids, first, min(last, end))})
+            for month in mini_months:
                 month_start, month_end = month_bounds(date.fromisoformat(month['month'] + '-01'))
                 month_end = min(month_end, end)
                 result['purchases']['trend'].append({'month': month['month'], 'has_data': month['has_data'], **self._purchases(ids, month_start, month_end, month['data']['sales_net'])})
@@ -272,7 +286,7 @@ class DashboardSections(models.AbstractModel):
             amount = current['channels'].get(key, 0)
             before = previous['channels'].get(key, 0)
             rows.append({'key': key, 'name': channel['name'], 'kind': channel['kind'], 'color_token': channel['color_token'],
-                         'amount': amount, 'share_pct': percent(amount / current['gross'] * net_sales, net_sales) if current['gross'] else None, 'change_pct': change(amount, before),
+                         'amount': amount, 'commission_rate': channel['commission_rate'], 'share_pct': percent(amount, current['gross']), 'change_pct': change(amount, before),
                          'trend': [m['data']['channels'].get(key, 0) if m['has_data'] else None for m in monthly]})
         commissions = []
         for row in rows:

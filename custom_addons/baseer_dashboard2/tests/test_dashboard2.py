@@ -13,11 +13,31 @@ class TestDashboard2(TransactionCase):
         self.assertFalse(incomplete_fixed_costs(False, 1, [100, 100, 100]))
         self.assertFalse(incomplete_fixed_costs(True, 1, [100, 100]))
 
+    def test_mini_trend_covers_selected_year_to_month(self):
+        from ..models.sections import year_to_date_months
+        months = year_to_date_months(date(2026, 10, 15))
+        self.assertEqual(len(months), 10)
+        self.assertEqual(months[0][0], date(2026, 1, 1))
+        self.assertEqual(months[-1], (date(2026, 10, 1), date(2026, 10, 31)))
+
+    def test_low_salaries_needs_three_month_baseline(self):
+        from ..models.sections import low_salaries
+        self.assertTrue(low_salaries(69, [100, 100, 100]))
+        self.assertFalse(low_salaries(70, [100, 100, 100]))
+        self.assertFalse(low_salaries(1, [100, 100]))
+
     def test_change_rejects_tiny_base(self):
         from ..models.sections import change
         self.assertIsNone(change(11050, 100))
         self.assertIsNone(change(655, 100))
         self.assertEqual(change(150, 100), 50)
+
+    def test_default_app_commissions_are_editable(self):
+        for key, rate in (("keeta", 18), ("hunger", 22), ("jahez", 20)):
+            channel = self.env.ref("baseer_dashboard2.channel_" + key)
+            self.assertEqual(channel.commission_rate, rate)
+            channel.commission_rate = rate + 1
+            self.assertEqual(channel.commission_rate, rate + 1)
 
     def test_apps_include_tax_in_summary(self):
         from unittest.mock import patch

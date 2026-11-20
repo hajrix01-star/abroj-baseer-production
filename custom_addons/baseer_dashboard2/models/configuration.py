@@ -93,6 +93,10 @@ class DashboardSettings(models.Model):
     custody_journal_ids = fields.Many2many('account.journal', 'bd2_settings_custody_journal_rel', 'settings_id', 'journal_id', check_company=True)
     show_vat_paid_line = fields.Boolean(default=True)
     pos_cutover_note = fields.Text()
+    pos_cutover_date = fields.Date()
+    summary_pos_config_ids = fields.Many2many('pos.config', 'bd2_summary_pos_rel', 'settings_id', 'config_id', check_company=True)
+    liquidity_account_ids = fields.Many2many('account.account', 'bd2_liquidity_account_rel', 'settings_id', 'account_id', check_company=True)
+    liquidity_ids = fields.One2many('baseer.dashboard2.liquidity', 'settings_id')
 
     excluded_journal_ids = fields.Many2many('account.journal', 'bd2_settings_excluded_journal_rel', 'settings_id', 'journal_id', check_company=True)
     min_order_amount = fields.Float(default=1.5)
@@ -151,18 +155,21 @@ class DashboardSettings(models.Model):
                 accounts = self.env['account.account'].sudo().with_company(company).search([('company_ids', 'in', company.id), ('code', '=', code)])
                 for account in accounts:
                     add('account', account, key)
-            if company.id == 2:
-                for aid in (3420, 3421, 3986):
-                    account = self.env['account.account'].sudo().browse(aid).exists()
-                    if not account or company not in account.company_ids:
-                        _logger.info('Dashboard defaults: skip wallet account %s (missing or company mismatch)', aid)
-                        continue
-                    name = (account.name or '').casefold()
-                    key = next((k for k, words in {'hunger': ('hunger', 'هنقر', 'هنجر'), 'keeta': ('keeta', 'كيتا'), 'jahez': ('jahez', 'جاهز')}.items() if any(w in name for w in words)), None)
-                    if key:
-                        add('account', account, key)
-                    else:
-                        _logger.info('Dashboard defaults: skip wallet account %s (unrecognised name)', aid)
+            defaults_accounts = {1: [(3426, 'custody', '')], 2: [(3427, 'custody', ''), (3420, 'bank', 'حساب الأهلي — كيتا'), (3421, 'bank', 'حساب الأهلي — هنقرستيشن'), (3986, 'bank', 'حساب الأهلي — جاهز')], 3: []}
+            for aid, kind, label in defaults_accounts.get(company.id, []):
+                account = self.env['account.account'].sudo().browse(aid).exists()
+                if not account or company not in account.company_ids:
+                    _logger.info('Dashboard defaults: skip liquidity account %s for company %s (missing or mismatch)', aid, company.id)
+                    continue
+                if account not in settings.liquidity_account_ids:
+                    settings.write({'liquidity_account_ids': [(4, account.id)]})
+                if not settings.liquidity_ids.filtered(lambda row: row.account_id == account):
+                    self.env['baseer.dashboard2.liquidity'].create({'settings_id': settings.id, 'account_id': account.id, 'kind': kind, 'label': label})
+                if company.id == 2 and aid in (3420, 3421, 3986):
+                    add('account', account, {3420: 'keeta', 3421: 'hunger', 3986: 'jahez'}[aid])
+            for code in ('101090', '105090'):
+                accounts = self.env['account.account'].sudo().with_company(company).search([('company_ids', 'in', company.id), ('code', '=', code)])
+                settings.write({'liquidity_account_ids': [(4, account.id) for account in accounts]})
         return True
 
 
@@ -187,3 +194,15 @@ class DashboardChannelMap(models.Model):
             fields_by_source = {'pos_method': rec.pos_payment_method_id, 'account': rec.account_id, 'journal': rec.journal_id}
             if not fields_by_source.get(rec.source) or sum(bool(v) for v in fields_by_source.values()) != 1 or rec.settings_id.company_id != rec.company_id:
                 raise ValidationError(_('Select the matching source and company.'))
+
+
+class DashboardLiquidity(models.Model):
+    _name = 'baseer.dashboard2.liquidity'
+    _description = 'Dashboard liquidity account source'
+    _check_company_auto = True
+
+    settings_id = fields.Many2one('baseer.dashboard2.settings', required=True, ondelete='cascade', check_company=True)
+    company_id = fields.Many2one(related='settings_id.company_id', store=True)
+    account_id = fields.Many2one('account.account', required=True, check_company=True)
+    kind = fields.Selection([('bank', 'Bank'), ('cash', 'Cash'), ('custody', 'Custody'), ('app', 'App account')], required=True)
+    label = fields.Char()

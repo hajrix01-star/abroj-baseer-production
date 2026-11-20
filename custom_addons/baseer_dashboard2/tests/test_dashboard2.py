@@ -131,10 +131,10 @@ class TestDashboard2(TransactionCase):
         salary = account('400003', 'expense')
         journal = self.env['account.journal'].create({'name': 'عهدة اختبار', 'code': 'D2CUS', 'type': 'cash', 'company_id': company.id, 'default_account_id': custody.id})
         settings = self.env['baseer.dashboard2.settings'].search([('company_id', '=', company.id)], limit=1) or self.env['baseer.dashboard2.settings'].create({'company_id': company.id})
-        settings.write({'outflow_journal_ids': [(6, 0, [journal.id])], 'custody_journal_ids': [(6, 0, [journal.id])]})
+        settings.write({'liquidity_account_ids': [(4, custody.id)], 'liquidity_ids': [(0, 0, {'account_id': custody.id, 'kind': 'custody', 'label': 'عهدة اختبار'})]})
         empty = self.env['baseer.dashboard2.service']._inout([company.id], date(2026, 9, 30))
         self.assertTrue({'salaries', 'rent', 'utilities', 'purchases', 'commissions', 'marketing', 'non_operating', 'other'} <= set(empty['total']['items']))
-        self.assertTrue({'bank', 'cash', 'عهدة عهدة اختبار'} <= set(empty['total']['sources']))
+        self.assertTrue({'bank', 'cash'} <= set(empty['total']['sources']))
         def entry(debit_account, amount):
             move = self.env['account.move'].create({'journal_id': journal.id, 'date': '2026-10-03', 'line_ids': [
                 (0, 0, {'name': 'Debit', 'account_id': debit_account.id, 'debit': amount, 'credit': 0}),
@@ -145,11 +145,11 @@ class TestDashboard2(TransactionCase):
         result = self.env['baseer.dashboard2.service']._cash_out([company.id], date(2026, 10, 1), date(2026, 10, 31))
         self.assertEqual(result['total'], 200)
         self.assertEqual(result['items']['salaries'], 200)
-        self.assertEqual(result['sources']['عهدة عهدة اختبار'], 200)
+        self.assertEqual(result['sources']['عهدة اختبار'], 200)
         settings.write({'excluded_journal_ids': [(6, 0, [journal.id])]})
         result = self.env['baseer.dashboard2.service']._cash_out([company.id], date(2026, 10, 1), date(2026, 10, 31))
-        self.assertFalse(result['available'])
-        self.assertEqual(result['total'], 0)
+        self.assertTrue(result['available'])
+        self.assertEqual(result['total'], 200)
 
 
     def test_pos_sales(self):
@@ -184,6 +184,12 @@ class TestDashboard2(TransactionCase):
         session.move_id = move
         summary, _, _, _ = self.env['baseer.dashboard2.service']._sales_summary([company.id], date(2026, 10, 1), date(2026, 10, 31))
         self.assertEqual(summary['gross'], 116)
+        self.assertEqual(len(summary['warnings']), 1)
+        settings.pos_cutover_date = '2026-10-02'
+        summary, _, _, _ = self.env['baseer.dashboard2.service']._sales_summary([company.id], date(2026, 10, 1), date(2026, 10, 1))
+        self.assertEqual(summary['gross'], 300)
+        self.assertEqual(len(summary['warnings']), 1)
+        settings.pos_cutover_date = '2026-10-01'
         second = self.env['account.move'].create({'journal_id': misc.id, 'date': '2026-10-02', 'line_ids': [
             (0, 0, {'name': 'cash', 'account_id': cash.id, 'debit': 300, 'credit': 0}),
             (0, 0, {'name': 'sale', 'account_id': revenue.id, 'debit': 0, 'credit': 300})]})
@@ -194,9 +200,25 @@ class TestDashboard2(TransactionCase):
             (0, 0, {'name': 'clearing', 'account_id': self.env['account.account'].create({'code': 'D2CLR', 'name': 'Clearing', 'account_type': 'asset_current', 'company_ids': [(6, 0, [company.id])]}).id, 'debit': 0, 'credit': 300})]})
         combine.action_post()
         summary, _, _, _ = self.env['baseer.dashboard2.service']._sales_summary([company.id], date(2026, 10, 1), date(2026, 10, 31))
-        self.assertEqual(summary['gross'], 416)
+        self.assertEqual(summary['gross'], 116)
+        summary_config = self.env['pos.config'].create({'name': 'ملخصات', 'company_id': company.id, 'journal_id': sale_journal.id, 'payment_method_ids': [(6, 0, [method.id])]})
+        summary_session = self.env['pos.session'].create({'config_id': summary_config.id})
+        self.env['pos.order'].create({'company_id': company.id, 'session_id': summary_session.id, 'date_order': '2026-09-29 10:00:00', 'state': 'paid', 'amount_tax': 0, 'amount_total': 500, 'amount_paid': 500, 'amount_return': 0})
+        session.move_id = False
+        summary_session.move_id = second
+        tiny = self.env['pos.order'].create({'company_id': company.id, 'session_id': session.id, 'date_order': '2026-10-02 10:00:00', 'state': 'paid', 'amount_tax': 0, 'amount_total': 1, 'amount_paid': 1, 'amount_return': 0})
+        self.env['pos.payment'].create({'pos_order_id': tiny.id, 'payment_method_id': method.id, 'amount': 1})
+        settings.pos_cutover_date = '2026-10-03'
+        summary, _, _, hours = self.env['baseer.dashboard2.service']._sales_summary([company.id], date(2026, 10, 2), date(2026, 10, 2))
+        self.assertEqual(summary['gross'], 300)
+        self.assertFalse(summary['customers']['available'])
+        self.assertFalse(hours)
+        settings.pos_cutover_date = '2026-10-01'
+        summary, _, _, _ = self.env['baseer.dashboard2.service']._sales_summary([company.id], date(2026, 10, 2), date(2026, 10, 2))
+        self.assertEqual(summary['gross'], 1)
+        self.assertFalse(summary['warnings'])
         heatmap = self.env['baseer.dashboard2.service']._heatmap([company.id], '2026-10')
-        self.assertEqual(heatmap['daily_average']['current'], 208)
+        self.assertEqual(heatmap['daily_average']['current'], 58.5)
         self.assertIsNone(heatmap['days'][2]['gross'])
 
     def test_official_events_loaded(self):
@@ -333,3 +355,72 @@ class TestDashboardThemeLiterals(TransactionCase):
         for path in root.rglob('*'):
             if path.is_file() and path.name != 'theme.scss':
                 self.assertFalse(pattern.search(path.read_text()), str(path))
+
+    def test_liquidity_reset_and_reconciliation(self):
+        from datetime import date
+        company = self.env.company
+        model = self.env['account.account'].with_company(company)
+        def account(code, kind, reconcile=False):
+            return model.create({'code': code, 'name': code, 'account_type': kind, 'reconcile': reconcile, 'company_ids': [(6, 0, [company.id])]})
+        bank = account('D2APP', 'asset_current')
+        cash = account('D2CASH', 'asset_cash')
+        salary = account('400003', 'expense')
+        rent = account('400016', 'expense')
+        payable = account('D2PAY2', 'liability_payable', True)
+        intermediary = account('102014', 'asset_current', True)
+        salaries_due = account('201090', 'liability_current')
+        reset = account('999999', 'equity')
+        revenue = account('D2REVENUE', 'income')
+        journal = self.env['account.journal'].create({'name': 'Test misc', 'code': 'D2ZZ', 'type': 'general', 'company_id': company.id})
+        settings = self.env['baseer.dashboard2.settings'].search([('company_id', '=', company.id)], limit=1) or self.env['baseer.dashboard2.settings'].create({'company_id': company.id})
+        settings.write({'liquidity_account_ids': [(4, bank.id)], 'liquidity_ids': [(0, 0, {'account_id': bank.id, 'kind': 'bank', 'label': 'حساب الأهلي — كيتا'})]})
+        self.env['baseer.dashboard2.channel.map'].create({'settings_id': settings.id, 'company_id': company.id, 'source': 'account', 'account_id': bank.id, 'channel_id': self.env.ref('baseer_dashboard2.channel_keeta').id, 'kind': 'app'})
+        def entry(debit, credit, amount, day='2026-10-03'):
+            move = self.env['account.move'].create({'journal_id': journal.id, 'date': day, 'line_ids': [
+                (0, 0, {'name': 'Debit', 'account_id': debit.id, 'debit': amount}),
+                (0, 0, {'name': 'Credit', 'account_id': credit.id, 'credit': amount})]})
+            move.action_post()
+            return move
+        entry(bank, revenue, 1000)
+        entry(salary, bank, 100)
+        payment = entry(payable, bank, 80)
+        bill = entry(rent, payable, 80)
+        (payment.line_ids | bill.line_ids).filtered(lambda line: line.account_id == payable).reconcile()
+        payment2 = entry(intermediary, bank, 60)
+        payroll = entry(salaries_due, intermediary, 60)
+        (payment2.line_ids | payroll.line_ids).filtered(lambda line: line.account_id == intermediary).reconcile()
+        entry(cash, bank, 50)
+        entry(reset, bank, 20, '2026-10-31')
+        service = self.env['baseer.dashboard2.service']
+        out = service._cash_out([company.id], date(2026, 10, 1), date(2026, 10, 31))
+        self.assertEqual(out['total'], 240)
+        self.assertEqual(out['items']['salaries'], 160)
+        self.assertEqual(out['items']['rent'], 80)
+        self.assertEqual(out['sources']['حساب الأهلي — كيتا'], 240)
+        before, _, _, _ = service._sales_summary([company.id], date(2026, 10, 1), date(2026, 10, 30))
+        self.assertEqual(before['apps_unreceived']['value'], 710)
+        summary, _, _, _ = service._sales_summary([company.id], date(2026, 10, 1), date(2026, 10, 31))
+        self.assertFalse(summary['apps_unreceived']['available'])
+        self.assertIn('31/10', summary['apps_unreceived']['label'])
+        after, _, _, _ = service._sales_summary([company.id], date(2026, 10, 1), date(2026, 11, 1))
+        self.assertEqual(after['apps_unreceived']['value'], 710)
+
+    def test_salaries_warning_three_months(self):
+        company = self.env.company
+        accounts = self.env['account.account'].with_company(company)
+        salary = accounts.create({'code': '400003', 'name': 'رواتب | Salaries', 'account_type': 'expense', 'company_ids': [(6, 0, [company.id])]})
+        cash = accounts.create({'code': 'D2SAC', 'name': 'Cash', 'account_type': 'asset_cash', 'company_ids': [(6, 0, [company.id])]})
+        journal = self.env['account.journal'].create({'name': 'Salaries', 'code': 'D2SAL', 'type': 'general', 'company_id': company.id})
+        for month, amount in [(7, 100), (8, 100), (9, 100), (10, 69)]:
+            move = self.env['account.move'].create({'journal_id': journal.id, 'date': '2026-%02d-01' % month, 'line_ids': [
+                (0, 0, {'name': 'Salary', 'account_id': salary.id, 'debit': amount}),
+                (0, 0, {'name': 'Cash', 'account_id': cash.id, 'credit': amount})]})
+            move.action_post()
+        self.env['ir.config_parameter'].set_param('baseer_dashboard2.company_map', '%s:Configured label' % company.id)
+        service = self.env['baseer.dashboard2.service']
+        params = {'company_key': str(company.id), 'period': {'mode': 'month', 'month': '2026-10'}}
+        for section in ('overview', 'expenses', 'pnl'):
+            self.assertTrue(service.get_section(section, params)['salaries_warning'])
+        overview = service.get_section('overview', params)
+        self.assertEqual(overview['companies_compare'][0]['name'], 'Configured label')
+        self.assertEqual(next(a for a in overview['current']['accounts'] if a['account_id'] == salary.id)['name'], 'رواتب')

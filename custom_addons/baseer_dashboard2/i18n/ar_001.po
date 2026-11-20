@@ -588,3 +588,19 @@ msgstr "ربط قنوات لوحة المعلومات"
 
 msgid "Dashboard event"
 msgstr "مناسبة لوحة المعلومات"
+
+#. module: baseer_dashboard2
+msgid "Pos Cutover Date"
+msgstr "تاريخ التحول إلى نقاط البيع"
+
+#. module: baseer_dashboard2
+msgid "Summary Pos Configs"
+msgstr "إعدادات نقاط بيع الملخصات"
+
+#. module: baseer_dashboard2
+msgid "Liquidity Accounts"
+msgstr "حسابات السيولة"
+
+#. module: baseer_dashboard2
+msgid "Liquidity"
+msgstr "مصادر السيولة"

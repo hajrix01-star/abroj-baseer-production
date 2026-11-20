@@ -122,6 +122,16 @@ class DashboardService(models.AbstractModel):
                 return category.code
         return 'other_opex' if (account.account_type or '').startswith('expense') else False
 
+    def _reset_move_ids(self, ids, end, start=None):
+        result = set()
+        for cid in ids:
+            domain = [('company_id', '=', cid), ('parent_state', '=', 'posted'), ('date', '<=', end), ('account_id.code', '=', '999999')]
+            if start:
+                domain.append(('date', '>=', start))
+            company = self.env['res.company'].browse(cid)
+            result.update(self.env['account.move.line'].with_company(company).with_context(allowed_company_ids=[cid]).search(domain).mapped('move_id').ids)
+        return list(result)
+
     def _accounting(self, ids, start, end):
         categories = self.env['baseer.dashboard2.category'].with_context(allowed_company_ids=ids).search([])
         lines = self.env['account.move.line'].with_context(allowed_company_ids=ids)

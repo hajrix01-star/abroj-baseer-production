@@ -9,113 +9,92 @@ class DashboardCash(models.AbstractModel):
     _inherit = 'baseer.dashboard2.service'
 
     def _cash_out(self, ids, start, end):
-        items, sources, total = defaultdict(float), defaultdict(float), 0.0
+        items, sources = defaultdict(float), defaultdict(float)
+        total = 0.0
         vat_visibility = {}
-        unconfigured = []
         for cid in ids:
             ctx = dict(allowed_company_ids=[cid])
             company = self.env['res.company'].browse(cid)
             settings = self.env['baseer.dashboard2.settings'].with_context(**ctx).search([('company_id', '=', cid)], limit=1)
-            if settings:
-                for journal in settings.custody_journal_ids:
-                    sources['عهدة ' + journal.name] += 0
             vat_visibility[str(cid)] = settings.show_vat_paid_line if settings else True
-            journals = settings.outflow_journal_ids - settings.excluded_journal_ids if settings else self.env['account.journal']
-            wallet_maps = self.env['baseer.dashboard2.channel.map'].with_context(**ctx).search([('company_id', '=', cid), ('source', '=', 'journal'), ('kind', '=', 'app')])
-            journals -= wallet_maps.mapped('journal_id')
-            wallet_accounts = self.env['baseer.dashboard2.channel.map'].with_context(**ctx).search([('company_id', '=', cid), ('source', '=', 'account'), ('kind', '=', 'app')]).mapped('account_id')
-            journals -= journals.filtered(lambda journal: journal.default_account_id in wallet_accounts)
-            if not journals:
-                unconfigured.append(cid)
-            liquidity = set(journals.mapped('default_account_id').ids)
-            liquidity.update(self.env['account.account'].with_context(**ctx).search([('company_ids', 'in', [cid]), ('account_type', '=', 'asset_cash')]).ids)
-            custody = settings.custody_journal_ids & journals if settings else self.env['account.journal']
-            methods = self.env['account.payment.method.line'].with_context(**ctx).search([('journal_id.company_id', '=', cid)])
-            outstanding = set(methods.mapped('payment_account_id').ids)
-            for name in ('account_journal_payment_credit_account_id', 'account_journal_payment_debit_account_id'):
-                if name in company._fields and company[name]:
-                    outstanding.add(company[name].id)
+            accounts = self.env['account.account'].with_context(**ctx).with_company(company).search([('company_ids', 'in', [cid]), '|', ('account_type', '=', 'asset_cash'), ('code', 'in', ('101090', '105090'))])
+            if settings:
+                accounts |= settings.liquidity_account_ids | settings.liquidity_ids.mapped('account_id')
+            liquidity = set(accounts.ids)
+            bank_accounts = set(self.env['account.journal'].with_context(**ctx).search([('company_id', '=', cid), ('type', '=', 'bank')]).mapped('default_account_id').ids)
+            categories = self.env['baseer.dashboard2.category'].with_context(**ctx).search([])
             tax_ids = set(self.env['account.tax.repartition.line'].with_context(**ctx).search([('account_id', '!=', False), ('tax_id.company_id', '=', cid)]).mapped('account_id').ids)
-            line_model = self.env['account.move.line'].with_context(**ctx)
-            paid = line_model.search_read([('company_id', '=', cid), ('parent_state', '=', 'posted'), ('date', '>=', start), ('date', '<=', end), ('journal_id', 'in', journals.ids), ('account_id', 'in', list(liquidity)), ('credit', '>', 0)], ['move_id', 'journal_id', 'credit'], limit=200001)
+            resets = set(self._reset_move_ids([cid], end, start))
+            paid = self.env['account.move.line'].with_context(**ctx).search([('company_id', '=', cid), ('parent_state', '=', 'posted'), ('date', '>=', start), ('date', '<=', end), ('account_id', 'in', list(liquidity)), ('credit', '>', 0), ('move_id', 'not in', list(resets))], limit=200001)
             if len(paid) > 200000:
                 raise UserError(_('The selected period contains more than 200,000 outflow lines.'))
-            move_ids = list({row['move_id'][0] for row in paid})
-            if not move_ids:
-                continue
-            counterparts = line_model.search_read([('company_id', '=', cid), ('move_id', 'in', move_ids)], ['move_id', 'account_id', 'debit', 'credit', 'tax_repartition_line_id', 'matched_debit_ids', 'matched_credit_ids'], limit=200001)
-            if len(counterparts) > 200000:
-                raise UserError(_('The selected period contains more than 200,000 outflow counterpart lines.'))
-            by_move = defaultdict(list)
-            for row in counterparts:
-                by_move[row['move_id'][0]].append(row)
-            partial_ids = {pid for row in counterparts if row['account_id'][0] in outstanding for pid in row['matched_debit_ids'] + row['matched_credit_ids']}
-            partials = self.env['account.partial.reconcile'].with_context(**ctx).search_read([('id', 'in', list(partial_ids)), ('company_id', '=', cid)], ['debit_move_id', 'credit_move_id']) if partial_ids else []
-            other_line_ids = {p[side][0] for p in partials for side in ('debit_move_id', 'credit_move_id') if p[side]} - {r['id'] for r in counterparts}
-            other_lines = line_model.search_read([('company_id', '=', cid), ('id', 'in', list(other_line_ids))], ['move_id']) if other_line_ids else []
-            matched_moves = {r['move_id'][0] for r in other_lines}
-            matched_rows = line_model.search_read([('company_id', '=', cid), ('move_id', 'in', list(matched_moves))], ['move_id', 'account_id', 'debit', 'credit', 'tax_repartition_line_id']) if matched_moves else []
-            for row in matched_rows:
-                by_move[row['move_id'][0]].append(row)
-            line_to_move = {r['id']: r['move_id'][0] for r in counterparts + other_lines}
-            related = defaultdict(set)
-            for p in partials:
-                a, b = p['debit_move_id'][0], p['credit_move_id'][0]
-                if a in line_to_move and b in line_to_move:
-                    related[a].add(line_to_move[b])
-                    related[b].add(line_to_move[a])
-            all_account_ids = {r['account_id'][0] for rows in by_move.values() for r in rows}
-            accounts = {a.id: a for a in self.env['account.account'].with_context(**ctx).browse(list(all_account_ids)).exists()}
-            categories = self.env['baseer.dashboard2.category'].with_context(**ctx).search([])
-            for paid_line in paid:
-                move_lines = by_move[paid_line['move_id'][0]]
-                other = [r for r in move_lines if r['account_id'][0] not in liquidity and r['account_id'][0] != company.transfer_account_id.id]
+            def classify(line):
+                account = line.account_id.with_company(company)
+                code = account.code or ''
+                if code == '201090':
+                    return {'salaries': 1.0}
+                if account.account_type == 'liability_payable' or code == '102014' or line.matched_debit_ids or line.matched_credit_ids:
+                    matched = (line.matched_debit_ids | line.matched_credit_ids)
+                    other = (matched.mapped('debit_move_id') | matched.mapped('credit_move_id')) - line
+                    weights = defaultdict(float)
+                    for counterpart in other.mapped('move_id').line_ids:
+                        acc = counterpart.account_id.with_company(company)
+                        category = 'salaries' if acc.code == '201090' else self._category(acc, categories) if (acc.account_type or '').startswith('expense') else False
+                        if category:
+                            weights['purchases' if category == 'food_cost' else category] += abs(counterpart.balance)
+                    return weights or {'purchases' if account.account_type == 'liability_payable' else 'other': 1.0}
+                if line.tax_repartition_line_id or account.id in tax_ids:
+                    return {'vat_paid': 1.0}
+                category = self._category(account, categories)
+                return {('purchases' if category == 'food_cost' else category or 'other'): 1.0}
+            for line in paid:
+                other = line.move_id.line_ids.filtered(lambda l: l.account_id.id not in liquidity)
                 if not other:
                     continue
-                weighted = defaultdict(float)
-                for row in other:
-                    aid = row['account_id'][0]
-                    weight = abs(row['debit'] - row['credit'])
-                    if aid in outstanding:
-                        matches = [r for mid in related[row['id']] for r in by_move[mid] if r['account_id'][0] not in outstanding and r['account_id'][0] not in liquidity]
-                        sums = defaultdict(float)
-                        for match in matches:
-                            acc = accounts[match['account_id'][0]]
-                            key = 'purchases' if acc.account_type == 'liability_payable' else self._category(acc, categories) or 'other'
-                            sums[key] += abs(match['debit'] - match['credit'])
-                        denominator = sum(sums.values())
-                        for key, amount in (sums.items() if denominator else [('other', 1)]):
-                            weighted[key] += weight * amount / (denominator or 1)
-                    else:
-                        acc = accounts[aid]
-                        key = 'purchases' if acc.account_type == 'liability_payable' else 'vat_paid' if aid in tax_ids or row['tax_repartition_line_id'] else self._category(acc, categories) or 'other'
-                        weighted[key] += weight
-                denominator = sum(weighted.values())
-                amount = paid_line['credit']
-                total += amount
-                for key, weight in weighted.items():
-                    items[key] += amount * weight / denominator if denominator else 0
-                journal = journals.filtered(lambda j: j.id == paid_line['journal_id'][0])
-                source = ('عهدة ' + journal.name) if journal in custody else 'bank' if journal.type == 'bank' else 'cash'
-                sources[source] += amount
-        return {'available': not bool(unconfigured), 'unconfigured_company_ids': unconfigured, 'total': round(total, 2), 'items': {k: round(v, 2) for k, v in items.items()}, 'sources': {k: round(v, 2) for k, v in sources.items()}, 'show_vat_paid_line': any(vat_visibility.values()), 'vat_visibility_by_company': vat_visibility}
+                weights = defaultdict(float)
+                for counterpart in other:
+                    parts = classify(counterpart)
+                    denominator = sum(parts.values())
+                    for key, weight in parts.items():
+                        weights[key] += abs(counterpart.balance) * weight / denominator if denominator else 0
+                denominator = sum(weights.values())
+                total += line.credit
+                for key, weight in weights.items():
+                    items[key] += line.credit * weight / denominator if denominator else 0
+                row = settings.liquidity_ids.filtered(lambda r: r.account_id == line.account_id)[:1] if settings else False
+                kind = row.kind if row else ('bank' if line.account_id.id in bank_accounts else 'cash')
+                label = (row.label or line.account_id.with_context(lang='ar_001').name or '').split('|')[0].strip() if row else ''
+                if label.startswith('L '):
+                    label = label[2:].strip()
+                if kind == 'custody':
+                    source = label if label.startswith('عهدة') else 'عهدة ' + label
+                elif row and row.label:
+                    source = row.label
+                else:
+                    source = {'bank': 'bank', 'cash': 'cash', 'app': 'حساب تطبيق'}[kind]
+                sources[source] += line.credit
+        return {'available': True, 'unconfigured_company_ids': [], 'total': round(total, 2), 'items': {k: round(v, 2) for k, v in items.items()}, 'sources': {k: round(v, 2) for k, v in sources.items()}, 'show_vat_paid_line': any(vat_visibility.values()), 'vat_visibility_by_company': vat_visibility}
 
     def _sales_vat(self, ids, start, end):
         ctx = dict(allowed_company_ids=ids)
         sales_days, _, _, _ = self._sales_days(ids, start, end)
         sessions = self.env['pos.session'].with_context(**ctx).search_read([
             ('company_id', 'in', ids), ('move_id.state', '=', 'posted'),
-            ('move_id.date', '>=', start), ('move_id.date', '<=', end)], ['move_id'])
-        session_move_ids = [s['move_id'][0] for s in sessions if s['move_id']]
+            ('move_id.date', '>=', start), ('move_id.date', '<=', end)], ['move_id', 'config_id'])
+        settings = self.env['baseer.dashboard2.settings'].with_context(**ctx).search([('company_id', 'in', ids)])
+        summary_ids = set(settings.mapped('summary_pos_config_ids').ids)
+        configs = self.env['pos.config'].with_context(**dict(ctx, active_test=False)).search([('company_id', 'in', ids)])
+        summary_ids.update(config.id for config in configs if any(word in (config.name or '').casefold() for word in ('ملخص المبيعات', 'sales summaries', 'ملخصات')))
+        session_move_ids = [s['move_id'][0] for s in sessions if s['move_id'] and (not s['config_id'] or s['config_id'][0] not in summary_ids)]
         orders = self.env['pos.order'].with_context(**ctx).search_read([
             ('company_id', 'in', ids), ('account_move.state', '=', 'posted'),
-            ('account_move.date', '>=', start), ('account_move.date', '<=', end)], ['account_move'], limit=200001)
+            ('account_move.date', '>=', start), ('account_move.date', '<=', end)], ['account_move', 'config_id'], limit=200001)
         if len(orders) > 200000:
             raise UserError(_('The selected period contains more than 200,000 POS orders.'))
-        pos_moves = set(session_move_ids + [o['account_move'][0] for o in orders if o['account_move']])
+        pos_moves = set(session_move_ids + [o['account_move'][0] for o in orders if o['account_move'] and (not o['config_id'] or o['config_id'][0] not in summary_ids)])
         rows = self.env['account.move.line'].with_context(**ctx)._read_group([
             ('company_id', 'in', ids), ('parent_state', '=', 'posted'), ('date', '>=', start), ('date', '<=', end),
-            ('account_id.account_type', '=', 'liability_current'), ('tax_line_id', '!=', False),
+            ('account_id.account_type', '=', 'liability_current'), ('tax_line_id', '!=', False), ('move_id', 'not in', self._reset_move_ids(ids, end, start)),
             '|', '|', ('move_id.ref', 'ilike', 'NOORIX-SALES'), ('move_id.reversed_entry_id.ref', 'ilike', 'NOORIX-SALES'), ('move_id', 'in', list(pos_moves))],
             ['company_id', 'date:day', 'move_id'], ['credit:sum', 'debit:sum'])
         amount = sum(day.get('sales_vat', 0) for day in sales_days.values() if day['source'] == 'summary')
@@ -130,12 +109,16 @@ class DashboardCash(models.AbstractModel):
         bills = self.env['account.move'].with_context(**ctx).search([
             ('company_id', 'in', ids), ('state', '=', 'posted'), ('move_type', 'in', ['in_invoice', 'in_refund']),
             ('invoice_date', '<=', end)])
+        resets = set(self._reset_move_ids(ids, end))
+        bills = bills.filtered(lambda move: move.id not in resets)
         lines = bills.line_ids.filtered(lambda line: line.account_id.account_type == 'liability_payable')
         partials = self.env['account.partial.reconcile'].with_context(**ctx).search([
             ('max_date', '<=', end), '|', ('debit_move_id', 'in', lines.ids), ('credit_move_id', 'in', lines.ids)])
         remaining = sum(-line.balance for line in lines)
         line_ids = set(lines.ids)
         for partial in partials:
+            if partial.debit_move_id.move_id.id in resets or partial.credit_move_id.move_id.id in resets:
+                continue
             if partial.credit_move_id.id in line_ids:
                 remaining -= partial.amount
             if partial.debit_move_id.id in line_ids:

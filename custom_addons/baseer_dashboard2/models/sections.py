@@ -34,9 +34,12 @@ class DashboardSections(models.AbstractModel):
         return {'available': True, 'value': round(value, 2), 'pct': percent(value, sales)}
 
     def _posted_months(self, ids):
-        rows = self.env['account.move.line'].with_context(allowed_company_ids=ids)._read_group(
-            [('company_id', 'in', ids), ('parent_state', '=', 'posted')], ['date:month'], [])
-        return {fields.Date.to_date(row[0]).strftime('%Y-%m') for row in rows if row[0]}
+        lines = self.env['account.move.line'].with_context(allowed_company_ids=ids).search([
+            ('company_id', 'in', ids), ('parent_state', '=', 'posted'),
+            ('account_id.account_type', 'in', ('income', 'income_other', 'expense', 'expense_depreciation', 'expense_direct_cost'))])
+        reset_ids = set(self._reset_move_ids(ids, fields.Date.to_date('9999-12-31')))
+        opening_ids = set(self.env['res.company'].browse(ids).mapped('account_opening_move_id').ids)
+        return {line.date.strftime('%Y-%m') for line in lines if line.move_id.id not in reset_ids | opening_ids and line.move_id.ref != 'Opening Entry'}
 
     def _timeline(self, ids, end, mode):
         if mode not in ('monthly', 'yearly'):
@@ -74,7 +77,7 @@ class DashboardSections(models.AbstractModel):
         result = []
         for cid, label, name in companies:
             data = self._accounting([cid], start, end)
-            result.append({'key': str(cid), 'label': label, 'name': name, 'sales_net': data['sales_net'], **data['ratios']})
+            result.append({'key': str(cid), 'label': label, 'name': label, 'sales_net': data['sales_net'], **data['ratios']})
         return result
 
     def _targets(self, ids, current):
@@ -107,6 +110,10 @@ class DashboardSections(models.AbstractModel):
         targets = self._targets(ids, current)
         result = {'available': True, 'period': {'date_from': str(start), 'date_to': str(end)},
                   'current': current, 'previous': previous, 'trend': trend, 'targets': targets, 'has_data': covered(start, end)}
+        prior_months = sorted((m for m in posted_months if m < start.strftime('%Y-%m')), reverse=True)[:3]
+        prior_salaries = [self._accounting(ids, *month_bounds(date.fromisoformat(m + '-01')))['categories'].get('salaries', 0) for m in prior_months]
+        average_salaries = sum(prior_salaries) / len(prior_salaries) if prior_salaries else 0
+        result['salaries_warning'] = bool(len(prior_salaries) == 3 and covered(start, end) and average_salaries > 0 and current['categories'].get('salaries', 0) < 0.7 * average_salaries)
         if section in ('overview', 'ratios'):
             result['companies_compare'] = self._compare(companies, start, end)
         expense_keys = ('food_cost', 'salaries', 'rent', 'utilities', 'marketing', 'commissions', 'other_opex', 'depreciation', 'non_operating', 'zakat_tax')
@@ -257,7 +264,7 @@ class DashboardSections(models.AbstractModel):
             vat = self._sales_vat(ids, start, last)
             if not sales['channels']:
                 lines = self.env['account.move.line'].with_context(allowed_company_ids=ids).search([
-                    ('company_id', 'in', ids), ('parent_state', '=', 'posted'), ('date', '>=', start), ('date', '<=', last)])
+                    ('company_id', 'in', ids), ('parent_state', '=', 'posted'), ('date', '>=', start), ('date', '<=', last), ('move_id', 'not in', self._reset_move_ids(ids, last, start))])
                 categories = self.env['baseer.dashboard2.category'].with_context(allowed_company_ids=ids).search([])
                 revenue = lines.filtered(lambda line: self._category(line.account_id.with_company(line.company_id), categories) == 'revenue')
                 moves = revenue.mapped('move_id')
@@ -287,7 +294,7 @@ class DashboardSections(models.AbstractModel):
                 'items': {key: round(amount, 2) for key, amount in item_totals.items()},
                 'sources': {key: round(amount, 2) for key, amount in source_totals.items()},
                 'sales_vat': round(sum(m['sales_vat']['value'] for m in months), 2),
-                'unpaid_bills': months[-1]['unpaid_bills'], 'apps_unreceived': {'available': True, 'label': 'حتى نهاية الفترة', 'value': self._sales_summary(ids, month_bounds(end, -5)[0], end)[0]['apps_unreceived']['value']}}}
+                'unpaid_bills': months[-1]['unpaid_bills'], 'apps_unreceived': self._sales_summary(ids, month_bounds(end, -5)[0], end)[0]['apps_unreceived']}}
 
     def _heatmap(self, ids, month):
         try:
@@ -300,7 +307,7 @@ class DashboardSections(models.AbstractModel):
         prev_first, prev_last = month_bounds(first, -1)
         previous, prev_days, _, _ = self._sales_summary(ids, prev_first, prev_last)
         events = self.env['baseer.dashboard2.event'].with_context(allowed_company_ids=ids).search_read([
-            ('date_from', '<=', last), ('date_to', '>=', first), '|', ('company_ids', '=', False), ('company_ids', 'in', ids)],
+            ('date_from', '<=', year_end), ('date_to', '>=', year_start), '|', ('company_ids', '=', False), ('company_ids', 'in', ids)],
             ['name', 'date_from', 'date_to', 'company_ids', 'kind', 'note', 'color_token'])
         for event in events:
             event['date_from'] = str(event['date_from'])
@@ -309,7 +316,7 @@ class DashboardSections(models.AbstractModel):
             rows = [v for (_, d), v in source.items() if d == day]
             pos = [r for r in rows if r['source'] == 'pos']
             noorix = [r for r in rows if r['source'] == 'summary']
-            return {'date': str(day), 'gross': round(sum(sum(r['channels'].values()) for r in rows), 2) if rows else None,
+            return {'date': str(day), 'events': [event for event in events if event['date_from'] <= str(day) <= event['date_to']], 'gross': round(sum(sum(r['channels'].values()) for r in rows), 2) if rows else None,
                     'customers': sum(r['customers'] for r in pos) if pos and not noorix else None,
                     'partial': bool(pos and noorix)}
         def dates(start, end):

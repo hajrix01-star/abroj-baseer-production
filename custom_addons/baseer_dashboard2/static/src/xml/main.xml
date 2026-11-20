@@ -127,6 +127,7 @@
         <div class="grid five">
             <KpiCard t-foreach="Object.entries(state.data.kpis || {})" t-as="entry" t-key="entry[0]" title="name(entry[0])" value="entry[1].value" change="entry[1].change_pct" trend="entry[1].trend" hero="entry[0]==='net_profit'" goodWhen="entry[1].good_when"/>
         </div>
+        <div t-if="state.data.salaries_warning" class="chip">الرواتب أقل بوضوح من متوسط آخر 3 أشهر — قد تكون غير مكتملة</div>
         <div class="grid two-wide">
             <div class="card">
                 <h3>المبيعات وصافي الربح مقابل نقطة التعادل</h3>
@@ -141,10 +142,11 @@
             <div t-att-class="'bridge-row '+(row.key==='net_profit'?'net-profit':(['sales_net','gross_profit','operating_profit'].includes(row.key)?'subtotal':''))" t-foreach="state.data.bridge" t-as="row" t-key="row.key">
                 <b t-esc="name(row.key)"/>
                 <Track value="row.amount" max="current.sales_net" gold="row.key==='net_profit'"/>
-                <strong dir="ltr" t-esc="tableFmt(row.amount, true)"/>
+                <strong dir="ltr" t-esc="tableFmt(row.amount || 0, true)"/>
                 <span class="muted" dir="ltr" t-esc="tablePct(row.pct)"/>
             </div>
         </div>
+        <div t-foreach="state.data.sales.warnings" t-as="warning" t-key="warning.company_id+warning.date" class="chip"><t t-esc="warning.date"/> · <t t-esc="warning.label"/></div>
         <t t-call="baseer_dashboard2.Compare"/>
     </t>
     <t t-name="baseer_dashboard2.BreakEven">
@@ -184,7 +186,7 @@
                 </thead>
                 <tbody>
                     <tr t-foreach="state.data.companies_compare" t-as="co" t-key="co.key" t-att-class="co.key===state.company?'highlight':''">
-                        <th t-esc="co.name"/>
+                        <th t-esc="co.label"/>
                         <td t-esc="tableFmt(co.sales_net)"/>
                         <td t-esc="tablePct(co.food_pct)"/>
                         <td t-esc="tablePct(co.salaries_pct)"/>
@@ -283,6 +285,7 @@
         </div>
     </t>
     <t t-name="baseer_dashboard2.Expenses">
+        <div t-if="state.data.salaries_warning" class="chip">الرواتب أقل بوضوح من متوسط آخر 3 أشهر — قد تكون غير مكتملة</div>
         <div class="grid four">
             <KpiCard title="'إجمالي المصاريف'" value="state.data.has_data ? totalExpense(current) : null" hero="true"/>
             <KpiCard title="'تكلفة الأكل'" value="state.data.has_data ? current.categories?.food_cost : null"/>
@@ -393,14 +396,15 @@
             </div>
             <div>
                 <small>تطبيقات لم تُستلم بعد</small>
-                <b t-esc="fmt(state.data.months.at(-1)?.incoming.available ? state.data.months.at(-1).incoming.apps_unreceived.value : null)"/>
+                <b t-esc="state.data.months.at(-1)?.incoming.apps_unreceived.available ? fmt(state.data.months.at(-1).incoming.apps_unreceived.value) : state.data.months.at(-1)?.incoming.apps_unreceived.label"/>
             </div>
         </div>
+        <div t-if="state.data.salaries_warning" class="chip">الرواتب أقل بوضوح من متوسط آخر 3 أشهر — قد تكون غير مكتملة</div>
         <div class="card table-wrap">
             <div class="card-head">
                 <div>
                     <h3 t-esc="state.view==='pnl'?'قائمة الدخل (الربح والخسارة)':'الداخل والخارج'"/>
-                    <div class="muted" t-esc="state.view==='inout' ? 'الداخل = المبيعات شاملة الضريبة · الخارج = المدفوع فعلياً من البنك والنقد والعهدة' : 'المبالغ بالريال، الأقواس = خصم'"/>
+                    <div class="muted" t-esc="state.view==='inout' ? 'الداخل = المبيعات شاملة الضريبة · الخارج = المدفوع فعلياً من البنك والنقد والعهدة وحسابات التطبيقات' : 'المبالغ بالريال، الأقواس = خصم'"/>
                 </div>
                 <button class="icon-button" t-on-click="exportCsv" title="تنزيل CSV">↓</button>
             </div>
@@ -475,8 +479,8 @@
                         <tr class="account" t-if="group[2]==='channels'">
                             <td>منها تطبيقات لم تُستلم بعد</td>
                             <td/>
-                            <td t-foreach="state.data.months" t-as="m" t-key="m.month" t-esc="tableFmt(m.incoming.apps_unreceived.value)"/>
-                            <td t-esc="tableFmt(state.data.total.apps_unreceived.value)"/>
+                            <td t-foreach="state.data.months" t-as="m" t-key="m.month" t-esc="m.incoming.apps_unreceived.available ? tableFmt(m.incoming.apps_unreceived.value) : m.incoming.apps_unreceived.label"/>
+                            <td t-esc="state.data.total.apps_unreceived.available ? tableFmt(state.data.total.apps_unreceived.value) : state.data.total.apps_unreceived.label"/>
                         </tr>
                         <tr class="account" t-if="group[2]==='channels'">
                             <td>منها ضريبة القيمة المضافة</td>
@@ -551,7 +555,7 @@
                 </div>
                 <t t-foreach="calendarCells" t-as="day" t-key="day_index">
                     <div t-if="!day"/>
-                    <div t-else="" t-att-class="'day level-'+level(day)">
+                    <div t-else="" t-att-class="'day level-'+level(day)+(day.events.length ? ' occasion' : '')" t-att-title="day.events.map(e=&gt;e.name).join('، ')">
                         <small t-esc="Number(day.date.slice(-2))"/>
                         <strong t-esc="fmt(dayValue(day))"/>
                         <span>
@@ -592,7 +596,7 @@
                 <div t-foreach="state.data.year_calendar" t-as="m" t-key="m.month">
                     <b t-esc="monthName(m.month)"/>
                     <div class="year-days">
-                        <i t-foreach="m.days" t-as="d" t-key="d.date" t-att-class="'level-'+level(d)" t-att-title="dateName(d.date)+' · '+fmt(d.gross)">
+                        <i t-foreach="m.days" t-as="d" t-key="d.date" t-att-class="'level-'+level(d)+(d.events.length ? ' occasion' : '')" t-att-title="dateName(d.date)+' · '+fmt(d.gross)+' · '+d.events.map(e=&gt;e.name).join('، ')">
                             <span t-esc="Number(d.date.slice(-2))"/>
                             <b t-esc="fmt(d.gross)"/>
                         </i>

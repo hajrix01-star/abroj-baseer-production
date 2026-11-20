@@ -17,7 +17,7 @@
                 <path t-att-d="miniPath(props.values, false, true)" fill="var(--bd2-c1)" fill-opacity="0.09"/>
                 <path t-att-d="miniPath(props.values)" fill="none" stroke="var(--bd2-c1)" stroke-width="2" vector-effect="non-scaling-stroke"/>
                 <path t-att-d="miniPath(props.previous, true)" fill="none" stroke="var(--bd2-gold)" stroke-width="2" vector-effect="non-scaling-stroke"/>
-                <t t-if="!props.stretch" t-foreach="endpoints(props.values)" t-as="i" t-key="i"><circle t-att-cx="miniPoint(props.values,i).x" t-att-cy="miniPoint(props.values,i).y" r="1.3" t-att-fill="i === endpoints(props.values).at(-1) ? 'var(--bd2-c1)' : 'var(--bd2-card)'" stroke="var(--bd2-c1)" stroke-width="0.5"/><text t-if="i === endpoints(props.values).at(-1)" font-weight="700" t-att-x="miniPoint(props.values,i).x" t-att-y="miniPoint(props.values,i).y-2" text-anchor="middle" fill="var(--bd2-c1)" font-size="2.4" t-esc="short(props.values[i])"/></t>
+                <t t-if="!props.stretch" t-foreach="endpoints(props.values)" t-as="i" t-key="i"><circle t-att-cx="miniPoint(props.values,i).x" t-att-cy="miniPoint(props.values,i).y" r="1.3" t-att-fill="i === endpoints(props.values).at(-1) ? 'var(--bd2-c1)' : 'var(--bd2-card)'" stroke="var(--bd2-c1)" stroke-width="0.5"/><text t-if="i === endpoints(props.values).at(-1)" font-weight="700" t-att-x="miniPoint(props.values,i).x" t-att-y="miniPoint(props.values,i).y-2" text-anchor="middle" fill="var(--bd2-c1)" font-size="2.4" t-esc="short(props.values[i], false, props.amountDecimal)"/></t>
                 <t t-if="!props.stretch" t-foreach="endpoints(props.previous)" t-as="i" t-key="i"><circle t-att-cx="miniPoint(props.previous,i,true).x" t-att-cy="miniPoint(props.previous,i,true).y" r="1.3" t-att-fill="i === endpoints(props.previous).at(-1) ? 'var(--bd2-gold)' : 'var(--bd2-card)'" stroke="var(--bd2-gold)" stroke-width="0.5"/><text t-if="i === endpoints(props.previous).at(-1)" font-weight="700" t-att-x="miniPoint(props.previous,i,true).x" t-att-y="miniPoint(props.previous,i,true).y-2" text-anchor="middle" fill="var(--bd2-gold-text)" font-size="2.4" t-esc="short(props.previous[i], props.ratioPercent) + (props.ratioPercent ? '%' : '')"/></t>
             </t>
             <t t-else="">
@@ -28,7 +28,7 @@
             <path t-if="props.previous" t-att-d="path(props.previous)" fill="none" t-att-stroke="props.secondaryGold ? 'var(--bd2-gold)' : 'var(--bd2-faint)'" stroke-width="1.5" t-att-stroke-dasharray="props.secondaryGold ? '' : '4 3'"/>
             </t>
         </svg>
-        <t t-if="props.mini and props.stretch"><t t-foreach="endpoints(props.values)" t-as="i" t-key="i"><span class="spark-dot navy" t-att-class="i === endpoints(props.values).at(-1) ? 'spark-dot navy filled' : 'spark-dot navy'" t-att-style="'left:'+miniPoint(props.values,i).x+'%;top:'+(miniPoint(props.values,i).y/32*100)+'%'"/><span t-if="i === endpoints(props.values).at(-1)" class="spark-label navy" t-att-style="'left:'+miniPoint(props.values,i).x+'%;top:'+(miniPoint(props.values,i).y/32*100-10)+'%'" t-esc="short(props.values[i])"/></t><t t-foreach="endpoints(props.previous)" t-as="i" t-key="i"><span class="spark-dot gold" t-att-class="i === endpoints(props.previous).at(-1) ? 'spark-dot gold filled' : 'spark-dot gold'" t-att-style="'left:'+miniPoint(props.previous,i,true).x+'%;top:'+(miniPoint(props.previous,i,true).y/32*100)+'%'"/><span t-if="i === endpoints(props.previous).at(-1)" class="spark-label gold" t-att-style="'left:'+miniPoint(props.previous,i,true).x+'%;top:'+(miniPoint(props.previous,i,true).y/32*100-10)+'%'" t-esc="short(props.previous[i], props.ratioPercent) + (props.ratioPercent ? '%' : '')"/></t></t></div>
+        <t t-if="props.mini and props.stretch"><t t-foreach="endpoints(props.values)" t-as="i" t-key="i"><span class="spark-dot navy" t-att-class="i === endpoints(props.values).at(-1) ? 'spark-dot navy filled' : 'spark-dot navy'" t-att-style="'left:'+miniPoint(props.values,i).x+'%;top:'+(miniPoint(props.values,i).y/32*100)+'%'"/><span t-if="i === endpoints(props.values).at(-1)" class="spark-label navy" t-att-style="'left:'+miniPoint(props.values,i).x+'%;top:'+(miniPoint(props.values,i).y/32*100-10)+'%'" t-esc="short(props.values[i], false, props.amountDecimal)"/></t><t t-foreach="endpoints(props.previous)" t-as="i" t-key="i"><span class="spark-dot gold" t-att-class="i === endpoints(props.previous).at(-1) ? 'spark-dot gold filled' : 'spark-dot gold'" t-att-style="'left:'+miniPoint(props.previous,i,true).x+'%;top:'+(miniPoint(props.previous,i,true).y/32*100)+'%'"/><span t-if="i === endpoints(props.previous).at(-1)" class="spark-label gold" t-att-style="'left:'+miniPoint(props.previous,i,true).x+'%;top:'+(miniPoint(props.previous,i,true).y/32*100-10)+'%'" t-esc="short(props.previous[i], props.ratioPercent) + (props.ratioPercent ? '%' : '')"/></t></t></div>
     </t>
     <t t-name="baseer_dashboard2.LineChart">
         <div>
@@ -52,7 +52,7 @@
                 <t t-if="!s.dashed or s.endpoint"><t t-foreach="s.values" t-as="v" t-key="v_index">
                     <text t-if="s.partial?.[v_index] and v != null and !s.dashed" t-att-x="chartX(v_index,s.values.length)" t-att-y="y(v)+16" text-anchor="middle" fill="var(--bd2-muted)" font-size="9">جزئي</text>
                     <circle t-if="v !== null and v !== undefined and (!s.dashed or v_index === s.values.findLastIndex(x=&gt;x != null))" t-att-cx="chartX(v_index,s.values.length)" t-att-cy="y(v)" t-att-r="v_index === s.values.findLastIndex(x=&gt;x != null) ? 5 : 3" t-att-fill="v_index === s.values.findLastIndex(x=&gt;x != null) ? (s.gold ? 'var(--bd2-gold)' : 'var(--bd2-c1)') : 'var(--bd2-card)'" t-att-stroke="s.gold ? 'var(--bd2-gold)' : 'var(--bd2-c1)'" stroke-width="2"/>
-                    <text t-if="((s.area and !s.firstLabel) or s.pointLabels or ((s.firstLabel or s.endpoint) and v_index === s.values.findLastIndex(x=&gt;x != null)) or (props.percent and v_index === s.values.findLastIndex(x=&gt;x != null))) and v !== null and v !== undefined" t-att-x="chartX(v_index,s.values.length)" t-att-y="y(v)-8" text-anchor="middle" fill="var(--bd2-ink)" font-size="9" font-weight="700" t-esc="compact(v)"/>
+                    <text t-if="((s.area and !s.firstLabel) or s.pointLabels or ((s.firstLabel or s.endpoint) and v_index === s.values.findLastIndex(x=&gt;x != null)) or (props.percent and v_index === s.values.findLastIndex(x=&gt;x != null))) and v !== null and v !== undefined" t-att-x="(s.firstLabel or s.endpoint) ? chartX(v_index,s.values.length)+8 : chartX(v_index,s.values.length)" t-att-y="(s.firstLabel or s.endpoint) ? labelY(s,v) : y(v)-8" t-att-text-anchor="(s.firstLabel or s.endpoint) ? 'start' : 'middle'" fill="var(--bd2-ink)" font-size="9" font-weight="700" t-esc="compact(v)"/>
                 </t></t>
             </t>
             <t t-foreach="props.labels || []" t-as="label" t-key="label_index">
@@ -78,7 +78,7 @@
     <t t-name="baseer_dashboard2.Gauge">
         <div class="bd2-gauge">
             <i t-att-style="'width:'+pos(props.value)+'%'"/>
-            <b t-if="props.target != null" t-att-style="'right:'+pos(props.target)+'%'"/>
+            <b t-if="props.target != null" t-att-style="'right:'+pos(props.target)+'%'"><span class="gauge-target">المستهدف <bdi dir="ltr" t-esc="(props.operator === 'le' ? '≤' : '≥') + Number(props.target).toLocaleString('en-US', {maximumFractionDigits: 1}) + '%'"/></span></b>
             <em t-if="props.previous != null" t-att-style="'right:'+pos(props.previous)+'%'"/>
         </div>
     </t>
@@ -88,7 +88,7 @@
             <Sparkline values="props.trend" gold="props.hero"/>
             <div class="kpi-heading"><span class="card-icon"><svg viewBox="0 0 24 24"><path t-att-d="iconPath(props.icon)"/></svg></span><span class="muted" t-esc="props.title"/></div><small t-if="props.subtitle" class="muted" t-esc="props.subtitle"/><small t-if="props.subtitlePercent != null" class="muted">= <bdi dir="ltr" t-esc="formatPercent(props.subtitlePercent)"/> من المبيعات</small>
             <div class="kpi-value">
-                <Money value="props.value"/>
+                <span t-if="props.unit === 'orders'"><t t-esc="formatNumber(props.value)"/> <small>طلب</small></span><Money t-else="" value="props.value"/>
             </div>
             <div>
                 <Badge value="props.change" goodWhen="props.goodWhen" warning="props.warning"/>
@@ -136,9 +136,9 @@
     </t>
     <t t-name="baseer_dashboard2.Overview">
         <div class="grid three">
-            <div class="card mini" t-foreach="[['المشتريات',state.data.purchases?.value,state.data.purchases?.pct,state.data.purchases?.trend?.map(x=&gt;x.has_data ? x.pct : null),state.data.purchases?.trend?.map(x=&gt;x.has_data ? x.value : null),state.data.purchases?.change_pct],['تطبيقات التوصيل',state.data.sales?.apps,state.data.sales?.apps_pct,state.data.sales?.trend?.map(x=&gt;x.has_data ? x.apps_pct : null),state.data.sales?.trend?.map(x=&gt;x.has_data ? x.apps : null),state.data.sales?.apps_change_pct],['عدد العملاء ومتوسط الفاتورة',state.data.sales?.customers?.value,state.data.sales?.customers?.avg_ticket,state.data.sales?.trend?.map(x=&gt;x.has_data ? x.customers.avg_ticket : null),state.data.sales?.trend?.map(x=&gt;x.has_data ? x.customers.value : null),state.data.sales?.customers_change_pct]]" t-as="item" t-key="item[0]">
-                <div class="mini-head"><div><span class="card-icon"><svg viewBox="0 0 24 24"><path t-att-d="iconPath(['purchases','apps','customers'][item_index])"/></svg></span><h3 t-esc="item[0]"/><small t-if="item_index===0" class="block muted" t-esc="monthName(state.period.month)"/><small t-if="item_index===1" class="block muted">كيتا + هنقر + جاهز · شامل الضريبة</small></div><div t-if="item_index !== 2 or state.data.sales?.customers?.available" class="mini-value"><strong t-esc="item_index === 0 and !state.data.purchases?.available ? 'غير متوفر' : fmt(item[1])"/><div class="mini-pill"><t t-if="item[2] == null">غير متوفر</t><t t-elif="item_index &lt; 2"><bdi dir="ltr" t-esc="pct(item[2])"/> من المبيعات<t t-if="item_index === 1"> · شامل الضريبة</t></t><t t-else="" t-esc="fmt(item[2])+' متوسط الفاتورة'"/></div></div></div>
-                <t t-if="item_index !== 2 or state.data.sales?.customers?.available"><Sparkline values="item[4]" previous="item[3]" mini="true" ratioPercent="item_index &lt; 2"/><div class="mini-labels"><span t-foreach="state.data.purchases.trend.map(x=&gt;monthName(x.month).split(' ')[0])" t-as="label" t-key="label_index" t-esc="label"/></div><div class="mini-legend"><span><i/><t t-esc="item_index === 2 ? 'عدد الطلبات' : 'المبلغ'"/></span><span><i class="gold"/><t t-esc="item_index === 2 ? 'متوسط الفاتورة' : 'النسبة'"/></span></div></t><div t-else="" class="customer-empty">غير متوفر — يتوفر من بيانات نقاط البيع فقط</div>
+            <div class="card mini" t-foreach="[['المشتريات',state.data.purchases?.value,state.data.purchases?.pct,state.data.purchases?.trend?.map(x=&gt;x.has_data ? x.pct : null),state.data.purchases?.trend?.map(x=&gt;x.has_data ? x.value : null),state.data.purchases?.change_pct],['تطبيقات التوصيل',state.data.sales?.apps,state.data.sales?.apps_pct,state.data.sales?.trend?.map(x=&gt;x.has_data ? x.apps_pct : null),state.data.sales?.trend?.map(x=&gt;x.has_data ? x.apps : null),state.data.sales?.apps_change_pct],['عدد العملاء (الطلبات)',state.data.sales?.customers?.value,state.data.sales?.customers?.avg_ticket,state.data.sales?.trend?.map(x=&gt;x.has_data ? x.customers.avg_ticket : null),state.data.sales?.trend?.map(x=&gt;x.has_data ? x.customers.value : null),state.data.sales?.customers_change_pct]]" t-as="item" t-key="item[0]">
+                <div class="mini-head"><div><div class="mini-title"><span class="card-icon"><svg viewBox="0 0 24 24"><path t-att-d="iconPath(['purchases','apps','customers'][item_index])"/></svg></span><h3 t-esc="item[0]"/></div><small t-if="item_index!==1" class="block muted" t-esc="monthName(state.period.month)"/><small t-if="item_index===1" class="block muted">كيتا + هنقر + جاهز · شامل الضريبة</small></div><div t-if="item_index !== 2 or state.data.sales?.customers?.available" class="mini-value"><strong t-esc="item_index === 0 and !state.data.purchases?.available ? 'غير متوفر' : fmt(item[1])"/><div class="mini-pill"><t t-if="item[2] == null">غير متوفر</t><t t-elif="item_index &lt; 2"><bdi dir="ltr" t-esc="pct(item[2])"/> من المبيعات<t t-if="item_index === 1"> · شامل الضريبة</t></t><t t-else="" t-esc="fmt(item[2])+' متوسط الفاتورة'"/></div></div></div>
+                <t t-if="item_index !== 2 or state.data.sales?.customers?.available"><Sparkline values="item[4]" previous="item[3]" mini="true" ratioPercent="item_index &lt; 2" amountDecimal="item_index === 2"/><div class="mini-labels"><span t-foreach="state.data.purchases.trend.map(x=&gt;monthName(x.month).split(' ')[0])" t-as="label" t-key="label_index" t-esc="label"/></div><div class="mini-legend"><span><i/><t t-esc="item_index === 2 ? 'عدد الطلبات' : 'المبلغ'"/></span><span><i class="gold"/><t t-esc="item_index === 2 ? 'متوسط الفاتورة' : 'النسبة'"/></span></div></t><div t-else="" class="customer-empty">غير متوفر — يتوفر من بيانات نقاط البيع فقط</div>
             </div>
         </div>
         <div class="grid five">
@@ -149,7 +149,7 @@
             <div class="card">
                 <h3>المبيعات وصافي الربح مقابل نقطة التعادل</h3>
                 <div class="muted">المسافة بين خط المبيعات والخط المتقطع = هامش الأمان</div>
-                <LineChart series="[{values:state.data.breakeven_series.map(x=&gt;x.sales_net),firstLabel:true,partial:state.data.breakeven_series.map(x=&gt;x.partial),name:'المبيعات'}, {values:state.data.breakeven_series.map(x=&gt;x.net_profit),partial:state.data.breakeven_series.map(x=&gt;x.partial),gold:true,area:true,firstLabel:true,name:'صافي الربح'},{values:state.data.breakeven_series.map(x=&gt;x.breakeven),dashed:true,endpoint:true,name:'نقطة التعادل'}]" labels="trendLabels"/>
+                <LineChart series="[{values:state.data.breakeven_series.map(x=&gt;x.sales_net),firstLabel:true,partial:state.data.breakeven_series.map(x=&gt;x.partial),name:'المبيعات'}, {values:state.data.breakeven_series.map(x=&gt;x.net_profit),partial:state.data.breakeven_series.map(x=&gt;x.partial),gold:true,area:true,firstLabel:true,name:'صافي الربح'},{values:state.data.breakeven_series.map(x=&gt;x.breakeven),dashed:true,endpoint:true,name:'نقطة التعادل'}]" labels="trendLabels" fiveTicks="true"/>
                 <div class="safety-chips"><strong>هامش صافي الربح:</strong><span t-foreach="state.data.breakeven_series" t-as="m" t-key="m.month" t-att-class="m_last ? 'current' : ''"><t t-esc="monthName(m.month).split(' ')[0]"/> <bdi dir="ltr" t-att-class="m.margin_pct &lt; 0 ? 'negative' : ''" t-esc="pct(m.margin_pct)"/></span></div>
             </div>
             <t t-call="baseer_dashboard2.BreakEven"/>
@@ -219,7 +219,7 @@
         <div class="grid four">
             <KpiCard title="'إجمالي المبيعات — شامل الضريبة'" icon="'sales_net'" value="current.gross" change="changeValue(current.gross, state.data.previous.gross)" trend="trend.map(x=&gt;x.has_data ? x.data.gross : null)" hero="true"/>
             <KpiCard title="'مبيعات التطبيقات — شامل الضريبة'" icon="'apps'" value="current.apps" change="changeValue(current.apps, state.data.previous.apps)" trend="trend.map(x=&gt;x.has_data ? x.data.apps : null)" subtitle="current.apps_pct == null ? 'غير متوفر' : null" subtitlePercent="current.apps_pct"/>
-            <KpiCard title="'عدد العملاء (الطلبات)'" icon="'customers'" value="current.customers?.value" change="changeValue(current.customers?.value, state.data.previous.customers?.value)" trend="trend.map(x=&gt;x.has_data ? x.data.customers?.value : null)"/>
+            <KpiCard title="'عدد العملاء (الطلبات)'" icon="'customers'" unit="'orders'" value="current.customers?.value" change="changeValue(current.customers?.value, state.data.previous.customers?.value)" trend="trend.map(x=&gt;x.has_data ? x.data.customers?.value : null)"/>
             <KpiCard title="'متوسط الفاتورة'" icon="'ticket'" value="current.customers?.avg_ticket" change="changeValue(current.customers?.avg_ticket, state.data.previous.customers?.avg_ticket)" trend="trend.map(x=&gt;x.has_data ? x.data.customers?.avg_ticket : null)"/>
         </div>
         <t t-call="baseer_dashboard2.Timeline"/>
@@ -262,7 +262,7 @@
                             <th colspan="3">المجموع</th>
                             <th t-esc="tableFmt(current.gross)"/>
                             <td t-esc="current.gross == null ? '—' : '100%'"/>
-                            <td colspan="2">الصالة <t t-esc="fmt(state.data.split.hall)"/> · التطبيقات <t t-esc="fmt(state.data.split.apps)"/>
+                            <td colspan="2"><div t-if="current.gross &gt; 0" class="channel-split"><i t-att-style="'width:'+Math.max(0, Math.min(100, state.data.split.hall/current.gross*100))+'%'"/><i t-att-style="'width:'+Math.max(0, Math.min(100, state.data.split.apps/current.gross*100))+'%'"/></div><small>الصالة <bdi dir="ltr" t-esc="pct(current.gross ? state.data.split.hall/current.gross*100 : null)"/> · التطبيقات <bdi dir="ltr" t-esc="pct(current.gross ? state.data.split.apps/current.gross*100 : null)"/></small> <Badge value="changeValue(current.gross, state.data.previous.gross)"/>
                             </td>
                         </tr>
                     </tbody>
@@ -296,7 +296,7 @@
             <KpiCard title="'الإيجار والكهرباء'" icon="'rent'" value="state.data.has_data ? ((current.categories?.rent || 0)+(current.categories?.utilities || 0)) : null" change="changeValue(((current.categories?.rent || 0)+(current.categories?.utilities || 0)), ((state.data.previous.categories?.rent || 0)+(state.data.previous.categories?.utilities || 0)))" trend="trend.map(x=&gt;x.has_data ? ((x.data.categories?.rent || 0)+(x.data.categories?.utilities || 0)) : null)" goodWhen="'down'"/>
         </div>
         <div class="grid two-wide">
-            <div class="card">
+            <div class="card expense-sales-chart">
                 <h3>المصاريف مقابل المبيعات</h3>
                 <div class="muted">آخر 6 أشهر — الفرق بين الخطين هو الربح قبل الزكاة</div>
                 <LineChart series="[{values:series('sales_net'),firstLabel:true,name:'المبيعات'},{values:trend.map(x=&gt;x.has_data === false ? null : operatingExpense(x.data)),gold:true,area:true,firstLabel:true,name:'المصاريف قبل الزكاة'}]" labels="trendLabels"/><div class="safety-chips"><strong>المصاريف ÷ المبيعات:</strong><span t-foreach="trend" t-as="m" t-key="m.month" t-att-class="m_last ? 'current' : ''"><t t-esc="monthName(m.month).split(' ')[0]"/> <bdi dir="ltr" t-esc="m.has_data and m.data.sales_net ? pct(operatingExpense(m.data)/m.data.sales_net*100) : '—'"/></span></div>
@@ -358,8 +358,7 @@
             <div class="card ratio" t-foreach="['food_pct','salaries_pct','prime_pct','net_margin_pct']" t-as="key" t-key="key">
                 <div class="ratio-heading"><div><h3 t-esc="name(key)"/><div class="muted" t-esc="({food_pct:'تكلفة الأكل ÷ المبيعات',salaries_pct:'الرواتب ÷ المبيعات',prime_pct:'(الأكل + الرواتب) ÷ المبيعات',net_margin_pct:'صافي الربح ÷ المبيعات'})[key]"/></div><span t-if="current.ratios?.[key] != null and state.data.targets[key]" t-att-class="'bd2-badge '+(state.data.targets[key].status === 'ok' ? 'good' : 'bad')" t-esc="state.data.targets[key].status === 'ok' ? 'ضمن المستهدف' : 'خارج المستهدف'"/></div>
                 <div class="ratio-value"><strong t-att-class="key === 'net_margin_pct' and current.ratios?.[key] &lt; 0 ? 'negative' : ''"><bdi dir="ltr" t-esc="pct(current.ratios?.[key])"/></strong><Badge value="key === 'salaries_pct' and state.data.previous_salaries_warning ? null : changeValue(current.ratios?.[key], state.data.previous.ratios?.[key])" goodWhen="key === 'net_margin_pct' ? 'up' : 'down'" warning="key === 'salaries_pct' and state.data.previous_salaries_warning"/></div>
-                <div class="muted" t-if="state.data.targets[key]">المستهدف <t t-esc="state.data.targets[key].operator === 'le' ? '≤' : '≥'"/><bdi dir="ltr" t-esc="pct(state.data.targets[key].value)"/></div>
-                <Gauge value="current.ratios?.[key]" previous="state.data.previous.ratios?.[key]" target="state.data.targets[key]?.value" max="({food_pct:50,salaries_pct:40,prime_pct:80,net_margin_pct:30})[key]"/><div class="gauge-scale"><span t-esc="({food_pct:50,salaries_pct:40,prime_pct:80,net_margin_pct:30})[key]+'%'"/><span>0%</span></div>
+                <Gauge value="current.ratios?.[key]" previous="state.data.previous.ratios?.[key]" target="state.data.targets[key]?.value" operator="state.data.targets[key]?.operator" max="({food_pct:50,salaries_pct:40,prime_pct:80,net_margin_pct:30})[key]"/><div class="gauge-scale"><span t-esc="({food_pct:50,salaries_pct:40,prime_pct:80,net_margin_pct:30})[key]+'%'"/><span>0%</span></div>
                 <div class="ratio-foot"><span class="muted">آخر 6 أشهر</span><Sparkline values="trend.map(x=&gt;x.has_data ? x.data.ratios[key] : null)" partial="trend.map(x=&gt;x.partial)" navy="true"/></div>
             </div>
         </div>
@@ -434,7 +433,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <t t-foreach="state.data.rows" t-as="row" t-key="row.key">
+                    <t t-foreach="state.data.rows.filter(r=&gt;hasDisplayValues([...r.months, r.total]))" t-as="row" t-key="row.key">
                         <tr t-att-class="row.key==='net_profit'?'net': ['gross_profit','operating_profit'].includes(row.key)?'highlight':'group'" t-on-click="()=&gt;this.toggleRow(row.key)">
                             <th>
                                 <span t-if="row.children.length">▾</span>
@@ -447,7 +446,7 @@
                             <td t-esc="tableFmt(row.total)"/>
                             <td><bdi dir="ltr" t-esc="tablePct(row.pct)"/></td>
                         </tr>
-                        <t t-if="!state.closed[row.key]"><tr t-foreach="row.children" t-as="child" t-key="child_index" class="account">
+                        <t t-if="!state.closed[row.key]"><tr t-foreach="row.children.filter(c=&gt;hasDisplayValues([...c.months, c.total]))" t-as="child" t-key="child_index" class="account">
                             <td>
                                 <span class="muted account-code" dir="ltr" t-esc="child.code"/>
                                 <t t-esc="child.code ? ' '+child.name : child.name"/>
@@ -469,6 +468,7 @@
                         <th>الاتجاه</th>
                         <th t-foreach="state.data.months" t-as="m" t-key="m.month" t-esc="monthName(m.month).split(' ')[0]"/>
                         <th class="highlight">المجموع</th>
+                        <th>٪ من الداخل</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -482,24 +482,27 @@
                             </td>
                             <td t-foreach="state.data.months" t-as="m" t-key="m.month" t-esc="group[0]==='incoming'?tableFmt(m.incoming.available ? m.incoming.gross : null):(!m.outgoing.available?'غير مُعد':tableFmt(-m.outgoing.total))"/>
                             <td t-esc="group[0]==='incoming'?tableFmt(state.data.total[group[0]]):(state.data.months.some(m=&gt;!m.outgoing.available)?'غير مُعد':tableFmt(-state.data.total[group[0]]))"/>
+                            <td><bdi dir="ltr" t-esc="tablePct(state.data.total.incoming and (group[0]==='incoming' or state.data.months.every(m=&gt;m.outgoing.available)) ? (group[0]==='incoming' ? state.data.total.incoming : -state.data.total.outgoing)/state.data.total.incoming*100 : null)"/></td>
                         </tr>
-                        <t t-foreach="Object.keys(state.data.total[group[2]])" t-as="key" t-key="key"><tr t-if="hasDisplayValues(state.data.months.map(m=&gt;m[group[0]][group[2]][key]))">
+                        <t t-foreach="Object.keys(state.data.total[group[2]])" t-as="key" t-key="key"><tr t-if="hasDisplayValues([...state.data.months.map(m=&gt;m[group[0]][group[2]][key]), state.data.total[group[2]][key]])">
                             <td t-esc="name(key)"/>
                             <td>
-                                <Sparkline values="state.data.months.map(m=&gt;m[group[0]][group[2]][key] ?? null)" partial="state.data.months.map(m=&gt;m.partial)"/>
+                                <Sparkline values="multiplePoints(state.data.months.map(m=&gt;m[group[0]][group[2]][key] ?? null))" partial="state.data.months.map(m=&gt;m.partial)"/>
                             </td>
                             <td t-foreach="state.data.months" t-as="m" t-key="m.month" t-esc="tableFmt(m[group[0]][group[2]][key] == null ? null : group[0]==='incoming' ? m[group[0]][group[2]][key] : -m[group[0]][group[2]][key])"/>
                             <td t-esc="tableFmt(group[0]==='incoming'?state.data.total[group[2]][key]:-state.data.total[group[2]][key])"/>
+                            <td><bdi dir="ltr" t-esc="tablePct(state.data.total.incoming ? (group[0]==='incoming' ? 1 : -1)*state.data.total[group[2]][key]/state.data.total.incoming*100 : null)"/></td>
                         </tr></t>
-                        <tr class="account unreceived-row" t-if="group[2]==='channels'">
+                        <tr class="account unreceived-row" t-if="group[2]==='channels' and hasDisplayValues([...state.data.months.map(m=&gt;m.incoming.apps_unreceived.available ? m.incoming.apps_unreceived.value : null), state.data.total.apps_unreceived.available ? state.data.total.apps_unreceived.value : null])">
                             <td>منها تطبيقات لم تُستلم بعد<small class="unreceived-reason" t-if="state.data.months.some(m=&gt;!m.incoming.apps_unreceived.available) or !state.data.total.apps_unreceived.available" t-esc="state.data.months.find(m=&gt;!m.incoming.apps_unreceived.available)?.incoming.apps_unreceived.label || state.data.total.apps_unreceived.label"/></td>
                             <td/>
                             <td t-foreach="state.data.months" t-as="m" t-key="m.month" t-att-title="!m.incoming.apps_unreceived.available ? m.incoming.apps_unreceived.label : false" t-esc="m.incoming.apps_unreceived.available ? tableFmt(m.incoming.apps_unreceived.value) : '—'"/>
                             <td t-att-title="!state.data.total.apps_unreceived.available ? state.data.total.apps_unreceived.label : false" t-esc="state.data.total.apps_unreceived.available ? tableFmt(state.data.total.apps_unreceived.value) : '—'"/>
+                            <td/>
                         </tr>
                         <t t-if="group[2]==='channels'">
                           <t t-foreach="state.data.total.apps_unreceived.breakdown" t-as="app" t-key="app.key">
-                            <tr class="account unreceived-app-row">
+                            <tr class="account unreceived-app-row" t-if="hasDisplayValues([...state.data.months.map(m=&gt;m.incoming.apps_unreceived.available ? m.incoming.apps_unreceived.breakdown.find(x=&gt;x.key===app.key)?.value : null), state.data.total.apps_unreceived.available ? app.value : null])">
                                 <td t-esc="app.name"/><td/>
                                 <td t-foreach="state.data.months" t-as="m" t-key="m.month" t-att-title="!m.incoming.apps_unreceived.available ? m.incoming.apps_unreceived.label : false">
                                     <t t-set="part" t-value="m.incoming.apps_unreceived.breakdown.find(x=&gt;x.key===app.key)"/>
@@ -507,20 +510,23 @@
                                 </td>
                                 <td t-att-title="!state.data.total.apps_unreceived.available ? state.data.total.apps_unreceived.label : false"><t t-esc="state.data.total.apps_unreceived.available ? tableFmt(app.value) : '—'"/>
                                 </td>
+                                <td/>
                             </tr>
                           </t>
                         </t>
-                        <tr class="account" t-if="group[2]==='channels'">
+                        <tr class="account" t-if="group[2]==='channels' and hasDisplayValues([...state.data.months.map(m=&gt;m.sales_vat.value), state.data.total.sales_vat])">
                             <td>منها ضريبة القيمة المضافة<small class="block muted">قد يختلف المبلغ عن ضريبة دفتر المبيعات بسبب تقريب نوركس؛ مثلاً فرق الشامي في أكتوبر 2026 هو 6.48 ر.س</small></td>
                             <td/>
                             <td t-foreach="state.data.months" t-as="m" t-key="m.month" t-esc="tableFmt(m.sales_vat.value)"/>
                             <td t-esc="tableFmt(state.data.total.sales_vat)"/>
+                            <td/>
                         </tr>
-                        <tr class="account" t-if="group[2]==='items' and hasDisplayValues(state.data.months.map(m=&gt;m.unpaid_bills.value))">
+                        <tr class="account" t-if="group[2]==='items' and hasDisplayValues([...state.data.months.map(m=&gt;m.unpaid_bills.value), state.data.total.unpaid_bills.value])">
                             <td>فواتير غير مسددة — نهاية الفترة</td>
                             <td/>
                             <td t-foreach="state.data.months" t-as="m" t-key="m.month" t-esc="tableFmt(m.unpaid_bills.value)"/>
                             <td t-esc="tableFmt(state.data.total.unpaid_bills.value)"/>
+                            <td/>
                         </tr>
                     </t>
                     <tr class="net">
@@ -530,6 +536,7 @@
                         </td>
                         <td t-foreach="state.data.months" t-as="m" t-key="m.month" t-esc="tableFmt(m.net)"/>
                         <td t-esc="tableFmt(state.data.total.net)"/>
+                        <td><bdi dir="ltr" t-esc="tablePct(state.data.total.incoming ? state.data.total.net/state.data.total.incoming*100 : null)"/></td>
                     </tr>
                 </tbody>
             </table>
@@ -540,6 +547,7 @@
             <div>
                 <small>معدل المبيعات اليومي — <t t-esc="monthName(state.period.month).split(' ')[0]"/></small>
                 <b t-esc="fmt(state.data.daily_average.current)"/>
+                <small class="block muted"><Badge value="changeValue(state.data.daily_average.current, state.data.daily_average.previous)"/> عن <t t-esc="months[(Number(state.period.month.slice(5))+10)%12]"/></small>
             </div>
             <div>
                 <small>معدل العملاء اليومي</small>
@@ -606,14 +614,14 @@
                     <tr>
                         <th t-esc="monthName(state.period.month).split(' ')[0]"/>
                         <td t-foreach="weekdays" t-as="wd" t-key="wd_index" t-att-class="state.data.weekday_month[(wd_index+5)%7]?.gross === Math.max(...state.data.weekday_month.map(x=&gt;x.gross || 0)) ? 'weekday-best' : ''">
-                            <b t-esc="fmt(state.data.weekday_month[(wd_index+5)%7]?.gross)"/><Track value="state.data.weekday_month[(wd_index+5)%7]?.gross || 0" max="Math.max(...state.data.weekday_month.map(x=&gt;x.gross || 0))" gold="true"/>
+                            <b t-esc="fmt(state.data.weekday_month[(wd_index+5)%7]?.gross)"/><Track value="state.data.weekday_month[(wd_index+5)%7]?.gross || 0" max="Math.max(...state.data.weekday_month.map(x=&gt;x.gross || 0))" gold="state.data.weekday_month[(wd_index+5)%7]?.gross != null and state.data.weekday_month[(wd_index+5)%7]?.gross === Math.max(...state.data.weekday_month.map(x=&gt;x.gross || 0))"/>
                             <small class="block">
                                 <t t-esc="fmt(state.data.weekday_month[(wd_index+5)%7]?.customers)"/> عميل</small>
                         </td>
                     </tr>
                     <tr>
                         <th>السنة <t t-esc="state.period.month.slice(0,4)"/></th>
-                        <td t-foreach="weekdays" t-as="wd" t-key="wd_index" t-att-class="state.data.weekday_ytd[(wd_index+5)%7]?.gross === Math.max(...state.data.weekday_ytd.map(x=&gt;x.gross || 0)) ? 'weekday-best' : ''"><b t-esc="fmt(state.data.weekday_ytd[(wd_index+5)%7]?.gross)"/><Track value="state.data.weekday_ytd[(wd_index+5)%7]?.gross || 0" max="Math.max(...state.data.weekday_ytd.map(x=&gt;x.gross || 0))" gold="true"/></td>
+                        <td t-foreach="weekdays" t-as="wd" t-key="wd_index" t-att-class="state.data.weekday_ytd[(wd_index+5)%7]?.gross === Math.max(...state.data.weekday_ytd.map(x=&gt;x.gross || 0)) ? 'weekday-best' : ''"><b t-esc="fmt(state.data.weekday_ytd[(wd_index+5)%7]?.gross)"/><Track value="state.data.weekday_ytd[(wd_index+5)%7]?.gross || 0" max="Math.max(...state.data.weekday_ytd.map(x=&gt;x.gross || 0))" gold="state.data.weekday_ytd[(wd_index+5)%7]?.gross != null and state.data.weekday_ytd[(wd_index+5)%7]?.gross === Math.max(...state.data.weekday_ytd.map(x=&gt;x.gross || 0))"/><small class="block"><t t-esc="fmt(state.data.weekday_ytd[(wd_index+5)%7]?.customers)"/> عميل</small></td>
                     </tr>
                 </tbody>
             </table>

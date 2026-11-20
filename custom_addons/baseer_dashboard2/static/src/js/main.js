@@ -99,9 +99,10 @@ export const niceStep = (range, count = 4) => {
 export const hourLabel = hour => `${hour % 12 || 12}${hour >= 12 ? 'م' : 'ص'}`;
 export const hasDisplayValues = (values) => (values || []).some(v => v != null && Number.isFinite(Number(v)) && Math.abs(Number(v)) >= 0.5);
 export const hasPoints = (values) => (values || []).some((v) => v != null && Number.isFinite(Number(v)));
+export const multiplePoints = (values) => (values || []).filter(v => v != null && Number.isFinite(Number(v))).length > 1 ? values : [];
 export class Sparkline extends Component {
   static template = "baseer_dashboard2.Sparkline";
-  static props = { values: { optional: true }, previous: { optional: true }, gold: { optional: true }, secondaryGold: { optional: true }, navy: { optional: true }, mini: { optional: true }, stretch: { optional: true }, ratioPercent: { optional: true }, partial: { optional: true } };
+  static props = { values: { optional: true }, previous: { optional: true }, gold: { optional: true }, secondaryGold: { optional: true }, navy: { optional: true }, mini: { optional: true }, stretch: { optional: true }, ratioPercent: { optional: true }, amountDecimal: { optional: true }, partial: { optional: true } };
   miniPoint(a, i, ratio = false) {
     const values = (a || []).filter(v => v != null).map(Number);
     if (!values.length || a[i] == null) return null;
@@ -114,7 +115,7 @@ export class Sparkline extends Component {
     (a || []).forEach((v, i) => { const p = this.miniPoint(a, i, ratio); if (p) points.push(p); else flush(); }); flush(); return segments.join(' ');
   }
   endpoints(a) { const indices = (a || []).map((v, i) => v == null ? -1 : i).filter(i => i >= 0); return indices.length > 1 ? [indices[0], indices[indices.length - 1]] : indices; }
-  short(v, ratio = false) { return ratio ? (Number(v) < 0 ? "−" : "") + (Math.round((Math.abs(Number(v)) + Number.EPSILON * 100) * 10) / 10).toFixed(1) : Math.abs(v) >= 1000 ? `${Math.round(v / 1000)}K` : `${Math.round(v)}`; }
+  short(v, ratio = false, decimal = false) { return ratio ? (Number(v) < 0 ? "−" : "") + (Math.round((Math.abs(Number(v)) + Number.EPSILON * 100) * 10) / 10).toFixed(1) : Math.abs(v) >= 1000 ? `${decimal ? (v / 1000).toFixed(1) : Math.round(v / 1000)}K` : `${Math.round(v)}`; }
   endpoint(a) {
     const i = (a || []).findLastIndex(v => v != null);
     if (i < 0) return null;
@@ -132,20 +133,30 @@ export class Sparkline extends Component {
 }
 export class LineChart extends Component {
   static template = "baseer_dashboard2.LineChart";
-  static props = { series: Array, labels: { optional: true }, percent: { optional: true }, compactTop: { optional: true } };
+  static props = { series: Array, labels: { optional: true }, percent: { optional: true }, compactTop: { optional: true }, fiveTicks: { optional: true } };
   chartX = chartX;
   get renderedSeries() { return this.props.series.filter((s) => hasPoints(s.values)); }
   get scale() {
     const values = this.renderedSeries.flatMap((s) => s.values.filter((v) => v != null).map(Number));
     const low = Math.min(0, ...values), high = Math.max(0, ...values);
     const step = niceStep(high - low);
-    return { min: Math.floor(low / step) * step, max: Math.max(step, Math.ceil(high / step) * step), step };
+    const min = Math.floor(low / step) * step;
+    return { min, max: Math.max(this.props.fiveTicks ? min + 4 * step : step, Math.ceil(high / step) * step), step };
   }
   get ticks() {
     const { min, max, step } = this.scale;
     return Array.from({ length: Math.round((max - min) / step) + 1 }, (_, i) => min + i * step);
   }
   y(v) { const {min, max} = this.scale; return 205 - (Number(v) - min) / (max - min) * 165; }
+  labelY(series, value) {
+    let position = this.y(value) - 8;
+    for (const previous of this.renderedSeries.slice(0, this.renderedSeries.indexOf(series))) {
+      if (!(previous.firstLabel || previous.endpoint)) continue;
+      const last = previous.values.findLast(v => v != null);
+      if (last != null && Math.abs(position - (this.y(last) - 8)) < 12) position += 14;
+    }
+    return Math.max(12, Math.min(200, position));
+  }
   area(values) {
     const baseline = this.y(0); let segments = [], points = [];
     const flush = () => { if (points.length) segments.push(`M${points[0][0]},${baseline} ` + points.map(([x,y]) => `L${x},${y}`).join(" ") + ` L${points.at(-1)[0]},${baseline} Z`); points = []; };
@@ -164,7 +175,7 @@ class Money extends Component {
   static props = { value: { optional: true } };
   format = formatNumber;
 }
-class Badge extends Component {
+export class Badge extends Component {
   formatPercent = formatPercent;
   static template = "baseer_dashboard2.Badge";
   static props = { value: { optional: true }, goodWhen: { optional: true }, warning: { optional: true } };
@@ -206,6 +217,7 @@ class Gauge extends Component {
     target: { optional: true },
     previous: { optional: true },
     max: { optional: true },
+    operator: { optional: true },
   };
   // Value, target, and previous period share the displayed gauge scale.
   pos(v) {
@@ -222,11 +234,13 @@ export class KpiCard extends Component {
   static template = "baseer_dashboard2.KpiCard";
   iconPath = iconPath;
   formatPercent = formatPercent;
+  formatNumber = formatNumber;
   static components = { Money, Badge, Sparkline };
   static props = {
     title: String,
     subtitle: { optional: true },
     subtitlePercent: { optional: true },
+    unit: { optional: true },
     icon: { optional: true },
     value: { optional: true },
     change: { optional: true },
@@ -525,6 +539,7 @@ class Dashboard2 extends Component {
   peakAverage(values) { return (values.reduce((sum, value) => sum + value, 0) / values.length).toFixed(1); }
   operatingExpense = (d) => this.totalExpense(d) - (d?.categories?.zakat_tax || 0);
   changeValue(value, previous) { return previous && value != null ? (value - previous) / Math.abs(previous) * 100 : null; }
+  multiplePoints = multiplePoints;
   iconPath = iconPath;
   totalExpense(d) {
     return Object.entries(d?.categories || {})

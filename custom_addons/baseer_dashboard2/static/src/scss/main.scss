@@ -463,6 +463,8 @@ td {
   border: 2px solid var(--bd2-faint);
   background: var(--bd2-card);
   border-radius: 50%;
+  transform: translateX(50%);
+  right: clamp(5px, var(--bd2-previous-position), calc(100% - 5px));
 }
 .target-input {
   width: 52px;

@@ -294,6 +294,18 @@ class TestDashboard2(TransactionCase):
         self.assertTrue(october['purchases']['trend'][-1]['partial'])
         self.assertEqual(october['breakeven_series'][-1]['partial'], october['trend'][-1]['partial'])
         self.assertEqual(october['bridge'][-1]['pct'], october['current']['ratios']['net_margin_pct'])
+        # Commission amounts below 1% of sales merge into other expenses;
+        # at exactly 1% they retain their own row.
+        commission = account('400051', 'expense')
+        entry('small commission', '2026-10-08', [(commission, 'fee', 9, 0), (cash, 'paid', 0, 9)])
+        small_bridge = service.get_section('overview', params)['bridge']
+        self.assertNotIn('commissions', [row['key'] for row in small_bridge])
+        self.assertAlmostEqual(next(row['amount'] for row in small_bridge if row['key'] == 'other_opex'), -1259.18)
+        entry('commission threshold', '2026-10-09', [(commission, 'fee', 1, 0), (cash, 'paid', 0, 1)])
+        threshold_bridge = service.get_section('overview', params)['bridge']
+        self.assertEqual(next(row['amount'] for row in threshold_bridge if row['key'] == 'commissions'), -10)
+        self.assertAlmostEqual(next(row['amount'] for row in threshold_bridge if row['key'] == 'other_opex'), -1250.18)
+        self.assertEqual(service.get_section('heatmap', params)['period'], {'date_from': '2026-10-01', 'date_to': '2026-10-31'})
         # Customer chart values and month labels share chronological trend order.
         revenue_trend = service.get_section('revenue', params)['trend']
         self.assertEqual([m['month'] for m in revenue_trend], sorted(m['month'] for m in revenue_trend))

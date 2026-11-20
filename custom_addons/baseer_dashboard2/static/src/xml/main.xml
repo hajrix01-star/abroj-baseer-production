@@ -18,8 +18,8 @@
                 <path t-att-d="miniPath(props.values, false, true)" fill="var(--bd2-c1)" fill-opacity="0.09"/>
                 <path t-att-d="miniPath(props.values)" fill="none" stroke="var(--bd2-c1)" stroke-width="2" vector-effect="non-scaling-stroke"/>
                 <path t-att-d="miniPath(props.previous, true)" fill="none" stroke="var(--bd2-gold)" stroke-width="2" vector-effect="non-scaling-stroke"/>
-                <t t-if="!props.stretch" t-foreach="endpoints(props.values)" t-as="i" t-key="i"><circle t-att-cx="miniPoint(props.values,i).x" t-att-cy="miniPoint(props.values,i).y" r="1.3" t-att-fill="i === endpoints(props.values).at(-1) ? 'var(--bd2-c1)' : 'var(--bd2-card)'" stroke="var(--bd2-c1)" stroke-width="0.5"/><text t-if="i === endpoints(props.values).at(-1)" font-weight="700" t-att-x="miniPoint(props.values,i).x" t-att-y="miniPoint(props.values,i).y-2" text-anchor="middle" fill="var(--bd2-c1)" font-size="2.4" t-esc="short(props.values[i], false, props.amountDecimal)"/></t>
-                <t t-if="!props.stretch" t-foreach="endpoints(props.previous)" t-as="i" t-key="i"><circle t-att-cx="miniPoint(props.previous,i,true).x" t-att-cy="miniPoint(props.previous,i,true).y" r="1.3" t-att-fill="i === endpoints(props.previous).at(-1) ? 'var(--bd2-gold)' : 'var(--bd2-card)'" stroke="var(--bd2-gold)" stroke-width="0.5"/><text t-if="i === endpoints(props.previous).at(-1)" font-weight="700" t-att-x="miniPoint(props.previous,i,true).x" t-att-y="miniPoint(props.previous,i,true).y-2" text-anchor="middle" fill="var(--bd2-gold-text)" font-size="2.4" t-esc="short(props.previous[i], props.ratioPercent) + (props.ratioPercent ? '%' : '')"/></t>
+                <t t-foreach="endpoints(props.values)" t-as="i" t-key="i"><circle t-att-cx="miniPoint(props.values,i).x" t-att-cy="miniPoint(props.values,i).y" r="1.3" t-att-fill="i === endpoints(props.values).at(-1) ? 'var(--bd2-c1)' : 'var(--bd2-card)'" stroke="var(--bd2-c1)" stroke-width="0.5"/><text t-if="!props.stretch and i === endpoints(props.values).at(-1)" font-weight="700" t-att-x="miniPoint(props.values,i).x" t-att-y="miniPoint(props.values,i).y-2" text-anchor="middle" fill="var(--bd2-c1)" font-size="2.4" t-esc="short(props.values[i], false, props.amountDecimal)"/></t>
+                <t t-foreach="endpoints(props.previous)" t-as="i" t-key="i"><circle t-att-cx="miniPoint(props.previous,i,true).x" t-att-cy="miniPoint(props.previous,i,true).y" r="1.3" t-att-fill="i === endpoints(props.previous).at(-1) ? 'var(--bd2-gold)' : 'var(--bd2-card)'" stroke="var(--bd2-gold)" stroke-width="0.5"/><text t-if="!props.stretch and i === endpoints(props.previous).at(-1)" font-weight="700" t-att-x="miniPoint(props.previous,i,true).x" t-att-y="miniPoint(props.previous,i,true).y-2" text-anchor="middle" fill="var(--bd2-gold-text)" font-size="2.4" t-esc="short(props.previous[i], props.ratioPercent) + (props.ratioPercent ? '%' : '')"/></t>
             </t>
             <t t-else="">
             <path t-att-d="path(props.values)" fill="none" t-att-stroke="props.gold ? 'var(--bd2-gold)' : props.navy ? 'var(--bd2-c1)' : 'var(--bd2-c5)'" stroke-width="2"/>
@@ -29,7 +29,7 @@
             <path t-if="props.previous" t-att-d="path(props.previous)" fill="none" t-att-stroke="props.secondaryGold ? 'var(--bd2-gold)' : 'var(--bd2-faint)'" stroke-width="1.5" t-att-stroke-dasharray="props.secondaryGold ? '' : '4 3'"/>
             </t>
         </svg>
-        <t t-if="props.mini and props.stretch"><t t-foreach="endpoints(props.values)" t-as="i" t-key="i"><span class="spark-dot navy" t-att-class="i === endpoints(props.values).at(-1) ? 'spark-dot navy filled' : 'spark-dot navy'" t-att-style="'left:'+miniPoint(props.values,i).x+'%;top:'+(miniPoint(props.values,i).y/32*100)+'%'"/><span t-if="i === endpoints(props.values).at(-1)" class="spark-label navy" t-att-style="miniLabelStyle(props.values,i)" t-esc="short(props.values[i], false, props.amountDecimal)"/></t><t t-foreach="endpoints(props.previous)" t-as="i" t-key="i"><span class="spark-dot gold" t-att-class="i === endpoints(props.previous).at(-1) ? 'spark-dot gold filled' : 'spark-dot gold'" t-att-style="'left:'+miniPoint(props.previous,i,true).x+'%;top:'+(miniPoint(props.previous,i,true).y/32*100)+'%'"/><span t-if="i === endpoints(props.previous).at(-1)" class="spark-label gold" t-att-style="miniLabelStyle(props.previous,i,true)" t-esc="short(props.previous[i], props.ratioPercent) + (props.ratioPercent ? '%' : '')"/></t></t></div>
+        <t t-if="props.mini and props.stretch"><t t-foreach="endpoints(props.values)" t-as="i" t-key="i"><span t-if="i === endpoints(props.values).at(-1)" class="spark-label navy" t-att-style="miniLabelStyle(props.values,i)" t-esc="short(props.values[i], false, props.amountDecimal)"/></t><t t-foreach="endpoints(props.previous)" t-as="i" t-key="i"><span t-if="i === endpoints(props.previous).at(-1)" class="spark-label gold" t-att-style="miniLabelStyle(props.previous,i,true)" t-esc="short(props.previous[i], props.ratioPercent) + (props.ratioPercent ? '%' : '')"/></t></t></div>
     </t>
     <t t-name="baseer_dashboard2.LineChart">
         <div>
@@ -79,7 +79,7 @@
         <div class="bd2-gauge">
             <i t-att-style="'width:'+pos(props.value)+'%'"/>
             <b t-if="props.target != null" t-att-style="'right:'+pos(props.target)+'%'"><span class="gauge-target">المستهدف <bdi dir="ltr" t-esc="targetLabel()"/></span></b>
-            <em t-if="props.previous != null" t-att-style="'right:'+pos(props.previous)+'%'"/>
+            <em t-if="props.previous != null" t-att-style="'--bd2-previous-position:'+pos(props.previous)+'%'"/>
         </div>
     </t>
     <t t-name="baseer_dashboard2.KpiCard">
@@ -670,7 +670,7 @@
                 </table>
             </div>
             <div class="card">
-                <h3>أوقات الذروة — اليوم × الساعة</h3><div class="muted">عدد الطلبات · الفترة</div>
+                <h3>أوقات الذروة — اليوم × الساعة</h3><div class="muted">عدد الطلبات · <t t-esc="periodRange(state.data.period)"/></div>
                 <div t-if="!state.data.hours.available" class="customer-empty">غير متوفر — يتوفر من بيانات نقاط البيع فقط</div>
                 <div t-else="" class="hours-scroll"><table class="hours-table">
                     <thead><tr><th>اليوم</th><th t-foreach="peakHours" t-as="hour" t-key="hour" t-esc="hourLabel(hour)"/><th>المتوسط</th></tr></thead>

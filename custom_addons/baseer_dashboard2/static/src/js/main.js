@@ -102,6 +102,12 @@ export const niceStep = (range, count = 4) => {
   const power = 10 ** Math.floor(Math.log10(raw));
   return ([1, 2, 2.5, 5, 10].find((n) => n * power >= raw) || 10) * power;
 };
+export const periodRange = (period) => {
+  if (!period?.date_from || !period?.date_to) return "—";
+  const [fromYear, fromMonth, fromDay] = period.date_from.split("-");
+  const [toYear, toMonth, toDay] = period.date_to.split("-");
+  return `${Number(fromDay)}/${Number(fromMonth)}${fromYear !== toYear ? `/${fromYear}` : ""} – ${Number(toDay)}/${Number(toMonth)}/${toYear}`;
+};
 export const hourLabel = hour => `${hour % 12 || 12}${hour >= 12 ? 'م' : 'ص'}`;
 export const hasDisplayValues = (values) => (values || []).some(v => v != null && Number.isFinite(Number(v)) && Math.abs(Number(v)) >= 0.5);
 export const hasPoints = (values) => (values || []).some((v) => v != null && Number.isFinite(Number(v)));
@@ -159,13 +165,17 @@ export class LineChart extends Component {
   }
   y(v) { const {min, max} = this.scale; return 205 - (Number(v) - min) / (max - min) * 165; }
   labelY(series, value) {
-    let position = this.y(value) - 8;
-    for (const previous of this.renderedSeries.slice(0, this.renderedSeries.indexOf(series))) {
-      if (!(previous.firstLabel || previous.endpoint)) continue;
-      const last = previous.values.findLast(v => v != null);
-      if (last != null && Math.abs(position - (this.y(last) - 8)) < 12) position += 14;
+    const entries = this.renderedSeries.filter(s => s.firstLabel || s.endpoint)
+      .map(s => ({ series: s, value: s.values.findLast(v => v != null) }))
+      .filter(entry => entry.value != null)
+      .map(entry => ({ ...entry, y: Math.max(12, Math.min(200, this.y(entry.value) - 8)) }))
+      .sort((a, b) => a.y - b.y);
+    for (let i = 1; i < entries.length; i++) entries[i].y = Math.max(entries[i].y, entries[i - 1].y + 12);
+    if (entries.length && entries.at(-1).y > 200) {
+      entries.at(-1).y = 200;
+      for (let i = entries.length - 2; i >= 0; i--) entries[i].y = Math.min(entries[i].y, entries[i + 1].y - 12);
     }
-    return Math.max(12, Math.min(200, position));
+    return entries.find(entry => entry.series === series)?.y ?? this.y(value) - 8;
   }
   area(values) {
     const baseline = this.y(0); let segments = [], points = [];
@@ -445,6 +455,7 @@ class Dashboard2 extends Component {
   selectMonth(index) { this.periodChange("month", this.state.period.month.slice(0, 4) + "-" + String(index + 1).padStart(2, "0")); }
   fmt = formatNumber;
   tableFmt = formatTable;
+  periodRange = periodRange;
   dateName(d) {
     if (!d) return "—";
     const [, month, day] = d.split("-");

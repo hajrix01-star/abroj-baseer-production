@@ -177,7 +177,13 @@ class DashboardSections(models.AbstractModel):
                                        'previous_trend': [None] + [value(m['data'], key) if m['has_data'] else None for m in trend[:-1]], 'good_when': 'down' if key in expense_keys or key == 'expenses_total' else 'up'}
             bridge = [('sales_net', current['sales_net']), ('food_cost', -current['categories'].get('food_cost', 0)), ('gross_profit', current['gross_profit']),
                       ('salaries', -current['categories'].get('salaries', 0)), ('rent', -current['categories'].get('rent', 0))]
-            bridge += [(k, -(current['categories'].get(k, 0) + (current['categories'].get('non_operating', 0) if k == 'other_opex' else 0))) for k in ('utilities', 'marketing', 'commissions', 'other_opex', 'depreciation')]
+            commission = current['categories'].get('commissions', 0)
+            # Keep small commission balances in other expenses instead of a stray row.
+            small_commission = commission if abs(commission) < abs(current['sales_net']) * 0.01 else 0
+            bridge += [(k, -(current['categories'].get(k, 0)
+                             + (current['categories'].get('non_operating', 0) + small_commission if k == 'other_opex' else 0)
+                             - (small_commission if k == 'commissions' else 0)))
+                       for k in ('utilities', 'marketing', 'commissions', 'other_opex', 'depreciation')]
             bridge += [('operating_profit', current['operating_profit']), ('other_income', current['categories'].get('other_income', 0)), ('zakat_tax', -current['categories'].get('zakat_tax', 0)), ('net_profit', current['net_profit'])]
             result['bridge'] = [{'key': key, 'amount': amount, 'pct': percent(amount, current['sales_net'])} for key, amount in bridge if amount or key in ('sales_net', 'gross_profit', 'operating_profit', 'net_profit')]
             result['breakeven_series'] = [{'month': m['month'], 'partial': m['partial'], 'sales_net': m['data']['sales_net'] if m['has_data'] else None, 'net_profit': m['data']['net_profit'] if m['has_data'] else None, 'breakeven': m['data']['breakeven'] if m['has_data'] else None, 'margin_pct': m['data']['ratios']['net_margin_pct'] if m['has_data'] else None} for m in trend]
@@ -415,7 +421,7 @@ class DashboardSections(models.AbstractModel):
             year_calendar.append({'month': mfirst.strftime('%Y-%m'), 'days': [day_values(d, year_days) for d in dates(mfirst, mlast)]})
         current_summary, _, _, hours = self._sales_summary(ids, first, last)
         matrix = [{'weekday': wd, 'hour': hour, 'orders': hours[(wd, hour)]['orders'] if (wd, hour) in hours else None, 'gross': round(hours[(wd, hour)]['gross'], 2) if (wd, hour) in hours else None} for wd in range(7) for hour in range(24)]
-        return {'available': True, 'days': days, 'events': events, 'weekday_month': averages(first, last),
+        return {'available': True, 'period': {'date_from': str(first), 'date_to': str(last)}, 'days': days, 'events': events, 'weekday_month': averages(first, last),
                 'weekday_ytd': averages(year_start, last), 'year_calendar': year_calendar,
                 'daily_average': {'current': round(current_summary['gross'] / len([d for d in days if d['gross'] is not None]), 2) if any(d['gross'] is not None for d in days) else None, 'previous': round(previous['gross'] / len({d for (_, d), row in prev_days.items() if not row.get('sales_missing')}), 2) if any(not row.get('sales_missing') for row in prev_days.values()) else None},
                 'best_day': max((d for d in days if d['gross'] is not None), key=lambda d: d['gross'], default=None),

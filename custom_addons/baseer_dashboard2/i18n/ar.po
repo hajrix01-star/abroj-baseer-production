@@ -1,0 +1,563 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* baseer_dashboard2
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 19.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-11-20 09:24+0000\n"
+"PO-Revision-Date: 2026-11-20 09:24+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: ar\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5;\n"
+
+#. module: baseer_dashboard2
+#: model:ir.model.fields,field_description:baseer_dashboard2.field_baseer_dashboard2_category__account_code_prefixes
+msgid "Account Code Prefixes"
+msgstr "بادئات رموز الحسابات"
+
+#. module: baseer_dashboard2
+#: model:ir.model.fields,field_description:baseer_dashboard2.field_baseer_dashboard2_category__account_type_fallback
+msgid "Account Type Fallback"
+msgstr "نوع الحساب البديل"
+
+#. module: baseer_dashboard2
+#: model:ir.model.fields,field_description:baseer_dashboard2.field_baseer_dashboard2_category__active
+#: model:ir.model.fields,field_description:baseer_dashboard2.field_baseer_dashboard2_channel__active
+#: model:ir.model.fields,field_description:baseer_dashboard2.field_baseer_dashboard2_event__active
+msgid "Active"
+msgstr "نشط"
+
+#. module: baseer_dashboard2
+#: model:ir.model.fields.selection,name:baseer_dashboard2.selection__baseer_dashboard2_channel__kind__app
+msgid "App"
+msgstr "تطبيق"
+
+#. module: baseer_dashboard2
+#: model:ir.model.fields,field_description:baseer_dashboard2.field_baseer_dashboard2_category__code
+msgid "Code"
+msgstr "الرمز"
+
+#. module: baseer_dashboard2
+#: model:ir.model.fields,field_description:baseer_dashboard2.field_baseer_dashboard2_category__color_token
+#: model:ir.model.fields,field_description:baseer_dashboard2.field_baseer_dashboard2_channel__color_token
+#: model:ir.model.fields,field_description:baseer_dashboard2.field_baseer_dashboard2_event__color_token
+msgid "Color Token"
+msgstr "رمز اللون"
+
+#. module: baseer_dashboard2
+#: model:ir.model.fields,field_description:baseer_dashboard2.field_baseer_dashboard2_channel__commission_rate
+msgid "Commission Rate"
+msgstr "نسبة العمولة"
+
+#. module: baseer_dashboard2
+#: model:ir.model.fields,field_description:baseer_dashboard2.field_baseer_dashboard2_event__company_ids
+#: model:ir.model.fields,field_description:baseer_dashboard2.field_baseer_dashboard2_settings__company_id
+#: model:ir.model.fields,field_description:baseer_dashboard2.field_baseer_dashboard2_target__company_id
+msgid "Company"
+msgstr "الشركة"
+
+#. module: baseer_dashboard2
+#: model:ir.model.fields,field_description:baseer_dashboard2.field_baseer_dashboard2_category__create_uid
+#: model:ir.model.fields,field_description:baseer_dashboard2.field_baseer_dashboard2_channel__create_uid
+#: model:ir.model.fields,field_description:baseer_dashboard2.field_baseer_dashboard2_event__create_uid
+#: model:ir.model.fields,field_description:baseer_dashboard2.field_baseer_dashboard2_settings__create_uid
+#: model:ir.model.fields,field_description:baseer_dashboard2.field_baseer_dashboard2_target__create_uid
+msgid "Created by"
+msgstr "أنشئ بواسطة"
+
+#. module: baseer_dashboard2
+#: model:ir.model.fields,field_description:baseer_dashboard2.field_baseer_dashboard2_category__create_date
+#: model:ir.model.fields,field_description:baseer_dashboard2.field_baseer_dashboard2_channel__create_date
+#: model:ir.model.fields,field_description:baseer_dashboard2.field_baseer_dashboard2_event__create_date
+#: model:ir.model.fields,field_description:baseer_dashboard2.field_baseer_dashboard2_settings__create_date
+#: model:ir.model.fields,field_description:baseer_dashboard2.field_baseer_dashboard2_target__create_date
+msgid "Created on"
+msgstr "تاريخ الإنشاء"
+
+#. module: baseer_dashboard2
+#: model:ir.model.fields,field_description:baseer_dashboard2.field_baseer_dashboard2_settings__custody_journal_ids
+msgid "Custody Journal"
+msgstr "يوميات العهدة"
+
+#. module: baseer_dashboard2
+#: model:ir.actions.client,name:baseer_dashboard2.action_dashboard
+#: model:ir.ui.menu,name:baseer_dashboard2.menu_dashboard
+msgid "Dashboard 2"
+msgstr "Dashboard 2"
+
+#. module: baseer_dashboard2
+#: model:ir.model,name:baseer_dashboard2.model_baseer_dashboard2_category
+msgid "Dashboard category"
+msgstr "فئة لوحة المعلومات"
+
+#. module: baseer_dashboard2
+#: model:ir.model,name:baseer_dashboard2.model_baseer_dashboard2_channel
+msgid "Dashboard channel"
+msgstr "قناة لوحة المعلومات"
+
+#. module: baseer_dashboard2
+#: model:ir.model,name:baseer_dashboard2.model_baseer_dashboard2_settings
+msgid "Dashboard company settings"
+msgstr "إعدادات لوحة المعلومات للشركة"
+
+#. module: baseer_dashboard2
+#: model:ir.model,name:baseer_dashboard2.model_baseer_dashboard2_service
+msgid "Dashboard data service"
+msgstr "خدمة بيانات لوحة المعلومات"
+
+#. module: baseer_dashboard2
+#: model:ir.model,name:baseer_dashboard2.model_baseer_dashboard2_event
+msgid "Dashboard event"
+msgstr "مناسبة لوحة المعلومات"
+
+#. module: baseer_dashboard2
+#: model:ir.model,name:baseer_dashboard2.model_baseer_dashboard2_target
+msgid "Dashboard target"
+msgstr "مستهدف لوحة المعلومات"
+
+#. module: baseer_dashboard2
+#: model:ir.model.fields,field_description:baseer_dashboard2.field_baseer_dashboard2_event__date_from
+msgid "Date From"
+msgstr "من تاريخ"
+
+#. module: baseer_dashboard2
+#: model:ir.model.fields,field_description:baseer_dashboard2.field_baseer_dashboard2_event__date_to
+msgid "Date To"
+msgstr "إلى تاريخ"
+
+#. module: baseer_dashboard2
+#: model:ir.model.fields,field_description:baseer_dashboard2.field_baseer_dashboard2_category__display_name
+#: model:ir.model.fields,field_description:baseer_dashboard2.field_baseer_dashboard2_channel__display_name
+#: model:ir.model.fields,field_description:baseer_dashboard2.field_baseer_dashboard2_event__display_name
+#: model:ir.model.fields,field_description:baseer_dashboard2.field_baseer_dashboard2_service__display_name
+#: model:ir.model.fields,field_description:baseer_dashboard2.field_baseer_dashboard2_settings__display_name
+#: model:ir.model.fields,field_description:baseer_dashboard2.field_baseer_dashboard2_target__display_name
+msgid "Display Name"
+msgstr "الاسم المعروض"
+
+#. module: baseer_dashboard2
+#: model:ir.model.fields.selection,name:baseer_dashboard2.selection__baseer_dashboard2_channel__kind__hall
+msgid "Hall"
+msgstr "الصالة"
+
+#. module: baseer_dashboard2
+#: model:ir.model.fields,field_description:baseer_dashboard2.field_baseer_dashboard2_category__id
+#: model:ir.model.fields,field_description:baseer_dashboard2.field_baseer_dashboard2_channel__id
+#: model:ir.model.fields,field_description:baseer_dashboard2.field_baseer_dashboard2_event__id
+#: model:ir.model.fields,field_description:baseer_dashboard2.field_baseer_dashboard2_service__id
+#: model:ir.model.fields,field_description:baseer_dashboard2.field_baseer_dashboard2_settings__id
+#: model:ir.model.fields,field_description:baseer_dashboard2.field_baseer_dashboard2_target__id
+msgid "ID"
+msgstr "المعرّف"
+
+#. module: baseer_dashboard2
+#. odoo-python
+#: code:addons/baseer_dashboard2/models/service.py:0
+msgid "Invalid dashboard period."
+msgstr "فترة لوحة المعلومات غير صالحة."
+
+#. module: baseer_dashboard2
+#. odoo-python
+#: code:addons/baseer_dashboard2/models/sections.py:0
+msgid "Invalid heatmap month."
+msgstr "شهر التقويم الحراري غير صالح."
+
+#. module: baseer_dashboard2
+#. odoo-python
+#: code:addons/baseer_dashboard2/models/service.py:0
+msgid "Invalid target value."
+msgstr "قيمة المستهدف غير صالحة."
+
+#. module: baseer_dashboard2
+#. odoo-python
+#: code:addons/baseer_dashboard2/models/sections.py:0
+msgid "Invalid timeline mode."
+msgstr "وضع المسار الزمني غير صالح."
+
+#. module: baseer_dashboard2
+#: model:ir.model.fields,field_description:baseer_dashboard2.field_baseer_dashboard2_channel__key
+#: model:ir.model.fields,field_description:baseer_dashboard2.field_baseer_dashboard2_target__key
+msgid "Key"
+msgstr "المفتاح"
+
+#. module: baseer_dashboard2
+#: model:ir.model.fields,field_description:baseer_dashboard2.field_baseer_dashboard2_channel__kind
+#: model:ir.model.fields,field_description:baseer_dashboard2.field_baseer_dashboard2_event__kind
+msgid "Kind"
+msgstr "النوع"
+
+#. module: baseer_dashboard2
+#: model:ir.model.fields,field_description:baseer_dashboard2.field_baseer_dashboard2_category__write_uid
+#: model:ir.model.fields,field_description:baseer_dashboard2.field_baseer_dashboard2_channel__write_uid
+#: model:ir.model.fields,field_description:baseer_dashboard2.field_baseer_dashboard2_event__write_uid
+#: model:ir.model.fields,field_description:baseer_dashboard2.field_baseer_dashboard2_settings__write_uid
+#: model:ir.model.fields,field_description:baseer_dashboard2.field_baseer_dashboard2_target__write_uid
+msgid "Last Updated by"
+msgstr "آخر تحديث بواسطة"
+
+#. module: baseer_dashboard2
+#: model:ir.model.fields,field_description:baseer_dashboard2.field_baseer_dashboard2_category__write_date
+#: model:ir.model.fields,field_description:baseer_dashboard2.field_baseer_dashboard2_channel__write_date
+#: model:ir.model.fields,field_description:baseer_dashboard2.field_baseer_dashboard2_event__write_date
+#: model:ir.model.fields,field_description:baseer_dashboard2.field_baseer_dashboard2_settings__write_date
+#: model:ir.model.fields,field_description:baseer_dashboard2.field_baseer_dashboard2_target__write_date
+msgid "Last Updated on"
+msgstr "تاريخ آخر تحديث"
+
+#. module: baseer_dashboard2
+#: model:ir.model.fields,field_description:baseer_dashboard2.field_baseer_dashboard2_channel__line_keywords
+msgid "Line Keywords"
+msgstr "كلمات وصف السطر"
+
+#. module: baseer_dashboard2
+#: model:ir.model.fields,field_description:baseer_dashboard2.field_baseer_dashboard2_category__name
+#: model:ir.model.fields,field_description:baseer_dashboard2.field_baseer_dashboard2_channel__name
+#: model:ir.model.fields,field_description:baseer_dashboard2.field_baseer_dashboard2_event__name
+msgid "Name"
+msgstr "الاسم"
+
+#. module: baseer_dashboard2
+#: model:ir.model.fields,field_description:baseer_dashboard2.field_baseer_dashboard2_event__note
+msgid "Note"
+msgstr "ملاحظة"
+
+#. module: baseer_dashboard2
+#. odoo-python
+#: code:addons/baseer_dashboard2/models/service.py:0
+msgid "Only accounting managers can edit targets."
+msgstr "يستطيع مديرو المحاسبة فقط تعديل المستهدفات."
+
+#. module: baseer_dashboard2
+#: model:ir.model.constraint,message:baseer_dashboard2.constraint_baseer_dashboard2_settings_company_unique
+msgid "Only one settings record is allowed per company."
+msgstr "يسمح بسجل إعدادات واحد لكل شركة."
+
+#. module: baseer_dashboard2
+#: model:ir.model.fields,field_description:baseer_dashboard2.field_baseer_dashboard2_target__operator
+msgid "Operator"
+msgstr "المقارنة"
+
+#. module: baseer_dashboard2
+#: model:ir.model.fields,field_description:baseer_dashboard2.field_baseer_dashboard2_settings__outflow_journal_ids
+msgid "Outflow Journal"
+msgstr "يوميات الخارج"
+
+#. module: baseer_dashboard2
+#: model:ir.model.fields,field_description:baseer_dashboard2.field_baseer_dashboard2_settings__pos_cutover_note
+msgid "Pos Cutover Note"
+msgstr "ملاحظة بدء نقاط البيع"
+
+#. module: baseer_dashboard2
+#: model:ir.model.fields,field_description:baseer_dashboard2.field_baseer_dashboard2_channel__pos_method_keywords
+msgid "Pos Method Keywords"
+msgstr "كلمات طرق الدفع"
+
+#. module: baseer_dashboard2
+#: model:ir.model.fields,field_description:baseer_dashboard2.field_baseer_dashboard2_category__sequence
+#: model:ir.model.fields,field_description:baseer_dashboard2.field_baseer_dashboard2_channel__sequence
+msgid "Sequence"
+msgstr "الترتيب"
+
+#. module: baseer_dashboard2
+#: model:ir.model.fields,field_description:baseer_dashboard2.field_baseer_dashboard2_settings__show_vat_paid_line
+msgid "Show Vat Paid Line"
+msgstr "إظهار ضريبة القيمة المضافة المسددة"
+
+#. module: baseer_dashboard2
+#. odoo-python
+#: code:addons/baseer_dashboard2/models/configuration.py:0
+msgid "The end date must not precede the start date."
+msgstr "يجب ألا يسبق تاريخ النهاية تاريخ البداية."
+
+#. module: baseer_dashboard2
+#. odoo-python
+#: code:addons/baseer_dashboard2/models/service.py:0
+msgid "The selected company is not available."
+msgstr "الشركة المحددة غير متاحة."
+
+#. module: baseer_dashboard2
+#. odoo-python
+#: code:addons/baseer_dashboard2/models/sources_sales.py:0
+msgid "The selected period contains more than 200,000 Noorix entries."
+msgstr "تحتوي الفترة المحددة على أكثر من ٢٠٠٬٠٠٠ قيد نوركس."
+
+#. module: baseer_dashboard2
+#. odoo-python
+#: code:addons/baseer_dashboard2/models/sources_sales.py:0
+msgid "The selected period contains more than 200,000 Noorix lines."
+msgstr "تحتوي الفترة المحددة على أكثر من ٢٠٠٬٠٠٠ سطر نوركس."
+
+#. module: baseer_dashboard2
+#. odoo-python
+#: code:addons/baseer_dashboard2/models/sources_sales.py:0
+msgid "The selected period contains more than 200,000 POS orders."
+msgstr "تحتوي الفترة المحددة على أكثر من ٢٠٠٬٠٠٠ طلب نقطة بيع."
+
+#. module: baseer_dashboard2
+#. odoo-python
+#: code:addons/baseer_dashboard2/models/sources_cash.py:0
+msgid ""
+"The selected period contains more than 200,000 outflow counterpart lines."
+msgstr "تحتوي الفترة المحددة على أكثر من ٢٠٠٬٠٠٠ سطر مقابل للخارج."
+
+#. module: baseer_dashboard2
+#. odoo-python
+#: code:addons/baseer_dashboard2/models/sources_cash.py:0
+msgid "The selected period contains more than 200,000 outflow lines."
+msgstr "تحتوي الفترة المحددة على أكثر من ٢٠٠٬٠٠٠ سطر خارج."
+
+#. module: baseer_dashboard2
+#. odoo-python
+#: code:addons/baseer_dashboard2/models/sections.py:0
+msgid "Unknown dashboard section."
+msgstr "قسم لوحة المعلومات غير معروف."
+
+#. module: baseer_dashboard2
+#. odoo-python
+#: code:addons/baseer_dashboard2/models/service.py:0
+msgid "Unknown target."
+msgstr "المستهدف غير معروف."
+
+#. module: baseer_dashboard2
+#: model:ir.model.fields,field_description:baseer_dashboard2.field_baseer_dashboard2_target__value
+msgid "Value"
+msgstr "القيمة"
+
+#. module: baseer_dashboard2
+#. odoo-python
+#: code:addons/baseer_dashboard2/models/service.py:0
+msgid "You cannot access this dashboard."
+msgstr "لا يمكنك الوصول إلى لوحة المعلومات."
+
+#. module: baseer_dashboard2
+#: model:ir.model.fields.selection,name:baseer_dashboard2.selection__baseer_dashboard2_channel__key__card
+msgid "card"
+msgstr "شبكة/مدى"
+
+#. module: baseer_dashboard2
+#: model:ir.model.fields.selection,name:baseer_dashboard2.selection__baseer_dashboard2_channel__key__cash
+msgid "cash"
+msgstr "نقداً/كاش"
+
+#. module: baseer_dashboard2
+#: model:ir.model.fields.selection,name:baseer_dashboard2.selection__baseer_dashboard2_category__code__commissions
+msgid "commissions"
+msgstr "العمولات"
+
+#. module: baseer_dashboard2
+#: model:ir.model.fields.selection,name:baseer_dashboard2.selection__baseer_dashboard2_category__code__depreciation
+msgid "depreciation"
+msgstr "الإهلاك"
+
+#. module: baseer_dashboard2
+#: model:ir.model.fields.selection,name:baseer_dashboard2.selection__baseer_dashboard2_category__code__food_cost
+msgid "food_cost"
+msgstr "تكلفة الأكل"
+
+#. module: baseer_dashboard2
+#: model:ir.model.fields.selection,name:baseer_dashboard2.selection__baseer_dashboard2_target__key__food_pct
+msgid "food_pct"
+msgstr "نسبة تكلفة الأكل"
+
+#. module: baseer_dashboard2
+#: model:ir.model.fields.selection,name:baseer_dashboard2.selection__baseer_dashboard2_channel__key__hunger
+msgid "hunger"
+msgstr "هنقرستيشن"
+
+#. module: baseer_dashboard2
+#: model:ir.model.fields.selection,name:baseer_dashboard2.selection__baseer_dashboard2_channel__key__jahez
+msgid "jahez"
+msgstr "جاهز"
+
+#. module: baseer_dashboard2
+#: model:ir.model.fields.selection,name:baseer_dashboard2.selection__baseer_dashboard2_channel__key__keeta
+msgid "keeta"
+msgstr "كيتا"
+
+#. module: baseer_dashboard2
+#: model:ir.model.fields.selection,name:baseer_dashboard2.selection__baseer_dashboard2_category__code__marketing
+msgid "marketing"
+msgstr "التسويق"
+
+#. module: baseer_dashboard2
+#: model:ir.model.fields.selection,name:baseer_dashboard2.selection__baseer_dashboard2_target__key__net_margin_pct
+msgid "net_margin_pct"
+msgstr "صافي هامش الربح"
+
+#. module: baseer_dashboard2
+#: model:ir.model.fields.selection,name:baseer_dashboard2.selection__baseer_dashboard2_channel__key__other
+msgid "other"
+msgstr "أخرى"
+
+#. module: baseer_dashboard2
+#: model:ir.model.fields.selection,name:baseer_dashboard2.selection__baseer_dashboard2_channel__key__other_app
+msgid "other_app"
+msgstr "تطبيق آخر"
+
+#. module: baseer_dashboard2
+#: model:ir.model.fields.selection,name:baseer_dashboard2.selection__baseer_dashboard2_category__code__other_income
+msgid "other_income"
+msgstr "إيرادات أخرى"
+
+#. module: baseer_dashboard2
+#: model:ir.model.fields.selection,name:baseer_dashboard2.selection__baseer_dashboard2_category__code__other_opex
+msgid "other_opex"
+msgstr "مصاريف تشغيلية أخرى"
+
+#. module: baseer_dashboard2
+#: model:ir.model.fields.selection,name:baseer_dashboard2.selection__baseer_dashboard2_target__key__prime_pct
+msgid "prime_pct"
+msgstr "التكلفة الأساسية"
+
+#. module: baseer_dashboard2
+#: model:ir.model.fields.selection,name:baseer_dashboard2.selection__baseer_dashboard2_category__code__rent
+msgid "rent"
+msgstr "الإيجار"
+
+#. module: baseer_dashboard2
+#: model:ir.model.fields.selection,name:baseer_dashboard2.selection__baseer_dashboard2_category__code__revenue
+msgid "revenue"
+msgstr "المبيعات"
+
+#. module: baseer_dashboard2
+#: model:ir.model.fields.selection,name:baseer_dashboard2.selection__baseer_dashboard2_category__code__salaries
+msgid "salaries"
+msgstr "الرواتب"
+
+#. module: baseer_dashboard2
+#: model:ir.model.fields.selection,name:baseer_dashboard2.selection__baseer_dashboard2_target__key__salaries_pct
+msgid "salaries_pct"
+msgstr "نسبة الرواتب"
+
+#. module: baseer_dashboard2
+#: model:ir.model.fields.selection,name:baseer_dashboard2.selection__baseer_dashboard2_category__code__utilities
+msgid "utilities"
+msgstr "كهرباء وخدمات"
+
+#. module: baseer_dashboard2
+#: model:ir.model.fields.selection,name:baseer_dashboard2.selection__baseer_dashboard2_category__code__zakat_tax
+msgid "zakat_tax"
+msgstr "الزكاة والضريبة"
+
+#. module: baseer_dashboard2
+#: model:ir.model.fields.selection,name:baseer_dashboard2.selection__baseer_dashboard2_event__kind__other
+msgid "أخرى"
+msgstr "أخرى"
+
+#. module: baseer_dashboard2
+#: model:ir.model.fields.selection,name:baseer_dashboard2.selection__baseer_dashboard2_event__kind__holiday
+msgid "إجازة/عيد"
+msgstr "إجازة/عيد"
+
+#. module: baseer_dashboard2
+#: model:baseer.dashboard2.category,name:baseer_dashboard2.category_other_income
+msgid "إيرادات أخرى"
+msgstr "إيرادات أخرى"
+
+#. module: baseer_dashboard2
+#: model:ir.actions.act_window,name:baseer_dashboard2.action_settings
+#: model:ir.ui.menu,name:baseer_dashboard2.menu_settings
+msgid "الإعدادات"
+msgstr "الإعدادات"
+
+#. module: baseer_dashboard2
+#: model:baseer.dashboard2.category,name:baseer_dashboard2.category_depreciation
+msgid "الإهلاك"
+msgstr "الإهلاك"
+
+#. module: baseer_dashboard2
+#: model:baseer.dashboard2.category,name:baseer_dashboard2.category_rent
+msgid "الإيجار"
+msgstr "الإيجار"
+
+#. module: baseer_dashboard2
+#: model:baseer.dashboard2.category,name:baseer_dashboard2.category_marketing
+msgid "التسويق والإعلان"
+msgstr "التسويق والإعلان"
+
+#. module: baseer_dashboard2
+#: model:baseer.dashboard2.category,name:baseer_dashboard2.category_salaries
+msgid "الرواتب"
+msgstr "الرواتب"
+
+#. module: baseer_dashboard2
+#: model:baseer.dashboard2.category,name:baseer_dashboard2.category_zakat_tax
+msgid "الزكاة والضريبة"
+msgstr "الزكاة والضريبة"
+
+#. module: baseer_dashboard2
+#: model:baseer.dashboard2.category,name:baseer_dashboard2.category_commissions
+msgid "العمولات ورسوم البطاقات"
+msgstr "العمولات ورسوم البطاقات"
+
+#. module: baseer_dashboard2
+#: model:baseer.dashboard2.category,name:baseer_dashboard2.category_revenue
+msgid "المبيعات"
+msgstr "المبيعات"
+
+#. module: baseer_dashboard2
+#: model:ir.actions.act_window,name:baseer_dashboard2.action_events
+#: model:ir.ui.menu,name:baseer_dashboard2.menu_events
+msgid "المناسبات"
+msgstr "المناسبات"
+
+#. module: baseer_dashboard2
+#: model:baseer.dashboard2.category,name:baseer_dashboard2.category_food_cost
+msgid "تكلفة الأكل"
+msgstr "تكلفة الأكل"
+
+#. module: baseer_dashboard2
+#: model:baseer.dashboard2.channel,name:baseer_dashboard2.channel_jahez
+msgid "جاهز"
+msgstr "جاهز"
+
+#. module: baseer_dashboard2
+#: model:baseer.dashboard2.channel,name:baseer_dashboard2.channel_card
+msgid "شبكة/مدى"
+msgstr "شبكة/مدى"
+
+#. module: baseer_dashboard2
+#: model:ir.model.fields.selection,name:baseer_dashboard2.selection__baseer_dashboard2_event__kind__promo
+msgid "عرض/حملة"
+msgstr "عرض/حملة"
+
+#. module: baseer_dashboard2
+#: model:baseer.dashboard2.category,name:baseer_dashboard2.category_utilities
+msgid "كهرباء وخدمات"
+msgstr "كهرباء وخدمات"
+
+#. module: baseer_dashboard2
+#: model:baseer.dashboard2.channel,name:baseer_dashboard2.channel_keeta
+msgid "كيتا"
+msgstr "كيتا"
+
+#. module: baseer_dashboard2
+#: model:baseer.dashboard2.category,name:baseer_dashboard2.category_other_opex
+msgid "مصاريف تشغيلية أخرى"
+msgstr "مصاريف تشغيلية أخرى"
+
+#. module: baseer_dashboard2
+#: model:ir.model.fields.selection,name:baseer_dashboard2.selection__baseer_dashboard2_event__kind__season
+msgid "موسم"
+msgstr "موسم"
+
+#. module: baseer_dashboard2
+#: model:ir.model.fields.selection,name:baseer_dashboard2.selection__baseer_dashboard2_event__kind__salary
+msgid "نزول الرواتب"
+msgstr "نزول الرواتب"
+
+#. module: baseer_dashboard2
+#: model:baseer.dashboard2.channel,name:baseer_dashboard2.channel_cash
+msgid "نقداً/كاش"
+msgstr "نقداً/كاش"
+
+#. module: baseer_dashboard2
+#: model:baseer.dashboard2.channel,name:baseer_dashboard2.channel_hunger
+msgid "هنقرستيشن"
+msgstr "هنقرستيشن"

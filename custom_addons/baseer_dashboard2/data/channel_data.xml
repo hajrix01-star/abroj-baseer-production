@@ -1,0 +1,47 @@
+<odoo noupdate="1">
+    <record id="channel_cash" model="baseer.dashboard2.channel">
+        <field name="name">نقداً/كاش</field>
+        <field name="sequence">10</field>
+        <field name="key">cash</field>
+        <field name="kind">hall</field>
+        <field name="line_keywords">cash,نقد,نقدي,كاش</field>
+        <field name="pos_method_keywords">cash,نقد</field>
+        <field name="color_token">--bd2-c-navy</field>
+    </record>
+    <record id="channel_card" model="baseer.dashboard2.channel">
+        <field name="name">شبكة/مدى</field>
+        <field name="sequence">20</field>
+        <field name="key">card</field>
+        <field name="kind">hall</field>
+        <field name="line_keywords">bank,card,mada,مدى,شبكة,بنك</field>
+        <field name="pos_method_keywords">card,mada,مدى,شبكة,bank</field>
+        <field name="color_token">--bd2-c-blue-grey</field>
+    </record>
+    <record id="channel_keeta" model="baseer.dashboard2.channel">
+        <field name="name">كيتا</field>
+        <field name="sequence">30</field>
+        <field name="key">keeta</field>
+        <field name="kind">app</field>
+        <field name="line_keywords">keeta,كيتا</field>
+        <field name="pos_method_keywords">keeta,كيتا</field>
+        <field name="color_token">--bd2-c-gold</field>
+    </record>
+    <record id="channel_hunger" model="baseer.dashboard2.channel">
+        <field name="name">هنقرستيشن</field>
+        <field name="sequence">40</field>
+        <field name="key">hunger</field>
+        <field name="kind">app</field>
+        <field name="line_keywords">hunger,هنقر,هنجر</field>
+        <field name="pos_method_keywords">hunger,هنقر,هنجر</field>
+        <field name="color_token">--bd2-c-brick</field>
+    </record>
+    <record id="channel_jahez" model="baseer.dashboard2.channel">
+        <field name="name">جاهز</field>
+        <field name="sequence">50</field>
+        <field name="key">jahez</field>
+        <field name="kind">app</field>
+        <field name="line_keywords">jahez,جاهز</field>
+        <field name="pos_method_keywords">jahez,جاهز</field>
+        <field name="color_token">--bd2-c-teal</field>
+    </record>
+</odoo>

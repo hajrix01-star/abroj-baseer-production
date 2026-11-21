@@ -7,9 +7,9 @@ import time
 from uuid import UUID, uuid4
 from urllib.parse import urlencode
 
-from odoo import _, fields, models
+from odoo import _, api, fields, models
 from odoo.exceptions import AccessError, ValidationError
-from odoo.tools import hmac as odoo_hmac
+from odoo.tools import hmac as odoo_hmac, format_amount
 
 
 _logger = logging.getLogger(__name__)
@@ -21,6 +21,29 @@ class PosSession(models.Model):
     baseer_print_session_close_report = fields.Boolean(
         related='config_id.baseer_print_session_close_report', readonly=True,
     )
+    baseer_session_sales_display = fields.Char(
+        string='Session sales total', compute='_compute_baseer_session_sales_total',
+        compute_sudo=False, help='Total including tax for completed orders, including refunds.',
+    )
+
+    @api.depends_context('uid', 'company', 'allowed_company_ids', 'lang')
+    @api.depends('order_ids.amount_total', 'order_ids.state', 'order_ids.company_id', 'order_ids.config_id')
+    def _compute_baseer_session_sales_total(self):
+        domain = [('session_id', 'in', self.ids), ('state', 'not in', ['draft', 'cancel'])]
+        groupby = ['session_id', 'company_id', 'config_id']
+        groups = self.env['pos.order']._read_group(domain, groupby, ['amount_total:sum', '__count']) if self.ids else []
+        all_groups = self.env['pos.order'].sudo()._read_group(domain, groupby, ['__count']) if self.ids else []
+        identities = {s.id: (s.company_id.id, s.config_id.id) for s in self}
+        totals = {s.id: (total, count) for s, company, config, total, count in groups
+                  if s and (company.id, config.id) == identities.get(s.id)}
+        counts = {s.id: count for s, company, config, count in all_groups
+                  if s and (company.id, config.id) == identities.get(s.id)}
+        for session in self:
+            total, visible_count = totals.get(session.id, (0.0, 0))
+            session.baseer_session_sales_display = (
+                format_amount(self.env, total, session.currency_id)
+                if visible_count == counts.get(session.id, 0) else _('Unavailable')
+            )
 
     def baseer_enqueue_draft_bill(self, order_uuid, request_uuid, jpeg_base64):
         self.ensure_one()

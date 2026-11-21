@@ -22,11 +22,73 @@ class TestDashboardPlus(TransactionCase):
             with self.subTest(kind=kind):
                 action = journals.baseer_summary_action(kind)
                 self.assert_complete_window(action, 'account.move' if kind == 'draft' else 'account.move.line')
+                if kind != 'draft':
+                    self.assert_company_filters(action, self.env.companies)
+                    self.assertEqual(action['context']['search_default_posted'], 1)
                 if kind in ('receivable', 'payable'):
                     expected = 'asset_receivable' if kind == 'receivable' else 'liability_payable'
-                    other = 'liability_payable' if kind == 'receivable' else 'asset_receivable'
-                    self.assertIn(('account_id.account_type', '=', expected), action['domain'])
-                    self.assertNotIn(('account_id.account_type', '=', other), action['domain'])
+                    self.assertEqual(action['context']['search_default_account_type'], expected)
+                    self.assertEqual(action['context']['search_default_unreconciled'], 1)
+                    self.assertEqual(action['domain'], [])
+
+    def assert_company_filters(self, action, companies):
+        self.assertEqual(action['context']['allowed_company_ids'], companies.ids)
+        self.assertEqual(action['context']['company_ids'], companies.ids)
+        self.assertEqual(action['context']['search_default_company_ids'], 1)
+
+    def assert_residual_matches_tile(self, company, kind):
+        journals = self.env['account.journal'].with_context(allowed_company_ids=company.ids)
+        action = journals.baseer_summary_action(kind)
+        ctx = action['context']
+        domain = [('company_id', 'in', ctx['company_ids']), ('parent_state', '=', 'posted'),
+                  ('account_id.account_type', '=', ctx['search_default_account_type']),
+                  ('amount_residual', '!=', 0), ('account_id.reconcile', '=', True)]
+        lines = self.env['account.move.line'].with_context(allowed_company_ids=company.ids).search(domain)
+        amount = sum(lines.mapped('amount_residual')) * (-1 if kind == 'payable' else 1)
+        row = journals.baseer_dashboard_summary()['companies'][0]
+        self.assertAlmostEqual(amount, row[kind], places=2)
+
+    def test_filters_for_newly_created_company(self):
+        from odoo import Command
+        company = self.env['res.company'].create({'name': 'New filters company', 'currency_id': self.env.company.currency_id.id})
+        self.env.user.write({'company_ids': [Command.link(company.id)]})
+        journals = self.env['account.journal'].with_context(allowed_company_ids=company.ids)
+        for kind, account_type in (('receivable', 'asset_receivable'), ('payable', 'liability_payable')):
+            action = journals.baseer_summary_action(kind)
+            self.assert_company_filters(action, company)
+            self.assertEqual(action['context']['search_default_account_type'], account_type)
+            self.assertEqual(action['context']['search_default_posted'], 1)
+            self.assertEqual(action['context']['search_default_unreconciled'], 1)
+            self.assertEqual(action['domain'], [])
+            self.assert_residual_matches_tile(company, kind)
+        for kind in ('bank', 'cash', 'custody', 'delivery'):
+            action = journals.baseer_summary_action(kind)
+            self.assert_company_filters(action, company)
+            self.assertEqual(action['domain'], [('id', '=', False)])
+
+    def test_journal_account_filters(self):
+        from odoo import Command
+        company = self.env.company
+        other = self.env['res.company'].create({'name': 'Journal filter company', 'currency_id': company.currency_id.id})
+        self.env.user.write({'company_ids': [Command.link(other.id)]})
+        for target in (company, other):
+            for name, code, journal_type in (('Bank filter', 'FBK', 'bank'), ('Cash filter', 'FCS', 'cash'),
+                                              ('custody filter', 'FCU', 'cash'), ('Keeta filter', 'FKE', 'bank')):
+                account = self.env['account.account'].with_company(target).create({
+                    'name': name, 'code': code, 'account_type': 'asset_cash', 'company_ids': [Command.set(target.ids)]})
+                self.env['account.journal'].with_company(target).create({
+                    'name': name, 'code': code, 'type': journal_type, 'company_id': target.id, 'default_account_id': account.id})
+        for companies in (company, other, company | other):
+            journals = self.env['account.journal'].with_context(allowed_company_ids=companies.ids)
+            candidates = journals.search([('company_id', 'in', companies.ids), ('type', 'in', ['bank', 'cash'])])
+            for kind in ('bank', 'cash', 'custody', 'delivery'):
+                selected = candidates.filtered(lambda j: j.type == kind if kind in ('bank', 'cash') else classify_journal(j.name, j.code, j.type)[0] == kind)
+                action = journals.baseer_summary_action(kind)
+                self.assert_company_filters(action, companies)
+                self.assertEqual(set(action['context']['account_ids']), set(selected.default_account_id.ids))
+                self.assertEqual(action['context']['search_default_account_ids'], 1)
+                self.assertNotIn('search_default_unreconciled', action['context'])
+                self.assertEqual(action['domain'], [])
 
     def test_action_normalization(self):
         journals = self.env['account.journal']
@@ -110,6 +172,7 @@ class TestDashboardPlus(TransactionCase):
         bank = account('BTEST01', 'asset_cash')
         counterpart = account('BTEST02', 'equity')
         receivable = account('BTEST03', 'asset_receivable', True)
+        receivable.non_trade = True
         payable = account('BTEST04', 'liability_payable', True)
         tax_account = account('BTEST05', 'liability_current')
         partner = self.env['res.partner'].create({'name': 'Dashboard partner'})
@@ -141,6 +204,14 @@ class TestDashboardPlus(TransactionCase):
         self.assertGreaterEqual(row['receivable'], 200)
         self.assertGreaterEqual(row['payable'], 50)
         self.assertGreaterEqual(row['vat'], 30)
+        for kind in ('receivable', 'payable'):
+            self.assert_residual_matches_tile(company, kind)
+        bank_action = self.env['account.journal'].with_context(allowed_company_ids=company.ids).baseer_summary_action('bank')
+        bank_context = bank_action['context']
+        lines = self.env['account.move.line'].with_context(allowed_company_ids=company.ids).search([
+            ('company_id', 'in', bank_context['company_ids']), ('parent_state', '=', 'posted'),
+            ('account_id', 'in', bank_context['account_ids'])])
+        self.assertAlmostEqual(sum(lines.mapped('balance')), row['bank'], places=2)
 
     def test_ledger_two_companies(self):
         from odoo import Command, fields

@@ -2,7 +2,6 @@ from collections import defaultdict
 from datetime import timedelta
 
 from odoo import api, fields, models, _
-from odoo.fields import Domain
 
 
 REPORTS = {
@@ -147,23 +146,29 @@ class AccountJournal(models.Model):
 
     @api.model
     def baseer_summary_action(self, kind):
-        domain = [('company_id', 'in', self.env.companies.ids)]
+        company_ids = self.env.companies.ids
+        context = {'allowed_company_ids': company_ids}
+        domain = []
         model = 'account.move.line'
         if kind == 'draft':
             model = 'account.move'
-            domain += [('state', '=', 'draft'), ('ref', 'ilike', 'AGENT:')]
+            domain = [('company_id', 'in', company_ids), ('state', '=', 'draft'), ('ref', 'ilike', 'AGENT:')]
         else:
-            domain += [('parent_state', '=', 'posted')]
+            context.update(company_ids=company_ids, search_default_company_ids=1, search_default_posted=1)
             if kind == 'vat':
                 today = fields.Date.context_today(self)
                 start = today.replace(day=1)
                 end = (start.replace(day=28) + timedelta(days=4)).replace(day=1)
-                domain += [('tax_line_id', '!=', False), ('tax_line_id.type_tax_use', 'in', ['sale', 'purchase']), ('date', '>=', start), ('date', '<', end)]
+                domain = [('tax_line_id', '!=', False), ('tax_line_id.type_tax_use', 'in', ['sale', 'purchase']), ('date', '>=', start), ('date', '<', end)]
             elif kind in ('receivable', 'payable'):
-                domain += [('account_id.account_type', '=', 'asset_receivable' if kind == 'receivable' else 'liability_payable')]
+                context.update(search_default_account_type='asset_receivable' if kind == 'receivable' else 'liability_payable',
+                               search_default_unreconciled=1)
             else:
-                journals = self.search([('company_id', 'in', self.env.companies.ids), ('type', 'in', ['bank', 'cash'])])
+                journals = self.search([('company_id', 'in', company_ids), ('type', 'in', ['bank', 'cash'])])
                 journals = journals.filtered(lambda j: (j.type == kind if kind in ('bank', 'cash') else classify_journal(j.name, j.code, j.type)[0] == kind))
-                pairs = {(j.company_id.id, j.default_account_id.id) for j in journals if j.default_account_id}
-                domain += list(Domain.OR([Domain('company_id', '=', company_id) & Domain('account_id', '=', account_id) for company_id, account_id in pairs])) if pairs else [('id', '=', False)]
-        return self._baseer_complete_action({'type': 'ir.actions.act_window', 'name': _('Journal Items'), 'res_model': model, 'view_mode': 'list,form', 'domain': domain})
+                account_ids = journals.default_account_id.ids
+                if account_ids:
+                    context.update(account_ids=account_ids, search_default_account_ids=1)
+                else:
+                    domain = [('id', '=', False)]
+        return self._baseer_complete_action({'type': 'ir.actions.act_window', 'name': _('Journal Items'), 'res_model': model, 'view_mode': 'list,form', 'domain': domain, 'context': context})

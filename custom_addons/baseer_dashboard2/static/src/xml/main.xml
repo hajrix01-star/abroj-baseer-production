@@ -380,6 +380,7 @@
         </div>
     </t>
     <t t-name="baseer_dashboard2.Pnl">
+        <t t-set="pnlColumns" t-value="state.data.pnl_columns || trend"/>
         <div class="view-controls">
             <div class="seg">
                 <button t-att-class="state.view==='pnl'?'on':''" t-on-click="()=&gt;this.choose('view','pnl')">الربح والخسارة</button>
@@ -424,12 +425,22 @@
                 </div>
                 <div><span t-if="state.view==='pnl'" class="muted">اضغط على أي بند لعرض الحسابات ›</span> <button class="icon-button" t-on-click="exportCsv" title="تنزيل CSV">↓</button></div>
             </div>
+            <div t-if="state.view==='pnl'" class="pnl-period-controls">
+                <div class="seg pnl-period-seg" aria-label="فترة قائمة الدخل">
+                    <button t-foreach="[['month','شهر'],['quarter','ربع'],['year','١٢ شهر'],['range','من – إلى']]" t-as="option" t-key="option[0]" t-att-class="state.pnl_view===option[0]?'on':''" t-on-click="()=&gt;this.choose('pnl_view',option[0])" t-esc="option[1]"/>
+                </div>
+                <div t-if="state.pnl_view==='range' and state.pnl_range" class="pnl-range">
+                    <label class="seg">من <input type="date" t-att-value="state.pnl_range.date_from" t-on-change="(e)=&gt;this.pnlRangeChange('date_from',e.target.value)"/></label>
+                    <label class="seg">إلى <input type="date" t-att-value="state.pnl_range.date_to" t-on-change="(e)=&gt;this.pnlRangeChange('date_to',e.target.value)"/></label>
+                    <span t-if="state.pnl_range.date_from &gt; state.pnl_range.date_to" class="muted">يجب أن يكون تاريخ البداية قبل النهاية</span>
+                </div>
+            </div>
             <div class="bd2-scroll-x"><table t-if="state.view==='pnl'" class="export-table">
                 <thead>
                     <tr>
                         <th>البند</th>
-                        <th>الاتجاه</th>
-                        <th t-foreach="trend" t-as="m" t-key="m.month" t-esc="monthName(m.month).split(' ')[0]+(m.partial ? ' (جزئي)' : '')"/>
+                        <th t-if="pnlColumns.length &gt; 1">الاتجاه</th>
+                        <th t-foreach="pnlColumns" t-as="m" t-key="m.month" t-att-class="m.partial ? 'muted' : ''" t-esc="(m.label || monthName(m.month))+(m.partial ? ' (جزئي)' : '')"/>
                         <th class="highlight">المجموع</th>
                         <th>٪ من المبيعات</th>
                     </tr>
@@ -441,10 +452,10 @@
                                 <span t-if="row.children.length">▾</span>
                                 <t t-esc="row.name || name(row.key)"/>
                             </th>
-                            <td>
-                                <Sparkline values="row.months" partial="trend.map(x=&gt;x.partial)" gold="row.key==='net_profit'" navy="row.key!=='net_profit'"/>
+                            <td t-if="pnlColumns.length &gt; 1">
+                                <Sparkline values="row.months" partial="pnlColumns.map(x=&gt;x.partial)" gold="row.key==='net_profit'" navy="row.key!=='net_profit'"/>
                             </td>
-                            <td t-foreach="row.months" t-as="v" t-key="v_index" t-esc="tableFmt(v)"/>
+                            <td t-foreach="row.months" t-as="v" t-key="v_index" t-att-class="pnlColumns[v_index]?.partial ? 'muted' : ''" t-esc="tableFmt(v)"/>
                             <td t-esc="tableFmt(row.total)"/>
                             <td><bdi dir="ltr" t-esc="tablePct(row.pct)"/></td>
                         </tr>
@@ -453,10 +464,10 @@
                                 <span class="muted account-code" dir="ltr" t-esc="child.code"/>
                                 <t t-esc="child.code ? ' '+child.name : child.name"/>
                             </td>
-                            <td>
-                                <Sparkline values="child.months" partial="trend.map(x=&gt;x.partial)"/>
+                            <td t-if="pnlColumns.length &gt; 1">
+                                <Sparkline values="child.months" partial="pnlColumns.map(x=&gt;x.partial)"/>
                             </td>
-                            <td t-foreach="child.months" t-as="v" t-key="v_index" t-esc="tableFmt(v)"/>
+                            <td t-foreach="child.months" t-as="v" t-key="v_index" t-att-class="pnlColumns[v_index]?.partial ? 'muted' : ''" t-esc="tableFmt(v)"/>
                             <td t-esc="tableFmt(child.total)"/>
                             <td><bdi dir="ltr" t-esc="tablePct(child.pct)"/></td>
                         </tr></t>

@@ -341,6 +341,8 @@ export class Dashboard2 extends Component {
       period: getStored("period", null),
       timeline: getStored("timeline", "monthly"),
       view: "pnl",
+      pnl_view: null,
+      pnl_range: null,
       metric: "gross",
       closed: {},
       navOpen: false,
@@ -364,6 +366,9 @@ export class Dashboard2 extends Component {
         date_from: m.today,
         date_to: m.today,
       };
+      // Only an explicit user selection is stored, so an untouched installation follows the server default.
+      this.state.pnl_view = getStored("pnl_view", null) || m.pnl_default_view || "month";
+      this.resetPnlRange();
       await this.load();
     } catch (e) {
       this.state.error = e.message;
@@ -389,6 +394,7 @@ export class Dashboard2 extends Component {
           [
             this.state.page === "pnl" ? this.state.view : this.state.page,
             {
+              ...(this.state.page === "pnl" && this.state.view === "pnl" ? {pnl_view: this.state.pnl_view, pnl_range: this.state.pnl_range} : {}),
               company_key: this.state.company,
               period: this.state.period,
               timeline_mode: this.state.timeline,
@@ -405,10 +411,25 @@ export class Dashboard2 extends Component {
   }
   async choose(key, value) {
     this.state[key] = value;
+    if (key === "pnl_view") { this.persist(key); if (value === "range") this.resetPnlRange(); }
     if (key === "page") this.state.navOpen = false;
     if (["page", "company", "mode", "timeline", "period"].includes(key))
       this.persist(key);
     if (key !== "mode") await this.load();
+  }
+  resetPnlRange() {
+    const p = this.state.period;
+    if (p.mode === "range") this.state.pnl_range = {date_from: p.date_from, date_to: p.date_to};
+    else {
+      const [y, m] = p.month.split("-").map(Number);
+      const last = new Date(Date.UTC(y, m, 0)).getUTCDate();
+      this.state.pnl_range = {date_from: p.month + "-01", date_to: p.month + "-" + String(last).padStart(2, "0")};
+    }
+  }
+  async pnlRangeChange(key, value) {
+    this.state.pnl_range[key] = value;
+    const r = this.state.pnl_range;
+    if (r.date_from && r.date_to && r.date_from <= r.date_to) await this.load();
   }
   async periodChange(key, value) {
     this.state.period[key] = value;

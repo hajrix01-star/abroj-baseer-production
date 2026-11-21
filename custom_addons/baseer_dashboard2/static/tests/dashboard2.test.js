@@ -752,3 +752,45 @@ test('long chart axes mark alternating labels for the phone layout', async () =>
     expect(getFixture().querySelectorAll('.bd2-axis-label').length).toBe(6);
     expect(getFixture().querySelectorAll('.bd2-axis-alternate').length).toBe(6);
 });
+
+test('P&L period selector controls columns and hides a single-column sparkline', async () => {
+    class Pnl extends Component {
+        static template = 'baseer_dashboard2.Pnl';
+        static components = { Sparkline };
+        state = { view: 'pnl', pnl_view: 'month', closed: {}, data: { pnl_columns: [{month: '2026-10'}], rows: [{key:'revenue', name:'مبيعات', months:[100], total:100, pct:100, children:[]}] } };
+        trend = []; hasDisplayValues = hasDisplayValues; name = v => v; monthName = v => v; tableFmt = formatTable; tablePct = formatTablePct;
+        toggleRow() {} exportCsv() {} choose() {}
+    }
+    const response = await withFetch(globals.fetch, () => fetch('/baseer_dashboard2/static/src/xml/main.xml'));
+    const app = new App(Pnl, { templates: await response.text(), test: true });
+    after(() => app.destroy());
+    await app.mount(getFixture());
+    expect(getFixture().querySelectorAll('.pnl-period-seg button').length).toBe(4);
+    expect(getFixture().querySelector('.export-table').textContent.includes('الاتجاه')).toBe(false);
+});
+
+
+test('P&L section request includes view and custom dates', async () => {
+    let args;
+    const context = { state: { company: '2', page: 'pnl', view: 'pnl', pnl_view: 'range', pnl_range: {date_from:'2026-08-15', date_to:'2026-10-20'}, period: {mode:'month', month:'2026-10'}, timeline:'monthly' }, orm: { async call(...values) { args = values; return {}; } } };
+    await Dashboard2.prototype.load.call(context);
+    expect(args[2][1].pnl_view).toBe('range');
+    expect(args[2][1].pnl_range.date_from).toBe('2026-08-15');
+    expect(args[2][1].pnl_range.date_to).toBe('2026-10-20');
+});
+
+test('P&L shows sparklines with multiple displayed columns', async () => {
+    class Pnl extends Component {
+        static template = 'baseer_dashboard2.Pnl';
+        static components = { Sparkline };
+        state = { view:'pnl', pnl_view:'year', closed:{}, data:{pnl_columns:[{month:'2026-09'}, {month:'2026-10'}], rows:[{key:'revenue', name:'مبيعات', months:[20,100], total:120, pct:100, children:[]}]} };
+        trend = []; hasDisplayValues = hasDisplayValues; name = v => v; monthName = v => v; tableFmt = formatTable; tablePct = formatTablePct;
+        toggleRow() {} exportCsv() {} choose() {}
+    }
+    const response = await withFetch(globals.fetch, () => fetch('/baseer_dashboard2/static/src/xml/main.xml'));
+    const app = new App(Pnl, { templates: await response.text(), test:true });
+    after(() => app.destroy());
+    await app.mount(getFixture());
+    expect(getFixture().querySelector('.export-table').textContent).toInclude('الاتجاه');
+    expect(getFixture().querySelector('.export-table .bd2-spark')).not.toBe(null);
+});

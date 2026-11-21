@@ -10,6 +10,7 @@ patch(DashboardKanbanRenderer.prototype, {
         super.setup(...arguments);
         this.baseerOrm = useService("orm");
         this.baseerAction = useService("action");
+        this.baseerNotification = useService("notification");
         this.baseer = useState({ data: null, open: (localStorage.getItem("baseer.summary.open") === null ? !window.matchMedia("(max-width: 767px)").matches : localStorage.getItem("baseer.summary.open") === "true"), companiesOpen: false });
         onWillStart(async () => {
             this.baseer.data = await this.baseerOrm.call("account.journal", "baseer_dashboard_summary", []);
@@ -35,12 +36,24 @@ patch(DashboardKanbanRenderer.prototype, {
         this.baseer.open = !this.baseer.open;
         localStorage.setItem("baseer.summary.open", String(this.baseer.open));
     },
+    async baseerDoAction(action) {
+        if (!action || !action.type ||
+            (action.type === "ir.actions.act_window" && !action.res_model) ||
+            (action.type === "ir.actions.client" && !action.tag)) {
+            this.baseerNotification.add(_t("Unable to open this dashboard action."), { type: "warning" });
+            return;
+        }
+        if (action.type === "ir.actions.act_window" && !Array.isArray(action.views)) {
+            action = { ...action, views: (action.view_mode || "list,form").split(",").map(mode => [false, mode.trim()]).filter(([, mode]) => mode) };
+        }
+        await this.baseerAction.doAction(action);
+    },
     async baseerOpen(kind) {
         const action = await this.baseerOrm.call("account.journal", "baseer_summary_action", [kind]);
-        if (action) await this.baseerAction.doAction(action);
+        await this.baseerDoAction(action);
     },
     async baseerReport(key) {
         const action = await this.baseerOrm.call("account.journal", "baseer_report_action", [key]);
-        if (action) await this.baseerAction.doAction(action);
+        await this.baseerDoAction(action);
     },
 });

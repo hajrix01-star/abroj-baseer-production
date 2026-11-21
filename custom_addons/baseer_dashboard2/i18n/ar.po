@@ -675,3 +675,27 @@ msgstr "عدد الطلبات · الفترة"
 #: model_terms:ir.ui.view,arch_db:baseer_dashboard2.assets_backend
 msgid "نقطة"
 msgstr "نقطة"
+
+#. module: baseer_dashboard2
+msgid "شامل الضريبة"
+msgstr "شامل الضريبة"
+
+#. module: baseer_dashboard2
+msgid "فواتير وتسويات أخرى"
+msgstr "فواتير وتسويات أخرى"
+
+#. module: baseer_dashboard2
+msgid "يشمل ضريبة قيمة مضافة مستحقة للهيئة"
+msgstr "يشمل ضريبة قيمة مضافة مستحقة للهيئة"
+
+#. module: baseer_dashboard2
+msgid "ضريبة مدخلات غير موزعة"
+msgstr "ضريبة مدخلات غير موزعة"
+
+#. module: baseer_dashboard2
+msgid "منها رسوم التبغ"
+msgstr "منها رسوم التبغ"
+
+#. module: baseer_dashboard2
+msgid "المستهدفات شاملة الضريبة"
+msgstr "المستهدفات شاملة الضريبة"

@@ -4,7 +4,10 @@ on:
   pull_request:
     paths:
       - ops/qa/refresh-qa.py
+      - ops/qa/verify-qa-refresh-odoo.py
       - ops/qa/baseer-qa-refresh
+      - ops/qa/baseer-qa-deploy
+      - ops/qa/runtime-pins/20261121b.env
       - ops/qa/install-qa-refresh.sh
       - tests/test_qa_refresh.py
       - .github/workflows/refresh-reviewed-qa.yml
@@ -13,7 +16,10 @@ on:
     branches: [main]
     paths:
       - ops/qa/refresh-qa.py
+      - ops/qa/verify-qa-refresh-odoo.py
       - ops/qa/baseer-qa-refresh
+      - ops/qa/baseer-qa-deploy
+      - ops/qa/runtime-pins/20261121b.env
       - ops/qa/install-qa-refresh.sh
       - tests/test_qa_refresh.py
 
@@ -27,5 +33,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: bash -n ops/qa/baseer-qa-refresh
+      - run: bash -n ops/qa/baseer-qa-deploy
       - run: bash -n ops/qa/install-qa-refresh.sh
+      - run: >-
+          python3 -c 'import ast; ast.parse(open("ops/qa/verify-qa-refresh-odoo.py").read())'
       - run: python3 -B -m unittest discover -s tests -p test_qa_refresh.py -v

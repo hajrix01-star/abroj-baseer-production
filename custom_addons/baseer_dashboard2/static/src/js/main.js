@@ -75,7 +75,7 @@ const labels = {
   purchases: "المشتريات",
   bank: "بنك",
   cash: "نقد", card: "شبكة", keeta: "كيتا", hunger: "هنقرستيشن", jahez: "جاهز", transfer: "تحويل بنكي", credit: "آجل", other: "أخرى", unclassified: "غير مصنف",
-  expenses: "المصاريف", profit: "الأرباح", ratios: "النسب", breakeven: "نقطة التعادل", gross_sales_by_channel: "المبيعات حسب القناة", apps: "التطبيقات", apps_unreceived: "التطبيقات غير المستلمة", customers: "العملاء", hours: "أوقات الذروة", inout: "الداخل والخارج", unpaid_bills: "الفواتير غير المسددة", timeline: "المسار الزمني", heatmap: "التقويم الحراري", sales_vat: "ضريبة المبيعات",
+  expenses: "المصاريف", profit: "الأرباح", ratios: "النسب", breakeven: "نقطة التعادل", gross_sales_by_channel: "المبيعات حسب القناة", apps: "التطبيقات", apps_unreceived: "التطبيقات غير المستلمة", customers: "العملاء", hours: "أوقات الذروة", inout: "الداخل والخارج", unpaid_bills: "الفواتير غير المسددة", timeline: "المسار الزمني", heatmap: "التقويم الحراري", sales_vat: "ضريبة المبيعات", tax_basis: "مصدر الضريبة", waterfall: "شلال الربح",
 };
 const pages = [
   ["overview", "نظرة عامة", "ملخص الأداء المالي للفترة المحددة", "▦"],
@@ -788,7 +788,7 @@ export class Dashboard2 extends Component {
     );
     const a = document.createElement("a");
     a.href = URL.createObjectURL(
-      new Blob(["\ufeff" + rows.join("\n")], {
+      new Blob(["\ufeff" + (this.state.view === "pnl" ? "قبل الضريبة" : "شامل الضريبة") + "\n" + rows.join("\n")], {
         type: "text/csv;charset=utf-8",
       }),
     );

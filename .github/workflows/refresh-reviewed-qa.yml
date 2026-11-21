@@ -51,8 +51,23 @@ jobs:
           [[ -z "$RECOVERY_RUN" || "$RECOVERY_RUN" =~ ^[1-9][0-9]{0,19}$ ]]
           git merge-base --is-ancestor "$LIVE_COMMIT" "$GITHUB_SHA"
           git merge-base --is-ancestor "$PREVIOUS_QA_COMMIT" "$GITHUB_SHA"
+          git merge-base --is-ancestor "$LIVE_COMMIT" "$PREVIOUS_QA_COMMIT"
+          . ops/qa/runtime-pins/20261121b.env
+          test "$LIVE_COMMIT" = "$RUNTIME_LIVE"
+          test "$PREVIOUS_QA_COMMIT" = "$RUNTIME_PREVIOUS_QA"
+          test "$RUNTIME_REF" = refs/heads/codex/qa-runtime-20261121b-90c662
+          git fetch --no-tags origin "$RUNTIME_REF:refs/heads/reviewed-runtime"
+          test "$(git rev-parse refs/heads/reviewed-runtime)" = "$RUNTIME_CANDIDATE"
+          test "$(git rev-parse "$RUNTIME_CANDIDATE^")" = "$RUNTIME_BASELINE"
+          test "$(git rev-parse "$RUNTIME_BASELINE^")" = "$RUNTIME_LIVE"
+          for path in custom_addons/baseer_profit_loss_report/{__manifest__.py,models/profit_loss.py}; do
+            test "$(git rev-parse "$RUNTIME_CANDIDATE:$path")" = "$(git rev-parse "$PREVIOUS_QA_COMMIT:$path")"
+          done
+          test "$(git diff --name-only "$RUNTIME_BASELINE" "$RUNTIME_CANDIDATE" | wc -l)" -eq 2
+          bash -n ops/qa/baseer-qa-deploy
           bash -n ops/qa/baseer-qa-refresh
           bash -n ops/qa/install-qa-refresh.sh
+          python3 -c 'import ast; ast.parse(open("ops/qa/verify-qa-refresh-odoo.py").read())'
           python3 -B -m unittest discover -s tests -p test_qa_refresh.py -v
       - name: Sign the bounded refresh request
         env:
@@ -71,11 +86,11 @@ jobs:
           git config user.email baseer-qa-release-bot@users.noreply.github.com
           git config gpg.format ssh
           git config user.signingkey "$signing_key"
-          printf 'QA_REFRESH_DATE=20261023\nQA_REFRESH_LIVE=%s\nQA_REFRESH_PREVIOUS=%s\n' "$LIVE_COMMIT" "$PREVIOUS_QA_COMMIT" > "$RUNNER_TEMP/qa-refresh-request"
+          printf 'QA_REFRESH_DATE=20261121b\nQA_REFRESH_LIVE=%s\nQA_REFRESH_PREVIOUS=%s\n' "$LIVE_COMMIT" "$PREVIOUS_QA_COMMIT" > "$RUNNER_TEMP/qa-refresh-request"
           if [ -n "$RECOVERY_RUN" ]; then
             printf 'QA_REFRESH_RECOVERY_RUN=%s\n' "$RECOVERY_RUN" >> "$RUNNER_TEMP/qa-refresh-request"
           fi
-          request_tag="qa-refresh-20261023-${GITHUB_RUN_ID}"
+          request_tag="qa-refresh-20261121b-${GITHUB_RUN_ID}"
           git tag --sign --file "$RUNNER_TEMP/qa-refresh-request" "$request_tag" "$GITHUB_SHA"
           git push origin "refs/tags/$request_tag"
           printf 'QA_REFRESH_REQUEST=QUEUED\nTAG=%s\n' "$request_tag"

@@ -11,12 +11,17 @@ source_dir="/srv/baseer-qa/deploy-staging/qa-refresh-bootstrap-$revision"
 repo="$source_dir/repo.git"
 git -C "$repo" cat-file -e "$revision^{commit}"
 git -C "$repo" merge-base --is-ancestor "$revision" refs/heads/reviewed-main
-for script in ops/qa/install-qa-refresh.sh ops/qa/baseer-qa-refresh ops/qa/refresh-qa.py ops/qa/verify-qa-refresh-odoo.py; do
+for script in ops/qa/install-qa-refresh.sh ops/qa/baseer-qa-refresh ops/qa/refresh-qa.py ops/qa/verify-qa-refresh-odoo.py ops/qa/baseer-qa-deploy; do
     [ -f "$source_dir/$script" ] && [ ! -L "$source_dir/$script" ]
     git -C "$repo" show "$revision:$script" > "$source_dir/expected"
     cmp "$source_dir/expected" "$source_dir/$script"
 done
 bash -n "$source_dir/ops/qa/baseer-qa-refresh"
+bash -n "$source_dir/ops/qa/baseer-qa-deploy"
+# The existing deploy entrypoint is shared with ordinary QA releases. Refuse
+# to overwrite any wrapper other than the already reviewed predecessor.
+git -C "$repo" show b622190af505c0ba72f4acbc90f188fe278b426e:ops/qa/baseer-qa-deploy > "$source_dir/previous-qa-deploy"
+cmp -s "$source_dir/previous-qa-deploy" /usr/local/sbin/baseer-qa-deploy
 python3 - "$source_dir/ops/qa/refresh-qa.py" <<'PY'
 import ast, pathlib, sys
 ast.parse(pathlib.Path(sys.argv[1]).read_text())
@@ -24,7 +29,7 @@ PY
 backup="$source_dir/before-install"
 [ ! -e "$backup" ]
 mkdir -m 0700 "$backup"
-for installed in /usr/local/sbin/baseer-qa-refresh /usr/local/lib/baseer-qa-refresh/refresh-qa.py /usr/local/lib/baseer-qa-refresh/verify-qa-refresh-odoo.py; do
+for installed in /usr/local/sbin/baseer-qa-refresh /usr/local/lib/baseer-qa-refresh/refresh-qa.py /usr/local/lib/baseer-qa-refresh/verify-qa-refresh-odoo.py /usr/local/sbin/baseer-qa-deploy; do
     if [ -e "$installed" ]; then
         [ -f "$installed" ] && [ ! -L "$installed" ]
         cp -a --parents "$installed" "$backup/"
@@ -37,4 +42,6 @@ install -o root -g root -m 0750 "$source_dir/ops/qa/baseer-qa-refresh" /usr/loca
 cmp "$source_dir/ops/qa/refresh-qa.py" /usr/local/lib/baseer-qa-refresh/refresh-qa.py
 cmp "$source_dir/ops/qa/verify-qa-refresh-odoo.py" /usr/local/lib/baseer-qa-refresh/verify-qa-refresh-odoo.py
 cmp "$source_dir/ops/qa/baseer-qa-refresh" /usr/local/sbin/baseer-qa-refresh
+install -o root -g root -m 0750 "$source_dir/ops/qa/baseer-qa-deploy" /usr/local/sbin/baseer-qa-deploy
+cmp "$source_dir/ops/qa/baseer-qa-deploy" /usr/local/sbin/baseer-qa-deploy
 printf 'QA_REFRESH_BOOTSTRAP=PASS\nREVISION=%s\n' "$revision"

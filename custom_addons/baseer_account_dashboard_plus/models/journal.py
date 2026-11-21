@@ -54,11 +54,36 @@ class AccountJournal(models.Model):
                 baseer_ledger_diff=currency.format(card - ledger), baseer_has_ledger_diff=abs(card - ledger) > 0.01,
                 baseer_kind=kind, baseer_app=app)
 
+    @api.model
+    def _baseer_complete_action(self, action):
+        """Return an action safe for the web client, or False if incomplete."""
+        if not isinstance(action, dict):
+            return False
+        action = dict(action)
+        if action.get('type') == 'ir.actions.act_window':
+            if not action.get('res_model'):
+                return False
+            action['name'] = action.get('name') or _('Journal Items')
+            action['view_mode'] = action.get('view_mode') or 'list,form'
+            if not isinstance(action.get('views'), (list, tuple)) or not action['views']:
+                action['views'] = [[False, mode.strip()] for mode in action['view_mode'].split(',') if mode.strip()]
+            action['domain'] = action.get('domain') or []
+            action['context'] = action.get('context') or {}
+            action['target'] = action.get('target') or 'current'
+        elif action.get('type') == 'ir.actions.client':
+            if not action.get('tag'):
+                return False
+            action['context'] = action.get('context') or {}
+            action['target'] = action.get('target') or 'current'
+        else:
+            return False
+        return action
+
     def baseer_open_ledger(self):
         self.ensure_one()
-        return {'type': 'ir.actions.act_window', 'name': _('Ledger balance'), 'res_model': 'account.move.line',
+        return self._baseer_complete_action({'type': 'ir.actions.act_window', 'name': _('Ledger balance'), 'res_model': 'account.move.line',
                 'view_mode': 'list,form', 'domain': [('account_id', '=', self.default_account_id.id),
-                ('company_id', '=', self.company_id.id), ('parent_state', '=', 'posted')]}
+                ('company_id', '=', self.company_id.id), ('parent_state', '=', 'posted')]})
 
     def baseer_card_report_action(self):
         self.ensure_one()
@@ -69,7 +94,7 @@ class AccountJournal(models.Model):
         key = key or self.env.context.get('baseer_report')
         item = REPORTS.get(key)
         action = self.env.ref(item[0], raise_if_not_found=False) if item else False
-        return action.read()[0] if action else False
+        return self._baseer_complete_action(action.read()[0]) if action else False
 
     @api.model
     def baseer_dashboard_summary(self):
@@ -141,4 +166,4 @@ class AccountJournal(models.Model):
                 journals = journals.filtered(lambda j: (j.type == kind if kind in ('bank', 'cash') else classify_journal(j.name, j.code, j.type)[0] == kind))
                 pairs = {(j.company_id.id, j.default_account_id.id) for j in journals if j.default_account_id}
                 domain += list(Domain.OR([Domain('company_id', '=', company_id) & Domain('account_id', '=', account_id) for company_id, account_id in pairs])) if pairs else [('id', '=', False)]
-        return {'type': 'ir.actions.act_window', 'name': _('Journal Items'), 'res_model': model, 'view_mode': 'list,form', 'domain': domain}
+        return self._baseer_complete_action({'type': 'ir.actions.act_window', 'name': _('Journal Items'), 'res_model': model, 'view_mode': 'list,form', 'domain': domain})

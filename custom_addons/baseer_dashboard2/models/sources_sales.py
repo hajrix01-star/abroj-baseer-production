@@ -326,6 +326,34 @@ class DashboardSales(models.AbstractModel):
                 for (sid, day), (amount, count) in sorted(grouped.items())]
 
     @request_memo
+    def _tooltip_sales_months(self, ids, start, end):
+        """Reuse the existing day/source selection once for all comparison months."""
+        days, channels, _unreceived, _hours = self._sales_days(ids, start, end)
+        app_keys = {c['key'] for c in channels if c['kind'] == 'app'}
+        groups = defaultdict(list)
+        for (_company, day), value in days.items():
+            groups[day.strftime('%Y-%m')].append(value)
+        result = {}
+        for month, rows in groups.items():
+            totals = defaultdict(float)
+            for row in rows:
+                for key, amount in row['channels'].items():
+                    totals[key] += amount
+            gross = sum(totals.values())
+            apps = sum(v for k, v in totals.items() if k in app_keys)
+            customer_days = [row for row in rows if row['customers'] is not None]
+            orders = sum(row['customers'] for row in customer_days)
+            pos_gross = sum(row['pos_gross'] for row in customer_days)
+            has_sales = any(row['source'] in ('pos', 'summary', 'mixed') for row in rows)
+            result[month] = {'gross': round(gross, 2) if has_sales else None,
+                             'apps': round(apps, 2) if has_sales else None,
+                             'apps_pct': round(apps / gross * 100, 2) if gross else None,
+                             'channels': {k: round(v, 2) for k, v in totals.items()},
+                             'customers': {'value': orders if customer_days else None,
+                                           'avg_ticket': round(pos_gross / orders, 2) if orders else None}}
+        return result
+
+    @request_memo
     def _sales_summary(self, ids, start, end):
         days, channels, unreceived, hours = self._sales_days(ids, start, end)
         totals = defaultdict(float)

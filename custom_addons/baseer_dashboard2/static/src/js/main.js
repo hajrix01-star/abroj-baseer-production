@@ -1,5 +1,6 @@
 /** @odoo-module **/
-import { Component, onWillStart, useState, useExternalListener } from "@odoo/owl";
+import { Component, onWillStart, onWillUnmount, useState, useExternalListener } from "@odoo/owl";
+import { dashboardTooltip } from "./tooltip";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 
@@ -111,8 +112,36 @@ export const hasDisplayValues = (values) => (values || []).some(v => v != null &
 export const hasPoints = (values) => (values || []).some((v) => v != null && Number.isFinite(Number(v)));
 export const multiplePoints = (values) => (values || []).filter(v => v != null && Number.isFinite(Number(v))).length > 1 ? values : [];
 export class Sparkline extends Component {
+  miniX = miniX;
+  setup() { this.hover = useState({ index: -1 }); }
   static template = "baseer_dashboard2.Sparkline";
-  static props = { values: { optional: true }, previous: { optional: true }, gold: { optional: true }, secondaryGold: { optional: true }, navy: { optional: true }, mini: { optional: true }, stretch: { optional: true }, ratioPercent: { optional: true }, amountDecimal: { optional: true }, partial: { optional: true }, onDrill: { optional: true }, canDrill: { optional: true } };
+  static props = { months: { optional: true }, previousYear: { optional: true }, previousYearSecondary: { optional: true }, unit: { optional: true }, values: { optional: true }, previous: { optional: true }, gold: { optional: true }, secondaryGold: { optional: true }, navy: { optional: true }, mini: { optional: true }, stretch: { optional: true }, ratioPercent: { optional: true }, amountDecimal: { optional: true }, partial: { optional: true }, onDrill: { optional: true }, canDrill: { optional: true } };
+  get slots() { return (this.props.values || []).map((_, i) => i); }
+  sparkPoint(a, i, secondary = false) {
+    if (a?.[i] == null) return null;
+    if (this.props.mini) return this.miniPoint(a, i, secondary);
+    const values = [...(this.props.values || []), ...(this.props.previous || [])].filter(v => v != null).map(Number);
+    const lo = Math.min(...values), hi = Math.max(...values);
+    return {x: miniX(i, a.length), y: 28 - (Number(a[i])-lo)/(hi-lo || 1)*24};
+  }
+  sparkInfo(event, index) {
+    const svg = event.currentTarget.ownerSVGElement, rect = svg.getBoundingClientRect();
+    const matrix = svg.getScreenCTM(), local = new DOMPoint(event.clientX,event.clientY).matrixTransform(matrix.inverse());
+    const y = local.y;
+    const candidates = [{values:this.props.values, prior:this.props.previousYear, secondary:false}, {values:this.props.previous, prior:this.props.previousYearSecondary, secondary:true}]
+      .map(x => ({...x, point:this.sparkPoint(x.values,index,x.secondary)})).filter(x => x.point);
+    if (!candidates.length) return null;
+    const c = candidates.reduce((a,b) => Math.abs(a.point.y-y) <= Math.abs(b.point.y-y) ? a : b);
+    const screen = new DOMPoint(c.point.x,c.point.y).matrixTransform(matrix), x=screen.x, py=screen.y;
+    const prior = c.prior?.[index], value=c.values[index], percent = c.secondary && this.props.ratioPercent || this.props.unit === 'percent';
+    const format = percent ? formatPercent : this.props.unit === 'orders' && !c.secondary ? formatNumber : v => v == null ? '—' : `${formatNumber(v)} ر.س`;
+    const month=this.props.months?.[index];
+    const rows=[['الشهر',month && /^\d{4}-\d{2}$/.test(month) ? monthLabel(month,{year:true}) : (month || '—')],['القيمة',format(value)],['نفس الشهر العام الماضي',format(prior)],['التغير',formatPercent(prior == null || Number(prior) === 0 ? null : (value-prior)/Math.abs(prior)*100)]];
+    return {rows, options:{rect:{left:x-4,right:x+4,top:py-4,bottom:py+4,width:8,height:8}, drill:this.props.canDrill?.(index,c.secondary) ? e => this.props.onDrill?.(e,index,c.secondary) : null}};
+  }
+  sparkEnter(event,index) { if (event.pointerType === 'touch') return; const tip=this.sparkInfo(event,index); if (tip) { this.hover.index=index; dashboardTooltip.show(event.currentTarget,tip.rows,tip.options); } }
+  sparkLeave(event) { if (event.pointerType !== 'touch') { this.hover.index=-1; dashboardTooltip.deferClose(); } }
+  sparkTap(event,index) { if (event.pointerType !== 'touch') return; const tip=this.sparkInfo(event,index); if (tip) { this.hover.index=index; dashboardTooltip.toggle(event.currentTarget,tip.rows,tip.options); } }
   miniPoint(a, i, ratio = false) {
     const values = (a || []).filter(v => v != null).map(Number);
     if (!values.length || a[i] == null) return null;
@@ -151,8 +180,46 @@ export class Sparkline extends Component {
 }
 export class LineChart extends Component {
   static template = "baseer_dashboard2.LineChart";
-  static props = { series: Array, labels: { optional: true }, percent: { optional: true }, compactTop: { optional: true }, fiveTicks: { optional: true } };
+  static props = { series: Array, labels: { optional: true }, months: { optional: true }, percent: { optional: true }, compactTop: { optional: true }, fiveTicks: { optional: true } };
   chartX = chartX;
+  setup() { this.hover = useState({ index: -1, series: -1 }); }
+  get slots() { return Array.from({ length: Math.max(0, ...this.renderedSeries.map(s => s.values.length)) }, (_, i) => i); }
+  slotWidth() { return this.slots.length > 1 ? 630 / (this.slots.length - 1) : 630; }
+  pointInfo(event, index) {
+    const svg = event.currentTarget.ownerSVGElement;
+    const rect = svg.getBoundingClientRect();
+    const box = svg.viewBox.baseVal;
+    const matrix=svg.getScreenCTM();
+    const y = new DOMPoint(event.clientX,event.clientY).matrixTransform(matrix.inverse()).y;
+    const candidates = this.renderedSeries.map((s, n) => ({ s, n })).filter(({s}) => (!s.dashed || s.endpoint) && s.values[index] != null);
+    if (!candidates.length) return null;
+    const {s, n} = candidates.reduce((a, b) => Math.abs(this.y(a.s.values[index]) - y) <= Math.abs(this.y(b.s.values[index]) - y) ? a : b);
+    const screen=new DOMPoint(chartX(index,s.values.length),this.y(s.values[index])).matrixTransform(matrix);
+    const xScreen=screen.x, yScreen=screen.y;
+    const point = {left:xScreen-4, right:xScreen+4, top:yScreen-4, bottom:yScreen+4, width:8, height:8};
+    const fallback = this.props.labels?.[index] || '—';
+    const short = String(fallback).replace(/[^A-Za-z]/g, '').slice(0, 3);
+    const monthNumber = MONTHS_SHORT.findIndex(m => m.toLowerCase() === short.toLowerCase()) + 1;
+    const month = this.props.months?.[index] ? monthLabel(this.props.months[index], {year:true}) : monthNumber ? monthLabel(`2000-${String(monthNumber).padStart(2,'0')}`) : fallback;
+    const prior = s.previousYear?.[index] ?? null;
+    const val = s.values[index];
+    const format = this.props.percent ? formatPercent : v => v == null ? '—' : `${formatNumber(v)} ر.س`;
+    const change = prior == null || Number(prior) === 0 ? null : (val-prior)/Math.abs(prior)*100;
+    return { n, rows: [['الشهر', month], ...(s.name ? [['المؤشر', s.name]] : []), ['القيمة',format(val)], ['نفس الشهر العام الماضي',format(prior)], ['التغير',formatPercent(change)]], options: {rect:point, bounds:svg, drill:s.drill ? e => s.drill(e,index) : null} };
+  }
+  pointEnter(event, index) {
+    if (event.pointerType === 'touch') return;
+    const info = this.pointInfo(event,index); if (!info) return;
+    this.hover.index=index; this.hover.series=info.n;
+    dashboardTooltip.show(event.currentTarget,info.rows,info.options);
+  }
+  pointLeave(event) { if (event.pointerType !== 'touch') { this.hover.index=-1; dashboardTooltip.deferClose(); } }
+  pointTap(event, index) {
+    if (event.pointerType !== 'touch') return;
+    const info = this.pointInfo(event,index); if (!info) return;
+    this.hover.index=index; this.hover.series=info.n;
+    dashboardTooltip.toggle(event.currentTarget,info.rows,info.options);
+  }
   get renderedSeries() { return this.props.series.filter((s) => hasPoints(s.values)); }
   get scale() {
     const values = this.renderedSeries.flatMap((s) => s.values.filter((v) => v != null).map(Number));
@@ -201,12 +268,26 @@ export class Badge extends Component {
       : this.props.value >= 0;
   }
 }
+const visualTip = {
+  click(event) { if (event.pointerType === 'touch') event.stopPropagation(); },
+  enter(event, rows) { if (event.pointerType !== 'touch') dashboardTooltip.show(event.currentTarget, rows); },
+  leave(event) { if (event.pointerType !== 'touch') dashboardTooltip.deferClose(); },
+  tap(event, rows) {
+    const drill = event.target.closest('.bd2-drill');
+    if (event.pointerType !== 'touch' || event.target.closest('.bd2-spark') || (drill && event.currentTarget.contains(drill))) return;
+    dashboardTooltip.toggle(event.currentTarget, rows);
+  },
+};
+
 class Track extends Component {
+  tip = visualTip;
+  get tipRows() { return [['التاريخ', this.props.date], ['المبلغ', this.props.value == null ? '—' : `${formatNumber(this.props.value)} ر.س`], ['العملاء', this.props.customers == null ? null : formatNumber(this.props.customers)], ['المناسبة', this.props.occasion]]; }
   static template = "baseer_dashboard2.Track";
   static props = {
     value: { optional: true },
     max: { optional: true },
     gold: { optional: true },
+    date: { optional: true }, customers: { optional: true }, occasion: { optional: true },
   };
   get width() {
     return Math.min(
@@ -220,13 +301,17 @@ class Track extends Component {
   }
 }
 class Ring extends Component {
+  tip = visualTip;
+  get tipRows() { return [['التاريخ', this.props.date], ['المبلغ', this.props.amount == null ? null : `${formatNumber(this.props.amount)} ر.س`], ['العملاء', this.props.customers == null ? null : formatNumber(this.props.customers)], ['المناسبة', this.props.occasion], ['النسبة', formatPercent(this.props.value)]]; }
   static template = "baseer_dashboard2.Ring";
-  static props = { value: { optional: true } };
+  static props = { value: { optional: true }, date: { optional: true }, amount: { optional: true }, customers: { optional: true }, occasion: { optional: true } };
   get offset() {
     return 264 * (1 - Math.max(0, Math.min(100, this.props.value || 0)) / 100);
   }
 }
 export class Gauge extends Component {
+  tip = visualTip;
+  get tipRows() { return [['النسبة', formatPercent(this.props.value)], ['المستهدف', formatPercent(this.props.target)], ['السابق', formatPercent(this.props.previous)]]; }
   static template = "baseer_dashboard2.Gauge";
   static props = {
     value: { optional: true },
@@ -255,6 +340,8 @@ export function customerCutoverLabel(date) {
   return `من ${Number(day)}/${Number(month)}`;
 }
 export class KpiCard extends Component {
+  tip = visualTip;
+  get tipRows() { return [['المؤشر', this.props.title], ['الشهر', this.props.months?.at(-1) ? monthLabel(this.props.months.at(-1), {year:true}) : null], ['القيمة', this.props.unit === 'orders' ? formatNumber(this.props.value) : this.props.value == null ? '—' : `${formatNumber(this.props.value)} ر.س`], ['التغير', formatPercent(this.props.change)]]; }
   static template = "baseer_dashboard2.KpiCard";
   iconPath = iconPath;
   formatPercent = formatPercent;
@@ -270,6 +357,8 @@ export class KpiCard extends Component {
     value: { optional: true },
     change: { optional: true },
     trend: { optional: true },
+    months: { optional: true },
+    previousYearTrend: { optional: true },
     previousTrend: { optional: true },
     partial: { optional: true },
     hero: { optional: true },
@@ -300,6 +389,8 @@ export class InfoPopup extends Component {
 }
 
 export class Dashboard2 extends Component {
+  tip = visualTip;
+  dayTip(day) { return [['التاريخ', `${this.dateName(day.date)} ${day.date.slice(0,4)}`], ['المبلغ', day.gross == null ? '—' : `${formatNumber(day.gross)} ر.س`], ['العملاء', formatNumber(day.customers)], ['المناسبة', (day.events || []).map(e => e.name).join('، ')]]; }
   static template = "baseer_dashboard2.Main";
   static components = {
     Sparkline,
@@ -325,6 +416,7 @@ export class Dashboard2 extends Component {
       "monthName",
       "level",
       "dayValue",
+      "dayTip",
     ])
       this[name] = this[name].bind(this);
     this.orm = useService("orm");
@@ -348,6 +440,8 @@ export class Dashboard2 extends Component {
       navOpen: false,
     });
     useExternalListener(window, "keydown", (event) => { if (event.key === "Escape") this.state.navOpen = false; });
+    onWillUnmount(() => { this.loadToken++; dashboardTooltip.destroy(); });
+    this.loadToken = 0;
     onWillStart(() => this.init());
   }
   async init() {
@@ -425,13 +519,18 @@ export class Dashboard2 extends Component {
     return this.drill(event, 'overview', ['purchases', 'apps', 'customers'][item], {period: this.monthPeriod(month)});
   }
   async load() {
+    const token = ++this.loadToken;
+    const company = this.state.company;
+    const period = { ...this.state.period };
+    let loadCashDrills = false;
     this.state.loading = true;
     this.state.error = "";
+    this.state.cashDrills = {};
     try {
       if (!this.state.company && this.state.page !== "glossary") {
         this.state.data = { available: false, reason: "لا توجد شركات متاحة" };
       } else {
-        this.state.data = await this.orm.call(
+        const data = await this.orm.call(
           "baseer.dashboard2.service",
           "get_section",
           [
@@ -445,15 +544,24 @@ export class Dashboard2 extends Component {
             },
           ],
         );
-        this.state.cashDrills = {};
-        if (this.state.page === "pnl" && this.state.view === "inout") {
-          this.state.cashDrills = await this.orm.call("baseer.dashboard2.service", "get_cash_drill_availability", [{company_key: this.state.company, period: this.state.period}]);
-        }
+        if (token !== this.loadToken) return;
+        this.state.data = data;
+        loadCashDrills = this.state.page === "pnl" && this.state.view === "inout";
       }
     } catch (e) {
-      this.state.error = e.message || String(e);
+      if (token === this.loadToken) this.state.error = e.message || String(e);
     } finally {
-      this.state.loading = false;
+      if (token === this.loadToken) this.state.loading = false;
+    }
+    if (loadCashDrills && token === this.loadToken) this.loadCashDrills(token, company, period);
+  }
+  async loadCashDrills(token, company, period) {
+    try {
+      const drills = await this.orm.call("baseer.dashboard2.service", "get_cash_drill_availability", [{company_key: company, period}]);
+      if (token === this.loadToken && this.state.page === "pnl" && this.state.view === "inout" &&
+          company === this.state.company && JSON.stringify(period) === JSON.stringify(this.state.period)) this.state.cashDrills = drills;
+    } catch (_) {
+      // Availability is optional; cash-out figures remain non-drillable on failure.
     }
   }
   async choose(key, value) {
@@ -479,6 +587,7 @@ export class Dashboard2 extends Component {
     if (r.date_from && r.date_to && r.date_from <= r.date_to) await this.load();
   }
   async periodChange(key, value) {
+    this.state.cashDrills = {};
     this.state.period[key] = value;
     this.persist("period");
     if (
@@ -580,10 +689,12 @@ export class Dashboard2 extends Component {
   get timelineLabels() {
     return this.timeline.map((x) => x.year ? String(x.year) + (x.partial ? " (جزئي)" : "") : monthLabel(`2000-${String(x.month).padStart(2, "0")}`, { short: true, partial: x.partial, isolate: x.partial }));
   }
+  get timelineMonths() { return this.state.timeline === "monthly" ? this.timeline.map(x => `${timelineYear(this.state.period)}-${String(x.month).padStart(2, "0")}`) : []; }
   get timelineSeries() {
     return [
       {
         values: this.timeline.map((x) => x.value),
+        previousYear: this.timeline.map((x) => x.previous),
         partial: this.timeline.map((x) => x.partial),
         gold: true,
         area: true,

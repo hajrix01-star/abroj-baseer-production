@@ -881,7 +881,7 @@ td {
   .o_bd2 .stats.card > div { flex: 1 1 50%; }
   .o_bd2 .card-head, .o_bd2 .view-controls, .o_bd2 .chart-legend, .o_bd2 .break-legend, .o_bd2 .bridge-legend, .o_bd2 .safety-chips { flex-wrap: wrap; white-space: normal; }
   .o_bd2 .timeline .chart-legend { position: static; justify-content: flex-start; }
-  .o_bd2 .bd2-chart { min-height: 0; }
+  .o_bd2 .bd2-chart { min-height: 180px; }
   .o_bd2 .bridge-row, .o_bd2 .rank-row { grid-template-columns: minmax(0, 1fr) minmax(65px, 1fr); gap: 6px; }
 
   .o_bd2 .year-grid { min-width: 900px; }
@@ -954,3 +954,42 @@ td {
 .o_bd2 .pnl-range label { display: flex; align-items: center; gap: 5px; }
 .o_bd2 .bd2-drill { cursor: pointer; }
 .o_bd2 .bd2-drill:hover, .o_bd2 .bd2-drill:focus { text-decoration: underline dotted; text-underline-offset: 3px; }
+
+// Keep indicator feedback visual only: it must not move neighbouring cards.
+@media (hover: hover) {
+  .o_bd2 .card.kpi, .o_bd2 .card.mini, .o_bd2 .card.ratio {
+    transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
+  }
+  .o_bd2 .card.kpi:hover, .o_bd2 .card.mini:hover, .o_bd2 .card.ratio:hover {
+    transform: translateY(-2px);
+    border-color: var(--bd2-gold);
+    box-shadow: 0 4px 12px var(--bd2-shadow);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .o_bd2 .card.kpi, .o_bd2 .card.mini, .o_bd2 .card.ratio {
+    transition: none;
+  }
+}
+
+.o_bd2 .bd2-tooltip {
+  position: fixed; z-index: 1100; width: max-content; max-width: 290px; max-width: unquote("min(290px, calc(100vw - 16px))");
+  padding: 10px 12px; border: 1px solid var(--bd2-gold); border-radius: 8px;
+  background: var(--bd2-card); color: var(--bd2-text); box-shadow: 0 6px 20px var(--bd2-shadow);
+  font-size: 12px; line-height: 1.6; pointer-events: auto;
+}
+.o_bd2 .bd2-tooltip[hidden] { display: none; }
+.o_bd2 .bd2-tooltip > div { display: flex; gap: 16px; justify-content: space-between; }
+.o_bd2 .bd2-tooltip > div span { color: var(--bd2-muted); }
+.o_bd2 .bd2-tooltip bdi { font-weight: 700; }
+.o_bd2 .bd2-tooltip button { display: block; border: 0; padding: 3px 0 0; background: var(--bd2-transparent); color: var(--bd2-gold-text); text-decoration: underline; cursor: pointer; }
+
+.o_bd2 .bd2-chart > :not(.bd2-chart-slot) { pointer-events: none; }
+.o_bd2 .bd2-chart .bd2-drill { pointer-events: auto; }
+.o_bd2 .bd2-chart-slot { pointer-events: all; }
+.o_bd2 .bd2-chart circle { transition: r 120ms ease; }
+@media (prefers-reduced-motion: reduce) { .o_bd2 .bd2-chart circle { transition: none; } }
+
+.o_bd2 .bd2-spark > :not(.bd2-spark-slot) { pointer-events: none; }
+.o_bd2 .bd2-spark .bd2-drill { pointer-events: auto; }
+.o_bd2 .bd2-spark-slot { pointer-events: all; }

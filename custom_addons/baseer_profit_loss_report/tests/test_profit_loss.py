@@ -232,6 +232,9 @@ class TestProfitLoss(TransactionCase):
             tax.invoice_repartition_line_ids.filtered(
                 lambda line: line.repartition_type == 'tax',
             ).write({'account_id': vat_account.id})
+            tax.refund_repartition_line_ids.filtered(
+                lambda line: line.repartition_type == 'tax',
+            ).write({'account_id': vat_account.id})
             move = self.env['account.move'].with_company(self.company).create({
                 'move_type': move_type, 'partner_id': partner.id,
                 'journal_id': journal.id, 'invoice_date': '2041-05-10',
@@ -244,10 +247,201 @@ class TestProfitLoss(TransactionCase):
             move.action_post()
             self.assertEqual(move.state, 'posted')
             self.assertEqual(Decimal(str(move.amount_total)), Decimal('115'))
-        result = self.report.get_report(self.filters)
+        result = self.report.get_report({**self.filters, 'tax_inclusive': False})
         self.assertEqual(self._section(result, 'income')['amount'], '100.00')
         self.assertEqual(self._section(result, 'expense')['amount'], '-100.00')
         self.assertEqual(result['net_profit']['amount'], '0.00')
+        inclusive = self.report.get_report(self.filters)
+        self.assertEqual(self._section(inclusive, 'income')['amount'], '115.00')
+        self.assertEqual(self._section(inclusive, 'expense')['amount'], '-115.00')
+        self.assertEqual(inclusive['net_profit']['amount'], '0.00')
+        income = self.report.get_accounts(self.filters, 'income')
+        self.assertEqual(income['total_amount'], '115.00')
+        lines = self.report.get_lines(self.filters, self.accounts['income'].id)
+        self.assertEqual(lines['total_amount'], '115.00')
+        self.assertEqual(lines['lines'][0]['amount'], '115.00')
+        sale_journal = self.env['account.journal'].search([('company_id', '=', self.company.id), ('code', '=', 'PLI')])
+        sale_tax = self.env['account.tax'].search([('company_id', '=', self.company.id), ('name', '=', 'P&L sale VAT 15%')])
+        other_tax = self.env['account.tax'].with_company(self.company).create({
+            'name': 'P&L second sales tax', 'amount': 5, 'type_tax_use': 'sale', 'company_id': self.company.id,
+        })
+        other_tax.invoice_repartition_line_ids.filtered(lambda line: line.repartition_type == 'tax').write({'account_id': vat_due.id})
+        split = self.env['account.move'].with_company(self.company).create({
+            'move_type': 'out_invoice', 'partner_id': partner.id, 'journal_id': sale_journal.id,
+            'invoice_date': '2041-05-10', 'invoice_line_ids': [
+                Command.create({'name': 'First tax', 'quantity': 1, 'price_unit': 100,
+                                'account_id': self.accounts['income'].id, 'tax_ids': [Command.set(sale_tax.ids)]}),
+                Command.create({'name': 'Second tax', 'quantity': 1, 'price_unit': 50,
+                                'account_id': self.accounts['income_other'].id, 'tax_ids': [Command.set(other_tax.ids)]}),
+            ],
+        })
+        split.action_post()
+        proved = self.report.get_report(self.filters)
+        self.assertEqual(self._section(proved, 'income')['amount'], '230.00')
+        self.assertEqual(self._section(proved, 'income_other')['amount'], '52.50')
+        ambiguous = self.env['account.move'].with_company(self.company).create({
+            'move_type': 'out_invoice', 'partner_id': partner.id, 'journal_id': sale_journal.id,
+            'invoice_date': '2041-05-10', 'invoice_line_ids': [
+            Command.create({'name': 'First', 'quantity': 1, 'price_unit': 100, 'discount': 10,
+                            'account_id': self.accounts['income'].id, 'tax_ids': [Command.set(sale_tax.ids)]}),
+            Command.create({'name': 'Second', 'quantity': 1, 'price_unit': 50,
+                            'account_id': self.accounts['income_other'].id, 'tax_ids': [Command.set(sale_tax.ids)]})]})
+        ambiguous.action_post()
+        shared = self.report.get_report(self.filters)
+        self.assertEqual(self._section(shared, 'income')['amount'], '333.50')
+        self.assertEqual(self._section(shared, 'income_other')['amount'], '110.00')
+        refund = self.env['account.move'].with_company(self.company).create({
+            'move_type': 'out_refund', 'partner_id': partner.id, 'journal_id': sale_journal.id,
+            'invoice_date': '2041-05-10', 'invoice_line_ids': [
+                Command.create({'name': 'First refund', 'quantity': 1, 'price_unit': 100, 'discount': 10,
+                                'account_id': self.accounts['income'].id, 'tax_ids': [Command.set(sale_tax.ids)]}),
+                Command.create({'name': 'Second refund', 'quantity': 1, 'price_unit': 50,
+                                'account_id': self.accounts['income_other'].id, 'tax_ids': [Command.set(sale_tax.ids)]}),
+            ],
+        })
+        refund.action_post()
+        reconciled = self.report.get_report(self.filters)
+        self.assertEqual(self._section(reconciled, 'income')['amount'], '230.00')
+        self.assertEqual(self._section(reconciled, 'income_other')['amount'], '52.50')
+        rounded = self.env['account.move'].with_company(self.company).create({
+            'move_type': 'out_invoice', 'partner_id': partner.id, 'journal_id': sale_journal.id,
+            'invoice_date': '2041-05-10', 'invoice_line_ids': [
+                Command.create({'name': 'Small first', 'quantity': 1, 'price_unit': 0.03,
+                                'account_id': self.accounts['income'].id, 'tax_ids': [Command.set(sale_tax.ids)]}),
+                Command.create({'name': 'Small second', 'quantity': 1, 'price_unit': 0.04,
+                                'account_id': self.accounts['income_other'].id, 'tax_ids': [Command.set(sale_tax.ids)]}),
+            ],
+        })
+        rounded.action_post()
+        reconciled = self.report.get_report(self.filters)
+        self.assertEqual(self._section(reconciled, 'income')['amount'], '230.03')
+        self.assertEqual(self._section(reconciled, 'income_other')['amount'], '52.55')
+        zero_tax = self.env['account.tax'].with_company(self.company).create({
+            'name': 'P&L zero tax', 'amount': 0, 'type_tax_use': 'sale', 'company_id': self.company.id,
+        })
+        for amount, account in ((10, self.accounts['income']), (30, self.accounts['income_other'])):
+            mixed = self.env['account.move'].with_company(self.company).create({
+                'move_type': 'out_invoice', 'partner_id': partner.id, 'journal_id': sale_journal.id,
+                'invoice_date': '2041-05-10', 'invoice_line_ids': [
+                    Command.create({'name': 'Taxable', 'quantity': 1, 'price_unit': 10,
+                                    'account_id': self.accounts['income'].id, 'tax_ids': [Command.set(sale_tax.ids)]}),
+                    Command.create({'name': 'Zero tax', 'quantity': 1, 'price_unit': amount,
+                                    'account_id': account.id, 'tax_ids': [Command.set(zero_tax.ids)]}),
+                ],
+            })
+            mixed.action_post()
+        mixed_report = self.report.get_report(self.filters)
+        self.assertEqual(self._section(mixed_report, 'income')['amount'], '263.03')
+        self.assertEqual(self._section(mixed_report, 'income_other')['amount'], '82.55')
+        self.report.get_report({**self.filters, 'tax_inclusive': False})
+
+    def test_noorix_original_gross_channels_reconcile_to_posted_entry(self):
+        if 'baseer.noorix.sales.evidence' not in self.env:
+            self.skipTest('Noorix reader is optional in the profit and loss module')
+        sar = self.env.ref('base.SAR')
+        sar.active = True
+        self.company.currency_id = sar
+        Account = self.env['account.account'].with_company(self.company)
+        funding = Account.create({'code': '959107', 'name': 'Noorix cash',
+                                  'account_type': 'asset_current', 'company_ids': [Command.set(self.company.ids)]})
+        vat = Account.create({'code': '959108', 'name': 'Noorix VAT',
+                              'account_type': 'liability_current', 'company_ids': [Command.set(self.company.ids)]})
+        tag = self.env['account.account.tag'].create({'name': '+Noorix test VAT', 'applicability': 'taxes',
+                                                      'country_id': self.company.account_fiscal_country_id.id})
+        self.env['account.tax'].with_company(self.company).create({
+            'name': 'Noorix test tax', 'amount': 15, 'type_tax_use': 'sale', 'company_id': self.company.id,
+            'invoice_repartition_line_ids': [Command.clear(), Command.create({'repartition_type': 'base'}),
+                Command.create({'repartition_type': 'tax', 'account_id': vat.id, 'tag_ids': [Command.set(tag.ids)]})],
+        })
+        move = self.env['account.move'].with_company(self.company).create({
+            'date': '2041-05-10', 'journal_id': self.journal.id, 'move_type': 'entry',
+            'ref': 'NOORIX-SALES SHAMI 2041-05-10 | src:synthetic-1',
+            'line_ids': [
+                Command.create({'name': 'Noorix sales cash 2041-05-10', 'account_id': funding.id, 'debit': 115}),
+                Command.create({'name': 'Noorix sales', 'account_id': self.accounts['income'].id, 'credit': 100}),
+                Command.create({'name': 'Noorix VAT', 'account_id': vat.id, 'credit': 15,
+                                'tax_tag_ids': [Command.set(tag.ids)]}),
+            ],
+        })
+        move.action_post()
+        current = self.report.get_report(self.filters)
+        self.assertEqual(self._section(current, 'income')['amount'], '115.00')
+        accounts = self.report.get_accounts(self.filters, 'income')['accounts']
+        account = next(row for row in accounts if row['id'] == self.accounts['income'].id)
+        self.assertEqual(account['amounts']['current']['amount'], '115.00')
+        self.assertEqual(sum(Decimal(row['amounts']['current']['amount'].replace(',', ''))
+                             for row in account['channels']), Decimal('115.00'))
+        channel = next(row for row in account['channels'] if row['key'] == 'noorix_cash')
+        self.assertEqual(channel['amounts']['current']['amount'], '115.00')
+        selector = {'kind': 'channel', 'account_id': self.accounts['income'].id,
+                    'channel_key': 'noorix_cash', 'period_key': 'current'}
+        drilled = self.report._get_drilldown(self.filters, selector)
+        self.assertEqual(drilled['value'], '115.00')
+        self.assertEqual(drilled['total_count'], 1)
+        self.assertEqual(drilled['rows'][0]['cells']['amount'], '115.00')
+        self.assertEqual(self.report._open_drill_source(self.filters, drilled['rows'][0]['source'])['res_id'], move.id)
+        document = self.report._get_export_document(self.filters)
+        exported = [row for row in document['rows'] if row.get('indent') == 2]
+        self.assertEqual(len(exported), 1)
+        self.assertEqual(exported[0]['cells']['current'], Decimal('115.00'))
+        self.assertEqual(self._section(self.report.get_report({**self.filters, 'tax_inclusive': False}),
+                                       'income')['amount'], '100.00')
+        untaxed = self.env['account.move'].with_company(self.company).create({
+            'date': '2041-05-11', 'journal_id': self.journal.id, 'move_type': 'entry',
+            'ref': 'NOORIX-SALES SHAMI 2041-05-11 | src:untaxed-1',
+            'line_ids': [
+                Command.create({'name': 'Noorix sales cash 2041-05-11', 'account_id': funding.id, 'debit': 20}),
+                Command.create({'name': 'Noorix sales', 'account_id': self.accounts['income'].id, 'credit': 20}),
+            ],
+        })
+        untaxed.action_post()
+        account = next(row for row in self.report.get_accounts(self.filters, 'income')['accounts']
+                       if row['id'] == self.accounts['income'].id)
+        self.assertEqual(next(row for row in account['channels'] if row['key'] == 'noorix_cash')
+                         ['amounts']['current']['amount'], '135.00')
+        other_journal = self.env['account.journal'].with_company(self.company).create({
+            'name': 'Other Noorix journal', 'code': 'NRO', 'type': 'general', 'company_id': self.company.id,
+        })
+        unrelated = self._entry('income', '10', journal=other_journal)
+        unrelated.ref = 'NOORIX-SALES invalid unrelated source'
+        filtered = {**self.filters, 'journal_ids': [self.journal.id]}
+        self.assertEqual(self._section(self.report.get_report(filtered), 'income')['amount'], '135.00')
+        prefix = move.copy(default={'journal_id': other_journal.id,
+                                    'ref': 'NOORIX-SALES SHAMI 2041-05-10 | src:synthetic-12'})
+        prefix.action_post()
+        rule = self._hide_record('account.move', prefix)
+        try:
+            user_report = self.report.with_user(self._accountant()).with_context(allowed_company_ids=self.company.ids)
+            self.assertEqual(self._section(user_report.get_report(filtered), 'income')['amount'], '135.00')
+        finally:
+            rule.unlink()
+        hidden_tax_move = self.env['account.move'].with_company(self.company).create({
+            'date': '2041-05-12', 'journal_id': other_journal.id, 'move_type': 'entry',
+            'ref': 'NOORIX-SALES SHAMI 2041-05-12 | src:hidden-tax-1',
+            'line_ids': [
+                Command.create({'name': 'Noorix sales cash 2041-05-12', 'account_id': funding.id, 'debit': 21}),
+                Command.create({'name': 'Noorix sales', 'account_id': self.accounts['income'].id, 'credit': 20}),
+                Command.create({'name': 'Noorix VAT', 'account_id': vat.id, 'credit': 1,
+                                'tax_tag_ids': [Command.set(tag.ids)]}),
+            ],
+        })
+        hidden_tax_move.action_post()
+        rule = self._hide_record('account.move.line', hidden_tax_move.line_ids.filtered(lambda line: line.account_id == vat))
+        try:
+            with self.assertRaises(AccessError):
+                user_report.get_report({**self.filters, 'journal_ids': [other_journal.id]})
+        finally:
+            rule.unlink()
+        duplicate = move.copy(default={'journal_id': other_journal.id, 'ref': move.ref})
+        duplicate.action_post()
+        with self.assertRaises(ValidationError):
+            self.report.get_report(filtered)
+        rule = self._hide_record('account.move', duplicate)
+        try:
+            with self.assertRaises(AccessError):
+                user_report.get_report(filtered)
+        finally:
+            rule.unlink()
 
     def test_empty_reversal_and_late_posting_changes_rerun(self):
         empty = self.report.get_report(self.filters)

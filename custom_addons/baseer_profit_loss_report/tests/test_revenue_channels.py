@@ -1,15 +1,53 @@
 """Small deterministic allocation tests, no database or new environment."""
 from decimal import Decimal
+from datetime import date
 from odoo.tests.common import TransactionCase, tagged
+from odoo.fields import Domain
 from types import SimpleNamespace
 from ..models.profit_loss import BaseerProfitLossReport
 from ..models.revenue_channels import (
     allocate_channels, UNALLOCATED, tender_matches_order, reconcile_order_amounts,
+    noorix_gross_channels,
 )
 
 
 @tagged('post_install', '-at_install')
 class TestRevenueChannels(TransactionCase):
+    def test_noorix_gross_channels_use_named_original_funding_only(self):
+        class Records(list):
+            def filtered(self, predicate):
+                return Records(item for item in self if predicate(item))
+
+            def mapped(self, name):
+                return Records({getattr(item, name).id: getattr(item, name) for item in self}.values())
+
+            @property
+            def id(self):
+                return self[0].id
+
+        company = SimpleNamespace(currency_id=object())
+        income = SimpleNamespace(id=1, account_type='income', internal_group='income')
+        cash = SimpleNamespace(id=2, account_type='asset_cash', internal_group='asset')
+        bank = SimpleNamespace(id=3, account_type='asset_cash', internal_group='asset')
+        def line(name, account, balance):
+            return SimpleNamespace(name=name, account_id=account, balance=balance,
+                                   company_id=company, currency_id=company.currency_id)
+        cash_line = line('Noorix sales cash 2026-11-01', cash, '15.00')
+        bank_line = line('Noorix sales bank 2026-11-01', bank, '100.00')
+        move = SimpleNamespace(date=date(2026, 11, 1), line_ids=Records([
+            line('Sales', income, '-100.00'), cash_line, bank_line,
+        ]))
+        event = {'original': True, 'move': move, 'amount': Decimal('115.00')}
+        self.assertEqual(noorix_gross_channels(event, company),
+                         (1, {'cash': Decimal('15.00'), 'bank': Decimal('100.00')}, {'cash': 2, 'bank': 3}))
+        self.assertIsNone(noorix_gross_channels({**event, 'amount': Decimal('114.99')}, company))
+        self.assertIsNone(noorix_gross_channels({**event, 'original': False}, company))
+        bank_line.name = 'unrecognised funding'
+        self.assertIsNone(noorix_gross_channels(event, company))
+        bank_line.name = 'Noorix sales bank 2026-11-01'
+        move.line_ids.append(line('Noorix sales cash 2026-11-01', bank, '1.00'))
+        self.assertIsNone(noorix_gross_channels({**event, 'amount': Decimal('116.00')}, company))
+
     def test_identity_census_empty_deduplicated_and_bounded_chunks(self):
         calls = []
         class Model:

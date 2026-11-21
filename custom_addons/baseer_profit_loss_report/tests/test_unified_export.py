@@ -5,6 +5,7 @@ from io import BytesIO
 import os
 import logging
 import re
+import unicodedata
 from uuid import uuid4
 from time import perf_counter
 from pathlib import Path
@@ -12,10 +13,15 @@ from unittest.mock import patch
 from types import SimpleNamespace
 
 from openpyxl import load_workbook
+try:
+    from pdfminer.high_level import extract_text
+except ImportError:
+    extract_text = None
 from odoo import Command
 from odoo.exceptions import AccessError, ValidationError
 from odoo.tests.common import TransactionCase, tagged
 from odoo.addons.baseer_reports_menu.report_values import source_money
+from odoo.addons.baseer_reports_menu.report_document import render_html
 from .test_profit_loss import TestProfitLoss
 from ..models.profit_loss import SECTION_KEYS
 from ..report.profit_loss_report import LABELS
@@ -443,3 +449,45 @@ class TestUnifiedExport(TransactionCase):
                 target = os.environ.get('BASEER_EXPORT_EVIDENCE_DIR')
                 if target and os.path.isdir(target):
                     Path(target, 'profit_loss-export-' + suffix + '.' + file_format).write_bytes(payload)
+
+    def test_tax_basis_in_bilingual_document_excel_and_pdf(self):
+        exports = self.env['baseer.report.export']
+        for lang, inclusive, basis, note in (
+            ('en_US', True, 'Tax inclusive', 'not accounting net profit'),
+            ('en_US', False, 'Tax exclusive', None),
+            ('ar_001', True, 'شامل الضريبة', 'ليس صافي الربح المحاسبي'),
+            ('ar_001', False, 'غير شامل الضريبة', None),
+        ):
+            filters = {**self.filters, 'tax_inclusive': inclusive}
+            report = self.report.with_context(lang=lang)
+            doc = report._get_export_document(filters)
+            self.assertIn(basis, doc['title'])
+            self.assertIn(basis, dict(doc['metadata']).values())
+            html = render_html(doc)
+            self.assertIn(basis, html)
+            if note:
+                self.assertTrue(any(note in item for item in doc['notes']))
+                self.assertIn(note, html)
+            else:
+                self.assertFalse(any('accounting net profit' in item or 'الربح المحاسبي' in item
+                                     for item in doc['notes']))
+            payload, _mime, _filename = exports.with_context(lang=lang)._export('profit_loss', filters, 'xlsx')
+            sheet = load_workbook(BytesIO(payload)).active
+            text = '\n'.join(str(cell.value) for row in sheet for cell in row if cell.value is not None)
+            self.assertIn(basis, text)
+            if note:
+                self.assertIn(note, text)
+            payload, mime, _filename = exports.with_context(lang=lang)._export('profit_loss', filters, 'pdf')
+            self.assertEqual(mime, 'application/pdf')
+            self.assertTrue(payload.startswith(b'%PDF-'))
+            if extract_text:
+                pdf_text = unicodedata.normalize('NFKC', extract_text(BytesIO(payload)))
+                if lang.startswith('ar'):
+                    # PDF text extraction visits Arabic words in visual rather
+                    # than logical order and may introduce line breaks.
+                    for word in (basis + (' ' + note if note else '')).split():
+                        self.assertIn(word.strip('؛،.'), pdf_text)
+                else:
+                    self.assertIn(basis, pdf_text)
+                    if note:
+                        self.assertIn(note, pdf_text)

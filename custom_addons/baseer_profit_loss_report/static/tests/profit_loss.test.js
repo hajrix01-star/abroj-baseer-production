@@ -13,6 +13,7 @@ const MODEL = "baseer.profit.loss.report";
 defineMailModels();
 const filters = {
     company_id: 1,
+    tax_inclusive: true,
     period: { kind: "month", anchor_date: "2026-10-15", direction: 0, date_from: "", date_to: "" },
     comparison: { kind: "previous_period", order: "descending", count: 1, date_from: "", date_to: "" },
     journal_ids: [],
@@ -138,6 +139,26 @@ test("profit and loss remains a real accounting-only report component", () => {
     expect(descriptor.kind).toBe("component");
     expect(descriptor.component).toBe(BaseerProfitLossReport);
     expect(descriptor.groups).toEqual(["account.group_account_readonly", "account.group_account_user", "account.group_account_manager"]);
+});
+
+test("the applied tax basis and management note follow the displayed report", async () => {
+    patchWithCleanup(user, { lang: "en_US" });
+    await mountReport([]);
+    expect(document.querySelector(".o_baseer_report_title").textContent.includes("Tax inclusive")).toBe(true);
+    expect(document.querySelector("[data-testid='tax-management-note']").textContent.includes("not accounting net profit")).toBe(true);
+    await click(".o_baseer_pl_filter_chip");
+    await waitUntil(() => document.querySelector(".o_baseer_report_title")?.textContent.includes("Tax exclusive"));
+    expect(document.querySelector("[data-testid='tax-management-note']")).toBe(null);
+});
+
+test("the applied tax basis is described in Arabic", async () => {
+    patchWithCleanup(user, { lang: "ar_001" });
+    await mountReport([]);
+    expect(document.querySelector(".o_baseer_report_title").textContent.includes("شامل الضريبة")).toBe(true);
+    expect(document.querySelector("[data-testid='tax-management-note']").textContent.includes("ليس صافي الربح المحاسبي")).toBe(true);
+    await click(".o_baseer_pl_filter_chip");
+    await waitUntil(() => document.querySelector(".o_baseer_report_title")?.textContent.includes("غير شامل الضريبة"));
+    expect(document.querySelector("[data-testid='tax-management-note']")).toBe(null);
 });
 
 test("profit and loss shared exports send only the applied report filters", async () => {
@@ -419,7 +440,8 @@ test("mounted Arabic report keeps backend values and exposes Arabic period filte
     patchWithCleanup(user, { lang: "ar_001" });
     await mountReport([]);
     expect(document.querySelector(".o_baseer_pl_report").getAttribute("dir")).toBe("rtl");
-    expect(document.querySelector(".o_baseer_report_title").textContent).toBe("الأداء المالي — الربح والخسارة");
+    expect(document.querySelector(".o_baseer_report_title").textContent.includes("الأداء المالي — الربح والخسارة")).toBe(true);
+    expect(document.querySelector(".o_baseer_report_title").textContent.includes("شامل الضريبة")).toBe(true);
     expect(document.querySelector('.o_baseer_pl_filter_chip[aria-label="المقارنة"]').textContent.includes("دون مقارنة") || document.querySelector('.o_baseer_pl_filter_chip[aria-label="المقارنة"]').textContent.includes("الفترة السابقة")).toBe(true);
     expect(document.querySelector(".o_baseer_pl_result .is-negative").textContent).toBe("-50.00");
 });

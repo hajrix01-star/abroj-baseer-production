@@ -12,10 +12,11 @@ class ProfitLossExport(models.AbstractModel):
     _inherit = 'baseer.profit.loss.report'
 
     def _get_export_document(self, filters):
+        self = self.with_context(_baseer_pl_inclusive=self._tax_inclusive(filters))
         require_active_filters(self.env, filters, {
             'company_id', 'period', 'comparison', 'journal_ids', 'date_from', 'date_to',
             'period_mode', 'anchor_date', 'period_direction', 'comparison_mode', 'comparison_count',
-            'comparison_order', 'comparison_date_from', 'comparison_date_to',
+            'comparison_order', 'comparison_date_from', 'comparison_date_to', 'tax_inclusive',
         })
         company, _journals, periods, _period_control, _comparison_control = self._scope(filters)
         grouped = {period['key']: self._section_rows(period['domain']) for period in periods}
@@ -83,5 +84,14 @@ class ProfitLossExport(models.AbstractModel):
         metadata = [('الدفاتر' if arabic else 'Journals', ', '.join(journals.mapped('display_name')) if journals
                      else ('جميع الدفاتر' if arabic else 'All journals'))]
         metadata += [(label, f"{period['date_from']} — {period['date_to']}") for period, label in zip(periods, period_labels)]
-        return export_document(self.env, 'الربح والخسارة' if arabic else 'Profit and Loss', columns, rows,
-                               metadata=metadata, notes=['قيود مرحلة فقط' if arabic else 'Posted entries only'])
+        inclusive = self._tax_inclusive(filters)
+        basis = (('شامل الضريبة' if inclusive else 'غير شامل الضريبة') if arabic
+                 else ('Tax inclusive' if inclusive else 'Tax exclusive'))
+        title = ('الربح والخسارة' if arabic else 'Profit and Loss') + ' — ' + basis
+        notes = ['قيود مرحلة فقط' if arabic else 'Posted entries only']
+        if inclusive:
+            title += ' (عرض إداري)' if arabic else ' (Management view)'
+            notes.append('عرض إداري شامل الضريبة؛ صافي الربح المعروض ليس صافي الربح المحاسبي.' if arabic else
+                         'Tax-inclusive management view; the net profit shown is not accounting net profit.')
+        metadata.insert(0, ('أساس الضريبة' if arabic else 'Tax basis', basis))
+        return export_document(self.env, title, columns, rows, metadata=metadata, notes=notes)

@@ -20,7 +20,7 @@ const copy = {
         income: "الإيرادات", income_other: "إيرادات أخرى", expense_direct_cost: "تكلفة المبيعات", expense: "المصروفات", expense_other: "مصروفات أخرى", expense_depreciation: "الاستهلاك",
         gross: "إجمالي الربح", totalIncome: "إجمالي الإيرادات", totalExpense: "إجمالي المصروفات", operating: "صافي الربح التشغيلي", otherNet: "صافي الإيرادات الأخرى", net: "صافي الربح",
         source: "عرض قيود اليومية", previous: "السابق", next: "التالي", page: "صفحة", noAccounts: "لا توجد حسابات في هذا القسم.", debit: "مدين", credit: "دائن",
-        period: "الفترة", comparison: "المقارنة", month: "شهر", quarter: "ربع سنة", fiscalYear: "سنة مالية", customDates: "تواريخ مخصصة", noComparison: "دون مقارنة", previousPeriods: "الفترة السابقة", samePeriodLastYear: "الفترة نفسها العام الماضي", periods: "فترات", periodOrder: "ترتيب الفترات", descending: "تنازلي", ascending: "تصاعدي", from: "من", to: "إلى", current: "الحالية",
+        taxInclusive: "شامل الضريبة", taxExclusive: "غير شامل الضريبة", managementView: "عرض إداري", managementTaxNote: "عرض إداري شامل الضريبة؛ صافي الربح المعروض ليس صافي الربح المحاسبي.", period: "الفترة", comparison: "المقارنة", month: "شهر", quarter: "ربع سنة", fiscalYear: "سنة مالية", customDates: "تواريخ مخصصة", noComparison: "دون مقارنة", previousPeriods: "الفترة السابقة", samePeriodLastYear: "الفترة نفسها العام الماضي", periods: "فترات", periodOrder: "ترتيب الفترات", descending: "تنازلي", ascending: "تصاعدي", from: "من", to: "إلى", current: "الحالية",
         waterfallTitle: "جسر الربحية", waterfallCaption: "من الإيرادات إلى صافي الربح", waterfallAccessible: "تسلسل صافي الربح: الإيرادات، تكلفة المبيعات، المصروفات التشغيلية، صافي الإيرادات الأخرى، ثم صافي الربح.", statementTitle: "قائمة الربح والخسارة", statementCaption: "تفصيل موثّق قابل للوصول إلى القيود", revenueAccountsTitle: "أعلى حسابات الإيراد", revenueAccountsCaption: "أكبر خمسة حسابات ضمن الفترة", financialNotesTitle: "ملاحظات مالية", financialNotesCaption: "نطاق البيانات والتحقق", postedShort: "قيود مُرحّلة", vsComparison: "مقارنة", noComparisonData: "لا توجد مقارنة", noRevenueAccounts: "لا توجد حسابات إيراد ضمن الفترة", unavailable: "غير متاح",
         cost_of_sales: "تكلفة المبيعات", gross_profit: "إجمالي الربح", gross_margin: "هامش الربح الإجمالي", net_other_income: "صافي الإيرادات الأخرى", net_income: "صافي الربح", posted_only: "الأرقام من القيود المُرحّلة فقط.", partial_journals: "النتائج مقصورة على الدفاتر المختارة.", comparison_available: "المقارنة مبنية على فترة واحدة محددة.", comparison_unavailable: "اختر مقارنة لإظهار اتجاه الفترة.", gross_margin_unavailable: "هامش الربح غير متاح عندما لا يكون صافي الإيراد موجبًا.", revenue_share_unavailable: "حصة حسابات الإيراد غير متاحة عندما لا يكون إجمالي الإيراد موجبًا.",
     },
@@ -31,7 +31,7 @@ const copy = {
         income: "Income", income_other: "Other income", expense_direct_cost: "Cost of sales", expense: "Expenses", expense_other: "Other expenses", expense_depreciation: "Depreciation",
         gross: "Gross profit", totalIncome: "Total income", totalExpense: "Total expense", operating: "Net operating income", otherNet: "Net other income", net: "Net income",
         source: "View journal items", previous: "Previous", next: "Next", page: "Page", noAccounts: "No accounts in this section.", debit: "Debit", credit: "Credit",
-        period: "Period", comparison: "Comparison", month: "Month", quarter: "Quarter", fiscalYear: "Fiscal year", customDates: "Custom dates", noComparison: "No comparison", previousPeriods: "Previous period", samePeriodLastYear: "Same period last year", periods: "Periods", periodOrder: "Period order", descending: "Descending", ascending: "Ascending", from: "From", to: "To", current: "Current",
+        taxInclusive: "Tax inclusive", taxExclusive: "Tax exclusive", managementView: "Management view", managementTaxNote: "Tax-inclusive management view; the net profit shown is not accounting net profit.", period: "Period", comparison: "Comparison", month: "Month", quarter: "Quarter", fiscalYear: "Fiscal year", customDates: "Custom dates", noComparison: "No comparison", previousPeriods: "Previous period", samePeriodLastYear: "Same period last year", periods: "Periods", periodOrder: "Period order", descending: "Descending", ascending: "Ascending", from: "From", to: "To", current: "Current",
         waterfallTitle: "Profit bridge", waterfallCaption: "From revenue to net income", waterfallAccessible: "Net income sequence: revenue, cost of sales, operating expenses, net other income, then net income.", statementTitle: "Profit and loss statement", statementCaption: "Auditable detail with journal access", revenueAccountsTitle: "Top revenue accounts", revenueAccountsCaption: "Five largest accounts in the period", financialNotesTitle: "Financial notes", financialNotesCaption: "Data scope and verification", postedShort: "Posted entries", vsComparison: "vs comparison", noComparisonData: "No comparison", noRevenueAccounts: "No revenue accounts in this period", unavailable: "Unavailable",
         cost_of_sales: "Cost of sales", gross_profit: "Gross profit", gross_margin: "Gross margin", net_other_income: "Net other income", net_income: "Net income", posted_only: "Amounts come from posted entries only.", partial_journals: "Results are limited to the selected journals.", comparison_available: "Comparison is based on one selected period.", comparison_unavailable: "Choose a comparison to show the period trend.", gross_margin_unavailable: "Gross margin is unavailable when net revenue is not positive.", revenue_share_unavailable: "Revenue-account share is unavailable when total revenue is not positive.",
     },
@@ -58,7 +58,7 @@ export class BaseerProfitLossReport extends Component {
         onWillStart(() => this.refreshActiveCompany());
     }
 
-    emptyFilters() { return { company_id: 0, period: { kind: "month", anchor_date: "", direction: 0, date_from: "", date_to: "" }, comparison: { kind: "none", order: "descending", count: 1, date_from: "", date_to: "" }, journal_ids: [] }; }
+    emptyFilters() { return { company_id: 0, tax_inclusive: true, period: { kind: "month", anchor_date: "", direction: 0, date_from: "", date_to: "" }, comparison: { kind: "none", order: "descending", count: 1, date_from: "", date_to: "" }, journal_ids: [] }; }
     get labels() { return copy[this.lang]; }
     get dashboard() { return this.state.report?.dashboard || { cards: [], waterfall: [], revenue_accounts: [], notes: [] }; }
     get reportPeriods() { return this.state.report?.periods || []; }
@@ -103,8 +103,9 @@ export class BaseerProfitLossReport extends Component {
     rowColspan() { return Math.max(2, this.reportPeriods.length + 1); }
     cloneFilters(direction = 0) {
         const { period, comparison } = this.state.filters;
-        return { company_id: this.activeCompanyId, period: { ...period, direction }, comparison: { ...comparison }, journal_ids: [...this.state.filters.journal_ids] };
+        return { company_id: this.activeCompanyId, tax_inclusive: this.state.filters.tax_inclusive, period: { ...period, direction }, comparison: { ...comparison }, journal_ids: [...this.state.filters.journal_ids] };
     }
+    async toggleTaxBasis() { this.state.filters.tax_inclusive = !this.state.filters.tax_inclusive; await this.apply(); }
     installContext(context) {
         this.state.journals = context.journals || [];
         const defaults = context.default_filters || {};

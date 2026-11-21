@@ -25,7 +25,7 @@ class ProfitLossDrill(models.AbstractModel):
         require_active_filters(self.env, filters, {
             'period', 'comparison', 'journal_ids', 'date_from', 'date_to', 'period_mode', 'anchor_date',
             'period_direction', 'comparison_mode', 'comparison_count', 'comparison_order',
-            'comparison_date_from', 'comparison_date_to'})
+            'comparison_date_from', 'comparison_date_to', 'tax_inclusive'})
         kind = selector.get('kind') if type(selector) is dict else None
         keys = {'row': {'kind', 'row_key', 'period_key'}, 'account': {'kind', 'account_id', 'period_key'},
                 'channel': {'kind', 'account_id', 'channel_key', 'period_key'}}
@@ -54,6 +54,7 @@ class ProfitLossDrill(models.AbstractModel):
         return company, domain, grouped
 
     def _drill_rows(self, filters, selector):
+        self = self.with_context(_baseer_pl_inclusive=self._tax_inclusive(filters))
         company, domain, grouped = self._drill_scope(filters, selector)
         currency = company.currency_id
         ar = (self.env.lang or '').startswith('ar')
@@ -124,10 +125,12 @@ class ProfitLossDrill(models.AbstractModel):
                 value = fmt(matches[0]['raw'] if matches else Decimal('0'))
                 lines = self.env['account.move.line'].with_context(active_test=False).search(domain, order='date,id')
                 self._verify_links(lines)
+                adjustments = self._inclusive_adjustments(domain) if self.env.context.get('_baseer_pl_inclusive') else {}
                 for line in lines:
                     amount = self._decimal(line.debit) - self._decimal(line.credit)
                     if account.account_type not in EXPENSE_KEYS:
                         amount = -amount
+                    amount += adjustments.get(line, Decimal('0'))
                     rows.append({'key': line.id, 'cells': {'label': f'{line.date} · {line.move_id.name}', 'amount': fmt(amount)},
                         'source': {'kind': 'source', 'parent': dict(selector), 'line_id': line.id}})
         return title, value, basis, columns, rows

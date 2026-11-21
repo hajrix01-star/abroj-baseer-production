@@ -290,3 +290,13 @@ msgstr "بنود اليومية"
 #. module: baseer_account_dashboard_plus
 msgid "Unable to open this dashboard action."
 msgstr "تعذر فتح هذا الإجراء من لوحة المعلومات."
+
+#. module: baseer_account_dashboard_plus
+#: model_terms:ir.ui.view,arch_db:baseer_account_dashboard_plus.account_move_line_search_dashboard
+msgid "Selected Companies"
+msgstr "الشركات المحددة"
+
+#. module: baseer_account_dashboard_plus
+#: model_terms:ir.ui.view,arch_db:baseer_account_dashboard_plus.account_move_line_search_dashboard
+msgid "Journal Default Accounts"
+msgstr "الحسابات الافتراضية لليوميات"

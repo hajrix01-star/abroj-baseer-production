@@ -1,0 +1,19 @@
+<odoo>
+  <record id="account_move_line_search_dashboard" model="ir.ui.view">
+    <field name="name">account.move.line.search.dashboard.filters</field>
+    <field name="model">account.move.line</field>
+    <field name="inherit_id" ref="account.view_account_move_line_filter"/>
+    <field name="arch" type="xml">
+      <xpath expr="//filter[@name='journal_ids']" position="before">
+        <separator/>
+        <filter string="Selected Companies" name="company_ids" domain="[('company_id', 'in', context.get('company_ids'))]" invisible="not context.get('company_ids')"/>
+        <separator/>
+        <filter string="Journal Default Accounts" name="account_ids" domain="[('account_id', 'in', context.get('account_ids'))]" invisible="not context.get('account_ids')"/>
+        <separator/>
+      </xpath>
+      <xpath expr="//field[@name='account_id']" position="after">
+        <field name="company_id" groups="base.group_multi_company"/>
+      </xpath>
+    </field>
+  </record>
+</odoo>

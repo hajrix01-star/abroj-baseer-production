@@ -2935,6 +2935,6 @@ msgid "Total including tax for completed orders, including refunds."
 msgstr "إجمالي الطلبات المكتملة شامل الضريبة والمرتجعات."
 
 #. module: baseer_pos_print_bridge
-#: code:addons/baseer_pos_print_bridge/models/pos_session.py
+#: code:addons/baseer_pos_print_bridge/models/pos_session.py:0
 msgid "Unavailable"
 msgstr "غير متاح"

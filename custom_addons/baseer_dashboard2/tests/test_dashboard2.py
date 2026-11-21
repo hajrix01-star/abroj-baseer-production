@@ -1024,3 +1024,25 @@ class TestDashboardRequestMemo(TransactionCase):
         self.assertIsInstance(channels, list)
         self.assertIn('available', unreceived)
         self.assertEqual(hours[(3, 13)]['gross'], 115)
+
+    def test_reset_move_ranges_match_individual_searches(self):
+        company = self.env.company
+        ids = [company.id]
+        accounts = self.env['account.account']
+        reset = accounts.create({'code': '999999', 'name': 'Reset', 'account_type': 'expense', 'company_ids': [(6, 0, ids)]})
+        offset = accounts.create({'code': 'BD2RST', 'name': 'Offset', 'account_type': 'income', 'company_ids': [(6, 0, ids)]})
+        journal = self.env['account.journal'].create({'name': 'Reset ranges', 'code': 'B2RST', 'type': 'general', 'company_id': company.id})
+        for day in ('2026-09-15', '2026-10-15', '2026-11-15'):
+            move = self.env['account.move'].create({'journal_id': journal.id, 'date': day, 'line_ids': [
+                (0, 0, {'name': 'Reset', 'account_id': reset.id, 'debit': 10, 'credit': 0}),
+                (0, 0, {'name': 'Offset', 'account_id': offset.id, 'debit': 0, 'credit': 10})]})
+            move.action_post()
+        memo = self.env['baseer.dashboard2.service'].with_context(_bd2_request_cache={})
+        lines = self.env['account.move.line'].with_company(company).with_context(allowed_company_ids=ids)
+        for start, end in ((None, date(2026, 9, 30)), (date(2026, 10, 1), date(2026, 10, 31)),
+                           (date(2026, 9, 1), date(2026, 11, 30))):
+            domain = [('company_id', '=', company.id), ('parent_state', '=', 'posted'),
+                      ('date', '<=', end), ('account_id.code', '=', '999999')]
+            if start:
+                domain.append(('date', '>=', start))
+            self.assertEqual(set(memo._reset_move_ids(ids, end, start)), set(lines.search(domain).mapped('move_id').ids))

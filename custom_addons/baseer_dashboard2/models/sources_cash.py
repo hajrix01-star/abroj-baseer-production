@@ -37,8 +37,7 @@ class DashboardCash(models.AbstractModel):
             reconciled = partials.mapped('debit_move_id') | partials.mapped('credit_move_id')
             bill_lines = reconciled.mapped('move_id.line_ids')
             (counterparts | bill_lines).fetch(['balance', 'account_id'])
-            bill_lines.mapped('account_id')
-            counterparts.mapped('account_id')
+            (bill_lines | counterparts).mapped('account_id').with_company(company).fetch(['code', 'account_type'])
             rows_by_account = {row.account_id.id: row for row in settings.liquidity_ids} if settings else {}
             def source_label(row):
                 parts = [part.strip() for part in (row.label or row.account_id.with_context(lang='ar_001').name or '').split('|')]

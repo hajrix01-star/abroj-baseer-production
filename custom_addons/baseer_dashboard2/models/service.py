@@ -174,12 +174,18 @@ class DashboardService(models.AbstractModel):
     @request_memo
     def _reset_move_ids(self, ids, end, start=None):
         result = set()
+        cache = self.env.context.get('_bd2_request_cache')
         for cid in ids:
-            domain = [('company_id', '=', cid), ('parent_state', '=', 'posted'), ('date', '<=', end), ('account_id.code', '=', '999999')]
-            if start:
-                domain.append(('date', '>=', start))
-            company = self.env['res.company'].browse(cid)
-            result.update(self.env['account.move.line'].with_company(company).with_context(allowed_company_ids=[cid]).search(domain).mapped('move_id').ids)
+            key = ('_reset_move_rows', cid)
+            rows = cache.get(key) if cache is not None else None
+            if rows is None:
+                company = self.env['res.company'].browse(cid)
+                rows = self.env['account.move.line'].with_company(company).with_context(allowed_company_ids=[cid]).search_read(
+                    [('company_id', '=', cid), ('parent_state', '=', 'posted'), ('account_id.code', '=', '999999')],
+                    ['date', 'move_id'], load=None)
+                if cache is not None:
+                    cache[key] = rows
+            result.update(row['move_id'] for row in rows if row['date'] <= end and (not start or row['date'] >= start))
         return list(result)
 
     @request_memo

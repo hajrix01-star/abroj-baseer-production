@@ -4,6 +4,7 @@ from collections import defaultdict
 from datetime import date, timedelta
 
 from odoo import api, fields, models, _
+from odoo.osv import expression
 from odoo.exceptions import UserError
 
 from .service import SOURCES, food_ratio
@@ -51,14 +52,15 @@ class DashboardSections(models.AbstractModel):
             return {'available': False, 'value': None, 'pct': None}
         excluded = self._reset_move_ids(ids, end, start)
         excluded += self.env['res.company'].browse(ids).mapped('account_opening_move_id').ids
-        value = 0.0
-        for setting in settings:
-            rows = self.env['account.move.line'].with_company(setting.company_id)._read_group([
-                ('company_id', '=', setting.company_id.id), ('parent_state', '=', 'posted'),
-                ('date', '>=', start), ('date', '<=', end),
-                ('account_id', 'in', setting.food_purchase_account_ids.ids),
-                ('move_id', 'not in', excluded), ('move_id.ref', '!=', 'Opening Entry')], [], ['balance:sum'])
-            value += (rows[0][0] or 0) if rows else 0
+        company_accounts = expression.OR([[('company_id', '=', setting.company_id.id),
+                                           ('account_id', 'in', setting.food_purchase_account_ids.ids)]
+                                          for setting in settings])
+        rows = self.env['account.move.line'].with_context(allowed_company_ids=ids)._read_group(
+            expression.AND([company_accounts, [('parent_state', '=', 'posted'),
+                ('date', '>=', start), ('date', '<=', end), ('move_id', 'not in', excluded),
+                ('move_id.ref', '!=', 'Opening Entry')]]), ['company_id'], ['balance:sum'])
+        values = {company.id: amount or 0 for company, amount in rows}
+        value = sum((values.get(setting.company_id.id, 0) for setting in settings), 0.0)
         bill_exists = self.env['account.move.line'].with_context(allowed_company_ids=ids).search_count([
             ('company_id', 'in', ids), ('parent_state', '=', 'posted'),
             ('date', '>=', start), ('date', '<=', end), ('move_id.move_type', 'in', ('in_invoice', 'in_refund')),
@@ -138,10 +140,13 @@ class DashboardSections(models.AbstractModel):
     def _targets(self, ids, current):
         targets = {}
         model = self.env['baseer.dashboard2.target'].with_context(allowed_company_ids=ids)
+        company_id = ids[0] if len(ids) == 1 else False
+        rows = model.search([('company_id', 'in', [False, company_id])], order='id')
+        by_key = {}
+        for row in rows:
+            by_key.setdefault((row.company_id.id or False, row.key), row)
         for key, value in current['ratios'].items():
-            target = model.search([('company_id', '=', ids[0] if len(ids) == 1 else False), ('key', '=', key)], limit=1)
-            if not target and len(ids) == 1:
-                target = model.search([('company_id', '=', False), ('key', '=', key)], limit=1)
+            target = by_key.get((company_id, key)) or by_key.get((False, key))
             if target:
                 good = value is not None and (value <= target.value if target.operator == 'le' else value >= target.value)
                 targets[key] = {'value': target.value, 'operator': target.operator,

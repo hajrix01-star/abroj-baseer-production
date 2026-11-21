@@ -79,6 +79,29 @@ class RefreshContracts(unittest.TestCase):
             with self.subTest(change=change), self.assertRaises(RuntimeError):
                 attempt(change)
 
+    def test_captured_mount_manifest_requires_the_signed_hash_and_exact_runtime(self):
+        refresh = self.make()
+        with tempfile.TemporaryDirectory(dir=Path(__file__).parent) as directory:
+            refresh.snapshot = Path(directory)
+            baseline = refresh.snapshot / 'baseline'
+            for name in engine.SOURCE_DIRS:
+                (baseline / name).mkdir(parents=True)
+                (baseline / name / 'manifest.py').write_text(name)
+            manifest = {name: engine.tree_hash(baseline / name) for name in engine.SOURCE_DIRS}
+            capture = refresh.snapshot / 'live-mount-manifest.json'
+            capture.write_text(json.dumps(manifest))
+            checksum = engine.digest(capture)
+            (refresh.snapshot / 'inventory.json').write_text(json.dumps({'mount_sha256': checksum}))
+            pins = {'QA_REFRESH_SNAPSHOT_MOUNT_SHA': checksum, 'QA_REFRESH_RUNTIME_BASELINE_DIR': str(baseline)}
+            with patch.dict(engine.os.environ, pins), patch.object(engine, 'protected_file'):
+                self.assertEqual(refresh.captured_baseline(), manifest)
+                (baseline / 'custom_addons' / 'manifest.py').write_text('different')
+                with self.assertRaisesRegex(RuntimeError, 'differs from the reviewed baseline'):
+                    refresh.captured_baseline()
+                capture.write_text('{}')
+                with self.assertRaisesRegex(RuntimeError, 'checksum mismatch'):
+                    refresh.captured_baseline()
+
     def test_filestore_archive_rejects_escape_links_and_duplicate_members(self):
         def make_archive(path, bad=None):
             with tarfile.open(path, 'w') as archive:

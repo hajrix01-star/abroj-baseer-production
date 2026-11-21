@@ -198,11 +198,9 @@ class BaseerPrintJob(models.Model):
             'created_at': fields.Datetime.to_string(fields.Datetime.now()),
         }
         if order and ticket_type == 'preparation':
-            if order.tracking_number:
-                # Keep the native customer-facing number distinct from the POS
-                # reference in both operating modes. The queued JSON freezes it
-                # for the original print and any later reprint.
-                order_payload['tracking_number'] = str(order.tracking_number)
+            paper_number = order.baseer_ticket_label or order.tracking_number
+            if paper_number:
+                order_payload['tracking_number'] = str(paper_number)
             if order.preset_id:
                 order_type = ' '.join(order.preset_id.name.split())
                 order_payload['order_type'] = order_type

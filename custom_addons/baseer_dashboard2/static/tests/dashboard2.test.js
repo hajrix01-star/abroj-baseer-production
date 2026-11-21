@@ -34,6 +34,7 @@ test('P&L renders without in/out months', async () => {
     after(() => app.destroy());
     await app.mount(getFixture());
     expect(getFixture().querySelector('.export-table')).not.toBe(null);
+    expect(getFixture().querySelector('.chip').textContent).toBe('قبل الضريبة');
 });
 
 test('ratios render a numeric gauge target', async () => {
@@ -555,6 +556,7 @@ test('partial overview marks ratios and neutralizes company comparisons', async 
             bridge: [{ key: 'commissions', amount: -1, pct: -1 }, { key: 'other_opex', amount: -11, pct: -11 }, { key: 'operating_profit', amount: 96, pct: 96 }, { key: 'net_profit', amount: 95, pct: 95.5 }],
             companies_compare: ['1', '2'].map(key => ({ key, name: key, sales_net: 100, food_pct: 1.6, salaries_pct: 0.4, net_margin_pct: -5, targets: { food_pct: { status: 'ok' }, salaries_pct: { status: 'bad' } } }))
         } };
+        current = { tax: {} };
         trend = [{ partial }]; monthName = (v, short, year, isPartial) => monthLabel(v, { short, year, partial: isPartial }); fmt = formatNumber; pct = formatPercent; tableFmt = formatTable; tablePct = formatTablePct; customerCutoverLabel = customerCutoverLabel;
         iconPath() { return ''; } name(v) { return v; } bridgeStyle() { return ''; } bridgeDrillKey = Dashboard2.prototype.bridgeDrillKey; miniDrillable = Dashboard2.prototype.miniDrillable; miniDrill = Dashboard2.prototype.miniDrill;
     }
@@ -562,6 +564,7 @@ test('partial overview marks ratios and neutralizes company comparisons', async 
     after(() => app.destroy());
     const fixture = getFixture();
     await app.mount(fixture);
+    expect(fixture.querySelector('.tax-note').textContent).toInclude('ضريبة قيمة مضافة مستحقة للهيئة');
     expect(fixture.querySelectorAll('.mini')[2].textContent).toInclude('من 19/11');
     expect([...fixture.querySelectorAll('.mini-pill')].every(el => el.textContent.includes('(جزئي)'))).toBe(true);
     expect(fixture.querySelector('.bridge-row').parentElement.querySelector('h3').textContent).toInclude('(جزئي)');
@@ -788,6 +791,7 @@ test('mobile navigation opens and closes on page selection and Escape', async ()
     after(() => app.destroy());
     await app.mount(getFixture());
     const root = getFixture().querySelector('.o_bd2');
+    expect(root.querySelector('.tax-basis-badge').textContent).toBe('شامل الضريبة');
     expect(root.querySelector('.company-label-fallback').textContent).toBe('المجموع');
     root.querySelector('.bd2-menu-toggle').click();
     await animationFrame();
@@ -897,7 +901,7 @@ test('P&L drill calls the service and action without toggling or changing CSV te
     try {
         URL.createObjectURL = (blob) => { exported = blob; return 'blob:test'; };
         HTMLAnchorElement.prototype.click = () => {};
-        Dashboard2.prototype.exportCsv();
+        Dashboard2.prototype.exportCsv.call({state: {view: 'pnl'}});
         expect(await exported.text()).toInclude('"(120)"');
     } finally {
         URL.createObjectURL = createUrl;
@@ -994,4 +998,27 @@ test('calendar tooltip includes the full date, amount, customers and occasion', 
         date: '2026-10-03', gross: 26827, customers: 42, events: [{name: 'عرض'}],
     });
     expect(rows).toEqual([['التاريخ', '3 October 2026'], ['المبلغ', '26,827 ر.س'], ['العملاء', '42'], ['المناسبة', 'عرض']]);
+});
+
+test('inclusive basis, waterfall tax note and P&L basis are identified', async () => {
+    const response = await withFetch(globals.fetch, () => fetch('/baseer_dashboard2/static/src/xml/main.xml'));
+    const doc = new DOMParser().parseFromString(await response.text(), 'application/xml');
+    expect(doc.querySelector('.tax-basis-badge').textContent).toBe('شامل الضريبة');
+    const overview = doc.querySelector('[t-name="baseer_dashboard2.Overview"]');
+    expect(overview.querySelector('.tax-note').textContent).toInclude('ضريبة قيمة مضافة مستحقة للهيئة');
+    const revenue = doc.querySelector('[t-name="baseer_dashboard2.Revenue"]');
+    expect(revenue.querySelector('KpiCard').getAttribute('value')).toBe('current.gross');
+    const pnl = doc.querySelector('[t-name="baseer_dashboard2.Pnl"]');
+    expect(pnl.outerHTML).toInclude('قبل الضريبة');
+});
+
+test('inclusive revenue drills through accounting and adjustments are not drillable', async () => {
+    const response = await withFetch(globals.fetch, () => fetch('/baseer_dashboard2/static/src/xml/main.xml'));
+    const doc = new DOMParser().parseFromString(await response.text(), 'application/xml');
+    const revenue = doc.querySelector('[t-name="baseer_dashboard2.Revenue"]');
+    expect(revenue.querySelector('KpiCard').getAttribute('onDrill')).toInclude("'revenue','gross'");
+    expect(revenue.outerHTML).toInclude("row.key !== 'accounting_adjustments'");
+    const overview = doc.querySelector('[t-name="baseer_dashboard2.Overview"]');
+    const percentage = overview.querySelector('[t-foreach="state.data.bridge"] span.muted bdi');
+    expect(percentage.hasAttribute('t-on-click')).toBe(false);
 });

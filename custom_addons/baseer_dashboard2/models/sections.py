@@ -111,6 +111,31 @@ class DashboardSections(models.AbstractModel):
             return month_bounds(end)
         raise UserError(translate('Invalid P&L view.'))
 
+    def _inclusive_drill_domain(self, ids, start, end, base_domain, include_revenue=False, include_input=True):
+        """Add only tax journal items wholly attributable to the selected accounts."""
+        lines = self.env['account.move.line'].with_context(allowed_company_ids=ids)
+        groups = lines._read_group(base_domain, ['company_id', 'account_id'], [])
+        selected = {(company.id, account.id) for company, account in groups}
+        tax_parts = defaultdict(list)
+        for day, cid, kind, account_id, amount, line_id in self._tax_window(ids, start, end):
+            tax_parts[line_id].append((cid, kind, account_id, amount))
+        tax_ids = []
+        for line_id, parts in tax_parts.items():
+            if parts[0][1] in ('output_vat', 'tobacco_fee'):
+                if include_revenue:
+                    tax_ids.append(line_id)
+                continue
+            if not include_input:
+                continue
+            if parts[0][1] == 'unallocated_input_vat':
+                raise UserError(_('This figure is allocated across journal items.'))
+            flags = {(cid, account_id) in selected for cid, _kind, account_id, amount in parts if amount}
+            if len(flags) > 1:
+                raise UserError(_('This figure is allocated across journal items.'))
+            if flags == {True}:
+                tax_ids.append(line_id)
+        return expression.OR([base_domain, [('id', 'in', tax_ids)]])
+
     @api.model
     def get_drilldown(self, descriptor):
         self._check_reader()
@@ -195,7 +220,7 @@ class DashboardSections(models.AbstractModel):
             end = self._heatmap_hours_end(ids, start, end)
             domain = self._customer_hour_domain(ids, start, end, weekday, hour)
             model, label = 'pos.order', 'الطلبات حسب الساعة'
-        elif section in ('overview', 'revenue', 'heatmap', 'inout') and key in ('gross', 'apps', 'channel'):
+        elif section in ('overview', 'revenue', 'heatmap', 'inout') and key in ('gross', 'apps', 'channel') and not (section == 'revenue' and key == 'gross'):
             trace, pos_trace = {}, {}
             summary, days, channels, _hours = self.with_context(_bd2_sales_trace=trace, _bd2_pos_trace=pos_trace, _bd2_request_cache=None)._sales_summary(ids, start, end)
             counts = summary['source_counts']
@@ -220,7 +245,8 @@ class DashboardSections(models.AbstractModel):
                 domain = [('company_id', 'in', ids), ('id', 'in', list(line_ids))]
             label = 'المبيعات'
         elif section in ('overview', 'revenue') and key == 'recorded_commissions':
-            domain = self._commission_domain(ids, start, end)
+            base_domain = self._commission_domain(ids, start, end)
+            domain = self._inclusive_drill_domain(ids, start, end, base_domain)
             label = 'عمولات التطبيقات'
         elif section in ('overview', 'revenue', 'heatmap') and key == 'customers':
             domain = self._customer_orders_domain(ids, start, end)
@@ -229,6 +255,7 @@ class DashboardSections(models.AbstractModel):
             domain = self._purchase_domain(ids, start, end)
             if domain is None:
                 raise UserError(_('Unknown dashboard figure.'))
+            domain = self._inclusive_drill_domain(ids, start, end, domain)
             context['group_by'] = 'move_id'
             label = 'المشتريات'
         elif section == 'pnl' and key in ('revenue', 'food_cost', 'gross_profit', 'salaries', 'rent', 'utilities',
@@ -269,7 +296,7 @@ class DashboardSections(models.AbstractModel):
         elif section in ('overview', 'revenue', 'expenses', 'ratios'):
             expense_keys = ('food_cost', 'salaries', 'rent', 'utilities', 'marketing', 'commissions', 'other_opex', 'depreciation', 'non_operating', 'zakat_tax')
             mapping = {k: (k,) for k in expense_keys + ('revenue', 'other_income')}
-            mapping.update({'sales_net': ('revenue',), 'timeline_ytd': ('revenue',), 'timeline_previous_ytd': ('revenue',), 'timeline_best': ('revenue',), 'timeline_point': ('revenue',), 'food_pct': ('food_cost',),
+            mapping.update({'gross': ('revenue',), 'sales_net': ('revenue',), 'timeline_ytd': ('revenue',), 'timeline_previous_ytd': ('revenue',), 'timeline_best': ('revenue',), 'timeline_point': ('revenue',), 'food_pct': ('food_cost',),
                             'salaries_pct': ('salaries',), 'prime_pct': ('food_cost', 'salaries'),
                             'rent_utilities': ('rent', 'utilities'), 'expenses_total': expense_keys,
                             'operating_expenses': tuple(k for k in expense_keys if k != 'zakat_tax'),
@@ -291,9 +318,15 @@ class DashboardSections(models.AbstractModel):
                 if end < start:
                     raise UserError(_('Invalid dashboard period.'))
             accounts = [a for a in self._accounting(ids, start, end)['accounts'] if a['category'] in categories]
+            child = descriptor.get('child')
+            if child:
+                accounts = [a for a in accounts if '%s:%s' % (a['company_id'], a['account_id']) == child]
+                if not accounts:
+                    raise UserError(_('Unknown dashboard figure.'))
             pairs = expression.OR([[('company_id', '=', a['company_id']), ('account_id', '=', a['account_id'])]
                                    for a in accounts]) if accounts else [('id', '=', 0)]
-            domain = expression.AND([self._aml_domain(ids, start, end), pairs])
+            base_domain = expression.AND([self._aml_domain(ids, start, end), pairs])
+            domain = self._inclusive_drill_domain(ids, start, end, base_domain, include_revenue='revenue' in categories, include_input=any(k not in ('revenue', 'other_income') for k in categories))
             label = 'القيود المحاسبية'
         else:
             raise UserError(_('Unknown dashboard figure.'))
@@ -323,6 +356,8 @@ class DashboardSections(models.AbstractModel):
             domain, ['company_id'], ['balance:sum'])
         values = {company.id: amount or 0 for company, amount in rows}
         value = sum((values.get(setting.company_id.id, 0) for setting in settings), 0.0)
+        allocated = self._tax_basis(ids, start, end)['accounts']
+        value += sum(allocated.get((setting.company_id.id, account.id), 0) for setting in settings for account in setting.food_purchase_account_ids)
         bill_exists = self.env['account.move.line'].with_context(allowed_company_ids=ids).search_count([
             ('company_id', 'in', ids), ('parent_state', '=', 'posted'),
             ('date', '>=', start), ('date', '<=', end), ('move_id.move_type', 'in', ('in_invoice', 'in_refund')),
@@ -365,10 +400,15 @@ class DashboardSections(models.AbstractModel):
                             ('move_id', 'not in', excluded), ('move_id.ref', '!=', 'Opening Entry')])
         return expression.AND([self._aml_domain(ids, start, end), expression.OR(domains)])
 
-    def _recorded_app_commissions(self, ids, start, end):
+    def _recorded_app_commissions(self, ids, start, end, include_tax=True):
         rows = self.env['account.move.line'].with_context(allowed_company_ids=ids)._read_group(
-            self._commission_domain(ids, start, end), [], ['balance:sum'])
-        return round((rows[0][0] or 0) if rows else 0, 2)
+            self._commission_domain(ids, start, end), ['company_id', 'account_id'], ['balance:sum'])
+        total = sum(amount or 0 for _company, _account, amount in rows)
+        if include_tax:
+            pairs = {(company.id, account.id) for company, account, _amount in rows}
+            allocated = self._tax_basis(ids, start, end)['accounts']
+            total += sum(amount for pair, amount in allocated.items() if pair in pairs)
+        return round(total, 2)
 
     @request_memo
     def _posted_months(self, ids, revenue_only=False):
@@ -394,24 +434,24 @@ class DashboardSections(models.AbstractModel):
         cutoff = min(end, last, fields.Date.context_today(self)) if last else None
         start_year = date(end.year, 1, 1)
         previous_end = cutoff.replace(year=cutoff.year - 1, day=min(cutoff.day, calendar.monthrange(cutoff.year - 1, cutoff.month)[1])) if cutoff else None
-        ytd = self._accounting(ids, start_year, cutoff)['sales_net'] if cutoff and cutoff >= start_year else 0
-        pytd = self._accounting(ids, date(end.year - 1, 1, 1), previous_end)['sales_net'] if previous_end and previous_end.year == end.year - 1 else None
+        ytd = self._accounting_gross(ids, start_year, cutoff)['sales_net'] if cutoff and cutoff >= start_year else 0
+        pytd = self._accounting_gross(ids, date(end.year - 1, 1, 1), previous_end)['sales_net'] if previous_end and previous_end.year == end.year - 1 else None
         if previous_end and not covered(date(end.year - 1, 1, 1), previous_end):
             pytd = None
         months = []
         for m in range(1, 13):
             first, last_month = month_bounds(date(end.year, m, 1))
             prior_first, prior_last = month_bounds(date(end.year - 1, m, 1))
-            months.append({'month': m, 'value': self._accounting(ids, first, min(last_month, cutoff))['sales_net'] if cutoff and first <= cutoff and covered(first, min(last_month, cutoff)) else None,
+            months.append({'month': m, 'value': self._accounting_gross(ids, first, min(last_month, cutoff))['sales_net'] if cutoff and first <= cutoff and covered(first, min(last_month, cutoff)) else None,
                            'partial': bool(cutoff and first <= cutoff < last_month),
-                           'previous': self._accounting(ids, prior_first, min(prior_last, previous_end))['sales_net'] if previous_end and prior_first <= previous_end and covered(prior_first, min(prior_last, previous_end)) else None})
+                           'previous': self._accounting_gross(ids, prior_first, min(prior_last, previous_end))['sales_net'] if previous_end and prior_first <= previous_end and covered(prior_first, min(prior_last, previous_end)) else None})
         years = []
         if mode == 'yearly':
             for year in range(end.year - 4, end.year + 1):
                 first, last_year = date(year, 1, 1), date(year, 12, 31)
                 prior_first, prior_last = date(year - 1, 1, 1), date(year - 1, 12, 31)
                 prior_cutoff = min(prior_last, previous_end) if previous_end else None
-                years.append({'year': year, 'value': self._accounting(ids, first, min(last_year, cutoff))['sales_net'] if cutoff and first <= cutoff and covered(first, min(last_year, cutoff)) else None, 'previous': self._accounting(ids, prior_first, prior_cutoff)['sales_net'] if prior_cutoff and prior_first <= prior_cutoff and covered(prior_first, prior_cutoff) else None, 'partial': bool(cutoff and year == cutoff.year and cutoff < last_year)})
+                years.append({'year': year, 'value': self._accounting_gross(ids, first, min(last_year, cutoff))['sales_net'] if cutoff and first <= cutoff and covered(first, min(last_year, cutoff)) else None, 'previous': self._accounting_gross(ids, prior_first, prior_cutoff)['sales_net'] if prior_cutoff and prior_first <= prior_cutoff and covered(prior_first, prior_cutoff) else None, 'partial': bool(cutoff and year == cutoff.year and cutoff < last_year)})
         eligible = [m for m in months if m['value'] is not None]
         return {'available': True, 'mode': mode, 'months': months, 'years': years,
                 'stats': {'end_date': str(cutoff) if cutoff else None, 'previous_end_date': str(previous_end) if previous_end else None, 'ytd': ytd, 'previous_ytd': pytd, 'growth_pct': change(ytd, pytd), 'best_month': max(eligible, key=lambda x: x['value']) if eligible else None}}
@@ -419,7 +459,7 @@ class DashboardSections(models.AbstractModel):
     def _compare(self, companies, start, end):
         result = []
         for cid, label, name in companies:
-            data = self._accounting([cid], start, end)
+            data = self._accounting_gross([cid], start, end)
             result.append({'key': str(cid), 'label': label, 'name': name, 'sales_net': data['sales_net'], 'targets': self._targets([cid], data), **data['ratios']})
         return result
 
@@ -472,8 +512,9 @@ class DashboardSections(models.AbstractModel):
         return result
 
     def _accounting_sections(self, ids, section, start, end, previous_start, previous_end, companies, params):
-        current = self._accounting(ids, start, end)
-        previous = self._accounting(ids, previous_start, previous_end)
+        accounting = self._accounting if section == 'pnl' else self._accounting_gross
+        current = accounting(ids, start, end)
+        previous = accounting(ids, previous_start, previous_end)
         bounds = self.env['account.move.line'].with_context(allowed_company_ids=ids)._read_group(
             [('company_id', 'in', ids), ('parent_state', '=', 'posted')], [], ['date:min', 'date:max'])
         first_data, last_data = bounds[0] if bounds else (None, None)
@@ -483,19 +524,26 @@ class DashboardSections(models.AbstractModel):
         trend = []
         for offset in range(-5, 1):
             first, last = month_bounds(end, offset)
-            trend.append({'month': first.strftime('%Y-%m'), 'data': self._accounting(ids, first, min(last, end)),
+            trend.append({'month': first.strftime('%Y-%m'), 'data': accounting(ids, first, min(last, end)),
                           'has_data': covered(first, min(last, end)), 'partial': bool(first <= min(end, fields.Date.context_today(self), last_data or end) < last)})
         if section in ('overview', 'expenses', 'ratios'):
             prior_end = end.replace(year=end.year - 1, day=min(end.day, calendar.monthrange(end.year - 1, end.month)[1]))
             first_prior, _ = month_bounds(prior_end, -5)
             _, last_prior = month_bounds(prior_end)
             previous_year = self._tooltip_accounting_months(ids, first_prior, last_prior)
+            for key, data in previous_year.items():
+                first, last = month_bounds(date.fromisoformat(key + '-01'))
+                previous_year[key] = self._accounting_gross(ids, first, last, data)
             for month in trend:
                 key = str(int(month['month'][:4]) - 1) + month['month'][4:]
                 month['previous_year'] = previous_year.get(key) if key in posted_months else None
         targets = self._targets(ids, current)
         result = {'available': True, 'period': {'date_from': str(start), 'date_to': str(end)},
                   'current': current, 'previous': previous, 'trend': trend, 'targets': targets, 'has_data': covered(start, end)}
+        if section != 'pnl':
+            result.update(basis='inclusive', tax=current['tax'])
+            if current['tax']['unallocated_input_vat_lines']:
+                result['warnings'] = ['unallocated_input_vat']
         prior_months = sorted((m for m in posted_months if m < start.strftime('%Y-%m')), reverse=True)[:3]
         prior_salaries = [self._accounting(ids, *month_bounds(date.fromisoformat(m + '-01')))['categories'].get('salaries', 0) for m in prior_months]
         result['salaries_warning'] = covered(start, end) and low_salaries(current['categories'].get('salaries', 0), prior_salaries)
@@ -519,13 +567,15 @@ class DashboardSections(models.AbstractModel):
             bridge = [('sales_net', current['sales_net']), ('food_cost', -current['categories'].get('food_cost', 0)), ('gross_profit', current['gross_profit']),
                       ('salaries', -current['categories'].get('salaries', 0)), ('rent', -current['categories'].get('rent', 0))]
             commission = self._recorded_app_commissions(ids, start, end)
+            if not self._recorded_app_commissions(ids, start, end, include_tax=False):
+                commission = 0
             bridge += [(k, -(commission if k == 'commissions' else current['categories'].get(k, 0)
                              + (current['categories'].get('non_operating', 0)
                                 + current['categories'].get('commissions', 0) - commission if k == 'other_opex' else 0)))
                        for k in ('utilities', 'marketing', 'commissions', 'other_opex', 'depreciation')]
             bridge += [('operating_profit', current['operating_profit']), ('other_income', current['categories'].get('other_income', 0)), ('zakat_tax', -current['categories'].get('zakat_tax', 0)), ('net_profit', current['net_profit'])]
             result['bridge'] = [{'key': key, 'amount': amount, 'pct': percent(amount, current['sales_net'])} for key, amount in bridge if amount or key in ('sales_net', 'gross_profit', 'operating_profit', 'net_profit')]
-            result['breakeven_series'] = [{'month': m['month'], 'partial': m['partial'], 'sales_net': m['data']['sales_net'] if m['has_data'] else None, 'net_profit': m['data']['net_profit'] if m['has_data'] else None, 'breakeven': m['data']['breakeven'] if m['has_data'] else None, 'margin_pct': m['data']['ratios']['net_margin_pct'] if m['has_data'] else None, 'previous_year': m.get('previous_year')} for m in trend]
+            result['breakeven_series'] = [{'month': m['month'], 'partial': m['partial'], 'sales_net': m['data']['sales_net'] if m['has_data'] else None, 'net_profit': m['data']['net_profit'] if m['has_data'] else None, 'breakeven': m['data']['breakeven'] if m['has_data'] else None, 'safety_margin': m['data']['safety_margin'] if m['has_data'] else None, 'margin_pct': m['data']['ratios']['net_margin_pct'] if m['has_data'] else None, 'previous_year': m.get('previous_year')} for m in trend]
             result['purchases'] = self._purchases(ids, start, end, current['sales_net'])
             if not covered(start, end):
                 result['purchases']['value'] = None
@@ -536,7 +586,7 @@ class DashboardSections(models.AbstractModel):
             mini_months = []
             for first, last in year_to_date_months(end):
                 mini_months.append({'month': first.strftime('%Y-%m'), 'has_data': covered(first, min(last, end)),
-                                    'data': self._accounting(ids, first, min(last, end)),
+                                    'data': accounting(ids, first, min(last, end)),
                                     'partial': bool(first <= min(end, fields.Date.context_today(self), last_data or end) < last)})
             for month in mini_months:
                 month_start, month_end = month_bounds(date.fromisoformat(month['month'] + '-01'))
@@ -546,12 +596,21 @@ class DashboardSections(models.AbstractModel):
                                                     'value': purchase['value'] if purchase.get('has_bills') else None,
                                                     'pct': purchase['pct'] if purchase.get('has_bills') else None})
                 monthly_sales, _, _, _ = self._sales_summary(ids, month_start, month_end)
+                monthly_sales['apps_pct'] = percent(monthly_sales['apps'], month['data']['sales_net'])
                 sales_trend.append({'month': month['month'], 'has_data': bool(monthly_sales['source_counts']['pos'] or monthly_sales['source_counts']['summary']), **monthly_sales})
             prior_start = date(end.year - 1, 1, 1)
             prior_finish = date(end.year - 1, end.month, calendar.monthrange(end.year - 1, end.month)[1])
             prior_mini = self._tooltip_sales_months(ids, prior_start, prior_finish)
             purchase_prior = self._tooltip_purchase_months(ids, prior_start, prior_finish)
             prior_accounting = self._tooltip_accounting_months(ids, prior_start, prior_finish)
+            settings = self.env['baseer.dashboard2.settings'].with_context(allowed_company_ids=ids).search([('company_id', 'in', ids)])
+            purchase_accounts = {(setting.company_id.id, account.id) for setting in settings for account in setting.food_purchase_account_ids}
+            for key, data in prior_accounting.items():
+                first, last = month_bounds(date.fromisoformat(key + '-01'))
+                prior_accounting[key] = self._accounting_gross(ids, first, last, data)
+                if key in purchase_prior:
+                    allocated = self._tax_basis(ids, first, last)['accounts']
+                    purchase_prior[key] = round(purchase_prior[key] + sum(allocated.get(pair, 0) for pair in purchase_accounts), 2)
             for month in result['purchases']['trend']:
                 prior_key = str(int(month['month'][:4]) - 1) + month['month'][4:]
                 amount = purchase_prior.get(prior_key)
@@ -562,7 +621,9 @@ class DashboardSections(models.AbstractModel):
                 month['previous_year'] = prior_mini.get(prior_key)
             sales, days, channels, hours = self._sales_summary(ids, start, end)
             prior_sales, _, _, _ = self._sales_summary(ids, previous_start, previous_end)
+            prior_sales['apps_pct'] = percent(prior_sales['apps'], previous['sales_net'])
             result['sales'] = dict(sales)
+            result['sales']['apps_pct'] = percent(sales['apps'], current['sales_net'])
             if not days:
                 result['sales']['apps'] = None
             result['sales']['previous'] = prior_sales
@@ -593,6 +654,7 @@ class DashboardSections(models.AbstractModel):
                         break
             if section == 'overview' and incomplete:
                 result['breakeven_series'][-1]['breakeven'] = None
+                result['breakeven_series'][-1]['safety_margin'] = None
         if section == 'expenses':
             rows = []
             for key in expense_keys:
@@ -707,6 +769,8 @@ class DashboardSections(models.AbstractModel):
     def _revenue(self, ids, start, end, previous_start, previous_end, params):
         current, days, channels, hours = self._sales_summary(ids, start, end)
         previous, _, _, _ = self._sales_summary(ids, previous_start, previous_end)
+        accounting = self._accounting_gross(ids, start, end)
+        previous_accounting = self._accounting_gross(ids, previous_start, previous_end)
         bounds = self.env['account.move.line'].with_context(allowed_company_ids=ids)._read_group(
             [('company_id', 'in', ids), ('parent_state', '=', 'posted')], [], ['date:min', 'date:max'])
         first_data, last_data = bounds[0] if bounds else (None, None)
@@ -715,21 +779,32 @@ class DashboardSections(models.AbstractModel):
         for offset in range(-9, 1):
             first, last = month_bounds(end, offset)
             summary, _, _, _ = self._sales_summary(ids, first, min(last, end))
+            summary['gross'] = self._accounting_gross(ids, first, min(last, end))['sales_net']
+            summary['apps_pct'] = percent(summary['apps'], summary['gross'])
             monthly.append({'month': first.strftime('%Y-%m'), 'data': summary,
-                            'has_data': bool(summary['source_counts']['pos'] or summary['source_counts']['summary']),
+                            'has_data': first.strftime('%Y-%m') in posted_months,
                             'partial': bool(first <= min(end, fields.Date.context_today(self), last_data or end) < last)})
         prior_end = end.replace(year=end.year - 1, day=min(end.day, calendar.monthrange(end.year - 1, end.month)[1]))
         prior_first, _ = month_bounds(prior_end, -9)
         _, prior_last = month_bounds(prior_end)
         prior_sales = self._tooltip_sales_months(ids, prior_first, prior_last)
+        prior_accounting = self._tooltip_accounting_months(ids, prior_first, prior_last)
+        for key, data in prior_accounting.items():
+            first, last = month_bounds(date.fromisoformat(key + '-01'))
+            prior_accounting[key] = self._accounting_gross(ids, first, last, data)
         for month in monthly:
             prior_key = str(int(month['month'][:4]) - 1) + month['month'][4:]
             month['previous_year'] = prior_sales.get(prior_key)
+            if month['previous_year'] is not None and prior_key in prior_accounting:
+                month['previous_year']['gross'] = prior_accounting[prior_key]['sales_net']
         apps_trend = monthly
         monthly = monthly[-6:]
         known = {c['key']: c for c in channels}
         known['other'] = {'key': 'other', 'name': 'أخرى', 'kind': 'hall', 'color_token': False, 'commission_rate': 0}
-        net_sales = self._accounting(ids, start, end)['sales_net']
+        channel_gross, prior_channel_gross = current['gross'], previous['gross']
+        current['gross'], previous['gross'] = accounting['sales_net'], previous_accounting['sales_net']
+        current['apps_pct'] = percent(current['apps'], current['gross'])
+        previous['apps_pct'] = percent(previous['apps'], previous['gross'])
         rows = []
         for key in set(known) | set(current['channels']) | set(previous['channels']):
             channel = known[key]
@@ -738,12 +813,21 @@ class DashboardSections(models.AbstractModel):
             rows.append({'key': key, 'name': channel['name'], 'kind': channel['kind'], 'color_token': channel['color_token'],
                          'amount': amount, 'share_pct': percent(amount, current['gross']), 'change_pct': change(amount, before),
                          'trend': [m['data']['channels'].get(key, 0) if m['has_data'] else None for m in monthly]})
+        difference = round(current['gross'] - channel_gross, 2)
+        previous_difference = round(previous['gross'] - prior_channel_gross, 2)
+        differences = [round(m['data']['gross'] - sum(m['data']['channels'].values()), 2) if m['has_data'] else None for m in monthly]
+        if abs(difference) >= 0.01:
+            rows.append({'key': 'accounting_adjustments', 'name': 'فواتير وتسويات أخرى', 'kind': 'hall', 'color_token': False,
+                         'amount': difference, 'share_pct': percent(difference, current['gross']),
+                         'change_pct': change(difference, previous_difference), 'trend': differences})
         commission_amount = self._recorded_app_commissions(ids, start, end)
         split = {'hall': round(current['gross'] - current['apps'], 2), 'apps': current['apps']}
         if not days:
-            current = dict(current, gross=None, apps=None)
+            current = dict(current, gross=current['gross'] if current['gross'] else None, apps=None)
             split = {'hall': None, 'apps': None}
-        return {'available': True, 'current': current, 'previous': previous, 'trend': monthly, 'apps_trend': apps_trend,
+        return {'available': True, 'basis': 'inclusive', 'tax': accounting['tax'],
+                'warnings': ['unallocated_input_vat'] if accounting['tax']['unallocated_input_vat_lines'] else [],
+                'current': current, 'previous': previous, 'trend': monthly, 'apps_trend': apps_trend,
                 'ranked': sorted((row for row in rows if row['amount'] or any(row['trend'])), key=lambda row: row['amount'], reverse=True),
                 'split': split,
                 'commissions': {'available': bool(commission_amount), 'amount': commission_amount},
@@ -873,6 +957,9 @@ class DashboardSections(models.AbstractModel):
         start, end = self._period(params.get('period') or {})
         previous_end = start - timedelta(days=1)
         previous_start = previous_end.replace(day=1) if params['period']['mode'] == 'month' else previous_end - (end - start)
+        if section in ('overview', 'revenue', 'expenses', 'ratios'):
+            self = self.with_context(_bd2_tax_window=(min(start, previous_start, date(max(1, end.year - 5), 1, 1)), end),
+                                     _bd2_tax_companies=[cid for cid, _, _ in companies])
         if section in ('overview', 'expenses', 'ratios', 'pnl'):
             return self._accounting_sections(ids, section, start, end, previous_start, previous_end, companies, params)
         if section == 'revenue':

@@ -1,4 +1,4 @@
-from .month_names import english_months
+from .month_names import english_months, month_label
 from .service import request_memo
 import calendar
 from collections import defaultdict
@@ -53,19 +53,274 @@ def incomplete_fixed_costs(partial, current, history):
 class DashboardSections(models.AbstractModel):
     _inherit = 'baseer.dashboard2.service'
 
-    def _purchases(self, ids, start, end, sales):
+    @request_memo
+    def _cash_drill_candidates(self, ids, end):
+        first = month_bounds(end, -5)[0]
+        trace = {}
+        values = self.with_context(_bd2_cash_trace=trace, _bd2_request_cache=None)._cash_out(ids, first, end, split=True)
+        result = {'total': {}, 'items': {}, 'sources': {}}
+        for field in result:
+            keys = {'total'} if field == 'total' else {key for data in values.values() for key in data[field]}
+            for key in keys:
+                combined_ids = set()
+                expected_total = 0.0
+                for month, data in values.items():
+                    expected = data['total'] if field == 'total' else data[field].get(key, 0)
+                    expected_total += expected
+                    parts = trace.get(month, {}).get(field, {}).get(key, {})
+                    ids_for_value = set(parts)
+                    raw = sum(credit for credit, _part in parts.values())
+                    if ids_for_value and abs(round(raw, 2) - expected) < .005:
+                        result[field].setdefault(month, {})[key] = sorted(ids_for_value)
+                    combined_ids.update(ids_for_value)
+                raw_total = sum(trace[month][field][key][line_id][0]
+                                for month in trace for line_id in trace[month].get(field, {}).get(key, {}))
+                if combined_ids and abs(round(raw_total, 2) - round(expected_total, 2)) < .005:
+                    result[field].setdefault('all', {})[key] = sorted(combined_ids)
+        return result
+
+    @api.model
+    def get_cash_drill_availability(self, params):
+        self._check_reader()
+        ids = self._scope((params or {}).get('company_key'))
+        _start, end = self._period((params or {}).get('period') or {})
+        candidates = self._cash_drill_candidates(ids, end)
+        return {field: {month: list(keys) for month, keys in months.items()} for field, months in candidates.items()}
+
+    def _heatmap_hours_end(self, ids, first, last):
+        bounds = self.env['account.move.line'].with_context(allowed_company_ids=ids)._read_group(
+            [('company_id', 'in', ids), ('parent_state', '=', 'posted')], [], ['date:max'])
+        last_data = bounds[0][0] if bounds else None
+        return hours_data_end(first, last, fields.Date.context_today(self), last_data)
+
+    def _pnl_bounds(self, start, end, params):
+        view = params.get('pnl_view', PNL_DEFAULT_VIEW)
+        if view == 'range':
+            requested = params.get('pnl_range')
+            if requested:
+                return self._period({'mode': 'range', **requested})
+            if params.get('period', {}).get('mode') == 'range':
+                return start, end
+            return month_bounds(end)
+        if view == 'quarter':
+            first = date(end.year, ((end.month - 1) // 3) * 3 + 1, 1)
+            return first, month_bounds(first, 2)[1]
+        if view == 'year':
+            return pnl_year_start(end), month_bounds(end)[1]
+        if view == 'month':
+            return month_bounds(end)
+        raise UserError(translate('Invalid P&L view.'))
+
+    @api.model
+    def get_drilldown(self, descriptor):
+        self._check_reader()
+        if not isinstance(descriptor, dict):
+            raise UserError(_('Unknown dashboard figure.'))
+        ids = self._scope(descriptor.get('company_key'))
+        start, end = self._period(descriptor.get('period') or {})
+        section, key = descriptor.get('section'), descriptor.get('key')
+        context = {'allowed_company_ids': ids, 'create': False, 'edit': False,
+                   'delete': False, 'duplicate': False}
+        model = 'account.move.line'
+        if section in ('overview', 'revenue') and key in ('timeline_ytd', 'timeline_previous_ytd', 'timeline_best', 'timeline_point'):
+            mode = descriptor.get('timeline_mode', 'monthly') if key == 'timeline_point' else 'monthly'
+            timeline = self._timeline(ids, end, mode)
+            stats = timeline['stats']
+            cutoff = stats['end_date' if key == 'timeline_ytd' else 'previous_end_date']
+            if key in ('timeline_best', 'timeline_point'):
+                cutoff = stats['end_date']
+            if not cutoff or (key == 'timeline_previous_ytd' and stats['previous_ytd'] is None):
+                raise UserError(_('Unknown dashboard figure.'))
+            end = fields.Date.to_date(cutoff)
+            if key == 'timeline_point':
+                points = timeline['years' if mode == 'yearly' else 'months']
+                index = descriptor.get('index')
+                if type(index) is not int or not 0 <= index < len(points) or points[index]['value'] is None:
+                    raise UserError(_('Unknown dashboard figure.'))
+                point = points[index]
+                if mode == 'yearly':
+                    start, last = date(point['year'], 1, 1), date(point['year'], 12, 31)
+                else:
+                    start, last = month_bounds(date(end.year, point['month'], 1))
+                end = min(last, end)
+            elif key == 'timeline_best':
+                if not stats['best_month']:
+                    raise UserError(_('Unknown dashboard figure.'))
+                start, last = month_bounds(date(end.year, stats['best_month']['month'], 1))
+                end = min(last, end)
+            else:
+                start = date(end.year, 1, 1)
+        if section == 'heatmap':
+            month_start, month_end = month_bounds(end)
+            if descriptor.get('day'):
+                start, end = self._period({'mode': 'range', 'date_from': descriptor['day'], 'date_to': descriptor['day']})
+                if descriptor.get('year_calendar') is True:
+                    valid_day = start.year == month_start.year
+                else:
+                    valid_day = month_start <= start <= month_end
+                if not valid_day:
+                    raise UserError(_('Unknown dashboard figure.'))
+            else:
+                start, end = month_start, month_end
+        if section == 'inout' and key in ('gross', 'channel', 'sales_vat', 'cash_out'):
+            if descriptor.get('month'):
+                first, last = self._period({'mode': 'month', 'month': descriptor['month']})
+                if not month_bounds(end, -5)[0] <= first <= end:
+                    raise UserError(_('Unknown dashboard figure.'))
+                start, end = first, min(last, end)
+            else:
+                start = month_bounds(end, -5)[0]
+        if section == 'inout' and key == 'cash_out':
+            original_end = self._period(descriptor.get('period') or {})[1]
+            field = descriptor.get('group')
+            item = descriptor.get('item') if field in ('items', 'sources') else 'total'
+            month = descriptor.get('month') or 'all'
+            if field not in ('total', 'items', 'sources') or not isinstance(item, str):
+                raise UserError(_('Unknown dashboard figure.'))
+            candidates = self._cash_drill_candidates(ids, original_end)
+            line_ids = candidates[field].get(month, {}).get(item)
+            if not line_ids:
+                raise UserError(_('This figure is allocated across journal items.'))
+            domain = expression.AND([self._aml_domain(ids, start, end), [('id', 'in', line_ids)]])
+            label = 'المدفوعات الفعلية'
+        elif section == 'inout' and key == 'sales_vat':
+            vat_trace = set()
+            self.with_context(_bd2_vat_trace=vat_trace, _bd2_request_cache=None)._sales_vat(ids, start, end)
+            domain = expression.AND([self._aml_domain(ids, start, end), [('id', 'in', list(vat_trace))]])
+            label = 'ضريبة المبيعات'
+        elif section == 'heatmap' and key == 'hours':
+            weekday, hour = descriptor.get('weekday'), descriptor.get('hour')
+            if type(weekday) is not int or type(hour) is not int or not 0 <= weekday <= 6 or not 0 <= hour <= 23:
+                raise UserError(_('Unknown dashboard figure.'))
+            end = self._heatmap_hours_end(ids, start, end)
+            domain = self._customer_hour_domain(ids, start, end, weekday, hour)
+            model, label = 'pos.order', 'الطلبات حسب الساعة'
+        elif section in ('overview', 'revenue', 'heatmap', 'inout') and key in ('gross', 'apps', 'channel'):
+            trace, pos_trace = {}, {}
+            summary, days, channels, _hours = self.with_context(_bd2_sales_trace=trace, _bd2_pos_trace=pos_trace, _bd2_request_cache=None)._sales_summary(ids, start, end)
+            counts = summary['source_counts']
+            if bool(counts['summary']) == bool(counts['pos']):
+                raise UserError(_('This figure contains more than one source.'))
+            known = {c['key'] for c in channels} | {'other', 'unclassified'}
+            if key == 'channel':
+                selected = {descriptor.get('channel')}
+                if not selected <= known:
+                    raise UserError(_('Unknown dashboard figure.'))
+            elif key == 'apps':
+                selected = {c['key'] for c in channels if c['kind'] == 'app'}
+            else:
+                selected = known
+            selected_trace = trace if counts['summary'] else pos_trace
+            line_ids = {line_id for by_channel in selected_trace.values() for channel, line_ids in by_channel.items()
+                        if channel in selected for line_id in line_ids}
+            if counts['summary']:
+                domain = expression.AND([self._aml_domain(ids, start, end), [('id', 'in', list(line_ids))]])
+            else:
+                model = 'pos.payment'
+                domain = [('company_id', 'in', ids), ('id', 'in', list(line_ids))]
+            label = 'المبيعات'
+        elif section in ('overview', 'revenue') and key == 'recorded_commissions':
+            domain = self._commission_domain(ids, start, end)
+            label = 'عمولات التطبيقات'
+        elif section in ('overview', 'revenue', 'heatmap') and key == 'customers':
+            domain = self._customer_orders_domain(ids, start, end)
+            model, label = 'pos.order', 'عدد العملاء'
+        elif section == 'overview' and key == 'purchases':
+            domain = self._purchase_domain(ids, start, end)
+            if domain is None:
+                raise UserError(_('Unknown dashboard figure.'))
+            context['group_by'] = 'move_id'
+            label = 'المشتريات'
+        elif section == 'pnl' and key in ('revenue', 'food_cost', 'gross_profit', 'salaries', 'rent', 'utilities',
+                                           'marketing', 'commissions', 'other_opex', 'depreciation',
+                                           'operating_profit', 'other_income', 'zakat_tax', 'net_profit'):
+            view = descriptor.get('pnl_view')
+            first, last = self._pnl_bounds(start, end, descriptor)
+            full_first, full_last = first, last
+            column = descriptor.get('column')
+            if column is not None:
+                if not isinstance(column, int) or isinstance(column, bool) or column < 0:
+                    raise UserError(_('Unknown dashboard figure.'))
+                if view == 'quarter':
+                    if column:
+                        raise UserError(_('Unknown dashboard figure.'))
+                else:
+                    month_first, month_last = month_bounds(first, column)
+                    if month_first > last:
+                        raise UserError(_('Unknown dashboard figure.'))
+                    first, last = max(first, month_first), min(last, month_last)
+            start, end = first, last
+            expense_categories = ('food_cost', 'salaries', 'rent', 'utilities', 'marketing', 'commissions', 'other_opex', 'depreciation', 'non_operating')
+            categories = {'other_opex': ('other_opex', 'non_operating'),
+                          'gross_profit': ('revenue', 'food_cost'),
+                          'operating_profit': ('revenue',) + expense_categories,
+                          'net_profit': ('revenue', 'other_income', 'zakat_tax') + expense_categories}.get(key, (key,))
+            accounts = [a for a in self._accounting(ids, start, end)['accounts'] if a['category'] in categories]
+            child = descriptor.get('child')
+            if child:
+                valid_children = self._accounting(ids, full_first, full_last)['accounts']
+                if not any(a['category'] in categories and '%s:%s' % (a['company_id'], a['account_id']) == child for a in valid_children):
+                    raise UserError(_('Unknown dashboard figure.'))
+                accounts = [a for a in accounts if '%s:%s' % (a['company_id'], a['account_id']) == child]
+            pairs = expression.OR([[('company_id', '=', a['company_id']), ('account_id', '=', a['account_id'])]
+                                   for a in accounts]) if accounts else [('id', '=', 0)]
+            domain = expression.AND([self._aml_domain(ids, start, end), pairs])
+            label = 'قائمة الدخل'
+        elif section in ('overview', 'revenue', 'expenses', 'ratios'):
+            expense_keys = ('food_cost', 'salaries', 'rent', 'utilities', 'marketing', 'commissions', 'other_opex', 'depreciation', 'non_operating', 'zakat_tax')
+            mapping = {k: (k,) for k in expense_keys + ('revenue', 'other_income')}
+            mapping.update({'sales_net': ('revenue',), 'timeline_ytd': ('revenue',), 'timeline_previous_ytd': ('revenue',), 'timeline_best': ('revenue',), 'timeline_point': ('revenue',), 'food_pct': ('food_cost',),
+                            'salaries_pct': ('salaries',), 'prime_pct': ('food_cost', 'salaries'),
+                            'rent_utilities': ('rent', 'utilities'), 'expenses_total': expense_keys,
+                            'operating_expenses': tuple(k for k in expense_keys if k != 'zakat_tax'),
+                            'gross_profit': ('revenue', 'food_cost'),
+                            'operating_profit': ('revenue',) + tuple(k for k in expense_keys if k != 'zakat_tax'),
+                            'net_profit': ('revenue', 'other_income') + expense_keys,
+                            'net_margin_pct': ('revenue', 'other_income') + expense_keys})
+            if section == 'expenses':
+                mapping['other_opex'] = ('other_opex', 'non_operating')
+                all_categories = self.env['baseer.dashboard2.category'].with_context(allowed_company_ids=ids).search([]).mapped('code')
+                mapping['expenses_total'] = tuple(k for k in all_categories if k not in ('revenue', 'other_income'))
+                mapping['operating_expenses'] = tuple(k for k in all_categories if k not in ('revenue', 'other_income', 'zakat_tax'))
+            categories = mapping.get(key)
+            if not categories:
+                raise UserError(_('Unknown dashboard figure.'))
+            if descriptor.get('month'):
+                month_start, month_end = self._period({'mode': 'month', 'month': descriptor['month']})
+                start, end = month_start, min(month_end, end)
+                if end < start:
+                    raise UserError(_('Invalid dashboard period.'))
+            accounts = [a for a in self._accounting(ids, start, end)['accounts'] if a['category'] in categories]
+            pairs = expression.OR([[('company_id', '=', a['company_id']), ('account_id', '=', a['account_id'])]
+                                   for a in accounts]) if accounts else [('id', '=', 0)]
+            domain = expression.AND([self._aml_domain(ids, start, end), pairs])
+            label = 'القيود المحاسبية'
+        else:
+            raise UserError(_('Unknown dashboard figure.'))
+        period_label = month_label(start, year=True) if start.day == 1 and end == month_bounds(start)[1] else '%s – %s' % (start, end)
+        return {'type': 'ir.actions.act_window', 'name': '%s — %s' % (label, period_label),
+                'res_model': model, 'domain': domain,
+                'views': [[False, 'list'], [False, 'form']], 'context': context, 'target': 'current'}
+
+    def _purchase_domain(self, ids, start, end):
         settings = self.env['baseer.dashboard2.settings'].with_context(allowed_company_ids=ids).search([('company_id', 'in', ids)])
         if set(settings.mapped('company_id').ids) != set(ids) or any(not setting.food_purchase_account_ids for setting in settings):
-            return {'available': False, 'value': None, 'pct': None}
+            return None
         excluded = self._reset_move_ids(ids, end, start)
         excluded += self.env['res.company'].browse(ids).mapped('account_opening_move_id').ids
         company_accounts = expression.OR([[('company_id', '=', setting.company_id.id),
                                            ('account_id', 'in', setting.food_purchase_account_ids.ids)]
                                           for setting in settings])
+        return expression.AND([self._aml_domain(ids, start, end), company_accounts,
+                               [('move_id', 'not in', excluded), ('move_id.ref', '!=', 'Opening Entry')]])
+
+    def _purchases(self, ids, start, end, sales):
+        domain = self._purchase_domain(ids, start, end)
+        if domain is None:
+            return {'available': False, 'value': None, 'pct': None}
+        settings = self.env['baseer.dashboard2.settings'].with_context(allowed_company_ids=ids).search([('company_id', 'in', ids)])
         rows = self.env['account.move.line'].with_context(allowed_company_ids=ids)._read_group(
-            expression.AND([company_accounts, [('parent_state', '=', 'posted'),
-                ('date', '>=', start), ('date', '<=', end), ('move_id', 'not in', excluded),
-                ('move_id.ref', '!=', 'Opening Entry')]]), ['company_id'], ['balance:sum'])
+            domain, ['company_id'], ['balance:sum'])
         values = {company.id: amount or 0 for company, amount in rows}
         value = sum((values.get(setting.company_id.id, 0) for setting in settings), 0.0)
         bill_exists = self.env['account.move.line'].with_context(allowed_company_ids=ids).search_count([
@@ -74,8 +329,8 @@ class DashboardSections(models.AbstractModel):
             ('account_id', 'in', settings.mapped('food_purchase_account_ids').ids)], limit=1)
         return {'available': True, 'value': round(value, 2), 'pct': food_ratio(value, sales), 'has_bills': bool(bill_exists)}
 
-    def _recorded_app_commissions(self, ids, start, end):
-        total = 0.0
+    def _commission_domain(self, ids, start, end):
+        domains = []
         settings_model = self.env['baseer.dashboard2.settings'].with_context(allowed_company_ids=ids)
         for company in self.env['res.company'].browse(ids):
             setting = settings_model.search([('company_id', '=', company.id)], limit=1)
@@ -84,12 +339,14 @@ class DashboardSections(models.AbstractModel):
                 accounts = self.env['account.account'].with_company(company).search([
                     ('company_ids', 'in', company.id), ('code', '=', '400011')])
             excluded = self._reset_move_ids([company.id], end, start) + company.account_opening_move_id.ids
-            rows = self.env['account.move.line'].with_company(company)._read_group([
-                ('company_id', '=', company.id), ('parent_state', '=', 'posted'),
-                ('date', '>=', start), ('date', '<=', end), ('account_id', 'in', accounts.ids),
-                ('move_id', 'not in', excluded), ('move_id.ref', '!=', 'Opening Entry')], [], ['balance:sum'])
-            total += (rows[0][0] or 0) if rows else 0
-        return round(total, 2)
+            domains.append([('company_id', '=', company.id), ('account_id', 'in', accounts.ids),
+                            ('move_id', 'not in', excluded), ('move_id.ref', '!=', 'Opening Entry')])
+        return expression.AND([self._aml_domain(ids, start, end), expression.OR(domains)])
+
+    def _recorded_app_commissions(self, ids, start, end):
+        rows = self.env['account.move.line'].with_context(allowed_company_ids=ids)._read_group(
+            self._commission_domain(ids, start, end), [], ['balance:sum'])
+        return round((rows[0][0] or 0) if rows else 0, 2)
 
     @request_memo
     def _posted_months(self, ids, revenue_only=False):
@@ -279,22 +536,7 @@ class DashboardSections(models.AbstractModel):
             view = params.get('pnl_view', PNL_DEFAULT_VIEW)
             if view not in ('month', 'quarter', 'year', 'range'):
                 raise UserError(translate('Invalid P&L view.'))
-            selected_first, selected_last = month_bounds(end)
-            if view == 'range':
-                requested = params.get('pnl_range')
-                if requested:
-                    first_period, last_period = self._period({'mode': 'range', **requested})
-                elif params.get('period', {}).get('mode') == 'range':
-                    first_period, last_period = start, end
-                else:
-                    first_period, last_period = selected_first, selected_last
-            elif view == 'quarter':
-                first_period = date(end.year, ((end.month - 1) // 3) * 3 + 1, 1)
-                last_period = month_bounds(first_period, 2)[1]
-            elif view == 'year':
-                first_period, last_period = pnl_year_start(end), selected_last
-            else:
-                first_period, last_period = selected_first, selected_last
+            first_period, last_period = self._pnl_bounds(start, end, params)
             pnl_trend = []
             first = month_bounds(first_period)[0]
             while first <= last_period:
@@ -482,10 +724,7 @@ class DashboardSections(models.AbstractModel):
         for m in range(1, 13):
             mfirst, mlast = month_bounds(date(first.year, m, 1))
             year_calendar.append({'month': mfirst.strftime('%Y-%m'), 'days': [day_values(d, year_days) for d in dates(mfirst, mlast)]})
-        bounds = self.env['account.move.line'].with_context(allowed_company_ids=ids)._read_group(
-            [('company_id', 'in', ids), ('parent_state', '=', 'posted')], [], ['date:max'])
-        last_data = bounds[0][0] if bounds else None
-        hours_end = hours_data_end(first, last, fields.Date.context_today(self), last_data)
+        hours_end = self._heatmap_hours_end(ids, first, last)
         current_summary, _, _, hours = self._sales_summary(ids, first, hours_end)
         matrix = [{'weekday': wd, 'hour': hour, 'orders': hours[(wd, hour)]['orders'] if (wd, hour) in hours else None, 'gross': round(hours[(wd, hour)]['gross'], 2) if (wd, hour) in hours else None} for wd in range(7) for hour in range(24)]
         return {'available': True, 'period': {'date_from': str(first), 'date_to': str(last)}, 'days': days, 'events': events, 'weekday_month': averages(first, last),

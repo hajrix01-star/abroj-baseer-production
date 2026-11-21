@@ -6,6 +6,7 @@ import pytz
 
 from odoo import fields, models, _
 from odoo.exceptions import UserError
+from odoo.osv import expression
 
 from .configuration import ACCOUNT_DEFAULTS
 
@@ -19,6 +20,43 @@ class DashboardSales(models.AbstractModel):
             if any(token.strip().casefold() in label for token in (channel[field] or '').split(',') if token.strip()):
                 return channel
         return {'key': 'other', 'kind': 'hall', 'name': 'أخرى', 'color_token': False, 'commission_rate': 0}
+
+    def _customer_orders_domain(self, ids, start, end):
+        context = {'allowed_company_ids': ids, 'active_test': False}
+        settings = self.env['baseer.dashboard2.settings'].with_context(**context).search([('company_id', 'in', ids)])
+        by_company = {s.company_id.id: s for s in settings}
+        configs = self.env['pos.config'].with_context(**context).search([('company_id', 'in', ids)])
+        summary_ids = set(settings.mapped('summary_pos_config_ids').ids)
+        summary_ids.update(c.id for c in configs if any(word in (c.name or '').casefold() for word in ('ملخص المبيعات', 'sales summaries', 'ملخصات')))
+        tz = pytz.timezone('Asia/Riyadh')
+        branches = []
+        for cid in ids:
+            setting = by_company.get(cid)
+            first = max(start, setting.pos_cutover_date) if setting and setting.pos_cutover_date else start
+            if first > end:
+                continue
+            threshold = setting.min_order_amount if setting else 1.5
+            utc_first = tz.localize(datetime.combine(first, time.min)).astimezone(pytz.UTC).replace(tzinfo=None)
+            utc_end = tz.localize(datetime.combine(end + timedelta(days=1), time.min)).astimezone(pytz.UTC).replace(tzinfo=None)
+            branches.append(expression.AND([[('company_id', '=', cid), ('date_order', '>=', utc_first),
+                                              ('date_order', '<', utc_end)],
+                                             expression.OR([[('amount_total', '>', threshold)], [('amount_total', '<', -threshold)]])]))
+        return expression.AND([[('company_id', 'in', ids), ('state', 'in', ('paid', 'done', 'invoiced')),
+                                ('config_id', 'not in', list(summary_ids))],
+                               expression.OR(branches) if branches else [('id', '=', 0)]])
+
+    def _customer_hour_domain(self, ids, start, end, weekday, hour):
+        tz = pytz.timezone('Asia/Riyadh')
+        intervals = []
+        day = start
+        while day <= end:
+            if day.weekday() == weekday:
+                local_start = tz.localize(datetime.combine(day, time(hour)))
+                first = local_start.astimezone(pytz.UTC).replace(tzinfo=None)
+                last = (local_start + timedelta(hours=1)).astimezone(pytz.UTC).replace(tzinfo=None)
+                intervals.append([('date_order', '>=', first), ('date_order', '<', last)])
+            day += timedelta(days=1)
+        return expression.AND([self._customer_orders_domain(ids, start, end), expression.OR(intervals) if intervals else [('id', '=', 0)]])
 
     @request_memo
     def _sales_days(self, ids, start, end):
@@ -42,7 +80,6 @@ class DashboardSales(models.AbstractModel):
         mapped = {(m.company_id.id, m.source, (m.pos_payment_method_id if m.source == 'pos_method' else m.account_id if m.source == 'account' else m.journal_id).id): channel_by_id[m.channel_id.id] for m in maps if m.channel_id.id in channel_by_id}
         settings = self.env['baseer.dashboard2.settings'].with_context(**context).search([('company_id', 'in', ids)])
         thresholds = {s.company_id.id: s.min_order_amount for s in settings}
-        cutovers = {s.company_id.id: s.pos_cutover_date for s in settings if s.pos_cutover_date}
         configs = self.env['pos.config'].with_context(**dict(context, active_test=False)).search([('company_id', 'in', ids)])
         summary_ids = set(settings.mapped('summary_pos_config_ids').ids)
         summary_ids.update(c.id for c in configs if any(word in (c.name or '').casefold() for word in ('ملخص المبيعات', 'sales summaries', 'ملخصات')))
@@ -50,9 +87,12 @@ class DashboardSales(models.AbstractModel):
             ('company_id', 'in', ids), ('state', 'in', ('paid', 'done', 'invoiced')),
             ('date_order', '>=', utc_start), ('date_order', '<', utc_end)],
             ['company_id', 'date_order', 'amount_total', 'config_id'], limit=200001)
+        qualifying_ids = set(self.env['pos.order'].with_context(**context).search(self._customer_orders_domain(ids, start, end)).ids)
         if len(orders) > 200000:
             raise UserError(_('The selected period contains more than 200,000 POS orders.'))
         days = {}
+        summary_line_ids = defaultdict(lambda: defaultdict(list))
+        summary_vat_ids = defaultdict(list)
         pos_days = {}
         real_days = set()
         order_hours = []
@@ -64,7 +104,7 @@ class DashboardSales(models.AbstractModel):
                 continue
             day = pos_days.setdefault(key, {'source': 'pos', 'channels': defaultdict(float), 'customers': 0, 'pos_gross': 0.0})
             sign = 1 if order['amount_total'] > 0 else -1 if order['amount_total'] < 0 else 0
-            if (not cutovers.get(key[0]) or key[1] >= cutovers[key[0]]) and abs(order['amount_total']) > thresholds.get(key[0], 1.5):
+            if order['id'] in qualifying_ids:
                 day['customers'] += sign
                 day['pos_gross'] += order['amount_total']
                 real_days.add(key)
@@ -95,14 +135,26 @@ class DashboardSales(models.AbstractModel):
                       if abs(order['amount_total']) > thresholds.get(order['company_id'], 1.5)}
         posted_real_days = set(order_days.values())
         posted_channels = defaultdict(lambda: defaultdict(float))
+        pos_payment_ids = defaultdict(lambda: defaultdict(list))
         if order_days:
+            payment_domain = [('pos_order_id', 'in', list(order_days)), ('company_id', 'in', ids)]
             groups = self.env['pos.payment'].with_context(**context)._read_group(
-                [('pos_order_id', 'in', list(order_days)), ('company_id', 'in', ids)],
+                payment_domain,
                 ['pos_order_id', 'payment_method_id'], ['amount:sum'])
             for order, method, amount in groups:
                 key = order_days[order.id]
                 channel = mapped.get((key[0], 'pos_method', method.id)) or self._channel_for(method.name, channels, 'pos_method_keywords')
                 posted_channels[key][channel['key']] += amount
+            if self.env.context.get('_bd2_pos_trace') is not None:
+                payment_rows = raw_rows(self.env['pos.payment'].with_context(**context), payment_domain,
+                                        ['pos_order_id', 'payment_method_id'])
+                methods = self.env['pos.payment.method'].with_context(**context).browse({p['payment_method_id'] for p in payment_rows})
+                names = {m.id: m.name for m in methods}
+                for payment in payment_rows:
+                    key = order_days[payment['pos_order_id']]
+                    method_id = payment['payment_method_id']
+                    channel = mapped.get((key[0], 'pos_method', method_id)) or self._channel_for(names.get(method_id), channels, 'pos_method_keywords')
+                    pos_payment_ids[key][channel['key']].append(payment['id'])
         if move_map:
             line_rows = raw_rows(self.env['account.move.line'].with_context(**context),
                 [('company_id', 'in', ids), ('move_id', 'in', list(move_map))],
@@ -144,10 +196,12 @@ class DashboardSales(models.AbstractModel):
                     if (reverse and line['credit'] > 0) or (not reverse and line['debit'] > 0):
                         channel = mapped.get((company.id, 'account', line['account_id'])) or self._channel_for(line['name'], channels, 'line_keywords')
                         day['channels'][channel['key']] += amount
+                        summary_line_ids[key][channel['key']].append(line['id'])
                         if channel['kind'] == 'app':
                             receivable_ids[key[0]].add(line['account_id'])
                     elif (line['tax_line_id'] or by_account[line['account_id']].account_type == 'liability_current') and ((reverse and line['debit'] > 0) or (not reverse and line['credit'] > 0)):
                         day['sales_vat'] -= amount
+                        summary_vat_ids[key].append(line['id'])
         summary_days = days
         days = {}
         overrides = self.env['baseer.dashboard2.source.override'].with_context(**context).search([
@@ -172,9 +226,18 @@ class DashboardSales(models.AbstractModel):
             if use_summary:
                 day['channels'].update(summary_days[key]['channels'])
                 day['sales_vat'] = summary_days[key]['sales_vat']
+                trace = self.env.context.get('_bd2_sales_trace')
+                if trace is not None:
+                    trace[key] = dict(summary_line_ids[key])
+                vat_trace = self.env.context.get('_bd2_vat_trace')
+                if vat_trace is not None:
+                    vat_trace.update(summary_vat_ids[key])
             if use_pos:
                 for channel, amount in posted_channels[key].items():
                     day['channels'][channel] += amount
+                trace = self.env.context.get('_bd2_pos_trace')
+                if trace is not None:
+                    trace[key] = dict(pos_payment_ids[key])
             if key in real_days:
                 day['customers'] = pos_days[key]['customers']
                 day['pos_gross'] = pos_days[key]['pos_gross']

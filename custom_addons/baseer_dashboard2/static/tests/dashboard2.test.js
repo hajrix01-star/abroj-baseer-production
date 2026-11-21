@@ -11,9 +11,18 @@ test('month labels support full, short, year, bidi isolation and plain CSV', () 
     expect(plainCsvText(mixed)).toBe('November (جزئي)');
 });
 
+test('mini chart drills use the plotted month and exclude mixed sources and averages', () => {
+    const context = {state: {period: {mode: 'range', date_to: '2026-10-20'}, data: {sales: {trend: [{source_counts: {summary: 1, pos: 1}}, {source_counts: {summary: 1, pos: 0}}]}}}};
+    expect(Dashboard2.prototype.monthPeriod.call(context, '2026-10')).toEqual({mode:'range', date_from:'2026-10-01', date_to:'2026-10-20'});
+    expect(Dashboard2.prototype.miniDrillable.call(context, 1, 0, false)).toBe(false);
+    expect(Dashboard2.prototype.miniDrillable.call(context, 1, 1, false)).toBe(true);
+    expect(Dashboard2.prototype.miniDrillable.call(context, 2, 1, true)).toBe(false);
+});
+
 test('P&L renders without in/out months', async () => {
     class Pnl extends Component {
         static template = 'baseer_dashboard2.Pnl';
+        pnlDrillable = Dashboard2.prototype.pnlDrillable;
         state = { view: 'pnl', data: { rows: [] }, closed: {} };
         trend = [];
         exportCsv() {}
@@ -95,6 +104,7 @@ test('in/out unavailable unreceived values use dashes with tooltips', async () =
     const month = (name, apps) => ({ month: name, incoming: { available: true, gross: 100, channels: {}, warnings: [], apps_unreceived: apps }, outgoing: { available: true, total: 0, items: {}, sources: {} }, sales_vat: { value: 0 }, unpaid_bills: { value: 0 }, net: 100 });
     class Pnl extends Component {
         static template = 'baseer_dashboard2.Pnl';
+        pnlDrillable = Dashboard2.prototype.pnlDrillable;
         static components = { Sparkline };
         state = { view: 'inout', data: { months: [month('2026-10', unavailable), month('2026-11', available)], total: { incoming: 200, outgoing: 0, channels: {}, items: {}, sources: {}, apps_unreceived: available, sales_vat: 0, unpaid_bills: { value: 0 }, net: 200 } } };
         objectKeys = Object.keys; fmt = formatNumber; tableFmt = formatTable; tablePct = formatTablePct; hasDisplayValues = hasDisplayValues; multiplePoints = multiplePoints; monthName = (v) => v; name = (v) => v;
@@ -311,6 +321,7 @@ test('P&L hides all-zero groups and account rows across displayed months', async
     const row = (key, months, children = []) => ({ key, name: key, months, total: months.reduce((a, b) => a + (b || 0), 0), pct: 0, children });
     class Pnl extends Component {
         static template = 'baseer_dashboard2.Pnl';
+        pnlDrillable = Dashboard2.prototype.pnlDrillable;
         static components = { Sparkline };
         state = { view: 'pnl', closed: {}, data: { rows: [row('empty', [0, null]), row('active', [0, 20], [row('empty child', [0, 0]), row('active child', [3, 0])])] } };
         trend = []; hasDisplayValues = hasDisplayValues; name = v => v; monthName = v => v;
@@ -496,7 +507,7 @@ test('partial overview marks ratios and neutralizes company comparisons', async 
             companies_compare: ['1', '2'].map(key => ({ key, name: key, sales_net: 100, food_pct: 1.6, salaries_pct: 0.4, net_margin_pct: -5, targets: { food_pct: { status: 'ok' }, salaries_pct: { status: 'bad' } } }))
         } };
         trend = [{ partial }]; monthName = (v, short, year, isPartial) => monthLabel(v, { short, year, partial: isPartial }); fmt = formatNumber; pct = formatPercent; tableFmt = formatTable; tablePct = formatTablePct; customerCutoverLabel = customerCutoverLabel;
-        iconPath() { return ''; } name(v) { return v; } bridgeStyle() { return ''; }
+        iconPath() { return ''; } name(v) { return v; } bridgeStyle() { return ''; } bridgeDrillKey = Dashboard2.prototype.bridgeDrillKey; miniDrillable = Dashboard2.prototype.miniDrillable; miniDrill = Dashboard2.prototype.miniDrill;
     }
     const app = new App(PartialOverview, { templates, test: true });
     after(() => app.destroy());
@@ -599,6 +610,7 @@ test('expense distribution displays the aggregated other row', async () => {
 test('P&L displays the merged other expense and its accounts in one row', async () => {
     class Pnl extends Component {
         static template = 'baseer_dashboard2.Pnl';
+        pnlDrillable = Dashboard2.prototype.pnlDrillable;
         static components = { Sparkline };
         state = { view: 'pnl', closed: {}, data: { rows: [{ key: 'other_opex', name: false, months: [-1250.18], total: -1250.18, pct: -1, children: [{ code: '400032', name: 'حساب', months: [-1250.18], total: -1250.18, pct: -1 }] }] } };
         trend = [{ month: '2026-10' }];
@@ -648,7 +660,7 @@ test('ratio changes are percentage points and targets omit unnecessary decimals'
 test('small display details and commission data are wired correctly', async () => {
     const response = await withFetch(globals.fetch, () => fetch('/baseer_dashboard2/static/src/xml/main.xml'));
     const doc = new DOMParser().parseFromString(await response.text(), 'text/xml');
-    expect(doc.querySelector('[t-name="baseer_dashboard2.Timeline"] b[t-att-class]').getAttribute('t-att-class')).toInclude('muted');
+    expect(doc.querySelector('[t-name="baseer_dashboard2.Timeline"] b[t-att-class*="muted"]').getAttribute('t-att-class')).toInclude('muted');
     expect(doc.querySelector('[t-name="baseer_dashboard2.Ratios"]').outerHTML).toInclude('targetPercent(');
     expect(doc.querySelector('[t-name="baseer_dashboard2.BreakEven"] Money').getAttribute('value')).toBe('state.data.breakeven.value');
 });
@@ -764,6 +776,7 @@ test('long chart axes mark alternating labels for the phone layout', async () =>
 test('P&L period selector controls columns and hides a single-column sparkline', async () => {
     class Pnl extends Component {
         static template = 'baseer_dashboard2.Pnl';
+        pnlDrillable = Dashboard2.prototype.pnlDrillable;
         static components = { Sparkline };
         state = { view: 'pnl', pnl_view: 'month', closed: {}, data: { pnl_columns: [{month: '2026-10'}], rows: [{key:'revenue', name:'مبيعات', months:[100], total:100, pct:100, children:[]}] } };
         trend = []; hasDisplayValues = hasDisplayValues; name = v => v; monthName = v => v; tableFmt = formatTable; tablePct = formatTablePct;
@@ -790,6 +803,7 @@ test('P&L section request includes view and custom dates', async () => {
 test('P&L shows sparklines with multiple displayed columns', async () => {
     class Pnl extends Component {
         static template = 'baseer_dashboard2.Pnl';
+        pnlDrillable = Dashboard2.prototype.pnlDrillable;
         static components = { Sparkline };
         state = { view:'pnl', pnl_view:'year', closed:{}, data:{pnl_columns:[{month:'2026-09'}, {month:'2026-10'}], rows:[{key:'revenue', name:'مبيعات', months:[20,100], total:120, pct:100, children:[]}]} };
         trend = []; hasDisplayValues = hasDisplayValues; name = v => v; monthName = v => v; tableFmt = formatTable; tablePct = formatTablePct;
@@ -801,4 +815,44 @@ test('P&L shows sparklines with multiple displayed columns', async () => {
     await app.mount(getFixture());
     expect(getFixture().querySelector('.export-table').textContent).toInclude('الاتجاه');
     expect(getFixture().querySelector('.export-table .bd2-spark')).not.toBe(null);
+});
+
+
+test('P&L drill calls the service and action without toggling or changing CSV text', async () => {
+    let args, opened, toggles = 0;
+    class Pnl extends Component {
+        static template = 'baseer_dashboard2.Pnl';
+        static components = { Sparkline };
+        state = { view:'pnl', pnl_view:'month', company:'2', period:{mode:'month', month:'2026-10'}, closed:{}, data:{pnl_columns:[{month:'2026-10'}], rows:[{key:'salaries', name:'رواتب', months:[-120], total:-120, pct:1, children:[]}]} };
+        trend = []; hasDisplayValues = hasDisplayValues; name = v => v; monthName = v => v; tableFmt = formatTable; tablePct = formatTablePct;
+        pnlDrillable = Dashboard2.prototype.pnlDrillable; drillPnl = Dashboard2.prototype.drillPnl;
+        orm = { async call(...values) { args = values; return {name:'drill'}; } };
+        toggleRow() { toggles++; } exportCsv() {} choose() {}
+    }
+    const response = await withFetch(globals.fetch, () => fetch('/baseer_dashboard2/static/src/xml/main.xml'));
+    const app = new App(Pnl, { templates: await response.text(), env: {services: {action: {async doAction(value) { opened = value; }}}}, test:true });
+    after(() => app.destroy());
+    await app.mount(getFixture());
+    const cell = getFixture().querySelector('.export-table tbody td');
+    expect(plainCsvText(cell.textContent.trim())).toBe('(120)');
+    await click(cell.querySelector('.bd2-drill'));
+    expect(toggles).toBe(0);
+    expect(args[1]).toBe('get_drilldown');
+    expect(args[2][0].key).toBe('salaries');
+    expect(opened.name).toBe('drill');
+    expect(plainCsvText(cell.textContent.trim())).toBe('(120)');
+    getFixture().classList.add('o_bd2');
+    const createUrl = URL.createObjectURL;
+    const anchorClick = HTMLAnchorElement.prototype.click;
+    let exported;
+    try {
+        URL.createObjectURL = (blob) => { exported = blob; return 'blob:test'; };
+        HTMLAnchorElement.prototype.click = () => {};
+        Dashboard2.prototype.exportCsv();
+        expect(await exported.text()).toInclude('"(120)"');
+    } finally {
+        URL.createObjectURL = createUrl;
+        HTMLAnchorElement.prototype.click = anchorClick;
+        getFixture().classList.remove('o_bd2');
+    }
 });

@@ -272,9 +272,29 @@ class TestDashboard2(TransactionCase):
         self.assertEqual(data['categories']['non_operating'], 50)
         self.assertEqual(data['operating_profit'], 450)
         self.assertEqual(data['net_profit'], 450)
+        common = {'company_key': str(company.id), 'period': {'mode': 'month', 'month': '2026-10'}}
+        for section, key, expected in [('pnl', 'salaries', 200), ('ratios', 'food_pct', 300), ('overview', 'purchases', 200)]:
+            action = service.get_drilldown(dict(common, section=section, key=key, pnl_view='month', column=0))
+            lines = self.env[action['res_model']].with_context(**action['context']).search(action['domain'])
+            self.assertEqual(sum(lines.mapped('balance')), expected)
+            self.assertEqual(action['context']['allowed_company_ids'], [company.id])
+            self.assertTrue(all(action['context'][flag] is False for flag in ('create', 'edit', 'delete', 'duplicate')))
+        with self.assertRaises(UserError):
+            service.get_drilldown(dict(common, section='pnl', key='unknown', pnl_view='month'))
+        self.assertFalse(set(service._scope('all') if len(service._companies()) > 1 else service._scope(str(company.id))) & {54, 56})
+        for cid in (54, 56):
+            with self.assertRaises(AccessError):
+                service.get_drilldown(dict(common, company_key=str(cid), section='overview', key='purchases'))
         sales, _, _, _ = service._sales_summary([company.id], date(2026, 10, 1), date(2026, 10, 31))
         self.assertEqual(sales['channels']['cash'], 540)
         self.assertEqual(sales['channels']['keeta'], 360)
+        for section, key, expected in [('revenue', 'gross', sales['gross']), ('revenue', 'apps', sales['apps']), ('inout', 'gross', sales['gross'])]:
+            action = service.get_drilldown(dict(common, section=section, key=key, month='2026-10'))
+            lines = self.env[action['res_model']].with_context(**action['context']).search(action['domain'])
+            self.assertAlmostEqual(sum(lines.mapped('balance')), expected, places=2)
+        action = service.get_drilldown(dict(common, section='inout', key='sales_vat', month='2026-10'))
+        lines = self.env[action['res_model']].with_context(**action['context']).search(action['domain'])
+        self.assertAlmostEqual(-sum(lines.mapped('balance')), service._sales_vat([company.id], date(2026, 10, 1), date(2026, 10, 31))['value'], places=2)
         # Summary channel amounts, including applications, retain their VAT-inclusive basis.
         self.assertEqual(sales['apps'], 360)
         self.assertAlmostEqual(sales['apps_pct'], 360 / 1015 * 100, places=2)
@@ -502,6 +522,12 @@ class TestDashboard2(TransactionCase):
         self.assertNotIn('vat_paid', out['items'])
         self.assertAlmostEqual(sum(out['items'].values()), out['total'], places=2)
         self.assertAlmostEqual(sum(out['sources'].values()), out['total'], places=2)
+        params = {'company_key': str(company.id), 'period': {'mode': 'month', 'month': '2026-10'}}
+        available = service.get_cash_drill_availability(params)
+        self.assertNotIn('total', available['total'].get('2026-10', []))
+        self.assertNotIn('zakat_tax', available['items'].get('2026-10', []))
+        with self.assertRaises(UserError):
+            service.get_drilldown(dict(params, section='inout', key='cash_out', group='total', month='2026-10'))
         report = service._inout([company.id], date(2026, 10, 31))
         self.assertEqual(report['months'][-1]['outgoing']['total'], 50)
         self.assertEqual(report['total']['outgoing'], 50)
@@ -564,6 +590,9 @@ class TestDashboard2(TransactionCase):
             order(new_session(config), day, 80)
         november = service._sales_summary([company.id], date(2026, 11, 1), date(2026, 11, 30))[0]
         self.assertEqual(november['customers']['value'], 2)
+        action = service.get_drilldown({'company_key': str(company.id), 'period': {'mode': 'month', 'month': '2026-11'}, 'section': 'revenue', 'key': 'customers'})
+        orders = self.env[action['res_model']].with_context(**action['context']).search(action['domain'])
+        self.assertEqual(sum(1 if order.amount_total > 0 else -1 for order in orders), november['customers']['value'])
         self.assertEqual(november['customers']['avg_ticket'], 80)
         self.assertEqual(november['customers']['cutover_date'], '2026-11-19')
         october = service._sales_summary([company.id], date(2026, 10, 1), date(2026, 10, 31))[0]
@@ -624,6 +653,14 @@ class TestDashboard2(TransactionCase):
         order(session, day, 1)
         self.assertEqual(result(day)[0]['gross'], 115)
         self.assertEqual(result(day)[1][(company.id, day)]['source'], 'pos')
+        action = service.get_drilldown({'company_key': str(company.id), 'period': {'mode': 'range', 'date_from': str(day), 'date_to': str(day)}, 'section': 'revenue', 'key': 'gross'})
+        self.assertEqual(action['res_model'], 'pos.payment')
+        payments = self.env['pos.payment'].with_context(**action['context']).search(action['domain'])
+        self.assertEqual(sum(payments.mapped('amount')), 115)
+        month_hours = service._sales_days([company.id], date(2026, 10, 1), date(2026, 10, 31))[3]
+        action = service.get_drilldown({'company_key': str(company.id), 'period': {'mode': 'month', 'month': '2026-10'}, 'section': 'heatmap', 'key': 'hours', 'weekday': day.weekday(), 'hour': 13})
+        orders = self.env['pos.order'].with_context(**action['context']).search(action['domain'])
+        self.assertEqual(sum(1 if order.amount_total > 0 else -1 for order in orders), month_hours[(day.weekday(), 13)]['orders'])
         for day in (date(2026, 10, 25), date(2026, 10, 31)):
             if day.day == 31:
                 entry(day)
@@ -707,6 +744,13 @@ class TestDashboard2(TransactionCase):
         result = self.env['baseer.dashboard2.service']._cash_out([company.id], date(2026, 10, 1), date(2026, 10, 31))
         self.assertEqual(result['total'], 250)
         self.assertEqual(result['items']['salaries'], 250)
+        service = self.env['baseer.dashboard2.service']
+        params = {'company_key': str(company.id), 'period': {'mode': 'month', 'month': '2026-10'}}
+        available = service.get_cash_drill_availability(params)
+        self.assertIn('salaries', available['items']['2026-10'])
+        action = service.get_drilldown(dict(params, section='inout', key='cash_out', group='items', item='salaries', month='2026-10'))
+        lines = self.env[action['res_model']].with_context(**action['context']).search(action['domain'])
+        self.assertEqual(-sum(lines.mapped('balance')), result['items']['salaries'])
 
     def test_unpaid_bill_not_outflow(self):
         from datetime import date
@@ -723,6 +767,11 @@ class TestDashboard2(TransactionCase):
         self.assertFalse(service._purchases([company.id], date(2026, 10, 1), date(2026, 10, 31), 1000)['has_bills'])
         bill.action_post()
         self.assertTrue(service._purchases([company.id], date(2026, 10, 1), date(2026, 10, 31), 1000)['has_bills'])
+        action = service.get_drilldown({'company_key': str(company.id), 'period': {'mode': 'month', 'month': '2026-10'}, 'section': 'overview', 'key': 'purchases'})
+        lines = self.env[action['res_model']].with_context(**action['context']).search(action['domain'])
+        self.assertIn(bill, lines.mapped('move_id'))
+        self.assertEqual(sum(lines.mapped('balance')), service._purchases([company.id], date(2026, 10, 1), date(2026, 10, 31), 1000)['value'])
+        self.assertEqual(action['context']['group_by'], 'move_id')
         self.assertFalse(service._purchases([company.id], date(2026, 9, 1), date(2026, 9, 30), 1000)['has_bills'])
         self.assertEqual(abs(service._unpaid_bills([company.id], date(2026, 10, 31))['value']), 100)
         payment_journal = self.env['account.journal'].create({'name': 'Bill settlement', 'code': 'D2SET', 'type': 'general', 'company_id': company.id})

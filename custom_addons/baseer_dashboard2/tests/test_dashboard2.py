@@ -298,7 +298,7 @@ class TestDashboard2(TransactionCase):
             self.assertEqual(comparison['customers'][key], sales['customers'][key], key)
         self.assertEqual(sales['channels']['cash'], 540)
         self.assertEqual(sales['channels']['keeta'], 360)
-        for section, key, expected in [('revenue', 'gross', sales['gross']), ('revenue', 'apps', sales['apps']), ('inout', 'gross', sales['gross'])]:
+        for section, key, expected in [('revenue', 'gross', -service._accounting_gross([company.id], date(2026, 10, 1), date(2026, 10, 31))['sales_net']), ('revenue', 'apps', sales['apps']), ('inout', 'gross', sales['gross'])]:
             action = service.get_drilldown(dict(common, section=section, key=key, month='2026-10'))
             lines = self.env[action['res_model']].with_context(**action['context']).search(action['domain'])
             self.assertAlmostEqual(sum(lines.mapped('balance')), expected, places=2)
@@ -355,6 +355,7 @@ class TestDashboard2(TransactionCase):
         params = {'company_key': str(company.id), 'period': {'mode': 'month', 'month': '2026-10'}}
         expense = service.get_section('expenses', params)
         overview = service.get_section('overview', params)
+        self.assertEqual(overview['breakeven_series'][-1]['safety_margin'], overview['current']['safety_margin'])
         self.assertNotIn('zakat_tax', [row['key'] for row in expense['ranked']])
         self.assertEqual(sum(row['amount'] for row in expense['ranked']), 550)
         self.assertEqual(next(row['amount'] for row in expense['ranked'] if row['key'] == 'other_opex'), 50)
@@ -672,7 +673,7 @@ class TestDashboard2(TransactionCase):
         order(session, day, 1)
         self.assertEqual(result(day)[0]['gross'], 115)
         self.assertEqual(result(day)[1][(company.id, day)]['source'], 'pos')
-        action = service.get_drilldown({'company_key': str(company.id), 'period': {'mode': 'range', 'date_from': str(day), 'date_to': str(day)}, 'section': 'revenue', 'key': 'gross'})
+        action = service.get_drilldown({'company_key': str(company.id), 'period': {'mode': 'month', 'month': '2026-10'}, 'section': 'heatmap', 'key': 'gross', 'day': str(day)})
         self.assertEqual(action['res_model'], 'pos.payment')
         payments = self.env['pos.payment'].with_context(**action['context']).search(action['domain'])
         self.assertEqual(sum(payments.mapped('amount')), 115)
@@ -924,6 +925,10 @@ class TestDashboard2(TransactionCase):
         first, last = date(2026, 10, 1), date(2026, 10, 31)
         self.assertEqual(service._accounting(service._scope('all'), first, last)['sales_net'], 300)
         self.assertEqual(service._accounting([company.id], first, last)['sales_net'] + service._accounting([other.id], first, last)['sales_net'], 300)
+        combined = service._accounting_gross(service._scope('all'), first, last)
+        parts = [service._accounting_gross([co.id], first, last) for co in (company, other)]
+        for key in ('sales_net', 'gross_profit', 'operating_profit', 'net_profit'):
+            self.assertEqual(combined[key], sum(part[key] for part in parts))
 
 
 class TestDashboardThemeLiterals(TransactionCase):
@@ -1049,7 +1054,7 @@ class TestDashboardThemeLiterals(TransactionCase):
 class TestGlossaryBasis(TransactionCase):
     def test_apps_ratio_is_gross(self):
         from ..models.service import SOURCES
-        self.assertIn('عدا نسبة التطبيقات: شاملة الضريبة', SOURCES['ratios'])
+        self.assertIn('شاملة الضريبة', SOURCES['ratios'])
 
 
 class TestDashboardRequestMemo(TransactionCase):

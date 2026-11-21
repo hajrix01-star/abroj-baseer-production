@@ -69,8 +69,8 @@ class DashboardTaxBasis(models.AbstractModel):
         return totals
 
     @request_memo
-    def _accounting_gross(self, ids, start, end):
-        data = self._accounting(ids, start, end)
+    def _accounting_gross(self, ids, start, end, data=None):
+        data = data if data is not None else self._accounting(ids, start, end)
         tax = self._tax_basis(ids, start, end)
         categories = self.env['baseer.dashboard2.category'].with_context(allowed_company_ids=ids).search([])
         for (cid, account_id), amount in tax['accounts'].items():
@@ -78,7 +78,7 @@ class DashboardTaxBasis(models.AbstractModel):
             key = self._category(account, categories)
             if key:
                 data['categories'][key] = round(data['categories'].get(key, 0) + amount, 2)
-            for row in data['accounts']:
+            for row in data.get('accounts', []):
                 if row['company_id'] == cid and row['account_id'] == account_id:
                     row['amount'] = round(row['amount'] + amount, 2)
                     break

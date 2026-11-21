@@ -901,7 +901,7 @@ test('P&L drill calls the service and action without toggling or changing CSV te
     try {
         URL.createObjectURL = (blob) => { exported = blob; return 'blob:test'; };
         HTMLAnchorElement.prototype.click = () => {};
-        Dashboard2.prototype.exportCsv();
+        Dashboard2.prototype.exportCsv.call({state: {view: 'pnl'}});
         expect(await exported.text()).toInclude('"(120)"');
     } finally {
         URL.createObjectURL = createUrl;

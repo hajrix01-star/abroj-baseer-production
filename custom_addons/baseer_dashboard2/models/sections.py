@@ -498,6 +498,9 @@ class DashboardSections(models.AbstractModel):
             first_prior, _ = month_bounds(prior_end, -5)
             _, last_prior = month_bounds(prior_end)
             previous_year = self._tooltip_accounting_months(ids, first_prior, last_prior)
+            for key, data in previous_year.items():
+                first, last = month_bounds(date.fromisoformat(key + '-01'))
+                previous_year[key] = self._accounting_gross(ids, first, last, data)
             for month in trend:
                 key = str(int(month['month'][:4]) - 1) + month['month'][4:]
                 month['previous_year'] = previous_year.get(key) if key in posted_months else None
@@ -567,6 +570,14 @@ class DashboardSections(models.AbstractModel):
             prior_mini = self._tooltip_sales_months(ids, prior_start, prior_finish)
             purchase_prior = self._tooltip_purchase_months(ids, prior_start, prior_finish)
             prior_accounting = self._tooltip_accounting_months(ids, prior_start, prior_finish)
+            settings = self.env['baseer.dashboard2.settings'].with_context(allowed_company_ids=ids).search([('company_id', 'in', ids)])
+            purchase_accounts = {(setting.company_id.id, account.id) for setting in settings for account in setting.food_purchase_account_ids}
+            for key, data in prior_accounting.items():
+                first, last = month_bounds(date.fromisoformat(key + '-01'))
+                prior_accounting[key] = self._accounting_gross(ids, first, last, data)
+                if key in purchase_prior:
+                    allocated = self._tax_basis(ids, first, last)['accounts']
+                    purchase_prior[key] = round(purchase_prior[key] + sum(allocated.get(pair, 0) for pair in purchase_accounts), 2)
             for month in result['purchases']['trend']:
                 prior_key = str(int(month['month'][:4]) - 1) + month['month'][4:]
                 amount = purchase_prior.get(prior_key)
@@ -744,9 +755,15 @@ class DashboardSections(models.AbstractModel):
         prior_first, _ = month_bounds(prior_end, -9)
         _, prior_last = month_bounds(prior_end)
         prior_sales = self._tooltip_sales_months(ids, prior_first, prior_last)
+        prior_accounting = self._tooltip_accounting_months(ids, prior_first, prior_last)
+        for key, data in prior_accounting.items():
+            first, last = month_bounds(date.fromisoformat(key + '-01'))
+            prior_accounting[key] = self._accounting_gross(ids, first, last, data)
         for month in monthly:
             prior_key = str(int(month['month'][:4]) - 1) + month['month'][4:]
             month['previous_year'] = prior_sales.get(prior_key)
+            if month['previous_year'] is not None and prior_key in prior_accounting:
+                month['previous_year']['gross'] = prior_accounting[prior_key]['sales_net']
         apps_trend = monthly
         monthly = monthly[-6:]
         known = {c['key']: c for c in channels}

@@ -39,6 +39,10 @@ class TestTaxBasis(TransactionCase):
         before = service._accounting(ids, first, last)
         gross = service._accounting_gross(ids, first, last)
         self.assertAlmostEqual(gross['categories']['food_cost'] - before['categories']['food_cost'], 15)
+        prior = service._tooltip_accounting_months(ids, first, last)['2026-10']
+        inclusive_prior = service._accounting_gross(ids, first, last, prior)
+        self.assertAlmostEqual(inclusive_prior['categories']['food_cost'], gross['categories']['food_cost'])
+        self.assertAlmostEqual(inclusive_prior['sales_net'], gross['sales_net'])
         bill('untaxed')
         untaxed = service._accounting_gross(ids, first, last)
         self.assertAlmostEqual(untaxed['categories']['food_cost'] - gross['categories']['food_cost'], 100)

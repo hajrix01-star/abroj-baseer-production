@@ -712,8 +712,6 @@ td {
 .o_bd2 .info-button { border: 1px solid var(--bd2-border); border-radius: 50%; background: var(--bd2-card); color: var(--bd2-muted); width: 24px; height: 24px; }
 .o_bd2 .info-panel { position: absolute; z-index: 20; inset-inline-start: 0; top: calc(100% + 6px); width: 280px; max-width: 70vw; padding: 12px; border: 1px solid var(--bd2-border); border-radius: 8px; background: var(--bd2-card); color: var(--bd2-text); box-shadow: 0 4px 16px var(--bd2-shadow); font-size: 13px; font-weight: 400; }
 .o_bd2 .info-panel strong, .o_bd2 .info-panel span { display: block; }
-.o_bd2 .inout-scroll { direction: ltr; }
-.o_bd2 .inout-scroll > * { direction: rtl; }
 
 .o_bd2 .chart-legend { display: flex; gap: 16px; justify-content: flex-end; color: var(--bd2-muted); font-size: 11px; }
 .o_bd2 .chart-legend i { display: inline-block; width: 16px; margin-inline-end: 4px; vertical-align: middle; border-top: 2px solid var(--bd2-c1); }
@@ -862,6 +860,8 @@ td {
 .bd2-menu-toggle, .bd2-nav-backdrop, .o_bd2 .context-source, .o_bd2 .company-label-fallback { display: none; }
 .o_bd2 .bd2-scroll-x { max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
 @media (max-width: 1000px) {
+  .o_bd2 .bd2-sidebar nav button { display: flex; align-items: center; gap: 10px; }
+  .o_bd2 .bd2-sidebar nav .nav-icon { margin: 0; flex: 0 0 18px; }
   .o_bd2 .bd2-sidebar { display: none; position: fixed; inset-block: 0; inset-inline-start: 0; width: 280px; max-width: 85vw; z-index: 102; overflow-y: auto; }
   .o_bd2.bd2-nav-open .bd2-sidebar { display: flex; }
   .o_bd2 .bd2-nav-backdrop { display: block; position: fixed; inset: 0; z-index: 101; background: var(--bd2-backdrop); }
@@ -888,8 +888,25 @@ td {
   .o_bd2 .hours-table { min-width: 850px; }
   .o_bd2 .inout-table th, .o_bd2 .inout-table td { white-space: nowrap; word-break: normal; overflow-wrap: normal; }
   .o_bd2 .bd2-scroll-x table { width: max-content; min-width: 100%; }
-  .o_bd2 .bd2-scroll-x th:first-child { position: sticky; inset-inline-start: 0; z-index: 1; background: var(--bd2-surface); }
-  .o_bd2 .bd2-scroll-x tr.net th:first-child { background: var(--bd2-sidebar); }
+  .o_bd2 .bd2-scroll-x table :is(th, td):first-child {
+    position: sticky; inset-inline-start: 0; z-index: 1;
+    width: 140px; min-width: 140px; max-width: 140px;
+    white-space: normal; overflow-wrap: anywhere; word-break: normal;
+    background: var(--bd2-card); border-inline-end: 1px solid var(--bd2-border);
+  }
+  .o_bd2 .bd2-scroll-x thead :is(th, td):first-child { z-index: 2; background: var(--bd2-surface); }
+  .o_bd2 .bd2-scroll-x tr.account :is(th, td):first-child { background: var(--bd2-surface); }
+  .o_bd2 .bd2-scroll-x tr.highlight :is(th, td):first-child { background: var(--bd2-gold-soft); }
+  .o_bd2 .bd2-scroll-x tr.net :is(th, td):first-child { background: var(--bd2-sidebar); }
+  .o_bd2 .bd2-scroll-x .hours-table :is(th, td):first-child { width: 62px; min-width: 62px; max-width: 62px; }
+  .o_bd2 .bd2-scroll-x .payment-methods-table :is(th, td):first-child { width: 45px; min-width: 45px; max-width: 45px; border-inline-end: 0; }
+  .o_bd2 .bd2-scroll-x .payment-methods-table :is(th, td):first-child:not([colspan]) + :is(th, td) {
+    position: sticky; inset-inline-start: 45px; z-index: 1;
+    width: 140px; min-width: 140px; max-width: 140px;
+    white-space: normal; overflow-wrap: anywhere; background: var(--bd2-card);
+    border-inline-end: 1px solid var(--bd2-border);
+  }
+  .o_bd2 .bd2-scroll-x .payment-methods-table thead :is(th, td):first-child:not([colspan]) + :is(th, td) { z-index: 2; background: var(--bd2-surface); }
 }
 @media (max-width: 767px) {
   .o_bd2 .stats { flex-wrap: wrap; }
@@ -922,7 +939,6 @@ td {
   .o_bd2 .day strong { font-size: 10px; }
   .o_bd2 .day span, .o_bd2 .day small { font-size: 10px; }
   .o_bd2 .occasion-badge { padding: 1px; font-size: 10px; }
-  .o_bd2 .hours-table th:first-child { position: sticky; inset-inline-start: 0; z-index: 2; background: var(--bd2-surface); }
   .o_bd2 .bd2-axis-alternate, .o_bd2 .bd2-point-alternate { display: none; }
   .o_bd2 .mini:not(.revenue-combo) .mini-labels .bd2-axis-alternate { display: block; visibility: hidden; }
   .o_bd2 .bd2-chart text { font-size: 22px; }

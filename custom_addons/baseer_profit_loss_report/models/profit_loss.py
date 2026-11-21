@@ -1553,7 +1553,7 @@ class BaseerProfitLossReport(models.AbstractModel):
             methods = Method.search([('company_id', '=', company.id),
                                      ('id', 'in', mappings.mapped('payment_method_id'))])
             methods.check_access('read')
-            by_id = {method.id: method for method in methods if method.active}
+            by_id = {method.id: method for method in methods}
         except (AccessError, KeyError):
             by_id = {}
         return [(mapping.source_channel, mapping.date_from, mapping.date_to,

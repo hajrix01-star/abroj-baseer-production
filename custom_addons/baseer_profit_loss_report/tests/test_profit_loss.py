@@ -602,7 +602,13 @@ class TestProfitLoss(TransactionCase):
         method.active = False
         inactive = self.report.get_accounts(self.filters, 'income')['accounts']
         inactive = next(item for item in inactive if item['id'] == self.accounts['income'].id)
-        self.assertNotIn('payment_' + str(method.id), [item['key'] for item in inactive['channels']])
+        self.assertEqual(next(item for item in inactive['channels'] if item['key'] == 'payment_' + str(method.id))
+                         ['amounts']['current']['amount'], '20.00')
+        self.assertEqual(self.report._get_drilldown(self.filters, selector)['value'], '20.00')
+        archived_mapping = Mapping.create({**vals, 'date_from': '2041-06-01', 'date_to': '2041-06-02',
+                                          'approval_reference': 'Approved archived method'})
+        self.assertEqual(archived_mapping.payment_method_id, method.id)
+        self.assertFalse(method.active)
         method.active = True
         with self.assertRaises(AccessError), self.cr.savepoint():
             mapping.write({'approval_reference': 'Edited without audit'})

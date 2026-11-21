@@ -62,8 +62,8 @@ class NoorixChannelMapping(models.Model):
             Method = self.env['pos.payment.method'].with_context(active_test=False)
             method = Method.search([('id', '=', mapping.payment_method_id),
                                     ('company_id', '=', mapping.company_id.id)], limit=1)
-            if not method or not method.active:
-                raise ValidationError(_('Select an active payment method available in this company.'))
+            if not method:
+                raise ValidationError(_('Select a payment method available in this company.'))
             method.check_access('read')
             self.flush_model(['company_id', 'source_channel', 'payment_method_id', 'date_from', 'date_to', 'revoked'])
             self.env.cr.execute('''SELECT 1 FROM baseer_pl_noorix_channel_mapping

@@ -112,7 +112,7 @@ export const hasPoints = (values) => (values || []).some((v) => v != null && Num
 export const multiplePoints = (values) => (values || []).filter(v => v != null && Number.isFinite(Number(v))).length > 1 ? values : [];
 export class Sparkline extends Component {
   static template = "baseer_dashboard2.Sparkline";
-  static props = { values: { optional: true }, previous: { optional: true }, gold: { optional: true }, secondaryGold: { optional: true }, navy: { optional: true }, mini: { optional: true }, stretch: { optional: true }, ratioPercent: { optional: true }, amountDecimal: { optional: true }, partial: { optional: true } };
+  static props = { values: { optional: true }, previous: { optional: true }, gold: { optional: true }, secondaryGold: { optional: true }, navy: { optional: true }, mini: { optional: true }, stretch: { optional: true }, ratioPercent: { optional: true }, amountDecimal: { optional: true }, partial: { optional: true }, onDrill: { optional: true }, canDrill: { optional: true } };
   miniPoint(a, i, ratio = false) {
     const values = (a || []).filter(v => v != null).map(Number);
     if (!values.length || a[i] == null) return null;
@@ -277,6 +277,7 @@ export class KpiCard extends Component {
     foodProgress: { optional: true },
     warning: { optional: true },
     partialMonth: { optional: true },
+    onDrill: { optional: true },
   };
 }
 
@@ -343,6 +344,7 @@ export class Dashboard2 extends Component {
       pnl_range: null,
       metric: "gross",
       closed: {},
+      cashDrills: {},
       navOpen: false,
     });
     useExternalListener(window, "keydown", (event) => { if (event.key === "Escape") this.state.navOpen = false; });
@@ -379,6 +381,49 @@ export class Dashboard2 extends Component {
       JSON.stringify(this.state[key]),
     );
   }
+  pnlDrillable(key, child) {
+    return ["revenue", "food_cost", "gross_profit", "salaries", "rent", "utilities", "marketing", "commissions", "other_opex", "depreciation", "operating_profit", "other_income", "zakat_tax", "net_profit"].includes(key) && (!child || !child.startsWith("channel:"));
+  }
+  bridgeDrillKey(key) {
+    if (key === "commissions") return "recorded_commissions";
+    return ["sales_net", "food_cost", "gross_profit", "salaries", "rent", "utilities", "marketing", "depreciation", "operating_profit", "other_income", "zakat_tax", "net_profit"].includes(key) ? key : null;
+  }
+  async drillPnl(event, key, child, column) {
+    event.stopPropagation();
+    if (event.type === "keydown" && event.key !== "Enter") return;
+    const action = await this.orm.call("baseer.dashboard2.service", "get_drilldown", [{
+      section: "pnl", key, child, column, company_key: this.state.company,
+      period: this.state.period, pnl_view: this.state.pnl_view, pnl_range: this.state.pnl_range,
+    }]);
+    await this.env.services.action.doAction(action);
+  }
+  async drill(event, section, key, extra = {}) {
+    event.stopPropagation();
+    if (event.type === "keydown" && event.key !== "Enter") return;
+    const action = await this.orm.call("baseer.dashboard2.service", "get_drilldown", [{
+      section, key, company_key: this.state.company, period: this.state.period, ...extra,
+    }]);
+    await this.env.services.action.doAction(action);
+  }
+  monthPeriod(month) {
+    const [year, number] = month.split('-').map(Number);
+    const end = `${month}-${String(new Date(year, number, 0).getDate()).padStart(2, '0')}`;
+    const selectedEnd = this.state.period.mode === 'month'
+      ? `${this.state.period.month}-${String(new Date(Number(this.state.period.month.slice(0, 4)), Number(this.state.period.month.slice(5, 7)), 0).getDate()).padStart(2, '0')}`
+      : this.state.period.date_to;
+    return {mode: 'range', date_from: `${month}-01`, date_to: end < selectedEnd ? end : selectedEnd};
+  }
+  miniDrillable(item, index, previous) {
+    if (item === 2 && previous) return false;
+    if (item !== 1) return true;
+    const counts = this.state.data.sales?.trend?.[index]?.source_counts;
+    return !!counts?.summary !== !!counts?.pos;
+  }
+  miniDrill(event, item, index, previous) {
+    if (!this.miniDrillable(item, index, previous)) return;
+    const month = this.state.data.purchases.trend[index].month;
+    return this.drill(event, 'overview', ['purchases', 'apps', 'customers'][item], {period: this.monthPeriod(month)});
+  }
   async load() {
     this.state.loading = true;
     this.state.error = "";
@@ -400,6 +445,10 @@ export class Dashboard2 extends Component {
             },
           ],
         );
+        this.state.cashDrills = {};
+        if (this.state.page === "pnl" && this.state.view === "inout") {
+          this.state.cashDrills = await this.orm.call("baseer.dashboard2.service", "get_cash_drill_availability", [{company_key: this.state.company, period: this.state.period}]);
+        }
       }
     } catch (e) {
       this.state.error = e.message || String(e);
@@ -539,6 +588,7 @@ export class Dashboard2 extends Component {
         gold: true,
         area: true,
         name: timelineYear(this.state.period),
+        drill: (event, index) => this.drill(event, this.state.page, 'timeline_point', {timeline_mode: this.state.timeline, index}),
       },
       { values: this.timeline.map((x) => x.previous), dashed: true, name: String(Number(timelineYear(this.state.period)) - 1) },
     ];

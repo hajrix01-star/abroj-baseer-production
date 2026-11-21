@@ -103,7 +103,7 @@ class DashboardService(models.AbstractModel):
         # The private system-parameter accessor reads this fixed key without granting
         # users access to the rest of ir.config_parameter.
         raw = self.env['ir.config_parameter']._get_param('baseer_dashboard2.company_map') or '1:أرز,2:الشامي,3:الدوحة'
-        allowed = set(self.env.user.company_ids.ids) - FORBIDDEN_COMPANY_IDS
+        allowed = set(self.env.user.company_ids.ids) & {1, 2, 3}
         pairs = []
         for item in raw.split(','):
             number, sep, label = item.partition(':')
@@ -208,10 +208,16 @@ class DashboardService(models.AbstractModel):
         return list(result)
 
     @request_memo
+    def _aml_domain(self, ids, start, end):
+        """The posted journal items used by the accounting figures."""
+        return [('company_id', 'in', ids), ('parent_state', '=', 'posted'),
+                ('date', '>=', start), ('date', '<=', end)]
+
+    @request_memo
     def _accounting(self, ids, start, end):
         categories = self.env['baseer.dashboard2.category'].with_context(allowed_company_ids=ids).search([])
         lines = self.env['account.move.line'].with_context(allowed_company_ids=ids)
-        rows = lines._read_group([('company_id', 'in', ids), ('parent_state', '=', 'posted'), ('date', '>=', start), ('date', '<=', end)], ['company_id', 'account_id'], ['debit:sum', 'credit:sum'])
+        rows = lines._read_group(self._aml_domain(ids, start, end), ['company_id', 'account_id'], ['debit:sum', 'credit:sum'])
         totals = {cat.code: 0.0 for cat in categories}
         accounts = []
         arabic_lang = 'ar_001' if self.env['res.lang']._get_data(code='ar_001').code else self.env.lang

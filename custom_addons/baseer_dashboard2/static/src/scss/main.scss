@@ -952,3 +952,5 @@ td {
 .o_bd2 .pnl-period-seg { display: flex; flex-wrap: wrap; }
 .o_bd2 .pnl-period-seg button, .o_bd2 .pnl-range input { min-height: 44px; }
 .o_bd2 .pnl-range label { display: flex; align-items: center; gap: 5px; }
+.o_bd2 .bd2-drill { cursor: pointer; }
+.o_bd2 .bd2-drill:hover, .o_bd2 .bd2-drill:focus { text-decoration: underline dotted; text-underline-offset: 3px; }

@@ -12,6 +12,10 @@ class DashboardCash(models.AbstractModel):
     @request_memo
     def _cash_out(self, ids, start, end, split=False):
         buckets = defaultdict(lambda: {'items': defaultdict(float), 'sources': defaultdict(float), 'total': 0.0})
+        trace = self.env.context.get('_bd2_cash_trace')
+        def trace_part(month, field, key, line, amount):
+            if trace is not None:
+                trace.setdefault(month, {}).setdefault(field, {}).setdefault(key, {})[line['id']] = (line['credit'], amount)
         for cid in ids:
             ctx = dict(allowed_company_ids=[cid])
             company = self.env['res.company'].browse(cid)
@@ -118,10 +122,13 @@ class DashboardCash(models.AbstractModel):
                 if not included:
                     continue
                 bucket = buckets[line['date'].strftime('%Y-%m')]
+                month = line['date'].strftime('%Y-%m')
                 bucket['total'] += included
+                trace_part(month, 'total', 'total', line, included)
                 for key, weight in weights.items():
                     if key != 'vat_paid':
                         bucket['items'][key] += line['credit'] * weight / denominator if denominator else 0
+                        trace_part(month, 'items', key, line, line['credit'] * weight / denominator if denominator else 0)
                 row = rows_by_account.get(line['account_id'])
                 kind = row.kind if row else ('bank' if line['account_id'] in bank_accounts else 'cash')
                 label = (row.label or self.env['account.account'].browse(line['account_id']).with_context(lang='ar_001').name or '').split('|')[0].strip() if row else ''
@@ -134,6 +141,7 @@ class DashboardCash(models.AbstractModel):
                 else:
                     source = {'bank': 'bank', 'cash': 'cash', 'app': 'حساب تطبيق'}[kind]
                 bucket['sources'][source] += included
+                trace_part(month, 'sources', source, line, included)
         def finish(bucket):
             total = round(bucket['total'], 2)
             def rounded_rows(rows):
@@ -172,16 +180,23 @@ class DashboardCash(models.AbstractModel):
         if len(orders) > 200000:
             raise UserError(_('The selected period contains more than 200,000 POS orders.'))
         pos_moves = set(session_move_ids + [o['account_move'] for o in orders if o['account_move'] and (not o['config_id'] or o['config_id'] not in summary_ids)])
-        rows = self.env['account.move.line'].with_context(**ctx)._read_group([
+        domain = [
             ('company_id', 'in', ids), ('parent_state', '=', 'posted'), ('date', '>=', start), ('date', '<=', end),
             ('account_id.account_type', '=', 'liability_current'), ('tax_line_id', '!=', False), ('move_id', 'not in', self._reset_move_ids(ids, end, start)),
-            '|', '|', ('move_id.ref', 'ilike', 'NOORIX-SALES'), ('move_id.reversed_entry_id.ref', 'ilike', 'NOORIX-SALES'), ('move_id', 'in', list(pos_moves))],
+            '|', '|', ('move_id.ref', 'ilike', 'NOORIX-SALES'), ('move_id.reversed_entry_id.ref', 'ilike', 'NOORIX-SALES'), ('move_id', 'in', list(pos_moves))]
+        rows = self.env['account.move.line'].with_context(**ctx)._read_group(domain,
             ['company_id', 'date:day', 'move_id'], ['credit:sum', 'debit:sum'])
         amount = sum(day.get('sales_vat', 0) for day in sales_days.values() if day['source'] in ('summary', 'mixed'))
         for company, day, move, credit, debit in rows:
             source = sales_days.get((company.id, day), {}).get('source')
             if (source in ('pos', 'mixed') and move.id in session_move_ids):
                 amount += (credit or 0) - (debit or 0)
+        trace = self.env.context.get('_bd2_vat_trace')
+        if trace is not None:
+            for line in raw_rows(self.env['account.move.line'].with_context(**ctx), domain, ['company_id', 'date', 'move_id']):
+                source = sales_days.get((line['company_id'], line['date']), {}).get('source')
+                if source in ('pos', 'mixed') and line['move_id'] in session_move_ids:
+                    trace.add(line['id'])
         return {'available': True, 'value': round(amount, 2)}
 
     @request_memo

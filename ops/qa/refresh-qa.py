@@ -26,26 +26,16 @@ BASE = Path('/srv/baseer-qa')
 CONFIG = Path('/etc/baseer-qa')
 LIVE = Path('/srv/abroj-baseer-production/current')
 LPG, LODOO = 'baseer-odoo-prod-db-1', 'baseer-odoo-prod-odoo-1'
-QPG = 'baseer-qa-refresh-20261023-db-1'
-QODOO = 'baseer-qa-refresh-20261023-odoo-1'
-LDB, QDB = 'baseer_prod', 'baseer_qa_20261023'
-LVO, QVO = 'baseer-odoo-prod-odoo-data', 'baseer-qa-refresh-20261023-odoo'
-PROJECT, DB = 'baseer-qa-refresh-20261121', 'baseer_qa_20261121'
+QPG = 'baseer-live-qa-clean-20260928-db-1'
+QODOO = 'baseer-live-qa-clean-20260928-odoo-1'
+LDB, QDB = 'baseer_prod', 'baseer_live_qa_clean_20260928'
+LVO, QVO = 'baseer-odoo-prod-odoo-data', 'baseer-live-qa-clean-20260928-odoo'
+PROJECT, DB = 'baseer-qa-refresh-20261023', 'baseer_qa_20261023'
 PG, ODOO = PROJECT + '-db-1', PROJECT + '-odoo-1'
-NETWORK, SUBNET, PGIP = PROJECT + '-isolated', '172.31.135.0/28', '172.31.135.2'
+NETWORK, SUBNET, PGIP = PROJECT + '-isolated', '172.31.134.0/28', '172.31.134.2'
 ODOO_IMAGE = 'sha256:f99ffac95cb39a0924622ea4118481c95651d9c84187e5b30a21c2cc4419c7dd'
 PG_IMAGE = 'sha256:f1c3376c26f2609ab9f29f71f824103fe2fcd8ee0346485cb6122a4f93df6f94'
-SOURCE_DIRS = ('custom_addons', 'third_party_addons')
 TIMER = 'baseer-qa-release-poller.timer'
-FIREWALL_PATH = Path('/usr/local/sbin/baseer-qa-refresh-20261121-firewall')
-FIREWALL_UNIT = Path('/etc/systemd/system/baseer-qa-refresh-20261121-firewall.service')
-BOOT_UNIT = Path('/etc/systemd/system/baseer-qa-refresh-20261121.service')
-VERIFIER = Path('/usr/local/lib/baseer-qa-refresh/verify-qa-refresh-odoo.py')
-CONNECTOR_SECRETS = ['gmail_token', 'gmail_refresh_token', 'gmail_access_token',
-                         'microsoft_outlook_token', 'microsoft_outlook_refresh_token',
-                         'google_calendar_token', 'google_calendar_rtoken', 'oauth_access_token',
-                         'oauth_refresh_token', 'token_ciphertext', 'token_nonce', 'token_key_version',
-                         'token_expires_at', 'smtp_user', 'smtp_pass']
 ADDONS = '/usr/lib/python3/dist-packages/odoo/addons,/mnt/baseer-addons,/mnt/third-party-addons/erp_heritage_19,/mnt/third-party-addons/odoomates_19,/mnt/third-party-addons/oca_dms_19'
 
 
@@ -148,43 +138,27 @@ def schema(container, database):
     return result
 
 
-def fingerprints(container, database, protected=True, upgrading=False):
+def fingerprints(container, database, protected=True):
     """Ordered hashes and counts; secret/user rows never leave PostgreSQL."""
     tables = schema(container, database)
     selected = [t for t in tables if not protected or t.startswith(
         ('account_', 'pos_', 'purchase_', 'stock_', 'hr_', 'res_company', 'abroj_',
-         'baseer_', 'product_', 'sale_', 'payment_transaction',
+         'baseer_bwork_membership', 'baseer_bwork_binding',
          'res_users', 'res_groups', 'res_partner', 'ir_module_module', 'ir_attachment'))]
     excluded = {
         'pos_config': ['baseer_direct_print_enabled', 'baseer_native_receipt_enabled',
                        'baseer_print_session_close_report', 'access_token'],
-        'res_company': ['baseer_receipt_profile_enabled', 'baseer_receipt_profile_close_report', 'l10n_sa_api_mode'],
-        'res_users': CONNECTOR_SECRETS,
-        'res_users_settings': CONNECTOR_SECRETS + ['google_synchronization_stopped'],
-        'baseer_gads_connection': CONNECTOR_SECRETS + ['state', 'writer_enabled'],
-        'baseer_gbp_connection': CONNECTOR_SECRETS + ['state', 'writer_enabled'],
+        'res_company': ['baseer_receipt_profile_enabled', 'baseer_receipt_profile_close_report'],
+        'res_users': ['oauth_access_token', 'oauth_refresh_token'],
+        'res_users_settings': ['google_calendar_rtoken', 'google_calendar_token', 'google_synchronization_stopped'],
         'res_users_apikeys': ['expiration_date'],
-        'baseer_print_agent': ['active', 'state', 'token_fingerprint', 'pairing_fingerprint',
-                               'pairing_expires_at', 'runtime_instance_id', 'runtime_lease_expires_at'],
-        'baseer_print_job': ['state', 'lease_token', 'lease_expires_at'],
-        'baseer_bwork_push_device': ['active', 'fcm_token'],
-        'baseer_bank_sms_device': ['active', 'secret_salt', 'secret_hash'],
-        'baseer_bank_sms_pairing': ['token', 'state', 'expires_at'],
-        'baseer_bwork_mobile_upload_grant': ['secret_hash'],
     } if protected else {}
     values = {}
     for table in sorted(selected):
         keys = excluded.get(table, [])
         minus = ''.join(" - '" + key + "'" for key in keys)
-        where = ''
-        if upgrading and table == 'ir_module_module':
-            where = " WHERE name <> 'baseer_profit_loss_report'"
-        elif upgrading and table == 'ir_attachment':
-            where = (" WHERE NOT (coalesce(url, '') ~ '^/web/assets/([0-9]+/)?[a-f0-9]{7,64}/[^/]+[.](js|css|map)$'"
-                     " AND coalesce(res_model, '') = 'ir.ui.view' AND coalesce(res_id, 0) = 0"
-                     " AND (coalesce(mimetype, '') IN ('text/css', 'application/javascript', 'text/javascript', 'application/json')))")
         query = (f"SELECT count(*),md5(coalesce(string_agg(h,'' ORDER BY h),'')) FROM "
-                 f"(SELECT md5((to_jsonb(t){minus})::text) h FROM \"{table}\" t{where}) s")
+                 f"(SELECT md5((to_jsonb(t){minus})::text) h FROM \"{table}\" t) s")
         values[table] = sql(container, database, query).strip()
     return values
 
@@ -222,9 +196,14 @@ def neutral_sql(tables):
                                        'baseer_receipt_profile_close_report'], 'FALSE'))
     update('res_users_apikeys', {'expiration_date': "'2000-01-01'::timestamp"})
     update('res_users_settings', {'google_synchronization_stopped': 'TRUE'})
+    credential_fields = ['gmail_token', 'gmail_refresh_token', 'gmail_access_token',
+                         'microsoft_outlook_token', 'microsoft_outlook_refresh_token',
+                         'google_calendar_token', 'google_calendar_rtoken', 'oauth_access_token',
+                         'oauth_refresh_token', 'token_ciphertext', 'token_nonce', 'token_key_version',
+                         'token_expires_at', 'smtp_user', 'smtp_pass']
     for table in ('res_users', 'res_users_settings', 'ir_mail_server', 'fetchmail_server',
                   'baseer_gads_connection', 'baseer_gbp_connection'):
-        update(table, dict.fromkeys(CONNECTOR_SECRETS, 'NULL'))
+        update(table, dict.fromkeys(credential_fields, 'NULL'))
     for table in ('baseer_gads_connection', 'baseer_gbp_connection'):
         update(table, {'state': "'disabled'", 'writer_enabled': 'FALSE'})
     # Business fingerprint/HMAC parameters are deliberately preserved.
@@ -242,9 +221,9 @@ class Refresh:
     def __init__(self, run_id, live_sha, qa_sha):
         require(re.fullmatch(r'[1-9][0-9]{0,19}', run_id), 'invalid run id')
         require(all(re.fullmatch('[0-9a-f]{40}', x) for x in (live_sha, qa_sha)), 'invalid source SHA')
-        self.state = BASE / 'refresh' / ('20261121-' + run_id)
+        self.state = BASE / 'refresh' / ('20261023-' + run_id)
         self.live_sha, self.qa_sha = live_sha, qa_sha
-        self.release = BASE / 'releases' / ('qa-refresh-20261121-' + run_id)
+        self.release = BASE / 'releases' / ('qa-refresh-20261023-' + run_id)
         self.compose = self.state / 'compose.json'
         self.config = self.state / 'odoo.conf'
 
@@ -254,72 +233,18 @@ class Refresh:
         require(self.state.is_dir() and not self.state.is_symlink(), 'missing protected state')
         require(self.state.stat().st_uid == 0 and self.state.stat().st_mode & 0o777 == 0o700,
                 'state owner/mode invalid')
-        if stage in ('finance', 'switch'):
-            self.prepared()
         if stage == 'switch':
+            require((self.state / 'prepare.receipt.json').exists(), 'prepare not accepted')
             review = self.state / 'review.accepted'
-            require(review.is_file() and review.stat().st_uid == 0 and review.stat().st_mode & 0o777 == 0o600 and not review.is_symlink(), 'unsafe review receipt')
-            financial = self.state / 'financial.receipt.json'
-            require(financial.is_file() and not financial.is_symlink() and financial.stat().st_uid == 0 and
-                    financial.stat().st_mode & 0o777 == 0o600, 'unsafe financial receipt')
-            prepare_hash = digest(self.state / 'prepare.receipt.json')
-            require(review.read_text().strip() == prepare_hash + ' ' + digest(financial),
+            require(review.stat().st_uid == 0 and review.stat().st_mode & 0o777 == 0o600 and not review.is_symlink(), 'unsafe review receipt')
+            require(review.read_text().strip() == digest(self.state / 'prepare.receipt.json'),
                     'independent review receipt missing')
-            result = json.loads(financial.read_text())
-            require(all(result.get(key) == value for key, value in {
-                'prepared_sha256': prepare_hash, 'source_sha': self.qa_sha, 'database': DB,
-                'arz': 'PASS', 'shami': 'PASS', 'repeat': 'PASS', 'company_guard': 'PASS',
-                'read_only': True, 'verifier_sha256': digest(VERIFIER),
-                'input_sha256': digest(self.state / 'financial-input.json'),
-                'workbook_sha256': digest(self.state / 'financial-workbook.xlsx'),
-            }.items()), 'financial acceptance mismatch')
+            prepared = json.loads((self.state / 'prepare.receipt.json').read_text())
+            require(prepared['reviewed_revision'] == os.environ['QA_REFRESH_REVIEWED_REVISION'] and
+                    prepared['signed_tag'] == os.environ['QA_REFRESH_SIGNED_TAG'], 'reviewed request changed')
         intent = self.state / (stage + '.intent.json')
         require(not intent.exists(), 'stage already attempted; no automatic replay')
         save(intent, {'live_sha': self.live_sha, 'qa_sha': self.qa_sha, 'time': time.time()})
-
-    def prepared(self):
-        receipt = self.state / 'prepare.receipt.json'
-        require(receipt.is_file() and not receipt.is_symlink() and receipt.stat().st_uid == 0
-                and receipt.stat().st_mode & 0o777 == 0o600, 'prepare not accepted')
-        prepared = json.loads(receipt.read_text())
-        require(prepared.get('reviewed_revision') == os.environ['QA_REFRESH_REVIEWED_REVISION'] and
-                prepared.get('signed_tag') == os.environ['QA_REFRESH_SIGNED_TAG'] and
-                prepared.get('source_sha') == self.qa_sha and prepared.get('live_sha') == self.live_sha,
-                'reviewed request changed')
-        return receipt
-
-    def finance(self):
-        self.start('finance')
-        self.verify()
-        paths = [self.state / name for name in ('financial-input.json', 'financial-workbook.xlsx')]
-        for path in paths:
-            require(path.is_file() and not path.is_symlink() and path.stat().st_uid == 0
-                    and path.stat().st_mode & 0o777 == 0o600 and path.stat().st_size < 100_000,
-                    'unsafe private financial input')
-        evidence, workbook = (path.read_bytes() for path in paths)
-        value = json.loads(evidence)
-        value['prepared_sha256'] = digest(self.prepared())
-        workbook_hash = hashlib.sha256(workbook).hexdigest()
-        require(value['shami']['workbook_sha256'] == workbook_hash, 'workbook evidence mismatch')
-        source = VERIFIER.read_bytes()
-        payload = ("import json\nQA_INPUT = json.loads(" + repr(json.dumps(value)) + ")\n"
-                   + 'QA_WORKBOOK = ' + repr(workbook) + '\n').encode() + source
-        out = run(['docker', 'exec', '-i', ODOO, 'odoo', 'shell', '--config=/etc/odoo/odoo.conf',
-                   '-d', DB, '--no-http', '--workers=0', '--max-cron-threads=0'], data=payload)
-        prefix = 'QA_REFRESH_ODOO='
-        reports = [line[len(prefix):] for line in out.splitlines() if line.startswith(prefix)]
-        require(len(reports) == 1, 'financial verifier did not return one result')
-        result = json.loads(reports[0])
-        require(all(result.get(key) == expected for key, expected in {
-            'prepared_sha256': value['prepared_sha256'], 'source_sha': self.qa_sha, 'database': DB,
-            'arz': 'PASS', 'shami': 'PASS', 'repeat': 'PASS', 'company_guard': 'PASS', 'read_only': True,
-        }.items()), 'financial verifier did not pass all guards')
-        require(json.loads((self.state / 'protected-after.json').read_text()) == fingerprints(PG, DB),
-                'protected data drift during financial checks')
-        result.update(input_sha256=hashlib.sha256(evidence).hexdigest(),
-                      verifier_sha256=hashlib.sha256(source).hexdigest(),
-                      workbook_sha256=workbook_hash)
-        self.receipt('financial', result)
 
     def receipt(self, stage, value):
         require(not (self.state / (stage + '.receipt.json')).exists(), 'receipt already exists')
@@ -330,14 +255,7 @@ class Refresh:
     def guards(self, switched=False):
         require((LIVE / 'RELEASE_COMMIT').read_text().strip() == self.live_sha, 'LIVE source moved')
         require((BASE / 'current' / 'RELEASE_COMMIT').read_text().strip() ==
-                self.qa_sha, 'QA source moved')
-        identity = {'QA_DATABASE': DB if switched else QDB, 'QA_DB_CONTAINER': PG if switched else QPG,
-                    'QA_ODOO_VOLUME': PROJECT + '-odoo' if switched else QVO,
-                    'QA_COMPOSE_PROJECT': PROJECT if switched else 'baseer-qa-refresh-20261023'}
-        actual = env_file(CONFIG / 'deploy.env')
-        require(all(actual.get(key) == value for key, value in identity.items()), 'QA deploy identity mismatch')
-        if switched:
-            require((BASE / 'current').resolve(strict=True) == self.release.resolve(strict=True), 'QA release link mismatch')
+                (self.live_sha if switched else self.qa_sha), 'QA source moved')
         for name, expected in ((LPG, PG_IMAGE), (LODOO, ODOO_IMAGE), (QPG, PG_IMAGE), (QODOO, ODOO_IMAGE)):
             item = inspect(name)
             require(item['Image'] == expected, 'runtime image mismatch')
@@ -352,8 +270,7 @@ class Refresh:
 
     def dump(self, container, database, name):
         target = self.state / (name + '.dump')
-        run(['docker', 'exec', '-e', 'PGOPTIONS=-c default_transaction_read_only=on', container,
-             'pg_dump', '-Fc', '--lock-wait-timeout=5s', '--no-owner', '--no-privileges',
+        run(['docker', 'exec', container, 'pg_dump', '-Fc', '--no-owner', '--no-privileges',
              '-U', pg_user(container), '-d', database], output=target)
         run(['docker', 'exec', '-i', container, 'pg_restore', '--list'], data=target.read_bytes())
         return digest(target)
@@ -369,31 +286,33 @@ class Refresh:
     def firewall(self):
         # Only this new subnet is matched. No existing network/LIVE rule is changed.
         script = '#!/bin/sh\nset -eu\n'
-        for parent, chain in (('DOCKER-USER', 'BAS_QA1121_FWD'), ('INPUT', 'BAS_QA1121_HOST')):
+        for parent, chain in (('DOCKER-USER', 'BAS_QAR_FWD'), ('INPUT', 'BAS_QAR_HOST')):
             script += f'iptables -w -N {chain} 2>/dev/null || true\niptables -w -F {chain}\n'
             script += f'iptables -w -A {chain} -m conntrack --ctstate ESTABLISHED,RELATED -j RETURN\n'
             if parent == 'DOCKER-USER':
                 script += f'iptables -w -A {chain} -d {PGIP} -p tcp --dport 5432 -j RETURN\n'
             script += f'iptables -w -A {chain} -j DROP\n'
             script += f'iptables -w -C {parent} -s {SUBNET} -j {chain} 2>/dev/null || iptables -w -I {parent} 1 -s {SUBNET} -j {chain}\n'
-        save(FIREWALL_PATH, script)
-        os.chmod(FIREWALL_PATH, 0o700)
-        save(FIREWALL_UNIT,
-             '[Unit]\nRequires=docker.service\nAfter=docker.service\nBefore=baseer-qa-refresh-20261121.service\n'
-             '[Service]\nType=oneshot\nRemainAfterExit=yes\nExecStart=' + str(FIREWALL_PATH) + '\n'
+        path = Path('/usr/local/sbin/baseer-qa-refresh-firewall')
+        save(path, script)
+        os.chmod(path, 0o700)
+        save('/etc/systemd/system/baseer-qa-refresh-firewall.service',
+             '[Unit]\nRequires=docker.service\nAfter=docker.service\nBefore=baseer-qa-refresh.service\n'
+             '[Service]\nType=oneshot\nRemainAfterExit=yes\nExecStart=' + str(path) + '\n'
              '[Install]\nWantedBy=multi-user.target')
         run(['systemctl', 'daemon-reload'])
-        run(['systemctl', 'enable', '--now', FIREWALL_UNIT.name])
+        run(['systemctl', 'enable', 'baseer-qa-refresh-firewall.service'])
+        run([path])
 
     def compose_config(self, source, port, config):
         def service(image, address):
             return {'image': image, 'restart': 'no', 'networks': {'isolated': {'ipv4_address': address}},
-                    'dns': [PGIP], 'sysctls': {'net.ipv6.conf.all.disable_ipv6': '1',
+                    'sysctls': {'net.ipv6.conf.all.disable_ipv6': '1',
                                 'net.ipv6.conf.default.disable_ipv6': '1'}}
         pg = service(PG_IMAGE, PGIP)
         pg.update(container_name=PG, env_file=[str(self.state / 'pg.env')],
                   volumes=[PROJECT + '-postgres:/var/lib/postgresql/data'])
-        odoo = service(ODOO_IMAGE, '172.31.135.3')
+        odoo = service(ODOO_IMAGE, '172.31.134.3')
         odoo.update(container_name=ODOO, entrypoint=['odoo'],
                     env_file=[str(CONFIG / 'runtime.env') if port == 18134 else str(self.state / 'app.env')],
                     command=['--config=/etc/odoo/odoo.conf'],
@@ -424,24 +343,19 @@ class Refresh:
 
     def namespace_test(self, proof_name='network-proof.json'):
         live_ip = next(iter(inspect(LPG)['NetworkSettings']['Networks'].values()))['IPAddress']
-        network = inspect(NETWORK, 'network')
-        require(network['Name'] == NETWORK and network['Driver'] == 'bridge'
-                and not network.get('EnableIPv6')
-                and network_ranges(network) == [{'Subnet': SUBNET, 'Gateway': '172.31.135.1'}]
-                and all(endpoint['Name'] in {PG, ODOO} for endpoint in network.get('Containers', {}).values()),
-                'candidate network identity mismatch')
+        require(not inspect(NETWORK, 'network').get('EnableIPv6'), 'network IPv6 enabled')
         helper = PROJECT + '-tcp-control'
         require(run(['docker', 'container', 'inspect', helper], check=False) is None, 'TCP control already exists')
         with socket.socket() as listener:
-            listener.bind(('172.31.135.1', 0))
+            listener.bind(('172.31.134.1', 0))
             listener.listen(4)
             host_port = listener.getsockname()[1]
             server = 'import socket; s=socket.socket(); s.bind(("0.0.0.0",16443)); s.listen(8)\nwhile True: c,a=s.accept(); c.close()'
-            run(['docker', 'run', '-d', '--name', helper, '--network', NETWORK, '--ip', '172.31.135.5',
-                 '--dns', PGIP, '--sysctl', 'net.ipv6.conf.all.disable_ipv6=1', '--entrypoint', 'python3', ODOO_IMAGE, '-c', server])
+            run(['docker', 'run', '-d', '--name', helper, '--network', NETWORK, '--ip', '172.31.134.5',
+                 '--sysctl', 'net.ipv6.conf.all.disable_ipv6=1', '--entrypoint', 'python3', ODOO_IMAGE, '-c', server])
             try:
-                targets = [('host', '172.31.135.1', host_port), ('public', '1.1.1.1', 443),
-                           ('live_pg', live_ip, 5432), ('internal_qa_peer', '172.31.135.5', 16443)]
+                targets = [('host', '172.31.134.1', host_port), ('public', '1.1.1.1', 443),
+                           ('live_pg', live_ip, 5432), ('internal_qa_peer', '172.31.134.5', 16443)]
                 for name, host, port in targets:
                     for attempt in range(10):
                         try:
@@ -470,8 +384,8 @@ class Refresh:
             "assert pathlib.Path('/proc/sys/net/ipv6/conf/all/disable_ipv6').read_text().strip()=='1'\n"
             "r['ipv6_disabled']=True\n"
             "print(json.dumps(r))")
-        result = run(['docker', 'run', '--rm', '--network', NETWORK, '--ip', '172.31.135.4',
-                      '--dns', PGIP, '--sysctl', 'net.ipv6.conf.all.disable_ipv6=1', '--entrypoint', 'python3', ODOO_IMAGE, '-c', code])
+        result = run(['docker', 'run', '--rm', '--network', NETWORK, '--ip', '172.31.134.4',
+                      '--sysctl', 'net.ipv6.conf.all.disable_ipv6=1', '--entrypoint', 'python3', ODOO_IMAGE, '-c', code])
         path = self.state / proof_name
         if path.exists():
             require(json.loads(path.read_text()) == json.loads(result), 'recorded network proof changed')
@@ -479,8 +393,6 @@ class Refresh:
             save(path, json.loads(result))
 
     def neutral_guard(self):
-        require(sql(PG, DB, "SELECT value FROM ir_config_parameter WHERE key='database.is_neutralized'").strip()
-                == 'true', 'database is not neutralized')
         tables = schema(PG, DB)
         predicates = {'ir_cron': 'active', 'ir_mail_server': 'active', 'fetchmail_server': 'active',
                       'baseer_print_agent': 'active', 'baseer_bwork_push_device': 'active',
@@ -503,73 +415,63 @@ class Refresh:
         raise RuntimeError('QA HTTP unavailable on internal network')
 
     def prepare(self):
-        self.start('prepare')
         try:
             self.prepare_impl()
         except BaseException:
-            if (self.state / 'inventory.json').exists():
-                run(['docker', 'stop', ODOO], check=False)
+            inventory = self.state / 'inventory.json'
+            if inventory.exists() and json.loads(inventory.read_text())['poller_active']:
+                run(['systemctl', 'start', TIMER])
             raise
 
     def prepare_impl(self):
+        self.start('prepare')
         self.guards()
         require(shutil.disk_usage(BASE).free > 12 * 1024**3, 'insufficient guarded recovery space')
-        for port in (18136, 18137):
-            with socket.socket() as probe:
-                probe.bind(('127.0.0.1', port))
         old_source = (BASE / 'current').resolve(strict=True)
         live_source = LIVE.resolve(strict=True)
         require(str(old_source).startswith(str(BASE / 'releases') + '/'), 'QA source outside releases')
-        require(not self.release.exists() and not self.release.is_symlink(), 'candidate release exists')
-        for name in (PG, ODOO):
-            require(run(['docker', 'container', 'inspect', name], check=False) is None, 'candidate container exists')
+        manifest = {'old_source': str(old_source), 'live_source': str(live_source), 'archives': {}}
+        manifest['poller_active'] = run(['systemctl', 'is-active', TIMER], check=False) is not None
+        save(self.state / 'inventory.json', manifest)
+        run(['systemctl', 'stop', TIMER])
+        # Lock is held by main. Odoo stopped before every old QA DB/filestore backup.
+        run(['docker', 'stop', QODOO])
+        try:
+            databases = [QDB]
+            manifest['old_databases'] = databases
+            for index, database in enumerate(databases):
+                name = 'old-db-' + str(index)
+                manifest['archives'][name + '.dump'] = self.dump(QPG, database, name)
+            for name, path in [('old-odoo', volume(QVO)), ('old-config', CONFIG), ('old-source', old_source)]:
+                manifest['archives'][name + '.tar'] = self.archive(name, path)
+        finally:
+            run(['docker', 'start', QODOO])
+        # Live dump is an MVCC snapshot. Only live SELECT/pg_dump and filestore reads.
+        manifest['archives']['live.dump'] = self.dump(LPG, LDB, 'live')
+        manifest['archives']['live-filestore.tar'] = self.archive('live-filestore', volume(LVO) / 'filestore' / LDB)
+        self.release.mkdir(mode=0o755, exist_ok=False)
+        os.chmod(self.release, 0o755)
+        before = {name: tree_hash(live_source / name) for name in ('custom_addons', 'third_party_addons')}
+        for name in before:
+            shutil.copytree(live_source / name, self.release / name, symlinks=False)
+        save(self.release / 'RELEASE_COMMIT', self.live_sha)
+        os.chmod(self.release / 'RELEASE_COMMIT', 0o644)
+        require(before == {name: tree_hash(self.release / name) for name in before}, 'copied source differs')
+        save(self.state / 'source-manifest.json', before)
+        self.guards()
+        require(before == {name: tree_hash(live_source / name) for name in before}, 'LIVE source changed during copy')
+        # No preexisting candidate resource can be silently reused.
+        require(run(['docker', 'ps', '-aq', '--filter', 'name=^/' + PG + '$']) == '', 'candidate exists')
         for suffix in ('postgres', 'odoo'):
-            require(run(['docker', 'volume', 'inspect', PROJECT + '-' + suffix], check=False) is None,
-                    'candidate volume exists')
+            name = PROJECT + '-' + suffix
+            require(run(['docker', 'volume', 'inspect', name], check=False) is None, 'candidate volume exists')
+            run(['docker', 'volume', 'create', name])
         require(run(['docker', 'network', 'inspect', NETWORK], check=False) is None, 'candidate network exists')
-        for path in (FIREWALL_PATH, FIREWALL_UNIT, BOOT_UNIT):
-            require(not path.exists() and not path.is_symlink(), 'candidate unit or firewall exists')
-        for chain in ('BAS_QA1121_FWD', 'BAS_QA1121_HOST'):
-            require(run(['iptables', '-w', '-S', chain], check=False) is None, 'candidate firewall chain exists')
         for network_id in run(['docker', 'network', 'ls', '-q']).split():
             for item in network_ranges(inspect(network_id, 'network')):
                 if item.get('Subnet'):
                     net = ipaddress.ip_network(item['Subnet'])
                     require(net.version != 4 or not net.overlaps(ipaddress.ip_network(SUBNET)), 'candidate subnet overlaps')
-        live_filestore = volume(LVO) / 'filestore' / LDB
-        live_bytes = int(run(['du', '-sb', '--', live_filestore]).split()[0])
-        db_bytes = int(sql(LPG, LDB, 'SELECT pg_database_size(current_database())'))
-        source_bytes = sum(int(run(['du', '-sb', '--', live_source / name]).split()[0]) for name in SOURCE_DIRS)
-        require(shutil.disk_usage(BASE).free > 2 * (live_bytes + db_bytes + source_bytes) + 2 * 1024**3,
-                'insufficient space for snapshot, restore and reserve')
-        require(os.statvfs(BASE).f_favail > 20000, 'insufficient inodes for retained QA and candidate')
-        manifest = {'old_source': str(old_source), 'live_source': str(live_source), 'archives': {}}
-        manifest['poller_active'] = run(['systemctl', 'is-active', TIMER], check=False) is not None
-        save(self.state / 'inventory.json', manifest)
-        # Existing QA resources remain intact in place; they are not archived again.
-        manifest['old_databases'] = [QDB]
-        # Live dump is an MVCC snapshot. Only live SELECT/pg_dump and filestore reads.
-        manifest['archives']['live.dump'] = self.dump(LPG, LDB, 'live')
-        require(shutil.disk_usage(BASE).free > 2 * 1024**3, 'insufficient space after snapshot')
-        manifest['archives']['live-filestore.tar'] = self.archive('live-filestore', live_filestore)
-        require(shutil.disk_usage(BASE).free > live_bytes + db_bytes + source_bytes + 2 * 1024**3,
-                'insufficient space after filestore')
-        save(self.state / 'inventory.json', manifest)
-        self.release.mkdir(mode=0o755, exist_ok=False)
-        os.chmod(self.release, 0o755)
-        signed_source = Path(os.environ['QA_REFRESH_SOURCE_DIR'])
-        source = {name: tree_hash(signed_source / name) for name in SOURCE_DIRS}
-        require(all(source.values()), 'signed runtime source incomplete')
-        for name in SOURCE_DIRS:
-            shutil.copytree(signed_source / name, self.release / name, symlinks=False)
-        require(source == {name: tree_hash(self.release / name) for name in SOURCE_DIRS},
-                'copied source differs from signed source')
-        save(self.release / 'RELEASE_COMMIT', self.qa_sha)
-        os.chmod(self.release / 'RELEASE_COMMIT', 0o644)
-        save(self.state / 'source-manifest.json', source)
-        self.guards()
-        for suffix in ('postgres', 'odoo'):
-            run(['docker', 'volume', 'create', PROJECT + '-' + suffix])
         run(['docker', 'network', 'create', '--subnet', SUBNET, NETWORK])
         admin_pw, runner_pw = secrets.token_hex(32), secrets.token_hex(32)
         save(self.state / 'pg.env', 'POSTGRES_USER=qa_refresh_admin\nPOSTGRES_PASSWORD=' + admin_pw + '\nPOSTGRES_DB=postgres')
@@ -597,7 +499,6 @@ class Refresh:
             time.sleep(1)
         sql(PG, 'postgres', "CREATE ROLE qa_runner LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION PASSWORD '" + runner_pw + "'")
         self.restore(DB, self.state / 'live.dump')
-        require(shutil.disk_usage(BASE).free > live_bytes + 2 * 1024**3, 'insufficient space for filestore restore')
         target = volume(PROJECT + '-odoo')
         (target / 'filestore' / DB).mkdir(parents=True)
         (target / 'sessions').mkdir()
@@ -610,18 +511,22 @@ class Refresh:
         stage = self.recovery_stage()
         self.start(stage)
         self.guards()
-        require(not any((self.state / name).exists() for name in
-                        ('prepare.receipt.json', 'neutralization.intent.json', 'protected-after.json', 'network-proof.json')),
-                'recovery point already crossed')
-        require(run(['docker', 'container', 'inspect', ODOO], check=False) is None,
-                'candidate Odoo already exists')
+        neutralized = (self.state / 'protected-after.json').exists()
+        require(not (self.state / 'prepare.receipt.json').exists() and
+                (neutralized or not (self.state / 'network-proof.json').exists()),
+            'recovery point already crossed')
+        if not neutralized:
+            require(run(['docker', 'container', 'inspect', ODOO], check=False) is None, 'candidate Odoo already exists')
         target_pg = inspect(PG)
         require(target_pg['Image'] == PG_IMAGE and target_pg['State']['Running'], 'candidate PostgreSQL mismatch')
-        archives = ('live.dump', 'live-filestore.tar')
+        archives = ('old-db-0.dump', 'old-odoo.tar', 'old-config.tar', 'old-source.tar',
+                    'live.dump', 'live-filestore.tar')
         required = archives + ('prepare.intent.json', 'inventory.json', 'attachments.json',
                                'source-manifest.json', 'pg.env', 'app.env', 'compose.json', 'odoo.conf')
         if (self.state / 'protected-before.json').exists():
             required += ('protected-before.json',)
+        if neutralized:
+            required += ('protected-before.json', 'protected-after.json', 'network-proof.json')
         for name in required:
             path = self.state / name
             require(path.is_file() and not path.is_symlink() and path.stat().st_uid == 0 and
@@ -634,9 +539,10 @@ class Refresh:
                 manifest['live_source'] == str(LIVE.resolve(strict=True)), 'recovery source path changed')
         source = json.loads((self.state / 'source-manifest.json').read_text())
         require(set(source) == {'custom_addons', 'third_party_addons'} and
-                (self.release / 'RELEASE_COMMIT').read_text().strip() == self.qa_sha,
+                (self.release / 'RELEASE_COMMIT').read_text().strip() == self.live_sha,
                 'recovery release identity mismatch')
-        self.verify_source()
+        require(source == {name: tree_hash(self.release / name) for name in source} ==
+                {name: tree_hash(LIVE / name) for name in source}, 'recovery source bytes changed')
         require(json.loads(self.compose.read_text()) == self.compose_config(self.release, 18136, self.config),
                 'recovery compose changed')
         config = configparser.ConfigParser()
@@ -644,24 +550,83 @@ class Refresh:
         require(config['options']['db_name'] == DB and config['options']['db_user'] == 'qa_runner' and
                 config['options']['db_host'] == 'db' and config['options']['max_cron_threads'] == '0',
                 'recovery database config mismatch')
-        require(sql(PG, DB, "SELECT coalesce((SELECT lower(value) FROM ir_config_parameter WHERE key='database.is_neutralized'),'false')").strip() == 'false',
+        require(sql(PG, DB, "SELECT coalesce((SELECT lower(value) FROM ir_config_parameter WHERE key='database.is_neutralized'),'false')").strip() == ('true' if neutralized else 'false'),
                 'database neutralization checkpoint mismatch')
-        require(manifest['old_databases'] == [QDB] and
-                manifest['archives'] == {name: digest(self.state / name) for name in archives},
-                'recovery archive checksum mismatch')
+        manifest.update(old_databases=[QDB], archives={name: digest(self.state / name) for name in archives})
+        run(['systemctl', 'stop', TIMER])
         try:
-            self.finish_prepare(manifest)
-            self.receipt(stage, {'state': str(self.state), 'resumed': 'restored-before-neutralization'})
+            if neutralized:
+                self.recover_http(manifest, stage)
+            else:
+                self.finish_prepare(manifest)
+            self.receipt(stage, {'state': str(self.state), 'resumed': 'neutralized-http' if neutralized else 'restored-before-neutralization'})
         except BaseException:
             run(['docker', 'stop', ODOO], check=False)
             require(inspect(QODOO)['State']['Running'], 'old QA is not running')
+            if manifest['poller_active']:
+                run(['systemctl', 'start', TIMER])
             raise
 
     def recovery_stage(self):
-        request = re.fullmatch(r'qa-refresh-20261121-([1-9][0-9]{0,19})',
+        request = re.fullmatch(r'qa-refresh-20261023-([1-9][0-9]{0,19})',
                                os.environ.get('QA_REFRESH_SIGNED_TAG', ''))
         require(request is not None, 'invalid signed recovery request')
         return 'resume-' + request.group(1)
+
+    def recover_http(self, manifest, stage):
+        baseline = json.loads((self.state / 'protected-before.json').read_text())
+        require(baseline == json.loads((self.state / 'protected-after.json').read_text()) == fingerprints(PG, DB),
+                'neutralized recovery protected data mismatch')
+        network, pg, odoo = inspect(NETWORK, 'network'), inspect(PG), inspect(ODOO)
+        require(network['Name'] == NETWORK and network['Driver'] == 'bridge' and network['Internal'] and
+                not network.get('EnableIPv6') and network_ranges(network) == [{'Subnet': SUBNET, 'Gateway': '172.31.134.1'}] and
+                set(network.get('Containers', {})) <= {pg['Id'], odoo['Id']}, 'unexpected QA network checkpoint')
+        for item, image, env, mounts in (
+            (pg, PG_IMAGE, 'pg.env', {'/var/lib/postgresql/data': ('volume', PROJECT + '-postgres', True)}),
+            (odoo, ODOO_IMAGE, 'app.env', {'/var/lib/odoo': ('volume', PROJECT + '-odoo', True),
+             '/etc/odoo/odoo.conf': ('bind', str(self.config), False),
+             '/mnt/baseer-addons': ('bind', str(self.release / 'custom_addons'), False),
+             '/mnt/third-party-addons': ('bind', str(self.release / 'third_party_addons'), False)})):
+            actual_env = dict(v.split('=', 1) for v in item['Config']['Env'] if '=' in v)
+            actual_mounts = {v['Destination']: (v['Type'], v.get('Name') if v['Type'] == 'volume' else v['Source'], v['RW']) for v in item['Mounts']}
+            # The pinned Odoo image declares an anonymous, unused extra-addons volume.
+            extra = actual_mounts.get('/mnt/extra-addons')
+            if image == ODOO_IMAGE and extra:
+                require(extra[0] == 'volume' and extra[2] and
+                        '/mnt/extra-addons' in inspect(ODOO_IMAGE, 'image')['Config']['Volumes'] and
+                        str(volume(extra[1])) == next(v['Source'] for v in item['Mounts'] if v['Destination'] == '/mnt/extra-addons') and
+                        not any(volume(extra[1]).iterdir()), 'unexpected image extra-addons contents')
+                del actual_mounts['/mnt/extra-addons']
+            require(item['Image'] == image and item['HostConfig']['RestartPolicy']['Name'] == 'no' and
+                    set(item['NetworkSettings']['Networks']) == {NETWORK} and actual_mounts == mounts and
+                    all(actual_env.get(k) == v for k, v in env_file(self.state / env).items()), 'candidate runtime changed')
+        require(not odoo['State']['Running'], 'candidate Odoo must be stopped for network recovery')
+        artifacts = ('protected-before.json', 'protected-after.json', 'network-proof.json', 'pg.env', 'app.env', 'odoo.conf', 'compose.json')
+        unchanged = {name: digest(self.state / name) for name in artifacts}
+        prior = self.state / (stage + '.prior-network-proof.json')
+        require(not prior.exists(), 'prior network proof already exists')
+        shutil.copyfile(self.state / 'network-proof.json', prior)
+        os.chmod(prior, 0o600)
+        run(['docker', 'stop', PG])
+        run(['docker', 'rm', PG, ODOO])  # No -v: retain both external data volumes.
+        run(['docker', 'network', 'rm', NETWORK])
+        run(['docker', 'network', 'create', '--subnet', SUBNET, NETWORK])
+        self.firewall()
+        self.compose_run('up', '-d', '--force-recreate', 'db')
+        for _ in range(60):
+            if run(['docker', 'exec', PG, 'pg_isready', '-h', '127.0.0.1', '-U', 'qa_refresh_admin', '-d', 'postgres'], check=False):
+                break
+            time.sleep(1)
+        self.compose_run('up', '-d', '--force-recreate', 'odoo')
+        proof = stage + '.network-proof.json'
+        self.namespace_test(proof)
+        self.neutral_guard()
+        self.health(18136)
+        require(baseline == fingerprints(PG, DB) and unchanged == {name: digest(self.state / name) for name in artifacts},
+                'HTTP recovery changed protected evidence')
+        self.receipt(stage + '-network-migration', {'from_internal': True, 'to_internal': False,
+                     'prior_proof': str(prior), 'prior_sha256': digest(prior), 'new_proof': str(self.state / proof), 'http': 200})
+        self.complete_prepare(manifest, self.attachments())
 
     def finish_prepare(self, manifest):
         attachments = self.attachments()
@@ -672,7 +637,6 @@ class Refresh:
         else:
             save(previous, baseline)
         self.namespace_test()
-        save(self.state / 'neutralization.intent.json', {'database': DB})
         # Native command loads neutralize SQL only, no registry/HTTP/cron process.
         cli = ("import configparser,os; c=configparser.ConfigParser(); c.read('/etc/odoo/odoo.conf'); "
                "v=c['options']; os.execvp('odoo',['odoo','neutralize','--db_host=db',"
@@ -681,18 +645,10 @@ class Refresh:
         sql(PG, DB, neutral_sql(schema(PG, DB)))
         self.neutral_guard()
         require(baseline == fingerprints(PG, DB), 'protected data changed during neutralization')
-        upgrade_before = fingerprints(PG, DB, upgrading=True)
-        self.compose_run('run', '--rm', '--no-deps', 'odoo', '--config=/etc/odoo/odoo.conf',
-                         '-d', DB, '-u', 'baseer_profit_loss_report', '--stop-after-init',
-                         '--workers=0', '--max-cron-threads=0')
-        require(upgrade_before == fingerprints(PG, DB, upgrading=True), 'protected data changed during module upgrade')
-        self.neutral_guard()
-        self.attachments()
         save(self.state / 'protected-after.json', fingerprints(PG, DB))
         self.compose_run('up', '-d', 'odoo')
         self.health(18136)
-        require(json.loads((self.state / 'protected-after.json').read_text()) == fingerprints(PG, DB),
-                'protected data changed after HTTP')
+        require(baseline == fingerprints(PG, DB), 'protected data changed after HTTP')
         self.complete_prepare(manifest, attachments)
 
     def complete_prepare(self, manifest, attachments):
@@ -700,100 +656,33 @@ class Refresh:
         manifest['source_sha'] = self.live_sha
         manifest['release'] = str(self.release)
         save(self.state / 'inventory.json', manifest)
-        self.receipt('prepare', {'state': str(self.state), 'source_sha': self.qa_sha, 'live_sha': self.live_sha,
+        self.receipt('prepare', {'state': str(self.state), 'source_sha': self.live_sha,
                                 'archives': len(manifest['archives']), 'attachments': attachments,
                                 'old_databases': len(manifest['old_databases']), 'network': NETWORK, 'http': 200})
 
-    def verify_source(self):
-        signed = Path(os.environ['QA_REFRESH_SOURCE_DIR'])
-        source = json.loads((self.state / 'source-manifest.json').read_text())
-        require(set(source) == set(SOURCE_DIRS)
-                and (self.release / 'RELEASE_COMMIT').read_text().strip() == self.qa_sha
-                and source == {name: tree_hash(signed / name) for name in SOURCE_DIRS}
-                and source == {name: tree_hash(self.release / name) for name in SOURCE_DIRS},
-                'candidate source drift')
-
-    def verify_runtime(self, switched):
-        require(run(['systemctl', 'is-active', FIREWALL_UNIT.name]).strip() == 'active',
-                'candidate firewall service inactive')
-        expected_source = BASE / 'current' if switched else self.release
-        expected_config = CONFIG / 'odoo.conf' if switched else self.config
-        config = configparser.ConfigParser()
-        config.read(expected_config)
-        options = config['options']
-        require(all(options.get(key) == value for key, value in {
-            'db_host': 'db', 'db_name': DB, 'dbfilter': '^' + DB + '$',
-            'db_user': 'qa_runner', 'max_cron_threads': '0',
-        }.items()), 'candidate Odoo connected to an unexpected database')
-        for name, image, mounts in (
-            (PG, PG_IMAGE, {'/var/lib/postgresql/data': ('volume', PROJECT + '-postgres', True)}),
-            (ODOO, ODOO_IMAGE, {'/var/lib/odoo': ('volume', PROJECT + '-odoo', True),
-             '/etc/odoo/odoo.conf': ('bind', str(expected_config), False),
-             '/mnt/baseer-addons': ('bind', str(expected_source / 'custom_addons'), False),
-             '/mnt/third-party-addons': ('bind', str(expected_source / 'third_party_addons'), False)})):
-            item = inspect(name)
-            actual = {m['Destination']: (m['Type'], m.get('Name') if m['Type'] == 'volume' else m['Source'], m['RW'])
-                      for m in item['Mounts']}
-            if name == ODOO and '/mnt/extra-addons' in actual:
-                kind, volume_name, writable = actual.pop('/mnt/extra-addons')
-                require(kind == 'volume' and writable and not any(volume(volume_name).iterdir()),
-                        'unexpected vendor extra-addons volume')
-            ports = item['HostConfig']['PortBindings'] or {}
-            offset = 18134 if switched else 18136
-            expected_ports = {f'{target}/tcp': [{'HostIp': '127.0.0.1', 'HostPort': str(offset + index)}]
-                              for index, target in enumerate((8069, 8072))} if name == ODOO else {}
-            require(item['Image'] == image and item['State']['Running']
-                    and item['HostConfig']['RestartPolicy']['Name'] == 'no'
-                    and item['HostConfig']['Dns'] == [PGIP]
-                    and set(item['NetworkSettings']['Networks']) == {NETWORK}
-                    and ports == expected_ports and actual == mounts, 'candidate runtime identity mismatch')
-
     def verify(self, switched=False):
         self.guards(switched)
-        self.verify_runtime(switched)
         inventory = json.loads((self.state / 'inventory.json').read_text())
         for name, checksum in inventory['archives'].items():
             require(digest(self.state / name) == checksum, 'archive checksum mismatch')
-        self.verify_source()
-        require(json.loads((self.state / 'protected-after.json').read_text()) == fingerprints(PG, DB), 'protected data drift')
+        source = json.loads((self.state / 'source-manifest.json').read_text())
+        require(source == {name: tree_hash(self.release / name) for name in source}, 'candidate source drift')
+        require(json.loads((self.state / 'protected-before.json').read_text()) == fingerprints(PG, DB), 'protected data drift')
         self.namespace_test()
         self.neutral_guard()
         self.attachments()
         self.health(18134 if switched else 18136)
-        return {'source_sha': self.qa_sha, 'live_sha': self.live_sha, 'http': 200, 'archives_verified': len(inventory['archives'])}
+        return {'source_sha': self.live_sha, 'http': 200, 'archives_verified': len(inventory['archives'])}
 
     def switch(self):
         self.start('switch')
         self.verify()
         previous = (BASE / 'current').resolve(strict=True)
         require(str(previous) == json.loads((self.state / 'inventory.json').read_text())['old_source'], 'old QA source moved')
-        config_names = ('compose.yaml', 'runtime.env', 'odoo.conf', 'deploy.env')
-        rollback = self.state / 'previous-config'
-        rollback.mkdir(mode=0o700, exist_ok=False)
-        for name in config_names:
-            path = CONFIG / name
-            require(path.is_file() and not path.is_symlink(), 'unexpected QA configuration path')
-            metadata = path.stat()
-            copy = rollback / name
-            shutil.copy2(path, copy)
-            os.chown(copy, metadata.st_uid, metadata.st_gid)
-            require(digest(path) == digest(copy), 'QA config recovery copy mismatch')
-        old_unit = 'baseer-qa-refresh.service'
-        new_unit = BOOT_UNIT.name
-        unit_path = BOOT_UNIT
-        require(not unit_path.exists() and not unit_path.is_symlink(), 'candidate service already exists')
-        old_enabled = run(['systemctl', 'is-enabled', old_unit], check=False)
-        old_active = run(['systemctl', 'is-active', old_unit], check=False)
-        poller_active = run(['systemctl', 'is-active', TIMER], check=False) is not None
-        save(self.state / 'previous-boot.json', {'old_unit': old_unit,
-             'enabled': old_enabled.strip() if old_enabled else None,
-             'active': old_active.strip() if old_active else None,
-             'timer_active': poller_active, 'old_source': str(previous),
-             'config_hashes': {name: digest(rollback / name) for name in config_names}})
+        files = {name: ((CONFIG / name).read_bytes(), (CONFIG / name).stat())
+                 for name in ('compose.yaml', 'runtime.env', 'odoo.conf', 'deploy.env')}
+        run(['docker', 'stop', QODOO])
         try:
-            if poller_active:
-                run(['systemctl', 'stop', TIMER])
-            run(['docker', 'stop', QODOO])
             run(['docker', 'stop', ODOO])
             link = BASE / ('refresh-current-' + self.state.name)
             link.symlink_to(self.release)
@@ -802,53 +691,39 @@ class Refresh:
             os.chown(CONFIG / 'odoo.conf', 0, 101)
             os.chmod(CONFIG / 'odoo.conf', 0o640)
             save(CONFIG / 'runtime.env', (self.state / 'app.env').read_text())
-            updates = dict(QA_DATABASE=DB, QA_DB_CONTAINER=PG, QA_ODOO_VOLUME=PROJECT + '-odoo',
-                           QA_COMPOSE_PROJECT=PROJECT, QA_LOGIN_URL='http://127.0.0.1:18134/web/login',
-                           QA_ADDONS_PATH=ADDONS)
-            env = (rollback / 'deploy.env').read_text().splitlines()
-            lines = []
-            for line in env:
-                key = line.partition('=')[0]
-                lines.append(key + '=' + updates.pop(key) if key in updates else line)
-            lines.extend(key + '=' + value for key, value in updates.items())
-            save(CONFIG / 'deploy.env', '\n'.join(lines))
+            values = env_file(CONFIG / 'deploy.env')
+            values.update(QA_DATABASE=DB, QA_DB_CONTAINER=PG, QA_ODOO_VOLUME=PROJECT + '-odoo',
+                          QA_COMPOSE_PROJECT=PROJECT, QA_LOGIN_URL='http://127.0.0.1:18134/web/login',
+                          QA_ADDONS_PATH=ADDONS)
+            save(CONFIG / 'deploy.env', '\n'.join(k + '=' + v for k, v in values.items()))
             config = self.compose_config(BASE / 'current', 18134, CONFIG / 'odoo.conf')
             save(CONFIG / 'compose.yaml', config)
             save(self.compose, config)
             self.compose_run('up', '-d', 'odoo')
             result = self.verify(True)
             # Reboot starts firewall first; Docker restart policies remain disabled.
-            save(unit_path,
-                 '[Unit]\nRequires=docker.service baseer-qa-refresh-20261121-firewall.service\n'
-                 'After=docker.service baseer-qa-refresh-20261121-firewall.service\n[Service]\nType=oneshot\n'
+            save('/etc/systemd/system/baseer-qa-refresh.service',
+                 '[Unit]\nRequires=docker.service baseer-qa-refresh-firewall.service\n'
+                 'After=docker.service baseer-qa-refresh-firewall.service\n[Service]\nType=oneshot\n'
                  'RemainAfterExit=yes\nExecStart=/usr/bin/docker compose -p ' + PROJECT +
                  ' -f /etc/baseer-qa/compose.yaml up -d\n[Install]\nWantedBy=multi-user.target')
             run(['systemctl', 'daemon-reload'])
-            run(['systemctl', 'disable', old_unit])
-            run(['systemctl', 'enable', new_unit])
-            if poller_active:
+            run(['systemctl', 'enable', 'baseer-qa-refresh.service'])
+            if json.loads((self.state / 'inventory.json').read_text())['poller_active']:
                 run(['systemctl', 'start', TIMER])
             self.receipt('switch', result)
         except BaseException:
             run(['docker', 'stop', ODOO], check=False)
-            run(['systemctl', 'disable', new_unit], check=False)
-            if unit_path.exists():
-                unit_path.unlink()
-            run(['systemctl', 'daemon-reload'], check=False)
-            if old_enabled and old_enabled.strip() == 'enabled':
-                run(['systemctl', 'enable', old_unit])
-            for name in config_names:
-                copy = rollback / name
-                shutil.copy2(copy, CONFIG / name)
-                metadata = copy.stat()
+            run(['systemctl', 'disable', 'baseer-qa-refresh.service'], check=False)
+            for name, (value, metadata) in files.items():
+                (CONFIG / name).write_bytes(value)
                 os.chown(CONFIG / name, metadata.st_uid, metadata.st_gid)
+                os.chmod(CONFIG / name, metadata.st_mode & 0o777)
             link = BASE / ('rollback-current-' + self.state.name)
             link.symlink_to(previous)
             os.replace(link, BASE / 'current')
             run(['docker', 'start', QODOO])
-            run(['curl', '-fsSL', '--retry', '10', '--retry-connrefused',
-                 '--max-time', '10', 'http://127.0.0.1:18134/web/login'])
-            if poller_active:
+            if json.loads((self.state / 'inventory.json').read_text())['poller_active']:
                 run(['systemctl', 'start', TIMER])
             save(self.state / 'rollback.receipt.json', {'old_source': str(previous), 'old_odoo_restarted': True})
             raise
@@ -856,7 +731,7 @@ class Refresh:
 
 def main(argv=None):
     args = sys.argv[1:] if argv is None else argv
-    require(len(args) == 4 and args[0] in ('prepare', 'resume', 'finance', 'switch', 'verify'), 'expected stage RUNID LIVE_SHA QA_SHA')
+    require(len(args) == 4 and args[0] in ('prepare', 'resume', 'switch', 'verify'), 'expected stage RUNID LIVE_SHA QA_SHA')
     require(os.geteuid() == 0, 'root required')
     require(os.name == 'posix', 'Linux required')
     os.umask(0o077)
@@ -869,11 +744,7 @@ def main(argv=None):
         print(json.dumps(result, sort_keys=True))
     else:
         getattr(engine, args[0])()
-        stage = args[0]
-        if stage == 'resume':
-            stage = engine.recovery_stage()
-        elif stage == 'finance':
-            stage = 'financial'
+        stage = engine.recovery_stage() if args[0] == 'resume' else args[0]
         print((engine.state / (stage + '.receipt.json')).read_text())
 
 

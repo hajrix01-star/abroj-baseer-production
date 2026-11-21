@@ -3,7 +3,6 @@ import importlib.util
 import json
 import os
 from pathlib import Path
-import stat
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -16,92 +15,12 @@ SPEC.loader.exec_module(engine)
 
 class RefreshContracts(unittest.TestCase):
     def setUp(self):
-        request = patch.dict(engine.os.environ, {'QA_REFRESH_SIGNED_TAG': 'qa-refresh-20261121-12345',
-                                                 'QA_REFRESH_REVIEWED_REVISION': 'c' * 40})
+        request = patch.dict(engine.os.environ, {'QA_REFRESH_SIGNED_TAG': 'qa-refresh-20261023-12345'})
         request.start()
         self.addCleanup(request.stop)
 
     def make(self):
         return engine.Refresh('12345', 'a' * 40, 'b' * 40)
-
-    def test_new_candidate_has_distinct_fixed_resources(self):
-        self.assertEqual(engine.QDB, 'baseer_qa_20261023')
-        self.assertEqual(engine.DB, 'baseer_qa_20261121')
-        self.assertEqual(engine.QODOO, 'baseer-qa-refresh-20261023-odoo-1')
-        self.assertNotEqual(engine.ODOO, engine.QODOO)
-        self.assertEqual(engine.SUBNET, '172.31.135.0/28')
-        self.assertNotEqual(engine.PROJECT + '-odoo', engine.QVO)
-
-    def test_switch_requires_both_receipt_hashes_and_exact_financial_identity(self):
-        # Mock POSIX ownership/mode only: receipt bytes and hashes are real.
-        original_stat = Path.stat
-        def root_stat(path, *args, **kwargs):
-            result = original_stat(path, *args, **kwargs)
-            values = list(result)
-            values[4] = 0
-            if stat.S_ISDIR(result.st_mode):
-                values[0] = stat.S_IFDIR | 0o700
-            elif stat.S_ISREG(result.st_mode):
-                values[0] = stat.S_IFREG | 0o600
-            return os.stat_result(values)
-
-        def attempt(change=None):
-            with tempfile.TemporaryDirectory(dir=Path(__file__).parent) as directory:
-                refresh = self.make()
-                refresh.state = Path(directory)
-                prepared = refresh.state / 'prepare.receipt.json'
-                prepared_values = {'reviewed_revision': 'c' * 40,
-                                   'signed_tag': 'qa-refresh-20261121-12345',
-                                   'source_sha': 'b' * 40, 'live_sha': 'a' * 40}
-                if change and change[0] == 'prepared_identity':
-                    prepared_values[change[1]] = change[2]
-                prepared.write_text(json.dumps(prepared_values))
-                prepare_hash = engine.digest(prepared)
-                evidence = refresh.state / 'financial-input.json'
-                evidence.write_text('{"fixture":"original"}')
-                workbook = refresh.state / 'financial-workbook.xlsx'
-                workbook.write_bytes(b'original workbook')
-                verifier = refresh.state / 'verifier.py'
-                verifier.write_text('original verifier')
-                finance = {'prepared_sha256': prepare_hash, 'source_sha': 'b' * 40,
-                           'database': engine.DB, 'arz': 'PASS', 'shami': 'PASS', 'repeat': 'PASS',
-                           'company_guard': 'PASS', 'read_only': True,
-                           'input_sha256': engine.digest(evidence),
-                           'workbook_sha256': engine.digest(workbook),
-                           'verifier_sha256': engine.digest(verifier)}
-                if change and change[0] == 'finance':
-                    finance[change[1]] = change[2]
-                financial = refresh.state / 'financial.receipt.json'
-                financial.write_text(json.dumps(finance))
-                hashes = prepare_hash + ' ' + engine.digest(financial)
-                if change and change[0] == 'review':
-                    hashes = change[1]
-                (refresh.state / 'review.accepted').write_text(hashes)
-                if change and change[0] == 'prepared':
-                    prepared.write_text(json.dumps(change[1]))
-                if change and change[0] == 'financial_after_review':
-                    financial.write_text(financial.read_text() + ' ')
-                if change and change[0] == 'evidence_after_review':
-                    evidence.write_text('{"fixture":"changed"}')
-                if change and change[0] == 'workbook_after_review':
-                    workbook.write_bytes(b'changed workbook')
-                with patch.object(Path, 'stat', autospec=True, side_effect=root_stat), \
-                        patch.object(engine, 'VERIFIER', verifier):
-                    refresh.start('switch')
-                self.assertTrue((refresh.state / 'switch.intent.json').exists())
-
-        attempt()
-        for change in [('finance', 'source_sha', 'a' * 40), ('finance', 'database', engine.QDB),
-                       ('finance', 'arz', 'FAIL'), ('finance', 'shami', 'FAIL'),
-                       ('finance', 'company_guard', 'NO_FIXTURE'), ('finance', 'read_only', False),
-                       ('finance', 'prepared_sha256', '0' * 64), ('review', '0' * 64),
-                       ('prepared', {'reviewed_revision': 'd' * 40, 'signed_tag': 'wrong'}),
-                       ('prepared_identity', 'signed_tag', 'qa-refresh-20261121-67890'),
-                       ('prepared_identity', 'reviewed_revision', 'd' * 40),
-                       ('financial_after_review',), ('evidence_after_review',),
-                       ('workbook_after_review',)]:
-            with self.subTest(change=change), self.assertRaises(RuntimeError):
-                attempt(change)
 
     def test_host_and_none_networks_have_no_address_ranges(self):
         for value in ({}, {'IPAM': None}, {'IPAM': {'Config': None}}, {'IPAM': {'Config': []}}):
@@ -165,7 +84,7 @@ class RefreshContracts(unittest.TestCase):
     def test_company_membership_password_and_financial_rows_are_protected(self):
         tables = {name: {} for name in ('account_move', 'res_users', 'res_users_settings',
                   'res_company_users_rel', 'res_groups_users_rel', 'ir_module_module',
-                  'abroj_employee_history', 'baseer_bwork_membership', 'baseer_loan_installment', 'ir_cron')}
+                  'abroj_employee_history', 'baseer_bwork_membership', 'ir_cron')}
         queries = []
         def query(container, database, statement):
             queries.append(statement)
@@ -228,12 +147,96 @@ class RefreshContracts(unittest.TestCase):
             self.assertNotIn(forbidden, source)
         self.assertIn('self.finish_prepare(manifest)', source)
 
+    def http_checkpoint(self, refresh):
+        baseline = {'account_move': '10|original'}
+        files = {'protected-before.json': json.dumps(baseline), 'protected-after.json': json.dumps(baseline),
+                 'network-proof.json': '{"database": true}\n', 'pg.env': 'POSTGRES_USER=qa_refresh_admin',
+                 'app.env': 'POSTGRES_USER=qa_runner', 'odoo.conf': 'original-config', 'compose.json': '{}'}
+        for name, value in files.items():
+            (refresh.state / name).write_text(value)
+        def container(ident, image, env, mounts):
+            return {'Id': ident, 'Image': image, 'Config': {'Env': env}, 'State': {'Running': False},
+                    'HostConfig': {'RestartPolicy': {'Name': 'no'}},
+                    'NetworkSettings': {'Networks': {engine.NETWORK: {}}}, 'Mounts': mounts}
+        pg = container('pg-id', engine.PG_IMAGE, ['POSTGRES_USER=qa_refresh_admin'], [
+            {'Destination': '/var/lib/postgresql/data', 'Type': 'volume', 'Name': engine.PROJECT + '-postgres', 'RW': True}])
+        mounts = [{'Destination': '/var/lib/odoo', 'Type': 'volume', 'Name': engine.PROJECT + '-odoo', 'RW': True}]
+        for target, source in (('/etc/odoo/odoo.conf', refresh.config), ('/mnt/baseer-addons', refresh.release / 'custom_addons'),
+                               ('/mnt/third-party-addons', refresh.release / 'third_party_addons')):
+            mounts.append({'Destination': target, 'Type': 'bind', 'Source': str(source), 'RW': False})
+        odoo = container('odoo-id', engine.ODOO_IMAGE, ['POSTGRES_USER=qa_runner'], mounts)
+        odoo['Mounts'].append({'Destination': '/mnt/extra-addons', 'Type': 'volume',
+                              'Name': 'image-extra', 'Source': str(refresh.state / 'extra'), 'RW': True})
+        network = {'Name': engine.NETWORK, 'Driver': 'bridge', 'Internal': True, 'EnableIPv6': False,
+                   'IPAM': {'Config': [{'Subnet': engine.SUBNET, 'Gateway': '172.31.134.1'}]},
+                   'Containers': {'pg-id': {}, 'odoo-id': {}}}
+        return baseline, network, pg, odoo
+
+    def test_http_recovery_preserves_evidence_and_installs_firewall_before_start(self):
+        refresh, events = self.make(), []
+        with tempfile.TemporaryDirectory(dir=Path(__file__).parent) as directory:
+            refresh.state = Path(directory)
+            baseline, network, pg, odoo = self.http_checkpoint(refresh)
+            original = {name: (refresh.state / name).read_bytes() for name in
+                        ('protected-before.json', 'protected-after.json', 'network-proof.json')}
+            (refresh.state / 'extra').mkdir()
+            with patch.object(engine, 'inspect', side_effect=[network, pg, odoo, {'Config': {'Volumes': {'/mnt/extra-addons': {}}}}]), \
+                    patch.object(engine, 'volume', return_value=refresh.state / 'extra'), \
+                    patch.object(engine, 'fingerprints', return_value=baseline), \
+                    patch.object(engine, 'run', side_effect=lambda args, **kwargs: events.append(tuple(args)) or 'ready'), \
+                    patch.object(refresh, 'compose_run', side_effect=lambda *args: events.append(('compose',) + args)), \
+                    patch.object(refresh, 'firewall', side_effect=lambda: events.append(('firewall',))), \
+                    patch.object(refresh, 'namespace_test') as proof, patch.object(refresh, 'neutral_guard'), \
+                    patch.object(refresh, 'health') as health, patch.object(refresh, 'receipt') as receipt, \
+                    patch.object(refresh, 'attachments', return_value=8), patch.object(refresh, 'complete_prepare') as complete:
+                refresh.recover_http({'old_databases': [engine.QDB]}, 'resume-12345')
+            self.assertLess(events.index(('firewall',)), events.index(('compose', 'up', '-d', '--force-recreate', 'db')))
+            self.assertLess(events.index(('compose', 'up', '-d', '--force-recreate', 'db')),
+                            events.index(('compose', 'up', '-d', '--force-recreate', 'odoo')))
+            self.assertIn(('docker', 'network', 'create', '--subnet', engine.SUBNET, engine.NETWORK), events)
+            self.assertIn(('docker', 'rm', engine.PG, engine.ODOO), events)
+            self.assertNotIn('--internal', str(events))
+            proof.assert_called_once_with('resume-12345.network-proof.json')
+            health.assert_called_once_with(18136)
+            self.assertEqual(receipt.call_args.args[0], 'resume-12345-network-migration')
+            self.assertEqual(complete.call_args.args[1], 8)
+            for name, content in original.items():
+                self.assertEqual((refresh.state / name).read_bytes(), content)
+            self.assertEqual((refresh.state / 'resume-12345.prior-network-proof.json').read_bytes(), original['network-proof.json'])
+
+    def test_http_recovery_refuses_other_network_endpoints_before_stopping_anything(self):
+        refresh = self.make()
+        with tempfile.TemporaryDirectory(dir=Path(__file__).parent) as directory:
+            refresh.state = Path(directory)
+            baseline, network, pg, odoo = self.http_checkpoint(refresh)
+            network['Containers']['foreign-id'] = {}
+            with patch.object(engine, 'inspect', side_effect=[network, pg, odoo]), \
+                    patch.object(engine, 'fingerprints', return_value=baseline), patch.object(engine, 'run') as run:
+                with self.assertRaisesRegex(RuntimeError, 'unexpected QA network checkpoint'):
+                    refresh.recover_http({}, 'resume-12345')
+                run.assert_not_called()
+
+    def test_http_recovery_refuses_nonempty_image_extra_addons(self):
+        refresh = self.make()
+        with tempfile.TemporaryDirectory(dir=Path(__file__).parent) as directory:
+            refresh.state = Path(directory)
+            baseline, network, pg, odoo = self.http_checkpoint(refresh)
+            extra = refresh.state / 'extra'
+            extra.mkdir()
+            (extra / 'unexpected.py').write_text('unexpected')
+            with patch.object(engine, 'inspect', side_effect=[network, pg, odoo, {'Config': {'Volumes': {'/mnt/extra-addons': {}}}}]), \
+                    patch.object(engine, 'volume', return_value=extra), \
+                    patch.object(engine, 'fingerprints', return_value=baseline), patch.object(engine, 'run') as run:
+                with self.assertRaisesRegex(RuntimeError, 'unexpected image extra-addons contents'):
+                    refresh.recover_http({}, 'resume-12345')
+                run.assert_not_called()
+
     def test_resume_intent_names_bind_the_signed_request_and_receipts_do_not_overwrite(self):
         refresh = self.make()
         self.assertEqual(refresh.recovery_stage(), 'resume-12345')
-        with patch.dict(engine.os.environ, {'QA_REFRESH_SIGNED_TAG': 'qa-refresh-20261121-67890'}):
+        with patch.dict(engine.os.environ, {'QA_REFRESH_SIGNED_TAG': 'qa-refresh-20261023-67890'}):
             self.assertEqual(refresh.recovery_stage(), 'resume-67890')
-        with patch.dict(engine.os.environ, {'QA_REFRESH_SIGNED_TAG': 'qa-refresh-20261121-12/34'}):
+        with patch.dict(engine.os.environ, {'QA_REFRESH_SIGNED_TAG': 'qa-refresh-20261023-12/34'}):
             with self.assertRaises(RuntimeError):
                 refresh.recovery_stage()
         with tempfile.TemporaryDirectory(dir=Path(__file__).parent) as directory:
@@ -266,81 +269,11 @@ class RefreshContracts(unittest.TestCase):
                 fingerprints.assert_called_once()
             self.assertEqual(path.read_bytes(), original_bytes)
 
-    def test_upgrade_runs_after_isolation_and_rejects_changed_business_data(self):
-        events = []
-        with tempfile.TemporaryDirectory(dir=Path(__file__).parent) as directory:
-            refresh = self.make()
-            refresh.state = Path(directory)
-            def fingerprint(*args, **kwargs):
-                if kwargs.get('upgrading'):
-                    events.append('upgrade_fingerprint')
-                    return {'account_move': 'changed' if events.count('upgrade_fingerprint') == 2 else 'original'}
-                return {'account_move': 'original'}
-            def compose(*args):
-                events.append(args)
-            with patch.object(refresh, 'attachments', return_value=1), \
-                    patch.object(engine, 'fingerprints', side_effect=fingerprint), \
-                    patch.object(refresh, 'namespace_test', side_effect=lambda: events.append('network')), \
-                    patch.object(refresh, 'neutral_guard', side_effect=lambda: events.append('neutral')), \
-                    patch.object(refresh, 'compose_run', side_effect=compose), \
-                    patch.object(engine, 'schema', return_value={}), patch.object(engine, 'sql'), \
-                    patch.object(refresh, 'health') as health, patch.object(refresh, 'complete_prepare') as complete:
-                with self.assertRaisesRegex(RuntimeError, 'protected data changed during module upgrade'):
-                    refresh.finish_prepare({})
-                health.assert_not_called()
-                complete.assert_not_called()
-            upgrade = next(x for x in events if isinstance(x, tuple) and '-u' in x)
-            self.assertLess(events.index('network'), events.index(upgrade))
-            self.assertLess(events.index('neutral'), events.index(upgrade))
-            self.assertEqual(upgrade[upgrade.index('-u') + 1], 'baseer_profit_loss_report')
-            self.assertIn('--stop-after-init', upgrade)
-            self.assertIn('--max-cron-threads=0', upgrade)
-
-    def test_switch_failure_restores_old_configuration_and_boot_enablement(self):
-        with tempfile.TemporaryDirectory(dir=Path(__file__).parent) as directory:
-            base = Path(directory) / 'qa'
-            config = Path(directory) / 'config'
-            state = base / 'refresh' / 'test'
-            for path in (base / 'current', config, state):
-                path.mkdir(parents=True)
-            files = {'compose.yaml': '{"old": true}', 'runtime.env': 'OLD=yes',
-                     'odoo.conf': 'old configuration', 'deploy.env': 'QA_DATABASE=old'}
-            for name, contents in files.items():
-                (config / name).write_text(contents)
-            (state / 'inventory.json').write_text(json.dumps({
-                'old_source': str((base / 'current').resolve()), 'poller_active': True}))
-            (state / 'app.env').write_text('POSTGRES_USER=qa_runner')
-            (state / 'odoo.conf').write_text('candidate configuration')
-            refresh = self.make()
-            refresh.state, refresh.config, refresh.compose = state, state / 'odoo.conf', state / 'compose.json'
-            refresh.release = base / 'candidate'
-            events = []
-            def command(args, **kwargs):
-                events.append(tuple(args))
-                if args[:2] == ['systemctl', 'is-enabled']:
-                    return 'enabled\n'
-                if args[:2] == ['systemctl', 'is-active']:
-                    return 'active\n'
-                return ''
-            with patch.object(engine, 'BASE', base), patch.object(engine, 'CONFIG', config), \
-                    patch.object(refresh, 'start'), patch.object(refresh, 'verify', side_effect=[None, RuntimeError('candidate health')]), \
-                    patch.object(refresh, 'compose_run'), patch.object(engine, 'run', side_effect=command), \
-                    patch.object(engine.os, 'chown', create=True), patch.object(engine.os, 'replace'), \
-                    patch.object(Path, 'symlink_to'):
-                with self.assertRaisesRegex(RuntimeError, 'candidate health'):
-                    refresh.switch()
-            for name, contents in files.items():
-                self.assertEqual((config / name).read_text(), contents)
-            self.assertIn(('docker', 'start', engine.QODOO), events)
-            self.assertIn(('systemctl', 'enable', 'baseer-qa-refresh.service'), events)
-            self.assertIn(('systemctl', 'start', engine.TIMER), events)
-            self.assertTrue(json.loads((state / 'rollback.receipt.json').read_text())['old_odoo_restarted'])
-
     def test_network_proof_explicitly_allows_internal_qa_peer_and_records_ipv6(self):
         import inspect
         source = inspect.getsource(engine.Refresh.namespace_test)
         self.assertIn("name == 'internal_qa_peer'", source)
-        targets = [('database', engine.PGIP, 5432, True), ('internal_qa_peer', '172.31.135.5', 16443, True)]
+        targets = [('database', engine.PGIP, 5432, True), ('internal_qa_peer', '172.31.134.5', 16443, True)]
         with tempfile.TemporaryDirectory(dir=Path(__file__).parent) as directory:
             refresh = self.make()
             refresh.state = Path(directory)
@@ -390,7 +323,7 @@ class RefreshContracts(unittest.TestCase):
         source = inspect.getsource(engine.Refresh.prepare_impl)
         self.assertNotIn('ZATCA', source)
         self.assertNotIn('qa_old_restore_', source)
-        self.assertIn("manifest['old_databases'] = [QDB]", source)
+        self.assertIn('databases = [QDB]', source)
         self.assertNotIn('dropdb', source)
         self.assertNotIn('volume", "rm', source)
 

@@ -239,10 +239,9 @@ class EhGeneralLedgerHandler(models.AbstractModel):
                 account_id, {'code': '', 'name': ''})
 
             header = self._account_header_line(account_id, meta)
-            # An opening-only account has no journal items in this period.
-            # Do not offer a caret that expands to an empty page.
-            if has_activity:
-                self._eh_apply_leaf_lazy_flags(header, options)
+            # Flip the header into a lazy-expandable leaf via the shared
+            # hook (no-op for GL multi-column safety; GL is single-period).
+            self._eh_apply_leaf_lazy_flags(header, options)
             lines.append(header)
             lines.append(self._opening_line(account_id, opening))
             lines.append(

@@ -163,8 +163,7 @@
         <field name="inherit_id" ref="point_of_sale.view_pos_session_tree"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='config_id']" position="after">
-                <field name="currency_id" column_invisible="True"/>
-                <field name="baseer_session_sales_total"/>
+                <field name="baseer_session_sales_display"/>
             </xpath>
         </field>
     </record>

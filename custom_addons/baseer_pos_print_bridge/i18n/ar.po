@@ -2925,11 +2925,16 @@ msgid "Order number"
 msgstr "رقم الطلب"
 
 #. module: baseer_pos_print_bridge
-#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_pos_session__baseer_session_sales_total
+#: model:ir.model.fields,field_description:baseer_pos_print_bridge.field_pos_session__baseer_session_sales_display
 msgid "Session sales total"
 msgstr "إجمالي مبيعات الجلسة"
 
 #. module: baseer_pos_print_bridge
-#: model:ir.model.fields,help:baseer_pos_print_bridge.field_pos_session__baseer_session_sales_total
+#: model:ir.model.fields,help:baseer_pos_print_bridge.field_pos_session__baseer_session_sales_display
 msgid "Total including tax for completed orders, including refunds."
 msgstr "إجمالي الطلبات المكتملة شامل الضريبة والمرتجعات."
+
+#. module: baseer_pos_print_bridge
+#: code:addons/baseer_pos_print_bridge/models/pos_session.py
+msgid "Unavailable"
+msgstr "غير متاح"

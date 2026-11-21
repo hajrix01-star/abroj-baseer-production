@@ -348,32 +348,43 @@ try:
     arz = check_arz(QA_INPUT['arz'])
     require(shami == check_shami(QA_INPUT['shami']) and arz == check_arz(QA_INPUT['arz'], public=False),
             'repeated input changed read results')
-    outsiders = env['res.users'].sudo().search([
-        ('active', '=', True), ('share', '=', False), ('id', 'not in', [1, 2]), ('company_ids', 'not in', [2]),
+    accountants = env['res.users'].sudo().search([
+        ('active', '=', True), ('share', '=', False), ('id', 'not in', [1, 2]),
     ], limit=50)
     guard = 'NO_FIXTURE'
-    for outsider in outsiders:
-        if outsider.with_user(outsider).has_group('base.group_system'):
+    guard_scope = 'none'
+    for accountant in accountants:
+        if accountant.with_user(accountant).has_group('base.group_system'):
             continue
-        candidate = env['baseer.profit.loss.report'].with_user(outsider).with_context(
-            allowed_company_ids=outsider.company_ids.ids)
+        memberships = set(accountant.company_ids.ids)
+        allowed = min(memberships - {2}, default=None)
+        if allowed is None:
+            continue
+        candidate = env['baseer.profit.loss.report'].with_user(accountant).with_context(
+            allowed_company_ids=[allowed])
         try:
             candidate._check_accounting_access()
         except AccessError:
             continue
+        accepted = candidate.get_context(company_id=allowed)
+        require(accepted['default_company_id'] == allowed
+                and {company['id'] for company in accepted['companies']} == {allowed},
+                'active company input did not limit the report')
         try:
             candidate.get_context(company_id=2)
         except AccessError:
             guard = 'PASS'
-            break
+            guard_scope = 'assigned_membership' if 2 not in memberships else 'active_company'
+            if guard_scope == 'assigned_membership':
+                break
         else:
-            raise AssertionError('unauthorized company was accepted')
+            raise AssertionError('out-of-scope company was accepted')
     print('QA_REFRESH_ODOO=' + json.dumps({
         'source_sha': QA_INPUT['source_sha'], 'prepared_sha256': QA_INPUT['prepared_sha256'],
         'database': env.cr.dbname, 'module_version': module.installed_version,
         'arz': 'PASS', 'shami': 'PASS', 'public_report': 'PASS', 'xlsx': 'PASS',
         'numeric_verification': {'arz': arz, 'shami': shami},
-        'repeat': 'PASS', 'company_guard': guard, 'read_only': True,
+        'repeat': 'PASS', 'company_guard': guard, 'company_guard_scope': guard_scope, 'read_only': True,
     }, sort_keys=True))
 finally:
     env.cr.rollback()

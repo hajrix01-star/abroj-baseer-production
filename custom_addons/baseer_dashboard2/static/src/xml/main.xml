@@ -229,7 +229,7 @@
             <div class="card">
                 <h3>المبيعات حسب طريقة الدفع — <t t-esc="monthName(state.period.month).split(' ')[0]"/></h3>
                 <div class="muted">المبالغ والحصص شاملة الضريبة</div>
-                <div class="bd2-scroll-x"><table>
+                <div class="bd2-scroll-x"><table class="payment-methods-table">
                     <thead>
                         <tr>
                             <th>#</th>

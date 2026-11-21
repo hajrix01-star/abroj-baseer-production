@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="baseer_purchase_daily_report.Report">
+        <main class="bpr-shell">
+            <div class="bpr-container">
+                <t t-if="state.invoice or state.invoiceLoading or state.invoiceError">
+                    <button type="button" class="bpr-back" t-on-click="backToReport"><i class="fa fa-angle-right" aria-hidden="true"/> <span t-esc="labels.back"/></button>
+                    <div t-if="state.invoiceLoading" class="bpr-feedback" role="status" aria-live="polite"><span class="bpr-spinner"/> <span t-esc="labels.loading"/></div>
+                    <div t-elif="state.invoiceError" class="bpr-feedback bpr-feedback--error" role="alert"><span t-esc="state.invoiceError"/></div>
+                    <t t-else="">
+                        <header class="bpr-detail-header">
+                            <div><span class="bpr-eyebrow" t-esc="kindLabel(state.invoice.kind)"/><h1 t-esc="state.invoice.vendor"/><p class="bpr-invoice-number" dir="ltr" t-esc="state.invoice.number"/></div>
+                            <span t-attf-class="bpr-status bpr-status--{{state.invoice.status}}" t-esc="statusLabel(state.invoice.status)"/>
+                        </header>
+                        <section class="bpr-detail-overview">
+                            <div class="bpr-detail-amount"><span t-esc="labels.total"/><strong><bdi t-esc="state.invoice.total"/> <small t-esc="state.invoice.currency"/></strong><small t-esc="labels.amountCurrency"/></div>
+                            <div class="bpr-detail-amount"><span t-esc="labels.settled"/><strong><bdi t-esc="state.invoice.settled"/> <small t-esc="state.invoice.currency"/></strong></div>
+                            <div class="bpr-detail-amount"><span t-esc="labels.residual"/><strong><bdi t-esc="state.invoice.residual"/> <small t-esc="state.invoice.currency"/></strong></div>
+                        </section>
+                        <section class="bpr-panel">
+                            <h2 t-esc="labels.details"/>
+                            <dl class="bpr-meta">
+                                <div><dt t-esc="labels.vendor"/><dd t-esc="state.invoice.vendor"/></div>
+                                <div><dt t-esc="labels.reference"/><dd t-esc="state.invoice.reference || '—'"/></div>
+                                <div><dt t-esc="labels.date"/><dd><bdi t-esc="state.invoice.date || '—'"/></dd></div>
+                                <div><dt t-esc="labels.due"/><dd><bdi t-esc="state.invoice.due_date || '—'"/></dd></div>
+                                <div><dt t-esc="labels.beforeTax"/><dd><bdi t-esc="state.invoice.untaxed"/> <span t-esc="state.invoice.currency"/></dd></div>
+                                <div><dt t-esc="labels.tax"/><dd><bdi t-esc="state.invoice.tax"/> <span t-esc="state.invoice.currency"/></dd></div>
+                                <div><dt><span t-esc="labels.total"/> · <span t-esc="labels.companyCurrency"/></dt><dd><bdi t-esc="state.invoice.company_total"/> <span t-esc="state.payload.company.currency"/></dd></div>
+                                <div><dt><span t-esc="labels.residual"/> · <span t-esc="labels.companyCurrency"/></dt><dd><bdi t-esc="state.invoice.company_residual"/> <span t-esc="state.payload.company.currency"/></dd></div>
+                            </dl>
+                        </section>
+                        <section class="bpr-panel bpr-items"><div class="bpr-panel-heading"><h2 t-esc="labels.items"/><span class="bpr-count" t-esc="state.invoice.lines.length"/></div>
+                            <div t-if="!state.invoice.lines.length" class="bpr-empty-small" t-esc="labels.noItems"/>
+                            <article class="bpr-line" t-foreach="state.invoice.lines" t-as="line" t-key="line_index">
+                                <strong class="bpr-line-name" t-esc="line.description"/>
+                                <dl t-if="line.kind === 'product'" class="bpr-line-values">
+                                    <div><dt t-esc="labels.quantity"/><dd><bdi t-esc="line.quantity"/></dd></div>
+                                    <div><dt t-esc="labels.unitPrice"/><dd><bdi t-esc="line.unit_price"/> <span t-esc="state.invoice.currency"/></dd></div>
+                                    <div><dt t-esc="labels.discount"/><dd><bdi t-esc="line.discount"/>%</dd></div>
+                                    <div><dt t-esc="labels.subtotal"/><dd><bdi t-esc="line.subtotal"/> <span t-esc="state.invoice.currency"/></dd></div>
+                                    <div><dt t-esc="labels.itemTotal"/><dd><bdi t-esc="line.total"/> <span t-esc="state.invoice.currency"/></dd></div>
+                                </dl>
+                            </article>
+                        </section>
+                        <section t-if="state.invoice.adjustments and state.invoice.adjustments.length" class="bpr-panel bpr-items">
+                            <h2 t-esc="labels.adjustments"/>
+                            <article t-foreach="state.invoice.adjustments" t-as="adjustment" t-key="adjustment_index" class="bpr-line">
+                                <strong class="bpr-line-name" t-esc="adjustment.description"/>
+                                <strong><bdi t-esc="adjustment.amount"/> <small t-esc="state.payload.company.currency"/></strong>
+                            </article>
+                        </section>
+                        <p class="bpr-footnote" t-esc="labels.settledNote"/>
+                    </t>
+                </t>
+                <t t-else="">
+                    <header class="bpr-header"><div class="bpr-heading"><span class="bpr-eyebrow"><span class="bpr-eyebrow-dot"/> <span t-esc="labels.eyebrow"/></span><h1 t-esc="labels.title"/><p t-esc="labels.subtitle"/></div><div t-if="state.payload" class="bpr-company"><span class="bpr-company-icon"><i class="fa fa-building-o" aria-hidden="true"/></span><div><small t-esc="labels.activeCompany"/><strong t-esc="state.payload.company.name"/></div></div></header>
+                    <form class="bpr-filter" t-on-submit.prevent="applyFilters">
+                        <label><span t-esc="labels.from"/><input type="date" t-model="state.from" required="required"/></label>
+                        <label><span t-esc="labels.to"/><input type="date" t-model="state.to" required="required"/></label>
+                        <label><span t-esc="labels.payment"/><select t-model="state.payment"><option value="all" t-esc="labels.all"/><option value="not_paid" t-esc="labels.not_paid"/><option value="partial" t-esc="labels.partial"/><option value="in_payment" t-esc="labels.in_payment"/><option value="paid" t-esc="labels.paid"/><option value="reversed" t-esc="labels.reversed"/><option value="blocked" t-esc="labels.blocked"/></select></label>
+                        <button type="submit" class="bpr-apply" t-att-disabled="state.loading"><i class="fa fa-search" aria-hidden="true"/> <span t-esc="labels.apply"/></button>
+                    </form>
+                    <div class="bpr-context"><span><i class="fa fa-calendar-o" aria-hidden="true"/> <span t-esc="labels.dateNote"/></span><span t-esc="labels.liveNote"/></div>
+                    <div t-if="state.loading" class="bpr-feedback" role="status" aria-live="polite"><span class="bpr-spinner"/> <span t-esc="labels.loading"/></div>
+                    <div t-elif="state.error" class="bpr-feedback bpr-feedback--error" role="alert"><span t-esc="state.error"/><button type="button" t-on-click="applyFilters" t-esc="labels.retry"/></div>
+                    <div t-elif="!state.payload.days.length" class="bpr-empty"><span class="bpr-empty-icon"><i class="fa fa-folder-open-o" aria-hidden="true"/></span><h2 t-esc="labels.empty"/><p t-esc="labels.emptyHint"/></div>
+                    <div t-else="" class="bpr-days">
+                        <article t-foreach="state.payload.days" t-as="day" t-key="day.date" t-attf-class="bpr-day {{state.expanded === day.date ? 'bpr-day--open' : ''}}">
+                            <button type="button" class="bpr-day-button" t-on-click="() => this.toggleDay(day.date)" t-att-aria-expanded="state.expanded === day.date ? 'true' : 'false'" t-att-aria-controls="'bpr-day-' + day.date">
+                                <span class="bpr-day-title"><span class="bpr-calendar"><i class="fa fa-calendar-o" aria-hidden="true"/></span><span><strong><bdi t-esc="day.date"/></strong><small><bdi t-esc="day.count"/> <span t-esc="labels.documents"/></small></span></span>
+                                <span class="bpr-day-metric"><small t-esc="labels.total"/><strong><bdi t-esc="day.total"/> <em t-esc="state.payload.company.currency"/></strong></span>
+                                <span class="bpr-day-metric bpr-day-metric--settled"><small t-esc="labels.settled"/><strong><bdi t-esc="day.settled"/> <em t-esc="state.payload.company.currency"/></strong></span>
+                                <span class="bpr-day-metric bpr-day-metric--due"><small t-esc="labels.residual"/><strong><bdi t-esc="day.residual"/> <em t-esc="state.payload.company.currency"/></strong></span>
+                                <span class="bpr-chevron"><span class="bpr-sr-only" t-esc="state.expanded === day.date ? labels.hide : labels.show"/><i t-att-class="state.expanded === day.date ? 'fa fa-angle-up' : 'fa fa-angle-down'" aria-hidden="true"/></span>
+                            </button>
+                            <section t-if="state.expanded === day.date" class="bpr-day-content" t-att-id="'bpr-day-' + day.date">
+                                <div t-if="state.dayLoading" class="bpr-feedback bpr-feedback--compact" role="status" aria-live="polite"><span class="bpr-spinner"/> <span t-esc="labels.loading"/></div>
+                                <div t-elif="state.dayError" class="bpr-feedback bpr-feedback--error bpr-feedback--compact" role="alert"><span t-esc="state.dayError"/><button type="button" t-on-click="() => this.loadDay(0)" t-esc="labels.retry"/></div>
+                                <t t-elif="state.dayData">
+                                    <button type="button" class="bpr-transaction" t-foreach="state.dayData.rows" t-as="row" t-key="row.id" t-on-click="() => this.openInvoice(row.id)">
+                                        <span class="bpr-transaction-icon"><i t-att-class="row.kind === 'in_refund' ? 'fa fa-reply' : 'fa fa-file-text-o'" aria-hidden="true"/></span>
+                                        <span class="bpr-transaction-main"><strong t-esc="row.vendor"/><small><span t-esc="kindLabel(row.kind)"/> <span aria-hidden="true"> · </span><bdi t-esc="row.number"/></small><small t-if="row.reference" t-esc="row.reference"/></span>
+                                        <span class="bpr-transaction-amount"><strong><bdi t-esc="row.total"/> <small t-esc="row.currency"/></strong><small><span t-esc="labels.residual"/>: <bdi t-esc="row.residual"/> <span t-esc="row.currency"/></small></span>
+                                        <span t-attf-class="bpr-status bpr-status--{{row.status}}" t-esc="statusLabel(row.status)"/>
+                                        <span class="bpr-open"><span class="bpr-sr-only" t-esc="labels.open"/><i class="fa fa-angle-left" aria-hidden="true"/></span>
+                                    </button>
+                                    <nav t-if="state.dayData.offset or state.dayData.has_more" class="bpr-pagination" t-att-aria-label="labels.page"><button type="button" t-on-click="previousPage" t-att-disabled="!state.dayData.offset" t-esc="labels.previous"/><span><span t-esc="labels.page"/> <bdi t-esc="pageNumber"/></span><button type="button" t-on-click="nextPage" t-att-disabled="!state.dayData.has_more" t-esc="labels.next"/></nav>
+                                </t>
+                            </section>
+                        </article>
+                    </div>
+                    <p class="bpr-footnote" t-esc="labels.settledNote"/>
+                </t>
+            </div>
+        </main>
+    </t>
+</templates>

@@ -144,7 +144,14 @@ class BasserWorkspaceCase(TransactionCase):
         dashboard_menu = self.env.ref(
             'baseer_basser_workspace.menu_pos_cashier_point_of_sale_dashboard'
         )
-        item.sudo().write({'menu_id': legacy_menu.id})
+        # Reproduce the already-persisted, pre-policy state seen by a migration.
+        # The current ORM correctly rejects creating this old target.
+        item.flush_recordset(['menu_id'])
+        self.env.cr.execute(
+            'UPDATE baseer_basser_workspace_item SET menu_id = %s WHERE id = %s',
+            (legacy_menu.id, item.id),
+        )
+        item.invalidate_recordset(['menu_id'])
         self.env['baseer.basser.workspace.item']._repair_pos_cashier_dashboard_target()
         self.assertEqual(item.menu_id, dashboard_menu)
 
@@ -172,6 +179,7 @@ class BasserWorkspaceCase(TransactionCase):
             self.env.ref('baseer_basser_workspace.workspace_item_cashier_advances').id,
             self.env.ref('baseer_basser_workspace.workspace_item_cashier_purchase_batches').id,
             self.env.ref('baseer_basser_workspace.workspace_item_cashier_heat_calendar').id,
+            self.env.ref('baseer_basser_workspace.workspace_item_cashier_daily_purchase_report').id,
         }
         self.assertSetEqual(item_ids, expected)
 
@@ -238,7 +246,7 @@ class BasserWorkspaceCase(TransactionCase):
         with self.assertRaises(AccessError):
             workspace.with_context(allowed_company_ids=[foreign.id]).open_workspace_item(card.id)
 
-    def test_basser_t01a_accountant_gets_custody_and_monthly_reconciliation(self):
+    def test_basser_t01a_accountant_gets_current_representative_petty_cash(self):
         accountant = self._user('accountant')
         self.assertTrue(accountant.has_group(
             'baseer_procurement_requests.group_procurement_accountant'
@@ -248,25 +256,56 @@ class BasserWorkspaceCase(TransactionCase):
         self.assertSetEqual(item_ids, {
             self.env.ref('baseer_basser_workspace.workspace_item_accountant_purchase_batches').id,
             self.env.ref('baseer_basser_workspace.workspace_item_accountant_advances').id,
-            self.env.ref('baseer_basser_workspace.workspace_item_accountant_procurement_custody').id,
             self.env.ref(
-                'baseer_basser_workspace.workspace_item_accountant_monthly_custody_reconciliation'
+                'baseer_basser_workspace.workspace_item_accountant_representative_petty_cash'
             ).id,
+            self.env.ref('baseer_basser_workspace.workspace_item_accountant_daily_purchase_report').id,
         })
         with self.assertRaises(AccessError):
             self.env['baseer.basser.workspace.section'].with_user(accountant).open_workspace_item(
                 self.env.ref('baseer_basser_workspace.workspace_item_accountant_supplier_bills').id,
             )
-        pool = self.env['baseer.procurement.custody'].create({
-            'company_id': accountant.company_id.id,
-            'is_company_pool': True,
-        })
         custody_opened = self.env['baseer.basser.workspace.section'].with_user(
             accountant
         ).open_workspace_item(
-            self.env.ref('baseer_basser_workspace.workspace_item_accountant_procurement_custody').id,
+            self.env.ref('baseer_basser_workspace.workspace_item_accountant_representative_petty_cash').id,
         )
-        self.assertEqual(custody_opened['action']['res_id'], pool.id)
+        self.assertEqual(
+            custody_opened['action']['tag'],
+            'baseer_procurement_requests.representative_petty_cash',
+        )
+        for xmlid in (
+            'workspace_item_accountant_procurement_custody',
+            'workspace_item_accountant_monthly_custody_reconciliation',
+        ):
+            with self.assertRaises(AccessError):
+                self.env['baseer.basser.workspace.section'].with_user(accountant).open_workspace_item(
+                    self.env.ref('baseer_basser_workspace.' + xmlid).id,
+                )
+
+    def test_daily_purchase_report_role_shortcuts_are_bounded(self):
+        menu = self.env.ref('baseer_purchase_daily_report.menu_daily_purchase_report')
+        for role in ('cashier', 'accountant'):
+            user = self._user(role)
+            workspace = self.env['baseer.basser.workspace.section'].with_user(user)
+            item = self.env.ref(
+                'baseer_basser_workspace.workspace_item_%s_daily_purchase_report' % role
+            )
+            ids = {entry['id'] for section in workspace.get_workspace()['sections']
+                   for entry in section['items']}
+            self.assertIn(menu.id, self.env['ir.ui.menu'].with_user(user)._baseer_native_visible_menu_ids())
+            self.assertIn(item.id, ids)
+            self.assertEqual(workspace.open_workspace_item(item.id)['action']['tag'],
+                             'baseer_purchase_daily_report.action')
+        pos_cashier = self._user('pos_cashier')
+        workspace = self.env['baseer.basser.workspace.section'].with_user(pos_cashier)
+        with self.assertRaises(AccessError):
+            workspace.open_workspace_item(
+                self.env.ref('baseer_basser_workspace.workspace_item_cashier_daily_purchase_report').id
+            )
+        owner_menu = self.env.ref('baseer_basser_workspace.menu_basser_daily_purchase_report')
+        self.assertEqual(owner_menu.action, menu.action)
+        self.assertIn(owner_menu.id, self.env['ir.ui.menu'].with_user(self._user('owner'))._visible_menu_ids())
 
     def test_basser_t02_configuration_cannot_expose_unapproved_or_server_actions(self):
         owner = self._user('owner')

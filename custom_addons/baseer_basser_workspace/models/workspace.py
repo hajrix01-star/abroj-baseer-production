@@ -33,6 +33,11 @@ BASEER_WORKSPACE_TARGET_POLICY = {
             'action_type': 'ir.actions.act_window',
             'icon': 'fa fa-shopping-cart',
         },
+        'baseer_purchase_daily_report.menu_daily_purchase_report': {
+            'action_type': 'ir.actions.client',
+            'tag': 'baseer_purchase_daily_report.action',
+            'icon': 'fa fa-calendar-check-o',
+        },
         'baseer_procurement_requests.menu_procurement_catalog': {
             'action_type': 'ir.actions.client',
             'tag': 'baseer_procurement_requests.catalog',
@@ -67,6 +72,11 @@ BASEER_WORKSPACE_TARGET_POLICY = {
         },
     },
     'accountant': {
+        'baseer_purchase_daily_report.menu_daily_purchase_report': {
+            'action_type': 'ir.actions.client',
+            'tag': 'baseer_purchase_daily_report.action',
+            'icon': 'fa fa-calendar-check-o',
+        },
         'baseer_procurement_requests.menu_procurement_representative_petty_cash': {
             'action_type': 'ir.actions.client',
             'tag': 'baseer_procurement_requests.representative_petty_cash',

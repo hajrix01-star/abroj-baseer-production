@@ -1120,3 +1120,6 @@ Node request suite PASS (14 cases), diff whitespace check PASS. Browser preview
 of modified desktop/mobile layouts remains unverified: local file opening was
 blocked by browser policy, and the subsequent preview-server request was rejected
 by automatic approval review. No production deployment or release GO is recorded.
+## PURCHASE-DAILY-REPORT — local candidate (2026-11-22)
+
+Custom daily purchase report for direct and batch-generated posted vendor bills; controlled role and company scope, read-only details and company-currency aggregation. Not deployed. [Impact and contract](PURCHASE-DAILY-REPORT.md).

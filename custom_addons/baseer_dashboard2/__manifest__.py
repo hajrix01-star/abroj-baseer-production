@@ -1,6 +1,6 @@
 {
     'name': 'Baseer Dashboard 2',
-    'version': '19.0.1.9.0',
+    'version': '19.0.1.10.0',
     'author': 'Baseer',
     'license': 'LGPL-3',
     'category': 'Accounting',
@@ -11,6 +11,7 @@
         'views/dashboard_views.xml',
     ],
     'assets': {'web.assets_backend': [
+        'baseer_dashboard2/static/src/js/tooltip.js',
         'baseer_dashboard2/static/src/js/main.js',
         'baseer_dashboard2/static/src/xml/main.xml',
         'baseer_dashboard2/static/src/scss/theme.scss',

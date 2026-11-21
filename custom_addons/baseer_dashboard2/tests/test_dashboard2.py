@@ -249,6 +249,11 @@ class TestDashboard2(TransactionCase):
         entry('non-operating', '2026-10-03', [(nonop, 'expense', 80, 0), (offset, 'offset', 0, 30), (cash, 'paid', 0, 50)])
         service = self.env['baseer.dashboard2.service']
         data = service._accounting([company.id], date(2026, 10, 1), date(2026, 10, 31))
+        grouped = service._tooltip_accounting_months([company.id], date(2026, 10, 1), date(2026, 10, 31))['2026-10']
+        for key in ('sales_net', 'gross_profit', 'operating_profit', 'net_profit', 'breakeven', 'ratios'):
+            self.assertEqual(grouped[key], data[key], key)
+        for key, value in data['categories'].items():
+            self.assertEqual(grouped['categories'].get(key, 0), value, key)
         settings = self.env['baseer.dashboard2.settings'].search([('company_id', '=', company.id)], limit=1)
         settings.food_purchase_account_ids = False
         self.assertFalse(service._purchases([company.id], date(2026, 10, 1), date(2026, 10, 31), 1000)['available'])
@@ -286,6 +291,11 @@ class TestDashboard2(TransactionCase):
             with self.assertRaises(AccessError):
                 service.get_drilldown(dict(common, company_key=str(cid), section='overview', key='purchases'))
         sales, _, _, _ = service._sales_summary([company.id], date(2026, 10, 1), date(2026, 10, 31))
+        comparison = service._tooltip_sales_months([company.id], date(2026, 10, 1), date(2026, 10, 31))['2026-10']
+        for key in ('gross', 'apps', 'apps_pct', 'channels'):
+            self.assertEqual(comparison[key], sales[key], key)
+        for key in ('value', 'avg_ticket'):
+            self.assertEqual(comparison['customers'][key], sales['customers'][key], key)
         self.assertEqual(sales['channels']['cash'], 540)
         self.assertEqual(sales['channels']['keeta'], 360)
         for section, key, expected in [('revenue', 'gross', sales['gross']), ('revenue', 'apps', sales['apps']), ('inout', 'gross', sales['gross'])]:
@@ -438,6 +448,15 @@ class TestDashboard2(TransactionCase):
         self.assertEqual(len(revenue['apps_trend']), 10)
         self.assertIn('gross', revenue['current'])
         self.assertIn('apps_pct', revenue['current'])
+        self.assertTrue(all('previous_year' in month for month in revenue['trend']))
+        overview = service.get_section('overview', params)
+        self.assertTrue(all('previous_year' in month for month in overview['trend']))
+        self.assertTrue(all('previous_year' in month for month in overview['purchases']['trend']))
+        self.assertTrue(all('previous_year_trend' in kpi for kpi in overview['kpis'].values()))
+        cash = service.get_section('inout', params)
+        self.assertTrue(all('previous_year' in month for month in cash['months']))
+        pnl = service.get_section('pnl', dict(params, pnl_view='year'))
+        self.assertTrue(all('previous_year_months' in row for row in pnl['rows']))
         heatmap = service.get_section('heatmap', params)
         self.assertEqual(len(heatmap['hours']['matrix']), 7 * 24)
         self.assertTrue(all('orders' in cell for cell in heatmap['hours']['matrix']))
@@ -767,6 +786,7 @@ class TestDashboard2(TransactionCase):
         self.assertFalse(service._purchases([company.id], date(2026, 10, 1), date(2026, 10, 31), 1000)['has_bills'])
         bill.action_post()
         self.assertTrue(service._purchases([company.id], date(2026, 10, 1), date(2026, 10, 31), 1000)['has_bills'])
+        self.assertEqual(service._tooltip_purchase_months([company.id], date(2026, 10, 1), date(2026, 10, 31))['2026-10'], service._purchases([company.id], date(2026, 10, 1), date(2026, 10, 31), 1000)['value'])
         action = service.get_drilldown({'company_key': str(company.id), 'period': {'mode': 'month', 'month': '2026-10'}, 'section': 'overview', 'key': 'purchases'})
         lines = self.env[action['res_model']].with_context(**action['context']).search(action['domain'])
         self.assertIn(bill, lines.mapped('move_id'))

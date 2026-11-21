@@ -1,5 +1,5 @@
 from .month_names import english_months, month_label
-from .service import request_memo
+from .service import request_memo, food_ratio
 import calendar
 from collections import defaultdict
 from datetime import date, timedelta
@@ -329,6 +329,28 @@ class DashboardSections(models.AbstractModel):
             ('account_id', 'in', settings.mapped('food_purchase_account_ids').ids)], limit=1)
         return {'available': True, 'value': round(value, 2), 'pct': food_ratio(value, sales), 'has_bills': bool(bill_exists)}
 
+    @request_memo
+    def _tooltip_purchase_months(self, ids, start, end):
+        settings = self.env['baseer.dashboard2.settings'].with_context(allowed_company_ids=ids).search([('company_id', 'in', ids)])
+        if set(settings.mapped('company_id').ids) != set(ids) or any(not setting.food_purchase_account_ids for setting in settings):
+            return {}
+        accounts = expression.OR([[('company_id', '=', setting.company_id.id), ('account_id', 'in', setting.food_purchase_account_ids.ids)] for setting in settings])
+        lines = self.env['account.move.line'].with_context(allowed_company_ids=ids)
+        rows = lines._read_group(expression.AND([self._aml_domain(ids, start, end), accounts]), ['date:month', 'move_id'], ['balance:sum'])
+        moves = self.env['account.move'].browse([move.id for _, move, _ in rows])
+        moves.fetch(['ref', 'move_type'])
+        excluded = set(self._reset_move_ids(ids, end, start)) | set(self.env['res.company'].browse(ids).mapped('account_opening_move_id').ids)
+        amounts, bill_months = defaultdict(float), set()
+        for month, move, value in rows:
+            if not month:
+                continue
+            key = month.strftime('%Y-%m')
+            if move.move_type in ('in_invoice', 'in_refund'):
+                bill_months.add(key)
+            if move.id not in excluded and move.ref != 'Opening Entry':
+                amounts[key] += value or 0
+        return {key: round(amounts[key], 2) for key in bill_months}
+
     def _commission_domain(self, ids, start, end):
         domains = []
         settings_model = self.env['baseer.dashboard2.settings'].with_context(allowed_company_ids=ids)
@@ -417,6 +439,38 @@ class DashboardSections(models.AbstractModel):
                                 'status': ('ok' if good else 'near' if value is not None and abs(value - target.value) <= 3 else 'bad') if value is not None else None}
         return targets
 
+    @request_memo
+    def _tooltip_accounting_months(self, ids, start, end):
+        """Aggregate all comparison months in one query using the accounting basis."""
+        categories = self.env['baseer.dashboard2.category'].with_context(allowed_company_ids=ids).search([])
+        lines = self.env['account.move.line'].with_context(allowed_company_ids=ids)
+        rows = lines._read_group(self._aml_domain(ids, start, end), ['date:month', 'company_id', 'account_id'], ['debit:sum', 'credit:sum'])
+        grouped = defaultdict(lambda: defaultdict(float))
+        grouped_accounts = defaultdict(dict)
+        for month, company, account, debit, credit in rows:
+            key = self._category(account.with_company(company), categories)
+            if key:
+                amount = (credit - debit) if key in ('revenue', 'other_income') else (debit - credit)
+                grouped[month.strftime('%Y-%m')][key] += amount
+                grouped_accounts[month.strftime('%Y-%m')][f'{company.id}:{account.id}'] = round(amount, 2)
+        result = {}
+        for month, totals in grouped.items():
+            sales = totals['revenue']
+            gross = sales - totals['food_cost']
+            operating = gross - sum(totals[k] for k in ('salaries', 'rent', 'utilities', 'marketing', 'commissions', 'other_opex', 'depreciation', 'non_operating'))
+            net = operating + totals['other_income'] - totals['zakat_tax']
+            fixed = sum(totals[k] for k in ('salaries', 'rent', 'utilities', 'depreciation'))
+            variable = sum(totals[k] for k in ('food_cost', 'commissions', 'marketing', 'other_opex'))
+            breakeven = fixed / (1 - variable / sales) if sales and variable / sales < 1 else None
+            result[month] = {'account_values': grouped_accounts[month], 'categories': {k: round(v, 2) for k, v in totals.items()},
+                             'sales_net': round(sales, 2), 'gross_profit': round(gross, 2),
+                             'operating_profit': round(operating, 2), 'net_profit': round(net, 2),
+                             'breakeven': round(breakeven, 2) if breakeven is not None else None,
+                             'ratios': {k: (food_ratio(v, sales) if k == 'food_pct' else round(v / sales * 100, 2) if sales else None) for k, v in {
+                                 'food_pct': totals['food_cost'], 'salaries_pct': totals['salaries'],
+                                 'prime_pct': totals['food_cost'] + totals['salaries'], 'net_margin_pct': net}.items()}}
+        return result
+
     def _accounting_sections(self, ids, section, start, end, previous_start, previous_end, companies, params):
         current = self._accounting(ids, start, end)
         previous = self._accounting(ids, previous_start, previous_end)
@@ -431,6 +485,14 @@ class DashboardSections(models.AbstractModel):
             first, last = month_bounds(end, offset)
             trend.append({'month': first.strftime('%Y-%m'), 'data': self._accounting(ids, first, min(last, end)),
                           'has_data': covered(first, min(last, end)), 'partial': bool(first <= min(end, fields.Date.context_today(self), last_data or end) < last)})
+        if section in ('overview', 'expenses', 'ratios'):
+            prior_end = end.replace(year=end.year - 1, day=min(end.day, calendar.monthrange(end.year - 1, end.month)[1]))
+            first_prior, _ = month_bounds(prior_end, -5)
+            _, last_prior = month_bounds(prior_end)
+            previous_year = self._tooltip_accounting_months(ids, first_prior, last_prior)
+            for month in trend:
+                key = str(int(month['month'][:4]) - 1) + month['month'][4:]
+                month['previous_year'] = previous_year.get(key) if key in posted_months else None
         targets = self._targets(ids, current)
         result = {'available': True, 'period': {'date_from': str(start), 'date_to': str(end)},
                   'current': current, 'previous': previous, 'trend': trend, 'targets': targets, 'has_data': covered(start, end)}
@@ -453,7 +515,7 @@ class DashboardSections(models.AbstractModel):
                 now, before = value(current, key) if covered(start, end) else None, value(previous, key) if covered(previous_start, previous_end) else None
                 result['kpis'][key] = {'available': True, 'value': now, 'previous': before, 'change_pct': None if key == 'salaries' and result['previous_salaries_warning'] else change(now, before),
                                        'trend': [value(m['data'], key) if m['has_data'] else None for m in trend],
-                                       'previous_trend': [None] + [value(m['data'], key) if m['has_data'] else None for m in trend[:-1]], 'good_when': 'down' if key in expense_keys or key == 'expenses_total' else 'up'}
+                                       'previous_trend': [None] + [value(m['data'], key) if m['has_data'] else None for m in trend[:-1]], 'previous_year_trend': [value(m['previous_year'], key) if m.get('previous_year') else None for m in trend], 'good_when': 'down' if key in expense_keys or key == 'expenses_total' else 'up'}
             bridge = [('sales_net', current['sales_net']), ('food_cost', -current['categories'].get('food_cost', 0)), ('gross_profit', current['gross_profit']),
                       ('salaries', -current['categories'].get('salaries', 0)), ('rent', -current['categories'].get('rent', 0))]
             commission = self._recorded_app_commissions(ids, start, end)
@@ -463,7 +525,7 @@ class DashboardSections(models.AbstractModel):
                        for k in ('utilities', 'marketing', 'commissions', 'other_opex', 'depreciation')]
             bridge += [('operating_profit', current['operating_profit']), ('other_income', current['categories'].get('other_income', 0)), ('zakat_tax', -current['categories'].get('zakat_tax', 0)), ('net_profit', current['net_profit'])]
             result['bridge'] = [{'key': key, 'amount': amount, 'pct': percent(amount, current['sales_net'])} for key, amount in bridge if amount or key in ('sales_net', 'gross_profit', 'operating_profit', 'net_profit')]
-            result['breakeven_series'] = [{'month': m['month'], 'partial': m['partial'], 'sales_net': m['data']['sales_net'] if m['has_data'] else None, 'net_profit': m['data']['net_profit'] if m['has_data'] else None, 'breakeven': m['data']['breakeven'] if m['has_data'] else None, 'margin_pct': m['data']['ratios']['net_margin_pct'] if m['has_data'] else None} for m in trend]
+            result['breakeven_series'] = [{'month': m['month'], 'partial': m['partial'], 'sales_net': m['data']['sales_net'] if m['has_data'] else None, 'net_profit': m['data']['net_profit'] if m['has_data'] else None, 'breakeven': m['data']['breakeven'] if m['has_data'] else None, 'margin_pct': m['data']['ratios']['net_margin_pct'] if m['has_data'] else None, 'previous_year': m.get('previous_year')} for m in trend]
             result['purchases'] = self._purchases(ids, start, end, current['sales_net'])
             if not covered(start, end):
                 result['purchases']['value'] = None
@@ -485,6 +547,19 @@ class DashboardSections(models.AbstractModel):
                                                     'pct': purchase['pct'] if purchase.get('has_bills') else None})
                 monthly_sales, _, _, _ = self._sales_summary(ids, month_start, month_end)
                 sales_trend.append({'month': month['month'], 'has_data': bool(monthly_sales['source_counts']['pos'] or monthly_sales['source_counts']['summary']), **monthly_sales})
+            prior_start = date(end.year - 1, 1, 1)
+            prior_finish = date(end.year - 1, end.month, calendar.monthrange(end.year - 1, end.month)[1])
+            prior_mini = self._tooltip_sales_months(ids, prior_start, prior_finish)
+            purchase_prior = self._tooltip_purchase_months(ids, prior_start, prior_finish)
+            prior_accounting = self._tooltip_accounting_months(ids, prior_start, prior_finish)
+            for month in result['purchases']['trend']:
+                prior_key = str(int(month['month'][:4]) - 1) + month['month'][4:]
+                amount = purchase_prior.get(prior_key)
+                sales = prior_accounting.get(prior_key, {}).get('sales_net')
+                month['previous_year'] = {'value': amount, 'pct': food_ratio(amount, sales) if amount is not None else None}
+            for month in sales_trend:
+                prior_key = str(int(month['month'][:4]) - 1) + month['month'][4:]
+                month['previous_year'] = prior_mini.get(prior_key)
             sales, days, channels, hours = self._sales_summary(ids, start, end)
             prior_sales, _, _, _ = self._sales_summary(ids, previous_start, previous_end)
             result['sales'] = dict(sales)
@@ -547,6 +622,15 @@ class DashboardSections(models.AbstractModel):
                     'has_data': covered(clipped_first, clipped_last),
                     'partial': bool(clipped_first > first or clipped_last < last or first <= min(fields.Date.context_today(self), last_data or last) < last)})
                 first = month_bounds(first, 1)[0]
+            if len(pnl_trend) > 1 and view != 'quarter':
+                first_prior = pnl_trend[0]['first'].replace(year=pnl_trend[0]['first'].year - 1, day=1)
+                last_prior_date = pnl_trend[-1]['last'].replace(year=pnl_trend[-1]['last'].year - 1, day=1)
+                _, last_prior = month_bounds(last_prior_date)
+                prior_rows = self._tooltip_accounting_months(ids, first_prior, last_prior)
+                prior_sales_pnl = self._tooltip_sales_months(ids, first_prior, last_prior)
+                for month in pnl_trend:
+                    prior_key = str(int(month['month'][:4]) - 1) + month['month'][4:]
+                    month['previous_year'] = prior_rows.get(prior_key) if prior_key in posted_months else None
             rows = []
             arabic_lang = 'ar_001' if self.env['res.lang']._get_data(code='ar_001').code else self.env.lang
             category_names = {c.code: c.name for c in self.env['baseer.dashboard2.category'].with_context(allowed_company_ids=ids, lang=arabic_lang).search([])}
@@ -582,14 +666,35 @@ class DashboardSections(models.AbstractModel):
                             row = children.setdefault(ident, {'key': '%s:%s' % ident, 'code': account['code'], 'name': account['name'], 'months': [0 if m['has_data'] else None for m in pnl_trend]})
                             row['months'][i] += factor * account['amount']
                 for child in children.values():
+                    if child['key'].startswith('channel:') and len(pnl_trend) > 1 and view != 'quarter':
+                        prior_values = []
+                        for month in pnl_trend:
+                            prior_key = str(int(month['month'][:4]) - 1) + month['month'][4:]
+                            accounting = month.get('previous_year')
+                            gross = prior_sales_pnl.get(prior_key, {}).get('channels', {})
+                            net = accounting['sales_net'] if accounting else None
+                            if net is None or not net:
+                                prior_values.append(None if net is None else 0)
+                                continue
+                            shares = {k: round(net * v / sum(gross.values()), 2) for k, v in gross.items()} if sum(gross.values()) else {'unclassified': net}
+                            largest = max(shares, key=lambda k: abs(gross.get(k, 0)))
+                            shares[largest] = round(shares[largest] + net - sum(shares.values()), 2)
+                            prior_values.append(shares.get(child['key'].split(':', 1)[1], 0))
+                        child['previous_year_months'] = prior_values
+                    elif not child['key'].startswith('channel:'):
+                        child['previous_year_months'] = [factor * m['previous_year']['account_values'].get(child['key'], 0) if m.get('previous_year') else None for m in pnl_trend]
                     child['total'] = round(sum(v for v in child['months'] if v is not None), 2)
                     child['pct'] = percent(child['total'], sum(m['data']['sales_net'] for m in pnl_trend))
                 total = sum(v for v in values if v is not None)
-                rows.append({'key': key, 'name': False if key == 'other_opex' else category_names.get(key), 'months': values, 'total': round(total, 2), 'pct': percent(total, sum(m['data']['sales_net'] for m in pnl_trend)), 'children': list(children.values())})
+                prior_values = [factor * m['previous_year'].get(key, m['previous_year']['categories'].get(key, 0)) if m.get('previous_year') else None for m in pnl_trend]
+                if key == 'other_opex':
+                    prior_values = [v - m['previous_year']['categories'].get('non_operating', 0) if v is not None else None for v, m in zip(prior_values, pnl_trend)]
+                rows.append({'key': key, 'name': False if key == 'other_opex' else category_names.get(key), 'previous_year_months': prior_values, 'months': values, 'total': round(total, 2), 'pct': percent(total, sum(m['data']['sales_net'] for m in pnl_trend)), 'children': list(children.values())})
             if view == 'quarter':
                 for row in rows:
                     for item in [row] + row['children']:
                         item['months'] = [item['total'] if any(v is not None for v in item['months']) else None]
+                        item.pop('previous_year_months', None)
                 quarter = (end.month - 1) // 3 + 1
                 columns = [{'month': first_period.strftime('%Y-%m'), 'label': 'الربع %s %s' % (('الأول', 'الثاني', 'الثالث', 'الرابع')[quarter - 1], end.year),
                             'partial': fields.Date.context_today(self) <= last_period}]
@@ -613,6 +718,13 @@ class DashboardSections(models.AbstractModel):
             monthly.append({'month': first.strftime('%Y-%m'), 'data': summary,
                             'has_data': bool(summary['source_counts']['pos'] or summary['source_counts']['summary']),
                             'partial': bool(first <= min(end, fields.Date.context_today(self), last_data or end) < last)})
+        prior_end = end.replace(year=end.year - 1, day=min(end.day, calendar.monthrange(end.year - 1, end.month)[1]))
+        prior_first, _ = month_bounds(prior_end, -9)
+        _, prior_last = month_bounds(prior_end)
+        prior_sales = self._tooltip_sales_months(ids, prior_first, prior_last)
+        for month in monthly:
+            prior_key = str(int(month['month'][:4]) - 1) + month['month'][4:]
+            month['previous_year'] = prior_sales.get(prior_key)
         apps_trend = monthly
         monthly = monthly[-6:]
         known = {c['key']: c for c in channels}
@@ -654,6 +766,16 @@ class DashboardSections(models.AbstractModel):
             sales['available'] = bool(sales['channels'])
             months.append({'month': start.strftime('%Y-%m'), 'partial': bool(start <= min(end, last_data or end) < month_bounds(start)[1]), 'incoming': sales, 'outgoing': out,
                            'unpaid_bills': unpaid_by_end[last], 'sales_vat': vat, 'net': round(sales['gross'] - out['total'], 2)})
+        prior_end = end.replace(year=end.year - 1, day=min(end.day, calendar.monthrange(end.year - 1, end.month)[1]))
+        prior_first, _ = month_bounds(prior_end, -5)
+        _, prior_last = month_bounds(prior_end)
+        prior_sales = self._tooltip_sales_months(ids, prior_first, prior_last)
+        prior_out = self._cash_out(ids, prior_first, prior_last, split=True)
+        for month in months:
+            prior_key = str(int(month['month'][:4]) - 1) + month['month'][4:]
+            incoming, outgoing = prior_sales.get(prior_key), prior_out.get(prior_key)
+            month['previous_year'] = {'incoming': incoming, 'outgoing': outgoing,
+                                      'net': round(incoming['gross'] - outgoing['total'], 2) if incoming and incoming['gross'] is not None and outgoing else None}
         channel_totals, item_totals, source_totals = defaultdict(float), defaultdict(float), defaultdict(float)
         for key in ('salaries', 'rent', 'utilities', 'purchases', 'commissions', 'marketing', 'non_operating', 'other'):
             item_totals[key] = 0

@@ -1,6 +1,7 @@
 import { after, expect, getFixture, globals, test, withFetch, click, press } from '@odoo/hoot';
 import { animationFrame } from '@odoo/hoot-mock';
-import { App, Component } from '@odoo/owl';
+import { App, Component, useState, xml } from '@odoo/owl';
+import { DashboardTooltip, dashboardTooltip } from '../src/js/tooltip';
 import { monthLabel, plainCsvText, periodRange, hourLabel, hasDisplayValues, multiplePoints, formatNumber, formatTable, formatTablePct, formatPercent, formatPoints, ratioDifference, formatTargetPercent, chartX, miniX, timelineYear, customerCutoverLabel, Dashboard2, InfoPopup, LineChart, niceStep, KpiCard, Sparkline, Badge, Gauge } from '../src/js/main';
 
 test('month labels support full, short, year, bidi isolation and plain CSV', () => {
@@ -97,6 +98,52 @@ test('in/out numeric cells never contain the VAT basis label', async () => {
     }
 });
 
+test('in/out renders before cash drill availability and ignores stale responses', async () => {
+    const month = { month: '2026-10', incoming: { available: true, gross: 1234, channels: {}, warnings: [], apps_unreceived: { available: false, breakdown: [] } }, outgoing: { available: true, total: 567, items: {}, sources: {} }, sales_vat: { value: 0 }, unpaid_bills: { value: 0 }, net: 667 };
+    const data = { months: [month], total: { incoming: 1234, outgoing: 567, channels: {}, items: {}, sources: {}, apps_unreceived: { available: false, breakdown: [] }, sales_vat: 0, unpaid_bills: { value: 0 }, net: 667 } };
+    const pending = [];
+    let instance;
+    class InOut extends Component {
+        static template = xml`<div><div t-if="state.loading" class="loading">Loading</div><t t-else="" t-call="baseer_dashboard2.Pnl"/></div>`;
+        static components = { Sparkline };
+        setup() {
+            instance = this;
+            this.loadToken = 0;
+            this.state = useState({ loading: true, error: '', page: 'pnl', view: 'inout', company: 'a', period: { mode: 'month', month: '2026-10' }, timeline: 'monthly', cashDrills: {}, data: null, closed: {} });
+            this.orm = { call: (_model, method) => method === 'get_section' ? Promise.resolve(data) : new Promise((resolve, reject) => pending.push({ resolve, reject })) };
+        }
+        load = Dashboard2.prototype.load;
+        loadCashDrills = Dashboard2.prototype.loadCashDrills;
+        objectKeys = Object.keys; fmt = formatNumber; tableFmt = formatTable; tablePct = formatTablePct; hasDisplayValues = hasDisplayValues; multiplePoints = multiplePoints; monthName = (v) => v; name = (v) => v;
+        exportCsv() {} drill() {}
+    }
+    const response = await withFetch(globals.fetch, () => fetch('/baseer_dashboard2/static/src/xml/main.xml'));
+    const app = new App(InOut, { templates: await response.text(), test: true });
+    after(() => app.destroy());
+    await app.mount(getFixture());
+    await instance.load();
+    await animationFrame();
+    expect(getFixture().querySelector('.loading')).toBe(null);
+    expect(getFixture().querySelector('.inout-table').textContent).toInclude('1,234');
+    expect(getFixture().querySelector('.inout-table').textContent).toInclude('567');
+    expect(getFixture().querySelector('.inout-table .bd2-drill')).toBe(null);
+    expect(pending.length).toBe(1);
+    pending[0].resolve({ total: { '2026-10': ['total'], all: ['total'] } });
+    await animationFrame();
+    expect(getFixture().querySelector('.inout-table .bd2-drill').textContent).toInclude('567');
+
+    await instance.load();
+    instance.state.company = 'b';
+    await instance.load();
+    pending[1].resolve({ total: { '2026-10': ['total'] } });
+    await animationFrame();
+    expect(getFixture().querySelector('.inout-table .bd2-drill')).toBe(null);
+    pending[2].reject(new Error('unavailable'));
+    await animationFrame();
+    expect(instance.state.error).toBe('');
+    expect(getFixture().querySelector('.inout-table .bd2-drill')).toBe(null);
+});
+
 test('in/out unavailable unreceived values use dashes with tooltips', async () => {
     const label = 'غير متوفر';
     const unavailable = { available: false, label, breakdown: [] };
@@ -159,6 +206,7 @@ test('heatmap renders occasion badges for an event day', async () => {
             period: { date_from: '2026-10-01', date_to: '2026-10-31' }, daily_average: {}, days: [day], best_day: day, weekday_month: [], weekday_ytd: [],
             year_calendar: [{ month: '2026-10', days: [day] }], events: [], hours: { available: false, period: { date_from: '2026-10-01', date_to: '2026-10-31' } },
         } };
+        tip = { leave() {} }; dayTip() { return []; }
         number = Number; weekdayName = () => ""; months = []; weekdays = []; calendarCells = [day]; hasCustomers = true;
         fmt = formatNumber; dateName = (v) => v; monthName = (v) => v; periodRange = periodRange;
         changeValue() { return null; }
@@ -169,7 +217,8 @@ test('heatmap renders occasion badges for an event day', async () => {
     after(() => app.destroy());
     await app.mount(getFixture());
     expect(getFixture().querySelector('.calendar .occasion-badge').textContent).toBe('عرض');
-    expect(getFixture().querySelector('.year-occasion').title).toBe('عرض');
+    expect(getFixture().querySelector('.year-days i').getAttribute('aria-label')).toBe('2026-10-03');
+    expect(getFixture().querySelector('.year-occasion').hasAttribute('title')).toBe(false);
     expect(getFixture().textContent).toInclude('عدد الطلبات · 1/10 – 31/10/2026');
 });
 
@@ -496,7 +545,7 @@ test('partial overview marks ratios and neutralizes company comparisons', async 
     const mini = overview.querySelector('.grid.three');
     const bridge = overview.querySelector('[t-foreach="state.data.bridge"]').parentElement;
     const templates = source.replace('</templates>', `<t t-name="test.PartialOverview"><t t-set="partialMonth" t-value="state.period.mode === 'month' and trend.at(-1)?.partial"/>${new XMLSerializer().serializeToString(mini)}${new XMLSerializer().serializeToString(bridge)}<t t-call="baseer_dashboard2.Compare"/></t><t t-name="test.Track"><div/></t></templates>`);
-    class Track extends Component { static template = 'test.Track'; static props = ['value', 'max']; }
+    class Track extends Component { static template = 'test.Track'; static props = { value: {optional: true}, max: {optional: true}, date: {optional: true}, customers: {optional: true}, occasion: {optional: true} }; }
     let partial = true;
     class PartialOverview extends Component {
         static template = 'test.PartialOverview'; static components = { Sparkline, Track };
@@ -855,4 +904,94 @@ test('P&L drill calls the service and action without toggling or changing CSV te
         HTMLAnchorElement.prototype.click = anchorClick;
         getFixture().classList.remove('o_bd2');
     }
+});
+
+test('shared line tooltip shows a full month, current and prior values, and drills', async () => {
+    const response = await withFetch(globals.fetch, () => fetch('/baseer_dashboard2/static/src/xml/main.xml'));
+    let drilled = 0;
+    const host = document.createElement('div');
+    host.className = 'o_bd2';
+    getFixture().append(host);
+    const app = new App(LineChart, { templates: await response.text(), props: {
+        months: ['2026-10'], labels: ['Oct'], series: [{ values: [12000], previousYear: [10000], drill: () => drilled++ }],
+    }, test: true });
+    after(() => { dashboardTooltip.destroy(); app.destroy(); });
+    await app.mount(host);
+    const slot = host.querySelector('.bd2-chart-slot');
+    const svg = slot.ownerSVGElement;
+    const point = new DOMPoint(chartX(0, 1), 80).matrixTransform(svg.getScreenCTM());
+    slot.dispatchEvent(new PointerEvent('pointerenter', { pointerType: 'mouse', clientX: point.x, clientY: point.y }));
+    await animationFrame();
+    const tip = host.querySelector('.bd2-tooltip');
+    expect(tip.textContent).toInclude('October 2026');
+    expect(tip.textContent).toInclude('12,000');
+    expect(tip.textContent).toInclude('10,000');
+    expect(tip.textContent).toInclude('20.0%');
+    expect(host.querySelector('circle').hasAttribute('title')).toBe(false);
+    tip.querySelector('button').click();
+    expect(drilled).toBe(1);
+});
+
+test('shared tooltip toggles on touch and clamps to a 375px viewport', async () => {
+    const tip = new DashboardTooltip();
+    const root = document.createElement('div');
+    root.className = 'o_bd2';
+    const anchor = document.createElement('button');
+    root.append(anchor); getFixture().append(root);
+    after(() => tip.destroy());
+    const rect = { left: 360, right: 370, top: 200, bottom: 210, width: 10, height: 10 };
+    const oldWidth = Object.getOwnPropertyDescriptor(window, 'innerWidth');
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 375 });
+    try {
+        tip.toggle(anchor, [['المبلغ', '12,000 ر.س']], { rect });
+        const box = tip.element.getBoundingClientRect();
+        expect(box.left >= 0 && box.right <= 375).toBe(true);
+        expect(box.bottom <= rect.top || box.top >= rect.bottom || box.right <= rect.left || box.left >= rect.right).toBe(true);
+        tip.toggle(anchor, [['المبلغ', '12,000 ر.س']], { rect });
+        expect(tip.element.hidden).toBe(true);
+    } finally { if (oldWidth) Object.defineProperty(window, 'innerWidth', oldWidth); else delete window.innerWidth; }
+});
+
+test('bounded line tooltip stays below the comparison panel and clears the point', () => {
+    const tip = new DashboardTooltip();
+    const root = document.createElement('div'); root.className = 'o_bd2';
+    const panel = document.createElement('div');
+    const plot = document.createElement('div');
+    const anchor = document.createElement('button');
+    panel.style.cssText = 'position:fixed;left:10px;top:80px;width:350px;height:80px';
+    plot.style.cssText = 'position:fixed;left:10px;top:160px;width:350px;height:200px';
+    plot.append(anchor); root.append(panel, plot); getFixture().append(root);
+    after(() => tip.destroy());
+    const point = { left: 180, right: 188, top: 170, bottom: 178, width: 8, height: 8 };
+    tip.show(anchor, [['القيمة', '12,000 ر.س']], { rect: point, bounds: plot });
+    const box = tip.element.getBoundingClientRect(), above = panel.getBoundingClientRect();
+    expect(box.top >= plot.getBoundingClientRect().top).toBe(true);
+    expect(box.top >= above.bottom).toBe(true);
+    expect(box.bottom <= point.top || box.top >= point.bottom || box.right <= point.left || box.left >= point.right).toBe(true);
+});
+
+test('touch on a chart slot toggles the shared tooltip without firing the drill', async () => {
+    const response = await withFetch(globals.fetch, () => fetch('/baseer_dashboard2/static/src/xml/main.xml'));
+    let drilled = 0;
+    const host = document.createElement('div'); host.className = 'o_bd2'; getFixture().append(host);
+    const app = new App(LineChart, { templates: await response.text(), props: {
+        months: ['2026-10'], series: [{ values: [12000], previousYear: [10000], drill: () => drilled++ }],
+    }, test: true });
+    after(() => { dashboardTooltip.destroy(); app.destroy(); });
+    await app.mount(host);
+    const slot = host.querySelector('.bd2-chart-slot');
+    const p = new DOMPoint(chartX(0, 1), 100).matrixTransform(slot.ownerSVGElement.getScreenCTM());
+    const touch = () => slot.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerType: 'touch', clientX: p.x, clientY: p.y }));
+    touch(); expect(host.querySelector('.bd2-tooltip').hidden).toBe(false);
+    expect(drilled).toBe(0);
+    touch(); expect(host.querySelector('.bd2-tooltip').hidden).toBe(true);
+    touch(); document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerType: 'touch' }));
+    expect(host.querySelector('.bd2-tooltip').hidden).toBe(true);
+});
+
+test('calendar tooltip includes the full date, amount, customers and occasion', () => {
+    const rows = Dashboard2.prototype.dayTip.call({dateName: () => '3 October'}, {
+        date: '2026-10-03', gross: 26827, customers: 42, events: [{name: 'عرض'}],
+    });
+    expect(rows).toEqual([['التاريخ', '3 October 2026'], ['المبلغ', '26,827 ر.س'], ['العملاء', '42'], ['المناسبة', 'عرض']]);
 });

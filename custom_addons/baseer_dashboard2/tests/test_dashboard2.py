@@ -39,8 +39,14 @@ class TestDashboard2(TransactionCase):
         self.assertIn('spark-stretch', spark.xpath('./div')[0].get('t-att-class'))
         scss = (Path(__file__).resolve().parents[1] / 'static/src/scss/main.scss').read_text()
         self.assertIn('.spark-stretch > .bd2-spark { display: block; width: 100%; margin: 0; padding: 0; border: 0;', scss)
+        self.assertEqual(scss.count('.o_bd2 .spark-dot {'), 1)
+        for transform in ('translate(-50%, -50%)', 'translate(-50%, -100%)', 'translateX(-50%)'):
+            self.assertNotIn('transform: ' + transform, scss.replace('/*rtl:ignore*/ transform: ' + transform, ''))
         chart = root.xpath("//t[@t-name='baseer_dashboard2.LineChart']")[0]
         self.assertIn('labelY(s,v)', chart.xpath('.//text[@t-att-y]')[-1].get('t-att-y'))
+        bridge = root.xpath("//t[@t-name='baseer_dashboard2.Overview']//div[@t-foreach='state.data.bridge']")[0]
+        self.assertFalse(bridge.xpath(".//t[contains(@t-if, 'partialMonth')]"))
+        self.assertTrue(bridge.getparent().xpath("./h3/t[@t-if='partialMonth']"))
 
     def test_partial_fixed_costs_require_three_month_baseline(self):
         from ..models.sections import incomplete_fixed_costs
@@ -330,17 +336,31 @@ class TestDashboard2(TransactionCase):
         self.assertTrue(october['purchases']['trend'][-1]['partial'])
         self.assertEqual(october['breakeven_series'][-1]['partial'], october['trend'][-1]['partial'])
         self.assertEqual(october['bridge'][-1]['pct'], october['current']['ratios']['net_margin_pct'])
-        # Commission amounts below 1% of sales merge into other expenses;
-        # at exactly 1% they retain their own row.
-        commission = account('400051', 'expense')
-        entry('small commission', '2026-10-08', [(commission, 'fee', 9, 0), (cash, 'paid', 0, 9)])
-        small_bridge = service.get_section('overview', params)['bridge']
-        self.assertNotIn('commissions', [row['key'] for row in small_bridge])
-        self.assertAlmostEqual(next(row['amount'] for row in small_bridge if row['key'] == 'other_opex'), -1259.18)
-        entry('commission threshold', '2026-10-09', [(commission, 'fee', 1, 0), (cash, 'paid', 0, 1)])
-        threshold_bridge = service.get_section('overview', params)['bridge']
-        self.assertEqual(next(row['amount'] for row in threshold_bridge if row['key'] == 'commissions'), -10)
-        self.assertAlmostEqual(next(row['amount'] for row in threshold_bridge if row['key'] == 'other_opex'), -1250.18)
+        fee = account('400051', 'expense')
+        commission = account('400011', 'expense')
+        entry('bank fee', '2026-10-08', [(fee, 'fee', 20, 0), (cash, 'paid', 0, 20)])
+        def check_bridge(expected):
+            overview = service.get_section('overview', params)
+            card = service.get_section('revenue', params)['commissions']
+            rows = {row['key']: row['amount'] for row in overview['bridge']}
+            self.assertEqual(card['available'], bool(expected))
+            self.assertEqual(card['amount'], expected)
+            self.assertEqual('commissions' in rows, card['available'])
+            if expected:
+                self.assertEqual(rows['commissions'], -expected)
+            self.assertAlmostEqual(rows['other_opex'], -1270.18)
+            self.assertEqual(rows['net_profit'], overview['current']['net_profit'])
+            return rows
+        check_bridge(0)
+        entry('app commission', '2026-10-09', [(commission, 'fee', 1, 0), (cash, 'paid', 0, 1)])
+        check_bridge(1)
+        entry('app commission reversal', '2026-10-10', [(commission, 'refund', 0, 1), (cash, 'received', 1, 0)])
+        check_bridge(0)
+        settings.app_commission_account_ids = fee
+        configured = {row['key']: row['amount'] for row in service.get_section('overview', params)['bridge']}
+        self.assertEqual(configured['commissions'], -20)
+        self.assertAlmostEqual(configured['other_opex'], -1250.18)
+        self.assertEqual(service.get_section('revenue', params)['commissions']['amount'], 20)
         self.assertEqual(service.get_section('heatmap', params)['period'], {'date_from': '2026-10-01', 'date_to': '2026-10-31'})
         # Customer chart values and month labels share chronological trend order.
         revenue_trend = service.get_section('revenue', params)['trend']

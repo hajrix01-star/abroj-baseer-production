@@ -182,12 +182,10 @@ class DashboardSections(models.AbstractModel):
                                        'previous_trend': [None] + [value(m['data'], key) if m['has_data'] else None for m in trend[:-1]], 'good_when': 'down' if key in expense_keys or key == 'expenses_total' else 'up'}
             bridge = [('sales_net', current['sales_net']), ('food_cost', -current['categories'].get('food_cost', 0)), ('gross_profit', current['gross_profit']),
                       ('salaries', -current['categories'].get('salaries', 0)), ('rent', -current['categories'].get('rent', 0))]
-            commission = current['categories'].get('commissions', 0)
-            # Keep small commission balances in other expenses instead of a stray row.
-            small_commission = commission if abs(commission) < abs(current['sales_net']) * 0.01 else 0
-            bridge += [(k, -(current['categories'].get(k, 0)
-                             + (current['categories'].get('non_operating', 0) + small_commission if k == 'other_opex' else 0)
-                             - (small_commission if k == 'commissions' else 0)))
+            commission = self._recorded_app_commissions(ids, start, end)
+            bridge += [(k, -(commission if k == 'commissions' else current['categories'].get(k, 0)
+                             + (current['categories'].get('non_operating', 0)
+                                + current['categories'].get('commissions', 0) - commission if k == 'other_opex' else 0)))
                        for k in ('utilities', 'marketing', 'commissions', 'other_opex', 'depreciation')]
             bridge += [('operating_profit', current['operating_profit']), ('other_income', current['categories'].get('other_income', 0)), ('zakat_tax', -current['categories'].get('zakat_tax', 0)), ('net_profit', current['net_profit'])]
             result['bridge'] = [{'key': key, 'amount': amount, 'pct': percent(amount, current['sales_net'])} for key, amount in bridge if amount or key in ('sales_net', 'gross_profit', 'operating_profit', 'net_profit')]

@@ -416,6 +416,10 @@ test('stretched sparkline endpoint centers align with SVG paths', async () => {
     const cssResponse = await withFetch(globals.fetch, () => fetch('/baseer_dashboard2/static/src/scss/main.scss'));
     const style = document.createElement('style');
     style.textContent = await cssResponse.text();
+    expect((style.textContent.match(/\.o_bd2 \.spark-dot \{/g) || []).length).toBe(1);
+    for (const transform of ['translate(-50%, -50%)', 'translate(-50%, -100%)', 'translateX(-50%)']) {
+        expect(style.textContent.replaceAll(`/*rtl:ignore*/ transform: ${transform}`, '').includes(`transform: ${transform}`)).toBe(false);
+    }
     document.head.append(style);
     after(() => style.remove());
     const host = document.createElement('div');
@@ -434,6 +438,7 @@ test('stretched sparkline endpoint centers align with SVG paths', async () => {
             const projected = new DOMPoint(Number(point[1]), Number(point[2])).matrixTransform(path.getScreenCTM());
             const rect = dot.getBoundingClientRect();
             expect(Math.abs(rect.left + rect.width / 2 - projected.x) < 0.5).toBe(true);
+            expect(Math.abs(rect.top + rect.height / 2 - projected.y) < 0.5).toBe(true);
         }
     }
 });
@@ -479,7 +484,7 @@ test('partial overview marks ratios and neutralizes company comparisons', async 
         state = { period: { mode: 'month', month: '2026-11' }, company: '1', data: {
             purchases: { available: true, value: 10, pct: 1.6, trend: [] },
             sales: { apps: 20, apps_pct: 2, customers: { available: true, value: 100, avg_ticket: 80, cutover_date: '2026-11-19' }, trend: [] },
-            bridge: [{ key: 'net_profit', amount: 95, pct: 95.5 }, { key: 'other_opex', amount: -11, pct: -11 }],
+            bridge: [{ key: 'commissions', amount: -1, pct: -1 }, { key: 'other_opex', amount: -11, pct: -11 }, { key: 'operating_profit', amount: 96, pct: 96 }, { key: 'net_profit', amount: 95, pct: 95.5 }],
             companies_compare: ['1', '2'].map(key => ({ key, name: key, sales_net: 100, food_pct: 1.6, salaries_pct: 0.4, net_margin_pct: -5, targets: { food_pct: { status: 'ok' }, salaries_pct: { status: 'bad' } } }))
         } };
         trend = [{ partial }]; monthName = v => v; fmt = formatNumber; pct = formatPercent; tableFmt = formatTable; tablePct = formatTablePct; customerCutoverLabel = customerCutoverLabel;
@@ -491,9 +496,10 @@ test('partial overview marks ratios and neutralizes company comparisons', async 
     await app.mount(fixture);
     expect(fixture.querySelectorAll('.mini')[2].textContent).toInclude('من 19/11');
     expect([...fixture.querySelectorAll('.mini-pill')].every(el => el.textContent.includes('(جزئي)'))).toBe(true);
-    expect(fixture.querySelector('.bridge-row span').textContent).toInclude('(جزئي)');
+    expect(fixture.querySelector('.bridge-row').parentElement.querySelector('h3').textContent).toInclude('(جزئي)');
+    expect([...fixture.querySelectorAll('.bridge-row')].every(row => !row.textContent.includes('(جزئي)'))).toBe(true);
     expect([...fixture.querySelectorAll('.bridge-row')].map(row => row.textContent).some(text => text.includes('other_opex'))).toBe(true);
-    expect(fixture.querySelector('.bridge-row').parentElement.textContent.includes('commissions')).toBe(false);
+    expect([...fixture.querySelectorAll('.bridge-row')].map(row => row.querySelector('b').textContent)).toEqual(['commissions', 'other_opex', 'operating_profit', 'net_profit']);
     expect(fixture.querySelectorAll('.compare-pill.neutral').length).toBe(6);
     expect([...fixture.querySelectorAll('.compare-pill')].every(el => el.title === 'الشهر لم يكتمل')).toBe(true);
     expect(fixture.textContent.match(/2026-11 \(جزئي\)/g).length).toBe(2);

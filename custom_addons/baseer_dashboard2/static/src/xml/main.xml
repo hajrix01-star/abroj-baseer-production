@@ -162,7 +162,7 @@
                 <b t-att-title="row.key==='zakat_tax' ? 'قيود الزكاة سنوية أو غير منتظمة بين الفترات' : false" t-esc="row.key==='utilities' ? 'الكهرباء والماء' : name(row.key)"/>
                 <div class="bd2-track"><i t-att-style="bridgeStyle(row, row_index)"/></div>
                 <strong dir="ltr" t-esc="tableFmt(row.amount || 0, true)"/>
-                <span class="muted"><bdi dir="ltr" t-esc="tablePct(row.pct == null ? null : Math.abs(row.pct))"/><t t-if="row.pct != null and partialMonth"> (جزئي)</t></span>
+                <span class="muted"><bdi dir="ltr" t-esc="tablePct(row.pct == null ? null : Math.abs(row.pct))"/></span>
             </div>
         </div>
         <div t-foreach="state.data.sales.warnings" t-as="warning" t-key="warning.company_id+warning.date+warning.label" class="chip"><t t-esc="warning.date"/> · <t t-esc="warning.label"/></div>

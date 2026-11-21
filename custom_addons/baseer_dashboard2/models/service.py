@@ -6,6 +6,22 @@ from decimal import Decimal, ROUND_HALF_UP
 
 from odoo import api, fields, models, _
 from odoo.exceptions import AccessError, UserError
+from odoo.tools import SQL
+
+def raw_rows(model, domain, columns, limit=None, order=None):
+    """Read stored columns with the same access rules and order as search_read."""
+    columns = ['id'] + [name for name in columns if name != 'id']
+    for name in columns:
+        model._check_field_access(model._fields[name], 'read')
+    model.flush_model(columns)
+    query = model._search(domain, limit=limit, order=order or model._order)
+    rows = model.env.execute_query_dict(query.select(*(SQL.identifier(query.table, name) for name in columns)))
+    for row in rows:
+        for name in columns:
+            if row[name] is None:
+                row[name] = False
+    return rows
+
 
 def request_memo(method):
     """Cache helper results only for the duration of a section request."""
@@ -180,9 +196,9 @@ class DashboardService(models.AbstractModel):
             rows = cache.get(key) if cache is not None else None
             if rows is None:
                 company = self.env['res.company'].browse(cid)
-                rows = self.env['account.move.line'].with_company(company).with_context(allowed_company_ids=[cid]).search_read(
+                rows = raw_rows(self.env['account.move.line'].with_company(company).with_context(allowed_company_ids=[cid]),
                     [('company_id', '=', cid), ('parent_state', '=', 'posted'), ('account_id.code', '=', '999999')],
-                    ['date', 'move_id'], load=None)
+                    ['date', 'move_id'])
                 if cache is not None:
                     cache[key] = rows
             result.update(row['move_id'] for row in rows if row['date'] <= end and (not start or row['date'] >= start))

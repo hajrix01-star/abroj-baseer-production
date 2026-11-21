@@ -1,4 +1,4 @@
-from .service import request_memo
+from .service import request_memo, raw_rows
 from collections import defaultdict
 from datetime import datetime, time, timedelta
 
@@ -46,10 +46,10 @@ class DashboardSales(models.AbstractModel):
         configs = self.env['pos.config'].with_context(**dict(context, active_test=False)).search([('company_id', 'in', ids)])
         summary_ids = set(settings.mapped('summary_pos_config_ids').ids)
         summary_ids.update(c.id for c in configs if any(word in (c.name or '').casefold() for word in ('ملخص المبيعات', 'sales summaries', 'ملخصات')))
-        orders = self.env['pos.order'].with_context(**context).search_read([
+        orders = raw_rows(self.env['pos.order'].with_context(**context), [
             ('company_id', 'in', ids), ('state', 'in', ('paid', 'done', 'invoiced')),
             ('date_order', '>=', utc_start), ('date_order', '<', utc_end)],
-            ['company_id', 'date_order', 'amount_total', 'config_id'], limit=200001, load=None)
+            ['company_id', 'date_order', 'amount_total', 'config_id'], limit=200001)
         if len(orders) > 200000:
             raise UserError(_('The selected period contains more than 200,000 POS orders.'))
         days = {}
@@ -70,10 +70,10 @@ class DashboardSales(models.AbstractModel):
                 real_days.add(key)
                 order_hours.append((key, local.weekday(), local.hour, sign, order['amount_total']))
         moves = self.env['account.move'].with_context(**context)
-        move_rows = moves.search_read([
+        move_rows = raw_rows(moves, [
             ('company_id', 'in', ids), ('state', '=', 'posted'), ('move_type', '=', 'entry'),
             ('date', '>=', start), ('date', '<=', end)],
-            ['company_id', 'date', 'reversed_entry_id', 'ref'], limit=200001, load=None)
+            ['company_id', 'date', 'reversed_entry_id', 'ref'], limit=200001)
         if len(move_rows) > 200000:
             raise UserError(_('The selected period contains more than 200,000 entries.'))
         move_map = {m['id']: m for m in move_rows}
@@ -81,14 +81,14 @@ class DashboardSales(models.AbstractModel):
         sessions = self.env['pos.session'].with_context(**context).search([('company_id', 'in', ids), ('move_id', 'in', list(move_map))]) if move_map else self.env['pos.session']
         real_sessions = sessions.filtered(lambda session: session.config_id.id not in summary_ids)
         real_session_moves = set(real_sessions.mapped('move_id').ids)
-        real_order_moves = set(self.env['pos.order'].with_context(**context).search([
+        real_order_moves = {row['account_move'] for row in raw_rows(self.env['pos.order'].with_context(**context), [
             ('company_id', 'in', ids), ('account_move', 'in', list(move_map)),
-            ('config_id', 'not in', list(summary_ids))]).mapped('account_move').ids) if move_map else set()
+            ('config_id', 'not in', list(summary_ids))], ['account_move']) if row['account_move']} if move_map else set()
         session_keys = {session.id: (session.company_id.id, session.move_id.date) for session in real_sessions}
         posted_days = set(session_keys.values())
-        posted_orders = self.env['pos.order'].with_context(**context).search_read([
+        posted_orders = raw_rows(self.env['pos.order'].with_context(**context), [
             ('session_id', 'in', list(session_keys)), ('state', 'in', ('paid', 'done', 'invoiced'))],
-            ['company_id', 'session_id', 'amount_total'], limit=200001, load=None) if session_keys else []
+            ['company_id', 'session_id', 'amount_total'], limit=200001) if session_keys else []
         if len(posted_orders) > 200000:
             raise UserError(_('The selected period contains more than 200,000 POS orders.'))
         order_days = {order['id']: session_keys[order['session_id']] for order in posted_orders
@@ -104,9 +104,9 @@ class DashboardSales(models.AbstractModel):
                 channel = mapped.get((key[0], 'pos_method', method.id)) or self._channel_for(method.name, channels, 'pos_method_keywords')
                 posted_channels[key][channel['key']] += amount
         if move_map:
-            line_rows = self.env['account.move.line'].with_context(**context).search_read(
+            line_rows = raw_rows(self.env['account.move.line'].with_context(**context),
                 [('company_id', 'in', ids), ('move_id', 'in', list(move_map))],
-                ['move_id', 'name', 'account_id', 'debit', 'credit', 'tax_line_id'], limit=200001, load=None)
+                ['move_id', 'name', 'account_id', 'debit', 'credit', 'tax_line_id'], limit=200001)
             if len(line_rows) > 200000:
                 raise UserError(_('The selected period contains more than 200,000 entry lines.'))
             categories = self.env['baseer.dashboard2.category'].with_context(**context).search([])
@@ -226,11 +226,11 @@ class DashboardSales(models.AbstractModel):
         starts = {s.company_id.id: s.app_balance_start_date for s in settings}
         summary_ids = set(settings.mapped('summary_pos_config_ids').ids)
         # A wide UTC window accommodates every company timezone; filter local dates below.
-        orders = self.env['pos.order'].with_context(**ctx).search_read([
+        orders = raw_rows(self.env['pos.order'].with_context(**ctx), [
             ('company_id', 'in', ids), ('session_id.move_id.state', '=', 'cancel'),
             ('date_order', '>=', datetime.combine(start - timedelta(days=1), time.min)),
             ('date_order', '<', datetime.combine(end + timedelta(days=2), time.min)),
-        ], ['company_id', 'session_id', 'date_order', 'amount_total'], load=None)
+        ], ['company_id', 'session_id', 'date_order', 'amount_total'])
         sessions = self.env['pos.session'].with_context(**ctx).browse({o['session_id'] for o in orders})
         sessions = sessions.filtered(lambda session: session.config_id.id not in summary_ids and not any(
             word in (session.config_id.name or '').casefold() for word in ('ملخص المبيعات', 'sales summaries', 'ملخصات')))

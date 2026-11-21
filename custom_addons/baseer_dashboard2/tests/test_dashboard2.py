@@ -1046,3 +1046,24 @@ class TestDashboardRequestMemo(TransactionCase):
             if start:
                 domain.append(('date', '>=', start))
             self.assertEqual(set(memo._reset_move_ids(ids, end, start)), set(lines.search(domain).mapped('move_id').ids))
+
+    def test_raw_rows_respects_record_rules_and_pending_writes(self):
+        from ..models.service import raw_rows
+
+        allowed, hidden = self.env['res.partner'].create([
+            {'name': 'Visible raw row'}, {'name': 'Hidden raw row'},
+        ])
+        user = self.env['res.users'].create({
+            'name': 'Raw row reader', 'login': 'bd2_raw_reader',
+            'company_id': self.env.company.id,
+            'company_ids': [(6, 0, [self.env.company.id])],
+            'group_ids': [(6, 0, [self.env.ref('base.group_user').id])],
+        })
+        self.env['ir.rule'].create({
+            'name': 'Hide one raw row', 'model_id': self.env['ir.model']._get_id('res.partner'),
+            'domain_force': repr([('id', '!=', hidden.id)]),
+        })
+        allowed.name = 'Updated raw row'
+        model = self.env['res.partner'].with_user(user)
+        rows = raw_rows(model, [('id', 'in', [allowed.id, hidden.id])], ['name'])
+        self.assertEqual(rows, [{'id': allowed.id, 'name': 'Updated raw row'}])

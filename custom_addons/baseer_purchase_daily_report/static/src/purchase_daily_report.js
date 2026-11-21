@@ -59,6 +59,7 @@ export class PurchaseDailyReport extends Component {
             documents: _t("documents"), show: _t("Show transactions"), hide: _t("Hide transactions"),
             invoice: _t("Supplier bill"), refund: _t("Supplier credit note"),
             vendor: _t("Supplier"), reference: _t("Reference"), date: _t("Invoice date"),
+            enteredBy: _t("Entered by"), batchEntry: _t("Batch line creator"), invoiceEntry: _t("Invoice creator"),
             due: _t("Due date"), details: _t("Invoice details"), back: _t("Back to report"),
             open: _t("View details"), beforeTax: _t("Before tax"), tax: _t("Tax"),
             items: _t("Items"), quantity: _t("Quantity"), unitPrice: _t("Unit price"), discount: _t("Discount"),

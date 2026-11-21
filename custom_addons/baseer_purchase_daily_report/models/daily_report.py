@@ -236,11 +236,35 @@ class PurchaseDailyReport(models.AbstractModel):
         return {'company': {'id': company.id, 'name': company.name, 'currency': currency.name}, 'days': days}
 
     @api.model
-    def _bill_row(self, move):
+    def _entry_sources(self, moves):
+        """Identify the audit creator of the actual input, without guessing a human actor."""
+        if not moves:
+            return {}
+        company = moves[0].company_id
+        lines = self.env['baseer.purchase.batch.line'].sudo().search([
+            ('company_id', '=', company.id), ('move_id', 'in', moves.ids),
+        ])
+        by_move = {}
+        for line in lines:
+            by_move.setdefault(line.move_id.id, []).append(line)
+        result = {}
+        for move in moves:
+            batch_lines = by_move.get(move.id, [])
+            if len(batch_lines) == 1:
+                result[move.id] = (batch_lines[0].create_uid.name or '', 'batch')
+            elif batch_lines:
+                result[move.id] = ('', 'unknown')
+            else:
+                result[move.id] = (move.create_uid.name or '', 'invoice')
+        return result
+
+    @api.model
+    def _bill_row(self, move, entry_sources=None):
         currency = move.currency_id
         company_currency = move.company_currency_id
         sign = -1 if move.move_type == 'in_refund' else 1
         paid, pending, unavailable = self._cash_allocation(move)
+        entered_by, entry_source = (entry_sources if entry_sources is not None else self._entry_sources(move)).get(move.id, ('', 'unknown'))
         return {
             'id': move.id, 'number': move.name or '',
             'vendor': move.partner_id.display_name or '', 'reference': move.ref or '',
@@ -253,6 +277,7 @@ class PurchaseDailyReport(models.AbstractModel):
             'company_residual': _money(-_decimal(move.amount_residual_signed), company_currency),
             'paid': None if unavailable else _money(paid, currency),
             'paid_pending': pending, 'paid_unavailable': unavailable,
+            'entered_by': entered_by, 'entry_source': entry_source,
         }
 
     @api.model
@@ -266,8 +291,9 @@ class PurchaseDailyReport(models.AbstractModel):
         count = moves.search_count(domain)
         records = moves.search(domain, order='id desc', offset=offset, limit=PAGE_SIZE)
         self._prefetch_cash_allocation(records)
+        entry_sources = self._entry_sources(records)
         return {
-            'day': selected.isoformat(), 'rows': [self._bill_row(move) for move in records],
+            'day': selected.isoformat(), 'rows': [self._bill_row(move, entry_sources) for move in records],
             'offset': offset, 'count': count, 'has_more': offset + len(records) < count,
         }
 

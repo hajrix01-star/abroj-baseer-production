@@ -408,3 +408,21 @@ msgstr "تظهر الدفعات المؤكدة المخصصة لهذه الفو�
 #: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
 msgid "An amount is unavailable when the cash payment cannot be verified, including some foreign currency payments."
 msgstr "يظهر المبلغ غير متاح عند تعذر التحقق من الدفع الفعلي، بما في ذلك بعض الدفعات بعملات أجنبية."
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Entered by"
+msgstr "أدخلها"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Batch line creator"
+msgstr "منشئ بند الدفعة"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Invoice creator"
+msgstr "منشئ الفاتورة"

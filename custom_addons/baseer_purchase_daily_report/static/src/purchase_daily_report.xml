@@ -21,6 +21,7 @@
                             <h2 t-esc="labels.details"/>
                             <dl class="bpr-meta">
                                 <div><dt t-esc="labels.vendor"/><dd t-esc="state.invoice.vendor"/></div>
+                                <div><dt t-esc="labels.enteredBy"/><dd><span t-esc="state.invoice.entered_by || labels.paidUnavailable"/><small t-if="state.invoice.entered_by"> · <span t-esc="state.invoice.entry_source === 'batch' ? labels.batchEntry : labels.invoiceEntry"/></small></dd></div>
                                 <div><dt t-esc="labels.reference"/><dd t-esc="state.invoice.reference || '—'"/></div>
                                 <div><dt t-esc="labels.date"/><dd><bdi t-esc="state.invoice.date || '—'"/></dd></div>
                                 <div><dt t-esc="labels.due"/><dd><bdi t-esc="state.invoice.due_date || '—'"/></dd></div>
@@ -81,7 +82,7 @@
                                 <t t-elif="state.dayData">
                                     <button type="button" class="bpr-transaction" t-foreach="state.dayData.rows" t-as="row" t-key="row.id" t-on-click="() => this.openInvoice(row.id)">
                                         <span class="bpr-transaction-icon"><i t-att-class="row.kind === 'in_refund' ? 'fa fa-reply' : 'fa fa-file-text-o'" aria-hidden="true"/></span>
-                                        <span class="bpr-transaction-main"><strong t-esc="row.vendor"/><small><span t-esc="kindLabel(row.kind)"/> <span aria-hidden="true"> · </span><bdi t-esc="row.number"/></small><small t-if="row.reference" t-esc="row.reference"/></span>
+                                        <span class="bpr-transaction-main"><strong t-esc="row.vendor"/><small><span t-esc="kindLabel(row.kind)"/> <span aria-hidden="true"> · </span><bdi t-esc="row.number"/></small><small t-if="row.reference" t-esc="row.reference"/><small><span t-esc="labels.enteredBy"/>: <span t-esc="row.entered_by || labels.paidUnavailable"/><t t-if="row.entered_by"> · <span t-esc="row.entry_source === 'batch' ? labels.batchEntry : labels.invoiceEntry"/></t></small></span>
                                         <span class="bpr-transaction-amount"><strong><bdi t-esc="row.total"/> <small t-esc="row.currency"/></strong><small><span t-esc="labels.paidAmount"/>: <bdi t-esc="row.paid_unavailable ? labels.paidUnavailable : row.paid"/> <span t-if="!row.paid_unavailable" t-esc="row.currency"/></small><small t-if="row.paid_pending" t-esc="labels.paidPending"/><small><span t-esc="labels.residual"/>: <bdi t-esc="row.residual"/> <span t-esc="row.currency"/></small></span>
                                         <span t-attf-class="bpr-status bpr-status--{{row.status}}" t-esc="statusLabel(row.status)"/>
                                         <span class="bpr-open"><span class="bpr-sr-only" t-esc="labels.open"/><i class="fa fa-angle-left" aria-hidden="true"/></span>

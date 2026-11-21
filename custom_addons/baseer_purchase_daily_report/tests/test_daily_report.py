@@ -377,13 +377,27 @@ class DailyPurchaseReportCase(TransactionCase):
                 'is_credit': True, 'tax_id': False,
             })],
         })
+        # Simulate a line entered by the branch manager and approved by the
+        # accountant: the two audit creators are intentionally different.
+        self.env.cr.execute(
+            'UPDATE baseer_purchase_batch_line SET create_uid = %s WHERE id = %s',
+            [self.users['cashier'].id, batch.line_ids.id],
+        )
+        batch.line_ids.invalidate_recordset(['create_uid'])
         batch.action_approve()
         bill = batch.line_ids.move_id
         self.assertEqual(bill.state, 'posted')
         report = api.Environment(self.env.cr, self.users['cashier'].id, context)['baseer.purchase.daily.report']
         daily = report.get_days('2099-09-15', '2099-09-15', 'all')['days'][0]
         self.assertEqual((daily['count'], daily['total']), (2, '100.00'))
-        self.assertEqual({row['id'] for row in report.get_day('2099-09-15', 'all', 0)['rows']}, {direct.id, bill.id})
+        rows = {row['id']: row for row in report.get_day('2099-09-15', 'all', 0)['rows']}
+        self.assertEqual(set(rows), {direct.id, bill.id})
+        self.assertEqual((rows[direct.id]['entered_by'], rows[direct.id]['entry_source']),
+                         (direct.create_uid.name, 'invoice'))
+        self.assertEqual((rows[bill.id]['entered_by'], rows[bill.id]['entry_source']),
+                         (self.users['cashier'].name, 'batch'))
+        detail = report.get_invoice(bill.id)
+        self.assertEqual((detail['entered_by'], detail['entry_source']), (self.users['cashier'].name, 'batch'))
         # Even a user authorised for both companies cannot pull an arbitrary
         # other-company bill while the active company is the first one.
         wrong_company = self._report('cashier')

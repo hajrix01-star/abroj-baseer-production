@@ -1,3 +1,4 @@
+from .service import request_memo
 from collections import defaultdict
 
 from odoo import models, _
@@ -8,6 +9,7 @@ from odoo.exceptions import UserError
 class DashboardCash(models.AbstractModel):
     _inherit = 'baseer.dashboard2.service'
 
+    @request_memo
     def _cash_out(self, ids, start, end, split=False):
         buckets = defaultdict(lambda: {'items': defaultdict(float), 'sources': defaultdict(float), 'total': 0.0})
         for cid in ids:
@@ -33,7 +35,9 @@ class DashboardCash(models.AbstractModel):
             counterparts = paid.mapped('move_id.line_ids')
             partials = counterparts.mapped('matched_debit_ids') | counterparts.mapped('matched_credit_ids')
             reconciled = partials.mapped('debit_move_id') | partials.mapped('credit_move_id')
-            reconciled.mapped('move_id.line_ids.account_id')
+            bill_lines = reconciled.mapped('move_id.line_ids')
+            (counterparts | bill_lines).fetch(['balance', 'account_id'])
+            bill_lines.mapped('account_id')
             counterparts.mapped('account_id')
             rows_by_account = {row.account_id.id: row for row in settings.liquidity_ids} if settings else {}
             def source_label(row):
@@ -122,6 +126,7 @@ class DashboardCash(models.AbstractModel):
                     combined[field][key] += value
         return finish(combined)
 
+    @request_memo
     def _sales_vat(self, ids, start, end):
         ctx = dict(allowed_company_ids=ids)
         sales_days, _, _, _ = self._sales_days(ids, start, end)
@@ -151,6 +156,7 @@ class DashboardCash(models.AbstractModel):
                 amount += (credit or 0) - (debit or 0)
         return {'available': True, 'value': round(amount, 2)}
 
+    @request_memo
     def _unpaid_bills(self, ids, end):
         ctx = dict(allowed_company_ids=ids)
         bills = self.env['account.move'].with_context(**ctx).search([

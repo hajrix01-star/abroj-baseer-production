@@ -1,3 +1,4 @@
+from .service import request_memo
 from collections import defaultdict
 from datetime import datetime, time, timedelta
 
@@ -19,6 +20,7 @@ class DashboardSales(models.AbstractModel):
                 return channel
         return {'key': 'other', 'kind': 'hall', 'name': 'أخرى', 'color_token': False, 'commission_rate': 0}
 
+    @request_memo
     def _sales_days(self, ids, start, end):
         """Select revenue by cutover; retain qualifying real POS orders for metrics."""
         context = dict(allowed_company_ids=ids, tz='Asia/Riyadh')
@@ -249,6 +251,7 @@ class DashboardSales(models.AbstractModel):
                      by_id[sid].name.rsplit('/', 1)[-1], format(amount, ',.0f'), count), 'session_id': sid}
                 for (sid, day), (amount, count) in sorted(grouped.items())]
 
+    @request_memo
     def _sales_summary(self, ids, start, end):
         days, channels, unreceived, hours = self._sales_days(ids, start, end)
         totals = defaultdict(float)

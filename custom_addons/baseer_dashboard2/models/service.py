@@ -1,9 +1,31 @@
 import calendar
+import copy
+from functools import wraps
 from datetime import date, timedelta
 from decimal import Decimal, ROUND_HALF_UP
 
 from odoo import api, fields, models, _
 from odoo.exceptions import AccessError, UserError
+
+def request_memo(method):
+    """Cache helper results only for the duration of a section request."""
+    @wraps(method)
+    def wrapper(self, *args, **kwargs):
+        cache = self.env.context.get('_bd2_request_cache')
+        if cache is None:
+            return method(self, *args, **kwargs)
+        def freeze(value):
+            if isinstance(value, (list, tuple)):
+                return tuple(freeze(item) for item in value)
+            if isinstance(value, dict):
+                return tuple(sorted((key, freeze(item)) for key, item in value.items()))
+            return value
+        key = (method.__name__, freeze(args), freeze(kwargs))
+        if key not in cache:
+            cache[key] = method(self, *args, **kwargs)
+        return copy.deepcopy(cache[key])
+    return wrapper
+
 
 def food_ratio(value, sales):
     """Round the exact monetary ratio once, away from zero at half tenths."""
@@ -133,6 +155,7 @@ class DashboardService(models.AbstractModel):
                 return category.code
         return 'other_opex' if (account.account_type or '').startswith('expense') else False
 
+    @request_memo
     def _reset_move_ids(self, ids, end, start=None):
         result = set()
         for cid in ids:
@@ -143,6 +166,7 @@ class DashboardService(models.AbstractModel):
             result.update(self.env['account.move.line'].with_company(company).with_context(allowed_company_ids=[cid]).search(domain).mapped('move_id').ids)
         return list(result)
 
+    @request_memo
     def _accounting(self, ids, start, end):
         categories = self.env['baseer.dashboard2.category'].with_context(allowed_company_ids=ids).search([])
         lines = self.env['account.move.line'].with_context(allowed_company_ids=ids)

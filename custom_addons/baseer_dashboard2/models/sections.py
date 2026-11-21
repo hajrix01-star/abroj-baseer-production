@@ -1,3 +1,4 @@
+from .service import request_memo
 import calendar
 from collections import defaultdict
 from datetime import date, timedelta
@@ -81,6 +82,7 @@ class DashboardSections(models.AbstractModel):
             total += (rows[0][0] or 0) if rows else 0
         return round(total, 2)
 
+    @request_memo
     def _posted_months(self, ids, revenue_only=False):
         lines = self.env['account.move.line'].with_context(allowed_company_ids=ids).search([
             ('company_id', 'in', ids), ('parent_state', '=', 'posted'),
@@ -444,6 +446,7 @@ class DashboardSections(models.AbstractModel):
         if section == 'glossary':
             return {'sources': SOURCES}
         params = params or {}
+        self = self.with_context(_bd2_request_cache={})
         companies = self._companies()
         if not companies:
             return {'available': False, 'reason': 'empty_company_scope'}

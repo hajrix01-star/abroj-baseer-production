@@ -943,3 +943,25 @@ class TestGlossaryBasis(TransactionCase):
     def test_apps_ratio_is_gross(self):
         from ..models.service import SOURCES
         self.assertIn('عدا نسبة التطبيقات: شاملة الضريبة', SOURCES['ratios'])
+
+
+class TestDashboardRequestMemo(TransactionCase):
+    def test_accounting_memo_matches_direct_and_is_isolated(self):
+        service = self.env['baseer.dashboard2.service']
+        ids = [self.env.company.id]
+        first, last = date(2026, 1, 1), date(2026, 1, 31)
+        direct = service._accounting(ids, first, last)
+        memo = service.with_context(_bd2_request_cache={})
+        result = memo._accounting(ids, first, last)
+        self.assertEqual(result, direct)
+        result['categories']['changed'] = 42
+        self.assertEqual(memo._accounting(ids, first, last), direct)
+
+    def test_sales_days_memo_is_isolated(self):
+        service = self.env['baseer.dashboard2.service'].with_context(_bd2_request_cache={})
+        ids = [self.env.company.id]
+        first, last = date(2026, 1, 1), date(2026, 1, 31)
+        expected = service._sales_days(ids, first, last)
+        result = service._sales_days(ids, first, last)
+        result[0][(self.env.company.id, first)] = {'changed': True}
+        self.assertEqual(service._sales_days(ids, first, last), expected)

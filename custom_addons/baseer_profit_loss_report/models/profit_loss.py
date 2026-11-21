@@ -6,7 +6,7 @@ from datetime import date, timedelta
 from decimal import Decimal, ROUND_HALF_UP, localcontext
 
 from odoo import _, api, fields, models
-from odoo.exceptions import AccessError, ValidationError
+from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.fields import Domain
 from .revenue_channels import (
     UNALLOCATED, allocate_channels, tender_matches_order, reconcile_order_amounts,
@@ -934,6 +934,110 @@ class BaseerProfitLossReport(models.AbstractModel):
                 accounts.check_access('read')
         return prepared
 
+    def _closed_pos_accounting_amounts(self, orders, move, company, line_ids_by_order):
+        """Rebuild the read-only tax bases used by native POS session posting."""
+        sessions = orders.session_id
+        currency = company.currency_id
+        if (len(sessions) != 1 or sessions.state != 'closed' or sessions.move_id != move
+                or sessions.company_id != company or sessions.currency_id != currency
+                or move.state != 'posted' or move.company_id != company
+                or move.currency_id != currency
+                or any(order.account_move or order.currency_id != currency for order in orders)):
+            return None
+
+        move_lines = move.line_ids
+        move_lines.check_access('read')
+        Move = self.env['account.move']
+        if Move.search_count(Domain('id', '=', move.id) & Domain(
+                'line_ids', 'any!', Domain('id', 'not in', move_lines.ids)), limit=1):
+            return None
+        self._verify_links(move_lines)
+        if any(line.company_id != company or line.currency_id != currency for line in move_lines):
+            return None
+        move_lines.tax_repartition_line_id.check_access('read')
+        move_lines.tax_line_id.check_access('read')
+
+        def minor_amount(value):
+            return self._decimal(currency.round(value))
+
+        def add(amounts, key, value):
+            if value:
+                amounts[key] = amounts.get(key, Decimal('0')) + value
+
+        def nonzero(amounts):
+            return {key: amount for key, amount in amounts.items() if amount}
+
+        ledger_revenue, ledger_tax = {}, {}
+        for line in move_lines:
+            if line.tax_repartition_line_id:
+                if not line.tax_line_id:
+                    return None
+                add(ledger_tax, line.tax_line_id.id, self._decimal(line.balance))
+            elif line.account_id.account_type in ('income', 'income_other'):
+                add(ledger_revenue, line.account_id.id, -self._decimal(line.balance))
+        # Saved POS order totals prove the net at order level, but do not
+        # disambiguate a historical split between multiple income accounts.
+        if len(nonzero(ledger_revenue)) != 1:
+            return None
+        income_account_id = next(iter(nonzero(ledger_revenue)))
+
+        Tax = self.env['account.tax']
+        reconstructed_revenue, reconstructed_tax = {}, {}
+        by_order = {}
+        for order in orders:
+            bases = order.with_context(linked_to_pos=True)._prepare_tax_base_line_values()
+            records = [base['record'] for base in bases]
+            if (any(record._name != 'pos.order.line' or len(record) != 1 for record in records)
+                    or len(records) != len(line_ids_by_order[order.id])
+                    or {record.id for record in records} != line_ids_by_order[order.id]):
+                return None
+            Tax.browse(sorted({tax.id for base in bases for tax in base['tax_ids']})).check_access('read')
+            Tax._add_tax_details_in_base_lines(bases, company)
+            Tax._round_base_lines_tax_details(bases, company)
+            taxes = Tax.browse(sorted({item['tax'].id for base in bases
+                                      for item in base['tax_details']['taxes_data']}))
+            taxes.check_access('read')
+            if any(tax.company_id != company for tax in taxes):
+                return None
+            order_amounts = {}
+            gross = Decimal('0')
+            tax_total = Decimal('0')
+            for base in bases:
+                account = base['account_id']
+                account.check_access('read')
+                if not account or company not in account.company_ids:
+                    return None
+                details = base['tax_details']
+                sign = base['sign']
+                # Same signed base amount as account.tax._prepare_tax_lines.
+                # Tags and repartition-line generation are unnecessary here.
+                net = -sign * minor_amount(details['total_excluded_currency']
+                                           + details['delta_total_excluded_currency'])
+                if net and account.id != income_account_id:
+                    return None
+                gross += net
+                add(order_amounts, account.id, net)
+                add(reconstructed_revenue, account.id, net)
+                for item in details['taxes_data']:
+                    if item['is_reverse_charge']:
+                        return None
+                    value = sign * minor_amount(item['tax_amount_currency'])
+                    gross -= value
+                    tax_total -= value
+                    add(reconstructed_tax, item['tax'].id, value)
+            total = minor_amount(order.amount_total)
+            saved_tax = minor_amount(order.amount_tax)
+            if order.is_refund:
+                total, saved_tax = -abs(total), -abs(saved_tax)
+            if gross != total or tax_total != saved_tax:
+                return None
+            by_order[order.id] = order_amounts
+        if (nonzero(reconstructed_revenue) != nonzero(ledger_revenue)
+                or nonzero(reconstructed_tax) != nonzero(ledger_tax)):
+            return None
+        return by_order
+
+    @api.model
     def _revenue_channels(self, company, domain, provenance=None, _export_channel_budget=None):
         """Only attribute a whole move/account after exact POS net matching."""
         lines = self.env['account.move.line'].search(domain)
@@ -946,6 +1050,7 @@ class BaseerProfitLossReport(models.AbstractModel):
         # Only IDs are reused within this invocation; no context, cross-request,
         # amount or visibility cache. Guard failures retain their original scope.
         child_ids = {'lines': {}, 'payments': {}}
+        accounting_amounts = {}
         for (move_id, account_id), amount in grouped.items():
             allocation = {UNALLOCATED: ('', amount)}
             try:
@@ -988,6 +1093,21 @@ class BaseerProfitLossReport(models.AbstractModel):
                     order_amounts.append((order, net))
                 order_amounts = reconcile_order_amounts(
                     order_amounts, amount, self._decimal(company.currency_id.rounding))
+                if order_amounts is None and orders:
+                    if move_id not in accounting_amounts:
+                        move = lines.env['account.move'].browse(move_id)
+                        try:
+                            accounting_amounts[move_id] = self._closed_pos_accounting_amounts(
+                                orders, move, company, child_ids['lines'])
+                        except UserError:
+                            accounting_amounts[move_id] = None
+                    recovered = accounting_amounts[move_id]
+                    if recovered is not None:
+                        rebuilt = [(order, recovered[order.id].get(account_id, Decimal('0')))
+                                   for order in orders]
+                        # The alternate basis must match exactly, without spending the residual twice.
+                        if sum((net for _order, net in rebuilt), Decimal('0')) == amount:
+                            order_amounts = rebuilt
                 if order_amounts is not None:
                     allocation = {}
                     for order, net in order_amounts:

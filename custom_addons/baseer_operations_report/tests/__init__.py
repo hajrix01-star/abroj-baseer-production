@@ -17,3 +17,4 @@ from . import test_owner_details
 from . import test_owner_export
 from . import test_unified_drill_browser
 from . import test_toolbar_browser
+from . import test_pl_pos_session_diagnostic

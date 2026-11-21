@@ -116,7 +116,16 @@ class PurchaseDailyReport(models.AbstractModel):
                 payment = other.origin_payment_id or counterpart.payment_id
                 statement = other.statement_line_id or counterpart.statement_line_id
                 if not payment and not statement:
-                    continue  # Credit note, exchange difference or other adjustment.
+                    # A posted manual entry can settle payable against a bank
+                    # account without a payment/statement model. We cannot
+                    # safely infer its cash attribution; never report zero as
+                    # an established payment amount in that case. Credit notes
+                    # and entries with no cash leg remain noncash settlements.
+                    if (other.move_type == 'entry' and other.line_ids.filtered(
+                            lambda line: line.account_id.account_type == 'asset_cash'
+                            and not currency.is_zero(line.balance))):
+                        unavailable = True
+                    continue
                 if payment:
                     allocated_payment_ids.add(payment.id)
                 if (other.company_id != company or other.state != 'posted'

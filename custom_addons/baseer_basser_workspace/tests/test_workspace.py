@@ -3,6 +3,7 @@ from uuid import uuid4
 from odoo import Command
 from odoo.exceptions import AccessError, ValidationError
 from odoo.tests.common import TransactionCase
+from odoo.addons.baseer_basser_workspace.models.workspace import MAX_WORKSPACE_ITEMS
 
 
 class BasserWorkspaceCase(TransactionCase):
@@ -439,10 +440,20 @@ class BasserWorkspaceCase(TransactionCase):
         owner = self._user('owner')
         section_model = self.env['baseer.basser.workspace.section'].with_user(owner)
         item_model = self.env['baseer.basser.workspace.item'].with_user(owner)
-        for sequence in range(1, 34):
+        company = self.env.company
+        count_domain = [
+            ('active', '=', True), ('section_id.active', '=', True),
+            ('section_id.role', '=', 'cashier'),
+            '|', ('section_id.company_id', '=', False),
+            ('section_id.company_id', '=', company.id),
+        ]
+        existing = item_model.sudo().search_count(count_domain)
+        self.assertLess(existing, MAX_WORKSPACE_ITEMS)
+        for sequence in range(MAX_WORKSPACE_ITEMS - existing):
             section = section_model.create({
                 'name': 'Bounded cashier section %s' % sequence,
                 'role': 'cashier',
+                'company_id': company.id,
                 'sequence': 100 + sequence,
             })
             item_model.create({
@@ -450,14 +461,15 @@ class BasserWorkspaceCase(TransactionCase):
                 'name': 'Bounded request %s' % sequence,
                 'menu_id': request_menu.id,
             })
-        section = section_model.create({
+        self.assertEqual(item_model.sudo().search_count(count_domain), MAX_WORKSPACE_ITEMS)
+        overflow_section = section_model.create({
             'name': 'Over-limit cashier section',
             'role': 'cashier',
-            'sequence': 200,
+            'company_id': company.id,
         })
         with self.assertRaises(ValidationError):
             item_model.create({
-                'section_id': section.id,
+                'section_id': overflow_section.id,
                 'name': 'Over-limit request',
                 'menu_id': request_menu.id,
             })

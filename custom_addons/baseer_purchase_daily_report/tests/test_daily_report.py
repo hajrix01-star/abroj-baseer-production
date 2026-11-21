@@ -92,6 +92,41 @@ class DailyPurchaseReportCase(TransactionCase):
         paid = report.get_days('2099-09-15', '2099-09-15', 'paid')['days'][0]
         self.assertEqual((paid['total'], paid['residual'], paid['paid']), ('100.00', '0.00', '0.00'))
 
+    def test_manual_cash_entry_is_unavailable_and_noncash_entry_is_zero(self):
+        bill = self._bill(100, day='2099-09-15')
+        cash = self.env['account.account'].create({
+            'name': 'Manual payment cash', 'code': 'DPR115', 'account_type': 'asset_cash',
+            'company_ids': [Command.set(self.company.ids)],
+        })
+        entry = self.env['account.move'].create({
+            'move_type': 'entry', 'company_id': self.company.id,
+            'journal_id': self.settlement_journal.id, 'date': bill.invoice_date,
+            'line_ids': [
+                Command.create({'name': 'Supplier payable', 'account_id': self.payable.id,
+                                'partner_id': self.partner.id, 'debit': 40, 'credit': 0}),
+                Command.create({'name': 'Cash paid', 'account_id': cash.id,
+                                'debit': 0, 'credit': 40}),
+            ],
+        })
+        entry.action_post()
+        (bill.line_ids | entry.line_ids).filtered(
+            lambda line: line.account_id == self.payable and not line.reconciled
+        ).reconcile()
+        report = self._report('cashier')
+        detail = report.get_invoice(bill.id)
+        self.assertEqual(detail['residual'], '60.00')
+        self.assertTrue(detail['paid_unavailable'])
+        self.assertIsNone(detail['paid'])
+        day = report.get_days('2099-09-15', '2099-09-15', 'all')['days'][0]
+        self.assertTrue(day['paid_unavailable'])
+        self.assertIsNone(day['paid'])
+
+        noncash = self._bill(100, day='2099-09-14')
+        self._settle(noncash, 40)
+        detail = report.get_invoice(noncash.id)
+        self.assertEqual((detail['paid'], detail['residual']), ('0.00', '60.00'))
+        self.assertFalse(detail['paid_unavailable'])
+
     def test_actual_cash_payment_not_noncash_settlement(self):
         bill = self._bill(100)
         cash_account = self.env['account.account'].create({

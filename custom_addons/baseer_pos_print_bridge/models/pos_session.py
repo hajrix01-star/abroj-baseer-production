@@ -7,7 +7,7 @@ import time
 from uuid import UUID, uuid4
 from urllib.parse import urlencode
 
-from odoo import _, fields, models
+from odoo import _, api, fields, models
 from odoo.exceptions import AccessError, ValidationError
 from odoo.tools import hmac as odoo_hmac
 
@@ -21,6 +21,23 @@ class PosSession(models.Model):
     baseer_print_session_close_report = fields.Boolean(
         related='config_id.baseer_print_session_close_report', readonly=True,
     )
+    baseer_session_sales_total = fields.Monetary(
+        string='Session sales total', compute='_compute_baseer_session_sales_total',
+        currency_field='currency_id', compute_sudo=False,
+        help='Total including tax for completed orders, including refunds.',
+    )
+
+    @api.depends_context('uid', 'company')
+    @api.depends('order_ids.amount_total', 'order_ids.state', 'order_ids.company_id', 'order_ids.config_id')
+    def _compute_baseer_session_sales_total(self):
+        groups = self.env['pos.order']._read_group(
+            [('session_id', 'in', self.ids), ('state', 'not in', ['draft', 'cancel'])],
+            ['session_id', 'company_id', 'config_id'], ['amount_total:sum'],
+        ) if self.ids else []
+        totals = {session.id: total for session, company, config, total in groups
+                  if session and company == session.company_id and config == session.config_id}
+        for session in self:
+            session.baseer_session_sales_total = totals.get(session.id, 0.0)
 
     def baseer_enqueue_draft_bill(self, order_uuid, request_uuid, jpeg_base64):
         self.ensure_one()

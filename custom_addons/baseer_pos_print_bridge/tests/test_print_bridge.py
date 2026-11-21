@@ -9,7 +9,7 @@ from PIL import Image
 
 from odoo import Command, fields
 from odoo.exceptions import AccessError, UserError, ValidationError
-from odoo.tests.common import TransactionCase, tagged
+from odoo.tests.common import TransactionCase, tagged, new_test_user
 
 
 @tagged('post_install', '-at_install')
@@ -62,6 +62,50 @@ class TestBaseerPrintBridgeHybrid(TransactionCase):
                                       'price_subtotal': 10 * quantity, 'price_subtotal_incl': 10 * quantity,
                                       'full_product_name': product.display_name})],
         })
+
+    def test_session_sales_total_includes_refunds_and_excludes_unfinished_orders(self):
+        sale = self._order(quantity=3)
+        refund = self._order(quantity=-1)
+        draft = self._order(quantity=5)
+        cancelled = self._order(quantity=7)
+        sale.write({'state': 'paid'})
+        refund.write({'state': 'paid'})
+        cancelled.write({'state': 'cancel'})
+        session = sale.session_id
+        self.assertEqual(session.baseer_session_sales_total, 20.0)
+        draft.write({'state': 'paid'})
+        self.assertEqual(session.baseer_session_sales_total, 70.0)
+        cashier = new_test_user(self.env, login='session-sales-cashier',
+                                groups='base.group_user,point_of_sale.group_pos_user')
+        self.assertEqual(session.with_user(cashier).baseer_session_sales_total, 70.0)
+        restricted_group = self.env['res.groups'].create({'name': 'Restricted session sales test'})
+        cashier.write({'group_ids': [Command.link(restricted_group.id)]})
+        self.env['ir.rule'].create({
+            'name': 'Hide one session order for test',
+            'model_id': self.env['ir.model']._get_id('pos.order'),
+            'groups': [Command.link(restricted_group.id)],
+            'domain_force': "[('id', '!=', %s)]" % sale.id,
+        })
+        session.invalidate_recordset(['baseer_session_sales_total'])
+        self.assertEqual(session.baseer_session_sales_total, 70.0)
+        self.assertEqual(session.with_user(cashier).baseer_session_sales_total, 40.0)
+        self.assertEqual(session.baseer_session_sales_total, 70.0)
+
+        # Historical inconsistent rows must not enter another POS's total.
+        other_config = self.env['pos.config'].create({'name': 'Other session sales POS'})
+        self.env.cr.execute('UPDATE pos_order SET config_id = %s WHERE id = %s',
+                            [other_config.id, sale.id])
+        sale.invalidate_recordset(['config_id'])
+        session.invalidate_recordset(['baseer_session_sales_total'])
+        self.assertEqual(session.baseer_session_sales_total, 40.0)
+        other_company = self.env['res.company'].create({'name': 'Other session sales company'})
+        self.env.cr.execute('UPDATE pos_order SET config_id = %s, company_id = %s WHERE id = %s',
+                            [self.config.id, other_company.id, sale.id])
+        sale.invalidate_recordset(['config_id', 'company_id'])
+        session.invalidate_recordset(['baseer_session_sales_total'])
+        self.assertEqual(session.with_context(
+            allowed_company_ids=[self.company.id, other_company.id],
+        ).baseer_session_sales_total, 40.0)
 
     def test_shared_hardware_is_authorized_server_side(self):
         other_company = self.env['res.company'].create({'name': 'Unapproved print company'})

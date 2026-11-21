@@ -4,6 +4,45 @@ from decimal import Decimal, ROUND_HALF_UP
 UNALLOCATED = 'unallocated'
 
 
+def noorix_gross_channels(event, company):
+    """Classify one already-validated Noorix ledger event without allocating VAT.
+
+    The caller must obtain the event from the guarded Noorix ledger reader,
+    which proves source identity, visibility, posted gross and uniqueness.
+    Return None if the source does not unambiguously name each funding line.
+    Reversals require their own original-line provenance and are left to the
+    caller until that provenance can be proved.
+    """
+    if not event.get('original'):
+        return None
+    move = event['move']
+    labels = ('cash', 'bank', 'keeta', 'hunger', 'jahez')
+    income = move.line_ids.filtered(lambda line: line.account_id.account_type in ('income', 'income_other'))
+    accounts = income.mapped('account_id')
+    if len(accounts) != 1:
+        return None
+    amounts = {}
+    account_by_label = {}
+    for line in move.line_ids:
+        balance = Decimal(str(line.balance))
+        if line.company_id != company or line.currency_id != company.currency_id:
+            return None
+        if balance <= 0:
+            continue
+        label = next((key for key in labels
+                      if line.name == f'Noorix sales {key} {move.date.isoformat()}'), None)
+        if not label or line.account_id.internal_group != 'asset':
+            return None
+        if label in account_by_label and account_by_label[label] != line.account_id.id:
+            return None
+        account_by_label[label] = line.account_id.id
+        amounts[label] = amounts.get(label, Decimal('0')) + balance
+    total = sum(amounts.values(), Decimal('0'))
+    if not amounts or total != event['amount']:
+        return None
+    return accounts.id, amounts, account_by_label
+
+
 def reconcile_order_amounts(order_amounts, posted_amount, rounding):
     """Absorb at most one currency unit per move/account, never per order.
 

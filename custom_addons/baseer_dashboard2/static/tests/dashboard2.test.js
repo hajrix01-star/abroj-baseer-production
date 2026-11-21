@@ -1011,3 +1011,14 @@ test('inclusive basis, waterfall tax note and P&L basis are identified', async (
     const pnl = doc.querySelector('[t-name="baseer_dashboard2.Pnl"]');
     expect(pnl.outerHTML).toInclude('قبل الضريبة');
 });
+
+test('inclusive revenue drills through accounting and adjustments are not drillable', async () => {
+    const response = await withFetch(globals.fetch, () => fetch('/baseer_dashboard2/static/src/xml/main.xml'));
+    const doc = new DOMParser().parseFromString(await response.text(), 'application/xml');
+    const revenue = doc.querySelector('[t-name="baseer_dashboard2.Revenue"]');
+    expect(revenue.querySelector('KpiCard').getAttribute('onDrill')).toInclude("'revenue','gross'");
+    expect(revenue.outerHTML).toInclude("row.key !== 'accounting_adjustments'");
+    const overview = doc.querySelector('[t-name="baseer_dashboard2.Overview"]');
+    const percentage = overview.querySelector('[t-foreach="state.data.bridge"] span.muted bdi');
+    expect(percentage.hasAttribute('t-on-click')).toBe(false);
+});

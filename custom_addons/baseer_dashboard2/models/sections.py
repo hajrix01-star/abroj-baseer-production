@@ -402,12 +402,12 @@ class DashboardSections(models.AbstractModel):
 
     def _recorded_app_commissions(self, ids, start, end, include_tax=True):
         rows = self.env['account.move.line'].with_context(allowed_company_ids=ids)._read_group(
-            self._commission_domain(ids, start, end), [], ['balance:sum'])
-        total = (rows[0][0] or 0) if rows else 0
+            self._commission_domain(ids, start, end), ['company_id', 'account_id'], ['balance:sum'])
+        total = sum(amount or 0 for _company, _account, amount in rows)
         if include_tax:
-            accounts = self.env['account.move.line'].with_context(allowed_company_ids=ids).search(self._commission_domain(ids, start, end)).mapped('account_id')
+            pairs = {(company.id, account.id) for company, account, _amount in rows}
             allocated = self._tax_basis(ids, start, end)['accounts']
-            total += sum(amount for (cid, account_id), amount in allocated.items() if account_id in accounts.ids and cid in ids)
+            total += sum(amount for pair, amount in allocated.items() if pair in pairs)
         return round(total, 2)
 
     @request_memo

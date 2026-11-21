@@ -3,6 +3,7 @@ from collections import defaultdict
 import re
 
 from odoo import models
+from odoo.tools import SQL
 
 from .service import request_memo, food_ratio, raw_rows
 from .tax_math import allocate_tax
@@ -24,19 +25,25 @@ class DashboardTaxBasis(models.AbstractModel):
         if not taxes:
             return []
         moves = list({line['move_id'] for line in taxes})
-        bases = raw_rows(lines, [('move_id', 'in', moves), ('tax_ids', '!=', False)],
-                         ['move_id', 'account_id', 'balance'])
+        base_fields = ['id', 'move_id', 'account_id', 'balance']
+        for field in base_fields:
+            lines._check_field_access(lines._fields[field], 'read')
+        lines.flush_model(base_fields)
+        query = lines._search([('move_id', 'in', moves), ('tax_ids', '!=', False)], order=lines._order)
+        # Keep the ORM's access rules while fetching base values and tax links
+        # together, so the full window requires only one base-link query.
+        columns = [SQL.identifier(query.table, field) for field in base_fields]
+        columns.append(SQL('(SELECT array_agg(account_tax_id ORDER BY account_tax_id) '
+                           'FROM account_move_line_account_tax_rel '
+                           'WHERE account_move_line_id = %s) AS tax_ids',
+                           SQL.identifier(query.table, 'id')))
+        bases = self.env.execute_query_dict(query.select(*columns))
         by_id = {base['id']: base for base in bases}
         by_move_tax = defaultdict(list)
-        if by_id:
-            self.env.cr.execute('SELECT account_move_line_id, account_tax_id FROM account_move_line_account_tax_rel WHERE account_move_line_id = ANY(%s) ORDER BY account_move_line_id, account_tax_id', [list(by_id)])
-            links = defaultdict(list)
-            for line_id, tax_id in self.env.cr.fetchall():
-                links[line_id].append(tax_id)
-            for base in bases:
-                for tax_id in links[base['id']]:
-                    by_move_tax[(base['move_id'], tax_id)].append((base['id'], base['balance']))
-        tax_records = self.env['account.tax'].browse(list({line['tax_line_id'] for line in taxes}))
+        for base in bases:
+            for tax_id in base['tax_ids'] or ():
+                by_move_tax[(base['move_id'], tax_id)].append((base['id'], base['balance']))
+        tax_records = lines.env['account.tax'].browse(list({line['tax_line_id'] for line in taxes}))
         tax_records.fetch(['type_tax_use', 'name', 'tax_group_id', 'amount_type', 'amount'])
         tax_records.mapped('tax_group_id').fetch(['name'])
         metadata = {}
@@ -47,7 +54,7 @@ class DashboardTaxBasis(models.AbstractModel):
             metadata[tax.id] = (tax.type_tax_use, excluded_tax)
         codes = {}
         for cid, aid in {(line['company_id'], line['account_id']) for line in taxes}:
-            codes[(cid, aid)] = self.env['account.account'].browse(aid).with_company(self.env['res.company'].browse(cid)).code or ''
+            codes[(cid, aid)] = lines.env['account.account'].browse(aid).with_company(lines.env['res.company'].browse(cid)).code or ''
         entries = []
         for line in taxes:
             cid, account_id, tax_id = line['company_id'], line['account_id'], line['tax_line_id']

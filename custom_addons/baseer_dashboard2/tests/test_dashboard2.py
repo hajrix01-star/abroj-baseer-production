@@ -673,7 +673,7 @@ class TestDashboard2(TransactionCase):
         order(session, day, 1)
         self.assertEqual(result(day)[0]['gross'], 115)
         self.assertEqual(result(day)[1][(company.id, day)]['source'], 'pos')
-        action = service.get_drilldown({'company_key': str(company.id), 'period': {'mode': 'range', 'date_from': str(day), 'date_to': str(day)}, 'section': 'revenue', 'key': 'gross'})
+        action = service.get_drilldown({'company_key': str(company.id), 'period': {'mode': 'month', 'month': '2026-10'}, 'section': 'heatmap', 'key': 'gross', 'day': str(day)})
         self.assertEqual(action['res_model'], 'pos.payment')
         payments = self.env['pos.payment'].with_context(**action['context']).search(action['domain'])
         self.assertEqual(sum(payments.mapped('amount')), 115)

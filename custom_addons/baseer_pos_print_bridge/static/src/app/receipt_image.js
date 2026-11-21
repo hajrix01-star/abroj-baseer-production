@@ -16,7 +16,7 @@ function sanitizeReceiptText(node) {
 // width before drawing text. renderer.toCanvas fixes pixelRatio at 1.
 export async function renderReceiptCanvas(renderer, component, props) {
     const el = await renderer.toHtml(component, props);
-    el.classList.add("pos-receipt-print", "p-3");
+    el.classList.add("pos-receipt-print", "p-3", "baseer-receipt-image");
     sanitizeReceiptText(el);
     return renderer.whenMounted({
         el,

@@ -4,6 +4,7 @@ from collections import Counter
 from calendar import monthrange
 from datetime import date, timedelta
 from decimal import Decimal, ROUND_HALF_UP, localcontext
+import re
 
 from odoo import _, api, fields, models
 from odoo.exceptions import AccessError, UserError, ValidationError
@@ -934,14 +935,18 @@ class BaseerProfitLossReport(models.AbstractModel):
                 accounts.check_access('read')
         return prepared
 
-    def _closed_pos_accounting_amounts(self, orders, move, company, line_ids_by_order):
+    def _closed_pos_accounting_amounts(self, orders, move, company, line_ids_by_order,
+                                       original_session_move=None):
         """Rebuild the read-only tax bases used by native POS session posting."""
         sessions = orders.session_id
         currency = company.currency_id
-        if (len(sessions) != 1 or sessions.state != 'closed' or sessions.move_id != move
+        session_move = original_session_move or move
+        if (len(sessions) != 1 or sessions.state != 'closed' or sessions.move_id != session_move
                 or sessions.company_id != company or sessions.currency_id != currency
                 or move.state != 'posted' or move.company_id != company
                 or move.currency_id != currency
+                or session_move.state != 'posted' or session_move.company_id != company
+                or session_move.currency_id != currency or session_move.journal_id != move.journal_id
                 or any(order.account_move or order.currency_id != currency for order in orders)):
             return None
 
@@ -1037,6 +1042,176 @@ class BaseerProfitLossReport(models.AbstractModel):
             return None
         return by_order
 
+    def _pos_correction_pair(self, move, company):
+        """Prove one isolated, explicitly reconciled POS correction, or return None.
+
+        SQL checks identity completeness only. All values and relationships are
+        read through the caller's ORM environment and record rules.
+        """
+        if (move.state != 'posted' or move.company_id != company
+                or move.currency_id != company.currency_id):
+            return None
+        move.check_access('read')
+        Partial = self.env['account.partial.reconcile']
+        Partial.flush_model(['debit_move_id', 'credit_move_id'])
+        self.env.cr.execute('''SELECT p.id FROM account_partial_reconcile p
+            JOIN account_move_line d ON d.id=p.debit_move_id
+            JOIN account_move_line c ON c.id=p.credit_move_id
+            JOIN account_move dm ON dm.id=d.move_id
+            JOIN account_move cm ON cm.id=c.move_id
+            WHERE (d.move_id = %s OR c.move_id = %s)
+            AND (dm.ref LIKE 'POS-%%-ADMIN-CORRECTION-%%'
+                 OR cm.ref LIKE 'POS-%%-ADMIN-CORRECTION-%%')''',
+            [move.id, move.id])
+        partial_ids = [row[0] for row in self.env.cr.fetchall()]
+        suspected = bool((move.ref or '').startswith('POS-') and '-ADMIN-CORRECTION-' in move.ref)
+        if not partial_ids:
+            return {} if suspected else None
+        move_lines = move.line_ids
+        move_lines.check_access('read')
+        self._verify_links(move_lines)
+        if self.env['account.move'].search_count(Domain('id', '=', move.id) & Domain(
+                'line_ids', 'any!', Domain('id', 'not in', move_lines.ids)), limit=1):
+            return {}
+        Partial.browse().check_access('read')
+        partials = Partial.browse(partial_ids).exists()
+        partials.check_access('read')
+        candidates = []
+        pattern = re.compile(r'^POS-([1-9][0-9]*)-ADMIN-CORRECTION-([0-9]{8})$')
+        for partial in partials:
+            debit, credit = partial.debit_move_id, partial.credit_move_id
+            (debit | credit).check_access('read')
+            (debit.move_id | credit.move_id).check_access('read')
+            for correction_line, original_line in ((debit, credit), (credit, debit)):
+                correction = correction_line.move_id
+                match = pattern.fullmatch(correction.ref or '')
+                if not match or (move != correction and move != original_line.move_id):
+                    continue
+                expected = correction.ref + ' / reverse ONLY original closing difference'
+                if correction_line.name not in (expected + str(original_line.id),
+                                                 expected + ' ' + str(original_line.id)):
+                    continue
+                candidates.append((partial, original_line, correction_line, match))
+        if len(candidates) != 1:
+            return {}
+        partial, original_line, correction_line, match = candidates[0]
+        original, correction = original_line.move_id, correction_line.move_id
+        if len(match[1]) > 10:
+            return {}
+        order_id = int(match[1])
+        if order_id > 2147483647:
+            return {}
+        if (original == correction or original.state != 'posted' or correction.state != 'posted'
+                or original.move_type != 'entry' or correction.move_type != 'entry'
+                or original.company_id != company or correction.company_id != company
+                or original.currency_id != company.currency_id or correction.currency_id != company.currency_id
+                or original.journal_id != correction.journal_id
+                or original_line.company_id != company or correction_line.company_id != company
+                or original_line.currency_id != company.currency_id or correction_line.currency_id != company.currency_id
+                or original_line.account_id != correction_line.account_id
+                or original_line.account_id.account_type != 'asset_receivable'
+                or not original_line.full_reconcile_id
+                or original_line.full_reconcile_id != correction_line.full_reconcile_id
+                or partial.full_reconcile_id != original_line.full_reconcile_id
+                or self._decimal(original_line.balance) >= 0
+                or self._decimal(correction_line.balance) != -self._decimal(original_line.balance)
+                or self._decimal(partial.amount) != abs(self._decimal(original_line.balance))):
+            return {}
+        original_line.full_reconcile_id.check_access('read')
+        try:
+            correction_date = date(int(match[2][:4]), int(match[2][4:6]), int(match[2][6:]))
+        except ValueError:
+            return {}
+        if correction.date != correction_date:
+            return {}
+        # Both reconciliation endpoints must have exactly this one complete edge.
+        for line in (original_line, correction_line):
+            self.env.cr.execute('''SELECT id FROM account_partial_reconcile
+                WHERE debit_move_id=%s OR credit_move_id=%s''', [line.id, line.id])
+            if {row[0] for row in self.env.cr.fetchall()} != {partial.id}:
+                return {}
+            visible = line.matched_debit_ids | line.matched_credit_ids
+            visible.check_access('read')
+            if visible.ids != partial.ids:
+                return {}
+            if (self._decimal(line.amount_currency) != self._decimal(line.balance)
+                    or self._decimal(partial.debit_amount_currency) != self._decimal(partial.amount)
+                    or self._decimal(partial.credit_amount_currency) != self._decimal(partial.amount)):
+                return {}
+
+        # A second correction or a hidden competing reference makes linkage ambiguous.
+        ref_prefix = 'POS-%s-ADMIN-CORRECTION-' % order_id
+        Move = self.env['account.move']
+        refs = Move.search([('company_id', '=', company.id), ('ref', '=like', ref_prefix + '%'),
+                            ('state', '!=', 'cancel')])
+        refs.check_access('read')
+        Move.flush_model(['company_id', 'ref', 'state'])
+        self.env.cr.execute('''SELECT id FROM account_move WHERE company_id=%s
+            AND ref LIKE %s AND state != 'cancel' ''', [company.id, ref_prefix + '%'])
+        if set(refs.ids) != {row[0] for row in self.env.cr.fetchall()} or refs.ids != correction.ids:
+            return {}
+        Order = self.env['pos.order']
+        Order.browse().check_access('read')
+        Order.flush_model(['company_id', 'state', 'account_move', 'session_id'])
+        self.env['pos.session'].flush_model(['move_id'])
+        # The correction must not already own native POS orders by either path.
+        self.env.cr.execute('''SELECT o.id FROM pos_order o LEFT JOIN pos_session s ON s.id=o.session_id
+            WHERE o.account_move=%s OR s.move_id=%s''', [correction.id, correction.id])
+        if self.env.cr.fetchone():
+            return {}
+        order = Order.browse(order_id).exists()
+        order.check_access('read')
+        if (not order or order.company_id != company or order.currency_id != company.currency_id
+                or order.state not in ('paid', 'done') or order.is_refund or order.is_invoiced
+                or order.account_move or self._decimal(order.amount_total) <= 0
+                or self._decimal(order.amount_total) != self._decimal(partial.amount)):
+            return {}
+        session = order.session_id
+        session.check_access('read')
+        if (not session or session.state != 'closed' or session.company_id != company
+                or session.currency_id != company.currency_id or session.move_id != original
+                or session.config_id.journal_id != original.journal_id):
+            return {}
+        orders = Order.search([
+            ('company_id', '=', company.id), ('state', 'in', ('paid', 'done', 'invoiced')),
+            '|', ('account_move', '=', original.id),
+            '&', ('account_move', '=', False), ('session_id.move_id', '=', original.id),
+        ])
+        orders.check_access('read')
+        self.env.cr.execute('''SELECT o.id FROM pos_order o LEFT JOIN pos_session s ON s.id=o.session_id
+            WHERE o.state IN ('paid','done','invoiced')
+            AND (o.account_move=%s OR (o.account_move IS NULL AND s.move_id=%s))''',
+            [original.id, original.id])
+        if set(orders.ids) != {row[0] for row in self.env.cr.fetchall()} or order not in orders:
+            return {}
+        remaining = orders - order
+        if (not remaining or remaining.session_id != session
+                or any(item.account_move or item.is_invoiced for item in remaining)):
+            return {}
+        census = self._channel_child_ids(orders)
+        self._native_channel_accounts(orders, census['lines'])
+        original_basis = self._closed_pos_accounting_amounts(remaining, original, company, census['lines'])
+        correction_basis = self._closed_pos_accounting_amounts(
+            order, correction, company, census['lines'], original_session_move=original)
+        if original_basis is None or correction_basis is None:
+            return {}
+        original_accounts = {key for amounts in original_basis.values() for key, value in amounts.items() if value}
+        correction_accounts = {key for amounts in correction_basis.values() for key, value in amounts.items() if value}
+        if len(original_accounts) != 1 or original_accounts != correction_accounts:
+            return {}
+        account_id = next(iter(original_accounts))
+        # Every payment must be independently visible and reconcilable to its order.
+        for item in orders:
+            portions = self._order_channels(item, original_basis[item.id].get(account_id, Decimal('0'))
+                                            if item != order else correction_basis[item.id].get(account_id, Decimal('0')),
+                                            company, _payment_ids=census['payments'][item.id])
+            if not portions or UNALLOCATED in portions:
+                return {}
+        return {
+            original.id: (remaining, original_basis, census),
+            correction.id: (order, correction_basis, census),
+        }
+
     @api.model
     def _revenue_channels(self, company, domain, provenance=None, _export_channel_budget=None):
         """Only attribute a whole move/account after exact POS net matching."""
@@ -1051,6 +1226,7 @@ class BaseerProfitLossReport(models.AbstractModel):
         # amount or visibility cache. Guard failures retain their original scope.
         child_ids = {'lines': {}, 'payments': {}}
         accounting_amounts = {}
+        correction_pairs = {}
         for (move_id, account_id), amount in grouped.items():
             allocation = {UNALLOCATED: ('', amount)}
             try:
@@ -1074,45 +1250,63 @@ class BaseerProfitLossReport(models.AbstractModel):
                 if set(orders.ids) != {item[0] for item in self.env.cr.fetchall()}:
                     raise AccessError(_('POS source is not available.'))
                 orders.session_id.check_access('read')
-                missing = orders.filtered(lambda order: order.id not in child_ids['lines'])
-                if missing:
-                    census = self._channel_child_ids(missing)
-                    for key in child_ids:
-                        child_ids[key].update(census[key])
-                prepared_accounts = self._native_channel_accounts(orders, child_ids['lines'])
-                order_amounts = []
-                for order in orders:
-                    net = Decimal('0')
-                    for source in order.lines:
-                        account = prepared_accounts[source.id]
-                        if account and account.id == account_id:
-                            # Baseer refunds can store positive subtotals;
-                            # already-negative native lines must not flip twice.
-                            subtotal = self._decimal(source.price_subtotal)
-                            net += -abs(subtotal) if order.is_refund else subtotal
-                    order_amounts.append((order, net))
-                order_amounts = reconcile_order_amounts(
-                    order_amounts, amount, self._decimal(company.currency_id.rounding))
-                if order_amounts is None and orders:
-                    if move_id not in accounting_amounts:
-                        move = lines.env['account.move'].browse(move_id)
-                        try:
-                            accounting_amounts[move_id] = self._closed_pos_accounting_amounts(
-                                orders, move, company, child_ids['lines'])
-                        except UserError:
-                            accounting_amounts[move_id] = None
-                    recovered = accounting_amounts[move_id]
-                    if recovered is not None:
-                        rebuilt = [(order, recovered[order.id].get(account_id, Decimal('0')))
-                                   for order in orders]
-                        # The alternate basis must match exactly, without spending the residual twice.
+                if move_id not in correction_pairs:
+                    try:
+                        pair = self._pos_correction_pair(lines.env['account.move'].browse(move_id), company)
+                    except UserError:
+                        # A failed correction proof must not fall back to an
+                        # ordinary POS attribution of the same source.
+                        pair = {}
+                    correction_pairs[move_id] = pair
+                    if pair:
+                        correction_pairs.update({key: pair for key in pair})
+                pair = correction_pairs[move_id]
+                order_amounts = None
+                payment_census = child_ids['payments']
+                if pair is not None:
+                    if move_id in pair:
+                        pair_orders, basis, census = pair[move_id]
+                        rebuilt = [(item, basis[item.id].get(account_id, Decimal('0'))) for item in pair_orders]
                         if sum((net for _order, net in rebuilt), Decimal('0')) == amount:
                             order_amounts = rebuilt
+                            payment_census = census['payments']
+                else:
+                    missing = orders.filtered(lambda order: order.id not in child_ids['lines'])
+                    if missing:
+                        census = self._channel_child_ids(missing)
+                        for key in child_ids:
+                            child_ids[key].update(census[key])
+                    prepared_accounts = self._native_channel_accounts(orders, child_ids['lines'])
+                    order_amounts = []
+                    for order in orders:
+                        net = Decimal('0')
+                        for source in order.lines:
+                            account = prepared_accounts[source.id]
+                            if account and account.id == account_id:
+                                subtotal = self._decimal(source.price_subtotal)
+                                net += -abs(subtotal) if order.is_refund else subtotal
+                        order_amounts.append((order, net))
+                    order_amounts = reconcile_order_amounts(
+                        order_amounts, amount, self._decimal(company.currency_id.rounding))
+                    if order_amounts is None and orders:
+                        if move_id not in accounting_amounts:
+                            move = lines.env['account.move'].browse(move_id)
+                            try:
+                                accounting_amounts[move_id] = self._closed_pos_accounting_amounts(
+                                    orders, move, company, child_ids['lines'])
+                            except UserError:
+                                accounting_amounts[move_id] = None
+                        recovered = accounting_amounts[move_id]
+                        if recovered is not None:
+                            rebuilt = [(order, recovered[order.id].get(account_id, Decimal('0')))
+                                       for order in orders]
+                            if sum((net for _order, net in rebuilt), Decimal('0')) == amount:
+                                order_amounts = rebuilt
                 if order_amounts is not None:
                     allocation = {}
                     for order, net in order_amounts:
                         for key, (name, value) in self._order_channels(
-                                order, net, company, _payment_ids=child_ids['payments'][order.id]).items():
+                                order, net, company, _payment_ids=payment_census[order.id]).items():
                             prior = allocation.get(key, (name, Decimal('0')))
                             allocation[key] = (name, prior[1] + value)
             except (AccessError, KeyError):

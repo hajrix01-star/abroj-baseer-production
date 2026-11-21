@@ -169,3 +169,118 @@ class TestPLPosSessionDiagnostic(TransactionCase):
         self.assertEqual(rejected['unallocated'][1], posted)
         self.assertNotIn('payment_%s' % original_method.id, rejected)
         self.assertNotIn('payment_%s' % second_method.id, rejected)
+
+    def test_closed_session_administrative_correction_has_one_ledger_source_per_order(self):
+        bank = self.env['account.journal'].search([
+            ('company_id', '=', self.company.id), ('type', '=', 'bank'),
+        ], limit=1)
+        self.assertTrue(bank)
+        first_method = self.env['pos.payment.method'].with_company(self.company).create({
+            'name': 'Synthetic original tender', 'company_id': self.company.id,
+            'journal_id': bank.id, 'receivable_account_id': self.receivable.id,
+            'outstanding_account_id': self._account('956141', 'asset_current', True).id,
+        })
+        second_method = first_method.copy({'name': 'Synthetic corrected tender'})
+        config = self.env['pos.config'].with_company(self.company).create({
+            'name': 'Synthetic administrative correction', 'company_id': self.company.id,
+            'journal_id': self.sale_journal.id, 'invoice_journal_id': self.sale_journal.id,
+            'payment_method_ids': [Command.set((first_method | second_method).ids)],
+        })
+        session = self.env['pos.session'].create({'config_id': config.id})
+        session.set_opening_control(0, 'Synthetic administrative correction')
+        remaining = self._order(session, amount=100, taxed=True)
+        remaining.payment_ids.payment_method_id = first_method
+        corrected = self._order(session, amount=40, taxed=True)
+        corrected.payment_ids.payment_method_id = second_method
+        move = self._close(remaining).move_id
+        income = move.line_ids.filtered(lambda line: line.account_id == self.income)
+        tax = move.line_ids.filtered('tax_line_id')
+        self.assertEqual(sum(income.mapped('balance')), -140)
+        self.assertEqual(sum(tax.mapped('balance')), -21)
+        move.button_draft()
+        marker_name = 'Synthetic POS closing difference'
+        move.with_context(check_move_validity=False).write({'line_ids': [
+            Command.update(income.id, {'credit': 100, 'amount_currency': -100}),
+            Command.update(tax.id, {'credit': 15, 'amount_currency': -15, 'tax_base_amount': 100}),
+            Command.create({
+                'account_id': self.receivable.id, 'partner_id': self.partner.id,
+                'name': marker_name, 'credit': 46,
+            }),
+        ]})
+        move.action_post()
+        marker = move.line_ids.filtered(lambda line: line.name == marker_name)
+        correction_date = fields.Date.add(move.date, months=1)
+        ref = 'POS-%s-ADMIN-CORRECTION-%s' % (
+            corrected.id, correction_date.strftime('%Y%m%d'),
+        )
+        counterpart_name = '%s / reverse ONLY original closing difference%s' % (ref, marker.id)
+        correction = self.env['account.move'].create({
+            'move_type': 'entry', 'journal_id': move.journal_id.id, 'date': correction_date,
+            'ref': ref, 'line_ids': [
+                Command.create({
+                    'account_id': self.receivable.id, 'partner_id': self.partner.id,
+                    'name': counterpart_name, 'debit': 46,
+                }),
+                Command.create({
+                    'account_id': self.income.id, 'name': 'Synthetic sales correction', 'credit': 40,
+                }),
+                Command.create({
+                    'account_id': self.tax_account.id, 'name': 'Synthetic tax correction',
+                    'tax_repartition_line_id': tax.tax_repartition_line_id.id,
+                    'tax_base_amount': 40, 'credit': 6,
+                }),
+            ],
+        })
+        correction.action_post()
+        counterpart = correction.line_ids.filtered(lambda line: line.name == counterpart_name)
+        report = self._empty_native_reader().env['baseer.profit.loss.report']
+
+        def channels(source, provenance=None):
+            scope = Domain('move_id', 'in', source.ids) & Domain('account_id', '=', self.income.id)
+            return {key: amount for key, (_name, amount) in report._revenue_channels(
+                self.company, scope, provenance=provenance,
+            )[self.income.id].items()}
+
+        self.assertEqual(channels(move | correction), {'unallocated': Decimal('140.00')})
+        (marker | counterpart).reconcile()
+        self.assertTrue(marker.full_reconcile_id)
+        self.assertEqual(marker.full_reconcile_id, counterpart.full_reconcile_id)
+        first_key = 'payment_%s' % first_method.id
+        second_key = 'payment_%s' % second_method.id
+        evidence = []
+        self.assertEqual(channels(move, evidence), {first_key: Decimal('100.00')})
+        self.assertEqual(channels(correction, evidence), {second_key: Decimal('40.00')})
+        self.assertEqual(channels(move | correction), {
+            first_key: Decimal('100.00'), second_key: Decimal('40.00'),
+        })
+        self.assertEqual({(item['move_id'], item['channel_key'], item['value']) for item in evidence}, {
+            (move.id, first_key, Decimal('100.00')), (correction.id, second_key, Decimal('40.00')),
+        })
+        for source, channel, expected in (
+            (move, first_key, '100.00'), (correction, second_key, '40.00'),
+        ):
+            filters = {'company_id': self.company.id, 'date_from': str(source.date),
+                       'date_to': str(source.date), 'journal_ids': [source.journal_id.id]}
+            data = report.get_accounts(filters, 'income')
+            row = next(row for row in data['accounts'] if row['id'] == self.income.id)
+            self.assertEqual(row['amount'], expected)
+            self.assertEqual([(item['key'], item['amounts']['current']['amount'])
+                              for item in row['channels']], [(channel, expected)])
+        duplicate = self.env['account.move'].create({
+            'move_type': 'entry', 'journal_id': correction.journal_id.id,
+            'date': correction.date, 'ref': ref,
+        })
+        self.assertEqual(channels(move | correction), {'unallocated': Decimal('140.00')})
+        duplicate.unlink()
+        rule = self.env['ir.rule'].create({
+            'name': 'Hide the synthetic administrative correction',
+            'model_id': self.env['ir.model']._get('account.move').id,
+            'domain_force': f"[('id', '!=', {correction.id})]",
+        })
+        try:
+            report.env.invalidate_all()
+            self.assertEqual(channels(move), {'unallocated': Decimal('100.00')})
+        finally:
+            rule.unlink()
+        counterpart.name = '%s / reverse ONLY original closing difference%s' % (ref, income.id)
+        self.assertEqual(channels(move | correction), {'unallocated': Decimal('140.00')})

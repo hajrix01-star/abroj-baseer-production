@@ -14,7 +14,7 @@ safe_file() {
 action=$1
 tag=$2
 [[ "$action" =~ ^(prepare|resume|finance|switch|verify)$ ]] || die 'unsupported action'
-[[ "$tag" =~ ^qa-refresh-20261121-([1-9][0-9]{0,19})$ ]] || die 'unsupported request'
+[[ "$tag" =~ ^qa-refresh-20261121b-([1-9][0-9]{0,19})$ ]] || die 'unsupported request'
 run_id=${BASH_REMATCH[1]}
 safe_file "$CONFIG" 600
 # shellcheck disable=SC1090
@@ -45,13 +45,28 @@ git -C "$stage/repo.git" merge-base --is-ancestor "$revision" refs/heads/reviewe
 message=$(git -C "$stage/repo.git" cat-file -p "refs/tags/$tag" | sed '1,/^$/d' | sed '/^-----BEGIN SSH SIGNATURE-----/,$d')
 mapfile -t fields < <(printf '%s\n' "$message" | sed '/^$/d')
 [[ "${#fields[@]}" -eq 3 || "${#fields[@]}" -eq 4 ]] || die 'request must have three or four bounded fields'
-[ "${fields[0]}" = QA_REFRESH_DATE=20261121 ] || die 'request date mismatch'
+[ "${fields[0]}" = QA_REFRESH_DATE=20261121b ] || die 'request date mismatch'
 [[ "${fields[1]}" =~ ^QA_REFRESH_LIVE=([a-f0-9]{40})$ ]] || die 'invalid LIVE source identity'
 live=${BASH_REMATCH[1]}
 [[ "${fields[2]}" =~ ^QA_REFRESH_PREVIOUS=([a-f0-9]{40})$ ]] || die 'invalid previous QA identity'
 previous=${BASH_REMATCH[1]}
-git -C "$stage/repo.git" merge-base --is-ancestor "$live" "$previous" || die 'QA overlay source does not descend from Live'
-git -C "$stage/repo.git" merge-base --is-ancestor "$previous" "$revision" || die 'QA overlay source is outside the signed revision'
+git -C "$stage/repo.git" show "$revision:ops/qa/runtime-pins/20261121b.env" > "$stage/runtime-pins.env"
+# This file comes from the verified tag's exact reviewed commit.
+# shellcheck disable=SC1091
+. "$stage/runtime-pins.env"
+[ "$live" = "$RUNTIME_LIVE" ] && [ "$previous" = "$RUNTIME_PREVIOUS_QA" ] || die 'request differs from reviewed runtime pins'
+for source in "$RUNTIME_BASELINE" "$RUNTIME_CANDIDATE"; do
+    [[ "$source" =~ ^[a-f0-9]{40}$ ]] || die 'invalid runtime commit pin'
+done
+for hash in "$RUNTIME_SNAPSHOT_DUMP_SHA" "$RUNTIME_SNAPSHOT_FILESTORE_SHA"; do
+    [[ "$hash" =~ ^[a-f0-9]{64}$ ]] || die 'invalid snapshot checksum pin'
+done
+[ "$RUNTIME_REF" = refs/heads/codex/qa-runtime-20261121b ] || die 'unexpected runtime branch'
+git -C "$stage/repo.git" merge-base --is-ancestor "$previous" "$revision" || die 'previous QA source is outside reviewed main'
+git -C "$stage/repo.git" fetch --quiet --no-tags origin "$RUNTIME_REF:refs/heads/reviewed-runtime"
+[ "$(git -C "$stage/repo.git" rev-parse refs/heads/reviewed-runtime)" = "$RUNTIME_CANDIDATE" ] || die 'runtime branch moved'
+[ "$(git -C "$stage/repo.git" rev-parse "$RUNTIME_CANDIDATE^")" = "$RUNTIME_BASELINE" ] || die 'runtime baseline mismatch'
+[ "$(git -C "$stage/repo.git" rev-parse "$RUNTIME_BASELINE^")" = "$RUNTIME_LIVE" ] || die 'runtime does not descend from deployed Live'
 if [ "${#fields[@]}" -eq 4 ]; then
     [[ "${fields[3]}" =~ ^QA_REFRESH_RECOVERY_RUN=([1-9][0-9]{0,19})$ ]] || die 'invalid recovery run'
     run_id=${BASH_REMATCH[1]}
@@ -59,24 +74,29 @@ if [ "${#fields[@]}" -eq 4 ]; then
 elif [ "$action" = resume ]; then
     die 'resume requires a signed recovery run'
 fi
-for pair in 'ops/qa/baseer-qa-refresh:/usr/local/sbin/baseer-qa-refresh' 'ops/qa/refresh-qa.py:/usr/local/lib/baseer-qa-refresh/refresh-qa.py' 'ops/qa/verify-qa-refresh-odoo.py:/usr/local/lib/baseer-qa-refresh/verify-qa-refresh-odoo.py'; do
+for pair in 'ops/qa/baseer-qa-refresh:/usr/local/sbin/baseer-qa-refresh' 'ops/qa/refresh-qa.py:/usr/local/lib/baseer-qa-refresh/refresh-qa.py' 'ops/qa/verify-qa-refresh-odoo.py:/usr/local/lib/baseer-qa-refresh/verify-qa-refresh-odoo.py' 'ops/qa/baseer-qa-deploy:/usr/local/sbin/baseer-qa-deploy'; do
     repo_path=${pair%%:*}
     installed=${pair#*:}
     git -C "$stage/repo.git" show "$revision:$repo_path" > "$stage/expected"
     cmp -- "$stage/expected" "$installed" || die 'installed operation does not match the signed reviewed request'
 done
-# Pin the entire runtime source to an actual Git commit. Scope the change
-# from Live to the reviewed report and its one diagnostic test.
-git -C "$stage/repo.git" diff --name-only --no-renames -z "$live" "$previous" -- custom_addons third_party_addons > "$stage/runtime-diff"
-while IFS= read -r -d '' path; do
-    case "$path" in
-        custom_addons/baseer_profit_loss_report/*|custom_addons/baseer_operations_report/tests/test_pl_pos_session_diagnostic.py) ;;
-        *) die 'QA source contains a runtime change outside the reviewed report' ;;
-    esac
-done < "$stage/runtime-diff"
-mkdir -m 0700 "$stage/runtime"
-git -C "$stage/repo.git" archive --format=tar "$previous" custom_addons third_party_addons | tar -x -C "$stage/runtime"
+module=custom_addons/baseer_profit_loss_report
+model="$module/models/profit_loss.py"
+manifest="$module/__manifest__.py"
+delta=$(git -C "$stage/repo.git" diff --name-only --no-renames "$RUNTIME_BASELINE" "$RUNTIME_CANDIDATE" --)
+[[ "$delta" == "$manifest"$'\n'"$model" ]] || die 'runtime delta is not limited to the two reviewed report files'
+for path in "$model" "$manifest"; do
+    [ "$(git -C "$stage/repo.git" rev-parse "$RUNTIME_CANDIDATE:$path")" = "$(git -C "$stage/repo.git" rev-parse "$previous:$path")" ] ||
+        die 'runtime report blob differs from the approved QA correction'
+done
+for directory in baseline runtime; do mkdir -m 0700 "$stage/$directory"; done
+git -C "$stage/repo.git" archive --format=tar "$RUNTIME_BASELINE" custom_addons third_party_addons | tar -x -C "$stage/baseline"
+git -C "$stage/repo.git" archive --format=tar "$RUNTIME_CANDIDATE" custom_addons third_party_addons | tar -x -C "$stage/runtime"
 export QA_REFRESH_SOURCE_DIR="$stage/runtime"
+export QA_REFRESH_RUNTIME_BASELINE_DIR="$stage/baseline"
+export QA_REFRESH_SOURCE_COMMIT="$RUNTIME_CANDIDATE"
+export QA_REFRESH_SNAPSHOT_DUMP_SHA="$RUNTIME_SNAPSHOT_DUMP_SHA"
+export QA_REFRESH_SNAPSHOT_FILESTORE_SHA="$RUNTIME_SNAPSHOT_FILESTORE_SHA"
 export QA_REFRESH_REVIEWED_REVISION=$revision
 export QA_REFRESH_SIGNED_TAG=$tag
 python3 "$ENGINE" "$action" "$run_id" "$live" "$previous"

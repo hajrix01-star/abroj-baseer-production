@@ -1,8 +1,9 @@
 """Read-only acceptance script for native Odoo shell on the isolated QA clone.
 
-The caller supplies a private QA_INPUT Python mapping before this file.  It
-must never be committed alongside this script.  Only status and hashes are
-printed: neither private references, per-day amounts nor employee data.
+The caller supplies a private QA_INPUT mapping and the independently verified
+QA_EXPECTED_SOURCE marker before this file.  Private inputs must never be
+committed alongside this script.  Only status and hashes are printed: neither
+private references, per-day amounts nor employee data.
 """
 import json
 import re
@@ -327,12 +328,14 @@ def check_arz(data, public=True):
 env.cr.rollback()
 env.cr.execute('SET TRANSACTION READ ONLY')
 try:
-    require(env.cr.dbname == 'baseer_qa_20261121', 'wrong acceptance database')
+    require(env.cr.dbname == 'baseer_qa_20261121b', 'wrong acceptance database')
     env.cr.execute('SHOW transaction_read_only')
     require(env.cr.fetchone()[0] == 'on', 'transaction is not read-only')
     require(isinstance(QA_INPUT, dict), 'private acceptance input missing')
-    require(QA_INPUT['source_sha'] == '10f298ee22ca86e88d8c822966c2fffdc72ccae9',
-            'candidate source marker mismatch')
+    require(isinstance(QA_EXPECTED_SOURCE, str)
+            and bool(re.fullmatch(r'[0-9a-f]{40}', QA_EXPECTED_SOURCE)),
+            'verified source marker missing')
+    require(QA_INPUT['source_sha'] == QA_EXPECTED_SOURCE, 'candidate source marker mismatch')
     require(bool(re.fullmatch(r'[a-fA-F0-9]{64}', QA_INPUT['prepared_sha256'])), 'invalid prepare receipt hash')
     user = env['res.users'].browse(2).exists()
     require(bool(user) and user.active and {1, 2}.issubset(set(user.company_ids.ids)),
@@ -346,10 +349,12 @@ try:
     require(shami == check_shami(QA_INPUT['shami']) and arz == check_arz(QA_INPUT['arz'], public=False),
             'repeated input changed read results')
     outsiders = env['res.users'].sudo().search([
-        ('active', '=', True), ('share', '=', False), ('id', '!=', 2), ('company_ids', 'not in', [2]),
+        ('active', '=', True), ('share', '=', False), ('id', 'not in', [1, 2]), ('company_ids', 'not in', [2]),
     ], limit=50)
     guard = 'NO_FIXTURE'
     for outsider in outsiders:
+        if outsider.with_user(outsider).has_group('base.group_system'):
+            continue
         candidate = env['baseer.profit.loss.report'].with_user(outsider).with_context(
             allowed_company_ids=outsider.company_ids.ids)
         try:

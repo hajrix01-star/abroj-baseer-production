@@ -10,11 +10,11 @@ safe_file() {
     [ "$(stat -c '%U:%G:%a' "$1")" = "root:root:$2" ] || die 'unsafe file ownership/mode'
 }
 [ "$(id -u)" -eq 0 ] || die 'root is required'
-[ "$#" -eq 2 ] || die 'expected prepare/resume/switch/verify and signed request tag'
+[ "$#" -eq 2 ] || die 'expected prepare/resume/finance/switch/verify and signed request tag'
 action=$1
 tag=$2
-[[ "$action" =~ ^(prepare|resume|switch|verify)$ ]] || die 'unsupported action'
-[[ "$tag" =~ ^qa-refresh-20261023-([0-9]+)$ ]] || die 'unsupported request'
+[[ "$action" =~ ^(prepare|resume|finance|switch|verify)$ ]] || die 'unsupported action'
+[[ "$tag" =~ ^qa-refresh-20261121-([1-9][0-9]{0,19})$ ]] || die 'unsupported request'
 run_id=${BASH_REMATCH[1]}
 safe_file "$CONFIG" 600
 # shellcheck disable=SC1090
@@ -45,11 +45,13 @@ git -C "$stage/repo.git" merge-base --is-ancestor "$revision" refs/heads/reviewe
 message=$(git -C "$stage/repo.git" cat-file -p "refs/tags/$tag" | sed '1,/^$/d' | sed '/^-----BEGIN SSH SIGNATURE-----/,$d')
 mapfile -t fields < <(printf '%s\n' "$message" | sed '/^$/d')
 [[ "${#fields[@]}" -eq 3 || "${#fields[@]}" -eq 4 ]] || die 'request must have three or four bounded fields'
-[ "${fields[0]}" = QA_REFRESH_DATE=20261023 ] || die 'request date mismatch'
+[ "${fields[0]}" = QA_REFRESH_DATE=20261121 ] || die 'request date mismatch'
 [[ "${fields[1]}" =~ ^QA_REFRESH_LIVE=([a-f0-9]{40})$ ]] || die 'invalid LIVE source identity'
 live=${BASH_REMATCH[1]}
 [[ "${fields[2]}" =~ ^QA_REFRESH_PREVIOUS=([a-f0-9]{40})$ ]] || die 'invalid previous QA identity'
 previous=${BASH_REMATCH[1]}
+git -C "$stage/repo.git" merge-base --is-ancestor "$live" "$previous" || die 'QA overlay source does not descend from Live'
+git -C "$stage/repo.git" merge-base --is-ancestor "$previous" "$revision" || die 'QA overlay source is outside the signed revision'
 if [ "${#fields[@]}" -eq 4 ]; then
     [[ "${fields[3]}" =~ ^QA_REFRESH_RECOVERY_RUN=([1-9][0-9]{0,19})$ ]] || die 'invalid recovery run'
     run_id=${BASH_REMATCH[1]}
@@ -63,6 +65,18 @@ for pair in 'ops/qa/baseer-qa-refresh:/usr/local/sbin/baseer-qa-refresh' 'ops/qa
     git -C "$stage/repo.git" show "$revision:$repo_path" > "$stage/expected"
     cmp -- "$stage/expected" "$installed" || die 'installed operation does not match the signed reviewed request'
 done
+# Pin the entire runtime source to an actual Git commit. Scope the change
+# from Live to the reviewed report and its one diagnostic test.
+git -C "$stage/repo.git" diff --name-only --no-renames -z "$live" "$previous" -- custom_addons third_party_addons > "$stage/runtime-diff"
+while IFS= read -r -d '' path; do
+    case "$path" in
+        custom_addons/baseer_profit_loss_report/*|custom_addons/baseer_operations_report/tests/test_pl_pos_session_diagnostic.py) ;;
+        *) die 'QA source contains a runtime change outside the reviewed report' ;;
+    esac
+done < "$stage/runtime-diff"
+mkdir -m 0700 "$stage/runtime"
+git -C "$stage/repo.git" archive --format=tar "$previous" custom_addons third_party_addons | tar -x -C "$stage/runtime"
+export QA_REFRESH_SOURCE_DIR="$stage/runtime"
 export QA_REFRESH_REVIEWED_REVISION=$revision
 export QA_REFRESH_SIGNED_TAG=$tag
 python3 "$ENGINE" "$action" "$run_id" "$live" "$previous"

@@ -858,3 +858,76 @@ td {
 .o_bd2 .hours-table th:last-child { width: 58px; }
 .o_bd2 .hours-table { font-size: 10px; }
 .o_bd2 .hours-table th, .o_bd2 .hours-table td { padding-inline: 1px; }
+
+.bd2-menu-toggle, .bd2-nav-backdrop, .o_bd2 .context-source, .o_bd2 .company-label-fallback { display: none; }
+.o_bd2 .bd2-scroll-x { max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+@media (max-width: 1000px) {
+  .o_bd2 .bd2-sidebar { display: none; position: fixed; inset-block: 0; inset-inline-start: 0; width: 280px; max-width: 85vw; z-index: 102; overflow-y: auto; }
+  .o_bd2.bd2-nav-open .bd2-sidebar { display: flex; }
+  .o_bd2 .bd2-nav-backdrop { display: block; position: fixed; inset: 0; z-index: 101; background: var(--bd2-backdrop); }
+  .o_bd2 .bd2-menu-toggle { display: inline-grid; place-items: center; min-width: 44px; min-height: 44px; border: 1px solid var(--bd2-border); border-radius: 10px; background: var(--bd2-card); }
+  .o_bd2 .bd2-header, .o_bd2 .context, .o_bd2 .header-controls { flex-wrap: wrap; }
+  .o_bd2 .header-controls { width: 100%; margin: 0; }
+  .o_bd2 .header-controls .seg { flex-wrap: wrap; max-width: 100%; }
+  .o_bd2 .grid.two, .o_bd2 .grid.three, .o_bd2 .grid.four, .o_bd2 .grid.five { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 767px) {
+  .o_bd2 .bd2-main { padding: 16px 12px; }
+  .o_bd2 .grid.two, .o_bd2 .grid.two-wide, .o_bd2 .grid.three, .o_bd2 .grid.four, .o_bd2 .grid.five { grid-template-columns: minmax(0, 1fr); }
+  .o_bd2 .header-controls .seg { width: 100%; }
+  .o_bd2 .header-controls .seg input, .o_bd2 .header-controls .seg select { flex: 1 1 140px; min-width: 0; max-width: 100%; }
+  .o_bd2 .card { padding: 15px; }
+  .o_bd2 .stats.card { flex-wrap: wrap; }
+  .o_bd2 .stats.card > div { flex: 1 1 50%; }
+  .o_bd2 .card-head, .o_bd2 .view-controls, .o_bd2 .chart-legend, .o_bd2 .break-legend, .o_bd2 .bridge-legend, .o_bd2 .safety-chips { flex-wrap: wrap; white-space: normal; }
+  .o_bd2 .timeline .chart-legend { position: static; justify-content: flex-start; }
+  .o_bd2 .bd2-chart { min-height: 0; }
+  .o_bd2 .bridge-row, .o_bd2 .rank-row { grid-template-columns: minmax(0, 1fr) minmax(65px, 1fr); gap: 6px; }
+
+  .o_bd2 .year-grid { min-width: 900px; }
+  .o_bd2 .hours-table { min-width: 850px; }
+  .o_bd2 .inout-table th, .o_bd2 .inout-table td { white-space: nowrap; word-break: normal; overflow-wrap: normal; }
+  .o_bd2 .bd2-scroll-x table { width: max-content; min-width: 100%; }
+  .o_bd2 .bd2-scroll-x th:first-child { position: sticky; inset-inline-start: 0; z-index: 1; background: var(--bd2-surface); }
+  .o_bd2 .bd2-scroll-x tr.net th:first-child { background: var(--bd2-sidebar); }
+}
+@media (max-width: 767px) {
+  .o_bd2 .stats { flex-wrap: wrap; }
+  .o_bd2 .stats > div { flex: 1 1 50%; min-width: 0; }
+}
+
+@media (min-width: 1000px) {
+  .o_bd2 .company-strip { max-width: none; overflow-x: visible; }
+}
+@media (max-width: 999px) {
+  .o_bd2 .company-label-fallback { display: inline; }
+  .o_bd2 button, .o_bd2 select, .o_bd2 input, .o_bd2 a[href], .o_bd2 [role="button"] { min-width: 44px; min-height: 44px; }
+}
+@media (max-width: 767px) {
+  .o_bd2 .bd2-header { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; gap: 8px; align-items: center; }
+  .o_bd2 .bd2-header h1 { font-size: 20px; line-height: 1.3; }
+  .o_bd2 .header-controls { display: contents; }
+  .o_bd2 .header-controls .icon-button { grid-column: 3; grid-row: 1; }
+  .o_bd2 .header-source { display: none; }
+  .o_bd2 .context-source { display: inline; }
+  .o_bd2 .header-controls .company-strip { grid-column: 1 / -1; grid-row: 2; width: 100%; flex-wrap: nowrap; justify-content: flex-start; scroll-snap-type: x mandatory; }
+  .o_bd2 .company-strip button { flex: 0 0 auto; scroll-snap-align: start; }
+  .o_bd2 .header-controls .period-strip { grid-column: 1 / -1; grid-row: 3; width: 100%; flex-wrap: nowrap; }
+  .o_bd2 .header-controls .period-strip select { flex: 1 1 0; }
+  .o_bd2 .header-controls .period-strip input { flex: 1 1 0; width: 0; padding-inline: 2px; }
+  .o_bd2 .context { margin: 8px 0 12px; gap: 6px; }
+  .o_bd2 .calendar { min-width: 0; gap: 2px; }
+  .o_bd2 .weekday { padding: 4px 0; font-size: 10px; overflow-wrap: anywhere; }
+  .o_bd2 .day { min-width: 0; min-height: 64px; padding: 3px 1px; border-radius: 5px; }
+  .o_bd2 .day strong { font-size: 10px; }
+  .o_bd2 .day span, .o_bd2 .day small { font-size: 10px; }
+  .o_bd2 .occasion-badge { padding: 1px; font-size: 10px; }
+  .o_bd2 .hours-table th:first-child { position: sticky; inset-inline-start: 0; z-index: 2; background: var(--bd2-surface); }
+  .o_bd2 .bd2-axis-alternate, .o_bd2 .bd2-point-alternate { display: none; }
+  .o_bd2 .mini:not(.revenue-combo) .mini-labels .bd2-axis-alternate { display: block; visibility: hidden; }
+  .o_bd2 .bd2-chart text { font-size: 22px; }
+  .o_bd2 .bd2-chart .bd2-value-label { direction: ltr; }
+  .o_bd2 .bd2-chart .bd2-endpoint-label { /*rtl:ignore*/ transform: translateX(55px); }
+  .o_bd2 .mini-labels { font-size: 10px; }
+  .o_bd2 .mini .bd2-spark text { font-size: 4px; }
+}

@@ -1,9 +1,47 @@
 import calendar
+import copy
+from functools import wraps
 from datetime import date, timedelta
 from decimal import Decimal, ROUND_HALF_UP
 
 from odoo import api, fields, models, _
 from odoo.exceptions import AccessError, UserError
+from odoo.tools import SQL
+
+def raw_rows(model, domain, columns, limit=None, order=None):
+    """Read stored columns with the same access rules and order as search_read."""
+    columns = ['id'] + [name for name in columns if name != 'id']
+    for name in columns:
+        model._check_field_access(model._fields[name], 'read')
+    model.flush_model(columns)
+    query = model._search(domain, limit=limit, order=order or model._order)
+    rows = model.env.execute_query_dict(query.select(*(SQL.identifier(query.table, name) for name in columns)))
+    for row in rows:
+        for name in columns:
+            if row[name] is None:
+                row[name] = False
+    return rows
+
+
+def request_memo(method):
+    """Cache helper results only for the duration of a section request."""
+    @wraps(method)
+    def wrapper(self, *args, **kwargs):
+        cache = self.env.context.get('_bd2_request_cache')
+        if cache is None:
+            return method(self, *args, **kwargs)
+        def freeze(value):
+            if isinstance(value, (list, tuple)):
+                return tuple(freeze(item) for item in value)
+            if isinstance(value, dict):
+                return tuple(sorted((key, freeze(item)) for key, item in value.items()))
+            return value
+        key = (method.__name__, freeze(args), freeze(kwargs))
+        if key not in cache:
+            cache[key] = method(self, *args, **kwargs)
+        return copy.deepcopy(cache[key])
+    return wrapper
+
 
 def food_ratio(value, sales):
     """Round the exact monetary ratio once, away from zero at half tenths."""
@@ -124,25 +162,49 @@ class DashboardService(models.AbstractModel):
             raise UserError(_('Invalid dashboard period.'))
 
     def _category(self, account, categories):
+        cache = self.env.context.get('_bd2_request_cache')
+        category_ids = tuple(categories.ids)
+        rules_key = ('_category_rules', category_ids)
+        result_key = ('_category_result', category_ids, account.id, account.env.company.id)
+        if cache is not None and result_key in cache:
+            return cache[result_key]
+        rules = cache.get(rules_key) if cache is not None else None
+        if rules is None:
+            rules = [(category.code,
+                      tuple(prefix.strip() for prefix in (category.account_code_prefixes or '').split(',') if prefix.strip()),
+                      tuple(value.strip() for value in (category.account_type_fallback or '').split(',') if value.strip()))
+                     for category in categories]
+            if cache is not None:
+                cache[rules_key] = rules
         code = account.code or ''
-        for category in categories:
-            if any(code.startswith(prefix.strip()) for prefix in (category.account_code_prefixes or '').split(',') if prefix.strip()):
-                return category.code
-        for category in categories:
-            if account.account_type in [v.strip() for v in (category.account_type_fallback or '').split(',') if v.strip()]:
-                return category.code
-        return 'other_opex' if (account.account_type or '').startswith('expense') else False
+        account_type = account.account_type
+        result = next((key for key, prefixes, _types in rules if prefixes and code.startswith(prefixes)), None)
+        if result is None:
+            result = next((key for key, _prefixes, types in rules if account_type in types), None)
+        if result is None:
+            result = 'other_opex' if (account_type or '').startswith('expense') else False
+        if cache is not None:
+            cache[result_key] = result
+        return result
 
+    @request_memo
     def _reset_move_ids(self, ids, end, start=None):
         result = set()
+        cache = self.env.context.get('_bd2_request_cache')
         for cid in ids:
-            domain = [('company_id', '=', cid), ('parent_state', '=', 'posted'), ('date', '<=', end), ('account_id.code', '=', '999999')]
-            if start:
-                domain.append(('date', '>=', start))
-            company = self.env['res.company'].browse(cid)
-            result.update(self.env['account.move.line'].with_company(company).with_context(allowed_company_ids=[cid]).search(domain).mapped('move_id').ids)
+            key = ('_reset_move_rows', cid)
+            rows = cache.get(key) if cache is not None else None
+            if rows is None:
+                company = self.env['res.company'].browse(cid)
+                rows = raw_rows(self.env['account.move.line'].with_company(company).with_context(allowed_company_ids=[cid]),
+                    [('company_id', '=', cid), ('parent_state', '=', 'posted'), ('account_id.code', '=', '999999')],
+                    ['date', 'move_id'])
+                if cache is not None:
+                    cache[key] = rows
+            result.update(row['move_id'] for row in rows if row['date'] <= end and (not start or row['date'] >= start))
         return list(result)
 
+    @request_memo
     def _accounting(self, ids, start, end):
         categories = self.env['baseer.dashboard2.category'].with_context(allowed_company_ids=ids).search([])
         lines = self.env['account.move.line'].with_context(allowed_company_ids=ids)

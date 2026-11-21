@@ -943,3 +943,127 @@ class TestGlossaryBasis(TransactionCase):
     def test_apps_ratio_is_gross(self):
         from ..models.service import SOURCES
         self.assertIn('عدا نسبة التطبيقات: شاملة الضريبة', SOURCES['ratios'])
+
+
+class TestDashboardRequestMemo(TransactionCase):
+    def test_accounting_memo_matches_direct_and_is_isolated(self):
+        service = self.env['baseer.dashboard2.service']
+        ids = [self.env.company.id]
+        first, last = date(2026, 1, 1), date(2026, 1, 31)
+        direct = service._accounting(ids, first, last)
+        memo = service.with_context(_bd2_request_cache={})
+        result = memo._accounting(ids, first, last)
+        self.assertEqual(result, direct)
+        result['categories']['changed'] = 42
+        self.assertEqual(memo._accounting(ids, first, last), direct)
+
+    def test_sales_days_memo_is_isolated(self):
+        service = self.env['baseer.dashboard2.service'].with_context(_bd2_request_cache={})
+        ids = [self.env.company.id]
+        first, last = date(2026, 1, 1), date(2026, 1, 31)
+        expected = service._sales_days(ids, first, last)
+        result = service._sales_days(ids, first, last)
+        result[0][(self.env.company.id, first)] = {'changed': True}
+        self.assertEqual(service._sales_days(ids, first, last), expected)
+
+    def test_category_request_memo_matches_original_rules(self):
+        service = self.env['baseer.dashboard2.service'].with_context(_bd2_request_cache={})
+        categories = self.env['baseer.dashboard2.category'].search([])
+        companies = self.env['res.company'].search([], limit=2)
+        accounts = self.env['account.account'].search([], limit=30)
+        for company in companies:
+            for account in accounts:
+                account = account.with_company(company)
+                code = account.code or ''
+                expected = next((category.code for category in categories
+                                 if any(code.startswith(prefix.strip()) for prefix in (category.account_code_prefixes or '').split(',') if prefix.strip())), None)
+                if expected is None:
+                    expected = next((category.code for category in categories
+                                     if account.account_type in [value.strip() for value in (category.account_type_fallback or '').split(',') if value.strip()]), None)
+                if expected is None:
+                    expected = 'other_opex' if (account.account_type or '').startswith('expense') else False
+                self.assertEqual(service._category(account, categories), expected)
+                self.assertEqual(service._category(account, categories), expected)
+
+    def test_unpaid_bills_batch_matches_individual_calls(self):
+        service = self.env['baseer.dashboard2.service']
+        company = self.env.company
+        ids = [company.id]
+        accounts = self.env['account.account']
+        expense = accounts.create({'code': 'BD2BEXP', 'name': 'Expense', 'account_type': 'expense', 'company_ids': [(6, 0, ids)]})
+        payable = accounts.create({'code': 'BD2BPAY', 'name': 'Payable', 'account_type': 'liability_payable', 'reconcile': True, 'company_ids': [(6, 0, ids)]})
+        partner = self.env['res.partner'].create({'name': 'Batch supplier', 'property_account_payable_id': payable.id})
+        journal = self.env['account.journal'].create({'name': 'Batch purchases', 'code': 'B2PUR', 'type': 'purchase', 'company_id': company.id})
+        bill = self.env['account.move'].create({'move_type': 'in_invoice', 'journal_id': journal.id, 'partner_id': partner.id, 'invoice_date': '2026-09-03',
+            'invoice_line_ids': [(0, 0, {'name': 'Purchase', 'account_id': expense.id, 'quantity': 1, 'price_unit': 100})]})
+        bill.action_post()
+        journal = self.env['account.journal'].create({'name': 'Batch settlement', 'code': 'B2SET', 'type': 'general', 'company_id': company.id})
+        payment = self.env['account.move'].create({'journal_id': journal.id, 'date': '2026-10-10', 'line_ids': [
+            (0, 0, {'name': 'Payable', 'account_id': payable.id, 'partner_id': partner.id, 'debit': 100, 'credit': 0}),
+            (0, 0, {'name': 'Offset', 'account_id': expense.id, 'debit': 0, 'credit': 100})]})
+        payment.action_post()
+        (bill.line_ids + payment.line_ids).filtered(lambda line: line.account_id == payable).reconcile()
+        ends = [date(2026, 8, 31), date(2026, 9, 30), date(2026, 10, 31)]
+        batch = service._unpaid_bills_batch(ids, ends)
+        self.assertEqual([batch[end]['value'] for end in ends], [0, 100, 0])
+        for end in ends:
+            self.assertEqual(batch[end], service._unpaid_bills(ids, end))
+
+    def test_sales_days_uses_company_ids_in_keys(self):
+        company = self.env.company
+        method = self.env['pos.payment.method'].create({'name': 'cash', 'company_id': company.id})
+        journal = self.env['account.journal'].create({'name': 'Sales IDs', 'code': 'D2IDS', 'type': 'sale', 'company_id': company.id})
+        config = self.env['pos.config'].create({'name': 'Sales IDs', 'company_id': company.id, 'journal_id': journal.id, 'payment_method_ids': [(6, 0, [method.id])]})
+        session = self.env['pos.session'].create({'config_id': config.id})
+        self.env['pos.order'].create({'company_id': company.id, 'session_id': session.id, 'date_order': '2026-10-15 10:00:00', 'state': 'paid', 'amount_tax': 0, 'amount_total': 115, 'amount_paid': 115, 'amount_return': 0})
+        days, channels, unreceived, hours = self.env['baseer.dashboard2.service']._sales_days([company.id], date(2026, 10, 15), date(2026, 10, 15))
+        day = days[(company.id, date(2026, 10, 15))]
+        self.assertIsInstance(next(iter(days))[0], int)
+        self.assertEqual(day['customers'], 1)
+        self.assertEqual(day['pos_gross'], 115)
+        self.assertIsInstance(channels, list)
+        self.assertIn('available', unreceived)
+        self.assertEqual(hours[(3, 13)]['gross'], 115)
+
+    def test_reset_move_ranges_match_individual_searches(self):
+        company = self.env.company
+        ids = [company.id]
+        accounts = self.env['account.account']
+        reset = accounts.create({'code': '999999', 'name': 'Reset', 'account_type': 'expense', 'company_ids': [(6, 0, ids)]})
+        offset = accounts.create({'code': 'BD2RST', 'name': 'Offset', 'account_type': 'income', 'company_ids': [(6, 0, ids)]})
+        journal = self.env['account.journal'].create({'name': 'Reset ranges', 'code': 'B2RST', 'type': 'general', 'company_id': company.id})
+        for day in ('2026-09-15', '2026-10-15', '2026-11-15'):
+            move = self.env['account.move'].create({'journal_id': journal.id, 'date': day, 'line_ids': [
+                (0, 0, {'name': 'Reset', 'account_id': reset.id, 'debit': 10, 'credit': 0}),
+                (0, 0, {'name': 'Offset', 'account_id': offset.id, 'debit': 0, 'credit': 10})]})
+            move.action_post()
+        memo = self.env['baseer.dashboard2.service'].with_context(_bd2_request_cache={})
+        lines = self.env['account.move.line'].with_company(company).with_context(allowed_company_ids=ids)
+        for start, end in ((None, date(2026, 9, 30)), (date(2026, 10, 1), date(2026, 10, 31)),
+                           (date(2026, 9, 1), date(2026, 11, 30))):
+            domain = [('company_id', '=', company.id), ('parent_state', '=', 'posted'),
+                      ('date', '<=', end), ('account_id.code', '=', '999999')]
+            if start:
+                domain.append(('date', '>=', start))
+            self.assertEqual(set(memo._reset_move_ids(ids, end, start)), set(lines.search(domain).mapped('move_id').ids))
+
+    def test_raw_rows_respects_record_rules_and_pending_writes(self):
+        from ..models.service import raw_rows
+
+        allowed, hidden = self.env['res.partner'].create([
+            {'name': 'Visible raw row'}, {'name': 'Hidden raw row'},
+        ])
+        user = self.env['res.users'].create({
+            'name': 'Raw row reader', 'login': 'bd2_raw_reader',
+            'company_id': self.env.company.id,
+            'company_ids': [(6, 0, [self.env.company.id])],
+            'group_ids': [(6, 0, [self.env.ref('base.group_user').id])],
+        })
+        self.env['ir.rule'].create({
+            'name': 'Hide one raw row', 'model_id': self.env['ir.model']._get_id('res.partner'),
+            'domain_force': repr([('id', '!=', hidden.id)]),
+        })
+        allowed.name = 'Updated raw row'
+        model = self.env['res.partner'].with_user(user)
+        rows = raw_rows(model, [('id', 'in', [allowed.id, hidden.id])], ['name'])
+        self.assertEqual(rows, [{'id': allowed.id, 'name': 'Updated raw row'}])

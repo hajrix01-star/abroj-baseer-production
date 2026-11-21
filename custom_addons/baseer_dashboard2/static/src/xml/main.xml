@@ -52,11 +52,11 @@
                 <path t-if="s.partial" t-att-d="partialPath(s.values, s.partial)" fill="none" t-att-stroke="s.gold ? 'var(--bd2-gold)' : 'var(--bd2-c1)'" stroke-width="2.3" stroke-dasharray="5 4"/>
                 <t t-if="!s.dashed or s.endpoint"><t t-foreach="s.values" t-as="v" t-key="v_index">
                     <circle t-if="v !== null and v !== undefined and (!s.dashed or v_index === s.values.findLastIndex(x=&gt;x != null))" t-att-cx="chartX(v_index,s.values.length)" t-att-cy="y(v)" t-att-r="v_index === s.values.findLastIndex(x=&gt;x != null) ? 5 : 3" t-att-fill="v_index === s.values.findLastIndex(x=&gt;x != null) ? (s.gold ? 'var(--bd2-gold)' : 'var(--bd2-c1)') : 'var(--bd2-card)'" t-att-stroke="s.gold ? 'var(--bd2-gold)' : 'var(--bd2-c1)'" stroke-width="2"/>
-                    <text t-if="((s.area and !s.firstLabel) or s.pointLabels or ((s.firstLabel or s.endpoint) and v_index === s.values.findLastIndex(x=&gt;x != null)) or (props.percent and v_index === s.values.findLastIndex(x=&gt;x != null))) and v !== null and v !== undefined" t-att-x="(s.firstLabel or s.endpoint) ? chartX(v_index,s.values.length)+8 : chartX(v_index,s.values.length)" t-att-y="(s.firstLabel or s.endpoint) ? labelY(s,v) : y(v)-8" t-att-text-anchor="(s.firstLabel or s.endpoint) ? 'start' : 'middle'" fill="var(--bd2-ink)" font-size="9" font-weight="700" t-esc="compact(v)"/>
+                    <text t-att-class="(s.firstLabel or s.endpoint) ? 'bd2-value-label bd2-endpoint-label' : v_index % 2 ? 'bd2-value-label bd2-point-alternate' : 'bd2-value-label'" t-if="((s.area and !s.firstLabel) or s.pointLabels or ((s.firstLabel or s.endpoint) and v_index === s.values.findLastIndex(x=&gt;x != null)) or (props.percent and v_index === s.values.findLastIndex(x=&gt;x != null))) and v !== null and v !== undefined" t-att-x="(s.firstLabel or s.endpoint) ? chartX(v_index,s.values.length)+8 : chartX(v_index,s.values.length)" t-att-y="(s.firstLabel or s.endpoint) ? labelY(s,v) : y(v)-8" t-att-text-anchor="(s.firstLabel or s.endpoint) ? 'start' : 'middle'" fill="var(--bd2-ink)" font-size="9" font-weight="700" t-esc="compact(v)"/>
                 </t></t>
             </t>
             <t t-foreach="props.labels || []" t-as="label" t-key="label_index">
-                <text t-att-x="chartX(label_index,props.labels.length)" y="229" direction="ltr" t-att-text-anchor="label_index === 0 ? 'end' : label_last ? 'start' : 'middle'" fill="var(--bd2-muted)" font-size="10" t-esc="label"/>
+                <text t-att-class="props.labels.length &gt; 6 and label_index % 2 ? 'bd2-axis-alternate' : 'bd2-axis-label'" t-att-x="chartX(label_index,props.labels.length)" y="229" direction="ltr" t-att-text-anchor="label_index === 0 ? 'end' : label_last ? 'start' : 'middle'" fill="var(--bd2-muted)" font-size="10" t-esc="label"/>
             </t>
         </svg>
         </div>
@@ -139,7 +139,7 @@
         <div class="grid three">
             <div class="card mini" t-foreach="[['المشتريات',state.data.purchases?.value,state.data.purchases?.pct,state.data.purchases?.trend?.map(x=&gt;x.has_data ? x.pct : null),state.data.purchases?.trend?.map(x=&gt;x.has_data ? x.value : null),state.data.purchases?.change_pct],['تطبيقات التوصيل',state.data.sales?.apps,state.data.sales?.apps_pct,state.data.sales?.trend?.map(x=&gt;x.has_data ? x.apps_pct : null),state.data.sales?.trend?.map(x=&gt;x.has_data ? x.apps : null),state.data.sales?.apps_change_pct],['عدد العملاء (الطلبات)',state.data.sales?.customers?.value,state.data.sales?.customers?.avg_ticket,state.data.sales?.trend?.map(x=&gt;x.has_data ? x.customers.avg_ticket : null),state.data.sales?.trend?.map(x=&gt;x.has_data ? x.customers.value : null),state.data.sales?.customers_change_pct]]" t-as="item" t-key="item[0]">
                 <div class="mini-head"><div><div class="mini-title"><span class="card-icon"><svg viewBox="0 0 24 24"><path t-att-d="iconPath(['purchases','apps','customers'][item_index])"/></svg></span><h3 t-esc="item[0]"/></div><small t-if="item_index!==1" class="block muted"><t t-esc="monthName(state.period.month)"/><t t-if="item_index === 2 and state.data.sales?.customers?.cutover_date"> · <t t-esc="customerCutoverLabel(state.data.sales.customers.cutover_date)"/></t></small><small t-if="item_index===1" class="block muted">كيتا + هنقر + جاهز · شامل الضريبة</small></div><div t-if="item_index !== 2 or state.data.sales?.customers?.available" class="mini-value"><strong t-esc="item_index === 0 and !state.data.purchases?.available ? 'غير متوفر' : fmt(item[1])"/><div class="mini-pill"><t t-if="item[2] == null">غير متوفر</t><t t-elif="item_index &lt; 2"><bdi dir="ltr" t-esc="pct(item[2])"/> من المبيعات<t t-if="item_index === 1"> · شامل الضريبة</t></t><t t-else="" t-esc="fmt(item[2])+' متوسط الفاتورة'"/><t t-if="item[2] != null and partialMonth"> (جزئي)</t></div></div></div>
-                <t t-if="item_index !== 2 or state.data.sales?.customers?.available"><Sparkline values="item[4]" previous="item[3]" mini="true" ratioPercent="item_index &lt; 2" amountDecimal="item_index === 2"/><div class="mini-labels"><span t-foreach="state.data.purchases.trend.map(x=&gt;monthName(x.month).split(' ')[0]+(x.partial ? ' (جزئي)' : ''))" t-as="label" t-key="label_index" t-esc="label"/></div><div class="mini-legend"><span><i/><t t-esc="item_index === 2 ? 'عدد الطلبات' : 'المبلغ'"/></span><span><i class="gold"/><t t-esc="item_index === 2 ? 'متوسط الفاتورة' : 'النسبة'"/></span></div></t><div t-else="" class="customer-empty">غير متوفر — يتوفر من بيانات نقاط البيع فقط</div>
+                <t t-if="item_index !== 2 or state.data.sales?.customers?.available"><Sparkline values="item[4]" previous="item[3]" mini="true" ratioPercent="item_index &lt; 2" amountDecimal="item_index === 2"/><div class="mini-labels"><span t-foreach="state.data.purchases.trend.map(x=&gt;monthName(x.month).split(' ')[0]+(x.partial ? ' (جزئي)' : ''))" t-as="label" t-key="label_index" t-att-class="label_index % 2 ? 'bd2-axis-alternate' : ''" t-esc="label"/></div><div class="mini-legend"><span><i/><t t-esc="item_index === 2 ? 'عدد الطلبات' : 'المبلغ'"/></span><span><i class="gold"/><t t-esc="item_index === 2 ? 'متوسط الفاتورة' : 'النسبة'"/></span></div></t><div t-else="" class="customer-empty">غير متوفر — يتوفر من بيانات نقاط البيع فقط</div>
             </div>
         </div>
         <div class="grid five">
@@ -195,7 +195,7 @@
         <div class="card" t-if="state.data.companies_compare?.length &gt; 1">
             <h3>مقارنة الشركات</h3>
             <div class="muted"><t t-esc="monthName(state.period.month)"/><t t-if="partialMonth"> (جزئي)</t> — الشركات الثلاث جنب بعض</div>
-            <table>
+            <div class="bd2-scroll-x"><table>
                 <thead>
                     <tr>
                         <th>الشركة</th>
@@ -214,7 +214,7 @@
                         <td><span t-att-class="'compare-pill '+(partialMonth ? 'neutral' : (co.net_margin_pct &lt; 0 ? 'bad' : (co.targets?.net_margin_pct?.status || '')))" t-att-title="partialMonth ? 'الشهر لم يكتمل' : undefined"><bdi dir="ltr" t-esc="tablePct(co.net_margin_pct)"/></span></td>
                     </tr>
                 </tbody>
-            </table>
+            </table></div>
         </div>
     </t>
     <t t-name="baseer_dashboard2.Revenue">
@@ -229,7 +229,7 @@
             <div class="card">
                 <h3>المبيعات حسب طريقة الدفع — <t t-esc="monthName(state.period.month).split(' ')[0]"/></h3>
                 <div class="muted">المبالغ والحصص شاملة الضريبة</div>
-                <table>
+                <div class="bd2-scroll-x"><table>
                     <thead>
                         <tr>
                             <th>#</th>
@@ -268,7 +268,7 @@
                             </td>
                         </tr>
                     </tbody>
-                </table>
+                </table></div>
             </div>
             <div class="card">
                 <h3>التطبيقات ونسبتها من المبيعات</h3>
@@ -285,7 +285,7 @@
             <div class="card">
                 <h3>عدد العملاء ومتوسط الفاتورة</h3>
                 <div t-if="!current.customers?.available" class="customer-empty">غير متوفر — يتوفر من بيانات نقاط البيع فقط</div>
-                <div t-else="" class="revenue-combo customer-combo"><div class="muted">متوسط الفاتورة (أعلى، ذهبي) وعدد الطلبات (أسفل، كحلي)</div><Sparkline values="trend.map(x=&gt;x.has_data ? x.data.customers?.value : null)" previous="trend.map(x=&gt;x.has_data ? x.data.customers?.avg_ticket : null)" mini="true" stretch="true" amountDecimal="true"/><div class="mini-labels"><span t-foreach="trendLabels" t-as="label" t-key="label_index" t-att-style="'left:'+miniX(label_index, trendLabels.length)+'%'" t-esc="label"/></div><div class="mini-legend"><span><i/>عدد الطلبات</span><span><i class="gold"/>متوسط الفاتورة</span></div></div>
+                <div t-else="" class="revenue-combo customer-combo"><div class="muted">متوسط الفاتورة (أعلى، ذهبي) وعدد الطلبات (أسفل، كحلي)</div><Sparkline values="trend.map(x=&gt;x.has_data ? x.data.customers?.value : null)" previous="trend.map(x=&gt;x.has_data ? x.data.customers?.avg_ticket : null)" mini="true" stretch="true" amountDecimal="true"/><div class="mini-labels"><span t-foreach="trendLabels" t-as="label" t-key="label_index" t-att-class="label_index % 2 ? 'bd2-axis-alternate' : ''" t-att-style="'left:'+miniX(label_index, trendLabels.length)+'%'" t-esc="label"/></div><div class="mini-legend"><span><i/>عدد الطلبات</span><span><i class="gold"/>متوسط الفاتورة</span></div></div>
             </div>
         </div>
     </t>
@@ -323,7 +323,7 @@
         </div>
         <div class="card">
             <h3>المصاريف حسب البند — مقارنة شهرية</h3>
-            <table>
+            <div class="bd2-scroll-x"><table>
                 <thead>
                     <tr>
                         <th>البند</th>
@@ -352,7 +352,7 @@
                         <td><bdi dir="ltr" t-esc="tablePct(current.sales_net ? operatingExpense(current)/current.sales_net*100 : null)"/></td>
                     </tr>
                 </tbody>
-            </table>
+            </table></div>
         </div>
     </t>
     <t t-name="baseer_dashboard2.Ratios">
@@ -424,7 +424,7 @@
                 </div>
                 <div><span t-if="state.view==='pnl'" class="muted">اضغط على أي بند لعرض الحسابات ›</span> <button class="icon-button" t-on-click="exportCsv" title="تنزيل CSV">↓</button></div>
             </div>
-            <table t-if="state.view==='pnl'" class="export-table">
+            <div class="bd2-scroll-x"><table t-if="state.view==='pnl'" class="export-table">
                 <thead>
                     <tr>
                         <th>البند</th>
@@ -541,7 +541,7 @@
                         <td><bdi dir="ltr" t-esc="tablePct(state.data.total.incoming ? state.data.total.net/state.data.total.incoming*100 : null)"/></td>
                     </tr>
                 </tbody>
-            </table>
+            </table></div>
         </div>
     </t>
     <t t-name="baseer_dashboard2.Heatmap">
@@ -585,7 +585,7 @@
             <div class="month-chips">
                 <button t-foreach="months" t-as="month" t-key="month_index" t-att-class="number(state.period.month.slice(5))===month_index+1?'on':''" t-on-click="()=&gt;this.selectMonth(month_index)" t-esc="month"/>
             </div>
-            <div class="calendar">
+            <div class="bd2-scroll-x"><div class="calendar">
                 <div class="weekday" t-foreach="weekdays" t-as="wd" t-key="wd_index">
                     <b t-esc="wd"/>
                     <small>معدل <t t-esc="fmt(state.data.weekday_month[(wd_index+5)%7]?.gross)"/>
@@ -601,11 +601,11 @@
                         <em class="occasion-badge" t-foreach="day.events" t-as="event" t-key="event.id" t-att-title="event.name" t-esc="event.name"/>
                     </div>
                 </t>
-            </div><div class="heat-legend">أقل ▢ ▢ ▢ ▢ أكثر · مناسبة · عرض/حملة · رمضان · لم يأتِ بعد</div>
+            </div></div><div class="heat-legend">أقل ▢ ▢ ▢ ▢ أكثر · مناسبة · عرض/حملة · رمضان · لم يأتِ بعد</div>
         </div>
         <div class="card">
             <h3>معدل المبيعات والعملاء حسب يوم الأسبوع</h3><div class="muted">متوسط المبيعات لكل يوم — <t t-esc="monthName(state.period.month).split(' ')[0]"/> مقابل السنة كاملة · الأعلى بلون التمييز</div>
-            <table>
+            <div class="bd2-scroll-x"><table>
                 <thead>
                     <tr>
                         <th>الفترة</th>
@@ -626,11 +626,11 @@
                         <td t-foreach="weekdays" t-as="wd" t-key="wd_index" t-att-class="state.data.weekday_ytd[(wd_index+5)%7]?.gross === Math.max(...state.data.weekday_ytd.map(x=&gt;x.gross || 0)) ? 'weekday-best' : ''"><b t-esc="fmt(state.data.weekday_ytd[(wd_index+5)%7]?.gross)"/><Track value="state.data.weekday_ytd[(wd_index+5)%7]?.gross || 0" max="Math.max(...state.data.weekday_ytd.map(x=&gt;x.gross || 0))" gold="state.data.weekday_ytd[(wd_index+5)%7]?.gross != null and state.data.weekday_ytd[(wd_index+5)%7]?.gross === Math.max(...state.data.weekday_ytd.map(x=&gt;x.gross || 0))"/><small class="block"><t t-esc="fmt(state.data.weekday_ytd[(wd_index+5)%7]?.customers)"/> عميل</small></td>
                     </tr>
                 </tbody>
-            </table>
+            </table></div>
         </div>
         <div class="card">
             <h3>نظرة على السنة</h3>
-            <div class="year-grid">
+            <div class="bd2-scroll-x"><div class="year-grid">
                 <div t-foreach="state.data.year_calendar" t-as="m" t-key="m.month" t-att-class="m.month === state.period.month ? 'year-current' : ''">
                     <b t-esc="monthName(m.month).split(' ')[0]+(m.partial ? ' (جزئي)' : '')"/>
                     <small class="block muted">معدل يومي <t t-esc="fmt(m.days.some(d=&gt;d.gross != null) ? m.days.reduce((a,d)=&gt;a+(d.gross || 0),0)/m.days.filter(d=&gt;d.gross != null).length : null)"/> · عملاء <t t-esc="fmt(m.days.some(d=&gt;d.customers != null) ? m.days.reduce((a,d)=&gt;a+(d.customers || 0),0)/m.days.filter(d=&gt;d.customers != null).length : null)"/>/يوم</small>
@@ -644,7 +644,7 @@
                         </i>
                     </div>
                 </div>
-            </div>
+            </div></div>
         </div>
         <div class="grid two">
             <div class="card">
@@ -652,7 +652,7 @@
                     <h3>المناسبات والعروض</h3>
                     <button t-if="state.meta.can_edit" class="chip" t-on-click="addEvent">+ إضافة مناسبة</button>
                 </div>
-                <table>
+                <div class="bd2-scroll-x"><table>
                     <thead>
                         <tr>
                             <th>المناسبة</th>
@@ -667,12 +667,12 @@
                             <td t-esc="dateName(e.date_to)"/>
                         </tr>
                     </tbody>
-                </table>
+                </table></div>
             </div>
             <div class="card">
                 <h3>أوقات الذروة — اليوم × الساعة</h3><div class="muted">عدد الطلبات · <t t-esc="periodRange(state.data.hours.period)"/><t t-if="state.data.hours.partial"> (جزئي)</t></div>
                 <div t-if="!state.data.hours.available" class="customer-empty">غير متوفر — يتوفر من بيانات نقاط البيع فقط</div>
-                <div t-else="" class="hours-scroll"><table class="hours-table">
+                <div t-else="" class="hours-scroll bd2-scroll-x"><table class="hours-table">
                     <thead><tr><th>اليوم</th><th t-foreach="peakHours" t-as="hour" t-key="hour" t-esc="hourLabel(hour)"/><th>المتوسط</th></tr></thead>
                     <tbody><tr t-foreach="weekdays" t-as="weekday" t-key="weekday_index"><th t-esc="weekday"/><td t-foreach="peakHours" t-as="hour" t-key="hour" t-att-class="'hour-level-'+peakLevel(peakValue((weekday_index+5)%7, hour))" t-esc="peakValue((weekday_index+5)%7, hour) || '—'"/><td t-esc="peakAverage(peakHours.map(h=&gt;peakValue((weekday_index+5)%7,h)))"/></tr>
                     <tr><th>المتوسط</th><td t-foreach="peakHours" t-as="hour" t-key="hour" t-esc="peakAverage(weekdays.map((_,i)=&gt;peakValue((i+5)%7,hour)))"/><td t-esc="peakAverage(weekdays.flatMap((_,i)=&gt;peakHours.map(h=&gt;peakValue((i+5)%7,h))))"/></tr></tbody>
@@ -695,18 +695,19 @@
         </div>
         <div class="card">
             <h3>مصادر البيانات</h3>
-            <table>
+            <div class="bd2-scroll-x"><table>
                 <tbody>
                     <tr t-foreach="objectEntries(state.data.sources)" t-as="entry" t-key="entry[0]">
                         <th t-esc="name(entry[0])"/>
                         <td t-esc="entry[1]"/>
                     </tr>
                 </tbody>
-            </table>
+            </table></div>
         </div>
     </t>
     <t t-name="baseer_dashboard2.Main">
-        <div class="o_bd2" dir="rtl" data-bd2-theme="navy-gold" t-att-data-bd2-mode="state.mode">
+        <div class="o_bd2" t-att-class="{'bd2-nav-open': state.navOpen}" dir="rtl" data-bd2-theme="navy-gold" t-att-data-bd2-mode="state.mode">
+            <div t-if="state.navOpen" class="bd2-nav-backdrop" t-on-click="()=&gt;state.navOpen=false"/>
             <aside class="bd2-sidebar">
                 <div class="brand">
                     <div class="brand-icon">
@@ -735,16 +736,17 @@
             </aside>
             <main class="bd2-main">
                 <header class="bd2-header">
+                    <button class="bd2-menu-toggle" aria-label="القائمة" t-att-aria-expanded="state.navOpen ? 'true' : 'false'" t-on-click="()=&gt;state.navOpen=!state.navOpen">☰</button>
                     <div>
                         <h1 t-esc="state.page==='pnl' and state.view==='inout' ? 'الداخل والخارج' : page[1]"/>
                         <div class="muted" t-esc="page[2]"/>
                     </div>
-                    <span class="chip">بيانات أودو المرحّلة</span>
+                    <span class="chip header-source">بيانات أودو المرحّلة</span>
                     <div class="header-controls">
-                        <div class="seg">
-                            <button t-foreach="state.meta?.companies || []" t-as="co" t-key="co.key" t-att-class="state.company===co.key?'on':''" t-on-click="()=&gt;this.choose('company',co.key)" t-esc="co.name"/>
+                        <div class="seg company-strip bd2-scroll-x">
+                            <button t-foreach="state.meta?.companies || []" t-as="co" t-key="co.key" t-att-class="state.company===co.key?'on':''" t-on-click="()=&gt;this.choose('company',co.key)"><t t-esc="co.name"/><span t-if="!co.name" class="company-label-fallback" t-esc="co.label"/></button>
                         </div>
-                        <div class="seg">
+                        <div class="seg period-strip">
                             <button t-att-class="state.period?.mode==='month'?'on':''" t-on-click="()=&gt;this.periodChange('mode','month')">شهر</button>
                             <button t-att-class="state.period?.mode==='range'?'on':''" t-on-click="()=&gt;this.periodChange('mode','range')">من – إلى</button>
                             <select t-if="state.period?.mode==='month'" t-att-value="state.period.month" t-on-change="(e)=&gt;this.periodChange('month',e.target.value)">
@@ -761,6 +763,7 @@
                     </div>
                 </header>
                 <div class="context">
+                    <span class="chip context-source">بيانات أودو المرحّلة</span>
                     <span>عرض:</span>
                     <span class="chip" t-esc="companyName"/>
                     <span class="chip" t-esc="state.period?.mode==='month' ? monthName(state.period.month) : dateName(state.period?.date_from)+' – '+dateName(state.period?.date_to)"/>

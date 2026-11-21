@@ -8,7 +8,7 @@
     <record id="action_settings" model="ir.actions.act_window"><field name="name">الإعدادات</field><field name="res_model">baseer.dashboard2.settings</field><field name="view_mode">list,form</field></record>
     <!-- Preserve a menu name edited in the UI or through translations on upgrades. -->
     <data noupdate="1">
-        <menuitem id="menu_dashboard" name="Dashboard 2" action="action_dashboard" web_icon="baseer_dashboard2,static/description/icon.png" groups="account.group_account_readonly" sequence="20"/>
+        <menuitem id="menu_dashboard" name="Dashboard 2" action="action_dashboard" web_icon="baseer_dashboard2,static/description/icon.png" groups="account.group_account_readonly" sequence="-100"/>
         <menuitem id="menu_events" name="المناسبات" parent="menu_dashboard" action="action_events" groups="account.group_account_readonly"/>
         <menuitem id="menu_settings" name="الإعدادات" parent="menu_dashboard" action="action_settings" groups="account.group_account_manager"/>
     </data>

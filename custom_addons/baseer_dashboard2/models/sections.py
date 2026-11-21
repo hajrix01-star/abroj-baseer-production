@@ -1,8 +1,10 @@
+from .service import request_memo
 import calendar
 from collections import defaultdict
 from datetime import date, timedelta
 
 from odoo import api, fields, models, _
+from odoo.osv import expression
 from odoo.exceptions import UserError
 
 from .service import SOURCES, food_ratio
@@ -50,14 +52,15 @@ class DashboardSections(models.AbstractModel):
             return {'available': False, 'value': None, 'pct': None}
         excluded = self._reset_move_ids(ids, end, start)
         excluded += self.env['res.company'].browse(ids).mapped('account_opening_move_id').ids
-        value = 0.0
-        for setting in settings:
-            rows = self.env['account.move.line'].with_company(setting.company_id)._read_group([
-                ('company_id', '=', setting.company_id.id), ('parent_state', '=', 'posted'),
-                ('date', '>=', start), ('date', '<=', end),
-                ('account_id', 'in', setting.food_purchase_account_ids.ids),
-                ('move_id', 'not in', excluded), ('move_id.ref', '!=', 'Opening Entry')], [], ['balance:sum'])
-            value += (rows[0][0] or 0) if rows else 0
+        company_accounts = expression.OR([[('company_id', '=', setting.company_id.id),
+                                           ('account_id', 'in', setting.food_purchase_account_ids.ids)]
+                                          for setting in settings])
+        rows = self.env['account.move.line'].with_context(allowed_company_ids=ids)._read_group(
+            expression.AND([company_accounts, [('parent_state', '=', 'posted'),
+                ('date', '>=', start), ('date', '<=', end), ('move_id', 'not in', excluded),
+                ('move_id.ref', '!=', 'Opening Entry')]]), ['company_id'], ['balance:sum'])
+        values = {company.id: amount or 0 for company, amount in rows}
+        value = sum((values.get(setting.company_id.id, 0) for setting in settings), 0.0)
         bill_exists = self.env['account.move.line'].with_context(allowed_company_ids=ids).search_count([
             ('company_id', 'in', ids), ('parent_state', '=', 'posted'),
             ('date', '>=', start), ('date', '<=', end), ('move_id.move_type', 'in', ('in_invoice', 'in_refund')),
@@ -81,13 +84,17 @@ class DashboardSections(models.AbstractModel):
             total += (rows[0][0] or 0) if rows else 0
         return round(total, 2)
 
+    @request_memo
     def _posted_months(self, ids, revenue_only=False):
-        lines = self.env['account.move.line'].with_context(allowed_company_ids=ids).search([
-            ('company_id', 'in', ids), ('parent_state', '=', 'posted'),
-            ('account_id.account_type', 'in', ('income', 'income_other', 'expense', 'expense_depreciation', 'expense_direct_cost'))])
         reset_ids = set(self._reset_move_ids(ids, fields.Date.to_date('9999-12-31')))
         opening_ids = set(self.env['res.company'].browse(ids).mapped('account_opening_move_id').ids)
-        return {line.date.strftime('%Y-%m') for line in lines if line.move_id.id not in reset_ids | opening_ids and line.move_id.ref != 'Opening Entry' and (not revenue_only or line.account_id.account_type in ('income', 'income_other'))}
+        types = ('income', 'income_other') if revenue_only else (
+            'income', 'income_other', 'expense', 'expense_depreciation', 'expense_direct_cost')
+        rows = self.env['account.move.line'].with_context(allowed_company_ids=ids)._read_group([
+            ('company_id', 'in', ids), ('parent_state', '=', 'posted'),
+            ('account_id.account_type', 'in', types), ('move_id', 'not in', list(reset_ids | opening_ids)),
+            ('move_id.ref', '!=', 'Opening Entry')], ['date:month'], [])
+        return {month.strftime('%Y-%m') for (month,) in rows if month}
 
     def _timeline(self, ids, end, mode):
         if mode not in ('monthly', 'yearly'):
@@ -133,10 +140,13 @@ class DashboardSections(models.AbstractModel):
     def _targets(self, ids, current):
         targets = {}
         model = self.env['baseer.dashboard2.target'].with_context(allowed_company_ids=ids)
+        company_id = ids[0] if len(ids) == 1 else False
+        rows = model.search([('company_id', 'in', [False, company_id])], order='id')
+        by_key = {}
+        for row in rows:
+            by_key.setdefault((row.company_id.id or False, row.key), row)
         for key, value in current['ratios'].items():
-            target = model.search([('company_id', '=', ids[0] if len(ids) == 1 else False), ('key', '=', key)], limit=1)
-            if not target and len(ids) == 1:
-                target = model.search([('company_id', '=', False), ('key', '=', key)], limit=1)
+            target = by_key.get((company_id, key)) or by_key.get((False, key))
             if target:
                 good = value is not None and (value <= target.value if target.operator == 'le' else value >= target.value)
                 targets[key] = {'value': target.value, 'operator': target.operator,
@@ -345,6 +355,8 @@ class DashboardSections(models.AbstractModel):
         months = []
         first = month_bounds(end, -5)[0]
         out_by_month = self._cash_out(ids, first, end, split=True)
+        bill_ends = [min(month_bounds(end, offset)[1], end) for offset in range(-5, 1)]
+        unpaid_by_end = self._unpaid_bills_batch(ids, bill_ends)
         for offset in range(-5, 1):
             start, last = month_bounds(end, offset)
             last = min(last, end)
@@ -353,7 +365,7 @@ class DashboardSections(models.AbstractModel):
             vat = self._sales_vat(ids, start, last)
             sales['available'] = bool(sales['channels'])
             months.append({'month': start.strftime('%Y-%m'), 'partial': bool(start <= min(end, last_data or end) < month_bounds(start)[1]), 'incoming': sales, 'outgoing': out,
-                           'unpaid_bills': self._unpaid_bills(ids, last), 'sales_vat': vat, 'net': round(sales['gross'] - out['total'], 2)})
+                           'unpaid_bills': unpaid_by_end[last], 'sales_vat': vat, 'net': round(sales['gross'] - out['total'], 2)})
         channel_totals, item_totals, source_totals = defaultdict(float), defaultdict(float), defaultdict(float)
         for key in ('salaries', 'rent', 'utilities', 'purchases', 'commissions', 'marketing', 'non_operating', 'other'):
             item_totals[key] = 0
@@ -444,6 +456,7 @@ class DashboardSections(models.AbstractModel):
         if section == 'glossary':
             return {'sources': SOURCES}
         params = params or {}
+        self = self.with_context(_bd2_request_cache={})
         companies = self._companies()
         if not companies:
             return {'available': False, 'reason': 'empty_company_scope'}

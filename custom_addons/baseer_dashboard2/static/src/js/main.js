@@ -300,7 +300,7 @@ export class InfoPopup extends Component {
   }
 }
 
-class Dashboard2 extends Component {
+export class Dashboard2 extends Component {
   static template = "baseer_dashboard2.Main";
   static components = {
     Sparkline,
@@ -343,7 +343,9 @@ class Dashboard2 extends Component {
       view: "pnl",
       metric: "gross",
       closed: {},
+      navOpen: false,
     });
+    useExternalListener(window, "keydown", (event) => { if (event.key === "Escape") this.state.navOpen = false; });
     onWillStart(() => this.init());
   }
   async init() {
@@ -403,6 +405,7 @@ class Dashboard2 extends Component {
   }
   async choose(key, value) {
     this.state[key] = value;
+    if (key === "page") this.state.navOpen = false;
     if (["page", "company", "mode", "timeline", "period"].includes(key))
       this.persist(key);
     if (key !== "mode") await this.load();

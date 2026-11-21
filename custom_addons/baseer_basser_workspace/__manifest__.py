@@ -1,7 +1,7 @@
 {
     'name': 'Baseer Workspace',
     'summary': 'Role-curated navigation to approved Baseer operations',
-    'version': '19.0.1.0.16',
+    'version': '19.0.1.0.17',
     'category': 'Productivity',
     'author': 'Baseer',
     'license': 'LGPL-3',
@@ -10,6 +10,7 @@
         'baseer_procurement_requests',
         'baseer_sales_heat_calendar',
         'baseer_purchase_expense_dashboard',
+        'baseer_purchase_daily_report',
     ],
     'data': [
         'security/ir.model.access.csv',

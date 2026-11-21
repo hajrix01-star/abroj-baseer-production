@@ -1,0 +1,428 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: ar\n"
+"Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5;\n"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "PURCHASE INSIGHTS"
+msgstr "نظرة على المشتريات"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Daily purchases"
+msgstr "تقرير المشتريات اليومي"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Every supplier bill, organized by day."
+msgstr "كل فواتير الموردين مرتبة حسب اليوم."
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "From"
+msgstr "من"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "To"
+msgstr "إلى"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Payment status"
+msgstr "حالة السداد"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "All statuses"
+msgstr "جميع الحالات"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Unpaid"
+msgstr "غير مدفوعة"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Partially paid"
+msgstr "مدفوعة جزئيًا"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "In payment"
+msgstr "قيد الدفع"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Paid"
+msgstr "مدفوعة"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Reversed"
+msgstr "معكوسة"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Blocked"
+msgstr "محظورة"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Legacy"
+msgstr "حالة سابقة"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Show purchases"
+msgstr "عرض المشتريات"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Loading purchases…"
+msgstr "جارٍ تحميل المشتريات…"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "We could not load this report. Please try again."
+msgstr "تعذر تحميل التقرير. حاول مرة أخرى."
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Try again"
+msgstr "إعادة المحاولة"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "No purchases found for these filters."
+msgstr "لا توجد مشتريات مطابقة للفلاتر."
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Try another date range or payment status."
+msgstr "جرّب فترة أو حالة سداد أخرى."
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Grouped by invoice date · Payment status is current"
+msgstr "التجميع حسب تاريخ الفاتورة · حالة السداد الحالية"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Total"
+msgstr "الإجمالي"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Settled"
+msgstr "المسوّى"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Outstanding"
+msgstr "المتبقي"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "documents"
+msgstr "مستند"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Show transactions"
+msgstr "عرض العمليات"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Hide transactions"
+msgstr "إخفاء العمليات"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Supplier bill"
+msgstr "فاتورة مورد"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Supplier credit note"
+msgstr "إشعار دائن من مورد"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Supplier"
+msgstr "المورد"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Reference"
+msgstr "المرجع"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Invoice date"
+msgstr "تاريخ الفاتورة"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Due date"
+msgstr "تاريخ الاستحقاق"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Invoice details"
+msgstr "تفاصيل الفاتورة"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Back to report"
+msgstr "العودة إلى التقرير"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "View details"
+msgstr "عرض التفاصيل"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Before tax"
+msgstr "قبل الضريبة"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Tax"
+msgstr "الضريبة"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Items"
+msgstr "الأصناف"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Quantity"
+msgstr "الكمية"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Unit price"
+msgstr "سعر الوحدة"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Subtotal"
+msgstr "المجموع قبل الضريبة"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Total including tax"
+msgstr "الإجمالي شامل الضريبة"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "No invoice items."
+msgstr "لا توجد أصناف للفاتورة."
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Previous"
+msgstr "السابق"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Next"
+msgstr "التالي"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Page"
+msgstr "صفحة"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Company currency"
+msgstr "عملة الشركة"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Original invoice currency"
+msgstr "عملة الفاتورة الأصلية"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Settled amounts can include adjustments and reconciliation, not only cash payments."
+msgstr "قد تشمل المبالغ المسوّاة التسويات والمطابقات، وليس المدفوعات النقدية فقط."
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Posted supplier bills and credit notes only."
+msgstr "فواتير الموردين والإشعارات الدائنة المرحلة فقط."
+
+
+#. module: baseer_purchase_daily_report
+#. odoo-python
+#: code:addons/baseer_purchase_daily_report/models/daily_report.py:0
+msgid "You do not have access to the purchase report."
+msgstr "ليست لديك صلاحية الوصول إلى تقرير المشتريات."
+
+#. module: baseer_purchase_daily_report
+#. odoo-python
+#: code:addons/baseer_purchase_daily_report/models/daily_report.py:0
+msgid "The active company is not available to you."
+msgstr "لا تملك صلاحية الوصول إلى الشركة النشطة."
+
+#. module: baseer_purchase_daily_report
+#. odoo-python
+#: code:addons/baseer_purchase_daily_report/models/daily_report.py:0
+msgid "Enter a valid date."
+msgstr "أدخل تاريخًا صحيحًا."
+
+#. module: baseer_purchase_daily_report
+#. odoo-python
+#: code:addons/baseer_purchase_daily_report/models/daily_report.py:0
+msgid "Choose a valid payment status."
+msgstr "اختر حالة سداد صحيحة."
+
+#. module: baseer_purchase_daily_report
+#. odoo-python
+#: code:addons/baseer_purchase_daily_report/models/daily_report.py:0
+msgid "Choose a date range of at most 366 days."
+msgstr "اختر فترة لا تتجاوز 366 يومًا."
+
+#. module: baseer_purchase_daily_report
+#. odoo-python
+#: code:addons/baseer_purchase_daily_report/models/daily_report.py:0
+msgid "Choose a valid page."
+msgstr "اختر صفحة صحيحة."
+
+#. module: baseer_purchase_daily_report
+#. odoo-python
+#: code:addons/baseer_purchase_daily_report/models/daily_report.py:0
+msgid "This purchase document is not available."
+msgstr "مستند الشراء غير متاح."
+
+#. module: baseer_purchase_daily_report
+#: model:ir.actions.client,name:baseer_purchase_daily_report.action_daily_purchase_report
+msgid "Daily purchases"
+msgstr "تقرير المشتريات اليومي"
+
+#. module: baseer_purchase_daily_report
+#: model:ir.ui.menu,name:baseer_purchase_daily_report.menu_daily_purchase_report
+msgid "Daily purchases"
+msgstr "تقرير المشتريات اليومي"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Adjustments and rounding"
+msgstr "التسويات والتقريب"
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Active company"
+msgstr "الشركة النشطة"
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Discount"
+msgstr "الخصم"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Paid amount"
+msgstr "المبلغ المدفوع"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Unavailable"
+msgstr "غير متاح"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Pending payment excluded"
+msgstr "الدفع قيد المعالجة غير محتسب"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Confirmed payments allocated to these invoices are shown. Other settlements can reduce the outstanding amount."
+msgstr "تظهر الدفعات المؤكدة المخصصة لهذه الفواتير. قد تنخفض المبالغ المتبقية بسبب تسويات أخرى."
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "An amount is unavailable when the cash payment cannot be verified, including some foreign currency payments."
+msgstr "يظهر المبلغ غير متاح عند تعذر التحقق من الدفع الفعلي، بما في ذلك بعض الدفعات بعملات أجنبية."
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Entered by"
+msgstr "أدخلها"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Batch line creator"
+msgstr "منشئ بند الدفعة"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Invoice creator"
+msgstr "منشئ الفاتورة"

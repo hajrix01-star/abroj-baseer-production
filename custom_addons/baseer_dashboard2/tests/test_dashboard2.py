@@ -6,6 +6,15 @@ from odoo.tests import TransactionCase, tagged
 
 @tagged('post_install', '-at_install')
 class TestDashboard2(TransactionCase):
+    def test_month_labels(self):
+        from ..models.month_names import english_months, month_label
+        self.assertEqual(month_label(date(2026, 10, 1)), 'October')
+        self.assertEqual(month_label('2026-11', short=True, year=True), 'Nov 2026')
+        self.assertEqual(month_label('2026-01', year=True), 'January 2026')
+        self.assertEqual(english_months('23 سبتمبر 2026'), '23 September 2026')
+        with self.assertRaises(ValueError):
+            month_label('2026-13')
+
     def test_arabic_translation_files_are_readable(self):
         from pathlib import Path
         from odoo.tools.translate import PoFileReader
@@ -46,7 +55,7 @@ class TestDashboard2(TransactionCase):
         self.assertIn('labelY(s,v)', chart.xpath('.//text[@t-att-y]')[-1].get('t-att-y'))
         bridge = root.xpath("//t[@t-name='baseer_dashboard2.Overview']//div[@t-foreach='state.data.bridge']")[0]
         self.assertFalse(bridge.xpath(".//t[contains(@t-if, 'partialMonth')]"))
-        self.assertTrue(bridge.getparent().xpath("./h3/t[@t-if='partialMonth']"))
+        self.assertTrue(bridge.getparent().xpath("./h3/bdi[contains(@t-esc, 'partialMonth')]"))
 
     def test_partial_fixed_costs_require_three_month_baseline(self):
         from ..models.sections import incomplete_fixed_costs

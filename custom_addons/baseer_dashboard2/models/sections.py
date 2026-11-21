@@ -1,3 +1,4 @@
+from .month_names import english_months
 from .service import request_memo
 import calendar
 from collections import defaultdict
@@ -445,6 +446,8 @@ class DashboardSections(models.AbstractModel):
             ('date_from', '<=', year_end), ('date_to', '>=', year_start), '|', ('company_ids', '=', False), ('company_ids', 'in', ids)],
             ['name', 'date_from', 'date_to', 'company_ids', 'kind', 'note', 'color_token'])
         for event in events:
+            event['name'] = english_months(event['name'])
+            event['note'] = english_months(event['note'])
             event['date_from'] = str(event['date_from'])
             event['date_to'] = str(event['date_to'])
         warnings = year_summary['warnings']

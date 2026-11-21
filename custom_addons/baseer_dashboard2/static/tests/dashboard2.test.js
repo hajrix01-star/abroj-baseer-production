@@ -1,7 +1,15 @@
 import { after, expect, getFixture, globals, test, withFetch, click, press } from '@odoo/hoot';
 import { animationFrame } from '@odoo/hoot-mock';
 import { App, Component } from '@odoo/owl';
-import { periodRange, hourLabel, hasDisplayValues, multiplePoints, formatNumber, formatTable, formatTablePct, formatPercent, formatPoints, ratioDifference, formatTargetPercent, chartX, miniX, timelineYear, customerCutoverLabel, Dashboard2, InfoPopup, LineChart, niceStep, KpiCard, Sparkline, Badge, Gauge } from '../src/js/main';
+import { monthLabel, plainCsvText, periodRange, hourLabel, hasDisplayValues, multiplePoints, formatNumber, formatTable, formatTablePct, formatPercent, formatPoints, ratioDifference, formatTargetPercent, chartX, miniX, timelineYear, customerCutoverLabel, Dashboard2, InfoPopup, LineChart, niceStep, KpiCard, Sparkline, Badge, Gauge } from '../src/js/main';
+
+test('month labels support full, short, year, bidi isolation and plain CSV', () => {
+    expect(monthLabel('2026-10')).toBe('October');
+    expect(monthLabel('2026-11', { short: true, year: true })).toBe('Nov 2026');
+    const mixed = monthLabel('2026-11', { partial: true, isolate: true });
+    expect(mixed).toBe('\u2068November (جزئي)\u2069');
+    expect(plainCsvText(mixed)).toBe('November (جزئي)');
+});
 
 test('P&L renders without in/out months', async () => {
     class Pnl extends Component {
@@ -236,13 +244,13 @@ test('partial chart month uses a dashed segment and an unclipped axis label', as
     const app = new App(LineChart, { templates: await response.text(), props: { series: [
         { name: 'Sales', values: [100000, 161000], partial: [false, true], firstLabel: true },
         { name: 'Profit', values: [90000, 154000], partial: [false, true], firstLabel: true },
-    ], labels: ['أكتوبر', 'نوفمبر (جزئي)'] }, test: true });
+    ], labels: ['October', 'November (جزئي)'] }, test: true });
     after(() => app.destroy());
     await app.mount(getFixture());
     expect(getFixture().querySelector('[stroke-dasharray="5 4"]')).not.toBe(null);
     const svg = getFixture().querySelector('svg');
     const texts = [...svg.querySelectorAll('text')];
-    const axis = texts.find(el => el.textContent === 'نوفمبر (جزئي)');
+    const axis = texts.find(el => el.textContent === 'November (جزئي)');
     expect(axis.getAttribute('text-anchor')).toBe('start');
     expect(texts.filter(el => el.textContent === 'جزئي').length).toBe(0);
     const sales = texts.find(el => el.textContent === '161K');
@@ -454,7 +462,7 @@ test('customer chart aligns every month with its plotted point and formats order
         static template = 'test.CustomerChart';
         static components = { Sparkline };
         trend = Array.from({ length: 6 }, (_, i) => ({ has_data: true, data: { customers: { value: i === 0 ? null : i === 5 ? 1471 : 100 * (i + 1), avg_ticket: i === 0 ? null : 80 } } }));
-        trendLabels = ['مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر'];
+        trendLabels = ['May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct'];
         miniX = miniX;
     }
     const app = new App(CustomerChart, { templates, test: true });
@@ -487,7 +495,7 @@ test('partial overview marks ratios and neutralizes company comparisons', async 
             bridge: [{ key: 'commissions', amount: -1, pct: -1 }, { key: 'other_opex', amount: -11, pct: -11 }, { key: 'operating_profit', amount: 96, pct: 96 }, { key: 'net_profit', amount: 95, pct: 95.5 }],
             companies_compare: ['1', '2'].map(key => ({ key, name: key, sales_net: 100, food_pct: 1.6, salaries_pct: 0.4, net_margin_pct: -5, targets: { food_pct: { status: 'ok' }, salaries_pct: { status: 'bad' } } }))
         } };
-        trend = [{ partial }]; monthName = v => v; fmt = formatNumber; pct = formatPercent; tableFmt = formatTable; tablePct = formatTablePct; customerCutoverLabel = customerCutoverLabel;
+        trend = [{ partial }]; monthName = (v, short, year, isPartial) => monthLabel(v, { short, year, partial: isPartial }); fmt = formatNumber; pct = formatPercent; tableFmt = formatTable; tablePct = formatTablePct; customerCutoverLabel = customerCutoverLabel;
         iconPath() { return ''; } name(v) { return v; } bridgeStyle() { return ''; }
     }
     const app = new App(PartialOverview, { templates, test: true });
@@ -502,7 +510,7 @@ test('partial overview marks ratios and neutralizes company comparisons', async 
     expect([...fixture.querySelectorAll('.bridge-row')].map(row => row.querySelector('b').textContent)).toEqual(['commissions', 'other_opex', 'operating_profit', 'net_profit']);
     expect(fixture.querySelectorAll('.compare-pill.neutral').length).toBe(6);
     expect([...fixture.querySelectorAll('.compare-pill')].every(el => el.title === 'الشهر لم يكتمل')).toBe(true);
-    expect(fixture.textContent.match(/2026-11 \(جزئي\)/g).length).toBe(2);
+    expect(fixture.textContent.match(/November 2026 \(جزئي\)/g).length).toBe(2);
     app.destroy();
     partial = false;
     const completed = new App(PartialOverview, { templates, test: true });
@@ -549,7 +557,7 @@ test('partial KPI badge hides the comparison with an explanation', async () => {
     expect(getFixture().textContent.trim()).toBe('—');
     expect(getFixture().querySelector('[title]').title).toBe('الشهر لم يكتمل');
     const doc = new DOMParser().parseFromString(templates, 'text/xml');
-    expect(doc.querySelector('[t-name="baseer_dashboard2.Overview"] .safety-chips').outerHTML).toInclude('(جزئي)');
+    expect(doc.querySelector('[t-name="baseer_dashboard2.Overview"] .safety-chips').outerHTML).toInclude('m.partial');
 });
 
 test('overview hides only the current incomplete-costs margin with an explanation', async () => {

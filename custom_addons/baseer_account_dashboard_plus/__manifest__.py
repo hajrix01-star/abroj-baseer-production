@@ -1,5 +1,5 @@
 {
-    'name': 'Baseer Accounting Dashboard Plus', 'version': '19.0.1.0.0',
+    'name': 'Baseer Accounting Dashboard Plus', 'version': '19.0.1.0.1',
     'author': 'Baseer', 'license': 'LGPL-3',
     'depends': ['account', 'baseer_report_engine'],
     'data': ['views/journal_dashboard.xml'],

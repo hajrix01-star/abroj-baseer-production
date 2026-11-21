@@ -55,7 +55,7 @@ jobs:
           . ops/qa/runtime-pins/20261121b.env
           test "$LIVE_COMMIT" = "$RUNTIME_LIVE"
           test "$PREVIOUS_QA_COMMIT" = "$RUNTIME_PREVIOUS_QA"
-          test "$RUNTIME_REF" = refs/heads/codex/qa-runtime-20261121b
+          test "$RUNTIME_REF" = refs/heads/codex/qa-runtime-20261121b-90c662
           git fetch --no-tags origin "$RUNTIME_REF:refs/heads/reviewed-runtime"
           test "$(git rev-parse refs/heads/reviewed-runtime)" = "$RUNTIME_CANDIDATE"
           test "$(git rev-parse "$RUNTIME_CANDIDATE^")" = "$RUNTIME_BASELINE"

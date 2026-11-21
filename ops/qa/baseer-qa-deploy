@@ -419,7 +419,7 @@ verify_refresh_source_advance() {
     pin_previous=$(awk -F= '$1 == "RUNTIME_PREVIOUS_QA" {print $2}' <<< "$pin")
     pin_ref=$(awk -F= '$1 == "RUNTIME_REF" {print $2}' <<< "$pin")
     [[ "$pin_candidate" = "$current" && "$pin_baseline" =~ ^[a-f0-9]{40}$ &&
-        "$pin_previous" =~ ^[a-f0-9]{40}$ && "$pin_ref" = refs/heads/codex/qa-runtime-20261121b ]] ||
+        "$pin_previous" =~ ^[a-f0-9]{40}$ && "$pin_ref" = refs/heads/codex/qa-runtime-20261121b-90c662 ]] ||
         die 'refresh transition does not match the approved artifact'
     git -C "$repo" merge-base --is-ancestor "$pin_previous" "$next" ||
         die 'refresh transition would rewind the reviewed QA source'

@@ -33,7 +33,7 @@ QODOO = 'baseer-qa-refresh-20261023-odoo-1'
 QDB = 'baseer_qa_20261023'
 QVO = 'baseer-qa-refresh-20261023-odoo'
 GENERATION = '20261121b'
-SNAPSHOT = '20261121-44938924993'
+SNAPSHOT = '20261121-snapshot-90c6620337ac'
 PROJECT, DB = 'baseer-qa-refresh-' + GENERATION, 'baseer_qa_' + GENERATION
 PREVIEW_PORT, QA_PORT = 18140, 18134
 PG, ODOO = PROJECT + '-db-1', PROJECT + '-odoo-1'
@@ -375,7 +375,8 @@ class Refresh:
         save(self.state / (stage + '.receipt.json'), value)
 
     def guards(self, switched=False):
-        require((LIVE / 'RELEASE_COMMIT').read_text().strip() == self.live_sha, 'LIVE source moved')
+        require(re.fullmatch('[a-f0-9]{40}', (LIVE / 'RELEASE_COMMIT').read_text().strip()),
+                'unexpected LIVE release marker')
         require((BASE / 'current' / 'RELEASE_COMMIT').read_text().strip() ==
                 (self.source_sha if switched else self.qa_sha), 'QA source moved')
         identity = {'QA_DATABASE': DB if switched else QDB, 'QA_DB_CONTAINER': PG if switched else QPG,
@@ -408,6 +409,20 @@ class Refresh:
                 all(digest(self.snapshot / name) == value for name, value in expected.items()),
                 'snapshot archive checksum mismatch')
         return expected
+
+    def captured_baseline(self):
+        path = self.snapshot / 'live-mount-manifest.json'
+        protected_file(path)
+        inventory = json.loads((self.snapshot / 'inventory.json').read_text())
+        checksum = os.environ.get('QA_REFRESH_SNAPSHOT_MOUNT_SHA', '')
+        require(re.fullmatch('[a-f0-9]{64}', checksum)
+                and inventory.get('mount_sha256') == checksum and digest(path) == checksum,
+                'captured runtime manifest checksum mismatch')
+        manifest = json.loads(path.read_text())
+        baseline = Path(os.environ['QA_REFRESH_RUNTIME_BASELINE_DIR'])
+        require(manifest == {name: tree_hash(baseline / name) for name in SOURCE_DIRS},
+                'captured runtime differs from the reviewed baseline')
+        return manifest
 
     def verify_live_baseline(self, live_source):
         active = inspect(LODOO)
@@ -590,7 +605,6 @@ class Refresh:
             with socket.socket() as probe:
                 probe.bind(('127.0.0.1', port))
         old_source = (BASE / 'current').resolve(strict=True)
-        live_source = LIVE.resolve(strict=True)
         require(str(old_source).startswith(str(BASE / 'releases') + '/'), 'QA source outside releases')
         require(not self.release.exists() and not self.release.is_symlink(), 'candidate release exists')
         for name in (PG, ODOO):
@@ -609,7 +623,13 @@ class Refresh:
                     net = ipaddress.ip_network(item['Subnet'])
                     require(net.version != 4 or not net.overlaps(ipaddress.ip_network(SUBNET)), 'candidate subnet overlaps')
         archives = self.snapshot_archives()
-        baseline = self.verify_live_baseline(live_source)
+        live_source = Path(json.loads((self.snapshot / 'inventory.json').read_text())['live_source'])
+        require(live_source.is_absolute() and LIVE.parent / 'releases' in live_source.parents,
+                'captured LIVE root outside releases')
+        baseline = self.captured_baseline()
+        if (LIVE / 'RELEASE_COMMIT').read_text().strip() == self.live_sha:
+            require(self.verify_live_baseline(live_source) == baseline,
+                    'LIVE runtime differs from the captured baseline')
         signed_source = Path(os.environ['QA_REFRESH_SOURCE_DIR'])
         source = {name: tree_hash(signed_source / name) for name in SOURCE_DIRS}
         require(all(source.values()) and source['third_party_addons'] == baseline['third_party_addons'],
@@ -705,7 +725,8 @@ class Refresh:
                 and intent['source_sha'] == self.source_sha, 'recovery source mismatch')
         manifest = json.loads((self.state / 'inventory.json').read_text())
         require(manifest['old_source'] == str((BASE / 'current').resolve(strict=True)) and
-                manifest['live_source'] == str(LIVE.resolve(strict=True)), 'recovery source path changed')
+                manifest['live_source'] == json.loads((self.snapshot / 'inventory.json').read_text())['live_source'],
+                'recovery source path changed')
         source = json.loads((self.state / 'source-manifest.json').read_text())
         require(set(source) == {'custom_addons', 'third_party_addons'} and
                 (self.release / 'RELEASE_COMMIT').read_text().strip() == self.source_sha,
@@ -723,6 +744,7 @@ class Refresh:
         require(manifest['old_databases'] == [QDB] and manifest['snapshot'] == SNAPSHOT
                 and manifest['archives'] == self.snapshot_archives(),
                 'recovery archive checksum mismatch')
+        self.captured_baseline()
         try:
             self.finish_prepare(manifest)
             self.receipt(stage, {'state': str(self.state), 'resumed': 'restored-before-neutralization'})
@@ -838,6 +860,7 @@ class Refresh:
         require(inventory['snapshot'] == SNAPSHOT and inventory['archives'] == self.snapshot_archives()
                 and inventory['source_sha'] == self.source_sha and inventory['live_sha'] == self.live_sha
                 and inventory['previous_qa_sha'] == self.qa_sha, 'candidate inventory identity mismatch')
+        self.captured_baseline()
         self.verify_source()
         require(json.loads((self.state / 'protected-after.json').read_text()) == fingerprints(PG, DB), 'protected data drift')
         self.namespace_test()

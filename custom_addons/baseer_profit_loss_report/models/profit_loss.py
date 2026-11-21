@@ -1379,6 +1379,7 @@ class BaseerProfitLossReport(models.AbstractModel):
             grouped[key] = grouped.get(key, Decimal('0')) - self._decimal(line.balance)
         noorix = {}
         method_by_account = {}
+        approved_mappings = []
         if self.env.context.get('_baseer_pl_inclusive'):
             for line, delta in self._inclusive_adjustments(domain).items():
                 key = (line.move_id.id, line.account_id.id)
@@ -1389,6 +1390,7 @@ class BaseerProfitLossReport(models.AbstractModel):
                     company, min(dates), max(dates), domain)
                 if noorix:
                     method_by_account = self._noorix_payment_methods(company)
+                    approved_mappings = self._noorix_display_mappings(company, min(dates), max(dates))
         result = {}
         # Only IDs are reused within this invocation; no context, cross-request,
         # amount or visibility cache. Guard failures retain their original scope.
@@ -1412,8 +1414,14 @@ class BaseerProfitLossReport(models.AbstractModel):
                 account_counts = Counter(funding_accounts.values())
                 for key, value in source_channels.items():
                     account_id_for_channel = funding_accounts[key]
-                    method = (method_by_account.get(account_id_for_channel)
-                              if account_counts[account_id_for_channel] == 1 else None)
+                    source_date = lines.env['account.move'].browse(move_id).date
+                    selected = [item for item in approved_mappings
+                                if item[0] == key and item[1] <= source_date <= item[2]]
+                    if selected:
+                        method = selected[0][3]
+                    else:
+                        method = (method_by_account.get(account_id_for_channel)
+                                  if account_counts[account_id_for_channel] == 1 else None)
                     channel = 'payment_' + str(method.id) if method else 'noorix_' + key
                     name = method.display_name if method else names[key][0 if arabic else 1]
                     previous = allocation.get(channel, (name, Decimal('0')))
@@ -1519,6 +1527,38 @@ class BaseerProfitLossReport(models.AbstractModel):
                 previous = target.get(key, (name, Decimal('0')))
                 target[key] = (name, previous[1] + value)
         return result
+
+    def _noorix_display_mappings(self, company, start, end):
+        """Load only authorized, explicit mappings; unavailable methods remain separate."""
+        Mapping = self.env['baseer.pl.noorix.channel.mapping']
+        mappings = Mapping.search([('company_id', '=', company.id), ('date_from', '<=', end),
+                                   ('date_to', '>=', start)])
+        mappings.check_access('read')
+        Mapping.flush_model(['company_id', 'date_from', 'date_to'])
+        self.env.cr.execute('''SELECT id FROM baseer_pl_noorix_channel_mapping
+            WHERE company_id=%s AND date_from<=%s AND date_to>=%s''', [company.id, end, start])
+        if set(mappings.ids) != {row[0] for row in self.env.cr.fetchall()}:
+            raise AccessError(_('A payment display mapping is not available.'))
+        if not mappings:
+            return []
+        active = mappings.filtered(lambda item: not item.revoked)
+        for index, mapping in enumerate(active):
+            if any(other.date_from <= mapping.date_to and other.date_to >= mapping.date_from
+                   and (other.source_channel == mapping.source_channel
+                        or other.payment_method_id == mapping.payment_method_id)
+                   for other in active[index + 1:]):
+                raise ValidationError(_('Conflicting payment display mappings require review.'))
+        try:
+            Method = self.env['pos.payment.method'].with_context(active_test=False)
+            methods = Method.search([('company_id', '=', company.id),
+                                     ('id', 'in', mappings.mapped('payment_method_id'))])
+            methods.check_access('read')
+            by_id = {method.id: method for method in methods}
+        except (AccessError, KeyError):
+            by_id = {}
+        return [(mapping.source_channel, mapping.date_from, mapping.date_to,
+                 None if mapping.revoked else by_id.get(mapping.payment_method_id))
+                for mapping in mappings.sorted(key=lambda item: (item.revoked, item.id))]
 
     @api.model
     def _verified_noorix_gross_channels(self, company, start, end, domain):

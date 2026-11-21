@@ -1,0 +1,7 @@
+<odoo noupdate="1">
+    <record id="company_map" model="ir.config_parameter"><field name="key">baseer_dashboard2.company_map</field><field name="value">1:أرز,2:الشامي,3:الدوحة</field></record>
+    <record id="target_food" model="baseer.dashboard2.target"><field name="key">food_pct</field><field name="operator">le</field><field name="value">33</field></record>
+    <record id="target_salaries" model="baseer.dashboard2.target"><field name="key">salaries_pct</field><field name="operator">le</field><field name="value">25</field></record>
+    <record id="target_prime" model="baseer.dashboard2.target"><field name="key">prime_pct</field><field name="operator">le</field><field name="value">60</field></record>
+    <record id="target_net" model="baseer.dashboard2.target"><field name="key">net_margin_pct</field><field name="operator">ge</field><field name="value">12</field></record>
+</odoo>

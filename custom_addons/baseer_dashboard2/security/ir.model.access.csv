@@ -1,0 +1,22 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+category_read,category read,model_baseer_dashboard2_category,account.group_account_readonly,1,0,0,0
+category_manager,category manager,model_baseer_dashboard2_category,account.group_account_manager,1,1,1,1
+channel_read,channel read,model_baseer_dashboard2_channel,account.group_account_readonly,1,0,0,0
+channel_manager,channel manager,model_baseer_dashboard2_channel,account.group_account_manager,1,1,1,1
+target_read,target read,model_baseer_dashboard2_target,account.group_account_readonly,1,0,0,0
+target_manager,target manager,model_baseer_dashboard2_target,account.group_account_manager,1,1,1,1
+event_read,event read,model_baseer_dashboard2_event,account.group_account_readonly,1,0,0,0
+event_manager,event manager,model_baseer_dashboard2_event,account.group_account_manager,1,1,1,1
+settings_read,settings read,model_baseer_dashboard2_settings,account.group_account_readonly,1,0,0,0
+settings_manager,settings manager,model_baseer_dashboard2_settings,account.group_account_manager,1,1,1,1
+pos_order_account_read,pos order account read,point_of_sale.model_pos_order,account.group_account_readonly,1,0,0,0
+pos_payment_account_read,pos payment account read,point_of_sale.model_pos_payment,account.group_account_readonly,1,0,0,0
+pos_method_account_read,pos method account read,point_of_sale.model_pos_payment_method,account.group_account_readonly,1,0,0,0
+pos_session_account_read,pos session account read,point_of_sale.model_pos_session,account.group_account_readonly,1,0,0,0
+channel_map_read,channel map read,model_baseer_dashboard2_channel_map,account.group_account_readonly,1,0,0,0
+channel_map_manager,channel map manager,model_baseer_dashboard2_channel_map,account.group_account_manager,1,1,1,1
+liquidity_read,liquidity read,model_baseer_dashboard2_liquidity,account.group_account_readonly,1,0,0,0
+liquidity_manager,liquidity manager,model_baseer_dashboard2_liquidity,account.group_account_manager,1,1,1,1
+pos_config_account_read,pos config account read,point_of_sale.model_pos_config,account.group_account_readonly,1,0,0,0
+source_override_read,source override read,model_baseer_dashboard2_source_override,account.group_account_readonly,1,0,0,0
+source_override_manager,source override manager,model_baseer_dashboard2_source_override,account.group_account_manager,1,1,1,1

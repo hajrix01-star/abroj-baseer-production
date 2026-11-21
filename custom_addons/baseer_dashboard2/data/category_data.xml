@@ -1,0 +1,77 @@
+<odoo noupdate="1">
+    <record id="category_revenue" model="baseer.dashboard2.category">
+        <field name="name">المبيعات</field>
+        <field name="sequence">10</field>
+        <field name="code">revenue</field>
+        <field name="account_type_fallback">income</field>
+    </record>
+    <record id="category_other_income" model="baseer.dashboard2.category">
+        <field name="name">إيرادات أخرى</field>
+        <field name="sequence">20</field>
+        <field name="code">other_income</field>
+        <field name="account_type_fallback">income_other</field>
+    </record>
+    <record id="category_food_cost" model="baseer.dashboard2.category">
+        <field name="name">تكلفة الأكل</field>
+        <field name="sequence">30</field>
+        <field name="code">food_cost</field>
+        <field name="account_code_prefixes">400001,400002</field>
+        <field name="account_type_fallback">expense_direct_cost</field>
+        <field name="color_token">--bd2-c-brick</field>
+    </record>
+    <record id="category_salaries" model="baseer.dashboard2.category">
+        <field name="name">الرواتب</field>
+        <field name="sequence">40</field>
+        <field name="code">salaries</field>
+        <field name="account_code_prefixes">400003,400004,400005,400006,400007,400008,400009,400010,400012,400013,400014,400015,400074,400075,400093</field>
+        <field name="color_token">--bd2-c-teal</field>
+    </record>
+    <record id="category_rent" model="baseer.dashboard2.category">
+        <field name="name">الإيجار</field>
+        <field name="sequence">50</field>
+        <field name="code">rent</field>
+        <field name="account_code_prefixes">400016,400017,400070</field>
+        <field name="color_token">--bd2-c-navy</field>
+    </record>
+    <record id="category_utilities" model="baseer.dashboard2.category">
+        <field name="name">الكهرباء والماء</field>
+        <field name="sequence">60</field>
+        <field name="code">utilities</field>
+        <field name="account_code_prefixes">400018,400019,400020,400021,400022,400023</field>
+    </record>
+    <record id="category_marketing" model="baseer.dashboard2.category">
+        <field name="name">التسويق والإعلان</field>
+        <field name="sequence">70</field>
+        <field name="code">marketing</field>
+        <field name="account_code_prefixes">400034</field>
+        <field name="color_token">--bd2-c-gold</field>
+    </record>
+    <record id="category_commissions" model="baseer.dashboard2.category">
+        <field name="name">العمولات ورسوم البطاقات</field>
+        <field name="sequence">80</field>
+        <field name="code">commissions</field>
+        <field name="account_code_prefixes">400011,400051,400058,400060,400062</field>
+        <field name="color_token">--bd2-c-red</field>
+    </record>
+    <record id="category_depreciation" model="baseer.dashboard2.category">
+        <field name="name">الإهلاك</field>
+        <field name="sequence">90</field>
+        <field name="code">depreciation</field>
+        <field name="account_code_prefixes">400063</field>
+        <field name="account_type_fallback">expense_depreciation</field>
+    </record>
+    <record id="category_non_operating" model="baseer.dashboard2.category"><field name="name">غير تشغيلي</field><field name="sequence">95</field><field name="code">non_operating</field><field name="account_code_prefixes">400057,400061,400035,999002,999001</field></record>
+    <record id="category_zakat_tax" model="baseer.dashboard2.category">
+        <field name="name">الزكاة والضريبة</field>
+        <field name="sequence">100</field>
+        <field name="code">zakat_tax</field>
+        <field name="account_code_prefixes">400055,400072,400073</field>
+    </record>
+    <record id="category_other_opex" model="baseer.dashboard2.category">
+        <field name="name">مصاريف تشغيلية أخرى</field>
+        <field name="sequence">110</field>
+        <field name="code">other_opex</field>
+        <field name="account_code_prefixes">400032,400042,400048</field>
+        <field name="account_type_fallback">expense</field>
+    </record>
+</odoo>

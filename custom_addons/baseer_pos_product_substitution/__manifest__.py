@@ -1,7 +1,7 @@
 {
     'name': 'Baseer POS Product Substitution',
     'summary': 'Controlled product edits and cancellation records',
-    'version': '19.0.2.0.8',
+    'version': '19.0.2.0.5',
     'category': 'Baseer/POS',
     'author': 'Baseer',
     'license': 'LGPL-3',
@@ -16,7 +16,6 @@
     'assets': {
         'point_of_sale._assets_pos': [
             'baseer_pos_product_substitution/static/src/app/substitution.js',
-            'baseer_pos_product_substitution/static/src/app/auto_payment_refresh.js',
             'baseer_pos_product_substitution/static/src/app/substitution.xml',
             'baseer_pos_product_substitution/static/src/app/substitution.scss',
         ],

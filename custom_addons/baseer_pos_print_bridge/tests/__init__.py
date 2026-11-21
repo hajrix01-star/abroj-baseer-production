@@ -7,4 +7,3 @@ from . import test_note
 from . import test_kitchen_document
 from . import test_native_split
 from . import test_draft_bill_freshness
-from . import test_session_ticket

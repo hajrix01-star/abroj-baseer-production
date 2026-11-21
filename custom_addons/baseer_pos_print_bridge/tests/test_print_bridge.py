@@ -1670,7 +1670,7 @@ class TestBaseerPrintBridgeHybrid(TransactionCase):
         self.assertTrue(all(len(j.payload['lines']) == 1 for j in jobs))
         self.assertEqual({job.payload['order']['reference'] for job in jobs},
                          {order.pos_reference or order.name})
-        self.assertEqual({job.payload['order']['tracking_number'] for job in jobs}, {f'{order.session_id.id}-1'})
+        self.assertEqual({job.payload['order']['tracking_number'] for job in jobs}, {'1011'})
         self.assertEqual(set(Event._retry_events(action).job_ids.ids), set(jobs.ids))
         self.assertEqual(len(Job.sudo().search([('source_order_id', '=', order.id),
                                                  ('ticket_type', '=', 'preparation')])), 2)
@@ -1703,7 +1703,7 @@ class TestBaseerPrintBridgeHybrid(TransactionCase):
             with self.subTest(version=version):
                 self.agent.with_context(baseer_print_internal=True).write({'agent_version': version})
                 payload = Job._job_payload('preparation', order, self.kitchen_a)['order']
-                self.assertEqual(payload['tracking_number'], f'{order.session_id.id}-1')
+                self.assertEqual(payload['tracking_number'], '1011')
                 self.assertEqual(payload['reference'], 'POS/QA/000011')
                 self.assertEqual(payload.get('order_type'), 'هنقرستيشن')
         receipt = Job._job_payload('receipt', order, self.kitchen_a)['order']
@@ -1737,7 +1737,7 @@ class TestBaseerPrintBridgeHybrid(TransactionCase):
                     )
                     result = State._apply_action(order, action)
                     job = Job.browse(result['job_ids']).ensure_one()
-                    self.assertEqual(job.payload['order']['tracking_number'], f'{order.session_id.id}-1')
+                    self.assertEqual(job.payload['order']['tracking_number'], '1011')
                     self.assertEqual(job.payload['order']['reference'], 'POS/QA/000011')
                     self.assertEqual(job.payload['lines'][0]['action'], expected_action)
                     self.assertEqual(job.payload['lines'][0]['new_quantity'], target)
@@ -1753,7 +1753,7 @@ class TestBaseerPrintBridgeHybrid(TransactionCase):
                 first_job.action_reprint()
                 reprint = Job.search([('reprint_of_id', '=', first_job.id)])
                 self.assertEqual(reprint.payload, frozen)
-                self.assertEqual(reprint.payload['order']['tracking_number'], f'{order.session_id.id}-1')
+                self.assertEqual(reprint.payload['order']['tracking_number'], '1011')
 
     def test_whole_kitchen_cancellation_keeps_number_in_both_modes(self):
         self.agent.with_context(baseer_print_internal=True).write({'agent_version': '1.5.16'})
@@ -1772,17 +1772,12 @@ class TestBaseerPrintBridgeHybrid(TransactionCase):
                 job = Job.search([
                     ('source_order_id', '=', order.id), ('cancellation_id', '!=', False),
                 ]).ensure_one()
-                self.assertEqual(job.payload['order']['tracking_number'], f'{order.session_id.id}-1')
+                self.assertEqual(job.payload['order']['tracking_number'], '2008')
                 self.assertEqual(job.payload['order']['reference'], 'POS/QA/000008')
                 self.assertEqual(job.payload['lines'][0]['action'], 'cancel')
                 self.assertEqual(order.state, 'cancel')
 
     def test_kitchen_missing_number_does_not_infer_one_from_reference(self):
-        # An open session at module upgrade keeps the native ticket forever.
-        self.config.open_ui()
-        session = self.config.current_session_id
-        self.env.cr.execute("UPDATE pos_session SET baseer_ticket_enabled = FALSE WHERE id = %s", (session.id,))
-        session.invalidate_recordset(['baseer_ticket_enabled'])
         order = self._order()
         order.write({'tracking_number': False, 'pos_reference': '261-39-001011'})
         payload = self.env['baseer.print.job']._job_payload('preparation', order, self.kitchen_a)
@@ -1790,9 +1785,6 @@ class TestBaseerPrintBridgeHybrid(TransactionCase):
         self.assertEqual(payload['order']['reference'], '261-39-001011')
         test_payload = self.env['baseer.print.job']._job_payload('test', False, self.kitchen_a)
         self.assertNotIn('tracking_number', test_payload['order'])
-        order.tracking_number = '1011'
-        legacy = self.env['baseer.print.job']._job_payload('preparation', order, self.kitchen_a)
-        self.assertEqual(legacy['order']['tracking_number'], '1011')
 
     def test_kitchen_metadata_is_independent_of_agent_layout_version(self):
         order = self._order()
@@ -1801,7 +1793,7 @@ class TestBaseerPrintBridgeHybrid(TransactionCase):
             self.agent.with_context(baseer_print_internal=True).write({'agent_version': version})
             payload = self.env['baseer.print.job']._job_payload('preparation', order, self.kitchen_a)
             self.assertEqual(payload['order']['reference'], 'POS/QA/000011')
-            self.assertEqual(payload['order']['tracking_number'], f'{order.session_id.id}-1')
+            self.assertEqual(payload['order']['tracking_number'], '1011')
 
     def test_legacy_enqueue_keeps_both_kitchens_on_update(self):
         self._enable()

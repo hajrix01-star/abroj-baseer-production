@@ -712,13 +712,14 @@ test('peak hours subtitle uses the actual partial data range', async () => {
 test('mobile navigation opens and closes on page selection and Escape', async () => {
     const response = await withFetch(globals.fetch, () => fetch('/baseer_dashboard2/static/src/xml/main.xml'));
     class Dashboard extends Dashboard2 {
-        async init() { this.state.meta = { companies: [] }; }
+        async init() { this.state.meta = { companies: [{ key: "all", label: "المجموع" }] }; }
         async load() {}
     }
     const app = new App(Dashboard, { templates: await response.text(), env: { services: { orm: {}, action: {} } }, test: true });
     after(() => app.destroy());
     await app.mount(getFixture());
     const root = getFixture().querySelector('.o_bd2');
+    expect(root.querySelector('.company-label-fallback').textContent).toBe('المجموع');
     root.querySelector('.bd2-menu-toggle').click();
     await animationFrame();
     expect(root.classList.contains('bd2-nav-open')).toBe(true);
@@ -738,4 +739,16 @@ test('wide dashboard content has horizontal scroll containers', async () => {
     for (const selector of ['.export-table', '.inout-table', '.calendar', '.year-grid', '.hours-table']) {
         expect(doc.querySelector(selector).closest('.bd2-scroll-x')).not.toBe(null);
     }
+});
+
+test('long chart axes mark alternating labels for the phone layout', async () => {
+    const response = await withFetch(globals.fetch, () => fetch('/baseer_dashboard2/static/src/xml/main.xml'));
+    const app = new App(LineChart, { templates: await response.text(), props: {
+        labels: Array.from({ length: 12 }, (_, i) => String(i + 1)),
+        series: [{ values: Array.from({ length: 12 }, (_, i) => i) }],
+    }, test: true });
+    after(() => app.destroy());
+    await app.mount(getFixture());
+    expect(getFixture().querySelectorAll('.bd2-axis-label').length).toBe(6);
+    expect(getFixture().querySelectorAll('.bd2-axis-alternate').length).toBe(6);
 });

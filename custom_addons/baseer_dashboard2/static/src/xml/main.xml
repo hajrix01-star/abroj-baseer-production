@@ -165,7 +165,7 @@
                 <span class="muted"><bdi dir="ltr" t-esc="tablePct(row.pct == null ? null : Math.abs(row.pct))"/></span>
             </div>
             <div class="muted tax-note">يشمل ضريبة قيمة مضافة مستحقة للهيئة: <t t-esc="fmt(current.tax?.vat_payable)"/> (مخرجات <t t-esc="fmt(current.tax?.output_vat)"/> − مدخلات <t t-esc="fmt(current.tax?.input_vat)"/>)<t t-if="current.tax?.tobacco_fee"> ورسوم تبغ: <t t-esc="fmt(current.tax.tobacco_fee)"/></t></div>
-            <div t-if="current.tax?.unallocated_input_vat" class="chip">ضريبة مدخلات غير موزعة: <t t-esc="fmt(current.tax.unallocated_input_vat)"/></div>
+            <div t-if="current.tax?.unallocated_input_vat_lines" class="chip">ضريبة مدخلات غير موزعة: <t t-esc="fmt(current.tax.unallocated_input_vat)"/></div>
         </div>
         <div t-foreach="state.data.sales.warnings" t-as="warning" t-key="warning.company_id+warning.date+warning.label" class="chip"><t t-esc="warning.date"/> · <t t-esc="warning.label"/></div>
         <t t-call="baseer_dashboard2.Compare"/>
@@ -358,6 +358,7 @@
         </div>
     </t>
     <t t-name="baseer_dashboard2.Ratios">
+        <div class="muted">المستهدفات شاملة الضريبة</div>
         <div class="grid four">
             <div class="card ratio" t-foreach="['food_pct','salaries_pct','prime_pct','net_margin_pct']" t-as="key" t-key="key">
                 <div class="ratio-heading"><div><h3 t-esc="name(key)"/><div class="muted" t-esc="({food_pct:'تكلفة الأكل ÷ المبيعات',salaries_pct:'الرواتب ÷ المبيعات',prime_pct:'(الأكل + الرواتب) ÷ المبيعات',net_margin_pct:'صافي الربح ÷ المبيعات'})[key]"/></div><span t-if="current.ratios?.[key] != null and state.data.targets[key]" t-att-class="'bd2-badge '+(state.data.targets[key].status === 'ok' ? 'good' : 'bad')" t-esc="state.data.targets[key].status === 'ok' ? 'ضمن المستهدف' : 'خارج المستهدف'"/></div>

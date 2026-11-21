@@ -1,4 +1,7 @@
 from decimal import Decimal
+from copy import deepcopy
+from datetime import date
+from unittest.mock import patch
 
 from odoo.tests import TransactionCase, tagged
 
@@ -28,3 +31,20 @@ class TestTaxMath(TransactionCase):
         self.assertIsNone(convert_target('food_pct', 33, 100, 120, 0, 0, 20, 10, 26))
         self.assertIsNone(convert_target('salaries_pct', 25, 100, 0, 40, 44, 20, 10, 26))
         self.assertIsNone(convert_target('unknown', 25, *values))
+
+    def test_inclusive_profit_tobacco_and_breakeven(self):
+        service = self.env['baseer.dashboard2.service']
+        net = {'sales_net': 100.0, 'categories': {'revenue': 100.0, 'food_cost': 40.0, 'salaries': 20.0},
+               'accounts': [], 'breakeven': 50.0, 'gross_profit': 60.0, 'operating_profit': 40.0,
+               'net_profit': 40.0, 'ratios': {}, 'safety_margin': 50.0}
+        taxes = {'accounts': {}, 'output_vat': 10.0, 'tobacco_fee': 2.0, 'input_vat': 0.0,
+                 'unallocated_input_vat': 0.0, 'unallocated_input_vat_lines': 0, 'vat_payable': 10.0}
+        with patch.object(type(service), '_accounting', side_effect=lambda *a: deepcopy(net)), \
+             patch.object(type(service), '_tax_basis', return_value=taxes):
+            result = service._accounting_gross([self.env.company.id], date(2026, 10, 1), date(2026, 10, 31))
+        self.assertEqual(result['sales_net'], 112)
+        self.assertEqual(result['tax']['tobacco_fee'], 2)
+        self.assertEqual(result['net_profit'], 52)
+        self.assertEqual(result['ratios']['net_margin_pct'], 46.43)
+        self.assertEqual(result['breakeven'], 56)
+        self.assertEqual(result['sales_net'] / result['breakeven'], net['sales_net'] / net['breakeven'])

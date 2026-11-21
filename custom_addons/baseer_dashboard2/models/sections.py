@@ -69,7 +69,7 @@ class DashboardSections(models.AbstractModel):
             ('account_id', 'in', settings.mapped('food_purchase_account_ids').ids)], limit=1)
         return {'available': True, 'value': round(value, 2), 'pct': food_ratio(value, sales), 'has_bills': bool(bill_exists)}
 
-    def _recorded_app_commissions(self, ids, start, end):
+    def _recorded_app_commissions(self, ids, start, end, include_tax=True):
         total = 0.0
         settings_model = self.env['baseer.dashboard2.settings'].with_context(allowed_company_ids=ids)
         for company in self.env['res.company'].browse(ids):
@@ -84,8 +84,9 @@ class DashboardSections(models.AbstractModel):
                 ('date', '>=', start), ('date', '<=', end), ('account_id', 'in', accounts.ids),
                 ('move_id', 'not in', excluded), ('move_id.ref', '!=', 'Opening Entry')], [], ['balance:sum'])
             total += (rows[0][0] or 0) if rows else 0
-            allocated = self._tax_basis(ids, start, end)['accounts']
-            total += sum(allocated.get((company.id, account.id), 0) for account in accounts)
+            if include_tax:
+                allocated = self._tax_basis(ids, start, end)['accounts']
+                total += sum(allocated.get((company.id, account.id), 0) for account in accounts)
         return round(total, 2)
 
     @request_memo
@@ -177,7 +178,7 @@ class DashboardSections(models.AbstractModel):
                   'current': current, 'previous': previous, 'trend': trend, 'targets': targets, 'has_data': covered(start, end)}
         if section != 'pnl':
             result.update(basis='inclusive', tax=current['tax'])
-            if current['tax']['unallocated_input_vat']:
+            if current['tax']['unallocated_input_vat_lines']:
                 result['warnings'] = ['unallocated_input_vat']
         prior_months = sorted((m for m in posted_months if m < start.strftime('%Y-%m')), reverse=True)[:3]
         prior_salaries = [self._accounting(ids, *month_bounds(date.fromisoformat(m + '-01')))['categories'].get('salaries', 0) for m in prior_months]
@@ -202,13 +203,15 @@ class DashboardSections(models.AbstractModel):
             bridge = [('sales_net', current['sales_net']), ('food_cost', -current['categories'].get('food_cost', 0)), ('gross_profit', current['gross_profit']),
                       ('salaries', -current['categories'].get('salaries', 0)), ('rent', -current['categories'].get('rent', 0))]
             commission = self._recorded_app_commissions(ids, start, end)
+            if not self._recorded_app_commissions(ids, start, end, include_tax=False):
+                commission = 0
             bridge += [(k, -(commission if k == 'commissions' else current['categories'].get(k, 0)
                              + (current['categories'].get('non_operating', 0)
                                 + current['categories'].get('commissions', 0) - commission if k == 'other_opex' else 0)))
                        for k in ('utilities', 'marketing', 'commissions', 'other_opex', 'depreciation')]
             bridge += [('operating_profit', current['operating_profit']), ('other_income', current['categories'].get('other_income', 0)), ('zakat_tax', -current['categories'].get('zakat_tax', 0)), ('net_profit', current['net_profit'])]
             result['bridge'] = [{'key': key, 'amount': amount, 'pct': percent(amount, current['sales_net'])} for key, amount in bridge if amount or key in ('sales_net', 'gross_profit', 'operating_profit', 'net_profit')]
-            result['breakeven_series'] = [{'month': m['month'], 'partial': m['partial'], 'sales_net': m['data']['sales_net'] if m['has_data'] else None, 'net_profit': m['data']['net_profit'] if m['has_data'] else None, 'breakeven': m['data']['breakeven'] if m['has_data'] else None, 'margin_pct': m['data']['ratios']['net_margin_pct'] if m['has_data'] else None} for m in trend]
+            result['breakeven_series'] = [{'month': m['month'], 'partial': m['partial'], 'sales_net': m['data']['sales_net'] if m['has_data'] else None, 'net_profit': m['data']['net_profit'] if m['has_data'] else None, 'breakeven': m['data']['breakeven'] if m['has_data'] else None, 'safety_margin': m['data']['safety_margin'] if m['has_data'] else None, 'margin_pct': m['data']['ratios']['net_margin_pct'] if m['has_data'] else None} for m in trend]
             result['purchases'] = self._purchases(ids, start, end, current['sales_net'])
             if not covered(start, end):
                 result['purchases']['value'] = None
@@ -233,6 +236,7 @@ class DashboardSections(models.AbstractModel):
                 sales_trend.append({'month': month['month'], 'has_data': bool(monthly_sales['source_counts']['pos'] or monthly_sales['source_counts']['summary']), **monthly_sales})
             sales, days, channels, hours = self._sales_summary(ids, start, end)
             prior_sales, _, _, _ = self._sales_summary(ids, previous_start, previous_end)
+            prior_sales['apps_pct'] = percent(prior_sales['apps'], previous['sales_net'])
             result['sales'] = dict(sales)
             result['sales']['apps_pct'] = percent(sales['apps'], current['sales_net'])
             if not days:
@@ -265,6 +269,7 @@ class DashboardSections(models.AbstractModel):
                         break
             if section == 'overview' and incomplete:
                 result['breakeven_series'][-1]['breakeven'] = None
+                result['breakeven_series'][-1]['safety_margin'] = None
         if section == 'expenses':
             rows = []
             for key in expense_keys:
@@ -359,7 +364,7 @@ class DashboardSections(models.AbstractModel):
         difference = round(current['gross'] - channel_gross, 2)
         previous_difference = round(previous['gross'] - prior_channel_gross, 2)
         differences = [round(m['data']['gross'] - sum(m['data']['channels'].values()), 2) if m['has_data'] else None for m in monthly]
-        if abs(difference) >= 0.01 or abs(previous_difference) >= 0.01 or any(abs(v or 0) >= 0.01 for v in differences):
+        if abs(difference) >= 0.01:
             rows.append({'key': 'accounting_adjustments', 'name': 'فواتير وتسويات أخرى', 'kind': 'hall', 'color_token': False,
                          'amount': difference, 'share_pct': percent(difference, current['gross']),
                          'change_pct': change(difference, previous_difference), 'trend': differences})
@@ -368,7 +373,9 @@ class DashboardSections(models.AbstractModel):
         if not days:
             current = dict(current, gross=current['gross'] if current['gross'] else None, apps=None)
             split = {'hall': None, 'apps': None}
-        return {'available': True, 'basis': 'inclusive', 'tax': accounting['tax'], 'current': current, 'previous': previous, 'trend': monthly, 'apps_trend': apps_trend,
+        return {'available': True, 'basis': 'inclusive', 'tax': accounting['tax'],
+                'warnings': ['unallocated_input_vat'] if accounting['tax']['unallocated_input_vat_lines'] else [],
+                'current': current, 'previous': previous, 'trend': monthly, 'apps_trend': apps_trend,
                 'ranked': sorted((row for row in rows if row['amount'] or any(row['trend'])), key=lambda row: row['amount'], reverse=True),
                 'split': split,
                 'commissions': {'available': bool(commission_amount), 'amount': commission_amount},
@@ -487,11 +494,11 @@ class DashboardSections(models.AbstractModel):
             return {'available': False, 'reason': 'empty_company_scope'}
         ids = self._scope(params.get('company_key'))
         start, end = self._period(params.get('period') or {})
-        if section in ('overview', 'revenue', 'expenses', 'ratios'):
-            self = self.with_context(_bd2_tax_window=(min(start, date(end.year - 5, 1, 1)), end),
-                                     _bd2_tax_companies=[cid for cid, _, _ in companies])
         previous_end = start - timedelta(days=1)
         previous_start = previous_end.replace(day=1) if params['period']['mode'] == 'month' else previous_end - (end - start)
+        if section in ('overview', 'revenue', 'expenses', 'ratios'):
+            self = self.with_context(_bd2_tax_window=(min(start, previous_start, date(max(1, end.year - 5), 1, 1)), end),
+                                     _bd2_tax_companies=[cid for cid, _, _ in companies])
         if section in ('overview', 'expenses', 'ratios', 'pnl'):
             return self._accounting_sections(ids, section, start, end, previous_start, previous_end, companies, params)
         if section == 'revenue':

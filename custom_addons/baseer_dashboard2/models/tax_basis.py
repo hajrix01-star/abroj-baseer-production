@@ -34,8 +34,8 @@ class DashboardTaxBasis(models.AbstractModel):
             if tax.type_tax_use == 'sale' and code in ('201017', '201021'):
                 entries.append((line.date, company.id, 'output_vat' if code == '201017' else 'tobacco_fee', 0, -line.balance))
             elif tax.type_tax_use == 'purchase' and code in ('104041', '104043'):
-                name = (tax.name or '').upper()
-                group = (tax.tax_group_id.name or '').upper()
+                name = ' '.join((tax.name or '', tax.with_context(lang='en_US').name or '')).upper()
+                group = ' '.join((tax.tax_group_id.name or '', tax.tax_group_id.with_context(lang='en_US').name or '')).upper()
                 if re.search(r'\bR\s*C\b|\bWH\b|WITHHOLD', name) or 'WITHHOLD' in group or (tax.amount_type == 'division' and tax.amount < 0):
                     continue
                 allocations = allocate_tax(line.balance, by_move_tax[(line.move_id.id, tax.id)])
@@ -51,6 +51,7 @@ class DashboardTaxBasis(models.AbstractModel):
         first, last = min(window[0], start), max(window[1], end)
         totals = {'output_vat': 0.0, 'tobacco_fee': 0.0, 'unallocated_input_vat': 0.0}
         accounts = defaultdict(float)
+        unallocated_lines = 0
         scope = self.env.context.get('_bd2_tax_companies') or ids
         for day, cid, kind, account_id, amount in self._tax_window(scope, first, last):
             if cid in ids and start <= day <= end:
@@ -58,9 +59,12 @@ class DashboardTaxBasis(models.AbstractModel):
                     accounts[(cid, account_id)] += amount
                 else:
                     totals[kind] += amount
+                    if kind == 'unallocated_input_vat':
+                        unallocated_lines += 1
         totals = {key: round(value, 2) for key, value in totals.items()}
         totals['accounts'] = {key: round(value, 2) for key, value in accounts.items()}
         totals['input_vat'] = round(sum(accounts.values()), 2)
+        totals['unallocated_input_vat_lines'] = unallocated_lines
         totals['vat_payable'] = round(totals['output_vat'] - totals['input_vat'], 2)
         return totals
 
@@ -94,6 +98,6 @@ class DashboardTaxBasis(models.AbstractModel):
                             'prime_pct': round((cat.get('food_cost', 0) + cat.get('salaries', 0)) / sales * 100, 2) if sales else None,
                             'net_margin_pct': round(net / sales * 100, 2) if sales else None},
                     basis='inclusive', tax={**{k: v for k, v in tax.items() if k != 'accounts'}, 'sales_net_pre_tax': net_sales})
-        if tax['unallocated_input_vat']:
+        if tax['unallocated_input_vat_lines']:
             data['warnings'] = ['unallocated_input_vat']
         return data

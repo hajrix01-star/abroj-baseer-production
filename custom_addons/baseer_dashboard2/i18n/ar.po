@@ -695,3 +695,7 @@ msgstr "ضريبة مدخلات غير موزعة"
 #. module: baseer_dashboard2
 msgid "منها رسوم التبغ"
 msgstr "منها رسوم التبغ"
+
+#. module: baseer_dashboard2
+msgid "المستهدفات شاملة الضريبة"
+msgstr "المستهدفات شاملة الضريبة"

@@ -16,6 +16,7 @@ test('P&L renders without in/out months', async () => {
     after(() => app.destroy());
     await app.mount(getFixture());
     expect(getFixture().querySelector('.export-table')).not.toBe(null);
+    expect(getFixture().querySelector('.chip').textContent).toBe('قبل الضريبة');
 });
 
 test('ratios render a numeric gauge target', async () => {
@@ -495,6 +496,7 @@ test('partial overview marks ratios and neutralizes company comparisons', async 
     after(() => app.destroy());
     const fixture = getFixture();
     await app.mount(fixture);
+    expect(fixture.querySelector('.tax-note').textContent).toInclude('ضريبة قيمة مضافة مستحقة للهيئة');
     expect(fixture.querySelectorAll('.mini')[2].textContent).toInclude('من 19/11');
     expect([...fixture.querySelectorAll('.mini-pill')].every(el => el.textContent.includes('(جزئي)'))).toBe(true);
     expect(fixture.querySelector('.bridge-row').parentElement.querySelector('h3').textContent).toInclude('(جزئي)');
@@ -720,6 +722,7 @@ test('mobile navigation opens and closes on page selection and Escape', async ()
     after(() => app.destroy());
     await app.mount(getFixture());
     const root = getFixture().querySelector('.o_bd2');
+    expect(root.querySelector('.tax-basis-badge').textContent).toBe('شامل الضريبة');
     expect(root.querySelector('.company-label-fallback').textContent).toBe('المجموع');
     root.querySelector('.bd2-menu-toggle').click();
     await animationFrame();

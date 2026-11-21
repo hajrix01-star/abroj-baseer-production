@@ -26,20 +26,25 @@ class TestTaxBasis(TransactionCase):
             (record.invoice_repartition_line_ids | record.refund_repartition_line_ids).filtered(lambda r: r.repartition_type == 'tax').write({'account_id': vat.id})
             return record
         normal, reverse, withholding = tax('VAT normal', 15), tax('15% R C', 15), tax('WH 5', -5, 'division')
-        def bill(name, tax_record=None, kind='in_invoice'):
+        def bill(name, tax_record=None, kind='in_invoice', expense=None):
             move = self.env['account.move'].create({'move_type': kind, 'journal_id': journal.id, 'partner_id': partner.id,
                 'invoice_date': '2026-10-05', 'date': '2026-10-05', 'ref': name,
-                'invoice_line_ids': [(0, 0, {'name': name, 'account_id': food.id, 'quantity': 1, 'price_unit': 100,
+                'invoice_line_ids': [(0, 0, {'name': name, 'account_id': (expense or food).id, 'quantity': 1, 'price_unit': 100,
                                               'tax_ids': [(6, 0, tax_record.ids if tax_record else [])]})]})
             move.action_post()
             return move
         taxed = bill('taxed', normal)
+        service = self.env['baseer.dashboard2.service']
+        first, last = date(2026, 10, 1), date(2026, 10, 31)
+        before = service._accounting(ids, first, last)
+        gross = service._accounting_gross(ids, first, last)
+        self.assertAlmostEqual(gross['categories']['food_cost'] - before['categories']['food_cost'], 15)
         bill('untaxed')
+        untaxed = service._accounting_gross(ids, first, last)
+        self.assertAlmostEqual(untaxed['categories']['food_cost'] - gross['categories']['food_cost'], 100)
         bill('refund', normal, 'in_refund')
         bill('reverse charge', reverse)
         bill('withholding', withholding)
-        service = self.env['baseer.dashboard2.service']
-        first, last = date(2026, 10, 1), date(2026, 10, 31)
         self.assertTrue(taxed.line_ids.filtered(lambda l: l.tax_line_id), taxed.line_ids.read(['date', 'account_id', 'tax_line_id', 'tax_ids', 'balance']))
         observed = service._tax_window(ids, first, last)
         self.assertTrue(observed, taxed.line_ids.read(['date', 'account_id', 'tax_line_id', 'tax_ids', 'balance', 'parent_state']))
@@ -53,6 +58,10 @@ class TestTaxBasis(TransactionCase):
         basis = service._tax_basis(ids, first, last)
         self.assertAlmostEqual(basis['unallocated_input_vat'], 15)
         self.assertAlmostEqual(basis['input_vat'], -15)
+        commission = make_account('400011', 'expense')
+        bill('app commission', normal, expense=commission)
+        self.assertAlmostEqual(service._recorded_app_commissions(ids, first, last), 115)
+        self.assertIn('unallocated_input_vat', service._accounting_gross(ids, first, last)['warnings'])
 
     def test_migration_idempotent_guard(self):
         config = self.env['ir.config_parameter'].sudo()

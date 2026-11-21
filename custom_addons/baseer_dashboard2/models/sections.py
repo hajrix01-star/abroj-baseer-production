@@ -111,6 +111,31 @@ class DashboardSections(models.AbstractModel):
             return month_bounds(end)
         raise UserError(translate('Invalid P&L view.'))
 
+    def _inclusive_drill_domain(self, ids, start, end, base_domain, include_revenue=False, include_input=True):
+        """Add only tax journal items wholly attributable to the selected accounts."""
+        lines = self.env['account.move.line'].with_context(allowed_company_ids=ids)
+        groups = lines._read_group(base_domain, ['company_id', 'account_id'], [])
+        selected = {(company.id, account.id) for company, account in groups}
+        tax_parts = defaultdict(list)
+        for day, cid, kind, account_id, amount, line_id in self._tax_window(ids, start, end):
+            tax_parts[line_id].append((cid, kind, account_id, amount))
+        tax_ids = []
+        for line_id, parts in tax_parts.items():
+            if parts[0][1] in ('output_vat', 'tobacco_fee'):
+                if include_revenue:
+                    tax_ids.append(line_id)
+                continue
+            if not include_input:
+                continue
+            if parts[0][1] == 'unallocated_input_vat':
+                raise UserError(_('This figure is allocated across journal items.'))
+            flags = {(cid, account_id) in selected for cid, _kind, account_id, amount in parts if amount}
+            if len(flags) > 1:
+                raise UserError(_('This figure is allocated across journal items.'))
+            if flags == {True}:
+                tax_ids.append(line_id)
+        return expression.OR([base_domain, [('id', 'in', tax_ids)]])
+
     @api.model
     def get_drilldown(self, descriptor):
         self._check_reader()
@@ -195,7 +220,7 @@ class DashboardSections(models.AbstractModel):
             end = self._heatmap_hours_end(ids, start, end)
             domain = self._customer_hour_domain(ids, start, end, weekday, hour)
             model, label = 'pos.order', 'الطلبات حسب الساعة'
-        elif section in ('overview', 'revenue', 'heatmap', 'inout') and key in ('gross', 'apps', 'channel'):
+        elif section in ('overview', 'revenue', 'heatmap', 'inout') and key in ('gross', 'apps', 'channel') and not (section == 'revenue' and key == 'gross'):
             trace, pos_trace = {}, {}
             summary, days, channels, _hours = self.with_context(_bd2_sales_trace=trace, _bd2_pos_trace=pos_trace, _bd2_request_cache=None)._sales_summary(ids, start, end)
             counts = summary['source_counts']
@@ -220,7 +245,8 @@ class DashboardSections(models.AbstractModel):
                 domain = [('company_id', 'in', ids), ('id', 'in', list(line_ids))]
             label = 'المبيعات'
         elif section in ('overview', 'revenue') and key == 'recorded_commissions':
-            domain = self._commission_domain(ids, start, end)
+            base_domain = self._commission_domain(ids, start, end)
+            domain = self._inclusive_drill_domain(ids, start, end, base_domain)
             label = 'عمولات التطبيقات'
         elif section in ('overview', 'revenue', 'heatmap') and key == 'customers':
             domain = self._customer_orders_domain(ids, start, end)
@@ -229,6 +255,7 @@ class DashboardSections(models.AbstractModel):
             domain = self._purchase_domain(ids, start, end)
             if domain is None:
                 raise UserError(_('Unknown dashboard figure.'))
+            domain = self._inclusive_drill_domain(ids, start, end, domain)
             context['group_by'] = 'move_id'
             label = 'المشتريات'
         elif section == 'pnl' and key in ('revenue', 'food_cost', 'gross_profit', 'salaries', 'rent', 'utilities',
@@ -269,7 +296,7 @@ class DashboardSections(models.AbstractModel):
         elif section in ('overview', 'revenue', 'expenses', 'ratios'):
             expense_keys = ('food_cost', 'salaries', 'rent', 'utilities', 'marketing', 'commissions', 'other_opex', 'depreciation', 'non_operating', 'zakat_tax')
             mapping = {k: (k,) for k in expense_keys + ('revenue', 'other_income')}
-            mapping.update({'sales_net': ('revenue',), 'timeline_ytd': ('revenue',), 'timeline_previous_ytd': ('revenue',), 'timeline_best': ('revenue',), 'timeline_point': ('revenue',), 'food_pct': ('food_cost',),
+            mapping.update({'gross': ('revenue',), 'sales_net': ('revenue',), 'timeline_ytd': ('revenue',), 'timeline_previous_ytd': ('revenue',), 'timeline_best': ('revenue',), 'timeline_point': ('revenue',), 'food_pct': ('food_cost',),
                             'salaries_pct': ('salaries',), 'prime_pct': ('food_cost', 'salaries'),
                             'rent_utilities': ('rent', 'utilities'), 'expenses_total': expense_keys,
                             'operating_expenses': tuple(k for k in expense_keys if k != 'zakat_tax'),
@@ -291,9 +318,15 @@ class DashboardSections(models.AbstractModel):
                 if end < start:
                     raise UserError(_('Invalid dashboard period.'))
             accounts = [a for a in self._accounting(ids, start, end)['accounts'] if a['category'] in categories]
+            child = descriptor.get('child')
+            if child:
+                accounts = [a for a in accounts if '%s:%s' % (a['company_id'], a['account_id']) == child]
+                if not accounts:
+                    raise UserError(_('Unknown dashboard figure.'))
             pairs = expression.OR([[('company_id', '=', a['company_id']), ('account_id', '=', a['account_id'])]
                                    for a in accounts]) if accounts else [('id', '=', 0)]
-            domain = expression.AND([self._aml_domain(ids, start, end), pairs])
+            base_domain = expression.AND([self._aml_domain(ids, start, end), pairs])
+            domain = self._inclusive_drill_domain(ids, start, end, base_domain, include_revenue='revenue' in categories, include_input=any(k not in ('revenue', 'other_income') for k in categories))
             label = 'القيود المحاسبية'
         else:
             raise UserError(_('Unknown dashboard figure.'))

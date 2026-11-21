@@ -4,7 +4,7 @@ import re
 
 from odoo import models
 
-from .service import request_memo, food_ratio
+from .service import request_memo, food_ratio, raw_rows
 from .tax_math import allocate_tax
 
 
@@ -16,33 +16,51 @@ class DashboardTaxBasis(models.AbstractModel):
         """Read a complete request window; match bases in the same move only."""
         lines = self.env['account.move.line'].with_context(allowed_company_ids=ids)
         excluded = self._reset_move_ids(ids, end, start) + self.env['res.company'].browse(ids).mapped('account_opening_move_id').ids
-        taxes = lines.search([('company_id', 'in', ids), ('parent_state', '=', 'posted'),
-                              ('date', '>=', start), ('date', '<=', end),
-                              ('tax_line_id', '!=', False), ('move_id', 'not in', excluded),
-                              ('move_id.ref', '!=', 'Opening Entry')])
-        bases = lines.search([('move_id', 'in', taxes.mapped('move_id').ids), ('tax_ids', '!=', False)])
+        taxes = raw_rows(lines, [('company_id', 'in', ids), ('parent_state', '=', 'posted'),
+                                ('date', '>=', start), ('date', '<=', end),
+                                ('tax_line_id', '!=', False), ('move_id', 'not in', excluded),
+                                ('move_id.ref', '!=', 'Opening Entry')],
+                         ['date', 'company_id', 'account_id', 'tax_line_id', 'move_id', 'balance'])
+        if not taxes:
+            return []
+        moves = list({line['move_id'] for line in taxes})
+        bases = raw_rows(lines, [('move_id', 'in', moves), ('tax_ids', '!=', False)],
+                         ['move_id', 'account_id', 'balance'])
+        by_id = {base['id']: base for base in bases}
         by_move_tax = defaultdict(list)
-        for base in bases:
-            for tax in base.tax_ids:
-                by_move_tax[(base.move_id.id, tax.id)].append((base.id, base.balance))
-        base_accounts = {base.id: base.account_id.id for base in bases}
+        if by_id:
+            self.env.cr.execute('SELECT account_move_line_id, account_tax_id FROM account_move_line_account_tax_rel WHERE account_move_line_id = ANY(%s) ORDER BY account_move_line_id, account_tax_id', [list(by_id)])
+            links = defaultdict(list)
+            for line_id, tax_id in self.env.cr.fetchall():
+                links[line_id].append(tax_id)
+            for base in bases:
+                for tax_id in links[base['id']]:
+                    by_move_tax[(base['move_id'], tax_id)].append((base['id'], base['balance']))
+        tax_records = self.env['account.tax'].browse(list({line['tax_line_id'] for line in taxes}))
+        tax_records.fetch(['type_tax_use', 'name', 'tax_group_id', 'amount_type', 'amount'])
+        tax_records.mapped('tax_group_id').fetch(['name'])
+        metadata = {}
+        for tax in tax_records:
+            name = ' '.join((tax.name or '', tax.with_context(lang='en_US').name or '')).upper()
+            group = ' '.join((tax.tax_group_id.name or '', tax.tax_group_id.with_context(lang='en_US').name or '')).upper()
+            excluded_tax = bool(re.search(r'\bR\s*C\b|\bWH\b|WITHHOLD', name) or 'WITHHOLD' in group or (tax.amount_type == 'division' and tax.amount < 0))
+            metadata[tax.id] = (tax.type_tax_use, excluded_tax)
+        codes = {}
+        for cid, aid in {(line['company_id'], line['account_id']) for line in taxes}:
+            codes[(cid, aid)] = self.env['account.account'].browse(aid).with_company(self.env['res.company'].browse(cid)).code or ''
         entries = []
         for line in taxes:
-            company = line.company_id
-            code = line.account_id.with_company(company).code or ''
-            tax = line.tax_line_id
-            if tax.type_tax_use == 'sale' and code in ('201017', '201021'):
-                entries.append((line.date, company.id, 'output_vat' if code == '201017' else 'tobacco_fee', 0, -line.balance))
-            elif tax.type_tax_use == 'purchase' and code in ('104041', '104043'):
-                name = ' '.join((tax.name or '', tax.with_context(lang='en_US').name or '')).upper()
-                group = ' '.join((tax.tax_group_id.name or '', tax.tax_group_id.with_context(lang='en_US').name or '')).upper()
-                if re.search(r'\bR\s*C\b|\bWH\b|WITHHOLD', name) or 'WITHHOLD' in group or (tax.amount_type == 'division' and tax.amount < 0):
-                    continue
-                allocations = allocate_tax(line.balance, by_move_tax[(line.move_id.id, tax.id)])
+            cid, account_id, tax_id = line['company_id'], line['account_id'], line['tax_line_id']
+            code = codes[(cid, account_id)]
+            use, excluded_tax = metadata[tax_id]
+            if use == 'sale' and code in ('201017', '201021'):
+                entries.append((line['date'], cid, 'output_vat' if code == '201017' else 'tobacco_fee', 0, -line['balance'], line['id']))
+            elif use == 'purchase' and code in ('104041', '104043') and not excluded_tax:
+                allocations = allocate_tax(line['balance'], by_move_tax[(line['move_id'], tax_id)])
                 if allocations is None:
-                    entries.append((line.date, company.id, 'unallocated_input_vat', 0, line.balance))
+                    entries.append((line['date'], cid, 'unallocated_input_vat', 0, line['balance'], line['id']))
                 else:
-                    entries.extend((line.date, company.id, 'input_vat', base_accounts[base_id], float(amount)) for base_id, amount in allocations)
+                    entries.extend((line['date'], cid, 'input_vat', by_id[base_id]['account_id'], float(amount), line['id']) for base_id, amount in allocations)
         return entries
 
     @request_memo
@@ -53,7 +71,17 @@ class DashboardTaxBasis(models.AbstractModel):
         accounts = defaultdict(float)
         unallocated_lines = 0
         scope = self.env.context.get('_bd2_tax_companies') or ids
-        for day, cid, kind, account_id, amount in self._tax_window(scope, first, last):
+        # Entries are immutable tuples; reuse this private request-local snapshot
+        # instead of deep-copying the entire window for every monthly bucket.
+        cache = self.env.context.get('_bd2_request_cache')
+        key = ('_bd2_tax_entries', tuple(scope), first, last)
+        if cache is not None:
+            if key not in cache:
+                cache[key] = tuple(self._tax_window(scope, first, last))
+            entries = cache[key]
+        else:
+            entries = self._tax_window(scope, first, last)
+        for day, cid, kind, account_id, amount, _line_id in entries:
             if cid in ids and start <= day <= end:
                 if kind == 'input_vat':
                     accounts[(cid, account_id)] += amount

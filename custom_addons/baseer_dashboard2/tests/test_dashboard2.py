@@ -298,7 +298,7 @@ class TestDashboard2(TransactionCase):
             self.assertEqual(comparison['customers'][key], sales['customers'][key], key)
         self.assertEqual(sales['channels']['cash'], 540)
         self.assertEqual(sales['channels']['keeta'], 360)
-        for section, key, expected in [('revenue', 'gross', sales['gross']), ('revenue', 'apps', sales['apps']), ('inout', 'gross', sales['gross'])]:
+        for section, key, expected in [('revenue', 'gross', -service._accounting_gross([company.id], date(2026, 10, 1), date(2026, 10, 31))['sales_net']), ('revenue', 'apps', sales['apps']), ('inout', 'gross', sales['gross'])]:
             action = service.get_drilldown(dict(common, section=section, key=key, month='2026-10'))
             lines = self.env[action['res_model']].with_context(**action['context']).search(action['domain'])
             self.assertAlmostEqual(sum(lines.mapped('balance')), expected, places=2)

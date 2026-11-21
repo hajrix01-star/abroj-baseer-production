@@ -900,6 +900,7 @@ td {
   .o_bd2 .bd2-scroll-x tr.account :is(th, td):first-child { background: var(--bd2-surface); }
   .o_bd2 .bd2-scroll-x tr.highlight :is(th, td):first-child { background: var(--bd2-gold-soft); }
   .o_bd2 .bd2-scroll-x tr.net :is(th, td):first-child { background: var(--bd2-sidebar); }
+  .o_bd2 .bd2-scroll-x .hours-table :is(th, td):first-child { width: 62px; min-width: 62px; max-width: 62px; }
   .o_bd2 .bd2-scroll-x .payment-methods-table :is(th, td):first-child { width: 45px; min-width: 45px; max-width: 45px; border-inline-end: 0; }
   .o_bd2 .bd2-scroll-x .payment-methods-table :is(th, td):first-child:not([colspan]) + :is(th, td) {
     position: sticky; inset-inline-start: 45px; z-index: 1;
@@ -908,10 +909,6 @@ td {
     border-inline-end: 1px solid var(--bd2-border);
   }
   .o_bd2 .bd2-scroll-x .payment-methods-table thead :is(th, td):first-child:not([colspan]) + :is(th, td) { z-index: 2; background: var(--bd2-surface); }
-  .o_bd2 .bd2-scroll-x .year-grid > :nth-child(3n + 1) {
-    position: sticky; inset-inline-start: 0; z-index: 1;
-    background: var(--bd2-card); border-inline-end: 1px solid var(--bd2-border);
-  }
 }
 @media (max-width: 767px) {
   .o_bd2 .stats { flex-wrap: wrap; }

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_daily_purchase_report" model="ir.actions.client">
+        <field name="name">Daily purchases</field>
+        <field name="tag">baseer_purchase_daily_report.action</field>
+    </record>
+    <menuitem id="menu_daily_purchase_report" name="Daily purchases"
+              action="action_daily_purchase_report"
+              groups="baseer_access_roles.group_owner,baseer_access_roles.group_accountant,baseer_access_roles.group_cashier"
+              sequence="80"/>
+</odoo>

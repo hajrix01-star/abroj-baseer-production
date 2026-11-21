@@ -369,3 +369,16 @@ msgstr "العهد"
 #: model:baseer.basser.workspace.item,description:baseer_basser_workspace.workspace_item_branch_manager_representative_advances
 msgid "Review advances recorded when receiving your restaurant's purchase orders."
 msgstr "متابعة عهد مندوبي المشتريات المسجلة عند استلام طلبات مطعمك."
+
+#. module: baseer_basser_workspace
+#: model:baseer.basser.workspace.item,name:baseer_basser_workspace.workspace_item_cashier_daily_purchase_report
+#: model:baseer.basser.workspace.item,name:baseer_basser_workspace.workspace_item_accountant_daily_purchase_report
+#: model:ir.ui.menu,name:baseer_basser_workspace.menu_basser_daily_purchase_report
+msgid "Daily purchase report"
+msgstr "تقرير المشتريات اليومي"
+
+#. module: baseer_basser_workspace
+#: model:baseer.basser.workspace.item,description:baseer_basser_workspace.workspace_item_cashier_daily_purchase_report
+#: model:baseer.basser.workspace.item,description:baseer_basser_workspace.workspace_item_accountant_daily_purchase_report
+msgid "Review daily supplier bills and payment status."
+msgstr "استعرض فواتير الموردين اليومية وحالة سدادها."

@@ -1,0 +1,7 @@
+# Daily purchase report — architectural impact
+
+- Status: local candidate, not deployed. Baseline `fee40097e441626b66290fe9ab192194ab0d3b04`; classification ARCHITECTURAL.
+- `baseer_purchase_daily_report` provides a Baseer-designed OWL action and bounded read-only service. `baseer_basser_workspace` provides role-specific navigation; owner has a dedicated workspace menu. No native accounting model or financial transaction is modified.
+- Source of truth: posted `account.move` supplier invoices and credit notes, grouped by invoice date. A purchase batch creates a native invoice and is never separately counted. Aggregates use signed company currency; document detail identifies original currency. Current reconciliation and payment state are not historical payment-date cash flow. Settlement can include noncash reconciliation.
+- Scope boundary: owner, accountant and branch manager (`group_cashier`) are allowed; POS cashier is distinct. Each endpoint verifies the acting user and active company before privileged reads, applies the exact company/type/posting domain, and returns a field-limited projection. Details are read-only. Queries are bounded to 366 days and day results to 50 records per page.
+- Test evidence and limitations: [build contract](../../build-governance/PURCHASE-DAILY-REPORT.md). No load claim, production install, release approval, or live data modification.

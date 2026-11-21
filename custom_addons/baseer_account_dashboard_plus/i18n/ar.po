@@ -286,3 +286,7 @@ msgstr "تقرير التبغ الشهري"
 #: code:addons/baseer_account_dashboard_plus/models/journal.py:0
 msgid "Journal Items"
 msgstr "بنود اليومية"
+
+#. module: baseer_account_dashboard_plus
+msgid "Unable to open this dashboard action."
+msgstr "تعذر فتح هذا الإجراء من لوحة المعلومات."

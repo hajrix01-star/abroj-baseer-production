@@ -440,7 +440,8 @@ test("mounted Arabic report keeps backend values and exposes Arabic period filte
     patchWithCleanup(user, { lang: "ar_001" });
     await mountReport([]);
     expect(document.querySelector(".o_baseer_pl_report").getAttribute("dir")).toBe("rtl");
-    expect(document.querySelector(".o_baseer_report_title").textContent).toBe("الأداء المالي — الربح والخسارة");
+    expect(document.querySelector(".o_baseer_report_title").textContent.includes("الأداء المالي — الربح والخسارة")).toBe(true);
+    expect(document.querySelector(".o_baseer_report_title").textContent.includes("شامل الضريبة")).toBe(true);
     expect(document.querySelector('.o_baseer_pl_filter_chip[aria-label="المقارنة"]').textContent.includes("دون مقارنة") || document.querySelector('.o_baseer_pl_filter_chip[aria-label="المقارنة"]').textContent.includes("الفترة السابقة")).toBe(true);
     expect(document.querySelector(".o_baseer_pl_result .is-negative").textContent).toBe("-50.00");
 });

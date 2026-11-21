@@ -54,7 +54,8 @@ export class PurchaseDailyReport extends Component {
             error: _t("We could not load this report. Please try again."), retry: _t("Try again"),
             empty: _t("No purchases found for these filters."), emptyHint: _t("Try another date range or payment status."),
             dateNote: _t("Grouped by invoice date · Payment status is current"),
-            total: _t("Total"), settled: _t("Settled"), residual: _t("Outstanding"),
+            total: _t("Total"), paidAmount: _t("Paid amount"), residual: _t("Outstanding"),
+            paidUnavailable: _t("Unavailable"), paidPending: _t("Pending payment excluded"),
             documents: _t("documents"), show: _t("Show transactions"), hide: _t("Hide transactions"),
             invoice: _t("Supplier bill"), refund: _t("Supplier credit note"),
             vendor: _t("Supplier"), reference: _t("Reference"), date: _t("Invoice date"),
@@ -65,7 +66,8 @@ export class PurchaseDailyReport extends Component {
             noItems: _t("No invoice items."), adjustments: _t("Adjustments and rounding"), previous: _t("Previous"), next: _t("Next"),
             page: _t("Page"), companyCurrency: _t("Company currency"), activeCompany: _t("Active company"),
             amountCurrency: _t("Original invoice currency"),
-            settledNote: _t("Settled amounts can include adjustments and reconciliation, not only cash payments."),
+            paidNote: _t("Confirmed payments allocated to these invoices are shown. Other settlements can reduce the outstanding amount."),
+            paidUnavailableNote: _t("An amount is unavailable when the cash payment cannot be verified, including some foreign currency payments."),
             liveNote: _t("Posted supplier bills and credit notes only."),
         };
     }

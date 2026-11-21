@@ -378,3 +378,33 @@ msgstr "الشركة النشطة"
 #: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
 msgid "Discount"
 msgstr "الخصم"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Paid amount"
+msgstr "المبلغ المدفوع"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Unavailable"
+msgstr "غير متاح"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Pending payment excluded"
+msgstr "الدفع قيد المعالجة غير محتسب"
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "Confirmed payments allocated to these invoices are shown. Other settlements can reduce the outstanding amount."
+msgstr "تظهر الدفعات المؤكدة المخصصة لهذه الفواتير. قد تنخفض المبالغ المتبقية بسبب تسويات أخرى."
+
+#. module: baseer_purchase_daily_report
+#. odoo-javascript
+#: code:addons/baseer_purchase_daily_report/static/src/purchase_daily_report.js:0
+msgid "An amount is unavailable when the cash payment cannot be verified, including some foreign currency payments."
+msgstr "يظهر المبلغ غير متاح عند تعذر التحقق من الدفع الفعلي، بما في ذلك بعض الدفعات بعملات أجنبية."

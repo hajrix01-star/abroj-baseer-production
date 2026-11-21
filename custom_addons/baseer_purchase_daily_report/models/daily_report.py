@@ -8,6 +8,7 @@ from odoo.exceptions import AccessError, ValidationError
 
 PAGE_SIZE = 50
 MAX_DAYS = 366
+ZERO = Decimal('0')
 PAYMENT_STATES = frozenset(('all', 'not_paid', 'partial', 'in_payment', 'paid', 'reversed', 'blocked'))
 ALLOWED_ROLES = (
     'baseer_access_roles.group_owner',
@@ -79,6 +80,107 @@ class PurchaseDailyReport(models.AbstractModel):
         return domain
 
     @api.model
+    def _cash_allocation(self, bill):
+        """Return proven cash allocated to this bill, never total less residual.
+
+        Foreign currency and mixed write-offs cannot be attributed to cash
+        without an additional policy; fail closed rather than invent a value.
+        """
+        company = bill.company_id
+        currency = company.currency_id
+        pending = False
+        unavailable = bill.currency_id != currency
+        amount = ZERO
+        sign = Decimal('-1') if bill.move_type == 'in_refund' else Decimal('1')
+        expected_type = 'inbound' if sign < 0 else 'outbound'
+        expected_sign = -1 if sign < 0 else 1
+        partial_ids = set()
+        allocated_payment_ids = set()
+
+        for payment in bill.matched_payment_ids:
+            if payment.company_id != company:
+                unavailable = True
+            elif payment.state == 'in_process':
+                pending = True
+            elif payment.state == 'paid' and not payment.move_id:
+                unavailable = True
+
+        terms = bill.line_ids.filtered(lambda line: line.account_id.account_type == 'liability_payable')
+        for term in terms:
+            for partial in term.matched_debit_ids | term.matched_credit_ids:
+                if partial.id in partial_ids:
+                    continue
+                partial_ids.add(partial.id)
+                counterpart = partial.credit_move_id if partial.debit_move_id == term else partial.debit_move_id
+                other = counterpart.move_id
+                payment = other.origin_payment_id or counterpart.payment_id
+                statement = other.statement_line_id or counterpart.statement_line_id
+                if not payment and not statement:
+                    continue  # Credit note, exchange difference or other adjustment.
+                if payment:
+                    allocated_payment_ids.add(payment.id)
+                if (other.company_id != company or other.state != 'posted'
+                        or counterpart.company_id != company
+                        or expected_sign * counterpart.balance <= 0):
+                    unavailable = True
+                    continue
+                if payment:
+                    if payment.company_id != company or payment.payment_type != expected_type:
+                        unavailable = True
+                        continue
+                    if payment.state == 'in_process':
+                        pending = True
+                        continue
+                    if payment.state != 'paid':
+                        unavailable = True
+                        continue
+                    if payment.currency_id != currency or payment.journal_id.type not in ('bank', 'cash'):
+                        unavailable = True
+                        continue
+                    liquidity, payable, writeoffs = payment._seek_for_lines()
+                    # One payable leg and one liquidity leg prove direct allocation.
+                    if (len(liquidity) != 1 or len(payable) != 1 or writeoffs
+                            or payable != counterpart
+                            or liquidity.company_id != company
+                            or liquidity.account_id.account_type != 'asset_cash'
+                            or not currency.is_zero(abs(liquidity.balance) - abs(counterpart.balance))
+                            or not currency.is_zero(abs(payment.amount) - abs(counterpart.balance))):
+                        unavailable = True
+                        continue
+                else:
+                    # Direct bank-statement posting: one liquidity and one payable
+                    # line, with no extra lines that might contain write-offs.
+                    lines = other.line_ids.filtered(lambda line: not currency.is_zero(line.balance))
+                    liquidity = lines.filtered(lambda line: line.account_id.account_type == 'asset_cash')
+                    if (statement.company_id != company or statement.currency_id != currency
+                            or other.journal_id.type not in ('bank', 'cash')
+                            or len(lines) != 2 or len(liquidity) != 1
+                            or counterpart not in lines
+                            or expected_sign * liquidity.balance >= 0
+                            or not currency.is_zero(abs(liquidity.balance) - abs(counterpart.balance))):
+                        unavailable = True
+                        continue
+                if bill.currency_id != currency:
+                    unavailable = True
+                    continue
+                amount += sign * _decimal(partial.amount)
+        # A matched confirmed payment that has no payable allocation is not
+        # evidence of a zero paid amount for this particular invoice.
+        if any(payment.state == 'paid' and payment.id not in allocated_payment_ids
+               for payment in bill.matched_payment_ids):
+            unavailable = True
+        return amount, pending, unavailable
+
+    @api.model
+    def _prefetch_cash_allocation(self, bills):
+        """Prime relational caches for one bounded invoice batch."""
+        lines = bills.mapped('line_ids')
+        bills.mapped('matched_payment_ids')
+        partials = lines.mapped('matched_debit_ids') | lines.mapped('matched_credit_ids')
+        counterparts = partials.mapped('debit_move_id') | partials.mapped('credit_move_id')
+        counterparts.mapped('move_id.line_ids')
+
+    @api.model
     def get_days(self, date_from, date_to, status='all'):
         company = self._scope()
         first, last = self._date(date_from), self._date(date_to)
@@ -97,8 +199,30 @@ class PurchaseDailyReport(models.AbstractModel):
             days.append({
                 'date': fields.Date.to_string(invoice_date), 'count': count,
                 'total': _money(total, currency), 'residual': _money(residual, currency),
-                'settled': _money(total - residual, currency),
+                'paid': _money(ZERO, currency), 'paid_pending': False,
+                'paid_unavailable': False,
             })
+        by_date = {day['date']: day for day in days}
+        totals = {key: ZERO for key in by_date}
+        # Iterate bounded batches; a day's 50-row UI page must not truncate totals.
+        last_id = 0
+        Move = self.env['account.move'].sudo()
+        while True:
+            batch = Move.search(domain + [('id', '>', last_id)], order='id', limit=200)
+            if not batch:
+                break
+            # Explicit bulk prefetch: one2many and many2many relations otherwise
+            # trigger queries per bill when accessed through singleton calls.
+            self._prefetch_cash_allocation(batch)
+            for bill in batch:
+                key = fields.Date.to_string(bill.invoice_date)
+                paid, pending, unavailable = self._cash_allocation(bill)
+                totals[key] += paid
+                by_date[key]['paid_pending'] |= pending
+                by_date[key]['paid_unavailable'] |= unavailable
+            last_id = batch[-1].id
+        for key, day in by_date.items():
+            day['paid'] = None if day['paid_unavailable'] else _money(totals[key], currency)
         days.sort(key=lambda item: item['date'], reverse=True)
         return {'company': {'id': company.id, 'name': company.name, 'currency': currency.name}, 'days': days}
 
@@ -107,6 +231,7 @@ class PurchaseDailyReport(models.AbstractModel):
         currency = move.currency_id
         company_currency = move.company_currency_id
         sign = -1 if move.move_type == 'in_refund' else 1
+        paid, pending, unavailable = self._cash_allocation(move)
         return {
             'id': move.id, 'number': move.name or '',
             'vendor': move.partner_id.display_name or '', 'reference': move.ref or '',
@@ -117,6 +242,8 @@ class PurchaseDailyReport(models.AbstractModel):
             'residual': _money(sign * _decimal(move.amount_residual), currency),
             'company_total': _money(-_decimal(move.amount_total_signed), company_currency),
             'company_residual': _money(-_decimal(move.amount_residual_signed), company_currency),
+            'paid': None if unavailable else _money(paid, currency),
+            'paid_pending': pending, 'paid_unavailable': unavailable,
         }
 
     @api.model
@@ -129,6 +256,7 @@ class PurchaseDailyReport(models.AbstractModel):
         moves = self.env['account.move'].sudo()
         count = moves.search_count(domain)
         records = moves.search(domain, order='id desc', offset=offset, limit=PAGE_SIZE)
+        self._prefetch_cash_allocation(records)
         return {
             'day': selected.isoformat(), 'rows': [self._bill_row(move) for move in records],
             'offset': offset, 'count': count, 'has_more': offset + len(records) < count,
@@ -153,7 +281,6 @@ class PurchaseDailyReport(models.AbstractModel):
             'due_date': fields.Date.to_string(move.invoice_date_due) if move.invoice_date_due else '',
             'untaxed': _money(sign * _decimal(move.amount_untaxed), currency),
             'tax': _money(sign * _decimal(move.amount_tax), currency),
-            'settled': _money(sign * (_decimal(move.amount_total) - _decimal(move.amount_residual)), currency),
             'lines': [{
                 'description': line.name or '',
                 'kind': line.display_type,

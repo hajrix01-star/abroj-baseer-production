@@ -55,7 +55,7 @@
     .bpr-day-title small, .bpr-day-metric small { color: var(--bpr-muted); font-size: 11px; margin-top: 3px; }
     .bpr-day-metric strong { font-size: 15px; white-space: nowrap; margin-top: 4px; }
     .bpr-day-metric strong em { font-size: 10px; font-weight: 500; font-style: normal; color: var(--bpr-muted); }
-    .bpr-day-metric--settled strong { color: #28745f; }
+    .bpr-day-metric--paid strong { color: #28745f; }
     .bpr-day-metric--due strong { color: #a66a22; }
     .bpr-chevron { display: grid; place-items: center; width: 28px; height: 28px; border: 1px solid var(--bpr-border); border-radius: 8px; color: #7d718d; }
     .bpr-day-content { background: #fafafd; border-top: 1px solid #efedf4; padding: 4px 20px 15px; }
@@ -115,8 +115,10 @@
     .bpr-shell {
         padding: 26px 18px 48px;
         .bpr-filter { grid-template-columns: 1fr 1fr; }
-        .bpr-day-button { grid-template-columns: minmax(140px, 1.2fr) 1fr 1fr 28px; }
-        .bpr-day-metric--settled { display: none; }
+        .bpr-day-button { grid-template-columns: repeat(3, minmax(0, 1fr)) 28px; }
+        .bpr-day-title { grid-column: 1 / 4; }
+        .bpr-chevron { grid-column: 4; grid-row: 1; }
+        .bpr-day-metric { grid-row: 2; }
         .bpr-meta { grid-template-columns: repeat(2, 1fr); }
         .bpr-line { align-items: flex-start; flex-direction: column; gap: 12px; }
         .bpr-line-values { width: 100%; }
@@ -137,7 +139,7 @@
         .bpr-day-title { grid-column: 1; }
         .bpr-chevron { grid-column: 2; grid-row: 1; }
         .bpr-day-metric { display: block; grid-row: 2; }
-        .bpr-day-metric--settled { grid-column: 1; grid-row: 3; }
+        .bpr-day-metric--paid { grid-column: 1; grid-row: 3; }
         .bpr-day-metric--due { grid-column: 2; grid-row: 2; }
         .bpr-day-metric strong { font-size: 13px; }
         .bpr-day-content { padding: 4px 15px 15px; }

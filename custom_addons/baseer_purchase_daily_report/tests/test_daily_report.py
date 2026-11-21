@@ -1,6 +1,10 @@
+import logging
+
 from odoo import Command, api
 from odoo.exceptions import AccessError, ValidationError
 from odoo.tests.common import TransactionCase, tagged
+
+_logger = logging.getLogger(__name__)
 
 
 @tagged('post_install', '-at_install')
@@ -77,16 +81,159 @@ class DailyPurchaseReportCase(TransactionCase):
         bill = self._bill(100)
         report = self._report('cashier')
         before = report.get_days('2099-09-15', '2099-09-15', 'all')['days'][0]
-        self.assertEqual((before['total'], before['residual'], before['settled']), ('100.00', '100.00', '0.00'))
+        self.assertEqual((before['total'], before['residual'], before['paid']), ('100.00', '100.00', '0.00'))
         self._settle(bill, 40)
         self.assertEqual(bill.payment_state, 'partial')
         partial = report.get_days('2099-09-15', '2099-09-15', 'partial')['days'][0]
-        self.assertEqual((partial['total'], partial['residual'], partial['settled']), ('100.00', '60.00', '40.00'))
+        self.assertEqual((partial['total'], partial['residual'], partial['paid']), ('100.00', '60.00', '0.00'))
         self.assertEqual(report.get_invoice(bill.id)['residual'], '60.00')
         self._settle(bill, 60)
         self.assertEqual(bill.payment_state, 'paid')
         paid = report.get_days('2099-09-15', '2099-09-15', 'paid')['days'][0]
-        self.assertEqual((paid['total'], paid['residual'], paid['settled']), ('100.00', '0.00', '100.00'))
+        self.assertEqual((paid['total'], paid['residual'], paid['paid']), ('100.00', '0.00', '0.00'))
+
+    def test_actual_cash_payment_not_noncash_settlement(self):
+        bill = self._bill(100)
+        cash_account = self.env['account.account'].create({
+            'name': 'Test cash', 'code': 'DPR101', 'account_type': 'asset_cash',
+            'company_ids': [Command.set(self.company.ids)],
+        })
+        journal = self.env['account.journal'].create({
+            'name': 'Test cash journal', 'code': 'DPRC', 'type': 'cash',
+            'company_id': self.company.id, 'default_account_id': cash_account.id,
+        })
+        journal.outbound_payment_method_line_ids.write({'payment_account_id': cash_account.id})
+        wizard = self.env['account.payment.register'].with_context(
+            active_model='account.move', active_ids=bill.ids,
+        ).create({'journal_id': journal.id, 'amount': 40, 'payment_date': bill.invoice_date})
+        payment = wizard._create_payments()
+        self.assertEqual(payment.state, 'paid')
+        report = self._report('cashier')
+        detail = report.get_invoice(bill.id)
+        self.assertEqual((detail['paid'], detail['residual']), ('40.00', '60.00'))
+        self.assertEqual(report.get_days('2099-09-15', '2099-09-15', 'all')['days'][0]['paid'], '40.00')
+        self._settle(bill, 60)
+        detail = report.get_invoice(bill.id)
+        self.assertEqual((detail['paid'], detail['residual']), ('40.00', '0.00'))
+
+    def _cash_journal(self):
+        account = self.env['account.account'].create({
+            'name': 'Cash evidence', 'code': 'DPR110', 'account_type': 'asset_cash',
+            'company_ids': [Command.set(self.company.ids)],
+        })
+        journal = self.env['account.journal'].create({
+            'name': 'Cash evidence', 'code': 'DPRX', 'type': 'cash',
+            'company_id': self.company.id, 'default_account_id': account.id,
+        })
+        (journal.outbound_payment_method_line_ids | journal.inbound_payment_method_line_ids).write({'payment_account_id': account.id})
+        return journal
+
+    def test_cash_refund_and_payment_distributed_across_bills(self):
+        journal = self._cash_journal()
+        first, second = self._bill(60), self._bill(40)
+        wizard = self.env['account.payment.register'].with_context(
+            active_model='account.move', active_ids=(first | second).ids,
+        ).create({'journal_id': journal.id, 'payment_date': first.invoice_date, 'group_payment': True})
+        payments = wizard._create_payments()
+        self.assertEqual(len(payments), 1)
+        self.assertEqual(payments.state, 'paid')
+        report = self._report('cashier')
+        self.assertEqual(report.get_invoice(first.id)['paid'], '60.00')
+        self.assertEqual(report.get_invoice(second.id)['paid'], '40.00')
+        refund = self._bill(20, kind='in_refund')
+        self.env['account.payment.register'].with_context(
+            active_model='account.move', active_ids=refund.ids,
+        ).create({'journal_id': journal.id, 'payment_date': refund.invoice_date})._create_payments()
+        self.assertEqual(report.get_invoice(refund.id)['paid'], '-20.00')
+        self.assertEqual(report.get_days('2099-09-15', '2099-09-15', 'all')['days'][0]['paid'], '80.00')
+
+    def test_mixed_cash_and_writeoff_is_unavailable(self):
+        journal = self._cash_journal()
+        bill = self._bill(100)
+        self.env['account.payment.register'].with_context(
+            active_model='account.move', active_ids=bill.ids,
+        ).create({
+            'journal_id': journal.id, 'amount': 80, 'payment_date': bill.invoice_date,
+            'payment_difference_handling': 'reconcile', 'writeoff_account_id': self.expense.id,
+        })._create_payments()
+        report = self._report('cashier')
+        self.assertIsNone(report.get_invoice(bill.id)['paid'])
+        day = report.get_days('2099-09-15', '2099-09-15', 'all')['days'][0]
+        self.assertTrue(day['paid_unavailable'])
+        self.assertIsNone(day['paid'])
+
+    def test_pending_payment_without_move_is_not_confirmed_paid(self):
+        bill = self._bill(100)
+        journal = self.env['account.journal'].create({
+            'name': 'Pending cash', 'code': 'DPRP', 'type': 'cash', 'company_id': self.company.id,
+        })
+        wizard = self.env['account.payment.register'].with_context(
+            active_model='account.move', active_ids=bill.ids,
+        ).create({'journal_id': journal.id, 'amount': 40, 'payment_date': bill.invoice_date})
+        payment = wizard._create_payments()
+        self.assertEqual(payment.state, 'in_process')
+        detail = self._report('cashier').get_invoice(bill.id)
+        self.assertEqual(detail['paid'], '0.00')
+        self.assertTrue(detail['paid_pending'])
+
+    def test_paid_state_on_unsettled_outstanding_account_is_unavailable(self):
+        bill = self._bill(100)
+        journal = self._cash_journal()
+        outstanding = self.env['account.account'].create({
+            'name': 'Unsettled payment account', 'code': 'DPR113',
+            'account_type': 'asset_current', 'reconcile': True,
+            'company_ids': [Command.set(self.company.ids)],
+        })
+        journal.outbound_payment_method_line_ids.write({'payment_account_id': outstanding.id})
+        payment = self.env['account.payment.register'].with_context(
+            active_model='account.move', active_ids=bill.ids,
+        ).create({'journal_id': journal.id, 'amount': 40, 'payment_date': bill.invoice_date})._create_payments()
+        self.assertTrue(payment.move_id)
+        payment.action_validate()  # Odoo allows this without a bank match.
+        self.assertEqual(payment.state, 'paid')
+        liquidity, _, _ = payment._seek_for_lines()
+        self.assertEqual(liquidity.account_id, outstanding)
+        detail = self._report('cashier').get_invoice(bill.id)
+        self.assertTrue(detail['paid_unavailable'])
+        self.assertIsNone(detail['paid'])
+
+    def test_daily_query_count_is_bounded_for_unpaid_batch(self):
+        self._bill(1, day='2099-09-14')
+        for index in range(30):
+            self._bill(index + 1)
+        self.env.flush_all()
+        report = self._report('cashier')
+        self.env.invalidate_all()
+        before = self.env.cr.sql_log_count
+        report.get_days('2099-09-14', '2099-09-14', 'all')
+        one = self.env.cr.sql_log_count - before
+        self.env.invalidate_all()
+        before = self.env.cr.sql_log_count
+        report.get_days('2099-09-15', '2099-09-15', 'all')
+        many = self.env.cr.sql_log_count - before
+        _logger.warning('Daily purchase query measurement: 1 invoice=%s, 30 invoices=%s', one, many)
+        self.assertLessEqual(many, one + 20, 'Invoice count must not cause per-invoice SQL queries')
+
+    def test_daily_query_count_with_separate_cash_payments(self):
+        journal = self._cash_journal()
+        for day, count in [('2099-09-14', 1), ('2099-09-15', 10)]:
+            for index in range(count):
+                bill = self._bill(index + 1, day=day)
+                self.env['account.payment.register'].with_context(
+                    active_model='account.move', active_ids=bill.ids,
+                ).create({'journal_id': journal.id, 'payment_date': bill.invoice_date})._create_payments()
+        self.env.flush_all()
+        report = self._report('cashier')
+        self.env.invalidate_all()
+        before = self.env.cr.sql_log_count
+        report.get_days('2099-09-14', '2099-09-14', 'all')
+        one = self.env.cr.sql_log_count - before
+        self.env.invalidate_all()
+        before = self.env.cr.sql_log_count
+        report.get_days('2099-09-15', '2099-09-15', 'all')
+        many = self.env.cr.sql_log_count - before
+        _logger.warning('Daily purchase paid query measurement: 1 invoice=%s, 10 invoices=%s', one, many)
+        self.assertLessEqual(many, one + 20, 'Paid invoice count must not cause per-invoice SQL queries')
 
     def test_invoice_detail_preserves_discount(self):
         bill = self.env['account.move'].create({
@@ -129,6 +276,34 @@ class DailyPurchaseReportCase(TransactionCase):
         self.assertEqual((row['currency'], row['total']), ('DRX', '100.00'))
         self.assertEqual(row['company_total'], total['total'])
         self.assertNotEqual(row['company_total'], row['total'])
+        self.assertTrue(row['paid_unavailable'])
+        self.assertIsNone(row['paid'])
+        self.assertIsNone(total['paid'])
+
+    def test_direct_bank_statement_payment(self):
+        bill = self._bill(100)
+        cash = self.env['account.account'].create({
+            'name': 'Bank cash', 'code': 'DPR111', 'account_type': 'asset_cash',
+            'company_ids': [Command.set(self.company.ids)],
+        })
+        suspense = self.env['account.account'].create({
+            'name': 'Bank suspense', 'code': 'DPR112', 'account_type': 'asset_current',
+            'company_ids': [Command.set(self.company.ids)],
+        })
+        journal = self.env['account.journal'].create({
+            'name': 'Bank evidence', 'code': 'DPRN', 'type': 'bank', 'company_id': self.company.id,
+            'default_account_id': cash.id, 'suspense_account_id': suspense.id,
+        })
+        statement = self.env['account.bank.statement.line'].create({
+            'payment_ref': 'Supplier payment', 'journal_id': journal.id,
+            'amount': -40, 'date': bill.invoice_date, 'partner_id': self.partner.id,
+        })
+        _liquidity, counterpart, _other = statement.with_context(skip_account_move_synchronization=True)._seek_for_lines()
+        counterpart.account_id = self.payable
+        (counterpart | bill.line_ids.filtered(lambda line: line.account_id == self.payable)).reconcile()
+        report = self._report('cashier')
+        self.assertEqual(report.get_invoice(bill.id)['paid'], '40.00')
+        self.assertEqual(report.get_days('2099-09-15', '2099-09-15', 'all')['days'][0]['paid'], '40.00')
 
     def test_native_batch_bill_and_direct_bill_each_appear_once(self):
         sar = self.env.ref('base.SAR')

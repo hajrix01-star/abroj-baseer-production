@@ -116,14 +116,20 @@ class DashboardSales(models.AbstractModel):
             by_move = defaultdict(list)
             for line in line_rows:
                 by_move[line['move_id'][0]].append(line)
+            account_info = {}
             for move_id, lines in by_move.items():
                 move = move_map[move_id]
                 if move_id in real_session_moves or move_id in real_order_moves:
                     continue
                 company = self.env['res.company'].browse(move['company_id'][0])
-                kinds = {line['account_id'][0]: self._category(
-                    by_account[line['account_id'][0]].with_company(company), categories) for line in lines}
-                if any(by_account[line['account_id'][0]].with_company(company).code == '999999' for line in lines):
+                account_ids = {line['account_id'][0] for line in lines}
+                for account_id in account_ids:
+                    info_key = (company.id, account_id)
+                    if info_key not in account_info:
+                        account = by_account[account_id].with_company(company)
+                        account_info[info_key] = (self._category(account, categories), account.code == '999999')
+                kinds = {account_id: account_info[(company.id, account_id)][0] for account_id in account_ids}
+                if any(account_info[(company.id, account_id)][1] for account_id in account_ids):
                     continue
                 if 'revenue' not in kinds.values():
                     continue

@@ -84,12 +84,15 @@ class DashboardSections(models.AbstractModel):
 
     @request_memo
     def _posted_months(self, ids, revenue_only=False):
-        lines = self.env['account.move.line'].with_context(allowed_company_ids=ids).search([
-            ('company_id', 'in', ids), ('parent_state', '=', 'posted'),
-            ('account_id.account_type', 'in', ('income', 'income_other', 'expense', 'expense_depreciation', 'expense_direct_cost'))])
         reset_ids = set(self._reset_move_ids(ids, fields.Date.to_date('9999-12-31')))
         opening_ids = set(self.env['res.company'].browse(ids).mapped('account_opening_move_id').ids)
-        return {line.date.strftime('%Y-%m') for line in lines if line.move_id.id not in reset_ids | opening_ids and line.move_id.ref != 'Opening Entry' and (not revenue_only or line.account_id.account_type in ('income', 'income_other'))}
+        types = ('income', 'income_other') if revenue_only else (
+            'income', 'income_other', 'expense', 'expense_depreciation', 'expense_direct_cost')
+        rows = self.env['account.move.line'].with_context(allowed_company_ids=ids)._read_group([
+            ('company_id', 'in', ids), ('parent_state', '=', 'posted'),
+            ('account_id.account_type', 'in', types), ('move_id', 'not in', list(reset_ids | opening_ids)),
+            ('move_id.ref', '!=', 'Opening Entry')], ['date:month'], [])
+        return {month.strftime('%Y-%m') for (month,) in rows if month}
 
     def _timeline(self, ids, end, mode):
         if mode not in ('monthly', 'yearly'):
@@ -347,6 +350,8 @@ class DashboardSections(models.AbstractModel):
         months = []
         first = month_bounds(end, -5)[0]
         out_by_month = self._cash_out(ids, first, end, split=True)
+        bill_ends = [min(month_bounds(end, offset)[1], end) for offset in range(-5, 1)]
+        unpaid_by_end = self._unpaid_bills_batch(ids, bill_ends)
         for offset in range(-5, 1):
             start, last = month_bounds(end, offset)
             last = min(last, end)
@@ -355,7 +360,7 @@ class DashboardSections(models.AbstractModel):
             vat = self._sales_vat(ids, start, last)
             sales['available'] = bool(sales['channels'])
             months.append({'month': start.strftime('%Y-%m'), 'partial': bool(start <= min(end, last_data or end) < month_bounds(start)[1]), 'incoming': sales, 'outgoing': out,
-                           'unpaid_bills': self._unpaid_bills(ids, last), 'sales_vat': vat, 'net': round(sales['gross'] - out['total'], 2)})
+                           'unpaid_bills': unpaid_by_end[last], 'sales_vat': vat, 'net': round(sales['gross'] - out['total'], 2)})
         channel_totals, item_totals, source_totals = defaultdict(float), defaultdict(float), defaultdict(float)
         for key in ('salaries', 'rent', 'utilities', 'purchases', 'commissions', 'marketing', 'non_operating', 'other'):
             item_totals[key] = 0

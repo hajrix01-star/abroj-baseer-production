@@ -75,13 +75,22 @@ class DashboardCash(models.AbstractModel):
                     return weights or {'purchases' if account.account_type == 'liability_payable' else 'other': 1.0}
                 category = self._category(account, categories)
                 return {('purchases' if category == 'food_cost' else category or 'other'): 1.0}
+            # A move can contain multiple paid liquidity lines. Classify each
+            # counterpart once and reuse the same ordered counterparts for it.
+            others_by_move = {}
+            classified = {}
             for line in paid:
-                other = line.move_id.line_ids.filtered(lambda l: l.account_id.id not in liquidity)
+                move_id = line.move_id.id
+                if move_id not in others_by_move:
+                    others_by_move[move_id] = line.move_id.line_ids.filtered(lambda l: l.account_id.id not in liquidity)
+                other = others_by_move[move_id]
                 if not other:
                     continue
                 weights = defaultdict(float)
                 for counterpart in other:
-                    parts = classify(counterpart)
+                    if counterpart.id not in classified:
+                        classified[counterpart.id] = classify(counterpart)
+                    parts = classified[counterpart.id]
                     denominator = sum(parts.values())
                     for key, weight in parts.items():
                         weights[key] += abs(counterpart.balance) * weight / denominator if denominator else 0
@@ -158,22 +167,36 @@ class DashboardCash(models.AbstractModel):
 
     @request_memo
     def _unpaid_bills(self, ids, end):
+        return self._unpaid_bills_batch(ids, (end,))[end]
+
+    def _unpaid_bills_batch(self, ids, ends):
+        if not ends:
+            return {}
         ctx = dict(allowed_company_ids=ids)
         bills = self.env['account.move'].with_context(**ctx).search([
             ('company_id', 'in', ids), ('state', '=', 'posted'), ('move_type', 'in', ['in_invoice', 'in_refund']),
-            ('invoice_date', '<=', end)])
-        resets = set(self._reset_move_ids(ids, end))
-        bills = bills.filtered(lambda move: move.id not in resets)
+            ('invoice_date', '<=', max(ends))])
         lines = bills.line_ids.filtered(lambda line: line.account_id.account_type == 'liability_payable')
         partials = self.env['account.partial.reconcile'].with_context(**ctx).search([
-            ('max_date', '<=', end), '|', ('debit_move_id', 'in', lines.ids), ('credit_move_id', 'in', lines.ids)])
-        remaining = sum(-line.balance for line in lines)
-        line_ids = set(lines.ids)
-        for partial in partials:
-            if partial.debit_move_id.move_id.id in resets or partial.credit_move_id.move_id.id in resets:
-                continue
-            if partial.credit_move_id.id in line_ids:
-                remaining -= partial.amount
-            if partial.debit_move_id.id in line_ids:
-                remaining += partial.amount
-        return {'available': True, 'value': round(remaining, 2), 'label': 'فواتير غير مسددة — نهاية الفترة'}
+            ('max_date', '<=', max(ends)), '|', ('debit_move_id', 'in', lines.ids), ('credit_move_id', 'in', lines.ids)])
+        # Keep the original recordset order for each sum and each reconciliation.
+        bill_rows = [(line.id, line.move_id.id, line.move_id.invoice_date, line.balance) for line in lines]
+        partial_rows = [(partial.max_date, partial.debit_move_id.id, partial.credit_move_id.id,
+                         partial.debit_move_id.move_id.id, partial.credit_move_id.move_id.id, partial.amount)
+                        for partial in partials]
+        result = {}
+        for end in ends:
+            resets = set(self._reset_move_ids(ids, end))
+            selected = [(line_id, balance) for line_id, move_id, invoice_date, balance in bill_rows
+                        if invoice_date <= end and move_id not in resets]
+            line_ids = {line_id for line_id, _balance in selected}
+            remaining = sum(-balance for _line_id, balance in selected)
+            for max_date, debit_id, credit_id, debit_move, credit_move, amount in partial_rows:
+                if max_date > end or debit_move in resets or credit_move in resets:
+                    continue
+                if credit_id in line_ids:
+                    remaining -= amount
+                if debit_id in line_ids:
+                    remaining += amount
+            result[end] = {'available': True, 'value': round(remaining, 2), 'label': 'فواتير غير مسددة — نهاية الفترة'}
+        return result

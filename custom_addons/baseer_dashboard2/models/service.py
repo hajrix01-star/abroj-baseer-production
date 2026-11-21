@@ -146,14 +146,30 @@ class DashboardService(models.AbstractModel):
             raise UserError(_('Invalid dashboard period.'))
 
     def _category(self, account, categories):
+        cache = self.env.context.get('_bd2_request_cache')
+        category_ids = tuple(categories.ids)
+        rules_key = ('_category_rules', category_ids)
+        result_key = ('_category_result', category_ids, account.id, account.env.company.id)
+        if cache is not None and result_key in cache:
+            return cache[result_key]
+        rules = cache.get(rules_key) if cache is not None else None
+        if rules is None:
+            rules = [(category.code,
+                      tuple(prefix.strip() for prefix in (category.account_code_prefixes or '').split(',') if prefix.strip()),
+                      tuple(value.strip() for value in (category.account_type_fallback or '').split(',') if value.strip()))
+                     for category in categories]
+            if cache is not None:
+                cache[rules_key] = rules
         code = account.code or ''
-        for category in categories:
-            if any(code.startswith(prefix.strip()) for prefix in (category.account_code_prefixes or '').split(',') if prefix.strip()):
-                return category.code
-        for category in categories:
-            if account.account_type in [v.strip() for v in (category.account_type_fallback or '').split(',') if v.strip()]:
-                return category.code
-        return 'other_opex' if (account.account_type or '').startswith('expense') else False
+        account_type = account.account_type
+        result = next((key for key, prefixes, _types in rules if prefixes and code.startswith(prefixes)), None)
+        if result is None:
+            result = next((key for key, _prefixes, types in rules if account_type in types), None)
+        if result is None:
+            result = 'other_opex' if (account_type or '').startswith('expense') else False
+        if cache is not None:
+            cache[result_key] = result
+        return result
 
     @request_memo
     def _reset_move_ids(self, ids, end, start=None):

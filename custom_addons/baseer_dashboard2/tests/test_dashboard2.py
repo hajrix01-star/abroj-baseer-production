@@ -965,3 +965,46 @@ class TestDashboardRequestMemo(TransactionCase):
         result = service._sales_days(ids, first, last)
         result[0][(self.env.company.id, first)] = {'changed': True}
         self.assertEqual(service._sales_days(ids, first, last), expected)
+
+    def test_category_request_memo_matches_original_rules(self):
+        service = self.env['baseer.dashboard2.service'].with_context(_bd2_request_cache={})
+        categories = self.env['baseer.dashboard2.category'].search([])
+        companies = self.env['res.company'].search([], limit=2)
+        accounts = self.env['account.account'].search([], limit=30)
+        for company in companies:
+            for account in accounts:
+                account = account.with_company(company)
+                code = account.code or ''
+                expected = next((category.code for category in categories
+                                 if any(code.startswith(prefix.strip()) for prefix in (category.account_code_prefixes or '').split(',') if prefix.strip())), None)
+                if expected is None:
+                    expected = next((category.code for category in categories
+                                     if account.account_type in [value.strip() for value in (category.account_type_fallback or '').split(',') if value.strip()]), None)
+                if expected is None:
+                    expected = 'other_opex' if (account.account_type or '').startswith('expense') else False
+                self.assertEqual(service._category(account, categories), expected)
+                self.assertEqual(service._category(account, categories), expected)
+
+    def test_unpaid_bills_batch_matches_individual_calls(self):
+        service = self.env['baseer.dashboard2.service']
+        company = self.env.company
+        ids = [company.id]
+        accounts = self.env['account.account']
+        expense = accounts.create({'code': 'BD2BEXP', 'name': 'Expense', 'account_type': 'expense', 'company_ids': [(6, 0, ids)]})
+        payable = accounts.create({'code': 'BD2BPAY', 'name': 'Payable', 'account_type': 'liability_payable', 'reconcile': True, 'company_ids': [(6, 0, ids)]})
+        partner = self.env['res.partner'].create({'name': 'Batch supplier', 'property_account_payable_id': payable.id})
+        journal = self.env['account.journal'].create({'name': 'Batch purchases', 'code': 'B2PUR', 'type': 'purchase', 'company_id': company.id})
+        bill = self.env['account.move'].create({'move_type': 'in_invoice', 'journal_id': journal.id, 'partner_id': partner.id, 'invoice_date': '2026-09-03',
+            'invoice_line_ids': [(0, 0, {'name': 'Purchase', 'account_id': expense.id, 'quantity': 1, 'price_unit': 100})]})
+        bill.action_post()
+        journal = self.env['account.journal'].create({'name': 'Batch settlement', 'code': 'B2SET', 'type': 'general', 'company_id': company.id})
+        payment = self.env['account.move'].create({'journal_id': journal.id, 'date': '2026-10-10', 'line_ids': [
+            (0, 0, {'name': 'Payable', 'account_id': payable.id, 'partner_id': partner.id, 'debit': 100, 'credit': 0}),
+            (0, 0, {'name': 'Offset', 'account_id': expense.id, 'debit': 0, 'credit': 100})]})
+        payment.action_post()
+        (bill.line_ids + payment.line_ids).filtered(lambda line: line.account_id == payable).reconcile()
+        ends = [date(2026, 8, 31), date(2026, 9, 30), date(2026, 10, 31)]
+        batch = service._unpaid_bills_batch(ids, ends)
+        self.assertEqual([batch[end]['value'] for end in ends], [0, 100, 0])
+        for end in ends:
+            self.assertEqual(batch[end], service._unpaid_bills(ids, end))

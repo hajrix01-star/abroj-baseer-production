@@ -49,7 +49,7 @@ class DashboardSales(models.AbstractModel):
         orders = self.env['pos.order'].with_context(**context).search_read([
             ('company_id', 'in', ids), ('state', 'in', ('paid', 'done', 'invoiced')),
             ('date_order', '>=', utc_start), ('date_order', '<', utc_end)],
-            ['company_id', 'date_order', 'amount_total', 'config_id'], limit=200001)
+            ['company_id', 'date_order', 'amount_total', 'config_id'], limit=200001, load=None)
         if len(orders) > 200000:
             raise UserError(_('The selected period contains more than 200,000 POS orders.'))
         days = {}
@@ -59,8 +59,8 @@ class DashboardSales(models.AbstractModel):
         hours = defaultdict(lambda: {'orders': 0, 'gross': 0.0})
         for order in orders:
             local = fields.Datetime.to_datetime(order['date_order']).replace(tzinfo=pytz.UTC).astimezone(tz)
-            key = (order['company_id'][0], local.date())
-            if order['config_id'] and order['config_id'][0] in summary_ids:
+            key = (order['company_id'], local.date())
+            if order['config_id'] and order['config_id'] in summary_ids:
                 continue
             day = pos_days.setdefault(key, {'source': 'pos', 'channels': defaultdict(float), 'customers': 0, 'pos_gross': 0.0})
             sign = 1 if order['amount_total'] > 0 else -1 if order['amount_total'] < 0 else 0
@@ -73,7 +73,7 @@ class DashboardSales(models.AbstractModel):
         move_rows = moves.search_read([
             ('company_id', 'in', ids), ('state', '=', 'posted'), ('move_type', '=', 'entry'),
             ('date', '>=', start), ('date', '<=', end)],
-            ['company_id', 'date', 'reversed_entry_id', 'ref'], limit=200001)
+            ['company_id', 'date', 'reversed_entry_id', 'ref'], limit=200001, load=None)
         if len(move_rows) > 200000:
             raise UserError(_('The selected period contains more than 200,000 entries.'))
         move_map = {m['id']: m for m in move_rows}
@@ -88,11 +88,11 @@ class DashboardSales(models.AbstractModel):
         posted_days = set(session_keys.values())
         posted_orders = self.env['pos.order'].with_context(**context).search_read([
             ('session_id', 'in', list(session_keys)), ('state', 'in', ('paid', 'done', 'invoiced'))],
-            ['company_id', 'session_id', 'amount_total'], limit=200001) if session_keys else []
+            ['company_id', 'session_id', 'amount_total'], limit=200001, load=None) if session_keys else []
         if len(posted_orders) > 200000:
             raise UserError(_('The selected period contains more than 200,000 POS orders.'))
-        order_days = {order['id']: session_keys[order['session_id'][0]] for order in posted_orders
-                      if abs(order['amount_total']) > thresholds.get(order['company_id'][0], 1.5)}
+        order_days = {order['id']: session_keys[order['session_id']] for order in posted_orders
+                      if abs(order['amount_total']) > thresholds.get(order['company_id'], 1.5)}
         posted_real_days = set(order_days.values())
         posted_channels = defaultdict(lambda: defaultdict(float))
         if order_days:
@@ -106,23 +106,23 @@ class DashboardSales(models.AbstractModel):
         if move_map:
             line_rows = self.env['account.move.line'].with_context(**context).search_read(
                 [('company_id', 'in', ids), ('move_id', 'in', list(move_map))],
-                ['move_id', 'name', 'account_id', 'debit', 'credit', 'tax_line_id'], limit=200001)
+                ['move_id', 'name', 'account_id', 'debit', 'credit', 'tax_line_id'], limit=200001, load=None)
             if len(line_rows) > 200000:
                 raise UserError(_('The selected period contains more than 200,000 entry lines.'))
             categories = self.env['baseer.dashboard2.category'].with_context(**context).search([])
             accounts = self.env['account.account'].with_context(**context).browse(
-                list({line['account_id'][0] for line in line_rows}))
+                list({line['account_id'] for line in line_rows}))
             by_account = {account.id: account for account in accounts}
             by_move = defaultdict(list)
             for line in line_rows:
-                by_move[line['move_id'][0]].append(line)
+                by_move[line['move_id']].append(line)
             account_info = {}
             for move_id, lines in by_move.items():
                 move = move_map[move_id]
                 if move_id in real_session_moves or move_id in real_order_moves:
                     continue
-                company = self.env['res.company'].browse(move['company_id'][0])
-                account_ids = {line['account_id'][0] for line in lines}
+                company = self.env['res.company'].browse(move['company_id'])
+                account_ids = {line['account_id'] for line in lines}
                 for account_id in account_ids:
                     info_key = (company.id, account_id)
                     if info_key not in account_info:
@@ -138,23 +138,28 @@ class DashboardSales(models.AbstractModel):
                                             'customers': None, 'pos_gross': 0.0, 'sales_vat': 0.0})
                 reverse = bool(move['reversed_entry_id'])
                 for line in lines:
-                    if kinds[line['account_id'][0]] in ('revenue', 'other_income'):
+                    if kinds[line['account_id']] in ('revenue', 'other_income'):
                         continue
                     amount = line['debit'] - line['credit']
                     if (reverse and line['credit'] > 0) or (not reverse and line['debit'] > 0):
-                        channel = mapped.get((company.id, 'account', line['account_id'][0])) or self._channel_for(line['name'], channels, 'line_keywords')
+                        channel = mapped.get((company.id, 'account', line['account_id'])) or self._channel_for(line['name'], channels, 'line_keywords')
                         day['channels'][channel['key']] += amount
                         if channel['kind'] == 'app':
-                            receivable_ids[key[0]].add(line['account_id'][0])
-                    elif (line['tax_line_id'] or by_account[line['account_id'][0]].account_type == 'liability_current') and ((reverse and line['debit'] > 0) or (not reverse and line['credit'] > 0)):
+                            receivable_ids[key[0]].add(line['account_id'])
+                    elif (line['tax_line_id'] or by_account[line['account_id']].account_type == 'liability_current') and ((reverse and line['debit'] > 0) or (not reverse and line['credit'] > 0)):
                         day['sales_vat'] -= amount
         summary_days = days
         days = {}
         overrides = self.env['baseer.dashboard2.source.override'].with_context(**context).search([
             ('company_id', 'in', ids), ('date_from', '<=', end), ('date_to', '>=', start)])
+        overrides_by_company = defaultdict(list)
+        for row in overrides:
+            overrides_by_company[row.company_id.id].append((row.date_from, row.date_to, row.source))
         for key in set(summary_days) | posted_days | set(pos_days):
-            override = overrides.filtered(lambda row: row.company_id.id == key[0] and row.date_from <= key[1] <= row.date_to)
-            mode = override.source if override else 'auto'
+            matches = [source for date_from, date_to, source in overrides_by_company[key[0]] if date_from <= key[1] <= date_to]
+            if len(matches) > 1:
+                raise ValueError('Expected singleton: baseer.dashboard2.source.override')
+            mode = matches[0] if matches else 'auto'
             has_summary = key in summary_days
             has_pos = key in posted_days
             use_summary = has_summary and mode != 'pos'
@@ -225,8 +230,8 @@ class DashboardSales(models.AbstractModel):
             ('company_id', 'in', ids), ('session_id.move_id.state', '=', 'cancel'),
             ('date_order', '>=', datetime.combine(start - timedelta(days=1), time.min)),
             ('date_order', '<', datetime.combine(end + timedelta(days=2), time.min)),
-        ], ['company_id', 'session_id', 'date_order', 'amount_total'])
-        sessions = self.env['pos.session'].with_context(**ctx).browse({o['session_id'][0] for o in orders})
+        ], ['company_id', 'session_id', 'date_order', 'amount_total'], load=None)
+        sessions = self.env['pos.session'].with_context(**ctx).browse({o['session_id'] for o in orders})
         sessions = sessions.filtered(lambda session: session.config_id.id not in summary_ids and not any(
             word in (session.config_id.name or '').casefold() for word in ('ملخص المبيعات', 'sales summaries', 'ملخصات')))
         if not sessions:
@@ -241,8 +246,8 @@ class DashboardSales(models.AbstractModel):
         by_id = {s.id: s for s in sessions}
         grouped = defaultdict(lambda: [0.0, 0])
         for order in orders:
-            session = by_id.get(order['session_id'][0])
-            cid = order['company_id'][0]
+            session = by_id.get(order['session_id'])
+            cid = order['company_id']
             if not session or order['amount_total'] <= thresholds.get(cid, 1.5):
                 continue
             tz = pytz.timezone(session.company_id.partner_id.tz or self.env.user.tz or 'Asia/Riyadh')

@@ -1008,3 +1008,19 @@ class TestDashboardRequestMemo(TransactionCase):
         self.assertEqual([batch[end]['value'] for end in ends], [0, 100, 0])
         for end in ends:
             self.assertEqual(batch[end], service._unpaid_bills(ids, end))
+
+    def test_sales_days_uses_company_ids_in_keys(self):
+        company = self.env.company
+        method = self.env['pos.payment.method'].create({'name': 'cash', 'company_id': company.id})
+        journal = self.env['account.journal'].create({'name': 'Sales IDs', 'code': 'D2IDS', 'type': 'sale', 'company_id': company.id})
+        config = self.env['pos.config'].create({'name': 'Sales IDs', 'company_id': company.id, 'journal_id': journal.id, 'payment_method_ids': [(6, 0, [method.id])]})
+        session = self.env['pos.session'].create({'config_id': config.id})
+        self.env['pos.order'].create({'company_id': company.id, 'session_id': session.id, 'date_order': '2026-10-15 10:00:00', 'state': 'paid', 'amount_tax': 0, 'amount_total': 115, 'amount_paid': 115, 'amount_return': 0})
+        days, channels, unreceived, hours = self.env['baseer.dashboard2.service']._sales_days([company.id], date(2026, 10, 15), date(2026, 10, 15))
+        day = days[(company.id, date(2026, 10, 15))]
+        self.assertIsInstance(next(iter(days))[0], int)
+        self.assertEqual(day['customers'], 1)
+        self.assertEqual(day['pos_gross'], 115)
+        self.assertIsInstance(channels, list)
+        self.assertIn('available', unreceived)
+        self.assertEqual(hours[(3, 13)]['gross'], 115)

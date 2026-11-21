@@ -27,20 +27,18 @@ export const timelineYear = (period) => (period?.mode === "month" ? period.month
 export const chartX = (i, n, width = 700) =>
   width - 48 - (width - 70) * (n <= 1 ? 0.5 : i / (n - 1));
 export const miniX = (i, n) => 95 - (n <= 1 ? 45 : 90 * i / (n - 1));
-const months = [
-  "يناير",
-  "فبراير",
-  "مارس",
-  "أبريل",
-  "مايو",
-  "يونيو",
-  "يوليو",
-  "أغسطس",
-  "سبتمبر",
-  "أكتوبر",
-  "نوفمبر",
-  "ديسمبر",
-];
+// Full names suit titles and pickers; use short names for dense tables, charts and year tiles.
+export const MONTHS_FULL = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+export const MONTHS_SHORT = MONTHS_FULL.map((name) => name.slice(0, 3));
+export function monthLabel(ym, { short = false, year = false, partial = false, isolate = false } = {}) {
+  if (!ym) return "—";
+  const [y, m] = ym.split("-");
+  const name = (short ? MONTHS_SHORT : MONTHS_FULL)[Number(m) - 1];
+  const label = name + (year ? " " + y : "") + (partial ? " (جزئي)" : "");
+  return isolate ? `\u2068${label}\u2069` : label;
+}
+export const plainCsvText = (value) => value.replace(/[\u2066-\u2069]/g, "");
+const months = MONTHS_FULL;
 const weekdays = [
   "السبت",
   "الأحد",
@@ -341,6 +339,8 @@ export class Dashboard2 extends Component {
       period: getStored("period", null),
       timeline: getStored("timeline", "monthly"),
       view: "pnl",
+      pnl_view: null,
+      pnl_range: null,
       metric: "gross",
       closed: {},
       navOpen: false,
@@ -364,6 +364,9 @@ export class Dashboard2 extends Component {
         date_from: m.today,
         date_to: m.today,
       };
+      // Only an explicit user selection is stored, so an untouched installation follows the server default.
+      this.state.pnl_view = getStored("pnl_view", null) || m.pnl_default_view || "month";
+      this.resetPnlRange();
       await this.load();
     } catch (e) {
       this.state.error = e.message;
@@ -389,6 +392,7 @@ export class Dashboard2 extends Component {
           [
             this.state.page === "pnl" ? this.state.view : this.state.page,
             {
+              ...(this.state.page === "pnl" && this.state.view === "pnl" ? {pnl_view: this.state.pnl_view, pnl_range: this.state.pnl_range} : {}),
               company_key: this.state.company,
               period: this.state.period,
               timeline_mode: this.state.timeline,
@@ -405,10 +409,25 @@ export class Dashboard2 extends Component {
   }
   async choose(key, value) {
     this.state[key] = value;
+    if (key === "pnl_view") { this.persist(key); if (value === "range") this.resetPnlRange(); }
     if (key === "page") this.state.navOpen = false;
     if (["page", "company", "mode", "timeline", "period"].includes(key))
       this.persist(key);
     if (key !== "mode") await this.load();
+  }
+  resetPnlRange() {
+    const p = this.state.period;
+    if (p.mode === "range") this.state.pnl_range = {date_from: p.date_from, date_to: p.date_to};
+    else {
+      const [y, m] = p.month.split("-").map(Number);
+      const last = new Date(Date.UTC(y, m, 0)).getUTCDate();
+      this.state.pnl_range = {date_from: p.month + "-01", date_to: p.month + "-" + String(last).padStart(2, "0")};
+    }
+  }
+  async pnlRangeChange(key, value) {
+    this.state.pnl_range[key] = value;
+    const r = this.state.pnl_range;
+    if (r.date_from && r.date_to && r.date_from <= r.date_to) await this.load();
   }
   async periodChange(key, value) {
     this.state.period[key] = value;
@@ -458,8 +477,8 @@ export class Dashboard2 extends Component {
   periodRange = periodRange;
   dateName(d) {
     if (!d) return "—";
-    const [, month, day] = d.split("-");
-    return `${Number(day)} ${months[Number(month) - 1]}`;
+    const [, , day] = d.split("-");
+    return `${Number(day)} ${monthLabel(d)}`;
   }
   name(key) {
     return this.state.data?.channel_names?.[key] || labels[key] || key;
@@ -470,10 +489,8 @@ export class Dashboard2 extends Component {
   pct(v) {
     return formatPercent(v);
   }
-  monthName(m) {
-    if (!m) return "—";
-    const [y, n] = m.split("-");
-    return `${months[Number(n) - 1]} ${y}`;
+  monthName(m, short = false, year = true, partial = false) {
+    return monthLabel(m, { short, year, partial, isolate: partial });
   }
   get current() {
     return this.state.data?.current || {};
@@ -482,7 +499,7 @@ export class Dashboard2 extends Component {
     return this.state.data?.trend || [];
   }
   get trendLabels() {
-    return this.trend.map((x) => this.monthName(x.month).split(" ")[0] + (x.partial ? " (جزئي)" : ""));
+    return this.trend.map((x) => this.monthName(x.month, true, false, x.partial));
   }
   series(key, category = false) {
     return this.trend.map((x) =>
@@ -512,7 +529,7 @@ export class Dashboard2 extends Component {
     return `right:${Math.max(0, Math.min(100, start / total * 100))}%;width:${Math.max(0, Math.min(100, Math.abs(row.amount) / total * 100))}%`;
   }
   get timelineLabels() {
-    return this.timeline.map((x) => (x.year || months[x.month - 1]) + (x.partial ? " (جزئي)" : ""));
+    return this.timeline.map((x) => x.year ? String(x.year) + (x.partial ? " (جزئي)" : "") : monthLabel(`2000-${String(x.month).padStart(2, "0")}`, { short: true, partial: x.partial, isolate: x.partial }));
   }
   get timelineSeries() {
     return [
@@ -605,7 +622,7 @@ export class Dashboard2 extends Component {
     if (!table) return;
     const rows = [...table.rows].map((r) =>
       [...r.cells]
-        .map((c) => '"' + c.innerText.replaceAll('"', '""') + '"')
+        .map((c) => '"' + plainCsvText(c.innerText).replaceAll('"', '""') + '"')
         .join(","),
     );
     const a = document.createElement("a");

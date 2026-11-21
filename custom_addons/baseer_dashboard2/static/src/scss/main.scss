@@ -947,3 +947,8 @@ td {
   .o_bd2 .mini-labels { font-size: 10px; }
   .o_bd2 .mini .bd2-spark text { font-size: 4px; }
 }
+
+.o_bd2 .pnl-period-controls, .o_bd2 .pnl-range { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 10px 0; }
+.o_bd2 .pnl-period-seg { display: flex; flex-wrap: wrap; }
+.o_bd2 .pnl-period-seg button, .o_bd2 .pnl-range input { min-height: 44px; }
+.o_bd2 .pnl-range label { display: flex; align-items: center; gap: 5px; }

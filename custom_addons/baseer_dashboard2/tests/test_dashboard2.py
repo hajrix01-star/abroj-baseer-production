@@ -1,11 +1,20 @@
 from datetime import date
 
-from odoo.exceptions import AccessError, ValidationError
+from odoo.exceptions import AccessError, ValidationError, UserError
 from odoo.tests import TransactionCase, tagged
 
 
 @tagged('post_install', '-at_install')
 class TestDashboard2(TransactionCase):
+    def test_month_labels(self):
+        from ..models.month_names import english_months, month_label
+        self.assertEqual(month_label(date(2026, 10, 1)), 'October')
+        self.assertEqual(month_label('2026-11', short=True, year=True), 'Nov 2026')
+        self.assertEqual(month_label('2026-01', year=True), 'January 2026')
+        self.assertEqual(english_months('23 سبتمبر 2026'), '23 September 2026')
+        with self.assertRaises(ValueError):
+            month_label('2026-13')
+
     def test_arabic_translation_files_are_readable(self):
         from pathlib import Path
         from odoo.tools.translate import PoFileReader
@@ -46,7 +55,7 @@ class TestDashboard2(TransactionCase):
         self.assertIn('labelY(s,v)', chart.xpath('.//text[@t-att-y]')[-1].get('t-att-y'))
         bridge = root.xpath("//t[@t-name='baseer_dashboard2.Overview']//div[@t-foreach='state.data.bridge']")[0]
         self.assertFalse(bridge.xpath(".//t[contains(@t-if, 'partialMonth')]"))
-        self.assertTrue(bridge.getparent().xpath("./h3/t[@t-if='partialMonth']"))
+        self.assertTrue(bridge.getparent().xpath("./h3/bdi[contains(@t-esc, 'partialMonth')]"))
 
     def test_partial_fixed_costs_require_three_month_baseline(self):
         from ..models.sections import incomplete_fixed_costs
@@ -277,7 +286,36 @@ class TestDashboard2(TransactionCase):
         pnl = service.get_section('pnl', {'company_key': str(company.id), 'period': {'mode': 'month', 'month': '2026-10'}})
         revenue_row = next(row for row in pnl['rows'] if row['key'] == 'revenue')
         self.assertAlmostEqual(sum(child['months'][-1] for child in revenue_row['children']), revenue_row['months'][-1], places=2)
-        self.assertIsNone(revenue_row['months'][-2])
+        self.assertEqual(len(revenue_row['months']), 1)
+        self.assertEqual(revenue_row['total'], pnl['trend'][-1]['data']['sales_net'])
+        self.assertEqual(revenue_row['pct'], 100)
+        from ..models.service import PNL_DEFAULT_VIEW
+        self.assertEqual(service.get_meta()['pnl_default_view'], PNL_DEFAULT_VIEW)
+        base_params = {'company_key': str(company.id), 'period': {'mode': 'month', 'month': '2026-10'}}
+        views = {view: service.get_section('pnl', {**base_params, 'pnl_view': view}) for view in ('quarter', 'year')}
+        self.assertEqual(len(views['quarter']['pnl_columns']), 1)
+        self.assertIn('الرابع 2026', views['quarter']['pnl_columns'][0]['label'])
+        self.assertEqual(len(views['year']['pnl_columns']), 12)
+        self.assertEqual(views['year']['pnl_columns'][0]['month'], '2025-11')
+        for row in views['year']['rows']:
+            self.assertAlmostEqual(row['total'], sum(v or 0 for v in row['months']), places=2)
+            for child in row['children']:
+                self.assertAlmostEqual(child['total'], sum(v or 0 for v in child['months']), places=2)
+        quarter_months = [service.get_section('pnl', {**base_params, 'period': {'mode': 'month', 'month': '2026-%02d' % m}}) for m in (10, 11, 12)]
+        for row in views['quarter']['rows']:
+            month_rows = [next(r for r in month['rows'] if r['key'] == row['key']) for month in quarter_months]
+            self.assertAlmostEqual(row['total'], sum(r['total'] for r in month_rows), places=2)
+            for child in row['children']:
+                self.assertAlmostEqual(child['total'], sum(next((c['total'] for c in r['children'] if c['key'] == child['key']), 0) for r in month_rows), places=2)
+        year_months = [service.get_section('pnl', {**base_params, 'period': {'mode': 'month', 'month': col['month']}}) for col in views['year']['pnl_columns']]
+        for row in views['year']['rows']:
+            self.assertAlmostEqual(row['total'], sum(next(r['total'] for r in month['rows'] if r['key'] == row['key']) for month in year_months), places=2)
+        clipped = service.get_section('pnl', {**base_params, 'pnl_view': 'range', 'pnl_range': {'date_from': '2026-10-02', 'date_to': '2026-10-03'}})
+        self.assertEqual(next(r['total'] for r in clipped['rows'] if r['key'] == 'revenue'), -100)
+        with self.assertRaises(UserError):
+            service.get_section('pnl', {**base_params, 'pnl_view': 'invalid'})
+        with self.assertRaises(UserError):
+            service.get_section('pnl', {**base_params, 'pnl_view': 'range', 'pnl_range': {'date_from': '2026-10-03', 'date_to': '2026-10-02'}})
         self.assertIsNone(service._timeline([company.id], date(2026, 10, 31), 'monthly')['months'][8]['value'])
         yearly = service._timeline([company.id], date(2026, 10, 31), 'yearly')['years']
         self.assertEqual(yearly[-1]['value'], 1000)

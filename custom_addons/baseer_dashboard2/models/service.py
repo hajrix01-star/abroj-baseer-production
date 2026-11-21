@@ -8,6 +8,9 @@ from odoo import api, fields, models, _
 from odoo.exceptions import AccessError, UserError
 from odoo.tools import SQL
 
+PNL_DEFAULT_VIEW = 'month'
+
+
 def raw_rows(model, domain, columns, limit=None, order=None):
     """Read stored columns with the same access rules and order as search_read."""
     columns = ['id'] + [name for name in columns if name != 'id']
@@ -140,7 +143,7 @@ class DashboardService(models.AbstractModel):
         today = fields.Date.context_today(self)
         previous_month = (today.replace(day=1) - timedelta(days=1)).strftime('%Y-%m')
         default_month = previous_month
-        return {'default_month': default_month, 'companies': options, 'default_company_key': str(self.env.company.id if self.env.company.id in ids else ids[0]) if ids else False,
+        return {'pnl_default_view': PNL_DEFAULT_VIEW, 'default_month': default_month, 'companies': options, 'default_company_key': str(self.env.company.id if self.env.company.id in ids else ids[0]) if ids else False,
                 'months_available': months, 'today': fields.Date.to_string(fields.Date.context_today(self)),
                 'last_data_date': fields.Date.to_string(last) if last else False,
                 'can_edit': self.env.user.has_group('account.group_account_manager'), 'tz': self.env.user.tz or 'Asia/Riyadh',

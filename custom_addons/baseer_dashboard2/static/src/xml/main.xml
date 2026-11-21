@@ -164,13 +164,15 @@
         </div>
         <div class="card">
             <h3>من المبيعات إلى صافي الربح — <bdi dir="ltr" t-esc="monthName(state.period.month, false, true, partialMonth)"/></h3>
-            <div class="muted">المبالغ ونسبتها من المبيعات دون الضريبة</div><div class="bridge-legend"><span>■ مجموع</span><span>■ خصم</span><span>■ صافي الربح</span></div>
+            <div class="muted">المبالغ ونسبتها من المبيعات شاملة الضريبة</div><div class="bridge-legend"><span>■ مجموع</span><span>■ خصم</span><span>■ صافي الربح</span></div>
             <div t-att-class="'bridge-row '+(row.key==='net_profit'?'net-profit':(['sales_net','gross_profit','operating_profit'].includes(row.key)?'subtotal':''))" t-foreach="state.data.bridge" t-as="row" t-key="row.key">
                 <b t-att-title="row.key==='zakat_tax' ? 'قيود الزكاة سنوية أو غير منتظمة بين الفترات' : false" t-esc="row.key==='utilities' ? 'الكهرباء والماء' : name(row.key)"/>
                 <div class="bd2-track"><i t-att-style="bridgeStyle(row, row_index)"/></div>
                 <strong dir="ltr" t-att-class="bridgeDrillKey(row.key) ? 'bd2-drill' : ''" t-att-role="bridgeDrillKey(row.key) ? 'button' : false" t-att-tabindex="bridgeDrillKey(row.key) ? 0 : false" t-on-click="(e)=&gt;bridgeDrillKey(row.key) and this.drill(e,'overview',bridgeDrillKey(row.key))" t-on-keydown="(e)=&gt;bridgeDrillKey(row.key) and this.drill(e,'overview',bridgeDrillKey(row.key))" t-esc="tableFmt(row.amount || 0, true)"/>
                 <span class="muted"><bdi dir="ltr" t-att-class="row.pct != null and bridgeDrillKey(row.key) ? 'bd2-drill' : ''" t-att-role="row.pct != null and bridgeDrillKey(row.key) ? 'button' : false" t-att-tabindex="row.pct != null and bridgeDrillKey(row.key) ? 0 : false" t-on-click="(e)=&gt;row.pct != null and bridgeDrillKey(row.key) and this.drill(e,'overview',bridgeDrillKey(row.key))" t-on-keydown="(e)=&gt;row.pct != null and bridgeDrillKey(row.key) and this.drill(e,'overview',bridgeDrillKey(row.key))" t-esc="tablePct(row.pct == null ? null : Math.abs(row.pct))"/></span>
             </div>
+            <div class="muted tax-note">يشمل ضريبة قيمة مضافة مستحقة للهيئة: <t t-esc="fmt(current.tax?.vat_payable)"/> (مخرجات <t t-esc="fmt(current.tax?.output_vat)"/> − مدخلات <t t-esc="fmt(current.tax?.input_vat)"/>)<t t-if="current.tax?.tobacco_fee"> ورسوم تبغ: <t t-esc="fmt(current.tax.tobacco_fee)"/></t></div>
+            <div t-if="current.tax?.unallocated_input_vat_lines" class="chip">ضريبة مدخلات غير موزعة: <t t-esc="fmt(current.tax.unallocated_input_vat)"/></div>
         </div>
         <div t-foreach="state.data.sales.warnings" t-as="warning" t-key="warning.company_id+warning.date+warning.label" class="chip"><t t-esc="warning.date"/> · <t t-esc="warning.label"/></div>
         <t t-call="baseer_dashboard2.Compare"/>
@@ -226,7 +228,7 @@
     </t>
     <t t-name="baseer_dashboard2.Revenue">
         <div class="grid four">
-            <KpiCard months="trend.map(x=&gt;x.month)" partialMonth="trend.at(-1)?.partial" title="'إجمالي المبيعات'" headingSubtitle="'شامل الضريبة'" icon="'sales_net'" value="current.gross" change="changeValue(current.gross, state.data.previous.gross)" trend="trend.map(x=&gt;x.has_data ? x.data.gross : null)" previousYearTrend="trend.map(x=&gt;x.previous_year?.gross)" hero="true" onDrill="(!!current.source_counts?.summary !== !!current.source_counts?.pos) ? (e)=&gt;this.drill(e,'revenue','gross') : null"/>
+            <KpiCard months="trend.map(x=&gt;x.month)" partialMonth="trend.at(-1)?.partial" title="'إجمالي المبيعات'" headingSubtitle="state.data.tax?.tobacco_fee ? 'منها رسوم التبغ '+fmt(state.data.tax.tobacco_fee) : 'شامل الضريبة'" icon="'sales_net'" value="current.gross" change="changeValue(current.gross, state.data.previous.gross)" trend="trend.map(x=&gt;x.has_data ? x.data.gross : null)" previousYearTrend="trend.map(x=&gt;x.previous_year?.gross)" hero="true" onDrill="(!!current.source_counts?.summary !== !!current.source_counts?.pos) ? (e)=&gt;this.drill(e,'revenue','gross') : null"/>
             <KpiCard months="trend.map(x=&gt;x.month)" partialMonth="trend.at(-1)?.partial" title="'مبيعات التطبيقات'" headingSubtitle="'شامل الضريبة'" icon="'apps'" value="current.apps" change="changeValue(current.apps, state.data.previous.apps)" trend="trend.map(x=&gt;x.has_data ? x.data.apps : null)" previousYearTrend="trend.map(x=&gt;x.previous_year?.apps)" subtitle="current.apps_pct == null ? 'غير متوفر' : null" subtitlePercent="current.apps_pct" onDrill="(!!current.source_counts?.summary !== !!current.source_counts?.pos) ? (e)=&gt;this.drill(e,'revenue','apps') : null"/>
             <KpiCard months="trend.map(x=&gt;x.month)" partialMonth="trend.at(-1)?.partial" title="'عدد العملاء (الطلبات)'" headingSubtitle="customerCutoverLabel(current.customers?.cutover_date)" icon="'customers'" unit="'orders'" value="current.customers?.value" change="changeValue(current.customers?.value, state.data.previous.customers?.value)" trend="trend.map(x=&gt;x.has_data ? x.data.customers?.value : null)" previousYearTrend="trend.map(x=&gt;x.previous_year?.customers.value)" onDrill="(e)=&gt;this.drill(e,'revenue','customers')"/>
             <KpiCard months="trend.map(x=&gt;x.month)" partialMonth="trend.at(-1)?.partial" title="'متوسط الفاتورة'" headingSubtitle="customerCutoverLabel(current.customers?.cutover_date)" icon="'ticket'" value="current.customers?.avg_ticket" change="changeValue(current.customers?.avg_ticket, state.data.previous.customers?.avg_ticket)" trend="trend.map(x=&gt;x.has_data ? x.data.customers?.avg_ticket : null)" previousYearTrend="trend.map(x=&gt;x.previous_year?.customers.avg_ticket)"/>
@@ -307,7 +309,7 @@
         <div class="grid two-wide">
             <div class="card expense-sales-chart">
                 <h3>المصاريف مقابل المبيعات</h3>
-                <div class="muted">آخر 6 أشهر — الفرق بين الخطين هو الربح قبل الزكاة</div>
+                <div class="muted">آخر 6 أشهر — الفرق شامل الضريبة قبل تسوية الضريبة</div>
                 <LineChart series="[{values:series('sales_net'),previousYear:trend.map(x=&gt;x.previous_year?.sales_net),firstLabel:true,name:'المبيعات',drill:(e,i)=&gt;this.drill(e,'expenses','sales_net',{month:trend[i].month})},{values:trend.map(x=&gt;x.has_data === false ? null : operatingExpense(x.data)),previousYear:trend.map(x=&gt;x.previous_year ? operatingExpense(x.previous_year) : null),gold:true,area:true,firstLabel:true,name:'المصاريف قبل الزكاة',drill:(e,i)=&gt;this.drill(e,'expenses','operating_expenses',{month:trend[i].month})}]" labels="trendLabels" months="trend.map(x=&gt;x.month)"/><div class="safety-chips"><strong>المصاريف ÷ المبيعات:</strong><span t-foreach="trend" t-as="m" t-key="m.month" t-att-class="m_last ? 'current' : ''"><t t-esc="monthName(m.month, true, false, m.partial)"/> <bdi dir="ltr" t-att-class="m.has_data and m.data.sales_net ? 'bd2-drill' : ''" t-att-role="m.has_data and m.data.sales_net ? 'button' : false" t-att-tabindex="m.has_data and m.data.sales_net ? 0 : false" t-on-click="(e)=&gt;m.has_data and m.data.sales_net and this.drill(e,'expenses','operating_expenses',{month:m.month})" t-on-keydown="(e)=&gt;m.has_data and m.data.sales_net and this.drill(e,'expenses','operating_expenses',{month:m.month})" t-esc="m.has_data and m.data.sales_net ? pct(operatingExpense(m.data)/m.data.sales_net*100) : '—'"/></span></div>
             </div>
             <div class="card">
@@ -363,6 +365,7 @@
         </div>
     </t>
     <t t-name="baseer_dashboard2.Ratios">
+        <div class="muted">المستهدفات شاملة الضريبة</div>
         <div class="grid four">
             <div class="card ratio" t-foreach="['food_pct','salaries_pct','prime_pct','net_margin_pct']" t-as="key" t-key="key">
                 <div class="ratio-heading"><div><h3 t-esc="name(key)"/><div class="muted" t-esc="({food_pct:'تكلفة الأكل ÷ المبيعات',salaries_pct:'الرواتب ÷ المبيعات',prime_pct:'(الأكل + الرواتب) ÷ المبيعات',net_margin_pct:'صافي الربح ÷ المبيعات'})[key]"/></div><span t-if="current.ratios?.[key] != null and state.data.targets[key]" t-att-class="'bd2-badge '+(state.data.targets[key].status === 'ok' ? 'good' : 'bad')" t-esc="state.data.targets[key].status === 'ok' ? 'ضمن المستهدف' : 'خارج المستهدف'"/></div>
@@ -374,7 +377,7 @@
         <div class="grid two">
             <div class="card">
                 <h3>اتجاه نسب التكلفة</h3>
-                <div class="muted">الخطوط المتقطعة = المستهدف (الأكل <bdi dir="ltr" t-esc="targetPercent(state.data.targets.food_pct?.value)"/> · الرواتب <bdi dir="ltr" t-esc="targetPercent(state.data.targets.salaries_pct?.value)"/>)</div><LineChart series="[{name:'تكلفة الأكل',values:trend.map(x=&gt;x.has_data ? x.data.ratios.food_pct : null),previousYear:trend.map(x=&gt;x.previous_year?.ratios.food_pct),drill:(e,i)=&gt;this.drill(e,'ratios','food_pct',{month:trend[i].month})},{name:'الرواتب',values:trend.map(x=&gt;x.has_data ? x.data.ratios.salaries_pct : null),previousYear:trend.map(x=&gt;x.previous_year?.ratios.salaries_pct),gold:true,drill:(e,i)=&gt;this.drill(e,'ratios','salaries_pct',{month:trend[i].month})},...(state.data.targets.food_pct?.value != null ? [{name:'مستهدف الأكل',hideLegend:true,values:trend.map(()=&gt;state.data.targets.food_pct.value),dashed:true}] : []),...(state.data.targets.salaries_pct?.value != null ? [{name:'مستهدف الرواتب',hideLegend:true,values:trend.map(()=&gt;state.data.targets.salaries_pct.value),dashed:true}] : [])]" labels="trendLabels" months="trend.map(x=&gt;x.month)" percent="true"/>
+                <div class="muted">الخطوط المتقطعة = المستهدف شامل الضريبة (الأكل <bdi dir="ltr" t-esc="targetPercent(state.data.targets.food_pct?.value)"/> · الرواتب <bdi dir="ltr" t-esc="targetPercent(state.data.targets.salaries_pct?.value)"/>)</div><LineChart series="[{name:'تكلفة الأكل',values:trend.map(x=&gt;x.has_data ? x.data.ratios.food_pct : null),previousYear:trend.map(x=&gt;x.previous_year?.ratios.food_pct),drill:(e,i)=&gt;this.drill(e,'ratios','food_pct',{month:trend[i].month})},{name:'الرواتب',values:trend.map(x=&gt;x.has_data ? x.data.ratios.salaries_pct : null),previousYear:trend.map(x=&gt;x.previous_year?.ratios.salaries_pct),gold:true,drill:(e,i)=&gt;this.drill(e,'ratios','salaries_pct',{month:trend[i].month})},...(state.data.targets.food_pct?.value != null ? [{name:'مستهدف الأكل',hideLegend:true,values:trend.map(()=&gt;state.data.targets.food_pct.value),dashed:true}] : []),...(state.data.targets.salaries_pct?.value != null ? [{name:'مستهدف الرواتب',hideLegend:true,values:trend.map(()=&gt;state.data.targets.salaries_pct.value),dashed:true}] : [])]" labels="trendLabels" months="trend.map(x=&gt;x.month)" percent="true"/>
             </div>
             <div class="card">
                 <h3>مجمل الهامش وصافي الهامش</h3>
@@ -759,6 +762,7 @@
                         <h1 t-esc="state.page==='pnl' and state.view==='inout' ? 'الداخل والخارج' : page[1]"/>
                         <div class="muted" t-esc="page[2]"/>
                     </div>
+                    <span t-if="state.page !== 'glossary' and !(state.page === 'pnl' and state.view === 'pnl')" class="tax-basis-badge">شامل الضريبة</span>
                     <span class="chip header-source">بيانات أودو المرحّلة</span>
                     <div class="header-controls">
                         <div class="seg company-strip bd2-scroll-x">

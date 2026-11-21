@@ -857,7 +857,7 @@ td {
 .o_bd2 .hours-table { font-size: 10px; }
 .o_bd2 .hours-table th, .o_bd2 .hours-table td { padding-inline: 1px; }
 
-.bd2-menu-toggle, .bd2-nav-backdrop, .o_bd2 .context-source, .o_bd2 .company-label-fallback { display: none; }
+.bd2-menu-toggle, .bd2-nav-backdrop, .o_bd2 .context-source { display: none; }
 .o_bd2 .bd2-scroll-x { max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
 @media (max-width: 1000px) {
   .o_bd2 .bd2-sidebar nav button { display: flex; align-items: center; gap: 10px; }
@@ -993,3 +993,13 @@ td {
 .o_bd2 .bd2-spark > :not(.bd2-spark-slot) { pointer-events: none; }
 .o_bd2 .bd2-spark .bd2-drill { pointer-events: auto; }
 .o_bd2 .bd2-spark-slot { pointer-events: all; }
+
+.o_bd2 .tax-basis-badge {
+  color: var(--bd2-gold-text);
+  background: var(--bd2-gold-soft);
+  border: 1px solid var(--bd2-border);
+  border-radius: 999px;
+  padding: .25rem .65rem;
+  font-size: .75rem;
+  white-space: nowrap;
+}

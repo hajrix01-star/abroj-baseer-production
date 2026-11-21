@@ -19,3 +19,6 @@ The March 2026 Shami sales timeline is a gap: the local copy contains a posted h
 يوم الوصول للتعادل هو أول يوم خلال الفترة تبلغ فيه المبيعات اليومية المتراكمة، بعد تحويلها بنسبة صافي المبيعات المحاسبية إلى إجمالي المبيعات، قيمة نقطة التعادل. إذا لم تبلغها خلال الفترة يظهر غير متوفر.
 
 In/Out excludes direct payments to VAT control and settlement accounts (100103, 101060, 104041, 104043, 201017, 201030, 202003) and VAT tax-repartition accounts. Supplier bills remain gross, including their input VAT; zakat and other taxes remain in their existing category. The legacy `show_vat_paid_line` database field is retained for compatibility and has no effect. Sales VAT remains visible under incoming sales.
+
+The periods and English months (19.0.1.8.0), drill-down and tooltip chains
+must be rebased onto the tax-inclusive version before integration.

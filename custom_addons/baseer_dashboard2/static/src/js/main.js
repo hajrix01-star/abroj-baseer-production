@@ -610,7 +610,7 @@ export class Dashboard2 extends Component {
     );
     const a = document.createElement("a");
     a.href = URL.createObjectURL(
-      new Blob(["\ufeff" + rows.join("\n")], {
+      new Blob(["\ufeff" + (this.state.view === "pnl" ? "قبل الضريبة" : "شامل الضريبة") + "\n" + rows.join("\n")], {
         type: "text/csv;charset=utf-8",
       }),
     );

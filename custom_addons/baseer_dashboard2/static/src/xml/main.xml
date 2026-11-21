@@ -157,13 +157,15 @@
         </div>
         <div class="card">
             <h3>من المبيعات إلى صافي الربح — <t t-esc="monthName(state.period.month)"/><t t-if="partialMonth"> (جزئي)</t></h3>
-            <div class="muted">المبالغ ونسبتها من المبيعات دون الضريبة</div><div class="bridge-legend"><span>■ مجموع</span><span>■ خصم</span><span>■ صافي الربح</span></div>
+            <div class="muted">المبالغ ونسبتها من المبيعات شاملة الضريبة</div><div class="bridge-legend"><span>■ مجموع</span><span>■ خصم</span><span>■ صافي الربح</span></div>
             <div t-att-class="'bridge-row '+(row.key==='net_profit'?'net-profit':(['sales_net','gross_profit','operating_profit'].includes(row.key)?'subtotal':''))" t-foreach="state.data.bridge" t-as="row" t-key="row.key">
                 <b t-att-title="row.key==='zakat_tax' ? 'قيود الزكاة سنوية أو غير منتظمة بين الفترات' : false" t-esc="row.key==='utilities' ? 'الكهرباء والماء' : name(row.key)"/>
                 <div class="bd2-track"><i t-att-style="bridgeStyle(row, row_index)"/></div>
                 <strong dir="ltr" t-esc="tableFmt(row.amount || 0, true)"/>
                 <span class="muted"><bdi dir="ltr" t-esc="tablePct(row.pct == null ? null : Math.abs(row.pct))"/></span>
             </div>
+            <div class="muted tax-note">يشمل ضريبة قيمة مضافة مستحقة للهيئة: <t t-esc="fmt(current.tax?.vat_payable)"/> (مخرجات <t t-esc="fmt(current.tax?.output_vat)"/> − مدخلات <t t-esc="fmt(current.tax?.input_vat)"/>)<t t-if="current.tax?.tobacco_fee"> ورسوم تبغ: <t t-esc="fmt(current.tax.tobacco_fee)"/></t></div>
+            <div t-if="current.tax?.unallocated_input_vat" class="chip">ضريبة مدخلات غير موزعة: <t t-esc="fmt(current.tax.unallocated_input_vat)"/></div>
         </div>
         <div t-foreach="state.data.sales.warnings" t-as="warning" t-key="warning.company_id+warning.date+warning.label" class="chip"><t t-esc="warning.date"/> · <t t-esc="warning.label"/></div>
         <t t-call="baseer_dashboard2.Compare"/>
@@ -219,7 +221,7 @@
     </t>
     <t t-name="baseer_dashboard2.Revenue">
         <div class="grid four">
-            <KpiCard partialMonth="trend.at(-1)?.partial" title="'إجمالي المبيعات'" headingSubtitle="'شامل الضريبة'" icon="'sales_net'" value="current.gross" change="changeValue(current.gross, state.data.previous.gross)" trend="trend.map(x=&gt;x.has_data ? x.data.gross : null)" hero="true"/>
+            <KpiCard partialMonth="trend.at(-1)?.partial" title="'إجمالي المبيعات'" headingSubtitle="state.data.tax?.tobacco_fee ? 'منها رسوم التبغ '+fmt(state.data.tax.tobacco_fee) : 'شامل الضريبة'" icon="'sales_net'" value="current.gross" change="changeValue(current.gross, state.data.previous.gross)" trend="trend.map(x=&gt;x.has_data ? x.data.gross : null)" hero="true"/>
             <KpiCard partialMonth="trend.at(-1)?.partial" title="'مبيعات التطبيقات'" headingSubtitle="'شامل الضريبة'" icon="'apps'" value="current.apps" change="changeValue(current.apps, state.data.previous.apps)" trend="trend.map(x=&gt;x.has_data ? x.data.apps : null)" subtitle="current.apps_pct == null ? 'غير متوفر' : null" subtitlePercent="current.apps_pct"/>
             <KpiCard partialMonth="trend.at(-1)?.partial" title="'عدد العملاء (الطلبات)'" headingSubtitle="customerCutoverLabel(current.customers?.cutover_date)" icon="'customers'" unit="'orders'" value="current.customers?.value" change="changeValue(current.customers?.value, state.data.previous.customers?.value)" trend="trend.map(x=&gt;x.has_data ? x.data.customers?.value : null)"/>
             <KpiCard partialMonth="trend.at(-1)?.partial" title="'متوسط الفاتورة'" headingSubtitle="customerCutoverLabel(current.customers?.cutover_date)" icon="'ticket'" value="current.customers?.avg_ticket" change="changeValue(current.customers?.avg_ticket, state.data.previous.customers?.avg_ticket)" trend="trend.map(x=&gt;x.has_data ? x.data.customers?.avg_ticket : null)"/>
@@ -300,7 +302,7 @@
         <div class="grid two-wide">
             <div class="card expense-sales-chart">
                 <h3>المصاريف مقابل المبيعات</h3>
-                <div class="muted">آخر 6 أشهر — الفرق بين الخطين هو الربح قبل الزكاة</div>
+                <div class="muted">آخر 6 أشهر — الفرق شامل الضريبة قبل تسوية الضريبة</div>
                 <LineChart series="[{values:series('sales_net'),firstLabel:true,name:'المبيعات'},{values:trend.map(x=&gt;x.has_data === false ? null : operatingExpense(x.data)),gold:true,area:true,firstLabel:true,name:'المصاريف قبل الزكاة'}]" labels="trendLabels"/><div class="safety-chips"><strong>المصاريف ÷ المبيعات:</strong><span t-foreach="trend" t-as="m" t-key="m.month" t-att-class="m_last ? 'current' : ''"><t t-esc="monthName(m.month).split(' ')[0]+(m.partial ? ' (جزئي)' : '')"/> <bdi dir="ltr" t-esc="m.has_data and m.data.sales_net ? pct(operatingExpense(m.data)/m.data.sales_net*100) : '—'"/></span></div>
             </div>
             <div class="card">
@@ -367,7 +369,7 @@
         <div class="grid two">
             <div class="card">
                 <h3>اتجاه نسب التكلفة</h3>
-                <div class="muted">الخطوط المتقطعة = المستهدف (الأكل <bdi dir="ltr" t-esc="targetPercent(state.data.targets.food_pct?.value)"/> · الرواتب <bdi dir="ltr" t-esc="targetPercent(state.data.targets.salaries_pct?.value)"/>)</div><LineChart series="[{name:'تكلفة الأكل',values:trend.map(x=&gt;x.has_data ? x.data.ratios.food_pct : null)},{name:'الرواتب',values:trend.map(x=&gt;x.has_data ? x.data.ratios.salaries_pct : null),gold:true},...(state.data.targets.food_pct?.value != null ? [{name:'مستهدف الأكل',hideLegend:true,values:trend.map(()=&gt;state.data.targets.food_pct.value),dashed:true}] : []),...(state.data.targets.salaries_pct?.value != null ? [{name:'مستهدف الرواتب',hideLegend:true,values:trend.map(()=&gt;state.data.targets.salaries_pct.value),dashed:true}] : [])]" labels="trendLabels" percent="true"/>
+                <div class="muted">الخطوط المتقطعة = المستهدف شامل الضريبة (الأكل <bdi dir="ltr" t-esc="targetPercent(state.data.targets.food_pct?.value)"/> · الرواتب <bdi dir="ltr" t-esc="targetPercent(state.data.targets.salaries_pct?.value)"/>)</div><LineChart series="[{name:'تكلفة الأكل',values:trend.map(x=&gt;x.has_data ? x.data.ratios.food_pct : null)},{name:'الرواتب',values:trend.map(x=&gt;x.has_data ? x.data.ratios.salaries_pct : null),gold:true},...(state.data.targets.food_pct?.value != null ? [{name:'مستهدف الأكل',hideLegend:true,values:trend.map(()=&gt;state.data.targets.food_pct.value),dashed:true}] : []),...(state.data.targets.salaries_pct?.value != null ? [{name:'مستهدف الرواتب',hideLegend:true,values:trend.map(()=&gt;state.data.targets.salaries_pct.value),dashed:true}] : [])]" labels="trendLabels" percent="true"/>
             </div>
             <div class="card">
                 <h3>مجمل الهامش وصافي الهامش</h3>
@@ -741,6 +743,7 @@
                         <h1 t-esc="state.page==='pnl' and state.view==='inout' ? 'الداخل والخارج' : page[1]"/>
                         <div class="muted" t-esc="page[2]"/>
                     </div>
+                    <span t-if="state.page !== 'glossary' and !(state.page === 'pnl' and state.view === 'pnl')" class="tax-basis-badge">شامل الضريبة</span>
                     <span class="chip header-source">بيانات أودو المرحّلة</span>
                     <div class="header-controls">
                         <div class="seg company-strip bd2-scroll-x">

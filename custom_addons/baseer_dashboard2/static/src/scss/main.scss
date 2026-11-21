@@ -947,3 +947,12 @@ td {
   .o_bd2 .mini-labels { font-size: 10px; }
   .o_bd2 .mini .bd2-spark text { font-size: 4px; }
 }
+.o_bd2 .tax-basis-badge {
+  color: var(--bd2-gold-text);
+  background: var(--bd2-gold-soft);
+  border: 1px solid var(--bd2-border);
+  border-radius: 999px;
+  padding: .25rem .65rem;
+  font-size: .75rem;
+  white-space: nowrap;
+}

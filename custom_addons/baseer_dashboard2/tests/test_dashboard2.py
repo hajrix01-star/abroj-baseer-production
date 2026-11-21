@@ -942,7 +942,7 @@ class TestDashboardThemeLiterals(TransactionCase):
 class TestGlossaryBasis(TransactionCase):
     def test_apps_ratio_is_gross(self):
         from ..models.service import SOURCES
-        self.assertIn('عدا نسبة التطبيقات: شاملة الضريبة', SOURCES['ratios'])
+        self.assertIn('شاملة الضريبة', SOURCES['ratios'])
 
 
 class TestDashboardRequestMemo(TransactionCase):

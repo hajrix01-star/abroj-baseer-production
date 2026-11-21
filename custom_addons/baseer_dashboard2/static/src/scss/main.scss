@@ -843,7 +843,7 @@ td {
 .o_bd2 .mini-title { display: flex; align-items: center; gap: 8px; }
 .o_bd2 .mini-pill { white-space: nowrap; }
 .o_bd2 .ratio .bd2-gauge { margin-top: 30px; }
-.o_bd2 .gauge-target { position: absolute; bottom: 12px; left: 50%; /*rtl:ignore*/ transform: translateX(-50%); white-space: nowrap; color: var(--bd2-muted); font-size: 10px; font-weight: 400; }
+.o_bd2 .gauge-target { position: absolute; bottom: 12px; /*rtl:ignore*/ left: 50%; /*rtl:ignore*/ transform: translateX(-50%); white-space: nowrap; color: var(--bd2-muted); font-size: 10px; font-weight: 400; }
 .o_bd2 .channel-split { display: flex; direction: rtl; width: 100%; height: 6px; border-radius: 4px; overflow: hidden; }
 .o_bd2 .channel-split i:first-child { background: var(--bd2-c1); }
 .o_bd2 .channel-split i:last-child { background: var(--bd2-gold); }

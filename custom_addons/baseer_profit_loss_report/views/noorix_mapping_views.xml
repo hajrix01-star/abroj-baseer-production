@@ -1,0 +1,14 @@
+<odoo>
+  <record id="noorix_mapping_list" model="ir.ui.view">
+    <field name="name">baseer.pl.noorix.channel.mapping.list</field>
+    <field name="model">baseer.pl.noorix.channel.mapping</field>
+    <field name="arch" type="xml"><list><field name="company_id" groups="base.group_multi_company"/><field name="source_channel"/><field name="payment_method_id"/><field name="date_from"/><field name="date_to"/><field name="approval_reference"/><field name="revoked"/></list></field>
+  </record>
+  <record id="noorix_mapping_form" model="ir.ui.view">
+    <field name="name">baseer.pl.noorix.channel.mapping.form</field>
+    <field name="model">baseer.pl.noorix.channel.mapping</field>
+    <field name="arch" type="xml"><form string="ربط عرض قنوات نوركس"><sheet><div class="alert alert-info">تجميع للعرض فقط؛ لا يغير القيود أو يوزع الضريبة. لإصلاح ربط معتمد، ألغِه بسبب موثق ثم أنشئ ربطًا جديدًا.</div><group><field name="company_id" readonly="id"/><field name="source_channel" readonly="id"/><field name="payment_method_id" readonly="id"/><field name="date_from" readonly="id"/><field name="date_to" readonly="id"/><field name="approval_reference" readonly="id"/><field name="revoked" invisible="not id"/><field name="revocation_reason" invisible="not revoked"/><field name="revoked_by_id" invisible="not revoked"/><field name="revoked_at" invisible="not revoked"/></group></sheet></form></field>
+  </record>
+  <record id="action_noorix_mapping" model="ir.actions.act_window"><field name="name">ربط عرض قنوات نوركس</field><field name="res_model">baseer.pl.noorix.channel.mapping</field><field name="view_mode">list,form</field></record>
+  <menuitem id="menu_noorix_mapping" name="ربط عرض قنوات نوركس" parent="account.menu_finance_configuration" action="action_noorix_mapping" groups="account.group_account_manager" sequence="90"/>
+</odoo>

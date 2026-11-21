@@ -443,6 +443,195 @@ class TestProfitLoss(TransactionCase):
         finally:
             rule.unlink()
 
+    def test_explicit_noorix_mapping_groups_with_native_pos_and_keeps_sources(self):
+        if 'baseer.noorix.sales.evidence' not in self.env or 'pos.order' not in self.env:
+            self.skipTest('Optional Noorix and POS sources are unavailable')
+        from .test_unified_export import TestUnifiedExport
+        sar = self.env.ref('base.SAR')
+        sar.active = True
+        self.company.currency_id = sar
+        self.cash = self.env['account.account'].create({
+            'code': '959118', 'name': 'Native POS cash', 'account_type': 'asset_cash',
+            'company_ids': [Command.set(self.company.ids)],
+        })
+        self.income = self.accounts['income']
+        orders, pos_move, _reader = TestUnifiedExport._native_channel_orders(self, count=1)
+        method = orders.payment_ids.payment_method_id
+        self.env['baseer.pl.noorix.channel.mapping'].create({
+            'company_id': self.company.id, 'source_channel': 'cash', 'payment_method_id': method.id,
+            'date_from': '2044-10-01', 'date_to': '2044-10-31', 'approval_reference': 'Synthetic approval',
+        })
+        noorix = self.env['account.move'].with_company(self.company).create({
+            'date': '2044-10-19', 'journal_id': self.journal.id,
+            'ref': 'NOORIX-SALES SHAMI 2044-10-19 | src:group-fixture',
+            'line_ids': [
+                Command.create({'name': 'Noorix sales cash 2044-10-19', 'account_id': self.cash.id, 'debit': 20}),
+                Command.create({'name': 'Noorix sales', 'account_id': self.income.id, 'credit': 20}),
+            ],
+        })
+        noorix.action_post()
+        filters = {**self.filters, 'date_from': '2044-10-01', 'date_to': '2044-10-31', 'tax_inclusive': True}
+        details = self.report.get_accounts(filters, 'income')['accounts']
+        account = next(row for row in details if row['id'] == self.income.id)
+        channel_key = 'payment_' + str(method.id)
+        self.assertEqual([(row['key'], row['amounts']['current']['amount']) for row in account['channels']],
+                         [(channel_key, '120.00')])
+        selector = {'kind': 'channel', 'account_id': self.income.id,
+                    'channel_key': channel_key, 'period_key': 'current'}
+        drilled = self.report._get_drilldown(filters, selector)
+        self.assertEqual(drilled['value'], '120.00')
+        self.assertEqual({row['source']['move_id'] for row in drilled['rows']}, {pos_move.id, noorix.id})
+        self.assertEqual(sum(Decimal(row['cells']['amount'].replace(',', '')) for row in drilled['rows']), Decimal('120.00'))
+        doc = self.report._get_export_document(filters)
+        channel_rows = [row for row in doc['rows'] if row.get('indent') == 2]
+        self.assertEqual(len(channel_rows), 1)
+        self.assertEqual(channel_rows[0]['cells']['current'], Decimal('120.00'))
+
+    def test_noorix_explicit_mapping_is_scoped_and_drillable(self):
+        if 'baseer.noorix.sales.evidence' not in self.env or 'pos.payment.method' not in self.env:
+            self.skipTest('Optional Noorix and POS sources are unavailable')
+        sar = self.env.ref('base.SAR')
+        sar.active = True
+        self.company.currency_id = sar
+        Account = self.env['account.account'].with_company(self.company)
+        receivable = Account.create({'code': '959115', 'name': 'Mapping receivable',
+                                     'account_type': 'asset_receivable', 'reconcile': True,
+                                     'company_ids': [Command.set(self.company.ids)]})
+        funding = Account.create({'code': '959116', 'name': 'Noorix funding', 'account_type': 'asset_current',
+                                  'company_ids': [Command.set(self.company.ids)]})
+        cash = self.env['account.journal'].with_company(self.company).create({
+            'name': 'Mapping cash', 'code': 'MPC', 'type': 'cash', 'company_id': self.company.id,
+        })
+        method = self.env['pos.payment.method'].with_company(self.company).create({
+            'name': 'Approved cash', 'company_id': self.company.id,
+            'journal_id': cash.id, 'receivable_account_id': receivable.id,
+        })
+        Mapping = self.env['baseer.pl.noorix.channel.mapping']
+        vals = {'company_id': self.company.id, 'source_channel': 'cash', 'payment_method_id': method.id,
+                'date_from': '2041-05-01', 'date_to': '2041-05-18', 'approval_reference': 'Owner test approval'}
+        mapping = Mapping.create(vals)
+        # Simulate a concurrent committed reservation invisible to the
+        # preliminary overlap query. Catching the error must not retain an
+        # unprotected parent mapping in this transaction.
+        self.cr.execute('''INSERT INTO baseer_pl_noorix_mapping_day
+            (mapping_id, company_id, source_channel, payment_method_id, day)
+            VALUES (%s,%s,%s,%s,%s)''',
+            [mapping.id, self.company.id, 'cash', method.id, '2041-06-01'])
+        with self.assertRaises(ValidationError):
+            Mapping.create({**vals, 'date_from': '2041-06-01', 'date_to': '2041-06-01',
+                            'approval_reference': 'unique race failure must not persist'})
+        self.assertFalse(Mapping.search([('approval_reference', '=', 'unique race failure must not persist')]))
+        self.cr.execute('DELETE FROM baseer_pl_noorix_mapping_day WHERE mapping_id=%s AND day=%s',
+                        [mapping.id, '2041-06-01'])
+        with self.assertRaises(ValidationError), self.cr.savepoint():
+            Mapping.create({**vals, 'date_from': '2041-05-18', 'date_to': '2041-05-20'})
+        with self.assertRaises(ValidationError), self.cr.savepoint():
+            Mapping.create({**vals, 'source_channel': 'bank'})
+        with self.assertRaises(ValidationError), self.cr.savepoint():
+            Mapping.create({**vals, 'date_from': '2041-06-01', 'date_to': '2041-05-01'})
+        foreign = self.env['res.company'].create({'name': 'Foreign mapping company'})
+        with self.assertRaises(ValidationError), self.cr.savepoint():
+            Mapping.create({**vals, 'company_id': foreign.id})
+        reader = self._accountant()
+        foreign_receivable = Account.with_company(foreign).create({
+            'code': '959117', 'name': 'Foreign mapping receivable', 'account_type': 'asset_receivable',
+            'reconcile': True, 'company_ids': [Command.set(foreign.ids)],
+        })
+        foreign_journal = self.env['account.journal'].with_company(foreign).create({
+            'name': 'Foreign mapping cash', 'code': 'FMC', 'type': 'cash', 'company_id': foreign.id,
+        })
+        foreign_method = self.env['pos.payment.method'].with_company(foreign).create({
+            'name': 'Foreign cash', 'company_id': foreign.id, 'journal_id': foreign_journal.id,
+            'receivable_account_id': foreign_receivable.id,
+        })
+        foreign_mapping = Mapping.with_company(foreign).create({
+            **vals, 'company_id': foreign.id, 'payment_method_id': foreign_method.id,
+        })
+        visible = Mapping.with_user(reader).with_context(allowed_company_ids=self.company.ids)
+        self.assertFalse(visible.search([('id', '=', foreign_mapping.id)]))
+        with self.assertRaises(AccessError), self.cr.savepoint():
+            visible.browse(foreign_mapping.id).read(['source_channel'])
+        with self.assertRaises(AccessError), self.cr.savepoint():
+            Mapping.with_user(reader).create(vals)
+
+        def source(day, amount):
+            move = self.env['account.move'].with_company(self.company).create({
+                'date': day, 'journal_id': self.journal.id, 'move_type': 'entry',
+                'ref': 'NOORIX-SALES SHAMI ' + day + ' | src:map-' + day,
+                'line_ids': [
+                    Command.create({'name': 'Noorix sales cash ' + day, 'account_id': funding.id, 'debit': amount}),
+                    Command.create({'name': 'Noorix sales', 'account_id': self.accounts['income'].id, 'credit': amount}),
+                ],
+            })
+            move.action_post()
+            return move
+        inside = source('2041-05-10', 20)
+        outside = source('2041-05-19', 30)
+        details = self.report.get_accounts(self.filters, 'income')['accounts']
+        account = next(item for item in details if item['id'] == self.accounts['income'].id)
+        channels = {item['key']: item['amounts']['current']['amount'] for item in account['channels']}
+        self.assertEqual(channels['payment_' + str(method.id)], '20.00')
+        self.assertEqual(channels['noorix_cash'], '30.00')
+        self.assertEqual(account['amounts']['current']['amount'], '50.00')
+        selector = {'kind': 'channel', 'account_id': self.accounts['income'].id,
+                    'channel_key': 'payment_' + str(method.id), 'period_key': 'current'}
+        drilled = self.report._get_drilldown(self.filters, selector)
+        self.assertEqual(drilled['value'], '20.00')
+        self.assertEqual(drilled['total_count'], 1)
+        self.assertEqual(self.report._open_drill_source(self.filters, drilled['rows'][0]['source'])['res_id'], inside.id)
+        document = self.report._get_export_document(self.filters)
+        amounts = [row['cells']['current'] for row in document['rows'] if row.get('indent') == 2]
+        self.assertEqual(sum(amounts), Decimal('50.00'))
+        comparison = {'company_id': self.company.id, 'journal_ids': [],
+                      'period': {'kind': 'month', 'anchor_date': '2041-05-01', 'direction': 0},
+                      'comparison': {'kind': 'previous_period', 'count': 1, 'order': 'descending'}}
+        compared = self.report.get_accounts(comparison, 'income')['accounts']
+        compared = next(item for item in compared if item['id'] == self.accounts['income'].id)
+        mapped = next(item for item in compared['channels'] if item['key'] == 'payment_' + str(method.id))
+        self.assertEqual(mapped['amounts']['previous_1']['amount'], '0.00')
+        previous = self.report._get_drilldown(comparison, {**selector, 'period_key': 'previous_1'})
+        self.assertEqual(previous['value'], '0.00')
+        self.assertEqual(previous['total_count'], 0)
+        rule = self._hide_record('baseer.pl.noorix.channel.mapping', mapping)
+        try:
+            user_report = self.report.with_user(reader).with_context(allowed_company_ids=self.company.ids)
+            with self.assertRaises(AccessError):
+                user_report.get_accounts(self.filters, 'income')
+        finally:
+            rule.unlink()
+        method.active = False
+        inactive = self.report.get_accounts(self.filters, 'income')['accounts']
+        inactive = next(item for item in inactive if item['id'] == self.accounts['income'].id)
+        self.assertNotIn('payment_' + str(method.id), [item['key'] for item in inactive['channels']])
+        method.active = True
+        with self.assertRaises(AccessError), self.cr.savepoint():
+            mapping.write({'approval_reference': 'Edited without audit'})
+        mapping.write({'revoked': True, 'revocation_reason': 'Replace the approved target'})
+        revoked = self.report.get_accounts(self.filters, 'income')['accounts']
+        revoked = next(item for item in revoked if item['id'] == self.accounts['income'].id)
+        self.assertNotIn('payment_' + str(method.id), [item['key'] for item in revoked['channels']])
+        replacement = self.env['pos.payment.method'].with_company(self.company).create({
+            'name': 'Replacement cash', 'company_id': self.company.id,
+            'journal_id': cash.id, 'receivable_account_id': receivable.id,
+        })
+        Mapping.create({**vals, 'payment_method_id': replacement.id,
+                        'approval_reference': 'Owner replacement approval'})
+        replacement_key = 'payment_' + str(replacement.id)
+        updated = self.report.get_accounts(self.filters, 'income')['accounts']
+        updated = next(item for item in updated if item['id'] == self.accounts['income'].id)
+        self.assertEqual(next(item for item in updated['channels'] if item['key'] == replacement_key)
+                         ['amounts']['current']['amount'], '20.00')
+        self.assertEqual(self.report._get_drilldown(self.filters, {**selector, 'channel_key': replacement_key})
+                         ['value'], '20.00')
+        document = self.report._get_export_document(self.filters)
+        self.assertEqual(sum(row['cells']['current'] for row in document['rows'] if row.get('indent') == 2),
+                         Decimal('50.00'))
+        exclusive = self.report.get_accounts({**self.filters, 'tax_inclusive': False}, 'income')['accounts']
+        self.assertEqual(next(item for item in exclusive if item['id'] == self.accounts['income'].id)
+                         ['amounts']['current']['amount'], '50.00')
+        self.assertEqual(outside.state, 'posted')
+        self.assertEqual(mapping.company_id, self.company)
+
     def test_empty_reversal_and_late_posting_changes_rerun(self):
         empty = self.report.get_report(self.filters)
         self.assertEqual(empty['net_profit']['amount'], '0.00')

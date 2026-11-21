@@ -455,7 +455,7 @@ class TestProfitLoss(TransactionCase):
             'company_ids': [Command.set(self.company.ids)],
         })
         self.income = self.accounts['income']
-        orders, pos_move, _reader = TestUnifiedExport._native_channel_orders(self, count=1)
+        orders, pos_move, reader = TestUnifiedExport._native_channel_orders(self, count=1)
         method = orders.payment_ids.payment_method_id
         self.env['baseer.pl.noorix.channel.mapping'].create({
             'company_id': self.company.id, 'source_channel': 'cash', 'payment_method_id': method.id,
@@ -486,6 +486,19 @@ class TestProfitLoss(TransactionCase):
         channel_rows = [row for row in doc['rows'] if row.get('indent') == 2]
         self.assertEqual(len(channel_rows), 1)
         self.assertEqual(channel_rows[0]['cells']['current'], Decimal('120.00'))
+        # This synthetic fixture links the already posted move directly; close
+        # its test session before archiving, as the native method guard requires.
+        orders.session_id.write({'state': 'closed'})
+        method.active = False
+        archived = self.report.get_accounts(filters, 'income')['accounts']
+        archived = next(row for row in archived if row['id'] == self.income.id)
+        self.assertEqual([(row['key'], row['amounts']['current']['amount']) for row in archived['channels']],
+                         [(channel_key, '120.00')])
+        drilled = self.report._get_drilldown(filters, selector)
+        self.assertEqual({row['source']['move_id'] for row in drilled['rows']}, {pos_move.id, noorix.id})
+        self.assertEqual(drilled['value'], '120.00')
+        self.assertEqual(reader._get_drilldown(filters, selector)['value'], '120.00')
+        self.assertFalse(method.active)
 
     def test_noorix_explicit_mapping_is_scoped_and_drillable(self):
         if 'baseer.noorix.sales.evidence' not in self.env or 'pos.payment.method' not in self.env:

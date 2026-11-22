@@ -117,8 +117,21 @@ class RepresentativePettyCashAggregate(models.Model):
             ('representative_partner_id', '=', representative.id),
             ('state', '=', 'posted'),
         ])
+        native_spend, _ = self._native_custody_spend(company, representative.id)
         return (Decimal(str(funded)) - Decimal(str(returned)) - Decimal(str(reversed_funding))
-                - Decimal(str(historical)) - Decimal(str(settled))).quantize(MONEY_QUANTUM)
+                - Decimal(str(historical)) - Decimal(str(settled)) - native_spend).quantize(MONEY_QUANTUM)
+
+    def _native_custody_spend(self, company, representative_id, start=None, end=None):
+        """Return net native purchases split at the month, or the overall total."""
+        self._flush_native_custody_activity()
+        activity = self._native_custody_activity_sql()
+        self.env.cr.execute(f'''
+            SELECT COALESCE(SUM(amount::numeric) FILTER (WHERE %(start)s::date IS NULL OR day < %(start)s), 0),
+                   COALESCE(SUM(amount::numeric) FILTER (WHERE day >= %(start)s AND day < %(end)s), 0)
+              FROM ({activity}) native_activity
+        ''', {'company': company.id, 'partner': representative_id or None, 'start': start, 'end': end})
+        previous, current = self.env.cr.fetchone()
+        return Decimal(str(previous)), Decimal(str(current))
 
     @api.model
     def submit_funding(self, request_id, payment_journal_id, representative_partner_id, amount, client_token,
@@ -245,13 +258,15 @@ class RepresentativePettyCashAggregate(models.Model):
         self.env['baseer.procurement.representative.petty.cash.invoice.settlement'].flush_model(
             ['company_id', 'representative_partner_id', 'move_id', 'amount', 'state'])
         self.env['account.move'].flush_model(['company_id', 'date'])
+        self._flush_native_custody_activity()
+        native_activity = self._native_custody_activity_sql()
         params = {
             'company': company.id,
-            'partner': int(representative_id) if representative_id else 0,
+            'partner': int(representative_id) if representative_id else None,
             'before': month_start,
             'window_start': month_start - relativedelta(months=12),
         }
-        self.env.cr.execute('''
+        self.env.cr.execute(f'''
             WITH activity AS (
                 SELECT a.representative_partner_id AS partner_id, a.movement_date AS day,
                        CASE WHEN a.movement_type = 'funding' THEN a.amount::numeric
@@ -259,20 +274,24 @@ class RepresentativePettyCashAggregate(models.Model):
                   FROM baseer_procurement_representative_advance a
                  WHERE a.company_id = %(company)s AND a.state = 'posted'
                    AND a.movement_date < %(before)s
-                   AND (%(partner)s = 0 OR a.representative_partner_id = %(partner)s)
+                   AND (%(partner)s IS NULL OR a.representative_partner_id = %(partner)s)
                 UNION ALL
                 SELECT a.representative_partner_id, m.date, -s.amount::numeric
                   FROM baseer_procurement_representative_advance_settlement s
                   JOIN baseer_procurement_representative_advance a ON a.id = s.advance_id AND a.company_id = s.company_id
                   JOIN account_move m ON m.id = s.move_id AND m.company_id = s.company_id
                  WHERE s.company_id = %(company)s AND s.state = 'posted' AND m.date < %(before)s
-                   AND (%(partner)s = 0 OR a.representative_partner_id = %(partner)s)
+                   AND (%(partner)s IS NULL OR a.representative_partner_id = %(partner)s)
                 UNION ALL
                 SELECT s.representative_partner_id, m.date, -s.amount::numeric
                   FROM baseer_procurement_representative_petty_cash_invoice_settlement s
                   JOIN account_move m ON m.id = s.move_id AND m.company_id = s.company_id
                  WHERE s.company_id = %(company)s AND s.state = 'posted' AND m.date < %(before)s
-                   AND (%(partner)s = 0 OR s.representative_partner_id = %(partner)s)
+                   AND (%(partner)s IS NULL OR s.representative_partner_id = %(partner)s)
+                UNION ALL
+                SELECT partner_id, day, -amount::numeric
+                  FROM ({native_activity}) native_activity
+                 WHERE day < %(before)s
             ), totals AS (
                 SELECT partner_id,
                        CASE WHEN day < %(window_start)s THEN NULL
@@ -336,15 +355,17 @@ class RepresentativePettyCashAggregate(models.Model):
         self.env['baseer.procurement.request'].flush_model(['company_id', 'name'])
         self.env['res.partner'].flush_model(['name'])
         self.env['account.move'].flush_model(['company_id', 'date'])
+        self._flush_native_custody_activity()
+        native_activity = self._native_custody_activity_sql()
         can_see_purchase_reference = (
             self.env.user.has_group('baseer_procurement_requests.group_procurement_accountant')
             or self.env.user.has_group('baseer_procurement_requests.group_procurement_manager')
             or self.env.user.has_group('base.group_system')
         )
-        params = {'company': company.id, 'partner': int(representative_id) if representative_id else 0,
+        params = {'company': company.id, 'partner': int(representative_id) if representative_id else None,
                   'start': start, 'end': end, 'search': search, 'movement_type': movement_type,
                   'offset': offset, 'can_see_purchase_reference': can_see_purchase_reference}
-        self.env.cr.execute('''
+        self.env.cr.execute(f'''
             SELECT activity.source, activity.id, activity.day, activity.movement_type, activity.partner_id,
                    activity.amount, activity.reference, activity.request_id, activity.request_name FROM (
                 SELECT 'movement' AS source, a.id, a.movement_date AS day, a.movement_type,
@@ -354,7 +375,7 @@ class RepresentativePettyCashAggregate(models.Model):
                   LEFT JOIN baseer_procurement_request r ON r.id = a.procurement_request_id AND r.company_id = a.company_id
                  WHERE a.company_id = %(company)s AND a.state = 'posted'
                    AND a.movement_date >= %(start)s AND a.movement_date < %(end)s
-                   AND (%(partner)s = 0 OR a.representative_partner_id = %(partner)s)
+                   AND (%(partner)s IS NULL OR a.representative_partner_id = %(partner)s)
                 UNION ALL
                 SELECT 'historical', s.id, m.date, 'purchase', a.representative_partner_id, s.amount, b.name, NULL::integer, NULL::varchar
                   FROM baseer_procurement_representative_advance_settlement s
@@ -363,7 +384,7 @@ class RepresentativePettyCashAggregate(models.Model):
                   JOIN account_move m ON m.id = s.move_id AND m.company_id = s.company_id
                  WHERE s.company_id = %(company)s AND s.state = 'posted'
                    AND m.date >= %(start)s AND m.date < %(end)s
-                   AND (%(partner)s = 0 OR a.representative_partner_id = %(partner)s)
+                   AND (%(partner)s IS NULL OR a.representative_partner_id = %(partner)s)
                 UNION ALL
                 SELECT 'invoice', s.id, m.date, 'purchase', s.representative_partner_id, s.amount, l.supplier_ref, NULL::integer, NULL::varchar
                   FROM baseer_procurement_representative_petty_cash_invoice_settlement s
@@ -371,7 +392,11 @@ class RepresentativePettyCashAggregate(models.Model):
                   JOIN account_move m ON m.id = s.move_id AND m.company_id = s.company_id
                  WHERE s.company_id = %(company)s AND s.state = 'posted'
                    AND m.date >= %(start)s AND m.date < %(end)s
-                   AND (%(partner)s = 0 OR s.representative_partner_id = %(partner)s)
+                   AND (%(partner)s IS NULL OR s.representative_partner_id = %(partner)s)
+                UNION ALL
+                SELECT 'native_payment', id, day, 'purchase', partner_id, amount, reference, NULL::integer, NULL::varchar
+                  FROM ({native_activity}) native_activity
+                 WHERE day >= %(start)s AND day < %(end)s
             ) activity
             LEFT JOIN res_partner p ON p.id = activity.partner_id
             WHERE (%(movement_type)s = '' OR activity.movement_type = %(movement_type)s)
@@ -396,6 +421,21 @@ class RepresentativePettyCashAggregate(models.Model):
             'request_id': request_id or False, 'request_name': request_name or '',
         } for source, record_id, day, movement_type, partner_id, amount, reference, request_id, request_name in visible], len(rows) > 100
 
+    def _dashboard_history_representatives(self, company, active_representatives):
+        """Keep former representatives selectable only in the history filters."""
+        Partner = self.env['res.partner'].sudo()
+        posted = self.sudo()._read_group(
+            [('company_id', '=', company.id), ('state', '=', 'posted')], ['representative_partner_id'],
+        )
+        journals = self.env['account.journal'].sudo().with_context(active_test=False).search([
+            ('company_id', '=', company.id), ('baseer_custody_representative_id', '!=', False),
+        ])
+        historical = Partner.browse([partner.id for partner, in posted]) | journals.baseer_custody_representative_id
+        active = Partner.browse([row['id'] for row in active_representatives])
+        return [{'id': partner.id, 'display_name': partner.display_name} for partner in (active | historical).sorted(
+            key=lambda partner: (partner.name or '', partner.id),
+        )]
+
     def _dashboard_data(self, representative_id=False, month_start=False):
         data = super()._dashboard_data(representative_id, month_start)
         company = self.env.company
@@ -409,8 +449,8 @@ class RepresentativePettyCashAggregate(models.Model):
         movement = [('company_id', '=', company.id), ('state', '=', 'posted')]
         historical = [('company_id', '=', company.id), ('state', '=', 'posted')]
         invoices = [('company_id', '=', company.id), ('state', '=', 'posted')]
-        if representative_id:
-            partner_id = int(representative_id)
+        partner_id = int(representative_id) if representative_id else None
+        if partner_id:
             movement.append(('representative_partner_id', '=', partner_id))
             historical.append(('advance_id.representative_partner_id', '=', partner_id))
             invoices.append(('representative_partner_id', '=', partner_id))
@@ -429,6 +469,9 @@ class RepresentativePettyCashAggregate(models.Model):
 
         previous_funded, previous_returned, previous_settled, previous_reversed = period([('<', start)])
         funded, returned, settled, reversed_funding = period([('>=', start), ('<', end)])
+        previous_native_spend, native_spend = self._native_custody_spend(company, partner_id, start, end)
+        settled = (settled + native_spend).quantize(MONEY_QUANTUM)
+        previous_settled = (previous_settled + previous_native_spend).quantize(MONEY_QUANTUM)
         opening = previous_funded - previous_returned - previous_settled - previous_reversed
         closing = opening + funded - returned - settled - reversed_funding
         data['summary'].update({
@@ -437,9 +480,10 @@ class RepresentativePettyCashAggregate(models.Model):
             'closing': float(closing.quantize(MONEY_QUANTUM)),
             'remaining': float(closing.quantize(MONEY_QUANTUM)),
         })
-        if representative_id:
-            representative = self.env['res.partner'].browse(int(representative_id)).exists()
+        if partner_id:
+            representative = self.env['res.partner'].browse(partner_id).exists()
             data['summary']['available'] = float(self._baseer_representative_available_amount(company, representative)) if representative else 0.0
+        data['history_representatives'] = self._dashboard_history_representatives(company, data['representatives'])
         data['carryovers'] = self._dashboard_carryovers(company, representative_id, start)
         data['daily_movements'], data['daily_movements_truncated'] = self._dashboard_daily_movements(
             company, representative_id, start, end,

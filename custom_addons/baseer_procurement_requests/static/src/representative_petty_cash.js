@@ -232,7 +232,7 @@ export class RepresentativePettyCash extends Component {
     }
 
     representativeLabel() {
-        return this.selectionLabel(this.state.data?.representatives, this.state.representativeId, _t("All representatives"));
+        return this.selectionLabel(this.state.data?.history_representatives ?? this.state.data?.representatives, this.state.representativeId, _t("All representatives"));
     }
 
     requestLabel() {

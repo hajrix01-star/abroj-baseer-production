@@ -16,10 +16,20 @@ using System.Runtime.InteropServices;
 var configPath = Path.Combine(AgentRuntime.DataDirectory, "config.json");
 var executablePath = Environment.ProcessPath ?? throw new InvalidOperationException("Agent executable path is unavailable.");
 
+AppDomain.CurrentDomain.UnhandledException += (_, e) =>
+    AgentDiagnostics.Record(null, "start", "process_failed", e.ExceptionObject as Exception);
+
+// Read-only local diagnostics are available before configuration/pairing checks.
+if (args.Length == 1 && args[0].Equals("status", StringComparison.OrdinalIgnoreCase))
+    return AgentStatusWindow.Run();
+
 if (args.Length > 0 && args[0].Equals("preview-kitchen", StringComparison.OrdinalIgnoreCase))
     return KitchenTicketPreview.Run(args.Skip(1).ToArray());
 
 #if QA_PROFILE
+// Double-clicking a QA build opens read-only diagnostics, never the installer/worker.
+if (args.Length == 0)
+    return AgentStatusWindow.Run();
 if (args.Length == 0 || !AutoUpdate.IsLimitedUser()
     || args[0] is not ("watch" or "run-supervised"))
     return 2;
@@ -174,6 +184,7 @@ sealed class PrintAgent
     private readonly AgentConfig _config;
     private readonly string _configPath;
     private readonly HttpClient _http;
+    private DateTimeOffset _nextDiagnosticHeartbeat;
 
     public PrintAgent(AgentConfig config, string configPath)
     {
@@ -201,6 +212,7 @@ sealed class PrintAgent
             AgentLog.Write($"{AgentName}: another agent is already running on this Windows computer.");
             return 1;
         }
+        using var statusTray = AgentStatusWindow.StartTray();
         try
         {
             AgentRuntime.WriteCurrentId(_configPath);
@@ -216,6 +228,7 @@ sealed class PrintAgent
 
     private async Task<int> RunLoopAsync(bool supervised, string? trialKey)
     {
+        AgentDiagnostics.Record(null, "start", "started");
         if (trialKey is not null)
         {
             await HeartbeatAsync();
@@ -232,18 +245,26 @@ sealed class PrintAgent
         Task<AgentUpdate?>? stage = null;
         while (true)
         {
+            var diagnosticStage = "connection";
             try
             {
                 await HeartbeatAsync();
                 await SyncPrintersAsync();
+                if (DateTimeOffset.UtcNow >= _nextDiagnosticHeartbeat)
+                {
+                    AgentDiagnostics.Record(null, "connection", "heartbeat");
+                    _nextDiagnosticHeartbeat = DateTimeOffset.UtcNow.AddSeconds(30);
+                }
                 if (supervised && stage is null && DateTimeOffset.UtcNow >= nextCheck)
                 {
                     nextCheck = DateTimeOffset.UtcNow + AutoUpdate.CheckInterval;
                     stage = AutoUpdate.StageAsync(_http);
                 }
+                diagnosticStage = "claim";
                 var job = await ClaimAsync();
                 if (job is not null)
                 {
+                    diagnosticStage = "persist";
                     await ExecuteAsync(job);
                     continue;
                 }
@@ -261,11 +282,19 @@ sealed class PrintAgent
             }
             catch (AgentRuntimeBusyException)
             {
+                AgentDiagnostics.Record(null, "connection", "runtime_busy");
                 await Task.Delay(TimeSpan.FromSeconds(10));
             }
             catch (Exception error)
             {
-                AgentLog.Write($"{AgentName}: {error.Message}");
+                var code = error switch
+                {
+                    IOException or UnauthorizedAccessException => "storage_failed",
+                    JsonException or KeyNotFoundException => "protocol_failed",
+                    HttpRequestException or OperationCanceledException => "connection_failed",
+                    _ => "process_failed"
+                };
+                AgentDiagnostics.Record(null, diagnosticStage, code, error);
                 await Task.Delay(TimeSpan.FromSeconds(5));
             }
         }
@@ -275,6 +304,7 @@ sealed class PrintAgent
     {
         foreach (var job in _config.InFlightJobs.ToList())
         {
+            AgentDiagnostics.Record(job.Id, "recovery", "recovery_unknown");
             try
             {
                 await PostAsync($"baseer/print/v1/jobs/{job.Id}/fail", new { lease_token = job.LeaseToken, error_code = "outcome_unknown", retryable = false, runtime_id = AgentRuntime.InstanceId });
@@ -283,7 +313,7 @@ sealed class PrintAgent
             {
                 // Do not respool an ambiguous job. The server lease expires to
                 // outcome_unknown, and this entry must not block startup.
-                AgentLog.Write($"{AgentName}: recovery for job {job.Id} was not acknowledged: {error.Message}");
+                AgentDiagnostics.Record(job.Id, "recovery", "ack_failed", error);
             }
             _config.InFlightJobs.Remove(job);
         }
@@ -313,33 +343,50 @@ sealed class PrintAgent
 
     private async Task ExecuteAsync(ClaimedJob job)
     {
+        AgentDiagnostics.Record(job.Id, "claim", "claimed");
         var durable = new InFlightJob { Id = job.Id, LeaseToken = job.LeaseToken };
         _config.InFlightJobs.Add(durable);
-        Save(); // durable before contacting the Windows spooler; a restart reports outcome_unknown.
+        try
+        {
+            Save(); // durable before contacting Windows; restart reports outcome_unknown.
+        }
+        catch (Exception error)
+        {
+            AgentDiagnostics.Record(job.Id, "persist", "storage_failed", error);
+            throw;
+        }
+        AgentDiagnostics.Record(job.Id, "persist", "inflight_saved");
         using var renewal = new CancellationTokenSource();
         var renewTask = RenewLeaseAsync(job, renewal.Token);
         var spoolAccepted = false;
         var outcomeReported = false;
         try
         {
-            ThermalPrinter.Print(job.Payload);
+            ThermalPrinter.Print(job.Payload, job.Id);
             spoolAccepted = true;
+            AgentDiagnostics.Record(job.Id, "submit", "spool_accepted");
             await PostAsync($"baseer/print/v1/jobs/{job.Id}/complete", new { lease_token = job.LeaseToken, runtime_id = AgentRuntime.InstanceId });
             outcomeReported = true;
+            AgentDiagnostics.Record(job.Id, "ack", "completed");
         }
-        catch (PrinterUnavailableException) when (!spoolAccepted)
+        catch (PrinterUnavailableException error) when (!spoolAccepted)
         {
+            AgentDiagnostics.Record(job.Id, "submit", "printer_offline", error);
             await PostAsync($"baseer/print/v1/jobs/{job.Id}/fail", new { lease_token = job.LeaseToken, error_code = "printer_offline", retryable = true, runtime_id = AgentRuntime.InstanceId });
             outcomeReported = true;
         }
-        catch (InvalidReceiptException) when (!spoolAccepted)
+        catch (InvalidReceiptException error) when (!spoolAccepted)
         {
+            AgentDiagnostics.Record(job.Id, "validate", "invalid_receipt", error);
             await PostAsync($"baseer/print/v1/jobs/{job.Id}/fail", new { lease_token = job.LeaseToken, error_code = "invalid_receipt", retryable = false, runtime_id = AgentRuntime.InstanceId });
             outcomeReported = true;
         }
-        catch
+        catch (Exception error)
         {
             var errorCode = spoolAccepted ? "outcome_unknown" : "print_failed";
+            var diagnosticCode = spoolAccepted ? "ack_failed"
+                : error is PrintOutcomeUnknownException ? "outcome_unknown" : "prepare_failed";
+            AgentDiagnostics.Record(job.Id, spoolAccepted ? "ack" : error is PrintOutcomeUnknownException ? "submit" : "prepare", diagnosticCode, error);
             await PostAsync($"baseer/print/v1/jobs/{job.Id}/fail", new { lease_token = job.LeaseToken, error_code = errorCode, retryable = false, runtime_id = AgentRuntime.InstanceId });
             outcomeReported = true;
         }
@@ -397,6 +444,7 @@ sealed class ClaimedJob
 sealed class PrinterUnavailableException : Exception { }
 sealed class InvalidReceiptException(string message) : Exception(message) { }
 sealed class AgentRuntimeBusyException : Exception { }
+sealed class PrintOutcomeUnknownException(Exception inner) : Exception("Windows submission result is unknown.", inner) { }
 
 static class AgentStorage
 {
@@ -435,8 +483,9 @@ static class ThermalPrinter
     private const float SessionReportMaxWidth = 270f;
     private record ReceiptRow(string Label, string Value = "", bool Strong = false, bool Divider = false);
 
-    public static void Print(JsonElement payload)
+    public static void Print(JsonElement payload, int? jobId = null)
     {
+        AgentDiagnostics.Record(jobId, "validate");
         var printer = payload.GetProperty("printer").GetProperty("machine_identifier").GetString() ?? "";
         var ticketType = GetString(payload, "ticket_type");
         var nativeReceipt = ticketType == "receipt" &&
@@ -484,14 +533,24 @@ static class ThermalPrinter
              nativeImage.Width != payload.GetProperty("receipt_image").GetProperty("width").GetInt32() ||
             nativeImage.Height != payload.GetProperty("receipt_image").GetProperty("height").GetInt32()))
             throw new InvalidReceiptException("The Odoo receipt image dimensions are invalid.");
+        if (nativeImage is not null)
+            AgentDiagnostics.Record(jobId, "validate", "image_validated", fingerprint: Convert.ToHexString(SHA256.HashData(nativeBytes)), width: nativeImage.Width, height: nativeImage.Height);
         // Thermal heads are binary (a dot is heated or not heated).  Supplying
         // an RGB JPEG lets a Windows driver dither every anti-aliased glyph,
         // which is perceived as a field of dots.  Quantise the audited image
         // locally, after checksum validation, so the driver receives crisp
         // black/white pixels without altering the stored receipt snapshot.
         using var thermalImage = nativeImage is null ? null : ToThermalMonochrome(nativeImage);
+        if (thermalImage is not null)
+        {
+            AgentDiagnostics.Record(jobId, "prepare", "image_prepared", width: thermalImage.Width, height: thermalImage.Height);
+            if (jobId is int captureJob) AgentDiagnostics.CaptureRaster(captureJob, nativeBytes, thermalImage);
+        }
         var printableNativeImage = thermalImage ?? nativeImage;
         using var document = new PrintDocument();
+        // A random document identity correlates Windows jobs without customer content.
+        document.DocumentName = "Baseer-" + Guid.NewGuid().ToString("N");
+        document.PrintController = new StandardPrintController();
         document.PrinterSettings.PrinterName = printer;
         if (!document.PrinterSettings.IsValid) throw new PrinterUnavailableException();
         var paperWidth = payload.GetProperty("printer").GetProperty("paper_width").GetString();
@@ -574,7 +633,21 @@ static class ThermalPrinter
             eventArgs.HasMorePages = kitchenRenderer.DrawPage(
                 eventArgs.Graphics, Left, kitchenWidth, eventArgs.PageBounds.Height - 15f);
         };
-        document.Print(); // confirms Windows spooler acceptance only; paper output is not observable programmatically.
+        AgentDiagnostics.Record(jobId, "submit", "spool_submitting");
+        try
+        {
+            document.Print(); // Windows acceptance, never proof that paper exited.
+        }
+        catch (Exception error)
+        {
+            AgentDiagnostics.Record(jobId, "submit", "outcome_unknown", error);
+            throw new PrintOutcomeUnknownException(error);
+        }
+        finally
+        {
+            if (jobId is int observedJob)
+                WindowsPrintObserver.Observe(observedJob, printer, document.DocumentName);
+        }
     }
 
     private static List<ReceiptRow> BuildReceiptRows(JsonElement payload)

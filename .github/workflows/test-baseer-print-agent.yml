@@ -1,0 +1,33 @@
+name: Test Baseer Windows print agent
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - services/baseer-print-agent/**
+      - .github/workflows/test-baseer-print-agent.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  agent-diagnostics:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build agent
+        run: dotnet build services/baseer-print-agent/Baseer.PrintAgent.csproj -c Release --nologo
+      - name: Verify diagnostics, raster and queue correlation without printing
+        shell: pwsh
+        run: |
+          $dll = 'services/baseer-print-agent/bin/Release/net8.0-windows/win-x64/Baseer.PrintAgent.dll'
+          & services/baseer-print-agent/qa/Test-AgentDiagnostics.ps1 -AgentDll $dll
+          & services/baseer-print-agent/qa/Test-RasterPixelScale.ps1 -AgentDll $dll
+          & services/baseer-print-agent/qa/Test-WindowsPrintObserver.ps1 -AgentDll $dll
+      - name: Build isolated QA profile
+        run: dotnet publish services/baseer-print-agent/Baseer.PrintAgent.csproj -c Release -p:QaProfile=true -o artifacts/print-agent-qa --nologo

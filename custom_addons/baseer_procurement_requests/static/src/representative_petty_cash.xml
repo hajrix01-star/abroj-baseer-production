@@ -18,93 +18,108 @@
             <section t-elif="state.error" class="alert alert-danger"><t t-esc="state.error"/></section>
             <t t-else="">
                 <section class="o_rep_pc_cards" aria-label="Monthly summary">
-                    <article><span>Transferred to representative</span><strong dir="ltr"><t t-esc="money(state.data.summary.funded)"/></strong></article>
-                    <article><span>Settled against purchases</span><strong dir="ltr"><t t-esc="money(state.data.summary.settled)"/></strong><small>Completed during invoice entry</small></article>
-                    <article class="is_total"><span>Remaining</span><strong dir="ltr"><t t-esc="money(state.data.summary.remaining)"/></strong></article>
+                    <article class="o_rep_pc_card is_carry"><div class="o_rep_pc_card_heading"><span>Carried forward</span><i class="fa fa-history" aria-hidden="true"/></div><strong dir="ltr"><t t-esc="money(state.data.summary.opening)"/></strong></article>
+                    <article class="o_rep_pc_card is_funded"><div class="o_rep_pc_card_heading"><span>Transferred to representative</span><i class="fa fa-arrow-down" aria-hidden="true"/></div><strong dir="ltr"><t t-esc="money(state.data.summary.funded)"/></strong></article>
+                    <article class="o_rep_pc_card is_purchase"><div class="o_rep_pc_card_heading"><span>Settled against purchases</span><i class="fa fa-shopping-basket" aria-hidden="true"/></div><strong dir="ltr"><t t-esc="money(state.data.summary.settled)"/></strong><small>Completed during invoice entry</small></article>
+                    <article class="o_rep_pc_card is_return"><div class="o_rep_pc_card_heading"><span>Returned this month</span><i class="fa fa-reply" aria-hidden="true"/></div><strong dir="ltr"><t t-esc="money(state.data.summary.returned)"/></strong></article>
+                    <article class="o_rep_pc_card is_reversal"><div class="o_rep_pc_card_heading"><span>Reversed this month</span><i class="fa fa-undo" aria-hidden="true"/></div><strong dir="ltr"><t t-esc="money(state.data.summary.reversed)"/></strong></article>
+                    <article class="o_rep_pc_card is_total"><div class="o_rep_pc_card_heading"><span>Month-end balance</span><i class="fa fa-calculator" aria-hidden="true"/></div><strong dir="ltr"><t t-esc="money(state.data.summary.closing)"/></strong></article>
                 </section>
-                <section t-if="state.data.can_record" class="o_rep_pc_entry" aria-label="Add petty cash">
-                    <h2>Add petty cash</h2>
-                    <p t-if="state.data.setup_issue" class="alert alert-warning mb-3"><t t-esc="state.data.setup_issue"/></p>
-                    <p t-elif="!state.data.payment_points_configured" class="alert alert-warning mb-3">
-                        No payment point is configured for Representative Petty Cash. Ask a manager to select the existing company payment points in the company settings.
-                    </p>
-                    <div class="o_rep_pc_grid">
-                        <label>Purchase request
-                            <Dropdown>
-                                <button type="button" class="o_rep_pc_select btn btn-light" t-att-title="requestLabel()"><span t-esc="requestLabel()"/><i class="fa fa-chevron-down" aria-hidden="true"/></button>
-                                <t t-set-slot="content">
-                                    <DropdownItem t-foreach="state.data.requests" t-as="request" t-key="request.id" onSelected="() => this.selectRequest(request.id)"><span class="o_rep_pc_request_option"><strong dir="ltr"><t t-esc="request.name"/></strong><span><t t-esc="request.representative_name"/></span><small dir="ltr"><t t-esc="requestDateTimeLabel(request)"/></small></span></DropdownItem>
-                                </t>
-                            </Dropdown>
-                        </label>
-                        <div class="o_rep_pc_request_total" t-if="selectedRequest()"><span>Purchase request value: <strong dir="ltr"><t t-esc="money(selectedRequest().amount)"/></strong></span><small><span>Request date:</span> <span><t t-esc="requestDateTimeLabel()"/></span></small></div>
-                        <label>From
-                            <Dropdown>
-                                <button type="button" class="o_rep_pc_select btn btn-light" t-att-title="paymentPointLabel()"><span t-esc="paymentPointLabel()"/><i class="fa fa-chevron-down" aria-hidden="true"/></button>
-                                <t t-set-slot="content">
-                                    <DropdownItem t-foreach="state.data.payment_points" t-as="point" t-key="point.id" onSelected="() => this.selectPaymentPoint(point.id)"><t t-esc="point.name"/></DropdownItem>
-                                </t>
-                            </Dropdown>
-                        </label>
-                        <label>To
-                            <Dropdown>
-                                <button type="button" class="o_rep_pc_select btn btn-light" t-att-title="destinationLabel()"><span t-esc="destinationLabel()"/><i class="fa fa-chevron-down" aria-hidden="true"/></button>
-                                <t t-set-slot="content">
-                                    <DropdownItem t-foreach="state.data.representatives" t-as="representative" t-key="representative.id" onSelected="() => this.selectDestination(representative.id)"><t t-esc="representative.display_name"/></DropdownItem>
-                                </t>
-                            </Dropdown>
-                        </label>
-                        <label>Amount
-                            <input class="form-control" type="number" min="0.01" step="0.01" inputmode="decimal" t-att-value="state.amount" t-on-input="onAmountInput"/>
-                        </label>
-                        <label>Transfer date
-                            <input class="form-control" type="date" t-att-value="state.movementDate" t-on-input="onMovementDateInput"/>
-                        </label>
-                        <button type="button" class="btn btn-primary" t-on-click="save" t-att-disabled="state.saving or state.data.setup_issue or !state.data.payment_points_configured"><t t-if="state.saving">Saving…</t><t t-else="">Save</t></button>
-                    </div>
+                <div class="o_rep_pc_toolbar">
+                    <div class="o_rep_pc_tabs"><button type="button" t-att-class="state.tab === 'movements' ? 'btn btn-primary' : 'btn btn-light'" t-on-click="() => state.tab = 'movements'">Daily movements</button><button type="button" t-att-class="state.tab === 'carryovers' ? 'btn btn-primary' : 'btn btn-light'" t-on-click="() => state.tab = 'carryovers'">Carryover history</button></div>
+                    <div t-if="state.data.can_record" class="o_rep_pc_actions"><button type="button" class="btn btn-primary" t-on-click="() => this.openEntry()">Add petty cash</button><button type="button" class="btn btn-outline-primary" t-on-click="() => this.openEntry('return')">Return remaining</button></div>
+                </div>
+                <section t-if="state.tab === 'movements'" class="o_rep_pc_rows">
+                    <h2>Daily movements</h2>
+                    <form class="o_rep_pc_table_filters" t-on-submit="searchMovements"><label>Search<input class="form-control" type="search" t-model="state.search" placeholder="Search movements"/></label><label>Movement<select class="form-select" t-att-value="state.movementType" t-on-change="filterMovements"><option value="">All movements</option><option value="funding">Petty cash given</option><option value="purchase">Purchase</option><option value="return">Cash returned</option><option value="reversal">Petty cash reversal</option></select></label><button type="submit" class="btn btn-secondary">Search</button></form>
+                    <p t-if="state.data.daily_movements_truncated">More matching movements are available. Monthly totals include all movements.</p>
+                    <p t-if="!state.data.daily_movements?.length" class="o_rep_pc_empty">No matching movements.</p>
+                    <table t-else="" class="o_rep_pc_daily_table"><thead><tr><th>Date</th><th>Movement</th><th>Representative</th><th>Reference</th><th>Amount</th><th t-if="state.data.can_record">Action</th></tr></thead><tbody>
+                        <tr t-foreach="state.data.daily_movements" t-as="movement" t-key="movement.key">
+                            <td t-att-data-label="dailyColumnLabels.date"><span dir="ltr"><t t-esc="movement.date"/></span></td>
+                            <td t-att-data-label="dailyColumnLabels.type"><t t-esc="dailyMovementLabel(movement.type)"/></td>
+                            <td t-att-data-label="dailyColumnLabels.representative"><t t-esc="movement.representative_name"/></td>
+                            <td t-att-data-label="dailyColumnLabels.reference"><t t-esc="movement.reference || '—'"/><span t-if="movement.request_id"> · <button type="button" class="btn btn-link p-0" t-on-click="() => this.openRequest(movement.request_id)"><t t-esc="movement.request_name"/></button></span></td>
+                            <td t-att-data-label="dailyColumnLabels.amount"><span dir="ltr"><t t-esc="money(movement.amount)"/></span></td>
+                            <td t-if="state.data.can_record" t-att-data-label="carryoverColumnLabels.action"><button t-if="movement.funding_id" type="button" class="btn btn-outline-secondary" t-on-click="() => this.openReversal(movement.funding_id)">Reverse</button></td>
+                        </tr>
+                    </tbody></table>
+                    <div class="o_rep_pc_pagination"><button t-if="state.movementOffset > 0" type="button" class="btn btn-light" t-on-click="() => this.loadMovements(state.movementOffset - 100)">Previous</button><button t-if="state.data.daily_movements_truncated" type="button" class="btn btn-light" t-on-click="() => this.loadMovements(state.movementOffset + 100)">Next</button></div>
                 </section>
-                <section t-if="state.data.can_record" class="o_rep_pc_entry" aria-label="Return petty cash">
-                    <h2>Return remaining</h2>
-                    <div class="o_rep_pc_grid">
-                        <label>Purchasing representative
-                            <Dropdown>
-                                <button type="button" class="o_rep_pc_select btn btn-light" t-att-title="returnRepresentativeLabel()"><span t-esc="returnRepresentativeLabel()"/><i class="fa fa-chevron-down" aria-hidden="true"/></button>
-                                <t t-set-slot="content">
-                                    <DropdownItem t-foreach="state.data.representatives" t-as="representative" t-key="representative.id" onSelected="() => this.selectReturnRepresentative(representative.id)"><t t-esc="representative.display_name"/></DropdownItem>
-                                </t>
-                            </Dropdown>
-                        </label>
-                        <label>To
-                            <Dropdown>
-                                <button type="button" class="o_rep_pc_select btn btn-light" t-att-title="returnPaymentPointLabel()"><span t-esc="returnPaymentPointLabel()"/><i class="fa fa-chevron-down" aria-hidden="true"/></button>
-                                <t t-set-slot="content">
-                                    <DropdownItem t-foreach="state.data.payment_points" t-as="point" t-key="point.id" onSelected="() => this.selectReturnPaymentPoint(point.id)"><t t-esc="point.name"/></DropdownItem>
-                                </t>
-                            </Dropdown>
-                        </label>
-                        <label>Amount<input class="form-control" type="number" min="0.01" step="0.01" inputmode="decimal" t-att-value="state.returnAmount" t-on-input="(event) => state.returnAmount = event.target.value"/></label>
-                        <button type="button" class="btn btn-outline-primary" t-on-click="saveReturn" t-att-disabled="state.saving or state.data.setup_issue or !state.data.payment_points_configured">Save return</button>
-                    </div>
-                </section>
-                <section t-if="!state.data.can_record" class="o_rep_pc_empty">Advances recorded at purchase receipt appear here. Contact the accountant for returns or corrections.</section>
-                <section class="o_rep_pc_rows">
-                    <h2>This month's movements</h2>
-                    <p t-if="!state.data.movements.length" class="o_rep_pc_empty">No movements in the selected month.</p>
-                    <table t-else=""><thead><tr><th>Date</th><th>Movement number</th><th>Purchase request</th><th>From</th><th>To</th><th>Amount</th></tr></thead><tbody>
-                        <tr t-foreach="state.data.movements" t-as="movement" t-key="movement.id">
-                            <td t-att-data-label="movementColumnLabels.date"><t t-esc="movement.date"/></td>
-                            <td t-att-data-label="movementColumnLabels.movement"><t t-esc="movement.name"/></td>
-                            <td t-att-data-label="movementColumnLabels.request">
-                                <button t-if="movement.request_id" type="button" class="btn btn-link p-0" t-on-click="() => this.openRequest(movement.request_id)"><t t-esc="movement.request_name"/></button>
-                                <t t-else="" t-esc="movement.request_name || 'Return'"/>
-                            </td>
-                            <td t-att-data-label="movementColumnLabels.from"><t t-esc="movement.from_name"/></td>
-                            <td t-att-data-label="movementColumnLabels.to"><t t-esc="movement.to_name"/></td>
-                            <td t-att-data-label="movementColumnLabels.amount" dir="ltr"><t t-esc="money(movement.amount)"/></td>
+                <section t-if="!state.data.can_record" class="o_rep_pc_empty">Contact the accountant to record transfers, returns, or corrections.</section>
+                <section t-if="state.tab === 'carryovers'" class="o_rep_pc_rows">
+                    <h2>Carryover history</h2>
+                    <p>Calculated month-end balances; no new transfer is recorded.</p>
+                    <p>Last 12 months, up to 60 balances. Select a representative to narrow the history.</p>
+                    <p t-if="!state.data.carryovers?.length" class="o_rep_pc_empty">No carryovers in the last 12 months.</p>
+                    <table t-else="" class="o_rep_pc_carryover_table"><thead><tr><th>Representative</th><th>From month</th><th>To month</th><th>Carried forward</th><th t-if="state.data.can_record">Action</th></tr></thead><tbody>
+                        <tr t-foreach="state.data.carryovers" t-as="carryover" t-key="carryover.representative_id + '-' + carryover.source_month">
+                            <td t-att-data-label="carryoverColumnLabels.representative"><t t-esc="carryover.representative_name"/></td>
+                            <td t-att-data-label="carryoverColumnLabels.from"><span dir="ltr"><t t-esc="carryover.source_month.slice(0, 7)"/></span></td>
+                            <td t-att-data-label="carryoverColumnLabels.to"><span dir="ltr"><t t-esc="carryover.destination_month.slice(0, 7)"/></span></td>
+                            <td t-att-data-label="carryoverColumnLabels.amount"><span dir="ltr"><t t-esc="money(carryover.amount)"/></span></td><td t-if="state.data.can_record" t-att-data-label="carryoverColumnLabels.action"><button type="button" class="btn btn-outline-primary" t-on-click="() => this.openSettlement(carryover.representative_id)">Settle</button></td>
                         </tr>
                     </tbody></table>
                 </section>
             </t>
         </main>
     </t>
+    <t t-name="baseer_procurement_requests.PettyCashEntryDialog"><Dialog title="title" size="'md'"><t t-set="o" t-value="props.owner"/><div class="o_rep_pc o_rep_pc_modal" t-att-dir="o.languageDirection()">                <section t-if="props.mode === &quot;funding&quot;" class="o_rep_pc_entry" aria-label="Add petty cash">
+                    <h2>Add petty cash</h2>
+                    <p t-if="state.data.setup_issue" class="alert alert-warning mb-3"><t t-esc="state.data.setup_issue"/></p>
+                    <p t-elif="!state.data.payment_points_configured" class="alert alert-warning mb-3">
+                        No payment point is configured for Representative Petty Cash. Ask a manager to select the existing company payment points in the company settings.
+                    </p>
+                    <div class="o_rep_pc_grid">
+                        <label>From
+                            <Dropdown>
+                                <button type="button" class="o_rep_pc_select btn btn-light" t-att-title="o.paymentPointLabel()"><span t-esc="o.paymentPointLabel()"/><i class="fa fa-chevron-down" aria-hidden="true"/></button>
+                                <t t-set-slot="content">
+                                    <DropdownItem t-foreach="state.data.payment_points" t-as="point" t-key="point.id" onSelected="() => o.selectPaymentPoint(point.id)"><t t-esc="point.name"/></DropdownItem>
+                                </t>
+                            </Dropdown>
+                        </label>
+                        <label>To
+                            <Dropdown>
+                                <button type="button" class="o_rep_pc_select btn btn-light" t-att-title="o.destinationLabel()"><span t-esc="o.destinationLabel()"/><i class="fa fa-chevron-down" aria-hidden="true"/></button>
+                                <t t-set-slot="content">
+                                    <DropdownItem t-foreach="state.data.representatives" t-as="representative" t-key="representative.id" onSelected="() => o.selectDestination(representative.id)"><t t-esc="representative.display_name"/></DropdownItem>
+                                </t>
+                            </Dropdown>
+                        </label>
+                        <label>Amount
+                            <input class="form-control" type="number" min="0.01" step="0.01" inputmode="decimal" t-att-value="state.amount" t-on-input="o.onAmountInput.bind(o)"/>
+                        </label>
+                        <label>Transfer date
+                            <input class="form-control" type="date" t-att-value="state.movementDate" t-on-input="o.onMovementDateInput.bind(o)"/>
+                        </label>
+                        <button type="button" class="btn btn-primary" t-on-click="submit" t-att-disabled="state.saving or state.data.setup_issue or !state.data.payment_points_configured"><t t-if="state.saving">Saving…</t><t t-else="">Save</t></button>
+                    </div>
+                </section>
+                <section t-if="props.mode === &quot;return&quot;" class="o_rep_pc_entry" aria-label="Return petty cash">
+                    <h2>Return remaining</h2>
+                    <div class="o_rep_pc_grid">
+                        <label>Purchasing representative
+                            <Dropdown>
+                                <button type="button" class="o_rep_pc_select btn btn-light" t-att-title="o.returnRepresentativeLabel()"><span t-esc="o.returnRepresentativeLabel()"/><i class="fa fa-chevron-down" aria-hidden="true"/></button>
+                                <t t-set-slot="content">
+                                    <DropdownItem t-foreach="state.data.representatives" t-as="representative" t-key="representative.id" onSelected="() => o.selectReturnRepresentative(representative.id)"><t t-esc="representative.display_name"/></DropdownItem>
+                                </t>
+                            </Dropdown>
+                        </label>
+                        <label>To
+                            <Dropdown>
+                                <button type="button" class="o_rep_pc_select btn btn-light" t-att-title="o.returnPaymentPointLabel()"><span t-esc="o.returnPaymentPointLabel()"/><i class="fa fa-chevron-down" aria-hidden="true"/></button>
+                                <t t-set-slot="content">
+                                    <DropdownItem t-foreach="state.data.payment_points" t-as="point" t-key="point.id" onSelected="() => o.selectReturnPaymentPoint(point.id)"><t t-esc="point.name"/></DropdownItem>
+                                </t>
+                            </Dropdown>
+                        </label>
+                        <label>Amount<input class="form-control" type="number" min="0.01" step="0.01" inputmode="decimal" t-att-value="state.returnAmount" t-on-input="(event) => state.returnAmount = event.target.value"/></label>
+                        <button type="button" class="btn btn-outline-primary" t-on-click="submit" t-att-disabled="state.saving or state.data.setup_issue or !state.data.payment_points_configured">Save return</button>
+                    </div>
+                </section>
+</div></Dialog></t>
+    <t t-name="baseer_procurement_requests.PettyCashSettlementDialog"><Dialog title="title" size="'md'"><div class="o_rep_pc_settlement"><p>Choose how to settle the representative's current balance.</p><button type="button" class="btn btn-primary" t-on-click="purchases">Settle against purchases</button><button type="button" class="btn btn-outline-primary" t-on-click="returnCash">Return remaining</button></div></Dialog></t>
+    <t t-name="baseer_procurement_requests.PettyCashReversalDialog"><Dialog title="title" size="'md'"><div class="o_rep_pc_reversal"><p>Reverse the complete entry, then record the correct petty cash entry. The original remains in the history.</p><label>Reversal date<input class="form-control" type="date" t-model="state.date"/></label><label>Reason<textarea class="form-control" t-model="state.reason" maxlength="500"/></label><button type="button" class="btn btn-primary" t-on-click="reverse" t-att-disabled="state.saving"><t t-if="state.saving">Saving…</t><t t-else="">Reverse entry</t></button></div></Dialog></t>
 </templates>

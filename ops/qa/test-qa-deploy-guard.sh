@@ -93,6 +93,72 @@ expect_failed preview-on-primary 'requires the isolated preview target' preview_
 expect_failed primary-on-preview 'only the approved standalone report' preview_scope --noorix-preview baseer-2026-11-22-noorix-net-estimate 123
 preview_scope baseer-2026-11-22-noorix-net-estimate 123
 
+route_case() (
+    load_guard
+    explicit_preview=0 target=primary
+    local json=$1 expected=$2
+    qa_serve_status() { printf '%s\n' "$json"; }
+    select_active_target
+    [ "$target" = "$expected" ]
+)
+primary_route='{"TCP":{"8443":{"HTTPS":true}},"Web":{"baseer-live-qa.tail938958.ts.net:8443":{"Handlers":{"/":{"Proxy":"http://127.0.0.1:18134"}}}}}'
+preview_route='{"TCP":{"8443":{"HTTPS":true}},"Web":{"baseer-live-qa.tail938958.ts.net:8443":{"Handlers":{"/":{"Proxy":"http://127.0.0.1:18140"}}}}}'
+route_case "$primary_route" primary
+route_case "$preview_route" noorix-preview
+expect_failed route-absent 'cannot safely determine active QA route' route_case '{}' primary
+expect_failed route-extra 'cannot safely determine active QA route' route_case '{"TCP":{"8443":{"HTTPS":true},"443":{"HTTPS":true}},"Web":{}}' primary
+expect_failed route-wrong-proxy 'cannot safely determine active QA route' route_case '{"TCP":{"8443":{"HTTPS":true}},"Web":{"baseer-live-qa.tail938958.ts.net:8443":{"Handlers":{"/":{"Proxy":"http://127.0.0.1:18141"}}}}}' primary
+expect_failed route-public-proxy 'cannot safely determine active QA route' route_case '{"TCP":{"8443":{"HTTPS":true}},"Web":{"baseer-live-qa.tail938958.ts.net:8443":{"Handlers":{"/":{"Proxy":"http://0.0.0.0:18140"}}}}}' primary
+expect_failed route-duplicate-key 'cannot safely determine active QA route' route_case '{"TCP":{"8443":{"HTTPS":true,"HTTPS":true}},"Web":{"baseer-live-qa.tail938958.ts.net:8443":{"Handlers":{"/":{"Proxy":"http://127.0.0.1:18140"}}}}}' primary
+expect_failed route-https-integer 'cannot safely determine active QA route' route_case '{"TCP":{"8443":{"HTTPS":1}},"Web":{"baseer-live-qa.tail938958.ts.net:8443":{"Handlers":{"/":{"Proxy":"http://127.0.0.1:18140"}}}}}' primary
+
+promoted_scope() (
+    load_guard
+    validate_arguments ordinary-release 123
+    target=noorix-preview
+    QA_DATABASE=baseer_qa_20261121b QA_DB_CONTAINER=baseer-qa-refresh-20261121b-db-1
+    QA_ODOO_VOLUME=baseer-qa-refresh-20261121b-odoo QA_COMPOSE_PROJECT=baseer-qa-refresh-20261121b
+    QA_LOGIN_URL=http://127.0.0.1:18140/web/login ODOO_SERVICE=odoo
+    require_safe_file() { :; }; grep() { :; }; systemctl() { :; }
+    python3() { [ "$*" = '-I /usr/local/lib/baseer-qa-refresh/prepare-noorix-preview.py --verify-promoted' ]; }
+    verify_preview_scope
+)
+promoted_scope
+
+promoted_record_case() (
+    load_guard
+    target=$1 explicit_preview=$2
+    require_safe_file() { [ "$*" = '/usr/local/lib/baseer-qa-refresh/prepare-noorix-preview.py 750' ]; }
+    python3() { printf '%s\n' "$*" >> "$test_dir/record.trace"; }
+    record_promoted_release
+)
+promoted_record_case primary 0
+promoted_record_case noorix-preview 1
+! test -e "$test_dir/record.trace"
+promoted_record_case noorix-preview 0
+grep -Fxq -- '-I /usr/local/lib/baseer-qa-refresh/prepare-noorix-preview.py --record-promoted' "$test_dir/record.trace"
+
+promoted_record_failure() (
+    load_guard
+    QA_BASE="$test_dir/record-failure" old_release="$test_dir/record-failure/old"
+    CURRENT="$test_dir/record-failure/current" backup="$test_dir/record-failure/backup"
+    target=noorix-preview explicit_preview=0 ODOO_SERVICE=odoo
+    mkdir -p "$old_release" "$backup"
+    : > "$CURRENT"
+    release_switched=1 database_mutated=1 service_quiesced=1 phase_guard_active=1
+    require_safe_file() { :; }; python3() { return 1; }
+    restore_pair() { printf 'restore\n' >> "$QA_BASE/trace"; }
+    compose_cmd() { printf 'compose %s\n' "$*" >> "$QA_BASE/trace"; }
+    ln() { printf 'link %s\n' "$*" >> "$QA_BASE/trace"; }
+    wait_for_login() { :; }
+    verify_preview_app_source() { :; }
+    record_promoted_release
+)
+expect_failed promoted-record-failure 'cannot seal promoted QA release' promoted_record_failure
+grep -Fq 'QA_DEPLOY=ROLLED_BACK' "$test_dir/record-failure/backup/result.env"
+grep -Fxq 'restore' "$test_dir/record-failure/trace"
+! grep -Fq 'QA_DEPLOY=GO' "$test_dir/record-failure/backup/result.env"
+
 preview_boot() (
     load_guard
     target=noorix-preview ODOO_SERVICE=odoo
@@ -100,6 +166,26 @@ preview_boot() (
     start_qa_app
 )
 preview_boot
+
+preview_consecutive_sources() (
+    load_guard
+    target=noorix-preview
+    local first="$test_dir/first-release" second="$test_dir/second-release" third="$test_dir/third-release"
+    mkdir "$first" "$second" "$third"
+    printf 'first\n' > "$first/QA_PROMOTED_SOURCE.json"
+    printf 'report\n' > "$first/fixture"
+    old_release=$first stage=$second
+    copy_qa_source
+    test ! -e "$second/QA_PROMOTED_SOURCE.json"
+    test "$(cat "$first/QA_PROMOTED_SOURCE.json")" = first
+    printf 'second\n' > "$second/QA_PROMOTED_SOURCE.json"
+    old_release=$second stage=$third
+    copy_qa_source
+    test ! -e "$third/QA_PROMOTED_SOURCE.json"
+    test "$(cat "$second/QA_PROMOTED_SOURCE.json")" = second
+    test "$(cat "$third/fixture")" = report
+)
+preview_consecutive_sources
 
 for wrapper in baseer-qa-approve-release baseer-qa-deploy; do
     policy_case "$wrapper" dms
@@ -340,6 +426,10 @@ fetch_line="$(grep -n '^git init --bare' "$deploy" | cut -d: -f1)"
 backup_line="$(grep -n '^capacity_guard backup$' "$deploy" | cut -d: -f1)"
 stop_line="$(grep -n '^compose_cmd stop "\$ODOO_SERVICE"$' "$deploy" | cut -d: -f1)"
 (( prefetch_line < fetch_line && backup_line < stop_line ))
+smoke_line="$(grep -n '^verify_smoke_log$' "$deploy" | cut -d: -f1)"
+record_line="$(grep -n '^record_promoted_release$' "$deploy" | cut -d: -f1)"
+go_line="$(grep -n "^printf 'QA_DEPLOY=GO" "$deploy" | head -n1 | cut -d: -f1)"
+(( smoke_line < record_line && record_line < go_line ))
 grep -Fq 'compose_cmd logs --since "$smoke_since" --no-color --tail=300' "$deploy"
 
 printf 'QA_DEPLOY_GUARD_TESTS=PASS\n'

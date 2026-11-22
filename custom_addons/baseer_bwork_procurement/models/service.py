@@ -363,7 +363,6 @@ class BWorkProcurementService(models.AbstractModel):
             'requester_id': order.requester_id.id,
             'requester_name': self._label(order.requester_id.name),
             'state': order.state,
-            'list_only': bool(order.list_only),
             'purchase_route': order.purchase_route,
             'purchase_route_name': self._label(order._purchase_route_label()),
             'representative_id': representative.id or None,

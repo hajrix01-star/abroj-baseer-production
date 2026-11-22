@@ -11,6 +11,7 @@ from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.fields import Domain
 from .revenue_channels import (
     UNALLOCATED, allocate_channels, tender_matches_order, reconcile_order_amounts,
+    noorix_gross_channels,
 )
 
 
@@ -30,6 +31,10 @@ SECTION_GROUPS = {
     # individual account type remains addressable for the legacy detail API.
     'expense': ('expense', 'expense_depreciation'),
 }
+
+
+class NoorixSourceConflict(ValidationError):
+    """Conflicting identities must never become an unallocated fallback."""
 
 
 class BaseerProfitLossReport(models.AbstractModel):
@@ -78,6 +83,12 @@ class BaseerProfitLossReport(models.AbstractModel):
             raise AccessError(_('The selected company is not allowed.'))
         company.check_access('read')
         return company
+
+    @api.model
+    def _tax_inclusive(self, filters):
+        if not isinstance(filters, dict) or type(filters.get('tax_inclusive', True)) is not bool:
+            raise ValidationError(_('Select a valid tax display option.'))
+        return filters.get('tax_inclusive', True)
 
     @api.model
     def get_context(self, company_id=None):
@@ -453,7 +464,150 @@ class BaseerProfitLossReport(models.AbstractModel):
             cursor = lines[-1].id
             if len(lines) < self.SECURITY_BATCH:
                 break
+        if self.env.context.get('_baseer_pl_inclusive'):
+            for line, delta in self._inclusive_adjustments(domain).items():
+                entry = totals.get(line.account_id.id)
+                if entry is not None:
+                    if line.account_id.account_type in EXPENSE_KEYS:
+                        entry['debit'] += delta
+                    else:
+                        entry['credit'] += delta
         return totals
+
+    def _inclusive_adjustments(self, domain):
+        """Return proved tax additions on visible P&L lines, or refuse ambiguity."""
+        AML = self.env['account.move.line'].with_context(active_test=False)
+        visible = AML.search(domain)
+        self._verify_links(visible)
+        moves = visible.mapped('move_id')
+        if not moves:
+            return {}
+        # Tax and other P&L lines on each entry must all be readable before
+        # amounts can be attributed to a single account.
+        seen = AML._search([('move_id', 'in', moves.ids)])
+        hidden = Domain('id', 'in', moves.ids) & Domain('line_ids', 'any!', Domain('id', 'not in', seen))
+        if self.env['account.move'].search_count(hidden, limit=1):
+            raise AccessError(_('Some tax source lines are not available. Select the tax-exclusive report.'))
+        all_lines = moves.mapped('line_ids')
+        self._verify_links(all_lines)
+        all_lines.tax_line_id.check_access('read')
+        all_lines.tax_repartition_line_id.check_access('read')
+        all_lines.tax_tag_ids.check_access('read')
+        all_lines.tax_ids.check_access('read')
+        dates = [line.date for line in visible if line.date]
+        noorix = {}
+        if dates:
+            companies = moves.mapped('company_id')
+            if len(companies) != 1:
+                raise AccessError(_('Tax-inclusive entries must belong to one company.'))
+            noorix, _incomplete = self._verified_noorix_gross_channels(
+                companies[0], min(dates), max(dates), domain)
+        result = {}
+        visible_ids = set(visible.ids)
+        for move in moves:
+            entries = move.line_ids.filtered(lambda item: item.account_id.account_type in SECTION_KEYS)
+            taxes = move.line_ids.filtered(lambda item: item.tax_line_id or item.tax_repartition_line_id
+                                           or (item.tax_tag_ids and item.account_id.internal_group == 'liability'))
+            if not taxes:
+                continue
+            if any(line.account_id.account_type in SECTION_KEYS for line in taxes):
+                raise ValidationError(_('A tax line is already included in a profit and loss account. Select the tax-exclusive report.'))
+            accounts = entries.account_id
+            if not entries:
+                continue
+            account = accounts[0] if len(accounts) == 1 else None
+            noorix_source = noorix.get((move.id, account.id)) if account else None
+            if noorix_source is not None:
+                noorix_channels, _funding_accounts = noorix_source
+                sign = Decimal('1') if account.account_type in EXPENSE_KEYS else Decimal('-1')
+                amount = sum((sign * self._decimal(line.balance) for line in taxes), Decimal('0'))
+                net = -sum((self._decimal(line.balance) for line in entries), Decimal('0'))
+                if sum(noorix_channels.values(), Decimal('0')) != net + amount:
+                    raise ValidationError(_('The Noorix tax-inclusive amount no longer reconciles. Select the tax-exclusive report.'))
+                target = next((line for line in entries if line.id in visible_ids), None)
+                if target:
+                    result[target] = amount
+            else:
+                tax_ids = set(taxes.mapped('tax_line_id').ids)
+                base_ids = set(entries.mapped('tax_ids').ids)
+                if not tax_ids or not tax_ids.issubset(base_ids) or any(not line.tax_line_id for line in taxes):
+                    raise ValidationError(_('The tax-inclusive allocation cannot be proved for a source entry. Select the tax-exclusive report.'))
+                if tax_ids != base_ids or any(len(entries.filtered(lambda line: tax in line.tax_ids).account_id) != 1
+                       for tax in taxes.mapped('tax_line_id')):
+                    allocated = self._native_invoice_tax_adjustments(move, entries, taxes)
+                    for line, amount in allocated.items():
+                        if line.id in visible_ids:
+                            result[line] = result.get(line, Decimal('0')) + amount
+                    continue
+                for tax_line in taxes:
+                    owners = entries.filtered(lambda line: tax_line.tax_line_id in line.tax_ids).account_id
+                    if len(owners) != 1:
+                        raise ValidationError(_('The posted tax cannot be assigned to one profit and loss account. Select the tax-exclusive report.'))
+                    owner = owners[0]
+                    target = next((line for line in entries if line.account_id == owner and line.id in visible_ids), None)
+                    if target:
+                        sign = Decimal('1') if owner.account_type in EXPENSE_KEYS else Decimal('-1')
+                        result[target] = result.get(target, Decimal('0')) + sign * self._decimal(tax_line.balance)
+        return result
+
+    def _native_invoice_tax_adjustments(self, move, entries, taxes):
+        """Reconcile Odoo's rounded invoice tax details to every posted tax line."""
+        error = _('The posted tax cannot be assigned to one profit and loss account. Select the tax-exclusive report.')
+        if not move.is_invoice(include_receipts=True):
+            raise ValidationError(error)
+        currency = move.company_id.currency_id
+        if move.currency_id != currency:
+            raise ValidationError(error)
+        bases, _tax_lines = move._get_rounded_base_and_tax_lines()
+        self.env['account.tax']._add_accounting_data_in_base_lines_tax_details(bases, move.company_id)
+        source_lines = move.line_ids.filtered(lambda line: line.display_type == 'product')
+        by_id = {base['record'].id: base for base in bases
+                 if base['record']._name == 'account.move.line' and base['record'].move_id == move
+                 and base['record'].display_type == 'product'}
+        if len(by_id) != len(bases) or set(by_id) != set(source_lines.ids) or set(entries.ids) != set(source_lines.ids):
+            raise ValidationError(error)
+
+        def money(value):
+            return self._decimal(currency.round(float(value or 0)))
+
+        expected, actual, allocated, observed_taxes = {}, {}, {}, set()
+        for line in source_lines:
+            details = by_id[line.id].get('tax_details') or {}
+            if 'total_excluded' not in details or 'taxes_data' not in details:
+                raise ValidationError(error)
+            if abs(money(details['total_excluded'])) != abs(money(line.balance)):
+                raise ValidationError(error)
+            for item in details['taxes_data']:
+                tax = item.get('tax')
+                if not tax or tax.amount < 0 or not line.balance:
+                    raise ValidationError(error)
+                tax.check_access('read')
+                observed_taxes.add(tax.id)
+                amount = money(item.get('tax_amount'))
+                reps = item.get('tax_reps_data') or []
+                if sum((money(rep.get('tax_amount')) for rep in reps), Decimal('0')) != amount:
+                    raise ValidationError(error)
+                for rep in reps:
+                    repartition, account = rep.get('tax_rep'), rep.get('account')
+                    if not money(rep.get('tax_amount')):
+                        continue
+                    if not repartition or not account:
+                        raise ValidationError(error)
+                    repartition.check_access('read')
+                    account.check_access('read')
+                    value = abs(money(rep.get('tax_amount'))).copy_sign(self._decimal(line.balance))
+                    key = (tax.id, repartition.id, account.id)
+                    expected[key] = expected.get(key, Decimal('0')) + value
+                    sign = Decimal('1') if line.account_id.account_type in EXPENSE_KEYS else Decimal('-1')
+                    allocated[line] = allocated.get(line, Decimal('0')) + sign * value
+        for line in taxes:
+            key = (line.tax_line_id.id, line.tax_repartition_line_id.id, line.account_id.id)
+            actual[key] = actual.get(key, Decimal('0')) + money(line.balance)
+        if observed_taxes != set(entries.mapped('tax_ids').ids):
+            raise ValidationError(error)
+        if {k: v for k, v in expected.items() if v} != {k: v for k, v in actual.items() if v}:
+            raise ValidationError(error)
+        return allocated
 
     @api.model
     def _verify_links(self, lines):
@@ -698,6 +852,7 @@ class BaseerProfitLossReport(models.AbstractModel):
 
     @api.model
     def get_report(self, filters):
+        self = self.with_context(_baseer_pl_inclusive=self._tax_inclusive(filters))
         company, journal_ids, periods, period_control, comparison_control = self._scope(filters)
         grouped_by_period = {
             period['key']: self._section_rows(period['domain']) for period in periods
@@ -760,6 +915,7 @@ class BaseerProfitLossReport(models.AbstractModel):
 
     @api.model
     def get_accounts(self, filters, section, page=1):
+        self = self.with_context(_baseer_pl_inclusive=self._tax_inclusive(filters))
         if section not in SECTION_KEYS:
             raise ValidationError(_('Select a profit and loss section.'))
         if type(page) is not int or page < 1:
@@ -1221,6 +1377,20 @@ class BaseerProfitLossReport(models.AbstractModel):
         for line in lines:
             key = (line.move_id.id, line.account_id.id)
             grouped[key] = grouped.get(key, Decimal('0')) - self._decimal(line.balance)
+        noorix = {}
+        method_by_account = {}
+        approved_mappings = []
+        if self.env.context.get('_baseer_pl_inclusive'):
+            for line, delta in self._inclusive_adjustments(domain).items():
+                key = (line.move_id.id, line.account_id.id)
+                grouped[key] = grouped.get(key, Decimal('0')) + delta
+            dates = [line.date for line in lines if line.date]
+            if dates:
+                noorix, _incomplete = self._verified_noorix_gross_channels(
+                    company, min(dates), max(dates), domain)
+                if noorix:
+                    method_by_account = self._noorix_payment_methods(company)
+                    approved_mappings = self._noorix_display_mappings(company, min(dates), max(dates))
         result = {}
         # Only IDs are reused within this invocation; no context, cross-request,
         # amount or visibility cache. Guard failures retain their original scope.
@@ -1229,89 +1399,125 @@ class BaseerProfitLossReport(models.AbstractModel):
         correction_pairs = {}
         for (move_id, account_id), amount in grouped.items():
             allocation = {UNALLOCATED: ('', amount)}
-            try:
-                Order = self.env['pos.order']
-                Order.browse().check_access('read')
-                orders = Order.search([
-                    ('company_id', '=', company.id), ('state', 'in', ('paid', 'done', 'invoiced')),
-                    '|', ('account_move', '=', move_id),
-                    '&', ('account_move', '=', False), ('session_id.move_id', '=', move_id),
-                ])
-                orders.check_access('read')
-                # Rules may silently hide some orders. IDs are used only to
-                # prove completeness, never to expose hidden amounts/names.
-                Order.flush_model(['company_id', 'state', 'account_move', 'session_id'])
-                self.env['pos.session'].flush_model(['move_id'])
-                self.env.cr.execute('''SELECT o.id FROM pos_order o
-                    LEFT JOIN pos_session s ON s.id=o.session_id
-                    WHERE o.company_id=%s AND o.state IN ('paid','done','invoiced')
-                    AND (o.account_move=%s OR (o.account_move IS NULL AND s.move_id=%s))''',
-                    [company.id, move_id, move_id])
-                if set(orders.ids) != {item[0] for item in self.env.cr.fetchall()}:
-                    raise AccessError(_('POS source is not available.'))
-                orders.session_id.check_access('read')
-                if move_id not in correction_pairs:
-                    try:
-                        pair = self._pos_correction_pair(lines.env['account.move'].browse(move_id), company)
-                    except UserError:
-                        # A failed correction proof must not fall back to an
-                        # ordinary POS attribution of the same source.
-                        pair = {}
-                    correction_pairs[move_id] = pair
-                    if pair:
-                        correction_pairs.update({key: pair for key in pair})
-                pair = correction_pairs[move_id]
-                order_amounts = None
-                payment_census = child_ids['payments']
-                if pair is not None:
-                    if move_id in pair:
-                        pair_orders, basis, census = pair[move_id]
-                        rebuilt = [(item, basis[item.id].get(account_id, Decimal('0'))) for item in pair_orders]
-                        if sum((net for _order, net in rebuilt), Decimal('0')) == amount:
-                            order_amounts = rebuilt
-                            payment_census = census['payments']
-                else:
-                    missing = orders.filtered(lambda order: order.id not in child_ids['lines'])
-                    if missing:
-                        census = self._channel_child_ids(missing)
-                        for key in child_ids:
-                            child_ids[key].update(census[key])
-                    prepared_accounts = self._native_channel_accounts(orders, child_ids['lines'])
-                    order_amounts = []
-                    for order in orders:
-                        net = Decimal('0')
-                        for source in order.lines:
-                            account = prepared_accounts[source.id]
-                            if account and account.id == account_id:
-                                subtotal = self._decimal(source.price_subtotal)
-                                net += -abs(subtotal) if order.is_refund else subtotal
-                        order_amounts.append((order, net))
-                    order_amounts = reconcile_order_amounts(
-                        order_amounts, amount, self._decimal(company.currency_id.rounding))
-                    if order_amounts is None and orders:
-                        if move_id not in accounting_amounts:
-                            move = lines.env['account.move'].browse(move_id)
-                            try:
-                                accounting_amounts[move_id] = self._closed_pos_accounting_amounts(
-                                    orders, move, company, child_ids['lines'])
-                            except UserError:
-                                accounting_amounts[move_id] = None
-                        recovered = accounting_amounts[move_id]
-                        if recovered is not None:
-                            rebuilt = [(order, recovered[order.id].get(account_id, Decimal('0')))
-                                       for order in orders]
-                            if sum((net for _order, net in rebuilt), Decimal('0')) == amount:
+            posted_net = sum((-self._decimal(line.balance) for line in lines
+                              if line.move_id.id == move_id and line.account_id.id == account_id), Decimal('0'))
+            source = noorix.get((move_id, account_id))
+            if source is not None:
+                source_channels, funding_accounts = source
+                names = {
+                    'cash': ('نقدي', 'Cash'), 'bank': ('بنك', 'Bank'),
+                    'keeta': ('كيتا', 'Keeta'), 'hunger': ('هنقرستيشن', 'HungerStation'),
+                    'jahez': ('جاهز', 'Jahez'),
+                }
+                arabic = (self.env.lang or '').startswith('ar')
+                allocation = {}
+                account_counts = Counter(funding_accounts.values())
+                for key, value in source_channels.items():
+                    account_id_for_channel = funding_accounts[key]
+                    source_date = lines.env['account.move'].browse(move_id).date
+                    selected = [item for item in approved_mappings
+                                if item[0] == key and item[1] <= source_date <= item[2]]
+                    if selected:
+                        method = selected[0][3]
+                    else:
+                        method = (method_by_account.get(account_id_for_channel)
+                                  if account_counts[account_id_for_channel] == 1 else None)
+                    channel = 'payment_' + str(method.id) if method else 'noorix_' + key
+                    name = method.display_name if method else names[key][0 if arabic else 1]
+                    previous = allocation.get(channel, (name, Decimal('0')))
+                    allocation[channel] = (name, previous[1] + value)
+            if source is None:
+                try:
+                    Order = self.env['pos.order']
+                    Order.browse().check_access('read')
+                    orders = Order.search([
+                        ('company_id', '=', company.id), ('state', 'in', ('paid', 'done', 'invoiced')),
+                        '|', ('account_move', '=', move_id),
+                        '&', ('account_move', '=', False), ('session_id.move_id', '=', move_id),
+                    ])
+                    orders.check_access('read')
+                    # Rules may silently hide some orders. IDs are used only to
+                    # prove completeness, never to expose hidden amounts/names.
+                    Order.flush_model(['company_id', 'state', 'account_move', 'session_id'])
+                    self.env['pos.session'].flush_model(['move_id'])
+                    self.env.cr.execute('''SELECT o.id FROM pos_order o
+                        LEFT JOIN pos_session s ON s.id=o.session_id
+                        WHERE o.company_id=%s AND o.state IN ('paid','done','invoiced')
+                        AND (o.account_move=%s OR (o.account_move IS NULL AND s.move_id=%s))''',
+                        [company.id, move_id, move_id])
+                    if set(orders.ids) != {item[0] for item in self.env.cr.fetchall()}:
+                        raise AccessError(_('POS source is not available.'))
+                    orders.session_id.check_access('read')
+                    if move_id not in correction_pairs:
+                        try:
+                            pair = self._pos_correction_pair(lines.env['account.move'].browse(move_id), company)
+                        except UserError:
+                            # A failed correction proof must not fall back to an
+                            # ordinary POS attribution of the same source.
+                            pair = {}
+                        correction_pairs[move_id] = pair
+                        if pair:
+                            correction_pairs.update({key: pair for key in pair})
+                    pair = correction_pairs[move_id]
+                    order_amounts = None
+                    payment_census = child_ids['payments']
+                    if pair is not None:
+                        if move_id in pair:
+                            pair_orders, basis, census = pair[move_id]
+                            rebuilt = [(item, basis[item.id].get(account_id, Decimal('0'))) for item in pair_orders]
+                            if sum((net for _order, net in rebuilt), Decimal('0')) == posted_net:
                                 order_amounts = rebuilt
-                if order_amounts is not None:
-                    allocation = {}
-                    for order, net in order_amounts:
-                        for key, (name, value) in self._order_channels(
-                                order, net, company, _payment_ids=payment_census[order.id]).items():
-                            prior = allocation.get(key, (name, Decimal('0')))
-                            allocation[key] = (name, prior[1] + value)
-            except (AccessError, KeyError):
-                # POS is an optional source for an accounting-only installation.
-                pass
+                                payment_census = census['payments']
+                    else:
+                        missing = orders.filtered(lambda order: order.id not in child_ids['lines'])
+                        if missing:
+                            census = self._channel_child_ids(missing)
+                            for key in child_ids:
+                                child_ids[key].update(census[key])
+                        prepared_accounts = self._native_channel_accounts(orders, child_ids['lines'])
+                        order_amounts = []
+                        for order in orders:
+                            net = Decimal('0')
+                            for source in order.lines:
+                                account = prepared_accounts[source.id]
+                                if account and account.id == account_id:
+                                    subtotal = self._decimal(source.price_subtotal)
+                                    net += -abs(subtotal) if order.is_refund else subtotal
+                            order_amounts.append((order, net))
+                        order_amounts = reconcile_order_amounts(
+                            order_amounts, posted_net, self._decimal(company.currency_id.rounding))
+                        if order_amounts is None and orders:
+                            if move_id not in accounting_amounts:
+                                move = lines.env['account.move'].browse(move_id)
+                                try:
+                                    accounting_amounts[move_id] = self._closed_pos_accounting_amounts(
+                                        orders, move, company, child_ids['lines'])
+                                except UserError:
+                                    accounting_amounts[move_id] = None
+                            recovered = accounting_amounts[move_id]
+                            if recovered is not None:
+                                rebuilt = [(order, recovered[order.id].get(account_id, Decimal('0')))
+                                           for order in orders]
+                                if sum((net for _order, net in rebuilt), Decimal('0')) == posted_net:
+                                    order_amounts = rebuilt
+                    if order_amounts is not None and self.env.context.get('_baseer_pl_inclusive'):
+                        gross_orders = [(order, -abs(self._decimal(order.amount_total)) if order.is_refund
+                                         else self._decimal(order.amount_total))
+                                        for order, _net in order_amounts]
+                        if sum((gross for _order, gross in gross_orders), Decimal('0')) == amount:
+                            order_amounts = gross_orders
+                        else:
+                            order_amounts = None
+                    if order_amounts is not None:
+                        allocation = {}
+                        for order, net in order_amounts:
+                            for key, (name, value) in self._order_channels(
+                                    order, net, company, _payment_ids=payment_census[order.id]).items():
+                                prior = allocation.get(key, (name, Decimal('0')))
+                                allocation[key] = (name, prior[1] + value)
+                except (AccessError, KeyError):
+                    # POS is an optional source for an accounting-only installation.
+                    pass
             target = result.setdefault(account_id, {})
             for key, (name, value) in allocation.items():
                 self._claim_export_channel(_export_channel_budget, account_id, key)
@@ -1321,6 +1527,173 @@ class BaseerProfitLossReport(models.AbstractModel):
                 previous = target.get(key, (name, Decimal('0')))
                 target[key] = (name, previous[1] + value)
         return result
+
+    def _noorix_display_mappings(self, company, start, end):
+        """Load only authorized, explicit mappings; unavailable methods remain separate."""
+        Mapping = self.env['baseer.pl.noorix.channel.mapping']
+        mappings = Mapping.search([('company_id', '=', company.id), ('date_from', '<=', end),
+                                   ('date_to', '>=', start)])
+        mappings.check_access('read')
+        Mapping.flush_model(['company_id', 'date_from', 'date_to'])
+        self.env.cr.execute('''SELECT id FROM baseer_pl_noorix_channel_mapping
+            WHERE company_id=%s AND date_from<=%s AND date_to>=%s''', [company.id, end, start])
+        if set(mappings.ids) != {row[0] for row in self.env.cr.fetchall()}:
+            raise AccessError(_('A payment display mapping is not available.'))
+        if not mappings:
+            return []
+        active = mappings.filtered(lambda item: not item.revoked)
+        for index, mapping in enumerate(active):
+            if any(other.date_from <= mapping.date_to and other.date_to >= mapping.date_from
+                   and (other.source_channel == mapping.source_channel
+                        or other.payment_method_id == mapping.payment_method_id)
+                   for other in active[index + 1:]):
+                raise ValidationError(_('Conflicting payment display mappings require review.'))
+        try:
+            Method = self.env['pos.payment.method'].with_context(active_test=False)
+            methods = Method.search([('company_id', '=', company.id),
+                                     ('id', 'in', mappings.mapped('payment_method_id'))])
+            methods.check_access('read')
+            by_id = {method.id: method for method in methods}
+        except (AccessError, KeyError):
+            by_id = {}
+        return [(mapping.source_channel, mapping.date_from, mapping.date_to,
+                 None if mapping.revoked else by_id.get(mapping.payment_method_id))
+                for mapping in mappings.sorted(key=lambda item: (item.revoked, item.id))]
+
+    @api.model
+    def _verified_noorix_gross_channels(self, company, start, end, domain):
+        """Prove only selected Noorix entries, without reading unrelated amounts."""
+        if 'baseer.noorix.sales.evidence' not in self.env:
+            return {}, []
+        Line = self.env['account.move.line']
+        scoped = Line.search(domain)
+        self._verify_links(scoped)
+        moves = scoped.mapped('move_id').filtered(
+            lambda move: 'NOORIX-SALES' in (move.ref or '').upper())
+        if not moves:
+            return {}, []
+        Evidence = self.env['baseer.noorix.sales.evidence'].with_company(company)
+        Evidence.check_access('read')
+        Evidence._ledger_check_complete_lines(moves)
+        candidates = Evidence._ledger_tax_candidates(moves)
+        evidence = Evidence.search([('move_id', 'in', moves.ids)])
+        # Existence-only guard; no hidden identity or value is exposed.
+        self.env.cr.execute(
+            'SELECT 1 FROM baseer_noorix_sales_evidence WHERE move_id=ANY(%s) AND NOT (id=ANY(%s)) LIMIT 1',
+            [moves.ids, evidence.ids])
+        if self.env.cr.fetchone():
+            raise AccessError(_('A Noorix source has inaccessible reporting evidence.'))
+        evidence_amounts = evidence._validated_amounts()
+        by_move = {}
+        for line in scoped:
+            by_move.setdefault(line.move_id.id, set()).add(line.account_id.id)
+        sources, incomplete = {}, []
+        seen = set()
+        Move = self.env['account.move']
+        for move in moves:
+            try:
+                if move.reversed_entry_id or Move.search_count(
+                        Domain('id', '=', move.id) & Domain('reversal_move_ids', 'any!', Domain([])), limit=1):
+                    incomplete.append(move.id)
+                    continue
+                identity = Evidence._ledger_source_identity(move, company)
+                if identity in seen:
+                    raise NoorixSourceConflict(_('A Noorix source identity is represented more than once.'))
+                seen.add(identity)
+                # Existing tagged source identities must be unique across the
+                # company even if a competing entry is outside these journals.
+                source_id = identity[2]
+                if isinstance(source_id, str):
+                    search = [('company_id', '=', company.id), ('state', '=', 'posted'),
+                              ('ref', 'ilike', 'src:' + source_id)]
+                    visible = Move.search(search).filtered(
+                        lambda other: source_id in re.findall(r'(?<!\S)src:([A-Za-z0-9_-]+)(?=\s|$)', other.ref or '', re.IGNORECASE))
+                    Move.flush_model(['company_id', 'state', 'ref'])
+                    self.env.cr.execute(
+                        'SELECT id FROM account_move WHERE company_id=%s AND state=%s AND ref ~ %s',
+                        [company.id, 'posted', r'(^|[[:space:]])[sS][rR][cC]:' + source_id + r'([[:space:]]|$)'])
+                    if set(visible.ids) != {row[0] for row in self.env.cr.fetchall()}:
+                        raise AccessError(_('A competing Noorix source is not available.'))
+                    for other in visible - move:
+                        tokens = re.findall(r'(?<!\S)src:([A-Za-z0-9_-]+)(?=\s|$)', other.ref or '')
+                        if tokens == [source_id] and Evidence._ledger_source_identity(other, company) == identity:
+                            raise NoorixSourceConflict(_('A Noorix source identity is represented more than once.'))
+                linked = evidence.filtered(lambda item: item.move_id == move)
+                if len(linked) > 1:
+                    raise NoorixSourceConflict(_('A Noorix entry has conflicting evidence.'))
+                if linked:
+                    amount = evidence_amounts[linked.id]
+                elif not any(line.tax_ids or line.tax_line_id or line.tax_repartition_line_id or line.tax_tag_ids
+                             for line in move.line_ids):
+                    amount = self._noorix_untaxed_amount(move, company)
+                else:
+                    amount = Evidence._ledger_sales_amount(move, company, candidates)
+                result = noorix_gross_channels({'original': True, 'move': move, 'amount': amount}, company)
+                if result is None or result[0] not in by_move[move.id]:
+                    incomplete.append(move.id)
+                    continue
+                account_id, amounts, funding_accounts = result
+                sources[(move.id, account_id)] = (amounts, funding_accounts)
+            except NoorixSourceConflict:
+                raise
+            except ValidationError:
+                # Unsupported selected entries remain visible as incomplete.
+                # The inclusive amount collector will refuse ambiguity.
+                incomplete.append(move.id)
+        return sources, incomplete
+
+    def _noorix_untaxed_amount(self, move, company):
+        """Prove an original, all-visible, untaxed sales and funding entry."""
+        error = _('The Noorix source is not a proved tax-free sale.')
+        revenue = funding = Decimal('0')
+        for line in move.line_ids:
+            line.check_access('read')
+            line.account_id.check_access('read')
+            line.tax_ids.check_access('read')
+            line.tax_line_id.check_access('read')
+            line.tax_repartition_line_id.check_access('read')
+            line.tax_tag_ids.check_access('read')
+            if (line.company_id != company or company not in line.account_id.company_ids
+                    or line.currency_id != company.currency_id or line.tax_ids or line.tax_line_id
+                    or line.tax_repartition_line_id or line.tax_tag_ids):
+                raise ValidationError(error)
+            value = self._decimal(line.balance)
+            if line.account_id.account_type in ('income', 'income_other'):
+                if value > 0:
+                    raise ValidationError(error)
+                revenue -= value
+            elif line.account_id.internal_group == 'asset':
+                if value < 0:
+                    raise ValidationError(error)
+                funding += value
+            else:
+                raise ValidationError(error)
+        if revenue <= 0 or revenue != funding:
+            raise ValidationError(error)
+        return revenue
+
+    def _noorix_payment_methods(self, company):
+        """Match ledger accounts to one visible, explicitly configured POS method."""
+        try:
+            Method = self.env['pos.payment.method'].with_context(active_test=False)
+            methods = Method.search([('company_id', '=', company.id)])
+            methods.check_access('read')
+            Method.flush_model(['company_id'])
+            self.env.cr.execute('SELECT id FROM pos_payment_method WHERE company_id=%s', [company.id])
+            if set(methods.ids) != {row[0] for row in self.env.cr.fetchall()}:
+                return {}
+            methods.journal_id.check_access('read')
+            methods.receivable_account_id.check_access('read')
+            methods.outstanding_account_id.check_access('read')
+            methods.journal_id.default_account_id.check_access('read')
+        except AccessError:
+            return {}
+        candidates = {}
+        for method in methods:
+            accounts = method.receivable_account_id | method.outstanding_account_id | method.journal_id.default_account_id
+            for account in accounts:
+                candidates.setdefault(account.id, set()).add(method.id)
+        return {account_id: methods.browse(next(iter(ids))) for account_id, ids in candidates.items() if len(ids) == 1}
 
     def _channel_period_payload(self, account_id, periods, channel_periods, currency):
         keys = {}
@@ -1339,6 +1712,7 @@ class BaseerProfitLossReport(models.AbstractModel):
     @api.model
     def get_lines(self, filters, account_id, page=1, period_key='current'):
         """Return a guarded page of source AMLs; every linked move remains readable."""
+        self = self.with_context(_baseer_pl_inclusive=self._tax_inclusive(filters))
         if type(account_id) is not int or account_id <= 0:
             raise ValidationError(_('Select a profit and loss account.'))
         if type(page) is not int or page < 1:
@@ -1364,10 +1738,11 @@ class BaseerProfitLossReport(models.AbstractModel):
         self._verify_links(selected)
         currency = company.currency_id
         rows = []
+        adjustments = self._inclusive_adjustments(domain) if self.env.context.get('_baseer_pl_inclusive') else {}
         for line in selected:
             debit, credit = self._decimal(line.debit), self._decimal(line.credit)
             raw = credit - debit if income else debit - credit
-            display = raw
+            display = raw + adjustments.get(line, Decimal('0'))
             rows.append({
                 'id': line.id,
                 'date': fields.Date.to_string(line.date),

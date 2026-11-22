@@ -114,6 +114,27 @@ class TestProfitLoss(TransactionCase):
         self.assertEqual(self._section(result, 'expense_depreciation')['amount'], '-5.00')
         self.assertEqual(result['gross_profit']['amount'], '120.00')
         self.assertEqual(result['net_profit']['amount'], '91.00')
+        dashboard = result['dashboard']
+        self.assertEqual([card['key'] for card in dashboard['cards']], [
+            'income', 'cost_of_sales', 'gross_profit', 'gross_margin', 'expense', 'net_income',
+        ])
+        dashboard_cards = {card['key']: card for card in dashboard['cards']}
+        self.assertEqual(dashboard_cards['income']['value']['amount'], '180.00')
+        self.assertEqual(dashboard_cards['cost_of_sales']['value']['amount'], '60.00')
+        self.assertEqual(dashboard_cards['gross_profit']['value']['amount'], '120.00')
+        self.assertEqual(dashboard_cards['gross_margin']['value']['display'], '66.67%')
+        self.assertEqual(dashboard_cards['expense']['value']['amount'], '35.00')
+        self.assertEqual(dashboard_cards['net_income']['value']['amount'], '91.00')
+        self.assertEqual([step['key'] for step in dashboard['waterfall']], [
+            'income', 'cost_of_sales', 'expense', 'net_other_income', 'net_income',
+        ])
+        self.assertEqual(dashboard['waterfall'][3]['amount']['amount'], '6.00')
+        shares = {account['amount']['amount']: account['share']['display']
+                  for account in dashboard['revenue_accounts']}
+        self.assertEqual(shares['180.00'], '94.74%')
+        self.assertEqual(shares['10.00'], '5.26%')
+        self.assertIn('posted_only', dashboard['notes'])
+        self.assertIn('comparison_unavailable', dashboard['notes'])
         sources = self.env['account.move.line'].search([
             ('company_id', '=', self.company.id),
             ('parent_state', '=', 'posted'),
@@ -211,6 +232,9 @@ class TestProfitLoss(TransactionCase):
             tax.invoice_repartition_line_ids.filtered(
                 lambda line: line.repartition_type == 'tax',
             ).write({'account_id': vat_account.id})
+            tax.refund_repartition_line_ids.filtered(
+                lambda line: line.repartition_type == 'tax',
+            ).write({'account_id': vat_account.id})
             move = self.env['account.move'].with_company(self.company).create({
                 'move_type': move_type, 'partner_id': partner.id,
                 'journal_id': journal.id, 'invoice_date': '2041-05-10',
@@ -223,20 +247,428 @@ class TestProfitLoss(TransactionCase):
             move.action_post()
             self.assertEqual(move.state, 'posted')
             self.assertEqual(Decimal(str(move.amount_total)), Decimal('115'))
-        result = self.report.get_report(self.filters)
+        result = self.report.get_report({**self.filters, 'tax_inclusive': False})
         self.assertEqual(self._section(result, 'income')['amount'], '100.00')
         self.assertEqual(self._section(result, 'expense')['amount'], '-100.00')
         self.assertEqual(result['net_profit']['amount'], '0.00')
+        inclusive = self.report.get_report(self.filters)
+        self.assertEqual(self._section(inclusive, 'income')['amount'], '115.00')
+        self.assertEqual(self._section(inclusive, 'expense')['amount'], '-115.00')
+        self.assertEqual(inclusive['net_profit']['amount'], '0.00')
+        income = self.report.get_accounts(self.filters, 'income')
+        self.assertEqual(income['total_amount'], '115.00')
+        lines = self.report.get_lines(self.filters, self.accounts['income'].id)
+        self.assertEqual(lines['total_amount'], '115.00')
+        self.assertEqual(lines['lines'][0]['amount'], '115.00')
+        sale_journal = self.env['account.journal'].search([('company_id', '=', self.company.id), ('code', '=', 'PLI')])
+        sale_tax = self.env['account.tax'].search([('company_id', '=', self.company.id), ('name', '=', 'P&L sale VAT 15%')])
+        other_tax = self.env['account.tax'].with_company(self.company).create({
+            'name': 'P&L second sales tax', 'amount': 5, 'type_tax_use': 'sale', 'company_id': self.company.id,
+        })
+        other_tax.invoice_repartition_line_ids.filtered(lambda line: line.repartition_type == 'tax').write({'account_id': vat_due.id})
+        split = self.env['account.move'].with_company(self.company).create({
+            'move_type': 'out_invoice', 'partner_id': partner.id, 'journal_id': sale_journal.id,
+            'invoice_date': '2041-05-10', 'invoice_line_ids': [
+                Command.create({'name': 'First tax', 'quantity': 1, 'price_unit': 100,
+                                'account_id': self.accounts['income'].id, 'tax_ids': [Command.set(sale_tax.ids)]}),
+                Command.create({'name': 'Second tax', 'quantity': 1, 'price_unit': 50,
+                                'account_id': self.accounts['income_other'].id, 'tax_ids': [Command.set(other_tax.ids)]}),
+            ],
+        })
+        split.action_post()
+        proved = self.report.get_report(self.filters)
+        self.assertEqual(self._section(proved, 'income')['amount'], '230.00')
+        self.assertEqual(self._section(proved, 'income_other')['amount'], '52.50')
+        ambiguous = self.env['account.move'].with_company(self.company).create({
+            'move_type': 'out_invoice', 'partner_id': partner.id, 'journal_id': sale_journal.id,
+            'invoice_date': '2041-05-10', 'invoice_line_ids': [
+            Command.create({'name': 'First', 'quantity': 1, 'price_unit': 100, 'discount': 10,
+                            'account_id': self.accounts['income'].id, 'tax_ids': [Command.set(sale_tax.ids)]}),
+            Command.create({'name': 'Second', 'quantity': 1, 'price_unit': 50,
+                            'account_id': self.accounts['income_other'].id, 'tax_ids': [Command.set(sale_tax.ids)]})]})
+        ambiguous.action_post()
+        shared = self.report.get_report(self.filters)
+        self.assertEqual(self._section(shared, 'income')['amount'], '333.50')
+        self.assertEqual(self._section(shared, 'income_other')['amount'], '110.00')
+        refund = self.env['account.move'].with_company(self.company).create({
+            'move_type': 'out_refund', 'partner_id': partner.id, 'journal_id': sale_journal.id,
+            'invoice_date': '2041-05-10', 'invoice_line_ids': [
+                Command.create({'name': 'First refund', 'quantity': 1, 'price_unit': 100, 'discount': 10,
+                                'account_id': self.accounts['income'].id, 'tax_ids': [Command.set(sale_tax.ids)]}),
+                Command.create({'name': 'Second refund', 'quantity': 1, 'price_unit': 50,
+                                'account_id': self.accounts['income_other'].id, 'tax_ids': [Command.set(sale_tax.ids)]}),
+            ],
+        })
+        refund.action_post()
+        reconciled = self.report.get_report(self.filters)
+        self.assertEqual(self._section(reconciled, 'income')['amount'], '230.00')
+        self.assertEqual(self._section(reconciled, 'income_other')['amount'], '52.50')
+        rounded = self.env['account.move'].with_company(self.company).create({
+            'move_type': 'out_invoice', 'partner_id': partner.id, 'journal_id': sale_journal.id,
+            'invoice_date': '2041-05-10', 'invoice_line_ids': [
+                Command.create({'name': 'Small first', 'quantity': 1, 'price_unit': 0.03,
+                                'account_id': self.accounts['income'].id, 'tax_ids': [Command.set(sale_tax.ids)]}),
+                Command.create({'name': 'Small second', 'quantity': 1, 'price_unit': 0.04,
+                                'account_id': self.accounts['income_other'].id, 'tax_ids': [Command.set(sale_tax.ids)]}),
+            ],
+        })
+        rounded.action_post()
+        reconciled = self.report.get_report(self.filters)
+        self.assertEqual(self._section(reconciled, 'income')['amount'], '230.03')
+        self.assertEqual(self._section(reconciled, 'income_other')['amount'], '52.55')
+        zero_tax = self.env['account.tax'].with_company(self.company).create({
+            'name': 'P&L zero tax', 'amount': 0, 'type_tax_use': 'sale', 'company_id': self.company.id,
+        })
+        for amount, account in ((10, self.accounts['income']), (30, self.accounts['income_other'])):
+            mixed = self.env['account.move'].with_company(self.company).create({
+                'move_type': 'out_invoice', 'partner_id': partner.id, 'journal_id': sale_journal.id,
+                'invoice_date': '2041-05-10', 'invoice_line_ids': [
+                    Command.create({'name': 'Taxable', 'quantity': 1, 'price_unit': 10,
+                                    'account_id': self.accounts['income'].id, 'tax_ids': [Command.set(sale_tax.ids)]}),
+                    Command.create({'name': 'Zero tax', 'quantity': 1, 'price_unit': amount,
+                                    'account_id': account.id, 'tax_ids': [Command.set(zero_tax.ids)]}),
+                ],
+            })
+            mixed.action_post()
+        mixed_report = self.report.get_report(self.filters)
+        self.assertEqual(self._section(mixed_report, 'income')['amount'], '263.03')
+        self.assertEqual(self._section(mixed_report, 'income_other')['amount'], '82.55')
+        self.report.get_report({**self.filters, 'tax_inclusive': False})
+
+    def test_noorix_original_gross_channels_reconcile_to_posted_entry(self):
+        if 'baseer.noorix.sales.evidence' not in self.env:
+            self.skipTest('Noorix reader is optional in the profit and loss module')
+        sar = self.env.ref('base.SAR')
+        sar.active = True
+        self.company.currency_id = sar
+        Account = self.env['account.account'].with_company(self.company)
+        funding = Account.create({'code': '959107', 'name': 'Noorix cash',
+                                  'account_type': 'asset_current', 'company_ids': [Command.set(self.company.ids)]})
+        vat = Account.create({'code': '959108', 'name': 'Noorix VAT',
+                              'account_type': 'liability_current', 'company_ids': [Command.set(self.company.ids)]})
+        tag = self.env['account.account.tag'].create({'name': '+Noorix test VAT', 'applicability': 'taxes',
+                                                      'country_id': self.company.account_fiscal_country_id.id})
+        self.env['account.tax'].with_company(self.company).create({
+            'name': 'Noorix test tax', 'amount': 15, 'type_tax_use': 'sale', 'company_id': self.company.id,
+            'invoice_repartition_line_ids': [Command.clear(), Command.create({'repartition_type': 'base'}),
+                Command.create({'repartition_type': 'tax', 'account_id': vat.id, 'tag_ids': [Command.set(tag.ids)]})],
+        })
+        move = self.env['account.move'].with_company(self.company).create({
+            'date': '2041-05-10', 'journal_id': self.journal.id, 'move_type': 'entry',
+            'ref': 'NOORIX-SALES SHAMI 2041-05-10 | src:synthetic-1',
+            'line_ids': [
+                Command.create({'name': 'Noorix sales cash 2041-05-10', 'account_id': funding.id, 'debit': 115}),
+                Command.create({'name': 'Noorix sales', 'account_id': self.accounts['income'].id, 'credit': 100}),
+                Command.create({'name': 'Noorix VAT', 'account_id': vat.id, 'credit': 15,
+                                'tax_tag_ids': [Command.set(tag.ids)]}),
+            ],
+        })
+        move.action_post()
+        current = self.report.get_report(self.filters)
+        self.assertEqual(self._section(current, 'income')['amount'], '115.00')
+        accounts = self.report.get_accounts(self.filters, 'income')['accounts']
+        account = next(row for row in accounts if row['id'] == self.accounts['income'].id)
+        self.assertEqual(account['amounts']['current']['amount'], '115.00')
+        self.assertEqual(sum(Decimal(row['amounts']['current']['amount'].replace(',', ''))
+                             for row in account['channels']), Decimal('115.00'))
+        channel = next(row for row in account['channels'] if row['key'] == 'noorix_cash')
+        self.assertEqual(channel['amounts']['current']['amount'], '115.00')
+        selector = {'kind': 'channel', 'account_id': self.accounts['income'].id,
+                    'channel_key': 'noorix_cash', 'period_key': 'current'}
+        drilled = self.report._get_drilldown(self.filters, selector)
+        self.assertEqual(drilled['value'], '115.00')
+        self.assertEqual(drilled['total_count'], 1)
+        self.assertEqual(drilled['rows'][0]['cells']['amount'], '115.00')
+        self.assertEqual(self.report._open_drill_source(self.filters, drilled['rows'][0]['source'])['res_id'], move.id)
+        document = self.report._get_export_document(self.filters)
+        exported = [row for row in document['rows'] if row.get('indent') == 2]
+        self.assertEqual(len(exported), 1)
+        self.assertEqual(exported[0]['cells']['current'], Decimal('115.00'))
+        self.assertEqual(self._section(self.report.get_report({**self.filters, 'tax_inclusive': False}),
+                                       'income')['amount'], '100.00')
+        untaxed = self.env['account.move'].with_company(self.company).create({
+            'date': '2041-05-11', 'journal_id': self.journal.id, 'move_type': 'entry',
+            'ref': 'NOORIX-SALES SHAMI 2041-05-11 | src:untaxed-1',
+            'line_ids': [
+                Command.create({'name': 'Noorix sales cash 2041-05-11', 'account_id': funding.id, 'debit': 20}),
+                Command.create({'name': 'Noorix sales', 'account_id': self.accounts['income'].id, 'credit': 20}),
+            ],
+        })
+        untaxed.action_post()
+        account = next(row for row in self.report.get_accounts(self.filters, 'income')['accounts']
+                       if row['id'] == self.accounts['income'].id)
+        self.assertEqual(next(row for row in account['channels'] if row['key'] == 'noorix_cash')
+                         ['amounts']['current']['amount'], '135.00')
+        other_journal = self.env['account.journal'].with_company(self.company).create({
+            'name': 'Other Noorix journal', 'code': 'NRO', 'type': 'general', 'company_id': self.company.id,
+        })
+        unrelated = self._entry('income', '10', journal=other_journal)
+        unrelated.ref = 'NOORIX-SALES invalid unrelated source'
+        filtered = {**self.filters, 'journal_ids': [self.journal.id]}
+        self.assertEqual(self._section(self.report.get_report(filtered), 'income')['amount'], '135.00')
+        prefix = move.copy(default={'journal_id': other_journal.id,
+                                    'ref': 'NOORIX-SALES SHAMI 2041-05-10 | src:synthetic-12'})
+        prefix.action_post()
+        rule = self._hide_record('account.move', prefix)
+        try:
+            user_report = self.report.with_user(self._accountant()).with_context(allowed_company_ids=self.company.ids)
+            self.assertEqual(self._section(user_report.get_report(filtered), 'income')['amount'], '135.00')
+        finally:
+            rule.unlink()
+        hidden_tax_move = self.env['account.move'].with_company(self.company).create({
+            'date': '2041-05-12', 'journal_id': other_journal.id, 'move_type': 'entry',
+            'ref': 'NOORIX-SALES SHAMI 2041-05-12 | src:hidden-tax-1',
+            'line_ids': [
+                Command.create({'name': 'Noorix sales cash 2041-05-12', 'account_id': funding.id, 'debit': 21}),
+                Command.create({'name': 'Noorix sales', 'account_id': self.accounts['income'].id, 'credit': 20}),
+                Command.create({'name': 'Noorix VAT', 'account_id': vat.id, 'credit': 1,
+                                'tax_tag_ids': [Command.set(tag.ids)]}),
+            ],
+        })
+        hidden_tax_move.action_post()
+        rule = self._hide_record('account.move.line', hidden_tax_move.line_ids.filtered(lambda line: line.account_id == vat))
+        try:
+            with self.assertRaises(AccessError):
+                user_report.get_report({**self.filters, 'journal_ids': [other_journal.id]})
+        finally:
+            rule.unlink()
+        duplicate = move.copy(default={'journal_id': other_journal.id, 'ref': move.ref})
+        duplicate.action_post()
+        with self.assertRaises(ValidationError):
+            self.report.get_report(filtered)
+        rule = self._hide_record('account.move', duplicate)
+        try:
+            with self.assertRaises(AccessError):
+                user_report.get_report(filtered)
+        finally:
+            rule.unlink()
+
+    def test_explicit_noorix_mapping_groups_with_native_pos_and_keeps_sources(self):
+        if 'baseer.noorix.sales.evidence' not in self.env or 'pos.order' not in self.env:
+            self.skipTest('Optional Noorix and POS sources are unavailable')
+        from .test_unified_export import TestUnifiedExport
+        sar = self.env.ref('base.SAR')
+        sar.active = True
+        self.company.currency_id = sar
+        self.cash = self.env['account.account'].create({
+            'code': '959118', 'name': 'Native POS cash', 'account_type': 'asset_cash',
+            'company_ids': [Command.set(self.company.ids)],
+        })
+        self.income = self.accounts['income']
+        orders, pos_move, reader = TestUnifiedExport._native_channel_orders(self, count=1)
+        method = orders.payment_ids.payment_method_id
+        self.env['baseer.pl.noorix.channel.mapping'].create({
+            'company_id': self.company.id, 'source_channel': 'cash', 'payment_method_id': method.id,
+            'date_from': '2044-10-01', 'date_to': '2044-10-31', 'approval_reference': 'Synthetic approval',
+        })
+        noorix = self.env['account.move'].with_company(self.company).create({
+            'date': '2044-10-19', 'journal_id': self.journal.id,
+            'ref': 'NOORIX-SALES SHAMI 2044-10-19 | src:group-fixture',
+            'line_ids': [
+                Command.create({'name': 'Noorix sales cash 2044-10-19', 'account_id': self.cash.id, 'debit': 20}),
+                Command.create({'name': 'Noorix sales', 'account_id': self.income.id, 'credit': 20}),
+            ],
+        })
+        noorix.action_post()
+        filters = {**self.filters, 'date_from': '2044-10-01', 'date_to': '2044-10-31', 'tax_inclusive': True}
+        details = self.report.get_accounts(filters, 'income')['accounts']
+        account = next(row for row in details if row['id'] == self.income.id)
+        channel_key = 'payment_' + str(method.id)
+        self.assertEqual([(row['key'], row['amounts']['current']['amount']) for row in account['channels']],
+                         [(channel_key, '120.00')])
+        selector = {'kind': 'channel', 'account_id': self.income.id,
+                    'channel_key': channel_key, 'period_key': 'current'}
+        drilled = self.report._get_drilldown(filters, selector)
+        self.assertEqual(drilled['value'], '120.00')
+        self.assertEqual({row['source']['move_id'] for row in drilled['rows']}, {pos_move.id, noorix.id})
+        self.assertEqual(sum(Decimal(row['cells']['amount'].replace(',', '')) for row in drilled['rows']), Decimal('120.00'))
+        doc = self.report._get_export_document(filters)
+        channel_rows = [row for row in doc['rows'] if row.get('indent') == 2]
+        self.assertEqual(len(channel_rows), 1)
+        self.assertEqual(channel_rows[0]['cells']['current'], Decimal('120.00'))
+        # This synthetic fixture links the already posted move directly; close
+        # its test session before archiving, as the native method guard requires.
+        orders.session_id.write({'state': 'closed'})
+        method.active = False
+        archived = self.report.get_accounts(filters, 'income')['accounts']
+        archived = next(row for row in archived if row['id'] == self.income.id)
+        self.assertEqual([(row['key'], row['amounts']['current']['amount']) for row in archived['channels']],
+                         [(channel_key, '120.00')])
+        drilled = self.report._get_drilldown(filters, selector)
+        self.assertEqual({row['source']['move_id'] for row in drilled['rows']}, {pos_move.id, noorix.id})
+        self.assertEqual(drilled['value'], '120.00')
+        self.assertEqual(reader._get_drilldown(filters, selector)['value'], '120.00')
+        self.assertFalse(method.active)
+
+    def test_noorix_explicit_mapping_is_scoped_and_drillable(self):
+        if 'baseer.noorix.sales.evidence' not in self.env or 'pos.payment.method' not in self.env:
+            self.skipTest('Optional Noorix and POS sources are unavailable')
+        sar = self.env.ref('base.SAR')
+        sar.active = True
+        self.company.currency_id = sar
+        Account = self.env['account.account'].with_company(self.company)
+        receivable = Account.create({'code': '959115', 'name': 'Mapping receivable',
+                                     'account_type': 'asset_receivable', 'reconcile': True,
+                                     'company_ids': [Command.set(self.company.ids)]})
+        funding = Account.create({'code': '959116', 'name': 'Noorix funding', 'account_type': 'asset_current',
+                                  'company_ids': [Command.set(self.company.ids)]})
+        cash = self.env['account.journal'].with_company(self.company).create({
+            'name': 'Mapping cash', 'code': 'MPC', 'type': 'cash', 'company_id': self.company.id,
+        })
+        method = self.env['pos.payment.method'].with_company(self.company).create({
+            'name': 'Approved cash', 'company_id': self.company.id,
+            'journal_id': cash.id, 'receivable_account_id': receivable.id,
+        })
+        Mapping = self.env['baseer.pl.noorix.channel.mapping']
+        vals = {'company_id': self.company.id, 'source_channel': 'cash', 'payment_method_id': method.id,
+                'date_from': '2041-05-01', 'date_to': '2041-05-18', 'approval_reference': 'Owner test approval'}
+        mapping = Mapping.create(vals)
+        # Simulate a concurrent committed reservation invisible to the
+        # preliminary overlap query. Catching the error must not retain an
+        # unprotected parent mapping in this transaction.
+        self.cr.execute('''INSERT INTO baseer_pl_noorix_mapping_day
+            (mapping_id, company_id, source_channel, payment_method_id, day)
+            VALUES (%s,%s,%s,%s,%s)''',
+            [mapping.id, self.company.id, 'cash', method.id, '2041-06-01'])
+        with self.assertRaises(ValidationError):
+            Mapping.create({**vals, 'date_from': '2041-06-01', 'date_to': '2041-06-01',
+                            'approval_reference': 'unique race failure must not persist'})
+        self.assertFalse(Mapping.search([('approval_reference', '=', 'unique race failure must not persist')]))
+        self.cr.execute('DELETE FROM baseer_pl_noorix_mapping_day WHERE mapping_id=%s AND day=%s',
+                        [mapping.id, '2041-06-01'])
+        with self.assertRaises(ValidationError), self.cr.savepoint():
+            Mapping.create({**vals, 'date_from': '2041-05-18', 'date_to': '2041-05-20'})
+        with self.assertRaises(ValidationError), self.cr.savepoint():
+            Mapping.create({**vals, 'source_channel': 'bank'})
+        with self.assertRaises(ValidationError), self.cr.savepoint():
+            Mapping.create({**vals, 'date_from': '2041-06-01', 'date_to': '2041-05-01'})
+        foreign = self.env['res.company'].create({'name': 'Foreign mapping company'})
+        with self.assertRaises(ValidationError), self.cr.savepoint():
+            Mapping.create({**vals, 'company_id': foreign.id})
+        reader = self._accountant()
+        foreign_receivable = Account.with_company(foreign).create({
+            'code': '959117', 'name': 'Foreign mapping receivable', 'account_type': 'asset_receivable',
+            'reconcile': True, 'company_ids': [Command.set(foreign.ids)],
+        })
+        foreign_journal = self.env['account.journal'].with_company(foreign).create({
+            'name': 'Foreign mapping cash', 'code': 'FMC', 'type': 'cash', 'company_id': foreign.id,
+        })
+        foreign_method = self.env['pos.payment.method'].with_company(foreign).create({
+            'name': 'Foreign cash', 'company_id': foreign.id, 'journal_id': foreign_journal.id,
+            'receivable_account_id': foreign_receivable.id,
+        })
+        foreign_mapping = Mapping.with_company(foreign).create({
+            **vals, 'company_id': foreign.id, 'payment_method_id': foreign_method.id,
+        })
+        visible = Mapping.with_user(reader).with_context(allowed_company_ids=self.company.ids)
+        self.assertFalse(visible.search([('id', '=', foreign_mapping.id)]))
+        with self.assertRaises(AccessError), self.cr.savepoint():
+            visible.browse(foreign_mapping.id).read(['source_channel'])
+        with self.assertRaises(AccessError), self.cr.savepoint():
+            Mapping.with_user(reader).create(vals)
+
+        def source(day, amount):
+            move = self.env['account.move'].with_company(self.company).create({
+                'date': day, 'journal_id': self.journal.id, 'move_type': 'entry',
+                'ref': 'NOORIX-SALES SHAMI ' + day + ' | src:map-' + day,
+                'line_ids': [
+                    Command.create({'name': 'Noorix sales cash ' + day, 'account_id': funding.id, 'debit': amount}),
+                    Command.create({'name': 'Noorix sales', 'account_id': self.accounts['income'].id, 'credit': amount}),
+                ],
+            })
+            move.action_post()
+            return move
+        inside = source('2041-05-10', 20)
+        outside = source('2041-05-19', 30)
+        details = self.report.get_accounts(self.filters, 'income')['accounts']
+        account = next(item for item in details if item['id'] == self.accounts['income'].id)
+        channels = {item['key']: item['amounts']['current']['amount'] for item in account['channels']}
+        self.assertEqual(channels['payment_' + str(method.id)], '20.00')
+        self.assertEqual(channels['noorix_cash'], '30.00')
+        self.assertEqual(account['amounts']['current']['amount'], '50.00')
+        selector = {'kind': 'channel', 'account_id': self.accounts['income'].id,
+                    'channel_key': 'payment_' + str(method.id), 'period_key': 'current'}
+        drilled = self.report._get_drilldown(self.filters, selector)
+        self.assertEqual(drilled['value'], '20.00')
+        self.assertEqual(drilled['total_count'], 1)
+        self.assertEqual(self.report._open_drill_source(self.filters, drilled['rows'][0]['source'])['res_id'], inside.id)
+        document = self.report._get_export_document(self.filters)
+        amounts = [row['cells']['current'] for row in document['rows'] if row.get('indent') == 2]
+        self.assertEqual(sum(amounts), Decimal('50.00'))
+        comparison = {'company_id': self.company.id, 'journal_ids': [],
+                      'period': {'kind': 'month', 'anchor_date': '2041-05-01', 'direction': 0},
+                      'comparison': {'kind': 'previous_period', 'count': 1, 'order': 'descending'}}
+        compared = self.report.get_accounts(comparison, 'income')['accounts']
+        compared = next(item for item in compared if item['id'] == self.accounts['income'].id)
+        mapped = next(item for item in compared['channels'] if item['key'] == 'payment_' + str(method.id))
+        self.assertEqual(mapped['amounts']['previous_1']['amount'], '0.00')
+        previous = self.report._get_drilldown(comparison, {**selector, 'period_key': 'previous_1'})
+        self.assertEqual(previous['value'], '0.00')
+        self.assertEqual(previous['total_count'], 0)
+        rule = self._hide_record('baseer.pl.noorix.channel.mapping', mapping)
+        try:
+            user_report = self.report.with_user(reader).with_context(allowed_company_ids=self.company.ids)
+            with self.assertRaises(AccessError):
+                user_report.get_accounts(self.filters, 'income')
+        finally:
+            rule.unlink()
+        method.active = False
+        inactive = self.report.get_accounts(self.filters, 'income')['accounts']
+        inactive = next(item for item in inactive if item['id'] == self.accounts['income'].id)
+        self.assertEqual(next(item for item in inactive['channels'] if item['key'] == 'payment_' + str(method.id))
+                         ['amounts']['current']['amount'], '20.00')
+        self.assertEqual(self.report._get_drilldown(self.filters, selector)['value'], '20.00')
+        archived_mapping = Mapping.create({**vals, 'date_from': '2041-06-01', 'date_to': '2041-06-02',
+                                          'approval_reference': 'Approved archived method'})
+        self.assertEqual(archived_mapping.payment_method_id, method.id)
+        self.assertFalse(method.active)
+        method.active = True
+        with self.assertRaises(AccessError), self.cr.savepoint():
+            mapping.write({'approval_reference': 'Edited without audit'})
+        mapping.write({'revoked': True, 'revocation_reason': 'Replace the approved target'})
+        revoked = self.report.get_accounts(self.filters, 'income')['accounts']
+        revoked = next(item for item in revoked if item['id'] == self.accounts['income'].id)
+        self.assertNotIn('payment_' + str(method.id), [item['key'] for item in revoked['channels']])
+        replacement = self.env['pos.payment.method'].with_company(self.company).create({
+            'name': 'Replacement cash', 'company_id': self.company.id,
+            'journal_id': cash.id, 'receivable_account_id': receivable.id,
+        })
+        Mapping.create({**vals, 'payment_method_id': replacement.id,
+                        'approval_reference': 'Owner replacement approval'})
+        replacement_key = 'payment_' + str(replacement.id)
+        updated = self.report.get_accounts(self.filters, 'income')['accounts']
+        updated = next(item for item in updated if item['id'] == self.accounts['income'].id)
+        self.assertEqual(next(item for item in updated['channels'] if item['key'] == replacement_key)
+                         ['amounts']['current']['amount'], '20.00')
+        self.assertEqual(self.report._get_drilldown(self.filters, {**selector, 'channel_key': replacement_key})
+                         ['value'], '20.00')
+        document = self.report._get_export_document(self.filters)
+        self.assertEqual(sum(row['cells']['current'] for row in document['rows'] if row.get('indent') == 2),
+                         Decimal('50.00'))
+        exclusive = self.report.get_accounts({**self.filters, 'tax_inclusive': False}, 'income')['accounts']
+        self.assertEqual(next(item for item in exclusive if item['id'] == self.accounts['income'].id)
+                         ['amounts']['current']['amount'], '50.00')
+        self.assertEqual(outside.state, 'posted')
+        self.assertEqual(mapping.company_id, self.company)
 
     def test_empty_reversal_and_late_posting_changes_rerun(self):
         empty = self.report.get_report(self.filters)
         self.assertEqual(empty['net_profit']['amount'], '0.00')
+        dashboard_cards = {card['key']: card for card in empty['dashboard']['cards']}
+        self.assertFalse(dashboard_cards['gross_margin']['value']['available'])
+        self.assertEqual(empty['dashboard']['waterfall'][-1]['amount']['amount'], '0.00')
         self.assertEqual(self.report.get_accounts(self.filters, 'income')['accounts'], [])
         self._entry('income', '10')
         self._entry('income', '-15')
         first = self.report.get_report(self.filters)
         self.assertEqual(first['net_profit']['amount'], '-5.00')
         self.assertTrue(first['net_profit']['negative'])
+        dashboard_cards = {card['key']: card for card in first['dashboard']['cards']}
+        self.assertFalse(dashboard_cards['gross_margin']['value']['available'])
+        self.assertIn('gross_margin_unavailable', first['dashboard']['notes'])
+        self.assertTrue(first['dashboard']['revenue_accounts'])
+        self.assertFalse(first['dashboard']['revenue_accounts'][0]['share']['available'])
+        self.assertIn('revenue_share_unavailable', first['dashboard']['notes'])
         self._entry('income', '8', day='2041-02-01')
         self.assertEqual(self.report.get_report(self.filters)['net_profit']['amount'], '3.00')
 

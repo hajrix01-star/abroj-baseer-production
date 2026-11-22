@@ -192,10 +192,17 @@ def measure_capacity():
     del accounts
 
     filters = {"company_id": company.id, "journal_ids": [], **PERIOD}
+    comparison_filters = {
+        **filters,
+        "comparison": {
+            "kind": "custom", "count": 1, "order": "descending",
+            "date_from": "2040-01-01", "date_to": "2040-12-31",
+        },
+    }
     registry, uid = env.registry, readonly.id
     context = {"allowed_company_ids": [company.id], "lang": "en_US"}
 
-    def measure(method, *args):
+    def measure(method, *args, report_filters=None):
         before = memory_snapshot()
         with registry.cursor() as cursor:
             isolated = api.Environment(cursor, uid, context, su=False)
@@ -205,7 +212,7 @@ def measure_capacity():
             before_queries = cursor.sql_log_count
             started = time.perf_counter()
             try:
-                result = getattr(report, method)(filters, *args)
+                result = getattr(report, method)(report_filters or filters, *args)
             except Exception as error:
                 print("BASEER_PL_BENCHMARK_FAILURE=" + json.dumps({
                     "method": method, "error": type(error).__name__,
@@ -228,6 +235,13 @@ def measure_capacity():
         **{k: v for k, v in first.items() if k != "result"},
         "memory": memory_snapshot(),
     }), flush=True)
+    comparison = measure("get_report", report_filters=comparison_filters)
+    if len(comparison["result"].get("periods", [])) != 2:
+        raise RuntimeError("The two-period dashboard measurement did not return two periods")
+    print("BASEER_PL_BENCHMARK_TWO_PERIODS=" + json.dumps({
+        **{k: v for k, v in comparison.items() if k != "result"},
+        "memory": memory_snapshot(),
+    }), flush=True)
     page1 = measure("get_accounts", "income", 1)
     page5 = measure("get_accounts", "income", 5)
     if len(page1["result"]["accounts"]) != 100:
@@ -242,6 +256,7 @@ def measure_capacity():
         "read_only_accountant_id": uid,
         "read_only_accountant_su": False,
         "first_report_fresh_orm_warm_db": {k: v for k, v in first.items() if k != "result"},
+        "two_period_report_fresh_orm_warm_db": {k: v for k, v in comparison.items() if k != "result"},
         "account_page_1_fresh_orm": {k: v for k, v in page1.items() if k != "result"},
         "account_page_5_fresh_orm": {k: v for k, v in page5.items() if k != "result"},
         "memory_after_single_reads": memory_snapshot(),
@@ -249,12 +264,12 @@ def measure_capacity():
     print("BASEER_PL_BENCHMARK_SINGLE=" + json.dumps(single, sort_keys=True), flush=True)
     gc.collect()
 
-    def concurrent_sample(readers):
+    def concurrent_sample(readers, report_filters):
         barrier = Barrier(readers)
 
         def one_read(_index):
             barrier.wait(timeout=30)
-            sample = measure("get_report")
+            sample = measure("get_report", report_filters=report_filters)
             return (sample["seconds"], sample["sql_queries"])
 
         started = time.perf_counter()
@@ -283,9 +298,9 @@ def measure_capacity():
         return memory["effective_headroom_mb"] >= required_mb, memory, required_mb
 
     two_safe, two_memory, two_required = safe_for(2)
-    if first["seconds"] <= 15.0 and two_safe:
+    if comparison["seconds"] <= 15.0 and two_safe:
         try:
-            two_readers = concurrent_sample(2)
+            two_readers = concurrent_sample(2, comparison_filters)
         except MemoryError:
             print("BASEER_PL_BENCHMARK_FAILURE=" + json.dumps({
                 "readers": 2, "error": "MemoryError", "memory": memory_snapshot(),
@@ -294,7 +309,7 @@ def measure_capacity():
     else:
         two_readers = {
             "status": "SKIPPED_SAFETY_GUARD",
-            "reason": "First report exceeds 15 s or measured headroom is insufficient",
+            "reason": "Two-period report exceeds 15 s or measured headroom is insufficient",
             "required_headroom_mb": two_required, "memory": two_memory,
         }
     print("BASEER_PL_BENCHMARK_TWO_READERS=" + json.dumps(two_readers), flush=True)
@@ -303,7 +318,7 @@ def measure_capacity():
     if (first["seconds"] <= 3.0 and two_readers.get("max_seconds", 999) <= 5.0
             and ten_safe):
         try:
-            ten_readers = concurrent_sample(10)
+            ten_readers = concurrent_sample(10, comparison_filters)
         except MemoryError:
             print("BASEER_PL_BENCHMARK_FAILURE=" + json.dumps({
                 "readers": 10, "error": "MemoryError", "memory": memory_snapshot(),

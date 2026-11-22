@@ -1,12 +1,13 @@
 {
     "name": "Baseer Profit and Loss Report",
     "summary": "Posted profit and loss inside Baseer Reports",
-    "version": "19.0.1.1.4",
+    "version": "19.0.1.1.6",
     "author": "Baseer",
     "license": "LGPL-3",
     "category": "Accounting/Reporting",
     "depends": ["account", "baseer_reports_menu"],
-    "data": ["report/profit_loss_report.xml"],
+    "data": ["security/noorix_mapping_security.xml", "security/ir.model.access.csv",
+             "views/noorix_mapping_views.xml", "report/profit_loss_report.xml"],
     "assets": {
         "web.assets_backend": [
             "baseer_profit_loss_report/static/src/profit_loss.js",

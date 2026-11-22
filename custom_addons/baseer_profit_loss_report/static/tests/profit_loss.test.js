@@ -13,6 +13,7 @@ const MODEL = "baseer.profit.loss.report";
 defineMailModels();
 const filters = {
     company_id: 1,
+    tax_inclusive: true,
     period: { kind: "month", anchor_date: "2026-10-15", direction: 0, date_from: "", date_to: "" },
     comparison: { kind: "previous_period", order: "descending", count: 1, date_from: "", date_to: "" },
     journal_ids: [],
@@ -38,6 +39,25 @@ function mockReportRequests(calls) {
                 { kind: "fiscal_year", display_label: "2026" }, { kind: "custom", display_label: "Custom Dates" },
             ] },
             is_partial_journals: false,
+            dashboard: {
+                cards: [
+                    { key: "income", value: { amount: "1,150.00", negative: false }, change: { available: true, display: "27.78%", direction: "up" } },
+                    { key: "cost_of_sales", value: { amount: "0.00", negative: false }, change: { available: false, display: "", direction: "flat" } },
+                    { key: "gross_profit", value: { amount: "1,150.00", negative: false }, change: { available: true, display: "27.78%", direction: "up" } },
+                    { key: "gross_margin", value: { available: true, display: "100.00%", negative: false }, change: { available: false, display: "", direction: "flat" } },
+                    { key: "expense", value: { amount: "1,200.00", negative: false }, change: { available: true, display: "60.00%", direction: "down" } },
+                    { key: "net_income", value: { amount: "-50.00", negative: true }, change: { available: true, display: "-133.33%", direction: "down" } },
+                ],
+                waterfall: [
+                    { key: "income", amount: { amount: "1,150.00", negative: false }, visual_width: 96, tone: "positive" },
+                    { key: "cost_of_sales", amount: { amount: "0.00", negative: false }, visual_width: 0, tone: "neutral" },
+                    { key: "expense", amount: { amount: "-1,200.00", negative: true }, visual_width: 100, tone: "negative" },
+                    { key: "net_other_income", amount: { amount: "0.00", negative: false }, visual_width: 0, tone: "neutral" },
+                    { key: "net_income", amount: { amount: "-50.00", negative: true }, visual_width: 4, tone: "negative" },
+                ],
+                revenue_accounts: [{ id: 7, code: "400000", name: "Sales", amount: { amount: "1,150.00", negative: false }, share: { available: true, display: "100.00%" } }],
+                notes: ["posted_only", "comparison_available"],
+            },
             rows: [
                 { key: "income", kind: "section", section: "income", label: "Income", expandable: true,
                     amounts: { current: { amount: "1,150.00", negative: false }, previous_1: { amount: "900.00", negative: false } } },
@@ -121,6 +141,26 @@ test("profit and loss remains a real accounting-only report component", () => {
     expect(descriptor.groups).toEqual(["account.group_account_readonly", "account.group_account_user", "account.group_account_manager"]);
 });
 
+test("the applied tax basis and management note follow the displayed report", async () => {
+    patchWithCleanup(user, { lang: "en_US" });
+    await mountReport([]);
+    expect(document.querySelector(".o_baseer_report_title").textContent.includes("Tax inclusive")).toBe(true);
+    expect(document.querySelector("[data-testid='tax-management-note']").textContent.includes("not accounting net profit")).toBe(true);
+    await click(".o_baseer_pl_filter_chip");
+    await waitUntil(() => document.querySelector(".o_baseer_report_title")?.textContent.includes("Tax exclusive"));
+    expect(document.querySelector("[data-testid='tax-management-note']")).toBe(null);
+});
+
+test("the applied tax basis is described in Arabic", async () => {
+    patchWithCleanup(user, { lang: "ar_001" });
+    await mountReport([]);
+    expect(document.querySelector(".o_baseer_report_title").textContent.includes("شامل الضريبة")).toBe(true);
+    expect(document.querySelector("[data-testid='tax-management-note']").textContent.includes("ليس صافي الربح المحاسبي")).toBe(true);
+    await click(".o_baseer_pl_filter_chip");
+    await waitUntil(() => document.querySelector(".o_baseer_report_title")?.textContent.includes("غير شامل الضريبة"));
+    expect(document.querySelector("[data-testid='tax-management-note']")).toBe(null);
+});
+
 test("profit and loss shared exports send only the applied report filters", async () => {
     const requests = [];
     patchWithCleanup(download, { _download: async (request) => requests.push(request) });
@@ -141,6 +181,31 @@ test("amount styling receives only server-formatted values", () => {
     expect(classify({ amount: "0.000", negative: true })).toBe("is-zero");
     expect(classify({ amount: "-1,200.00", negative: true })).toBe("is-negative");
     expect(classify({ amount: "1,200.00", negative: false })).toBe("");
+});
+
+test("financial dashboard retains the approved information order and server display values", async () => {
+    await mountReport([]);
+    expect([...document.querySelectorAll("[data-testid]")].map((node) => node.dataset.testid).filter((value) => value === "financial-filters" || value === "financial-kpis" || value === "financial-waterfall" || value === "financial-statement" || value === "financial-revenue-accounts" || value === "financial-notes")).toEqual([
+        "financial-filters", "financial-kpis", "financial-waterfall", "financial-statement", "financial-revenue-accounts", "financial-notes",
+    ]);
+    expect([...document.querySelectorAll("[data-testid^='financial-kpi-']")].map((node) => node.dataset.testid)).toEqual([
+        "financial-kpi-income", "financial-kpi-cost_of_sales", "financial-kpi-gross_profit",
+        "financial-kpi-gross_margin", "financial-kpi-expense", "financial-kpi-net_income",
+    ]);
+    expect(document.querySelector("[data-testid='financial-kpi-income'] .o_baseer_financial_kpi_value").textContent).toBe("1,150.00");
+    expect([...document.querySelectorAll("[data-testid='financial-waterfall'] .o_baseer_financial_waterfall_label")].map((node) => node.textContent)).toEqual([
+        "Income", "Cost of sales", "Expenses", "Net other income", "Net income",
+    ]);
+    expect(document.querySelector("[data-testid='financial-statement']")).not.toBe(null);
+    expect(document.querySelector("[data-testid='financial-revenue-accounts']")).not.toBe(null);
+    expect(document.querySelector("[data-testid='financial-notes']")).not.toBe(null);
+});
+
+test("an unavailable server margin is never relabelled as a zero value", () => {
+    const value = BaseerProfitLossReport.prototype.dashboardValue.call(
+        { labels: { unavailable: "Unavailable" } }, { value: { available: false, display: "" } },
+    );
+    expect(value).toBe("Unavailable");
 });
 
 test("period navigation delegates calendar movement to the server", async () => {
@@ -375,7 +440,8 @@ test("mounted Arabic report keeps backend values and exposes Arabic period filte
     patchWithCleanup(user, { lang: "ar_001" });
     await mountReport([]);
     expect(document.querySelector(".o_baseer_pl_report").getAttribute("dir")).toBe("rtl");
-    expect(document.querySelector(".o_baseer_report_title").textContent).toBe("الربح والخسارة");
-    expect(document.querySelector('.o_baseer_pl_filter_chip[aria-label="المقارنة"]').textContent.includes("دون مقارنة") || document.querySelector('.o_baseer_pl_filter_chip[aria-label="المقارنة"]').textContent.includes("الفترات السابقة")).toBe(true);
+    expect(document.querySelector(".o_baseer_report_title").textContent.includes("الأداء المالي — الربح والخسارة")).toBe(true);
+    expect(document.querySelector(".o_baseer_report_title").textContent.includes("شامل الضريبة")).toBe(true);
+    expect(document.querySelector('.o_baseer_pl_filter_chip[aria-label="المقارنة"]').textContent.includes("دون مقارنة") || document.querySelector('.o_baseer_pl_filter_chip[aria-label="المقارنة"]').textContent.includes("الفترة السابقة")).toBe(true);
     expect(document.querySelector(".o_baseer_pl_result .is-negative").textContent).toBe("-50.00");
 });

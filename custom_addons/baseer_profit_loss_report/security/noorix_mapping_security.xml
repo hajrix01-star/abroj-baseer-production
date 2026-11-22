@@ -1,0 +1,7 @@
+<odoo>
+  <record id="noorix_mapping_company_rule" model="ir.rule">
+    <field name="name">Noorix display mappings by allowed company</field>
+    <field name="model_id" ref="model_baseer_pl_noorix_channel_mapping"/>
+    <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+  </record>
+</odoo>

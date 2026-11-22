@@ -1,3 +1,4 @@
 # These release-pinned files must retain their original bytes on every platform.
 *.ttf -text
-OFL.txt -text
+# Preserve the upstream license verbatim, including its existing trailing space.
+OFL.txt -text -whitespace

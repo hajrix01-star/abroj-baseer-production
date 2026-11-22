@@ -169,6 +169,7 @@ static class AgentLifecycle
         File.Copy(sourceExecutable, InstalledExecutable, overwrite: true);
         RegisterRepairProtocol(InstalledExecutable);
         RegisterLogonTask(InstalledExecutable);
+        RegisterStatusShortcut(InstalledExecutable);
         var configPath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
             "BaseerPrintAgent", "config.json");
@@ -229,6 +230,7 @@ static class AgentLifecycle
         ReleaseLocalRuntime(configPath);
         StopPreviousAgents();
         RegisterLogonTask(executablePath);
+        RegisterStatusShortcut(executablePath);
         EnsureWatchdog(executablePath);
         return 0;
     }
@@ -423,6 +425,42 @@ static class AgentLifecycle
         key.SetValue("URL Protocol", string.Empty);
         using var command = key.CreateSubKey(@"shell\open\command");
         command!.SetValue(string.Empty, $"\"{executablePath}\" repair");
+    }
+
+    private static void RegisterStatusShortcut(string executablePath)
+    {
+        // All-users Start is discoverable from every cashier account. This is
+        // installer-owned only; opening status never requires installation or elevation.
+        object? shell = null;
+        object? shortcut = null;
+        try
+        {
+            var folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonPrograms), ProductFolder);
+            Directory.CreateDirectory(folder);
+            var shellType = Type.GetTypeFromProgID("WScript.Shell");
+            if (shellType is null) return;
+            shell = Activator.CreateInstance(shellType);
+            if (shell is null) return;
+            dynamic automation = shell;
+            shortcut = automation.CreateShortcut(Path.Combine(folder, "Baseer Print Status.lnk"));
+            dynamic link = shortcut;
+            link.TargetPath = executablePath;
+            link.Arguments = "status";
+            link.WorkingDirectory = Path.GetDirectoryName(executablePath)!;
+            link.Description = "حالة طباعة بصير / Baseer print diagnostics";
+            link.Save();
+        }
+        catch
+        {
+            // An optional shortcut cannot interrupt installation or a repair.
+        }
+        finally
+        {
+            if (shortcut is not null && System.Runtime.InteropServices.Marshal.IsComObject(shortcut))
+                System.Runtime.InteropServices.Marshal.FinalReleaseComObject(shortcut);
+            if (shell is not null && System.Runtime.InteropServices.Marshal.IsComObject(shell))
+                System.Runtime.InteropServices.Marshal.FinalReleaseComObject(shell);
+        }
     }
 
     private static void RegisterLogonTask(string executablePath)

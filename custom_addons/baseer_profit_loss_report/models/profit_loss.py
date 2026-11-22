@@ -474,7 +474,7 @@ class BaseerProfitLossReport(models.AbstractModel):
                         entry['credit'] += delta
         return totals
 
-    def _inclusive_adjustments(self, domain):
+    def _inclusive_adjustments(self, domain, *, noorix_sources=None):
         """Return proved tax additions on visible P&L lines, or refuse ambiguity."""
         AML = self.env['account.move.line'].with_context(active_test=False)
         visible = AML.search(domain)
@@ -502,6 +502,8 @@ class BaseerProfitLossReport(models.AbstractModel):
                 raise AccessError(_('Tax-inclusive entries must belong to one company.'))
             noorix, _incomplete = self._verified_noorix_gross_channels(
                 companies[0], min(dates), max(dates), domain)
+            if noorix_sources is not None:
+                noorix_sources.update(noorix)
         result = {}
         visible_ids = set(visible.ids)
         for move in moves:
@@ -1198,28 +1200,48 @@ class BaseerProfitLossReport(models.AbstractModel):
             return None
         return by_order
 
-    def _pos_correction_pair(self, move, company):
+    def _channel_move_census(self, company, move_ids):
+        """Batch only identity checks for the caller's already verified moves."""
+        self.env['pos.order'].flush_model(['company_id', 'state', 'account_move', 'session_id'])
+        self.env['pos.session'].flush_model(['move_id'])
+        self.env.cr.execute('''SELECT COALESCE(o.account_move, s.move_id), array_agg(o.id)
+            FROM pos_order o LEFT JOIN pos_session s ON s.id=o.session_id
+            WHERE o.company_id=%s AND o.state IN ('paid', 'done', 'invoiced')
+              AND (o.account_move=ANY(%s) OR (o.account_move IS NULL AND s.move_id=ANY(%s)))
+            GROUP BY 1''', [company.id, move_ids, move_ids])
+        orders = {move_id: set(ids) for move_id, ids in self.env.cr.fetchall()}
+        self.env['account.partial.reconcile'].flush_model(['debit_move_id', 'credit_move_id'])
+        self.env.cr.execute('''WITH linked AS (
+            SELECT p.id, d.move_id AS scoped_move, d.move_id AS debit_move, c.move_id AS credit_move
+            FROM account_move_line d
+            JOIN account_partial_reconcile p ON p.debit_move_id=d.id
+            JOIN account_move_line c ON c.id=p.credit_move_id
+            WHERE d.move_id=ANY(%s)
+            UNION
+            SELECT p.id, c.move_id, d.move_id, c.move_id
+            FROM account_move_line c
+            JOIN account_partial_reconcile p ON p.credit_move_id=c.id
+            JOIN account_move_line d ON d.id=p.debit_move_id
+            WHERE c.move_id=ANY(%s)
+        )
+        SELECT scoped_move, array_agg(linked.id) FROM linked
+        JOIN account_move dm ON dm.id=debit_move
+        JOIN account_move cm ON cm.id=credit_move
+        WHERE dm.ref LIKE 'POS-%%-ADMIN-CORRECTION-%%' OR cm.ref LIKE 'POS-%%-ADMIN-CORRECTION-%%'
+        GROUP BY scoped_move''', [move_ids, move_ids])
+        return orders, dict(self.env.cr.fetchall())
+
+    def _pos_correction_pair(self, move, company, partial_ids):
         """Prove one isolated, explicitly reconciled POS correction, or return None.
 
-        SQL checks identity completeness only. All values and relationships are
-        read through the caller's ORM environment and record rules.
+        The census supplies IDs only. Values and relationships still require
+        the caller's ORM access checks.
         """
         if (move.state != 'posted' or move.company_id != company
                 or move.currency_id != company.currency_id):
             return None
         move.check_access('read')
         Partial = self.env['account.partial.reconcile']
-        Partial.flush_model(['debit_move_id', 'credit_move_id'])
-        self.env.cr.execute('''SELECT p.id FROM account_partial_reconcile p
-            JOIN account_move_line d ON d.id=p.debit_move_id
-            JOIN account_move_line c ON c.id=p.credit_move_id
-            JOIN account_move dm ON dm.id=d.move_id
-            JOIN account_move cm ON cm.id=c.move_id
-            WHERE (d.move_id = %s OR c.move_id = %s)
-            AND (dm.ref LIKE 'POS-%%-ADMIN-CORRECTION-%%'
-                 OR cm.ref LIKE 'POS-%%-ADMIN-CORRECTION-%%')''',
-            [move.id, move.id])
-        partial_ids = [row[0] for row in self.env.cr.fetchall()]
         suspected = bool((move.ref or '').startswith('POS-') and '-ADMIN-CORRECTION-' in move.ref)
         if not partial_ids:
             return {} if suspected else None
@@ -1373,49 +1395,49 @@ class BaseerProfitLossReport(models.AbstractModel):
         """Only attribute a whole move/account after exact POS net matching."""
         lines = self.env['account.move.line'].search(domain)
         self._verify_links(lines)
-        grouped = {}
+        posted_by_move_account = {}
         for line in lines:
             key = (line.move_id.id, line.account_id.id)
-            grouped[key] = grouped.get(key, Decimal('0')) - self._decimal(line.balance)
+            posted_by_move_account[key] = posted_by_move_account.get(key, Decimal('0')) - self._decimal(line.balance)
+        grouped = dict(posted_by_move_account)
         noorix = {}
         method_by_account = {}
         approved_mappings = []
-        if self.env.context.get('_baseer_pl_inclusive'):
-            for line, delta in self._inclusive_adjustments(domain).items():
+        inclusive = self.env.context.get('_baseer_pl_inclusive')
+        if inclusive:
+            for line, delta in self._inclusive_adjustments(domain, noorix_sources=noorix).items():
                 key = (line.move_id.id, line.account_id.id)
                 grouped[key] = grouped.get(key, Decimal('0')) + delta
         dates = [line.date for line in lines if line.date]
-        if dates:
+        if dates and not inclusive:
             try:
                 noorix, _incomplete = self._verified_noorix_gross_channels(
                     company, min(dates), max(dates), domain)
             except AccessError:
-                if self.env.context.get('_baseer_pl_inclusive'):
-                    raise
                 # Report-only users retain the posted net, without learning
                 # whether an inaccessible source or evidence record exists.
                 noorix = {}
-            if noorix:
-                if self.env.context.get('_baseer_pl_inclusive'):
-                    method_by_account = self._noorix_payment_methods(company)
-                try:
-                    approved_mappings = self._noorix_display_mappings(company, min(dates), max(dates))
-                except AccessError:
-                    if self.env.context.get('_baseer_pl_inclusive'):
-                        raise
-                    noorix = {}
+        if noorix and dates:
+            if inclusive:
+                method_by_account = self._noorix_payment_methods(company)
+            try:
+                approved_mappings = self._noorix_display_mappings(company, min(dates), max(dates))
+            except AccessError:
+                if inclusive:
+                    raise
+                noorix = {}
         result = {}
         # Only IDs are reused within this invocation; no context, cross-request,
         # amount or visibility cache. Guard failures retain their original scope.
         child_ids = {'lines': {}, 'payments': {}}
         accounting_amounts = {}
         correction_pairs = {}
+        order_census = None
         for (move_id, account_id), amount in grouped.items():
             allocation = {UNALLOCATED: ('', amount)}
-            posted_net = sum((-self._decimal(line.balance) for line in lines
-                              if line.move_id.id == move_id and line.account_id.id == account_id), Decimal('0'))
+            posted_net = posted_by_move_account.get((move_id, account_id), Decimal('0'))
             source = noorix.get((move_id, account_id))
-            if source is not None and not self.env.context.get('_baseer_pl_inclusive'):
+            if source is not None and not inclusive:
                 source_channels, _funding_accounts = source
                 move = lines.env['account.move'].browse(move_id)
                 estimated = self._noorix_net_estimate(move, company, posted_net,
@@ -1447,32 +1469,33 @@ class BaseerProfitLossReport(models.AbstractModel):
                     name = method.display_name if method else names[key][0 if arabic else 1]
                     previous = allocation.get(channel, (name, Decimal('0')))
                     allocation[channel] = (name, previous[1] + value)
-            if source is None and not (not self.env.context.get('_baseer_pl_inclusive') and
+            if source is None and not (not inclusive and
                                        'NOORIX-SALES' in (lines.env['account.move'].browse(move_id).ref or '').upper()):
                 try:
                     Order = self.env['pos.order']
                     Order.browse().check_access('read')
-                    orders = Order.search([
-                        ('company_id', '=', company.id), ('state', 'in', ('paid', 'done', 'invoiced')),
-                        '|', ('account_move', '=', move_id),
-                        '&', ('account_move', '=', False), ('session_id.move_id', '=', move_id),
-                    ])
-                    orders.check_access('read')
+                    if order_census is None:
+                        move_ids = sorted({key[0] for key in grouped})
+                        move_orders, correction_census = self._channel_move_census(company, move_ids)
+                        verified_orders = Order.search([
+                            ('id', 'in', sorted({order_id for ids in move_orders.values() for order_id in ids})),
+                            ('company_id', '=', company.id), ('state', 'in', ('paid', 'done', 'invoiced')),
+                        ])
+                        order_rank = {order_id: index for index, order_id in enumerate(verified_orders.ids)}
+                        order_census = move_orders
+                    order_ids = order_census.get(move_id, set())
                     # Rules may silently hide some orders. IDs are used only to
                     # prove completeness, never to expose hidden amounts/names.
-                    Order.flush_model(['company_id', 'state', 'account_move', 'session_id'])
-                    self.env['pos.session'].flush_model(['move_id'])
-                    self.env.cr.execute('''SELECT o.id FROM pos_order o
-                        LEFT JOIN pos_session s ON s.id=o.session_id
-                        WHERE o.company_id=%s AND o.state IN ('paid','done','invoiced')
-                        AND (o.account_move=%s OR (o.account_move IS NULL AND s.move_id=%s))''',
-                        [company.id, move_id, move_id])
-                    if set(orders.ids) != {item[0] for item in self.env.cr.fetchall()}:
+                    if not order_ids <= order_rank.keys():
                         raise AccessError(_('POS source is not available.'))
+                    orders = Order.browse(sorted(order_ids, key=order_rank.__getitem__))
+                    orders.check_access('read')
                     orders.session_id.check_access('read')
                     if move_id not in correction_pairs:
                         try:
-                            pair = self._pos_correction_pair(lines.env['account.move'].browse(move_id), company)
+                            pair = self._pos_correction_pair(
+                                lines.env['account.move'].browse(move_id), company,
+                                correction_census.get(move_id, []))
                         except UserError:
                             # A failed correction proof must not fall back to an
                             # ordinary POS attribution of the same source.
@@ -1522,7 +1545,7 @@ class BaseerProfitLossReport(models.AbstractModel):
                                            for order in orders]
                                 if sum((net for _order, net in rebuilt), Decimal('0')) == posted_net:
                                     order_amounts = rebuilt
-                    if order_amounts is not None and self.env.context.get('_baseer_pl_inclusive'):
+                    if order_amounts is not None and inclusive:
                         gross_orders = [(order, -abs(self._decimal(order.amount_total)) if order.is_refund
                                          else self._decimal(order.amount_total))
                                         for order, _net in order_amounts]

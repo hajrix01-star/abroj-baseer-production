@@ -39,6 +39,7 @@ class BaseerPrintAgentRelease(models.Model):
         string='تنزيل تحديث جهاز مرتبط من GitHub',
         help='Downloads the general installer. It does not create a new pairing.',
     )
+    user_download_url = fields.Char(compute='_compute_user_download_url')
     signer_identity = fields.Char(help='Optional Authenticode publisher identity.')
     state = fields.Selection([
         ('draft', 'Draft'),
@@ -53,6 +54,20 @@ class BaseerPrintAgentRelease(models.Model):
 
     _BOOTSTRAP_MAGIC = b'BASEER-BOOTSTRAP-V1'
     _BOOTSTRAP_MAX_BYTES = 4096
+
+    @api.depends('version', 'catalog_only', 'github_download_url')
+    def _compute_user_download_url(self):
+        # Only versions with a separately published, byte-identical named asset
+        # belong here. Older releases may have only the original fixed filename.
+        named_assets = {'1.5.22'}
+        for record in self:
+            url = record.github_download_url or ''
+            expected = ('https://github.com/hajrix01-star/abroj-baseer-production/'
+                        f'releases/download/baseer-print-agent-{record.version}/Baseer.PrintAgent.exe')
+            if record.catalog_only and record.version in named_assets and url == expected:
+                record.user_download_url = url.removesuffix('Baseer.PrintAgent.exe') + f'Baseer.PrintAgent-{record.version}.exe'
+            else:
+                record.user_download_url = url or False
 
     def _require_system_admin(self):
         if not self.env.user.has_group('base.group_system'):
@@ -203,7 +218,7 @@ class BaseerPrintAgentRelease(models.Model):
             raise UserError(_('Approve the release before downloading it.'))
         return {
             'type': 'ir.actions.act_url',
-            'url': self.github_download_url or self._PUBLIC_DOWNLOAD_URL,
+            'url': self.user_download_url or self._PUBLIC_DOWNLOAD_URL,
             'target': 'self',
         }
 

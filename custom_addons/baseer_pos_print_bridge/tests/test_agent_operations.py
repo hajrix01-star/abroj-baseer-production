@@ -155,6 +155,25 @@ class TestBaseerAgentOperations(TransactionCase):
         self.assertEqual(release.state, 'retired')
         self.assertEqual(replacement.state, 'approved')
 
+    def test_versioned_user_download_preserves_machine_manifest_and_legacy(self):
+        releases = self.env['baseer.print.agent.release'].sudo()
+        legacy = releases._approved_pairing_release()
+        digest = '1' * 64
+        releases._register_github_release('1.5.22', digest)
+        current = releases.search([('version', '=', '1.5.22')], limit=1)
+        fixed = ('https://github.com/hajrix01-star/abroj-baseer-production/'
+                 'releases/download/baseer-print-agent-1.5.22/Baseer.PrintAgent.exe')
+        named = fixed.replace('Baseer.PrintAgent.exe', 'Baseer.PrintAgent-1.5.22.exe')
+        self.assertEqual(current.github_download_url, fixed)
+        self.assertEqual(current.user_download_url, named)
+        self.assertEqual(current.action_download()['url'], named)
+        self.assertEqual(self.config.action_baseer_download_agent()['url'], named)
+        self.assertEqual(releases._pilot_update_manifest()['download_url'], fixed)
+        self.assertEqual(releases._approved_pairing_release(), legacy)
+        older = releases.search([('version', '=', '1.5.16')], limit=1)
+        if older:
+            self.assertEqual(older.user_download_url, older.github_download_url)
+
     def test_pos_settings_open_the_permanent_download_url(self):
         self.env['baseer.print.agent.release'].search([('catalog_only', '=', True)]).write({'state': 'retired'})
         action = self.config.action_baseer_download_agent()

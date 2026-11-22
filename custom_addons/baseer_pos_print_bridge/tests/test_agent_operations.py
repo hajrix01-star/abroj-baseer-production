@@ -157,7 +157,13 @@ class TestBaseerAgentOperations(TransactionCase):
 
     def test_versioned_user_download_preserves_machine_manifest_and_legacy(self):
         releases = self.env['baseer.print.agent.release'].sudo()
-        legacy = releases._approved_pairing_release()
+        legacy = releases.create({
+            'version': '1.5.15-pairing-test',
+            'artifact_filename': 'Baseer.PrintAgent.exe',
+            'artifact': base64.b64encode(b'previous pairing installer'),
+        })
+        legacy.action_approve()
+        legacy.write({'approved_at': fields.Datetime.now() - timedelta(days=1)})
         digest = 'dcc183a967686ce3d5a262bfa5d100a02f615e24fed007892d7e6d8c4dd09593'
         releases._register_github_release('1.5.22', digest)
         current = releases.search([('version', '=', '1.5.22')], limit=1)
@@ -171,6 +177,7 @@ class TestBaseerAgentOperations(TransactionCase):
         self.assertEqual(releases._pilot_update_manifest()['download_url'], fixed)
         self.assertEqual(releases.auto_update_manifest()['download_url'], fixed)
         self.assertEqual(releases._approved_pairing_release(), legacy)
+        self.assertEqual(legacy.state, 'approved')
         older = releases.search([('version', '=', '1.5.16')], limit=1)
         if older:
             self.assertEqual(older.user_download_url, older.github_download_url)

@@ -415,7 +415,7 @@ class ProcurementRequest(models.Model):
     ], string='Purchase route', default='representative', required=True, index=True, tracking=True)
     can_edit_plan = fields.Boolean(compute='_compute_can_edit_catalog_plan')
 
-    @api.depends('state', 'company_id')
+    @api.depends('state', 'company_id', 'catalog_direct_submitted', 'history_removed_at')
     @api.depends_context('uid', 'company')
     def _compute_can_edit_catalog_plan(self):
         for request in self:
@@ -450,6 +450,9 @@ class ProcurementRequest(models.Model):
     list_only = fields.Boolean(string='Order list only', default=False, readonly=True, copy=False, index=True)
     list_closed_at = fields.Datetime(readonly=True, copy=False)
     list_closed_by_id = fields.Many2one('res.users', readonly=True, copy=False, ondelete='restrict')
+    catalog_direct_submitted = fields.Boolean(readonly=True, copy=False)
+    history_removed_at = fields.Datetime(readonly=True, copy=False, tracking=True)
+    history_removed_by_id = fields.Many2one('res.users', readonly=True, copy=False, ondelete='restrict')
     cancellation_reason = fields.Text(copy=False, readonly=True)
     state = fields.Selection([
         ('draft', 'Draft'), ('sent', 'Sent for purchase'), ('received', 'Cashier receipt confirmed'),
@@ -482,7 +485,8 @@ class ProcurementRequest(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
-            if 'list_only' in vals or 'list_closed_at' in vals or 'list_closed_by_id' in vals:
+            if {'list_only', 'list_closed_at', 'list_closed_by_id', 'catalog_direct_submitted',
+                'history_removed_at', 'history_removed_by_id'} & vals.keys():
                 raise AccessError(_('The request workflow is controlled by the server.'))
             vals['list_only'] = True
             internal = bool(self.env.context.get(REQUEST_CREATE_INTERNAL) and self.env.su)
@@ -503,6 +507,9 @@ class ProcurementRequest(models.Model):
             vals['actual_confirmed_by_id'] = False
             vals['list_closed_at'] = False
             vals['list_closed_by_id'] = False
+            vals['catalog_direct_submitted'] = False
+            vals['history_removed_at'] = False
+            vals['history_removed_by_id'] = False
             if not internal:
                 if vals.get('company_id') and int(vals['company_id']) != self.env.company.id:
                     raise AccessError(_('Procurement requests must be created in the active company.'))
@@ -576,6 +583,7 @@ class ProcurementRequest(models.Model):
             raise UserError(_('Only an independent order list can be closed here.'))
         if self.state == 'list_closed':
             return True
+        self._require_legacy_catalog_actions()
         self._require_state('sent')
         super(ProcurementRequest, self).write({'state': 'list_closed', 'list_closed_at': fields.Datetime.now(),
                                               'list_closed_by_id': self.env.user.id})
@@ -617,6 +625,8 @@ class ProcurementRequest(models.Model):
         request.check_access('read')
         if request.state == 'cancel':
             raise UserError(_('A cancelled procurement request cannot be shared on WhatsApp.'))
+        if request.history_removed_at:
+            raise UserError(_('This order was removed from previous requests.'))
         if request.purchase_route != 'representative':
             raise UserError(_('WhatsApp sharing is only available for purchase-representative requests.'))
         if snapshot is not False and snapshot is not None:
@@ -659,6 +669,63 @@ class ProcurementRequest(models.Model):
         super(ProcurementRequest, self).write({'state': 'sent', 'whatsapp_sent_at': fields.Datetime.now()})
         return True
 
+    @api.model
+    def submit_order_list_from_catalog(self, lines, client_token, representative_partner_id):
+        """Approve the validated cart and build its share payload atomically."""
+        if not client_token:
+            raise ValidationError(_('The cart submission token is invalid.'))
+        with self.env.cr.savepoint():
+            request = self.browse(self.create_from_catalog(
+                lines, client_token=client_token, representative_partner_id=representative_partner_id,
+            ))._lock_catalog_parent_rows()
+            if not request or request.company_id != self.env.company or not request.list_only:
+                raise AccessError(_('The procurement request is unavailable in the active company.'))
+            if request.state == 'draft':
+                request.action_mark_sent()
+            request._require_state('sent', 'list_closed')
+            payload = self.prepare_catalog_whatsapp(request.id)
+            if not request.catalog_direct_submitted:
+                super(ProcurementRequest, request).write({'catalog_direct_submitted': True})
+            return payload
+
+    @api.model
+    def _order_list_history_request(self, request_id, *, lock=False):
+        self._check_catalog_access()
+        request = self.browse(_catalog_identifier(request_id)).exists()
+        if not request:
+            raise AccessError(_('The procurement request is unavailable in the active company.'))
+        request.check_access('read')
+        if request.company_id != self.env.company:
+            raise AccessError(_('The procurement request is unavailable in the active company.'))
+        if lock:
+            request = request._lock_catalog_parent_rows()
+        if not request or request.company_id != self.env.company:
+            raise AccessError(_('The procurement request is unavailable in the active company.'))
+        if not request.list_only:
+            raise UserError(_('Only independent order lists can be managed here.'))
+        request._require_state('sent', 'list_closed')
+        return request
+
+    def _require_legacy_catalog_actions(self):
+        if self.filtered('catalog_direct_submitted'):
+            raise UserError(_('An approved order can only be shared again or removed from previous requests.'))
+
+    @api.model
+    def resend_order_list_whatsapp(self, request_id):
+        request = self._order_list_history_request(request_id)
+        return self.prepare_catalog_whatsapp(request.id)
+
+    @api.model
+    def remove_order_list_from_history(self, request_id):
+        """Retain the hidden order, its audit and its original cart token."""
+        request = self._order_list_history_request(request_id, lock=True)
+        if not request.history_removed_at:
+            super(ProcurementRequest, request).write({
+                'history_removed_at': fields.Datetime.now(),
+                'history_removed_by_id': self.env.user.id,
+            })
+        return True
+
     def action_confirm_manager_receipt(self):
         self._require_receipt_workflow()
         self._require_active_company_for_cashier()
@@ -689,6 +756,7 @@ class ProcurementRequest(models.Model):
         if not self.env.user.has_group('baseer_procurement_requests.group_procurement_user'):
             raise AccessError(_('You are not allowed to cancel procurement requests.'))
         self._lock_catalog_parent_rows()
+        self._require_legacy_catalog_actions()
         self._require_state('draft', 'sent')
         if not self.cancellation_reason or not self.cancellation_reason.strip():
             raise ValidationError(_('Enter a cancellation reason before cancelling the procurement request.'))
@@ -1311,7 +1379,7 @@ class ProcurementRequest(models.Model):
         }
 
     @api.model
-    def cashier_recent_requests(self, offset=0, limit=50, search_term=False, state=False):
+    def cashier_recent_requests(self, offset=0, limit=50, search_term=False, state=False, list_only=False):
         """Return a searchable, paged, company-scoped cashier request feed.
 
         ``limit + 1`` deliberately replaces ``search_count`` so every page is a
@@ -1333,6 +1401,11 @@ class ProcurementRequest(models.Model):
         if len(term) > 128:
             raise ValidationError(_('Search text cannot exceed 128 characters.'))
         domain = [('company_id', '=', self.env.company.id)]
+        if list_only:
+            domain.extend([
+                ('list_only', '=', True), ('state', 'in', ('sent', 'list_closed')),
+                ('history_removed_at', '=', False),
+            ])
         if state:
             domain.append(('state', '=', state))
         if term:
@@ -1372,13 +1445,18 @@ class ProcurementRequest(models.Model):
                 'can_edit_plan': record._can_edit_catalog_plan(),
                 'purchase_route': record.purchase_route,
                 'purchase_route_label': record._purchase_route_label(),
-                'request_date': fields.Datetime.to_string(record.request_date),
+                'request_date': (
+                    fields.Datetime.context_timestamp(record, record.request_date).strftime('%Y-%m-%d %H:%M')
+                    if list_only and record.request_date else fields.Datetime.to_string(record.request_date)
+                ),
                 'line_count': len(record.line_ids),
                 'representative_name': (
                     record.representative_partner_id.display_name
                     or record.purchaser_id.name
                     or ''
                 ),
+                'can_resend': bool(list_only and record.purchase_route == 'representative'),
+                'can_remove': bool(list_only),
                 'total_text': _decimal_text(
                     record.actual_total if record.state == 'purchased' else record.requested_total
                 ),
@@ -1429,7 +1507,8 @@ class ProcurementRequest(models.Model):
         )
         return bool(
             self.state in ('draft', 'sent') and self.company_id == self.env.company
-            and not bwork_owned and not _is_bwork_receipt_internal(self.env)
+            and not (self.catalog_direct_submitted or self.history_removed_at or bwork_owned)
+            and not _is_bwork_receipt_internal(self.env)
             and self.env.user.has_group('baseer_procurement_requests.group_procurement_cashier')
         )
 
@@ -2136,9 +2215,12 @@ class ProcurementRequest(models.Model):
                 raise AccessError(_('The procurement request must remain in the active company.'))
         protected = {'state', 'picking_id', 'whatsapp_opened_at', 'whatsapp_sent_at', 'manager_received_at',
                      'list_only', 'list_closed_at', 'list_closed_by_id',
+                     'catalog_direct_submitted', 'history_removed_at', 'history_removed_by_id',
                      'actual_confirmed_at', 'actual_confirmed_by_id', 'client_token', 'client_payload_hash'}
         if protected & set(vals):
             raise AccessError(_('Request state, receipt links, and audit timestamps are controlled by the server.'))
+        if {'name', 'line_ids', 'cancellation_reason'} & vals.keys():
+            self._require_legacy_catalog_actions()
         if 'cancellation_reason' in vals:
             if not self.env.user.has_group('baseer_procurement_requests.group_procurement_user'):
                 raise AccessError(_('You are not allowed to record a cancellation reason.'))

@@ -12,11 +12,57 @@ const canSave = new Function(saveBody);
 const draftBody = source.match(/async saveDraft\(openWhatsApp = false\) \{([\s\S]*?)\n    \}/)[1];
 const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
 const saveDraft = new AsyncFunction('openWhatsApp', 'newClientToken', '_t', draftBody);
+const submitBody = source.match(/async submitOrderList\(\) \{([\s\S]*?)\n    \}/)[1];
+const submitOrderList = new AsyncFunction('newClientToken', '_t', 'ProcurementWhatsAppDialog', submitBody);
 const component = () => ({ state: {
     existingRequest: false, purchaseRoute: 'representative', representativePartnerId: 42,
     warehouseId: 1, cart: [{}], saving: false, quotePending: false, quoteError: false,
     quote: { lines: [{}] },
 }, unpricedReceivedLines: [] });
+
+test('direct send approves through one RPC, opens sharing and immediately shows history', async () => {
+    const calls = [];
+    const lines = [{ option_id: 4, quantity: '2', unit_price: '10.50' }];
+    const payload = { request_id: 51, url: 'https://wa.me/?text=order' };
+    const dialog = Symbol('WhatsApp share dialog');
+    const c = {
+        state: { clientToken: 'current-token', representativePartnerId: 42, cart: lines },
+        canSave: true,
+        editorLines: () => lines,
+        emptyQuote: () => ({}),
+        orm: { call: async (...args) => { calls.push(args); return payload; } },
+        dialog: { add: (...args) => calls.push(args) },
+        notification: { add() {} },
+        loadRecentRequests: async () => calls.push('history'),
+    };
+    await submitOrderList.call(c, () => 'next-token', (text) => text, dialog);
+    assert.deepEqual(calls, [
+        ['baseer.procurement.request', 'submit_order_list_from_catalog', [lines, 'current-token', 42]],
+        [dialog, { payload }],
+        'history',
+    ]);
+    assert.equal(c.state.workspaceTab, 'recent');
+    assert.equal(c.state.clientToken, 'next-token');
+    assert.deepEqual(c.state.cart, []);
+    assert.equal(c.state.saving, false);
+});
+
+test('direct send preserves its cart and token after a failed request', async () => {
+    const lines = [{ option_id: 4, quantity: '2', unit_price: '10.50' }];
+    const c = {
+        state: { clientToken: 'retry-token', representativePartnerId: 42, cart: lines, workspaceTab: 'new' },
+        canSave: true,
+        editorLines: () => lines,
+        orm: { call: async () => { throw new Error('Connection lost'); } },
+        dialog: { add: () => assert.fail('A failed submission must not open sharing') },
+        notification: { add: (message) => assert.equal(message, 'Connection lost') },
+    };
+    await submitOrderList.call(c, () => assert.fail('Retry must keep the same token'), (text) => text, null);
+    assert.equal(c.state.workspaceTab, 'new');
+    assert.equal(c.state.clientToken, 'retry-token');
+    assert.equal(c.state.cart, lines);
+    assert.equal(c.state.saving, false);
+});
 
 test('catalogue receipt confirmation sends only receipt lines', async () => {
     const c = cartComponent({ id: 91, name: 'PRC/test' });

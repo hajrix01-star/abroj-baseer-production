@@ -44,8 +44,10 @@ BASEER_WORKSPACE_TARGET_POLICY = {
             'icon': 'oi oi-cart',
         },
         'baseer_procurement_requests.menu_procurement_requests': {
-            'action_type': 'ir.actions.act_window',
+            'action_type': 'ir.actions.client',
+            'tag': 'baseer_procurement_requests.catalog',
             'icon': 'oi oi-view-list',
+            'workspace_tab': 'recent',
         },
         'baseer_pos_summary.menu_summary': {
             'action_type': 'ir.actions.act_window',
@@ -340,6 +342,8 @@ class BasserWorkspaceSection(models.Model):
                 if not dashboard:
                     raise AccessError(_('The approved dashboard is unavailable.'))
                 client_action['params'] = {'dashboard_id': dashboard.id}
+            elif spec.get('workspace_tab'):
+                client_action['params'] = {'workspace_tab': spec['workspace_tab']}
             return {
                 'action': client_action,
             }

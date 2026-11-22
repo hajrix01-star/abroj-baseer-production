@@ -7,6 +7,69 @@ from .test_procurement_flow import ProcurementFlowCase
 
 
 class OrderListSeparationCase(ProcurementFlowCase):
+    def _order_list_contact(self):
+        return self.env['res.partner'].create({
+            'name': 'QA list representative',
+            'company_id': self.company.id,
+            'is_purchase_representative': True,
+        })
+
+    def test_direct_send_resend_and_remove_have_no_operational_effect(self):
+        requester = self._route_requester()
+        representative = self._order_list_contact()
+        lines = [{'option_id': self.option.id, 'quantity': '2', 'unit_price': '10.50'}]
+        token = str(uuid4())
+        models = ('stock.picking', 'stock.move', 'stock.move.line', 'stock.quant',
+                  'account.move', 'account.payment', 'baseer.purchase.batch',
+                  'baseer.procurement.representative.advance')
+        before = {model: self.env[model].search_count([]) for model in models}
+        old_draft = requester.browse(requester.create_from_catalog(lines, purchase_route='cash'))
+
+        share = requester.submit_order_list_from_catalog(lines, token, representative.id)
+        request = requester.browse(share['request_id'])
+        self.assertEqual(request.state, 'sent')
+        self.assertEqual(request.requested_total, 21)
+        self.assertFalse(request.picking_id)
+        self.assertEqual(share['url'].split('?')[0], 'https://wa.me/')
+        self.assertEqual(share['name'], request.display_name)
+        self.assertIn(self.product.name, share['text'])
+
+        def history():
+            return requester.cashier_recent_requests(0, 24, False, False, True)['items']
+
+        self.assertEqual([item['id'] for item in history()], [request.id])
+        self.assertEqual(history()[0]['representative_name'], representative.display_name)
+        self.assertEqual(requester.submit_order_list_from_catalog(lines, token, representative.id), share)
+        self.assertEqual(requester.resend_order_list_whatsapp(request.id), share)
+        self.assertEqual(request.state, 'sent')
+        with self.assertRaises(UserError):
+            request.line_ids.write({'requested_qty': 4})
+
+        self.assertTrue(requester.remove_order_list_from_history(request.id))
+        self.assertTrue(requester.remove_order_list_from_history(request.id))
+        self.assertFalse(history())
+        self.assertTrue(request.exists())
+        self.assertEqual(request.state, 'sent')
+        self.assertEqual(old_draft.state, 'draft')
+        with self.assertRaises(UserError):
+            requester.resend_order_list_whatsapp(request.id)
+        with self.assertRaises(UserError):
+            requester.submit_order_list_from_catalog(lines, token, representative.id)
+        self.assertFalse(history())
+        self.assertEqual(self.env[request._name].search_count([
+            ('company_id', '=', self.company.id), ('client_token', '=', token),
+        ]), 1)
+        self.assertEqual({model: self.env[model].search_count([]) for model in models}, before)
+
+    def test_direct_submission_rejects_invalid_representative_without_creating_draft(self):
+        requester = self._route_requester()
+        before = self.env[requester._name].search_count([('company_id', '=', self.company.id)])
+        with self.assertRaises(ValidationError):
+            requester.submit_order_list_from_catalog(
+                [{'option_id': self.option.id, 'quantity': '1'}], str(uuid4()), False,
+            )
+        self.assertEqual(self.env[requester._name].search_count([('company_id', '=', self.company.id)]), before)
+
     def _new_list(self):
         return self._route_requester().browse(self._route_requester().create_from_catalog(
             [{'option_id': self.option.id, 'quantity': '2'}], False, purchase_route='cash'))

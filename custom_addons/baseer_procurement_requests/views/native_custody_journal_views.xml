@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="account_journal_form_custody_representative" model="ir.ui.view">
+        <field name="name">account.journal.form.custody.representative</field>
+        <field name="model">account.journal</field>
+        <field name="inherit_id" ref="account.view_account_journal_form"/>
+        <field name="arch" type="xml">
+            <field name="profit_account_id" position="after">
+                <field name="baseer_custody_representative_id"
+                       invisible="type not in ('cash', 'bank')"
+                       domain="[('is_purchase_representative', '=', True), ('active', '=', True), ('is_company', '=', False), ('parent_id', '=', False)]"
+                       options="{'no_create': True}"
+                       groups="account.group_account_manager"/>
+            </field>
+        </field>
+    </record>
+    <record id="partner_form_custody_journal" model="ir.ui.view">
+        <field name="name">res.partner.form.custody.journal</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="baseer_procurement_requests.view_partner_form_purchase_representative"/>
+        <field name="arch" type="xml">
+            <field name="is_purchase_representative" position="after">
+                <div groups="account.group_account_manager">
+                    <field name="is_purchase_representative" invisible="1"/>
+                    <button name="action_baseer_open_custody_journal" type="object"
+                            class="btn btn-link p-0" icon="fa-book"
+                            string="Custody journal"
+                            invisible="not is_purchase_representative or not active or is_company or parent_id"/>
+                </div>
+            </field>
+        </field>
+    </record>
+</odoo>

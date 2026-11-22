@@ -50,12 +50,11 @@ class ProfitLossDrill(models.AbstractModel):
         aml = self.env['account.move.line'].with_context(active_test=False)
         if aml.search_count(domain, limit=5001) > 5000:
             raise ValidationError(_('The complete detail is too large. Select a shorter period.'))
-        grouped = self._section_rows(domain)
-        return company, domain, grouped
+        return company, domain
 
     def _drill_rows(self, filters, selector):
         self = self.with_context(_baseer_pl_inclusive=self._tax_inclusive(filters))
-        company, domain, grouped = self._drill_scope(filters, selector)
+        company, domain = self._drill_scope(filters, selector)
         currency = company.currency_id
         ar = (self.env.lang or '').startswith('ar')
         label = lambda key: LABELS[key][0 if ar else 1]
@@ -68,6 +67,7 @@ class ProfitLossDrill(models.AbstractModel):
                  'Server components for the same period and journals. Signs indicate addition or subtraction; the value is not a page total.')
         kind = selector['kind']
         if kind == 'row':
+            grouped = self._section_rows(domain)
             report_rows, _totals = self._report_rows({period_key: grouped}, [{'key': period_key}], currency)
             by_key = {row['key']: row for row in report_rows}
             key = selector['row_key']
@@ -96,6 +96,8 @@ class ProfitLossDrill(models.AbstractModel):
                     _company, _journals, periods, _pc, _cc = self._scope(filters)
                     found = False
                     for period in periods:
+                        if period['key'] == period_key:
+                            continue
                         other_domain = period['domain'] & Domain('account_id', '=', account.id)
                         if self.env['account.move.line'].search_count(other_domain, limit=5001) > 5000:
                             raise ValidationError(_('Select a shorter period.'))
@@ -122,6 +124,7 @@ class ProfitLossDrill(models.AbstractModel):
                         rows.append({'key': move.id, 'cells': {'label': move.name or '', 'amount': fmt(item['value'])},
                             'source': {'kind': 'channel_source', 'parent': dict(selector), 'move_id': move.id}})
             else:
+                grouped = self._section_rows(domain)
                 matches = [item for items in grouped.values() for item in items if item['account'].id == account.id]
                 if not matches and account.account_type not in grouped:
                     raise AccessError(_('The account is not in this report.'))

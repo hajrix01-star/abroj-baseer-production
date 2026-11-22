@@ -375,7 +375,15 @@ class TestProfitLoss(TransactionCase):
         self.assertEqual(channel['amounts']['current']['amount'], '115.00')
         selector = {'kind': 'channel', 'account_id': self.accounts['income'].id,
                     'channel_key': 'noorix_cash', 'period_key': 'current'}
-        drilled = self.report._get_drilldown(self.filters, selector)
+        report_type = type(self.report)
+        verify_noorix = report_type._verified_noorix_gross_channels
+        with (
+            patch.object(report_type, '_section_rows', side_effect=AssertionError('Unexpected section recomputation')),
+            patch.object(report_type, '_verified_noorix_gross_channels', autospec=True,
+                         side_effect=verify_noorix) as verify,
+        ):
+            drilled = self.report._get_drilldown(self.filters, selector)
+            self.assertEqual(verify.call_count, 1)
         self.assertEqual(drilled['value'], '115.00')
         self.assertEqual(drilled['total_count'], 1)
         self.assertEqual(drilled['rows'][0]['cells']['amount'], '115.00')

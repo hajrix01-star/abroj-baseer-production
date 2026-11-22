@@ -1119,6 +1119,7 @@ msgstr "النوع"
 #. odoo-javascript
 #: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_custody_form
 #: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_direct_bill_custody_wizard_form
 msgid "Representative"
 msgstr "المندوب"
 
@@ -1333,6 +1334,7 @@ msgstr "التاريخ"
 #: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_procurement_custody_event__amount
 #: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_custody_event_form
 #: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_custody_form
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_direct_bill_custody_wizard_form
 msgid "Amount"
 msgstr "المبلغ"
 
@@ -1508,6 +1510,7 @@ msgstr "تسوية من عهدة مندوب المشتريات"
 #: model:ir.model.fields,field_description:baseer_procurement_requests.field_baseer_purchase_batch_line__representative_petty_cash_available_amount
 #: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_purchase_batch_representative_petty_cash
 #: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_purchase_batch_line_representative_petty_cash
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_direct_bill_custody_wizard_form
 msgid "Available balance"
 msgstr "الرصيد المتاح"
 
@@ -2960,6 +2963,7 @@ msgstr "عكس القيد"
 #. odoo-javascript
 #: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.js:0
 #: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_direct_bill_custody_reversal_wizard_form
 msgid "Reversal date"
 msgstr "تاريخ العكس"
 
@@ -2994,6 +2998,7 @@ msgstr "اعكس القيد كاملًا، ثم سجل العهدة الصحيح
 #. module: baseer_procurement_requests
 #. odoo-javascript
 #: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_direct_bill_custody_reversal_wizard_form
 msgid "Reason"
 msgstr "السبب"
 
@@ -3002,3 +3007,280 @@ msgstr "السبب"
 #: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.js:0
 msgid "Select the representative as the invoice payment source."
 msgstr "اختر المندوب مصدرًا للدفع عند تسجيل الفاتورة."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+msgid "Pay supplier bill"
+msgstr "سداد فاتورة مورد"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.js:0
+msgid "Could not open supplier bill settlement."
+msgstr "تعذر فتح نافذة سداد فاتورة المورد."
+
+#. module: baseer_procurement_requests
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_direct_bill_custody_wizard_form
+msgid "Pay supplier bill from petty cash"
+msgstr "سداد فاتورة مورد من العهدة"
+
+#. module: baseer_procurement_requests
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_direct_bill_custody_wizard_form
+msgid "This payment reduces the selected representative's petty cash balance."
+msgstr "يُخصم مبلغ السداد من رصيد عهدة المندوب المختار."
+
+#. module: baseer_procurement_requests
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_direct_bill_custody_wizard_form
+msgid "Supplier bill"
+msgstr "فاتورة المورد"
+
+#. module: baseer_procurement_requests
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_direct_bill_custody_wizard_form
+msgid "Settlement date"
+msgstr "تاريخ السداد"
+
+#. module: baseer_procurement_requests
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_direct_bill_custody_wizard_form
+msgid "Pay from petty cash"
+msgstr "سداد من العهدة"
+
+#. module: baseer_procurement_requests
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_move_form_direct_bill_custody
+msgid "Pay from representative petty cash"
+msgstr "سداد من عهدة المندوب"
+
+#. module: baseer_procurement_requests
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_direct_bill_custody_wizard_form
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_direct_bill_custody_reversal_wizard_form
+msgid "Cancel"
+msgstr "إلغاء"
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/representative_petty_cash_invoice_source.py:0
+msgid "Direct custody settlements are created only by the payment workflow."
+msgstr "تُنشأ تسويات العهدة المباشرة من إجراء السداد فقط."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/representative_petty_cash_invoice_source.py:0
+msgid "Direct custody settlements are immutable accounting links."
+msgstr "روابط تسويات العهدة المباشرة محاسبية ولا يمكن تعديلها."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/representative_petty_cash_invoice_source.py:0
+msgid "Direct custody settlements cannot be deleted."
+msgstr "لا يمكن حذف تسويات العهدة المباشرة."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/representative_petty_cash_invoice_source.py:0
+msgid "Enter a valid positive amount with at most two decimal places and a valid date."
+msgstr "أدخل مبلغًا موجبًا صحيحًا بحد أقصى منزلتين عشريتين وتاريخًا صحيحًا."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/representative_petty_cash_invoice_source.py:0
+msgid "This payment request was already used for different details."
+msgstr "استُخدم طلب السداد هذا سابقًا ببيانات مختلفة."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/representative_petty_cash_invoice_source.py:0
+msgid "Choose an eligible supplier bill and purchase representative."
+msgstr "اختر فاتورة مورد مؤهلة ومندوب مشتريات."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/representative_petty_cash_invoice_source.py:0
+msgid "Choose an eligible supplier bill and purchase representative in the active company."
+msgstr "اختر فاتورة مورد مؤهلة ومندوب مشتريات في الشركة النشطة."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/representative_petty_cash_invoice_source.py:0
+msgid "Choose a posted supplier bill in the company currency."
+msgstr "اختر فاتورة مورد مرحلة بعملة الشركة."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/representative_petty_cash_invoice_source.py:0
+msgid "The settlement date cannot precede the bill accounting date."
+msgstr "لا يمكن أن يسبق تاريخ السداد التاريخ المحاسبي للفاتورة."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/representative_petty_cash_invoice_source.py:0
+msgid "This supplier bill must have one payable line to use Representative Petty Cash."
+msgstr "يجب أن تحتوي فاتورة المورد على سطر دائن واحد للسداد من عهدة المندوب."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/representative_petty_cash_invoice_source.py:0
+msgid "The supplier bill payable must use the company currency."
+msgstr "يجب أن يكون حساب دائن المورد بعملة الشركة."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/representative_petty_cash_invoice_source.py:0
+msgid "The amount exceeds the unpaid supplier bill balance."
+msgstr "المبلغ يتجاوز الرصيد غير المدفوع من فاتورة المورد."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/representative_petty_cash_invoice_source.py:0
+msgid "Representative Petty Cash settlements require company-currency accounts and journals."
+msgstr "تتطلب تسويات عهدة المندوب حسابات ودفاتر بعملة الشركة."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/representative_petty_cash_invoice_source.py:0
+msgid "The settlement date is in a locked accounting period."
+msgstr "تاريخ السداد يقع في فترة محاسبية مقفلة."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/representative_petty_cash_invoice_source.py:0
+msgid "The amount exceeds the representative balance available on the settlement date."
+msgstr "المبلغ يتجاوز رصيد المندوب المتاح في تاريخ السداد."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/representative_petty_cash_invoice_source.py:0
+msgid "Representative Petty Cash — %(bill)s"
+msgstr "عهدة المندوب — %(bill)s"
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/representative_petty_cash_invoice_source.py:0
+msgid "The settlement payable entry is incomplete."
+msgstr "قيد سداد المورد غير مكتمل."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/representative_petty_cash_invoice_source.py:0
+msgid "This payment request was already recorded."
+msgstr "تم تسجيل طلب السداد هذا مسبقًا."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/representative_petty_cash_invoice_source.py:0
+msgid "Pay supplier bill from Representative Petty Cash"
+msgstr "سداد فاتورة مورد من عهدة المندوب"
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/representative_petty_cash_invoice_source.py:0
+msgid "Switch to the settlement company before paying."
+msgstr "انتقل إلى شركة السداد قبل تأكيد العملية."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/representative_petty_cash_invoice_source.py:0
+msgid "Choose an unpaid posted supplier bill in the active company."
+msgstr "اختر فاتورة مورد مرحلة وغير مسددة في الشركة النشطة."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/representative_petty_cash_invoice_source.py:0
+msgid "A bill or entry settled from Representative Petty Cash cannot be reset, cancelled, reversed, or deleted."
+msgstr "لا يمكن إعادة فاتورة أو قيد سُدّد من عهدة المندوب إلى المسودة أو إلغاؤه أو عكسه أو حذفه."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/representative_petty_cash_invoice_source.py:0
+msgid "A bill or entry settled from Representative Petty Cash cannot be modified."
+msgstr "لا يمكن تعديل فاتورة أو قيد سُدّد من عهدة المندوب."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/representative_petty_cash_invoice_source.py:0
+msgid "Accounting lines of a custody-settled bill cannot be modified."
+msgstr "لا يمكن تعديل السطور المحاسبية لفاتورة سُدّدت من العهدة."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/representative_petty_cash_invoice_source.py:0
+msgid "A custody settlement reconciliation cannot be removed or modified."
+msgstr "لا يمكن إزالة أو تعديل مطابقة تسوية العهدة."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/representative_petty_cash_invoice_source.py:0
+msgid "Open Representative Petty Cash funding is insufficient for reconciliation."
+msgstr "رصيد تمويل عهدة المندوب المفتوح غير كافٍ لإتمام المطابقة."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/representative_petty_cash_invoice_source.py:0
+msgid "Reload the page and try saving again."
+msgstr "أعد تحميل الصفحة ثم حاول الحفظ مجددًا."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/representative_petty_cash_invoice_source.py:0
+msgid "The Representative Petty Cash settlement entry is incomplete."
+msgstr "قيد تسوية عهدة المندوب غير مكتمل."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/representative_petty_cash_invoice_source.py:0
+msgid "Accounting lines of a custody-settled bill cannot be deleted."
+msgstr "لا يمكن حذف السطور المحاسبية لفاتورة سُدّدت من العهدة."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+msgid "Supplier bill payment reversal"
+msgstr "عكس سداد فاتورة مورد"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.js:0
+msgid "Could not open supplier bill reversal."
+msgstr "تعذر فتح عكس سداد فاتورة المورد."
+
+#. module: baseer_procurement_requests
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_direct_bill_custody_reversal_wizard_form
+#: code:addons/baseer_procurement_requests/models/representative_petty_cash_invoice_source.py:0
+msgid "Reverse supplier bill custody payment"
+msgstr "عكس سداد فاتورة المورد من العهدة"
+
+#. module: baseer_procurement_requests
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_direct_bill_custody_reversal_wizard_form
+msgid "The original payment remains in the history. The unpaid amount returns to the supplier bill."
+msgstr "يبقى السداد الأصلي في السجل، ويعود المبلغ غير المسدد إلى فاتورة المورد."
+
+#. module: baseer_procurement_requests
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_direct_bill_custody_reversal_wizard_form
+msgid "Supplier bill settlement"
+msgstr "تسوية فاتورة المورد"
+
+#. module: baseer_procurement_requests
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_direct_bill_custody_reversal_wizard_form
+msgid "Reverse payment"
+msgstr "عكس السداد"
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/representative_petty_cash_invoice_source.py:0
+msgid "Choose a valid settlement, reason, and reversal date."
+msgstr "اختر تسوية صحيحة وأدخل سبب العكس وتاريخه."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/representative_petty_cash_invoice_source.py:0
+msgid "This settlement was already reversed."
+msgstr "تم عكس هذه التسوية مسبقًا."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/representative_petty_cash_invoice_source.py:0
+msgid "Choose an unlocked reversal date on or after the settlement and no later than today."
+msgstr "اختر تاريخ عكس في فترة غير مقفلة، لا يسبق تاريخ التسوية ولا يتجاوز اليوم."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/representative_petty_cash_invoice_source.py:0
+msgid "This settlement has mixed accounting entries and cannot be reversed automatically."
+msgstr "تحتوي هذه التسوية على قيود محاسبية مختلطة ولا يمكن عكسها تلقائيًا."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/representative_petty_cash_invoice_source.py:0
+msgid "This settlement has mixed reconciliations, cash-basis taxes, or exchange differences and cannot be reversed automatically."
+msgstr "تحتوي هذه التسوية على مطابقة مختلطة أو ضرائب على الأساس النقدي أو فروق عملات، ولا يمكن عكسها تلقائيًا."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/representative_petty_cash_invoice_source.py:0
+#, python-format
+msgid "Reversal of Representative Petty Cash settlement — %(bill)s"
+msgstr "عكس تسوية عهدة المندوب — %(bill)s"
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/representative_petty_cash_invoice_source.py:0
+msgid "The settlement could not be reversed safely."
+msgstr "تعذر عكس التسوية بطريقة آمنة."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/representative_petty_cash_invoice_source.py:0
+msgid "Direct custody reversals are created only by the reversal workflow."
+msgstr "لا يمكن إنشاء عكس العهدة إلا من إجراء العكس."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/representative_petty_cash_invoice_source.py:0
+msgid "Direct custody reversals cannot be modified."
+msgstr "لا يمكن تعديل عمليات عكس العهدة."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/representative_petty_cash_invoice_source.py:0
+msgid "Direct custody reversals cannot be deleted."
+msgstr "لا يمكن حذف عمليات عكس العهدة."

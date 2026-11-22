@@ -1,6 +1,6 @@
 {
     'name': 'Baseer Procurement Requests',
-    'version': '19.0.14.0.36',
+    'version': '19.0.14.0.37',
     'category': 'Inventory/Purchase',
     'summary': 'Company-product procurement requests, price history, and optional stock receipts',
     'author': 'Baseer',
@@ -14,6 +14,7 @@
         'views/procurement_option_views.xml',
         'views/procurement_custody_views.xml',
         'views/representative_petty_cash_views.xml',
+        'views/direct_bill_custody_views.xml',
         'views/procurement_auto_draft_views.xml',
         'views/company_onboarding_views.xml',
         'views/procurement_menus.xml',

@@ -14,8 +14,15 @@ class RepresentativePettyCashCase(TransactionCase):
         self.env.user.group_ids |= self.env.ref('baseer_procurement_requests.group_procurement_manager')
         self.env.user.group_ids |= self.env.ref('base.group_erp_manager')
         self.company = self.env.company
+        self._configure_company_fixture()
+
+    def _configure_company_fixture(self):
         self.company.currency_id.active = True
         self.warehouse = self.env['stock.warehouse'].search([('company_id', '=', self.company.id)], limit=1)
+        if not self.warehouse:
+            self.warehouse = self.env['stock.warehouse'].create({
+                'name': 'Petty cash fixture warehouse', 'code': 'RPCFX', 'company_id': self.company.id,
+            })
         category = self.env['product.category'].create({'name': 'Representative petty cash test category'})
         product = self.env['product.product'].create({
             'name': 'Representative petty cash test product', 'categ_id': category.id,
@@ -53,6 +60,16 @@ class RepresentativePettyCashCase(TransactionCase):
             'baseer_procurement_representative_petty_cash_payment_journal_ids': [Command.set([self.bank_journal.id])],
         })
 
+    def _use_isolated_sar_company(self):
+        sar = self.env['res.currency'].with_context(active_test=False).search([('name', '=', 'SAR')], limit=1)
+        if not sar:
+            sar = self.env['res.currency'].create({'name': 'SAR', 'symbol': 'SR', 'active': True})
+        sar.active = True
+        self.company = self.env['res.company'].create({'name': 'Petty cash fixture SAR company', 'currency_id': sar.id})
+        self.env.user.company_ids |= self.company
+        self.env = self.env['res.company'].with_company(self.company).env
+        self._configure_company_fixture()
+
     def _request(self):
         return self.env['baseer.procurement.request'].create({
             'company_id': self.company.id, 'warehouse_id': self.warehouse.id,
@@ -68,6 +85,7 @@ class RepresentativePettyCashCase(TransactionCase):
         return request
 
     def test_dashboard_ignores_vendor_payments(self):
+        self._use_isolated_sar_company()
         Model = self.env['baseer.procurement.representative.advance']
         request = self._sent_request()
         today = fields.Date.context_today(self.env.user)
@@ -129,17 +147,22 @@ class RepresentativePettyCashCase(TransactionCase):
         request = self._sent_request()
         token = str(uuid4())
         Model = self.env['baseer.procurement.representative.advance']
-        record_id = Model.submit_funding(request.id, self.bank_journal.id, self.representative.id, 20, token, '2026-09-17')
-        self.assertEqual(record_id, Model.submit_funding(request.id, self.bank_journal.id, self.representative.id, 20, token, '2026-09-17'))
+        movement_date = fields.Date.context_today(self.env.user)
+        record_id = Model.submit_funding(request.id, self.bank_journal.id, self.representative.id, 20, token, movement_date)
+        self.assertEqual(record_id, Model.submit_funding(request.id, self.bank_journal.id, self.representative.id, 20, token, movement_date))
         record = Model.browse(record_id)
         self.assertEqual(record.move_id.state, 'posted')
         self.assertEqual(record.amount, 20)
-        self.assertEqual(str(record.movement_date), '2026-09-17')
+        self.assertEqual(record.movement_date, movement_date)
         dashboard_movement = next(row for row in Model.dashboard_data()['movements'] if row['id'] == record.id)
         self.assertNotIn('external_reference', dashboard_movement)
         self.assertNotIn('proof_url', dashboard_movement)
         self.assertEqual(dashboard_movement['from_name'], self.bank_journal.display_name)
         self.assertEqual(dashboard_movement['to_name'], self.representative.display_name)
+        daily = Model.dashboard_data(False, record.movement_date.replace(day=1))['daily_movements']
+        historical_funding = next(row for row in daily if row['key'] == 'movement:%s' % record.id)
+        self.assertEqual(historical_funding['request_id'], request.id)
+        self.assertEqual(historical_funding['request_name'], request.name)
         line = record.move_id.line_ids.filtered(lambda row: row.account_id == self.petty_cash_account)
         self.assertEqual(line.baseer_representative_petty_cash_id, record)
         self.assertEqual(line.partner_id, self.representative)
@@ -158,6 +181,194 @@ class RepresentativePettyCashCase(TransactionCase):
             record.write({'amount': 10})
         with self.assertRaises(UserError):
             record.move_id.button_draft()
+
+    def test_independent_funding_carries_balance_and_return_between_months(self):
+        Model = self.env['baseer.procurement.representative.advance']
+        token = str(uuid4())
+        values = (False, self.bank_journal.id, self.representative.id, '100.00', token, '2025-01-15')
+        advance = Model.browse(Model.submit_funding(*values))
+        self.assertEqual(Model.submit_funding(*values), advance.id)
+        self.assertFalse(advance.procurement_request_id)
+        self.assertEqual(advance.move_id.state, 'posted')
+        debit = advance.move_id.line_ids.filtered(lambda line: line.account_id == self.petty_cash_account)
+        self.assertEqual((debit.partner_id, debit.debit, debit.credit), (self.representative, 100, 0))
+        Model.submit_aggregate_return(self.representative.id, self.bank_journal.id, '15.00', str(uuid4()), '2025-02-10')
+        Model.submit_funding(False, self.bank_journal.id, self.representative.id, '30.00', str(uuid4()), '2025-03-01')
+        jan = Model.dashboard_data(self.representative.id, '2025-01-01')['summary']
+        feb_data = Model.dashboard_data(self.representative.id, '2025-02-01')
+        feb = feb_data['summary']
+        self.assertEqual((jan['opening'], jan['funded'], jan['returned'], jan['closing']), (0, 100, 0, 100))
+        self.assertEqual((feb['opening'], feb['funded'], feb['returned'], feb['closing']), (100, 0, 15, 85))
+        self.assertEqual(feb['remaining'], 85)
+        self.assertEqual(feb['available'], 115)
+        self.assertEqual([(row['type'], row['amount']) for row in feb_data['daily_movements']], [('return', 15)])
+        self.assertIn(self.representative.id, [row['id'] for row in Model.dashboard_data()['representatives']])
+
+        other = self.env['res.partner'].create({'name': 'Other petty cash representative', 'company_id': self.company.id})
+        other.with_company(self.company).is_purchase_representative = True
+        Model.submit_funding(False, self.bank_journal.id, other.id, '17.00', str(uuid4()), '2025-01-20')
+        moves_before = self.env['account.move'].search_count([('company_id', '=', self.company.id)])
+        advances_before = Model.search_count([('company_id', '=', self.company.id)])
+        carryovers = Model.dashboard_data(self.representative.id, '2025-03-01')['carryovers']
+        self.assertEqual([(row['source_month'], row['destination_month'], row['amount']) for row in carryovers], [
+            ('2025-02-01', '2025-03-01', 85), ('2025-01-01', '2025-02-01', 100),
+        ])
+        self.assertTrue(all(row['representative_id'] == self.representative.id for row in carryovers))
+        all_carryovers = Model.dashboard_data(False, '2025-03-01')['carryovers']
+        self.assertIn(other.id, [row['representative_id'] for row in all_carryovers])
+        self.assertEqual(self.env['account.move'].search_count([('company_id', '=', self.company.id)]), moves_before)
+        self.assertEqual(Model.search_count([('company_id', '=', self.company.id)]), advances_before)
+
+    def test_monthly_total_is_not_limited_to_displayed_movements(self):
+        # Synthetic rows isolate aggregation coverage; the posting workflow is
+        # verified separately by the independent-funding test above.
+        Model = self.env['baseer.procurement.representative.advance']
+        values = [{
+            'company_id': self.company.id, 'movement_type': 'funding',
+            'representative_partner_id': self.representative.id,
+            'payment_journal_id': self.bank_journal.id, 'movement_date': '2025-03-01',
+            'amount': 1, 'client_token': str(uuid4()), 'created_by_id': self.env.user.id,
+        } for _ in range(101)]
+        Model.sudo().with_context(baseer_representative_petty_cash_internal=True).create(values)
+        data = Model.dashboard_data(self.representative.id, '2025-03-01')
+        self.assertEqual(len(data['movements']), 100)
+        self.assertEqual(data['summary']['funded'], 101)
+        self.assertEqual(data['summary']['closing'], 101)
+        self.assertEqual(len(data['daily_movements']), 100)
+        self.assertTrue(data['daily_movements_truncated'])
+        self.assertEqual(len({row['key'] for row in data['daily_movements']}), 100)
+
+    def test_independent_funding_rejects_foreign_currency_sources(self):
+        Model = self.env['baseer.procurement.representative.advance']
+        foreign = (self.env.ref('base.USD') if self.company.currency_id != self.env.ref('base.USD')
+                   else self.env.ref('base.EUR'))
+        foreign.active = True
+        records = (self.petty_cash_account, self.general_journal,
+                   self.bank_journal, self.bank_journal.default_account_id)
+        for record in records:
+            with self.subTest(model=record._name, id=record.id):
+                original = record.currency_id
+                record.currency_id = foreign
+                before = Model.search_count([('company_id', '=', self.company.id)])
+                with self.assertRaisesRegex(ValidationError, 'company-currency'):
+                    Model.submit_funding(False, self.bank_journal.id, self.representative.id,
+                                         '10.00', str(uuid4()), '2025-01-15')
+                self.assertEqual(Model.search_count([('company_id', '=', self.company.id)]), before)
+                record.currency_id = original
+
+    def test_both_return_routes_reject_foreign_currency_point(self):
+        Model = self.env['baseer.procurement.representative.advance']
+        advance = Model.browse(Model.submit_funding(False, self.bank_journal.id, self.representative.id,
+                                                    '20.00', str(uuid4()), '2025-01-15'))
+        foreign = (self.env.ref('base.USD') if self.company.currency_id != self.env.ref('base.USD')
+                   else self.env.ref('base.EUR'))
+        foreign.active = True
+        foreign_account = self.env['account.account'].create({
+            'name': 'Foreign currency petty cash', 'code': 'RPA799', 'account_type': 'asset_cash',
+            'currency_id': foreign.id, 'company_ids': [Command.set(self.company.ids)],
+        })
+        foreign_bank = self.env['account.journal'].create({
+            'name': 'Foreign bank', 'code': 'RPAF', 'type': 'bank', 'company_id': self.company.id,
+            'default_account_id': foreign_account.id, 'currency_id': foreign.id,
+        })
+        self.company.baseer_procurement_representative_petty_cash_payment_journal_ids = [Command.link(foreign_bank.id)]
+        before = Model.search_count([('company_id', '=', self.company.id)])
+        with self.assertRaisesRegex(ValidationError, 'company-currency'):
+            Model.submit_return(advance.id, foreign_bank.id, 1, str(uuid4()), '2025-01-16')
+        with self.assertRaisesRegex(ValidationError, 'company-currency'):
+            Model.submit_aggregate_return(self.representative.id, foreign_bank.id, 1, str(uuid4()), '2025-01-16')
+        self.assertEqual(Model.search_count([('company_id', '=', self.company.id)]), before)
+
+    def test_monthly_balances_include_both_settlement_generations(self):
+        # The settlement links are synthetic; real invoice approval is covered
+        # by the procurement-flow tests. This isolates the two reporting sources.
+        self._use_isolated_sar_company()
+        Model = self.env['baseer.procurement.representative.advance']
+        jan = Model.browse(Model.submit_funding(False, self.bank_journal.id, self.representative.id,
+                                                '100.00', str(uuid4()), '2025-01-15'))
+        feb = Model.browse(Model.submit_funding(False, self.bank_journal.id, self.representative.id,
+                                                '30.00', str(uuid4()), '2025-02-15'))
+        Batch = self.env['baseer.purchase.batch']
+        historic_batch = Batch.create({'company_id': self.company.id})
+        self.env['baseer.procurement.representative.advance.settlement'].sudo().with_context(
+            baseer_representative_petty_cash_internal=True,
+        ).create({
+            'company_id': self.company.id, 'advance_id': jan.id, 'batch_id': historic_batch.id,
+            'move_id': jan.move_id.id, 'amount': 20,
+        })
+        supplier = self.env['res.partner'].create({'name': 'Monthly test supplier'})
+        invoice_batch = Batch.create({
+            'company_id': self.company.id,
+            'line_ids': [Command.create({
+                'partner_id': supplier.id, 'supplier_ref': 'MONTHLY-TEST',
+                'gross_amount': 15, 'is_credit': True,
+            })],
+        })
+        self.env['baseer.procurement.representative.petty.cash.invoice.settlement'].sudo().with_context(
+            baseer_representative_petty_cash_internal=True,
+        ).create({
+            'company_id': self.company.id, 'representative_partner_id': self.representative.id,
+            'batch_line_id': invoice_batch.line_ids.id, 'move_id': feb.move_id.id, 'amount': 15,
+        })
+        jan_summary = Model.dashboard_data(self.representative.id, '2025-01-01')['summary']
+        feb_data = Model.dashboard_data(self.representative.id, '2025-02-01')
+        feb_summary = feb_data['summary']
+        self.assertEqual((jan_summary['settled'], jan_summary['closing']), (20, 80))
+        self.assertEqual((feb_summary['opening'], feb_summary['funded'], feb_summary['settled'], feb_summary['closing']),
+                         (80, 30, 15, 95))
+        carryovers = Model.dashboard_data(self.representative.id, '2025-03-01')['carryovers']
+        self.assertEqual([(row['source_month'], row['amount']) for row in carryovers],
+                         [('2025-02-01', 95), ('2025-01-01', 80)])
+        jan_rows = Model.dashboard_data(self.representative.id, '2025-01-01')['daily_movements']
+        feb_rows = feb_data['daily_movements']
+        self.assertEqual([(row['type'], row['amount']) for row in jan_rows if row['type'] == 'purchase'], [('purchase', 20)])
+        self.assertEqual([(row['type'], row['amount'], row['reference']) for row in feb_rows if row['type'] == 'purchase'],
+                         [('purchase', 15, 'MONTHLY-TEST')])
+        cashier = self.env['res.users'].create({
+            'name': 'Daily custody cashier', 'login': 'daily-custody-cashier',
+            'company_id': self.company.id, 'company_ids': [Command.set(self.company.ids)],
+            'group_ids': [Command.set([self.env.ref('baseer_procurement_requests.group_procurement_cashier').id])],
+        })
+        cashier_model = Model.with_user(cashier).with_context(allowed_company_ids=[self.company.id])
+        cashier_jan = cashier_model.dashboard_data(self.representative.id, '2025-01-01')['daily_movements']
+        cashier_feb = cashier_model.dashboard_data(self.representative.id, '2025-02-01')['daily_movements']
+        self.assertEqual([row['reference'] for row in cashier_jan if row['type'] == 'purchase'], [''])
+        self.assertEqual([row['reference'] for row in cashier_feb if row['type'] == 'purchase'], [''])
+        self.assertEqual([row['amount'] for row in cashier_feb if row['type'] == 'purchase'], [15])
+
+    def test_carryover_history_stays_within_the_active_company(self):
+        Model = self.env['baseer.procurement.representative.advance']
+        other_company = self.env['res.company'].create({
+            'name': 'Carryover isolation company', 'currency_id': self.company.currency_id.id,
+        })
+        other_partner = self.env['res.partner'].create({'name': 'Other company representative', 'company_id': other_company.id})
+        other_partner.with_company(other_company).is_purchase_representative = True
+        other_account = self.env['account.account'].create({
+            'name': 'Other cash', 'code': 'RPA801', 'account_type': 'asset_cash',
+            'company_ids': [Command.set(other_company.ids)],
+        })
+        other_journal = self.env['account.journal'].create({
+            'name': 'Other bank', 'code': 'RPAY', 'type': 'bank', 'company_id': other_company.id,
+            'default_account_id': other_account.id,
+        })
+        other_company.baseer_procurement_representative_petty_cash_payment_journal_ids = [Command.set(other_journal.ids)]
+        Model.sudo().with_company(other_company).with_context(baseer_representative_petty_cash_internal=True).create({
+            'company_id': other_company.id, 'movement_type': 'funding',
+            'representative_partner_id': other_partner.id, 'payment_journal_id': other_journal.id,
+            'movement_date': '2025-01-15', 'amount': 50, 'client_token': str(uuid4()),
+            'created_by_id': self.env.user.id,
+        })
+        Model.submit_funding(False, self.bank_journal.id, self.representative.id, '20.00', str(uuid4()), '2025-01-15')
+        local = Model.dashboard_data(False, '2025-02-01')['carryovers']
+        other = Model.sudo().with_company(other_company).dashboard_data(False, '2025-02-01')['carryovers']
+        self.assertIn(self.representative.id, [row['representative_id'] for row in local])
+        self.assertNotIn(other_partner.id, [row['representative_id'] for row in local])
+        self.assertIn(other_partner.id, [row['representative_id'] for row in other])
+        self.assertNotIn(self.representative.id, [row['representative_id'] for row in other])
+        local_daily = Model.dashboard_data(False, '2025-01-01')['daily_movements']
+        other_daily = Model.sudo().with_company(other_company).dashboard_data(False, '2025-01-01')['daily_movements']
+        self.assertEqual({row['representative_id'] for row in local_daily}, {self.representative.id})
+        self.assertEqual({row['representative_id'] for row in other_daily}, {other_partner.id})
 
     def test_funding_rejects_draft_request_and_wrong_destination(self):
         request = self._request()

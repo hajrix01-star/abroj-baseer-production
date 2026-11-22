@@ -354,9 +354,9 @@ class RepresentativePettyCash(models.Model):
                 raise ValidationError(_('Choose an active purchase-representative contact in the active company.'))
             if record.movement_type == 'funding':
                 request = record.procurement_request_id
-                if not request or request.company_id != record.company_id or request.state not in ('sent', 'received', 'purchased'):
+                if request and (request.company_id != record.company_id or request.state not in ('sent', 'received', 'purchased')):
                     raise ValidationError(_('Choose a sent, received, or completed purchase request in the active company.'))
-                if request.representative_partner_id != record.representative_partner_id:
+                if request and request.representative_partner_id != record.representative_partner_id:
                     raise ValidationError(_('The purchase representative must match the selected purchase request.'))
                 if record.origin_id:
                     raise ValidationError(_('A funding movement cannot have an original movement.'))
@@ -409,7 +409,7 @@ class RepresentativePettyCash(models.Model):
 
     @api.model
     def _month_range(self, month_start=False):
-        start = fields.Date.to_date(month_start) if month_start else fields.Date.context_today(self).replace(day=1)
+        start = (fields.Date.to_date(month_start) if month_start else fields.Date.context_today(self)).replace(day=1)
         return start, start + relativedelta(months=1)
 
     @api.model
@@ -439,17 +439,12 @@ class RepresentativePettyCash(models.Model):
             if representative_id:
                 request_domain.append(('representative_partner_id', '=', int(representative_id)))
             requests = self.env['baseer.procurement.request'].sudo().with_company(company).search(request_domain, order='request_date desc, id desc', limit=100)
-            # A funding record always requires a qualifying purchase request.
-            # Derive the selectable representatives from those requests instead
-            # of searching a company-dependent contact property separately.
             stage = _('قائمة المندوبين')
-            representatives = [
-                {'id': partner_id, 'display_name': partner_name}
-                for partner_id, partner_name in sorted({
-                    (request.representative_partner_id.id, request.representative_partner_id.display_name)
-                    for request in requests if request.representative_partner_id
-                }, key=lambda row: row[1])
-            ]
+            partners = self.env['res.partner'].sudo().with_company(company).search([
+                ('is_purchase_representative', '=', True), ('company_id', 'in', [False, company.id]),
+                ('is_company', '=', False), ('parent_id', '=', False), ('active', '=', True),
+            ], order='name, id')
+            representatives = [{'id': partner.id, 'display_name': partner.display_name} for partner in partners]
             request_rows = [{
                 'id': request.id, 'name': request.name, 'representative_id': request.representative_partner_id.id,
                 'representative_name': request.representative_partner_id.display_name,
@@ -468,20 +463,6 @@ class RepresentativePettyCash(models.Model):
             if representative_id:
                 open_funding_domain.append(('representative_partner_id', '=', int(representative_id)))
             open_fundings = read_model.search(open_funding_domain, order='movement_date desc, id desc', limit=200)
-            funded = sum((Decimal(str(amount)) for amount in movements.filtered(
-                lambda row: row.movement_type == 'funding'
-            ).mapped('amount')), Decimal('0.00'))
-            returned = sum((Decimal(str(amount)) for amount in movements.filtered(
-                lambda row: row.movement_type == 'return'
-            ).mapped('amount')), Decimal('0.00'))
-            settlement_domain = [
-                ('company_id', '=', company.id), ('state', '=', 'posted'),
-                ('move_id.date', '>=', start), ('move_id.date', '<', end),
-            ]
-            if representative_id:
-                settlement_domain.append(('advance_id.representative_partner_id', '=', int(representative_id)))
-            settlements = self.env['baseer.procurement.representative.advance.settlement'].sudo().search(settlement_domain)
-            settled = sum((Decimal(str(amount)) for amount in settlements.mapped('amount')), Decimal('0.00'))
             stage = _('نقاط الدفع')
             can_record = self.env.user.has_group('baseer_procurement_requests.group_procurement_accountant')
             payment_points = []
@@ -503,10 +484,8 @@ class RepresentativePettyCash(models.Model):
             'payment_points': payment_points,
             'payment_points_configured': bool(payment_points),
             'setup_issue': company._baseer_representative_petty_cash_setup_issue() if can_record else False,
-            'summary': {
-                'funded': float(funded.quantize(MONEY_QUANTUM)), 'settled': float(settled.quantize(MONEY_QUANTUM)),
-                'remaining': float((funded - returned - settled).quantize(MONEY_QUANTUM)),
-            },
+            # The invoice-source extension calculates complete server totals.
+            'summary': {},
             'open_fundings': [{
                 'id': funding.id, 'name': funding.name, 'representative_name': funding.representative_partner_id.display_name,
                 'request_name': funding.procurement_request_id.name, 'remaining': funding.remaining_amount,
@@ -564,20 +543,20 @@ class RepresentativePettyCash(models.Model):
         existing = self.search([('company_id', '=', company.id), ('created_by_id', '=', self.env.user.id), ('client_token', '=', token)], limit=1)
         if existing:
             return existing.id
-        request = self._lock_request(int(request_id))
+        request = self._lock_request(int(request_id)) if request_id else self.env['baseer.procurement.request']
         payment_journal = self.env['account.journal'].browse(int(payment_journal_id)).exists()
         representative = self.env['res.partner'].browse(int(representative_partner_id)).exists()
-        if not request or not payment_journal or not representative:
-            raise ValidationError(_('Choose the purchase request, payment point, and purchase representative.'))
+        if not payment_journal or not representative or (request_id and not request):
+            raise ValidationError(_('Choose the payment point and purchase representative.'))
         company._baseer_validate_representative_petty_cash_payment_point(payment_journal)
-        if representative != request.representative_partner_id:
+        if request and representative != request.representative_partner_id:
             raise ValidationError(_('The transfer destination must match the purchase representative on the selected request.'))
-        if request.company_id != company or request.state not in ('sent', 'received', 'purchased'):
+        if request and (request.company_id != company or request.state not in ('sent', 'received', 'purchased')):
             raise ValidationError(_('Choose a sent, received, or completed purchase request in the active company.'))
         values = {
             'company_id': company.id, 'movement_type': 'funding',
             'representative_partner_id': representative.id,
-            'procurement_request_id': request.id, 'payment_journal_id': payment_journal.id,
+            'procurement_request_id': request.id or False, 'payment_journal_id': payment_journal.id,
             'movement_date': movement_date, 'amount': amount,
             'client_token': token, 'created_by_id': self.env.user.id,
         }
@@ -634,6 +613,11 @@ class RepresentativePettyCash(models.Model):
     def _create_and_post(self, values):
         company = self.env['res.company'].browse(values['company_id'])
         account, journal = company._baseer_representative_petty_cash_ready()
+        payment_journal = self.env['account.journal'].browse(values['payment_journal_id']).exists()
+        company._baseer_validate_representative_petty_cash_payment_point(payment_journal)
+        if any(record.currency_id and record.currency_id != company.currency_id for record in (
+                account, journal, payment_journal, payment_journal.default_account_id)):
+            raise ValidationError(_('Representative Petty Cash movements require company-currency accounts and journals.'))
         record = self.sudo().with_company(company).with_context(**{INTERNAL: True}).create(values)
         self._lock_advance(record.id)
         original = record.origin_id if record.movement_type == 'return' and record.origin_id else record

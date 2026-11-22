@@ -1052,6 +1052,8 @@ msgstr "طلب المشتريات المموّل"
 #. module: baseer_procurement_requests
 #: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_custody_event_form
 #: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_custody_form
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.js:0
 msgid "Movement"
 msgstr "نوع الحركة"
 
@@ -2649,3 +2651,102 @@ msgstr "أدخل سعر وحدة صفرًا أو أكبر، وبحد أقصى م
 #: code:addons/baseer_procurement_requests/models/procurement.py:0
 msgid "The cart amount exceeds the supported decimal precision."
 msgstr "مبلغ السلة أكبر من الحد الذي يدعمه النظام."
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+msgid "Carried forward"
+msgstr "الرصيد المرحّل"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+msgid "Returned this month"
+msgstr "المبلغ المُعاد هذا الشهر"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+msgid "Month-end balance"
+msgstr "رصيد نهاية الشهر"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+msgid "Carryover history"
+msgstr "سجل الترحيلات"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+msgid "Calculated month-end balances; no new transfer is recorded."
+msgstr "أرصدة نهاية الشهر محسوبة من الحركات المسجلة، ولا ينتج عنها تحويل جديد."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+msgid "No carryovers in the last 12 months."
+msgstr "لا توجد أرصدة مرحّلة في آخر 12 شهرًا."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.js:0
+msgid "From month"
+msgstr "من شهر"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.js:0
+msgid "To month"
+msgstr "إلى شهر"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.js:0
+msgid "Complete the payment point, representative, amount, and transfer date."
+msgstr "أكمل نقطة الدفع والمندوب والمبلغ وتاريخ التحويل."
+
+#. module: baseer_procurement_requests
+#: code:addons/baseer_procurement_requests/models/receipt_custody.py:0
+msgid "Receipt no longer records Representative Petty Cash. Reload the page and record the transfer separately."
+msgstr "لم يعد الاستلام يسجل عهدة المندوب. أعد تحميل الصفحة وسجّل التحويل من قسم العهدة."
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+msgid "Last 12 months, up to 60 balances. Select a representative to narrow the history."
+msgstr "آخر 12 شهرًا، حتى 60 رصيدًا. اختر المندوب لتضييق السجل."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+msgid "Contact the accountant to record transfers, returns, or corrections."
+msgstr "تواصل مع المحاسب لتسجيل التسليم أو الإرجاع أو التصحيح."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+msgid "Daily movements"
+msgstr "الحركات اليومية"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
+msgid "Showing the latest 100 movements. The monthly totals include all movements."
+msgstr "تظهر آخر 100 حركة، وتشمل إجماليات الشهر جميع الحركات."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.js:0
+msgid "Petty cash given"
+msgstr "تسليم عهدة"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.js:0
+msgid "Cash returned"
+msgstr "إرجاع عهدة"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.js:0
+msgid "Purchase"
+msgstr "مشتريات"

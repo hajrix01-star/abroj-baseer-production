@@ -183,6 +183,18 @@ export class RepresentativePettyCash extends Component {
         };
     }
 
+    get carryoverColumnLabels() {
+        return { representative: _t("Representative"), from: _t("From month"), to: _t("To month"), amount: _t("Carried forward") };
+    }
+
+    get dailyColumnLabels() {
+        return { date: _t("Date"), type: _t("Movement"), representative: _t("Representative"), reference: _t("Reference"), amount: _t("Amount") };
+    }
+
+    dailyMovementLabel(type) {
+        return { funding: _t("Petty cash given"), purchase: _t("Purchase"), return: _t("Cash returned") }[type] || "—";
+    }
+
     selectPaymentPoint(paymentPointId) { this.state.paymentPointId = String(paymentPointId); }
     selectDestination(destinationId) { this.state.destinationId = String(destinationId); }
     selectReturnRepresentative(representativeId) { this.state.returnRepresentativeId = String(representativeId); }
@@ -191,14 +203,14 @@ export class RepresentativePettyCash extends Component {
     onMovementDateInput(event) { this.state.movementDate = event.target.value; }
     async save() {
         if (this.state.saving) return;
-        if (!this.state.requestId || !this.state.paymentPointId || !this.state.destinationId || !this.state.amount || !this.state.movementDate) {
-            this.notification.add(_t("Complete the request, payment point, destination, amount, and transfer date."), { type: "warning" });
+        if (!this.state.paymentPointId || !this.state.destinationId || !this.state.amount || !this.state.movementDate) {
+            this.notification.add(_t("Complete the payment point, representative, amount, and transfer date."), { type: "warning" });
             return;
         }
         this.state.saving = true;
         try {
             await this.orm.call("baseer.procurement.representative.advance", "submit_funding", [
-                Number(this.state.requestId), Number(this.state.paymentPointId), Number(this.state.destinationId), this.state.amount, this.state.clientToken,
+                false, Number(this.state.paymentPointId), Number(this.state.destinationId), this.state.amount, this.state.clientToken,
                 this.state.movementDate,
             ]);
             this.state.requestId = "";

@@ -70,6 +70,26 @@ class BWorkReceiptCase(TransactionCase):
             'lines': [{'option_id': self.option.id, 'quantity': '2.00'}],
         })['order']['id']
         self.order = self.env['baseer.procurement.request'].sudo().browse(self.order_id)
+        self._historical(self.order)
+
+    def _historical(self, orders, state=None):
+        """Model pre-upgrade rows for the historical receipt workflow tests.
+
+        The server now always creates list-only records. Only this isolated
+        fixture marks its records as present before the schema upgrade.
+        """
+        orders.flush_recordset(['list_only', 'state'])
+        self.env.cr.execute(
+            'UPDATE baseer_procurement_request SET list_only = FALSE WHERE id = ANY(%s)',
+            [orders.ids],
+        )
+        if state:
+            self.env.cr.execute(
+                'UPDATE baseer_procurement_request SET state = %s WHERE id = ANY(%s)',
+                [state, orders.ids],
+            )
+        orders.invalidate_recordset(['list_only', 'state'])
+        return orders
 
     def _payload(self, token=None, quantity='1.00', price='7.25'):
         return {
@@ -137,12 +157,16 @@ class BWorkReceiptCase(TransactionCase):
         } for _ in range(30)])
         foreign_order = Order.with_company(self.foreign).create({
             'company_id': self.foreign.id, 'warehouse_id': foreign_warehouse.id,
-            'requester_id': self.operator.id, 'source_channel': LEGACY_SOURCE_CHANNEL, 'state': 'received',
+            'requester_id': self.operator.id, 'source_channel': LEGACY_SOURCE_CHANNEL, 'state': 'sent',
         })
+        self._historical(rows)
+        self._historical(foreign_order, 'received')
         excluded = Order.with_company(self.company).create([{
             'company_id': self.company.id, 'warehouse_id': self.warehouse.id,
             'requester_id': self.operator.id, 'source_channel': channel, 'state': state,
-        } for channel, state in [('odoo', 'sent'), (LEGACY_SOURCE_CHANNEL, 'draft'), (LEGACY_SOURCE_CHANNEL, 'cancel')]])
+        } for channel, state in [('odoo', 'sent'), (LEGACY_SOURCE_CHANNEL, 'draft'), (LEGACY_SOURCE_CHANNEL, 'draft')]])
+        self._historical(excluded)
+        self._historical(excluded[-1], 'cancel')
         first = self.service._v2_receipts_all()
         second = self.service._v2_receipts_all(first['next_before_id'])
         ids = [row['id'] for row in first['orders'] + second['orders']]
@@ -192,7 +216,7 @@ class BWorkReceiptCase(TransactionCase):
             'client_uuid': str(uuid4()), 'room_id': room.id,
             'lines': [{'option_id': self.option.id, 'quantity': '2.00'}],
         })['order']['id']
-        return room, membership, self.env['baseer.procurement.request'].sudo().browse(order_id)
+        return room, membership, self._historical(self.env['baseer.procurement.request'].sudo().browse(order_id))
 
     def test_receipt_share_is_separate_server_authored_and_idempotent(self):
         room, membership, order = self._room_order()
@@ -567,6 +591,7 @@ class BWorkReceiptCase(TransactionCase):
             'lines': [{'option_id': self.option.id, 'quantity': '2.00'}],
         })['order']['id']
         second = self.env['baseer.procurement.request'].sudo().browse(second_id)
+        self._historical(second)
         payload = {
             'api_version': 2, 'company_id': self.company.id, 'client_uuid': token,
             'lines': [{'line_id': second.line_ids.id,
@@ -603,6 +628,7 @@ class BWorkReceiptCase(TransactionCase):
                       for option in [self.option] + extra_options],
         })['order']['id']
         order = self.env['baseer.procurement.request'].sudo().browse(order_id)
+        self._historical(order)
         by_option = {line.option_id.id: line.id for line in order.line_ids}
         result = self.service._v2_receipt_confirm(order_id, {
             'api_version': 2, 'company_id': self.company.id,

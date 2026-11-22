@@ -65,7 +65,9 @@ class BWorkOrderCase(TransactionCase):
             'product_id': self.product.id, 'uom_id': uom.id,
             'packaging_note': 'Case of 12',
         })
-        self.service = self.env['baseer.bwork.service'].with_user(self.user)
+        # These service-level contracts exercise the list-aware client.
+        # Separate boundary tests cover legacy clients that omit this flag.
+        self.service = self.env['baseer.bwork.service'].with_user(self.user).with_context(bwork_list_workflow=True)
 
     def _representative(self, name, company=None):
         partner = self.env['res.partner'].create({
@@ -103,6 +105,19 @@ class BWorkOrderCase(TransactionCase):
                           Command.link(self.env.ref('base.group_system').id)],
         })
         company.with_user(owner).with_context(allowed_company_ids=company.ids).write(values)
+
+    def test_legacy_snapshot_excludes_new_lists_but_keeps_old_orders(self):
+        old = self._workflow_order()
+        old.flush_recordset(['list_only'])
+        self.env.cr.execute('UPDATE baseer_procurement_request SET list_only = FALSE WHERE id = %s', [old.id])
+        old.invalidate_recordset(['list_only'])
+        new = self._workflow_order()
+        self.assertTrue(new.list_only)
+        watermark = self.service._v2_changes(0, 1)['watermark']
+        snapshot = self.service._v2_change_snapshot('orders', watermark=watermark)
+        snapshot_ids = [row['id'] for row in snapshot['orders']]
+        self.assertIn(old.id, snapshot_ids)
+        self.assertNotIn(new.id, snapshot_ids)
 
     def test_company_display_hides_discovery_not_replay_native_names_or_amounts(self):
         payload = {**self._payload(), 'purchase_route': 'cash'}
@@ -833,6 +848,11 @@ class BWorkOrderCase(TransactionCase):
             'requester_id': colleague.id, 'source_channel': LEGACY_SOURCE_CHANNEL, 'state': 'sent',
         } for _ in range(30)])
 
+        historical = own | other_channel | colleague_order | excluded | second_company | page_orders
+        historical.flush_recordset(['list_only'])
+        self.env.cr.execute('UPDATE baseer_procurement_request SET list_only = FALSE WHERE id = ANY(%s)', [historical.ids])
+        historical.invalidate_recordset(['list_only'])
+
         legacy = self.service._v2_orders(self.company.id)['orders']
         self.assertEqual([row['id'] for row in legacy], [own.id])
         with self.assertRaises(ProtocolError) as legacy_colleague:
@@ -1074,6 +1094,16 @@ class BWorkOrderHttpCase(HttpCase):
         self.env['baseer.bwork.membership'].with_user(manager).with_company(company).create({
             'room_id': room.id, 'user_id': user.id,
         })
+        # Preserve a pre-upgrade BWork receipt fixture while exercising the new
+        # list-only HTTP contract independently below.
+        legacy_service = self.env['baseer.bwork.service'].with_user(user)
+        legacy_id = legacy_service._v2_order_create({
+            'api_version': 2, 'company_id': company.id, 'warehouse_id': warehouse.id,
+            'representative_partner_id': None, 'client_uuid': str(uuid4()), 'room_id': room.id,
+            'lines': [{'option_id': option.id, 'quantity': '2.00'}],
+        })['order']['id']
+        self.env.cr.execute('UPDATE baseer_procurement_request SET list_only = FALSE WHERE id = %s', [legacy_id])
+        self.env['baseer.procurement.request'].browse(legacy_id).invalidate_recordset(['list_only'])
         self.authenticate(user.login, password)
         bootstrap = self.url_open('/bwork/api/v2/bootstrap').json()
         csrf = bootstrap['csrf_token']
@@ -1144,25 +1174,28 @@ class BWorkOrderHttpCase(HttpCase):
         })
         missing_csrf = self.url_open('/bwork/api/v2/orders', data={'payload': payload}, allow_redirects=False)
         self.assertNotEqual(missing_csrf.status_code, 200)
-        created = self.url_open('/bwork/api/v2/orders', data={
+        blocked = self.url_open('/bwork/api/v2/orders', data={'csrf_token': csrf, 'payload': payload}, allow_redirects=False)
+        self.assertEqual(blocked.status_code, 409)
+        self.assertEqual(blocked.json()['error']['code'], 'server_update_required')
+        created = self.url_open('/bwork/api/v2/orders?list_workflow=1', data={
             'csrf_token': csrf, 'payload': payload,
         }, allow_redirects=False)
         self.assertEqual(created.status_code, 200)
         self.assertEqual(created.json()['client_uuid'], token)
         self.assertEqual(created.json()['order']['state'], 'sent')
         self.assertEqual(created.json()['order']['representative_id'], representative.id)
-        replay = self.url_open('/bwork/api/v2/orders', data={
+        replay = self.url_open('/bwork/api/v2/orders?list_workflow=1', data={
             'csrf_token': csrf, 'payload': payload,
         }, allow_redirects=False)
         self.assertEqual(replay.status_code, 200)
         self.assertTrue(replay.json()['replayed'])
         self.assertEqual(replay.json()['order']['id'], created.json()['order']['id'])
-        listed = self.url_open('/bwork/api/v2/orders?company_id=%s' % company.id)
+        listed = self.url_open('/bwork/api/v2/orders?company_id=%s&list_workflow=1' % company.id)
         self.assertIn(created.json()['order']['id'], [row['id'] for row in listed.json()['orders']])
-        all_orders = self.url_open('/bwork/api/v2/orders?scope=all', allow_redirects=False)
+        all_orders = self.url_open('/bwork/api/v2/orders?scope=all&list_workflow=1', allow_redirects=False)
         self.assertEqual(all_orders.status_code, 200, all_orders.text)
         self.assertEqual(all_orders.json()['orders'][0]['requester_id'], user.id)
-        company_orders = self.url_open('/bwork/api/v2/orders?scope=all&company_id=%s' % company.id, allow_redirects=False)
+        company_orders = self.url_open('/bwork/api/v2/orders?scope=all&company_id=%s&list_workflow=1' % company.id, allow_redirects=False)
         self.assertEqual(company_orders.status_code, 200, company_orders.text)
         self.assertTrue(all(row['company_id'] == company.id for row in company_orders.json()['orders']))
         for path in ('/bwork/api/v2/orders',
@@ -1190,7 +1223,7 @@ class BWorkOrderHttpCase(HttpCase):
         order_replayed = self.url_open(order_share_path, data={'csrf_token': csrf, 'payload': order_sharing_payload}, allow_redirects=False)
         self.assertEqual(order_replayed.json()['message_id'], order_shared.json()['message_id'])
         self.assertTrue(order_replayed.json()['replayed'])
-        detail_path = '/bwork/api/v2/orders/%s?company_id=%s' % (
+        detail_path = '/bwork/api/v2/orders/%s?company_id=%s&list_workflow=1' % (
             created.json()['order']['id'], company.id,
         )
         detail = self.url_open(detail_path, allow_redirects=False)
@@ -1213,17 +1246,19 @@ class BWorkOrderHttpCase(HttpCase):
         receipt_list = self.url_open('%s?company_id=%s' % (receipt_root, company.id),
                                      allow_redirects=False)
         self.assertEqual(receipt_list.status_code, 200, receipt_list.text)
-        self.assertIn(created.json()['order']['id'],
+        self.assertNotIn(created.json()['order']['id'],
                       [row['id'] for row in receipt_list.json()['orders']])
+        self.assertIn(legacy_id, [row['id'] for row in receipt_list.json()['orders']])
         global_receipts = self.url_open('%s?scope=all' % receipt_root, allow_redirects=False)
         self.assertEqual(global_receipts.status_code, 200, global_receipts.text)
-        self.assertIn(created.json()['order']['id'], [row['id'] for row in global_receipts.json()['orders']])
+        self.assertNotIn(created.json()['order']['id'], [row['id'] for row in global_receipts.json()['orders']])
+        self.assertIn(legacy_id, [row['id'] for row in global_receipts.json()['orders']])
         scoped_receipts = self.url_open('%s?scope=all&company_id=%s' % (receipt_root, company.id), allow_redirects=False)
         self.assertEqual(scoped_receipts.status_code, 200, scoped_receipts.text)
         for suffix in ('', '?scope=mine', '?scope=all&company_id=0', '?scope=all&before_id=0'):
             self.assertEqual(self.url_open('%s%s' % (receipt_root, suffix), allow_redirects=False).status_code, 400)
         receipt_detail = self.url_open('%s/%s?company_id=%s' % (
-            receipt_root, created.json()['order']['id'], company.id,
+            receipt_root, legacy_id, company.id,
         ), allow_redirects=False)
         self.assertEqual(receipt_detail.status_code, 200, receipt_detail.text)
         self.assertEqual(len(receipt_detail.json()['lines']), 1)
@@ -1232,7 +1267,7 @@ class BWorkOrderHttpCase(HttpCase):
             'lines': [{'line_id': receipt_detail.json()['lines'][0]['line_id'],
                        'actual_qty': '1.00', 'actual_price': '7.25'}],
         })
-        confirm_path = '%s/%s/confirm' % (receipt_root, created.json()['order']['id'])
+        confirm_path = '%s/%s/confirm' % (receipt_root, legacy_id)
         self.assertNotEqual(self.url_open(confirm_path, data={
             'payload': receipt_payload,
         }, allow_redirects=False).status_code, 200)
@@ -1242,7 +1277,7 @@ class BWorkOrderHttpCase(HttpCase):
         self.assertEqual(confirmed.status_code, 200, confirmed.text)
         self.assertEqual(confirmed.json()['receipt']['state'], 'purchased')
         self.assertEqual(confirmed.json()['receipt']['confirmed_by_id'], user.id)
-        share_path = '%s/%s/share' % (receipt_root, created.json()['order']['id'])
+        share_path = '%s/%s/share' % (receipt_root, legacy_id)
         sharing = self.url_open(share_path, data={
             'csrf_token': csrf,
             'payload': json.dumps({'api_version': 2, 'company_id': company.id}),

@@ -310,6 +310,10 @@ class BWorkChangeService(models.AbstractModel):
             return {'api_version': 2, 'section': section, 'snapshot_watermark': watermark,
                     'orders': [], 'next_before_id': None}
         domain = [('source_channel', '=', LEGACY_SOURCE_CHANNEL), ('company_id', 'in', list(scopes))]
+        # Legacy BWork clients cannot represent independent order lists.
+        # Keep the optional procurement extension from breaking their snapshot.
+        if 'list_only' in self.env['baseer.procurement.request']._fields:
+            domain.append(('list_only', '=', False))
         if before_id:
             domain.append(('id', '<', before_id))
         scoped = self.with_context({

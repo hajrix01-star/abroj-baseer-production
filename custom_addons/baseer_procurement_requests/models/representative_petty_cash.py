@@ -364,6 +364,8 @@ class RepresentativePettyCash(models.Model):
                 raise ValidationError(_('Choose an active purchase-representative contact in the active company.'))
             if record.movement_type == 'funding':
                 request = record.procurement_request_id
+                if request:
+                    request._require_receipt_workflow()
                 if request and (request.company_id != record.company_id or request.state not in ('sent', 'received', 'purchased')):
                     raise ValidationError(_('Choose a sent, received, or completed purchase request in the active company.'))
                 if request and request.representative_partner_id != record.representative_partner_id:
@@ -556,6 +558,8 @@ class RepresentativePettyCash(models.Model):
         if existing:
             return existing.id
         request = self._lock_request(int(request_id)) if request_id else self.env['baseer.procurement.request']
+        if request:
+            request._require_receipt_workflow()
         payment_journal = self.env['account.journal'].browse(int(payment_journal_id)).exists()
         representative = self.env['res.partner'].browse(int(representative_partner_id)).exists()
         if not payment_journal or not representative or (request_id and not request):

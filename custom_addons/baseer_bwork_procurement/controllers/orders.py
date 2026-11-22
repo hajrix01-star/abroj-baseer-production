@@ -82,7 +82,9 @@ class BWorkOrderApi(http.Controller):
                 methods=['GET'], csrf=True, save_session=True)
     def options(self, **kwargs):
         try:
-            args = self._args(('company_id',))
+            args = self._args(('company_id', 'list_workflow'))
+            if args.get('list_workflow', '0') not in ('0', '1'):
+                raise ProtocolError('invalid_payload', 'Unknown order workflow.')
             company_id = self._id(args['company_id'], 'company_id') if 'company_id' in args else None
             return self._response(self._service()._v2_order_options(company_id))
         except (AccessError, ProtocolError, ValidationError, UserError) as error:
@@ -125,17 +127,20 @@ class BWorkOrderApi(http.Controller):
                 methods=['GET'], csrf=True, save_session=True)
     def orders(self, **kwargs):
         try:
-            args = self._args(('company_id', 'before_id', 'scope'))
+            args = self._args(('company_id', 'before_id', 'scope', 'list_workflow'))
+            if args.get('list_workflow', '0') not in ('0', '1'):
+                raise ProtocolError('invalid_payload', 'Unknown order workflow.')
+            service = self._service().with_context(bwork_list_workflow=args.get('list_workflow') == '1')
             before_id = self._id(args['before_id'], 'before_id') if 'before_id' in args else None
             if 'scope' in args:
                 if args['scope'] != 'all':
                     raise ProtocolError('invalid_payload', 'Choose one supported order scope.')
                 company_id = self._id(args['company_id'], 'company_id') if 'company_id' in args else None
-                return self._response(self._service()._v2_orders_all(before_id, company_id=company_id))
+                return self._response(service._v2_orders_all(before_id, company_id=company_id))
             if 'company_id' not in args:
                 raise ProtocolError('invalid_payload', 'company_id is required.')
             company_id = self._id(args['company_id'], 'company_id')
-            return self._response(self._service()._v2_orders(company_id, before_id))
+            return self._response(service._v2_orders(company_id, before_id))
         except (AccessError, ProtocolError, ValidationError, UserError) as error:
             return self._error(error)
 
@@ -143,13 +148,15 @@ class BWorkOrderApi(http.Controller):
                 methods=['GET'], csrf=True, save_session=True)
     def order_detail(self, order_id, **kwargs):
         try:
-            args = self._args(('company_id', 'scope'))
+            args = self._args(('company_id', 'scope', 'list_workflow'))
+            if args.get('list_workflow', '0') not in ('0', '1'):
+                raise ProtocolError('invalid_payload', 'Unknown order workflow.')
             if 'company_id' not in args:
                 raise ProtocolError('invalid_payload', 'company_id is required.')
             if 'scope' in args and args['scope'] != 'all':
                 raise ProtocolError('invalid_payload', 'Unknown order scope.')
             company_id = self._id(args['company_id'], 'company_id')
-            return self._response(self._service()._v2_order_detail(
+            return self._response(self._service().with_context(bwork_list_workflow=args.get('list_workflow') == '1')._v2_order_detail(
                 company_id, order_id, scope=args.get('scope'),
             ))
         except (AccessError, ProtocolError, ValidationError, UserError) as error:
@@ -159,8 +166,11 @@ class BWorkOrderApi(http.Controller):
                 methods=['POST'], csrf=True, save_session=True, max_content_length=65536)
     def create(self, **kwargs):
         try:
-            self._args(())
-            return self._response(self._service()._v2_order_create(self._form()))
+            args = self._args(('list_workflow',))
+            if args.get('list_workflow', '0') not in ('0', '1'):
+                raise ProtocolError('invalid_payload', 'Unknown order workflow.')
+            service = self._service().with_context(bwork_legacy_replay_only=args.get('list_workflow') != '1')
+            return self._response(service._v2_order_create(self._form()))
         except (AccessError, ProtocolError, ConcurrencyError, ValidationError, UserError) as error:
             return self._error(error)
 

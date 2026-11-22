@@ -57,6 +57,12 @@ msgstr "اكتمل استلام الكمية"
 #. module: baseer_procurement_operations_dashboard
 #. odoo-javascript
 #: code:addons/baseer_procurement_operations_dashboard/static/src/procurement_dashboard.js:0
+msgid "Order lists closed"
+msgstr "قوائم الطلبات المغلقة"
+
+#. module: baseer_procurement_operations_dashboard
+#. odoo-javascript
+#: code:addons/baseer_procurement_operations_dashboard/static/src/procurement_dashboard.js:0
 msgid "Pending for more than 3 days"
 msgstr "معلق لأكثر من 3 أيام"
 

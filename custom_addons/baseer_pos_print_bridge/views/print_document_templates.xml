@@ -8,7 +8,7 @@
                 <style type="text/css">
                     * { box-sizing: border-box; }
                     html, body { margin: 0; padding: 0; background: #fff; color: #000; }
-                    body { font-family: 'DejaVu Sans', 'Noto Sans Arabic', Arial, sans-serif;
+                    body { font-family: 'Segoe UI', 'DejaVu Sans', 'Noto Sans Arabic', Arial, sans-serif;
                            font-size: 26px; line-height: 1.45; }
                     .document { padding: 12px 14px; overflow-wrap: break-word; word-wrap: break-word; }
                     .center { text-align: center; }

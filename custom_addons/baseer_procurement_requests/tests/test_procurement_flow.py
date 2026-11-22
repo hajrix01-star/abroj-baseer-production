@@ -2446,9 +2446,10 @@ class ProcurementFlowCase(TransactionCase):
         representative = self.env['res.partner'].create({'name': 'PRA21 representative'})
         request = self._complete_external_request(representative)
         advance_id = self.env['baseer.procurement.representative.advance'].with_company(self.company).submit_funding(
-            request.id, bank.id, representative.id, 25, str(uuid4()), fields.Date.context_today(self),
+            False, bank.id, representative.id, 25, str(uuid4()), fields.Date.context_today(self),
         )
         advance = self.env['baseer.procurement.representative.advance'].browse(advance_id)
+        self.assertFalse(advance.procurement_request_id)
         self.assertEqual(advance.remaining_amount, 25)
         choices = self.env['baseer.purchase.batch.line'].payment_settlement_choices(self.company.id)
         representative_choice = next(
@@ -2544,6 +2545,10 @@ class ProcurementFlowCase(TransactionCase):
         self.assertEqual(batch.line_ids.representative_petty_cash_invoice_settlement_id.move_id.state, 'posted')
         self.assertEqual(batch.line_ids.move_id.payment_state, 'paid')
         self.assertFalse(batch.line_ids.payment_id)
+        summary = self.env['baseer.procurement.representative.advance'].dashboard_data(representative.id)['summary']
+        self.assertEqual(summary['funded'], 25)
+        self.assertEqual(summary['settled'], 20)
+        self.assertEqual(summary['closing'], 5)
         self.assertEqual(
             self.env['baseer.procurement.representative.advance']._baseer_representative_available_amount(
                 self.company, representative,

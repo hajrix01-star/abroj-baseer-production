@@ -18,9 +18,25 @@
             <section t-elif="state.error" class="alert alert-danger"><t t-esc="state.error"/></section>
             <t t-else="">
                 <section class="o_rep_pc_cards" aria-label="Monthly summary">
+                    <article><span>Carried forward</span><strong dir="ltr"><t t-esc="money(state.data.summary.opening)"/></strong></article>
                     <article><span>Transferred to representative</span><strong dir="ltr"><t t-esc="money(state.data.summary.funded)"/></strong></article>
                     <article><span>Settled against purchases</span><strong dir="ltr"><t t-esc="money(state.data.summary.settled)"/></strong><small>Completed during invoice entry</small></article>
-                    <article class="is_total"><span>Remaining</span><strong dir="ltr"><t t-esc="money(state.data.summary.remaining)"/></strong></article>
+                    <article><span>Returned this month</span><strong dir="ltr"><t t-esc="money(state.data.summary.returned)"/></strong></article>
+                    <article class="is_total"><span>Month-end balance</span><strong dir="ltr"><t t-esc="money(state.data.summary.closing)"/></strong></article>
+                </section>
+                <section class="o_rep_pc_rows">
+                    <h2>Daily movements</h2>
+                    <p t-if="state.data.daily_movements_truncated">Showing the latest 100 movements. The monthly totals include all movements.</p>
+                    <p t-if="!state.data.daily_movements?.length" class="o_rep_pc_empty">No movements in the selected month.</p>
+                    <table t-else=""><thead><tr><th>Date</th><th>Movement</th><th>Representative</th><th>Reference</th><th>Amount</th></tr></thead><tbody>
+                        <tr t-foreach="state.data.daily_movements" t-as="movement" t-key="movement.key">
+                            <td t-att-data-label="dailyColumnLabels.date" dir="ltr"><t t-esc="movement.date"/></td>
+                            <td t-att-data-label="dailyColumnLabels.type"><t t-esc="dailyMovementLabel(movement.type)"/></td>
+                            <td t-att-data-label="dailyColumnLabels.representative"><t t-esc="movement.representative_name"/></td>
+                            <td t-att-data-label="dailyColumnLabels.reference"><t t-esc="movement.reference || '—'"/><span t-if="movement.request_id"> · <button type="button" class="btn btn-link p-0" t-on-click="() => this.openRequest(movement.request_id)"><t t-esc="movement.request_name"/></button></span></td>
+                            <td t-att-data-label="dailyColumnLabels.amount" dir="ltr"><t t-esc="money(movement.amount)"/></td>
+                        </tr>
+                    </tbody></table>
                 </section>
                 <section t-if="state.data.can_record" class="o_rep_pc_entry" aria-label="Add petty cash">
                     <h2>Add petty cash</h2>
@@ -29,15 +45,6 @@
                         No payment point is configured for Representative Petty Cash. Ask a manager to select the existing company payment points in the company settings.
                     </p>
                     <div class="o_rep_pc_grid">
-                        <label>Purchase request
-                            <Dropdown>
-                                <button type="button" class="o_rep_pc_select btn btn-light" t-att-title="requestLabel()"><span t-esc="requestLabel()"/><i class="fa fa-chevron-down" aria-hidden="true"/></button>
-                                <t t-set-slot="content">
-                                    <DropdownItem t-foreach="state.data.requests" t-as="request" t-key="request.id" onSelected="() => this.selectRequest(request.id)"><span class="o_rep_pc_request_option"><strong dir="ltr"><t t-esc="request.name"/></strong><span><t t-esc="request.representative_name"/></span><small dir="ltr"><t t-esc="requestDateTimeLabel(request)"/></small></span></DropdownItem>
-                                </t>
-                            </Dropdown>
-                        </label>
-                        <div class="o_rep_pc_request_total" t-if="selectedRequest()"><span>Purchase request value: <strong dir="ltr"><t t-esc="money(selectedRequest().amount)"/></strong></span><small><span>Request date:</span> <span><t t-esc="requestDateTimeLabel()"/></span></small></div>
                         <label>From
                             <Dropdown>
                                 <button type="button" class="o_rep_pc_select btn btn-light" t-att-title="paymentPointLabel()"><span t-esc="paymentPointLabel()"/><i class="fa fa-chevron-down" aria-hidden="true"/></button>
@@ -86,21 +93,18 @@
                         <button type="button" class="btn btn-outline-primary" t-on-click="saveReturn" t-att-disabled="state.saving or state.data.setup_issue or !state.data.payment_points_configured">Save return</button>
                     </div>
                 </section>
-                <section t-if="!state.data.can_record" class="o_rep_pc_empty">Advances recorded at purchase receipt appear here. Contact the accountant for returns or corrections.</section>
+                <section t-if="!state.data.can_record" class="o_rep_pc_empty">Contact the accountant to record transfers, returns, or corrections.</section>
                 <section class="o_rep_pc_rows">
-                    <h2>This month's movements</h2>
-                    <p t-if="!state.data.movements.length" class="o_rep_pc_empty">No movements in the selected month.</p>
-                    <table t-else=""><thead><tr><th>Date</th><th>Movement number</th><th>Purchase request</th><th>From</th><th>To</th><th>Amount</th></tr></thead><tbody>
-                        <tr t-foreach="state.data.movements" t-as="movement" t-key="movement.id">
-                            <td t-att-data-label="movementColumnLabels.date"><t t-esc="movement.date"/></td>
-                            <td t-att-data-label="movementColumnLabels.movement"><t t-esc="movement.name"/></td>
-                            <td t-att-data-label="movementColumnLabels.request">
-                                <button t-if="movement.request_id" type="button" class="btn btn-link p-0" t-on-click="() => this.openRequest(movement.request_id)"><t t-esc="movement.request_name"/></button>
-                                <t t-else="" t-esc="movement.request_name || 'Return'"/>
-                            </td>
-                            <td t-att-data-label="movementColumnLabels.from"><t t-esc="movement.from_name"/></td>
-                            <td t-att-data-label="movementColumnLabels.to"><t t-esc="movement.to_name"/></td>
-                            <td t-att-data-label="movementColumnLabels.amount" dir="ltr"><t t-esc="money(movement.amount)"/></td>
+                    <h2>Carryover history</h2>
+                    <p>Calculated month-end balances; no new transfer is recorded.</p>
+                    <p>Last 12 months, up to 60 balances. Select a representative to narrow the history.</p>
+                    <p t-if="!state.data.carryovers?.length" class="o_rep_pc_empty">No carryovers in the last 12 months.</p>
+                    <table t-else=""><thead><tr><th>Representative</th><th>From month</th><th>To month</th><th>Carried forward</th></tr></thead><tbody>
+                        <tr t-foreach="state.data.carryovers" t-as="carryover" t-key="carryover.representative_id + '-' + carryover.source_month">
+                            <td t-att-data-label="carryoverColumnLabels.representative"><t t-esc="carryover.representative_name"/></td>
+                            <td t-att-data-label="carryoverColumnLabels.from" dir="ltr"><t t-esc="carryover.source_month.slice(0, 7)"/></td>
+                            <td t-att-data-label="carryoverColumnLabels.to" dir="ltr"><t t-esc="carryover.destination_month.slice(0, 7)"/></td>
+                            <td t-att-data-label="carryoverColumnLabels.amount" dir="ltr"><t t-esc="money(carryover.amount)"/></td>
                         </tr>
                     </tbody></table>
                 </section>

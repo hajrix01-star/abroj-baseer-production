@@ -6,6 +6,8 @@ historical records untouched and introduces the new, invoice-level contract.
 """
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
+from dateutil.relativedelta import relativedelta
+
 from psycopg2 import IntegrityError
 
 from odoo import Command, _, api, fields, models
@@ -226,26 +228,185 @@ class RepresentativePettyCashAggregate(models.Model):
                 return existing.id
             raise ValidationError(_('This external transfer reference was already used for the selected payment point.'))
 
+    def _dashboard_carryovers(self, company, representative_id, month_start):
+        """Calculate, never post, up to 60 nonzero month-end balances.
+
+        Show up to twelve source months before the selected month. An opening
+        aggregate retains older activity, while the returned rows stay bounded.
+        Company is always explicit: this SQL is used only after dashboard access
+        checks, and never crosses the active company even for shared contacts.
+        """
+        self.flush_model(['company_id', 'representative_partner_id', 'movement_type', 'movement_date', 'amount', 'state'])
+        self.env['baseer.procurement.representative.advance.settlement'].flush_model(
+            ['company_id', 'advance_id', 'move_id', 'amount', 'state'])
+        self.env['baseer.procurement.representative.petty.cash.invoice.settlement'].flush_model(
+            ['company_id', 'representative_partner_id', 'move_id', 'amount', 'state'])
+        self.env['account.move'].flush_model(['company_id', 'date'])
+        params = {
+            'company': company.id,
+            'partner': int(representative_id) if representative_id else 0,
+            'before': month_start,
+            'window_start': month_start - relativedelta(months=12),
+        }
+        self.env.cr.execute('''
+            WITH activity AS (
+                SELECT a.representative_partner_id AS partner_id, a.movement_date AS day,
+                       CASE WHEN a.movement_type = 'funding' THEN a.amount::numeric
+                            ELSE -a.amount::numeric END AS amount
+                  FROM baseer_procurement_representative_advance a
+                 WHERE a.company_id = %(company)s AND a.state = 'posted'
+                   AND a.movement_date < %(before)s
+                   AND (%(partner)s = 0 OR a.representative_partner_id = %(partner)s)
+                UNION ALL
+                SELECT a.representative_partner_id, m.date, -s.amount::numeric
+                  FROM baseer_procurement_representative_advance_settlement s
+                  JOIN baseer_procurement_representative_advance a ON a.id = s.advance_id AND a.company_id = s.company_id
+                  JOIN account_move m ON m.id = s.move_id AND m.company_id = s.company_id
+                 WHERE s.company_id = %(company)s AND s.state = 'posted' AND m.date < %(before)s
+                   AND (%(partner)s = 0 OR a.representative_partner_id = %(partner)s)
+                UNION ALL
+                SELECT s.representative_partner_id, m.date, -s.amount::numeric
+                  FROM baseer_procurement_representative_petty_cash_invoice_settlement s
+                  JOIN account_move m ON m.id = s.move_id AND m.company_id = s.company_id
+                 WHERE s.company_id = %(company)s AND s.state = 'posted' AND m.date < %(before)s
+                   AND (%(partner)s = 0 OR s.representative_partner_id = %(partner)s)
+            ), totals AS (
+                SELECT partner_id,
+                       CASE WHEN day < %(window_start)s THEN NULL
+                            ELSE date_trunc('month', day)::date END AS month,
+                       SUM(amount) AS amount
+                  FROM activity GROUP BY partner_id, 2
+            ), partners AS (
+                SELECT DISTINCT partner_id FROM totals
+            ), grid AS (
+                SELECT p.partner_id, months.month::date AS month,
+                       COALESCE(old.amount, 0) AS opening, COALESCE(current.amount, 0) AS change
+                  FROM partners p
+                 CROSS JOIN generate_series(%(window_start)s::date, %(before)s::date - interval '1 month', interval '1 month') months(month)
+                  LEFT JOIN totals old ON old.partner_id = p.partner_id AND old.month IS NULL
+                  LEFT JOIN totals current ON current.partner_id = p.partner_id AND current.month = months.month::date
+            ), balances AS (
+                SELECT partner_id, month,
+                       ROUND(opening + SUM(change) OVER (PARTITION BY partner_id ORDER BY month), 2) AS amount
+                  FROM grid
+            )
+            SELECT partner_id, month, amount FROM balances
+             WHERE amount <> 0 ORDER BY month DESC, partner_id LIMIT 60
+        ''', params)
+        rows = self.env.cr.fetchall()
+        names = {p.id: p.display_name for p in self.env['res.partner'].sudo().browse([row[0] for row in rows]).exists()}
+        return [{
+            'representative_id': partner_id, 'representative_name': names.get(partner_id, ''),
+            'source_month': fields.Date.to_string(month),
+            'destination_month': fields.Date.to_string(month + relativedelta(months=1)),
+            'amount': float(amount),
+        } for partner_id, month, amount in rows]
+
+    def _dashboard_daily_movements(self, company, representative_id, start, end):
+        """Return a bounded, stable view of all representative activity sources."""
+        self.flush_model(['company_id', 'representative_partner_id', 'procurement_request_id', 'movement_type', 'movement_date', 'name', 'amount', 'state'])
+        self.env['baseer.procurement.representative.advance.settlement'].flush_model(
+            ['company_id', 'advance_id', 'batch_id', 'move_id', 'amount', 'state'])
+        self.env['baseer.procurement.representative.petty.cash.invoice.settlement'].flush_model(
+            ['company_id', 'representative_partner_id', 'batch_line_id', 'move_id', 'amount', 'state'])
+        self.env['baseer.purchase.batch'].flush_model(['company_id', 'name'])
+        self.env['baseer.purchase.batch.line'].flush_model(['company_id', 'supplier_ref'])
+        self.env['baseer.procurement.request'].flush_model(['company_id', 'name'])
+        self.env['account.move'].flush_model(['company_id', 'date'])
+        params = {'company': company.id, 'partner': int(representative_id) if representative_id else 0,
+                  'start': start, 'end': end}
+        self.env.cr.execute('''
+            SELECT source, id, day, movement_type, partner_id, amount, reference, request_id, request_name FROM (
+                SELECT 'movement' AS source, a.id, a.movement_date AS day, a.movement_type,
+                       a.representative_partner_id AS partner_id, a.amount, a.name AS reference,
+                       r.id AS request_id, r.name AS request_name
+                  FROM baseer_procurement_representative_advance a
+                  LEFT JOIN baseer_procurement_request r ON r.id = a.procurement_request_id AND r.company_id = a.company_id
+                 WHERE a.company_id = %(company)s AND a.state = 'posted'
+                   AND a.movement_date >= %(start)s AND a.movement_date < %(end)s
+                   AND (%(partner)s = 0 OR a.representative_partner_id = %(partner)s)
+                UNION ALL
+                SELECT 'historical', s.id, m.date, 'purchase', a.representative_partner_id, s.amount, b.name, NULL::integer, NULL::varchar
+                  FROM baseer_procurement_representative_advance_settlement s
+                  JOIN baseer_procurement_representative_advance a ON a.id = s.advance_id AND a.company_id = s.company_id
+                  JOIN baseer_purchase_batch b ON b.id = s.batch_id AND b.company_id = s.company_id
+                  JOIN account_move m ON m.id = s.move_id AND m.company_id = s.company_id
+                 WHERE s.company_id = %(company)s AND s.state = 'posted'
+                   AND m.date >= %(start)s AND m.date < %(end)s
+                   AND (%(partner)s = 0 OR a.representative_partner_id = %(partner)s)
+                UNION ALL
+                SELECT 'invoice', s.id, m.date, 'purchase', s.representative_partner_id, s.amount, l.supplier_ref, NULL::integer, NULL::varchar
+                  FROM baseer_procurement_representative_petty_cash_invoice_settlement s
+                  JOIN baseer_purchase_batch_line l ON l.id = s.batch_line_id AND l.company_id = s.company_id
+                  JOIN account_move m ON m.id = s.move_id AND m.company_id = s.company_id
+                 WHERE s.company_id = %(company)s AND s.state = 'posted'
+                   AND m.date >= %(start)s AND m.date < %(end)s
+                   AND (%(partner)s = 0 OR s.representative_partner_id = %(partner)s)
+            ) activity ORDER BY day DESC, source DESC, id DESC LIMIT 101
+        ''', params)
+        rows = self.env.cr.fetchall()
+        visible = rows[:100]
+        names = {p.id: p.display_name for p in self.env['res.partner'].sudo().browse([row[4] for row in visible]).exists()}
+        can_see_purchase_reference = (
+            self.env.user.has_group('baseer_procurement_requests.group_procurement_accountant')
+            or self.env.user.has_group('baseer_procurement_requests.group_procurement_manager')
+            or self.env.user.has_group('base.group_system')
+        )
+        return [{
+            'key': '%s:%s' % (source, record_id), 'date': fields.Date.to_string(day), 'type': movement_type,
+            'representative_id': partner_id, 'representative_name': names.get(partner_id, ''),
+            'amount': float(amount),
+            'reference': (reference or '') if movement_type != 'purchase' or can_see_purchase_reference else '',
+            'request_id': request_id or False, 'request_name': request_name or '',
+        } for source, record_id, day, movement_type, partner_id, amount, reference, request_id, request_name in visible], len(rows) > 100
+
     def _dashboard_data(self, representative_id=False, month_start=False):
         data = super()._dashboard_data(representative_id, month_start)
         company = self.env.company
         start, end = self._month_range(data['month_start'])
-        domain = [
-            ('company_id', '=', company.id), ('state', '=', 'posted'),
-            ('move_id.date', '>=', start), ('move_id.date', '<', end),
-        ]
+        # Totals come from all posted sources, not the first 100 displayed rows.
+        # Historical batch-level settlements and newer invoice-level ones are
+        # distinct, immutable records; both consume the same company balance.
+        def total(model, domain):
+            return Decimal(str(self._baseer_grouped_amount(model, domain))).quantize(MONEY_QUANTUM)
+
+        movement = [('company_id', '=', company.id), ('state', '=', 'posted')]
+        historical = [('company_id', '=', company.id), ('state', '=', 'posted')]
+        invoices = [('company_id', '=', company.id), ('state', '=', 'posted')]
         if representative_id:
-            domain.append(('representative_partner_id', '=', int(representative_id)))
-        current_settled = self._baseer_grouped_amount(
-            self.env['baseer.procurement.representative.petty.cash.invoice.settlement'], domain,
-        )
-        # Dashboard's settled card remains monthly; the available card is
-        # cumulative only when a representative is selected.
-        data['summary']['settled'] = float(Decimal(str(data['summary']['settled'])) + Decimal(str(current_settled)))
-        data['summary']['remaining'] = float((Decimal(str(data['summary']['remaining'])) - Decimal(str(current_settled))).quantize(MONEY_QUANTUM))
+            partner_id = int(representative_id)
+            movement.append(('representative_partner_id', '=', partner_id))
+            historical.append(('advance_id.representative_partner_id', '=', partner_id))
+            invoices.append(('representative_partner_id', '=', partner_id))
+
+        def period(date_domain):
+            movement_dates = [('movement_date', op, date) for op, date in date_domain]
+            settlement_dates = [('move_id.date', op, date) for op, date in date_domain]
+            funded = total(self, movement + movement_dates + [('movement_type', '=', 'funding')])
+            returned = total(self, movement + movement_dates + [('movement_type', '=', 'return')])
+            settled = (
+                total(self.env['baseer.procurement.representative.advance.settlement'], historical + settlement_dates)
+                + total(self.env['baseer.procurement.representative.petty.cash.invoice.settlement'], invoices + settlement_dates)
+            )
+            return funded, returned, settled
+
+        previous_funded, previous_returned, previous_settled = period([('<', start)])
+        funded, returned, settled = period([('>=', start), ('<', end)])
+        opening = previous_funded - previous_returned - previous_settled
+        closing = opening + funded - returned - settled
+        data['summary'].update({
+            'opening': float(opening.quantize(MONEY_QUANTUM)),
+            'funded': float(funded), 'returned': float(returned), 'settled': float(settled),
+            'closing': float(closing.quantize(MONEY_QUANTUM)),
+            'remaining': float(closing.quantize(MONEY_QUANTUM)),
+        })
         if representative_id:
             representative = self.env['res.partner'].browse(int(representative_id)).exists()
             data['summary']['available'] = float(self._baseer_representative_available_amount(company, representative)) if representative else 0.0
+        data['carryovers'] = self._dashboard_carryovers(company, representative_id, start)
+        data['daily_movements'], data['daily_movements_truncated'] = self._dashboard_daily_movements(
+            company, representative_id, start, end,
+        )
         return data
 
 

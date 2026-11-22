@@ -71,6 +71,28 @@ dms_runtime_path() (
     verify_third_party_runtime_path
 )
 
+preview_scope() (
+    load_guard
+    validate_arguments "$@"
+    commit=4a4f06cda34a5a6e2817e9e118f95c9945c4f2ab
+    policy_modules=baseer_profit_loss_report
+    QA_DATABASE=baseer_qa_20261121b
+    QA_DB_CONTAINER=baseer-qa-refresh-20261121b-db-1
+    QA_ODOO_VOLUME=baseer-qa-refresh-20261121b-odoo
+    QA_COMPOSE_PROJECT=baseer-qa-refresh-20261121b
+    QA_LOGIN_URL=http://127.0.0.1:18140/web/login
+    ODOO_SERVICE=odoo
+    require_safe_file() { :; }
+    grep() { :; }
+    systemctl() { :; }
+    python3() { [ "$*" = '-I /usr/local/lib/baseer-qa-refresh/prepare-noorix-preview.py --verify-installed' ]; }
+    verify_preview_scope
+)
+preview_scope --noorix-preview baseer-2026-11-22-noorix-net-estimate-preview 123
+expect_failed preview-on-primary 'requires the isolated preview target' preview_scope baseer-2026-11-22-noorix-net-estimate-preview 123
+expect_failed primary-on-preview 'only the approved standalone report' preview_scope --noorix-preview baseer-2026-11-22-noorix-net-estimate 123
+preview_scope baseer-2026-11-22-noorix-net-estimate 123
+
 for wrapper in baseer-qa-approve-release baseer-qa-deploy; do
     policy_case "$wrapper" dms
     policy_case "$wrapper" eh_account_dynamic_reports
@@ -194,6 +216,7 @@ rollback_restore_failure() (
     load_guard
     local mode=$1
     QA_BASE="$test_dir/rollback-$mode"
+    CURRENT="$QA_BASE/current"
     old_release="$QA_BASE/old"
     backup="$QA_BASE/backup"
     QA_DB_CONTAINER=qa-db QA_ODOO_VOLUME=qa-volume QA_DATABASE=baseer_qa
@@ -223,11 +246,12 @@ smoke_failure() (
     load_guard
     local mode=${1:-fatal}
     QA_BASE="$test_dir/smoke-$mode"
+    CURRENT="$QA_BASE/current"
     old_release="$QA_BASE/old"
     backup="$QA_BASE/backup"
     ODOO_SERVICE=odoo
     mkdir -p "$old_release" "$backup"
-    : > "$QA_BASE/current"
+    : > "$CURRENT"
     if [ "$mode" = fatal ]; then
         printf 'FATAL: boot failed\n' > "$backup/odoo-smoke.log"
     elif [ "$mode" = websocket ]; then

@@ -113,6 +113,9 @@ class ProfitLossDrill(models.AbstractModel):
                 value = fmt(amount)
                 basis = ('توزيع إيراد الحساب على طريقة الدفع؛ المساهمة ليست إجمالي الإيصال أو القيد. غير الموزع يبقى ظاهرًا دون تخمين.' if ar else
                          'Account revenue allocated to this payment channel; each contribution is not the receipt or journal total. Unallocated revenue is retained without guessing.')
+                if key.startswith('estimated_payment_'):
+                    basis = ('حصة صافي نوركس تقدير إداري موزع نسبيًا من إجمالي التحصيل؛ لا تمثل ضريبة فعلية لطريقة الدفع.' if ar else
+                             'Noorix net share is a proportional management estimate, not actual tax for the payment method.')
                 for item in contributions:
                     if item['channel_key'] == key:
                         move = self.env['account.move'].browse(item['move_id'])

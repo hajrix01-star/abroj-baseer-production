@@ -4,6 +4,32 @@ from decimal import Decimal, ROUND_HALF_UP
 UNALLOCATED = 'unallocated'
 
 
+def estimate_noorix_net(net, gross_by_method):
+    """Allocate posted net cents for management, never as actual channel VAT."""
+    cent = Decimal('0.01')
+    if not net.is_finite() or net <= 0 or net != net.quantize(cent) or not gross_by_method:
+        return None
+    if any(type(key) is not int or key <= 0 or not value.is_finite()
+           or value <= 0 or value != value.quantize(cent)
+           for key, value in gross_by_method.items()):
+        return None
+    gross = sum((int(value / cent) for value in gross_by_method.values()), 0)
+    net_cents = int(net / cent)
+    if not gross or net_cents > gross:
+        return None
+    divisions = {key: divmod(net_cents * int(value / cent), gross)
+                 for key, value in gross_by_method.items()}
+    result = {key: quotient for key, (quotient, _remainder) in divisions.items()}
+    remaining = net_cents - sum(result.values())
+    for key in sorted(divisions, key=lambda key: (-divisions[key][1], key))[:remaining]:
+        result[key] += 1
+    if sum(result.values()) != net_cents or any(
+            value < 0 or value > int(gross_by_method[key] / cent)
+            for key, value in result.items()):
+        return None
+    return {key: Decimal(value) * cent for key, value in result.items()}
+
+
 def noorix_gross_channels(event, company):
     """Classify one already-validated Noorix ledger event without allocating VAT.
 

@@ -60,6 +60,7 @@
         <field name="sequence">40</field>
     </record>
     <record id="workspace_item_cashier_purchase_batches" model="baseer.basser.workspace.item">
+        <field name="active" eval="False"/>
         <field name="section_id" ref="workspace_section_cashier_operations"/>
         <field name="name">Purchase batch entry</field>
         <field name="description">Enter and follow up only your own grouped purchase batches.</field>
@@ -86,6 +87,7 @@
         <field name="sequence">20</field>
     </record>
     <record id="workspace_item_accountant_purchase_batches" model="baseer.basser.workspace.item">
+        <field name="active" eval="False"/>
         <field name="section_id" ref="workspace_section_accountant_operations"/>
         <field name="name">Purchase batches</field>
         <field name="description">Review and process approved purchase batches.</field>

@@ -7,9 +7,14 @@ on:
       - ops/qa/verify-qa-refresh-odoo.py
       - ops/qa/baseer-qa-refresh
       - ops/qa/baseer-qa-deploy
+      - ops/qa/baseer-qa-noorix-stage
+      - ops/qa/noorix-qa-route.py
+      - ops/qa/prepare-noorix-preview.py
       - ops/qa/runtime-pins/20261121b.env
       - ops/qa/install-qa-refresh.sh
       - tests/test_qa_refresh.py
+      - tests/test_qa_noorix_preview_config.py
+      - tests/test_qa_noorix_route.py
       - .github/workflows/refresh-reviewed-qa.yml
       - .github/workflows/test-qa-refresh.yml
   push:
@@ -19,9 +24,14 @@ on:
       - ops/qa/verify-qa-refresh-odoo.py
       - ops/qa/baseer-qa-refresh
       - ops/qa/baseer-qa-deploy
+      - ops/qa/baseer-qa-noorix-stage
+      - ops/qa/noorix-qa-route.py
+      - ops/qa/prepare-noorix-preview.py
       - ops/qa/runtime-pins/20261121b.env
       - ops/qa/install-qa-refresh.sh
       - tests/test_qa_refresh.py
+      - tests/test_qa_noorix_preview_config.py
+      - tests/test_qa_noorix_route.py
 
 permissions:
   contents: read
@@ -34,7 +44,75 @@ jobs:
       - uses: actions/checkout@v4
       - run: bash -n ops/qa/baseer-qa-refresh
       - run: bash -n ops/qa/baseer-qa-deploy
+      - run: bash -n ops/qa/baseer-qa-noorix-stage
       - run: bash -n ops/qa/install-qa-refresh.sh
       - run: >-
           python3 -c 'import ast; ast.parse(open("ops/qa/verify-qa-refresh-odoo.py").read())'
       - run: python3 -B -m unittest discover -s tests -p test_qa_refresh.py -v
+      - run: python3 -B -m unittest discover -s tests -p test_qa_noorix_preview_config.py -v
+      - run: python3 -B -m unittest discover -s tests -p test_qa_noorix_route.py -v
+      - name: Restore a QA fixture and verify source, database and filestore
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          work=$(mktemp -d)
+          project=qa-preview-recovery-fixture
+          QA_DB_CONTAINER="$project-db"
+          QA_ODOO_VOLUME="$project-files"
+          QA_DATABASE=baseer_qa_recovery_fixture
+          QA_ENV_FILE="$work/runtime.env"
+          backup="$work/backup"
+          cleanup() {
+            compose_cmd down --timeout 1 >/dev/null 2>&1 || true
+            docker rm -fv "$QA_DB_CONTAINER" >/dev/null 2>&1 || true
+            docker volume rm "$QA_ODOO_VOLUME" >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+          source <(sed '/^require_root$/,$d' ops/qa/baseer-qa-deploy)
+          compose_cmd() { docker compose -p "$project" -f "$work/compose.yaml" "$@"; }
+          target=noorix-preview
+          ODOO_SERVICE=odoo
+          mkdir "$work/previous" "$work/candidate" "$backup"
+          printf 'USER=qa_runner\n' > "$QA_ENV_FILE"
+          docker volume create "$QA_ODOO_VOLUME" >/dev/null
+          docker run --rm --network none -v "$QA_ODOO_VOLUME:/source" alpine:3.20 sh -c \
+            'mkdir -p "/source/filestore/$1"; printf previous > "/source/filestore/$1/fixture"' sh "$QA_DATABASE"
+          docker run -d --network none --name "$QA_DB_CONTAINER" -e POSTGRES_USER=postgres \
+            -e POSTGRES_HOST_AUTH_METHOD=trust postgres:16-alpine >/dev/null
+          for attempt in {1..40}; do
+            docker exec "$QA_DB_CONTAINER" pg_isready -h 127.0.0.1 -U postgres -q && break
+            sleep 1
+          done
+          docker exec "$QA_DB_CONTAINER" psql -X -U postgres -v ON_ERROR_STOP=1 -c 'CREATE ROLE qa_runner LOGIN'
+          docker exec "$QA_DB_CONTAINER" createdb -U postgres "$QA_DATABASE"
+          fixture_sql() { docker exec "$QA_DB_CONTAINER" psql -XAt -U postgres -v ON_ERROR_STOP=1 -d "$QA_DATABASE" -c "$1"; }
+          fixture_sql "CREATE TABLE fixture(value text); INSERT INTO fixture VALUES ('previous');"
+          printf 'previous\n' > "$work/previous/source"
+          printf 'candidate\n' > "$work/candidate/source"
+          ln -s "$work/previous" "$work/current"
+          cat > "$work/compose.yaml" <<EOF
+          services:
+            odoo:
+              image: alpine:3.20
+              command: [sleep, '300']
+              network_mode: none
+              volumes:
+                - "$work/current:/source:ro"
+          EOF
+          start_qa_app
+          test "$(compose_cmd exec -T odoo cat /source/source)" = previous
+          compose_cmd stop -t 1 odoo
+          capture_recovery_pair
+          fixture_sql "UPDATE fixture SET value = 'candidate';"
+          docker run --rm --network none -v "$QA_ODOO_VOLUME:/source" alpine:3.20 sh -c \
+            'printf candidate > "/source/filestore/$1/fixture"' sh "$QA_DATABASE"
+          ln -sfn "$work/candidate" "$work/current"
+          start_qa_app
+          test "$(compose_cmd exec -T odoo cat /source/source)" = candidate
+          restore_pair
+          ln -sfn "$work/previous" "$work/current"
+          start_qa_app
+          test "$(compose_cmd exec -T odoo cat /source/source)" = previous
+          test "$(fixture_sql 'SELECT value FROM fixture;')" = previous
+          test "$(docker run --rm --network none -v "$QA_ODOO_VOLUME:/source:ro" \
+            alpine:3.20 cat "/source/filestore/$QA_DATABASE/fixture")" = previous

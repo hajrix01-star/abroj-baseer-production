@@ -4,6 +4,10 @@
 
 تتبع محلي محدود ومنقح للمهمة والصورة والإرسال وطابور Windows، نافذة حالة وتنبيهات وتقرير دعم يستبعد مفاتيح الربط وصور العملاء. التقاط الأصل والصورة المعالجة اختياري ومؤقت؛ التصميم يبقى في أودو ومنع التكرار كما هو. لا نشر لايف لهذا المرشح؛ قبول QA الفعلي منفصل عن الفحوص المحلية. [العقد والأدلة والحدود](../../build-governance/PRINT-AGENT-DIAGNOSTICS-20261122.md).
 
+## NKR — حزمة خط المطبخ Noto (2026-11-22؛ مرشح نشر)
+
+اعتماد المالك Noto Sans Arabic بأوزان500/600/700، مع تفويض نشر اللايف. مرشح bridge19.0.7.8.63 يضمّن الملفات المرخّصة ويعزل اختيارها داخل عملية رسم أودو، دون تغيير الإيجنت أو الصور المجمدة/إعادة الطباعة. [الخريطة المصغرة والأدلة والنشر](POS-KITCHEN-NOTO-APPROVED-20261122.md).
+
 ## POS-NUM1 — official receipt reservation fixes (2026-11-20; QA candidate)
 
 Pinned Odoo 19.0-20260817 stays unchanged. Cache-resilience addon ports official
@@ -1127,3 +1131,6 @@ by automatic approval review. No production deployment or release GO is recorded
 ## PURCHASE-DAILY-REPORT — local candidate (2026-11-22)
 
 Custom daily purchase report for direct and batch-generated posted vendor bills; controlled role and company scope, read-only details and company-currency aggregation. Not deployed. [Impact and contract](PURCHASE-DAILY-REPORT.md).
+# INDEPENDENT-REPRESENTATIVE-CUSTODY-20261122 — local candidate
+
+ARCHITECTURAL delta from `official/main` `c8fa9bef7`: independent representative funding and receipt confirmation; server-computed monthly opening, funding, purchases, returns, closing and computed carryover history; a bounded daily activity view. Native journal entries and company/representative balances remain authoritative. Isolated focused tests, concurrency proof and a single synthetic historical-funding upgrade comparison are recorded in [build contract](../../build-governance/INDEPENDENT-REPRESENTATIVE-CUSTODY-20261122.md). Local candidate only: production data upgrade, the complete Arabic/mobile entry journey, CI and deployment are not verified.

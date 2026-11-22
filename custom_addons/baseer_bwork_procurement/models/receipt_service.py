@@ -40,6 +40,7 @@ class BWorkReceiptService(models.AbstractModel):
         ).search([
             ('id', '=', order_id), ('company_id', '=', scoped.env.company.id),
             ('source_channel', '=', LEGACY_SOURCE_CHANNEL),
+            ('list_only', '=', False),
         ], limit=1)
         if not order:
             raise ProtocolError('not_found', 'This receipt request is unavailable.', 404)
@@ -77,7 +78,8 @@ class BWorkReceiptService(models.AbstractModel):
         if scoped.env.company.id not in self._bwork_visible_companies().ids:
             return {'api_version': 2, 'orders': [], 'next_before_id': None}
         domain = [('company_id', '=', scoped.env.company.id),
-                  ('source_channel', '=', LEGACY_SOURCE_CHANNEL), ('state', 'in', ('sent', 'received'))]
+                  ('source_channel', '=', LEGACY_SOURCE_CHANNEL), ('list_only', '=', False),
+                  ('state', 'in', ('sent', 'received'))]
         if before_id:
             domain.append(('id', '<', before_id))
         orders = scoped.env['baseer.procurement.request'].sudo().with_company(
@@ -107,6 +109,7 @@ class BWorkReceiptService(models.AbstractModel):
         if not scopes:
             return {'api_version': 2, 'orders': [], 'next_before_id': None}
         domain = [('company_id', 'in', list(scopes)), ('source_channel', '=', LEGACY_SOURCE_CHANNEL),
+                  ('list_only', '=', False),
                   ('state', 'in', ('sent', 'received'))]
         if before_id:
             domain.append(('id', '<', before_id))

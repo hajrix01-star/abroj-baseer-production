@@ -11,7 +11,7 @@ from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.fields import Domain
 from .revenue_channels import (
     UNALLOCATED, allocate_channels, tender_matches_order, reconcile_order_amounts,
-    noorix_gross_channels,
+    noorix_gross_channels, estimate_noorix_net,
 )
 
 
@@ -1384,13 +1384,26 @@ class BaseerProfitLossReport(models.AbstractModel):
             for line, delta in self._inclusive_adjustments(domain).items():
                 key = (line.move_id.id, line.account_id.id)
                 grouped[key] = grouped.get(key, Decimal('0')) + delta
-            dates = [line.date for line in lines if line.date]
-            if dates:
+        dates = [line.date for line in lines if line.date]
+        if dates:
+            try:
                 noorix, _incomplete = self._verified_noorix_gross_channels(
                     company, min(dates), max(dates), domain)
-                if noorix:
+            except AccessError:
+                if self.env.context.get('_baseer_pl_inclusive'):
+                    raise
+                # Report-only users retain the posted net, without learning
+                # whether an inaccessible source or evidence record exists.
+                noorix = {}
+            if noorix:
+                if self.env.context.get('_baseer_pl_inclusive'):
                     method_by_account = self._noorix_payment_methods(company)
+                try:
                     approved_mappings = self._noorix_display_mappings(company, min(dates), max(dates))
+                except AccessError:
+                    if self.env.context.get('_baseer_pl_inclusive'):
+                        raise
+                    noorix = {}
         result = {}
         # Only IDs are reused within this invocation; no context, cross-request,
         # amount or visibility cache. Guard failures retain their original scope.
@@ -1402,7 +1415,15 @@ class BaseerProfitLossReport(models.AbstractModel):
             posted_net = sum((-self._decimal(line.balance) for line in lines
                               if line.move_id.id == move_id and line.account_id.id == account_id), Decimal('0'))
             source = noorix.get((move_id, account_id))
-            if source is not None:
+            if source is not None and not self.env.context.get('_baseer_pl_inclusive'):
+                source_channels, _funding_accounts = source
+                move = lines.env['account.move'].browse(move_id)
+                estimated = self._noorix_net_estimate(move, company, posted_net,
+                                                       source_channels, approved_mappings)
+                if estimated is not None:
+                    allocation = estimated
+                source = False  # Do not mix this source with POS attribution.
+            if source:
                 source_channels, funding_accounts = source
                 names = {
                     'cash': ('نقدي', 'Cash'), 'bank': ('بنك', 'Bank'),
@@ -1426,7 +1447,8 @@ class BaseerProfitLossReport(models.AbstractModel):
                     name = method.display_name if method else names[key][0 if arabic else 1]
                     previous = allocation.get(channel, (name, Decimal('0')))
                     allocation[channel] = (name, previous[1] + value)
-            if source is None:
+            if source is None and not (not self.env.context.get('_baseer_pl_inclusive') and
+                                       'NOORIX-SALES' in (lines.env['account.move'].browse(move_id).ref or '').upper()):
                 try:
                     Order = self.env['pos.order']
                     Order.browse().check_access('read')
@@ -1527,6 +1549,58 @@ class BaseerProfitLossReport(models.AbstractModel):
                 previous = target.get(key, (name, Decimal('0')))
                 target[key] = (name, previous[1] + value)
         return result
+
+    def _noorix_net_estimate(self, move, company, posted_net, source_channels, mappings):
+        """Return explicitly labelled management estimates, never actual tax."""
+        if (move.move_type != 'entry' or company.currency_id.name != 'SAR'
+                or self._decimal(company.currency_id.rounding) != Decimal('0.01')
+                or 'pos.order' not in self.env):
+            return None
+        # Legacy untagged imports lack a stable external identity. If another
+        # posted summary names the same source and day, at least one untagged
+        # entry prevents us from proving that they represent distinct sales.
+        # Test existence only: competitors hidden by record rules are never read.
+        ref = move.ref or ''
+        branch = re.search(r'NOORIX-SALES[ \t]+([A-Z][A-Z0-9_-]*)[ \t]+', ref)
+        if not branch:
+            return None
+        tagged = bool(re.search(r'(?<!\S)src:([A-Za-z0-9_-]+)(?=\s|$)', ref))
+        ref_pattern = r'NOORIX-SALES[[:space:]]+' + re.escape(branch[1]) + r'[[:space:]]+'
+        self.env['account.move'].flush_model(['company_id', 'state', 'date', 'ref'])
+        self.env.cr.execute('''SELECT 1 FROM account_move
+                               WHERE company_id=%s AND state='posted' AND date=%s AND id<>%s
+                                 AND ref ~ %s
+                                 AND (%s OR ref !~ %s)
+                               LIMIT 1''', [company.id, move.date, move.id, ref_pattern,
+                                            not tagged, r'(^|[[:space:]])src:[A-Za-z0-9_-]+([[:space:]]|$)'])
+        if self.env.cr.fetchone():
+            return None
+        # An existence-only census prevents duplicate attribution even if a POS
+        # order is hidden by a record rule; no hidden values are disclosed.
+        self.env['pos.order'].flush_model(['account_move', 'session_id'])
+        self.env['pos.session'].flush_model(['move_id'])
+        self.env.cr.execute('''SELECT 1 FROM pos_order o LEFT JOIN pos_session s ON s.id=o.session_id
+                               WHERE o.account_move=%s OR s.move_id=%s LIMIT 1''', [move.id, move.id])
+        if self.env.cr.fetchone():
+            return None
+        by_method, methods = {}, {}
+        for key, gross in source_channels.items():
+            selected = [item for item in mappings if item[0] == key and item[1] <= move.date <= item[2]]
+            if len(selected) != 1 or not selected[0][3]:
+                return None
+            method = selected[0][3]
+            if method.company_id != company or method.id in methods:
+                return None
+            methods[method.id] = method
+            by_method[method.id] = gross
+        portions = estimate_noorix_net(posted_net, by_method)
+        if portions is None:
+            return None
+        ar = (self.env.lang or '').startswith('ar')
+        suffix = ' — تقديري إداري' if ar else ' — management estimate'
+        return {'estimated_payment_%s' % method_id:
+                (methods[method_id].display_name + suffix, amount)
+                for method_id, amount in portions.items()}
 
     def _noorix_display_mappings(self, company, start, end):
         """Load only authorized, explicit mappings; unavailable methods remain separate."""

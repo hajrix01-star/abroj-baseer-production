@@ -1,7 +1,7 @@
 {
     'name': 'Baseer Procurement Operations Dashboard',
     'summary': 'Read-only procurement request workflow dashboard',
-    'version': '19.0.1.0.0',
+    'version': '19.0.1.0.1',
     'category': 'Inventory/Purchase',
     'author': 'Baseer',
     'license': 'LGPL-3',

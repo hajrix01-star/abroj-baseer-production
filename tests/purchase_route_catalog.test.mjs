@@ -11,144 +11,55 @@ const setRoute = new Function('route', routeBody);
 const canSave = new Function(saveBody);
 const draftBody = source.match(/async saveDraft\(openWhatsApp = false\) \{([\s\S]*?)\n    \}/)[1];
 const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
-const custodyArguments = new Function('value', source.match(/function receiptCustodyArguments\(value\) \{([\s\S]*?)\n\}/)[1]);
-const rawSaveDraft = new AsyncFunction('openWhatsApp', 'newClientToken', '_t', 'receiptCustodyArguments', draftBody);
-const saveDraft = function (openWhatsApp, newClientToken, _t) {
-    return rawSaveDraft.call(this, openWhatsApp, newClientToken, _t, custodyArguments);
-};
+const saveDraft = new AsyncFunction('openWhatsApp', 'newClientToken', '_t', draftBody);
 const component = () => ({ state: {
     existingRequest: false, purchaseRoute: 'representative', representativePartnerId: 42,
     warehouseId: 1, cart: [{}], saving: false, quotePending: false, quoteError: false,
-    quote: { lines: [{}] }, receiptCustody: { context: { required: false }, ready: true },
+    quote: { lines: [{}] },
 }, unpricedReceivedLines: [] });
 
-function custodyComponent(response) {
-    const c = { state: { context: false, loading: true, error: false, ready: false, amount: '', paymentJournalId: false, movementDate: '' },
-        props: { requestId: 91, saving: false }, loadSequence: 0,
-        orm: { call: async () => response } };
-    for (const [name, args] of Object.entries({ updateCustodyReady: [], setCustodyField: ['field', 'value'] })) {
-        const body = source.match(new RegExp(`    ${name}\\([^\\n]*\\) \\{([\\s\\S]*?)\\n    \\}`))[1];
-        c[name] = new Function(...args, body).bind(c);
-    }
-    const body = source.match(/    async reloadCustody\(\) \{([\s\S]*?)\n    \}/)[1];
-    const reload = new AsyncFunction('_t', body);
-    c.reloadCustody = () => reload.call(c, (text) => text);
-    const errorBody = source.match(/    custodyErrorMessage\(error\) \{([\s\S]*?)\n    \}/)[1];
-    const errorMessage = new Function('error', '_t', errorBody);
-    c.custodyErrorMessage = (error) => errorMessage.call(c, error, (text) => text);
-    return c;
-}
-
-const custodyContext = (points = [{ id: 13, name: 'Company bank' }]) => ({ required: true, snapshot: 'funding-v1',
-    request_name: 'PRC/test', representative_name: 'Representative', existing_funded: false,
-    payment_points: points, movement_date: '2026-11-04' });
-
-test('receipt advance defaults only a sole approved source and leaves actual amount blank', async () => {
-    for (const points of [[{ id: 13 }], [{ id: 13 }, { id: 14 }]]) {
-        const c = custodyComponent(custodyContext(points));
-        await c.reloadCustody();
-        assert.equal(c.state.amount, '');
-        assert.equal(c.state.paymentJournalId, points.length === 1 ? 13 : false);
-        assert.equal(c.state.movementDate, '2026-11-04');
-        assert.equal(c.state.ready, false);
-        c.setCustodyField('amount', '120.25');
-        assert.equal(c.state.ready, points.length === 1);
-        c.setCustodyField('paymentJournalId', '14');
-        assert.equal(c.state.ready, true);
-        assert.deepEqual(custodyArguments(c.state), [{ snapshot: 'funding-v1', amount: '120.25', payment_journal_id: 14, movement_date: '2026-11-04' }]);
-    }
-});
-
-test('existing accountant funding is read-only and confirmation submits only its snapshot', async () => {
-    const c = custodyComponent({ ...custodyContext([]), existing_funded: true, funded_amount_text: '120.25', funding_records: [{ id: 1 }] });
-    await c.reloadCustody();
-    assert.equal(c.state.ready, true);
-    c.setCustodyField('amount', '999');
-    c.setCustodyField('paymentJournalId', '14');
-    assert.equal(c.state.amount, '');
-    assert.equal(c.state.paymentJournalId, false);
-    assert.deepEqual(custodyArguments(c.state), [{ snapshot: 'funding-v1' }]);
-});
-
-test('funding loading, missing source and read failure block confirmation with retry', async () => {
-    const c = custodyComponent(custodyContext([]));
-    assert.equal(c.state.ready, false);
-    await c.reloadCustody();
-    assert.equal(c.state.ready, false);
-    assert.match(c.state.error, /No approved/);
-    c.orm.call = async () => { throw { data: { name: 'odoo.exceptions.UserError', arguments: ['Company custody configuration is missing.'] } }; };
-    await c.reloadCustody();
-    assert.equal(c.state.ready, false);
-    assert.equal(c.state.error, 'Company custody configuration is missing.');
-    c.orm.call = async () => ({ required: false });
-    await c.reloadCustody();
-    assert.equal(c.state.ready, true);
-    assert.deepEqual(custodyArguments(c.state), []);
-});
-
-test('advance read errors expose intentional business messages and hide technical details', async () => {
-    const c = custodyComponent(custodyContext());
-    for (const name of ['odoo.exceptions.AccessError', 'odoo.exceptions.UserError', 'odoo.exceptions.ValidationError']) {
-        c.orm.call = async () => { throw { data: { name, arguments: ['Choose an approved company source.'] } }; };
-        await c.reloadCustody();
-        assert.equal(c.state.error, 'Choose an approved company source.');
-        assert.equal(c.state.ready, false);
-    }
-    for (const error of [
-        { message: 'PostgreSQL private server traceback' },
-        { data: { name: 'psycopg2.errors.UndefinedColumn', arguments: ['SELECT private_column FROM internal_table'] } },
-        { data: { name: 'odoo.exceptions.UserError', arguments: [{ debug: 'private traceback' }] } },
-    ]) {
-        c.orm.call = async () => { throw error; };
-        await c.reloadCustody();
-        assert.equal(c.state.error, 'Could not load the representative advance details.');
-        assert.equal(c.state.ready, false);
-    }
-});
-
-test('receipt catalogue confirmation includes advance in its single receipt call', async () => {
+test('catalogue receipt confirmation sends only receipt lines', async () => {
     const c = cartComponent({ id: 91, name: 'PRC/test' });
     c.state.cart = [{ line_id: 4, quantity: '1', actual_price: '5' }];
-    c.state.receiptCustody = { context: custodyContext(), ready: true, amount: '120.25', paymentJournalId: 13, movementDate: '2026-11-03' };
     c.canSave = true;
     c.emptyQuote = () => ({ lines: [] });
     c.loadRecentRequests = async () => {};
     const calls = [];
     c.orm = { call: async (...args) => calls.push(args) };
     await saveDraft.call(c, false, () => 'unused', (text) => text);
-    assert.deepEqual(calls, [['baseer.procurement.request', 'confirm_actual_from_catalog', [91,
-        [{ line_id: 4, actual_qty: '1', actual_price: '5' }],
-        { snapshot: 'funding-v1', amount: '120.25', payment_journal_id: 13, movement_date: '2026-11-03' }]]]);
+    assert.deepEqual(calls, [['baseer.procurement.request', 'confirm_actual_from_catalog',
+        [91, [{ line_id: 4, actual_qty: '1', actual_price: '5' }]]]]);
 });
 
-test('catalogue save guard blocks receipt until advance details are ready but leaves creation independent', () => {
+test('catalogue receipt guard depends on receipt quote, not funding state', () => {
     const c = component();
-    c.state.receiptCustody.ready = false;
-    assert.equal(canSave.call(c), true);
     c.state.existingRequest = { id: 91 };
-    assert.equal(canSave.call(c), false);
-    c.state.receiptCustody.ready = true;
     assert.equal(canSave.call(c), true);
+    c.state.quotePending = true;
+    assert.equal(canSave.call(c), false);
+    c.state.quotePending = false;
+    c.state.quoteError = 'Invalid quote';
+    assert.equal(canSave.call(c), false);
 });
 
-test('alternate actual receipt includes funding; operational manager handover never does', async () => {
+test('both receipt screens omit funding and preserve manager handover', async () => {
     const actualSource = source.slice(source.indexOf('export class ProcurementActualCatalog'));
     const body = actualSource.match(/    async confirm\(\) \{([\s\S]*?)\n    \}/)[1];
-    const confirm = new AsyncFunction('_t', 'receiptCustodyArguments', body);
+    const confirm = new AsyncFunction('_t', body);
     for (const mode of ['cashier', 'manager_receipt']) {
         const calls = [];
         const c = { state: { mode, saving: false, quotePending: false, quote: { lines: [{}] }, request: { id: 91 },
-            lines: [{ id: 4, actual_qty: '1', actual_price: '5', manager_received_qty: '1' }],
-            receiptCustody: { context: { ...custodyContext(), existing_funded: true }, ready: mode !== 'manager_receipt' } },
+            lines: [{ id: 4, actual_qty: '1', actual_price: '5', manager_received_qty: '1' }] },
             orm: { call: async (...args) => { calls.push(args); return {}; } }, action: { doAction: async () => {} }, notification: { add: () => {} } };
-        await confirm.call(c, (text) => text, custodyArguments);
+        await confirm.call(c, (text) => text);
         if (mode === 'cashier') assert.deepEqual(calls, [['baseer.procurement.request', 'confirm_actual_from_catalog', [91,
-            [{ line_id: 4, actual_qty: '1', actual_price: '5' }], { snapshot: 'funding-v1' }]]]);
-        else assert.deepEqual(calls, [['baseer.procurement.request', 'confirm_manager_receipt_from_catalog', [91, [{ line_id: 4, manager_received_qty: '1' }]]]]);
+            [{ line_id: 4, actual_qty: '1', actual_price: '5' }]]]]);
+        else assert.deepEqual(calls, [['baseer.procurement.request', 'confirm_manager_receipt_from_catalog',
+            [91, [{ line_id: 4, manager_received_qty: '1' }]]]]);
     }
-    assert.match(template, /<ReceiptCustodyFields t-if="state.mode !== 'manager_receipt'"/);
+    assert.doesNotMatch(template, /ReceiptCustodyFields/);
+    assert.doesNotMatch(source, /prepare_receipt_custody|receiptCustodyArguments/);
 });
-
 test('cash/bank clear representative and can save; returning to representative requires choice', () => {
     for (const route of ['cash', 'bank_transfer']) {
         const c = component();
@@ -198,20 +109,19 @@ function submission(route) {
     return { c, calls, actions, notices };
 }
 
-test('cash/bank primary action submits route then sends without WhatsApp', async () => {
-    for (const route of ['cash', 'bank_transfer']) {
-        const { c, calls, actions, notices } = submission(route);
-        await saveDraft.call(c, true, () => 'next-token', (text) => text);
-        assert.deepEqual(calls.map((call) => call.method), ['create_from_catalog', 'action_mark_sent']);
-        assert.deepEqual(calls[0].args, [[{ option_id: 5, quantity: '2.00', unit_price: '9.25' }], 1, false, false, 'original-token', false, route]);
-        assert.deepEqual(calls[1].args, [[91]]);
-        assert.equal(actions.length, 1);
-        assert.equal(actions[0].res_id, 91);
-        assert.deepEqual(actions[0].views, [[false, 'form']]);
-        assert.equal(c.state.clientToken, 'next-token');
-        assert.equal(c.state.saving, false);
-        assert.deepEqual(notices, []);
-    }
+test('new list sends the representative without a warehouse or payment route selection', async () => {
+    const { c, calls, actions, notices } = submission('representative');
+    c.isListOnly = true;
+    c.state.warehouseId = false;
+    await saveDraft.call(c, true, () => 'next-token', (text) => text);
+    assert.deepEqual(calls.map((call) => call.method), ['create_from_catalog', 'action_open_whatsapp']);
+    assert.deepEqual(calls[0].args, [[{ option_id: 5, quantity: '2.00', unit_price: '9.25' }], false, false, false, 'original-token', 42, 'representative']);
+    assert.equal(actions.length, 1);
+    assert.equal(c.state.clientToken, 'next-token');
+    assert.equal(c.state.saving, false);
+    assert.deepEqual(notices, []);
+    assert.match(template, /t-if="isListOnly" class="o_prc_route_representative"/);
+    assert.match(template, /t-elif="!state.existingRequest" state="routeDropdown"/);
 });
 
 test('representative primary action preserves WhatsApp and representative RPC arguments', async () => {
@@ -229,21 +139,51 @@ test('representative primary action preserves WhatsApp and representative RPC ar
     assert.deepEqual(notices, []);
 });
 
-test('save-only never sends; pending quote prevents all submission RPCs', async () => {
-    for (const route of ['cash', 'bank_transfer', 'representative']) {
-        const { c, calls } = submission(route);
-        c.state.quotePending = true;
-        await saveDraft.call(c, true, () => 'next-token', (text) => text);
-        assert.deepEqual(calls, []);
-        c.state.quotePending = false;
-        await saveDraft.call(c, false, () => 'next-token', (text) => text);
-        assert.deepEqual(calls.map((call) => call.method), ['create_from_catalog']);
-        assert.equal(calls[0].args[6], route);
-    }
+test('save-only never sends; pending quote blocks submission for a new list', async () => {
+    const { c, calls } = submission('representative');
+    c.isListOnly = true;
+    c.state.warehouseId = false;
+    c.state.quotePending = true;
+    await saveDraft.call(c, true, () => 'next-token', (text) => text);
+    assert.deepEqual(calls, []);
+    c.state.quotePending = false;
+    await saveDraft.call(c, false, () => 'next-token', (text) => text);
+    assert.deepEqual(calls.map((call) => call.method), ['create_from_catalog']);
+    assert.equal(calls[0].args[1], false);
+    assert.equal(calls[0].args[6], 'representative');
+});
+
+test('closing a clean order list uses only the list-closing RPC', async () => {
+    const body = source.match(/    async closeOrderList\(\) \{([\s\S]*?)\n    \}/)[1];
+    const close = new AsyncFunction('_t', body);
+    const calls = [], actions = [], notices = [];
+    const c = {
+        state: { editRequest: { id: 71, list_only: true, can_close_list: true }, saving: false, shareLoading: false, editorLoading: false },
+        editorDirty: false,
+        orm: { call: async (...args) => { calls.push(args); return { type: 'ir.actions.act_window', res_id: 71 }; } },
+        action: { doAction: async (action) => actions.push(action) },
+        notification: { add: (...args) => notices.push(args) },
+    };
+    await close.call(c, (text) => text);
+    assert.deepEqual(calls, [['baseer.procurement.request', 'close_order_list_from_catalog', [71]]]);
+    assert.equal(actions[0].res_id, 71);
+    assert.equal(c.state.saving, false);
+    assert.equal(notices[0][0], 'The request list was closed.');
+    c.editorDirty = true;
+    await close.call(c, (text) => text);
+    assert.equal(calls.length, 1, 'unsaved edits must not close the list');
+});
+
+test('a new list cannot enter the legacy receipt path', async () => {
+    const body = source.match(/    async openReceipt\(\) \{([\s\S]*?)\n    \}/)[1];
+    const openReceipt = new AsyncFunction('_t', body);
+    const c = { state: { editRequest: { id: 71, list_only: true } }, orm: { call: async () => assert.fail('unexpected RPC') } };
+    assert.equal(await openReceipt.call(c, (text) => text), false);
+    assert.match(template, /state\.editRequest and !state\.editRequest\.list_only/);
 });
 
 function cartComponent(existing = false) {
-    const c = { state: { existingRequest: existing, cart: [], receiptCustody: { context: { required: false }, ready: true } }, quotes: 0,
+    const c = { state: { existingRequest: existing, cart: [] }, quotes: 0,
         scheduleQuote() { this.quotes++; } };
     c.notices = [];
     c.notification = { add: (...args) => c.notices.push(args) };

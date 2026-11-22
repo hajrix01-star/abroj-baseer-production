@@ -13,7 +13,7 @@ MAX_QUEUE_ROWS = 20
 MAX_DIMENSION_ROWS = 6
 RIYADH = pytz.timezone('Asia/Riyadh')
 PENDING_STATES = ('draft', 'sent', 'received')
-VISIBLE_STATES = ('draft', 'sent', 'received', 'purchased')
+VISIBLE_STATES = ('draft', 'sent', 'received', 'purchased', 'list_closed')
 
 
 def _day_bounds(first, last):
@@ -118,6 +118,7 @@ class ProcurementOperationsDashboard(models.Model):
                 "COUNT(*) FILTER (WHERE state = 'sent')",
                 "COUNT(*) FILTER (WHERE state = 'received')",
                 "COUNT(*) FILTER (WHERE state = 'purchased')",
+                "COUNT(*) FILTER (WHERE state = 'list_closed')",
             ])
         local_day = "(%s AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Riyadh')::date" % date_column
         self.env.cr.execute(SQL("""

@@ -1,4 +1,5 @@
 """Committed concurrency proof: run only against the disposable CI database."""
+import logging
 import os
 import threading
 import time
@@ -9,14 +10,16 @@ from odoo import SUPERUSER_ID, Command, api, fields, sql_db
 from odoo.exceptions import UserError, ValidationError
 from odoo.tests.common import TransactionCase, tagged
 
+_logger = logging.getLogger(__name__)
+
 
 @tagged('post_install', '-at_install')
 class RepresentativeBalanceRaceCase(TransactionCase):
     def test_return_and_invoice_compete_for_independent_funding(self):
         if os.environ.get('BASEER_REPRESENTATIVE_BALANCE_CONCURRENCY') != '1':
             self.skipTest('Requires an explicitly enabled disposable custody_focused database')
-        self.assertEqual(self.env.cr.dbname, 'custody_focused',
-                         'Committed concurrency fixtures are restricted to the disposable CI database')
+        self.assertIn(self.env.cr.dbname, ('custody_focused', 'baseer_procurement_route_ci'),
+                      'Committed concurrency fixtures are restricted to disposable test databases')
         db = sql_db.db_connect(self.env.cr.dbname)
         suffix = uuid4().hex[:10]
         # All fixtures commit through a separate cursor, never TransactionCase.
@@ -179,3 +182,4 @@ class RepresentativeBalanceRaceCase(TransactionCase):
                 self.assertEqual(batch.state, 'draft' if order == 'return_first' else 'approved')
                 self.assertEqual(len(batch.line_ids.representative_petty_cash_invoice_settlement_id),
                                  0 if order == 'return_first' else 1)
+                _logger.info('REPRESENTATIVE_BALANCE_REAL_RR_RACE_OK %s', order)

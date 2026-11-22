@@ -2750,5 +2750,17 @@ msgstr "إرجاع عهدة"
 #. module: baseer_procurement_requests
 #. odoo-javascript
 #: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.js:0
+msgid "Representative Petty Cash was saved."
+msgstr "تم تسجيل العهدة."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.js:0
+msgid "Returned cash was saved."
+msgstr "تم تسجيل المبلغ المُعاد."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.js:0
 msgid "Purchase"
 msgstr "مشتريات"

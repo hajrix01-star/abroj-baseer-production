@@ -255,7 +255,9 @@ static class AgentStatusWindow
 
         private void AddColumn(string name, string header, float weight) =>
             events.Columns.Add(new DataGridViewTextBoxColumn {
-                Name = name, HeaderText = header, FillWeight = weight, SortMode = DataGridViewColumnSortMode.NotSortable,
+                Name = name, HeaderText = header, FillWeight = weight,
+                MinimumWidth = name == "Time" ? 190 : name == "Job" ? 64 : 80,
+                SortMode = DataGridViewColumnSortMode.NotSortable,
             });
 
         private void RefreshEvents()
@@ -270,7 +272,7 @@ static class AgentStatusWindow
                 foreach (var item in rows)
                 {
                     var index = events.Rows.Add(
-                        item.Utc.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture),
+                        "\u200e" + item.Utc.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", CultureInfo.InvariantCulture) + "\u200e",
                         item.JobId?.ToString(CultureInfo.InvariantCulture) ?? "—", StageLabel(item.Stage),
                         AgentDiagnostics.Describe(item.Code, true));
                     events.Rows[index].Tag = item;
@@ -297,7 +299,9 @@ static class AgentStatusWindow
                     ? "لا توجد مهمة مسجلة بعد / No recorded job yet"
                     : "آخر مهمة / Last job: " + job.JobId!.Value.ToString(CultureInfo.InvariantCulture)
                         + " — " + StageLabel(job.Stage) + " — " + AgentDiagnostics.Describe(job.Code, true);
-                capture.Text = "التقاط الصور المحلي / Local image capture: " + AgentDiagnostics.CaptureStatus()
+                var captureState = AgentDiagnostics.CaptureStatus();
+                var captureArabic = captureState switch { "armed" => "مفعّل", "off" => "متوقف", _ => "غير متاح" };
+                capture.Text = "التقاط الصور المحلي / Local image capture: " + captureArabic + " / " + captureState
                     + "\nصور الإيصالات لا تدخل في تقرير الدعم / Receipt images are excluded from the support report";
                 if (selected is not null)
                     foreach (DataGridViewRow row in events.Rows)

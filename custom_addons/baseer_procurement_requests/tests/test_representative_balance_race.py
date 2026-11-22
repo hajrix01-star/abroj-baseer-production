@@ -14,7 +14,7 @@ from odoo.tests.common import TransactionCase, tagged
 class RepresentativeBalanceRaceCase(TransactionCase):
     def test_return_and_invoice_compete_for_independent_funding(self):
         if os.environ.get('BASEER_REPRESENTATIVE_BALANCE_CONCURRENCY') != '1':
-            return
+            self.skipTest('Requires an explicitly enabled disposable custody_focused database')
         self.assertEqual(self.env.cr.dbname, 'custody_focused',
                          'Committed concurrency fixtures are restricted to the disposable CI database')
         db = sql_db.db_connect(self.env.cr.dbname)

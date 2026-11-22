@@ -443,6 +443,114 @@ class TestProfitLoss(TransactionCase):
         finally:
             rule.unlink()
 
+    def test_noorix_taxed_net_estimates_reconcile_per_move(self):
+        if 'baseer.noorix.sales.evidence' not in self.env or 'pos.order' not in self.env:
+            self.skipTest('Optional Noorix and POS sources are unavailable')
+        sar = self.env.ref('base.SAR')
+        sar.active = True
+        self.company.currency_id = sar
+        Account = self.env['account.account'].with_company(self.company)
+        funding = Account.create({'code': '959121', 'name': 'Noorix funding', 'account_type': 'asset_current',
+                                  'company_ids': [Command.set(self.company.ids)]})
+        receivable = Account.create({'code': '959122', 'name': 'POS receivable', 'account_type': 'asset_receivable',
+                                     'reconcile': True, 'company_ids': [Command.set(self.company.ids)]})
+        vat = Account.create({'code': '959123', 'name': 'Sales VAT', 'account_type': 'liability_current',
+                              'company_ids': [Command.set(self.company.ids)]})
+        tag = self.env['account.account.tag'].create({'name': '+Noorix estimate VAT', 'applicability': 'taxes',
+                                                      'country_id': self.company.account_fiscal_country_id.id})
+        self.env['account.tax'].with_company(self.company).create({
+            'name': 'Noorix estimate tax', 'amount': 15, 'type_tax_use': 'sale', 'company_id': self.company.id,
+            'invoice_repartition_line_ids': [Command.clear(), Command.create({'repartition_type': 'base'}),
+                Command.create({'repartition_type': 'tax', 'account_id': vat.id, 'tag_ids': [Command.set(tag.ids)]})],
+        })
+        methods = []
+        for code, label in [('EC1', 'cash'), ('EB1', 'bank')]:
+            journal = self.env['account.journal'].with_company(self.company).create({
+                'name': 'Estimate ' + label, 'code': code, 'type': 'cash', 'company_id': self.company.id})
+            method = self.env['pos.payment.method'].with_company(self.company).create({
+                'name': label, 'company_id': self.company.id, 'journal_id': journal.id,
+                'receivable_account_id': receivable.id})
+            self.env['baseer.pl.noorix.channel.mapping'].create({
+                'company_id': self.company.id, 'source_channel': label, 'payment_method_id': method.id,
+                'date_from': '2041-05-01', 'date_to': '2041-05-31', 'approval_reference': 'Synthetic test'})
+            methods.append(method)
+        move = self.env['account.move'].with_company(self.company).create({
+            'date': '2041-05-10', 'journal_id': self.journal.id,
+            'ref': 'NOORIX-SALES SHAMI 2041-05-10 | src:net-two-channels',
+            'line_ids': [
+                Command.create({'name': 'Noorix sales cash 2041-05-10', 'account_id': funding.id, 'debit': 15}),
+                Command.create({'name': 'Noorix sales bank 2041-05-10', 'account_id': funding.id, 'debit': 100}),
+                Command.create({'name': 'Noorix sales', 'account_id': self.accounts['income'].id, 'credit': 100}),
+                Command.create({'name': 'Noorix VAT', 'account_id': vat.id, 'credit': 15,
+                                'tax_tag_ids': [Command.set(tag.ids)]}),
+            ],
+        })
+        move.action_post()
+        filters = {**self.filters, 'tax_inclusive': False}
+        account = next(row for row in self.report.get_accounts(filters, 'income')['accounts']
+                       if row['id'] == self.accounts['income'].id)
+        channels = {row['key']: row for row in account['channels']}
+        self.assertEqual(channels['estimated_payment_%s' % methods[0].id]['amounts']['current']['amount'], '13.04')
+        self.assertEqual(channels['estimated_payment_%s' % methods[1].id]['amounts']['current']['amount'], '86.96')
+        self.assertEqual(account['amounts']['current']['amount'], '100.00')
+        self.assertEqual(sum(Decimal(row['amounts']['current']['amount'].replace(',', ''))
+                             for row in channels.values()), Decimal('100.00'))
+        from io import BytesIO
+        from openpyxl import load_workbook
+        from pdfminer.high_level import extract_text
+        exporter = self.env['baseer.report.export'].with_context(lang='en_US')
+        xlsx, _, _ = exporter._export('profit_loss', filters, 'xlsx')
+        cells = list(load_workbook(BytesIO(xlsx)).active.values)
+        estimated = [row for row in cells if any(isinstance(cell, str) and 'management estimate' in cell
+                                                for cell in row)]
+        self.assertEqual(len(estimated), 2)
+        self.assertEqual(sorted(Decimal(str(cell)) for row in estimated for cell in row
+                                if isinstance(cell, (int, float))), [Decimal('13.04'), Decimal('86.96')])
+        pdf, _, _ = exporter._export('profit_loss', filters, 'pdf')
+        self.assertTrue(pdf.startswith(b'%PDF-'))
+        pdf_text = extract_text(BytesIO(pdf))
+        self.assertIn('management estimate', pdf_text)
+        self.assertIn('13.04', pdf_text)
+        self.assertIn('86.96', pdf_text)
+        arabic_exporter = self.env['baseer.report.export'].with_context(lang='ar_001')
+        arabic_xlsx, _, _ = arabic_exporter._export('profit_loss', filters, 'xlsx')
+        arabic_cells = list(load_workbook(BytesIO(arabic_xlsx)).active.values)
+        arabic_estimates = [row for row in arabic_cells if any(
+            isinstance(cell, str) and 'تقديري إداري' in cell for cell in row)]
+        self.assertEqual(len(arabic_estimates), 2)
+        self.assertEqual(sorted(Decimal(str(cell)) for row in arabic_estimates for cell in row
+                                if isinstance(cell, (int, float))), [Decimal('13.04'), Decimal('86.96')])
+        arabic_pdf, _, _ = arabic_exporter._export('profit_loss', filters, 'pdf')
+        self.assertTrue(arabic_pdf.startswith(b'%PDF-'))
+        arabic_pdf_text = extract_text(BytesIO(arabic_pdf))
+        self.assertIn('13.04', arabic_pdf_text)
+        self.assertIn('86.96', arabic_pdf_text)
+        self.assertTrue(any('\u0600' <= char <= '\u06ff' or '\ufb50' <= char <= '\ufeff'
+                            for char in arabic_pdf_text))
+        gross = next(row for row in self.report.get_accounts({**filters, 'tax_inclusive': True}, 'income')['accounts']
+                     if row['id'] == self.accounts['income'].id)
+        self.assertEqual(gross['amounts']['current']['amount'], '115.00')
+        # Two explicitly identified summaries remain distinct and allocatable.
+        second = move.copy({'date': move.date,
+                            'ref': 'NOORIX-SALES SHAMI 2041-05-10 | src:net-other-source'})
+        second.action_post()
+        separate = next(row for row in self.report.get_accounts(filters, 'income')['accounts']
+                        if row['id'] == self.accounts['income'].id)
+        separate_channels = {row['key']: row for row in separate['channels']}
+        self.assertEqual(separate_channels['estimated_payment_%s' % methods[0].id]
+                         ['amounts']['current']['amount'], '26.08')
+        self.assertEqual(separate_channels['estimated_payment_%s' % methods[1].id]
+                         ['amounts']['current']['amount'], '173.92')
+        # An untagged competitor for the same company, source and day may be
+        # the same event imported twice. Neither estimate may claim certainty.
+        duplicate = move.copy({'date': move.date, 'ref': 'NOORIX-SALES SHAMI 2041-05-10'})
+        duplicate.action_post()
+        ambiguous = next(row for row in self.report.get_accounts(filters, 'income')['accounts']
+                         if row['id'] == self.accounts['income'].id)
+        self.assertFalse(any(row['key'].startswith('estimated_payment_')
+                             for row in ambiguous['channels']))
+        self.assertEqual(ambiguous['amounts']['current']['amount'], '300.00')
+
     def test_explicit_noorix_mapping_groups_with_native_pos_and_keeps_sources(self):
         if 'baseer.noorix.sales.evidence' not in self.env or 'pos.order' not in self.env:
             self.skipTest('Optional Noorix and POS sources are unavailable')
@@ -486,6 +594,32 @@ class TestProfitLoss(TransactionCase):
         channel_rows = [row for row in doc['rows'] if row.get('indent') == 2]
         self.assertEqual(len(channel_rows), 1)
         self.assertEqual(channel_rows[0]['cells']['current'], Decimal('120.00'))
+        exclusive = {**filters, 'tax_inclusive': False}
+        estimated_key = 'estimated_payment_' + str(method.id)
+        account_net = next(row for row in self.report.get_accounts(exclusive, 'income')['accounts']
+                           if row['id'] == self.income.id)
+        channels_net = {row['key']: row for row in account_net['channels']}
+        self.assertEqual(channels_net[channel_key]['amounts']['current']['amount'], '100.00')
+        self.assertEqual(channels_net[estimated_key]['amounts']['current']['amount'], '20.00')
+        self.assertIn('estimate', channels_net[estimated_key]['name'].lower())
+        net_selector = {**selector, 'channel_key': estimated_key}
+        net_drill = self.report._get_drilldown(exclusive, net_selector)
+        self.assertEqual(net_drill['value'], '20.00')
+        self.assertIn('estimate', net_drill['basis'].lower())
+        self.assertEqual([row['source']['move_id'] for row in net_drill['rows']], [noorix.id])
+        net_doc = self.report._get_export_document(exclusive)
+        estimated_rows = [row for row in net_doc['rows'] if row.get('indent') == 2
+                          and 'estimate' in row['cells']['label'].lower()]
+        self.assertEqual(len(estimated_rows), 1)
+        self.assertEqual(estimated_rows[0]['cells']['current'], Decimal('20.00'))
+        from unittest.mock import patch
+        with patch.object(type(self.report), '_verified_noorix_gross_channels', side_effect=AccessError('hidden')):
+            hidden_account = next(row for row in self.report.get_accounts(exclusive, 'income')['accounts']
+                                  if row['id'] == self.income.id)
+            hidden = {row['key']: row['amounts']['current']['amount'] for row in hidden_account['channels']}
+            self.assertNotIn(estimated_key, hidden)
+            self.assertEqual(hidden['unallocated'], '20.00')
+            self.assertEqual(hidden[channel_key], '100.00')
         # This synthetic fixture links the already posted move directly; close
         # its test session before archiving, as the native method guard requires.
         orders.session_id.write({'state': 'closed'})
@@ -610,6 +744,12 @@ class TestProfitLoss(TransactionCase):
             user_report = self.report.with_user(reader).with_context(allowed_company_ids=self.company.ids)
             with self.assertRaises(AccessError):
                 user_report.get_accounts(self.filters, 'income')
+            net_account = next(item for item in user_report.get_accounts(
+                {**self.filters, 'tax_inclusive': False}, 'income')['accounts']
+                if item['id'] == self.accounts['income'].id)
+            net_channels = {item['key']: item['amounts']['current']['amount'] for item in net_account['channels']}
+            self.assertEqual(net_account['amounts']['current']['amount'], '50.00')
+            self.assertEqual(net_channels, {'unallocated': '50.00'})
         finally:
             rule.unlink()
         method.active = False

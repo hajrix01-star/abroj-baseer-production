@@ -7,12 +7,25 @@ from types import SimpleNamespace
 from ..models.profit_loss import BaseerProfitLossReport
 from ..models.revenue_channels import (
     allocate_channels, UNALLOCATED, tender_matches_order, reconcile_order_amounts,
-    noorix_gross_channels,
+    noorix_gross_channels, estimate_noorix_net,
 )
 
 
 @tagged('post_install', '-at_install')
 class TestRevenueChannels(TransactionCase):
+    def test_noorix_net_estimate_uses_posted_cents_and_stable_largest_remainders(self):
+        # Same gross on three methods: ties go to stable method IDs, not input order.
+        self.assertEqual(estimate_noorix_net(Decimal('1.00'), {
+            9: Decimal('0.50'), 2: Decimal('0.50'), 5: Decimal('0.50')}), {
+                9: Decimal('0.33'), 2: Decimal('0.34'), 5: Decimal('0.33')})
+        self.assertEqual(estimate_noorix_net(Decimal('100.00'), {
+            1: Decimal('15.00'), 2: Decimal('100.00')}), {
+                1: Decimal('13.04'), 2: Decimal('86.96')})
+        self.assertIsNone(estimate_noorix_net(Decimal('0'), {1: Decimal('1')}))
+        self.assertIsNone(estimate_noorix_net(Decimal('1.01'), {1: Decimal('1')}))
+        self.assertIsNone(estimate_noorix_net(Decimal('1.001'), {1: Decimal('2')}))
+        self.assertIsNone(estimate_noorix_net(Decimal('1'), {1: Decimal('-1'), 2: Decimal('2')}))
+
     def test_noorix_gross_channels_use_named_original_funding_only(self):
         class Records(list):
             def filtered(self, predicate):

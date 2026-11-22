@@ -69,8 +69,8 @@
                         <section class="o_baseer_procurement_panel">
                             <header><div><h2 t-esc="labels.dailyStates"/><p t-esc="labels.dailyStatesNote"/></div></header>
                             <p t-if="!cohortRows.length" class="text-muted mb-0" t-esc="labels.empty"/>
-                            <div t-else="" class="table-responsive"><table class="table table-sm mb-0"><thead><tr><th scope="col" t-esc="labels.date"/><th scope="col" t-esc="labels.draft"/><th scope="col" t-esc="labels.sent"/><th scope="col" t-esc="labels.received"/><th scope="col" t-esc="labels.purchased"/></tr></thead><tbody>
-                                <tr t-foreach="cohortRows" t-as="row" t-key="row.key"><th scope="row" class="o_baseer_procurement_numeric" t-esc="row.label"/><td class="o_baseer_procurement_numeric" t-esc="row.states.draft"/><td class="o_baseer_procurement_numeric" t-esc="row.states.sent"/><td class="o_baseer_procurement_numeric" t-esc="row.states.received"/><td class="o_baseer_procurement_numeric" t-esc="row.states.purchased"/></tr>
+                            <div t-else="" class="table-responsive"><table class="table table-sm mb-0"><thead><tr><th scope="col" t-esc="labels.date"/><th scope="col" t-esc="labels.draft"/><th scope="col" t-esc="labels.sent"/><th scope="col" t-esc="labels.received"/><th scope="col" t-esc="labels.purchased"/><th scope="col" t-esc="labels.listClosed"/></tr></thead><tbody>
+                                <tr t-foreach="cohortRows" t-as="row" t-key="row.key"><th scope="row" class="o_baseer_procurement_numeric" t-esc="row.label"/><td class="o_baseer_procurement_numeric" t-esc="row.states.draft"/><td class="o_baseer_procurement_numeric" t-esc="row.states.sent"/><td class="o_baseer_procurement_numeric" t-esc="row.states.received"/><td class="o_baseer_procurement_numeric" t-esc="row.states.purchased"/><td class="o_baseer_procurement_numeric" t-esc="row.states.list_closed"/></tr>
                             </tbody></table></div>
                         </section>
                         <section class="o_baseer_procurement_panel">

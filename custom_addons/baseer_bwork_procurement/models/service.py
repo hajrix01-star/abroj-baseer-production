@@ -418,6 +418,8 @@ class BWorkProcurementService(models.AbstractModel):
             return {'api_version': 2, 'orders': [], 'next_before_id': None}
         domain = [('company_id', '=', scoped.env.company.id),
                   ('requester_id', '=', scoped.env.uid), ('source_channel', '=', LEGACY_SOURCE_CHANNEL)]
+        if not self.env.context.get('bwork_list_workflow'):
+            domain.append(('list_only', '=', False))
         if before_id:
             domain.append(('id', '<', before_id))
         orders = scoped.env['baseer.procurement.request'].sudo().search(
@@ -435,6 +437,8 @@ class BWorkProcurementService(models.AbstractModel):
         if not scopes:
             return {'api_version': 2, 'orders': [], 'next_before_id': None}
         domain = [('company_id', 'in', list(scopes)), ('source_channel', '=', LEGACY_SOURCE_CHANNEL)]
+        if not self.env.context.get('bwork_list_workflow'):
+            domain.append(('list_only', '=', False))
         if before_id:
             domain.append(('id', '<', before_id))
         scoped = self.with_context({
@@ -546,6 +550,8 @@ class BWorkProcurementService(models.AbstractModel):
         Order = scoped.env['baseer.procurement.request'].sudo().with_company(company)
         domain = [('id', '=', order_id), ('company_id', '=', company.id),
                   ('source_channel', '=', LEGACY_SOURCE_CHANNEL)]
+        if not self.env.context.get('bwork_list_workflow'):
+            domain.append(('list_only', '=', False))
         if scope is None:
             domain.append(('requester_id', '=', scoped.env.uid))
         order = Order.search(domain, limit=1)
@@ -738,8 +744,12 @@ class BWorkProcurementService(models.AbstractModel):
         if existing:
             if existing.source_channel != LEGACY_SOURCE_CHANNEL or existing.client_payload_hash != digest:
                 raise ProtocolError('idempotency_conflict', 'This order token was already used differently.', 409)
+            if self.env.context.get('bwork_legacy_replay_only') and existing.list_only:
+                raise ProtocolError('server_update_required', 'Update the app before submitting order lists.', 409)
             return {'api_version': 2, 'order': scoped._order_data(existing),
                     'client_uuid': token, 'replayed': True}
+        if self.env.context.get('bwork_legacy_replay_only'):
+            raise ProtocolError('server_update_required', 'Update the app before submitting order lists.', 409)
         warehouse = scoped.env['stock.warehouse'].sudo().browse(warehouse_id).exists()
         if not warehouse or warehouse.company_id.id != company_id or not warehouse.active:
             raise ProtocolError('invalid_warehouse', 'Choose a warehouse in this company.', 400)

@@ -238,6 +238,8 @@ export class ProcurementCatalog extends Component {
             this.state.quote = this.emptyQuote();
             this.state.quoteError = false;
             this.state.quotePending = false;
+            this.state.purchaseRoute = "representative";
+            this.state.representativePartnerId = this.state.representatives.length === 1 ? this.state.representatives[0].id : false;
             this.quoteSequence++;
             globalThis.clearTimeout(this.quoteTimer);
         }
@@ -247,6 +249,7 @@ export class ProcurementCatalog extends Component {
 
     async openReceipt() {
         const request = this.state.editRequest;
+        if (request?.list_only) return false;
         if (!request || this.state.saving || this.state.shareLoading || this.state.editorLoading || this.state.receiptPromptOpen ||
                 this.state.selectedProduct || this.state.replacementLine) return false;
         if (this.editorDirty) {
@@ -752,6 +755,7 @@ export class ProcurementCatalog extends Component {
         const labels = {
             draft: _t("Draft"),
             sent: _t("Sent to purchaser"),
+            list_closed: _t("List closed"),
             received: _t("Waiting for cashier confirmation"),
             purchased: _t("Completed"),
             cancel: _t("Cancelled"),
@@ -766,6 +770,35 @@ export class ProcurementCatalog extends Component {
             await this.action.doAction(action);
         } catch (error) {
             this.notification.add(error.message || _t("Could not open this request."), { type: "danger" });
+        }
+    }
+
+    get isListOnly() {
+        return !this.state.existingRequest && (!this.state.editRequest || Boolean(this.state.editRequest.list_only));
+    }
+
+    async closeOrderList() {
+        const request = this.state.editRequest;
+        if (!request?.list_only || !request.can_close_list || this.state.saving || this.state.shareLoading || this.state.editorLoading) return;
+        if (this.editorDirty) {
+            this.notification.add(_t("Save the changes before closing the list."), { type: "warning" });
+            return;
+        }
+        this.state.saving = true;
+        try {
+            const action = await this.orm.call("baseer.procurement.request", "close_order_list_from_catalog", [request.id]);
+            if (action) await this.action.doAction(action);
+            else {
+                this.state.editRequest = false;
+                this.state.cart = [];
+                this.state.workspaceTab = "recent";
+                await this.loadRecentRequests();
+            }
+            this.notification.add(_t("The request list was closed."), { type: "success" });
+        } catch (error) {
+            this.notification.add(error?.data?.arguments?.[0] || error.message || _t("Could not close the request list."), { type: "danger" });
+        } finally {
+            this.state.saving = false;
         }
     }
 
@@ -1080,7 +1113,7 @@ export class ProcurementCatalog extends Component {
     get canSave() {
         const representativeReady = this.state.existingRequest || this.state.purchaseRoute !== "representative" || this.state.representativePartnerId ||
             (this.state.editRequest?.purchase_route === "representative" && !this.state.editRequest.representative_partner_id && this.state.editRequest.representative_name);
-        return Boolean(this.state.warehouseId && representativeReady && this.state.cart.length &&
+        return Boolean((this.isListOnly || this.state.warehouseId) && representativeReady && this.state.cart.length &&
             !this.state.saving && !this.state.editorLoading && !this.state.quotePending && !this.state.quoteError && !this.unpricedReceivedLines.length &&
             this.state.quote.lines.length === this.state.cart.length);
     }
@@ -1115,7 +1148,7 @@ export class ProcurementCatalog extends Component {
             }
             const id = await this.orm.call("baseer.procurement.request", "create_from_catalog", [
                 this.state.cart.map((line) => ({ option_id: line.option_id, quantity: line.quantity, unit_price: line.unit_price })),
-                this.state.warehouseId, false, false, this.state.clientToken, this.state.representativePartnerId, this.state.purchaseRoute,
+                false, false, false, this.state.clientToken, this.state.representativePartnerId, "representative",
             ]);
             this.state.clientToken = newClientToken();
             // Creation is committed: never leave this cart available for a second create

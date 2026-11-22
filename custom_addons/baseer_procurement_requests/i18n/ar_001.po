@@ -3002,3 +3002,64 @@ msgstr "السبب"
 #: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.js:0
 msgid "Select the representative as the invoice payment source."
 msgstr "اختر المندوب مصدرًا للدفع عند تسجيل الفاتورة."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "List closed"
+msgstr "القائمة مغلقة"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_request_form
+msgid "Close list"
+msgstr "إغلاق القائمة"
+
+#. module: baseer_procurement_requests
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_request_search
+msgid "Closed lists"
+msgstr "القوائم المغلقة"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "Send list"
+msgstr "إرسال القائمة"
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "Review the list before sending it to the representative."
+msgstr "راجع القائمة قبل إرسالها إلى المندوب."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "Choose the items and quantities for the representative."
+msgstr "اختر الأصناف والكميات المطلوبة للمندوب."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.xml:0
+msgid "This list does not record a purchase or receipt."
+msgstr "هذه القائمة لا تسجل شراءً أو استلامًا."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+msgid "Save the changes before closing the list."
+msgstr "احفظ التغييرات قبل إغلاق القائمة."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+msgid "The request list was closed."
+msgstr "تم إغلاق قائمة الطلبات."
+
+#. module: baseer_procurement_requests
+#. odoo-javascript
+#: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
+msgid "Could not close the request list."
+msgstr "تعذر إغلاق قائمة الطلبات."

@@ -59,7 +59,12 @@ class ReceiptCustodyCase(TransactionCase):
             'baseer_procurement_representative_petty_cash_payment_journal_ids': [Command.set([self.bank_journal.id])],
         })
 
-    _request = RepresentativePettyCashCase._request
+    def _request(self):
+        request = RepresentativePettyCashCase._request(self)
+        # Simulate a request created before the list-only field existed.
+        self.env.cr.execute('UPDATE baseer_procurement_request SET list_only=false WHERE id=%s', [request.id])
+        request.invalidate_recordset(['list_only'])
+        return request
     _sent_request = RepresentativePettyCashCase._sent_request
 
     def _cashier(self):

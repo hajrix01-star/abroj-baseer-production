@@ -13,7 +13,7 @@
                 <field name="purchaser_id" optional="hide"/>
                 <field name="requested_total"/>
                 <field name="actual_total" optional="hide"/>
-                <field name="state" widget="badge" decoration-info="state == 'draft'" decoration-warning="state in ('sent', 'received')" decoration-success="state == 'purchased'"/>
+                <field name="state" widget="badge" decoration-info="state == 'draft'" decoration-warning="state in ('sent', 'received')" decoration-success="state in ('purchased', 'list_closed')"/>
                 <field name="company_id" groups="base.group_multi_company"/>
             </list>
         </field>
@@ -25,20 +25,23 @@
             <form string="Procurement request">
                 <header>
                     <field name="can_edit_plan" invisible="1"/>
+                    <field name="list_only" invisible="1"/>
                     <button name="action_open_catalog_editor" type="object" string="Edit order" icon="fa-pencil" class="btn-secondary" invisible="not can_edit_plan" groups="baseer_procurement_requests.group_procurement_user"/>
-                    <button name="action_open_whatsapp" type="object" icon="fa-whatsapp" title="Open WhatsApp" class="btn-secondary" invisible="state == 'cancel' or purchase_route != 'representative'" groups="baseer_procurement_requests.group_procurement_user"/>
+                    <button name="action_open_whatsapp" type="object" icon="fa-whatsapp" title="Open WhatsApp" class="btn-secondary" invisible="state in ('cancel', 'list_closed') or purchase_route != 'representative'" groups="baseer_procurement_requests.group_procurement_user"/>
                     <button name="action_mark_sent" type="object" string="Confirm sent" class="oe_highlight" invisible="state != 'draft'"/>
                     <button name="action_cancel" type="object" string="Cancel request" class="btn-secondary" invisible="state not in ('draft', 'sent')" groups="baseer_procurement_requests.group_procurement_user"/>
-                    <button name="action_open_actual_catalog" type="object" string="Cashier purchase receipt" class="oe_highlight" invisible="state not in ('sent', 'received')" groups="baseer_procurement_requests.group_procurement_cashier"/>
-                    <field name="state" widget="statusbar" statusbar_visible="draft,sent,received,purchased"/>
+                    <button name="action_open_actual_catalog" type="object" string="Cashier purchase receipt" class="oe_highlight" invisible="list_only or state not in ('sent', 'received')" groups="baseer_procurement_requests.group_procurement_cashier"/>
+                    <button name="action_close_order_list" type="object" string="Close list" class="oe_highlight" invisible="not list_only or state != 'sent'" groups="baseer_procurement_requests.group_procurement_user"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,sent,list_closed" invisible="not list_only"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,sent,received,purchased" invisible="list_only"/>
                 </header>
                 <sheet>
                     <div class="oe_button_box" name="button_box">
                         <field name="receipt_custody_confirmed" invisible="1"/>
-                        <button name="action_open_receipt_custody" type="object" class="oe_stat_button" icon="fa-exchange" invisible="not receipt_custody_confirmed" groups="base.group_system,baseer_procurement_requests.group_procurement_manager,baseer_procurement_requests.group_procurement_accountant,baseer_procurement_requests.group_procurement_cashier">
+                        <button name="action_open_receipt_custody" type="object" class="oe_stat_button" icon="fa-exchange" invisible="list_only or not receipt_custody_confirmed" groups="base.group_system,baseer_procurement_requests.group_procurement_manager,baseer_procurement_requests.group_procurement_accountant,baseer_procurement_requests.group_procurement_cashier">
                             <div class="o_stat_info"><span class="o_stat_text">Purchasing representative custody</span></div>
                         </button>
-                        <button name="action_open_picking" type="object" class="oe_stat_button" icon="fa-truck" invisible="not picking_id"><field name="picking_id" widget="statinfo" string="Receipt"/></button>
+                        <button name="action_open_picking" type="object" class="oe_stat_button" icon="fa-truck" invisible="list_only or not picking_id"><field name="picking_id" widget="statinfo" string="Receipt"/></button>
                     </div>
                     <div class="oe_title"><h1><field name="name"/></h1></div>
                     <div class="o_prc_draft_send_action" invisible="state != 'draft'">
@@ -47,7 +50,7 @@
                     <group><group>
                         <field name="company_id" readonly="state != 'draft'"/>
                         <field name="warehouse_id" invisible="1"/>
-                        <field name="purchase_route" readonly="state != 'draft'"/>
+                        <field name="purchase_route" readonly="state != 'draft'" invisible="list_only"/>
                         <field name="representative_partner_id" readonly="state != 'draft'" invisible="purchase_route != 'representative'" context="{'force_company': company_id}"/>
                         <field name="purchaser_id" readonly="1" invisible="representative_partner_id or purchase_route != 'representative'"/>
                         <field name="requester_id" readonly="1"/>
@@ -55,19 +58,19 @@
                         <field name="request_date" readonly="state != 'draft'"/>
                         <field name="whatsapp_number" invisible="1"/>
                         <field name="whatsapp_sent_at" readonly="1" invisible="not whatsapp_sent_at"/>
-                        <field name="manager_received_at" readonly="1" invisible="not manager_received_at"/>
-                        <field name="actual_confirmed_at" readonly="1" invisible="not actual_confirmed_at"/>
+                        <field name="manager_received_at" readonly="1" invisible="list_only or not manager_received_at"/>
+                        <field name="actual_confirmed_at" readonly="1" invisible="list_only or not actual_confirmed_at"/>
                         <field name="cancellation_reason" readonly="state not in ('draft', 'sent')" invisible="state not in ('draft', 'sent', 'cancel')"/>
                     </group></group>
                     <notebook>
                         <page string="Materials">
-                            <field name="line_ids" readonly="state in ('purchased', 'cancel')">
-                                <list editable="bottom"><field name="product_id" readonly="1" context="{'display_default_code': False}"/><field name="option_id" readonly="parent.state != 'draft'"/><field name="requested_qty" readonly="parent.state != 'draft'"/><field name="requested_price" readonly="parent.state != 'draft'"/><field name="manager_received_qty" readonly="parent.state != 'sent'"/><field name="actual_qty" readonly="parent.state != 'received'" groups="baseer_procurement_requests.group_procurement_cashier"/><field name="actual_price" readonly="parent.state != 'received'" groups="baseer_procurement_requests.group_procurement_cashier"/></list>
+                            <field name="line_ids" readonly="state in ('purchased', 'list_closed', 'cancel')">
+                                <list editable="bottom"><field name="product_id" readonly="1" context="{'display_default_code': False}"/><field name="option_id" readonly="parent.state != 'draft'"/><field name="requested_qty" readonly="parent.state != 'draft'"/><field name="requested_price" readonly="parent.state != 'draft'"/><field name="manager_received_qty" readonly="parent.state != 'sent'" column_invisible="parent.list_only"/><field name="actual_qty" readonly="parent.state != 'received'" column_invisible="parent.list_only" groups="baseer_procurement_requests.group_procurement_cashier"/><field name="actual_price" readonly="parent.state != 'received'" column_invisible="parent.list_only" groups="baseer_procurement_requests.group_procurement_cashier"/></list>
                             </field>
-                            <group class="oe_subtotal_footer oe_right"><field name="requested_total" readonly="1"/><field name="actual_total" readonly="1"/></group>
+                            <group class="oe_subtotal_footer oe_right"><field name="requested_total" readonly="1"/><field name="actual_total" readonly="1" invisible="list_only"/></group>
                         </page>
                         <page string="WhatsApp" invisible="not whatsapp_text"><field name="whatsapp_text" readonly="1" nolabel="1"/></page>
-                        <page string="Audit"><group><field name="picking_id" readonly="1"/><field name="actual_confirmed_by_id" readonly="1"/></group></page>
+                        <page string="Audit" invisible="list_only"><group><field name="picking_id" readonly="1"/><field name="actual_confirmed_by_id" readonly="1"/></group></page>
                     </notebook>
                 </sheet>
                 <chatter/>
@@ -83,6 +86,7 @@
                 <filter name="draft" string="Draft" domain="[('state','=','draft')]"/>
                 <filter name="waiting" string="Waiting for cashier" domain="[('state','=','received')]"/>
                 <filter name="purchased" string="Quantity receipts" domain="[('state','=','purchased')]"/>
+                <filter name="list_closed" string="Closed lists" domain="[('state','=','list_closed')]"/>
                 <group>
                     <filter name="group_route" string="Purchase route" context="{'group_by':'purchase_route'}"/>
                     <filter name="group_warehouse" string="Warehouse" context="{'group_by':'warehouse_id'}"/>
@@ -139,6 +143,7 @@
     </record>
     <record id="action_procurement_request_line_report" model="ir.actions.act_window">
         <field name="name">Requested versus received</field><field name="res_model">baseer.procurement.request.line</field><field name="view_mode">list,pivot,graph</field><field name="search_view_id" ref="view_procurement_request_line_search"/>
+        <field name="domain">[('request_id.list_only', '=', False)]</field>
     </record>
     <record id="action_procurement_request" model="ir.actions.act_window">
         <field name="name">Procurement requests</field><field name="res_model">baseer.procurement.request</field><field name="view_mode">list,form</field><field name="search_view_id" ref="view_procurement_request_search"/>

@@ -774,6 +774,8 @@ class ProcurementCustodyEvent(models.Model):
     @api.constrains('custody_id', 'representative_partner_id', 'procurement_request_id', 'event_type')
     def _check_event_representative(self):
         for event in self:
+            if event.procurement_request_id:
+                event.procurement_request_id._require_receipt_workflow()
             if event.custody_id.is_company_pool and not event.representative_partner_id:
                 raise ValidationError(_('Choose the purchase representative for a company custody-pool movement.'))
             if event.event_type == 'return' and event.procurement_request_id:
@@ -839,6 +841,8 @@ class ProcurementCustodyEvent(models.Model):
                 )
             self.env.cr.execute('SELECT id FROM baseer_procurement_custody_event WHERE id = %s FOR UPDATE', [event.id])
             event.invalidate_recordset()
+            if event.procurement_request_id:
+                event.procurement_request_id._require_receipt_workflow()
             if event.state == 'posted':
                 continue
             if event.custody_id.state != 'open':
@@ -939,6 +943,8 @@ class BaseerPurchaseBatchLine(models.Model):
     @api.constrains('procurement_request_id', 'procurement_custody_id')
     def _check_procurement_link(self):
         for line in self:
+            if line.procurement_request_id:
+                line.procurement_request_id._require_receipt_workflow()
             if line.procurement_request_id and line.procurement_request_id.company_id != line.company_id:
                 raise ValidationError(_('The procurement request must belong to the batch company.'))
             if line.procurement_custody_id and line.procurement_custody_id.company_id != line.company_id:
@@ -1157,6 +1163,7 @@ class ProcurementBillAllocation(models.Model):
     def _check_allocation(self):
         for allocation in self:
             line, request, custody = allocation.batch_line_id, allocation.request_id, allocation.custody_id
+            request._require_receipt_workflow()
             if allocation.amount <= 0:
                 raise ValidationError(_('A request allocation amount must be positive.'))
             if line.batch_state != 'draft':
@@ -1377,6 +1384,8 @@ class BaseerPurchaseBatch(models.Model):
     def _check_procurement_header(self):
         for batch in self:
             request, custody = batch.procurement_request_id, batch.procurement_custody_id
+            if request:
+                request._require_receipt_workflow()
             if request and request.company_id != batch.company_id:
                 raise ValidationError(_('The received procurement request must belong to the batch company.'))
             if custody and custody.company_id != batch.company_id:
@@ -1439,6 +1448,7 @@ class BaseerPurchaseBatch(models.Model):
                 'UPDATE baseer_procurement_request SET id = id WHERE id = %s', [request.id]
             )
             request.invalidate_recordset()
+            request._require_receipt_workflow()
             if request.state != 'purchased':
                 raise ValidationError(_('Only a completed quantity receipt can be entered through petty cash.'))
             if request.company_id != batch.company_id:

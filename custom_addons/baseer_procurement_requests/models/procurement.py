@@ -392,7 +392,7 @@ class ProcurementRequest(models.Model):
     name = fields.Char(required=True, readonly=True, default=lambda self: _('New'), copy=False, index=True)
     company_id = fields.Many2one('res.company', required=True, default=lambda self: self.env.company,
                                  index=True, ondelete='restrict', tracking=True)
-    warehouse_id = fields.Many2one('stock.warehouse', required=True, check_company=True, ondelete='restrict',
+    warehouse_id = fields.Many2one('stock.warehouse', check_company=True, ondelete='restrict',
                                    domain="[('company_id', '=', company_id)]", tracking=True,
                                    default=lambda self: self.env.company.baseer_procurement_default_warehouse_id)
     # Kept for existing employee-based requests.  New requests use the Contact
@@ -447,10 +447,13 @@ class ProcurementRequest(models.Model):
     manager_received_at = fields.Datetime(readonly=True, copy=False, tracking=True)
     actual_confirmed_at = fields.Datetime(readonly=True, copy=False, tracking=True)
     actual_confirmed_by_id = fields.Many2one('res.users', readonly=True, copy=False, ondelete='restrict')
+    list_only = fields.Boolean(string='Order list only', default=False, readonly=True, copy=False, index=True)
+    list_closed_at = fields.Datetime(readonly=True, copy=False)
+    list_closed_by_id = fields.Many2one('res.users', readonly=True, copy=False, ondelete='restrict')
     cancellation_reason = fields.Text(copy=False, readonly=True)
     state = fields.Selection([
         ('draft', 'Draft'), ('sent', 'Sent for purchase'), ('received', 'Cashier receipt confirmed'),
-        ('purchased', 'Quantity receipt completed'), ('cancel', 'Cancelled'),
+        ('purchased', 'Quantity receipt completed'), ('list_closed', 'Order list closed'), ('cancel', 'Cancelled'),
     ], default='draft', required=True, readonly=True, tracking=True, index=True)
     line_ids = fields.One2many('baseer.procurement.request.line', 'request_id', copy=True)
     picking_id = fields.Many2one('stock.picking', readonly=True, copy=False, check_company=True, ondelete='restrict')
@@ -479,6 +482,9 @@ class ProcurementRequest(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
+            if 'list_only' in vals or 'list_closed_at' in vals or 'list_closed_by_id' in vals:
+                raise AccessError(_('The request workflow is controlled by the server.'))
+            vals['list_only'] = True
             internal = bool(self.env.context.get(REQUEST_CREATE_INTERNAL) and self.env.su)
             protected = {
                 'state', 'picking_id', 'whatsapp_opened_at', 'whatsapp_sent_at', 'manager_received_at',
@@ -486,6 +492,17 @@ class ProcurementRequest(models.Model):
             }
             if not internal and protected & set(vals):
                 raise AccessError(_('Request state, receipt links, and audit timestamps are controlled by the server.'))
+            if vals.get('state') not in (None, 'draft', 'sent') or vals.get('picking_id'):
+                raise AccessError(_('Order lists cannot be created as received purchases.'))
+            # Explicit values prevent JSON/RPC default_* context from injecting
+            # a legacy receipt, closing audit, or an already-completed state.
+            vals.setdefault('state', 'draft')
+            vals['picking_id'] = False
+            vals['manager_received_at'] = False
+            vals['actual_confirmed_at'] = False
+            vals['actual_confirmed_by_id'] = False
+            vals['list_closed_at'] = False
+            vals['list_closed_by_id'] = False
             if not internal:
                 if vals.get('company_id') and int(vals['company_id']) != self.env.company.id:
                     raise AccessError(_('Procurement requests must be created in the active company.'))
@@ -542,6 +559,36 @@ class ProcurementRequest(models.Model):
         for request in self:
             if request.state not in states:
                 raise UserError(_('This action is not available in the current request state.'))
+
+    def _require_receipt_workflow(self):
+        if self.filtered('list_only'):
+            raise UserError(_('Order lists cannot be received or linked to inventory, bills, or petty cash.'))
+
+    def action_close_order_list(self):
+        self.ensure_one()
+        if not self.env.user.has_group('baseer_procurement_requests.group_procurement_user'):
+            raise AccessError(_('You are not allowed to close order lists.'))
+        self.check_access('write')
+        if self.company_id != self.env.company:
+            raise AccessError(_('The procurement request is unavailable in the active company.'))
+        self._lock_catalog_parent_rows()
+        if not self.list_only:
+            raise UserError(_('Only an independent order list can be closed here.'))
+        if self.state == 'list_closed':
+            return True
+        self._require_state('sent')
+        super(ProcurementRequest, self).write({'state': 'list_closed', 'list_closed_at': fields.Datetime.now(),
+                                              'list_closed_by_id': self.env.user.id})
+        return True
+
+    @api.model
+    def close_order_list_from_catalog(self, request_id):
+        request = self.browse(_catalog_identifier(request_id)).exists()
+        if not request or request.company_id != self.env.company:
+            raise AccessError(_('The procurement request is unavailable in the active company.'))
+        request.action_close_order_list()
+        return {'type': 'ir.actions.act_window', 'res_model': 'baseer.procurement.request',
+                'res_id': request.id, 'views': [[False, 'form']], 'view_mode': 'form', 'target': 'current'}
 
     def _require_active_company_for_cashier(self):
         """Keep every cashier mutation inside the currently active company.
@@ -613,6 +660,7 @@ class ProcurementRequest(models.Model):
         return True
 
     def action_confirm_manager_receipt(self):
+        self._require_receipt_workflow()
         self._require_active_company_for_cashier()
         if not self.env.user.has_group('baseer_procurement_requests.group_procurement_manager'):
             raise AccessError(_('Only a procurement manager can confirm the operational receipt.'))
@@ -626,6 +674,7 @@ class ProcurementRequest(models.Model):
     def action_open_manager_receipt_catalog(self):
         """Open the shared cashier surface for the manager's physical receipt."""
         self.ensure_one()
+        self._require_receipt_workflow()
         self._require_active_company_for_cashier()
         if not self.env.user.has_group('baseer_procurement_requests.group_procurement_manager'):
             raise AccessError(_('Only a procurement manager can confirm the operational receipt.'))
@@ -821,6 +870,7 @@ class ProcurementRequest(models.Model):
 
     def action_confirm_actual_purchase(self):
         self.ensure_one()
+        self._require_receipt_workflow()
         if not _is_bwork_receipt_internal(self.env) and not self.env.user.has_group(
             'baseer_procurement_requests.group_procurement_cashier'
         ):
@@ -912,6 +962,7 @@ class ProcurementRequest(models.Model):
 
     def action_open_actual_catalog(self):
         self.ensure_one()
+        self._require_receipt_workflow()
         if not self.env.user.has_group('baseer_procurement_requests.group_procurement_cashier'):
             raise AccessError(_('Only a procurement cashier can enter actual purchase details.'))
         self._require_active_company_for_cashier()
@@ -1273,7 +1324,7 @@ class ProcurementRequest(models.Model):
             limit = min(max(int(limit or 50), 1), 50)
         except (TypeError, ValueError):
             raise ValidationError(_('Request pagination is invalid.'))
-        allowed_states = {'draft', 'sent', 'received', 'purchased', 'cancel'}
+        allowed_states = {'draft', 'sent', 'received', 'purchased', 'list_closed', 'cancel'}
         if state in (None, False, '', 'all'):
             state = False
         elif state not in allowed_states:
@@ -1307,6 +1358,7 @@ class ProcurementRequest(models.Model):
             'sent': _('Sent to purchaser'),
             'received': _('Waiting for cashier confirmation'),
             'purchased': _('Completed'),
+            'list_closed': _('Order list closed'),
             'cancel': _('Cancelled'),
         }
         currency = self.env.company.currency_id
@@ -1315,6 +1367,7 @@ class ProcurementRequest(models.Model):
                 'id': record.id,
                 'name': record.name,
                 'state': record.state,
+                'list_only': record.list_only,
                 'state_label': labels.get(record.state, record.state),
                 'can_edit_plan': record._can_edit_catalog_plan(),
                 'purchase_route': record.purchase_route,
@@ -1494,14 +1547,15 @@ class ProcurementRequest(models.Model):
             'price': _decimal_input(line.requested_price, _('Unit price')),
         } for line in request.line_ids.sorted('id')]
         return {
-            'id': request.id, 'name': request.name, 'state': request.state,
+            'id': request.id, 'name': request.name, 'state': request.state, 'list_only': request.list_only,
             'warehouse_id': request.warehouse_id.id,
             'purchase_route': request.purchase_route,
             'representative_partner_id': request.representative_partner_id.id or False,
             'representative_name': request.representative_partner_id.display_name or request.purchaser_id.name or '',
             'snapshot': request._catalog_editor_snapshot(), 'can_cancel': True,
             'can_send': request.state == 'draft',
-            'can_open_receipt': request.state == 'sent',
+            'can_open_receipt': request.state == 'sent' and not request.list_only,
+            'can_close_list': request.state == 'sent' and request.list_only,
             'items': [{
                 'line_id': entry['line'].id, 'option_id': entry['option'].id,
                 'product_id': entry['option'].product_id.id,
@@ -1600,6 +1654,7 @@ class ProcurementRequest(models.Model):
         request = self.browse(_catalog_identifier(request_id)).exists()
         if not request or request.company_id != self.env.company:
             raise AccessError(_('The procurement request is unavailable in the active company.'))
+        request._require_receipt_workflow()
         request._require_state('sent', 'received')
         if not self.env.user.has_group('baseer_procurement_requests.group_procurement_cashier'):
             raise AccessError(_('Only a procurement cashier can confirm a received request.'))
@@ -1615,7 +1670,7 @@ class ProcurementRequest(models.Model):
             raise AccessError(_('The procurement request is unavailable in the active company.'))
         if request._can_edit_catalog_plan():
             return request.action_open_catalog_editor()
-        if request.state in ('sent', 'received'):
+        if request.state in ('sent', 'received') and not request.list_only:
             if not self.env.user.has_group('baseer_procurement_requests.group_procurement_cashier'):
                 raise AccessError(_('Only a procurement cashier can confirm a received request.'))
             return {
@@ -1640,6 +1695,7 @@ class ProcurementRequest(models.Model):
         request = self.browse(int(request_id)).exists()
         if not request or request.company_id != self.env.company:
             raise AccessError(_('The procurement request is unavailable in the active company.'))
+        request._require_receipt_workflow()
         if request.state not in ('sent', 'received'):
             raise UserError(_('Only a sent request can be confirmed in the cashier cart.'))
         if not self.env.user.has_group('baseer_procurement_requests.group_procurement_cashier'):
@@ -1891,6 +1947,7 @@ class ProcurementRequest(models.Model):
         request = self.browse(int(request_id)).exists()
         if not request or request.company_id != self.env.company:
             raise AccessError(_('The procurement request is unavailable in the active company.'))
+        request._require_receipt_workflow()
         request._require_state('sent', 'received')
         plan = request._prepare_actual_cart(lines)
         response_lines = []
@@ -1919,6 +1976,7 @@ class ProcurementRequest(models.Model):
         request = self.browse(int(request_id)).exists()
         if not request or request.company_id != self.env.company:
             raise AccessError(_('The procurement request is unavailable in the active company.'))
+        request._require_receipt_workflow()
         self.env.cr.execute('SELECT id FROM baseer_procurement_request WHERE id = %s FOR UPDATE', [request.id])
         request.invalidate_recordset()
         request._require_state('sent')
@@ -1967,6 +2025,7 @@ class ProcurementRequest(models.Model):
         request = self.browse(int(request_id)).exists()
         if not request:
             raise UserError(_('The procurement request no longer exists.'))
+        request._require_receipt_workflow()
         # ``browse`` honours allowed companies, not necessarily the company
         # currently selected in the UI.  A cashier may legitimately have two
         # companies in ``allowed_company_ids``; that must not let an RPC from
@@ -2076,6 +2135,7 @@ class ProcurementRequest(models.Model):
             if requested_company_id != self.env.company.id:
                 raise AccessError(_('The procurement request must remain in the active company.'))
         protected = {'state', 'picking_id', 'whatsapp_opened_at', 'whatsapp_sent_at', 'manager_received_at',
+                     'list_only', 'list_closed_at', 'list_closed_by_id',
                      'actual_confirmed_at', 'actual_confirmed_by_id', 'client_token', 'client_payload_hash'}
         if protected & set(vals):
             raise AccessError(_('Request state, receipt links, and audit timestamps are controlled by the server.'))
@@ -2165,7 +2225,7 @@ class ProcurementRequest(models.Model):
             self.env['res.partner'].with_company(self.env.company).browse(int(representative_partner_id)).exists()
             if representative_partner_id else self.env['res.partner']
         )
-        if not warehouse or warehouse.company_id != self.env.company:
+        if (warehouse_id and not warehouse) or (warehouse and warehouse.company_id != self.env.company):
             raise AccessError(_('Choose a warehouse in the active company.'))
         if purchaser_id and (not purchaser or purchaser.company_id != self.env.company):
             raise AccessError(_('Choose a purchasing representative in the active company.'))
@@ -2253,9 +2313,11 @@ class ProcurementRequestLine(models.Model):
         digits='Product Unit of Measure', readonly=True,
     )
 
-    @api.constrains('requested_qty', 'manager_received_qty', 'actual_qty', 'requested_price', 'actual_price')
+    @api.constrains('request_id', 'requested_qty', 'manager_received_qty', 'actual_qty', 'requested_price', 'actual_price')
     def _check_nonnegative(self):
         for line in self:
+            if line.request_id.list_only and (line.manager_received_qty or line.actual_qty or line.actual_price):
+                raise ValidationError(_('Order lists cannot record receipt quantities or purchase prices.'))
             values = (line.requested_qty, line.manager_received_qty, line.actual_qty, line.requested_price, line.actual_price)
             if not all(_is_finite_number(value) for value in values):
                 raise ValidationError(_('Quantities and prices must be finite numbers.'))
@@ -2272,6 +2334,19 @@ class ProcurementRequestLine(models.Model):
         self.check_access('create')
         parent_ids = sorted({_catalog_identifier(vals.get('request_id')) for vals in vals_list})
         parents = self.env['baseer.procurement.request'].browse(parent_ids)._lock_catalog_parent_rows()
+        by_id = {request.id: request for request in parents}
+        normalized = []
+        for original in vals_list:
+            vals = dict(original)
+            request = by_id.get(_catalog_identifier(vals.get('request_id')))
+            if request and request.list_only:
+                fields_to_clear = ('manager_received_qty', 'actual_qty', 'actual_price')
+                if any(vals.get(field) not in (False, 0, 0.0, None) for field in fields_to_clear):
+                    raise AccessError(_('Order lists cannot record receipt quantities or purchase prices.'))
+                # Explicit values take precedence over untrusted default_* context.
+                vals.update({field: 0 for field in fields_to_clear})
+            normalized.append(vals)
+        vals_list = normalized
         if _catalog_editor_proven(self):
             if len(parents) != len(parent_ids) or any(not request._can_edit_catalog_plan() for request in parents):
                 raise UserError(_('This request is locked for editing after representative handover or completion.'))
@@ -2280,8 +2355,10 @@ class ProcurementRequestLine(models.Model):
             if any(set(vals) - allowed or any(vals.get(key) not in (None, False, 0) for key in (
                     'manager_received_qty', 'actual_qty', 'actual_price')) for vals in vals_list):
                 raise AccessError(_('The editor cannot change controlled request fields.'))
-            records = super().create(vals_list)
-            parents._touch_catalog_parent_rows()
+            with self.env.cr.savepoint():
+                records = super().create(vals_list)
+                records._check_nonnegative()
+                parents._touch_catalog_parent_rows()
             return records
         for vals in vals_list:
             if self.env.context.get(REQUEST_CREATE_INTERNAL) and self.env.su:
@@ -2293,8 +2370,10 @@ class ProcurementRequestLine(models.Model):
             protected = ('manager_received_qty', 'actual_qty', 'actual_price')
             if any(vals.get(field) not in (False, 0, 0.0, None) for field in protected):
                 raise AccessError(_('Received quantities and actual prices are controlled by the receipt workflow.'))
-        records = super().create(vals_list)
-        parents._touch_catalog_parent_rows()
+        with self.env.cr.savepoint():
+            records = super().create(vals_list)
+            records._check_nonnegative()
+            parents._touch_catalog_parent_rows()
         return records
 
     @api.depends('requested_qty', 'manager_received_qty', 'actual_qty')
@@ -2306,6 +2385,9 @@ class ProcurementRequestLine(models.Model):
     def write(self, vals):
         self.check_access('write')
         parents = self.mapped('request_id')._lock_catalog_parent_rows()
+        if (parents.filtered('list_only') and any(vals.get(field) not in (False, 0, 0.0, None)
+                for field in ('manager_received_qty', 'actual_qty', 'actual_price'))):
+            raise AccessError(_('Order lists cannot record receipt quantities or purchase prices.'))
         if 'request_id' in vals and any(line.request_id.id != vals['request_id'] for line in self):
             raise AccessError(_('Request lines cannot be moved to another request.'))
         if _catalog_editor_proven(self):
@@ -2322,7 +2404,7 @@ class ProcurementRequestLine(models.Model):
         parents._require_active_company_for_cashier()
         protected = {'requested_qty', 'requested_price', 'manager_received_qty', 'actual_qty', 'actual_price', 'option_id'}
         if protected & set(vals):
-            locked = self.filtered(lambda line: line.request_id.state in ('purchased', 'cancel'))
+            locked = self.filtered(lambda line: line.request_id.state in ('purchased', 'list_closed', 'cancel'))
             if locked:
                 raise UserError(_('Purchased or cancelled request lines cannot be changed. Use a correcting stock operation.'))
             if {'requested_qty', 'requested_price', 'option_id'} & set(vals):

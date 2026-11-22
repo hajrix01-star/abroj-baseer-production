@@ -56,13 +56,20 @@ class ProcurementFlowCase(TransactionCase):
         })
         self.purchaser = self.env['hr.employee'].create({'name': 'PRC standard buyer', 'company_id': self.company.id})
 
+    def _as_legacy_request(self, request):
+        # Simulate persisted pre-migration requests, only inside the test transaction.
+        self.env.cr.execute('UPDATE baseer_procurement_request SET list_only=false WHERE id IN %s', [tuple(request.ids)])
+        request.invalidate_recordset(['list_only'])
+        return request
+
     def _request(self, purchase_route='representative'):
-        return self.env['baseer.procurement.request'].create({
+        request = self.env['baseer.procurement.request'].create({
             'company_id': self.company.id, 'warehouse_id': self.warehouse.id,
             'purchase_route': purchase_route,
             'purchaser_id': self.purchaser.id if purchase_route == 'representative' else False,
             'line_ids': [(0, 0, {'option_id': self.option.id, 'requested_qty': 5, 'requested_price': 4})],
         })
+        return self._as_legacy_request(request)
 
     def _fund_representative_receipt(self, request, representative=None):
         """Use the real accountant path for representative receipt fixtures."""
@@ -199,7 +206,7 @@ class ProcurementFlowCase(TransactionCase):
         with self.assertRaises(AccessError):
             draft_request.write({'purchase_route': 'bank_transfer'})
 
-        completed_request = self.env['baseer.procurement.request'].browse(request_id)
+        completed_request = self._as_legacy_request(self.env['baseer.procurement.request'].browse(request_id))
         completed_request.action_mark_sent()
         completed_request.line_ids.manager_received_qty = 1
         completed_request.action_confirm_manager_receipt()
@@ -398,6 +405,7 @@ class ProcurementFlowCase(TransactionCase):
                 'requested_price': actual_price,
             })],
         })
+        self._as_legacy_request(request)
         request.action_mark_sent()
         request.line_ids.manager_received_qty = actual_quantity
         request.action_confirm_manager_receipt()
@@ -442,6 +450,7 @@ class ProcurementFlowCase(TransactionCase):
                 'requested_price': actual_price,
             })],
         })
+        self._as_legacy_request(request)
         request.action_mark_sent()
         request.line_ids.manager_received_qty = actual_quantity
         request.action_confirm_manager_receipt()
@@ -816,7 +825,7 @@ class ProcurementFlowCase(TransactionCase):
             [{'option_id': self.option.id, 'quantity': '2'}], self.warehouse.id,
             self.purchaser.id, False, token,
         )
-        request = self.env['baseer.procurement.request'].browse(request_id)
+        request = self._as_legacy_request(self.env['baseer.procurement.request'].browse(request_id))
         request.action_mark_sent()
         fingerprint = (request.client_token, request.client_payload_hash)
         loaded = request.load_catalog_editor(request.id)
@@ -1241,6 +1250,7 @@ class ProcurementFlowCase(TransactionCase):
                 'requested_price': 3,
             })],
         })
+        self._as_legacy_request(other_request)
         other_request.action_mark_sent()
 
         active_company_request = self.env['baseer.procurement.request'].with_context(
@@ -1533,6 +1543,7 @@ class ProcurementFlowCase(TransactionCase):
             })],
         })
         account_moves_before = self.env['account.move'].search_count([('company_id', '=', self.company.id)])
+        self._as_legacy_request(request)
         request.action_mark_sent()
         request.line_ids.manager_received_qty = 4
         request.action_confirm_manager_receipt()
@@ -1589,6 +1600,7 @@ class ProcurementFlowCase(TransactionCase):
                 'option_id': self.option.id, 'requested_qty': 2, 'requested_price': 10,
             })],
         })
+        self._as_legacy_request(request)
         request.action_mark_sent()
         self.env['baseer.procurement.representative.advance'].with_company(
             self.company

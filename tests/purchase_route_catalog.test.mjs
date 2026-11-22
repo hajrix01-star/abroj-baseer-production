@@ -109,20 +109,19 @@ function submission(route) {
     return { c, calls, actions, notices };
 }
 
-test('cash/bank primary action submits route then sends without WhatsApp', async () => {
-    for (const route of ['cash', 'bank_transfer']) {
-        const { c, calls, actions, notices } = submission(route);
-        await saveDraft.call(c, true, () => 'next-token', (text) => text);
-        assert.deepEqual(calls.map((call) => call.method), ['create_from_catalog', 'action_mark_sent']);
-        assert.deepEqual(calls[0].args, [[{ option_id: 5, quantity: '2.00', unit_price: '9.25' }], 1, false, false, 'original-token', false, route]);
-        assert.deepEqual(calls[1].args, [[91]]);
-        assert.equal(actions.length, 1);
-        assert.equal(actions[0].res_id, 91);
-        assert.deepEqual(actions[0].views, [[false, 'form']]);
-        assert.equal(c.state.clientToken, 'next-token');
-        assert.equal(c.state.saving, false);
-        assert.deepEqual(notices, []);
-    }
+test('new list sends the representative without a warehouse or payment route selection', async () => {
+    const { c, calls, actions, notices } = submission('representative');
+    c.isListOnly = true;
+    c.state.warehouseId = false;
+    await saveDraft.call(c, true, () => 'next-token', (text) => text);
+    assert.deepEqual(calls.map((call) => call.method), ['create_from_catalog', 'action_open_whatsapp']);
+    assert.deepEqual(calls[0].args, [[{ option_id: 5, quantity: '2.00', unit_price: '9.25' }], false, false, false, 'original-token', 42, 'representative']);
+    assert.equal(actions.length, 1);
+    assert.equal(c.state.clientToken, 'next-token');
+    assert.equal(c.state.saving, false);
+    assert.deepEqual(notices, []);
+    assert.match(template, /t-if="isListOnly" class="o_prc_route_representative"/);
+    assert.match(template, /t-elif="!state.existingRequest" state="routeDropdown"/);
 });
 
 test('representative primary action preserves WhatsApp and representative RPC arguments', async () => {
@@ -140,17 +139,47 @@ test('representative primary action preserves WhatsApp and representative RPC ar
     assert.deepEqual(notices, []);
 });
 
-test('save-only never sends; pending quote prevents all submission RPCs', async () => {
-    for (const route of ['cash', 'bank_transfer', 'representative']) {
-        const { c, calls } = submission(route);
-        c.state.quotePending = true;
-        await saveDraft.call(c, true, () => 'next-token', (text) => text);
-        assert.deepEqual(calls, []);
-        c.state.quotePending = false;
-        await saveDraft.call(c, false, () => 'next-token', (text) => text);
-        assert.deepEqual(calls.map((call) => call.method), ['create_from_catalog']);
-        assert.equal(calls[0].args[6], route);
-    }
+test('save-only never sends; pending quote blocks submission for a new list', async () => {
+    const { c, calls } = submission('representative');
+    c.isListOnly = true;
+    c.state.warehouseId = false;
+    c.state.quotePending = true;
+    await saveDraft.call(c, true, () => 'next-token', (text) => text);
+    assert.deepEqual(calls, []);
+    c.state.quotePending = false;
+    await saveDraft.call(c, false, () => 'next-token', (text) => text);
+    assert.deepEqual(calls.map((call) => call.method), ['create_from_catalog']);
+    assert.equal(calls[0].args[1], false);
+    assert.equal(calls[0].args[6], 'representative');
+});
+
+test('closing a clean order list uses only the list-closing RPC', async () => {
+    const body = source.match(/    async closeOrderList\(\) \{([\s\S]*?)\n    \}/)[1];
+    const close = new AsyncFunction('_t', body);
+    const calls = [], actions = [], notices = [];
+    const c = {
+        state: { editRequest: { id: 71, list_only: true, can_close_list: true }, saving: false, shareLoading: false, editorLoading: false },
+        editorDirty: false,
+        orm: { call: async (...args) => { calls.push(args); return { type: 'ir.actions.act_window', res_id: 71 }; } },
+        action: { doAction: async (action) => actions.push(action) },
+        notification: { add: (...args) => notices.push(args) },
+    };
+    await close.call(c, (text) => text);
+    assert.deepEqual(calls, [['baseer.procurement.request', 'close_order_list_from_catalog', [71]]]);
+    assert.equal(actions[0].res_id, 71);
+    assert.equal(c.state.saving, false);
+    assert.equal(notices[0][0], 'The request list was closed.');
+    c.editorDirty = true;
+    await close.call(c, (text) => text);
+    assert.equal(calls.length, 1, 'unsaved edits must not close the list');
+});
+
+test('a new list cannot enter the legacy receipt path', async () => {
+    const body = source.match(/    async openReceipt\(\) \{([\s\S]*?)\n    \}/)[1];
+    const openReceipt = new AsyncFunction('_t', body);
+    const c = { state: { editRequest: { id: 71, list_only: true } }, orm: { call: async () => assert.fail('unexpected RPC') } };
+    assert.equal(await openReceipt.call(c, (text) => text), false);
+    assert.match(template, /state\.editRequest and !state\.editRequest\.list_only/);
 });
 
 function cartComponent(existing = false) {

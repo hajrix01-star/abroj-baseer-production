@@ -35,6 +35,13 @@ class ProcurementRequest(models.Model):
         self._bwork_publish_state_result(before)
         return result
 
+    def action_close_order_list(self):
+        before = self._bwork_prior_states()
+        scoped = self.with_context(bwork_state_action_feed=_STATE_ACTION_FEED_TOKEN)
+        result = super(ProcurementRequest, scoped).action_close_order_list()
+        self._bwork_publish_state_result(before)
+        return result
+
     def action_confirm_manager_receipt(self):
         before = self._bwork_prior_states()
         scoped = self.with_context(bwork_state_action_feed=_STATE_ACTION_FEED_TOKEN)

@@ -40,6 +40,7 @@ class ProcurementReceiptCustody(models.Model):
         request = self.browse(_catalog_identifier(request_id)).exists()
         if not request or request.company_id != self.env.company:
             raise AccessError(_('The procurement request is unavailable in the active company.'))
+        request._require_receipt_workflow()
         request.check_access('read')
         return request
 
@@ -72,6 +73,7 @@ class ProcurementReceiptCustody(models.Model):
 
     def action_open_receipt_custody(self):
         self.ensure_one()
+        self._require_receipt_workflow()
         self.env['baseer.procurement.representative.advance']._require_reader()
         if self.company_id != self.env.company:
             raise AccessError(_('The procurement request is unavailable in the active company.'))

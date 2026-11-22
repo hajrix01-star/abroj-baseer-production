@@ -108,9 +108,11 @@ export class ProcurementCatalog extends Component {
             quote: this.emptyQuote(), search: "", selectedCategoryId: false, offset: 0, hasMore: false,
             warehouseId: false, representativePartnerId: false, purchaseRoute: "representative", whatsappNumber: "", saving: false,
             loadingOptions: true, loadingMore: false, quotePending: false, catalogueError: false,
-            mobilePane: "products", clientToken: newClientToken(), workspaceTab: "new",
+            mobilePane: "products", clientToken: newClientToken(),
+            workspaceTab: this.props.action?.params?.workspace_tab === "recent" ? "recent" : "new",
             recentRequests: [], recentSearch: "", recentState: "all", recentOffset: 0,
             recentHasMore: false, recentLoading: false, recentLoadingMore: false, recentError: false,
+            recentActionPending: false,
             existingRequest: false, editRequest: false, editorBaseline: "", removedLines: [], replacementLine: false,
             cancelOpen: false, cancelReason: "", editorLoading: false, quoteError: false, selectedProduct: false, shareLoading: false, receiptPromptOpen: false,
             canCurateCatalog: false, highlights: [], highlightsLoading: false,
@@ -158,7 +160,7 @@ export class ProcurementCatalog extends Component {
                 } else if (this.state.canCurateCatalog) {
                     await this.loadHighlights();
                 }
-                await this.loadRecentRequests();
+                if (this.state.workspaceTab === "recent") await this.loadRecentRequests();
             } catch (error) {
                 this.state.catalogueError = true;
                 this.notification.add(error.message || _t("Could not load the procurement catalogue."), { type: "danger" });
@@ -704,6 +706,7 @@ export class ProcurementCatalog extends Component {
                 RECENT_PAGE_SIZE,
                 this.state.recentSearch,
                 this.state.recentState,
+                this.isListOnly,
             ]);
             if (sequence !== this.recentSequence) return;
             if (reset) {
@@ -754,7 +757,7 @@ export class ProcurementCatalog extends Component {
     recentStateLabel(request) {
         const labels = {
             draft: _t("Draft"),
-            sent: _t("Sent to purchaser"),
+            sent: request.list_only ? _t("Approved") : _t("Sent to purchaser"),
             list_closed: _t("List closed"),
             received: _t("Waiting for cashier confirmation"),
             purchased: _t("Completed"),
@@ -770,6 +773,48 @@ export class ProcurementCatalog extends Component {
             await this.action.doAction(action);
         } catch (error) {
             this.notification.add(error.message || _t("Could not open this request."), { type: "danger" });
+        }
+    }
+
+    async resendOrderList(request) {
+        if (this.state.recentActionPending || !request.can_resend) return;
+        this.state.recentActionPending = true;
+        try {
+            const payload = await this.orm.call(
+                "baseer.procurement.request", "resend_order_list_whatsapp", [request.id],
+            );
+            this.dialog.add(ProcurementWhatsAppDialog, { payload });
+        } catch (error) {
+            this.notification.add(error?.data?.arguments?.[0] || error.message || _t("Could not prepare the WhatsApp message."), { type: "danger" });
+        } finally {
+            this.state.recentActionPending = false;
+        }
+    }
+
+    confirmRemoveOrderList(request) {
+        if (this.state.recentActionPending || !request.can_remove) return;
+        this.dialog.add(ConfirmationDialog, {
+            title: _t("Delete request"),
+            body: _t("Delete %s from previous requests?", request.name),
+            confirmLabel: _t("Delete"),
+            confirmClass: "btn-danger",
+            confirm: () => this.removeOrderList(request.id),
+        });
+    }
+
+    async removeOrderList(requestId) {
+        if (this.state.recentActionPending) return;
+        this.state.recentActionPending = true;
+        try {
+            await this.orm.call(
+                "baseer.procurement.request", "remove_order_list_from_history", [requestId],
+            );
+            this.notification.add(_t("Request deleted."), { type: "success" });
+            await this.loadRecentRequests();
+        } catch (error) {
+            this.notification.add(error?.data?.arguments?.[0] || error.message || _t("Could not delete this request."), { type: "danger" });
+        } finally {
+            this.state.recentActionPending = false;
         }
     }
 
@@ -1124,6 +1169,31 @@ export class ProcurementCatalog extends Component {
         this.state.purchaseRoute = route;
         if (route !== "representative") this.state.representativePartnerId = false;
         if (this.state.editRequest) this.scheduleQuote();
+    }
+
+    async submitOrderList() {
+        if (!this.canSave || this.state.existingRequest || this.state.editRequest) return;
+        this.state.saving = true;
+        try {
+            const payload = await this.orm.call("baseer.procurement.request", "submit_order_list_from_catalog", [
+                this.editorLines(), this.state.clientToken, this.state.representativePartnerId,
+            ]);
+            this.state.clientToken = newClientToken();
+            this.state.cart = [];
+            this.state.quote = this.emptyQuote();
+            this.state.mobilePane = "products";
+            this.state.recentSearch = "";
+            this.state.recentState = "all";
+            globalThis.clearTimeout(this.recentSearchTimer);
+            this.state.workspaceTab = "recent";
+            this.dialog.add(ProcurementWhatsAppDialog, { payload });
+            this.notification.add(_t("Request approved."), { type: "success" });
+            await this.loadRecentRequests();
+        } catch (error) {
+            this.notification.add(error?.data?.arguments?.[0] || error?.data?.message || error.message || _t("Could not send the request."), { type: "danger" });
+        } finally {
+            this.state.saving = false;
+        }
     }
 
     async saveDraft(openWhatsApp = false) {

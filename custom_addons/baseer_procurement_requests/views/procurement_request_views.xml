@@ -26,12 +26,14 @@
                 <header>
                     <field name="can_edit_plan" invisible="1"/>
                     <field name="list_only" invisible="1"/>
+                    <field name="catalog_direct_submitted" invisible="1"/>
+                    <field name="history_removed_at" invisible="1"/>
                     <button name="action_open_catalog_editor" type="object" string="Edit order" icon="fa-pencil" class="btn-secondary" invisible="not can_edit_plan" groups="baseer_procurement_requests.group_procurement_user"/>
-                    <button name="action_open_whatsapp" type="object" icon="fa-whatsapp" title="Open WhatsApp" class="btn-secondary" invisible="state in ('cancel', 'list_closed') or purchase_route != 'representative'" groups="baseer_procurement_requests.group_procurement_user"/>
+                    <button name="action_open_whatsapp" type="object" icon="fa-whatsapp" title="Open WhatsApp" class="btn-secondary" invisible="history_removed_at or state in ('cancel', 'list_closed') or purchase_route != 'representative'" groups="baseer_procurement_requests.group_procurement_user"/>
                     <button name="action_mark_sent" type="object" string="Confirm sent" class="oe_highlight" invisible="state != 'draft'"/>
-                    <button name="action_cancel" type="object" string="Cancel request" class="btn-secondary" invisible="state not in ('draft', 'sent')" groups="baseer_procurement_requests.group_procurement_user"/>
+                    <button name="action_cancel" type="object" string="Cancel request" class="btn-secondary" invisible="catalog_direct_submitted or state not in ('draft', 'sent')" groups="baseer_procurement_requests.group_procurement_user"/>
                     <button name="action_open_actual_catalog" type="object" string="Cashier purchase receipt" class="oe_highlight" invisible="list_only or state not in ('sent', 'received')" groups="baseer_procurement_requests.group_procurement_cashier"/>
-                    <button name="action_close_order_list" type="object" string="Close list" class="oe_highlight" invisible="not list_only or state != 'sent'" groups="baseer_procurement_requests.group_procurement_user"/>
+                    <button name="action_close_order_list" type="object" string="Close list" class="oe_highlight" invisible="catalog_direct_submitted or not list_only or state != 'sent'" groups="baseer_procurement_requests.group_procurement_user"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,sent,list_closed" invisible="not list_only"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,sent,received,purchased" invisible="list_only"/>
                 </header>
@@ -60,7 +62,7 @@
                         <field name="whatsapp_sent_at" readonly="1" invisible="not whatsapp_sent_at"/>
                         <field name="manager_received_at" readonly="1" invisible="list_only or not manager_received_at"/>
                         <field name="actual_confirmed_at" readonly="1" invisible="list_only or not actual_confirmed_at"/>
-                        <field name="cancellation_reason" readonly="state not in ('draft', 'sent')" invisible="state not in ('draft', 'sent', 'cancel')"/>
+                        <field name="cancellation_reason" readonly="state not in ('draft', 'sent')" invisible="catalog_direct_submitted or state not in ('draft', 'sent', 'cancel')"/>
                     </group></group>
                     <notebook>
                         <page string="Materials">

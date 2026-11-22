@@ -286,6 +286,19 @@
 .o_prc_recent_state { padding: .17rem .45rem; border-radius: 1rem; color: var(--prc-brand); background: #f2eaf0; font-size: .72rem; font-weight: 700; }
 .o_prc_recent_card small { color: var(--prc-muted); }
 .o_prc_recent_card b { margin-top: auto; color: var(--prc-accent); direction: ltr; }
+.o_prc_order_history {
+    border: 1px solid var(--prc-border);
+    border-radius: .75rem;
+    border-collapse: separate;
+    border-spacing: 0;
+    overflow: hidden;
+
+    th, td { padding: .75rem; vertical-align: middle; }
+    thead th { background: var(--prc-surface-muted, #f6f4f6); }
+    tbody tr:last-child > * { border-bottom: 0; }
+    .o_prc_history_actions > div { display: flex; flex-wrap: wrap; gap: .35rem; }
+    .o_prc_history_cell_label { display: none; }
+}
 .o_prc_recent_inline_error { margin: .75rem 0 0; color: #b42318; text-align: center; font-size: .78rem; font-weight: 600; }
 .o_prc_actual_footer .btn { min-height: 3rem; border-color: var(--prc-brand); border-radius: .65rem; background: var(--prc-brand); font-weight: 600; }
 
@@ -327,6 +340,38 @@
     .o_prc_recent_filters { grid-template-columns: 1fr; gap: .5rem; margin-bottom: .7rem; }
     .o_prc_recent_grid { grid-template-columns: 1fr; gap: .55rem; }
     .o_prc_recent_card { min-height: 7.5rem; }
+    .o_prc_order_history {
+        display: block;
+        border: 0;
+        border-radius: 0;
+        overflow: visible;
+
+        thead {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            overflow: hidden;
+            clip-path: inset(50%);
+        }
+        tbody { display: grid; gap: .55rem; }
+        tbody tr {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            padding: .4rem .5rem;
+            border: 1px solid var(--prc-border);
+            border-radius: .65rem;
+            background: var(--bs-body-bg, #fff);
+        }
+        th, td { display: block; border: 0; padding: .35rem; }
+        tbody th, .o_prc_history_actions { grid-column: 1 / -1; }
+        .o_prc_history_cell_label {
+            display: block;
+            margin-bottom: .15rem;
+            color: var(--prc-muted);
+            font-size: .75rem;
+        }
+        .o_prc_history_actions .btn { min-height: 2.75rem; }
+    }
     .o_prc_cart_footer { padding: .5rem .7rem; padding-bottom: calc(.5rem + env(safe-area-inset-bottom)); }
     .o_prc_total_row small { display: none; }
     .o_prc_total_row strong { font-size: 1.08rem; }

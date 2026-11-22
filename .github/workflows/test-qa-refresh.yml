@@ -54,7 +54,6 @@ jobs:
           QA_DATABASE=baseer_qa_recovery_fixture
           QA_ENV_FILE="$work/runtime.env"
           backup="$work/backup"
-          compose_cmd() { docker compose -p "$project" -f "$work/compose.yaml" "$@"; }
           cleanup() {
             compose_cmd down --timeout 1 >/dev/null 2>&1 || true
             docker rm -fv "$QA_DB_CONTAINER" >/dev/null 2>&1 || true
@@ -62,6 +61,7 @@ jobs:
           }
           trap cleanup EXIT
           source <(sed '/^require_root$/,$d' ops/qa/baseer-qa-deploy)
+          compose_cmd() { docker compose -p "$project" -f "$work/compose.yaml" "$@"; }
           target=noorix-preview
           ODOO_SERVICE=odoo
           mkdir "$work/previous" "$work/candidate" "$backup"

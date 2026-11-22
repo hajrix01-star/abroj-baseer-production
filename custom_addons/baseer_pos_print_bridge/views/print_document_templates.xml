@@ -8,25 +8,25 @@
                 <style type="text/css">
                     * { box-sizing: border-box; }
                     html, body { margin: 0; padding: 0; background: #fff; color: #000; }
-                    body { font-family: 'DejaVu Sans', 'Noto Sans Arabic', Arial, sans-serif;
-                           font-size: 26px; line-height: 1.45; }
+                    body { font-family: 'Noto Sans Arabic', 'DejaVu Sans', Arial, sans-serif;
+                           font-size: 26px; font-weight: 500; line-height: 1.45; }
                     .document { padding: 12px 14px; overflow-wrap: break-word; word-wrap: break-word; }
                     .center { text-align: center; }
-                    .title { margin: 0 0 8px; font-size: 38px; font-weight: bold; }
-                    .tracking { margin: 2px 0 8px; font-size: 56px; font-weight: bold; line-height: 1.25; }
+                    .title { margin: 0 0 8px; font-size: 38px; font-weight: 700; }
+                    .tracking { margin: 2px 0 8px; font-size: 56px; font-weight: 500; line-height: 1.25; }
                     .reference { font-size: 24px; white-space: pre-wrap; }
-                    .order-type { margin: 8px 0; font-size: 34px; font-weight: bold; }
+                    .order-type { margin: 8px 0; font-size: 34px; font-weight: 700; }
                     .metadata { margin: 5px 0; }
-                    .label { font-weight: bold; }
+                    .label { font-weight: 700; }
                     .text { white-space: pre-wrap; }
                     .rule { border: 0; border-top: 2px solid #000; height: 0; margin: 12px 0; }
                     .item { margin: 0; }
-                    .action { font-size: 26px; font-weight: bold; }
-                    .quantity { font-size: 36px; font-weight: bold; margin: 3px 0; }
-                    .product { font-size: 34px; font-weight: bold; white-space: pre-wrap; }
+                    .action { font-size: 26px; font-weight: 700; }
+                    .quantity { font-size: 36px; font-weight: 600; margin: 3px 0; }
+                    .product { font-size: 34px; font-weight: 600; white-space: pre-wrap; }
                     .note { margin: 7px 0; }
                     .note > span[dir] { white-space: pre-wrap; }
-                    .ending { margin-top: 14px; font-weight: bold; }
+                    .ending { margin-top: 14px; font-weight: 700; }
                 </style>
             </head>
             <body t-att-style="'width: %spx;' % document['paper_pixels']">

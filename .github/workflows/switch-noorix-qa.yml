@@ -1,0 +1,44 @@
+name: Authorize switching the private QA link
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: Type SWITCH_NOORIX_QA to authorize the private QA link change
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: baseer-qa
+  cancel-in-progress: false
+
+jobs:
+  authorize:
+    if: github.ref == 'refs/heads/main' && inputs.confirmation == 'SWITCH_NOORIX_QA'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: qa
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify and sign the bounded QA switch
+        env:
+          QA_REQUEST_SIGNING_KEY: ${{ secrets.QA_REQUEST_SIGNING_KEY }}
+        run: |
+          set -Eeuo pipefail
+          bash ops/qa/verify-qa-deploy-source.sh
+          python3 -B -m unittest discover -s tests -p 'test_qa_noorix_*.py' -v
+          test -n "$QA_REQUEST_SIGNING_KEY"
+          signing_key="$RUNNER_TEMP/noorix-qa-switch-key"
+          trap 'rm -f -- "$signing_key"' EXIT
+          (umask 077; printf '%s\n' "$QA_REQUEST_SIGNING_KEY" > "$signing_key")
+          git config user.name baseer-qa-release-bot
+          git config user.email baseer-qa-release-bot@users.noreply.github.com
+          git config gpg.format ssh
+          git config user.signingkey "$signing_key"
+          tag="qa-noorix-switch-$GITHUB_RUN_ID"
+          git tag --sign --message 'Authorize switching the private QA link to the staged report' "$tag" "$GITHUB_SHA"
+          git push origin "refs/tags/$tag"
+          printf 'QA_SWITCH_REQUEST=SIGNED\nTAG=%s\n' "$tag"

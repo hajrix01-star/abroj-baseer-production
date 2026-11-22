@@ -1,0 +1,110 @@
+#!/usr/bin/env bash
+# Only activates the already staged, independently verified QA preview.
+set -Eeuo pipefail
+umask 077
+
+die() { printf 'QA_NOORIX_SWITCH=FAILED\nREASON=%s\n' "$*" >&2; exit 1; }
+protected() {
+    [ -f "$1" ] && [ ! -L "$1" ] &&
+        [ "$(stat -c '%U:%G:%a' "$1")" = "root:root:$2" ] || die 'unsafe QA operation file'
+}
+
+[ "$(id -u)" -eq 0 ] || die 'root required'
+[ "$#" -ge 2 ] && [ "$#" -le 3 ] && [[ "$1" =~ ^qa-noorix-switch-([1-9][0-9]{0,19})$ ]] &&
+    { [[ "$2" =~ ^[.]acceptance[.][a-zA-Z0-9]{6}$ ]] || [ "$2" = --rollback ]; } ||
+    die 'expected QA switch tag and protected receipt, or rollback mode'
+tag=$1
+receipt=$2
+mode=${3:---switch}
+case "$mode" in --rehearse|--switch) ;; *) die 'invalid QA operation mode' ;; esac
+[ "$receipt" != --rollback ] || [ "$#" -eq 2 ] || die 'invalid rollback invocation'
+protected /etc/baseer-qa/deploy.env 600
+# shellcheck disable=SC1091
+. /etc/baseer-qa/deploy.env
+[ "$QA_BASE" = /srv/baseer-qa ] && [ "$QA_ENVIRONMENT" = qa ] &&
+    [ "$QA_DATABASE" = baseer_qa_20261023 ] || die 'unexpected primary QA'
+protected "$QA_SOURCE_SSH_KEY" 600
+protected "$QA_SOURCE_KNOWN_HOSTS" 644
+protected "$QA_TAG_ALLOWED_SIGNERS" 644
+if [ "$receipt" != --rollback ]; then
+    protected "/srv/baseer-qa/noorix-preview/$receipt" 600
+fi
+
+stage_root=/srv/baseer-qa/deploy-staging
+[ "$(realpath -e "$stage_root")" = "$stage_root" ] &&
+    [ "$(stat -c '%U:%G:%a' "$stage_root")" = root:root:700 ] || die 'unsafe QA staging directory'
+stage=$(mktemp -d "$stage_root/.noorix-switch.XXXXXX")
+trap 'rm -rf -- "$stage"' EXIT
+repo="$stage/repo.git"
+git init --bare --quiet "$repo"
+git -C "$repo" remote add origin "$QA_SOURCE_REMOTE"
+export GIT_SSH_COMMAND="ssh -i $QA_SOURCE_SSH_KEY -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$QA_SOURCE_KNOWN_HOSTS"
+git -C "$repo" fetch --quiet --no-tags origin main:refs/heads/reviewed-main "refs/tags/$tag:refs/tags/$tag"
+[ "$(git -C "$repo" cat-file -t "refs/tags/$tag")" = tag ] || die 'signed annotated tag required'
+[ "$(git -C "$repo" cat-file -p "refs/tags/$tag" | sed -n '3s/^tag //p')" = "$tag" ] || die 'tag mismatch'
+git -C "$repo" -c gpg.format=ssh -c "gpg.ssh.allowedSignersFile=$QA_TAG_ALLOWED_SIGNERS" verify-tag "refs/tags/$tag"
+revision=$(git -C "$repo" rev-parse "refs/tags/$tag^{commit}")
+git -C "$repo" merge-base --is-ancestor "$revision" refs/heads/reviewed-main || die 'request is outside reviewed main'
+git -C "$repo" show "$revision:ops/qa/baseer-qa-noorix-switch" > "$stage/expected"
+cmp -s -- "$stage/expected" "$0" || die 'switch tool differs from reviewed source'
+for name in baseer-qa-deploy prepare-noorix-preview.py noorix-qa-route.py; do
+    git -C "$repo" show "$revision:ops/qa/$name" > "$stage/$name"
+done
+unit=baseer-qa-noorix-preview.service
+git -C "$repo" show "$revision:ops/qa/systemd/$unit" > "$stage/$unit"
+bash -n "$stage/baseer-qa-deploy"
+if [ "$receipt" = --rollback ]; then
+    python3 -I "$stage/noorix-qa-route.py" --rollback
+    exit
+fi
+
+helper=/usr/local/lib/baseer-qa-refresh/prepare-noorix-preview.py
+deploy=/usr/local/sbin/baseer-qa-deploy
+protected "$helper" 750
+protected "$deploy" 750
+reviewed_stage=4b44732b2abe3a62d5100298de98c23da7f65bc0
+check_previous() {
+    local installed=$1 candidate=$2 ref=$3 name=$4
+    if ! cmp -s -- "$installed" "$candidate"; then
+        git -C "$repo" show "$ref:ops/qa/$name" > "$stage/previous"
+        cmp -s -- "$stage/previous" "$installed" || die 'installed QA tool differs from reviewed predecessor'
+    fi
+}
+[ "$(tailscale serve status --json | python3 -I "$stage/noorix-qa-route.py" --backend)" = 18134 ] ||
+    die 'existing private QA link is not on the rollback backend'
+
+atomic_install() {
+    local source=$1 destination=$2 mode=$3 temporary
+    temporary=$(mktemp "$(dirname -- "$destination")/.baseer-noorix-install.XXXXXX")
+    install -o root -g root -m "$mode" "$source" "$temporary"
+    mv -Tf -- "$temporary" "$destination"
+}
+
+# Install while the standard deploy lock is held. Both services are still
+# independent, and the link still points to the previous QA.
+exec 9>/var/lock/baseer-qa-deploy.lock
+flock -n 9 || die 'another QA deployment is running'
+check_previous "$helper" "$stage/prepare-noorix-preview.py" "$reviewed_stage" prepare-noorix-preview.py
+check_previous "$deploy" "$stage/baseer-qa-deploy" "$reviewed_stage^" baseer-qa-deploy
+if ! cmp -s -- "$helper" "$stage/prepare-noorix-preview.py"; then
+    atomic_install "$stage/prepare-noorix-preview.py" "$helper" 0750
+fi
+python3 -I "$helper" --verify-promoted
+if [ -e "/etc/systemd/system/$unit" ] || [ -L "/etc/systemd/system/$unit" ]; then
+    protected "/etc/systemd/system/$unit" 644
+    cmp -s -- "$stage/$unit" "/etc/systemd/system/$unit" || die 'preview boot service differs from reviewed configuration'
+else
+    atomic_install "$stage/$unit" "/etc/systemd/system/$unit" 0644
+fi
+if ! cmp -s -- "$deploy" "$stage/baseer-qa-deploy"; then
+    atomic_install "$stage/baseer-qa-deploy" "$deploy" 0750
+fi
+flock -u 9
+exec 9>&-
+systemctl daemon-reload
+systemctl enable "$unit"
+if [ "$mode" = --rehearse ]; then
+    python3 -I "$stage/noorix-qa-route.py" --rehearse
+else
+    python3 -I "$stage/noorix-qa-route.py" --switch "$receipt"
+fi

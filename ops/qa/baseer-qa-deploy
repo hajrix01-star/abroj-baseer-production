@@ -75,15 +75,16 @@ load_config() {
     readonly RELEASES="$QA_BASE/releases"
     readonly BACKUPS="$QA_BASE/backups"
     readonly STAGING="$QA_BASE/deploy-staging"
-    readonly LOCK_FILE=/var/lock/baseer-qa-deploy.lock
     readonly ODOO_SERVICE="${QA_ODOO_SERVICE:-odoo}"
     readonly ADDONS_PATH="${QA_ADDONS_PATH:-/usr/lib/python3/dist-packages/odoo/addons,/mnt/baseer-addons,/mnt/third-party-addons/erp_heritage_19,/mnt/third-party-addons/odoomates_19}"
 }
 
 validate_arguments() {
     target=primary
+    explicit_preview=0
     if [ "${1:-}" = --noorix-preview ]; then
         target=noorix-preview
+        explicit_preview=1
         shift
     fi
     [ "$#" -eq 2 ] || die 'expected: release_id github_run_id'
@@ -93,17 +94,64 @@ validate_arguments() {
     [[ "$run_id" =~ ^[0-9]+$ ]] || die 'invalid GitHub run id'
 }
 
+qa_serve_status() { /usr/bin/tailscale serve status --json; }
+
+select_active_target() {
+    # Called only with the shared deployment lock held. Refuse ambiguity rather
+    # than guessing which database an ordinary deployment should mutate.
+    [ "$explicit_preview" = 0 ] || return 0
+    local route
+    route="$(qa_serve_status | python3 -c '
+import json, sys
+def unique(pairs):
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError()
+        result[key] = value
+    return result
+try:
+    obj = json.load(sys.stdin, object_pairs_hook=unique)
+    if not isinstance(obj, dict) or set(obj) != {"TCP", "Web"}:
+        raise ValueError()
+    tcp = obj["TCP"]
+    if (not isinstance(tcp, dict) or set(tcp) != {"8443"} or
+            not isinstance(tcp["8443"], dict) or set(tcp["8443"]) != {"HTTPS"} or
+            tcp["8443"]["HTTPS"] is not True or not isinstance(obj["Web"], dict) or len(obj["Web"]) != 1):
+        raise ValueError()
+    host, value = next(iter(obj["Web"].items()))
+    if host != "baseer-live-qa.tail938958.ts.net:8443" or not isinstance(value, dict):
+        raise ValueError()
+    handlers = value.get("Handlers")
+    if set(value) != {"Handlers"} or not isinstance(handlers, dict) or set(handlers) != {"/"}:
+        raise ValueError()
+    entry = handlers["/"]
+    if not isinstance(entry, dict) or set(entry) != {"Proxy"}:
+        raise ValueError()
+    routes = {"http://127.0.0.1:18134": "primary", "http://127.0.0.1:18140": "noorix-preview"}
+    print(routes[entry["Proxy"]])
+except (ValueError, KeyError, TypeError):
+    sys.exit(1)
+')" || die 'cannot safely determine active QA route'
+    case "$route" in primary|noorix-preview) target=$route ;; *) die 'invalid QA route' ;; esac
+}
+
 verify_preview_scope() {
     if [ "$target" = primary ]; then
         [ "$release_id" != baseer-2026-11-22-noorix-net-estimate-preview ] ||
             die 'Noorix preview release requires the isolated preview target'
         return
     fi
-    [ "$release_id" = baseer-2026-11-22-noorix-net-estimate-preview ] &&
-    [ "$commit" = 4a4f06cda34a5a6e2817e9e118f95c9945c4f2ab ] &&
-    [ "$policy_modules" = baseer_profit_loss_report ] &&
-    [ -z "${policy_third_party_modules:-}" ] ||
-        die 'Noorix preview accepts only the approved standalone report release'
+    if [ "$explicit_preview" = 1 ]; then
+        [ "$release_id" = baseer-2026-11-22-noorix-net-estimate-preview ] &&
+        [ "$commit" = 4a4f06cda34a5a6e2817e9e118f95c9945c4f2ab ] &&
+        [ "$policy_modules" = baseer_profit_loss_report ] &&
+        [ -z "${policy_third_party_modules:-}" ] ||
+            die 'Noorix preview accepts only the approved standalone report release'
+    else
+        [ "$release_id" != baseer-2026-11-22-noorix-net-estimate-preview ] ||
+            die 'Noorix preview release requires explicit isolated staging'
+    fi
     [ "$QA_DATABASE" = baseer_qa_20261121b ] &&
     [ "$QA_DB_CONTAINER" = baseer-qa-refresh-20261121b-db-1 ] &&
     [ "$QA_ODOO_VOLUME" = baseer-qa-refresh-20261121b-odoo ] &&
@@ -120,8 +168,19 @@ verify_preview_scope() {
         die 'Noorix preview isolation service is not active'
     local helper=/usr/local/lib/baseer-qa-refresh/prepare-noorix-preview.py
     require_safe_file "$helper" 750
-    python3 -I "$helper" --verify-installed ||
+    local verify_flag=--verify-promoted
+    [ "$explicit_preview" = 1 ] && verify_flag=--verify-installed
+    python3 -I "$helper" "$verify_flag" ||
         die 'Noorix preview configuration or runtime did not pass preflight'
+}
+
+copy_qa_source() {
+    cp -a -- "$old_release/." "$stage/"
+    if [ "$target" = noorix-preview ]; then
+        # The receipt authenticates the inherited source only. Keep it on
+        # that release for rollback; the new release seals its own receipt.
+        rm -f -- "$stage/QA_PROMOTED_SOURCE.json"
+    fi
 }
 
 verify_source_identity() {
@@ -337,6 +396,17 @@ verify_smoke_log() {
     fi
 }
 
+record_promoted_release() {
+    # Only an ordinary deployment to the active Noorix backend updates its
+    # boot provenance. Initial isolated staging has its own immutable pin.
+    if [ "$target" != noorix-preview ] || [ "$explicit_preview" = 1 ]; then
+        return 0
+    fi
+    local helper=/usr/local/lib/baseer-qa-refresh/prepare-noorix-preview.py
+    require_safe_file "$helper" 750
+    python3 -I "$helper" --record-promoted || die 'cannot seal promoted QA release'
+}
+
 restore_pair() (
     set -Eeuo pipefail
     # rollback() invokes this in an OR-list, where Bash ignores errexit even
@@ -534,13 +604,15 @@ PY_VERIFY_REFRESH
 
 require_root
 validate_arguments "$@"
+readonly LOCK_FILE=/var/lock/baseer-qa-deploy.lock
+exec 9>"$LOCK_FILE"
+flock -n 9 || die 'another QA deployment is running'
+select_active_target
 load_config
 verify_source_identity
 load_policy
 verify_third_party_runtime_path
 install -d -o root -g root -m 0700 "$RELEASES" "$BACKUPS" "$STAGING"
-exec 9>"$LOCK_FILE"
-flock -n 9 || die 'another QA deployment is running'
 verify_preview_scope
 
 old_release="$(readlink -f "$CURRENT")"
@@ -565,7 +637,7 @@ git init --bare --quiet "$stage.git"
 git -C "$stage.git" remote add origin "$QA_SOURCE_REMOTE"
 source_ssh git -C "$stage.git" fetch --no-tags --quiet origin main:refs/heads/source-main "$commit"
 git -C "$stage.git" cat-file -e "$commit^{commit}" || die 'candidate commit is missing'
-if [ "$target" = noorix-preview ] || ! git -C "$stage.git" merge-base --is-ancestor "$live_commit" "$commit"; then
+if [ "$explicit_preview" = 1 ] || ! git -C "$stage.git" merge-base --is-ancestor "$live_commit" "$commit"; then
     verify_refresh_source_advance "$stage.git" "$old_release" "$live_commit" "$commit"
 fi
 for module in "${APPROVED_MODULES[@]}"; do
@@ -583,7 +655,7 @@ fi
 # overlay only the reviewed modules so unrelated commits in the candidate
 # cannot leak into QA merely because they share Git history.
 mkdir -m 0700 "$stage"
-cp -a -- "$old_release/." "$stage/"
+copy_qa_source
 for module in "${APPROVED_MODULES[@]}"; do
     rm -rf -- "$stage/custom_addons/$module"
     mkdir -p "$stage/custom_addons"
@@ -658,6 +730,7 @@ for module in "${APPROVED_MODULES[@]}" ${policy_third_party_modules:+"$policy_th
 done
 compose_cmd logs --since "$smoke_since" --no-color --tail=300 "$ODOO_SERVICE" > "$backup/odoo-smoke.log"
 verify_smoke_log
+record_promoted_release
 printf 'QA_DEPLOY=GO\nRELEASE_ID=%s\nRELEASE=%s\nBACKUP=%s\nCOMMIT=%s\nMODULES=%s\nTHIRD_PARTY_MODULES=%s\n' \
     "$release_id" "$release" "$backup" "$commit" "$policy_modules" "${policy_third_party_modules:-}" > "$backup/result.env"
 printf 'QA_DEPLOY=GO\nRELEASE=%s\nBACKUP=%s\n' "$release" "$backup"

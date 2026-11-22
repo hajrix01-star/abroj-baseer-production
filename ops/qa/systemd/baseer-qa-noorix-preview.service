@@ -1,0 +1,13 @@
+[Unit]
+Description=Start verified isolated Noorix QA preview
+Requires=docker.service baseer-qa-refresh-20261121b-firewall.service
+After=docker.service baseer-qa-refresh-20261121b-firewall.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/lib/baseer-qa-refresh/prepare-noorix-preview.py --boot-promoted
+TimeoutStartSec=180
+
+[Install]
+WantedBy=multi-user.target

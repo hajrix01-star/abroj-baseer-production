@@ -52,6 +52,14 @@ class PrivateRouteTest(unittest.TestCase):
             with self.subTest(invalid=invalid), self.assertRaises(ValueError):
                 route.pick_backend(invalid)
 
+    def test_staged_backup_matches_the_deployment_wrapper_path(self):
+        root = '/srv/baseer-qa'
+        release = Path(root + '/releases/4a4f06cda34a-run-45045444123-20261122T164813Z')
+        self.assertEqual(route.staged_backup_path(release),
+                         Path(root + '/backups/pre-4a4f06cda34a-45045444123-20261122T164813Z'))
+        with self.assertRaisesRegex(ValueError, 'unrecognized staged'):
+            route.staged_backup_path(Path(str(release).replace('45045444123', '45034040610')))
+
 
 class CutoverTest(unittest.TestCase):
     def setUp(self):

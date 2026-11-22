@@ -173,24 +173,35 @@ def proof_lines(path):
     return [line for line in path.read_text(encoding='utf-8').splitlines() if line.startswith('QA_ACCEPT_')]
 
 
+def staged_backup_path(source):
+    match = re.fullmatch(r'/srv/baseer-qa/releases/(4a4f06cda34a)-run-(' + STAGING_RUN +
+                         r')-([0-9]{8}T[0-9]{6}Z)', source.as_posix())
+    if not match:
+        raise ValueError('unrecognized staged report release')
+    return Path('/srv/baseer-qa/backups') / ('pre-' + '-'.join(match.groups()))
+
+
 def staged_acceptance(port, log_name):
     if port != 18140 or not re.fullmatch(r'[.]acceptance[.][A-Za-z0-9]{6}', log_name):
         return False
     source = (PREVIEW / 'current').resolve(strict=True)
-    if not re.fullmatch('/srv/baseer-qa/releases/4a4f06cda34a-run-' + STAGING_RUN + r'-[0-9]{8}T[0-9]{6}Z',
-                        str(source)):
-        return False
+    backup = staged_backup_path(source)
     if (source / 'RELEASE_COMMIT').read_text().strip() != REPORT_COMMIT:
         return False
-    backup = Path('/srv/baseer-qa/backups') / ('pre-' + source.name)
-    result = (backup / 'result.env').read_text().splitlines()
+    receipt = backup / 'result.env'
+    if receipt.resolve(strict=True) != receipt or backup.stat().st_uid != 0 or backup.stat().st_mode & 0o077:
+        return False
+    info = receipt.lstat()
+    if not stat.S_ISREG(info.st_mode) or info.st_uid != 0 or info.st_mode & 0o027 or info.st_size > 4096:
+        return False
+    result = receipt.read_text().splitlines()
     expected = {'QA_DEPLOY=GO', 'RELEASE=' + str(source), 'BACKUP=' + str(backup),
                 'COMMIT=' + REPORT_COMMIT, 'MODULES=baseer_profit_loss_report',
                 'RELEASE_ID=baseer-2026-11-22-noorix-net-estimate-preview'}
     if not expected.issubset(result):
         return False
     log = PREVIEW / log_name
-    if log.stat().st_mtime_ns < (backup / 'result.env').stat().st_mtime_ns:
+    if log.stat().st_mtime_ns < info.st_mtime_ns:
         return False
     lines = proof_lines(log)
     return len(lines) == 3 and all(re.fullmatch(pattern, line) for pattern, line in zip((

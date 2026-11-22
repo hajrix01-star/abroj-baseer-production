@@ -4,6 +4,7 @@ import hashlib
 import io
 import subprocess
 from datetime import timedelta
+from pathlib import Path
 from unittest.mock import patch
 from uuid import uuid4
 
@@ -369,6 +370,22 @@ class TestOdooKitchenDocument(TransactionCase):
         self.assertEqual(kwargs['timeout'], 20)
         self.assertTrue(kwargs['check'])
         self.assertEqual(kwargs['input'], job.print_html.encode())
+        self.assertIn('FONTCONFIG_FILE', kwargs['env'])
+
+    def test_missing_font_fails_job_without_changing_immutable_intent(self):
+        job = self._job()
+        before = copy.deepcopy(job.payload)
+        html = job.print_html
+        with patch('odoo.addons.baseer_pos_print_bridge.models.print_fonts.font_directory',
+                   return_value=Path('/missing-baseer-font-test')), patch(
+                       'odoo.addons.baseer_pos_print_bridge.models.kitchen_document.subprocess.run') as run:
+            self.assertFalse(job._ensure_kitchen_image())
+            run.assert_not_called()
+        self.assertEqual(job.state, 'failed')
+        self.assertEqual(job.error_code, 'document_render_failed')
+        self.assertEqual(job.payload, before)
+        self.assertEqual(job.print_html, html)
+        self.assertFalse(job.receipt_image_sha256)
 
     def test_long_raster_compression_preserves_pixels_and_wire_budget(self):
         job = self._job(self._payload('58'))

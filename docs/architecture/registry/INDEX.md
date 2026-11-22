@@ -1,5 +1,9 @@
 # سجل معمارية بصير أودو
 
+## NKR — حزمة خط المطبخ Noto (2026-11-22؛ مرشح نشر)
+
+اعتماد المالك Noto Sans Arabic بأوزان500/600/700، مع تفويض نشر اللايف. مرشح bridge19.0.7.8.63 يضمّن الملفات المرخّصة ويعزل اختيارها داخل عملية رسم أودو، دون تغيير الإيجنت أو الصور المجمدة/إعادة الطباعة. [الخريطة المصغرة والأدلة والنشر](POS-KITCHEN-NOTO-APPROVED-20261122.md).
+
 ## POS-NUM1 — official receipt reservation fixes (2026-11-20; QA candidate)
 
 Pinned Odoo 19.0-20260817 stays unchanged. Cache-resilience addon ports official

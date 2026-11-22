@@ -207,6 +207,23 @@ wait_for_login() {
     return 1
 }
 
+start_qa_app() {
+    if [ "${target:-primary}" = noorix-preview ]; then
+        compose_cmd up -d --no-deps --force-recreate "$ODOO_SERVICE"
+    else
+        compose_cmd up -d "$ODOO_SERVICE"
+    fi
+}
+
+verify_preview_app_source() {
+    [ "${target:-primary}" = noorix-preview ] || return 0
+    local file expected actual
+    file=baseer_profit_loss_report/models/profit_loss.py
+    expected=$(sha256sum -- "$CURRENT/custom_addons/$file") || return 1
+    actual=$(docker exec baseer-qa-refresh-20261121b-odoo-1 sha256sum -- "/mnt/baseer-addons/$file") || return 1
+    [ "${expected%% *}" = "${actual%% *}" ]
+}
+
 # The copied release, Git fetch and recovery pair all occupy QA's filesystem.
 # Use apparent source/filestore sizes so sparse files cannot understate a tar
 # backup.  All probes are read-only and must return bounded decimal integers.
@@ -355,8 +372,13 @@ rollback() {
     fi
     # A failed restore must never restart Odoo against an incomplete database.
     if [ "${service_quiesced:-0}" -eq 1 ] && [ "$rollback_failed" -eq 0 ]; then
-        compose_cmd up -d "$ODOO_SERVICE" >/dev/null 2>&1 || rollback_failed=1
-        wait_for_login >/dev/null 2>&1 || rollback_failed=1
+        if ! start_qa_app >/dev/null 2>&1 || ! wait_for_login >/dev/null 2>&1 ||
+            ! verify_preview_app_source >/dev/null 2>&1; then
+            rollback_failed=1
+            if [ "${target:-primary}" = noorix-preview ]; then
+                compose_cmd stop "$ODOO_SERVICE" >/dev/null 2>&1 || true
+            fi
+        fi
     fi
     if [ -n "${backup:-}" ] && [ -d "$backup" ]; then
         if [ "$rollback_failed" -eq 0 ]; then
@@ -628,8 +650,9 @@ database_mutated=1
 compose_cmd run --rm --no-deps --entrypoint sh "$ODOO_SERVICE" -lc "$odoo_command" > "$backup/module-upgrade.log" 2>&1
 bwork_verify "$release" "$backup/bwork-verified.json" compose_cmd
 smoke_since="$(date -u +%Y-%m-%dT%H:%M:%SZ)" || die 'cannot timestamp QA smoke attempt'
-compose_cmd up -d "$ODOO_SERVICE"
+start_qa_app
 wait_for_login
+verify_preview_app_source || die 'running Noorix preview did not mount the approved report source'
 for module in "${APPROVED_MODULES[@]}" ${policy_third_party_modules:+"$policy_third_party_modules"}; do
     [ "$(module_state "$module")" = installed ] || die "module not installed after QA deployment: $module"
 done

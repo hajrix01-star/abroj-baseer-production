@@ -236,6 +236,10 @@ def verify_installed():
     original = Path(ORIGINAL)
     require(current.is_symlink() and current.resolve(strict=True) == original and original.is_dir(),
             'unexpected preview source pointer')
+    pg = _assignments(protected_text(STATE + '/pg.env'))
+    require(set(pg) == {'POSTGRES_USER', 'POSTGRES_PASSWORD', 'POSTGRES_DB'} and
+            pg['POSTGRES_USER'] == 'qa_refresh_admin' and pg['POSTGRES_DB'] == 'postgres' and
+            re.fullmatch('[0-9a-f]{64}', pg['POSTGRES_PASSWORD']), 'unexpected preview database process environment')
     for path, expected in expected_files().items():
         require(protected_text(path, 0o640, 101) == expected if path.endswith('/odoo.conf')
                 else protected_text(path) == expected, 'generated preview files differ')
@@ -251,22 +255,54 @@ def verify_installed():
     for item, (name, ip, image, ports, destination, volume) in zip(items, expectations):
         networks = item['NetworkSettings']['Networks']
         host = item['HostConfig']
-        mounts = [m for m in item['Mounts'] if m['Destination'] == destination]
+        mounts = {m['Destination']: m for m in item['Mounts']}
         require(item['Name'] == '/' + name and item['Image'] == image and item['State']['Running']
                 and set(networks) == {NETWORK} and networks[NETWORK]['IPAddress'] == ip
                 and (host['PortBindings'] or {}) == ports
                 and host['RestartPolicy']['Name'] == 'no' and host['Dns'] == [DB_IP]
-                and not host['Privileged'] and len(mounts) == 1
-                and mounts[0].get('Name') == volume and mounts[0]['Type'] == 'volume',
+                and not host['Privileged'] and destination in mounts
+                and mounts[destination].get('Name') == volume and mounts[destination]['Type'] == 'volume'
+                and mounts[destination]['RW'],
                 'unexpected preview container identity')
+        mounts.pop(destination)
+        if name == PROJECT + '-odoo-1':
+            override = mounts.pop('/mnt/extra-addons', None)
+            if override is not None:
+                require(override['Type'] == 'volume' and re.fullmatch('[0-9a-f]{64}', override['Name']),
+                        'unexpected vendor addon mount')
+                require(not docker('exec', name, 'find', '/mnt/extra-addons', '-mindepth', '1', '-maxdepth', '1',
+                                   '-print', '-quit').strip(), 'vendor addon mount is not empty')
+            expected_mounts = {'/etc/odoo/odoo.conf': STATE + '/odoo.conf',
+                               '/mnt/baseer-addons': ORIGINAL + '/custom_addons',
+                               '/mnt/third-party-addons': ORIGINAL + '/third_party_addons'}
+            require(set(mounts) == set(expected_mounts) and all(
+                mounts[key]['Type'] == 'bind' and not mounts[key]['RW'] and
+                Path(mounts[key]['Source']).resolve(strict=True) == Path(source)
+                for key, source in expected_mounts.items()), 'running preview source mount differs')
+        else:
+            require(not mounts, 'unexpected database mount')
+    def read_query(query):
+        return docker('exec', '--env', 'PGOPTIONS=-c default_transaction_read_only=on', PROJECT + '-db-1',
+                      '/bin/sh', '-c', 'exec psql -XAt -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$1" -c "$2"',
+                      'sh', DATABASE, query).strip()
+
     query = ("SELECT current_database() = 'baseer_qa_20261121b' "
              "AND EXISTS (SELECT FROM ir_config_parameter "
              "WHERE key = 'database.is_neutralized' AND value = 'true') "
              "AND NOT EXISTS (SELECT FROM ir_cron WHERE active)")
-    result = docker('exec', PROJECT + '-db-1', '/bin/sh', '-c',
-                    'exec psql -XAt -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$1" -c "$2"',
-                    'sh', DATABASE, query)
-    require(result.strip() == 't', 'preview database identity or neutralization mismatch')
+    require(read_query(query) == 't', 'preview database identity or neutralization mismatch')
+    predicates = {
+        'ir_mail_server': 'active', 'fetchmail_server': 'active', 'baseer_print_agent': 'active',
+        'baseer_bwork_push_device': 'active', 'baseer_bank_sms_device': 'active',
+        'payment_provider': "state <> 'disabled'",
+        'res_users_apikeys': 'expiration_date IS NULL OR expiration_date > now()',
+        'pos_config': 'baseer_direct_print_enabled OR baseer_native_receipt_enabled OR baseer_print_session_close_report',
+    }
+    installed = set(read_query("SELECT tablename FROM pg_tables WHERE schemaname = 'public'").splitlines())
+    for table, condition in predicates.items():
+        if table in installed:
+            require(read_query(f'SELECT NOT EXISTS (SELECT FROM "{table}" WHERE {condition})') == 't',
+                    'preview outgoing integration is enabled')
 
 
 if __name__ == '__main__':

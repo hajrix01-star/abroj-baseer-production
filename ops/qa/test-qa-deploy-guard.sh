@@ -93,6 +93,14 @@ expect_failed preview-on-primary 'requires the isolated preview target' preview_
 expect_failed primary-on-preview 'only the approved standalone report' preview_scope --noorix-preview baseer-2026-11-22-noorix-net-estimate 123
 preview_scope baseer-2026-11-22-noorix-net-estimate 123
 
+preview_boot() (
+    load_guard
+    target=noorix-preview ODOO_SERVICE=odoo
+    compose_cmd() { [ "$*" = 'up -d --no-deps --force-recreate odoo' ]; }
+    start_qa_app
+)
+preview_boot
+
 for wrapper in baseer-qa-approve-release baseer-qa-deploy; do
     policy_case "$wrapper" dms
     policy_case "$wrapper" eh_account_dynamic_reports

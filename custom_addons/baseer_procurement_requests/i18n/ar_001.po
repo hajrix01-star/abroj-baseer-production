@@ -1133,7 +1133,9 @@ msgid "Account"
 msgstr "الحساب"
 
 #. module: baseer_procurement_requests
+#. odoo-javascript
 #: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.view_procurement_custody_form
+#: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.js:0
 msgid "Reference"
 msgstr "المرجع"
 
@@ -1565,7 +1567,7 @@ msgstr "المسدّد للمشتريات"
 #. odoo-javascript
 #: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
 msgid "Completed during invoice entry"
-msgstr "يُستكمل في مرحلة الفواتير"
+msgstr "المشتريات المسددة من العهدة"
 
 #. module: baseer_procurement_requests
 #. odoo-javascript
@@ -2287,7 +2289,7 @@ msgstr "تظهر هنا العهد المسجلة عند استلام طلبات
 #. odoo-javascript
 #: code:addons/baseer_procurement_requests/static/src/representative_petty_cash.xml:0
 msgid "Review your restaurant's representative advances and purchase references."
-msgstr "متابعة عهد مندوبي مطعمك ومراجع طلبات الشراء."
+msgstr "متابعة عهد مندوبي مطعمك وحركات مشترياتهم."
 
 #. module: baseer_procurement_requests
 #. odoo-javascript

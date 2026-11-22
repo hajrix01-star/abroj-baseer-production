@@ -71,10 +71,11 @@ class TestProfitLossDrill(TransactionCase):
         filters = dict(self.filters, comparison={'kind': 'previous_period', 'count': 1, 'order': 'descending'})
         report = self.report.with_user(self.reader)
         channels = {self.accounts['income'].id: {'payment_9': ('Card', Decimal('120'))}}
-        # Selected period, then current-period scope, then comparison-period scope.
-        with patch.object(type(report), '_revenue_channels', side_effect=[{}, {}, channels]):
+        # Resolve the selected period once, then look in the comparison period.
+        with patch.object(type(report), '_revenue_channels', side_effect=[{}, channels]) as revenue:
             detail = report._get_drilldown(filters, {'kind': 'channel', 'account_id': self.accounts['income'].id,
                 'channel_key': 'payment_9', 'period_key': 'current'})
+            self.assertEqual(revenue.call_count, 2)
         self.assertIn('Card', detail['title'])
         self.assertEqual(detail['value'], '0.00')
         self.assertEqual(detail['rows'], [])

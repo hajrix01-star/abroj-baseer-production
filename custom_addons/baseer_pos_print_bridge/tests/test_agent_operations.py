@@ -158,7 +158,7 @@ class TestBaseerAgentOperations(TransactionCase):
     def test_versioned_user_download_preserves_machine_manifest_and_legacy(self):
         releases = self.env['baseer.print.agent.release'].sudo()
         legacy = releases._approved_pairing_release()
-        digest = '1' * 64
+        digest = 'dcc183a967686ce3d5a262bfa5d100a02f615e24fed007892d7e6d8c4dd09593'
         releases._register_github_release('1.5.22', digest)
         current = releases.search([('version', '=', '1.5.22')], limit=1)
         fixed = ('https://github.com/hajrix01-star/abroj-baseer-production/'
@@ -169,6 +169,7 @@ class TestBaseerAgentOperations(TransactionCase):
         self.assertEqual(current.action_download()['url'], named)
         self.assertEqual(self.config.action_baseer_download_agent()['url'], named)
         self.assertEqual(releases._pilot_update_manifest()['download_url'], fixed)
+        self.assertEqual(releases.auto_update_manifest()['download_url'], fixed)
         self.assertEqual(releases._approved_pairing_release(), legacy)
         older = releases.search([('version', '=', '1.5.16')], limit=1)
         if older:

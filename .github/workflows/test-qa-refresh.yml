@@ -77,7 +77,8 @@ jobs:
           docker volume create "$QA_ODOO_VOLUME" >/dev/null
           docker run --rm --network none -v "$QA_ODOO_VOLUME:/source" alpine:3.20 sh -c \
             'mkdir -p "/source/filestore/$1"; printf previous > "/source/filestore/$1/fixture"' sh "$QA_DATABASE"
-          docker run -d --network none --name "$QA_DB_CONTAINER" -e POSTGRES_HOST_AUTH_METHOD=trust postgres:16-alpine >/dev/null
+          docker run -d --network none --name "$QA_DB_CONTAINER" -e POSTGRES_USER=postgres \
+            -e POSTGRES_HOST_AUTH_METHOD=trust postgres:16-alpine >/dev/null
           for attempt in {1..40}; do
             docker exec "$QA_DB_CONTAINER" pg_isready -h 127.0.0.1 -U postgres -q && break
             sleep 1

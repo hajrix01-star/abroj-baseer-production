@@ -6,6 +6,5 @@
         <field name="code">model.cron_redact_expired_reviews()</field>
         <field name="interval_number">1</field>
         <field name="interval_type">days</field>
-        <field name="active">True</field>
     </record>
 </odoo>

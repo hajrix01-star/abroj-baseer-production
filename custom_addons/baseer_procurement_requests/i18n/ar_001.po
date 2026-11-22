@@ -3175,3 +3175,56 @@ msgstr "تم إغلاق قائمة الطلبات."
 #: code:addons/baseer_procurement_requests/static/src/procurement_catalog.js:0
 msgid "Could not close the request list."
 msgstr "تعذر إغلاق قائمة الطلبات."
+
+#. module: baseer_procurement_requests
+#: model:ir.model.fields,field_description:baseer_procurement_requests.field_account_journal__baseer_custody_representative_id
+msgid "Custody representative"
+msgstr "مندوب العهدة"
+
+#. module: baseer_procurement_requests
+#: model:ir.model.fields,help:baseer_procurement_requests.field_account_journal__baseer_custody_representative_id
+msgid "This permanent assignment includes past and future posted supplier payments from this journal in this representative’s custody."
+msgstr "هذا الربط دائم. تظهر دفعات الموردين المرحلة سابقًا ومستقبلًا من هذا الدفتر ضمن عهدة المندوب المحدد."
+
+#. module: baseer_procurement_requests
+#. odoo-python
+#: code:addons/baseer_procurement_requests/models/native_custody_payments.py:0
+#: model_terms:ir.ui.view,arch_db:baseer_procurement_requests.partner_form_custody_journal
+msgid "Custody journal"
+msgstr "دفتر العهدة"
+
+#. module: baseer_procurement_requests
+#. odoo-python
+#: code:addons/baseer_procurement_requests/models/native_custody_payments.py:0
+msgid "Custody %s"
+msgstr "عهدة %s"
+
+#. module: baseer_procurement_requests
+#. odoo-python
+#: code:addons/baseer_procurement_requests/models/native_custody_payments.py:0
+msgid "Only accounting managers can set up a custody journal."
+msgstr "إعداد دفتر العهدة متاح لمديري المحاسبة."
+
+#. module: baseer_procurement_requests
+#. odoo-python
+#: code:addons/baseer_procurement_requests/models/native_custody_payments.py:0
+msgid "Configure the company’s representative custody account first."
+msgstr "أعدّ حساب عهدة المندوبين في الشركة أولًا."
+
+#. module: baseer_procurement_requests
+#. odoo-python
+#: code:addons/baseer_procurement_requests/models/native_custody_payments.py:0
+msgid "Select an active purchasing representative of this company."
+msgstr "اختر مندوب مشتريات نشطًا في هذه الشركة."
+
+#. module: baseer_procurement_requests
+#. odoo-python
+#: code:addons/baseer_procurement_requests/models/native_custody_payments.py:0
+msgid "Use a cash or bank journal whose default account is the company’s representative custody account."
+msgstr "اختر دفترًا نقديًا أو بنكيًا حسابه الافتراضي هو حساب عهدة المندوبين في الشركة."
+
+#. module: baseer_procurement_requests
+#. odoo-python
+#: code:addons/baseer_procurement_requests/models/native_custody_payments.py:0
+msgid "This custody journal already belongs to a representative. Use a separate journal for the new representative."
+msgstr "هذا الدفتر مخصص لمندوب سبق تعيينه. استخدم دفترًا مستقلًا للمندوب الجديد."

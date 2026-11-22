@@ -71,13 +71,18 @@ class RepresentativePettyCashCase(TransactionCase):
         self._configure_company_fixture()
 
     def _request(self):
-        return self.env['baseer.procurement.request'].create({
+        request = self.env['baseer.procurement.request'].create({
             'company_id': self.company.id, 'warehouse_id': self.warehouse.id,
             'representative_partner_id': self.representative.id,
             'line_ids': [Command.create({
                 'option_id': self.option.id, 'requested_qty': 5, 'requested_price': 4,
             })],
         })
+        # The request-linked custody routes are supported for pre-separation data.
+        request.flush_recordset(['list_only'])
+        self.cr.execute('UPDATE baseer_procurement_request SET list_only = false WHERE id = %s', [request.id])
+        request.invalidate_recordset(['list_only'])
+        return request
 
     def _sent_request(self):
         request = self._request()
@@ -86,6 +91,7 @@ class RepresentativePettyCashCase(TransactionCase):
 
     def test_dashboard_ignores_vendor_payments(self):
         self._use_isolated_sar_company()
+        self.env.user.group_ids |= self.env.ref('account.group_account_manager')
         Model = self.env['baseer.procurement.representative.advance']
         request = self._sent_request()
         today = fields.Date.context_today(self.env.user)
@@ -142,6 +148,129 @@ class RepresentativePettyCashCase(TransactionCase):
         self.assertEqual(summary(self.representative)['settled'], 2)
         self.assertEqual(summary(self.representative)['remaining'], 18)
         self.assertEqual(summary()['settled'], 2)
+        journal.baseer_custody_representative_id = self.representative
+        self.assertEqual(summary(self.representative)['settled'], 9)
+        self.assertEqual(summary(self.representative)['remaining'], 11)
+
+    def test_native_vendor_payments_follow_the_linked_journal(self):
+        self._use_isolated_sar_company()
+        self.env.user.group_ids |= self.env.ref('account.group_account_manager')
+        company = self.company
+        Model = self.env['baseer.procurement.representative.advance']
+        Account = self.env['account.account']
+        Journal = self.env['account.journal']
+        self.petty_cash_account.account_type = 'asset_current'
+        payable = Account.create({
+            'name': 'Native custody test payable', 'code': 'RPC703',
+            'account_type': 'liability_payable', 'reconcile': True,
+            'company_ids': [Command.set(company.ids)],
+        })
+        expense = Account.create({
+            'name': 'Native custody test expense', 'code': 'RPC704',
+            'account_type': 'expense', 'company_ids': [Command.set(company.ids)],
+        })
+        purchase = Journal.create({
+            'name': 'Native custody test purchases', 'code': 'RPCP', 'type': 'purchase',
+            'company_id': company.id, 'default_account_id': expense.id,
+        })
+        custody = Journal.create({
+            'name': 'Native custody test cash', 'code': 'RPCC', 'type': 'cash',
+            'company_id': company.id, 'default_account_id': self.petty_cash_account.id,
+        })
+        custody.outbound_payment_method_line_ids.payment_account_id = self.petty_cash_account
+        self.bank_journal.outbound_payment_method_line_ids.payment_account_id = self.bank_journal.default_account_id
+        vendor = self.env['res.partner'].create({'name': 'Native custody test vendor'})
+        vendor.with_company(company).property_account_payable_id = payable
+        product = self.env['product.product'].create({
+            'name': 'Native custody test service', 'type': 'service', 'company_id': company.id,
+        })
+
+        def make_bill(amount, ref):
+            bill = self.env['account.move'].create({
+                'move_type': 'in_invoice', 'company_id': company.id, 'journal_id': purchase.id,
+                'partner_id': vendor.id, 'invoice_date': '2025-01-20', 'ref': ref,
+                'invoice_line_ids': [Command.create({
+                    'product_id': product.id, 'account_id': expense.id, 'quantity': 1,
+                    'price_unit': amount, 'tax_ids': [Command.clear()],
+                })],
+            })
+            bill.action_post()
+            return bill
+
+        def pay(bills, journal, date, amount=None):
+            wizard = self.env['account.payment.register'].with_context(
+                active_model='account.move', active_ids=bills.ids,
+            ).create({
+                'journal_id': journal.id, 'payment_date': date, 'group_payment': True,
+                'payment_method_line_id': journal.outbound_payment_method_line_ids[0].id,
+            })
+            if amount is not None:
+                wizard.amount = amount
+            return wizard._create_payments().ensure_one()
+
+        rep = self.representative
+        successor = self.env['res.partner'].create({
+            'name': rep.name, 'company_id': company.id,
+        })
+        Model.submit_funding(False, self.bank_journal.id, rep.id, '100.00', str(uuid4()), '2025-01-15')
+        partial = make_bill(30, 'RPC partial')
+        pay(partial, custody, '2025-01-21', amount=10)
+        self.assertEqual(partial.amount_residual, 20)
+        pay(make_bill(8, 'RPC normal bank'), self.bank_journal, '2025-01-22')
+        self.assertEqual(Model.dashboard_data(rep.id, '2025-01-01')['summary']['settled'], 0)
+
+        custody.baseer_custody_representative_id = rep
+        self.assertEqual(rep.action_baseer_open_custody_journal()['res_id'], custody.id)
+        grouped = make_bill(12, 'RPC group 1') | make_bill(13, 'RPC group 2')
+        payment = pay(grouped, custody, '2025-02-03')
+        self.assertEqual(grouped.mapped('amount_residual'), [0, 0])
+        self.assertEqual(payment.amount, 25)
+        move_count = self.env['account.move'].search_count([('company_id', '=', company.id)])
+
+        jan = Model.dashboard_data(rep.id, '2025-01-01')
+        feb = Model.dashboard_data(rep.id, '2025-02-01')
+        self.assertEqual((jan['summary']['settled'], jan['summary']['closing']), (10, 90))
+        self.assertEqual((feb['summary']['opening'], feb['summary']['settled'], feb['summary']['closing']), (90, 25, 65))
+        purchase_rows = [row for row in feb['daily_movements'] if row['type'] == 'purchase']
+        self.assertEqual([(row['key'], row['amount']) for row in purchase_rows], [
+            (f'native_payment:{payment.move_id.id}', 25),
+        ])
+        self.assertEqual(Model._baseer_representative_available_amount(company, rep), 65)
+        self.assertEqual(Model.dashboard_data(successor.id, '2025-02-01')['summary']['closing'], 0)
+        self.assertEqual(self.env['account.move'].search_count([('company_id', '=', company.id)]), move_count)
+
+        with self.assertRaises(ValidationError):
+            custody.baseer_custody_representative_id = successor
+        rep.is_purchase_representative = False
+        history = Model.dashboard_data(rep.id, '2025-02-01')
+        self.assertEqual(history['summary']['closing'], 65)
+        self.assertIn(rep.id, [row['id'] for row in history['history_representatives']])
+        self.assertNotIn(rep.id, [row['id'] for row in history['representatives']])
+
+        reversal = payment.move_id._reverse_moves([{'date': '2025-03-04'}], cancel=True)
+        march = Model.dashboard_data(rep.id, '2025-03-01')
+        self.assertEqual((march['summary']['opening'], march['summary']['settled'], march['summary']['closing']), (65, -25, 90))
+        self.assertEqual([(row['key'], row['amount']) for row in march['daily_movements']], [
+            (f'native_payment:{reversal.id}', -25),
+        ])
+
+        journal_domain = [('company_id', '=', company.id), ('baseer_custody_representative_id', '=', successor.id)]
+        self.assertFalse(Journal.search(journal_domain))
+        move_count = self.env['account.move'].search_count([('company_id', '=', company.id)])
+        successor.is_purchase_representative = True
+        new_custody = Journal.search(journal_domain).ensure_one()
+        self.assertEqual(successor.action_baseer_open_custody_journal()['res_id'], new_custody.id)
+        successor.is_purchase_representative = False
+        successor.is_purchase_representative = True
+        self.assertEqual(Journal.search(journal_domain), new_custody)
+        self.assertEqual(self.env['account.move'].search_count([('company_id', '=', company.id)]), move_count)
+        self.assertEqual(new_custody.default_account_id, self.petty_cash_account)
+        methods = new_custody.inbound_payment_method_line_ids | new_custody.outbound_payment_method_line_ids
+        self.assertEqual(methods.mapped('payment_account_id'), self.petty_cash_account)
+        Model.submit_funding(False, self.bank_journal.id, successor.id, '15.00', str(uuid4()), '2025-03-05')
+        pay(make_bill(5, 'RPC successor'), new_custody, '2025-03-05')
+        self.assertEqual(Model.dashboard_data(successor.id, '2025-03-01')['summary']['closing'], 10)
+        self.assertEqual(Model.dashboard_data(rep.id, '2025-03-01')['summary']['closing'], 90)
 
     def test_funding_posts_once_and_is_immutable(self):
         request = self._sent_request()

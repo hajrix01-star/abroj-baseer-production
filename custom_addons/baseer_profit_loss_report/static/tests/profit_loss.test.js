@@ -146,8 +146,14 @@ test("the applied tax basis and management note follow the displayed report", as
     await mountReport([]);
     expect(document.querySelector(".o_baseer_report_title").textContent.includes("Tax inclusive")).toBe(true);
     expect(document.querySelector("[data-testid='tax-management-note']").textContent.includes("not accounting net profit")).toBe(true);
-    await click(".o_baseer_pl_filter_chip");
+    const taxToggle = document.querySelector(".o_baseer_pl_tax_toggle");
+    expect(taxToggle).toBe(document.querySelector("[data-testid='financial-filters']").lastElementChild);
+    expect(taxToggle.textContent.trim()).toBe("Tax inclusive");
+    expect(taxToggle.getAttribute("aria-pressed")).toBe("true");
+    await click(".o_baseer_pl_tax_toggle");
     await waitUntil(() => document.querySelector(".o_baseer_report_title")?.textContent.includes("Tax exclusive"));
+    expect(taxToggle.textContent.trim()).toBe("Tax exclusive");
+    expect(taxToggle.getAttribute("aria-pressed")).toBe("false");
     expect(document.querySelector("[data-testid='tax-management-note']")).toBe(null);
 });
 
@@ -156,7 +162,7 @@ test("the applied tax basis is described in Arabic", async () => {
     await mountReport([]);
     expect(document.querySelector(".o_baseer_report_title").textContent.includes("شامل الضريبة")).toBe(true);
     expect(document.querySelector("[data-testid='tax-management-note']").textContent.includes("ليس صافي الربح المحاسبي")).toBe(true);
-    await click(".o_baseer_pl_filter_chip");
+    await click(".o_baseer_pl_tax_toggle");
     await waitUntil(() => document.querySelector(".o_baseer_report_title")?.textContent.includes("غير شامل الضريبة"));
     expect(document.querySelector("[data-testid='tax-management-note']")).toBe(null);
 });

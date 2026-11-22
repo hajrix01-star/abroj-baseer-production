@@ -1,7 +1,7 @@
 {
     "name": "Baseer Profit and Loss Report",
     "summary": "Posted profit and loss inside Baseer Reports",
-    "version": "19.0.1.1.6",
+    "version": "19.0.1.1.7",
     "author": "Baseer",
     "license": "LGPL-3",
     "category": "Accounting/Reporting",

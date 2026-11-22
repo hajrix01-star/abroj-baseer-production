@@ -64,6 +64,42 @@
     }
     .o_baseer_pl_filter_chip i { margin-inline-end: 0.32rem; }
     .o_baseer_pl_filter_chip:focus-visible { outline: 2px solid var(--baseer-report-accent); outline-offset: 3px; }
+
+    .o_baseer_pl_filter_chip.o_baseer_pl_tax_toggle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 0.5rem;
+        width: auto;
+        min-inline-size: 10rem;
+        background: transparent;
+        white-space: nowrap;
+    }
+    .o_baseer_pl_filter_chip.o_baseer_pl_tax_toggle:hover { color: var(--baseer-report-accent); }
+    .o_baseer_pl_tax_switch {
+        position: relative;
+        flex: 0 0 1.75rem;
+        height: 1rem;
+        border-radius: 1rem;
+        background: #667885;
+
+        &::before {
+            content: "";
+            position: absolute;
+            inset-block-start: 0.125rem;
+            inset-inline-start: 0.125rem;
+            width: 0.75rem;
+            height: 0.75rem;
+            border-radius: 50%;
+            background: #fff;
+        }
+    }
+    .o_baseer_pl_filter_chip.o_baseer_pl_tax_toggle[aria-pressed="true"] {
+        color: #15575b;
+
+        .o_baseer_pl_tax_switch { background: #087d84; }
+        .o_baseer_pl_tax_switch::before { inset-inline-start: 0.875rem; }
+    }
     .o_baseer_pl_filter_menu summary,
     .o_baseer_pl_navigation button {
         min-height: 2rem;
@@ -200,6 +236,7 @@
         .o_baseer_report_filters { width: 100%; }
         .o_baseer_pl_filter_menu { flex: 1 1 auto; }
         .o_baseer_pl_filter_chip { display: flex; align-items: center; justify-content: center; width: 100%; }
+        .o_baseer_pl_filter_chip.o_baseer_pl_tax_toggle { min-height: 2.5rem; }
         .o_baseer_pl_filter_menu summary { display: flex; align-items: center; justify-content: center; }
         .o_baseer_pl_popover { inset-inline-start: 0; min-width: 0; width: 18rem; max-width: 92vw; }
         .o_baseer_pl_table_wrap { overflow: visible; }

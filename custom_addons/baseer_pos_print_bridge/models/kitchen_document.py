@@ -16,6 +16,7 @@ from odoo.tools import find_in_path
 
 from .job import NATIVE_RECEIPT_MAX_BYTES, NATIVE_RECEIPT_MAX_PIXELS
 from .note import normalize_detail_notes
+from .print_fonts import kitchen_font_environment
 
 MAX_HTML_BYTES = 128 * 1024
 MAX_SOURCE_CHARACTERS = 30_000
@@ -158,9 +159,10 @@ class BaseerKitchenDocument(models.Model):
                    '--quiet', '--width', str(width), '--disable-smart-width', '--height', '0',
                    '--format', 'jpg', '--quality', '90', '-', '-']
         # File-backed output avoids buffering an unbounded raster in the Odoo worker.
-        with tempfile.TemporaryFile() as output:
+        with kitchen_font_environment() as font_environment, tempfile.TemporaryFile() as output:
             subprocess.run(command, input=self.print_html.encode(), stdout=output,
-                           stderr=subprocess.DEVNULL, timeout=RENDER_TIMEOUT_SECONDS, check=True)
+                           stderr=subprocess.DEVNULL, timeout=RENDER_TIMEOUT_SECONDS, check=True,
+                           env=font_environment)
             output.seek(0)
             raw = output.read(MAX_RENDER_BYTES + 1)
         if len(raw) > MAX_RENDER_BYTES:

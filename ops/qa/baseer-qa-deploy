@@ -1,11 +1,10 @@
 #!/usr/bin/env bash
-# Root-owned QA deployment wrapper.  The caller supplies a release ID only;
+# Root-owned QA deployment wrapper. The caller supplies a reviewed release ID;
 # this wrapper owns the policy, source verification, recovery pair and module
 # allowlist.
 set -Eeuo pipefail
 umask 027
 
-readonly CONFIG=/etc/baseer-qa/deploy.env
 declare -A APPROVED_MODULE_SET=()
 phase_guard_active=0
 
@@ -47,10 +46,17 @@ require_root_owned_path() {
 require_root() { [ "$(id -u)" -eq 0 ] || die 'root is required'; }
 
 load_config() {
-    require_safe_file "$CONFIG" 600
+    local config_dir=/etc/baseer-qa current_suffix=/current
+    if [ "$target" = noorix-preview ]; then
+        config_dir=/etc/baseer-qa/noorix-preview
+        current_suffix=/noorix-preview/current
+    fi
+    local config="$config_dir/deploy.env"
+    require_safe_file "$config" 600
+    require_root_owned_path "$config" /etc/baseer-qa 600
     # The root-owned configuration contains QA infrastructure identity only.
     # shellcheck disable=SC1090
-    . "$CONFIG"
+    . "$config"
     for name in QA_ENVIRONMENT QA_BASE QA_DATABASE QA_DB_CONTAINER QA_ODOO_VOLUME QA_COMPOSE_PROJECT QA_COMPOSE_FILE QA_ENV_FILE QA_LOGIN_URL QA_SOURCE_REMOTE QA_SOURCE_SSH_KEY QA_SOURCE_KNOWN_HOSTS; do
         [ -n "${!name:-}" ] || die "missing config value: $name"
     done
@@ -59,11 +65,12 @@ load_config() {
     [[ "$QA_DATABASE" =~ ^baseer(_live)?_qa(_[a-zA-Z0-9]+)*$ ]] || die 'database is not QA-namespaced'
     [[ "$QA_DB_CONTAINER" =~ qa ]] && [[ "$QA_ODOO_VOLUME" =~ qa ]] && [[ "$QA_COMPOSE_PROJECT" =~ qa ]] || die 'runtime identity is not QA-namespaced'
     [[ "$QA_LOGIN_URL" =~ ^http://127\.0\.0\.1:[0-9]+/web/login$ ]] || die 'QA login URL must be loopback only'
-    [ "$QA_COMPOSE_FILE" = /etc/baseer-qa/compose.yaml ] || die 'QA compose path must be fixed'
-    [ "$QA_ENV_FILE" = /etc/baseer-qa/runtime.env ] || die 'QA env path must be fixed'
+    [ "$QA_COMPOSE_FILE" = "$config_dir/compose.yaml" ] || die 'QA compose path must be fixed'
+    [ "$QA_ENV_FILE" = "$config_dir/runtime.env" ] || die 'QA env path must be fixed'
     require_root_owned_path "$QA_COMPOSE_FILE" /etc/baseer-qa 600
     require_root_owned_path "$QA_ENV_FILE" /etc/baseer-qa 600
-    grep -Fq "$QA_BASE/current/custom_addons:/mnt/baseer-addons:ro" "$QA_COMPOSE_FILE" || die 'QA compose must mount current custom addons read-only'
+    readonly CURRENT="$QA_BASE$current_suffix"
+    grep -Fq "$CURRENT/custom_addons:/mnt/baseer-addons:ro" "$QA_COMPOSE_FILE" || die 'QA compose must mount the selected current custom addons read-only'
     readonly POLICY_DIR=/etc/baseer-qa/release-policies
     readonly RELEASES="$QA_BASE/releases"
     readonly BACKUPS="$QA_BASE/backups"
@@ -74,11 +81,47 @@ load_config() {
 }
 
 validate_arguments() {
+    target=primary
+    if [ "${1:-}" = --noorix-preview ]; then
+        target=noorix-preview
+        shift
+    fi
     [ "$#" -eq 2 ] || die 'expected: release_id github_run_id'
     release_id=$1
     run_id=$2
     [[ "$release_id" =~ ^[a-z0-9][a-z0-9-]{2,63}$ ]] || die 'invalid release id'
     [[ "$run_id" =~ ^[0-9]+$ ]] || die 'invalid GitHub run id'
+}
+
+verify_preview_scope() {
+    if [ "$target" = primary ]; then
+        [ "$release_id" != baseer-2026-11-22-noorix-net-estimate-preview ] ||
+            die 'Noorix preview release requires the isolated preview target'
+        return
+    fi
+    [ "$release_id" = baseer-2026-11-22-noorix-net-estimate-preview ] &&
+    [ "$commit" = 4a4f06cda34a5a6e2817e9e118f95c9945c4f2ab ] &&
+    [ "$policy_modules" = baseer_profit_loss_report ] &&
+    [ -z "${policy_third_party_modules:-}" ] ||
+        die 'Noorix preview accepts only the approved standalone report release'
+    [ "$QA_DATABASE" = baseer_qa_20261121b ] &&
+    [ "$QA_DB_CONTAINER" = baseer-qa-refresh-20261121b-db-1 ] &&
+    [ "$QA_ODOO_VOLUME" = baseer-qa-refresh-20261121b-odoo ] &&
+    [ "$QA_COMPOSE_PROJECT" = baseer-qa-refresh-20261121b ] &&
+    [ "$QA_LOGIN_URL" = http://127.0.0.1:18140/web/login ] &&
+    [ "$ODOO_SERVICE" = odoo ] ||
+        die 'Noorix preview target identity mismatch'
+    local primary=/etc/baseer-qa/deploy.env
+    require_safe_file "$primary" 600
+    grep -Fxq 'QA_DATABASE=baseer_qa_20261023' "$primary" &&
+    grep -Fxq 'QA_COMPOSE_PROJECT=baseer-qa-refresh-20261023' "$primary" ||
+        die 'primary and preview must use distinct approved QA identities'
+    systemctl is-active --quiet baseer-qa-refresh-20261121b-firewall.service ||
+        die 'Noorix preview isolation service is not active'
+    local helper=/usr/local/lib/baseer-qa-refresh/prepare-noorix-preview.py
+    require_safe_file "$helper" 750
+    python3 -I "$helper" --verify-installed ||
+        die 'Noorix preview configuration or runtime did not pass preflight'
 }
 
 verify_source_identity() {
@@ -162,6 +205,23 @@ wait_for_login() {
         sleep 1
     done
     return 1
+}
+
+start_qa_app() {
+    if [ "${target:-primary}" = noorix-preview ]; then
+        compose_cmd up -d --no-deps --force-recreate "$ODOO_SERVICE"
+    else
+        compose_cmd up -d "$ODOO_SERVICE"
+    fi
+}
+
+verify_preview_app_source() {
+    [ "${target:-primary}" = noorix-preview ] || return 0
+    local file expected actual
+    file=baseer_profit_loss_report/models/profit_loss.py
+    expected=$(sha256sum -- "$CURRENT/custom_addons/$file") || return 1
+    actual=$(docker exec baseer-qa-refresh-20261121b-odoo-1 sha256sum -- "/mnt/baseer-addons/$file") || return 1
+    [ "${expected%% *}" = "${actual%% *}" ]
 }
 
 # The copied release, Git fetch and recovery pair all occupy QA's filesystem.
@@ -308,12 +368,17 @@ rollback() {
         restore_pair >/dev/null 2>&1 || rollback_failed=1
     fi
     if [ "${release_switched:-0}" -eq 1 ] && [ "$stop_failed" -eq 0 ]; then
-        ln -sfn "$old_release" "$QA_BASE/current" || rollback_failed=1
+        ln -sfn "$old_release" "$CURRENT" || rollback_failed=1
     fi
     # A failed restore must never restart Odoo against an incomplete database.
     if [ "${service_quiesced:-0}" -eq 1 ] && [ "$rollback_failed" -eq 0 ]; then
-        compose_cmd up -d "$ODOO_SERVICE" >/dev/null 2>&1 || rollback_failed=1
-        wait_for_login >/dev/null 2>&1 || rollback_failed=1
+        if ! start_qa_app >/dev/null 2>&1 || ! wait_for_login >/dev/null 2>&1 ||
+            ! verify_preview_app_source >/dev/null 2>&1; then
+            rollback_failed=1
+            if [ "${target:-primary}" = noorix-preview ]; then
+                compose_cmd stop "$ODOO_SERVICE" >/dev/null 2>&1 || true
+            fi
+        fi
     fi
     if [ -n "${backup:-}" ] && [ -d "$backup" ]; then
         if [ "$rollback_failed" -eq 0 ]; then
@@ -468,16 +533,17 @@ PY_VERIFY_REFRESH
 }
 
 require_root
-load_config
 validate_arguments "$@"
+load_config
 verify_source_identity
 load_policy
 verify_third_party_runtime_path
 install -d -o root -g root -m 0700 "$RELEASES" "$BACKUPS" "$STAGING"
 exec 9>"$LOCK_FILE"
 flock -n 9 || die 'another QA deployment is running'
+verify_preview_scope
 
-old_release="$(readlink -f "$QA_BASE/current")"
+old_release="$(readlink -f "$CURRENT")"
 [ -d "$old_release" ] || die 'current QA release cannot be resolved'
 [ -f "$old_release/RELEASE_COMMIT" ] || die 'current QA release has no source marker'
 live_commit="$(tr -d '\r\n' < "$old_release/RELEASE_COMMIT")"
@@ -499,14 +565,14 @@ git init --bare --quiet "$stage.git"
 git -C "$stage.git" remote add origin "$QA_SOURCE_REMOTE"
 source_ssh git -C "$stage.git" fetch --no-tags --quiet origin main:refs/heads/source-main "$commit"
 git -C "$stage.git" cat-file -e "$commit^{commit}" || die 'candidate commit is missing'
-if ! git -C "$stage.git" merge-base --is-ancestor "$live_commit" "$commit"; then
+if [ "$target" = noorix-preview ] || ! git -C "$stage.git" merge-base --is-ancestor "$live_commit" "$commit"; then
     verify_refresh_source_advance "$stage.git" "$old_release" "$live_commit" "$commit"
 fi
 for module in "${APPROVED_MODULES[@]}"; do
     git -C "$stage.git" cat-file -e "$commit:custom_addons/$module/__manifest__.py" || die "approved module absent from candidate: $module"
 done
 if [ -n "${policy_third_party_modules:-}" ]; then
-    grep -Fq "$QA_BASE/current/third_party_addons:/mnt/third-party-addons:ro" "$QA_COMPOSE_FILE" || die 'QA compose must mount current third-party addons read-only'
+    grep -Fq "$CURRENT/third_party_addons:/mnt/third-party-addons:ro" "$QA_COMPOSE_FILE" || die 'QA compose must mount selected current third-party addons read-only'
     git -C "$stage.git" cat-file -e "$commit:$third_party_path/__manifest__.py" || die 'approved third-party module absent from candidate'
     if git -C "$stage.git" ls-tree -r "$commit" -- "$third_party_path" | awk '$1 == "120000" { found = 1 } END { exit !found }'; then
         die 'approved third-party module contains a symlink'
@@ -566,7 +632,7 @@ if [ -n "$bwork_requested" ]; then
     cmp "$release/bwork-classification.json" "$backup/bwork-classification.json" || die 'BWork classification changed during quiescence'
 fi
 
-ln -sfn "$release" "$QA_BASE/current"
+ln -sfn "$release" "$CURRENT"
 release_switched=1
 odoo_command="odoo --config=/etc/odoo/odoo.conf --db_host=\"\$HOST\" --db_user=\"\$USER\" --db_password=\"\$PASSWORD\" --addons-path=$ADDONS_PATH -d $QA_DATABASE"
 if [ "${#upgrade_modules[@]}" -gt 0 ]; then
@@ -584,8 +650,9 @@ database_mutated=1
 compose_cmd run --rm --no-deps --entrypoint sh "$ODOO_SERVICE" -lc "$odoo_command" > "$backup/module-upgrade.log" 2>&1
 bwork_verify "$release" "$backup/bwork-verified.json" compose_cmd
 smoke_since="$(date -u +%Y-%m-%dT%H:%M:%SZ)" || die 'cannot timestamp QA smoke attempt'
-compose_cmd up -d "$ODOO_SERVICE"
+start_qa_app
 wait_for_login
+verify_preview_app_source || die 'running Noorix preview did not mount the approved report source'
 for module in "${APPROVED_MODULES[@]}" ${policy_third_party_modules:+"$policy_third_party_modules"}; do
     [ "$(module_state "$module")" = installed ] || die "module not installed after QA deployment: $module"
 done

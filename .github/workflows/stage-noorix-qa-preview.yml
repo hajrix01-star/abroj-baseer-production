@@ -1,0 +1,49 @@
+name: Authorize the isolated QA report preview
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: Type STAGE_NOORIX_QA to authorize only the isolated report preview
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: baseer-qa
+  cancel-in-progress: false
+
+jobs:
+  authorize:
+    if: github.ref == 'refs/heads/main' && inputs.confirmation == 'STAGE_NOORIX_QA'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: qa
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Test and sign the bounded QA preview request
+        env:
+          QA_REQUEST_SIGNING_KEY: ${{ secrets.QA_REQUEST_SIGNING_KEY }}
+        run: |
+          set -Eeuo pipefail
+          bash ops/qa/verify-qa-deploy-source.sh
+          python3 -B -m unittest discover -s tests -p test_qa_noorix_preview_config.py -v
+          source ops/qa/release-policies/baseer-2026-11-22-noorix-net-estimate-preview.env
+          test "$COMMIT" = 4a4f06cda34a5a6e2817e9e118f95c9945c4f2ab
+          git merge-base --is-ancestor "$COMMIT" "$GITHUB_SHA"
+          test -n "$QA_REQUEST_SIGNING_KEY"
+          signing_key="$RUNNER_TEMP/noorix-qa-preview-signing-key"
+          trap 'rm -f -- "$signing_key"' EXIT
+          (umask 077; printf '%s\n' "$QA_REQUEST_SIGNING_KEY" > "$signing_key")
+          git config user.name baseer-qa-release-bot
+          git config user.email baseer-qa-release-bot@users.noreply.github.com
+          git config gpg.format ssh
+          git config user.signingkey "$signing_key"
+          tag="qa-noorix-preview-$GITHUB_RUN_ID"
+          git tag --sign --message 'Authorize isolated QA report preview only' "$tag" "$GITHUB_SHA"
+          git push origin "refs/tags/$tag"
+          printf 'QA_PREVIEW_REQUEST=SIGNED\nTAG=%s\n' "$tag"

@@ -1,0 +1,75 @@
+#!/usr/bin/env bash
+# Bounded QA-only staging entrypoint. It never changes the QA route.
+set -Eeuo pipefail
+umask 077
+
+die() { printf 'QA_NOORIX_STAGE=FAILED\nREASON=%s\n' "$*" >&2; exit 1; }
+protected() {
+    [ -f "$1" ] && [ ! -L "$1" ] &&
+        [ "$(stat -c '%U:%G:%a' "$1")" = "root:root:$2" ] || die 'unsafe QA authorization file'
+}
+
+[ "$(id -u)" -eq 0 ] || die 'root required'
+[ "$#" -eq 1 ] && [[ "$1" =~ ^qa-noorix-preview-([1-9][0-9]{0,19})$ ]] ||
+    die 'expected an isolated preview request tag'
+tag=$1
+run_id=${BASH_REMATCH[1]}
+protected /etc/baseer-qa/deploy.env 600
+# shellcheck disable=SC1091
+. /etc/baseer-qa/deploy.env
+[ "$QA_BASE" = /srv/baseer-qa ] && [ "$QA_ENVIRONMENT" = qa ] &&
+    [ "$QA_DATABASE" = baseer_qa_20261023 ] || die 'unexpected primary QA'
+protected "$QA_SOURCE_SSH_KEY" 600
+protected "$QA_SOURCE_KNOWN_HOSTS" 644
+protected "$QA_TAG_ALLOWED_SIGNERS" 644
+protected /usr/local/sbin/baseer-qa-approve-release 750
+root=/srv/baseer-qa/deploy-staging
+[ "$(realpath -e "$root")" = "$root" ] &&
+    [ "$(stat -c '%U:%G:%a' "$root")" = root:root:700 ] || die 'unsafe staging directory'
+stage=$(mktemp -d "$root/.noorix-preview.XXXXXX")
+trap 'rm -rf -- "$stage"' EXIT
+repo="$stage/repo.git"
+git init --bare --quiet "$repo"
+git -C "$repo" remote add origin "$QA_SOURCE_REMOTE"
+export GIT_SSH_COMMAND="ssh -i $QA_SOURCE_SSH_KEY -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$QA_SOURCE_KNOWN_HOSTS"
+git -C "$repo" fetch --quiet --no-tags origin main:refs/heads/reviewed-main "refs/tags/$tag:refs/tags/$tag"
+[ "$(git -C "$repo" cat-file -t "refs/tags/$tag")" = tag ] || die 'signed annotated tag required'
+[ "$(git -C "$repo" cat-file -p "refs/tags/$tag" | sed -n '3s/^tag //p')" = "$tag" ] || die 'tag mismatch'
+git -C "$repo" -c gpg.format=ssh -c "gpg.ssh.allowedSignersFile=$QA_TAG_ALLOWED_SIGNERS" verify-tag "refs/tags/$tag"
+revision=$(git -C "$repo" rev-parse "refs/tags/$tag^{commit}")
+git -C "$repo" merge-base --is-ancestor "$revision" refs/heads/reviewed-main || die 'request is outside reviewed main'
+git -C "$repo" show "$revision:ops/qa/baseer-qa-noorix-stage" > "$stage/expected"
+cmp -s -- "$stage/expected" "$0" || die 'stage tool differs from authorized source'
+for file in baseer-qa-deploy prepare-noorix-preview.py noorix-qa-route.py; do
+    git -C "$repo" show "$revision:ops/qa/$file" > "$stage/$file"
+done
+bash -n "$stage/baseer-qa-deploy"
+tailscale serve status --json | python3 -I -c '
+import runpy, sys
+read = runpy.run_path(sys.argv[1])["pick_backend"]
+try:
+    assert read(sys.stdin.read(1048577)) == 18134
+except (ValueError, AssertionError):
+    sys.exit("QA preview can only be staged while the existing QA route is active")
+' "$stage/noorix-qa-route.py"
+helper_dir=/usr/local/lib/baseer-qa-refresh
+[ "$(realpath -e "$helper_dir")" = "$helper_dir" ] &&
+    [ "$(stat -c '%U:%G:%a' "$helper_dir")" = root:root:750 ] || die 'unsafe QA helper directory'
+helper="$helper_dir/prepare-noorix-preview.py"
+if [ -e "$helper" ] || [ -L "$helper" ]; then
+    protected "$helper" 750
+    cmp -s -- "$stage/prepare-noorix-preview.py" "$helper" || die 'another preview helper is installed'
+else
+    # Hard link the prepared file into place so concurrent bootstrap attempts
+    # cannot overwrite the helper after a check.
+    tmp=$(mktemp "$helper_dir/.noorix-helper.XXXXXX")
+    trap 'rm -f -- "$tmp"; rm -rf -- "$stage"' EXIT
+    install -o root -g root -m 0750 "$stage/prepare-noorix-preview.py" "$tmp"
+    ln -- "$tmp" "$helper"
+fi
+if [ ! -e /etc/baseer-qa/noorix-preview ]; then
+    python3 -I "$helper" --provision
+fi
+release_id=baseer-2026-11-22-noorix-net-estimate-preview
+/usr/local/sbin/baseer-qa-approve-release "$release_id" "$run_id" "$revision"
+bash "$stage/baseer-qa-deploy" --noorix-preview "$release_id" "$run_id"

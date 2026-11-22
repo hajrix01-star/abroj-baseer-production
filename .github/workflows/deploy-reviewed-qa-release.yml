@@ -44,6 +44,7 @@ jobs:
           set -Eeuo pipefail
           [[ "$RELEASE_ID" =~ ^[a-z0-9][a-z0-9-]{2,63}$ ]]
           policy_file="ops/qa/release-policies/$RELEASE_ID.env"
+          test "$RELEASE_ID" != baseer-2026-11-22-noorix-net-estimate-preview
           test -f "$policy_file"
           # shellcheck disable=SC1090
           . "$policy_file"

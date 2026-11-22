@@ -8,6 +8,7 @@ import { user } from "@web/core/user";
 import { registry } from "@web/core/registry";
 import { _t } from "@web/core/l10n/translation";
 import { useService } from "@web/core/utils/hooks";
+import { Dialog } from "@web/core/dialog/dialog";
 
 function newClientToken() {
     return globalThis.crypto.randomUUID();
@@ -60,6 +61,59 @@ function serverErrorMessage(error, fallback) {
     )) || fallback;
 }
 
+export class PettyCashEntryDialog extends Component {
+    static template = "baseer_procurement_requests.PettyCashEntryDialog";
+    static components = { Dialog, Dropdown, DropdownItem };
+    static props = { close: Function, owner: Object, mode: String };
+
+    setup() { this.state = useState(this.props.owner.state); }
+
+    get title() { return this.props.mode === "return" ? _t("Return remaining") : _t("Add petty cash"); }
+    async submit() {
+        const saved = this.props.mode === "return" ? await this.props.owner.saveReturn() : await this.props.owner.save();
+        if (saved) this.props.close();
+    }
+}
+
+export class PettyCashSettlementDialog extends Component {
+    static template = "baseer_procurement_requests.PettyCashSettlementDialog";
+    static components = { Dialog };
+    static props = { close: Function, owner: Object, representativeId: Number };
+    get title() { return _t("Settle carried balance"); }
+    returnCash() { this.props.close(); this.props.owner.openEntry("return", this.props.representativeId); }
+    purchases() {
+        this.props.close();
+        this.props.owner.notification.add(_t("Select the representative as the invoice payment source."), { type: "info" });
+        this.props.owner.openPurchases();
+    }
+}
+
+export class PettyCashReversalDialog extends Component {
+    static template = "baseer_procurement_requests.PettyCashReversalDialog";
+    static components = { Dialog };
+    static props = { close: Function, owner: Object, fundingId: Number };
+    setup() { this.state = useState({ reason: "", date: today(), saving: false, token: newClientToken() }); }
+    get title() { return _t("Reverse petty cash entry"); }
+    async reverse() {
+        if (this.state.saving) return;
+        if (!this.state.reason.trim() || !this.state.date) {
+            this.props.owner.notification.add(_t("Enter a reason and reversal date."), { type: "warning" });
+            return;
+        }
+        this.state.saving = true;
+        try {
+            await this.props.owner.orm.call("baseer.procurement.representative.advance", "submit_funding_reversal", [
+                this.props.fundingId, this.state.reason.trim(), this.state.date, this.state.token,
+            ]);
+            await this.props.owner.load();
+            this.props.owner.notification.add(_t("The entry was reversed. You can record the correct petty cash entry."), { type: "success" });
+            this.props.close();
+        } catch (error) {
+            this.props.owner.notification.add(serverErrorMessage(error, _t("Could not reverse the entry.")), { type: "danger" });
+        } finally { this.state.saving = false; }
+    }
+}
+
 export class RepresentativePettyCash extends Component {
     static template = "baseer_procurement_requests.RepresentativePettyCash";
     static props = ["*"];
@@ -69,34 +123,78 @@ export class RepresentativePettyCash extends Component {
         this.orm = useService("orm");
         this.action = useService("action");
         this.notification = useService("notification");
+        this.dialog = useService("dialog");
         const params = this.props.action?.params || {};
         this.state = useState({
-            loading: true, saving: false, error: false, data: false,
+            loading: true, saving: false, error: false, data: false, tab: "movements", search: "", movementType: "", movementOffset: 0,
             representativeId: "", monthStart: "", destinationId: "", requestId: "", paymentPointId: "", amount: "", movementDate: today(), clientToken: newClientToken(),
             returnRepresentativeId: "", returnPaymentPointId: "", returnAmount: "", returnClientToken: newClientToken(),
         });
         this.state.representativeId = params.representative_id ? String(params.representative_id) : "";
-        this.state.monthStart = params.month_start || "";
+        this.state.monthStart = params.month_start || `${today().slice(0, 7)}-01`;
         // Render the shell and its loading state immediately. Waiting in
         // onWillStart leaves a blank mobile page until the dashboard RPC ends.
         onMounted(() => this.load());
     }
 
     async load() {
+        const sequence = this.dashboardSequence = (this.dashboardSequence || 0) + 1;
+        this.movementSequence = (this.movementSequence || 0) + 1;
         this.state.loading = true;
         try {
-            this.state.data = await this.orm.call(
+            const data = await this.orm.call(
                 "baseer.procurement.representative.advance", "dashboard_data", [this.state.representativeId || false, this.state.monthStart || false],
             );
+            if (sequence !== this.dashboardSequence) return;
+            this.state.data = data;
             this.state.error = false;
+            this.state.movementOffset = 0;
+            if (this.state.search || this.state.movementType) await this.loadMovements();
         } catch (error) {
+            if (sequence !== this.dashboardSequence) return;
             // Odoo wraps a UserError in a generic RPC "Odoo Server Error". Keep
             // the safe server-side message visible instead of discarding it.
             this.state.error = serverErrorMessage(error, _t("Could not load Representative Petty Cash."));
         } finally {
-            this.state.loading = false;
+            if (sequence === this.dashboardSequence) this.state.loading = false;
         }
     }
+
+    openEntry(mode = "funding", representativeId = false) {
+        if (representativeId) this.state.returnRepresentativeId = String(representativeId);
+        this.dialog.add(PettyCashEntryDialog, { owner: this, mode });
+    }
+
+    openSettlement(representativeId) {
+        this.dialog.add(PettyCashSettlementDialog, { owner: this, representativeId });
+    }
+
+    openReversal(fundingId) {
+        this.dialog.add(PettyCashReversalDialog, { owner: this, fundingId });
+    }
+
+    async openPurchases() {
+        await this.action.doAction("baseer_purchase_batch.action_purchase_batches");
+    }
+
+    async loadMovements(offset = 0) {
+        const sequence = this.movementSequence = (this.movementSequence || 0) + 1;
+        this.state.movementOffset = offset;
+        try {
+            const result = await this.orm.call("baseer.procurement.representative.advance", "dashboard_daily_movements", [
+                this.state.representativeId || false, this.state.monthStart || false,
+                this.state.search.trim(), this.state.movementType, offset,
+            ]);
+            if (sequence !== this.movementSequence) return;
+            this.state.data.daily_movements = result.daily_movements;
+            this.state.data.daily_movements_truncated = result.daily_movements_truncated;
+        } catch (error) {
+            this.notification.add(serverErrorMessage(error, _t("Could not load movements.")), { type: "danger" });
+        }
+    }
+
+    searchMovements(event) { event.preventDefault(); this.loadMovements(0); }
+    filterMovements(event) { this.state.movementType = event.target.value; this.loadMovements(0); }
 
     selectRepresentative(representativeId) {
         this.state.representativeId = representativeId ? String(representativeId) : "";
@@ -114,7 +212,7 @@ export class RepresentativePettyCash extends Component {
     }
 
     onMonthChange(event) {
-        this.state.monthStart = event.target.value ? `${event.target.value}-01` : "";
+        this.state.monthStart = event.target.value ? `${event.target.value}-01` : `${today().slice(0, 7)}-01`;
         this.load();
     }
 
@@ -184,7 +282,7 @@ export class RepresentativePettyCash extends Component {
     }
 
     get carryoverColumnLabels() {
-        return { representative: _t("Representative"), from: _t("From month"), to: _t("To month"), amount: _t("Carried forward") };
+        return { representative: _t("Representative"), from: _t("From month"), to: _t("To month"), amount: _t("Carried forward"), action: _t("Action") };
     }
 
     get dailyColumnLabels() {
@@ -192,7 +290,7 @@ export class RepresentativePettyCash extends Component {
     }
 
     dailyMovementLabel(type) {
-        return { funding: _t("Petty cash given"), purchase: _t("Purchase"), return: _t("Cash returned") }[type] || "—";
+        return { funding: _t("Petty cash given"), purchase: _t("Purchase"), return: _t("Cash returned"), reversal: _t("Petty cash reversal") }[type] || "—";
     }
 
     selectPaymentPoint(paymentPointId) { this.state.paymentPointId = String(paymentPointId); }
@@ -221,6 +319,7 @@ export class RepresentativePettyCash extends Component {
             this.state.clientToken = newClientToken();
             await this.load();
             this.notification.add(_t("Representative Petty Cash was saved."), { type: "success" });
+            return true;
         } catch (error) {
             this.notification.add(serverErrorMessage(error, _t("Could not save Representative Petty Cash.")), { type: "danger" });
         } finally {
@@ -245,6 +344,7 @@ export class RepresentativePettyCash extends Component {
             this.state.returnClientToken = newClientToken();
             await this.load();
             this.notification.add(_t("Returned cash was saved."), { type: "success" });
+            return true;
         } catch (error) {
             this.notification.add(serverErrorMessage(error, _t("Could not save returned cash.")), { type: "danger" });
         } finally {

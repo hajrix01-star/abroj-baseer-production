@@ -100,6 +100,9 @@ class RepresentativePettyCashAggregate(models.Model):
         returned = self._baseer_grouped_amount(
             self, movement_domain + [('movement_type', '=', 'return')],
         )
+        reversed_funding = self._baseer_grouped_amount(
+            self, movement_domain + [('movement_type', '=', 'reversal')],
+        )
         # Pre-existing batch-level settlements still consume the representative
         # balance, but no new workflow creates them.
         historical = self._baseer_grouped_amount(
@@ -114,7 +117,7 @@ class RepresentativePettyCashAggregate(models.Model):
             ('representative_partner_id', '=', representative.id),
             ('state', '=', 'posted'),
         ])
-        return (Decimal(str(funded)) - Decimal(str(returned))
+        return (Decimal(str(funded)) - Decimal(str(returned)) - Decimal(str(reversed_funding))
                 - Decimal(str(historical)) - Decimal(str(settled))).quantize(MONEY_QUANTUM)
 
     @api.model
@@ -302,7 +305,26 @@ class RepresentativePettyCashAggregate(models.Model):
             'amount': float(amount),
         } for partner_id, month, amount in rows]
 
-    def _dashboard_daily_movements(self, company, representative_id, start, end):
+    @api.model
+    def dashboard_daily_movements(self, representative_id=False, month_start=False,
+                                  search='', movement_type='', offset=0):
+        """Search the visible monthly ledger without changing financial totals."""
+        self._require_reader()
+        if not isinstance(search, str) or len(search) > 200:
+            raise ValidationError(_('Search must contain at most 200 characters.'))
+        if movement_type not in ('', 'funding', 'purchase', 'return', 'reversal'):
+            raise ValidationError(_('Invalid movement type.'))
+        if type(offset) is not int or not 0 <= offset <= 100000:
+            raise ValidationError(_('Invalid movement page.'))
+        start, end = self._month_range(month_start)
+        movements, truncated = self._dashboard_daily_movements(
+            self.env.company, representative_id, start, end,
+            search=search.strip(), movement_type=movement_type, offset=offset,
+        )
+        return {'daily_movements': movements, 'daily_movements_truncated': truncated}
+
+    def _dashboard_daily_movements(self, company, representative_id, start, end,
+                                   search='', movement_type='', offset=0):
         """Return a bounded, stable view of all representative activity sources."""
         self.flush_model(['company_id', 'representative_partner_id', 'procurement_request_id', 'movement_type', 'movement_date', 'name', 'amount', 'state'])
         self.env['baseer.procurement.representative.advance.settlement'].flush_model(
@@ -312,11 +334,19 @@ class RepresentativePettyCashAggregate(models.Model):
         self.env['baseer.purchase.batch'].flush_model(['company_id', 'name'])
         self.env['baseer.purchase.batch.line'].flush_model(['company_id', 'supplier_ref'])
         self.env['baseer.procurement.request'].flush_model(['company_id', 'name'])
+        self.env['res.partner'].flush_model(['name'])
         self.env['account.move'].flush_model(['company_id', 'date'])
+        can_see_purchase_reference = (
+            self.env.user.has_group('baseer_procurement_requests.group_procurement_accountant')
+            or self.env.user.has_group('baseer_procurement_requests.group_procurement_manager')
+            or self.env.user.has_group('base.group_system')
+        )
         params = {'company': company.id, 'partner': int(representative_id) if representative_id else 0,
-                  'start': start, 'end': end}
+                  'start': start, 'end': end, 'search': search, 'movement_type': movement_type,
+                  'offset': offset, 'can_see_purchase_reference': can_see_purchase_reference}
         self.env.cr.execute('''
-            SELECT source, id, day, movement_type, partner_id, amount, reference, request_id, request_name FROM (
+            SELECT activity.source, activity.id, activity.day, activity.movement_type, activity.partner_id,
+                   activity.amount, activity.reference, activity.request_id, activity.request_name FROM (
                 SELECT 'movement' AS source, a.id, a.movement_date AS day, a.movement_type,
                        a.representative_partner_id AS partner_id, a.amount, a.name AS reference,
                        r.id AS request_id, r.name AS request_name
@@ -342,18 +372,24 @@ class RepresentativePettyCashAggregate(models.Model):
                  WHERE s.company_id = %(company)s AND s.state = 'posted'
                    AND m.date >= %(start)s AND m.date < %(end)s
                    AND (%(partner)s = 0 OR s.representative_partner_id = %(partner)s)
-            ) activity ORDER BY day DESC, source DESC, id DESC LIMIT 101
+            ) activity
+            LEFT JOIN res_partner p ON p.id = activity.partner_id
+            WHERE (%(movement_type)s = '' OR activity.movement_type = %(movement_type)s)
+              AND (%(search)s = '' OR
+                   strpos(lower(COALESCE(p.name, '')), lower(%(search)s)) > 0 OR
+                   strpos(lower(COALESCE(activity.request_name, '')), lower(%(search)s)) > 0 OR
+                   strpos(lower(activity.day::text), lower(%(search)s)) > 0 OR
+                   strpos(lower(activity.amount::text), lower(%(search)s)) > 0 OR
+                   ((activity.movement_type != 'purchase' OR %(can_see_purchase_reference)s)
+                    AND strpos(lower(COALESCE(activity.reference, '')), lower(%(search)s)) > 0))
+            ORDER BY activity.day DESC, activity.source DESC, activity.id DESC LIMIT 101 OFFSET %(offset)s
         ''', params)
         rows = self.env.cr.fetchall()
         visible = rows[:100]
         names = {p.id: p.display_name for p in self.env['res.partner'].sudo().browse([row[4] for row in visible]).exists()}
-        can_see_purchase_reference = (
-            self.env.user.has_group('baseer_procurement_requests.group_procurement_accountant')
-            or self.env.user.has_group('baseer_procurement_requests.group_procurement_manager')
-            or self.env.user.has_group('base.group_system')
-        )
         return [{
             'key': '%s:%s' % (source, record_id), 'date': fields.Date.to_string(day), 'type': movement_type,
+            'funding_id': record_id if source == 'movement' and movement_type == 'funding' else False,
             'representative_id': partner_id, 'representative_name': names.get(partner_id, ''),
             'amount': float(amount),
             'reference': (reference or '') if movement_type != 'purchase' or can_see_purchase_reference else '',
@@ -384,19 +420,20 @@ class RepresentativePettyCashAggregate(models.Model):
             settlement_dates = [('move_id.date', op, date) for op, date in date_domain]
             funded = total(self, movement + movement_dates + [('movement_type', '=', 'funding')])
             returned = total(self, movement + movement_dates + [('movement_type', '=', 'return')])
+            reversed_funding = total(self, movement + movement_dates + [('movement_type', '=', 'reversal')])
             settled = (
                 total(self.env['baseer.procurement.representative.advance.settlement'], historical + settlement_dates)
                 + total(self.env['baseer.procurement.representative.petty.cash.invoice.settlement'], invoices + settlement_dates)
             )
-            return funded, returned, settled
+            return funded, returned, settled, reversed_funding
 
-        previous_funded, previous_returned, previous_settled = period([('<', start)])
-        funded, returned, settled = period([('>=', start), ('<', end)])
-        opening = previous_funded - previous_returned - previous_settled
-        closing = opening + funded - returned - settled
+        previous_funded, previous_returned, previous_settled, previous_reversed = period([('<', start)])
+        funded, returned, settled, reversed_funding = period([('>=', start), ('<', end)])
+        opening = previous_funded - previous_returned - previous_settled - previous_reversed
+        closing = opening + funded - returned - settled - reversed_funding
         data['summary'].update({
             'opening': float(opening.quantize(MONEY_QUANTUM)),
-            'funded': float(funded), 'returned': float(returned), 'settled': float(settled),
+            'funded': float(funded), 'returned': float(returned), 'settled': float(settled), 'reversed': float(reversed_funding),
             'closing': float(closing.quantize(MONEY_QUANTUM)),
             'remaining': float(closing.quantize(MONEY_QUANTUM)),
         })

@@ -70,6 +70,7 @@ class RepresentativePettyCash(models.Model):
     @api.depends('amount', 'return_ids.amount', 'return_ids.state', 'settlement_ids.amount', 'settlement_ids.state')
     def _compute_returned_amount(self):
         returns_by_origin = {}
+        reversals_by_origin = {}
         settlements_by_advance = {}
         if self.ids:
             posted_returns = self.search([
@@ -79,9 +80,8 @@ class RepresentativePettyCash(models.Model):
                 ('advance_id', 'in', self.ids), ('state', '=', 'posted'),
             ])
             for movement in posted_returns:
-                returns_by_origin[movement.origin_id.id] = (
-                    returns_by_origin.get(movement.origin_id.id, 0.0) + movement.amount
-                )
+                amounts = reversals_by_origin if movement.movement_type == 'reversal' else returns_by_origin
+                amounts[movement.origin_id.id] = amounts.get(movement.origin_id.id, 0.0) + movement.amount
             for settlement in posted_settlements:
                 settlements_by_advance[settlement.advance_id.id] = (
                     settlements_by_advance.get(settlement.advance_id.id, 0.0) + settlement.amount
@@ -90,7 +90,7 @@ class RepresentativePettyCash(models.Model):
             record.returned_amount = returns_by_origin.get(record.id, 0.0)
             record.settled_amount = settlements_by_advance.get(record.id, 0.0)
             record.remaining_amount = (
-                record.amount - record.returned_amount - record.settled_amount
+                record.amount - record.returned_amount - record.settled_amount - reversals_by_origin.get(record.id, 0.0)
                 if record.movement_type == 'funding' else 0.0
             )
 
